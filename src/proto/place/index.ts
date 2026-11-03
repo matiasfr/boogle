@@ -93,6 +93,7 @@ import { installContact } from './look-kit.ts';
 import {
   CRANE,
   DOCK,
+  FAR,
   FORGE,
   HEAP,
   LINKS,
@@ -152,7 +153,7 @@ import {
   takeRail,
   updateForge,
 } from './forge.ts';
-import { buildSigns, setBeacon, setNumbers, setObjective } from './signs.ts';
+import { beaconAt, buildSigns, pointArrow, setBeacon, setNumbers, setObjective } from './signs.ts';
 import { campSmoke, onStepUp, snapCamp, snapTown, staticPart, updateTown, wakeCamp } from './town.ts';
 
 // A clean view for someone playing it cold (the tester's link, `&fresh=1`): place.css hides the bar, the panel and the numbers.
@@ -759,6 +760,10 @@ const nearestSample = (x: number, z: number) => {
     }
   return best;
 };
+const offThePath = (x: number, z: number) => {
+  const q = nearestSample(x, z);
+  return Math.hypot(q[0] + ORIGIN.x - x, q[1] - z) > 20;
+};
 function backUp() {
   const b = me.body;
   if (!b) return;
@@ -838,7 +843,8 @@ registerInteractable(() => {
     sitAt.set(p.x, p.y + 1.1, p.z);
     return [{ id: 'place-stand', verb: 'Stand up', at: sitAt, r: 100, run: standUp }];
   }
-  if (me.swimming) {
+  // In the water, or down on a shore or a river bank well off every path: never stuck with no way back.
+  if (me.swimming || (p.y < VILLAGE.y - 6 && offThePath(p.x, p.z))) {
     atPrompt.set(p.x, p.y + 1.2, p.z);
     return [{ id: 'place-back', verb: 'Back up the path', at: atPrompt, run: backUp }];
   }
@@ -871,7 +877,7 @@ registerInteractable(() => {
           : { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, run: () => void chopTree(t) },
       );
     }
-  if (s.turned) {
+  if (s.turned && stationOf(L2)) {
     const st = stationOf(L2);
     if (Math.hypot(p.x - rackFrom.x, p.z - rackFrom.z) < 4)
       (out ??= []).push(
@@ -946,6 +952,10 @@ function arrive(l: LineRun, stop: number) {
         if (onto === yard) {
           s.stone++;
           s.people++;
+          if (s.stone === 1) {
+            fanfare(true);
+            showBanner('You did it!', 'That island across the sea is for next time. Thanks for playing!', 9);
+          }
         }
         drawHeaps(allHeaps);
         save();
@@ -1109,6 +1119,28 @@ const nearestTree = () => {
   }
   return best;
 };
+/** Where to head while the machine sleeps: not straight at it over the gorge, but along the path, a little ahead of you. */
+const ahead = { x: 0, z: 0 };
+function pathAhead() {
+  const b = me.body;
+  const path = PATH_SAMPLES[0];
+  if (!b || !path) return null;
+  if (machine.distance(b.position.x, b.position.z) < 25) return beaconAt();
+  let bd = Infinity,
+    best = 0;
+  for (let n = 0; n < path.length; n += 4) {
+    const q = path[n]!;
+    const d = (q[0] + ORIGIN.x - b.position.x) ** 2 + (q[1] - b.position.z) ** 2;
+    if (d < bd) {
+      bd = d;
+      best = n;
+    }
+  }
+  const q = path[Math.min(path.length - 1, best + 24)]!;
+  ahead.x = q[0] + ORIGIN.x;
+  ahead.z = q[1];
+  return ahead;
+}
 const farStop = besideLine(L1.spec.line, L1.spec.line.len - TUNE.stopIn, 2.9); // on the camp's platform
 /** Whole seconds from clock `t` until line 1's train pulls in at `stop` (0 the village, 1 the far end). rail.ts's cycle. */
 function secondsTo(t: number, stop: 0 | 1) {
@@ -1168,10 +1200,13 @@ function objective(now: number) {
     return `A train brings timber for the forge in ${secondsTo(clock.t, 0)} s: ${count}.`;
   }
   if (run.mode === 'done') {
-    setBeacon(null, now);
-    return L2.open && s.stone > 0
-      ? 'That was the whole test. Thanks for playing!'
-      : 'Line 2 is through! The first stone is on its way home.';
+    if (!L2.open || s.stone <= 0) {
+      setBeacon(null, now);
+      return 'Line 2 is through! The first stone is on its way home.';
+    }
+    // The end: no more jobs. The beacon and the chevron go to the shard across the sea, and you're free to look around.
+    beam(FAR.x + ORIGIN.x + 10, 200, FAR.z + ORIGIN.z);
+    return 'That was the whole test. Look across the sea, and wander as long as you like.';
   }
   // Idle at a station: what's next depends on what it wants and what you carry.
   const st = stationOf(run.line);
@@ -1432,6 +1467,7 @@ onFrame(
       }
     // What's on screen.
     setObjective(objective(now));
+    pointArrow(showing() ? null : run.mode === 'asleep' ? pathAhead() : beaconAt());
     setNumbers(L1.open ? TUNE.deckCrates : null, s.people);
     forgeBoard.set(
       forge.lit ? 'Forge lit' : `Forge: timber ${forge.crates}/${TUNE.forgeCost}`,
