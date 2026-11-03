@@ -108,6 +108,7 @@ function skipPath() {
   L1.track.snapTo(L1.track.u(STUB.village));
   L1.stations.forEach((st) => st.drawStock({ logs: 0, rails: 0, stone: 0, beam: 0 }));
   run.line = L1;
+  job.rung.multi = true;
   job.score.metres = 161;
   snapRun();
   grantChest('axe', true);
@@ -119,6 +120,7 @@ function skipLine2() {
   if (!L1.open) skipPath();
   job.tech.jump = true;
   job.rung.axe = 1;
+  job.rung.multi = true;
   job.rung.pack = 1;
   job.chest = null;
   job.forgeBill = 1;

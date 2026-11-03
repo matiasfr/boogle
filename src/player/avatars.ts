@@ -15,7 +15,7 @@ const capsuleGeo = new THREE.CapsuleGeometry(PLAYER_R, HEAD_OFFSET, 6, 16);
  * What a skin offers the game (unset on the capsule): loadFit, how a haul bundle sits on this body (src/features/haul-stack.ts);
  * handSocket, where held things hang (src/features/held.ts); flopY, the inner group's height lying flat (src/features/impact.ts).
  * What the game tells a skin: load, pieces carried; holdKind, what's in hand; flopAmt, 0..1 flopped over; seatedAt, when it
- * was last seated in a vehicle. All render only.
+ * was last seated in a vehicle; aloft, both hands holding something up over its head. All render only.
  */
 export type AvatarData = {
   inner: THREE.Group;
@@ -30,6 +30,7 @@ export type AvatarData = {
   holdKind?: 'item' | 'hang' | 'ball' | null;
   flopAmt?: number;
   seatedAt?: number;
+  aloft?: boolean;
 };
 export type Avatar = THREE.Group & { userData: AvatarData };
 

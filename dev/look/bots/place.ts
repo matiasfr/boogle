@@ -10,6 +10,7 @@ import { teleport } from '../../../src/physics/engine.ts';
 import { carry, type Platform } from '../../../src/physics/platforms.ts';
 import type { Rock, Tree } from '../../../src/proto/place/chop.ts';
 import { nearest } from '../../../src/proto/place/nearest.ts';
+import { gettingItem, press as putAwayGot } from '../../../src/proto/place/got.ts';
 
 const q = new URLSearchParams(location.search);
 
@@ -18,6 +19,17 @@ export async function play() {
   const place = window.__place as any;
   const bot = makeBot({ recover: () => place.backUp() });
   const { note, wait, now, press } = bot;
+  // "You got ___": read it for a second, then put it away, as a person would.
+  let gotFor = 0;
+  setInterval(() => {
+    if (!gettingItem()) return;
+    gotFor += 0.25;
+    if (gotFor > 1.2) {
+      note('put away a "You got"');
+      putAwayGot();
+      gotFor = 0;
+    }
+  }, 250);
   const body = me.body!;
   const O = place.ORIGIN.x;
   const [L1, L2] = place.lines;

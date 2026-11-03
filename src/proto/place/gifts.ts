@@ -13,13 +13,14 @@ import { thump } from '../../render/machine-sfx.ts';
 import { me } from '../../player/player.ts';
 import { addPresenceField, onPeerRemoved, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { carry } from '../../physics/platforms.ts';
-import { fanfare, knock, label, pop } from '../minis/common.ts';
+import { knock, pop } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
 import { COOP, personalSlice } from './job.ts';
 import { SHELF, toWorld } from './layout.ts';
 import { FINDERS } from './tech-layout.ts';
 import { dustRing } from './pieces.ts';
 import { softGlow } from './look.ts';
+import { dropGot, youGot } from './got.ts';
 import { addFoot } from './sites.ts';
 
 // ---------------------------------------------------------------- shapes: a few primitives, merged, in their own colours
@@ -496,6 +497,8 @@ const EXTRAS: Record<Extra, { name: string; line: string; parts: Part[] }> = {
 const byId = (id: GiftId) => GIFTS.find((g) => g.id === id) ?? STOCK.find((g) => g.id === id)!;
 /** A gift's shape, for standing it somewhere else. */
 export const giftParts = (id: GiftId) => byId(id).parts;
+/** Parts as one mesh in the gifts' material: for showing a thing that isn't a gift. */
+export const partsMesh = (parts: Part[]) => new THREE.Mesh(merged(parts), giftMat);
 const geos = new Map<GiftId, THREE.BufferGeometry>();
 const geoOf = (id: GiftId) => {
   let g = geos.get(id);
@@ -519,11 +522,9 @@ const ODDS: Record<Tier, [number, number, number]> = {
 const PITY = { firstWonderBy: 3, mostWithout: 5 };
 const TIER_COLOR: Record<Tier, string> = { common: '#fff7e8', rare: '#8fd0ff', wonder: '#ffd76a' };
 const TIER_MARKS: Record<Tier, string> = { common: '★', rare: '★★', wonder: '★★★' };
-const REVEAL: Record<Tier, { shake: number; hold: number; fly: number }> = {
-  common: { shake: 0.12, hold: 0.4, fly: 0.28 },
-  rare: { shake: 0.18, hold: 0.8, fly: 0.32 },
-  wonder: { shake: 0.3, hold: 1.3, fly: 0.4 },
-};
+// How long the lid rattles; then it's held up over your head (./got.ts).
+const REVEAL_SHAKE: Record<Tier, number> = { common: 0.12, rare: 0.18, wonder: 0.3 };
+const SHAFT_S = 0.8;
 
 // ---------------------------------------------------------------- the curio shelf
 const SX = toWorld(SHELF.x),
@@ -811,7 +812,8 @@ export function keepTried() {
   const { id } = trying;
   trying = null;
   if (!giftState.bought.includes(id)) giftState.bought.push(id);
-  pop(6, 0.7);
+  const g = byId(id);
+  youGot({ name: g.name, line: g.line, model: new THREE.Mesh(geoOf(id), giftMat) });
   saveHook();
   return id;
 }
@@ -1022,12 +1024,6 @@ const shaftGlow = softGlow('#ffe08a', 0.8, true);
 const shaft = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 2.1, 40, 14, 1, true).translate(0, 20, 0), shaftGlow.mat);
 shaft.visible = false;
 scene.add(flash, shaft);
-const shown = new THREE.Mesh(new THREE.BufferGeometry(), giftMat);
-shown.visible = false;
-scene.add(shown);
-const tag = label(5.6, 2.8);
-tag.sprite.visible = false;
-scene.add(tag.sprite);
 const CONFETTI = ['#ff4f4f', '#ffcf33', '#2f8cff', '#4fdc7a', '#ff7ad9', '#ffffff'].map((c) => new THREE.Color(c));
 const gold = new THREE.Color('#ffd76a');
 function sparkles(x: number, y: number, z: number, n: number, sp: number, color = gold) {
@@ -1079,13 +1075,9 @@ type Show = {
   y: number;
   z: number;
   boomed: boolean;
-  flew: boolean;
-  landed: boolean;
-  from: THREE.Vector3;
-  n: number;
+  geo: THREE.BufferGeometry;
 };
 let show: Show | null = null;
-const BIG = 3;
 export const showing = () => !!show;
 export const giftState = {
   got: [] as GiftId[],
@@ -1166,12 +1158,8 @@ export function openCrate(c: { x: number; z: number }) {
     y: crate.y,
     z: crate.z,
     boomed: false,
-    flew: false,
-    landed: false,
-    from: new THREE.Vector3(),
-    n: giftState.got.length,
+    geo: chest ? extraGeo(id as Extra) : geoOf(id as GiftId),
   };
-  shown.geometry = chest ? extraGeo(id as Extra) : geoOf(id as GiftId);
   saveHook();
 }
 let saveHook = () => {};
@@ -1201,11 +1189,6 @@ personalSlice('gifts', {
     );
   },
 });
-function target(out: THREE.Vector3) {
-  const b = me.body;
-  if (b) return out.set(b.position.x, b.position.y + 1.1, b.position.z);
-  return out.set(show!.x, show!.y + 20, show!.z);
-}
 function wearIt(id: GiftId) {
   const g = byId(id);
   // An empty slot puts it on. Something you're wearing stays: it's on the shelf, to swap to.
@@ -1222,7 +1205,7 @@ function updateShow(dt: number) {
   const s = show;
   if (!s) return;
   s.t += dt;
-  const { shake: SHAKE, hold: HOLD, fly: FLY } = REVEAL[s.tier];
+  const SHAKE = REVEAL_SHAKE[s.tier];
   const crate = crates.find((q) => q.t === -1);
   if (!s.boomed) {
     // The lid rattles, and it's about to go.
@@ -1255,60 +1238,36 @@ function updateShow(dt: number) {
     dustRing(s.x, s.y + 0.1, s.z, 12, 3.2, 0.45);
     knock(0.25, 1.3);
     thump(s.x, s.z);
-    fanfare(s.tier === 'wonder' || s.n === 1);
     flash.visible = shaft.visible = true;
     flash.position.set(s.x, s.y + 0.9, s.z);
     shaft.position.set(s.x, s.y, s.z);
-    shown.visible = true;
-    tag.sprite.visible = true;
     const tier = !isChest(s.content) ? byId(s.gift.id as GiftId).tier : null;
-    tag.set(s.gift.name, s.gift.line || (tier ? TIER_MARKS[tier] : ''), tier ? TIER_COLOR[tier] : TIER_COLOR.rare);
-    tag.punch();
+    youGot({
+      name: s.gift.name,
+      line: s.gift.line || (tier ? TIER_MARKS[tier] : ''),
+      color: tier ? TIER_COLOR[tier] : undefined,
+      model: new THREE.Mesh(s.geo, giftMat),
+      from: new THREE.Vector3(s.x, s.y + 0.9, s.z),
+      done: () => handOver(s),
+    });
   }
   const u = s.t - SHAKE; // since the boom
   const fb = Math.min(1, u / 0.42);
   flash.scale.setScalar(0.6 + fb * 6);
   flashGlow.strength.value = (1 - fb) * 1.1;
   flash.visible = fb < 1;
-  const fs = Math.min(1, u / HOLD);
+  const fs = Math.min(1, u / SHAFT_S);
   shaft.scale.set(1 + fs * 0.3, 1, 1 + fs * 0.3);
   shaftGlow.strength.value = 0.7 * (1 - fs * fs);
   shaft.visible = fs < 1;
-  if (u < HOLD) {
-    // Up out of the wreck, turning, big enough to read: this is the beat where the thing is shown.
-    const rise = 1 - (1 - Math.min(1, u / 0.5)) ** 3,
-      pulse = Math.min(1, u / 0.3);
-    const sc =
-      (pulse < 1 ? BIG * (1 + 2.70158 * (pulse - 1) ** 3 + 1.70158 * (pulse - 1) ** 2) : 2.2) *
-      (1 + 0.04 * Math.sin(u * 5));
-    shown.position.set(s.x, s.y + 0.6 + rise * 2 + Math.sin(u * 2.4) * 0.07, s.z);
-    shown.rotation.y = u * 1.8;
-    shown.scale.setScalar(Math.max(0.01, sc));
-    tag.sprite.position.set(s.x, s.y + 6.2, s.z);
-    if (Math.floor(u * 8) !== Math.floor((u - dt) * 8))
-      sparkles(shown.position.x, shown.position.y + 0.5, shown.position.z, 3, 2);
-    return;
+}
+/** Put away: it goes on the shelf, and on you if its slot's empty. */
+function handOver(s: Show) {
+  if (!isChest(s.content)) {
+    reveal(s.gift.id as GiftId, near(SX, SZ));
+    wearIt(s.gift.id as GiftId);
   }
-  if (!s.flew) {
-    s.flew = true;
-    s.from.copy(shown.position);
-    tag.sprite.visible = false;
-    pop(3, 0.6);
-    if (!isChest(s.content)) reveal(s.gift.id as GiftId, near(SX, SZ));
-  }
-  const fu = Math.min(1, (u - HOLD) / FLY);
-  target(v);
-  shown.position.lerpVectors(s.from, v, fu * fu);
-  shown.position.y += Math.sin(fu * Math.PI) * 2;
-  shown.rotation.y += dt * 14;
-  shown.scale.setScalar(BIG + (0.75 - BIG) * fu);
-  if (fu < 1) return;
-  shown.visible = false;
-  sparkles(v.x, v.y, v.z, 26, 4);
-  pop(7, 0.8);
-  pop(5, 0.5);
-  if (!isChest(s.content)) wearIt(s.gift.id as GiftId);
-  show = null;
+  if (show === s) show = null;
   saveHook();
 }
 const near = (x: number, z: number) => {
@@ -1336,7 +1295,8 @@ export function snapGifts(
   crit.on = false;
   critter.visible = false;
   show = null;
-  shown.visible = flash.visible = shaft.visible = tag.sprite.visible = false;
+  flash.visible = shaft.visible = false;
+  dropGot();
   giftState.got = got.slice();
   giftState.dry = dry;
   for (const id of got) reveal(id, false);

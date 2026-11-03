@@ -1,5 +1,6 @@
 // The efficiency ladder of ?proto=place: each rung is earned and physical, and arrives as you start wanting it. "It was that
 // the only thing asked of me was to just chop 1 or 2 trees, so I wasn't feeling hungry for more efficiency yet."
+//   0. The multi-axe: when the machine first wakes, you can chop trees and break rocks (./run.ts).
 //   1. A proper axe: a chest at the village end of the first path. Tangible from the first swing, on the old oak beside it.
 //   2. A pack frame: a chest by the forge, when its frame is up. You can see you carry more.
 //   3. The depot: when line 2's first stretch is laid, the camp starts sending a cart of logs to a rack by the next frame
@@ -12,7 +13,8 @@ import { playMark } from '../mark.ts';
 import { H } from './land.ts';
 import { job, type ChestId } from './job.ts';
 import { OAK, toWorld } from './layout.ts';
-import { deliver, dropChest, prizeHooks } from './gifts.ts';
+import { deliver, dropChest, partsMesh, prizeHooks } from './gifts.ts';
+import { youGot } from './got.ts';
 import { showBanner } from './celebrate.ts';
 import { coop } from './coop.ts';
 
@@ -31,6 +33,22 @@ export function grantChest(id: ChestId, quiet = false) {
   sky.set(x, y + 22, q.z);
   dropChest(id);
   deliver(x, y, q.z, quiet ? null : sky, id);
+}
+/** The machine's awake: chopping starts here. Every tab in the room gets it as the machine wakes there. */
+export function grantMultiAxe() {
+  if (job.rung.multi) return;
+  job.rung.multi = true;
+  playMark('rung earned', { rung: 'multi' });
+  youGot({
+    name: 'The multi-axe',
+    line: 'Chops trees, breaks rocks, and more.',
+    model: partsMesh([
+      ['b', 0, 0.55, 0, 0.11, 1.3, 0.11, '#a9794c'],
+      ['b', 0, 1.06, -0.2, 0.15, 0.34, 0.4, '#c9ced8'],
+      ['k', 0, 1.06, 0.3, 0.09, 0.5, 0.09, '#8d929c', Math.PI / 2],
+      ['b', 0, 1.06, 0, 0.17, 0.12, 0.17, '#39e6c6'],
+    ]),
+  });
 }
 /** As the state says: for a reload, a Start over, or taking a partner's state. */
 export function snapChest() {

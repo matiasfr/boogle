@@ -48,7 +48,7 @@ const FADED = 1e-3; // a fading clip's weight under this is 0: exponential fades
 const rigs = new WeakMap<Avatar, Rig>();
 // animate's scratch, kept so a frame allocates nothing (npm run hitches). Neither outlives the call.
 const want = Object.fromEntries(NAMES.map((n) => [n, 0])) as Record<string, number>;
-const lifeState: LifeState = { vy: 0, airborne: false, load: 0, hold: null, seated: false, down: 0 };
+const lifeState: LifeState = { vy: 0, airborne: false, load: 0, hold: null, seated: false, down: 0, aloft: false };
 
 function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimming: boolean) {
   const r = rigs.get(a);
@@ -123,6 +123,7 @@ function animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimmi
   lifeState.hold = seated ? null : (u.holdKind ?? null);
   lifeState.seated = seated;
   lifeState.down = u.flopAmt ?? 0;
+  lifeState.aloft = !seated && !!u.aloft;
   lifeState.charging = a === me.avatar && me.charging;
   r.life.update(dt, lifeState);
   r.lastY = a.position.y;

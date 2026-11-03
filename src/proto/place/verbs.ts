@@ -251,23 +251,23 @@ registerInteractable(() => {
       if (t.great) {
         (out ??= []).push(
           back.big
-            ? { id: 'place-great', verb: 'Chop', at: t.at, blocked: 'Your hands are full' }
-            : { id: 'place-great', verb: 'Chop', at: t.at, run: () => void chopTree(t) },
+            ? { id: 'place-great', verb: 'Chop', at: t.at, click: true, blocked: 'Your hands are full' }
+            : { id: 'place-great', verb: 'Chop', at: t.at, click: true, run: () => void chopTree(t) },
         );
         continue;
       }
       (out ??= []).push(
         room <= 0
-          ? { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, blocked: 'Your back is full' }
-          : { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, run: () => void chopTree(t) },
+          ? { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, click: true, blocked: 'Your back is full' }
+          : { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, click: true, run: () => void chopTree(t) },
       );
     }
-    for (const q of ROCK_LIST) {
+    for (const q of job.rung.multi ? ROCK_LIST : []) {
       if (!whole(q) || Math.hypot(p.x - q.x, p.z - q.z) > q.r + 2.6) continue;
       (out ??= []).push(
         back.room() <= 0
-          ? { id: `place-rock${q.index}`, verb: 'Break', at: q.at, blocked: 'Your back is full' }
-          : { id: `place-rock${q.index}`, verb: 'Break', at: q.at, run: () => void breakRock(q) },
+          ? { id: `place-rock${q.index}`, verb: 'Break', at: q.at, click: true, blocked: 'Your back is full' }
+          : { id: `place-rock${q.index}`, verb: 'Break', at: q.at, click: true, run: () => void breakRock(q) },
       );
     }
     if (trunkDown()) {

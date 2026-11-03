@@ -72,6 +72,8 @@ import { buildHalt } from './halts.ts';
 import { cartFolk } from './depot.ts';
 import { haltUnder, snapTrains, updateCargo, wakeTrains } from './cargo.ts';
 import { showing, nearestCrate, openCrate, snapGifts, updateGifts, onGiftSaved } from './gifts.ts';
+import { updateGot } from './got.ts';
+import { resetDrops, updateDrop } from './drop.ts';
 import { updateLamps } from './lamps.ts';
 import './pair.ts';
 import {
@@ -289,6 +291,7 @@ function startOver() {
   resetFolk();
   back.logs = back.rails = back.stone = back.beam = back.incoming = 0;
   back.big = null;
+  resetDrops();
   incoming.rails = incoming.logs = 0;
   resetTrees();
   resetRocks();
@@ -420,6 +423,8 @@ onFrame(
     updatePieces(dt);
     updateMoments(dt);
     updateGifts(dt, now);
+    updateGot(dt);
+    updateDrop();
     updateCrystals(dt, now);
     setPopulation(job.people);
     updateFolk(dt);

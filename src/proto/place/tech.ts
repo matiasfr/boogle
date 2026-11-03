@@ -23,7 +23,7 @@ import { camera, scene } from '../../render/scene.ts';
 import { getAudio } from '../../render/audio.ts';
 import { protoCount } from '../count.ts';
 import { playMark } from '../mark.ts';
-import { fanfare, knock, pop } from '../minis/common.ts';
+import { knock, pop } from '../minis/common.ts';
 import { flat } from '../flat.ts';
 import { after, barrage, pullOut, shakeView, showBanner } from './celebrate.ts';
 import { coop, coopWire } from './coop.ts';
@@ -36,6 +36,7 @@ import { dustRing } from './pieces.ts';
 import { gateHere, snapHooks } from './run.ts';
 import { RINGS, cancelPull, fireHook, move, resetMoves, syncControls, toggleGlide, whyNot } from './moves.ts';
 import { flashCanopy } from './moves-view.ts';
+import { youGot } from './got.ts';
 import {
   DEVICES,
   FINDERS,
@@ -277,6 +278,27 @@ function buildDevices() {
   }
 }
 const NAMES: Record<TechId, string> = { jump: 'A second jump', hook: 'The hook shot', glide: 'The glider' };
+const LINES: Record<TechId, string> = {
+  jump: 'Jump again in the air.',
+  hook: 'Pull yourself to a ring.',
+  glide: 'Open it in the air.',
+};
+// What you wear for each, to hold up when you take it: rings for the ankles, a spool for the forearm, a folded wing.
+const WORN_SHAPE: Record<TechId, Parameters<typeof merged>[0]> = {
+  jump: [
+    ['t', -0.3, 0, 0, 0.32, 0.32, 0.32, TEAL],
+    ['t', 0.3, 0, 0, 0.32, 0.32, 0.32, TEAL],
+  ],
+  hook: [
+    ['c', 0, 0, 0, 0.26, 0.5, 0.26, BRASS],
+    ['c', 0, 0, 0, 0.3, 0.12, 0.3, TEAL],
+    ['k', 0, 0.42, 0, 0.12, 0.34, 0.12, TEAL],
+  ],
+  glide: [
+    ['b', 0, 0, 0, 1.4, 0.05, 0.5, TEAL, 0, 0.12],
+    ['b', 0, -0.06, 0, 1.3, 0.06, 0.06, BRASS],
+  ],
+};
 const tealColor = new THREE.Color(TEAL),
   white = new THREE.Color('#f2fffb');
 function chord(rootHz: number, vol: number) {
@@ -328,14 +350,20 @@ function gainTech(id: TechId, here: boolean) {
   syncControls();
   if (here) {
     coop.tech(id);
-    fanfare(true);
     chord(id === 'jump' ? 196 : id === 'hook' ? 165 : 131, 1);
     shakeView(id === 'glide' ? 0.22 : 0.12);
-    showBanner(NAMES[id], '', id === 'glide' ? 4 : 3);
     const b = d;
     barrage(b.x, b.y, b.z, id === 'glide' ? 12 : 6, 0.3, 26, 1.8);
-    if (id === 'jump') after(1.6, demoJump);
-    if (id === 'hook') after(1.7, demoHook);
+    youGot({
+      name: NAMES[id],
+      line: LINES[id],
+      model: new THREE.Mesh(merged(WORN_SHAPE[id]), partMat),
+      from: new THREE.Vector3(b.x, b.y + 1.45, b.z),
+      done: () => {
+        if (id === 'jump') after(0.3, demoJump);
+        if (id === 'hook') after(0.3, demoHook);
+      },
+    });
     if (id === 'glide') {
       flashCanopy(2.6);
       // The whole point of the climb: what it opened, from up here.
