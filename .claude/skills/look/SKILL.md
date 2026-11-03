@@ -11,7 +11,7 @@ Before capturing, name one question, the action that reveals it, the camera/devi
 
 ## Read the relevant reference
 
-Read capture-health for every capture, then only the details used by the task. AGENTS.md and tests.md decide required checks; old broad examples do not add checks.
+Read capture-health for every capture, then only the details used by the task. AGENTS.md and tests.md decide required checks; examples here do not add checks.
 
 - Setting up a capture (camera, eval, action, warm-up): [capture](references/capture.md).
 - Pacing changes, checkpoints, filmstrips or motion curves: [playthrough-motion](references/playthrough-motion.md).
@@ -23,4 +23,4 @@ Read capture-health for every capture, then only the details used by the task. A
 - Producing clips or video: [video](references/video.md).
 
 ## Loop for a feature
-Name the visual question, set up the action and view, capture, inspect and fix what is off (up to three rounds per AGENTS.md). Include a concrete observation and any unverified behavior in the handoff. Only add a scenario when a sync contract needs one; visual changes use targeted evidence rather than another test suite.
+Name the visual question, set up the action and view, capture, inspect and fix what is off (up to three rounds per docs/agents/verification.md). Include a concrete observation and any unverified behavior in the handoff. Only add a scenario when a sync contract needs one; visual changes use targeted evidence rather than another test suite.

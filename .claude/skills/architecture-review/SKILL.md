@@ -73,5 +73,5 @@ In the ledger, add each new finding as `open`, record anything deferred with its
 delete an entry. Ship it with `npm run ship`, or a `claude/` PR in a session that can only push that.
 
 When the owner answers, record it: `fixed`, `rejected` or `deferred`, with the reason and a revisit trigger. A rejection with
-a general reason becomes a line in the report's "Don't flag", or in AGENTS.md's standing calls if it should bind every agent.
+a general reason becomes a line in the report's "Don't flag", or in docs/agents/owner-calls.md if it should bind every agent.
 An accepted finding that could recur should become a rule.
