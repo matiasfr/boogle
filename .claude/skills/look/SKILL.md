@@ -31,6 +31,9 @@ Default outputs are `<name>-still.png` and `<name>-motion.png` (8 timestamped sc
 
 **Jump to a beat: `npm run look -- --at "path opened"`** (8 s). Starts at that beat of the last playthrough with its real state, through the game's own save, so abilities and town come along with no skip to write; `--at list` names the beats. Add `--cam`, `--action`, `--video` as usual. Run a new playthrough when the save's shape changes. A save can't hold what the game doesn't save (a train part way along).
 
+**Frame-exact stills:** `--filmstrip N --every K` captures N images K drawn 60 Hz frames apart (K defaults to 1), paused between shots; labels show frame and elapsed game time. Use `--curves` to record the same frames. It needs warp and cannot be used with `--real`, `--url`, or `--players`.
+Filmstrips show poses, not real-time feel or smoothness; the server and CSS still run on wall time.
+
 **Motion as numbers: `--curves`** adds a plot and CSV of every frame's speed, vertical speed, height, camera distance and frame time, plus readings, while the action plays in real time. Use it for glide, hook, sprint or any camera change: `npm run look -- --at "path opened" --curves --action dev/look/evals/sprint-jump.ts --seconds 6 --frames 2`. `--curves-vs old.csv` draws an earlier run underneath; `--target glide` (or `glide-slow`, `glide-frame`) draws and scores against a reference and says when each value settled; numbers and what's unknown: `docs/research/botw-glide-target.md`, which also gives the transients to compare by hand. Frame the steady part in the last third, and `playMark` the moment the action starts so its line is on the plot.
 
 **Before and after: `npm run before-after -- <git ref> [look options]`** runs the same capture on that commit and on this checkout and writes `<name>-before-after.png` side by side (with `--curves`, the plot overlays both). Use it with `--cam`/`--look` or `--at`, so it's one camera and one state. About 16 s.

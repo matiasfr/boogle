@@ -14,6 +14,8 @@ export type WarpHandle = {
   now: () => number;
   /** Ahead at this speed; at game second `stopAt`, if given, it returns to 1x on its own, on the exact frame. */
   go: (speed: number, stopAt?: number) => void;
+  /** Pause with go(0), then advance and present exactly n drawn frames. */
+  step: (n: number) => Promise<void>;
   /** Draw one frame in this many while warped. */
   drawEvery: number;
   /** Virtual frames run so far, and those skipped drawing. */
@@ -128,12 +130,29 @@ export function installWarp() {
       handle.skip = false;
       budgetFrom = real.perf();
       budgetBase = virtual;
-      if (was === 1 && speed !== 1) post();
+      if ((was === 1 || was === 0) && speed > 0 && speed !== 1) post();
       if (speed === 1) {
         lastReal = real.perf();
         if (!realLoop) real.raf(onReal);
         realLoop = true;
       }
+    },
+    async step(n: number) {
+      if (handle.speed !== 0 || !Number.isSafeInteger(n) || n < 1)
+        throw new Error('step requires a paused clock and a positive integer');
+      for (let i = 0; i < n; i++) {
+        // One real display interval per game frame. The next real rAF runs after the previous draw was presented.
+        await new Promise<void>((resolve) =>
+          real.raf(() => {
+            virtual += STEP;
+            runTimers();
+            handle.frames++;
+            runRafs();
+            resolve();
+          }),
+        );
+      }
+      await new Promise<void>((resolve) => real.raf(() => resolve()));
     },
   };
   (window as unknown as { __warp: WarpHandle }).__warp = handle;
@@ -168,7 +187,7 @@ export function installWarp() {
   let frame = 0;
   const post = () => channel.port1.postMessage(0);
   channel.port2.onmessage = () => {
-    if (handle.speed === 1) return;
+    if (handle.speed === 1 || handle.speed === 0) return;
     if (virtual / 1000 >= stopAt) return handle.go(1);
     // Over the speed asked for: wait for the wall to catch up.
     const ahead = virtual - budgetBase - (real.perf() - budgetFrom) * handle.speed;
