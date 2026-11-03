@@ -8,7 +8,7 @@ without touching anything else on the island.
 | Natural shape | `shape.ts` | The original island ("home", around the origin) joined to the mainland to the north, plus the north-west massif. Home ground within `HOME_KEEP` m of the origin is exactly what it always was. |
 | Stamps | `stamps.ts` | Shapes (disc, box, path) with an effect (`set`, `add`, `min`, `max`) and/or paint. Each POI's stamps reshape only the ground around it. |
 | Sites | `src/pois/<name>/site.ts` | Where a POI is, its stamps and its keep-out discs. Read before the terrain is built. |
-| Content | `src/pois/<name>/index.ts` | Meshes, colliders, lights and per-frame updates; registers `onStart`/`onFrame` like a feature. Loaded by `src/features/pois.ts`. |
+| Content | `src/pois/<name>/index.ts` | Registers entities owning meshes, colliders, lights and per-frame work; one-time spawning can use `onStart`. Loaded by `src/features/pois.ts`. |
 
 `index.ts` here composes the sites (folder order, alphabetical) into `island`: `heightAt(x, z)`, `paintAt(x, z)`,
 `keepOut` and `keptOut(x, z, pad)`, plus `baseCm`: the ground on the world grid in centimetres, court levelled
@@ -33,9 +33,10 @@ trees and rocks out of keep-out discs, and `src/entities/props/` pushes them int
    };
    ```
 
-2. `src/pois/<name>/index.ts` builds the content in `onStart` (after the terrain and props exist), using
+2. `src/pois/<name>/index.ts` spawns entity-owned content in `onStart` (after the terrain and props exist), using
    `groundHeight`, `siteFrame(site)` from `stamps.ts` for local-to-world placement, and `addPart`/`mergeParts` from
    `src/render/props.ts` to merge small parts into one draw call.
+   Use the lifecycle in `src/entities/ball/` or `src/features/ping.ts`; new POIs cannot register `onFrame` or add bodies/meshes outside entities. The lighthouse is a site/placement reference only: its suppressed lifecycle is deliberate debt until the home redesign (`eslint.config.js`), not an example to copy.
 3. `npm run island-map` writes `.look/island-map.png`: the composed island, keep-out discs in red. Check the POI sits
    where you meant, run `npm run level-check`, then look at it in the game (`npm run look -- --cam x,y,z --look x,y,z`).
 

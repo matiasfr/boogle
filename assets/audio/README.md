@@ -1,8 +1,8 @@
 # Music stems
 
 For the owner's own music, later. The groove prototype that played these was cut (2026-11-02, no placeholder music);
-its stems loader (`src/proto/groove/stems.ts`), clock, grid and mixer stay for when real music lands. Nothing plays
-them today.
+its stems loader, clock, grid and mixer are archived at Git tag `archive/groove`, not present in today's source. Nothing plays
+them today. The manifest and query options below describe that archived implementation for future reference.
 
 - **Stems**: same start, same length (`bars` bars at `bpm`), one file per layer. Tails may ring past the loop end: each
   pass starts on the shared downbeat and its tail overlaps the next. `.m4a` (AAC) plays everywhere; check Opus or Ogg

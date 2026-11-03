@@ -1,6 +1,6 @@
 # Research
 
-Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or [PLAN.md](../../PLAN.md) rests on one, link it from there.
+Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
 - [codex-model-routing.md](codex-model-routing.md) (2026-11-03): CLI 0.166 account model/effort inventory, official guidance and system cards, subscription versus credit/API usage, independent benchmarks and nine local job audits; nine recommendations, a routing card and three controlled trials for Terra medium, Sol and higher-effort review.
 - [goofy-physics-coop.md](goofy-physics-coop.md) (2026-11-02): co-op-only hangout games and friend-group returns; Human: Fall Flat, PEAK, PICO PARK, Heave Ho, Totally Reliable Delivery Service, Octodad and Moving Out; recoverable comedy, 2–8-player roles, connected physics authority and durable cosmetic boxes, with twelve recommendations and parcel, cooperative golf and shared-tray prototypes.
