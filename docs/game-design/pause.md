@@ -13,7 +13,7 @@
   and suggests Add to Home Screen; the button then reads Fullscreen anyway (touch only)) and
   Leave (press twice within 3 s). The title is the room id. It opens on Esc (when the pointer
   lock ends), H (on the Controls page), pad Menu and the corner menu button. The Room page ends with a You section: a
-  name box and the colour swatches, saved as you type or tap ([identity.md](identity.md)). Get unstuck on the main page puts you back at the usual spawn with one press and forgets your saved spot, and you keep what you carry (it's not there while you're in a vehicle's seat). Start fresh is on the main page and under You: it asks once more, then replays the first visit as someone new. Round 4 clears this device's solo/co-op saves; co-op starts in a new room while partners keep their railway, as the warning says. Leave goes to
+  name box and the colour swatches, saved as you type or tap ([identity.md](identity.md)). Get unstuck on the main page puts you back at the usual spawn with one press and forgets your saved spot, and you keep what you carry (it's not there while you're in a vehicle's seat). Start fresh is on the main page: it asks once more, then replays the first visit as someone new. Round 4 clears this device's solo/co-op saves; co-op starts in a new room while partners keep their railway, as the warning says. Leave goes to
   a small menu page with the game stopped ([first-run.md](first-run.md)).
 - **Sync kind.** Local, through [src/player/modal.ts](../../src/player/modal.ts) (one modal at a time; it takes keys and pad).
 - **Files.** [src/features/pause.ts](../../src/features/pause.ts), [src/player/guide.ts](../../src/player/guide.ts),

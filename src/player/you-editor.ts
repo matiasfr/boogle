@@ -7,7 +7,6 @@ import './you-editor.css';
 import { COLORS } from '../constants.ts';
 import { paintAvatar } from './avatars.ts';
 import { sanitizeName } from '../math.ts';
-import { freshButton } from './fresh-button.ts';
 import { me } from './player.ts';
 import { renderPeople } from './hud.ts';
 
@@ -62,6 +61,6 @@ export function youEditor(): HTMLElement {
     swatches.append(b);
   });
   paint();
-  you.append(h, name, swatches, ...freshButton());
+  you.append(h, name, swatches);
   return you;
 }

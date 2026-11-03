@@ -16,7 +16,7 @@
   the room or prototype it was last in.
 - **Leaving and starting fresh.** The pause view's Leave goes to a small menu page (`/menu/`) with the game stopped: nothing
   renders and you leave the room. Back to the island returns to the same address; a lobby picker can go here if there are
-  ever more lobbies. Start fresh on the main pause page (also under Room / You) asks for confirmation, forgets you on this
+  ever more lobbies. Start fresh on the main pause page asks for confirmation, forgets you on this
   device and replays the first visit ([identity.md](identity.md)). Round 4 also forgets all solo/co-op saves, including
   personal slices, gifts and position. In co-op it leaves the shared room for a fresh railway in a new room; the warning
   says that partners keep their current room and railway. Reloading stays in that new room. Classic keeps its shared island.

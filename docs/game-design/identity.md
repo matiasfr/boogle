@@ -7,7 +7,7 @@
 - **Changing them.** The pause view's Room page has a You section: a name box and the colour swatches, saved as you
   type or tap. The roster, the HUD list, your avatar, the floating name over you and plaque lines follow (presence on
   its next beat; `who.set` within 3 s, [src/features/identity.ts](../../src/features/identity.ts)).
-- **Starting fresh.** On the main pause page and under You, Start fresh turns into "Yes, start fresh" with a warning for 6 s; pressing it again forgets
+- **Starting fresh.** On the main pause page, Start fresh turns into "Yes, start fresh" with a warning for 6 s; pressing it again forgets
   you on this device (name, colour, pid and key, room memories, The Boogler's friendship, mini-game and soapbox bests) and
   reloads into the first visit's fall. Settings and the controls cards you've seen stay. In round 4, every solo/co-op save
   on this device is cleared too: your back, dropped pieces, gifts, finds, crystals, conversations and saved position.
