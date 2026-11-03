@@ -1,6 +1,7 @@
 // Render and sim cost in under a minute: `npm run perf` (or `-- --url http://localhost:5173/` for a running game;
 // `-- --render` or `-- --sim` for one half; `-- --json file` writes the first render row from a fixed pose, for
-// dev/look/counts.ts). `--view NAME` and `--query proto=place` select the view and flags.
+// dev/look/counts.ts). `--hardware` opens a visible browser and samples real frames for 5 seconds;
+// `--seconds N` (1–30), `--view NAME` and `--query proto=place` select the sample. Counts stay timing-free.
 // Render: draw calls, triangles, shadow-pass calls, geometries and shader stages (vertex and fragment, deduplicated) for the island as you enter it.
 // Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.
@@ -15,8 +16,10 @@ import type { Stack } from './lib.ts';
 
 const argv = process.argv.slice(2);
 const url = argv.includes('--url') ? argv[argv.indexOf('--url') + 1] : null;
+const hardware = argv.includes('--hardware');
 const doRender = !argv.includes('--sim');
-const doSim = !argv.includes('--render');
+const doSim = !hardware && !argv.includes('--render');
+const seconds = argv.includes('--seconds') ? Number(argv[argv.indexOf('--seconds') + 1]) : 5;
 const viewName = argv.includes('--view') ? argv[argv.indexOf('--view') + 1] : null;
 const query = argv.includes('--query') ? argv[argv.indexOf('--query') + 1] : '';
 const jsonOut = argv.includes('--json') ? argv[argv.indexOf('--json') + 1] : null;
@@ -124,15 +127,18 @@ async function profile(g: Game, label: string, ticks: number) {
 
 let stack: Stack | undefined, browser: Browser | undefined;
 try {
+  if (hardware && !doRender) throw new Error('--hardware cannot be combined with --sim');
+  if (!Number.isFinite(seconds) || seconds < 1 || seconds > 30) throw new Error('--seconds must be 1–30');
   if (argv.includes('--view') && (!viewName || !VIEWS[viewName]))
     throw new Error('Unknown --view; use ' + Object.keys(VIEWS).join(', '));
   stack = await startStack({ url });
-  browser = await launch();
+  browser = await launch({ hardware });
   // The spawn is a random spot, the sky follows the clock and the shadow pass culls around all that, so counts that must
   // repeat (--json) take a seeded Math.random, a fixed camera and a fixed sun, once the lazy props are in.
   const init = jsonOut ? SEEDED_RANDOM : undefined;
   const q = new URLSearchParams(query);
-  const g = await Game.open(browser, stack, { name: 'perf', isolated: doSim, init, query: q.toString() });
+  if (hardware) q.set('prof', '1');
+  const g = await Game.open(browser, stack, { name: 'perf', isolated: doSim || hardware, init, query: q.toString() });
   if (doRender) {
     if (jsonOut || viewName) {
       const { cam, look } = VIEWS[viewName ?? 'overview']!;
@@ -142,6 +148,15 @@ try {
     }
     const measuredView = viewName ?? (jsonOut ? 'overview' : 'player camera');
     const row = { ...(await g.eval(STATS)), measuredView };
+    if (hardware) {
+      // The shadow-difference sample above perturbs a few frames; settle before the separate timing window.
+      await sleep(1000);
+      row.hardwareTiming = await g.eval(`
+        const { hardwareTiming } = await import('/src/debug/prof-overlay.ts');
+        return await hardwareTiming(${seconds});`);
+      console.log('hardware timing (visible browser; verify adapter and exclusive GPU use)');
+      console.log(JSON.stringify(row.hardwareTiming, null, 2));
+    }
     if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(row));
     console.log('render');
     console.table({
@@ -154,7 +169,9 @@ try {
         programs: row.programs,
       },
     });
-    console.log(JSON.stringify(row, null, 2));
+    const metadata = { ...row };
+    delete metadata.hardwareTiming;
+    console.log(JSON.stringify(metadata, null, 2));
     // CPU per frame section (src/loop.ts), averaged over the last 240 frames. Headless: compare before/after only.
     console.log('\nmain-thread CPU per frame section (ms over the last 240 frames; compare on the same device)');
     console.table(await g.eval('return window.boogle.prof.table(10);'));
