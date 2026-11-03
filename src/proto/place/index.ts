@@ -122,6 +122,7 @@ import {
   type Track,
   type TrainRun,
 } from './rail.ts';
+import { seated, sitDown, standUp } from './seat.ts';
 import { buildStation, type StationRun } from './stations.ts';
 import {
   TREES,
@@ -803,10 +804,16 @@ function takeTimber(st: StationRun) {
 }
 let logsIncoming = 0;
 const hasTimber = () => hub.list.length > 0 || s.loose > 0;
+const sitAt = new THREE.Vector3();
 registerInteractable(() => {
   if (!me.body) return NO_TARGETS;
   const p = me.body.interpolatedPosition;
   let out: Interactable[] | null = null;
+  // Sitting, the one thing the button does is stand you up.
+  if (seated()) {
+    sitAt.set(p.x, p.y + 1.1, p.z);
+    return [{ id: 'place-stand', verb: 'Stand up', at: sitAt, r: 100, run: standUp }];
+  }
   if (me.swimming) {
     atPrompt.set(p.x, p.y + 1.2, p.z);
     return [{ id: 'place-back', verb: 'Back up the path', at: atPrompt, run: backUp }];
@@ -865,8 +872,14 @@ registerInteractable(() => {
       );
     }
   }
+  // On a deck, with nothing else to press for: sit. Far down the pick's order (r), so anything nearer that acts wins.
+  if (onDeck() && !out?.some((t) => t.run)) {
+    sitAt.set(p.x, p.y + 1.1, p.z);
+    (out ??= []).push({ id: 'place-sit', verb: 'Sit', at: sitAt, r: -100, run: sitDown });
+  }
   return out ?? NO_TARGETS;
 });
+const onDeck = () => machine.onMachine(carry.on) || lines.some((l) => l.train.onTrain(carry.on));
 function chopTree(t: Tree) {
   if (!chop(t)) return;
   if (t.strokes === 0) protoCount('chops');
@@ -1511,6 +1524,7 @@ window.__place = {
   startOver,
   wake,
   backUp,
+  seat: { seated, sitDown, standUp },
   giftState,
   openCrate,
   nearestCrate,
