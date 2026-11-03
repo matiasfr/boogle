@@ -403,11 +403,27 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
   // Each sample()/level() clone of viewportSharedTexture copies the framebuffer again in r187.
   // viewportTexture keys updates by the ocean's context texture: one opaque snapshot for every offset.
   // Keep the old path only as a cost diagnostic, so captures can bracket this exact change.
-  const opaqueColor = options.repeatColorCopy ? viewportSharedTexture() : viewportTexture();
+  const snapshots = new Set<THREE.Texture>();
+  function ownSnapshot<T extends THREE.Texture>(seed: T): T {
+    snapshots.add(seed);
+    const clone = seed.clone.bind(seed);
+    // ViewportTextureNode clones this seed for every context, including compileAsync's 1×1 target.
+    // Its WeakMap cannot be enumerated at teardown; track these explicitly owned clones at their creation seam.
+    seed.clone = () => {
+      const copy = clone();
+      snapshots.add(copy);
+      return copy;
+    };
+    return seed;
+  }
+  const opaqueColor = options.repeatColorCopy
+    ? viewportSharedTexture()
+    : viewportTexture(undefined, null, ownSnapshot(new THREE.FramebufferTexture(1, 1)));
   opaqueColor.value.type = THREE.HalfFloatType;
   opaqueColor.value.colorSpace = THREE.LinearSRGBColorSpace;
   opaqueColor.value.minFilter = opaqueColor.value.magFilter = THREE.LinearFilter;
-  const opaqueDepth = viewportDepthTexture();
+  // Own the seed texture as well as the viewport's per-target clone; don't borrow Three's global depth seed.
+  const opaqueDepth = viewportDepthTexture(undefined, null, ownSnapshot(new THREE.DepthTexture()));
   const linearDepth = (depth: N) => perspectiveDepthToViewZ(depth, cameraNear, cameraFar).negate();
 
   const heightAt = Fn(([at]: [N]) => {
@@ -915,8 +931,9 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
     dispose() {
       geo.dispose();
       material.dispose();
-      opaqueColor.value.dispose();
-      opaqueDepth.value.dispose();
+      if (options.repeatColorCopy) opaqueColor.value.dispose();
+      for (const texture of snapshots) texture.dispose();
+      snapshots.clear();
     },
   };
 }
