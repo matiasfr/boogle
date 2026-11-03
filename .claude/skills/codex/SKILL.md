@@ -61,3 +61,5 @@ Run a queue with `npm run queue -- jobs.json [--max 3]`; dependencies can name a
 Use `--base <ref>` (also `--base-ref`) to start a task at an existing commit or branch.
 
 Run `npm run ship-watch` to wait for shipping trouble; `npm run ship-watch -- --once` checks once. It only reads GitHub.
+
+Directors: put the relevant files, errors and decisions in the brief.

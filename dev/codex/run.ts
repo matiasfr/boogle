@@ -134,7 +134,7 @@ async function worktree(job: JobControl, ref: string, branch?: string): Promise<
   return dir;
 }
 
-const HOUSE = `You are working on Boogle, a goofy co-op browser game (three.js WebGPURenderer + TSL, Rapier, Vite). Read AGENTS.md and DESIGN.md first; they bind you. For design, level, art or character work, also read docs/proposals/boogle-2.md.`;
+const HOUSE = `You are working on Boogle, a goofy co-op browser game (three.js WebGPURenderer + TSL, Rapier, Vite). AGENTS.md and its referenced requirements bind you. Read the docs named in the brief and the sections needed for this task, including any reading required by AGENTS.md; use npm run map before reading whole source files.`;
 
 function previzPrompt(out: string, refs: string[]): string {
   const shots = Number(opts.shots) || 4;
