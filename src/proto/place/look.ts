@@ -30,7 +30,8 @@ import {
 } from 'three/tsl';
 import { onFrame } from '../../loop.ts';
 import { scene, sun } from '../../render/scene.ts';
-import { skyColors, skyDebug, skyU } from '../../render/sky.ts';
+import { skyColors, skyDebug, skyNow, skyU } from '../../render/sky.ts';
+import { smoothstep as ss_ } from '../../math.ts';
 import { flat } from '../flat.ts';
 
 const asked = new Set((new URLSearchParams(location.search).get('look') ?? 'all').split(','));
@@ -122,26 +123,55 @@ const LIGHT = {
   fogNear: 170,
   fogFar: 1500,
 };
+// The owner, round 3: "the sun doesn't go away". The day moves, slowly, and most of it is the accepted look's daylight: the
+// late-morning sun swings across, then a short golden hour, a moonlit night (the game's own) and a dawn back into the day.
+// One cycle is DAY.seconds of play. Where the sun's up, LIGHT's palette holds; as it sinks, the game's sky takes over.
+export const DAY = {
+  seconds: 1680, // s for a whole day
+  u: 0.26, // where in it we are: the look's morning, at the start
+  hold: new URLSearchParams(location.search).get('day') === 'off', // `&day=off` holds this morning; evals can set `u` too
+  low: 0.14, // the sun's height where LIGHT's palette is gone
+  high: 0.42, // and where it's all there
+};
+/** How the sky's own clock (0 sunrise, 0.3 noon, 0.6 sunset, 0.8 midnight) runs through a day of ours. */
+const DAY_KEYS: [u: number, frac: number][] = [
+  [0, 0.09],
+  [0.7, 0.44],
+  [0.8, 0.6],
+  [0.9, 0.86],
+  [1, 1.09],
+];
+export function dayFrac(u: number) {
+  for (let k = 0; k < DAY_KEYS.length - 1; k++) {
+    const [u0, f0] = DAY_KEYS[k]!,
+      [u1, f1] = DAY_KEYS[k + 1]!;
+    if (u <= u1) return (f0 + ((f1 - f0) * (u - u0)) / (u1 - u0)) % 1;
+  }
+  return DAY_KEYS[0]![1];
+}
 export function installLight() {
-  // A late morning: a higher sun, for short shadows and lit grass. Phase 0.5 keeps the moon under the horizon, where its
-  // pale disc can't stand out against the deeper sky.
-  skyDebug.preview(LIGHT.frac, 0.5);
+  // A late morning to start: a higher sun, for short shadows and lit grass. Phase 0.5 keeps the moon opposite the sun, under
+  // the horizon by day, where its pale disc can't stand out against the deeper sky, and full at night.
+  skyDebug.preview(dayFrac(DAY.u), 0.5);
   const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
     THREE.HemisphereLight | undefined;
   onFrame(
-    () => {
-      sun.color.copy(LIGHT.sun);
-      sun.intensity = LIGHT.sunI;
+    ({ dt }) => {
+      if (!DAY.hold) DAY.u = (DAY.u + dt / DAY.seconds) % 1;
+      skyDebug.preview(dayFrac(DAY.u), 0.5);
+      const d = ss_(DAY.low, DAY.high, skyNow.sunDir.y);
+      sun.color.lerp(LIGHT.sun, d);
+      sun.intensity += (LIGHT.sunI - sun.intensity) * d;
       if (hemi) {
-        hemi.color.copy(LIGHT.hemiSky);
-        hemi.groundColor.copy(LIGHT.hemiGround);
-        hemi.intensity = LIGHT.hemiI;
+        hemi.color.lerp(LIGHT.hemiSky, d);
+        hemi.groundColor.lerp(LIGHT.hemiGround, d);
+        hemi.intensity += (LIGHT.hemiI - hemi.intensity) * d;
       }
-      skyColors.top.copy(LIGHT.top);
-      skyColors.horizon.copy(LIGHT.horizon);
-      skyU.uCurve.value = LIGHT.curve;
+      skyColors.top.lerp(LIGHT.top, d);
+      skyColors.horizon.lerp(LIGHT.horizon, d);
+      skyU.uCurve.value = skyU.uCurve.value + (LIGHT.curve - skyU.uCurve.value) * d;
       const fog = scene.fog as THREE.Fog;
-      fog.color.copy(LIGHT.fog);
+      fog.color.lerp(LIGHT.fog, d);
       fog.near = LIGHT.fogNear;
       fog.far = LIGHT.fogFar;
     },

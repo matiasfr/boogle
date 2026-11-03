@@ -17,7 +17,7 @@ and a bright shard in the ring's middle.
 
 ## The run
 
-1. **Goal up front, lightly.** No big sign: one short line of objective on the HUD changes at each beat, in plain words (what to do next and only that: "Follow the path to the old machine", "Chop a tree with an orange band", "4/12 on your back. Chop more, or carry them to Station 1"), and an orange beacon, a floating crystal on a beam, stands over the next thing. In view at spawn: a wide, strong path, a half-built forge with little guys hammering on its poles, a crane, a rail stub, and the **curio shelf**: shapes under dust sheets and a row of dull crystals, so you can see there are things to come. A small signpost at the only fork.
+1. **Goal up front, lightly.** No big sign: one small line of objective comes up on the HUD when it changes, when you've stood still for 16 s or when you press Interact with nothing in reach, and fades after 5.5 s (the owner: "always on"), in plain words (what to do next and only that: "Follow the path to the old machine", "Chop a tree with an orange band", "4/12 on your back. Chop more, or carry them to Station 1"), and an orange beacon, a floating crystal on a beam, stands over the next thing. In view at spawn: a wide, strong path, a half-built forge with little guys hammering on its poles, a crane, a rail stub, and the **curio shelf**: shapes under dust sheets and a row of dull crystals, so you can see there are things to come. A small signpost at the only fork.
 2. **Walk and wake.** The path winds north, down the wall, over a footbridge under where the trestle will go, up and round the ridge: about 78 s, with gold finds, crystals and a rock arch. The machine sits at the camp end of line 1, rusty and dusty, its rack of 12 rails showing, a loaded train waiting behind it, and empty mounts on both engines: a bare flagpole, a chimney collar, a bell bracket, posts for a string. Interact: **Wake it up**. About 3 s, and you keep control: it shudders, rust and dust shake off and the paint comes back, the boiler coughs faster and catches, a big burst of steam, the headlamps, a whistle. The camp's little guys cheer.
 3. **Chop.** Trees with an orange band, in a grove by station 1 and one by the rim. Interact: **Chop**. The swing starts on the press, the axe meets the bark 60 ms later, the tree shakes, chips fly and 4 logs arc straight to your back. Three strokes fell a tree, leaving a stump and the trunk where it fell. Your back holds 12.
 4. **Stations.** Three on line 1, each an open frame with amber posts, a log on its board and a short roller feeder, and two helpers waving by it. Walk up to the frame and your logs land in it one by one with a thunk: 24 logs, so about two trips. Station 1 is at the camp and lays to the near rim; station 2 is at the near rim and lays across the gorge; station 3 is on the far rim, reached by walking out over the trestle you just built with timber on your back, and lays into the village's stub.
@@ -39,6 +39,12 @@ Now and then two of them near you stop and **chatter**: two to four short lines 
 
 **The town and camps are solid**: every building has a collider, its walls from when its frame is up. Standing in a plot when they go up moves you to the nearest edge.
 
+**Everything that looks solid is solid** (round 4 audit): trees and stumps, a felled tree's bare trunk (its crown bursts into leaves as it lands, so a cut grove shows what you've done), crate stacks as far as they're stacked, frames as high as their stack can get, feeders, rail bearers, survey stakes, bridge rails, and scaffold poles and walkways while they stand. Little guys and pickups aren't solid; gift crates open when you walk into them.
+
+**The day moves.** One day is 28 minutes of play (`DAY`, `look.ts`): 70% the accepted look's daylight with the sun swinging across, then a short golden hour, a moonlit night and a dawn. `&day=off` holds the morning.
+
+**The stowaway rides.** On a moving deck it hops up beside you and sits, rather than chasing the train along the ground.
+
 **You can sit.** On a train's or the machine's deck, with nothing nearer to press for, Interact reads **Sit**: you sit down on the deck in the avatars' seated pose, a little inboard if you were at the edge, and stay there through curves and stops. The stick does nothing and the camera works as ever, so you can look around. Interact (**Stand up**) or Jump gets you up.
 
 **The decks hold you.** Stop at the edge of a train's or the machine's deck and you're eased a few centimetres back inside, so standing never takes you off, moving or not. Push the stick off the side or jump and you leave as ever; there are no railings.
@@ -55,7 +61,7 @@ Falling is harmless: in the water, or down on a shore or a river bank more than 
 
 The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2.
 Its cradle isn't solid, unlike the rest of it: a second shape on the flatbed's body made you fall through the deck (see below).
-Trees still have no colliders (greybox), and buildings are solid blocks you can't go inside.
+Buildings are solid blocks you can't go inside.
 
 ## Measured
 

@@ -1,6 +1,6 @@
 // The land of ?proto=place: a height function baked onto one 2 m grid, drawn as one faceted mesh and collided as one
 // heightfield. The gorge's walls are near-vertical cells of that grid, so nothing here overhangs; the footbridges and
-// platforms are their own boxes. Trees have no colliders (greybox), and the spire's are a cylinder. Local.
+// platforms are their own boxes. Local.
 import * as THREE from 'three/webgpu';
 import { flat } from '../flat.ts';
 import { LOOK, addBlob, groundMaterial, spireRock } from './look.ts';
@@ -301,6 +301,13 @@ export function addStatic(shape: Shape, position: { x: number; y: number; z: num
   return body;
 }
 
+/** Many small solid things in one body: `offset`s are from `position`. */
+export function addStatics(shapes: Shape[], position: { x: number; y: number; z: number }) {
+  const body = createBody({ material: groundMat, group: GROUP.SCENERY, position, shapes });
+  addBody(body);
+  return body;
+}
+
 /** A solid slab between two world points, top at y, with nothing drawn: built track's walkable top. */
 export function slab(ax: number, az: number, bx: number, bz: number, topA: number, topB: number, width: number) {
   const dx = bx - ax,
@@ -389,7 +396,6 @@ function buildBridges() {
       bx = b[0] + ORIGIN.x,
       bz = b[1] + ORIGIN.z;
     plank(ax, az, bx, bz, a[2] + 0.12, b[2] + 0.12, 3, '#c08a4c', 0.35);
-    // Posts and rails, drawn only: it's low, and falling in is fine.
     const len = Math.hypot(bx - ax, bz - az),
       ux = (bx - ax) / len,
       uz = (bz - az) / len;
@@ -403,6 +409,12 @@ function buildBridges() {
       rail.position.set((ax + bx) / 2 - uz * side * 1.45, a[2] + 1.15, (az + bz) / 2 + ux * side * 1.45);
       rail.rotation.y = Math.atan2(ux, uz);
       scene.add(rail);
+      // The rail holds you in: what looks solid is solid.
+      addStatic(
+        { kind: 'box', hx: 0.08, hy: 0.6, hz: len / 2 },
+        { x: rail.position.x, y: a[2] + 0.65, z: rail.position.z },
+        new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, rail.rotation.y),
+      );
     }
   }
 }
@@ -447,6 +459,18 @@ function buildTrees() {
     m.frustumCulled = false;
     scene.add(m);
   }
+  // Their trunks are solid, all in one body. The crowns are over your head.
+  addStatics(
+    spots.map((t) => ({
+      kind: 'cylinder' as const,
+      rTop: 0.36 * t.s,
+      rBottom: 0.36 * t.s,
+      h: 3 * t.s,
+      segments: 6,
+      offset: { x: t.x, y: t.y + 1.5 * t.s, z: t.z },
+    })),
+    { x: ORIGIN.x, y: 0, z: ORIGIN.z },
+  );
 }
 
 // ---------------------------------------------------------------- what stands across the sea

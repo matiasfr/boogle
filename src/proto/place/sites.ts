@@ -26,6 +26,7 @@ export type Plan = {
   WALLS: number;
   ROOFED: number;
   hulls: Hull[];
+  poles: Hull[]; // the scaffold's corner poles and walkway: solid while they stand
   hw: number;
   hd: number;
   smoke: { x: number; y: number; z: number } | null;
@@ -63,6 +64,15 @@ function poles(part: Parter, w: number, d: number, top: number, every: number) {
     }
   // A walkway along the front, where the little guys hammer.
   out.push(part(0, every + 0.14, (d + 1.4) / 2, w + 1.4, 0.08, 0.7, PLANK));
+  return out;
+}
+/** The solid part of `poles`. */
+function poleHulls(w: number, d: number, top: number, every: number): Hull[] {
+  const out: Hull[] = [];
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1])
+      out.push({ dx: (sx * (w + 1.4)) / 2, dy: top / 2, dz: (sz * (d + 1.4)) / 2, hx: 0.13, hy: top / 2, hz: 0.13 });
+  out.push({ dx: 0, dy: every + 0.18, dz: (d + 1.4) / 2, hx: (w + 1.4) / 2, hy: 0.06, hz: 0.35 });
   return out;
 }
 export type HouseSpec = {
@@ -205,6 +215,7 @@ export function housePlan(s: HouseSpec): Plan {
       { dx: 0, dy: high + rise * 0.3, dz: 0, hx: w / 2, hy: rise * 0.3, hz: (d / 2) * 0.7 },
       { dx: 0, dy: FLOOR / 2, dz: 0, hx: w / 2 + 0.8, hy: FLOOR / 2, hz: d / 2 + 0.8 },
     ],
+    poles: poleHulls(w, d, s.poleTop ?? high + rise + 0.8, 1.8),
     hw: w / 2 + 0.8,
     hd: d / 2 + 0.8,
     smoke,
@@ -260,6 +271,7 @@ export function towerPlan(s: TowerSpec): Plan {
     WALLS,
     ROOFED: pieces.length,
     hulls: [{ dx: 0, dy: yy / 2, dz: 0, hx: w / 2 + 0.2, hy: yy / 2, hz: w / 2 + 0.2 }],
+    poles: poleHulls(w, w, high + 2, 2.6),
     hw: w / 2 + 1,
     hd: w / 2 + 1,
     smoke: null,
@@ -297,6 +309,7 @@ export function blockPlan(s: BlockSpec, lifts = 1, top?: string): Plan {
     WALLS: pieces.length,
     ROOFED: pieces.length,
     hulls: [{ dx: 0, dy: y0 + s.h / 2, dz: 0, hx: s.w / 2, hy: s.h / 2, hz: s.d / 2 }],
+    poles: [],
     hw: s.w / 2 + 0.4,
     hd: s.d / 2 + 0.4,
     smoke: null,
@@ -335,6 +348,7 @@ export type Site = {
   pole1: number; // the scaffold ends here
   spans: Span[];
   bodies: Body[];
+  poleBodies: Body[];
   state: 'none' | 'building' | 'done';
   t: number;
   solidAt: number;
@@ -369,6 +383,7 @@ export function addSite(id: string, plan: Plan, pace = 1): Site {
     pole1,
     spans,
     bodies: [],
+    poleBodies: [],
     state: 'none',
     t: 0,
     solidAt: (1 + 1.5) * pace,
@@ -387,6 +402,24 @@ function onLand(k: number) {
   if (landed++ % 3 === 0) thump(b.x, b.z);
   if (landed % 4 === 0) dustRing(b.x, b.y + 0.3, b.z, 4, 1.8, 0.3);
 }
+/** Solid boxes from a plan's hulls. */
+export function hullBodies(plan: Plan, hulls: Hull[]) {
+  const { x, y, z, yaw } = plan;
+  const cos = Math.cos(yaw),
+    sin = Math.sin(yaw);
+  const q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
+  return hulls.map((h) =>
+    addStatic(
+      { kind: 'box', hx: h.hx, hy: h.hy, hz: h.hz },
+      { x: x + h.dx * cos + h.dz * sin, y: y + h.dy, z: z - h.dx * sin + h.dz * cos },
+      q,
+    ),
+  );
+}
+const polesOff = (site: Site) => {
+  for (const b of site.poleBodies) removeBody(b);
+  site.poleBodies.length = 0;
+};
 function solid(site: Site, on: boolean) {
   if (!on) {
     for (const b of site.bodies) removeBody(b);
@@ -397,15 +430,8 @@ function solid(site: Site, on: boolean) {
   const { x, y, z, yaw, hulls } = site.plan;
   const cos = Math.cos(yaw),
     sin = Math.sin(yaw);
-  const q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
-  for (const h of hulls)
-    site.bodies.push(
-      addStatic(
-        { kind: 'box', hx: h.hx, hy: h.hy, hz: h.hz },
-        { x: x + h.dx * cos + h.dz * sin, y: y + h.dy, z: z - h.dx * sin + h.dz * cos },
-        q,
-      ),
-    );
+  site.bodies.push(...hullBodies(site.plan, hulls));
+  if (site.state === 'building') site.poleBodies.push(...hullBodies(site.plan, site.plan.poles));
   // Standing in the plot when the walls go up: you're moved to the nearest edge.
   const me_ = me.body;
   if (!me_) return;
@@ -442,6 +468,7 @@ export function snapSite(site: Site, on: boolean) {
   for (let k = site.k0; k < site.k1; k++) set.snap(k, on && (k >= site.pole1 || k === site.k0));
   site.state = on ? 'done' : 'none';
   site.onDone = null;
+  polesOff(site);
   solid(site, on);
 }
 const building: Site[] = [];
@@ -458,6 +485,7 @@ export function updateSites(dt: number) {
     if (site.t >= site.solidAt) solid(site, true);
     if (site.t < site.doneAt) continue;
     // The poles come down, top first, and the slab stays.
+    polesOff(site);
     const want = Math.ceil((site.t - site.doneAt) * 40);
     for (let k = site.pole1 - 1 - site.struck; k > site.k0 && site.struck < want; k--) {
       set.snap(k, false);

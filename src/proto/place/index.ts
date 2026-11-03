@@ -23,10 +23,16 @@ import { worldStatus, world, onApplied, submitEdit } from '../../world/sync.ts';
 import { getRoomId } from '../../netplay/net.ts';
 import { PLAYER_R, FOG_FAR } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
-import { interactTarget, registerInteractable, NO_TARGETS, type Interactable } from '../../player/hands.ts';
+import {
+  interactTarget,
+  onInteractPress,
+  registerInteractable,
+  NO_TARGETS,
+  type Interactable,
+} from '../../player/hands.ts';
 import { myBundleNext } from '../../features/haul-stack.ts';
 import { haulHooks } from '../../player/haul-variant.ts';
-import { setCcd, teleport } from '../../physics/engine.ts';
+import { removeBody, setCcd, teleport, type Body, type Shape } from '../../physics/engine.ts';
 import { softWall } from '../../entities/player/state.ts';
 import { carry } from '../../physics/platforms.ts';
 import { scene } from '../../render/scene.ts';
@@ -53,7 +59,7 @@ import {
 import { playPanel } from '../flags.ts';
 import { protoCount } from '../count.ts';
 import { protoMark } from '../mark.ts';
-import { H, PATH_SAMPLES, addStatic, buildLand, insidePlace } from './land.ts';
+import { H, PATH_SAMPLES, addStatic, addStatics, buildLand, insidePlace } from './land.ts';
 import {
   after,
   clearMoments,
@@ -89,7 +95,7 @@ import {
   type GiftId,
 } from './gifts.ts';
 import { addFoot, clearDrops } from './sites.ts';
-import { LOOK, installLight } from './look.ts';
+import { DAY, LOOK, installLight } from './look.ts';
 import { installContact } from './look-kit.ts';
 import {
   CRANE,
@@ -155,7 +161,16 @@ import {
   takeRail,
   updateForge,
 } from './forge.ts';
-import { beaconAt, buildSigns, pointArrow, setBeacon, setNumbers, setObjective } from './signs.ts';
+import {
+  beaconAt,
+  buildSigns,
+  pointArrow,
+  setBeacon,
+  setNumbers,
+  setObjective,
+  showObjective,
+  updateObjective,
+} from './signs.ts';
 import { campSmoke, onStepUp, snapCamp, snapTown, staticPart, updateTown, wakeCamp } from './town.ts';
 
 // A clean view for someone playing it cold (the tester's link, `&fresh=1`): place.css hides the bar, the panel and the numbers.
@@ -212,11 +227,13 @@ const lines: LineRun[] = LINKS.map((spec, k) => {
   // Survey stakes beside the line: where it'll go.
   const stakes = new THREE.InstancedMesh(new THREE.BoxGeometry(0.14, 1.5, 0.14), FLAT('#f0752c'), 30);
   const o = new THREE.Object3D();
+  const stakeShapes: Shape[] = [];
   let n = 0;
   for (let s = 22; s < line.len - 8 && n < 30; s += 11) {
     const q = besideLine(line, s, 5.5),
       y = H(q.x, q.z);
     if (railY(line, s) - y > 2) continue; // over the gorge
+    stakeShapes.push({ kind: 'box', hx: 0.07, hy: 0.75, hz: 0.07, offset: { x: q.x, y: y + 0.75, z: q.z } });
     o.position.set(q.x, y + 0.75, q.z);
     o.updateMatrix();
     stakes.setMatrixAt(n++, o.matrix);
@@ -224,6 +241,7 @@ const lines: LineRun[] = LINKS.map((spec, k) => {
   stakes.count = n;
   stakes.frustumCulled = false;
   scene.add(stakes);
+  addStatics(stakeShapes, { x: 0, y: 0, z: 0 });
   // Platforms: at the village, and at the far end.
   // Line 1's stands on the village's side, facing the forge.
   const [s0, s1, lat] = k === 0 ? [8, 30, -2.9] : [6, 28, 2.9];
@@ -326,6 +344,40 @@ scene.add(rackBoard.sprite);
 const forgeBoard = label(5.6, 2.8);
 forgeBoard.sprite.position.set(toWorld(FORGE.x), VILLAGE.y + 9, FORGE.z + 4.6);
 scene.add(forgeBoard.sprite);
+
+// A crate stack is solid as far as it's stacked: the owner could walk through them. A box round each pyramid, remade when
+// its size changes; a crate's 0.85 m. (crates.ts stacks `base` x `base`, one smaller on top, and past its top another beside it.)
+const heapBodies = new Map<Heap, { n: number; body: Body | null }>();
+const CRATE = 0.85;
+function solidHeaps() {
+  for (const h of allHeaps) {
+    let e = heapBodies.get(h);
+    if (!e) heapBodies.set(h, (e = { n: 0, body: null }));
+    if (e.n === h.list.length) continue;
+    e.n = h.list.length;
+    if (e.body) removeBody(e.body);
+    e.body = null;
+    if (!e.n) continue;
+    const size = (h.base * (h.base + 1) * (2 * h.base + 1)) / 6;
+    const more = Math.floor((e.n - 1) / size);
+    let left = more ? h.base * h.base : e.n,
+      side = h.base,
+      layers = 0;
+    if (more) layers = h.base;
+    else
+      while (left > 0) {
+        left -= side * side;
+        side--;
+        layers++;
+      }
+    const across = (h.base * CRATE) / 2,
+      wide = (more * (h.base + 0.5) * CRATE) / 2;
+    e.body = addStatic(
+      { kind: 'box', hx: across + wide, hy: (layers * 0.82) / 2, hz: across },
+      { x: h.x + wide, y: (h.y ?? 0) + (layers * 0.82) / 2, z: h.z },
+    );
+  }
+}
 
 // ---------------------------------------------------------------- local state, kept per room
 const KEY = coopKey(`boogle-place-v3:${getRoomId()}`, getRoomId()); // a new key each round: an older save's shape can't break this one
@@ -921,6 +973,10 @@ registerInteractable(() => {
   }
   return out ?? NO_TARGETS;
 });
+// Pressing with nothing in reach: you're wondering what to do.
+onInteractPress((t) => {
+  if (!t) showObjective();
+});
 const onDeck = () => machine.onMachine(carry.on) || lines.some((l) => l.train.onTrain(carry.on));
 function chopTree(t: Tree) {
   if (!chop(t)) return;
@@ -1165,7 +1221,7 @@ function objective(now: number) {
   const beam = (x: number, y: number, z: number) => setBeacon({ x, y, z }, now);
   if (run.mode === 'waking') {
     setBeacon(null, now);
-    return "It's waking up...";
+    return ''; // you can see it, hear it and feel it
   }
   if (run.mode === 'asleep') {
     beam(machine.flatbed.x, machine.flatbed.y + 2, machine.flatbed.z);
@@ -1455,6 +1511,7 @@ onFrame(
     }
     updateChop(dt, now);
     updateCrates(dt);
+    solidHeaps();
     updateTown(stepsOf(s.wood), stepsOf(s.stone), dt);
     updateFinds(dt);
     // The two smoke columns: tall, slow and white, the first thing you read across the gorge.
@@ -1480,6 +1537,7 @@ onFrame(
       }
     // What's on screen.
     setObjective(objective(now));
+    updateObjective(dt, me.wish.lengthSq() > 0.01 || run.mode === 'laying' || !!showing());
     pointArrow(showing() ? null : run.mode === 'asleep' ? pathAhead() : beaconAt());
     document.body.classList.toggle('place-no-target', !interactTarget()?.run);
     setNumbers(L1.open ? TUNE.deckCrates : null, s.people);
@@ -1620,6 +1678,7 @@ coop.setup({
 
 // For the look evals (dev/look/evals/place.ts).
 window.__place = {
+  day: DAY,
   lines,
   machine,
   run,

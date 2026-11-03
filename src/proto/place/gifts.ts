@@ -11,6 +11,7 @@ import { emit } from '../../render/particles.ts';
 import { scene } from '../../render/scene.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { me } from '../../player/player.ts';
+import { carry } from '../../physics/platforms.ts';
 import { fanfare, knock, label, pop } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
 import { SHELF, toWorld } from './layout.ts';
@@ -381,7 +382,7 @@ function unfill() {
 const worn = new Map<GiftId, THREE.Mesh>();
 type Named = THREE.Object3D & { getObjectByName: (n: string) => THREE.Object3D | undefined };
 const WEAR: Partial<Record<GiftId, { bone: string; y: number; z: number; scale: number }>> = {
-  hat: { bone: 'head', y: 0.2, z: 0, scale: 0.8 },
+  hat: { bone: 'head', y: 0.075, z: 0, scale: 0.86 }, // brim down round the head, not perched on its crown
   scarf: { bone: 'neck_01', y: -0.2, z: 0, scale: 0.62 },
 };
 function wear(id: GiftId) {
@@ -414,11 +415,31 @@ const critter = new THREE.Mesh(geoOf('critter'), giftMat);
 critter.visible = false;
 critter.castShadow = true;
 scene.add(critter);
-const crit = { on: false, x: 0, y: 0, z: 0, yaw: 0, hop: 0, t: 0 };
+const crit = { on: false, x: 0, y: 0, z: 0, yaw: 0, hop: 0, t: 0, riding: false };
+const CRIT_SEAT = { side: 0.62, back: 0.45 }; // m beside and behind you, riding
 function updateCritter(dt: number) {
   const b = me.body;
   if (!crit.on || !b) return;
   const p = b.interpolatedPosition;
+  // On a moving deck it hops up beside you and sits: no chasing a train along the ground and through its wheels.
+  if (carry.on) {
+    const sx = p.x + Math.cos(me.yaw) * CRIT_SEAT.side + Math.sin(me.yaw) * CRIT_SEAT.back,
+      sz = p.z - Math.sin(me.yaw) * CRIT_SEAT.side + Math.cos(me.yaw) * CRIT_SEAT.back;
+    const sy = p.y - 0.46;
+    if (!crit.riding) crit.t = 0;
+    crit.riding = true;
+    crit.t = Math.min(1, crit.t + dt / 0.28); // the hop aboard
+    const u = crit.t;
+    crit.x += (sx - crit.x) * (u < 1 ? u : 1);
+    crit.z += (sz - crit.z) * (u < 1 ? u : 1);
+    crit.y += (sy - crit.y) * (u < 1 ? u : 1);
+    crit.yaw = me.yaw + Math.PI;
+    critter.position.set(crit.x, crit.y + (u < 1 ? Math.sin(u * Math.PI) * 0.9 : 0), crit.z);
+    critter.rotation.y = crit.yaw;
+    critter.scale.setScalar(0.8);
+    return;
+  }
+  crit.riding = false;
   const bx = p.x + Math.sin(me.yaw) * 1.1 + Math.cos(me.yaw) * 0.7,
     bz = p.z + Math.cos(me.yaw) * 1.1 - Math.sin(me.yaw) * 0.7;
   const dx = bx - crit.x,
