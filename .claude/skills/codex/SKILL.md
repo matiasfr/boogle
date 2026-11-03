@@ -18,7 +18,7 @@ Codex reads AGENTS.md and DESIGN.md like you do, and can't push. A `task` job ca
 | `task` | high | same worktree setup | commits on `codex/<topic>`, `npm run check` run, not pushed |
 | `review` | xhigh | detached worktree at `--ref-branch` (default HEAD) | `codex exec review` against `origin/main`; an optional brief focuses it |
 
-Effort: previz is mostly image prompts, so `medium` (or `high`) is enough; `xhigh` for research and review; `high` for implementation; `max` only for one hard question. For straightforward implementation with a clear shape, try `--model gpt-6.1-terra --effort low` first (a trial, AGENTS.md, "Owner's standing calls").
+Effort: previz is mostly image prompts, so `medium` (or `high`) is enough; `xhigh` for research and review; `high` for implementation; `max` only for one hard question. For straightforward implementation with a clear shape, use `--model gpt-6.1-terra --effort low` first (AGENTS.md, "Codex first").
 
 ## Previz
 
