@@ -23,6 +23,7 @@ try {
         missing: timing.gpu.render.missingFrames,
         outputColorTransform: pipeline.outputColorTransform,
         outputIsScenePass: pipeline.outputNode === scenePass,
+        loadedTone: performance.getEntriesByType('resource').some((e) => e.name.includes('/src/proto/tone.ts')),
       }),
   );
 } finally {
