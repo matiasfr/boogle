@@ -119,7 +119,7 @@ try {
           size: opt.size,
           clock: true,
           ...o,
-          query: [shot.query, o.query].filter(Boolean).join('&'),
+          query: [shot.query, o.query].filter(Boolean).join('&') || undefined,
           name: o.name || 'p' + (games.length + 1),
         })) as unknown as ClipGame;
         // Software GL (no GPU, e.g. CI) can take far longer than Playwright's 30 s default for a screenshot.

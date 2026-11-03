@@ -8,7 +8,7 @@ const DROP = ['dpr', 'debugcam', 'netdebug', 'prof', 'look'];
 // (`?play`) (the default island), else the query without debug flags, prototype parameters (?v=, ?hero=, ...) included.
 export function launchQuery(search: string): string {
   const q = new URLSearchParams(search);
-  if (!q.get('room') && !q.get('proto') && !q.has('play')) return '';
+  if (!q.get('room') && !q.get('proto') && !q.has('play') && q.get('classic') !== '1') return '';
   for (const k of DROP) q.delete(k);
   return q.toString();
 }
@@ -21,6 +21,7 @@ export function describeLaunch(query: string): string {
     v = q.get('v');
   const parts: string[] = [];
   if (q.has('play')) parts.push('the playtest playlist');
+  if (q.get('classic') === '1' && !q.has('proto') && !q.has('play')) parts.push('the classic island');
   if (room) parts.push(`room ${room}`);
   if (proto) parts.push(`prototype ${proto}${v ? ` (${v})` : ''}`);
   return parts.join(' · ');

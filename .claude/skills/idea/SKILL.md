@@ -2,7 +2,6 @@
 name: idea
 description: Park an idea for later in docs/ideas.md.
 argument-hint: '<the idea>'
-disable-model-invocation: true
 ---
 
 Add to `docs/ideas.md`: $ARGUMENTS

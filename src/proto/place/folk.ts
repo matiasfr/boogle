@@ -16,14 +16,17 @@ import { babble, CHATTER } from './chatter.ts';
 import { H } from './land.ts';
 import { merged } from './gifts.ts';
 import { TOWN, toWorld, FORGE } from './layout.ts';
-import { feet, outOf, underway, type Site } from './sites.ts';
+import { feet, outOf, underway, type Foot, type Site } from './sites.ts';
 
 // ---------------------------------------------------------------- the meshes
 const VILLAGE_MAX = 28, // the most of the village's people you'll see at once
   CAMP = 3,
   STATION = 2,
-  RIDERS = 2;
-const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2;
+  RIDERS = 2,
+  COMMUTERS = 5,
+  PUSHERS = 2,
+  RESIDENTS = 6;
+const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + COMMUTERS + PUSHERS + RESIDENTS;
 const SKIN = '#f4cfa4',
   EYE = '#1d1a20';
 // Facing +z, standing on y = 0, about 0.95 m tall. Two thirds of it head and hat.
@@ -58,7 +61,8 @@ const HAND = new THREE.Color(SKIN),
   IRON = new THREE.Color('#5d6068');
 
 // ---------------------------------------------------------------- what each one is doing
-type Job = 'stroll' | 'scaffold' | 'hauler' | 'platform' | 'camp' | 'station' | 'rider';
+type Job =
+  'stroll' | 'scaffold' | 'hauler' | 'platform' | 'camp' | 'station' | 'rider' | 'commuter' | 'pusher' | 'resident';
 type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
 type Guy = {
   k: number;
@@ -91,6 +95,23 @@ type Guy = {
   px: number; // where it stood last frame: the stride follows how fast it really goes
   pz: number;
   chat: 0 | 1 | 2; // in an exchange: 1 saying something, 2 listening
+  route: Route;
+  act: Mood; // a resident: what they're doing when you're not there
+  tint: THREE.Color | null;
+};
+// Where steer() is taking it: the goal it was given (r), that goal clear of footprints (g), the corner it's rounding (w),
+// the corner before that (p), and the s it has left; below 0, nothing's planned.
+type Route = {
+  rx: number;
+  rz: number;
+  gx: number;
+  gz: number;
+  wx: number;
+  wz: number;
+  px: number;
+  pz: number;
+  way: boolean;
+  left: number;
 };
 const rng = mulberry32(2211);
 const X = toWorld;
@@ -127,6 +148,9 @@ function make(job: Job, x: number, z: number, extra?: Partial<Guy>): Guy {
     px: x,
     pz: z,
     chat: 0,
+    route: { rx: 0, rz: 0, gx: 0, gz: 0, wx: 0, wz: 0, px: 0, pz: 0, way: false, left: -1 },
+    act: 'idle',
+    tint: null,
     ...extra,
   };
   guys.push(g);
@@ -193,6 +217,19 @@ const riders = Array.from({ length: RIDERS * 2 }, (_, k) =>
   make('rider', 0, 0, { on: false, seat: k % RIDERS, camp: k < RIDERS ? 0 : 1 }),
 );
 
+// Once a path's open they use it: a few of them walk the new track, there and back, all day. The first time they run.
+const commuters = Array.from({ length: COMMUTERS }, (_, k) =>
+  make('commuter', 0, 0, { on: false, seat: k, side: k % 2 ? 1 : -1, far: 0, tx: 0 }),
+);
+// The depot's cart: two of them shoving it along, a real but small job (./depot.ts).
+const pushers = Array.from({ length: PUSHERS }, (_, k) => make('pusher', 0, 0, { on: false, seat: k }));
+
+/** Someone who lives in a building and stays put (./residents.ts): same on every tab, so two people can talk to them at once. */
+export function addResident(x: number, y: number, z: number, yaw: number, act: Mood, color: string) {
+  return make('resident', x, z, { on: false, fy: y, yaw, act, a: { x: yaw, z: 0 }, tint: new THREE.Color(color) });
+}
+export type { Guy, Mood };
+
 // ---------------------------------------------------------------- what they can see of the world (set by ./index.ts)
 export type FolkEnv = {
   /** The next station's feet, where its helpers stand; null when nothing's waiting. */
@@ -202,8 +239,12 @@ export type FolkEnv = {
   trainCar: (line: number) => { mesh: THREE.Object3D; top: number } | null;
   /** The platform and where people gather when a line opens. */
   gather: { x: number; z: number; ux: number; uz: number; lx: number; lz: number; len: number };
-  platform: { x: number; y: number; z: number; ux: number; uz: number };
+  platform: { x: number; y: number; z: number; ux: number; uz: number; up: () => boolean };
   forgeLit: () => boolean;
+  /** A place along the first path: `u` 0 the village end to 1 the far end; null until it's open. */
+  path: ((u: number, lat: number) => { x: number; y: number; z: number; yaw: number } | null) | null;
+  /** The cart they push: null while it's at rest. */
+  cart: () => { mesh: THREE.Object3D; top: number; hz: number } | null;
   /** Something's on that nobody should talk over (a crate opening, a moment). */
   hush: () => boolean;
 };
@@ -214,29 +255,112 @@ export const setFolkEnv = (e: FolkEnv) => void (env = e);
 const SPEED = { walk: 1.7, run: 4.6 };
 // The walk. Tune these by eye at about 10 m.
 const WALK = { bob: 0.11, squash: 0.05, rock: 0.17, lean: 0.07, stride: 0.2, lift: 0.13, stepsPerMetre: 4.4 };
+// Round a building, not through it. They head straight for where they're going until a footprint's on the line, then for
+// the corner of it that makes the shorter way round. Plots count before they're built, so nobody's standing there when a
+// building rises. A goal that takes far longer than the walk should is given up on, as if they'd got there.
+const WALL = 0.38, // m they keep from a wall
+  CORNER = WALL + 0.3, // m they take a corner wide by
+  PATIENCE = 2.5; // times the straight walk's time, plus GRACE s, before they give up
+const GRACE = 3;
+/** How far along the line a footprint starts, 0 to 1; Infinity if the line misses it. A hair inside WALL: walking along it isn't hitting it. */
+function hits(f: Foot, ax: number, az: number, bx: number, bz: number) {
+  const r = WALL - 0.02,
+    dx = ax - f.x,
+    dz = az - f.z,
+    ex = bx - ax,
+    ez = bz - az;
+  let t0 = 0,
+    t1 = 1;
+  for (let axis = 0; axis < 2; axis++) {
+    const half = (axis ? f.hd : f.hw) + r,
+      l = axis ? dx * f.s + dz * f.c : dx * f.c - dz * f.s,
+      v = axis ? ex * f.s + ez * f.c : ex * f.c - ez * f.s;
+    if (Math.abs(v) < 1e-6) {
+      if (Math.abs(l) >= half) return Infinity;
+      continue;
+    }
+    const a = (-half - l) / v,
+      b = (half - l) / v;
+    t0 = Math.max(t0, Math.min(a, b));
+    t1 = Math.min(t1, Math.max(a, b));
+  }
+  return t0 < t1 ? t0 : Infinity;
+}
+const spot = { x: 0, z: 0 };
+const inAFoot = (x: number, z: number) => {
+  spot.x = x;
+  spot.z = z;
+  return feet.some((f) => outOf(f, spot, WALL));
+};
+function detour(g: Guy, toX: number, toZ: number) {
+  let f: Foot | null = null,
+    first = Infinity;
+  for (let k = 0; k < feet.length; k++) {
+    const t = hits(feet[k]!, g.x, g.z, toX, toZ);
+    if (t < first) {
+      first = t;
+      f = feet[k]!;
+    }
+  }
+  if (!f) return;
+  let best = Infinity;
+  for (let k = 0; k < 4; k++) {
+    const nx = (k & 1 ? 1 : -1) * (f.hw + CORNER),
+      nz = (k & 2 ? 1 : -1) * (f.hd + CORNER),
+      x = f.x + nx * f.c + nz * f.s,
+      z = f.z - nx * f.s + nz * f.c,
+      there = Math.hypot(x - g.x, z - g.z);
+    // There now, just came from it (they'd pace a wall between two corners), or round the far side.
+    if (there < 0.4 || Math.hypot(x - g.route.px, z - g.route.pz) < 0.4 || hits(f, g.x, g.z, x, z) !== Infinity)
+      continue;
+    const way = there + Math.hypot(toX - x, toZ - z) + (inAFoot(x, z) ? 40 : 0);
+    if (way < best) {
+      best = way;
+      g.route.wx = x;
+      g.route.wz = z;
+      g.route.way = true;
+    }
+  }
+}
 function steer(g: Guy, dt: number, speed: number) {
-  const dx = g.tx - g.x,
-    dz = g.tz - g.z,
-    d = Math.hypot(dx, dz);
-  if (d < 0.25) return true;
-  const ux = dx / d,
+  const r = g.route;
+  if (r.left < 0 || Math.hypot(g.tx - r.rx, g.tz - r.rz) > 1.5) {
+    // A new goal, moved out of any footprint it's in.
+    r.rx = spot.x = g.tx;
+    r.rz = spot.z = g.tz;
+    for (let k = 0; k < feet.length; k++) outOf(feet[k]!, spot, WALL);
+    r.gx = spot.x;
+    r.gz = spot.z;
+    r.way = false;
+    r.px = r.pz = Infinity;
+    r.left = (Math.hypot(r.gx - g.x, r.gz - g.z) / speed) * PATIENCE + GRACE;
+  }
+  r.left -= dt;
+  if (Math.hypot(r.gx - g.x, r.gz - g.z) < 0.25 || r.left <= 0) {
+    r.left = -1;
+    return true;
+  }
+  if (r.way && Math.hypot(r.wx - g.x, r.wz - g.z) < 0.4) {
+    r.way = false;
+    r.px = r.wx;
+    r.pz = r.wz;
+  }
+  detour(g, r.way ? r.wx : r.gx, r.way ? r.wz : r.gz);
+  const dx = (r.way ? r.wx : r.gx) - g.x,
+    dz = (r.way ? r.wz : r.gz) - g.z,
+    d = Math.max(Math.hypot(dx, dz), 0.001),
+    ux = dx / d,
     uz = dz / d;
-  let want = Math.atan2(ux, uz);
-  let dy = want - g.yaw;
+  let dy = Math.atan2(ux, uz) - g.yaw;
   while (dy > Math.PI) dy -= Math.PI * 2;
   while (dy < -Math.PI) dy += Math.PI * 2;
   g.yaw += dy * Math.min(1, dt * 9);
-  want = speed * dt;
-  g.x += ux * want;
-  g.z += uz * want;
-  // Round a building, not through it: out by the shortest way, and on along its wall.
+  g.x += ux * speed * dt;
+  g.z += uz * speed * dt;
   for (let k = 0; k < feet.length; k++) {
     const f = feet[k]!;
     if (Math.abs(f.x - g.x) > 18 || Math.abs(f.z - g.z) > 18) continue;
-    if (outOf(f, g, 0.38)) {
-      g.x += -uz * want * 0.9 * g.side;
-      g.z += ux * want * 0.9 * g.side;
-    }
+    outOf(f, g, WALL);
   }
   g.y += (H(g.x, g.z) - g.y) * Math.min(1, dt * 12);
   return false;
@@ -244,7 +368,20 @@ function steer(g: Guy, dt: number, speed: number) {
 
 // ---------------------------------------------------------------- their brains
 const you = { x: 0, z: 0, ok: false };
-let followers = 0;
+// Who's waving at you or tagging along right now. Counted, not kept: a cheer or a building site can cut a wave short.
+function greeters() {
+  let n = 0;
+  for (let k = 0; k < VILLAGE_MAX; k++) {
+    const g = guys[k]!;
+    if (
+      g.on &&
+      (g.job === 'stroll' || (g.job === 'platform' && !env?.platform.up())) &&
+      (g.follow > 0 || g.mood === 'wave')
+    )
+      n++;
+  }
+  return n;
+}
 function strollBrain(g: Guy, dt: number) {
   // Noticed you: a wave, then along for a few steps.
   g.cooldown -= dt;
@@ -256,7 +393,6 @@ function strollBrain(g: Guy, dt: number) {
     if (g.follow <= 0) {
       g.hasTarget = false;
       g.cooldown = 22;
-      followers = Math.max(0, followers - 1);
     }
     return;
   }
@@ -269,8 +405,7 @@ function strollBrain(g: Guy, dt: number) {
     }
     return;
   }
-  if (you.ok && g.cooldown <= 0 && followers < 2 && Math.hypot(you.x - g.x, you.z - g.z) < 7) {
-    followers++;
+  if (you.ok && g.cooldown <= 0 && Math.hypot(you.x - g.x, you.z - g.z) < 7 && greeters() < 2) {
     g.mood = 'wave';
     g.wait = 1.1;
     return;
@@ -333,6 +468,13 @@ function tapSound(x: number, z: number, k: number) {
   o.start(t);
   o.stop(t + 0.06);
 }
+/** A stamp coming down on a leaf: a little tap and no sparks. */
+function stampAt(g: Guy, dt: number) {
+  const prev = Math.floor(g.t);
+  g.mood = 'hammer';
+  g.t += dt * 0.9;
+  if (Math.floor(g.t) !== prev) tapSound(g.x, g.z, g.k);
+}
 function hammerAt(g: Guy, dt: number) {
   const prev = Math.floor(g.t);
   g.mood = 'hammer';
@@ -378,8 +520,8 @@ function brain(g: Guy, dt: number) {
   }
   switch (g.job) {
     case 'stroll': {
-      // A building going up pulls in whoever's nearby.
-      if (!g.site) {
+      // A building going up pulls in whoever's nearby, once they've finished saying hello.
+      if (!g.site && g.follow <= 0 && g.mood !== 'wave') {
         const b = underway();
         for (let k = 0; k < b.length; k++) {
           const s = b[k]!;
@@ -430,7 +572,11 @@ function brain(g: Guy, dt: number) {
       return;
     case 'platform': {
       const p = e?.platform;
-      if (!p) return;
+      if (!p || !p.up()) {
+        g.fy = null;
+        strollBrain(g, dt);
+        return;
+      }
       const s = g.k % 2 ? 6 : -4;
       g.x = p.x + p.ux * s;
       g.z = p.z + p.uz * s;
@@ -459,6 +605,7 @@ function brain(g: Guy, dt: number) {
         if (Math.abs(f.x - g.x) < 8 && Math.abs(f.z - g.z) < 8) outOf(f, g, 0.4);
       }
       g.y = H(g.x, g.z);
+      g.fy = null; // down off the machine: riding it left them at deck height, floating in front of the frame
       g.mood = you.ok && Math.hypot(you.x - g.x, you.z - g.z) < 14 ? 'wave' : 'idle';
       g.yaw = you.ok ? Math.atan2(you.x - g.x, you.z - g.z) : g.yaw;
       return;
@@ -466,8 +613,43 @@ function brain(g: Guy, dt: number) {
     case 'rider':
       g.mood = 'ride';
       return;
+    case 'commuter': {
+      const q = e?.path?.(g.a.x, g.side * (0.45 + (g.seat % 3) * 0.35));
+      if (!q) return;
+      // There and back along it; `a.x` is where along, `a.z` which way. The first run out's at a run.
+      const speed = commuteRun > 0 ? SPEED.run : SPEED.walk * 1.3;
+      g.a.x += (g.a.z * speed * dt) / PATH_LEN;
+      if (g.a.x > 1 || g.a.x < 0) {
+        g.a.z = -g.a.z;
+        g.a.x = Math.max(0, Math.min(1, g.a.x));
+      }
+      g.x = q.x;
+      g.z = q.z;
+      g.fy = q.y;
+      g.yaw = q.yaw + (g.a.z > 0 ? 0 : Math.PI);
+      g.mood = commuteRun > 0 ? 'run' : 'walk';
+      return;
+    }
+    case 'pusher':
+      g.mood = 'walk';
+      return;
+    case 'resident': {
+      // They look up when you come close, and go back to it when you've gone. Local: nobody else's copy has to agree.
+      const close = you.ok && Math.hypot(you.x - g.x, you.z - g.z) < 3.4;
+      const face = close ? Math.atan2(you.x - g.x, you.z - g.z) : g.a.x;
+      let dy = face - g.yaw;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      g.yaw += dy * Math.min(1, dt * 5);
+      if (g.chat || close) g.mood = 'chat';
+      else if (g.act === 'hammer') stampAt(g, dt);
+      else g.mood = g.act;
+      return;
+    }
   }
 }
+const PATH_LEN = 190;
+let commuteRun = 0;
 const hammering = (s: Site) => {
   let n = 0;
   for (let k = 0; k < VILLAGE_MAX; k++) if (guys[k]!.site === s) n++;
@@ -493,7 +675,7 @@ const limb = (k: number, part: number, x: number, y: number, z: number, rx: numb
 let slot = 0;
 function pose(g: Guy) {
   const k = slot++;
-  coats.setColorAt(k, COLORS[g.k % COLORS.length]!);
+  coats.setColorAt(k, g.tint ?? COLORS[g.k % COLORS.length]!);
   const t = g.t;
   let hop = 0,
     tilt = 0,
@@ -668,7 +850,6 @@ export function pourOut(seconds = 9) {
       g.cheer = seconds;
       continue;
     }
-    if (g.follow > 0) followers = Math.max(0, followers - 1);
     g.cheer = seconds + rng();
     g.gather = true;
     g.hasTarget = !!gr;
@@ -693,12 +874,25 @@ export function setCamp(k: number, busy: boolean) {
 export function setRiders(line: number, on: boolean) {
   for (const g of riders) if (g.camp === line) g.on = on;
 }
+/** The path's open: they come out onto it. `run`: s they run for, the first time. */
+export function setCommuters(on: boolean, run = 0) {
+  commuteRun = run;
+  commuters.forEach((g, k) => {
+    if (on && !g.on) {
+      g.a = { x: run ? -0.02 * k : (k * 0.37) % 1, z: 1 };
+      if (g.a.x < 0) g.a.x = 0;
+    }
+    g.on = on;
+  });
+}
+export const setPushers = (on: boolean) => {
+  for (const g of pushers) g.on = on;
+};
 /** Start over. */
 export function resetFolk() {
   endTalk();
   rest = TALK.firstAfter;
   wanted = 0;
-  followers = 0;
   for (let k = 0; k < VILLAGE_MAX; k++) {
     const g = guys[k]!;
     g.on = false;
@@ -716,6 +910,8 @@ export function resetFolk() {
   }
   setRiders(0, false);
   setRiders(1, false);
+  setCommuters(false);
+  setPushers(false);
   campBusy[0] = campBusy[1] = false;
 }
 
@@ -841,6 +1037,7 @@ function updateTalk(dt: number) {
 let frame = 0;
 export function updateFolk(dt: number) {
   frame++;
+  commuteRun = Math.max(0, commuteRun - dt);
   const b = me.body;
   you.ok = !!b;
   if (b) {
@@ -875,7 +1072,7 @@ export function updateFolk(dt: number) {
     const d2 = (g.x - cx) ** 2 + (g.z - cz) ** 2;
     const far = d2 > 150 * 150;
     // Out of sight of the camera, they're looked at less often.
-    if (far && g.mood !== 'ride' && g.job !== 'rider') {
+    if (far && g.mood !== 'ride' && g.job !== 'rider' && g.job !== 'pusher') {
       g.far += dt;
       if ((frame + g.k) % 8 === 0) {
         brain(g, Math.min(0.5, g.far));
@@ -889,7 +1086,7 @@ export function updateFolk(dt: number) {
     } else g.t += dt * (g.mood === 'hammer' ? 0 : 3);
     g.px = g.x;
     g.pz = g.z;
-    if (g.chat && g.job !== 'station' && g.job !== 'rider') chatBrain(g, dt);
+    if (g.chat && g.job !== 'station' && g.job !== 'rider' && g.job !== 'resident') chatBrain(g, dt);
     else brain(g, dt);
     if (e_ && g.job === 'station' && g.mood === 'ride') {
       const car = e_.machine();
@@ -898,6 +1095,10 @@ export function updateFolk(dt: number) {
       const car = e_.trainCar(g.camp);
       if (!car) continue;
       ride(g, car, g.seat ? 0.42 : -0.42, -1.1, g.seat ? 0.9 : -0.9);
+    } else if (e_ && g.job === 'pusher') {
+      const car = e_.cart();
+      if (!car) continue;
+      ride(g, car, g.seat ? 0.35 : -0.35, -car.hz - 0.5, 0);
     }
     // Never in the lens: anyone within a couple of metres of the camera isn't drawn.
     const nx = g.x - cx,

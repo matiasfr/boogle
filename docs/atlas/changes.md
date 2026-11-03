@@ -1,5 +1,18 @@
 # What changed
 
+## 2026-11-03
+
+- The place prototype now opens by default in its co-op room; `?classic=1` brings back the earlier island. [Two of you build one railway](#story/coop) still uses the same referee.
+- The owner parked the sky experiment after comparing it with the original, so the original sky and clouds stay in the game. The experiment remains behind its flag.
+- The real place prototype can now be played by two people at once (`?proto=place&coop=1`). The oldest tab in the room acts as the referee: when you drop a log at a station, it decides whether that log counts, so two people can't both drop the last one. Once a second it sends everyone the whole railway, like a scorekeeper reading the scoreboard aloud. New story: [two of you build one railway](#story/coop).
+- The server learned to keep playtest notes: a prototype page can send what happened in a session, and the team reads it back later, like a flight recorder. Nothing a player sees changed.
+- Everything else was only in your own tab: the place prototype got sea and gull sounds, little guys who walk and chatter, decks you can sit on, and crystals; touch players can sprint by pushing the stick far; the soapbox left the island. Nothing else in the picture moved.
+- Later the same day: those playtest notes now actually get written. Any prototype page quietly sends a diary of the session to the server (where you walked, what you pressed, where you got stuck, how smooth it ran), unless you add `&notrack=1`, and the team reads it back with a heat map, like a coach watching game tape. It travels straight to the server, not to other players, so no arrow in the picture moved.
+- Later still, only small fixes landed: the server guards that playtest diary better, limiting how many sessions one visitor can send in an hour and keeping real play sessions longest, like a guestbook that throws out spam before signatures. Nothing in the picture moved.
+- Last of the day: the place prototype grew a whole job (chop by hand, then a better axe, a cart, a second line over the sea, trains that come when you call), and the two-player version now sends those new pieces through the same referee and the same once-a-second scoreboard, so [two of you build one railway](#story/coop) still tells it right. A new water prototype (`?proto=water`) paints waves and shoreline foam only in your own tab, like a painted backdrop, and the rest was tools for agents to watch and measure the game. Nothing in the picture moved.
+- Overnight: two-player place got fairer about leaving. A great beam or boiler on your shoulder now shows in your presence, so if you walk out carrying one, your partner's tab puts it back where it was found, like returning a library book for someone who left town. A log you dropped is only given back if the referee says no or actually leaves, never just because the answer was slow. The cart also carries rails now. See the new last step of [two of you build one railway](#story/coop).
+- Also new, only in your own tab: a sky prototype (`?proto=sky`) with richer daylight and soft drifting clouds, plus more tools for agents. Nothing else in the picture moved.
+
 ## 2026-11-02
 
 - Last of the day: a new player's first visit, riding a cart off a rail and smashing through the BOOGLE title in mid-air, graduated from a prototype into the game and got its own folder. It only plays in your own tab, like a welcome film shown to each guest alone, so nothing shared changed and no arrow in the picture moved.

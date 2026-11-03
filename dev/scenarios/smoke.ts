@@ -16,8 +16,8 @@ export default {
   async run(t: T) {
     const room = process.env.SMOKE_ROOM || ('smoke-' + id).slice(0, 32);
     const size = [480, 300]; // small frames keep software GL fast enough for the world clock to run near real time
-    const A = await t.open({ name: 'Alice', room, size });
-    const B = await t.open({ name: 'Bob', room, size });
+    const A = await t.open({ name: 'Alice', room, size, query: 'classic=1' });
+    const B = await t.open({ name: 'Bob', room, size, query: 'classic=1' });
     const worldErrors = new Map<Game, string[]>();
     for (const g of [A, B]) {
       const errs: string[] = [];

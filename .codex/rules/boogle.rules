@@ -1,0 +1,64 @@
+# What Codex may run outside its sandbox without asking in this repository. `allow` means outside the sandbox: macOS's sandbox won't
+# let Chromium start, and a worktree's Git data lives outside it, so the harness and Git can't work from inside. Test a change with
+# `codex execpolicy check --pretty --rules .codex/rules/boogle.rules -- npm run look`.
+# A rule sees plain commands: `X=1 npm run look` and `npm run look > log` don't match and stay in the sandbox. Pass --query to look
+# and playthrough, and pipe rather than redirect. SHIP_NO_AI isn't needed: ship notices Codex itself.
+
+PROJECT = [
+    # The game, seen and measured (these start Chromium)
+    "look", "playthrough", "before-after", "scenario", "scenarios", "perf", "hitches", "counts", "clip", "reel", "inspect",
+    # Checks and tools
+    "check", "check:full", "check:gpu", "lint", "typecheck", "build", "test:unit", "test:net", "load", "registry",
+    "level-check", "sim", "assets", "atlas", "patch", "dev", "prepare",
+    # What players did, and the owner's notes (the token is outside the workspace)
+    "playtest", "verdicts",
+    # Painted concept art, through this same tool
+    "concepts",
+    # Shipping: writes Git data and pushes a ship/ branch; force-pushing is forbidden below
+    "inflight", "wip", "ship",
+]
+prefix_rule(
+    pattern = ["npm", "run", PROJECT],
+    decision = "allow",
+    justification = "The project's own commands, as AGENTS.md tells every agent to run them",
+    match = [["npm", "run", "look", "--", "--view", "hill"], ["npm", "run", "ship"]],
+    not_match = [["npm", "run", "format"]],
+)
+prefix_rule(pattern = ["npm", "run", ["-s", "--silent"], PROJECT], decision = "allow")
+prefix_rule(pattern = ["npm", "ci"], decision = "allow", justification = "A fresh worktree's install; runs the prepare step, which writes Git config")
+prefix_rule(pattern = ["npm", "--prefix", "server", ["test", "ci"]], decision = "allow")
+prefix_rule(pattern = ["npx", "playwright", "install", "chromium"], decision = "allow")
+prefix_rule(pattern = ["bash", "scripts/pr-shot.sh"], decision = "allow")
+prefix_rule(pattern = ["scripts/pr-shot.sh"], decision = "allow")
+prefix_rule(
+    pattern = ["node", "dev/codex/run.ts"],
+    decision = "allow",
+    justification = "A worker on its own branch and worktree, the way a director hands off a track",
+)
+
+# A pipeline is judged by its strictest part, so one unlisted `| tail` would put the whole of `npm run look | tail` back in the
+# sandbox, where Chromium can't start. These only read.
+prefix_rule(pattern = [["tail", "head", "grep", "cut", "wc", "sort", "uniq", "cat", "tr"]], decision = "allow")
+
+# Git, which in a linked worktree keeps its data outside the workspace.
+prefix_rule(pattern = ["git", ["fetch", "add", "commit", "restore", "switch", "merge", "cherry-pick", "revert", "config"]], decision = "allow")
+prefix_rule(pattern = ["git", "rebase"], decision = "allow")
+prefix_rule(pattern = ["git", "worktree", ["add", "remove", "list", "prune"]], decision = "allow")
+prefix_rule(pattern = ["git", "branch"], decision = "allow")
+prefix_rule(pattern = ["git", "tag"], decision = "allow", justification = "archive/<name> tags for a finished prototype")
+
+# GitHub, through the owner's login.
+prefix_rule(pattern = ["gh", "pr", ["view", "list", "checks", "diff", "create", "comment"]], decision = "allow")
+prefix_rule(pattern = ["gh", "run", ["view", "list", "watch"]], decision = "allow")
+prefix_rule(pattern = ["gh", "issue", ["view", "list"]], decision = "allow")
+
+# Never, for anyone (AGENTS.md, "Shipping").
+prefix_rule(
+    pattern = ["git", "push", ["--force", "-f", "--force-with-lease", "--no-verify"]],
+    decision = "forbidden",
+    justification = "Never force-push or skip hooks unless a human asks",
+)
+prefix_rule(pattern = ["git", "commit", ["--no-verify", "-n"]], decision = "forbidden", justification = "Never skip hooks")
+prefix_rule(pattern = ["git", "stash"], decision = "prompt", justification = "The stash is shared with every other worktree")
+prefix_rule(pattern = ["git", "reset", "--hard"], decision = "prompt")
+prefix_rule(pattern = ["git", "clean"], decision = "prompt")

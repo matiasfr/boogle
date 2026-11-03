@@ -21,6 +21,8 @@ export type DropSet = BoxSet & {
   drop: (k: number, h: number, delay?: number) => void;
   /** Piece k is there, or not, with no show. */
   snap: (k: number, on: boolean) => void;
+  /** Piece k, `y` metres above or below its place. */
+  lift: (k: number, y: number) => void;
   update: (dt: number) => void;
   busy: () => boolean;
   /** Whatever's in the air stops where it is: start over. */
@@ -69,13 +71,17 @@ export function dropSet(boxes: Box[], onLand: (k: number) => void): DropSet {
         set.mesh.instanceMatrix.needsUpdate = true;
       }
     },
+    lift(k, y) {
+      write(k, y, 0);
+      set.mesh.instanceMatrix.needsUpdate = true;
+    },
     busy: () => air.length > 0,
     clear: () => void (air.length = 0),
   };
 }
 
 // ---------------------------------------------------------------- pieces in the air
-export type PieceKind = 'log' | 'rail';
+export type PieceKind = 'log' | 'rail' | 'stone';
 /** Where the machine and the racks draw a rail: one length of steel. */
 export const RAIL_SIZE = new THREE.Vector3(0.14, 0.16, 2.6);
 const railGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -89,6 +95,16 @@ rails.count = 0;
 rails.frustumCulled = false;
 rails.castShadow = true;
 scene.add(logs, rails);
+// A lump of stone: one shape, tumbling.
+const stones = new THREE.InstancedMesh(
+  new THREE.DodecahedronGeometry(0.2, 0),
+  new THREE.MeshStandardNodeMaterial({ color: '#a8a498', roughness: 0.95, flatShading: true }),
+  32,
+);
+stones.count = 0;
+stones.frustumCulled = false;
+stones.castShadow = true;
+scene.add(stones);
 
 type Trip = {
   kind: PieceKind;
@@ -141,7 +157,8 @@ const m = new THREE.Matrix4(),
 const color = LOOK.kit ? new THREE.Color(1, 1, 1) : pieceColor(0);
 export function updatePieces(dt: number) {
   let nl = 0,
-    nr = 0;
+    nr = 0,
+    ns = 0;
   for (let k = trips.length - 1; k >= 0; k--) {
     const t = trips[k]!;
     t.t += dt;
@@ -157,6 +174,8 @@ export function updatePieces(dt: number) {
       logs.setColorAt(nl++, color);
     } else if (t.kind === 'rail' && nr < MAX) {
       rails.setMatrixAt(nr++, m.compose(v, q.setFromEuler(e.set(0, u * 0.8, 0)), RAIL_DRAW));
+    } else if (t.kind === 'stone' && ns < 32) {
+      stones.setMatrixAt(ns++, m.compose(v, q, sc.setScalar(t.size0 + (t.size1 - t.size0) * u)));
     }
     if (u >= 1) {
       trips.splice(k, 1);
@@ -167,6 +186,10 @@ export function updatePieces(dt: number) {
   if (nr || rails.count) {
     rails.count = nr;
     rails.instanceMatrix.needsUpdate = true;
+  }
+  if (ns || stones.count) {
+    stones.count = ns;
+    stones.instanceMatrix.needsUpdate = true;
   }
 }
 

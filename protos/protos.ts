@@ -58,6 +58,23 @@ export type Proto = {
 
 export const PROTOS: Proto[] = [
   {
+    id: 'sky',
+    title: 'A sky worth lingering under',
+    step: 'depth',
+    status: 'parked',
+    answer: {
+      on: '2026-11-03',
+      verdict: 'The original is still my preference; I like the original cloud shape more.',
+      next: 'Parked by the owner. The game keeps its sky and clouds.',
+    },
+    url: '/?proto=sky',
+    question: 'Do these clouds and this horizon keep the sky you liked and make it better?',
+    what: 'The original light blue, with rounded white clouds that glow orange at sunset and a soft sea horizon.',
+    since: '2026-11-03',
+    chapter: 'it compares cloud shapes and horizon haze on the original island',
+    spawn: { x: 0, z: -30, yaw: -0.59 },
+  },
+  {
     id: 'onehand',
     title: 'One thing in your hands',
     step: 'depth',
@@ -88,13 +105,33 @@ export const PROTOS: Proto[] = [
     chapter: 'it replaces the arrival: every load starts from the card, above the clouds',
   },
   {
+    id: 'water',
+    title: 'That water, in our world',
+    step: 'depth',
+    status: 'live',
+    url: '/?room=proto-water&proto=water',
+    question: 'Does this look like the demo, here?',
+    what: "Ultra Water's full-scale island, small waves, caustics and atmosphere inside our renderer.",
+    since: '2026-11-02',
+    defaultWhat: 'The demo scene, opening on its Lagoon view.',
+    spawn: { x: 2081.037, z: 88.249, yaw: 2.688 },
+    chapter: 'it replaces the sea, far plane and fog, and sits on its own island',
+    variants: [
+      {
+        name: 'pop',
+        url: '/?room=proto-water&proto=water&v=pop',
+        what: 'Our poppier water grade over the same demo scene.',
+      },
+    ],
+  },
+  {
     id: 'place',
     title: 'A real place',
     step: 8,
     status: 'live',
-    url: '/?room=proto-place&proto=place&tod=0.07',
-    question: 'Did the crates and the little guys give you a reason to keep carrying?',
-    what: 'The same job, now with the new look. Each finished stretch delivers a crate with something in it for you or your train, a curio shelf at the station hints at what’s to come, little guys work the place, and the town goes up on scaffolding, solid. &look=off for the old look.',
+    url: '/?room=proto-place&proto=place',
+    question: 'Did splitting up beat staying together?',
+    what: 'In co-op, load rails onto the cart and ride to your partner, then carry a beam together and make a see-saw.',
     since: '2026-11-02',
     spawn: { x: 903, z: 14, yaw: -0.25 }, // at the village's edge, with the shelf, the path, the forge and the stub ahead
     verb: 'chops',
@@ -550,6 +587,7 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'net', variant: 'depot', why: 'Does the haul feel good now that the network is helping?' },
   { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },
   { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
+  { id: 'water', why: 'Does this look like the demo, here?' },
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */

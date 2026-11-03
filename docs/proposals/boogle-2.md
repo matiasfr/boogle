@@ -61,7 +61,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - **First reaching a far island:** the line builds out over the sea, and you ride it.
 - **The network:** preset links, your choice of order, and a last link from Home to the port. So the chain closes into a ring. Which links appear when is still open.
 - **Home:** a busy town at most.
-- **Danger:** no hazards at all. Nothing decays.
+- **Danger:** open. Was "no hazards at all, nothing decays", see Changed.
 - **While nobody plays:** the network banks one project, and the next step waits for players.
 - **Thanks:** credit people with no order or ranking.
 - **Mini-games pass:** after the rail loop has its answer.
@@ -70,6 +70,32 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - **Documents:** this log and [DESIGN.md](../../DESIGN.md) count. PLAN.md, SETTLED.md, the vertical slice and older proposals are marked historical, and the story briefs stay parked.
 
 ### The shape of the game
+
+- **2026-11-03, bring the default switch forward** (owner). The bare main URL now opens round 4, equivalent to `?proto=place&fresh=1&coop=1`, in the existing shared `proto-place-coop` room. Explicit URL flags and rooms win; `?classic=1` opens the old island, which stays for later. Solo remains fully playable. This is the entry switch only: `src/proto/place` stays where it is; retiring prototype code and the architecture pass still follow after the round.
+
+- **2026-11-02, the call on the Design Table** (owner and Grant, spoken while going through the table; Granola note of 2 November; the table's own database stayed empty, so this entry is its record). About 17 minutes of the call didn't transcribe, and they recapped it quickly, so this may be short of what was said.
+  - **Show, don't tell** is a principle now: DESIGN.md 11. In-game helper text is usually a sign the world is unclear, and the fix goes in the world.
+  - **Where it ends:** back on the original island, meeting The Boogler. The old island gets redesigned into a proper endgame hangout worth reaching, with little games to play with friends. Later in the game you can build your own track from certain places instead of following one set route, and that may be part of how you get there.
+  - **The Boogler** is an entrepreneur. You were doing his project all along, and he starts charging you when you reach him. Rumours around the world call him a prophet or a mystic, and the joke is that none of it is true. The JRPG-style relationship system gets refactored into plenty of fun dialogue that isn't gated on it.
+  - **The strange thing in this world** is extraordinary geology plus ancient technology, which both gates places and helps build things. Abilities are ancient technology you find, in the style of Tears of the Kingdom.
+  - **Abilities replace curios.** Grant doesn't like collectibles for collecting's sake, so the things you find are Metroidvania unlocks that open new paths: hook shot, bombs, a sledgehammer for walls, double jump and the glider. **The glider** matches Breath of the Wild as closely as we can, done our own way.
+  - **Materials replace eras.** The world doesn't turn into a steel era. You find better materials like cement and steel, and your engines are better because you upgraded them.
+  - **Length and sessions:** about 8 hours for the main game, leaving room for more mechanics. Each area is one or two hours aimed at something that feels complete, and it ends in a sense of closure such as a new ability, as Big Walk did it, so you can walk away feeling good.
+  - **Places:** all five on the table, and many more. They should be cool to reach.
+  - **Water:** the ultra-realistic water from the iPad demo as the starting point, made stylized to sit with toon characters.
+  - **Time of day has a purpose:** some things only by day and some only by night, with a brief night. In the lore these are northern islands in summer.
+  - **The roundhouse** is where you unlock, upgrade, customize and send out trains, with a light management feel. You start with one slow train, so each one joining the network is exciting.
+  - **Cosmetics have swappable slots.** Character: a hat, an accessory (headphones, glasses, a scarf) and a full-body outfit, with no separate pants and shirts. Train: a flag, a side accessory and a chimney accessory.
+  - **Boxes have rarity.** Common ones first and rarer ones later, with some cosmetics only in certain boxes. They're cosmetic for now; something functional may come later, and the last box on an island could hold a new ability. **The pet** stays small and hops on your shoulder when you board a train.
+  - **Mini-games** are co-op only, in the spirit of Human Fall Flat, and give cosmetic boxes.
+  - **What brings friends back:** splitting up jobs so progress goes faster, and rough proximity voice chat, possibly with mechanics that use it. **What's next in multiplayer** is finding the friction and complementary tasks that let two people split off.
+  - **While nobody plays,** whatever you kicked off finishes, as a small incremental touch.
+  - **Sound and music** are procedural.
+  - **After round 4:** real multiplayer gets priority. The main URL starts on this build, prototype code goes, and we take a deliberate look at the architecture as it becomes the main game.
+  - **Research next:** incremental game maths, goofy physics co-op, and traversal at speed (Sunset Overdrive, Burnout's boost); cosmetic collecting got a soft yes. **Not yet:** funny-resident writing research (though the first resident arrives in round 4), maps and fast travel, a level-building tool, a style guide, names, and getting friends in. The goal now is a vertical slice that's really fun, with the right frictions and the sense of building towards something.
+  - **The speed device waits until after round 4** (owner, after reading [traversal-at-speed.md](../research/traversal-at-speed.md)). It's a candidate for later, as ancient technology found after a useful walkable shortcut, giving short bursts you choose.
+  - **Unresolved: where your axe comes from.** You walk up to a tree and suddenly have one. If the screen shows what's true and there's no inventory, tools should show somehow, in a lo-fi way given complex animation is a worry. It can wait for the systems to lock, but Grant invited Claude to try an idea.
+- **2026-11-02, the direction after round 3** (owner and Grant, "we concur completely"; answers to the director's questions, playtests.md). The hour-to-hour game is **all three equally**: building the railway, exploring with abilities, and an incremental climb. **Path first, train later:** a new path you can walk is its own reward, and the train is its own unlock once distances are long ("too much too soon"). **A good slog** is more chopping and carrying that feels good until you want a better way, helped by longer routes; the point is getting "hungry for efficiency". **The efficiency ladder:** better tool, bigger carry, materials brought closer, then a faster way to travel, with trains at the top. **Ability gates:** a few key gates on the main line, the rest optional. **Two players:** splitting up helps, like one chopping while the other rides cargo, with optional co-op-specific things for certain rewards; chains aren't required. **The Boogler's story** stays mostly for later, and we plant rumours now. **Money is a comic score**, with The Boogler's prices as a gag ("money as a joke is a compelling concept"). **Towns:** test a house interior with a funny resident, a shop and a museum, all three; buildings have roles and you can go inside and talk to little guys. **Next test:** path-before-train and movement abilities with gated secrets together, on one island.
 
 - **2026-11-02, the game runs closer to 8 hours, and starts with fewer eras** (owner, after the compounding research: "expand the game length more to an 8-hour, closer to an 8-hour experience"; "if we need to start with fewer eras, because we already have so much going on and so many assets, maybe we can just reduce those a little bit in quantity"). The eight eras below are the long list, no longer the plan; the audit picks list the six that remain.
 - **The island grows through eight technology eras.** It expands outward (reclaimed land) and new islands rise around it.
@@ -88,7 +114,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - **Old lines upgrade with the eras**, and a heritage narrow-gauge loco keeps running.
 - **Pace: fast.** Was about 1–3 evenings per era; the 8-hour target above replaces that, see Changed.
 - **After the finale,** the archipelago stays open as a toy box.
-- **The ending is open** (see [story-and-finale.md](story-and-finale.md), section 2).
+- **The ending:** back on the original island with The Boogler (the Design Table call, top of this section). [story-and-finale.md](story-and-finale.md) has the older options.
 
 ### Trains and the world
 
@@ -155,7 +181,6 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - **Kept from SETTLED:**
   - every system is ignorable;
   - mini-games never gate progress;
-  - nothing decays;
   - the beach ball never produces income.
 
 ### Characters and story
@@ -167,6 +192,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - **2026-11-02, the hero camera is 5.2 m with 5° of sprint widening** (owner, comparing 5.2, 5.8 and 6.5 m and 0°, 3° and 5° live, `docs/research/third-person-camera.md`). Horizontal follow stays locked to the body.
 - **2026-11-02, the Buddy will be the default character:** the owner wants it to replace the capsule in normal play, with carrying and other animations fitted to its body. The capsule's code stays. Fitted behind a flag first, then switched the same day.
 - **2026-11-02, the Buddy is the one player figure:** the owner had the Tracklayer, the cute, ears, stout and bib looks, the robot, the code-animated hero and its model, and the modern-Mario controller (`?ctl=odyssey`) removed; the Buddy is now `?proto=hero`'s default, the plain mannequin stays behind `&body=mannequin` for comparison, and git history has the rest. The Tracklayer entries below are history.
+- **2026-11-02, the Buddy has no ears and no cheeks** (owner: "Take the ear bumps off. Rosy cheeks off."). The head is a plain ball with two eyes; this replaces the blush in the direction below.
 - **2026-11-02, the Buddy's look, from the owner's review in the viewer:** no rim light. In idle it looks straight ahead, not down, so check the gaze whenever the head, face or clips change. Shoulders stay soft and round, not sharp. Hats read as a railway conductor's rather than a police officer's: a straight stiff drum and brass trim, not a flared navy crown.
 - **2026-11-02, the player's direction is the Buddy** (`assets/src/buddy.py`, `?proto=hero&body=buddy`, `/character/`): a simple, smooth, slightly plump figure on the mannequin's clips, in the player's colour, with bead eyes and blush and no mouth, hair or clothes yet. The owner is "liking this a lot". Stock character kits were too complex, and full Meshy models fuse hair and clothes into one mesh. The Tracklayer below stays one fixed design, with no customization; whether it's still the player or a separate character is open.
 - **2026-11-02, the player is the Tracklayer** (previz name "the Plumber's Cousin": `.look/previz/hero-options-3`, shot 2; renamed by the owner, with a railway cap and not red by default; replaces the open Bib Buddies/split question). A sculpted, skinned humanoid, about 3.5 heads tall, in the spirit of modern Mario as our own character: a big head, simple dark eyes and no mouth, railway engineer's cap, overalls over a tee, big gloves, chunky boots. It plays the hand-made clips on a humanoid skeleton. The owner chose it because it should scale best to customizable outfits and feel like a good character to be. The player's colour on the cap and overalls is the working assumption; not yet confirmed. Not built yet.
@@ -189,6 +215,12 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### Look
 
+- **2026-11-03, the water uses the demo's mobile settings on mobile and its default on desktop, as a starting point** (owner). Cost work keeps the look and aims to leave margin for the rest of the game's graphics, which get more advanced over time.
+- **2026-11-03, Neutral is open** (owner): "a malleable rule". If AgX with exposure looks better, switch; decide from a side-by-side with our characters. The demo's difference from the previz grade is "totally acceptable".
+- **2026-11-03, the original lighter blue stays** (owner, comparing today's sky with the deeper-blue prototype: "the original is looking pretty nice, honestly."). Keep the game's lighter blue, not the deeper `#2a6fe0`. The next `?proto=sky` pass improves the rounded clouds and softens the sea horizon on that existing sky, following its normal daylight, sunset and moonlit night; it does not replace the sun or fill light.
+- **2026-11-03, the original sky and clouds stay; `?proto=sky` is parked** (owner, after that pass's final comparison: "it still feels like the original is my preference. I like the original cloud shape more, I think."; "let's park this for now"). The game keeps today's sky, faceted clouds and horizon. The rounded clouds and soft horizon stay behind the flag and don't go into the game.
+- **2026-11-02, make the Ultra Water demo scene the starting point** (owner, after `?proto=water`): "The waves are way too big, and the terrain is getting sloshed around unrealistically, unlike the ultra water demo. I think I like the ultra water demo scene look best as a starting point." Default to the demo scene and keep our grade as `&v=pop`; the captured desktop demo shots are the visual target.
+- **2026-11-02, start from Ultra Water and tune it, keeping its features** (owner, while `?proto=water` was being built): start from that water and change its parameters rather than building up from a bare sea toward toon; keep features like waves being affected by the rock; import the below-water treatment too; "I like their terrain", so see what can be learned and imported if it's efficient; more than the core water may ship later; the iPad mobile settings can be the water's default if needed. Supersedes the "recommends a selective TSL treatment" line below.
 - **2026-11-02, Ultra Water's water is a target, graded poppier** (owner, after playing the demo on the iPad: "I think the water looks fantastic"; "maybe with just a color grade, we could make it feel more poppier and more saturated like the mocks"). Its benchmark ran at 7.03 ms on the mobile profile at 1210×702 and 2× MSAA; the 30 FPS seen live is a display cap, not the GPU. How much to port is open; [ultra-water.md](../research/ultra-water.md) recommends a selective TSL treatment, starting with depth and contacts.
 - **2026-11-02, the look test's look becomes the default in the next round of `?proto=place`** (owner, after `&v=look&look=all`: "it looks pretty great. Definitely better"; "make it the default look in the next round and make sure to write down the to-dos"). The largest gap to the paintings was light, then the kit, materials and ground; GTAO wasn't worth it. Rolling it out to the whole game is a separate step and needs a call on time of day. To-dos: [look-pass.md](../plans/look-pass.md).
 - **2026-11-02, the look to aim for is the crossing previz, shots 2, 3 and 5, especially 2** (owner: "Especially 2, because it reminds me of Mario Sunshine and how beautiful it is"). Images and how each effect would be built: `.look/previz/crossing-beauty/` (gitignored, in the main checkout on the owner's Mac). Shot 2 is the everyday look; shots 3 (golden hour) and 5 (dusk arrival) are moods it passes through. These are paintings, so they set a target, not a promise: the real renderer has to prove it, on an M4 iPad Pro.
@@ -245,6 +277,10 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ## Changed
 
+- **2026-11-02:** "no hazards at all, nothing decays" was withdrawn along with DESIGN.md's "Nothing is the antagonist": the owner called the guidance outdated. Danger is open; nothing replaces it yet.
+- **2026-11-02:** "the island grows through technology eras" became "you find better materials and upgrade": the world doesn't change era, your things do. The era lists above are history; asset limits and the round structure still apply.
+- **2026-11-02:** "curios to collect" became "abilities to find": what you discover opens new paths.
+- **2026-11-02:** "the ending is parked" became "it ends on the original island, meeting The Boogler". All other narrative detail stays parked.
 - **2026-11-02:** "the hotbar stays for now" became "one thing in your hands": the owner played `?proto=onehand` and didn't miss it.
 - **2026-11-02:** "eight eras at 1–3 evenings each" became "closer to 8 hours, starting with fewer eras": the owner wants to limit how many assets the game needs.
 - **2026-11-01:** "riding must be more than standing on a moving platform" became "the wagon is transportation": after trying the research's variants, the owner doesn't want extra verbs on the ride.
@@ -258,7 +294,6 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 ## Parked by the owner
 
 - **The fourth melon:** the reveal, and whether to keep melons at all ([fourth-melon.md](fourth-melon.md)). Waiting on collaborators.
-- **The ending.**
 - **All narrative detail** until the core loop is fun.
 
 ## Open questions (round 8 and the architecture review)
@@ -278,10 +313,10 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 12. ~~Does "play is the material" still hold?~~ Yes (audit picks); see question 15.
 13. ~~How do you first reach a far island?~~ The line builds out over the sea, and you ride it (audit picks).
 14. ~~Which eras remain?~~ Six (audit picks).
-15. What do mini-games reward, and do rarities, incremental or gacha mechanics belong? The owner is interested; nothing is designed, and som and knacks stay parked until then.
+15. ~~What do mini-games reward, and do rarities, incremental or gacha mechanics belong?~~ Cosmetic boxes with rarity; co-op-only mini-games (the Design Table call). The incremental maths is still to research; som and knacks stay parked.
 16. Do helpers come back as life around the camps? The owner likes little guys running around, cuter than The Boogler (Decided, 2 November); what they do is still open.
-17. What becomes of today's island when the rail chapter becomes the game? The owner: it "has emotional appeal from the beginning of the game, because it feels sort of approachable in its size. Maybe there's some way players start there, but maybe not. And it's just a sort of Easter egg or a place that you can get to later in the game and discover, especially since it has the guest Easter egg." Director's suggestion: make it the first far island you build out to, keeping its toys and the guest. Not decided.
-18. Where does The Boogler appear? The owner: "maybe the Boogler will make sense to appear in different places ... at different times, because he'll be central to the sort of narrative of the game". Not designed; the mayor stays parked and his lines stay.
+17. ~~What becomes of today's island when the rail chapter becomes the game?~~ The endgame hangout where you meet The Boogler, redesigned (the Design Table call). Earlier, the owner: it "has emotional appeal from the beginning of the game, because it feels sort of approachable in its size. Maybe there's some way players start there, but maybe not. And it's just a sort of Easter egg or a place that you can get to later in the game and discover, especially since it has the guest Easter egg." Director's suggestion, not taken: make it the first far island you build out to.
+18. Where does The Boogler appear before the end? The owner: "maybe the Boogler will make sense to appear in different places ... at different times, because he'll be central to the sort of narrative of the game". You meet him at the end, with rumours before that (the Design Table call). Other appearances aren't designed; the mayor stays parked and his lines stay.
 19. What do crystals do? The owner's instinct: "certain crystals that you can mine that help build out pillars that sustain the railway across islands where there isn't a good foundation". Not designed; it fits [crystals-and-wonder.md](../research/crystals-and-wonder.md), direction B. After the previz (`.look/previz/crystal-pillars/`), the owner agrees with shot 4's pillars going down through the water and likes "the physicality of image 3" for constructing segments, but shot 4 may suggest "an absurd amount of crystals that we need to collect ... maybe it just grows down". Direction the owner likes ("I love your description ... that sounds like a good plan"): you mine one crystal and carry it out, the machine's crane sets it in an iron collar under the track, and it grows down towards the seabed in visible steps, each faceted section clicking on with a sound, a pulse of light and bubbles. Not built; comes with the first sea crossing. Pillar count should stay low enough not to be a grind, and the network can bring crystals for later ones.
 
 ## Next: find the fun (agreed direction, 1 November)

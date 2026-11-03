@@ -38,7 +38,7 @@ function firstLoad() {
 
 try {
   const perf = path.join(tmp, 'perf.json');
-  node(['dev/look/perf.ts', '--render', '--json', perf]);
+  node(['dev/look/perf.ts', '--render', '--query', 'classic=1', '--json', perf]);
   const { calls, shadowCalls, programs, ...measurement } = JSON.parse(fs.readFileSync(perf, 'utf8'));
   const result = {
     commit: process.env.GITHUB_SHA ?? null,

@@ -9,29 +9,29 @@ import { smoothstep } from '../../math.ts';
 export const ORIGIN = { x: 1000, z: 0 };
 export const toWorld = (x: number) => x + ORIGIN.x;
 
+// Round 4's numbers are hypotheses, set with dev/economy/model.ts (`node dev/economy/model.ts round4`) until played.
 export const TUNE = {
-  carry: 12, // pieces on your back
-  strokes: 3, // chops to fell a tree
-  logsPerStroke: 4,
+  carry: 8, // pieces on your back at first; the pack frame makes it PACK.carry
+  strokes: 5, // chops to fell a tree with the first axe
+  logsPerStroke: 2,
   swingS: 0.24, // s before the next chop can start
   contactS: 0.06, // s from the press to the axe meeting the bark
   flyS: 0.26, // s a log takes from the bark to your back
   unloadS: 0.09, // s between pieces leaving your back at a station
   feedS: 0.07, // s between pieces rolling from a frame into the machine
-  laySpeed: 5, // m/s the machine lays at
+  laySpeed: 5, // m/s the machine lays at, unless a station says otherwise
   runSpeed: 7, // m/s it runs over track that's already there, into the village
   turnS: 2.6, // s on the turntable
-  cruise: 12, // m/s, trains
+  cruise: 20, // m/s, trains (the crossing's accepted speed), and a rider goes express
   accel: 3.5, // m/s²
-  dwell: 5, // s at each end
-  stopIn: 14, // m from each end of a line to where the train stands
+  dwell: 5, // s at each stop
   deckCrates: 8, // what a train carries: its capacity, the number on the board
   pileEvery: 1.4, // s per crate a working camp makes
   pileMax: 14,
-  forgeCost: 12, // crates of timber the forge takes
-  forgePieces: 4, // pieces each crate adds
+  roofCrates: 8, // crates of timber the first train cranes onto the forge: trains finish what your hands started
   craneS: 1.5, // s the crane takes per crate
-  railEvery: 0.9, // s per rail the lit forge pours
+  railEvery: 0.5, // s per rail the lit forge pours
+  railEveryRoofed: 0.25, // and with its roof on
   rackMax: 24,
   rackStart: 12, // rails on the machine's own rack, for line 1
   crateLogs: 6, // logs a crate on the village heap gives
@@ -39,6 +39,18 @@ export const TUNE = {
   stepAt: [6, 16], // crates of a kind at the village for its first and second step-up
   reachStation: 3.6, // m from a frame's middle where your back unloads
 };
+/** The better axe: the first swing tells you. */
+export const AXE2 = { strokes: 3, logsPerStroke: 5 }; // 2.5 x the logs a stroke, half again the logs a tree: fewer retargets
+/** The pack frame: 16 crosses real trip thresholds (docs/research/rail-economy-model.md, "capacity has cliffs"). */
+export const PACK = { carry: 16 };
+/** Rocks with an orange band: strokes and stones a stroke, either axe. */
+export const ROCK_WORK = { strokes: 4, stonePerStroke: 2 };
+/** The great tree: one trunk, on your shoulder. It takes strokes, not a bigger axe. */
+export const GREAT = { strokes: 12 };
+/** The handcart that brings logs to a rack by the next frame, once the depot's open (./depot.ts). */
+export const CART = { speed: 9, load: 24, loadS: 3, rails: 16, forgeS: 8, leaveS: 3, hx: 0.75, hz: 1.35, top: 0.55 };
+/** Money, a comic score: what a piece delivered pays (./score.ts). */
+export const PAY = { logs: 15, rails: 40, stone: 25, beam: 1500, stretch: 500 };
 
 export type Pt = [x: number, z: number, y: number];
 export const SPIRE = { x: 8, z: -10, h: 105 };
@@ -51,6 +63,10 @@ export const GORGE = { river: 4.5, bank: 12.5, wall: 3, floor: 1.3, bed: -2.2 };
 export const LOBE = { west: 18, north: 30, east: 24 };
 
 export const VILLAGE = { x: -100, z: 14, y: 18, r: 42 };
+/** Far Head: a low headland past the quarry, over the sea, that a long trestle reaches. The second route ends here. */
+export const HEAD = { x: 392, z: -170, r: 78, y: 24 };
+/** The land's grid: wider now, for Far Head. */
+export const GRID = { x0: -260, x1: 520, z0: -280, z1: 260, cell: 2 };
 
 export type Foot = { pts: Pt[]; bridgeAt: number; bold: boolean };
 // `bridgeAt`: the path's segment from pts[bridgeAt] to pts[bridgeAt + 1] is a low footbridge, not ground. `bold`: the way
@@ -201,6 +217,21 @@ export const LINES = {
       [45, 38],
       [75, 38],
       [88, 36],
+      // On past the quarry: over the table, across the sea on a long trestle, up onto Far Head...
+      [118, 16],
+      [150, -8],
+      [182, -30],
+      [222, -62],
+      [262, -94],
+      [306, -128],
+      [346, -156],
+      [376, -176],
+      [392, -200],
+      // ...and the pier, north off the Head towards the shard across the sea.
+      [400, -232],
+      [404, -270],
+      [404, -320],
+      [402, -372],
     ],
     18.3,
     24.3,
@@ -209,13 +240,24 @@ export const LINES = {
 };
 
 // ---------------------------------------------------------------- the lines' stations
+export type Goods = 'logs' | 'rails' | 'stone' | 'beam';
+export const GOODS: Goods[] = ['logs', 'rails', 'stone', 'beam'];
+export type Stock = Record<Goods, number>;
+export const noStock = (): Stock => ({ logs: 0, rails: 0, stone: 0, beam: 0 });
 export type Station = {
+  id: string;
   s: number; // along the line: where the laid track ends when this station's turn comes
   to: number; // how far along the line this station's stretch lays
   side: number; // which side of the track its frame stands
   logs: number; // what it needs
   rails: number;
+  stone?: number;
+  beam?: number; // the great tree's trunk: one thing, on your shoulder
+  speed?: number; // m/s it lays at, when not TUNE.laySpeed
   label: string;
+  crate?: boolean; // the machine hands down a crate when it's laid (./gifts.ts)
+  rack?: 'cart' | 'train'; // a rack by the frame that something brings logs (and rails) to; you do the last carry
+  gate?: 'quarry' | 'sea'; // a slab stands across the line here: this frame takes nothing until it's down (./tech.ts)
 };
 export type LineSpec = {
   id: 'timber' | 'quarry';
@@ -224,11 +266,15 @@ export type LineSpec = {
   dir: 1 | -1; // which way along the line the machine lays
   camp: { x: number; z: number; y: number };
   stations: Station[];
+  stops: number[]; // where trains stand, in metres along the line
+  freeUpTo: number; // the last of `stations` that opens the line for trains; the rest lay on past the last stop
 };
 const N = LINES.north.len,
   E = LINES.east.len;
 /** Where the track is already down at each end of line 1; line 2 has a few metres off the turntable. */
 export const STUB = { camp: N - 30, village: 30, east: 7 };
+/** Line 2's landmarks in metres along it. */
+export const EAST = { quarry: 178, rim: 286, head: 546, headStop: 524 };
 export const LINKS: LineSpec[] = [
   {
     id: 'timber',
@@ -236,11 +282,14 @@ export const LINKS: LineSpec[] = [
     line: LINES.north,
     dir: -1,
     camp: { x: -13, z: -142, y: 30 },
+    // Three on the ridge, and the last is the big one: its stretch is the trestle and the run home, and it opens the path.
     stations: [
-      { s: STUB.camp, to: 116, side: 1, logs: 24, rails: 0, label: 'Station 1' },
-      { s: 116, to: 62, side: 1, logs: 24, rails: 0, label: 'Station 2' },
-      { s: 62, to: STUB.village, side: 1, logs: 24, rails: 0, label: 'Station 3' },
+      { id: 'T1', s: STUB.camp, to: 150, side: 1, logs: 24, rails: 0, label: 'Station 1', crate: true },
+      { id: 'T2', s: 150, to: 116, side: 1, logs: 32, rails: 0, stone: 8, label: 'Station 2', crate: true },
+      { id: 'T3', s: 116, to: STUB.village, side: 1, logs: 40, rails: 0, beam: 1, label: 'Station 3' },
     ],
+    stops: [14, N - 14],
+    freeUpTo: 2,
   },
   {
     id: 'quarry',
@@ -249,18 +298,102 @@ export const LINKS: LineSpec[] = [
     dir: 1,
     camp: { x: 98, z: 52, y: 24 },
     stations: [
-      { s: STUB.east, to: 42, side: -1, logs: 8, rails: 4, label: 'Line 2, station 1' },
-      { s: 42, to: 122, side: -1, logs: 8, rails: 8, label: 'Line 2, station 2' },
-      { s: 122, to: E - 1, side: -1, logs: 4, rails: 8, label: 'Line 2, station 3' },
+      { id: 'Q1', s: STUB.east, to: 42, side: -1, logs: 16, rails: 6, label: 'Line 2, station 1' },
+      {
+        id: 'Q2',
+        s: 42,
+        to: 122,
+        side: -1,
+        logs: 24,
+        rails: 12,
+        speed: 6,
+        label: 'Line 2, station 2',
+        rack: 'cart',
+        crate: true,
+      },
+      {
+        id: 'Q3',
+        s: 122,
+        to: EAST.quarry,
+        side: -1,
+        logs: 16,
+        rails: 12,
+        speed: 6,
+        label: 'Line 2, station 3',
+        rack: 'cart',
+        crate: true,
+      },
+      {
+        id: 'Q4',
+        s: EAST.quarry,
+        to: EAST.rim,
+        side: -1,
+        logs: 16,
+        rails: 16,
+        speed: 8,
+        label: 'Line 2, station 4',
+        rack: 'cart',
+        crate: true,
+        gate: 'quarry',
+      },
+      {
+        id: 'Q5',
+        s: EAST.rim,
+        to: EAST.head,
+        side: -1,
+        logs: 24,
+        rails: 24,
+        speed: 9,
+        label: 'Line 2, station 5',
+        rack: 'cart',
+        crate: true,
+        gate: 'sea',
+      },
+      {
+        id: 'Q6',
+        s: EAST.head,
+        to: E - 1,
+        side: -1,
+        logs: 32,
+        rails: 32,
+        speed: 9,
+        label: 'The pier',
+        rack: 'train',
+        crate: true,
+      },
     ],
+    stops: [17, EAST.quarry - 4, EAST.headStop],
+    freeUpTo: 4,
   },
 ];
 
-/** The trees you can chop: a grove by station 1, and one by the rim for stations 2 and 3. */
-export const GROVES = [
-  { x: 8, z: -120, n: 7, r: 9 },
-  { x: -13, z: -100, n: 9, r: 8 },
+/** The forge's own frame, by its north wall: logs land in it and its pieces drop. By hand first; trains finish the roof. */
+export const FORGE_FRAME = { x: -88, z: -12, yaw: 0 };
+export const FORGE_BILLS: Station[] = [
+  { id: 'F1', s: 0, to: 0, side: 1, logs: 24, rails: 0, label: 'The forge' },
+  { id: 'F2', s: 0, to: 0, side: 1, logs: 32, rails: 0, label: 'The forge' },
 ];
+
+/** The trees you can chop. The near ones run out, and you walk further. */
+export const GROVES = [
+  { x: 2, z: -128, n: 5, r: 7 }, // by station 1
+  { x: -42, z: -146, n: 7, r: 7 }, // by station 2
+  { x: -52, z: -178, n: 8, r: 9 }, // up the ridge
+  { x: 12, z: -176, n: 7, r: 9 }, // behind the camp
+];
+/** One old tree by the forge, for trying the new axe on the spot. */
+export const OAK = { x: -74, z: -12 };
+/** The great tree, on the ridge, in sight of station 3. Its trunk is station 3's main beam. */
+export const GREAT_TREE = { x: 4, z: -86 };
+/** Banded rocks, near station 2. */
+export const ROCKS = [
+  { x: 1, z: -106, r: 1.7 },
+  { x: 8, z: -101, r: 1.5 },
+  { x: 7, z: -110, r: 1.6 },
+];
+/** The telescope on the ridge that points across the sea. The buoys lead out from the Head. */
+export const SCOPE = { x: -30, z: -205 };
+export const BUOYS = { n: 12, gap: 62 };
 
 // ---------------------------------------------------------------- the village's working yard, by the end of line 1
 // The platform is on the forge's side of the track, and the forge stands just past where the train stops, so what your
@@ -307,13 +440,7 @@ export const TOWN: {
   stone: Plot[][];
   camps: { asleep: Plot[]; awake: Plot[] }[];
 } = {
-  start: [
-    cottage(-108, -4, 0.5, true),
-    cottage(-113, 11, 1.4),
-    cottage(-110, 26, 2.2, true),
-    cottage(-123, 19, 1.6),
-    cottage(-122, -3, 0.9),
-  ],
+  start: [cottage(-108, -4, 0.5, true), cottage(-123, 19, 1.6), cottage(-135, 24, 1.1, true), cottage(-139, 5, 1.5)],
   wood: [
     [
       { type: 'hall', x: -88, z: 31, w: 11, d: 8, yaw: 2.73, smoke: true },
@@ -365,6 +492,14 @@ export const TOWN: {
       ],
     },
   ],
+};
+/** The buildings you can walk into (./rooms.ts). Their doors are local +z, so `yaw` turns each door to face the street. Sizes
+ * are the outside; docs/research/town-interiors.md, "How little room is enough?". */
+export type RoomId = 'house' | 'shop' | 'museum';
+export const ROOM_PLOTS: Record<RoomId, { x: number; z: number; yaw: number; w: number; d: number; high: number }> = {
+  house: { x: -114, z: 11, yaw: 1.42, w: 7.4, d: 7.4, high: 3.7 },
+  shop: { x: -116, z: 31, yaw: 2.05, w: 10, d: 8, high: 3.9 },
+  museum: { x: -125, z: -8, yaw: 0.97, w: 13, d: 12, high: 5 },
 };
 /** What stands across the sea: too far to reach, north-east of the ridge. */
 export const FAR = { x: 330, z: -1120 };

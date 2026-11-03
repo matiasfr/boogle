@@ -7,6 +7,11 @@ import { stripTypeScriptTypes } from 'node:module';
 import type { Browser } from 'playwright';
 import { startStack, launch, Game, VIEWS, reportGfxErrors } from './lib.ts';
 import type { Stack } from './lib.ts';
+import { findSave, listSaves, POSE_AT, SEED } from './saves.ts';
+import { plotCurves, readCsv, readings, START_CURVES, STOP_CURVES, writeCsv } from './curves.ts';
+import type { CurveData } from './curves.ts';
+import { TARGETS } from './targets.ts';
+import { coopWarpOptions, startCoopWarp } from './coop-warp.ts';
 
 const opt: {
   view: string;
@@ -21,13 +26,26 @@ const opt: {
   out: string;
   warm: number;
   frames: number;
+  filmstrip: number;
+  every: number;
   seconds: number;
   region: number[] | null;
   size: number[];
   fov: number | null;
   name: string | null;
   room?: string;
+  query: string | undefined;
   hud: boolean;
+  warp: boolean;
+  until: string | null;
+  at: string | null;
+  saves?: string;
+  root?: string;
+  curves: boolean;
+  curvesVs: string | null;
+  target: string | null;
+  players: number;
+  clockUrl?: string;
 } = {
   view: 'hill',
   cam: null,
@@ -41,12 +59,22 @@ const opt: {
   out: '.look',
   warm: 10,
   frames: 8,
+  filmstrip: 0,
+  every: 1,
   seconds: 2,
   region: null,
   size: [960, 600],
   fov: null,
   name: null,
   hud: false,
+  warp: true,
+  until: null,
+  at: null,
+  query: undefined,
+  curves: false,
+  curvesVs: null,
+  target: null,
+  players: 1,
 };
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
@@ -70,6 +98,8 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--heatmap') opt.heatmap = true;
   else if (a === '--out') opt.out = v();
   else if (a === '--warm') opt.warm = parseFloat(v());
+  else if (a === '--filmstrip') opt.filmstrip = Number(v());
+  else if (a === '--every') opt.every = Number(v());
   else if (a === '--frames') opt.frames = parseInt(v(), 10);
   else if (a === '--seconds') opt.seconds = parseFloat(v());
   else if (a === '--region')
@@ -79,19 +109,73 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--name') opt.name = v();
   else if (a === '--room')
     opt.room = v(); // e.g. proto-wagon: a playtest room, where tune and shortcut ops are allowed
+  else if (a === '--query')
+    opt.query = v(); // URL params for the page, like BOOGLE_QUERY; a Codex rule can't see past an environment variable
   else if (a === '--hud')
     opt.hud = true; // keep the HUD in the picture
+  else if (a === '--warp')
+    opt.warp = true; // the default: --warm and an eval's waits pass in game time, far faster than real (./warp.ts). Captures run at real speed
+  else if (a === '--real')
+    opt.warp = false; // the warm-up in real time too: for what warps can't show, like how long something takes to load
+  else if (a === '--until')
+    opt.until = v(); // warm up until this page expression is true (--warm is then only the limit)
+  else if (a === '--saves')
+    opt.saves = v(); // explicit checkpoint directory, including another worktree's bot run
+  else if (a === '--at')
+    opt.at = v(); // start at a beat of the last `npm run playthrough`, in its real state: a save, not a skip
+  else if (a === '--players')
+    opt.players = Number(v()); // 2: a second player in the same room, each in its own browser profile, so neither takes over
+  else if (a === '--warp-speed')
+    v(); // validated by coopWarpOptions below
+  else if (a === '--clock-url')
+    opt.clockUrl = v(); // local server owned by dev/codex/see.ts
+  else if (a === '--curves')
+    opt.curves = true; // every frame's speed, height, camera distance: a CSV, a plot and readings (./curves.ts)
+  else if (a === '--curves-vs') {
+    opt.curves = true;
+    opt.curvesVs = v(); // an earlier run's CSV, drawn underneath
+  } else if (a === '--target') {
+    opt.curves = true;
+    opt.target = v(); // a reference to draw and score against (./targets.ts)
+  } else if (a === '--root')
+    opt.root = v(); // serve another checkout's build
   else if (a === '--help' || a === '-h') {
     console.log(`npm run look -- [--view ${Object.keys(VIEWS).join('|')}] [--cam x,y,z --look x,y,z] [--fov deg]
   [--question "what should be visible?"] [--eval setup.ts] [--action action.ts] [--video]
+  [--filmstrip N] [--every K]              capture N drawn frames, K game frames apart (warp only)
   [--warm 10] [--frames 8] [--seconds 2] [--heatmap --region x,y,w,h (fractions)] [--size 960x600]
-  [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]`);
+  [--query 'proto=place&shot=play'] [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
+  [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
+  [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
+  [--saves <directory>]                     use checkpoints from this playthrough instead of latest
+  [--root <checkout>]                       serve another checkout's build
+  [--players 2]                             two players, one room: the eval runs on both, &player=1 and &player=2
+  [--warp-speed 5]                          cap both pages and accelerate the local server; --real opts out
+  [--curves] [--curves-vs old.csv] [--target glide]   speed, height, camera, frame time per frame: CSV, plot, readings`);
     process.exit(0);
   } else {
     console.error('unknown option ' + a);
     process.exit(2);
   }
 }
+if (argv.includes('--filmstrip') && (!opt.warp || opt.url || argv.includes('--players'))) {
+  console.error('--filmstrip needs warp and cannot be used with --real, --url or --players');
+  process.exit(2);
+}
+if (
+  (argv.includes('--filmstrip') && (!Number.isSafeInteger(opt.filmstrip) || opt.filmstrip < 1)) ||
+  !Number.isSafeInteger(opt.every) ||
+  opt.every < 1 ||
+  (argv.includes('--every') && !opt.filmstrip)
+) {
+  console.error('--filmstrip and --every require positive integers; --every requires --filmstrip');
+  process.exit(2);
+}
+const coopOptions = coopWarpOptions(argv);
+// Only a locally controlled server can share the pages' warp. External sites retain real time.
+if (opt.url && !opt.clockUrl) opt.warp = false;
+if (opt.clockUrl && (opt.players !== 2 || !opt.warp)) throw new Error('--clock-url requires two-player warp');
+if (opt.players !== 1 && opt.players !== 2) throw new Error('--players must be 1 or 2');
 const region = opt.region;
 if (
   !Number.isInteger(opt.frames) ||
@@ -120,7 +204,15 @@ const pose = opt.cam ? { cam: opt.cam, look: opt.look || [0, 0, 0] } : VIEWS[opt
 if (!pose) throw new Error('unknown view ' + opt.view);
 const label = opt.name || (opt.cam ? 'custom' : opt.view);
 
+if (opt.at === 'list') {
+  for (const b of listSaves(opt.saves)) console.log(b);
+  process.exit(0);
+}
+const save = opt.at ? findSave(opt.at, opt.saves) : null;
+if (save) console.log(`at: "${save.beat}", ${Math.round(save.t)} s into the run ${save.run}`);
+
 let stack: Stack | undefined, browser: Browser | undefined;
+let coopWarp: Awaited<ReturnType<typeof startCoopWarp>> | undefined;
 async function pageScript(g: Game, file: string) {
   let body = fs.readFileSync(path.resolve(file), 'utf8');
   // TS evals are modules (top-level await); remove the module marker after stripping types for page evaluation.
@@ -129,23 +221,120 @@ async function pageScript(g: Game, file: string) {
   if (out !== undefined) console.log('eval result:', JSON.stringify(out));
 }
 try {
-  stack = await startStack({ url: opt.url });
+  stack = await startStack({ url: opt.url, root: opt.root, warp: opt.warp && opt.players === 2 });
   browser = await launch();
-  const g = await Game.open(browser, stack, { out: opt.out, size: opt.size, hud: opt.hud, room: opt.room });
+  const g = await Game.open(browser, stack, {
+    out: opt.out,
+    size: opt.size,
+    hud: opt.hud,
+    room: opt.players > 1 ? (opt.room ?? 'look-two') : (save?.room ?? opt.room),
+    query:
+      [opt.query, save?.pageQuery, opt.players > 1 ? 'player=1' : ''].filter(Boolean).join('&') ||
+      (opt.query === '' ? '' : undefined),
+    init: [
+      "localStorage.getItem('boogle.color') || localStorage.setItem('boogle.color', '1');", // comparable pictures
+      save ? SEED(save) : '',
+    ].join('\n'),
+    warp: opt.warp,
+  });
+  // What an eval says as it goes (PLAY ..., RIDE ...): here as it happens, so a long run can be read without its still.
+  g.page.on('console', (m) => /^[A-Z]{3,} /.test(m.text()) && console.log(m.text()));
   console.log(
     `question: ${opt.question}\nview: ${JSON.stringify(pose)}\naction: ${opt.action ?? 'none (observe only)'}`,
   );
-  if (opt.eval) await pageScript(g, opt.eval);
-  await g.view(pose, opt.fov ?? undefined);
-  console.log(`warming up ${opt.warm}s ...`);
-  await new Promise((r) => setTimeout(r, opt.warm * 1000));
+  if (save) await g.eval(POSE_AT(save));
+  // Its own browser profile, as a friend's machine would be: one profile is one player, and a second tab of it takes over.
+  const g2 =
+    opt.players > 1
+      ? await Game.open(browser, stack, {
+          out: opt.out,
+          size: opt.size,
+          hud: opt.hud,
+          name: 'Second',
+          room: opt.room ?? 'look-two',
+          query: [opt.query, 'player=2'].filter(Boolean).join('&'),
+          prefix: 'p2-',
+          warp: opt.warp,
+        })
+      : null;
+  g2?.page.on('console', (m) => /^[A-Z]{3,} /.test(m.text()) && console.log(`[2] ${m.text()}`));
+  if (g2) {
+    coopWarp = await startCoopWarp(
+      [g, g2],
+      opt.warp ? (opt.clockUrl ?? stack.clockUrl) : undefined,
+      opt.warp ? coopOptions.speed : 1,
+      path.join(g.out, `${label}-warp.json`),
+    );
+  }
+  // Warped, the setup's own waits take no time.
+  const warpNow = (n: number) => g.page.evaluate((s) => window.__warp?.go(s ?? Infinity), n);
+  if (opt.eval) {
+    if (opt.warp && !g2) await warpNow(Infinity);
+    await Promise.all([pageScript(g, opt.eval), ...(g2 ? [pageScript(g2, opt.eval)] : [])]);
+    if (opt.warp && !g2) await warpNow(1);
+  }
+  // At a beat or with two players, the follow camera shows the player unless a camera was asked for.
+  if ((!save && opt.players < 2) || opt.cam) await g.view(pose, opt.fov ?? undefined);
+  if (g2 && opt.cam) await g2.view(pose, opt.fov ?? undefined);
+  const limit = opt.until && !argv.includes('--warm') ? 3600 : save && !argv.includes('--warm') ? 2 : opt.warm;
+  console.log(
+    `warming up ${opt.warp ? 'warped, ' : ''}${limit}s of game time${opt.until ? ` or until ${opt.until}` : ''} ...`,
+  );
+  if (coopWarp) {
+    await coopWarp.warm(limit, opt.until);
+    const running = coopWarp;
+    coopWarp = undefined;
+    await running.stop();
+  } else if (opt.warp) {
+    const w = await g.warp({ seconds: limit, until: opt.until ?? undefined });
+    console.log(`warped: ${w.game.toFixed(0)} s of game in ${w.wall.toFixed(0)} s (${(w.game / w.wall).toFixed(0)}x)`);
+    if (opt.until && !w.done) console.log(`NOT REACHED: ${opt.until}`);
+  } else {
+    const t0 = Date.now();
+    while (Date.now() - t0 < limit * 1000 && !g.errors.length) {
+      await new Promise((r) => setTimeout(r, 200));
+      if (opt.until && (await g.page.evaluate(`!!(${opt.until})`))) break;
+    }
+  }
+  if (g.errors.length) throw new Error(`Stopped during warm-up:\n${g.healthErrors().join('\n')}`);
   const video = opt.video ? path.join(g.out, `${label}-realtime.webm`) : null;
   if (video)
     await g.page.screencast.start({ path: video, size: { width: opt.size[0]!, height: opt.size[1]! }, fps: 30 });
   try {
+    if (opt.filmstrip) await warpNow(0);
+    if (opt.curves) await g.eval(START_CURVES);
+    if (opt.filmstrip && opt.curves) await g.eval('window.__curves.rows.length = 0;');
     if (opt.action) await pageScript(g, opt.action);
-    const m = await g.motion(label, { frames: opt.frames, seconds: opt.seconds, region, heatmap: opt.heatmap });
-    console.log(`still:   ${await g.still(label)}\nmotion:  ${m.sheet}`);
+    const m = await g.motion(label, {
+      frames: opt.filmstrip || opt.frames,
+      seconds: opt.seconds,
+      region,
+      heatmap: opt.heatmap,
+      every: opt.filmstrip ? opt.every : 0,
+    });
+    if (opt.curves) {
+      const target = opt.target ? TARGETS[opt.target] : null;
+      if (opt.target && !target) throw new Error(`no target ${opt.target}: ${Object.keys(TARGETS).join(', ')}`);
+      const data = (await g.eval(STOP_CURVES)) as CurveData;
+      const vs = opt.curvesVs ? readCsv(opt.curvesVs) : null;
+      const csv = path.join(g.out, `${label}-curves.csv`);
+      const png = path.join(g.out, `${label}-curves.png`);
+      writeCsv(csv, data.rows);
+      await plotCurves(g, png, { ...data, vs, target: target ?? null, label: opt.question });
+      console.log(`curves:  ${png}\ncsv:     ${csv}`);
+      for (const line of readings(data.rows, target)) console.log('  ' + line);
+    }
+    if (opt.filmstrip) await warpNow(1);
+    console.log(`still:   ${await g.still(label)}\n${opt.filmstrip ? 'filmstrip' : 'motion'}:  ${m.sheet}`);
+    if (g2) {
+      console.log(`still 2: ${await g2.still(label)}`);
+      const two = await g.eval(`return { first: window.boogle.remotes.size }`);
+      const other = await g2.eval(`return { second: window.boogle.remotes.size }`);
+      console.log(`players seen: ${JSON.stringify({ ...two, ...other })}`);
+      if (two.first < 1 || other.second < 1) throw new Error('The two players never saw each other');
+      const more = g2.healthErrors();
+      if (more.length) throw new Error(more.join('\n'));
+    }
     if (m.heat) console.log(`heatmap: ${m.heat}`);
     if (region)
       console.log(
@@ -153,7 +342,7 @@ try {
       );
     const fps = await g.fps();
     console.log(`completed game frames/s: ${fps.toFixed(1)} (1s sample; not a GPU benchmark)`);
-    reportGfxErrors([g]);
+    reportGfxErrors(g2 ? [g, g2] : [g]);
     const errors = g.healthErrors();
     if (fps <= 0) errors.push('No completed game frames during the sample');
     if (errors.length) throw new Error(errors.join('\n'));
@@ -170,6 +359,7 @@ try {
   console.error(e);
   process.exitCode = 1;
 } finally {
+  await coopWarp?.stop().catch((e) => console.error('warp cleanup:', e));
   await browser?.close().catch(() => {});
   await stack?.close();
   process.exit(process.exitCode || 0);

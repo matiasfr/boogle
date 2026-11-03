@@ -12,6 +12,7 @@ import { modalOpen } from '../player/modal.ts';
 import { dialogue } from '../boogler/dialogue.ts';
 import { renderGuide } from '../player/guide.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
+import { protoOn } from '../proto/flags.ts';
 
 const MOVE_S = 3; // seconds of walking that teach enough
 const MAX_S = 15;
@@ -19,7 +20,7 @@ const GROUPS = ['move', 'camera', 'ball', 'hands'];
 const WALK = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'];
 
 type Kind = ReturnType<typeof inputKind>;
-const flag = (kind: Kind) => `boogle.firstRun.${kind}`;
+const flag = (kind: Kind) => `boogle.firstRun.${protoOn('place') ? 'place.' : ''}${kind}`;
 const seen = (kind: Kind) => {
   try {
     return localStorage.getItem(flag(kind)) !== null;

@@ -5,7 +5,9 @@ The atlas (boogle.club/atlas, code in `atlas/`) shows how Boogle fits together. 
 - **Facts** (files, imports, presence keys, ops, messages, actions, frame hooks, routes) are read from the code on every
   build by `dev/atlas/extract.ts`. Nothing here is committed; `npm run atlas` writes them to `.look/atlas/facts.json`.
 - **Narrative** is this folder: the explanations people read. A daily agent (`dev/atlas/agent-prompt.md`) keeps it
-  current, and people and agents may edit it any time. A stale explanation is a chore, never a red build.
+  current using Codex on the owner's Mac (`npm run daily -- atlas`), and people and agents may edit it any time.
+  A stale explanation is a chore, never a red build. [Daily setup and recovery](../../dev/daily/README.md) covers
+  launchd, credentials and dry runs. CI only reports stale citations; it no longer runs a model after merges.
 
 | File | What it is |
 |---|---|

@@ -29,10 +29,6 @@ Toys, mini-games and any farming are invitations, never gates.
 Helping should happen just by playing near each other: anyone's work on the line helps everyone. Nobody should need to coordinate in chat to contribute.
 - *Prefer:* bonuses for *different* people helping over bonuses for one person grinding.
 
-### 5. Nothing is the antagonist
-Players can't destroy what other players made, and nothing threatens your progress: no hazards, and nothing decays.
-- *Avoid:* PvP destruction, stealing, griefable shared resources.
-
 ### 6. Communal world, personal rewards
 The world and its network belong to everyone. Anything you *earn* (cosmetics, hats) is yours alone. No shared wallets, so nobody spends what someone else earned.
 
@@ -47,6 +43,9 @@ Progress persists between sessions, and the world can keep changing while everyo
 
 ### 10. Slapstick over precision
 Loose physics, splashes and tumbling toys are features. Prefer mechanics that produce funny moments between players over ones that reward precise execution.
+
+### 11. Show, don't tell
+The world and how its things relate should explain what's happening. The train moving says the logs went in; no note needs to. Use helper text sparingly: reaching for it usually means the world is unclear, so fix the world first. What's on screen is true, including what you're holding.
 
 ## Technical principles
 

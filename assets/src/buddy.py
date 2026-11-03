@@ -2,7 +2,7 @@
 # shapes are blended into a single watertight mesh by a voxel remesh, reduced, and bound to the skeleton with automatic
 # weights, softened, so joints bend without seams; the head and mitts stay rigid so they keep their shape. The face is
 # one more mesh in vertex colours, moulded to the head, on the Head bone and two eye bones (scaling one blinks). No mouth
-# or hair. Hats are `wear_head_<name>` parts on the Head bone, hidden until worn, a material of their own to tint.
+# hair, ears or cheeks. Hats are `wear_head_<name>` parts on the Head bone, hidden until worn, a material of their own to tint.
 # Bones are named as in Quaternius's Universal Animation Library, in a T-pose, with shorter limbs; retargetClip plays the
 # clips on it. Knobs are the numbers below. Blender Z up, the figure faces -Y (glTF +Z), left is +X.
 import sys
@@ -38,7 +38,7 @@ BODY = material('M_Main', '1fbfc4', 0.62)
 FACE = material('M_Face', 'ffffff', 0.3)  # vertex colours
 HAT = material('M_Hat', '7a2433', 0.7)  # vertex colours multiply this, so a hat can be tinted
 TRIM = material('M_Trim', 'ffffff', 0.35)  # vertex colours; never tinted (a hat's brass and its peak)
-INK, SHINE, BLUSH = linear('0d1a30'), linear('ffffff'), linear('ffa5b5')
+INK, SHINE = linear('0d1a30'), linear('ffffff')
 
 # ---------------------------------------------------------------- the skeleton
 J = {
@@ -110,11 +110,10 @@ bm = bmesh.new()
 ball(bm, (0, 0, 0.76), (0.255, 0.21, 0.17))
 ball(bm, (0, -0.012, 0.87), (0.265, 0.225, 0.2))
 ball(bm, (0, 0, 1.0), (0.2, 0.165, 0.11))
-# Neck and head; small round ears.
+# Neck and head.
 limb(bm, (0, 0, 1.05), (0, 0, 1.16), 0.1, 0.105, 4)
 ball(bm, HEAD_C, HEAD_R, 40)
 for sx in (1, -1):
-    ball(bm, (sx * 0.285, 0.005, 1.35), (0.04, 0.035, 0.05), 16)
     # Arms: a soft shoulder, thin at the elbow, a round mitt and thumb.
     limb(bm, (sx * 0.17, 0, 1.03), (sx * 0.41, 0, 1.03), 0.092, 0.08)
     limb(bm, (sx * 0.41, 0, 1.03), (sx * 0.6, 0, 1.03), 0.08, 0.075)
@@ -314,7 +313,6 @@ for sx, side in ((1, 'l'), (-1, 'r')):
     bone = 'eye_' + side
     decal(face, sx * 0.115, EYE_Z, 0.054, 0.082, 0.014, -0.006, INK, bone, 8)
     decal(face, sx * 0.115 + sx * 0.012, EYE_Z + 0.036, 0.016, 0.021, 0.0195, 0.012, SHINE, bone, 3, 14)
-    decal(face, sx * 0.19, HEAD_C.z - 0.078, 0.05, 0.033, 0.007, -0.007, BLUSH, 'Head', 4, 20)
 face_ob = face.mesh('buddy_face', FACE)
 for name in ('Head', 'eye_l', 'eye_r'):
     g = face_ob.vertex_groups.new(name=name)

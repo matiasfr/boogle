@@ -13,20 +13,22 @@ different systems don't touch the same file. A new system adds its file and one 
 
 ## 1. Overview
 
-Boogle is a drop-in browser island for up to 8 friends. On your first visit you pick a name and a colour, press "Jump in", and land next to a
+Boogle is a drop-in browser game for up to 8 friends. The default URL now opens [round 4 in Threefold Reach](game-design/place.md), with the clean tester view and co-op enabled in `proto-place-coop`: chop and carry, open a walking path, earn better tools and abilities, and unlock trains. Explicit prototype and room links still work. The entry switch leaves the prototype code in place; its retirement and the architecture pass follow later.
+
+The old island remains at `?classic=1`. On your first visit you pick a name and a colour, press "Jump in", and land next to a
 sand volleyball court, among the island's toys: a shared beach ball, a frisbee, things to throw, mushrooms to bounce on
-and The Boogler. Returning players go straight in with their saved identity. In the base game you can throw and chase the ball;
+and The Boogler. Returning players go straight in with their saved identity. On the classic island you can throw and chase the ball;
 throw things at each other; take a bag of seeds from the stand and bounce on the mushrooms it sprouts; befriend The Boogler, a purple
 blob NPC from Samarqand who wanders the island, talks in chapters, takes presents and launches you if you ride him;
 honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves; take logs from bundles at the palms and
 carry them on your back to work sites that lay a short railway (the 0.1 testbed, placeholder visuals).
 Wagon rides (`?proto=wagon`), rail-fed town growth (`?proto=net`) and long crossings
-(`?proto=crossing`) are flagged prototypes, not the base game's progression loop.
+(`?proto=crossing`) remain flagged prototypes.
 
 It runs on desktop (keyboard and mouse, pointer lock), touch screens (virtual stick and buttons) and a Backbone-style
 gamepad (W3C standard mapping, aimed at iPhone and iPad). Our server hosts every room over WebSocket, runs its
 lockstep world and saves its snapshots (section 8). Live at
-**https://boogle.club/** (`?room=<name>` picks an island, default `beach`).
+**https://boogle.club/** (`?room=<name>` picks a room; default `proto-place-coop`, or `beach` with `?classic=1`).
 
 ## 2. Pillars
 
@@ -38,7 +40,6 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 | 2 | Physics toys are optional fun | The beach ball, frisbee and mushroom bounces are optional. |
 | 3 | Side activities are never required | Mushrooms are optional; nothing is gated on them. |
 | 4 | Cooperation is automatic, not negotiated | Anyone can stock the same work site; nearby honks harmonize. |
-| 5 | Nothing is the antagonist | No PvP state damage. |
 | 6 | Communal world, personal rewards | Work sites are shared; what you hold and Boogler friendship are per player. |
 | 7 | Telegraph everything | Interact prompts, ping markers and work-site rings show what can be done and what is being built. |
 | 8 | Designed for drop-in, drop-out | Solo play and joining an existing room need no group start; returning players skip the identity card. |
@@ -83,8 +84,10 @@ tick of 100 ms (10 per second).
 - [6.24 Identity: name and colour](game-design/identity.md)
 - [6.25 HUD feedback: sounds, motion, notices](game-design/hud.md)
 - [6.26 Prototype: the long crossing (`?proto=crossing`)](game-design/crossing.md)
+- [6.26b Prototype: Ultra Water in our renderer (`?proto=water`)](game-design/water-proto.md)
 - [6.27 Prototype: the line feeds the town (`?proto=net`)](game-design/net.md)
 - [6.28 Prototype: a real place (`?proto=place`)](game-design/place.md)
+- [6.29 Prototype: procedural sky (`?proto=sky`)](game-design/sky-proto.md)
 ## 7. Content inventory
 
 - [7.1 Items (gift catalog)](game-design/items.md)

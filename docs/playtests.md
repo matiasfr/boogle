@@ -153,6 +153,14 @@ One short entry per session: date, who (first names), what was new, what was fun
 - Unclear: the answer on continuing reads "I didn't want to keep going", then "I was interested in continuing"; taken as wanting to continue, to confirm.
 - After: boogle-2.md (Decided, 2 November).
 
+## 2026-11-02 (round 3, two players, `?proto=place&coop=1&fresh=1`)
+- Who: Matias and Grant; one survey for both. More notes to come.
+- First two minutes: knew what to do right away. Carrying: a bit of both, building and chore. Crates and little guys: "nice, but I would have carried on anyway". Together: about the same as alone; one of them did most of it. Riding: nice. Look and sound: rough but promising. Would come back "once there is more to it".
+- Best: "the sounds and watching things get built. seeing a path between two areas open up which was previously tedious was satisfying."
+- Felt off: after the first couple of deliveries "i was kinda ready for the complexity to increase, or for there to be some additional friction"; cutting one tree and collecting boxes each time "didnt feel meaningfully different".
+- Felt off: trains came too soon. "everything kind of ramped up too quickly, and suddenly the small amount of frction i was feeling was resolved"; "i would have liked just having a path to an area"; "being able to walk across the shortcut was already a big help. Too soon." Wished for "some control over the train schedule".
+- Broke: the guiding UI at the bottom is always on and obscures the game. The hat floats above the head. You can walk through some stacks. Little guys float in front of the deposit site. The pet frantically keeps up beside the train, clipping through it.
+
 Raw brainstorm from the same session, typed while Matias and Grant talked. Not decisions; the owner says not to over-index on them, and to organise and ask more first:
 
 - Minigames: progression; helpful; wonder. Each area should have cosmetics to get (Grant). The hat is motivating. Prizes appear in the hub if you missed them.

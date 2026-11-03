@@ -20,7 +20,18 @@ import { VERDICTS, cardFor, countsLine, read, urlParam, vName, writeV, type Verd
 import { allEntries, copy } from '../../../protos/entry.ts';
 import { protoCount, flushCounts, onCounts, readoutLine, countFor } from '../count.ts';
 import { startSitting } from '../trace/record.ts';
-import { ON_ISLAND, PLAY, PROTO, playState, protoV, savePlay, setChooser, setStep, switchLive } from '../flags.ts';
+import {
+  ON_ISLAND,
+  PLAY,
+  PROTO,
+  pageQuery,
+  playState,
+  protoV,
+  savePlay,
+  setChooser,
+  setStep,
+  switchLive,
+} from '../flags.ts';
 import { padBar } from './pad.ts';
 import { isSent, sendVerdict } from './send.ts';
 
@@ -83,7 +94,7 @@ let at = ON_ISLAND
       steps.findIndex((s) => s.card.id === playState().step),
     )
   : steps.findIndex((s) => s.card.id === PROTO);
-let card: Proto | undefined = ON_ISLAND ? steps[at]?.card : cardFor(location.search);
+let card: Proto | undefined = ON_ISLAND ? steps[at]?.card : cardFor(pageQuery().toString());
 const playing = (p: Proto) => protoV(p.id);
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = '') => {

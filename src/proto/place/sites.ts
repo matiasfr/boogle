@@ -9,12 +9,12 @@ import { PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/player.ts';
 import { removeBody, teleport, type Body } from '../../physics/engine.ts';
 import { box, place, type Box } from '../net/boxes.ts';
-import { H, addStatic } from './land.ts';
+import { H, ROOM_GROUP, addStatic } from './land.ts';
 import { boardMaterial } from './look.ts';
 import { dropSet, dustRing, type DropSet } from './pieces.ts';
 
 // ---------------------------------------------------------------- the plan of a building
-export type Hull = { dx: number; dy: number; dz: number; hx: number; hy: number; hz: number };
+export type Hull = { dx: number; dy: number; dz: number; hx: number; hy: number; hz: number; room?: boolean };
 export type Plan = {
   x: number;
   y: number;
@@ -26,6 +26,9 @@ export type Plan = {
   WALLS: number;
   ROOFED: number;
   hulls: Hull[];
+  /** What you're moved out of if it goes up around you, when that isn't `hulls[0]` (a hollow building's whole footprint). */
+  keepOut?: Hull;
+  poles: Hull[]; // the scaffold's corner poles and walkway: solid while they stand
   hw: number;
   hd: number;
   smoke: { x: number; y: number; z: number } | null;
@@ -65,6 +68,15 @@ function poles(part: Parter, w: number, d: number, top: number, every: number) {
   out.push(part(0, every + 0.14, (d + 1.4) / 2, w + 1.4, 0.08, 0.7, PLANK));
   return out;
 }
+/** The solid part of `poles`. */
+function poleHulls(w: number, d: number, top: number, every: number): Hull[] {
+  const out: Hull[] = [];
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1])
+      out.push({ dx: (sx * (w + 1.4)) / 2, dy: top / 2, dz: (sz * (d + 1.4)) / 2, hx: 0.13, hy: top / 2, hz: 0.13 });
+  out.push({ dx: 0, dy: every + 0.18, dz: (d + 1.4) / 2, hx: (w + 1.4) / 2, hy: 0.06, hz: 0.35 });
+  return out;
+}
 export type HouseSpec = {
   x: number;
   z: number;
@@ -84,11 +96,14 @@ export type HouseSpec = {
   chimney?: { dx: number; dz: number; n: number; a: string; b: string };
   rowH?: number;
   poleTop?: number;
+  /** How high its slab stands; a building you walk into has a low one. */
+  floor?: number;
 };
 const FLOOR = 0.5;
 /** The forge's build, for any house: a frame, walls by rows, a roof by boards, then a chimney, in that order. */
 export function housePlan(s: HouseSpec): Plan {
   const { x, z, w, d, high, rise, wall, post, roof } = s;
+  const floor = s.floor ?? FLOOR;
   const yaw = s.yaw ?? 0,
     y = H(x, z),
     part = parter(x, y, z, yaw);
@@ -97,27 +112,27 @@ export function housePlan(s: HouseSpec): Plan {
     postsX = Math.max(1, Math.round(d / 4));
   for (let k = 0; k <= postsZ; k++) {
     const px = -w / 2 + (k * w) / postsZ;
-    pieces.push(part(px, FLOOR, -d / 2, 0.42, high - FLOOR, 0.42, post));
-    if (!s.door || Math.abs(px) > s.door.w / 2) pieces.push(part(px, FLOOR, d / 2, 0.42, high - FLOOR, 0.42, post));
+    pieces.push(part(px, floor, -d / 2, 0.42, high - floor, 0.42, post));
+    if (!s.door || Math.abs(px) > s.door.w / 2) pieces.push(part(px, floor, d / 2, 0.42, high - floor, 0.42, post));
   }
   if (s.door)
     for (const sx of [-1, 1])
-      pieces.push(part((sx * s.door.w) / 2 + sx * 0.2, FLOOR, d / 2, 0.42, high - FLOOR, 0.42, post));
+      pieces.push(part((sx * s.door.w) / 2 + sx * 0.2, floor, d / 2, 0.42, high - floor, 0.42, post));
   for (let k = 1; k < postsX; k++)
     for (const sx of [-1, 1])
-      pieces.push(part((sx * w) / 2, FLOOR, -d / 2 + (k * d) / postsX, 0.42, high - FLOOR, 0.42, post));
+      pieces.push(part((sx * w) / 2, floor, -d / 2 + (k * d) / postsX, 0.42, high - floor, 0.42, post));
   for (const sz of [-1, 1]) pieces.push(part(0, high, (sz * d) / 2, w + 0.5, 0.36, 0.42, post));
   for (const sx of [-1, 1]) pieces.push(part((sx * w) / 2, high, 0, 0.42, 0.36, d + 0.4, post));
   const FRAME = pieces.length;
   // Walls, a row at a time, going round.
   const rowH = s.rowH ?? 0.82,
-    rows = Math.round((high - FLOOR) / rowH),
-    h = (high - FLOOR) / rows;
+    rows = Math.round((high - floor) / rowH),
+    h = (high - floor) / rows;
   const boardsW = Math.max(2, Math.round(w / 2.5)),
     boardsD = Math.max(1, Math.round(d / 4));
   for (let row = 0; row < rows; row++) {
-    const yy = FLOOR + row * h;
-    const off = (row % 2) * 0.3; // courses overlap, so it reads as built
+    const yy = floor + row * h;
+    const off = s.floor === undefined ? (row % 2) * 0.3 : 0; // courses overlap, so it reads as built; a room has to be shut
     for (let k = 0; k < boardsW; k++) {
       const bw = w / boardsW;
       pieces.push(
@@ -139,7 +154,7 @@ export function housePlan(s: HouseSpec): Plan {
       }
   }
   if (s.windows) {
-    const wy = FLOOR + (high - FLOOR) * 0.42;
+    const wy = floor + (high - floor) * 0.42;
     for (const sx of [-1, 1]) {
       pieces.push(part(sx * (w / 2 + 0.04), wy, 0, 0.14, 1, Math.min(1.3, d * 0.3), s.windows));
       pieces.push(part(sx * (w / 2 + 0.08), wy - 0.08, 0, 0.14, 0.08, Math.min(1.6, d * 0.34), post));
@@ -150,7 +165,7 @@ export function housePlan(s: HouseSpec): Plan {
     }
   }
   if (s.door && s.closed !== false)
-    pieces.push(part(0, FLOOR, d / 2 - 0.02, s.door.w, s.door.rows * h, 0.1, '#5c3a20'));
+    pieces.push(part(0, floor, d / 2 - 0.02, s.door.w, s.door.rows * h, 0.1, '#5c3a20'));
   const WALLS = pieces.length;
   // Gable ends, then boards up each slope, then the ridge.
   const eave = d / 2 + 0.5,
@@ -181,7 +196,7 @@ export function housePlan(s: HouseSpec): Plan {
   let smoke: Plan['smoke'] = null;
   if (s.chimney) {
     const c = s.chimney;
-    const start = Math.max(FLOOR, high - 1.4);
+    const start = Math.max(floor, high - 1.4);
     for (let k = 0; k < c.n; k++) pieces.push(part(c.dx, start + k, c.dz, 1.15, 1, 1.15, k % 2 ? c.a : c.b));
     const cos = Math.cos(yaw),
       sin = Math.sin(yaw);
@@ -193,7 +208,7 @@ export function housePlan(s: HouseSpec): Plan {
     z,
     yaw,
     scaffold: [
-      part(0, -1, 0, w + 1.6, FLOOR + 1, d + 1.6, '#b2ad9f'),
+      part(0, -1, 0, w + 1.6, floor + 1, d + 1.6, '#b2ad9f'),
       ...poles(part, w, d, s.poleTop ?? high + rise + 0.8, 1.8),
     ],
     pieces,
@@ -203,8 +218,9 @@ export function housePlan(s: HouseSpec): Plan {
     hulls: [
       { dx: 0, dy: high / 2, dz: 0, hx: w / 2 + 0.1, hy: high / 2, hz: d / 2 + 0.1 },
       { dx: 0, dy: high + rise * 0.3, dz: 0, hx: w / 2, hy: rise * 0.3, hz: (d / 2) * 0.7 },
-      { dx: 0, dy: FLOOR / 2, dz: 0, hx: w / 2 + 0.8, hy: FLOOR / 2, hz: d / 2 + 0.8 },
+      { dx: 0, dy: floor / 2, dz: 0, hx: w / 2 + 0.8, hy: floor / 2, hz: d / 2 + 0.8 },
     ],
+    poles: poleHulls(w, d, s.poleTop ?? high + rise + 0.8, 1.8),
     hw: w / 2 + 0.8,
     hd: d / 2 + 0.8,
     smoke,
@@ -260,6 +276,7 @@ export function towerPlan(s: TowerSpec): Plan {
     WALLS,
     ROOFED: pieces.length,
     hulls: [{ dx: 0, dy: yy / 2, dz: 0, hx: w / 2 + 0.2, hy: yy / 2, hz: w / 2 + 0.2 }],
+    poles: poleHulls(w, w, high + 2, 2.6),
     hw: w / 2 + 1,
     hd: w / 2 + 1,
     smoke: null,
@@ -297,6 +314,7 @@ export function blockPlan(s: BlockSpec, lifts = 1, top?: string): Plan {
     WALLS: pieces.length,
     ROOFED: pieces.length,
     hulls: [{ dx: 0, dy: y0 + s.h / 2, dz: 0, hx: s.w / 2, hy: s.h / 2, hz: s.d / 2 }],
+    poles: [],
     hw: s.w / 2 + 0.4,
     hd: s.d / 2 + 0.4,
     smoke: null,
@@ -335,6 +353,7 @@ export type Site = {
   pole1: number; // the scaffold ends here
   spans: Span[];
   bodies: Body[];
+  poleBodies: Body[];
   state: 'none' | 'building' | 'done';
   t: number;
   solidAt: number;
@@ -369,6 +388,7 @@ export function addSite(id: string, plan: Plan, pace = 1): Site {
     pole1,
     spans,
     bodies: [],
+    poleBodies: [],
     state: 'none',
     t: 0,
     solidAt: (1 + 1.5) * pace,
@@ -387,6 +407,25 @@ function onLand(k: number) {
   if (landed++ % 3 === 0) thump(b.x, b.z);
   if (landed % 4 === 0) dustRing(b.x, b.y + 0.3, b.z, 4, 1.8, 0.3);
 }
+/** Solid boxes from a plan's hulls. */
+export function hullBodies(plan: Plan, hulls: Hull[]) {
+  const { x, y, z, yaw } = plan;
+  const cos = Math.cos(yaw),
+    sin = Math.sin(yaw);
+  const q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
+  return hulls.map((h) =>
+    addStatic(
+      { kind: 'box', hx: h.hx, hy: h.hy, hz: h.hz },
+      { x: x + h.dx * cos + h.dz * sin, y: y + h.dy, z: z - h.dx * sin + h.dz * cos },
+      q,
+      h.room ? ROOM_GROUP : undefined,
+    ),
+  );
+}
+const polesOff = (site: Site) => {
+  for (const b of site.poleBodies) removeBody(b);
+  site.poleBodies.length = 0;
+};
 function solid(site: Site, on: boolean) {
   if (!on) {
     for (const b of site.bodies) removeBody(b);
@@ -397,21 +436,15 @@ function solid(site: Site, on: boolean) {
   const { x, y, z, yaw, hulls } = site.plan;
   const cos = Math.cos(yaw),
     sin = Math.sin(yaw);
-  const q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
-  for (const h of hulls)
-    site.bodies.push(
-      addStatic(
-        { kind: 'box', hx: h.hx, hy: h.hy, hz: h.hz },
-        { x: x + h.dx * cos + h.dz * sin, y: y + h.dy, z: z - h.dx * sin + h.dz * cos },
-        q,
-      ),
-    );
+  site.bodies.push(...hullBodies(site.plan, hulls));
+  if (site.state === 'building') site.poleBodies.push(...hullBodies(site.plan, site.plan.poles));
   // Standing in the plot when the walls go up: you're moved to the nearest edge.
   const me_ = me.body;
   if (!me_) return;
   const pos = { x: me_.position.x, z: me_.position.z };
-  const f: Foot = { x, z, c: cos, s: sin, hw: hulls[0]!.hx, hd: hulls[0]!.hz };
-  if (me_.position.y < y + hulls[0]!.hy * 2 && outOf(f, pos, PLAYER_R + 0.2)) {
+  const out = site.plan.keepOut ?? hulls[0]!;
+  const f: Foot = { x, z, c: cos, s: sin, hw: out.hx, hd: out.hz };
+  if (me_.position.y < y + out.hy * 2 && outOf(f, pos, PLAYER_R + 0.2)) {
     teleport(me_, pos.x, H(pos.x, pos.z) + PLAYER_R + 0.2, pos.z);
     me_.velocity.set(0, 0, 0);
   }
@@ -434,6 +467,9 @@ export function startSite(site: Site, delay = 0, onDone?: () => void) {
     at += secs;
   }
 }
+/** One finished piece, for this tab only: there or not, or `y` metres off its place. Nobody else's copy moves. */
+export const showPiece = (k: number, on: boolean) => set?.snap(k, on);
+export const liftPiece = (k: number, y: number) => set?.lift(k, y);
 /** Start over: nothing's in the air. */
 export const clearDrops = () => set?.clear();
 /** There or not, with no show. */
@@ -442,6 +478,7 @@ export function snapSite(site: Site, on: boolean) {
   for (let k = site.k0; k < site.k1; k++) set.snap(k, on && (k >= site.pole1 || k === site.k0));
   site.state = on ? 'done' : 'none';
   site.onDone = null;
+  polesOff(site);
   solid(site, on);
 }
 const building: Site[] = [];
@@ -458,6 +495,7 @@ export function updateSites(dt: number) {
     if (site.t >= site.solidAt) solid(site, true);
     if (site.t < site.doneAt) continue;
     // The poles come down, top first, and the slab stays.
+    polesOff(site);
     const want = Math.ceil((site.t - site.doneAt) * 40);
     for (let k = site.pole1 - 1 - site.struck; k > site.k0 && site.struck < want; k--) {
       set.snap(k, false);

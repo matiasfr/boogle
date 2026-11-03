@@ -6,10 +6,10 @@
 // nouns a person reads. Local only: never synced, never read by the sim.
 import { cardFor, vName, write } from '../../protos/store.ts';
 import type { Proto } from '../../protos/protos.ts';
-import { protoV } from './flags.ts';
-import { protoMark } from './mark.ts';
+import { pageQuery, protoV } from './flags.ts';
+import { playMark, protoMark } from './mark.ts';
 
-let card: Proto | undefined = cardFor(location.search);
+let card: Proto | undefined = cardFor(pageQuery().toString());
 let v = card ? vName(card, protoV(card.id)) : '';
 let pending: Record<string, number> = {};
 let timer = 0;
@@ -39,6 +39,7 @@ export function countFor(p: Proto, variant: string) {
 export function protoCount(name: string, by = 1, toy?: string) {
   if (!card || !Number.isFinite(by) || (toy && toy !== card.id)) return;
   if (name === card.verb) protoMark('verb');
+  if (name !== 'seconds') playMark(name, by === 1 ? undefined : { by });
   pending[name] = (pending[name] ?? 0) + by;
   if (!timer) timer = window.setTimeout(flushCounts, 2000);
 }

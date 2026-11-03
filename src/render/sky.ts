@@ -45,6 +45,11 @@ import { seaU } from './water-render.ts';
 import { clouds } from './props.ts';
 import { world, TICK_MS } from '../world/sync.ts';
 import { skyAt, skyState } from '../sim/sky-clock.ts';
+import { protoOn } from '../proto/flags.ts';
+
+// Temporary ?proto=sky seam: build the original graph verbatim on every other page.
+// Only a horizon haze blend remains; palettes, lighting and clock are the plain game's.
+const softHorizon = protoOn('sky');
 
 const DIST = 600; // sun/moon billboards sit this far from the camera (inside the 700 sky sphere)
 const SUN_R = 24; // the disc; its billboard is twice as wide, for the glow around it
@@ -127,10 +132,12 @@ const hash = Fn(([p0]: [any]) => {
 
 const skyColor = Fn(() => {
   const d = normalize(positionGeometry);
-  const col = mix(skyU.uHorizon, skyU.uTop, pow(max(d.y, 0), skyU.uCurve)).toVar();
+  const ramp = pow(max(d.y, 0), skyU.uCurve);
+  const col = mix(skyU.uHorizon, skyU.uTop, ramp).toVar();
   const s = max(dot(d, skyU.uSun), 0);
   // The sun's glow: a wide warm wash and a tight halo that the disc's own glow fades into.
-  col.addAssign(skyU.uGlow.mul(pow(s, 6).mul(0.28).add(pow(s, 40).mul(0.3)).add(pow(s, 400).mul(0.45))));
+  const glow = pow(s, 6).mul(0.28).add(pow(s, 40).mul(0.3)).add(pow(s, 400).mul(0.45));
+  col.addAssign(skyU.uGlow.mul(glow));
   const m = max(dot(d, skyU.uMoon), 0);
   col.addAssign(
     vec3(0.5, 0.58, 0.88)
@@ -157,7 +164,9 @@ const skyColor = Fn(() => {
         .mul(step(0.991, h)),
     );
   });
-  return vec4(min(col, 1), 1);
+  // Temporary ?proto=sky seam: the existing horizon colour meets the fogged sea/land, with a soft shoulder.
+  // Blend after glow so sun-facing and moon-facing horizons meet the same fog colour too. No new palette.
+  return vec4(softHorizon ? mix(skyU.uHorizon, min(col, 1), tslSmoothstep(0, 0.025, d.y)) : min(col, 1), 1);
 });
 
 const skyMat = new MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false });

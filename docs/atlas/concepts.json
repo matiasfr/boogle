@@ -66,7 +66,7 @@
     "netplay": "Presence fields, the remotes table, peer lifecycle hooks.",
     "net": "The room interface over one WebSocket to our server.",
     "server": "Hosts every room on Fly: relays presence and messages, runs the shared world and saves it.",
-    "proto": "Prototypes behind ?proto= flags and the prototype bar, loaded only when asked for.",
+    "proto": "Prototypes and the prototype bar; the place prototype is also the default game.",
     "ui": "Shared HUD pieces: the notification lane and UI sounds."
   },
   "boxes": {
@@ -83,7 +83,7 @@
     "fr.netplay": "presence and the room",
     "fr.world": "the same copy, kept in step",
     "fr.screen": "three.js draws it",
-    "server": "hosts rooms · runs the world · saves · problem reports"
+    "server": "hosts rooms · runs the world · saves · problem reports · playtest data"
   },
   "concepts": [
     {

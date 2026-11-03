@@ -6,6 +6,7 @@ import path from 'node:path';
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { createStore } from './store.ts';
+import { addPlaydata } from './playdata.ts';
 import { routeUpgrades } from './host/upgrade.ts';
 import { createRoomHost } from './host/rooms.ts';
 import type { RoomHost } from './host/rooms.ts';
@@ -76,6 +77,12 @@ export function loadConfig(
     roomIdleMs: Number(env.ROOM_IDLE_MS ?? 600000), // with SERVER_ROOMS=*: unload a room this long after it emptied
     maxHostedRooms: Number(env.MAX_HOSTED_ROOMS ?? 20), // with SERVER_ROOMS=*: rooms loaded at once
     upgradesPerMin: Number(env.UPGRADES_PER_MIN) || 20, // room sockets per IP
+    // || so a malformed value falls back rather than a NaN turning a cap off.
+    playRatePerMin: Number(env.PLAY_RATE_PER_MIN) || 240, // POST /playdata per IP: 8 friends on one network, batching
+    playNewSessionsPerHour: Number(env.PLAY_NEW_SESSIONS_PER_HOUR) || 40, // per IP; each page load is a session
+    playMaxSessionBytes: Number(env.PLAY_MAX_SESSION_BYTES) || 4 * 1024 * 1024,
+    playMaxTotalBytes: Number(env.PLAY_MAX_TOTAL_BYTES) || 200 * 1024 * 1024,
+    playMaxSessions: Number(env.PLAY_MAX_SESSIONS) || 2000,
     log: (...a: unknown[]) => console.log(new Date().toISOString(), ...a),
     ...overrides,
   };
@@ -93,6 +100,11 @@ export type ServerConfig = {
   serverRooms: string[];
   maxPlayers: number;
   upgradesPerMin: number;
+  playRatePerMin: number;
+  playNewSessionsPerHour: number;
+  playMaxSessionBytes: number;
+  playMaxTotalBytes: number;
+  playMaxSessions: number;
   serverSaveMs: number;
   roomIdleMs: number;
   maxHostedRooms: number;
@@ -306,14 +318,25 @@ export function createService(cfg: ServerConfig) {
     },
   );
 
-  // Read back one day's reports. Exists only when REPORT_TOKEN is set; needs `Authorization: Bearer <token>`.
-  app.get('/reports', async (req: Request, res: Response, next: NextFunction) => {
-    if (!cfg.reportToken) return res.status(404).json({ error: 'not found' });
+  // The reads of what players sent exist only when REPORT_TOKEN is set and need `Authorization: Bearer <token>`. False
+  // when it answered the request.
+  const authed = (req: Request, res: Response) => {
+    if (!cfg.reportToken) {
+      res.status(404).json({ error: 'not found' });
+      return false;
+    }
     const given = Buffer.from(req.get('authorization') || '');
     const want = Buffer.from(`Bearer ${cfg.reportToken}`);
     if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) {
-      return res.status(401).json({ error: 'unauthorized' });
+      res.status(401).json({ error: 'unauthorized' });
+      return false;
     }
+    return true;
+  };
+
+  // Read back one day's reports.
+  app.get('/reports', async (req: Request, res: Response, next: NextFunction) => {
+    if (!authed(req, res)) return;
     const day = req.query.day ?? new Date().toISOString().slice(0, 10);
     if (typeof day !== 'string' || !DAY_RE.test(day)) return res.status(400).json({ error: 'day must be YYYY-MM-DD' });
     try {
@@ -324,6 +347,9 @@ export function createService(cfg: ServerConfig) {
       next(e);
     }
   });
+
+  // ---- playtest data (./playdata.ts) ----
+  addPlaydata(app, cfg, { limit: createRateLimiter({ perMinute: cfg.playRatePerMin }), authed, withLock });
 
   // ---- room sockets (./host/upgrade.ts) ----
   const server = http.createServer(app);

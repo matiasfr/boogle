@@ -164,6 +164,9 @@ export type Sitting = {
   end: { t: number; x: number; z: number; idle: number } | null;
 };
 
+/** protos/island.png, the heat maps' backdrop: `npm run island-map -- --protos` prints these (1 m per pixel, +z down). */
+export const ISLAND_MAP = { x0: -130, z0: -140, w: 270, h: 210 };
+
 export const TRACES_KEY = 'boogle-protos-traces-v1';
 export const SITTINGS = 10;
 export const IDLE_S = 5;

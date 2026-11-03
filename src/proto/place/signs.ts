@@ -1,6 +1,7 @@
 // What tells you what to do in ?proto=place: a signpost at the fork, a beacon over the next thing, one line of objective on
-// the HUD and the shared numbers (the train's capacity, the town's people). "A small prompt is direction enough" (the
+// the HUD and the numbers (logs, kilometres, town, money). "A small prompt is direction enough" (the
 // owner, 2 November): no big sign. Local.
+import { playObjective } from '../mark.ts';
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
 import { flat } from '../flat.ts';
@@ -12,7 +13,7 @@ import { toWorld } from './layout.ts';
 // ---------------------------------------------------------------- boards you can read
 const PAPER = '#fff3d6',
   INK = '#2a1c10';
-function board(lines: { t: string; px: number; color?: string }[], w: number, h: number) {
+export function paintBoard(lines: { t: string; px: number; color?: string }[], w: number, h: number) {
   const c = document.createElement('canvas');
   c.width = 1024;
   c.height = Math.round((1024 * h) / w);
@@ -46,7 +47,7 @@ export function sign(
   w: number,
   h: number,
   up: number,
-  lines: Parameters<typeof board>[0],
+  lines: Parameters<typeof paintBoard>[0],
 ) {
   const wx = toWorld(x),
     y = H(wx, z),
@@ -57,7 +58,7 @@ export function sign(
   const back = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, h + 0.3, 0.2), flat('#7f5630'));
   back.position.y = up + h / 2;
   back.castShadow = true;
-  const front = new THREE.Mesh(new THREE.PlaneGeometry(w, h), board(lines, w, h));
+  const front = new THREE.Mesh(new THREE.PlaneGeometry(w, h), paintBoard(lines, w, h));
   front.position.set(0, up + h / 2, 0.11);
   g.add(back, front);
   for (const dx of [-w / 2 + 0.3, w / 2 - 0.3]) {
@@ -136,17 +137,48 @@ obj.className = 'place-objective';
 const nums = document.createElement('div');
 nums.className = 'place-nums';
 (document.querySelector('.hud') ?? document.body).append(obj, nums);
-let lastObj = '';
+// It shows when it changes or when you seem unsure, then gets out of the way: the owner found it "always on", covering the
+// game. The beacon and the chevron do the rest of the time. A number ticking over isn't news.
+const OBJ = { showS: 5.5, unsureS: 16 };
+let lastObj = '',
+  objT = 0, // s it stays up
+  stillT = 0; // s you've gone without moving or doing anything
 export function setObjective(text: string) {
   if (text === lastObj) return;
-  // A number ticking over (a count, a countdown) isn't news: only a new line pops.
-  if (text.replace(/\d+/g, '') !== lastObj.replace(/\d+/g, '')) replay(obj, 'place-pop');
+  const news = text.replace(/\d+/g, '') !== lastObj.replace(/\d+/g, '');
   lastObj = text;
   obj.textContent = text;
+  playObjective(text);
+  if (news) showObjective();
 }
+/** Up it comes for a few seconds, with a little pop. */
+export function showObjective() {
+  if (!lastObj) return;
+  if (objT <= 0) replay(obj, 'place-pop');
+  objT = OBJ.showS;
+  stillT = 0;
+}
+/** Each frame. `busy`: you're moving or something's happening, so you don't look unsure. */
+export function updateObjective(dt: number, busy: boolean) {
+  stillT = busy ? 0 : stillT + dt;
+  if (stillT > OBJ.unsureS) showObjective();
+  objT = Math.max(0, objT - dt);
+  obj.classList.toggle('on', objT > 0 && !!lastObj);
+}
+// The numbers: logs, kilometres, town and a running money count, a comic score. They tick up one by one, so you can feel them.
+const shownNum = { logs: 0, km: 0, people: 0, money: 0 };
 let lastNums = '';
-export function setNumbers(train: number | null, people: number) {
-  const s = `${train === null ? '' : `<span>Train holds <b>${train}</b> crates</span>`}<span>Village <b>${people}</b> people</span>`;
+export function setNumbers(score: { money: number; logs: number; metres: number }, people: number) {
+  const ease = (a: number, b: number, k: number) => (Math.abs(b - a) < 1 ? b : a + (b - a) * k);
+  shownNum.logs = ease(shownNum.logs, score.logs, 0.2);
+  shownNum.km = score.metres / 1000;
+  shownNum.people = people;
+  shownNum.money = ease(shownNum.money, score.money, 0.12);
+  const s =
+    `<span>Logs <b>${Math.round(shownNum.logs)}</b></span>` +
+    `<span>Track <b>${shownNum.km.toFixed(2)}</b> km</span>` +
+    `<span>Town <b>${shownNum.people}</b></span>` +
+    `<span class="place-money"><b>$${Math.round(shownNum.money).toLocaleString('en-US')}</b></span>`;
   if (s === lastNums) return;
   lastNums = s;
   nums.innerHTML = s;

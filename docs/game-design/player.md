@@ -19,7 +19,8 @@ Files: [src/entities/player/state.ts](../../src/entities/player/state.ts), [view
   1.6 m/s) while held. Ground snap pulls you back onto a crest within 0.45 m,
   measured to the floor under you (terrain, stair, deck or cave floor), so ramps and stairs don't trigger it; rising
   faster than 6 m/s is a launch (a mushroom bounce), which it leaves alone.
-- Pad sprint is a latch: click L3 once and it stays on until the stick rests.
+- Pad sprint is a latch: click L3 once and it stays on until the stick rests. Touch sprint is automatic: pushing the
+  stick to the edge of its travel sprints ([controls.md](controls.md)).
 - A soft wall 18 m inside the map edge turns you back from the open sea.
 
 ## Swim
@@ -72,7 +73,8 @@ you enter, it slowly circles the island.
 
 - Avatar: the Buddy (below). `?body=capsule` is the older coloured capsule with two eyes, bobbing and squashing with speed ([avatars.ts](../../src/player/avatars.ts)), which also shows if the Buddy can't load, or hasn't within the loading screen's 8 s.
 - Eight colours ([constants.ts](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,
-  `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your home voice in the honk chord.
+  `#3d9bff`, `#9b6bff`, `#ff6fb5`, `#ff9a3d`. The colour also sets your home voice in the honk chord. Every avatar also
+  gives off a little of its own colour (emissive 0.15, day and night), so its shaded side and a player at night still read.
 - Name: up to 16 characters, control and format characters stripped. Name and colour are kept in localStorage
   (`boogle.name`, `boogle.color`); a first visit's card offers a friendly random name and a random colour, later
   visits go straight in with them, and the pause view's Room page changes them ([identity.md](identity.md)).
@@ -92,7 +94,7 @@ the camera ([src/player/buddy/camera.ts](../../src/player/buddy/camera.ts), `&ca
 
 The Buddy is a simple, slightly plump figure in the player's colour ([assets/src/buddy.py](../../assets/src/buddy.py)): one
 smooth skin blended by a voxel remesh, with softened weights, soft shading (the normals of a smoother copy) and a head and mitts that hold their shape, plus a face moulded to
-the head; two draw calls, no textures, on the same clips. It has no rim light. Its head looks straight ahead: each clip's average
+the head, two eyes and nothing else (no ears, no cheeks); two draw calls, no textures, on the same clips. It has no rim light. Its head looks straight ahead: each clip's average
 pitch comes off the head (the library's idle looks down about 13°) and its bob stays. Most of the butt's weight rides on the
 pelvis, and half the clips' hip roll, twist and sway comes off, so its mass stays put at a walk. It blinks, and in the air
 ([src/player/buddy/life.ts](../../src/player/buddy/life.ts)) it tucks a knee and reaches up while rising (the other knee on the next

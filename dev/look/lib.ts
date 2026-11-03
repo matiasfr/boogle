@@ -9,6 +9,9 @@ import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import type { Browser, BrowserContext, Page } from 'playwright';
 import { createService, loadConfig } from '../../server/src/server.ts';
+import { installWarp, SKIP_DRAWS } from './warp.ts';
+import type { WarpHandle } from './warp.ts';
+import { startWarpServer } from './server-process.ts';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -24,6 +27,8 @@ export type Pose = { cam: number[]; look: number[] };
 
 // One table of named viewpoints: camera position, look-at target (world metres, y up).
 export const VIEWS: Record<string, Pose> = {
+  'water-surf': { cam: [2572, 3.2, -52], look: [2530, 0, -34] }, // ?proto=water
+  'water-open': { cam: [2900, 6, -200], look: [3500, 0, -400] },
   hill: { cam: [-10, 12, -14], look: [-22, 3.5, -21] },
   shore: { cam: [-22, 7.5, -17], look: [-30, 0.5, -27] },
   court: { cam: [12, 4, 30], look: [12, 0.5, 21] },
@@ -42,17 +47,26 @@ export const freePort = () =>
 // Starts Vite on a free port and our server in-process, hosting every room (so rooms work offline), with its saves in
 // a temporary directory. With `url`, only uses that already-running game (the game's own server applies).
 // `root` serves another checkout (e.g. a git worktree of a prototype branch) with this harness.
-export type Stack = { base: string; close: () => Promise<void> };
+export type Stack = { base: string; close: () => Promise<void>; dataDir?: string; clockUrl?: string };
 export async function startStack({
   url = null,
   root: dir = root,
-}: { url?: string | null; root?: string } = {}): Promise<Stack> {
+  dataRoot = os.tmpdir(),
+  warp = false,
+}: { url?: string | null; root?: string; dataRoot?: string; warp?: boolean } = {}): Promise<Stack> {
   if (url) return { base: url, close: async () => {} };
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-look-'));
+  const dataDir = fs.mkdtempSync(path.join(dataRoot, 'boogle-look-'));
   // `npm run scenarios` opens every player of every scenario from one address on one stack: no limit meant for strangers.
-  const env = { DATA_DIR: dataDir, SERVER_ROOMS: '*', UPGRADES_PER_MIN: '1000000', MAX_HOSTED_ROOMS: '1000' };
-  const server = createService(loadConfig(env, { log: () => {} }));
-  const sigPort = await server.listen(0);
+  const env = {
+    DATA_DIR: dataDir,
+    SERVER_ROOMS: '*',
+    UPGRADES_PER_MIN: '1000000',
+    MAX_HOSTED_ROOMS: '1000',
+    PLAY_RATE_PER_MIN: '1000000', // a warped page's five-second batches arrive many times a second
+  };
+  const child = warp ? await startWarpServer(env) : null;
+  const server = child ? null : createService(loadConfig(env, { log: () => {} }));
+  const sigPort = child ? child.port : await server!.listen(0);
   const port = await freePort();
   const vite = spawn(
     process.execPath,
@@ -63,9 +77,13 @@ export async function startStack({
       env: { ...process.env, VITE_BOOGLE_SERVER: `http://127.0.0.1:${sigPort}` },
     },
   );
+  let viteError = '';
+  vite.stderr.on('data', (data) => (viteError = (viteError + String(data)).slice(-4000)));
+  vite.on('error', (error) => (viteError = error.message));
   const base = `http://127.0.0.1:${port}/`;
   let up = false;
   for (let t = 0; t < 150 && !up; t++) {
+    if (vite.exitCode !== null || vite.signalCode !== null) break;
     try {
       up = (await fetch(base)).ok;
     } catch {
@@ -74,13 +92,19 @@ export async function startStack({
   }
   if (!up) {
     vite.kill('SIGTERM');
-    throw new Error('vite did not start');
+    await child?.close();
+    await server?.close({ save: false });
+    fs.rmSync(dataDir, { recursive: true, force: true });
+    throw new Error(`vite did not start${viteError ? ': ' + viteError.trim() : ''}`);
   }
   return {
     base,
+    dataDir,
+    clockUrl: child?.clockUrl,
     async close() {
       if (!vite.killed) vite.kill('SIGTERM');
-      await server.close({ save: false });
+      await child?.close();
+      await server?.close({ save: false });
       fs.rmSync(dataDir, { recursive: true, force: true });
     },
   };
@@ -127,6 +151,7 @@ export type GameOpts = {
   isolated?: boolean;
   touch?: boolean;
   trace?: boolean;
+  warp?: boolean;
 };
 /** A function `page.evaluate` runs in the page (serialised, so it sees only its argument). */
 type PageFn<A, R> = (arg: A) => R | Promise<R>;
@@ -155,7 +180,8 @@ export class Game {
   // layout viewport, and the game only needs the coarse pointer),
   // trace (record a Playwright trace: the action timeline, console, network and page errors; `close({ trace: file })`
   // keeps it. No screencast or DOM snapshots: on a CI runner's software GL they starve the frame loop, since waitFor
-  // evaluates every 100 ms and each call snapshots the DOM, and the stills already show the canvas)
+  // evaluates every 100 ms and each call snapshots the DOM, and the stills already show the canvas),
+  // warp (the page's clock can run ahead of the wall, for `g.warp`: ./warp.ts)
   static async open(browser: Browser, stack: Stack, opts: GameOpts = {}) {
     const g = new Game();
     g.name = opts.name || 'player';
@@ -173,6 +199,7 @@ export class Game {
         window.matchMedia = (q: string) =>
           q === '(pointer: coarse)' ? ({ ...mm(q), matches: true, media: q } as MediaQueryList) : mm(q);
       });
+    if (opts.warp) await g.ctx.addInitScript(installWarp);
     if (opts.init) await g.ctx.addInitScript(opts.init);
     const doc = new URL(stack.base);
     if (opts.isolated)
@@ -210,12 +237,14 @@ export class Game {
     });
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';
-    await g.page.goto(
-      `${stack.base}${sep}dpr=fixed&debugcam=1&room=${room}${opts.query ? '&' + opts.query : ''}${EXTRA_QUERY}`,
-      {
-        timeout: 90000,
-      },
-    );
+    const query = new URLSearchParams([opts.query, EXTRA_QUERY].filter(Boolean).join('&'));
+    const selected = new URLSearchParams(`${doc.search}&${query}`);
+    // Existing scenarios, clips and measurements target the classic island. An explicit empty query tests the
+    // default game; proto/play/classic selectors (including BOOGLE_QUERY or --url) always win.
+    if (opts.query !== '' && !['proto', 'play', 'classic'].some((key) => selected.has(key))) query.set('classic', '1');
+    await g.page.goto(`${stack.base}${sep}dpr=fixed&debugcam=1&room=${room}&${query}`, {
+      timeout: 90000,
+    });
     // A deployed site (`--url`) over a slow link can take a while to load, and software GL (two tabs at once) builds
     // every shader before the lobby opens.
     await g.page.waitForSelector('#enter:not([disabled])', { timeout: 180000 });
@@ -236,6 +265,7 @@ export class Game {
     console.log(`[${g.name}] renderer backend: ${g.gfx ?? 'unknown'}`);
     await sleep(300);
     fs.mkdirSync(g.out, { recursive: true });
+    if (opts.warp) await g.eval(SKIP_DRAWS);
     return g;
   }
 
@@ -267,6 +297,43 @@ export class Game {
       await sleep(step);
     }
     return -1;
+  }
+
+  // Runs the page ahead of the wall (needs `warp` at open) for `seconds` of game time, or until `until` is true, then back to
+  // real frames for whatever comes next. Stops at once on a page error. Returns game seconds passed, wall seconds and frames.
+  async warp({
+    seconds = Infinity,
+    until,
+    speed = Infinity,
+    wallLimit = 540,
+    stalled,
+  }: {
+    seconds?: number;
+    until?: string;
+    speed?: number;
+    wallLimit?: number;
+    stalled?: (gameSeconds: number) => Promise<boolean>;
+  } = {}) {
+    const v = () => this.page.evaluate(() => (window as unknown as { __warp: WarpHandle }).__warp.now());
+    const start = await v();
+    const t0 = Date.now();
+    await this.page.evaluate(
+      ([n, stop]) => (window as unknown as { __warp: WarpHandle }).__warp.go(n ?? Infinity, stop ?? undefined),
+      [speed, Number.isFinite(seconds) ? start + seconds : null] as const,
+    );
+    let done = false;
+    let at = start;
+    while (!done && !this.errors.length && Date.now() - t0 < wallLimit * 1000) {
+      await sleep(Number.isFinite(seconds) && seconds < 30 ? 20 : 100);
+      at = await v();
+      done = at - start >= seconds || (until ? !!(await this.page.evaluate(`!!(${until})`)) : false);
+      if (!done && (await stalled?.(at))) break;
+    }
+    await this.page.evaluate(() => (window as unknown as { __warp: WarpHandle }).__warp.go(1));
+    // Real time again. Fetches and shader builds ran on the wall clock, so give what the warp outran the time to land.
+    await this.page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+    await sleep(500);
+    return { game: at - start, wall: (Date.now() - t0) / 1000, done };
   }
 
   // Freeze the camera at a named view or {cam, look}. Pass fov to change the field of view.
@@ -333,12 +400,29 @@ export class Game {
       seconds = 2,
       region = null,
       heatmap = false,
-    }: { frames?: number; seconds?: number; region?: number[] | null; heatmap?: boolean } = {},
+      every = 0,
+    }: { frames?: number; seconds?: number; region?: number[] | null; heatmap?: boolean; every?: number } = {},
   ) {
     const [W, H] = this.size;
     const shots: Shot[] = [];
     const t0 = Date.now();
+    const start = every
+      ? await this.page.evaluate(() => (window as unknown as { __warp: WarpHandle }).__warp.now())
+      : 0;
     for (let k = 0; k < frames; k++) {
+      if (every) {
+        const t = await this.page.evaluate(async (n) => {
+          const warp = (window as unknown as { __warp: WarpHandle }).__warp;
+          const before = window.boogle.prof?.last.frames;
+          await warp.step(n);
+          const after = window.boogle.prof?.last.frames;
+          if (typeof before !== 'number' || typeof after !== 'number' || after - before !== n)
+            throw new Error(`filmstrip expected ${n} completed frames, got ${Number(after) - Number(before)}`);
+          return warp.now();
+        }, every);
+        shots.push({ t: t - start, frame: (k + 1) * every, b64: (await this.page.screenshot()).toString('base64') });
+        continue;
+      }
       const due = t0 + (k * seconds * 1000) / Math.max(1, frames - 1);
       if (Date.now() < due) await sleep(due - Date.now());
       const t = (Date.now() - t0) / 1000;
@@ -348,7 +432,7 @@ export class Game {
     const res = await calc.evaluate(analyse, { shots, region, heatmap, W: W!, H: H! });
     await calc.close();
     const save = (p: string, url: string) => fs.writeFileSync(p, Buffer.from(url.split(',')[1]!, 'base64'));
-    const sheet = this.path(label, 'motion'),
+    const sheet = this.path(label, every ? 'filmstrip' : 'motion'),
       heat = heatmap ? this.path(label, 'heat') : null;
     save(sheet, res.sheetUrl);
     if (heat && res.heatUrl) save(heat, res.heatUrl);
@@ -440,7 +524,7 @@ export class Game {
 }
 
 // Runs inside a scratch page (canvas), so the harness needs no image library.
-type Shot = { t: number; b64: string };
+type Shot = { t: number; b64: string; frame?: number };
 async function analyse({
   shots,
   region,
@@ -528,9 +612,13 @@ async function analyse({
       y = Math.floor(f / cols) * th;
     sx.drawImage(im, x, y, tw, th);
     sx.fillStyle = 'rgba(0,0,0,0.6)';
-    sx.fillRect(x, y, 70, 20);
+    sx.fillRect(x, y, shots[f]!.frame === undefined ? 70 : 180, 20);
     sx.fillStyle = '#fff';
-    sx.fillText(shots[f]!.t.toFixed(2) + 's', x + 4, y + 15);
+    sx.fillText(
+      (shots[f]!.frame === undefined ? '' : `#${shots[f]!.frame}  `) + shots[f]!.t.toFixed(3) + 's',
+      x + 4,
+      y + 15,
+    );
     if (region) {
       sx.strokeStyle = '#f0f';
       sx.strokeRect(x + rx0 / 2, y + ry0 / 2, (rx1 - rx0) / 2, (ry1 - ry0) / 2);

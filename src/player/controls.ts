@@ -398,6 +398,8 @@ function warnWaitingWraps() {
   for (const id of waitingWraps.keys()) console.warn(`[controls] wrapAction: no action "${id}"`);
 }
 
+/** Every action's id, hidden from the guide or not (the playtest data counts their presses). */
+export const actionIds = () => [...actions.keys()];
 export const triggerAction = (id: string, edge: 'down' | 'up') => actionById(id, 'triggerAction')?.[edge]?.();
 
 export const actionForSlot = (pad: string) => bySlot.get(pad) || null;

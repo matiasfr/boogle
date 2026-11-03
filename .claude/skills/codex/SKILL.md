@@ -5,9 +5,29 @@ description: Hand work to Codex CLI (GPT-6-Astra, on the owner's ChatGPT subscri
 
 # Codex jobs
 
+Jobs outlive the session that started them. A director runs `npm run codex-status` first to find running and finished jobs.
+
+For exact-build handoffs and gameplay evidence, see [dev/codex/README.md](../../../dev/codex/README.md).
+Task jobs accept `--base-ref HEAD` (or another commit/branch) and `--snapshot` (the caller's working files, leaving its
+index untouched). Default remains `origin/main`. Each job installs its own dependencies. The returned `handoff.md` links
+the worker's assessment, machine evidence and copied artifacts; read it before shipping. A snapshot includes unfinished
+caller changes: review those too.
+
+For follow-up feedback, run `node dev/codex/run.ts resume <topic> "<feedback and checks to repeat>"` in the original
+launching checkout, in the background as before. This keeps the explicit session ID, conversation, worktree and bot
+checkpoints, and restarts the broker. Review the latest handoff after every turn; previous reports are in `turns/` and
+earlier failures remain in the evidence. Keep the worktree and local Codex session until done. Do not start a new topic
+or use `codex exec resume --last` for a follow-up. Caller edits aren't recopied; describe the fix or start a new snapshot.
+
+The worker's `.look/see-client.ts` supports `playthrough`, `look` and named existing `scenario` operations. Ask it to run the
+relevant bot, open the generated PNGs, explain what it saw, and report failures and unverified feel. `look --at` reads this
+job's own bot checkpoints. The broker is already running; the worker should not start another or run Chromium directly.
+
+From inside Codex this is how you start a worker on its own branch and worktree: run it in the background and carry on.
+
 `node dev/codex/run.ts <mode> <topic> [--effort ...] [--ref a.png] "<brief>"` runs one Codex job and prints its final message. Always start it with Bash `run_in_background: true` (jobs take 5-40 minutes) and carry on; you're notified when it ends. Log, report and meta: `.look/codex/<topic>/`. `--dry` prints the prompt and command without running.
 
-Codex reads AGENTS.md and DESIGN.md like you do, but it can't see the running game, can't push and has no `/look`. You are the director: brief it, then review and ship what it made.
+Codex reads AGENTS.md and DESIGN.md like you do, and can't push. A `task` job can see the game through `node dev/codex/see.ts` (below): stills, motion sheets, video as extracted frames, curves, and scripted play through `--action`. You are the director: brief it, then review and ship what it made.
 
 | Mode | Effort default | Where it works | What you get |
 |---|---|---|---|
@@ -16,7 +36,7 @@ Codex reads AGENTS.md and DESIGN.md like you do, but it can't see the running ga
 | `task` | high | same worktree setup | commits on `codex/<topic>`, `npm run check` run, not pushed |
 | `review` | xhigh | detached worktree at `--ref-branch` (default HEAD) | `codex exec review` against `origin/main`; an optional brief focuses it |
 
-Effort: previz is mostly image prompts, so `medium` (or `high`) is enough; `xhigh` for research and review; `high` for implementation; `max` only for one hard question.
+Effort: previz is mostly image prompts, so `medium` (or `high`) is enough; `xhigh` for research and review; `high` for implementation; `max` only for one hard question. For straightforward implementation with a clear shape, use `--model gpt-6.1-terra --effort low` first (AGENTS.md, "Codex first").
 
 ## Previz
 
@@ -28,8 +48,22 @@ Previz is not concept art: it pictures *this* game at its best (DESIGN.md, the r
 
 ## Research, task, review
 
+Put what you already know in the brief (paths, errors, the snippet, the decision), so it doesn't explore the repo again; its report is all that comes back into your context, so ask for a short one.
+
 - Research: name the facet and the questions. Read the doc when it lands; it ships like any other change (from the worktree: `npm run ship`).
-- Task: give it work that doesn't need eyes on the game: lockstep logic with tests (`src/sim/`, rules), JS-to-TS conversion, tooling, docs. Not visuals or feel. Before starting, `npm run inflight` so it doesn't collide with in-flight work. Read its diff (`git -C ../boogle-codex/<topic> log -p origin/main..`), run `/look` yourself if a player could see it, then ship from the worktree.
+- Task: lockstep logic with tests (`src/sim/`, rules), JS-to-TS conversion, tooling, docs, and visuals it can judge from stills and motion sheets. Not feel: it reads frames and numbers, and doesn't play or watch in real time. A task's sandbox can't start Chromium, so `dev/codex/see.ts` runs the job's server and Vite inside it, and `dev/codex/look-broker.ts`, started by `run.ts`, runs this checkout's harness and the browser outside it. That takes network access in the job's sandbox; the brief limits it to the local server, and `--eyes off` turns it all off. Before starting, `npm run inflight` so it doesn't collide with in-flight work. Read its diff (`git -C ../boogle-codex/<topic> log -p origin/main..`), run `/look` yourself if a player could see it, then ship from the worktree.
 - Review: run it on branches touching `src/world/`, `src/net*`, `src/sim/` or `server/` before shipping. Verify each finding against the code before acting on it.
 
 Clean up a finished worktree with `git worktree remove ../boogle-codex/<topic>` (and `git branch -D codex/<topic>` once it's merged).
+
+Run a queue with `npm run queue -- jobs.json [--max 3]`; dependencies can name another topic or `{ "onMain": "path" }`. It exits on failure, stall, or a Codex usage limit.
+
+Use `--base <ref>` (also `--base-ref`) to start a task at an existing commit or branch.
+
+Run `npm run ship-watch` to wait for shipping trouble; `npm run ship-watch -- --once` checks once. It only reads GitHub.
+
+Directors: put the relevant files, errors and decisions in the brief.
+
+Jobs end with a structured JSON result saved as `.look/codex/<topic>/result.json`; the queue includes its outcome and summary.
+
+Routing card, by job type, with when to escalate: `docs/research/codex-model-routing.md`. Keep `xhigh` and `max` for a specific unresolved question, and name the model, effort and completion check in the brief.

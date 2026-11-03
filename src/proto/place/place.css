@@ -1,7 +1,6 @@
 /* The tester's link (&fresh=1): nothing that primes them or lets them skip. The counters still run. */
 .place-fresh .proto-bar,
 .place-fresh .place-proto,
-.place-fresh .place-nums,
 .place-fresh .guide-row[data-id='proto-bar'],
 .place-fresh .tbtn.honk-btn,
 .place-fresh .tbtn.ping-btn {
@@ -13,6 +12,42 @@ body.touch.place-no-target .tbtn.grab {
 }
 body.touch .place-objective {
   bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+}
+/* The moves' touch buttons, once you've found them; a right thumb still reaches Jump, and each is a toggle or one press. */
+.tbtn.place-hook-btn,
+.tbtn.place-glide-btn {
+  display: none;
+  width: 64px;
+  height: 64px;
+  font-size: 15px;
+  background: rgba(47, 183, 160, 0.55);
+}
+body.place-has-hook .tbtn.place-hook-btn,
+body.place-has-glide .tbtn.place-glide-btn {
+  display: block;
+}
+.tbtn.place-hook-btn {
+  right: calc(196px + env(safe-area-inset-right, 0px));
+  bottom: calc(34px + env(safe-area-inset-bottom, 0px));
+}
+.tbtn.place-glide-btn {
+  right: calc(196px + env(safe-area-inset-right, 0px));
+  bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+}
+/* The button's own glyph, on the ring you're aiming at or under you in the air: not a sentence, and only the first few times. */
+.place-key {
+  position: fixed;
+  left: 0;
+  top: 0;
+  display: none;
+  pointer-events: none;
+  padding: 3px;
+  border-radius: 8px;
+  background: rgba(14, 40, 38, 0.72);
+  z-index: 6;
+}
+.place-key.on {
+  display: block;
 }
 /* Not until you're in: the lobby has its own job. */
 body:not(.playing) .place-objective,
@@ -53,22 +88,28 @@ body:not(.playing) .place-proto {
   cursor: pointer;
 }
 
-/* The objective: one short line, always on screen, big enough for an iPad across the room. */
+/* The objective: one short line that comes up when it changes or you seem unsure, and fades (signs.ts). */
 .place-objective {
   position: absolute;
   left: 50%;
   bottom: calc(112px + env(safe-area-inset-bottom, 0px)); /* above the log-count chip (haul-stack.css) */
   transform: translateX(-50%);
-  max-width: min(62vw, 760px);
-  padding: 10px 20px;
-  font: 800 20px/1.25 var(--font-body);
+  max-width: min(56vw, 560px);
+  padding: 6px 14px;
+  font: 700 15px/1.25 var(--font-body);
   color: var(--ink);
   text-align: center;
   background: var(--paper);
-  border: 3px solid var(--ink);
-  border-radius: 16px;
-  box-shadow: 0 4px 0 var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 0 2px 0 var(--ink);
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+.place-objective.on {
+  opacity: 1;
+  transition: opacity 0.15s;
 }
 .place-objective.place-pop {
   animation: place-pop 0.28s ease-out;
@@ -101,7 +142,7 @@ body:not(.playing) .place-proto {
 .place-arrow.on {
   opacity: 1;
 }
-/* What everyone shares: the train's capacity and the town's people. */
+/* The numbers: logs, kilometres, town and money, a comic score. Small, and off to one side. */
 .place-nums {
   position: absolute;
   right: 14px;
@@ -109,16 +150,20 @@ body:not(.playing) .place-proto {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
-  font: 700 15px var(--font-body);
+  gap: 3px;
+  font: 700 13px var(--font-body);
   color: var(--ink);
   pointer-events: none;
 }
 .place-nums span {
-  padding: 3px 10px;
+  padding: 2px 8px;
   background: var(--paper);
   border: 2px solid var(--ink);
-  border-radius: 10px;
+  border-radius: 9px;
+}
+.place-nums .place-money {
+  font-size: 16px;
+  background: #e8f5d0;
 }
 /* The big moments, once each: a line through, the first crystal. */
 .place-banner {
@@ -159,4 +204,92 @@ body:not(.playing) .place-proto {
     transform: translateX(-50%) scale(1);
     opacity: 1;
   }
+}
+
+/* Talking to a little guy: small and low, so the room stays in the shot. */
+.place-talk {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  width: min(520px, calc(100vw - 32px));
+  z-index: 30;
+  padding: 12px 16px 10px;
+  border-radius: 16px;
+  background: #fff7e8;
+  color: #2a1c10;
+  font:
+    600 17px/1.35 Figtree,
+    system-ui,
+    sans-serif;
+  box-shadow: 0 6px 22px rgba(30, 20, 10, 0.32);
+  pointer-events: auto;
+}
+.place-talk[hidden] {
+  display: none;
+}
+.place-talk-name {
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--who, #7f5630);
+  filter: brightness(0.82);
+}
+.place-talk-say {
+  margin: 2px 0 8px;
+}
+.place-talk-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.place-talk-opts[hidden] {
+  display: none;
+}
+.place-talk-opts button {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: #efe2c6;
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.place-talk-opts button.talk-sel {
+  background: #ffd24a;
+  outline: 2px solid #2a1c10;
+}
+body.touch .place-talk-opts button.talk-sel {
+  background: #efe2c6;
+  outline: 0;
+}
+.place-talk-hints {
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+/* Someone saying something out loud as you pass. */
+.place-bark {
+  position: fixed;
+  left: 0;
+  top: 0;
+  max-width: 280px;
+  padding: 7px 12px;
+  border-radius: 14px;
+  background: #fff7e8;
+  color: #2a1c10;
+  font:
+    600 15px/1.25 Figtree,
+    system-ui,
+    sans-serif;
+  text-align: center;
+  box-shadow: 0 3px 12px rgba(30, 20, 10, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.14s;
+  z-index: 8;
+}
+.place-bark.on {
+  opacity: 1;
 }

@@ -4,13 +4,13 @@
 // (measured from the library's root-motion file), so the feet don't slide; they share one phase so a blend between them
 // stays in step. Everything comes from speed and airborne, so remote players need no new presence. Render only.
 import * as THREE from 'three/webgpu';
-import { COLORS, PLAYER_R } from '../../constants.ts';
+import { PLAYER_R } from '../../constants.ts';
 import { clamp } from '../../math.ts';
 import { precompile } from '../../render/precompile.ts';
 import { loadAsset } from '../../render/assets.ts';
 import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
-import { setAvatarSkin, type Avatar } from '../../player/avatars.ts';
+import { paintAvatar, setAvatarSkin, type Avatar } from '../../player/avatars.ts';
 import { makeLife, type LifeState } from './life.ts';
 import { retargetClip } from './retarget.ts';
 import clipsUrl from '../../../assets/built/hero-clips.glb?url';
@@ -180,7 +180,7 @@ export async function startBuddy() {
       const shared = m.material as THREE.MeshStandardNodeMaterial;
       if (shared.name === 'M_Main') {
         const own = shared.clone();
-        own.color.set(COLORS[colorIdx]!);
+        paintAvatar(own as unknown as THREE.MeshStandardMaterial, colorIdx);
         m.material = own;
         a.userData.mat = own as unknown as THREE.MeshStandardMaterial;
       }

@@ -1,6 +1,5 @@
-// The land of ?proto=place: a height function baked onto one 2 m grid, drawn as one faceted mesh and collided as one
-// heightfield. The gorge's walls are near-vertical cells of that grid, so nothing here overhangs; the footbridges and
-// platforms are their own boxes. Trees have no colliders (greybox), and the spire's are a cylinder. Local.
+// The land of ?proto=place, drawn: the heights of ./terrain.ts as one faceted mesh, collided as one heightfield, with the
+// spire, the footbridges, the trees and what stands across the sea. Local.
 import * as THREE from 'three/webgpu';
 import { flat } from '../flat.ts';
 import { LOOK, addBlob, groundMaterial, spireRock } from './look.ts';
@@ -9,224 +8,31 @@ import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
 import { mulberry32 } from '../../sim/rng.ts';
 import { smoothstep } from '../../math.ts';
+import { FAR, GRID, GROVES, HEAD, ORIGIN, PATHS, SPIRE } from './layout.ts';
 import {
-  ARMS,
-  FAR,
-  GORGE,
-  GROVES,
-  LINES,
-  LINKS,
-  LOBE,
-  ORIGIN,
-  PATHS,
-  SPIRE,
-  TOWN,
-  VILLAGE,
-  lineAt,
-  railY,
-  YARD,
-  type LinePoint,
-} from './layout.ts';
+  CELL,
+  H,
+  NX,
+  NZ,
+  PATH_SAMPLES,
+  at,
+  cellX,
+  cellZ,
+  clearMask,
+  gorgeD,
+  heights,
+  insidePlace,
+  pathMask,
+} from './terrain.ts';
 
-const CELL = 2,
-  EXT = 260,
-  N = (EXT * 2) / CELL + 1;
-const heights = new Float32Array(N * N),
-  pathMask = new Float32Array(N * N),
-  clearMask = new Float32Array(N * N);
-const at = (i: number, j: number) => i + j * N;
-const cellX = (i: number) => -EXT + i * CELL;
-const cellZ = (j: number) => -EXT + j * CELL;
-
-// ---------------------------------------------------------------- the gorge
-const rad = (d: number) => (d * Math.PI) / 180;
-const ORG = { x: SPIRE.x, z: SPIRE.z };
-function arm(bearing: number, phase: number) {
-  const ax = Math.sin(rad(bearing)),
-    az = -Math.cos(rad(bearing));
-  const out: [number, number][] = [];
-  for (let t = 0; t <= 330; t += 22) {
-    const w = 5 * Math.sin(t * 0.035 + phase) * smoothstep(0, 40, t);
-    out.push([ORG.x + ax * t - az * w, ORG.z + az * t + ax * w]);
-  }
-  return out;
-}
-const ARM_POLYS = [arm(ARMS.nw, 0.4), arm(ARMS.ne, 2.1), arm(ARMS.stem, 4)];
-function gorgeD(x: number, z: number) {
-  let best = Infinity;
-  for (const poly of ARM_POLYS)
-    for (let k = 0; k < poly.length - 1; k++) {
-      const [ax, az] = poly[k]!,
-        [bx, bz] = poly[k + 1]!;
-      const dx = bx - ax,
-        dz = bz - az,
-        t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
-      const qx = ax + dx * t - x,
-        qz = az + dz * t - z,
-        d = qx * qx + qz * qz;
-      if (d < best) best = d;
-    }
-  return Math.sqrt(best);
-}
-
-// ---------------------------------------------------------------- the lobes
-function ground(x: number, z: number) {
-  const dx = x - ORG.x,
-    dz = z - ORG.z,
-    r = Math.hypot(dx, dz);
-  const a = (Math.atan2(dx, -dz) * 180) / Math.PI;
-  const north = a > ARMS.nw && a < ARMS.ne,
-    west = !north && a > ARMS.stem && a < ARMS.nw;
-  const angle = Math.atan2(dx, -dz);
-  const R = (north ? 238 : 226) + 13 * Math.sin(3 * angle + 1) + 7 * Math.sin(7 * angle + 2);
-  const shore = smoothstep(R, R - 46, r);
-  let top = west ? LOBE.west : north ? LOBE.north : LOBE.east;
-  if (north) top += 25 * Math.exp(-((x + 20) ** 2 + (z + 188) ** 2) / (38 * 38));
-  const noise =
-    0.8 * Math.sin(x * 0.05 + 1) * Math.cos(z * 0.06) +
-    0.5 * Math.sin(x * 0.13 + z * 0.09) +
-    0.3 * Math.cos(x * 0.31 - z * 0.23);
-  const beach = -5 + (top + 5) * smoothstep(0, 1, shore);
-  let h = beach + noise * shore;
-  // the gorge
-  const w = 1 + 0.1 * Math.sin(x * 0.07 + z * 0.05);
-  const d = gorgeD(x, z) / w;
-  const floor = GORGE.bed + (GORGE.floor - GORGE.bed) * smoothstep(GORGE.river, GORGE.river + 3.5, d);
-  const wall = smoothstep(GORGE.bank, GORGE.bank + GORGE.wall, d);
-  h = Math.min(h, floor + (Math.max(h, floor) - floor) * wall);
-  // the spire's islet
-  const dc = Math.hypot(dx, dz);
-  if (dc < 22) h = Math.max(h, 4 * smoothstep(22, 12, dc));
-  return h;
-}
-
-/** Pulls the ground toward y within a soft disc. */
-function pad(x0: number, z0: number, y: number, r: number, soft: number) {
-  const i0 = Math.max(0, Math.floor((x0 - r - soft + EXT) / CELL)),
-    i1 = Math.min(N - 1, Math.ceil((x0 + r + soft + EXT) / CELL)),
-    j0 = Math.max(0, Math.floor((z0 - r - soft + EXT) / CELL)),
-    j1 = Math.min(N - 1, Math.ceil((z0 + r + soft + EXT) / CELL));
-  for (let j = j0; j <= j1; j++)
-    for (let i = i0; i <= i1; i++) {
-      const d = Math.hypot(cellX(i) - x0, cellZ(j) - z0);
-      if (gorgeD(cellX(i), cellZ(j)) < GORGE.bank + GORGE.wall + 4) continue;
-      const t = smoothstep(r + soft, r, d);
-      heights[at(i, j)] = heights[at(i, j)]! + (y - heights[at(i, j)]!) * t;
-      clearMask[at(i, j)] = Math.max(clearMask[at(i, j)]!, t);
-    }
-}
-
-/** Rasterises a strip along samples [x, z, y]: within `inner` it is y, fading to the land by `outer`. */
-function strip(
-  samples: [number, number, number][],
-  inner: number,
-  outer: number,
-  painted: boolean,
-  skip?: (x: number, z: number) => boolean,
-) {
-  const best = new Map<number, [number, number]>();
-  const cells = Math.ceil(outer / CELL) + 1;
-  for (const [x, z, y] of samples) {
-    const ci = Math.round((x + EXT) / CELL),
-      cj = Math.round((z + EXT) / CELL);
-    for (let j = Math.max(0, cj - cells); j <= Math.min(N - 1, cj + cells); j++)
-      for (let i = Math.max(0, ci - cells); i <= Math.min(N - 1, ci + cells); i++) {
-        const d = Math.hypot(cellX(i) - x, cellZ(j) - z);
-        if (d > outer) continue;
-        const k = at(i, j),
-          b = best.get(k);
-        if (!b || d < b[0]) best.set(k, [d, y]);
-      }
-  }
-  for (const [k, [d, y]] of best) {
-    const i = k % N,
-      j = Math.floor(k / N);
-    if (skip?.(cellX(i), cellZ(j))) continue;
-    const t = smoothstep(outer, inner, d);
-    heights[k] = heights[k]! + (y - heights[k]!) * t;
-    clearMask[k] = Math.max(clearMask[k]!, t);
-    if (painted) pathMask[k] = Math.max(pathMask[k]!, smoothstep(inner + 1, inner - 0.5, d));
-  }
-}
-
-/** One path's samples every metre, in order, with its total. Bridges are left out of the ground. */
-export const PATH_SAMPLES: [number, number, number][][] = PATHS.map((p) => {
-  const out: [number, number, number][] = [];
-  p.pts.slice(0, -1).forEach((a, k) => {
-    const b = p.pts[k + 1]!;
-    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    for (let n = 0; n < Math.ceil(len); n++) {
-      const t = n / Math.ceil(len);
-      out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
-    }
-  });
-  return out;
-});
-
-function bake() {
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) heights[at(i, j)] = ground(cellX(i), cellZ(j));
-  pad(VILLAGE.x, VILLAGE.z, VILLAGE.y, VILLAGE.r, 18);
-  for (const l of LINKS) pad(l.camp.x, l.camp.z, l.camp.y, 34, 22);
-  pad(-82, 2, VILLAGE.y, 26, 10);
-  pad(YARD.x, YARD.z, VILLAGE.y, 14, 8);
-  // Every plot sits on a level pad, which also keeps the random trees out of it.
-  const plots = [TOWN.start, ...TOWN.wood, ...TOWN.stone].flat();
-  for (const p of plots) pad(p.x, p.z, VILLAGE.y, Math.max(p.w ?? 6, p.d ?? 6) * 0.7 + 1.5, 5);
-  TOWN.camps.forEach((c, k) => {
-    for (const p of [...c.asleep, ...c.awake])
-      pad(p.x, p.z, LINKS[k]!.camp.y, Math.max(p.w ?? 6, p.d ?? 6) * 0.7 + 1.5, 5);
-  });
-  // Rail on the land: a cutting or low bank along it, none in the gorge (that's what the trestle's for).
-  const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
-  for (const line of Object.values(LINES)) {
-    const samples: [number, number, number][] = [];
-    for (let s = -12; s <= line.len + 8; s += 1) {
-      lineAt(line, s, P);
-      samples.push([P.x, P.z, railY(line, s) - 0.08]);
-    }
-    strip(samples, 4, 8, false, (x, z) => gorgeD(x, z) < GORGE.bank + GORGE.wall + 2);
-  }
-  // Paths last: they cut their ramps into the walls and fill across whatever they meet.
-  PATHS.forEach((p) => {
-    const samples: [number, number, number][] = [];
-    p.pts.slice(0, -1).forEach((a, k) => {
-      if (k === p.bridgeAt) return;
-      const b = p.pts[k + 1]!;
-      const len = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]));
-      for (let m = 0; m <= len; m++) {
-        const t = m / len;
-        samples.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
-      }
-    });
-    strip(samples, p.bold ? 3.6 : 2.4, p.bold ? 6.5 : 4.8, true);
-  });
-}
-bake();
-
-/** The land's height at a world point. */
-export function H(wx: number, wz: number) {
-  const fx = (wx - ORIGIN.x + EXT) / CELL,
-    fz = (wz - ORIGIN.z + EXT) / CELL;
-  if (fx < 0 || fz < 0 || fx >= N - 1 || fz >= N - 1) return -6;
-  const i = Math.floor(fx),
-    j = Math.floor(fz),
-    u = fx - i,
-    v = fz - j;
-  const a = heights[at(i, j)]!,
-    b = heights[at(i + 1, j)]!,
-    c = heights[at(i, j + 1)]!,
-    d = heights[at(i + 1, j + 1)]!;
-  return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
-}
-export const insidePlace = (wx: number, wz: number) =>
-  Math.abs(wx - ORIGIN.x) < EXT - 4 && Math.abs(wz - ORIGIN.z) < EXT - 4;
+export { H, PATH_SAMPLES, insidePlace };
 
 // ---------------------------------------------------------------- the mesh and the heightfield
 const FLAT = (color: string) => flat(color);
 
 function buildMesh() {
-  const pos = new Float32Array(N * N * 3),
-    col = new Float32Array(N * N * 3);
+  const pos = new Float32Array(NX * NZ * 3),
+    col = new Float32Array(NX * NZ * 3);
   const c = new THREE.Color();
   const SAND = new THREE.Color('#e8d39a'),
     GRASS = new THREE.Color(LOOK.ground ? '#6c9a42' : '#79b84a'),
@@ -235,15 +41,15 @@ function buildMesh() {
     ROCK_LOW = new THREE.Color('#6d6f78'),
     DIRT = new THREE.Color('#e0b271'),
     BANK = new THREE.Color('#8e9a78');
-  for (let j = 0; j < N; j++)
-    for (let i = 0; i < N; i++) {
+  for (let j = 0; j < NZ; j++)
+    for (let i = 0; i < NX; i++) {
       const k = at(i, j),
         h = heights[k]!,
         x = cellX(i),
         z = cellZ(j);
       pos.set([x + ORIGIN.x, h, z + ORIGIN.z], k * 3);
-      const hx = heights[at(Math.min(N - 1, i + 1), j)]! - heights[at(Math.max(0, i - 1), j)]!,
-        hz = heights[at(i, Math.min(N - 1, j + 1))]! - heights[at(i, Math.max(0, j - 1))]!;
+      const hx = heights[at(Math.min(NX - 1, i + 1), j)]! - heights[at(Math.max(0, i - 1), j)]!,
+        hz = heights[at(i, Math.min(NZ - 1, j + 1))]! - heights[at(i, Math.max(0, j - 1))]!;
       const slope = Math.hypot(hx, hz) / (2 * CELL);
       c.copy(GRASS).lerp(
         GRASS2,
@@ -255,8 +61,8 @@ function buildMesh() {
       col.set([c.r, c.g, c.b], k * 3);
     }
   const idx: number[] = [];
-  for (let j = 0; j < N - 1; j++)
-    for (let i = 0; i < N - 1; i++) {
+  for (let j = 0; j < NZ - 1; j++)
+    for (let i = 0; i < NX - 1; i++) {
       const a = at(i, j),
         b = at(i + 1, j),
         c0 = at(i, j + 1),
@@ -281,22 +87,37 @@ function buildMesh() {
 
   // heights[i][j]: i steps +x, j steps -z, from the body's position.
   const hf: number[][] = [];
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < NX; i++) {
     const col2: number[] = [];
-    for (let j = 0; j < N; j++) col2.push(heights[at(i, N - 1 - j)]!);
+    for (let j = 0; j < NZ; j++) col2.push(heights[at(i, NZ - 1 - j)]!);
     hf.push(col2);
   }
-  addStatic({ kind: 'heightfield', heights: hf, cell: CELL }, { x: ORIGIN.x - EXT, y: 0, z: ORIGIN.z + EXT });
+  addStatic({ kind: 'heightfield', heights: hf, cell: CELL }, { x: ORIGIN.x + GRID.x0, y: 0, z: ORIGIN.z + GRID.z1 });
 }
 
-export function addStatic(shape: Shape, position: { x: number; y: number; z: number }, rotation?: THREE.Quaternion) {
+/** Walls and roofs of buildings you can walk into: solid to you (your mask has every bit), and the indoor camera leaves this
+ * bit out of its arm, so the wall it's cut away doesn't push the lens into your back (docs/research/town-interiors.md). */
+export const ROOM_GROUP = 8;
+export function addStatic(
+  shape: Shape,
+  position: { x: number; y: number; z: number },
+  rotation?: THREE.Quaternion,
+  group: number = GROUP.SCENERY,
+) {
   const body = createBody({
     material: groundMat,
-    group: GROUP.SCENERY,
+    group,
     position,
     ...(rotation ? { rotation: { x: rotation.x, y: rotation.y, z: rotation.z, w: rotation.w } } : {}),
     shapes: [shape],
   });
+  addBody(body);
+  return body;
+}
+
+/** Many small solid things in one body: `offset`s are from `position`. */
+export function addStatics(shapes: Shape[], position: { x: number; y: number; z: number }) {
+  const body = createBody({ material: groundMat, group: GROUP.SCENERY, position, shapes });
   addBody(body);
   return body;
 }
@@ -365,6 +186,8 @@ function buildSpire() {
     m.rotation.y = y * 0.7;
     m.castShadow = true;
     scene.add(m);
+    // Round 4: every drum's solid, as high as it's drawn. You climb this now.
+    addStatic({ kind: 'cylinder', rTop: r1, rBottom: r0, h, segments: 8 }, { x: X + dx, y: y + h / 2, z: Z + dz });
     y += h - 0.5;
   }
   // The lookout and the orange vane that say "that one" from every lobe.
@@ -376,7 +199,6 @@ function buildSpire() {
   const vane = new THREE.Mesh(new THREE.BoxGeometry(5, 1.6, 0.25), FLAT('#f0752c'));
   vane.position.set(X + 9.6, top + 4.4, Z - 1);
   scene.add(deck, mast, vane);
-  addStatic({ kind: 'cylinder', rTop: 5, rBottom: 11, h: 50, segments: 8 }, { x: X, y: 25, z: Z });
 }
 
 // ---------------------------------------------------------------- footbridges, trees, a few places to stop at
@@ -389,7 +211,6 @@ function buildBridges() {
       bx = b[0] + ORIGIN.x,
       bz = b[1] + ORIGIN.z;
     plank(ax, az, bx, bz, a[2] + 0.12, b[2] + 0.12, 3, '#c08a4c', 0.35);
-    // Posts and rails, drawn only: it's low, and falling in is fine.
     const len = Math.hypot(bx - ax, bz - az),
       ux = (bx - ax) / len,
       uz = (bz - az) / len;
@@ -403,6 +224,12 @@ function buildBridges() {
       rail.position.set((ax + bx) / 2 - uz * side * 1.45, a[2] + 1.15, (az + bz) / 2 + ux * side * 1.45);
       rail.rotation.y = Math.atan2(ux, uz);
       scene.add(rail);
+      // The rail holds you in: what looks solid is solid.
+      addStatic(
+        { kind: 'box', hx: 0.08, hy: 0.6, hz: len / 2 },
+        { x: rail.position.x, y: a[2] + 0.65, z: rail.position.z },
+        new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, rail.rotation.y),
+      );
     }
   }
 }
@@ -411,18 +238,22 @@ function buildTrees() {
   const rng = mulberry32(31);
   const pose = new THREE.Object3D();
   const spots: { x: number; y: number; z: number; s: number }[] = [];
-  for (let n = 0; n < 2600 && spots.length < 340; n++) {
-    const x = (rng() * 2 - 1) * (EXT - 12),
-      z = (rng() * 2 - 1) * (EXT - 12);
-    const i = Math.round((x + EXT) / CELL),
-      j = Math.round((z + EXT) / CELL),
+  const EXT = 260;
+  for (let n = 0; n < 2600 && spots.length < 400; n++) {
+    // The first 340 over the old island; the rest on Far Head.
+    const old = spots.length < 340,
+      x = old ? (rng() * 2 - 1) * (EXT - 12) : HEAD.x + (rng() * 2 - 1) * HEAD.r,
+      z = old ? (rng() * 2 - 1) * (EXT - 12) : HEAD.z + (rng() * 2 - 1) * HEAD.r;
+    const i = Math.round((x - GRID.x0) / CELL),
+      j = Math.round((z - GRID.z0) / CELL),
       h = heights[at(i, j)]!;
     if (h < 4 || clearMask[at(i, j)]! > 0.05 || gorgeD(x, z) < 21) continue;
     if (Math.hypot(x - SPIRE.x, z - SPIRE.z) < 30) continue;
     if (GROVES.some((g) => Math.hypot(x - g.x, z - g.z) < g.r + 6)) continue; // the groves' trees are the ones you chop
     // Groves, not a scatter: a slow field thins most of the land out, and the ridge is the densest.
     const grove = Math.sin(x * 0.036 + 1.2) * Math.cos(z * 0.041 - 0.4) + (z < -100 ? 0.8 : 0);
-    if (grove < 0.15 + rng() * 0.25) continue;
+    if (old && grove < 0.15 + rng() * 0.25) continue;
+    if (!old && rng() < 0.4) continue;
     spots.push({ x, y: h, z, s: 0.8 + rng() * 0.7 });
     if (LOOK.contact) addBlob(x + ORIGIN.x, h, z + ORIGIN.z, 2.4, 2.4);
   }
@@ -447,6 +278,18 @@ function buildTrees() {
     m.frustumCulled = false;
     scene.add(m);
   }
+  // Their trunks are solid, all in one body. The crowns are over your head.
+  addStatics(
+    spots.map((t) => ({
+      kind: 'cylinder' as const,
+      rTop: 0.36 * t.s,
+      rBottom: 0.36 * t.s,
+      h: 3 * t.s,
+      segments: 6,
+      offset: { x: t.x, y: t.y + 1.5 * t.s, z: t.z },
+    })),
+    { x: ORIGIN.x, y: 0, z: ORIGIN.z },
+  );
 }
 
 // ---------------------------------------------------------------- what stands across the sea

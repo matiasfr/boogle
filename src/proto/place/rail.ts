@@ -17,11 +17,11 @@ import { me } from '../../player/player.ts';
 import { wagonLook, LOCO, TRAILER, type CarSpec } from '../wagon/look.ts';
 import { box, place } from '../net/boxes.ts';
 import { deck, type Deck } from '../net/crates.ts';
-import { H, addStatic, plank, slab } from './land.ts';
+import { H, addStatic, slab } from './land.ts';
 import { ORIGIN, STUB, TUNE, lineAt, railY, type Line, type LinePoint, type LineSpec } from './layout.ts';
 import { RAIL_SIZE, dropSet, dustRing, logStackMesh, setStackLog, type DropSet } from './pieces.ts';
 import { flat } from '../flat.ts';
-import { LOOK, STEEL, paint, rustU, softGlow } from './look.ts';
+import { LOOK, STEEL, paint, rustTrainU, rustU, softGlow } from './look.ts';
 import { merged } from './gifts.ts';
 import { kitBatch, lookTrack, machineLook, trainLook } from './look-kit.ts';
 
@@ -272,32 +272,6 @@ function removeBodies(so: Solid) {
   so.on = null;
 }
 
-// ---------------------------------------------------------------- platforms
-/** A platform along one side of the track, with a ramp at its far end and one off its side, down to the ground. */
-export function buildPlatform(line: Line, s0: number, s1: number, lat: number, rampAt: number, sideAt = (s0 + s1) / 2) {
-  const a = { x: 0, z: 0 },
-    b = { x: 0, z: 0 };
-  lineAt(line, s0, P);
-  lateral(lat, a);
-  lineAt(line, s1, P);
-  lateral(lat, b);
-  const low = Math.min(railY(line, s0), railY(line, s1)) + 0.72;
-  plank(a.x, a.z, b.x, b.z, low, low, 2.5, '#bdb8ac', 1.2);
-  const r = { x: 0, z: 0 };
-  lineAt(line, rampAt, P);
-  lateral(lat, r);
-  const from = rampAt < s0 ? a : b;
-  plank(r.x, r.z, from.x, from.z, H(r.x, r.z) + 0.05, low, 2.5, '#bdb8ac', 0.4);
-  // Off the side, at the middle: so you can walk up from where you are.
-  lineAt(line, sideAt, P);
-  const sign = Math.sign(lat);
-  const t0 = { x: 0, z: 0 },
-    t1 = { x: 0, z: 0 };
-  lateral(lat + sign * 1.25, t0);
-  lateral(lat + sign * 7, t1);
-  plank(t1.x, t1.z, t0.x, t0.z, H(t1.x, t1.z) + 0.05, low, 2.5, '#bdb8ac', 0.4);
-}
-
 // ---------------------------------------------------------------- a car: a kinematic body following a planned pose
 const BOTTOM = 0.4;
 // The deck's edge holds you while you stand. The body is a sphere on a box and counts as standing up to CARRY.edge past the
@@ -330,7 +304,7 @@ onPreStep(
   },
   { order: 20 }, // after the decks move (10), before the player's controller (40)
 );
-type Car = {
+export type Car = {
   spec: CarSpec;
   hy: number;
   body: Body;
@@ -344,7 +318,12 @@ type Car = {
   pitch: number;
   platform: Platform;
 };
-function makeCar(spec: CarSpec, rock: THREE.Object3D, before: () => void, extra: Parameters<typeof createBody>[0]) {
+export function makeCar(
+  spec: CarSpec,
+  rock: THREE.Object3D,
+  before: () => void,
+  extra: Parameters<typeof createBody>[0],
+) {
   const hy = (spec.top - BOTTOM) / 2;
   const body = createBody({
     type: BODY.KINEMATIC,
@@ -396,7 +375,7 @@ function moveCar(c: Car, dt: number) {
   p.velocity.set(dx / dt, dy / dt, dz / dt);
   p.angularVelocity.set(0, (angleLerp(c.prevYaw, c.yaw, 1) - c.prevYaw) / dt, 0);
 }
-function snapCar(c: Car) {
+export function snapCar(c: Car) {
   const p = c.body;
   p.position.set(c.x, c.y, c.z);
   p.quaternion.set(0, Math.sin(c.yaw / 2), 0, Math.cos(c.yaw / 2));
@@ -404,14 +383,14 @@ function snapCar(c: Car) {
   p.angularVelocity.set(0, 0, 0);
   c.prevYaw = c.yaw;
 }
-function drawCar(c: Car, alpha: number) {
+export function drawCar(c: Car, alpha: number) {
   const ip = c.body.interpolatedPosition;
   c.mesh.position.set(ip.x, ip.y, ip.z);
   c.mesh.rotation.y = angleLerp(c.prevYaw, yawOf(c.body.quaternion), alpha);
   c.rock.rotation.x = -c.pitch;
   c.mesh.visible = c.y > -30; // a train not yet needed waits under the land: nothing to draw, nor to shadow
 }
-function poseCarOnLine(c: Car, line: Line, s: number, sign: number) {
+export function poseCarOnLine(c: Car, line: Line, s: number, sign: number) {
   lineAt(line, s + 1.1, a);
   lineAt(line, s - 1.1, b);
   c.x = (a.x + b.x) / 2 + ORIGIN.x;
@@ -428,7 +407,7 @@ const a = { ...P },
 // ---------------------------------------------------------------- the machine
 /** What the machine carries, drawn in the flatbed's frame: its rack of rails down each side, its cradle of logs. */
 const RACK_RAILS = 12,
-  CRADLE_LOGS = 24;
+  CRADLE_LOGS = 40;
 const F = 2.4, // m from the head (where pieces land) back to the flatbed's middle
   GAP = 3.7; // m between the cars' middles
 export type Machine = ReturnType<typeof buildMachine>;
@@ -491,7 +470,7 @@ export function buildMachine() {
     for (let k = 0; k < n; k++) {
       const row = Math.floor(k / 5),
         c = k % 5;
-      cradleAt.set(0, onDeck + 0.14 + row * 0.26, 0.2 + c * 0.25);
+      cradleAt.set(0, onDeck + 0.14 + row * 0.2, 0.2 + c * 0.25);
       setStackLog(cradle, k, cradleAt, 0);
     }
     cradle.count = n;
@@ -623,6 +602,11 @@ export function buildMachine() {
     shudder: (a: number) => void (st.shudder = a),
     setRust: (v: number) => void (rustU.value = v),
     setFire: (v: number) => void (fireOn = v),
+    /** Rad/s the wheels slip with no ground going by. */
+    setSlip: (rate: number) => {
+      const l = look as { slip?: { rate: number } };
+      if (l.slip) l.slip.rate = rate;
+    },
     setLamps,
     moved(d: number) {
       st.moved += d;
@@ -708,79 +692,103 @@ export function thud(machine: Machine, kind: string, x: number, y: number, z: nu
 }
 
 // ---------------------------------------------------------------- trains
+// Not a timetable: the owner felt "at the whims of if a train happened to show up". A train shuttles along its stops with its
+// cargo, and stepping onto a platform calls it straight there (./cargo.ts). It knows how long that'll be.
 const CARS: { spec: CarSpec; off: number }[] = [
   { spec: LOCO, off: 3.7 },
   { spec: TRAILER, off: 0 },
   { spec: TRAILER, off: -3.7 },
 ];
-/** A train's place on its line: `stop` 0 at the village, 1 at the camp, -1 moving. */
 export type Train = {
   line: Line;
+  stops: number[];
   s: number;
-  v: number;
-  stop: -1 | 0 | 1;
+  v: number; // m/s along the line, signed
+  stop: number; // the stop it's standing at, -1 moving
+  target: number;
+  sweep: 1 | -1; // which way it's working along the stops
+  dwell: number; // s left at this stop
+  express: boolean; // someone's aboard: straight to the end of the line, past the stops between
   cars: Car[];
   load: Deck;
   lastStop: number;
 };
-
-/** Rides between stops, for the report and the card. */
-export const runSeconds = (line: Line) => (line.len - TUNE.stopIn * 2) / TUNE.cruise + TUNE.cruise / TUNE.accel;
-export const cycleOf = (line: Line) => 2 * (TUNE.dwell + runSeconds(line));
-/** The moment in a cycle just before a train leaves the far end. */
-const leavingFar = (line: Line) => 2 * TUNE.dwell + runSeconds(line) - 0.6;
-
-function trainAt(tr: Train, t: number) {
-  const { line } = tr;
-  const RUN = runSeconds(line),
-    C = cycleOf(line),
-    LEN = line.len - TUNE.stopIn * 2,
-    ta = TUNE.cruise / TUNE.accel;
-  const along = (u: number) =>
-    u < ta
-      ? 0.5 * TUNE.accel * u * u
-      : u < RUN - ta
-        ? TUNE.cruise * (u - ta / 2)
-        : LEN - 0.5 * TUNE.accel * (RUN - u) ** 2;
-  const speed = (u: number) => Math.min(TUNE.cruise, TUNE.accel * u, TUNE.accel * (RUN - u));
-  const c = ((t % C) + C) % C;
-  if (c < TUNE.dwell) {
-    tr.s = TUNE.stopIn;
-    tr.v = 0;
-    tr.stop = 0;
-  } else if (c < TUNE.dwell + RUN) {
-    tr.s = TUNE.stopIn + along(c - TUNE.dwell);
-    tr.v = speed(c - TUNE.dwell);
-    tr.stop = -1;
-  } else if (c < 2 * TUNE.dwell + RUN) {
-    tr.s = line.len - TUNE.stopIn;
-    tr.v = 0;
-    tr.stop = 1;
-  } else {
-    const r = c - 2 * TUNE.dwell - RUN;
-    tr.s = line.len - TUNE.stopIn - along(r);
-    tr.v = -speed(r);
+function stepTrain(tr: Train, dt: number) {
+  if (tr.dwell > 0) {
+    tr.dwell -= dt;
+    if (tr.dwell > 0) return;
+    // On to the next stop along, turning at the ends.
+    if (tr.target + tr.sweep < 0 || tr.target + tr.sweep >= tr.stops.length) tr.sweep = -tr.sweep as 1 | -1;
+    tr.target = tr.express ? (tr.sweep > 0 ? tr.stops.length - 1 : 0) : tr.target + tr.sweep;
+    tr.express = false;
     tr.stop = -1;
   }
+  const to = tr.stops[tr.target]!,
+    d = to - tr.s,
+    want = Math.sign(d) * Math.min(TUNE.cruise, Math.sqrt(2 * TUNE.accel * Math.abs(d))),
+    most = TUNE.accel * dt;
+  tr.v += Math.max(-most, Math.min(most, want - tr.v));
+  tr.s += tr.v * dt;
+  if (Math.abs(to - tr.s) < 0.04 && Math.abs(tr.v) < 0.4) {
+    tr.s = to;
+    tr.v = 0;
+    tr.stop = tr.target;
+    tr.dwell = TUNE.dwell;
+    tr.express = false;
+  }
+}
+/** Seconds until it can be standing at `stop`, if it goes there now. */
+export function trainEta(tr: Train, stop: number) {
+  if (tr.stop === stop) return 0;
+  const a = TUNE.accel,
+    c = TUNE.cruise;
+  let d = tr.stops[stop]! - tr.s,
+    v = tr.v * Math.sign(d) || 0,
+    t = 0;
+  d = Math.abs(d);
+  if (v < 0) {
+    // Going the other way: it stops first, and that's further to come back.
+    t += -v / a;
+    d += (v * v) / (2 * a);
+    v = 0;
+  }
+  const up = (c * c - v * v) / (2 * a),
+    down = (c * c) / (2 * a);
+  if (up + down <= d) t += (c - v) / a + (d - up - down) / c + c / a;
+  else t += (2 * Math.sqrt(a * d + (v * v) / 2) - v) / a;
+  return Math.ceil(t);
+}
+/** Straight there. If it's already heading the other way it brakes and comes back. */
+export function callTrain(tr: Train, stop: number) {
+  if (tr.stop === stop) {
+    tr.dwell = Math.max(tr.dwell, TUNE.dwell);
+    return;
+  }
+  tr.target = stop;
+  tr.dwell = 0;
+  tr.stop = -1;
+  tr.sweep = stop === 0 ? 1 : stop === tr.stops.length - 1 ? -1 : tr.sweep;
 }
 
-/** One train on a line. It stands at the far end with its load until `start`. */
-export function buildTrain(line: Line) {
-  const clock = { t: 0, running: false };
+/** One train on a line. It stands where it's told until `start`. */
+export function buildTrain(line: Line, stops: number[]) {
+  const clock = { running: false };
   const look = LOOK.kit ? trainLook(CARS.length - 1) : wagonLook(CARS.length - 1, false);
   const tr: Train = {
     line,
-    s: line.len - TUNE.stopIn,
+    stops,
+    s: stops[stops.length - 1]!,
     v: 0,
-    stop: 1,
+    stop: stops.length - 1,
+    target: stops.length - 1,
+    sweep: -1,
+    dwell: 0,
+    express: false,
     cars: [],
     load: null as unknown as Deck,
     lastStop: -1,
   };
-  const plan = () => {
-    trainAt(tr, clock.t);
-    tr.cars.forEach((c, k) => poseCarOnLine(c, line, tr.s + CARS[k]!.off, 1));
-  };
+  const plan = () => tr.cars.forEach((c, k) => poseCarOnLine(c, line, tr.s + CARS[k]!.off, 1));
   CARS.forEach(({ spec }, k) => {
     tr.cars.push(
       makeCar(
@@ -788,7 +796,7 @@ export function buildTrain(line: Line) {
         look.cars[k]!,
         () => {
           if (k === 0 && clock.running) {
-            clock.t += FIXED;
+            stepTrain(tr, FIXED);
             plan();
           }
         },
@@ -799,11 +807,18 @@ export function buildTrain(line: Line) {
   tr.load = deck(tr.cars[tr.cars.length - 1]!.rock.children[0]!, () => {});
   const smoke = new THREE.Color('#ece8e0'),
     chimney = new THREE.Vector3();
-  let puffs = 0;
+  let puffs = 0,
+    shudder = 0;
+  const rocks = tr.cars.map((c) => c.rock);
   onFrame(
-    ({ dt }) => {
+    ({ dt, now }) => {
       const alpha = stepAlpha();
       for (const c of tr.cars) drawCar(c, alpha);
+      if (shudder > 0)
+        rocks.forEach((r, n) => {
+          r.rotation.z = Math.sin(now * 0.073 + n * 1.3) * 0.018 * shudder;
+          r.position.x = Math.sin(now * 0.097 + n * 1.3) * 0.035 * shudder;
+        });
       if (!clock.running) return;
       const speed = Math.abs(tr.v);
       puffs += speed * dt * 0.25 + (speed < 0.1 ? dt / 2 : 0);
@@ -828,14 +843,14 @@ export function buildTrain(line: Line) {
     },
     { phase: 'update', order: 6 },
   );
-  const parked = leavingFar(line) - TUNE.dwell;
-  return {
+  const run = {
     tr,
     clock,
-    /** Runs. From the far end, just pulling out; or from `at` in the cycle (just leaving the village, say). */
-    start(fromFar = true, at = 0) {
+    /** Runs, from wherever it's standing. */
+    start() {
       clock.running = true;
-      clock.t = fromFar ? leavingFar(line) : at;
+      tr.dwell = Math.max(tr.dwell, 1.5);
+      tr.stop = tr.target;
       plan();
       for (const c of tr.cars) c.mesh.visible = true;
     },
@@ -849,23 +864,51 @@ export function buildTrain(line: Line) {
         snapCar(c);
       }
     },
-    /** Stands at the far end, waiting. */
-    park() {
+    /** Stands at a stop, waiting. */
+    park(stop = stops.length - 1) {
       clock.running = false;
-      clock.t = parked;
+      tr.s = stops[stop]!;
+      tr.v = 0;
+      tr.stop = tr.target = stop;
+      tr.sweep = stop === 0 ? 1 : -1;
+      tr.dwell = 0;
       plan();
       for (const c of tr.cars) snapCar(c);
     },
-    /** Reloading into an open line: somewhere mid-cycle, not jumping anybody. */
-    resume(at: number) {
+    /** Running, from a saved or shared place. */
+    put(s: number, v: number, target: number, sweep: 1 | -1, dwell: number) {
       clock.running = true;
-      clock.t = at;
+      tr.s = s;
+      tr.v = v;
+      tr.target = target;
+      tr.sweep = sweep;
+      tr.dwell = dwell;
+      tr.stop = dwell > 0 ? target : -1;
       plan();
       for (const c of tr.cars) snapCar(c);
     },
     onTrain: (p: Platform | null) => tr.cars.some((c) => c.platform === p),
     look,
     clockRunning: () => clock.running,
+    /** For the wake: what ./celebrate.ts's wakeShow asks of a machine. */
+    waker: {
+      flatbed: tr.cars[1]!,
+      loco: tr.cars[0]!,
+      look,
+      shudder: (a: number) => {
+        shudder = a;
+        if (!a) for (const r of rocks) r.rotation.z = r.position.x = 0;
+      },
+      setRust: (v: number) => void (rustTrainU.value = v),
+      setFire: () => {},
+      setLamps: () => {},
+      setSlip: (rate: number) => {
+        const l = look as { slip?: { rate: number } };
+        if (l.slip) l.slip.rate = rate;
+      },
+      distance: (x: number, z: number) => Math.hypot(tr.cars[1]!.x - x, tr.cars[1]!.z - z),
+    },
   };
+  return run;
 }
 export type TrainRun = ReturnType<typeof buildTrain>;

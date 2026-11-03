@@ -1,11 +1,11 @@
 {
   "buddy": {
     "source": "buddy.py",
-    "sourceHash": "fb8d965af0fda2db",
-    "outHash": "83b56f23453ac778",
-    "rawBytes": 268920,
-    "bytes": 67628,
-    "triangles": 9252,
+    "sourceHash": "ef2a3c563ebaec25",
+    "outHash": "a211903b4d529c81",
+    "rawBytes": 258820,
+    "bytes": 66472,
+    "triangles": 8972,
     "animations": [],
     "textures": []
   },
