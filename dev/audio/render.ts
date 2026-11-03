@@ -9,6 +9,7 @@
 //   node dev/audio/render.ts                       every take into .look/audio/ (WAV + MP3 + manifest.json)
 //   node dev/audio/render.ts --only haul,ui        just the takes whose id or page starts with one of these
 //   node dev/audio/render.ts --out <dir>
+//   node dev/audio/render.ts --offline-place       raw round-4 recipes via the existing Codex browser broker
 //
 // Files are peak-normalized to -1 dBFS so they audition at the same loudness on a phone; manifest.json keeps each
 // one's in-game peak and RMS (dBFS at the game's master), so relative loudness is still on record. One-shots are
@@ -602,6 +603,89 @@ const opt = (k: string) => (args.includes(k) ? args[args.indexOf(k) + 1] : null)
 const only = opt('--only')?.split(',') ?? null;
 const out = path.resolve(opt('--out') ?? path.join(root, '.look/audio'));
 fs.mkdirSync(out, { recursive: true });
+// A Codex worker cannot launch Chromium. Ask its broker to render the same recipes in OfflineAudioContext;
+// preserve unnormalized SFX levels so the owner can judge their relationship. No live mixer/compressor in this mode.
+if (args.includes('--offline-place')) {
+  const evidenceRoot = path.join(root, '.look/evidence');
+  const before = new Set(fs.existsSync(evidenceRoot) ? fs.readdirSync(evidenceRoot) : []);
+  const run = spawnSync(
+    process.execPath,
+    [
+      '.look/see-client.ts',
+      'look',
+      '--query',
+      'proto=place&ambience=off',
+      '--eval',
+      'dev/audio/place-offline.ts',
+      '--warm',
+      '0',
+      '--seconds',
+      '0.2',
+      '--frames',
+      '2',
+      '--name',
+      'audio-offline',
+      '--question',
+      'Does the place still render after all round-4 sound recipes render offline?',
+    ],
+    { encoding: 'utf8', stdio: ['ignore', 'ignore', 'pipe'] },
+  );
+  // see-client prints and exits; large piped console output can be truncated. The broker's completed disk log is
+  // authoritative. Select only a new manifest for this exact eval, never a previous successful render.
+  const matches = (fs.existsSync(evidenceRoot) ? fs.readdirSync(evidenceRoot) : [])
+    .filter((id) => !before.has(id))
+    .map((id) => path.join(evidenceRoot, id, 'evidence.json'))
+    .filter((file) => fs.existsSync(file))
+    .filter((file) => {
+      const e = JSON.parse(fs.readFileSync(file, 'utf8')) as { operation: string; args: string[] };
+      return e.operation === 'look' && e.args.includes(path.join(root, 'dev/audio/place-offline.ts'));
+    });
+  if (matches.length !== 1) {
+    console.error(`Offline audio: expected one new broker manifest, found ${matches.length}; exit ${run.status}.`);
+    if (run.error) console.error(run.error.message);
+    process.exit(1);
+  }
+  const evidence = matches[0]!;
+  const broker = JSON.parse(fs.readFileSync(evidence, 'utf8')) as { status: number; changedDuringRun: boolean };
+  const log = fs.readFileSync(path.join(path.dirname(evidence), 'output.txt'), 'utf8');
+  type OfflineTake = Result & { id: string; description: string; scheduled: number; sources: number };
+  const takes: OfflineTake[] = log
+    .split('\n')
+    .filter((line) => line.startsWith('AUDIO '))
+    .map((line) => {
+      try {
+        return JSON.parse(line.slice(6)) as OfflineTake;
+      } catch {
+        throw new Error(`Incomplete offline take in broker log; read ${evidence}.`);
+      }
+    });
+  const manifest = takes.map(({ b64, ...take }) => {
+    fs.writeFileSync(path.join(out, `${take.id}.wav`), Buffer.from(b64, 'base64'));
+    console.log(
+      `${take.id}: ${take.seconds.toFixed(3)} s, peak ${take.peakDb.toFixed(1)} dBFS, ${take.clipped} clipped samples`,
+    );
+    return { ...take, wav: `${take.id}.wav` };
+  });
+  fs.writeFileSync(
+    path.join(out, 'place-offline.json'),
+    JSON.stringify(
+      {
+        mode: 'Raw mono SFX at unit distance gain; no master, compressor, normalization or live ambience.',
+        evidence,
+        takes: manifest,
+      },
+      null,
+      2,
+    ) + '\n',
+  );
+  console.log(`Evidence: ${evidence}`);
+  console.log(`Raw WAVs and place-offline.json: ${out}`);
+  if (run.status !== 0 || broker.status !== 0) console.error(`Offline audio failed; read ${evidence}.`);
+  const bad = takes.some((t) => t.clipped > 0 || t.peakDb < -60 || t.seconds < 0.05 || t.seconds > 1.5);
+  process.exit(
+    run.status === 0 && broker.status === 0 && !broker.changedDuringRun && takes.length === 21 && !bad ? 0 : 1,
+  );
+}
 const pick = (p: Page, t: Take) => !only || only.some((o) => t.id.startsWith(o) || p.key === o);
 const encoder = ['ffmpeg', 'afconvert'].find((c) => spawnSync('which', [c]).status === 0);
 
