@@ -45,7 +45,8 @@ import { resetFolk, setFolkEnv, setPopulation, setRiders, updateFolk } from './f
 import { resetForge, forge, updateForge, craneClear } from './forge.ts';
 import { LOOK, installLight } from './look.ts';
 import { installContact } from './look-kit.ts';
-import { clearDrops } from './sites.ts';
+import { clearDrops, feet, outOf } from './sites.ts';
+import { rooms, worldToRoom } from './rooms.ts';
 import {
   FORGE_BILLS,
   GOODS,
@@ -65,7 +66,7 @@ import { besideLine } from './rail.ts';
 import { TREES, back, resetRocks, resetTrees, updateChop, felled } from './chop.ts';
 import { coop, coopWire } from './coop.ts';
 import { rungFromPeer } from './ladder.ts';
-import { job, resetJob, restore, save, personalSlice } from './job.ts';
+import { job, resetJob, restore, save, personalSlice, num } from './job.ts';
 import { L1, L2, allHeaps, dock, forgeFrame, hub, lines, machine, solidHeaps, stepsOf, yard } from './lines.ts';
 import { buildHalt } from './halts.ts';
 import { cartFolk } from './depot.ts';
@@ -305,6 +306,7 @@ function startOver() {
   resetTownLife();
   log.length = 0;
   atSpawn();
+  savedPose = null;
   save();
 }
 onApplied((e: { op: string }) => e.op === 'tune.reset' && !coop.on && startOver());
@@ -319,6 +321,45 @@ onCrystal(() => save());
 personalSlice('crystals', {
   get: () => crystals.found.slice(),
   set: (v) => snapCrystals(Array.isArray(v) ? (v as number[]) : []),
+});
+type SavedPose = { x: number; z: number; yaw: number };
+let savedPose: SavedPose | null = null;
+function safePose(p: SavedPose) {
+  if (![p.x, p.z, p.yaw].every(num) || !insidePlace(p.x, p.z) || H(p.x, p.z) <= 1.6) return false;
+  if (feet.some((f) => outOf(f, { x: p.x, z: p.z }, PLAYER_R + 0.2))) return false;
+  return !Object.values(rooms).some((r) => {
+    const q = worldToRoom(r, p.x, p.z);
+    return Math.abs(q.x) < r.w / 2 + PLAYER_R && Math.abs(q.z) < r.d / 2 + PLAYER_R;
+  });
+}
+personalSlice('position', {
+  get: () => savedPose,
+  set: (v) => {
+    savedPose = null;
+    if (!v || typeof v !== 'object') return;
+    const p = v as SavedPose;
+    if (safePose(p)) savedPose = { x: p.x, z: p.z, yaw: p.yaw };
+  },
+});
+function capturePose() {
+  const b = me.body;
+  if (!b) return;
+  const p = { x: b.position.x, z: b.position.z, yaw: me.yaw };
+  // Never leave a stale safe position behind when quitting on a moving deck or in an unsafe spot.
+  savedPose = !carry.on && !me.swimming && safePose(p) ? p : null;
+}
+function restorePose() {
+  const b = me.body;
+  if (!b || !savedPose || !safePose(savedPose)) return;
+  teleport(b, savedPose.x, H(savedPose.x, savedPose.z) + PLAYER_R + 0.4, savedPose.z);
+  b.velocity.set(0, 0, 0);
+  cam.yaw = me.yaw = savedPose.yaw;
+}
+let poseClock = 0;
+window.addEventListener('pagehide', () => {
+  if (!ready || !placed) return;
+  capturePose();
+  save();
 });
 function atSpawn() {
   const b = me.body;
@@ -357,8 +398,16 @@ onFrame(
       fillPiles();
       restore();
       snapAll();
+      restorePose();
       startStepping();
       coop.arrived();
+    }
+    poseClock += dt;
+    if (poseClock >= 5) {
+      poseClock = 0;
+      const before = JSON.stringify(savedPose);
+      capturePose();
+      if (JSON.stringify(savedPose) !== before) save();
     }
     updateRun(dt);
     updateCargo(dt, now);
