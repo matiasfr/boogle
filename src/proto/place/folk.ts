@@ -24,8 +24,9 @@ const VILLAGE_MAX = 28, // the most of the village's people you'll see at once
   STATION = 2,
   RIDERS = 2,
   COMMUTERS = 5,
-  PUSHERS = 2;
-const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + COMMUTERS + PUSHERS;
+  PUSHERS = 2,
+  RESIDENTS = 6;
+const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + COMMUTERS + PUSHERS + RESIDENTS;
 const SKIN = '#f4cfa4',
   EYE = '#1d1a20';
 // Facing +z, standing on y = 0, about 0.95 m tall. Two thirds of it head and hat.
@@ -60,7 +61,8 @@ const HAND = new THREE.Color(SKIN),
   IRON = new THREE.Color('#5d6068');
 
 // ---------------------------------------------------------------- what each one is doing
-type Job = 'stroll' | 'scaffold' | 'hauler' | 'platform' | 'camp' | 'station' | 'rider' | 'commuter' | 'pusher';
+type Job =
+  'stroll' | 'scaffold' | 'hauler' | 'platform' | 'camp' | 'station' | 'rider' | 'commuter' | 'pusher' | 'resident';
 type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
 type Guy = {
   k: number;
@@ -94,6 +96,8 @@ type Guy = {
   pz: number;
   chat: 0 | 1 | 2; // in an exchange: 1 saying something, 2 listening
   route: Route;
+  act: Mood; // a resident: what they're doing when you're not there
+  tint: THREE.Color | null;
 };
 // Where steer() is taking it: the goal it was given (r), that goal clear of footprints (g), the corner it's rounding (w),
 // the corner before that (p), and the s it has left; below 0, nothing's planned.
@@ -145,6 +149,8 @@ function make(job: Job, x: number, z: number, extra?: Partial<Guy>): Guy {
     pz: z,
     chat: 0,
     route: { rx: 0, rz: 0, gx: 0, gz: 0, wx: 0, wz: 0, px: 0, pz: 0, way: false, left: -1 },
+    act: 'idle',
+    tint: null,
     ...extra,
   };
   guys.push(g);
@@ -217,6 +223,12 @@ const commuters = Array.from({ length: COMMUTERS }, (_, k) =>
 );
 // The depot's cart: two of them shoving it along, a real but small job (./depot.ts).
 const pushers = Array.from({ length: PUSHERS }, (_, k) => make('pusher', 0, 0, { on: false, seat: k }));
+
+/** Someone who lives in a building and stays put (./residents.ts): same on every tab, so two people can talk to them at once. */
+export function addResident(x: number, y: number, z: number, yaw: number, act: Mood, color: string) {
+  return make('resident', x, z, { on: false, fy: y, yaw, act, a: { x: yaw, z: 0 }, tint: new THREE.Color(color) });
+}
+export type { Guy, Mood };
 
 // ---------------------------------------------------------------- what they can see of the world (set by ./index.ts)
 export type FolkEnv = {
@@ -456,6 +468,13 @@ function tapSound(x: number, z: number, k: number) {
   o.start(t);
   o.stop(t + 0.06);
 }
+/** A stamp coming down on a leaf: a little tap and no sparks. */
+function stampAt(g: Guy, dt: number) {
+  const prev = Math.floor(g.t);
+  g.mood = 'hammer';
+  g.t += dt * 0.9;
+  if (Math.floor(g.t) !== prev) tapSound(g.x, g.z, g.k);
+}
 function hammerAt(g: Guy, dt: number) {
   const prev = Math.floor(g.t);
   g.mood = 'hammer';
@@ -614,6 +633,19 @@ function brain(g: Guy, dt: number) {
     case 'pusher':
       g.mood = 'walk';
       return;
+    case 'resident': {
+      // They look up when you come close, and go back to it when you've gone. Local: nobody else's copy has to agree.
+      const close = you.ok && Math.hypot(you.x - g.x, you.z - g.z) < 3.4;
+      const face = close ? Math.atan2(you.x - g.x, you.z - g.z) : g.a.x;
+      let dy = face - g.yaw;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      g.yaw += dy * Math.min(1, dt * 5);
+      if (g.chat || close) g.mood = 'chat';
+      else if (g.act === 'hammer') stampAt(g, dt);
+      else g.mood = g.act;
+      return;
+    }
   }
 }
 const PATH_LEN = 190;
@@ -643,7 +675,7 @@ const limb = (k: number, part: number, x: number, y: number, z: number, rx: numb
 let slot = 0;
 function pose(g: Guy) {
   const k = slot++;
-  coats.setColorAt(k, COLORS[g.k % COLORS.length]!);
+  coats.setColorAt(k, g.tint ?? COLORS[g.k % COLORS.length]!);
   const t = g.t;
   let hop = 0,
     tilt = 0,
@@ -1054,7 +1086,7 @@ export function updateFolk(dt: number) {
     } else g.t += dt * (g.mood === 'hammer' ? 0 : 3);
     g.px = g.x;
     g.pz = g.z;
-    if (g.chat && g.job !== 'station' && g.job !== 'rider') chatBrain(g, dt);
+    if (g.chat && g.job !== 'station' && g.job !== 'rider' && g.job !== 'resident') chatBrain(g, dt);
     else brain(g, dt);
     if (e_ && g.job === 'station' && g.mood === 'ride') {
       const car = e_.machine();

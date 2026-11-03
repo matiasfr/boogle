@@ -14,6 +14,7 @@
 //                 cart and rack; ./cargo.ts trains, ./halts.ts their stations; ./verbs.ts the Interact button; ./objective.ts the
 //                 small line and the beacon; ./panel.ts the tester's panel and `window.__place`; ./coop.ts `&coop=1`
 //   ./tech.ts     ancient technology: devices, gates, rings, secrets; ./tech-layout.ts its numbers; ./moves.ts the moves; ./moves-view.ts their look
+//   ./town-life.ts the town you can go into: ./rooms.ts, ./house.ts, ./shop.ts, ./museum.ts, ./residents.ts; every word in ./town-lines.ts
 //
 // Sync: Local, all of it, kept in localStorage per room. With `&coop=1`, ./coop.ts shares the railway between the tabs in the room.
 import './place.css';
@@ -95,6 +96,7 @@ import { buildPanel } from './panel.ts';
 import { buildSigns, pointArrow, setNumbers, setObjective, updateObjective } from './signs.ts';
 import { onStepUp, snapTown, updateTown } from './town.ts';
 import { buildTech, resetFinds, techApi, updateTech } from './tech.ts';
+import { resetTownLife, updateTownLife } from './town-life.ts';
 
 // A clean view for someone playing it cold (the tester's link, `&fresh=1`): place.css hides the bar and the panel.
 if (new URLSearchParams(location.search).get('fresh') === '1') document.body.classList.add('place-fresh');
@@ -298,6 +300,7 @@ function startOver() {
   snapGifts([], 0, []);
   snapAll();
   snapCrystals([]);
+  resetTownLife();
   log.length = 0;
   atSpawn();
   save();
@@ -380,6 +383,7 @@ onFrame(
     updateCrates(dt);
     solidHeaps();
     updateTown(stepsOf(job.wood), stepsOf(job.stone), dt);
+    updateTownLife(dt);
     updateFinds(dt);
     updateTech(dt, now);
     updateBoiler();
