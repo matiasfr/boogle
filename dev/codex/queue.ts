@@ -62,7 +62,26 @@ while (!stop && entries.some((entry) => entry.state === 'waiting' || entry.state
     } catch {
       /* starting */
     }
-    if (/usage limit|rate limit|too many requests|exceeded your (?:current )?quota/i.test(log)) {
+    const limited = log.split('\n').some((line) => {
+      try {
+        const event = JSON.parse(line);
+        const message =
+          event.type === 'error'
+            ? event.message
+            : event.type === 'turn.failed'
+              ? event.error?.message
+              : event.type === 'item.completed' && event.item?.type === 'error'
+                ? event.item.message
+                : undefined;
+        return (
+          typeof message === 'string' &&
+          /usage limit|rate limit|too many requests|exceeded your (?:current )?quota/i.test(message)
+        );
+      } catch {
+        return false; // A log line may be incomplete while Codex is writing it.
+      }
+    });
+    if (limited) {
       entry.detail = 'Codex usage limit';
       stop = 'Codex usage limit; no more jobs started';
       break;
