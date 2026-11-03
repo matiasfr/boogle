@@ -6,11 +6,14 @@ import { INTERP_MS } from '../../constants.ts';
 import { onFrame } from '../../loop.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { input } from '../../player/input.ts';
+import { removeBody, type Body } from '../../physics/engine.ts';
 import { registerInteractable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { scene } from '../../render/scene.ts';
 import { thump, whistle } from '../../render/machine-sfx.ts';
 import { flat } from '../flat.ts';
+import { pop } from '../minis/common.ts';
+import { shakeView } from './celebrate.ts';
 import { back } from './chop.ts';
 import { coop, pairHook } from './coop.ts';
 import { callCart, cart, cartHere, loadCart, rack } from './depot.ts';
@@ -21,6 +24,7 @@ import { TX, TY, TZ } from './lines.ts';
 import { dustRing, send } from './pieces.ts';
 import { activeFrame } from './run.ts';
 import { H } from './terrain.ts';
+import { addStatic } from './land.ts';
 
 export const BEAM = {
   len: 9,
@@ -33,6 +37,7 @@ export const BEAM = {
   dropS: 1,
   setR: 5,
 };
+export const SEESAW = { padAt: 3.6, padR: 1.6, landV: 5, launchV: 15, tilt: 0.35, coolS: 0.5 };
 type End = 0 | 1;
 let grip: End | null = null;
 const grips = new Map<string, { end: End; seen: number }>();
@@ -51,10 +56,42 @@ function holders(now: number) {
   if (grip !== null && me.body) ends[grip] = me.body.position;
   return ends;
 }
-export function beamEnd(end: End) {
+function beamPoint(end: End, distance: number) {
   const b = job.longBeam,
-    d = ((end === 0 ? -1 : 1) * BEAM.len) / 2;
+    d = (end === 0 ? -1 : 1) * distance;
   return new THREE.Vector3(b.x + Math.sin(b.yaw) * d, H(b.x, b.z) + 0.25, b.z + Math.cos(b.yaw) * d);
+}
+export const beamEnd = (end: End) => beamPoint(end, BEAM.len / 2);
+export const beamPad = (end: End) => beamPoint(end, SEESAW.padAt);
+function overPad(): End | null {
+  const p = me.body?.position;
+  if (!p) return null;
+  for (const end of [0, 1] as const) {
+    const at = beamPad(end);
+    if (Math.hypot(p.x - at.x, p.z - at.z) <= SEESAW.padR) return end;
+  }
+  return null;
+}
+let tilt = 0,
+  previousVy = 0,
+  lastBounce = -Infinity;
+function bounce(end: End, received: boolean) {
+  if (!job.longBeam.set) return;
+  tilt = end === 0 ? -SEESAW.tilt : SEESAW.tilt;
+  thump(job.longBeam.x, job.longBeam.z);
+  const b = me.body;
+  if (
+    received &&
+    b &&
+    overPad() === 1 - end &&
+    b.position.y - H(b.position.x, b.position.z) < 1.4 &&
+    performance.now() - lastBounce >= SEESAW.coolS * 1000
+  ) {
+    b.velocity.y = SEESAW.launchV;
+    lastBounce = performance.now();
+    shakeView(0.1);
+    pop(5);
+  }
 }
 export const pair = { grip: () => grip, carrying: () => carried };
 let carried = false,
@@ -80,6 +117,7 @@ if (COOP) {
     if (m.k === 'cartCall') callCart();
     else if (m.k === 'cartLoad' && count(m.n, CART.rails)) loadCart(m.n);
     else if (m.k === 'beamSet' && num(m.x) && num(m.z) && num(m.yaw)) setBeam(m.yaw);
+    else if (m.k === 'beamBounce' && (m.end === 0 || m.end === 1)) bounce(m.end, true);
   };
   pairHook.busy = () => grip !== null || [...grips.keys()].some((peer) => fresh(peer, performance.now()));
   addPresenceField('placeLongBeam', () => grip);
@@ -95,6 +133,7 @@ if (COOP) {
   const fulcrum = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.5, 0.85), flat('#5b5145'));
   root.add(fulcrum);
   scene.add(root);
+  let solid: Body | null = null;
   registerInteractable(() => {
     if (grip !== null)
       return [
@@ -140,6 +179,33 @@ if (COOP) {
       for (const peer of grips.keys()) if (!remotes.has(peer)) grips.delete(peer);
       const b = job.longBeam;
       if (b.set || !job.awake) grip = null;
+      if (b.set && !solid) {
+        // The neutral beam supports feet; its short tilt is cosmetic, never shared physics.
+        solid = addStatic(
+          { kind: 'box', hx: 0.25, hy: 0.25, hz: BEAM.len / 2 },
+          { x: b.x, y: H(b.x, b.z) + 0.65, z: b.z },
+          new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, b.yaw),
+        );
+      } else if (!b.set && solid) {
+        removeBody(solid);
+        solid = null;
+      }
+      const body = me.body,
+        pad = overPad();
+      if (
+        b.set &&
+        body &&
+        pad !== null &&
+        previousVy <= -SEESAW.landV &&
+        Math.abs(body.velocity.y) < 1 &&
+        now - lastBounce >= SEESAW.coolS * 1000
+      ) {
+        lastBounce = now;
+        bounce(pad, false);
+        coop.send({ k: 'beamBounce', end: pad });
+      }
+      previousVy = body?.velocity.y ?? 0;
+      tilt *= Math.max(0, 1 - dt / 0.5);
       let [a, c] = holders(now);
       const both = !b.set && !!a && !!c;
       if (both) {
@@ -175,7 +241,7 @@ if (COOP) {
       fulcrum.position.y = 0.25;
       const lifted = !b.set && (a || c);
       beam.position.y = b.set ? 0.65 : carrying ? BEAM.holdY : lifted ? 0.25 + BEAM.liftY / 2 : 0.25;
-      beam.rotation.x = !b.set && !carrying && lifted ? (a ? 1 : -1) * Math.asin(BEAM.liftY / BEAM.len) : 0;
+      beam.rotation.x = b.set ? tilt : !carrying && lifted ? (a ? 1 : -1) * Math.asin(BEAM.liftY / BEAM.len) : 0;
     },
     { phase: 'world', order: 15 },
   );

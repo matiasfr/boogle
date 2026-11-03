@@ -32,7 +32,8 @@ const put = (x: number, z: number, up = 1.4) => {
 };
 if (q.has('beam')) {
   const { net } = await import('/src/netplay/net.ts' as string);
-  const { BEAM, beamEnd, pair } = await import('/src/proto/place/pair.ts' as string);
+  const { BEAM, beamEnd, beamPad, pair } = await import('/src/proto/place/pair.ts' as string);
+  const { pressJump, releaseJump } = await import('/src/entities/player/state.ts' as string);
   const { makeBot } = await import('/dev/look/bot.ts' as string);
   const { input } = await import('/src/player/input.ts' as string);
   const hands = await import('/src/player/hands.ts' as string);
@@ -98,9 +99,75 @@ if (q.has('beam')) {
       Object.assign(window, { __coopDone: true });
       return;
     }
+    if (q.get('beam') === 'leave') {
+      if (who === '2') {
+        // A departure fixture combines both Owner fields; Lift itself still requires an empty shoulder.
+        place.job.boiler = 2;
+        place.shoulder('boiler');
+        place.coop.big('boiler');
+      }
+      await until(() => place.job.boiler === 2, 'boiler shouldered');
+      await wait(1200);
+      await barrier('leaving');
+      const beforeDrop = { ...place.job.longBeam };
+      if (who === '2') {
+        net.room.onMessage((m: { t: string; k: string }) => {
+          if (m.t === 'beamProbe' && m.k === 'depart') location.href = 'about:blank';
+        });
+        Object.assign(window, { __coopDone: true });
+        return;
+      }
+      Object.assign(window, { __coopDone: true, __placeAct: () => void depart() });
+      async function depart() {
+        net.room.send({ t: 'beamProbe', k: 'depart' });
+        await until(
+          () => place.job.boiler === 1 && !pair.carrying(),
+          'partner departure returned boiler and dropped beam',
+          15000,
+        );
+        if (
+          pair.grip() !== 0 ||
+          Math.hypot(place.job.longBeam.x - beforeDrop.x, place.job.longBeam.z - beforeDrop.z) > 0.5
+        )
+          throw new Error('Departure lost the surviving grip or beam position');
+        console.log(
+          `COOP 1 departure boiler ${place.job.boiler} beam at rest ${!pair.carrying()} grip ${pair.grip()} at ${JSON.stringify(place.job.longBeam)}`,
+        );
+        await press('Let go');
+        await wait(200);
+        await press('Lift');
+        console.log(`COOP 1 departure Lift still usable ${pair.grip() !== null}`);
+      }
+      return;
+    }
     put(place.ORIGIN.x + BEAM.site.x, BEAM.site.z + ((end === 0 ? -1 : 1) * BEAM.len) / 2);
     await until(() => place.job.longBeam.set && pair.grip() === null, 'beam set');
     console.log(`COOP ${who} beam set ${JSON.stringify(place.job.longBeam)}`);
+    if (q.get('beam') === 'bounce') {
+      const p = beamPad(end);
+      put(p.x, p.z, 1.4);
+      await wait(1000);
+      await barrier('on pads');
+      // Both pages observe the exchange; the primary action starts it after video and curves start.
+      Object.assign(window, {
+        __placeAct: () => {
+          pressJump();
+          setTimeout(releaseJump, 450);
+        },
+      });
+      let peak = me.body!.position.y;
+      const watch = setInterval(() => {
+        peak = Math.max(peak, me.body!.position.y);
+      }, 20);
+      net.room.onMessage((m: { t: string; k: string; end?: number }) => {
+        if (m.t === 'placeCoop' && m.k === 'beamBounce') console.log(`COOP ${who} bounce end ${m.end}`);
+      });
+      setTimeout(() => {
+        clearInterval(watch);
+        console.log(`COOP ${who} seesaw peak y ${peak.toFixed(2)} rise ${(peak - place.H(p.x, p.z)).toFixed(2)}`);
+        if (peak - place.H(p.x, p.z) < 4) throw new Error(`COOP ${who} was not launched`);
+      }, 6500);
+    }
     Object.assign(window, { __coopDone: true });
   })();
 } else if (q.has('pair')) {
