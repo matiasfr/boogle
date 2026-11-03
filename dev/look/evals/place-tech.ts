@@ -187,7 +187,32 @@ const SHOTS: Record<string, () => Promise<unknown> | unknown> = {
     await wait(800);
     const g = tech.GATES.sea;
     stand(g.x + O - 9, 24.5, g.z - 6, -1.2, -0.03);
+    setTimeout(
+      () =>
+        window.__debugCam!.set(
+          [g.x + O + Math.cos(g.yaw) * 14, g.y + 6, g.z - Math.sin(g.yaw) * 14],
+          [g.x + O, g.y + 2.7, g.z],
+        ),
+      1000,
+    );
     act(() => tech.open('sea'));
+  },
+  /** The dark posts connect the standing rim gate to Needle Bell. */
+  async posts() {
+    place.skipTower();
+    await wait(800);
+    const g = tech.GATES.sea;
+    stand(g.x + O - 5, place.H(g.x + O - 5, g.z - 8), g.z - 8);
+    const from = [g.x + O + 14, g.y + 13, g.z + 12];
+    const toward = [O + 26, 38, -8];
+    setTimeout(() => window.__debugCam!.set(from, toward), 1000);
+  },
+  /** The hook pillar's shaft, with the device still unclaimed, from below. */
+  async hookBelow() {
+    const p = padOf('p2');
+    stand(p.x + O - 14, place.H(p.x + O - 14, p.z - 14), p.z - 14);
+    const from = [p.x + O - 14, place.H(p.x + O - 14, p.z - 14) + 2, p.z - 14];
+    setTimeout(() => window.__debugCam!.set(from, [p.x + O, p.top + 13, p.z]), 1000);
   },
   /** A device's pillar from the footbridge below, on the first walk. */
   async fromBelow() {
