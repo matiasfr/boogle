@@ -14,6 +14,7 @@
 // Sync: Local, all of it, kept in localStorage per room. The back bundle's count is here too (`backSeam`, ./chop.ts), so
 // chopping never waits on the host.
 import './place.css';
+import './ambience.ts';
 import * as THREE from 'three/webgpu';
 import { flat } from '../flat.ts';
 import { onFrame } from '../../loop.ts';

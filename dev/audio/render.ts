@@ -512,6 +512,60 @@ const PAGES: Page[] = [
     ],
   },
   {
+    key: 'place',
+    query: 'proto=place',
+    room: 'proto-place',
+    setup: `await until(() => window.boogle.me.entered && window.boogle.me.body, 90000);
+      document.querySelector('.first-run-close')?.click();
+      await sleep(1000);`,
+    takes: [
+      {
+        id: 'place-mix',
+        group: 'A real place (?proto=place)',
+        title: 'The ambience under the game',
+        when: 'Standing at spawn with everything playing: the bed against the little guys and whatever else is going on.',
+        body: `return R.run(30, null, { trim: false });`,
+      },
+      ...[
+        ['coast', 'on the beach', 'place-coast', -125, 130],
+        ['river', 'on the river bank, at the bottom of the gorge', 'place-river', 8, 30],
+        ['inland', 'inland, on the village green', 'place-inland', -100, 14],
+      ].map(([where, title, id, x, z]) => ({
+        id: id as string,
+        group: 'A real place (?proto=place)',
+        title: `Ambience ${title}`,
+        when: `The sea, gulls and breeze alone (the other buses muted), standing ${title}, 45 s (${where}).`,
+        body: `const { getAudio } = await import('/src/render/audio.ts');
+          for (const bus of ['music', 'sfx', 'ui', 'voice']) getAudio(bus).out.gain.value = 0;
+          const { teleport } = await import('/src/physics/engine.ts');
+          const { H } = await import('/src/proto/place/land.ts');
+          const { toWorld } = await import('/src/proto/place/layout.ts');
+          const x = toWorld(${x}), z = ${z}, b = window.boogle.me.body;
+          teleport(b, x, Math.max(H(x, z), 0) + 1, z);
+          b.velocity.set(0, 0, 0);
+          await sleep(8000);
+          return R.run(45, null, { trim: false });`,
+      })),
+      {
+        id: 'place-gulls',
+        group: 'A real place (?proto=place)',
+        title: 'Gull calls, one of each',
+        when: 'Each pattern the ambience picks from, near and far: a lone mew, a pair, a long call, and one answered.',
+        body: seq(
+          `const { gullCall } = await import('/src/proto/place/ambience.ts');`,
+          [
+            `gullCall('mew', 0.2);`,
+            `gullCall('pair', 0.2);`,
+            `gullCall('long', 0.2);`,
+            `gullCall('answered', 0.2);`,
+            `gullCall('long', 1);`,
+          ],
+          5000,
+        ),
+      },
+    ],
+  },
+  {
     key: 'lay',
     query: 'proto=lay&v=quick',
     room: 'proto-lay',

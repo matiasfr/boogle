@@ -11,7 +11,7 @@
 // - far off and rare: a gull, a mallet on wood, a rope creaking; all through one dark reverb, panned;
 // - every minute or so the island motif, on the marimba.
 import { getAudio } from '../../render/audio.ts';
-import { noiseBuffer } from '../../render/noise.ts';
+import { brownNoiseBuffer, darkReverbBuffer, noiseBuffer } from '../../render/noise.ts';
 
 const LEVEL = 0.5; // the whole bed, under the game's own sounds
 const MOTIF = [0, 2, 4, 7, 4]; // semitones over the root: the island motif
@@ -46,7 +46,6 @@ function setup(): Beds | null {
   const a = getAudio('ambience');
   if (!a) return null;
   const { ctx } = a;
-  const sr = ctx.sampleRate;
   const out = ctx.createGain();
   out.gain.value = LEVEL;
   out.connect(a.out);
@@ -58,21 +57,9 @@ function setup(): Beds | null {
   };
   const dry = gain(1, out);
 
-  // The reverb: a dark, 3.5 s tail of decaying noise, low-passed as it fades (air soaks up the highs first).
-  const len = Math.round(sr * 3.5),
-    ir = ctx.createBuffer(2, len, sr);
-  for (let c = 0; c < 2; c++) {
-    const d = ir.getChannelData(c);
-    let lp = 0;
-    for (let k = 0; k < len; k++) {
-      const u = k / len,
-        damp = 0.5 - 0.42 * u; // the one-pole's coefficient: brighter early, darker late
-      lp += damp * (Math.random() * 2 - 1 - lp);
-      d[k] = lp * (1 - u) ** 2.2 * (k < sr * 0.012 ? k / (sr * 0.012) : 1);
-    }
-  }
+  // The reverb: a dark, 3.5 s tail.
   const conv = ctx.createConvolver();
-  conv.buffer = ir;
+  conv.buffer = darkReverbBuffer(ctx, 3.5);
   const verb = gain(1, conv);
   conv.connect(gain(0.55, out));
   // The echo: dotted eighths, each repeat duller and thinner, into the reverb.
@@ -92,9 +79,7 @@ function setup(): Beds | null {
 
   // Noise: white for clicks and foam; brown (integrated white) for surf and breeze, so there is no hiss.
   const noise = noiseBuffer(ctx, 2);
-  const brown = ctx.createBuffer(1, sr * 6, sr);
-  const b = brown.getChannelData(0);
-  for (let k = 0, v = 0; k < b.length; k++) b[k] = (v = (v + 0.02 * (Math.random() * 2 - 1)) / 1.02) * 3.5;
+  const brown = brownNoiseBuffer(ctx, 6);
   const loop = (buf: AudioBuffer, type: BiquadFilterType, f: number, q: number, to: AudioNode, pan = 0) => {
     const src = ctx.createBufferSource();
     src.buffer = buf;
