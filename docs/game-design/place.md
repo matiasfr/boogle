@@ -35,6 +35,8 @@ Along the way, seven **crystals** are tucked at spots worth stopping at, the sam
 
 **The town and camps are solid**: every building has a collider, its walls from when its frame is up. Standing in a plot when they go up moves you to the nearest edge.
 
+**The decks hold you.** Stop at the edge of a train's or the machine's deck and you're eased a few centimetres back inside, so standing never takes you off, moving or not. Push the stick off the side or jump and you leave as ever; there are no railings.
+
 Falling is harmless: in the water, Interact reads **Back up the path**. **The panel** has Start over, Skip the walk, Skip chop and carry (fills the current station), Skip to the forge and Skip to line 2.
 
 ## Departures from the brief

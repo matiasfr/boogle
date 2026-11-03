@@ -457,6 +457,65 @@ if (shot === 'reload') {
     const a = await frame();
     say.textContent += `${name}: ${a.drawCalls} draws, ${Math.round(a.triangles / 1000)}k tris, ${place.folk.count()} guys\n`;
     console.log('COST ' + name, a.drawCalls, a.triangles);
+    if (q.get('breakdown')) {
+      // What's in the scene by geometry: triangles if all of it were drawn, meshes (roughly draws), shadow casters.
+      type M = {
+        isMesh?: boolean;
+        visible: boolean;
+        count?: number;
+        castShadow: boolean;
+        frustumCulled: boolean;
+        geometry?: { uuid: string; index: { count: number } | null; attributes: { position: { count: number } } };
+        parent: M | null;
+        children: M[];
+        position: P3;
+      };
+      const { scene } = (await import('/src/render/scene.ts' as string)) as unknown as { scene: M };
+      const rows = new Map<string, { tris: number; meshes: number; cast: number; each: number; n: number; at: P3 }>();
+      const walk = (o: M) => {
+        if (!o.visible) return;
+        if (o.isMesh && o.geometry) {
+          const each = (o.geometry.index?.count ?? o.geometry.attributes.position.count) / 3;
+          const n = o.count ?? 1;
+          const r = rows.get(o.geometry.uuid) ?? { tris: 0, meshes: 0, cast: 0, each, n: 0, at: o.position };
+          r.tris += each * n;
+          r.n += n;
+          r.meshes++;
+          if (o.castShadow) r.cast++;
+          rows.set(o.geometry.uuid, r);
+        }
+        o.children.forEach(walk);
+      };
+      walk(scene);
+      const all = [...rows.values()];
+      const fmt = (r: (typeof all)[number]) =>
+        `${Math.round(r.tris / 1000)}k tris ${r.meshes} meshes ${r.cast} cast, ${r.each} x ${r.n} near ${r.at.x.toFixed(0)},${r.at.z.toFixed(0)}`;
+      console.log(`COST ${name}: ${all.reduce((n, r) => n + r.meshes, 0)} meshes in the scene`);
+      for (const r of [...all].sort((p, u) => u.tris - p.tris).slice(0, 14)) console.log('COST  tris ' + fmt(r));
+      for (const r of [...all].sort((p, u) => u.meshes - p.meshes).slice(0, 10)) console.log('COST  many ' + fmt(r));
+      // And by what hangs off the scene: which groups are many meshes.
+      const tops: string[] = [];
+      for (const top of scene.children) {
+        let meshes = 0,
+          cast = 0,
+          tris = 0;
+        const count = (o: M) => {
+          if (!o.visible) return;
+          if (o.isMesh && o.geometry) {
+            meshes++;
+            if (o.castShadow) cast++;
+            tris += ((o.geometry.index?.count ?? o.geometry.attributes.position.count) / 3) * (o.count ?? 1);
+          }
+          o.children.forEach(count);
+        };
+        count(top);
+        if (meshes)
+          tops.push(
+            `${String(meshes).padStart(3)} meshes ${String(cast).padStart(3)} cast ${String(Math.round(tris / 1000)).padStart(3)}k at ${top.position.x.toFixed(0)},${top.position.z.toFixed(0)} ${top.children.length} kids`,
+          );
+      }
+      for (const t of tops.sort().reverse().slice(0, 24)) console.log('COST  top ' + t);
+    }
   };
   await row('spawn, start of the run');
   place.give(8);
@@ -471,6 +530,215 @@ if (shot === 'reload') {
   await row('village, 20 s on');
   put(O - 72, 34, yawTo(O - 72, 34, O - 90, 50), -0.04);
   await row('stone street');
+} else if (shot === 'ride') {
+  // Walks to a spot on a deck with real input (W, then let go) and rides a whole trip standing still, logging how far you
+  // drift in the deck's frame, whether you stay on it, and whether you end in the water. &line=0|1, &car=, &spots=lat:lon,...
+  // (fractions of the deck's half width and half length), &trips=rounds of them. RIDE lines on the console and the screen.
+  void (async () => {
+    const say = document.createElement('div');
+    say.style.cssText =
+      'position:fixed;left:8px;top:80px;z-index:9999;font:bold 12px monospace;color:#000;background:#fff;padding:6px;white-space:pre';
+    document.body.append(say);
+    const note = (t: string) => {
+      say.textContent += t + '\n';
+      console.log('RIDE ' + t);
+    };
+    const k = Number(q.get('line') ?? 0);
+    place.skipLine2();
+    await wait(800);
+    const L = place.lines[k]!;
+    if (k === 1) {
+      const l2 = L as unknown as { track: { snapTo: (u: number) => void }; train: { start: (f: boolean) => void } };
+      l2.track.snapTo(1e6);
+      l2.train.start(true);
+    }
+    const carK = Number(q.get('car') ?? 1);
+    const tr = L.train.tr as unknown as {
+      stop: number;
+      s: number;
+      cars: { platform: import('../../../src/physics/platforms.ts').Platform; body: { position: P3 } }[];
+    };
+    const p = tr.cars[carK]!.platform;
+    const local = { x: 0, y: 0, z: 0, yaw: 0 };
+    const here = () => plat.toPlatform(p, body.position, 0, local);
+    const walkTo = async (lx: number, lz: number) => {
+      for (let n = 0; n < 60; n++) {
+        here();
+        const dx = lx - local.x,
+          dz = lz - local.z;
+        if (Math.hypot(dx, dz) < 0.1) break;
+        const py = plat.yawOf(p.body.quaternion);
+        const c = Math.cos(py),
+          s = Math.sin(py);
+        // Deck frame to world: the heading W walks.
+        const wx = dx * c + dz * s,
+          wz = -dx * s + dz * c;
+        cam.yaw = me.yaw = Math.atan2(-wx, -wz);
+        input.keys.add('KeyW');
+        await wait(16);
+        input.keys.delete('KeyW');
+        await wait(70);
+      }
+      input.keys.delete('KeyW');
+    };
+    const spots = (q.get('spots') ?? '0:0,0.9:0,-0.9:0,1:0,-1:0,0:0.9,0:-0.9')
+      .split(',')
+      .map((t) => t.split(':').map(Number));
+    const trips = Number(q.get('trips') ?? 1);
+    let trip = 0,
+      lost = 0;
+    // Line 2's train has just been started and is about to leave: wait for an arrival, with the whole dwell ahead.
+    while (tr.stop !== -1) await wait(50);
+    for (let round = 0; round < trips; round++)
+      for (const [fx, fz] of spots) {
+        while (tr.stop === -1) await wait(50);
+        const stop = tr.stop;
+        const c = tr.cars[carK]!.body.position;
+        putW(c.x, c.y + 1.4, c.z, cam.yaw);
+        await wait(350);
+        const lx = fx! * p.hx,
+          lz = fz! * p.hz;
+        await walkTo(lx, lz);
+        await wait(150);
+        here();
+        const x0 = local.x,
+          z0 = local.z;
+        let maxD = 0,
+          off = -1,
+          offAt = '';
+        const t0 = performance.now();
+        let sawMove = false;
+        while (performance.now() - t0 < 60000) {
+          here();
+          maxD = Math.max(maxD, Math.hypot(local.x - x0, local.z - z0));
+          if (tr.stop === -1) sawMove = true;
+          if (off < 0 && !plat.carry.on) {
+            off = (performance.now() - t0) / 1000;
+            offAt = `s=${tr.s.toFixed(1)} v=${(tr as unknown as { v: number }).v.toFixed(1)} l=${local.x.toFixed(2)},${local.z.toFixed(2)}`;
+          }
+          if (sawMove && tr.stop !== -1) break;
+          await wait(16);
+        }
+        await wait(300);
+        const fell = off >= 0;
+        if (fell) lost++;
+        note(
+          `#${trip++} line${k} car${carK} ${stop ? 'far>home' : 'home>far'} spot ${fx},${fz} at ${x0.toFixed(2)},${z0.toFixed(2)} drift ${maxD.toFixed(2)} ` +
+            (fell ? `FELL t=${off.toFixed(1)} ${offAt}${me.swimming ? ' IN WATER' : ''}` : 'ok'),
+        );
+      }
+    note(`DONE lost ${lost}/${trip}`);
+    // Leaving on purpose still works: W off the side at a stop, then a jump off the other.
+    for (const way of ['walk', 'jump'] as const) {
+      while (tr.stop === -1) await wait(50);
+      const c = tr.cars[carK]!.body.position;
+      putW(c.x, c.y + 1.4, c.z, cam.yaw);
+      await wait(350);
+      const py = plat.yawOf(p.body.quaternion);
+      cam.yaw = me.yaw = py + (way === 'walk' ? Math.PI / 2 : -Math.PI / 2);
+      input.keys.add('KeyW');
+      if (way === 'jump') {
+        await wait(150);
+        me.jumpQueued = 0.2;
+      }
+      await wait(900);
+      input.keys.delete('KeyW');
+      note(`${way} off: ${plat.carry.on === p ? 'STILL ON' : 'left the deck'}`);
+      await wait(1000);
+      while (tr.stop !== -1) await wait(50);
+    }
+    (window as unknown as { __rideDone: boolean }).__rideDone = true;
+  })();
+} else if (shot === 'layride') {
+  // The same on the machine's flatbed through each stretch it lays, line 1 then the shunt and line 2. &spots as for `ride`.
+  void (async () => {
+    const note = (t: string) => console.log('RIDE ' + t);
+    const p = (place.machine.flatbed as unknown as { platform: import('../../../src/physics/platforms.ts').Platform })
+      .platform;
+    const local = { x: 0, y: 0, z: 0, yaw: 0 };
+    const here = () => plat.toPlatform(p, body.position, 0, local);
+    const spots = (q.get('spots') ?? '-1:-0.8,1:-0.8,-1.1:-0.8,1.1:-0.8,0:-0.8,0:-1.08')
+      .split(',')
+      .map((t) => t.split(':').map(Number));
+    let n = 0,
+      lost = 0;
+    place.wake();
+    place.skipDelivery();
+    await wait(300);
+    const stand = async (fx: number, fz: number) => {
+      const f = place.machine.flatbed.body.position;
+      putW(f.x, f.y + 1.4, f.z, cam.yaw);
+      await wait(350);
+      for (let i = 0; i < 40; i++) {
+        here();
+        const dx = fx * p.hx - local.x,
+          dz = fz * p.hz - local.z;
+        if (Math.hypot(dx, dz) < 0.1) break;
+        const py = plat.yawOf(p.body.quaternion),
+          c = Math.cos(py),
+          s = Math.sin(py);
+        cam.yaw = me.yaw = Math.atan2(-(dx * c + dz * s), -(-dx * s + dz * c));
+        input.keys.add('KeyW');
+        await wait(16);
+        input.keys.delete('KeyW');
+        await wait(70);
+      }
+      await wait(120);
+      here();
+    };
+    const watch = async (label: string, until: () => boolean, fx: number, fz: number) => {
+      await stand(fx, fz);
+      const x0 = local.x,
+        z0 = local.z;
+      let maxD = 0,
+        off = '';
+      const t0 = performance.now();
+      while (!until() && performance.now() - t0 < 70000) {
+        here();
+        maxD = Math.max(maxD, Math.hypot(local.x - x0, local.z - z0));
+        if (!off && !plat.carry.on)
+          off = `FELL at ${((performance.now() - t0) / 1000).toFixed(1)} s l=${local.x.toFixed(2)},${local.z.toFixed(2)}`;
+        await wait(16);
+      }
+      if (off) lost++;
+      note(
+        `#${n++} machine ${label} spot ${fx},${fz} at ${x0.toFixed(2)},${z0.toFixed(2)} drift ${maxD.toFixed(2)} ${off || 'ok'}${me.swimming ? ' IN WATER' : ''}`,
+      );
+    };
+    const laid = () => place.run.mode !== 'laying' && place.run.mode !== 'feeding';
+    const [a, b, c, d, e, f] = spots as [number[], number[], number[], number[], number[], number[]];
+    await waitMode('laying');
+    await watch('L1 stretch 1', laid, a![0]!, a![1]!);
+    await waitMode('idle');
+    place.skipDelivery();
+    await waitMode('laying');
+    await watch('L1 trestle', laid, b![0]!, b![1]!);
+    await waitMode('idle');
+    place.skipDelivery();
+    await waitMode('laying');
+    await watch(
+      'L1 stretch 3 and run in',
+      () => place.run.mode === 'waiting' || place.run.mode === 'turning',
+      c![0]!,
+      c![1]!,
+    );
+    place.lines[0]!.train.clock.running = false;
+    place.skipLine2();
+    await wait(800);
+    place.skipDelivery();
+    await waitMode('laying');
+    await watch('L2 stretch 1', laid, d![0]!, d![1]!);
+    await waitMode('idle');
+    place.skipDelivery();
+    await waitMode('laying');
+    await watch('L2 stretch 2', laid, e![0]!, e![1]!);
+    await waitMode('idle');
+    place.skipDelivery();
+    await waitMode('laying');
+    await watch('L2 stretch 3', laid, f![0]!, f![1]!);
+    note(`DONE lost ${lost}/${n}`);
+    (window as unknown as { __rideDone: boolean }).__rideDone = true;
+  })();
 } else if (shot === 'play') {
   // The whole run, as a first-time player would, with real input: walk, wake, chop, carry, ride, take rails, line 2.
   // Not awaited: `--warm` is how long it gets, and the still at the end shows the log.
