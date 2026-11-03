@@ -1,10 +1,11 @@
-// Ultra Water's coarse-pointer mobile selection, adapted to Boogle's 0.6..1 adaptive-res range.
+// Ultra Water's mobile profile, adapted to Boogle's 0.6..1 adaptive-res range.
 // Local presentation only. Stored 4x MSAA, wave energy and the near-water grid stay the same.
 import { TSL } from './tsl.ts';
 
 const params = new URLSearchParams(location.search);
 const requested = params.get('q');
-const mobile = requested === 'mobile' || (requested !== 'high' && matchMedia('(pointer: coarse)').matches);
+// High everywhere for now: the owner's iPad held 60 fps on it, and mobile visibly softens the look. Only asked for.
+const mobile = requested === 'mobile';
 const full = (key: string) => params.get(key) === 'full' || (params.get(key) !== 'cheap' && !mobile);
 
 export const waterQuality = {
