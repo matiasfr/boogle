@@ -1,0 +1,61 @@
+Before reviewing instruction coverage or proposing enforcement, use this audit of the migrated rules.
+
+# Room-safety enforcement audit — 2026-11-03
+
+Evidence: [lint configuration](../../eslint.config.js), [registry comparison](../../dev/registry/scan.ts), [sync tests](../../test/world-sync.test.ts), [replay](../../test/world-replay.test.ts), [snapshot tests](../../test/world-snapshots.test.ts), [presence tests](../../test/presence-fields.test.ts). “Prose only” means no general enforcement of the obligation: a helper test or import ban does not prove every consumer obeys it. Tests cover exercised cases, not arbitrary future code. No listed room rule is enforced by level-check; it checks level reachability and geometry.
+
+Count: 20 rows are primarily prose-only; 8 more have an explicitly named prose-only remainder alongside enforcement. All 28 gaps have path reminders. These are obligations grouped as shown below, not a count of sentences or test cases.
+
+Path key: W = src/world/AGENTS.md; S = src/sim/AGENTS.md; N = src/net/AGENTS.md; P = src/netplay/AGENTS.md; F = src/features/AGENTS.md; E = src/entities/AGENTS.md; R = src/render/AGENTS.md; H = server/AGENTS.md; C = .claude/rules/state-consumers.md (adapters/player). Each nested file has a matching Claude paths rule. Codex at root must read the nested file explicitly, as its launch loader does not follow touched paths.
+
+| Source / rule | Enforcement and limits | Path reminder |
+| --- | --- | --- |
+| Don't: apply changes state only; effects and inventory go in onApplied | Prose only; lint bars renderer imports, but cannot prove purity | W, F, E, C |
+| Don't: submitEdit only queues; spend and celebrate in onApplied | Prose only; sync tests establish rejection/backlog expiry, not consumer compliance | F, E, C |
+| Don't: persist only hash-verified ticks | Prose only; replay checks convergence, not every persistence path | W, N, P, H |
+| Don't: never overwrite/serve failed-load fresh fallback as host save | Test: world-sync failed-save/forced-save cases; remote serve still prose only | W, N, P, H |
+| Don't: return null when a presence field stops; receivers treat missing as off | Prose only for callers; presence-fields tests enforce helper deletion only | P, N, F, E, C |
+| Don't: wrapAction instead of assigning actionById handlers | Prose only | F, C |
+| Don't: no random/time/per-peer counters in apply or ticks; do not silence replay | Lint: random/time; test: world-replay catches exercised peer divergence; preserving replay is prose only | S, W, H |
+| Math: integers for conserved quantities | Prose only; per-system conservation tests are partial | S, W |
+| Math: float operations only + - * / and sqrt; no native trig/pow/exp/log/hypot or ** | Lint: LOCKSTEP_FILES restricted math/properties/syntax; not a general float type proof | S, W |
+| Math: seeded mulberry32 | Prose only; lint bans unseeded standard APIs, not incorrect seeding | S, W |
+| Math: fixed order and tick | Test: world-replay/world-sync exercise ordering and convergence | S, W, H |
+| Math: no three.js or physics-engine math | Lint: sim/rules import boundaries | S, W |
+| Math: local cosmetics never read by sim; trig/random helpers outside sim and three-free | Prose only for local-to-sim data flow and three-free helpers; lint rejects trig anywhere inside sim | S, W, R |
+| Sync: cheapest applicable kind; physics never Lockstep | Prose only for kind choice; lint excludes direct physics imports from sim/rules | P, F, E, C |
+| Sync Local: no shared API; floats/random/GPU allowed locally | Prose only | R, F, E, C |
+| Sync Owner: addPresenceField/onRemotePresence, createSnaps at now - INTERP_MS, 20 Hz latest wins | Prose only for consumer choice/interpolation; transport implements cadence | P, F, E, C |
+| Sync Owner: descriptive untaken key; old short keys stay | Registry: uniqueness; prose only for naming/retention | P, F, E, C |
+| Sync Owner: sweep per-remote meshes when peers leave | Prose only | P, F, E, C |
+| Sync handoff: createOwnerSync owns claim/orphan/mode/sample; object keeps key/shape/holding meaning | Prose only | P, F, E, C |
+| Sync Host: addHostField, restart with next host | Prose only for choice; presence helper tests host publication/demotion | P, F, E, C |
+| Sync Lockstep: pure sim + test, rules ops/state/ticks, adapter callbacks, API in Rules | Lint: registration/import boundaries; prose only for complete module recipe | W |
+| Sync Lockstep: export edits and optional invariants for replay | Prose only for meaningful generator/invariants; replay consumes exports | W |
+| Sync Lockstep: append RULES, version + migrate on saved-shape changes | Registry: order/shape/version; test: migration execution; correctness still reviewed | W |
+| Sync Lockstep: validate host-only facts through setEnv / ctx.env | Prose only for choice; world-sync tests mechanism and missing-fact rejection | W, H |
+| Sync events: room onMessage/send, reliable ordered peers; never raw WebSocket | Lint: one WebSocket door; interface delivery is tested by room harnesses | N, P, F, E, H, C |
+| Sync events: validate and rate-limit receipt | Prose only for each new handler | N, P, F, E, H, C |
+| Mixed: old visible tabs coexist; ops/state/presence/messages must be additive | Registry: removed ops/state and RULES order; prose only for payload compatibility | W, N, P, F, E, H, C |
+| Mixed: existing shape/meaning needs version+migrate or new name | Registry: serialized state shape/version; prose only for meaning and other payloads | W, N, P, F, E, H, C |
+| Mixed dev: prefer clean break; remove/reshape ops/state/catalog via WORLD_NS and dated history | Registry: namespace bypass; prose only for catalog meaning and dated history | W, S, N, P, F, E, H, C |
+| Mixed dev: skip one-off localStorage migrations | Prose only | W, S, N, P, F, E, H, C |
+| Mixed: RULES append-only per namespace | Registry: compareRegistries prefix check | W, S |
+| Mixed: no namespace bump means shape changes need version+migrate | Registry: version/shape; test: migration execution | W, S |
+| Mixed: never crash on other builds' messages, presence or saves | Prose only generally; snapshot tests cover malformed/newer/unknown states | W, S, N, P, F, E, H, C |
+| Boundaries: add new lockstep modules outside sim/rules to LOCKSTEP_FILES | Prose only; lint cannot discover semantic lockstep use | S, W |
+| Boundaries: registerOp/registerState/onTick only in rules or installer | Lint: syncBan import restriction (not whole-program call analysis) | W |
+| Boundaries: rules import sim/grid/sibling rules only; sim no other src | Lint: rulesMessage/simMessage | S, W |
+| Boundaries: features never import features; shared code goes in src | Lint: feature import pattern (direct relative imports) | F |
+| Boundaries: world root/net headless; no renderer/player/features | Lint: headlessBan | W, N |
+| Boundaries: proto/debug dynamic imports except flags/mark | Lint: protoBan/debugBan | Root routes to lint-boundaries |
+| Boundaries: WebSocket/AudioContext/requestAnimationFrame only at doors; no second loop | Lint: DOORS; prose only for behavior inside allowed doors | N, R |
+| Boundaries: no WebGL-only three APIs | Lint: GL_ONLY and restricted imports | R |
+
+## Director follow-ups (not implemented)
+
+- Cheap lint candidates: reject direct actionById handler assignments; reject obvious effect/inventory calls in apply; flag direct success-side effects in a submitEdit conditional. These are targeted guardrails, not proofs of purity or acceptance.
+- Cheap registry candidate: require a dated namespace history line when WORLD_NS changes. Checking arbitrary payload meaning, peer cleanup, interpolation, receiver validation or data-flow determinism is not a cheap static proof.
+- Keep consumer null/off handling and remote-serving fallback review explicit. Existing helper tests do not replace those checks.
+
+The path reminders intentionally cover adapters/player as well as the named high-risk directories: those folders consume accepted edits and presence. No root imports or path-free rules were added.

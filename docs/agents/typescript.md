@@ -1,0 +1,4 @@
+Before adding or changing code, read this TypeScript contract.
+
+## TypeScript everywhere
+Every new file is `.ts` (`src/`, `server/`, `dev/`, `test/`); never add a `.js` or `.mjs` file. The only JavaScript left is `eslint.config.js`, which ESLint can't load as `.ts` without a new dependency. `tsconfig.json` is `strict` with `noUncheckedIndexedAccess`; `npm run typecheck` (in `check` and CI) must pass. An index gets `!` when it is loop-bounded, a fixed tuple or already checked, and a real guard when it comes from the wire, a save, user input or a lookup that can miss. No build step of our own: Vite and Node 24 strip the types, so use only erasable syntax (no `enum`, `namespace` or parameter properties; `import type` for types) and import files by their real name (`./rng.ts`). Wire messages, presence payloads and op/state shapes get exported types next to the code that owns them.

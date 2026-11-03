@@ -31,7 +31,7 @@ Update the system's `docs/game-design/` chapter (new system: add a chapter and i
   derivable from `land` and the rules' state is checked in validate directly.
 - An older snapshot without the new state key leaves it fresh: no fixture change needed. Ids come from a counter in
   the state, never a per-peer one.
-- Players start an action through the registries (AGENTS.md, "Shared registries"); a new carried item is appended to
+- Players start an action through the registries (docs/agents/registries.md, "Shared registries"); a new carried item is appended to
   `GIFTS` in `src/sim/gift-catalog.ts` (ground items store its index: reorder only with a `WORLD_NS` bump; it also needs The Boogler's `taste` and `line`), and what using it does is a case
   in `useDown` in `src/player/hands.ts`.
 

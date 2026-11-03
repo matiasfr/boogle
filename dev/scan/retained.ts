@@ -12,5 +12,6 @@ export const RETAINED: Record<string, string> = {
   'native/guest/build.ts': 'Manual guest engine build documented in native/guest/README.md.',
   'dev/look/evals/haul-pilot.ts': 'Manual browser eval helpers including optional freeCam.',
   'src/proto/place/ambience.ts': 'ambienceState is a documented manual browser listening inspection.',
+  'src/player/identity.ts': 'adoptPid is the owner-kept transfer and account seam (docs/plans/0.1-groundwork.md).',
   'src/sim/tiers.ts': 'Held until rewards are designed (docs/proposals/boogle-2.md, Controls).',
 };

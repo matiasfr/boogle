@@ -1,6 +1,6 @@
 // Every prototype the owner can playtest, for boogle.club/protos/ and the playlist on the `?play` island
 // (docs/plans/find-the-fun.md, "One path"). A new `?proto=` prototype adds or updates its entry here in the same PR,
-// flips it to 'live' when it ships (AGENTS.md, "Shipping"), and either joins the island (ISLAND in src/proto/flags.ts,
+// flips it to 'live' when it ships (docs/agents/shipping.md, "Shipping"), and either joins the island (ISLAND in src/proto/flags.ts,
 // its loader asking `protoOn`) or says why it is a `chapter`. Live first on the page, then building; graduated,
 // answered and parked cards go in the page's compact Answered list with the owner's verdict; retired last. Order
 // within a status is the order below.

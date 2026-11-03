@@ -1,124 +1,34 @@
-# Boogle: agent instructions
+# Boogle
 
-Shared rules for every coding agent (`CLAUDE.md` imports this file). Boogle is a multiplayer browser game: three.js (`WebGPURenderer`, shaders in TSL) + Rapier (WASM physics, through `src/physics/engine.ts`), Vite; our server (`server/`) hosts every room over WebSocket and runs its lockstep world. Friends and their agents ship at once through self-merging PRs; `main` auto-deploys to https://boogle.club/.
+Goofy co-op browser game: three.js WebGPU + TSL, Rapier and Vite; a WebSocket server hosts lockstep rooms. Main auto-deploys to boogle.club.
 
-Read [DESIGN.md](DESIGN.md) (principles; every feature names the one it serves, and asks before bending one) and [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) (what's being prototyped now; tick a box in the commit that finishes it). PLAN.md, SETTLED.md, the vertical slice and older proposals are historical: they bind no one. [src/README.md](src/README.md) maps the folders. [docs/game-design.md](docs/game-design.md) describes the game as built: a change that adds, changes or removes something a player can see or do (a system, control, item, tuning number, place) updates its file in `docs/game-design/` in the same commit (a new system adds a file and a line in the index); refactors and tooling don't.
+- Keep The Boogler's copy; list suspect lines for the owner.
+- No ROM data or anything cut from it, on any branch or in builds.
+- Codex first; pause and tell the owner at a usage limit.
+- Stop at the owner's playtest; full exceptions are in owner-calls.
+- Usage is no reason to hold back: read and verify what the work needs.
+- Decisions live in the repo and bind every agent.
+- Never force-push, skip hooks or push main unless a human asks.
+- Ship with npm run ship; report only verified states.
 
-[docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) is the owner's decision log for where the game is heading: read it before design, level, art or character work (nothing in it is built unless `docs/game-design.md` says so).
+Start ownership discovery: `npm run map -- --kind <kind>` (bare `--kind` lists kinds). Follow its companion docs and affected contracts. Combine matching rows below; each is mandatory at its trigger. Topic paths below are under `docs/agents/`; [index](docs/agents/README.md).
 
-[docs/ideas.md](docs/ideas.md) is a parking lot, not a task list: never implement from it unless asked; you may append an idea you notice but won't act on.
-
-## Required reading by task
-
-Read this entire file for every task, in every tool. The routes below add requirements; they never exempt a rule here. Combine routes when a task crosses kinds, follow the owning code and dependencies, and read any contract the change touches. Start with `npm run map -- --kind <kind>` using the exact kinds below; its owners, examples and companion docs supplement this index. If none fits, list kinds with `npm run map -- --kind`, then map the affected folder.
-
-**Default:** DESIGN.md and docs/plans/find-the-fun.md above remain mandatory. **Pure tooling or documentation** with no game behavior, design, level, art or character decision is exempt from the full DESIGN.md and find-the-fun reads; read DESIGN.md's [Understandable at a glance](DESIGN.md#understandable-at-a-glance) and [Small and readable](DESIGN.md#small-and-readable) for that work. If scope reaches the game, take its route and the default reads. This is routing by relevance; all necessary reading and verification still apply.
-
-| Task / map kind | Required sections and contracts beyond the default |
+| Before | Read |
 | --- | --- |
-| HUD: `hud` | A feature is a plug-in; Shared registries; [entity lifecycle](src/entity/entity.ts); map's HUD chapters; verification below. |
-| Objects: `entity`, `critter`, `hat` | A feature is a plug-in; Rendering; Pick a sync kind; Shared registries; [entity lifecycle](src/entity/entity.ts), [render contract](src/render/README.md), map's asset/system docs; decision log for character/art/design. |
-| Controls: `control`, `interactable`; tuning: `tuning` | Shared registries; Pick a sync kind; [controls contract](src/player/controls.ts), [hands](src/player/hands.ts); map's player/system chapters. Physics also requires replay below. |
-| Shared simulation: `lockstep-op`, `lockstep-system` | Pick a sync kind (including Lockstep math); Shared registries; Lint boundaries; Don't; Mixed builds; [rules recipe](src/world/rules/README.md), [world contract](src/world/README.md); map's system chapters. |
-| Networking: `presence-field`, `one-off-message` | Pick a sync kind; Shared registries; Don't; Mixed builds; [room contract](src/net/README.md), [world contract](src/world/README.md) for sync/persistence; map's multiplayer chapters. Transport/server work also maps its affected folder. |
-| Level: `poi`; experiment: `prototype` | A feature is a plug-in; Rendering; Pick a sync kind; [island recipe](src/island/README.md) for level work; map's companion docs; decision log. |
-| Rendering/art: `entity` (or the affected object's kind) | Rendering; [render contract](src/render/README.md); decision log; map's system/asset docs; verification's performance and GPU triggers. |
-| Tooling: `tooling`; documentation: `docs` | The explicit default-read exception above; map's companion docs; the contracts whose guidance or tooling changes. Game-design documentation also takes the relevant game route. |
+| Applying owner preferences; research, architecture, prototypes | [owner-calls](docs/agents/owner-calls.md) (full calls bind) |
+| Game/design/level/art/character work | [DESIGN.md](DESIGN.md), [context](docs/agents/context.md), [routes](docs/agents/routes.md) |
+| Game or prototype work | [find-the-fun](docs/plans/find-the-fun.md) |
+| Pure docs/tooling | DESIGN.md: Understandable at a glance; Small and readable |
+| Design/level/art/characters | [decision index](docs/proposals/boogle-2.md#current-decision-index) and routed dated sections |
+| Adding/changing code or module boundaries | [typescript](docs/agents/typescript.md), [lint-boundaries](docs/agents/lint-boundaries.md) |
+| Features/entities/HUD/level objects | [plugins](docs/agents/plugins.md) |
+| Rendering/art | [rendering](docs/agents/rendering.md) |
+| State/events, net*, server, adapters | [sync](docs/agents/sync.md), [room-safety](docs/agents/room-safety.md), [mixed-builds](docs/agents/mixed-builds.md) |
+| Touching src/sim or src/world/rules | [lockstep](docs/agents/lockstep.md), sync, room-safety, mixed-builds |
+| Controls/interactions/particles/shared registrations | [registries](docs/agents/registries.md) |
+| Choosing checks or changing game code | [tests](docs/agents/tests.md) |
+| Player-visible/feel changes | [verification](docs/agents/verification.md), look skill |
+| Tools/scripts; Codex work | [tools](docs/agents/tools.md); [codex](docs/agents/codex.md) |
+| Substantial work/commit/ship | [shipping](docs/agents/shipping.md) |
 
-**Before design, level, art or character work:** read the [current-decision index](docs/proposals/boogle-2.md#current-decision-index) and every dated section it routes for the task, including its precedence notes. The full log remains available; an index does not turn an open question into a decision.
-
-**Before choosing checks or changing game code:** read [AGENT-VERIFICATION.md, Tests](AGENT-VERIFICATION.md#tests). **Before a player-visible or feel change:** also read its [See it before you ship](AGENT-VERIFICATION.md#see-it-before-you-ship) procedure and the [look skill](.claude/skills/look/SKILL.md). **Before using tools or writing a shot, script or workaround:** read [AGENT-TOOLS.md, Tools and skills](AGENT-TOOLS.md#tools-and-skills); **for Codex work**, also read [Codex](AGENT-TOOLS.md#codex). **Before substantial work, committing or shipping:** read [AGENT-SHIPPING.md, Shipping](AGENT-SHIPPING.md#shipping). These linked procedures are binding, with the obligations below always in force.
-
-## Owner's standing calls
-- **Keep The Boogler's copy.** Cleanups and refactors never trim or reword his lines (dialogue, small talk, gift `line`s, HUD lines), even ones that look unreachable or mention removed systems. List those for the owner instead.
-- **Nintendo names are fine; ROMs are not.** Never rename or reword something to remove a Nintendo reference. The hard line: no ROM data, or anything cut from it, in the repo, on any branch or in the build.
-- **Use references by name.** When the owner points at a game or character, work out the features they're responding to (proportions, clothes, a mechanic's feel) and use those, naming the reference in briefs and docs: "the stubby proportions of Castle Story's Bricktrons, as our own character", not a vague paraphrase. Don't recreate the thing itself.
-- **Research before deep facets.** A facet with real depth (level design, vehicle handling, rendering, construction, pipelines) starts with research into how games solve it: web sources, GDC talks, postmortems, in `docs/research/<topic>.md` with sources and numbered recommendations. Builders cite it.
-- **Compare to standard engines.** Justify an architecture call by what Unity, Unreal and Godot actually do (their docs), and say where Boogle differs; don't defend a pattern because the code already uses it.
-- **Fold copies into one helper.** When the same small thing has been written several times (like the white-noise buffer, now `src/render/noise.ts`), simplify it into one shared helper when you notice it, as long as it's cheap and doesn't change behaviour. After each batch of tracks, not on a timer, Codex runs a simplify pass over the batch: no behaviour change, checked against a playthrough.
-- **Prototypes are temporary, but don't clear them out for tidiness.** Don't over-index on their decisions: no design debates about a prototype's internals, and no reshaping core code around one. A prototype still doesn't change fundamental code outside its own scope without saying so. While it's being tested, or other work depends on it, it stays on `main` behind its flag. Once answered with nothing depending on it, it's archived, not thrown away: tag the last commit that has it `archive/<name>`, remove it from `main`, and set `archived` on its card in `protos/protos.ts`. When graduating, the prototype version goes. Clean up what a prototype leaves in core code (a `protoOn` check, a seam, a setting only it uses), and remove code a decision has replaced so nobody takes it for the real thing. A tool for testing real code (`?proto=lay`) isn't a finished prototype.
-- **Research is fair game.** Learning how existing games solve a problem isn't copying any one of them. No copyright caveats or avoidance guidance in research docs, briefs or repo files.
-- **The owner playtests fast.** An experienced player with little time reads feel within minutes: one gut question and one line on what's new, for prototypes, playtest kits and briefs alike. Agents check edge cases themselves.
-- **Usage is not a reason to hold back.** Do what the work needs: read what's relevant, verify properly, take the deeper fix. Saving tokens or subscription usage never justifies a shallower result, and no one should write guidance that says otherwise.
-- **Codex first** (owner, 3 November: Claude usage is scarce, and Codex has much more room, though not unlimited). All implementation, research, review, tooling and bot work goes to Codex by default, including visible work, since `task` jobs can see the game: GPT-6.1-Terra at low effort for a clear shape, GPT-6-Astra for harder work. Claude directs, makes design calls, spot-checks results and judges real-time feel only where Codex can't, with short briefs, small reads and few images. This changes who does the work, not how well it's verified. If Codex hits a usage limit, don't move the work to Claude: pause it and tell the owner, who will upgrade the plan.
-- **Stop at the owner's playtest.** When a round is ready to play, or what's left needs the owner, stop developing and stop any check-ins or loops, and tell them. Nothing past that point starts until they've played and given notes. No usage goes on gameplay the playtest could change. Systems and graphics that make the world look better without affecting the flow under test may go ahead. This is a default rather than a strict rule, and collaborators may ship meanwhile (owner, 3 November).
-- **An M1 Max is the average target.** The M4 iPad Pro stays the floor, but don't over-index on it: judge looks and budgets on the Mac the agents run on, test locally, and let the iPad scale down (owner, 2 November). It still has to run there.
-- **Decisions live in the repo.** An owner decision or working preference binds every agent unless it's specific to one tool, so it goes in this section or the decision log, not only in one tool's private memory.
-
-## TypeScript everywhere
-Every new file is `.ts` (`src/`, `server/`, `dev/`, `test/`); never add a `.js` or `.mjs` file. The only JavaScript left is `eslint.config.js`, which ESLint can't load as `.ts` without a new dependency. `tsconfig.json` is `strict` with `noUncheckedIndexedAccess`; `npm run typecheck` (in `check` and CI) must pass. An index gets `!` when it is loop-bounded, a fixed tuple or already checked, and a real guard when it comes from the wire, a save, user input or a lookup that can miss. No build step of our own: Vite and Node 24 strip the types, so use only erasable syntax (no `enum`, `namespace` or parameter properties; `import type` for types) and import files by their real name (`./rng.ts`). Wire messages, presence payloads and op/state shapes get exported types next to the code that owns them.
-
-## A feature is a plug-in
-`src/features/<name>.ts`, auto-loaded by `src/main.ts`. Frame work goes in an entity's methods (below), or `onFrame(fn, { phase, order })` only for a service on the allow-list; one-time setup in `onStart(fn)` (`src/loop.ts` lists phases and taken orders; features use `order` -10 and up). CSS in `src/features/<name>.css`, imported by the feature; DOM built in JS (append to `.hud` or `body`), never in `index.html`. Heavy or rarely used parts (far-off decor, dialogue, debug tools) load with a dynamic `import()` from the small eager feature file ("Lazy parts" in `src/loop.ts`); never lazy: sync ops or state, `src/world/rules/`, or anything visible in the first seconds. Hotspots (`src/main.ts`, `src/style.css`, `index.html`, `PLAN.md`, `src/world/rules/index.ts`): a line or two at most. Plain modules (TypeScript); a new dependency needs a reason in the commit.
-
-**New things in the world or on screen are entities** (`src/entity/entity.ts`): copy `src/entities/ball/` (long-lived) or `src/features/ping.ts` (short-lived). Services other things call stay on `onFrame` (the allow-list in `eslint.config.js`), and prototypes stay on it until promoted. Importing an entity: game code imports its `state.ts`; presentation code may also import its `view.ts`; only `main.ts`'s glob imports its `index.ts`. Lint fails a new `onFrame`, `addBody` or `scene.add` elsewhere; what's left of the old way is listed in `eslint-suppressions.json`, which only shrinks. Never add to it. When you remove one, `npm run lint -- --prune-suppressions`.
-
-## Rendering
-`WebGPURenderer`, WebGPU only (no WebGL 2 fallback), one `RenderPipeline` (linear HDR, Neutral tone mapping), all custom shading in TSL node materials. Contract and pitfalls: [src/render/README.md](src/render/README.md).
-- Custom looks go in node slots (`colorNode`, `positionNode`, `maskNode`, ...) of a `*NodeMaterial` from `three/webgpu`; extend someone else's material with `patchNode` (`src/render/material-patch.ts`). No GLSL, `ShaderMaterial`, `onBeforeCompile` or `THREE.Points` (lint fails them).
-- Colours are linear; draw through `renderFrame()`; post effects extend `pipeline.outputNode`. Compute shaders, storage buffers and the rest of WebGPU are fair game, with no fallback path.
-
-## Pick a sync kind for each piece of state
-Cheapest that works (table: DESIGN.md, "Pick how each feature shares state"). Physics is never Lockstep.
-- **Local** (only this tab sees it, or it decorates): no API. Floats, `Math.random()`, GPU, all fine.
-- **Owner** (one player drives it; physics): `addPresenceField(key, getter)` + `onRemotePresence((r, pr, time) => ...)` (`src/netplay/net.ts`), smoothed with `createSnaps()` (`src/netplay/snaps.ts`, sample at `now - INTERP_MS`). 20 Hz, latest wins: a few numbers under an untaken key that names the feature (`boogler`, not `b`; existing short keys stay as they are; taken keys: `npm run registry -- --json`). A peer that leaves just drops out of `remotes`: sweep your per-remote meshes. Example: the soapbox (`src/proto/soapbox/index.ts`).
-- **Owner that changes hands** (one shared physics object any tab may simulate): `createOwnerSync(state, object)` (`src/netplay/owner-sync.ts`) has the claim rule, the orphan pick, the mode flip and the sampling; the object keeps its presence key and wire shape, and what holding means. Example: the ball (`src/entities/ball/`).
-- **Host** (shared, small, changing; restarts with the next host): `addHostField(key, getter, onValue)`. Example: The Boogler.
-- **Lockstep** (shared grid or many cells, persists): recipe in [src/world/rules/README.md](src/world/rules/README.md): `src/sim/<x>.ts` + test, `src/world/rules/<x>.ts` (ops, state, ticks; exports `edits` and optionally `invariants` for `test/world-replay.test.ts`; `version` + `migrate` when a state's shape changes; host-only facts for validate via `setEnv` → `ctx.env`), one appended line in `rules/index.ts`, its API in `Rules` in `rules/types.ts`, and a `src/features/<x>.ts` adapter (`submitEdit`, `onApplied`, `onAfterTick`, `onSnapshot`). Example: piles (`rules/piles.ts`, `src/adapters/piles.ts`). Sync contract: [src/world/README.md](src/world/README.md).
-- **One-off events** (a honk, a ping) are messages, not state: `onRoomReady(room => room.onMessage(...))`, `room.send(msg)` (reliable, ordered, every other peer; validate and rate-limit on receipt). Examples: `src/features/ping.ts` (each ping an entity), `src/features/honk.ts`. Room interface: [src/net/README.md](src/net/README.md); never the WebSocket directly.
-
-**Lockstep math** (`LOCKSTEP_FILES`: `src/sim/`, `src/world/rules/`, ...): integers for conserved quantities; floats only with `+ - * /` and `Math.sqrt`; seeded `mulberry32` (`src/sim/rng.ts`); fixed order and tick. Never `Math.random`, `Date.now`, `sin`/`cos`/`pow`/`exp`/`log`/`atan2`/`hypot`, `**`, or three.js or physics-engine math. Cosmetic code is Local and never read by the sim; a tested cosmetic helper that needs `sin` or `Math.random` goes in a three.js-free module outside `src/sim/` (like `src/math-pure.ts`); lint fails it anywhere in `src/sim/`, even beside cosmetic code.
-
-## Shared registries
-Registry compares suppression counts, KNOTS members and level allowance entry/max budgets with its local `--base` (default `origin/main`), independently of `WORLD_NS`, including shallow checkouts with the base tree available; moves/re-keys are not growth. Only the owner approves additions, recorded by exact list/key, maximum count and reason in `APPROVED_DEBT` in `dev/registry/debt.ts` for local checks and CI; agents must never add entries on their own. If named additions aren't yours, rebase on main: it may have shrunk a list since your branch was cut.
-`npm run registry` (in `check` and CI) fails on a presence key, message type or pad slot taken twice, or a feature `onFrame` order equal to a core one; and, against `main`, on a reordered `RULES`, a removed op or state, or a state whose saved shape changed without a `version` bump. It also fails when a file joins an import cycle (`KNOTS` in `dev/registry/knots.ts`, a list that only shrinks). `-- --json` lists what's taken.
-- **Controls** (`src/player/controls.ts`, contract at its top): every key or touch button is a `registerAction(id, { pad, key, touch, label, detail, group, down, up, held })` on a free pad slot; it also generates the guide row (pause view, first-run card). Taken slots: `npm run registry -- --json`; at least one must stay unclaimed in `src/`, since `src/features/updates.ts` takes D-pad up, or else `freeSlots()[0]`, at runtime; `src/proto/`'s claims don't count (they exist only on prototype pages). `group` is an id from `GROUPS`. `src/player/input.ts` binds Space, E, R and the move keys by hand. No slot left: rethink the layout, no key-only controls. A key with no pad action of its own is `onKey` plus a `describeControl` row. To change another module's action: `wrapAction(id, { down, up })` from `onStart`.
-- **Interact button** (E, pad B, touch action): `registerInteractable(fn)` (`src/player/hands.ts`); `fn()` returns targets in reach `{ id, verb, at, run | blocked }`, `[]` for none. Never a new key.
-- **Particles**: `emit({ x, y, z, vx, vy, vz, life, size, color, ... })` from `src/render/particles.ts`; don't build your own pool.
-
-## Lint boundaries (`eslint.config.js`)
-- Determinism rules on `LOCKSTEP_FILES`: a new lockstep module outside `src/sim/` and `src/world/rules/` joins that list.
-- `registerOp`/`registerState`/`onTick` only in `src/world/rules/` (and `game-world.ts`, which installs them): one place owns wire order and hashing.
-- Rules import only `src/sim/`, `../grid.ts` and sibling rules; `src/sim/` imports nothing from `src/`.
-- Features don't import other features: shared code moves to `src/` (an adapter, `src/player/`, ...).
-- `src/world/*.ts` and `src/net/` stay headless: no `three`, `src/render/`, `src/player/` or `src/features/`.
-- Outside `src/proto/` and `src/debug/`, reach them with `import()`; the only static ways in are `proto/flags.ts` and `proto/mark.ts`.
-- One door: `new WebSocket`, `AudioContext` and `requestAnimationFrame` only on `DOORS`' allow-lists; a second frame loop is an `onFrame`.
-- No WebGL-only three.js APIs in `src/` (list in `src/render/README.md`, "Materials").
-
-## Don't (each of these has broken a room)
-- **Effects in `apply`.** Apply changes state and returns a result; splashes, sounds, inventory go in the adapter's `onApplied(e, tick, result)`.
-- **Treat `submitEdit` as done.** It returns true when *queued*: the host may reject it, and edits held while reconnecting can be dropped. Take items, spend inventory, play the effect in `onApplied`.
-- **Save or serve unverified state.** A client persists only hash-verified ticks, and a state that failed to load (a fresh fallback) must never be uploaded as the host's save. Keep these guards when you touch `sync.ts`.
-- **Leave a presence field set.** The getter returns `null` when the thing stops (deletes the key); receivers treat a missing key as "off".
-- **Patch another module's action by string id** (`actionById(id).down = ...`): use `wrapAction`.
-- **`Math.random`, wall clock or per-peer counters in apply or ticks.** The replay test catches these; don't silence it.
-
-## Mixed builds
-Tabs reload onto new deploys (`src/features/updates.ts`), but a visible tab waits until hidden, so rooms mix builds for a while. Wire changes are additive (new ops, states, presence keys, message types; old tabs ignore them). Never change an existing one's shape or meaning without a version: a state's `version` + `migrate`, or a new name.
-
-**Dev phase (until public playtests):** progress may be lost, so prefer a clean break over compatibility code. To remove or reshape ops, states or catalog entries, bump `WORLD_NS` in `src/world/namespace.ts` in the same commit and add a dated line to its history comment. Old tabs then live in a different room and never meet the new world, and `npm run registry` skips its mixed-build comparison; this is the only way past that check. Skip one-off localStorage migrations (a new key, or ignoring the old one, is fine). Still binding: `RULES` is append-only within a namespace, a shape change without a bump needs `version` + `migrate`, and nothing may crash on another build's messages, presence or saves.
-
-## Tests
-Before choosing checks, read [AGENT-VERIFICATION.md, Tests](AGENT-VERIFICATION.md#tests) for the full triggers and tool catalogue.
-
-- Unit tests (`test/*.test.ts`, `node:test`): pure logic only (determinism, conservation, ordering, validation, serialize/load round-trips); no three.js, DOM or network; well under a second each.
-- `npm run check` (lint, typecheck, unit tests, registry, build; seconds): before every push.
-- `npm run check:full` (+ server tests, headless network test, ~30 s): CI runs it on every PR anyway; run it locally only when you touch `src/net*`, `src/world/sync.ts`, `src/world/game-world.ts` or `server/`. New room-interface behavior gets a check in `dev/peer-test/`.
-- **Test diet.** Iteration speed matters more than coverage this early. Write new tests only for lockstep code (`src/sim/`, `src/world/rules/`: determinism, conservation, validation). Features, UI, tuning and feel get no unit tests and no new scenario; they get looked at ("See it before you ship"). A new scenario only when a sync contract needs one. The owner's one exception: the entity core's `test/entity-walker.test.ts` and `test/entity-state-node.test.ts`, for walker ordering bugs no still can show; no precedent for testing features.
-
-Required checks by trigger: replay for player/ball physics; load before/after presence, room or relay changes; perf before/after many meshes, lights or post passes; check:gpu for networking or render-pipeline changes; level-check for a new level/static object. PR CI's world-inputs must pass. Every harness is WebGPU; gfx errors are bugs. Add/update an Atlas story for a new sync system or big feature. The full procedure specifies limitations, evidence and nonblocking checks.
-
-## See it before you ship
-For anything a player can see or feel, close the loop yourself before shipping; don't hand it to a human to check.
-Before such work, read [AGENT-VERIFICATION.md, See it before you ship](AGENT-VERIFICATION.md#see-it-before-you-ship): frame and exercise the change, inspect the artifacts, judge against the brief, fix and look again (up to three rounds), and report what remains unverified. Ship it yourself with an inspected still in the commit body; unresolved visual quality stays behind its flag.
-
-Sandboxed and can't do this (`npm run look` needs a local port, `npm run inflight` and commits need to write `.git`, `ship` needs the network)? Ask for the access if your tool can. Otherwise don't ship a change a player can see without having seen it: commit it, say what you couldn't check, and leave it for whoever gave you the job.
-
-## Tools and skills
-Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lists routes); `--docs <text>` searches docs with authority labels and current replacement pointers.
-Before using tools or writing a shot, script or workaround, read the table and details in [AGENT-TOOLS.md](AGENT-TOOLS.md#tools-and-skills). Codex work also requires its [Codex section](AGENT-TOOLS.md#codex).
-
-## Shipping
-Before substantial work, committing or shipping, read [AGENT-SHIPPING.md](AGENT-SHIPPING.md#shipping). Run inflight before substantial work; keep others' changes intact. Format and lint changed files, run the required checks, review and simplify a diff over ~3 files or ~150 lines, and code-review net/world/server changes. Follow the plan approval requirement there. Update prototype cards in the same PR; visible changes need an inspected PR still. Small commits, imperative subject; the body names the DESIGN.md principle served. Ship with `npm run ship` and report only verified push, CI, merge and deployment states. Keep both sides of rebase conflicts.
-- Never force-push, skip hooks (`--no-verify`) or push to `main` unless a human asks. Red `main`: fixing it beats starting something new.
+Before touching high-risk folders, read their nested AGENTS.md; Codex at root must do this explicitly.

@@ -142,7 +142,7 @@ async function worktree(job: JobControl, ref: string, branch?: string): Promise<
   return dir;
 }
 
-const HOUSE = `You are working on Boogle, a goofy co-op browser game (three.js WebGPURenderer + TSL, Rapier, Vite). AGENTS.md and its referenced requirements bind you. Read the docs named in the brief and the sections needed for this task, including any reading required by AGENTS.md; use npm run map before reading whole source files.`;
+const HOUSE = `You are working on Boogle, a goofy co-op browser game (three.js WebGPURenderer + TSL, Rapier, Vite). AGENTS.md and its trigger table bind you. Read the docs named in the brief and the sections needed for this task; use npm run map before reading whole source files. Read docs/agents/codex.md for Codex work. Root-started Codex does not automatically load deeper AGENTS.md: explicitly read the nested AGENTS.md for each high-risk folder you touch.`;
 
 function previzPrompt(out: string, refs: string[]): string {
   const shots = Number(opts.shots) || 4;
@@ -177,7 +177,7 @@ Task: ${brief}
 
 ${DEPENDENCIES}
 
-Work in this worktree only, on its branch. Follow AGENTS.md (its required-reading routes, AGENT-TOOLS.md's tool table before writing a shot or script, sync kinds, lockstep math, test diet, game-design docs). Run \`npx prettier --write\` on the files you changed, then \`npm run check\`, and fix what fails. Commit in small imperative commits with the DESIGN.md principle in the body. Do not push or run npm run ship. Network access is only for the local server below: no other network use.
+Work in this worktree only, on its branch. Follow AGENTS.md (its required-reading routes, docs/agents/tools.md's tool table before writing a shot or script, sync kinds, lockstep math, test diet, game-design docs). Run \`npx prettier --write\` on the files you changed, then \`npm run check\`, and fix what fails. Commit in small imperative commits with the DESIGN.md principle in the body. Do not push or run npm run ship. Network access is only for the local server below: no other network use.
 
 ${
   eyes

@@ -9,7 +9,7 @@ Create the feature `$0` (kebab-case file name). Description: $ARGUMENTS
 AGENTS.md has the rules; this is the order to apply them in.
 
 1. Say which DESIGN.md principle the feature serves (and any it bends; ask before bending one).
-2. Pick a sync kind for each piece of state (AGENTS.md, "Pick a sync kind"). Lockstep: follow the four-file recipe in
+2. Pick a sync kind for each piece of state (docs/agents/sync.md, "Pick a sync kind"). Lockstep: follow the four-file recipe in
    `src/world/rules/README.md` instead of steps 3-4, then come back for 5-6.
 3. Copy the shape of a small plug-in: `src/features/ping.ts` (a thing in the world, an action + room messages),
    `src/features/honk.ts` (an action + room messages),

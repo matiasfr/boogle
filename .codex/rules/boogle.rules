@@ -52,7 +52,7 @@ prefix_rule(pattern = ["gh", "pr", ["view", "list", "checks", "diff", "create", 
 prefix_rule(pattern = ["gh", "run", ["view", "list", "watch"]], decision = "allow")
 prefix_rule(pattern = ["gh", "issue", ["view", "list"]], decision = "allow")
 
-# Never, for anyone (AGENTS.md, "Shipping").
+# Never, for anyone (docs/agents/shipping.md, "Shipping").
 prefix_rule(
     pattern = ["git", "push", ["--force", "-f", "--force-with-lease", "--no-verify"]],
     decision = "forbidden",

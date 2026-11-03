@@ -2,7 +2,7 @@
 
 ## Current-decision index
 
-Authoritative routing as of 3 November 2026. Read this index, then the linked sections for the task, including the named dated entries and their qualifications. This index records explicit supersessions; it does not approve new work. The dated record below is retained unchanged. A later explicit owner decision wins over an earlier one; a heading's position or an old struck-through question is not evidence of currency. [AGENTS.md's standing calls](../../AGENTS.md#owners-standing-calls) apply to every task. [DESIGN.md](../../DESIGN.md) owns principles, [find-the-fun](../plans/find-the-fun.md) the prototype work order, and [game-design.md](../game-design.md) what is built. A direction here is not proof of implementation.
+Authoritative routing as of 3 November 2026. Read this index, then the linked sections for the task, including the named dated entries and their qualifications. This index records explicit supersessions; it does not approve new work. The dated record below is retained unchanged. A later explicit owner decision wins over an earlier one; a heading's position or an old struck-through question is not evidence of currency. [AGENTS.md's standing calls](../agents/owner-calls.md#owners-standing-calls) apply to every task. [DESIGN.md](../../DESIGN.md) owns principles, [find-the-fun](../plans/find-the-fun.md) the prototype work order, and [game-design.md](../game-design.md) what is built. A direction here is not proof of implementation.
 
 | Task | Current decision and required dated record |
 | --- | --- |

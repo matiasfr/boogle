@@ -24,12 +24,12 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       owners: ['dev', 'scripts', '.github'],
       example: 'dev/map.ts',
       copy: 'Existing CLI entry and shared scanner ownership; map the affected folder next',
-      docs: ['AGENTS.md', 'AGENT-TOOLS.md', 'AGENT-SHIPPING.md', 'AGENT-VERIFICATION.md'],
+      docs: ['AGENTS.md', 'docs/agents/tools.md', 'docs/agents/shipping.md', 'docs/agents/tests.md'],
       sync: 'No game state; take the game route too if scope reaches runtime behavior',
       checks: 'npm run check; exercise the changed tool locally; no browser for tooling-only work',
       lookalikes: ['src/debug'],
       warning:
-        'Use the pure-tooling reading exception in AGENTS.md, Required reading by task; read affected contracts. src/debug is in-game tooling and needs its game route and visual verification.',
+        'Use the pure-tooling reading exception in docs/agents/routes.md, Required reading by task; read affected contracts. src/debug is in-game tooling and needs its game route and visual verification.',
     },
   ],
   docs: [
@@ -38,12 +38,12 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       owners: ['docs', 'AGENTS.md', 'src/README.md'],
       example: 'docs/game-design.md',
       copy: 'As-built index with chapters owned by their systems; distinguish current guidance from dated records',
-      docs: ['AGENTS.md', 'AGENT-TOOLS.md', 'AGENT-SHIPPING.md', 'AGENT-VERIFICATION.md'],
+      docs: ['AGENTS.md', 'docs/agents/tools.md', 'docs/agents/shipping.md', 'docs/agents/tests.md'],
       sync: 'No game state; design decisions also take the relevant game route',
       checks: 'npm run check; verify links and guidance against owners; no browser for documentation-only work',
       lookalikes: ['docs/ideas.md', 'docs/proposals'],
       warning:
-        'Use the pure-documentation reading exception in AGENTS.md, Required reading by task. Proposals and parked ideas are not implementation authority; preserve dated decisions.',
+        'Use the pure-documentation reading exception in docs/agents/routes.md, Required reading by task. Proposals and parked ideas are not implementation authority; preserve dated decisions.',
     },
   ],
   hat: [
