@@ -19,7 +19,8 @@ const restore = new Map<MeshStandardNodeMaterial, () => void>();
 function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   if (restore.has(mat)) return;
   const previousColor = mat.colorNode,
-    previousRoughness = mat.roughnessNode;
+    previousRoughness = mat.roughnessNode,
+    previousNormal = mat.normalNode;
   const wash = Fn(() => swashNodes(positionWorld.xz, positionWorld.y, field))().toVar();
   const surface = Fn(() => {
     const p = positionWorld;
@@ -58,15 +59,19 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   patchNode(mat, 'colorNode', (previous: N) =>
     mix((previous ?? materialColor).mul(surface.rgb), vec3(0.65, 0.7, 0.68), foam),
   );
-  // The thin wet shoreline is glossy; submerged ground retains its own roughness rather than a faceted sun mirror.
-  patchNode(mat, 'roughnessNode', (previous: N) =>
-    mix(previous ?? materialRoughness, 0.26, surface.a.mul(smoothstep(-0.35, 0, positionWorld.y))),
-  );
+  // A wet film needs a continuous normal, as in the reference's smooth/rippled sand. Giving the dry terrain's
+  // flat face normals a low roughness lit entire triangles as white shards, even with the ocean hidden.
+  const gloss = surface.a.mul(smoothstep(-0.05, 0.05, positionWorld.y));
+  const filmNormal = TSL.transformNormalToView(TSL.normalLocal).toVarying().normalize();
+  patchNode(mat, 'normalNode', (previous: N) => mix(previous ?? TSL.normalViewGeometry, filmNormal, gloss).normalize());
+  patchNode(mat, 'roughnessNode', (previous: N) => mix(previous ?? materialRoughness, 0.32, gloss));
   const color = mat.colorNode,
-    roughness = mat.roughnessNode;
+    roughness = mat.roughnessNode,
+    normal = mat.normalNode;
   restore.set(mat, () => {
     if (mat.colorNode === color) mat.colorNode = previousColor;
     if (mat.roughnessNode === roughness) mat.roughnessNode = previousRoughness;
+    if (mat.normalNode === normal) mat.normalNode = previousNormal;
     mat.needsUpdate = true;
   });
 }

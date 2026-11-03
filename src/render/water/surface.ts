@@ -377,6 +377,8 @@ export function waterLighting(sky: WaterSky, look = DEFAULT_LOOK) {
 
 export type Ocean = {
   mesh: THREE.Mesh;
+  /** Bind the existing lens kernel's signed camera depth (positive under water). */
+  setCameraDepth(depth: N): void;
   /** World-height query for the near-plane grid, including shore waves and horizontal displacement inversion. */
   heightAt: (xz: N) => N;
   update: (camera: THREE.Camera, time: number, sun: THREE.DirectionalLight, hemi?: THREE.HemisphereLight) => void;
@@ -397,6 +399,7 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
   };
   const shoreAt = (xz: N, sh: N, surf: N, cell: N) => shoreWaves(xz, sh, f, surf, cell, motion, origin);
   const { waterSun, deepWater } = waterLighting(demoSky, LOOK);
+  let cameraDepth: N = cameraPosition.y.negate();
   const uGridScale = uniform(1),
     uCellStep = uniform((2 * PI) / GRID.angular),
     uOuter = uniform(GRID.outer);
@@ -541,9 +544,10 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
 
     // All derivatives and implicit samples above remain in uniform flow before the front/back branch.
     const result = vec4(0).toVar();
-    // Choppy horizontal displacement can fold a coastal triangle. Its winding is not a water-volume test:
-    // a camera looking down on that fold must see the top optics, not the dark underwater underside.
-    If(frontFacing.not().and(V.y.lessThan(0)), () => {
+    // OceanSurface's camera-side guard. Folded faces must not select the opposite volume's optics.
+    // Keep the half-metre straddling band and take derivatives before discarding (WGSL uniform flow).
+    TSL.Discard(select(frontFacing, cameraDepth.greaterThan(0.5), cameraDepth.lessThan(-0.5)));
+    If(frontFacing.not(), () => {
       const Nu = Nrm.negate();
       const cosI = dot(V, Nu);
       const deep = deepWater(reflect(V.negate(), Nu)).toVar();
@@ -944,6 +948,10 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
   return {
     mesh,
     heightAt,
+    setCameraDepth(depth) {
+      cameraDepth = depth;
+      material.needsUpdate = true;
+    },
     update(camera, time) {
       if (options.fitCameraRange && 'far' in camera && typeof camera.far === 'number' && camera.far !== lastFar) {
         lastFar = camera.far;

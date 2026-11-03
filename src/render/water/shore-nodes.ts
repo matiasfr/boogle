@@ -1,7 +1,7 @@
 // Shader helpers over the shore field, shared by the surface (./surface.ts) and the wet sand (./island.ts), so the two always
 // agree: Ultra Water's SHORE_GLSL and SWASH_GLSL (water/OceanSurface.js) as TSL. Samples are explicit-LOD: they sit inside
 // branches, which WGSL allows only for those.
-import { SHORE_CAPACITY, type ShoreAtlas } from './shore-providers.ts';
+import { SHORE_CAPACITY, SHORE_SIZE, type ShoreAtlas } from './shore-providers.ts';
 import { TSL, type N } from './tsl.ts';
 import { LOOK, ULTRA } from './tuning.ts';
 import { seaU } from './state.ts';
@@ -59,7 +59,34 @@ export function shoreFields(atlas: ShoreAtlas) {
     });
   const surf = lookup(atlas.surf, vec4(6, 0, 0, 1));
   return {
-    shore: lookup(atlas.shore, vec4(-60, 1e4, 0, 0)),
+    shore: Fn(([xz]: [N]) => {
+      const r = region(xz).toVar(),
+        layer = TSL.int(max(r.z, 0));
+      const vertexBed: N = atlas.vertexBeds.element(layer);
+      const sh = select(
+        r.z.greaterThanEqual(0),
+        texture(atlas.shore, r.xy).depth(layer).level(0),
+        vec4(-60, 1e4, 0, 0),
+      ).toVar();
+      If(r.z.greaterThanEqual(0).and(vertexBed.greaterThan(0)), () => {
+        const p = clamp(r.xy.mul(SHORE_SIZE), 0, SHORE_SIZE - 1),
+          ij = min(floor(p), SHORE_SIZE - 2),
+          ab = p.sub(ij);
+        const at = (x: number, z: number) => TSL.textureLoad(atlas.shore, TSL.ivec2(ij.add(vec2(x, z)))).depth(layer).r;
+        const h00 = at(0, 0),
+          h10 = at(1, 0),
+          h01 = at(0, 1),
+          h11 = at(1, 1);
+        sh.x.assign(
+          select(
+            ab.x.add(ab.y).lessThanEqual(1),
+            h00.add(h10.sub(h00).mul(ab.x)).add(h01.sub(h00).mul(ab.y)),
+            h11.add(h01.sub(h11).mul(ab.x.oneMinus())).add(h10.sub(h11).mul(ab.y.oneMinus())),
+          ),
+        );
+      });
+      return sh;
+    }),
     travel: lookup(atlas.travel, vec4(0)),
     surf: (xz: N) => surf(xz).r,
   };

@@ -2,10 +2,15 @@
 
 Production `water=new` also serves the opt-in home shore slice (`classic=1&shore=smooth-detail&shoreRocks=1`).
 Its receivers carry the demo-strength shallow caustic net, moving wetness and swash lace; contacts and bed data
-follow the slice. Coastal water folds viewed from above use top-side optics: triangle backfacing alone no longer
-selects the dark underwater underside and draws a blue bank slit. Genuine upward-looking backfaces retain the
-underwater branch. This corrects optical classification, not the physical existence of choppy surface folds.
-See [shore-water validation](../research/shore-water-validation.md) for evidence and remaining limits.
+follow the slice. Wet receiver sheen uses continuous vertex normals instead of turning dry terrain facets into
+white triangles. The surface rejects faces on the wrong side of the camera, using the existing GPU lens-depth
+query and the reference's half-metre transition band; genuine submerged views retain the underside.
+See [shore seam validation](../research/water-shore-seams.md) for evidence and remaining limits.
+
+Place's 2 m bed is stored on its actual terrain vertices and sampled on the same triangle diagonal. Wave damping,
+bed clamping and receivers therefore follow the drawn bank, instead of a twice-filtered approximation. Travel-time
+and shore-distance fields keep their smoothing. These are Local rendering/query changes; Owner physics and all
+shared state retain their existing ownership and messages.
 
 Ultra Water's scene, rewritten in TypeScript and TSL inside Boogle's single WebGPU renderer. The default starts
 from the demo's Lagoon view; `&v=pop` keeps our previous colour grade over the same scene. The gut question is
