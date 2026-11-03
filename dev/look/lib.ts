@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import type { Browser, BrowserContext, Page } from 'playwright';
 import { createService, loadConfig } from '../../server/src/server.ts';
+import { installWarp, SKIP_DRAWS } from './warp.ts';
+import type { WarpHandle } from './warp.ts';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -127,6 +129,7 @@ export type GameOpts = {
   isolated?: boolean;
   touch?: boolean;
   trace?: boolean;
+  warp?: boolean;
 };
 /** A function `page.evaluate` runs in the page (serialised, so it sees only its argument). */
 type PageFn<A, R> = (arg: A) => R | Promise<R>;
@@ -155,7 +158,8 @@ export class Game {
   // layout viewport, and the game only needs the coarse pointer),
   // trace (record a Playwright trace: the action timeline, console, network and page errors; `close({ trace: file })`
   // keeps it. No screencast or DOM snapshots: on a CI runner's software GL they starve the frame loop, since waitFor
-  // evaluates every 100 ms and each call snapshots the DOM, and the stills already show the canvas)
+  // evaluates every 100 ms and each call snapshots the DOM, and the stills already show the canvas),
+  // warp (the page's clock can run ahead of the wall, for `g.warp`: ./warp.ts)
   static async open(browser: Browser, stack: Stack, opts: GameOpts = {}) {
     const g = new Game();
     g.name = opts.name || 'player';
@@ -174,6 +178,7 @@ export class Game {
           q === '(pointer: coarse)' ? ({ ...mm(q), matches: true, media: q } as MediaQueryList) : mm(q);
       });
     if (opts.init) await g.ctx.addInitScript(opts.init);
+    if (opts.warp) await g.ctx.addInitScript(installWarp);
     const doc = new URL(stack.base);
     if (opts.isolated)
       await g.ctx.route(
@@ -236,6 +241,7 @@ export class Game {
     console.log(`[${g.name}] renderer backend: ${g.gfx ?? 'unknown'}`);
     await sleep(300);
     fs.mkdirSync(g.out, { recursive: true });
+    if (opts.warp) await g.eval(SKIP_DRAWS);
     return g;
   }
 
@@ -267,6 +273,30 @@ export class Game {
       await sleep(step);
     }
     return -1;
+  }
+
+  // Runs the page ahead of the wall (needs `warp` at open) for `seconds` of game time, or until `until` is true, then back to
+  // real frames for whatever comes next. Stops at once on a page error. Returns game seconds passed, wall seconds and frames.
+  async warp({
+    seconds = Infinity,
+    until,
+    speed = Infinity,
+    wallLimit = 540,
+  }: { seconds?: number; until?: string; speed?: number; wallLimit?: number } = {}) {
+    const v = () => this.page.evaluate(() => (window as unknown as { __warp: WarpHandle }).__warp.now());
+    const start = await v();
+    const t0 = Date.now();
+    await this.page.evaluate((n) => (window as unknown as { __warp: WarpHandle }).__warp.go(n ?? Infinity), speed);
+    let done = false;
+    let at = start;
+    while (!done && !this.errors.length && Date.now() - t0 < wallLimit * 1000) {
+      await sleep(100);
+      at = await v();
+      done = at - start >= seconds || (until ? !!(await this.page.evaluate(`!!(${until})`)) : false);
+    }
+    await this.page.evaluate(() => (window as unknown as { __warp: WarpHandle }).__warp.go(1));
+    await sleep(500); // real frames again, and drawn
+    return { game: at - start, wall: (Date.now() - t0) / 1000, done };
   }
 
   // Freeze the camera at a named view or {cam, look}. Pass fov to change the field of view.
