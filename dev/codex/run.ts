@@ -2,20 +2,21 @@
 // .claude/skills/codex/SKILL.md.
 //
 //   node dev/codex/run.ts <mode> <topic> [--effort low|medium|high|xhigh|max] [--model gpt-6-astra]
-//                         [--ref a.png,b.png] [--shots 4] [--ref-branch <branch>] [--dry] "<brief>"
+//                         [--ref a.png,b.png] [--shots 4] [--ref-branch <branch>] [--eyes off] [--dry] "<brief>"
 //
 // Modes:
 // - previz: art-directs the idealized look of a moment, prototype or effect and paints it with $imagegen. Output in
 //   .look/previz/<topic>/ (board.md + shot-<n>.png), never in the repo.
 // - research: writes docs/research/<topic>.md with live web search, on branch codex/<topic> in its own worktree.
-// - task: implements the brief on branch codex/<topic> in its own worktree, commits, never pushes.
+// - task: implements the brief on branch codex/<topic> in its own worktree, commits, never pushes. It can see the game:
+//   its sandbox gets network access for a local server, and ./look-broker.ts runs the browser outside it (./see.ts).
 // - review: `codex exec review` of a branch (default: this checkout's HEAD) against origin/main, in a detached worktree.
 //
 // Worktrees live in ../boogle-codex/<topic> and share this checkout's node_modules. The log, last message (report.md)
 // and meta.json go to .look/codex/<topic>/. Nothing is pushed: whoever ran it reviews the report and ships.
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync, type ChildProcess } from 'node:child_process';
 
 type Mode = 'previz' | 'research' | 'task' | 'review';
 const MODES: Mode[] = ['previz', 'research', 'task', 'review'];
@@ -48,6 +49,7 @@ const topic = rawTopic
   .replace(/^-|-$/g, '');
 const effort = opts.effort || DEFAULT_EFFORT[mode];
 const model = opts.model || 'gpt-6-astra';
+const eyes = mode === 'task' && opts.eyes !== 'off';
 
 const git = (cwd: string, ...a: string[]) =>
   execFileSync('git', a, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -105,7 +107,15 @@ Task: ${brief}
 
 ${SHARED_MODULES}
 
-Work in this worktree only, on its branch. Follow AGENTS.md (sync kinds, lockstep math, test diet, game-design docs). Run \`npx prettier --write\` on the files you changed, then \`npm run check\`, and fix what fails. Commit in small imperative commits with the DESIGN.md principle in the body. Do not push or run npm run ship; network is off. Your final message: what you changed, what check printed, and anything you were unsure of or could not verify (you cannot see the running game).`;
+Work in this worktree only, on its branch. Follow AGENTS.md (sync kinds, lockstep math, test diet, game-design docs). Run \`npx prettier --write\` on the files you changed, then \`npm run check\`, and fix what fails. Commit in small imperative commits with the DESIGN.md principle in the body. Do not push or run npm run ship. Network access is only for the local server below: no other network use.
+
+${
+  eyes
+    ? `You can see the running game. \`BOOGLE_QUERY='proto=x' node dev/codex/see.ts <options>\` takes the same options as \`npm run look\` (.claude/skills/look/SKILL.md; not --url or --out), runs on the real GPU and takes a minute or two. Open the PNGs it writes to .look/ with view_image. Use it for anything a player can see: name the question, frame it, look, fix what's off, up to three rounds (AGENTS.md, "See it before you ship"). You can't watch a video, so judge motion from the motion sheet and say that real-time motion is unverified.`
+    : 'You cannot see the running game.'
+}
+
+Your final message: what you changed, what check printed, what you saw, and anything you were unsure of or could not verify.`;
 
 function main() {
   const reportFile = path.join(logs, 'report.md');
@@ -139,6 +149,7 @@ function main() {
     prompt = mode === 'research' ? researchPrompt() : taskPrompt();
     argv = ['exec', ...base, '-C', cwd, '-s', 'workspace-write', '--add-dir', gitDir];
     if (mode === 'research') argv.push('-c', 'web_search="live"');
+    if (eyes) argv.push('-c', 'sandbox_workspace_write.network_access=true');
     argv.push('-');
   }
 
@@ -150,7 +161,10 @@ function main() {
   fs.writeFileSync(path.join(logs, 'meta.json'), JSON.stringify(meta, null, 2));
   console.log(`codex ${mode} "${topic}" (${model}, ${effort}) in ${cwd}\nlog: ${path.join(logs, 'log.txt')}`);
   const log = fs.openSync(path.join(logs, 'log.txt'), 'w');
+  let broker: ChildProcess | null = null;
+  if (eyes) broker = spawn(process.execPath, [path.join(repo, 'dev/codex/look-broker.ts'), cwd], { stdio: 'ignore' });
   const r = spawnSync('codex', argv, { cwd, input: prompt, stdio: ['pipe', log, log] });
+  broker?.kill();
   fs.closeSync(log);
   const done = { ...meta, finished: new Date().toISOString(), status: r.status };
   fs.writeFileSync(path.join(logs, 'meta.json'), JSON.stringify(done, null, 2));
