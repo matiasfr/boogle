@@ -18,10 +18,52 @@
 - `/video`: clips, GIFs, trailers and patch-notes videos. `/playtest-notes`: log a play session to `docs/playtests.md`.
 - Reference skills load on their own when relevant: `threejs-*`, `game-feel`, `camera-systems`, `audio-design`. The `threejs-*` skills cover WebGL and WebGPU; Boogle is WebGPU + TSL only, so use their WebGPU/TSL parts and [src/render/README.md](src/render/README.md). Codex sees these skills through the `.agents/skills` symlink, so keep them in `.claude/skills`.
 
+### Codex: bot runs, visual checks and follow-ups
+
+Use `/codex` for implementation and gameplay checks (AGENTS.md, "Codex first"). The complete command and evidence
+contract is [dev/codex/README.md](dev/codex/README.md); visual framing and motion guidance is in
+[the look skill](.claude/skills/look/SKILL.md). Run the launcher in the background with Bash `run_in_background: true`.
+
+From the checkout containing the work, start a job with a unique topic:
+
+```sh
+node dev/codex/run.ts task inspect-forge --base-ref HEAD --model gpt-6.1-terra --effort low "Run the place bot, inspect the forge reveal from its checkpoint, open the images, and report failures and visual findings. Do not change source."
+```
+
+Use `--snapshot` instead of `--base-ref HEAD` only when the job should include uncommitted work; it includes all
+nonignored untracked files too. Choose Astra for harder work. Ask the worker to use its already-running broker:
+
+```sh
+node .look/see-client.ts playthrough
+node .look/see-client.ts look --at list
+node .look/see-client.ts look --at "forge lit" --curves --question "Does the forge read clearly at its reveal?"
+node .look/see-client.ts scenario world-inputs
+```
+
+Read `.look/codex/<topic>/handoff.md`, `report.md` and `evidence.json`. Require the worker to open the PNGs, name what it
+saw and report failed or stale runs. A passing capture proves execution health; bot completion, visual quality and
+real-time feel are separate findings. Use `--action` to exercise the feature and `--video` for motion evidence; sampled
+frames and curves cannot establish smoothness. Repeat affected checks after fixes; don't edit source during a run.
+
+Send feedback from the **original launching checkout**, after the previous turn finishes:
+
+```sh
+node dev/codex/run.ts resume inspect-forge "Improve the framing, inspect the new images, and rerun the affected checks."
+```
+
+This keeps the session, worktree and bot checkpoints, restarts the broker, and archives earlier reports in `turns/`.
+Keep the worktree and local Codex session until follow-ups are done. Never use global `--last` to select a job. Caller
+edits aren't recopied on resume: describe the fix or start a new snapshot job. Review the returned diff and evidence,
+then ship through the normal workflow; Codex task workers commit but don't push or ship themselves.
+
+For a direct local check outside a Codex worker, `/look` documents `npm run playthrough`, `npm run look -- --at list`,
+targeted captures and `npm run session -- start` for interactive inspection. A live **game** session is separate from
+resuming a Codex **conversation**. Sandboxed task workers use the broker commands above for browser checks.
+
 ### Working in parallel
 - One session directs; implementation runs in parallel. A **subagent** (Agent tool, `isolation: "worktree"`, Opus at medium effort) suits one piece whose result the director reviews in the same sitting; subagents can't start their own. A **session** of its own (one per track, in its own worktree) can run its own subagents and lasts across days; use it for a track like a prototype.
-- Keep each agent to one stage, under about an hour, and start the next stage fresh from its handover rather than resuming it: every message re-reads the whole context, and one agent at 846k tokens used 57M in cache reads. Put the files, errors and decisions in the brief, so it doesn't have to go and find them.
-- Each worker sees its own result before shipping (AGENTS.md, "See it before you ship") and ships itself. The director reads the diff and the stills afterwards.
+- Give each agent a concrete stage and include the files, errors and decisions in its brief. Resume the same Codex job for feedback, fixes and repeated checks; use a new job for independent work or a new starting snapshot.
+- Each worker sees its own result (AGENTS.md, "See it before you ship"). The director reviews Codex task reports, diffs and stills before shipping their commits; other workers follow their assigned shipping workflow.
 - Research before deep facets (AGENTS.md, "Owner's standing calls") runs as a deep-research subagent.
 
 ### As the GitHub Action (`@claude` in `claude.yml`, or `ci-autofix.yml`)
