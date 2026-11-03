@@ -1180,7 +1180,7 @@ function objective(now: number) {
   }
   if (run.mode === 'laying') {
     setBeacon(null, now);
-    return 'Your logs are becoming track! Ride along, or walk behind it.';
+    return 'Your logs are becoming track! Hop on for a ride.';
   }
   if (run.mode === 'running') {
     setBeacon(null, now);
