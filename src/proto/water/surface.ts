@@ -468,6 +468,10 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
         smoothstep(float(0.62).sub(hit.mul(0.3).mul(ring)), float(0.85).sub(hit.mul(0.3).mul(ring)), n),
       );
       foam.assign(max(foam, skirt.mul(mix(0.35, 0.75, hit))));
+      // The demo finds the water against a rock from the depth buffer (its `obst` contact). No depth read here, so the known
+      // rock stands in: a churned band hard against its foot, breathing with each hit.
+      const foot = smoothstep(ROCK.r * 1.05, ROCK.r * 1.75, rl.sub(hit.mul(1.2))).oneMinus();
+      foam.assign(max(foam, foot.mul(smoothstep(0.2, 0.5, n)).mul(hit.mul(0.4).add(0.6))));
     });
 
     // --- lighting ----------------------------------------------------------------------

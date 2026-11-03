@@ -10,7 +10,7 @@ const params = new URLSearchParams(location.search);
 const size = params.get('n') === '128' ? 128 : 256;
 const cascade = Number(params.get('band') ?? 0);
 const { slopes, residue } = await readFftCheck(cascade, size);
-const cpu = bakeSlopeTile(cascade, size);
+const cpu = bakeSlopeTile(cascade, size, 0);
 const data = cpu.tex.image.data as Uint16Array;
 // Decode the CPU's actual half-float tile, including its second moments, without another three.js import in page code.
 function fromHalf(h: number) {

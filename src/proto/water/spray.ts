@@ -17,8 +17,9 @@ const OMEGA = Math.sqrt((9.81 * TAU) / SHORE_WAVE.lambda) * SHORE_WAVE.speed;
 const SWASH_TAU = 6.2831853; // SWASH_GLSL uses this literal, including in its frequency.
 const SWASH_OMEGA = Math.sqrt((9.81 * SWASH_TAU) / SHORE_WAVE.lambda) * SHORE_WAVE.speed;
 const DISTANCE = 350; // Spray.params.distance, metres; fade over the last 30%.
-const MAX_PER_SECOND = 180,
-  MAX_PER_FRAME = 48;
+const MAX_PER_SECOND = 420,
+  MAX_PER_FRAME = 96,
+  ROCK_CLUSTER = 4; // droplets per rock site per crest
 const BREAKER_SITES = 768,
   ROCK_SITES = 128,
   CROWN_DROPS = 32;
@@ -142,7 +143,12 @@ function sites(bake: ShoreBake) {
         ang = (r1 - 0.5) * 2.6;
       const nx = -(centre.dx * Math.cos(ang) - centre.dz * Math.sin(ang));
       const nz = -(centre.dx * Math.sin(ang) + centre.dz * Math.cos(ang));
-      const e = site(bake, cx + nx * ROCK.r * 1.08, cz + nz * ROCK.r * 1.08, r1, r2);
+      const e = site(bake, cx + nx * ROCK.r * 1.25, cz + nz * ROCK.r * 1.25, r1, r2);
+      // The bake's shock around the dome fades the waves on the rock's own face (shoal 0.2-0.5), so the crest that hits it is
+      // read from open water up-swell of the rock.
+      const approach = site(bake, cx - centre.dx * ROCK.r * 3.5, cz - centre.dz * ROCK.r * 3.5, 0, 0);
+      e.base = approach.base;
+      e.amax = approach.amax;
       e.nx = nx;
       e.nz = nz;
       rocks.push(e);
@@ -256,7 +262,7 @@ export function startSpray(bake: ShoreBake) {
       drop.vy = (2 + 4 * r3 * r3) * reach * strength;
       drop.life = 0.5 + 0.9 * r3;
       drop.drag = 1.6;
-      drop.size = 0.04 * (0.5 + e.r2) * (0.6 + (0.4 * reach) / 3);
+      drop.size = 0.12 * (0.5 + e.r2) * (0.6 + (0.4 * reach) / 3);
     } else {
       const side = (fract(e.r1 * 31.7) - 0.5) * 1.6;
       drop.x -= e.dz * side;
@@ -267,9 +273,18 @@ export function startSpray(bake: ShoreBake) {
       drop.vy = (1.2 + 3.2 * fract(e.r1 * 7.9)) * Math.sqrt(a);
       drop.life = 0.9 + 1.5 * e.r2;
       drop.drag = 1.7;
-      drop.size = 0.05 * (0.6 + 0.8 * fract(e.r2 * 5.3)) * Math.sqrt(a / 0.5);
+      drop.size = 0.1 * (0.6 + 0.8 * fract(e.r2 * 5.3)) * Math.sqrt(a / 0.5);
     }
     send(now);
+    if (rock)
+      for (let k = 1; k < ROCK_CLUSTER; k++) {
+        const j = fract(e.r1 * (11.3 + k * 7.1));
+        drop.vx *= 0.75 + 0.5 * j;
+        drop.vz *= 1.25 - 0.5 * j;
+        drop.vy *= 0.7 + 0.6 * j;
+        drop.life *= 0.8 + 0.4 * j;
+        send(now);
+      }
   };
   onFrame(
     ({ dt, elapsed }) => {

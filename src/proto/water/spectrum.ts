@@ -193,7 +193,7 @@ function ifft2(re: Float64Array, im: Float64Array, N: number) {
 }
 
 /** Cascade c at t = 0 as a tile of slope moments, and its mean square slope (what the demo reads from the 1×1 mip). */
-export function bakeSlopeTile(c: number, resolution = N) {
+export function bakeSlopeTile(c: number, resolution = N, choppiness = OCEAN.choppiness) {
   const N = resolution;
   const h0 = bakeH0(c, N),
     L = CASCADE_LENGTHS[c]!,
@@ -227,8 +227,8 @@ export function bakeSlopeTile(c: number, resolution = N) {
       const k = j * N + i,
         s = (i + j) & 1 ? -1 : 1, // undo the centred-k frequency shift
         // Slopes in the displaced surface's own space, as OceanSim's ASSEMBLE, before their moments.
-        sx = (re[k]! * s) / Math.max(1 + OCEAN.choppiness * re2[k]! * s, 0.2),
-        sz = (im[k]! * s) / Math.max(1 + OCEAN.choppiness * im2[k]! * s, 0.2);
+        sx = (re[k]! * s) / Math.max(1 + choppiness * re2[k]! * s, 0.2),
+        sz = (im[k]! * s) / Math.max(1 + choppiness * im2[k]! * s, 0.2);
       half[k * 4] = THREE.DataUtils.toHalfFloat(sx);
       half[k * 4 + 1] = THREE.DataUtils.toHalfFloat(sz);
       half[k * 4 + 2] = THREE.DataUtils.toHalfFloat(sx * sx);
