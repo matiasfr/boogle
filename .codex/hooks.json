@@ -1,0 +1,18 @@
+{
+  "description": "Prettier on each file an edit touches, and ESLint for TypeScript: the same hook Claude Code runs",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.claude/hooks/format-lint.ts\"",
+            "timeout": 30,
+            "statusMessage": "Formatting and linting"
+          }
+        ]
+      }
+    ]
+  }
+}

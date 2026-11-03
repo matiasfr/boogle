@@ -1,0 +1,36 @@
+# The desktop app's local environment: what a new worktree runs, and the buttons in the top bar.
+version = 1
+name = "boogle"
+
+[setup]
+script = '''
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && nvm use
+npm ci --no-audit --no-fund
+npx playwright install chromium
+'''
+
+[[actions]]
+name = "Dev server"
+icon = "run"
+command = "npm run dev"
+
+[[actions]]
+name = "Check"
+icon = "test"
+command = "npm run check"
+
+[[actions]]
+name = "Look"
+icon = "debug"
+command = "npm run look -- --view hill"
+
+[[actions]]
+name = "Playthrough"
+icon = "test"
+command = "npm run playthrough"
+
+[[actions]]
+name = "Ship"
+icon = "tool"
+command = "npm run ship"

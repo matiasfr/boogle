@@ -1,0 +1,12 @@
+# Codex in this repository: what `.claude/settings.json` is for Claude Code. Loads when the project is trusted; applies in every
+# worktree of it. What may leave the sandbox is in ./rules/boogle.rules; the format hook is ./hooks.json.
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+web_search = "live" # research is a standing call in AGENTS.md
+project_doc_max_bytes = 131072 # AGENTS.md is over 28 KB, and the default cuts it off at 32
+
+[sandbox_workspace_write]
+network_access = true # fetch, gh, local ports; the harness's local server and Vite
+
+[agents]
+max_concurrent_threads_per_session = 6
