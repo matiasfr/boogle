@@ -58,6 +58,18 @@ export type Proto = {
 
 export const PROTOS: Proto[] = [
   {
+    id: 'sky',
+    title: 'A sky worth lingering under',
+    step: 'depth',
+    status: 'live',
+    url: '/?proto=sky',
+    question: 'Does this feel like the place in the painting?',
+    what: 'Deeper blue daylight, warm sun and open shade, with five soft white cloud groups drifting overhead.',
+    since: '2026-11-03',
+    chapter: 'it holds its own daylight and changes the island lighting',
+    spawn: { x: 0, z: -30, yaw: -0.59 },
+  },
+  {
     id: 'onehand',
     title: 'One thing in your hands',
     step: 'depth',
@@ -566,6 +578,7 @@ export type PlaytestStep = {
 // one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
 // listed before it lands.
 export const PLAYTEST_ORDER: PlaytestStep[] = [
+  { id: 'sky', why: 'Does this feel like the place in the painting?', later: true },
   { id: 'place', why: 'Did the crates and the little guys give you a reason to keep carrying?' },
   { id: 'net', variant: 'depot', why: 'Does the haul feel good now that the network is helping?' },
   { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },
