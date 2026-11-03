@@ -1,10 +1,10 @@
-// Gift Freight, small (docs/research/maximal-rewards.md, A). Every finished stretch delivers a crate that bursts open with
-// a real payoff: a burst, a sound, a light and a beat where the thing is shown, and then it goes where you'll see it: on you
-// or on the train. First gifts are cosmetic only (owner: "maybe to start with, it can even be just cosmetics"). The first few
-// come in an authored order so the first is great, then a little surprise; no duplicates, no currency.
-// The hint comes first (owner: "having a hint that there's something you can get later would be really cool"): a curio
-// shelf at the station with shapes under dust sheets, and empty mounts on the train, from the start of the run. As gifts
-// land, a sheet comes off and a mount fills. More shapes than there are crates, so some stay covered. Local.
+// Crates: cosmetic boxes (owner, Design Table, 2 November: "cosmetic boxes only, with rarity tiers, common first and rarer later").
+// Numbers from docs/research/cosmetic-rarity.md, "A small round-4 set", all hypotheses: three tiers, told apart by marks on the lid
+// and the seal's shape as well as colour; odds by box; a Wonder by the third box, and never more than five in a row without one.
+// What's in a box goes in a slot, hat, accessory or outfit. An empty slot puts it on; a slot with something in it keeps it, and
+// you can swap at the curio shelf (Interact), which is your wardrobe: what you've got stands on it, what you haven't is under
+// dust sheets. The stowaway has a slot of its own. No curios or train ornaments as prizes: train slots wait for the roundhouse.
+// No duplicates. The ladder's tool chests use the same show (./ladder.ts). Personal, and Local.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { emit } from '../../render/particles.ts';
@@ -14,6 +14,7 @@ import { me } from '../../player/player.ts';
 import { carry } from '../../physics/platforms.ts';
 import { fanfare, knock, label, pop } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
+import { personalSlice } from './job.ts';
 import { SHELF, toWorld } from './layout.ts';
 import { dustRing } from './pieces.ts';
 import { softGlow } from './look.ts';
@@ -67,18 +68,40 @@ export function merged(parts: Part[], grow = 1) {
 }
 const giftMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.08 });
 const sheetMat = new THREE.MeshStandardNodeMaterial({ color: '#ded5c2', roughness: 1, flatShading: true });
-const darkMat = new THREE.MeshStandardNodeMaterial({ color: '#2c2a2e', roughness: 0.75 });
 const GOLD = '#f2b134',
   NAVY = '#27386b',
   RED = '#d8392b',
   BRASS = '#d9a23a';
 
-export type GiftId = 'hat' | 'flag' | 'critter' | 'cap' | 'bunting' | 'bell' | 'lantern' | 'scarf' | 'egg' | 'scope';
-type Gift = { id: GiftId; name: string; line: string; parts: Part[] };
+export type GiftId =
+  | 'hat'
+  | 'beanie'
+  | 'teacup'
+  | 'scarf'
+  | 'glasses'
+  | 'headphones'
+  | 'overalls'
+  | 'raincoat'
+  | 'festival'
+  | 'critter'
+  | 'egg'
+  | 'scope';
+export type Slot = 'hat' | 'accessory' | 'outfit' | 'pet';
+export type Tier = 'common' | 'rare' | 'wonder';
+type Gift = { id: GiftId; name: string; line: string; parts: Part[]; slot?: Slot; tier?: Tier };
 // Each drawn at about the size it sits on the shelf, base at y = 0.
+const overalls = (body: string, strap: string, trim: string): Part[] => [
+  ['s', 0, -0.06, 0, 0.3, 0.36, 0.25, body],
+  ['b', -0.15, 0.3, 0.2, 0.06, 0.34, 0.04, strap],
+  ['b', 0.15, 0.3, 0.2, 0.06, 0.34, 0.04, strap],
+  ['b', 0, 0.02, 0.26, 0.2, 0.14, 0.03, trim],
+];
+// New pieces carry no line yet: those wait for the owner's writing pass. Existing lines stay as they were.
 const GIFTS: Gift[] = [
   {
     id: 'hat',
+    slot: 'hat',
+    tier: 'common',
     name: "A conductor's hat",
     line: 'Yours. It suits you.',
     parts: [
@@ -90,18 +113,104 @@ const GIFTS: Gift[] = [
     ],
   },
   {
-    id: 'flag',
-    name: 'Your own flag',
-    line: 'It flies from every engine you own.',
+    id: 'beanie',
+    slot: 'hat',
+    tier: 'common',
+    name: 'A beanie',
+    line: '',
     parts: [
-      ['c', 0, 0.42, 0, 0.018, 0.84, 0.018, '#e8d3a2'],
-      ['s', 0, 0.86, 0, 0.04, 0.04, 0.04, GOLD],
-      ['k', 0.24, 0.66, 0, 0.17, 0.48, 0.02, '#ff5f8f', 0, -Math.PI / 2],
-      ['k', 0.15, 0.66, 0.003, 0.08, 0.22, 0.02, '#fff0c9', 0, -Math.PI / 2],
+      ['s', 0, 0.06, 0, 0.32, 0.26, 0.32, '#3f9a8a'],
+      ['c', 0, 0.02, 0, 0.33, 0.12, 0.33, '#2f7d70'],
+      ['s', 0, 0.34, 0, 0.08, 0.08, 0.08, '#fff0c9'],
+    ],
+  },
+  {
+    id: 'teacup',
+    slot: 'hat',
+    tier: 'wonder',
+    name: 'A teacup',
+    line: '',
+    parts: [
+      ['c', 0, 0.02, 0, 0.42, 0.04, 0.42, '#f4f1e8'],
+      ['c', 0, 0.22, 0, 0.32, 0.36, 0.32, '#f4f1e8'],
+      ['c', 0, 0.38, 0, 0.33, 0.05, 0.33, '#d8392b'],
+      ['t', 0.38, 0.22, 0, 0.14, 0.2, 0.14, '#f4f1e8', Math.PI / 2],
+    ],
+  },
+  {
+    id: 'scarf',
+    slot: 'accessory',
+    tier: 'common',
+    name: 'A very long scarf',
+    line: 'Knitted by someone in the village, probably.',
+    parts: [
+      ['t', 0, 0.32, 0, 0.28, 0.22, 0.28, '#d8392b'],
+      ['b', 0.14, 0.14, 0.26, 0.11, 0.42, 0.04, '#d8392b'],
+      ['b', 0.14, 0.02, 0.26, 0.115, 0.06, 0.045, '#fff0c9'],
+    ],
+  },
+  {
+    id: 'glasses',
+    slot: 'accessory',
+    tier: 'common',
+    name: 'Round glasses',
+    line: '',
+    parts: [
+      ['t', -0.12, 0.16, 0.26, 0.09, 0.09, 0.09, '#24262c', Math.PI / 2],
+      ['t', 0.12, 0.16, 0.26, 0.09, 0.09, 0.09, '#24262c', Math.PI / 2],
+      ['b', 0, 0.17, 0.27, 0.08, 0.02, 0.02, '#24262c'],
+    ],
+  },
+  {
+    id: 'headphones',
+    slot: 'accessory',
+    tier: 'rare',
+    name: 'Oversized headphones',
+    line: '',
+    parts: [
+      ['c', -0.3, 0.12, 0, 0.13, 0.12, 0.13, '#e8392a', 0, Math.PI / 2],
+      ['c', 0.3, 0.12, 0, 0.13, 0.12, 0.13, '#e8392a', 0, Math.PI / 2],
+      ['b', 0, 0.35, 0, 0.5, 0.05, 0.08, '#24262c'],
+      ['b', -0.27, 0.24, 0, 0.05, 0.22, 0.08, '#24262c'],
+      ['b', 0.27, 0.24, 0, 0.05, 0.22, 0.08, '#24262c'],
+    ],
+  },
+  {
+    id: 'overalls',
+    slot: 'outfit',
+    tier: 'common',
+    name: 'Work overalls',
+    line: '',
+    parts: overalls('#3f6fb0', '#34609c', '#2f5589'),
+  },
+  {
+    id: 'raincoat',
+    slot: 'outfit',
+    tier: 'rare',
+    name: 'A raincoat',
+    line: '',
+    parts: [
+      ['s', 0, 0.06, 0, 0.31, 0.34, 0.26, '#f2c81a'],
+      ['k', 0, -0.32, -0.01, 0.42, 0.62, 0.34, '#e8bc14'],
+      ['b', 0, 0.04, 0.26, 0.04, 0.5, 0.03, '#3a3d44'],
+    ],
+  },
+  {
+    id: 'festival',
+    slot: 'outfit',
+    tier: 'wonder',
+    name: 'Festival overalls',
+    line: '',
+    parts: [
+      ...overalls('#ff5f8f', '#ffcf33', '#ffcf33'),
+      ['b', -0.17, -0.1, 0.22, 0.12, 0.3, 0.05, '#4fb7ff'],
+      ['b', 0.17, -0.1, 0.22, 0.12, 0.3, 0.05, '#62d67a'],
     ],
   },
   {
     id: 'critter',
+    slot: 'pet',
+    tier: 'rare',
     name: 'A small stowaway',
     line: 'It was in the crate. It seems to like you.',
     parts: [
@@ -113,68 +222,6 @@ const GIFTS: Gift[] = [
       ['s', -0.07, 0.45, 0.24, 0.03, 0.035, 0.02, '#1b1a1e'],
       ['s', 0.07, 0.45, 0.24, 0.03, 0.035, 0.02, '#1b1a1e'],
       ['s', 0, 0.2, -0.26, 0.08, 0.08, 0.13, '#c9601f'],
-    ],
-  },
-  {
-    id: 'cap',
-    name: 'A golden chimney crown',
-    line: "Now it's the fanciest engine on the island.",
-    parts: [
-      ['t', 0, 0.05, 0, 0.3, 0.3, 0.3, GOLD],
-      ...[0, 1, 2, 3, 4, 5].map((k): Part => {
-        const a = (k / 6) * Math.PI * 2;
-        return ['k', Math.cos(a) * 0.3, 0.18, Math.sin(a) * 0.3, 0.07, 0.24, 0.07, GOLD];
-      }),
-    ],
-  },
-  {
-    id: 'bunting',
-    name: 'Bunting',
-    line: 'Every flatbed is a parade now.',
-    parts: [
-      ['c', 0, 0.5, 0, 0.012, 0.92, 0.012, '#e8d3a2', 0, Math.PI / 2],
-      ...['#ff5f8f', '#ffcf33', '#4fb7ff', '#62d67a', '#ff8a3a'].map((c, k): Part => [
-        'k',
-        -0.36 + k * 0.18,
-        0.38,
-        0,
-        0.07,
-        -0.22,
-        0.012,
-        c,
-      ]),
-    ],
-  },
-  {
-    id: 'bell',
-    name: 'A brass bell',
-    line: 'The engines ring it when they come in.',
-    parts: [
-      ['k', 0, 0.2, 0, 0.21, 0.36, 0.21, BRASS],
-      ['c', 0, 0.03, 0, 0.23, 0.05, 0.23, BRASS],
-      ['s', 0, 0.39, 0, 0.05, 0.05, 0.05, GOLD],
-      ['s', 0, 0.02, 0, 0.05, 0.05, 0.05, '#7a5a20'],
-    ],
-  },
-  {
-    id: 'lantern',
-    name: 'A red lantern',
-    line: "It hangs off the back, so they see you've been.",
-    parts: [
-      ['c', 0, 0.22, 0, 0.13, 0.3, 0.13, '#ff5a3a'],
-      ['c', 0, 0.05, 0, 0.16, 0.04, 0.16, '#2c2a2e'],
-      ['c', 0, 0.39, 0, 0.16, 0.04, 0.16, '#2c2a2e'],
-      ['t', 0, 0.47, 0, 0.07, 0.07, 0.07, '#2c2a2e', Math.PI / 2],
-    ],
-  },
-  {
-    id: 'scarf',
-    name: 'A very long scarf',
-    line: 'Knitted by someone in the village, probably.',
-    parts: [
-      ['t', 0, 0.32, 0, 0.28, 0.22, 0.28, '#d8392b'],
-      ['b', 0.14, 0.14, 0.26, 0.11, 0.42, 0.04, '#d8392b'],
-      ['b', 0.14, 0.02, 0.26, 0.115, 0.06, 0.045, '#fff0c9'],
     ],
   },
   // Shapes that never come out of this run's crates. They promise more.
@@ -199,6 +246,29 @@ const GIFTS: Gift[] = [
     ],
   },
 ];
+// The ladder's tool chests.
+type Extra = 'axe' | 'pack';
+const EXTRAS: Record<Extra, { name: string; line: string; parts: Part[] }> = {
+  axe: {
+    name: 'A proper axe',
+    line: '',
+    parts: [
+      ['b', 0, 0.55, 0, 0.11, 1.3, 0.11, '#a9794c'],
+      ['b', 0, 1.02, -0.2, 0.15, 0.38, 0.42, '#dfe4ec'],
+      ['b', 0, 1.02, -0.43, 0.16, 0.46, 0.08, '#f2b134'],
+    ],
+  },
+  pack: {
+    name: 'A pack frame',
+    line: '',
+    parts: [
+      ['b', -0.34, 0.65, 0, 0.09, 1.3, 0.09, '#c9a86a'],
+      ['b', 0.34, 0.65, 0, 0.09, 1.3, 0.09, '#c9a86a'],
+      ['b', 0, 0.2, 0, 0.8, 0.09, 0.09, '#a9794c'],
+      ['b', 0, 1.2, 0, 0.8, 0.09, 0.09, '#a9794c'],
+    ],
+  },
+};
 const byId = (id: GiftId) => GIFTS.find((g) => g.id === id)!;
 const geos = new Map<GiftId, THREE.BufferGeometry>();
 const geoOf = (id: GiftId) => {
@@ -206,14 +276,34 @@ const geoOf = (id: GiftId) => {
   if (!g) geos.set(id, (g = merged(byId(id).parts)));
   return g;
 };
-const AUTHORED: GiftId[] = ['hat', 'flag', 'critter'];
-const THEN: GiftId[] = ['cap', 'bunting', 'bell', 'lantern', 'scarf'];
+const extraGeos = new Map<Extra, THREE.BufferGeometry>();
+const extraGeo = (id: Extra) => {
+  let g = extraGeos.get(id);
+  if (!g) extraGeos.set(id, (g = merged(EXTRAS[id].parts)));
+  return g;
+};
+// The box each crate is, in the order they come. The first Rare box is after the first path (./layout.ts: stations 1 and 2 first).
+const BOXES: Tier[] = ['common', 'common', 'rare', 'common', 'rare', 'common', 'wonder'];
+/** Odds of what's in a box: Common, Rare, Wonder. */
+const ODDS: Record<Tier, [number, number, number]> = {
+  common: [0.6, 0.3, 0.1],
+  rare: [0, 0.7, 0.3],
+  wonder: [0, 0, 1],
+};
+const PITY = { firstWonderBy: 3, mostWithout: 5 };
+const TIER_COLOR: Record<Tier, string> = { common: '#fff7e8', rare: '#8fd0ff', wonder: '#ffd76a' };
+const TIER_MARKS: Record<Tier, string> = { common: '★', rare: '★★', wonder: '★★★' };
+const REVEAL: Record<Tier, { shake: number; hold: number; fly: number }> = {
+  common: { shake: 0.12, hold: 0.4, fly: 0.28 },
+  rare: { shake: 0.18, hold: 0.8, fly: 0.32 },
+  wonder: { shake: 0.3, hold: 1.3, fly: 0.4 },
+};
 
 // ---------------------------------------------------------------- the curio shelf
 const SX = toWorld(SHELF.x),
   SZ = SHELF.z,
   SY = H(SX, SZ),
-  COLS = 5,
+  COLS = 6,
   WIDE = 5.4,
   ROWS_Y = [1.32, 2.2],
   CRYSTAL_Y = 0.82;
@@ -286,8 +376,7 @@ function redrawShelf() {
 redrawShelf();
 const sheet = new THREE.Color('#ded5c2'),
   glint = new THREE.Color('#ffe9a8'),
-  v = new THREE.Vector3(),
-  v2 = new THREE.Vector3();
+  v = new THREE.Vector3();
 function reveal(id: GiftId, show: boolean) {
   const q = slots.get(id)!;
   open_.add(id);
@@ -316,85 +405,40 @@ export const shelfGroup = shelf;
 export const crystalPeg = (k: number, n: number, out: THREE.Vector3) =>
   out.set(((k + 0.5) / n - 0.5) * (WIDE - 0.4), CRYSTAL_Y, 0.08);
 
-// ---------------------------------------------------------------- what the train has waiting
-type Mount = { car: number; x: number; y: number; z: number; scale: number; ry?: number };
-/** Where each kind of ornament goes, on a car (0 the loco, then flatbeds), in the car's frame. */
-const MOUNTS: Partial<Record<GiftId, Mount[]>> = {
-  flag: [{ car: 0, x: 0, y: 2.08, z: -1.05, scale: 1.9 }],
-  cap: [{ car: 0, x: 0, y: 2.4, z: 1.05, scale: 1.1 }],
-  bell: [{ car: 0, x: 0, y: 1.72, z: 0.1, scale: 0.8 }],
-  bunting: [{ car: 1, x: 0.98, y: 0, z: 0, scale: 3.1, ry: Math.PI / 2 }],
-  lantern: [{ car: 1, x: 0.86, y: 1.12, z: -1.5, scale: 0.85 }],
-};
-const IRON = '#3a3a40';
-const EMPTY: Part[][] = [
-  // the loco: a bare pole on the cab roof, a collar on the chimney, a little bell-bracket
-  [
-    ['c', 0, 2.2, -1.05, 0.03, 0.26, 0.03, IRON],
-    ['t', 0, 2.42, 1.05, 0.31, 0.2, 0.31, IRON],
-    ['b', 0, 1.68, 0.1, 0.5, 0.05, 0.05, IRON],
-    ['b', -0.22, 1.86, 0.1, 0.04, 0.34, 0.04, IRON],
-    ['b', 0.22, 1.86, 0.1, 0.04, 0.34, 0.04, IRON],
-    ['b', 0, 2.03, 0.1, 0.48, 0.04, 0.04, IRON],
-  ],
-  // the flatbed: posts down one side for a string, and a hook at the back
-  [
-    ['c', 0.98, 1.1, -1.4, 0.025, 0.9, 0.025, IRON],
-    ['c', 0.98, 1.1, 1.4, 0.025, 0.9, 0.025, IRON],
-    ['b', 0.92, 1.55, -1.5, 0.2, 0.03, 0.03, IRON],
-  ],
-];
-const mountGeos = EMPTY.map((p) => merged(p));
-type Vehicle = { cars: THREE.Object3D[]; flag: THREE.Object3D[] };
-const vehicles: Vehicle[] = [];
-const filled = new Map<GiftId, THREE.Object3D[]>();
-/** A vehicle's empty mounts, on show from the start. Cars in train order, each in its own frame. */
-export function fitMounts(cars: THREE.Object3D[]) {
-  EMPTY.forEach((_, k) => {
-    const m = new THREE.Mesh(mountGeos[k], darkMat);
-    cars[k]?.add(m);
-  });
-  vehicles.push({ cars, flag: [] });
-}
-function fill(id: GiftId) {
-  const list = MOUNTS[id];
-  if (!list || filled.has(id)) return;
-  const made: THREE.Object3D[] = [];
-  for (const veh of vehicles)
-    for (const t of list) {
-      const m = new THREE.Mesh(geoOf(id), giftMat);
-      m.position.set(t.x, t.y, t.z);
-      m.scale.setScalar(t.scale);
-      m.rotation.y = t.ry ?? 0;
-      veh.cars[t.car]?.add(m);
-      made.push(m);
-      if (id === 'flag') veh.flag.push(m);
-    }
-  filled.set(id, made);
-}
-function unfill() {
-  for (const list of filled.values()) for (const m of list) m.removeFromParent();
-  filled.clear();
-  for (const veh of vehicles) veh.flag.length = 0;
-}
-
 // ---------------------------------------------------------------- what you wear, and who follows you
-const worn = new Map<GiftId, THREE.Mesh>();
+// One thing a slot, put on by a crate, swapped at the shelf. Each follows a bone but stays upright, in the avatar's space.
 type Named = THREE.Object3D & { getObjectByName: (n: string) => THREE.Object3D | undefined };
 const WEAR: Partial<Record<GiftId, { bone: string; y: number; z: number; scale: number }>> = {
-  hat: { bone: 'head', y: 0.075, z: 0, scale: 0.86 }, // brim down round the head, not perched on its crown
+  hat: { bone: 'Head', y: 0.33, z: 0, scale: 0.86 }, // brim down round the head, not perched on its crown
+  beanie: { bone: 'Head', y: 0.3, z: 0, scale: 0.92 },
+  teacup: { bone: 'Head', y: 0.42, z: 0, scale: 0.85 },
   scarf: { bone: 'neck_01', y: -0.2, z: 0, scale: 0.62 },
+  glasses: { bone: 'Head', y: 0.03, z: 0.01, scale: 0.92 },
+  headphones: { bone: 'Head', y: 0.08, z: 0, scale: 1 },
+  overalls: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
+  raincoat: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
+  festival: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
 };
-function wear(id: GiftId) {
-  const w = WEAR[id];
+const on: Partial<Record<Slot, GiftId>> = {};
+const worn = new Map<Slot, { id: GiftId; m: THREE.Mesh }>();
+function putOn(id: GiftId | null, slot: Slot) {
+  worn.get(slot)?.m.removeFromParent();
+  worn.delete(slot);
+  if (slot === 'pet') {
+    crit.on = id === 'critter';
+    critter.visible = crit.on;
+  }
+  if (id) on[slot] = id;
+  else delete on[slot];
+  const w = id ? WEAR[id] : null;
   const a = me.avatar;
-  if (!w || !a || worn.has(id)) return;
+  if (!id || !w || !a) return;
   const m = new THREE.Mesh(geoOf(id), giftMat);
   m.castShadow = true;
   m.scale.setScalar(w.scale);
   m.rotation.y = Math.PI; // the avatar faces -z, and these have their fronts at +z
   a.add(m);
-  worn.set(id, m);
+  worn.set(slot, { id, m });
 }
 /** Each frame: on the avatar, upright, where the bone has got to in its clip. Works in the avatar's space, so a fast train
  * can't leave it a frame behind. */
@@ -402,7 +446,7 @@ function updateWorn() {
   const a = me.avatar as Named | null | undefined;
   if (!a) return;
   a.updateWorldMatrix(true, false);
-  for (const [id, m] of worn) {
+  for (const { id, m } of worn.values()) {
     const w = WEAR[id]!;
     const bone = a.getObjectByName(w.bone);
     if (bone) a.worldToLocal(bone.getWorldPosition(m.position));
@@ -411,32 +455,47 @@ function updateWorn() {
     m.position.z += w.z;
   }
 }
+export const owned = (slot: Slot) => GIFTS.filter((g) => g.slot === slot && giftState.got.includes(g.id));
+/** On to the next thing you own in this slot, or nothing. */
+export function swapSlot(slot: Slot) {
+  const list = owned(slot),
+    k = list.findIndex((g) => g.id === on[slot]);
+  const next = list[k + 1];
+  putOn(next?.id ?? null, slot);
+  pop(next ? 5 : 2, 0.5);
+  saveHook();
+}
+const SLOT_X: Record<Slot, number> = { hat: -2, accessory: -0.7, outfit: 0.7, pet: 2 };
+/** Where a slot's prompt stands on the shelf. */
+export function shelfSpot(slot: Slot, out: THREE.Vector3) {
+  return shelf.localToWorld(out.set(SLOT_X[slot], 1.8, 0.4));
+}
 const critter = new THREE.Mesh(geoOf('critter'), giftMat);
 critter.visible = false;
 critter.castShadow = true;
 scene.add(critter);
 const crit = { on: false, x: 0, y: 0, z: 0, yaw: 0, hop: 0, t: 0, riding: false };
-const CRIT_SEAT = { side: 0.62, back: 0.45 }; // m beside and behind you, riding
+const CRIT = { scale: 0.55, shoulderScale: 0.42, side: 0.3, up: 0.78 }; // small; and up on your shoulder, riding
 function updateCritter(dt: number) {
   const b = me.body;
   if (!crit.on || !b) return;
   const p = b.interpolatedPosition;
-  // On a moving deck it hops up beside you and sits: no chasing a train along the ground and through its wheels.
+  // On a train it hops up onto your shoulder and stays small: no chasing a train along the ground and through its wheels.
   if (carry.on) {
-    const sx = p.x + Math.cos(me.yaw) * CRIT_SEAT.side + Math.sin(me.yaw) * CRIT_SEAT.back,
-      sz = p.z - Math.sin(me.yaw) * CRIT_SEAT.side + Math.cos(me.yaw) * CRIT_SEAT.back;
-    const sy = p.y - 0.46;
+    const sx = p.x + Math.cos(me.yaw) * CRIT.side,
+      sz = p.z - Math.sin(me.yaw) * CRIT.side,
+      sy = p.y + CRIT.up;
     if (!crit.riding) crit.t = 0;
     crit.riding = true;
-    crit.t = Math.min(1, crit.t + dt / 0.28); // the hop aboard
+    crit.t = Math.min(1, crit.t + dt / 0.28); // the hop up
     const u = crit.t;
     crit.x += (sx - crit.x) * (u < 1 ? u : 1);
     crit.z += (sz - crit.z) * (u < 1 ? u : 1);
     crit.y += (sy - crit.y) * (u < 1 ? u : 1);
     crit.yaw = me.yaw + Math.PI;
-    critter.position.set(crit.x, crit.y + (u < 1 ? Math.sin(u * Math.PI) * 0.9 : 0), crit.z);
+    critter.position.set(crit.x, crit.y + (u < 1 ? Math.sin(u * Math.PI) * 0.7 : 0), crit.z);
     critter.rotation.y = crit.yaw;
-    critter.scale.setScalar(0.8);
+    critter.scale.setScalar(CRIT.shoulderScale);
     return;
   }
   crit.riding = false;
@@ -463,7 +522,7 @@ function updateCritter(dt: number) {
   critter.position.set(crit.x, crit.y + crit.hop, crit.z);
   critter.rotation.y = crit.yaw;
   const sq = 1 + (moving ? 0.1 * Math.cos(crit.t * 2) : 0.03 * Math.sin(crit.t));
-  critter.scale.set(0.8 / sq, 0.8 * sq, 0.8 / sq);
+  critter.scale.set(CRIT.scale / sq, CRIT.scale * sq, CRIT.scale / sq);
 }
 
 // ---------------------------------------------------------------- the crate
@@ -475,14 +534,60 @@ const CRATE: Part[] = [
   ['b', 0, 1.03, 0, 1.06, 0.06, 1.06, '#8a6236'],
   ['s', 0, 1.1, 0, 0.13, 0.1, 0.13, RED],
 ];
-const crateGeo = merged(CRATE);
+// Each tier's box, so you can tell before you open it: its bands, one to three marks on the lid and the seal's shape.
+const TIER_BAND: Record<Tier, string> = { common: '#c9a86a', rare: '#3f8ee0', wonder: GOLD };
+const SEAL: Record<Tier, Part> = {
+  common: ['s', 0, 1.1, 0, 0.13, 0.1, 0.13, RED],
+  rare: ['b', 0, 1.14, 0, 0.17, 0.17, 0.17, '#3f8ee0', 0.785, 0.615],
+  wonder: ['k', 0, 1.26, 0, 0.17, 0.42, 0.17, GOLD],
+};
+const MARKS: Record<Tier, number> = { common: 1, rare: 2, wonder: 3 };
+const crateGeos = Object.fromEntries(
+  (Object.keys(TIER_BAND) as Tier[]).map((t) => [
+    t,
+    merged([
+      ...CRATE.filter((p) => p[1] === 0 && p[2] !== 1.1).map((p) =>
+        p[7] === GOLD ? (p.map((q, k) => (k === 7 ? TIER_BAND[t] : q)) as Part) : p,
+      ),
+      SEAL[t],
+      ...Array.from({ length: MARKS[t] }, (_, k): Part => [
+        's',
+        (k - (MARKS[t] - 1) / 2) * 0.24,
+        0.8,
+        0.53,
+        0.07,
+        0.07,
+        0.03,
+        '#fff0c9',
+      ]),
+    ]),
+  ]),
+) as Record<Tier, THREE.BufferGeometry>;
+const TIER_GLOW: Record<Tier, ReturnType<typeof softGlow>> = {
+  common: softGlow('#ffe9b0', 0.32, 'up'),
+  rare: softGlow('#4fa8ff', 0.5, 'up'),
+  wonder: softGlow('#ffb52e', 0.75, 'up'),
+};
+for (const g of Object.values(TIER_GLOW)) g.mat.blending = THREE.NormalBlending;
+// A tool chest: iron bands, not gold, and a blue shaft over it. It isn't a surprise: it's the thing you were wishing for.
+const CHEST: Part[] = [
+  ['b', 0, 0.55, 0, 1.5, 1.1, 1, '#6d5136'],
+  ['b', -0.5, 0.55, 0, 0.14, 1.14, 1.04, '#3a3d44'],
+  ['b', 0.5, 0.55, 0, 0.14, 1.14, 1.04, '#3a3d44'],
+  ['c', 0, 1.1, 0, 0.5, 1.5, 0.5, '#7f5f3f', 0, Math.PI / 2],
+  ['b', 0, 0.75, 0.52, 0.22, 0.28, 0.06, '#f2b134'],
+];
+const chestGeo = merged(CHEST);
+const chestGlow = softGlow('#7fd0ff', 0.5, 'up');
+chestGlow.mat.blending = THREE.NormalBlending;
 // The shaft over a waiting crate: soft all the time, reads from across the place, and it flares as the crate lands.
-const crateGlow = softGlow('#ffb52e', 0.5, 'up'),
-  crateBeam = crateGlow.mat;
-crateBeam.blending = THREE.NormalBlending; // gold, not added light: added to a bright sky it's gone
 let crateFlare = 0;
 const beamGeo = new THREE.CylinderGeometry(0.75, 1.1, 34, 12, 1, true).translate(0, 18.3, 0); // from over the crate's lid
+/** What's in a crate: the next gift, or a rung of the ladder. */
+export type Content = 'gift' | Extra;
+const isChest = (c: Content) => c === 'axe' || c === 'pack';
 type Crate = {
+  content: Content;
   x: number;
   y: number;
   z: number;
@@ -494,14 +599,17 @@ type Crate = {
 };
 const crates: Crate[] = [];
 let crateId = 0;
-function makeCrate(x: number, y: number, z: number, from: THREE.Vector3 | null) {
-  const mesh = new THREE.Mesh(crateGeo, giftMat);
+function makeCrate(x: number, y: number, z: number, from: THREE.Vector3 | null, content: Content = 'gift') {
+  const chest = isChest(content);
+  const tier =
+    BOXES[Math.min(BOXES.length - 1, giftState.got.length + crates.filter((c) => !isChest(c.content)).length)]!;
+  const mesh = new THREE.Mesh(chest ? chestGeo : crateGeos[tier], giftMat);
   mesh.castShadow = true;
-  const beam = new THREE.Mesh(beamGeo, crateBeam);
+  const beam = new THREE.Mesh(beamGeo, chest ? chestGlow.mat : TIER_GLOW[tier].mat);
   beam.position.set(x, y, z);
   mesh.position.set(x, y, z);
   scene.add(mesh, beam);
-  crates.push({ x, y, z, mesh, beam, t: from ? 0 : 1, from: from?.clone() ?? null, id: crateId++ });
+  crates.push({ content, x, y, z, mesh, beam, t: from ? 0 : 1, from: from?.clone() ?? null, id: crateId++ });
 }
 function dropCrate(c: Crate) {
   scene.remove(c.mesh, c.beam);
@@ -585,7 +693,9 @@ function confettiBurst(x: number, y: number, z: number) {
   }
 }
 type Show = {
-  gift: Gift;
+  gift: { id: GiftId | Extra; name: string; line: string };
+  content: Content;
+  tier: Tier;
   t: number;
   x: number;
   y: number;
@@ -597,44 +707,75 @@ type Show = {
   n: number;
 };
 let show: Show | null = null;
-const BIG = 3,
-  SHAKE = 0.3,
-  HOLD = 2.5,
-  FLY = 0.55;
+const BIG = 3;
 export const showing = () => !!show;
 export const giftState = {
   got: [] as GiftId[],
-  order: [] as GiftId[],
+  dry: 0, // boxes in a row with no Wonder: saved, so a reload can't dodge the ceiling
   /** Crates waiting to be opened, as where they stand. */
-  crates: () => crates.map((c) => ({ x: c.x, y: c.y, z: c.z })),
+  crates: () => crates.map((c) => ({ x: c.x, y: c.y, z: c.z, content: c.content })),
   count: () => crates.length,
 };
-const nextGift = (): GiftId | null => {
-  if (!giftState.order.length) {
-    const rest = THEN.slice();
-    for (let k = rest.length - 1; k > 0; k--) {
-      const j = Math.floor(Math.random() * (k + 1));
-      [rest[k], rest[j]] = [rest[j]!, rest[k]!];
-    }
-    giftState.order = [...AUTHORED, ...rest];
-  }
-  return giftState.order.find((g) => !giftState.got.includes(g)) ?? null;
+/** What a crate does when it's opened, beyond the show: ./ladder.ts fills it in. */
+export const prizeHooks = {
+  /** `what`: a gift's id, or a rung of the ladder coming out of its chest. */
+  opened: null as ((what: string) => void) | null,
 };
+const inTier = (t: Tier) => GIFTS.filter((g) => g.tier === t && !giftState.got.includes(g.id));
+/** What's in the next box. The first two are authored: a hat, then an accessory; then a Wonder; then an outfit if you've none. */
+function nextGift(): GiftId | null {
+  const n = giftState.got.length;
+  if (n === 0) return 'hat';
+  if (n === 1) return 'scarf';
+  const box = BOXES[Math.min(BOXES.length - 1, n)]!;
+  const firstWonder = !giftState.got.some((id) => byId(id).tier === 'wonder');
+  let tier: Tier;
+  if ((firstWonder && n + 1 >= PITY.firstWonderBy) || giftState.dry >= PITY.mostWithout) tier = 'wonder';
+  else if (n === 3 && !giftState.got.some((id) => byId(id).slot === 'outfit')) return 'overalls';
+  else {
+    const [c, r] = ODDS[box];
+    const roll = Math.random();
+    tier = roll < c ? 'common' : roll < c + r ? 'rare' : 'wonder';
+  }
+  // That tier's run out: up a tier, then down.
+  const order: Tier[] =
+    tier === 'common'
+      ? ['common', 'rare', 'wonder']
+      : tier === 'rare'
+        ? ['rare', 'wonder', 'common']
+        : ['wonder', 'rare', 'common'];
+  for (const t of order) {
+    const these = inTier(t);
+    if (these.length) return these[Math.floor(Math.random() * these.length)]!.id;
+  }
+  return null;
+}
 /** The machine hands a crate down at (x, y, z). */
-export function deliver(x: number, y: number, z: number, from: THREE.Vector3 | null) {
-  makeCrate(x, y, z, from);
+export function deliver(x: number, y: number, z: number, from: THREE.Vector3 | null, content: Content = 'gift') {
+  makeCrate(x, y, z, from, content);
+}
+/** A rung's chest goes: someone else opened it, or Start over. */
+export function dropChest(id: Content) {
+  for (const c of [...crates]) if (c.content === id && c.t !== -1) dropCrate(c);
 }
 /** Open the crate: bursts, shows what's in it, and sends it home. */
 export function openCrate(c: { x: number; z: number }) {
   if (show) return;
   const crate = crates.find((q) => q.x === c.x && q.z === c.z);
   if (!crate) return;
-  const id = nextGift();
+  const content = crate.content;
+  const id = content === 'gift' ? nextGift() : content;
   if (!id) return dropCrate(crate);
-  const gift = byId(id);
-  giftState.got.push(id);
+  const gift = content === 'gift' ? byId(id as GiftId) : { id, ...EXTRAS[content as Extra] };
+  if (content === 'gift') {
+    giftState.got.push(id as GiftId); // saved before the show: a reload mid-reveal keeps what you got
+    giftState.dry = byId(id as GiftId).tier === 'wonder' ? 0 : giftState.dry + 1;
+  }
+  prizeHooks.opened?.(content === 'gift' ? id : content);
   show = {
     gift,
+    content,
+    tier: content === 'gift' ? byId(id as GiftId).tier! : 'wonder',
     t: 0,
     x: crate.x,
     y: crate.y,
@@ -646,53 +787,55 @@ export function openCrate(c: { x: number; z: number }) {
     n: giftState.got.length,
   };
   crate.t = -1; // shaking
-  shown.geometry = geoOf(id);
+  shown.geometry = content === 'gift' ? geoOf(id as GiftId) : extraGeo(id as Extra);
   saveHook();
 }
 let saveHook = () => {};
 export const onGiftSaved = (fn: () => void) => void (saveHook = fn);
-function target(gift: Gift, out: THREE.Vector3) {
+personalSlice('gifts', {
+  get: () => ({
+    got: giftState.got,
+    dry: giftState.dry,
+    on,
+    crates: giftState.crates().filter((c) => !isChest(c.content)),
+  }),
+  set: (v) => {
+    const j = (v ?? {}) as {
+      got?: GiftId[];
+      dry?: unknown;
+      on?: Partial<Record<Slot, GiftId>>;
+      crates?: { x: number; y: number; z: number; content?: Content }[];
+    };
+    snapGifts(
+      Array.isArray(j.got) ? j.got : [],
+      typeof j.dry === 'number' ? j.dry : 0,
+      Array.isArray(j.crates) ? j.crates : [],
+      j.on,
+    );
+  },
+});
+function target(out: THREE.Vector3) {
   const b = me.body;
-  if ((gift.id === 'hat' || gift.id === 'scarf') && b) return out.set(b.position.x, b.position.y + 1.1, b.position.z);
-  if (gift.id === 'critter' && b) return out.set(b.position.x, b.position.y, b.position.z);
-  const mount = MOUNTS[gift.id]?.[0];
-  if (mount) {
-    let best = Infinity;
-    for (const veh of vehicles) {
-      const car = veh.cars[mount.car];
-      if (!car) continue;
-      car.localToWorld(v2.set(mount.x, mount.y, mount.z));
-      const d = b ? v2.distanceToSquared(b.position as unknown as THREE.Vector3) : 0;
-      if (d < best) {
-        best = d;
-        out.copy(v2);
-      }
-    }
-    return out;
-  }
+  if (b) return out.set(b.position.x, b.position.y + 1.1, b.position.z);
   return out.set(show!.x, show!.y + 20, show!.z);
 }
-function wearOrFit(id: GiftId, quiet: boolean) {
-  if (WEAR[id]) wear(id);
-  else if (id === 'critter') {
-    crit.on = true;
-    critter.visible = true;
-    const b = me.body;
-    if (b && quiet) {
-      crit.x = b.position.x;
-      crit.y = b.position.y - 0.5;
-      crit.z = b.position.z;
-    } else if (show) {
-      crit.x = show.x;
-      crit.y = show.y;
-      crit.z = show.z;
-    }
-  } else fill(id);
+function wearIt(id: GiftId) {
+  const g = byId(id);
+  // An empty slot puts it on. Something you're wearing stays: it's on the shelf, to swap to.
+  if (!g.slot || on[g.slot]) return;
+  const b = me.body;
+  if (id === 'critter' && b) {
+    crit.x = b.position.x;
+    crit.y = b.position.y - 0.5;
+    crit.z = b.position.z;
+  }
+  putOn(id, g.slot);
 }
 function updateShow(dt: number) {
   const s = show;
   if (!s) return;
   s.t += dt;
+  const { shake: SHAKE, hold: HOLD, fly: FLY } = REVEAL[s.tier];
   const crate = crates.find((q) => q.t === -1);
   if (!s.boomed) {
     // The lid rattles, and it's about to go.
@@ -725,13 +868,14 @@ function updateShow(dt: number) {
     dustRing(s.x, s.y + 0.1, s.z, 12, 3.2, 0.45);
     knock(0.25, 1.3);
     thump(s.x, s.z);
-    fanfare(s.n === 1 || s.n === 3);
+    fanfare(s.tier === 'wonder' || s.n === 1);
     flash.visible = shaft.visible = true;
     flash.position.set(s.x, s.y + 0.9, s.z);
     shaft.position.set(s.x, s.y, s.z);
     shown.visible = true;
     tag.sprite.visible = true;
-    tag.set(s.gift.name, s.gift.line);
+    const tier = s.content === 'gift' ? byId(s.gift.id as GiftId).tier : null;
+    tag.set(s.gift.name, s.gift.line || (tier ? TIER_MARKS[tier] : ''), tier ? TIER_COLOR[tier] : TIER_COLOR.rare);
     tag.punch();
   }
   const u = s.t - SHAKE; // since the boom
@@ -763,10 +907,10 @@ function updateShow(dt: number) {
     s.from.copy(shown.position);
     tag.sprite.visible = false;
     pop(3, 0.6);
-    reveal(s.gift.id, near(SX, SZ));
+    if (s.content === 'gift') reveal(s.gift.id as GiftId, near(SX, SZ));
   }
   const fu = Math.min(1, (u - HOLD) / FLY);
-  target(s.gift, v);
+  target(v);
   shown.position.lerpVectors(s.from, v, fu * fu);
   shown.position.y += Math.sin(fu * Math.PI) * 2;
   shown.rotation.y += dt * 14;
@@ -776,7 +920,7 @@ function updateShow(dt: number) {
   sparkles(v.x, v.y, v.z, 26, 4);
   pop(7, 0.8);
   pop(5, 0.5);
-  wearOrFit(s.gift.id, false);
+  if (s.content === 'gift') wearIt(s.gift.id as GiftId);
   show = null;
   saveHook();
 }
@@ -787,26 +931,35 @@ const near = (x: number, z: number) => {
 
 // ---------------------------------------------------------------- saving and frames
 /** Puts the gifts as a save says, with no show. */
-export function snapGifts(got: GiftId[], order: GiftId[], waiting: { x: number; y: number; z: number }[]) {
+export function snapGifts(
+  got: GiftId[],
+  dry: number,
+  waiting: { x: number; y: number; z: number; content?: Content }[],
+  wearing?: Partial<Record<Slot, GiftId>>,
+) {
   while (crates.length) dropCrate(crates[0]!);
   open_.clear();
   redrawShelf();
-  unfill();
-  for (const m of worn.values()) m.removeFromParent();
+  for (const q of worn.values()) q.m.removeFromParent();
   worn.clear();
+  for (const k of Object.keys(on) as Slot[]) delete on[k];
   crit.on = false;
   critter.visible = false;
   show = null;
   shown.visible = flash.visible = shaft.visible = tag.sprite.visible = false;
   giftState.got = got.slice();
-  giftState.order = order.slice();
+  giftState.dry = dry;
+  for (const id of got) reveal(id, false);
+  // What was on, or the last you got in each slot.
+  pendingWear.clear();
   for (const id of got) {
-    reveal(id, false);
-    pendingWear.add(id);
+    const g = byId(id);
+    if (g.slot && !wearing?.[g.slot]) pendingWear.set(g.slot, id);
   }
-  for (const c of waiting) makeCrate(c.x, c.y, c.z, null);
+  for (const k of Object.keys(wearing ?? {}) as Slot[]) pendingWear.set(k, wearing![k]!);
+  for (const c of waiting) makeCrate(c.x, c.y, c.z, null, c.content ?? 'gift');
 }
-const pendingWear = new Set<GiftId>();
+const pendingWear = new Map<Slot, GiftId>();
 const bump = new THREE.Vector3();
 export function nearestCrate(x: number, z: number, reach: number) {
   for (const c of crates) {
@@ -818,15 +971,22 @@ export function nearestCrate(x: number, z: number, reach: number) {
 export function updateGifts(dt: number, now: number) {
   // The avatar may not be there yet on a reload.
   if (pendingWear.size && me.avatar) {
-    for (const id of pendingWear) {
+    for (const [slot, id] of pendingWear) {
+      const w = WEAR[id];
       // The body arrives a moment after the avatar does.
-      if (WEAR[id] && !(me.avatar as Named).getObjectByName(WEAR[id].bone) && performance.now() < 8000) continue;
-      wearOrFit(id, true);
-      pendingWear.delete(id);
+      if (w && !(me.avatar as Named).getObjectByName(w.bone) && performance.now() < 8000) continue;
+      putOn(id, slot);
+      if (id === 'critter' && me.body) {
+        crit.x = me.body.position.x;
+        crit.y = me.body.position.y - 0.5;
+        crit.z = me.body.position.z;
+      }
+      pendingWear.delete(slot);
     }
   }
   crateFlare = Math.max(0, crateFlare - dt / 1.6);
-  crateGlow.strength.value = 0.42 + Math.sin(now * 0.0025) * 0.07 + crateFlare * crateFlare * 0.55;
+  TIER_GLOW.common.strength.value = 0.32 + crateFlare * crateFlare * 0.4;
+  chestGlow.strength.value = 0.5 + Math.sin(now * 0.004) * 0.12;
   for (const c of crates) {
     if (c.t === -1) continue;
     if (c.t < 1) {
@@ -882,6 +1042,4 @@ export function updateGifts(dt: number, now: number) {
   }
   updateCritter(dt);
   updateWorn();
-  for (const veh of vehicles)
-    for (let k = 0; k < veh.flag.length; k++) veh.flag[k]!.rotation.y = Math.sin(now * 0.006 + k) * 0.35;
 }

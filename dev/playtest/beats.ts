@@ -11,6 +11,9 @@ const BEATS: Record<string, [string, RegExp][]> = {
     ['laid a stretch', /^(laid |stretches|stretch laid)/],
     ['opened a path', /^(open |path opened)/],
     ['earned a rung', /rung/],
+    ['unlocked trains', /train unlocked/],
+    ['called a train', /train called/],
+    ['missed a train', /missed train/],
     ['opened a crate', /crate|^gifts?$/],
     ['found a crystal', /crystal|^finds$/],
     ['lit the forge', /forge/],
@@ -52,6 +55,7 @@ export async function sketchOf(card: string): Promise<Sketch | null> {
       ...named('the village', { x: L.VILLAGE.x + ox, z: L.VILLAGE.z + oz }, L.VILLAGE.r),
       ...named('the timber camp', end(L.PATHS[0]), 45),
       ...named('the quarry', end(L.PATHS[1]), 45),
+      ...named('Far Head', { x: L.HEAD.x + ox, z: L.HEAD.z + oz }, L.HEAD.r),
       ...named('the spire', { x: L.SPIRE.x + ox, z: L.SPIRE.z + oz }, 30),
     ];
     return { lines, rails, places };

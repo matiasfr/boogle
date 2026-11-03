@@ -1,21 +1,63 @@
-// Two players on one railway: `BOOGLE_QUERY='proto=place&coop=1' npm run look -- --players 2 --eval dev/look/evals/place-coop.ts`.
-// Player 1 wakes the machine; both say what they see. A start to copy for the two-player track; &player= tells them apart.
+// Two players on one railway: `BOOGLE_QUERY='proto=place&coop=1' npm run look -- --players 2 --eval dev/look/evals/place-coop.ts --warm 40`
+// Does the new job stay together: a wake, a deposit from the follower, a chest opened by the follower (the rung is everyone's),
+// a skip to trains, and a train called from a platform. Each says what it sees; read the COOP lines side by side.
 const q = new URLSearchParams(location.search);
 const who = q.get('player');
-const place = window.__place as {
-  wake: () => void;
-  run: { mode: string };
-  s: { awake: boolean };
-};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const place = window.__place as any;
+const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
+const { teleport } = (await import(
+  '/src/physics/engine.ts' as string
+)) as typeof import('../../../src/physics/engine.ts');
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-await wait(3000);
-if (who === '1') place.wake();
+const say = (what: string) => {
+  const st = place.stationOf(place.lines[0]);
+  const t = place.lines[1].train.tr;
+  console.log(
+    `COOP ${who} ${what}: authority ${place.coop.debug().amAuthority}, others ${window.boogle.remotes.size}, awake ${place.job.awake}, mode ${place.run.mode}, T ${st?.have.logs ?? '-'}, rung ${JSON.stringify(place.job.rung)}, chest ${place.job.chest}, $${place.job.score.money}, felled ${place.TREES.filter((x: { fall: number }) => x.fall >= 0).length}, train2 s ${t.s.toFixed(1)} target ${t.target} stop ${t.stop}`,
+  );
+};
+const put = (x: number, z: number, up = 1.4) => {
+  teleport(me.body!, x, place.H(x, z) + up, z);
+  me.body!.velocity.set(0, 0, 0);
+};
+while (!me.body) await wait(100);
+await wait(4000);
 void (async () => {
-  for (let k = 0; k < 4; k++) {
-    await wait(2500);
-    console.log(
-      `COOP player ${who}: awake ${place.s.awake}, machine ${place.run.mode}, others ${window.boogle.remotes.size}`,
-    );
+  say('start');
+  if (who === '1') place.wake();
+  await wait(5000);
+  say('after the wake');
+  if (who === '2') {
+    const st = place.stationOf(place.lines[0]);
+    place.back.logs = 8;
+    put(st.x + 2.5, st.z + 1);
   }
+  await wait(12000); // the tabs start some seconds apart
+  say('after the follower deposited 8');
+  if (who === '1') place.skipPath();
+  await wait(3000);
+  say('after a skip to the first path');
+  if (who === '2') {
+    const c = place.giftState.crates()[0];
+    if (c) {
+      put(c.x + 2, c.z);
+      place.openCrate(c);
+    } else say('NO CHEST HERE');
+  }
+  await wait(4000);
+  say('after the follower opened the chest');
+  if (who === '1') place.skipTrains();
+  await wait(4000);
+  say('after a skip to trains');
+  if (who === '2') {
+    const h = place.halts[3];
+    teleport(me.body!, h.x, h.y + 1.2, h.z);
+    me.body!.velocity.set(0, 0, 0);
+  }
+  await wait(5000);
+  say('after the follower stood on the quarry platform');
+  await wait(4000);
+  say('a bit later');
 })();
 export {};

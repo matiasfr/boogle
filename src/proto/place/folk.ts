@@ -22,8 +22,10 @@ import { feet, outOf, underway, type Site } from './sites.ts';
 const VILLAGE_MAX = 28, // the most of the village's people you'll see at once
   CAMP = 3,
   STATION = 2,
-  RIDERS = 2;
-const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2;
+  RIDERS = 2,
+  COMMUTERS = 5,
+  PUSHERS = 2;
+const COUNT = VILLAGE_MAX + CAMP * 2 + STATION + RIDERS * 2 + COMMUTERS + PUSHERS;
 const SKIN = '#f4cfa4',
   EYE = '#1d1a20';
 // Facing +z, standing on y = 0, about 0.95 m tall. Two thirds of it head and hat.
@@ -58,7 +60,7 @@ const HAND = new THREE.Color(SKIN),
   IRON = new THREE.Color('#5d6068');
 
 // ---------------------------------------------------------------- what each one is doing
-type Job = 'stroll' | 'scaffold' | 'hauler' | 'platform' | 'camp' | 'station' | 'rider';
+type Job = 'stroll' | 'scaffold' | 'hauler' | 'platform' | 'camp' | 'station' | 'rider' | 'commuter' | 'pusher';
 type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
 type Guy = {
   k: number;
@@ -193,6 +195,13 @@ const riders = Array.from({ length: RIDERS * 2 }, (_, k) =>
   make('rider', 0, 0, { on: false, seat: k % RIDERS, camp: k < RIDERS ? 0 : 1 }),
 );
 
+// Once a path's open they use it: a few of them walk the new track, there and back, all day. The first time they run.
+const commuters = Array.from({ length: COMMUTERS }, (_, k) =>
+  make('commuter', 0, 0, { on: false, seat: k, side: k % 2 ? 1 : -1, far: 0, tx: 0 }),
+);
+// The depot's cart: two of them shoving it along, a real but small job (./depot.ts).
+const pushers = Array.from({ length: PUSHERS }, (_, k) => make('pusher', 0, 0, { on: false, seat: k }));
+
 // ---------------------------------------------------------------- what they can see of the world (set by ./index.ts)
 export type FolkEnv = {
   /** The next station's feet, where its helpers stand; null when nothing's waiting. */
@@ -202,8 +211,12 @@ export type FolkEnv = {
   trainCar: (line: number) => { mesh: THREE.Object3D; top: number } | null;
   /** The platform and where people gather when a line opens. */
   gather: { x: number; z: number; ux: number; uz: number; lx: number; lz: number; len: number };
-  platform: { x: number; y: number; z: number; ux: number; uz: number };
+  platform: { x: number; y: number; z: number; ux: number; uz: number; up: () => boolean };
   forgeLit: () => boolean;
+  /** A place along the first path: `u` 0 the village end to 1 the far end; null until it's open. */
+  path: ((u: number, lat: number) => { x: number; y: number; z: number; yaw: number } | null) | null;
+  /** The cart they push: null while it's at rest. */
+  cart: () => { mesh: THREE.Object3D; top: number; hz: number } | null;
   /** Something's on that nobody should talk over (a crate opening, a moment). */
   hush: () => boolean;
 };
@@ -430,7 +443,11 @@ function brain(g: Guy, dt: number) {
       return;
     case 'platform': {
       const p = e?.platform;
-      if (!p) return;
+      if (!p || !p.up()) {
+        g.fy = null;
+        strollBrain(g, dt);
+        return;
+      }
       const s = g.k % 2 ? 6 : -4;
       g.x = p.x + p.ux * s;
       g.z = p.z + p.uz * s;
@@ -467,8 +484,30 @@ function brain(g: Guy, dt: number) {
     case 'rider':
       g.mood = 'ride';
       return;
+    case 'commuter': {
+      const q = e?.path?.(g.a.x, g.side * (0.45 + (g.seat % 3) * 0.35));
+      if (!q) return;
+      // There and back along it; `a.x` is where along, `a.z` which way. The first run out's at a run.
+      const speed = commuteRun > 0 ? SPEED.run : SPEED.walk * 1.3;
+      g.a.x += (g.a.z * speed * dt) / PATH_LEN;
+      if (g.a.x > 1 || g.a.x < 0) {
+        g.a.z = -g.a.z;
+        g.a.x = Math.max(0, Math.min(1, g.a.x));
+      }
+      g.x = q.x;
+      g.z = q.z;
+      g.fy = q.y;
+      g.yaw = q.yaw + (g.a.z > 0 ? 0 : Math.PI);
+      g.mood = commuteRun > 0 ? 'run' : 'walk';
+      return;
+    }
+    case 'pusher':
+      g.mood = 'walk';
+      return;
   }
 }
+const PATH_LEN = 190;
+let commuteRun = 0;
 const hammering = (s: Site) => {
   let n = 0;
   for (let k = 0; k < VILLAGE_MAX; k++) if (guys[k]!.site === s) n++;
@@ -694,6 +733,20 @@ export function setCamp(k: number, busy: boolean) {
 export function setRiders(line: number, on: boolean) {
   for (const g of riders) if (g.camp === line) g.on = on;
 }
+/** The path's open: they come out onto it. `run`: s they run for, the first time. */
+export function setCommuters(on: boolean, run = 0) {
+  commuteRun = run;
+  commuters.forEach((g, k) => {
+    if (on && !g.on) {
+      g.a = { x: run ? -0.02 * k : (k * 0.37) % 1, z: 1 };
+      if (g.a.x < 0) g.a.x = 0;
+    }
+    g.on = on;
+  });
+}
+export const setPushers = (on: boolean) => {
+  for (const g of pushers) g.on = on;
+};
 /** Start over. */
 export function resetFolk() {
   endTalk();
@@ -717,6 +770,8 @@ export function resetFolk() {
   }
   setRiders(0, false);
   setRiders(1, false);
+  setCommuters(false);
+  setPushers(false);
   campBusy[0] = campBusy[1] = false;
 }
 
@@ -842,6 +897,7 @@ function updateTalk(dt: number) {
 let frame = 0;
 export function updateFolk(dt: number) {
   frame++;
+  commuteRun = Math.max(0, commuteRun - dt);
   const b = me.body;
   you.ok = !!b;
   if (b) {
@@ -876,7 +932,7 @@ export function updateFolk(dt: number) {
     const d2 = (g.x - cx) ** 2 + (g.z - cz) ** 2;
     const far = d2 > 150 * 150;
     // Out of sight of the camera, they're looked at less often.
-    if (far && g.mood !== 'ride' && g.job !== 'rider') {
+    if (far && g.mood !== 'ride' && g.job !== 'rider' && g.job !== 'pusher') {
       g.far += dt;
       if ((frame + g.k) % 8 === 0) {
         brain(g, Math.min(0.5, g.far));
@@ -899,6 +955,10 @@ export function updateFolk(dt: number) {
       const car = e_.trainCar(g.camp);
       if (!car) continue;
       ride(g, car, g.seat ? 0.42 : -0.42, -1.1, g.seat ? 0.9 : -0.9);
+    } else if (e_ && g.job === 'pusher') {
+      const car = e_.cart();
+      if (!car) continue;
+      ride(g, car, g.seat ? 0.35 : -0.35, -car.hz - 0.5, 0);
     }
     // Never in the lens: anyone within a couple of metres of the camera isn't drawn.
     const nx = g.x - cx,

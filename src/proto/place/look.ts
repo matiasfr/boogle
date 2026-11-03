@@ -123,12 +123,12 @@ const LIGHT = {
   fogNear: 170,
   fogFar: 1500,
 };
-// The owner, round 3: "the sun doesn't go away". The day moves, slowly, and most of it is the accepted look's daylight: the
-// late-morning sun swings across, then a short golden hour, a moonlit night (the game's own) and a dawn back into the day.
+// The owner, round 3: "the sun doesn't go away"; then "mostly daylight, with a brief night". The day moves, slowly, and most of it
+// is the accepted look's daylight: the sun swings across, then a short golden hour, a brief moonlit night and a dawn.
 // One cycle is DAY.seconds of play. Where the sun's up, LIGHT's palette holds; as it sinks, the game's sky takes over.
 export const DAY = {
   seconds: 1680, // s for a whole day
-  u: 0.26, // where in it we are: the look's morning, at the start
+  u: 0.23, // where in it we are: the look's morning, at the start
   hold: new URLSearchParams(location.search).get('day') === 'off', // `&day=off` holds this morning; evals can set `u` too
   low: 0.14, // the sun's height where LIGHT's palette is gone
   high: 0.42, // and where it's all there
@@ -136,9 +136,9 @@ export const DAY = {
 /** How the sky's own clock (0 sunrise, 0.3 noon, 0.6 sunset, 0.8 midnight) runs through a day of ours. */
 const DAY_KEYS: [u: number, frac: number][] = [
   [0, 0.09],
-  [0.7, 0.44],
-  [0.8, 0.6],
-  [0.9, 0.86],
+  [0.82, 0.46],
+  [0.88, 0.6],
+  [0.94, 0.86],
   [1, 1.09],
 ];
 export function dayFrac(u: number) {
@@ -189,11 +189,12 @@ export type Paint = {
   rough?: number;
   /** The geometry brings colours of its own (the log's bark, band and cut ends). */
   own?: boolean;
-  /** Goes to rust and dust with `rustU`: the machine, stranded. */
-  rust?: boolean;
+  /** Goes to rust and dust with `rustU` (the machine, stranded) or `rustTrainU` (the old train, stranded longer). */
+  rust?: boolean | 'train';
 };
 /** 1 asleep, rusty and dusty; 0 awake. */
 export const rustU = uniform(0);
+export const rustTrainU = uniform(0);
 const made = new Map<string, THREE.MeshStandardNodeMaterial>();
 /** A piece's material, built from what's on: plain and flat with no layer, grain or metal with `mats`, soft with `kit`. */
 export function paint(p: Paint) {
@@ -218,7 +219,11 @@ export function paint(p: Paint) {
       .mul(0.5)
       .add(0.5);
     const base: N = m.colorNode ?? materialColor;
-    m.colorNode = mix(base, mix(vec3(0.27, 0.13, 0.06), vec3(0.42, 0.36, 0.28), patch), rustU.mul(0.9));
+    m.colorNode = mix(
+      base,
+      mix(vec3(0.27, 0.13, 0.06), vec3(0.42, 0.36, 0.28), patch),
+      (p.rust === 'train' ? rustTrainU : rustU).mul(0.9),
+    );
     m.metalness = 0;
   }
   made.set(key, m);

@@ -404,6 +404,115 @@ for (const [era, speed, lay, carry, kit, sourceM, rate, length, contentMin, walk
   }
 }
 
+// Round 4 of ?proto=place (docs/plans/round-4.md), hypotheses until played: a slog by hand that's starting to feel long by the
+// end, then each rung. Bills and spans are src/proto/place/layout.ts's. A press every 0.38 s (a person, not the 0.24 s cooldown),
+// 2 logs a stroke, then 4 with the proper axe. sourceM is the average one-way carry: real distances from layout.ts, weighted by
+// how many of a station's loads go that far (Q3 is one load of rails 130 m and one of logs 16 m from the rack, so 73).
+const axe1 = 0.38 / 2,
+  axe2 = 0.38 / 4;
+const round4Recipes: Table['recipes'] = {
+  t1: [item('logs', 24, false, axe1)],
+  t2: [item('logs', 32, false, axe1), item('stone', 8, false, axe1)],
+  t3: [item('logs', 40, false, axe1)],
+  f1: [item('logs', 24, false, axe2)],
+  f2: [item('logs', 32, false, axe2)],
+  q1: [item('logs', 16, false, axe2), item('rails', 6)],
+  q2: [item('logs', 24), item('rails', 12)],
+  q3: [item('logs', 16), item('rails', 12)],
+  q4: [item('logs', 16), item('rails', 16)],
+  q5: [item('logs', 24), item('rails', 24)],
+  q6: [item('logs', 32), item('rails', 32)],
+};
+const r4 = (id: string, recipe: string, sourceM: number, spanM: number, newThing?: string): Station => ({
+  id,
+  recipe,
+  sourceM,
+  spanM,
+  setupS: 1,
+  newThing,
+});
+export const round4: Table = {
+  name: 'round 4: hungry, then relief',
+  walkSpeed: 5.6,
+  pickupS: 1.2,
+  unloadS: 0.09,
+  recipes: round4Recipes,
+  links: [
+    {
+      id: 'first path',
+      era: 'wood',
+      carry: 8,
+      trainSpeed: 18,
+      laySpeed: 5,
+      before: [
+        { activity: 'walk', seconds: 0, metres: 431, newThing: 'camp discovered' },
+        beat('orient', 4, 'wake layer'),
+      ],
+      stations: [
+        r4('T1', 't1', 20, 41, 'first physical track'),
+        r4('T2', 't2', 30, 34, 'stone'),
+        {
+          ...r4('T3', 't3', 65, 86, 'first path open, no train'),
+          // The great tree: 12 strokes, and its trunk on your shoulder, there and back.
+          before: [beat('harvest', 12 * 0.38), { activity: 'haul', seconds: 0, metres: 0 }, beat('handling', 2)],
+        },
+      ],
+      after: [beat('content', 8, 'celebration'), { activity: 'walk', seconds: 0, metres: 90, newThing: 'the walk home' }],
+    },
+    {
+      id: 'forge frame',
+      era: 'wood',
+      carry: 8,
+      trainSpeed: 18,
+      laySpeed: 5,
+      before: [beat('content', 5, 'proper axe')],
+      stations: [{ ...r4('F1', 'f1', 95, 0, 'forge frame up'), setupS: 0 }], // half its logs from the old oak, half over the bridge
+      after: [],
+    },
+    {
+      id: 'forge lit',
+      era: 'wood',
+      carry: 16,
+      trainSpeed: 18,
+      laySpeed: 5,
+      before: [beat('content', 5, 'pack frame')],
+      stations: [{ ...r4('F2', 'f2', 170, 0, 'forge lit'), setupS: 0 }],
+      after: [beat('wait', 10, 'machine turns')],
+    },
+    {
+      id: 'far head',
+      era: 'wood',
+      carry: 16,
+      trainSpeed: 18,
+      laySpeed: 7,
+      before: [],
+      stations: [
+        r4('Q1', 'q1', 150, 35, 'depot'),
+        r4('Q2', 'q2', 27, 80, 'gorge again, logs by cart'),
+        r4('Q3', 'q3', 73, 56, 'quarry reached'),
+        r4('Q4', 'q4', 103, 108),
+        r4('Q5', 'q5', 199, 260, 'far head, over the sea'),
+      ],
+      after: [{ activity: 'walk', seconds: 0, metres: 546, newThing: 'the long walk home' }],
+    },
+    {
+      id: 'trains',
+      era: 'wood',
+      carry: 16,
+      trainSpeed: 18,
+      laySpeed: 9,
+      before: [
+        { activity: 'walk', seconds: 0, metres: 190, newThing: 'boiler over the bridge' },
+        beat('orient', 4, 'trains'),
+        { activity: 'ride', seconds: 0, metres: 190 },
+        { activity: 'ride', seconds: 0, metres: 524, newThing: 'first ride out' },
+      ],
+      stations: [r4('Q6', 'q6', 16, 196, 'the pier')],
+      after: [beat('content', 10, 'the end')],
+    },
+  ],
+};
+
 function report(result: ReturnType<typeof model>) {
   console.log(`\n${result.name} | ${result.players} player(s)`);
   console.table(
@@ -433,7 +542,7 @@ function report(result: ReturnType<typeof model>) {
 if (import.meta.main) {
   const args = process.argv.slice(2);
   const mode = args.find((a) => !a.startsWith('--')) ?? 'all';
-  const tables: Record<string, Table> = { prototype, chapter, eras };
+  const tables: Record<string, Table> = { prototype, chapter, eras, round4 };
   const options: Options = {};
   const allowed = ['carry', 'distance', 'supply', 'content', 'train', 'coordination'] as const;
   for (const arg of args.filter((a) => a.startsWith('--') && a !== '--json')) {
