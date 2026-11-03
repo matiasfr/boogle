@@ -5,12 +5,12 @@
 //
 // It reads the local player through localPresence().
 import * as THREE from 'three';
-import { COLORS, INTERP_MS } from '../../constants.ts';
+import { INTERP_MS } from '../../constants.ts';
 import { lerp, angleLerp, finiteArr, r2 } from '../../math.ts';
 import { teleport } from '../../physics/engine.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
 import { carry, platformById, toPlatform, fromPlatform, type Local } from '../../physics/platforms.ts';
-import { makeAvatar, makeLabel, animateAvatar } from '../../player/avatars.ts';
+import { makeAvatar, makeLabel, animateAvatar, paintAvatar } from '../../player/avatars.ts';
 import { chaseKinematic, makePlayerBody } from '../../physics/physics.ts';
 import {
   addPresenceField,
@@ -205,7 +205,7 @@ function spawnRemotePlayer(r: Remote, time: number): GameEntity {
         // A Buddy's skin swaps the material once it loads, so that counts as a change too.
         shownColor = r.colorIdx;
         shownMat = avatar.userData.mat;
-        shownMat.color.set(COLORS[shownColor]!);
+        paintAvatar(shownMat, shownColor);
       }
       if (labelText !== r.name) {
         if (label) {

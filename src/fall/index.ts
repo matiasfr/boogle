@@ -7,13 +7,13 @@
 // your body and the existing flops: the prop pieces are this tab's alone.
 import './fall.css';
 import * as THREE from 'three/webgpu';
-import { COLORS, FIXED, PLAYER_R, reducedMotion } from '../constants.ts';
+import { FIXED, PLAYER_R, reducedMotion } from '../constants.ts';
 import { onEntered } from '../entities/player/state.ts';
 import { groundHeight } from '../island/heights.ts';
 import { clamp, smoothstep } from '../math.ts';
 import { defineKind, despawn, spawn } from '../entity/entity.ts';
 import { teleport } from '../physics/engine.ts';
-import { animateAvatar, makeAvatar, makeLabel, type Avatar } from '../player/avatars.ts';
+import { AVATAR_FILL, animateAvatar, makeAvatar, makeLabel, paintAvatar, type Avatar } from '../player/avatars.ts';
 import { input, inputState } from '../player/input-state.ts';
 import { cam, me } from '../player/player.ts';
 import { getAudio } from '../render/audio.ts';
@@ -103,10 +103,7 @@ function updatePreview(dt: number) {
   if (me.colorIdx !== shownColor) {
     if (shownColor >= 0) hop = 0;
     shownColor = me.colorIdx;
-    const m = preview.userData.mat;
-    m.color.set(COLORS[me.colorIdx]!);
-    m.emissive.set(COLORS[me.colorIdx]!);
-    m.emissiveIntensity = FRONT_FILL;
+    paintAvatar(preview.userData.mat, me.colorIdx, FRONT_FILL);
   }
   hop += dt;
   const up = hop < 0.34 ? Math.sin((hop / 0.34) * Math.PI) * 0.55 : 0;
@@ -348,14 +345,13 @@ let blendT = 0,
   fov = 0,
   restT = 0;
 
-// You take over from the preview still lit as it was, and the fill goes as the camera swings round to your sunlit back.
+// You take over from the preview still lit as it was, and the fill settles as the camera swings round to your sunlit back.
 let filled = true;
 function fadeFrontFill(e: number) {
   const m = me.avatar?.userData.mat;
   if (!m || !filled) return;
   filled = e < 1;
-  m.emissive.set(filled ? COLORS[me.colorIdx]! : 0x000000);
-  m.emissiveIntensity = filled ? FRONT_FILL * (1 - e) : 1;
+  paintAvatar(m, me.colorIdx, FRONT_FILL + (AVATAR_FILL - FRONT_FILL) * e);
 }
 
 function blendCamera(dt: number) {
