@@ -17,12 +17,12 @@ import { rack, rackAdd } from './depot.ts';
 import { cheerAround, setCamp, setRiders } from './folk.ts';
 import { craneBusy, craneLift, crateIn, nextDrop, roofed } from './forge.ts';
 import { halts } from './halts.ts';
-import { EAST, TUNE, VILLAGE } from './layout.ts';
+import { TUNE, VILLAGE } from './layout.ts';
 import { count, job, num, save, sharedSlice } from './job.ts';
-import { L1, L2, TX, TZ, allHeaps, dock, hub, lines, type LineRun, yard } from './lines.ts';
+import { L1, L2, allHeaps, dock, hub, lines, type LineRun, yard } from './lines.ts';
 import { dustRing } from './pieces.ts';
 import { rustTrainU } from './look.ts';
-import { callTrain, trainEta } from './rail.ts';
+import { trainEta } from './rail.ts';
 import { wakeCamp } from './town.ts';
 
 // ---------------------------------------------------------------- crates
@@ -147,11 +147,6 @@ let wasOn: unknown = null,
   sawIt = false;
 /** Seconds till a called train's in, for the objective; null when none's on its way. */
 export const trainComing = () => (called.stop < 0 ? null : trainEta(called.l.train.tr, called.stop));
-export function requestTrain(k: number, stop: number) {
-  const l = lines[k];
-  if (!l || !job.rung.trains || !l.train.clockRunning() || !count(stop, l.spec.stops.length - 1)) return;
-  callTrain(l.train.tr, stop);
-}
 function updateCall() {
   // Aboard, you're not waiting: going past a platform on a train doesn't call one.
   const h = job.rung.trains && !onATrain() ? haltUnder() : null;
@@ -284,6 +279,3 @@ export function updateCargo(dt: number, now: number) {
   updateCall();
 }
 export const onATrain = () => lines.some((l) => l.train.onTrain(carry.on));
-export const onTrainOf = (l: LineRun) => l.train.onTrain(carry.on);
-export const headStopAt = EAST.headStop;
-export const villageAt = () => ({ x: TX, z: TZ });
