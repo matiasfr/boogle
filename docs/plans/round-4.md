@@ -58,7 +58,8 @@ Stop at the owner's playtest: when this list is done, or what's left needs the o
 1. [ ] Astra: check abilities with two players; capture the rim slab and tower posts.
 2. [ ] Terra, low: make the bot reliable (falls into water and holes, town's lone NEVER).
 3. [ ] Terra, low: build `docs/plans/two-player.md`, once it exists.
-4. [ ] Astra: the whole-run pass above, last, once 1 to 3 are on main.
+4. [ ] Astra: simplify round 4's whole batch once 1 to 3 are on main: fold duplicates, remove dead code, no behaviour change. Check with `npm run playthrough -- --compare` and `npm run sim -- replay`. Keep The Boogler's copy.
+5. [ ] Astra: the whole-run pass above, last.
 
 ## Left out for now
 
