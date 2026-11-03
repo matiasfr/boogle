@@ -110,6 +110,7 @@ export function grabBall() {
 // Throws the held ball from p with velocity vel (src/player/throw.ts launch('ball', charge) gives both).
 export function throwBall(p: { x: number; y: number; z: number }, vel: { x: number; y: number; z: number }) {
   if (!ball.mine || !me.holding) return;
+  waterField.invalidate('ball');
   me.holding = false;
   ball.held = false;
   setBallMode('sim');
@@ -124,6 +125,7 @@ export function throwBall(p: { x: number; y: number; z: number }, vel: { x: numb
 // wins: then nothing moves and this returns false.
 export function placeBall(x: number, y: number, z: number) {
   if (ball.remoteOwned || ball.held) return false;
+  waterField.invalidate('ball');
   ball.pose.p.set(x, y, z);
   ball.pose.v.set(0, 0, 0);
   teleport(ball.body, x, y, z);
@@ -135,6 +137,7 @@ export function placeBall(x: number, y: number, z: number) {
 }
 
 export function respawnBall() {
+  waterField.invalidate('ball');
   if (!ball.mine) claimBall(false);
   me.holding = false;
   me.charging = false;
@@ -147,7 +150,13 @@ export function respawnBall() {
 }
 
 // Before the step, after the player's intent: a carried ball goes to your hand, another tab's to its pose.
+let waterAuthority = '';
 export function prepareBall() {
+  const authority = `${ball.e}/${ball.mine}/${ball.held}/${ball.snap}`;
+  if (authority !== waterAuthority) {
+    waterField.invalidate('ball');
+    waterAuthority = authority;
+  }
   if (ball.mine && ball.held && me.body) {
     const h = handPosition();
     teleport(ball.body, h.x, h.y, h.z);
@@ -172,8 +181,14 @@ export function surfBall(dt: number) {
   const px = bb.position.x,
     pz = bb.position.z;
   const pondSurf = waterField.surfaceAt(px, pz);
-  const still = pondSurf > SEA + 0.06; // a pond above sea level: no waves, no sea drift
-  const surf = still ? pondSurf : SEA + Math.sin(px * 0.21 + t * 1.3) * 0.06 + Math.cos(pz * 0.17 - t * 1.1) * 0.06;
+  const water = waterField.sampleAt('ball', bb.position);
+  const still = waterField.moving ? water.body === 'pond' : pondSurf > SEA + 0.06;
+  // Keep the original sine sea on the default path until graduation step 7; the opt-in uses the rendered kernel.
+  const surf = waterField.moving
+    ? water.height
+    : still
+      ? pondSurf
+      : SEA + Math.sin(px * 0.21 + t * 1.3) * 0.06 + Math.cos(pz * 0.17 - t * 1.1) * 0.06;
   const sub = clamp((surf - (bb.position.y - BALL_R)) / (2 * BALL_R), 0, 1);
   if (sub > 0) {
     let cx = 0,
@@ -181,18 +196,21 @@ export function surfBall(dt: number) {
       grip: number;
     if (still) {
       // pulled to a stop, more firmly the deeper the water
-      grip = Math.max(sub, Math.min(1, (surf - groundHeight(px, pz)) / 0.2) * 0.6);
+      grip = Math.max(
+        sub,
+        Math.min(1, (surf - (waterField.moving ? water.bedHeight : groundHeight(px, pz))) / 0.2) * 0.6,
+      );
     } else {
       const rr = Math.hypot(px, pz) || 1;
-      const nx = px / rr,
-        nz = pz / rr;
+      const nx = waterField.moving ? water.normal[0] : px / rr,
+        nz = waterField.moving ? water.normal[1] : pz / rr;
       const along = 0.9 * Math.sin(t * 0.045 + 1.3) + 0.5 * Math.sin(t * 0.13 + rr * 0.05);
       const inward = 0.28 + 0.22 * Math.sin(t * 0.35 + rr * 0.1) + 0.12 * Math.sin(t * 0.11);
       cx = -nx * inward - nz * along;
       cz = -nz * inward + nx * along;
       grip = sub;
     }
-    bb.force.y += BALL_MASS * GRAVITY * 3.2 * sub - BALL_MASS * 2.5 * bb.velocity.y * sub;
+    bb.force.y += BALL_MASS * GRAVITY * 3.2 * sub - BALL_MASS * 2.5 * (bb.velocity.y - water.verticalVelocity) * sub;
     bb.force.x += (cx - bb.velocity.x) * 0.9 * BALL_MASS * grip;
     bb.force.z += (cz - bb.velocity.z) * 0.9 * BALL_MASS * grip;
   }

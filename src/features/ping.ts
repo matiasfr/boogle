@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { camera, toScreen, view } from '../render/scene.ts';
 import { COLORS, HALF, SEA, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../island/terrain.ts';
+import { waterField } from '../physics/water-field.ts';
 import { clamp } from '../math.ts';
 import { me, camForward } from '../player/player.ts';
 import { ball } from '../entities/ball/state.ts';
@@ -28,6 +29,8 @@ const TUNE = {
 const incoming = createLimiter(1, 800); // a little looser than our own 1 s gap, so honest senders never get dropped
 const fwd = new THREE.Vector3(),
   tmp = new THREE.Vector3();
+const contact = (x: number, y: number, z: number) =>
+  Math.max(groundHeight(x, z), waterField.moving ? waterField.nearby({ x, y, z }).height : SEA);
 
 // ---------------------------------------------------------------- aiming
 function aimPing() {
@@ -43,7 +46,7 @@ function aimPing() {
       y = o.y + fwd.y * s,
       z = o.z + fwd.z * s;
     if (Math.abs(x) > HALF - 1 || Math.abs(z) > HALF - 1) break;
-    const floor = Math.max(groundHeight(x, z), SEA);
+    const floor = contact(x, y, z);
     if (y <= floor) {
       let lo = prev,
         hi = s;
@@ -51,12 +54,12 @@ function aimPing() {
         const m = (lo + hi) / 2;
         const mx = o.x + fwd.x * m,
           mz = o.z + fwd.z * m;
-        if (o.y + fwd.y * m <= Math.max(groundHeight(mx, mz), SEA)) hi = m;
+        if (o.y + fwd.y * m <= contact(mx, o.y + fwd.y * m, mz)) hi = m;
         else lo = m;
       }
       const hx = o.x + fwd.x * hi,
         hz = o.z + fwd.z * hi;
-      return { x: hx, y: Math.max(groundHeight(hx, hz), SEA), z: hz, k: 'look' };
+      return { x: hx, y: contact(hx, o.y + fwd.y * hi, hz), z: hz, k: 'look' };
     }
     prev = s;
   }

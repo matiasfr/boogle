@@ -37,6 +37,8 @@ import { fftWaves } from './water/fft.ts';
 import { bakeFoam } from './water/foam.ts';
 import { shoreFields } from './water/shore-nodes.ts';
 import { createWaterQuality } from './water/quality.ts';
+import { createWaterQueries } from './water/queries.ts';
+import { waterField } from '../physics/water-field.ts';
 import { GRID } from './water/tuning.ts';
 import { TSL } from './water/tsl.ts';
 import { gameWaterSky } from './sky-radiance.ts';
@@ -198,6 +200,8 @@ function createRealSea() {
     fitCameraRange: true,
     fog: (distance) => TSL.smoothstep(fogRange.x, fogRange.y, distance),
   });
+  const queries = createWaterQueries(ocean.heightAt, atlas);
+  const removeProvider = waterField.install(queries.provider);
   let ready = false,
     disposed = false;
   const previousVisibility = waterMat.visible;
@@ -207,6 +211,7 @@ function createRealSea() {
     mesh: ocean.mesh,
     prePhysics({ elapsed }) {
       seaU.uTime.value = elapsed;
+      queries.publish(elapsed);
     },
     lateUpdate({ elapsed }) {
       if (!ready || disposed) return;
@@ -215,6 +220,7 @@ function createRealSea() {
       const fog = scene.fog as THREE.Fog;
       fogRange.value.set(fog.near, fog.far);
       ocean.update(camera, elapsed, sun);
+      queries.dispatch(elapsed);
       quality.update(); // after adaptive-res, normalize once against its actual DPR
     },
     describe: () => ({
@@ -224,6 +230,7 @@ function createRealSea() {
       fftBands: source.fft.bands,
       quality: quality.name,
       resolution: quality.resolution,
+      queries: queries.inspect(),
       ...atlas.inspect(),
     }),
     dispose() {
@@ -233,6 +240,8 @@ function createRealSea() {
       waterMesh = null;
       waterRuntime.inspect = () => ({ mode: 'new', ready: false, disposed: true });
       waterRuntime.dispose = () => {};
+      removeProvider();
+      queries.dispose();
       ocean.dispose();
       source.dispose?.();
       atlas.dispose();

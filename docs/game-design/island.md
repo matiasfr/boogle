@@ -65,6 +65,21 @@ ends by half the route's far range, with a monotonic altitude scale and a flat s
 Desktop defaults to high; coarse-pointer devices default to 0.6 world resolution, normalized once against adaptive DPR
 (`q=high|mobile` overrides). This leaves canvas/output resolution and MSAA unchanged. `waterRuntime.dispose()` releases
 the replacement resources and restores the prior resolution/material visibility; the main sea remains absent until
-`createWaterMesh()` recreates it. Moving-water physics is the next staged step, so this opt-in is not the default game.
+`createWaterMesh()` recreates it. This opt-in is not the default game.
+
+With `water=new`, swimming, the owned ball and entry splashes request the same inverse-displacement GPU kernel as
+the surface. One 64-point batch, at most two reusable readbacks, publishes only before physics; the player and ball
+have reserved capacity. Results more than 100 ms old or 0.5 m away are rejected, as are old generations and sequences.
+Surface velocity is estimated at a fixed position and bounded to ±3 m/s. Fresh heights extrapolate briefly; stale
+heights ease toward mean sea over 250 ms and cannot trigger entry splashes. Transfers, held-state changes and
+teleports invalidate the consumer. The unwrapped frame clock also drives breakers and ripple ages; only FFT phase loops.
+The cave pond is a named still-water volume at its original level and ellipse (`q < .81`); the 3D cave predicate excludes
+ocean waves under the roof. Pond splashes do not send rings to the sea. A stationary body overtaken by a crest does
+not emit a landing splash. Cameras use moving-water constraints; throw/flight/ping previews use nearby fresh cached
+heights or mean sea/pond, so their hypothetical arcs are approximate, not synchronous GPU queries.
+
+`waterRuntime.inspect().queries` reports consumed/accepted/rejected age summaries, rejection reasons and per-ID
+samples. Its prediction error compares the consumed estimate with a GPU evaluation at matching request time and
+position; it does not measure rasterized triangle error. Renderer teardown removes the provider and all query resources.
 
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.

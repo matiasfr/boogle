@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { camera } from '../render/scene.ts';
 import { emit } from '../render/particles.ts';
 import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA, reducedMotion } from '../constants.ts';
+import { waterField } from '../physics/water-field.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { clamp, lerp } from '../math.ts';
 import { ball } from '../entities/ball/state.ts';
@@ -209,7 +210,10 @@ function detect(now: number) {
   if (m > TUNE.impactMin && now - lastImpact > 90) {
     const gh = groundHeight(p.x, p.z);
     const onGround = p.y - gh < BALL_R + 0.3;
-    const inWater = gh < SEA - 0.1 && p.y - BALL_R < SEA + 0.2;
+    const water = waterField.sampleAt('ball', p);
+    const level = waterField.moving ? water.height : SEA;
+    const bed = waterField.moving ? water.bedHeight : gh;
+    const inWater = bed < level - 0.1 && p.y - BALL_R < level + 0.2;
     const person = nearestPerson(p);
     const mine = person?.me && now - lastHeldByMe < 700;
     if ((onGround || inWater || person) && !mine) {

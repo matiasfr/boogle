@@ -4,12 +4,15 @@ import * as THREE from 'three';
 import { BALL_R, GRAVITY, reducedMotion, SWIM_DEPTH } from '../constants.ts';
 import { seaRipples } from './water-render.ts';
 import { emit } from './particles.ts';
-import { groundHeight } from '../island/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
+import { groundProbe } from '../physics/physics.ts';
 
 const FOAM = new THREE.Color().setRGB(0.96, 0.99, 1.0, THREE.SRGBColorSpace);
 
 let elapsedNow = 0;
+const splashStats = { sea: 0, pond: 0, invalid: 0, crest: 0 };
+const entries: { id: string; body: string; time: number; level: number }[] = [];
+export const inspectSplash = () => ({ ...splashStats, entries: [...entries] });
 
 // seaRipples: x, z, start time, strength (0 = unused); the sea shader's ripple array sets how many
 let rippleCursor = 0;
@@ -21,7 +24,9 @@ function addRipple(x: number, z: number, strength: number) {
 // strength 0..1, level: the water surface there
 export function splash(x: number, z: number, strength: number, level: number) {
   strength = Math.min(Math.max(strength, 0), 1);
-  addRipple(x, z, 0.35 + strength * 0.65);
+  const body = waterField.nearby({ x, y: level, z }).body;
+  if (body === 'sea') addRipple(x, z, 0.35 + strength * 0.65);
+  if (body !== 'dry') splashStats[body]++;
   const n = Math.round((10 + strength * 55) * (reducedMotion ? 0.3 : 1));
   const up = 2.5 + strength * 5.5;
   const spread = 0.8 + strength * 2.2;
@@ -48,15 +53,25 @@ export function splash(x: number, z: number, strength: number, level: number) {
 }
 
 // Tracks the vertical motion of one thing (ball or avatar) and reports a water entry.
-type Tracker = { y: number; x: number; z: number; cool: number; bottomOffset: number };
+type Tracker = {
+  y: number;
+  x: number;
+  z: number;
+  cool: number;
+  bottomOffset: number;
+  sub: number;
+  body: string;
+  valid: boolean;
+};
 function makeTracker(bottomOffset: number): Tracker {
-  return { y: NaN, x: 0, z: 0, cool: 0, bottomOffset };
+  return { y: NaN, x: 0, z: 0, cool: 0, bottomOffset, sub: NaN, body: '', valid: false };
 }
 const ballTrack = makeTracker(-BALL_R);
 const meTrack = makeTracker(-SWIM_DEPTH);
 const remoteTracks = new Map<string, Tracker>();
 
 function track(
+  id: string,
   t: Tracker,
   x: number,
   y: number,
@@ -68,18 +83,30 @@ function track(
 ) {
   const bottom = y + t.bottomOffset;
   const prev = t.y;
+  const water = waterField.sampleAt(id, { x, y, z });
+  const sub = bottom - water.height;
+  const crossing = t.sub > 0 && sub <= 0 && t.body === water.bodyId;
+  const fresh = t.valid && water.valid;
+  t.sub = sub;
+  t.body = water.bodyId;
+  t.valid = water.valid;
   const moved = Math.abs(x - t.x) + Math.abs(z - t.z) + Math.abs(bottom - prev);
   t.y = bottom;
   t.x = x;
   t.z = z;
   t.cool -= dt;
   if (Number.isNaN(prev) || moved > 4 || dt <= 0) return; // teleport or first sample
-  const level = waterField.surfaceAt(x, z); // the sea, or the cave pond where that is higher
-  if (prev > level && bottom <= level && t.cool <= 0 && groundHeight(x, z) < level - 0.1) {
+  const level = water.height;
+  if (crossing && !fresh) splashStats.invalid++;
+  const bed = waterField.moving ? water.bedHeight : groundProbe.under(x, y, z);
+  if (crossing && fresh && t.cool <= 0 && bed < level - 0.1) {
     const vy = vyHint !== null ? vyHint : (bottom - prev) / dt;
-    const speed = -vy;
-    if (speed >= minSpeed) {
+    const speed = water.verticalVelocity - vy;
+    if (vy >= -0.1) splashStats.crest++;
+    if (vy < -0.1 && speed >= minSpeed) {
       splash(x, z, ((speed - minSpeed) / 12) * scale + 0.1, level);
+      if (entries.length === 32) entries.shift();
+      entries.push({ id, body: water.bodyId, time: elapsedNow, level });
       t.cool = 0.2;
     }
   }
@@ -95,19 +122,26 @@ export function updateSplash(
   remotes: Map<string, { avatar: unknown; visible: boolean; target: Vec }>,
 ) {
   elapsedNow = elapsed;
-  track(ballTrack, bp.x, bp.y, bp.z, ball.held ? 0 : ball.pose.v.y, dt, 2.2, 1);
+  if (ball.held) {
+    ballTrack.y = NaN;
+    ballTrack.valid = false;
+  } else track('ball', ballTrack, bp.x, bp.y, bp.z, ball.pose.v.y, dt, 2.2, 1);
 
   if (me.entered && me.body) {
     const p = me.body.position;
-    track(meTrack, p.x, p.y, p.z, me.body.velocity.y, dt, 3.5, 0.5);
+    track('player', meTrack, p.x, p.y, p.z, me.body.velocity.y, dt, 3.5, 0.5);
   }
   for (const [peer, r] of remotes) {
     if (!r.avatar || !r.visible) continue;
     let t = remoteTracks.get(peer);
     if (!t) remoteTracks.set(peer, (t = makeTracker(-SWIM_DEPTH)));
     const p = r.target;
-    track(t, p.x, p.y, p.z, null, dt, 3.5, 0.5);
+    track(`splash:${peer}`, t, p.x, p.y, p.z, null, dt, 3.5, 0.5);
   }
   if (remoteTracks.size > remotes.size)
-    for (const k of remoteTracks.keys()) if (!remotes.has(k)) remoteTracks.delete(k);
+    for (const k of remoteTracks.keys())
+      if (!remotes.has(k)) {
+        remoteTracks.delete(k);
+        waterField.forget(`splash:${k}`);
+      }
 }

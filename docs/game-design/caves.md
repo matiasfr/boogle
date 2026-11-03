@@ -1,5 +1,10 @@
 # 6.12 Caves
 
+The pond is a named still-water volume (`cave-pond`, level 3 m, existing ellipse `q < .81`). With `water=new`,
+the cave's 3D interior predicate excludes the outdoor ocean under its roof; the pond supplies its own floor and
+zero surface velocity. Pond entry splashes use the shared particles without adding sea rings. Above-roof queries
+remain outdoor, and the old default sea stays active unless opted in. See [island water](island.md) for query limits.
+
 - **What.** A separate little world under the heightfield, loaded lazily in its own chunk after start
   ([src/features/pois.ts](../../src/features/pois.ts); its `site.ts` ground stays eager): one seamless mesh, built a little
   each frame once loaded,

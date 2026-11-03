@@ -190,3 +190,6 @@ This registration does not change the current sea or Round 4 terrain.
 `?proto=place&water=new` uses the same staged replacement sea as [home](island.md), sampling the actual gorge/shore
 provider. The old crossing material and its outer rectangles are hidden only while this opt-in sea is active;
 the normal page keeps them. Existing place lighting, sky, camera clip distances and terrain remain owned by place.
+In this opt-in, swimming follows bounded asynchronous samples of those waves, and splash depth uses the registered
+bed rather than the home island. Query-age limits, fallback and diagnostics are described with [home water](island.md).
+The beach ball's existing home-island return bounds remain unchanged; this does not introduce a place ball toy.
