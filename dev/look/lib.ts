@@ -26,6 +26,8 @@ export type Pose = { cam: number[]; look: number[] };
 
 // One table of named viewpoints: camera position, look-at target (world metres, y up).
 export const VIEWS: Record<string, Pose> = {
+  'water-surf': { cam: [2572, 3.2, -52], look: [2530, 0, -34] }, // ?proto=water
+  'water-open': { cam: [2900, 6, -200], look: [3500, 0, -400] },
   hill: { cam: [-10, 12, -14], look: [-22, 3.5, -21] },
   shore: { cam: [-22, 7.5, -17], look: [-30, 0.5, -27] },
   court: { cam: [12, 4, 30], look: [12, 0.5, 21] },

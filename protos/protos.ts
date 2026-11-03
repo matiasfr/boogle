@@ -88,6 +88,26 @@ export const PROTOS: Proto[] = [
     chapter: 'it replaces the arrival: every load starts from the card, above the clouds',
   },
   {
+    id: 'water',
+    title: 'That water, in our world',
+    step: 'depth',
+    status: 'live',
+    url: '/?room=proto-water&proto=water&tod=0.15',
+    question: 'Does this feel like that water, in our world?',
+    what: "Ultra Water's ocean rewritten inside our renderer, graded poppier, on a test island: surf bends round the rock, foam, wet sand. No FFT yet.",
+    since: '2026-11-02',
+    defaultWhat: 'Their water with a poppier grade.',
+    spawn: { x: 2518, z: -28, yaw: -1.42 }, // on the beach the swell comes to, facing the surf rock
+    chapter: 'it replaces the sea, far plane and fog, and sits on its own island',
+    variants: [
+      {
+        name: 'raw',
+        url: '/?room=proto-water&proto=water&v=raw&tod=0.15',
+        what: "The demo's own water numbers, ungraded.",
+      },
+    ],
+  },
+  {
     id: 'place',
     title: 'A real place',
     step: 8,
@@ -550,6 +570,7 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
   { id: 'net', variant: 'depot', why: 'Does the haul feel good now that the network is helping?' },
   { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },
   { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
+  { id: 'water', why: 'Does this feel like that water, in our world?' },
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */

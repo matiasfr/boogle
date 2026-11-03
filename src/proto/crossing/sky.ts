@@ -37,7 +37,7 @@ const DAY = {
 };
 const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
   THREE.HemisphereLight | undefined;
-function holdDay() {
+export function holdDay() {
   const y = skyNow.sunDir.y,
     d = smoothstep(DAY_LOW, DAY_HIGH, y);
   skyU.uCurve.value = lerp(GAME_CURVE, LOOK.skyCurve, d);
