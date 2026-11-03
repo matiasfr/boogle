@@ -29,10 +29,6 @@ Toys, mini-games and any farming are invitations, never gates.
 Helping should happen just by playing near each other: anyone's work on the line helps everyone. Nobody should need to coordinate in chat to contribute.
 - *Prefer:* bonuses for *different* people helping over bonuses for one person grinding.
 
-### 5. Nothing is the antagonist
-Players can't destroy what other players made, and nothing threatens your progress: no hazards, and nothing decays.
-- *Avoid:* PvP destruction, stealing, griefable shared resources.
-
 ### 6. Communal world, personal rewards
 The world and its network belong to everyone. Anything you *earn* (cosmetics, hats) is yours alone. No shared wallets, so nobody spends what someone else earned.
 

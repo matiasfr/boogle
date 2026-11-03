@@ -38,7 +38,6 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 | 2 | Physics toys are optional fun | The beach ball, frisbee and mushroom bounces are optional. |
 | 3 | Side activities are never required | Mushrooms are optional; nothing is gated on them. |
 | 4 | Cooperation is automatic, not negotiated | Anyone can stock the same work site; nearby honks harmonize. |
-| 5 | Nothing is the antagonist | No PvP state damage. |
 | 6 | Communal world, personal rewards | Work sites are shared; what you hold and Boogler friendship are per player. |
 | 7 | Telegraph everything | Interact prompts, ping markers and work-site rings show what can be done and what is being built. |
 | 8 | Designed for drop-in, drop-out | Solo play and joining an existing room need no group start; returning players skip the identity card. |
