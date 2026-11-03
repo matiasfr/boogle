@@ -166,6 +166,8 @@ export async function play() {
     void (cam.yaw = me.yaw = Math.atan2(-(x - body.position.x), -(z - body.position.z)));
   /** Off the ground and up onto a ledge: jump, near the top jump again, steering at it all the way. */
   const twoJumps = async (x: number, z: number) => {
+    // The walking planner can arrive mid-hop. Land before spending the two presses on the ledge.
+    await waitFor(() => me.coyote > 0 && body.velocity.y <= 0, 2000, 'landed before the double jump');
     face(x, z);
     input.keys.add('KeyW');
     await wait(120);
