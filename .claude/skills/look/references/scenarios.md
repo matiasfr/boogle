@@ -2,11 +2,11 @@
 
 A scenario is `dev/scenarios/<name>.ts`: `export default { about, async run(t: T) {...} }` (`T` from `./run.ts`).
 It sets up a situation in the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
-failure, including page and console errors. Follow AGENTS.md's test diet: new scenarios only for sync contracts, not routine UI, tuning or feel. Run the relevant existing scenario when it resolves a concrete concern. PR CI runs `world-inputs` (single-player only; `SCENARIO_GATE=pr` refuses a second tab), `npm run check:gpu` (or `npm run ship -- --gpu`) runs `smoke` on a Mac's GPU, and the rest run nightly
+failure, including page and console errors. Follow the test diet in docs/agents/tests.md: new scenarios only for sync contracts, not routine UI, tuning or feel. Run the relevant existing scenario when it resolves a concrete concern. PR CI runs `world-inputs` (single-player only; `SCENARIO_GATE=pr` refuses a second tab), `npm run check:gpu` (or `npm run ship -- --gpu`) runs `smoke` on a Mac's GPU, and the rest run nightly
 (`.github/workflows/scenarios-nightly.yml`, which also runs `smoke` on WebGPU); a failing leg's images and a
 Playwright trace per player (`<player>-trace.zip`; open with `npx playwright show-trace <zip>`: the action timeline,
 console, network and errors) are its `scenario-<name>` artifact. `--no-trace` skips tracing. So local runs
-are optional; if access blocks a required visual check, request it per AGENTS.md rather than substituting CI for seeing the change.
+are optional; if access blocks a required visual check, request it per docs/agents/verification.md rather than substituting CI for seeing the change.
 `--url <game>` runs against a running or deployed build instead of a local stack; there are no
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
 `src/features/debug-handle.ts`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.

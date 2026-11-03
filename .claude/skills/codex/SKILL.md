@@ -27,7 +27,7 @@ From inside Codex this is how you start a worker on its own branch and worktree:
 
 `node dev/codex/run.ts <mode> <topic> [--effort ...] [--ref a.png] "<brief>"` runs one Codex job and prints its final message. Always start it with Bash `run_in_background: true` (jobs take 5-40 minutes) and carry on; you're notified when it ends. Log, report and meta: `.look/codex/<topic>/`. `--dry` prints the prompt and command without running.
 
-Codex reads AGENTS.md and DESIGN.md like you do, and can't push. A `task` job can see the game through `node dev/codex/see.ts` (below): stills, motion sheets, video as extracted frames, curves, and scripted play through `--action`. You are the director: brief it, then review and ship what it made.
+Codex reads AGENTS.md and the docs its table triggers like you do, and can't push. A `task` job can see the game through `node dev/codex/see.ts` (below): stills, motion sheets, video as extracted frames, curves, and scripted play through `--action`. You are the director: brief it, then review and ship what it made.
 
 | Mode | Effort default | Where it works | What you get |
 |---|---|---|---|

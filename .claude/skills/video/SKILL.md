@@ -53,7 +53,7 @@ export default {
   before the page's code (seed localStorage: friendship, pocket).
 - `g.record(label, { seconds, each(t, k) })`: `each` runs before every frame. Move the camera (`g.view({ cam, look }, fov)`),
   send input (`g.key`, `g.down/up`), call game modules (`g.eval`), or fast-forward the shared sim for a time-lapse
-  (`updateWorld(0.1)` in a loop from `/src/world/sync.js`).
+  (`updateWorld(0.1)` in a loop from `/src/world/sync.ts`).
 - `c.move(a, b, seconds, c.ease.inOut)`: an `each` that glides the debug camera between two poses (or `VIEWS` names).
 - The player's body drives shadows and the sun's focus: teleport it near what you film, out of frame.
 
