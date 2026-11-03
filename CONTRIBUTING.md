@@ -40,19 +40,14 @@ The playtest is the real test. Whenever something new lands, jump on https://boo
 
 ### Codex local and worktree tasks
 
-Open this repository in Codex. `AGENTS.md` is the shared entry point; `.agents/skills` is a committed relative symlink, so the same skills are available in a fresh worktree. There is no separate Codex copy to maintain. Read `src/README.md` for the code map, `docs/game-design.md` for what is built, and `docs/proposals/boogle-2.md` before design work.
+Open this repository in Codex and trust it. `AGENTS.md` is the shared entry point, `.agents/skills` links to the same skills, and `.codex/` holds the rest, committed so every worktree gets it:
 
-Use a worktree for an independent task and install dependencies there. For automatic setup in the desktop app, configure a project local environment with the following setup script after making Node 24 available to its shell:
+- `config.toml`: workspace-write with network, live web search, and room for all of `AGENTS.md` (the default cuts it off at 32 KB).
+- `rules/boogle.rules`: the project's commands, Git and `gh` run outside the sandbox with no prompt; force-pushing and skipping hooks are refused. macOS's sandbox won't let Chromium start and a worktree's Git data is outside it, so these can't work from inside. Restart Codex after changing rules.
+- `hooks.json`: Prettier and ESLint on each edit, the same `.claude/hooks/format-lint.ts` Claude Code runs. Codex skips a project hook until you trust it: run `/hooks` once in a session. In our tests the project's copy didn't fire under `codex exec`; `dev/codex/run.ts` jobs pass the hook themselves.
+- `agents/`: `planner` and `implementer`, which read the same briefs as Claude's.
+- `environments/environment.toml`: the desktop app's setup script for a new worktree (Node 24, `npm ci`, Chromium) and its top-bar buttons.
 
-```sh
-npm ci
-npx playwright install chromium
-```
+The look harness starts and stops its own local stack on free ports and writes to `.look/`, so it needs no running dev server. Name the question with `--question`, frame the feature, use `--action` after warm-up and open the still and sheet with `view_image`. A successful capture still needs a visual judgment (the shared `look` skill).
 
-Use the Linux browser-install command above on Linux. The app saves the generated environment configuration under `.codex/`; it can be committed for the team. This is optional desktop configuration, not a prerequisite for CLI tasks. See [OpenAI's local environment documentation](https://learn.chatgpt.com/docs/environments/local-environment).
-
-Useful desktop actions are `npm run dev`, `npm run check` and `npm run look -- --view hill`. The look harness starts and stops its own local stack on free ports and writes to `.look/`, so it does not need an already-running dev server. A default hill capture checks startup. For a visual change, name the question with `--question`, frame the feature, use `--action` after setup/warm-up and inspect the still and sheet; add `--video` for real-time motion. Heatmaps are optional (`--heatmap --region x,y,w,h`). The command fails on page/console errors or stopped game frames; a successful capture still needs a visual judgment (the shared `look` skill).
-
-Claude's edit hooks do not run in Codex: format the files you changed with `npx prettier --write <files>`, and run `npx eslint <changed TypeScript files>`. Do not format the whole repository. If a sandbox blocks setup or checks, request access for that command. In particular, `npm ci` can install dependencies successfully while its `prepare` step reports a Git config permission error; verify `git config --get core.hooksPath` is `.githooks`, and rerun `npm run prepare` with the required access if it is not.
-
-Commit only the task's files and use `SHIP_NO_AI=1 npm run ship` for Codex-managed conflict resolution. This uses the same `ship/` branch, CI and owner-gate workflow as every other agent. Follow [AGENTS.md](AGENTS.md#shipping) for review and verification, and distinguish a pushed branch from a verified merge or deployment in the handoff.
+Commit only the task's files and ship with `npm run ship`, with the same `ship/` branch, CI and owner gate as every other agent. Follow [AGENTS.md](AGENTS.md#shipping) for review and verification.

@@ -31,6 +31,7 @@ const opt: {
   fov: number | null;
   name: string | null;
   room?: string;
+  query: string;
   hud: boolean;
   warp: boolean;
   until: string | null;
@@ -62,6 +63,7 @@ const opt: {
   warp: true,
   until: null,
   at: null,
+  query: '',
   curves: false,
   curvesVs: null,
   target: null,
@@ -98,6 +100,8 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--name') opt.name = v();
   else if (a === '--room')
     opt.room = v(); // e.g. proto-wagon: a playtest room, where tune and shortcut ops are allowed
+  else if (a === '--query')
+    opt.query = v(); // URL params for the page, like BOOGLE_QUERY; a Codex rule can't see past an environment variable
   else if (a === '--hud')
     opt.hud = true; // keep the HUD in the picture
   else if (a === '--warp')
@@ -124,7 +128,7 @@ for (let k = 0; k < argv.length; k++) {
     console.log(`npm run look -- [--view ${Object.keys(VIEWS).join('|')}] [--cam x,y,z --look x,y,z] [--fov deg]
   [--question "what should be visible?"] [--eval setup.ts] [--action action.ts] [--video]
   [--warm 10] [--frames 8] [--seconds 2] [--heatmap --region x,y,w,h (fractions)] [--size 960x600]
-  [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
+  [--query 'proto=place&shot=play'] [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
   [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
   [--root <checkout>]                       serve another checkout's build
@@ -193,7 +197,7 @@ try {
     size: opt.size,
     hud: opt.hud,
     room: opt.players > 1 ? (opt.room ?? 'look-two') : (save?.room ?? opt.room),
-    query: [save?.pageQuery, opt.players > 1 ? 'player=1' : ''].filter(Boolean).join('&') || undefined,
+    query: [opt.query, save?.pageQuery, opt.players > 1 ? 'player=1' : ''].filter(Boolean).join('&') || undefined,
     init: [
       "localStorage.getItem('boogle.color') || localStorage.setItem('boogle.color', '1');", // comparable pictures
       save ? SEED(save) : '',
@@ -215,7 +219,7 @@ try {
           hud: opt.hud,
           name: 'Second',
           room: opt.room ?? 'look-two',
-          query: 'player=2',
+          query: [opt.query, 'player=2'].filter(Boolean).join('&'),
           prefix: 'p2-',
         })
       : null;

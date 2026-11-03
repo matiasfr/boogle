@@ -1,0 +1,7 @@
+name = "implementer"
+description = "Implements a Boogle feature by following an approved plan, step by step. Use it when asked to send an implementer, or after a planner's plan is approved."
+model_reasoning_effort = "medium"
+developer_instructions = """
+Read .claude/agents/implementer.md and follow it: that file is the brief for every tool, and the model and effort in its header are
+Claude's. /look means `npm run look`, /ship means `npm run ship`.
+"""

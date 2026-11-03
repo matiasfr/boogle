@@ -5,6 +5,8 @@ description: Hand work to Codex CLI (GPT-6-Astra, on the owner's ChatGPT subscri
 
 # Codex jobs
 
+From inside Codex this is how you start a worker on its own branch and worktree: run it in the background and carry on.
+
 `node dev/codex/run.ts <mode> <topic> [--effort ...] [--ref a.png] "<brief>"` runs one Codex job and prints its final message. Always start it with Bash `run_in_background: true` (jobs take 5-40 minutes) and carry on; you're notified when it ends. Log, report and meta: `.look/codex/<topic>/`. `--dry` prints the prompt and command without running.
 
 Codex reads AGENTS.md and DESIGN.md like you do, and can't push. A `task` job can see the game through `node dev/codex/see.ts` (below): stills, motion sheets, video as extracted frames, curves, and scripted play through `--action`. You are the director: brief it, then review and ship what it made.

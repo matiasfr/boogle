@@ -11,6 +11,8 @@ Before capturing, name one question, the action that reveals it, the camera/devi
 
 ## 1. Inspect: `npm run look`
 
+In Codex, use `--query 'proto=place'` rather than `BOOGLE_QUERY=`, since its rules don't see past an environment variable (AGENTS.md, "Codex").
+
 ```
 npm run look -- --view hill                           # startup/capture check only
 npm run look -- --cam -10,12,-14 --look -22,3.5,-21 --question "Does the feature read from here?"

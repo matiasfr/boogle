@@ -9,9 +9,10 @@
 set -euo pipefail
 
 # On a rebase conflict, ship asks Claude Code (if installed) to resolve it, keeping both sides' changes.
-# SHIP_NO_AI=1 turns that off.
+# SHIP_NO_AI=1 turns that off; so does running under Codex.
 resolve_with_claude() {
-  command -v claude >/dev/null 2>&1 && [ -z "${SHIP_NO_AI:-}" ] || return 1
+  # Under Codex the conflict goes back to the agent that's running: it has the context, and it may not be able to start Claude.
+  command -v claude >/dev/null 2>&1 && [ -z "${SHIP_NO_AI:-}" ] && [ -z "${CODEX_THREAD_ID:-}" ] || return 1
   local tries=0
   while [ -d "$(git rev-parse --git-path rebase-merge)" ] || [ -d "$(git rev-parse --git-path rebase-apply)" ]; do
     tries=$((tries + 1))

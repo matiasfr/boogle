@@ -117,6 +117,8 @@ ${
 
 Your final message: what you changed, what check printed, what you saw, and anything you were unsure of or could not verify.`;
 
+const FORMAT_HOOK = `hooks.PostToolUse=[{matcher="apply_patch|Edit|Write",hooks=[{type="command",timeout=30,command='node "$(git rev-parse --show-toplevel)/.claude/hooks/format-lint.ts"'}]}]`;
+
 function main() {
   const reportFile = path.join(logs, 'report.md');
   let cwd: string;
@@ -147,7 +149,20 @@ function main() {
     if (opts.dry) cwd = repo;
     else cwd = worktree('origin/main', `codex/${topic}`);
     prompt = mode === 'research' ? researchPrompt() : taskPrompt();
-    argv = ['exec', ...base, '-C', cwd, '-s', 'workspace-write', '--add-dir', gitDir];
+    // This repository's own format hook, passed here because a job can't stop to approve the project's copy.
+    argv = [
+      'exec',
+      ...base,
+      '-C',
+      cwd,
+      '-s',
+      'workspace-write',
+      '--add-dir',
+      gitDir,
+      '--dangerously-bypass-hook-trust',
+      '-c',
+      FORMAT_HOOK,
+    ];
     if (mode === 'research') argv.push('-c', 'web_search="live"');
     if (eyes) argv.push('-c', 'sandbox_workspace_write.network_access=true');
     argv.push('-');
