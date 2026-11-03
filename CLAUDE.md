@@ -20,6 +20,7 @@
 
 ### Working in parallel
 - One session directs; implementation runs in parallel. A **subagent** (Agent tool, `isolation: "worktree"`, Opus at medium effort) suits one piece whose result the director reviews in the same sitting; subagents can't start their own. A **session** of its own (one per track, in its own worktree) can run its own subagents and lasts across days; use it for a track like a prototype.
+- Keep each agent to one stage, under about an hour, and start the next stage fresh from its handover rather than resuming it: every message re-reads the whole context, and one agent at 846k tokens used 57M in cache reads. Put the files, errors and decisions in the brief, so it doesn't have to go and find them.
 - Each worker sees its own result before shipping (AGENTS.md, "See it before you ship") and ships itself. The director reads the diff and the stills afterwards.
 - Research before deep facets (AGENTS.md, "Owner's standing calls") runs as a deep-research subagent.
 

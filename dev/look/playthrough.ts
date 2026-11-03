@@ -2,6 +2,7 @@
 //                                         to it: time per beat, what never happened, where it stalled, every line on screen.
 // npm run playthrough -- --name before    keeps this run under that name (the default is the current commit)
 // npm run playthrough -- --compare a b    two runs side by side: time per beat, text gone and new
+//   --full                                print the whole report, not just what changed since the last run
 //   --query 'proto=place&shot=play'       the page and the bot's own settings; &from=line2 starts part way
 //   --eval dev/look/evals/place-job.ts    the file with the bot; it must set window.__placeDone
 //   --root <checkout>                     play another checkout's build, with this harness
@@ -142,6 +143,62 @@ function report(s: Session, text: Observed, wall: { game: number; wall: number; 
   return out;
 }
 
+/** What's printed: enough to decide what to read next. It stays in an agent's context for the rest of its session. */
+function brief(
+  s: Session,
+  text: Observed,
+  wall: { game: number; wall: number; done: boolean },
+  botLog: string[],
+  was: { session: Session; text: Observed } | null,
+) {
+  const out: string[] = [];
+  const missed = botLog.filter((l) => /NEVER:/.test(l));
+  out.push(`${s.card}: ${span(s.end / 1000 - s.start / 1000)} of game in ${span(wall.wall)}.`);
+  out.push(
+    !wall.done
+      ? 'THE BOT DID NOT FINISH.'
+      : missed.length
+        ? `Finished; ${missed.length} expected things never came:`
+        : 'Finished; everything it expected came.',
+  );
+  for (const l of missed.slice(0, 6)) out.push('  ' + l.replace(/^PLAY /, '').slice(0, 100));
+  if (!wall.done) for (const l of botLog.slice(-4)) out.push('  ' + l.slice(0, 100));
+  const list = beats(s);
+  const names = [...marksByName(s).keys()];
+  const never = beatsOf(s.card)
+    .filter(([, re]) => !names.some((n) => re.test(n)))
+    .map(([label]) => label);
+  if (never.length) out.push(`Never marked: ${never.join(', ')}`);
+  const of = (k: string) => s.events.filter((e) => e.k === k);
+  const sum = (evs: Ev[]) => evs.reduce((a, e) => a + num(e.s), 0);
+  out.push(`Stalls: still ${span(sum(of('idle')))}, pushing ${span(sum(of('into')))}; errors ${of('error').length}`);
+  if (was) {
+    const old = new Map(beats(was.session).map((b) => [b.name, b.at]));
+    const moved = list
+      .filter((b) => old.has(b.name) && Math.abs(b.at - old.get(b.name)!) >= 10)
+      .map((b) => ({ ...b, by: b.at - old.get(b.name)! }));
+    const fresh = list.filter((b) => !old.has(b.name)).map((b) => b.name);
+    const gone = [...old.keys()].filter((n) => !names.includes(n));
+    out.push(`Since the last run (${was.session.id}): ${moved.length} beats moved 10 s or more`);
+    for (const b of moved.slice(-6))
+      out.push(`  ${clock(b.at).padStart(6)} ${b.by > 0 ? '+' : ''}${Math.round(b.by)} s  ${b.name}`);
+    if (fresh.length) out.push(`  new beats: ${fresh.join(', ').slice(0, 160)}`);
+    if (gone.length) out.push(`  gone: ${gone.join(', ').slice(0, 160)}`);
+    const key = (t: string) => t.replace(/\d[\d,.]*/g, '#');
+    const a = new Set(was.text.lines.map((l) => key(l.text)));
+    const b = new Set(text.lines.map((l) => key(l.text)));
+    const newLines = text.lines.filter((l) => !a.has(key(l.text))).map((l) => `"${l.text.slice(0, 50)}"`);
+    const goneLines = was.text.lines.filter((l) => !b.has(key(l.text))).map((l) => `"${l.text.slice(0, 50)}"`);
+    if (newLines.length) out.push(`  new on screen: ${newLines.slice(0, 5).join(', ')}`);
+    if (goneLines.length) out.push(`  gone from screen: ${goneLines.slice(0, 5).join(', ')}`);
+  } else {
+    out.push('Longest waits between beats:');
+    for (const b of [...list].sort((x, y) => y.gap - x.gap).slice(0, 6))
+      out.push(`  ${clock(b.at).padStart(6)} +${span(b.gap).padEnd(9)} ${b.name}`);
+  }
+  return out;
+}
+
 function compareRuns(a: string, b: string) {
   const left = readRun(a);
   const right = readRun(b);
@@ -175,6 +232,13 @@ async function main() {
   const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   const name = opt('--name', commit);
   const dir = path.join(OUT, name);
+  // The last run, before this one can replace it: the report is what changed since.
+  let before: ReturnType<typeof readRun> | null = null;
+  try {
+    before = readRun(fs.realpathSync(path.join(OUT, 'latest')));
+  } catch {
+    // the first run here
+  }
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(path.join(dir, 'saves'), { recursive: true });
 
@@ -258,6 +322,7 @@ async function main() {
     fs.writeFileSync(path.join(dir, 'bot.txt'), botLog.join('\n') + '\n');
     const session = onGameClock(parseSession(name, fs.readFileSync(biggest, 'utf8')));
     const lines = report(session, observed, w, botLog);
+    const short = brief(session, observed, w, botLog, before);
     lines.push(
       '',
       `Saved in ${dir}`,
@@ -265,7 +330,7 @@ async function main() {
       `Saves: ${observed.saves.length} (npm run look -- --at "<beat>")`,
     );
     const text = lines.join('\n');
-    console.log(text);
+    console.log(has('--full') ? text : short.join('\n') + `\nFull report: ${path.join(dir, 'report.txt')}`);
     fs.writeFileSync(path.join(dir, 'report.txt'), text + '\n');
     const full = summarize(session, [], []);
     const perf = full.findIndex((l) => l.startsWith('Performance'));

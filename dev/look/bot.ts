@@ -246,6 +246,7 @@ export function makeBot(opts: BotOptions = {}) {
     let holdups = 0;
     let recovered = false;
     let pushed = false;
+    let forgiven = false;
     let nearest = Infinity;
     let ok = true;
     let why = '';
@@ -340,6 +341,12 @@ export function makeBot(opts: BotOptions = {}) {
         // It stopped looking before it found one: from here, it can look further. Only a real dead end is a failure.
         if (gaveUp && dist(x, z) < nearest - 3) {
           nearest = dist(x, z);
+          continue;
+        }
+        // What held it up may have moved on: once more, forgetting the spots it ruled out.
+        if (blocked.size && !forgiven) {
+          forgiven = true;
+          blocked.clear();
           continue;
         }
         ok = false;
