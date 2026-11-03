@@ -1,9 +1,0 @@
-/* Beside Grab, above Jump: reachable with the same thumb while the left stick swims. */
-.tbtn.water-dive {
-  right: calc(108px + env(safe-area-inset-right, 0px));
-  bottom: calc(120px + env(safe-area-inset-bottom, 0px));
-  background: rgba(30, 119, 143, 0.85);
-}
-.tbtn.water-dive[hidden] {
-  display: none;
-}

@@ -28,7 +28,7 @@ Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`
 
 ### Graphics, water, sky and devices
 
-[Look](#look): 3 November **real sea uses the demo's sky**, intentionally chosen frozen times and desktop/mobile starting settings; **Neutral is open** pending a character comparison; **original sky and clouds stay; sky is parked**. These qualify the older cycle/rounded-cloud entries. Read the 2 November Ultra Water and crossing-previz targets too. [Process](#process) and AGENTS set M1 Max as average and M4 iPad Pro as floor.
+[Look](#look): 3 November **surface swimming and automatic high-fall plunges, no dive controls** supersedes water-graduation step 5's manual dive. **Real sea uses the demo's sky**, intentionally chosen frozen times and desktop/mobile starting settings; **Neutral is open** pending a character comparison; **original sky and clouds stay; sky is parked**. These qualify the older cycle/rounded-cloud entries. Read the 2 November Ultra Water and crossing-previz targets too. [Process](#process) and AGENTS set M1 Max as average and M4 iPad Pro as floor.
 
 ### Audio
 
@@ -261,6 +261,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### Look
 
+- **2026-11-03, surface swimming and automatic high-fall plunges, no dive controls** (owner, on `?water=new`, water-graduation step 5): "Even though I like the underwater feature, I don't think we need new controls for diving. You should just swim on the surface by default. Maybe if falling from a great height, you can penetrate the surface, and then your character will just swim up. The water looks really great." Remove manual dive; fast falls carry the player under, faster hits go deeper, then buoyancy returns them to surface swimming without input or a breath mechanic. Keep the underwater look, surfacing droplets and marine snow whenever the camera dips under. This supersedes step 5's dive-control decision.
 - **2026-11-03, demo sky with AgX is the best starting point for the look** (owner, after the `&sky=demo&tone=agx` boards: "so far I really like Demo Sky AGX"). A frozen late morning (`tod=0.24`) is the comparison's pick. Rolling it out goes with the real-sea work; expect to tune trees and the avatar under it.
 - **2026-11-03, bake the real-water sky once during loading, at late morning** (owner). Under `?water=new`, the demo sky and metered AgX are the production starting look, frozen at `tod=0.24`. Its cube is baked once behind the loading screen and never during play, with the real sun fixed to that direction; it replaces the toon dome, sun/moon billboards and cycle on this route. More baked times may be considered later. The old route retains Neutral and its cycle until the reviewed switch (water-graduation step 7); `scene.ts` stays unchanged.
 - **2026-11-03, the real sea uses the demo's sky, with time of day frozen at a pleasant state** (owner): change the time only intentionally, in parts of the game. It replaces the 20-minute cycle, so the Design Table's day-only and night-only things hang off those chosen moments. Bake each chosen time once, ahead of time.
