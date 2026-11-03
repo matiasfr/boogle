@@ -34,9 +34,17 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i]!.startsWith('--')) {
     const flag = args[i]!;
     if (
-      !['--effort', '--model', '--base-ref', '--ref', '--shots', '--ref-branch', '--eyes', '--supervisor'].includes(
-        flag,
-      )
+      ![
+        '--effort',
+        '--model',
+        '--base-ref',
+        '--base',
+        '--ref',
+        '--shots',
+        '--ref-branch',
+        '--eyes',
+        '--supervisor',
+      ].includes(flag)
     )
       throw new Error(`Unknown option: ${flag}`);
     const value = args[++i];
@@ -58,6 +66,8 @@ const topic = rawTopic
   .replace(/[^a-z0-9]+/g, '-')
   .replace(/^-|-$/g, '');
 if (!topic) throw new Error('Use a nonempty topic');
+if (opts.base && opts['base-ref']) throw new Error('Use only one of --base and --base-ref');
+if (opts.base) opts['base-ref'] = opts.base;
 if (opts.snapshot && (command !== 'task' || opts['base-ref']))
   throw new Error('--snapshot is for tasks and uses the caller HEAD; do not combine it with --base-ref');
 if (opts['base-ref'] && command !== 'task') throw new Error('--base-ref is for tasks');
@@ -202,7 +212,7 @@ async function main(job?: JobControl): Promise<number> {
   let cwd: string;
   let argv: string[];
   let prompt: string;
-  if (!previous && job && mode !== 'previz' && !opts.snapshot)
+  if (!previous && job && mode !== 'previz' && !opts.snapshot && !opts['base-ref'])
     await job.command('git', ['fetch', '-q', 'origin', 'main'], repo);
   const sourceCommit = previous
     ? previous.sourceCommit
