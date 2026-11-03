@@ -117,17 +117,17 @@ export const boilerShape = () => {
   g.position.set(0, 0.55, 0);
   return g;
 };
-// The pack frame: two poles and two bars on your back, so you can see you carry more.
+// A low canvas pack with a rolled top: the upgrade stays below the shoulders, clear of the follow view.
 const packFrame = new THREE.Group();
+const packBag = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.42, 0.3), flat('#b99151'));
+packBag.position.set(0, 0.42, 0.48);
+const packRoll = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.7, 8).rotateZ(Math.PI / 2), flat('#d1b87c'));
+packRoll.position.set(0, 0.65, 0.48);
+packFrame.add(packBag, packRoll);
 for (const sx of [-1, 1]) {
-  const pole = new THREE.Mesh(new THREE.BoxGeometry(0.07, 1.05, 0.07), flat('#c9a86a'));
-  pole.position.set(sx * 0.3, 0.72, 0.42);
-  packFrame.add(pole);
-}
-for (const y of [0.3, 1.2]) {
-  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.07, 0.07), flat('#a9794c'));
-  bar.position.set(0, y, 0.42);
-  packFrame.add(bar);
+  const strap = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.47, 0.035), flat('#69472e'));
+  strap.position.set(sx * 0.2, 0.45, 0.65);
+  packFrame.add(strap);
 }
 packFrame.traverse((o) => void (o.castShadow = true));
 packFrame.visible = false;

@@ -730,8 +730,8 @@ onRemotePresence((r, pr) => {
   if (coopClothes && r.entered && value && typeof value === 'object' && !Array.isArray(value)) {
     for (const slot of clothesSlots) {
       const id = (value as Record<string, unknown>)[slot];
-      const gift = GIFTS.find((g) => g.id === id && g.slot === slot);
-      if (gift && WEAR[gift.id]) ids[slot] = gift.id;
+      const gift = GIFTS.find((g) => g.id === id) ?? STOCK.find((g) => g.id === id);
+      if (gift?.slot === slot && WEAR[gift.id]) ids[slot] = gift.id;
     }
   }
   const entry = remoteClothes.get(r.peer) ?? { ids: {}, avatar: null, worn: new Map() };
