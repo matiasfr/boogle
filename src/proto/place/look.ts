@@ -30,7 +30,8 @@ import {
 } from 'three/tsl';
 import { onFrame } from '../../loop.ts';
 import { scene, sun } from '../../render/scene.ts';
-import { skyColors, skyDebug, skyNow, skyU } from '../../render/sky.ts';
+import { newWaterEnabled } from '../../render/water/flags.ts';
+import { atmosphere, skyColors, skyDebug, skyNow, skyU } from '../../render/sky.ts';
 import { smoothstep as ss_ } from '../../math.ts';
 import { flat } from '../flat.ts';
 
@@ -152,11 +153,19 @@ export function dayFrac(u: number) {
 export function installLight() {
   // A late morning to start: a higher sun, for short shadows and lit grass. Phase 0.5 keeps the moon opposite the sun, under
   // the horizon by day, where its pale disc can't stand out against the deeper sky, and full at night.
-  skyDebug.preview(dayFrac(DAY.u), 0.5);
+  if (!newWaterEnabled) skyDebug.preview(dayFrac(DAY.u), 0.5);
   const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
     THREE.HemisphereLight | undefined;
   onFrame(
     ({ dt }) => {
+      if (newWaterEnabled) {
+        if (atmosphere.underground <= 0) {
+          const fog = scene.fog as THREE.Fog;
+          fog.near = LIGHT.fogNear;
+          fog.far = LIGHT.fogFar;
+        }
+        return;
+      }
       if (!DAY.hold) DAY.u = (DAY.u + dt / DAY.seconds) % 1;
       skyDebug.preview(dayFrac(DAY.u), 0.5);
       const d = ss_(DAY.low, DAY.high, skyNow.sunDir.y);

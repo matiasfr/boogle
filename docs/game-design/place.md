@@ -223,8 +223,14 @@ instead of evicting a visible shore. Bed/coast stays separate from projected obs
 This registration does not change the current sea or Round 4 terrain.
 
 `?proto=place&water=new` uses the same staged replacement sea as [home](island.md), sampling the actual gorge/shore
-provider. The old crossing material and its outer rectangles are hidden only while this opt-in sea is active;
-the normal page keeps them. Existing place lighting, sky, camera clip distances and terrain remain owned by place.
+provider. The old crossing material is hidden and its outer rectangles are not created while this opt-in sea is active;
+the normal page keeps them. The fixed late-morning atmosphere and metered AgX described with home water replace
+the place sky/light cycle on this path; existing camera clip distances, fog range, terrain and material palette remain.
 In this opt-in, swimming follows bounded asynchronous samples of those waves, and splash depth uses the registered
 bed rather than the home island. Query-age limits, fallback and diagnostics are described with [home water](island.md).
 The beach ball's existing home-island return bounds remain unchanged; this does not introduce a place ball toy.
+
+With the opt-in, the terrain includes its real submerged triangles and receives wave-driven caustics plus swash wetness
+through material patches, preserving the look's colour/normal nodes. Only built trestle legs register water contacts;
+resetting/removing their solids removes the corresponding contacts. Their analytic foam/spray footprints do not rebake
+the shore atlas and never treat bridge decks as seabed. Dry bank/deck surfaces remain dry receivers.

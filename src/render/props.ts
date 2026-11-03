@@ -8,6 +8,8 @@ import { clearedAt } from '../island/layout.ts';
 import { mulberry32 } from '../math.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { freezeStatic } from './instances.ts';
+import { registerWaterContact } from './water/contacts.ts';
+import { registerWaterReceiver } from './water/receivers.ts';
 
 // Concatenate many small vertex-colored geometries into one draw call (POIs use these too).
 export function addPart(
@@ -128,6 +130,8 @@ function addRock(parts: THREE.BufferGeometry[], { x, h, z, size: r, look }: Rock
 // Scenery that never moves, as one entity with no methods. Its colliders are the `props` entity (src/entities/props/).
 defineKind('props-view', {});
 export function createProps() {
+  registerWaterReceiver(propsMat);
+  const removeContacts: (() => void)[] = [];
   const tiles = new Map<number, THREE.BufferGeometry[]>();
   for (const p of placements) {
     if (clearedAt(p.x, p.z) && !isHomePalm(p)) continue;
@@ -136,7 +140,11 @@ export function createProps() {
     const parts = tiles.get(k)!;
     if (p.blueprint === 'palm') addPalm(parts, p);
     else if (p.blueprint === 'broadleaf') addBroadleaf(parts, p);
-    else addRock(parts, p);
+    else {
+      addRock(parts, p);
+      if (p.h < 0.5 && p.h + p.size * 1.25 > 0)
+        removeContacts.push(registerWaterContact({ x: p.x, z: p.z, radius: p.size * 1.1, top: p.h + p.size * 1.25 }));
+    }
   }
   const group = new THREE.Group();
   for (const parts of tiles.values()) {
@@ -146,7 +154,13 @@ export function createProps() {
     mesh.receiveShadow = true;
     group.add(mesh);
   }
-  spawn({ kind: 'props-view', mesh: group });
+  spawn({
+    kind: 'props-view',
+    mesh: group,
+    dispose: () => {
+      for (const remove of removeContacts) remove();
+    },
+  });
   freezeStatic(group); // never moves: no per-frame matrix work
 }
 

@@ -361,6 +361,7 @@ export type OceanOptions = {
   foamObstacles?: readonly { x: number; z: number; radius: number }[];
   fog?: (distance: N) => N;
   fitCameraRange?: boolean;
+  contactDistance?: (xz: N) => N;
 };
 // Shared by the surface, retained demo volume and snow. The sky source stays an explicit replaceable seam.
 export function waterLighting(sky: WaterSky, look = DEFAULT_LOOK) {
@@ -577,22 +578,44 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
           ns
             .mul(0.06)
             .mul(clamp(thick.mul(0.25), 0, 1))
+            .mul(smoothstep(0, 0.8, depthBelow))
             .div(max(waterDepth.mul(0.02), 1)),
         ),
         vec2(0),
         vec2(1),
       ).toVar();
+      // Retreat an offset that crosses foreground geometry. Colour and optical thickness must use the SAME final
+      // pixel: blending UVs but keeping the old offset depth made jagged dark cuts along the actual banks.
+      for (let i = 0; i < 3; i++) {
+        const candidate = linearDepth(opaqueDepth.sample(ruv).level(0).r);
+        ruv.assign(mix(screenUV, ruv, smoothstep(waterDepth, waterDepth.add(0.3), candidate)));
+      }
+      const finalCandidate = linearDepth(opaqueDepth.sample(ruv).level(0).r);
+      ruv.assign(select(finalCandidate.greaterThan(waterDepth.add(0.01)), ruv, screenUV));
       const rDepth = linearDepth(opaqueDepth.sample(ruv).level(0).r).toVar();
-      // An offset into foreground geometry falls smoothly back to the undisplaced pixel.
-      const valid = smoothstep(waterDepth.sub(0.3), waterDepth.add(0.3), rDepth);
-      ruv.assign(mix(screenUV, ruv, valid));
-      thick.assign(mix(thick, max(rDepth.sub(waterDepth), 0).div(viewCos), valid));
+      thick.assign(max(rDepth.sub(waterDepth), 0).div(viewCos));
       const refracted = opaqueColor.sample(ruv).level(0).rgb.toVar();
       const vth = thick.mul(V.y).toVar();
       // Contact foam where the water gets thin: in the shallows only, broken into drifting patches so it never traces the
       // waterline as a continuous rim, and mostly where bores arrive (a lee shore gets almost none, not an outline).
       const obst = smoothstep(0.5, 1.5, depthBelow.add(vWorld.y).sub(vth));
       const act = clamp(shore.residual.mul(1.5).add(shoreFoam).add(obst.mul(0.6)), 0, 1).toVar();
+      if (options.contactDistance) {
+        If(dist.lessThan(180), () => {
+          const contact = options.contactDistance!(vWorld.xz);
+          foam.assign(
+            max(
+              foam,
+              smoothstep(0, 0.65, contact)
+                .oneMinus()
+                .mul(smoothstep(-0.1, 0.1, contact))
+                .mul(shoreGroup(vWorld.xz))
+                .mul(smoothstep(0.025, 0.2, vth))
+                .mul(0.5),
+            ),
+          );
+        });
+      }
       If(depthBelow.lessThan(6).and(act.greaterThan(0)).and(dist.lessThan(600)), () => {
         const contact = smoothstep(0, mix(ULTRA.foamBand, 1, obst), vth)
           .oneMinus()
@@ -902,7 +925,11 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
             .toVar();
       col.assign(mix(col, demoSky.skyLod(V.negate(), float(3)), fog));
 
-      result.assign(vec4(col, 1));
+      // Resolved MSAA depth can include an opaque bank at a partially covered edge. Keep its original colour there,
+      // rather than refracting a neighboring water/sky pixel into a saturated triangular slit.
+      result.assign(
+        vec4(mix(opaqueColor.sample(screenUV).level(0).rgb, col, smoothstep(0, 0.06, sceneDepth.sub(waterDepth))), 1),
+      );
     });
     return result;
   })();

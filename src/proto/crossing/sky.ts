@@ -14,6 +14,7 @@ import { clouds } from '../../render/props.ts';
 import { camera, scene, sun } from '../../render/scene.ts';
 import { skyColors, skyNow, skyU, sunU } from '../../render/sky.ts';
 import { seaU, waterMat } from '../../render/water-render.ts';
+import { newWaterEnabled } from '../../render/water/flags.ts';
 import { LENGTH } from './line.ts';
 import { CROSSING, LOOK } from './tuning.ts';
 
@@ -38,6 +39,7 @@ const DAY = {
 const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
   THREE.HemisphereLight | undefined;
 export function holdDay() {
+  if (newWaterEnabled) return; // fixed atmosphere owns its matching real light; route fog is still applied below
   const y = skyNow.sunDir.y,
     d = smoothstep(DAY_LOW, DAY_HIGH, y);
   skyU.uCurve.value = lerp(GAME_CURVE, LOOK.skyCurve, d);
@@ -75,6 +77,7 @@ export function extendSky() {
     { phase: 'update', order: -4 },
   );
 
+  if (newWaterEnabled) return; // the range-fitted polar sea already covers this route
   const E = LENGTH + CROSSING.fogFar + 500,
     H = 645; // the game's sea reaches 650 m from the origin
   const rects = [

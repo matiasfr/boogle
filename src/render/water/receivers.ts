@@ -1,0 +1,84 @@
+// Real ground keeps its own colour, normals, shadows and cave masks. Only wetness and submerged light are layered on.
+// Local; Ultra Water research recommendations 4/7. The terrain registers before the sea owns its shared resources.
+import type { MeshStandardNodeMaterial } from 'three/webgpu';
+import { patchNode } from '../material-patch.ts';
+import { newWaterEnabled } from './flags.ts';
+import { CAUSTIC_TEXELS_PER_M, type CausticSample } from './caustics.ts';
+import { swashNodes, type ShoreFields } from './shore-nodes.ts';
+import { seaU } from './state.ts';
+import { LOOK } from './tuning.ts';
+import { TSL, type N } from './tsl.ts';
+
+const { Fn, exp, fwidth, log2, materialColor, materialRoughness, max, min, mix } = TSL;
+const { normalWorldGeometry, positionWorld, refract, smoothstep, vec3, vec4 } = TSL;
+type Context = { field: ShoreFields; caustics: CausticSample };
+const materials = new Set<MeshStandardNodeMaterial>();
+let current: Context | null = null;
+const restore = new Map<MeshStandardNodeMaterial, () => void>();
+
+function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
+  if (restore.has(mat)) return;
+  const previousColor = mat.colorNode,
+    previousRoughness = mat.roughnessNode;
+  const surface = Fn(() => {
+    const p = positionWorld;
+    const sh = field.shore(p.xz).toVar();
+    const depth = max(p.y.negate(), 0).toVar();
+    const swash = swashNodes(p.xz, p.y, field).toVar();
+    // Only exposed receivers: roof/deck tops are dry, and walls/undersides reject projected sunlight.
+    const up = smoothstep(0.05, 0.65, normalWorldGeometry.y);
+    const wet = max(smoothstep(-0.1, 0.18, p.y).oneMinus(), swash.z).mul(up);
+    const sunRay = refract(seaU.uSun.negate(), vec3(0, 1, 0), 1 / 1.33);
+    const entry = p.xz.add(sunRay.xz.div(min(sunRay.y, -0.05)).mul(depth));
+    const fw = fwidth(entry).toVar();
+    const lod = log2(max(max(fw.x, fw.y).mul(CAUSTIC_TEXELS_PER_M), 1));
+    const light = caustics(entry, depth, lod).toVar();
+    const exposed = smoothstep(0, 0.25, depth)
+      .mul(smoothstep(12, 24, depth).oneMinus())
+      .mul(smoothstep(0.02, 0.2, seaU.uSun.y))
+      .mul(up)
+      .mul(smoothstep(0.05, 1, field.surf(p.xz)))
+      .mul(smoothstep(-0.05, 0.1, p.y.sub(sh.x)));
+    const transmission = exp(
+      vec3(...LOOK.absorption)
+        .mul(depth)
+        .mul(-0.35),
+    );
+    const focused = max(mix(1, light, exposed), 0);
+    // This multiplier stays in the lit albedo path, so the receiver's existing shadow term still occludes it.
+    return vec4(transmission.mul(mix(1, 0.72, wet)).mul(focused), wet);
+  })().toVar();
+  patchNode(mat, 'colorNode', (previous: N) => (previous ?? materialColor).mul(surface.rgb));
+  // The thin wet shoreline is glossy; submerged ground retains its own roughness rather than a faceted sun mirror.
+  patchNode(mat, 'roughnessNode', (previous: N) =>
+    mix(previous ?? materialRoughness, 0.26, surface.a.mul(smoothstep(-0.35, 0, positionWorld.y))),
+  );
+  const color = mat.colorNode,
+    roughness = mat.roughnessNode;
+  restore.set(mat, () => {
+    if (mat.colorNode === color) mat.colorNode = previousColor;
+    if (mat.roughnessNode === roughness) mat.roughnessNode = previousRoughness;
+    mat.needsUpdate = true;
+  });
+}
+
+export function registerWaterReceiver<T extends MeshStandardNodeMaterial>(mat: T): T {
+  if (!newWaterEnabled) return mat;
+  materials.add(mat);
+  if (current) attach(mat, current);
+  mat.addEventListener('dispose', () => {
+    materials.delete(mat);
+    restore.delete(mat);
+  });
+  return mat;
+}
+
+export function installWaterReceivers(field: ShoreFields, caustics: CausticSample) {
+  current = { field, caustics };
+  for (const mat of materials) attach(mat, current);
+  return () => {
+    current = null;
+    for (const undo of restore.values()) undo();
+    restore.clear();
+  };
+}

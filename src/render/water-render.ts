@@ -37,11 +37,19 @@ import { fftWaves } from './water/fft.ts';
 import { bakeFoam } from './water/foam.ts';
 import { shoreFields } from './water/shore-nodes.ts';
 import { createWaterQuality } from './water/quality.ts';
+import { newWaterEnabled } from './water/flags.ts';
 import { createWaterQueries } from './water/queries.ts';
+import { createCaustics } from './water/caustics.ts';
+import { installWaterReceivers } from './water/receivers.ts';
+import { createSpray } from './water/spray.ts';
+import { contactDistance } from './water/contacts.ts';
+import { createUnderwater } from './water/underwater.ts';
+import { createSnow } from './water/snow.ts';
+import { createFrozenWaterSky } from './water/frozen-sky.ts';
+import { installWaterPost } from './water/post.ts';
 import { waterField } from '../physics/water-field.ts';
 import { GRID } from './water/tuning.ts';
 import { TSL } from './water/tsl.ts';
-import { gameWaterSky } from './sky-radiance.ts';
 import { camera, rendererReady, scene, sun } from './scene.ts';
 import { precompile } from './precompile.ts';
 export { seaU, seaRipples } from './water/state.ts';
@@ -181,27 +189,37 @@ waterMat.colorNode = color();
 // late 3010, last hook before render, after the presence send (net.ts, 3000): the sea's clock.
 defineKind('sea', { prePhysics: -110, lateUpdate: 3010 });
 
-export const newWaterEnabled = new URLSearchParams(location.search).get('water') === 'new' && !protoOn('water');
+export { newWaterEnabled } from './water/flags.ts';
 let waterMesh: THREE.Mesh | null = null;
+export let waterReady: Promise<void> = Promise.resolve();
 export const waterRuntime: { inspect(): Record<string, unknown>; dispose(): void } = {
   inspect: () => ({ mode: 'legacy' }),
   dispose() {},
 };
 
 function createRealSea() {
+  const frozen = createFrozenWaterSky();
   const atlas = createShoreAtlas(),
     source = fftWaves(),
     foam = bakeFoam(),
     quality = createWaterQuality();
   const fogRange = TSL.uniform(new THREE.Vector2(110, 520));
-  const ocean = createOcean(source, shoreFields(atlas), foam, {
-    sky: gameWaterSky,
+  const field = shoreFields(atlas);
+  const caustics = createCaustics(source.fft.moments, source.fft.bands.indexOf(2), source.fft.size);
+  const removeReceivers = installWaterReceivers(field, caustics.sample);
+  const ocean = createOcean(source, field, foam, {
+    sky: frozen.sky,
+    contactDistance,
     grid: { ...GRID, far: camera.far, outer: Math.min(3000, camera.far * 0.5) },
     fitCameraRange: true,
     fog: (distance) => TSL.smoothstep(fogRange.x, fogRange.y, distance),
   });
   const queries = createWaterQueries(ocean.heightAt, atlas);
+  const underwater = createUnderwater(ocean, frozen.sky);
+  const snow = createSnow(ocean, frozen.sky);
+  const post = installWaterPost(underwater.outputNode);
   const removeProvider = waterField.install(queries.provider);
+  const spray = createSpray(atlas);
   let ready = false,
     disposed = false;
   const previousVisibility = waterMat.visible;
@@ -213,15 +231,19 @@ function createRealSea() {
       seaU.uTime.value = elapsed;
       queries.publish(elapsed);
     },
-    lateUpdate({ elapsed }) {
+    lateUpdate({ elapsed, dt }) {
       if (!ready || disposed) return;
       atlas.sync();
-      gameWaterSky.sunColor.value.copy(sun.color).multiplyScalar(sun.intensity);
+      frozen.update();
       const fog = scene.fog as THREE.Fog;
       fogRange.value.set(fog.near, fog.far);
       ocean.update(camera, elapsed, sun);
+      caustics.update(seaU.uSun.value);
       queries.dispatch(elapsed);
       quality.update(); // after adaptive-res, normalize once against its actual DPR
+      underwater.update(elapsed, dt);
+      post.update(dt);
+      snow.update(underwater.near.value && waterField.nearby(camera.position).body === 'sea');
     },
     describe: () => ({
       mode: 'new',
@@ -231,6 +253,9 @@ function createRealSea() {
       quality: quality.name,
       resolution: quality.resolution,
       queries: queries.inspect(),
+      underwater: underwater.inspect(),
+      sky: frozen.inspect(),
+      tone: 'agx',
       ...atlas.inspect(),
     }),
     dispose() {
@@ -241,6 +266,13 @@ function createRealSea() {
       waterRuntime.inspect = () => ({ mode: 'new', ready: false, disposed: true });
       waterRuntime.dispose = () => {};
       removeProvider();
+      removeReceivers();
+      post.dispose();
+      frozen.dispose();
+      underwater.dispose();
+      snow.dispose();
+      spray.dispose();
+      caustics.dispose();
       queries.dispose();
       ocean.dispose();
       source.dispose?.();
@@ -253,7 +285,7 @@ function createRealSea() {
   waterRuntime.inspect = () => entity.describe!();
   waterRuntime.dispose = () => despawn(entity);
   // CPU resources exist before the loading precompile. GPU work begins only after the existing renderer is ready.
-  void rendererReady.then(() => {
+  waterReady = Promise.all([rendererReady, frozen.ready]).then(() => {
     if (disposed || !entity.alive) return;
     atlas.sync();
     source.update(0);

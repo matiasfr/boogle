@@ -5,6 +5,7 @@
 import * as THREE from 'three/webgpu';
 import { flat } from '../flat.ts';
 import { scene } from '../../render/scene.ts';
+import { registerWaterContact } from '../../render/water/contacts.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
 import { mulberry32 } from '../../sim/rng.ts';
@@ -168,13 +169,19 @@ function buildRepeats() {
   along(new THREE.BoxGeometry(0.14, 3.6, 0.14), LOOK.pierCap, 27, (_, o) => sideX(o, -2.4, 1.2), SPAN, LENGTH - SPAN);
   // Pillars from the sea to the deck, with a cap across, every 27 m; the stations stand on their own.
   const PILLAR = 27;
+  const pillarGeometry = new THREE.BoxGeometry(2.4, 1, 2.8);
+  const removeContacts: (() => void)[] = [];
+  pillarGeometry.addEventListener('dispose', () => removeContacts.splice(0).forEach((remove) => remove()));
   const tall = (s: number, o: THREE.Object3D) => {
     const h = railY(s) - 0.8 + 2;
     o.scale.y = h;
     o.position.y = -2 + h / 2;
     sideX(o, 0.7, 0);
+    removeContacts.push(
+      registerWaterContact({ x: o.position.x, z: o.position.z, radius: Math.hypot(1.2, 1.4), top: railY(s) - 0.8 }),
+    );
   };
-  along(new THREE.BoxGeometry(2.4, 1, 2.8), LOOK.pier, PILLAR, tall, SPAN, LENGTH - SPAN);
+  along(pillarGeometry, LOOK.pier, PILLAR, tall, SPAN, LENGTH - SPAN);
   along(
     new THREE.BoxGeometry(6.4, 0.8, 3.2),
     LOOK.pierCap,
