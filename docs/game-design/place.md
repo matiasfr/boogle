@@ -55,7 +55,7 @@ Now and then two of them near you stop and **chatter**: two to four short lines 
 
 **The town and camps are solid**: every building has a collider, its walls from when its frame is up. Standing in a plot when they go up moves you to the nearest edge.
 
-**Everything that looks solid is solid** (round 4 audit): trees and stumps, a felled tree's bare trunk (its crown bursts into leaves as it lands, so a cut grove shows what you've done), crate stacks as far as they're stacked, frames as high as their stack can get, feeders, rail bearers, survey stakes, bridge rails, and scaffold poles and walkways while they stand. Little guys and pickups aren't solid; gift crates open when you walk into them.
+**Everything that looks solid is solid** (round 4 audit): trees and stumps, a felled tree's bare trunk (its crown bursts into leaves as it lands, so a cut grove shows what you've done), crate stacks as far as they're stacked, frames, feeders, rail bearers, survey stakes, bridge rails, and scaffold poles and walkways while they stand. An empty material frame has a low 0.56 m base and four 1.52 m posts; its log collider rises with the visible rows and goes away when empty. There is no head-high invisible block across the empty frame at the first path's opening. Little guys and pickups aren't solid; gift crates open when you walk into them.
 
 **The day moves.** One day is 28 minutes of play (`DAY`, `look.ts`): mostly the accepted look's daylight with the sun swinging across, then a short golden hour, a brief moonlit night and a dawn. `&day=off` holds the morning.
 

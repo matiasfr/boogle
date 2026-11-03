@@ -4,6 +4,7 @@
 // (.look/previz/visible-materials/board.md, shots 1-3). Local.
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
+import { removeBody, type Body } from '../../physics/engine.ts';
 import { flat } from '../flat.ts';
 import { label } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
@@ -114,10 +115,20 @@ export function buildStation(spec0: Station, place: FrameAt) {
     g.add(feeder);
   }
   scene.add(g);
-  // Solid: the frame about as high as it looks (taller, it's an invisible wall for you and the camera arm), and the feeder's bed,
-  // which you can hop over.
+  // The empty frame is low rails and four posts, not a head-high solid block. In particular, T3 must not
+  // trap the player or collapse the camera just as the first path opens. Stock gets its own body below.
   const turn = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
-  addStatic({ kind: 'box', hx: FRAME_D / 2 + 0.1, hy: 0.95, hz: FRAME_W / 2 + 0.1 }, { x, y: y + 0.95, z }, turn);
+  addStatic({ kind: 'box', hx: FRAME_D / 2 + 0.1, hy: 0.28, hz: FRAME_W / 2 + 0.1 }, { x, y: y + 0.28, z }, turn);
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1]) {
+      const px = (sx * FRAME_D) / 2,
+        pz = (sz * FRAME_W) / 2;
+      addStatic(
+        { kind: 'box', hx: 0.21, hy: 0.76, hz: 0.21 },
+        { x: x + Math.cos(yaw) * px + Math.sin(yaw) * pz, y: y + 0.76, z: z - Math.sin(yaw) * px + Math.cos(yaw) * pz },
+        turn,
+      );
+    }
   addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3);
   addStatic(
     { kind: 'box', hx: 0.5, hy: 0.28, hz: SPAN / 2 },
@@ -192,6 +203,8 @@ export function buildStation(spec0: Station, place: FrameAt) {
   const railM = new THREE.Matrix4(),
     railQ = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw),
     one = new THREE.Vector3(1, 1, 1);
+  let stockBody: Body | null = null;
+  let stockRows = 0;
   const run = {
     spec: spec0, // the forge's frame takes its next bill here
     at,
@@ -209,6 +222,22 @@ export function buildStation(spec0: Station, place: FrameAt) {
     railSlot,
     stoneAt,
     drawStock(n: Stock) {
+      const rows = Math.ceil(n.logs / PER_ROW);
+      if (rows !== stockRows) {
+        if (stockBody) removeBody(stockBody);
+        stockBody = null;
+        stockRows = rows;
+        if (rows) {
+          // Read the same slot spacing as the visible logs; keep the pile solid only while it exists.
+          const radius = stackSlot(0, PER_ROW, at, yaw, slot).y - at.y;
+          const top = stackSlot((rows - 1) * PER_ROW, PER_ROW, at, yaw, slot).y + radius;
+          stockBody = addStatic(
+            { kind: 'box', hx: FRAME_D / 2, hy: (top - y) / 2, hz: FRAME_W / 2 },
+            { x, y: (top + y) / 2, z },
+            turn,
+          );
+        }
+      }
       run.shown.logs = n.logs;
       run.shown.rails = n.rails;
       run.shown.stone = n.stone;
