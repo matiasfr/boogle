@@ -581,6 +581,7 @@ function hide(g: Guy) {
   held.setMatrixAt(g.k * 2, ZERO);
   held.setMatrixAt(g.k * 2 + 1, ZERO);
 }
+const NEAR_CAM = 2.5; // m
 const wp = new THREE.Vector3();
 function ride(g: Guy, car: { mesh: THREE.Object3D; top: number }, x: number, z: number, yaw: number) {
   car.mesh.updateWorldMatrix(false, false);
@@ -714,7 +715,12 @@ export function updateFolk(dt: number) {
       }
       ride(g, car, g.seat ? 0.42 : -0.42, -1.1, g.seat ? 0.9 : -0.9);
     }
-    pose(g);
+    // Never in the lens: anyone within a couple of metres of the camera isn't drawn.
+    const nx = g.x - cx,
+      ny = (g.fy ?? g.y) + 0.5 - camera.position.y,
+      nz = g.z - cz;
+    if (nx * nx + ny * ny + nz * nz < NEAR_CAM * NEAR_CAM) hide(g);
+    else pose(g);
   }
   heads.instanceMatrix.needsUpdate = coats.instanceMatrix.needsUpdate = true;
   limbs.instanceMatrix.needsUpdate = held.instanceMatrix.needsUpdate = true;
