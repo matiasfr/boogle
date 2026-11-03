@@ -22,7 +22,7 @@ import { worldStatus, world, onApplied, submitEdit } from '../../world/sync.ts';
 import { getRoomId } from '../../netplay/net.ts';
 import { PLAYER_R, FOG_FAR } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
-import { registerInteractable, NO_TARGETS, type Interactable } from '../../player/hands.ts';
+import { interactTarget, registerInteractable, NO_TARGETS, type Interactable } from '../../player/hands.ts';
 import { myBundleNext } from '../../features/haul-stack.ts';
 import { haulHooks } from '../../player/haul-variant.ts';
 import { setCcd, teleport } from '../../physics/engine.ts';
@@ -1468,6 +1468,7 @@ onFrame(
     // What's on screen.
     setObjective(objective(now));
     pointArrow(showing() ? null : run.mode === 'asleep' ? pathAhead() : beaconAt());
+    document.body.classList.toggle('place-no-target', !interactTarget()?.run);
     setNumbers(L1.open ? TUNE.deckCrates : null, s.people);
     forgeBoard.set(
       forge.lit ? 'Forge lit' : `Forge: timber ${forge.crates}/${TUNE.forgeCost}`,

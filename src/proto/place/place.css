@@ -2,8 +2,17 @@
 .place-fresh .proto-bar,
 .place-fresh .place-proto,
 .place-fresh .place-nums,
-.place-fresh .guide-row[data-id='proto-bar'] {
+.place-fresh .guide-row[data-id='proto-bar'],
+.place-fresh .tbtn.honk-btn,
+.place-fresh .tbtn.ping-btn {
   display: none;
+}
+/* Touch: the main button means nothing until something's in reach (it reads "Grab" then). The objective clears Honk. */
+body.touch.place-no-target .tbtn.grab {
+  opacity: 0.4;
+}
+body.touch .place-objective {
+  bottom: calc(150px + env(safe-area-inset-bottom, 0px));
 }
 /* Not until you're in: the lobby has its own job. */
 body:not(.playing) .place-objective,
@@ -14,6 +23,7 @@ body:not(.playing) .place-proto {
 /* The first-run card: only what this place uses (this file loads only on ?proto=place). */
 .first-run .guide-group[data-group='ball'],
 .first-run .guide-row[data-id='use'],
+.first-run .guide-row[data-id='toss'],
 .first-run .guide-row[data-id='guest-crouch'],
 .first-run .guide-row[data-id='guest-punch'] {
   display: none;

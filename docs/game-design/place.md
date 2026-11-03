@@ -47,7 +47,7 @@ Now and then two of them near you stop and **chatter**: two to four short lines 
 
 Falling is harmless: in the water, or down on a shore or a river bank more than 20 m from any path, Interact reads **Back up the path**. **The panel** has Start over, Skip the walk, Skip chop and carry (fills the current station), Skip to the forge and Skip to line 2.
 
-**The tester's link** adds `&fresh=1`: no prototype bar (so no gut question or verdict buttons, and its D-pad and P do nothing), no panel, no shared numbers on the HUD. The counters still run. On every `?proto=place` page the first-run card lists only what this place uses, and the objective and numbers wait until you're in.
+**The tester's link** adds `&fresh=1`: no prototype bar (so no gut question or verdict buttons, and its D-pad and P do nothing), no panel, no shared numbers on the HUD, and no Honk or Ping touch buttons. The counters still run. On touch, the main button dims while nothing's in reach, and the objective sits above the buttons. On every `?proto=place` page the first-run card lists only what this place uses, and the objective and numbers wait until you're in.
 
 ## Departures from the brief
 
