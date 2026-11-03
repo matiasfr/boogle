@@ -52,7 +52,8 @@
     "sim": "node --import ./dev/sim/hooks.ts dev/sim/run.ts",
     "inspect": "node --import ./dev/sim/hooks.ts dev/sim/inspect.ts",
     "level-check": "node --import ./dev/sim/hooks.ts dev/level/check.ts",
-    "transcript": "node dev/transcript.ts"
+    "transcript": "node dev/transcript.ts",
+    "queue": "node dev/codex/queue.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d": "0.19.3",
