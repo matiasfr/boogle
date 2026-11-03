@@ -4,9 +4,11 @@ import { TSL } from './tsl.ts';
 
 const params = new URLSearchParams(location.search);
 const requested = params.get('q');
-// High everywhere for now: the owner's iPad held 60 fps on it, and mobile visibly softens the look. Only asked for.
-const mobile = requested === 'mobile';
-const full = (key: string) => params.get(key) === 'full' || (params.get(key) !== 'cheap' && !mobile);
+// The demo's own split, owner's call: a coarse pointer starts on mobile, everything else on high, and `q=` overrides.
+// Mobile is its 0.6 resolution, the part of its profile WebGPU can take: no 2× MSAA here, and it never had bloom on.
+const mobile = requested === 'mobile' || (requested !== 'high' && matchMedia('(pointer: coarse)').matches);
+// Not part of mobile: no clear saving measured. Diagnostics only (docs/research/water-demo-validation.md).
+const full = (key: string) => params.get(key) !== 'cheap';
 
 export const waterQuality = {
   name: mobile ? 'mobile' : 'high',
