@@ -64,7 +64,9 @@ remove a live lock. Pending job PRs also skip until resolved; inspect a stuck on
 
 ## Evidence and recovery
 
-State lives outside Git at `~/Library/Application Support/Boogle/daily/`. `atlas.log`, `patch-video.log` and their
+State lives outside Git at `~/.boogle/daily/`. Existing runs and logs remain at the old
+`~/Library/Application Support/Boogle/daily/` location; inspect them there. Reinstall the launch agents to point their
+logs at the new location. `atlas.log`, `patch-video.log` and their
 `.error.log` files are launchd output. Each `runs/<id>/` contains `report.md`, prompts, Codex logs, `evidence.json`,
 `handoff.md`, and (for a cut) `review.md` plus publishing/notification records. Successful runs move the worker's `.look`
 to `artifacts/` and remove only their own worktree and local branch. Failed runs retain `worktree/`, with dependencies

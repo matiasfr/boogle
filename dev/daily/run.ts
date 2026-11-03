@@ -265,7 +265,6 @@ if (dry) {
     result.status = 'failed';
     result.error = error instanceof Error ? error.message : String(error);
     console.error(result.error);
-    process.exitCode = 1;
   } finally {
     result.finished = new Date().toISOString();
     fs.writeFileSync(path.join(dir, 'evidence.json'), JSON.stringify(result, null, 2) + '\n');
@@ -285,4 +284,5 @@ if (dry) {
     }
     console.log(`Daily ${job}: ${result.status}. Evidence: ${dir}`);
   }
+  if (result.status === 'failed') process.exitCode = 1;
 }

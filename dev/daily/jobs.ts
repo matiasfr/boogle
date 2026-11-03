@@ -1,7 +1,7 @@
 import path from 'node:path';
 import os from 'node:os';
 
-export const stateDir = path.join(os.homedir(), 'Library/Application Support/Boogle/daily');
+export const stateDir = path.join(os.homedir(), '.boogle', 'daily');
 export const jobs = {
   atlas: { utcHour: 13, minute: 7, scope: 'docs/atlas/', model: 'gpt-6.1-terra', effort: 'low' },
   'patch-video': { utcHour: 14, minute: 23, scope: 'dev/video/shots/', model: 'gpt-6-astra', effort: 'high' },
