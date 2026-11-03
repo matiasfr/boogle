@@ -1,8 +1,6 @@
 <!--
 Most changes arrive through `npm run ship`, which pushes a ship/* branch; a bot opens its PR. Any non-draft PR from this
-repo auto-merges when CI is green unless labelled `no-automerge`. One exception: a change by someone other than the owner
-that touches networking, world sync, saves, the server, CI or dependencies gets `needs-owner` and waits for the owner's
-approval (automerge.yml, "Owner gate").
+repo auto-merges when CI is green unless labelled `no-automerge`; fork PRs do not automerge.
 -->
 
 ## What and why

@@ -17,7 +17,7 @@ We're in rapid iteration: a few people (mostly through Claude Code) building and
 3. `main` refuses direct pushes (the pre-push hook here, a ruleset on GitHub). `main` auto-deploys, so it must always be playable. After shipping, open the live site in two tabs (or with a friend) and check your change.
 4. If CI goes red on `main` anyway (two PRs that pass alone but break together), Claude opens a fix PR automatically and it merges when green. If you're around, fixing it beats starting something new; revert if the fix isn't quick.
 5. Want a review first? Push a branch and open a draft PR, or add the `no-automerge` label. Ask `@claude` or a friend to review.
-6. Changes to networking, world sync and saves, the server, CI or dependencies (`src/net/`, `src/netplay/`, `src/world/`, `src/sim/`, `server/`, `scripts/`, `.github/`, `eslint.config.js`, `package*.json`) wait for the owner's approval unless the owner made them: the PR gets a `needs-owner` label and a comment listing the files, and merges as soon as the owner approves its latest commit with CI green. Everything else still merges itself.
+6. Friends’ PRs from branches in this repository merge when CI is green, including changes to networking and tooling. Fork PRs do not automerge. Run `npm run friends-report` to see friends’ merged work and sensitive paths.
 
 Repo settings this relies on (owner only): Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests", and a ruleset on `main`: require a pull request (0 approvals), require the `client`, `server` and `net` checks, block force pushes. Leave "require branches to be up to date" off; it would restart everyone's CI whenever anyone merges.
 
@@ -50,4 +50,4 @@ Open this repository in Codex and trust it. `AGENTS.md` is the shared entry poin
 
 The look harness starts and stops its own local stack on free ports and writes to `.look/`, so it needs no running dev server. Name the question with `--question`, frame the feature, use `--action` after warm-up and open the still and sheet with `view_image`. A successful capture still needs a visual judgment (the shared `look` skill).
 
-Commit only the task's files and ship with `npm run ship`, with the same `ship/` branch, CI and owner gate as every other agent. Follow [AGENTS.md](AGENTS.md#shipping) for review and verification.
+Commit only the task's files and ship with `npm run ship`, with the same `ship/` branch, CI and automerge rules as every other agent. Follow [AGENTS.md](AGENTS.md#shipping) for review and verification.

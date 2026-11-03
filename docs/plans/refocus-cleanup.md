@@ -206,8 +206,7 @@ come from it.
 ## Steps
 
 Each step is one commit, shippable alone with `npm run check` green. Steps touching `src/world/`, `src/sim/`,
-`src/netplay/` or `server/` also run `npm run check:full` and carry the owner gate (ship them as the owner, or expect
-`needs-owner`).
+`src/netplay/` or `server/` also run `npm run check:full`.
 
 **Order and parallelism.**
 
@@ -616,8 +615,6 @@ Each step is one commit, shippable alone with `npm run check` green. Steps touch
   optional cleanup). No step edits `server/` or `src/world/sync.ts`.
 - **Mixed builds.** Steps 2, 3a, 4 and 5 change nothing on the wire: `src.take` is unchanged, launches and velocities
   are identical, and `bg` and `hd` are unchanged. Step 6 is additive. Step 3 is the documented clean break.
-- **Owner gate.** Steps 3 and 6 touch `src/world/`, `src/sim/` and `src/netplay/`, and 3a touches comments in
-  `src/sim/` and `src/world/rules/`. Ship them as the owner, or they wait for `needs-owner` approval.
 - **Performance.** Step 3 removes up to 5 instanced fruit meshes and a per-step contact scan, so it only gets cheaper
   (an `npm run perf` before and after is optional). Step 3a adds one interactable provider: 36 distance checks a
   frame. Step 6 adds no tick and no meshes. Step 5's preview keeps 48 dots.

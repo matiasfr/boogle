@@ -33,6 +33,7 @@
     "daily": "node dev/daily/run.ts",
     "daily:install": "node dev/daily/install.ts",
     "daily:uninstall": "node dev/daily/install.ts --uninstall",
+    "friends-report": "node dev/friends-report.ts",
     "inflight": "node dev/inflight.ts",
     "codex-status": "node dev/codex/status.ts",
     "wip": "node dev/inflight.ts wip",
