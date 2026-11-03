@@ -30,6 +30,8 @@ The owner's 2 November feedback is recorded under Look in [boogle-2.md](../propo
 - Hillaire transmittance, multiple-scattering and sky-view LUTs plus clouds are baked into a mipmapped HDR cube
   when the sun changes. The cube feeds background, roughness-dependent water reflection, terrain ambient and fog.
 - This **prototype's starting point** uses the source's metered exposure and AgX through `pipeline.outputNode`.
+  Its curve and meter are shared from `src/render/tone.ts`; the optional `&tone=neutral|agx|agx-sat|aces`
+  comparison changes the curve/exposure trim before the existing vignette and dither, retaining the underwater composite.
   **The game's standing Neutral choice is unchanged.** No edits to `src/render/scene.ts`, second renderer or
   second frame loop are needed. Bloom is omitted: the source's faint .05 bloom did not justify its 12 passes here.
 - The source near/far planes are .5 / 80000 m. Terrain/water aerial fog uses 1/18000 m; source shadow bounds are

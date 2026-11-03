@@ -20,6 +20,13 @@
   "Continue in room x · prototype y" under Jump in instead) ([src/features/home-app.ts](../../src/features/home-app.ts)). If the GPU device is lost (an iPhone backgrounding the tab, a driver reset), the page reloads when visible, at most
   once a minute.
 - **Sync kind.** Local: nothing about rendering crosses the network.
+- **Opt-in tone comparison.** Add `tone=neutral`, `tone=agx`, `tone=agx-sat` or `tone=aces` to any game page.
+  A lazy module uses the water demo's metered exposure with fixed middle-grey-matched trims (1 / 0.771116 /
+  0.771116 / 0.729587). AgX is the demo's existing contrast/saturation look; AgX-sat adds up to 30% chroma,
+  fading the extra lift out in highlights. ACES uses Three.js's filmic curve. All four share the existing output
+  pass; the meter adds two tiny draws except on water, which already has it. Absent or invalid flags leave the
+  page's original appearance unchanged. The unflagged game still uses Neutral; the water demo still uses its
+  original AgX. See [comparison rationale and reproduction](../research/tone-comparison.md).
 - **Files.** [src/render/scene.ts](../../src/render/scene.ts), [src/features/adaptive-res.ts](../../src/features/adaptive-res.ts),
   [src/features/wake-lock.ts](../../src/features/wake-lock.ts);
   rules for drawing things in [src/render/README.md](../../src/render/README.md).
