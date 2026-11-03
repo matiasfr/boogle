@@ -9,7 +9,7 @@ import * as THREE from 'three/webgpu';
 import { mulberry32 } from '../../sim/rng.ts';
 import { emit } from '../../render/particles.ts';
 import { scene, camera } from '../../render/scene.ts';
-import { clank, thump } from '../../render/machine-sfx.ts';
+import { getAudio } from '../../render/audio.ts';
 import { me } from '../../player/player.ts';
 import { flat } from '../flat.ts';
 import { babble, CHATTER } from './chatter.ts';
@@ -305,13 +305,40 @@ function shuttle(g: Guy, dt: number) {
     }
   } else g.mood = g.loaded ? 'carry' : 'walk';
 }
+// A hammer's tap: small, high and short, near only. These used the machine's sleeper thump (peaks near -3 dBFS, all of it
+// under 120 Hz, over and over from wherever you stood at spawn) and it pushed everything else down through the master's
+// compressor. Heard within TAP.reach, at most one every TAP.gap, however many are hammering.
+const TAP = { reach: 16, level: 0.07, gap: 0.2 };
+let tapAt = 0;
+function tapSound(x: number, z: number, k: number) {
+  const a = getAudio();
+  if (!a) return;
+  const { ctx, out } = a;
+  const d = Math.hypot(camera.position.x - x, camera.position.z - z);
+  const peak = TAP.level * Math.max(0, 1 - d / TAP.reach) ** 2;
+  const t = ctx.currentTime + 0.005;
+  if (peak < 0.004 || t < tapAt) return;
+  tapAt = t + TAP.gap;
+  const o = ctx.createOscillator();
+  o.type = 'triangle';
+  o.frequency.value = 780 + (k % 5) * 90 + Math.random() * 40;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(peak, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+  o.connect(g).connect(out);
+  o.onended = () => {
+    o.disconnect();
+    g.disconnect();
+  };
+  o.start(t);
+  o.stop(t + 0.06);
+}
 function hammerAt(g: Guy, dt: number) {
   const prev = Math.floor(g.t);
   g.mood = 'hammer';
   g.t += dt * 1.7;
   if (Math.floor(g.t) !== prev && Math.hypot(g.x - camera.position.x, g.z - camera.position.z) < 24) {
-    if (g.k % 2 === 0) clank(g.x, g.z);
-    else thump(g.x, g.z);
+    tapSound(g.x, g.z, g.k);
     for (let n = 0; n < 3; n++)
       emit({
         x: g.x + Math.sin(g.yaw) * 0.45,
