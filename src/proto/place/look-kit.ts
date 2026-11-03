@@ -202,7 +202,14 @@ const POST: Paint = { color: '#7f5630', grain: { axis: 'y', honey: honeyOf('#7f5
   BED: Paint = { color: '#4a4d55', steel: true, rough: 0.6 },
   ROLLER: Paint = { color: '#a9adb5', steel: true, rough: 0.5 };
 /** The frame and feeder of a station, in its own space (+z along the line, +x across): the greybox's sizes, real pieces. */
-export function stationKit(g: THREE.Group, away: number, FRAME_D: number, FRAME_W: number, SPAN: number) {
+export function stationKit(
+  g: THREE.Group,
+  away: number,
+  FRAME_D: number,
+  FRAME_W: number,
+  SPAN: number,
+  corner = false,
+) {
   // Every station's pieces go in one batch per piece: nothing here moves, and six stations are no more draws than one.
   g.updateMatrix();
   const feederAt = new THREE.Matrix4().makeTranslation(-away * (FRAME_D / 2 + SPAN / 2), 0, 0).premultiply(g.matrix);
@@ -223,6 +230,17 @@ export function stationKit(g: THREE.Group, away: number, FRAME_D: number, FRAME_
   );
   stationPict.instanceMatrix.needsUpdate = true;
   at('feeder_bed', BED, 0, 0, 0, feederAt);
+  if (corner) {
+    // Rough Station 3 composition: two existing bottom-pivoted timbers lead the eye from receiver to machine.
+    // Local only. Inside the unchanged feeder collider: length SPAN, width 0.9, top 0.56. Rollers stay exposed.
+    // No new asset, collision, material, delivery timing or saved state (beautiful-corner steps 1–2).
+    const runner = new THREE.Matrix4();
+    const turn = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, Math.PI / 2);
+    for (const side of [-1, 1]) {
+      runner.compose(new THREE.Vector3(0, 0.16, side * 0.38), turn, new THREE.Vector3(1, 1, SPAN / 2.6));
+      stationPiece('beam_long', LONG, runner.premultiply(feederAt));
+    }
+  }
   const rollers = Math.round(SPAN / 0.3);
   for (let k = 0; k < rollers; k++) at('roller', ROLLER, (k + 0.5) * 0.3 - SPAN / 2, 0.58, 0, feederAt);
   for (const dx of [-SPAN / 2 + 0.2, SPAN / 2 - 0.2]) at('feeder_leg', DARK, dx, 0, 0, feederAt);

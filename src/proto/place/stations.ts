@@ -70,7 +70,15 @@ export function buildStation(spec0: Station, place: FrameAt) {
     addBlob(x, y, z, FRAME_D + 1.4, FRAME_W + 1.4, yaw);
     addBlob(x - lx * (FRAME_D / 2 + SPAN / 2), y, z - lz * (FRAME_D / 2 + SPAN / 2), SPAN + 1, 1.5, yaw + Math.PI / 2);
   }
-  if (LOOK.kit) stationKit(g, away, FRAME_D, FRAME_W, SPAN);
+  if (LOOK.kit)
+    stationKit(
+      g,
+      away,
+      FRAME_D,
+      FRAME_W,
+      SPAN,
+      spec0.id === 'T3' && new URLSearchParams(location.search).get('corner') === '1',
+    );
   else {
     // In the frame's own space: +z along the line, +x across it.
     for (const sx of [-1, 1])
