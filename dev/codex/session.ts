@@ -131,8 +131,10 @@ export async function supervise<T extends Lifecycle>(
   meta: T,
   run: (job: JobControl) => Promise<number>,
 ): Promise<number> {
-  // The intermediate must have exited before the waiter can report a successful start.
-  while (process.ppid !== 1) await pause();
+  // The intermediate must have exited before the waiter can report a successful start. Elsewhere than a Mac, a subreaper
+  // can adopt the orphan instead of pid 1, so don't wait for it forever.
+  const orphanBy = Date.now() + 5000;
+  while (process.ppid !== 1 && Date.now() < orphanBy) await pause();
   const lock = path.join(logs, 'active');
   if (fs.readFileSync(path.join(lock, 'token'), 'utf8') !== token) throw new Error('Job lock changed during launch');
   fs.writeFileSync(path.join(lock, 'pid'), String(process.pid));
