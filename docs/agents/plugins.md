@@ -1,4 +1,4 @@
-Before adding or changing features, entities, HUD or level objects, read this plug-in contract.
+Before adding or changing feature/entity lifecycle, DOM ownership or loading, read this plug-in contract.
 
 ## A feature is a plug-in
 `src/features/<name>.ts`, auto-loaded by `src/main.ts`. Frame work goes in an entity's methods (below), or `onFrame(fn, { phase, order })` only for a service on the allow-list; one-time setup in `onStart(fn)` (`src/loop.ts` lists phases and taken orders; features use `order` -10 and up). CSS in `src/features/<name>.css`, imported by the feature; DOM built in JS (append to `.hud` or `body`), never in `index.html`. Heavy or rarely used parts (far-off decor, dialogue, debug tools) load with a dynamic `import()` from the small eager feature file ("Lazy parts" in `src/loop.ts`); never lazy: sync ops or state, `src/world/rules/`, or anything visible in the first seconds. Hotspots (`src/main.ts`, `src/style.css`, `index.html`, `PLAN.md`, `src/world/rules/index.ts`): a line or two at most. Plain modules (TypeScript); a new dependency needs a reason in the commit.

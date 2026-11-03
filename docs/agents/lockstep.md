@@ -1,4 +1,4 @@
-Before touching src/sim or src/world/rules (including cosmetic helpers), read this and the rules/world contracts.
+For lockstep math or helper-location edits/reviews, read this section. Read the rules/world contract sections only when their behavior is affected.
 
 # Lockstep
 

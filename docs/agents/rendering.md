@@ -1,4 +1,4 @@
-Before rendering or art work, read this and src/render/README.md.
+Before changing materials, lights, shaders or the render pipeline, read this and only the affected sections of src/render/README.md.
 
 ## Rendering
 `WebGPURenderer`, WebGPU only (no WebGL 2 fallback), one `RenderPipeline` (linear HDR, Neutral tone mapping), all custom shading in TSL node materials. Contract and pitfalls: [src/render/README.md](../../src/render/README.md).
