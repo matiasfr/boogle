@@ -48,7 +48,7 @@ export const ROCK_WORK = { strokes: 4, stonePerStroke: 2 };
 /** The great tree: one trunk, on your shoulder. It takes strokes, not a bigger axe. */
 export const GREAT = { strokes: 12 };
 /** The handcart that brings logs to a rack by the next frame, once the depot's open (./depot.ts). */
-export const CART = { speed: 9, load: 24, loadS: 3, hx: 0.75, hz: 1.35, top: 0.55 };
+export const CART = { speed: 9, load: 24, loadS: 3, rails: 16, forgeS: 8, leaveS: 3, hx: 0.75, hz: 1.35, top: 0.55 };
 /** Money, a comic score: what a piece delivered pays (./score.ts). */
 export const PAY = { logs: 15, rails: 40, stone: 25, beam: 1500, stretch: 500 };
 

@@ -161,6 +161,7 @@ export function rackTake(logs: number, rails: number) {
 // ---------------------------------------------------------------- the cart
 // Its road: down line 1 from the camp to the turntable, then out along line 2. `d` is metres along that from the camp.
 const L1_FROM = STUB.camp + 5; // on line 1, where it loads
+const FORGE_D = L1_FROM;
 const stopFor = (st: StationRun) => L1_FROM + st.spec.s - 13; // a little behind the machine, by the rack
 function poseOnRoad(c: Car, d: number) {
   if (d <= L1_FROM) poseCarOnLine(c, L1.spec.line, L1_FROM - d, -1);
@@ -189,18 +190,32 @@ const cartLook = new THREE.Group();
 const cartLogs = logStackMesh(CART.load);
 cartLogs.removeFromParent();
 cartLook.add(cartLogs);
-const leg = { LOAD: 'load', OUT: 'out', DROP: 'drop', BACK: 'back', REST: 'rest' } as const;
+const cartRailsMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 0.1, 2.4), flat('#8d9299'), CART.rails);
+cartRailsMesh.count = 0;
+cartLook.add(cartRailsMesh);
+const leg = { LOAD: 'load', OUT: 'out', DROP: 'drop', BACK: 'back', REST: 'rest', FORGE: 'forge' } as const;
 type Leg = (typeof leg)[keyof typeof leg];
 export const cart = {
   d: 0,
   leg: 'rest' as Leg,
   t: 0,
   load: 0,
+  rails: 0,
+  called: false,
   speed: 0,
 };
+export function loadCart(n: number) {
+  cart.rails = Math.min(CART.rails, Math.max(0, cart.rails + n));
+  cart.t = 0;
+  drawLoad(cart.load);
+}
+export function callCart() {
+  cart.called = true;
+}
 let activeStation: () => StationRun | null = () => null;
 export const setDepotFrame = (fn: () => StationRun | null) => void (activeStation = fn);
 const car: Car = makeCar({ hx: CART.hx, hz: CART.hz, top: CART.top }, cartLook, () => stepCart(FIXED), {});
+export const cartPlatform = car.platform;
 const here = new THREE.Vector3();
 function drawLoad(n: number) {
   cartLogs.count = n;
@@ -212,6 +227,12 @@ function drawLoad(n: number) {
   }
   cartLogs.instanceMatrix.needsUpdate = true;
   if (cartLogs.instanceColor) cartLogs.instanceColor.needsUpdate = true;
+  for (let k = 0; k < cart.rails; k++) {
+    here.set(((k % 8) - 3.5) * 0.16, CART.top + 0.3 + Math.ceil(n / 4) * 0.27 + Math.floor(k / 8) * 0.12, 0);
+    cartRailsMesh.setMatrixAt(k, m4.compose(here, new THREE.Quaternion(), one));
+  }
+  cartRailsMesh.count = cart.rails;
+  cartRailsMesh.instanceMatrix.needsUpdate = true;
 }
 function stepCart(dt: number) {
   if (!job.rung.depot) return;
@@ -219,7 +240,7 @@ function stepCart(dt: number) {
   const owed = st?.spec.rack === 'cart' ? st.wants('logs') - rack.logs - cart.load : 0;
   switch (cart.leg) {
     case 'rest':
-      if (owed > 0 && !job.rung.trains) {
+      if ((owed > 0 || cart.called) && !job.rung.trains) {
         cart.leg = 'load';
         cart.t = 0;
       }
@@ -229,7 +250,7 @@ function stepCart(dt: number) {
       if (cart.t >= 1 && !cart.load) {
         const n = Math.min(CART.load, Math.max(0, st ? st.wants('logs') - rack.logs : 0));
         cart.load = n;
-        if (!n) {
+        if (!n && !cart.called) {
           cart.leg = 'rest';
           break;
         }
@@ -242,21 +263,31 @@ function stepCart(dt: number) {
       }
       break;
     case 'out': {
-      const to = st ? stopFor(st) : cart.d;
+      const to = cart.called && cart.d < FORGE_D ? FORGE_D : st ? stopFor(st) : cart.d;
       cart.speed = Math.min(CART.speed, cart.speed + 3 * dt);
       cart.d = Math.min(to, cart.d + cart.speed * dt);
       if (cart.d >= to - 0.02) {
-        cart.leg = 'drop';
+        cart.leg = cart.called && to === FORGE_D ? 'forge' : 'drop';
         cart.t = 0;
         cart.speed = 0;
       }
       break;
     }
+    case 'forge':
+      cart.t += dt;
+      if (cart.t >= (cart.rails > 0 ? CART.leaveS : CART.forgeS)) {
+        cart.called = false;
+        whistle(car.x, car.z);
+        cart.leg = 'out';
+      }
+      break;
     case 'drop':
       cart.t += dt;
-      if (cart.t > 0.5 && cart.load > 0 && rack.on) {
+      if (cart.t > 0.5 && (cart.load > 0 || cart.rails > 0) && rack.on) {
         const n = cart.load;
+        const rails = cart.rails;
         cart.load = 0;
+        cart.rails = 0;
         drawLoad(0);
         here.set(car.x, car.y + 1, car.z);
         // They heave them over, in a stream, and they land on the rack.
@@ -275,13 +306,19 @@ function stepCart(dt: number) {
               }
             },
           });
+        for (let k = 0; k < rails; k++)
+          send('rail', here, rack.at, { dur: 0.45, delay: (n + k) * 0.06, apex: 1.1, land: () => rackAdd(0, 1) });
       }
       if (cart.t > 2.2) cart.leg = 'back';
       break;
     case 'back':
       cart.speed = Math.min(CART.speed, cart.speed + 3 * dt);
-      cart.d = Math.max(0, cart.d - cart.speed * dt);
-      if (cart.d <= 0.02) {
+      cart.d = Math.max(cart.called && cart.d > FORGE_D ? FORGE_D : 0, cart.d - cart.speed * dt);
+      if (cart.called && cart.d === FORGE_D) {
+        cart.leg = 'forge';
+        cart.t = 0;
+        cart.speed = 0;
+      } else if (cart.d <= 0.02) {
         cart.leg = 'rest';
         cart.speed = 0;
       }
@@ -306,6 +343,8 @@ export function snapCart() {
     cart.leg = 'rest';
     cart.d = 0;
     cart.load = 0;
+    cart.rails = 0;
+    cart.called = false;
     drawLoad(0);
     return;
   }
@@ -313,15 +352,35 @@ export function snapCart() {
   drawLoad(cart.load);
 }
 sharedSlice('depot', {
-  get: () => ({ logs: rack.logs, rails: rack.rails, d: +cart.d.toFixed(1), leg: cart.leg, t: cart.t, load: cart.load }),
+  get: () => ({
+    logs: rack.logs,
+    rails: rack.rails,
+    d: +cart.d.toFixed(1),
+    leg: cart.leg,
+    t: cart.t,
+    load: cart.load,
+    cartRails: cart.rails,
+    called: cart.called,
+  }),
   set: (v) => {
-    const j = (v ?? {}) as { logs?: unknown; rails?: unknown; d?: unknown; leg?: unknown; t?: unknown; load?: unknown };
+    const j = (v ?? {}) as {
+      logs?: unknown;
+      rails?: unknown;
+      d?: unknown;
+      leg?: unknown;
+      t?: unknown;
+      load?: unknown;
+      cartRails?: unknown;
+      called?: unknown;
+    };
     rack.logs = count(j.logs, 400) ? j.logs : 0;
     rack.rails = count(j.rails, 400) ? j.rails : 0;
     cart.d = num(j.d) ? j.d : 0;
     cart.leg = Object.values(leg).includes(j.leg as Leg) ? (j.leg as Leg) : 'rest';
     cart.t = num(j.t) ? j.t : 0;
     cart.load = count(j.load, CART.load) ? j.load : 0;
+    cart.rails = count(j.cartRails, CART.rails) ? j.cartRails : 0;
+    cart.called = typeof j.called === 'boolean' ? j.called : false;
     cart.speed = 0;
   },
 });

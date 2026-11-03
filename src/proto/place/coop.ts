@@ -49,7 +49,7 @@ import {
   type Rock,
   type Tree,
 } from './chop.ts';
-import { rackTake } from './depot.ts';
+import { cartPlatform, rackTake } from './depot.ts';
 import { forge, takeRail } from './forge.ts';
 import { COOP, applyShared, captureShared, count, job, num, save } from './job.ts';
 import { GOODS, TUNE, type Goods } from './layout.ts';
@@ -171,6 +171,7 @@ const volatile = (j: Record<string, unknown>) => {
     h,
     linesOf(j).map((l) => l.pile),
     j.depot && (j.depot as { logs: number }).logs,
+    j.depot && (j.depot as { cartRails: number }).cartRails,
   ]);
 };
 
@@ -648,6 +649,7 @@ export const coop = {
       p.id = id;
       p.shared = true;
     };
+    ids(cartPlatform, 'place:cart');
     ids(machine.flatbed.platform, 'place:flatbed');
     ids(machine.loco.platform, 'place:loco');
     for (const l of lines) l.train.tr.cars.forEach((c, n) => ids(c.platform, `place:train${l.k}:car${n}`));
