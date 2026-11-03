@@ -56,6 +56,7 @@ const ARMS = {
   release: { upper: [0.35, 0.35, 0.87], lower: [0.1, -0.1, 1] }, // and after it, the arm flung forward
   reach: { upper: [0.45, -0.25, 0.85], lower: [0.1, 0.05, 1] }, // the beach ball, out at arm's length
   sprawl: { upper: [0.82, 0.25, -0.5], lower: [0.9, 0.42, -0.1] }, // flat on its back
+  aloft: { upper: [0.18, 1, 0.08], lower: [-0.06, 1, 0.04] }, // both hands up, holding something over its head
 } satisfies Record<string, { upper: V3; lower: V3 }>;
 type ArmPose = keyof typeof ARMS;
 
@@ -71,6 +72,7 @@ export type LifeState = {
   seated: boolean;
   down: number; // 0..1: how far flopped over (src/features/impact.ts)
   charging?: boolean; // winding up a throw (your own only: no presence says so)
+  aloft?: boolean; // holding something up over its head
 };
 
 export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
@@ -205,21 +207,23 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
         const want: ArmPose | null =
           s.down > 0.3
             ? 'sprawl'
-            : s.seated
-              ? 'rest'
-              : s.charging && right
-                ? 'windup'
-                : releasing && right
-                  ? 'release'
-                  : s.hold === 'ball'
-                    ? 'reach'
-                    : s.hold === 'item' && right
-                      ? 'hold'
-                      : s.hold === 'hang' && right
-                        ? 'hang'
-                        : s.load
-                          ? 'strap'
-                          : null;
+            : s.aloft
+              ? 'aloft'
+              : s.seated
+                ? 'rest'
+                : s.charging && right
+                  ? 'windup'
+                  : releasing && right
+                    ? 'release'
+                    : s.hold === 'ball'
+                      ? 'reach'
+                      : s.hold === 'item' && right
+                        ? 'hold'
+                        : s.hold === 'hang' && right
+                          ? 'hang'
+                          : s.load
+                            ? 'strap'
+                            : null;
         for (let j = 0; j < NAMES.length; j++) {
           const n = NAMES[j]!;
           arm.w[n] += ((n === want ? 1 : 0) - arm.w[n]) * k;

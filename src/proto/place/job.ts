@@ -16,6 +16,7 @@ export type ChestId = 'axe' | 'pack';
 /** The ladder: each rung answers something you were already wishing for. */
 export type Rungs = {
   axe: number; // 0 the old axe, 1 the proper one
+  multi: boolean; // the multi-axe, from waking the machine: trees and rocks
   pack: number; // 0 your back, 1 the pack frame
   depot: boolean; // the camp's cart brings logs to a rack by the next frame
   trains: boolean; // trains are running: the top of the ladder
@@ -27,7 +28,7 @@ export const job = {
   wood: 0, // crates of timber that have reached the village's heap
   stone: 0,
   loose: 0, // logs out of an opened crate at the heap, not yet taken
-  rung: { axe: 0, pack: 0, depot: false, trains: false } as Rungs,
+  rung: { axe: 0, multi: false, pack: 0, depot: false, trains: false } as Rungs,
   /** Ancient technology you've found (./tech.ts), the room's, and the two slabs across the line. */
   tech: { jump: false, hook: false, glide: false },
   gate: { quarry: false, sea: false },

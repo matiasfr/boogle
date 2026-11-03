@@ -2,9 +2,9 @@
 //
 //   useDown/useUp            the main action (click, pad RT): use what is in your hand. A thing (ball, frisbee, ...)
 //                            winds up a throw and flies on release; a bag of seeds sprouts mushrooms ahead of you. Empty
-//                            hands do nothing.
-//   interactDown/interactUp  E, pad X: act on interactTarget(), and only on it; nothing while a throw winds up, and the
-//                            release never throws.
+//                            hands act on the nearest `click` target, or do nothing.
+//   interactDown/interactUp  E, pad X: act on the pick among targets without `click`; nothing while a throw winds up,
+//                            and the release never throws.
 //   touchDown                the touch main button, the one button for both: acts on interactTarget() when it can;
 //                            otherwise uses
 //   mainVerb()               what touchDown would do, for the button's label
@@ -25,12 +25,13 @@
 //                              on every press, so keep it cheap, allocate only when something is in reach, and do not
 //                              cache. Register once, from your feature file in src/features/ (a module this
 //                              file imports, like gifts.ts, would make an import cycle).
-//   target                     { id, verb, at, r?, run | blocked, show? }
+//   target                     { id, verb, at, r?, run | blocked, show?, click? }
 //     id       a stable string per thing; the prompt pops in again when it changes
 //     verb     the word on the prompt ('Pick up', 'Talk')
 //     at       a world point (THREE.Vector3) where the prompt floats; its x, z also rank the pick
 //     r        metres to measure to the edge of something big (The Boogler), default 0
 //     run      () what the press does; or blocked: why it cannot ('Full load'), shown greyed, and the press does nothing
+//     click    the main action (click, pad RT) acts on it with empty hands, and E doesn't; the touch main button still does
 //     show     (html) optional: draw the prompt yourself (The Boogler shows it in his name tag) instead of floating it at
 //              `at`; called each frame with the prompt markup while this is the pick, and with '' once when it stops
 //     Other fields are yours (gifts put the item id on theirs).
@@ -58,6 +59,7 @@ export type Interactable = InteractTarget & {
   id: string;
   verb: string;
   at: THREE.Vector3;
+  click?: boolean;
   show?: (html: string) => void; // draws the prompt itself (the Boogler's name tag); src/features/prompt.ts
 };
 
@@ -106,13 +108,17 @@ registerInteractable(() => {
 });
 
 const targets: Interactable[] = []; // reused by every pick
-function pickNow() {
+// by: 'click' keeps only click targets, 'press' only the others; both for the prompt and the touch main button.
+function pickNow(by: 'click' | 'press' | 'both' = 'both') {
   if (!me.entered || !me.body) return null;
   const p = me.body.interpolatedPosition;
   targets.length = 0; // (a provider that threw last time left some)
   for (let k = 0; k < providers.length; k++) {
     const some = providers[k]!();
-    for (let m = 0; m < some.length; m++) targets.push(some[m]!);
+    for (let m = 0; m < some.length; m++) {
+      const t = some[m]!;
+      if (by === 'both' || !!t.click === (by === 'click')) targets.push(t);
+    }
   }
   const t = pickInteract(targets, p.x, p.z, -Math.sin(cam.yaw), -Math.cos(cam.yaw));
   targets.length = 0;
@@ -181,14 +187,17 @@ export function releaseThrow() {
 export function useDown() {
   if (!me.entered || !me.body) return false;
   const id = heldId();
-  if (!id) return emptyHands.down();
+  if (!id) {
+    const t = me.charging ? null : pickNow('click');
+    return t ? interact(t) : emptyHands.down();
+  }
   if (id === 'seeds') return sprout() ? !!emptyHand() : deny("Can't grow here");
   return windUp();
 }
 
 export const useUp = releaseThrow;
 
-export const interactDown = () => (me.entered && me.body ? interact() : false);
+export const interactDown = () => (me.entered && me.body ? interact(pickNow('press')) : false);
 // E never throws. Its release only clears the guard grabTheBall set, so the next click release still throws.
 export const interactUp = () => {
   me.suppressUp = false;

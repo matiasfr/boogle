@@ -433,6 +433,18 @@ const AXES = [makeAxe(0.8, 0.26, 0.17, '#6b6f78', 0.7), makeAxe(1.08, 0.52, 0.34
 const edge = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.36, 0.06), flat('#f2b134', 0.4));
 edge.position.set(0, 1.08 * 0.86, -0.52 * 0.76);
 AXES[1]!.add(edge);
+// The multi-axe's pick, on the back of whichever head: it breaks rocks.
+const PICKS = AXES.map((a, k) => {
+  const len = k ? 1.08 : 0.8;
+  const pick = new THREE.Mesh(
+    new THREE.ConeGeometry(0.05, k ? 0.42 : 0.3, 6).rotateX(-Math.PI / 2),
+    flat('#8d929c', 0.5),
+  );
+  pick.position.set(0, len * 0.86, k ? 0.3 : 0.2);
+  pick.castShadow = true;
+  a.add(pick);
+  return pick;
+});
 const axe = new THREE.Group();
 axe.add(AXES[0]!, AXES[1]!);
 axe.visible = false;
@@ -642,6 +654,7 @@ export function updateChop(dt: number, now: number) {
   if (back.big) input.sprint = false; // you can't run with that
   AXES[0]!.visible = !job.rung.axe;
   AXES[1]!.visible = !!job.rung.axe;
+  for (const p of PICKS) p.visible = job.rung.multi;
   swing.t += dt;
   const c = TUNE.contactS;
   axe.visible = swing.t < 0.9;

@@ -5,7 +5,7 @@
 // `npm run playthrough` reports anything that never came, rather than the bot walking past it to THE END.
 import { me, cam } from '../../src/player/player.ts';
 import { input } from '../../src/player/input.ts';
-import { interactDown, interactTarget, interactUp } from '../../src/player/hands.ts';
+import { interactDown, interactTarget, interactUp, useDown, useUp } from '../../src/player/hands.ts';
 import { getMask, rayHit, raycastClosest, sweepSphere } from '../../src/physics/engine.ts';
 import { GROUP } from '../../src/physics/physics.ts';
 import { PLAYER_R, SEA, WALKABLE_NY } from '../../src/constants.ts';
@@ -408,7 +408,13 @@ export function makeBot(opts: BotOptions = {}) {
     input.keys.delete('KeyW');
     return dist(x, z) <= r;
   }
+  /** What a person presses for the thing in front of them: the click for a `click` target, Interact for the rest. */
   function press() {
+    if (interactTarget()?.click) {
+      useDown();
+      useUp();
+      return;
+    }
     interactDown();
     interactUp();
   }

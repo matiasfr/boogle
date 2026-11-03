@@ -20,7 +20,7 @@ import { forge, logIn, nextPiece, snapForge } from './forge.ts';
 import { deliver } from './gifts.ts';
 import { H } from './land.ts';
 import { lampRow, snapLamps } from './lamps.ts';
-import { grantChest, snapChest } from './ladder.ts';
+import { grantChest, grantMultiAxe, snapChest } from './ladder.ts';
 import { job, save, sharedSlice, num } from './job.ts';
 import {
   FAR,
@@ -334,6 +334,7 @@ export function wake(fromPeer = false) {
       machine.wake(true);
       setCamp(0, true);
       mark('awake');
+      grantMultiAxe();
       setStationTags();
       save();
     },
@@ -347,6 +348,7 @@ export function wakeNow() {
   run.mode = 'idle';
   machine.wake(true);
   setCamp(0, true);
+  job.rung.multi = true;
   mark('woke');
   setStationTags();
 }
