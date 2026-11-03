@@ -78,7 +78,13 @@ The day/night palettes live in [`sky.ts`](sky.ts) (`C`, `L`).
 
 - `npm run perf -- --render` prints draw calls, shadow calls, triangles, geometries and shader stages (vertex and
   fragment counted apart, so the number is not comparable with the old "programs"). Run it before and after
-  anything that adds meshes, lights, passes or per-frame GPU work.
+  anything that adds meshes, lights, passes or per-frame GPU work. Reports also include canvas/internal pixels,
+  device and renderer DPR, scene MSAA, backend render-context/compute-dispatch counts, observed offscreen targets
+  (GPU allocation dimensions, formats and samples), prototype/variant/look flags, URL route and camera pose.
+  Target inventory covers targets used during observation, not total GPU residency; pass counts exclude internal
+  copy/clear/mipmap passes and XR layer splits. `npm run counts` keeps its existing nightly fields and adds these
+  details under `measurement` (still no timings).
+  `--view NAME` selects a view from `dev/look/lib.ts`; `--query 'proto=place&look=all'` selects flags.
 - `npm run look` and the scenarios run WebGPU: SwiftShader over Vulkan on Linux and CI (a few fps with two tabs, so
   PR CI runs only the single-tab or light scenarios), Metal on a Mac. `npm run check:gpu` (smoke on the GPU) runs in
   `npm run ship` on a Mac, and `smoke.yml` runs smoke against the live site after every deploy. The harness

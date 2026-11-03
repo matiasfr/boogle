@@ -18,7 +18,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-counts-'));
 
 function node(args: string[], env: Record<string, string> = {}) {
   const r = spawnSync(process.execPath, args, { cwd: root, stdio: 'inherit', env: { ...process.env, ...env } });
-  if (r.status) throw new Error(`failed: node ${args.join(' ')}`);
+  if (r.error || r.status !== 0) throw new Error(`failed: node ${args.join(' ')}`);
 }
 
 /** Gzipped KB of the first-load files, by kind. */
@@ -39,13 +39,14 @@ function firstLoad() {
 try {
   const perf = path.join(tmp, 'perf.json');
   node(['dev/look/perf.ts', '--render', '--json', perf]);
-  const { calls, shadowCalls, programs } = JSON.parse(fs.readFileSync(perf, 'utf8'));
+  const { calls, shadowCalls, programs, ...measurement } = JSON.parse(fs.readFileSync(perf, 'utf8'));
   const result = {
     commit: process.env.GITHUB_SHA ?? null,
     drawCalls: calls,
     shadowDraws: shadowCalls,
     programs,
     firstLoadGzipKB: firstLoad(),
+    measurement, // Additive: preserve the fields consumed by counts-nightly; no hardware timings.
   };
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify(result, null, 2) + '\n');
