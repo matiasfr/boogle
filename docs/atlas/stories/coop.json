@@ -6,7 +6,7 @@
   "steps": [
     {
       "go": [["you.netplay", "lane:owner", "fr.netplay"]],
-      "text": "In ?proto=place&coop=1, each tab puts the tick it arrived on in its presence. The oldest visible tab is the authority: the one that decides.",
+      "text": "In the default place game or ?proto=place&coop=1, each tab puts its arrival tick in its presence. The oldest visible tab is the authority: the one that decides.",
       "code": "addPresenceField('placeCoop', () => since)",
       "cite": [
         {
