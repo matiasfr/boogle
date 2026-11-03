@@ -182,7 +182,8 @@ export function startSpray(bake: ShoreBake) {
   const seenImpact = new Float64Array(seaRipples.length).fill(-Infinity);
   let cursor = 0,
     frameEmits = 0,
-    breakerCursor = 0;
+    breakerCursor = 0,
+    previousTime = NaN;
   const send = (now: number) => {
     if (frameEmits >= MAX_PER_FRAME || now - emittedAt[cursor]! < 1) return;
     emittedAt[cursor] = now;
@@ -287,9 +288,12 @@ export function startSpray(bake: ShoreBake) {
       }
   };
   onFrame(
-    ({ dt, elapsed }) => {
+    ({ elapsed }) => {
       frameEmits = 0;
       const t = f(uTime.value as number); // the exact time already assigned to the surface in world/41
+      // The surface clock was copied from the sea's previous late update. Its step need not equal this frame's dt.
+      const dt = Number.isFinite(previousTime) ? clamp(t - previousTime, 0, 0.1) + 1e-5 : 0;
+      previousTime = t;
       // Fresh impact slots get first call on the budget. Observe, never overwrite: the sea still draws their rings.
       for (let i = 0; i < seaRipples.length; i++) {
         const impact = seaRipples[i]!;
@@ -330,6 +334,8 @@ export function startSpray(bake: ShoreBake) {
         spray(breakers[(breakerCursor + i) % breakers.length]!, t, dt, elapsed, false);
       breakerCursor = (breakerCursor + 1) % Math.max(1, breakers.length);
     },
-    { phase: 'update', order: 42 },
-  ); // after camera and splash slots, before late/-20 uploads the particle queue
+    { phase: 'world', order: 42 },
+  ); // after the surface, before update/-200 moves the camera: cull against the last rendered pose (including debugcam).
+  // During update, camera.lookAt has changed position but its inverse can still carry the previous rotation. That mixed
+  // transform rejected every rock site in the seaward capture. The shared pool uploads these drops at late/-20.
 }
