@@ -59,3 +59,5 @@ Clean up a finished worktree with `git worktree remove ../boogle-codex/<topic>` 
 Run a queue with `npm run queue -- jobs.json [--max 3]`; dependencies can name another topic or `{ "onMain": "path" }`. It exits on failure, stall, or a Codex usage limit.
 
 Use `--base <ref>` (also `--base-ref`) to start a task at an existing commit or branch.
+
+Run `npm run ship-watch` to wait for shipping trouble; `npm run ship-watch -- --once` checks once. It only reads GitHub.

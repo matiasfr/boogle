@@ -53,7 +53,8 @@
     "inspect": "node --import ./dev/sim/hooks.ts dev/sim/inspect.ts",
     "level-check": "node --import ./dev/sim/hooks.ts dev/level/check.ts",
     "transcript": "node dev/transcript.ts",
-    "queue": "node dev/codex/queue.ts"
+    "queue": "node dev/codex/queue.ts",
+    "ship-watch": "node dev/codex/ship-watch.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d": "0.19.3",
