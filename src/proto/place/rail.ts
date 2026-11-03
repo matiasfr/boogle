@@ -409,7 +409,7 @@ function drawCar(c: Car, alpha: number) {
   c.mesh.position.set(ip.x, ip.y, ip.z);
   c.mesh.rotation.y = angleLerp(c.prevYaw, yawOf(c.body.quaternion), alpha);
   c.rock.rotation.x = -c.pitch;
-  c.mesh.visible = true;
+  c.mesh.visible = c.y > -30; // a train not yet needed waits under the land: nothing to draw, nor to shadow
 }
 function poseCarOnLine(c: Car, line: Line, s: number, sign: number) {
   lineAt(line, s + 1.1, a);
