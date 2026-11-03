@@ -30,7 +30,84 @@ const put = (x: number, z: number, up = 1.4) => {
   teleport(me.body!, x, place.H(x, z) + up, z);
   me.body!.velocity.set(0, 0, 0);
 };
-if (q.has('deposits')) {
+if (q.has('pair')) {
+  const { remotes } = await import('/src/netplay/net.ts' as string);
+  const { cart, cartHere, cartPlatform, snapCart } = await import('/src/proto/place/depot.ts' as string);
+  const { snapRun } = await import('/src/proto/place/run.ts' as string);
+  const { TX, TY, TZ } = await import('/src/proto/place/lines.ts' as string);
+  const { carry } = await import('/src/physics/platforms.ts' as string);
+  const hands = await import('/src/player/hands.ts' as string);
+  const { cam } = await import('/src/player/player.ts' as string);
+  const setup = () => {
+    place.skipLine2();
+    place.lines[1].stage = 1;
+    place.job.rung.depot = true;
+    place.rack.logs = place.rack.rails = 0;
+    snapRun();
+    snapCart();
+  };
+  place.coop.skips({ pairQ2: setup });
+  const press = (verb: string) => {
+    const t = hands.interactTarget();
+    if (t?.verb !== verb) throw new Error(`COOP ${who} expected ${verb}, got ${t?.verb}`);
+    hands.interactDown();
+    hands.interactUp();
+    console.log(`COOP ${who} verb ${verb}`);
+  };
+  setInterval(() => {
+    const p = cartHere();
+    window.__debugCam?.set([p.x + 9, TY + 7, p.z + 12], [p.x, TY + 1, p.z]);
+  }, 30);
+  void (async () => {
+    await until(() => place.coop.debug().peers.length > 0, 'partner arrived');
+    await wait(2500);
+    if (who === '1') place.coop.skip('pairQ2', setup);
+    await until(() => place.activeFrame()?.spec.id === 'Q2' && place.rack.on && place.job.rung.depot, 'Q2 active');
+    await wait(1000); // let the forced skip snapshot finish before positioning either player
+    put(TX + (who === '2' ? 2 : 8), TZ + 1);
+    cam.yaw = -Math.PI / 2;
+    await wait(800);
+    if (who === '2') {
+      await until(() => hands.interactTarget()?.verb === 'Whistle for the cart', 'call offered');
+      press('Whistle for the cart');
+    }
+    await until(() => cart.leg === 'forge', 'cart at forge', 60000);
+    if (who === '2') {
+      press('Load the cart');
+      const p = cartPlatform.body.position;
+      teleport(me.body!, p.x, p.y + cartPlatform.top + 0.8, p.z);
+      me.body!.velocity.set(0, 0, 0);
+    }
+    await until(() => cart.rails === 12, '12 rails loaded');
+    console.log(`COOP ${who} cart rails ${cart.rails}`);
+    if (q.get('pair') === 'load') {
+      Object.assign(window, { __coopDone: true });
+      return;
+    }
+    await until(() => cart.leg === 'out', 'cart departing');
+    await wait(700);
+    if (who === '2' && carry.on !== cartPlatform) throw new Error('COOP rider left cart');
+    if (who === '1') {
+      await until(
+        () =>
+          [...remotes.values()].some(
+            (r: { ride?: { id: string; on: boolean } }) => r.ride?.id === 'place:cart' && r.ride.on,
+          ),
+        'partner riding our cart',
+      );
+    }
+    console.log(`COOP ${who} rider on cart`);
+    if (q.get('pair') === 'ride') {
+      Object.assign(window, { __coopDone: true });
+      return;
+    }
+    await until(() => place.rack.rails === 12, '12 rails on far rack', 60000);
+    console.log(`COOP ${who} rack rails ${place.rack.rails}`);
+    const r = place.rack;
+    setInterval(() => window.__debugCam?.set([r.x + 10, r.y + 8, r.z + 10], [r.x, r.y + 1, r.z]), 30);
+    Object.assign(window, { __coopDone: true });
+  })();
+} else if (q.has('deposits')) {
   const { net } = (await import('/src/netplay/net.ts' as string)) as typeof import('../../../src/netplay/net.ts');
   const { cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
   const st = place.stationOf(place.lines[0]);

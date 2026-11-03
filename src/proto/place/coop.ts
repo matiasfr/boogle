@@ -82,6 +82,10 @@ let api: Api | null = null;
 let skipsFns: Record<string, () => void> = {};
 /** Later hooks, from modules that import this one. */
 export const coopWire: Pick<Api, 'rung' | 'forgeBill' | 'wakeTrains' | 'activeFrame' | 'tech'> = {};
+export const pairHook = {
+  msg: null as ((m: Record<string, unknown>) => void) | null,
+  busy: null as (() => boolean) | null,
+};
 
 // ---------------------------------------------------------------- the whole shared state, once a second
 type Snap = { gen: number; shared: Record<string, unknown> };
@@ -367,6 +371,12 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       showBanner('Started over', 'Your partner reset the railway for you both.', 3);
       return;
     }
+    case 'cartCall':
+    case 'cartLoad':
+    case 'beamSet':
+    case 'beamBounce':
+      if (ready) pairHook.msg?.(m);
+      return;
     case 'wake':
       if (ready && run.mode === 'asleep') a.wake(true);
       return;
@@ -529,6 +539,7 @@ function expressNow(tr: (typeof lines)[number]['train']['tr']) {
 let startOverArmed = 0;
 export const coop = {
   on: COOP,
+  send: (m: Record<string, unknown>) => COOP && msg(m),
   /** Under the flag, and another tab decides. */
   follower: () => COOP && !amAuthority(),
   /** The authority is running someone else's Skip: it doesn't move its own player. */
