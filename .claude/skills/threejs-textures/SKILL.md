@@ -5,7 +5,7 @@ description: "Three.js textures: image loading, color spaces, UV channels and tr
 
 # Three.js Textures
 
-Targets three.js r186. Examples use WebGLRenderer; the WebGPU and TSL section uses WebGPURenderer.
+Targets three.js r187. Examples use WebGLRenderer; the WebGPU and TSL section uses WebGPURenderer.
 
 **In Boogle:** the game runs on `WebGPURenderer` with TSL node materials only (three r187). Use the WebGPU and TSL guidance here; the GLSL, `ShaderMaterial`, `onBeforeCompile`, `EffectComposer` and `THREE.Points` examples don't apply (lint bans them). Boogle's own contract: `src/render/README.md`.
 
@@ -472,6 +472,7 @@ mesh.visible = true;
 
 ## Common Mistakes
 
+- `THREE.CubeUVReflectionMapping` → use the mapping appropriate to the source texture, such as `THREE.EquirectangularReflectionMapping` for an HDR panorama: CubeUVReflectionMapping was removed in r187. PMREMs now use cube render targets and improved filtering can subtly change material appearance.
 - `geometry.setAttribute("uv2", geometry.attributes.uv)` → `material.aoMap = aoTexture;`: aoMap samples the attribute picked by `texture.channel` (default 0, `uv`), so it needs no extra attribute and `uv2` is read only by textures whose `channel` is 2; only a separate baked unwrap goes in `uv1`, with `aoTexture.channel = 1`.
 - `new RGBELoader()` → `new HDRLoader()`: renamed from RGBELoader to HDRLoader in r180; the old class still runs but logs a deprecation warning.
 - `import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js"` → `import { EXRLoader } from "three/addons/loaders/EXRLoader.js"`: the browser import maps map `three/addons/` to examples/jsm/ and define no `three/examples/` key, so the examples path fails to resolve there.
