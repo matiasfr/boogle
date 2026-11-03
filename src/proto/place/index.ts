@@ -155,6 +155,9 @@ import {
 import { buildSigns, setBeacon, setNumbers, setObjective } from './signs.ts';
 import { campSmoke, onStepUp, snapCamp, snapTown, staticPart, updateTown, wakeCamp } from './town.ts';
 
+// A clean view for someone playing it cold (the tester's link, `&fresh=1`): place.css hides the bar, the panel and the numbers.
+if (new URLSearchParams(location.search).get('fresh') === '1') document.body.classList.add('place-fresh');
+
 buildLand();
 dressSea();
 extendSky();

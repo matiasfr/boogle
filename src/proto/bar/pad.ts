@@ -87,6 +87,7 @@ export function padBar(bar: HTMLElement, opts: { prev: () => void; next: () => v
     }
   }
   function openBar() {
+    if (getComputedStyle(bar).display === 'none') return; // a page hiding the bar (?proto=place&fresh=1)
     if (open || !me.entered || !openModal({ onKey, onPad })) return;
     open = true;
     opts.unfold();
