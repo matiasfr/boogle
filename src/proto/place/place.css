@@ -74,6 +74,23 @@ body:not(.playing) .place-proto {
     transform: translateX(-50%) scale(1);
   }
 }
+/* Turned away from where to go: a chevron at the screen's edge, in the beacon's orange, pointing the way (signs.ts). */
+.place-arrow {
+  position: absolute;
+  left: -19px;
+  top: -19px;
+  width: 38px;
+  height: 38px;
+  background: #ff8a1a;
+  clip-path: polygon(50% 0, 100% 100%, 50% 72%, 0 100%);
+  filter: drop-shadow(0 0 1px var(--ink)) drop-shadow(0 2px 0 var(--ink));
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+.place-arrow.on {
+  opacity: 1;
+}
 /* What everyone shares: the train's capacity and the town's people. */
 .place-nums {
   position: absolute;

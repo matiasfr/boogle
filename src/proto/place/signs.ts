@@ -5,6 +5,7 @@ import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
 import { flat } from '../flat.ts';
 import { replay } from '../../ui/ui-sound.ts';
+import { cam, me } from '../../player/player.ts';
 import { H, addStatic } from './land.ts';
 import { toWorld } from './layout.ts';
 
@@ -98,6 +99,35 @@ export function setBeacon(at: { x: number; y: number; z: number } | null, now: n
   if (!at) return;
   beacon.position.set(at.x, at.y + 3 + Math.sin(now * 0.004) * 0.25, at.z);
   gem.rotation.y = now * 0.002;
+  // Far off, a hair's width and a speck wouldn't lead anyone: both grow with the distance, so they read across the place.
+  const b = me.body?.position;
+  const far = b ? Math.max(1, Math.hypot(b.x - at.x, b.z - at.z) / 60) : 1;
+  beam.scale.set(far, 1, far);
+  gem.scale.set(far, 1.5 * far, far);
+}
+export const beaconAt = () => (beacon.visible ? beacon.position : null);
+
+// ---------------------------------------------------------------- the way back to it
+// Only when you've turned away from where to go: a small chevron at the screen's edge turns you back. Local.
+const arrow = document.createElement('div');
+arrow.className = 'place-arrow';
+(document.querySelector('.hud') ?? document.body).append(arrow);
+const FACING = 0.62; // radians either side of straight ahead where you can see it for yourself
+/** Points the chevron from where you stand towards `to`; null hides it. */
+export function pointArrow(to: { x: number; z: number } | null) {
+  const b = me.body?.position;
+  if (!b || !to || !me.entered || Math.hypot(to.x - b.x, to.z - b.z) < 8) return void arrow.classList.remove('on');
+  let a = cam.yaw - Math.atan2(-(to.x - b.x), -(to.z - b.z));
+  a = Math.atan2(Math.sin(a), Math.cos(a));
+  if (Math.abs(a) < FACING) return void arrow.classList.remove('on');
+  arrow.classList.add('on');
+  // Round the screen's edge, and no lower than the middle of the objective's row.
+  const w = innerWidth / 2,
+    h = innerHeight / 2,
+    down = Math.cos(a) < 0 ? 0.55 : 1;
+  const x = w + Math.sin(a) * (w - 64),
+    y = h - Math.cos(a) * (h - 92) * down;
+  arrow.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${a.toFixed(3)}rad)`;
 }
 
 // ---------------------------------------------------------------- the HUD
