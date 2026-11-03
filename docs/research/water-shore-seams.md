@@ -52,12 +52,13 @@ Fixed ROIs exclude characters, trees and the pillar: home `(300,410,240,125)`, P
 These count colours, including legitimate highlights; they are not defect classifiers or visual acceptance scores.
 The videos are sampled at 5 fps for over 18 seconds, more than two periods of the 30 m / 4.38 s shore train.
 
-Initial repaired capture: home pale mean/max **380.77/562 → 18.23/90**; navy **0/0 → 0/0**. Place pale
+Repaired fixed-camera capture: home pale mean/max **380.77/562 → 18.23/90**; navy **0/0 → 0/0**. Place pale
 **94.57/1417 → 35.20/500**; navy **.96/24 → 1.86/46**. The small Place navy count did not improve: do not present
 it as proof that every blue pixel or every possible view is fixed. Large navy slits were already suppressed at
-these high cameras by the prerequisite branch. Final multi-view and plunge evidence is recorded below after checks.
+these high cameras by the prerequisite branch. Final multi-view and plunge evidence is recorded below.
 
 Baseline manifests:
+
 - [Home high](../../.look/evidence/1793738150041-55846/evidence.json), [Place high](../../.look/evidence/1793738185653-56141/evidence.json).
 - [Home four-view sweep](../../.look/evidence/1793738315353-57065/evidence.json), [Place four-view sweep](../../.look/evidence/1793738416930-58349/evidence.json).
 - [Ocean hidden](../../.look/evidence/1793738451151-58590/evidence.json), [receiver gloss disabled](../../.look/evidence/1793738537199-59570/evidence.json).
@@ -68,3 +69,50 @@ Opened the originals and sweep sheets, the worst baseline frames, and both diagn
 row becomes a much thinner continuous wet sheen. Place still exposes its coarse, jagged terrain triangles and
 steep dark submerged bank; this is not a smooth beach redesign. Real-time feel, mobile and exhaustive all-angle
 acceptance remain unverified. All work stays behind `water=new`. No external network was used.
+
+## Final verification
+
+Runtime source is committed as `2c3764d6` (tree `df24db959c2663e34875295fa2334fff881713cb`). All final
+runs below record that clean build before and after, with no changes during capture. The subsequent commit
+only records this report. `npx prettier --write` and ESLint were run on the edited files; `npm run check`
+passed (types, lint, unit/registry/level/asset checks and production build). `git diff --check` passed.
+No external network, push or ship was used.
+
+- **Home:** [manifest](../../.look/evidence/1793739202486-66695/evidence.json),
+  [opened four-view sheet](../../.look/evidence/1793739202486-66695/final-home-tour-motion.png).
+  Three stretches at 25 m, then a 2.5 m view, 12 seconds per view. The large pale triangular row is absent
+  in these sampled views; a thin continuous wet sheen and caustics remain.
+- **Place:** [manifest](../../.look/evidence/1793739221364-67115/evidence.json),
+  [opened four-view sheet](../../.look/evidence/1793739221364-67115/final-place-tour-motion.png).
+  Gorge and two outer shore stretches at 25 m, then a 2.4 m view, 12 seconds per view. Water meets the actual
+  bank. The bank's coarse triangles and dark submerged edge remain visible; this is not all-angle acceptance.
+- **Lagoon:** [manifest](../../.look/evidence/1793739221360-67116/evidence.json),
+  [opened still](../../.look/evidence/1793739221360-67116/final-lagoon-still.png).
+  Twelve seconds, plus consecutive 5 fps frames: caustics and moving crests remain. Thin dark crest lines are
+  still visible; no new solid triangular row was seen in the inspected frames.
+- **Surf rock:** [manifest](../../.look/evidence/1793739221368-67114/evidence.json),
+  [opened sheet](../../.look/evidence/1793739221368-67114/final-surf-rock-motion.png).
+  Twelve seconds, plus consecutive 5 fps frames: breaker foam crosses the rock and submerged caustics remain.
+- **Plunge:** [manifest](../../.look/evidence/1793739221350-67117/evidence.json),
+  [opened sheet](../../.look/evidence/1793739221350-67117/final-plunge-motion.png),
+  [opened curves](../../.look/evidence/1793739221350-67117/final-plunge-curves.png).
+  The staged player fall reaches −5.5 m and buoyancy returns the player toward the surface. The underwater
+  upward view retains the underside/Snell window; the later above-water view restores the top surface.
+  This is a scripted visual/physics observation, not an owner feel verdict.
+
+Also opened consecutive extracted frames 25–26 for home, Place, Lagoon and Surf, frame 25 for the plunge,
+and the fixed-camera counter's worst home pale and Place navy frames before and after. The helpers, JSON
+measurements, those frames and adjacent samples are archived beside the home manifest in
+[analysis/README.md](../../.look/evidence/1793739202486-66695/analysis/README.md). Full videos remain alongside
+each manifest, so the complete 5 fps sequence can be regenerated.
+
+The [full Place bot manifest](../../.look/evidence/1793739334504-69695/evidence.json) and
+[report](../../.look/evidence/1793739334504-69695/run/report.txt) passed: 33 minutes of game in 3 minutes
+41 seconds, every expected beat, 78 checkpoints, no runtime errors. Read the full report and opened its
+[end still](../../.look/evidence/1793739334504-69695/run/end-still.png): the bot reaches the completed Place
+with the completion HUD and elevated track visible. It reports 4 minutes 58 seconds standing still and 2 seconds pushing in game
+time, and never marks “did something together”; co-op is unverified. No bot failures occurred.
+The existing [world-inputs scenario](../../.look/evidence/1793739335569-69743/evidence.json) passed grid,
+state/op order and gift-layout assertions against the trusted fixture. All final visual runs passed WebGPU,
+advancing-frame and no-page/console-error checks. GPU performance, real-time smoothness and mobile remain
+unverified; the short completed-frame samples are not benchmarks. The next acceptance step is the owner's playtest.
