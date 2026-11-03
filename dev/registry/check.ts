@@ -1,7 +1,8 @@
 // npm run registry [-- --base <ref>]: checks the shared registries (dev/registry/scan.ts) and the import knots
 // (dev/registry/knots.ts) in this tree, then diffs the registries against <ref> (default origin/main, skipped if it
 // isn't there) for changes that break mixed-build rooms.
-// `--json` prints this tree's registry instead.
+// `--json` prints this tree's registry instead. --owner-approved-debt <reason> permits intentional debt growth
+// only with explicit owner approval; agents must never select it themselves.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,6 +12,7 @@ import { scanSources, checkRegistry, compareRegistries, shapeOf } from './scan.t
 import { KNOTS, checkKnots, findKnots, importsOf } from './knots.ts';
 import type { Registry, Source, StateInfo } from './scan.ts';
 import { checkTaskRoutes } from '../scan/task-routes.ts';
+import { DEBT_FILES, debtOf, debtCounts, compareDebt } from './debt.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -74,22 +76,53 @@ async function registryOf(root: string): Promise<Registry> {
   return { ...scanSources(sources(root)), ...(await rulesOf(root)) };
 }
 
-function baseTree(ref: string): string | null {
+function baseTree(ref: string): { dir: string | null; note?: string } {
+  const git = (...args: string[]) =>
+    execFileSync('git', args, {
+      cwd: ROOT,
+      stdio: 'pipe',
+      maxBuffer: 1 << 28,
+      env: { ...process.env, GIT_NO_LAZY_FETCH: '1' },
+    });
   try {
-    execFileSync('git', ['rev-parse', '--verify', '-q', `${ref}^{commit}`], { cwd: ROOT, stdio: 'pipe' });
+    if (git('rev-parse', '--is-shallow-repository').toString().trim() === 'true')
+      return {
+        dir: null,
+        note: 'shallow checkout: skipped mixed-build and debt baseline comparisons (local history only; no fetch)',
+      };
+    git('rev-parse', '--verify', '-q', `${ref}^{commit}`);
   } catch {
-    return null;
+    return { dir: null, note: `no local base ${ref}: skipped mixed-build and debt baseline comparisons (no fetch)` };
   }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-registry-'));
-  const tar = execFileSync('git', ['archive', ref, 'src', 'test/helpers', 'test/fixtures'], {
-    cwd: ROOT,
-    maxBuffer: 1 << 28,
-  });
-  execFileSync('tar', ['-x', '-C', dir], { input: tar });
-  return dir;
+  try {
+    // Old bases may predate one of the lists. Archive only paths actually in that local tree.
+    const debtPaths = git('ls-tree', '--name-only', ref, '--', ...DEBT_FILES)
+      .toString()
+      .trim()
+      .split('\n')
+      .filter(Boolean);
+    const tar = git('archive', ref, 'src', 'test/helpers', 'test/fixtures', ...debtPaths);
+    execFileSync('tar', ['-x', '-C', dir], { input: tar });
+    return { dir };
+  } catch {
+    fs.rmSync(dir, { recursive: true, force: true });
+    return {
+      dir: null,
+      note: `base ${ref} unavailable locally: skipped mixed-build and debt baseline comparisons (no fetch)`,
+    };
+  }
 }
 
 const args = process.argv.slice(2);
+const approvalAt = args.indexOf('--owner-approved-debt');
+const approval = approvalAt < 0 ? undefined : args[approvalAt + 1];
+if (approvalAt >= 0 && (!approval?.trim() || approval.startsWith('--'))) {
+  console.error(
+    'registry: --owner-approved-debt needs the explicit owner-approved reason; agents must not use it on their own',
+  );
+  process.exit(1);
+}
 const baseRef = args.includes('--base') ? args[args.indexOf('--base') + 1] : 'origin/main';
 if (baseRef === undefined) {
   console.error('registry: --base needs a ref');
@@ -107,18 +140,35 @@ const errors = [
   ...checkKnots(findKnots(importsOf(sources(ROOT))), KNOTS),
   ...checkTaskRoutes(ROOT),
 ];
-const dir = baseTree(baseRef);
-let notes: string[] = [];
+const { dir, note } = baseTree(baseRef);
+const notes: string[] = [];
+const currentDebt = await debtOf(ROOT);
+notes.push(`debt now: ${debtCounts(currentDebt)}`);
 if (dir) {
   try {
+    const missing = DEBT_FILES.filter((f) => !fs.existsSync(path.join(dir, f)));
+    if (missing.length) notes.push(`debt baseline skipped: ${baseRef} predates ${missing.join(', ')} (no fetch)`);
+    else {
+      const baseDebt = await debtOf(dir);
+      notes.push(`debt base ${baseRef}: ${debtCounts(baseDebt)}`);
+      const growth = compareDebt(baseDebt, currentDebt);
+      if (growth.length && approval) notes.push(`OWNER-APPROVED debt growth (${approval}): ${growth.join('; ')}`);
+      else
+        errors.push(
+          ...growth.map(
+            (g) =>
+              `${g}. Remove the growth; only an explicit owner-approved change may use --owner-approved-debt <reason>. Agents must not use it on their own.`,
+          ),
+        );
+    }
     const diff = compareRegistries(await registryOf(dir), head);
     errors.push(...diff.errors);
-    notes = diff.notes;
+    notes.push(...diff.notes);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 } else {
-  notes.push(`no ${baseRef} here: skipped the comparison with main (git fetch origin main to run it)`);
+  notes.push(note!);
 }
 
 // The burn-down: what's left of the entity ratchet (eslint.config.js; not a registry, so not in --json). ESLint only
