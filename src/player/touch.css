@@ -1,3 +1,23 @@
+/* Pushing the stick all the way sprints (src/player/input.ts): the ring lights up in sun, so you can tell without
+   looking at your feet. A shadow, not a thicker border, so the knob stays centred. */
+.stick,
+.knob {
+  transition:
+    background-color 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+.stick.sprinting {
+  background-color: rgba(255, 201, 61, 0.24);
+  border-color: var(--sun);
+  box-shadow:
+    0 0 0 3px var(--sun),
+    0 0 20px rgba(255, 201, 61, 0.7);
+}
+.stick.sprinting .knob {
+  background-color: var(--paper);
+}
+
 /* Tablets (both sides at least 700 CSS px: an iPad either way up, never a phone): the touch buttons grow toward the
    24 mm target of XAG 107 (research/cross-device-input.md rec 8; about 125 CSS px on the M4 iPad Pro), and the stick
    ring follows its larger travel (60 px, src/player/input.ts). zoom scales each button's size, label and offsets
