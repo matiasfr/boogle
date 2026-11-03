@@ -4,7 +4,7 @@ import type { MeshStandardNodeMaterial } from 'three/webgpu';
 import { patchNode } from '../material-patch.ts';
 import { newWaterEnabled } from './flags.ts';
 import { CAUSTIC_TEXELS_PER_M, type CausticSample } from './caustics.ts';
-import { swashNodes, type ShoreFields } from './shore-nodes.ts';
+import { swashNodes, vnoise, type ShoreFields } from './shore-nodes.ts';
 import { seaU } from './state.ts';
 import { LOOK } from './tuning.ts';
 import { TSL, type N } from './tsl.ts';
@@ -20,14 +20,14 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   if (restore.has(mat)) return;
   const previousColor = mat.colorNode,
     previousRoughness = mat.roughnessNode;
+  const wash = Fn(() => swashNodes(positionWorld.xz, positionWorld.y, field))().toVar();
   const surface = Fn(() => {
     const p = positionWorld;
     const sh = field.shore(p.xz).toVar();
     const depth = max(p.y.negate(), 0).toVar();
-    const swash = swashNodes(p.xz, p.y, field).toVar();
     // Only exposed receivers: roof/deck tops are dry, and walls/undersides reject projected sunlight.
     const up = smoothstep(0.05, 0.65, normalWorldGeometry.y);
-    const wet = max(smoothstep(-0.1, 0.18, p.y).oneMinus(), swash.z).mul(up);
+    const wet = max(smoothstep(-0.1, 0.18, p.y).oneMinus(), wash.z).mul(up);
     const sunRay = refract(seaU.uSun.negate(), vec3(0, 1, 0), 1 / 1.33);
     const entry = p.xz.add(sunRay.xz.div(min(sunRay.y, -0.05)).mul(depth));
     const fw = fwidth(entry).toVar();
@@ -38,7 +38,9 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
       .mul(smoothstep(0.02, 0.2, seaU.uSun.y))
       .mul(up)
       .mul(smoothstep(0.05, 1, field.surf(p.xz)))
-      .mul(smoothstep(-0.05, 0.1, p.y.sub(sh.x)));
+      // The receiver IS the bed. A positive offset requirement erased light on matching triangles.
+      .mul(smoothstep(-0.35, -0.05, p.y.sub(sh.x)))
+      .mul(mix(1.35, 1, smoothstep(1.5, 3, depth)));
     const transmission = exp(
       vec3(...LOOK.absorption)
         .mul(depth)
@@ -48,7 +50,14 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
     // This multiplier stays in the lit albedo path, so the receiver's existing shadow term still occludes it.
     return vec4(transmission.mul(mix(1, 0.72, wet)).mul(focused), wet);
   })().toVar();
-  patchNode(mat, 'colorNode', (previous: N) => (previous ?? materialColor).mul(surface.rgb));
+  const lace = smoothstep(0.48, 0.72, vnoise(positionWorld.xz.mul(24).add(seaU.uTime.mul(0.3))));
+  const foam = wash.y
+    .mul(lace)
+    .mul(smoothstep(-0.02, 0.04, positionWorld.y))
+    .mul(0.7);
+  patchNode(mat, 'colorNode', (previous: N) =>
+    mix((previous ?? materialColor).mul(surface.rgb), vec3(0.65, 0.7, 0.68), foam),
+  );
   // The thin wet shoreline is glossy; submerged ground retains its own roughness rather than a faceted sun mirror.
   patchNode(mat, 'roughnessNode', (previous: N) =>
     mix(previous ?? materialRoughness, 0.26, surface.a.mul(smoothstep(-0.35, 0, positionWorld.y))),

@@ -2,7 +2,7 @@
 // The original triangles remain available for same-tab A/B/A; only their indices change while this flag is on.
 import * as THREE from 'three/webgpu';
 import { CELL, HALF, COURT } from '../../constants.ts';
-import { heights, groundHeight } from '../../island/heights.ts';
+import { heights, baseGroundHeight as groundHeight } from '../../island/heights.ts';
 import { island } from '../../island/index.ts';
 import { SHORE, inShore, shoreMode } from '../../island/shore-options.ts';
 import { placements } from '../../entities/props/state.ts';
@@ -10,6 +10,9 @@ import { smoothstep, valueNoise } from '../../math.ts';
 import { freezeStatic } from '../../render/instances.ts';
 import { groundNoise, sandNormal } from '../water/ground.ts';
 import { TSL } from '../water/tsl.ts';
+import { registerWaterReceiver } from '../../render/water/receivers.ts';
+import { newWaterEnabled } from '../../render/water/flags.ts';
+import { createShoreContact } from './contact.ts';
 
 const { attribute, cameraViewMatrix, float, mix, normalWorldGeometry, positionWorld, vec4, smoothstep: ss } = TSL;
 const trees = placements.filter((p) => p.blueprint !== 'rock' && inShore(p.x, p.z));
@@ -20,6 +23,7 @@ const grass = new THREE.Color('#7cc650'),
 const originals: { geometry: THREE.BufferGeometry; full: THREE.BufferAttribute; cut: THREE.BufferAttribute }[] = [];
 let patch: THREE.Mesh | undefined;
 let smoothMaterial: THREE.MeshStandardNodeMaterial, detailMaterial: THREE.MeshStandardNodeMaterial;
+let setContact: ((enabled: boolean) => void) | undefined;
 
 function feather(x: number, z: number) {
   return smoothstep(0, 7.5, Math.min(x - SHORE.x0, SHORE.x1 - x, z - SHORE.z0, SHORE.z1 - z));
@@ -64,7 +68,7 @@ export function shoreHeight(x: number, z: number) {
   const court = smoothstep(COURT.r + 1, COURT.r + 7, Math.hypot(x - COURT.x, z - COURT.z));
   const paint = island.paintAt(x, z);
   const protect = paint ? 1 - paint[3]! : 1;
-  // Keep the actual waterline and all POI paint/contacts; bound walking mismatch without flattening the shapes.
+  // Keep the authored waterline and POI contacts; collision and queries use the resulting triangles too.
   const offset = 0.14 * Math.tanh((rounded - base + beach * (berm + dunes)) / 0.14);
   return base + offset * edge * contact * court * protect * smoothstep(-0.3, 0.25, base);
 }
@@ -74,6 +78,7 @@ export function setShoreMode(mode: 'today' | 'smooth' | 'smooth-detail') {
   for (const { geometry, full, cut } of originals) geometry.setIndex(mode === 'today' ? full : cut);
   patch.visible = mode !== 'today';
   patch.material = mode === 'smooth-detail' ? detailMaterial : smoothMaterial;
+  setContact?.(mode !== 'today');
 }
 
 export function buildShore(group: THREE.Group, source: THREE.MeshStandardNodeMaterial) {
@@ -186,6 +191,9 @@ export function buildShore(group: THREE.Group, source: THREE.MeshStandardNodeMat
   geometry.setIndex(indices);
   geometry.computeBoundingSphere();
   smoothMaterial = source.clone();
+  // Clone the authored material, not a receiver graph already patched during asynchronous loading.
+  smoothMaterial.colorNode = null;
+  smoothMaterial.roughnessNode = null;
   smoothMaterial.flatShading = false;
   const f = attribute('shoreBlend', 'float'),
     p = positionWorld;
@@ -193,9 +201,9 @@ export function buildShore(group: THREE.Group, source: THREE.MeshStandardNodeMat
   smoothMaterial.normalNode = cameraViewMatrix.mul(vec4(worldNormal, 0)).xyz.normalize();
   detailMaterial = smoothMaterial.clone();
   const noise = groundNoise();
-  // Preserve vertex paint. Cheap filtered grain/variation and static wet sand; no new swash or water work.
+  // Preserve vertex paint. The new sea supplies moving wetness; legacy water retains the static damp gradient.
   detailMaterial.colorNode = float(1).sub(noise.filtered(p.xz.mul(0.6)).sub(0.5).mul(0.09).mul(f));
-  const damp = ss(-0.1, 0.65, p.y).oneMinus().mul(f);
+  const damp = newWaterEnabled ? float(0) : ss(-0.1, 0.65, p.y).oneMinus().mul(f);
   detailMaterial.colorNode = detailMaterial.colorNode!.mul(mix(1, 0.83, damp));
   detailMaterial.roughnessNode = mix(0.95, 0.65, damp);
   detailMaterial.normalNode = mix(
@@ -203,11 +211,14 @@ export function buildShore(group: THREE.Group, source: THREE.MeshStandardNodeMat
     sandNormal(p, worldNormal, float(1.5), noise),
     f,
   ).normalize();
+  registerWaterReceiver(smoothMaterial);
+  registerWaterReceiver(detailMaterial);
   patch = new THREE.Mesh(geometry, smoothMaterial);
   patch.name = 'shore-slice';
   patch.castShadow = patch.receiveShadow = true;
   group.add(patch);
   freezeStatic(patch);
+  setContact = createShoreContact(geometry, shoreHeight);
   setShoreMode(shoreMode === 'smooth-detail' ? 'smooth-detail' : 'smooth');
   const meshBytes = Object.values(geometry.attributes).reduce(
     (s, a) => s + a.array.byteLength,
@@ -222,7 +233,7 @@ export function buildShore(group: THREE.Group, source: THREE.MeshStandardNodeMat
         removed,
         added: indices.length / 3 - removed,
         meshBytes,
-        colliderOffset: { max: maxOffset, rms: Math.sqrt(squareOffset / landSamples), worst },
+        authoredOffset: { max: maxOffset, rms: Math.sqrt(squareOffset / landSamples), worst },
         drawsAdded: 1,
       }),
   );

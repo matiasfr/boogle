@@ -146,14 +146,13 @@ export function createProps() {
     else if (p.blueprint === 'broadleaf') addBroadleaf(parts, p);
     else {
       addRock(parts, p);
-      if (p.h < 0.5 && p.h + p.size * 1.25 > 0)
+      if (!(shoreRocks && inShore(p.x, p.z)) && p.h < 0.5 && p.h + p.size * 1.25 > 0)
         removeContacts.push(registerWaterContact({ x: p.x, z: p.z, radius: p.size * 1.1, top: p.h + p.size * 1.25 }));
+      if (shoreRocks && inShore(p.x, p.z)) {
+        shoreParts.add(parts.at(-1)!);
+        shorePlacements.push(p);
+      }
     }
-    else if (shoreRocks && inShore(p.x, p.z)) {
-      addRock(parts, p);
-      shoreParts.add(parts.at(-1)!);
-      shorePlacements.push(p);
-    } else addRock(parts, p);
   }
   const group = new THREE.Group();
   for (const parts of tiles.values()) {
@@ -182,7 +181,9 @@ export function createProps() {
   });
   freezeStatic(group); // never moves: no per-frame matrix work
   if (shorePlacements.length)
-    void import('../proto/shore/rocks.ts').then((m) => m.buildShoreRocks(group, shoreCuts, shorePlacements));
+    void import('../proto/shore/rocks.ts').then((m) =>
+      removeContacts.push(m.buildShoreRocks(group, shoreCuts, shorePlacements)),
+    );
 }
 
 // update -190, after the camera (src/entities/camera/, -200), before the feature update hooks (src/loop.ts lists the orders).

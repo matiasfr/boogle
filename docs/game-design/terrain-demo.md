@@ -40,10 +40,21 @@ reads as the same continuous landform, while unmodified inland cliffs retain the
 
 Two small suggestions are included: **soft grass–sand feather** and **tree-base contact pockets**
 (displacement fades out within 0.65–2 m of trunks). Court and authored POI paint are protected.
-All new state is Local; colliders, height queries, water shore data and prop colliders retain their original values.
-The measured visual-ground mismatch reaches about 12 cm and is visible at the worst foot-contact point;
-this is an art comparison, not a collision-ready replacement. Adoption needs matching local collision/surface
-queries, or less displacement; larger shoreline reshaping would also need matching water shore data.
+The surface stays Local and the player/toys remain Owner physics. The slice now replaces its collider with the
+exact rendered triangles, with four original heightfields surrounding it. Local ground queries and the home
+water provider sample those same triangle planes; authored/lockstep heights and saves stay unchanged.
+Rock colliders still use their original simple shapes.
+
+With `&water=new`, both smooth materials and the deformed rocks register as water receivers. Moving caustics,
+wet sand and swash lace reach the slice; its static damp gradient is disabled to avoid darkening twice.
+Rock water contacts use transformed geometry bounds. The new water brings its own frozen demo sky, metered
+AgX and single bake at tod=0.24; no extra sky/tone flags are needed. The receiver uses the demo's 1.35 shallow
+caustic contrast, falling to 1 at 3 m, without requiring the receiving surface to sit above its own bed.
+The original saturated palette and clear-water absorption stay intact.
+
+The previous 12 cm collider gap is removed on this flag. The water bake remains filtered at 1 m, so its sampled
+bed is an approximation (up to 6 cm near the tested waterline), while rasterized depth and collision use the mesh.
+See [shore-water validation](../research/shore-water-validation.md) for views, contact measurements and limits.
 
 Source: `src/proto/shore/`. DESIGN.md: **Code first, images by approval**, **Small and readable**,
 **Pick how each feature shares state**. Research: [stylized terrain](../research/stylized-terrain.md),
