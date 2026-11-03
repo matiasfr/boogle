@@ -32,7 +32,7 @@ import {
 
 type Mode = 'previz' | 'research' | 'task' | 'review';
 const MODES: Mode[] = ['previz', 'research', 'task', 'review'];
-const DEFAULT_EFFORT: Record<Mode, string> = { previz: 'medium', research: 'xhigh', task: 'high', review: 'xhigh' };
+const DEFAULT_EFFORT: Record<Mode, string> = { previz: 'medium', research: 'high', task: 'high', review: 'high' };
 
 const args = process.argv.slice(2);
 const opts: Record<string, string> = {};
