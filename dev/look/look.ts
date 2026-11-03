@@ -25,6 +25,8 @@ const opt: {
   out: string;
   warm: number;
   frames: number;
+  filmstrip: number;
+  every: number;
   seconds: number;
   region: number[] | null;
   size: number[];
@@ -54,6 +56,8 @@ const opt: {
   out: '.look',
   warm: 10,
   frames: 8,
+  filmstrip: 0,
+  every: 1,
   seconds: 2,
   region: null,
   size: [960, 600],
@@ -91,6 +95,8 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--heatmap') opt.heatmap = true;
   else if (a === '--out') opt.out = v();
   else if (a === '--warm') opt.warm = parseFloat(v());
+  else if (a === '--filmstrip') opt.filmstrip = Number(v());
+  else if (a === '--every') opt.every = Number(v());
   else if (a === '--frames') opt.frames = parseInt(v(), 10);
   else if (a === '--seconds') opt.seconds = parseFloat(v());
   else if (a === '--region')
@@ -127,6 +133,7 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--help' || a === '-h') {
     console.log(`npm run look -- [--view ${Object.keys(VIEWS).join('|')}] [--cam x,y,z --look x,y,z] [--fov deg]
   [--question "what should be visible?"] [--eval setup.ts] [--action action.ts] [--video]
+  [--filmstrip N] [--every K]              capture N drawn frames, K game frames apart (warp only)
   [--warm 10] [--frames 8] [--seconds 2] [--heatmap --region x,y,w,h (fractions)] [--size 960x600]
   [--query 'proto=place&shot=play'] [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
   [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
@@ -139,6 +146,19 @@ for (let k = 0; k < argv.length; k++) {
     console.error('unknown option ' + a);
     process.exit(2);
   }
+}
+if (argv.includes('--filmstrip') && (!opt.warp || opt.url || argv.includes('--players'))) {
+  console.error('--filmstrip needs warp and cannot be used with --real, --url or --players');
+  process.exit(2);
+}
+if (
+  (argv.includes('--filmstrip') && (!Number.isSafeInteger(opt.filmstrip) || opt.filmstrip < 1)) ||
+  !Number.isSafeInteger(opt.every) ||
+  opt.every < 1 ||
+  (argv.includes('--every') && !opt.filmstrip)
+) {
+  console.error('--filmstrip and --every require positive integers; --every requires --filmstrip');
+  process.exit(2);
 }
 // Two pages only agree through the server, which runs in real time; a built site has no modules to skip its draws through.
 if (opt.players > 1 || opt.url) opt.warp = false;
@@ -250,9 +270,17 @@ try {
   if (video)
     await g.page.screencast.start({ path: video, size: { width: opt.size[0]!, height: opt.size[1]! }, fps: 30 });
   try {
+    if (opt.filmstrip) await warpNow(0);
     if (opt.curves) await g.eval(START_CURVES);
+    if (opt.filmstrip && opt.curves) await g.eval('window.__curves.rows.length = 0;');
     if (opt.action) await pageScript(g, opt.action);
-    const m = await g.motion(label, { frames: opt.frames, seconds: opt.seconds, region, heatmap: opt.heatmap });
+    const m = await g.motion(label, {
+      frames: opt.filmstrip || opt.frames,
+      seconds: opt.seconds,
+      region,
+      heatmap: opt.heatmap,
+      every: opt.filmstrip ? opt.every : 0,
+    });
     if (opt.curves) {
       const target = opt.target ? TARGETS[opt.target] : null;
       if (opt.target && !target) throw new Error(`no target ${opt.target}: ${Object.keys(TARGETS).join(', ')}`);
@@ -265,7 +293,8 @@ try {
       console.log(`curves:  ${png}\ncsv:     ${csv}`);
       for (const line of readings(data.rows, target)) console.log('  ' + line);
     }
-    console.log(`still:   ${await g.still(label)}\nmotion:  ${m.sheet}`);
+    if (opt.filmstrip) await warpNow(1);
+    console.log(`still:   ${await g.still(label)}\n${opt.filmstrip ? 'filmstrip' : 'motion'}:  ${m.sheet}`);
     if (g2) {
       console.log(`still 2: ${await g2.still(label)}`);
       const two = await g.eval(`return { first: window.boogle.remotes.size }`);

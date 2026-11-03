@@ -385,12 +385,29 @@ export class Game {
       seconds = 2,
       region = null,
       heatmap = false,
-    }: { frames?: number; seconds?: number; region?: number[] | null; heatmap?: boolean } = {},
+      every = 0,
+    }: { frames?: number; seconds?: number; region?: number[] | null; heatmap?: boolean; every?: number } = {},
   ) {
     const [W, H] = this.size;
     const shots: Shot[] = [];
     const t0 = Date.now();
+    const start = every
+      ? await this.page.evaluate(() => (window as unknown as { __warp: WarpHandle }).__warp.now())
+      : 0;
     for (let k = 0; k < frames; k++) {
+      if (every) {
+        const t = await this.page.evaluate(async (n) => {
+          const warp = (window as unknown as { __warp: WarpHandle }).__warp;
+          const before = window.boogle.prof?.last.frames;
+          await warp.step(n);
+          const after = window.boogle.prof?.last.frames;
+          if (typeof before !== 'number' || typeof after !== 'number' || after - before !== n)
+            throw new Error(`filmstrip expected ${n} completed frames, got ${Number(after) - Number(before)}`);
+          return warp.now();
+        }, every);
+        shots.push({ t: t - start, frame: (k + 1) * every, b64: (await this.page.screenshot()).toString('base64') });
+        continue;
+      }
       const due = t0 + (k * seconds * 1000) / Math.max(1, frames - 1);
       if (Date.now() < due) await sleep(due - Date.now());
       const t = (Date.now() - t0) / 1000;
@@ -400,7 +417,7 @@ export class Game {
     const res = await calc.evaluate(analyse, { shots, region, heatmap, W: W!, H: H! });
     await calc.close();
     const save = (p: string, url: string) => fs.writeFileSync(p, Buffer.from(url.split(',')[1]!, 'base64'));
-    const sheet = this.path(label, 'motion'),
+    const sheet = this.path(label, every ? 'filmstrip' : 'motion'),
       heat = heatmap ? this.path(label, 'heat') : null;
     save(sheet, res.sheetUrl);
     if (heat && res.heatUrl) save(heat, res.heatUrl);
@@ -492,7 +509,7 @@ export class Game {
 }
 
 // Runs inside a scratch page (canvas), so the harness needs no image library.
-type Shot = { t: number; b64: string };
+type Shot = { t: number; b64: string; frame?: number };
 async function analyse({
   shots,
   region,
@@ -580,9 +597,13 @@ async function analyse({
       y = Math.floor(f / cols) * th;
     sx.drawImage(im, x, y, tw, th);
     sx.fillStyle = 'rgba(0,0,0,0.6)';
-    sx.fillRect(x, y, 70, 20);
+    sx.fillRect(x, y, shots[f]!.frame === undefined ? 70 : 180, 20);
     sx.fillStyle = '#fff';
-    sx.fillText(shots[f]!.t.toFixed(2) + 's', x + 4, y + 15);
+    sx.fillText(
+      (shots[f]!.frame === undefined ? '' : `#${shots[f]!.frame}  `) + shots[f]!.t.toFixed(3) + 's',
+      x + 4,
+      y + 15,
+    );
     if (region) {
       sx.strokeStyle = '#f0f';
       sx.strokeRect(x + rx0 / 2, y + ry0 / 2, (rx1 - rx0) / 2, (ry1 - ry0) / 2);
