@@ -20,8 +20,10 @@ The owner's 2 November feedback is recorded under Look in [boogle-2.md](../propo
   swim as usual. C / RB swims down; Space / A swims up. Rendering is Local; the existing Rapier player remains Owner.
 - Four FFT cascades are the default. Source depth damping replaces long swell with shore waves near land, and
   troughs clamp above the bed at the displaced position. Shore wavelength is 30 m and amplitude .55 m.
-- Actual opaque terrain and rock colour/depth are read **in-pass** using TSL `viewportSharedTexture` and
-  `viewportDepthTexture`. Depth validation rejects refraction offsets into foreground objects; Beer–Lambert
+- Actual opaque terrain and rock colour/depth are read **in-pass** using TSL `viewportTexture` and
+  `viewportDepthTexture`. The colour snapshot uses `viewportTexture` so all refraction offsets reuse one copy
+  per frame (r187's `viewportSharedTexture` repeats the copy for each sample node). Depth validation rejects
+  refraction offsets into foreground objects; Beer–Lambert
   absorption colours the real bed. Actual obstacle depth drives contact foam. No synthesized bed remains.
 - Wave-driven caustics refract the cubic-filtered 12 m FFT slope grid onto 1.5, 4 and 10 m depth planes. Additive
   area-ratio rasterization makes the bright sand net; it multiplies direct sunlight on both ground and rocks.
