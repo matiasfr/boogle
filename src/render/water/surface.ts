@@ -541,7 +541,9 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
 
     // All derivatives and implicit samples above remain in uniform flow before the front/back branch.
     const result = vec4(0).toVar();
-    If(frontFacing.not(), () => {
+    // Choppy horizontal displacement can fold a coastal triangle. Its winding is not a water-volume test:
+    // a camera looking down on that fold must see the top optics, not the dark underwater underside.
+    If(frontFacing.not().and(V.y.lessThan(0)), () => {
       const Nu = Nrm.negate();
       const cosI = dot(V, Nu);
       const deep = deepWater(reflect(V.negate(), Nu)).toVar();

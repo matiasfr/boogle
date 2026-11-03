@@ -361,3 +361,14 @@ Remaining acceptance limits: the confirmed shore/refraction slit; real-time feel
 5. **Neutral versus AgX:** the separate side-by-side with characters owns this decision. This plan leaves Neutral and `scene.ts` unchanged. Any renderer/depth/global output change needs explicit approval of its concrete diff; approving water alone does not choose AgX.
 
 Coordination prerequisite, not an art decision: identify who owns the current Round 4 integration hunks and refresh `inflight` before building. Stop after committing this plan; no push or ship in this task.
+
+
+### Shore-slice follow-up (3 November 2026)
+
+[Shore-water validation](../research/shore-water-validation.md) narrows the residual bank slit above:
+a front-face-only diagnostic removes it without changing the coarse terrain. Folded, horizontally displaced
+water triangles selected the dark underside optics from above. Commit `f8faab2f` restricts those optics to
+backfaces viewed upward; the matched Place bank and a genuine underwater view were inspected successfully.
+Finer terrain alone was not the repair. This supersedes the slit observation at that tested angle, not every
+view or the outstanding owner/device acceptance gates. Keep step 4 partial. The follow-up includes all six
+shore/rock combinations, demo comparison boards, exact sand collision, bed-bake limits and GPU spans.

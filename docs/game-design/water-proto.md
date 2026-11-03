@@ -1,5 +1,12 @@
 # 6.26b Prototype: Ultra Water demo scene (`?proto=water`)
 
+Production `water=new` also serves the opt-in home shore slice (`classic=1&shore=smooth-detail&shoreRocks=1`).
+Its receivers carry the demo-strength shallow caustic net, moving wetness and swash lace; contacts and bed data
+follow the slice. Coastal water folds viewed from above use top-side optics: triangle backfacing alone no longer
+selects the dark underwater underside and draws a blue bank slit. Genuine upward-looking backfaces retain the
+underwater branch. This corrects optical classification, not the physical existence of choppy surface folds.
+See [shore-water validation](../research/shore-water-validation.md) for evidence and remaining limits.
+
 Ultra Water's scene, rewritten in TypeScript and TSL inside Boogle's single WebGPU renderer. The default starts
 from the demo's Lagoon view; `&v=pop` keeps our previous colour grade over the same scene. The gut question is
 **Does this look like the demo, here?** Serves DESIGN.md **Toys before chores** and **Show, don't tell**.

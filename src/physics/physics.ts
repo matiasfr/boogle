@@ -51,14 +51,13 @@ export function catchFallThrough(body: Body, r: number) {
   if (body.velocity.y < 0) body.velocity.y = 0;
 }
 
-addBody(
-  createBody({
-    material: groundMat,
-    group: GROUP.SCENERY,
-    position: { x: -HALF, y: 0, z: HALF },
-    shapes: [{ kind: 'heightfield', heights, cell: CELL }],
-  }),
-);
+export const terrainBody = createBody({
+  material: groundMat,
+  group: GROUP.SCENERY,
+  position: { x: -HALF, y: 0, z: HALF },
+  shapes: [{ kind: 'heightfield', heights, cell: CELL }],
+});
+addBody(terrainBody);
 
 // A player's body: yours (dynamic), or a remote's (kinematic: moved by the network, not by the ground).
 export function makePlayerBody(kinematic: boolean) {
