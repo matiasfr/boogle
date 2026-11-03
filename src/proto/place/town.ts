@@ -29,7 +29,7 @@ import { LOOK } from './look.ts';
 import { TOWN, VILLAGE, toWorld, type Plot } from './layout.ts';
 
 const PLASTER = '#e8dcc0',
-  THATCH = '#c9a86a',
+  THATCH = '#b99a60',
   OAK = '#7f5630',
   TIMBER = '#a9794c',
   RED = '#c4453a',
@@ -38,7 +38,7 @@ const PLASTER = '#e8dcc0',
   SLATE = '#4d5560',
   BRICK = '#9a4a3a',
   BRICK2 = '#8a4032',
-  GLASS = '#3f4a57',
+  GLASS = '#375b67',
   GOLD = '#f2b134',
   WHITE = '#f4f1e8',
   IRON = '#3f4145',

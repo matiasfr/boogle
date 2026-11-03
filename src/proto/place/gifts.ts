@@ -24,7 +24,7 @@ import { dropGot, youGot } from './got.ts';
 import { addFoot } from './sites.ts';
 
 // ---------------------------------------------------------------- shapes: a few primitives, merged, in their own colours
-type Prim = 's' | 'c' | 'k' | 'b' | 't';
+type Prim = 's' | 'c' | 'k' | 'b' | 't' | 'vest' | 'strap';
 type Part = [
   shape: Prim,
   x: number,
@@ -43,6 +43,37 @@ const unit: Record<Prim, () => THREE.BufferGeometry> = {
   k: () => new THREE.ConeGeometry(1, 1, 10),
   b: () => new THREE.BoxGeometry(1, 1, 1),
   t: () => new THREE.TorusGeometry(1, 0.3, 6, 14).rotateX(Math.PI / 2),
+  strap: () =>
+    new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0.03, 0.27),
+        new THREE.Vector3(0, 0.12, 0.21),
+        new THREE.Vector3(0, 0.17, 0.1),
+        new THREE.Vector3(0, 0.18, 0),
+        new THREE.Vector3(0, 0.17, -0.1),
+        new THREE.Vector3(0, 0.12, -0.21),
+        new THREE.Vector3(0, 0.03, -0.27),
+      ]),
+      12,
+      0.028,
+      4,
+      false,
+    ),
+  // One continuous pear-shaped shell: open hem and neck, with an inward lip at each edge.
+  // Buddy's belly is broader than its shoulders (assets/src/buddy.py).
+  vest: () =>
+    new THREE.LatheGeometry(
+      [
+        new THREE.Vector2(0.85, -0.5),
+        new THREE.Vector2(0.94, -0.5),
+        new THREE.Vector2(1, -0.27),
+        new THREE.Vector2(1, 0),
+        new THREE.Vector2(0.96, 0.24),
+        new THREE.Vector2(0.82, 0.5),
+        new THREE.Vector2(0.74, 0.5),
+      ],
+      24,
+    ),
 };
 const m4 = new THREE.Matrix4(),
   e4 = new THREE.Euler(),
@@ -70,6 +101,7 @@ export function merged(parts: Part[], grow = 1) {
   return mergeGeometries(geos)!;
 }
 const giftMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.08 });
+const clothMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.92 });
 const sheetMat = new THREE.MeshStandardNodeMaterial({ color: '#ded5c2', roughness: 1, flatShading: true });
 const GOLD = '#f2b134',
   NAVY = '#27386b',
@@ -110,10 +142,13 @@ export type Tier = 'common' | 'rare' | 'wonder';
 type Gift = { id: GiftId; name: string; line: string; parts: Part[]; slot?: Slot; tier?: Tier; area?: string };
 // Each drawn at about the size it sits on the shelf, base at y = 0.
 const overalls = (body: string, strap: string, trim: string): Part[] => [
-  ['s', 0, -0.06, 0, 0.3, 0.36, 0.25, body],
-  ['b', -0.15, 0.3, 0.2, 0.06, 0.34, 0.04, strap],
-  ['b', 0.15, 0.3, 0.2, 0.06, 0.34, 0.04, strap],
-  ['b', 0, 0.02, 0.26, 0.2, 0.14, 0.03, trim],
+  ['vest', 0, -0.1, 0, 0.31, 0.52, 0.28, body],
+  ['strap', -0.14, 0, 0, 1, 1, 1, strap],
+  ['strap', 0.14, 0, 0, 1, 1, 1, strap],
+  ['b', 0, -0.06, 0.28, 0.21, 0.15, 0.025, trim],
+  ['b', 0, 0.01, 0.297, 0.21, 0.015, 0.012, strap],
+  ['s', -0.14, 0.06, 0.283, 0.022, 0.022, 0.012, '#d9a23a'],
+  ['s', 0.14, 0.06, 0.283, 0.022, 0.022, 0.012, '#d9a23a'],
 ];
 // New pieces carry no line yet: those wait for the owner's writing pass. Existing lines stay as they were.
 const GIFTS: Gift[] = [
@@ -209,9 +244,11 @@ const GIFTS: Gift[] = [
     name: 'A raincoat',
     line: '',
     parts: [
-      ['s', 0, 0.06, 0, 0.31, 0.34, 0.26, '#f2c81a'],
-      ['k', 0, -0.32, -0.01, 0.42, 0.62, 0.34, '#e8bc14'],
-      ['b', 0, 0.04, 0.26, 0.04, 0.5, 0.03, '#3a3d44'],
+      ['vest', 0, -0.14, 0, 0.32, 0.65, 0.27, '#f2c81a'],
+      ['b', 0, -0.12, 0.27, 0.035, 0.4, 0.025, '#b38b16'],
+      ['b', -0.16, -0.2, 0.245, 0.14, 0.13, 0.035, '#e0ac13'],
+      ['b', 0.16, -0.2, 0.245, 0.14, 0.13, 0.035, '#e0ac13'],
+      ['t', 0, 0.19, 0, 0.18, 0.1, 0.14, '#e0ac13'],
     ],
   },
   {
@@ -222,8 +259,8 @@ const GIFTS: Gift[] = [
     line: '',
     parts: [
       ...overalls('#ff5f8f', '#ffcf33', '#ffcf33'),
-      ['b', -0.17, -0.1, 0.22, 0.12, 0.3, 0.05, '#4fb7ff'],
-      ['b', 0.17, -0.1, 0.22, 0.12, 0.3, 0.05, '#62d67a'],
+      ['b', -0.17, -0.1, 0.255, 0.12, 0.3, 0.05, '#4fb7ff'],
+      ['b', 0.17, -0.1, 0.255, 0.12, 0.3, 0.05, '#62d67a'],
     ],
   },
   {
@@ -473,6 +510,29 @@ export const STOCK: Stock[] = [
 ];
 // The ladder's tool chests.
 type Extra = 'axe' | 'pack';
+/** The same canvas pack in the reward show and on Buddy's back. +z is the pocket side. */
+function packParts(): Part[] {
+  const parts: Part[] = [
+    ['b', 0, 0.42, 0, 0.62, 0.44, 0.28, '#a98249'],
+    ['s', 0, 0.62, 0.01, 0.32, 0.1, 0.16, '#d1b87c'],
+    ['b', 0, 0.53, 0.16, 0.58, 0.18, 0.055, '#c5a466'],
+    ['b', 0, 0.29, 0.18, 0.38, 0.18, 0.1, '#b99151'],
+    ['b', 0, 0.37, 0.24, 0.4, 0.035, 0.035, '#d1b87c'],
+    ['b', 0, 0.73, -0.03, 0.18, 0.04, 0.06, '#69472e'],
+  ];
+  for (const x of [-0.21, 0.21])
+    parts.push(
+      ['b', x, 0.43, -0.16, 0.055, 0.53, 0.06, '#c9a86a'],
+      ['b', x, 0.47, 0.2, 0.065, 0.29, 0.025, '#69472e'],
+      ['b', x, 0.43, 0.22, 0.09, 0.065, 0.02, '#d9a23a'],
+      ['b', x, 0.43, 0.235, 0.045, 0.028, 0.01, '#69472e'],
+    );
+  return parts;
+}
+let packGeometry: THREE.BufferGeometry | undefined;
+export function packFrameMesh() {
+  return new THREE.Mesh((packGeometry ??= merged(packParts())), clothMat);
+}
 const EXTRAS: Record<Extra, { name: string; line: string; parts: Part[] }> = {
   axe: {
     name: 'A proper axe',
@@ -486,12 +546,7 @@ const EXTRAS: Record<Extra, { name: string; line: string; parts: Part[] }> = {
   pack: {
     name: 'A pack frame',
     line: '',
-    parts: [
-      ['b', -0.34, 0.65, 0, 0.09, 1.3, 0.09, '#c9a86a'],
-      ['b', 0.34, 0.65, 0, 0.09, 1.3, 0.09, '#c9a86a'],
-      ['b', 0, 0.2, 0, 0.8, 0.09, 0.09, '#a9794c'],
-      ['b', 0, 1.2, 0, 0.8, 0.09, 0.09, '#a9794c'],
-    ],
+    parts: packParts(),
   },
 };
 const byId = (id: GiftId) => GIFTS.find((g) => g.id === id) ?? STOCK.find((g) => g.id === id)!;
@@ -748,7 +803,7 @@ function clearRemoteClothes(peer: string) {
 onPeerRemoved((r) => clearRemoteClothes(r.peer));
 function makeWorn(id: GiftId, avatar: THREE.Object3D) {
   const w = WEAR[id]!;
-  const m = new THREE.Mesh(geoOf(id), giftMat);
+  const m = new THREE.Mesh(geoOf(id), byId(id).slot === 'outfit' ? clothMat : giftMat);
   m.castShadow = true;
   m.scale.setScalar(w.scale);
   m.rotation.y = Math.PI;

@@ -24,6 +24,7 @@ import { AXE2, GREAT, GREAT_TREE, GROVES, OAK, ORIGIN, PACK, ROCKS, ROCK_WORK, T
 import { RAIL_SIZE, chips, dustRing, send } from './pieces.ts';
 import { shakeView } from './celebrate.ts';
 import { addFoot } from './sites.ts';
+import { packFrameMesh } from './gifts.ts';
 
 // ---------------------------------------------------------------- your back
 /** One big thing on your shoulder: it fills your back, and you can't sprint with it. */
@@ -119,17 +120,7 @@ export const boilerShape = () => {
 };
 // A low canvas pack with a rolled top: the upgrade stays below the shoulders, clear of the follow view.
 const packFrame = new THREE.Group();
-const packBag = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.42, 0.3), flat('#b99151'));
-packBag.position.set(0, 0.42, 0.48);
-const packRoll = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.7, 8).rotateZ(Math.PI / 2), flat('#d1b87c'));
-packRoll.position.set(0, 0.65, 0.48);
-packFrame.add(packBag, packRoll);
-for (const sx of [-1, 1]) {
-  const strap = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.47, 0.035), flat('#69472e'));
-  strap.position.set(sx * 0.2, 0.45, 0.65);
-  packFrame.add(strap);
-}
-packFrame.traverse((o) => void (o.castShadow = true));
+packFrame.position.z = 0.43;
 packFrame.visible = false;
 
 // ---------------------------------------------------------------- what you can hit
@@ -642,6 +633,12 @@ export function updateChop(dt: number, now: number) {
   if (f && axe.parent !== f) {
     f.add(axe);
     axe.position.set(0.42, 0.72, -0.2);
+    // Build after the prototype's modules have loaded; gifts and the carry view share the mesh.
+    if (!packFrame.children.length) {
+      const pack = packFrameMesh();
+      pack.castShadow = pack.receiveShadow = true;
+      packFrame.add(pack);
+    }
     f.add(railsWorn, stoneWorn, beamWorn, boilerWorn, packFrame);
   }
   railsWorn.count = back.rails;

@@ -50,8 +50,9 @@ const FLOOR = 0.14;
 
 /** What rooms are made of: their own colours, a little warm light of their own so a shaded room still reads, one material for
  * all three. */
-export const roomMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.82 });
-roomMat.emissiveNode = vertexColor().mul(0.2);
+export const roomMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.9 });
+// A little bounce in the shadow proxy, without washing out the furniture's sunlit edges.
+roomMat.emissiveNode = vertexColor().mul(0.12);
 const shadowOnly = new THREE.MeshBasicNodeMaterial({ colorWrite: false, depthWrite: false });
 
 export type Part = Parameters<typeof merged>[0][number];
