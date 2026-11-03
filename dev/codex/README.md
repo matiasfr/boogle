@@ -10,11 +10,38 @@ node dev/codex/run.ts task inspect-forge --base-ref HEAD "Evaluate the forge rev
 node dev/codex/run.ts task inspect-wip --snapshot "Evaluate this working version. Do not change source. Run the place bot, inspect the forge checkpoint, and report findings."
 ```
 
-Give every job a new topic. `--snapshot` uses HEAD plus tracked changes/deletions and nonignored untracked files; it cannot
+Give every new job a new topic; use `resume` for follow-up work on the same job. `--snapshot` uses HEAD plus tracked changes/deletions and nonignored untracked files; it cannot
 be combined with `--base-ref`. Ignored assets are not copied. It creates a snapshot commit on the worker's branch, not the
 caller's. Review that snapshot along with the worker's changes before shipping: it contains the caller's unfinished work.
 `meta.json` records the selected source ref and exact starting commit. Dependencies are installed separately from that
 build's lockfile. Don't edit the caller while a snapshot is being made; detected changes stop it rather than mix versions.
+
+## Follow-up feedback
+
+From the original launching checkout, after the job finishes:
+
+```sh
+node dev/codex/run.ts resume inspect-forge "The forge is cropped in the capture. Fix the framing, inspect the new PNGs, and rerun the affected checks."
+```
+
+This resumes the recorded **session ID**, with the same conversation, worktree, branch, files and bot checkpoints. It
+restarts the browser broker and reminds Codex to fix the feedback and repeat affected checks. It never chooses the CLI's
+global `--last` session, fetches a new build, or resets the worker. Caller edits made since the original handoff aren't
+copied into the worker: describe the needed changes in the feedback, or start a new snapshot job.
+
+The model, effort and permissions carry forward; optionally override `--model` or `--effort`. `--dry` previews the exact
+resume command. Task, research and previz jobs can resume; review jobs need a new task for fixes. Keep the original
+worktree/output folder and local Codex session storage until follow-ups are finished. Older jobs can resume if their
+`log.txt` contains the CLI's explicit `session id:` header.
+
+Only one launcher can run a job at once. A failed turn with a recorded session ID can resume too. If a force-killed
+launcher left `.look/codex/<topic>/active/`, check its `pid` file and remove that lock directory **only after that launcher
+has stopped**. Interrupted browser requests return a failure on restart; ask Codex to rerun them.
+
+Latest reports remain at the job root. Before each follow-up replaces them, the prior turn's metadata, feedback, report,
+log, JSON events and evidence summary are preserved under `turns/001/`, `turns/002/`, etc. Copied capture artifacts stay
+in the shared `evidence/` directory. The latest handoff includes earlier runs too, marking those whose source tree no
+longer matches. A later pass doesn't erase an earlier failure.
 
 Run jobs in the background in Claude Code. The worker receives `.look/see-client.ts`, a copy of the launcher's client, so
 even an older `--base-ref` can use today's broker. From the worker's checkout:
@@ -56,7 +83,8 @@ Operations have a seven-minute timeout. Do not edit source or launch simultaneou
 - `evidence/<request>/`: copies of each run's logs, images, curves, video, reports, checkpoints and traces. These survive
   removing the worker worktree; assessment links are repointed to these copies. `output.txt` includes renderer/runtime
   diagnostics; `evidence.json` describes the run.
-- `meta.json` and `log.txt`: job provenance and the full worker log.
+- `meta.json`, `log.txt` and `events.jsonl`: job provenance (including session ID, turn and feedback), full worker log,
+  and CLI JSON events. The session ID is saved as soon as the CLI announces it, even if the turn subsequently fails.
 
 Each operation also returns its manifest immediately in the worker's `.look/evidence/`. A build that changes during a run
 fails verification. Committing identical files keeps the tree fingerprint, so valid evidence stays valid. Changes after

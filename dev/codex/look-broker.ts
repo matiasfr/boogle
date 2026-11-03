@@ -199,7 +199,15 @@ async function execute(id: string, request: Request) {
 }
 
 fs.mkdirSync(dir, { recursive: true });
-fs.writeFileSync(path.join(dir, 'ready.json'), JSON.stringify({ pid: process.pid }));
+// A resumed job keeps checkpoints, but an interrupted request's old local server is gone.
+for (const name of fs.readdirSync(dir)) {
+  if (!/^\d+-\d+\.json$/.test(name)) continue;
+  const done = path.join(dir, name.replace('.json', '.done.json'));
+  if (!fs.existsSync(done))
+    fs.writeFileSync(done, JSON.stringify({ status: 130, output: 'Previous broker stopped; rerun this operation.' }));
+}
+fs.writeFileSync(path.join(dir, 'ready.tmp'), JSON.stringify({ pid: process.pid }));
+fs.renameSync(path.join(dir, 'ready.tmp'), path.join(dir, 'ready.json'));
 for (;;) {
   try {
     process.kill(parent, 0);
