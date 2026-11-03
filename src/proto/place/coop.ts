@@ -17,6 +17,10 @@
 // - Trains are nudged to the authority's place, and platforms get stable ids so a rider stands on your copy of the deck.
 // - Owner presence tracks a carried great beam or boiler. Departure returns it to its pickup; snapshots clear a
 //   returning carrier's stale shoulder, including ordinary reconciliation after reconnecting.
+// - Cart calls and rail loads are reliable events; cargo rides on a stable platform on each tab. Bills stay fixed.
+// - The optional long beam has Owner grips (`placeLongBeam`) and a saved shared pose. While held, snapshots leave its
+//   midpoint alone; only the authority sets it on the fulcrum. A departing grip leaves the other end usable.
+// - See-saw bounces are one-off events: tilt is Local, and only the receiving tab launches its own player.
 //
 // Personal: your back, crates and gifts (each tab gets its own crate at each stretch), crystals, gold finds. Shared: the rungs,
 // the money, the felled trees, the paths. A newcomer inherits every rung without earning it again.
@@ -82,6 +86,10 @@ let api: Api | null = null;
 let skipsFns: Record<string, () => void> = {};
 /** Later hooks, from modules that import this one. */
 export const coopWire: Pick<Api, 'rung' | 'forgeBill' | 'wakeTrains' | 'activeFrame' | 'tech'> = {};
+export const pairHook = {
+  msg: null as ((m: Record<string, unknown>) => void) | null,
+  busy: null as (() => boolean) | null,
+};
 
 // ---------------------------------------------------------------- the whole shared state, once a second
 type Snap = { gen: number; shared: Record<string, unknown> };
@@ -146,6 +154,7 @@ const discrete = (j: Record<string, unknown>) => {
     gate: unknown;
     boiler: number;
     forgeBill: number;
+    longBeam?: { set: boolean };
   };
   const r = j.run as { k: number };
   return JSON.stringify([
@@ -156,6 +165,7 @@ const discrete = (j: Record<string, unknown>) => {
     q.gate,
     q.boiler,
     q.forgeBill,
+    q.longBeam?.set ?? false,
     r.k,
     linesOf(j).map((l) => [l.stage, l.open]),
   ]);
@@ -237,13 +247,16 @@ function reconcile(a: Api, j: Snap) {
     if ((q.trunk === true) !== trunkTaken()) setTrunkTaken(q.trunk === true);
   }
   Object.assign(job.score, (j.shared.job as typeof job).score);
+  const theirs = (j.shared.job as typeof job).longBeam;
+  if (!pairHook.busy?.() && theirs && typeof theirs === 'object' && num(theirs.x) && num(theirs.z) && num(theirs.yaw))
+    Object.assign(job.longBeam, { x: theirs.x, z: theirs.z, yaw: theirs.yaw, set: theirs.set === true });
   // Crates and people: each tab counts them as they land, so a moment's difference is normal.
   numMiss = volatile(j.shared) === volatile(mine) ? 0 : numMiss + 1;
   if (numMiss < 4) return;
   numMiss = 0;
   applyShared({
     ...mine,
-    job: j.shared.job,
+    job: pairHook.busy?.() ? { ...(j.shared.job as typeof job), longBeam: { ...job.longBeam } } : j.shared.job,
     heaps: j.shared.heaps,
     lines: j.shared.lines,
     depot: j.shared.depot,
@@ -367,6 +380,12 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       showBanner('Started over', 'Your partner reset the railway for you both.', 3);
       return;
     }
+    case 'cartCall':
+    case 'cartLoad':
+    case 'beamSet':
+    case 'beamBounce':
+      if (ready) pairHook.msg?.(m);
+      return;
     case 'wake':
       if (ready && run.mode === 'asleep') a.wake(true);
       return;
@@ -529,6 +548,7 @@ function expressNow(tr: (typeof lines)[number]['train']['tr']) {
 let startOverArmed = 0;
 export const coop = {
   on: COOP,
+  send: (m: Record<string, unknown>) => COOP && msg(m),
   /** Under the flag, and another tab decides. */
   follower: () => COOP && !amAuthority(),
   /** The authority is running someone else's Skip: it doesn't move its own player. */

@@ -71,6 +71,7 @@ import { cartFolk } from './depot.ts';
 import { haltUnder, snapTrains, updateCargo, wakeTrains } from './cargo.ts';
 import { showing, nearestCrate, openCrate, snapGifts, updateGifts, onGiftSaved } from './gifts.ts';
 import { updateLamps } from './lamps.ts';
+import './pair.ts';
 import {
   activeFrame,
   beginFeed,

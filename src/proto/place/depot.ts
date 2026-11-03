@@ -8,14 +8,14 @@ import { onFrame } from '../../loop.ts';
 import { FIXED } from '../../constants.ts';
 import { scene } from '../../render/scene.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
-import { removeBody, stepAlpha, type Body } from '../../physics/engine.ts';
+import { removeBody, setShapes, stepAlpha, type Body } from '../../physics/engine.ts';
 import { flat } from '../flat.ts';
 import { pop } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
 import { LOOK, STEEL } from './look.ts';
 import { kitBatch } from './look-kit.ts';
 import { CART, STUB, lineAt, railY, type LinePoint } from './layout.ts';
-import { count, job, num, sharedSlice } from './job.ts';
+import { COOP, count, job, num, sharedSlice } from './job.ts';
 import { L1, L2 } from './lines.ts';
 import { RAIL_SIZE, dustRing, logStackMesh, send, setStackLog } from './pieces.ts';
 import { besideLine, drawCar, makeCar, poseCarOnLine, type Car } from './rail.ts';
@@ -233,6 +233,18 @@ function drawLoad(n: number) {
   }
   cartRailsMesh.count = cart.rails;
   cartRailsMesh.instanceMatrix.needsUpdate = true;
+  // In co-op you ride the cargo, not inside it. Keep the original solo deck unchanged.
+  if (COOP) {
+    const cargoTop = cart.rails
+      ? 0.35 + Math.ceil(n / 4) * 0.27 + Math.floor((cart.rails - 1) / 8) * 0.12
+      : n
+        ? 0.3 + Math.floor((n - 1) / 4) * 0.27
+        : 0;
+    car.platform.top = car.hy + cargoTop;
+    setShapes(car.body, [
+      { kind: 'box', hx: CART.hx, hy: car.hy + cargoTop / 2, hz: CART.hz, offset: { x: 0, y: cargoTop / 2, z: 0 } },
+    ]);
+  }
 }
 function stepCart(dt: number) {
   if (!job.rung.depot) return;
