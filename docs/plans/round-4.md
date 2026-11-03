@@ -31,7 +31,7 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 
 ## Tracks, in order
 
-- [ ] **Character:** remove the avatar's ear bumps and rosy cheeks.
+- [x] **Character:** remove the avatar's ear bumps and rosy cheeks.
 - [ ] **Playtest data:** consented auto-upload to our server, fetched with one command, so we understand a session before hearing about it.
 - [ ] **Research and pictures:** movement abilities and glide feel; interiors in a third-person camera.
 - [ ] **The job:** steps 1 to 4, and the fixes above.
