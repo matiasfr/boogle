@@ -89,7 +89,8 @@ switch variant (another reload) → back to the page to copy notes. Research rec
 - [x] **Procedural sky (3 November, owner verdict revision):** `?proto=sky` keeps the original lighter blue,
   improves five rounded cloud groups and softens the sea horizon across the normal day/night cycle. Owner question:
   “Do these clouds and this horizon keep the sky you liked and make it better?” [As built](../game-design/sky-proto.md).
-  This completes the revised prototype build, not look approval.
+  This completes the revised prototype build, not look approval. Parked the same day: the owner prefers the original
+  sky and cloud shape (`docs/proposals/boogle-2.md`).
 
 Work that can run beside the prototypes when there's attention or agents to spare. None of it ships into the game
 until a look is picked; none of it blocks a playtest.

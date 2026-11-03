@@ -61,7 +61,12 @@ export const PROTOS: Proto[] = [
     id: 'sky',
     title: 'A sky worth lingering under',
     step: 'depth',
-    status: 'live',
+    status: 'parked',
+    answer: {
+      on: '2026-11-03',
+      verdict: 'The original is still my preference; I like the original cloud shape more.',
+      next: 'Parked by the owner. The game keeps its sky and clouds.',
+    },
     url: '/?proto=sky',
     question: 'Do these clouds and this horizon keep the sky you liked and make it better?',
     what: 'The original light blue, with rounded white clouds that glow orange at sunset and a soft sea horizon.',
@@ -578,7 +583,6 @@ export type PlaytestStep = {
 // one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
 // listed before it lands.
 export const PLAYTEST_ORDER: PlaytestStep[] = [
-  { id: 'sky', why: 'Do these clouds and this horizon keep the sky you liked and make it better?', later: true },
   { id: 'place', why: 'Did the crates and the little guys give you a reason to keep carrying?' },
   { id: 'net', variant: 'depot', why: 'Does the haul feel good now that the network is helping?' },
   { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },

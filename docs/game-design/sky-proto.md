@@ -7,6 +7,9 @@ This Local cosmetic study makes the main island a place worth lingering in. Ques
 The owner's 3 November verdict was “the original is looking pretty nice, honestly.” The original light blue stays;
 the deeper `#2a6fe0` take and its sun/fill overrides are removed.
 
+**Parked (3 November):** after the pass described here, the owner still preferred the original sky and cloud shape. The
+game keeps them; none of this is in the game without the flag.
+
 - The dome's existing palette, gradient curve, sun, fill light and fog colour follow the plain game's whole day.
   No forced time or moon phase: the normal world clock runs, and `&tod=` / `&moon=` use the game's existing preview.
   For comparison, `&tod=0.3` gives noon, `0.55` sunset and `0.8` night.
