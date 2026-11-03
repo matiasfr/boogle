@@ -97,7 +97,7 @@ export function arrivalTick(): number {
     while (d === deg) d = CLIMB - 3 + Math.floor(Math.random() * 3);
     deg = d;
   }
-  const { t, freq } = onBeat(ctx.currentTime + 0.005, note(deg), 16);
+  const { t, freq } = onBeat(ctx.currentTime + 0.005, note(deg));
   const accent = step % 4 === 3;
   pan = -pan;
   const g = voice(ctx, out, t, 0.3, pan * 0.3 + (Math.random() - 0.5) * 0.1);
@@ -111,7 +111,7 @@ export function burstChord(): void {
   if (!a) return;
   const { ctx, out } = a;
   const big = step >= 9;
-  const { t, freq } = onBeat(ctx.currentTime + 0.06, note(0), 16);
+  const { t, freq } = onBeat(ctx.currentTime + 0.06, note(0));
   const g = voice(ctx, out, t, 0.7, 0);
   const notes = big ? [1, 1.5, 2, 2.5] : [1, 1.5, 2]; // root, fifth, octave (and the third above it)
   notes.forEach((r, k) =>
