@@ -91,13 +91,23 @@ export function buildStation(spec: Station, line: Line, dir: number) {
     g.add(feeder);
   }
   scene.add(g);
-  // Solid: the frame, and the feeder's bed, which you can step over.
+  // Solid: the frame as high as its stack can get, and the feeder's bed, which you can hop over.
   const turn = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
-  addStatic({ kind: 'box', hx: FRAME_D / 2 + 0.1, hy: 0.7, hz: FRAME_W / 2 + 0.1 }, { x, y: y + 0.7, z }, turn);
+  addStatic({ kind: 'box', hx: FRAME_D / 2 + 0.1, hy: 1.5, hz: FRAME_W / 2 + 0.1 }, { x, y: y + 1.5, z }, turn);
   addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3);
+  addStatic(
+    { kind: 'box', hx: 0.5, hy: 0.28, hz: SPAN / 2 },
+    { x: x - lx * (FRAME_D / 2 + SPAN / 2), y: y + 0.28, z: z - lz * (FRAME_D / 2 + SPAN / 2) },
+    new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw + Math.PI / 2),
+  );
   // The rails' bearers, beside the frame on the far side, for stations that ask for rails.
   const railAt = new THREE.Vector3(x + lx * (FRAME_D / 2 + 0.9), y, z + lz * (FRAME_D / 2 + 0.9));
   if (spec.rails) {
+    addStatic(
+      { kind: 'box', hx: 0.5, hy: 0.45, hz: 1.35 },
+      { x: railAt.x, y: y + 0.45, z: railAt.z },
+      new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw),
+    );
     for (const off of [-0.9, 0.9]) {
       const b = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.2, 0.2), flat('#8a6236'));
       b.position.set(railAt.x + Math.sin(yaw) * off, y + 0.1, railAt.z + Math.cos(yaw) * off);

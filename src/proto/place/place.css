@@ -53,22 +53,28 @@ body:not(.playing) .place-proto {
   cursor: pointer;
 }
 
-/* The objective: one short line, always on screen, big enough for an iPad across the room. */
+/* The objective: one short line that comes up when it changes or you seem unsure, and fades (signs.ts). */
 .place-objective {
   position: absolute;
   left: 50%;
   bottom: calc(112px + env(safe-area-inset-bottom, 0px)); /* above the log-count chip (haul-stack.css) */
   transform: translateX(-50%);
-  max-width: min(62vw, 760px);
-  padding: 10px 20px;
-  font: 800 20px/1.25 var(--font-body);
+  max-width: min(56vw, 560px);
+  padding: 6px 14px;
+  font: 700 15px/1.25 var(--font-body);
   color: var(--ink);
   text-align: center;
   background: var(--paper);
-  border: 3px solid var(--ink);
-  border-radius: 16px;
-  box-shadow: 0 4px 0 var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 0 2px 0 var(--ink);
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+.place-objective.on {
+  opacity: 1;
+  transition: opacity 0.15s;
 }
 .place-objective.place-pop {
   animation: place-pop 0.28s ease-out;

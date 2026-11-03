@@ -136,13 +136,32 @@ obj.className = 'place-objective';
 const nums = document.createElement('div');
 nums.className = 'place-nums';
 (document.querySelector('.hud') ?? document.body).append(obj, nums);
-let lastObj = '';
+// It shows when it changes or when you seem unsure, then gets out of the way: the owner found it "always on", covering the
+// game. The beacon and the chevron do the rest of the time. A number ticking over isn't news.
+const OBJ = { showS: 5.5, unsureS: 16 };
+let lastObj = '',
+  objT = 0, // s it stays up
+  stillT = 0; // s you've gone without moving or doing anything
 export function setObjective(text: string) {
   if (text === lastObj) return;
-  // A number ticking over (a count, a countdown) isn't news: only a new line pops.
-  if (text.replace(/\d+/g, '') !== lastObj.replace(/\d+/g, '')) replay(obj, 'place-pop');
+  const news = text.replace(/\d+/g, '') !== lastObj.replace(/\d+/g, '');
   lastObj = text;
   obj.textContent = text;
+  if (news) showObjective();
+}
+/** Up it comes for a few seconds, with a little pop. */
+export function showObjective() {
+  if (!lastObj) return;
+  if (objT <= 0) replay(obj, 'place-pop');
+  objT = OBJ.showS;
+  stillT = 0;
+}
+/** Each frame. `busy`: you're moving or something's happening, so you don't look unsure. */
+export function updateObjective(dt: number, busy: boolean) {
+  stillT = busy ? 0 : stillT + dt;
+  if (stillT > OBJ.unsureS) showObjective();
+  objT = Math.max(0, objT - dt);
+  obj.classList.toggle('on', objT > 0 && !!lastObj);
 }
 let lastNums = '';
 export function setNumbers(train: number | null, people: number) {

@@ -459,6 +459,7 @@ function brain(g: Guy, dt: number) {
         if (Math.abs(f.x - g.x) < 8 && Math.abs(f.z - g.z) < 8) outOf(f, g, 0.4);
       }
       g.y = H(g.x, g.z);
+      g.fy = null; // down off the machine: riding it left them at deck height, floating in front of the frame
       g.mood = you.ok && Math.hypot(you.x - g.x, you.z - g.z) < 14 ? 'wave' : 'idle';
       g.yaw = you.ok ? Math.atan2(you.x - g.x, you.z - g.z) : g.yaw;
       return;

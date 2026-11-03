@@ -18,13 +18,13 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 
 ## Fixes from the round 3 notes
 
-- [ ] The objective box fades when you don't need it, rather than always covering the game.
-- [ ] The hat rests on the head.
-- [ ] Stacks you can see are solid.
-- [ ] Little guys don't float in front of the deposit site.
-- [ ] The pet doesn't chase the train frantically or clip through it.
-- [ ] The train shows it's waking, without saying so.
-- [ ] The sun moves.
+- [x] The objective box fades when you don't need it, rather than always covering the game.
+- [x] The hat rests on the head.
+- [x] Stacks you can see are solid.
+- [x] Little guys don't float in front of the deposit site.
+- [x] The pet doesn't chase the train frantically or clip through it.
+- [x] The train shows it's waking, without saying so.
+- [x] The sun moves.
 - [ ] The platform's purpose is obvious.
 - [ ] Something points to the next island.
 - [ ] Crates and gifts vary, since "one tree and boxes" stopped feeling different.

@@ -19,7 +19,7 @@ import { CRANE, FORGE, ORIGIN, RACK, TUNE } from './layout.ts';
 import { LOOK, STEEL, boardMaterial } from './look.ts';
 import { kitBatch } from './look-kit.ts';
 import { RAIL_SIZE, dropSet, dustRing, send } from './pieces.ts';
-import { addFoot, housePlan, outOf } from './sites.ts';
+import { addFoot, housePlan, hullBodies, outOf } from './sites.ts';
 
 const WOOD = '#a9794c',
   WOOD2 = '#8a6236',
@@ -336,7 +336,13 @@ export function updateForge(dt: number, onLit: () => void) {
 /** The poles stand until the forge is lit; the foundation stays. */
 function poles(on: boolean) {
   draw(scaffold, (k) => (on || k === 0 ? 1 : 0));
+  if (on && !poleBodies.length) poleBodies.push(...hullBodies(plan, plan.poles));
+  if (!on) {
+    for (const b of poleBodies) removeBody(b);
+    poleBodies.length = 0;
+  }
 }
+const poleBodies: ReturnType<typeof addStatic>[] = [];
 let inFlight = 0;
 export function takeRail() {
   forge.rails--;

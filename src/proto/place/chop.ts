@@ -5,13 +5,15 @@
 // `backSeam`, and a few rails strapped upright behind it once you carry rails.
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
+import { emit } from '../../render/particles.ts';
+import { removeBody, type Body } from '../../physics/engine.ts';
 import { me } from '../../player/player.ts';
 import { backSeam, myBundleNext } from '../../features/haul-stack.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { mulberry32 } from '../../sim/rng.ts';
 import { knock, pop } from '../minis/common.ts';
 import { flat } from '../flat.ts';
-import { H } from './land.ts';
+import { H, addStatic } from './land.ts';
 import { LOOK, STEEL, paint } from './look.ts';
 import { GROVES, ORIGIN, TUNE } from './layout.ts';
 import { RAIL_SIZE, chips, dustRing, send } from './pieces.ts';
@@ -59,6 +61,8 @@ export type Tree = {
   fall: number; // s since it was felled, -1 standing
   fallYaw: number;
   at: THREE.Vector3;
+  body: Body | null; // standing: its trunk; felled: the trunk on the ground and the stump
+  stump: Body | null;
 };
 
 const rng = mulberry32(77);
@@ -81,11 +85,69 @@ export const TREES: Tree[] = GROVES.flatMap((g) => {
       fall: -1,
       fallYaw: 0,
       at: new THREE.Vector3(x, y + 1.7, z),
+      body: null,
+      stump: null,
     });
   }
   return out;
 });
 TREES.forEach((t, k) => (t.index = k));
+
+// ---------------------------------------------------------------- solid: standing, and where it lies
+const AXIS_Y = new THREE.Vector3(0, 1, 0),
+  lie = new THREE.Quaternion();
+function solidTree(t: Tree) {
+  if (t.body) removeBody(t.body);
+  if (t.stump) removeBody(t.stump);
+  t.body = t.stump = null;
+  const h = 5 * t.size;
+  if (t.fall < 0) {
+    t.body = addStatic(
+      { kind: 'cylinder', rTop: 0.38 * t.size, rBottom: 0.38 * t.size, h, segments: 6 },
+      { x: t.x, y: t.y + h / 2, z: t.z },
+    );
+    return;
+  }
+  t.stump = addStatic(
+    { kind: 'cylinder', rTop: 0.46, rBottom: 0.46, h: 0.6, segments: 6 },
+    { x: t.x, y: t.y + 0.3, z: t.z },
+  );
+  // On the ground, along the way it fell.
+  lie.setFromAxisAngle(AXIS_Y, t.fallYaw);
+  t.body = addStatic(
+    { kind: 'box', hx: 0.3 * t.size, hy: 0.3 * t.size, hz: h / 2 },
+    {
+      x: t.x + Math.sin(t.fallYaw) * (h / 2 + 0.2),
+      y: H(t.x + Math.sin(t.fallYaw) * h * 0.5, t.z + Math.cos(t.fallYaw) * h * 0.5) + 0.3 * t.size,
+      z: t.z + Math.cos(t.fallYaw) * (h / 2 + 0.2),
+    },
+    lie,
+  );
+}
+const leaf = new THREE.Color('#4f9c44'),
+  leaf2 = new THREE.Color('#3f8a3a');
+/** The crown comes apart as it lands: what stays is a bare trunk, solid, and you can see how much you've cut. */
+function shedCrown(t: Tree) {
+  for (let k = 0; k < 70; k++) {
+    const along = 5 + Math.random() * 7,
+      a = Math.random() * Math.PI * 2,
+      sp = 1 + Math.random() * 3;
+    emit({
+      x: t.x + Math.sin(t.fallYaw) * along * t.size + Math.cos(a) * Math.random() * 1.8,
+      y: t.y + 0.4 + Math.random() * 2,
+      z: t.z + Math.cos(t.fallYaw) * along * t.size + Math.sin(a) * Math.random() * 1.8,
+      vx: Math.cos(a) * sp,
+      vy: 1.5 + Math.random() * 3,
+      vz: Math.sin(a) * sp,
+      life: 0.9 + Math.random() * 0.8,
+      size: 0.18 + Math.random() * 0.16,
+      color: k % 2 ? leaf : leaf2,
+      gravity: 4,
+      drag: 1.4,
+      shrink: 0.5,
+    });
+  }
+}
 
 const n = TREES.length;
 const parts = {
@@ -127,8 +189,9 @@ function pose(t: Tree, now: number) {
       .multiply(local.makeTranslation(0, y * t.size, 0))
       .scale(sv);
   parts.trunk.setMatrixAt(t.index, at(2.5));
-  parts.crown.setMatrixAt(t.index, at(7.2));
-  parts.crown2.setMatrixAt(t.index, at(10));
+  const bare = t.fall >= 0.75;
+  parts.crown.setMatrixAt(t.index, bare ? ZERO : at(7.2));
+  parts.crown2.setMatrixAt(t.index, bare ? ZERO : at(10));
   parts.ribbon.setMatrixAt(t.index, at(1.15));
   parts.stump.setMatrixAt(t.index, t.fall >= 0 ? local.makeTranslation(t.x, t.y + 0.3, t.z) : ZERO);
   for (const m of Object.values(parts)) m.instanceMatrix.needsUpdate = true;
@@ -139,6 +202,7 @@ export function resetTrees() {
     t.shake = 0;
     t.fall = -1;
     pose(t, 0);
+    solidTree(t);
   }
 }
 /** Trees already down, by index: what a reload keeps. */
@@ -150,6 +214,7 @@ export function restoreFellen(list: number[]) {
     t.fall = 1;
     t.strokes = TUNE.strokes;
     pose(t, 0);
+    solidTree(t);
   }
 }
 export const standing = (t: Tree) => t.fall < 0;
@@ -220,6 +285,8 @@ function contact(t: Tree) {
     t.fall = 0;
     t.fallYaw = Math.atan2(dx, dz);
     logsLanded = 0;
+    if (t.body) removeBody(t.body);
+    t.body = null;
     thump(t.x, t.z);
   }
   chopHooks.stroke?.(t);
@@ -258,9 +325,14 @@ export function updateChop(dt: number, now: number) {
         felled.n++;
         thump(t.x, t.z);
         dustRing(t.x + Math.sin(t.fallYaw) * 5, t.y + 0.2, t.z + Math.cos(t.fallYaw) * 5, 16, 3.4, 0.6);
+        shedCrown(t);
         pose(t, now);
+        solidTree(t);
       }
     }
   }
 }
-for (const t of TREES) pose(t, 0);
+for (const t of TREES) {
+  pose(t, 0);
+  solidTree(t);
+}
