@@ -4,20 +4,22 @@
 import * as THREE from 'three/webgpu';
 import { renderer } from '../../render/scene.ts';
 import { TSL, type N } from './tsl.ts';
+import { waterQuality } from './quality.ts';
 
 const { Fn, abs, clamp, float, floor, log2, max, min, mix, normalize, positionGeometry, refract, texture, uniform } =
   TSL;
 const { varying, vec2, vec3, vec4 } = TSL;
 const PERIOD = 12;
-export const CAUSTIC_TEXELS_PER_M = 512 / PERIOD;
+const scale = waterQuality.causticScale;
+export const CAUSTIC_TEXELS_PER_M = (512 * scale) / PERIOD;
 const TARGETS = [
-  { res: 512, format: THREE.RedFormat },
-  { res: 256, format: THREE.RGFormat },
+  { res: 512 * scale, format: THREE.RedFormat },
+  { res: 256 * scale, format: THREE.RGFormat },
 ];
 const SLICES = [
-  { depth: 1.5, target: 0, channel: 0, cells: 128, margin: 6 },
-  { depth: 4, target: 1, channel: 0, cells: 64, margin: 7 },
-  { depth: 10, target: 1, channel: 1, cells: 32, margin: 8 },
+  { depth: 1.5, target: 0, channel: 0, cells: 128 * scale, margin: 6 },
+  { depth: 4, target: 1, channel: 0, cells: 64 * scale, margin: 7 },
+  { depth: 10, target: 1, channel: 1, cells: 32 * scale, margin: 8 },
 ];
 
 /** Cubic B-spline reconstructed with four bilinear taps, GPU Gems 2 ch. 20 as used by the source.

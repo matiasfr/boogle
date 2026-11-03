@@ -2,11 +2,12 @@
 // Two tiny draws (32² meter, 1² adaptation). No extra full-screen composite, renderer, loop or MSAA changes.
 // The adaptation reads a separate previous-state texture; a one-texel GPU copy after the output saves it for next frame.
 import * as THREE from 'three/webgpu';
-import { pipeline, renderer, scenePass } from '../../render/scene.ts';
+import { MAX_DPR, pipeline, renderer, scenePass } from '../../render/scene.ts';
 import { TSL, type N } from './tsl.ts';
+import { waterQuality } from './quality.ts';
 
 const { Fn, Loop, clamp, dot, exp2, float, fract, log2, mat3, max, mix, pow, rtt, screenCoordinate, select } = TSL;
-const { OnAfterRenderPipeline, texture, uniform, uv, vec2, vec3, vec4 } = TSL;
+const { OnAfterRenderPipeline, OnBeforeRenderPipeline, texture, uniform, uv, vec2, vec3, vec4 } = TSL;
 const luma = (v: N) => dot(v, vec3(0.2126, 0.7152, 0.0722));
 const hash33 = Fn(([p]: [N]) => {
   const q = fract(p.mul(vec3(0.1031, 0.103, 0.0973))).toVar();
@@ -109,6 +110,11 @@ export function installDemoPost() {
   );
   adaptation.name = 'water exposure adaptation';
   pipeline.outputNode = Fn(() => {
+    OnBeforeRenderPipeline(() => {
+      // Apply after adaptive-res's late hook. Normalize by its current DPR so the world stays at
+      // 0.6 of MAX_DPR, never 0.6 * 0.6. Keep the canvas/output, shared settings and MSAA storage intact.
+      scenePass.setResolutionScale(Math.min(1, (waterQuality.resolution * MAX_DPR) / renderer.getPixelRatio()));
+    });
     OnAfterRenderPipeline(() => renderer.copyTextureToTexture(adaptation.value, history));
     const ex = clamp(exp2(adaptation.sample(vec2(0.5)).level(0).r.negate()).mul(0.18), 0.05, 20).mul(exposure);
     const d = uv().sub(0.5).mul(Math.SQRT2);

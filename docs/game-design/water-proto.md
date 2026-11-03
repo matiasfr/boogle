@@ -20,8 +20,10 @@ The owner's 2 November feedback is recorded under Look in [boogle-2.md](../propo
   swim as usual. C / RB swims down; Space / A swims up. Rendering is Local; the existing Rapier player remains Owner.
 - Four FFT cascades are the default. Source depth damping replaces long swell with shore waves near land, and
   troughs clamp above the bed at the displaced position. Shore wavelength is 30 m and amplitude .55 m.
-- Actual opaque terrain and rock colour/depth are read **in-pass** using TSL `viewportSharedTexture` and
-  `viewportDepthTexture`. Depth validation rejects refraction offsets into foreground objects; Beer–Lambert
+- Actual opaque terrain and rock colour/depth are read **in-pass** using TSL `viewportTexture` and
+  `viewportDepthTexture`. The colour snapshot uses `viewportTexture` so all refraction offsets reuse one copy
+  per frame (r187's `viewportSharedTexture` repeats the copy for each sample node). Depth validation rejects
+  refraction offsets into foreground objects; Beer–Lambert
   absorption colours the real bed. Actual obstacle depth drives contact foam. No synthesized bed remains.
 - Wave-driven caustics refract the cubic-filtered 12 m FFT slope grid onto 1.5, 4 and 10 m depth planes. Additive
   area-ratio rasterization makes the bright sand net; it multiplies direct sunlight on both ground and rocks.
@@ -57,17 +59,27 @@ and trough clamp; finite GPU triangulation and the 10 Hz sample interval limit t
 ## Options
 
 - `?proto=water`: demo scene and Lagoon opening; `&v=pop`: previous saturation/absorption/reflection grade.
+- `&q=high|mobile`: high by default; a coarse pointer selects mobile unless `q=high` is explicit.
+  Mobile draws the world at 0.6 of the maximum device pixel ratio, normalized against adaptive resolution's
+  current 0.6–1 ratio so the scales never multiply down to 0.36. AgX/output remains at the adaptive canvas size.
+  Stored 4× MSAA, all four FFT bands, wave energy, 384-segment grid and the 4096 shadow map stay the same.
+  Mobile halves the two caustic targets (256²/128²) and their three splat grids (64/32/16 cells), updating every
+  frame; it omits the finest sand ripple octave and rock bump detail. Both profiles omit bloom.
 - `&shot=lagoon|breakers|surf-rock|open-ocean`: source camera and sun presets, translated only by the island offset.
 - `&waves=analytic`: earlier analytic wave diagnostic; it has no FFT caustics.
 - `&n=128`, `&cascades=1..4`, `&band=0..3`: FFT cost diagnostics. Caustics require band 2.
 - `&ocean=off`, `&grid=192`, `&groundFlat=1`, `&rockFlat=1`: visual/cost diagnostics.
+- `&waterCopy=repeat`: the old redundant colour copies, for cost comparisons only.
+- `&waterScale=0.6|1`, `&waterTerrain=full|cheap`, `&waterCaustics=full|cheap`: isolate the mobile settings.
+  They do not change `q` or saved adaptive-resolution preferences. Timing and device requests are in the
+  [validation report](../research/water-demo-validation.md).
 - `raw` is no longer a distinct variant; toy terrain is not carried forward.
 
 ## Render budget and limits
 
 - FFT: one compute pass containing 10 dispatches; no additional ocean simulation for caustics.
-- Caustics: two 4× MSAA raster targets, three grid draws. Their mip chains add 17 internal reductions: **19 GPU
-  passes / 20 draws** total. Renderer counters omit these internal mip draws.
+- Caustics: two 4× MSAA raster targets, three grid draws. High's mip chains add 17 internal reductions: **19 GPU
+  passes / 20 draws** total. Mobile has 15 reductions: **17 passes / 18 draws**. Renderer counters omit these mip draws.
 - Exposure: two tiny raster passes/draws (32² meter and 1² adaptation), plus a 16-byte history copy; AgX shares
   the existing fullscreen output draw. No CPU readback and no new full-screen composite.
 - Refraction: opaque HDR colour and depth snapshot copies interrupt/resume the current scene pass, without

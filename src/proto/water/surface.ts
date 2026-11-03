@@ -48,6 +48,7 @@ const {
   screenUV,
   perspectiveDepthToViewZ,
   viewportSharedTexture,
+  viewportTexture,
   viewportDepthTexture,
 } = TSL;
 
@@ -366,7 +367,11 @@ export function createOcean(source: WaveSource, bake: ShoreBake, foamTex: THREE.
     uCellStep = uniform((2 * PI) / GRID.angular);
   const f = shoreFields(bake);
   // The colour copy matches scenePass's HDR format. Both nodes read immediately before the ocean draws.
-  const opaqueColor = viewportSharedTexture();
+  // Each sample()/level() clone of viewportSharedTexture copies the framebuffer again in r187.
+  // viewportTexture keys updates by the ocean's context texture: one opaque snapshot for every offset.
+  // Keep the old path only as a cost diagnostic, so captures can bracket this exact change.
+  const opaqueColor =
+    new URLSearchParams(location.search).get('waterCopy') === 'repeat' ? viewportSharedTexture() : viewportTexture();
   opaqueColor.value.type = THREE.HalfFloatType;
   opaqueColor.value.colorSpace = THREE.LinearSRGBColorSpace;
   opaqueColor.value.minFilter = opaqueColor.value.magFilter = THREE.LinearFilter;

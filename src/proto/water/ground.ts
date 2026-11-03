@@ -6,6 +6,7 @@ import { TSL, type N } from './tsl.ts';
 import { CAUSTIC_TEXELS_PER_M, type CausticSample } from './caustics.ts';
 import { ISLAND_AT } from './tuning.ts';
 import { demoSky } from './sky.ts';
+import { waterQuality } from './quality.ts';
 
 const { Fn, If, abs, clamp, cos, cross, dot, exp, float, fwidth, length, max, min, mix, normalize, refract, sign } =
   TSL;
@@ -149,7 +150,7 @@ export function sandNormal(p: N, normal: N, sandLine: N, noise: Noise) {
         .add(0.3)
         .mul(0.02);
       g.assign(rippleSlope(p.xz, d, 3.9, 0.35, 0.8, a1, noise).mul(ss(0.15, 0.5, px).oneMinus()));
-      If(px.lessThan(0.09), () => {
+      If(waterQuality.fineTerrain.and(px.lessThan(0.09)), () => {
         const a2 = ss(0.25, 0.75, noise.ripple(p.xz.mul(0.15).add(3)).x)
           .mul(0.7)
           .add(0.3)
@@ -170,17 +171,16 @@ export function sandNormal(p: N, normal: N, sandLine: N, noise: Noise) {
 export function rockNormal(p: N, normal: N, r2: N, noise: Noise) {
   return Fn(() => {
     const px = length(fwidth(p));
-    const bh = noise
-      .volume(p.mul(1.6))
-      .mul(0.6)
-      .add(r2.mul(0.25))
-      .add(
+    const fine = float(0).toVar();
+    If(waterQuality.fineTerrain, () => {
+      fine.assign(
         noise
           .volume(p.mul(9))
           .mul(0.15)
           .mul(ss(0.03, 0.12, px).oneMinus()),
-      )
-      .toVar();
+      );
+    });
+    const bh = noise.volume(p.mul(1.6)).mul(0.6).add(r2.mul(0.25)).add(fine).toVar();
     const dx = p.dFdx(),
       dy = p.dFdy(),
       r1 = cross(dy, normal),
