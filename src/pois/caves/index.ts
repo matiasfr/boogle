@@ -328,6 +328,7 @@ onStart(() => {
   waterField.registerPond({
     id: 'cave-pond',
     level: POND.level,
+    ellipse: { x: POND.x, z: POND.z, rx: POND.rx * 0.9, rz: POND.rz * 0.9 },
     contains: ({ x, y, z }) => {
       const q = ((x - POND.x) / POND.rx) ** 2 + ((z - POND.z) / POND.rz) ** 2;
       return q < 0.81 && (!waterField.moving || y === Infinity || inCave(x, y, z));

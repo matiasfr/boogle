@@ -5,6 +5,13 @@ the cave's 3D interior predicate excludes the outdoor ocean under its roof; the 
 zero surface velocity. Pond entry splashes use the shared particles without adding sea rings. Above-roof queries
 remain outdoor, and the old default sea stays active unless opted in. See [island water](island.md) for query limits.
 
+Under `water=new`, the near-plane lens grid uses that pond's level and actual ellipse, including when the lens
+straddles its bank. It does not use ocean waves inside the pond. Dry cave interiors have no underwater volume;
+the pond transmits the locally lit cave through absorption, with a wet-lens exit but no outdoor sky/sun in-scatter,
+ocean sun shafts or marine snow. These are Local optics,
+with no breath, drowning or additional shared state.
+The pond does not sample the outdoor frozen sky cube through its cave roof.
+
 - **What.** A separate little world under the heightfield, loaded lazily in its own chunk after start
   ([src/features/pois.ts](../../src/features/pois.ts); its `site.ts` ground stays eager): one seamless mesh, built a little
   each frame once loaded,

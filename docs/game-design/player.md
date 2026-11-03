@@ -30,7 +30,12 @@ Files: [src/entities/player/state.ts](../../src/entities/player/state.ts), [view
 - With the staged `water=new` opt-in, that surface is a bounded asynchronous sample of the visible waves, and damping
   is relative to bounded surface velocity. The threshold and Jump swim-up stay the same; stale samples ease to mean
   water. The old default path is unchanged. Query limits and cave composition: [island water](island.md).
-- There is no dive (removed 2026-10-30, [plans/done/cleanup-dig-water-junk.md](../plans/done/cleanup-dig-water-junk.md)).
+- The staged `water=new` path and retained `proto=water` demo add Dive: hold C, D-pad Right or the touch Dive button
+  while swimming. It replaces buoyancy with a target of 2.5 m/s down (gain 8, acceleration bounded to 30 m/s²);
+  Rapier still handles collisions. Release restores buoyancy with passive ascent capped toward 2.5 m/s, so a deep
+  release does not launch you out of the sea. Jump/Space/A wins over Dive and bypasses that cap. Blur, hidden tab, menus,
+  talks, sitting, knockdown, leaving water and respawn clear the intent. This is local input driving the existing
+  Owner body, with no new presence field. The default old water still has no dive.
 
 ## Flops (cosmetic)
 

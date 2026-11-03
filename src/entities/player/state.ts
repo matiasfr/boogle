@@ -23,6 +23,7 @@ import { waterField } from '../../physics/water-field.ts';
 import { peopleChanged, sendPresence, setLocalPresence } from '../../netplay/net.ts';
 import { input, inputState } from '../../player/input-state.ts';
 import { cam, me } from '../../player/state.ts';
+import { releaseDive, waterIntent } from '../../player/water-intent.ts';
 
 export { cam, me };
 setLocalPresence(me);
@@ -55,6 +56,7 @@ export const onEntered = (fn: () => void) => void onEnter.push(fn);
 /** Into the world as `name`, once. The lobby's part (its name field, closing it) is in src/player/hud.ts. */
 export function enterIsland(name: string) {
   if (me.entered) return;
+  releaseDive();
   me.name = name;
   me.entered = true;
   const ang = Math.random() * Math.PI * 2,
@@ -164,6 +166,8 @@ export function steerPlayer() {
   const surfY = water.height;
   const depth = surfY - (b.position.y + SWIM_DEPTH);
   me.swimming = depth > 0;
+  if (!me.swimming || !me.entered || me.down || inputState.held || inputState.seated) releaseDive();
+  const swimUp = me.jumpHeld || me.jumpQueued > 0;
   const speed = (me.sprint ? 9.5 : 5.6) * (me.swimming ? 0.55 : 1);
   const rvx = b.velocity.x - carry.x,
     rvz = b.velocity.z - carry.z;
@@ -190,10 +194,23 @@ export function steerPlayer() {
       me.jumpQueued = 0;
     }
   }
-  if (depth > 0)
-    b.force.y +=
-      PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) -
-      PLAYER_MASS * 3 * (b.velocity.y - water.verticalVelocity);
+  if (depth > 0) {
+    if (waterIntent.enabled && waterIntent.diving && !swimUp) {
+      // Replace buoyancy here rather than cancelling it in a later hook. Rapier still resolves the floor/walls.
+      const acceleration = Math.max(-30, Math.min(30, (-2.5 - b.velocity.y) * 8));
+      b.force.y += PLAYER_MASS * (GRAVITY + acceleration);
+    } else {
+      const buoyancy =
+        PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) -
+        PLAYER_MASS * 3 * (b.velocity.y - water.verticalVelocity);
+      // Deep dives must rise gently on release rather than launching out under maximum deep-water buoyancy.
+      // The staged controller caps passive ascent at 2.5 m/s; an intentional swim-up keeps its existing impulse.
+      b.force.y +=
+        waterIntent.enabled && !swimUp
+          ? Math.min(buoyancy, PLAYER_MASS * (GRAVITY + (2.5 - b.velocity.y) * 8))
+          : buoyancy;
+    }
+  }
   // Soft wall a little inside the edge of the map: swimming out to sea turns you back.
   if (Math.abs(b.position.x) > softWall.at) b.velocity.x = turnedBack(b.position.x, b.velocity.x);
   if (Math.abs(b.position.z) > softWall.at) b.velocity.z = turnedBack(b.position.z, b.velocity.z);
@@ -219,6 +236,7 @@ export function fallRespawn() {
 /** Puts you back at the spawn: falling off the world, or the pause view's Get unstuck. */
 export function backToSpawn() {
   const b = me.body!;
+  releaseDive();
   waterField.invalidate('player');
   teleport(b, SPAWN.x, groundHeight(SPAWN.x, SPAWN.z) + 1.2, SPAWN.z);
   b.velocity.set(0, 0, 0);

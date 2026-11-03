@@ -19,7 +19,13 @@ export type WaterProvider = {
   invalidate(id: string): void;
   forget(id: string): void;
 };
-type Pond = { id: string; level: number; contains(p: WaterPosition): boolean; bedAt(p: WaterPosition): number };
+type Pond = {
+  id: string;
+  level: number;
+  ellipse?: { x: number; z: number; rx: number; rz: number };
+  contains(p: WaterPosition): boolean;
+  bedAt(p: WaterPosition): number;
+};
 const ponds = new Map<string, Pond>();
 const exclusions = new Map<string, (p: WaterPosition) => boolean>();
 let provider: WaterProvider | null = null;
@@ -70,6 +76,18 @@ export const waterField = {
   registerPond(pond: Pond) {
     ponds.set(pond.id, pond);
     return () => void ponds.delete(pond.id);
+  },
+  pond(id: string) {
+    return ponds.get(id);
+  },
+  opticalPondAt(p: WaterPosition, padding: number) {
+    for (const pond of ponds.values()) {
+      const e = pond.ellipse;
+      if (!e || !pond.contains({ x: e.x, y: p.y, z: e.z })) continue;
+      const q = ((p.x - e.x) / (e.rx + padding)) ** 2 + ((p.z - e.z) / (e.rz + padding)) ** 2;
+      if (q < 1) return pond;
+    }
+    return undefined;
   },
   excludeSea(id: string, contains: (p: WaterPosition) => boolean) {
     exclusions.set(id, contains);

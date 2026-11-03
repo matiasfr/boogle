@@ -6,11 +6,9 @@
 import * as THREE from 'three/webgpu';
 import { softWall } from '../../entities/player/state.ts';
 import { onFrame } from '../../loop.ts';
-import { onPreStep, setCcd, teleport } from '../../physics/engine.ts';
-import { waterField } from '../../physics/water-field.ts';
-import { GRAVITY, PLAYER_MASS, PLAYER_R, SWIM_DEPTH } from '../../constants.ts';
+import { setCcd, teleport } from '../../physics/engine.ts';
+import { PLAYER_R } from '../../constants.ts';
 import { cam, me } from '../../player/player.ts';
-import { registerAction } from '../../player/controls.ts';
 import { precompile } from '../../render/precompile.ts';
 import { camera, scene, sun } from '../../render/scene.ts';
 import { waterMat } from '../../render/water-render.ts';
@@ -45,9 +43,8 @@ buildIsland(bake, caustics?.sample);
 const ocean = createOcean(source, bake, foamTex);
 const underwater = createUnderwater(ocean);
 export const post = installDemoPost();
-const snow = createSnow();
+const snow = createSnow(ocean);
 scene.add(ocean.mesh);
-scene.add(snow.mesh);
 ocean.mesh.visible = new URLSearchParams(location.search).get('ocean') !== 'off'; // for cost: `perf --query`, with and without
 void precompile(ocean.mesh);
 console.info(
@@ -67,37 +64,7 @@ sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.6;
 softWall.at = Infinity; // this world runs well past the 510 m square the player's soft wall guards
 
-// Prototype-only Owner movement, through the existing Rapier body. Space/A remains swim up.
-let diving = false;
-registerAction('water-dive', {
-  pad: 'right',
-  key: 'KeyC',
-  label: 'Swim down',
-  group: 'move',
-  context: 'swimming',
-  down: () => {
-    diving = true;
-  },
-  up: () => {
-    diving = false;
-  },
-});
-addEventListener('blur', () => {
-  diving = false;
-});
-onPreStep(
-  () => {
-    const b = me.body;
-    if (!b || !diving) return;
-    const depth = waterField.surfaceAt(b.position.x, b.position.z) - (b.position.y + SWIM_DEPTH);
-    if (depth < -0.15) return;
-    // Cancel the existing buoyancy while held, then steer to 2.5 m/s down. Collisions still own the position.
-    if (depth > 0)
-      b.force.y -= PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) - PLAYER_MASS * 3 * b.velocity.y;
-    b.force.y += PLAYER_MASS * (GRAVITY + (-2.5 - b.velocity.y) * 8);
-  },
-  { order: 1001 },
-);
+// Dive now uses the same registered action and controller force as the staged production sea.
 onFrame(
   ({ elapsed, dt }) => {
     ocean.update(camera, elapsed, sun, hemi);
