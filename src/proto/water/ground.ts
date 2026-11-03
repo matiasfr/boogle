@@ -3,6 +3,9 @@
 import * as THREE from 'three/webgpu';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { TSL, type N } from './tsl.ts';
+import { CAUSTIC_TEXELS_PER_M, type CausticSample } from './caustics.ts';
+import { ISLAND_AT } from './tuning.ts';
+import { demoSky } from './sky.ts';
 
 const { Fn, If, abs, clamp, cos, cross, dot, exp, float, fwidth, length, max, min, mix, normalize, refract, sign } =
   TSL;
@@ -199,19 +202,69 @@ export type GroundInputs = {
   sunDirection: N;
   absorption: N;
   swash: (xz: N, height: N) => N;
+  caustics?: CausticSample;
   rock?: boolean;
 };
 
+// The source modifies the standard material's direct-sun loop and directDiffuse accumulator. Native TSL's lighting
+// model is that extension point: keep the standard BRDF, ambient and specular, refract sunlight below the water and
+// apply the area-ratio map only to the direct diffuse contribution (multiplying albedo would also brighten the sky).
+class GroundLightingModel extends THREE.PhysicalLightingModel {
+  position: N;
+  sunDirection: N;
+  caustics?: CausticSample;
+
+  constructor(position: N, sunDirection: N, caustics?: CausticSample) {
+    super();
+    this.position = position;
+    this.sunDirection = sunDirection;
+    this.caustics = caustics;
+  }
+
+  override direct(input: Parameters<THREE.PhysicalLightingModel['direct']>[0], builder: THREE.NodeBuilder) {
+    const p = this.position,
+      sun = this.sunDirection;
+    const under = ss(-0.25, 0.05, p.y).oneMinus().toVar();
+    const rsun = refract(sun.negate(), vec3(0, 1, 0), 1 / 1.33).toVar();
+    const refracted = cameraViewMatrix.mul(vec4(rsun.negate(), 0)).xyz;
+    const ft = max(sun.y, 0).oneMinus().pow(5).mul(0.98).add(0.02);
+    const before = vec3(input.reflectedLight.directDiffuse).toVar();
+    super.direct(
+      {
+        ...input,
+        lightDirection: normalize(mix(input.lightDirection, refracted, under)),
+        lightColor: vec3(input.lightColor).mul(ft.mul(under).oneMinus()),
+      },
+      builder,
+    );
+    if (this.caustics) {
+      const depth = max(p.y.negate(), 0).toVar();
+      const entry = p.xz.add(rsun.xz.div(min(rsun.y, -0.05)).mul(depth)).toVar();
+      const fw = fwidth(entry).toVar();
+      const lod = TSL.log2(max(max(fw.x, fw.y).mul(CAUSTIC_TEXELS_PER_M), 1));
+      const c = this.caustics(entry, depth, lod).toVar();
+      const strength = mix(1.35, 1, ss(1.5, 3, depth)).mul(ss(0, 0.3, depth));
+      const multiplier = max(mix(1, c, strength), 0);
+      const diffuse = input.reflectedLight.directDiffuse as N;
+      diffuse.assign(before.add(diffuse.sub(before).mul(multiplier)));
+    }
+  }
+}
+
 /** Slots for a MeshStandardNodeMaterial; normal is geometric WORLD normal (flat or smooth), never normalWorld. */
 export function groundNodes({
-  position: p,
+  position: world,
   normal,
   time,
   sunDirection,
   absorption,
   swash,
+  caustics,
   rock = false,
 }: GroundInputs) {
+  // The prototype lives 2.4 km from home, but the source's procedural landscape is centred at the origin.
+  // Keep its noise and refracted caustic entry points in source coordinates; swash and shadows use world coordinates.
+  const p = world.sub(vec3(ISLAND_AT.x, 0, ISLAND_AT.z));
   const noise = groundNoise();
   const n1 = noise.filtered(p.xz.mul(0.08)).toVar();
   const n2 = rock ? float(0) : noise.filtered(p.xz.mul(0.6)).toVar();
@@ -263,7 +316,7 @@ export function groundNodes({
       .mul(0.6)
       .add(noise.filtered(p.xz.mul(7.3)).mul(0.4))
       .toVar();
-    const sw = swash(p.xz, p.y).toVar();
+    const sw = swash(world.xz, world.y).toVar();
     const wet = max(ss(0.35, n1.mul(0.5).add(1.3), p.y).oneMinus(), sw.z);
     // Light bounces inside wet grains: compounded tint (~albedo squared), not cold grey. Underwater stays flatter.
     albedo.mulAssign(mix(vec3(1), mix(albedo.mul(0.8).add(0.06), vec3(0.6), ss(-0.8, 0, p.y).oneMinus()), wet));
@@ -281,9 +334,28 @@ export function groundNodes({
     return vec4(albedo, rough);
   })().toVar();
   return {
+    fog: false,
+    envMapIntensity: 0.9,
     colorNode: surface.rgb,
     roughnessNode: surface.a,
     normalNode: rock ? rockNormal(p, normal, r2, noise) : sandNormal(p, normal, sandLine, noise),
+    receivedShadowPositionNode: Fn(() => {
+      const under = ss(-0.25, 0.05, p.y).oneMinus();
+      const rsun = refract(sunDirection.negate(), vec3(0, 1, 0), 1 / 1.33);
+      const entry = world.xz.sub(rsun.xz.div(min(rsun.y, -0.05)).mul(world.y));
+      return TSL.select(
+        under.greaterThan(0.5).and(rsun.y.lessThan(-0.05)),
+        vec3(entry.x, 0.05, entry.y),
+        world.add(normal.mul(0.04)),
+      );
+    })(),
+    setupLightingModel: () => new GroundLightingModel(p, sunDirection, caustics),
+    outputNode: Fn(() => {
+      const toPoint = world.sub(TSL.cameraPosition).toVar();
+      const fogAmount = exp(length(toPoint).mul(-1 / 18000)).oneMinus();
+      const fogColor = demoSky.skyLod(normalize(toPoint), 3);
+      return vec4(mix(TSL.output.rgb, fogColor, fogAmount), TSL.output.a);
+    })(),
   };
 }
 

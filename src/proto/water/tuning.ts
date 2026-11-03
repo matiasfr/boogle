@@ -1,11 +1,8 @@
-// The numbers of ?proto=water (./index.ts). Ultra Water's own values come first, unchanged, so the prototype starts from
-// that water and moves toward toon by turning knobs, not the other way round (owner, 2 November). `&v=raw` plays them as
-// they are; the default adds GRADE on top. The demo's units are physical (sun ~7, then auto exposure and AgX); ours are
-// display-ish under a fixed exposure and Neutral, so SUN_GAIN stands in for what its exposure did to that sun.
+// Ultra Water scene defaults, with a measured wave-energy scale. &v=pop keeps our grade over the same scene.
+// The prototype uses its own metered exposure and AgX; the game's standing Neutral choice is unchanged.
 import { protoV } from '../flags.ts';
 
 export const ISLAND_AT = { x: 2400, z: 0 }; // far enough that home is a smudge on the horizon
-export const SPAWN = { x: 2400 + 118, z: -28, yaw: -Math.PI / 2 + 0.15 }; // on the beach the swell comes to, facing the surf rock
 
 // OceanSurface.js, constructor uniforms, and main.js's "clear" water preset.
 export const ULTRA = {
@@ -27,10 +24,11 @@ export const ULTRA = {
   swellFull: 26, // m: the depth where long swell fully exists
   chopShallow: 0.55, // chop's strength in the shallows
   wind: 9, // m/s
+  waveScale: 0.25, // spectrum energy; source shape retained, amplitude halved (measured Hs 6.949 m)
   swellBearing: -15, // degrees
 };
 
-// The look over those numbers. Each is 1 (or the demo's) in `raw`.
+// Default demo optics and the previous pop grade, under the same physical lighting.
 const RAW = {
   absorption: ULTRA.absorption,
   scatter: ULTRA.scatter,
@@ -38,8 +36,8 @@ const RAW = {
   reflectGain: 1,
   reflectCap: 1,
   reflectTint: [1, 1, 1],
-  sunGain: 2.1,
-  fogDensity: 1 / 3200, // the demo's haze has 18 km to work in; our far plane is 6 km
+  sunGain: 1,
+  fogDensity: ULTRA.fogDensity,
   shoreAmp: ULTRA.shoreAmp,
   shoreLambda: ULTRA.shoreLambda,
 };
@@ -50,16 +48,16 @@ const GRADE = {
   reflectGain: 0.8,
   reflectCap: 0.5, // the horizon stays blue, as in the previz, instead of going to sky
   reflectTint: [0.66, 0.94, 1], // our sky's pale band mirrored in thin water reads lavender; the demo's sky is greener
-  sunGain: 2.3,
-  fogDensity: 1 / 4200,
-  shoreAmp: 0.7, // this island's shelf is half as wide as the demo's, so its surf is shorter and a little taller
-  shoreLambda: 22,
+  sunGain: 2.3 / 2.1,
+  fogDensity: ULTRA.fogDensity,
+  shoreAmp: ULTRA.shoreAmp,
+  shoreLambda: ULTRA.shoreLambda,
 };
-export const LOOK = protoV('water') === 'raw' ? RAW : GRADE;
+export const LOOK = protoV('water') === 'pop' ? GRADE : RAW;
 
 // The mesh: OceanSurface.js's polar grid. ANGULAR 384 is its ~190k vertices.
 const gridParam = Number(new URLSearchParams(location.search).get('grid')); // `&grid=192`, for cost
-export const GRID = { angular: gridParam || 384, inner: 1, outer: 3000, far: 6000 };
+export const GRID = { angular: gridParam || 384, inner: 1, outer: 3000, far: 80000 };
 
 // A few analytic waves for the geometry (stage 1): metres, metres, degrees. Friendly, well under the demo's Hs.
 export const WAVES = [
@@ -70,18 +68,17 @@ export const WAVES = [
   { lambda: 13, amp: 0.04, dir: 48, steep: 0.8 },
 ];
 
-// The shore field, over the island: 512² over 1400 m is 2.7 m a texel (the demo: 3.5).
-export const SHORE = { extent: 1400, size: 512 };
+// Source shore field: 512² over 1800 m, 3.516 m per texel.
+export const SHORE = { extent: 1800, size: 512 };
 
 // Independent of the water grade. Keep the same mesh/heightfield for a useful terrain-only comparison.
 const terrainParams = new URLSearchParams(location.search);
 export const TERRAIN = {
-  ultra: terrainParams.get('terrain') !== 'toy',
   flatGround: terrainParams.get('groundFlat') === '1',
   flatRocks: terrainParams.get('rockFlat') === '1',
 };
 
-// Stage 2 is opt-in (&waves=fft). Keep all four source bands and 256² by default; &n=128 and &cascades=1..4
+// FFT is default. Keep all four source bands and 256²; &n=128 and &cascades=1..4
 // let the director compare cost. &band=0..3 starts at a particular band without widening its spectral cutoffs.
 const fftQuery = new URLSearchParams(location.search);
 const fftInteger = (key: string, fallback: number, lo: number, hi: number) => {

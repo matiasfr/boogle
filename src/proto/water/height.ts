@@ -1,5 +1,5 @@
-// The test island's shape, Ultra Water's islandHeight (scene/islandHeight.js) at about half its size, so the shelf and the
-// surf have room: heights over sea level at island-local x, z. Its noise is scene/noise.js. Pure, for the bake and the mesh.
+// Ultra Water's unscaled islandHeight, including its mountain ridges: metres above sea level at island-local x,z.
+// scene/islandHeight.js and scene/noise.js. One pure function for the bake, mesh and collider.
 import { smoothstep } from '../../math.ts';
 import { ULTRA } from './tuning.ts';
 
@@ -36,26 +36,39 @@ export function fbm(x: number, z: number, octaves: number, seed: number) {
   return sum / norm;
 }
 
-const S = 0.45; // the demo's island, in x and z
-/** Ground height over sea level at island-local x, z: the coast at about 150 m, the shelf to about 300 m, then deep. */
-export function islandHeight(lx: number, lz: number) {
-  const x = lx / S,
-    z = lz / S;
+function ridged(x: number, z: number) {
+  let sum = 0,
+    amp = 0.5,
+    norm = 0;
+  for (let i = 0; i < 5; i++) {
+    const n = 1 - Math.abs(valueNoise(x, z, 1 + i * 31));
+    sum += amp * n * n;
+    norm += amp;
+    const nx = 1.6 * x - 1.2 * z;
+    z = 1.2 * x + 1.6 * z;
+    x = nx;
+    amp *= 0.5;
+  }
+  return sum / norm;
+}
+/** Ground height over sea level: coast around 330 m, shelf then deep seabed. */
+export function islandHeight(x: number, z: number) {
   const warp = fbm(x * 0.0035 + 11.3, z * 0.0035 - 4.1, 4, 3);
   const r = Math.hypot(x - 40 * warp, z + 30 * warp) * (1 + 0.32 * fbm(x * 0.003, z * 0.003, 3, 7));
   let h = 62 * Math.exp(-((r / 190) ** 2)) + 15 * Math.exp(-((r / 430) ** 2)) - 10;
   h -= 32 * smoothstep(380, 1100, r);
+  h += smoothstep(4, 40, h) * 26 * (ridged(x * 0.009, z * 0.009) - 0.45);
   if (h > 0 && h < 5) h *= 0.55 + 0.09 * h;
   else if (h <= 0 && h > -14) h = -14 * Math.pow(-h / 14, 1.8);
   h += 1.2 * fbm(x * 0.05, z * 0.05, 3, 9) * smoothstep(-30, 2, h);
-  return h > 0 ? h * 0.55 : h; // a toy hill, on the demo's real depths
+  return h;
 }
 
 /** The surf rock: on the swell-exposed coast (the demo's -15° bearing), in about 2.5 m of water. */
 export const ROCK = (() => {
   const a = (ULTRA.swellBearing * Math.PI) / 180;
-  let r = 60;
-  while (r < 500 && islandHeight(Math.cos(a) * r, Math.sin(a) * r) > -2.5) r += 1;
+  let r = 100;
+  while (r < 900 && islandHeight(Math.cos(a) * r, Math.sin(a) * r) > -2.5) r += 1;
   return { x: Math.cos(a) * r, z: Math.sin(a) * r, r: 8.5 }; // the demo's radius: smaller, the bake's blur all but erases it
 })();
 

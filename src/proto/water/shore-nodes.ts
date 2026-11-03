@@ -60,12 +60,17 @@ export const vnoise = Fn(([p]: [N]) => {
 }).setLayout({ name: 'vnoise', type: 'float', inputs: [{ name: 'p', type: 'vec2' }] });
 
 // The phase offset along the coast, the slowly drifting sets, and how much of the swell a coast facing dir receives.
+const localXZ = (xz: N) => xz.sub(vec2(ISLAND_AT.x, ISLAND_AT.z));
 export const shoreNoisePhase = (xz: N) =>
-  vnoise(xz.mul(0.0042))
+  vnoise(localXZ(xz).mul(0.0042))
     .mul(9)
-    .add(vnoise(xz.mul(0.011).add(7)).mul(2.5));
+    .add(vnoise(localXZ(xz).mul(0.011).add(7)).mul(2.5));
 export const shoreGroup = (xz: N) =>
-  vnoise(xz.mul(0.004).add(vec2(uTime.mul(0.021), uTime.mul(-0.017))))
+  vnoise(
+    localXZ(xz)
+      .mul(0.004)
+      .add(vec2(uTime.mul(0.021), uTime.mul(-0.017))),
+  )
     .mul(0.55)
     .add(0.45);
 export const shoreExposure = (dir: N) => mix(0.25, 1, smoothstep(-0.3, 0.7, dot(dir, uSwellDir)));

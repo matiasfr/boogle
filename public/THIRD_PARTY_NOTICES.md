@@ -5,27 +5,30 @@ Served with the game at `/THIRD_PARTY_NOTICES.md`. Scope: code adapted into Boog
 ## Ultra Water
 
 - Source: https://github.com/Humpalumps/Ultra-Water, revision `30ea65ecb0a66b137aa200d099965634bdd84d51`
-- Adapted in: `src/proto/water/` (`shore.ts` from `src/water/shoreMap.js`; `surface.ts`, `shore-nodes.ts` and `island.ts` from `src/water/OceanSurface.js` and `src/scene/terrain.js`; `spectrum.ts` and `fft.ts` from `src/water/OceanSim.js`; `foam.ts` from `src/water/bakeTextures.js`; `ground.ts` from `src/scene/terrain.js`; `spray.ts` from `src/water/Spray.js`; `underwater.ts` from `src/water/UnderwaterPass.js` and the lens droplets in `src/engine/PostFX.js`; `snow.ts` from `src/water/MarineSnow.js`; `height.ts` from `src/scene/islandHeight.js` and `src/scene/noise.js`; values in `tuning.ts`), rewritten in TypeScript and TSL.
+- Adapted in: `src/proto/water/` (`shore.ts` from `src/water/shoreMap.js`; `surface.ts`, `shore-nodes.ts` and `island.ts` from `src/water/OceanSurface.js` and `src/scene/terrain.js`; `spectrum.ts` and `fft.ts` from `src/water/OceanSim.js`; `foam.ts` from `src/water/bakeTextures.js`; `ground.ts` from `src/scene/terrain.js`; `caustics.ts` from `src/water/Caustics.js`; `atmosphere.ts` and `sky.ts` from `src/scene/atmosphere.js` and `src/scene/sky.js`; `post.ts` from the metered exposure and AgX in `src/engine/PostFX.js`; `spray.ts` from `src/water/Spray.js`; `underwater.ts` from `src/water/UnderwaterPass.js` and the lens droplets in `src/engine/PostFX.js`; `snow.ts` from `src/water/MarineSnow.js`; `height.ts` from `src/scene/islandHeight.js` and `src/scene/noise.js`; values in `tuning.ts`), rewritten in TypeScript and TSL.
 - Copyright (c) 2026 Humpalumps
 - MIT License
 
 ## Hash without Sine (Dave Hoskins)
 
 - Source: https://www.shadertoy.com/view/4djSRW
-- Used in: `src/proto/water/shore-nodes.ts` (`hash12`), `src/proto/water/foam.ts` (`hash22`), `src/proto/water/underwater.ts` (`hash33`), through Ultra Water
+- Used in: `src/proto/water/shore-nodes.ts` (`hash12`), `src/proto/water/foam.ts` (`hash22`), `src/proto/water/underwater.ts` and `post.ts` (`hash33`), `sky.ts` (cloud gradient hash), through Ultra Water
 - Copyright (c) 2014 David Hoskins
 - MIT License
 
 ## three.js
 
 - Source: https://github.com/mrdoob/three.js
-- The renderer of the whole game. Ultra Water's own three.js-derived code (its cloud layer and AgX) is not adapted here so far.
+- The renderer of the whole game. The cloud layer in `src/proto/water/sky.ts` and AgX in `src/proto/water/post.ts` are adapted through Ultra Water from three.js's Sky and AgXToneMapping implementations (Filament/Blender AgX, iolite contrast approximation).
 - Copyright (c) 2010-2026 three.js authors
 - MIT License
 
-## Not adapted so far
+## UnrealEngineSkyAtmosphere (Sebastien Hillaire)
 
-Ultra Water's atmosphere follows Sebastien Hillaire's UnrealEngineSkyAtmosphere, Copyright (c) 2020 Epic Games, Inc., MIT License. Boogle has not taken it. Add its entry here if it comes over.
+- Source: https://github.com/sebh/UnrealEngineSkyAtmosphere
+- Used in: `src/proto/water/atmosphere.ts`, through Ultra Water's Hillaire 2020 transmittance, multiple-scattering and sky-view LUT implementation, with Earth coefficients also following Bruneton 2017.
+- Copyright (c) 2020 Epic Games, Inc.
+- MIT License
 
 ## MIT License
 
