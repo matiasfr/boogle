@@ -1,4 +1,5 @@
 # src/ map
+Start with `npm run map -- --kind <kind>` for task owners, safe examples, companion docs, sync and checks; bare `--kind` lists the routes.
 
 Top level: `main.ts` (boot once the renderer is ready, then the frame loop), `loop.ts` (`onFrame`/`onStart` phases), `style.css`, `constants.ts`,
 `math.ts` and `math-pure.ts` (the pure half, also used in Node), `build-id.ts` (this page's build, read from the page

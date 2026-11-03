@@ -4,8 +4,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { docLabel, searchDocs } from './scan/docs.ts';
+import { TASK_ROUTES, taskRouteLines } from './scan/task-routes.ts';
+import { readFile } from './scan/read.ts';
 
 const asked = process.argv.slice(2);
+if (asked[0] === '--kind') {
+  if (!asked[1]) console.log(`Task kinds: ${Object.keys(TASK_ROUTES).join(', ')}`);
+  else {
+    const lines = taskRouteLines('.', asked.slice(1).join('-').toLowerCase());
+    if (!lines) {
+      console.error(`Unknown task kind: ${asked.slice(1).join(' ')}; npm run map -- --kind lists them`);
+      process.exit(2);
+    }
+    console.log(lines.join('\n'));
+  }
+  process.exit(0);
+}
 if (asked[0] === '--docs') {
   if (!asked[1]) {
     console.error('npm run map -- --docs <text>');
@@ -15,7 +29,7 @@ if (asked[0] === '--docs') {
   process.exit(0);
 }
 if (!asked.length) {
-  console.error('npm run map -- <folder> [more] | --docs <text>');
+  console.error('npm run map -- <folder> [more] | --kind [kind] | --docs <text>');
   process.exit(2);
 }
 const files = asked.flatMap((a) =>
@@ -34,18 +48,11 @@ for (const f of files) {
     continue;
   }
   const lines = text.split('\n');
-  const about: string[] = [];
-  for (const l of lines) {
-    const c = /^\/\/ ?(.*)/.exec(l);
-    if (!c) break;
-    about.push(c[1]!);
-  }
-  const sentence =
-    about
-      .join(' ')
-      .match(/^.*?\.(\s|$)/)?.[0]
-      ?.trim() ?? about.join(' ');
-  const names = [...text.matchAll(/^export (?:async )?(?:const|let|function|class|type) (\w+)/gm)].map((m) => m[1]!);
+  const facts = readFile(f, text);
+  const sentence = facts.head.match(/^.*?\.(\s|$)/)?.[0]?.trim() ?? facts.head;
+  // The shared runtime reader deliberately excludes types; keep the map's type-owner discovery too.
+  const types = [...text.matchAll(/^export (?:type|interface) (\w+)/gm)].map((m) => m[1]!);
+  const names = [...new Set([...facts.exports, ...types])];
   const shown = names.slice(0, 14).join(', ') + (names.length > 14 ? `, +${names.length - 14}` : '');
   console.log(`${f}  ${lines.length} lines, ${Math.round(text.length / 1000)}k`);
   if (sentence) console.log(`  ${sentence.slice(0, 170)}`);

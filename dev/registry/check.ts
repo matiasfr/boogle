@@ -10,6 +10,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { scanSources, checkRegistry, compareRegistries, shapeOf } from './scan.ts';
 import { KNOTS, checkKnots, findKnots, importsOf } from './knots.ts';
 import type { Registry, Source, StateInfo } from './scan.ts';
+import { checkTaskRoutes } from '../scan/task-routes.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -101,7 +102,11 @@ if (args.includes('--json')) {
   process.exit(0);
 }
 
-const errors = [...checkRegistry(head), ...checkKnots(findKnots(importsOf(sources(ROOT))), KNOTS)];
+const errors = [
+  ...checkRegistry(head),
+  ...checkKnots(findKnots(importsOf(sources(ROOT))), KNOTS),
+  ...checkTaskRoutes(ROOT),
+];
 const dir = baseTree(baseRef);
 let notes: string[] = [];
 if (dir) {

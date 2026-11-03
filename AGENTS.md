@@ -104,6 +104,7 @@ For anything a player can see or feel, close the loop yourself before shipping; 
 Sandboxed and can't do this (`npm run look` needs a local port, `npm run inflight` and commits need to write `.git`, `ship` needs the network)? Ask for the access if your tool can. Otherwise don't ship a change a player can see without having seen it: commit it, say what you couldn't check, and leave it for whoever gave you the job.
 
 ## Tools and skills
+Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lists routes); `--docs <text>` searches docs with authority labels and current replacement pointers.
 **Check here before writing a shot, a script or a workaround.** Details: `.claude/skills/look/SKILL.md`.
 | You want to | Use |
 |---|---|
