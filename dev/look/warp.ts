@@ -5,13 +5,16 @@
 // `__warp.drawEvery`. Real events (the socket, fetches, WebGPU promises) still arrive between steps.
 //
 // What it isn't: a performance measure, or a judge of feel. dt is a steady 1/60 s, which is the kindest case. CSS animations
-// run on the wall clock, and the local server's world ticks at real speed, so anything lockstep looks slow to a warped page.
+// run on the wall clock. Solo warp leaves the server at real speed; two-player look uses a separate scaled server clock
+// (coop-warp.ts), measuring drift rather than assuming the pages can sustain the cap.
 
 export type WarpHandle = {
   /** The multiple of real time asked for: 1 is normal. */
   speed: number;
   /** Virtual seconds since the page began. */
   now: () => number;
+  /** Real wall time and accumulated deficit against the requested speed, for multi-page diagnostics. */
+  read: () => { game: number; wall: number; lag: number };
   /** Ahead at this speed; at game second `stopAt`, if given, it returns to 1x on its own, on the exact frame. */
   go: (speed: number, stopAt?: number) => void;
   /** Pause with go(0), then advance and present exactly n drawn frames. */
@@ -123,6 +126,11 @@ export function installWarp() {
   const handle: WarpHandle = {
     speed: 1,
     now: () => virtual / 1000,
+    read: () => ({
+      game: virtual / 1000,
+      wall: (epoch + real.perf()) / 1000,
+      lag: handle.speed === 1 ? 0 : ((real.perf() - budgetFrom) * handle.speed - (virtual - budgetBase)) / 1000,
+    }),
     drawEvery: 30,
     frames: 0,
     skipped: 0,

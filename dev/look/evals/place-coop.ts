@@ -12,6 +12,13 @@ const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const until = async (ready: () => boolean, what: string, ms = 10000) => {
+  const end = performance.now() + ms;
+  while (!ready()) {
+    if (performance.now() >= end) throw new Error(`COOP ${who} timed out: ${what}`);
+    await wait(100);
+  }
+};
 const say = (what: string) => {
   const st = place.stationOf(place.lines[0]);
   const t = place.lines[1].train.tr;
@@ -37,7 +44,7 @@ if (!q.has('railway')) {
   } else put(900, 14);
   console.log(`COOP clothing view ground ${place.H(903, 14)}`);
   await wait(4000);
-  void (async () => {
+  await (async () => {
     say('start');
     if (who === '1') place.wake();
     await wait(5000);
@@ -48,21 +55,35 @@ if (!q.has('railway')) {
       put(st.x + 2.5, st.z + 1);
     }
     await wait(12000); // the tabs start some seconds apart
+    await until(() => place.stationOf(place.lines[0])?.have.logs === 8, 'follower deposit reached this page');
     say('after the follower deposited 8');
+    await wait(2000); // keep the observed deposit visible before the authority advances the shared job
     if (who === '1') place.skipPath();
     await wait(3000);
+    await until(
+      () => place.run.mode === 'waiting' && (place.job.chest === 'axe' || place.job.rung.axe === 1),
+      'first path and chest arrived',
+    );
     say('after a skip to the first path');
     if (who === '2') {
       const c = place.giftState.crates()[0];
       if (c) {
         put(c.x + 2, c.z);
         place.openCrate(c);
-      } else say('NO CHEST HERE');
+      } else throw new Error(`COOP ${who} NO CHEST HERE`);
     }
     await wait(4000);
+    await until(() => place.job.rung.axe === 1, 'follower chest upgrade arrived');
     say('after the follower opened the chest');
     if (who === '1') place.skipTrains();
     await wait(4000);
+    await until(
+      () =>
+        place.job.rung.trains &&
+        place.run.mode === 'idle' &&
+        place.lines.every((l: { train: { clockRunning: () => boolean } }) => l.train.clockRunning()),
+      'trains started on this page',
+    );
     say('after a skip to trains');
     if (who === '2') {
       const h = place.halts[3];
@@ -73,6 +94,12 @@ if (!q.has('railway')) {
     say('after the follower stood on the quarry platform');
     await wait(4000);
     say('a bit later');
+    const minutes = Number(q.get('coopMinutes') ?? 0);
+    if (!Number.isFinite(minutes) || minutes < 0) throw new Error('coopMinutes must be finite and nonnegative');
+    for (let elapsed = 0; elapsed < minutes * 60; elapsed += 30) {
+      await wait(30000);
+      say(`trains +${elapsed + 30}s`);
+    }
   })();
 }
 export {};
