@@ -1,12 +1,15 @@
 // npm run unused [-- --json]: advisory reference evidence, never deletion authority. Opt-in, outside check.
-// Reuse the registry/atlas reader, then the compiler's symbol identities for exports; supplement their static
+// Reuse the registry/atlas reader, Knip's module graph and lexical binding identities for exports; supplement static
 // edges with Boogle's browser/CLI loaders. Dynamic-name evidence is conservative, not runtime coverage.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import ts from 'typescript';
+import { parseSync, type Node, type Program } from 'oxc-parser';
+import { analyze, type ScopeManager } from '@typescript-eslint/scope-manager';
+import { createOptions, createSession } from 'knip/session';
 import { readFile } from './read.ts';
 import { RETAINED } from './retained.ts';
+import { walk } from './parse.ts';
 
 type Use = 'runtime' | 'tool';
 type Ref = { from: string; reason: string };
@@ -44,6 +47,7 @@ const identifiers = new Map<string, Set<string>>();
 const prefixes = new Map<string, Set<string>>();
 const packages = new Map<string, Set<string>>();
 const namespaceTargets = new Set<string>();
+const reexports = new Map<string, Set<string>>();
 const add = <T>(map: Map<string, Set<T>>, key: string, value: T) => {
   if (!map.has(key)) map.set(key, new Set());
   map.get(key)!.add(value);
@@ -69,93 +73,100 @@ function reference(from: string, spec: string, reason: string) {
   const candidates = [resolve(from, spec), spec.replace(/^\//, ''), `public/${spec.replace(/^\//, '')}`];
   for (const target of candidates) if (known.has(target)) edge(from, target, reason);
 }
-const config = ts.readConfigFile('tsconfig.json', ts.sys.readFile).config;
-const options = ts.parseJsonConfigFileContent(config, ts.sys, root).options;
-const program = ts.createProgram(code, options);
-const checker = program.getTypeChecker();
-const symbolRefs = new Map<ts.Symbol, Map<string, number>>();
-const canonical = (s: ts.Symbol) => (s.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(s) : s);
-function walk(n: ts.Node, visit: (n: ts.Node) => void) {
-  visit(n);
-  ts.forEachChild(n, (child) => walk(child, visit));
-}
+// Every tracked code file participates, including manual tools and disconnected modules. Boogle owns roots/loaders.
+const options = await createOptions({ cwd: root, isSession: true, isShowProgress: false, isIncludeEntryExports: true });
+options.parsedConfig = {
+  entry: code.filter((f) => f.endsWith('ts')),
+  project: code.filter((f) => f.endsWith('ts')),
+  ignoreExportsUsedInFile: false,
+  eslint: false,
+  vite: false,
+  typescript: false,
+  node: false,
+  prettier: false,
+};
+const session = await createSession(options);
+if (session.getResults().hasConfigLoadErrors) throw new Error('unused: Knip could not load its configuration');
+const programs = new Map<string, Program>();
+const scopes = new Map<string, ScopeManager>();
+const stringOf = (n: Node | null | undefined) =>
+  n?.type === 'Literal' && typeof n.value === 'string'
+    ? n.value
+    : n?.type === 'TemplateLiteral' && !n.expressions.length
+      ? (n.quasis[0]?.value.cooked ?? undefined)
+      : undefined;
 for (const f of code) {
   const text = texts.get(f)!;
   const facts = readFile(f, text);
   for (const target of facts.imports) edge(f, target, 'module import/re-export');
   for (const target of facts.lazy) edge(f, target, 'dynamic import (including browser-eval literal)');
-  const sf = program.getSourceFile(f);
-  if (!sf) continue;
+  // The project's allowJs=false also excluded JavaScript from the old compiler's symbol/literal pass.
+  if (!f.endsWith('ts')) continue;
+  const parsed = parseSync(f, text, { astType: 'ts', range: true, preserveParens: false });
+  if (parsed.errors.length) throw new Error(`unused: ${f}: ${parsed.errors.map((e) => e.message).join('; ')}`);
+  const sf = parsed.program;
+  programs.set(f, sf);
+  scopes.set(f, analyze(sf as unknown as Parameters<typeof analyze>[0], { sourceType: 'module', lib: [] }));
   walk(sf, (n) => {
-    if (ts.isIdentifier(n)) {
-      add(identifiers, n.text, f);
-      const sym = checker.getSymbolAtLocation(n);
-      if (sym) {
-        const key = canonical(sym);
-        if (!symbolRefs.has(key)) symbolRefs.set(key, new Map());
-        const counts = symbolRefs.get(key)!;
-        counts.set(f, (counts.get(f) ?? 0) + 1);
-      }
-    }
+    if (n.type === 'Identifier') add(identifiers, n.name, f);
     // The report's own example/retention paths are not consumers of the things it describes.
     const diagnostic = f === 'dev/scan/unused.ts' || f === 'dev/scan/retained.ts';
-    if (
-      !diagnostic &&
-      (ts.isStringLiteralLike(n) || ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n))
-    ) {
-      for (const token of n.text.match(/[A-Za-z_$][\w$-]*/g) ?? []) add(literals, token, f);
-      reference(f, n.text, 'literal path reference');
+    const literal = n.type === 'TemplateElement' ? n.value.cooked : stringOf(n);
+    if (!diagnostic && literal != null) {
+      for (const token of literal.match(/[A-Za-z_$][\w$-]*/g) ?? []) add(literals, token, f);
+      reference(f, literal, 'literal path reference');
       // Imports inside page.evaluate strings do not appear as TS import nodes.
-      for (const m of n.text.matchAll(/import\s*\(\s*['"]([^'"]+)['"]/g)) reference(f, m[1]!, 'browser-eval import');
+      for (const m of literal.matchAll(/import\s*\(\s*['"]([^'"]+)['"]/g)) reference(f, m[1]!, 'browser-eval import');
     }
-    if (!diagnostic && (ts.isTemplateHead(n) || ts.isTemplateMiddle(n))) {
-      const prefix = /([A-Za-z][\w-]*-)$/.exec(n.text)?.[1];
+    if (!diagnostic && n.type === 'TemplateElement' && !n.tail) {
+      const prefix = /([A-Za-z][\w-]*-)$/.exec(n.value.cooked ?? '')?.[1];
       if (prefix) add(prefixes, prefix, f);
     }
-    if (ts.isNewExpression(n) && n.expression.getText(sf) === 'URL') {
-      const arg = n.arguments?.[0];
-      if (arg && ts.isStringLiteralLike(arg)) reference(f, arg.text, 'URL asset/worker entry');
+    if (n.type === 'NewExpression' && text.slice(n.callee.start, n.callee.end) === 'URL') {
+      const arg = stringOf(n.arguments[0]);
+      if (arg !== undefined) reference(f, arg, 'URL asset/worker entry');
     }
     if (
-      ts.isPropertyAssignment(n) &&
-      n.name.getText(sf) === 'entryPoints' &&
-      ts.isArrayLiteralExpression(n.initializer)
+      n.type === 'Property' &&
+      text.slice(n.key.start, n.key.end) === 'entryPoints' &&
+      n.value.type === 'ArrayExpression'
     ) {
-      walk(n.initializer, (arg) => {
-        if (ts.isStringLiteralLike(arg) && known.has(arg.text)) {
-          edge(f, arg.text, 'bundler entryPoints (service worker/build entry)');
-          entry(arg.text, `bundler entry in ${f}`, 'runtime');
+      walk(n.value, (arg) => {
+        const value = stringOf(arg);
+        if (value !== undefined && known.has(value)) {
+          edge(f, value, 'bundler entryPoints (service worker/build entry)');
+          entry(value, `bundler entry in ${f}`, 'runtime');
         }
       });
     }
     if (
-      (ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) &&
-      n.moduleSpecifier &&
-      ts.isStringLiteral(n.moduleSpecifier)
+      (n.type === 'ImportDeclaration' || n.type === 'ExportNamedDeclaration' || n.type === 'ExportAllDeclaration') &&
+      n.source
     ) {
-      const spec = n.moduleSpecifier.text;
+      const spec = n.source.value;
       reference(f, spec, 'module edge (including type-only)');
       if (!spec.startsWith('.') && !spec.startsWith('/')) {
         add(packages, spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]!, f);
       }
-      if (
-        ts.isImportDeclaration(n) &&
-        n.importClause?.namedBindings &&
-        ts.isNamespaceImport(n.importClause.namedBindings)
-      ) {
+      if (n.type === 'ImportDeclaration' && n.specifiers.some((s) => s.type === 'ImportNamespaceSpecifier')) {
         namespaceTargets.add(resolve(f, spec));
       }
+      if (n.type === 'ExportNamedDeclaration')
+        for (const s of n.specifiers)
+          add(reexports, resolve(f, spec), s.local.type === 'Identifier' ? s.local.name : s.local.value);
     }
-    if (ts.isCallExpression(n) && n.expression.getText(sf) === 'import.meta.glob') {
+    if (n.type === 'CallExpression' && text.slice(n.callee.start, n.callee.end) === 'import.meta.glob') {
       const arg = n.arguments[0];
-      const patterns = arg && ts.isArrayLiteralExpression(arg) ? arg.elements : arg ? [arg] : [];
+      const patterns = arg?.type === 'ArrayExpression' ? arg.elements : arg ? [arg] : [];
       const expanded: string[] = [];
-      for (const p of patterns)
-        if (ts.isStringLiteralLike(p)) {
-          const value = (p.text.startsWith('!') ? '!' : '') + resolve(f, p.text.replace(/^!/, ''));
+      for (const p of patterns) {
+        const pattern = stringOf(p);
+        if (pattern !== undefined) {
+          const value = (pattern.startsWith('!') ? '!' : '') + resolve(f, pattern.replace(/^!/, ''));
           const brace = /\{([^}]+)\}/.exec(value);
           expanded.push(...(brace ? brace[1]!.split(',').map((part) => value.replace(brace[0], part)) : [value]));
         }
+      }
       for (const target of files) {
         const positives = expanded.filter((p) => !p.startsWith('!'));
         if (
@@ -268,15 +279,53 @@ for (const [f, reason] of Object.entries(RETAINED))
 for (const f of code) {
   if (!(incoming.get(f)?.length || roots.has(f) || RETAINED[f]))
     groups.files.push(evidence(f, f, 'no known incoming reference or root', 'medium'));
-  const sf = program.getSourceFile(f);
-  const module = sf && checker.getSymbolAtLocation(sf);
-  if (!sf || !module || RETAINED[f]) continue;
-  for (const exp of checker.getExportsOfModule(module)) {
-    const name = exp.name;
-    const symbol = canonical(exp);
-    if (!(symbol.flags & ts.SymbolFlags.Value) || name === 'default') continue;
-    const refs = symbolRefs.get(symbol) ?? new Map<string, number>();
-    if ([...refs.keys()].some((source) => source !== f)) continue;
+  const sf = programs.get(f);
+  if (!sf) continue;
+  const module = scopes.get(f)!.scopes.find((s) => s.type === 'module');
+  const descriptor = session.describeFile(f, { isShowContention: false });
+  if (!descriptor) throw new Error(`unused: Knip did not analyze ${f}`);
+  if (!module || RETAINED[f]) continue;
+  // The old compiler enumerated hoisted function exports before other declarations.
+  const functions = new Set(
+    sf.body.flatMap((n) =>
+      n.type === 'ExportNamedDeclaration' && n.declaration?.type === 'FunctionDeclaration' && n.declaration.id
+        ? [n.declaration.id.name]
+        : [],
+    ),
+  );
+  const exports = [...descriptor.exports].sort(
+    (a, b) => Number(functions.has(b.identifier)) - Number(functions.has(a.identifier)),
+  );
+  const specifiers = sf.body.flatMap((n) => (n.type === 'ExportNamedDeclaration' && !n.source ? n.specifiers : []));
+  const bindingOf = (name: string) => {
+    const binding = specifiers.find(
+      (s) => (s.exported.type === 'Identifier' ? s.exported.name : s.exported.value) === name,
+    )?.local;
+    return module.set.get(binding ? (binding.type === 'Identifier' ? binding.name : binding.value) : name);
+  };
+  // An imported/re-exported alias uses the shared value symbol, including its other exported names.
+  // Star re-exports contain no identifier and did not count as symbol references in the old report.
+  const usedBindings = new Set(
+    exports
+      .filter(
+        (exp) =>
+          exp.importLocations.some((ref) => path.relative(root, ref.filePath) !== f) ||
+          reexports.get(f)?.has(exp.identifier),
+      )
+      .map((exp) => bindingOf(exp.identifier)),
+  );
+  const shorthand = new Set<number>();
+  walk(sf, (n, parent) => {
+    // The compiler identified an object shorthand as its property symbol, not the lexical value symbol.
+    if (n.type === 'Property' && n.shorthand && parent?.type === 'ObjectExpression') shorthand.add(n.key.start);
+  });
+  for (const exp of exports) {
+    const name = exp.identifier;
+    const variable = bindingOf(name);
+    // Re-exports already reference a declaration in another file; type-only declarations have no value symbol.
+    if (!variable?.isValueVariable || name === 'default' || variable.defs.some((d) => d.type === 'ImportBinding'))
+      continue;
+    if (usedBindings.has(variable)) continue;
     // Namespace contracts include rule.install/edits/invariants; dynamic property access cannot prove one unused.
     if (namespaceTargets.has(f) || f.startsWith('src/world/rules/')) continue;
     const stringRefs = [...(literals.get(name) ?? [])].filter((source) => source !== f);
@@ -284,14 +333,29 @@ for (const f of code) {
     // Same-name unrelated symbols may hide a candidate: deliberately prefer a missed flag to a false deletion lead.
     const nameRefs = [...(identifiers.get(name) ?? [])].filter((source) => source !== f);
     if (stringRefs.length || nameRefs.length) continue;
-    const local = (refs.get(f) ?? 0) > 1;
+    // Class names have inner/outer lexical bindings sharing one declaration; the compiler used one symbol.
+    const bindings = scopes
+      .get(f)!
+      .scopes.flatMap((s) => s.variables)
+      .filter((v) => v === variable || v.identifiers.some((id) => variable.identifiers.includes(id)));
+    const positions = new Set(
+      bindings
+        .flatMap((v) => [...v.identifiers, ...v.references.map((r) => r.identifier)])
+        .map((n) => n.range[0])
+        .filter((pos) => !shorthand.has(pos)),
+    );
+    for (const specifier of specifiers)
+      if ((specifier.local.type === 'Identifier' ? specifier.local.name : specifier.local.value) === variable.name)
+        positions.add(specifier.exported.start);
+    const count = positions.size;
+    const local = count > 1;
     groups.exports.push(
       evidence(
         f,
         `${f}#${name}`,
         local ? 'export unused, body used locally' : 'no use at all (no static reference beyond declaration)',
         local ? 'high' : 'medium',
-        local ? [{ from: f, reason: `${refs.get(f)! - 1} local symbol reference(s) beyond declaration` }] : [],
+        local ? [{ from: f, reason: `${count - 1} local symbol reference(s) beyond declaration` }] : [],
       ),
     );
   }
