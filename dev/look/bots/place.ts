@@ -13,6 +13,8 @@ import { nearest } from '../../../src/proto/place/nearest.ts';
 import { gettingItem, press as putAwayGot } from '../../../src/proto/place/got.ts';
 import { automaticRails } from '../../../src/proto/place/depot.ts';
 import { CART } from '../../../src/proto/place/layout.ts';
+import { runDoubleJumpCourse } from './double-jump.ts';
+import { JUMP_COURSE, JUMP_RECOVERY } from '../../../src/proto/place/tech-layout.ts';
 
 const q = new URLSearchParams(location.search);
 
@@ -278,13 +280,18 @@ export async function play() {
     const d1 = deck(L1);
     await bot.walk(d1.x, d1.z, 1.2);
     await takeTech('jump');
-    // The block beside it, straight away.
-    const b = padOf('p1-block');
-    await bot.walk(b.x + O + 3.2, b.z, 0.8);
-    await twoJumps(b.x + O, b.z);
+    // The optional block course, with the same personal reward at its end.
+    await runDoubleJumpCourse(bot);
     await waitFor(() => tech.found.has('block'), 5000, 'the box on the block');
     await wait(2500);
-    await bot.straight(d1.x, d1.z, 1.2, 5000); // back down onto the deck
+    const last = JUMP_COURSE.at(-1)!;
+    await bot.straight(last.x + O + last.hx + 1.2, last.z, 0.3, 3000);
+    await wait(500); // onto the lower dry return, then up its ramp
+    await bot.straight(JUMP_RECOVERY.returnX + O, last.z, 0.5, 9000);
+    await bot.straight(JUMP_RECOVERY.returnX + O, JUMP_RECOVERY.ramp.z + JUMP_RECOVERY.ramp.hz, 0.5, 9000);
+    await bot.straight(JUMP_RECOVERY.ramp.x + O, JUMP_RECOVERY.ramp.z + JUMP_RECOVERY.ramp.hz, 0.5, 9000);
+    await bot.straight(JUMP_COURSE[0]!.x + O, JUMP_COURSE[0]!.z, 0.6, 5000);
+    await bot.straight(d1.x, d1.z, 1.2, 5000);
   };
   const ontoSecondPillar = async () => {
     const d2 = deck(L2);
