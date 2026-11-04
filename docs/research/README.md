@@ -16,6 +16,8 @@ Background reports that design and technical decisions lean on. Each file states
 
 - [dev-menu-plan.md](dev-menu-plan.md) (2026-11-03): engine and shipped-game debug patterns, current tools/flags inventory, nineteen ranked candidates and eight first-version recommendations; touch access, lazy loading, authority boundaries and disposable fixtures for live owner and agent testing.
 
+- [dev-tools-agentic.md](dev-tools-agentic.md) (2026-11-03): agent-to-owner review loop, pinned feedback and version comparisons, separate asset/animation stage, shared-HDR grade feasibility, persistent non-modal Dev/free camera, and eight ranked recommendations with three next deliveries.
+
 - [water-load-stall.md](water-load-stall.md) (2026-11-03): M1 Max cold/reload, old/new sea, 90-second callback and GPU-completion baselines; CPU shore-bake attribution, every >50 ms interval and explicit limits. The reported minute-long visible freeze remains unresolved; no gameplay fix claimed.
 
 - [codex-model-routing.md](codex-model-routing.md) (2026-11-03): CLI 0.166 account model/effort inventory, official guidance and system cards, subscription versus credit/API usage, independent benchmarks and nine local job audits; nine recommendations, a routing card and three controlled trials for Terra medium, Sol and higher-effort review.
