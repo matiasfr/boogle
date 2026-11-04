@@ -3,12 +3,12 @@
 The ground is a pure function, composed in layers, so a point of interest (POI) can be added, moved or removed
 without touching anything else on the island.
 
-| Layer | File | What it does |
-|---|---|---|
-| Natural shape | `shape.ts` | The original island ("home", around the origin) joined to the mainland to the north, plus the north-west massif. Home ground within `HOME_KEEP` m of the origin is exactly what it always was. |
-| Stamps | `stamps.ts` | Shapes (disc, box, path) with an effect (`set`, `add`, `min`, `max`) and/or paint. Each POI's stamps reshape only the ground around it. |
-| Sites | `src/pois/<name>/site.ts` | Where a POI is, its stamps and its keep-out discs. Read before the terrain is built. |
-| Content | `src/pois/<name>/index.ts` | Registers entities owning meshes, colliders, lights and per-frame work; one-time spawning can use `onStart`. Loaded by `src/features/pois.ts`. |
+| Layer         | File                       | What it does                                                                                                                                                                                   |
+| ------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Natural shape | `shape.ts`                 | The original island ("home", around the origin) joined to the mainland to the north, plus the north-west massif. Home ground within `HOME_KEEP` m of the origin is exactly what it always was. |
+| Stamps        | `stamps.ts`                | Shapes (disc, box, path) with an effect (`set`, `add`, `min`, `max`) and/or paint. Each POI's stamps reshape only the ground around it.                                                        |
+| Sites         | `src/pois/<name>/site.ts`  | Where a POI is, its stamps and its keep-out discs. Read before the terrain is built.                                                                                                           |
+| Content       | `src/pois/<name>/index.ts` | Registers entities owning meshes, colliders, lights and per-frame work; one-time spawning can use `onStart`. Loaded by `src/features/pois.ts`.                                                 |
 
 `index.ts` here composes the sites (folder order, alphabetical) into `island`: `heightAt(x, z)`, `paintAt(x, z)`,
 `keepOut` and `keptOut(x, z, pad)`, plus `baseCm`: the ground on the world grid in centimetres, court levelled
@@ -22,13 +22,14 @@ trees and rocks out of keep-out discs, and `src/entities/props/` pushes them int
    ```js
    export default {
      name: 'Bandstand',
-     x: 40, z: -150,            // world metres (+z is south, towards home)
-     dir: [0, 1],               // local forward (+z); local +x is to its right
+     x: 40,
+     z: -150, // world metres (+z is south, towards home)
+     dir: [0, 1], // local forward (+z); local +x is to its right
      stamps: [
-       { shape: 'disc', r: 9, fade: 6, set: 'ground' },              // flatten to the natural height here
+       { shape: 'disc', r: 9, fade: 6, set: 'ground' }, // flatten to the natural height here
        { shape: 'disc', r: 9, fade: 1, paint: '#c8b48a', strength: 0.6 },
      ],
-     keepOut: [{ r: 11 }],      // no trees or rocks, the Boogler walks around (local x, z, r)
+     keepOut: [{ r: 11 }], // no trees or rocks, the Boogler walks around (local x, z, r)
      reach: [{ name: 'the stage', z: 4 }], // where a player must be able to get to (local x, z)
    };
    ```
@@ -36,7 +37,7 @@ trees and rocks out of keep-out discs, and `src/entities/props/` pushes them int
 2. `src/pois/<name>/index.ts` spawns entity-owned content in `onStart` (after the terrain and props exist), using
    `groundHeight`, `siteFrame(site)` from `stamps.ts` for local-to-world placement, and `addPart`/`mergeParts` from
    `src/render/props.ts` to merge small parts into one draw call.
-   Use the lifecycle in `src/entities/ball/` or `src/features/ping.ts`; new POIs cannot register `onFrame` or add bodies/meshes outside entities. The lighthouse is a site/placement reference only: its suppressed lifecycle is deliberate debt until the home redesign (`eslint.config.js`), not an example to copy.
+   Use the lifecycle in `src/entities/ball/` or `src/features/ping.ts`; new POIs cannot register `onFrame` or add bodies/meshes outside entities. The lighthouse is a site/placement reference only: its suppressed lifecycle is deliberate debt until the home redesign (`dev/lint/policy.ts`), not an example to copy.
 3. `npm run island-map` writes `.look/island-map.png`: the composed island, keep-out discs in red. Check the POI sits
    where you meant, run `npm run level-check`, then look at it in the game (`npm run look -- --cam x,y,z --look x,y,z`).
 

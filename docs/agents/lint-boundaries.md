@@ -1,6 +1,7 @@
 Before changing module dependencies, services or lockstep boundaries, read this lint contract.
 
-## Lint boundaries (`eslint.config.js`)
+## Lint boundaries (`dev/lint/policy.ts`)
+
 - Determinism rules on `LOCKSTEP_FILES`: a new lockstep module outside `src/sim/` and `src/world/rules/` joins that list.
 - `registerOp`/`registerState`/`onTick` only in `src/world/rules/` (and `game-world.ts`, which installs them): one place owns wire order and hashing.
 - Rules import only `src/sim/`, `../grid.ts` and sibling rules; `src/sim/` imports nothing from `src/`.
@@ -9,3 +10,19 @@ Before changing module dependencies, services or lockstep boundaries, read this 
 - Outside `src/proto/` and `src/debug/`, reach them with `import()`; the only static ways in are `proto/flags.ts` and `proto/mark.ts`.
 - One door: `new WebSocket`, `AudioContext` and `requestAnimationFrame` only on `DOORS`' allow-lists; a second frame loop is an `onFrame`.
 - No WebGL-only three.js APIs in `src/` (list in `src/render/README.md`, "Materials").
+
+`npm run lint -- [files...]` runs native Oxlint, oxlint-tsgolint and the repo's oxc-parser safety checks together.
+Use that command in hooks and CI: calling Oxlint alone omits custom protections. `.oxlintrc.json` holds the native
+baseline; the runner adds native safety overrides from `policy.ts`, which owns the only `LOCKSTEP_FILES` list.
+Selectors use esquery and imports use gitignore matching, preserving dynamic/side-effect and physics type-import rules
+without ESLint or Oxlint's alpha plugin API. `boogle/js-language` uses Acorn to enforce ES2022 JavaScript, with ES2024
+for `dev/**/*.mjs`; CommonJS retains its latest-language scope and duplicate-parameter/octal checks.
+
+Native suppressions use `oxlint-disable-next-line typescript/no-explicit-any` (or the native core rule name).
+Custom ones use `boogle-disable-next-line no-restricted-syntax` (or another exact policy rule ID); line and block
+disable/enable forms also work. Name each rule explicitly; unused directives fail lint. Entity counts live in
+`lint-suppressions.json`: excess or stale counts fail, `--prune-suppressions` only shrinks, and registry rejects growth
+and deleted entries. Hooks alone use `--pass-on-unpruned-suppressions` while editing.
+
+Type-aware `await-thenable` and `return-await` are enabled. Floating/misused promise rules remain off: WebGPU dispatch
+and async callback findings need behavior review (see the status in `docs/research/linter-replacement.md`).

@@ -3,9 +3,11 @@ For Claude setup, skills, delegation, bot runs or GitHub Actions, read the relev
 ## Claude Code only
 
 ### Setup
-- `.claude/settings.json` (shared): allowlist for routine npm/git commands, denies force-push and `--no-verify`, and a hook (`.claude/hooks/format-lint.ts`) that runs Prettier on each file you edit (plus ESLint for JS and TS). Lint errors come back to you; fix them. Personal tweaks go in `.claude/settings.local.json` or `CLAUDE.local.md` (both gitignored).
+
+- `.claude/settings.json` (shared): allowlist for routine npm/git commands, denies force-push and `--no-verify`, and a hook (`.claude/hooks/format-lint.ts`) that runs Prettier on each file you edit (plus the full lint runner for JS and TS: Oxlint, type-aware rules and Boogle's parser protections). Lint errors come back to you; fix them. Personal tweaks go in `.claude/settings.local.json` or `CLAUDE.local.md` (both gitignored).
 
 ### Project skills
+
 - `/ship`: commit and ship with `npm run ship`.
 - `/simplify` is the cleanup pass and `/code-review` the code review required by docs/agents/shipping.md, "Shipping" (procedure: docs/agents/shipping.md).
 - `/new-feature <name>`: one self-contained plug-in in `src/features/`.
@@ -61,11 +63,13 @@ targeted captures and `npm run session -- start` for interactive inspection. A l
 resuming a Codex **conversation**. Sandboxed task workers use the broker commands above for browser checks.
 
 ### Working in parallel
+
 - One session directs; implementation runs in parallel. A **subagent** (Agent tool, `isolation: "worktree"`, Opus at medium effort) suits one piece whose result the director reviews in the same sitting; subagents can't start their own. A **session** of its own (one per track, in its own worktree) can run its own subagents and lasts across days; use it for a track like a prototype.
 - Give each agent a concrete stage and include the files, errors and decisions in its brief. Resume the same Codex job for feedback, fixes and repeated checks; use a new job for independent work or a new starting snapshot.
 - Each worker sees its own result (docs/agents/verification.md, "See it before you ship", required by AGENTS.md). The director reviews Codex task reports, diffs and stills before shipping their commits; other workers follow their assigned shipping workflow.
 - Research before deep facets (docs/agents/owner-calls.md, "Owner's standing calls") runs as a deep-research subagent.
 
 ### As the GitHub Action (`@claude` in `claude.yml`, or `ci-autofix.yml`)
+
 - `npm ci && npm run check` before committing (`check:full` per docs/agents/tests.md, "Tests"). The runner has no GPU, so `check:gpu` (smoke) can't run there; for networking or rendering changes say so in the PR, and the live smoke after the deploy (`smoke.yml`) is the check.
 - Push a `claude/<topic>` branch and open a non-draft PR with `gh pr create` (docs/agents/shipping.md, "Shipping", required by AGENTS.md): imperative title; body says what changed and which DESIGN.md principle it serves, plus a screenshot (`scripts/pr-shot.sh`) for anything a player can see.

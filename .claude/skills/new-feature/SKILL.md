@@ -19,7 +19,7 @@ docs/agents/plugins.md has the rules; this is the order to apply them in.
    A thing in the world or on screen with its own lifetime is an entity (`src/entity/entity.ts`): `defineKind` and `spawn`,
    copying `src/features/ping.ts` (many short-lived ones, in this file) or `src/entities/ball/` (long-lived, its own folder:
    `index.ts`, `state.ts`, `view.ts`, `sync.ts`). Lint fails a new `onFrame`, `addBody` or `scene.add` outside the services
-   on the allow-list in `eslint.config.js`.
+   on the allow-list in `dev/lint/policy.ts`.
 4. Wire it through the registries, not new listeners: `registerAction` for any key/pad/touch control (on a slot from
    `npm run registry -- --json`; one must stay unclaimed for `src/features/updates.ts`, so if that's the only one free,
    stop and report that there's no slot: no key-only controls), `registerInteractable` for things the interact button acts on, `emit` for particles,
