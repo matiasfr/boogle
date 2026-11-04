@@ -2,6 +2,8 @@
 
 Reviewed `origin/main...HEAD`, base `792057338ce6462e8353a3ad91e0a310a07e9be3`, implementation head `94e6acc4cea26958bf2a5583c0bb546a85dd3c16`, on 2026-11-04. Scope: `server/src/reviews.ts`, `server/src/server.ts`, `scripts/review-card.ts`, `scripts/verdicts.ts`, `protos/review.ts`, `protos/main.ts`, and `src/proto/bar/`, with supporting storage, deployment and type definitions. Source is unchanged. Line numbers below refer to that implementation head.
 
+**Since fixed:** both findings below. Images are now streamed and retained uploads must be real PNGs, with limits of 30 cards and 20 receipts, a free-space reserve and card deletion. This audit describes the implementation head named above; line numbers refer to it.
+
 ## Findings
 
 ### P2 — Bound and stream capability image reads
