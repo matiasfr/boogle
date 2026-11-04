@@ -251,9 +251,13 @@ export const cart = {
   rails: 0,
   called: false,
   auto: false,
+  manual: false,
+  boost: false,
   speed: 0,
 };
-export function loadCart(n: number) {
+export const CART_RIDE_SPEED = 13;
+export function loadCart(n: number, manual = false) {
+  if (manual && n > 0 && cart.rails < CART.rails) cart.manual = true;
   cart.rails = Math.min(CART.rails, Math.max(0, cart.rails + n));
   cart.t = 0;
   drawLoad(cart.load);
@@ -270,6 +274,8 @@ let activeStation: () => StationRun | null = () => null;
 export const setDepotFrame = (fn: () => StationRun | null) => void (activeStation = fn);
 /** Installed by pair.ts, which already owns forge/co-op dependencies; no reverse import cycle. */
 export const depotRails = { enabled: () => false, load: () => {} };
+/** The prototype authority decides the shared ride bonus; solo reads its own rider. */
+export const depotRide = { enabled: () => false, update: () => {} };
 export const automaticRails = () => {
   const st = activeStation();
   return (
@@ -327,6 +333,9 @@ function drawLoad(n: number) {
 }
 function stepCart(dt: number) {
   if (!job.rung.depot) return;
+  depotRide.update();
+  const cruise = cart.boost && cart.manual && depotRide.enabled() ? CART_RIDE_SPEED : CART.speed;
+  car.speedLimit = Math.max(CART.speed, cart.speed, cruise) * 1.5;
   const correction = Math.max(-1.5 * dt, Math.min(1.5 * dt, nudge));
   cart.d += correction;
   nudge -= correction;
@@ -360,7 +369,7 @@ function stepCart(dt: number) {
     case 'out': {
       // A snapshot nudge may cross the stop by centimetres; a called outbound cart still owes the forge stop.
       const to = cart.called ? FORGE_D : st ? stopFor(st) : cart.d;
-      cart.speed = Math.min(CART.speed, cart.speed + 3 * dt);
+      cart.speed = Math.min(cruise, cart.speed + 3 * dt);
       cart.d = Math.min(to, cart.d + cart.speed * dt);
       if (cart.d >= to - 0.02) {
         cart.leg = cart.called && to === FORGE_D ? 'forge' : 'drop';
@@ -396,6 +405,7 @@ function stepCart(dt: number) {
         pendingRails += rails;
         cart.load = 0;
         cart.rails = 0;
+        cart.manual = cart.boost = false;
         drawLoad(0);
         here.set(car.x, car.y + 1, car.z);
         // They heave them over, in a stream, and they land on the rack.
@@ -439,7 +449,7 @@ function stepCart(dt: number) {
       if (cart.t > 2.2) cart.leg = 'back';
       break;
     case 'back':
-      cart.speed = Math.min(CART.speed, cart.speed + 3 * dt);
+      cart.speed = Math.min(cruise, cart.speed + 3 * dt);
       cart.d = Math.max(cart.called ? FORGE_D : 0, cart.d - cart.speed * dt);
       if (cart.called && cart.d === FORGE_D) {
         cart.leg = 'forge';
@@ -509,6 +519,7 @@ export function snapCart() {
     cart.rails = 0;
     cart.called = false;
     cart.auto = false;
+    cart.manual = cart.boost = false;
     dropGeneration++;
     pendingLogs = pendingRails = takenLogs = takenRails = 0;
     drawLoad(0);
@@ -529,6 +540,8 @@ export type DepotSave = {
   called: boolean;
   speed?: number;
   auto?: boolean;
+  manual?: boolean;
+  boost?: boolean;
 };
 function readCart(v: unknown) {
   const j = (v ?? {}) as Partial<DepotSave>;
@@ -540,7 +553,12 @@ function readCart(v: unknown) {
     rails: count(j.cartRails, CART.rails) ? j.cartRails : 0,
     called: j.called === true,
     auto: j.auto === true && j.called === true,
-    speed: num(j.speed) ? Math.max(0, Math.min(CART.speed, j.speed)) : cart.speed,
+    manual: j.manual === true && count(j.cartRails, CART.rails) && j.cartRails > 0,
+    boost:
+      j.boost === true && j.manual === true && count(j.cartRails, CART.rails) && j.cartRails > 0 && depotRide.enabled(),
+    speed: num(j.speed)
+      ? Math.max(0, Math.min(depotRide.enabled() ? CART_RIDE_SPEED : CART.speed, j.speed))
+      : cart.speed,
   };
 }
 /** A follower's cart must follow the authority even when no inventory count changes. */
@@ -551,6 +569,7 @@ export function reconcileCart(v: unknown) {
   // Only motion here. Replaying an older cargo/leg snapshot just after local unloading would deliver it twice.
   // Reliable call/load events and the existing settled-inventory reconciliation own those transitions.
   cart.speed = next.speed;
+  cart.boost = next.boost;
   if (cart.leg === next.leg) cart.t = next.t;
   nudge = d - cart.d;
   if (Math.abs(nudge) > 8) {
@@ -572,6 +591,8 @@ sharedSlice('depot', {
     cartRails: cart.rails,
     called: cart.called,
     auto: cart.auto,
+    manual: cart.manual,
+    boost: cart.boost,
     speed: cart.speed,
   }),
   set: (v) => {

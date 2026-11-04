@@ -126,3 +126,56 @@ Final loaded-cart manifest `1793776192919-45482`: opened `hill-still.png`; pale 
 ### Rebase follow-up
 
 Rebased onto local `origin/main` at `b8870664`, preserving the incoming objective removal, relocated boiler and round-4 fixes alongside mixed cart delivery. The sole conflict was the run description in `docs/game-design/place.md`: keep the station-4 rail service and main's boiler apron location. The guidance audit now distinguishes player-fetched rails at stations 2–3 from visible mixed cart shipments and the separate frame shelf at stations 4–5. Main's remaining guidance stages and unresolved discovery questions are preserved. No gameplay retune is part of this reconciliation. Earlier timings, sync checks and images above are historical; use the follow-up manifests for the combined build. No fetch, push or ship was performed in this follow-up.
+
+## Ridden-cart follow-up (4 November)
+
+The owner's subsequent brief explicitly authorizes the previously proposed 12–13 m/s experiment and local commits, superseding this plan's earlier no-speed-retune boundary for this narrow case. Serve DESIGN.md **4. Cooperation is automatic, not negotiated** and **1. Toys before chores**: restore a payoff for a porter loading and riding while their partner works at the frontier. No push or ship; stop for the owner's feel judgment.
+
+- [x] Implement actual manual-load eligibility in `depot.ts`/`pair.ts`; automatic loading passes false, unloading/reset clears eligibility. A rider alone never boosts automatic cargo. Unridden or automatic carts remain at 9 m/s.
+- [x] Keep the existing prototype authority. Add bounded `placeCartRide` Owner presence (1 capable, 2 riding), authority-only reliable `cartRide` decisions, and optional validated `manual`/`boost` snapshot fields. Missing/invalid capability on any active peer disables the bonus; old event meanings, cargo, world rules and namespace stay unchanged. Existing motion reconciliation carries speed/position. No lockstep math changed.
+- [x] Preserve `rail.ts`'s `moveCar`/`snapCar` relocation handling and bounded junction turn. The cart's correction-speed threshold is 1.5 times the greater of base, current speed and selected cruise, so 13 m/s travel is ordinary motion while legacy travel retains its old threshold.
+- [x] Compare 12 and 13 in the existing Q5 eval at real 1x, and repeat close comparisons. Select **13 m/s**, with the modest but repeated advantage below. No higher speed was tried.
+- [x] Extend the existing co-op fixture with whole-trip contact, angular velocity, speed and peer-position measurements, plus an absent-capability mode. Use its rider-1 option for curves/video; its initial platform teleport is fixture setup, not the Q5 timing protocol. Q5 boarding/dismounting remain real input.
+- [x] Inspect the trip images, curves and consecutive video frames; run the full place bot and trusted `world-inputs` scenario. Keep copy and `chop.ts`, `land.ts`, `verbs.ts` unchanged.
+
+### Q5 observations
+
+Same commands above with **`--real`**, no changes to bills, starts, strategy or forge rate. The sole runtime difference between candidates is `CART_RIDE_SPEED`. Times below are player 1's authority clock; player 2's roughly 0.3-second earlier completion observation is retained in each output log. Historical 9 m/s mixed-cart solo/walk/split remains 73.78/69.16/75.80 s, not a fresh control.
+
+| Candidate | Mode | Seconds | Manifest ID |
+| --- | --- | ---: | --- |
+| 12 | solo | 73.75 | `1793778025511-43197` |
+| 12 | walk | 68.40 | `1793777919231-37887` |
+| 12 | split | 68.94 | `1793777831529-33684` |
+| 12 | split repeat | 69.08 | `1793778136517-48846` |
+| 13 | solo | 73.73 | `1793778448884-60182` |
+| 13 | walk | 71.52 | `1793778345663-57058` |
+| 13 | walk repeat | 69.02 | `1793778691416-72332` |
+| 13 | split | 67.02 | `1793778237816-53272` |
+| 13 | split repeat | 67.28 | `1793778565153-67956` |
+
+Every ID names `.look/evidence/<id>/evidence.json`, with exact source/harness fingerprints and output/artifact paths. All nine measurement manifests passed without changes during their runs. Twelve fails the requested comparison. Thirteen's slowest split is 1.12 s faster than the fastest walker across all trials, and 1.74 s faster than the fastest walker in its own candidate. That is a small, consistently observed win, not a claim of a large human-play advantage. The 13 split spread was 0.26 s; walking's total spread was 3.12 s. Solo is effectively unchanged. Every split reached its target cruise and retained contact throughout the ride (12: 1239/1235 samples; 13: 1156/1156 samples), then jumped off through input. The owner still judges whether this feels rewarding.
+
+### Ride and compatibility evidence
+
+Visual question: does the loaded rider remain supported through departure, the junction and arrival, without an upward launch? Follow the cart from a three-quarter camera, record the full forge-to-Q2 delivery, and inspect both visual frames and continuous measurements. The longer Q5 real-input rides above supplement this focused junction trip.
+
+```sh
+node .look/see-client.ts look --query 'proto=place&coop=1&pair=ride&tripVideo=1&rider=1' --players 2 --real --eval dev/look/evals/place-coop.ts --until window.__coopDone --warm 120 --video --curves --seconds 12 --frames 8 --question 'Does the loaded rider stay on through departure, the bounded junction turn and arrival without launching?'
+node .look/see-client.ts look --query 'proto=place&coop=1&pair=drop&legacyRide=1' --players 2 --real --eval dev/look/evals/place-coop.ts --until window.__coopDone --warm 120
+```
+
+| Check | Manifest ID | Observed result |
+| --- | --- | --- |
+| Boosted whole trip, video and curves | `1793778797711-79173` | Both peers reached 13 m/s; zero contact-loss samples; max peer gap 0.205 m / 0.05 m/s; max angular velocity 0.502 rad/s; both racks received 12 rails |
+| Missing ride capability | `1793779033258-93151` | Both peers stayed at 9 m/s, zero rider loss; max gap 0.625 m / 0.10 m/s; both racks received 12 rails |
+| Full place bot | `1793779124661-7634` | All expected actions finished, 78 checkpoints; no errors/water falls; 30 game minutes in 2:12 wall time |
+| Trusted world inputs | `1793779294998-22112` | All assertions passed |
+
+Actually opened: first 12 m/s split `hill-still.png`; boosted trip `hill-motion.png` and `hill-curves.png`; four consecutive `junction-01.png` through `junction-04.png` extracted at 3.0 seconds from that trip's `hill-realtime.webm`; successful legacy `p2-hill-still.png`; full bot `run/end-still.png`. The rider stays on top of the visible rail/log load, turns with the cart, and lowers onto the deck when cargo unloads. Consecutive junction frames show gradual pose changes without a visible snap or separation. Curves reach 13 smoothly, stop without upward velocity, and show the expected support-height drop at unload. The full-run end still confirms its completed overlay, not cart handling. Real-time smoothness and subjective feel remain unverified.
+
+Failures retained: `1793778881277-81100` stayed at 9 but failed the position probe during a recorded 1.48 s world-clock deficit (8.82 m gap). The unchanged repeat `1793778960597-83506` passed gameplay assertions, but the external broker harness moved from `c7e714e0` to `279cbc71` during the run, invalidating its manifest; this worktree's source fingerprint did not change. The third run above passed with stable provenance. The full solo bot's optional “did something together” mark is absent, not an expected-beat failure; it reported 7:09 stationary time and one 2-second pushing stall.
+
+Final Prettier and `npm run check` passed: lint, typecheck, 292 unit tests, registry, five level checks, assets and production build. The reviewed diff contains only the three cart/co-op files, the two existing evals and these two owning docs; all copy and excluded tree files are unchanged.
+
+Limitations: absent capability was simulated on the wire; no actual older binary, eight-player load benchmark, physical device, audio or human feel test. The mandated broker workflow does not expose the independent `npm run load` browser benchmark. No new unit test or scenario was added. Process departure: root ran the prescribed `npm run inflight` before inspecting its implementation, which accessed remote metadata despite the local-only network restriction; disclosed immediately, not repeated, no upload/push/ship. All implementation stayed in this worktree. Commits are recorded in the handoff.
