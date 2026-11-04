@@ -5,6 +5,7 @@ import { addPart, mergeParts } from '../src/render/geometry-parts.ts';
 import { itemModel } from '../src/player/item-models.ts';
 import { millBody, rotorParts, HUB_UP } from '../src/pois/windmills/model.ts';
 import type { CodeId } from './code-descriptors.ts';
+import { partGeometry } from '../src/proto/net/box-plan.ts';
 
 export type CodePreview = { group: THREE.Group; dispose(): void };
 export async function codePreview(id: CodeId): Promise<CodePreview> {
@@ -83,10 +84,11 @@ export async function codePreview(id: CodeId): Promise<CodePreview> {
               },
               0,
             );
-    const geo = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
-    for (const box of id === 'scaffold' ? plan.scaffold : plan.pieces)
+    for (const box of id === 'scaffold' ? plan.scaffold : plan.pieces) {
+      const geo = partGeometry(box.taper);
       addPart(parts, geo, new THREE.Matrix4().makeTranslation(box.x, box.y, box.z).multiply(box.local), box.color);
-    geo.dispose();
+      geo.dispose();
+    }
   }
   if (parts.length) {
     group.add(new THREE.Mesh(mergeParts(parts), material));

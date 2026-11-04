@@ -7,7 +7,7 @@ import { groundHeight } from '../../island/terrain.ts';
 import type { Block } from '../era/blocks.ts';
 
 export type Smoke = { x: number; y: number; z: number };
-import { place, boxAt, type Box } from './box-plan.ts';
+import { place, boxAt, partMesh, type Box } from './box-plan.ts';
 export { place, type Box } from './box-plan.ts';
 
 const Y = new THREE.Vector3(0, 1, 0);
@@ -58,14 +58,12 @@ export function blockBoxes(b: Block, smokes: Smoke[]): Box[] {
   return out;
 }
 
-const geo = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0); // a unit box standing on its base
 const mat = new THREE.MeshStandardNodeMaterial({ roughness: 0.85, flatShading: true });
 export type BoxSet = { boxes: Box[]; mesh: THREE.InstancedMesh };
 export function makeSet(boxes: Box[]): BoxSet {
-  const mesh = new THREE.InstancedMesh(geo, mat, Math.max(1, boxes.length));
+  const mesh = partMesh(boxes, mat);
   mesh.castShadow = mesh.receiveShadow = true;
   mesh.frustumCulled = false;
-  boxes.forEach((b, k) => mesh.setColorAt(k, b.color));
   scene.add(mesh);
   const set = { boxes, mesh };
   draw(set, () => 0);
