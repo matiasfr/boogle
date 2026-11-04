@@ -2,10 +2,13 @@
 // side, so a visual change can be judged at one camera and one state. The other build comes from `git archive` into
 // .look/before/<sha> (kept for next time). Use it with --cam/--look or --at, and BOOGLE_QUERY as usual; with --curves the second
 // run draws the first underneath. Writes <name>-before-after.png in the look output folder.
+// --verify-restore (with --at) compares live page readbacks before publishing a pair; other callers retain their behavior.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { launch, root } from './lib.ts';
+import { pairRestores, expectedRestore } from './restore-pair.ts';
+import { findSave } from './saves.ts';
 
 const [ref, ...args] = process.argv.slice(2);
 if (!ref || ref.startsWith('-')) {
@@ -23,6 +26,15 @@ const without = (name: string) => {
 const name = opt('--name') ?? 'compare';
 const out = path.resolve(root, opt('--out') ?? '.look');
 const afterRoot = opt('--root');
+const verifyRestore = args.includes('--verify-restore');
+if (verifyRestore) args.splice(args.indexOf('--verify-restore'), 1);
+if (verifyRestore && !opt('--at')) throw new Error('--verify-restore requires --at');
+if (verifyRestore) {
+  // A failed rerun must not leave an earlier approved-looking pair or proof under this name.
+  for (const suffix of ['before-after.png', 'restore-pair.json', 'before-restore.json', 'after-restore.json'])
+    fs.rmSync(path.join(out, `${name}-${suffix}`), { force: true });
+}
+const expected = verifyRestore ? expectedRestore(findSave(opt('--at')!, opt('--saves') ?? undefined)) : null;
 without('--name');
 without('--root');
 
@@ -38,7 +50,15 @@ if (!fs.existsSync(path.join(before, 'package.json'))) {
 const look = (checkout: string | null, label: string, extra: string[]) => {
   const r = spawnSync(
     process.execPath,
-    ['dev/look/look.ts', ...args, ...extra, '--name', label, ...(checkout ? ['--root', checkout] : [])],
+    [
+      'dev/look/look.ts',
+      ...args,
+      ...extra,
+      ...(verifyRestore ? ['--restore-report'] : []),
+      '--name',
+      label,
+      ...(checkout ? ['--root', checkout] : []),
+    ],
     { cwd: root, stdio: ['ignore', 'pipe', 'inherit'], encoding: 'utf8' },
   );
   console.log(`--- ${label} (${checkout ? path.basename(checkout) : 'this checkout'})\n${r.stdout.trim()}`);
@@ -49,6 +69,24 @@ const a = `${name}-before`,
 look(before, a, []);
 const curves = args.includes('--curves') && !args.includes('--curves-vs');
 look(afterRoot, b, curves ? ['--curves-vs', path.join(out, `${a}-curves.csv`)] : []);
+if (verifyRestore) {
+  const read = (label: string): unknown => {
+    try {
+      return JSON.parse(fs.readFileSync(path.join(out, `${label}-restore.json`), 'utf8'));
+    } catch {
+      return null;
+    }
+  };
+  const beforeState = read(a),
+    afterState = read(b);
+  const decision = pairRestores(beforeState, afterState, expected);
+  fs.writeFileSync(
+    path.join(out, `${name}-restore-pair.json`),
+    JSON.stringify({ ...decision, expected, before: beforeState, after: afterState }, null, 2),
+  );
+  console.log(`${decision.pair ? 'RESTORE MATCH' : 'NOT COMPARED'}: ${decision.reason}`);
+  if (!decision.pair) process.exit(1);
+}
 
 // In a scratch page (canvas), so the harness needs no image library.
 const browser = await launch();

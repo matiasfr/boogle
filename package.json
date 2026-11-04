@@ -29,6 +29,7 @@
     "session": "node dev/look/session.ts",
     "playthrough": "node dev/look/playthrough.ts",
     "before-after": "node dev/look/before-after.ts",
+    "sheet": "node dev/look/sheet.ts",
     "registry": "node dev/registry/check.ts",
     "atlas": "node dev/atlas/cli.ts",
     "daily": "node dev/daily/run.ts",

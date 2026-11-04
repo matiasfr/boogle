@@ -12,6 +12,7 @@ import { plotCurves, readCsv, readings, START_CURVES, STOP_CURVES, writeCsv } fr
 import type { CurveData } from './curves.ts';
 import { TARGETS } from './targets.ts';
 import { coopWarpOptions, startCoopWarp } from './coop-warp.ts';
+import { READ_RESTORED } from './restore-pair.ts';
 
 const opt: {
   view: string;
@@ -46,6 +47,7 @@ const opt: {
   target: string | null;
   players: number;
   clockUrl?: string;
+  restoreReport: boolean;
 } = {
   view: 'hill',
   cam: null,
@@ -75,6 +77,7 @@ const opt: {
   curvesVs: null,
   target: null,
   players: 1,
+  restoreReport: false,
 };
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
@@ -113,6 +116,7 @@ for (let k = 0; k < argv.length; k++) {
     opt.query = v(); // URL params for the page, like BOOGLE_QUERY; a Codex rule can't see past an environment variable
   else if (a === '--hud')
     opt.hud = true; // keep the HUD in the picture
+  else if (a === '--restore-report') opt.restoreReport = true;
   else if (a === '--warp')
     opt.warp = true; // the default: --warm and an eval's waits pass in game time, far faster than real (./warp.ts). Captures run at real speed
   else if (a === '--real')
@@ -148,6 +152,7 @@ for (let k = 0; k < argv.length; k++) {
   [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
   [--saves <directory>]                     use checkpoints from this playthrough instead of latest
+  [--restore-report]                        with --at: write live position, room/interior and place progress before capture
   [--root <checkout>]                       serve another checkout's build
   [--players 2]                             two players, one room: the eval runs on both, &player=1 and &player=2
   [--warp-speed 5]                          cap both pages and accelerate the local server; --real opts out
@@ -209,6 +214,7 @@ if (opt.at === 'list') {
   process.exit(0);
 }
 const save = opt.at ? findSave(opt.at, opt.saves) : null;
+if (opt.restoreReport && !save) throw new Error('--restore-report requires --at');
 if (save) console.log(`at: "${save.beat}", ${Math.round(save.t)} s into the run ${save.run}`);
 
 let stack: Stack | undefined, browser: Browser | undefined;
@@ -299,6 +305,12 @@ try {
     }
   }
   if (g.errors.length) throw new Error(`Stopped during warm-up:\n${g.healthErrors().join('\n')}`);
+  if (opt.restoreReport) {
+    const restored = await g.eval(READ_RESTORED);
+    const file = path.join(g.out, `${label}-restore.json`);
+    fs.writeFileSync(file, JSON.stringify(restored, null, 2));
+    console.log(`restored state: ${file} ${JSON.stringify(restored)}`);
+  }
   const video = opt.video ? path.join(g.out, `${label}-realtime.webm`) : null;
   if (video)
     await g.page.screencast.start({ path: video, size: { width: opt.size[0]!, height: opt.size[1]! }, fps: 30 });
