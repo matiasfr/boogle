@@ -2,11 +2,14 @@
 import { Vector3 } from 'three/webgpu';
 import { newWaterEnabled } from './flags.ts';
 import { TSL, type N } from './tsl.ts';
+import { devEnabled } from '../../dev-preferences.ts';
 
-export const tuningEnabled = newWaterEnabled && new URLSearchParams(location.search).get('tune') === '1';
+export const tuningEnabled =
+  newWaterEnabled && (devEnabled || new URLSearchParams(location.search).get('tune') === '1');
 export type Value = number | number[];
 export type Binding = { get(): Value; set(value: Value): void };
 export const bindings = new Map<string, Binding>();
+export const bindingDefaults = new Map<string, Value>();
 const nodes = new Map<string, N>();
 const refreshers = new Set<() => void>();
 export function onChange(update: () => void) {
@@ -20,6 +23,8 @@ export function refresh() {
 }
 export function bind(key: string, get: () => Value, set: (value: Value) => void) {
   if (!tuningEnabled) return;
+  const initial = get();
+  bindingDefaults.set(key, Array.isArray(initial) ? [...initial] : initial);
   bindings.set(key, {
     get,
     set(value) {

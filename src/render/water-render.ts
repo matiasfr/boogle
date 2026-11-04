@@ -255,7 +255,7 @@ function createRealSea() {
       queries: queries.inspect(),
       underwater: underwater.inspect(),
       sky: frozen.inspect(),
-      tone: 'agx',
+      tone: post.tone(),
       ...atlas.inspect(),
     }),
     dispose() {
@@ -291,6 +291,7 @@ function createRealSea() {
     await source.prepare();
     await queries.prepare();
     await underwater.prepare();
+    await post.prepare();
   });
   // CPU resources exist before the loading precompile. GPU work begins only after the existing renderer is ready.
   waterReady = Promise.all([rendererReady, frozen.ready]).then(() => {
