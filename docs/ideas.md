@@ -4,6 +4,9 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 
 ## Ball
 
+## Look
+- Revisit time of day and colour grading with the new sky and AgX: the game felt a bit dull and even the stars around the player's head looked very dark, maybe material properties and emissive values on things (owner, 2026-11-03)
+
 ## Island
 
 ## The Boogler
