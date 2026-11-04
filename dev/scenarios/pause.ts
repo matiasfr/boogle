@@ -1,7 +1,7 @@
 // The pause view: a local overlay (the island keeps running, only this player's input is taken). H opens it on the
 // controls, every control with keys is in the guide there; Resume is focused; held keys do nothing behind it; the room
 // page shows the room and an invite button and renames you; Leave asks twice; it ends a talk and keeps one from opening; the controls tab follows the
-// input; the phone's menu button clears the name tag and the connection pill; the first-run card shows once per input.
+// input; the phone's menu button clears the name tag and the connection pill.
 // Pointer lock cannot be exercised headless, so Esc-from-the-lock and Resume re-locking need a real browser.
 import type { T } from './run.ts';
 const PAUSE = `const { openPause, closePause } = await import('/src/features/pause.ts');`;
@@ -186,38 +186,6 @@ export default {
     await g.eval(`document.body.classList.remove('gamepad');`);
 
     await g.ctx.close(); // fewer live pages keeps the software renderer quick
-
-    // 8a. A fresh player sees the first-run card and it fades after a few seconds of walking.
-    const fresh = await t.open({ name: 'fresh', hud: true, size: [1280, 720] });
-    await fresh.wait(0.6);
-    const card = await fresh.eval(`const c = document.querySelector('.first-run');
-      return { has: !!c, text: c?.textContent ?? '', flag: localStorage.getItem('boogle.firstRun.kbm') };`);
-    const cardShot = await fresh.still('first-run');
-    t.check(
-      'a fresh player sees the first-run card once',
-      card.has && card.text.includes('All controls and the menu') && card.flag === '1',
-      `${JSON.stringify(card)}; ${cardShot}`,
-    );
-    await fresh.down('KeyW');
-    const gone = await fresh.waitFor(`!document.querySelector('.first-run')`, { timeout: 25000 });
-    await fresh.up('KeyW');
-    t.check('the card is gone after walking', gone >= 0, `${gone} ms`);
-    await fresh.ctx.close();
-
-    // 8b. The flag is set: the same browser profile does not see it again.
-    const again = await t.open({
-      name: 'again',
-      hud: true,
-      size: [1280, 720],
-      init: `try { localStorage.setItem('boogle.firstRun.kbm', '1'); } catch {}`,
-    });
-    await again.wait(0.8);
-    t.check(
-      'with the flag set the card does not show',
-      !(await again.eval(`return !!document.querySelector('.first-run');`)),
-    );
-
-    await again.ctx.close();
 
     // 7. A phone: the menu button clears the name tag and the connection pill; both pages fit.
     const phone = await t.open({ name: 'phone', hud: true, touch: true, size: [390, 844] });

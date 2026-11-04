@@ -1,4 +1,4 @@
-# 6.14 Arrival and the first-run card
+# 6.14 Arrival
 
 - **First visit.** With no name saved on this device (`boogle.name`), you fall into the world (below). The card asks for
   nothing but a name box already filled with a friendly random name ("Sunny Otter", "Jolly Puffin", ...), the eight colour
@@ -27,11 +27,6 @@
   here, when that is known: "Ana and Bo were here" (players new to the room's roster, or whose plaque points rose),
   "3 new stretches of track were laid", "Opening day happened while you were away". Nothing changed, or no memory of
   the room: just the greeting. It waits up to 4 s for the room's state, takes no clicks and blocks nothing.
-- **First-run card.** The first time you play with each input kind (keyboard, pad, touch) a small paper card lists the
-  basics (groups move, camera, ball, hands, from the registry) and points at the menu. Only its close button takes
-  clicks; it leaves after 3 s of walking, 15 s, a click on the close button, or when the menu opens. It sits at the
-  lower left (above the name tag on screens under 960 px wide; mid-left on touch). On short screens (under 520 px tall)
-  and upright phones it drops the hands group and sits higher, clear of the held-item buttons.
 - **Hooks for later** ([src/player/arrival.ts](../../src/player/arrival.ts)): `isFirstVisit()`, `showCard()`,
   `lastVisit` (`{ at, room }` of the previous visit, localStorage `boogle.lastVisit`), and `addWelcomeItem({ key,
   save, since })`: `save()` says what to remember about the room now, `since(then)` turns last visit's value into a
@@ -43,7 +38,7 @@
   You steer on the way down (the usual air control, inside a funnel that closes on the title, so you can't miss), drop
   through the cloud into the island's daylight, and see BOOGLE in timber hanging 55 m up. You smash through it (a burst, a thump
   and a shake) and the letters tumble in a loose ring around you at your speed. You land flat with stars (1.8 s; any input
-  stands you up after 0.9 s), the letters crash down around you and the cart lands next to you 0.8 s later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's usual 20 m/s, so the 150 m drop is about 7.5 s in the air. The controls card waits until you land. Local: only
+  stands you up after 0.9 s), the letters crash down around you and the cart lands next to you 0.8 s later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's usual 20 m/s, so the 150 m drop is about 7.5 s in the air. Local: only
   your body and the existing flop and knockdown presence go to others, so a friend sees you land on nothing. The same
   director uses round 4's spawn, facing and terrain height for the player, letters and trolley; classic keeps its original
   target. Round 4 waits for the landing before starting its objective and local interactions. Returning players skip the
@@ -53,13 +48,11 @@
 - **History.** `?proto=arrive` (1 Nov 2026; wordless-onboarding recs 1, 2, 3, 8) tried skipping the lobby on every
   visit, a south-of-the-court arrival with the ball rolled toward you, a two-group card and timings. It was retired
   (merged) on 2 Nov: its direct entry is how returning players arrive now and its rename editor is the pause view's
-  You section; the arrival spot, the ball roll, the trimmed card and the timings went with it.
-- **Sync kind.** Local (localStorage `boogle.name`, `boogle.color`, `boogle.lastVisit`, `boogle.visit.<room>` (your spot among them),
-  `boogle.firstRun.<kind>`). The welcome back reads lockstep state (roster, sites, opening) and never changes it.
+  You section; the arrival spot, the ball roll, the trimmed card and the timings went with it. The first-run controls card was removed on 3 Nov: the pause view covers the controls.
+- **Sync kind.** Local (localStorage `boogle.name`, `boogle.color`, `boogle.lastVisit`, `boogle.visit.<room>` (your spot among them)). The welcome back reads lockstep state (roster, sites, opening) and never changes it.
 - **Files.** [src/player/arrival.ts](../../src/player/arrival.ts), [src/player/hud.ts](../../src/player/hud.ts) (the
   card), [src/features/welcome-back.ts](../../src/features/welcome-back.ts),
-  [src/features/first-run.ts](../../src/features/first-run.ts),
-  [src/features/home-app.ts](../../src/features/home-app.ts), [src/features/fall.ts](../../src/features/fall.ts). Scenarios: `arrival`, `first-run`, `home-app`. Identity:
+  [src/features/home-app.ts](../../src/features/home-app.ts), [src/features/fall.ts](../../src/features/fall.ts). Scenarios: `arrival`, `home-app`. Identity:
   [identity.md](identity.md).
 
 ---

@@ -52,7 +52,7 @@ export default {
     const d = Number(await g.eval(AT));
     t.check('you start at the card’s spawn', d < 2, `${d.toFixed(2)} m away`);
 
-    await g.eval(`document.querySelector('.first-run-close')?.click(); document.querySelector('.pb-yes').click();`);
+    await g.eval(`document.querySelector('.pb-yes').click();`);
     await g.eval(
       `const n = document.querySelector('.pb-note'); n.value = 'drifts feel great'; n.dispatchEvent(new Event('input')); n.blur();`,
     );

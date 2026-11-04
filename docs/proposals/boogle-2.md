@@ -36,7 +36,7 @@ Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`
 
 ### Controls, HUD and arrival
 
-[Decided](#decided): one thing in hand, no hotbar or empty-hand bump. [Controls](#controls): Interact X/Square, no petting/tier labels, first fall/title, room-specific return, confirmed fresh start, Get unstuck and stopped Leave menu. Later return/menu entries supersede earlier arrival descriptions. Invite links wait.
+[Decided](#decided): one thing in hand, no hotbar or empty-hand bump. [Controls](#controls): Interact X/Square, no petting/tier labels, first fall/title, room-specific return, confirmed fresh start, Get unstuck and stopped Leave menu, no first-run controls card. Later return/menu entries supersede earlier arrival descriptions. Invite links wait.
 
 ### Architecture, tools and prototype lifecycle
 
@@ -286,6 +286,8 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - **2026-11-01, night stays light, moonlit** (owner: "night mode feels too dark, it should feel light still maybe moonlit"). A cool, bright moonlight you can play by, not darkness. **The sun and moon lose their faces** (owner: "they can be a bit more real").
 
 ### Controls
+
+- **2026-11-03, no first-run controls card** (owner: "the pause menu has sufficient context for now"). The "Getting around" card that popped up on entering is removed; the pause view's Controls page is the one place controls are listed.
 
 - **2026-11-01, Interact moves to X / Square** (the west face button; owner, iPad playtest with a controller: "I want to use X/Square and it prompts me B for a lot of things"). B becomes back/cancel. Dialogue with The Boogler gets a controller pass designed to scale to every NPC.
 

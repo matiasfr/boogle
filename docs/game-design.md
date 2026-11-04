@@ -71,7 +71,7 @@ tick of 100 ms (10 per second).
 - [6.11 Day and night](game-design/day-night.md)
 - [6.12 Caves](game-design/caves.md)
 - [6.13 Pause view and controls guide](game-design/pause.md)
-- [6.14 Arrival and the first-run card](game-design/first-run.md)
+- [6.14 Arrival](game-design/first-run.md)
 - [6.15 Telemetry and updates](game-design/telemetry-and-updates.md)
 - [6.16 Talking to NPCs](game-design/npcs.md)
 - [6.17 The dino and the guest](game-design/dino-and-guest.md)

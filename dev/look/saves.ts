@@ -39,9 +39,7 @@ export function findSave(what: string, dir?: string): Save {
 }
 /** What a run made, not who played it: a saved name would skip the lobby the harness walks through. */
 const progress = (all: Record<string, string>) =>
-  Object.fromEntries(
-    Object.entries(all).filter(([k]) => /^boogle\.firstRun/.test(k) || !/^boogle[.-]protos|^boogle\./.test(k)),
-  );
+  Object.fromEntries(Object.entries(all).filter(([k]) => !/^boogle(\.|-protos)/.test(k)));
 /** Page init: the save's storage, before the game reads it. Only on the first load: a reload keeps what the game wrote. */
 export const SEED = (s: Save) => `
   if (!sessionStorage.getItem('look-seeded')) {

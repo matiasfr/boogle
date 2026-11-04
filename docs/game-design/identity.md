@@ -9,7 +9,7 @@
   its next beat; `who.set` within 3 s, [src/features/identity.ts](../../src/features/identity.ts)).
 - **Starting fresh.** On the main pause page, Start fresh turns into "Yes, start fresh" with a warning for 6 s; pressing it again forgets
   you on this device (name, colour, pid and key, room memories, The Boogler's friendship, mini-game and soapbox bests) and
-  reloads into the first visit's fall. Settings and the controls cards you've seen stay. In round 4, every solo/co-op save
+  reloads into the first visit's fall. Settings stay. In round 4, every solo/co-op save
   on this device is cleared too: your back, dropped pieces, gifts, finds, crystals, conversations and saved position.
   Solo restarts the railway; co-op moves you to a new room, leaving partners and their railway intact, as the confirmation
   explains. On classic, the island keeps everything and your old plaque lines keep your old name. There's no undo.

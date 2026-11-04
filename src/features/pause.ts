@@ -3,7 +3,7 @@
 // and You: your name and colour, src/player/you-editor.ts) and Leave (out to the menu page, with the game stopped).
 // The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop); it only takes this
 // player's input through src/player/modal.ts. Opens on Esc (the pointer lock ends), H (on the controls),
-// Menu on a gamepad and the corner menu button. The first-run card is src/features/first-run.ts.
+// Menu on a gamepad and the corner menu button.
 // The main page also has the mute button and volume slider.
 // Fullscreen is a toggle on the main page, shown only where the page can go fullscreen and is not already an installed
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.

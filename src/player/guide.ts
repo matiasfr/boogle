@@ -1,9 +1,8 @@
 // The controls guide, generated from the control registry (src/player/controls.ts) so it cannot drift from the code.
 //
-//   renderGuide(kind, { groups })   an element with one section per group that has rows for `kind`: 'kbm' (rows with
-//                                   keys), 'pad' (rows with a pad binding) or 'touch' (rows with a touch label).
-//                                   groups limits it to those GROUPS ids. Each row is [glyph] label (detail) and
-//                                   carries data-id. Plain DOM; style it through src/player/guide.css.
+//   renderGuide(kind)   an element with one section per group that has rows for `kind`: 'kbm' (rows with keys),
+//                       'pad' (rows with a pad binding) or 'touch' (rows with a touch label). Each row is
+//                       [glyph] label (detail) and carries data-id. Plain DOM; style it through src/player/guide.css.
 //
 // A pad row that only applies in some situation (context) and shares its slot with an earlier row of the same group is
 // left out of the pad guide: it is the same button doing the same thing (Toss is X, like Use).
@@ -61,12 +60,11 @@ function rowFor(kind: GuideKind, c: ControlRow) {
   return row;
 }
 
-export function renderGuide(kind: GuideKind, { groups }: { groups?: string[] } = {}) {
+export function renderGuide(kind: GuideKind) {
   const root = document.createElement('div');
   root.className = `guide guide-${kind}`;
   const list = listControls().filter((c) => has[kind](c));
   for (const [id, title] of GROUPS) {
-    if (groups && !groups.includes(id)) continue;
     const seen = new Set();
     const rows = [];
     for (const c of list.filter((c) => c.group === id)) {
@@ -78,7 +76,6 @@ export function renderGuide(kind: GuideKind, { groups }: { groups?: string[] } =
     if (!rows.length) continue;
     const section = document.createElement('section');
     section.className = 'guide-group';
-    section.dataset.group = id;
     const h = document.createElement('h3');
     h.textContent = title;
     section.append(h, ...rows);

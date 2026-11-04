@@ -55,14 +55,6 @@ body:not(.playing) .place-nums,
 body:not(.playing) .place-proto {
   display: none;
 }
-/* The first-run card: only what this place uses (this file loads only on ?proto=place). */
-.first-run .guide-group[data-group='ball'],
-.first-run .guide-row[data-id='use'],
-.first-run .guide-row[data-id='toss'],
-.first-run .guide-row[data-id='guest-crouch'],
-.first-run .guide-row[data-id='guest-punch'] {
-  display: none;
-}
 
 /* A real place (?proto=place): the solo tester's panel. */
 .place-proto {

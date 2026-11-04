@@ -167,8 +167,8 @@ export function leaveIsland() {
   ).href;
 }
 
-// Who you are on this device: your identity, and what's yours rather than the island's. The controls cards you've seen
-// and your settings stay: it's still you at the keyboard.
+// Who you are on this device: your identity, and what's yours rather than the island's. Your settings stay: it's still
+// you at the keyboard.
 const PERSON = ['boogle.name', 'boogle.color', 'boogle.pid', 'boogle.key', 'boogle.lastVisit', 'boogle.boogler'];
 const PERSON_PREFIX = ['boogle.visit.', 'boogle.minis.', 'boogle.soapbox.'];
 let fresh = false;

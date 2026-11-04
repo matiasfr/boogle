@@ -53,7 +53,6 @@ export default {
       const up = await g.waitFor(`!!document.querySelector('.lay-proto button')`, { timeout: 90000 });
       t.check(`${tag}: the panel is up`, up >= 0);
       await g.waitFor(`window.boogle?.me?.entered`, { timeout: 30000 });
-      await g.eval(`document.querySelector('.first-run-close')?.click();`);
       await g.eval(`document.querySelector('.lay-proto button').click();`);
       const full = await g.waitFor(`(async () => { ${R} return rules.sites.canRun(0); })()`, { timeout: 10000 });
       t.check(`${tag}: Fill the Track ring fills it`, full >= 0);

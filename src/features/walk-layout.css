@@ -1,6 +1,6 @@
 .walk-layout {
   position: fixed;
-  /* top centre, under the touch name tag: bottom left is the controls card (keyboard) and the stick (touch) */
+  /* top centre, under the touch name tag: on touch the stick is bottom left */
   left: 50%;
   top: calc(70px + env(safe-area-inset-top, 0px));
   transform: translateX(-50%);

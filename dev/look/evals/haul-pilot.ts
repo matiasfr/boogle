@@ -14,9 +14,9 @@ const win = window as unknown as { __debugCam?: { clear(): void } };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
-// Sheets without the tuning panel or the first-run card over the action.
+// Sheets without the tuning panel over the action.
 const style = document.createElement('style');
-style.textContent = '.first-run, .haul-kit { display: none !important }';
+style.textContent = '.haul-kit { display: none !important }';
 document.head.append(style);
 
 export const myCount = () => (identity.pid ? rules.stacks.count(identity.pid) : 0);

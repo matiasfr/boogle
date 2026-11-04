@@ -59,7 +59,7 @@ export default {
     const room = 'hutbuild' + Math.random().toString(36).slice(2, 6);
     const g = await t.open({ name: 'solo', room, hud: true });
     await g.waitFor(`window.boogle?.me?.entered`, { timeout: 90000 });
-    await g.eval(`document.querySelector('.first-run-close')?.click(); ${TP(8, 16)}`); // behind the camera
+    await g.eval(TP(8, 16)); // behind the camera
     await g.view(HUT_VIEW);
     await t.sleep(1500);
     t.check('the ring starts empty', (await g.eval(`return ${FILL};`)) === 0);
@@ -94,7 +94,6 @@ export default {
     ] as const) {
       const j = await t.open({ name, room, hud: true, size: [...size] });
       await j.waitFor(`window.boogle?.me?.entered && ${FILL}.then((n) => n === 'built')`, { timeout: 90000 });
-      await j.eval(`document.querySelector('.first-run-close')?.click();`);
       t.check(`still: ${name} arriving (the player's own camera)`, true, await j.still(`${name}-arrive`));
       await j.eval(TP(tp[0], tp[1])); // out of the hut view, apart from the others
       await j.view(HUT_VIEW);
