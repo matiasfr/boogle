@@ -19,59 +19,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-
-const ROOT = path.resolve(import.meta.dirname, '../..');
-const SRC = path.join(ROOT, 'assets/src');
-const OUT = path.join(ROOT, 'assets/built');
-const MANIFEST = path.join(OUT, 'manifest.json');
-
-/** Default limits; a sidecar can raise one asset's. Sizes are the optimized .glb as downloaded. */
-const BUDGET = { assetKB: 1024, totalKB: 12 * 1024, maxTexture: 1024 };
-/** Textures at or under this many pixels a side may stay PNG/WebP (open-world.md, section 2). */
-const SMALL_TEXTURE = 256;
-
-type Sidecar = { maxTexture?: number; simplify?: number; budgetKB?: number };
-type Entry = {
-  source: string;
-  sourceHash: string;
-  outHash: string;
-  rawBytes: number;
-  bytes: number;
-  triangles: number;
-  animations: string[];
-  textures: { name: string; size: [number, number]; mime: string }[];
-};
-type Manifest = Record<string, Entry>;
-
-const SOURCE_EXT = ['.py', '.blend', '.glb', '.gltf'];
-const sha = (buf: Buffer | string) => crypto.createHash('sha256').update(buf).digest('hex').slice(0, 16);
-const kb = (n: number) => (n / 1024).toFixed(1) + ' KB';
-
-function sources() {
-  return fs
-    .readdirSync(SRC)
-    .filter((f) => SOURCE_EXT.includes(path.extname(f)))
-    .map((f) => ({ name: path.basename(f, path.extname(f)), file: f }));
-}
-function sidecar(name: string): Sidecar {
-  const p = path.join(SRC, name + '.json');
-  return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
-}
-/** A source's hash covers its sidecar too, so changing a budget or texture size rebuilds it. */
-function sourceHash(file: string, name: string) {
-  const side = path.join(SRC, name + '.json');
-  return sha(
-    Buffer.concat([
-      fs.readFileSync(path.join(SRC, file)),
-      fs.existsSync(side) ? fs.readFileSync(side) : Buffer.alloc(0),
-    ]),
-  );
-}
-function readManifest(): Manifest {
-  return fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : {};
-}
+import {
+  SRC,
+  OUT,
+  MANIFEST,
+  BUDGET,
+  SMALL_TEXTURE,
+  sha,
+  kb,
+  sources,
+  sidecar,
+  sourceHash,
+  readManifest,
+} from './manifest.ts';
 
 // ---------------------------------------------------------------- --check: cheap, runs in `npm run check`
 function check() {
