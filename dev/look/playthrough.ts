@@ -21,6 +21,7 @@ import { IGNORE_TEXT, installObserver, WATCH_MARKS, type Observed } from './obse
 import { beatsOf } from '../playtest/beats.ts';
 import { clock, parseSession, span, str, num, type Ev, type Session } from '../playtest/read.ts';
 import { marksByName, objectiveSteps, summarize, compare } from '../playtest/summary.ts';
+import { coopPlaythrough } from './coop-playthrough.ts';
 
 const SIZE = [1180, 820];
 const ROOM = 'proto-place'; // a save belongs to its room
@@ -228,6 +229,9 @@ async function main() {
   const query = opt('--query', 'proto=place&shot=play');
   const checkout = path.resolve(opt('--root', root));
   const stallS = Number(opt('--stall', '600'));
+  const players = Number(opt('--players', '1'));
+  if (players !== 1 && players !== 2) throw new Error('--players must be 1 or 2');
+  if (!Number.isFinite(stallS) || stallS <= 0) throw new Error('--stall must be positive game seconds');
   const job = path.join(checkout, 'dev/look/evals/place-job.ts');
   const evalFile = path.resolve(checkout, opt('--eval', fs.existsSync(job) ? job : 'dev/look/evals/place.ts'));
   const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: checkout, encoding: 'utf8' }).trim();
@@ -243,6 +247,8 @@ async function main() {
   }
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(path.join(dir, 'saves'), { recursive: true });
+
+  if (players === 2) return coopPlaythrough({ args, checkout, dir, query, stallS, report });
 
   let stack: Stack | undefined, browser: Browser | undefined;
   try {
@@ -288,7 +294,7 @@ async function main() {
     let wallAt = Date.now();
     const w = await g.warp({
       until: 'window.__placeDone',
-      wallLimit: 300,
+      wallLimit: has('--long') ? 1800 : 300,
       stalled: async (at) => {
         const last = await g.page.evaluate(
           () => (window as unknown as { __observe: { lastBeat: number } }).__observe.lastBeat,

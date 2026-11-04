@@ -5,18 +5,19 @@ Before using tools or writing a shot, script or workaround, read this tool table
 Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lists routes); `--docs <text>` searches docs with authority labels and current replacement pointers.
 **Check here before writing a shot, a script or a workaround.** Details: `.claude/skills/look/SKILL.md`.
 
-| You want to                                 | Use                                                                                                     |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| See a beat of the run                       | `npm run look -- --at "<beat>"` (`--at list` names them); warm-ups are warped, so `--warm` costs little |
-| Pacing, what never happened, on-screen text | `npm run playthrough` (about 90 s); new beats go in `dev/look/bots/place.ts`                            |
-| Ask several questions of the running game   | `npm run session -- start`, then `keys`, `press`, `state`, `still` (under a second each)                |
-| Judge motion or feel from evidence          | `look --curves`, `--target glide`; `look --filmstrip N` for exact frames                                |
-| Compare with an earlier build               | `npm run before-after -- <ref>`                                                                         |
-| Two players                                 | `look --players 2` (warped at 5x)                                                                       |
-| Know a folder without reading it            | `npm run map -- <folder>`, then `grep` and line ranges                                                  |
-| Check level coverage or a placement         | `npm run level-check`; `-- --place=place --region=T3 --state=empty --physics --json`; `-- --replay`     |
-| Make many edits at once                     | `npm run patch -- <file>`                                                                               |
-| See where a session's time and tokens went  | `npm run transcript -- <id>`                                                                            |
+| You want to                                    | Use                                                                                                                                                                        |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| See a beat of the run                          | `npm run look -- --at "<beat>"` (`--at list` names them); warm-ups are warped, so `--warm` costs little                                                                    |
+| Pacing, what never happened, on-screen text    | `npm run playthrough` (about 90 s); new beats go in `dev/look/bots/place.ts`                                                                                               |
+| Ask several questions of the running game      | `npm run session -- start`, then `keys`, `press`, `state`, `still` (under a second each)                                                                                   |
+| Judge motion or feel from evidence             | `look --curves`, `--target glide`; `look --filmstrip N` for exact frames                                                                                                   |
+| Compare with an earlier build                  | `npm run before-after -- <ref>`                                                                                                                                            |
+| Two players                                    | `look --players 2` (warped at 5x)                                                                                                                                          |
+| Continuous two-player route, reload and rejoin | `node .look/see-client.ts playthrough --players 2 --long --warp-speed 5 --query 'proto=place&shot=play'` (requires a launcher/broker with this extension; `--real` for 1x) |
+| Know a folder without reading it               | `npm run map -- <folder>`, then `grep` and line ranges                                                                                                                     |
+| Check level coverage or a placement            | `npm run level-check`; `-- --place=place --region=T3 --state=empty --physics --json`; `-- --replay`                                                                        |
+| Make many edits at once                        | `npm run patch -- <file>`                                                                                                                                                  |
+| See where a session's time and tokens went     | `npm run transcript -- <id>`                                                                                                                                               |
 
 - `npm run friends-report -- [--since YYYY-MM-DD]` lists friends’ merged PRs and flags sensitive paths; it remembers the last report date in `.look/`.
 - `npm run transcript -- <path|id>` summarizes a finished Claude or Codex session; `--latest claude|codex`, `--compare a b`, and `--json` select other views.
@@ -24,6 +25,8 @@ Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lis
 - `npm run concepts`: painted concept images. `npm run clip`, `npm run reel`: clips and trailers. `npm run playtest`: what `?proto=` sessions did, uploaded on their own (`-- latest` prints the summary and a heat map; prototypes add beats with `playMark` from `src/proto/mark.ts`). `npm run verdicts`: the owner's notes from the prototype bar; read them from a checkout with the token rather than asking the owner to paste them.
 - `npm run patch -- <file>`: many edits across files in one go. Nothing is written if any edit's text is missing or appears twice, then it runs Prettier, the full lint runner and a typecheck. Use it instead of a throwaway script, whose `replace` misses in silence and which skips the format hook. The format is at the top of `dev/patch.ts`.
 - One Mac GPU is shared: `look` runs are fine in parallel but slower; `perf` and `hitches` numbers need the machine to themselves.
+
+The two-player playthrough alternates station and forge bills between peers, reloads player 2 after Q2, and has player 1 leave the page for five seconds and rejoin after Q4. It uses real inputs, no staged game state or recovery teleports, and stops at the pier. It checks both peers' contributions, dry arrival, stations, rack, shared rewards and moving trains (2 m position tolerance). Personal cosmetics are recorded separately. Each uninterrupted clock segment retains achieved rates and drift; navigation runs at 1x. Ordinary broker runs retain the seven-minute cutoff. `playthrough --long` explicitly allows 30 minutes of work, with a 35-minute broker cutoff and 36-minute client wait. Reports, per-peer observers, checkpoints, clock samples and end stills survive failures. A worker's edits do not upgrade the already-running trusted broker: the caller must review these commits and relaunch with the updated harness before this command is supported.
 
 ### Vite build contract
 
