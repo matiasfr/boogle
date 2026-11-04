@@ -24,6 +24,7 @@ import { onFrame } from '../../loop.ts';
 import { worldStatus, world, onApplied } from '../../world/sync.ts';
 import { FOG_FAR, PLAYER_R } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
+import { hideControls } from '../../player/controls.ts';
 import { freshStart } from '../../player/arrival.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { interactTarget } from '../../player/hands.ts';
@@ -106,8 +107,13 @@ import { onStepUp, snapTown, updateTown } from './town.ts';
 import { buildTech, resetFinds, techApi, updateTech } from './tech.ts';
 import { resetTownLife, updateTownLife } from './town-life.ts';
 
+// The controls guide lists only what this place uses.
+hideControls(['respawn', 'use', 'toss', 'guest-crouch', 'guest-punch']);
 // A clean view for someone playing it cold (the tester's link, `&fresh=1`): place.css hides the bar and the panel.
-if (pageQuery().get('fresh') === '1') document.body.classList.add('place-fresh');
+if (pageQuery().get('fresh') === '1') {
+  document.body.classList.add('place-fresh');
+  hideControls(['proto-bar']);
+}
 freshStart.warning = coop.on
   ? "Are you sure? You'll lose your own progress and fall in as someone new on a fresh railway. Your partners keep this room and its railway."
   : "Are you sure? You'll lose your own progress and railway, and fall in as someone new.";
