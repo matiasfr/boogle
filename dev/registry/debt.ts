@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import ts from 'typescript';
+import { parseSync } from 'oxc-parser';
 import type { Allow } from '../level/allow.ts';
 
 export const DEBT_FILES = ['eslint-suppressions.json', 'dev/registry/knots.ts', 'dev/level/allow.ts'];
@@ -19,17 +19,19 @@ export const APPROVED_DEBT: Approval[] = [];
 
 // KNOTS' module imports the source reader; only its literal declaration belongs to this baseline.
 function knotsOf(text: string): string[][] {
-  const file = ts.createSourceFile('knots.ts', text, ts.ScriptTarget.Latest, true);
-  for (const s of file.statements) {
-    if (!ts.isVariableStatement(s)) continue;
-    for (const d of s.declarationList.declarations) {
-      if (!ts.isIdentifier(d.name) || d.name.text !== 'KNOTS') continue;
-      if (!d.initializer || !ts.isArrayLiteralExpression(d.initializer)) break;
-      return d.initializer.elements.map((group) => {
-        if (!ts.isArrayLiteralExpression(group)) throw new Error('KNOTS groups must be literal arrays');
+  const file = parseSync('knots.ts', text).program;
+  for (const st of file.body) {
+    const s = st.type === 'ExportNamedDeclaration' ? st.declaration : st;
+    if (s?.type !== 'VariableDeclaration') continue;
+    for (const d of s.declarations) {
+      if (d.id.type !== 'Identifier' || d.id.name !== 'KNOTS') continue;
+      if (d.init?.type !== 'ArrayExpression') break;
+      return d.init.elements.map((group) => {
+        if (group?.type !== 'ArrayExpression') throw new Error('KNOTS groups must be literal arrays');
         return group.elements.map((member) => {
-          if (!ts.isStringLiteral(member)) throw new Error('KNOTS members must be literal paths');
-          return member.text;
+          if (member?.type !== 'Literal' || typeof member.value !== 'string')
+            throw new Error('KNOTS members must be literal paths');
+          return member.value;
         });
       });
     }
