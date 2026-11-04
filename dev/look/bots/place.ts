@@ -15,6 +15,7 @@ import { automaticRails } from '../../../src/proto/place/depot.ts';
 import { CART } from '../../../src/proto/place/layout.ts';
 import { runDoubleJumpCourse } from './double-jump.ts';
 import { JUMP_COURSE, JUMP_RECOVERY } from '../../../src/proto/place/tech-layout.ts';
+import { playMark } from '../../../src/proto/mark.ts';
 
 const q = new URLSearchParams(location.search);
 
@@ -625,6 +626,7 @@ export async function play() {
       if (st.spec.gate === 'quarry' && !place.job.gate.quarry) await firstGate();
       if (st.spec.gate === 'sea' && !place.job.gate.sea) {
         await climb();
+        playMark('sheet: before glide');
         await wait(4500);
         await glideTo(st.x, st.z);
       }
