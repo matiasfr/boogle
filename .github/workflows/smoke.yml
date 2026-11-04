@@ -35,8 +35,8 @@ jobs:
     env:
       URL: ${{ inputs.url || 'https://boogle.club/' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -45,7 +45,7 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       - id: pw
         run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
@@ -55,7 +55,7 @@ jobs:
         shell: bash # -o pipefail, so tee keeps the scenario's exit code
         run: SMOKE_ROOM="smoke-$(date -u +%u)" npm run scenario -- smoke --url "$URL" 2>&1 | tee smoke.log
       - if: failure() || cancelled()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smoke-screenshots
           path: |
