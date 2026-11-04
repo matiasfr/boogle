@@ -19,7 +19,7 @@ const REPORT_BATCH = 10; // reports per POST
 const REPORT_KEEP_DAYS = 30;
 
 // POST /report (wire shape): one report, or an array of up to REPORT_BATCH, as sent by the client's telemetry
-// (navigator.sendBeacon, text/plain JSON) and the prototype bar. Stored as one JSON line each, with `at` added.
+// (navigator.sendBeacon, text/plain JSON) and cached playtest clients. Stored as JSON lines with `at` added.
 export type ReportKind = 'error' | 'desync' | 'snapshot' | 'connect' | 'playtest';
 export type ReportDetail = string | Record<string, string | number | boolean | null> | PlaytestDetail | null;
 export type Report = {
@@ -171,9 +171,9 @@ function cleanReport(r: any): Report | null {
   return out;
 }
 
-// A playtest verdict from the prototype bar (src/proto/bar/), read back by `npm run verdicts`. Its own shape: the
-// verdict is one of the bar's three, the note may run to 1000 chars, and `counts` is the one nested object (the bar's
-// behaviour counters, name -> number). `proto` (the card id in protos/protos.ts) and `verdict` are required.
+// Legacy playtest reports remain accepted for cached clients and readable through GET /reports.
+// The note may run to 1000 chars; `counts` holds behaviour counters (name -> number).
+// `proto` (the card id in protos/protos.ts) and `verdict` are required.
 const PLAYTEST_VERDICTS = new Set<unknown>(['yes', 'no', 'cant']);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untrusted JSON, checked field by field
 function cleanPlaytest(d: any): PlaytestDetail | null {

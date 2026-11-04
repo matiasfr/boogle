@@ -18,7 +18,7 @@ export type Proto = {
   /** The find-the-fun step it answers (docs/plans/find-the-fun.md), or 'depth' for a depth track. */
   step: number | 'depth';
   status: ProtoStatus;
-  /** Path and query from the site root. A `<name>` placeholder gets a text box on the page. */
+  /** Path and query from the site root. */
   url: string;
   /** The one gut question the prototype asks. */
   question: string;
@@ -28,18 +28,14 @@ export type Proto = {
   since: string;
   /** One extra line under the title. */
   note?: string;
-  /** The prototype has a "Copy values" button whose line belongs in the playtest entry. */
-  values?: boolean;
-  /** The default take in one line, shown on the bar under the variant buttons while it plays (variants: their `what`). */
-  defaultWhat?: string;
-  /** Other takes on the same question (`&v=<name>`), each a button under Play; the entry asks which one won. A variant's
+  /** Other takes on the same question (`&v=<name>`), each a link under Play. A variant's
    * own `spawn` replaces the card's when that variant is playing. */
   variants?: { name: string; url: string; what: string; spawn?: Spawn }[];
-  /** Where the in-game prototype bar drops you on load, next to the verb (world metres; yaw as the camera's, 0 looks
+  /** Where the prototype session drops you on load, next to the verb (world metres; yaw as the camera's, 0 looks
    * toward -z, forward = (-sin, -cos)). Leave it out to start at the usual spawn. */
   spawn?: Spawn;
   /** The prototype's verb, for the trace's time-to-verb: a counter (`protoCount`) whose first bump is it, or one of the
-   * trace's activities ('riding', 'driving', 'carrying'). Only it counts, so on the island another toy's ride or carry
+   * trace's activities ('riding', 'driving', 'carrying'). Only it counts, so another toy's ride or carry
    * isn't this card's verb. Left out, the first ride, drive or carry is. */
   verb?: string;
   /** A graduated, answered or parked card: the day, the owner's verdict in his words (one line) and what happens next.
@@ -51,9 +47,6 @@ export type Proto = {
   merged?: { label: string; url: string };
   /** Why a retired prototype ended: cut (the answer was no), merged (into another), superseded (a later one asks it). */
   retired?: { why: 'cut' | 'merged' | 'superseded'; note?: string };
-  /** Why a live prototype can't share the `?play` island (it reshapes the world or clashes with another toy): the
-   * playlist opens its own address for it, a chapter. Every live card is either in ISLAND or has this. */
-  chapter?: string;
 };
 
 export const PROTOS: Proto[] = [
@@ -71,7 +64,6 @@ export const PROTOS: Proto[] = [
     question: 'Do these clouds and this horizon keep the sky you liked and make it better?',
     what: 'The original light blue, with rounded white clouds that glow orange at sunset and a soft sea horizon.',
     since: '2026-11-03',
-    chapter: 'it compares cloud shapes and horizon haze on the original island',
     spawn: { x: 0, z: -30, yaw: -0.59 },
   },
   {
@@ -103,7 +95,6 @@ export const PROTOS: Proto[] = [
     question: 'Did that make you laugh?',
     what: 'Your Buddy riding a flat trolley above the clouds while you pick. Jump in runs it off the end of the rail; steer down through the cloud, smash through BOOGLE in the sky and the letters fall with you.',
     since: '2026-11-02',
-    chapter: 'it replaces the arrival: every load starts from the card, above the clouds',
   },
   {
     id: 'water',
@@ -114,9 +105,7 @@ export const PROTOS: Proto[] = [
     question: 'Does this look like the demo, here?',
     what: "Ultra Water's full-scale island, small waves, caustics and atmosphere inside our renderer.",
     since: '2026-11-02',
-    defaultWhat: 'The demo scene, opening on its Lagoon view.',
     spawn: { x: 2081.037, z: 88.249, yaw: 2.688 },
-    chapter: 'it replaces the sea, far plane and fog, and sits on its own island',
     variants: [
       {
         name: 'pop',
@@ -136,7 +125,6 @@ export const PROTOS: Proto[] = [
     since: '2026-11-02',
     spawn: { x: 903, z: 14, yaw: -0.25 }, // at the village's edge, with the shelf, the path, the forge and the stub ahead
     verb: 'chops',
-    chapter: 'it builds its own land far from the island, with its own far plane, fog and sea',
   },
   {
     id: 'net',
@@ -147,10 +135,8 @@ export const PROTOS: Proto[] = [
     question: 'When the village steps up, do you want to go connect the next camp?',
     what: 'Connect a camp by rail: its crates ride to the village by themselves, the village steps up, the train speeds up and the rail fills the next work site.',
     since: '2026-11-02',
-    defaultWhat: 'After the first step-up the rail fills the next Track ring; you press Start.',
     spawn: { x: -24.5, z: 31, yaw: 0.02 }, // in the village, looking up the line at Camp 1's smoke
     verb: 'links',
-    chapter: 'it reshapes the line and fills the island with its town',
     variants: [
       {
         name: 'haul',
@@ -180,7 +166,6 @@ export const PROTOS: Proto[] = [
     since: '2026-11-01',
     spawn: { x: 4, z: 10, yaw: -0.67 }, // by the palm nearest the first work site, looking past it to the site
     verb: 'carrying',
-    values: true,
     variants: [
       {
         name: 'wave',
@@ -223,7 +208,6 @@ export const PROTOS: Proto[] = [
     url: '/?room=proto-wagon&proto=wagon',
     question: 'Would you ride it twice for no reason, and does each laid section make the ride feel like yours?',
     what: 'A greybox steam wagon on the laid rails: lay the route (panel, or −/+ for one section at a time), hop on a flatbed. On the island the step puts you on its deck.',
-    defaultWhat: 'Calm: 3 m/s, a gentle sway over the joints, light smoke.',
     since: '2026-11-01',
     spawn: { x: 13, z: -9, yaw: 3.0 }, // at the second station (Palm Walk), the wagon coming up the line towards you
     verb: 'riding',
@@ -288,7 +272,6 @@ export const PROTOS: Proto[] = [
     what: 'Lay all sections, start opening day at the lighthouse platform: a gathering call (smoke, a tolling bell, a ring that burns down) until everyone is there, the 10 s bell, then blocks, sky, fog and sound change together, two old huts stay, and a before/after postcard comes up.',
     since: '2026-11-01',
     spawn: { x: 6, z: -40, yaw: 0 }, // south of the lighthouse platform, looking at it
-    chapter: 'it swaps the whole island’s blocks, sky, fog and sound',
   },
   {
     id: 'soapbox',
@@ -505,7 +488,6 @@ export const PROTOS: Proto[] = [
     question: 'Which layout feels best to walk?',
     what: 'Walk a layout option in greybox: lighthouse-line (recommended), east-bay or west-cove. Compare them on the map at claude.ai/artifact/BQuFyGfrXwuzSm9KeKq1fT.',
     since: '2026-11-01',
-    chapter: 'it moves the railway and the places on the island',
     variants: [
       {
         name: 'east-bay',
@@ -550,10 +532,8 @@ export const PROTOS: Proto[] = [
     question: 'Does this start to look like the shot you picked?',
     what: 'The crossing in the late-morning look you picked from the previz, after Mario Sunshine: a new sea, sky and timber, with sun glitter on the water. Step on a flatbed and ride.',
     since: '2026-11-02',
-    defaultWhat: '1.2 km at 20 m/s: about a minute.',
     spawn: { x: 48, z: 5, yaw: 3.142 }, // on the home platform beside the flatbeds, looking down the line at the far island
     verb: 'rides',
-    chapter: 'it reshapes the world’s far plane, fog and sea',
     variants: [
       {
         name: 'express',
@@ -570,49 +550,3 @@ export const PROTOS: Proto[] = [
     ],
   },
 ];
-
-export type PlaytestStep = {
-  /** A card's id in PROTOS. */
-  id: string;
-  /** One of the card's `variants` by name; leave it out for the card's own url. */
-  variant?: string;
-  /** One short line: what to find out. */
-  why: string;
-  /** Under "When you have time" instead of the numbered run. */
-  later?: true;
-};
-
-// The "Start here" strip at the top of boogle.club/protos/: the order to play in. Consecutive entries for one card are
-// one numbered step. An entry whose card or variant doesn't exist (yet, or any more) is skipped, so a variant can be
-// listed before it lands.
-export const PLAYTEST_ORDER: PlaytestStep[] = [
-  { id: 'place', why: 'Did the crates and the little guys give you a reason to keep carrying?' },
-  { id: 'net', variant: 'depot', why: 'Does the haul feel good now that the network is helping?' },
-  { id: 'net', why: 'When the village steps up, do you want to go connect the next camp?' },
-  { id: 'net', variant: 'haul', why: 'Is the fun the rail doing the work, or the town growing?' },
-  { id: 'water', why: 'Does this look like the demo, here?' },
-];
-
-/** Whether a card plays on the `?play` island (else it is a chapter with its own page). */
-export const onIsland = (p: Proto) => ['haul', 'wagon', 'lay', 'minis', 'assets'].includes(p.id);
-
-/** One step of the playlist: a card, its variants in the order to try them ('' is the card's own url), and why. */
-export type PlayStep = { card: Proto; legs: string[]; why: string; later: boolean };
-
-/** The playlist on the `?play` island and the protos page's Start here: PLAYTEST_ORDER with consecutive entries for
- * one card as one step (its legs), skipping cards or variants that don't exist (yet, or any more). */
-export function playlist(): PlayStep[] {
-  const steps: PlayStep[] = [];
-  for (const o of PLAYTEST_ORDER) {
-    const card = PROTOS.find((p) => p.id === o.id && p.status === 'live');
-    if (!card || (o.variant && !card.variants?.some((v) => v.name === o.variant))) continue;
-    const leg = o.variant ?? '';
-    const last = steps.at(-1);
-    if (last?.card === card) last.legs.push(leg);
-    else steps.push({ card, legs: [leg], why: o.why, later: !!o.later });
-  }
-  return steps;
-}
-
-/** A variant's address ('' for the card's own), from the site root. */
-export const variantUrl = (p: Proto, v: string) => p.variants?.find((x) => x.name === v)?.url ?? p.url;

@@ -47,7 +47,7 @@ it (and otherwise only hides a remote driver; see Sync).*
 - **The run:** seated on the start, the HUD shows "Ready". The clock starts once you have rolled 3 m and stops on the
   finish line; your best time is kept in localStorage (`boogle.soapbox.best`) and shown beside it, with "New best!" when
   you beat it. A wipeout ends the run ("Wipeout!"); getting out ends it quietly. No prize, no hat. Each finished run
-  counts once on the prototype bar (`runs`).
+  adds one local prototype counter (`runs`).
 - **After the finish you keep driving** (owner, second run-through: "once I was down the hill, I couldn't drive it
   anymore"): the time stays up for 6 s and you stay in control, free to drive anywhere on the island, with no clock,
   until you get out, wipe out or reach the water. **To go again:** for those 6 s Interact reads **Back to the top** even
@@ -91,8 +91,7 @@ wipeout or a stop that a player would steer out of.
 
 ## Handling variants (`&v=`)
 
-For comparing in one sitting, each changing one thing; no `&v` is the tuning below. They switch live from the
-prototype bar.
+Each variant changes one thing; no `&v` is the tuning below. Open its variant link to compare.
 
 - **`&v=bouncy`:** soft, long-travel springs: spring 16, damper 0.9 (damping ratio about 0.2, so it bounces twice), a
   wheel hangs up to 34 cm, landings jolt up to 7 m/s. Big roll and bounce, a monster truck.

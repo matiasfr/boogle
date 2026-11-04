@@ -103,12 +103,9 @@ h2 {
   font-size: 15px;
   color: var(--mute);
 }
-h3 {
-  margin: 18px 0 6px;
-  font-size: 13px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--mute);
+.question {
+  margin: 12px 0;
+  font-weight: 600;
 }
 .btn {
   display: inline-flex;
@@ -137,31 +134,6 @@ h3 {
   border-color: var(--accent);
   color: var(--accent-fg);
 }
-.play.off {
-  pointer-events: none;
-  opacity: 0.45;
-}
-.playrow {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-.playrow .play {
-  margin-top: 0;
-  width: auto;
-  flex: 1;
-}
-.name {
-  flex: 1;
-  min-width: 0;
-  min-height: 56px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--bg);
-  color: var(--fg);
-  font: inherit;
-}
 .variants {
   display: flex;
   flex-wrap: wrap;
@@ -180,235 +152,23 @@ h3 {
   font-size: 14px;
   color: var(--mute);
 }
-.field .pick {
-  display: block;
-  width: 100%;
-  min-height: 48px;
-}
 .url {
   margin: 6px 0 0;
   color: var(--mute);
   overflow-wrap: anywhere;
 }
-.try {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.try label {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 8px 0;
-  min-height: 44px;
-  cursor: pointer;
-}
-.try input {
-  flex: none;
-  width: 24px;
-  height: 24px;
-  margin: 0;
-  accent-color: var(--accent);
-}
-.try input:checked + span {
-  color: var(--mute);
-  text-decoration: line-through;
-}
-.field {
-  display: block;
-  margin: 0 0 12px;
-}
-.field .q {
-  display: block;
-  margin-bottom: 4px;
-  font-weight: 600;
-}
-textarea {
-  display: block;
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--bg);
-  color: var(--fg);
-  font: inherit;
-  resize: vertical;
-}
-textarea:focus,
-.name:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-.foot {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  margin-top: 4px;
-}
-.foot .btn {
-  flex: 1;
-}
-.kit {
-  color: var(--accent);
-  font-weight: 600;
-  padding: 12px 4px;
-}
-.said {
-  display: block;
-  min-height: 1em;
-  margin-top: 6px;
-  font-size: 14px;
-  color: var(--accent);
-}
-.top .said {
-  display: inline;
-  margin-left: 10px;
-}
-.fallback {
-  margin-top: 8px;
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 13px;
-  min-height: 140px;
-}
-/* What the in-game prototype bar recorded: the verdict, its line, and the behaviour counters. */
+/* Counters recorded by game sessions. */
 .played {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 10px;
   margin: 12px 0 0;
   padding: 8px 10px;
   border-radius: 10px;
   background: var(--sunk);
+  color: var(--mute);
   font-size: 14px;
 }
 .played[hidden] {
   display: none;
 }
-.played .verdict {
-  padding: 1px 10px;
-  border-radius: 999px;
-  font-weight: 700;
-  background: var(--line);
-}
-.played .verdict.yes {
-  background: var(--accent);
-  color: var(--accent-fg);
-}
-.played .verdict.no {
-  background: var(--badge);
-  color: var(--card);
-}
-.played .verdict small {
-  font-weight: 500;
-}
-.played .did {
-  color: var(--mute);
-}
-
-/* "Start here": the playtest order, numbered steps of big Play buttons (main.ts, startHere). */
-.start {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 8px 16px 16px;
-}
-.start h2 {
-  margin: 0 0 2px;
-  font-size: 22px;
-}
-.start h3 {
-  margin: 18px 0 8px;
-  font-size: 17px;
-  color: var(--mute);
-}
-.start .lede {
-  margin: 0 0 12px;
-  color: var(--mute);
-}
-/* The one way in: /?play, the island with the playlist. */
-.start .go {
-  display: flex;
-  width: 100%;
-  min-height: 64px;
-  margin: 0 0 14px;
-  font-size: 20px;
-}
-.steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 10px;
-}
-.step {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 14px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 12px 14px;
-}
-.step .n {
-  flex: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--accent);
-  color: var(--accent-fg);
-  font-weight: 700;
-  font-size: 20px;
-}
-.step .text {
-  flex: 1 1 200px;
-  min-width: 0;
-  display: grid;
-}
-.step .why {
-  color: var(--mute);
-  font-size: 15px;
-}
-.step .legs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.leg {
-  min-height: 56px;
-  min-width: 112px;
-  font-size: 18px;
-  gap: 8px;
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-fg);
-}
-ul.steps .leg {
-  background: var(--sunk);
-  border-color: var(--line);
-  color: var(--fg);
-}
-.leg .tick {
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--accent-fg);
-  color: var(--accent);
-  font-size: 14px;
-}
-ul.steps .leg .tick {
-  background: var(--accent);
-  color: var(--accent-fg);
-}
-.leg .tick[hidden] {
-  display: none;
-}
-
 /* "Answered": settled cards as one compact row each (main.ts, answered). */
 .settled {
   max-width: 1100px;

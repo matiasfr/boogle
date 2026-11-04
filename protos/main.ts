@@ -1,13 +1,8 @@
-// boogle.club/protos/: the way in to the playtest playlist (`/?play`, docs/plans/find-the-fun.md, "One path") and its
-// steps, then a card per prototype (protos.ts) with a Play button, its one question and a box for your take saved in
-// this browser (store.ts) that copy out as a docs/playtests.md entry (entry.ts), with the verdicts and behaviour
-// counters the in-game prototype bar (src/proto/bar/) recorded, and a heat map of the recorded sittings (heat.ts).
+// boogle.club/protos/: prototype cards with play links, recorded answers, behaviour counters and local heat maps.
 // A direct ?review= link opens the internal retained comparison instead of the prototype list.
 import './protos.css';
-import { ANSWERED, PROTOS, playlist, onIsland, variantUrl } from './protos.ts';
-import type { Proto, ProtoStatus } from './protos.ts';
-import { countsLine, read, vName, write, type Saved } from './store.ts';
-import { allEntries, body, copy, header, label, stepLabel } from './entry.ts';
+import { ANSWERED, PROTOS, type Proto, type ProtoStatus } from './protos.ts';
+import { countsLine, read } from './store.ts';
 import { heatMap } from './heat.ts';
 
 const reviewId = new URLSearchParams(location.search).get('review');
@@ -15,11 +10,6 @@ if (reviewId) await (await import('./review.ts')).showReview(reviewId);
 
 const ORDER: Record<ProtoStatus, number> = { live: 0, building: 1, graduated: 2, answered: 2, parked: 2, retired: 3 };
 const touch = matchMedia('(pointer: coarse)').matches;
-
-// Re-read on every access: the game's prototype bar writes verdicts and counters to the same key from another tab.
-const saved = (id: string): Saved => read(id);
-const save = (id: string, patch: Partial<Omit<Saved, 'counts'>>) => write(id, patch);
-
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = '') => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -27,29 +17,12 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = '') 
   return e;
 };
 
-const PLACEHOLDER = /<(\w+)>/;
-const href = (p: Proto, name: string) =>
-  import.meta.env.BASE_URL + p.url.replace(/^\//, '').replace(PLACEHOLDER, encodeURIComponent(name.trim()));
-
-function field(label: string, value: string, rows: number, onInput: (v: string) => void, placeholder = '') {
-  const wrap = el('label', 'field');
-  wrap.append(el('span', 'q', label));
-  const t = el('textarea');
-  t.rows = rows;
-  t.value = value;
-  t.placeholder = placeholder;
-  t.addEventListener('input', () => onInput(t.value));
-  wrap.append(t);
-  return wrap;
-}
-
 function card(p: Proto): HTMLElement {
-  const s = saved(p.id);
   const c = el('article', `card ${p.status}`);
   c.id = p.id;
-
   const head = el('div', 'head');
-  const meta = el('p', 'meta', `${stepLabel(p)} · since ${p.since}`);
+  const step = p.step === 'depth' ? 'Depth track' : `Step ${p.step}`;
+  const meta = el('p', 'meta', `${step} · since ${p.since}`);
   if (p.status !== 'live')
     meta.append(
       ' · ',
@@ -66,34 +39,12 @@ function card(p: Proto): HTMLElement {
   c.append(head);
 
   if (p.archived) c.append(el('p', 'note', `Archived: git tag ${p.archived}.`));
-  else if (p.merged) {
-    const destination = el('a', 'btn', `Merged into: ${p.merged.label}`);
-    destination.href = import.meta.env.BASE_URL + p.merged.url.replace(/^\//, '');
-    if (!touch) destination.target = '_blank';
-    c.append(destination);
-  } else {
-    const play = el('a', 'btn play', 'Play');
-    const ph = p.url.match(PLACEHOLDER);
-    const setHref = (name: string) => {
-      play.href = href(p, name);
-      play.classList.toggle('off', !!ph && !name.trim());
-    };
+  else {
+    const play = el('a', p.merged ? 'btn' : 'btn play', p.merged ? `Merged into: ${p.merged.label}` : 'Play');
+    play.href = import.meta.env.BASE_URL + (p.merged?.url ?? p.url).replace(/^\//, '');
     if (!touch) play.target = '_blank';
-    if (ph) {
-      const nameIn = el('input', 'name');
-      nameIn.placeholder = `${ph[1]}`;
-      nameIn.value = s.name;
-      nameIn.setAttribute('aria-label', ph[1]!);
-      nameIn.addEventListener('input', () => {
-        save(p.id, { name: nameIn.value });
-        setHref(nameIn.value);
-      });
-      const row = el('div', 'playrow');
-      row.append(nameIn, play);
-      c.append(row);
-    } else c.append(play);
-    setHref(s.name);
-    c.append(el('p', 'url', p.url));
+    c.append(play);
+    if (!p.merged) c.append(el('p', 'url', p.url));
   }
   if (p.variants?.length) {
     const row = el('div', 'variants');
@@ -107,133 +58,30 @@ function card(p: Proto): HTMLElement {
     }
     c.append(row);
   }
+  c.append(el('p', 'question', p.question));
 
   const played = el('p', 'played');
   played.setAttribute('aria-live', 'polite');
   const drawPlayed = () => {
-    const now = saved(p.id);
-    const bits: HTMLElement[] = [];
-    const perV = Object.entries(now.byV).filter(([, v]) => v.verdict);
-    for (const [name, v] of perV) {
-      const b = el('span', `verdict ${v.verdict}`, label(v.verdict));
-      b.append(el('small', '', ` on ${name}`));
-      bits.push(b);
-      if (v.note.trim()) bits.push(el('span', 'why', v.note));
-    }
-    if (!perV.length && now.verdict) {
-      const v = el('span', `verdict ${now.verdict}`, label(now.verdict));
-      if (now.verdictV) v.append(el('small', '', ` on ${now.verdictV}`));
-      bits.push(v);
-      if (now.verdictNote.trim()) bits.push(el('span', 'why', now.verdictNote));
-    }
-    const did = countsLine(now.counts);
-    if (did) bits.push(el('span', 'did', did));
-    played.replaceChildren(...bits);
-    played.hidden = !bits.length;
+    const did = countsLine(read(p.id).counts);
+    played.textContent = did;
+    played.hidden = !did;
   };
   drawPlayed();
   redraws.push(drawPlayed);
   c.append(played);
-
-  c.append(field(p.question, s.notes, 3, (v) => save(p.id, { notes: v }), 'Your take: what felt good, what felt off'));
-  if (p.variants?.length) {
-    const wrap = el('label', 'field');
-    wrap.append(el('span', 'q', 'Variant preferred'));
-    const input = el('input', 'name pick');
-    input.value = s.variant;
-    input.placeholder = p.variants.map((v) => v.name).join(' / ');
-    input.addEventListener('input', () => save(p.id, { variant: input.value }));
-    wrap.append(input);
-    c.append(wrap);
-  }
-  if (p.values)
-    c.append(
-      field('Copy values line (paste from the kit)', s.values, 2, (v) => save(p.id, { values: v }), 'haul-kit room=…'),
-    );
-
   const heat = heatMap(p);
   redraws.push(heat.redraw);
   c.append(heat.el);
-
-  const foot = el('div', 'foot');
-  const copyBtn = el('button', 'btn', 'Copy playtest entry');
-  copyBtn.type = 'button';
-  const said = el('span', 'said');
-  said.setAttribute('aria-live', 'polite');
-  copyBtn.addEventListener('click', () => void copy(`${header()}\n${body(p)}\n`, said));
-  foot.append(copyBtn);
-  c.append(foot, said);
   return c;
 }
 
 const redraws: (() => void)[] = [];
-// The game tab saved a verdict or counters: show them without a reload.
+// Game tabs save counters and sittings: show them without a reload.
 addEventListener('storage', () => redraws.forEach((fn) => fn()));
 addEventListener('focus', () => redraws.forEach((fn) => fn()));
 
-// "Start here": the playlist (protos.ts, `playlist`) as numbered steps of big buttons, one per variant to compare, each
-// opening the `?play` island at that step and variant (a chapter's own page for the ones that can't share it), ticked
-// once the game's bar has a verdict for that variant. The big button resumes wherever the playlist got to.
-function startHere(): HTMLElement {
-  const steps = playlist();
-  const wrap = el('section', 'start');
-  const go = el('a', 'btn leg go', 'Play the playlist');
-  go.href =
-    import.meta.env.BASE_URL + (steps[0] ? variantUrl(steps[0].card, steps[0].legs[0] ?? '') : '').replace(/^\//, '');
-  wrap.append(
-    el('h2', '', 'Start here'),
-    el(
-      'p',
-      'lede',
-      'One link for the whole run: the island with every toy on it, the bar walking you through them in this order (Next takes you to each), a verdict and a line per variant, Copy all at the end. Solo, iPad, pad or touch.',
-    ),
-    go,
-  );
-  const list = (rs: typeof steps, numbered: boolean) => {
-    const ol = el(numbered ? 'ol' : 'ul', 'steps');
-    rs.forEach((r, i) => {
-      const li = el('li', 'step');
-      if (numbered) li.append(el('span', 'n', String(i + 1)));
-      const text = el('div', 'text');
-      text.append(el('strong', '', r.card.title), el('span', 'why', r.why));
-      if (!onIsland(r.card)) text.append(el('span', 'why', `Own page: ${r.card.chapter ?? 'not on the island'}.`));
-      const legs = el('div', 'legs');
-      for (const leg of r.legs) {
-        // A lone default is just "Play"; "default" only beside the variants it's compared with.
-        const name = vName(r.card, leg);
-        const a = el('a', 'btn leg', r.legs.length === 1 && !leg ? 'Play' : leg || 'default');
-        a.href = import.meta.env.BASE_URL + variantUrl(r.card, leg).replace(/^\//, '');
-        a.title = variantUrl(r.card, leg);
-        const tick = el('span', 'tick', '✓');
-        tick.setAttribute('aria-label', 'verdict saved');
-        a.append(tick);
-        const draw = () => {
-          const s = saved(r.card.id);
-          tick.hidden = !(s.byV[name]?.verdict || (s.verdict && s.verdictV === leg));
-        };
-        draw();
-        redraws.push(draw);
-        legs.append(a);
-      }
-      li.append(text, legs);
-      ol.append(li);
-    });
-    return ol;
-  };
-  wrap.append(
-    list(
-      steps.filter((r) => !r.later),
-      true,
-    ),
-  );
-  const later = steps.filter((r) => r.later);
-  if (later.length) wrap.append(el('h3', '', 'When you have time'), list(later, false));
-  return wrap;
-}
-if (!reviewId) document.getElementById('list')!.before(startHere());
-
-// "Answered": graduated, answered and parked cards, one compact row each: the status, the owner's verdict in his
-// words and what happens next. Their full cards are gone from the list below (the question is settled).
+// Settled cards retain the owner's answer and what happens next.
 function answered(): HTMLElement {
   const wrap = el('section', 'settled');
   wrap.append(el('h2', '', 'Answered'));
@@ -257,8 +105,3 @@ const sorted = PROTOS.map((p, i) => ({ p, i }))
   .sort((a, b) => ORDER[a.p.status] - ORDER[b.p.status] || a.i - b.i)
   .map((x) => x.p);
 if (!reviewId) document.getElementById('list')!.append(...sorted.map(card));
-
-// Copy all: every prototype with something written, under one date (all the live ones if nothing is written yet).
-document
-  .getElementById('copy-all')
-  ?.addEventListener('click', () => void copy(allEntries(), document.getElementById('said-all')!));

@@ -76,7 +76,7 @@ Notes:
   (`setPadGrab(fn, slots, { stick: true })` in [src/player/controls.ts](../../src/player/controls.ts)), A, B, X (so
   interact does nothing mid-talk), the D-pad ↑ ↓ and the left stick, picking with repeat while held. The other buttons
   keep their actions (Y still honks). The pause view is still a modal ([src/player/modal.ts](../../src/player/modal.ts)), and opening it ends a talk.
-- With a pad, B (back) also leaves a focused text field (the prototype bar's note) without doing anything else.
+- With a pad, B (back) also leaves a focused text field without doing anything else.
 - While a pad is in use the touch overlay hides and the reticle shows; the next touch brings the touch controls back
   ([src/features/gamepad.ts](../../src/features/gamepad.ts)). Analog triggers count as pressed at 0.4. On an iPad
   `body.touch` stays on while the pad plays, so pad-only styles key on `body.gamepad`. A pad without the standard

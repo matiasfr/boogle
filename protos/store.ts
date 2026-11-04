@@ -1,48 +1,22 @@
-// What the owner wrote and did per prototype, in this browser's localStorage under one key. Shared by the protos page
-// (protos/main.ts) and the in-game prototype bar (src/proto/bar/), which can be open in two tabs at once: every write
-// re-reads the key first, so neither tab overwrites the other's fields. Nothing here talks to a server.
+// Prototype counters and traces in this browser's localStorage, read by the protos page and game trace view.
+// Every counter write re-reads the key so game tabs preserve each other's counts and older stored fields.
+// Nothing here talks to a server.
 import { PROTOS, type Proto } from './protos.ts';
 
-export type Verdict = 'yes' | 'no' | 'cant';
-export const VERDICTS: { id: Verdict; label: string }[] = [
-  { id: 'yes', label: 'Yes' },
-  { id: 'no', label: 'No' },
-  { id: 'cant', label: 'Can’t tell' },
-];
-
 export type Saved = {
-  notes: string;
-  values: string;
-  name: string;
-  variant: string;
-  /** The one-tap answer to the gut question, from the bar in the game. */
-  verdict: Verdict | '';
-  /** One line on why, beside the verdict. */
-  verdictNote: string;
-  /** The variant playing when the verdict was given ('' for the default). */
-  verdictV: string;
-  /** Behaviour counters (`protoCount`): rides, runs, variant switches, seconds in the prototype. */
+  /** Behaviour counters (`protoCount`): rides, runs, seconds in the prototype. */
   counts: Record<string, number>;
-  /** The same per variant, by name (`vName`): its verdict, its line on why, its counters. */
-  byV: Record<string, VariantSaved>;
+  /** The same per variant, by name (`vName`). */
+  byV: Record<string, { counts: Record<string, number> }>;
 };
-export type VariantSaved = { verdict: Verdict | ''; note: string; counts: Record<string, number> };
 
-/** A variant's name for the store and the entry: `v`, else the card's own url's `v`, else 'default'. */
+/** A variant's name for the store: `v`, else the card's own url's `v`, else 'default'. */
 export const vName = (p: Proto, v: string) => v || urlParam(p, 'v') || 'default';
 const obj = (x: unknown): Record<string, unknown> => (x && typeof x === 'object' ? (x as Record<string, unknown>) : {});
-const readV = (x: unknown): VariantSaved => {
-  const o = obj(x);
-  return {
-    verdict: VERDICTS.some((v) => v.id === o.verdict) ? (o.verdict as Verdict) : '',
-    note: typeof o.note === 'string' ? o.note : '',
-    counts: obj(o.counts) as Record<string, number>,
-  };
-};
 
-export const KEY = 'boogle-protos-v1';
+const KEY = 'boogle-protos-v1';
 
-export function loadAll(): Record<string, Partial<Saved>> {
+function loadAll(): Record<string, Record<string, unknown>> {
   try {
     const all = JSON.parse(localStorage.getItem(KEY) || '{}');
     return all && typeof all === 'object' ? all : {};
@@ -54,60 +28,34 @@ export function loadAll(): Record<string, Partial<Saved>> {
 export function read(id: string, all = loadAll()): Saved {
   const s = all[id] ?? {};
   return {
-    notes: s.notes ?? '',
-    values: s.values ?? '',
-    name: s.name ?? '',
-    variant: s.variant ?? '',
-    verdict: s.verdict ?? '',
-    verdictNote: s.verdictNote ?? '',
-    verdictV: s.verdictV ?? '',
-    counts: s.counts && typeof s.counts === 'object' ? s.counts : {},
-    byV: Object.fromEntries(Object.entries(obj(s.byV)).map(([k, v]) => [k, readV(v)])),
+    counts: obj(s.counts) as Record<string, number>,
+    byV: Object.fromEntries(
+      Object.entries(obj(s.byV)).map(([k, v]) => [k, { counts: obj(obj(v).counts) as Record<string, number> }]),
+    ),
   };
 }
 
-/** Merges `patch` into the prototype's entry; `counts` add to what is stored, and to variant `v`'s too when given (a
- * `vName`). Returns the saved entry. */
-export function write(
-  id: string,
-  patch: Partial<Omit<Saved, 'counts'>>,
-  addCounts?: Record<string, number>,
-  v?: string,
-): Saved {
+/** Add counters to a card and its variant (`vName`), preserving any historical stored fields. */
+export function write(id: string, addCounts: Record<string, number>, v: string): void {
   const all = loadAll();
-  const s = { ...read(id, all), ...patch };
+  const s = obj(all[id]);
+  const byV = obj(s.byV);
+  const was = obj(byV[v]);
   const add = (to: Record<string, number>) => {
     const out = { ...to };
-    for (const [k, n] of Object.entries(addCounts ?? {})) out[k] = (out[k] ?? 0) + n;
+    for (const [k, n] of Object.entries(addCounts)) out[k] = (out[k] ?? 0) + n;
     return out;
   };
-  if (addCounts) {
-    s.counts = add(s.counts);
-    if (v !== undefined) {
-      const was = s.byV[v] ?? readV(null);
-      s.byV = { ...s.byV, [v]: { ...was, counts: add(was.counts) } };
-    }
-  }
-  all[id] = s;
+  all[id] = {
+    ...s,
+    counts: add(obj(s.counts) as Record<string, number>),
+    byV: { ...byV, [v]: { ...was, counts: add(obj(was.counts) as Record<string, number>) } },
+  };
   try {
     localStorage.setItem(KEY, JSON.stringify(all));
   } catch {
     // Private mode or full storage: nothing is kept past this page.
   }
-  return s;
-}
-
-/** Sets variant `v`'s (a `vName`) verdict or note; the card's latest verdict follows it (verdict, verdictV, verdictNote). */
-export function writeV(id: string, v: string, patch: { verdict?: Verdict | ''; note?: string }): Saved {
-  const s = read(id);
-  const was = s.byV[v] ?? readV(null);
-  const now = { ...was, ...patch };
-  return write(id, {
-    byV: { ...s.byV, [v]: now },
-    verdict: now.verdict,
-    verdictV: v,
-    verdictNote: now.note,
-  });
 }
 
 /** The value of `name` in a prototype's url (`proto`, `room`, ...), or null. */
@@ -119,7 +67,7 @@ export function cardFor(search: string): Proto | undefined {
   return proto ? PROTOS.find((p) => urlParam(p, 'proto') === proto) : undefined;
 }
 
-/** The counters as one plain line: "3 rides, 2 variant switches, 6 min in prototype". */
+/** The counters as one plain line: "3 rides, 6 min in prototype". */
 export function countsLine(counts: Record<string, number>): string {
   const parts: string[] = [];
   for (const [k, v] of Object.entries(counts)) {
@@ -133,7 +81,7 @@ export function countsLine(counts: Record<string, number>): string {
 
 // ---------------------------------------------------------------- sittings (docs/research/playtest-telemetry.md)
 // One record per page load of a `?proto=` page (src/proto/trace/record.ts): where you went, idled, failed and quit, and
-// how long until the prototype's verb. Kept under their own key, the last SITTINGS per card, so the notes above stay
+// how long until the prototype's verb. Kept under their own key, the last SITTINGS per card, so the counters above stay
 // small. Positions are rounded to a metre; nothing leaves the browser.
 
 /** What you were doing in a sample, by index (append only: stored sittings keep the index). */
@@ -207,7 +155,7 @@ export function saveSitting(card: string, s: Sitting) {
 
 const dur = (s: number) => (s < 90 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`);
 
-/** The latest sitting as one line for the playtest entry: "6 min, verb in 4 s, idle 3 times (40 s), 2 tumbles, 1
+/** The latest sitting as one line for the trace readers: "6 min, verb in 4 s, idle 3 times (40 s), 2 tumbles, 1
  * crash; ended at (31, -8) after 12 s still". */
 export function sittingLine(s: Sitting | undefined): string {
   if (!s) return '';
