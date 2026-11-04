@@ -179,7 +179,7 @@ export function carryStep(b: Body, me: { coyote: number; swimming: boolean }) {
     // Snapped to the floor: ride the deck's vertical motion, and close a small gap (a dip, a stop) instead of
     // floating off it and dropping back.
     b.velocity.y = v.y - (Math.max(0, gap) * 0.5) / FIXED;
-    me.coyote = Math.max(me.coyote, 0.1);
+    // Boarding catches a small air gap; only groundPlayer's actual contact may grant a jump.
     return;
   }
   carry.on = null;

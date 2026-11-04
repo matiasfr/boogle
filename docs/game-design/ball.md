@@ -1,5 +1,8 @@
 # 6.1 Beach ball
 
+The ball uses Rapier 0.21.0 and the material/drag values below. Version comparisons, outstanding parity gates and
+reference decisions live in the [upgrade assessment](../research/rapier-021-upgrade.md).
+
 The staged `water=new` opt-in replaces the ball's old sine sea with bounded samples of the visible FFT/shore waves.
 Vertical drag is relative to surface velocity (bounded ±3 m/s); gentle wash-in follows the registered coast's normal
 and tangent. Ponds have explicit still-water identity, so a sea crest is never mistaken for a pond. Ownership, held

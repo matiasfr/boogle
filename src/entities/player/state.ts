@@ -31,6 +31,8 @@ const q = new URLSearchParams(globalThis.location?.search);
 // Air acceleration (m/s²). ?air=35 tries another on any page (rec 6: Celeste's air control is 0.65 of ground, ours
 // 0.2); unset, it stays 14.
 const AIR_ACCEL = Number(q.get('air')) || 14;
+// Preserve 0.19's first 0.1s of takeoff steering, formerly supplied by stale contacts, without renewing jump eligibility.
+const LAUNCH_STEER_TIME = 0.1;
 const MAX_FALL = 20; // m/s: see catchFallThrough in src/physics/physics.ts
 // Owner physics only; the old sea keeps its existing forces.
 const plungeEnabled = q.get('water') === 'new';
@@ -144,7 +146,8 @@ export function shapeJump() {
   if (me.jumpQueued > 0 && me.coyote > 0 && !under) jumpActive = true; // the jump happens this step
   if (!under) {
     let g = 1;
-    if (vy < 0) g = JUMP.fallGravity;
+    // Preserve the launch-step force when the solver rests at exactly zero; rising hop/apex shaping starts after launch.
+    if (vy < 0 || (vy === 0 && jumpActive)) g = JUMP.fallGravity;
     else if (jumpActive && !me.jumpHeld) g = JUMP.cutGravity;
     else if (jumpActive && vy < JUMP.apexSpeed) g = JUMP.apexGravity;
     b.force.y -= PLAYER_MASS * GRAVITY * (g - 1);
@@ -164,10 +167,12 @@ function turnedBack(p: number, v: number) {
   return out > -2 ? v - Math.sign(p) * (out + 2) : v;
 }
 
+let launchSteerTime = 0;
 // Each physics step: steer the body's velocity toward what you want, jump, swim, and stay inside the map.
 export function steerPlayer() {
   const b = me.body!;
   me.coyote -= FIXED;
+  launchSteerTime -= FIXED;
   carryStep(b, me); // a deck under you (src/physics/platforms.ts): steering below is relative to its motion
   const water = waterField.sampleAt('player', b.position);
   const surfY = water.height;
@@ -182,7 +187,7 @@ export function steerPlayer() {
   const rvx = b.velocity.x - carry.x,
     rvz = b.velocity.z - carry.z;
   const braking = me.wish.x * rvx + me.wish.z * rvz < 0;
-  const accel = me.coyote > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : AIR_ACCEL;
+  const accel = me.coyote > 0 || launchSteerTime > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : AIR_ACCEL;
   let dx = me.wish.x * speed - rvx,
     dz = me.wish.z * speed - rvz;
   const dl = Math.hypot(dx, dz),
@@ -199,6 +204,7 @@ export function steerPlayer() {
       b.velocity.y = Math.min(Math.max(b.velocity.y, 0), 6) + JUMP_SPEED; // adds to an upward bounce: bounces chain
       me.coyote = 0;
       me.jumpQueued = 0;
+      launchSteerTime = LAUNCH_STEER_TIME;
     } else if (me.swimming) {
       b.velocity.y = Math.max(b.velocity.y, SWIM_JUMP_SPEED);
       me.jumpQueued = 0;

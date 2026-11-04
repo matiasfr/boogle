@@ -91,6 +91,10 @@ export function ready() {
     R = mod;
     world = new R.World({ x: 0, y: -GRAVITY, z: 0 });
     world.timestep = FIXED;
+    // Rapier 0.20's 20mm prediction lifts the player at plank seams, interrupting glide takeoffs and braking.
+    // Retain the 0.19 envelope; current-pose contact queries below handle grounding independently.
+    // Thin-wall stress checks and the tradeoff with upstream's wider margin: docs/research/rapier-021-upgrade.md.
+    world.integrationParameters.normalizedPredictionDistance = 0.002;
     for (const b of bodies) build(b);
   });
 }
@@ -348,36 +352,116 @@ export function forEachStatic(mask: number, fn: (body: Body, shapes: Shape[]) =>
   for (const b of bodies) if (b.kind === 'static' && b.group & mask) fn(b as unknown as Body, b.shapes);
 }
 
-// Rapier also keeps speculative contacts a little before shapes meet; game code (the mushroom bounce, ground checks)
-// wants only touching ones.
-function touching(manifold: RAPIER.TempContactManifold) {
-  for (let i = 0; i < manifold.numContacts(); i++) if (manifold.contactDist(i) <= 0.005) return true;
+// Rapier recycles manifold distances and anchors. Reproject each manifold at the current collider poses;
+// one fresh pair normal loses simultaneous floor/wall support, while stale normals can ground a wall touch.
+const contactPoint1 = new Vec(),
+  contactPoint2 = new Vec(),
+  contactPosition1 = new Vec(),
+  contactPosition2 = new Vec(),
+  contactRotation1 = new Quat(),
+  contactRotation2 = new Quat(),
+  contactNormal = new Vec();
+const pairContact: RAPIER.ShapeContact = {
+  distance: 0,
+  point1: new Vec(),
+  point2: new Vec(),
+  normal1: new Vec(),
+  normal2: new Vec(),
+};
+let contactCast: { ray: RAPIER.Ray; hit: RAPIER.RayIntersection } | undefined;
+function rotateContact(v: V3, q: RAPIER.Rotation) {
+  const tx = 2 * (q.y * v.z - q.z * v.y),
+    ty = 2 * (q.z * v.x - q.x * v.z),
+    tz = 2 * (q.x * v.y - q.y * v.x);
+  v.x += q.w * tx + q.y * tz - q.z * ty;
+  v.y += q.w * ty + q.z * tx - q.x * tz;
+  v.z += q.w * tz + q.x * ty - q.y * tx;
+}
+function touching(manifold: RAPIER.TempContactManifold, flipped: boolean) {
+  const p1 = flipped ? contactPosition2 : contactPosition1,
+    p2 = flipped ? contactPosition1 : contactPosition2,
+    q1 = flipped ? contactRotation2 : contactRotation1,
+    q2 = flipped ? contactRotation1 : contactRotation2;
+  manifold.localNormal1(contactNormal);
+  rotateContact(contactNormal, q1);
+  for (let i = 0; i < manifold.numContacts(); i++) {
+    if (!manifold.localContactPoint1(i, contactPoint1) || !manifold.localContactPoint2(i, contactPoint2)) continue;
+    rotateContact(contactPoint1, q1);
+    rotateContact(contactPoint2, q2);
+    const gap =
+      (contactPoint2.x + p2.x - contactPoint1.x - p1.x) * contactNormal.x +
+      (contactPoint2.y + p2.y - contactPoint1.y - p1.y) * contactNormal.y +
+      (contactPoint2.z + p2.z - contactPoint1.z - p1.z) * contactNormal.z;
+    if (!(gap <= 0)) continue;
+    // Reprojection alone extends a finite face's plane past its edge. Validate this feature, not just the pair.
+    // The ray ends ON the current body's anchor: the 1mm origin offset adds no airborne touching allowance.
+    const length = -gap + 0.001,
+      anchor = flipped ? contactPoint2 : contactPoint1,
+      position = flipped ? p2 : p1,
+      sign = flipped ? -1 : 1;
+    contactCast ??= { ray: new R!.Ray(new Vec(), new Vec()), hit: new R!.RayIntersection(0, new Vec()) };
+    const { ray, hit: target } = contactCast;
+    const dir = ray.dir,
+      origin = ray.origin;
+    dir.x = contactNormal.x * sign;
+    dir.y = contactNormal.y * sign;
+    dir.z = contactNormal.z * sign;
+    origin.x = anchor.x + position.x - dir.x * length;
+    origin.y = anchor.y + position.y - dir.y * length;
+    origin.z = anchor.z + position.z - dir.z * length;
+    const hit = contactOtherCollider!.castRayAndGetNormal(ray, length, false, target);
+    if (!hit || hit.normal.x * dir.x + hit.normal.y * dir.y + hit.normal.z * dir.z >= 0) continue;
+    contactNormal.set(-hit.normal.x * sign, -hit.normal.y * sign, -hit.normal.z * sign);
+    return true;
+  }
   return false;
 }
-// A manifold's normal points from its first collider to its second; flip it so it points into `body`.
-// The player runs this every step, so it goes round Rapier's per-call closures and vectors, on one set of callbacks
-// reading the state below (npm run hitches). So not reentrant: a `fn` can't call forEachContact.
+// Reuse callbacks and transform buffers. Not reentrant: a `fn` can't call forEachContact.
 type ContactFn = (nx: number, ny: number, nz: number, other: Body) => boolean | void;
 let contactFn: ContactFn,
   contactCol = 0,
   contactOther: MBody | undefined,
+  contactOtherCollider: RAPIER.Collider | undefined,
   contactDone = false;
 function contactManifold(manifold: RAPIER.TempContactManifold, flipped: boolean) {
-  if (contactDone || !touching(manifold)) return;
-  const n = manifold.raw.normal(),
-    x = n.x,
-    y = n.y,
-    z = n.z,
+  if (contactDone || !touching(manifold, flipped)) return;
+  const n = contactNormal,
     s = flipped ? 1 : -1;
-  n.free();
-  if (contactFn(x * s, y * s, z * s, contactOther as unknown as Body) === true) contactDone = true;
+  if (contactFn(n.x * s, n.y * s, n.z * s, contactOther as unknown as Body) === true) contactDone = true;
 }
 function contactPairWith(handle: number) {
   if (contactDone) return;
   const other = byCollider.get(handle);
   if (!other) return;
+  const collider = world!.getCollider(handle);
+  // Anchors alone extend a finite floor's plane past its edge. Require actual pair overlap as well.
+  // Solver-contact counts/impulses cannot replace this: both can be zero on resting heightfield contacts.
+  const own = world!.getCollider(contactCol);
+  const contact = own.contactCollider(collider, 0, pairContact);
+  if (!contact || contact.distance > 0) return;
+  // The fresh normal is already a valid contact. Only search cached manifolds if a caller needs another surface
+  // (e.g. the floor behind a deeper wall contact). Starting with anchors alone can miss support while sliding.
+  const fresh = contact.normal1;
+  if (contactFn(-fresh.x, -fresh.y, -fresh.z, other as unknown as Body) === true) {
+    contactDone = true;
+    return;
+  }
+  const a = own.shapeType(),
+    b = collider.shapeType();
+  if (
+    a !== R!.ShapeType.TriMesh &&
+    a !== R!.ShapeType.HeightField &&
+    b !== R!.ShapeType.TriMesh &&
+    b !== R!.ShapeType.HeightField
+  ) {
+    // Convex pairs need no secondary manifold search.
+    return;
+  }
   contactOther = other;
-  world!.narrowPhase.contactPair(contactCol, handle, contactManifold);
+  contactOtherCollider = collider;
+  collider.translation(contactPosition2);
+  collider.rotation(contactRotation2);
+  world!.narrowPhase.contactPair(contactCol, handle, world!.bodies, contactManifold);
 }
 export function forEachContact(body: Body, fn: ContactFn) {
   const b = m(body);
@@ -386,6 +470,8 @@ export function forEachContact(body: Body, fn: ContactFn) {
   contactDone = false;
   for (let k = 0; k < b.colliders.length && !contactDone; k++) {
     contactCol = b.colliders[k]!.handle;
+    b.colliders[k]!.translation(contactPosition1);
+    b.colliders[k]!.rotation(contactRotation1);
     world.narrowPhase.contactPairsWith(contactCol, contactPairWith);
   }
 }
@@ -398,6 +484,7 @@ type RawVector = ReturnType<typeof RAPIER.VectorOps.intoRaw>;
 type RawRotation = ReturnType<typeof RAPIER.RotationOps.intoRaw>;
 type RawShape = ReturnType<RAPIER.Shape['intoRaw']>;
 let sweep: { from: RawVector; by: RawVector; turn: RawRotation; r: number; ball: RawShape } | undefined;
+const sweepHit = new Float32Array(16); // Rapier's scratch-buffer size; getComponents puts TOI at index 0.
 export function sweepSphere(from: V3, to: V3, r: number, o: { mask: number; thin: 'skip' | 'only' }) {
   if (!R || !world) return -1;
   const dx = to.x - from.x,
@@ -446,7 +533,8 @@ export function sweepSphere(from: V3, to: V3, r: number, o: { mask: number; thin
     only,
   );
   if (!h) return -1;
-  const at = h.time_of_impact() * len;
+  h.getComponents(sweepHit);
+  const at = sweepHit[0]! * len;
   h.free();
   return at;
 }
