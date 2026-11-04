@@ -214,6 +214,10 @@ export function loadCart(n: number) {
 }
 export function callCart() {
   cart.called = true;
+  // A whistle recalls even a loaded outbound cart; demand at the frontier is irrelevant.
+  cart.leg = cart.d > FORGE_D ? 'back' : cart.d < FORGE_D ? 'out' : 'forge';
+  cart.t = 0;
+  cart.speed = 0;
 }
 let activeStation: () => StationRun | null = () => null;
 export const setDepotFrame = (fn: () => StationRun | null) => void (activeStation = fn);

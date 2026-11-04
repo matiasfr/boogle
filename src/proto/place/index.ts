@@ -29,7 +29,8 @@ import { freshStart } from '../../player/arrival.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { interactTarget } from '../../player/hands.ts';
 import { haulHooks } from '../../player/haul-variant.ts';
-import { setCcd, teleport } from '../../physics/engine.ts';
+import { setCcd, sweepSphere, teleport } from '../../physics/engine.ts';
+import { GROUP } from '../../physics/physics.ts';
 import { softWall } from '../../entities/player/state.ts';
 import { carry } from '../../physics/platforms.ts';
 import { scene } from '../../render/scene.ts';
@@ -99,7 +100,7 @@ import {
   wake,
 } from './run.ts';
 import { clearFinds, updateBoiler, updateBuoys, updateFinds } from './props.ts';
-import { incoming } from './verbs.ts';
+import { backUp, incoming } from './verbs.ts';
 import { arrowTarget, objective } from './objective.ts';
 import { buildPanel } from './panel.ts';
 import { buildSigns, pointArrow, setNumbers, setObjective, updateObjective } from './signs.ts';
@@ -379,6 +380,44 @@ function restorePose() {
   teleport(b, savedPose.x, H(savedPose.x, savedPose.z) + PLAYER_R + 0.4, savedPose.z);
   b.velocity.set(0, 0, 0);
   cam.yaw = me.yaw = savedPose.yaw;
+}
+/** Local recovery: use the rejoin safety rules on nearby ground before falling back to a path. */
+export function getUnstuck() {
+  const b = me.body;
+  if (!b) return;
+  carry.on = null;
+  carry.x = carry.y = carry.z = carry.spin = 0;
+  for (let r = 2; r <= 40; r += 2) {
+    const n = Math.ceil((2 * Math.PI * r) / 2);
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * Math.PI * 2;
+      const p = { x: b.position.x + Math.cos(a) * r, z: b.position.z + Math.sin(a) * r, yaw: me.yaw };
+      if (!safePose(p)) continue;
+      const h = H(p.x, p.z);
+      if (
+        [
+          [-1, 0],
+          [1, 0],
+          [0, -1],
+          [0, 1],
+        ].some(([x, z]) => Math.abs(H(p.x + x!, p.z + z!) - h) > 0.5)
+      )
+        continue;
+      // Start above even Needle Bell: the sweep ignores solids containing its starting point.
+      const from = { x: p.x, y: h + 128, z: p.z };
+      const to = { x: p.x, y: h + PLAYER_R + 0.4, z: p.z };
+      if (
+        ['skip', 'only'].some(
+          (thin) => sweepSphere(from, to, PLAYER_R, { mask: GROUP.SCENERY, thin: thin as 'skip' | 'only' }) >= 0,
+        )
+      )
+        continue;
+      savedPose = p;
+      restorePose();
+      return;
+    }
+  }
+  backUp();
 }
 let poseClock = 0;
 window.addEventListener('pagehide', () => {

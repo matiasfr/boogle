@@ -1,6 +1,6 @@
 // "You got ___": a new thing (a cosmetic, a tool, a move) is held up over your head, turning and glowing, under a text box
 // you dismiss. Generic finds (logs, stone, rails, money, crystals, gold) never come through here. You stand still while it's
-// up: Interact, Jump, Back, a click or a tap puts it away, and the next one in the queue comes up. Local and cosmetic.
+// up: Interact, Back, a click or a tap puts it away, and the next one in the queue comes up. Local and cosmetic.
 import * as THREE from 'three/webgpu';
 import { cam, me } from '../../player/player.ts';
 import { inputState } from '../../player/input-state.ts';
@@ -66,6 +66,7 @@ function next() {
   const g = queue.shift();
   if (!g) return;
   cur = { ...g, t: 0, start: new THREE.Vector3() };
+  touch = null;
   spin.clear();
   const fit = new THREE.Box3().setFromObject(g.model).getSize(new THREE.Vector3());
   g.model.scale.multiplyScalar(SIZE / Math.max(fit.x, fit.y, fit.z, 0.01));
@@ -81,7 +82,13 @@ function next() {
   me.charging = false;
   me.yaw = cam.yaw + Math.PI; // turned to face you
   setAloft(true);
-  setPadGrab(press, ['a', 'b', 'x', 'rt'], { stick: true });
+  setPadGrab(
+    (slot) => {
+      if (slot === 'x') press();
+    },
+    ['a', 'b', 'x', 'rt'],
+    { stick: true },
+  );
   title.textContent = `You got ${g.name.charAt(0).toLowerCase()}${g.name.slice(1)}!`;
   title.style.color = g.color ?? '';
   sub.textContent = g.line ?? '';
@@ -118,7 +125,7 @@ export function dropGot() {
   putAway();
 }
 
-/** Interact, Jump, Back, a click or a tap: put it away, once it's been up long enough to read. */
+/** A deliberate press puts it away, once it's been up long enough to read. */
 export function press() {
   if (cur && cur.t >= MIN_S) putAway();
 }
@@ -177,25 +184,72 @@ export function updateGot(dt: number) {
 }
 
 // Capture phase on window, before the game's own handlers: the keys that answer a text box put it away and go no further.
-const KEYS = new Set(['KeyE', 'Space', 'Enter', 'NumpadEnter', 'Escape']);
+const MOVE_KEYS = new Set([
+  'KeyW',
+  'KeyA',
+  'KeyS',
+  'KeyD',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'ShiftLeft',
+  'ShiftRight',
+]);
 addEventListener(
   'keydown',
   (e) => {
-    if (!cur || !KEYS.has(e.code)) return;
+    if (!cur || MOVE_KEYS.has(e.code)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    if (!e.repeat) press();
+    if (!e.repeat && (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'Escape')) press();
   },
   { capture: true },
 );
-// A click or a tap anywhere: it doesn't also chop, throw or press a touch button.
+// A touch must finish without dragging, so moving or looking cannot dismiss the card.
+let touch: { id: number; x: number; y: number; moved: boolean } | null = null;
 addEventListener(
   'pointerdown',
   (e) => {
     if (!cur) return;
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+      const target = e.target instanceof Element ? e.target : null;
+      if (target?.closest('.tbtn, #stick') || (target?.closest('#touch') && e.clientX < innerWidth * 0.45)) return;
+      if (cur.t < MIN_S) return;
+      touch = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+      return;
+    }
     e.preventDefault();
     e.stopImmediatePropagation();
     press();
+  },
+  { capture: true },
+);
+addEventListener(
+  'pointermove',
+  (e) => {
+    if (touch?.id === e.pointerId && Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 10) touch.moved = true;
+  },
+  { capture: true },
+);
+addEventListener(
+  'pointerup',
+  (e) => {
+    if (touch?.id !== e.pointerId) return;
+    const tap = !touch.moved;
+    touch = null;
+    if (cur && tap) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      press();
+    }
+  },
+  { capture: true },
+);
+addEventListener(
+  'pointercancel',
+  () => {
+    touch = null;
   },
   { capture: true },
 );
