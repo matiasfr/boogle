@@ -32,6 +32,7 @@ Codex reads AGENTS.md and the docs its table triggers like you do, and can't pus
 | Mode | Effort default | Where it works | What you get |
 |---|---|---|---|
 | `previz` | medium (`high` for a hard art-direction call) | `.look/previz/<topic>/` (gitignored) | `shot-<n>.png` (`--shots`, default 4) and `board.md`: pitch, per-shot camera, light, palette, the prompt, and how we'd build it in TSL, particles and post |
+| `brainstorm` | high, live web search, read-only | this checkout, in place; `--role design\|systems\|creative` | one panelist's contribution as `.look/codex/<topic>/report.md`; resume for round 2 (the brainstorm skill drives it) |
 | `research` | xhigh, live web search | worktree `../boogle-codex/<topic>`, branch `codex/<topic>` | `docs/research/<topic>.md` committed, not pushed |
 | `task` | high | same worktree setup | commits on `codex/<topic>`, `npm run check` run, not pushed |
 | `review` | xhigh | detached worktree at `--ref-branch` (default HEAD) | `codex exec review` against `origin/main`; an optional brief focuses it |

@@ -22,7 +22,8 @@ export function docAuthority(file: string, text: string): Authority {
     };
   if (f.startsWith('docs/research/') && f !== 'docs/research/README.md')
     return { status: 'historical', next: decisions, why: 'dated evidence; reverify against owning code' };
-  if (f.startsWith('docs/plans/') && f !== work) {
+  // A brainstorm brief is a build spec once approved, like a plan.
+  if ((f.startsWith('docs/plans/') && f !== work) || f.startsWith('docs/brainstorms/')) {
     if (/Status:.*(?:complete|done|superseded|archived)/i.test(header))
       return { status: 'historical', next: built, why: 'completed or superseded plan' };
     if (/Status:.*(?:active|in progress|approved)/i.test(header))
