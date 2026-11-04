@@ -4,7 +4,7 @@
 import * as THREE from 'three/webgpu';
 import { cam, me } from '../../player/player.ts';
 import { inputState } from '../../player/input-state.ts';
-import { setPadGrab } from '../../player/controls.ts';
+import { menuSlot, setPadGrab } from '../../player/controls.ts';
 import { glyph } from '../../player/glyphs.ts';
 import type { Avatar } from '../../player/avatars.ts';
 import { emit } from '../../render/particles.ts';
@@ -81,7 +81,13 @@ function next() {
   me.charging = false;
   me.yaw = cam.yaw + Math.PI; // turned to face you
   setAloft(true);
-  setPadGrab(press, ['a', 'b', 'x', 'rt'], { stick: true });
+  setPadGrab(
+    (slot) => {
+      if (slot === 'x' || slot === menuSlot('confirm')) press();
+    },
+    ['a', 'b', 'x', 'rt'],
+    { stick: true },
+  );
   title.textContent = `You got ${g.name.charAt(0).toLowerCase()}${g.name.slice(1)}!`;
   title.style.color = g.color ?? '';
   sub.textContent = g.line ?? '';
@@ -177,25 +183,69 @@ export function updateGot(dt: number) {
 }
 
 // Capture phase on window, before the game's own handlers: the keys that answer a text box put it away and go no further.
-const KEYS = new Set(['KeyE', 'Space', 'Enter', 'NumpadEnter', 'Escape']);
+const MOVE_KEYS = new Set([
+  'KeyW',
+  'KeyA',
+  'KeyS',
+  'KeyD',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'ShiftLeft',
+  'ShiftRight',
+]);
 addEventListener(
   'keydown',
   (e) => {
-    if (!cur || !KEYS.has(e.code)) return;
+    if (!cur || MOVE_KEYS.has(e.code)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if (!e.repeat) press();
   },
   { capture: true },
 );
-// A click or a tap anywhere: it doesn't also chop, throw or press a touch button.
+// A touch must finish without dragging, so moving or looking cannot dismiss the card.
+let touch: { id: number; x: number; y: number; moved: boolean } | null = null;
 addEventListener(
   'pointerdown',
   (e) => {
     if (!cur) return;
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+      touch = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+      return;
+    }
     e.preventDefault();
     e.stopImmediatePropagation();
     press();
+  },
+  { capture: true },
+);
+addEventListener(
+  'pointermove',
+  (e) => {
+    if (touch?.id === e.pointerId && Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 10) touch.moved = true;
+  },
+  { capture: true },
+);
+addEventListener(
+  'pointerup',
+  (e) => {
+    if (touch?.id !== e.pointerId) return;
+    const tap = !touch.moved;
+    touch = null;
+    if (cur && tap) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      press();
+    }
+  },
+  { capture: true },
+);
+addEventListener(
+  'pointercancel',
+  () => {
+    touch = null;
   },
   { capture: true },
 );

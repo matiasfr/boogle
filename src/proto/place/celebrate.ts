@@ -1,11 +1,11 @@
 // The moments of ?proto=place: the machine waking, a line coming through, and the one camera move in the run. The owner
 // "barely noticed" the last round's celebration and wanted more drama from the wake. You keep control throughout: nothing
-// here stops the player, and any input ends the pull-out at once (docs/research/construction-you-can-watch.md, rec 9: the
+// here stops the player, and a deliberate press ends the pull-out (docs/research/construction-you-can-watch.md, rec 9: the
 // completion beat is the one place for a camera move). Local and cosmetic.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
 import { camConstraints, camForward, me } from '../../player/player.ts';
-import { input } from '../../player/input.ts';
+import { menuSlot } from '../../player/controls.ts';
 import { chuff, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
@@ -102,24 +102,83 @@ const pull = {
   shot: new THREE.Vector3(),
   shotTo: new THREE.Vector3(),
   at: new THREE.Vector3(),
-  keys: '',
-  sx: 0,
-  sy: 0,
-  pads: 0,
+  pads: [false, false],
 };
 const ease = (u: number) => u * u * (3 - 2 * u);
-const padsDown = () => {
-  let n = 0;
-  for (const p of navigator.getGamepads?.() ?? []) if (p) for (const b of p.buttons) if (b.pressed) n++;
-  return n;
+const padButtons = () => {
+  const indices = [2, menuSlot('confirm') === 'a' ? 0 : 1];
+  return indices.map((i) => [...(navigator.getGamepads?.() ?? [])].some((p) => !!p?.buttons[i]?.pressed));
 };
-const keysNow = () => [...input.keys].sort().join();
 const stop = () => {
-  if (pull.on) pull.cut = Math.min(pull.cut, 0.999); // starts the quick fade back
+  if (pull.on && pull.t >= 0.6) pull.cut = Math.min(pull.cut, 0.999);
 };
-for (const ev of ['pointerdown', 'wheel', 'mousemove', 'touchstart'] as const)
-  addEventListener(ev, () => pull.on && pull.t > 0.05 && stop(), { capture: true, passive: true });
-/** The camera eases out to `shot`, looking at `at`, drifting to `shotTo`. Any input brings it straight back. */
+const MOVE_KEYS = new Set([
+  'KeyW',
+  'KeyA',
+  'KeyS',
+  'KeyD',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'ShiftLeft',
+  'ShiftRight',
+]);
+addEventListener(
+  'keydown',
+  (e) => {
+    if (pull.on && !e.repeat && !MOVE_KEYS.has(e.code)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      stop();
+    }
+  },
+  { capture: true },
+);
+let touch: { id: number; x: number; y: number; moved: boolean } | null = null;
+addEventListener(
+  'pointerdown',
+  (e) => {
+    if (!pull.on) return;
+    if (e.pointerType === 'touch' || e.pointerType === 'pen')
+      touch = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+    else {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      stop();
+    }
+  },
+  { capture: true },
+);
+addEventListener(
+  'pointermove',
+  (e) => {
+    if (touch?.id === e.pointerId && Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 10) touch.moved = true;
+  },
+  { capture: true },
+);
+addEventListener(
+  'pointerup',
+  (e) => {
+    if (touch?.id !== e.pointerId) return;
+    const tap = !touch.moved;
+    touch = null;
+    if (pull.on && tap) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      stop();
+    }
+  },
+  { capture: true },
+);
+addEventListener(
+  'pointercancel',
+  () => {
+    touch = null;
+  },
+  { capture: true },
+);
+/** The camera eases out to `shot`, looking at `at`, drifting to `shotTo`. A deliberate press brings it straight back. */
 export function pullOut(shot: THREE.Vector3, shotTo: THREE.Vector3, at: THREE.Vector3, seconds = 3) {
   if (reducedMotion) return;
   pull.on = true;
@@ -129,10 +188,7 @@ export function pullOut(shot: THREE.Vector3, shotTo: THREE.Vector3, at: THREE.Ve
   pull.shot.copy(shot);
   pull.shotTo.copy(shotTo);
   pull.at.copy(at);
-  pull.keys = keysNow();
-  pull.sx = input.stickX;
-  pull.sy = input.stickY;
-  pull.pads = padsDown();
+  pull.pads = padButtons();
 }
 export const pullOn = () => pull.on;
 const fwd = new THREE.Vector3(),
@@ -426,10 +482,9 @@ export function updateMoments(dt: number) {
   }
   if (!pull.on) return;
   pull.t += dt;
-  // Anything new from the player ends it: a key, a stick, a pad button. (A key held since before it started doesn't.)
-  if (keysNow() !== pull.keys || Math.abs(input.stickX - pull.sx) > 0.2 || Math.abs(input.stickY - pull.sy) > 0.2)
-    stop();
-  if (padsDown() > pull.pads) stop();
+  const buttons = padButtons();
+  if (buttons.some((down, i) => down && !pull.pads[i])) stop();
+  pull.pads = buttons;
   if (pull.cut < 1) pull.cut = Math.max(0, pull.cut - dt / 0.14);
   const out = Math.min(1, pull.t / 0.95),
     back = Math.max(0, (pull.t - (pull.dur - 0.55)) / 0.55);
