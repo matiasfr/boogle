@@ -75,7 +75,8 @@ for y in (BOTTOM + 0.005, BOTTOM - 0.007):
     for outer in (False, True):
         for i in range(N + 1):
             a = math.pi / 2 + (i / N * 2 - 1) * math.radians(65)
-            reach = PEAK * (0.18 + 0.82 * math.sin(i / N * math.pi)) if outer else -0.012
+            # Keep the inner edge outside the actual head: the former 12 mm inset buried its underside by 4 mm.
+            reach = PEAK * (0.18 + 0.82 * math.sin(i / N * math.pi)) if outer else 0.0
             verts.append(((RX + reach) * math.cos(a), y - (reach * 0.15), (RZ + reach) * math.sin(a)))
 faces = []
 S = N + 1
