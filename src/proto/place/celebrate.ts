@@ -5,7 +5,6 @@
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
 import { camConstraints, camForward, me } from '../../player/player.ts';
-import { menuSlot } from '../../player/controls.ts';
 import { chuff, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
@@ -102,32 +101,17 @@ const pull = {
   shot: new THREE.Vector3(),
   shotTo: new THREE.Vector3(),
   at: new THREE.Vector3(),
-  pads: [false, false],
+  pad: false,
 };
 const ease = (u: number) => u * u * (3 - 2 * u);
-const padButtons = () => {
-  const indices = [2, menuSlot('confirm') === 'a' ? 0 : 1];
-  return indices.map((i) => [...(navigator.getGamepads?.() ?? [])].some((p) => !!p?.buttons[i]?.pressed));
-};
+const padInteract = () => [...(navigator.getGamepads?.() ?? [])].some((p) => !!p?.buttons[2]?.pressed);
 const stop = () => {
   if (pull.on && pull.t >= 0.6) pull.cut = Math.min(pull.cut, 0.999);
 };
-const MOVE_KEYS = new Set([
-  'KeyW',
-  'KeyA',
-  'KeyS',
-  'KeyD',
-  'ArrowUp',
-  'ArrowDown',
-  'ArrowLeft',
-  'ArrowRight',
-  'ShiftLeft',
-  'ShiftRight',
-]);
 addEventListener(
   'keydown',
   (e) => {
-    if (pull.on && !e.repeat && !MOVE_KEYS.has(e.code)) {
+    if (pull.on && !e.repeat && e.code === 'KeyE') {
       e.preventDefault();
       e.stopImmediatePropagation();
       stop();
@@ -140,9 +124,12 @@ addEventListener(
   'pointerdown',
   (e) => {
     if (!pull.on) return;
-    if (e.pointerType === 'touch' || e.pointerType === 'pen')
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+      const target = e.target instanceof Element ? e.target : null;
+      if (target?.closest('.tbtn, #stick') || (target?.closest('#touch') && e.clientX < innerWidth * 0.45)) return;
+      if (pull.t < 0.6) return;
       touch = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
-    else {
+    } else {
       e.preventDefault();
       e.stopImmediatePropagation();
       stop();
@@ -182,13 +169,14 @@ addEventListener(
 export function pullOut(shot: THREE.Vector3, shotTo: THREE.Vector3, at: THREE.Vector3, seconds = 3) {
   if (reducedMotion) return;
   pull.on = true;
+  touch = null;
   pull.t = 0;
   pull.dur = seconds;
   pull.cut = 1;
   pull.shot.copy(shot);
   pull.shotTo.copy(shotTo);
   pull.at.copy(at);
-  pull.pads = padButtons();
+  pull.pad = padInteract();
 }
 export const pullOn = () => pull.on;
 const fwd = new THREE.Vector3(),
@@ -401,7 +389,7 @@ export function wakeShow(m: Machine, onLamps: () => void, done: () => void) {
 
 // ---------------------------------------------------------------- a path opening
 /** The first path: a warm opening chord, rockets down the gorge, a shake, the pull-out along what
- * you built, with the village running out onto it. Any input ends the camera move at once; you keep control throughout. */
+ * you built, with the village running out onto it. A deliberate press ends the camera move; you keep control throughout. */
 export function firstPathShow(o: {
   village: THREE.Vector3;
   gorge: THREE.Vector3;
@@ -482,9 +470,9 @@ export function updateMoments(dt: number) {
   }
   if (!pull.on) return;
   pull.t += dt;
-  const buttons = padButtons();
-  if (buttons.some((down, i) => down && !pull.pads[i])) stop();
-  pull.pads = buttons;
+  const button = padInteract();
+  if (button && !pull.pad) stop();
+  pull.pad = button;
   if (pull.cut < 1) pull.cut = Math.max(0, pull.cut - dt / 0.14);
   const out = Math.min(1, pull.t / 0.95),
     back = Math.max(0, (pull.t - (pull.dur - 0.55)) / 0.55);
