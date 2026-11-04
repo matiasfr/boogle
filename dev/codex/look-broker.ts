@@ -15,6 +15,7 @@ const ENTRIES: Record<Operation, string> = {
   look: 'dev/look/look.ts',
   playthrough: 'dev/look/playthrough.ts',
   scenario: 'dev/scenarios/run.ts',
+  'cold-start': 'dev/cold-start.ts',
 };
 const VALUES: Record<Operation, string[]> = {
   look: [
@@ -42,11 +43,13 @@ const VALUES: Record<Operation, string[]> = {
   ],
   playthrough: ['--query', '--eval', '--stall'],
   scenario: [],
+  'cold-start': ['--runs', '--mode', '--seconds', '--query'],
 };
 const FLAGS: Record<Operation, string[]> = {
   look: ['--video', '--heatmap', '--hud', '--warp', '--real', '--curves'],
   playthrough: ['--full'],
   scenario: ['--no-trace'],
+  'cold-start': ['--video-probe'],
 };
 const FILES = ['--eval', '--action', '--curves-vs', '--saves'];
 let active: ChildProcess | undefined;
@@ -120,6 +123,7 @@ async function execute(id: string, request: Request) {
   const started = new Date().toISOString();
   const { operation, url, query } = request;
   const args = [...request.args];
+  if (operation === 'cold-start') args.push('--direct');
   if (operation === 'look' && args.includes('--at') && !args.includes('--saves')) {
     const latest = path.join(dir, 'latest-playthrough.json');
     if (!fs.existsSync(latest)) throw new Error('Run see.ts playthrough first, or give --saves <directory>');
@@ -144,10 +148,11 @@ async function execute(id: string, request: Request) {
       },
     ));
     let timedOut = false;
+    const timeout = operation === 'cold-start' ? 35 * 60_000 : 7 * 60_000;
     const timer = setTimeout(() => {
       timedOut = true;
       stopChild();
-    }, 7 * 60_000);
+    }, timeout);
     const parentCheck = setInterval(() => {
       try {
         process.kill(parent, 0);
@@ -160,7 +165,7 @@ async function execute(id: string, request: Request) {
       clearTimeout(timer);
       clearInterval(parentCheck);
       active = undefined;
-      if (timedOut) fs.writeSync(log, 'Broker timed out after 7 minutes\n');
+      if (timedOut) fs.writeSync(log, `Broker timed out after ${timeout / 60000} minutes\n`);
       fs.closeSync(log);
       resolve(timedOut ? 124 : (code ?? 1));
     });

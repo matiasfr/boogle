@@ -17,8 +17,8 @@ fs.mkdirSync(dir, { recursive: true });
 const id = `${Date.now()}-${process.pid}`;
 const args = process.argv.slice(2);
 const operation = (args[0] && !args[0].startsWith('--') ? args.shift() : 'look') as Operation;
-if (!['look', 'playthrough', 'scenario'].includes(operation))
-  throw new Error('Use see.ts [look|playthrough|scenario] <options>');
+if (!['look', 'playthrough', 'scenario', 'cold-start'].includes(operation))
+  throw new Error('Use see.ts [look|playthrough|scenario|cold-start] <options>');
 const ready = path.join(dir, 'ready.json');
 if (!fs.existsSync(ready)) throw new Error('No broker: run this task through dev/codex/run.ts');
 const { pid } = JSON.parse(fs.readFileSync(ready, 'utf8')) as { pid: number };
@@ -31,7 +31,16 @@ function brokerAlive() {
   }
 }
 brokerAlive();
-const stack = await startStack({ dataRoot: dir });
+const production = args.includes('--production');
+if (production) args.splice(args.indexOf('--production'), 1);
+const stack =
+  operation === 'cold-start' || production
+    ? await (
+        (await import(
+          pathToFileURL(path.resolve('dev/cold-start/production.ts')).href
+        )) as typeof import('../cold-start/production.ts')
+      ).startProduction(dir)
+    : await startStack({ dataRoot: dir });
 let status: number;
 try {
   const request: Request = {
@@ -44,7 +53,7 @@ try {
   fs.writeFileSync(path.join(dir, `${id}.tmp`), JSON.stringify(request));
   fs.renameSync(path.join(dir, `${id}.tmp`), path.join(dir, `${id}.json`)); // the broker never reads half a request
   const done = path.join(dir, `${id}.done.json`);
-  const deadline = Date.now() + 8 * 60_000;
+  const deadline = Date.now() + (operation === 'cold-start' ? 36 : 8) * 60_000;
   while (!fs.existsSync(done)) {
     if (Date.now() > deadline)
       throw new Error('No answer from the look broker (is this running under dev/codex/run.ts?)');
