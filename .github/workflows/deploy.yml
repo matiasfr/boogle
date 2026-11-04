@@ -31,7 +31,8 @@ jobs:
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      - run: npm run lint
+      - name: Lint (Oxlint, type-aware rules and Boogle protections)
+        run: npm run lint
       - run: npm run build
         env:
           BASE: /

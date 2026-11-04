@@ -191,6 +191,7 @@ The broker owns --url, --root, --data-dir and --out. Each command prints a manif
 
 Your final message is Claude's assessment: keep it short. State what changed, check results, which images you actually opened, what you observed against the visual question, bot failures, and anything unverified. Link the evidence manifests. The launcher also returns handoff.md and evidence.json, copying the artifacts beside them.`;
 
+// Shared hook runs Prettier, native/type-aware Oxlint and Boogle's parser protections.
 const FORMAT_HOOK = `hooks.PostToolUse=[{matcher="apply_patch|Edit|Write",hooks=[{type="command",timeout=30,command='node "$(git rev-parse --show-toplevel)/.claude/hooks/format-lint.ts"'}]}]`;
 
 const sourceRef = opts.snapshot

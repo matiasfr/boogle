@@ -28,9 +28,10 @@ jobs:
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      - run: npm run lint
+      - name: Lint (Oxlint, type-aware rules and Boogle protections)
+        run: npm run lint
       - run: npm run typecheck
-      # TS 7 may accept errors missed by the checker lint and tools rely on; drop this when they use TS 7.
+      # Five dev tools still use the TS 6 compiler API; drop this when they move to TS 7 or oxc-parser.
       - run: npm run typecheck:legacy
       # Reads committed files only: needs neither Blender nor KTX-Software.
       - run: npm run assets -- --check

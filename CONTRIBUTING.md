@@ -8,6 +8,8 @@ Use Node 24 (`.nvmrc`; `nvm use` if you use nvm). Run `npm ci`, then `npm run de
 
 For browser checks, install the pinned Playwright browser with `npx playwright install chromium` (Linux: `npx playwright install --with-deps chromium`). Start with `npm run check`; the change-specific checks are in [AGENTS.md](docs/agents/tests.md#tests).
 
+`npm run lint` runs Oxlint with type-aware checking and Boogle's parser protections. Use `npm run lint -- <files>` for an edit; calling Oxlint alone omits the custom determinism and boundary checks. VS Code users can install the Oxc extension (`oxc.oxc-vscode`) for native lint feedback; the shared runner remains the complete gate.
+
 ## How we work
 
 We're in rapid iteration: a few people (mostly through Claude Code) building and playtesting many times a day. Everything lands on `main` through a PR, but nobody has to open or review one.
@@ -44,7 +46,7 @@ Open this repository in Codex and trust it. `AGENTS.md` is the shared entry poin
 
 - `config.toml`: workspace-write with network, live web search, and room for all of `AGENTS.md` (the default cuts it off at 32 KB).
 - `rules/boogle.rules`: the project's commands, Git and `gh` run outside the sandbox with no prompt; force-pushing and skipping hooks are refused. macOS's sandbox won't let Chromium start and a worktree's Git data is outside it, so these can't work from inside. Restart Codex after changing rules.
-- `hooks.json`: Prettier and ESLint on each edit, the same `.claude/hooks/format-lint.ts` Claude Code runs. Codex skips a project hook until you trust it: run `/hooks` once in a session. In our tests the project's copy didn't fire under `codex exec`; `dev/codex/run.ts` jobs pass the hook themselves.
+- `hooks.json`: Prettier and the full lint runner on each edit, the same `.claude/hooks/format-lint.ts` Claude Code runs. Codex skips a project hook until you trust it: run `/hooks` once in a session. In our tests the project's copy didn't fire under `codex exec`; `dev/codex/run.ts` jobs pass the hook themselves.
 - `agents/`: `planner` and `implementer`, which read the same briefs as Claude's.
 - `environments/environment.toml`: the desktop app's setup script for a new worktree (Node 24, `npm ci`, Chromium) and its top-bar buttons.
 

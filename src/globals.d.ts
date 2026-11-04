@@ -28,7 +28,7 @@ export interface BoogleHandle {
   prof: typeof prof;
   gfx: 'webgpu' | null;
   dev?: import('./debug/dev/types.ts').DevApi;
-  [more: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any -- the grab bag, as above
+  [more: string]: any; // oxlint-disable-line typescript/no-explicit-any -- the grab bag, as above
 }
 
 declare global {

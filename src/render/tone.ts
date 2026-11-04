@@ -3,9 +3,9 @@
 import * as THREE from 'three/webgpu';
 import * as tsl from 'three/tsl';
 // TSL typings cannot follow the swizzles in this graph (as in the water shaders).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 export type N = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 export const TSL = tsl as unknown as Record<string, any>;
 const {
   Fn,

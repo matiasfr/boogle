@@ -2,7 +2,7 @@
 // Static states are staged; walk uses ordinary inputs from a saved great-beam-shouldered checkpoint, without skips.
 const q = new URLSearchParams(location.search);
 const state = q.get('cornerState') ?? 'empty';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 const p = window.__place as any;
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(

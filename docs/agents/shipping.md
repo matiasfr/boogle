@@ -1,10 +1,11 @@
 Before substantial work, committing or shipping, read this shipping procedure.
 
 ## Shipping
+
 - Before starting something larger, `npm run inflight` lists unmerged `wip/`, `ship/` and `claude/` branches and the files they touch (`!` = files you changed too); split work so parallel tracks don't touch the same files. Work that spans sessions: `npm run wip -- <topic>` pushes it to `wip/<you>/<topic>` (no CI) so others see it; `ship` removes it once shipped.
 - A large or risky change (several files with shared state, or `src/sim/`, `src/world/`, `src/net*`, `server/`) can start from a plan in `docs/plans/<name>.md` when asked for one, using the format in `.claude/agents/planner.md`; wait for approval before building it.
 - PRs merge without review, so over ~3 files or ~150 lines, re-read your diff and simplify it before shipping; for `src/net*`, `src/world/` or `server/`, also run your tool's code review. The GitHub Action flows skip this.
-- Style: ESLint + Prettier (single quotes, 120 columns). Run `npx prettier --write <your files>` and `npx eslint <your files>` on what you edit, never the whole repo: CI doesn't check formatting, and only Claude Code does this for you (a hook).
+- Style: Oxlint + Prettier (single quotes, 120 columns). Run `npx prettier --write <your files>` and `npm run lint -- <your files>` on what you edit, never format the whole repo: CI doesn't check formatting. Claude Code and Codex share the format/lint hook; the lint runner also checks Boogle's parser protections.
 - A new `?proto=` prototype adds or updates its entry in `protos/protos.ts` (the list at boogle.club/protos/) in the same PR (one gut question and one line on what's new: no checklists, the owner plays it and knows), and flips it to `live` when it ships.
 - A change a player can see (a model, a hat, UI, an effect) shows it in its PR: a still from `npm run look` or a scenario (look at it first), uploaded with `scripts/pr-shot.sh <png>...`, which prints Markdown. Paste that into the commit body (`ship` PRs are built from commit messages) or the `gh pr create` body; already merged, `gh pr comment`.
 - Small commits, imperative subject; the body names the DESIGN.md principle served. Then `npm run ship`: rebases on `main`, runs `check` (`-- --gpu` adds `check:gpu`), pushes `ship/<you>-<sha>`. Green CI merges and deploys; red or conflicting, `ci-autofix.yml` pushes up to two fixes, then @mentions you. `-- --wait` waits for `main`.

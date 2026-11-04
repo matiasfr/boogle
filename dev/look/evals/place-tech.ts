@@ -4,7 +4,7 @@
 // `&glidecam=frame|pull|off` compares cameras. `&test=rest|neutral|turn|open|close` picks a glide transient.
 const q = new URLSearchParams(location.search);
 const shot = q.get('shot') || 'glide';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 const place = window.__place as any;
 if (!place) throw new Error('no place: add proto=place to the query');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');

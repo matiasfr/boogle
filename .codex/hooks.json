@@ -1,5 +1,5 @@
 {
-  "description": "Prettier on each file an edit touches, and ESLint for TypeScript: the same hook Claude Code runs",
+  "description": "Prettier on each file an edit touches, and the full lint runner for JS/TS: the same hook Claude Code runs",
   "hooks": {
     "PostToolUse": [
       {

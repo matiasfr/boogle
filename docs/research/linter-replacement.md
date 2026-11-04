@@ -1,5 +1,60 @@
 # Linter replacement feasibility
 
+## Implementation status — 4 November 2026
+
+The owner's replacement decision is implemented: Oxlint **1.91.0** and oxlint-tsgolint **7.0.2005**, with no ESLint,
+`@eslint/js`, or TypeScript-ESLint packages. Native rules cover the baseline and native safety rules; a small
+`dev/lint/` runner uses oxc-parser, esquery and gitignore matching for the exact selectors, imports and entity ratchet.
+This retains the established matching semantics without the alpha jsPlugins API or an ESLint provider. Acorn's
+`boogle/js-language` guard restores the ES2022/ES2024 split (and CommonJS parser checks). `policy.ts` owns the only
+`LOCKSTEP_FILES`, read by atlas and tests. All 27 in-scope directives in 21 files are converted; unused directives
+fail. The 20 entity allowances are unchanged, with prune, stale/deleted-entry and archived-base no-growth checks.
+
+Parity was measured against this worktree's **current ESLint before removal**, including main's fixed sync patterns.
+The kept `test/lint-determinism.test.ts` and JSON fixtures produce this final table:
+
+| Assertion group                  | ESLint caught / allowed | Replacement caught / allowed |
+| -------------------------------- | ----------------------: | ---------------------------: |
+| Restricted imports               |                 19 / 16 |                      19 / 16 |
+| Physics type-import rule         |                   1 / 2 |                        1 / 2 |
+| Lockstep properties              |                  30 / 1 |                       30 / 1 |
+| Restricted globals               |                  14 / 0 |                       14 / 0 |
+| GL, DOORS and lockstep selectors |                 43 / 10 |                      43 / 10 |
+| Entity rule and exemptions       |                  3 / 20 |                       3 / 20 |
+| Debugger / global ignores        |                   1 / 5 |                        1 / 5 |
+| Explicit any / suppression       |                   1 / 1 |                        1 / 1 |
+| Unused directive                 |                   1 / 0 |                        1 / 0 |
+| Underscore unused variables      |                   2 / 0 |                        2 / 0 |
+| **170 fixtures**                 |            **115 / 55** |                 **115 / 55** |
+| **Two language probes**          |               **1 / 1** |                    **1 / 1** |
+
+**Zero misses and zero suppression false positives.** Additional regressions cover same-line block directives,
+invalid multiline disable-line comments, TypeScript import-equals, re-exports, all sync paths, unmatched targets,
+root-only versus nested dependency exclusions, JavaScript/CJS parsing, and entity budget modes.
+
+Type-aware `await-thenable` and `return-await` (`in-try-catch`) are enabled: zero findings, with deliberate mistakes
+caught in isolated sim and WebGPU probes. Existing lockstep files were clean. The exploratory scan found
+`no-floating-promises` **343**, `no-misused-promises` **21**, `no-unnecessary-type-assertion` **272**, and
+`only-throw-error` **2**; these remain off. Floating/misused findings include WebGPU `renderer.compute` dispatch
+(`src/render/water/fft.ts:308,399`), async event callbacks (`src/features/pause.ts:229,316`), and the browser fallback
+for pointer lock (`src/player/input.ts:64`). Those need behavior decisions, not automatic awaits or blanket voids.
+Assertion churn and rethrowing saved unknown failures in `dev/look/coop-warp.ts:96,183` add no useful gate here.
+No game behavior changed. tsgolint has no TypeScript 5/6 dependency or peer; the five compiler-API tools listed in
+`typescript-7.md` are the remaining reason for canonical TypeScript 6.
+
+Three-run CLI wall-time medians (whole / `src/features/ping.ts`): ESLint **9.701 / 0.536 s**;
+the complete replacement, including type-aware checks, **1.540 / 0.348 s**. Whole runs were
+15.992, 7.946, 9.701 s before and 1.609, 1.540, 1.520 s after; single-file runs were
+0.536, 0.498, 0.632 s before and 0.367, 0.324, 0.348 s after. These are non-interleaved, shared-machine measurements,
+not an idle-machine or CI speedup claim; earlier noisier replacement samples are retained locally.
+
+`npm run check` passes, `npm ls` is clean, and `npm audit --offline` reports zero vulnerabilities. Matching cached
+advisories to both lockfiles independently confirms **11 affected moderate package paths → 0**. Live advisories,
+CI/deploy timing and gameplay were not tested; no browser or images are needed for tooling-only changes.
+Local logs, baseline diagnostics, type findings and timings: `.look/oxlint-migration/`.
+
+## Original feasibility study (historical)
+
 **Recommendation: stay with ESLint for now.** Oxlint is the strongest candidate, but its fast native configuration loses protections. The compatibility port catches the tested restrictions, yet still depends on ESLint/TypeScript-ESLint, needs an alpha plugin API, differs on suppression comments, and loses the configured JavaScript language-version guard. Do not replace the gate merely because the clean tree passes. Biome requires more custom work and cannot reuse the JavaScript rules.
 
 Study: 3 November 2026, base `66e22e10ae90faf423ec83a33d2d45dd4c12617e`, Node 24.11.1, macOS arm64. Versions: ESLint 10.14.0, TypeScript-ESLint 8.72.1, Oxlint 1.91.0, oxlint-tsgolint 7.0.2005, Biome 2.6.4. No production lint configuration or dependency changes. Only this report is committed.

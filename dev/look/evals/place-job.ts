@@ -4,7 +4,7 @@
 const q = new URLSearchParams(location.search);
 const shot = q.get('shot') || 'hat';
 type V3t = [number, number, number];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 const place = window.__place as any;
 if (!place) throw new Error('no place: add proto=place to the query');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');

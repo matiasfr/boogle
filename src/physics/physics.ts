@@ -34,7 +34,7 @@ export const NOT_SCENERY = ~(GROUP.SCENERY | GROUP.CAVE); // mask for bodies mov
 // own safety net), so the fall-through net (catchFallThrough) leaves bodies there alone.
 export const groundProbe = {
   under: (x: number, _y: number, z: number) => groundHeight(x, z),
-  netted: (_x: number, _z: number) => true, // eslint-disable-line @typescript-eslint/no-unused-vars -- the caves replace it
+  netted: (_x: number, _z: number) => true, // oxlint-disable-line no-unused-vars -- the caves replace it
 };
 
 // The physics engine has no continuous collision: a sphere that moves more than its radius in one step can end up with its

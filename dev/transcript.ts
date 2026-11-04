@@ -13,7 +13,7 @@ const kinds: [string, RegExp][] = [
   ['look', /\b(?:npm run look|dev\/codex\/see\.ts)\b/],
   ['session', /\b(?:npm run session|dev\/session)\b/],
   ['sim', /\b(?:npm run sim|dev\/sim)\b/],
-  ['typecheck/lint', /\b(?:typecheck|eslint|lint)\b/],
+  ['typecheck/lint', /\b(?:typecheck|oxlint|tsgolint|eslint|lint)\b/],
   ['map', /\b(?:npm run map|dev\/map)\b/],
   ['patch', /\b(?:npm run patch|dev\/patch\.ts)\b/],
   ['waiting', /\bwaitfor\b|\bsleep\b/],

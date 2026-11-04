@@ -1,0 +1,1365 @@
+{
+  "source": "Current ESLint 10.14.0, measured before removal on 2026-11-03; fixed syncBan patterns. Original 170 assertions from the linter study.",
+  "cases": [
+    {
+      "group": "base Rapier",
+      "file": "src/lint-probe.ts",
+      "code": "import '@dimforge/rapier3d';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "base SIMD",
+      "file": "src/lint-probe.ts",
+      "code": "import '@dimforge/rapier3d-simd';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "sync named",
+      "file": "src/lint-probe.ts",
+      "code": "import {registerOp} from './world/sync.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "proto static",
+      "file": "src/lint-probe.ts",
+      "code": "import './proto/test.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "debug static",
+      "file": "src/lint-probe.ts",
+      "code": "import './debug/test.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "proto override",
+      "file": "src/proto/lint-probe.ts",
+      "code": "import '../debug/test.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "debug override",
+      "file": "src/debug/lint-probe.ts",
+      "code": "import '../proto/test.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "world headless",
+      "file": "src/world/lint-probe.ts",
+      "code": "import 'three';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "net headless",
+      "file": "src/net/lint-probe.ts",
+      "code": "import '../render/scene.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "game-world headless",
+      "file": "src/world/game-world.ts",
+      "code": "import 'three/webgpu';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "rules import",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "import '../sync.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "feature import",
+      "file": "src/features/lint-probe.ts",
+      "code": "import './another.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "sim import",
+      "file": "src/sim/lint-probe.ts",
+      "code": "import '../math-pure.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "sim three",
+      "file": "src/sim/lint-probe.ts",
+      "code": "import 'three/webgpu';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "netplay type counts",
+      "file": "src/netplay/lint-probe.ts",
+      "code": "import type {Mesh} from 'three';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "netplay render",
+      "file": "src/netplay/lint-probe.ts",
+      "code": "import '../render/scene.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "state view",
+      "file": "src/entities/lint-probe/state.ts",
+      "code": "import './view.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "state type counts",
+      "file": "src/entities/lint-probe/state.ts",
+      "code": "import type {View} from './view.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "backend sync remains",
+      "file": "src/physics/backend-lint-probe.ts",
+      "code": "import {registerState} from '../world/sync.ts';",
+      "rule": "no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "physics value",
+      "file": "src/physics/lint-probe.ts",
+      "code": "import {player} from '../player/player.ts';",
+      "rule": "@typescript-eslint/no-restricted-imports",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "dynamic debug",
+      "file": "src/lint-probe.ts",
+      "code": "import('./debug/test.ts');",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "dynamic proto",
+      "file": "src/lint-probe.ts",
+      "code": "import('./proto/test.ts');",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "sync side effect",
+      "file": "src/lint-probe.ts",
+      "code": "import './world/sync.ts';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "sync allowed name",
+      "file": "src/lint-probe.ts",
+      "code": "import {submitEdit} from './world/sync.ts';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "proto flags",
+      "file": "src/lint-probe.ts",
+      "code": "import './proto/flags.ts';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "proto mark",
+      "file": "src/lint-probe.ts",
+      "code": "import './proto/mark.ts';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "proto internal",
+      "file": "src/proto/lint-probe.ts",
+      "code": "import './another.ts';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "debug internal",
+      "file": "src/debug/lint-probe.ts",
+      "code": "import './another.ts';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "game-world register",
+      "file": "src/world/game-world.ts",
+      "code": "import {registerState} from './sync.ts';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "rules sim",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "import '../../sim/rng.ts';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "rules grid",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "import '../grid.ts';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "rules sibling",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "import './another.ts';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "feature css",
+      "file": "src/features/lint-probe.ts",
+      "code": "import './another.css';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "netplay identity",
+      "file": "src/netplay/lint-probe.ts",
+      "code": "import '../player/identity.ts';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "physics type",
+      "file": "src/physics/lint-probe.ts",
+      "code": "import type {Player} from '../player/player.ts';",
+      "rule": "@typescript-eslint/no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "physics inline type",
+      "file": "src/physics/lint-probe.ts",
+      "code": "import {type Player2} from '../player/player.ts';",
+      "rule": "@typescript-eslint/no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "backend Rapier",
+      "file": "src/physics/backend-lint-probe.ts",
+      "code": "import '@dimforge/rapier3d';",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "safe math",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.sqrt(4);",
+      "rule": "no-restricted-properties",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "sim global window",
+      "file": "src/sim/lint-probe.ts",
+      "code": "window;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "sim global document",
+      "file": "src/sim/lint-probe.ts",
+      "code": "document;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "sim global navigator",
+      "file": "src/sim/lint-probe.ts",
+      "code": "navigator;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "sim global localStorage",
+      "file": "src/sim/lint-probe.ts",
+      "code": "localStorage;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "world/rules global window",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "window;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "world/rules global document",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "document;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "world/rules global navigator",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "navigator;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "world/rules global localStorage",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "localStorage;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "world/rules global location",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "location;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "world/rules global performance",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "performance;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "world/rules global setTimeout",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "setTimeout;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "world/rules global setInterval",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "setInterval;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "entities/lint-probe global window",
+      "file": "src/entities/lint-probe/state.ts",
+      "code": "window;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "entities/lint-probe global document",
+      "file": "src/entities/lint-probe/state.ts",
+      "code": "document;",
+      "rule": "no-restricted-globals",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.random",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.random(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.sin",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.sin(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.cos",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.cos(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.tan",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.tan(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.asin",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.asin(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.acos",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.acos(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.atan",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.atan(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.atan2",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.atan2(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.sinh",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.sinh(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.cosh",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.cosh(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.tanh",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.tanh(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.asinh",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.asinh(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.acosh",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.acosh(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.atanh",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.atanh(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.pow",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.pow(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.exp",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.exp(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.expm1",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.expm1(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.log",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.log(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.log2",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.log2(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.log10",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.log10(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.log1p",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.log1p(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.hypot",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.hypot(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Math.cbrt",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Math.cbrt(1);",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "crypto.getRandomValues(new Uint8Array(1))",
+      "file": "src/sim/lint-probe.ts",
+      "code": "crypto.getRandomValues(new Uint8Array(1));",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "crypto.randomUUID()",
+      "file": "src/sim/lint-probe.ts",
+      "code": "crypto.randomUUID();",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "Date.now()",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Date.now();",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "performance.now()",
+      "file": "src/sim/lint-probe.ts",
+      "code": "performance.now();",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "lockstep extra src/world/grid.ts",
+      "file": "src/world/grid.ts",
+      "code": "Math.random();",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "lockstep extra src/world/rules/lint-probe.ts",
+      "file": "src/world/rules/lint-probe.ts",
+      "code": "Math.random();",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "lockstep extra src/sim/lint-probe.js",
+      "file": "src/sim/lint-probe.js",
+      "code": "Math.random();",
+      "rule": "no-restricted-properties",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "lockstep selector export const pow = 2 ** 3;",
+      "file": "src/sim/lint-probe.ts",
+      "code": "export const pow = 2 ** 3;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "lockstep selector let power=2; power **= 3;",
+      "file": "src/sim/lint-probe.ts",
+      "code": "let power=2; power **= 3;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "lockstep selector new Date();",
+      "file": "src/sim/lint-probe.ts",
+      "code": "new Date();",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "lockstep selector Date();",
+      "file": "src/sim/lint-probe.ts",
+      "code": "Date();",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "lockstep selector globalThis.Math.sin(1);",
+      "file": "src/sim/lint-probe.ts",
+      "code": "globalThis.Math.sin(1);",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "lockstep selector window.crypto.randomUUID();",
+      "file": "src/sim/lint-probe.ts",
+      "code": "window.crypto.randomUUID();",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "lockstep selector self.Date.now();",
+      "file": "src/sim/lint-probe.ts",
+      "code": "self.Date.now();",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "lockstep selector globalThis.performance.now();",
+      "file": "src/sim/lint-probe.ts",
+      "code": "globalThis.performance.now();",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "glOnly ShaderMaterial",
+      "file": "src/lint-probe.ts",
+      "code": "THREE.ShaderMaterial;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "glOnly RawShaderMaterial",
+      "file": "src/lint-probe.ts",
+      "code": "THREE.RawShaderMaterial;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "glOnly ShaderChunk",
+      "file": "src/lint-probe.ts",
+      "code": "THREE.ShaderChunk;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "glOnly ShaderLib",
+      "file": "src/lint-probe.ts",
+      "code": "THREE.ShaderLib;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "glOnly UniformsLib",
+      "file": "src/lint-probe.ts",
+      "code": "THREE.UniformsLib;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "glOnly UniformsUtils",
+      "file": "src/lint-probe.ts",
+      "code": "THREE.UniformsUtils;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "glOnly WebGLRenderer",
+      "file": "src/lint-probe.ts",
+      "code": "THREE.WebGLRenderer;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "glOnly Points",
+      "file": "src/lint-probe.ts",
+      "code": "THREE.Points;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "glOnly onBeforeCompile",
+      "file": "src/lint-probe.ts",
+      "code": "THREE.onBeforeCompile;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "glOnly customProgramCacheKey",
+      "file": "src/lint-probe.ts",
+      "code": "THREE.customProgramCacheKey;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "glOnly readRenderTargetPixels",
+      "file": "src/lint-probe.ts",
+      "code": "THREE.readRenderTargetPixels;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "door new WebSocket('x');",
+      "file": "src/lint-probe.ts",
+      "code": "new WebSocket('x');",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "door new window.WebSocket('x');",
+      "file": "src/lint-probe.ts",
+      "code": "new window.WebSocket('x');",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "door new AudioContext();",
+      "file": "src/lint-probe.ts",
+      "code": "new AudioContext();",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "door new webkitAudioContext();",
+      "file": "src/lint-probe.ts",
+      "code": "new webkitAudioContext();",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "door window.AudioContext;",
+      "file": "src/lint-probe.ts",
+      "code": "window.AudioContext;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "door window.webkitAudioContext;",
+      "file": "src/lint-probe.ts",
+      "code": "window.webkitAudioContext;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "door requestAnimationFrame(()=>{});",
+      "file": "src/lint-probe.ts",
+      "code": "requestAnimationFrame(()=>{});",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "door window.requestAnimationFrame(()=>{});",
+      "file": "src/lint-probe.ts",
+      "code": "window.requestAnimationFrame(()=>{});",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "RAF allowed src/main.ts",
+      "file": "src/main.ts",
+      "code": "requestAnimationFrame(()=>{});",
+      "rule": "no-restricted-syntax",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "other door remains src/main.ts",
+      "file": "src/main.ts",
+      "code": "new WebSocket('x');",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "GL remains src/main.ts",
+      "file": "src/main.ts",
+      "code": "THREE.Points;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "RAF allowed src/boot/splash.ts",
+      "file": "src/boot/splash.ts",
+      "code": "requestAnimationFrame(()=>{});",
+      "rule": "no-restricted-syntax",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "other door remains src/boot/splash.ts",
+      "file": "src/boot/splash.ts",
+      "code": "new WebSocket('x');",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "GL remains src/boot/splash.ts",
+      "file": "src/boot/splash.ts",
+      "code": "THREE.Points;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "RAF allowed src/features/welcome-back.ts",
+      "file": "src/features/welcome-back.ts",
+      "code": "requestAnimationFrame(()=>{});",
+      "rule": "no-restricted-syntax",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "other door remains src/features/welcome-back.ts",
+      "file": "src/features/welcome-back.ts",
+      "code": "new WebSocket('x');",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "GL remains src/features/welcome-back.ts",
+      "file": "src/features/welcome-back.ts",
+      "code": "THREE.Points;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "RAF allowed src/player/pad-diagram.ts",
+      "file": "src/player/pad-diagram.ts",
+      "code": "requestAnimationFrame(()=>{});",
+      "rule": "no-restricted-syntax",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "other door remains src/player/pad-diagram.ts",
+      "file": "src/player/pad-diagram.ts",
+      "code": "new WebSocket('x');",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "GL remains src/player/pad-diagram.ts",
+      "file": "src/player/pad-diagram.ts",
+      "code": "THREE.Points;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "RAF allowed src/proto/bar/pad.ts",
+      "file": "src/proto/bar/pad.ts",
+      "code": "requestAnimationFrame(()=>{});",
+      "rule": "no-restricted-syntax",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "other door remains src/proto/bar/pad.ts",
+      "file": "src/proto/bar/pad.ts",
+      "code": "new WebSocket('x');",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "GL remains src/proto/bar/pad.ts",
+      "file": "src/proto/bar/pad.ts",
+      "code": "THREE.Points;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "RAF allowed src/debug/look-lab.ts",
+      "file": "src/debug/look-lab.ts",
+      "code": "requestAnimationFrame(()=>{});",
+      "rule": "no-restricted-syntax",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "other door remains src/debug/look-lab.ts",
+      "file": "src/debug/look-lab.ts",
+      "code": "new WebSocket('x');",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "GL remains src/debug/look-lab.ts",
+      "file": "src/debug/look-lab.ts",
+      "code": "THREE.Points;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "RAF allowed src/debug/startup-record.ts",
+      "file": "src/debug/startup-record.ts",
+      "code": "requestAnimationFrame(()=>{});",
+      "rule": "no-restricted-syntax",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "other door remains src/debug/startup-record.ts",
+      "file": "src/debug/startup-record.ts",
+      "code": "new WebSocket('x');",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "GL remains src/debug/startup-record.ts",
+      "file": "src/debug/startup-record.ts",
+      "code": "THREE.Points;",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "socket allowed",
+      "file": "src/net/ws-room.ts",
+      "code": "new WebSocket('x');",
+      "rule": "no-restricted-syntax",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "socket RAF ban",
+      "file": "src/net/ws-room.ts",
+      "code": "requestAnimationFrame(()=>{});",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "audio allowed",
+      "file": "src/render/audio.ts",
+      "code": "new AudioContext();",
+      "rule": "no-restricted-syntax",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "audio RAF ban",
+      "file": "src/render/audio.ts",
+      "code": "requestAnimationFrame(()=>{});",
+      "rule": "no-restricted-syntax",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "entity onFrame(()=>{});",
+      "file": "src/lint-probe.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "entity addBody({});",
+      "file": "src/lint-probe.ts",
+      "code": "addBody({});",
+      "rule": "boogle/use-an-entity",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "entity scene.add(mesh);",
+      "file": "src/lint-probe.ts",
+      "code": "scene.add(mesh);",
+      "rule": "boogle/use-an-entity",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "entity exempt src/proto/lint-probe.ts",
+      "file": "src/proto/lint-probe.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/debug/lint-probe.ts",
+      "file": "src/debug/lint-probe.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/entity/lint-probe.ts",
+      "file": "src/entity/lint-probe.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/features/identity.ts",
+      "file": "src/features/identity.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/loop.ts",
+      "file": "src/loop.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/physics/physics.ts",
+      "file": "src/physics/physics.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/render/scene.ts",
+      "file": "src/render/scene.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/render/particles.ts",
+      "file": "src/render/particles.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/render/sprites.ts",
+      "file": "src/render/sprites.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/render/lights.ts",
+      "file": "src/render/lights.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/render/assets.ts",
+      "file": "src/render/assets.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/netplay/net.ts",
+      "file": "src/netplay/net.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/features/world.ts",
+      "file": "src/features/world.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/features/gamepad.ts",
+      "file": "src/features/gamepad.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/features/adaptive-res.ts",
+      "file": "src/features/adaptive-res.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/features/ball-rest.ts",
+      "file": "src/features/ball-rest.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/features/feel.ts",
+      "file": "src/features/feel.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/features/impact.ts",
+      "file": "src/features/impact.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "entity exempt src/features/proto-soapbox.ts",
+      "file": "src/features/proto-soapbox.ts",
+      "code": "onFrame(()=>{});",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "recommended debugger",
+      "file": "dev/lint-probe.ts",
+      "code": "debugger;",
+      "rule": "no-debugger",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "recommended explicit any",
+      "file": "dev/lint-probe.ts",
+      "code": "export const any: any = 1;",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "disable works",
+      "file": "dev/lint-probe.ts",
+      "code": "export const okay: any = 1; // eslint-disable-line @typescript-eslint/no-explicit-any",
+      "rule": "@typescript-eslint/no-explicit-any",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "unused disable",
+      "file": "dev/lint-probe.ts",
+      "code": "export const fine = 1; // eslint-disable-line @typescript-eslint/no-explicit-any",
+      "rule": null,
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "global ignore server/lint-probe.ts",
+      "file": "server/lint-probe.ts",
+      "code": "debugger;",
+      "rule": "no-debugger",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "global ignore .claude/lint-probe.ts",
+      "file": ".claude/lint-probe.ts",
+      "code": "debugger;",
+      "rule": "no-debugger",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "global ignore .look/lint-probe.ts",
+      "file": ".look/lint-probe.ts",
+      "code": "debugger;",
+      "rule": "no-debugger",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "global ignore dist/lint-probe.ts",
+      "file": "dist/lint-probe.ts",
+      "code": "debugger;",
+      "rule": "no-debugger",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "global ignore node_modules/lint-probe.ts",
+      "file": "node_modules/lint-probe.ts",
+      "code": "debugger;",
+      "rule": "no-debugger",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "disable selector alias",
+      "file": "src/sim/lint-probe.ts",
+      "code": "new Date(); // eslint-disable-line no-restricted-syntax",
+      "rule": "no-restricted-syntax",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "disable imports alias",
+      "file": "src/lint-probe.ts",
+      "code": "import '@dimforge/rapier3d'; // eslint-disable-line no-restricted-imports",
+      "rule": "no-restricted-imports",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "disable entity",
+      "file": "src/lint-probe.ts",
+      "code": "onFrame(()=>{}); // eslint-disable-line boogle/use-an-entity",
+      "rule": "boogle/use-an-entity",
+      "expected": false,
+      "eslint": false
+    },
+    {
+      "group": "unused underscore arg",
+      "file": "dev/lint-probe.ts",
+      "code": "export const unusedArg = (_x: number) => 1;",
+      "rule": "@typescript-eslint/no-unused-vars",
+      "expected": true,
+      "eslint": true
+    },
+    {
+      "group": "unused underscore var",
+      "file": "dev/lint-probe.ts",
+      "code": "const _unusedLocal = 1;",
+      "rule": "@typescript-eslint/no-unused-vars",
+      "expected": true,
+      "eslint": true
+    }
+  ]
+}

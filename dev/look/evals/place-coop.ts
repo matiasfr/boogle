@@ -5,7 +5,7 @@
 // a skip to trains, and a train called from a platform. Each says what it sees; read the COOP lines side by side.
 const q = new URLSearchParams(location.search);
 const who = q.get('player');
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 const place = window.__place as any;
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(

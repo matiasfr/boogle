@@ -14,7 +14,7 @@
       "Bash(npm ci)",
       "Bash(npm install)",
       "Bash(npx prettier --check *)",
-      "Bash(npx eslint *)",
+      "Bash(node dev/lint/run.ts *)",
       "Bash(node --test *)",
       "Bash(git status *)",
       "Bash(git diff *)",

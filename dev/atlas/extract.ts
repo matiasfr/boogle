@@ -15,12 +15,12 @@ import { git } from './git.ts';
 const posix = path.posix;
 const uniq = <T>(list: T[]): T[] => [...new Set(list)];
 
-// LOCKSTEP_FILES from eslint.config.js (the files whose math must be deterministic), read as text so the config is
+// LOCKSTEP_FILES from dev/lint/policy.ts (the files whose math must be deterministic), read as text so the config is
 // never executed. Globs: `**` crosses folders, `*` does not, `{a,b}` is a choice.
 function readLockstepGlobs(root: string): string[] {
   try {
-    const text = fs.readFileSync(path.join(root, 'eslint.config.js'), 'utf8');
-    const sf = parseSync('eslint.config.js', text).program;
+    const text = fs.readFileSync(path.join(root, 'dev/lint/policy.ts'), 'utf8');
+    const sf = parseSync('policy.ts', text).program;
     for (const st of sf.body) {
       const declaration = st.type === 'ExportNamedDeclaration' ? st.declaration : st;
       if (declaration?.type !== 'VariableDeclaration') continue;
@@ -33,7 +33,7 @@ function readLockstepGlobs(root: string): string[] {
       }
     }
   } catch {
-    // No eslint config here (a fixture root): nothing is flagged.
+    // No lint policy here (a fixture root): nothing is flagged.
   }
   return [];
 }

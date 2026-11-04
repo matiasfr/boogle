@@ -1,6 +1,16 @@
-import js from '@eslint/js';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
+// Ordered safety policy. Native rules go to Oxlint; selectors, imports and entity counts go to safety.ts.
+export type Restriction = { selector: string; message: string };
+export type ImportBan = {
+  name?: string;
+  group?: string[];
+  regex?: string;
+  importNames?: string[];
+  message: string;
+  allowTypeImports?: boolean;
+};
+export type ImportOptions = { paths?: ImportBan[]; patterns?: ImportBan[] };
+export type Rule = string | [string, ...unknown[]];
+export type PolicyBlock = { files?: string[]; ignores?: string[]; rules?: Record<string, Rule> };
 
 // Rapier's plain and SIMD builds (src/physics/backend-rapier.ts loads one).
 const rapierBans = ['@dimforge/rapier3d', '@dimforge/rapier3d-simd'].map((name) => ({
@@ -50,7 +60,7 @@ const debugBan = {
 // Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Rules modules
 // (src/world/rules/) are covered; add any other pure module that feeds lockstep state.
 export const LOCKSTEP_FILES = ['src/sim/**/*.{js,ts}', 'src/world/rules/**/*.{js,ts}', 'src/world/grid.{js,ts}'];
-const det = (what) => `${what} is not deterministic across browsers; see docs/agents/lockstep.md.`;
+const det = (what: string) => `${what} is not deterministic across browsers; see docs/agents/lockstep.md.`;
 const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh']
   .concat(['atanh', 'pow', 'exp', 'expm1', 'log', 'log2', 'log10', 'log1p', 'hypot', 'cbrt'])
   .map((property) => ({ object: 'Math', property, message: det(`Math.${property}`) + ' Use a table or polynomial.' }));
@@ -89,33 +99,17 @@ const DOORS = [
       'src/debug/startup-record.ts', // opt-in wrapper of existing callbacks; no second frame loop
     ],
     selector: "Identifier[name='requestAnimationFrame']",
-    message: 'One frame loop: use onFrame (src/loop.ts). A one-shot joins the allow-list in eslint.config.js.',
+    message: 'One frame loop: use onFrame (src/loop.ts). A one-shot joins the allow-list in dev/lint/policy.ts.',
   },
 ];
-const doorRule = ({ selector, message }) => ({ selector, message });
+const doorRule = ({ selector, message }: { selector: string; message: string }) => ({ selector, message });
 
 // The entity ratchet (docs/plans/entity-architecture.md, step 11): new things in the world or on screen are entities.
-// Today's offenders are listed in eslint-suppressions.json, generated, which can only shrink: a file adding one more
+// Today's offenders are listed in lint-suppressions.json, generated, which can only shrink: a file adding one more
 // fails, and a file with one fewer fails until `npm run lint -- --prune-suppressions`. Its own rule, so that file's counts
 // mean this and nothing else.
-const ENTITY_MESSAGE =
-  'A thing in the world or on screen is an entity: copy src/entities/ball (long-lived) or src/features/ping.ts (short-lived). A service other things call goes on the allow-list in eslint.config.js.';
-const entityPlugin = {
-  rules: {
-    'use-an-entity': {
-      meta: { type: 'suggestion', schema: [], messages: { useAnEntity: ENTITY_MESSAGE } },
-      create: (context) => ({
-        CallExpression(node) {
-          const c = node.callee;
-          const bare = c.type === 'Identifier' && (c.name === 'onFrame' || c.name === 'addBody');
-          const sceneAdd =
-            c.type === 'MemberExpression' && c.object.name === 'scene' && c.property.name === 'add' && !c.computed;
-          if (bare || sceneAdd) context.report({ node, messageId: 'useAnEntity' });
-        },
-      }),
-    },
-  },
-};
+export const ENTITY_MESSAGE =
+  'A thing in the world or on screen is an entity: copy src/entities/ball (long-lived) or src/features/ping.ts (short-lived). A service other things call goes on the allow-list in dev/lint/policy.ts.';
 // src/pois/ stays suppressed: the home redesign replaces it, so migrating it now would be wasted.
 // The services that stay on onFrame ("Entity or system" in that plan).
 const ENTITY_SERVICES = [
@@ -137,19 +131,8 @@ const ENTITY_SERVICES = [
   'src/features/impact.ts', // hit-stop, squash and flop over the ball's and avatars' meshes; owns no object
 ];
 
-export default [
+export const policy: PolicyBlock[] = [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/', '.look/'] },
-  js.configs.recommended,
-  {
-    files: ['**/*.js', '**/*.mjs', '**/*.ts'],
-    languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: 'module',
-      globals: globals.browser,
-    },
-  },
-  // TypeScript everywhere (AGENTS.md): typescript-eslint's recommended rules on .ts files; tsc does the type checking.
-  ...tseslint.configs.recommended.map((c) => ({ ...c, files: ['**/*.ts'] })),
   // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the sync, proto and debug bans.
   {
     files: ['src/**/*.{js,ts}'],
@@ -375,14 +358,13 @@ export default [
     },
   },
   // A door's allow-list keeps every other door, and the WebGL ban, in force on that file.
-  ...DOORS.map((door) => ({
+  ...DOORS.map((door): PolicyBlock => ({
     files: door.allow,
     rules: { 'no-restricted-syntax': ['error', glOnly, ...DOORS.filter((d) => d !== door).map(doorRule)] },
   })),
   {
     files: ['src/**/*.ts'],
     ignores: ['src/proto/**', 'src/debug/**', 'src/entity/**', ...ENTITY_SERVICES],
-    plugins: { boogle: entityPlugin },
     rules: { 'boogle/use-an-entity': 'error' },
   },
   // The physics backend is the only module that imports a physics library (docs/plans/done/rapier.md).
@@ -421,13 +403,5 @@ export default [
         ...DOORS.map(doorRule),
       ],
     },
-  },
-  {
-    files: ['eslint.config.js', 'vite.config.ts', 'native/**/*.ts'],
-    languageOptions: { globals: globals.node },
-  },
-  {
-    files: ['dev/**/*.mjs'],
-    languageOptions: { ecmaVersion: 2024, globals: { ...globals.node, ...globals.browser } },
   },
 ];

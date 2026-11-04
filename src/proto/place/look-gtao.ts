@@ -16,7 +16,7 @@ import {
 import { ao } from 'three/addons/tsl/display/GTAONode.js';
 import { camera, pipeline, scene } from '../../render/scene.ts';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
 const p = pass(scene, camera);
 p.setMRT(mrt({ output, normal: directionToColor(normalView) }));

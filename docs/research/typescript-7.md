@@ -2,10 +2,12 @@
 
 Study: 3 November 2026, source `75526a2ad41bd567bdfa776e7e77ff5998423348`.
 The study itself was feasibility only; it proposed no dependency or application changes in its own commit.
-Implementation: TS 7.0.2 now runs the primary typecheck; canonical TypeScript 6.0.3 supports lint and tools.
-The legacy CI typecheck remains until lint and tools move to 7. Remove the alias after typescript-eslint supports
-TS 7 (upstream issue #10940 tracks TS >=7.1) or the running linter-study supplies a replacement, and all five
-compiler-API tools are ported.
+Implementation status, 4 November 2026: TS 7.0.2 runs the primary typecheck. Oxlint 1.91.0 plus
+oxlint-tsgolint 7.0.2005 and the repo safety runner replace ESLint; all ESLint packages are removed. The type-aware
+linter uses its own Go compiler and has no TypeScript 5/6 dependency or peer. Only five compiler-API tools still need
+canonical TypeScript 6.0.3: `dev/scan/{read,unused}.ts`, `dev/registry/{debt,prototypes}.ts`, and `dev/atlas/extract.ts`.
+After that separately owned port, switch canonical `typescript` to 7, remove the `typescript-native` alias and
+`typecheck:legacy` CI step, and recheck the tools. The original feasibility findings below are historical.
 
 **Recommendation: use TS 7 for typecheck only, aliased as `typescript-native`;
 keep `typescript` at the legacy version for ESLint and developer tools.**
@@ -29,12 +31,12 @@ type-only compatibility fix below. `npm run typecheck` selected the exact
 compiler through `node node_modules/<package>/bin/tsc -p .`, avoiding the
 two packages' competing `.bin/tsc` links. All six runs passed.
 
-| Run | TS 5.9.3 wall (s) | Peak RSS (MiB) | TS 7.0.2 wall (s) | Peak RSS (MiB) |
-| --- | ---: | ---: | ---: | ---: |
-| 1 | 11.56 | 906.1 | 2.31 | 771.5 |
-| 2 | 13.69 | 872.2 | 1.59 | 763.0 |
-| 3 | 12.06 | 909.8 | 2.29 | 755.2 |
-| Median | **12.06** | **906.1** | **2.29** | **763.0** |
+| Run    | TS 5.9.3 wall (s) | Peak RSS (MiB) | TS 7.0.2 wall (s) | Peak RSS (MiB) |
+| ------ | ----------------: | -------------: | ----------------: | -------------: |
+| 1      |             11.56 |          906.1 |              2.31 |          771.5 |
+| 2      |             13.69 |          872.2 |              1.59 |          763.0 |
+| 3      |             12.06 |          909.8 |              2.29 |          755.2 |
+| Median |         **12.06** |      **906.1** |          **2.29** |      **763.0** |
 
 Median checker speedup: **5.26x**; median peak RSS reduction: **15.8%**.
 Earlier unmodified-tree TS 5 runs were 97.75/48.07/33.54 s and
@@ -44,12 +46,12 @@ raw evidence; the final alternating comparison reduces time-order bias.
 
 Final pipeline totals (one sequential pass per version, all passed):
 
-| Command | TS 5.9.3 (s) | Native 7 + legacy API (s) |
-| --- | ---: | ---: |
-| `npm run lint` | 32.93 | 20.49 |
-| `npm run build` | 41.72 | 9.12 |
-| `npm run check` | 85.93 | 24.14 |
-| Typecheck stage **inside that check** | 8.86 (**10.3%**) | 1.48 (**6.1%**) |
+| Command                               |     TS 5.9.3 (s) | Native 7 + legacy API (s) |
+| ------------------------------------- | ---------------: | ------------------------: |
+| `npm run lint`                        |            32.93 |                     20.49 |
+| `npm run build`                       |            41.72 |                      9.12 |
+| `npm run check`                       |            85.93 |                     24.14 |
+| Typecheck stage **inside that check** | 8.86 (**10.3%**) |           1.48 (**6.1%**) |
 
 **Do not call this a 3.6x pipeline speedup.** Only 7.37 s of the 61.79 s
 observed reduction is in the compiler stage; the remaining 54.42 s is in
@@ -80,13 +82,13 @@ and `unstable/ast/*`, but are incompatible: snapshots/projects replace the
 
 Repository-wide import search found exactly these five direct consumers:
 
-| Consumer | Required legacy API |
-| --- | --- |
-| `dev/scan/read.ts` | `createSourceFile`, AST kinds/guards/walking, modifiers, comments, source positions, parse diagnostics |
-| `dev/scan/unused.ts` | Config parsing and `sys`, `createProgram`, type checker, symbol identity/aliases/module exports, AST traversal |
-| `dev/registry/prototypes.ts` | Source parsing, syntax kinds, guards, walking import/export/call nodes |
-| `dev/registry/debt.ts` | Source parsing and literal/variable guards |
-| `dev/atlas/extract.ts` | Source parsing and literal/variable guards; also invokes the shared reader |
+| Consumer                     | Required legacy API                                                                                            |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `dev/scan/read.ts`           | `createSourceFile`, AST kinds/guards/walking, modifiers, comments, source positions, parse diagnostics         |
+| `dev/scan/unused.ts`         | Config parsing and `sys`, `createProgram`, type checker, symbol identity/aliases/module exports, AST traversal |
+| `dev/registry/prototypes.ts` | Source parsing, syntax kinds, guards, walking import/export/call nodes                                         |
+| `dev/registry/debt.ts`       | Source parsing and literal/variable guards                                                                     |
+| `dev/atlas/extract.ts`       | Source parsing and literal/variable guards; also invokes the shared reader                                     |
 
 `eslint.config.js` imports `typescript-eslint`, whose parser imports the old
 compiler API internally. Its recommended config here is syntax linting, not
@@ -147,11 +149,11 @@ error could escape the old checker unless it also runs. Keep a temporary
 legacy CI gate to preserve that coverage; this forfeits CI typechecking
 speedup while still speeding local checks.
 
-| Option | Cost estimate, not measured | Verdict |
-| --- | --- | --- |
-| (a) Wait | No setup; revisit upstream support later | Safe, loses the demonstrated checker speed; no verified ETA |
-| (b) Native checker + legacy API | 2–4 hours to package, apply one type fix, validate aliases/editor/CI; maintain two pins | Recommended; use the tested inverse alias |
-| (c) Full TS 7 | Roughly 2–5 engineer-days for five tool ports and regression checks, plus unresolved ESLint support | Blocked today; unstable APIs are not drop-in replacements |
+| Option                          | Cost estimate, not measured                                                                         | Verdict                                                     |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| (a) Wait                        | No setup; revisit upstream support later                                                            | Safe, loses the demonstrated checker speed; no verified ETA |
+| (b) Native checker + legacy API | 2–4 hours to package, apply one type fix, validate aliases/editor/CI; maintain two pins             | Recommended; use the tested inverse alias                   |
+| (c) Full TS 7                   | Roughly 2–5 engineer-days for five tool ports and regression checks, plus unresolved ESLint support | Blocked today; unstable APIs are not drop-in replacements   |
 
 Exact next steps, for a separate implementation change:
 
