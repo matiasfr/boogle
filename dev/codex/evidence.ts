@@ -44,6 +44,8 @@ export function handoff(cwd: string, logs: string) {
       const file = path.join(dir, 'evidence.json');
       if (!fs.existsSync(file)) continue;
       const evidence = JSON.parse(fs.readFileSync(file, 'utf8')) as Evidence;
+      // Workers may save their own evidence.json here; only broker manifests have build fingerprints.
+      if (!evidence.after || typeof evidence.after.tree !== 'string') continue;
       const dest = path.join(out, entry.name);
       fs.mkdirSync(dest, { recursive: true });
       const copied = artifacts(dir);
