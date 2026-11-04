@@ -6,8 +6,9 @@ import { newWaterEnabled } from './flags.ts';
 import { CAUSTIC_TEXELS_PER_M, type CausticSample } from './caustics.ts';
 import { swashNodes, vnoise, type ShoreFields } from './shore-nodes.ts';
 import { seaU } from './state.ts';
-import { LOOK } from './tuning.ts';
+import { LOOK, ULTRA } from './tuning.ts';
 import { TSL, type N } from './tsl.ts';
+import { scalar, vector, tuningEnabled } from './live.ts';
 
 const { Fn, exp, fwidth, log2, materialColor, materialRoughness, max, min, mix } = TSL;
 const { normalWorldGeometry, positionWorld, refract, smoothstep, vec3, vec4 } = TSL;
@@ -15,6 +16,7 @@ type Context = { field: ShoreFields; caustics: CausticSample };
 const materials = new Set<MeshStandardNodeMaterial>();
 let current: Context | null = null;
 const restore = new Map<MeshStandardNodeMaterial, () => void>();
+const causticStrength = scalar('water.caustics', ULTRA, 'caustics');
 
 function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   if (restore.has(mat)) return;
@@ -42,12 +44,8 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
       // The receiver IS the bed. A positive offset requirement erased light on matching triangles.
       .mul(smoothstep(-0.35, -0.05, p.y.sub(sh.x)))
       .mul(mix(1.35, 1, smoothstep(1.5, 3, depth)));
-    const transmission = exp(
-      vec3(...LOOK.absorption)
-        .mul(depth)
-        .mul(-0.35),
-    );
-    const focused = max(mix(1, light, exposed), 0);
+    const transmission = exp(vector('water.absorption', LOOK, 'absorption').mul(depth).mul(-0.35));
+    const focused = max(mix(1, light, tuningEnabled ? exposed.mul(causticStrength) : exposed), 0);
     // This multiplier stays in the lit albedo path, so the receiver's existing shadow term still occludes it.
     return vec4(transmission.mul(mix(1, 0.72, wet)).mul(focused), wet);
   })().toVar();

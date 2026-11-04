@@ -10,13 +10,15 @@ import { atmosphere, skyNow } from '../sky.ts';
 import { SUN_DIR } from '../sun-dir.ts';
 import { seaU } from './state.ts';
 import { createWaterSky } from './sky.ts';
+import { bind, tuningEnabled } from './live.ts';
 
 export const WATER_TOD = 0.24;
 export let frozenSkyActive = false;
 const noon = new THREE.Vector3(0.45, 0.78, 0.32).normalize();
 const east = new THREE.Vector3().crossVectors(noon, new THREE.Vector3(0, 1, 0)).normalize();
 const angle = skyState(WATER_TOD, 0.5).sunAngle;
-const direction = east.multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
+const direction = east.clone().multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
+let timeOfDay = WATER_TOD;
 const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#8f806e'), ground: new THREE.Color('#3d342a') };
 
 /** Same early sky slot: reset route fog ranges before crossing/place apply theirs, with the cave transition intact. */
@@ -25,7 +27,7 @@ export function updateFrozenDay() {
   const f = scene.fog as THREE.Fog;
   f.near = THREE.MathUtils.lerp(FOG_NEAR, 6, ug);
   f.far = THREE.MathUtils.lerp(FOG_FAR, 80, ug);
-  skyNow.frac = WATER_TOD;
+  skyNow.frac = timeOfDay;
   skyNow.phase = 0.5;
   skyNow.illum = 1;
   skyNow.day = 1;
@@ -37,6 +39,8 @@ export function updateFrozenDay() {
 export function createFrozenWaterSky() {
   frozenSkyActive = true;
   const environment = createWaterSky();
+  environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(direction.y));
+  environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z));
   const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
     THREE.HemisphereLight | undefined;
   const prior = {
@@ -103,12 +107,10 @@ export function createFrozenWaterSky() {
     seaU.uLight.value.setRGB(1, 1, 1);
     renderer.toneMappingExposure = 1;
   }
-  const ready = rendererReady.then(async () => {
+  async function bake() {
     if (disposed) return;
-    environment.bake({
-      elevation: THREE.MathUtils.radToDeg(Math.asin(direction.y)),
-      azimuth: THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z)),
-    });
+    environment.bake();
+    if (tuningEnabled) direction.copy(environment.sunDirection.value);
     // Lambert toy materials need the same cube's coarse irradiance as their hemisphere fill.
     const target = new THREE.RenderTarget(2, 1, { type: THREE.FloatType, depthBuffer: false });
     const material = new THREE.MeshBasicNodeMaterial({ depthTest: false, depthWrite: false });
@@ -129,22 +131,61 @@ export function createFrozenWaterSky() {
       update();
       console.info(
         'WATER FROZEN SKY ' +
-          JSON.stringify({ tod: WATER_TOD, ...environment.inspect(), upper: upper.toArray(), lower: lower.toArray() }),
+          JSON.stringify({ tod: timeOfDay, ...environment.inspect(), upper: upper.toArray(), lower: lower.toArray() }),
       );
     } finally {
       renderer.setRenderTarget(previous, face, mip);
       target.dispose();
       material.dispose();
     }
-  });
+  }
+  const ready = rendererReady.then(bake);
+  let pending = ready;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const scheduleBake = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = undefined;
+      pending = pending
+        .then(bake)
+        .then(() => {
+          window.dispatchEvent(new CustomEvent('water-tuning-status', { detail: 'Sun & sky rebaked.' }));
+        })
+        .catch((error: unknown) => {
+          window.dispatchEvent(new CustomEvent('water-tuning-status', { detail: `Sky bake failed: ${String(error)}` }));
+        });
+    }, 250);
+  };
+  bind(
+    'sky.time',
+    () => timeOfDay,
+    (value) => {
+      timeOfDay = value as number;
+      const next = skyState(timeOfDay, 0.5).sunAngle;
+      const dir = east.clone().multiplyScalar(Math.cos(next)).addScaledVector(noon, Math.sin(next));
+      environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(dir.y));
+      environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(dir.x, dir.z));
+      scheduleBake();
+    },
+  );
+  for (const key of ['elevation', 'azimuth', 'sunIntensity', 'cloudCoverage', 'turbidity'] as const)
+    bind(
+      `sky.${key}`,
+      () => environment.params[key],
+      (value) => {
+        environment.params[key] = value as number;
+        scheduleBake();
+      },
+    );
   return {
     sky: environment,
     ready,
     update,
-    inspect: () => ({ tod: WATER_TOD, ready: baked, disposed, ...environment.inspect() }),
+    inspect: () => ({ tod: timeOfDay, ready: baked, disposed, ...environment.inspect() }),
     dispose() {
       if (disposed) return;
       disposed = true;
+      if (timer) clearTimeout(timer);
       frozenSkyActive = false;
       scene.backgroundNode = prior.background;
       scene.environment = prior.environment;
@@ -165,7 +206,7 @@ export function createFrozenWaterSky() {
         hemi.intensity = prior.hemi.intensity;
       }
       // A pending readback owns its source textures until it settles; never dispose a GPU resource beneath it.
-      void ready.finally(() => environment.dispose()).catch(() => {});
+      void pending.finally(() => environment.dispose()).catch(() => {});
     },
   };
 }

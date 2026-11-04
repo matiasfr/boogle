@@ -5,6 +5,7 @@ import { SHORE_CAPACITY, SHORE_SIZE, type ShoreAtlas } from './shore-providers.t
 import { TSL, type N } from './tsl.ts';
 import { LOOK, ULTRA } from './tuning.ts';
 import { seaU } from './state.ts';
+import { derived, scalar, tuningEnabled } from './live.ts';
 
 const { Fn, If, acos, clamp, cos, dot, float, floor, fract, length, max, min, mix, normalize, select } = TSL;
 const { sin, smoothstep, texture, vec2, vec3, vec4 } = TSL;
@@ -17,7 +18,18 @@ export const SHORE_WAVE = {
   speed: ULTRA.shoreSpeed,
   steep: ULTRA.shoreSteep,
 };
-export const uSwellDir = vec2(-Math.cos(a), -Math.sin(a));
+export const SHORE_NODES = {
+  amp: scalar('shore.amplitude', SHORE_WAVE, 'amp'),
+  lambda: scalar('shore.wavelength', SHORE_WAVE, 'lambda'),
+  speed: scalar('shore.speed', SHORE_WAVE, 'speed'),
+  steep: scalar('shore.steepness', SHORE_WAVE, 'steep'),
+};
+export const uSwellDir = tuningEnabled
+  ? vec2(
+      derived(() => -Math.cos((ULTRA.swellBearing * Math.PI) / 180)),
+      derived(() => -Math.sin((ULTRA.swellBearing * Math.PI) / 180)),
+    )
+  : vec2(-Math.cos(a), -Math.sin(a));
 
 /** The field's lookups for world xz. Out of the tile: deep open water, no shore. */
 export function shoreFields(atlas: ShoreAtlas) {
@@ -141,19 +153,19 @@ export function swashNodes(xz: N, hgt: N, f: ShoreFields, rockInfluence?: (xz: N
   const near = sh.y
     .lessThan(60)
     .and(hgt.greaterThan(-0.3))
-    .and(hgt.lessThan(1.74 * SHORE_WAVE.amp));
+    .and(hgt.lessThan(derived(() => 1.74 * SHORE_WAVE.amp)));
   If(near, () => {
     const dir = shoreDir(sh, tr).toVar();
     const rk = rockInfluence ? rockInfluence(xz, dir).toVar() : vec2(0);
     // The run-up of what's left of the breakers: lagoon and lee beaches only lap.
-    const A = min(float(SHORE_WAVE.amp).mul(shoreExposure(dir)).mul(shoreGroup(xz)), surf.mul(0.42).add(0.02));
+    const A = min(float(SHORE_NODES.amp).mul(shoreExposure(dir)).mul(shoreGroup(xz)), surf.mul(0.42).add(0.02));
     const R = A.mul(0.55)
       .mul(smoothstep(0.35, 0.8, length(sh.zw)))
       .mul(float(1).sub(rk.x.mul(0.9))) // SWASH_ROCKS: a dry wedge in the lee
       .toVar();
     // The bore's momentum carries it up the seaward face (~u²/2g), draining before the rest of the backwash.
     const surge = rk.y.mul(1.1).add(1);
-    const w = Math.sqrt((9.81 * 6.2831853) / SHORE_WAVE.lambda) * SHORE_WAVE.speed;
+    const w = derived(() => Math.sqrt((9.81 * 6.2831853) / SHORE_WAVE.lambda) * SHORE_WAVE.speed);
     const s = fract(uTime.mul(w).add(shoreNoisePhase(xz)).div(6.2831853)).toVar();
     If(R.greaterThan(0.02), () => {
       If(hgt.greaterThan(R.mul(surge)), () => {
@@ -181,7 +193,9 @@ export function swashNodes(xz: N, hgt: N, f: ShoreFields, rockInfluence?: (xz: N
           .div(1.5708)
           .mul(0.7)
           .add(0.3);
-        const since = select(s.greaterThan(sPass), s.sub(sPass), s.add(1).sub(sPass)).mul(6.2831853 / w);
+        const since = select(s.greaterThan(sPass), s.sub(sPass), s.add(1).sub(sPass)).mul(
+          derived(() => 6.2831853 / (Math.sqrt((9.81 * 6.2831853) / SHORE_WAVE.lambda) * SHORE_WAVE.speed)),
+        );
         const wet = select(th.greaterThan(0), float(1), TSL.exp(since.div(-5)));
         out.assign(vec3(max(th, 0), edge, wet));
       });

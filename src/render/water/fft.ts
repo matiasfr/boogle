@@ -8,6 +8,7 @@ import { uTime, vnoise } from './shore-nodes.ts';
 import { FFT, ULTRA } from './tuning.ts';
 import { TSL, type N } from './tsl.ts';
 import type { WaveSource } from './waves.ts';
+import { bind, scalar, derived, tuningEnabled } from './live.ts';
 
 const { Fn, Loop, attributeArray, clamp, cos, float, floor, fract, invocationLocalIndex, length, log2 } = TSL;
 const {
@@ -98,6 +99,46 @@ function simulation(size: number, bands: number[], probe = false, settings = FFT
   const initial = new Float32Array(count * size * size * 4);
   bands.forEach((c, layer) => initial.set(bakeH0(c, size, probe ? 1 : energy), layer * size * size * 4));
   const h0 = attributeArray(initial, 'vec4').toReadOnly();
+  const live = tuningEnabled && !probe && settings === FFT;
+  const chop = live ? scalar('wave.choppiness', OCEAN, 'choppiness') : OCEAN.choppiness;
+  const recovery = live ? scalar('water.foamRecovery', settings, 'foamRecovery') : settings.foamRecovery;
+  const playback = { timeScale: 1, cascade0: 1, cascade1: 1, cascade2: 1, cascade3: 1 };
+  let dirty = false,
+    dirtyAt = 0;
+  const markDirty = () => {
+    dirty = true;
+    dirtyAt = performance.now() + 180;
+  };
+  if (live) {
+    for (const key of ['windSpeed', 'windDirection', 'fetchKm', 'spreadBlend', 'swellScale', 'swellDirection'] as const)
+      bind(
+        `wave.${key}`,
+        () => OCEAN[key],
+        (value) => {
+          OCEAN[key] = value as number;
+          if (key === 'windSpeed') ULTRA.wind = value as number;
+          if (key === 'swellDirection') ULTRA.swellBearing = value as number;
+          markDirty();
+        },
+      );
+    bind(
+      'wave.waveScale',
+      () => ULTRA.waveScale,
+      (value) => {
+        ULTRA.waveScale = value as number;
+        markDirty();
+      },
+    );
+    for (const key of Object.keys(playback) as (keyof typeof playback)[])
+      bind(
+        `wave.${key}`,
+        () => playback[key],
+        (value) => {
+          playback[key] = value as number;
+          if (key !== 'timeScale') markDirty();
+        },
+      );
+  }
   const lengths = uniformArray(
     bands.map((c) => CASCADE_LENGTHS[c]!),
     'float',
@@ -175,7 +216,7 @@ function simulation(size: number, bands: number[], probe = false, settings = FFT
       const av = wa.element(y).mul(sign).toVar(),
         bv = wb.element(y).mul(sign).toVar();
       // Undo centred-k shift. A=(Dx,Dz,Dy,Dxz), B=(Dyx,Dyz,Dxx,Dzz).
-      const lambda = probe ? 0 : OCEAN.choppiness;
+      const lambda = probe ? 0 : chop;
       const dxx = bv.z.mul(lambda),
         dzz = bv.w.mul(lambda),
         dxz = av.w.mul(lambda);
@@ -183,7 +224,7 @@ function simulation(size: number, bands: number[], probe = false, settings = FFT
       const slope = bv.xy.div(max(vec2(dxx.add(1), dzz.add(1)), vec2(0.2))).toVar();
       const prev = select(reset, 1, textureLoad(previous, id).depth(c).w);
       // Foam follows the Jacobian down instantly and recovers at a dt-based rate; history starts at 1 (no foam).
-      const turb = min(jac, prev.add(dt.mul(settings.foamRecovery).div(max(jac, 0.5))));
+      const turb = min(jac, prev.add(dt.mul(recovery).div(max(jac, 0.5))));
       const disp = half(vec4(av.x.mul(lambda), probe ? float(0) : av.z, av.y.mul(lambda), turb)).toVar();
       const sl = half(vec4(slope, slope.mul(slope))).toVar();
       textureStore(storageTexture(target).depth(c), id, disp);
@@ -237,13 +278,29 @@ function simulation(size: number, bands: number[], probe = false, settings = FFT
     return nodes;
   });
   let last: number | undefined,
-    parity = 0;
+    parity = 0,
+    phase = 0,
+    lastInput: number | undefined;
   return {
     displacement: dispNode,
     moments: slopeNode,
     residual,
     prepare: () => renderer.compileComputeAsync([...new Set(groups.flat())]),
     update(t: number) {
+      if (live) {
+        if (dirty && performance.now() >= dirtyAt) {
+          bands.forEach((c, layer) => {
+            const strength = playback[`cascade${c}` as 'cascade0'];
+            initial.set(bakeH0(c, size, ULTRA.waveScale * strength * strength), layer * size * size * 4);
+          });
+          h0.value.needsUpdate = true;
+          last = undefined;
+          dirty = false;
+        }
+        phase = lastInput === undefined || t < lastInput ? t : phase + (t - lastInput) * playback.timeScale;
+        lastInput = t;
+        t = phase;
+      }
       reset.value = last === undefined || t < last;
       dt.value = reset.value ? 0 : t - last!;
       time.value = ((t % settings.loop) + settings.loop) % settings.loop;
@@ -268,6 +325,9 @@ export function fftWaves(
   const { size, bands } = settings;
   const sim = simulation(size, bands, false, settings, options.energy ?? ULTRA.waveScale),
     lodMax = Math.log2(size);
+  const foamBias = settings === FFT ? scalar('water.foamBias', ULTRA, 'foamBias') : ULTRA.foamBias;
+  const foamScale = settings === FFT ? scalar('water.foamScale', ULTRA, 'foamScale') : ULTRA.foamScale;
+  const unresolvedWind = settings === FFT ? derived(() => 0.003 + 0.00512 * ULTRA.wind) : 0.003 + 0.00512 * ULTRA.wind;
   return {
     fft: { displacement: sim.displacement, moments: sim.moments, bands, size },
     prepare: sim.prepare,
@@ -312,12 +372,8 @@ export function fftWaves(
         // Source lines 465-467: absent bands contribute a neutral Jacobian of 1; capillaries contribute no foam.
         if (c !== 3) jac.addAssign(sim.displacement.sample(uv).depth(layer).w.sub(1).mul(dampC));
       });
-      const unresolved = max(float(0.003 + 0.00512 * ULTRA.wind).sub(carried), 0)
-        .mul(damp.z)
-        .mul(damp.z)
-        .mul(sl3)
-        .mul(sl3);
-      const whitecap = clamp(float(ULTRA.foamBias).sub(jac).mul(ULTRA.foamScale), 0, 1);
+      const unresolved = max(float(unresolvedWind).sub(carried), 0).mul(damp.z).mul(damp.z).mul(sl3).mul(sl3);
+      const whitecap = clamp(float(foamBias).sub(jac).mul(foamScale), 0, 1);
       return { slope, variance, unresolved, whitecap };
     },
     update: sim.update,

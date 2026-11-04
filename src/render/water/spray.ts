@@ -13,11 +13,12 @@ import { type ShoreAtlas, shoreProviders, shoreRevision } from './shore-provider
 import { ULTRA } from './tuning.ts';
 import { waterContacts, waterContactRevision } from './contacts.ts';
 import { warmUp } from '../precompile.ts';
+import { bind, onChange, tuningEnabled } from './live.ts';
 
 const TAU = Math.PI * 2;
-const OMEGA = Math.sqrt((9.81 * TAU) / SHORE_WAVE.lambda) * SHORE_WAVE.speed;
+let OMEGA = Math.sqrt((9.81 * TAU) / SHORE_WAVE.lambda) * SHORE_WAVE.speed;
 const SWASH_TAU = 6.2831853; // SWASH_GLSL uses this literal, including in its frequency.
-const SWASH_OMEGA = Math.sqrt((9.81 * SWASH_TAU) / SHORE_WAVE.lambda) * SHORE_WAVE.speed;
+let SWASH_OMEGA = Math.sqrt((9.81 * SWASH_TAU) / SHORE_WAVE.lambda) * SHORE_WAVE.speed;
 const DISTANCE = 350; // Spray.params.distance, metres; fade over the last 30%.
 const MAX_PER_SECOND = 420,
   MAX_PER_FRAME = 96,
@@ -164,6 +165,20 @@ warmUp(() => {
   for (const prepare of preparations) prepare();
 });
 export function createSpray(atlas: ShoreAtlas) {
+  bind(
+    'shore.spray',
+    () => ULTRA.spray,
+    (value) => {
+      ULTRA.spray = value as number;
+    },
+  );
+  bind(
+    'shore.spraySize',
+    () => ULTRA.spraySize,
+    (value) => {
+      ULTRA.spraySize = value as number;
+    },
+  );
   let breakers: Site[] = [],
     rocks: Site[] = [],
     generation = -1,
@@ -180,6 +195,17 @@ export function createSpray(atlas: ShoreAtlas) {
     rocks = built.rocks;
   };
   preparations.add(prepare);
+  let lastAmp = SHORE_WAVE.amp,
+    lastBearing = ULTRA.swellBearing;
+  const stopTuning = onChange(() => {
+    OMEGA = Math.sqrt((9.81 * TAU) / SHORE_WAVE.lambda) * SHORE_WAVE.speed;
+    SWASH_OMEGA = Math.sqrt((9.81 * SWASH_TAU) / SHORE_WAVE.lambda) * SHORE_WAVE.speed;
+    if (lastAmp !== SHORE_WAVE.amp || lastBearing !== ULTRA.swellBearing) {
+      generation = -1;
+      lastAmp = SHORE_WAVE.amp;
+      lastBearing = ULTRA.swellBearing;
+    }
+  });
   // One reusable descriptor; emit copies it synchronously. Tiny separate dots make a cloud of droplets,
   // not the source's expanding noise-masked quads (a smooth growing sprite would read as a cotton ball).
   const drop: Particle = {
@@ -204,13 +230,26 @@ export function createSpray(atlas: ShoreAtlas) {
     frameEmits = 0,
     breakerCursor = 0,
     previousTime = NaN;
-  const send = (now: number) => {
+  const emitDrop = (now: number) => {
     if (frameEmits >= MAX_PER_FRAME || now - emittedAt[cursor]! < 1) return;
     emittedAt[cursor] = now;
     cursor = (cursor + 1) % MAX_PER_SECOND;
     frameEmits++;
     emit(drop);
   };
+  let amountCredit = 0;
+  const send = tuningEnabled
+    ? (now: number) => {
+        amountCredit += ULTRA.spray;
+        const originalSize = drop.size;
+        drop.size *= ULTRA.spraySize;
+        while (amountCredit >= 1) {
+          amountCredit--;
+          emitDrop(now);
+        }
+        drop.size = originalSize;
+      }
+    : emitDrop;
   const visibility = (x: number, y: number, z: number, near: number, full: number) => {
     const dx = x - camera.position.x,
       dz = z - camera.position.z;
@@ -364,6 +403,7 @@ export function createSpray(atlas: ShoreAtlas) {
     }),
     dispose: () => {
       preparations.delete(prepare);
+      stopTuning();
     },
   });
   return { dispose: () => despawn(entity) };
