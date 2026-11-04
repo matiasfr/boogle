@@ -54,7 +54,7 @@ export function objective() {
   if (!reach || carried === 0) {
     if (room > 0 && stillRails > 0) return '';
     if (room > 0 && stillLogs > 0 && st.spec.rack === 'cart') return '';
-    if (room > 0 && stillLogs > 0) return carried || felled.n ? '' : 'Chop a tree with an orange band.';
+    if (room > 0 && stillLogs > 0) return carried || felled.n ? '' : 'Chop an ordinary tree.';
     if (room > 0 && stillStone > 0) return ROCK_LIST.every(whole) ? 'Break a rock with an orange band.' : '';
   }
   return '';

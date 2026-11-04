@@ -41,9 +41,10 @@ output are complete. Thus the eight-slot proper-axe example yields **5 + 3**, th
 **5 + 2**, rather than losing two logs. A full bag advances nothing. There is no regrowth,
 bill increase, carry reduction or new ordinary-tree tier. This follows [tree-tiers](../research/tree-tiers.md).
 
-Copy held for the owner: `objective.ts` still contains **“Chop a tree with an orange band.”**
-It is now false, but is an internal progression label rather than the removed HUD objective.
-No conflicting resident or Boogler tree-band line was found; their copy is unchanged.
+The owner authorized replacing the false internal `objective.ts` label
+**“Chop a tree with an orange band.”** with **“Chop an ordinary tree.”** on 4 November.
+It is telemetry only, not a player-facing prompt. No conflicting resident or Boogler tree-band
+line was found; their copy is unchanged.
 
 **Beautiful-corner rough kit comparison (3 November):** `&corner=1` adds two existing timber runners beneath Station 3's feeder, giving the receiver-to-machine link a stronger silhouette. They reuse the kit's bottom pivots and fit inside the existing feeder collider, below the exposed rollers. This is Local presentation only; the default round, route, costs, material travel, saves and co-op are unchanged. The [approved plan](../plans/beautiful-corner.md) records the baseline/contact audit and stops after steps 1–2; final banks/materials wait for the real sea, demo-sky/AgX bake and terrain decision.
 
@@ -112,30 +113,30 @@ First-use carry meshes and the glider's cloth and shadow pipelines warm behind l
 
 Stage-by-stage audit of what the objective text or marker used to explain. These are physical cues already in the round unless a change is stated. A cue's existence does not establish that a blind player understands it.
 
-| Stage / former direction | What in the world points there now |
-| --- | --- |
-| Opening: follow the path to the sleeping machine | Wide path, existing Timber Camp sign, footbridge, camp smoke and rusty machine at the path's end. |
-| Wake the machine; start chopping | Machine and its nearby interaction, physical multi-axe reward, nearby banded trees. Bands and tree rules are unchanged. |
-| Station 1: carry logs to the receiver | Nearby grove, visible back load, frame's material board and feeder leading into the machine. |
-| Station 2: find logs and stone | Next receiver, material board, banded rocks and pieces breaking off under the multi-axe. |
-| Station 3: fell and shoulder the great beam | Oversized tree standing apart, receiver's existing great-beam bill, then the fallen trunk and shoulder interaction. Recognition without the former sentence needs playtesting. |
-| Feeding, laying and moving | Logs roll through the feeder; machine moves and builds track. No extra cue. |
-| First path: walk home | Reveal toward the village, rockets, continuous bridge, edge lamps and commuters. |
-| Proper axe and pack frame | Physical reward chests; their existing blue shafts stay. |
-| Double-jump device | Pillar beside the new path, device and its existing demonstration. |
-| Forge frame and chimney | Scaffolding, receiver/feeder and pieces assembling as the player supplies logs. |
-| Turn onto line 2; get rails | Turning machine and forge pouring rails onto the familiar rack. |
-| Line 2 station 1 | Receiver and material board, rail stub and survey stakes. |
-| Line 2 stations 2–3 | Log cart travels to the frontier rack; next receiver and laid track show the destination. Players still fetch rails from the forge unless a partner loads the cart. |
-| Hook and quarry gate | Device by the route, rings, slab and lever mechanism. |
-| Line 2 stations 4–5; glider and sea gate | From station 4, the little guys' cart brings forge rails with its logs and visibly unloads them onto the separate rail shelf beside the frame. The player does the final carry; the cart waits when forge stock runs dry. Next receivers, tower's rings and summit device, sea gate and visible Far Head remain the route cues. |
-| Far Head: head home | Rockets at the home end, continuous laid trestle and lamps running homeward. The route persists after the celebration; the reason to return remains a question. The optional Happy Clam sea-stack detour now has a visible return hook beside the trestle, within hook range and at rail height; it solves leaving the stack without a swim, not the reason to travel home. |
-| Find and shoulder the boiler | **Changed:** the actual boiler and pickup move from behind the forge to the open apron beside the rail rack and return track. No new text or symbol. |
-| Carry boiler to the old camp train | Existing rusty locomotive and nearby Fit the boiler interaction. The distant relationship between pickup and receiver is still weak; placement alone does not explain the repair. |
-| Trains unlock; stand on a platform | Wake/reveal, platforms appearing, signals and arriving trains. |
-| Use the second train to Far Head | The pier kit physically loads at the village and unloads into the Far Head rack. That shows its cargo payoff once witnessed; its value before boarding remains unresolved. |
-| Supply and build the pier | Delivered logs and rails beside the last receiver, followed by the familiar construction sequence. |
-| End: look toward the shard | Pier, buoys, distant shard and existing ending pull-out. |
+| Stage / former direction                         | What in the world points there now                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Opening: follow the path to the sleeping machine | Wide path, existing Timber Camp sign, footbridge, camp smoke and rusty machine at the path's end.                                                                                                                                                                                                                                                                           |
+| Wake the machine; start chopping                 | Machine and its nearby interaction, physical multi-axe reward, consistently choppable ordinary conifers. Tree bands are removed; rock bands remain.                                                                                                                                                                                                                         |
+| Station 1: carry logs to the receiver            | Nearby grove, visible back load, frame's material board and feeder leading into the machine.                                                                                                                                                                                                                                                                                |
+| Station 2: find logs and stone                   | Next receiver, material board, banded rocks and pieces breaking off under the multi-axe.                                                                                                                                                                                                                                                                                    |
+| Station 3: fell and shoulder the great beam      | Oversized tree standing apart, receiver's existing great-beam bill, then the fallen trunk and shoulder interaction. Recognition without the former sentence needs playtesting.                                                                                                                                                                                              |
+| Feeding, laying and moving                       | Logs roll through the feeder; machine moves and builds track. No extra cue.                                                                                                                                                                                                                                                                                                 |
+| First path: walk home                            | Reveal toward the village, rockets, continuous bridge, edge lamps and commuters.                                                                                                                                                                                                                                                                                            |
+| Proper axe and pack frame                        | Physical reward chests; their existing blue shafts stay.                                                                                                                                                                                                                                                                                                                    |
+| Double-jump device                               | Pillar beside the new path, device and its existing demonstration.                                                                                                                                                                                                                                                                                                          |
+| Forge frame and chimney                          | Scaffolding, receiver/feeder and pieces assembling as the player supplies logs.                                                                                                                                                                                                                                                                                             |
+| Turn onto line 2; get rails                      | Turning machine and forge pouring rails onto the familiar rack.                                                                                                                                                                                                                                                                                                             |
+| Line 2 station 1                                 | Receiver and material board, rail stub and survey stakes.                                                                                                                                                                                                                                                                                                                   |
+| Line 2 stations 2–3                              | Log cart travels to the frontier rack; next receiver and laid track show the destination. Players still fetch rails from the forge unless a partner loads the cart.                                                                                                                                                                                                         |
+| Hook and quarry gate                             | Device by the route, rings, slab and lever mechanism.                                                                                                                                                                                                                                                                                                                       |
+| Line 2 stations 4–5; glider and sea gate         | From station 4, the little guys' cart brings forge rails with its logs and visibly unloads them onto the separate rail shelf beside the frame. The player does the final carry; the cart waits when forge stock runs dry. Next receivers, tower's rings and summit device, sea gate and visible Far Head remain the route cues.                                             |
+| Far Head: head home                              | Rockets at the home end, continuous laid trestle and lamps running homeward. The route persists after the celebration; the reason to return remains a question. The optional Happy Clam sea-stack detour now has a visible return hook beside the trestle, within hook range and at rail height; it solves leaving the stack without a swim, not the reason to travel home. |
+| Find and shoulder the boiler                     | **Changed:** the actual boiler and pickup move from behind the forge to the open apron beside the rail rack and return track. No new text or symbol.                                                                                                                                                                                                                        |
+| Carry boiler to the old camp train               | Existing rusty locomotive and nearby Fit the boiler interaction. The distant relationship between pickup and receiver is still weak; placement alone does not explain the repair.                                                                                                                                                                                           |
+| Trains unlock; stand on a platform               | Wake/reveal, platforms appearing, signals and arriving trains.                                                                                                                                                                                                                                                                                                              |
+| Use the second train to Far Head                 | The pier kit physically loads at the village and unloads into the Far Head rack. That shows its cargo payoff once witnessed; its value before boarding remains unresolved.                                                                                                                                                                                                  |
+| Supply and build the pier                        | Delivered logs and rails beside the last receiver, followed by the familiar construction sequence.                                                                                                                                                                                                                                                                          |
+| End: look toward the shard                       | Pier, buoys, distant shard and existing ending pull-out.                                                                                                                                                                                                                                                                                                                    |
 
 **Owner questions:** round 4's “that's my objective” was carrying the late stretch. Boiler discovery is easier to inspect after relocation, but recognizing the old locomotive as its destination, wanting the second train before seeing its delivery, and wanting to return from Far Head still need a human playtest. A full bot run follows known destinations and cannot verify a blind first-time run. These gaps have not been filled with new helper text. That earlier guidance pass left bands and tree rules unchanged; the approved tree comparison above supersedes those two details. Cart/train naming remains unchanged; crate glows are described above.
 
@@ -165,18 +166,18 @@ another 0.4 m of clearance. Moving along the detection edge does not repeatedly 
 
 Historical Q5 measurement (3 November, local two-tab broker, real inputs, fixed 24-log/24-rail bill): solo 162.40 s; two walkers 115.14 s; split 80.90 s. The mixed-cart remeasurement uses the same bill and starting positions: solo at the forge, both two-player modes one at each end, empty backs and frontier rack. The forge-side walker/solo player still takes available rails before leaving, then uses frontier supply. The porter loads 16, takes nine on their back as the forge replenishes, double-jumps aboard, rides, and jumps off before walking to the frame. No teleports after positioning. Authority times, at measured 1x, one successful trial per strategy:
 
-| Q5 strategy | Historical before | Mixed cart | Change |
-| --- | ---: | ---: | ---: |
-| Solo | 162.40 s | 73.78 s | -88.62 s |
-| Two walkers | 115.14 s | 69.16 s | -45.98 s |
-| Split | 80.90 s | 75.80 s | -5.10 s |
+| Q5 strategy | Historical before | Mixed cart |   Change |
+| ----------- | ----------------: | ---------: | -------: |
+| Solo        |          162.40 s |    73.78 s | -88.62 s |
+| Two walkers |          115.14 s |    69.16 s | -45.98 s |
+| Split       |           80.90 s |    75.80 s |  -5.10 s |
 
 **That mixed-cart baseline lost the split advantage:** 6.64 s slower than walkers and 2.02 s slower than solo. The owner subsequently authorized a 12–13 m/s manually loaded, ridden-cart comparison. The implemented choice is **13 m/s**, the smaller tested speed that consistently beat walkers. Same real-input fixture, fixed 24/24 bill and starting positions, measured at 1x; authority times in seconds:
 
-| Ridden bonus | Solo | Two walkers | Split |
-| --- | ---: | ---: | ---: |
-| 12 m/s | 73.75 | 68.40 | 68.94, 69.08 |
-| 13 m/s | 73.73 | 71.52, 69.02 | 67.02, 67.28 |
+| Ridden bonus |  Solo |  Two walkers |        Split |
+| ------------ | ----: | -----------: | -----------: |
+| 12 m/s       | 73.75 |        68.40 | 68.94, 69.08 |
+| 13 m/s       | 73.73 | 71.52, 69.02 | 67.02, 67.28 |
 
 At 12, both splits lost to the fresh walkers. At 13, both won: even the slower split beat the fastest walker across all trials by 1.12 s, and the fastest walker at 13 by 1.74 s. The payoff is modest, not a large separation; walking varied by 3.12 s across trials. All split runs actually loaded by hand, carried nine extra rails, boarded and dismounted through real input, and recorded zero lost-contact samples on the trip. No bills, forge rates, capacity, copy or tree code changed. Full manifest IDs and limitations are in the [plan's follow-up](../plans/little-guys-rails.md#ridden-cart-follow-up-4-november).
 
@@ -247,7 +248,85 @@ Most buildings are solid blocks you can't go inside; three you can (above).
 
 ## Measured
 
-**Trees comparison, 4 November:** broker runs on this worktree, compared with
+**Trees plus shipped rail cart, 4 November follow-up:** this supersedes the earlier tree-only
+comparison below. Fresh main baseline was `37762c28`; while it ran, `origin/main` advanced to
+`88c7c36b` with tooling/dependency changes only. The branch rebased onto that newer commit.
+`git diff 37762c28 88c7c36b -- src dev/look` is empty: the measured main gameplay and bot are
+identical to the rebase base. Installed the updated dependencies in this worktree.
+
+| Beat                                    | Fresh main  | Rebased trees + cart |
+| --------------------------------------- | ----------- | -------------------- |
+| First path                              | 5:59.29     | 6:02.13              |
+| Little guys / depot                     | 15:08.63    | 8:51.19              |
+| **Path → little guys**                  | **9:09.34** | **2:49.06**          |
+| Trains unlock                           | 24:19.33    | 18:01.81             |
+| Pier / run ended                        | 27:09.04    | 20:51.53             |
+| Entire bot, including the optional tour | 30:12.20    | 23:54.00             |
+
+The hunger stretch loses **380.28 seconds (69%)**; **169.06 seconds (31%) remain**. First-path
+time is effectively unchanged. The owner still needs to judge whether that remaining hauling
+creates any desire for the little guys. No bills, carry quantities, forge rate, cart capacity,
+cart speed, upgrade placement or tree yield were retuned. Both whole runs completed all expected
+beats with zero runtime errors/water falls. Optional crystal/co-op marks were absent from the
+after solo run. Both still waited **1:49 for Q5's second shipment**. Manifests:
+[fresh main](../../.look/evidence/1793779930035-76662/evidence.json),
+[rebased run](../../.look/evidence/1793781061236-48731/evidence.json).
+Offline comparison: `npm run playthrough -- --compare .look/evidence/1793779930035-76662/run .look/evidence/1793781061236-48731/run`.
+
+Q5 uses the existing real-input fixture at **1×**, unchanged 24-log/24-rail bill and starts:
+solo at the forge; two-player strategies one at each end. Authority-clock seconds, one valid
+trial per strategy. The split still manually loads 16 rails, carries nine, boards and dismounts
+with actual input. It recorded zero lost-contact samples and reached the existing **13 m/s**.
+
+| Q5 strategy |                                              Fresh main seconds |                                                 Rebased seconds |
+| ----------- | --------------------------------------------------------------: | --------------------------------------------------------------: |
+| Solo        | [73.74](../../.look/evidence/1793780071338-83449/evidence.json) | [73.78](../../.look/evidence/1793781272448-58229/evidence.json) |
+| Two walkers |  [72.94](../../.look/evidence/1793780369968-3328/evidence.json) | [71.45](../../.look/evidence/1793781363546-62608/evidence.json) |
+| Split       | [67.42](../../.look/evidence/1793780252718-95180/evidence.json) | [66.98](../../.look/evidence/1793781452107-65856/evidence.json) |
+
+Split beat walkers by **4.47 seconds** and solo by **6.80 seconds** in the after trials. The
+small before/after changes are within observed variation. This fixture sources logs from the
+cart and does **not chop**, so it checks integration/strategy timing, not nearer-tree harvesting.
+
+The rebase retains `placeRailCart`, `placeCartRide`, cart call/load/ride messages and automatic
+rail waiting in the bot, within the `placeCoopTrees1` peer/message identity. Legacy beam grips
+are now filtered by that identity too. Tree-capable peers missing a cart capability still get
+the existing corresponding fallback; non-tree-version peers cannot alter this railway through
+old messages or claimed cart/beam presence. Checks against the combined gameplay:
+
+- [Tree co-op](../../.look/evidence/1793780766888-34935/evidence.json): finite final payout,
+  duplicate receipt, pending-snapshot reservation, saves, both cart capabilities, old reset/chop/
+  cart messages, and old-version ride/beam presence all passed.
+- [Automatic cargo](../../.look/evidence/1793780784091-35405/evidence.json): both loaded 16 logs
+  and 16 rails; a follower's pickup during an unload snapshot conserved 16 rails with no stale
+  flight duplication.
+- [Whole manual trip](../../.look/evidence/1793780986987-46094/evidence.json): follower whistled,
+  loaded and rode; both reached 13 m/s, with zero rider-contact losses and 12 rails at both racks.
+  Maximum sampled peer gap was 1.276 m / 0.35 m/s, within the existing fixture bounds.
+- [Absent rail capability](../../.look/evidence/1793781558252-70669/evidence.json): both delivered
+  16 logs / zero automatic rails. [Absent ride capability](../../.look/evidence/1793781619949-74526/evidence.json):
+  both stayed at 9 m/s, lost no rider contact and delivered 12 rails.
+- [world-inputs](../../.look/evidence/1793780762686-34768/evidence.json) passed. `npm run check`
+  passed 293 tests, lint/typecheck, registry and build after installing main's dependencies.
+
+Retained failures: the [first main walkers trial](../../.look/evidence/1793780156815-92379/evidence.json)
+delivered in 68.48 s but failed world-clock health by about 3 s, so its timing is excluded above.
+The [first manual-cart eval](../../.look/evidence/1793780856034-38596/evidence.json) timed out waiting
+for the whistle target. A repeat passed without a gameplay change; its cause was not reproduced.
+The fixture now prints target/position/cart state if that timeout returns. Initial check failures
+were missing newly landed tooling dependencies and a fixture presence-spread type error; both
+were resolved. No failures remain in the final selected runs.
+
+Opened new PNGs: both full-bot end stills; main solo/split Q5 stills; rebased solo/walk/split Q5
+stills; `rebased-tree-coop-still.png`; both `rebased-auto-rails-still.png` views; and both
+`rebased-cart-trip-repeat-still.png` views. The Q5 board visibly reaches 24/24 logs and rails;
+the rail shelf is empty after the conserved pickup while logs remain; the rider stays on the
+unloaded cart deck in both trip views. The tree assertion view is obscured by neighbouring
+crowns and does not establish felling quality. End stills contain debug overlays. Capture health
+and numeric continuity passed; real-time feel/audio, device performance, actual old binaries and
+the owner's hunger judgment remain unverified. Earlier tree-only stills/timings are historical.
+
+**Earlier trees-only comparison, 4 November (historical):** broker runs on this worktree, compared with
 `npm run playthrough -- --compare <before>/run <after>/run`.
 The [before manifest](../../.look/evidence/1793776901007-75675/evidence.json) and
 [after manifest](../../.look/evidence/1793778563313-67800/evidence.json) identify the tested trees;
@@ -350,34 +429,34 @@ ordinary chopping. Keep it as design history, not the current pacing measurement
 
 **Mixed-cart model, 3 November:** `node dev/economy/model.ts round4 --json` retains the historical arithmetic; `node dev/economy/model.ts round4-cart --json` changes only Q4/Q5 to the 16 m rack carry and charges supply time. These are solo estimates in seconds from model start, not bot measurements.
 
-| Model beat | Before | Mixed cart | Change |
-| --- | ---: | ---: | ---: |
-| Q3 laid | 875.46 | 875.46 | 0.00 |
-| Q4 laid | 970.74 | 966.01 | -4.73 |
-| Q5 laid | 1230.02 | 1216.15 | -13.87 |
-| Trains unlock | 1365.45 | 1351.58 | -13.87 |
+| Model beat    |  Before | Mixed cart | Change |
+| ------------- | ------: | ---------: | -----: |
+| Q3 laid       |  875.46 |     875.46 |   0.00 |
+| Q4 laid       |  970.74 |     966.01 |  -4.73 |
+| Q5 laid       | 1230.02 |    1216.15 | -13.87 |
+| Trains unlock | 1365.45 |    1351.58 | -13.87 |
 
 This intentionally conservative variant starts each frame with the cart at camp and an empty forge, charges every shipment before the player's final carries, and credits no existing stock or overlap. Road lengths are 361/469 m; supply wait is `rails / 2 + (2 * batches - 1) * road / 9 + batches * 9.3`, with 24 logs/16 rails per cart and 3 s camp loading, 3 s forge departure and up to 3.3 s unloading. Q4/Q5 supply waits are 57.41/186.93 s; short-carry work is 16.71/25.06 s instead of 78.85/221.13 s. The small net gain exposes the cost of a second Q5 trip under that cold-start assumption. Real play can overlap delivery, production and carrying; the bot comparison below is the observation. The model also omits the ability detours. Train unlock is Q5 completion plus `546 / 5.6 + 190 / 5.6 + 4` for the trip home and boiler; the model's `trains.openS` includes the pier and must not be used as the unlock time.
 
 **Mixed-cart full bot, 3 November:** measured through the local broker, same bills and full route. These station beats mark the **start of laying**, unlike the model's completed stations. Seconds from the saved game clock:
 
-| Bot beat | Before | Mixed cart | Change |
-| --- | ---: | ---: | ---: |
-| Q3 starts laying | 1047.62 | 1046.70 | -0.92 |
-| Q4 starts laying | 1160.03 | 1121.60 | -38.43 |
-| Q5 starts laying | 1452.20 | 1342.55 | -109.65 |
-| Trains unlock | 1578.42 | 1468.75 | -109.67 |
+| Bot beat         |  Before | Mixed cart |  Change |
+| ---------------- | ------: | ---------: | ------: |
+| Q3 starts laying | 1047.62 |    1046.70 |   -0.92 |
+| Q4 starts laying | 1160.03 |    1121.60 |  -38.43 |
+| Q5 starts laying | 1452.20 |    1342.55 | -109.65 |
+| Trains unlock    | 1578.42 |    1468.75 | -109.67 |
 
 Both runs completed every expected bot action with no page or graphics errors. `npm run playthrough -- --compare .look/evidence/1793772548990-11068/run .look/evidence/1793774348050-66816/run` reproduces the comparison. The after bot uses frontier deliveries from Q4; earlier behavior is unchanged. Its walking share fell from 85% to 77%, but stationary time rose from 4:49 to 7:01, including a **1:49 Q5 shipment wait**. Thus the route is shorter overall, while the retained 16-rail capacity still leaves a noticeable second-trip wait. No capacity, speed, bill or forge-rate retune was made to hide that tradeoff. Whether seeing the shipment arrive feels like earned relief still needs the owner's playtest; this bot already knows where to go.
 
 **Committed-build repeat:** `1793776017482-40382` tested clean commit `150d782e`, with all expected actions, no errors/falls and an inspected end still. The repeat includes more startup waiting; do not replace the first measured run or hide that variance. Raw checkpoint seconds and changes from the same baseline:
 
-| Bot beat | Baseline | Committed repeat | Change |
-| --- | ---: | ---: | ---: |
-| Q3 starts laying | 1047.62 | 1088.38 | +40.77 |
-| Q4 starts laying | 1160.03 | 1163.27 | +3.23 |
-| Q5 starts laying | 1452.20 | 1384.27 | -67.93 |
-| Trains unlock | 1578.42 | 1510.52 | -67.90 |
+| Bot beat         | Baseline | Committed repeat | Change |
+| ---------------- | -------: | ---------------: | -----: |
+| Q3 starts laying |  1047.62 |          1088.38 | +40.77 |
+| Q4 starts laying |  1160.03 |          1163.27 |  +3.23 |
+| Q5 starts laying |  1452.20 |          1384.27 | -67.93 |
+| Trains unlock    |  1578.42 |          1510.52 | -67.90 |
 
 The repeat is already 41.68 s behind the first after-run at Q3. From Q3 to trains it takes 422.13 s, versus baseline 530.80 s and the first after-run 422.05 s: the affected interval improves by 108.67 s on the repeat. Q5 still waits 1:49; total stationary time is 7:54. Offline comparison: `npm run playthrough -- --compare .look/evidence/1793772548990-11068/run .look/evidence/1793776017482-40382/run`. The trusted harness changed between measurement rounds, with its exact version recorded in each manifest; these are observations, not a deterministic performance guarantee.
 

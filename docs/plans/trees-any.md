@@ -202,3 +202,15 @@ owner questions are in [place: Measured](../game-design/place.md#measured). The 
 colliders were already present on one compound body, so the standing change is +361 bodies,
 not +362 shapes. No changes to depot.ts or pair.ts; no push or ship. Core harvest and its
 required owning documentation form one commit; bot/evidence tooling forms the next.
+
+## Rail-cart integration follow-up, 4 November
+
+The owner authorized rebasing onto current main, preserving its automatic rails and ridden-cart
+bonus, renaming the false internal telemetry label, and measuring without retuning. Rebased onto
+`88c7c36b`; retained both cart capabilities and all cart messages under `placeCoopTrees1`.
+Filtered legacy beam presence as well. `depot.ts` remains identical to main; `pair.ts` changes only
+that presence guard. The internal label is now “Chop an ordinary tree.”; player-facing copy stays.
+The former no-edit boundary on the then-unshipped cart branch is superseded by this explicit
+integration request. Fresh baseline/after runs, Q5 strategies, failures, compatibility checks
+and visual limits are recorded in [place: Measured](../game-design/place.md#measured). No retune,
+push or ship. Stop at the owner's hunger playtest.

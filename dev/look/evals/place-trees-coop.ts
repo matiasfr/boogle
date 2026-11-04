@@ -1,10 +1,13 @@
 // Imported by place-coop's &trees=1 route. Real two-peer harvest, replay, legacy-message and snapshot assertions.
 const { net } = (await import('/src/netplay/net.ts' as string)) as typeof import('../../../src/netplay/net.ts');
-const { coop } = (await import(
+const { coop, pairHook } = (await import(
   '/src/proto/place/coop.ts' as string
 )) as typeof import('../../../src/proto/place/coop.ts');
 const tree = (await import('/src/proto/place/chop.ts' as string)) as typeof import('../../../src/proto/place/chop.ts');
 const state = (await import('/src/proto/place/job.ts' as string)) as typeof import('../../../src/proto/place/job.ts');
+const { cart } = (await import(
+  '/src/proto/place/depot.ts' as string
+)) as typeof import('../../../src/proto/place/depot.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -50,6 +53,7 @@ const barrier = async (phase: string) => {
 };
 await barrier('ready');
 await wait(2000);
+check('current peers retain rail and ride capabilities', coop.railCart() && coop.rideCart());
 const authority = coop.debug().amAuthority;
 const t = tree.TREES[29]!;
 const empty = () => {
@@ -125,13 +129,18 @@ check(
 check('both agree felled, exactly fifteen issued', t.issued === 15 && t.fall >= 0, tree.readTreeHarvest(t));
 await wait(1200);
 const before = JSON.stringify(tree.readTreeHarvest(t));
+const cartBefore = JSON.stringify(cart);
 net.room!.send({ t: 'placeCoop', k: 'reset', gen: coop.debug().gen + 50 });
 net.room!.send({ t: 'placeCoop', k: 'chop', i: 28, n: 12, yaw: 0 });
+net.room!.send({ t: 'placeCoop', k: 'cartCall' });
+net.room!.send({ t: 'placeCoop', k: 'cartLoad', n: 16, manual: true });
+net.room!.send({ t: 'placeCoop', k: 'cartRide', boost: true });
 await wait(500);
 check(
   'legacy reset and chop messages are harmless',
   JSON.stringify(tree.readTreeHarvest(t)) === before && tree.greatTree.fall < 0,
 );
+check('legacy cart call, load and ride messages are harmless', JSON.stringify(cart) === cartBefore);
 await barrier('legacy ignored');
 if (!authority) tree.resetTrees();
 await barrier('restore snapshot');
@@ -145,6 +154,26 @@ empty();
 check('local save restores accepted state', state.restore());
 check('reload keeps felled state and exact personal award', t.fall >= 0 && t.issued === 15 && tree.back.logs === owned);
 await barrier('restored');
+// Model old presence on the wire as well as old messages. Capability fields alone
+// must neither elect an older peer nor let its claimed ride/grip change this railway.
+const presence = net.room!.presence.bind(net.room);
+net.room!.presence = (p) =>
+  presence({
+    ...(p && typeof p === 'object' ? p : {}),
+    placeCoopTrees1: null,
+    placeCoop: 0,
+    placeRailCart: 1,
+    placeCartRide: 2,
+    placeLongBeam: 0,
+  });
+net.room!.presence({});
+await until(() => coop.debug().peers.length === 0, 'legacy peer excluded');
+await wait(300);
+check(
+  'legacy capability and beam presence cannot affect current railway',
+  coop.railCart() && coop.rideCart() && !coop.cartRider() && !pairHook.busy?.(),
+);
+await barrier('legacy presence ignored');
 window.__debugCam!.set([t.x + 10, t.y + 7, t.z + 12], [t.x, t.y + 1, t.z], 50);
 Object.assign(window, { __coopDone: true });
 console.log(

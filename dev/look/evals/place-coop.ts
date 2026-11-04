@@ -162,7 +162,7 @@ if (q.has('trees')) {
         peak = Math.max(peak, me.body!.position.y);
       }, 20);
       net.room.onMessage((m: { t: string; k: string; end?: number }) => {
-        if (m.t === 'placeCoop' && m.k === 'beamBounce') console.log(`COOP ${who} bounce end ${m.end}`);
+        if (m.t === 'placeCoopTrees1' && m.k === 'beamBounce') console.log(`COOP ${who} bounce end ${m.end}`);
       });
       setTimeout(() => {
         clearInterval(watch);
@@ -197,7 +197,7 @@ if (q.has('trees')) {
       return presence({ ...p, placeRailCart: null });
     };
     onRemotePresence((_r: unknown, pr: Record<string, unknown>) => {
-      if (typeof pr.placeCoop === 'number') sawLegacy = !('placeRailCart' in pr);
+      if (typeof pr.placeCoopTrees1 === 'number') sawLegacy = !('placeRailCart' in pr);
     });
   }
   const setup = () => {
@@ -308,7 +308,7 @@ if (q.has('trees')) {
     const presence = net.room.presence.bind(net.room);
     net.room.presence = (p: Record<string, unknown>) => presence({ ...p, placeCartRide: null });
     onRemotePresence((_r: unknown, pr: Record<string, unknown>) => {
-      if (typeof pr.placeCoop === 'number') sawLegacyRide = !('placeCartRide' in pr);
+      if (typeof pr.placeCoopTrees1 === 'number') sawLegacyRide = !('placeCartRide' in pr);
     });
   }
   const { cart, cartHere, cartPlatform, snapCart } = await import('/src/proto/place/depot.ts' as string);
@@ -347,7 +347,12 @@ if (q.has('trees')) {
     cam.yaw = -Math.PI / 2;
     await wait(800);
     if (rider) {
-      await until(() => hands.interactTarget()?.verb === 'Whistle for the cart', 'call offered');
+      await until(() => hands.interactTarget()?.verb === 'Whistle for the cart', 'call offered').catch((error) => {
+        console.log(
+          `COOP call target ${JSON.stringify({ position: me.body!.position, target: hands.interactTarget(), cart, rung: place.job.rung })}`,
+        );
+        throw error;
+      });
       press('Whistle for the cart');
     }
     await until(() => cart.leg === 'forge', 'cart at forge', 60000);
@@ -412,6 +417,8 @@ if (q.has('trees')) {
       throw new Error('COOP whole-trip rider, turn or shared position failed');
     if (q.has('legacyRide') && (!sawLegacyRide || maxSpeed > 9.01))
       throw new Error('COOP legacy capability failed to keep 9 m/s');
+    if (!q.has('legacyRide') && maxSpeed < 12.99)
+      throw new Error('COOP current peers did not receive the ridden-cart bonus');
     console.log(`COOP ${who} rack rails ${place.rack.rails}`);
     const r = place.rack;
     setInterval(() => window.__debugCam?.set([r.x + 10, r.y + 8, r.z + 10], [r.x, r.y + 1, r.z]), 30);
@@ -431,7 +438,7 @@ if (q.has('trees')) {
     if (m.t === 'coopProbe' && m.k === 'ready' && who === '1') go = true;
     if (m.t === 'coopProbe' && m.k === 'go' && who === '2') go = true;
     if (m.t === 'coopProbe' && m.k === 'back') otherBack = Number(m.n);
-    if (q.has('trace') && m.t === 'placeCoop' && ['dep', 'stock', 'no'].includes(String(m.k))) trace(m);
+    if (q.has('trace') && m.t === 'placeCoopTrees1' && ['dep', 'stock', 'no'].includes(String(m.k))) trace(m);
   });
   void (async () => {
     while (!me.body || !net.room || place.coop.debug().peers.length < 1) await wait(100);
