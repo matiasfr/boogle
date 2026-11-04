@@ -130,4 +130,4 @@ mitt: a bag of seeds carried down at the hip by the handle, anything else with t
 eyes clear of the water, wades where it can stand, and sits in the soapbox on the library's driving clip with its hands down at its sides, instead of
 being squashed into the tub. Throwing, its arm winds up behind its shoulder and flings forward. The beach ball rides lower on its back. Knocked down, it lies flat, sprawled, with the stars over its head.
 
-boogle.club/character/ shows the Buddy alone, with every clip, a full jump (Hop), blink, hats and hat colours, views, a crowd of 8 and render switches.
+`/character/` is the isolated [asset and animation stage](asset-stage.md), with every Buddy clip, Raw/As played playback through the real body functions, exact seek/frame stepping, hats, views, a crowd of 8 and inspection overlays. Existing clip/time/view/pose/hat links remain supported; `/assets/` redirects to it.

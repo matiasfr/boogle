@@ -98,6 +98,8 @@ tick of 100 ms (10 per second).
 
 ## 9. [Tech and tooling](game-design/tech.md)
 
+- [Asset and animation stage](game-design/asset-stage.md)
+
 Opt-in visual comparison: [Dry demo terrain](game-design/terrain-demo.md).
 
 ## 10. [Status](game-design/status.md)

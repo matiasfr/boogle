@@ -3,6 +3,7 @@ import type { Rollup } from 'vite';
 import wasm from 'vite-plugin-wasm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { atlasFacts } from './dev/atlas/vite-plugin.ts';
+import { assetCatalogue } from './dev/assets/vite-plugin.ts';
 import { build as esbuild } from 'esbuild';
 import type { Service, createService as CreateService, loadConfig as LoadConfig } from './server/src/server.ts';
 
@@ -40,6 +41,7 @@ export default defineConfig({
         atlas: resolve('atlas/index.html'),
         protos: resolve('protos/index.html'),
         character: resolve('character/index.html'),
+        assets: resolve('assets/index.html'),
         menu: resolve('menu/index.html'),
       },
       output: {
@@ -64,6 +66,7 @@ export default defineConfig({
       },
     },
     atlasFacts(),
+    assetCatalogue(),
     {
       // `npm run dev` runs our server in-process (every room, saves in .boogle-data/), so the game has its server
       // without anything else running. Skipped when VITE_BOOGLE_SERVER is set (the look harness runs its own).

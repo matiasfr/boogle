@@ -4,37 +4,100 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="robots" content="noindex" />
-    <meta name="color-scheme" content="light dark" />
-    <title>Boogle Character</title>
+    <title>Boogle Asset Stage</title>
     <link rel="stylesheet" href="./character.css" />
     <script type="module" src="./main.ts"></script>
   </head>
   <body>
-    <canvas id="view"></canvas>
+    <canvas id="view" aria-label="Asset inspection: drag to orbit, pinch or wheel to zoom"></canvas>
     <aside id="panel">
-      <h1>Character</h1>
-      <p id="stats">Loading…</p>
-      <div class="row" id="colours"></div>
-      <h2>Hat</h2>
-      <div class="row" id="hats"></div>
-      <div class="row" id="hat-colours"></div>
-      <h2>Animation</h2>
-      <div class="row" id="clips"></div>
-      <div class="row" id="poses"></div>
-      <label
-        >Speed <output id="speed-out">1</output
-        ><input id="speed" type="range" min="0.1" max="1.5" step="0.05" value="1"
-      /></label>
-      <label
-        >Arms out <output id="arm-out">12°</output><input id="arm" type="range" min="0" max="35" step="1" value="12"
-      /></label>
-      <h2>View</h2>
-      <div class="row" id="views"></div>
-      <label class="check"><input id="spin" type="checkbox" /> Turntable</label>
-      <h2>Render</h2>
-      <div class="row" id="rims"></div>
-      <label class="check"><input id="wire" type="checkbox" /> Wireframe</label>
-      <label class="check"><input id="crowd" type="checkbox" /> Crowd of 8</label>
+      <header>
+        <h1>Asset stage</h1>
+        <span>Isolated · metres · WebGPU</span>
+      </header>
+      <label>Find an asset<input id="search" type="search" placeholder="Buddy, scaffold…" /></label>
+      <label>Asset<select id="asset"></select></label><label>Part<select id="node"></select></label>
+      <p id="status" role="status">Loading…</p>
+      <section>
+        <h2>Animation</h2>
+        <label>Clip<select id="clip"></select></label>
+        <div class="row">
+          <button id="play" class="primary">Play</button><button id="reset">Reset</button
+          ><button id="back" aria-label="Previous sampled frame">−1 frame</button
+          ><button id="next" aria-label="Next sampled frame">+1 frame</button>
+        </div>
+        <input id="scrub" aria-label="Animation time" type="range" min="0" max="1" step="0.001" value="0" />
+        <div class="row">
+          <label>Seconds<input id="time" type="number" min="0" step="0.001" value="0" /></label
+          ><label>Speed<input id="speed" type="number" min="0.05" max="4" step="0.05" value="1" /></label
+          ><label class="check"><input id="loop" type="checkbox" checked />Loop</label>
+        </div>
+        <p id="clock">30 Hz preview sampling · not native keyframe FPS</p>
+        <div id="buddy-controls">
+          <label
+            >Playback<select id="mode">
+              <option value="raw">Raw clip (retargeted)</option>
+              <option value="played">As played (body + life)</option>
+            </select></label
+          ><label
+            >Body pose<select id="pose">
+              <option value="free">Free</option>
+              <option value="carrying">Carrying</option>
+              <option value="item">Item</option>
+              <option value="can">Can</option>
+              <option value="ball">Ball</option>
+              <option value="seated">Seated</option>
+              <option value="windup">Windup</option>
+              <option value="knocked">Knocked</option>
+            </select></label
+          ><label
+            >Hat<select id="hat">
+              <option value="">None</option>
+              <option value="cap">Conductor's cap</option>
+              <option value="beanie">Beanie</option>
+            </select></label
+          >
+        </div>
+        <p id="mode-note"></p>
+      </section>
+      <section>
+        <h2>View</h2>
+        <div id="views" class="row"></div>
+        <div class="checks">
+          <label><input id="spin" type="checkbox" />Turntable</label
+          ><label><input id="bounds" type="checkbox" checked />Bounds</label
+          ><label><input id="reference" type="checkbox" checked />Buddy scale</label
+          ><label><input id="wire" type="checkbox" />Wireframe</label
+          ><label><input id="bones" type="checkbox" />Bones</label
+          ><label><input id="sockets" type="checkbox" />Sockets</label
+          ><label><input id="trajectory" type="checkbox" />Root trajectory</label
+          ><label><input id="crowd" type="checkbox" />Crowd of 8</label>
+        </div>
+        <p id="dimensions"></p>
+        <p id="root-note"></p>
+      </section>
+      <section>
+        <h2>Lighting</h2>
+        <select id="light" aria-label="Lighting">
+          <option value="studio">Neutral studio</option>
+          <option value="shipped">Shipped frozen sky · .24</option>
+        </select>
+        <label
+          >Fixed review exposure<input id="exposure" type="number" min="0.01" max="4" step="0.01" value="1"
+        /></label>
+        <p id="light-note"></p>
+      </section>
+      <details>
+        <summary>Geometry, textures &amp; budgets</summary>
+        <pre id="stats"></pre>
+        <p id="draws"></p>
+        <p id="memory-note">
+          GPU bytes are estimates; exclude render targets, driver overhead and the rest of the stage.
+        </p>
+        <p id="health"></p>
+      </details>
+      <button id="copy">Copy this view</button><input id="link" aria-label="Reproducible view URL" readonly />
+      <p>Drag to orbit · two fingers to pan/pinch. Camera and exact time are saved in the link.</p>
     </aside>
   </body>
 </html>
