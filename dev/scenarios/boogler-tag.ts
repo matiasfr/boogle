@@ -1,5 +1,5 @@
 // The Boogler's tag stays quiet: at range only the small talk-bubble mark floats over his head; walk up close and his
-// name plate (hearts, then the Talk prompt in reach) takes its place.
+// name plate (and the Talk prompt in reach) takes its place.
 import { TP } from './lib/world.ts';
 import type { T } from './run.ts';
 

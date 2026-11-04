@@ -8,7 +8,7 @@
   type or tap. The roster, the HUD list, your avatar, the floating name over you and plaque lines follow (presence on
   its next beat; `who.set` within 3 s, [src/features/identity.ts](../../src/features/identity.ts)).
 - **Starting fresh.** On the main pause page, Start fresh turns into "Yes, start fresh" with a warning for 6 s; pressing it again forgets
-  you on this device (name, colour, pid and key, room memories, The Boogler's friendship, mini-game and soapbox bests) and
+  you on this device (name, colour, pid and key, room memories, The Boogler's memory of you, mini-game and soapbox bests) and
   reloads into the first visit's fall. Settings stay. In round 4, every solo/co-op save
   on this device is cleared too: your back, dropped pieces, gifts, finds, crystals, conversations and saved position.
   Solo restarts the railway; co-op reloads into the same room as a newcomer and takes an existing partner's railway

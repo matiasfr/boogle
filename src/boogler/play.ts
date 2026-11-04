@@ -1,7 +1,7 @@
-// The Boogler as a friend: talk to him (the interact button, see talkTargets), and in the talk give him what you hold; or ride him (he hates it). Ride too long and he puffs up an orb that launches you off, then tells you off.
+// Talk to The Boogler (the interact button, see talkTargets), and in the talk give him what you hold; or ride him (he hates it). Ride too long and he puffs up an orb that launches you off, then tells you off.
 // Get launched too often and he runs when you come near.
 //
-// Friendship is personal (src/boogler/friendship.ts), saved in localStorage once per browser, shared by every room. Each player publishes
+// His memories are personal (src/boogler/memory.ts), saved in localStorage once per browser, shared by every room. Each player publishes
 // bg = [act, wary, ev, evN] in presence: the host's brain (src/boogler/boogler.ts) reads act and wary, and every client plays
 // ev on his model whenever that player's evN changes, so friends see the hearts and launches too.
 import { FIXED, PLAYER_R } from '../constants.ts';
@@ -12,17 +12,17 @@ import { me } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
 import { boogler, booglerReact, ACT, MODE, PUFF_MS, W_R } from './boogler.ts';
 import { booglerHearts, booglerPuff } from './fx.ts';
-import { booglerSay, setTagBond, setTagPrompt } from './hud.ts';
-import { dialogue, showDialogue, closeDialogue, dialogueReact } from './dialogue.ts';
+import { booglerSay, setTagWary, setTagPrompt } from './hud.ts';
+import { dialogue, showDialogue, closeDialogue } from './dialogue.ts';
 import { modalOpen } from '../player/modal.ts';
-import { LEVEL_UP, RIDE, RIDE_BAIL, FLEE } from './barks.ts';
-import { bond, createFriend, loadFriend, serializeFriend, kickedOff, rideLimit, isWary } from './friendship.ts';
+import { RIDE, RIDE_BAIL, FLEE } from './barks.ts';
+import { createMemory, loadMemory, serializeMemory, kickedOff, rideLimit, isWary } from './memory.ts';
 import { heldId, emptyHand } from '../player/inventory.ts';
 import { GIFTS, giftIndex } from '../sim/gift-catalog.ts';
 import { NO_TARGETS } from '../sim/interact-pick.ts';
 import { guest } from '../guest/state.ts';
 import type { BgRemote } from './boogler.ts';
-import type { Friend } from './friendship.ts';
+import type { BooglerMemory } from './memory.ts';
 import type { Talk } from './talk.ts';
 
 const TALK_RANGE = 3.6; // metres from his centre
@@ -30,43 +30,43 @@ const LEAVE_RANGE = TALK_RANGE + 1;
 const LAUNCH_UP = 10.5;
 const LAUNCH_OUT = 5.5;
 const RIDE_WARN = [0.35, 0.6, 0.82]; // fractions of his patience at which he complains (RIDE lines)
-const EV = { NONE: 0, PET: 1, PAT: 2, LEVEL: 3, PUFF: 4, LOVE: 5, YUCK: 6 }; // PET: only from tabs that still pet him
+// Retired events still render when older tabs send them; never reuse their wire numbers.
+const EV = { NONE: 0, RETIRED_PET: 1, PAT: 2, RETIRED_CELEBRATION: 3, PUFF: 4, LOVE: 5, YUCK: 6 };
 
-let friend: Friend | null = null;
+let memory: BooglerMemory | null = null;
 const storeKey = 'boogle.boogler'; // global: you are yours in every room (the old per-room keys are ignored)
 function f() {
-  if (friend) return friend;
+  if (memory) return memory;
   let saved: string | null = null;
   try {
     saved = localStorage.getItem(storeKey);
   } catch {
-    // storage unavailable: a fresh friendship that lasts until reload
+    // storage unavailable: fresh memories that last until reload
   }
-  friend = saved ? loadFriend(saved) : createFriend();
-  return friend;
+  memory = saved ? loadMemory(saved) : createMemory();
+  return memory;
 }
 function save() {
   try {
-    localStorage.setItem(storeKey, serializeFriend(f()));
+    localStorage.setItem(storeKey, serializeMemory(f()));
   } catch {
-    // storage unavailable; the friendship lasts until reload
+    // storage unavailable; the memories last until reload
   }
 }
 const pick = <T>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)]!;
-const named = (s: string) => s.replaceAll('{name}', me.name || 'friend');
 
 // ---------------------------------------------------------------- presence and shared reactions
 let ev = EV.NONE,
   evN = 0;
 
 function play(kind: number) {
-  if (kind === EV.PET) {
+  if (kind === EV.RETIRED_PET) {
     booglerReact('pet');
     booglerHearts('pet');
   } else if (kind === EV.PAT) booglerReact('pet');
-  else if (kind === EV.LEVEL) {
+  else if (kind === EV.RETIRED_CELEBRATION) {
     booglerReact('joy');
-    booglerHearts('level');
+    booglerHearts('legacyCelebration');
   } else if (kind === EV.PUFF) booglerPuff();
   else if (kind === EV.LOVE) {
     booglerReact('joy');
@@ -88,13 +88,6 @@ function playRemoteEvents() {
     seen.set(r.peer, r.bg[3]!);
     if (prev !== undefined && prev !== r.bg[3]) play(r.bg[2]!);
   }
-}
-
-function celebrate(level: number) {
-  emit(EV.LEVEL);
-  const line = named(LEVEL_UP[level]!);
-  if (dialogue.open) dialogueReact({ line, mood: 'joy', hearts: true, bond: bond(f()) });
-  else booglerSay(line, 3200);
 }
 
 // ---------------------------------------------------------------- distance
@@ -241,6 +234,7 @@ function converse(start: 'menu' | 'kick'): boolean {
     gifts: giftList,
     give: (kind: number) => heldId() === GIFTS[kind]!.id && !!emptyHand(),
   });
+  save();
   render();
   return true;
 }
@@ -249,7 +243,7 @@ function render() {
   const v = talk && talkApi!.talkView(talk);
   if (!v) return hangUp();
   boogler.me.mood = v.mood;
-  showDialogue(v, bond(f()), answer, leave);
+  showDialogue(v, answer, leave);
 }
 
 // A line over his head, up long enough to read.
@@ -265,9 +259,7 @@ function answer(i: number) {
     emit(t === 'love' || t === 'like' ? EV.LOVE : t === 'dislike' ? EV.YUCK : EV.PAT);
   }
   render();
-  if (out.levelUp)
-    celebrate(out.levelUp); // in the box, or as his bubble when this answer ended the talk
-  else if (out.bubble) sayFor(out.bubble);
+  if (out.bubble) sayFor(out.bubble);
 }
 
 // Closed it (back: Esc, pad B; the close button) or ended up away from him: he bookmarks a story you left halfway and says bye.
@@ -331,5 +323,5 @@ export function updateBooglerPlay(dt: number, now: number) {
     fleeSayAt = now + 4000;
     booglerSay(pick(FLEE), 1200);
   }
-  setTagBond(bond(f()).level, boogler.me.wary);
+  setTagWary(boogler.me.wary);
 }

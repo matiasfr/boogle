@@ -63,7 +63,7 @@ In code: Local needs nothing; Owner is `addPresenceField` + `onRemotePresence` (
 
 - **Physics is never lockstep.** Our physics (and three.js math) isn't kept bit-identical across browsers. A physical thing is Owner or Host; it can read lockstep state (a player bounces on a mushroom) and change it only by submitting edits (stocking a work site).
 - **Crossing kinds goes through edits.** A thrown thing landing (each tab replays the flight as Local, the thrower submits where it landed): the actor submits an edit and the lockstep sim applies it.
-- **Shared state that should survive everyone leaving** is Lockstep: snapshots save it through `registerState`, which also hashes it, so it must match on every tab. Host values restart with whoever leads next. Your own things (friendship with The Boogler) are yours, kept in localStorage; what you hold is yours too, for the visit.
+- **Shared state that should survive everyone leaving** is Lockstep: snapshots save it through `registerState`, which also hashes it, so it must match on every tab. Host values restart with whoever leads next. Your own things (The Boogler's memory of your conversations) are yours, kept in localStorage; what you hold is yours too, for the visit.
 - **Shared schedules are Lockstep without state:** a pure function of tick + seed that every tab computes, so they cost no bandwidth and need no snapshot. Their visuals read the same function. The [wagon prototype's timetable](src/sim/wagon.ts) needs no seed: it derives its pose from tick, laid sections and timetable settings, without storing a pose.
 - **The scene graph is a view.** three.js objects are updated from state (lockstep ticks run at 10/s and rendering interpolates between them); never read game state back out of a mesh.
 
@@ -85,7 +85,7 @@ For lockstep systems, clients send small **edit events** (plant or water a mushr
 | The beach ball | Its current owner (epoch rule in [`src/netplay/owner-sync.ts`](src/netplay/owner-sync.ts)) |
 | Mushrooms, gifts, work sites | The server |
 | The Boogler (wandering NPC) | The lead tab (the server picks it), published in its presence ([`src/boogler/boogler.ts`](src/boogler/boogler.ts)) |
-| Your friendship with The Boogler; what you hold | You (client): friendship kept in localStorage ([`src/boogler/play.ts`](src/boogler/play.ts)); what you hold for the visit ([`src/player/inventory.ts`](src/player/inventory.ts)) |
+| The Boogler's memory of you; what you hold | You (client): conversations and comic grudges kept in localStorage ([`src/boogler/play.ts`](src/boogler/play.ts)); what you hold for the visit ([`src/player/inventory.ts`](src/player/inventory.ts)) |
 | Persistence (snapshots) | The server writes each room to its disk (every 2 s when it changed, every 30 s and on shutdown regardless) and starts a room from that save; tabs keep no copy |
 
 ### Server hosts every room

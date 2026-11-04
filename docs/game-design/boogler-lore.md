@@ -29,32 +29,34 @@ you ask about Oyijon.
 
 **Chapters**
 
-| Thread (menu question) | Chapter | Unlocks at | Opens with |
-|---|---|---|---|
-| home ("Where are you from?") | home0 | 0 Stranger | Uzbekistan, far from the sea |
-| | home1 | 1 Familiar face | The Registon and the bazaar |
-| | home2 | 2 Pal | Osh in a qozon; first mention of Oyijon |
-| | home3 | 3 Friend | How he got here: the melons |
-| | home4 | 4 Close friend | Navro'z and the apricot tree |
-| | home5 | 5 Best friend | The island has become home |
-| mom ("Do you have any family?") | mom0 | 1 | Oyijon and the four melons |
-| | mom1 | 2 | Her one rule: you eat |
-| | mom2 | 3 | No boats, and the promise |
-| | mom3 | 4 | Letters in coconut shells |
-| | mom4 | 5 | Helping him write a letter |
-| biz ("What do you do here?") | biz0 | 0 | Entrepreneur between ventures |
-| | biz1 | 1 | The three-business portfolio |
-| | biz2 | 2 | "Business for Beginners"; pick an idea |
-| | biz3 | 3 | The Emporium; pick a slogan |
-| | biz4 | 4 | Doubt: "just a blob who lost some melons" |
-| | biz5 | 5 | The partnership offer |
+Every thread is available from the first talk. Chapters play in this order within each thread.
+
+| Thread (menu question) | Chapter | Opens with |
+|---|---|---|
+| home ("Where are you from?") | home0 | Uzbekistan, far from the sea |
+| | home1 | The Registon and the bazaar |
+| | home2 | Osh in a qozon; Oyijon |
+| | home3 | How he got here: the melons |
+| | home4 | Navro'z and the apricot tree |
+| | home5 | The island has become home |
+| mom ("Do you have any family?") | mom0 | Oyijon and the four melons |
+| | mom1 | Her one rule: you eat |
+| | mom2 | No boats, and the promise |
+| | mom3 | Letters in coconut shells |
+| | mom4 | Helping him write a letter |
+| biz ("What do you do here?") | biz0 | Entrepreneur between ventures |
+| | biz1 | The three-business portfolio |
+| | biz2 | "Business for Beginners"; pick an idea |
+| | biz3 | The Emporium; pick a slogan |
+| | biz4 | Doubt: "just a blob who lost some melons" |
+| | biz5 | The partnership offer |
 
 Finished threads offer a retelling ("Tell me about Samarqand again."): he tells one of the thread's chapters again
-(never the one he retold last; trust-gated answers now open), scoring like small talk, then a retell line. The last
+(never the one he retold last), then a retell line. The last
 retold chapter per thread is the `retold.<thread>` flag.
 
-**Small talk** ("How's it going?"): `ball`, `mushrooms` (level 0), `name` (level 1),
-`visitors` (level 2), `rides` (needs the `kicked` flag).
+**Small talk** ("How's it going?"): `ball`, `mushrooms`, `name`, `visitors`, and `rides` (needs the `kicked` flag).
+Recent-topic rotation avoids repeating the last three topics when another eligible topic is available.
 
 ---
 

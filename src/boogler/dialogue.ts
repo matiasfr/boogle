@@ -1,11 +1,10 @@
-// The talk box: The Boogler's line typed out, your answers as buttons (a gift answer shows the gift), the friendship
-// meter, his portrait, a close button, and the button hints for the input in use. Its keys, pad buttons,
+// The talk box: The Boogler's line typed out, your answers as buttons (a gift answer shows the gift),
+// his portrait, a close button, and the button hints for the input in use. Its keys, pad buttons,
 // taps, the held movement and the camera are the shared NPC talk input (src/player/conversation.ts): confirm (pad A,
 // E, Space, Enter) skips the typing and says the selected answer, up and down pick, number keys answer at once, back
 // (pad B, Esc) leaves.
 import { reducedMotion } from '../constants.ts';
 import { openConversation, closeConversation } from '../player/conversation.ts';
-import { heartsText } from './friendship.ts';
 import { boogler } from './boogler.ts';
 import { GIFTS } from '../sim/gift-catalog.ts';
 import { setIcon } from '../player/item-icons.ts';
@@ -22,7 +21,6 @@ const VOICE: VoiceSpec = {
   grainMs: [65, 95],
   vowels: [0.3, 0.15, 0.1, 0.25, 0.2],
 };
-const REACT_MS = 1500;
 const MOUTHS = {
   smile:
     '<path d="M17.6 22.4 Q20 24.6 22.4 22.4" stroke="#1d1640" stroke-width="1.2" fill="none" stroke-linecap="round"/>',
@@ -49,16 +47,10 @@ const CROSS = `<svg class="bd-x" viewBox="0 0 12 12" aria-hidden="true"><path d=
 
 const MARKUP = `
   <div class="bd-wrap">
-    <div class="bd-pop" hidden><div class="bd-pop-text"></div></div>
     <div class="bd-card" role="dialog" aria-modal="true" aria-labelledby="bd-name">
       <div class="bd-head">
         <span class="bd-face"><span class="bd-face-svg"></span></span>
         <span class="bd-name" id="bd-name">The Boogler</span>
-        <span class="bd-bond">
-          <span class="bd-hearts" aria-hidden="true"></span>
-          <span class="bd-level"></span>
-          <span class="bd-bar" aria-hidden="true"><i></i></span>
-        </span>
         <button type="button" class="bd-close" aria-label="Leave" title="Leave"></button>
       </div>
       <p class="bd-say" aria-live="polite"></p>
@@ -69,28 +61,11 @@ const MARKUP = `
 
 /** What the talk box shows (src/boogler/talk.ts talkView). */
 export type DialogueView = { say: string; mood: string; opts: string[]; gifts?: number[] };
-export type Bond = { level: number; name: string; frac: number };
-type Dom = Record<
-  | 'wrap'
-  | 'faceBox'
-  | 'face'
-  | 'close'
-  | 'pop'
-  | 'popText'
-  | 'hearts'
-  | 'level'
-  | 'bond'
-  | 'bar'
-  | 'say'
-  | 'opts'
-  | 'hints',
-  HTMLElement
-> & { root: HTMLElement };
+type Dom = Record<'wrap' | 'face' | 'close' | 'say' | 'opts' | 'hints', HTMLElement> & { root: HTMLElement };
 type Current = {
   text: string;
   shown: number;
   at: number;
-  mood: string;
   onPick: (i: number) => void;
   onClose?: () => void;
   opts: string[];
@@ -99,7 +74,6 @@ type Current = {
 export const dialogue = { open: false };
 let el: Dom | null = null;
 let cur: Current | null = null;
-const react = { until: 0 };
 
 let speech: LineSpeech | null = null;
 function hush() {
@@ -118,15 +92,8 @@ function dom(): Dom {
   const d: Dom = (el = {
     root,
     wrap: q('.bd-wrap'),
-    faceBox: q('.bd-face'),
     face: q('.bd-face-svg'),
     close: q('.bd-close'),
-    pop: q('.bd-pop'),
-    popText: q('.bd-pop-text'),
-    hearts: q('.bd-hearts'),
-    level: q('.bd-level'),
-    bond: q('.bd-bond'),
-    bar: q('.bd-bar i'),
     say: q('.bd-say'),
     opts: q('.bd-opts'),
     hints: q('.bd-hints'),
@@ -163,9 +130,9 @@ function refreshGlyphs() {
   dom().close.innerHTML = glyph('close') || CROSS;
 }
 
-// view: { say, mood, opts, gifts? } (gifts[i]: the catalog index answer i hands over); bond: { level, name, frac };
+// view: { say, mood, opts, gifts? } (gifts[i]: the catalog index answer i hands over);
 // onPick(i) answers; onClose() runs on back (Esc, pad B) and the close button.
-export function showDialogue(view: DialogueView, bond: Bond, onPick: (i: number) => void, onClose?: () => void) {
+export function showDialogue(view: DialogueView, onPick: (i: number) => void, onClose?: () => void) {
   const d = dom();
   const opening = !dialogue.open;
   if (opening) {
@@ -184,13 +151,11 @@ export function showDialogue(view: DialogueView, bond: Bond, onPick: (i: number)
   }
   dialogue.open = true;
   d.root.hidden = false;
-  if (performance.now() >= react.until) d.face.innerHTML = portrait(view.mood);
-  setBond(bond);
+  d.face.innerHTML = portrait(view.mood);
   cur = {
     text: view.say,
     shown: 0,
     at: performance.now(),
-    mood: view.mood,
     onPick,
     onClose,
     opts: view.opts,
@@ -231,62 +196,12 @@ export function replay(node: HTMLElement, cls: string) {
   node.classList.add(cls);
 }
 
-let bondLevel = -1;
-function setBond(b: Bond) {
-  const d = dom();
-  d.hearts.textContent = heartsText(b.level);
-  d.level.textContent = b.name;
-  d.bar.style.width = `${Math.round(b.frac * 100)}%`;
-  if (bondLevel >= 0 && b.level > bondLevel) replay(d.bond, 'up');
-  bondLevel = b.level;
-}
-
-// His reaction while the box is open (a level up): a speech bubble over the card, a face for a moment, hearts.
-export function dialogueReact({
-  line,
-  mood,
-  hearts = false,
-  bond = null,
-}: {
-  line: string;
-  mood: string;
-  hearts?: boolean;
-  bond?: Bond | null;
-}) {
-  if (!dialogue.open) return;
-  const d = dom();
-  react.until = performance.now() + REACT_MS;
-  d.popText.textContent = line;
-  d.face.innerHTML = portrait(mood);
-  if (bond) setBond(bond);
-  const w = d.wrap.getBoundingClientRect(),
-    f = d.faceBox.getBoundingClientRect();
-  const x = f.left + f.width / 2 - w.left;
-  d.pop.style.left = `${Math.max(0, x - 30).toFixed(0)}px`;
-  d.pop.hidden = false;
-  replay(d.pop, 'pop');
-  replay(d.faceBox, 'pop');
-  if (!hearts || reducedMotion) return;
-  for (let k = 0; k < 4; k++) {
-    const h = document.createElement('span');
-    h.className = 'bd-heart';
-    h.textContent = '♥';
-    h.style.left = `${(x - 6 + (k - 1.5) * 12).toFixed(0)}px`;
-    h.style.top = `${(f.top - w.top + 6).toFixed(0)}px`;
-    h.style.animationDelay = `${k * 70}ms`;
-    h.addEventListener('animationend', () => h.remove());
-    d.wrap.append(h);
-  }
-}
-
 export function closeDialogue() {
   if (!dialogue.open) return;
   dialogue.open = false;
   hush();
   cur = null;
-  react.until = 0;
   const d = dom();
-  d.pop.hidden = true;
   closeConversation();
   boogler.me.speaking = false;
   d.root.hidden = true;
@@ -294,11 +209,6 @@ export function closeDialogue() {
 
 export function updateDialogue(now: number) {
   if (dialogue.open) refreshGlyphs();
-  if (react.until && now >= react.until) {
-    react.until = 0;
-    dom().pop.hidden = true;
-    if (cur) dom().face.innerHTML = portrait(cur.mood);
-  }
   if (!cur?.typing) return;
   const ms = now - cur.at;
   speech?.update(ms);

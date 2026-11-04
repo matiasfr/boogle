@@ -18,7 +18,7 @@ Boogle is a drop-in browser game for up to 8 friends. The default URL now opens 
 The old island remains at `?classic=1`. On your first visit you pick a name and a colour, press "Jump in", and land next to a
 sand volleyball court, among the island's toys: a shared beach ball, a frisbee, things to throw, mushrooms to bounce on
 and The Boogler. Returning players go straight in with their saved identity. On the classic island you can throw and chase the ball;
-throw things at each other; take a bag of seeds from the stand and bounce on the mushrooms it sprouts; befriend The Boogler, a purple
+throw things at each other; take a bag of seeds from the stand and bounce on the mushrooms it sprouts; chat with The Boogler, a purple
 blob NPC from Samarqand who wanders the island, talks in chapters, takes presents and launches you if you ride him;
 honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves; take logs from bundles at the palms and
 carry them on your back to work sites that lay a short railway (the 0.1 testbed, placeholder visuals).
@@ -40,7 +40,7 @@ The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each
 | 2 | Physics toys are optional fun | The beach ball, frisbee and mushroom bounces are optional. |
 | 3 | Side activities are never required | Mushrooms are optional; nothing is gated on them. |
 | 4 | Cooperation is automatic, not negotiated | Anyone can stock the same work site; nearby honks harmonize. |
-| 6 | Communal world, personal rewards | Work sites are shared; what you hold and Boogler friendship are per player. |
+| 6 | Communal world, personal rewards | Work sites are shared; what you hold and The Boogler's conversation memories are per player. |
 | 7 | Telegraph everything | Interact prompts, ping markers and work-site rings show what can be done and what is being built. |
 | 8 | Designed for drop-in, drop-out | Solo play and joining an existing room need no group start; returning players skip the identity card. |
 | 9 | Leave something for the next visitor | Items, piles, haul stacks and work sites persist in server snapshots. |

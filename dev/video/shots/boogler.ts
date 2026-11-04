@@ -1,8 +1,8 @@
-// The Boogler friendship (ea29f9f): talk and give a present, ride him until he launches you.
+// The Boogler: talk and give a present, ride him until he launches you.
 import type { ClipGame, Shot } from '../clip.ts';
 const ROOM = 'clipboog';
 const seed = () => {
-  localStorage.setItem('boogle.boogler', JSON.stringify({ pts: 18, pets: [], gifts: [], learned: [] }));
+  localStorage.setItem('boogle.boogler', JSON.stringify({ met: true, gifts: [], learned: [] }));
 };
 // Page code: put the player `d` metres from The Boogler at angle `a` (radians), or on his back with d = 0.
 const STAND = (d: number, a: number) => `
