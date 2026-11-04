@@ -254,6 +254,17 @@ This intentionally conservative variant starts each frame with the cart at camp 
 
 Both runs completed every expected bot action with no page or graphics errors. `npm run playthrough -- --compare .look/evidence/1793772548990-11068/run .look/evidence/1793774348050-66816/run` reproduces the comparison. The after bot uses frontier deliveries from Q4; earlier behavior is unchanged. Its walking share fell from 85% to 77%, but stationary time rose from 4:49 to 7:01, including a **1:49 Q5 shipment wait**. Thus the route is shorter overall, while the retained 16-rail capacity still leaves a noticeable second-trip wait. No capacity, speed, bill or forge-rate retune was made to hide that tradeoff. Whether seeing the shipment arrive feels like earned relief still needs the owner's playtest; this bot already knows where to go.
 
+**Committed-build repeat:** `1793776017482-40382` tested clean commit `150d782e`, with all expected actions, no errors/falls and an inspected end still. The repeat includes more startup waiting; do not replace the first measured run or hide that variance. Raw checkpoint seconds and changes from the same baseline:
+
+| Bot beat | Baseline | Committed repeat | Change |
+| --- | ---: | ---: | ---: |
+| Q3 starts laying | 1047.62 | 1088.38 | +40.77 |
+| Q4 starts laying | 1160.03 | 1163.27 | +3.23 |
+| Q5 starts laying | 1452.20 | 1384.27 | -67.93 |
+| Trains unlock | 1578.42 | 1510.52 | -67.90 |
+
+The repeat is already 41.68 s behind the first after-run at Q3. From Q3 to trains it takes 422.13 s, versus baseline 530.80 s and the first after-run 422.05 s: the affected interval improves by 108.67 s on the repeat. Q5 still waits 1:49; total stationary time is 7:54. Offline comparison: `npm run playthrough -- --compare .look/evidence/1793772548990-11068/run .look/evidence/1793776017482-40382/run`. The trusted harness changed between measurement rounds, with its exact version recorded in each manifest; these are observations, not a deterministic performance guarantee.
+
 **Each rung, before and after** (from `layout.ts` and the model's sums; bills held fixed): the axe doesn't cut much time (a 24-log job 65 m out, 80 s to 77 s, 3%) and isn't meant to: **12 presses to 5**, 8 logs in 2 swings where it took 4, 1.6 trees to 2.4. The pack: the forge's 32-log bill 170 m out, **4 trips to 2, 253 s to 129 s (49%)**, with line 2's first bill (22 pieces) also down to 2. The cart: station 3's logs, 350 m to the trees against 16 m to the rack, **223 s to 104 s for the job's walking (53%)**.
 
 **The train, door to door, Far Head to the village:** on foot 546 m, 98 s walking, 57 s sprinting. By train, measured with a called train at the far end (the worst wait): 31 s wait, 2 s to board, 3 s of dwell, 31 s ride: **68 s**. Already there: about 36 s. So it beats walking by 31 to 63%, and beats non-stop sprinting only when it's already near; the fair reason for it is cargo, and the sit. A missed train costs a return trip of about 70 s, less if you call it back at once. Camp to village: 18.6 s riding against 34 s walking.
