@@ -4,6 +4,7 @@
 import * as THREE from 'three/webgpu';
 import { instancedDynamicBufferAttribute } from 'three/tsl';
 import { scene } from './scene.ts';
+import { guardDrawCount } from './draw-count.ts';
 
 // A per-instance buffer that is rewritten every frame.
 export const dynAttr = (array: Float32Array, itemSize: number) =>
@@ -19,7 +20,8 @@ export function instancedSprite(
 ) {
   mat.alphaToCoverage = false;
   mat.positionNode = instancedDynamicBufferAttribute(posAttr);
-  const sprite = new THREE.Sprite(mat);
+  posAttr.name = 'instanced sprite positions';
+  const sprite = guardDrawCount(new THREE.Sprite(mat), () => posAttr.count, 'instanced sprite');
   sprite.count = count;
   sprite.frustumCulled = false;
   sprite.visible = false;

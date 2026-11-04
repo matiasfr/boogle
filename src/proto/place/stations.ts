@@ -3,6 +3,7 @@
 // in it piece by piece; when the frame has what it needs, those same logs roll into the machine's cradle
 // (.look/previz/visible-materials/board.md, shots 1-3). Local.
 import * as THREE from 'three/webgpu';
+import { guardInstances } from '../../render/draw-count.ts';
 import { material } from '../../render/materials.ts';
 import { scene } from '../../render/scene.ts';
 import { removeBody, type Body } from '../../physics/engine.ts';
@@ -153,6 +154,9 @@ export function buildStation(spec0: Station, place: FrameAt) {
   scene.add(rails);
   // Stone in a low heap beside the frame; the great beam, when it comes, across the frame's top.
   const stones = spec0.stone ? new THREE.InstancedMesh(stoneGeo, stoneMat, spec0.stone) : null;
+  guardInstances(logs, `station ${spec0.id} logs`);
+  guardInstances(rails, `station ${spec0.id} rails`);
+  if (stones) guardInstances(stones, `station ${spec0.id} stone`);
   if (stones) {
     stones.castShadow = true;
     stones.frustumCulled = false;

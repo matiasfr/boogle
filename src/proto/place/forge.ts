@@ -5,6 +5,7 @@
 // building copies its plan (./sites.ts).
 // docs/proposals/boogle-2.md, 2026-11-02 "construction is physical" and "the next test". Local.
 import * as THREE from 'three/webgpu';
+import { guardInstances } from '../../render/draw-count.ts';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
@@ -234,6 +235,7 @@ const racked = LOOK.kit
       flat('#4c5058', 0.6),
       TUNE.rackMax,
     );
+guardInstances(racked, 'forge rack');
 racked.castShadow = true;
 racked.frustumCulled = false;
 racked.count = 0;

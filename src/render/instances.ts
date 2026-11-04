@@ -10,6 +10,7 @@
 //
 //   freezeStatic(object)   decor that never moves: compute its matrices once and skip them every frame after
 import * as THREE from 'three/webgpu';
+import { guardInstances } from './draw-count.ts';
 
 export type Pool = {
   mesh: THREE.InstancedMesh;
@@ -31,7 +32,7 @@ export type Pool = {
 };
 
 export function createPool(geometry: THREE.BufferGeometry, material: THREE.Material, max: number): Pool {
-  const mesh = new THREE.InstancedMesh(geometry, material, max);
+  const mesh = guardInstances(new THREE.InstancedMesh(geometry, material, max), 'instance pool');
   mesh.count = 0;
   geometry.computeBoundingSphere();
   const r0 = geometry.boundingSphere!.radius + geometry.boundingSphere!.center.length();
