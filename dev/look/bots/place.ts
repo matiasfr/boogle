@@ -47,9 +47,15 @@ export async function play() {
     // A short walk can finish mid-hop. Let physics land before planning the next leg from the ground.
     if (
       coopRoute &&
-      !(await bot.until(() => me.coyote > 0 && body.velocity.y <= 0 && !me.swimming, 10000, 'dry co-op landing'))
+      !(await bot.until(
+        () => me.coyote > 0 && Math.abs(body.velocity.y) < 0.5 && !me.swimming,
+        10000,
+        'dry co-op landing',
+      ))
     )
-      throw new Error('Co-op player did not land before the next walk');
+      throw new Error(
+        `Co-op player did not land before the next walk: ${JSON.stringify({ position: body.position, velocity: body.velocity, coyote: me.coyote })}`,
+      );
     return bot.walk(x, z, r, { limit });
   };
   const travel = go;

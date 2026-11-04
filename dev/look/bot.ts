@@ -268,7 +268,10 @@ export function makeBot(opts: BotOptions = {}) {
   }
   function swimCheck() {
     if (!me.swimming) return false;
-    note('in the water: back on land');
+    // Recovery can deliberately throw in a continuous route. Stop driving even when its caller aborts.
+    input.keys.delete('KeyW');
+    input.keys.delete('ShiftLeft');
+    note('in the water: requesting recovery');
     opts.recover?.();
     return true;
   }
