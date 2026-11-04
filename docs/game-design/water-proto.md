@@ -157,6 +157,9 @@ rebuilds and are intentionally omitted. Additional uniforms and grading arithmet
 the flag-off shader graphs retain their constants and do not restore saved overrides.
 
 Production `water=new` also serves the opt-in home shore slice (`classic=1&shore=smooth-detail&shoreRocks=1`).
+Real registered rock/support contacts each retain eight world-fixed spray sites, including later-built supports;
+the 512-contact registry bounds that list. Provider obstacles retain their separate 256-site cap. Spray still
+uses the shared particle pool with at most 96 emissions per frame and 420 per rolling second, before particle upload.
 Its receivers carry the demo-strength shallow caustic net, moving wetness and swash lace; contacts and bed data
 follow the slice. Wet receiver sheen uses continuous vertex normals instead of turning dry terrain facets into
 white triangles. The surface rejects faces on the wrong side of the camera, using the existing GPU lens-depth
