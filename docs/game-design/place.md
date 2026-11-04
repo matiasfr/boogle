@@ -79,7 +79,7 @@ Now and then two of them near you stop and **chatter**: two to four short lines 
 
 When rails are needed, the beacon points to the visible forge rack and its nearby Interact prompt remains **Take rails**. The repeated objective sentence has been removed (DESIGN.md 11); The Boogler's copy and gift lines are unchanged.
 
-Falling is harmless: in the water, or down on a shore or a river bank more than 20 m from any path or laid track, Interact reads **Back up the path**. **The panel** has Start over, Skip the walk, Skip chop and carry (fills the current frame), and Skip to the first path, to line 2, to Far Head and to trains.
+Falling is harmless: in the water, or down on a shore or a river bank more than 20 m from any path or laid track, Interact reads **Back up the path**. **Get unstuck** in the pause view searches nearby dry, level ground using the same safety validator as rejoining, with a clear landing checked against solid scenery. It falls back to the nearest path or laid track if no safe ground is found within 40 m. Classic mode keeps its spawn reset. **The panel** has Start over, Skip the walk, Skip chop and carry (fills the current frame), and Skip to the first path, to line 2, to Far Head and to trains.
 
 **The tester's link** adds `&fresh=1`: no prototype bar (so no gut question or verdict buttons, and its D-pad and P do nothing), no panel, and no Honk or Ping touch buttons. The counters and the numbers still run. On touch, the main button dims while nothing's in reach, and the objective sits above the buttons. On every `?proto=place` page the pause view's controls (every tab, and the drawn pad) list only what this place uses, without the ball, Use, Toss or the guest's Crouch and Punch, and the objective and numbers wait until you're in.
 
