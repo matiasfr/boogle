@@ -456,6 +456,28 @@ body.touch .bd-opt kbd,
 body.gamepad .bd-opt kbd {
   display: none;
 }
+/* Touch: thumb-sized answers (48 px tall at least) and close button (44 px), no double-tap zoom or grey flash. */
+body.touch .bd-card {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+body.touch .bd-opts {
+  gap: 9px;
+}
+body.touch .bd-opt {
+  min-height: 48px;
+  padding: 11px 14px;
+  font-size: 16px;
+}
+body.touch .bd-close {
+  min-width: 44px;
+  height: 44px;
+  margin: -8px -10px -4px -4px; /* the same 30 px of header as before */
+}
+body.touch .bd-x {
+  width: 16px;
+  height: 16px;
+}
 /* On a phone the left 45% of the screen is the move stick (src/player/input.ts): keep the card off it, so you can walk
    away mid-talk. Landscape: to the right. Portrait: up top, under the name tag. */
 @media (orientation: landscape) {

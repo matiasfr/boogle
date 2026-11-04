@@ -195,6 +195,23 @@ body.touch .place-talk-opts button.talk-sel {
   background: #efe2c6;
   outline: 0;
 }
+/* Touch: thumb-sized answers, each at least 44 px tall and sharing the row; no double-tap zoom or grey flash. */
+body.touch .place-talk {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+body.touch .place-talk-opts {
+  gap: 8px;
+}
+body.touch .place-talk-opts button {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: 16px;
+}
+body.touch .place-talk-opts button:active {
+  background: #ffd24a;
+}
 .place-talk-hints {
   margin-top: 6px;
   font-size: 12px;

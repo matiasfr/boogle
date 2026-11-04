@@ -10,7 +10,7 @@ button does what) and 8 (designed for drop-in). Local: no sim or network state.
 | | Pad | Keyboard | Touch |
 |---|---|---|---|
 | Open | X / □ / Y (the interact button) | E | the main button (it says Talk) |
-| Skip the typing, or go on | A / ✕ | E, Space, Enter | tap the box |
+| Skip the typing, or go on | A / ✕ | E, Space, Enter | tap the box (with one answer, the tap says it) |
 | Pick an answer | D-pad ↑ ↓ or the left stick (repeats while held) | ↑ ↓ or W S; 1-9 answer at once | tap it |
 | Say the picked answer | A / ✕ | E, Space, Enter | (the tap) |
 | Leave | B / ○ | Esc (with the mouse locked, Esc ends the lock, which also leaves) | the close button |
@@ -20,9 +20,14 @@ button does what) and 8 (designed for drop-in). Local: no sim or network state.
 - X / □ (interact) does nothing in a talk; the other pad buttons keep their actions (Y / △ honks).
 - The first answer is selected when the answers appear (a sun-yellow fill with an outline; drawn while a pad or
   keyboard plays, not on touch). Skipping the typing never also answers.
+- **Touch.** With one answer, a tap anywhere on the box says it, so a run of one-answer lines is tap, tap, tap; the
+  answer button still works. For 350 ms after the answers appear, taps on them or the box do nothing, so a second tap
+  meant for the typing never answers. Answers are thumb-sized on touch (48 px tall on The Boogler's card, 44 px on the
+  others) and his close button is 44 px.
 - A hint row on the box shows the buttons for the input in use, named for the pad's brand: "A Next, B Leave" while the
   line types or there is only one way on, "A Answer, ↑↓ Pick, B Leave" when there are choices (✕ / ○ on a PlayStation
-  pad); "E Next" / "E Answer", "↑↓ Pick", "Esc Leave" on a keyboard; nothing on touch.
+  pad); "E Next" / "E Answer", "↑↓ Pick", "Esc Leave" on a keyboard; on touch only "Tap to go on ▸" when there is one
+  answer.
 - D-pad ↑ ↓ (buttons 12 and 13, or the D-pad axes of a pad without the standard mapping) and the left stick repeat
   while held: first after 380 ms, then every 170 ms.
 - **You stand still.** Move and jump are held for the whole talk (`inputState.held`); looking around still works.
@@ -38,7 +43,7 @@ button does what) and 8 (designed for drop-in). Local: no sim or network state.
 
    ```ts
    openConversation({
-     box, // the card element: a tap on no button skips the typing
+     box, // the card element: a tap on no button skips the typing, then says a lone answer
      typing: () => typing, // is the line still typing out?
      skip, // show the whole line now
      choices: () => [...box.querySelectorAll('button.answer')], // [] while typing; saying one clicks it
