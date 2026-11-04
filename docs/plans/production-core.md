@@ -1,6 +1,6 @@
 # Production core: friends build one railway that stays built
 
-**Proposal for owner scope approval. No implementation is authorized by this document.** Prepared 4 November 2026 against `279cbc7167913401254113a21a9fe337daedcd51`, on `codex/conversion-plan`. Only this plan changes. The seven findings in [mainline-architecture](mainline-architecture.md) remain open; the closure assignments below are proposed exit criteria, not completed work.
+**Scope approved by the owner on 4 November 2026, all eight recommendations as written below ([decision](../proposals/boogle-2.md#the-shape-of-the-game)). Implementation still waits for their replay of the corrected round 4 loop.** Prepared 4 November 2026 against `279cbc7167913401254113a21a9fe337daedcd51`, on `codex/conversion-plan`. Only this plan changes. The seven findings in [mainline-architecture](mainline-architecture.md) remain open; the closure assignments below are proposed exit criteria, not completed work.
 
 ## Goal and gate
 
