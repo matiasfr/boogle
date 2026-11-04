@@ -33,6 +33,26 @@ existing AgX curve, plus optional **bloom on**, **bloomStrength** (0–0.5, step
 are `post.bloom` (0 or 1), `post.bloomStrength` and `post.bloomThreshold`. Quality resolution scales the shared
 scene pass, retaining adaptive DPR ownership.
 
+**AgX look** in Post selects **Current** (the shipped power 1.12 / saturation 1.3), **Stock AgX**
+(1 / 1, no look), or **Punchy** (1.35 / 1.4). The `agxPower` (0.5–2) and `agxSaturation` (0–2)
+sliders update the existing graph immediately; unmatched pairs display **Custom**. Slope stays 1.
+These are `post.agxPower` and `post.agxSaturation` in Copy/Apply and tuning-only persistence; both
+group and all Reset restore Current. The selector is derived from the numbers, so pasted and reloaded
+settings cannot leave its name stale. Exposure compensation remains separate.
+
+The look stays after the AgX contrast polynomial in its encoded/log domain, before outset, linearization
+and conversion back to sRGB. Local three.js r187 (`ToneMappingFunctions.js` and
+`tonemapping_pars_fragment.glsl.js`) confirms this insertion point and has no Punchy implementation.
+The local Ultra Water `src/engine/PostFX.js` confirms the existing power-then-luminance/saturation
+operation and 1.12 / 1.3 defaults. Punchy's 1.35 / 1.4 values follow the owner's supplied Minimal AgX /
+Filament reference; those upstream implementations were not independently verified because this task
+allowed no external network access. Golden is omitted. This is a preset for Boogle's existing graph,
+not a claim of bit-for-bit Filament output.
+
+Without `tune=1`, the same single-input AgX graph still uses the original literal constants; no new
+uniforms or saved overrides enter the shader. These controls are Local viewer preferences, with no
+shared state or lockstep changes.
+
 Bloom ports Ultra Water `PostFX.js`'s six-level 13-tap downsample / nine-tap additive tent reconstruction to TSL,
 including its per-tap 64-luminance clamp, half-threshold soft knee and first-level Karis weights. Three's BloomNode
 uses five separable Gaussian levels and a different high-pass/weighting, so its .05 would not mean the same look.

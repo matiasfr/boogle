@@ -29,7 +29,7 @@ const {
   vec4,
 } = TSL;
 export const luma = (v: N) => dot(v, vec3(0.2126, 0.7152, 0.0722));
-export const agx = Fn(([input]: [N]) => {
+export const agx = Fn(([input, power = 1.12, saturation = 1.3]: [N, N?, N?]) => {
   const to2020 = mat3(vec3(0.6274, 0.0691, 0.0164), vec3(0.3293, 0.9195, 0.088), vec3(0.0433, 0.0113, 0.8956));
   const toSrgb = mat3(vec3(1.6605, -0.1246, -0.0182), vec3(-0.5876, 1.1329, -0.1006), vec3(-0.0728, -0.0083, 1.1187));
   const inset = mat3(
@@ -65,8 +65,9 @@ export const agx = Fn(([input]: [N]) => {
       .add(c.mul(0.1191))
       .sub(0.00232),
   );
-  c.assign(pow(max(c, 0), vec3(1.12)));
-  c.assign(mix(vec3(luma(c)), c, 1.3));
+  // Look in the AgX log domain, after contrast and before the inverse transform; slope stays 1.
+  c.assign(pow(max(c, 0), vec3(power)));
+  c.assign(mix(vec3(luma(c)), c, saturation));
   c.assign(outset.mul(c));
   return clamp(toSrgb.mul(pow(max(c, 0), vec3(2.2))), 0, 1);
 });

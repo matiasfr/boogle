@@ -16,11 +16,14 @@ export function installWaterPost(source: N) {
   const key = scalar('post.keyValue', params, 'keyValue');
   const contrast = scalar('post.contrast', params, 'contrast');
   const saturation = scalar('post.saturation', params, 'saturation');
+  const look = { power: 1.12, saturation: 1.3 };
+  const agxPower = scalar('post.agxPower', look, 'power');
+  const agxSaturation = scalar('post.agxSaturation', look, 'saturation');
   const makeOutput = (hdr: N) =>
     Fn(() => {
       OnAfterRenderPipeline(() => meter.save(renderer));
       const gain = tuningEnabled ? mix(1, meter.value.mul(float(key).div(0.18)), auto).mul(exposure) : meter.value;
-      let c = agx(hdr.rgb.mul(gain));
+      let c = tuningEnabled ? agx(hdr.rgb.mul(gain), agxPower, agxSaturation) : agx(hdr.rgb.mul(gain));
       if (tuningEnabled) {
         c = pow(max(c, 0), vec3(contrast));
         c = mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, saturation);
