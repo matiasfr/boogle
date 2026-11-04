@@ -2,6 +2,7 @@
 // `.clear()` gives it back). Used by `npm run look` (dev/look/); src/features/debug-cam.ts loads it only with the flag.
 import { camera } from '../render/scene.ts';
 import { defineKind, spawn, despawn, type GameEntity } from '../entity/entity.ts';
+import { devInput } from '../player/dev-input.ts';
 
 type V3t = [number, number, number];
 let pose: { pos: V3t; look: V3t } | null = null;
@@ -10,6 +11,7 @@ let saved: { position: typeof camera.position; quaternion: typeof camera.quatern
 defineKind('debug-camera', { lateUpdate: 1000 });
 window.__debugCam = {
   set(pos: V3t, look: V3t, fov?: number) {
+    if (devInput.camera) return; // A live free camera owns the view until Return.
     if (!pos.every(Number.isFinite) || !look.every(Number.isFinite)) return;
     saved ??= { position: camera.position.clone(), quaternion: camera.quaternion.clone(), fov: camera.fov };
     pose = { pos, look };

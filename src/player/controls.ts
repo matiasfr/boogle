@@ -46,6 +46,8 @@
 // Each logs a [controls] warning when the id is missing (renamed or never registered). Re-registering an id drops its
 // wraps.
 
+import { devInputBlocked } from './dev-input.ts';
+
 /** A key list for the guide: codes, mouse tokens, combos, ranges, or a nested cluster. */
 export type Keys = (string | Keys)[];
 export type Detail = string | { pad?: string; kbm?: string; touch?: string };
@@ -204,7 +206,9 @@ const warnProblems = (c: Action | Described) => {
 // ---------------------------------------------------------------- keyboard
 // One guard for every bound key: the name field (or any text field) keeps its letters.
 export const isTyping = (e: { target?: EventTarget | null } | null | undefined) =>
-  !!(e?.target as Element | null | undefined)?.closest?.('input, textarea, [contenteditable], [data-water-panel]');
+  !!(e?.target as Element | null | undefined)?.closest?.(
+    'input, textarea, select, [contenteditable], [data-water-panel], [data-dev-ui]',
+  );
 const keyBinds = new Map<string, { owner: string; down: Edge | null; up: Edge | null }>(); // code -> binding
 let listening = false;
 
@@ -212,6 +216,7 @@ let listening = false;
 export function keyEvent(e: KeyLike) {
   const b = keyBinds.get(e.code);
   if (!b) return false;
+  if (devInputBlocked() && b.owner !== 'dev-camera') return false;
   if (e.type === 'keyup') b.up?.();
   else if (!e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e)) b.down?.();
   else return false;
@@ -253,9 +258,10 @@ function touchButton(action: Action, { label, className }: { label: string; clas
   btn.textContent = label;
   btn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
+    if (devInputBlocked()) return;
     action.down?.();
   });
-  for (const ev of ['pointerup', 'pointercancel']) btn.addEventListener(ev, () => action.up?.());
+  for (const ev of ['pointerup', 'pointercancel']) btn.addEventListener(ev, () => !devInputBlocked() && action.up?.());
   box.append(btn);
   return btn;
 }
@@ -404,7 +410,8 @@ function warnWaitingWraps() {
 
 /** Every action's id, hidden from the guide or not (the playtest data counts their presses). */
 export const actionIds = () => [...actions.keys()];
-export const triggerAction = (id: string, edge: 'down' | 'up') => actionById(id, 'triggerAction')?.[edge]?.();
+export const triggerAction = (id: string, edge: 'down' | 'up') =>
+  !devInputBlocked() && actionById(id, 'triggerAction')?.[edge]?.();
 
 export const actionForSlot = (pad: string) => bySlot.get(pad) || null;
 export const slotFor = (id: string) => actions.get(id)?.pad ?? null; // the pad slot an action is bound to

@@ -14,7 +14,9 @@ export type Tool = {
   run(command: string, args: Args): Result | Promise<Result>;
   mount(parent: HTMLElement, context: Context): (() => void) | Promise<() => void>;
   snapshot?(): unknown;
+  dispose?(): void;
 };
+export type DockPanel = { id: string; label: string; load(): Promise<{ tool: Tool }> };
 export type DevApi = {
   tools(): { id: string; label: string; scope?: string; commands?: readonly string[] }[];
   open(tool?: string): Promise<boolean>;

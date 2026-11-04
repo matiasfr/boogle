@@ -32,6 +32,8 @@ and [updates.ts](../../src/features/updates.ts).
 
 Notes:
 
+- **Dev free camera:** after explicitly enabling Dev, Free cam owns movement and interaction until Return, even with the dock collapsed. WASD flies, Space rises, Shift lowers, and dragging the scene looks. Touch has held Forward/Back/Left/Right/Up/Down buttons outside the dock; pad sticks fly/look, LB lowers, RB rises, and B returns. Speed is adjustable. Dock inputs retain their normal text/slider behavior. Tapping the scene releases dock focus, including after Return on touch. Blur clears held camera input. The camera never moves the avatar; other players still see its ordinary physical position. Camera bookmarks and speed persist locally, but active camera/input ownership does not.
+
 - **Gamepad diagram** ([src/player/pad-diagram.ts](../../src/player/pad-diagram.ts), 2026-11-01): the pause view's
   Gamepad tab draws a generic controller (two sticks, D-pad, four face buttons, bumpers, triggers, View / Menu, stick
   clicks) between two columns of callouts, one per slot and stick, each with a leader line to its button. The callouts
