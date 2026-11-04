@@ -10,7 +10,8 @@ import { lerp, angleLerp, finiteArr, r2 } from '../../math.ts';
 import { setMask, teleport } from '../../physics/engine.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
 import { carry, platformById, toPlatform, fromPlatform, type Local } from '../../physics/platforms.ts';
-import { makeAvatar, makeLabel, animateAvatar, paintAvatar } from '../../player/avatars.ts';
+import { makeAvatar, animateAvatar, paintAvatar } from '../../player/avatars.ts';
+import { createNameLabel } from '../../components/name-label/view.ts';
 import { chaseKinematic, makePlayerBody, NOT_SCENERY } from '../../physics/physics.ts';
 import {
   addPresenceField,
@@ -67,11 +68,6 @@ function leave(r: Remote) {
 }
 onPeerLeftIsland(leave);
 onPeerRemoved(leave);
-
-function disposeLabel(label: ReturnType<typeof makeLabel>) {
-  label.material.map?.dispose();
-  label.material.dispose();
-}
 
 // ---------------------------------------------------------------- riding a shared platform (Owner)
 // World presence trails a moving deck by the interpolation delay (0.3 m at the wagon's 3 m/s, more on a stop or a
@@ -181,8 +177,7 @@ function spawnRemotePlayer(r: Remote, time: number): GameEntity {
   const body = makePlayerBody(true);
   teleport(body, r.target.x, r.target.y, r.target.z);
   const prevPos = r.target.clone();
-  let label: ReturnType<typeof makeLabel> | null = null;
-  let labelText = '';
+  const nameLabel = createNameLabel(avatar);
   let shownColor = -1,
     shownMat: THREE.MeshStandardMaterial | null = null;
   let posed = false; // the first frame puts it at that frame's pose: no walk from where its first presence arrived
@@ -190,6 +185,7 @@ function spawnRemotePlayer(r: Remote, time: number): GameEntity {
     kind: 'remote-player',
     mesh: avatar,
     bodies: [body],
+    nameLabel,
     prePhysics({ now }) {
       if (!r.snaps.length) return;
       const rt = now - INTERP_MS;
@@ -207,15 +203,7 @@ function spawnRemotePlayer(r: Remote, time: number): GameEntity {
         shownMat = avatar.userData.mat;
         paintAvatar(shownMat, shownColor);
       }
-      if (labelText !== r.name) {
-        if (label) {
-          avatar.remove(label);
-          disposeLabel(label);
-        }
-        label = makeLabel(r.name);
-        labelText = r.name;
-        avatar.add(label);
-      }
+      nameLabel.setText(r.name);
     },
     fixedPre() {
       // A co-rider's body is an interpolated proxy, not another simulated passenger. Its catch-up velocity must
@@ -240,9 +228,13 @@ function spawnRemotePlayer(r: Remote, time: number): GameEntity {
       prevPos.copy(r.target);
       animateAvatar(avatar, r.speed, r.state === 1, dt, r.state === 2);
     },
+    describe: () => ({ components: { nameLabel: nameLabel.describe() } }),
     dispose() {
-      avatar.userData.mat.dispose();
-      if (label) disposeLabel(label);
+      try {
+        avatar.userData.mat.dispose();
+      } finally {
+        nameLabel.dispose();
+      }
     },
   });
   r.avatar = avatar;

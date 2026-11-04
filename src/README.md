@@ -18,6 +18,7 @@ so hashed file names don't depend on it).
   smooth shared time).
 - `entity/`: the entity core, for anything new in the world or on screen: `entity.ts` (`defineKind`, `spawn`, `despawn`; the
   lifecycle contract is at its top) and `walker.ts`, its pure logic, tested in Node.
+- `components/`: typed behaviours explicitly owned and called by entities; see the [owned-behaviour convention](../docs/agents/plugins.md#a-feature-is-a-plug-in). `name-label/view.ts` shares remote-player and arrival-preview label maintenance.
 - `entities/`: game objects (docs/plans/entity-architecture.md). `ball/`: the beach ball, the worked example of a
   long-lived entity (`index.ts` runs it, `state.ts`, `view.ts`, `sync.ts`); `features/ping.ts` is the short-lived one. `player/` and
   `camera/`: the local player and camera as entities, over `player/`. `remote-player/`: other players as this tab
