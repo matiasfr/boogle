@@ -27,12 +27,82 @@ foam, reflection gain/cap/tint, caustics, spray amount/size and underwater scatt
 Sun elevation, azimuth, intensity, cloud coverage, turbidity and time of day rebake the existing sky cube and
 matching sun/hemisphere lighting after editing; a brief stall is possible. This does not start a day/night cycle.
 Post controls cover exposure compensation, automatic exposure, key value, contrast and saturation around the
-existing AgX curve. Quality resolution scales the shared scene pass, retaining adaptive DPR ownership.
+existing AgX curve, plus optional **bloom on**, **bloomStrength** (0–0.5, step .001) and **bloomThreshold**
+(0–10, step .01). Bloom starts off on desktop and mobile; first enable uses the reference's .05 strength and
+1.5 threshold. All three controls join Copy, Apply, group/all Reset and tuning-only persistence. The JSON keys
+are `post.bloom` (0 or 1), `post.bloomStrength` and `post.bloomThreshold`. Quality resolution scales the shared
+scene pass, retaining adaptive DPR ownership.
+
+Bloom ports Ultra Water `PostFX.js`'s six-level 13-tap downsample / nine-tap additive tent reconstruction to TSL,
+including its per-tap 64-luminance clamp, half-threshold soft knee and first-level Karis weights. Three's BloomNode
+uses five separable Gaussian levels and a different high-pass/weighting, so its .05 would not mean the same look.
+This extends the one `pipeline.outputNode`: underwater HDR → bloom addition → exposure → AgX → sRGB.
+The reference's 11 filtering draws need one extra HDR materialization here because underwater is an expression;
+there are **12 additional draws while enabled**, no second scene render, renderer or frame loop. Upsampling uses
+separate additive targets instead of attachment blending. The exposure meter still reads the unbloomed scene.
+
+The optional graph and native pipelines are built **when first enabled**, on the next real draw, which can briefly
+stall. Saved tuning overrides restored before the loading warm-up are included in `precompile`'s normal frame
+path. No bloom graph or targets exist at ordinary startup. Off and zero strength select the original cached output
+graph, removing every bloom dependency and pass; positive strength/threshold edits change uniforms only. Previously
+enabled targets remain allocated for reuse until water disposal, but do no work while disconnected. Without `tune=1`,
+there are no bloom uniforms, restored overrides, passes or changes to the output shader's arithmetic.
+
+### Bloom verification (3 November 2026)
+
+On this M1 Max, hardware WebGPU/Metal, fixed DPR 1, full-resolution scene/output and stored 4× MSAA,
+the place shoreline camera `(900,10,120) → (950,3,180)` was measured in two sessions per resolution.
+Each session used off / .05 / off / .05 / enabled-with-zero-strength / off, three real seconds per segment.
+These are **earliest GPU start to latest GPU end across render and compute**, not summed pass timers.
+The capture corrects r187's resumed-pass timestamp ownership, following the shore-water measurement.
+All 4,285 sampled frames had valid ranges, with no missing or partial timestamp coverage.
+
+| Physical pixels | Off: segment means | .05 / 1.5: segment means | Zero strength: segment means | Off / on p95 ranges |
+| --- | --- | --- | --- | --- |
+| 1210×702 | 6.28–7.02 ms | 6.79–9.04 ms | 6.13–6.57 ms | 7.66–9.59 / 8.05–15.13 ms |
+| 2880×1800 | 10.89–21.19 ms | 10.58–26.80 ms | 10.89–13.90 ms | 12.70–40.19 / 11.67–38.49 ms |
+
+**Shared GPU, contended even on repeat:** other headless Chromium groups and WebKit GPU activity were observed.
+The drift can exceed the bloom increment or reverse its sign; these samples do not establish isolated incremental
+cost. They do establish the bypass: 7 renderer passes off/zero versus 19 on, with 12 additional fullscreen draws
+and no additional scene draw. Raw per-frame spans and the measurement helper accompany the manifests:
+[1210 first](../../.look/evidence/1793773333700-25988/evidence.json),
+[1210 repeat](../../.look/evidence/1793774026144-55152/evidence.json),
+[2880 first](../../.look/evidence/1793773413237-28023/evidence.json),
+[2880 repeat](../../.look/evidence/1793773949850-53766/evidence.json).
+
+Opened matching-camera off/.05/.2 stills of glints, sky, head stars and underwater, plus plain-shore and panel
+stills. **.05 is visible on water glints**, as a faint soft glow; .2 is conspicuous and washes out contrast.
+The sky already has an atmospheric sun halo, so .05 is barely perceptible there. The actual head-star sprites
+remain dark: .2 mainly lifts surrounding haze, rather than making them glow. Their unlit texture is below the
+useful threshold; bloom does not repair that material/exposure issue. The stars were held in a staged knockdown
+pose with unchanged materials; the water spectrum was frozen for comparisons. At the plain shore, .05 lifts
+the dark cliff slightly without an obvious bright edge rim. Underwater retains its caustics, scattering and
+lens treatment without graphics errors; moving snow/droplets were not frozen.
+Representative manifests: [glints](../../.look/evidence/1793773700407-43118/evidence.json),
+[sky](../../.look/evidence/1793773729568-44242/evidence.json),
+[stars](../../.look/evidence/1793773758343-45642/evidence.json),
+[shore](../../.look/evidence/1793773896871-51831/evidence.json),
+[underwater](../../.look/evidence/1793773865407-50410/evidence.json).
+
+Copy/Apply, group/all Reset, invalid-toggle rejection and live zero bypass passed the
+[panel exercise](../../.look/evidence/1793773588100-37314/evidence.json).
+A [real saved-on reload](../../.look/evidence/1793774074306-56432/evidence.json) restored .05/1.5 and built bloom
+pipelines at 5.13–5.94 s, before reveal at 5.98 s; no late pipelines were recorded. The
+[same saved overrides without tune](../../.look/evidence/1793774114770-55150/evidence.json) produced no bloom
+bindings or pipelines and no late pipelines. Enabling during play builds on that draw; toggling graphs can
+rebuild native variants, while positive-strength/threshold edits stay uniform-only. No changes to `precompile.ts`.
+The [full place bot](../../.look/evidence/1793774167853-60024/evidence.json) completed every expected beat
+with .05 bloom, zero errors and 78 checkpoints; the solo run did not mark co-op. Its report and end still were
+read. [Smoke and world-inputs](../../.look/evidence/1793774462698-60023/evidence.json) passed, as did `npm run check`.
+Real-time feel, isolated GPU timing and mobile-device performance remain unverified.
+
+### Other controls and limits
 
 The panel lists the demo controls that are unavailable: camera presets and uncapped benchmark are demo tools;
 floater spawn/drop/clear and drag/angularDrag/buoyancy belong to gameplay bodies; planar `reflections`,
-`reflectionScale` and `reflectionDistort` have no production reflection target; bloom strength/threshold would add
-a pass. Refraction distortion is adjustable on the existing production path. Colour presets and clarity are
+`reflectionScale` and `reflectionDistort` have no production reflection target. Refraction distortion is adjustable
+on the existing production path. Colour presets and clarity are
 represented by the editable absorption, scatter and foam tint. AgX remains the production curve. MSAA and
 automatic resolution belong to the shared renderer, and distance fog belongs to the place/cave route. FFT size,
 cascade topology, polar mesh resolution, foam/shore bake dimensions, shaft steps and snow count require resource

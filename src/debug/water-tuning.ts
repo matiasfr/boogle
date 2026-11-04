@@ -8,7 +8,7 @@ import { waterReady } from '../render/water-render.ts';
 import { newWaterEnabled } from '../render/water/flags.ts';
 import { bindings, type Value } from '../render/water/live.ts';
 
-type Spec = { key: string; label: string; min: number; max: number; step: number; color?: boolean };
+type Spec = { key: string; label: string; min: number; max: number; step: number; color?: boolean; toggle?: boolean };
 type Group = { name: string; note?: string; specs: Spec[] };
 const spec = (key: string, label: string, min: number, max: number, step = 0.01): Spec => ({
   key,
@@ -99,8 +99,11 @@ const groups: Group[] = [
   },
   {
     name: 'Post',
-    note: 'AgX is the production tone curve. Exposure compensation is applied before it.',
+    note: 'Bloom and exposure run before AgX. Bloom starts off; first enable builds its filters and may briefly stall. Off or zero strength skips them.',
     specs: [
+      { ...spec('post.bloom', 'bloom on', 0, 1, 1), toggle: true },
+      spec('post.bloomStrength', 'bloomStrength', 0, 0.5, 0.001),
+      spec('post.bloomThreshold', 'bloomThreshold', 0, 10),
       spec('post.exposure', 'exposure comp', 0.25, 4),
       spec('post.autoExposure', 'autoExposure', 0, 1, 1),
       spec('post.keyValue', 'keyValue', 0.05, 0.6),
@@ -319,7 +322,21 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
     details.append(groupReset);
     for (const s of specs) {
       const initial = defaults.get(s.key)!;
-      if (s.color) {
+      if (s.toggle) {
+        const row = node('label');
+        row.className = 'water-row';
+        row.append(node('span', s.label));
+        const input = node('input');
+        input.type = 'checkbox';
+        input.dataset.waterKey = s.key;
+        input.setAttribute('aria-label', s.label);
+        refreshers.push(() => {
+          input.checked = bindings.get(s.key)!.get() === 1;
+        });
+        input.addEventListener('change', () => set(s, Number(input.checked)));
+        row.append(input);
+        details.append(row);
+      } else if (s.color) {
         const row = node('label');
         row.className = 'water-row';
         row.append(node('span', s.label));
@@ -396,7 +413,8 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
           throw new Error(`Invalid RGB value: ${key}`);
         changes[key] = [...candidate] as number[];
       } else {
-        if (!validNumber(candidate)) throw new Error(`Out of range: ${key} (${s.min}–${s.max})`);
+        if (!validNumber(candidate) || (s.toggle && candidate !== 0 && candidate !== 1))
+          throw new Error(`Out of range: ${key} (${s.min}–${s.max})`);
         changes[key] = candidate;
       }
     }
@@ -461,7 +479,7 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
   limits.append(
     node(
       'p',
-      'Planar reflections, reflectionScale and reflectionDistort have no production reflection target. Reflection gain/cap/tint adjust the existing sky reflections. Bloom strength/threshold require a new post pass.',
+      'Planar reflections, reflectionScale and reflectionDistort have no production reflection target. Reflection gain/cap/tint adjust the existing sky reflections.',
     ),
   );
   limits.append(
