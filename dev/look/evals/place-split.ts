@@ -17,6 +17,7 @@ const { cart, cartHere, cartPlatform, automaticRails } = await import('/src/prot
 const { TX, TZ } = await import('/src/proto/place/lines.ts' as string);
 const hands = await import('/src/player/hands.ts' as string);
 const { net } = await import('/src/netplay/net.ts' as string);
+const got = await import('/src/proto/place/got.ts' as string);
 const bot = makeBot();
 const { wait } = bot;
 let done = false;
@@ -44,12 +45,17 @@ const barrier = async (k: string) => {
   }
 };
 void (async () => {
+  // A forced stage snapshot grants shared rewards to the follower; dismiss their cards as the full bot does.
+  const dismiss = setInterval(() => {
+    if (got.gettingItem()) got.press();
+  }, 250);
   if (mode !== 'solo') await require(() => place.coop.debug().peers.length, 15000, 'partner arrived');
   await barrier('ready');
   await wait(1500);
   const started = performance.now();
   if (who === '1') place.coop.skip('q5', place.skipQ5);
   await require(() => place.activeFrame()?.spec.id === 'Q5' && place.rack.on, 10000, 'Q5 active');
+  await require(() => !got.gettingItem(), 15000, 'staged rewards dismissed');
   const st = place.activeFrame();
   const b = place.back;
   const porter = mode === 'split' && who === '2';
@@ -70,6 +76,7 @@ void (async () => {
     if (done || (!st.full() && place.run.mode !== 'feeding')) return;
     done = true;
     clearInterval(timer);
+    clearInterval(dismiss);
     input.keys.clear();
     input.sprint = false;
     const seconds = (performance.now() - started) / 1000;
@@ -97,7 +104,8 @@ void (async () => {
   // Keep the fixture's useful starting position: take available rails before leaving the forge.
   if (atForge && !porter) await fetchRails();
   if (porter) {
-    await bot.use(TX + 2, TZ + 1, 'call the cart', /Whistle for the cart/);
+    if (!(await bot.use(TX + 2, TZ + 1, 'call the cart', /Whistle for the cart/)))
+      throw new Error('SPLIT could not whistle for the cart');
     await require(() => cart.leg === 'forge', 90000, 'cart reached forge');
     if (cart.rails < 16) {
       await require(() => hands.interactTarget()?.verb === 'Load the cart', 3000, 'Load offered');
