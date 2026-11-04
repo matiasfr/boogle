@@ -17,8 +17,9 @@ import { addFoot } from './sites.ts';
 import {
   FRAME_D,
   FRAME_W,
-  OUT,
   PER_ROW,
+  RAIL_OUT,
+  SPAN,
   stationColliders,
   stationStockCollider,
   type FrameAt,
@@ -52,7 +53,6 @@ export function buildStation(spec0: Station, place: FrameAt) {
     return m;
   };
   const away = lx * Math.cos(yaw) - lz * Math.sin(yaw) > 0 ? 1 : -1; // the track's on the frame's -away side
-  const SPAN = OUT - FRAME_D / 2 - 1.2;
   if (LOOK.contact) {
     addBlob(x, y, z, FRAME_D + 1.4, FRAME_W + 1.4, yaw);
     addBlob(x - lx * (FRAME_D / 2 + SPAN / 2), y, z - lz * (FRAME_D / 2 + SPAN / 2), SPAN + 1, 1.5, yaw + Math.PI / 2);
@@ -122,7 +122,7 @@ export function buildStation(spec0: Station, place: FrameAt) {
     new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, solids.feeder.yaw),
   );
   // The rails' bearers, beside the frame on the far side, for stations that ask for rails.
-  const railAt = new THREE.Vector3(x + lx * (FRAME_D / 2 + 0.9), y, z + lz * (FRAME_D / 2 + 0.9));
+  const railAt = new THREE.Vector3(x + lx * RAIL_OUT, y, z + lz * RAIL_OUT);
   if (solids.rails) {
     addStatic(
       solids.rails.shape,

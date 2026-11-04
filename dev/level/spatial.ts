@@ -7,7 +7,6 @@ import { sourceFunction } from './source.ts';
 import type { V3 } from '../../src/physics/engine.ts';
 import { PLAYER_R } from '../../src/constants.ts';
 import { sourceBuild } from './build.ts';
-export { sourceBuild } from './build.ts';
 
 // Each unadapted creator is conservative unknown coverage. We cannot prove its regional bounds by its filename.
 // Including every unknown prevents a newly introduced creator silently disappearing from the denominator.

@@ -1,4 +1,4 @@
-// Historical source-fragment replays, reached only through level-check --replay. Fixtures are PARTLY, never full-build proof.
+// Historical source-fragment replays through level-check --replay, plus the current crate check --physics uses. Fixtures are PARTLY, never full-build proof.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -82,12 +82,21 @@ function frameAt(s: Snapshot, H?: Terrain['H']) {
     { ...s.layout, P: { x: 0, z: 0, ux: 0, uz: 1 }, OUT },
   );
 }
-function beside(s: Snapshot) {
-  const source = s.read('src/proto/place/rail.ts');
-  const selected = source.slice(
+const CRATE_MARGIN = 3.5; // src/proto/place/run.ts handCrate
+const CRATE_SAMPLES = [
+  [0, 0],
+  [CRATE_MARGIN, 0],
+  [-CRATE_MARGIN, 0],
+  [0, CRATE_MARGIN],
+  [0, -CRATE_MARGIN],
+];
+const railPrefix = (source: string) =>
+  source.slice(
     source.indexOf('const P:'),
     source.indexOf('// ---------------------------------------------------------------- track:'),
   );
+function beside(s: Snapshot) {
+  const selected = railPrefix(s.read('src/proto/place/rail.ts'));
   return sourceModule<{ besideLine: (line: Line, at: number, side: number) => { x: number; z: number } }>(
     selected,
     s.layout,
@@ -206,13 +215,7 @@ function crateReplay(ref: string) {
   handCrate({ spec, stations }, stations[1]!.spec.to, stations[1]!.spec.side);
   if (!delivered) throw new Error('Historical handCrate did not deliver');
   const point: Point = delivered;
-  const samples = [
-    [0, 0],
-    [3.5, 0],
-    [-3.5, 0],
-    [0, 3.5],
-    [0, -3.5],
-  ].map(([dx, dz]) => {
+  const samples = CRATE_SAMPLES.map(([dx, dz]) => {
     const x = point.x + dx!,
       z = point.z + dz!,
       height = ground.H(x, z);
@@ -220,13 +223,7 @@ function crateReplay(ref: string) {
   });
   const primaryCandidates = [-spec.dir * 3.4, spec.dir * 3.4].map((along) => {
     const q = besideLine(spec.line, next.spec.s - spec.dir * 1.5 + along, next.spec.side * 5.4);
-    const residuals = [
-      [0, 0],
-      [3.5, 0],
-      [-3.5, 0],
-      [0, 3.5],
-      [0, -3.5],
-    ].map(([dx, dz]) => Math.abs(ground.H(q.x + dx!, q.z + dz!) - next.y));
+    const residuals = CRATE_SAMPLES.map(([dx, dz]) => Math.abs(ground.H(q.x + dx!, q.z + dz!) - next.y));
     return {
       ...q,
       residuals,
@@ -274,14 +271,7 @@ function stackReplay(ref: string) {
   // Q5 has opened Far Head, while Q6 (the pier) is still unbuilt: derive laid extent from the snapshot's own Q5.
   const laid = spec.stations.find((st) => st.id === 'Q5')!.to;
   const rail = s.read('src/proto/place/rail.ts');
-  const basis = sourceModule<Record<string, unknown>>(
-    rail.slice(
-      rail.indexOf('const P:'),
-      rail.indexOf('// ---------------------------------------------------------------- track:'),
-    ),
-    s.layout,
-    ['P', 'lateral'],
-  );
+  const basis = sourceModule<Record<string, unknown>>(railPrefix(rail), s.layout, ['P', 'lateral']);
   const uStart = rail.indexOf('  const u =', rail.indexOf('export function buildTrack'));
   const uEnd = rail.indexOf('\n  const boxes', uStart);
   const stubStart = rail.indexOf('  const stubbed =', uEnd);
@@ -374,10 +364,7 @@ export async function auditCurrentCrate() {
   const ground = await import('../../src/proto/place/terrain.ts');
   const { frameBesideLine } = await import('../../src/proto/place/spatial-station.ts');
   const railSource = fs.readFileSync('src/proto/place/rail.ts', 'utf8');
-  const railFragment = railSource.slice(
-    railSource.indexOf('const P:'),
-    railSource.indexOf('// ---------------------------------------------------------------- track:'),
-  );
+  const railFragment = railPrefix(railSource);
   const { besideLine } = sourceModule<{
     besideLine: (line: unknown, at: number, side: number) => { x: number; z: number };
   }>(railFragment, layout);
@@ -408,13 +395,7 @@ export async function auditCurrentCrate() {
   if (!delivered) throw new Error('Current handCrate did not deliver');
   const point: Point = delivered,
     stationHeight = stations[recipient]!.y;
-  const samples = [
-    [0, 0],
-    [3.5, 0],
-    [-3.5, 0],
-    [0, 3.5],
-    [0, -3.5],
-  ].map(([dx, dz]) => {
+  const samples = CRATE_SAMPLES.map(([dx, dz]) => {
     const x = point.x + dx!,
       z = point.z + dz!,
       height = ground.H(x, z);
@@ -428,7 +409,7 @@ export async function auditCurrentCrate() {
     samples,
     unsafeApproach: samples.some((sample) => sample.delta > 1),
     maximumHeightResidualM: Math.max(...samples.map((sample) => sample.delta)),
-    marginM: 3.5,
+    marginM: CRATE_MARGIN,
     toleranceM: 1,
     method:
       'Executed current handCrate source with real pure terrain, frame pose and besideLine; delivery/machine animation are fixture dependencies.',

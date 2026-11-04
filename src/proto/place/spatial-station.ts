@@ -7,6 +7,8 @@ export const FRAME_W = 2.6, // along the line
   FRAME_D = 2, // across
   OUT = 5.4; // m from the track to the frame's middle
 export const PER_ROW = 5;
+export const SPAN = OUT - FRAME_D / 2 - 1.2; // the feeder's length
+export const RAIL_OUT = FRAME_D / 2 + 0.9; // m from the frame's middle to the rails' bearers
 
 /** Where a frame stands: `yaw` along the thing it feeds, (lx, lz) the way out from it. */
 export type FrameAt = { x: number; z: number; yaw: number; lx: number; lz: number };
@@ -28,7 +30,6 @@ export type StationCollider = {
 /** Groups preserve the renderer's registration order, including its footprint between frame and feeder. */
 export function stationColliders(place: FrameAt, y: number, hasRails: boolean) {
   const { x, z, yaw, lx, lz } = place;
-  const SPAN = OUT - FRAME_D / 2 - 1.2;
   const frame: StationCollider[] = [
     {
       id: 'frame-base',
@@ -62,7 +63,7 @@ export function stationColliders(place: FrameAt, y: number, hasRails: boolean) {
     ? {
         id: 'rail-bearers',
         shape: { kind: 'box', hx: 0.5, hy: 0.45, hz: 1.35 },
-        position: { x: x + lx * (FRAME_D / 2 + 0.9), y: y + 0.45, z: z + lz * (FRAME_D / 2 + 0.9) },
+        position: { x: x + lx * RAIL_OUT, y: y + 0.45, z: z + lz * RAIL_OUT },
         yaw,
       }
     : null;
