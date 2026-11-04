@@ -38,7 +38,7 @@ export function partMesh(boxes: Box[], material: THREE.Material) {
   });
   if (!shapes.size) return mesh;
   const routes = new Map<number, { mesh: THREE.InstancedMesh; at: number }>();
-  const children: THREE.InstancedMesh[] = [];
+  const batches: { mesh: THREE.InstancedMesh; slots: number[] }[] = [];
   for (const [taper, slots] of shapes) {
     let geo = taperedGeometry.get(taper);
     if (!geo) taperedGeometry.set(taper, (geo = partGeometry(taper)));
@@ -50,14 +50,26 @@ export function partMesh(boxes: Box[], material: THREE.Material) {
       routes.set(k, { mesh: child, at });
     });
     mesh.add(child);
-    children.push(child);
+    batches.push({ mesh: child, slots });
   }
+  // count remains a prefix of the original piece list, including pieces routed to children.
+  let count = mesh.count;
+  Object.defineProperty(mesh, 'count', {
+    get: () => count,
+    set: (next: number) => {
+      count = next;
+      for (const batch of batches) {
+        const end = batch.slots.findIndex((k) => k >= next);
+        batch.mesh.count = end < 0 ? batch.slots.length : end;
+      }
+    },
+  });
   // Callers install their board material after construction; every shape uses that same material.
   Object.defineProperty(mesh, 'material', {
     get: () => material,
     set: (next: THREE.Material) => {
       material = next;
-      for (const child of children) child.material = next;
+      for (const batch of batches) batch.mesh.material = next;
     },
   });
   const write = mesh.setMatrixAt.bind(mesh);
@@ -70,6 +82,13 @@ export function partMesh(boxes: Box[], material: THREE.Material) {
       route.mesh.instanceMatrix.needsUpdate = true;
     }
     return mesh;
+  };
+  // InstancedMesh.dispose does not visit children. Release their instance buffers too;
+  // shared geometry and caller-owned material retain the same lifetime as ordinary boxes.
+  const dispose = mesh.dispose.bind(mesh);
+  mesh.dispose = () => {
+    for (const batch of batches) batch.mesh.dispose();
+    dispose();
   };
   return mesh;
 }
