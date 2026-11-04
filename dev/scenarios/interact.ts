@@ -172,9 +172,9 @@ export default {
       const { camera } = await import('/src/render/scene.ts');
       const { cam } = await import('/src/player/player.ts');
       const { giftIndex } = await import('/src/sim/gift-catalog.ts');
-      const { CELL, HALF, SEA } = await import('/src/constants.ts');
+      const { onApplied } = await import('/src/world/sync.ts');
+      const { SEA } = await import('/src/constants.ts');
       const b = window.boogle.me.body, frisbee = giftIndex('frisbee');
-      const items = () => window.boogle.gifts.items; // a new array whenever things expire
       const nap = (ms) => new Promise((r) => setTimeout(r, ms));
       const land = (x, z) => groundHeight(x, z) > SEA + 0.4;
       I.emptyHand();
@@ -188,14 +188,21 @@ export default {
           const ux = Math.cos((a * Math.PI) / 4), uz = Math.sin((a * Math.PI) / 4);
           const bx = P.x + ux * 2.5, bz = P.z + uz * 2.5;
           if (!land(bx, bz) || !land(P.x + ux * 1.4, P.z + uz * 1.4)) continue;
-          const had = new Set(items().map((it) => it.id));
           const from = camera.position.clone().set(bx, groundHeight(bx, bz) + 0.6, bz);
-          if (!G.throwItem(frisbee, from, from.clone().set(0, -0.5, 0))) continue;
-          let it = null;
-          for (let n = 0; n < 150 && !it; n++, await nap(100)) it = items().find((x) => !had.has(x.id) && x.kind === frisbee);
+          const velocity = from.clone().set(0, -0.5, 0);
+          const launch = [...from.toArray(), ...velocity.toArray()].map((v) => Math.round(v * 100));
+          let it = null, listening = true;
+          // take('frisbee') above drops the old held frisbee. Its delayed edit can arrive here: a new id/kind
+          // alone does not identify this drop. Match its accepted launch, without assuming where it lands.
+          onApplied((e, _tick, result) => {
+            if (listening && e.op === 'gift.toss' && e.k === frisbee && JSON.stringify(e.l) === JSON.stringify(launch)) it = result;
+          });
+          if (G.throwItem(frisbee, from, velocity))
+            for (let n = 0; n < 150 && !it; n++) await nap(100);
+          listening = false;
           if (!it) continue;
           await nap(600); // its flight comes down
-          const sx = it.i * CELL - HALF, sz = HALF - it.j * CELL;
+          const sx = cellX(it.i), sz = cellZ(it.j);
           const gap = Math.hypot(P.x - sx, P.z - sz), wx = (P.x - sx) / gap, wz = (P.z - sz) / gap;
           const ahead = Math.min(1.8, gap - 0.8), x = P.x - wx * ahead, z = P.z - wz * ahead;
           teleport(b, x, groundHeight(x, z) + 0.6, z);
@@ -203,7 +210,7 @@ export default {
           cam.yaw = Math.atan2(-wx, -wz);
           cam.pitch = -0.2;
           await nap(300);
-          return { palm: 'logs' + k, item: 'item' + it.id, behind: gap - ahead, ahead, ids: G.giftTargets().map((t) => t.id), pick: H.interactTarget()?.id };
+          return { palm: 'logs' + k, item: 'item' + it.id, drift: Math.hypot(sx - bx, sz - bz), behind: gap - ahead, ahead, ids: G.giftTargets().map((t) => t.id), pick: H.interactTarget()?.id };
         }
       }
       return null;`);
@@ -213,7 +220,7 @@ export default {
     const shakeShot = await g.still('shake');
     t.check(
       'a frisbee behind you does not hide the log bundle ahead: the prompt says Take logs',
-      shakeMs >= 0 && palm.ids.includes(palm.item) && palm.pick === palm.palm,
+      shakeMs >= 0 && palm.drift < 1 && palm.ids.includes(palm.item) && palm.pick === palm.palm,
       `${shakeMs} ms; ${JSON.stringify(palm)}; ${shakeShot}`,
     );
 
