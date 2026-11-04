@@ -93,7 +93,7 @@ jobs:
   # runner's software WebGPU (SwiftShader) run at a few frames a second and time out at random, so SCENARIO_GATE=pr
   # makes run.ts refuse a second player. Multiplayer is covered here by test:net (real rooms, no rendering) and the
   # replay unit test; end to end, `smoke` runs on a Mac's GPU before every `npm run ship` (`npm run check:gpu`) and
-  # against the live site after every deploy (smoke.yml). The rest run nightly (scenarios-nightly.yml). A flaky leg
+  # against the live site after every deploy (smoke.yml). The rest run nightly on the owner Mac (dev/daily). A flaky leg
   # here gets a better wait (on a condition, not a time), never a skip; one that can't be reliable here moves to the
   # device gate or the nightly list.
   scenarios:

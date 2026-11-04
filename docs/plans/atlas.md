@@ -505,7 +505,7 @@ glance".
   `new URL(pathname, stack.base)`, and is closed by the runner. Create `dev/scenarios/atlas.mjs`: open `atlas/` in
   light and dark; wait for `.diagram svg`; take a still of How it works, of the mush story at step 3, and of each tab
   (Map in all three styles, Focus, Flow, Frame) into `t.out`; check that every story's last step renders and that
-  there are no page errors. Add `- atlas` to the matrix in `.github/workflows/scenarios-nightly.yml` (never to
+  there are no page errors. Add `atlas` to the nightly list in `dev/daily/run.ts` (never to
   `ci.yml`; it never blocks a merge). Verify: `npm run scenario -- atlas`, then Read the stills. `npm run check`.
 
 - [x] **10. Deploy with history.** (Workflow edit and the local checks are done; shipping and the post-deploy look at https://boogle.club/atlas/ are left to the user.) `.github/workflows/deploy.yml`: give the build job's `actions/checkout@v4`
@@ -611,7 +611,7 @@ glance".
   catches everything, and the narrative is imported as raw text. Step 5's verification exercises all three.
 - **Hotspots:** `index.html`, `src/main.ts`, `src/style.css`, `PLAN.md` and `src/world/rules/index.js` are untouched.
   Shared config edits stay small: `vite.config.ts` (one import, one plugin, `input`), `deploy.yml` (two lines: `fetch-depth: 0` and `filter: blob:none`),
-  `automerge.yml` (one `if`), `scenarios-nightly.yml` (one line), `AGENTS.md` and `README.md` (one line each),
+  `automerge.yml` (one `if`), the nightly scenarios list (one line), `AGENTS.md` and `README.md` (one line each),
   `DESIGN.md` (one section, its own commit).
 - **The game bundle must not grow.** d3 and the virtual facts module are imported only from `atlas/`. Step 5 checks
   that the game chunk is byte-identical apart from the build hash. No meshes, lights or tick work are added, so

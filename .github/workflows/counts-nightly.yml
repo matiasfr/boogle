@@ -5,7 +5,7 @@ name: Counts
 
 on:
   schedule:
-    - cron: '37 10 * * *' # daily, 10:37 UTC, after scenarios-nightly.yml
+    - cron: '37 10 * * *' # daily, 10:37 UTC
   workflow_dispatch:
 
 permissions:

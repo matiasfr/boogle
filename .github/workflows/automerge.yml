@@ -13,7 +13,7 @@ name: Auto-merge
 
 on:
   workflow_run:
-    workflows: [CI, Review]
+    workflows: [CI]
     types: [completed]
 
 permissions:
@@ -38,8 +38,7 @@ jobs:
       (
         (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' &&
          !startsWith(github.event.workflow_run.head_branch, 'ship/')) ||
-        (github.event.workflow_run.event == 'push' && startsWith(github.event.workflow_run.head_branch, 'ship/')) ||
-        github.event.workflow_run.name == 'Review'
+        (github.event.workflow_run.event == 'push' && startsWith(github.event.workflow_run.head_branch, 'ship/'))
       )
     runs-on: ubuntu-latest
     env:
@@ -49,7 +48,6 @@ jobs:
       SHA: ${{ github.event.workflow_run.head_sha }}
       GREEN: ${{ github.event.workflow_run.conclusion == 'success' }}
       SHIPPER: ${{ github.event.workflow_run.actor.login }}
-      TRIGGER: ${{ github.event.workflow_run.name }}
       # GitHub logins excluded from the friends report.
       OWNERS: matiasfr
     steps:
@@ -82,27 +80,9 @@ jobs:
           fi
           echo "number=$pr" >> "$GITHUB_OUTPUT"
 
-      # A review run says nothing about CI: look up the CI run on this commit (ship/* counts its push run).
-      - name: Is CI green?
-        id: ci
-        if: steps.pr.outputs.number != ''
-        run: |
-          if [ "$TRIGGER" != Review ]; then
-            echo "green=$GREEN" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          ev=pull_request
-          [[ "$BRANCH" == ship/* ]] && ev=push
-          c=$(gh run list --workflow ci.yml --commit "$SHA" --event "$ev" --limit 1 --json conclusion --jq '.[0].conclusion // ""')
-          if [ "$c" = success ]; then
-            echo "green=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "CI on $SHA is '${c:-not finished}'; its green run will merge it."
-          fi
-
       - name: Merge
         id: merge
-        if: steps.ci.outputs.green == 'true'
+        if: steps.pr.outputs.number != '' && env.GREEN == 'true'
         env:
           PR: ${{ steps.pr.outputs.number }}
         run: |
@@ -121,11 +101,16 @@ jobs:
             gh workflow run ci-autofix.yml --ref main -f branch="$BRANCH" -f reason=conflict
             exit 0
           fi
-          if [[ "$BRANCH" == ship/* ]]; then
-            gh pr merge "$PR" --merge --subject "$(jq -r .title <<<"$info") (#$PR)" --delete-branch --match-head-commit "$SHA"
-          else
-            gh pr merge "$PR" --squash --delete-branch --match-head-commit "$SHA"
-          fi
+          # Two merges landing together fail one with "Base branch was modified", and nothing would run this again.
+          for try in 1 2 3 4 5; do
+            if [[ "$BRANCH" == ship/* ]]; then
+              gh pr merge "$PR" --merge --subject "$(jq -r .title <<<"$info") (#$PR)" --delete-branch --match-head-commit "$SHA" && break
+            else
+              gh pr merge "$PR" --squash --delete-branch --match-head-commit "$SHA" && break
+            fi
+            [ "$try" != 5 ] || exit 1
+            sleep $((try * 10))
+          done
           echo "merged=true" >> "$GITHUB_OUTPUT"
 
       - name: Deploy, and run CI on main
