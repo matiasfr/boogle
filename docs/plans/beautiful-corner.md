@@ -2,7 +2,7 @@
 
 > **Approved by the owner, 3 November 2026.** Both recommendations accepted: Station 3's first walkable crossing and great-beam delivery; one finished job plus one measured reuse, then stop. This work is limited to steps 1–2. The owner played round 4 on 3 November; see [playtests](../playtests.md) and [round-4 notes](round-4-notes.md). Step 1 is baseline and audit only; every player-visible change goes behind new `&corner=1`, leaving the default round unchanged. List real contact/material-travel bugs with evidence rather than fixing them, except tiny fixes invisible to pacing. No approval to graduate Round 4 or add progression.
 
-> **4 November, owner calls:** the sea runs under Neutral for now, superseding AgX below. Terrain becomes a larger pass after water, with terrain level design on the vertical slice's gray box, so step 3's terrain gate clears there, not as a separate comparison. Whether step 3's sea and light work goes ahead sooner, on today's terrain, is still the owner's call.
+> **4 November, owner calls:** the sea runs under Neutral for now, superseding AgX below. Terrain becomes a larger pass after water, with terrain level design on the vertical slice's gray box, so step 3's terrain gate clears there, not as a separate comparison. The owner chose to wait: step 3 and everything after it wait for the terrain pass, rather than doing sea and light on today's terrain first.
 
 ## Goal and scope
 
