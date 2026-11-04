@@ -7,6 +7,8 @@ import { DEV_SETTINGS, clearDevPreferences, devOffUrl } from '../dev-preferences
 import { me } from '../player/state.ts';
 import { releaseInput, requestLock } from '../player/input.ts';
 import { devInput } from '../player/dev-input.ts';
+import { isTyping } from '../player/controls.ts';
+import { modalOpen } from '../player/modal.ts';
 import { canvas } from '../render/scene.ts';
 import { PROTO } from '../proto/flags.ts';
 import { fixture, fixtureReason, scenarioName, destinationName, VERSION } from './dev/fixtures.ts';
@@ -324,7 +326,7 @@ export function installDevMenu() {
   hide.dataset.devCollapse = '';
   bar.append(hide);
   dock.append(bar, tabs, body);
-  const play = button('Play · Esc for mouse', () => {
+  const play = button('Play · ` for mouse', () => {
     cameraModule?.returnCamera();
     collapse();
     requestLock();
@@ -383,6 +385,7 @@ export function installDevMenu() {
     shell.remove();
     removeEventListener('dev-camera-change', updateCamera);
     removeEventListener('pagehide', dispose);
+    removeEventListener('keydown', toggleMouse, { capture: true });
     window.removeEventListener('pointerdown', sceneFocus, { capture: true });
     pausePages.splice(pausePages.indexOf(pauseEntry), 1);
     devInput.cursor = devInput.dock = false;
@@ -394,6 +397,25 @@ export function installDevMenu() {
     if (shellEntity) despawn(shellEntity);
     shellEntity = null;
   };
+  // ` (Backquote) frees or takes back the mouse. Esc can't: the browser spends the first press on the lock, and the next
+  // opens Pause. A freed cursor stays free (scene clicks don't re-lock) until ` again or Play.
+  const toggleMouse = (e: KeyboardEvent) => {
+    if (e.code !== 'Backquote' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || !me.entered) return;
+    if (modalOpen() || isTyping(e)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (document.pointerLockElement) {
+      devInput.cursor = true;
+      document.exitPointerLock();
+    } else {
+      devInput.cursor = false;
+      (document.activeElement as HTMLElement | null)?.blur?.();
+      devInput.dock = false;
+      requestLock();
+      canvas.focus({ preventScroll: true });
+    }
+  };
+  addEventListener('keydown', toggleMouse, { capture: true });
   shellEntity = spawn({ kind: 'dev-dock', dispose });
   addEventListener('pagehide', dispose);
   window.boogle.dev = {
