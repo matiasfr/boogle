@@ -9,6 +9,7 @@
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
+import { warmUp } from '../../render/precompile.ts';
 import { removeBody, type Body } from '../../physics/engine.ts';
 import { input } from '../../player/input-state.ts';
 import { me } from '../../player/player.ts';
@@ -124,6 +125,16 @@ export const boilerShape = () => {
 const packFrame = new THREE.Group();
 packFrame.position.z = 0.43;
 packFrame.visible = false;
+
+// These meshes attach to the avatar after loading, so the scene warm-up cannot see them.
+warmUp(() => {
+  const g = new THREE.Group();
+  const rails = railsWorn.clone(),
+    stone = stoneWorn.clone();
+  rails.count = stone.count = 1;
+  g.add(rails, stone, beamWorn.clone(), boilerWorn.clone());
+  return g;
+});
 
 /** Owner cosmetic state; existing placeBack/placeBig keep their wire meanings. */
 export type PlaceLoad = { rails: number; stone: number; pack: boolean };
