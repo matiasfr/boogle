@@ -17,7 +17,7 @@ and [updates.ts](../../src/features/updates.ts).
 | Sprint (`sprint`) | action | Left Shift | L3 (latches) | Push the stick far | Getting around | |
 | Look around (`look`) | described | Mouse; unlocked: drag, two-finger scroll, ← → | Right stick | Drag on the right | Camera | |
 | Bring the ball back (`respawn`) | action | R | View | none | The ball | |
-| Talk, pick up, take (`interact`) | action | E | X (only this: nothing in reach, it does nothing) | Grab (the main button; its label follows what it would do) | Hands | |
+| Talk, pick up, take (`interact`) | action | E | X | Grab (the main button; its label follows what it would do) | Hands | |
 | Use what you hold (`use`) | action | Left click | RT | the main button: Throw or Sprout when it has no target | Hands | |
 | Throw what you hold (`toss`) | described | (use) | RT | Toss | Hands | holding |
 | Crouch, ground pound (`guest-crouch`) | action | Left Shift (read by hand) | LT | none | Getting around | as the guest |
@@ -31,6 +31,9 @@ and [updates.ts](../../src/features/updates.ts).
 | Reload for the new version (`update-reload`) | action, hidden | (notice button) | first free slot, only while the update notice shows | notice button | none | |
 
 Notes:
+
+- **Place chopping:** E and X/Square first choose an ordinary interaction, including a blocked one. With no ordinary target and empty hands, they chop/break the nearest harvest target. RT/left click still harvest directly. Touch uses the same priority, so its label and the floating prompt describe the action that will run; one press cannot interact and chop together. The Place `Chop` guide row lists E/left click, X/RT and touch Chop using existing labels.
+- **Place Ping and Drop:** Ping remains G/middle click/D-pad left; Drop remains right click/R3. Fresh play shows both separate touch buttons beside each other, with Drop visible while carrying a load. Ping remains available with an empty back. D-pad up remains free for the update notice.
 
 - **Dev free camera:** after explicitly enabling Dev, Free cam owns movement and interaction until Return, even with the dock collapsed. WASD flies, Space rises, Shift lowers, and dragging the scene looks. Touch has held Forward/Back/Left/Right/Up/Down buttons outside the dock; pad sticks fly/look, LB lowers, RB rises, and B returns. Speed is adjustable. Dock inputs retain their normal text/slider behavior. Tapping the scene releases dock focus, including after Return on touch. Blur clears held camera input. The camera never moves the avatar; other players still see its ordinary physical position. Camera bookmarks and speed persist locally, but active camera/input ownership does not.
 

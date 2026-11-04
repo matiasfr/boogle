@@ -24,7 +24,7 @@ const ui = {
 };
 
 const chip = (t: Interactable) =>
-  `<span class="prompt-chip${t.blocked ? ' blocked' : ''}">${glyph(t.click ? 'use' : 'interact')}<span>${t.verb}</span></span>` +
+  `<span class="prompt-chip${t.blocked ? ' blocked' : ''}">${glyph('interact')}<span>${t.verb}</span></span>` +
   (t.blocked ? `<span class="prompt-why">${t.blocked}</span>` : '');
 
 function build() {
