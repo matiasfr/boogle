@@ -23,7 +23,7 @@
   Files: [src/proto/playdata/record.ts](../../src/proto/playdata/record.ts),
   [server/src/playdata.ts](../../server/src/playdata.ts), [dev/playtest/cli.ts](../../dev/playtest/cli.ts).
 - **Mixed builds.** Each tab checks `version.json` on start, every 5 min and when it comes back into view. A hidden tab
-  reloads onto a newer build at once; a visible one shows "Boogle was updated – reload to stay in sync with friends"
+  reloads onto a newer build at once; a visible one shows "Boogle was updated – reload for the latest version"
   as a sticky notice in the notification lane ([hud.md](hud.md)) with a Reload button, and reloads the next time it is
   hidden. Each player's build rides in presence `bv`.
   Files: [src/features/updates.ts](../../src/features/updates.ts), [src/netplay/builds.ts](../../src/netplay/builds.ts).
