@@ -183,14 +183,14 @@ Raw brainstorm from the same session, typed while Matias and Grant talked. Not d
 
 ### Broke
 - **Freeze, one time:** the world stopped while the camera and markers kept moving (Grant, video to come). The session logged `GPUValidationError ... strideCount(25) ... bufferSize(1536)`: a 24-slot instance buffer asked to draw 25, about 10 s before Grant reported it and 6 s after taking rails. Reloading cleared it and the same build then ran 21 minutes clean. Cause not found yet.
-- **Launched while riding the cart:** at (1235, -72) Matias left the cart at up to 98 m/s and travelled 376 m in 6 s into the sea. Not reproduced.
+- **Launched while riding the cart:** at (1235, -72) Matias left the cart at up to 98 m/s and travelled 376 m in 6 s into the sea. Cause not looked at yet.
 - **Trains with two players:** riders thrown off repeatedly, 12 rides for Matias and 7 for Grant in under 4 minutes, many lasting under a second. Both came off together at 37:41 on the session clock, at the same spot, so some of this is not just desync. Grant's "train is pushing me back". Matias stopped seeing Grant's cart while Grant rode it, with Grant walking in place.
 - **Not shown to the other player:** a carried beam, boiler or rails; a partner's pet.
 - **Get unstuck** went to the old island for one second, (14, 26), then to the start of the map, about 170 m from where Matias was. It calls the shared `backToSpawn` (`src/features/pause.ts:227`).
 - **Gates sit 90 degrees off:** Grant's report holds in code. `src/proto/place/tech.ts:436` adds a quarter turn, which lays the slab along the track.
 - **Cinematics and item cards close on any movement.** Dismissed by accident at least four times, so neither player really saw the town reveal. The town-unlock camera cancels the same way.
 - **Whistle for the cart** does nothing unless the far end needs something.
-- **"Stand on a platform" flickers:** on and off at least 16 times in 41 s for Grant, with `train called` firing 9 times. Doorways may do the same (5 shop entries in 7 s), though Matias may have been testing the walls.
+- **"Stand on a platform" flickers:** on and off 14 times in 41 s for Grant, with `train called` firing 9 times. Doorways may do the same (5 shop entries in 7 s), though Matias may have been testing the walls.
 - **Start fresh split them into separate rooms** (known). They needed an invite link, which cost about 2 minutes.
 - **Small:** a square shadow under the character (both saw it). Double-jump rings off the feet. Rails floating where the line leaves the mountain. Z-fighting on the platform between the canyon rails and the tower. The junction snaps the cart. Pack floats off the body and its load sits outside it. Happy Clam has no way back but the water. Crate boxes can be clipped through. A wobble on some jump surfaces. Can't board the track layer. The reload prompt claims you must reload to stay with friends, and that's not true.
 
@@ -205,7 +205,7 @@ Raw brainstorm from the same session, typed while Matias and Grant talked. Not d
 - **Gate puzzles between stations:** one switch moving two gates, "fun friction". Grant's idea, both like it.
 - **Ping comes back** on its own button beside drop.
 - **Item cards need a button press,** so a new item has weight.
-- **"N s! The long way round took you X s."** Nobody understood it. It fires the first time you cross in one go, here 21 minutes after the bridge opened and from a cart, comparing against a walk from half an hour ago (`src/proto/place/index.ts:245`). It reminded Grant of Burnout Paradise's street times: cut it, or make it real route times.
+- **"N s! The long way round took you X s."** Nobody understood it. It fires the first time you cross in one go, here 21 minutes after the bridge opened and from a cart, comparing against a walk from 25 minutes earlier (`src/proto/place/index.ts:246`). It reminded Grant of Burnout Paradise's street times: cut it, or make it real route times.
 - **Kept, despite the Granola summary:** the hook platforms stay visible from the start. Matias asked; Grant argued that seeing what you can't reach yet is good, and Matias came round. Matias's other point stands: the blue concrete doesn't fit the world's style yet.
 - **Looks:** train rust looks out of place, so make it a real material. Festival Overalls read as a barrel. Red flag on the hook course meant nothing to either. Dropped items might expire on a long timer. Chop could also be on square. Glide on L1 or jump is open (jump clashes with double jump). Fade on respawn, a far-off nit.
 
