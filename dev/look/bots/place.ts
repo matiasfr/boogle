@@ -251,14 +251,19 @@ export async function play() {
     await wait(350);
   };
   const hookTo = async (id: string) => {
+    // Landing on a secret can hold up a reward and block the next hook. Let the normal dismissal finish before aiming.
+    if (!(await waitFor(() => !gettingItem(), 8000, `put away the reward before ${id}`)))
+      throw new Error(`Reward blocked the hook to ${id}`);
     const r = tech.RINGS.find((x: { pad: { id: string } }) => x.pad.id === id);
     face(r.at.x, r.at.z);
     // Aimed as a person would: the ring up in the view, not dead centre.
     const up = Math.atan2(r.at.y - (body.position.y + 1.35), bot.dist(r.at.x, r.at.z));
     cam.pitch = Math.min(0.85, up - 0.3);
     await wait(350);
-    if (!tech.fireHook())
+    if (!tech.fireHook()) {
       bot.never(`a pull to ${id}: picked ${tech.move.pick?.pad.id ?? 'nothing'}, ${tech.whyNot(r)}`);
+      if (coopRoute) throw new Error(`Co-op hook to ${id} did not start`);
+    }
     await waitFor(() => !tech.move.pull, 5000, `arrived at ${id}`);
     cam.pitch = -0.1;
     await wait(500);
