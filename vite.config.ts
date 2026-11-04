@@ -20,7 +20,8 @@ const build = process.env.VITE_BUILD || `dev-${Date.now().toString(36)}`;
 // BOOGLE_SW=off builds the service worker's kill switch (src/boot/sw-worker.ts): it clears its caches and unregisters.
 const swOff = process.env.BOOGLE_SW === 'off';
 // Lazy chunks the first frame waits for, precached with the page's static imports (docs/plans/loading.md).
-const FIRST_DYNAMIC = [/\/src\/main\.ts$/, /rapier3d-simd/];
+const GAME_MODULE = /\/src\/main\.ts$/;
+const SIMD_MODULE = /\/@dimforge\/rapier3d-simd\//;
 
 let localServer: Service | null = null; // the dev server's own game server (boogle-local-server below)
 
@@ -107,10 +108,18 @@ export default defineConfig({
     },
     {
       // dist/sw.js, from src/boot/sw-worker.ts: bundled on its own, with this build's id and the files the first frame
-      // needs (the page's static imports, the FIRST_DYNAMIC chunks and their CSS and assets), for it to precache.
+      // needs (the page, game and SIMD chunks' static imports, CSS and assets), for it to precache.
       name: 'boogle-sw',
       apply: 'build',
       async generateBundle(_, bundle) {
+        const chunks = Object.values(bundle).filter((c): c is Rolldown.OutputChunk => c.type === 'chunk');
+        // Generated/shared chunks can have no facade. Inspect actual module membership, and seed every matching
+        // chunk rather than depending on how Rolldown groups the dynamic import edges this release.
+        const contains = (c: Rolldown.OutputChunk, re: RegExp) =>
+          Object.keys(c.modules).some((id) => re.test(id.replaceAll('\\', '/')));
+        const page = chunks.filter((c) => c.isEntry && c.facadeModuleId === resolve('index.html'));
+        const game = chunks.filter((c) => contains(c, GAME_MODULE));
+        const simd = chunks.filter((c) => contains(c, SIMD_MODULE));
         const first = new Set<string>();
         const add = (file: string) => {
           const c = bundle[file];
@@ -120,19 +129,29 @@ export default defineConfig({
           for (const f of [...(c.viteMetadata?.importedCss ?? []), ...(c.viteMetadata?.importedAssets ?? [])])
             first.add(f);
           c.imports.forEach(add);
-          for (const d of c.dynamicImports)
-            if (
-              FIRST_DYNAMIC.some((re) => re.test((bundle[d] as Rolldown.OutputChunk | undefined)?.facadeModuleId ?? ''))
-            )
-              add(d);
         };
-        for (const c of Object.values(bundle))
-          if (c.type === 'chunk' && c.isEntry && c.facadeModuleId?.endsWith('/index.html') && c.name === 'main')
-            add(c.fileName);
+        for (const c of [...page, ...game, ...simd]) add(c.fileName);
         // Authored content (models, textures, audio) loads by need through the content manifest
         // (src/render/asset-manifest.ts), even where a feature imports its URL eagerly: not precached.
         const content = /\.(glb|gltf|bin|ktx2|mp3|m4a|ogg|wav|opus)$/;
         const config = { build, first: [...first].filter((f) => !content.test(f)).sort(), off: swOff };
+        // Independently identify emitted WASM by its source, not its ambiguous rapier_wasm3d_bg basename.
+        // A bundler/plugin change must fail the build instead of silently dropping physics from the precache.
+        const wasm = Object.values(bundle).filter((c) => c.type === 'asset' && c.fileName.endsWith('.wasm'));
+        const simdWasm = wasm.filter((c) => c.originalFileNames.some((id) => SIMD_MODULE.test('/' + id)));
+        const plainWasm = wasm.filter((c) =>
+          c.originalFileNames.some((id) => /\/@dimforge\/rapier3d\//.test('/' + id)),
+        );
+        const required = [...page, ...game, ...simd, ...simdWasm];
+        if (
+          !page.length ||
+          !game.length ||
+          !simd.length ||
+          !simdWasm.length ||
+          required.some((c) => !config.first.includes(c.fileName) || !bundle[c.fileName]) ||
+          plainWasm.some((c) => config.first.includes(c.fileName))
+        )
+          this.error('Precache must include the emitted page, game, SIMD chunks and SIMD WASM; plain WASM stays lazy.');
         const out = await esbuild({
           entryPoints: [resolve('src/boot/sw-worker.ts')],
           bundle: true,

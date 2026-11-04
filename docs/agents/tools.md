@@ -39,8 +39,10 @@ still need device verification when browser compatibility changes.
 
 The atlas virtual module and five HTML entries remain in the build. Keep esbuild: the `boogle-sw` plugin
 bundles `src/boot/sw-worker.ts` directly, and `dev/peer-test/harness.ts` also uses it. The service worker
-collects the main page's static imports plus the main game and SIMD Rapier dynamic chunks, CSS and assets;
-check its `first` list when changing chunking (`npm run counts` gzips each file at level 9). Plain Rapier
+collects the main page, game and SIMD Rapier chunks by emitted module membership, then follows static imports,
+CSS and assets. The build requires the game and SIMD WASM in `first` and excludes plain WASM.
+Check that list when changing chunking (`npm run counts` gzips each file at level 9;
+`npm run counts -- --build-only` skips browser/render counts). Plain Rapier
 remains a lazy fallback. Preserve `BOOGLE_SW=off`, `VITE_BUILD`, `VITE_BOOGLE_SERVER`, `BASE=/`, and
 deploy.yml's `keep-old-assets` step. After dependency updates, run `npm ci --dry-run` and retain the
 `@emnapi` pins/overrides and optional WASM lock entries, including packages for platforms other than this Mac.

@@ -109,8 +109,10 @@ pipelines differently (Metal, no shared blob cache), so the GPU part of the warm
 ### a. Service worker (built)
 
 `src/boot/sw-worker.ts`, built to `dist/sw.js` by `vite.config.ts` ('boogle-sw', bundled with esbuild, which Vite
-already depends on). Registered by `src/boot/sw.ts` once the game is interactive and in a room, so its precache never
-competes with the boot.
+already depends on). Registered by `src/boot/sw.ts` after both `bootDone` and `bootInteractive`: the loading screen
+must be finished even if the diagnostic `bootDone` promise hits its 20-second no-room timeout. The first install's
+precache cannot compete with the first load. A returning browser may independently check an existing registration
+for an update on navigation; this gate controls the page's registration, not the browser's update scheduler.
 
 - **What it caches:** only files under `assets/`, which all carry a content hash (`src/boot/sw-policy.ts`,
   `cacheable`). A hashed URL never changes meaning, so cache-first is always correct for it. JS, CSS, WASM (Rapier, the
@@ -119,10 +121,19 @@ competes with the boot.
   `src/features/updates.ts` keeps seeing the network: its check of `version.json` (`cache: 'no-store'`) and its reload
   behave as before.
 - **One cache per build:** `boogle-<build>`. On install it precaches the first-load files (the page's static imports,
-  `main.ts` and Rapier's chunks and their CSS and assets, computed from the bundle; content files are left to the
-  manifest), copying unchanged files from the previous build's cache instead of downloading them. `skipWaiting` and
+  `main.ts` and SIMD Rapier's chunks and their CSS and assets, computed from emitted module membership and static
+  import/asset closure, without depending on dynamic-chunk facades). Plain Rapier JS/WASM stays on demand; content
+  files are left to the manifest. Every build asserts that the game, SIMD chunks and emitted SIMD WASM are present
+  and the plain WASM is absent. Rapier 0.21 SIMD is 3,292,228 bytes (1,151,160 gzip); downloading plain as well would
+  waste another 1,175,669 gzip bytes on a successful SIMD load. `npm run counts -- --build-only` measures this list
+  without a browser. Unchanged hashed files are copied from earlier caches instead of downloaded. `skipWaiting` and
   `clients.claim`: safe because the worker is generic (a tab on the old build asks for old hashed URLs, found in the
   old cache or on the network).
+- **Optional cache:** individual downloads and CacheStorage failures cannot reject install. Cache lookup failure
+  falls through to the network, and failed background writes are ignored. Cached responses retain their headers,
+  including `application/wasm` for streaming compilation; JS still references its own content-hashed WASM URL.
+  Matches ignore `Vary` only for these immutable same-scope assets: Vite preview's `Vary: Origin` otherwise causes
+  module requests to miss entries installed by ordinary fetches. Their hashed URLs identify identical bytes.
 - **Versioned purge:** on activate it deletes every build's cache except this one and the one before it
   (`KEEP_BUILDS = 2`), so a tab left open on the previous build can still load its lazy chunks after the deploy.
 - **Deploy flow:** a new deploy changes `sw.js` (the build id and the file list are inlined), the browser notices on
@@ -141,6 +152,48 @@ competes with the boot.
   another on one origin. All pass: second visit, 0 requests reach the server (every hashed file from the worker);
   deploy b (only the build id differs), 0 files fetched, page shows b; reload on b, 0 requests; deploy c keeps b and c
   and drops a; the kill-switch build leaves no registration and no cache.
+
+**4 November 2026 precache verification (Vite 8.3.5 / Rapier 0.21):** the inherited build at `5b356980` already
+included the game and SIMD WASM, despite the older omission described in the Rapier research. The selector now
+uses emitted module membership and fails the build if the required chunk/asset closure disappears. A production
+preview exposed a separate `Vary: Origin` miss, fixed by matching immutable assets independently of that header.
+
+Broker production runs, same classic route, fresh origin per build, then a visible same-origin iframe for the
+second navigation. One pair each, no throttling; these are observations, not a statistical speed claim. Server
+response-body bytes include HTML/version and compression actually used by Vite preview (WASM was uncompressed),
+exclude HTTP headers/WebSocket traffic, and stop at `interactive`. Resource timing alone hid worker-forwarded 304s.
+
+| Measurement | Before | After |
+| --- | ---: | ---: |
+| First navigation to interactive | 1,944 ms | 1,865 ms |
+| First navigation network body bytes | 4,602,607 | 4,602,624 |
+| Post-interactive install window body bytes | 2,142 | 2,178 |
+| Second navigation to interactive | 1,871 ms | 905 ms |
+| Second navigation network body bytes | 1,126 | 1,126 |
+| Second navigation precached-file network requests | 107 | 0 |
+| Second navigation all asset requests (all 304, zero bodies) | 118 | 11 |
+| Second navigation game JS / SIMD WASM network requests | 2 / 0 | 0 / 0 |
+
+Both installed caches held 110 precached files, including only the SIMD physics WASM, with `application/wasm`;
+browser `WebAssembly.compileStreaming` succeeded on the cached response. Remaining second-load requests are lazy
+chunks outside the first list. The first worker request began at 1,884 ms in the final run, after interactive at
+1,865 ms. `counts --build-only` reports gzip KiB: JS 567, WASM 1,124, CSS 11, other 92 (level 9).
+
+Evidence: [before](../../.look/evidence/1793817021139-36172/evidence.json),
+[after](../../.look/evidence/1793817223037-45067/evidence.json),
+[production smoke](../../.look/evidence/1793817278513-48000/evidence.json).
+Opened the before/after second-navigation stills: player, island and HUD render with no loading overlay;
+also opened smoke's Alice still, showing both players. Smoke passed all eight checks, no graphics errors.
+Raw server accounting: `.look/http-before.jsonl`, `.look/http-final.jsonl`; page eval: `.look/precache-measure.ts`.
+
+Additional local probes: `.look/check-precache-build.log` checks facade removal and rejects missing game, missing
+SIMD WASM, broken SIMD asset edges and eager plain WASM. `.look/check-sw-lifecycle.log` exercises the bundled worker
+in Node with in-memory CacheStorage: a/b/c retain only b/c and copy unchanged files with zero refetches; offline
+game-byte retrieval and SIMD streaming compile succeed; failed downloads/storage still install; kill switch
+purges/unregisters. A `BOOGLE_SW=off` production build also succeeds. Cached responses preserve headers and exact
+hashed URLs; old JS continues requesting its own WASM, and `scripts/keep-old-assets.ts` is unchanged.
+These probes do not establish browser update scheduling or offline navigation. Live multi-deploy browser updates,
+offline browser navigation, Safari/iPad and real-time feel were not run; `check:full` is left to the owner.
 
 **Follow-ups:**
 
