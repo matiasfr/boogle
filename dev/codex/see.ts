@@ -37,14 +37,17 @@ const { coopWarpOptions } = (await import(
   pathToFileURL(path.resolve('dev/look/coop-warp.ts')).href
 )) as typeof import('../look/coop-warp.ts');
 const warp = (operation === 'look' || operation === 'playthrough') && coopWarpOptions(args).enabled;
-if (production && warp) throw new Error('Two-player warp requires the disposable local development server');
+if (production && warp)
+  throw new Error(
+    '--production --players 2 needs --real; omit --production to use the disposable dev server for warped co-op.',
+  );
 const stack =
   operation === 'cold-start' || production
     ? await (
         (await import(
           pathToFileURL(path.resolve('dev/cold-start/production.ts')).href
         )) as typeof import('../cold-start/production.ts')
-      ).startProduction(dir)
+      ).startProduction(dir, { harness: operation !== 'cold-start' })
     : await startStack({ dataRoot: dir, warp });
 let status: number;
 try {

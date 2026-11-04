@@ -145,8 +145,26 @@ export function reportGfxErrors(games: Game[]) {
 // BOOGLE_QUERY=physics=rapier (any URL params) is added to every page the harness opens: scenarios on another backend.
 const EXTRA_QUERY = process.env.BOOGLE_QUERY ? '&' + process.env.BOOGLE_QUERY : '';
 
+const HARNESS_REQUIRED =
+  '--url targets a plain production build: --curves, --at, --eval/--action, warp and source-import tools need ' +
+  'node .look/see-client.ts <look|playthrough|scenario> --production, or a Vite dev server. ' +
+  'For a manually served build use BOOGLE_HARNESS=1 npm run build. Ordinary captures and window-handle scenarios remain supported.';
+
+/** A page advertises module access without adding any code or module entries to ordinary builds. */
+export async function harnessModules(url: string): Promise<boolean> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Harness page returned HTTP ${response.status}: ${url}`);
+  const html = await response.text();
+  return (
+    /<meta\b[^>]*name=["']boogle-harness["'][^>]*content=["'](?:dev|production)["']/.test(html) ||
+    /<script\b[^>]*src=["'][^"']*\/@vite\/client["']/.test(html)
+  );
+}
+
 /** Options for `Game.open` (described above it). */
 export type GameOpts = {
+  /** False only for window-handle-only tools that also work on ordinary deployed builds. */
+  sourceImports?: boolean;
   room?: string;
   name?: string;
   size?: number[];
@@ -165,6 +183,7 @@ export type GameOpts = {
 type PageFn<A, R> = (arg: A) => R | Promise<R>;
 
 export class Game {
+  sourceImports = false;
   name = 'player';
   out = '';
   prefix = '';
@@ -192,6 +211,8 @@ export class Game {
   // warp (the page's clock can run ahead of the wall, for `g.warp`: ./warp.ts)
   static async open(browser: Browser, stack: Stack, opts: GameOpts = {}) {
     const g = new Game();
+    g.sourceImports = await harnessModules(stack.base);
+    if ((opts.sourceImports !== false || opts.warp) && !g.sourceImports) throw new Error(HARNESS_REQUIRED);
     g.name = opts.name || 'player';
     g.out = path.resolve(opts.out || '.look');
     g.prefix = opts.prefix || '';
@@ -273,8 +294,13 @@ export class Game {
 
   // Run code in the page. A function (with optional JSON arg) or a string body (may `await`, may
   // `await import('/src/...')` game modules; `return` a JSON-able value).
+  private checkImports(code: unknown) {
+    if (!this.sourceImports && /\bimport\s*\(/.test(String(code))) throw new Error(HARNESS_REQUIRED);
+  }
+
   // oxlint-disable-next-line typescript/no-explicit-any -- page results are whatever the caller asked for
   eval<R = any, A = any>(code: string | PageFn<A, R>, arg?: A): Promise<R> {
+    this.checkImports(code);
     if (typeof code === 'function') return this.page.evaluate(code as PageFn<unknown, R>, arg);
     return this.page.evaluate(`(async () => { ${code}\n})()`) as Promise<R>;
   }
@@ -285,6 +311,7 @@ export class Game {
     pred: string | PageFn<A, unknown>,
     { timeout = 15000, step = 100, arg }: { timeout?: number; step?: number; arg?: A } = {},
   ) {
+    this.checkImports(pred);
     const t0 = Date.now();
     while (Date.now() - t0 < timeout) {
       try {

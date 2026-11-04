@@ -3,6 +3,7 @@
 import { camera } from '../render/scene.ts';
 import { defineKind, spawn, despawn, type GameEntity } from '../entity/entity.ts';
 import { devInput } from '../player/dev-input.ts';
+import './harness-imports.ts';
 
 type V3t = [number, number, number];
 let pose: { pos: V3t; look: V3t } | null = null;

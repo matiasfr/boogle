@@ -50,6 +50,7 @@ export default {
     // (src/player/arrival.ts), past the lobby.
     const loaded = { state: 'attached', timeout: 180000 } as const;
     await B.waitForSelector('#enter:not([disabled])', loaded);
+    await B.waitForFunction(() => !!window.__debugCam, null, { timeout: 20000 });
     t.check('the second tab is live', (await until(B, live, 30000)) >= 0);
     const toldMs = await until(A.page, told, 5000);
     const shot = `${A.out}/first-elsewhere.png`;

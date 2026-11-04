@@ -33,7 +33,7 @@ export type T = {
   open: (opts?: GameOpts) => Promise<Game>;
   check: (label: string, ok: unknown, detail?: string) => boolean;
 };
-export type Scenario = { about?: string; timeout?: number; run: (t: T) => Promise<void> };
+export type Scenario = { about?: string; timeout?: number; sourceImports?: boolean; run: (t: T) => Promise<void> };
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // <name>.ts
@@ -108,6 +108,7 @@ try {
               'Run this scenario on a device (npm run check:gpu) or nightly (scenarios-nightly.yml).',
           );
         const g = await Game.open(br, st, {
+          sourceImports: mod.sourceImports,
           out,
           trace,
           ...opts,

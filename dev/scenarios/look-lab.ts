@@ -62,6 +62,7 @@ const mode = process.env.LOOKLAB || 'all';
 const lab = 'window.boogle.lookLab';
 
 export default {
+  sourceImports: false,
   about: 'look lab: stills per preset and view, ms a frame per preset and per layer',
   timeout: 1200000,
   async run(t: Run) {

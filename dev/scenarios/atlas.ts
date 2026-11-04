@@ -11,6 +11,7 @@ type Run = {
 };
 
 export default {
+  sourceImports: false,
   about: 'the atlas page: every view and every story, light and dark, no page errors',
   async run(t: Run) {
     for (const scheme of ['light', 'dark'] as const) {

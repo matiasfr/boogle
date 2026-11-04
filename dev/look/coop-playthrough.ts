@@ -204,6 +204,7 @@ export async function coopPlaythrough(options: {
             await g.page.goto(url, { waitUntil: 'domcontentloaded' });
           }
           say(`COOP ${interrupt} entry: ${await enterGame(g.page, 90000)}`);
+          await g.page.waitForFunction(() => !!window.__debugCam, null, { timeout: 20000 });
           if (
             (await g.waitFor(
               'window.__place && window.boogle?.remotes.size === 1 && window.__place.coop.debug().peers.length === 1',

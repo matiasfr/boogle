@@ -260,6 +260,13 @@ async function entityRows(cdp: CDPSession) {
 let stack: Stack | undefined, browser: Browser | undefined;
 try {
   stack = await startStack({ url, root });
+  if (allocs) {
+    const dev = await fetch(new URL('/@vite/client', stack.base));
+    if (!dev.ok || !dev.headers.get('content-type')?.includes('javascript'))
+      throw new Error(
+        '--allocs needs Vite development source URLs for attribution; use npm run dev and --url, or omit --allocs for production.',
+      );
+  }
   browser = await launch();
   const g = await Game.open(browser, stack, { name: 'hitches', hud: 'play', init: ENTER_FRAMES });
   g.page.on('framenavigated', (f) => f === g.page.mainFrame() && console.log('page navigated to', f.url()));

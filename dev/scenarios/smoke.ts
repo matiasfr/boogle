@@ -11,6 +11,7 @@ import type { Game } from '../look/lib.ts';
 const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
 
 export default {
+  sourceImports: false,
   about: 'two tabs join, see each other, toss an item, throw the ball, and agree on every world hash',
   timeout: 420000, // generous: two software-rendered tabs on a busy runner (smoke.yml) drop to a few frames per second
   async run(t: T) {
