@@ -5,7 +5,8 @@
 // shows which button does what) and 8 (drop-in: the same talk works on a pad, a keyboard or a touch screen).
 //
 //   openConversation(talk)   false if one is open, or a modal (the pause view) is up. talk:
-//     box        the talk box element; a tap in it that hits no button skips the typing
+//     box        the talk box element; a tap in it that hits no button skips the typing, then goes on when there
+//                is only one answer
 //     typing()   whether the line is still typing out
 //     skip()     show the whole line now
 //     choices()  the answer buttons shown now ([] while typing); saying one clicks it
@@ -16,12 +17,15 @@
 //   closeConversation()      hands the input back; call it however the talk ends
 //   conversation.open
 //   talkHints()              HTML for the hint row, with the glyphs of the input in use: confirm is Next while the line
-//                            types or there is only one way on, Answer when there are choices; Pick; Leave always
+//                            types or there is only one way on, Answer when there are choices; Pick; Leave always.
+//                            On touch only "Tap to go on", when the one answer can be said by tapping the box
 //
 // Controls: confirm (pad A / ✕; E, Space, Enter) skips the typing, then says the selected answer. Up and down (D-pad,
 // left stick, arrow keys, W and S) move the selection, repeating while held; number keys say an answer at once. Back
 // (pad B / ○, Esc) leaves. Pad X / □ (interact, which opened the talk) does nothing in one. A Switch pad swaps confirm
-// and back (menuSlot in src/player/controls.ts). Touch: tap the box to skip, tap an answer. The selected answer has the
+// and back (menuSlot in src/player/controls.ts). Touch: tap the box to skip; with one answer, tap anywhere on the box
+// to say it; with more, tap an answer. For TAP_GUARD_MS after the answers appear, taps on them or the box do nothing,
+// so a second tap meant for the typing does not answer by accident. The selected answer has the
 // class talk-sel, shown while a pad or keyboard plays (body.gamepad, or not body.touch: an iPad keeps body.touch while
 // its pad plays).
 import './conversation.css';
@@ -50,11 +54,13 @@ const FRAME_MS = 1400; // the camera eases toward the NPC this long after the ta
 const FRAME_RATE = 3; // 1/s, the ease
 const SIDE = 0.55; // rad: the camera looks a little past the NPC, so you and they share the shot
 const LIFT_RATE = 4; // 1/s, how fast the shot lifts above the talk box (and settles back after)
+const TAP_GUARD_MS = 350; // taps that land this soon after the answers appear were meant for the typing
 
 export const conversation = { open: false };
 let cur: Talk | null = null;
 let sel = 0;
 let selFirst: HTMLButtonElement | null = null; // the first answer button when sel was set: new buttons, new selection
+let readyAt = 0; // when the answers shown now appeared
 let openedAt = 0;
 let hintHtml = '';
 const tapped = new WeakSet<HTMLElement>();
@@ -80,6 +86,7 @@ function sync() {
   if (list[0] !== selFirst) {
     selFirst = list[0] ?? null;
     sel = 0;
+    readyAt = performance.now();
   }
   if (sel >= list.length) sel = Math.max(0, list.length - 1);
   list.forEach((b, i) => b.classList.toggle('talk-sel', i === sel));
@@ -132,9 +139,26 @@ export function openConversation(talk: Talk) {
   setPadGrab(padPress, ['a', 'b', 'x', 'up', 'down'], { stick: true });
   if (!tapped.has(talk.box)) {
     tapped.add(talk.box);
-    talk.box.addEventListener('pointerdown', (e) => {
-      if (cur?.box === talk.box && cur.typing() && !(e.target as Element | null)?.closest('button')) cur.skip();
-    });
+    const box = talk.box;
+    // Capture: runs before the answer's own click. Only real taps; say() clicks the answer itself.
+    box.addEventListener(
+      'click',
+      (e) => {
+        if (cur?.box !== box || !e.isTrusted) return;
+        const list = sync(); // now, not next frame: answers a tap ago showed are new (readyAt)
+        const onButton = (e.target as Element | null)?.closest('button');
+        if (onButton && !list.includes(onButton as HTMLButtonElement)) return; // the close button
+        if (!cur.typing() && performance.now() - readyAt < TAP_GUARD_MS) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return;
+        }
+        if (onButton) return;
+        if (cur.typing()) cur.skip();
+        else if (list.length === 1) say(0);
+      },
+      { capture: true },
+    );
   }
   sync();
   return true;
@@ -152,8 +176,9 @@ export function closeConversation() {
 const hint = (glyphs: string, word: string) => `<span class="talk-hint">${glyphs}<span>${word}</span></span>`;
 export function talkHints() {
   const kind = inputKind();
-  if (!cur || kind === 'touch') return '';
+  if (!cur) return '';
   const n = cur.typing() ? 0 : sync().length; // answers shown
+  if (kind === 'touch') return n === 1 ? `<span class="talk-hint talk-tap"><span>Tap to go on</span></span>` : '';
   const pick =
     n < 2
       ? ''
@@ -231,7 +256,7 @@ describeControl('talk-answer', {
   },
   keys: ['Digit1-8', ['ArrowUp', 'ArrowDown']],
   pad: ['up', 'down'],
-  touch: 'Tap an answer',
+  touch: 'Tap an answer, or the box when there is one',
   group: 'friends',
   context: 'talking',
 });

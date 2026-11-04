@@ -30,3 +30,19 @@ body.gamepad .talk-sel {
 .talk-hint .g-pad + .g-pad {
   margin-left: -3px;
 }
+/* Touch, one answer: the whole box goes on. A soft nudge, so it reads as a tip rather than a button. */
+.talk-tap::after {
+  content: '▸';
+  display: inline-block;
+  animation: talk-tap 1.1s ease-in-out infinite;
+}
+@keyframes talk-tap {
+  50% {
+    transform: translateX(3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .talk-tap::after {
+    animation: none;
+  }
+}
