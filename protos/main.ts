@@ -2,13 +2,16 @@
 // steps, then a card per prototype (protos.ts) with a Play button, its one question and a box for your take saved in
 // this browser (store.ts) that copy out as a docs/playtests.md entry (entry.ts), with the verdicts and behaviour
 // counters the in-game prototype bar (src/proto/bar/) recorded, and a heat map of the recorded sittings (heat.ts).
-// Nothing here talks to a server.
+// A direct ?review= link opens the internal retained comparison instead of the prototype list.
 import './protos.css';
 import { ANSWERED, PROTOS, playlist, onIsland, variantUrl } from './protos.ts';
 import type { Proto, ProtoStatus } from './protos.ts';
 import { countsLine, read, vName, write, type Saved } from './store.ts';
 import { allEntries, body, copy, header, label, stepLabel } from './entry.ts';
 import { heatMap } from './heat.ts';
+
+const reviewId = new URLSearchParams(location.search).get('review');
+if (reviewId) await (await import('./review.ts')).showReview(reviewId);
 
 const ORDER: Record<ProtoStatus, number> = { live: 0, building: 1, graduated: 2, answered: 2, parked: 2, retired: 3 };
 const touch = matchMedia('(pointer: coarse)').matches;
@@ -227,7 +230,7 @@ function startHere(): HTMLElement {
   if (later.length) wrap.append(el('h3', '', 'When you have time'), list(later, false));
   return wrap;
 }
-document.getElementById('list')!.before(startHere());
+if (!reviewId) document.getElementById('list')!.before(startHere());
 
 // "Answered": graduated, answered and parked cards, one compact row each: the status, the owner's verdict in his
 // words and what happens next. Their full cards are gone from the list below (the question is settled).
@@ -247,15 +250,15 @@ function answered(): HTMLElement {
   wrap.append(ul);
   return wrap;
 }
-if (PROTOS.some((p) => ANSWERED.includes(p.status))) document.getElementById('list')!.before(answered());
+if (!reviewId && PROTOS.some((p) => ANSWERED.includes(p.status))) document.getElementById('list')!.before(answered());
 
 const sorted = PROTOS.map((p, i) => ({ p, i }))
   .filter(({ p }) => !ANSWERED.includes(p.status))
   .sort((a, b) => ORDER[a.p.status] - ORDER[b.p.status] || a.i - b.i)
   .map((x) => x.p);
-document.getElementById('list')!.append(...sorted.map(card));
+if (!reviewId) document.getElementById('list')!.append(...sorted.map(card));
 
 // Copy all: every prototype with something written, under one date (all the live ones if nothing is written yet).
 document
-  .getElementById('copy-all')!
-  .addEventListener('click', () => copy(allEntries(), document.getElementById('said-all')!));
+  .getElementById('copy-all')
+  ?.addEventListener('click', () => copy(allEntries(), document.getElementById('said-all')!));

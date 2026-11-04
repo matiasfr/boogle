@@ -10,8 +10,32 @@
 import { PROTOS } from '../protos/protos.ts';
 import { reportToken } from './report-token.ts';
 
-const SERVER = process.env.BOOGLE_SERVER || 'https://boogle-server.fly.dev';
 const args = process.argv.slice(2);
+const explicitServer = args.includes('--server') ? args[args.indexOf('--server') + 1] : undefined;
+if (args.includes('--server') && (!explicitServer || explicitServer.startsWith('--')))
+  throw new Error('--server requires an HTTP(S) origin');
+const serverUrl = new URL(explicitServer || process.env.BOOGLE_SERVER || 'https://boogle-server.fly.dev');
+if (
+  !['http:', 'https:'].includes(serverUrl.protocol) ||
+  serverUrl.username ||
+  serverUrl.password ||
+  serverUrl.search ||
+  serverUrl.hash ||
+  serverUrl.pathname !== '/'
+)
+  throw new Error('--server must be an HTTP(S) origin without credentials or query');
+const SERVER = serverUrl.origin;
+if (args.includes('--reviews')) {
+  const auth = reportToken();
+  if (!auth) throw new Error('Set REPORT_TOKEN in the environment or .env.local');
+  const response = await fetch(new URL('/reviews', SERVER), {
+    headers: { authorization: `Bearer ${auth}` },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw new Error(`Review retrieval: HTTP ${response.status}`);
+  console.log(JSON.stringify({ server: new URL(SERVER).origin, receipts: await response.json() }, null, 2));
+  process.exit(0);
+}
 const days = Math.max(1, Math.min(30, Number(args[args.indexOf('--days') + 1]) || 3));
 const md = args.includes('--md');
 const all = args.includes('--all');

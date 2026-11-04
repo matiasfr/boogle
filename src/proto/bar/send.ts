@@ -8,6 +8,7 @@ import { BUILD } from '../../build-id.ts';
 import { read, sittingLine, sittings, vName } from '../../../protos/store.ts';
 import { PROTOS } from '../../../protos/protos.ts';
 import { playMark } from '../mark.ts';
+import { queueReport } from './report-transport.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const last = new Map<string, string>(); // card/variant -> the last payload sent
@@ -41,12 +42,7 @@ export function sendVerdict(id: string, v: string): boolean {
   const same = sig(m.verdict, m.note);
   if (last.get(key) === same) return false;
   playMark('verdict', { verdict: m.verdict, note: detail.note, variant: v });
-  try {
-    const body = JSON.stringify({ room: getRoomId(), kind: 'playtest', detail, build: BUILD });
-    if (!navigator.sendBeacon(new URL('/report', SERVER), body)) return false;
-  } catch {
-    return false;
-  }
+  if (!queueReport(SERVER, { room: getRoomId(), kind: 'playtest', detail, build: BUILD })) return false;
   last.set(key, same);
   return true;
 }
