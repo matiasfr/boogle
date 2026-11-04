@@ -182,6 +182,7 @@ const volatile = (j: Record<string, unknown>) => {
     h,
     linesOf(j).map((l) => l.pile),
     j.depot && (j.depot as { logs: number }).logs,
+    j.depot && (j.depot as { rails: number }).rails,
     j.depot && (j.depot as { cartRails: number }).cartRails,
   ]);
 };
@@ -310,7 +311,7 @@ function reconcileBig() {
 }
 
 // ---------------------------------------------------------------- who's here, and who decides
-const peers = new Map<string, { since: number; visible: boolean; seen: number }>();
+const peers = new Map<string, { since: number; visible: boolean; seen: number; railCart: boolean }>();
 const peerBack = new Map<string, number>();
 const peerBig = new Map<string, BigThing>();
 const SEEN_MS = 5000; // no presence for this long (a tab stuck or gone): it doesn't decide
@@ -570,6 +571,9 @@ export const coop = {
   send: (m: Record<string, unknown>) => COOP && msg(m),
   /** Under the flag, and another tab decides. */
   follower: () => COOP && !amAuthority(),
+  /** Legacy participants keep the existing manual cart: they cannot predict a dry-forge wait. */
+  railCart: () =>
+    !COOP || [...peers.values()].every((p) => !p.visible || performance.now() - p.seen > SEEN_MS || p.railCart),
   /** The authority is running someone else's Skip: it doesn't move its own player. */
   noHop: false,
   /** What this tab has decided a station shows. */
@@ -695,6 +699,7 @@ export const coop = {
     chopHooks.stroke = (t: Tree) => msg({ k: 'chop', i: t.index, n: t.strokes, y: t.fallYaw, fell: t.fall >= 0 });
     chopHooks.rock = (q: Rock) => msg({ k: 'rock', i: q.index, n: q.strokes });
     addPresenceField('placeCoop', () => (since >= 0 ? since : null));
+    addPresenceField('placeRailCart', () => (since >= 0 ? 1 : null));
     keepPresenceWhile(() => since >= 0);
     // Keep the legacy log count and cargo recovery fields; chop.ts draws the other worn loads.
     addPresenceField('placeBack', () => (back.logs > 0 ? back.logs : null));
@@ -708,7 +713,7 @@ export const coop = {
       const v = (pr as { placeCoop?: unknown }).placeCoop;
       if (!count(v, Number.MAX_SAFE_INTEGER)) return void peers.delete(r.peer);
       if (!peers.has(r.peer)) showBanner('Your partner is here', 'Same railway, same job.', 2.6);
-      peers.set(r.peer, { since: v, visible: r.visible, seen: performance.now() });
+      peers.set(r.peer, { since: v, visible: r.visible, seen: performance.now(), railCart: pr.placeRailCart === 1 });
     });
     onPeerRemoved((r) => {
       for (let k = pending.length - 1; k >= 0; k--)

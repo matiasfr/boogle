@@ -170,6 +170,134 @@ if (q.has('beam')) {
     }
     Object.assign(window, { __coopDone: true });
   })();
+} else if (q.has('auto')) {
+  // Existing co-op fixture, now exercising the automatic path and its stock contract.
+  const { net, onRemotePresence } = await import('/src/netplay/net.ts' as string);
+  const { cart, cartHere, cartPlatform, snapCart, automaticRails } = await import(
+    '/src/proto/place/depot.ts' as string
+  );
+  const { captureShared, applyShared } = await import('/src/proto/place/job.ts' as string);
+  const { snapRun } = await import('/src/proto/place/run.ts' as string);
+  const { snapForge } = await import('/src/proto/place/forge.ts' as string);
+  const { cam } = await import('/src/player/player.ts' as string);
+  const hands = await import('/src/player/hands.ts' as string);
+  const mode = q.get('auto');
+  let picked = 0,
+    sawLegacy = false;
+  net.room.onMessage((m: { t: string; rails?: number }) => {
+    if (m.t === 'cartProbe' && m.rails === 16) picked = m.rails;
+  });
+  if (mode === 'legacy') {
+    // Model a missing capability on the wire, without altering production code or its registration.
+    const presence = net.room.presence.bind(net.room);
+    net.room.presence = (p: Record<string, unknown>) => {
+      // Room.presence takes a patch: omission retains an earlier advertised value; null actually deletes it.
+      return presence({ ...p, placeRailCart: null });
+    };
+    onRemotePresence((_r: unknown, pr: Record<string, unknown>) => {
+      if (typeof pr.placeCoop === 'number') sawLegacy = !('placeRailCart' in pr);
+    });
+  }
+  const setup = () => {
+    place.skipQ5();
+    place.lines[1].stage = place.lines[1].stations.findIndex((s: { spec: { id: string } }) => s.spec.id === 'Q4');
+    const st = place.lines[1].stations[place.lines[1].stage];
+    if (mode === 'rails') st.have.logs = st.need('logs');
+    if (mode === 'dry') place.forge.rails = 0;
+    snapRun();
+    snapForge();
+    snapCart();
+  };
+  place.coop.skips({ autoQ4: setup });
+  const standByRack = () => {
+    const r = place.rack;
+    // Outside the log cradle, opposite the rail shelf; face the actual pickup point.
+    const x = r.x - Math.cos(r.yaw) * 2.4,
+      z = r.z + Math.sin(r.yaw) * 2.4;
+    put(x, z, 0.8);
+    cam.yaw = me.yaw = Math.atan2(x - r.x, z - r.z);
+  };
+  let showCart = mode === 'load';
+  setInterval(() => {
+    if (showCart) {
+      const p = cartHere(),
+        y = cartPlatform.body.position.y;
+      window.__debugCam?.set([p.x + 6, y + 4, p.z + 8], [p.x, y + 1, p.z]);
+    } else {
+      const r = place.rack;
+      window.__debugCam?.set([r.x + 6, r.y + 4.5, r.z + 7], [r.x, r.y + 0.8, r.z]);
+    }
+  }, 30);
+  void (async () => {
+    await until(() => place.coop.debug().peers.length > 0, 'partner arrived');
+    await wait(2500);
+    if (who === '1') place.coop.skip('autoQ4', setup);
+    await until(() => place.activeFrame()?.spec.id === 'Q4' && place.rack.on, 'Q4 active');
+    await wait(1200); // finish the forced skip snapshot before positioning the observers
+    const r = place.rack;
+    standByRack();
+    if (mode === 'legacy') {
+      await until(() => sawLegacy, 'remote presence lacks rail capability');
+      await until(() => !automaticRails(), 'legacy capability disables auto');
+      await until(() => r.logs === 16, 'legacy logs delivered', 90000);
+      if (r.rails || cart.rails) throw new Error('Legacy room received automatic rails');
+      console.log(`COOP ${who} legacy capability absent ${sawLegacy}, fallback logs ${r.logs} rails ${r.rails}`);
+    } else {
+      await until(() => automaticRails(), 'all peers support auto');
+      const dry =
+        mode === 'dry'
+          ? setInterval(() => {
+              place.forge.rails = 0;
+              place.forge.pour = -1000;
+            }, 20)
+          : undefined;
+      await until(() => cart.leg === 'forge' && cart.auto, 'automatic forge stop', 60000);
+      if (dry !== undefined) {
+        await wait(10000); // longer than the legacy empty-cart timeout
+        if (cart.leg !== 'forge' || cart.rails !== 0) throw new Error('Dry forge did not hold shipment');
+        clearInterval(dry);
+        place.forge.pour = 0;
+        console.log(`COOP ${who} dry forge waited 10s, rails ${cart.rails}`);
+      }
+      await until(() => cart.leg === 'out' && cart.rails === 16, '16 real forge rails loaded', 30000);
+      if (place.forge.rails < 0 || cart.load !== (mode === 'rails' ? 0 : 16)) throw new Error('Invalid mixed load');
+      console.log(`COOP ${who} automatic load logs ${cart.load} rails ${cart.rails} forge ${place.forge.rails}`);
+      if (mode === 'load') {
+        Object.assign(window, { __coopDone: true });
+        return;
+      }
+      showCart = false;
+      if (mode === 'reconcile') {
+        await until(
+          () => cart.leg === 'drop' && cart.rails === 0 && captureShared().depot.rails === 16,
+          'unload reserved',
+          60000,
+        );
+        if (place.coop.follower()) {
+          applyShared(captureShared()); // settle reservations, leaving the old cosmetic flights alive
+          standByRack(); // a fixture relocation, before the authority's rail flights land
+          await until(() => hands.interactTarget()?.verb === 'Take from the rack', 'corrected rack pickup', 1000);
+          console.log(`COOP ${who} corrected pickup at ${JSON.stringify(me.body!.position)} rack ${r.x},${r.z}`);
+          hands.interactDown();
+          hands.interactUp();
+          await until(() => place.back.rails === 16 && place.back.incoming === 0, 'corrected rails on back');
+          picked = place.back.rails;
+          net.room.send({ t: 'cartProbe', rails: picked });
+        }
+        await until(() => picked === 16, 'partner picked corrected rails');
+        await wait(4000);
+        if (r.rails !== 0 || captureShared().depot.rails !== 0)
+          throw new Error('A stale unload duplicated picked rails');
+        console.log(`COOP ${who} corrected pickup conserved ${picked} rails, rack ${r.rails}`);
+      } else {
+        await until(() => r.rails === 16, '16 rails stacked at frontier', 60000);
+        await wait(1500);
+        if (r.logs !== (mode === 'rails' ? 0 : 16) || r.rails !== 16) throw new Error('Frontier stacks disagree');
+        console.log(`COOP ${who} frontier logs ${r.logs} rails ${r.rails}`);
+      }
+    }
+    Object.assign(window, { __coopDone: true });
+  })();
 } else if (q.has('pair')) {
   const { remotes } = await import('/src/netplay/net.ts' as string);
   const { cart, cartHere, cartPlatform, snapCart } = await import('/src/proto/place/depot.ts' as string);
