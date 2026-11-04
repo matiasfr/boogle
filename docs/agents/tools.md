@@ -14,6 +14,7 @@ Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lis
 | Compare with an earlier build               | `npm run before-after -- <ref>`                                                                         |
 | Two players                                 | `look --players 2` (warped at 5x)                                                                       |
 | Know a folder without reading it            | `npm run map -- <folder>`, then `grep` and line ranges                                                  |
+| Check level coverage or a placement         | `npm run level-check`; `-- --place=place --region=T3 --state=empty --physics --json`; `-- --replay`     |
 | Make many edits at once                     | `npm run patch -- <file>`                                                                               |
 | See where a session's time and tokens went  | `npm run transcript -- <id>`                                                                            |
 
