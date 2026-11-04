@@ -26,12 +26,20 @@ export function summarize(t: StartupTimeline) {
     });
   const sync = t.pipelines.filter((p) => p.ok && !p.kind.endsWith('Async') && p.kind !== 'createShaderModule');
   const async = t.pipelines.filter((p) => p.ok && p.kind.endsWith('Async'));
+  // Union of elapsed intervals avoids counting concurrently compiling pipelines twice.
+  let asyncPipelineElapsedMs = 0;
+  let end = 0;
+  for (const p of async.toSorted((a, b) => a.t - b.t)) {
+    asyncPipelineElapsedMs += Math.max(0, p.t + p.ms - Math.max(end, p.t));
+    end = Math.max(end, p.t + p.ms);
+  }
   return {
     firstVisibleWaterProxy: visible,
     frames: t.frames.length,
     stalls,
     syncPipelineMs: sync.reduce((n, p) => n + p.ms, 0),
     asyncPipelineLatencyMs: async.reduce((n, p) => n + p.ms, 0),
+    asyncPipelineElapsedMs,
     shaderModuleMs: t.pipelines.filter((p) => p.kind === 'createShaderModule').reduce((n, p) => n + p.ms, 0),
     pipelineSignature: t.pipelines
       .map((p) => `${p.kind}:${p.label}`)
