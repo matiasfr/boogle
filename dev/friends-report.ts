@@ -60,7 +60,8 @@ const pulls = JSON.parse(
   ),
 ) as Pull[];
 if (pulls.length === 1000) throw new Error('Report reached the 1000 PR limit; use a later --since date');
-const risky = /^(src\/(net|netplay|world|sim)\/|server\/|scripts\/|\.github\/|eslint\.config\.js$|package[^/]*\.json$)/;
+const risky =
+  /^(src\/(net|netplay|world|sim)\/|server\/|scripts\/|\.github\/|dev\/lint\/|\.oxlintrc\.json$|lint-suppressions\.json$|package[^/]*\.json$)/;
 console.log(`Friends' PRs merged to main since ${since} (UTC):`);
 let count = 0;
 for (const pr of pulls) {

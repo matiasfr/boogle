@@ -5,7 +5,7 @@ const q = new URLSearchParams(location.search);
 const mode = q.get('mode') ?? 'solo';
 if (!['solo', 'walk', 'split'].includes(mode)) throw new Error('mode must be solo, walk or split');
 const who = q.get('player') ?? '1';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 const place = window.__place as any;
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');

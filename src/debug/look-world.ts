@@ -53,7 +53,7 @@ import { heights } from '../island/terrain.ts';
 import { island } from '../island/index.ts';
 import { smoothstep } from '../math.ts';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
 
 export const worldU = {

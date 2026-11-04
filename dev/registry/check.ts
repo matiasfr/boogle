@@ -12,7 +12,7 @@ import { scanSources, checkRegistry, compareRegistries, shapeOf } from './scan.t
 import { KNOTS, checkKnots, findKnots, importsOf } from './knots.ts';
 import type { Registry, Source, StateInfo } from './scan.ts';
 import { checkTaskRoutes } from '../scan/task-routes.ts';
-import { DEBT_FILES, debtOf, debtCounts, compareDebt } from './debt.ts';
+import { DEBT_FILES, LEGACY_SUPPRESSIONS, debtFile, debtOf, debtCounts, compareDebt } from './debt.ts';
 import { PROTOS } from '../../protos/protos.ts';
 import { prototypeReport } from './prototypes.ts';
 import { checkAgentDocs } from './agent-docs.ts';
@@ -97,7 +97,7 @@ function baseTree(ref: string): { dir: string | null; note?: string } {
   let tar: Buffer;
   try {
     // Old bases may predate one of the lists. Archive only paths actually in that local tree.
-    const debtPaths = git('ls-tree', '--name-only', ref, '--', ...DEBT_FILES)
+    const debtPaths = git('ls-tree', '--name-only', ref, '--', ...DEBT_FILES, LEGACY_SUPPRESSIONS)
       .toString()
       .trim()
       .split('\n')
@@ -159,7 +159,7 @@ const currentDebt = await debtOf(ROOT);
 notes.push(`debt now: ${debtCounts(currentDebt)}`);
 if (dir) {
   try {
-    const missing = DEBT_FILES.filter((f) => !fs.existsSync(path.join(dir, f)));
+    const missing = DEBT_FILES.filter((f) => !fs.existsSync(path.join(dir, debtFile(dir, f))));
     if (missing.length) notes.push(`debt baseline skipped: ${baseRef} predates ${missing.join(', ')} (no fetch)`);
     else {
       const baseDebt = await debtOf(dir);
@@ -181,9 +181,9 @@ if (dir) {
   notes.push(note!);
 }
 
-// The burn-down: what's left of the entity ratchet (eslint.config.js; not a registry, so not in --json). ESLint only
+// The burn-down: what's left of the entity ratchet (dev/lint/policy.ts; not a registry, so not in --json). Lint only
 // notices a stale suppression in a file it lints, so a deleted file's entry is caught here: it would inflate the count.
-const suppressions = JSON.parse(fs.readFileSync(path.join(ROOT, 'eslint-suppressions.json'), 'utf8')) as Record<
+const suppressions = JSON.parse(fs.readFileSync(path.join(ROOT, 'lint-suppressions.json'), 'utf8')) as Record<
   string,
   Record<string, { count: number }>
 >;
@@ -191,7 +191,7 @@ let suppressed = 0;
 for (const [file, rules] of Object.entries(suppressions)) {
   suppressed += rules['boogle/use-an-entity']?.count ?? 0;
   if (!fs.existsSync(path.join(ROOT, file)))
-    errors.push(`eslint-suppressions.json lists ${file}, which is gone: npm run lint -- --prune-suppressions`);
+    errors.push(`lint-suppressions.json lists ${file}, which is gone: npm run lint -- --prune-suppressions`);
 }
 
 for (const n of notes) console.log(`registry: ${n}`);

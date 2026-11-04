@@ -1,7 +1,7 @@
 // Atlas model: turns the extracted facts into what the views draw. PURE (no DOM, no d3).
 //
 // kindOf is a reading aid, not a contract. It goes by what a file registers, never by folder. First match wins:
-//   lock     ops, states or ticks registered, a `w:` wire message, or the file is in eslint's LOCKSTEP_FILES
+//   lock     ops, states or ticks registered, a `w:` wire message, or the file is in the lint policy's LOCKSTEP_FILES
 //   host     addHostField
 //   owner    addPresenceField (or the core keys of buildPresence)
 //   msg      room messages (send/onMessage)

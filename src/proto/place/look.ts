@@ -47,7 +47,7 @@ export const LOOK = {
 };
 
 // TSL's types don't follow these graphs; kept loose like src/debug/look-post.ts.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
 
 // ---------------------------------------------------------------- ground: smooth grass, faceted rock

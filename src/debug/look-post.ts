@@ -41,7 +41,7 @@ import { gaussianBlur } from 'three/addons/tsl/display/GaussianBlurNode.js';
 import { renderer, scene, camera, scenePass, pipeline } from '../render/scene.ts';
 
 // TSL's types don't follow node graphs built from addon outputs; the lab keeps them loose rather than cast every line.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
 
 export type PostFlags = {

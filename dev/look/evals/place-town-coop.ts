@@ -3,7 +3,7 @@
 // says what it sees. Cameras, cutaways, talks and what you've taken should be your own; the buildings and the money are shared.
 const q = new URLSearchParams(location.search);
 const who = q.get('player');
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 const place = window.__place as any;
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(

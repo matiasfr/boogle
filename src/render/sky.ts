@@ -115,7 +115,7 @@ const SUN_I = 2.5,
 export const skyColors = { top: skyU.uTop.value as THREE.Color, horizon: skyU.uHorizon.value as THREE.Color };
 
 // TSL's typings can't follow a vec3 through fract and back to .x/.y/.z: the node is typed loosely here.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 const hash = Fn(([p0]: [any]) => {
   const p = vec3(fract(p0.mul(0.3183099).add(0.1)).mul(17));
   return fract(p.x.mul(p.y).mul(p.z).mul(p.x.add(p.y).add(p.z)));
@@ -156,7 +156,7 @@ skyMat.colorNode = skyColor();
 // Both are drawn in TSL on a camera-facing quad: no textures, no faces.
 
 // Smooth 3D value noise from the hash above (for the moon's maria).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 const valueNoise = Fn(([p]: [any]) => {
   const i = floor(p);
   const f = fract(p);

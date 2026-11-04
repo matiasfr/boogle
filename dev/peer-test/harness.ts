@@ -31,7 +31,7 @@ export type RoomPage = { name: string; page: Page; ctx: BrowserContext; selfId: 
 // The page's peer id, or { error } when the room turned it away.
 type SelfId = string | { error: string; max?: number };
 // The page's T.snap(): the room as that page sees it (dev/peer-test/ws-page.ts).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- the test API, driven by page.evaluate
+// oxlint-disable-next-line typescript/no-explicit-any -- the test API, driven by page.evaluate
 type Snap = any;
 
 export const ev = <R, A = undefined>(page: Page, fn: (arg: A) => R | Promise<R>, arg?: A): Promise<R> =>

@@ -16,7 +16,7 @@ vite.config.ts.timestamp-*
 *.log
 coverage
 .npm
-.eslintcache
+/.oxlint-run-*.json
 
 # macOS
 .DS_Store

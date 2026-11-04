@@ -1,84 +1,238 @@
-// The determinism lint (eslint.config.js) fires on lockstep code: browser-rounded math, Math.random and clocks.
+// Owner-requested safety-gate parity: preserve the 170 study assertions against the fixed ESLint baseline.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { ESLint } from 'eslint';
-import { LOCKSTEP_FILES } from '../eslint.config.js';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import fixtures from './fixtures/lint-parity.json' with { type: 'json' };
+import { LOCKSTEP_FILES } from '../dev/lint/policy.ts';
+import { lintSafety } from '../dev/lint/safety.ts';
+import type { Diagnostic } from '../dev/lint/safety.ts';
+import { lintFiles } from '../dev/lint/runner.ts';
+import { compareDebt, debtOf } from '../dev/registry/debt.ts';
 
-const eslint = new ESLint({ cwd: fileURLToPath(new URL('..', import.meta.url)) });
-const lint = async (code: string, filePath = 'src/sim/lint-probe.js') => {
-  const [result] = await eslint.lintText(code, { filePath });
-  return result!.messages.map((m) => m.ruleId);
+const write = (root: string, file: string, code: string) => {
+  fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+  fs.writeFileSync(path.join(root, file), code);
 };
+const temporary = (run: (root: string) => void) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-lint-test-'));
+  try {
+    run(root);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+};
+const converted = (code: string) =>
+  code.replace(/eslint-disable-line (.+)$/, (_, rule: string) =>
+    rule.startsWith('@typescript-eslint/')
+      ? `oxlint-disable-line ${rule.replace('@typescript-eslint/', 'typescript/')}`
+      : `boogle-disable-line ${rule}`,
+  );
+const normalize = (rule: string) => (rule === 'no-unused-vars' ? '@typescript-eslint/no-unused-vars' : rule);
+const has = (diagnostics: Diagnostic[], rule: string) => diagnostics.some((d) => d.rule === rule);
 
-test('lockstep code may not use Math.random, Math.sin, ** or Date.now', async () => {
-  for (const code of [
-    'Math.random();',
-    'Math.sin(1);',
-    'Math.atanh(0.5);',
-    'export const x = 2 ** 3;',
-    'Date.now();',
-    'new Date();',
-    'crypto.getRandomValues(new Uint8Array(1));',
-    'crypto.randomUUID();',
-  ]) {
-    const rules = await lint(code);
-    assert.ok(
-      rules.some((r) => r?.startsWith('no-restricted-')),
-      `${code} should be reported, got ${rules}`,
+test('170 fixture assertions retain every ESLint catch and every allowed case; JS language gate is preserved', () => {
+  temporary((root) => {
+    const files = new Map<string, string[]>();
+    const cases = fixtures.cases.map((c) => {
+      const lines = files.get(c.file) ?? [];
+      lines.push(converted(c.code));
+      files.set(c.file, lines);
+      return { ...c, line: lines.length };
+    });
+    for (const [file, lines] of files) write(root, file, lines.join('\n') + '\n');
+    const js = 'src/linter-language-probe.js';
+    const mjs = 'dev/linter-language-probe.mjs';
+    write(root, js, 'export const x = /a/v;\n');
+    write(root, mjs, 'export const x = /a/v;\n');
+    const diagnostics = lintFiles(root, [...files.keys(), js, mjs], { typeAware: false });
+    const differences = cases.filter((c) => {
+      assert.equal(c.eslint, c.expected, `baseline drift: ${c.group}`);
+      const caught = diagnostics.some(
+        (d) =>
+          d.file === c.file &&
+          d.line === c.line &&
+          (c.rule === null ? /unused.*disable|unused.*directive/i.test(d.message) : normalize(d.rule) === c.rule),
+      );
+      return caught !== c.eslint;
+    });
+    assert.equal(cases.length, 170);
+    assert.deepEqual(differences, [], JSON.stringify({ differences, diagnostics }, null, 2));
+    assert.ok(diagnostics.some((d) => d.file === js && d.rule === 'boogle/js-language'));
+    assert.deepEqual(
+      diagnostics.filter((d) => d.file === mjs),
+      [],
     );
-  }
+    // A renamed or moved named lockstep file must not silently drop out of lint.
+    for (const named of LOCKSTEP_FILES.filter((f) => !f.includes('*'))) {
+      const entry = ['.js', '.ts']
+        .map((ext) => named.replace('.{js,ts}', ext))
+        .find((f) => fs.existsSync(new URL('../' + f, import.meta.url)));
+      assert.ok(entry, `${named} is missing: update dev/lint/policy.ts`);
+      assert.ok(diagnostics.some((d) => d.file === entry && d.rule === 'no-restricted-properties'));
+    }
+  });
 });
 
-test('nor sneak them past the lint as Date() or globalThis.Math.*', async () => {
-  for (const code of [
-    'Date();',
-    'globalThis.Math.sin(1);',
-    'window.Math.random();',
-    'self.Math.pow(2, 3);',
-    'globalThis.crypto.randomUUID();',
-  ]) {
-    const rules = await lint(code);
-    assert.ok(
-      rules.some((r) => r?.startsWith('no-restricted-')),
-      `${code} should be reported, got ${rules}`,
-    );
-  }
-});
-
-// A renamed or moved rules module would otherwise silently drop out of the lint (flat config never warns).
-test('every named lockstep file exists and is linted', async () => {
-  for (const named of LOCKSTEP_FILES.filter((f) => !f.includes('*'))) {
-    // `grid.{js,ts}`: whichever of the two exists (modules move from .js to .ts).
-    const entry = ['.js', '.ts']
-      .map((ext) => named.replace('.{js,ts}', ext))
-      .find((f) => existsSync(new URL('../' + f, import.meta.url)));
-    assert.ok(entry, `${named} is in LOCKSTEP_FILES but missing: update eslint.config.js`);
-    const rules = await lint('Math.random();', entry);
-    assert.ok(rules.includes('no-restricted-properties'), `${entry} should be linted, got ${rules}`);
-  }
-});
-
-test('Math.sqrt and plain arithmetic are allowed', async () => {
-  assert.deepEqual(await lint('export const x = Math.sqrt(2) * 3 + 1 / 4 - Math.floor(0.5);\n'), []);
-});
-
-test('lockstep registration imports are restricted to rules and the world installer', async () => {
+test('registration imports remain restricted at every fixed sync path', () => {
   for (const name of ['registerOp', 'registerState', 'onTick']) {
     for (const ext of ['js', 'ts']) {
-      for (const [file, path] of [
+      for (const [file, source] of [
         ['src/probe.ts', `./world/sync.${ext}`],
         ['src/physics/backend-probe.ts', `../world/sync.${ext}`],
         ['src/world/probe.ts', `./sync.${ext}`],
       ]) {
-        const code = `import { ${name} } from '${path}'; ${name}();`;
-        assert.ok((await lint(code, file)).includes('no-restricted-imports'), `${file}: ${code}`);
+        const code = `import { ${name} } from '${source}'; ${name}();`;
+        assert.ok(has(lintSafety(code, file!), 'no-restricted-imports'), `${file}: ${code}`);
       }
       const installer = `import { ${name} } from './sync.${ext}'; ${name}();`;
-      assert.ok(!(await lint(installer, 'src/world/game-world.ts')).includes('no-restricted-imports'), installer);
+      assert.ok(!has(lintSafety(installer, 'src/world/game-world.ts'), 'no-restricted-imports'), installer);
     }
-    // Rules receive the registration functions through their sync argument, not a direct sync.ts import.
-    assert.deepEqual(await lint(`export const install = (sync) => sync.${name}();`, 'src/world/rules/probe.js'), []);
+    assert.deepEqual(lintSafety(`export const install = (sync) => sync.${name}();`, 'src/world/rules/probe.js'), []);
+  }
+});
+
+test('custom directives suppress only their rule and report stale entries', () => {
+  for (const code of [
+    'new Date(); // boogle-disable-line no-restricted-syntax',
+    '// boogle-disable-next-line no-restricted-syntax -- intentional fixture\nnew Date();',
+    '/* boogle-disable no-restricted-syntax */\nnew Date();\n/* boogle-enable no-restricted-syntax */',
+    '/* boogle-disable no-restricted-syntax */ new Date(); /* boogle-enable no-restricted-syntax */',
+  ])
+    assert.deepEqual(lintSafety(code, 'src/sim/probe.ts'), [], code);
+  const enabled = lintSafety(
+    '/* boogle-disable no-restricted-syntax */\nnew Date();\n/* boogle-enable no-restricted-syntax */\nnew Date();',
+    'src/sim/probe.ts',
+  );
+  assert.equal(enabled.length, 1);
+  assert.equal(enabled[0]!.line, 4);
+  const late = lintSafety('new Date(); /* boogle-disable no-restricted-syntax */', 'src/sim/probe.ts');
+  assert.ok(has(late, 'no-restricted-syntax'), 'a later block directive cannot suppress an earlier violation');
+  assert.ok(has(late, 'boogle/unused-disable'));
+  const multiline = lintSafety('new Date(); /* boogle-disable-line\n no-restricted-syntax */', 'src/sim/probe.ts');
+  assert.ok(has(multiline, 'no-restricted-syntax'));
+  assert.ok(has(multiline, 'boogle/invalid-disable'));
+  assert.ok(
+    has(
+      lintSafety('Math.sqrt(1); // boogle-disable-line no-restricted-syntax', 'src/sim/probe.ts'),
+      'boogle/unused-disable',
+    ),
+  );
+  assert.ok(
+    has(
+      lintSafety('new Date(); // boogle-disable-line no-restricted-imports', 'src/sim/probe.ts'),
+      'no-restricted-syntax',
+    ),
+  );
+  assert.ok(
+    has(
+      lintSafety('export const text = "// boogle-disable-line no-restricted-syntax"; new Date();', 'src/sim/probe.ts'),
+      'no-restricted-syntax',
+    ),
+  );
+});
+
+test('import restrictions include re-exports, namespace imports and mixed physics type/value imports', () => {
+  for (const code of [
+    "export { registerOp } from './world/sync.ts';",
+    "export * from './world/sync.ts';",
+    "import * as sync from './world/sync.ts';",
+  ])
+    assert.ok(has(lintSafety(code, 'src/probe.ts'), 'no-restricted-imports'), code);
+  for (const code of [
+    "import type { Player } from '../player/player.ts';",
+    "import { type Player } from '../player/player.ts';",
+    "export type { Player } from '../player/player.ts';",
+    "import type Player = require('../player/player.ts');",
+  ])
+    assert.ok(!has(lintSafety(code, 'src/physics/probe.ts'), '@typescript-eslint/no-restricted-imports'), code);
+  const mixed = "import { type Player, player } from '../player/player.ts';";
+  assert.ok(has(lintSafety(mixed, 'src/physics/probe.ts'), '@typescript-eslint/no-restricted-imports'));
+  assert.ok(
+    has(
+      lintSafety("import Player = require('../player/player.ts');", 'src/physics/probe.ts'),
+      '@typescript-eslint/no-restricted-imports',
+    ),
+  );
+});
+
+test('the JS language guard replaces duplicate-parameter and legacy-octal parser protections', () => {
+  for (const code of ['export function f(a, a) {}', 'export const n = 010;', 'export const s = "\\1";'])
+    assert.ok(has(lintSafety(code, 'dev/probe.js'), 'boogle/js-language'), code);
+  assert.ok(has(lintSafety('function f(a, a) {}', 'dev/probe.cjs'), 'no-dupe-args'));
+  assert.ok(has(lintSafety('const n = 010;', 'dev/probe.cjs'), 'no-octal'));
+});
+
+test('entity count budgets fail overflow and stale entries, prune downward, and relax only stale counts', () => {
+  temporary((root) => {
+    const file = 'src/pois/lighthouse/index.ts';
+    const budget = 'lint-suppressions.json';
+    const rule = 'boogle/use-an-entity';
+    const setCount = (count: number) => write(root, budget, JSON.stringify({ [file]: { [rule]: { count } } }));
+    const run = (options = {}) => lintFiles(root, ['.'], { typeAware: false, ...options });
+    write(root, file, 'onFrame(() => {});\nonFrame(() => {});\n');
+    setCount(2);
+    assert.deepEqual(run(), []);
+    setCount(1);
+    assert.equal(run().filter((d) => d.rule === rule).length, 2, 'overflow reports all offenders');
+    assert.equal(run({ relaxed: true }).filter((d) => d.rule === rule).length, 2, 'per-edit mode never permits growth');
+    setCount(3);
+    assert.ok(has(run(), 'boogle/stale-budget'));
+    assert.deepEqual(run({ relaxed: true }), []);
+    assert.deepEqual(run({ prune: true }), []);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(root, budget), 'utf8'))[file][rule].count, 2);
+    fs.unlinkSync(path.join(root, file));
+    assert.ok(has(run(), 'boogle/stale-budget'), 'deleted files cannot retain budget');
+    assert.deepEqual(run({ prune: true }), []);
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, budget), 'utf8')), {});
+  });
+});
+
+test('missing single-file targets and unmatched globs fail instead of reporting a clean lint', () => {
+  temporary((root) => {
+    assert.throws(() => lintFiles(root, ['src/typo.ts'], { typeAware: false }));
+    assert.throws(() => lintFiles(root, ['src/missing/**/*.ts'], { typeAware: false }));
+    assert.deepEqual(lintFiles(root, ['server/ignored.ts'], { typeAware: false }), []);
+  });
+});
+
+test('root-only exclusions never hide nested source directories; dependency exclusions apply at every depth', () => {
+  temporary((root) => {
+    for (const file of [
+      'src/server/probe.ts',
+      'src/sim/dist/probe.ts',
+      'server/probe.ts',
+      'src/demo/node_modules/probe.ts',
+    ])
+      write(root, file, 'new WebSocket("x");\n');
+    const diagnostics = lintFiles(root, ['.'], { typeAware: false });
+    assert.deepEqual(
+      diagnostics
+        .filter((d) => d.rule === 'no-restricted-syntax')
+        .map((d) => d.file)
+        .sort(),
+      ['src/server/probe.ts', 'src/sim/dist/probe.ts'],
+    );
+    assert.deepEqual(lintFiles(root, ['src/demo/node_modules/probe.ts'], { typeAware: false }), []);
+  });
+});
+
+test('renaming the suppression budget preserves the archived baseline and its no-growth check', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-lint-debt-'));
+  try {
+    const budget = (count: number) => JSON.stringify({ 'src/pois/probe.ts': { 'boogle/use-an-entity': { count } } });
+    write(root, 'eslint-suppressions.json', budget(2));
+    write(root, 'dev/registry/knots.ts', 'export const KNOTS = [];\n');
+    write(root, 'dev/level/allow.ts', 'export const ALLOW = [];\n');
+    const before = await debtOf(root);
+    fs.renameSync(path.join(root, 'eslint-suppressions.json'), path.join(root, 'lint-suppressions.json'));
+    assert.deepEqual(compareDebt(before, await debtOf(root)), []);
+    write(root, 'lint-suppressions.json', budget(3));
+    assert.match(compareDebt(before, await debtOf(root)).join('\n'), /lint-suppressions\.json grew: 2 → 3/);
+    write(root, 'lint-suppressions.json', budget(1));
+    assert.deepEqual(compareDebt(before, await debtOf(root)), []);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
   }
 });

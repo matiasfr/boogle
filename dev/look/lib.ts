@@ -271,14 +271,14 @@ export class Game {
 
   // Run code in the page. A function (with optional JSON arg) or a string body (may `await`, may
   // `await import('/src/...')` game modules; `return` a JSON-able value).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- page results are whatever the caller asked for
+  // oxlint-disable-next-line typescript/no-explicit-any -- page results are whatever the caller asked for
   eval<R = any, A = any>(code: string | PageFn<A, R>, arg?: A): Promise<R> {
     if (typeof code === 'function') return this.page.evaluate(code as PageFn<unknown, R>, arg);
     return this.page.evaluate(`(async () => { ${code}\n})()`) as Promise<R>;
   }
 
   // Poll an in-page predicate (function or expression string) until truthy. Returns elapsed ms or -1.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the predicate's argument is the caller's
+  // oxlint-disable-next-line typescript/no-explicit-any -- the predicate's argument is the caller's
   async waitFor<A = any>(
     pred: string | PageFn<A, unknown>,
     { timeout = 15000, step = 100, arg }: { timeout?: number; step?: number; arg?: A } = {},

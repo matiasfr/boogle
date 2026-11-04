@@ -8,7 +8,7 @@ import home from '../../src/world/home-land.json';
 
 declare global {
   interface Window {
-    T: any; // eslint-disable-line @typescript-eslint/no-explicit-any -- the test API, driven by page.evaluate
+    T: any; // oxlint-disable-line typescript/no-explicit-any -- the test API, driven by page.evaluate
   }
 }
 

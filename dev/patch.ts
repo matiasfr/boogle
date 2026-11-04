@@ -1,6 +1,6 @@
 // npm run patch -- <file>: many edits in one go, for an agent changing several files at once. Each edit's text must be in its
 // file exactly once, or nothing at all is written and it says which failed: a throwaway script's `s.replace` misses in silence.
-// Then Prettier and ESLint on what it touched and a typecheck, since the editor's own format hook doesn't see this.
+// Then Prettier and the full lint runner on what it touched and a typecheck, since the editor's own format hook doesn't see this.
 //
 //   === src/proto/place/job.ts
 //   <<<<
@@ -10,7 +10,7 @@
 //   >>>>
 //   === a/new/file.ts       (an empty <<<< side with no matching text makes a new file only when it doesn't exist)
 //
-// --no-check skips the Prettier, ESLint and typecheck step.
+// --no-check skips the Prettier, lint and typecheck step.
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
@@ -89,10 +89,16 @@ run('npx', ['prettier', '--write', '--log-level', 'silent', '--ignore-unknown', 
 const code = files.filter((f) => /\.(ts|js)$/.test(f));
 let bad = false;
 if (code.length) {
-  const lint = run('npx', ['eslint', '--quiet', '--no-warn-ignored', '--pass-on-unpruned-suppressions', ...code]);
+  const lint = run(process.execPath, [
+    'dev/lint/run.ts',
+    '--quiet',
+    '--no-warn-ignored',
+    '--pass-on-unpruned-suppressions',
+    ...code,
+  ]);
   if (lint.status) {
     bad = true;
-    console.log(lint.stdout);
+    console.log(lint.stdout + lint.stderr);
   }
   const types = run('npm', ['run', 'typecheck']);
   if (types.status) {

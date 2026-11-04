@@ -6,8 +6,12 @@ import { pathToFileURL } from 'node:url';
 import { parseSync } from 'oxc-parser';
 import type { Allow } from '../level/allow.ts';
 
-export const DEBT_FILES = ['eslint-suppressions.json', 'dev/registry/knots.ts', 'dev/level/allow.ts'];
-type DebtList = 'eslint-suppressions.json' | 'KNOTS' | 'dev/level/allow.ts';
+export const DEBT_FILES = ['lint-suppressions.json', 'dev/registry/knots.ts', 'dev/level/allow.ts'];
+// Local archived bases can predate the linter rename. Never skip the no-growth comparison on that account.
+export const LEGACY_SUPPRESSIONS = 'eslint-suppressions.json';
+export const debtFile = (root: string, file: string) =>
+  file === DEBT_FILES[0] && !fs.existsSync(path.join(root, file)) ? LEGACY_SUPPRESSIONS : file;
+type DebtList = 'lint-suppressions.json' | 'KNOTS' | 'dev/level/allow.ts';
 type Budget = { label: DebtList; entries: Record<string, number>; countEntries?: boolean };
 export type Debt = { budgets: Budget[]; groups: number };
 type Approval = { list: DebtList; key: string; max: number; reason: string };
@@ -41,7 +45,10 @@ function knotsOf(text: string): string[][] {
 
 export async function debtOf(root: string): Promise<Debt> {
   const read = (f: string) => fs.readFileSync(path.join(root, f), 'utf8');
-  const suppressed = JSON.parse(read(DEBT_FILES[0]!)) as Record<string, Record<string, { count: number }>>;
+  const suppressed = JSON.parse(read(debtFile(root, DEBT_FILES[0]!))) as Record<
+    string,
+    Record<string, { count: number }>
+  >;
   const knots = knotsOf(read(DEBT_FILES[1]!));
   // allow.ts is a standalone data module (including its sketch helper), with no game or tool imports.
   const { ALLOW } = (await import(pathToFileURL(path.join(root, DEBT_FILES[2]!)).href)) as { ALLOW: Allow[] };
@@ -57,7 +64,7 @@ export async function debtOf(root: string): Promise<Debt> {
     groups: knots.length,
     budgets: [
       {
-        label: 'eslint-suppressions.json',
+        label: 'lint-suppressions.json',
         entries: entries(
           Object.entries(suppressed).flatMap(([f, rules]) =>
             Object.entries(rules).map(([rule, value]): [string, number] => [`${f} [${rule}]`, value.count]),

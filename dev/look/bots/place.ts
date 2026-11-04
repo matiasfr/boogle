@@ -17,7 +17,7 @@ import { CART } from '../../../src/proto/place/layout.ts';
 const q = new URLSearchParams(location.search);
 
 export async function play() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line typescript/no-explicit-any
   const place = window.__place as any;
   const bot = makeBot({ recover: () => place.backUp() });
   const { note, wait, now, press } = bot;
@@ -445,7 +445,7 @@ export async function play() {
 }
 // The town, after the job, so a visit doesn't move the job's times: in and out of each building with real input, every talk and the
 // shop's three presses. `bot.walk` finds the doors by itself.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 async function townTour(bot: Bot, place: any) {
   const town = place.town;
   const at = (id: string, lx: number, lz: number) => {
