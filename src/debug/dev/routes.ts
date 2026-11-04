@@ -1,10 +1,10 @@
 // Separate pages, not a world teleport. Never carry disposable-run authority across islands.
-import { el } from './ui.ts';
+import { el, button, note } from './ui.ts';
 
 export function islandLink(island: 'starting' | 'low' | 'home', shore = false) {
   const url = new URL(location.pathname, location.origin);
   const current = new URLSearchParams(location.search);
-  for (const key of ['water', 'tune', 'dpr']) {
+  for (const key of ['water', 'tune', 'dpr', 'sky', 'tone', 'tod', 'v']) {
     const value = current.get(key);
     if (value !== null) url.searchParams.set(key, value);
   }
@@ -17,31 +17,29 @@ export function islandLink(island: 'starting' | 'low' | 'home', shore = false) {
   if (shore) url.searchParams.set('devshore', '1');
   return url.href;
 }
-export function islandLinks(parent: HTMLElement) {
-  const section = el('details', '', 'dev-islands');
-  section.open = true;
-  section.append(el('summary', 'Islands · separate pages, reload'));
+export function islandPicker(parent: HTMLElement) {
+  const section = el('section', '', 'dev-islands');
+  const label = el('label', 'Island / shore', 'dev-field');
+  const picker = el('select');
+  picker.dataset.devIslandPicker = '';
+  picker.setAttribute('aria-label', 'Island or shore destination');
   for (const [id, label] of [
     ['starting', 'Starting area'],
     ['low', 'Lower home island'],
     ['home', 'Current home island'],
   ] as const) {
-    const row = el('div', '', 'dev-actions');
     for (const shore of [false, true]) {
-      const link = el('a', shore ? `${label} shore` : label, 'pause-btn');
-      link.href = islandLink(id, shore);
-      link.dataset.devIsland = id;
-      link.dataset.devShore = String(shore);
-      row.append(link);
+      const option = el('option', shore ? `${label} · shore` : label);
+      option.value = islandLink(id, shore);
+      option.dataset.devIsland = id;
+      option.dataset.devShore = String(shore);
+      picker.append(option);
     }
-    section.append(row);
   }
-  section.append(
-    el(
-      'p',
-      'Dev and saved Water settings stay in this browser. Shore opens a Local camera; your body stays at arrival.',
-      'dev-note',
-    ),
-  );
+  label.append(picker);
+  const go = button('Open', () => location.assign(picker.value));
+  go.dataset.devGo = '';
+  section.append(label, go);
+  note(section, 'Separate page · reload. Shore opens a Local camera; your body stays at arrival.');
   parent.append(section);
 }

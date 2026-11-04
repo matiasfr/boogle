@@ -1,5 +1,14 @@
-import { SCENARIOS, scenarioName, launch, fixtureReason, fixture } from './fixtures.ts';
-import { command, note } from './ui.ts';
+import {
+  SCENARIOS,
+  scenarioName,
+  launch,
+  fixtureReason,
+  fixture,
+  setup,
+  VERSION,
+  destinationName,
+} from './fixtures.ts';
+import { command, note, el, more, button } from './ui.ts';
 import { no, type Tool } from './types.ts';
 
 export const tool: Tool = {
@@ -17,19 +26,28 @@ export const tool: Tool = {
   },
   snapshot: fixture,
   mount(parent, ctx) {
+    note(parent, 'Start creates a new disposable solo room. Current saves stay intact.');
+    const picker = el('select');
+    picker.setAttribute('aria-label', 'Test scenario');
+    for (const scenario of SCENARIOS) {
+      const option = el('option', scenario === 'walk' ? 'Fresh walking · no skip' : scenario);
+      option.value = scenario;
+      picker.append(option);
+    }
+    parent.append(picker);
+    command(parent, ctx, 'scenarios', 'Start test', 'start', () => ({ scenario: picker.value }));
+    const proposed = setup();
+    if (proposed) {
+      note(parent, `${proposed.warning} Proposed: ${proposed.scenario} / ${proposed.destination}.`);
+      const start = button('Start proposed setup', () => launch(proposed.scenario, proposed.destination));
+      start.disabled =
+        proposed.version !== VERSION || !scenarioName(proposed.scenario) || !destinationName(proposed.destination);
+      parent.append(start);
+    }
     note(
-      parent,
-      'Stage fixtures use the existing place setup handlers. They are test evidence, not pacing evidence. Your current room and saves stay intact.',
+      more(parent),
+      'Stage fixtures use existing place setup handlers. They are test evidence, not pacing evidence. Shared-room grants and skips remain unavailable.',
     );
-    for (const scenario of SCENARIOS)
-      command(
-        parent,
-        ctx,
-        'scenarios',
-        scenario === 'walk' ? 'Start fresh walking test (no stage skip)' : `Start ${scenario} test`,
-        'start',
-        { scenario },
-      );
     return () => {};
   },
 };

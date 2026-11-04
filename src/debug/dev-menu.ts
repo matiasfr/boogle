@@ -9,32 +9,35 @@ import { releaseInput, requestLock } from '../player/input.ts';
 import { devInput } from '../player/dev-input.ts';
 import { canvas } from '../render/scene.ts';
 import { PROTO } from '../proto/flags.ts';
-import { fixture, fixtureReason, setup, launch, scenarioName, destinationName, VERSION } from './dev/fixtures.ts';
-import { islandLinks } from './dev/routes.ts';
-import { el, button, note } from './dev/ui.ts';
+import { fixture, fixtureReason, scenarioName, destinationName, VERSION } from './dev/fixtures.ts';
+import { el, button, note, more } from './dev/ui.ts';
 import { no, type Args, type Context, type Tool, type Result, type DockPanel } from './dev/types.ts';
 
 const entries: DockPanel[] = [
   { id: 'water', label: 'Water', load: () => import('./dev/water.ts') },
   { id: 'destinations', label: 'Go to', load: () => import('./dev/destinations.ts') },
-  { id: 'camera', label: 'Free camera', load: () => import('./dev/camera.ts') },
-  { id: 'inspect', label: 'Inspect and overlays', load: () => import('./dev/inspect.ts') },
-  { id: 'performance', label: 'Performance and startup', load: () => import('./dev/performance.ts') },
-  { id: 'room', label: 'Room health', load: () => import('./dev/room.ts') },
-  { id: 'report', label: 'Copy test report', load: () => import('./dev/report.ts') },
-  { id: 'scenarios', label: 'Test scenarios', load: () => import('./dev/scenarios.ts') },
+  { id: 'camera', label: 'Camera', load: () => import('./dev/camera.ts') },
+  { id: 'inspect', label: 'Inspect', load: () => import('./dev/inspect.ts') },
+  { id: 'performance', label: 'Perf', load: () => import('./dev/performance.ts') },
+  { id: 'room', label: 'Room', load: () => import('./dev/room.ts') },
+  { id: 'report', label: 'Report', load: () => import('./dev/report.ts') },
+  { id: 'scenarios', label: 'Tests', load: () => import('./dev/scenarios.ts') },
 ];
 /** Register a lazy panel before or after installation, using the same bounded commands as its agent API. */
 export function registerDockPanel(panel: DockPanel) {
   if (entries.some((entry) => entry.id === panel.id)) throw new Error(`Dev panel already registered: ${panel.id}`);
   entries.push(panel);
-  if (select && !selected) void select();
+  refreshTabs();
   return () => {
     const i = entries.indexOf(panel);
     if (i >= 0) entries.splice(i, 1);
     loaded.get(panel.id)?.dispose?.();
     loaded.delete(panel.id);
-    if (selected === panel.id) void select?.();
+    if (selected === panel.id) {
+      selected = 'water';
+      if (!collapsed) void select?.('water');
+    }
+    refreshTabs();
   };
 }
 const loaded = new Map<string, Tool>();
@@ -42,6 +45,7 @@ const loading = new Map<string, Promise<Tool>>();
 const history: { tool: string; command: string; at: string; result: Result }[] = [];
 let select: ((id?: string) => Promise<void>) | null = null;
 let collapse = () => {};
+let refreshTabs = () => {};
 let selected: string | undefined;
 let alive = true;
 let prepareCamera: (() => Promise<unknown>) | null = null;
@@ -131,6 +135,13 @@ export function installDevMenu() {
   dock.setAttribute('aria-label', 'Developer tools');
   const bar = el('div', '', 'dev-bar'),
     body = el('div', '', 'dev-tools');
+  const tabs = el('nav', '', 'dev-tabs');
+  tabs.setAttribute('aria-label', 'Dev tools');
+  const toolSelect = el('select', '', 'dev-tool-select');
+  toolSelect.dataset.devToolSelect = '';
+  toolSelect.setAttribute('aria-label', 'Dev tool');
+  toolSelect.onchange = () => void show(toolSelect.value);
+  body.id = 'dev-tool-panel';
   let disposePanel = () => {},
     generation = 0;
   const waterReady = (async () => {
@@ -214,6 +225,9 @@ export function installDevMenu() {
     dock.dataset.position = position;
     dock.hidden = collapsed;
     shell.dataset.collapsed = String(collapsed);
+    toolSelect.value = selected ?? 'water';
+    for (const tab of tabs.querySelectorAll<HTMLButtonElement>('[data-dev-tool]'))
+      tab.setAttribute('aria-pressed', String(tab.dataset.devTool === selected));
     remember();
   };
   collapse = () => {
@@ -227,6 +241,7 @@ export function installDevMenu() {
   };
   async function show(id?: string) {
     if (!alive) return;
+    id ??= entries.some((entry) => entry.id === selected) ? selected : 'water';
     devInput.cursor = true;
     releaseInput();
     if (document.pointerLockElement) document.exitPointerLock();
@@ -238,69 +253,72 @@ export function installDevMenu() {
     selected = id;
     body.replaceChildren();
     layout();
-    if (!id) {
-      body.append(el('h2', 'Tools'));
-      note(
-        body,
-        'Local tools; friends see your ordinary avatar. Movement and stage setup require a disposable solo TEST run.',
-      );
-      if (settingsNotice) note(body, settingsNotice);
-      islandLinks(body);
-      const proposed = setup();
-      if (proposed) {
-        note(body, `${proposed.warning} Proposed: ${proposed.scenario} / ${proposed.destination}.`);
-        const start = button('Start this setup in a disposable run', () =>
-          launch(proposed.scenario, proposed.destination),
-        );
-        start.disabled =
-          proposed.version !== VERSION || !scenarioName(proposed.scenario) || !destinationName(proposed.destination);
-        body.append(start);
-      }
-      for (const entry of entries) {
-        const b = button(entry.label, () => show(entry.id));
-        b.dataset.devTool = entry.id;
-        body.append(b);
-      }
-      return;
-    }
     note(body, 'Loading…');
     try {
       if (id === 'water') await waterReady;
       if (id === 'camera') await ensureCamera();
-      const value = await tool(id);
+      const value = await tool(id!);
       if (!alive || token !== generation) return;
       body.replaceChildren();
       if (!value) {
         note(body, 'Unknown tool.');
         return;
       }
-      body.append(el('h2', value.label));
-      note(body, value.scope);
       const unavailable = value.available();
       if (unavailable) note(body, unavailable);
       const parent = el('div');
+      parent.dataset.devPanel = value.id;
       body.append(parent);
       const cleanup = await value.mount(parent, context);
       if (!alive || token !== generation) cleanup();
-      else disposePanel = cleanup;
+      else {
+        disposePanel = cleanup;
+        const info = more(body, 'Info');
+        note(info, value.scope);
+        if (settingsNotice) note(info, settingsNotice);
+      }
     } catch (error) {
       if (token === generation) note(body, error instanceof Error ? error.message : String(error));
     }
   }
   select = show;
-  bar.append(button('Tools', () => show()));
+  refreshTabs = () => {
+    tabs.replaceChildren();
+    toolSelect.replaceChildren();
+    for (const entry of entries) {
+      const tab = button(entry.label, () => show(entry.id));
+      tab.dataset.devTool = entry.id;
+      tab.dataset.devTab = entry.id;
+      tab.setAttribute('aria-controls', body.id);
+      tab.setAttribute('aria-pressed', String(entry.id === selected));
+      tabs.append(tab);
+      const option = el('option', entry.label);
+      option.value = entry.id;
+      toolSelect.append(option);
+    }
+    toolSelect.value = selected ?? 'water';
+  };
+  refreshTabs();
+  const positionLabel = el('label', 'Dock', 'dev-position');
+  const positionSelect = el('select');
+  positionSelect.setAttribute('aria-label', 'Dock position');
+  positionSelect.dataset.devPosition = '';
   for (const side of ['left', 'right', 'bottom'] as const) {
-    const b = button(side[0]!.toUpperCase() + side.slice(1), () => {
-      position = side;
-      layout();
-    });
-    b.dataset.devPosition = side;
-    bar.append(b);
+    const option = el('option', side[0]!.toUpperCase() + side.slice(1));
+    option.value = side;
+    positionSelect.append(option);
   }
+  positionSelect.value = position;
+  positionSelect.onchange = () => {
+    position = positionSelect.value as Position;
+    layout();
+  };
+  positionLabel.append(positionSelect);
+  bar.append(toolSelect, positionLabel);
   const hide = button('Collapse', () => collapse());
   hide.dataset.devCollapse = '';
   bar.append(hide);
-  dock.append(bar, body);
+  dock.append(bar, tabs, body);
   const play = button('Play · Esc for mouse', () => {
     cameraModule?.returnCamera();
     collapse();
@@ -316,14 +334,30 @@ export function installDevMenu() {
   off.title = 'Turn Dev off';
   off.setAttribute('aria-label', 'Turn Dev off');
   off.dataset.devOff = '';
+  const reportStatus = el('span', '', 'dev-strip-status');
+  reportStatus.setAttribute('role', 'status');
+  const report = button('Report', async () => {
+    const result = await run('report', 'copy');
+    reportStatus.textContent = result.message;
+    const data = result.data as { copied?: boolean } | undefined;
+    if (!result.ok || !data?.copied) {
+      await show('report');
+      await run('report', 'read');
+    }
+  });
+  report.dataset.devReport = '';
+  const goTo = button('Go to', () => show('destinations'));
+  goTo.dataset.devGoto = '';
   strip.append(
     cameraButton,
     returnButton,
-    button('Report', () => show('report')),
+    goTo,
+    report,
     button('Tools', () => show()),
     play,
     off,
   );
+  strip.append(reportStatus);
   shell.append(strip, cameraControls, dock);
   document.body.append(shell);
   const pauseEntry = { id: 'dev', label: 'Dev', mount: () => () => {}, open: () => void show() };
@@ -350,6 +384,7 @@ export function installDevMenu() {
     releaseInput();
     delete window.boogle.dev;
     select = null;
+    refreshTabs = () => {};
     prepareCamera = null;
     if (shellEntity) despawn(shellEntity);
     shellEntity = null;

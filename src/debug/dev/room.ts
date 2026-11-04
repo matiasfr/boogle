@@ -2,7 +2,7 @@ import { worldStatus } from '../../world/sync.ts';
 import { net, getRoomId, remotes } from '../../netplay/net.ts';
 import { BUILD } from '../../build-id.ts';
 import { PROTO } from '../../proto/flags.ts';
-import { command, note } from './ui.ts';
+import { command, note, more } from './ui.ts';
 import { ok, type Tool } from './types.ts';
 
 export async function roomSummary() {
@@ -34,8 +34,8 @@ export const tool: Tool = {
     return ok('Room health snapshot.', await roomSummary());
   },
   mount(parent, ctx) {
-    note(parent, 'Read refreshes this snapshot. Unknown metrics stay unavailable.');
     command(parent, ctx, 'room', 'Refresh room health', 'read');
+    note(more(parent), 'Read refreshes this snapshot. Unknown metrics stay unavailable.');
     return () => {};
   },
 };

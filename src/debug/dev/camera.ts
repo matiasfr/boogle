@@ -12,7 +12,7 @@ import { MASSIF } from '../../island/shape.ts';
 import lighthouse from '../../pois/lighthouse/site.ts';
 import { ROUTE } from '../../sim/route.ts';
 import { destinationName, DESTINATIONS } from './fixtures.ts';
-import { el, button, command, note } from './ui.ts';
+import { el, button, command, note, more } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
 
 const position = new Vector3(),
@@ -433,25 +433,39 @@ export const tool: Tool = {
     bookmarks: [...bookmarks.keys()],
   }),
   mount(parent, ctx) {
+    const details = more(parent);
     note(
-      parent,
+      details,
       'Drag the scene to look. WASD flies; Space rises, Shift lowers. Pad sticks fly/look, bumpers lower/raise and B returns. Hold the camera buttons on touch. Panels and sliders remain usable.',
     );
     command(parent, ctx, 'camera', 'Start free camera', 'start');
     command(parent, ctx, 'camera', 'Return to player camera', 'return');
-    note(
-      parent,
-      PROTO === 'place'
-        ? 'Place camera bookmarks'
-        : 'Home equivalents: shore, open sea, lighthouse, rocky upland and work site.',
-    );
-    for (const destination of DESTINATIONS)
-      command(parent, ctx, 'camera', `View ${destination}`, 'bookmark', { destination });
-    note(parent, 'Six saved camera bookmarks, local to this browser. Each belongs to the island where it was saved.');
-    for (let slot = 1; slot <= 6; slot++) {
-      command(parent, ctx, 'camera', `Save bookmark ${slot}`, 'save-bookmark', { slot });
-      command(parent, ctx, 'camera', `Recall bookmark ${slot}`, 'recall-bookmark', { slot });
+    const views = el('select');
+    views.setAttribute('aria-label', 'Camera viewpoint');
+    for (const destination of DESTINATIONS) {
+      const option = el('option', destination);
+      option.value = destination;
+      views.append(option);
     }
+    parent.append(views);
+    command(parent, ctx, 'camera', 'View', 'bookmark', () => ({ destination: views.value }));
+    const slots = el('select');
+    slots.setAttribute('aria-label', 'Saved camera bookmark');
+    for (let slot = 1; slot <= 6; slot++) {
+      const option = el('option', `Bookmark ${slot}`);
+      option.value = String(slot);
+      slots.append(option);
+    }
+    parent.append(slots);
+    const actions = el('div', '', 'dev-actions');
+    parent.append(actions);
+    command(actions, ctx, 'camera', 'Save', 'save-bookmark', () => ({ slot: Number(slots.value) }));
+    command(actions, ctx, 'camera', 'Recall', 'recall-bookmark', () => ({ slot: Number(slots.value) }));
+    note(
+      details,
+      'Six saved bookmarks belong to the island where saved. Home viewpoints include shore, open sea, lighthouse, rocky upland and work site.',
+    );
+    parent.append(details);
     return () => {};
   },
 };
