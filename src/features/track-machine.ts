@@ -7,6 +7,7 @@
 // and sleepers it lays.
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three/webgpu';
+import { material } from '../render/materials.ts';
 import { attribute, positionLocal, uniform } from 'three/tsl';
 import type { FrameCtx } from '../loop.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
@@ -45,7 +46,7 @@ const LINES = ROUTE.map((sec) => {
   return { len, yaw: Math.atan2(dx, dz), fx: dx / len, fz: dz / len, n: Math.floor(len / TUNE.step) };
 });
 const sleepers = pieceMesh(LINES.reduce((t, l) => t + l.n, 0));
-const railMat = new THREE.MeshStandardNodeMaterial({ color: '#5c5f66', roughness: 0.45, metalness: 0.7 });
+const railMat = material('steel');
 // Every section's two rails in one instanced draw (and one shadow draw), only the laid ones shown.
 const RAIL_OFF = [-0.45, 0.45];
 const rails = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 0.08, 1), railMat, ROUTE.length * 2);

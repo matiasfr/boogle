@@ -7,6 +7,7 @@
 // shoulder. Felled trees stay felled. The axe and the back are the ladder's first two rungs (`AXE2`, `PACK`, ./ladder.ts);
 // which rung you're on comes from `job.rung`.
 import * as THREE from 'three/webgpu';
+import { material } from '../../render/materials.ts';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { warmUp } from '../../render/precompile.ts';
@@ -80,11 +81,7 @@ for (let k = 0; k < MAX_WORN; k++) {
   railsWorn.setMatrixAt(k, worn.matrix);
 }
 // Stone: lumps in a sack on your back.
-const stoneWorn = new THREE.InstancedMesh(
-  new THREE.DodecahedronGeometry(0.16, 0),
-  new THREE.MeshStandardNodeMaterial({ color: '#a8a498', roughness: 0.95, flatShading: true }),
-  MAX_WORN,
-);
+const stoneWorn = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.16, 0), material('stone'), MAX_WORN);
 stoneWorn.castShadow = true;
 stoneWorn.frustumCulled = false;
 stoneWorn.count = 0;
