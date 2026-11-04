@@ -3,11 +3,13 @@
 //
 //   node dev/codex/run.ts <mode> <topic> [--effort low|medium|high|xhigh|max] [--model gpt-6-astra]
 //                         [--base-ref <ref> | --snapshot] [--ref a.png,b.png] [--shots 4] [--ref-branch <branch>]
-//                         [--eyes off] [--dry] [--detach] "<brief>"
+//                         [--eyes off] [--role design|systems|creative] [--dry] [--detach] "<brief>"
 //
 // Modes:
 // - previz: art-directs the idealized look of a moment, prototype or effect and paints it with $imagegen. Output in
 //   .look/previz/<topic>/ (board.md + shot-<n>.png), never in the repo.
+// - brainstorm: one panelist of the /brainstorm skill (--role), read-only in this checkout with live web search. Its
+//   final message is its contribution, in .look/codex/<topic>/report.md; resume it for the cross-reading round.
 // - research: writes docs/research/<topic>.md with live web search, on branch codex/<topic> in its own worktree.
 // - task: implements the brief on branch codex/<topic> in its own worktree, commits, never pushes. It can see the game:
 //   its sandbox gets network access for a local server, and ./look-broker.ts runs the browser outside it (./see.ts).
@@ -30,9 +32,17 @@ import {
   type JobControl,
 } from './session.ts';
 
-type Mode = 'previz' | 'research' | 'task' | 'review';
-const MODES: Mode[] = ['previz', 'research', 'task', 'review'];
-const DEFAULT_EFFORT: Record<Mode, string> = { previz: 'medium', research: 'high', task: 'high', review: 'high' };
+type Mode = 'previz' | 'brainstorm' | 'research' | 'task' | 'review';
+const MODES: Mode[] = ['previz', 'brainstorm', 'research', 'task', 'review'];
+const DEFAULT_EFFORT: Record<Mode, string> = {
+  previz: 'medium',
+  brainstorm: 'high',
+  research: 'high',
+  task: 'high',
+  review: 'high',
+};
+// Modes that read the caller's checkout in place instead of a worktree of their own.
+const IN_PLACE: Mode[] = ['previz', 'brainstorm'];
 
 const args = process.argv.slice(2);
 const opts: Record<string, string> = {};
@@ -51,6 +61,7 @@ for (let i = 0; i < args.length; i++) {
         '--shots',
         '--ref-branch',
         '--eyes',
+        '--role',
         '--supervisor',
       ].includes(flag)
     )
@@ -79,8 +90,11 @@ if (opts.base) opts['base-ref'] = opts.base;
 if (opts.snapshot && (command !== 'task' || opts['base-ref']))
   throw new Error('--snapshot is for tasks and uses the caller HEAD; do not combine it with --base-ref');
 if (opts['base-ref'] && command !== 'task') throw new Error('--base-ref is for tasks');
+if ((command === 'brainstorm') !== !!opts.role) throw new Error('--role is required for brainstorm and only for it');
 
 const repo = git(process.cwd(), 'rev-parse', '--show-toplevel');
+const roleFile = opts.role && path.join(repo, '.claude/skills/brainstorm/roles', `${opts.role}.md`);
+if (roleFile && !fs.existsSync(roleFile)) throw new Error(`No brainstorm role ${opts.role}: ${roleFile}`);
 const gitDir = path.resolve(repo, git(repo, 'rev-parse', '--git-common-dir'));
 const logs = path.join(repo, '.look/codex', topic);
 type Job = Lifecycle & {
@@ -159,6 +173,13 @@ Do this:
 Your final message: the pitch paragraph and one line per shot.`;
 }
 
+const brainstormPrompt =
+  () => `${HOUSE} You are one of three panelists in a feature brainstorm (.claude/skills/brainstorm/SKILL.md). Read your role first: ${path.relative(repo, roleFile!)}. This is read-only: do not edit, commit or run anything that writes. Live web search is on: use it for how shipped games handle this.
+
+The owner's seed idea: ${brief}
+
+Work independently; the other two panelists answer the same seed from their own angles. Your final message is your whole contribution, in exactly the format your role file gives.`;
+
 const DEPENDENCIES =
   "Dependencies are already installed from this worktree's lockfile; they are not shared with the caller.";
 
@@ -196,7 +217,8 @@ const FORMAT_HOOK = `hooks.PostToolUse=[{matcher="apply_patch|Edit|Write",hooks=
 
 const sourceRef = opts.snapshot
   ? 'HEAD (working snapshot)'
-  : opts['base-ref'] || (mode === 'review' ? opts['ref-branch'] || 'HEAD' : 'origin/main');
+  : opts['base-ref'] ||
+    (mode === 'review' ? opts['ref-branch'] || 'HEAD' : IN_PLACE.includes(mode) ? 'HEAD (in place)' : 'origin/main');
 const meta: Job = {
   ...previous,
   mode,
@@ -205,7 +227,11 @@ const meta: Job = {
   effort,
   cwd:
     previous?.cwd ??
-    (mode === 'previz' ? path.join(repo, '.look/previz', topic) : path.resolve(gitDir, '../..', 'boogle-codex', topic)),
+    (mode === 'previz'
+      ? path.join(repo, '.look/previz', topic)
+      : mode === 'brainstorm'
+        ? repo
+        : path.resolve(gitDir, '../..', 'boogle-codex', topic)),
   brief: previous?.brief ?? brief,
   sourceRef: previous?.sourceRef ?? sourceRef,
   sourceCommit: previous?.sourceCommit ?? '',
@@ -221,11 +247,11 @@ async function main(job?: JobControl): Promise<number> {
   let cwd: string;
   let argv: string[];
   let prompt: string;
-  if (!previous && job && mode !== 'previz' && !opts.snapshot && !opts['base-ref'] && !opts['ref-branch'])
+  if (!previous && job && !IN_PLACE.includes(mode) && !opts.snapshot && !opts['base-ref'] && !opts['ref-branch'])
     await job.command('git', ['fetch', '-q', 'origin', 'main'], repo);
   const sourceCommit = previous
     ? previous.sourceCommit
-    : mode === 'previz'
+    : IN_PLACE.includes(mode)
       ? git(repo, 'rev-parse', 'HEAD')
       : opts.snapshot && !opts.dry
         ? snapshot(repo)
@@ -242,7 +268,10 @@ async function main(job?: JobControl): Promise<number> {
     const reasoning = argv.findIndex((arg) => arg.startsWith('model_reasoning_effort='));
     argv[reasoning] = `model_reasoning_effort="${effort}"`;
     argv.push('resume', previous.sessionId!, '-');
-    prompt = `Continue this same job in ${cwd}. Keep its earlier context and work. Do not push or ship.\n\nFollow-up feedback: ${brief}\n\nFix the requested issues, rerun affected checks after your last edit, and report what changed and any remaining failures. Earlier evidence may be stale. ${eyes ? 'The browser broker has been restarted; use node .look/see-client.ts as before. This job retains its bot checkpoints. Open new PNGs and distinguish execution success from visual quality.' : ''}`;
+    prompt =
+      mode === 'brainstorm'
+        ? `Continue this same brainstorm panel seat, still read-only. Keep your earlier contribution in mind.\n\n${brief}\n\nReply in the round-2 format your role file gives.`
+        : `Continue this same job in ${cwd}. Keep its earlier context and work. Do not push or ship.\n\nFollow-up feedback: ${brief}\n\nFix the requested issues, rerun affected checks after your last edit, and report what changed and any remaining failures. Earlier evidence may be stale. ${eyes ? 'The browser broker has been restarted; use node .look/see-client.ts as before. This job retains its bot checkpoints. Open new PNGs and distinguish execution success from visual quality.' : ''}`;
   } else if (mode === 'previz') {
     cwd = path.join(repo, '.look/previz', topic);
     if (job) fs.mkdirSync(cwd, { recursive: true });
@@ -256,6 +285,10 @@ async function main(job?: JobControl): Promise<number> {
       });
     prompt = previzPrompt(cwd, refs);
     argv = ['exec', ...base, '-C', cwd, '-s', 'workspace-write', '--skip-git-repo-check', '-'];
+  } else if (mode === 'brainstorm') {
+    cwd = repo;
+    prompt = brainstormPrompt();
+    argv = ['exec', ...base, '-C', cwd, '-s', 'read-only', '-c', 'web_search="live"', '-'];
   } else if (mode === 'review') {
     cwd = job ? await worktree(job, sourceCommit) : repo;
     // The CLI makes --base and a custom prompt mutually exclusive. Keep the native base review when there is
@@ -287,7 +320,10 @@ async function main(job?: JobControl): Promise<number> {
     argv.push('-');
   }
 
-  if (mode !== 'review' || brief)
+  if (mode === 'brainstorm')
+    prompt +=
+      '\n\nKeep the whole final message under about 450 words; rank, cut and be concrete rather than cover everything.';
+  else if (mode !== 'review' || brief)
     prompt +=
       '\n\nEnd your final message with a fenced json block containing {outcome: done|partial|blocked, summary, numbers, unverified, departures}. Keep the whole final message under about 150 words.';
   if (!argv.includes('--json')) argv.splice(1, 0, '--json');
@@ -365,7 +401,7 @@ async function main(job?: JobControl): Promise<number> {
 }
 
 if (!previous && fs.existsSync(metaFile)) throw new Error(`${logs} already has a job; use resume or a new topic`);
-if (!previous && mode !== 'previz' && fs.existsSync(meta.cwd))
+if (!previous && !IN_PLACE.includes(mode) && fs.existsSync(meta.cwd))
   throw new Error(`${meta.cwd} exists; pick another topic`);
 if (!['low', 'medium', 'high', 'xhigh', 'max'].includes(effort)) throw new Error(`Invalid effort: ${effort}`);
 if (opts.eyes && !['on', 'off'].includes(opts.eyes)) throw new Error('--eyes must be on or off');
