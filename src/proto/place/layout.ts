@@ -46,7 +46,7 @@ export const PACK = { carry: 16 };
 /** Rocks with an orange band: strokes and stones a stroke, either axe. */
 export const ROCK_WORK = { strokes: 4, stonePerStroke: 2 };
 /** The great tree: one trunk, on your shoulder. It takes strokes, not a bigger axe. */
-export const GREAT = { strokes: 12 };
+export const GREAT = { strokes: 12, soloSpeed: 2.2, pairSpeed: 5 };
 /** The handcart that brings logs to a rack by the next frame, once the depot's open (./depot.ts). */
 export const CART = { speed: 9, load: 24, loadS: 3, rails: 16, forgeS: 8, leaveS: 3, hx: 0.75, hz: 1.35, top: 0.55 };
 /** Money, a comic score: what a piece delivered pays (./score.ts). */
@@ -384,7 +384,7 @@ export const GROVES = [
 /** One old tree by the forge, for trying the new axe on the spot. */
 export const OAK = { x: -74, z: -12 };
 /** The great tree, on the ridge, in sight of station 3. Its trunk is station 3's main beam. */
-export const GREAT_TREE = { x: 4, z: -86 };
+export const GREAT_TREE = { x: -4, z: -138 };
 /** Banded rocks, near station 2. */
 export const ROCKS = [
   { x: 1, z: -106, r: 1.7 },

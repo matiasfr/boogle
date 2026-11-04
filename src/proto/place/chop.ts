@@ -68,7 +68,7 @@ personalSlice('back', {
 });
 
 type Worn = { inner?: THREE.Object3D; loadFit?: { frame: THREE.Object3D } };
-const frameOf = (avatar = me.avatar) => {
+const frameOf = (avatar: THREE.Object3D | null = me.avatar) => {
   const u = avatar?.userData as Worn | undefined;
   return u?.loadFit?.frame ?? u?.inner ?? null;
 };
@@ -160,6 +160,25 @@ onRemotePresence((r, pr) => {
   else peerLoads.delete(r.peer); // missing/malformed fields are off, including on older builds
 });
 const peerWorn = new Map<string, ReturnType<typeof makeLoad>>();
+/** Local presentation only: one existing beam spans the two supporting shoulders. */
+export const greatBeamView: { helper: (owner: string | null) => THREE.Object3D | null } = { helper: () => null };
+const support = new THREE.Vector3();
+const alongBeam = new THREE.Vector3(0, 0, 1);
+function poseCarriedBeam(beam: THREE.Mesh, frame: THREE.Object3D, owner: string | null) {
+  beam.position.set(0.32, 1.05, 0.2);
+  beam.quaternion.identity();
+  const other = frameOf(greatBeamView.helper(owner));
+  if (!other) return;
+  other.updateWorldMatrix(true, false);
+  frame.updateWorldMatrix(true, false);
+  support.set(0.32, 1.05, 0.2);
+  other.localToWorld(support);
+  frame.worldToLocal(support);
+  support.sub(beam.position);
+  if (support.lengthSq() < 0.25) return;
+  beam.position.addScaledVector(support, 0.5);
+  beam.quaternion.setFromUnitVectors(alongBeam, support.normalize());
+}
 function makeLoad() {
   const root = new THREE.Group();
   root.name = 'place-carried';
@@ -192,6 +211,7 @@ function updatePartnerLoads() {
     view.stone.count = state.stone;
     view.stone.visible = state.stone > 0;
     view.beam.visible = state.big === 'beam';
+    if (view.beam.visible) poseCarriedBeam(view.beam, frame, peer);
     view.boiler.visible = state.big === 'boiler';
     view.pack.visible = state.pack;
   }
@@ -1014,6 +1034,7 @@ export function updateChop(dt: number, now: number) {
   stoneWorn.count = Math.max(0, Math.min(stoneWorn.instanceMatrix.count, back.stone));
   stoneWorn.visible = back.stone > 0;
   beamWorn.visible = back.big === 'beam';
+  if (beamWorn.visible && f) poseCarriedBeam(beamWorn, f, null);
   boilerWorn.visible = back.big === 'boiler';
   packFrame.visible = !!job.rung.pack;
   updatePartnerLoads();

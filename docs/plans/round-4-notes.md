@@ -29,8 +29,8 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
 ### Co-op and carrying
 
-- [ ] Great beam: carrying should be slower, and it should sit further from the station.
-- [ ] Find out whether two people can actually co-carry the beam, and make that the point.
+- [ ] Great beam: carrying should be slower, and it should sit further from the station. Implemented and verified in [beam weight](beam-weight.md), branch-only; not shipped.
+- [ ] Find out whether two people can actually co-carry the beam, and make that the point. The great beam had no assist; the optional village seesaw is separate. [Beam weight](beam-weight.md) owns the implementation and proof.
 - [x] Mark `did something together`: it never fired in 33 minutes of co-op.
 - [ ] Say when a shared unlock arrives: Grant earned the multi-axe and Matias got it with no idea how.
 - [ ] Crates give each player different things, and Grant got something else where Matias got the pet. Confirm it's wanted. Two trinket shelves also puzzled Matias at first.

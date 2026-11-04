@@ -37,6 +37,8 @@ Out of scope: new progression, eras, residents/story/copy, camera redesign, scen
 
 ## Step 1 record — 3 November 2026
 
+**4 November source-approach exception:** the owner explicitly requested a heavier great beam farther from Station 3 after round 4. [Beam weight](beam-weight.md) owns that tuning and co-carry proof. It supersedes this audit's preserved 29 m source approach only: the receiver, feeder kit, machine, crossing and landings retain their fit. This touches approach composition; it does not authorize step 3's sea/terrain/light work.
+
 Baseline build `3e1a3034e80ce0a3708679110b84e33494151323`, tree `03846684589c873e0b35315005109a058d55e83b`. Broker WebGPU captures, 1180×820, fixed DPR, current `look=all`, existing sea/sky/Neutral, no terrain comparison. Static audit fixtures freeze the existing day at `u=0.26`; the first empty approach uses the existing `shot=opening` setup. These are desktop evidence, not the future demo-sky/AgX look or an iPad/headroom measurement. Exact command arguments and dirty/source fingerprints live in each manifest.
 
 **Footprint:** frame world `(975.426, 30.369, -89.320)`, yaw `2.85538`; great tree `(1004, 29.763, -86)`; line chainage **116 → 30 = 86 m**, at unchanged 5 m/s. Village landing `(937.740, 18.3, -10.587)`. Receiver **2 × 2.6 m**, feeder **3.2 × 0.9 m**, frame offset **5.4 m** from track. Empty-frame solid envelope **2.2 × 2.8 m**, top **0.56 m**, separate posts to **1.52 m**; walkable trestle deck **3.6 m** wide. Preserve the source's 29 m approach, machine standing/boarding envelope and both landings. The footprint view includes the gorge and return rather than just the receiver.
