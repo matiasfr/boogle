@@ -30,7 +30,9 @@ const put = (x: number, z: number, up = 1.4) => {
   teleport(me.body!, x, place.H(x, z) + up, z);
   me.body!.velocity.set(0, 0, 0);
 };
-if (q.has('trees')) {
+if (q.has('greatCarry')) {
+  await import('/dev/look/evals/place-great-carry.ts' as string);
+} else if (q.has('trees')) {
   await import('/dev/look/evals/place-trees-coop.ts' as string);
 } else if (q.has('beam')) {
   const { net } = await import('/src/netplay/net.ts' as string);
