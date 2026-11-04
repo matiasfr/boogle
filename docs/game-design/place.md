@@ -108,6 +108,8 @@ Now and then two of them near you stop and **chatter**: two to four short lines 
 
 **The decks hold you.** Stop at the edge of a train's or the machine's deck and you're eased a few centimetres back inside, so standing never takes you off, moving or not. Push the stick off the side or jump and you leave as ever; there are no railings.
 
+Settled train crates use the same idle edge hold on their own top footprint. A standing rider at a crate's edge is eased inward before the sphere-shaped player can slide off its rounded contact, even while still inside the wider flatbed. Walking and jumping still release that hold. This remains Owner player physics derived from the existing cargo, with no new presence, save or train-speed state. [Standing co-op verification](../plans/coop-route-verification.md) records the reproduced loss and the distinction between uncommanded knock-offs and missed jump landings.
+
 When a halt appears, anyone intersecting its new foundation, ramps, bench or posts is moved onto its clear middle lane, at the same place along the platform. Each player's tab checks their own body, including when a partner unlocks trains or a snapshot restores a halt. Players already clear of the new solids stay put.
 
 The track layer's flatbed is already standable: a held normal jump from beside it lands on its deck and stays attached. The round-4 report of being unable to board was not reproduced in the local capture; its collider and jump tuning are unchanged.
