@@ -12,7 +12,7 @@ type Job = {
   brief: string;
   after?: string | { onMain: string };
 };
-type Entry = { job: Job; state: string; child?: ChildProcess; started?: number; detail?: string };
+type Entry = { job: Job; state: string; child?: ChildProcess; started?: number; detail?: string; hadResult?: boolean };
 const [file, ...args] = process.argv.slice(2);
 const maxIndex = args.indexOf('--max');
 const max = maxIndex < 0 ? 5 : Number(args[maxIndex + 1]);
@@ -106,12 +106,16 @@ while (!stop && entries.some((entry) => entry.state === 'waiting' || entry.state
     } catch {
       /* starting */
     }
-    if (entry.child?.exitCode !== null && entry.child?.exitCode !== undefined) {
-      entry.state = entry.child.exitCode === 0 ? 'done' : 'failed';
-      if (entry.state === 'failed') {
-        stop = `${entry.job.topic} failed`;
-        break;
+    if (entry.child && (entry.child.exitCode !== null || entry.child.signalCode !== null)) {
+      let outcome: string | undefined;
+      if (!entry.hadResult) {
+        try {
+          outcome = JSON.parse(fs.readFileSync(path.join(dir, 'result.json'), 'utf8')).outcome;
+        } catch {
+          /* Fall back to the launcher status when there is no structured result. */
+        }
       }
+      entry.state = outcome ? (outcome === 'done' ? 'done' : 'failed') : entry.child.exitCode === 0 ? 'done' : 'failed';
     } else if (now - entry.started! > 10 * 60_000 && !fs.existsSync(path.join(dir, 'meta.json'))) {
       entry.state = 'stalled';
       stop = `${entry.job.topic} stalled during startup`;
@@ -119,6 +123,19 @@ while (!stop && entries.some((entry) => entry.state === 'waiting' || entry.state
     }
   }
   if (stop) break;
+  // Propagate failed dependencies, including chains, without blocking unrelated jobs.
+  let blocked: boolean;
+  do {
+    blocked = false;
+    for (const entry of entries) {
+      if (entry.state !== 'waiting' || typeof entry.job.after !== 'string') continue;
+      if (['failed', 'blocked', 'stalled'].includes(byTopic.get(entry.job.after)!.state)) {
+        entry.state = 'blocked';
+        entry.detail = `dependency ${entry.job.after} did not finish`;
+        blocked = true;
+      }
+    }
+  } while (blocked);
   const needsMain = entries.some((entry) => entry.state === 'waiting' && typeof entry.job.after === 'object');
   if (needsMain && now - lastFetch >= 60_000) {
     lastFetch = now;
@@ -136,6 +153,7 @@ while (!stop && entries.some((entry) => entry.state === 'waiting' || entry.state
   });
   if (next && active < max && now - lastStart >= 30_000) {
     const { job } = next;
+    next.hadResult = fs.existsSync(path.join(root, '.look/codex', job.topic, 'result.json'));
     const child = spawn(
       process.execPath,
       ['dev/codex/run.ts', job.mode, job.topic, '--model', job.model, '--effort', job.effort, job.brief],
@@ -143,7 +161,6 @@ while (!stop && entries.some((entry) => entry.state === 'waiting' || entry.state
     );
     child.on('error', () => {
       next.state = 'failed';
-      stop = `${job.topic} failed to start`;
     });
     next.child = child;
     next.started = now;
@@ -166,3 +183,4 @@ if (stop) {
   console.log(stop);
   process.exitCode = 1;
 }
+if (entries.some((entry) => entry.state === 'failed' || entry.state === 'blocked')) process.exitCode = 1;
