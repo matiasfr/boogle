@@ -388,8 +388,9 @@ onFrame(
     drawCable(myCable, hand, ring, dt);
     if (!ring && myCable.t <= 0) myCable.on = false;
     // What you've found, on you.
-    wear(root, gear.ankleL, 'calf_l', job.tech.jump, -0.16);
-    wear(root, gear.ankleR, 'calf_r', job.tech.jump, -0.16);
+    // The calf's pivot is the knee: a vertical offset from it leaves the ring behind a swinging foot.
+    wear(root, gear.ankleL, 'foot_l', job.tech.jump, 0.02);
+    wear(root, gear.ankleR, 'foot_r', job.tech.jump, 0.02);
     wear(root, gear.spool, 'lowerarm_r', job.tech.hook);
     wear(root, gear.pack, 'spine_02', job.tech.glide && !move.open);
     // Two threads of air off the wing's tips while you're moving: it reads as speed, against the sky.

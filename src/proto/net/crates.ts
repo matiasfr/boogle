@@ -105,7 +105,7 @@ export const DECK_SLOTS = SLOTS.length;
 export type Deck = {
   frame: THREE.Object3D; // the rear flatbed's look: what the load is parented to
   dipV: (v: number) => void; // kicks the flatbed's springs as a crate lands on it or lets go
-  held: ({ kind: Kind; mesh: THREE.Mesh } | null)[]; // by slot; a crate on its way in holds its slot already
+  held: ({ kind: Kind; mesh: THREE.Mesh; landed: boolean } | null)[]; // reserved in flight, solid once landed
 };
 export const deck = (frame: THREE.Object3D, dipV: (v: number) => void): Deck => ({
   frame,
@@ -129,6 +129,11 @@ const slotLocal = (k: number, out: THREE.Vector3) => {
   const [x, z, layer] = SLOTS[k]!;
   return out.set(x, TRAILER.top + (layer + 0.5) * SIZE, z);
 };
+/** Settled crate bounds in the deck's frame, independent of its drawing and flight animation. */
+export function deckBox(k: number) {
+  const [x, z, layer] = SLOTS[k]!;
+  return { x, z, bottom: layer * SIZE, size: SIZE };
+}
 export const deckCount = (d: Deck, kind?: Kind) => d.held.filter((c) => c && (!kind || c.kind === kind)).length;
 export const deckFree = (d: Deck) => d.held.findIndex((c) => !c);
 /** Empties the load and everything in the air at once (Start over). */
@@ -181,8 +186,9 @@ function launch(
 export function hopOn(d: Deck, kind: Kind, from: THREE.Vector3, delay: number, landed?: () => void): boolean {
   const k = deckFree(d);
   if (k < 0) return false;
-  d.held[k] = { kind, mesh: take(kind) };
-  const on = d.held[k]!.mesh;
+  const held = { kind, mesh: take(kind), landed: false };
+  d.held[k] = held;
+  const on = held.mesh;
   on.visible = false;
   slotLocal(k, on.position);
   d.frame.add(on);
@@ -197,6 +203,7 @@ export function hopOn(d: Deck, kind: Kind, from: THREE.Vector3, delay: number, l
     from,
     delay,
     () => {
+      held.landed = true;
       on.visible = true;
       d.dipV(-1.1);
       landed?.();

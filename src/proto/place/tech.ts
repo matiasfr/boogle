@@ -143,7 +143,8 @@ function buildPads() {
         dz = q.lipTo.z - q.z;
       const len = Math.hypot(dx, dz);
       const m = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, len), flat(STONE2, 0.9));
-      m.position.set(q.x + dx / 2 + ox, q.top - 0.25, q.z + dz / 2);
+      // Its inner end overlaps the pillar: a small step keeps their top faces out of the same plane.
+      m.position.set(q.x + dx / 2 + ox, q.top - 0.29, q.z + dz / 2);
       m.rotation.y = Math.atan2(dx, dz);
       m.castShadow = m.receiveShadow = true;
       scene.add(m);

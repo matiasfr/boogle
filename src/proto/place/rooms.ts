@@ -77,7 +77,7 @@ export type Room = {
   /** Low things outside, there whenever the building is. */
   outside: THREE.Group;
   pieces: Record<Face, number[]>;
-  corners: { k: number; a: (typeof WALLS)[number]; b: (typeof WALLS)[number]; on: boolean }[];
+  corners: { k: number; a: (typeof WALLS)[number]; b: (typeof WALLS)[number]; shown: number }[];
   t: Record<Face, number>; // 0 there, 1 out of the way
   shown: Record<Face, number>; // what's been written
   proxy: THREE.Mesh;
@@ -174,7 +174,7 @@ function makeRoom(id: RoomId): Room {
     for (const w of WALLS) if (dist[w] < dist[best]) best = w;
     // A post on a corner belongs to both its walls: it goes when either does, or it stands right in front of the lens.
     const other = WALLS.find((w) => w !== best && dist[w] < 0.35);
-    if (other) corners.push({ k, a: best, b: other, on: true });
+    if (other) corners.push({ k, a: best, b: other, shown: 0 });
     else pieces[best].push(k);
   });
   const y = plan.y + FLOOR;
@@ -371,7 +371,7 @@ export function snapRooms() {
     snapSite(r.site, up);
     setStake(r, !up);
     for (const g of FACES) r.t[g] = r.shown[g] = 0;
-    for (const c of r.corners) c.on = true;
+    for (const c of r.corners) c.shown = 0;
   }
 }
 /** Warm the rooms' shaders while nobody's waiting on them: docs/research/town-interiors.md, "Doors with no load screen". */
@@ -415,17 +415,17 @@ function suggest(to: number) {
   hint.lastPitch = cam.pitch;
   hint.lastYaw = cam.yaw;
 }
+function writePiece(k: number, t: number, travel: number) {
+  if (t >= 1) showPiece(k, false);
+  else if (t <= 0) showPiece(k, true);
+  else liftPiece(k, t * t * travel);
+}
 function write(r: Room, g: Face) {
   const t = r.t[g];
   if (r.shown[g] === t) return;
   r.shown[g] = t;
-  const list = r.pieces[g];
-  if (t >= 1) for (const k of list) showPiece(k, false);
-  else if (t <= 0) for (const k of list) showPiece(k, true);
-  else {
-    const y = g === 'roof' ? t * t * 7 : -t * t * (r.high + 0.4);
-    for (const k of list) liftPiece(k, y);
-  }
+  const travel = g === 'roof' ? 7 : -(r.high + 0.4);
+  for (const k of r.pieces[g]) writePiece(k, t, travel);
 }
 export function updateRooms(dt: number) {
   for (const r of LIST) {
@@ -518,8 +518,10 @@ export function updateRooms(dt: number) {
       if (r.t[g] > 0) any = true;
     }
     for (const q of r.corners) {
-      const on = r.t[q.a] <= 0 && r.t[q.b] <= 0;
-      if (on !== q.on) showPiece(q.k, (q.on = on));
+      const t = Math.max(r.t[q.a], r.t[q.b]);
+      if (t === q.shown) continue;
+      q.shown = t;
+      writePiece(q.k, t, -(r.high + 0.4));
     }
     r.proxy.visible = any;
     r.over.visible = r.t.roof < 1;
