@@ -43,6 +43,7 @@ export const CARRY = {
   below: 0.3, // m sunk into the deck that still counts (the contact pushes you out)
   leaveVy: 1, // m/s up relative to the deck: you jumped
   skid: 9, // m/s² the kept carry bleeds away once you land on plain ground
+  departureSkidS: 0.1, // s: preserve 0.19's six steps of carry loss after departure explicitly, without false ground
   tumbleSpeed: 3, // m/s of kept carry on landing that counts as a tumble
 };
 
@@ -58,6 +59,7 @@ export const carry = {
 let boardT = 0,
   fromX = 0,
   fromZ = 0,
+  departureSkidSteps = 0,
   airborne = false;
 
 const prevYaw = new Map<Platform, number>(); // each platform's yaw before the last fixed step, for drawing between
@@ -141,8 +143,10 @@ function deckUnder(b: Body) {
 
 // Once per fixed step, before the player's steering (src/entities/player/state.ts). me.coyote > 0: on some ground.
 export function carryStep(b: Body, me: { coyote: number; swimming: boolean }) {
+  const wasOn = carry.on !== null;
   const p = deckUnder(b);
   if (p) {
+    departureSkidSteps = 0;
     const v = p.body.velocity,
       q = p.body.position;
     // The deck point under you over this step: its centre's motion plus your offset turned by its yaw (the chord, so
@@ -182,10 +186,13 @@ export function carryStep(b: Body, me: { coyote: number; swimming: boolean }) {
     // Boarding catches a small air gap; only groundPlayer's actual contact may grant a jump.
     return;
   }
+  if (wasOn) departureSkidSteps = Math.round(CARRY.departureSkidS / FIXED);
+  const departing = departureSkidSteps > 0;
+  departureSkidSteps = Math.max(0, departureSkidSteps - 1);
   carry.on = null;
   carry.y = 0;
   const h = Math.hypot(carry.x, carry.z);
-  if (me.coyote <= 0 && !me.swimming) {
+  if (me.coyote <= 0 && !me.swimming && !departing) {
     if (h > 0) airborne = true; // left a deck: keep its speed through the air
     return;
   }

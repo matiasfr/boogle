@@ -7,15 +7,19 @@ Files: [src/entities/player/state.ts](../../src/entities/player/state.ts), [view
 ## Movement and jump
 
 The physics facade uses current-pose contacts, with the previous 0.002 m prediction distance. Grounding still requires
-a walkable normal; stale contacts cannot renew jump eligibility after takeoff. An eligible launch at exactly zero
-vertical velocity uses falling gravity on its first step: held jump 1.552 m, hop 0.664 m.
+a walkable normal; stale contacts cannot renew jump eligibility after takeoff. After airborne grace expires, a new
+landing needs overlap at both the start and end of the fixed step, preserving landing timing without granting ground
+in the air. An eligible stationary launch uses falling gravity on its first step: held jump 1.552 m, hop 0.664 m.
+Carried-deck launches keep their existing first-step shaping and upward deck motion.
 Version comparisons and verification limits live in the [upgrade assessment](../research/rapier-021-upgrade.md).
 
 - Body: two spheres of radius 0.45 m stacked 0.8 m apart, 70 kg, fixed rotation, zero friction (velocity is steered,
   not pushed).
 - Gravity 18 m/s². Walk 5.6 m/s, sprint 9.5 m/s, both × 0.55 in water. Acceleration 70 m/s² on the ground, 14 in the
-  air, 18 swimming. Braking against your velocity uses 115 m/s². A ground jump retains ground steering for its first
-  0.1 s, preserving the old takeoff acceleration independently of coyote time or permission to jump again.
+  air, 18 swimming. Braking against your velocity uses 115 m/s². Ground steering lasts 0.1 s plus one fixed step
+  after support, independently of jump eligibility. A supported jump, or one within the existing 6 cm floor-snap
+  deadband, retains ground steering for its first 0.1 s. A coyote jump over empty air gets no new steering grace.
+  These separate clocks preserve takeoff and run-off inertia without granting another jump.
 - Falls top out at 20 m/s (about an 11 m drop), so a step never moves the body further than its radius and long falls
   can't tunnel through the ground. A player or ball whose centre still ends up under the terrain is put back on top
   (`catchFallThrough`, [src/physics/physics.ts](../../src/physics/physics.ts); `npm run scenario -- falls`).
@@ -74,8 +78,10 @@ Local appearance; the lower default-sea value keeps the gold from washing out.
 Standing on a moving deck, like the wagon's cars, carries you
 ([src/physics/platforms.ts](../../src/physics/platforms.ts)): your steering is relative to the deck point under you,
 the deck's turn turns you and the camera, and you stay snapped to its floor. Landing on a
-moving deck blends you to its speed over 0.12 s. Jump or walk off and you keep its speed through the air; on plain
-ground it bleeds away at 9 m/s² (a short skid), and landing above 3 m/s tumbles you (the tumble flop).
+moving deck blends you to its speed over 0.12 s. Jump or walk off and the kept horizontal speed bleeds away at
+9 m/s² for the first six fixed steps (3 becomes 2.1 m/s), then stays through the rest of the flight. This explicit
+departure skid preserves the old carry loss without false ground contacts. On plain ground it bleeds away at the
+same rate; landing above 3 m/s tumbles you (the tumble flop).
 
 Deck acceleration and turns transport an attached rider before their own steering; a descending deck is not a jump.
 Boarding can close a small air gap, but only actual walkable contact refreshes jump eligibility.
