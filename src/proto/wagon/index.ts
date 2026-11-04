@@ -32,7 +32,7 @@ import { registerPlatform, yawOf, carry, CARRY, type Platform } from '../../phys
 import { reducedMotion, PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/player.ts';
 import { ROUTE } from '../../sim/route.ts';
-import { wagonAt, wagonCycle, WAGON_PACE, type WagonState, type WagonPace } from '../../sim/wagon.ts';
+import { wagonAt, wagonCycle, WAGON_PACE, type WagonState } from '../../sim/wagon.ts';
 import { paceIn } from '../../sim/tune.ts';
 import { lengthOf, MACHINE_RUN } from '../../sim/scripted-run.ts';
 import { wagonLook, LOCO, TRAILER, CRATES, type CarSpec } from './look.ts';
@@ -47,14 +47,9 @@ const VARIANTS = {
   calm: { rock: 0.02, bounce: 0, puffs: 1, puffSize: 1, shake: 0 },
   lively: { rock: 0.07, bounce: 0.06, puffs: 1.6, puffSize: 1.2, shake: 1 },
 };
-type WagonVariant = 'calm' | 'lively' | 'fast';
-const variantOf = (v: string): WagonVariant => (v === 'fast' || v === 'lively' ? v : 'calm');
-export const VARIANT = variantOf(protoV('wagon'));
-const PACES: Record<WagonVariant, WagonPace> = {
-  calm: WAGON_PACE,
-  lively: WAGON_PACE,
-  fast: { cruise: 65, accel: 20 },
-};
+const variant = protoV('wagon');
+const VARIANT = variant === 'fast' || variant === 'lively' ? variant : 'calm';
+const variantPace = VARIANT === 'fast' ? { cruise: 65, accel: 20 } : WAGON_PACE;
 const FEEL = {
   bogie: 1.1, // m from a car's centre to each bogie (the heading is the chord between them)
   joint: 4.5, // m between rail joints: the car rocks as each bogie crosses one
@@ -497,7 +492,7 @@ export function wagonPanel(protoRoom: boolean): void {
     () => {
       if (protoRoom && !paced && worldStatus().ready && world.tick > 0) {
         paced = true;
-        const want = PACES[VARIANT];
+        const want = variantPace;
         if (tune.v.wagonCruise !== want.cruise)
           submitEdit({ op: 'tune.set', i: 0, j: 0, key: 'wagonCruise', v: want.cruise });
         if (tune.v.wagonAccel !== want.accel)
@@ -518,9 +513,7 @@ export function wagonPanel(protoRoom: boolean): void {
 export const wagonApi = {
   FEEL,
   setTimetable: (fn: (tick: number) => WagonState | null) => void (ownTimetable = fn),
-  get VARIANT() {
-    return VARIANT;
-  },
+  VARIANT,
   cars,
   get state() {
     return w;

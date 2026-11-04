@@ -40,7 +40,8 @@
 
 > **Removed 4 November 2026, by owner request.** The top-centre bar wasted space in prototype plays; playtests and
 > feedback forms now carry feedback. The `?play` playlist and in-game verdict controls are gone. Prototype addresses,
-> spawn placement, counters and traces remain. The design below is a historical record, not current implementation guidance.
+> spawn placement, counters and traces remain. `/protos/` is a card catalog with play links and recorded answers;
+> its note fields and Copy entries are gone too. The design below is a historical record, not current implementation guidance.
 
 Designed 1 November, after the owner's first round: testing went page → Play (a reload) → lobby → walk to the toy →
 switch variant (another reload) → back to the page to copy notes. Research recs 5–7, 9 and 10.

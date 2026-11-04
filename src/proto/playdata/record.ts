@@ -61,8 +61,7 @@ let backoff = SEND_MS;
 let sentBytes = 0;
 let stopped = false;
 
-const card = () => currentCard?.id ?? PROTO;
-const firstCard = card();
+const card = currentCard?.id ?? PROTO;
 
 function push(k: string, fields: Record<string, string | number | boolean | null> = {}, ms?: number) {
   if (stopped) return;
@@ -83,7 +82,7 @@ function makeBatch(): string | null {
     if (size > BATCH_BYTES && ev.length) break;
     ev.push(queue.shift()!);
   }
-  return JSON.stringify({ s: session, card: firstCard, n: nextBatch++, now: clock(), ev });
+  return JSON.stringify({ s: session, card, n: nextBatch++, now: clock(), ev });
 }
 
 function stop(why: string) {
@@ -161,8 +160,8 @@ function sayWho() {
   const fields = {
     name: me.name || '',
     room: getRoomId(),
-    card: card(),
-    v: protoV(card()),
+    card,
+    v: protoV(card),
     flags: pageQuery().toString().slice(0, 199),
     build: BUILD,
     device: device(),
@@ -334,7 +333,7 @@ function sample(ms: number) {
   const fields: Record<string, string | number> = { x, y: round(b.y), z, a };
   if (where) fields.w = where.slice(0, 40);
   push('p', fields, ms);
-  const v = protoV(card());
+  const v = protoV(card);
   if (v !== lastV) push('variant', { v });
   lastV = v;
 }

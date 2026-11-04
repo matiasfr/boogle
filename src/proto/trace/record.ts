@@ -23,8 +23,7 @@ const ACTIVE = new Set<Activity>(['riding', 'driving', 'carrying']); // the firs
 let card = '';
 let cardVerb: string | undefined; // the card's own `verb` (a counter or an activity): then only it is the verb
 let s: Sitting | null = null;
-let t0 = 0; // performance.now() when the sitting started
-const clock = () => Math.round((performance.now() - t0) / 100) / 10; // s since the sitting started
+const clock = () => Math.round(performance.now() / 100) / 10; // s since the page loaded
 let step = 1; // s between samples
 let acc = 0;
 let still = 0; // s standing still
@@ -74,14 +73,12 @@ function leave() {
   save(stoodStill);
 }
 
-/** Ends the sitting being recorded (saved) and starts one for card `id` playing variant `v` ('' for the default),
- * timed from now, or from the page load (`fromLoad`: a page's first sitting, so time-to-verb includes the load). */
-export function startSitting(id: string, v: string, fromLoad = false) {
+/** Starts the page's sitting for card `id` and variant `v` ('' for the default), including load time. */
+export function startSitting(id: string, v: string) {
   leave();
   card = id;
   cardVerb = PROTOS.find((p) => p.id === id)?.verb;
   s = { id: Date.now(), v, p: [], idle: [], marks: [], verb: null, end: null };
-  t0 = fromLoad ? 0 : performance.now();
   step = 1;
   acc = still = lastSave = 0;
 }
