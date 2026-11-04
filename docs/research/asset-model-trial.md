@@ -1,6 +1,6 @@
 # Two-asset headless authoring trial
 
-2026-11-04. Owner review pending. These assets are catalogue-only; passing checks is not art approval.
+2026-11-04. Owner review, 4 November, of the live cap on Buddy and roller: "Looks good!" These assets remain catalogue-only; nothing is placed in the world.
 
 Implemented recommendations 1–3 and the inspection/smallest-proof sections of `/Users/matiasfranco/Developer/boogle-codex/agent-model-pipelines/docs/research/agent-model-pipelines.md` (the supplied research worktree, not main). Existing builder, Blender 5.2.1 at `/Applications/Blender.app`, original Boogle geometry, no paid generation, installation, MCP or open Blender session. State is Local to `/character/`; no world placement, gameplay, Buddy source or mechanics changed.
 
