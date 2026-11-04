@@ -4,6 +4,7 @@ import { scene } from '../../render/scene.ts';
 import { flat } from '../flat.ts';
 import { H, addStatic } from './land.ts';
 import { toWorld } from './layout.ts';
+import { pauseSections } from '../../player/pause-pages.ts';
 
 // ---------------------------------------------------------------- boards you can read
 const PAPER = '#fff3d6',
@@ -80,7 +81,7 @@ export function buildSigns() {
 // ---------------------------------------------------------------- the HUD
 const nums = document.createElement('div');
 nums.className = 'place-nums';
-(document.querySelector('.hud') ?? document.body).append(nums);
+pauseSections.push(nums);
 // The numbers: logs, kilometres, town and a running money count, a comic score. They tick up one by one, so you can feel them.
 const shownNum = { logs: 0, km: 0, people: 0, money: 0 };
 let lastNums = '';

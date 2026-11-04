@@ -1,6 +1,7 @@
 // The tester's panel on ?proto=place (not on the `&fresh=1` link), and `window.__place` for the look evals
 // (dev/look/evals/place-job.ts). The skips jump the state to a beat with no show, so a beat can be looked at by itself.
 import { me, cam } from '../../player/player.ts';
+import { pauseSections } from '../../player/pause-pages.ts';
 import { teleport } from '../../physics/engine.ts';
 import { carry } from '../../physics/platforms.ts';
 import { PLAYER_R } from '../../constants.ts';
@@ -217,35 +218,13 @@ export function prepareDevStage(id: keyof typeof devStages) {
 export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
   const box = document.createElement('div');
   box.className = 'place-proto';
-  const toggle = document.createElement('button');
-  toggle.type = 'button';
-  toggle.textContent = 'Test';
   const buttons = document.createElement('div');
   buttons.className = 'place-proto-buttons';
-  let expanded = false;
-  try {
-    expanded = localStorage.getItem('place-test-panel') === 'open';
-  } catch {
-    // Storage may be unavailable in private browsing.
-  }
-  const show = () => {
-    buttons.hidden = !expanded;
-    toggle.setAttribute('aria-expanded', String(expanded));
-  };
-  toggle.addEventListener('click', () => {
-    expanded = !expanded;
-    show();
-    try {
-      localStorage.setItem('place-test-panel', expanded ? 'open' : 'closed');
-    } catch {
-      // The panel still works without storage.
-    }
-  });
-  show();
-  box.append(toggle, buttons);
+  box.append(buttons);
   const btn = (text: string, fn: () => void) => {
     const e = document.createElement('button');
     e.type = 'button';
+    e.className = 'pause-btn';
     e.textContent = text;
     e.addEventListener('click', fn);
     buttons.append(e);
@@ -261,7 +240,7 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
   btn('Skip to the tower', () => coop.skip('tower', skipTower));
   btn('Skip to Far Head', () => coop.skip('head', skipHead));
   btn('Skip to trains', () => coop.skip('trains', skipTrains));
-  (document.querySelector('.hud') ?? document.body).append(box);
+  pauseSections.push(box);
   coop.skips({
     delivery: skipDelivery,
     path: skipPath,

@@ -49,45 +49,11 @@ body:not(.playing) .place-proto {
   display: none;
 }
 
-/* A real place (?proto=place): the solo tester's panel. */
-.place-proto {
-  position: absolute;
-  left: 12px;
-  top: 110px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  font: 600 13px var(--font-body);
-  color: var(--ink);
-  pointer-events: auto;
-}
-.place-proto button {
-  font: inherit;
-  padding: 6px 12px;
-  background: var(--paper);
-  color: var(--ink);
-  border: 3px solid var(--ink);
-  border-radius: 999px;
-  box-shadow: 0 3px 0 var(--ink);
-  cursor: pointer;
-}
-.place-proto-buttons:not([hidden]) {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-/* The numbers: logs, kilometres, town and money, a comic score. Small, and off to one side. */
+/* The numbers remain live in the pause view. */
 .place-nums {
-  position: absolute;
-  right: 14px;
-  top: 76px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
+  flex-wrap: wrap;
+  gap: 4px;
   font: 700 13px var(--font-body);
   color: var(--ink);
   pointer-events: none;

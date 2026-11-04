@@ -31,7 +31,7 @@ import { carry } from '../physics/platforms.ts';
 import { forgetInRoom, leaveIsland, SPOT_KEY } from '../player/arrival.ts';
 import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
 import { uiSound } from '../ui/ui-sound.ts';
-import { pausePages, pauseNavigation } from '../player/pause-pages.ts';
+import { pausePages, pauseNavigation, pauseSections } from '../player/pause-pages.ts';
 import { devCursorFree } from '../player/dev-input.ts';
 import { devEnabled } from '../dev-preferences.ts';
 
@@ -229,7 +229,7 @@ function renderMain() {
   const room = button('Room', () => show('room'));
   room.dataset.act = 'room';
   const list = el('div', 'pause-list');
-  list.append(resume, controls, room);
+  list.append(resume, ...pauseSections.filter((section) => section.classList.contains('place-nums')), controls, room);
   for (const extra of pausePages) list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
   if (canFullscreen()) list.append(fullscreenButton());
   list.append(soundRow());
@@ -247,7 +247,7 @@ function renderMain() {
     unstuck.dataset.act = 'unstuck';
     list.append(unstuck);
   }
-  list.append(...freshButton(), leave);
+  list.append(...freshButton(), leave, ...pauseSections.filter((section) => !section.classList.contains('place-nums')));
   return list;
 }
 
@@ -409,7 +409,7 @@ function move(dir: number) {
   const k = list.indexOf(document.activeElement as HTMLElement);
   const target = list[k < 0 ? (dir > 0 ? 0 : list.length - 1) : (k + dir + list.length) % list.length]!;
   target.focus({ preventScroll: true });
-  if (pausePages.some((entry) => entry.id === page)) target.scrollIntoView({ block: 'nearest' });
+  target.scrollIntoView({ block: 'nearest' });
 }
 function moveTab(dir: number) {
   if (page !== 'controls') return;

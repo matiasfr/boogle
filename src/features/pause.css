@@ -100,6 +100,17 @@ dialog.pause::backdrop {
 .pause-btn.primary {
   background: var(--sun);
 }
+.place-proto-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.place-proto-buttons .pause-btn {
+  min-height: 44px;
+  padding: 7px;
+  font: 700 13px/1.2 var(--font-body);
+  letter-spacing: 0;
+}
 .pause-note {
   margin: -4px 4px 0;
   font-size: 15px;

@@ -4,6 +4,7 @@ The HUD answers every press within the frame, quietly, so the toys stay louder t
 ([docs/research/ui-patterns.md](../research/ui-patterns.md), recs 1-5). Was the `?proto=uisfx` prototype ("UI that
 answers"); the owner kept it (2026-11-01). Local and cosmetic: nothing here is synced.
 
+- **Corners**: the name chip, Live pill and menu button remain during play; the HUD has no Boogle logo.
 - **Sounds** ([src/ui/ui-sound.ts](../../src/ui/ui-sound.ts)): synthesized, C major pentatonic, on a bus about 8 dB under
   the master, each kind rate-limited.
   - _tick_ when something new lands in your hand: one soft E5 sine, 45 ms (`TICK = false` silences it).

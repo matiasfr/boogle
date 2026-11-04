@@ -6,4 +6,6 @@ export type PausePage = {
   open?(): void;
 };
 export const pausePages: PausePage[] = [];
+// Persistent local sections move into the main page whenever it is rebuilt.
+export const pauseSections: HTMLElement[] = [];
 export const pauseNavigation: { open?: (page: string) => boolean; close?: () => void } = {};
