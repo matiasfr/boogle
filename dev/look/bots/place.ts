@@ -7,7 +7,7 @@ import { cam, me } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
 import { teleport } from '../../../src/physics/engine.ts';
-import { carry, type Platform } from '../../../src/physics/platforms.ts';
+import { carry, fromPlatform, type Platform } from '../../../src/physics/platforms.ts';
 import type { Rock, Tree } from '../../../src/proto/place/chop.ts';
 import { nearest } from '../../../src/proto/place/nearest.ts';
 import { gettingItem, press as putAwayGot } from '../../../src/proto/place/got.ts';
@@ -135,7 +135,7 @@ export async function play() {
   const bill = async (st: {
     x: number;
     z: number;
-    spec: { id: string };
+    spec: { id: string; rack?: string };
     wants: (g: string) => number;
     full: () => boolean;
   }) => {
@@ -182,10 +182,11 @@ export async function play() {
         }
       }
       if (st.wants('rails') - b.rails > 0 && b.room() >= Math.min(st.wants('rails') - b.rails, 8)) {
-        if (place.rack.on && (place.rack.rails > 0 || automaticRails())) {
+        if (place.rack.on && (spec.rack === 'train' || place.rack.rails > 0 || automaticRails())) {
           await travel(place.rack.x, place.rack.z, 2.6);
           const load = Math.min(st.wants('rails') - b.rails, b.room(), CART.rails);
-          if (!(await waitFor(() => place.rack.rails >= load, 180000, `${st.spec.id} cart rails arrived`))) return;
+          if (!(await waitFor(() => place.rack.rails >= load, 180000, `${st.spec.id} rack rails arrived`)))
+            throw new Error(`${st.spec.id}: rails did not arrive at the rack`);
           press();
           await waitFor(() => b.incoming === 0, 4000, `${st.spec.id} mixed load on the back`);
         } else {
@@ -541,10 +542,15 @@ export async function play() {
         () => true,
       );
       if (!nearestHalt) throw new Error('No station for the ride to Far Head');
-      if (nearestHalt.k === L1.k && nearestHalt.stop !== 0) await ride(L1, nearestHalt, 0);
-      else if (nearestHalt.stop !== 0) await ride(L2, nearestHalt, 0);
       const village = place.halts.find((h: { name: string }) => h.name === 'Village, line 2');
-      await ride(L2, village, 2);
+      if (nearestHalt.k === L1.k) {
+        if (nearestHalt.stop !== 0) await ride(L1, nearestHalt, 0);
+        await ride(L2, village, 2);
+      } else if (nearestHalt.stop !== 2) await ride(L2, nearestHalt, 2);
+      else {
+        await ride(L2, nearestHalt, 0);
+        await ride(L2, village, 2);
+      }
     });
     await station(L2, 5, 2);
     await phase('pier', async () => {
@@ -552,8 +558,8 @@ export async function play() {
       await travel(head.x, head.z, 1);
       if (!place.job.ended || me.swimming) throw new Error('Pier unfinished or player stranded in water');
       const shared = place.coop.debug().shared;
-      note(
-        `final cargo ${JSON.stringify({ train: shared.trainCargoV1, crane: shared.craneCargoV1, kitSent: shared.job.kitSent })}`,
+      console.log(
+        `CARGO ${JSON.stringify({ train: shared.trainCargoV1, crane: shared.craneCargoV1, kitSent: shared.job.kitSent })}`,
       );
     });
     bot.finish('continuous co-op route: both at the pier, without skips or relocations');
@@ -655,7 +661,11 @@ export async function play() {
       throw new Error('Train did not arrive for boarding');
     note(`waited ${(now() - callAt).toFixed(1)} s`);
     const car = l.train.tr.cars[1]!;
-    const c = car.body.position;
+    // Two people can share the deck without trying to sit inside the same point.
+    const seatZ = coopRoute ? (q.get('player') === '2' ? 0.75 : -0.75) : 0;
+    const c = { x: 0, y: 0, z: 0, yaw: 0 };
+    const aim = () => fromPlatform(car.platform, { x: 0, y: car.platform.top, z: seatZ, yaw: 0 }, false, c);
+    aim();
     face(c.x, c.z);
     pressJump();
     input.keys.add('KeyW');
@@ -664,8 +674,9 @@ export async function play() {
     const end = performance.now() + 3500;
     // A brush against the edge is not boarding. Keep steering to the middle, then use the real Sit prompt.
     while (performance.now() < end) {
+      aim();
       face(c.x, c.z);
-      if (bot.dist(c.x, c.z) < 0.6) {
+      if (bot.dist(c.x, c.z) < 0.3) {
         input.keys.delete('KeyW');
         if (carry.on === car.platform && interactTarget()?.id === 'place-sit') break;
       } else input.keys.add('KeyW');
@@ -702,7 +713,14 @@ export async function play() {
     );
     press(); // Stand up before walking off. Do not let the next departure carry a waiting peer away.
     await wait(100);
-    if (!(await travel(arrival.x, arrival.z, 1))) throw new Error('Could not disembark at the destination');
+    // The ground planner excludes moving bodies. Hop over the platform lip from the stopped car.
+    face(arrival.x, arrival.z);
+    input.keys.add('KeyW');
+    pressJump();
+    await wait(330);
+    releaseJump();
+    if (!(await bot.straight(arrival.x, arrival.z, 1, 3000)))
+      throw new Error(`Could not disembark at the destination: ${JSON.stringify(body.position)}`);
     if (!(await waitFor(() => me.coyote > 0 && !me.swimming, 4000, 'dry station landing')))
       throw new Error('Passenger did not land dry at the station');
   }
