@@ -22,6 +22,8 @@ and a bright shard in the ring's middle. Two physical things point at it: a line
 
 ## The run
 
+The sleeping machine and old trains use solid, dull oxidized paint and iron, with no spatial rust pattern. Their existing wake uniforms restore paint roughness and the wheels' steel response. Timber decks and sleepers retain their grain while the engine sleeps. This is Local material presentation (DESIGN.md 11, Show, don't tell); wake timing and shared progression are unchanged.
+
 **Beautiful-corner rough kit comparison (3 November):** `&corner=1` adds two existing timber runners beneath Station 3's feeder, giving the receiver-to-machine link a stronger silhouette. They reuse the kit's bottom pivots and fit inside the existing feeder collider, below the exposed rollers. This is Local presentation only; the default round, route, costs, material travel, saves and co-op are unchanged. The [approved plan](../plans/beautiful-corner.md) records the baseline/contact audit and stops after steps 1–2; final banks/materials wait for the real sea, demo-sky/AgX bake and terrain decision.
 
 All numbers are hypotheses until played, set with `node dev/economy/model.ts round4` and recorded in [round-4.md](../plans/round-4.md). The model's walking-only floor for the first path is 6.4 min; the target is 6-9 min of real play.

@@ -276,7 +276,7 @@ scene.add(stationPict);
 const RED: Paint = { color: '#e8392a', rough: 0.55 },
   BRASS: Paint = { color: '#d9a23a', rough: 0.5 },
   BLACK: Paint = { color: '#24262c', rough: 0.65 },
-  IRON: Paint = { color: '#2c2e34', rough: 0.55 },
+  IRON: Paint = { color: '#2c2e34', steel: true, rough: 0.55 },
   DECK: Paint = { color: '#9a7b55', grain: { axis: 'z', honey: honeyOf('#7f5630') } },
   HOPPER: Paint = { color: '#e8d3a2', rough: 0.75 },
   ARM: Paint = { color: '#f0752c', rough: 0.55 };
@@ -314,7 +314,8 @@ export const machineLook = (): MachineLook => kitCars(1, true);
 export const trainLook = (trailers: number): MachineLook => kitCars(trailers, false);
 function kitCars(trailers: number, working: boolean): MachineLook {
   const add = (parent: THREE.Object3D, name: string, p: Paint, x = 0, y = 0, z = 0) => {
-    const m = piece(name, { ...p, rust: working ? true : 'train' });
+    // The timber keeps its grain; only painted and bare metal age with the engine.
+    const m = piece(name, { ...p, rust: p.grain ? false : working ? true : 'train' });
     m.position.set(x, y, z);
     parent.add(m);
     return m;

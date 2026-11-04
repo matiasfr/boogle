@@ -222,18 +222,14 @@ export function paint(p: Paint) {
   if (wood) m.colorNode = materialColor.mul(grainOf(p.grain!.axis, p.grain!.scale ?? [1, 1, 1]));
   if (steel) m.emissiveNode = skyOnSteel();
   if (p.rust) {
-    const pw: N = positionWorld;
-    const patch: N = sin(pw.x.mul(7.1).add(sin(pw.z.mul(5.3)).mul(2)))
-      .mul(sin(pw.y.mul(9.7)))
-      .mul(0.5)
-      .add(0.5);
+    // Broad material changes fit the painted kit; world-space mottling made moving metal look camouflaged.
+    const wear = p.rust === 'train' ? rustTrainU : rustU;
     const base: N = m.colorNode ?? materialColor;
-    m.colorNode = mix(
-      base,
-      mix(vec3(0.27, 0.13, 0.06), vec3(0.42, 0.36, 0.28), patch),
-      (p.rust === 'train' ? rustTrainU : rustU).mul(0.9),
-    );
-    m.metalness = 0;
+    const aged = steel ? vec3(0.24, 0.12, 0.055) : base.mul(vec3(0.58, 0.5, 0.42)).add(vec3(0.055, 0.035, 0.015));
+    m.colorNode = mix(base, aged, wear);
+    m.roughnessNode = mix(float(m.roughness), float(0.95), wear);
+    m.metalnessNode = mix(float(m.metalness), float(0), wear);
+    if (steel) m.emissiveNode = skyOnSteel().mul(wear.oneMinus());
   }
   made.set(key, m);
   return m;
