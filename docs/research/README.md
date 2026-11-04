@@ -2,6 +2,8 @@
 
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
+- [game-direction.md](game-direction.md) (2026-11-03): small-team production and director practice; post-round-4 phase assessment, proposed gates to release, dependency ordering, eight recommendations, a shared Codex/Claude skill draft and three worked next-step answers; owner authority stays in the repo, with the Line Map uninspected. Nothing installed.
+
 - [dev-menu-plan.md](dev-menu-plan.md) (2026-11-03): engine and shipped-game debug patterns, current tools/flags inventory, nineteen ranked candidates and eight first-version recommendations; touch access, lazy loading, authority boundaries and disposable fixtures for live owner and agent testing.
 
 - [water-load-stall.md](water-load-stall.md) (2026-11-03): M1 Max cold/reload, old/new sea, 90-second callback and GPU-completion baselines; CPU shore-bake attribution, every >50 ms interval and explicit limits. The reported minute-long visible freeze remains unresolved; no gameplay fix claimed.
