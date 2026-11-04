@@ -60,9 +60,11 @@ export const tool: Tool = {
   },
   snapshot: lookSnapshot,
   mount(parent, ctx) {
+    const layout = el('div', '', 'dev-tools');
+    parent.append(layout);
     const status = el('p', '', 'dev-status');
     status.setAttribute('role', 'status');
-    const controls = el('div', '', 'dev-tools');
+    const controls = el('div', '', 'dev-actions');
     const presets = new Map<LookId, HTMLButtonElement>();
     const run = async (command: string, args = {}) => {
       const result = await ctx.run('looks', command, args);
@@ -77,12 +79,16 @@ export const tool: Tool = {
       const item = button(preset.label, () => run('select', { id }));
       item.dataset.look = id;
       item.style.minHeight = '44px';
+      if (id === 'current') item.style.gridColumn = '1 / -1';
       presets.set(id as LookId, item);
       controls.append(item);
     }
-    parent.append(controls);
+    layout.append(controls);
+    const slots = el('div', '', 'dev-actions');
+    layout.append(slots);
     const select = (name: 'A' | 'B') => {
       const label = el('label', `${name} `);
+      label.style.cssText = 'display:grid;gap:4px;min-width:0';
       const input = el('select');
       input.setAttribute('aria-label', `Look ${name}`);
       input.style.minHeight = '44px';
@@ -92,7 +98,7 @@ export const tool: Tool = {
         input.append(option);
       }
       label.append(input);
-      parent.append(label);
+      slots.append(label);
       return input;
     };
     const a = select('A'),
@@ -101,15 +107,17 @@ export const tool: Tool = {
     const swap = button('A/B · \\', () => run('swap'));
     swap.dataset.lookSwap = '';
     swap.style.minHeight = '44px';
-    parent.append(swap);
+    layout.append(swap);
     const lockLabel = el('label', ' Lock exposure');
+    lockLabel.style.cssText = 'display:flex;align-items:center;gap:8px';
     const lock = el('input');
     lock.type = 'checkbox';
     lock.style.minHeight = '44px';
     lock.onchange = () => void run('lock', { locked: lock.checked });
     lockLabel.prepend(lock);
-    parent.append(lockLabel);
+    layout.append(lockLabel);
     const trimLabel = el('label', 'Exposure trim (EV) ');
+    trimLabel.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px';
     const trim = el('input');
     trim.type = 'number';
     trim.min = '-2';
@@ -119,14 +127,14 @@ export const tool: Tool = {
     trim.style.minHeight = '44px';
     trim.onchange = () => void run('trim', { ev: Number(trim.value) });
     trimLabel.append(trim);
-    parent.append(trimLabel);
+    layout.append(trimLabel);
     const summary = el('p', '', 'dev-note');
-    parent.append(
+    layout.append(
       summary,
       button('Copy look', () => run('copy')),
       status,
     );
-    const details = more(parent);
+    const details = more(layout);
     note(
       details,
       'Only this browser. Select a look to restore its water and post settings. Lock freezes the shared exposure meter; each look keeps its recorded trim. Backslash switches A/B while this panel is open.',
