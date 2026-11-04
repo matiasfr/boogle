@@ -111,6 +111,8 @@
       "files": ["**/*.ts"],
       "rules": {
         "typescript/await-thenable": "error",
+        "typescript/no-floating-promises": "error",
+        "typescript/no-misused-promises": "error",
         "typescript/return-await": ["error", "in-try-catch"],
         "typescript/ban-ts-comment": "error",
         "no-array-constructor": "error",

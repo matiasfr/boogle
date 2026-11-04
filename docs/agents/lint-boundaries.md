@@ -24,5 +24,9 @@ disable/enable forms also work. Name each rule explicitly; unused directives fai
 `lint-suppressions.json`: excess or stale counts fail, `--prune-suppressions` only shrinks, and registry rejects growth
 and deleted entries. Hooks alone use `--pass-on-unpruned-suppressions` while editing.
 
-Type-aware `await-thenable` and `return-await` are enabled. Floating/misused promise rules remain off: WebGPU dispatch
-and async callback findings need behavior review (see the status in `docs/research/linter-replacement.md`).
+Type-aware `await-thenable`, `return-await`, `no-floating-promises` and `no-misused-promises` are errors.
+All misused-promise checks stay enabled, including void callbacks. The only known-safe-call exception is the
+`@types/node` `test` declaration in `test/**/*.ts`: Node owns registration failure reporting. Other promises in tests
+are still checked. Use `src/async.ts`'s `background(task, label)` for non-blocking work that needs rejection reporting;
+use explicit `void` only when failure is already handled or the operation cannot reject. Never add an await to a
+frame/tick dispatch just to pass lint. Classification and rationale: `docs/research/linter-replacement.md`.

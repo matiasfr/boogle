@@ -35,7 +35,7 @@ root-only versus nested dependency exclusions, JavaScript/CJS parsing, and entit
 Type-aware `await-thenable` and `return-await` (`in-try-catch`) are enabled: zero findings, with deliberate mistakes
 caught in isolated sim and WebGPU probes. Existing lockstep files were clean. The exploratory scan found
 `no-floating-promises` **343**, `no-misused-promises` **21**, `no-unnecessary-type-assertion` **272**, and
-`only-throw-error` **2**; these remain off. Floating/misused findings include WebGPU `renderer.compute` dispatch
+`only-throw-error` **2**; these were initially left off. Floating/misused findings included WebGPU `renderer.compute` dispatch
 (`src/render/water/fft.ts:308,399`), async event callbacks (`src/features/pause.ts:229,316`), and the browser fallback
 for pointer lock (`src/player/input.ts:64`). Those need behavior decisions, not automatic awaits or blanket voids.
 Assertion churn and rethrowing saved unknown failures in `dev/look/coop-warp.ts:96,183` add no useful gate here.
@@ -52,6 +52,64 @@ not an idle-machine or CI speedup claim; earlier noisier replacement samples are
 advisories to both lockfiles independently confirms **11 affected moderate package paths → 0**. Live advisories,
 CI/deploy timing and gameplay were not tested; no browser or images are needed for tooling-only changes.
 Local logs, baseline diagnostics, type findings and timings: `.look/oxlint-migration/`.
+
+### Promise safety follow-up — 4 November 2026
+
+Owner-approved follow-up: both `typescript/no-floating-promises` and `typescript/no-misused-promises` now run at
+error. The recount against this branch's repository lint scope was **347 floating / 21 misused**, before cleanup.
+The raw Oxlint scan also included the already-excluded server tree (382 / 23); this change preserves that scope.
+Baseline diagnostics and sorted classification are in `.look/promise-rules/`.
+
+| Floating promise kind | Count |
+| --- | ---: |
+| Node test registrations | 298 |
+| Lazy module imports | 10 |
+| Asset or interaction tasks | 8 |
+| Completion observers | 7 |
+| Initialized GPU dispatches | 6 |
+| Renderer lifecycle | 4 |
+| Room connection or presence | 4 |
+| Handled UI or update tasks | 4 |
+| Already-handled local saves | 3 |
+| Shader precompiles | 3 |
+| **Total** | **347** |
+
+| Misused promise kind | Count |
+| --- | ---: |
+| DOM callbacks | 5 |
+| Timer callbacks | 5 |
+| Startup callbacks | 4 |
+| Server callbacks | 3 |
+| Interaction callback properties | 2 |
+| Shot callback type | 1 |
+| Browser compatibility conditional | 1 |
+| **Total** | **21** |
+
+`dev/lint/config.ts` exempts only calls to the `test` declaration from `@types/node`, only in `test/**/*.ts`, using
+`allowForKnownSafeCalls`: the Node runner already owns these failures. No test-wide rule disabling or 298 mechanical
+annotations. A local probe confirmed an imported alias is allowed while a same-named local async function and other
+floating promises still fail. All `checksVoidReturn` checks remain on: only five findings are DOM callbacks, and
+turning off argument checking would also hide lifecycle, timer and server mistakes. The probe also caught an async
+DOM listener and a promise conditional. There are **no new inline suppressions**.
+
+`src/async.ts` provides the shared `background(task, label)` idiom: work starts immediately at its existing call site,
+and rejection is logged as a console error (retaining broker failure visibility). Explicit `void` marks handled saves,
+downloads, clipboard/fullscreen refusal and non-rejecting observers. Installed three.js dispatches `compute`
+synchronously after initialization; the six dispatch sites keep that ordering with `void`, with no frame/tick await.
+Pointer lock retains the older void-returning browser path through a callable-`catch` check. No sim or world-rule
+logic, player copy, recovery UI, room protocol or action ordering changes.
+
+**Bug fixed separately:** readiness timing observers created orphan rejected promises when startup already handled
+the renderer/physics readiness failure. Their rejection branches now defer to startup's existing handling.
+
+**Deferred observation:** the pre-existing `Promise.all(...).then(play, splashDone)` in `src/main.ts` handles readiness
+failure, but not rejection from `play()` itself. Choosing loading-screen recovery would change player-visible behavior;
+it remains unchanged. The rule does not flag a two-handler `then`, so an inline suppression there would be unused.
+Caught background failures are console errors rather than unhandled-rejection events; the existing unhandled-rejection
+telemetry hook does not upload them. No new telemetry delivery path is introduced here.
+
+Verification is recorded in the task's broker manifests and `.look/promise-rules/` logs. `check:full` is left to the
+owner. No remote fetch, push or ship; `inflight` was omitted because it performs network access.
 
 ## Original feasibility study (historical)
 
