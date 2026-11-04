@@ -43,7 +43,8 @@ export async function play() {
     return a > -38 && a < 16 ? 'n' : a > -164 && a < -38 ? 'w' : 'e';
   };
   const unreachable = new Set<unknown>();
-  const standing = (t: { fall: number; great?: boolean }) => t.fall < 0 && !t.great && !unreachable.has(t);
+  const standing = (t: Tree) =>
+    t.fall < 0 && !t.great && (!t.hardwood || place.job.rung.axe > 0) && !unreachable.has(t);
   const openCrates = async () => {
     for (const c of place.giftState.crates()) {
       if (c.content !== 'gift') continue; // a find stays where it's hidden: `tour`, below
@@ -64,19 +65,52 @@ export async function play() {
   };
   const chopUntil = async (fn: () => boolean) => {
     while (!fn() && place.back.room() > 0) {
-      const t = nearest<Tree>(place.TREES, body.position, standing);
+      // Compare walkable approaches, not straight lines across the gorge. A harvesting detour along the
+      // river's low shelf is not a useful source route; the ordinary traversal bot still uses real bridges.
+      const candidates = (place.TREES as Tree[])
+        .filter(standing)
+        .map((t) => ({ t, direct: Math.hypot(t.x - body.position.x, t.z - body.position.z) }))
+        .sort((a, b) => a.direct - b.direct);
+      let t: Tree | undefined;
+      let distance = Infinity;
+      for (const candidate of candidates) {
+        if (candidate.direct > distance + 3) break;
+        const route = bot.plan(candidate.t.x, candidate.t.z, 2.6);
+        if (!route.arrives || route.path.some((p) => p.y < 3)) continue;
+        let metres = 0;
+        for (let k = 1; k < route.path.length; k++) {
+          const a = route.path[k - 1]!,
+            b = route.path[k]!;
+          metres += Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z);
+        }
+        if (metres < distance) {
+          t = candidate.t;
+          distance = metres;
+        }
+      }
       if (!t) {
-        note('NO TREES LEFT');
+        note('NO REACHABLE TREES LEFT');
         await wait(5000);
         return;
       }
+      note(`tree ${t.index}: ${distance.toFixed(1)} m planned harvest route`);
       if (!(await travel(t.x, t.z, 2.6))) {
         unreachable.add(t);
         continue;
       }
+      let emptySwings = 0;
       while (t.fall < 0 && !fn() && place.back.room() > 0) {
+        const before = place.back.logs + place.back.incoming;
         press();
         await wait(380); // a person, not a machine
+        emptySwings = place.back.logs + place.back.incoming > before ? 0 : emptySwings + 1;
+        if (emptySwings >= 6) {
+          // A reachable trunk centre can still hide behind another tree or a steep lip.
+          // Try the next nearest legal source instead of hammering a non-progressing target forever.
+          note(`tree ${t.index}: no yield after six swings; try another approach/source`);
+          unreachable.add(t);
+          break;
+        }
       }
       await wait(150);
     }
