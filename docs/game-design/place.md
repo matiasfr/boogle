@@ -87,7 +87,7 @@ Falling is harmless: in the water, or down on a shore or a river bank more than 
 
 The forge rack holds 24 rails, including reserved slots for rails still flying out of its mouth. When a co-op correction replaces the rack, older flights no longer add rails to the corrected stock. Its visible stack updates immediately, and production continues from the corrected count.
 
-In co-op, after the depot opens and before trains, **Whistle for the cart** at the turntable calls it to the forge. **Load the cart** sends up to 16 needed rails from the forge rack onto its logs; it leaves three seconds after loading (eight seconds if empty). Rails fly onto the frontier rack, and a partner can ride the cart. Bills stay fixed. Without `coop=1`, these verbs are absent.
+In co-op, after the depot opens and before trains, **Whistle for the cart** at the turntable calls it to the forge even when the far end needs no materials, reversing an outbound cart immediately. Its round trip can be ridden in either direction, loaded or empty. **Load the cart** sends up to 16 needed rails from the forge rack onto its logs; it leaves three seconds after loading (eight seconds if empty). Rails fly onto the frontier rack, and a partner can ride the cart. Bills stay fixed. Without `coop=1`, these verbs are absent.
 
 Ride corrections preserve the rider's place on the deck. A car pose change faster than 1.5 times its cruise speed
 (13.5 m/s for the cart, 30 m/s for trains), or a yaw change faster than 4 rad/s, is a relocation, never a collision

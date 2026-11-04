@@ -249,10 +249,8 @@ if (COOP) {
   registerInteractable(() => {
     const p = me.body?.interpolatedPosition;
     const st = activeFrame();
-    if (!p || !job.rung.depot || job.rung.trains || st?.spec.rack !== 'cart' || Math.hypot(p.x - TX, p.z - TZ) > 5)
-      return [];
-    const need = st.wants('rails') - rack.rails - cart.rails;
-    if (need <= 0) return [];
+    if (!p || !job.rung.depot || job.rung.trains || Math.hypot(p.x - TX, p.z - TZ) > 5) return [];
+    const need = st?.spec.rack === 'cart' ? st.wants('rails') - rack.rails - cart.rails : 0;
     const n = Math.min(need, CART.rails - cart.rails, forge.rails);
     if (cart.leg === 'forge' && n > 0)
       return [
