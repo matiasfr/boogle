@@ -1,4 +1,75 @@
-# Continuous co-op route: reached Q2; reload coordinator blocked
+# Continuous co-op route: Q5 complete; passengers failed to reach Far Head
+
+4 November 2026, rerun in `boogle-codex/coop-route-full`, branch `codex/coop-route-full`, starting at **`3791b4f6`**, the locally available `origin/main` at launch. No remote fetch under the local-network-only brief. **Partial: no honest first-chop-to-pier completion.** The entry fix, original-bill guard, real reload and real leave/rejoin all worked. The final run completed Q5, opened both lines and unlocked trains, but neither passenger reached Far Head; Q6 stayed empty. Stop here for the larger transport/navigation investigation before claiming readiness for tonight.
+
+## Current attempts and exact boundary
+
+Read both new `report.txt` files in full, including all four telemetry segments per run, missing beats, stalls and errors; inspected both peers' bot logs, checkpoints, final states and clock samples. Historical evidence below remains historical, not additional executions in this worktree.
+
+| Attempt                                                                                                                                  | Tested tree and result                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [2x manifest](../../.look/evidence/1793818754845-84452/evidence.json), [report](../../.look/evidence/1793818754845-84452/run/report.txt) | Clean `3791b4f6`, tree `693137ca7f153e2b30e953aa1d1bf824ca8802b5`. **463.931 wall seconds**, checkpoint **16/Q4** released at **441.766 s**. Both interruptions succeeded. P1 landed on the first hook slab and received its personal bucket reward; the bot tried the next hook while that reward blocked actions. `NEVER: a pull to t1: picked t1, nothing`, then a cascading t2 attempt out of range. No water falls.                                             |
+| Rejected client invocation                                                                                                               | `--warp-speed 1` was rejected locally (`--warp-speed must be >1 and <=50`) before browser execution. No manifest or gameplay attempt. Corrected to documented `--real`.                                                                                                                                                                                                                                                                                              |
+| [1x manifest](../../.look/evidence/1793819311072-92075/evidence.json), [report](../../.look/evidence/1793819311072-92075/run/report.txt) | Clean **`1f7b1079`**, tree `ca5eea6a2d5e3cf2d0524740ce9f8f31eadfe1f3`. **1522.741 wall seconds**. Last released checkpoint **20, “ride to Far Head,” at 1372.495 s**. This checkpoint is misleading: it observes the train stop, not passenger arrival. Last completed shared work is **Q5 plus train unlock**. Q6 begins, then P2 falls into water while trying to walk to the rack; the bot throws `Co-op route needed a recovery; no fixture relocation allowed`. |
+
+Commands used the supplied broker throughout:
+
+```sh
+node .look/see-client.ts playthrough --players 2 --long --warp-speed 2 --query 'proto=place&shot=play'
+node .look/see-client.ts playthrough --players 2 --long --real --query 'proto=place&shot=play'
+```
+
+No staged save, debug skip, manual relocation or bot recovery was used to advance either route. No source changed during either run. The second manifest identifies the unchanged trusted harness at `3791b4f6` and the tested worktree at `1f7b1079`: the browser imports the changed bot from this worktree. The 30-minute work limit was not reached. The final documentation commit postdates this evidence; game and bot code do not.
+
+## What is now verified
+
+- **Real work by P1 on F2, twice.** P2 completes only F1, then releases the forge-frame checkpoint. After P1 collects the pack, P1 harvests trees 232, 132, 209 and 286 and completes F2 in **35.2 / 36.3 game seconds** (2x / 1x runs). Both peers' checkpoint score rises by **32 logs** between pack and forge-lit: **120→152** in the first run and **119→151** in the second. Score deltas are not a complete conservation ledger, but the separate work, bill boundary and resulting forge are observed.
+- **Reload and leave/rejoin, twice.** P2 reloads after Q2; P1 navigates to `about:blank` for five seconds after Q4 and returns. Both entry paths report `already playing`, retain player identities, and restore one remote. Leave/rejoin is page navigation, not the menu Leave button.
+- **Tower on the final bot.** P1 performs seven hook pulls, dismisses the slab reward, reaches the summit, gains glide and opens the sea gate. Its glide descends **77 m in 24.1 s**, ending **2 m** from the target. These are bot observations, not a real-time feel verdict. Both peers complete Q5 and unlock trains.
+- **Kit transport to the rack.** Both final states report the Far Head rack at **(1364.323, -173.530)** with **32 logs / 32 rails**, while Q6 has **0 logs / 0 rails** and both player backs are empty. Both retained pre-arrival saves show **kitSent=8** and eight `fill` crates carrying **4 logs / 4 rails each** on line 2. Thus the finite kit's full contents reached the rack; no missing pier-kit quantity is observed. The saved cargo slices are from different earlier beats, not a simultaneous final cargo comparison. Final ordinary timber/stone train loads and crane ownership are **not fully audited**, and interruptions occurred before cargo transport.
+
+## Passenger failure and agreement at the stop
+
+The final bot logged both players aboard after their first boarding attempt. The raw telemetry is stronger evidence than that label:
+
+- P1 session `mw2i9djg-3y90hw9r.jsonl`: `ride` at **397.2 s**, `off` at **397.3 s**, then remains near **(932, 19, 22)** while the train travels.
+- P2 session `mw2i5po9-ozxndq8q.jsonl`: `ride` at **568.1 s**, `off` at **568.2 s**, also remains at the village. P2 starts walking toward Q6 after the train reaches its stop, instead of arriving on it.
+- P2's bot records one water entry at **(1196.78, -0.91, -52.20)** at **753.0 s** on its resumed bot clock, then refuses its recovery callback. During failure capture the game itself records **four water entries and four `recovered` marks** between **754.9–757.4 page seconds**. Do not collapse those to “one fall” or claim the game recovered safely: the final P2 image is still in water.
+
+Both complete final state files agree exactly on stations, rack and shared rewards: line 1 **stage 3/open**, line 2 **stage 5/open**, Q1–Q5 paid, Q6 empty; axe, multi-axe, pack, depot and trains; jump, hook, glide, quarry and sea gates; **$12,205 / 247 logs / 70 rails / 8 stone / 700 metres**. Both see one remote and retain distinct IDs. Station contribution counters are **157 / 103**, positive but based on shared score deltas, not a per-player material ledger. Personal cosmetics differ as intended.
+
+Both trains are running. Use [paired samples](../../.look/evidence/1793819311072-92075/run/warp-2.json), not the sequential `p1-last-state.json` / `p2-last-state.json` train positions: those end captures are separated by rendering and health checks. The final three paired samples have identical targets and position gaps under **0.01 m** on both lines, at equal world ticks **15168, 15178, 15185**. Across the whole final segment, raw sampled maxima were **7.002 m / 1.334 m** (including read/network skew); p95 **0.016 m / 0.062 m**. This establishes convergence at the stop, not the unexecuted post-pier success gate.
+
+**Nobody-stranded condition fails.** P1 ends dry at the village **(932.25, 18.67, 22.48)**; P2 ends in the sea **(1200.41, -0.31, -54.76)**. Both `ended` and `atPier` are false. Neither was carrying materials at the stop, but the full route and safe final arrival are not verified.
+
+## Visual inspection and honest retries
+
+Visual question: **do both players finish dry at Far Head with matching earned progress?** Opened `run/end-still.png` and `run/p2-end-still.png` from **both** new manifests (four PNGs total). First pair: P1 is on the hook slab holding up a bucket reward; P2 stands dry beside Q4, and both HUDs show **224 logs / $10,400**. Final pair: P1 is beside the village track; P2 is visibly in water below the trestle; both HUDs show **247 logs / $12,205**. The answer is **no**. Prototype/bot overlays obscure part of each view, but these locations and HUDs are visible. No extra staged captures are counted as route evidence.
+
+Two actual runs, **both failed**, and **one full fresh rerun** after the small bot fix. One separate rejected CLI invocation. Internal behavior is not described as zero retries:
+
+- First run: **2** `no way yet` warnings, **2** failed hook attempts (t1 and the subsequent t2 cascade), and **7** repeated tree selections within a bill (P1 **3**, P2 **4**).
+- Final run: **3** `no way yet` warnings (including the failed Q6 approach), **0** `NEVER` hook misses, **7** repeated tree selections (P1 **3**, P2 **4**), **1** refused bot recovery request, and the **4** game water/recovery marks above. Eight double-jump gaps each logged one successful landing; both train boards had one logged attempt and then detached, with **no reboarding attempt**.
+- Repeated tree selections can be extra harvest trips, not necessarily failures. The bill loop and path planner also retry internally without logging each iteration, so an exact internal retry total cannot be recovered. These runs are not evidence of retry-free navigation.
+
+Both runs used WebGPU and reported no graphics errors. The first run had no game page/console errors beyond the failed-beat harness result. The final run's console/page-evaluation error is the explicit forbidden-recovery failure; it is not a clean command pass. All reports' “never happened” lists were read per telemetry segment; earlier segments naturally omit later events.
+
+## Small fix and checks
+
+**`1f7b1079` — Wait for rewards before the next bot hook.** `dev/look/bots/place.ts` now waits up to eight game seconds for the existing reward dismissal before aiming, and immediately fails a rejected co-op hook instead of continuing to another target. The first slab's new personal reward sets `inputState.held`; `fireHook` rejects held actions even when its geometry diagnostic says “nothing.” A focused read-only agent review found no blocking issue. The fresh continuous 1x run verifies the repaired tower sequence. No gameplay, pacing, copy, registrations, state ownership, wire shape or save contract changed; no game-design behavior change to document.
+
+Required `npx prettier --write` completed on both changed files (explicit Markdown ignore override), and final Node 26 `npm run check` passed: lint, TypeScript, **298/298 unit tests**, registry, level checks, assets and production build. [Final check log](../../.look/evidence/1793819311072-92075/check.txt). No new unit tests or scenarios; no `check:full` trigger. No unrelated GPU scenario was substituted for route evidence.
+
+## Ranked remaining work for tonight
+
+1. **High: passenger transport and truthful arrival validation.** Both players detached immediately after boarding; identify whether boarding placement/input or moving-platform behavior causes it. The harness must require each passenger's actual dry arrival before releasing the ride checkpoint. Do not treat `train.stop===2` as a successful ride. This needs focused transport evidence and a fresh continuous rerun; it is beyond the verified small reward-wait fix.
+2. **High: Q6 approach and safe recovery.** P2's planner attempted the distant rack from the village, went down the shore into water and triggered repeated game recovery marks. Fix/validate the route from the actual player position, then finish Q6 and both dry pier arrivals without debug recovery. No pacing or copy change is implied.
+3. **Medium: complete cargo/end-state evidence.** The complete finite kit is present on both racks, but final ordinary cargo/crane agreement and reload with cargo aboard remain unverified. Finish the route and compare all cargo ownership alongside final stations, rack, moving trains and rewards.
+4. **Evidence limits: transient departures and clocks.** At 2x, opening peak page deficits were **49.416 / 4.072 game seconds**, and P2's observer recorded **five** extra partner-left/returned pairs before the intentional reload. At 1x, page-clock deficits were zero, but opening world deficits were **14.573 / 1.761 s** and P2 recorded **three** extra partner-left/returned pairs before reload. Final-segment world deficits were **1.712 / 1.320 s**; clocks/ticks caught up at each boundary. No exclusive-machine performance, stable acceleration, human pacing, sound, mobile/device, remote-latency or real-time smoothness claim.
+
+All work stayed on this worktree's branch. Clients used Node **26.13.0**; the first check used shell Node **24.11.1**, and the final required check uses Node 26. No external network, push, ship, direct Chromium, replacement harness or source edits during runs. `npm run inflight` was omitted because it fetches origin. The launcher supplies its own `handoff.md` / `evidence.json` after this worker returns; the linked operation manifests above already exist.
+
+## Previous attempt: Q2; reload coordinator blocked (superseded)
 
 4 November 2026. Worktree `boogle-codex/coop-route-run`, branch `codex/coop-route-run`, starting at `e89d523a`. **Partial, not a passed first-chop-to-pier replay.** No push or ship. The earlier launcher rejection is superseded by the executed runs below.
 
