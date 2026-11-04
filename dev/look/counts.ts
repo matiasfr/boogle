@@ -1,4 +1,5 @@
-// What the normal game costs, as counts only: `npm run counts [-- --out file]` (default .look/counts.json). Draw calls,
+// What the normal game costs, as counts only: `npm run counts [-- --out file]` (default .look/counts.json).
+// --build-only measures the first-load download without launching a browser. Draw calls,
 // shadow draws and shader programs from `npm run perf` at a fixed pose (so not the same numbers as its table at the
 // spawn), and the gzip size of the files the first frame needs, listed in the build's service worker (vite.config.ts,
 // 'boogle-sw'). Runs nightly on SwiftShader (counts-nightly.yml), where times mean nothing: none are recorded and
@@ -37,20 +38,27 @@ function firstLoad() {
 }
 
 try {
-  const perf = path.join(tmp, 'perf.json');
-  node(['dev/look/perf.ts', '--render', '--query', 'classic=1', '--json', perf]);
-  const { calls, shadowCalls, programs, ...measurement } = JSON.parse(fs.readFileSync(perf, 'utf8'));
-  const result = {
-    commit: process.env.GITHUB_SHA ?? null,
-    drawCalls: calls,
-    shadowDraws: shadowCalls,
-    programs,
-    firstLoadGzipKB: firstLoad(),
-    measurement, // Additive: preserve the fields consumed by counts-nightly; no hardware timings.
-  };
-  fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, JSON.stringify(result, null, 2) + '\n');
-  console.log(JSON.stringify(result, null, 2));
+  if (argv.includes('--build-only')) {
+    const result = { firstLoadGzipKB: firstLoad() };
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, JSON.stringify(result, null, 2) + '\n');
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    const perf = path.join(tmp, 'perf.json');
+    node(['dev/look/perf.ts', '--render', '--query', 'classic=1', '--json', perf]);
+    const { calls, shadowCalls, programs, ...measurement } = JSON.parse(fs.readFileSync(perf, 'utf8'));
+    const result = {
+      commit: process.env.GITHUB_SHA ?? null,
+      drawCalls: calls,
+      shadowDraws: shadowCalls,
+      programs,
+      firstLoadGzipKB: firstLoad(),
+      measurement, // Additive: preserve the fields consumed by counts-nightly; no hardware timings.
+    };
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, JSON.stringify(result, null, 2) + '\n');
+    console.log(JSON.stringify(result, null, 2));
+  }
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
 }
