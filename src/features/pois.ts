@@ -5,6 +5,7 @@
 // The caves are far from spawn and build themselves over a few frames anyway, so they load after start, in their own
 // chunk (faster first load; src/loop.ts, "Lazy parts"). Their site.ts (the ground) stays eager, in src/island/.
 import { onStart } from '../loop.ts';
+import { background } from '../async.ts';
 
 import.meta.glob(['../pois/*/index.{js,ts}', '!../pois/caves/index.{js,ts}'], { eager: true });
-onStart(() => import('../pois/caves/index.ts'));
+onStart(() => background(import('../pois/caves/index.ts'), 'caves'));

@@ -4,6 +4,7 @@
 // carrying his rider takes a second slot in the fixed step, after his body and the player's controller (src/loop.ts).
 import './boogler.css';
 import { onStart } from '../loop.ts';
+import { background } from '../async.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { boogler, booglerBodyStep, createBoogler, updateBoogler } from '../boogler/boogler.ts';
 import { updateBooglerHud } from '../boogler/hud.ts';
@@ -38,7 +39,7 @@ onStart(() => {
     lateUpdate: updateBooglerHud,
   });
   spawn({ kind: 'boogler-ride', fixedPre: carryBooglerRider, fixedPost: checkStandingOnBoogler });
-  loadTalk();
+  background(loadTalk(), 'boogler dialogue preload');
   if (window.boogle) window.boogle.boogler = boogler; // debug handle
 });
 registerInteractable(talkTargets); // Talk, in his name tag

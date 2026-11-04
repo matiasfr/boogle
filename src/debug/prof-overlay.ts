@@ -383,7 +383,7 @@ export async function hardwareTiming(seconds = 5) {
 
 // Importing this module from the counts harness alone must not install UI, frame hooks or timestamp collection.
 if (Number(new URLSearchParams(location.search).get('prof')) > 0) {
-  bootDone.then(() => {
+  void bootDone.then(() => {
     bootRow = bootLine();
     console.info('[boot] ' + bootRow);
   });

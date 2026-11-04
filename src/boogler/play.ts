@@ -6,6 +6,7 @@
 // ev on his model whenever that player's evN changes, so friends see the hearts and launches too.
 import { FIXED, PLAYER_R } from '../constants.ts';
 import { clamp } from '../math.ts';
+import { background } from '../async.ts';
 import { forEachContact, physicsTime } from '../physics/engine.ts';
 import { me } from '../player/player.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
@@ -225,7 +226,10 @@ function giftList() {
 function converse(start: 'menu' | 'kick'): boolean {
   if (modalOpen() || !me.entered) return false; // the talk box, or the pause view (src/player/modal.ts)
   if (!talkApi) {
-    loadTalk().then(() => converse(start));
+    background(
+      loadTalk().then(() => converse(start)),
+      'boogler dialogue',
+    );
     return true;
   }
   talk = talkApi.openTalk(f(), {

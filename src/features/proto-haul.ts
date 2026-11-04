@@ -7,9 +7,10 @@ import { setEnv } from '../world/sync.ts';
 import { getRoomId } from '../netplay/net.ts';
 import { isProtoRoom } from '../sim/tune.ts';
 import { protoOn } from '../proto/flags.ts';
+import { background } from '../async.ts';
 
 setEnv({ protoRoom: isProtoRoom(getRoomId()) });
 if (protoOn('haul')) {
-  import('../debug/haul-kit.ts');
-  import('../proto/haul/index.ts'); // pickup feel, and with &v=wave or &v=magnet another take on hauling
+  background(import('../debug/haul-kit.ts'), 'haul kit');
+  background(import('../proto/haul/index.ts'), 'haul prototype'); // pickup feel, and with &v=wave or &v=magnet another take on hauling
 }
