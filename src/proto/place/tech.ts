@@ -433,7 +433,7 @@ function buildGates() {
     // Two stone jambs, and the slab between them. It doesn't stop you walking round: it stops the machine, and you can see that.
     const frame = new THREE.Group();
     frame.position.set(x, g.y, g.z);
-    frame.rotation.y = g.yaw + Math.PI / 2;
+    frame.rotation.y = g.yaw;
     for (const side of [-1, 1]) {
       const jamb = new THREE.Mesh(new THREE.BoxGeometry(SLAB.pillar, SLAB.h + 0.8, SLAB.pillar), flat(STONE, 0.9));
       jamb.position.set((side * (SLAB.w + SLAB.pillar)) / 2, (SLAB.h + 0.8) / 2, 0);
@@ -518,7 +518,7 @@ function placeSlab(g: Gate) {
     g.body = addStatic(
       { kind: 'box', hx: SLAB.w / 2, hy: SLAB.h / 2, hz: SLAB.d / 2 },
       { x: spec.x + ox, y: spec.y + SLAB.h / 2, z: spec.z },
-      gateQ(spec.yaw + Math.PI / 2),
+      gateQ(spec.yaw),
     );
   }
   if (g.t < 0) g.slab.position.y = down ? g.y0 - g.drop : g.y0;
