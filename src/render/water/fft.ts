@@ -156,6 +156,7 @@ function simulation(size: number, bands: number[], probe = false, settings = FFT
     a.element(out).assign(wa.element(x));
     b.element(out).assign(wb.element(x));
   })().compute([size, count, 1], [size]); // explicit workgroups avoid ComputeNode's non-uniform count early return
+  rows.setName('water FFT rows');
 
   const groups = displacement.map((target, parity) => {
     const previous = displacement[parity ^ 1]!;
@@ -191,6 +192,7 @@ function simulation(size: number, bands: number[], probe = false, settings = FFT
       b.element(index).assign(sl);
       if (residual) residual.element(y.mul(size).add(x)).assign(vec4(av.y, av.w, av.x.sub(bv.x), av.z.sub(bv.y)));
     })().compute([size, count, 1], [size]);
+    columns.setName(`water FFT columns ${parity}`);
 
     const nodes = [rows, columns];
     let offset = 0;
@@ -229,6 +231,7 @@ function simulation(size: number, bands: number[], probe = false, settings = FFT
           textureStore(storageTexture(moments).depth(c).setMipLevel(level), uvec2(x, y), db);
         });
       })().compute([Math.ceil((width * width) / 64), count, 1], [64]);
+      mip.setName(`water FFT mip ${parity}:${level}`);
       nodes.push(mip);
     }
     return nodes;
@@ -239,6 +242,7 @@ function simulation(size: number, bands: number[], probe = false, settings = FFT
     displacement: dispNode,
     moments: slopeNode,
     residual,
+    prepare: () => renderer.compileComputeAsync([...new Set(groups.flat())]),
     update(t: number) {
       reset.value = last === undefined || t < last;
       dt.value = reset.value ? 0 : t - last!;
@@ -258,7 +262,7 @@ function simulation(size: number, bands: number[], probe = false, settings = FFT
 
 export function fftWaves(
   options: { fft?: typeof FFT; energy?: number; phaseOrigin?: { x: number; z: number } } = {},
-): WaveSource & { fft: { displacement: N; moments: N; bands: number[]; size: number } } {
+): WaveSource & { prepare(): Promise<void>; fft: { displacement: N; moments: N; bands: number[]; size: number } } {
   const settings = options.fft ?? FFT,
     origin = options.phaseOrigin ?? { x: 0, z: 0 };
   const { size, bands } = settings;
@@ -266,6 +270,7 @@ export function fftWaves(
     lodMax = Math.log2(size);
   return {
     fft: { displacement: sim.displacement, moments: sim.moments, bands, size },
+    prepare: sim.prepare,
     displace(xz, cell, damp) {
       const local = xz.sub(vec2(origin.x, origin.z));
       const d = vec3(0).toVar();

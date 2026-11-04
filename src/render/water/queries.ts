@@ -48,13 +48,14 @@ export function createWaterQueries(heightAt: (xz: N) => N, atlas: ReturnType<typ
     failed = 0,
     skipped = 0,
     resets = 0;
-  const slots = Array.from({ length: 2 }, () => {
+  const slots = Array.from({ length: 2 }, (_, index) => {
     const input = attributeArray(new Float32Array(CAPACITY * 4), 'vec4');
     const output = attributeArray(CAPACITY, 'vec4');
     const compute = Fn(() => {
       const p = input.element(instanceIndex);
       output.element(instanceIndex).assign(vec4(heightAt(p.xy), heightAt(p.zw), 0, 0));
     })().compute(CAPACITY);
+    compute.setName(`water query ${index}`);
     return { input, output, compute, readback: new ReadbackBuffer(CAPACITY * 16), pending: false };
   });
   const reset = (c: Consumer) => {
@@ -129,6 +130,7 @@ export function createWaterQueries(heightAt: (xz: N) => N, atlas: ReturnType<typ
   };
   return {
     provider,
+    prepare: () => renderer.compileComputeAsync(slots.map((slot) => slot.compute)),
     publish(time: number) {
       if (disposed) return;
       if (time < now || time - now > 1) {
