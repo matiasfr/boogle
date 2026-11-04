@@ -12,6 +12,7 @@ import { emit } from '../../render/particles.ts';
 import { camera, scene } from '../../render/scene.ts';
 import { fanfare, pop } from '../minis/common.ts';
 import { softGlow } from './look.ts';
+import { dismissPointer } from './dismiss-pointer.ts';
 
 export type Got = {
   /** Local presentation identity for a shared unlock; never saved or sent. */
@@ -80,7 +81,7 @@ function next() {
   const g = queue.shift();
   if (!g) return;
   cur = { ...g, t: 0, start: new THREE.Vector3() };
-  touch = null;
+  resetTouch();
   spin.clear();
   const fit = new THREE.Box3().setFromObject(g.model).getSize(new THREE.Vector3());
   g.model.scale.multiplyScalar(SIZE / Math.max(fit.x, fit.y, fit.z, 0.01));
@@ -247,51 +248,9 @@ addEventListener(
   },
   { capture: true },
 );
-// A touch must finish without dragging, so moving or looking cannot dismiss the card.
-let touch: { id: number; x: number; y: number; moved: boolean } | null = null;
-addEventListener(
-  'pointerdown',
-  (e) => {
-    if (!cur) return;
-    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
-      const target = e.target instanceof Element ? e.target : null;
-      if (target?.closest('.tbtn, #stick') || (target?.closest('#touch') && e.clientX < innerWidth * 0.45)) return;
-      if (cur.t < MIN_S) return;
-      touch = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
-      return;
-    }
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    press();
-  },
-  { capture: true },
-);
-addEventListener(
-  'pointermove',
-  (e) => {
-    if (touch?.id === e.pointerId && Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 10) touch.moved = true;
-  },
-  { capture: true },
-);
-addEventListener(
-  'pointerup',
-  (e) => {
-    if (touch?.id !== e.pointerId) return;
-    const tap = !touch.moved;
-    touch = null;
-    if (cur && tap) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      press();
-    }
-  },
-  { capture: true },
-);
-addEventListener(
-  'pointercancel',
-  () => {
-    touch = null;
-  },
-  { capture: true },
+const resetTouch = dismissPointer(
+  () => !!cur,
+  () => !!cur && cur.t >= MIN_S,
+  press,
 );
 addEventListener('mousedown', (e) => cur && e.stopImmediatePropagation(), { capture: true });
