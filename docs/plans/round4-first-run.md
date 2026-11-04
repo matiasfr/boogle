@@ -1,5 +1,7 @@
 # Round 4 first run and restart
 
+**3 November playtest follow-up:** the same-room restart now supersedes the new-room destination below. It clears this device's saves as before and rejoins any partner's railway through the existing newcomer snapshot; alone, it starts a fresh railway. See [arrival](../game-design/first-run.md).
+
 ## Goal
 
 Restore the existing name/colour, trolley, cloud, BOOGLE lettering and landing opening on round 4, and make a confirmed restart available in the normal pause menu. Returning players retain their character and safe saved position. Serves DESIGN.md **8. Designed for drop-in, drop-out**, **10. Slapstick over precision**, **6. Communal world, personal rewards**, and **Small and readable**.

@@ -20,8 +20,9 @@
   renders and you leave the room. Back to the island returns to the same address; a lobby picker can go here if there are
   ever more lobbies. Start fresh on the main pause page asks for confirmation, forgets you on this
   device and replays the first visit ([identity.md](identity.md)). Round 4 also forgets all solo/co-op saves, including
-  personal slices, gifts and position. In co-op it leaves the shared room for a fresh railway in a new room; the warning
-  says that partners keep their current room and railway. Reloading stays in that new room. Classic keeps its shared island.
+  personal slices, gifts and position. In co-op it reloads the same room as a new person, rejoining an existing partner's
+  railway through the normal snapshot. With no partner, the railway starts fresh too; the warning explains both cases.
+  It never sends the shared reset. Classic keeps its shared island.
 - **Welcome back.** A returning player gets a small paper card at the top centre (under the name tag on touch) for
   3.5 s, plus 0.8 s for each line: "Welcome back, <name>", then what changed in this room since this browser was last
   here, when that is known: "Ana and Bo were here" (players new to the room's roster, or whose plaque points rose),
