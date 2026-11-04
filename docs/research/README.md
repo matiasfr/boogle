@@ -2,6 +2,8 @@
 
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
+- [shore-arrival.md](shore-arrival.md) (2026-11-04): ten opening-route comparisons, NPC asks, shore failure modes and co-op/return handling; three round-4 shore approaches and six recommendations, with a west-cove comparison first. Reference timings are estimates and metric lengths unverified; no gameplay changes or decisions.
+
 - [main-clean-dev-channel.md](main-clean-dev-channel.md) (2026-11-04): complete prototype/card/lab inventory, Place graduation dependencies, isolated hosting and server costs, branch/workflow tradeoffs and five recommendations; keep main deploying, use a selected prototype branch on dev.boogle.club, and archive only after extraction and owner approval. Proposed policy wording only; no implementation.
 
 - [agent-model-pipelines.md](agent-model-pipelines.md) (2026-11-04): agent-authored Blender assets, MCP, procedural/CAD/SDF and image-to-3D workflows; live model benchmarks, service costs and limitations, licensed skill ideas and six recommendations for a parametric-source inspection loop. Proposes a roller/cap proof; no generation, installation or paid tasks.
