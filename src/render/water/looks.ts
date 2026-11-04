@@ -9,7 +9,7 @@ import { graphicsOverrides } from '../../graphics-settings.ts';
 
 export const LOOK_STORAGE = 'boogle.dev.looks.v1';
 export const LOOKS = {
-  current: { label: 'Current', curve: 'agx', trim: 1, lift: 0, power: 1.12, saturation: 1.3 },
+  current: { label: 'Current', curve: 'neutral', trim: 1, lift: 0, power: 1.12, saturation: 1.3 },
   clean: { label: 'Clean toys', curve: 'neutral', trim: 1 / 0.771116, lift: 0, power: 1.12, saturation: 1.3 },
   sunny: { label: 'Sunny toys', curve: 'agx', trim: 1, lift: 0.08, power: 1.12, saturation: 1.3 },
   punchy: { label: 'AgX Punchy', curve: 'agx', trim: 1, lift: 0, power: 1.35, saturation: 1.4 },

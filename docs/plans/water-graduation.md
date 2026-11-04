@@ -284,6 +284,27 @@ No protected source, tone switch, demo sky or post file changed. Steps 4–8 rem
 
 ### Step 4 evidence (3 November 2026)
 
+### Neutral output evidence (4 November 2026)
+
+Production `water=new` and Looks' Current now use Neutral. The existing meter remains: identical gain isolates
+the tone-curve change, preserves surface/underwater adaptation, and keeps the existing comparison exposure lock
+meaningful. No exposure correction or water/sky retune was needed. Sunny toys and AgX Punchy remain AgX comparisons;
+the retained demo and explicit toy-sky experiment keep their choices. The legacy route never installs this post graph.
+
+Opened all six before/after stills: shore
+([before](../../.look/evidence/1793817735400-60734/evidence.json),
+[Neutral](../../.look/evidence/1793817888222-62253/evidence.json)), player on the bank
+([before](../../.look/evidence/1793817736741-60746/evidence.json),
+[Neutral](../../.look/evidence/1793817889421-62384/evidence.json)), and underwater
+([before](../../.look/evidence/1793817737823-60750/evidence.json),
+[Neutral](../../.look/evidence/1793817890581-62531/evidence.json)). Neutral gives stronger greens/sand and a deeper
+water colour while retaining readable avatar shading and the moving caustic net. Dry cliff faceting, strong caustic
+contrast and broader colour preference remain for the owner; no terrain adoption is implied. All captures were
+healthy WebGPU. `npm run check` passed. Early captures without explicit `proto=place` hit the look harness's classic
+fallback and were rejected as Place evidence. The frozen sky makes dawn/noon/night comparisons inapplicable here.
+
+### Earlier step 4 implementation
+
 Real submerged home/place triangles now remain in the opaque depth/colour snapshot. Refraction retreats from foreground samples, re-reads depth at its final UV, fades distortion in thin water and preserves opaque bank coverage at the resolved water edge. Real terrain materials receive reversible caustic/wetness patches; real rocks and only constructed place legs register bounded contact sites. Coast spray shares the particle pool and cleans up its preparation callback. Caustics retain two targets, three draws and 17 mip passes. Receiver modulation preserves masks and standard lighting/shadows, but modulates ambient albedo too: it is not strictly sun-only illumination.
 
 Three look/fix rounds were used. Opened the baseline home, repaired home, old-water diagnostic, step4 home and place stills, and all four consecutive home video frames. The broad diagonal home wedge also exists with old water: it is faceted terrain shading. The caustic net moves across submerged sand; wet banks darken while dry sand and the avatar remain readable. Final [bank manifest](../../.look/evidence/1793733062979-27833/evidence.json) shows the earlier saturated blue right-bank slit removed. The overhead [cost manifest](../../.look/evidence/1793733100803-28698/evidence.json) still leaves a narrow ragged orange/dark bank strip whose relation to refracted terrain faceting is uncertain; no claim of tear-free results at every angle. Earlier [home and consecutive frames](../../.look/evidence/1793732857441-23415/evidence.json) and [place](../../.look/evidence/1793732875480-23577/evidence.json) show caustics and the avatar.
