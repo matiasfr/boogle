@@ -8,7 +8,7 @@ Reviewed: 3 November 2026, at `0562c947`, against boogle-2.md, [round-4-notes.md
 
 **0. Close round 4 discovery.** The round was played on 3 November. Hunger and relief worked twice, with one miss on the rail runs. More than disconnected toys, but neither a production slice nor feature-complete.
 
-**Active gate:** the notes are worked through, and the changed loop is played again. Status: partial. Fixes are shipping, trees and rails are in progress, nothing has been played since.
+**Active gate:** the notes are worked through, and the changed loop is played again. Status: partial. All planned fixes shipped by 4 November and solo finishes; see [replay readiness](plans/replay-readiness.md). Nothing has been played since.
 
 ## Now, next, later
 
