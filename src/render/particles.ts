@@ -90,10 +90,13 @@ const updatePass = Fn(() => {
 spawnPass.setName('particles spawn');
 updatePass.setName('particles update');
 let computeReady = false;
-warmUp(async () => {
-  await renderer.compileComputeAsync([spawnPass, updatePass]);
-  computeReady = true;
-});
+warmUp(
+  async () => {
+    await renderer.compileComputeAsync([spawnPass, updatePass]);
+    computeReady = true;
+  },
+  { beforeScene: true },
+);
 
 // ---------------------------------------------------------------- soft dots
 const softMat = new THREE.SpriteNodeMaterial({ transparent: true, depthWrite: false, fog: false });

@@ -26,9 +26,9 @@ export const warmUp = (make: Warmup, { beforeScene = false } = {}) => (beforeSce
 
 // three keeps one precompilation state per renderer, so two compileAsync calls must never overlap: one at a time.
 let queue: Promise<unknown> = Promise.resolve();
-const compile = (root: THREE.Object3D, hidden = true) => (queue = queue.then(() => compileNow(root, hidden)));
+const compile = (root: THREE.Object3D) => (queue = queue.then(() => compileNow(root)));
 
-async function compileNow(root: THREE.Object3D, hidden: boolean) {
+async function compileNow(root: THREE.Object3D) {
   // compileAsync would await init itself, but the flags below must be undone without a gap
   if (
     !(await rendererReady.then(
@@ -44,11 +44,9 @@ async function compileNow(root: THREE.Object3D, hidden: boolean) {
       undo.push(() => (o.visible = false));
     }
   };
-  if (hidden) for (let p = root.parent; p; p = p.parent) open(p);
+  for (let p = root.parent; p; p = p.parent) open(p);
   root.traverse((o) => {
-    if (hidden) open(o);
-    // The normal lobby camera is positioned on its first update, after warm-up. Its provisional
-    // frustum must not decide which visible objects are ready for that first frame.
+    open(o);
     if (o.frustumCulled) {
       o.frustumCulled = false;
       undo.push(() => (o.frustumCulled = true));
@@ -225,28 +223,29 @@ async function compileFrame() {
   // Unlike compute(), r187's render path checks _pipelines.isReady before drawing. Escape remains safe.
   await Promise.all(promises);
   await gpuDone();
+  bootMark('frame-pipelines');
 }
 
 // Resolves when the pipelines are built; never rejects (a failed compile is only a hitch later).
 export async function precompile(root: THREE.Object3D | null = null, onProgress: (f: number) => void = () => {}) {
   if (root) return compile(root);
   warmStart = performance.now();
-  const parts = preparations.length + warmups.length + 3; // visible scene, real passes, hidden scene
+  const parts = preparations.length + warmups.length + 1;
   for (let i = 0; i < preparations.length; i++) {
     await preparations[i]!();
     onProgress((i + 1) / parts);
   }
-  // Prioritize the view and its real offscreen passes. Opening every hidden object first lets optional
-  // effects consume the escape budget before the first revealed frame's pipelines even begin.
-  await compile(scene, false);
-  await (queue = queue.then(compileFrame).catch((e) => console.warn('[precompile frame]', e)));
-  bootMark('frame-pipelines');
-  await compile(scene);
-  onProgress((preparations.length + 2) / parts);
+  // Submit the real passes first, then build the whole scene while those native pipelines compile.
+  // compileFrame restores renderer state before its first await; only compileNow uses three's mutable
+  // compileAsync state. Await BOTH: scene compilation can reuse still-pending wrappers from the frame.
+  await (queue = queue.then(() =>
+    Promise.all([compileFrame().catch((e) => console.warn('[precompile frame]', e)), compileNow(scene)]),
+  ));
+  onProgress((preparations.length + 1) / parts);
   for (let i = 0; i < warmups.length; i++) {
     const made = await warmups[i]!();
     if ((made as THREE.Object3D | null)?.isObject3D) await compile(made as THREE.Object3D);
-    onProgress((preparations.length + i + 3) / parts);
+    onProgress((preparations.length + i + 2) / parts);
   }
   bootMark('warmup-complete'); // unlike boot:shaders, never means the escape deadline won
 }

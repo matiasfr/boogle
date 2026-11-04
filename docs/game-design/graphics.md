@@ -14,8 +14,9 @@
   Windows and Apple Silicon. Any other browser sees a note in the lobby naming the browsers that work. A loading screen
   (key art, the title, a progress bar and a gear that keeps turning: download, graphics device, shaders) paints before the game's code arrives and
   covers the lobby while the graphics device, player's body, shaders and first GPU frame prepare; the room connects meanwhile ([src/boot/](../../src/boot/)).
-  Shader warm-up keeps its 8 s escape deadline after the frozen sky bake. It prioritizes visible objects (including
-  those outside the provisional camera), water compute, and the real caustics/post passes before hidden effects.
+  Shader warm-up keeps its 8 s escape deadline after the frozen sky bake. It awaits water and particle compute,
+  submits the real caustics/post passes, then compiles the whole scene while those native pipelines build.
+  Hidden objects and objects outside the provisional camera are included.
   If the deadline expires, unfinished compute stays dormant until its native pipelines exist; remaining warm-ups
   continue after reveal. This is a bounded wait, not a guarantee of stall-free startup on every device.
   `?dpr=fixed`
