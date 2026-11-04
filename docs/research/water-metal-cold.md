@@ -1,10 +1,16 @@
-# Exclusive Metal cold-start tool: implemented, headed runs pending
+# Cold-start freeze: reproduced and fixed on the M1 Max
 
 2026-11-03. DESIGN.md: **Small and readable — measure before optimizing**.
 
-**The tool now copies/signs a test-exclusive browser, guards Metal clearing, fixes framing and identifies the old
-404s. Its headed cold/warm path has not run; it is not yet verified working and no `trueCold` result is claimed.**
-No game files or other checkouts changed. Nothing was pushed or shipped.
+**A cold Metal cache froze the place page for 4.5–4.8 s as the loading screen lifted (2 of 3 full runs). With first-frame pipelines built behind loading and a 16 s deadline, it no longer does in two coarse cold runs.** Local production, new sea, M1 Max, Chrome for Testing, headed, exclusive Metal cache cleared.
+
+| Runs | World appears, cold | Longest gap around the reveal, cold | Same, warm |
+| --- | ---: | ---: | ---: |
+| Before: 3 pairs, 90 s | 14.7–17.8 s | 509–4,791 ms | 284–308 ms |
+| Warm-up fix, 8 s deadline: 2 pairs, 30 s | 14.0–14.7 s | 500–1,683 ms, 9–16 pipelines pending | 400–467 ms |
+| Warm-up fix, 16 s deadline: 2 pairs, 35 s | 13.0–14.4 s | 318–400 ms, none pending | 300–341 ms |
+
+Still there: the audio unlock on join (about 300 ms) and one ShadowMaterial pipeline built on join. Limits: small coarse samples; the tool still reports `trueCold: false` and `measurable: false`; the home island was not measured, because the fixed view needs `proto=place`; iPhone and Safari were not tested, and #35069 cannot be checked on this Mac. Old sea was not rerun after the fix. Tool notes follow.
 
 ## Verified here
 
