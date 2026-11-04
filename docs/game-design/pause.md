@@ -16,6 +16,7 @@
   name box and the colour swatches, saved as you type or tap ([identity.md](identity.md)). Get unstuck on the main page puts you back at the usual spawn with one press and forgets your saved spot, and you keep what you carry (it's not there while you're in a vehicle's seat). Start fresh is on the main page: it asks once more, then replays the first visit as someone new. Round 4 clears this device's solo/co-op saves; co-op starts in a new room while partners keep their railway, as the warning says. Leave goes to
   a small menu page with the game stopped ([first-run.md](first-run.md)).
 - **Sync kind.** Local, through [src/player/modal.ts](../../src/player/modal.ts) (one modal at a time; it takes keys and pad).
+- **Optional pages.** The opt-in [Dev menu](dev-menu.md) shares this modal. Navigation skips disabled controls and closed details; focused controls scroll into view on optional pages. Leaving a page disposes its tools.
 - **Files.** [src/features/pause.ts](../../src/features/pause.ts), [src/player/guide.ts](../../src/player/guide.ts),
   [src/player/pad-diagram.ts](../../src/player/pad-diagram.ts),
   [src/player/glyphs.ts](../../src/player/glyphs.ts), [src/player/controls.ts](../../src/player/controls.ts).

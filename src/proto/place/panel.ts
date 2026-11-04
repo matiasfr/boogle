@@ -196,6 +196,26 @@ function skipTrains() {
   setPushers(false);
   save();
 }
+/** Narrow stage setup for Dev's separately gated disposable solo runs. Never moves the player. */
+export const devStages = {
+  fresh: () => {},
+  walk: () => {},
+  path: skipPath,
+  line2: skipLine2,
+  tower: skipTower,
+  head: skipHead,
+  trains: skipTrains,
+};
+export function prepareDevStage(id: keyof typeof devStages) {
+  const previous = coop.noHop;
+  coop.noHop = true;
+  try {
+    devStages[id]();
+  } finally {
+    coop.noHop = previous;
+  }
+}
+
 export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
   const box = document.createElement('div');
   box.className = 'place-proto';

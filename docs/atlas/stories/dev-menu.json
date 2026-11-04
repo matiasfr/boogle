@@ -1,0 +1,28 @@
+{
+  "id": "dev-menu",
+  "title": "You set up a disposable mechanic test",
+  "kind": "local",
+  "order": 96,
+  "steps": [
+    {
+      "go": [["you.input", "you.features"]],
+      "text": "With dev=1, Pause offers Dev. The existing modal captures your controls while the island keeps running. Without the flag the Dev tools stay unloaded.",
+      "cite": [{ "file": "src/features/dev-menu.ts" }, { "file": "src/player/modal.ts" }]
+    },
+    {
+      "hl": ["you.features"],
+      "text": "The selected tool loads on demand. Buttons and the typed agent API run the same bounded commands and return the same results.",
+      "cite": [{ "file": "src/debug/dev-menu.ts" }]
+    },
+    {
+      "go": [["you.features", "you.screen"]],
+      "text": "A fresh solo place run gets its own room, scoped saves and a TEST badge. Travel and stage setup check the exact launched session and refuse shared rooms.",
+      "cite": [{ "file": "src/debug/dev/fixtures.ts" }, { "file": "src/proto/place/job.ts" }]
+    },
+    {
+      "hl": ["you.screen"],
+      "text": "The report records build, setup, poses and command results. Its setup link asks before launching another disposable run; it is not an exact world replay.",
+      "cite": [{ "file": "src/debug/dev/report.ts" }]
+    }
+  ]
+}

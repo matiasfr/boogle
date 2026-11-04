@@ -1,0 +1,116 @@
+.dev-page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.dev-bar {
+  display: flex;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 0;
+  background: #182327;
+}
+.dev-bar button {
+  flex: 1;
+}
+.dev-tools {
+  display: grid;
+  gap: 8px;
+}
+.dev-page button,
+.dev-page input,
+.dev-page select,
+.dev-page summary {
+  min-height: 44px;
+}
+.dev-page button {
+  touch-action: manipulation;
+}
+.dev-page input,
+.dev-page textarea,
+.dev-page select {
+  max-width: 100%;
+  color: #edf3e8;
+  background: #102027;
+  border: 1px solid #ffffff45;
+  border-radius: 8px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+.dev-page textarea {
+  width: 100%;
+  min-height: 150px;
+  font: 12px/1.4 monospace;
+}
+.dev-note,
+.dev-status {
+  margin: 4px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.dev-status {
+  color: #315b26;
+}
+.dev-output {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 11px/1.45 monospace;
+  max-height: 260px;
+  overflow: auto;
+  margin: 0;
+}
+.dev-output:empty,
+.dev-status:empty {
+  display: none;
+}
+.dev-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.dev-drag {
+  min-height: 130px;
+  border: 1px dashed #a8c5c9;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  user-select: none;
+}
+.dev-test {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left));
+  top: max(12px, env(safe-area-inset-top));
+  z-index: 100;
+  color: #182016;
+  background: #d6ef92;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font: 700 12px/1.4 system-ui;
+  pointer-events: none;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+}
+.dev-page [data-water-panel] {
+  position: static;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  box-shadow: none;
+}
+.dev-page [data-water-panel] input[type='color'] {
+  min-height: 44px;
+}
+@media (max-width: 500px) {
+  .pause-card[data-page='dev'] {
+    width: calc(100vw - 16px);
+  }
+  .dev-actions {
+    grid-template-columns: 1fr;
+  }
+}
