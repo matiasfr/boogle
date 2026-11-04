@@ -2,7 +2,7 @@
 
 3 November 2026. Preparation for the later conversion, **not an implementation plan or approval to start it**.
 Reviewed round 4 at `de69c653` and the accompanying simplification in `src/proto/place/` and `dev/look/bots/`.
-The owner plays round 4 before further development. The separate default-round4 job owns bare-URL routing;
+The owner played round 4 on 3 November; see [playtests](../playtests.md). The separate default-round4 job owns bare-URL routing;
 this pass leaves `src/proto/flags.ts` alone.
 
 Serves DESIGN.md's **Small and readable**, **Clear authority**, **The scene graph is a view**, and
