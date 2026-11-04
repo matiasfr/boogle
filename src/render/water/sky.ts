@@ -39,7 +39,7 @@ const fbm = Fn(([p]: [N]) => {
   return sum;
 });
 
-export function createWaterSky() {
+export function createWaterSky(bakedArt?: (direction: N, sunColor: N) => N) {
   const params: SkyParams = {
     elevation: 50,
     azimuth: 205,
@@ -118,8 +118,9 @@ export function createWaterSky() {
       ),
     );
     // CubeTextureNode flips x for WebGPU cube conventions. Bake the same mirror so the public API uses world directions.
-    const d = normalize(vec3(direction.x.negate(), direction.yz)).toVar(),
-      up = skyView(vec3(0, 1, 0)).toVar();
+    const d = normalize(vec3(direction.x.negate(), direction.yz)).toVar();
+    if (bakedArt) return bakedArt(d, sunColor);
+    const up = skyView(vec3(0, 1, 0)).toVar();
     // Explicit LOD for every sample; both hemispheres are evaluated in uniform flow.
     const F = pow(d.y.add(1), 5).mul(0.98).add(0.02);
     const body = vec3(0.02, 0.035, 0.045).mul(sunColor.mul(max(sunDirection.y, 0)).add(up));

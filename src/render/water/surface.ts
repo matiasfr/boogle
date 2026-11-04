@@ -21,6 +21,8 @@ import { TSL, type N } from './tsl.ts';
 import { GRID as DEFAULT_GRID, LOOK as DEFAULT_LOOK, ULTRA } from './tuning.ts';
 import type { WaveSource } from './waves.ts';
 import { derived, scalar, vector, tuningEnabled } from './live.ts';
+import { toyWaterEnabled } from './flags.ts';
+import { toyFoam, toyWater } from './toy.ts';
 
 const { Break, Fn, If, Loop, abs, cameraPosition, clamp, cos, dFdx, dFdy, dot, exp, exp2, float, floor } = TSL;
 const { fract, length, log, log2, max, min, mix, mod, normalize, positionGeometry, positionWorld, pow, reflect } = TSL;
@@ -368,7 +370,7 @@ export type OceanOptions = {
   contactDistance?: (xz: N) => N;
 };
 // Shared by the surface, retained demo volume and snow. The sky source stays an explicit replaceable seam.
-export function waterLighting(sky: WaterSky, look = DEFAULT_LOOK) {
+export function waterLighting(sky: WaterSky, look = toyWaterEnabled ? toyWater : DEFAULT_LOOK) {
   const gain = scalar('water.sunGain', look, 'sunGain');
   const scatter = vector('water.scatter', look, 'scatter');
   const absorption = vector('water.absorption', look, 'absorption');
@@ -393,7 +395,7 @@ export type Ocean = {
 };
 
 export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.Texture, options: OceanOptions): Ocean {
-  const LOOK = options.look ?? DEFAULT_LOOK,
+  const LOOK = options.look ?? (toyWaterEnabled ? toyWater : DEFAULT_LOOK),
     GRID = options.grid ?? DEFAULT_GRID,
     demoSky = options.sky;
   const origin = options.phaseOrigin ?? { x: 0, z: 0 };
@@ -419,9 +421,10 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
   const reflectGain = scalar('water.reflectGain', LOOK, 'reflectGain');
   const reflectCap = scalar('water.reflectCap', LOOK, 'reflectCap');
   const reflectTint = vector('water.reflectTint', LOOK, 'reflectTint');
-  const glint = scalar('water.glitter', ULTRA, 'glint');
-  const foamTint = vector('water.foamTint', ULTRA, 'foamTint');
-  const foamBright = scalar('water.foamBright', ULTRA, 'foamBright');
+  const foam = toyWaterEnabled ? toyFoam : ULTRA;
+  const glint = scalar('water.glitter', foam, 'glint');
+  const foamTint = vector('water.foamTint', foam, 'foamTint');
+  const foamBright = scalar('water.foamBright', foam, 'foamBright');
   // Production supplies route fog; only a caller using optical distance fog can tune this coefficient.
   if (!options.fog) scalar('water.fogDensity', LOOK, 'fogDensity');
   const fogDensity = options.fog ? -LOOK.fogDensity : derived(() => -LOOK.fogDensity);
