@@ -3,6 +3,7 @@
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
 - [game-direction.md](game-direction.md) (2026-11-03): small-team production and director practice; post-round-4 phase assessment, proposed gates to release, dependency ordering, eight recommendations, a shared Codex/Claude skill draft and three worked next-step answers; owner authority stays in the repo, with the Line Map uninspected. Nothing installed.
+- [tree-tiers.md](tree-tiers.md) (2026-11-03): ordinary-tree access versus tool gates in seven games, truthful failed-swing feedback, 362 decorative trees and their conversion cost, round-4 economy sensitivities, eight recommendations, universal chopping as the first test and a distinct optional hardwood fallback.
 
 - [dev-menu-plan.md](dev-menu-plan.md) (2026-11-03): engine and shipped-game debug patterns, current tools/flags inventory, nineteen ranked candidates and eight first-version recommendations; touch access, lazy loading, authority boundaries and disposable fixtures for live owner and agent testing.
 
