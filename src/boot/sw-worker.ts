@@ -30,14 +30,17 @@ const sw = self as unknown as Scope;
 const { build, first, off } = SW_CONFIG;
 const CACHE = cacheName(build);
 const scope = () => sw.registration.scope;
+// Only immutable same-scope asset URLs reach these lookups. Their bytes cannot vary by request headers;
+// Vite preview's Vary: Origin otherwise makes a module request miss an entry installed by fetch(url).
+const MATCH = { ignoreVary: true };
 
 async function precache() {
   const cache = await caches.open(CACHE);
   await Promise.allSettled(
     first.map(async (path) => {
       const url = new URL(path, scope()).href;
-      if (await cache.match(url)) return;
-      const res = (await caches.match(url)) ?? (await fetch(url));
+      if (await cache.match(url, MATCH)) return;
+      const res = (await caches.match(url, MATCH)) ?? (await fetch(url));
       if (res.ok) await cache.put(url, res);
     }),
   );
@@ -50,28 +53,36 @@ async function purge(all: boolean) {
 }
 
 async function respond(req: Request) {
-  const hit = await caches.match(req);
+  const hit = await caches.match(req, MATCH).catch(() => undefined);
   if (hit) return hit;
   const res = await fetch(req);
   if (res.ok && res.status === 200 && res.type === 'basic') {
     const copy = res.clone();
     // Only into a cache that exists: one the page deleted (its kill switch, ./sw.ts) stays deleted.
-    caches.has(CACHE).then(
-      async (ok) => {
+    caches
+      .has(CACHE)
+      .then(async (ok) => {
         if (ok) await (await caches.open(CACHE)).put(req, copy);
-      },
-      () => {},
-    );
+      })
+      .catch(() => {});
   }
   return res;
 }
 
 sw.addEventListener('install', (e) => {
-  e.waitUntil((off ? Promise.resolve() : precache()).then(() => sw.skipWaiting()));
+  // CacheStorage itself can fail (quota/private mode), not just an individual download. Caching is optional.
+  e.waitUntil((off ? Promise.resolve() : precache()).catch(() => {}).then(() => sw.skipWaiting()));
 });
 
 sw.addEventListener('activate', (e) => {
-  e.waitUntil(off ? purge(true).then(() => sw.registration.unregister()) : purge(false).then(() => sw.clients.claim()));
+  e.waitUntil(
+    purge(off)
+      .catch(() => {})
+      .then(async () => {
+        if (off) await sw.registration.unregister();
+        else await sw.clients.claim();
+      }),
+  );
 });
 
 sw.addEventListener('fetch', (e) => {

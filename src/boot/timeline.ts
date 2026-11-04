@@ -37,6 +37,7 @@ export function bootMark(name: string, detail?: Record<string, number | string>)
     // an old browser's mark takes no options: the line below still has it
   }
   marks.push({ name, t: round(t), detail });
+  if (name === 'interactive') resolveInteractive();
   beacon(JSON.stringify({ mark: name, t: round(t), hidden: document.hidden }));
   if (name === 'interactive' || name === 'room') maybeDone();
 }
@@ -101,6 +102,9 @@ export function bootLine() {
 
 let resolveDone: (tl: ReturnType<typeof bootTimeline>) => void;
 export const bootDone = new Promise<ReturnType<typeof bootTimeline>>((r) => (resolveDone = r));
+let resolveInteractive: () => void;
+/** Unlike the diagnostic bootDone timeout, this never resolves before the loading screen is done. */
+export const bootInteractive = new Promise<void>((r) => (resolveInteractive = r));
 let finished = false;
 function finish() {
   if (finished) return;
