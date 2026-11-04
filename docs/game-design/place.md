@@ -101,9 +101,9 @@ Stage-by-stage audit of what the objective text or marker used to explain. These
 | Forge frame and chimney | Scaffolding, receiver/feeder and pieces assembling as the player supplies logs. |
 | Turn onto line 2; get rails | Turning machine and forge pouring rails onto the familiar rack. |
 | Line 2 station 1 | Receiver and material board, rail stub and survey stakes. |
-| Line 2 stations 2–3 | Log cart travels to the frontier rack; next receiver and laid track show the destination. Rails still come from the forge. |
+| Line 2 stations 2–3 | Log cart travels to the frontier rack; next receiver and laid track show the destination. Players still fetch rails from the forge unless a partner loads the cart. |
 | Hook and quarry gate | Device by the route, rings, slab and lever mechanism. |
-| Line 2 stations 4–5; glider and sea gate | Next receivers, tower's rings and summit device, sea gate and visible Far Head. |
+| Line 2 stations 4–5; glider and sea gate | From station 4, the little guys' cart brings forge rails with its logs and visibly unloads them onto the separate rail shelf beside the frame. The player does the final carry; the cart waits when forge stock runs dry. Next receivers, tower's rings and summit device, sea gate and visible Far Head remain the route cues. |
 | Far Head: head home | Rockets at the home end, continuous laid trestle and lamps running homeward. The route persists after the celebration; the reason to return remains a question. The optional Happy Clam sea-stack detour now has a visible return hook beside the trestle, within hook range and at rail height; it solves leaving the stack without a swim, not the reason to travel home. |
 | Find and shoulder the boiler | **Changed:** the actual boiler and pickup move from behind the forge to the open apron beside the rail rack and return track. No new text or symbol. |
 | Carry boiler to the old camp train | Existing rusty locomotive and nearby Fit the boiler interaction. The distant relationship between pickup and receiver is still weak; placement alone does not explain the repair. |
