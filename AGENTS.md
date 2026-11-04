@@ -11,12 +11,12 @@ Goofy co-op browser game: three.js WebGPU + TSL, Rapier and Vite; a WebSocket se
 - Never force-push, skip hooks or push main unless a human asks.
 - Ship with npm run ship; report only verified states.
 
-Start with `npm run map -- --kind <kind>`. Read its must-read sections. A row applies only when its trigger is literally met, including in a review; read-if-relevant becomes required at its stated trigger. Read what the work needs; relevance, never usage, decides. Use `map -- --section <file> <heading>` or line ranges; links are not recursive reading lists.
+Start with `npm run map -- --kind <kind>`. Read its must-read sections. A row applies only when its trigger is literally met, including in a review; read-if-relevant becomes required at its stated trigger. Use `map -- --section <file> <heading>` or line ranges; links are not recursive reading lists.
 
 | When the task actually does this | Read |
 | --- | --- |
 | Applies an owner preference; researches or decides architecture | [owner-calls](docs/agents/owner-calls.md), applicable calls |
-| Makes a design decision, adds a mechanic, or prototypes | [context](docs/agents/context.md), DESIGN.md, relevant find-the-fun sections; [decision index](docs/proposals/boogle-2.md#current-decision-index), then only routed topics |
+| Picks a milestone, makes a design decision, adds a mechanic, or prototypes | game-direction skill; [context](docs/agents/context.md), DESIGN.md, relevant find-the-fun sections; [decision index](docs/proposals/boogle-2.md#current-decision-index), then only routed topics |
 | Adds or edits code | [typescript](docs/agents/typescript.md) |
 | Changes imports, module boundaries or service/loop ownership | [lint-boundaries](docs/agents/lint-boundaries.md) |
 | Adds or changes feature/entity lifecycle, DOM or loading | [plugins](docs/agents/plugins.md) |
