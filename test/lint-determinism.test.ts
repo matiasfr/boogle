@@ -32,7 +32,7 @@ const converted = (code: string) =>
 const normalize = (rule: string) => (rule === 'no-unused-vars' ? '@typescript-eslint/no-unused-vars' : rule);
 const has = (diagnostics: Diagnostic[], rule: string) => diagnostics.some((d) => d.rule === rule);
 
-test('fixture assertions retain every ESLint catch and every allowed case; JS language gate is preserved', () => {
+test('fixture assertions retain every ESLint catch and enforce current policy; JS language gate is preserved', () => {
   temporary((root) => {
     const files = new Map<string, string[]>();
     const cases = fixtures.cases.map((c) => {
@@ -48,16 +48,16 @@ test('fixture assertions retain every ESLint catch and every allowed case; JS la
     write(root, mjs, 'export const x = /a/v;\n');
     const diagnostics = lintFiles(root, [...files.keys(), js, mjs], { typeAware: false });
     const differences = cases.filter((c) => {
-      assert.equal(c.eslint, c.expected, `baseline drift: ${c.group}`);
+      if ('eslint' in c && c.eslint) assert.equal(c.expected, true, `lost baseline catch: ${c.group}`);
       const caught = diagnostics.some(
         (d) =>
           d.file === c.file &&
           d.line === c.line &&
           (c.rule === null ? /unused.*disable|unused.*directive/i.test(d.message) : normalize(d.rule) === c.rule),
       );
-      return caught !== c.eslint;
+      return caught !== c.expected;
     });
-    assert.equal(cases.length, 221);
+    assert.equal(cases.length, 233);
     assert.deepEqual(differences, [], JSON.stringify({ differences, diagnostics }, null, 2));
     assert.ok(diagnostics.some((d) => d.file === js && d.rule === 'boogle/js-language'));
     assert.deepEqual(

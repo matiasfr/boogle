@@ -76,17 +76,17 @@ const glOnly = {
 };
 // One door per shared service: one socket, one audio context, one frame loop. A file on `allow` may use that service;
 // `requestAnimationFrame`'s list is one-shots and what runs outside the loop, never a second loop (use onFrame). The
-// member form covers `window.AudioContext || webkitAudioContext`, which is how src/render/audio.ts reaches it.
+// Match names even when destructured/aliased, as for rAF; type-only references do not open a service.
 const DOORS = [
   {
     allow: ['src/net/ws-room.ts'],
-    selector: "NewExpression[callee.name='WebSocket'], NewExpression[callee.property.name='WebSocket']",
+    selector: "Identifier[name='WebSocket']:not(TSTypeReference > Identifier):not(TSTypeQuery > Identifier)",
     message: 'One socket: rooms go through src/net/ (onRoomReady, room.send), never a WebSocket of your own.',
   },
   {
     allow: ['src/render/audio.ts'],
     selector:
-      'NewExpression[callee.name=/^(webkit)?AudioContext$/], MemberExpression[property.name=/^(webkit)?AudioContext$/]',
+      'Identifier[name=/^(webkit)?AudioContext$/]:not(TSTypeReference > Identifier):not(TSTypeQuery > Identifier)',
     message: 'One audio context: use the one in src/render/audio.ts.',
   },
   {
