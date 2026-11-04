@@ -2,6 +2,7 @@
 // home on your back one by one (src/proto/haul/magnet.ts). The camera placed by the eval itself:
 // BOOGLE_QUERY='proto=haul&v=magnet' npm run look -- --eval dev/look/evals/haul-magnet-sprint.ts --cam 0,0,0 --warm 0.2 --seconds 2 --frames 12
 const H = (await import('/dev/look/evals/haul-pilot.ts' as string)) as typeof import('./haul-pilot.ts');
+const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const win = window as unknown as { __magnet?: { shown?: () => number } };
 const { submitEdit } = (await import('/src/world/sync.ts' as string)) as typeof import('../../../src/world/sync.ts');
 const { cellOf, cellX, cellZ, groundHeight } = (await import(
@@ -22,12 +23,15 @@ H.overlay(() => `logs: chip ${win.__magnet?.shown?.() ?? '?'} / host ${H.myCount
 setTimeout(() => window.__debugCam!.set([px + 1.5, gy + 3.2, pz - 10.5], [px + 1.5, gy + 0.8, pz - 1]), 150);
 setTimeout(
   () =>
-    H.walk(
-      [
-        [px + 2, pz - 2],
-        [px + 12, pz - 2],
-      ],
-      { sprint: true, seconds: 3 },
+    background(
+      H.walk(
+        [
+          [px + 2, pz - 2],
+          [px + 12, pz - 2],
+        ],
+        { sprint: true, seconds: 3 },
+      ),
+      'magnet sprint',
     ),
   300,
 );

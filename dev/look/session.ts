@@ -248,7 +248,9 @@ async function serve() {
     if (save) await game.eval(POSE_AT(save));
     await pause();
     await step(1 / 60);
-    server.on('request', async (req, res) => {
+    // The handler owns request failures and writes the error response itself.
+    server.on('request', (req, res) => void handleRequest(req, res));
+    async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
       const reply = (status: number, body: Reply) => {
         if (res.destroyed || res.writableEnded) return;
         res.writeHead(status, { 'content-type': 'application/json' });
@@ -291,7 +293,7 @@ async function serve() {
         busy = false;
       }
       if (request?.command === 'stop') setImmediate(() => void close());
-    });
+    }
     await new Promise<void>((resolve, reject) => {
       server.once('error', reject);
       server.listen(0, '127.0.0.1', resolve);

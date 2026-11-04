@@ -23,7 +23,12 @@ const put = (x: number, z: number, yaw = 0, up = 1.2) => {
   cam.yaw = me.yaw = yaw;
 };
 const ang = Number(q.get('ang') ?? 0.6);
-const act = (fn: () => unknown) => void ((window as unknown as { __placeAct: () => unknown }).__placeAct = fn);
+const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
+const act = (fn: () => unknown) => {
+  (window as unknown as { __placeAct: () => void }).__placeAct = () => {
+    background(Promise.resolve(fn()), 'place shot action');
+  };
+};
 /** Line 1 at frame `k`, awake, with no walking: for looking at one beat. */
 const toStage = async (k: number) => {
   while (place.lines[0].stage < k) {
@@ -60,14 +65,14 @@ const SHOTS: Record<string, () => Promise<unknown> | unknown> = {
     const t = place.TREES[3];
     put(t.x + 3, t.z + 1.2, Math.atan2(-(t.x - t.x - 3), -(t.z - t.z - 1.2)));
     follow();
-    (window as unknown as { __placeAct: () => void }).__placeAct = async () => {
+    act(async () => {
       const { interactDown, interactUp } = await import('/src/player/hands.ts' as string);
       for (let k = 0; k < 8 && t.fall < 0; k++) {
         interactDown();
         interactUp();
         await wait(300);
       }
-    };
+    });
   },
   /** The three boxes side by side, Common, Rare and Wonder. */
   async boxes() {
