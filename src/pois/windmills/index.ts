@@ -18,7 +18,7 @@ type Geos = THREE.BufferGeometry[];
 type Mill = { rotor: THREE.Mesh; body: Body; base: THREE.Quaternion; axis: THREE.Vector3; phase: number };
 
 import { TOWER_H, R_BOTTOM, R_TOP, PLINTH_H, HUB_UP, SAIL_LEN, millBody, rotorParts, put } from './model.ts';
-const SPIN = 0.55; // rad/s
+import { sailAngle, sailSpeed } from './motion.ts';
 
 const frame = siteFrame(site);
 const mills: Mill[] = [];
@@ -146,8 +146,6 @@ function build() {
   onPreStep(spinBodies, { order: 70 });
 }
 
-const sailAngle = (t: number, phase: number) => SPIN * t + 0.35 * Math.sin(t * 0.05 + phase) + phase;
-const sailSpeed = (t: number, phase: number) => SPIN + 0.35 * 0.05 * Math.cos(t * 0.05 + phase);
 const tmpQ = new THREE.Quaternion(),
   spinQ = new THREE.Quaternion(),
   zAxis = new THREE.Vector3(0, 0, 1);

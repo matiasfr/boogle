@@ -4,12 +4,20 @@ import { addPalm, addBroadleaf, addRock } from '../src/render/prop-models.ts';
 import { addPart, mergeParts } from '../src/render/geometry-parts.ts';
 import { itemModel } from '../src/player/item-models.ts';
 import { millBody, rotorParts, HUB_UP } from '../src/pois/windmills/model.ts';
+import { sailAngle } from '../src/pois/windmills/motion.ts';
 import type { CodeId } from './code-descriptors.ts';
 import { partGeometry } from '../src/proto/net/box-plan.ts';
 
-export type CodePreview = { group: THREE.Group; dispose(): void };
+export type CodePreview = { group: THREE.Group; seek(t: number): void; advance(dt: number): void; dispose(): void };
 export async function codePreview(id: CodeId): Promise<CodePreview> {
   const group = new THREE.Group();
+  let rotor: THREE.Mesh | undefined;
+  let time = 0;
+  const seek = (t: number) => {
+    time = t;
+    if (rotor) rotor.rotation.z = sailAngle(t);
+    group.updateMatrixWorld(true);
+  };
   const parts: THREE.BufferGeometry[] = [];
   const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 });
   if (id === 'palm')
@@ -43,10 +51,12 @@ export async function codePreview(id: CodeId): Promise<CodePreview> {
   } else if (id.startsWith('windmill')) {
     if (id !== 'windmill-rotor') millBody(parts);
     if (id !== 'windmill-body') {
-      const rotor = new THREE.Mesh(rotorParts(), material);
+      rotor = new THREE.Mesh(rotorParts(), material);
+      rotor.name = 'stage-rotor';
       rotor.rotation.order = 'YXZ';
       rotor.rotation.x = 0.08;
       if (id === 'windmill') rotor.position.set(0, HUB_UP, -2.25);
+      else rotor.position.y = HUB_UP; // Keep the isolated rotor's full sweep above the inspection floor.
       group.add(rotor);
     }
   } else {
@@ -99,6 +109,8 @@ export async function codePreview(id: CodeId): Promise<CodePreview> {
   });
   return {
     group,
+    seek,
+    advance: (dt) => seek(time + dt),
     dispose() {
       const geometries = new Set<THREE.BufferGeometry>(),
         materials = new Set<THREE.Material>([material]);
