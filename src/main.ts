@@ -106,7 +106,8 @@ start();
 splashStage(0.3, 0.45, 'Waking up the graphics');
 Promise.all([rendererReady, physicsReady])
   .then(play)
-  .catch(() => {
+  .catch((e: unknown) => {
+    console.error('[boot] startup failed:', e); // the lobby note can't say what went wrong
     graphicsFailed();
     splashDone();
   });
