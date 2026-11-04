@@ -1,7 +1,7 @@
 // Bounded opt-in physical audit. Incomplete creator coverage is a failure, never a regional green result.
 import fs from 'node:fs';
 import path from 'node:path';
-import ts from 'typescript';
+import { parseSync, visitorKeys } from 'oxc-parser';
 import { openScene, type Solid, type Source, type Finding } from './scene.ts';
 import { sourceFunction } from './source.ts';
 import type { V3 } from '../../src/physics/engine.ts';
@@ -13,25 +13,34 @@ import { sourceBuild } from './build.ts';
 function creators(): Source[] {
   const out = new Map<string, Source>();
   for (const file of fs.globSync('src/proto/place/*.ts').sort()) {
-    const ast = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
-    const visit = (n: ts.Node, owner: string) => {
-      if (ts.isFunctionDeclaration(n) && n.name) owner = n.name.text;
+    const text = fs.readFileSync(file, 'utf8');
+    const ast = parseSync(file, text).program;
+    type Node = { type: string; start: number; end: number; [key: string]: unknown };
+    const visit = (n: Node, owner: string) => {
+      const id = n.id as Node | null;
+      if (n.type === 'FunctionDeclaration' && id) owner = text.slice(id.start, id.end);
       if (
-        ts.isVariableDeclaration(n) &&
-        n.initializer &&
-        (ts.isArrowFunction(n.initializer) || ts.isFunctionExpression(n.initializer))
+        n.type === 'VariableDeclarator' &&
+        n.init &&
+        ['ArrowFunctionExpression', 'FunctionExpression'].includes((n.init as Node).type)
       )
-        owner = n.name.getText(ast);
+        owner = (id!.name as string | undefined) ?? text.slice(id!.start, id!.end);
       if (
-        ts.isCallExpression(n) &&
-        /^(addStatic|addStatics|addSolid|createBody|slab|plank)$/.test(n.expression.getText(ast))
+        n.type === 'CallExpression' &&
+        /^(addStatic|addStatics|addSolid|createBody|slab|plank)$/.test(
+          text.slice((n.callee as Node).start, (n.callee as Node).end),
+        )
       ) {
         const symbol = owner || '<module>';
         out.set(`${file}:${symbol}`, { file, symbol });
       }
-      ts.forEachChild(n, (child) => visit(child, owner));
+      for (const key of visitorKeys[n.type] ?? []) {
+        const child = n[key];
+        if (Array.isArray(child)) child.forEach((item: Node | null) => item && visit(item, owner));
+        else if (child) visit(child as Node, owner);
+      }
     };
-    visit(ast, '');
+    visit(ast as unknown as Node, '');
   }
   return [...out.values()];
 }

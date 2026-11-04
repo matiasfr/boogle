@@ -2,33 +2,57 @@
 // Only trusted checkout/Git source belongs here. This is not a sandbox for external code.
 import fs from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
-import ts from 'typescript';
+import { parseSync } from 'oxc-parser';
+
+type Statement = {
+  type: string;
+  start: number;
+  end: number;
+  declaration?: Statement | null;
+  id?: Statement | null;
+  name?: string;
+  declarations?: { id: Statement }[];
+};
+
+function statements(source: string): Statement[] {
+  return parseSync('fixture.ts', source).program.body as unknown as Statement[];
+}
+
+function declaration(node: Statement): Statement {
+  return node.declaration ?? node;
+}
+
+function namesOf(node: Statement, source: string): string[] {
+  if (node.type === 'FunctionDeclaration') return node.id ? [source.slice(node.id.start, node.id.end)] : [];
+  if (node.type === 'VariableDeclaration')
+    // An identifier's range includes its type annotation, so read its name.
+    return node.declarations!.map(({ id }) => id.name ?? source.slice(id.start, id.end));
+  return [];
+}
 
 export function sourceModule<T>(source: string, bindings: Record<string, unknown>, names?: string[]): T {
-  const ast = ts.createSourceFile('fixture.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  names ??= ast.statements.flatMap((node) => {
-    if (!ts.canHaveModifiers(node) || !ts.getModifiers(node)?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword))
-      return [];
-    if (ts.isFunctionDeclaration(node)) return node.name ? [node.name.text] : [];
-    if (ts.isVariableStatement(node)) return node.declarationList.declarations.map((d) => d.name.getText(ast));
-    return [];
-  });
-  const statements = ast.statements
-    .filter((node) => !ts.isImportDeclaration(node) && !ts.isExportDeclaration(node))
-    .map((node) => node.getText(ast).replace(/^export\s+(default\s+)?/, ''));
-  const js = stripTypeScriptTypes(statements.join('\n'));
+  const nodes = statements(source);
+  names ??= nodes.flatMap((node) =>
+    node.type === 'ExportNamedDeclaration' || node.type === 'ExportDefaultDeclaration'
+      ? namesOf(declaration(node), source)
+      : [],
+  );
+  const retained = nodes
+    .filter(
+      (node) =>
+        node.type !== 'ImportDeclaration' &&
+        node.type !== 'ExportAllDeclaration' &&
+        !(node.type === 'ExportNamedDeclaration' && !node.declaration),
+    )
+    .map((node) => source.slice(node.start, node.end).replace(/^export\s+(default\s+)?/, ''));
+  const js = stripTypeScriptTypes(retained.join('\n'));
   return new Function(...Object.keys(bindings), `${js}\nreturn {${names.join(',')}};`)(...Object.values(bindings)) as T;
 }
 
 export function sourceTextFunction<T>(source: string, symbol: string, bindings: Record<string, unknown>): T {
-  const ast = ts.createSourceFile('fixture.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  const node = ast.statements.find(
-    (n) =>
-      (ts.isFunctionDeclaration(n) && n.name?.text === symbol) ||
-      (ts.isVariableStatement(n) && n.declarationList.declarations.some((d) => d.name.getText(ast) === symbol)),
-  );
+  const node = statements(source).find((n) => namesOf(declaration(n), source).includes(symbol));
   if (!node) throw new Error(`No top-level source symbol: ${symbol}`);
-  return sourceModule<Record<string, T>>(node.getText(ast), bindings, [symbol])[symbol]!;
+  return sourceModule<Record<string, T>>(source.slice(node.start, node.end), bindings, [symbol])[symbol]!;
 }
 
 export function sourceFunction<T>(file: string, symbol: string, bindings: Record<string, unknown>): T {
