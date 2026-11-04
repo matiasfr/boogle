@@ -32,8 +32,9 @@ const syncBan = {
 // src/world/ runs on the server too (server/src/host/world-host.ts) and src/net/ is only the room layer: neither may
 // reach the renderer, the player or a feature.
 const headlessBan = {
-  regex: '^(three(/|$)|(\\.\\./)+(render|player|features)/)',
-  message: 'src/world/ and src/net/ stay headless: no three.js, src/render/, src/player/ or src/features/.',
+  regex: '^(three(/|$)|(\\.\\./)+(render|player|features|components)/)',
+  message:
+    'src/world/ and src/net/ stay headless: no three.js, src/render/, src/player/, src/features/ or src/components/.',
 };
 // A prototype or debug tool loads with a dynamic import() so the normal game doesn't carry it. flags.ts and mark.ts are
 // the small, eager way in.
@@ -254,6 +255,7 @@ export default [
                 '**/player/**',
                 '!**/player/identity.ts',
                 '**/entities/**',
+                '**/components/**',
                 '**/boogler/**',
                 '**/features/**',
               ],
@@ -277,7 +279,7 @@ export default [
         {
           patterns: [
             {
-              group: ['**/player/**', '**/netplay/**', '**/entities/**', '**/features/**'],
+              group: ['**/player/**', '**/netplay/**', '**/entities/**', '**/features/**', '**/components/**'],
               message: 'src/physics/ is infrastructure: pass it what it needs, or let the object call it.',
               allowTypeImports: true,
             },
@@ -289,7 +291,7 @@ export default [
   // An entity's state.ts is its body and rules, and loads in Node (test/entity-state-node.test.ts): the scene, the screen
   // and the DOM go in its view.ts (docs/plans/entity-architecture.md, "File shape").
   {
-    files: ['src/entities/*/state.ts'],
+    files: ['src/entities/*/state.ts', 'src/components/*/state.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -297,7 +299,16 @@ export default [
           paths: rapierBans,
           patterns: [
             {
-              group: ['**/render/**', '**/ui/**', '**/player/hud.ts', '**/island/terrain.ts', './view.ts', './sync.ts'],
+              group: [
+                '**/render/**',
+                '**/ui/**',
+                '**/player/hud.ts',
+                '**/island/terrain.ts',
+                '**/components/**/view.ts',
+                '../*/view.ts',
+                './view.ts',
+                './sync.ts',
+              ],
               message:
                 'state.ts holds no scene, DOM or HUD, and imports neither its view nor its sync: they read it. Ground lookups are in src/island/heights.ts.',
             },
@@ -311,6 +322,48 @@ export default [
         'error',
         { name: 'document', message: 'state.ts holds no DOM: pass the value in from index.ts, or use view.ts.' },
         { name: 'window', message: 'state.ts holds no DOM: pass the value in from index.ts, or use view.ts.' },
+      ],
+    },
+  },
+  // Owned behaviours are called by their entity, never independently scheduled or registered.
+  {
+    files: ['src/components/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**'],
+              importNames: [
+                'defineKind',
+                'spawn',
+                'despawn',
+                'onFrame',
+                'onStart',
+                'onPreStep',
+                'onPostStep',
+                'addBody',
+                'removeBody',
+                'addPresenceField',
+                'addHostField',
+                'keepPresenceWhile',
+                'setLocalPresence',
+                'onRemotePresence',
+                'onRoomReady',
+                'onNetState',
+                'onPeerAdded',
+                'onPeerLeftIsland',
+                'onPeerRemoved',
+                'onPeopleChanged',
+                'createOwnerSync',
+                'registerInteractable',
+              ],
+              allowTypeImports: true,
+              message: 'Components are owned behaviours: their entity owns scheduling, bodies and registrations.',
+            },
+          ],
+        },
       ],
     },
   },
