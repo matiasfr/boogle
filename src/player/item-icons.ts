@@ -61,7 +61,7 @@ function iconUrl(id: string) {
 // Fills `img` with the icon for `id` once its render finishes (unless the image has been given another id by then).
 export function setIcon(img: HTMLImageElement, id: string) {
   img.dataset.icon = id;
-  iconUrl(id).then((url) => {
+  void iconUrl(id).then((url) => {
     if (img.dataset.icon === id && url) img.src = url;
   });
 }

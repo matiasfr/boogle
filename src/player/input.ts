@@ -62,7 +62,8 @@ export function requestLock() {
   if (devCursorFree() || touchMode() || inputState.locked || !inputState.canLock) return;
   try {
     const p = canvas.requestPointerLock();
-    if (p && p.catch) p.catch(lockRefused);
+    // Older browsers return void; newer ones report a refused lock through the promise.
+    if (typeof p?.catch === 'function') p.catch(lockRefused);
   } catch {
     lockRefused();
   }

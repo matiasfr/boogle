@@ -242,6 +242,6 @@ export function renderPadDiagram(context = 'foot') {
   const draw = () => drawLines(root);
   if (typeof ResizeObserver === 'function') new ResizeObserver(draw).observe(root);
   requestAnimationFrame(draw);
-  document.fonts?.ready.then(draw);
+  void document.fonts?.ready.then(draw); // FontFaceSet.ready always resolves; a first draw is also scheduled above.
   return root;
 }

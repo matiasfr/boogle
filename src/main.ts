@@ -19,6 +19,7 @@ import { runFrame, runStart, beginFrame, mark, endFrame, frameCtx as ctx } from 
 import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
 import { bootMark } from './boot/timeline.ts';
 import { prefetchAssets } from './render/asset-manifest.ts';
+import { background } from './async.ts';
 
 // Every feature module in src/features/ registers its own hooks (see src/loop.ts).
 import.meta.glob('./features/*.{js,ts}', { eager: true });
@@ -73,7 +74,7 @@ function frame(now = performance.now()) {
 function start() {
   initInput();
   initLobby();
-  connectRoom();
+  background(connectRoom(), 'room connect');
   renderPeople();
   runStart();
 }
@@ -88,7 +89,8 @@ async function play() {
   shadersMark();
   lobbyReady(); // a returning player joins here, so their avatar's first draw is behind the loading screen too
   last = performance.now();
-  renderer.setAnimationLoop(frame); // three resets its info, ticks the TSL clock, then runs ours: one loop, one order
+  // three resets its info, ticks the TSL clock, then runs ours: one loop, one order
+  background(renderer.setAnimationLoop(frame), 'game loop');
   await new Promise((r) => requestAnimationFrame(r)); // one frame drawn: the output and shadow pipelines exist too
   await Promise.race([gpuDone(), giveUp]); // submitted is not finished: the screen lifts once the GPU has caught up
   bootMark('first');

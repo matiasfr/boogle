@@ -6,6 +6,7 @@ import './app-fill.ts';
 import './splash.ts';
 import './sw.ts';
 import './chunk-reload.ts';
+import { background } from '../async.ts';
 if (new URLSearchParams(location.search).get('startup') === '1')
   (await import('../debug/startup-record.ts')).installStartupRecorder();
-import('../main.ts');
+background(import('../main.ts'), 'boot');

@@ -1,4 +1,5 @@
 import { BUILD } from '../build-id.ts';
+import { background } from '../async.ts';
 import { pageQuery } from '../proto/flags.ts';
 import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, SEND_MS } from '../constants.ts';
 import { finiteArr, r2, sanitizeName } from '../math.ts';
@@ -330,7 +331,7 @@ function scheduleRetry(e: NetError) {
   net.retryAt = Date.now() + wait;
   retryTimer = setTimeout(() => {
     retryTimer = 0;
-    if (net.state === 'solo' && !net.room) connectRoom();
+    if (net.state === 'solo' && !net.room) background(connectRoom(), 'room retry');
   }, wait);
 }
 
