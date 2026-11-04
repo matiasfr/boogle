@@ -12,6 +12,7 @@ import { emit } from '../../render/particles.ts';
 import { removeBody, type Body } from '../../physics/engine.ts';
 import { input } from '../../player/input-state.ts';
 import { me } from '../../player/player.ts';
+import { addPresenceField, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { backSeam, myBundleNext } from '../../features/haul-stack.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
@@ -19,7 +20,7 @@ import { mulberry32 } from '../../sim/rng.ts';
 import { knock, pop } from '../minis/common.ts';
 import { flat } from '../flat.ts';
 import { H, addStatic } from './land.ts';
-import { count, job, personalSlice, sharedSlice } from './job.ts';
+import { COOP, count, job, personalSlice, sharedSlice } from './job.ts';
 import { LOOK, STEEL, paint } from './look.ts';
 import { AXE2, GREAT, GREAT_TREE, GROVES, OAK, ORIGIN, PACK, ROCKS, ROCK_WORK, TUNE } from './layout.ts';
 import { RAIL_SIZE, chips, dustRing, send } from './pieces.ts';
@@ -57,8 +58,8 @@ personalSlice('back', {
 });
 
 type Worn = { inner?: THREE.Object3D; loadFit?: { frame: THREE.Object3D } };
-const frameOf = () => {
-  const u = me.avatar?.userData as Worn | undefined;
+const frameOf = (avatar = me.avatar) => {
+  const u = avatar?.userData as Worn | undefined;
   return u?.loadFit?.frame ?? u?.inner ?? null;
 };
 const MAX_WORN = PACK.carry;
@@ -123,6 +124,71 @@ export const boilerShape = () => {
 const packFrame = new THREE.Group();
 packFrame.position.z = 0.43;
 packFrame.visible = false;
+
+/** Owner cosmetic state; existing placeBack/placeBig keep their wire meanings. */
+export type PlaceLoad = { rails: number; stone: number; pack: boolean };
+addPresenceField('placeLoad', (): PlaceLoad | null =>
+  COOP && (back.rails || back.stone || job.rung.pack)
+    ? { rails: back.rails, stone: back.stone, pack: !!job.rung.pack }
+    : null,
+);
+const peerLoads = new Map<string, PlaceLoad & { big: BigThing }>();
+onRemotePresence((r, pr) => {
+  if (!COOP || !r.entered) return void peerLoads.delete(r.peer);
+  const v = pr.placeLoad;
+  const load = v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  const rails = count(load.rails, MAX_WORN) ? load.rails : 0;
+  const stone = count(load.stone, MAX_WORN) ? load.stone : 0;
+  const big = pr.placeBig === 'beam' || pr.placeBig === 'boiler' ? pr.placeBig : null;
+  const pack = load.pack === true;
+  if (rails || stone || big || pack) peerLoads.set(r.peer, { rails, stone, big, pack });
+  else peerLoads.delete(r.peer); // missing/malformed fields are off, including on older builds
+});
+const peerWorn = new Map<string, ReturnType<typeof makeLoad>>();
+function makeLoad() {
+  const root = new THREE.Group();
+  root.name = 'place-carried';
+  const rails = railsWorn.clone(),
+    stone = stoneWorn.clone();
+  const beam = beamWorn.clone(),
+    boiler = boilerWorn.clone();
+  const pack = new THREE.Group();
+  pack.position.copy(packFrame.position);
+  pack.add(packFrameMesh());
+  root.add(rails, stone, beam, boiler, pack);
+  return { root, rails, stone, beam, boiler, pack };
+}
+function updatePartnerLoads() {
+  for (const [peer, state] of peerLoads) {
+    const r = remotes.get(peer);
+    const frame = r?.entered && r.avatar ? frameOf(r.avatar) : null;
+    if (!frame) {
+      peerLoads.delete(peer);
+      continue;
+    }
+    let view = peerWorn.get(peer);
+    if (!view) {
+      view = makeLoad();
+      peerWorn.set(peer, view);
+    }
+    if (view.root.parent !== frame) frame.add(view.root);
+    view.rails.count = state.rails;
+    view.rails.visible = state.rails > 0;
+    view.stone.count = state.stone;
+    view.stone.visible = state.stone > 0;
+    view.beam.visible = state.big === 'beam';
+    view.boiler.visible = state.big === 'boiler';
+    view.pack.visible = state.pack;
+  }
+  for (const [peer, view] of peerWorn) {
+    if (peerLoads.has(peer)) continue;
+    view.root.removeFromParent();
+    // Clones share geometry/materials, but own their instance buffers.
+    view.rails.dispose();
+    view.stone.dispose();
+    peerWorn.delete(peer);
+  }
+}
 
 // ---------------------------------------------------------------- what you can hit
 export type Tree = {
@@ -654,6 +720,7 @@ export function updateChop(dt: number, now: number) {
   beamWorn.visible = back.big === 'beam';
   boilerWorn.visible = back.big === 'boiler';
   packFrame.visible = !!job.rung.pack;
+  updatePartnerLoads();
   if (back.big) input.sprint = false; // you can't run with that
   AXES[0]!.visible = !job.rung.axe;
   AXES[1]!.visible = !!job.rung.axe;
