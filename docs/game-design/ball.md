@@ -1,5 +1,8 @@
 # 6.1 Beach ball
 
+Rapier 0.21.0 changes the recorded flight/bounce despite unchanged tuning. Visible throw/rebound and cave checks pass;
+the old numeric trace differs. Measurements and limits: [upgrade assessment](../research/rapier-021-upgrade.md).
+
 The staged `water=new` opt-in replaces the ball's old sine sea with bounded samples of the visible FFT/shore waves.
 Vertical drag is relative to surface velocity (bounded ±3 m/s); gentle wash-in follows the registered coast's normal
 and tangent. Ponds have explicit still-water identity, so a sea crest is never mistaken for a pond. Ownership, held

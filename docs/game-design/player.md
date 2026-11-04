@@ -6,6 +6,9 @@ Files: [src/entities/player/state.ts](../../src/entities/player/state.ts), [view
 
 ## Movement and jump
 
+Upgrade validation: Rapier 0.21.0 preserves the tuning below, but standing jumps at the classic spawn and two Place
+glide beats currently regress. This is not intended movement behavior; see the [upgrade assessment](../research/rapier-021-upgrade.md).
+
 - Body: two spheres of radius 0.45 m stacked 0.8 m apart, 70 kg, fixed rotation, zero friction (velocity is steered,
   not pushed).
 - Gravity 18 m/s². Walk 5.6 m/s, sprint 9.5 m/s, both × 0.55 in water. Acceleration 70 m/s² on the ground, 14 in the
