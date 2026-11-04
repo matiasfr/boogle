@@ -200,7 +200,7 @@ export function createWaterQueries(heightAt: (xz: N) => N, atlas: ReturnType<typ
       slot.input.value.needsUpdate = true;
       const seq = ++sequence;
       slot.pending = true;
-      renderer.compute(slot.compute);
+      void renderer.compute(slot.compute); // initialized renderer: enqueue before readback without yielding
       void renderer
         .getArrayBufferAsync(slot.output.value, slot.readback)
         .then(() => {

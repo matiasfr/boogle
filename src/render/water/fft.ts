@@ -305,7 +305,8 @@ function simulation(size: number, bands: number[], probe = false, settings = FFT
       dt.value = reset.value ? 0 : t - last!;
       time.value = ((t % settings.loop) + settings.loop) % settings.loop;
       last = t;
-      renderer.compute(groups[parity]!);
+      // The initialized renderer dispatches synchronously; do not yield between FFT passes and their consumers.
+      void renderer.compute(groups[parity]!);
       dispNode.value = displacement[parity]!;
       parity ^= 1;
     },
@@ -396,7 +397,7 @@ export async function readFftCheck(cascade: number, size: number) {
   })().compute(size * size);
   try {
     sim.update(0);
-    renderer.compute(read);
+    void renderer.compute(read); // initialized renderer: dispatch before the readbacks, without yielding
     const [slopes, residue] = await Promise.all([
       renderer.getArrayBufferAsync(out.value),
       renderer.getArrayBufferAsync(sim.residual!.value),
