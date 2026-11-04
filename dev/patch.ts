@@ -94,7 +94,7 @@ if (code.length) {
     bad = true;
     console.log(lint.stdout);
   }
-  const types = run('npx', ['tsc', '-p', '.', '--noEmit']);
+  const types = run('npm', ['run', 'typecheck']);
   if (types.status) {
     bad = true;
     console.log(types.stdout.split('\n').slice(0, 30).join('\n'));

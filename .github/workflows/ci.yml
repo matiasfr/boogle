@@ -30,6 +30,8 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       - run: npm run lint
       - run: npm run typecheck
+      # TS 7 may accept errors missed by the checker lint and tools rely on; drop this when they use TS 7.
+      - run: npm run typecheck:legacy
       # Reads committed files only: needs neither Blender nor KTX-Software.
       - run: npm run assets -- --check
       # format:check is not enforced: the repo is Prettier-clean and Claude Code's hook formats each edited file,

@@ -1,7 +1,11 @@
 # TypeScript 7 feasibility
 
 Study: 3 November 2026, source `75526a2ad41bd567bdfa776e7e77ff5998423348`.
-Feasibility only; no dependency or application changes proposed for this commit.
+The study itself was feasibility only; it proposed no dependency or application changes in its own commit.
+Implementation: TS 7.0.2 now runs the primary typecheck; canonical TypeScript 6.0.3 supports lint and tools.
+The legacy CI typecheck remains until lint and tools move to 7. Remove the alias after typescript-eslint supports
+TS 7 (upstream issue #10940 tracks TS >=7.1) or the running linter-study supplies a replacement, and all five
+compiler-API tools are ported.
 
 **Recommendation: use TS 7 for typecheck only, aliased as `typescript-native`;
 keep `typescript` at the legacy version for ESLint and developer tools.**
