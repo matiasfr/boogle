@@ -66,3 +66,7 @@ The owner's task explicitly authorizes implementation, verification and local co
 ## Open questions for the owner after verification
 
 Does the boiler read as a repair for the old camp locomotive, and is the benefit of the second train clear before its first cargo delivery? Does reaching Far Head make returning home desirable, in addition to making the route home visible? These are playtest questions, not permission gates for the authorized removal.
+
+## Rebase follow-up
+
+Rebased onto `origin/main` at `0e4376b1`, keeping the objective removal and all incoming round-4 fixes. The sole conflict in `place.md` retained main's halt clearance, boarding and warm-up paragraphs alongside the new guidance audit. The source merges preserve same-room Start fresh and recovery onto real track colliders. The boiler remains at (-81, 5.4), with mesh and pickup sharing the position; main's carry warm-up remains intact. The audit now distinguishes Happy Clam's return hook from the still-open question of why to travel home from Far Head, and corrects the former new-room restart description. Earlier evidence above is historical; the follow-up job reports new checks, bot results and inspected PNGs for this combined build. No additional gameplay change is part of this reconciliation.
