@@ -2,6 +2,7 @@
 // build, and it is gone (and lets clicks through) once Jump in is enabled. Phone sizes keep the title and bar on screen.
 import type { T } from './run.ts';
 export default {
+  sourceImports: false,
   about: 'the loading screen shows, fills, and gets out of the way when the island is ready',
   timeout: 300000,
   async run(t: T) {

@@ -18,6 +18,7 @@ type Run = {
 const ROSTER = `document.getElementById('roster').textContent`;
 
 export default {
+  sourceImports: false,
   about: 'alone the room calls onPeers no more; a join, rename and leave each update the roster',
   timeout: 180000,
   async run(t: Run) {

@@ -6,6 +6,9 @@ const { renderer, pipeline, scenePass } = (await import(
   '/src/render/scene.ts' as string
 )) as typeof import('../../../src/render/scene.ts');
 const observer = await observeGpu();
+const toneId = '/src/proto/tone.ts';
+const imports = JSON.parse(document.querySelector('script[type="importmap"]')?.textContent ?? '{}').imports ?? {};
+const toneUrl = new URL(imports[toneId] ?? toneId, location.href).href;
 try {
   const timing = await hardwareTiming(3);
   const snapshot = observer.snapshot();
@@ -23,7 +26,7 @@ try {
         missing: timing.gpu.render.missingFrames,
         outputColorTransform: pipeline.outputColorTransform,
         outputIsScenePass: pipeline.outputNode === scenePass,
-        loadedTone: performance.getEntriesByType('resource').some((e) => e.name.includes('/src/proto/tone.ts')),
+        loadedTone: performance.getEntriesByType('resource').some((e) => e.name === toneUrl),
       }),
   );
 } finally {

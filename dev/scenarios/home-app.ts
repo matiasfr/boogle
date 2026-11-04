@@ -55,6 +55,7 @@ const H = `getComputedStyle(document.documentElement).getPropertyValue('--app-h'
 const CANVAS = `[document.getElementById('view').clientHeight, document.getElementById('view').height]`;
 
 export default {
+  sourceImports: false,
   about:
     'the Home Screen app on iPad: a pad there before load is found, the canvas fills the screen, back to the last room',
   timeout: 240000,

@@ -12,6 +12,7 @@ const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6
 const PAUSE_MS = 2000; // well under sync's 5 s held-edit age
 
 export default {
+  sourceImports: false,
   about: 'a tab drops off the network, tosses while reconnecting, and the toss lands once it is back',
   timeout: 300000, // generous: two software-rendered tabs on a busy machine
   async run(t: T) {

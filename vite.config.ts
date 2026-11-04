@@ -5,6 +5,7 @@ import wasm from 'vite-plugin-wasm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { atlasFacts } from './dev/atlas/vite-plugin.ts';
 import { assetCatalogue } from './dev/assets/vite-plugin.ts';
+import { harnessImports } from './dev/look/import-map.ts';
 import { build as esbuild } from 'esbuild';
 import type { Service, createService as CreateService, loadConfig as LoadConfig } from './server/src/server.ts';
 
@@ -70,6 +71,7 @@ export default defineConfig({
     },
     atlasFacts(),
     assetCatalogue(),
+    harnessImports(),
     {
       // `npm run dev` runs our server in-process (every room, saves in .boogle-data/), so the game has its server
       // without anything else running. Skipped when VITE_BOOGLE_SERVER is set (the look harness runs its own).
@@ -111,57 +113,63 @@ export default defineConfig({
       // needs (the page, game and SIMD chunks' static imports, CSS and assets), for it to precache.
       name: 'boogle-sw',
       apply: 'build',
-      async generateBundle(_, bundle) {
-        const chunks = Object.values(bundle).filter((c): c is Rolldown.OutputChunk => c.type === 'chunk');
-        // Generated/shared chunks can have no facade. Inspect actual module membership, and seed every matching
-        // chunk rather than depending on how Rolldown groups the dynamic import edges this release.
-        const contains = (c: Rolldown.OutputChunk, re: RegExp) =>
-          Object.keys(c.modules).some((id) => re.test(id.replaceAll('\\', '/')));
-        const page = chunks.filter((c) => c.isEntry && c.facadeModuleId === resolve('index.html'));
-        const game = chunks.filter((c) => contains(c, GAME_MODULE));
-        const simd = chunks.filter((c) => contains(c, SIMD_MODULE));
-        const first = new Set<string>();
-        const add = (file: string) => {
-          const c = bundle[file];
-          if (!c || first.has(file)) return;
-          first.add(file);
-          if (c.type !== 'chunk') return;
-          for (const f of [...(c.viteMetadata?.importedCss ?? []), ...(c.viteMetadata?.importedAssets ?? [])])
-            first.add(f);
-          c.imports.forEach(add);
-        };
-        for (const c of [...page, ...game, ...simd]) add(c.fileName);
-        // Authored content (models, textures, audio) loads by need through the content manifest
-        // (src/render/asset-manifest.ts), even where a feature imports its URL eagerly: not precached.
-        const content = /\.(glb|gltf|bin|ktx2|mp3|m4a|ogg|wav|opus)$/;
-        const config = { build, first: [...first].filter((f) => !content.test(f)).sort(), off: swOff };
-        // Independently identify emitted WASM by its source, not its ambiguous rapier_wasm3d_bg basename.
-        // A bundler/plugin change must fail the build instead of silently dropping physics from the precache.
-        const wasm = Object.values(bundle).filter((c) => c.type === 'asset' && c.fileName.endsWith('.wasm'));
-        const simdWasm = wasm.filter((c) => c.originalFileNames.some((id) => SIMD_MODULE.test('/' + id)));
-        const plainWasm = wasm.filter((c) =>
-          c.originalFileNames.some((id) => /\/@dimforge\/rapier3d\//.test('/' + id)),
-        );
-        const required = [...page, ...game, ...simd, ...simdWasm];
-        if (
-          !page.length ||
-          !game.length ||
-          !simd.length ||
-          !simdWasm.length ||
-          required.some((c) => !config.first.includes(c.fileName) || !bundle[c.fileName]) ||
-          plainWasm.some((c) => config.first.includes(c.fileName))
-        )
-          this.error('Precache must include the emitted page, game, SIMD chunks and SIMD WASM; plain WASM stays lazy.');
-        const out = await esbuild({
-          entryPoints: [resolve('src/boot/sw-worker.ts')],
-          bundle: true,
-          write: false,
-          minify: true,
-          format: 'iife',
-          target: 'es2022',
-          define: { SW_CONFIG: JSON.stringify(config) },
-        });
-        this.emitFile({ type: 'asset', fileName: 'sw.js', source: out.outputFiles[0].text });
+      generateBundle: {
+        // Vite removes CSS-only JS chunks in generateBundle; precache the final graph, not those deleted files.
+        order: 'post',
+        async handler(_, bundle) {
+          const chunks = Object.values(bundle).filter((c): c is Rolldown.OutputChunk => c.type === 'chunk');
+          // Generated/shared chunks can have no facade. Inspect actual module membership, and seed every matching
+          // chunk rather than depending on how Rolldown groups the dynamic import edges this release.
+          const contains = (c: Rolldown.OutputChunk, re: RegExp) =>
+            Object.keys(c.modules).some((id) => re.test(id.replaceAll('\\', '/')));
+          const page = chunks.filter((c) => c.isEntry && c.facadeModuleId === resolve('index.html'));
+          const game = chunks.filter((c) => contains(c, GAME_MODULE));
+          const simd = chunks.filter((c) => contains(c, SIMD_MODULE));
+          const first = new Set<string>();
+          const add = (file: string) => {
+            const c = bundle[file];
+            if (!c || first.has(file)) return;
+            first.add(file);
+            if (c.type !== 'chunk') return;
+            for (const f of [...(c.viteMetadata?.importedCss ?? []), ...(c.viteMetadata?.importedAssets ?? [])])
+              first.add(f);
+            c.imports.forEach(add);
+          };
+          for (const c of [...page, ...game, ...simd]) add(c.fileName);
+          // Authored content (models, textures, audio) loads by need through the content manifest
+          // (src/render/asset-manifest.ts), even where a feature imports its URL eagerly: not precached.
+          const content = /\.(glb|gltf|bin|ktx2|mp3|m4a|ogg|wav|opus)$/;
+          const config = { build, first: [...first].filter((f) => !content.test(f)).sort(), off: swOff };
+          // Independently identify emitted WASM by its source, not its ambiguous rapier_wasm3d_bg basename.
+          // A bundler/plugin change must fail the build instead of silently dropping physics from the precache.
+          const wasm = Object.values(bundle).filter((c) => c.type === 'asset' && c.fileName.endsWith('.wasm'));
+          const simdWasm = wasm.filter((c) => c.originalFileNames.some((id) => SIMD_MODULE.test('/' + id)));
+          const plainWasm = wasm.filter((c) =>
+            c.originalFileNames.some((id) => /\/@dimforge\/rapier3d\//.test('/' + id)),
+          );
+          const required = [...page, ...game, ...simd, ...simdWasm];
+          if (
+            !page.length ||
+            !game.length ||
+            !simd.length ||
+            !simdWasm.length ||
+            required.some((c) => !config.first.includes(c.fileName) || !bundle[c.fileName]) ||
+            plainWasm.some((c) => config.first.includes(c.fileName))
+          )
+            this.error(
+              'Precache must include the emitted page, game, SIMD chunks and SIMD WASM; plain WASM stays lazy.',
+            );
+          const out = await esbuild({
+            entryPoints: [resolve('src/boot/sw-worker.ts')],
+            bundle: true,
+            write: false,
+            minify: true,
+            format: 'iife',
+            target: 'es2022',
+            define: { SW_CONFIG: JSON.stringify(config) },
+          });
+          this.emitFile({ type: 'asset', fileName: 'sw.js', source: out.outputFiles[0].text });
+        },
       },
     },
   ],

@@ -224,6 +224,7 @@ try {
   stack = await startStack({ url: opt.url, root: opt.root, warp: opt.warp && opt.players === 2 });
   browser = await launch();
   const g = await Game.open(browser, stack, {
+    sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until),
     out: opt.out,
     size: opt.size,
     hud: opt.hud,
@@ -247,6 +248,7 @@ try {
   const g2 =
     opt.players > 1
       ? await Game.open(browser, stack, {
+          sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until),
           out: opt.out,
           size: opt.size,
           hud: opt.hud,
