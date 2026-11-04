@@ -306,6 +306,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### Process
 
+- **2026-11-03, future Unreal alignment** (owner): may consider migrating to Unreal in the future and prefers choices that align with its patterns where cheap; no migration is decided. See [unreal-alignment.md](../research/unreal-alignment.md).
 - **2026-10-30, `main` keeps deploying straight to boogle.club** (owner: no public playtesting yet, saved worlds aren't precious, and bad changes get reverted after the fact). Don't push for gating or staging. Revisit when Boogle is shown outside the friend group. The plan discussed then: a `release` branch to boogle.club, `main` to dev.boogle.club (a subdomain, so localStorage isn't shared), both on Cloudflare Pages, with a separate `boogle-server-dev` Fly app and its own volume.
 - **2026-11-02, entities have methods** (owner). `update()` and friends on the entity, Unity's shape, over the research's timing rows per kind ([entity-architecture.md](../research/entity-architecture.md)). A second slot in a phase means a second kind. The entity loop gets a few unit tests, an exception to the test diet.
 - **2026-11-02, no automatic rollback yet** (owner: "we're not a live service yet"). Live smoke opens an issue and a person or agent fixes forward. Revisit before public playtests.
