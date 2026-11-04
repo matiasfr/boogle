@@ -245,6 +245,12 @@ export async function play() {
     await waitFor(() => place.job.tech[id], 3000, `took ${id}`);
     note(`ability: ${id}`);
     await wait(id === 'hook' ? 3800 : 3000); // its show
+    if (id === 'jump') {
+      // The reward's anticipation can outlast the old fixed wait. Its dismissal schedules the demo 0.3 s later.
+      await waitFor(() => !gettingItem(), 8000, 'put away the jump reward');
+      await wait(400);
+      await waitFor(() => me.coyote > 0 && body.velocity.y <= 0, 4000, 'landed after the jump demonstration');
+    }
   };
   const glideTo = async (x: number, z: number, limit = 90000) => {
     // Walk off the edge towards it; open as soon as you're off; steer to it, and land.

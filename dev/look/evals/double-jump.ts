@@ -27,8 +27,13 @@ place.skipPath();
 await wait(1500);
 place.tech.take('jump');
 await wait(1200);
-press();
-await wait(3000);
+// Main's anticipation/reveal is deliberately longer now. Finish the show before staging measured inputs.
+for (let attempt = 0; gettingItem() && attempt < 100; attempt++) {
+  press();
+  await wait(100);
+}
+if (gettingItem()) throw new Error('The jump reward did not dismiss before staging');
+await wait(2000); // the scheduled automatic demonstration finishes before the setup teleport
 const body = me.body!;
 const start = JUMP_COURSE[0]!;
 const stage = async () => {

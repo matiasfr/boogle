@@ -48,7 +48,7 @@ Research basis: `docs/research/movement-abilities.md` sections 2, 3 and 5 (short
 
 None block the owner's explicitly approved task. Ability timing and the owner's eventual playtest remain the owner's decisions. The implementer may adjust recovery construction or a few metres of spacing after measured collision/visual evidence; any wider mechanic or movement change is outside this plan.
 
-## Verification, 4 November
+## Original verification, 4 November (superseded by rebase verification below)
 
 Final runtime tree: `08bb473c4bb93d651d2c077ddded7f59652e9ae5`, before the documentation-only completion record. Each broker manifest reports no change during its run.
 
@@ -61,3 +61,18 @@ Final runtime tree: `08bb473c4bb93d651d2c077ddded7f59652e9ae5`, before the docum
 - `npx prettier --write` on changed files and `npm run check`: passed. No new tests or scenarios; no lockstep or player tuning changes.
 
 Limitations: human fun/discovery, real-time smoothness, physical gamepad/touch and co-op play are unverified. No Boogler copy changed or suspect lines found. `placement-checks` was not landed in inspected main refs, so its unfinished branch was not copied. Process departure: the required `inflight` command performed a fetch before its implementation was inspected; this was disclosed, and no further external network, push or ship was used. Stop here for the owner's playtest.
+
+## Rebase verification, 4 November
+
+Rebased onto existing `origin/main` at `adbc0d33`. Placement tooling has now landed. Resolved `dev/economy/place-level.ts` by retaining main's callable structured report, standalone printer and progression checks, and integrating the course's eight gap checks, catch-height check and recovery/rail clearance check into that report. Main's tree and unlock-show behavior remain intact. No ability timing or movement tuning changed.
+
+The first rebased [full bot](../../.look/evidence/1793784561617-70024/evidence.json) finished with four failed expectations: start pillar, first landing, reward box and secret. Main's longer reward anticipation left its automatic demonstration overlapping measured movement; the initial captures were contaminated too. Updated only the bot and capture setup to finish the reward show and demonstration before traversal. All evidence below follows that last code edit; each manifest records an unchanged runtime tree, `efd1137590b93b3adb59cbdb779f7657f7ac873d`.
+
+- `npm ci` under Node 26.13.0: passed, zero vulnerabilities. Prettier and `npm run check`: passed, 297 tests, lint/type/build and progression checks. `npm run level-check -- --place=place --json`: zero failures, all ten course assertions passed through the new unified tooling.
+- [Full bot](../../.look/evidence/1793784882224-73508/evidence.json): every expected beat passed, eight landings in **20.5 s**, original reward, main route and round completed. Zero errors or water falls. Read the full report and opened `run/end-still.png`; the end overlay is visible, but that image alone is not course-quality evidence. Crystal/co-op markers remain unexercised.
+- [Course](../../.look/evidence/1793784882223-73507/evidence.json): staged traversal **19.6 s**, eight landings. Opened `rebased-course-final-still.png` and `rebased-course-final-curves.png`: broad warm caps, lower dry walkway and separate rail; distant pads partly obscured by existing trees. Eight two-part arcs return to pad height.
+- [Proof](../../.look/evidence/1793784882226-73506/evidence.json): held walking single, sprint single and four late single-press sprint launches all missed; two-press double landed. Late presses beyond grace consume the air jump alone. Opened `rebased-proof-final-still.png`, `rebased-proof-final-curves.png` and four consecutive `flight-01.png` through `flight-04.png`, extracted at 7.8 s from the video. The frames show the airborne player advancing toward the landing, with the second-jump effect behind; the curves distinguish the successful double arc from falls to the catch.
+- [Recovery](../../.look/evidence/1793784882225-73509/evidence.json): **5.9 s** walking return after a dry missed jump. Opened `rebased-recovery-final-still.png` and `rebased-recovery-final-curves.png`: player back by the device; trace climbs from catch level via ramp.
+- [world-inputs](../../.look/evidence/1793785120019-75788/evidence.json): all existing assertions passed against the running build.
+
+Execution and capture-health success do not establish human fun, discovery or real-time smoothness. Those, physical gamepad/touch and co-op play remain unverified. No remaining expected-beat failures; no push or ship.
