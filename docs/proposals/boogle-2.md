@@ -2,21 +2,21 @@
 
 ## Current-decision index
 
-Authoritative routing as of 4 November 2026. Read this index, then the linked sections for the task, including the named dated entries and their qualifications. This index records explicit supersessions; it does not approve new work. The dated record below is retained unchanged. A later explicit owner decision wins over an earlier one; a heading's position or an old struck-through question is not evidence of currency. [AGENTS.md's standing calls](../agents/owner-calls.md#owners-standing-calls) apply to every task. [DESIGN.md](../../DESIGN.md) owns principles, [find-the-fun](../plans/find-the-fun.md) the prototype work order, and [game-design.md](../game-design.md) what is built. A direction here is not proof of implementation.
+Authoritative routing as of 4 November 2026. Read this index, then the linked sections for the task, including the named dated entries and their qualifications. This index records explicit supersessions; it does not approve new work. The dated record below is retained unchanged. A later explicit owner decision wins over an earlier one; a heading's position or an old struck-through question is not evidence of currency. [The owner's standing calls](../agents/owner-calls.md#owners-standing-calls) apply to every task. [DESIGN.md](../../DESIGN.md) owns principles, [find-the-fun](../plans/find-the-fun.md) the prototype work order, and [game-design.md](../game-design.md) what is built. A direction here is not proof of implementation.
 
 Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`, then select only the relevant topic below. Each linked heading is an exact section boundary; use line ranges for the named dated entry inside it. For Controls, “Decided” means only its introductory lines before “The audit picks”, not all descendants.
 
 ### Current build and next round
 
-[The shape of the game](#the-shape-of-the-game): **4 November, Place gets the top-level room**, with the owner's follow-up, names the bare entry `boogle`, preserves classic's `beach` save and explicit prototype rooms, and starts fresh without importing old progress. The old save is unused by `boogle`, not deleted; installed-app recall still reopens the new default. **3 November, bring the default switch forward** puts round 4 on the main URL, with explicit flags/rooms winning and classic retained. The **2 November Design Table call** still supplies the after-round-4 multiplayer and architecture direction. AGENTS' **Stop at the owner's playtest** controls when development pauses.
+[The shape of the game](#the-shape-of-the-game): **4 November, Place gets the top-level room**, with the owner's follow-up, names the bare entry `boogle`, preserves classic's `beach` save and explicit prototype rooms, and starts fresh without importing old progress. The old save is unused by `boogle`, not deleted; installed-app recall still reopens the new default. **3 November, bring the default switch forward** puts round 4 on the main URL, with explicit flags/rooms winning and classic retained. The **2 November Design Table call** still supplies the after-round-4 multiplayer and architecture direction. AGENTS' **Stop at the owner's playtest** controls when development pauses. **4 November, the production core's scope**: its code waits for the round 4 replay.
 
 ### Core loop, pacing and progression
 
-[The shape of the game](#the-shape-of-the-game): **direction after round 3** and **Design Table call**, 2 November. Building, exploration with abilities and incremental growth matter equally; path first, train later; staged efficiency; about eight hours. Materials and upgrades replace global eras; abilities replace curios. Read [Changed](#changed) and [Progress and rewards](#progress-and-rewards) with those overrides; the eight/six-era lists and rails-from-start notes are history.
+[The shape of the game](#the-shape-of-the-game): **direction after round 3** and **Design Table call**, 2 November. Building, exploration with abilities and incremental growth matter equally; path first, train later; staged efficiency; about eight hours. Materials and upgrades replace global eras; abilities replace curios. Read [Changed](#changed) and [Progress and rewards](#progress-and-rewards) with those overrides; the eight/six-era lists and rails-from-start notes are history. **3 November, after round 4** and **trees** update this.
 
 ### Rail, construction, levels and travel
 
-[Trains and the world](#trains-and-the-world), especially the 2 November physical construction, solid objects, visible cargo/town growth and crossing decisions; also the **Design Table call** and **direction after round 3** above. Threefold Reach/Two-Bay Weave are working layout picks; later free track is a direction, not a new level specification. The later **you can sit on the train** entry restores a sitting pose, not the cut bench camera. Maps/fast-travel research is deferred by the Design Table call.
+[Trains and the world](#trains-and-the-world), especially the 2 November physical construction, solid objects, visible cargo/town growth and crossing decisions; also the **Design Table call** and **direction after round 3** above. Threefold Reach/Two-Bay Weave are working layout picks; later free track is a direction, not a new level specification. The later **you can sit on the train** entry restores a sitting pose, not the cut bench camera. Maps/fast-travel research is deferred by the Design Table call. **3 November, after round 4** removes the objective marker ([place rule 1](../game-design/place.md#the-run)); older sign, objective-line and beacon entries are history.
 
 ### Rewards, co-op and town roles
 
@@ -28,7 +28,7 @@ Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`
 
 ### Graphics, water, sky and devices
 
-[Look](#look): 3 November **procedural sky preferred over toy sky** keeps `sky=toy` unused and opt-in; Sunshine continues through colour and water. **Surface swimming and automatic high-fall plunges, no dive controls** supersedes water-graduation step 5's manual dive. **Real sea uses the demo's sky**, intentionally frozen, with desktop/mobile starting settings; **Neutral stays for now, on the real sea too** (4 November), until the tone call is settled. **Terrain is a larger pass after water** (4 November), together with terrain level design on the vertical slice's gray box. Older cycle, original-sky and rounded-cloud calls are qualified by those later entries. Read the 2 November Ultra Water and crossing-previz targets too. [Process](#process) and AGENTS set M1 Max as average and M4 iPad Pro as floor.
+[Look](#look): 3 November **procedural sky preferred over toy sky** keeps `sky=toy` unused and opt-in; Sunshine continues through colour and water. **Surface swimming and automatic high-fall plunges, no dive controls** supersedes water-graduation step 5's manual dive. **Real sea uses the demo's sky**, intentionally frozen, with desktop/mobile starting settings; **Neutral stays for now, on the real sea too** (4 November), until the tone call is settled. **Terrain is a larger pass after water** (4 November), together with terrain level design on the vertical slice's gray box. Older cycle, original-sky and rounded-cloud calls are qualified by those later entries. Read the 2 November Ultra Water and crossing-previz targets too. [Process](#process) and [owner-calls](../agents/owner-calls.md#owners-standing-calls) set M1 Max as average and M4 iPad Pro as floor.
 
 ### Audio
 
@@ -40,7 +40,7 @@ Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`
 
 ### Architecture, tools and prototype lifecycle
 
-[Process](#process): entity methods, pipeline, solo-first evidence, no automatic rollback, and **2 November, be cautious removing prototypes for now** (ask before further archiving). Read that qualification before the older archive policy. AGENTS' **Codex first**, verification and test-diet calls supersede older tool/model assignments in [How the owner works](#how-the-owner-works) and Process.
+[Process](#process): entity methods, pipeline, solo-first evidence, no automatic rollback, and **2 November, be cautious removing prototypes for now** (ask before further archiving). Read that qualification before the older archive policy. `?play`, the prototype bar and verdicts went on 4 November; the one-playtest-path entry is history. AGENTS' **Codex first**, verification and test-diet calls supersede older tool/model assignments in [How the owner works](#how-the-owner-works) and Process.
 
 ### Unresolved scope
 
@@ -57,7 +57,7 @@ Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`
 | Level design previz: real renderer captures, image generation matched to them, and the painted first round (home concepts, network layouts) | Boogle Island Previz artifact, https://claude.ai/artifact/UWXyVfLBbG9NMY5uBe1j1C (private to the owner); images and boards in `.look/previz/` (`home-redesign`, `network-ring-chain`, `network-branching`, `places-engine-look`, `islands-*`), the rough blockout in `.look/env-ref/` (both gitignored, in the main checkout on the owner's Mac) |
 | Earlier concept pages | "Boogle Grows Up" https://claude.ai/artifact/9iQwPsUqWHxzy5TLENNZwK, "Boogle Crossroads" https://claude.ai/artifact/DMWtrTw6N8vBjKREKYwLcC |
 | Painted concepts: 8 eras, the era-2 opening day, the mainland port, 13 venue close-ups | Branch `claude/concept-images`, `concepts/` (a scratch branch, never merged to `main`); prompts in `dev/concepts/` |
-| Build spec for eras 1–2 | [vertical-slice.md](vertical-slice.md) |
+| Historical build spec for eras 1–2 | [vertical-slice.md](vertical-slice.md) |
 | Current eras 1–2 plan (awaiting approval; replaces the historical vertical slice) | [rail-slice.md](../plans/rail-slice.md) |
 | Story, gags and finales | [story-and-finale.md](story-and-finale.md), [fourth-melon.md](fourth-melon.md) |
 | Progression without mini-games | [progression-paths.md](progression-paths.md) |
@@ -78,7 +78,7 @@ These are standing preferences from the thread.
 - **Likes:** vehicles, exploration, construction you can watch, goofiness, Palworld's take on materials.
 - **Wary of:** material grinds.
 - **Collaborators may write the narrative.** Don't lock story details in alone. Draft options for them to react to.
-- **Decides through HTML pages with pick buttons.** The concept page ends with a round of questions and a copyable summary. Keep its localStorage key `boogle-2-v5`: changing it wipes the owner's picks.
+- **Decides through HTML pages with pick buttons.** The concept page ends with a round of questions and a copyable summary. Keep its localStorage key `boogle-2-v5`: changing it wipes the owner's picks. Playtest feedback works the same way: tap answers on a page Claude can read, as in the [Round 4 Replay](https://claude.ai/artifact/TAb4PhNz2E9g1DiZD5bHoF) (private to the owner).
 - **Solo first** (1 November). Every prototype must work and be fun for one person playing alone; multiplayer builds on top.
 - **Fast iteration over test coverage** (1 November). Agents run many tasks in parallel, see their own results and ship by themselves; tests only where lockstep needs them.
 - **Research before deep facets** (1 November). A facet with real depth (level design, vehicle feel, construction, rendering, asset pipelines) starts with deep research into industry practice, written to `docs/research/`, before its options are drafted.
@@ -332,7 +332,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - **2026-11-01, playtests are solo-first.** Each find-the-fun question must be answerable by one person; multiplayer comes after. (Replaces "playtest with 2–4 people", see Changed.)
 - **2026-11-01, a lighter test load.** `npm run ship` no longer runs smoke on the Mac by default (`-- --gpu` opts in); smoke runs against the live site after each deploy and nightly. New tests only for lockstep code; features and feel get looked at, not tested. `perf` only for heavy rendering changes.
 - **2026-11-01, level previz looks like what we'd build** (owner: "it's hard to get a real feel with that visual style"; "use something that's closer to what we might eventually build"). Use real renderer captures, or image generation matched to them, not painted maps.
-- **2026-11-01, agents check their own work.** Implementers (Opus, medium effort) look at their own `/look` stills, gut-check, iterate up to three rounds and ship themselves (AGENTS.md, "See it before you ship").
+- **2026-11-01, agents check their own work.** Implementers (Opus, medium effort) look at their own `/look` stills, gut-check, iterate up to three rounds and ship themselves ([verification.md](../agents/verification.md#see-it-before-you-ship)).
 - **2026-11-01, build prototypes in parallel, playtest in order.** Prototypes are built side by side; their questions are still answered in order, and a "no" on hauling still reshapes what follows.
 
 - **2026-11-02, the soapbox is removed** (owner: "I think we can remove the soapbox mini game. We can keep some of the code in case we bring it back later in a different place, but I don't think that island is the right place for it. The ball can stay"). Its card is retired and its code stays behind `?proto=soapbox`. Replaces the entry below.
