@@ -1,6 +1,6 @@
 // Ultra Water's familiar controls over the real sea. Values belong to their renderer bindings, not this UI.
 import { Color } from 'three/webgpu';
-import { defineKind, spawn } from '../entity/entity.ts';
+import { defineKind, spawn, despawn } from '../entity/entity.ts';
 import { releaseInput } from '../player/input.ts';
 import { cancelCharge } from '../player/throw.ts';
 import { releaseJump } from '../entities/player/state.ts';
@@ -120,9 +120,17 @@ const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '') => {
 };
 defineKind('water-tuning', {});
 
-export async function showWaterTuning(restorePointer: () => void) {
-  if (document.querySelector('[data-water-panel]')) return;
+let closeCurrent: (() => void) | null = null;
+let visit = 0;
+const productionDefaults = new Map<string, Value>();
+export async function showWaterTuning(restorePointer: () => void, parent: HTMLElement = document.body) {
+  const token = ++visit;
+  closeCurrent?.();
   await waterReady;
+  if (token !== visit) {
+    restorePointer();
+    return () => {};
+  }
   const panel = node('section');
   panel.dataset.waterPanel = '';
   panel.setAttribute('aria-label', 'Water tuning');
@@ -136,13 +144,14 @@ export async function showWaterTuning(restorePointer: () => void) {
     [data-water-panel] * { box-sizing:border-box; }
     [data-water-panel] h2 { margin:0; font-size:16px; }
     [data-water-panel] p { margin:7px 0; color:#c7d5d0; }
-    [data-water-panel] button { cursor:pointer; color:inherit; background:#ffffff13; border:1px solid #ffffff35;
+    [data-water-panel] button { min-height:44px; cursor:pointer; color:inherit; background:#ffffff13; border:1px solid #ffffff35;
       border-radius:7px; padding:5px 8px; font:inherit; }
     [data-water-panel] button:hover { background:#ffffff28; }
     [data-water-panel] button:focus-visible, [data-water-panel] input:focus-visible,
     [data-water-panel] textarea:focus-visible, [data-water-panel] summary:focus-visible { outline:2px solid #b7e4c7; outline-offset:2px; }
     [data-water-panel] details { margin-top:7px; border-top:1px solid #ffffff25; padding-top:7px; }
-    [data-water-panel] summary { cursor:pointer; font-weight:700; padding:3px 0; }
+    [data-water-panel] summary { min-height:44px; cursor:pointer; font-weight:700; padding:3px 0; }
+    [data-water-panel] input { min-height:44px; }
     [data-water-panel] .water-row { display:grid; grid-template-columns:1fr 70px; align-items:center; gap:5px; margin:7px 0; }
     [data-water-panel] .water-row input[type=range] { grid-column:1 / -1; width:100%; margin:0; accent-color:#b7e4c7; }
     [data-water-panel] input[type=number], [data-water-panel] textarea { width:100%; min-width:0; border:1px solid #ffffff35;
@@ -154,17 +163,29 @@ export async function showWaterTuning(restorePointer: () => void) {
   `,
   );
   document.head.append(style);
-  document.body.append(panel);
+  parent.append(panel);
   let removeStatusListener = () => {};
-  spawn({
+  let restoreOverrides = () => {};
+  let closed = false;
+  const cleanup = () => {
+    if (closed) return;
+    closed = true;
+    panel.remove();
+    style.remove();
+    removeStatusListener();
+    restoreOverrides();
+    restorePointer();
+    if (closeCurrent === close) closeCurrent = null;
+  };
+  const entity = spawn({
     kind: 'water-tuning',
-    dispose() {
-      panel.remove();
-      style.remove();
-      removeStatusListener();
-      restorePointer();
-    },
+    dispose: cleanup,
   });
+  const close = () => {
+    cleanup();
+    despawn(entity);
+  };
+  closeCurrent = close;
   const release = () => {
     releaseInput();
     releaseJump();
@@ -192,8 +213,19 @@ export async function showWaterTuning(restorePointer: () => void) {
   ])
     panel.addEventListener(event, (e) => e.stopPropagation());
   panel.append(node('h2', 'Water tuning'));
+  const closeButton = node('button', 'Close water tuning');
+  closeButton.type = 'button';
+  closeButton.addEventListener('click', close);
+  panel.append(closeButton);
   panel.append(node('p', 'Only your view. The game keeps running. Saved settings apply only with tune=1.'));
-  panel.append(node('p', 'Drag the scene to look; the cursor stays free while tuning.'));
+  panel.append(
+    node(
+      'p',
+      parent === document.body
+        ? 'Drag the scene to look; the cursor stays free while tuning.'
+        : 'Close the menu to look around; reopen Water to continue tuning.',
+    ),
+  );
   if (!newWaterEnabled) {
     panel.append(
       node(
@@ -207,11 +239,17 @@ export async function showWaterTuning(restorePointer: () => void) {
     if (url.searchParams.get('proto') === 'water') url.searchParams.set('proto', 'place');
     link.href = url.href;
     panel.append(link);
-    return;
+    return close;
   }
   const available = groups.flatMap((g) => g.specs).filter((s) => bindings.has(s.key));
   const byKey = new Map(available.map((s) => [s.key, s]));
-  const defaults = new Map(available.map((s) => [s.key, clone(bindings.get(s.key)!.get())]));
+  const previous = new Map(available.map((s) => [s.key, clone(bindings.get(s.key)!.get())]));
+  for (const [key, value] of previous) if (!productionDefaults.has(key)) productionDefaults.set(key, clone(value));
+  const defaults = new Map(available.map((s) => [s.key, clone(productionDefaults.get(s.key)!)]));
+  if (parent !== document.body)
+    restoreOverrides = () => {
+      for (const [key, value] of previous) bindings.get(key)?.set(clone(value));
+    };
   const refreshers: (() => void)[] = [];
   const status = node('p');
   status.setAttribute('role', 'status');
@@ -452,4 +490,5 @@ export async function showWaterTuning(restorePointer: () => void) {
   } catch (e) {
     say(`Saved settings not applied: ${e instanceof Error ? e.message : 'storage unavailable'}`);
   }
+  return close;
 }

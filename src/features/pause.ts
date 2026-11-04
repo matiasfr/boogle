@@ -30,6 +30,7 @@ import { carry } from '../physics/platforms.ts';
 import { forgetInRoom, leaveIsland, SPOT_KEY } from '../player/arrival.ts';
 import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
 import { uiSound } from '../ui/ui-sound.ts';
+import { pausePages, pauseNavigation } from '../player/pause-pages.ts';
 
 const TABS: [GuideKind, string][] = [
   ['kbm', 'Keyboard'],
@@ -45,8 +46,9 @@ let dlg!: HTMLDialogElement;
 let card!: HTMLElement;
 let menuBtn!: HTMLButtonElement;
 let open = false;
-type Page = 'main' | 'controls' | 'room';
+type Page = string;
 let page: Page = 'main';
+let disposePage = () => {};
 let tab: GuideKind = 'kbm';
 // The Gamepad tab: the drawn controller (src/player/pad-diagram.ts) for one situation, or the list.
 let padView: 'diagram' | 'list' = 'diagram';
@@ -219,6 +221,7 @@ function renderMain() {
   room.dataset.act = 'room';
   const list = el('div', 'pause-list');
   list.append(resume, controls, room);
+  for (const extra of pausePages) list.append(button(extra.label, () => show(extra.id)));
   if (canFullscreen()) list.append(fullscreenButton());
   list.append(soundRow());
   // Get unstuck: one press, nothing lost. A saved spot you were stuck in mustn't bring you back there.
@@ -341,6 +344,8 @@ function fillPeople(list = card.querySelector('.pause-people')) {
 }
 
 function show(next: Page) {
+  disposePage();
+  disposePage = () => {};
   page = next;
   clearTimeout(leaveTimer);
   leaveTimer = 0;
@@ -348,6 +353,12 @@ function show(next: Page) {
   card
     .querySelector('.pause-body')!
     .replaceChildren(page === 'controls' ? renderControls() : page === 'room' ? renderRoom() : renderMain());
+  const extra = pausePages.find((entry) => entry.id === page);
+  if (extra) {
+    const body = card.querySelector<HTMLElement>('.pause-body')!;
+    body.replaceChildren();
+    disposePage = extra.mount(body, closePause);
+  }
   card.querySelector('.pause-body')!.scrollTop = 0;
   focusFirst();
 }
@@ -358,7 +369,19 @@ function setTab(kind: GuideKind) {
 }
 
 const stops = () => {
-  const all = [...card.querySelectorAll<HTMLElement>('.pause-body button, .pause-body input')];
+  const all = [
+    ...card.querySelectorAll<HTMLElement>(
+      '.pause-body button:not(:disabled), .pause-body input, .pause-body textarea, .pause-body summary, .pause-body select',
+    ),
+  ].filter((target) => {
+    // Chromium can retain layout rects for descendants of a closed details element. Only its direct summary
+    // participates in focus navigation; an inner summary is still hidden when an outer details is closed.
+    for (let details = target.closest('details'); details; details = details.parentElement?.closest('details') ?? null)
+      if (!details.open && details.querySelector(':scope > summary') !== target) return false;
+    return (
+      !target.matches(':disabled') && [...target.getClientRects()].some((rect) => rect.width > 0 && rect.height > 0)
+    );
+  });
   // The tabs are one stop (left and right pick one; LB and RB the situation), so up and down go to Back.
   return page === 'controls'
     ? all.filter((b) => !b.matches('.pause-tab, .pause-ctx') || b.getAttribute('aria-selected') === 'true')
@@ -375,7 +398,9 @@ function move(dir: number) {
   const list = stops();
   if (!list.length) return;
   const k = list.indexOf(document.activeElement as HTMLElement);
-  list[k < 0 ? (dir > 0 ? 0 : list.length - 1) : (k + dir + list.length) % list.length]!.focus({ preventScroll: true });
+  const target = list[k < 0 ? (dir > 0 ? 0 : list.length - 1) : (k + dir + list.length) % list.length]!;
+  target.focus({ preventScroll: true });
+  if (pausePages.some((entry) => entry.id === page)) target.scrollIntoView({ block: 'nearest' });
 }
 function moveTab(dir: number) {
   if (page !== 'controls') return;
@@ -434,6 +459,8 @@ function build() {
   dlg.addEventListener('close', () => {
     if (!open || dlg.open) return; // a close we asked for, or the view already reopened
     open = false;
+    disposePage();
+    disposePage = () => {};
     closeModal();
   });
   card.addEventListener('focusin', (e) => {
@@ -459,6 +486,8 @@ export function openPause(start: Page = 'main') {
 export function closePause() {
   if (!open) return;
   open = false;
+  disposePage();
+  disposePage = () => {};
   clearTimeout(leaveTimer);
   leaveTimer = 0;
   dlg.close();
@@ -466,6 +495,15 @@ export function closePause() {
   if (inputKind() === 'kbm' && !document.pointerLockElement) requestLock();
   canvas.focus({ preventScroll: true });
 }
+
+pauseNavigation.open = (next) => {
+  if (open) {
+    show(next);
+    return true;
+  }
+  return openPause(next);
+};
+pauseNavigation.close = closePause;
 
 registerAction('pause', {
   pad: 'menu',
