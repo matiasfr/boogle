@@ -61,8 +61,8 @@ export const PILLARS = [
 
 export const PADS: Pad[] = [
   { id: 'p1', x: P1.x, z: P1.z, top: P1.y, hx: 3.4, hz: 3.4, look: 'stone' },
-  // The block on the first pillar: the second jump's first use, right beside where you got it.
-  { id: 'p1-block', x: P1.x - 2.1, z: P1.z + 0.8, top: P1.y + 2.2, hx: 1.3, hz: 1.7, look: 'stone' },
+  // Keep the old reward's ID and array slot; it now finishes the optional eight-jump course.
+  { id: 'p1-block', x: P1.x - 32.4, z: P1.z + 32, top: P1.y, hx: 3, hz: 3, look: 'stone' },
   { id: 'p2', x: P2.x, z: P2.z, top: P2.y + 2.2, hx: 3.4, hz: 3.4, look: 'stone', ring: 't0' },
   // Up Needle Bell, one turn round the rock: slabs that hang in the air, as the old things do. About 22 m a pull.
   { id: 't0', x: 8, z: 8, top: 24, hx: 3, hz: 3, look: 'float', ring: 'p2' },
@@ -93,8 +93,37 @@ export const PADS: Pad[] = [
     look: 'float',
     ring: 'stack',
   },
+  // Broad landings, 10 m of clear air between edges. Append to preserve existing ring indices.
+  { id: 'j1', x: P1.x - 16.4, z: P1.z, top: P1.y, hx: 3, hz: 3, look: 'stone' },
+  { id: 'j2', x: P1.x - 32.4, z: P1.z, top: P1.y, hx: 3, hz: 3, look: 'stone' },
+  { id: 'j3', x: P1.x - 48.4, z: P1.z, top: P1.y, hx: 3, hz: 3, look: 'stone' },
+  { id: 'j4', x: P1.x - 64.4, z: P1.z, top: P1.y, hx: 3, hz: 3, look: 'stone' },
+  { id: 'j5', x: P1.x - 64.4, z: P1.z + 16, top: P1.y, hx: 3, hz: 3, look: 'stone' },
+  { id: 'j6', x: P1.x - 64.4, z: P1.z + 32, top: P1.y, hx: 3, hz: 3, look: 'stone' },
+  { id: 'j7', x: P1.x - 48.4, z: P1.z + 32, top: P1.y, hx: 3, hz: 3, look: 'stone' },
 ];
 export const padById = (id: string) => PADS.find((p) => p.id === id)!;
+/** Optional sprint/double-jump loop, from the unchanged device to its existing personal reward. */
+export const JUMP_COURSE = ['p1', 'j1', 'j2', 'j3', 'j4', 'j5', 'j6', 'j7', 'p1-block'].map(padById);
+const jumpReturnX = P1.x - 10.4;
+/** Dry catch ribbon: below two-jump height, with a walkable ramp back to the start. Local static geometry. */
+export const JUMP_RECOVERY = {
+  top: P1.y - 3.4,
+  returnX: jumpReturnX,
+  slabs: [
+    { x: P1.x - 32.5, z: P1.z, hx: 35.9, hz: 4 },
+    { x: P1.x - 64.4, z: P1.z + 16, hx: 4, hz: 12 },
+    { x: P1.x - 38.6, z: P1.z + 32, hx: 29.8, hz: 4 },
+    // Keep the lower return west of the railway; its earlier x=0 lane crossed the laid deck.
+    { x: jumpReturnX, z: P1.z + 19.9, hx: 1.6, hz: 8.1 },
+    // A first-gap miss can round the pillar without walking into its solid column.
+    { x: jumpReturnX, z: P1.z + 6.3, hx: 1.6, hz: 2.3 },
+    { x: P1.x - 6.8, z: P1.z + 10.2, hx: 5.2, hz: 1.6 },
+    { x: P1.x, z: P1.z + 9.4, hx: 1.6, hz: 0.8 },
+  ],
+  // The top face rises northward: high at z−hz, low at z+hz.
+  ramp: { x: P1.x, z: P1.z + 6.65, hx: 1.6, hz: 3.55, low: P1.y - 3.4, high: P1.y },
+};
 const RING_FACES: Record<string, { x: number; z: number }> = { bridge: { x: -48, z: -83 }, camp: { x: 102, z: 69 } };
 /** Where a pad's ring hangs: a bit over head height, near the side you come from but off to one side of your way in, so nothing
  * stands between you and it, and its post isn't in your way as you land. */

@@ -42,6 +42,8 @@ import {
   DEVICES,
   FINDERS,
   GATES,
+  JUMP_COURSE,
+  JUMP_RECOVERY,
   LEVER,
   PADS,
   PILLARS,
@@ -49,6 +51,7 @@ import {
   SECRETS,
   padById,
   type GateId,
+  type Pad,
   type Secret,
   type SecretId,
   type TechId,
@@ -83,13 +86,33 @@ function stonePad(hx: number, hz: number, thick: number) {
   return new THREE.Mesh(merged(parts), partMat);
 }
 function buildPads() {
-  for (const p of PADS) {
+  const ramp = JUMP_RECOVERY.ramp;
+  const rise = ramp.high - ramp.low;
+  const pads: (Pad & { pitch?: number })[] = [
+    ...PADS,
+    ...JUMP_RECOVERY.slabs.map((p, i): Pad => ({ ...p, id: `jump-catch-${i}`, top: JUMP_RECOVERY.top, look: 'stone' })),
+    {
+      ...ramp,
+      id: 'jump-return',
+      top: (ramp.high + ramp.low) / 2,
+      hz: Math.hypot(ramp.hz, rise / 2),
+      pitch: Math.atan2(rise, ramp.hz * 2),
+      look: 'stone',
+    },
+  ];
+  for (const p of pads) {
     const thick = p.look === 'float' ? 0.9 : p.look === 'wood' ? 0.4 : 1.2;
     const m =
       p.look === 'wood'
         ? new THREE.Mesh(new THREE.BoxGeometry(p.hx * 2, thick, p.hz * 2), flat('#8a6238', 0.9))
         : stonePad(p.hx, p.hz, thick);
     m.position.set(p.x + ox, p.top - thick / 2, p.z);
+    if (p.pitch) {
+      m.rotation.x = p.pitch;
+      // Keep the rotated top face, not the slab's centre, on the authored ramp endpoints.
+      m.position.y = p.top - (Math.cos(p.pitch) * thick) / 2;
+      m.position.z -= (Math.sin(p.pitch) * thick) / 2;
+    }
     m.castShadow = m.receiveShadow = true;
     scene.add(m);
     if (p.ring) {
@@ -110,7 +133,7 @@ function buildPads() {
             offset: { x: p.x + ox - p.hx + hx * (i * 2 + 1), y: p.top - thick / 2, z: p.z - p.hz + hz * (j * 2 + 1) },
           });
       addStatics(shapes, { x: 0, y: 0, z: 0 });
-    } else addStatic({ kind: 'box', hx: p.hx, hy: thick / 2, hz: p.hz }, { x: p.x + ox, y: p.top - thick / 2, z: p.z });
+    } else addStatic({ kind: 'box', hx: p.hx, hy: thick / 2, hz: p.hz }, m.position, m.quaternion);
     // The slabs that hang in the air: a line of light round the underside, so you can tell they're the old things, from far.
     if (p.look === 'float') {
       const under = new THREE.Mesh(new THREE.BoxGeometry(p.hx * 0.7, 0.1, p.hz * 0.7), glow);
@@ -119,14 +142,13 @@ function buildPads() {
     }
   }
   // Solid all the way down: what looks solid is solid.
-  const block = padById('p1-block'),
-    apron = padById('apron'),
+  const apron = padById('apron'),
     lookout = padById('lookout'),
     loft = padById('loft'),
     balcony = padById('balcony'),
     stack = padById('stack');
-  for (const b of [block, apron, lookout, loft]) {
-    const base = b === block ? PILLARS[0]!.top : H(b.x + ox, b.z) - 0.5;
+  for (const b of [...JUMP_COURSE.slice(1), apron, lookout, loft]) {
+    const base = JUMP_COURSE.includes(b) ? JUMP_RECOVERY.top : H(b.x + ox, b.z) - 0.5;
     const h = b.top - 1.2 - base;
     if (h <= 0) continue;
     const m = new THREE.Mesh(new THREE.BoxGeometry(b.hx * 2 - 0.1, h, b.hz * 2 - 0.1), flat(STONE, 0.9));
@@ -991,6 +1013,8 @@ export const techApi = {
   LEVER,
   GATES,
   PADS,
+  JUMP_COURSE,
+  JUMP_RECOVERY,
   move,
   found,
   hubbed,
