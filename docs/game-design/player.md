@@ -7,8 +7,10 @@ Files: [src/entities/player/state.ts](../../src/entities/player/state.ts), [view
 ## Movement and jump
 
 Rapier 0.21.0 keeps the previous 0.002 m prediction distance in the physics facade. Standing jumps and the two Place
-glide beats pass again without changing the tuning below. Crest/swim golden-trace differences still need owner review;
-see the [upgrade assessment](../research/rapier-021-upgrade.md).
+glide beats pass again without changing the tuning below. An eligible launch at exactly zero vertical velocity uses the
+same first-step gravity as the old tiny negative resting velocity: held jump 1.552 m, hop 0.664 m. Controlled swimming
+is identical; golden swim differences follow entry and buffered-jump phase. Crest/ground drift still needs owner
+review; see the [upgrade assessment](../research/rapier-021-upgrade.md).
 
 - Body: two spheres of radius 0.45 m stacked 0.8 m apart, 70 kg, fixed rotation, zero friction (velocity is steered,
   not pushed).

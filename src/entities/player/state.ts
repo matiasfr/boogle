@@ -144,7 +144,8 @@ export function shapeJump() {
   if (me.jumpQueued > 0 && me.coyote > 0 && !under) jumpActive = true; // the jump happens this step
   if (!under) {
     let g = 1;
-    if (vy < 0) g = JUMP.fallGravity;
+    // Preserve the launch-step force when the solver rests at exactly zero; rising hop/apex shaping starts after launch.
+    if (vy < 0 || (vy === 0 && jumpActive)) g = JUMP.fallGravity;
     else if (jumpActive && !me.jumpHeld) g = JUMP.cutGravity;
     else if (jumpActive && vy < JUMP.apexSpeed) g = JUMP.apexGravity;
     b.force.y -= PLAYER_MASS * GRAVITY * (g - 1);

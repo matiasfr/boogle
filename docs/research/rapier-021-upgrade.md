@@ -1,6 +1,6 @@
 # Rapier 0.21.0 upgrade assessment
 
-Updated 4 November 2026. Owner-approved dependency upgrade; commit only, no shipping. Upgrade: `ccf6ac27`, baseline: `75526a2a`. **Standing jumps and both bot glide beats are fixed by restoring only the old prediction distance.** No jump, glide, movement or ball tuning changed. The game is still not behavior-equivalent: crest/swim and long ball-roll traces differ substantially, and warm island physics is slower. Reference traces remain untouched; this is not release approval.
+Updated 4 November 2026. Owner-approved dependency upgrade; commit only, no shipping. Upgrade: `ccf6ac27`, baseline: `75526a2a`. **Standing takeoffs and both bot glide beats are fixed by restoring the old prediction distance; exact-zero launch classification now also restores the old held-jump/hop heights.** No jump, glide, movement or ball constants changed. Controlled swimming is identical; golden swim differences follow entry and buffered-jump phase. Ball rebound height/timing changes systematically, amplifying into an offshore path difference. Warm island physics is slower. Reference traces remain untouched; this is not release approval.
 
 ## API and upstream changes
 
@@ -41,9 +41,64 @@ The final fix is one commented assignment in `backend-rapier.ts`: `normalizedPre
 
 All four `forEachContact` callers were audited: player grounding; mushroom bounce; Boogler riding; mini-hop bounce/count/finish. Raising the filter to 0.02 could trigger the last three early, so the numerical 0.005 filter stays unchanged. This restores the observed cases, not contact-distance freshness generally; retained negative distances could still delay separation recognition. There is no other Rapier contact-distance consumer. Deck carry independently tests feet gap −0.30…+0.15 m and relative vertical speed; fall-through recovery tests terrain height, not manifold distance. On the real turning crossing flatbed, [240 sampled fixed steps](../../.look/evidence/1793778648971-71045/evidence.json) were all grounded at 20 m/s: cached distances −0.000836…−0.000550, fresh distance about −0.000836. Raw diagnostic data: `.look/contact-variants.log`, `contact-fresh.log`, `final-contact.log`.
 
+## Final follow-up: jump, swim and ball
+
+### Exact-zero launch
+
+The jump-height regression comes from the **new resting state, not the 0.002 prediction setting**. At (14,26), after 120 settling steps, old resting vy is −1.718e−9 m/s; new vy is exactly zero. `shapeJump` used falling gravity for the tiny negative old value, but apex gravity (held) or short-hop gravity (released) at zero, before the controller assigned launch velocity. Forcing old vy to zero reproduces the new heights. Forcing eligibility with the new upstream 0.02 prediction gives the same altered heights as 0.002.
+
+The cause-level fix is `vy < 0 || (vy === 0 && jumpActive)` in `shapeJump`. `jumpActive` has just been cleared at nonpositive vy and set only for an eligible dry ground launch; zero idle/freefall, underwater and apex states keep their previous branches. This explicitly preserves the launch step's historical force, without inventing a velocity epsilon or changing a tuning constant. Changing the facade to fake a tiny downward velocity would affect unrelated consumers.
+
+| Controlled launch | Old natural rest | New before fix | New final |
+| --- | ---: | ---: | ---: |
+| Held height, m | 1.55159450 | 1.70371890 | 1.55159426 |
+| Hop height, m | about 0.663906 | 0.62543559 | 0.66390562 |
+| First post-step vy, held / hop, m/s | 7.08882 / 7.08882 | 7.44876 / 6.84886 | 7.08882 / 7.08882 |
+| First shaping force, held / hop, N | −882 / −882 | +630 / −1890 | −882 / −882 |
+
+These are full-step headless maxima; the course's five-step samples report 1.550 and 0.664 m. Old browser runs that already rested at exactly zero could show the taller arc too: this removes the solver-sign dependency and restores the recorded course intent, rather than claiming every old browser arc was 1.55 m. Diagnostic evidence: `.look/jump-followup-{old,current,default,final}.log`.
+
+### Swimming is the same law, with different entry and input phase
+
+Using the existing real-island/player simulation, both versions start at (−176,0.2,0) with zero velocity over deep water. All sampled position, velocity, surface and swimming states are **exactly equal** for 60 s idle, 30 s forward swimming, and a 60 s run with a 13-step held water jump at 10 s. This includes the final launch-condition fix. No swimming code or constants changed.
+
+| Controlled measurement | Both versions |
+| --- | ---: |
+| Steady bob period (20–60 s) | 34 fixed steps = 0.566667 s |
+| Centre-y trough / crest | −0.478076 / −0.340614 m |
+| Peak-to-peak / half amplitude | 0.137463 / 0.068731 m |
+| Water surface height / vertical velocity | 0 m / 0 m/s |
+| Forward speed, steady minimum / maximum / mean | 3.079487 / 4.010379 / 3.178596 m/s |
+| Water-jump first post-step vy / apex y above surface | 4.353240 m/s / +0.146931 m |
+
+Forward speed briefly rises when the bob crosses the swimming threshold, identically in both versions. The jump returns to the same equilibrium cycle. This tests the default classic water field, not the separate `water=new` FFT opt-in.
+
+The golden first enters swimming at frame 897 old versus 896 new. Its press at frame 993 is buffered until an underwater step: launch is frame 995 old versus 998 new. Therefore frame 997 compares old upward motion (+3.677) with new downward motion (−3.703), not failed buoyancy. Jump peaks are frame 1009, y=+0.215 m versus frame 1012, y=+0.182 m: 3 frames later and 3.3 cm lower because it starts at a different depth/phase. Extending the replay 120 seconds yields the same steady period and amplitude, with new lagging by 5 steps (0.083333 s). First-30-second y RMSE falls from 0.04337 m to 0.00920 m after phase alignment; the initial entry/jump transient is not a perfect rigid phase translation. **The swim law is unchanged; the route's entry and buffered input differ.** Evidence: `.look/swim-{idle,forward,jump}-{old,final}.json`, `swim-golden-{old,final}.json`.
+
+### Ball: stable roll, changed bounce, amplified shore trajectory
+
+Controlled comparisons use the existing headless island and actual ball hooks/material, no player, a raised flat or tilted box with matching ground probe, 6 m/s pure initial roll, 60 Hz for 60 s. Distances are accumulated horizontal x travel; stopping means speed below 0.05 m/s for 60 consecutive steps, reported at the start of that interval. No game tuning or sleep setting was changed.
+
+| Controlled measurement | Old | New final |
+| --- | ---: | ---: |
+| Flat travel / stopping time | 3.980209 m / 2.0167 s | 3.981939 m / 2.0167 s |
+| 0.025-radian downhill, travel / speed at 60 s | 6.211429 m / 0.031608 m/s | 6.215167 m / 0.031637 m/s |
+| 0.08-radian downhill, travel / speed at 60 s | 48.436275 m / 0.752077 m/s | 48.494785 m / 0.752863 m/s |
+| 5 m drop, first rebound clearance above plane | 1.373730 m | 1.273595 m |
+| First rebound outgoing vy | 7.229943 m/s | 7.229943 m/s |
+| Drop stopping time | 2.6333 s | 2.3500 s |
+
+The shallow slope crosses the 0.05 m/s stopping threshold at 2.5333 s in both, but keeps creeping at about 0.0316 m/s; the steeper slope never reaches that threshold in either version during the 60 s window. **No meaningful systematic extra flat-roll distance or later stop was found.** There is a systematic 10.0 cm (7.3%) lower first rebound and earlier settling. At the first post-impact step the bottom clearance is −0.02079 m old versus −0.12093 m new despite equal outgoing vy. That is a response-pose/integration difference consistent with upstream's end-of-step restitution change, not evidence of a lower material restitution coefficient.
+
+The game's rolling drag still multiplies horizontal velocity and spin by `1 − k*dt`, with k=1.2 above 0.5 m/s and k=10 below, while within `BALL_R + 0.08` of ground. Angular damping remains 0.3. Disabling rolling drag only gives flat travel 35.022911→35.053871 m and stop 27.950→27.967 s. Disabling angular damping only gives 4.236886→4.238441 m and 2.1333 s in both. These diagnostic ablations do not explain a multi-metre roll discrepancy. **Sleep was already disabled in both versions**, and neither sleeps in these runs; creep is not newly caused by disabled sleep.
+
+The golden's 7.535 m x gap at frame 985 was previously mislabeled a long roll. Its first material divergence is the terrain bounce at frame 193: new y is about 10.4 cm lower, which keeps it inside the rolling-drag band for another step. The next bounce reaches different heightfield features. Separation exceeds 0.5 m at frame 280 and 3 m at 351; by frame 400 both balls are floating above submerged terrain, and at 985 the bed is about 7 m below sea level. **A systematic bounce difference is amplified by terrain, the drag threshold and spatial shore drift.** This is not proof of nondeterministic chaos, or a systematically longer roll. The short throw's 2.2 cm resting gap therefore does not bound this trajectory.
+
+No demonstrated stock setting restores the old bounce while retaining the fixes. Diagnostic-only allowed error 0.001 and `maxCcdSubsteps=0` leave the new bounce unchanged; 8 solver iterations raise the apex only to 1.291257 m and add work. None was applied. Do not compensate with restitution, damping or sleep. Evidence: `.look/ball-followup-{runs,variants,trace}.log` and `ball-followup-{old,new}-*.json`.
+
 ## Measurements and loading
 
-Same Mac, Node 24.11.1, existing `npm run sim -- drop`: five alternating old/new processes, 300 fixed steps each. The old run uses copied baseline facade/dependencies under `.look/baseline`; no new benchmark was added. These cold timings include facade work and JIT, not just the solver, and do not predict full-game FPS.
+Size and performance figures in this section were measured on the prediction-fix predecessor `ce1532ad`, before the final launch-condition edit; byte counts were not remeasured for that small source change. Same Mac, Node 24.11.1, existing `npm run sim -- drop`: five alternating old/new processes, 300 fixed steps each. The old run uses copied baseline facade/dependencies under `.look/baseline`; no new benchmark was added. These cold timings include facade work and JIT, not just the solver, and do not predict full-game FPS.
 
 | Measurement | 0.19.3 | 0.21.0 |
 | --- | ---: | ---: |
@@ -74,7 +129,7 @@ Physics stays outside lockstep execution, but results reach saved state: `featur
 
 ## Checks and inspected evidence
 
-Final `npm run check` passes: lint, typecheck, 292 tests, registry, levels, assets and build (`.look/final-check.log`). The earlier 34 server tests passed; `check:full` previously stopped at a sandbox-forbidden Chromium launch in `test:net`. Per the follow-up, the owner runs `check:full`; it is not retried here. All five final broker scenarios pass, including interact (the suspected unrelated frisbee failure was not reproduced). Same-build smoke hashes agree.
+The owner reports `check:full` passing on predecessor `ce1532ad`, including 23/23 network checks. This is owner-provided evidence, not a rerun after the final launch condition. Final local `npm run check` passes lint, typecheck, all 292 tests, registries, levels, assets and build (`.look/last-check.log`); the sandbox-blocked network harness is not retried here. All five broker scenarios passed on the prediction-fix predecessor, including interact (the suspected unrelated frisbee failure was not reproduced). Same-build smoke hashes agree.
 
 | Evidence manifests | Inspection and result |
 | --- | --- |
@@ -85,20 +140,29 @@ Final `npm run check` passes: lint, typecheck, 292 tests, registry, levels, asse
 | [Baseline bot](../../.look/evidence/1793775761540-30632/evidence.json), [final bot](../../.look/evidence/1793778737151-75156/evidence.json) | Read reports and opened both end stills. Every expected beat passes, including glide to (1168,−27) and balcony: 77 m descent, about 24 s, 2 m from target. The solo co-op marker is absent in both. The preceding facade experiment [still failed both glides](../../.look/evidence/1793778075581-45451/evidence.json); that code was discarded. |
 | [Final glide](../../.look/evidence/1793779187362-11870/evidence.json) | Opened motion sheet and curves: walk across summit, canopy deploys after the real edge and remains open; steady 10 m/s forward and about −3.2 m/s vertical. |
 
-Baseline `sim player`, `sim ball` and golden replay were rerun and pass. Final 0.21 runs still fail their old numeric references: player has 30 differing fields; ball first differs at step 60, y=2.336 versus 2.415 m. Player semantic measurements: walk 5.652 (unchanged), sprint 9.599 versus 9.551 m/s, stop within 10 steps (unchanged), swim 3.079 m/s (unchanged), held jump 1.704 versus 1.55 m, hop 0.625 versus 0.66 m. The unchanged `shapeJump` selects different first-step gravity when resting vy is exactly zero versus slightly negative; no tuning was changed to conceal this. The browser standing arcs above are much closer than those headless course peaks.
+After the final source edit, `sim player` has **15 differing fields, down from 30**: small walk/sprint speed differences, up to 0.027 m sprint height drift, and about 0.024 m stop-height drift. Held jump/hop and swim differences are gone. Walk is 5.652 m/s, sprint 9.599 versus 9.551 m/s, stop within 10 steps in both, swim 3.079 m/s. `sim ball` still first differs at step 60, y=2.336 versus 2.415 m. Golden replay still first differs at frame 52, player.vx +0.038 m/s, and worst ball.x differs 7.535 m at frame 985. Old references remain unchanged, so these checks still fail; the underlying cause is characterized, not hidden by rebaselining.
 
-| Remaining golden difference | Assessment |
+| Golden section / reference | Final recommendation |
 | --- | --- |
-| First difference: frame 52, player.vx +0.038 m/s; grab/throw position within 4 mm | Small solver drift; acceptable for this investigation. |
-| Held and running jump sections: positions within 6 mm, vertical velocities matching; hop landing horizontal velocity differs up to 0.038 m/s | Jump eligibility is restored; small drift, unlike the original standing-jump failure. |
-| Crest: y differs up to 0.209 m; vy up to 3.275 m/s | Not accepted as equivalent; owner must inspect crest/shore transition. |
-| Swim: y differs up to 0.248 m; worst player.vy at frame 997 is −3.703 versus +3.677 m/s (7.380 difference) | Still a significant failure, not waved through as rounding. Water-entry/bobbing phases differ; the press at frame 993 occurs at a different phase. This is not evidence that the repaired standing jump still fails. |
-| Ball: x differs by 7.535 m at frame 985; held-state sequence identical | Long-roll behavior is not accepted. Short isolated throw rests only 2.2 cm away: [7.068,2.179,14.671] versus [7.046,2.177,14.673]; sea height remains 0.401 m. |
+| Player walk/sprint/stop; `dev/sim/player-browser.json` | Regenerate after the owner's crest/ground-motion playtest. The small course drift is acceptable for the upgrade; held/hop heights are restored. Capture the browser counterpart and compare Node, rather than replacing expectations with Node output. |
+| Golden held/running jumps | Positions within 6 mm, matching vertical velocities; retain behavior, no separate retune/reference required. |
+| Golden crest | y difference up to 0.209 m, vy up to 3.275 m/s; inspect this ground-to-water transition before accepting the combined replay. |
+| Golden swim | Same dynamics; accept the measured entry/buffer phase shift. The 7.380 m/s same-frame discrepancy is explained, not an altered swim law. No independent swim retune or new reference needed. |
+| `dev/sim/ball-browser.json` | **Do not regenerate yet.** Owner must accept lower bounce height and earlier settling; then recapture paired browser/Node evidence. |
+| `dev/sim/replays/golden.json` and `golden.trace.json` | **Do not regenerate yet.** Hold for crest and ball-bounce acceptance. Then record the browser session and its Node trace together; retain held-state/authority assertions. |
 
-No reference was regenerated. After acceptance, `dev/sim/player-browser.json`, `ball-browser.json`, and the golden browser recording plus `replays/golden.trace.json` need fresh browser/Node counterparts; do not simply bless these failures. Logs and observed rows are `.look/final-{old-player,old-ball,old-replay,sim-player,sim-ball,sim-replay,golden-detail}.log`, `final-golden-actual.json`, `final-ball-course.json`, and `fixed-player-course.json`. Final browser evidence records runtime tree `34e7a92154e6f6defea991d74d713c02b3e6e993`; subsequent edits are documentation only. Real-time feel/smoothness, devices, mixed-build handoff, full network harness and complete cold-load traffic remain unverified.
+Fresh evidence after the final launch-condition edit:
+
+| Manifest | Images actually opened and verdict |
+| --- | --- |
+| [Standing jump/hop](../../.look/evidence/1793781127120-51759/evidence.json) | Opened motion sheet, overlaid curves and six consecutive video ascent frames. Both launches and landings are visible; held arc is higher than hop. Curves show the intended shorter held arc versus the previous erroneous 1.704 m run. |
+| [Water jump](../../.look/evidence/1793781142772-52397/evidence.json) | Opened motion sheet, curves and six consecutive ascent frames. Consecutive frames show emergence above water; curves show a jump, return and decaying transient to steady bobbing. The wide sheet alone undersamples the jump and cannot establish its height. |
+| [Full playthrough](../../.look/evidence/1793781168820-51756/evidence.json) | Read report and opened end still. All expected beats pass, including glide to (1168,−27) and balcony; no errors. Solo co-op marker remains absent; bot reports 4m44s stationary and 3s pushing stalls, not failed expected beats. End still shows the player supported on the platform but the bot log overlay obstructs much of the view. |
+
+Runtime tree for these three captures is `4df75f36439cf74bbc3cd91e451d40391db74f21`; later edits are documentation only. Numeric checks: `.look/last-{sim-player,sim-ball,sim-replay,course-summary}.log`, `last-golden-actual.json`. The five scenarios above passed before this final launch-only change; the full playthrough and targeted launches were rerun afterward. Real-time feel/smoothness, devices, mixed-build handoff, opt-in FFT water, full network harness after this final condition and complete cold-load traffic remain unverified.
 
 ## Owner playtest and departures
 
-Gut question: **Do the repaired takeoffs feel reliable, and are crest/swim and ball-roll differences acceptable?** At classic (14,26), stop, hold jump, then tap-hop; repeat on flat ground and slopes. Sprint over the spawn-side crest into the sea, bob, then jump out. Walk across summit planks and glide to (1168,−27), then repeat toward the balcony secret. Throw/steal the ball, watch long downhill rolls, and throw hard against cave/thin walls. Ride the Boogler and a turning/downhill flatbed, then jump off. The owner must also run `check:full`. No movement tuning changed to hide differences.
+Gut question: **Do the restored jumps feel right, and are the crest transition and lower ball bounces acceptable?** At classic (14,26), stop, hold jump, then tap-hop; repeat on flat ground and slopes. Sprint over the spawn-side crest into the sea, bob, then jump out. Walk across summit planks and glide to (1168,−27), then repeat toward the balcony secret. Throw/steal the ball, watch long downhill rolls, and throw hard against cave/thin walls. Ride the Boogler and a turning/downhill flatbed, then jump off. The owner already reports `check:full` passing before the launch-condition follow-up. No movement tuning changed to hide differences.
 
-Earlier-turn departure: the required `npm run inflight` internally fetched origin before its implementation was inspected. This follow-up used no external network; it did not rerun inflight. Packages and upstream material came from local copies. Temporary diagnostics/evals stayed in `.look`; no new benchmark/test harness or gameplay tuning was committed. No push or ship was run. Screenshot uploads remain omitted under the network restriction. Stop for owner review/playtest; the significant trace failures remain unresolved.
+Earlier-turn departure: the required `npm run inflight` internally fetched origin before its implementation was inspected. This follow-up used no external network; it did not rerun inflight. Packages and upstream material came from local copies. Temporary diagnostics/evals stayed in `.look`; no new benchmark/test harness or gameplay tuning was committed. No push or ship was run. Screenshot uploads remain omitted under the network restriction. Stop for owner review/playtest; numeric reference mismatches remain intentionally unblessed, with their measured causes and regeneration gates above.

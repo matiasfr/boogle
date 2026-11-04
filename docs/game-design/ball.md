@@ -1,8 +1,10 @@
 # 6.1 Beach ball
 
 Rapier 0.21.0, with the previous 0.002 m prediction distance, changes flight/bounce despite unchanged ball tuning.
-Throw/rebound and cave checks pass, but the short course rests 2.2 cm away and the golden session's long roll differs
-by up to 7.535 m in x. That long-roll difference is not accepted or rebaselined; see the [upgrade assessment](../research/rapier-021-upgrade.md).
+Throw/rebound and cave checks pass. Controlled flat rolling differs by 1.7 mm with the same stopping time, but a
+5 m drop rebounds 10 cm lower and settles earlier. The golden's 7.535 m x gap follows changed terrain bounces and
+offshore drift, not a long roll. Bounce changes await owner acceptance; references remain unchanged. See the
+[upgrade assessment](../research/rapier-021-upgrade.md).
 
 The staged `water=new` opt-in replaces the ball's old sine sea with bounded samples of the visible FFT/shore waves.
 Vertical drag is relative to surface velocity (bounded ±3 m/s); gentle wash-in follows the registered coast's normal
