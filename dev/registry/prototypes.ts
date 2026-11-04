@@ -1,7 +1,8 @@
 // Prototype dependencies for registry JSON. Advisory except for archived code or an unlisted literal flag.
 // No status is inferred: only the owner's card can say answered, and archiving remains an owner decision.
 import path from 'node:path';
-import ts from 'typescript';
+import { parseSync, type Node } from 'oxc-parser';
+import { lineOf, walk } from '../scan/parse.ts';
 import type { Proto } from '../../protos/protos.ts';
 import type { Source } from './scan.ts';
 
@@ -33,37 +34,31 @@ export function prototypeReport(files: Source[], cards: Proto[]) {
     const relevant = (target: string) =>
       target.startsWith('src/proto/') || /src\/debug\/(look-lab|haul-kit)\.ts$/.test(target);
     if (!text.includes('protoOn') && !imports.some((i) => relevant(resolve(file, i[1]!)))) continue;
-    const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
-    const line = (n: ts.Node) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
-    const add = (n: ts.Node, spec: ts.Expression | undefined, kind: Ref['kind']) => {
-      if (!spec || !ts.isStringLiteral(spec)) return;
-      const target = resolve(file, spec.text);
+    const sf = parseSync(file, text).program;
+    const line = lineOf(text);
+    const add = (n: Node, spec: Node | null, kind: Ref['kind']) => {
+      if (spec?.type !== 'Literal' || typeof spec.value !== 'string') return;
+      const target = resolve(file, spec.value);
       refs.push({ file, line: line(n), target, kind });
     };
-    const visit = (n: ts.Node) => {
-      if (ts.isImportDeclaration(n)) {
-        const clause = n.importClause;
-        const bindings = clause?.namedBindings;
+    walk(sf, (n, parent) => {
+      if (n.type === 'ImportDeclaration') {
         const onlyTypes =
-          clause?.isTypeOnly ||
-          (!clause?.name &&
-            bindings &&
-            ts.isNamedImports(bindings) &&
-            bindings.elements.length > 0 &&
-            bindings.elements.every((e) => e.isTypeOnly));
-        add(n, n.moduleSpecifier, onlyTypes ? 'type' : 'value');
-      } else if (ts.isExportDeclaration(n)) add(n, n.moduleSpecifier, n.isTypeOnly ? 'type' : 'value');
-      else if (ts.isImportTypeNode(n) && ts.isLiteralTypeNode(n.argument)) add(n, n.argument.literal, 'type');
-      else if (ts.isCallExpression(n)) {
-        if (n.expression.kind === ts.SyntaxKind.ImportKeyword) add(n, n.arguments[0], 'dynamic');
-        if (ts.isIdentifier(n.expression) && n.expression.text === 'protoOn') {
+          n.importKind === 'type' ||
+          (n.specifiers.length > 0 &&
+            n.specifiers.every((s) => s.type === 'ImportSpecifier' && s.importKind === 'type'));
+        add(n, n.source, onlyTypes ? 'type' : 'value');
+      } else if (n.type === 'ExportNamedDeclaration' || n.type === 'ExportAllDeclaration')
+        add(n, n.source, n.exportKind === 'type' ? 'type' : 'value');
+      else if (n.type === 'TSImportType') add(parent?.type === 'TSTypeQuery' ? parent : n, n.source, 'type');
+      else if (n.type === 'ImportExpression') add(n, n.source, 'dynamic');
+      else if (n.type === 'CallExpression') {
+        if (n.callee.type === 'Identifier' && n.callee.name === 'protoOn') {
           const id = n.arguments[0];
-          if (id && ts.isStringLiteral(id)) flags.push({ file, line: line(n), id: id.text });
+          if (id?.type === 'Literal' && typeof id.value === 'string') flags.push({ file, line: line(n), id: id.value });
         }
       }
-      ts.forEachChild(n, visit);
-    };
-    visit(sf);
+    });
   }
   const errors: string[] = [];
   const ids = new Set(cards.map((p) => p.id));

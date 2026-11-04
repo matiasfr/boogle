@@ -1,11 +1,12 @@
 // The one reader of src/ and server/src/, shared by the atlas (dev/atlas/extract.ts) and the registry check
 // (dev/registry/scan.ts), so they can't disagree about who owns a presence key, a message or a frame hook. It parses
-// with the TypeScript compiler API, which reads `.js` and `.ts` alike (a module keeps its facts when it moves from
+// with Oxc's ESTree parser, which reads `.js` and `.ts` alike (a module keeps its facts when it moves from
 // one to the other). readFile(path, text) returns what a file registers as a raw record: names with line numbers,
 // `sends` apart from `reads`, literal-order flags. Each caller projects it into its own shape. Pure; never throws:
-// a file the parser rejects gets a `parseError`. Needs `typescript` (a devDependency): not for `atlas --gate`.
-import ts from 'typescript';
+// a file the parser rejects gets a `parseError`. Needs `oxc-parser` (a devDependency): not for `atlas --gate`.
+import { parseSync, type Node, type CallExpression, type Program, type ObjectPropertyKind } from 'oxc-parser';
 import path from 'node:path';
+import { walk, lineOf as sourceLine } from './parse.ts';
 
 const posix = path.posix;
 
@@ -61,107 +62,101 @@ export interface FileRecord {
   parseError?: string;
 }
 
-// Depth-first walk over every node. `fn(node)` runs before the children.
-function walk(node: ts.Node, fn: (n: ts.Node) => void) {
-  fn(node);
-  ts.forEachChild(node, (c) => walk(c, fn));
-}
-
 // `x as T`, `x satisfies T`, `(x)` and `x!` are the value x here.
-function unwrap(n: ts.Node | undefined): ts.Node | undefined {
+function unwrap(n: Node | null | undefined): Node | undefined {
   while (
     n &&
-    (ts.isAsExpression(n) ||
-      ts.isSatisfiesExpression(n) ||
-      ts.isParenthesizedExpression(n) ||
-      ts.isNonNullExpression(n))
+    (n.type === 'TSAsExpression' ||
+      n.type === 'TSSatisfiesExpression' ||
+      n.type === 'ParenthesizedExpression' ||
+      n.type === 'TSNonNullExpression' ||
+      n.type === 'ChainExpression')
   )
     n = n.expression;
-  return n;
+  return n ?? undefined;
 }
 
-const strOf = (n: ts.Node | undefined): string | undefined => {
+const strOf = (n: Node | null | undefined): string | undefined => {
   const u = unwrap(n);
-  return u && ts.isStringLiteral(u) ? u.text : undefined;
+  return u?.type === 'Literal' && typeof u.value === 'string' ? u.value : undefined;
 };
-const isFn = (n: ts.Node | undefined): boolean => !!n && (ts.isFunctionExpression(n) || ts.isArrowFunction(n));
+const isFn = (n: Node | undefined): boolean =>
+  n?.type === 'FunctionExpression' || n?.type === 'ArrowFunctionExpression';
 
 // Name of a call's callee: `f(...)` gives 'f', `a.b?.f(...)` gives 'f'. Null for anything else.
-function calleeName(call: ts.CallExpression): string | null {
-  const c = unwrap(call.expression);
-  if (c && ts.isIdentifier(c)) return c.text;
-  if (c && ts.isPropertyAccessExpression(c) && ts.isIdentifier(c.name)) return c.name.text;
+function calleeName(call: CallExpression): string | null {
+  const c = unwrap(call.callee);
+  if (c?.type === 'Identifier') return c.name;
+  if (c?.type === 'MemberExpression' && !c.computed && c.property.type === 'Identifier') return c.property.name;
   return null;
 }
 
 // A number literal, with an optional leading sign. Undefined when it is not one.
-function numberOf(n: ts.Node | undefined): number | undefined {
+function numberOf(n: Node | undefined): number | undefined {
   const u = unwrap(n);
   if (!u) return undefined;
-  if (ts.isNumericLiteral(u)) return Number(u.text);
-  if (
-    ts.isPrefixUnaryExpression(u) &&
-    (u.operator === ts.SyntaxKind.MinusToken || u.operator === ts.SyntaxKind.PlusToken)
-  ) {
-    const v = numberOf(u.operand);
-    if (v !== undefined) return u.operator === ts.SyntaxKind.MinusToken ? -v : v;
+  if (u.type === 'Literal' && typeof u.value === 'number') return u.value;
+  if (u.type === 'UnaryExpression' && (u.operator === '-' || u.operator === '+')) {
+    const v = numberOf(u.argument);
+    if (v !== undefined) return u.operator === '-' ? -v : v;
   }
   return undefined;
 }
 
-type Member = ts.ObjectLiteralElementLike;
+type Member = ObjectPropertyKind;
 
-const objectOf = (n: ts.Node | undefined): ts.ObjectLiteralExpression | undefined => {
+const objectOf = (n: Node | null | undefined) => {
   const u = unwrap(n);
-  return u && ts.isObjectLiteralExpression(u) ? u : undefined;
+  return u?.type === 'ObjectExpression' ? u : undefined;
 };
 
 // A member's key, unless it is computed or a spread.
 function memberKey(m: Member): string | null {
-  if (ts.isSpreadAssignment(m)) return null;
-  const name = m.name;
-  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text;
+  if (m.type === 'SpreadElement' || m.computed) return null;
+  const name = m.key;
+  if (name.type === 'Identifier') return name.name;
+  if (name.type === 'Literal' && (typeof name.value === 'string' || typeof name.value === 'number'))
+    return String(name.value);
   return null;
 }
 // A member's value node: the initializer, the shorthand's identifier, or the method itself.
-function memberValue(m: Member): ts.Node | undefined {
-  if (ts.isPropertyAssignment(m)) return m.initializer;
-  if (ts.isShorthandPropertyAssignment(m)) return m.name;
-  if (ts.isSpreadAssignment(m)) return undefined;
-  return m; // a method or accessor
+function memberValue(m: Member): Node | undefined {
+  if (m.type === 'SpreadElement') return undefined;
+  return m.value;
 }
 
 // Finds `key` in an object literal: its value node, or undefined.
-function prop(obj: ts.Node | undefined, key: string): ts.Node | undefined {
+function prop(obj: Node | undefined, key: string): Node | undefined {
   for (const m of objectOf(obj)?.properties ?? []) if (memberKey(m) === key) return memberValue(m);
   return undefined;
 }
 
 // The first statement's call in a function body (or the arrow's expression body), awaits removed.
-function bodyCall(fn: ts.Node): ts.CallExpression | null {
-  let e: ts.Node | undefined = (fn as ts.FunctionExpression | ts.ArrowFunction).body;
-  if (e && ts.isBlock(e)) {
-    const s = e.statements[0];
-    e = s && ts.isExpressionStatement(s) ? s.expression : undefined;
+function bodyCall(fn: Node): CallExpression | null {
+  let e: Node | undefined =
+    (fn.type === 'FunctionExpression' || fn.type === 'ArrowFunctionExpression' ? fn.body : undefined) ?? undefined;
+  if (e?.type === 'BlockStatement') {
+    const s = e.body[0];
+    e = s?.type === 'ExpressionStatement' ? s.expression : undefined;
   }
   e = unwrap(e);
-  if (e && ts.isAwaitExpression(e)) e = unwrap(e.expression);
-  return e && ts.isCallExpression(e) ? e : null;
+  if (e?.type === 'AwaitExpression') e = unwrap(e.argument);
+  return e?.type === 'CallExpression' ? e : null;
 }
 
 // What an onFrame hook is called: the function it passes, or the call its body makes, else the file's name.
-function frameName(fn: ts.Node | undefined, file: string): string {
+function frameName(fn: Node | undefined, file: string): string {
   const fallback = posix.basename(file).replace(/\.[jt]s$/, '');
   const u = unwrap(fn);
-  if (u && ts.isIdentifier(u)) return u.text;
+  if (u?.type === 'Identifier') return u.name;
   if (!u || !isFn(u)) return fallback;
   const call = bodyCall(u);
   return (call && calleeName(call)) || fallback;
 }
 
-function frameOf(call: ts.CallExpression, file: string, lineOf: (n: ts.Node) => number): Frame {
+function frameOf(call: CallExpression, file: string, lineOf: (n: Node) => number): Frame {
   const opts = call.arguments[1];
-  const read = <T>(key: string, dflt: T, get: (v: ts.Node) => T | undefined): T | null => {
+  const read = <T>(key: string, dflt: T, get: (v: Node) => T | undefined): T | null => {
     if (opts === undefined) return dflt;
     const v = prop(opts, key);
     if (v === undefined) return objectOf(opts) ? dflt : null;
@@ -191,7 +186,7 @@ const KIND_PHASE: Record<string, string> = {
 
 // defineKind('ball', { update: -300 }): one frame per entry, or a complaint. The kind and every order must be literals, so
 // this reader sees them.
-function kindOf(call: ts.CallExpression, lineOf: (n: ts.Node) => number, rec: FileRecord) {
+function kindOf(call: CallExpression, lineOf: (n: Node) => number, rec: FileRecord) {
   const line = lineOf(call);
   const kind = strOf(call.arguments[0]);
   const orders = objectOf(call.arguments[1]);
@@ -228,10 +223,15 @@ export const isCoreHook = (file: string, order: number | null): boolean =>
   !file.startsWith('src/features/') && typeof order === 'number' && (order < MIN_FEATURE_ORDER || order >= CORE_LATE);
 
 // `a.b` for a member call on an identifier, else the plain callee name: 'world.step', 'renderFrame'.
-function dotted(call: ts.CallExpression): string | null {
-  const c = unwrap(call.expression);
-  if (c && ts.isPropertyAccessExpression(c) && ts.isIdentifier(c.expression) && ts.isIdentifier(c.name))
-    return `${c.expression.text}.${c.name.text}`;
+function dotted(call: CallExpression): string | null {
+  const c = unwrap(call.callee);
+  if (
+    c?.type === 'MemberExpression' &&
+    !c.computed &&
+    c.object.type === 'Identifier' &&
+    c.property.type === 'Identifier'
+  )
+    return `${c.object.name}.${c.property.name}`;
   return calleeName(call);
 }
 
@@ -239,21 +239,21 @@ function dotted(call: ts.CallExpression): string | null {
 // runFrame that follows the step (the physics step: runFrame('prePhysics') is hooks, listed with their phase); render =
 // the call after the last runFrame (the draw). Profiling marks are not steps. Null when it cannot be found.
 const PROFILING = new Set(['beginFrame', 'endFrame', 'mark']);
-function loopOf(sf: ts.SourceFile): Loop | null {
+function loopOf(sf: Program): Loop | null {
   let fnName: string | null = null;
   walk(sf, (n) => {
-    if (!ts.isCallExpression(n) || calleeName(n) !== 'setAnimationLoop') return;
+    if (n.type !== 'CallExpression' || calleeName(n) !== 'setAnimationLoop') return;
     const a0 = n.arguments[0];
-    if (a0 && ts.isIdentifier(a0)) fnName = a0.text;
+    if (a0?.type === 'Identifier') fnName = a0.name;
   });
-  const fn = sf.statements.find(
-    (n): n is ts.FunctionDeclaration => ts.isFunctionDeclaration(n) && !!fnName && n.name?.text === fnName,
-  );
-  if (!fn?.body) return null;
-  const calls = fn.body.statements
-    .map((st) => (ts.isExpressionStatement(st) ? unwrap(st.expression) : undefined))
-    .map((e) => (e && ts.isAwaitExpression(e) ? unwrap(e.expression) : e))
-    .filter((e): e is ts.CallExpression => !!e && ts.isCallExpression(e))
+  const fn = sf.body
+    .map((n) => (n.type === 'ExportNamedDeclaration' || n.type === 'ExportDefaultDeclaration' ? n.declaration : n))
+    .find((n) => n?.type === 'FunctionDeclaration' && !!fnName && n.id?.name === fnName);
+  if (fn?.type !== 'FunctionDeclaration' || !fn.body) return null;
+  const calls = fn.body.body
+    .map((st) => (st.type === 'ExpressionStatement' ? unwrap(st.expression) : undefined))
+    .map((e) => (e?.type === 'AwaitExpression' ? unwrap(e.argument) : e))
+    .filter((e): e is CallExpression => e?.type === 'CallExpression')
     .filter((c) => !(calleeName(c) === 'runFrame' && strOf(c.arguments[0]) === 'prePhysics'))
     .map(dotted)
     .filter((name) => !PROFILING.has(name ?? ''));
@@ -293,38 +293,29 @@ function emptyRecord(f: string, loc: number): FileRecord {
   };
 }
 
-const hasModifier = (n: ts.Node, kind: ts.SyntaxKind) =>
-  ts.canHaveModifiers(n) && !!ts.getModifiers(n)?.some((m) => m.kind === kind);
+const EQUALITY = new Set(['===', '!==', '==', '!=']);
 
-const EQUALITY = new Set<ts.SyntaxKind>([
-  ts.SyntaxKind.EqualsEqualsEqualsToken,
-  ts.SyntaxKind.ExclamationEqualsEqualsToken,
-  ts.SyntaxKind.EqualsEqualsToken,
-  ts.SyntaxKind.ExclamationEqualsToken,
-]);
-
-const isTProp = (x: ts.Node) => {
+const isTProp = (x: Node) => {
   const u = unwrap(x);
-  return !!u && ts.isPropertyAccessExpression(u) && u.name.text === 't';
+  return u?.type === 'MemberExpression' && !u.computed && u.property.type === 'Identifier' && u.property.name === 't';
 };
 
 export function readFile(file: string, text: string): FileRecord {
   const loc = text.split('\n').length;
   const rec = emptyRecord(file, loc);
-  const kind = file.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.JS;
-  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, kind);
-  // The parser recovers from errors; its syntax errors are only on the (internal) parseDiagnostics list.
-  const bad = (sf as unknown as { parseDiagnostics?: ts.Diagnostic[] }).parseDiagnostics?.[0];
+  const parsed = parseSync(file, text, { lang: file.endsWith('.ts') ? 'ts' : 'js' });
+  const bad = parsed.errors[0];
   if (bad) {
-    rec.parseError = ts.flattenDiagnosticMessageText(bad.messageText, ' ');
+    rec.parseError = bad.message;
     return rec;
   }
-  const lineOf = (n: ts.Node) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
+  const sf = parsed.program;
+  const lineOf = sourceLine(text);
 
   // The line comments before the first statement.
-  rec.head = (ts.getLeadingCommentRanges(text, 0) ?? [])
-    .filter((c) => c.kind === ts.SyntaxKind.SingleLineCommentTrivia)
-    .map((c) => text.slice(c.pos + 2, c.end).trim())
+  rec.head = parsed.comments
+    .filter((c) => c.start < (sf.body[0]?.start ?? text.length) && c.type === 'Line')
+    .map((c) => c.value.trim())
     .filter(Boolean)
     .join(' ')
     .slice(0, 260);
@@ -339,26 +330,27 @@ export function readFile(file: string, text: string): FileRecord {
   const isServer = file.startsWith('server/');
   let sendsOrListens = false;
 
-  walk(sf, (n) => {
-    if (ts.isImportDeclaration(n)) {
-      if (!n.importClause?.isTypeOnly) imports.push(resolveImport(file, strOf(n.moduleSpecifier)));
-    } else if (ts.isExportDeclaration(n)) {
-      if (n.isTypeOnly) return;
-      if (n.moduleSpecifier) imports.push(resolveImport(file, strOf(n.moduleSpecifier)));
-      if (n.exportClause && ts.isNamedExports(n.exportClause))
-        for (const s of n.exportClause.elements) if (!s.isTypeOnly) exportsList.push(s.name.text);
-    } else if (ts.isExportAssignment(n)) {
-      if (!n.isExportEquals) exportsList.push('default');
-    } else if (ts.isFunctionDeclaration(n) || ts.isClassDeclaration(n)) {
-      if (n.name) names.push(n.name.text);
-      if (hasModifier(n, ts.SyntaxKind.ExportKeyword))
-        exportsList.push(hasModifier(n, ts.SyntaxKind.DefaultKeyword) ? 'default' : (n.name?.text ?? ''));
-      if (ts.isFunctionDeclaration(n) && n.name?.text === 'buildPresence' && n.body) {
-        for (const st of n.body.statements) {
-          if (!ts.isVariableStatement(st)) continue;
-          for (const d of st.declarationList.declarations) {
-            const init = objectOf(d.initializer);
-            if (ts.isIdentifier(d.name) && d.name.text === 'pr' && init)
+  walk(sf, (n, parent) => {
+    if (n.type === 'ImportDeclaration') {
+      if (n.importKind !== 'type') imports.push(resolveImport(file, strOf(n.source)));
+    } else if (n.type === 'ExportNamedDeclaration' || n.type === 'ExportAllDeclaration') {
+      if (n.exportKind === 'type') return;
+      if (n.source) imports.push(resolveImport(file, strOf(n.source)));
+      if (n.type === 'ExportNamedDeclaration')
+        for (const s of n.specifiers)
+          if (s.exportKind !== 'type')
+            exportsList.push(s.exported.type === 'Identifier' ? s.exported.name : s.exported.value);
+    } else if (n.type === 'ExportDefaultDeclaration') {
+      exportsList.push('default');
+    } else if (n.type === 'FunctionDeclaration' || n.type === 'TSDeclareFunction' || n.type === 'ClassDeclaration') {
+      if (n.id) names.push(n.id.name);
+      if (parent?.type === 'ExportNamedDeclaration') exportsList.push(n.id?.name ?? '');
+      if (n.type === 'FunctionDeclaration' && n.id?.name === 'buildPresence' && n.body) {
+        for (const st of n.body.body) {
+          if (st.type !== 'VariableDeclaration') continue;
+          for (const d of st.declarations) {
+            const init = objectOf(d.init);
+            if (d.id.type === 'Identifier' && d.id.name === 'pr' && init)
               for (const m of init.properties) {
                 const k = memberKey(m);
                 if (k) rec.corePresence.push(k);
@@ -366,42 +358,42 @@ export function readFile(file: string, text: string): FileRecord {
           }
         }
       }
-    } else if (ts.isVariableStatement(n)) {
-      if (hasModifier(n, ts.SyntaxKind.ExportKeyword))
-        for (const d of n.declarationList.declarations) {
-          if (!ts.isIdentifier(d.name)) continue;
-          exportsList.push(d.name.text);
-          const init = unwrap(d.initializer);
-          if (d.name.text === 'PAD' && init && ts.isArrayLiteralExpression(init))
+    } else if (n.type === 'VariableDeclaration') {
+      if (parent?.type === 'ExportNamedDeclaration')
+        for (const d of n.declarations) {
+          if (d.id.type !== 'Identifier') continue;
+          exportsList.push(d.id.name);
+          const init = unwrap(d.init);
+          if (d.id.name === 'PAD' && init?.type === 'ArrayExpression')
             rec.padSlots = init.elements.map(strOf).filter((s): s is string => s !== undefined);
         }
-    } else if (ts.isVariableDeclaration(n)) {
-      if (ts.isIdentifier(n.name)) names.push(n.name.text);
-    } else if (ts.isObjectLiteralExpression(n)) {
+    } else if (n.type === 'VariableDeclarator') {
+      if (n.id.type === 'Identifier') names.push(n.id.name);
+    } else if (n.type === 'CatchClause') {
+      if (n.param?.type === 'Identifier') names.push(n.param.name);
+    } else if (n.type === 'ObjectExpression') {
       // Members of an object literal: a function-valued one names a function; `t: '...'` is a message type.
       for (const m of n.properties) {
         const k = memberKey(m);
         if (!k) continue;
         const v = memberValue(m);
-        if (v === m || isFn(v)) names.push(k);
-        if (k === 't' && ts.isPropertyAssignment(m) && strOf(m.initializer) !== undefined)
-          tProps.push(strOf(m.initializer)!);
+        if (isFn(v)) names.push(k);
+        if (k === 't' && m.type === 'Property' && !m.shorthand && !m.method && strOf(m.value) !== undefined)
+          tProps.push(strOf(m.value)!);
       }
-    } else if (ts.isBinaryExpression(n)) {
-      if (EQUALITY.has(n.operatorToken.kind)) {
+    } else if (n.type === 'BinaryExpression') {
+      if (EQUALITY.has(n.operator)) {
         const [a, b] = [n.left, n.right];
         if (isTProp(a) && strOf(b) !== undefined) reads.push(strOf(b)!);
         else if (isTProp(b) && strOf(a) !== undefined) reads.push(strOf(a)!);
       }
-    } else if (ts.isCallExpression(n)) {
-      if (n.expression.kind === ts.SyntaxKind.ImportKeyword) {
-        lazy.push(resolveImport(file, strOf(n.arguments[0])));
-        return;
-      }
+    } else if (n.type === 'ImportExpression') {
+      lazy.push(resolveImport(file, strOf(n.source)));
+    } else if (n.type === 'CallExpression') {
       const name = calleeName(n);
       const s0 = strOf(n.arguments[0]);
       if (name === 'send' || name === 'onMessage') sendsOrListens = true;
-      if (name === 'send' && !ts.isIdentifier(unwrap(n.expression)!)) rec.memberSend = true;
+      if (name === 'send' && unwrap(n.callee)?.type !== 'Identifier') rec.memberSend = true;
       if (name === 'onMessage') rec.onMessage = true;
       else if (name === 'submitEdit') rec.submits = true;
       else if (name === 'onFrame') rec.frames.push(frameOf(n, file, lineOf));
@@ -419,8 +411,8 @@ export function readFile(file: string, text: string): FileRecord {
       else if (name === 'registerAction')
         rec.actions.push({ id: s0 ?? null, pad: strOf(prop(n.arguments[1], 'pad')) ?? null, line: lineOf(n) });
       else if (isServer && ['get', 'put', 'post', 'delete', 'use'].includes(name ?? '') && s0 !== undefined) {
-        const c = unwrap(n.expression);
-        if (c && ts.isPropertyAccessExpression(c) && ts.isIdentifier(c.expression) && c.expression.text === 'app')
+        const c = unwrap(n.callee);
+        if (c?.type === 'MemberExpression' && !c.computed && c.object.type === 'Identifier' && c.object.name === 'app')
           routes.push(`${name!.toUpperCase()} ${s0}`);
       }
     }
