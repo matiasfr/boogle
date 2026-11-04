@@ -28,6 +28,7 @@ import { dom } from '../player/hud.ts';
 import { canvas } from '../render/scene.ts';
 import { PAD, actionForSlot, padModal, padGrab, setMenuSwap, menuSlot } from '../player/controls.ts';
 import { standalone } from '../boot/app-fill.ts';
+import { devInputBlocked } from '../player/dev-input.ts';
 
 const DEAD = 0.15; // stick deadzone
 const LOOK_YAW = 2.8; // rad/s at full right-stick deflection
@@ -116,6 +117,7 @@ const typingIn = () => document.activeElement?.matches?.('input, textarea') ?? f
 // iPadOS also drives whatever has focus with the pad (a focused button gets "pressed" by A), so keep focus on the
 // canvas while the pad plays. Leave text fields alone: the name box may be mid-edit.
 function claimFocus() {
+  if (devInputBlocked()) return;
   const el = document.activeElement;
   if (el === canvas || el?.matches?.('input, textarea')) return;
   (el as HTMLElement | null)?.blur?.();
@@ -196,6 +198,15 @@ function poll(dt: number) {
     down[i] = !!b && (b.pressed || b.value > PRESS);
   }
   dpadAxes(pad, down);
+  if (devInputBlocked() && !padModal()) {
+    input.stickX = input.stickY = input.triggerL = input.triggerR = 0;
+    for (let i = 0; i < PAD.length; i++) {
+      if (down[i] && !pressed[i] && PAD[i] === 'menu') actionForSlot('menu')?.down?.();
+      pressed[i] = down[i];
+      grabbed[i] = true;
+    }
+    return;
+  }
   input.triggerL = trigger(pad.buttons[6]);
   input.triggerR = trigger(pad.buttons[7]);
   if (!active && (lx || ly || rx || ry || down.includes(true))) setActive(true);

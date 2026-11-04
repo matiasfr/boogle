@@ -5,7 +5,7 @@ import { me } from '../../player/state.ts';
 import { camera, canvas } from '../../render/scene.ts';
 import { defineKind, spawn, despawn } from '../../entity/entity.ts';
 import { fixture, setupLink, VERSION } from './fixtures.ts';
-import { command, note, el, copy, download } from './ui.ts';
+import { command, note, el, copy, download, more } from './ui.ts';
 import { ok, no, type Tool } from './types.ts';
 
 let latest: unknown = null;
@@ -37,7 +37,11 @@ async function report() {
       'No actual GPU presentation timestamps.',
     ],
   };
-  if (textArea) textArea.value = JSON.stringify(latest, null, 2);
+  if (textArea) {
+    textArea.value = JSON.stringify(latest, null, 2);
+    const details = textArea.closest('details');
+    if (details) details.open = true;
+  }
   return latest;
 }
 function screenshot() {
@@ -131,14 +135,15 @@ export const tool: Tool = {
       textArea?.select();
       return ok(
         copied ? 'Test report copied.' : 'Clipboard unavailable; select/copy the report below, or download it.',
-        data,
+        { copied, report: data },
       );
     }
     return ok('Test report ready.', data);
   },
   mount(parent, ctx) {
+    const details = more(parent);
     note(
-      parent,
+      details,
       'The setup link carries only named scenario/destination and appearance flags. It never resets the current room.',
     );
     for (const [label, name] of [
@@ -152,12 +157,13 @@ export const tool: Tool = {
       ['Stop input trace', 'record-stop'],
       ['Save input trace', 'record-save'],
     ])
-      command(parent, ctx, 'report', label!, name!);
+      command(['copy', 'setup', 'screenshot'].includes(name!) ? parent : details, ctx, 'report', label!, name!);
     const output = el('textarea');
     output.readOnly = true;
     output.setAttribute('aria-label', 'Test report or setup link');
     textArea = output;
-    parent.append(output);
+    details.append(output);
+    parent.append(details);
     return () => {
       if (textArea === output) textArea = null;
     };

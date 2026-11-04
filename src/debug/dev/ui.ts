@@ -12,11 +12,18 @@ export function button(label: string, action: () => unknown) {
   node.addEventListener('click', () => void action());
   return node;
 }
-export function command(parent: HTMLElement, ctx: Context, tool: string, label: string, name: string, args?: Args) {
+export function command(
+  parent: HTMLElement,
+  ctx: Context,
+  tool: string,
+  label: string,
+  name: string,
+  args?: Args | (() => Args),
+) {
   const b = button(label, async () => {
     b.disabled = true;
     try {
-      const result = await ctx.run(tool, name, args);
+      const result = await ctx.run(tool, name, typeof args === 'function' ? args() : args);
       status.textContent = result.message;
       if (result.data !== undefined) output.textContent = JSON.stringify(result.data, null, 2);
     } finally {
@@ -27,8 +34,16 @@ export function command(parent: HTMLElement, ctx: Context, tool: string, label: 
   const status = el('p', '', 'dev-status');
   status.setAttribute('role', 'status');
   const output = el('pre', '', 'dev-output');
-  parent.append(b, status, output);
+  const item = el('div', '', 'dev-command');
+  item.append(b, status, output);
+  parent.append(item);
   return b;
+}
+export function more(parent: HTMLElement, label = 'More') {
+  const details = el('details', '', 'dev-more');
+  details.append(el('summary', label));
+  parent.append(details);
+  return details;
 }
 export function note(parent: HTMLElement, text: string) {
   parent.append(el('p', text, 'dev-note'));

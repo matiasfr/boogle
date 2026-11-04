@@ -1,5 +1,5 @@
 import { prof } from '../../loop.ts';
-import { command, note, copy, el } from './ui.ts';
+import { command, note, copy, el, more } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
 
 let measurement: unknown = null;
@@ -46,8 +46,9 @@ export const tool: Tool = {
   },
   snapshot,
   mount(parent, ctx) {
+    const details = more(parent);
     note(
-      parent,
+      details,
       'CPU values cover the existing rolling window. GPU timestamps may be unsupported. Startup needs instrumentation before loading; a reload is not a cold-cache claim.',
     );
     for (const [label, name] of [
@@ -58,12 +59,13 @@ export const tool: Tool = {
       ['Reload with startup capture', 'reload-startup'],
       ['Reload without captures', 'reload-off'],
     ])
-      command(parent, ctx, 'performance', label!, name!);
+      command(name!.startsWith('reload') ? details : parent, ctx, 'performance', label!, name!);
     const text = el('textarea');
     text.readOnly = true;
     text.setAttribute('aria-label', 'Performance report');
     text.value = JSON.stringify(snapshot(), null, 2);
-    parent.append(text);
+    details.append(text);
+    parent.append(details);
     return () => {};
   },
 };

@@ -6,7 +6,7 @@ import { waterField } from '../../physics/water-field.ts';
 import { waterRuntime } from '../../render/water-render.ts';
 import { me } from '../../player/state.ts';
 import { PROTO } from '../../proto/flags.ts';
-import { el, command, note } from './ui.ts';
+import { el, command, note, more } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
 
 let overlay: GameEntity | null = null;
@@ -104,15 +104,17 @@ export const tool: Tool = {
   snapshot: () => latest,
   mount(parent, ctx) {
     mounted = true;
+    const details = more(parent, 'Snapshot / details');
     note(
-      parent,
+      details,
       'Water body, validity and sample age are shown separately. Nearby fallback is not a fresh GPU sample.',
     );
     command(parent, ctx, 'inspect', 'Refresh inspection', 'read');
     command(parent, ctx, 'inspect', 'Show nearby colliders / decks', 'overlay');
     command(parent, ctx, 'inspect', 'Hide overlays', 'clear');
     const output = el('pre', '', 'dev-output');
-    parent.append(output);
+    details.append(output);
+    parent.append(details);
     let elapsed = 0,
       busy = false,
       alive = true;

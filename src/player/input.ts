@@ -11,6 +11,7 @@ import { input, inputState } from './input-state.ts';
 import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.ts';
 import { cancelCharge } from './throw.ts';
 import { registerAction, describeControl, isTyping, triggerAction } from './controls.ts';
+import { devInputBlocked, devCursorFree } from './dev-input.ts';
 
 export { input, inputState } from './input-state.ts';
 
@@ -58,7 +59,7 @@ function setTouchMode(on: boolean) {
 }
 
 export function requestLock() {
-  if (touchMode() || inputState.locked || !inputState.canLock) return;
+  if (devCursorFree() || touchMode() || inputState.locked || !inputState.canLock) return;
   try {
     const p = canvas.requestPointerLock();
     if (p && p.catch) p.catch(lockRefused);
@@ -87,7 +88,7 @@ export function initInput() {
   // Held keys (move, sprint) are tracked here; one-press keys bind through their
   // action (registerAction's key) or onKey (src/player/controls.ts). Both skip key presses aimed at a text field.
   addEventListener('keydown', (e) => {
-    if (!me.entered || isTyping(e)) return;
+    if (!me.entered || isTyping(e) || devInputBlocked()) return;
     input.keys.add(e.code);
     if (e.code === 'Space') {
       pressJump();
@@ -100,6 +101,7 @@ export function initInput() {
   });
   addEventListener('keyup', (e) => {
     input.keys.delete(e.code);
+    if (devInputBlocked()) return;
     // macOS sends no keyup for other keys while Cmd is held, so they would stay pressed: release them all with Cmd.
     if (e.key === 'Meta') input.keys.clear();
     if (e.code === 'Space') releaseJump();
@@ -108,7 +110,7 @@ export function initInput() {
   let drag: { x: number; y: number; moved: boolean } | null = null;
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('mousedown', (e) => {
-    if (!me.entered) return;
+    if (!me.entered || devInputBlocked()) return;
     canvas.focus();
     if (!inputState.locked) {
       requestLock();
@@ -117,7 +119,7 @@ export function initInput() {
     if (e.button === 0) triggerAction('use', 'down');
   });
   addEventListener('mousemove', (e) => {
-    if (!me.entered) return;
+    if (!me.entered || devInputBlocked()) return;
     if (inputState.locked) {
       cam.yaw -= e.movementX * 0.0024;
       cam.pitch = clamp(cam.pitch - e.movementY * 0.0024, -1.25, 0.9);
@@ -134,7 +136,7 @@ export function initInput() {
     }
   });
   addEventListener('mouseup', (e) => {
-    if (!me.entered || e.button !== 0) {
+    if (!me.entered || devInputBlocked() || e.button !== 0) {
       drag = null;
       return;
     }
@@ -153,7 +155,7 @@ export function initInput() {
     'wheel',
     (e) => {
       e.preventDefault();
-      if (!me.entered || inputState.locked || inputState.seated || e.ctrlKey) return;
+      if (!me.entered || devInputBlocked() || inputState.locked || inputState.seated || e.ctrlKey) return;
       const px = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1;
       cam.yaw += e.deltaX * px * WHEEL_YAW;
       cam.pitch = clamp(cam.pitch + e.deltaY * px * WHEEL_PITCH, -1.25, 0.9);
@@ -169,6 +171,7 @@ export function initInput() {
   const stick = { id: null as number | null, ox: 0, oy: 0 };
   const look = { id: null as number | null, x: 0, y: 0 };
   touchEl.addEventListener('pointerdown', (e) => {
+    if (devInputBlocked()) return;
     // A trackpad click never spawns the stick or a touch look, whatever mode shows (rec 2).
     if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
     if ((e.target as Element | null)?.closest('.tbtn')) return;
@@ -188,6 +191,7 @@ export function initInput() {
     touchEl.setPointerCapture?.(e.pointerId);
   });
   touchEl.addEventListener('pointermove', (e) => {
+    if (devInputBlocked()) return;
     if (e.pointerId === stick.id) {
       const r = tablet.matches ? 60 : 50;
       let dx = e.clientX - stick.ox,
@@ -228,15 +232,18 @@ export function initInput() {
     touchEl.addEventListener(ev, endTouch);
   jumpBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
+    if (devInputBlocked()) return;
     pressJump();
   });
   for (const ev of ['pointerup', 'pointercancel']) jumpBtn.addEventListener(ev, releaseJump);
   grabBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
+    if (devInputBlocked()) return;
     touchDown();
   });
   grabBtn.addEventListener('pointerup', (e) => {
     e.stopPropagation();
+    if (devInputBlocked()) return;
     useUp();
   });
   grabBtn.addEventListener('pointercancel', () => {
@@ -343,6 +350,10 @@ export function initInput() {
     input.sprint = false;
     releaseStick();
     look.id = null;
+    drag = null;
+    input.triggerL = input.triggerR = 0;
+    releaseJump();
+    cancelCharge();
   }
   releaseInputFn = releaseAll;
   addEventListener('blur', releaseAll);

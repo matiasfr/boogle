@@ -1,6 +1,6 @@
-import { PROTO } from '../../proto/flags.ts';
 import { DESTINATIONS, destinationName, fixtureReason, launch } from './fixtures.ts';
-import { command, note } from './ui.ts';
+import { command, note, el } from './ui.ts';
+import { islandPicker } from './routes.ts';
 import { no, ok, type Tool } from './types.ts';
 
 const labels: Record<string, string> = {
@@ -19,7 +19,7 @@ export const tool: Tool = {
   label: 'Go to',
   scope: 'Owner movement, only in your disposable solo TEST run. Never advances progression.',
   commands: ['list', 'go', 'return', 'start'],
-  available: fixtureReason,
+  available: () => null,
   async run(command, args) {
     if (command === 'list')
       return ok(
@@ -34,22 +34,26 @@ export const tool: Tool = {
     return (await import('./place.ts')).travel(args.destination);
   },
   mount(parent, ctx) {
-    if (PROTO !== 'place')
-      note(
-        parent,
-        'Home-island positions are camera bookmarks. Player Go to starts a place test because v1 fixtures are solo place rooms.',
-      );
+    islandPicker(parent);
+    parent.append(el('h3', 'Disposable player travel'));
+    const label = el('label', 'Destination', 'dev-field');
+    const picker = el('select');
+    picker.dataset.devDestination = '';
+    for (const id of DESTINATIONS) {
+      const option = el('option', labels[id]);
+      option.value = id;
+      picker.append(option);
+    }
+    label.append(picker);
+    parent.append(label);
     const blocked = fixtureReason();
-    for (const id of DESTINATIONS)
-      command(
-        parent,
-        ctx,
-        'destinations',
-        `${blocked ? 'Start test at' : 'Go to'} ${labels[id]}`,
-        blocked ? 'start' : 'go',
-        { destination: id },
-      );
-    command(parent, ctx, 'destinations', 'Return', 'return');
+    note(parent, blocked ?? 'Only your disposable TEST body moves; no progression skip.');
+    const actions = el('div', '', 'dev-actions');
+    parent.append(actions);
+    const args = () => ({ destination: picker.value });
+    command(actions, ctx, 'destinations', 'Start test', 'start', args);
+    command(actions, ctx, 'destinations', 'Go', 'go', args).disabled = !!blocked;
+    command(actions, ctx, 'destinations', 'Return', 'return').disabled = !!blocked;
     return () => {};
   },
 };

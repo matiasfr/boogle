@@ -1,3 +1,4 @@
+import './dev-preferences.ts';
 import './style.css';
 import * as THREE from 'three/webgpu';
 import { scene, camera, renderer, rendererReady, renderFrame } from './render/scene.ts';

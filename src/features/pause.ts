@@ -31,6 +31,8 @@ import { forgetInRoom, leaveIsland, SPOT_KEY } from '../player/arrival.ts';
 import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
 import { uiSound } from '../ui/ui-sound.ts';
 import { pausePages, pauseNavigation } from '../player/pause-pages.ts';
+import { devCursorFree } from '../player/dev-input.ts';
+import { devEnabled } from '../dev-preferences.ts';
 
 const TABS: [GuideKind, string][] = [
   ['kbm', 'Keyboard'],
@@ -221,7 +223,7 @@ function renderMain() {
   room.dataset.act = 'room';
   const list = el('div', 'pause-list');
   list.append(resume, controls, room);
-  for (const extra of pausePages) list.append(button(extra.label, () => show(extra.id)));
+  for (const extra of pausePages) list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
   if (canFullscreen()) list.append(fullscreenButton());
   list.append(soundRow());
   // Get unstuck: one press, nothing lost. A saved spot you were stuck in mustn't bring you back there.
@@ -534,7 +536,18 @@ addEventListener(
 let wasLocked = false;
 document.addEventListener('pointerlockchange', () => {
   const locked = !!document.pointerLockElement;
-  if (wasLocked && !locked && me.entered && !modalOpen() && !conversation.open && inputKind() !== 'touch') openPause();
+  if (
+    wasLocked &&
+    !locked &&
+    me.entered &&
+    !modalOpen() &&
+    !conversation.open &&
+    !devEnabled &&
+    new URLSearchParams(location.search).get('tune') !== '1' &&
+    !devCursorFree() &&
+    inputKind() !== 'touch'
+  )
+    openPause();
   wasLocked = locked;
 });
 

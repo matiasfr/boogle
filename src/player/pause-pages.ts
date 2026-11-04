@@ -3,6 +3,7 @@ export type PausePage = {
   id: string;
   label: string;
   mount(parent: HTMLElement, resume: () => void): () => void;
+  open?(): void;
 };
 export const pausePages: PausePage[] = [];
 export const pauseNavigation: { open?: (page: string) => boolean; close?: () => void } = {};

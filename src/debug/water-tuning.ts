@@ -1,7 +1,8 @@
 // Ultra Water's familiar controls over the real sea. Values belong to their renderer bindings, not this UI.
 import { Color } from 'three/webgpu';
 import { defineKind, spawn, despawn } from '../entity/entity.ts';
-import { releaseInput } from '../player/input.ts';
+import { releaseInput, requestLock } from '../player/input.ts';
+import { devInput } from '../player/dev-input.ts';
 import { cancelCharge } from '../player/throw.ts';
 import { releaseJump } from '../entities/player/state.ts';
 import { waterReady } from '../render/water-render.ts';
@@ -116,6 +117,7 @@ const groups: Group[] = [
   { name: 'Quality', specs: [spec('quality.resolution', 'resolution', 0.25, 1, 0.05)] },
 ];
 const STORAGE = 'boogle.water-tuning.v1';
+const UI_STORAGE = 'boogle.dev.water-ui.v1';
 const clone = (v: Value): Value => (Array.isArray(v) ? [...v] : v);
 const same = (a: Value, b: Value) => JSON.stringify(a) === JSON.stringify(b);
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '') => {
@@ -128,7 +130,11 @@ defineKind('water-tuning', {});
 let closeCurrent: (() => void) | null = null;
 let visit = 0;
 const productionDefaults = new Map<string, Value>();
-export async function showWaterTuning(restorePointer: () => void, parent: HTMLElement = document.body) {
+export async function showWaterTuning(
+  restorePointer: () => void,
+  parent: HTMLElement = document.body,
+  retainAppearance = false,
+) {
   const token = ++visit;
   closeCurrent?.();
   await waterReady;
@@ -159,25 +165,55 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
     [data-water-panel] summary { min-height:44px; cursor:pointer; font-weight:700; padding:3px 0; }
     [data-water-panel] input { min-height:44px; }
     [data-water-panel] select { min-height:44px; color:inherit; background:#0c181d; font:inherit; border-radius:5px; }
-    [data-water-panel] .water-row { display:grid; grid-template-columns:1fr 70px; align-items:center; gap:5px; margin:7px 0; }
-    [data-water-panel] .water-row input[type=range] { grid-column:1 / -1; width:100%; margin:0; accent-color:#b7e4c7; }
+    [data-water-panel] .water-control { display:grid; grid-template-columns:28px minmax(0,1fr); gap:4px; align-items:start; }
+    [data-water-panel] .water-control > div { min-width:0; }
+    [data-water-panel] .water-row { display:grid; grid-template-columns:minmax(60px,.9fr) minmax(35px,1fr) 52px; align-items:center; gap:4px; margin:2px 0; min-width:0; }
+    [data-water-panel] .water-row label { min-width:0; overflow-wrap:anywhere; font-size:11px; }
+    [data-water-panel] .water-row input[type=range] { width:100%; min-width:0; margin:0; padding:0; accent-color:#b7e4c7; }
+    [data-water-panel] .water-row-simple { grid-template-columns:minmax(0,1fr) 52px; }
+    [data-water-panel] .water-row:has([data-water-reset]:not([hidden])) { grid-template-columns:minmax(55px,.9fr) minmax(30px,1fr) 48px 26px; }
+    [data-water-panel] .water-row-simple:has([data-water-reset]:not([hidden])) { grid-template-columns:minmax(0,1fr) 52px 26px; }
+    [data-water-panel] [data-water-reset] { padding:0; font-size:16px; min-width:26px; }
+    [data-water-panel] [data-water-pin] { padding:0; width:28px; color:#a4b9b4; font-size:17px; }
+    [data-water-panel] [data-water-pin][aria-pressed=true] { color:#f6db8a; }
+    [data-water-panel] [data-water-search] { width:100%; min-width:0; margin:0 0 3px; padding:5px 7px; }
+    [data-water-panel] .water-count { display:flex; align-items:center; justify-content:space-between; gap:5px; }
+    [data-water-panel] [data-water-changed] { font-size:11px; color:#b3c6c0; }
+    [data-water-panel] [hidden] { display:none !important; }
+    [data-water-panel] .water-agx { display:flex; align-items:center; justify-content:space-between; gap:6px; }
     [data-water-panel] input[type=number], [data-water-panel] textarea { width:100%; min-width:0; border:1px solid #ffffff35;
       color:inherit; background:#0c181d; border-radius:5px; padding:4px; font:inherit; }
-    [data-water-panel] input[type=color] { width:70px; height:26px; border:0; padding:0; background:none; }
+    [data-water-panel] input[type=color] { width:52px; height:26px; border:0; padding:0; background:none; }
     [data-water-panel] textarea { min-height:90px; resize:vertical; font:11px/1.4 ui-monospace,monospace; }
     [data-water-panel] .water-actions { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
     [data-water-panel] [role=status] { min-height:1.4em; color:#d5edbc; overflow-wrap:anywhere; }
+    [data-water-panel] [role=status]:empty { display:none; }
+    @media (pointer:fine) and (min-width:701px) {
+      [data-water-panel] button, [data-water-panel] input, [data-water-panel] select, [data-water-panel] summary { min-height:28px; }
+      [data-water-panel] summary { padding:4px 0; }
+      [data-water-panel] .water-row input { padding:3px; font-size:11px; }
+    }
+    @media (pointer:coarse), (max-width:700px) {
+      [data-water-panel] .water-control { grid-template-columns:44px minmax(0,1fr); }
+      [data-water-panel] [data-water-pin] { width:44px; }
+      [data-water-panel] .water-row { grid-template-columns:minmax(55px,.9fr) minmax(30px,1fr) 50px; }
+      [data-water-panel] .water-row:has([data-water-reset]:not([hidden])) { grid-template-columns:minmax(40px,.9fr) minmax(25px,1fr) 45px 44px; }
+      [data-water-panel] .water-row-simple:has([data-water-reset]:not([hidden])) { grid-template-columns:minmax(0,1fr) 52px 44px; }
+    }
   `,
   );
   document.head.append(style);
   parent.append(panel);
   let removeStatusListener = () => {};
   let restoreOverrides = () => {};
+  let playToggle: HTMLButtonElement | null = null;
   let closed = false;
   const cleanup = () => {
     if (closed) return;
     closed = true;
     panel.remove();
+    playToggle?.remove();
+    if (parent === document.body) devInput.cursor = false;
     style.remove();
     removeStatusListener();
     restoreOverrides();
@@ -219,18 +255,40 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
     'touchend',
   ])
     panel.addEventListener(event, (e) => e.stopPropagation());
-  panel.append(node('h2', 'Water tuning'));
+  const more = node('details');
+  more.dataset.waterSection = 'More';
+  const moreContent = node('div');
+  more.append(node('summary', 'More'), moreContent);
+  if (parent === document.body) panel.append(node('h2', 'Water tuning'));
   const closeButton = node('button', 'Close water tuning');
   closeButton.type = 'button';
   closeButton.addEventListener('click', close);
-  panel.append(closeButton);
-  panel.append(node('p', 'Only your view. The game keeps running. Saved settings apply only with tune=1.'));
-  panel.append(
+  if (parent === document.body) panel.append(closeButton);
+  if (parent === document.body) {
+    devInput.cursor = true;
+    if (document.pointerLockElement) document.exitPointerLock();
+    playToggle = node('button', 'Play · Esc for mouse');
+    playToggle.type = 'button';
+    playToggle.dataset.waterPlay = '';
+    playToggle.style.cssText =
+      'position:fixed;z-index:111;left:12px;top:12px;min-height:44px;padding:8px;border-radius:8px;pointer-events:auto';
+    playToggle.onclick = () => {
+      panel.hidden = !panel.hidden;
+      devInput.cursor = !panel.hidden;
+      release();
+      playToggle!.textContent = panel.hidden ? 'Water · Esc for mouse' : 'Play · Esc for mouse';
+      if (panel.hidden) requestLock();
+      else if (document.pointerLockElement) document.exitPointerLock();
+    };
+    document.body.append(playToggle);
+  }
+  moreContent.append(node('p', 'Only your view. The game keeps running. Saved settings apply only with tune=1.'));
+  moreContent.append(
     node(
       'p',
       parent === document.body
         ? 'Drag the scene to look; the cursor stays free while tuning.'
-        : 'Close the menu to look around; reopen Water to continue tuning.',
+        : 'Drag the scene with Free cam, or click the scene to play. Play hides the dock; Esc gives the mouse back.',
     ),
   );
   if (!newWaterEnabled) {
@@ -246,14 +304,41 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
     if (url.searchParams.get('proto') === 'water') url.searchParams.set('proto', 'place');
     link.href = url.href;
     panel.append(link);
+    panel.append(more);
     return close;
   }
   const available = groups.flatMap((g) => g.specs).filter((s) => bindings.has(s.key));
   const byKey = new Map(available.map((s) => [s.key, s]));
+  const knownGroups = new Set([...groups.map((g) => g.name), 'Pinned', 'More']);
+  const pinned = new Set<string>(),
+    openGroups = new Set<string>();
+  try {
+    const saved = JSON.parse(localStorage.getItem(UI_STORAGE) ?? 'null') as {
+      version?: number;
+      pinned?: unknown[];
+      open?: unknown[];
+    } | null;
+    if (saved?.version === 1) {
+      if (Array.isArray(saved.pinned))
+        for (const key of saved.pinned) if (typeof key === 'string' && byKey.has(key)) pinned.add(key);
+      if (Array.isArray(saved.open))
+        for (const name of saved.open) if (typeof name === 'string' && knownGroups.has(name)) openGroups.add(name);
+    }
+  } catch {
+    /* Optional UI preferences do not affect the sea. */
+  }
+  const saveUi = () => {
+    try {
+      localStorage.setItem(UI_STORAGE, JSON.stringify({ version: 1, pinned: [...pinned], open: [...openGroups] }));
+    } catch {
+      /* The current panel remains usable without storage. */
+    }
+  };
+  saveUi();
   const previous = new Map(available.map((s) => [s.key, clone(bindings.get(s.key)!.get())]));
   for (const [key, value] of previous) if (!productionDefaults.has(key)) productionDefaults.set(key, clone(value));
   const defaults = new Map(available.map((s) => [s.key, clone(productionDefaults.get(s.key)!)]));
-  if (parent !== document.body)
+  if (parent !== document.body && !retainAppearance)
     restoreOverrides = () => {
       for (const [key, value] of previous) bindings.get(key)?.set(clone(value));
     };
@@ -303,27 +388,110 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
   const reset = (specs: Spec[]) => {
     for (const s of specs) {
       const initial = defaults.get(s.key);
-      if (initial !== undefined) bindings.get(s.key)!.set(clone(initial));
+      if (initial !== undefined && !same(bindings.get(s.key)!.get(), initial)) bindings.get(s.key)!.set(clone(initial));
     }
     refresh();
     persist();
     say('Defaults restored.');
   };
-  const actions = node('div');
-  actions.className = 'water-actions';
-  actions.append(button('Reset all', () => reset(available), 'reset'));
-  panel.append(actions, status);
+  const search = node('input');
+  search.type = 'search';
+  search.placeholder = 'Search water controls';
+  search.dataset.waterSearch = '';
+  search.setAttribute('aria-label', 'Search water controls');
+  panel.append(search);
+  const changed = (specs: Spec[]) =>
+    specs.filter((s) => !same(bindings.get(s.key)!.get(), defaults.get(s.key)!)).length;
+  const counts = node('div');
+  counts.className = 'water-count';
+  const count = node('span');
+  count.dataset.waterChanged = '';
+  const resetAll = button('Reset changes', () => reset(available), 'reset');
+  counts.append(count);
+  panel.append(counts);
+  moreContent.append(resetAll);
+  refreshers.push(() => {
+    const total = changed(available);
+    count.textContent = `${total} changed`;
+    resetAll.hidden = total === 0;
+    counts.hidden = total === 0;
+  });
+  const pinGroup = node('details');
+  pinGroup.dataset.waterSection = 'Pinned';
+  const pinSummary = node('summary', 'Pinned');
+  const pinBody = node('div');
+  pinGroup.append(pinSummary, pinBody);
+  panel.append(pinGroup);
+  type Control = { key: string; element: HTMLElement; home: HTMLElement; search: string; pin: HTMLButtonElement };
+  const controls: Control[] = [];
+  const sections: { name: string; details: HTMLDetailsElement; body: HTMLElement; extra?: HTMLElement }[] = [];
+  const programmaticOpen = new WeakMap<HTMLDetailsElement, boolean>();
+  const setOpen = (details: HTMLDetailsElement, open: boolean) => {
+    if (details.open === open) return;
+    programmaticOpen.set(details, open);
+    details.open = open;
+  };
+  const rememberOpen = (details: HTMLDetailsElement, name: string) => {
+    setOpen(details, openGroups.has(name));
+    details.addEventListener('toggle', () => {
+      const expected = programmaticOpen.get(details);
+      programmaticOpen.delete(details);
+      if (expected === details.open) return;
+      if (search.value.trim()) return;
+      if (details.open) openGroups.add(name);
+      else openGroups.delete(name);
+      saveUi();
+    });
+  };
+  rememberOpen(pinGroup, 'Pinned');
+  rememberOpen(more, 'More');
+  const layout = () => {
+    const query = search.value.trim().toLowerCase();
+    for (const control of controls) {
+      const isPinned = pinned.has(control.key);
+      const target = isPinned ? pinBody : control.home;
+      if (control.element.parentElement !== target) target.append(control.element);
+      control.element.hidden = !!query && !control.search.includes(query);
+      control.pin.textContent = isPinned ? '★' : '☆';
+      control.pin.setAttribute('aria-pressed', String(isPinned));
+    }
+    for (const section of sections) {
+      const hasRows = [...section.body.children].some((child) => !(child as HTMLElement).hidden);
+      if (section.extra) section.extra.hidden = !!query && !'post agx look current stock punchy custom'.includes(query);
+      const hasExtra = !!section.extra && !section.extra.hidden;
+      section.details.hidden = !hasRows && !hasExtra;
+      setOpen(section.details, query ? hasRows || hasExtra : openGroups.has(section.name));
+    }
+    const visiblePins = [...pinBody.children].filter((child) => !(child as HTMLElement).hidden).length;
+    pinGroup.hidden = !visiblePins;
+    pinSummary.textContent = `Pinned · ${pinned.size}`;
+    setOpen(pinGroup, query ? !!visiblePins : openGroups.has('Pinned'));
+    const rareMatch = sections.some((s) => more.contains(s.details) && !s.details.hidden);
+    moreContent.hidden = !!query;
+    more.hidden = !!query && !rareMatch;
+    setOpen(more, query ? rareMatch : openGroups.has('More'));
+  };
+  search.addEventListener('input', layout);
   for (const group of groups) {
     const specs = group.specs.filter((s) => bindings.has(s.key));
     if (!specs.length) continue;
     const details = node('details');
     details.dataset.waterSection = group.name;
-    details.open = group.name === 'Waves';
-    details.append(node('summary', group.name));
-    if (group.note) details.append(node('p', group.note));
-    const groupReset = button('Reset group', () => reset(specs));
+    rememberOpen(details, group.name);
+    const summary = node('summary', group.name);
+    details.append(summary);
+    if (group.note) moreContent.append(node('p', `${group.name}: ${group.note}`));
+    const groupReset = button(`Reset ${group.name}`, () => reset(specs));
     groupReset.dataset.waterGroup = group.name;
-    details.append(groupReset);
+    moreContent.append(groupReset);
+    refreshers.push(() => {
+      const total = changed(specs);
+      summary.textContent = group.name + (total ? ` · ${total} changed` : '');
+      groupReset.hidden = total === 0;
+    });
+    const body = node('div');
+    const section: (typeof sections)[number] = { name: group.name, details, body };
+    sections.push(section);
     if (group.name === 'Post' && bindings.has('post.agxPower') && bindings.has('post.agxSaturation')) {
       const looks = [
         { name: 'Current', power: 1.12, saturation: 1.3 },
@@ -331,6 +499,7 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
         { name: 'Punchy', power: 1.35, saturation: 1.4 },
       ];
       const row = node('label', 'AgX look ');
+      row.className = 'water-agx';
       const select = node('select');
       select.setAttribute('aria-label', 'AgX look');
       for (const look of looks) select.append(node('option', look.name));
@@ -355,44 +524,81 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
       });
       row.append(select);
       details.append(row);
+      section.extra = row;
     }
     for (const s of specs) {
       const initial = defaults.get(s.key)!;
+      const resetControl = button('↺', () => reset([s]));
+      resetControl.dataset.waterReset = s.key;
+      resetControl.setAttribute('aria-label', `Reset ${s.label}`);
+      resetControl.title = `Reset ${s.label}`;
+      refreshers.push(() => {
+        resetControl.hidden = same(bindings.get(s.key)!.get(), initial);
+      });
+      const wrapper = node('div');
+      wrapper.className = 'water-control';
+      wrapper.dataset.waterControl = s.key;
+      const fields = node('div');
+      const pin = button('☆', () => {
+        if (pinned.has(s.key)) pinned.delete(s.key);
+        else {
+          pinned.add(s.key);
+          openGroups.add('Pinned');
+        }
+        saveUi();
+        layout();
+      });
+      pin.dataset.waterPin = s.key;
+      pin.setAttribute('aria-label', `Pin ${s.label}`);
+      pin.title = `Pin ${s.label}`;
+      wrapper.append(pin, fields);
+      body.append(wrapper);
+      controls.push({
+        key: s.key,
+        element: wrapper,
+        home: body,
+        search: `${group.name} ${s.label} ${s.key}`.toLowerCase(),
+        pin,
+      });
       if (s.toggle) {
-        const row = node('label');
-        row.className = 'water-row';
-        row.append(node('span', s.label));
+        const row = node('div');
+        row.className = 'water-row water-row-simple';
+        const label = node('label', s.label);
         const input = node('input');
         input.type = 'checkbox';
+        input.id = `water-${token}-${s.key}`;
+        label.htmlFor = input.id;
         input.dataset.waterKey = s.key;
         input.setAttribute('aria-label', s.label);
         refreshers.push(() => {
           input.checked = bindings.get(s.key)!.get() === 1;
         });
         input.addEventListener('change', () => set(s, Number(input.checked)));
-        row.append(input);
-        details.append(row);
+        row.append(label, input, resetControl);
+        fields.append(row);
       } else if (s.color) {
-        const row = node('label');
-        row.className = 'water-row';
-        row.append(node('span', s.label));
+        const row = node('div');
+        row.className = 'water-row water-row-simple';
+        const label = node('label', s.label);
         const input = node('input');
         input.type = 'color';
+        input.id = `water-${token}-${s.key}`;
+        label.htmlFor = input.id;
         input.dataset.waterKey = s.key;
         input.setAttribute('aria-label', s.label);
         refreshers.push(() => {
           input.value = '#' + new Color().fromArray(bindings.get(s.key)!.get() as number[]).getHexString();
         });
         input.addEventListener('input', () => set(s, new Color(input.value).toArray()));
-        row.append(input);
-        details.append(row);
+        row.append(label, input, resetControl);
+        fields.append(row);
       } else {
         const components = Array.isArray(initial) ? initial.length : 1;
         for (let c = 0; c < components; c++) {
-          const row = node('label');
+          const row = node('div');
           row.className = 'water-row';
           const label = s.label + (components > 1 ? ` ${'RGB'[c]}` : '');
-          row.append(node('span', label));
+          const labelNode = node('label', label);
           const number = node('input');
           number.type = 'number';
           number.dataset.waterKey = s.key;
@@ -400,6 +606,8 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
           const range = node('input');
           range.type = 'range';
           range.dataset.waterSlider = s.key;
+          range.id = `water-${token}-${s.key}-${c}`;
+          labelNode.htmlFor = range.id;
           for (const input of [number, range]) {
             input.min = String(s.min);
             input.max = String(s.max);
@@ -422,14 +630,17 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
             number.value = String(value);
             range.value = String(value);
           });
-          row.append(number, range);
-          details.append(row);
+          row.append(labelNode, range, number);
+          if (c === 0) row.append(resetControl);
+          fields.append(row);
         }
       }
     }
-    panel.append(details);
+    details.append(body);
+    if (group.name === 'Quality') more.insertBefore(details, moreContent);
+    else panel.append(details);
   }
-  const parse = (text: string) => {
+  const parse = (text: string, saved = false) => {
     const value: unknown = JSON.parse(text);
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Expected a settings object.');
     const data = value as Record<string, unknown>;
@@ -441,16 +652,23 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
     for (const [key, candidate] of Object.entries(data.changes)) {
       const s = byKey.get(key),
         initial = defaults.get(key);
-      if (!s || initial === undefined) throw new Error(`Unknown setting: ${key}`);
+      if (!s || initial === undefined) {
+        if (saved) continue;
+        throw new Error(`Unknown setting: ${key}`);
+      }
       const validNumber = (n: unknown): n is number =>
         typeof n === 'number' && Number.isFinite(n) && n >= s.min && n <= s.max;
       if (Array.isArray(initial)) {
-        if (!Array.isArray(candidate) || candidate.length !== initial.length || !candidate.every(validNumber))
+        if (!Array.isArray(candidate) || candidate.length !== initial.length || !candidate.every(validNumber)) {
+          if (saved) continue;
           throw new Error(`Invalid RGB value: ${key}`);
+        }
         changes[key] = [...candidate] as number[];
       } else {
-        if (!validNumber(candidate) || (s.toggle && candidate !== 0 && candidate !== 1))
+        if (!validNumber(candidate) || (s.toggle && candidate !== 0 && candidate !== 1)) {
+          if (saved) continue;
           throw new Error(`Out of range: ${key} (${s.min}–${s.max})`);
+        }
         changes[key] = candidate;
       }
     }
@@ -503,7 +721,7 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
     ),
   );
   transfer.append(transferActions, json);
-  panel.append(transfer);
+  moreContent.append(transfer);
   const limits = node('details');
   limits.append(node('summary', 'Unavailable demo controls'));
   limits.append(
@@ -533,15 +751,23 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
   const unavailable = groups.flatMap((group) => group.specs).filter((s) => !bindings.has(s.key));
   if (unavailable.length)
     limits.append(node('p', `No live production binding: ${unavailable.map((s) => s.label).join(', ')}.`));
-  panel.append(limits);
+  const restored = node('p');
+  moreContent.append(limits, restored);
+  panel.append(more, status);
+  layout();
   refresh();
   try {
     const saved = localStorage.getItem(STORAGE);
     if (saved) {
-      apply(parse(saved));
-      say('Saved viewer settings restored.');
+      apply(parse(saved, true));
+      restored.textContent = 'Supported saved viewer settings restored; unsupported settings dropped.';
     }
   } catch (e) {
+    try {
+      localStorage.removeItem(STORAGE);
+    } catch {
+      /* storage unavailable */
+    }
     say(`Saved settings not applied: ${e instanceof Error ? e.message : 'storage unavailable'}`);
   }
   return close;

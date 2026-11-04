@@ -1,6 +1,7 @@
-// One eager gate. Nothing from Dev is loaded, mounted or sampled without this exact opt-in.
+// One eager gate. Only this browser's deliberate opt-in loads Dev.
 import { onStart } from '../loop.ts';
+import { devEnabled } from '../dev-preferences.ts';
 
-if (new URLSearchParams(location.search).get('dev') === '1') {
+if (devEnabled) {
   onStart(() => import('../debug/dev-menu.ts').then((m) => m.installDevMenu()));
 }

@@ -27,7 +27,8 @@
 import './conversation.css';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { angleLerp } from '../math.ts';
-import { setPadGrab, menuSlot, describeControl } from './controls.ts';
+import { setPadGrab, menuSlot, describeControl, isTyping } from './controls.ts';
+import { devInputBlocked } from './dev-input.ts';
 import { modalOpen } from './modal.ts';
 import { inputState } from './input.ts';
 import { me, cam, camConstraints } from './player.ts';
@@ -168,10 +169,9 @@ const KEYS = new Set(['Escape', 'KeyE', 'Space', 'Enter', 'NumpadEnter', 'ArrowU
 addEventListener(
   'keydown',
   (e) => {
-    if (!cur || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!cur || devInputBlocked() || e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
     const digit = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
     if (!digit && !KEYS.has(e.code)) return;
-    if ((e.target as Element | null)?.closest?.('input, textarea, [contenteditable]')) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if (e.repeat && !e.code.startsWith('Arrow') && e.code !== 'KeyW' && e.code !== 'KeyS') return;
