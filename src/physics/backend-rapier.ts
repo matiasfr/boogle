@@ -362,14 +362,14 @@ let contactFn: ContactFn,
   contactCol = 0,
   contactOther: MBody | undefined,
   contactDone = false;
+const contactNormal = { x: 0, y: 0, z: 0 };
 function contactManifold(manifold: RAPIER.TempContactManifold, flipped: boolean) {
   if (contactDone || !touching(manifold)) return;
-  const n = manifold.raw.normal(),
+  const n = manifold.normal(contactNormal),
     x = n.x,
     y = n.y,
     z = n.z,
     s = flipped ? 1 : -1;
-  n.free();
   if (contactFn(x * s, y * s, z * s, contactOther as unknown as Body) === true) contactDone = true;
 }
 function contactPairWith(handle: number) {
@@ -377,7 +377,7 @@ function contactPairWith(handle: number) {
   const other = byCollider.get(handle);
   if (!other) return;
   contactOther = other;
-  world!.narrowPhase.contactPair(contactCol, handle, contactManifold);
+  world!.narrowPhase.contactPair(contactCol, handle, world!.bodies, contactManifold);
 }
 export function forEachContact(body: Body, fn: ContactFn) {
   const b = m(body);
@@ -398,6 +398,7 @@ type RawVector = ReturnType<typeof RAPIER.VectorOps.intoRaw>;
 type RawRotation = ReturnType<typeof RAPIER.RotationOps.intoRaw>;
 type RawShape = ReturnType<RAPIER.Shape['intoRaw']>;
 let sweep: { from: RawVector; by: RawVector; turn: RawRotation; r: number; ball: RawShape } | undefined;
+const sweepHit = new Float32Array(16); // Rapier's scratch-buffer size; getComponents puts TOI at index 0.
 export function sweepSphere(from: V3, to: V3, r: number, o: { mask: number; thin: 'skip' | 'only' }) {
   if (!R || !world) return -1;
   const dx = to.x - from.x,
@@ -446,7 +447,8 @@ export function sweepSphere(from: V3, to: V3, r: number, o: { mask: number; thin
     only,
   );
   if (!h) return -1;
-  const at = h.time_of_impact() * len;
+  h.getComponents(sweepHit);
+  const at = sweepHit[0]! * len;
   h.free();
   return at;
 }
