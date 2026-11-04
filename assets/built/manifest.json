@@ -9,6 +9,26 @@
     "animations": [],
     "textures": []
   },
+  "conductor-cap": {
+    "source": "conductor-cap.py",
+    "sourceHash": "ec2d025e2833e997",
+    "outHash": "122efbf52ad904b4",
+    "rawBytes": 28192,
+    "bytes": 11680,
+    "triangles": 560,
+    "animations": [],
+    "textures": []
+  },
+  "feeder-roller": {
+    "source": "feeder-roller.py",
+    "sourceHash": "33c90b849d25aa5b",
+    "outHash": "bbda85ead9afc07c",
+    "rawBytes": 3344,
+    "bytes": 2504,
+    "triangles": 76,
+    "animations": [],
+    "textures": []
+  },
   "hero-clips": {
     "source": "hero-clips.glb",
     "sourceHash": "3aed47314babac21",
@@ -47,9 +67,7 @@
     "rawBytes": 12320,
     "bytes": 8828,
     "triangles": 152,
-    "animations": [
-      "drop"
-    ],
+    "animations": ["drop"],
     "textures": []
   }
 }

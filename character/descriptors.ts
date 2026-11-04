@@ -8,6 +8,17 @@ export type AssetDescriptor = {
   rootNote?: string;
 };
 export const descriptors: Record<string, AssetDescriptor> = {
+  'feeder-roller': {
+    label: 'Feeder roller trial',
+    category: 'props',
+    rootNote: 'Z axle pivot; 20% length revision. Original 0.86 m span retained in trial evidence.',
+  },
+  'conductor-cap': {
+    label: 'Conductor cap trial',
+    category: 'props',
+    rootNote:
+      'Rigid Head attachment. Inspect worn via Buddy → Hat → Conductor trial; origin is Head rest [0, 1.12, 0].',
+  },
   buddy: {
     label: 'Buddy',
     category: 'characters',
