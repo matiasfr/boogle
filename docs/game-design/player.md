@@ -68,6 +68,10 @@ the deck's turn turns you and the camera, and you stay snapped to its floor. Lan
 moving deck blends you to its speed over 0.12 s. Jump or walk off and you keep its speed through the air; on plain
 ground it bleeds away at 9 m/s² (a short skid), and landing above 3 m/s tumbles you (the tumble flop).
 
+Deck acceleration and turns transport an attached rider before their own steering; a descending deck is not a jump.
+On a shared deck, a partner's interpolated collision proxy cannot push its co-rider off. Ordinary player collisions
+return when they stop sharing that deck.
+
 
 ## Camera
 

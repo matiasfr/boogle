@@ -7,11 +7,11 @@
 import * as THREE from 'three';
 import { INTERP_MS } from '../../constants.ts';
 import { lerp, angleLerp, finiteArr, r2 } from '../../math.ts';
-import { teleport } from '../../physics/engine.ts';
+import { setMask, teleport } from '../../physics/engine.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
 import { carry, platformById, toPlatform, fromPlatform, type Local } from '../../physics/platforms.ts';
 import { makeAvatar, makeLabel, animateAvatar, paintAvatar } from '../../player/avatars.ts';
-import { chaseKinematic, makePlayerBody } from '../../physics/physics.ts';
+import { chaseKinematic, makePlayerBody, NOT_SCENERY } from '../../physics/physics.ts';
 import {
   addPresenceField,
   localPresence,
@@ -218,6 +218,9 @@ function spawnRemotePlayer(r: Remote, time: number): GameEntity {
       }
     },
     fixedPre() {
+      // A co-rider's body is an interpolated proxy, not another simulated passenger. Its catch-up velocity must
+      // not shove our real rider off their common deck. Off the shared ride, ordinary player collisions return.
+      setMask(body, carry.on?.id && r.ride?.id === carry.on.id && !r.ride.leaving ? 0 : NOT_SCENERY);
       chaseKinematic(body, r.target.x, r.target.y, r.target.z);
     },
     // The avatar takes its interpolated pose and walks at the speed it moved since last frame.

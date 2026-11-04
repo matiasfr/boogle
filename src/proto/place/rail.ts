@@ -11,9 +11,26 @@ import { registerWaterContact } from '../../render/water/contacts.ts';
 import { chuff, clank, thump } from '../../render/machine-sfx.ts';
 import { FIXED } from '../../constants.ts';
 import { angleLerp } from '../../math.ts';
-import { BODY, addBody, createBody, onPreStep, removeBody, stepAlpha, type Body } from '../../physics/engine.ts';
+import {
+  BODY,
+  addBody,
+  createBody,
+  onPreStep,
+  removeBody,
+  stepAlpha,
+  teleport,
+  type Body,
+} from '../../physics/engine.ts';
 import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
-import { carry, registerPlatform, yawOf, type Platform } from '../../physics/platforms.ts';
+import {
+  carry,
+  CARRY,
+  fromPlatform,
+  registerPlatform,
+  toPlatform,
+  yawOf,
+  type Platform,
+} from '../../physics/platforms.ts';
 import { me } from '../../player/player.ts';
 import { wagonLook, LOCO, TRAILER, type CarSpec } from '../wagon/look.ts';
 import { box, place } from '../net/boxes.ts';
@@ -330,6 +347,7 @@ export type Car = {
   z: number;
   yaw: number;
   pitch: number;
+  speedLimit: number;
   platform: Platform;
 };
 export function makeCar(
@@ -364,6 +382,7 @@ export function makeCar(
     z: ORIGIN.z,
     yaw: 0,
     pitch: 0,
+    speedLimit: TUNE.cruise * 1.5, // slopes and small reconciliation nudges, never a snapshot's distance / FIXED
     platform: {
       body,
       hx: spec.hx,
@@ -385,17 +404,40 @@ function moveCar(c: Car, dt: number) {
   const dx = c.x - p.position.x,
     dy = c.y - p.position.y,
     dz = c.z - p.position.z;
-  if (dx * dx + dy * dy + dz * dz > 25) return snapCar(c);
+  const turn = angleLerp(c.prevYaw, c.yaw, 1) - c.prevYaw;
+  // A 1.65 m correction used to become ~99 m/s; a junction's yaw jump could fling an off-centre rider too.
+  // Corrections relocate the deck and its rider together, with no collision or carried correction velocity.
+  if (Math.hypot(dx, dy, dz) > c.speedLimit * dt || Math.abs(turn) > 4 * dt) return snapCar(c);
   p.velocity.set(dx / dt, dy / dt, dz / dt);
-  p.angularVelocity.set(0, (angleLerp(c.prevYaw, c.yaw, 1) - c.prevYaw) / dt, 0);
+  p.angularVelocity.set(0, turn / dt, 0);
 }
+const riderLocal = { x: 0, y: 0, z: 0, yaw: 0 },
+  riderWorld = { ...riderLocal };
 export function snapCar(c: Car) {
   const p = c.body;
-  p.position.set(c.x, c.y, c.z);
+  const rider =
+    c.y > -30 && carry.on === c.platform && me.body && me.body.velocity.y - carry.y <= CARRY.leaveVy ? me.body : null;
+  if (c.y <= -30 && carry.on === c.platform) carry.on = null;
+  const turn = angleLerp(yawOf(p.quaternion), c.yaw, 1) - yawOf(p.quaternion);
+  if (rider) toPlatform(c.platform, rider.position, me.yaw, riderLocal);
+  teleport(p, c.x, c.y, c.z);
   p.quaternion.set(0, Math.sin(c.yaw / 2), 0, Math.cos(c.yaw / 2));
   p.velocity.set(0, 0, 0);
   p.angularVelocity.set(0, 0, 0);
   c.prevYaw = c.yaw;
+  if (rider) {
+    fromPlatform(c.platform, riderLocal, false, riderWorld);
+    teleport(rider, riderWorld.x, riderWorld.y, riderWorld.z);
+    const vx = rider.velocity.x - carry.x,
+      vz = rider.velocity.z - carry.z;
+    rider.velocity.set(
+      vx * Math.cos(turn) + vz * Math.sin(turn),
+      rider.velocity.y - carry.y,
+      -vx * Math.sin(turn) + vz * Math.cos(turn),
+    );
+    carry.x = carry.y = carry.z = 0;
+    carry.spin += turn;
+  }
 }
 export function drawCar(c: Car, alpha: number) {
   const ip = c.body.interpolatedPosition;
@@ -890,13 +932,14 @@ export function buildTrain(line: Line, stops: number[]) {
       for (const c of tr.cars) snapCar(c);
     },
     /** Running, from a saved or shared place. */
-    put(s: number, v: number, target: number, sweep: 1 | -1, dwell: number) {
+    put(s: number, v: number, target: number, sweep: 1 | -1, dwell: number, express = false) {
       clock.running = true;
       tr.s = s;
       tr.v = v;
       tr.target = target;
       tr.sweep = sweep;
       tr.dwell = dwell;
+      tr.express = express;
       tr.stop = dwell > 0 ? target : -1;
       plan();
       for (const c of tr.cars) snapCar(c);
