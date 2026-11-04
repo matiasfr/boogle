@@ -2,7 +2,7 @@
 
 ## 8.1 Topology
 
-The default URL opens round 4 in the shared `proto-place-coop` room, with co-op enabled. A `?room=` in the address overrides it. `?classic=1` opens the old island in its original default room (or the explicit room); `?proto=` links retain their own mode. See [place.md](place.md) for the entry flags.
+The default URL opens round 4 in the shared `boogle` room, with co-op enabled, a **boogle** pause title and a bare invite link. A `?room=` in the address overrides it, including old `?room=proto-place-coop` invites. `?classic=1` opens the old island in `beach` (or the explicit room), retaining its saved world; classic invites keep `classic=1`. Headless tools retain the `beach` fallback. Explicit `?proto=place&coop=1` stays in `proto-place-coop`, and other `?proto=` links retain their own mode. See [place.md](place.md) for entry flags, the copy-only local progress migration and installed-app reopening.
 
 Our server hosts every room ([src/net/ws-room.ts](../../src/net/ws-room.ts), [src/net/README.md](../../src/net/README.md),
 [server/README.md](../../server/README.md)). Each tab opens one WebSocket to it at `/room/<world room>`, where the

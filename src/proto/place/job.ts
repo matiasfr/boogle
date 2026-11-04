@@ -7,6 +7,7 @@
 // garbage from another build's save or another tab, so it checks what it reads (`num`, `count`) and keeps its defaults when
 // something's missing. Local, or shared by ./coop.ts behind the flag. Never read by the sim.
 import { getRoomId } from '../../netplay/net.ts';
+import { DEFAULT_ROOM } from '../../constants.ts';
 import { TUNE } from './layout.ts';
 import { pageQuery } from '../flags.ts';
 
@@ -109,6 +110,11 @@ export function save() {
 /** True if there was a save. */
 export function restore() {
   try {
+    // The owner's railway follows the new bare entry once. Never overwrite a new-room save or remove the old one.
+    if (COOP && getRoomId() === DEFAULT_ROOM && localStorage.getItem(KEY) === null) {
+      const old = localStorage.getItem('boogle-place-coop-v2:proto-place-coop');
+      if (old !== null) localStorage.setItem(KEY, old);
+    }
     const j = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!j) return false;
     applyShared(j.shared ?? {});

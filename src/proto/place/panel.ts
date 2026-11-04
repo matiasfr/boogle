@@ -4,7 +4,6 @@ import { me, cam } from '../../player/player.ts';
 import { teleport } from '../../physics/engine.ts';
 import { carry } from '../../physics/platforms.ts';
 import { PLAYER_R } from '../../constants.ts';
-import { submitEdit } from '../../world/sync.ts';
 import { drawHeaps } from '../net/crates.ts';
 import { DAY } from './look.ts';
 import { ROCK_LIST, TREES, back, greatTree, shoulder, setTrunkTaken } from './chop.ts';
@@ -227,7 +226,7 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
   };
   btn(coop.on ? 'Start over (both)' : 'Start over', () => {
     if (coop.on) return coop.askStartOver(box.firstElementChild as HTMLElement);
-    if (!submitEdit({ op: 'tune.reset', i: 0, j: 0 })) a.startOver();
+    a.startOver();
   });
   btn('Skip the walk', skipWalk);
   btn('Skip chop and carry', () => coop.skip('delivery', skipDelivery));

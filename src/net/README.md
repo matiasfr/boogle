@@ -31,7 +31,7 @@ room.close()
 The game uses `entry.sameTab` to learn its own id (`net.myPeer = entry.peer`) and `entry.peer` for ball-ownership
 tie-breaks, so `peer` must be the stable `selfId`.
 
-The room id comes from the page URL (`?room=beach`, default `beach`, sanitized to `[a-z0-9-]{1,32}`).
+The room id comes from the effective page flags (`src/proto/flags.ts`): the bare URL opens Place in `boogle`, classic and headless tools default to `beach`, and explicit prototypes retain their rooms. An explicit `?room=` wins, sanitized to `[a-z0-9-]{1,32}`.
 
 Messages are wire format shared with tabs on older builds: add new `t` types and fields, never change what an existing
 one means (docs/agents/mixed-builds.md, "Mixed builds").
