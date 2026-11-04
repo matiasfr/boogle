@@ -39,7 +39,7 @@ const TRACK_HALF = 1; // m each side the wagon needs: its deck is 0.8 (src/featu
 const GRADE_RUN = 2.5; // m: grades are measured over about the wagon's length, so one bump in the ground doesn't count
 const PLAYER_HEIGHT = 1.7; // m: what's higher up than this over the ground, you walk under
 const UNREACHED_AREA = 60; // m²: smaller scraps of land nobody can reach don't matter
-// A quarter or so above today (234 objects, 846 spheres, 46 bodies). Props only: POIs build their colliders as they draw.
+// A quarter or so above classic (234 objects, 846 spheres, 46 bodies). Props only: POIs build colliders as they draw.
 const BUDGET = { placed: 300, spheres: 1100, bodies: 60 };
 
 const f1 = (v: number) => v.toFixed(1);
