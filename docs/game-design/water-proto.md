@@ -1,5 +1,23 @@
 # 6.26b Prototype: Ultra Water demo scene (`?proto=water`)
 
+## Opt-in Sunshine sky comparison
+
+`?proto=place&water=new&sky=toy&toyTone=neutral` selects original stylized sky art baked into the existing
+1024² HDR cube: a blue gradient and six sparse cumulus groups. The same cube supplies background, fog,
+environment and hemisphere fill; the physical late-morning sun direction/colour and cloud-alpha sun disc stay.
+FFT waves, shore geometry, caustics, foam coverage, refraction and underwater features remain. Only local optical
+tuning changes: cyan scatter/absorption, restrained reflection tint/cap, sun gain and foam/glitter brightness.
+No room state or gameplay changes. No change without `water=new&sky=toy`; the demo is excluded.
+
+`toyWater=off` isolates sky/fill from water tuning; omit `toyTone=neutral` for unchanged production AgX.
+`toyVariant=soft|clear|punch` compares softer blue, the default clear balance, and stronger cyan water.
+Neutral uses the same existing exposure meter and gain, with no per-curve exposure trim or second output pass.
+The normal `tone=` flag remains inactive on new water. AgX Punchy is a separate experiment.
+Optional `tune=1` keeps the existing controls and Copy/Apply settings; these reset to the selected experiment's
+values on this route. Toy cloud shape/coverage is authored in code, so the physical sky's cloud-coverage control
+does not reshape it. Saved tuning overrides can supersede the preset; use clean settings for comparisons.
+See [Sunshine sky research](../research/sunshine-sky.md) for the visual verdict and settings. This is not graduation.
+
 ## Production water tuning
 
 Open `?proto=place&water=new&tune=1` to tune the real sea on the place page, or append `&tune=1` to another

@@ -11,6 +11,8 @@ import { SUN_DIR } from '../sun-dir.ts';
 import { seaU } from './state.ts';
 import { createWaterSky } from './sky.ts';
 import { bind, tuningEnabled } from './live.ts';
+import { toySkyEnabled } from './flags.ts';
+import { toySky } from './toy.ts';
 
 export const WATER_TOD = 0.24;
 export let frozenSkyActive = false;
@@ -38,7 +40,7 @@ export function updateFrozenDay() {
 
 export function createFrozenWaterSky() {
   frozenSkyActive = true;
-  const environment = createWaterSky();
+  const environment = createWaterSky(toySkyEnabled ? toySky : undefined);
   environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(direction.y));
   environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z));
   const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as

@@ -3,6 +3,9 @@ import { pipeline, renderer, scenePass } from '../scene.ts';
 import { agx, createExposureMeter, TSL, type N } from '../tone.ts';
 import { bind, onChange, scalar, tuningEnabled } from './live.ts';
 import { createWaterBloom } from './bloom.ts';
+import { NeutralToneMapping } from 'three/webgpu';
+import { toneMapping } from 'three/tsl';
+import { toyNeutral } from './flags.ts';
 
 const { Fn, OnAfterRenderPipeline, pow, select, vec3, vec4, float, mix, dot, max } = TSL;
 
@@ -23,7 +26,11 @@ export function installWaterPost(source: N) {
     Fn(() => {
       OnAfterRenderPipeline(() => meter.save(renderer));
       const gain = tuningEnabled ? mix(1, meter.value.mul(float(key).div(0.18)), auto).mul(exposure) : meter.value;
-      let c = tuningEnabled ? agx(hdr.rgb.mul(gain), agxPower, agxSaturation) : agx(hdr.rgb.mul(gain));
+      let c = toyNeutral
+        ? toneMapping(NeutralToneMapping, 1, vec4(hdr.rgb.mul(gain), 1)).rgb
+        : tuningEnabled
+          ? agx(hdr.rgb.mul(gain), agxPower, agxSaturation)
+          : agx(hdr.rgb.mul(gain));
       if (tuningEnabled) {
         c = pow(max(c, 0), vec3(contrast));
         c = mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, saturation);
