@@ -116,6 +116,20 @@ First-use carry meshes and the glider's cloth and shadow pipelines warm behind l
 
 ### Guidance after removing the objective
 
+**Walking-in composition, 4 November:** Station 3's existing bill sits on the source side of its pile so
+the unchanged `great beam 0/1` row stays visible. The 53 m uphill great-tree source, receiver, feeder,
+machine and crossing fit are retained; seeing the source still requires turning uphill. The proper-axe
+chest sits on the forge side of the oak, and the pack sits beside the receiver's feeder, so their pickup
+approaches face the next work. The forge's existing bill sits on the frontage above the work. Its output
+rack and mouth retain their original positions: moving the rack changed cart-cycle pacing in the full
+comparison, so the rail-pickup sightline remains unresolved. The hook pedestal sits toward the first floating
+slab, keeping its ring and onward railway in the approach view. The camp's large shed moves south of the
+boarding approach, exposing the locomotive and platform. These are Local placement changes using the
+existing objects, materials and colliders, with no new copy, markers, rules, bills, unlocks or timing.
+The Q2 depot rack sits 8 m farther back along the track, putting the receiving pile in the same approach
+view as the coming cart. Cart stops, route, pushers and arrival sounds stay unchanged; a restored still
+cannot show the fresh arrival or explain the wait by itself. [Walking evidence and remaining limits](../plans/world-cues.md).
+
 Stage-by-stage audit of what the objective text or marker used to explain. These are physical cues already in the round unless a change is stated. A cue's existence does not establish that a blind player understands it.
 
 | Stage / former direction                         | What in the world points there now                                                                                                                                                                                                                                                                                                                                          |

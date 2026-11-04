@@ -146,7 +146,8 @@ export const ringAt = (p: Pad) => {
 /** The devices. `pad`: what you stand on to take it; `from`: which way the show faces you. */
 export const DEVICES: Record<TechId, { pad: string; x: number; z: number; y: number }> = {
   jump: { pad: 'p1', x: P1.x + 1.5, z: P1.z - 1.6, y: P1.y },
-  hook: { pad: 'p2', x: P2.x - 1.6, z: P2.z + 0.4, y: P2.y + 2.2 },
+  // Approach from the railway faces the first floating slab instead of the village behind you.
+  hook: { pad: 'p2', x: P2.x + 1, z: P2.z - 1.2, y: P2.y + 2.2 },
   glide: { pad: 'summit', x: 11.8, z: -6, y: 102.4 },
 };
 

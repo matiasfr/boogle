@@ -18,8 +18,8 @@ import { coop, coopWire } from './coop.ts';
 
 /** Where each chest waits. The axe's stands by the oak you'll try it on. */
 const CHEST_AT: Record<ChestId, { x: number; z: number }> = {
-  axe: { x: OAK.x + 3.4, z: OAK.z + 5 },
-  pack: { x: -82.5, z: -12.5 },
+  axe: { x: OAK.x - 4, z: OAK.z - 3 },
+  pack: { x: -86, z: -9 },
 };
 const sky = new THREE.Vector3();
 /** A chest lands where it waits: the rung is yours to open. */

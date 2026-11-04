@@ -171,7 +171,13 @@ export function buildStation(spec0: Station, place: FrameAt) {
   }
 
   const tag = label(3.4, 1.7);
-  tag.sprite.position.set(x, y + 2.9, z);
+  // T3's full log pile hid the missing beam row. Keep the existing bill beside the pile,
+  // on the source side, without moving the receiver, feeder or standing envelope.
+  const billOut = spec0.id === 'T3' ? 4 : 0;
+  tag.sprite.position.set(x + lx * billOut, y + 2.9, z + lz * billOut);
+  // The pack is on the working apron: put this existing bill on the building frontage,
+  // not between the follow camera and the receiver as the player collects it.
+  if (spec0.id === 'F1') tag.sprite.position.set(x, y + 3.6, z + 6);
   scene.add(tag.sprite);
 
   const slot = new THREE.Vector3();
