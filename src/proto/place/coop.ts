@@ -3,7 +3,7 @@
 // recommendations 2, 3, 9, 11 and 12. Without the flag every hook here is a no-op and nothing is sent.
 //
 // How it stays together, cheapest thing that works:
-// - One authority: the oldest visible coop tab (presence key `placeCoopTrees1`, the world tick it got here). Not the room's lead,
+// - One authority: the oldest visible coop tab (presence key `placeCoopCargo1`, the world tick it got here). Not the room's lead,
 //   which could be a tab without the flag, and not the lowest id, which a newcomer could take. It is the only tab that
 //   accepts a deposit, starts a station's run and ends a stretch, so the last log can't start two runs and a frame can't
 //   overfill: a deposit it can't take goes back on the sender's back.
@@ -11,7 +11,7 @@
 //   an explicit rejection or actual peer removal returns a pending piece, never a wall-clock timeout.
 // - Tree harvest is accepted once by that authority before material is awarded. A follower reserves capacity until its
 //   matching receipt arrives; duplicate receipts cannot issue another log. The rest of the prototype still runs locally.
-// - Trees use a versioned whole-place message/presence identity. Legacy clients remain visible in the underlying room,
+// - Cargo uses a versioned whole-place message/presence identity. Legacy clients remain visible in the underlying room,
 //   but neither elect nor apply this prototype's state. This is still local-save prototype persistence, not server lockstep.
 // - Once a second the authority sends the whole shared state (`captureShared`, ./job.ts: every slice registered there, so a new
 //   system's state comes along for free). A newcomer takes it and is caught up, a follower that stays different for a few
@@ -195,13 +195,16 @@ const discrete = (j: Record<string, unknown>) => {
   ]);
 };
 const volatile = (j: Record<string, unknown>) => {
-  const q = j.job as { people: number; wood: number; stone: number; loose: number };
+  const q = j.job as { people: number; wood: number; stone: number; loose: number; kitSent: number };
   const h = j.heaps as { hub: number; dock: number; yard: number };
   return JSON.stringify([
     q.people,
     q.wood,
     q.stone,
     q.loose,
+    q.kitSent,
+    j.trainCargoV1,
+    j.craneCargoV1,
     h,
     linesOf(j).map((l) => l.pile),
     j.depot && (j.depot as { logs: number }).logs,
@@ -302,17 +305,17 @@ function reconcile(a: Api, j: Snap) {
   // Tree receipts above may be newer than `mine`, captured at the start of reconciliation.
   // Correcting a crate count must not roll their accepted work back to that earlier snapshot.
   const current = captureShared();
-  applyCoopShared({
-    ...mine,
-    felled: current.felled,
-    treeHarvestV1: current.treeHarvestV1,
-    job: pairHook.busy?.() ? { ...(j.shared.job as typeof job), longBeam: { ...job.longBeam } } : j.shared.job,
-    heaps: j.shared.heaps,
-    lines: j.shared.lines,
-    depot: j.shared.depot,
-    forge: j.shared.forge,
+  // Cargo, motion and destination stock are one snapshot. Keeping our in-flight callbacks while
+  // replacing only the rack/heaps can land the same crate twice (or discard it without delivery).
+  applyFull(a, {
+    ...j,
+    shared: {
+      ...j.shared,
+      felled: current.felled,
+      treeHarvestV1: current.treeHarvestV1,
+      job: pairHook.busy?.() ? { ...(j.shared.job as typeof job), longBeam: { ...job.longBeam } } : j.shared.job,
+    },
   });
-  drawHeaps(allHeaps);
 }
 const nudge = lines.map(() => 0);
 
@@ -374,7 +377,7 @@ const amAuthority = () => authorityPeer() === null;
 
 function msg(m: Record<string, unknown>) {
   try {
-    net.room?.send({ t: 'placeCoopTrees1', ...m });
+    net.room?.send({ t: 'placeCoopCargo1', ...m });
   } catch (e) {
     console.warn('[place coop] send failed', e);
   }
@@ -854,7 +857,7 @@ export const coop = {
     for (const l of lines) l.train.tr.cars.forEach((c, n) => ids(c.platform, `place:train${l.k}:car${n}`));
     chopHooks.harvest = requestHarvest;
     chopHooks.rock = (q: Rock) => msg({ k: 'rock', i: q.index, n: q.strokes });
-    addPresenceField('placeCoopTrees1', () => (since >= 0 ? since : null));
+    addPresenceField('placeCoopCargo1', () => (since >= 0 ? since : null));
     addPresenceField('placeRailCart', () => (since >= 0 ? 1 : null));
     addPresenceField('placeCartRide', () => (since >= 0 ? (carry.on === cartPlatform ? 2 : 1) : null));
     keepPresenceWhile(() => since >= 0);
@@ -863,7 +866,7 @@ export const coop = {
     addPresenceField('placeBig', () => back.big);
     backSeam.remote = (peer) => peerBack.get(peer) ?? 0;
     onRemotePresence((r, pr) => {
-      const v = (pr as { placeCoopTrees1?: unknown }).placeCoopTrees1;
+      const v = (pr as { placeCoopCargo1?: unknown }).placeCoopCargo1;
       if (!count(v, Number.MAX_SAFE_INTEGER)) {
         peers.delete(r.peer);
         peerBack.delete(r.peer);
@@ -923,7 +926,7 @@ export const coop = {
       });
       room.onMessage((raw, from) => {
         const m = raw as Record<string, unknown> | null;
-        if (m?.t !== 'placeCoopTrees1' || typeof from !== 'string') return;
+        if (m?.t !== 'placeCoopCargo1' || typeof from !== 'string') return;
         const answer = m.k === 'stock' || m.k === 'no' || m.k === 'harvested' || m.k === 'harvestNo';
         const expected =
           answer &&

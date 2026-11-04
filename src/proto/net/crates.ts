@@ -136,6 +136,13 @@ export function deckBox(k: number) {
 }
 export const deckCount = (d: Deck, kind?: Kind) => d.held.filter((c) => c && (!kind || c.kind === kind)).length;
 export const deckFree = (d: Deck) => d.held.findIndex((c) => !c);
+/** Restore settled cargo after the caller has cleared old loads and flights. */
+export function putCrate(d: Deck, k: number, kind: Kind) {
+  const mesh = take(kind);
+  slotLocal(k, mesh.position);
+  d.frame.add(mesh);
+  d.held[k] = { kind, mesh, landed: true };
+}
 /** Empties the load and everything in the air at once (Start over). */
 export function clearCrates(d: Deck | null) {
   if (d) {

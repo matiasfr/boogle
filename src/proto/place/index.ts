@@ -38,7 +38,7 @@ import { emit } from '../../render/particles.ts';
 import { dressSea } from '../crossing/sea.ts';
 import { extendSky } from '../crossing/sky.ts';
 import { fanfare } from '../minis/common.ts';
-import { clearCrates, drawHeaps, hopTo, topSlot, updateCrates, type Kind } from '../net/crates.ts';
+import { drawHeaps, hopTo, topSlot, updateCrates, type Kind } from '../net/crates.ts';
 import { protoCount } from '../count.ts';
 import { pageQuery } from '../flags.ts';
 import { playObjective, playWhere } from '../mark.ts';
@@ -75,7 +75,7 @@ import { job, resetJob, restore, save, personalSlice, num, forgetSaves } from '.
 import { L1, L2, allHeaps, dock, forgeFrame, hub, lines, machine, solidHeaps, stepsOf, yard } from './lines.ts';
 import { buildHalt } from './halts.ts';
 import { cartFolk } from './depot.ts';
-import { snapTrains, updateCargo, wakeTrains } from './cargo.ts';
+import { resetCargo, snapTrains, updateCargo, wakeTrains } from './cargo.ts';
 import { showing, nearestCrate, openCrate, snapGifts, updateGifts, onGiftSaved } from './gifts.ts';
 import { updateGot } from './got.ts';
 import { resetDrops, updateDrop } from './drop.ts';
@@ -289,7 +289,6 @@ function snapAll() {
   clearDrops();
   clearTrips();
   craneClear();
-  for (const l of lines) clearCrates(l.train.tr.load);
   drawHeaps(allHeaps);
   snapRun();
   snapTrains();
@@ -299,6 +298,7 @@ function snapAll() {
 }
 function startOver() {
   resetJob();
+  resetCargo();
   for (const l of lines) {
     l.stage = 0;
     l.open = false;
