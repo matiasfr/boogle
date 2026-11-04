@@ -20,7 +20,7 @@ const JUMP_IN = `window.__hold = false; document.querySelector('#enter').click()
 const SWATCH = (k: number) => `document.querySelector('#swatch-${k}')?.click();`;
 // The game's own HUD comes back after the landing: keep the footage clean.
 const CLEAN = `const s = document.createElement('style');
-  s.textContent = '.proto-bar, .hud-tl, .hud-tr, .reticle, .touch:not(body) { display: none !important }';
+  s.textContent = '.hud-tl, .hud-tr, .reticle, .touch:not(body) { display: none !important }';
   document.head.append(s);`;
 
 export default {

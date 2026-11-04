@@ -396,13 +396,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
         'docs/plans/find-the-fun.md#rules-for-every-prototype',
         'docs/proposals/boogle-2.md#current-decision-index',
       ],
-      readIf: [
-        { when: 'Changing the place prototype', refs: ['docs/game-design/place.md#the-run'] },
-        {
-          when: 'Changing playlist behavior',
-          refs: ['docs/plans/find-the-fun.md#one-path-the-playtest-playlist-play'],
-        },
-      ],
+      readIf: [{ when: 'Changing the place prototype', refs: ['docs/game-design/place.md#the-run'] }],
       sync: 'Choose per state; lockstep number changes need a separate proto room',
       checks: `${look}; card question/one-line change and live status when shipped; owner playtest stops further work`,
       lookalikes: ['src/proto/flags.ts', 'src/entities'],

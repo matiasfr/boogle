@@ -37,7 +37,6 @@ export default {
     const room = 'soapseat' + Math.random().toString(36).slice(2, 6);
     const g = await t.open({ name: 'driver', room, hud: true, touch: true, size: [1194, 834], query: 'proto=soapbox' });
     await g.waitFor(`window.boogle?.me?.entered && !!window.__soapbox`, { timeout: 90000 });
-    await g.eval(`document.querySelector('.pb-close')?.click();`);
     const walking = (await g.eval(LAYOUT)) as Layout;
     t.check('walking: Jump reads Jump, Honk shows', walking.jump === 'Jump' && walking.honk, JSON.stringify(walking));
 

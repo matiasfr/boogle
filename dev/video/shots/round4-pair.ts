@@ -33,7 +33,7 @@ export default {
       const b = await c.open({ name: 'Nell', room: `r4-pair-${scene}`, hud: 'play' });
       for (const g of [a, b]) {
         await ready(g, 'window.__place?.coop.debug().peers.length > 0');
-        await g.page.addStyleTag({ content: '.place-objective,.place-proto,.proto-bar {display:none !important}' });
+        await g.page.addStyleTag({ content: '.place-objective,.place-proto {display:none !important}' });
         await g.eval(`${PRE} P.day.hold=true;P.day.u=0.26;`);
       }
       await a.wait(2);

@@ -17,10 +17,10 @@ const PRE = `const P = window.__place;
   };
   const put = (x, z, yaw, pitch = -0.1, up = 1.2) => putW(x, P.H(x, z) + up, z, yaw, pitch);`;
 const PRESS = `const h = await import('/src/player/hands.ts'); h.interactDown(); h.interactUp();`;
-// The prototype's own panel and bar stay out of the footage, and its objective line, where a reel's caption goes (the
+// The prototype's own panel stays out of the footage, and its objective line, where a reel's caption goes (the
 // caption says it); the numbers and the log count stay in.
 const CLEAN = `const s = document.createElement('style');
-  s.textContent = '.proto-bar, .place-proto, .place-objective { display: none !important }';
+  s.textContent = '.place-proto, .place-objective { display: none !important }';
   document.head.append(s);`;
 const FOLLOW = `window.__debugCam?.clear();`;
 

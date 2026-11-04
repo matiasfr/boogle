@@ -54,7 +54,7 @@ export default {
         `!new URLSearchParams(location.search).has('proto') && P.coop.on`,
         'not the default co-op game',
       );
-      await g.page.addStyleTag({ content: '.place-objective, .place-proto, .proto-bar { display:none !important }' });
+      await g.page.addStyleTag({ content: '.place-objective, .place-proto { display:none !important }' });
       await g.eval(`${PRE} P.day.hold = true; P.day.u = 0.26;`);
       return g;
     };

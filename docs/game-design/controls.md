@@ -26,7 +26,6 @@ and [updates.ts](../../src/features/updates.ts).
 | Honk (`honk`) | action | T | Y | Honk | Friends | |
 | Ping where you look (`ping`) | action | G, middle click | D-pad ← | Ping | Friends | |
 | Menu and controls (`pause`) | action | Esc, H (opens on Controls) | Menu | corner menu button | Menu | |
-| Prototype bar (`proto-bar`) | action, prototype pages only | P (then arrows, Enter, [ ] for previous / next toy, Esc) | D-pad ↓ (then D-pad between buttons, A presses, LB / RB previous / next toy, B closes) | tap the bar | Menu | `?proto=` and `?play` pages |
 | Back (`back`) | action | (Esc, in each menu and talk) | B: closes talks and menus, leaves a text box, puts a wound-up throw away | close buttons | Menu | |
 | Reload for the new version (`update-reload`) | action, hidden | (notice button) | first free slot, only while the update notice shows | notice button | none | |
 
@@ -61,8 +60,7 @@ Notes:
   Xbox letters, PlayStation shapes (✕ ○ □ △, L1, R2, Options), Switch letters (B A Y X by position, ZL, ZR, +, −). On
   a Switch pad confirm and back swap places in menus and talks (`menuSlot`), Nintendo's own convention.
 - **Free pad slots** (`npm run registry -- --json`): LB, RB, R3, D-pad ↑, D-pad ↓ and D-pad →.
-  Place uses LB, RB and R3 for its moves, and D-pad → for Flag. D-pad ↓ opens the prototype bar on
-  prototype pages only ([src/proto/bar/pad.ts](../../src/proto/bar/pad.ts)); claims in `src/proto/` don't count as taken
+  Place uses LB, RB and R3 for its moves, and D-pad → for Flag. Claims in `src/proto/` don't count as taken
   and can't clash with the game's in the registry. The update notice borrows D-pad ↑ while it is up (or the first free
   slot if that is ever taken), so AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
