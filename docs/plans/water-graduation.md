@@ -17,6 +17,53 @@ Replace the sea on the default Round 4 place and the classic home island with th
 
 ## Design
 
+### Default-switch handoff (4 November 2026): partial, stopped at gate 1
+
+Implementation commit `4edc988d` shares the route selector in `proto/flags.ts`, re-exported through
+`render/water/flags.ts`. Its consumers retain their existing new/legacy branches. The raw `water=new`
+plunge check in `entities/player/state.ts` now also consumes this selector, so flagless Place gets the
+existing automatic plunge behavior. The retained demo's explicit opt-in behavior is preserved. No force,
+threshold, terrain, copy, pacing, tone or renderer setting was retuned; no old path was deleted.
+
+**Do not claim tonight's replay is verified.** The owner required stopping at the first failed ordered
+check. Gate 1's second capture failed, and gates 2–6 were not started:
+
+- [Literal `--query ''` capture](../../.look/evidence/1793836008310-19251/evidence.json): passed on the
+  initial selector edit. Effective route Place, new water ready, Neutral (renderer enum 7 and production
+  post `neutral`), `tod=0.24`, exactly one completed sky bake both after loading and during play, no
+  page/console/GPU errors. Existing `main.play()` awaits `waterReady` before shader warm-up and first
+  play. Boot first frame **5732 ms**, interactive **5733 ms**, sky-bake CPU/submission **304.3 ms**;
+  these are local development-load diagnostics, not phone or GPU timings. Completed-frame sample
+  **59.8/s** is capture health, not a frame-cost benchmark.
+- Opened **only** `default-water-still.png` from that manifest. Visual question: does the literal default
+  Place bank show the replacement water while preserving readable shores? At camera `(972,22,55)`
+  looking at `(1000,0,20)`, transparent turquoise water and caustic detail are visible between faceted
+  banks and the support. This is one bank angle, not all-angle shore acceptance or real-time feel.
+- [Failed `--query 'water=old'` capture](../../.look/evidence/1793836032053-19486/evidence.json): the
+  broker adds `classic=1` to a nonempty query without an explicit route selector. Readback was correctly
+  **legacy**, Neutral, automatic output transform enabled, but the eval expected Place and threw
+  `Wrong route or water mode`. No legacy still was produced. This is a diagnostic setup failure,
+  not evidence of a broken legacy renderer, and not proof of the Place fallback. A resumed check must
+  use `--query 'proto=place&water=old'` for that comparison.
+- Both manifests have `changedDuringRun=false`, source tree `ffb5408a23b7e516b807e01b61ce51b78b403409`.
+  **They predate the shared-selector/plunge correction** in `4edc988d`; browser verification must restart
+  at gate 1 on the final source before advancing. No edits occurred during a run. No forced overflow
+  was attempted. The successful run reported no GPU errors; the failed eval ended before its final
+  graphics-health sample, so it does not supply a second complete GPU verdict.
+- Final code: changed files passed `npx prettier --write`; `npm run check` passed lint, typecheck, unit,
+  registry, levels, assets and build. `npm run sim -- replay` matched **1108 frames** within **0.01**,
+  with no differences or fixture changes. This headless legacy replay does not test new-water plunges.
+- No solo bot, `--compare`, two-player long route, reload/rejoin, final-state comparison, `world-inputs`,
+  `smoke` or `caves` run followed the failure. There are no measured bot failures, beat deltas, water-fall
+  counts or scenario-runtime comparisons from this task. CI speed/regression status remains unverified.
+- Phone emulation was not reached: no mobile first-play or frame-cost measurements, and no runtime proof
+  of mobile quality on default Place. Source still selects `q=mobile` or coarse pointer at **0.6** world
+  resolution. **A real iPhone is untested**, as are Safari, physical gamepad/touch and real-time feel.
+- All work stayed on this branch/worktree. No nonlocal network, push or ship; remote `inflight` was
+  skipped under the local-only restriction. The demo's separately owned sea still ignores `water=old`:
+  the requested any-URL override is implemented for production sea selection, with this explicitly
+  retained prototype exception. Step 7 remains partial and step 8 acceptance remains open.
+
 ### Evidence and the starting point
 
 Code inspected at `0fe0799b83742144e706aa26700e27e349b73d90`, 3 November 2026. Read AGENTS.md, DESIGN.md, [the decision log](../proposals/boogle-2.md), [find-the-fun](find-the-fun.md), the render contract and the following existing research:
