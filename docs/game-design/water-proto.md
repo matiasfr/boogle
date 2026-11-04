@@ -1,5 +1,44 @@
 # 6.26b Prototype: Ultra Water demo scene (`?proto=water`)
 
+## Production water tuning
+
+Open `?proto=place&water=new&tune=1` to tune the real sea on the place page, or append `&tune=1` to another
+`water=new` room link. The dependency-free panel is dynamically imported on the deployed build as well as locally.
+Without the flag it loads no panel code, CSS, DOM or saved overrides. These preferences belong to this viewer;
+they add no room state, messages, controls or gamepad slot. The cursor stays free on tuning visits; drag the scene
+to look around. The game keeps running while the panel takes mouse and keyboard events aimed at its controls.
+
+Groups follow the Ultra Water reference: **Sun & sky**, **Waves**, **Shore waves**, **Water**,
+**Floaters & underwater**, **Post** and **Quality**. Each group and the whole panel can reset to production defaults.
+Changes persist in localStorage only for tuning visits. **Copy settings** exports one JSON object containing only
+overrides; **Apply settings** accepts the same block, so the owner can send a look back to an agent to make permanent.
+
+The saved format is `{ "version": 1, "changes": { "wave.waveScale": 0.5, "post.exposure": 1.2 } }`, under
+`boogle.water-tuning.v1`. Pasting replaces current overrides after validating every key, range and RGB array.
+Colour pickers display sRGB; exported scatter, reflection tint and foam tint arrays are linear RGB. Absorption
+is editable per channel in inverse metres. Invalid pasted data changes nothing; Copy leaves selectable JSON
+when clipboard access is unavailable.
+
+Spectrum controls rebake H0 in the existing FFT buffers after editing, without replacing textures used by queries.
+`waveScale` scales energy (height follows its square root); each cascade also has an amplitude multiplier.
+Wind, fetch, spread and swell shape rebake; choppiness, foam recovery and playback speed update live. Shore
+amplitude, wavelength, speed and steepness update the shared surface/receiver motion and spray. Water optics,
+foam, reflection gain/cap/tint, caustics, spray amount/size and underwater scattering/shafts/meniscus are live.
+Sun elevation, azimuth, intensity, cloud coverage, turbidity and time of day rebake the existing sky cube and
+matching sun/hemisphere lighting after editing; a brief stall is possible. This does not start a day/night cycle.
+Post controls cover exposure compensation, automatic exposure, key value, contrast and saturation around the
+existing AgX curve. Quality resolution scales the shared scene pass, retaining adaptive DPR ownership.
+
+The panel lists the demo controls that are unavailable: camera presets and uncapped benchmark are demo tools;
+floater spawn/drop/clear and drag/angularDrag/buoyancy belong to gameplay bodies; planar `reflections`,
+`reflectionScale` and `reflectionDistort` have no production reflection target; bloom strength/threshold would add
+a pass. Refraction distortion is adjustable on the existing production path. Colour presets and clarity are
+represented by the editable absorption, scatter and foam tint. AgX remains the production curve. MSAA and
+automatic resolution belong to the shared renderer, and distance fog belongs to the place/cave route. FFT size,
+cascade topology, polar mesh resolution, foam/shore bake dimensions, shaft steps and snow count require resource
+rebuilds and are intentionally omitted. Additional uniforms and grading arithmetic are enabled only on tuning visits;
+the flag-off shader graphs retain their constants and do not restore saved overrides.
+
 Production `water=new` also serves the opt-in home shore slice (`classic=1&shore=smooth-detail&shoreRocks=1`).
 Its receivers carry the demo-strength shallow caustic net, moving wetness and swash lace; contacts and bed data
 follow the slice. Wet receiver sheen uses continuous vertex normals instead of turning dry terrain facets into
