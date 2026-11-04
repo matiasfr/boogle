@@ -936,38 +936,12 @@ registerInteractable(() => {
   return out ?? NO_TARGETS;
 });
 
-// ---------------------------------------------------------------- where the beacon goes, for ./objective.ts
-const spot = { x: 0, y: 0, z: 0 };
-const put = (x: number, y: number, z: number) => {
-  spot.x = x;
-  spot.y = y;
-  spot.z = z;
-  return spot;
-};
-/** The next ring up, from wherever you are on the climb. */
-function nextRing() {
-  const b = me.body;
-  const y = b ? b.position.y : 0;
-  const climb = RINGS.filter((r) => /^t\d|summit/.test(r.pad.id));
-  const next = climb.find((r) => r.pad.top > y + 0.5) ?? climb.at(-1)!;
-  return put(next.at.x, next.at.y - 1, next.at.z);
-}
-const deviceSpot = (id: TechId) => put(devices[id].x, devices[id].y + 1, devices[id].z);
-/** Where the beacon stands instead of the job's next thing: the first path's device; the next one when its line gets there;
- * and whatever lets a slab down, while the machine's waiting at one. */
-export function techGoal() {
-  if (L1.open && !job.tech.jump) return deviceSpot('jump');
-  if (L2.stage >= 2 && !job.tech.hook) return deviceSpot('hook');
+/** Keep the telemetry label empty while the next move or gate takes precedence over the job. */
+export function hasTechGoal() {
+  if (L1.open && !job.tech.jump) return true;
+  if (L2.stage >= 2 && !job.tech.hook) return true;
   const gate = gateHere();
-  if (gate === 'quarry') return put(LEVER.x + ox, LEVER.y + 1, LEVER.z);
-  if (gate === 'sea') {
-    if (!job.tech.glide) {
-      const b = me.body;
-      if (b && b.position.y > padById('t5').top + 3) return deviceSpot('glide');
-      return nextRing();
-    }
-  }
-  return null;
+  return gate === 'quarry' || (gate === 'sea' && !job.tech.glide);
 }
 
 // ---------------------------------------------------------------- the frame, and putting it all right

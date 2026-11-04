@@ -301,8 +301,6 @@ TREES.push(
 );
 TREES.forEach((t, k) => (t.index = k));
 const strokesFor = (t: Tree) => (t.great ? GREAT.strokes : job.rung.axe ? AXE2.strokes : TUNE.strokes);
-/** The most strokes anything takes, for checking another tab's message. */
-export const MOST_STROKES = Math.max(GREAT.strokes, TUNE.strokes);
 
 /** Accepted finite harvest, separate from local animation and the owner's back. */
 export type TreeHarvest = {
@@ -636,8 +634,8 @@ export function resetTrees() {
   }
 }
 /** Trees already down, by index: what a reload keeps. */
-export const fellenList = () => TREES.filter((t) => t.fall >= 0).map((t) => t.index);
-export function restoreFellen(list: number[]) {
+const fellenList = () => TREES.filter((t) => t.fall >= 0).map((t) => t.index);
+function restoreFellen(list: number[]) {
   for (const k of list) {
     const t = TREES[k];
     if (!t || t.fall >= 0) continue;

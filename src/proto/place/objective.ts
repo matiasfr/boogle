@@ -8,7 +8,7 @@ import { job } from './job.ts';
 import { L2, TX, TZ, machine } from './lines.ts';
 import { activeFrame, run, stationOf } from './run.ts';
 import { boilerAt } from './props.ts';
-import { techGoal } from './tech.ts';
+import { hasTechGoal } from './tech.ts';
 
 const dist = (x: number, z: number) => {
   const b = me.body;
@@ -19,7 +19,7 @@ const dist = (x: number, z: number) => {
 export function objective() {
   if (run.mode === 'waking' || (job.boiler === 3 && !job.rung.trains)) return '';
   if (run.mode === 'asleep') return dist(machine.flatbed.x, machine.flatbed.z) < 25 ? '' : 'Follow the path.';
-  if (techGoal()) return '';
+  if (hasTechGoal()) return '';
   if (job.chest) return job.chest === 'axe' && dist(TX, TZ) > 40 ? 'Walk home across your bridge.' : '';
   if (job.ended) return 'That was the whole test. Wander as long as you like.';
   if (
