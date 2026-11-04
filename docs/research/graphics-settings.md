@@ -2,6 +2,11 @@
 
 _2026-11-03. Research and recommendation, not implementation approval. Checkout `0562c947`. **[V]** = primary source text or repository code read; **[S]** = secondary account read; **[I]** = search excerpt only; **[D]** = proposal. No games launched or new benchmarks run; not tested on a device._
 
+**4 November implementation update:** the owner subsequently approved build-order steps 1–2 only. The Local
+registry, unified resolution/render cap and Dev Graphics cost switches are built; see the
+[Mac observations, checks and visual limits](graphics-switch-costs.md). Pause controls and presets below
+remain proposals while the owner chooses the look.
+
 **Build one small Graphics page in Pause, backed by the same Local settings that Dev and agents use. Default to Auto, preserving today's appearance; offer Quality, Performance and Battery Saver. Scale resolution before removing art.** The M1 Max is the average and judges the look; the M4 iPad Pro is the floor that scales down, and the owner's iPhone 17 Pro is an additional real-use case, not a measured tier. This follows [owner calls](../agents/owner-calls.md), **Small and readable** and **Clear authority**.
 
 ## Recommendation [D]

@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { scene, camera } from './scene.ts';
 import { onFrame } from '../loop.ts';
+import { registerGraphics } from '../graphics-settings.ts';
 
 const POOL = 2;
 /** Something that glows: the pool lights the nearest few. on() scales it, 0..1. */
@@ -18,6 +19,7 @@ export type LightSource = {
 };
 const pool: THREE.PointLight[] = [];
 const sources: LightSource[] = [];
+let enabled = true;
 
 // source: { position: Vector3, color, intensity, distance, on?: () => 0..1 }. Returns it (change fields freely).
 export function addLightSource(spec: Omit<LightSource, 'color'> & { color?: THREE.ColorRepresentation }) {
@@ -32,12 +34,28 @@ for (let k = 0; k < POOL; k++) {
   pool.push(l);
   scene.add(l);
 }
+registerGraphics({
+  id: 'lights',
+  label: 'Point lights',
+  choices: [true, false],
+  default: true,
+  applyMode: 'rebuild',
+  cost: 'lit pixels and CPU selection',
+  skips: 'Skips source selection and excludes both pool lights from lit draws; source glows stay visible.',
+  hitch: 'Changing light membership can compile material variants on first use.',
+  read: () => enabled,
+  apply(value) {
+    enabled = value === true;
+    for (const light of pool) light.visible = enabled;
+  },
+});
 
 // The POOL best sources this frame, best first (ties keep the earlier source). Reused: the hot path allocates nothing.
 type Pick = { s: LightSource | null; on: number; score: number };
 const picks: Pick[] = Array.from({ length: POOL }, () => ({ s: null, on: 0, score: 0 }));
 onFrame(
   () => {
+    if (!enabled) return;
     for (let k = 0; k < POOL; k++) picks[k]!.s = null;
     for (let i = 0; i < sources.length; i++) {
       const s = sources[i]!;

@@ -36,6 +36,9 @@
   once a minute.
 - **Sync kind.** Local: nothing about rendering crosses the network.
 - **Production-water Looks.** `water=new` with Dev or `tune=1` adds the [Looks dock comparison](dev-menu.md#looks) at the active water-post owner: Current, metered Neutral, restrained Sunny AgX, AgX Punchy and Sunshine water. All use the procedural frozen sky and one shared meter/output pass. A/B only changes uniforms; saved choices prepare behind loading. This is a Local preview, not a default change. Ordinary visits keep the shipped graph and do not load comparison code.
+  Explicit Graphics bloom overrides survive look selection, including Neutral. A saved bloom-on choice uses
+  the same prepared comparison graph as bloom-off. Graphics meter-off holds exposure and skips meter work;
+  Looks exposure lock independently freezes adaptation. Neither control selects the other tool's settings.
 - **Opt-in tone comparison.** Add `tone=neutral`, `tone=agx`, `tone=agx-sat` or `tone=aces` to any game page.
   A lazy module uses the water demo's metered exposure with fixed middle-grey-matched trims (1 / 0.771116 /
   0.771116 / 0.729587). AgX is the demo's existing contrast/saturation look; AgX-sat adds up to 30% chroma,
@@ -46,7 +49,45 @@
 - **Files.** [src/render/scene.ts](../../src/render/scene.ts), [src/features/adaptive-res.ts](../../src/features/adaptive-res.ts),
   [src/features/wake-lock.ts](../../src/features/wake-lock.ts);
   rules for drawing things in [src/render/README.md](../../src/render/README.md).
-- **Limits.** No quality setting yet; post effects (bloom, ambient occlusion, reflections) are planned as tiers.
+- **Dev cost controls.** With Dev enabled, the lazy **Graphics** dock panel exposes owned Local settings for
+  resolution, frame limit, shadows, MSAA, caustics, spray, snow, shafts, wet lens, bloom, exposure meter and the
+  two pooled point lights. Lab grass and lab post effects are available only when their existing owner and
+  effects are present; they do not load onto the place page. Each row states the work skipped and whether the
+  change is live, rebuild or reload. These are cost experiments, not player presets or an approved low look.
+  There is no Graphics page in Pause yet. No geometry, waves, queries, world population or gameplay controls
+  are included.
+- **One Local resolution/cap owner.** `render/quality.ts` combines adaptive resolution with the water ceiling
+  using their minimum, preserving the existing default scale. Dev offers Auto / 100 / 80 / 60% and Display /
+  60 / 30 rendered fps. A cap skips only scene/output rendering: input, physics, networking, FFT and water
+  query callbacks continue. Adaptive observations retain uncapped callback timing. Dev choices are bounded
+  and stored separately in `boogle.dev.graphics.v1`; **Restore baseline** clears them, and Dev Off removes them.
+  Closing the dock preserves them. Without Dev, adapters do not register and the panel chunk is not loaded.
+  Baseline restore also resets registered owners whose effect is temporarily absent from the current lab
+  preset, so returning to a grass/post preset restores those effects too.
+- **Actual work removed.** Caustics clear once before skipping producer draws; spray skips ambient scans
+  while preserving impact cues; snow skips update/draw; shafts skip their target update and composite;
+  wet lens skips droplet fragment evaluation while retaining the shared depth/water-boundary compute.
+  Bloom bypasses its chain but retains allocations; meter holds its last valid exposure and skips meter,
+  adaptation and history copy (one initialization result remains necessary). Point lights skip selection and
+  lit membership, retaining emissive source glows. Shadows skip shadow rendering; MSAA chooses stored 4x or
+  1x samples at reload. Live sample-count changes are unsupported: a broker check exposed cached depth-copy
+  and bind-group mismatches, so the requested value stays pending until reload. With Dev enabled,
+  `graphicsMsaa=0|1` selects the startup value for matched reload captures. Water, colliders, navigation and
+  interaction cues stay intact.
+- **Measurement and hitches.** Graphics **Measure on/off** uses Performance's real-frame profiler for warmed
+  on/off/off/on samples, freezes resolution and Display cadence during collection, then restores prior Dev
+  overrides. It reports frame-interval proxy, CPU submission and GPU timestamp span separately, never summed
+  pass timers. Incomplete GPU spans are unavailable; actual display presentation and physical occlusion are
+  unknown. The copied snapshot includes settings, route, camera, pixels, device and all samples. Repeated
+  samples and a contention label do not prove machine exclusivity. MSAA requires separate matched reload
+  captures and cannot use the live Measure button. Shadow/light membership, MSAA reload and first bloom
+  enable can compile or allocate; spray/shafts disabled at startup can defer first-use pipelines.
+  Live does not mean hitch-free. The 16-second startup escape remains in force.
+- **Limits.** No player quality page, presets, mobile validation or approved effects downgrade yet. Device
+  cost observations and inspected visual evidence are in the [Mac graphics switch report](../research/graphics-switch-costs.md).
+  The repeated 1440×900 captures were contended; smaller differences often changed sign. Spray, daylight
+  light/shadow footprints and bloom appearance were not clearly resolved in the inspected views. These
+  observations do not select a performance tier or replace the owner's playtest.
 
 ---
 

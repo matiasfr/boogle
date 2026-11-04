@@ -2,6 +2,8 @@ import * as THREE from 'three/webgpu';
 import { pass } from 'three/tsl';
 import { FOG_HEX, FOG_NEAR, FOG_FAR, isTouch } from '../constants.ts';
 import { scene } from './scene-graph.ts';
+import { MAX_DPR, installQuality } from './quality.ts';
+import { graphicsInitial, registerGraphics } from '../graphics-settings.ts';
 
 export const canvas = document.getElementById('view') as HTMLCanvasElement; // in index.html
 
@@ -9,15 +11,15 @@ export const canvas = document.getElementById('view') as HTMLCanvasElement; // i
 // second path (src/render/README.md). A browser without WebGPU gets a note in the lobby instead of the island.
 // render() throws until init() resolves, so main.ts starts the game from rendererReady.
 const params = new URLSearchParams(location.search);
+const msaa = graphicsInitial('msaa', [true, false], true) === true;
 export const renderer = new THREE.WebGPURenderer({
   canvas,
-  antialias: true,
+  antialias: msaa,
   powerPreference: 'high-performance',
   trackTimestamp: Number(params.get('prof')) > 0, // GPU ms per frame in the ?prof=1 overlay (src/debug/prof-overlay.ts)
 });
 (renderer as unknown as { _getFallback: null })._getFallback = null; // three would quietly swap in its WebGL 2 backend when WebGPU can't start; fail instead
-export const MAX_DPR = Math.min(devicePixelRatio, 2); // features/adaptive-res.ts scales the ratio below this
-export const FIXED_DPR = params.get('dpr') === 'fixed'; // ?dpr=fixed keeps the full ratio (stills, clips, perf runs)
+export { MAX_DPR, FIXED_DPR } from './quality.ts';
 renderer.setPixelRatio(MAX_DPR);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -91,6 +93,21 @@ export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1500);
 export const scenePass = pass(scene, camera, { colorSpace: THREE.LinearSRGBColorSpace });
 export const pipeline = new THREE.RenderPipeline(renderer, scenePass);
 export const renderFrame = () => pipeline.render();
+installQuality(renderer, scenePass);
+registerGraphics({
+  id: 'msaa',
+  label: 'Scene MSAA',
+  choices: [true, false],
+  default: true,
+  applyMode: 'reload',
+  cost: 'multisample rendering',
+  skips: 'Off uses one scene sample instead of four; caustics MSAA is independent.',
+  hitch:
+    'Reload builds sample-count pipelines behind loading. Live sample changes invalidate cached depth copies and bind groups.',
+  available: () => (msaa && renderer.samples === 0 ? 'This backend does not provide multisampling.' : null),
+  read: () => renderer.samples > 0,
+  apply: () => {}, // Reload-only: never mutate a live attachment's sample count.
+});
 
 // The canvas's CSS box, in CSS pixels: the window, except in the Home Screen app, where src/boot/app-fill.ts may make it
 // taller than innerHeight to reach the bottom of the screen. The drawing buffer and the camera follow the box.
@@ -132,6 +149,20 @@ Object.assign(sun.shadow.camera, { left: -36, right: 36, top: 36, bottom: -36, n
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.03;
 scene.add(sun, sun.target);
+registerGraphics({
+  id: 'shadows',
+  label: 'Sun shadows',
+  choices: [true, false],
+  default: true,
+  applyMode: 'rebuild',
+  cost: 'shadow rendering',
+  skips: 'Removes sun shadow rendering and receiver shadow sampling; leaves sun light and day clock intact.',
+  hitch: 'Changing the light shadow key builds material pipelines on first use.',
+  read: () => sun.castShadow,
+  apply: (value) => {
+    sun.castShadow = value === true;
+  },
+});
 
 // Placeholder until createSky (src/render/sky.ts) swaps in the real dome. The sky entity puts it in the scene
 // (src/features/day-night.ts): entity.ts imports this file, so this file can't spawn.

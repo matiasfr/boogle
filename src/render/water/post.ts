@@ -5,6 +5,7 @@ import { bind, onChange, scalar, tuningEnabled } from './live.ts';
 import { createWaterBloom } from './bloom.ts';
 import { NeutralToneMapping } from 'three/webgpu';
 import { toneMapping } from 'three/tsl';
+import { registerGraphics } from '../../graphics-settings.ts';
 import { toyNeutral, toySkyEnabled } from './flags.ts';
 
 const { Fn, If, OnAfterRenderPipeline, pow, select, vec3, vec4, float, mix, dot, max } = TSL;
@@ -68,21 +69,48 @@ export function installWaterPost(source: N) {
       bloomParams.enabled = value as number;
     },
   );
-  const stop = onChange(() => {
+  const updateBloom = () => {
     const enabled = bloomParams.enabled === 1 && bloomParams.strength > 0;
     if (enabled && !bloom) {
       // First enable builds the optional pipelines on the next real draw. No work at flag-off startup.
-      bloom = createWaterBloom(source, threshold);
+      bloom = createWaterBloom(source, float(threshold));
       bloomOutput = makeOutput(bloom.hdr.add(bloom.glow.mul(strength)));
     }
     const next = enabled ? bloomOutput : output;
     if (pipeline.outputNode === next) return;
     pipeline.outputNode = next;
     pipeline.needsUpdate = true;
-  });
+  };
+  const stop = onChange(updateBloom);
   pipeline.outputNode = output;
   pipeline.outputColorTransform = false;
   pipeline.needsUpdate = true;
+  const unregisterBloom = registerGraphics({
+    id: 'bloom',
+    label: 'Water bloom',
+    choices: [true, false],
+    default: false,
+    applyMode: 'rebuild',
+    cost: 'HDR materialization and bloom passes',
+    skips: 'Bypasses the entire bloom chain; allocated targets are retained until water disposal.',
+    hitch: 'First enable builds optional targets and pipelines on the next draw; it can hitch.',
+    read: () => bloomParams.enabled === 1 && bloomParams.strength > 0,
+    apply: (value) => {
+      bloomParams.enabled = value === true ? 1 : 0;
+      updateBloom();
+    },
+  });
+  const unregisterMeter = registerGraphics({
+    id: 'meter',
+    label: 'Exposure meter',
+    choices: [true, false],
+    default: true,
+    applyMode: 'live',
+    cost: 'two meter passes and history copy',
+    skips: 'Skips metering, adaptation and history copy; holds the last exposure texture.',
+    read: () => meter.enabled,
+    apply: (value) => meter.setEnabled(value === true),
+  });
   return {
     async prepare() {
       if (!tuningEnabled || toySkyEnabled) return;
@@ -92,12 +120,15 @@ export function installWaterPost(source: N) {
       curve = looks.activeLookCurve;
       stopCompare = looks.disposeLooks;
       output = makeOutput(source);
-      pipeline.outputNode = output;
-      pipeline.needsUpdate = true;
+      // A saved Graphics override may have built bloom before Looks was prepared.
+      if (bloom) bloomOutput = makeOutput(bloom.hdr.add(bloom.glow.mul(strength)));
+      updateBloom();
     },
     update: tuningEnabled ? (dt: number) => meter.update(locked() ? 0 : dt) : meter.update,
     tone: () => curve(),
     dispose() {
+      unregisterBloom();
+      unregisterMeter();
       stop();
       stopCompare();
       if (pipeline.outputNode === output || pipeline.outputNode === bloomOutput) {

@@ -124,8 +124,19 @@ export function createExposureMeter(hdr: N) {
 
   const value = clamp(exp2(adaptation.sample(vec2(0.5)).level(0).r.negate()).mul(0.18), 0.05, 20);
   let frames = 0;
+  let enabled = true;
+  let initialized = false;
   return {
     value,
+    get enabled() {
+      return enabled;
+    },
+    setEnabled(value: boolean) {
+      enabled = value;
+      // Retain the last adaptation texture: disabling holds exposure instead of flashing to a new gain.
+      meter.autoUpdate = adaptation.autoUpdate = enabled || !initialized;
+      meter.textureNeedsUpdate = adaptation.textureNeedsUpdate = enabled || !initialized;
+    },
     async read(renderer: THREE.WebGPURenderer) {
       const pixels = (await renderer.readRenderTargetPixelsAsync(adaptation.renderTarget, 0, 0, 1, 1)) as Float32Array;
       return Math.max(0.05, Math.min(20, 0.18 * 2 ** -pixels[0]!));
@@ -136,9 +147,16 @@ export function createExposureMeter(hdr: N) {
       history.dispose();
     },
     save(renderer: THREE.WebGPURenderer) {
+      if (!enabled && initialized) return;
       renderer.copyTextureToTexture(adaptation.value, history);
+      initialized = true;
+      if (!enabled) {
+        meter.autoUpdate = adaptation.autoUpdate = false;
+        meter.textureNeedsUpdate = adaptation.textureNeedsUpdate = false;
+      }
     },
     update(dt: number) {
+      if (!enabled && initialized) return;
       const f = frames++ & 255;
       jitter.value.set((f * 0.7548776662466927) % 1, (f * 0.5698402909980532) % 1);
       const delta = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 1)) : 0;

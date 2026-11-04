@@ -11,7 +11,13 @@ import type { RenderTarget, Texture } from 'three/webgpu';
 // every argument and preserve receivers; no targets, queries or command buffers are created by the observer.
 type GpuTexture = { width: number; height: number; depthOrArrayLayers: number; format: string; sampleCount: number };
 type Context = { renderTarget: RenderTarget | null; textures: Texture[] | null; depthTexture: Texture | null };
-type QueryPool = { timestamps: Map<string, number>; currentQueryIndex: number; pendingResolve: unknown };
+type QueryPool = {
+  currentQueryIndex: number;
+  pendingResolve: unknown;
+  queryOffsets: Map<string, number>;
+  _resolveQueries(): Promise<number>;
+  resultBuffer: { getMappedRange(offset?: number, size?: number): ArrayBuffer; mapState: string };
+};
 type Backend = {
   beginRender: (context: Context) => void;
   compute: (...args: unknown[]) => void;
@@ -158,7 +164,7 @@ type FrameSample = {
   computeDispatches: number;
   computePasses: number;
 };
-type GpuSample = { frame: number; ms: number; contexts: number };
+type GpuSample = { frame: number; ms: number; contexts: number; startMs: number; endMs: number; stale?: boolean };
 type Timing = { frames: FrameSample[]; render: GpuSample[]; compute: GpuSample[] };
 const emptyTiming = (): Timing => ({ frames: [], render: [], compute: [] });
 let recent = emptyTiming();
@@ -168,7 +174,69 @@ let observer: Awaited<ReturnType<typeof observeGpu>> | null = null;
 let previousNow: number | null = null;
 let bootRow = '';
 const pending: Record<'render' | 'compute', Promise<void> | null> = { render: null, compute: null };
-const lastGpuFrame = { render: -1, compute: -1 };
+const watchedPools = new WeakSet<QueryPool>();
+const lastGpuStart = { render: { frame: -1, ms: -Infinity }, compute: { frame: -1, ms: -Infinity } };
+
+// r187 exposes durations, not absolute endpoints. Observe its existing readback before unmap, without another
+// query, submission or fence. Version-specific structural guards deliberately fail closed on a backend change.
+function watchSpans(pool: QueryPool, type: 'render' | 'compute') {
+  if (watchedPools.has(pool)) return;
+  if (!pool.queryOffsets || !pool.resultBuffer || typeof pool._resolveQueries !== 'function') return;
+  watchedPools.add(pool);
+  const resolve = pool._resolveQueries;
+  const buffer = pool.resultBuffer;
+  const read = buffer.getMappedRange;
+  let offsets = new Map<string, number>();
+  pool._resolveQueries = function () {
+    if (buffer.mapState === 'unmapped') offsets = new Map(pool.queryOffsets);
+    return resolve.call(this);
+  };
+  buffer.getMappedRange = function (offset, size) {
+    const range = read.call(this, offset, size);
+    const times = new BigUint64Array(range);
+    const frames = new Map<number, GpuSample>();
+    for (const [uid, index] of offsets) {
+      const match = /:f(\d+)$/.exec(uid);
+      const start = times[index];
+      const end = times[index + 1];
+      if (!match || start === undefined || end === undefined || start === 0n || end < start) continue;
+      const frame = Number(match[1]);
+      const startMs = Number(start) / 1e6;
+      const endMs = Number(end) / 1e6;
+      const row = frames.get(frame) ?? { frame, startMs, endMs, ms: 0, contexts: 0 };
+      row.startMs = Math.min(row.startMs, startMs);
+      row.endMs = Math.max(row.endMs, endMs);
+      row.ms = row.endMs - row.startMs;
+      row.contexts++;
+      frames.set(frame, row);
+    }
+    for (const row of [...frames.values()].sort((a, b) => a.frame - b.frame)) {
+      // A freshly allocated query index can still contain an old GPU value if that slot was not written.
+      // Context counts alone cannot validate it. Queue-ordered newer frames must advance their first timestamp.
+      const last = lastGpuStart[type];
+      if (row.frame > last.frame) {
+        row.stale = row.startMs <= last.ms;
+        last.frame = row.frame;
+        if (!row.stale) last.ms = row.startMs;
+      }
+      const add = (timing: Timing) => {
+        const previous = timing[type].find((r) => r.frame === row.frame);
+        if (previous) {
+          previous.startMs = Math.min(previous.startMs, row.startMs);
+          previous.endMs = Math.max(previous.endMs, row.endMs);
+          previous.ms = previous.endMs - previous.startMs;
+          previous.contexts += row.contexts;
+          previous.stale ||= row.stale;
+        } else timing[type].push({ ...row });
+      };
+      add(recent);
+      if (recent[type].length > 240) recent[type].shift();
+      if (session?.frames.some((f) => f.frame === row.frame)) add(session);
+    }
+    offsets.clear();
+    return range;
+  };
+}
 
 function stats(values: number[]) {
   if (!values.length) return null;
@@ -181,33 +249,15 @@ function stats(values: number[]) {
   };
 }
 
-// Never use resolveTimestampsAsync's return value: it can be cached. r187's timestamp map keys end in :f<frame>.
-// Read every freshly resolved frame once, with one promise in flight per type. Query failures leave the old map;
-// frame IDs therefore reject cached results, even when a driver returns exactly the same duration on two frames.
+// Never use resolveTimestampsAsync's return value: it sums passes and can be cached. Only raw fresh readbacks count.
 async function resolveGpu(type: 'render' | 'compute') {
   if (pending[type]) return pending[type];
   const pool = backend.timestampQueryPool?.[type];
   if (!backend.trackTimestamp || !pool || (!pool.currentQueryIndex && !pool.pendingResolve)) return;
+  watchSpans(pool, type);
   pending[type] = (async () => {
     try {
       await renderer.resolveTimestampsAsync(type);
-      const frames = new Map<number, GpuSample>();
-      for (const [uid, ms] of pool.timestamps) {
-        const match = /:f(\d+)$/.exec(uid);
-        if (!match || !Number.isFinite(ms) || ms < 0) continue;
-        const frame = Number(match[1]);
-        if (frame <= lastGpuFrame[type]) continue;
-        const row = frames.get(frame) ?? { frame, ms: 0, contexts: 0 };
-        row.ms += ms;
-        row.contexts++;
-        frames.set(frame, row);
-      }
-      for (const row of [...frames.values()].sort((a, b) => a.frame - b.frame)) {
-        lastGpuFrame[type] = row.frame;
-        recent[type].push(row);
-        if (recent[type].length > 240) recent[type].shift();
-        if (session?.frames.some((f) => f.frame === row.frame)) session[type].push(row);
-      }
     } finally {
       pending[type] = null;
     }
@@ -216,28 +266,48 @@ async function resolveGpu(type: 'render' | 'compute') {
 }
 
 function summarize(timing: Timing) {
+  const complete = (frame: FrameSample, type: 'render' | 'compute') => {
+    const expected = type === 'render' ? frame.renderPasses : frame.computePasses;
+    const row = timing[type].find((r) => r.frame === frame.frame);
+    return expected === 0 || (row !== undefined && !row.stale && row.contexts === expected);
+  };
   const gpu = (type: 'render' | 'compute') => {
     const eligible = timing.frames.filter((f) => (type === 'render' ? f.renderPasses > 0 : f.computeDispatches > 0));
     const ids = new Set(eligible.map((f) => f.frame));
     const rows = timing[type].filter((f) => ids.has(f.frame));
+    const full = rows.filter((r) =>
+      complete(
+        eligible.find((f) => f.frame === r.frame)!,
+        type,
+      ),
+    );
     return {
       status: !backend.trackTimestamp
         ? 'unavailable: timestamp-query not supported/enabled'
         : !eligible.length
           ? 'no observed work'
-          : !rows.length
-            ? 'unavailable: no fresh timestamps'
+          : !full.length
+            ? 'unavailable: no complete fresh timestamps'
             : 'available',
-      stats: stats(rows.map((r) => r.ms)),
+      stats: stats(full.map((r) => r.ms)),
       eligibleFrames: eligible.length,
       missingFrames: eligible.length - rows.length,
+      staleFrames: rows.filter((r) => r.stale).length,
       partialFrames: rows.filter((r) => {
         const frame = eligible.find((f) => f.frame === r.frame)!;
-        return r.contexts < (type === 'render' ? frame.renderPasses : frame.computePasses);
+        return !complete(frame, type);
       }).length,
       samples: rows,
     };
   };
+  const spans = timing.frames.flatMap((frame) => {
+    if (!complete(frame, 'render') || !complete(frame, 'compute')) return [];
+    const rows = [...timing.render, ...timing.compute].filter((r) => r.frame === frame.frame);
+    if (!rows.length) return [];
+    return [
+      { frame: frame.frame, ms: Math.max(...rows.map((r) => r.endMs)) - Math.min(...rows.map((r) => r.startMs)) },
+    ];
+  });
   return {
     cpu: {
       scope: 'completed game frame main-thread CPU, including submission; excludes GPU execution',
@@ -246,8 +316,15 @@ function summarize(timing: Timing) {
     gpu: {
       render: gpu('render'),
       compute: gpu('compute'),
+      span: {
+        status: spans.length ? 'available' : 'unavailable: no complete fresh timestamp spans',
+        stats: stats(spans.map((r) => r.ms)),
+        eligibleFrames: timing.frames.length,
+        missingFrames: timing.frames.length - spans.length,
+        samples: spans,
+      },
       scope:
-        'three.js timestamp contexts grouped by unique renderer frame ID; asynchronous, gaps reported; render + compute is not end-to-end latency',
+        'earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.',
     },
     presentedFrameIntervals: {
       scope:
@@ -379,6 +456,7 @@ if (Number(new URLSearchParams(location.search).get('prof')) > 0) {
         message,
         report ? 'Captured sample (press Measure to repeat)' : 'Live: last 240 frames',
         `CPU: ${format(data.cpu.stats)}`,
+        `GPU span: ${format(data.gpu.span.stats)}; missing ${data.gpu.span.missingFrames}/${data.gpu.span.eligibleFrames}`,
         ...(['render', 'compute'] as const).map(
           (type) =>
             `GPU ${type}: ${format(data.gpu[type].stats)}\n  ${data.gpu[type].status}; missing ${data.gpu[type].missingFrames}/${data.gpu[type].eligibleFrames}; partial ${data.gpu[type].partialFrames}`,

@@ -49,6 +49,8 @@ let refreshTabs = () => {};
 let selected: string | undefined;
 let alive = true;
 let prepareCamera: (() => Promise<unknown>) | null = null;
+// Uses the same public extension seam as other optional dock panels. Graphics code stays lazy.
+registerDockPanel({ id: 'graphics', label: 'Graphics', load: () => import('./dev/graphics.ts') });
 type Position = 'left' | 'right' | 'bottom';
 let position: Position = 'right',
   collapsed = true,

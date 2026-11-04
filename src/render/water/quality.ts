@@ -1,5 +1,5 @@
 // Shared scene resolution only; never renderer DPR, tone mapping or MSAA. The demo keeps its independent post owner.
-import { renderer, scenePass } from '../scene.ts';
+import { setWaterResolution } from '../quality.ts';
 import { bind } from './live.ts';
 export function createWaterQuality() {
   const params = new URLSearchParams(location.search);
@@ -13,18 +13,16 @@ export function createWaterQuality() {
       resolution = value as number;
     },
   );
-  const original = scenePass.getResolutionScale();
-  const maxDpr = Math.min(devicePixelRatio, 2);
   return {
     name: mobile ? 'mobile' : 'high',
     get resolution() {
       return resolution;
     },
     update() {
-      scenePass.setResolutionScale(Math.min(1, (resolution * maxDpr) / renderer.getPixelRatio()));
+      setWaterResolution(resolution);
     },
     dispose() {
-      scenePass.setResolutionScale(original);
+      setWaterResolution(1);
     },
   };
 }

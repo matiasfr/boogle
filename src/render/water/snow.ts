@@ -8,6 +8,7 @@ import { uTime } from './shore-nodes.ts';
 import { waterLighting, type Ocean, type WaterSky } from './surface.ts';
 import { TSL } from './tsl.ts';
 import { UNDER } from './tuning.ts';
+import { registerGraphics } from '../../graphics-settings.ts';
 
 const {
   Fn,
@@ -66,10 +67,26 @@ export function createSnow(ocean: Ocean, sky: WaterSky) {
   mesh.frustumCulled = false;
   mesh.visible = false;
   mesh.renderOrder = 1;
+  let enabled = true;
+  const unregister = registerGraphics({
+    id: 'snow',
+    label: 'Underwater snow',
+    choices: [true, false],
+    default: true,
+    applyMode: 'live',
+    cost: 'sprite draw',
+    skips: 'Skips the 6000-sprite draw and per-frame projection update.',
+    read: () => enabled,
+    apply: (value) => {
+      enabled = value === true;
+      if (!enabled) mesh.visible = false;
+    },
+  });
   const entity = spawn({
     kind: 'water-snow',
     mesh,
     dispose() {
+      unregister();
       material.dispose();
     },
   });
@@ -80,8 +97,8 @@ export function createSnow(ocean: Ocean, sky: WaterSky) {
       despawn(entity);
     },
     update(visible: boolean) {
-      mesh.visible = visible;
-      if (!visible) return;
+      mesh.visible = visible && enabled;
+      if (!mesh.visible) return;
       renderer.getDrawingBufferSize(sizePx);
       px.value = sizePx.y / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
     },

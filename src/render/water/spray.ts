@@ -14,6 +14,7 @@ import { ULTRA } from './tuning.ts';
 import { waterContacts, waterContactRevision } from './contacts.ts';
 import { warmUp } from '../precompile.ts';
 import { bind, onChange, tuningEnabled } from './live.ts';
+import { registerGraphics } from '../../graphics-settings.ts';
 
 const TAU = Math.PI * 2;
 let OMEGA = Math.sqrt((9.81 * TAU) / SHORE_WAVE.lambda) * SHORE_WAVE.speed;
@@ -165,6 +166,21 @@ warmUp(() => {
   for (const prepare of preparations) prepare();
 });
 export function createSpray(atlas: ShoreAtlas) {
+  let enabled = true;
+  const unregister = registerGraphics({
+    id: 'spray',
+    label: 'Shore spray',
+    choices: [true, false],
+    default: true,
+    applyMode: 'live',
+    cost: 'emitter scans and particles',
+    skips: 'Skips shore/rock emitter preparation, scans and emissions. Impact cues remain; existing drops drain.',
+    hitch: 'Enabling after off-at-start can build the shore emitter list on its first update.',
+    read: () => enabled,
+    apply: (value) => {
+      enabled = value === true;
+    },
+  });
   bind(
     'shore.spray',
     () => ULTRA.spray,
@@ -184,6 +200,7 @@ export function createSpray(atlas: ShoreAtlas) {
     generation = -1,
     contactsGeneration = -1;
   const prepare = () => {
+    if (!enabled) return;
     const next = shoreRevision(),
       contactNext = waterContactRevision();
     if (next === generation && contactNext === contactsGeneration) return;
@@ -389,6 +406,7 @@ export function createSpray(atlas: ShoreAtlas) {
           send(elapsed);
         }
       }
+      if (!enabled) return;
       for (let i = 0; i < rocks.length; i++) spray(rocks[i]!, t, dt, elapsed, true);
       // Rotate priority so a busy near coast cannot always starve the same emission points.
       for (let i = 0; i < breakers.length; i++)
@@ -402,6 +420,7 @@ export function createSpray(atlas: ShoreAtlas) {
       maxPerSecond: MAX_PER_SECOND,
     }),
     dispose: () => {
+      unregister();
       preparations.delete(prepare);
       stopTuning();
     },
