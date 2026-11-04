@@ -53,6 +53,11 @@
 .haul-chip.full .haul-what::after {
   content: ' · full';
 }
+@media (max-width: 600px) and (orientation: portrait) {
+  body.touch .haul-chip {
+    bottom: calc(252px + env(safe-area-inset-bottom, 0px)); /* above the touch action rows */
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .haul-n.ui-tick {
     animation: none;
