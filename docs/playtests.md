@@ -186,13 +186,15 @@ Raw brainstorm from the same session, typed while Matias and Grant talked. Not d
 - **Launched while riding the cart:** at (1235, -72) Matias left the cart at up to 98 m/s and travelled 376 m in 6 s into the sea. Cause not looked at yet.
 - **Trains with two players:** riders thrown off repeatedly, 12 rides for Matias and 7 for Grant in under 4 minutes, many lasting under a second. Both came off together at 37:41 on the session clock, at the same spot, so some of this is not just desync. Grant's "train is pushing me back". Matias stopped seeing Grant's cart while Grant rode it, with Grant walking in place.
 - **Not shown to the other player:** a carried beam, boiler or rails; a partner's pet.
-- **Get unstuck** went to the old island for one second, (14, 26), then to the start of the map, about 170 m from where Matias was. It calls the shared `backToSpawn` (`src/features/pause.ts:227`).
+- **Get unstuck** put Matias on the old island at (14, 26). He pressed `Back up the path` there, which sent him to the start of the map, about 170 m from where he'd been. It calls the shared `backToSpawn` (`src/features/pause.ts:227`).
 - **Gates sit 90 degrees off:** Grant's report holds in code. `src/proto/place/tech.ts:436` adds a quarter turn, which lays the slab along the track.
 - **Cinematics and item cards close on any movement.** Dismissed by accident at least four times, so neither player really saw the town reveal. The town-unlock camera cancels the same way.
 - **Whistle for the cart** does nothing unless the far end needs something.
 - **"Stand on a platform" flickers:** on and off 14 times in 41 s for Grant, with `train called` firing 9 times. Doorways may do the same (5 shop entries in 7 s), though Matias may have been testing the walls.
+- **Pinned by the Camp halt:** Matias stood stuck at (1010, 30, -144) for about 16 s, starting just as Grant fitted the boiler and the trains unlocked. This is why he pressed Get unstuck. Fixing that button doesn't fix this.
+- **Hitch on first use:** Matias felt one on first taking rails, and the data agrees: 677 ms within 4 s of `took rails`, his worst frame of the session. Other spikes: 513 ms and 406 ms just after gaining the glider, 411 ms in Grant's freeze session.
 - **Start fresh split them into separate rooms** (known). They needed an invite link, which cost about 2 minutes.
-- **Small:** a square shadow under the character (both saw it). Double-jump rings off the feet. Rails floating where the line leaves the mountain. Z-fighting on the platform between the canyon rails and the tower. The junction snaps the cart. Pack floats off the body and its load sits outside it. Happy Clam has no way back but the water. Crate boxes can be clipped through. A wobble on some jump surfaces. Can't board the track layer. The reload prompt claims you must reload to stay with friends, and that's not true.
+- **Small:** a square shadow under the character (both saw it). Double-jump rings off the feet. Rails floating where the line leaves the mountain. Z-fighting on the platform between the canyon rails and the tower. The junction snaps the cart. Pack floats off the body and its load sits outside it. Happy Clam has no way back but the water. Boxes on the train can be clipped through and should be solid enough to stand on. Some wall parts disappear oddly in the indoor cutaway. A wobble on some jump surfaces. Can't board the track layer. The reload prompt claims you must reload to stay with friends, and that's not true.
 
 ### Calls they raised (not decided)
 - **Remove the objective marker:** both want it gone, and the world should guide you. But Grant was still following it at the end ("that's my objective") and asked why he'd want a second train, so it's what carried that stretch.
@@ -203,6 +205,12 @@ Raw brainstorm from the same session, typed while Matias and Grant talked. Not d
 - **Spread abilities out:** hook to glider was 49 s; double jump to hook was 10 minutes. Matias wants double jump later; Grant accepts it for the slice. Grant wants a real double-jump challenge where you first get it, not one higher ledge.
 - **Hook as a swing** (Just Cause, Spider-Man), releasing into the glider. An experiment worth a prototype.
 - **Gate puzzles between stations:** one switch moving two gates, "fun friction". Grant's idea, both like it.
+- **Great beam:** carrying it should be slower and it should sit further from the station, since right now you don't feel the slowness. Whether two people can actually co-carry it is still unknown: they asked, the partner couldn't see it, and `did something together` never fired.
+- **Item reward moment:** Matias liked the Zelda-style animation but wants more anticipation and camera movement.
+- **Shared unlocks arrive unexplained:** Grant earned the multi-axe and Matias got it with no idea how.
+- **Device cinematic goes only to whoever takes it:** Matias got the island shot, Grant didn't. This is by design (`gainTech` in `tech.ts`), but neither knew. The shot also suggests you can glide to the island, and you can't, which Grant liked as a tease.
+- **Crates give each player different things:** Grant got something else where Matias got the pet. Worth confirming that's wanted.
+- **Night:** Matias likes the lamps but asked whether night cycles are staying.
 - **Ping comes back** on its own button beside drop.
 - **Item cards need a button press,** so a new item has weight.
 - **"N s! The long way round took you X s."** Nobody understood it. It fires the first time you cross in one go, here 21 minutes after the bridge opened and from a cart, comparing against a walk from 25 minutes earlier (`src/proto/place/index.ts:246`). It reminded Grant of Burnout Paradise's street times: cut it, or make it real route times.
@@ -212,4 +220,5 @@ Raw brainstorm from the same session, typed while Matias and Grant talked. Not d
 ### Barely tried
 - Town: Matias at the end: didn't really look at the rumours or the town. Shop 7 s, house 5 s, the museum never, nothing tried on, `Talk` shown 11 times and pressed 0. One rumour did stop Grant mid-sentence ("never once blinked").
 - Performance was fine: frame p50 17 ms on both, p95 18 on the Mac and 20 on Grant's. Worst stalls 677 ms and 497 ms.
+- Unclear from the audio: Grant first loaded "an old version" and needed Start fresh; Matias mentioned annoying separate pop-ups just before starting.
 - Data gaps: `did something together` never marked in 33 minutes of co-op; `chop refused` counts include held presses. Round 4 sessions show no `water=new`, so that run was on the normal sea and sky. The separate `water=new` session (04:32 UTC) stalled 37 s and predates the #775 cold-start fix; that fix is not yet re-checked by a person.
