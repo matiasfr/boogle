@@ -25,6 +25,10 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 - [x] `place-bugs-look`, shipped (jump wobble and the recovery loop not reproduced; check the Z-fighting spot): square shadow; double-jump rings; floating rails; Z-fighting at the canyon platform; pack floating and load outside it; no way back from Happy Clam, and the water-recovery loop there; boxes on the train not solid; wall parts disappearing in the cutaway; jump wobble.
 - [x] `place-bugs-run`, shipped (track layer boarding not reproduced): pinned at the Camp halt; first-use hitches; cart junction snap; boarding the track layer; false reload prompt; Start fresh splitting a co-op room.
 
+- [x] Call feedback routine and silent flag (M, D-pad right; none on touch), shipped; first real use is the replay.
+- [x] World cues, shipped; the forge's rail pickup and the great tree from a straight-in walk stay weak.
+- [x] Two-player route, first chop to pier with a reload and a leave-and-rejoin, passed by bots seated on trains ([record](coop-route-verification.md)); standing rides are being tested.
+
 ## No job yet
 
 ### Co-op and carrying
@@ -75,10 +79,10 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
 - [ ] Town barely played: shop 7 s, house 5 s, museum never, `Talk` never pressed. Look at it properly next time.
 - [ ] Blind first-time player: everything about what's obvious, especially with the objective marker gone.
-- [ ] Re-check `water=new` after the #775 cold-start fix: it stalled 37 s before it.
+- [x] Re-check `water=new` after the #775 cold-start fix: it stalled 37 s before it. On 4 November the owner saw no stall from their link; the phone session's worst frame was 230 ms.
 - [ ] Physical gamepad and real touch dragging for the dismissal changes.
 - [ ] Grant's freeze video.
-- [ ] Matias's survey.
+- [x] Matias's survey: too cumbersome, replaced on 4 November by the call routine in `.claude/skills/playtest-notes/SKILL.md`.
 - [ ] Unclear from the audio: Grant first loaded "an old version" and needed Start fresh; "annoying separate pop-ups" just before starting.
 
 ## Liked: keep these
