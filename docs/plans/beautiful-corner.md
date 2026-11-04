@@ -2,6 +2,8 @@
 
 > **Approved by the owner, 3 November 2026.** Both recommendations accepted: Station 3's first walkable crossing and great-beam delivery; one finished job plus one measured reuse, then stop. This work is limited to steps 1–2. The owner played round 4 on 3 November; see [playtests](../playtests.md) and [round-4 notes](round-4-notes.md). Step 1 is baseline and audit only; every player-visible change goes behind new `&corner=1`, leaving the default round unchanged. List real contact/material-travel bugs with evidence rather than fixing them, except tiny fixes invisible to pacing. No approval to graduate Round 4 or add progression.
 
+> **4 November, owner calls:** the sea runs under Neutral for now, superseding AgX below. Terrain becomes a larger pass after water, with terrain level design on the vertical slice's gray box, so step 3's terrain gate clears there, not as a separate comparison. Whether step 3's sea and light work goes ahead sooner, on today's terrain, is still the owner's call.
+
 ## Goal and scope
 
 Make one complete, freely playable construction job beautiful, then measure reuse at a second arrangement. Serve DESIGN.md **Toys before chores**, **Telegraph everything**, **Show, don't tell** and **Small and readable**. No principle bends.
@@ -14,7 +16,7 @@ The [Round 4 record](../game-design/place.md#the-run) owns the baseline: satisfy
 
 The first [Shape of the game entries](../proposals/boogle-2.md#the-shape-of-the-game) and dated [Look calls](../proposals/boogle-2.md#look) supersede older research/plan prose.
 
-- **Sea:** owner and Grant chose Ultra Water as the starting point, stylized alongside toon characters, retaining waves, shore response and below-water treatment. [Water graduation](water-graduation.md) owns replacing the real sea; no selective analytic corner sea. Its steps 1–3 are recorded complete, opt-in; steps 4–8 still await approval. This plan grants none of those approvals.
+- **Sea:** owner and Grant chose Ultra Water as the starting point, stylized alongside toon characters, retaining waves, shore response and below-water treatment. [Water graduation](water-graduation.md) owns replacing the real sea; no selective analytic corner sea. Steps 1–3, 5 and 6 are recorded complete, opt-in; step 4 started on 4 November; steps 7–8 await review. This plan grants none of those approvals.
 - **Sky:** demo sky with **AgX**, frozen late morning **`tod=0.24`**, baked once ahead of time. Rollout belongs with the real sea. Tune foliage, avatar and props under it. Neutral, the old sky and a running cycle are no longer open choices. Water-graduation's older “sky decision is open” wording predates this pick; its implementation gates still stand.
 - **Terrain:** `&terrain=demo` remains a comparison. Its [report](../research/terrain-demo-validation.md#recommendation) recommends shore materials after an art pass, retaining authored inland colours and paths; that is not owner-approved adoption. Reuse the approved outcome when it lands. Keep cliff shape/collision work distinct from this shader comparison; do not duplicate shore/material ownership.
 - **Craft:** retain [recommendations 3–12](../research/beautiful-corner-craft.md#numbered-recommendations-for-boogle): action/contact before detail, composition before kit finish, restrained feedback, one integrator and measured reuse. The old light/station specifics in recommendations 1–2 and local-only baseline are superseded above. Paintings remain references, not runtime evidence.

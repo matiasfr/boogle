@@ -16,9 +16,11 @@ Reviewed: 3 November 2026, at `0562c947`, against boogle-2.md, [round-4-notes.md
 |---|---|---|---|---|
 | **Now** | The corrected loop still makes you hungry, then relieved, without an objective marker or bands | Rails, tree and objective work on main ([tracker](plans/round-4-notes.md)) | Owner replays it; someone who hasn't seen it is watched | Round 4 tracker |
 | **Next** | Friends build one railway that stays built: one material to station to track to payoff path with real saves, for solo and two players, surviving leaving and rejoining | Now is settled. The railway still runs on the temporary tab protocol ([findings](plans/mainline-architecture.md)). [Plan](plans/production-core.md) scope approved 4 November; code waits for the replay | Race, departure, rejoin and restart proofs pass, and working apart still feels like one railway | [production-core.md](plans/production-core.md) |
-| **Later** | A vertical slice: a full session at the target quality, a fresh player observed, a second area's cost measured | Next. Beautiful corner runs in parallel inside its own [stages](plans/beautiful-corner.md); it isn't the slice | Owner accepts the experience and quality | Not yet planned |
+| **Later** | A vertical slice: a full session at the target quality, a fresh player observed, a second area's cost measured | Next. Beautiful corner runs in parallel inside its own [stages](plans/beautiful-corner.md); it isn't the slice | Owner accepts the experience and quality | Not yet planned. Terrain and terrain level design come together here, on a gray box, after water |
 
 Bounded experiment waiting on the owner: **cart first, then trains** (leans yes), comparing a simple cart with a clearly better train on the same route, asking "was the train an upgrade you wanted?".
+
+**Running alongside (graphics, no effect on the flow under test):** the real sea, per [water graduation](plans/water-graduation.md), under Neutral for now. Step 4 is behind `water=new`; the default switch waits for the replay and the owner's review.
 
 **Don't start yet:** new areas and content at scale, since content built on the temporary protocol or an unlocked loop gets redone.
 
@@ -40,3 +42,4 @@ The graph can step back for an affected risk. Exit evidence for each is in the [
 
 - Cart then trains: run the comparison, or not.
 - Who is the first person to play blind, and when.
+- Beautiful corner step 3: wait for the terrain pass, or do sea and light on today's terrain first.
