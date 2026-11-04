@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Browser } from 'playwright';
-import { Game, launch, startStack, sleep, reportGfxErrors, type Stack } from './lib.ts';
+import { Game, enterGame, launch, startStack, sleep, reportGfxErrors, type Stack } from './lib.ts';
 import { coopWarpOptions, startCoopWarp } from './coop-warp.ts';
 import { IGNORE_TEXT, installObserver, WATCH_MARKS, type Observed } from './observe.ts';
 import { SKIP_DRAWS } from './warp.ts';
@@ -203,8 +203,7 @@ export async function coopPlaythrough(options: {
             await sleep(5000);
             await g.page.goto(url, { waitUntil: 'domcontentloaded' });
           }
-          await g.page.waitForSelector('#enter:not([disabled])', { timeout: 90000 });
-          if (!(await g.eval("return document.body.classList.contains('playing')"))) await g.page.click('#enter');
+          say(`COOP ${interrupt} entry: ${await enterGame(g.page, 90000)}`);
           if (
             (await g.waitFor(
               'window.__place && window.boogle?.remotes.size === 1 && window.__place.coop.debug().peers.length === 1',
