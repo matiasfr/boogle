@@ -4,6 +4,7 @@
 subscription-authenticated Codex. Atlas uses GPT-6.1-Terra at low effort; patch video and its independent visual review
 use GPT-6-Astra at high effort. DESIGN.md: **Understandable at a glance**, **Show, don't tell**, **Small and readable**.
 The scenarios job uses no model: at 03:30 local it runs the eight nightly scenarios sequentially on the Mac GPU in a fresh worktree, reports failures to the scenarios issue, and closes it after a passing run. Logs and images remain under the run folder.
+For a local check, `npm run daily -- scenarios --only caves` uses the current worktree and installed dependencies, skips GitHub and leaves its logs and images in the run folder. Each scenario has a 15-minute timeout.
 
 ## What moved, and what CI still does
 
@@ -56,6 +57,7 @@ launchd coalesces calendar events missed during sleep and runs once after wake, 
 loaded. It does not wake a powered-off Mac or guarantee a catch-up after shutdown/logout. Sleeping mid-recording can
 interrupt tools; don't judge a partial output as a completed video. Offline failures stop, keep evidence and wait for
 manual rerun or the next daily event; there is no automatic reconnect retry.
+If 03:30 is missed during sleep, scenarios start on wake and hold the shared lock and GPU for the length of the run.
 
 One atomic `active/` lock covers **all three** jobs, even across checkouts. Another run skips cleanly before any auth/network
 or model use. If both missed jobs start at wake, one may skip; rerun that job when the other finishes (or wait until
@@ -71,7 +73,7 @@ logs at the new location. `atlas.log`, `patch-video.log` and their
 `.error.log` files are launchd output. Each `runs/<id>/` contains `report.md`, prompts, Codex logs, `evidence.json`,
 `handoff.md`, and (for a cut) `review.md` plus publishing/notification records. Successful runs move the worker's `.look`
 to `artifacts/` and remove only their own worktree and local branch. Failed runs retain `worktree/`, with dependencies
-and all intermediate output. Agent image paths starting with `.look/` map to `artifacts/` after successful cleanup.
+and all intermediate output. Scenario failures are normal results: after reporting, their images and logs remain in the run folder and the worktree is removed. A job error retains the worktree. Agent image paths starting with `.look/` map to `artifacts/` after successful cleanup.
 
 Inspect failed runs before retrying. In particular, a release can already exist when Pages or notification fails;
 `publish-output.txt` records its URL/tag even if the page did not become live. Finish its Pages deploy or issue comment

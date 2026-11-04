@@ -11,9 +11,17 @@ const dry = args.includes('--dry-run');
 const force = args.includes('--force');
 const noteIndex = args.indexOf('--notes');
 const notes = noteIndex >= 0 ? args[noteIndex + 1] : '';
-const known = args.filter((_, i) => i !== noteIndex && (noteIndex < 0 || i !== noteIndex + 1));
-if (known.some((a) => !['--dry-run', '--force'].includes(a)) || notes === undefined)
-  throw new Error('Usage: npm run daily -- atlas|patch-video|scenarios [--dry-run] [--force] [--notes "..."]');
+const onlyIndex = args.indexOf('--only');
+const only = onlyIndex >= 0 ? args[onlyIndex + 1] : undefined;
+const known = args.filter(
+  (_, i) =>
+    (noteIndex < 0 || (i !== noteIndex && i !== noteIndex + 1)) &&
+    (onlyIndex < 0 || (i !== onlyIndex && i !== onlyIndex + 1)),
+);
+if (known.some((a) => !['--dry-run', '--force'].includes(a)) || notes === undefined || (onlyIndex >= 0 && !only))
+  throw new Error(
+    'Usage: npm run daily -- atlas|patch-video|scenarios [--dry-run] [--force] [--notes "..."] [--only scenario]',
+  );
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const spec = jobs[job];
 const env = { ...process.env, SHIP_NO_AI: '1', PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1', GIT_TERMINAL_PROMPT: '0' };
@@ -73,6 +81,8 @@ const scenarios = [
   'atlas',
   'second-tab',
 ];
+if (onlyIndex >= 0 && (job !== 'scenarios' || !scenarios.includes(only!))) throw new Error('Unknown nightly scenario');
+const selected = only ? [only] : scenarios;
 if (dry && job === 'scenarios') {
   console.log(
     JSON.stringify(
@@ -81,13 +91,14 @@ if (dry && job === 'scenarios') {
         stateDir,
         lock: path.join(stateDir, 'active'),
         time: '03:30 local',
-        scenarios,
+        scenarios: selected,
         steps: [
           'acquire shared lock',
-          'fetch origin/main and create fresh worktree',
-          'npm ci',
+          ...(only
+            ? ['use current worktree and installed dependencies; do not contact GitHub']
+            : ['fetch origin/main and create fresh worktree', 'npm ci', 'install Playwright Chromium']),
           'run scenarios sequentially on Mac GPU',
-          'update scenarios issue once',
+          ...(only ? ['skip issue reporting'] : ['update scenarios issue once']),
           'preserve artifacts and release lock',
         ],
       },
@@ -149,7 +160,7 @@ if (dry && job === 'scenarios') {
   }
   const id = `${job}-${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}`;
   const dir = path.join(stateDir, 'runs', id);
-  const work = path.join(dir, 'worktree');
+  const work = only ? root : path.join(dir, 'worktree');
   const branch = `daily/${id}`;
   fs.writeFileSync(path.join(lock, 'owner.json'), JSON.stringify({ pid: process.pid, job, dir, started: new Date() }));
   fs.mkdirSync(dir, { recursive: true });
@@ -167,82 +178,94 @@ if (dry && job === 'scenarios') {
       if (login.status !== 0 || !/ChatGPT/i.test(login.stdout + login.stderr))
         throw new Error('Use codex login with the owner ChatGPT account; subscription login was not confirmed');
     }
-    run('gh', ['auth', 'status']);
-    run('git', ['fetch', '--prune', '--tags', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
-    run('git', ['worktree', 'add', '-b', branch, work, 'origin/main']);
-    created = true;
+    if (!only) {
+      run('gh', ['auth', 'status']);
+      run('git', ['fetch', '--prune', '--tags', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+      run('git', ['worktree', 'add', '-b', branch, work, 'origin/main']);
+      created = true;
+    }
     const base = run('git', ['rev-parse', 'HEAD'], work);
     result.base = base;
     if (job === 'scenarios') {
-      run('npm', ['ci'], work);
+      if (!only) {
+        run('npm', ['ci'], work);
+        run('npx', ['playwright', 'install', 'chromium'], work);
+      }
       const failures: string[] = [];
-      for (const name of scenarios) {
-        const execution = spawnSync('npm', ['run', 'scenario', '--', name], {
-          cwd: work,
-          env,
-          encoding: 'utf8',
-          maxBuffer: 64 * 1024 * 1024,
-        });
+      for (const name of selected) {
+        const execution = spawnSync(
+          process.execPath,
+          ['dev/scenarios/run.ts', name, '--out', path.join(dir, 'artifacts', 'scenarios')],
+          {
+            cwd: work,
+            env,
+            encoding: 'utf8',
+            maxBuffer: 64 * 1024 * 1024,
+            timeout: 15 * 60 * 1000,
+          },
+        );
         const output = (execution.stdout ?? '') + (execution.stderr ?? '');
         fs.writeFileSync(path.join(dir, `${name}.log`), output);
         if (execution.status !== 0) {
           const lines = output.split('\n').filter((line) => /\bFAIL\b/i.test(line));
           failures.push(
-            `- ${name}: ${lines.length ? lines.join('\n  ') : `exit ${execution.status}: ${execution.error?.message ?? 'no FAIL line'}`}`,
+            `- ${name}: ${(execution.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT' ? 'FAIL: timed out after 15 minutes' : lines.length ? lines.join('\n  ') : `exit ${execution.status}: ${execution.error?.message ?? 'no FAIL line'}`}`,
           );
         }
       }
       result.failures = failures;
-      const issues = JSON.parse(
-        run(
-          'gh',
-          ['issue', 'list', '--label', 'scenarios', '--state', 'open', '--limit', '100', '--json', 'number'],
-          work,
-        ),
-      ) as { number: number }[];
-      if (issues.length > 1) throw new Error('Multiple open scenarios issues; resolve duplicates before reporting');
-      const body = path.join(dir, 'notification.md');
-      fs.writeFileSync(
-        body,
-        failures.length
-          ? `Nightly scenarios failed on ${base}:\n\n${failures.join('\n')}\n\nMac run: ${dir}\n`
-          : `Nightly scenarios passed on ${base}.\n\nMac run: ${dir}\n`,
-      );
-      if (failures.length && !issues.length) {
-        run(
-          'gh',
-          [
-            'label',
-            'create',
-            'scenarios',
-            '--color',
-            'd93f0b',
-            '--description',
-            'Nightly browser scenarios',
-            '--force',
-          ],
-          work,
+      if (!only) {
+        const issues = JSON.parse(
+          run(
+            'gh',
+            ['issue', 'list', '--label', 'scenarios', '--state', 'open', '--limit', '100', '--json', 'number'],
+            work,
+          ),
+        ) as { number: number }[];
+        if (issues.length > 1) throw new Error('Multiple open scenarios issues; resolve duplicates before reporting');
+        const body = path.join(dir, 'notification.md');
+        fs.writeFileSync(
+          body,
+          failures.length
+            ? `Nightly scenarios failed on ${base}:\n\n${failures.join('\n')}\n\nMac run: ${dir}\n`
+            : `Nightly scenarios passed on ${base}.\n\nMac run: ${dir}\n`,
         );
-        run(
-          'gh',
-          [
-            'issue',
-            'create',
-            '--title',
-            'Nightly browser scenarios are failing',
-            '--label',
-            'scenarios',
-            '--body-file',
-            body,
-          ],
-          work,
-        );
-      } else if (issues.length) {
-        run('gh', ['issue', 'comment', String(issues[0]!.number), '--body-file', body], work);
-        if (!failures.length) run('gh', ['issue', 'close', String(issues[0]!.number)], work);
+        if (failures.length && !issues.length) {
+          run(
+            'gh',
+            [
+              'label',
+              'create',
+              'scenarios',
+              '--color',
+              'd93f0b',
+              '--description',
+              'Nightly browser scenarios',
+              '--force',
+            ],
+            work,
+          );
+          run(
+            'gh',
+            [
+              'issue',
+              'create',
+              '--title',
+              'Nightly browser scenarios are failing',
+              '--label',
+              'scenarios',
+              '--body-file',
+              body,
+            ],
+            work,
+          );
+        } else if (issues.length) {
+          run('gh', ['issue', 'comment', String(issues[0]!.number), '--body-file', body], work);
+          if (!failures.length) run('gh', ['issue', 'close', String(issues[0]!.number)], work);
+        }
       }
       result.status = failures.length ? 'failed' : 'passed';
-      succeeded = !failures.length;
+      succeeded = true;
     } else {
       const prs = JSON.parse(
         run('gh', ['pr', 'list', '--state', 'open', '--limit', '1000', '--json', 'number,title,headRefName'], work),
@@ -386,7 +409,7 @@ if (dry && job === 'scenarios') {
     try {
       if (created && succeeded) {
         const artifacts = path.join(work, '.look');
-        if (fs.existsSync(artifacts)) fs.renameSync(artifacts, path.join(dir, 'artifacts'));
+        if (job !== 'scenarios' && fs.existsSync(artifacts)) fs.renameSync(artifacts, path.join(dir, 'artifacts'));
         run('git', ['worktree', 'remove', '--force', work]);
         run('git', ['branch', '-D', branch]);
       }
