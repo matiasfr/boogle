@@ -34,6 +34,7 @@ Notes:
 
 - **Place chopping:** E and X/Square first choose an ordinary interaction, including a blocked one. With no ordinary target and empty hands, they chop/break the nearest harvest target. RT/left click still harvest directly. Touch uses the same priority, so its label and the floating prompt describe the action that will run; one press cannot interact and chop together. The Place `Chop` guide row lists E/left click, X/RT and touch Chop using existing labels.
 - **Place Ping and Drop:** Ping remains G/middle click/D-pad left; Drop remains right click/R3. Fresh play shows both separate touch buttons beside each other, with Drop visible while carrying a load. Ping remains available with an empty back. D-pad up remains free for the update notice.
+- **Place playtest Flag:** M / D-pad right records a `flag` playData mark with time, position, activity, back contents and the ridden platform. A soft UI tick is the only acknowledgement; no prompt or typed note. The generated pause controls guide lists Flag. Touch omits it: the action area already holds Jump, the main action, Drop and Ping. F remains Hook; D-pad up remains free for updates.
 
 - **Dev free camera:** after explicitly enabling Dev, Free cam owns movement and interaction until Return, even with the dock collapsed. WASD flies, Space rises, Shift lowers, and dragging the scene looks. Touch has held Forward/Back/Left/Right/Up/Down buttons outside the dock; pad sticks fly/look, LB lowers, RB rises, and B returns. Speed is adjustable. Dock inputs retain their normal text/slider behavior. Tapping the scene releases dock focus, including after Return on touch. Blur clears held camera input. The camera never moves the avatar; other players still see its ordinary physical position. Camera bookmarks and speed persist locally, but active camera/input ownership does not.
 
@@ -60,7 +61,7 @@ Notes:
   Xbox letters, PlayStation shapes (✕ ○ □ △, L1, R2, Options), Switch letters (B A Y X by position, ZL, ZR, +, −). On
   a Switch pad confirm and back swap places in menus and talks (`menuSlot`), Nintendo's own convention.
 - **Free pad slots** (`npm run registry -- --json`): LB, RB, R3, D-pad ↑, D-pad ↓ and D-pad →.
-  Place uses LB, RB and R3 for its moves. D-pad ↓ opens the prototype bar on
+  Place uses LB, RB and R3 for its moves, and D-pad → for Flag. D-pad ↓ opens the prototype bar on
   prototype pages only ([src/proto/bar/pad.ts](../../src/proto/bar/pad.ts)); claims in `src/proto/` don't count as taken
   and can't clash with the game's in the registry. The update notice borrows D-pad ↑ while it is up (or the first free
   slot if that is ever taken), so AGENTS.md requires at least one to stay unclaimed.

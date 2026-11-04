@@ -79,6 +79,7 @@ import { resetCargo, snapTrains, updateCargo, wakeTrains } from './cargo.ts';
 import { showing, nearestCrate, openCrate, snapGifts, updateGifts, onGiftSaved } from './gifts.ts';
 import { updateGot } from './got.ts';
 import { resetDrops, updateDrop } from './drop.ts';
+import './flag.ts';
 import { updateLamps } from './lamps.ts';
 import './pair.ts';
 import './great-carry.ts';
