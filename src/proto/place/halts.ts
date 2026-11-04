@@ -8,7 +8,11 @@ import { clank, thump } from '../../render/machine-sfx.ts';
 import { flat } from '../flat.ts';
 import { box, place, type Box } from '../net/boxes.ts';
 import { label } from '../minis/common.ts';
-import { removeBody, type Body } from '../../physics/engine.ts';
+import { forEachStatic, removeBody, teleport, type Body } from '../../physics/engine.ts';
+import { GROUP } from '../../physics/physics.ts';
+import { carry } from '../../physics/platforms.ts';
+import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
+import { me } from '../../player/player.ts';
 import { H, addStatic, slab } from './land.ts';
 import { ORIGIN, lineAt, railY, type Line, type LinePoint } from './layout.ts';
 import { boardMaterial } from './look.ts';
@@ -139,6 +143,42 @@ function makeHalt(name: string, k: number, line: Line, s0: number, s1: number, l
     lateral(lat + sign * 1.25, a);
     lateral(lat + sign * 7, b);
     bodies.push(slab(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low, 2.5));
+    // A halt can arrive around someone, including a partner who did not fit the boiler. Rapier cannot
+    // lift a sphere already trapped between the ground and a new ramp. Only displace actual overlaps,
+    // testing in each box's frame so the pitched ramps and every halt's orientation are covered.
+    const player = me.body;
+    if (!player) return;
+    let trapped = false;
+    const local = new THREE.Vector3(),
+      inverse = new THREE.Quaternion();
+    forEachStatic(GROUP.SCENERY, (body, shapes) => {
+      if (!bodies.includes(body)) return;
+      inverse.copy(body.quaternion).invert();
+      for (const up of [0, HEAD_OFFSET]) {
+        local
+          .set(player.position.x, player.position.y + up, player.position.z)
+          .sub(body.position)
+          .applyQuaternion(inverse);
+        for (const shape of shapes) {
+          if (shape.kind !== 'box') continue;
+          const dx = Math.max(0, Math.abs(local.x) - shape.hx);
+          const dy = Math.max(0, Math.abs(local.y) - shape.hy);
+          const dz = Math.max(0, Math.abs(local.z) - shape.hz);
+          if (dx * dx + dy * dy + dz * dz < (PLAYER_R - 0.01) ** 2) trapped = true;
+        }
+      }
+    });
+    if (trapped) {
+      // The middle lane clears the bench, posts and signal; keep the player's place along the halt.
+      const ds = Math.max(
+        -half + PLAYER_R,
+        Math.min(half - PLAYER_R, (player.position.x - c.x) * sinY + (player.position.z - c.z) * cosY),
+      );
+      teleport(player, c.x + ds * sinY, Math.max(player.position.y, low + PLAYER_R + 0.05), c.z + ds * cosY);
+      player.velocity.set(0, 0, 0);
+      carry.on = null;
+      carry.x = carry.y = carry.z = 0;
+    }
   };
   // Drawn ramps, one mesh each: they're long, plain and don't change.
   const ramps = new THREE.Group();

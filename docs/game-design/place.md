@@ -75,6 +75,12 @@ Now and then two of them near you stop and **chatter**: two to four short lines 
 
 **The decks hold you.** Stop at the edge of a train's or the machine's deck and you're eased a few centimetres back inside, so standing never takes you off, moving or not. Push the stick off the side or jump and you leave as ever; there are no railings.
 
+When a halt appears, anyone intersecting its new foundation, ramps, bench or posts is moved onto its clear middle lane, at the same place along the platform. Each player's tab checks their own body, including when a partner unlocks trains or a snapshot restores a halt. Players already clear of the new solids stay put.
+
+The track layer's flatbed is already standable: a held normal jump from beside it lands on its deck and stays attached. The round-4 report of being unable to board was not reproduced in the local capture; its collider and jump tuning are unchanged.
+
+First-use carry meshes and the glider's cloth and shadow pipelines warm behind loading; temporary canopy samples are removed before play. The 16-second escape deadline is unchanged. See [first-use measurements](../research/round4-first-use.md) for warm-cache counts and device limits.
+
 **The way back.** The beacon's beam and crystal grow with distance, so they read across the place. Turn away from where to go and a small orange chevron at the screen's edge turns you back; while the machine sleeps it leads along the path rather than straight at it over the gorge.
 
 When rails are needed, the beacon points to the visible forge rack and its nearby Interact prompt remains **Take rails**. The repeated objective sentence has been removed (DESIGN.md 11); The Boogler's copy and gift lines are unchanged.
@@ -90,8 +96,8 @@ The forge rack holds 24 rails, including reserved slots for rails still flying o
 In co-op, after the depot opens and before trains, **Whistle for the cart** at the turntable calls it to the forge even when the far end needs no materials, reversing an outbound cart immediately. Its round trip can be ridden in either direction, loaded or empty. **Load the cart** sends up to 16 needed rails from the forge rack onto its logs; it leaves three seconds after loading (eight seconds if empty). Rails fly onto the frontier rack, and a partner can ride the cart. Bills stay fixed. Without `coop=1`, these verbs are absent.
 
 Ride corrections preserve the rider's place on the deck. A car pose change faster than 1.5 times its cruise speed
-(13.5 m/s for the cart, 30 m/s for trains), or a yaw change faster than 4 rad/s, is a relocation, never a collision
-velocity to inherit on leaving. The cart reconciles progress, leg, load and speed on every authority snapshot, so a
+(13.5 m/s for the cart, 30 m/s for trains) is a relocation, never a collision
+velocity to inherit on leaving. Ordinary turns follow the new heading at at most 2 rad/s and ease into it, rather than snapping at a junction. The physical deck and its drawn pose turn together, so riders follow that same bounded turn. Explicit snapshot relocations still move the rider with the deck and clear correction velocity. The cart reconciles progress, leg, load and speed on every authority snapshot, so a
 partner rides the cart everyone sees. Routine reconciliation adjusts motion, leaving delivery transitions to the existing
 events and settled-inventory correction. Riders follow the cargo deck's height when it unloads. Snapshot cart speed and
 train express status are additive; older snapshots retain the predicted values. Train corrections also retain velocity
