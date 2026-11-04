@@ -1,5 +1,14 @@
 # 6.26b Prototype: Ultra Water demo scene (`?proto=water`)
 
+## Real-sea output (4 November 2026)
+
+`water=new` uses Neutral after the underwater HDR composite, with the existing exposure meter and no extra
+exposure trim. Keeping adaptation isolates the owner's tone-curve change from lighting and preserves the
+surface/underwater exposure response. The two meter draws and history copy remain. Looks' **Current** matches
+this output; **Sunny toys** and **AgX Punchy** retain AgX comparisons. The frozen late-morning sky, water
+parameters, terrain and default legacy route are unchanged. The retained `proto=water` demo and explicit
+`sky=toy` experiment keep their own output choices.
+
 ## Opt-in Sunshine sky comparison
 
 `?proto=place&water=new&sky=toy&toyTone=neutral` selects original stylized sky art baked into the existing
@@ -9,7 +18,7 @@ FFT waves, shore geometry, caustics, foam coverage, refraction and underwater fe
 tuning changes: cyan scatter/absorption, restrained reflection tint/cap, sun gain and foam/glitter brightness.
 No room state or gameplay changes. No change without `water=new&sky=toy`; the demo is excluded.
 
-`toyWater=off` isolates sky/fill from water tuning; omit `toyTone=neutral` for unchanged production AgX.
+`toyWater=off` isolates sky/fill from water tuning; omit `toyTone=neutral` for this experiment's retained AgX.
 `toyVariant=soft|clear|punch` compares softer blue, the default clear balance, and stronger cyan water.
 Neutral uses the same existing exposure meter and gain, with no per-curve exposure trim or second output pass.
 The normal `tone=` flag remains inactive on new water. AgX Punchy is a separate experiment.
@@ -45,13 +54,13 @@ foam, reflection gain/cap/tint, caustics, spray amount/size and underwater scatt
 Sun elevation, azimuth, intensity, cloud coverage, turbidity and time of day rebake the existing sky cube and
 matching sun/hemisphere lighting after editing; a brief stall is possible. This does not start a day/night cycle.
 Post controls cover exposure compensation, automatic exposure, key value, contrast and saturation around the
-existing AgX curve, plus optional **bloom on**, **bloomStrength** (0–0.5, step .001) and **bloomThreshold**
+selected tone curve, plus optional **bloom on**, **bloomStrength** (0–0.5, step .001) and **bloomThreshold**
 (0–10, step .01). Bloom starts off on desktop and mobile; first enable uses the reference's .05 strength and
 1.5 threshold. All three controls join Copy, Apply, group/all Reset and tuning-only persistence. The JSON keys
 are `post.bloom` (0 or 1), `post.bloomStrength` and `post.bloomThreshold`. Quality resolution scales the shared
 scene pass, retaining adaptive DPR ownership.
 
-**AgX look** in Post selects **Current** (the shipped power 1.12 / saturation 1.3), **Stock AgX**
+When an AgX comparison is selected in Looks, **AgX look** in Post selects **Current** (power 1.12 / saturation 1.3), **Stock AgX**
 (1 / 1, no look), or **Punchy** (1.35 / 1.4). The `agxPower` (0.5–2) and `agxSaturation` (0–2)
 sliders update the existing graph immediately; unmatched pairs display **Custom**. Slope stays 1.
 These are `post.agxPower` and `post.agxSaturation` in Copy/Apply and tuning-only persistence; both
@@ -67,14 +76,14 @@ Filament reference; those upstream implementations were not independently verifi
 allowed no external network access. Golden is omitted. This is a preset for Boogle's existing graph,
 not a claim of bit-for-bit Filament output.
 
-Without `tune=1`, the same single-input AgX graph still uses the original literal constants; no new
+Without Dev/tuning, the production Neutral graph uses literal constants; no tuning
 uniforms or saved overrides enter the shader. These controls are Local viewer preferences, with no
 shared state or lockstep changes.
 
 Bloom ports Ultra Water `PostFX.js`'s six-level 13-tap downsample / nine-tap additive tent reconstruction to TSL,
 including its per-tap 64-luminance clamp, half-threshold soft knee and first-level Karis weights. Three's BloomNode
 uses five separable Gaussian levels and a different high-pass/weighting, so its .05 would not mean the same look.
-This extends the one `pipeline.outputNode`: underwater HDR → bloom addition → exposure → AgX → sRGB.
+This extends the one `pipeline.outputNode`: underwater HDR → bloom addition → exposure → selected tone curve → sRGB.
 The reference's 11 filtering draws need one extra HDR materialization here because underwater is an expression;
 there are **12 additional draws while enabled**, no second scene render, renderer or frame loop. Upsampling uses
 separate additive targets instead of attachment blending. The exposure meter still reads the unbloomed scene.
@@ -141,13 +150,16 @@ The panel lists the demo controls that are unavailable: camera presets and uncap
 floater spawn/drop/clear and drag/angularDrag/buoyancy belong to gameplay bodies; planar `reflections`,
 `reflectionScale` and `reflectionDistort` have no production reflection target. Refraction distortion is adjustable
 on the existing production path. Colour presets and clarity are
-represented by the editable absorption, scatter and foam tint. AgX remains the production curve. MSAA and
+represented by the editable absorption, scatter and foam tint. Neutral is the production curve. MSAA and
 automatic resolution belong to the shared renderer, and distance fog belongs to the place/cave route. FFT size,
 cascade topology, polar mesh resolution, foam/shore bake dimensions, shaft steps and snow count require resource
 rebuilds and are intentionally omitted. Additional uniforms and grading arithmetic are enabled only on tuning visits;
 the flag-off shader graphs retain their constants and do not restore saved overrides.
 
 Production `water=new` also serves the opt-in home shore slice (`classic=1&shore=smooth-detail&shoreRocks=1`).
+Real registered rock/support contacts each retain eight world-fixed spray sites, including later-built supports;
+the 512-contact registry bounds that list. Provider obstacles retain their separate 256-site cap. Spray still
+uses the shared particle pool with at most 96 emissions per frame and 420 per rolling second, before particle upload.
 Its receivers carry the demo-strength shallow caustic net, moving wetness and swash lace; contacts and bed data
 follow the slice. Wet receiver sheen uses continuous vertex normals instead of turning dry terrain facets into
 white triangles. The surface rejects faces on the wrong side of the camera, using the existing GPU lens-depth

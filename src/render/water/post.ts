@@ -1,4 +1,4 @@
-// One production AgX output, after underwater HDR. The old path retains scene.ts's Neutral transform.
+// One production Neutral output, after underwater HDR. AgX remains in the opt-in look comparisons.
 import { pipeline, renderer, scenePass } from '../scene.ts';
 import { agx, createExposureMeter, TSL, type N } from '../tone.ts';
 import { bind, onChange, scalar, tuningEnabled } from './live.ts';
@@ -14,6 +14,8 @@ export function installWaterPost(source: N) {
   const previous = pipeline.outputNode;
   const transform = pipeline.outputColorTransform;
   const meter = createExposureMeter(scenePass.getTextureNode());
+  // Keep the same adaptation for surface/underwater and comparisons: this changes the curve, not the lighting.
+  const neutral = !toySkyEnabled || toyNeutral;
   const params = { exposure: 1, autoExposure: 1, keyValue: 0.18, contrast: 1, saturation: 1 };
   const exposure = scalar('post.exposure', params, 'exposure');
   const auto = scalar('post.autoExposure', params, 'autoExposure');
@@ -25,7 +27,7 @@ export function installWaterPost(source: N) {
   const agxSaturation = scalar('post.agxSaturation', look, 'saturation');
   let compare: ((hdr: N, gain: N) => N) | undefined;
   let locked = () => false;
-  let curve = () => (toyNeutral ? 'neutral' : 'agx');
+  let curve = () => (neutral ? 'neutral' : 'agx');
   let stopCompare = () => {};
   const makeOutput = (hdr: N) =>
     Fn(() => {
@@ -33,7 +35,7 @@ export function installWaterPost(source: N) {
       const gain = tuningEnabled ? mix(1, meter.value.mul(float(key).div(0.18)), auto).mul(exposure) : meter.value;
       let c = compare
         ? compare(hdr, gain)
-        : toyNeutral
+        : neutral
           ? toneMapping(NeutralToneMapping, 1, vec4(hdr.rgb.mul(gain), 1)).rgb
           : tuningEnabled
             ? agx(hdr.rgb.mul(gain), agxPower, agxSaturation)

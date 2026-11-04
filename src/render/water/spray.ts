@@ -147,7 +147,9 @@ function sites(atlas: ShoreAtlas, coast = true) {
   }
   for (const contact of waterContacts().contacts) {
     const { x, z, radius } = contact;
-    for (let i = 0; i < 8 && rocks.length < 256; i++) {
+    // The registry already bounds contacts at 512. A shared 256-site cap silently dropped later-built supports
+    // after the first 32 rocks; keep every real contact represented and bound actual particles below.
+    for (let i = 0; i < 8; i++) {
       const angle = (i * TAU) / 8,
         nx = Math.cos(angle),
         nz = Math.sin(angle);

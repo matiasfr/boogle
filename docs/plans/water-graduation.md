@@ -282,6 +282,124 @@ No protected source, tone switch, demo sky or post file changed. Steps 4–8 rem
 - **Lifecycle and startup:** no imports forming a sky↔water or terrain↔water cycle, no extra `scene.add`/`onFrame` suppressions, no GPU work before initialization, no stale async callback into disposed state, no duplicate opaque snapshots or tone maps. `src/main.ts` is a hotspot and should need no change; any necessary loader tweak is at most a line or two. Boogler copy stays untouched.
 - **Verification limits:** there is no new-water-on-real-terrain build yet. Earlier demo images, the one gorge baseline and the reported short stationary iPad result cannot approve motion, query latency, cave behavior, sustained performance or the final art integration. Follow the three-round inspect/fix limit and identify remaining uncertainty; do not present a successful capture as a visual verdict or a push as a deployment.
 
+### Neutral output evidence (4 November 2026)
+
+Production `water=new` and Looks' Current now use Neutral. The existing meter remains: identical gain isolates
+the tone-curve change, preserves surface/underwater adaptation, and keeps the existing comparison exposure lock
+meaningful. No exposure correction or water/sky retune was needed. Sunny toys and AgX Punchy remain AgX comparisons;
+the retained demo and explicit toy-sky experiment keep their choices. The legacy route never installs this post graph.
+
+Opened all six before/after stills: shore
+([before](../../.look/evidence/1793817735400-60734/evidence.json),
+[Neutral](../../.look/evidence/1793817888222-62253/evidence.json)), player on the bank
+([before](../../.look/evidence/1793817736741-60746/evidence.json),
+[Neutral](../../.look/evidence/1793817889421-62384/evidence.json)), and underwater
+([before](../../.look/evidence/1793817737823-60750/evidence.json),
+[Neutral](../../.look/evidence/1793817890581-62531/evidence.json)). Neutral gives stronger greens/sand and a deeper
+water colour while retaining readable avatar shading and the moving caustic net. Dry cliff faceting, strong caustic
+contrast and broader colour preference remain for the owner; no terrain adoption is implied. All captures were
+healthy WebGPU. `npm run check` passed. Early captures without explicit `proto=place` hit the look harness's classic
+fallback and were rejected as Place evidence. The frozen sky makes dawn/noon/night comparisons inapplicable here.
+
+
+Opened side-by-side boards (AgX left, Neutral right):
+[shore](../../.look/evidence/1793817888222-62253/bank-agx-neutral.png),
+[player bank](../../.look/evidence/1793817889421-62384/player-agx-neutral.png),
+[underwater](../../.look/evidence/1793817890581-62531/underwater-agx-neutral.png).
+The existing enabled Looks preset `tune=1&lookPreset=sunny` still reports AgX; opened its
+[still](../../.look/evidence/1793818905927-86180/sunny-preset-still.png)
+([manifest](../../.look/evidence/1793818905927-86180/evidence.json)). A first preset probe omitted `tune=1`
+and correctly stayed Neutral; it is not used as AgX evidence.
+
+### Step 4 receiver follow-up (4 November 2026; partial)
+
+Step 4 remains **unchecked**. Existing receiver patches show moving caustics and a thin wet/swash edge on real
+ground, and the observed dry bridge/cave roof remain unlit by caustics. However, neither the lee-rock nor the
+exposed-rock recordings gives convincing visual proof of airborne crest spray. The remaining step-4 work is to
+qualify or repair that visibility on real contacts, then inspect consecutive frames again. Counts alone do not
+close it. No water retune, terrain adoption, gameplay/copy edit, default switch, or step 7/8 work was made.
+
+The code change removes a second, accidental 256-site limit on registered contacts. The contact registry already
+caps at 512; all eight sites per registered contact now survive, while provider-obstacle and actual particle caps
+remain. Emission stays before shared particle upload, at late order -21 versus -20, bounded at 96/frame and
+420/rolling second. The [constructed-trestle capture](../../.look/evidence/1793818277715-72764/evidence.json)
+registered 123 contacts / **984 sites**, versus 32 sites for four home rocks. Opened its still: dry support tops
+remain plain and water surrounds the legs. Spray entity CPU mean/p95/max was **0.238/0.3/0.4 ms** in that capture;
+this is not a maximum-512-contact stress or GPU benchmark.
+
+Opened the [bank still, curves and four consecutive recorded frames](../../.look/evidence/1793818021893-65039/evidence.json),
+[rock still/motion and four consecutive frames](../../.look/evidence/1793818023080-65115/evidence.json), and
+[beach still and four consecutive frames](../../.look/evidence/1793818024254-65121/evidence.json).
+The net advances across submerged ground, rock tops remain gray, and the beach has a narrow darker wet edge.
+There is no saturated blue slit at the matched bank angle; coarse bank faceting and all-angle integrity are not
+resolved by this view. Opened [dry bridge](../../.look/evidence/1793818058965-67203/evidence.json) and
+[dry cave hub](../../.look/evidence/1793818060156-67207/evidence.json) stills: no caustic projection on deck/roof.
+The existing albedo patch also modulates ambient light; this is not a claim of strictly sun-only illumination.
+The frozen late-morning sky (`tod=.24`, one bake) supersedes dawn/noon/night comparisons on this route.
+
+For spray, opened the lee-rock detail cycle and four native consecutive frames
+([manifest](../../.look/evidence/1793818122638-68464/evidence.json)), then the exposed rock's still, full cycle sheet,
+and four consecutive frames ([manifest](../../.look/evidence/1793818472230-77088/evidence.json)). Shared soft-particle
+counts rose/fell, but they cannot attribute visible droplets to this rock. Opened four consecutive frames from the
+[post-rebase rock recording](../../.look/evidence/1793818556767-81817/evidence.json): moving caustics remain, without
+convincing airborne spray. Real-time feel/smoothness remain unverified; no visual tuning followed these rounds.
+
+Performance follows water-demo-validation's follow-up: earliest GPU start to latest GPU end, never sums of
+overlapping timers; three ~180-frame windows, Apple Metal-3 / Chrome 156, DPR 1, stored 4x MSAA and 2048-square
+shadows. Same place camera `(972,22,55) -> (1000,0,20)`, 1920x1200 output. All cost stills were opened.
+
+| Window set | World size | Mean spans (ms) | p95 spans (ms) |
+| --- | --- | --- | --- |
+| [AgX baseline](../../.look/evidence/1793817739000-60752/evidence.json) | 1920x1200 | 9.74 / 8.46 / 9.60 | 12.56 / 12.35 / 12.14 |
+| [Neutral + contact fix](../../.look/evidence/1793818061310-67216/evidence.json) | 1920x1200 | 8.96 / 9.65 / 9.94 | 11.59 / 12.42 / 12.24 |
+| [Mobile](../../.look/evidence/1793818062442-67272/evidence.json) | 1152x720 | 7.64 / 7.59 / 7.50 | 9.08 / 9.26 / 9.30 |
+| [High after promise-handling rebase](../../.look/evidence/1793818541760-80913/evidence.json) | 1920x1200 | 7.27 / 7.25 / 7.24 | 8.49 / 8.14 / 8.14 |
+| [Mobile after rebase](../../.look/evidence/1793818555678-81666/evidence.json) | 1152x720 | 5.93 / 5.95 / 5.90 | 6.75 / 6.87 / 6.84 |
+
+All sampled windows have zero missing span frames and max animation interval 16.8 ms. Both qualities retain
+512-square and 256-square caustic targets, three caustic draws and **9+8=17 actual mip draws**: 26 native raster
+passes, 240 direct draws, 17 mip bundle executions and one opaque colour/depth copy pair per frame. The meter
+retains two tiny draws and its one-texel history copy. Mobile changes world resolution only (0.6), retaining four
+FFT bands and caustic detail. The smallest observed Neutral high p95 budget margin is 4.28 ms against 16.7 ms.
+
+The apparent first matched mean delta is +0.25 ms, smaller than window variation. Later runs were substantially
+lower without a relevant graphics algorithm change, so no speedup/regression is attributed to the patch. Historical
+demo follow-up means (high 7.78-8.56 ms, mobile 4.60-6.94 ms) used a different, much lighter scene; they are context,
+not a subtractable receiver baseline. Existing receivers were already active before this task. No exclusive GPU
+reservation/clock telemetry, sustained ten-minute run, native mobile/iPad result or real-time feel is claimed.
+Capture-only timestamp descriptor repair and native pass/mip counters are preserved as `cost-probe.ts` and raw
+`cost.json` beside each cost manifest; they add no GPU pass or wait and restore wrappers afterward.
+
+The tested upstream base is `3791b4f6`; the earlier promise-handling rebase is `6159ae0d`. The later co-op/entry commits
+change neither render/receiver nor terrain source (verified by a path diff), so the refreshed graphics evidence
+above describes the final graphics code. Repeated `npm run check` passed all 298 tests, lint/type checks, registry,
+levels, assets and build. [Final world-inputs, smoke and caves](../../.look/evidence/1793818888884-85965/evidence.json)
+all passed; opened both peer stills and cave hub/pond stills. Those trusted scenarios explicitly use classic legacy
+water; new-water cave exclusion is the separate dry-hub capture above. No co-op default-round acceptance is claimed.
+
+Literal default-route evidence: both baseline and final commands used `playthrough --query '' --eval .look/default-play.ts`.
+The eval starts the existing trusted Place bot without changing the query and logs the water state.
+The [baseline](../../.look/evidence/1793817445362-55870/evidence.json) and
+[final repeat](../../.look/evidence/1793819130131-88009/evidence.json) both complete all expected beats.
+Final diagnostics: **legacy water, Neutral enum 7, zero registered contacts, zero active spray entities**;
+source review confirms this route does not create receiver/caustic work. Full reports were read and end stills opened.
+The offline `playthrough --compare` [output](../../.look/evidence/1793819130131-88009/compare.txt)
+shows all first-beat shifts at most **10 game seconds**, each named objective duration within **1 second**,
+zero errors/pushing/water falls, 77 saves and the same 26-minute round. Optional repeat counts differ (12 versus
+14 second jumps and three versus two overheard rumours); no gameplay or copy source changed. Neither solo run marks
+found-a-crystal/did-something-together, which are not required beats here.
+
+Keep the failures/outliers: the first broker default eval selected its hat shot and
+[stalled](../../.look/evidence/1793817351397-52332/evidence.json); its report and still were inspected, then the
+explicit trusted-bot eval above corrected the harness selection. A later
+[successful but faster run](../../.look/evidence/1793818874452-85597/evidence.json) finished about 80 seconds early;
+Q4 bill gathering took 42.9 rather than 116.8 seconds. It exceeded the noise allowance, so it was rerun unchanged;
+the final repeat above returned within noise. The comparison is evidence of no observed pacing change, not a claim
+of deterministic bot timings. Broker rejects `--compare`, so the existing browser-free comparison path was invoked
+locally after broker runs; no second browser was launched. No push, ship or external network access was performed. Local `origin/main` advanced afterward to `f2dc0afa`
+with unrelated building-plan/production-harness changes and no overlap in these six changed files; this handoff
+remains pinned to the tested `3791b4f6` base, not a claim about that later tree.
+
 ### Step 4 evidence (3 November 2026)
 
 Real submerged home/place triangles now remain in the opaque depth/colour snapshot. Refraction retreats from foreground samples, re-reads depth at its final UV, fades distortion in thin water and preserves opaque bank coverage at the resolved water edge. Real terrain materials receive reversible caustic/wetness patches; real rocks and only constructed place legs register bounded contact sites. Coast spray shares the particle pool and cleans up its preparation callback. Caustics retain two targets, three draws and 17 mip passes. Receiver modulation preserves masks and standard lighting/shadows, but modulates ambient albedo too: it is not strictly sun-only illumination.
