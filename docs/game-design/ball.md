@@ -1,7 +1,8 @@
 # 6.1 Beach ball
 
-Rapier 0.21.0 changes the recorded flight/bounce despite unchanged tuning. Visible throw/rebound and cave checks pass;
-the old numeric trace differs. Measurements and limits: [upgrade assessment](../research/rapier-021-upgrade.md).
+Rapier 0.21.0, with the previous 0.002 m prediction distance, changes flight/bounce despite unchanged ball tuning.
+Throw/rebound and cave checks pass, but the short course rests 2.2 cm away and the golden session's long roll differs
+by up to 7.535 m in x. That long-roll difference is not accepted or rebaselined; see the [upgrade assessment](../research/rapier-021-upgrade.md).
 
 The staged `water=new` opt-in replaces the ball's old sine sea with bounded samples of the visible FFT/shore waves.
 Vertical drag is relative to surface velocity (bounded ±3 m/s); gentle wash-in follows the registered coast's normal

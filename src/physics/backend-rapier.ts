@@ -91,6 +91,11 @@ export function ready() {
     R = mod;
     world = new R.World({ x: 0, y: -GRAVITY, z: 0 });
     world.timestep = FIXED;
+    // Keep the 0.19 prediction envelope: 0.20's 20mm envelope leaves recycled contact distances above our 5mm
+    // touching cutoff and lifts the player at plank seams, breaking standing jumps and glide takeoffs.
+    // This trades the wider thin-wall margin for existing contact behavior; other solver/CCD defaults stay upstream.
+    // Measurements and caller audit: docs/research/rapier-021-upgrade.md.
+    world.integrationParameters.normalizedPredictionDistance = 0.002;
     for (const b of bodies) build(b);
   });
 }
