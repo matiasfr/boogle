@@ -299,7 +299,16 @@ if (q.has('beam')) {
     Object.assign(window, { __coopDone: true });
   })();
 } else if (q.has('pair')) {
-  const { remotes } = await import('/src/netplay/net.ts' as string);
+  const rider = who === (q.get('rider') ?? '2');
+  const { remotes, net, onRemotePresence } = await import('/src/netplay/net.ts' as string);
+  let sawLegacyRide = false;
+  if (q.has('legacyRide')) {
+    const presence = net.room.presence.bind(net.room);
+    net.room.presence = (p: Record<string, unknown>) => presence({ ...p, placeCartRide: null });
+    onRemotePresence((_r: unknown, pr: Record<string, unknown>) => {
+      if (typeof pr.placeCoop === 'number') sawLegacyRide = !('placeCartRide' in pr);
+    });
+  }
   const { cart, cartHere, cartPlatform, snapCart } = await import('/src/proto/place/depot.ts' as string);
   const { snapRun } = await import('/src/proto/place/run.ts' as string);
   const { TX, TY, TZ } = await import('/src/proto/place/lines.ts' as string);
@@ -332,15 +341,15 @@ if (q.has('beam')) {
     if (who === '1') place.coop.skip('pairQ2', setup);
     await until(() => place.activeFrame()?.spec.id === 'Q2' && place.rack.on && place.job.rung.depot, 'Q2 active');
     await wait(1000); // let the forced skip snapshot finish before positioning either player
-    put(TX + (who === '2' ? 2 : 8), TZ + 1);
+    put(TX + (rider ? 2 : 8), TZ + 1);
     cam.yaw = -Math.PI / 2;
     await wait(800);
-    if (who === '2') {
+    if (rider) {
       await until(() => hands.interactTarget()?.verb === 'Whistle for the cart', 'call offered');
       press('Whistle for the cart');
     }
     await until(() => cart.leg === 'forge', 'cart at forge', 60000);
-    if (who === '2') {
+    if (rider) {
       press('Load the cart');
       const p = cartPlatform.body.position;
       teleport(me.body!, p.x, p.y + cartPlatform.top + 0.8, p.z);
@@ -352,10 +361,11 @@ if (q.has('beam')) {
       Object.assign(window, { __coopDone: true });
       return;
     }
+    if (q.has('tripVideo')) Object.assign(window, { __coopDone: true });
     await until(() => cart.leg === 'out', 'cart departing');
     await wait(700);
-    if (who === '2' && carry.on !== cartPlatform) throw new Error('COOP rider left cart');
-    if (who === '1') {
+    if (rider && carry.on !== cartPlatform) throw new Error('COOP rider left cart');
+    if (!rider) {
       await until(
         () =>
           [...remotes.values()].some(
@@ -367,9 +377,39 @@ if (q.has('beam')) {
     console.log(`COOP ${who} rider on cart`);
     if (q.get('pair') === 'ride') {
       Object.assign(window, { __coopDone: true });
-      return;
+      if (!q.has('tripVideo')) return;
     }
+    let samples = 0;
+    let lostRide = 0;
+    let maxRelativeVy = 0;
+    let maxSpeed = 0;
+    let maxSpin = 0;
+    let maxGap = 0;
+    let maxSpeedGap = 0;
+    let comparisons = 0;
+    net.room.onMessage((m: { t: string; d: number; speed: number; leg: string }) => {
+      if (m.t !== 'rideProbe' || m.leg !== cart.leg) return;
+      maxGap = Math.max(maxGap, Math.abs(m.d - cart.d));
+      maxSpeedGap = Math.max(maxSpeedGap, Math.abs(m.speed - cart.speed));
+      comparisons++;
+    });
+    const probe = setInterval(() => {
+      samples++;
+      if (rider && carry.on !== cartPlatform) lostRide++;
+      if (rider) maxRelativeVy = Math.max(maxRelativeVy, Math.abs(me.body!.velocity.y - carry.y));
+      maxSpeed = Math.max(maxSpeed, cart.speed);
+      maxSpin = Math.max(maxSpin, Math.abs(cartPlatform.body.angularVelocity.y));
+      net.room.send({ t: 'rideProbe', d: cart.d, speed: cart.speed, leg: cart.leg });
+    }, 20);
     await until(() => place.rack.rails === 12, '12 rails on far rack', 60000);
+    clearInterval(probe);
+    console.log(
+      `COOP ${who} trip ${JSON.stringify({ samples, lostRide, maxRelativeVy, maxSpeed, maxSpin, maxGap, maxSpeedGap, comparisons })}`,
+    );
+    if (lostRide || maxSpin > 2.01 || maxGap > 3 || maxSpeedGap > 2.5 || !comparisons)
+      throw new Error('COOP whole-trip rider, turn or shared position failed');
+    if (q.has('legacyRide') && (!sawLegacyRide || maxSpeed > 9.01))
+      throw new Error('COOP legacy capability failed to keep 9 m/s');
     console.log(`COOP ${who} rack rails ${place.rack.rails}`);
     const r = place.rack;
     setInterval(() => window.__debugCam?.set([r.x + 10, r.y + 8, r.z + 10], [r.x, r.y + 1, r.z]), 30);

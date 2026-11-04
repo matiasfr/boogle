@@ -34,6 +34,7 @@ import {
   onRoomReady,
 } from '../../netplay/net.ts';
 import { world } from '../../world/sync.ts';
+import { carry } from '../../physics/platforms.ts';
 import { backSeam } from '../../features/haul-stack.ts';
 import { drawHeaps, type Kind } from '../net/crates.ts';
 import { clearMoments, showBanner } from './celebrate.ts';
@@ -311,7 +312,7 @@ function reconcileBig() {
 }
 
 // ---------------------------------------------------------------- who's here, and who decides
-const peers = new Map<string, { since: number; visible: boolean; seen: number; railCart: boolean }>();
+const peers = new Map<string, { since: number; visible: boolean; seen: number; railCart: boolean; rideCart: number }>();
 const peerBack = new Map<string, number>();
 const peerBig = new Map<string, BigThing>();
 const SEEN_MS = 5000; // no presence for this long (a tab stuck or gone): it doesn't decide
@@ -405,6 +406,9 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
     case 'beamSet':
     case 'beamBounce':
       if (ready) pairHook.msg?.(m);
+      return;
+    case 'cartRide':
+      if (ready && from === authorityPeer()) pairHook.msg?.(m);
       return;
     case 'wake':
       if (ready && run.mode === 'asleep') a.wake(true);
@@ -574,6 +578,11 @@ export const coop = {
   /** Legacy participants keep the existing manual cart: they cannot predict a dry-forge wait. */
   railCart: () =>
     !COOP || [...peers.values()].every((p) => !p.visible || performance.now() - p.seen > SEEN_MS || p.railCart),
+  /** 1 = supports the bonus, 2 = riding. Missing/invalid capability keeps every cart at the legacy speed. */
+  rideCart: () =>
+    !COOP || [...peers.values()].every((p) => !p.visible || performance.now() - p.seen > SEEN_MS || p.rideCart > 0),
+  cartRider: () =>
+    COOP && [...peers.values()].some((p) => p.visible && performance.now() - p.seen <= SEEN_MS && p.rideCart === 2),
   /** The authority is running someone else's Skip: it doesn't move its own player. */
   noHop: false,
   /** What this tab has decided a station shows. */
@@ -700,6 +709,7 @@ export const coop = {
     chopHooks.rock = (q: Rock) => msg({ k: 'rock', i: q.index, n: q.strokes });
     addPresenceField('placeCoop', () => (since >= 0 ? since : null));
     addPresenceField('placeRailCart', () => (since >= 0 ? 1 : null));
+    addPresenceField('placeCartRide', () => (since >= 0 ? (carry.on === cartPlatform ? 2 : 1) : null));
     keepPresenceWhile(() => since >= 0);
     // Keep the legacy log count and cargo recovery fields; chop.ts draws the other worn loads.
     addPresenceField('placeBack', () => (back.logs > 0 ? back.logs : null));
@@ -713,7 +723,13 @@ export const coop = {
       const v = (pr as { placeCoop?: unknown }).placeCoop;
       if (!count(v, Number.MAX_SAFE_INTEGER)) return void peers.delete(r.peer);
       if (!peers.has(r.peer)) showBanner('Your partner is here', 'Same railway, same job.', 2.6);
-      peers.set(r.peer, { since: v, visible: r.visible, seen: performance.now(), railCart: pr.placeRailCart === 1 });
+      peers.set(r.peer, {
+        since: v,
+        visible: r.visible,
+        seen: performance.now(),
+        railCart: pr.placeRailCart === 1,
+        rideCart: pr.placeCartRide === 1 || pr.placeCartRide === 2 ? pr.placeCartRide : 0,
+      });
     });
     onPeerRemoved((r) => {
       for (let k = pending.length - 1; k >= 0; k--)

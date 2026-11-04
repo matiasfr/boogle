@@ -7,6 +7,7 @@ import { onFrame } from '../../loop.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { input } from '../../player/input.ts';
 import { removeBody, type Body } from '../../physics/engine.ts';
+import { carry } from '../../physics/platforms.ts';
 import { registerInteractable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { scene } from '../../render/scene.ts';
@@ -17,7 +18,7 @@ import { pop } from '../minis/common.ts';
 import { shakeView } from './celebrate.ts';
 import { back } from './chop.ts';
 import { coop, pairHook } from './coop.ts';
-import { callCart, cart, cartHere, depotRails, loadCart, railsOwed } from './depot.ts';
+import { callCart, cart, cartHere, depotRails, depotRide, loadCart, onCart, railsOwed } from './depot.ts';
 import { forge, rackTop, takeRail } from './forge.ts';
 import { COOP, count, job, num, save } from './job.ts';
 import { CART, ORIGIN } from './layout.ts';
@@ -114,7 +115,7 @@ const at = new THREE.Vector3(TX, TY + 2, TZ);
 const from = new THREE.Vector3();
 const cartLoadAmount = () => Math.max(0, Math.min(railsOwed(), CART.rails - cart.rails, forge.rails));
 /** Both the porter and the little guys draw from the very same forge stock and load. */
-function loadFromForge() {
+function loadFromForge(manual = true) {
   const n = cartLoadAmount();
   if (!n) return;
   const here = cartHere();
@@ -127,18 +128,27 @@ function loadFromForge() {
       apex: 1.1,
     });
   }
-  loadCart(n);
+  loadCart(n, manual);
   coop.took('rails', n);
-  coop.send({ k: 'cartLoad', n });
+  coop.send({ k: 'cartLoad', n, manual });
 }
 depotRails.enabled = () => coop.railCart();
 depotRails.load = () => {
-  if (!coop.follower()) loadFromForge();
+  if (!coop.follower()) loadFromForge(false);
+};
+depotRide.enabled = () => coop.rideCart();
+depotRide.update = () => {
+  if (coop.follower()) return;
+  const boost = cart.manual && coop.rideCart() && (onCart(carry.on) || coop.cartRider());
+  if (boost === cart.boost) return;
+  cart.boost = boost;
+  coop.send({ k: 'cartRide', boost });
 };
 if (COOP) {
   pairHook.msg = (m) => {
     if (m.k === 'cartCall') callCart();
-    else if (m.k === 'cartLoad' && count(m.n, CART.rails)) loadCart(m.n);
+    else if (m.k === 'cartLoad' && count(m.n, CART.rails)) loadCart(m.n, m.manual === true);
+    else if (m.k === 'cartRide' && typeof m.boost === 'boolean') cart.boost = m.boost && coop.rideCart();
     else if (m.k === 'beamSet' && num(m.x) && num(m.z) && num(m.yaw)) setBeam(m.yaw);
     else if (m.k === 'beamBounce' && (m.end === 0 || m.end === 1)) bounce(m.end, true);
   };
@@ -277,7 +287,7 @@ if (COOP) {
           id: 'place-cart-load',
           verb: 'Load the cart',
           at,
-          run: loadFromForge,
+          run: () => loadFromForge(),
         },
       ];
     if (!cart.called || cart.auto)
