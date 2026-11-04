@@ -168,8 +168,7 @@ function digest(sessions: Session[], speech: Speech[], created: number, alignmen
   const origin = created + alignment.offset * 1000;
   const wall = (s: Speech) => origin + s.s * 1000;
   const near = (at: number) => speech.filter((s) => Math.abs(wall(s) - at) <= 30_000);
-  const say = (s: Speech) =>
-    `${stamp(wall(s))} SPEECH${/\bdecide\b/i.test(s.text) ? ' [DECIDE]' : ''} ${quote(s.text)}`;
+  const say = (s: Speech) => `${stamp(wall(s))} SPEECH ${quote(s.text)}`;
   const describe = ({ session, e }: Event) =>
     `${stamp(e.wall)} ${session} ${e.k === 'm' ? (str(e.n) === 'flag' ? 'FLAG' : 'BEAT') : e.k.toUpperCase()} ${quote(e)}`;
   const events = sessions.flatMap((s) => s.events.map((e) => ({ session: s.id, e })));
