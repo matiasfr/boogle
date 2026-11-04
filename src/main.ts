@@ -25,8 +25,15 @@ import.meta.glob('./features/*.{js,ts}', { eager: true });
 // And every entity's index.ts (src/entities/ball/index.ts is the example).
 import.meta.glob('./entities/*/index.ts', { eager: true });
 bootMark('modules'); // every eager module is in and evaluated (src/boot/timeline.ts lists the phases)
-physicsReady.then(() => bootMark('rapier'));
-rendererReady.then(() => bootMark('gpu'));
+// Startup below owns readiness failures; observers must not create another unhandled rejection.
+physicsReady.then(
+  () => bootMark('rapier'),
+  () => {},
+);
+rendererReady.then(
+  () => bootMark('gpu'),
+  () => {},
+);
 onRoomReady(() => bootMark('room'));
 
 createTerrainMesh();
