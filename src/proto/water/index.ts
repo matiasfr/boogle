@@ -112,7 +112,7 @@ onFrame(
       cam.yaw = me.yaw = Math.atan2(demoView.cam[0] - demoView.look[0], demoView.cam[2] - demoView.look[2]);
     }
   },
-  { phase: 'world', order: 41 }, // after the prototype bar places you (order 40)
+  { phase: 'world', order: 41 }, // after the prototype session places you (order 40)
 );
 
 // Open on the actual Lagoon shot; movement returns the camera to the usual player follow.

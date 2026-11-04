@@ -121,10 +121,9 @@ describeControl('place-chop', {
   group: 'hands',
   order: 2,
 });
-// A clean view for someone playing it cold (the tester's link, `&fresh=1`): place.css hides the bar and the panel.
+// A clean view for someone playing it cold (the tester's link, `&fresh=1`): place.css hides the panel.
 if (pageQuery().get('fresh') === '1') {
   document.body.classList.add('place-fresh');
-  hideControls(['proto-bar']);
 }
 freshStart.warning = coop.on
   ? "Are you sure? You'll lose your own progress and fall in as someone new in this room. If partners are here, you'll rejoin their railway; otherwise the railway starts fresh too."

@@ -21,7 +21,7 @@ import { isProtoRoom, paceIn } from '../../sim/tune.ts';
 import { ROUTE, TRACK, RING_R, ringAt } from '../../sim/route.ts';
 import { groundHeight } from '../../island/terrain.ts';
 import { wagonApi } from '../wagon/index.ts';
-import { playPanel, protoV } from '../flags.ts';
+import { protoV } from '../flags.ts';
 import { protoCount } from '../count.ts';
 import { createTimetable } from './timetable.ts';
 import { drawRails } from './rails.ts';
@@ -345,7 +345,6 @@ const btn = (text: string, fn: () => void) => {
 btn('Start over', () => submitEdit({ op: 'tune.reset', i: 0, j: 0 }));
 const skip = btn('Skip the haul', () => submitEdit({ op: 'tune.fill', i: 0, j: 0 }));
 (document.querySelector('.hud') ?? document.body).append(box);
-playPanel('net', box);
 onFrame(
   () => {
     skip.disabled = !proto || sites.open >= ROUTE.length || rules.sites.room(sites.open, TRACK) <= 0;

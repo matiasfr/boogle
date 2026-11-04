@@ -13,7 +13,7 @@ export type SaveState = {
 export type Observed = { lines: SeenLine[]; painted: PaintedLine[]; saves: SaveState[] };
 
 /** Not what a player is told: the tester's panels and the name tags and connection pill in the corners. */
-const IGNORE = '.place-proto, .proto-bar, .hud-tl, .hud-tr, .lobby, .splash, .reticle, [data-tool]';
+const IGNORE = '.place-proto, .hud-tl, .hud-tr, .lobby, .splash, .reticle, [data-tool]';
 
 export function installObserver(ignore: string) {
   const SAMPLE_MS = 500;

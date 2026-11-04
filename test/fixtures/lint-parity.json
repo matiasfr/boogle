@@ -1402,30 +1402,6 @@
       "eslint": true
     },
     {
-      "group": "RAF allowed src/proto/bar/pad.ts",
-      "file": "src/proto/bar/pad.ts",
-      "code": "requestAnimationFrame(()=>{});",
-      "rule": "no-restricted-syntax",
-      "expected": false,
-      "eslint": false
-    },
-    {
-      "group": "other door remains src/proto/bar/pad.ts",
-      "file": "src/proto/bar/pad.ts",
-      "code": "new WebSocket('x');",
-      "rule": "no-restricted-syntax",
-      "expected": true,
-      "eslint": true
-    },
-    {
-      "group": "GL remains src/proto/bar/pad.ts",
-      "file": "src/proto/bar/pad.ts",
-      "code": "THREE.Points;",
-      "rule": "no-restricted-syntax",
-      "expected": true,
-      "eslint": true
-    },
-    {
       "group": "RAF allowed src/debug/look-lab.ts",
       "file": "src/debug/look-lab.ts",
       "code": "requestAnimationFrame(()=>{});",

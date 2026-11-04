@@ -1,12 +1,11 @@
 // The playtest trace (docs/research/playtest-telemetry.md, recs 1-5 and 9): on any `?proto=` page, one sitting per page
-// load with the five signals; on the `?play` island one per stop of the playlist (`startSitting`, from the prototype
-// bar: each step, and each live variant switch, starts a new one for that card and variant). Once a second your
+// load with the five signals (`startSitting`, from src/proto/session.ts). Once a second your
 // position, rounded to a metre, and what you were doing (walking, riding a deck, driving, carrying, swimming, idle);
 // each stretch of standing still for IDLE_S or more; failure marks (`protoMark` from src/proto/mark.ts: wipeouts,
 // tumbles, crashes, spills, and a splash when you fall in the water); seconds from the start to the verb (the first
 // ride, drive or carry, or the card's own `verb`: a counter, an activity, or `protoMark('verb')`); and where and when it ended. Saved to this
 // browser's protos store (protos/store.ts) every few seconds and when the tab hides, the card's last 10 sittings; the
-// protos page draws them as heat maps. Loaded by the prototype bar.
+// protos page draws them as heat maps. Loaded by the prototype session.
 // Local: never synced, never sent anywhere (what reaches our server is src/proto/playdata/record.ts). Serves DESIGN.md
 // "How we work".
 import { onFrame } from '../../loop.ts';

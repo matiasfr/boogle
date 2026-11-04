@@ -4,7 +4,7 @@
 // key or a click clears it), so pad styles key on body.gamepad, never on body:not(.touch). Menu opens the pause view (src/features/pause.ts).
 // The pad's brand (from its id) names the buttons in prompts (body[data-pad], src/player/glyphs.ts): Xbox letters,
 // PlayStation shapes, Switch letters; on a Switch pad confirm and back swap places in menus and talks (menuSlot). B
-// (the back button) also leaves a focused text field, such as the prototype bar's note.
+// (the back button) also leaves a focused text field.
 // Finding the pad: with none known there is no per-frame work. navigator.getGamepads() is read on gamepadconnected, on
 // any pointer, key or touch, on visibilitychange, focus and pageshow, and once after load, so a pad connected before
 // the page loaded (or one whose gamepadconnected never comes, as in the owner's Home Screen app playtest) is still

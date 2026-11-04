@@ -1,10 +1,8 @@
-// Every prototype the owner can playtest, for boogle.club/protos/ and the playlist on the `?play` island
-// (docs/plans/find-the-fun.md, "One path"). A new `?proto=` prototype adds or updates its entry here in the same PR,
-// flips it to 'live' when it ships (docs/agents/shipping.md, "Shipping"), and either joins the island (ISLAND in src/proto/flags.ts,
-// its loader asking `protoOn`) or says why it is a `chapter`. Live first on the page, then building; graduated,
+// Every prototype the owner can playtest, for boogle.club/protos/ and bar-less ?proto= sessions.
+// A new prototype adds or updates its entry here in the same PR and flips it to 'live' when it ships
+// (docs/agents/shipping.md, "Shipping"). Live first on the page, then building; graduated,
 // answered and parked cards go in the page's compact Answered list with the owner's verdict; retired last. Order
 // within a status is the order below.
-import { ISLAND } from '../src/proto/flags.ts';
 
 /** live: still asking. graduated: a yes, and it moves into the game. answered: the question has its answer (it may
  * come back later in another form). parked: can't be answered yet (it waits for something). retired: ended (`retired`). */
@@ -596,7 +594,7 @@ export const PLAYTEST_ORDER: PlaytestStep[] = [
 ];
 
 /** Whether a card plays on the `?play` island (else it is a chapter with its own page). */
-export const onIsland = (p: Proto) => (ISLAND as readonly string[]).includes(p.id);
+export const onIsland = (p: Proto) => ['haul', 'wagon', 'lay', 'minis', 'assets'].includes(p.id);
 
 /** One step of the playlist: a card, its variants in the order to try them ('' is the card's own url), and why. */
 export type PlayStep = { card: Proto; legs: string[]; why: string; later: boolean };

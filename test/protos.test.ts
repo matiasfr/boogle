@@ -1,14 +1,13 @@
-// The protos page's cards and the `?play` playlist (protos/protos.ts, src/proto/flags.ts): every live card either
-// shares the island or says why it is a chapter, the playlist reaches every live card, and island toys have a spot.
+// The protos page's retained card classifications and play order: cards have reasons, the order reaches every
+// live card, and toys in its legacy island group have a spot.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ANSWERED, PROTOS, PLAYTEST_ORDER, playlist, onIsland } from '../protos/protos.ts';
-import { ISLAND } from '../src/proto/flags.ts';
 
 const live = PROTOS.filter((p) => p.status === 'live');
 
 test('every island toy is a live or answered card, and every other live card is a chapter with a reason', () => {
-  for (const id of ISLAND)
+  for (const { id } of PROTOS.filter(onIsland))
     assert.ok(
       PROTOS.some((p) => p.id === id && (p.status === 'live' || ANSWERED.includes(p.status))),
       `${id} is not a live or answered card`,

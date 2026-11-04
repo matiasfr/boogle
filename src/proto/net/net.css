@@ -25,7 +25,7 @@
   opacity: 0.5;
   cursor: default;
 }
-/* The layout's tag would sit on the prototype bar: the line is the only layout this page plays. */
+/* The line is the only layout this page plays, so it needs no layout tag. */
 .walk-layout {
   display: none;
 }

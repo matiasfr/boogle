@@ -10,7 +10,6 @@ import { submitEdit } from '../../world/sync.ts';
 import { getRoomId } from '../../netplay/net.ts';
 import { isProtoRoom } from '../../sim/tune.ts';
 import { ROUTE, TRACK } from '../../sim/route.ts';
-import { playPanel } from '../flags.ts';
 
 const proto = isProtoRoom(getRoomId());
 const { sites } = rules.sites;
@@ -27,7 +26,6 @@ const note = document.createElement('span');
 note.className = 'lay-note';
 box.append(fill, reset, note);
 (document.querySelector('.hud') ?? document.body).append(box);
-playPanel('lay', box);
 fill.addEventListener('click', () => submitEdit({ op: 'tune.fill', i: 0, j: 0 }));
 reset.addEventListener('click', () => submitEdit({ op: 'tune.reset', i: 0, j: 0 }));
 

@@ -14,17 +14,14 @@
   lockstep numbers runs in its own room (`?room=proto-<name>`) so it never touches the real world's save.
 - **Evidence before a playtest.** The builder looks at its own `/look` stills and motion sheets and iterates before
   shipping ([AGENT-VERIFICATION.md, See it before you ship](../agents/verification.md#see-it-before-you-ship), required by AGENTS.md). Tests only for lockstep code; `perf` only for heavy rendering.
-- **On the protos page and in the playlist.** [boogle.club/protos/](https://boogle.club/protos/) lists every
+- **On the protos page.** [boogle.club/protos/](https://boogle.club/protos/) lists every
   prototype with its Play link, one gut question and a copyable playtest entry (no checklists: the owner is an
-  experienced player and judges feel fast); its entry lives in `protos/protos.ts` ([AGENT-SHIPPING.md, Shipping](../agents/shipping.md#shipping)), and a live
-  card goes in `PLAYTEST_ORDER` and either joins the `?play` island (`ISLAND` in `src/proto/flags.ts`, its loader
-  asking `protoOn`, a `spawn` of its own) or says why it is a `chapter` ("One path", below).
-- **Into the verb in seconds.** On any `?proto=` page the prototype bar (`src/proto/bar/`) shows the card's question,
-  its variants (a variant that only changes feel, look or sound switches live through `onVariant`; any other reloads
-  into your spot) and a one-tap verdict, and drops you at the card's `spawn`, next to the thing to try: give every
-  live card one. A variant that is a different place (minis) has its own `spawn`, and
-  switching to it takes you there. Count what the owner does (`protoCount('rides')`, `src/proto/count.ts`):
-  time in the prototype and variant switches are counted already; the counts go into the copied playtest entry.
+  experienced player and judges feel fast); its entry lives in `protos/protos.ts` ([AGENT-SHIPPING.md, Shipping](../agents/shipping.md#shipping)).
+- **Into the verb in seconds.** On a `?proto=` page, `src/proto/session.ts` drops you at the variant's or card's
+  `spawn`, next to the thing to try: give every live card one. Place owns its spawn, and the fall arrival takes
+  precedence. Variants remain addressable with `&v=<name>`. Count what the owner does (`protoCount('rides')`,
+  `src/proto/count.ts`): time in the prototype is counted already; the counts go into the copied playtest entry.
+  Feedback comes from playtests and feedback forms; the in-game verdict bar was removed on 4 November.
 - **A trace of every sitting.** Each `?proto=` page load records where the owner went (1 Hz, 1 m), idled, failed
   and quit, and the seconds to the verb (`src/proto/trace/`, research: [playtest-telemetry.md](../research/playtest-telemetry.md)),
   kept in this browser only; the protos page draws it as a heat map under the card and adds one line to the entry.
@@ -40,6 +37,10 @@
 - **No twice → change it or cut it.** Never add rewards to prop up a mechanic that isn't fun.
 
 ## One path: the playtest playlist (`/?play`)
+
+> **Removed 4 November 2026, by owner request.** The top-centre bar wasted space in prototype plays; playtests and
+> feedback forms now carry feedback. The `?play` playlist and in-game verdict controls are gone. Prototype addresses,
+> spawn placement, counters and traces remain. The design below is a historical record, not current implementation guidance.
 
 Designed 1 November, after the owner's first round: testing went page → Play (a reload) → lobby → walk to the toy →
 switch variant (another reload) → back to the page to copy notes. Research recs 5–7, 9 and 10.

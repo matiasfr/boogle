@@ -11,11 +11,6 @@
 .dev-shell [hidden] {
   display: none !important;
 }
-@media (min-width: 701px) and (pointer: fine) {
-  body:has([data-dev-shell]) .proto-bar {
-    top: calc(64px + env(safe-area-inset-top));
-  }
-}
 .dev-strip {
   position: absolute;
   top: max(8px, env(safe-area-inset-top));
