@@ -81,7 +81,7 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 - [ ] Blind first-time player: everything about what's obvious, especially with the objective marker gone.
 - [x] Re-check `water=new` after the #775 cold-start fix: it stalled 37 s before it. On 4 November the owner saw no stall from their link; the phone session's worst frame was 230 ms.
 - [ ] Physical gamepad and real touch dragging for the dismissal changes.
-- [ ] Grant's freeze video.
+- [x] Grant's freeze video: received 4 November; it fits the logged instance overflow (see playtests.md). Not committed, as it's a private recording.
 - [x] Matias's survey: too cumbersome, replaced on 4 November by the call routine in `.claude/skills/playtest-notes/SKILL.md`.
 - [ ] Unclear from the audio: Grant first loaded "an old version" and needed Start fresh; "annoying separate pop-ups" just before starting.
 
