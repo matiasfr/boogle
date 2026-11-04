@@ -7,6 +7,7 @@
 // Local cosmetics, so Math.random is fine. Nothing here is read by the shared simulation.
 import type { Avatar } from '../player/avatars.ts';
 import * as THREE from 'three';
+import { material } from '../render/materials.ts';
 import { camera } from '../render/scene.ts';
 import { newWaterEnabled } from '../render/water/flags.ts';
 import { emit } from '../render/particles.ts';
@@ -288,11 +289,9 @@ const starTex = (() => {
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 })();
-const starMat = new THREE.SpriteMaterial({
+const starMat = material('feedback', {
   map: starTex,
-  color: new THREE.Color().setScalar(STAR_BRIGHTNESS),
-  transparent: true,
-  depthWrite: false,
+  emissive: { linear: [1, 1, 1], gain: STAR_BRIGHTNESS },
 });
 const ents = new WeakMap<THREE.Object3D, { amt: number; stars: THREE.Group }>(); // avatar -> its flop state
 function entOf(avatar: THREE.Object3D) {

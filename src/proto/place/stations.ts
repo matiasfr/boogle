@@ -3,6 +3,7 @@
 // in it piece by piece; when the frame has what it needs, those same logs roll into the machine's cradle
 // (.look/previz/visible-materials/board.md, shots 1-3). Local.
 import * as THREE from 'three/webgpu';
+import { material } from '../../render/materials.ts';
 import { scene } from '../../render/scene.ts';
 import { removeBody, type Body } from '../../physics/engine.ts';
 import { flat } from '../flat.ts';
@@ -48,7 +49,7 @@ export function frameBesideLine(spec: Station, line: Line, dir: number): FrameAt
   return { x: P.x + ORIGIN.x + lx * OUT, z: P.z + ORIGIN.z + lz * OUT, yaw: Math.atan2(P.ux, P.uz), lx, lz };
 }
 const stoneGeo = new THREE.DodecahedronGeometry(0.22, 0),
-  stoneMat = new THREE.MeshStandardNodeMaterial({ color: '#a8a498', roughness: 0.95, flatShading: true });
+  stoneMat = material('stone');
 export function buildStation(spec0: Station, place: FrameAt) {
   const { x, z, yaw, lx, lz } = place;
   const y = H(x, z);

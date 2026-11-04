@@ -2,6 +2,7 @@
 // the ground in front of you, rails first, then stone, then logs. Nothing vanishes: dropped pieces stay where they land, in a
 // pile you can pick up again (Interact). Your own, like your back: saved, and not shared in co-op.
 import * as THREE from 'three/webgpu';
+import { material } from '../../render/materials.ts';
 import { registerAction, triggerAction } from '../../player/controls.ts';
 import { NO_TARGETS, registerInteractable, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
@@ -29,11 +30,7 @@ logsDrawn.count = 0;
 const railsDrawn = LOOK.kit
   ? kitBatch('rail', STEEL, MAX)
   : new THREE.InstancedMesh(new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z), flat('#4c5058', 0.6), MAX);
-const stoneDrawn = new THREE.InstancedMesh(
-  new THREE.DodecahedronGeometry(0.2, 0),
-  new THREE.MeshStandardNodeMaterial({ color: '#a8a498', roughness: 0.95, flatShading: true }),
-  MAX,
-);
+const stoneDrawn = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.2, 0), material('stone'), MAX);
 for (const g of [railsDrawn, stoneDrawn]) {
   g.castShadow = true;
   g.frustumCulled = false;

@@ -2,6 +2,7 @@
 // ground under its middle: fine over 18 m, floating or buried over 85 m of real ground. Here they are short pieces that
 // follow the ground, as far as the machine has laid (track-machine.ts leaves its own out of the scene on this page).
 import * as THREE from 'three/webgpu';
+import { material } from '../../render/materials.ts';
 import { rules } from '../../world/game-world.ts';
 import { scene } from '../../render/scene.ts';
 import { groundHeight } from '../../island/terrain.ts';
@@ -20,7 +21,7 @@ const LINES = ROUTE.map((r) => {
 });
 const mesh = new THREE.InstancedMesh(
   new THREE.BoxGeometry(0.08, 0.08, 1),
-  new THREE.MeshStandardNodeMaterial({ color: '#5c5f66', roughness: 0.45, metalness: 0.7 }),
+  material('steel'),
   LINES.reduce((t, l) => t + l.n * 2, 0),
 );
 mesh.count = 0;

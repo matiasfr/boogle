@@ -3,6 +3,7 @@
 // (`send`, for logs and rails between trees, backs, frames, machine and rack). docs/proposals/boogle-2.md, "construction
 // is physical". Local and cosmetic.
 import * as THREE from 'three/webgpu';
+import { material } from '../../render/materials.ts';
 import { emit } from '../../render/particles.ts';
 import { scene } from '../../render/scene.ts';
 import { PIECE, pieceColor, pieceMesh, commitPieces } from '../../render/haul-pieces.ts';
@@ -96,11 +97,7 @@ rails.frustumCulled = false;
 rails.castShadow = true;
 scene.add(logs, rails);
 // A lump of stone: one shape, tumbling.
-const stones = new THREE.InstancedMesh(
-  new THREE.DodecahedronGeometry(0.2, 0),
-  new THREE.MeshStandardNodeMaterial({ color: '#a8a498', roughness: 0.95, flatShading: true }),
-  32,
-);
+const stones = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.2, 0), material('stone'), 32);
 stones.count = 0;
 stones.frustumCulled = false;
 stones.castShadow = true;
