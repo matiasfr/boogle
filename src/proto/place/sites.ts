@@ -2,7 +2,7 @@
 // row, a roof board by board and a chimney, each piece falling into place with a thud, and only then do the poles come down.
 // Nothing scales up. docs/proposals/boogle-2.md, "construction is physical" and "town buildings get scaffolding and are
 // solid"; docs/research/growing-towns.md (8-10 s for an ordinary addition, the longest for the landmark). Every building's
-// pieces share one instanced mesh, so a town costs one draw. Local.
+// pieces share one instanced set, batched by shape. Local.
 import * as THREE from 'three/webgpu';
 import { thump } from '../../render/machine-sfx.ts';
 import { PLAYER_R } from '../../constants.ts';

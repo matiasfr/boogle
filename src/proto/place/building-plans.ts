@@ -159,9 +159,19 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
   const eave = d / 2 + 0.5,
     slope = Math.hypot(rise, eave),
     tilt = Math.atan2(rise, eave);
-  for (const sx of [-1, 1])
-    for (let k = 0; k < 3; k++)
-      pieces.push(part((sx * w) / 2, high + 0.3 + (k * rise) / 3, 0, 0.16, rise / 3, d * (1 - (k + 0.5) / 3), wall));
+  // The roof's base plane is high + .36 + rise - abs(z) * rise / eave.
+  // Start under the beam and tuck .01 into the roof, below its .16 thickness.
+  // Keep three pieces per end and the existing roof-phase indices for construction/cutaways.
+  const gableRise = (rise * d) / (2 * eave),
+    shoulder = high + 0.36 + rise - gableRise + 0.01;
+  for (const sx of [-1, 1]) {
+    pieces.push(part((sx * w) / 2, high + 0.3, 0, 0.16, shoulder - high - 0.3, d, wall));
+    for (let k = 0; k < 2; k++) {
+      const b = part((sx * w) / 2, shoulder + (k * gableRise) / 2, 0, 0.16, gableRise / 2, d * (1 - k / 2), wall);
+      b.taper = k === 0 ? 0.5 : 1;
+      pieces.push(b);
+    }
+  }
   const boards = Math.max(3, Math.round((w + 0.8) / 1.7));
   for (let k = 0; k < boards; k++) {
     const dx = -w / 2 - 0.4 + ((k + 0.5) * (w + 0.8)) / boards;
