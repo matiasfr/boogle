@@ -322,7 +322,7 @@ async function main(job?: JobControl): Promise<number> {
 
   if (mode === 'brainstorm')
     prompt +=
-      '\n\nKeep the whole final message under about 450 words; rank, cut and be concrete rather than cover everything.';
+      '\n\nThe director merges three panels into one brief the owner reads in a couple of minutes, so rank and cut: only your strongest, most concrete points survive.';
   else if (mode !== 'review' || brief)
     prompt +=
       '\n\nEnd your final message with a fenced json block containing {outcome: done|partial|blocked, summary, numbers, unverified, departures}. Keep the whole final message under about 150 words.';
