@@ -24,6 +24,10 @@ const noise = (hz: number, to: number, seconds: number, db: number, delay = 0): 
 
 // Bigger rewards add a phrase, not gain. Repeated work has dry, short tails.
 const recipes = {
+  treeBite: [noise(1500, 600, 0.065, -25), tone(180, 100, 0.1, -28), noise(3100, 1400, 0.07, -33)],
+  hardwoodBite: [noise(1200, 350, 0.085, -25), tone(135, 65, 0.14, -27), noise(2600, 900, 0.09, -32)],
+  treeRebound: [noise(2300, 1500, 0.035, -30), tone(1700, 1400, 0.09, -38), tone(250, 200, 0.06, -35)],
+  bagFull: [noise(550, 250, 0.16, -32), tone(150, 120, 0.06, -36, 0.045)],
   rockBreak: [noise(1900, 420, 0.24, -21), tone(180, 70, 0.22, -22), noise(2800, 800, 0.12, -29, 0.1)],
   treeFall: [tone(230, 85, 0.65, -26), noise(1100, 260, 0.42, -25), tone(410, 170, 0.24, -32, 0.14)],
   treeLand: [tone(105, 48, 0.32, -22), noise(650, 180, 0.35, -25), noise(2100, 700, 0.24, -30, 0.08)],
@@ -63,6 +67,10 @@ const recipes = {
 } satisfies Record<string, Layer[]>;
 export type PlaceCue = keyof typeof recipes;
 export const placeCues: Record<PlaceCue, string> = {
+  treeBite: 'Dry woody attack, low body and a brief splinter.',
+  hardwoodBite: 'A deeper split as the proper axe bites dense hardwood.',
+  treeRebound: 'A restrained hard wood tick and short blade ring, without a reward tone.',
+  bagFull: 'A soft strap rustle and wood rattle from the full bundle.',
   rockBreak: 'A dry stone crack, low body and a short scatter of grit.',
   treeFall: 'A descending wooden groan and splinter as the great tree tips.',
   treeLand: 'A broad, dull trunk impact with a soft crown rustle.',
@@ -148,7 +156,8 @@ export function placeSound(cue: PlaceCue, x: number, z: number) {
   const now = a.ctx.currentTime;
   active = active.filter((until) => until > now);
   if (now - (last.get(cue) ?? -Infinity) < (cooldown[cue] ?? 0.08) || active.length >= 8) return;
+  const repeated = (cue === 'treeRebound' || cue === 'bagFull') && now - (last.get(cue) ?? -Infinity) < 1;
   last.set(cue, now);
-  const { seconds } = renderPlaceSound(a.ctx, a.out, cue, now + 0.005, gain);
+  const { seconds } = renderPlaceSound(a.ctx, a.out, cue, now + 0.005, gain * (repeated ? 0.55 : 1));
   active.push(now + 0.005 + seconds);
 }

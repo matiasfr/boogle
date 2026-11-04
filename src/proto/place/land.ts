@@ -1,31 +1,16 @@
 // The land of ?proto=place, drawn: the heights of ./terrain.ts as one faceted mesh, collided as one heightfield, with the
-// spire, the footbridges, the trees and what stands across the sea. Local.
+// spire, the footbridges and what stands across the sea. chop.ts owns every tree. Local.
 import * as THREE from 'three/webgpu';
 import { flat } from '../flat.ts';
-import { LOOK, addBlob, groundMaterial, spireRock } from './look.ts';
+import { LOOK, groundMaterial, spireRock } from './look.ts';
 import { scene } from '../../render/scene.ts';
 import { newWaterEnabled } from '../../render/water/flags.ts';
 import { registerWaterReceiver } from '../../render/water/receivers.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
-import { mulberry32 } from '../../sim/rng.ts';
 import { smoothstep } from '../../math.ts';
-import { FAR, GRID, GROVES, HEAD, ORIGIN, PATHS, SPIRE } from './layout.ts';
-import {
-  CELL,
-  H,
-  NX,
-  NZ,
-  PATH_SAMPLES,
-  at,
-  cellX,
-  cellZ,
-  clearMask,
-  gorgeD,
-  heights,
-  insidePlace,
-  pathMask,
-} from './terrain.ts';
+import { FAR, GRID, ORIGIN, PATHS, SPIRE } from './layout.ts';
+import { CELL, H, NX, NZ, PATH_SAMPLES, at, cellX, cellZ, gorgeD, heights, insidePlace, pathMask } from './terrain.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -239,64 +224,6 @@ function buildBridges() {
   }
 }
 
-function buildTrees() {
-  const rng = mulberry32(31);
-  const pose = new THREE.Object3D();
-  const spots: { x: number; y: number; z: number; s: number }[] = [];
-  const EXT = 260;
-  for (let n = 0; n < 2600 && spots.length < 400; n++) {
-    // The first 340 over the old island; the rest on Far Head.
-    const old = spots.length < 340,
-      x = old ? (rng() * 2 - 1) * (EXT - 12) : HEAD.x + (rng() * 2 - 1) * HEAD.r,
-      z = old ? (rng() * 2 - 1) * (EXT - 12) : HEAD.z + (rng() * 2 - 1) * HEAD.r;
-    const i = Math.round((x - GRID.x0) / CELL),
-      j = Math.round((z - GRID.z0) / CELL),
-      h = heights[at(i, j)]!;
-    if (h < 4 || clearMask[at(i, j)]! > 0.05 || gorgeD(x, z) < 21) continue;
-    if (Math.hypot(x - SPIRE.x, z - SPIRE.z) < 30) continue;
-    if (GROVES.some((g) => Math.hypot(x - g.x, z - g.z) < g.r + 6)) continue; // the groves' trees are the ones you chop
-    // Groves, not a scatter: a slow field thins most of the land out, and the ridge is the densest.
-    const grove = Math.sin(x * 0.036 + 1.2) * Math.cos(z * 0.041 - 0.4) + (z < -100 ? 0.8 : 0);
-    if (old && grove < 0.15 + rng() * 0.25) continue;
-    if (!old && rng() < 0.4) continue;
-    spots.push({ x, y: h, z, s: 0.8 + rng() * 0.7 });
-    if (LOOK.contact) addBlob(x + ORIGIN.x, h, z + ORIGIN.z, 2.4, 2.4);
-  }
-  const crown = new THREE.InstancedMesh(new THREE.ConeGeometry(2.6, 6.5, 6), FLAT('#3f8a3a'), spots.length);
-  const crown2 = new THREE.InstancedMesh(new THREE.ConeGeometry(1.9, 4.6, 6), FLAT('#4f9c44'), spots.length);
-  const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.28, 0.42, 3, 5), FLAT('#6e4c2a'), spots.length);
-  spots.forEach((t, k) => {
-    pose.position.set(t.x + ORIGIN.x, t.y + 1.5 * t.s, t.z + ORIGIN.z);
-    pose.scale.setScalar(t.s);
-    pose.rotation.y = k;
-    pose.updateMatrix();
-    trunk.setMatrixAt(k, pose.matrix);
-    pose.position.y = t.y + 5.4 * t.s;
-    pose.updateMatrix();
-    crown.setMatrixAt(k, pose.matrix);
-    pose.position.y = t.y + 8.2 * t.s;
-    pose.updateMatrix();
-    crown2.setMatrixAt(k, pose.matrix);
-  });
-  for (const m of [crown, crown2, trunk]) {
-    m.castShadow = true;
-    m.frustumCulled = false;
-    scene.add(m);
-  }
-  // Their trunks are solid, all in one body. The crowns are over your head.
-  addStatics(
-    spots.map((t) => ({
-      kind: 'cylinder' as const,
-      rTop: 0.36 * t.s,
-      rBottom: 0.36 * t.s,
-      h: 3 * t.s,
-      segments: 6,
-      offset: { x: t.x, y: t.y + 1.5 * t.s, z: t.z },
-    })),
-    { x: ORIGIN.x, y: 0, z: ORIGIN.z },
-  );
-}
-
 // ---------------------------------------------------------------- what stands across the sea
 // Too far to reach: a dark island with a broken ring on it and a bright shard in the ring's middle, hazy over a kilometre.
 function buildFar() {
@@ -333,6 +260,5 @@ export function buildLand() {
   buildMesh();
   buildSpire();
   buildBridges();
-  buildTrees();
   buildFar();
 }
