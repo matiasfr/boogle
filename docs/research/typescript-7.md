@@ -2,12 +2,9 @@
 
 Study: 3 November 2026, source `75526a2ad41bd567bdfa776e7e77ff5998423348`.
 The study itself was feasibility only; it proposed no dependency or application changes in its own commit.
-Implementation status, 4 November 2026: TS 7.0.2 runs the primary typecheck. Oxlint 1.91.0 plus
-oxlint-tsgolint 7.0.2005 and the repo safety runner replace ESLint; all ESLint packages are removed. The type-aware
-linter uses its own Go compiler and has no TypeScript 5/6 dependency or peer. Only five compiler-API tools still need
-canonical TypeScript 6.0.3: `dev/scan/{read,unused}.ts`, `dev/registry/{debt,prototypes}.ts`, and `dev/atlas/extract.ts`.
-After that separately owned port, switch canonical `typescript` to 7, remove the `typescript-native` alias and
-`typecheck:legacy` CI step, and recheck the tools. The original feasibility findings below are historical.
+Implementation status, 4 November 2026: **complete. TypeScript 7.0.2 is the only compiler.** Oxlint 1.91.0, oxlint-tsgolint
+7.0.2005 and the repo safety runner replaced ESLint, Oxc and Knip replaced the old compiler API in the five dev tools, and
+TypeScript 6 and the `typescript-native` alias are gone. The original feasibility findings below are historical.
 
 **Recommendation: use TS 7 for typecheck only, aliased as `typescript-native`;
 keep `typescript` at the legacy version for ESLint and developer tools.**

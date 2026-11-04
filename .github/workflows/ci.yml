@@ -31,8 +31,6 @@ jobs:
       - name: Lint (Oxlint, type-aware rules and Boogle protections)
         run: npm run lint
       - run: npm run typecheck
-      # Five dev tools still use the TS 6 compiler API; drop this when they move to TS 7 or oxc-parser.
-      - run: npm run typecheck:legacy
       # Reads committed files only: needs neither Blender nor KTX-Software.
       - run: npm run assets -- --check
       # format:check is not enforced: the repo is Prettier-clean and Claude Code's hook formats each edited file,
