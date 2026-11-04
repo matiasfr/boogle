@@ -13,7 +13,7 @@ different systems don't touch the same file. A new system adds its file and one 
 
 ## 1. Overview
 
-Boogle is a drop-in browser game for up to 8 friends. The default URL now opens [round 4 in Threefold Reach](game-design/place.md), with the clean tester view and co-op enabled in `proto-place-coop`: chop and carry, open a walking path, earn better tools and abilities, and unlock trains. Explicit prototype and room links still work. The entry switch leaves the prototype code in place; its retirement and the architecture pass follow later.
+Boogle is a drop-in browser game for up to 8 friends. The default URL now opens [round 4 in Threefold Reach](game-design/place.md), with the clean tester view and co-op enabled in `boogle`: chop and carry, open a walking path, earn better tools and abilities, and unlock trains. Explicit prototype and room links still work. The entry switch leaves the prototype code in place; its retirement and the architecture pass follow later.
 
 The old island remains at `?classic=1`. On your first visit you pick a name and a colour, press "Jump in", and land next to a
 sand volleyball court, among the island's toys: a shared beach ball, a frisbee, things to throw, mushrooms to bounce on
@@ -28,7 +28,7 @@ Wagon rides (`?proto=wagon`), rail-fed town growth (`?proto=net`) and long cross
 It runs on desktop (keyboard and mouse, pointer lock), touch screens (virtual stick and buttons) and a Backbone-style
 gamepad (W3C standard mapping, aimed at iPhone and iPad). Our server hosts every room over WebSocket, runs its
 lockstep world and saves its snapshots (section 8). Live at
-**https://boogle.club/** (`?room=<name>` picks a room; default `proto-place-coop`, or `beach` with `?classic=1`).
+**https://boogle.club/** (`?room=<name>` picks a room; default `boogle`, or `beach` with `?classic=1`).
 
 ## 2. Pillars
 

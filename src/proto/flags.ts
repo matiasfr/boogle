@@ -1,4 +1,5 @@
-// Local launch flags: ?proto=<id>[&v=<variant>] runs one prototype. Import-free and cheap for eager loaders.
+// Local launch flags: ?proto=<id>[&v=<variant>] runs one prototype. Cheap for eager loaders.
+import { DEFAULT_ROOM } from '../constants.ts';
 
 /** Effective launch flags. The address always wins; headless tools keep the classic island.
  * Round 4 is the default entry, without rewriting the URL or moving prototype code. */
@@ -16,6 +17,7 @@ export function pageQuery(): URLSearchParams {
   }
   if (!q.has('proto') && q.get('classic') !== '1') {
     q.set('proto', 'place');
+    if (!q.has('room')) q.set('room', DEFAULT_ROOM);
     if (!q.has('fresh')) q.set('fresh', '1');
     if (!q.has('coop')) q.set('coop', '1');
   }

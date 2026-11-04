@@ -11,7 +11,7 @@ import './pause.css';
 import { onStart } from '../loop.ts';
 import { background } from '../async.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
-import { COLORS, DEFAULT_ROOM } from '../constants.ts';
+import { COLORS, DEFAULT_ROOM, CLASSIC_ROOM } from '../constants.ts';
 import { inputState } from '../player/input-state.ts';
 import { me } from '../player/player.ts';
 import { remotes, getRoomId } from '../netplay/net.ts';
@@ -26,7 +26,7 @@ import { glyph, inputKind, padGlyph } from '../player/glyphs.ts';
 import { youEditor } from '../player/you-editor.ts';
 import { freshButton } from '../player/fresh-button.ts';
 import { backToSpawn } from '../entities/player/state.ts';
-import { protoOn } from '../proto/flags.ts';
+import { protoOn, pageQuery } from '../proto/flags.ts';
 import { carry } from '../physics/platforms.ts';
 import { forgetInRoom, leaveIsland, SPOT_KEY } from '../player/arrival.ts';
 import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
@@ -77,6 +77,9 @@ const button = (text: string, onClick: () => void | Promise<void>, cls = '') => 
 
 function inviteLink() {
   const id = getRoomId();
+  const flags = pageQuery();
+  if (!flags.has('proto') && flags.get('classic') === '1')
+    return location.origin + location.pathname + `?classic=1${id === CLASSIC_ROOM ? '' : `&room=${id}`}`;
   return location.origin + location.pathname + (id === DEFAULT_ROOM ? '' : `?room=${id}`);
 }
 

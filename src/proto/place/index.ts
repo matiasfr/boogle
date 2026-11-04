@@ -21,7 +21,7 @@ import './place.css';
 import './ambience.ts';
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
-import { worldStatus, world, onApplied } from '../../world/sync.ts';
+import { worldStatus, world } from '../../world/sync.ts';
 import { FOG_FAR, PLAYER_R } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
 import { describeControl, hideControls } from '../../player/controls.ts';
@@ -342,7 +342,6 @@ function startOver() {
   savedPose = null;
   save();
 }
-onApplied((e: { op: string }) => e.op === 'tune.reset' && !coop.on && startOver());
 onGiftSaved(save);
 // A step-up: a crate off the heap sails over to the first new plot, so you can see which cargo built what.
 onStepUp.fn = (kind, first) => {
