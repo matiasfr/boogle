@@ -9,6 +9,9 @@ import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Node 26 exposes a warning-producing localStorage getter without a storage file. Keep this DOM-free.
+Object.defineProperty(globalThis, 'localStorage', { value: undefined, configurable: true });
+
 const root = path.join(import.meta.dirname, '..');
 const states = fs
   .readdirSync(path.join(root, 'src/entities'))

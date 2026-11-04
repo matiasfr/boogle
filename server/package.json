@@ -5,7 +5,7 @@
   "description": "Boogle's game server: it hosts every room and runs its world",
   "type": "module",
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "main": "src/server.ts",
   "scripts": {
