@@ -204,7 +204,7 @@ const warnProblems = (c: Action | Described) => {
 // ---------------------------------------------------------------- keyboard
 // One guard for every bound key: the name field (or any text field) keeps its letters.
 export const isTyping = (e: { target?: EventTarget | null } | null | undefined) =>
-  !!(e?.target as Element | null | undefined)?.closest?.('input, textarea, [contenteditable]');
+  !!(e?.target as Element | null | undefined)?.closest?.('input, textarea, [contenteditable], [data-water-panel]');
 const keyBinds = new Map<string, { owner: string; down: Edge | null; up: Edge | null }>(); // code -> binding
 let listening = false;
 

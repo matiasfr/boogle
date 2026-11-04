@@ -12,6 +12,10 @@ export const ULTRA = {
   foamBand: 0.2, // m: the contact band
   foamBright: 0.72,
   roughness: 0.02,
+  refraction: 0.06,
+  caustics: 1,
+  spray: 1,
+  spraySize: 1,
   fogDensity: 1 / 18000,
   glint: 0.6,
   shoreAmp: 0.55, // m
@@ -77,6 +81,7 @@ export const FFT = {
 
 // UnderwaterPass.js, MarineSnow.js and main.js: source values, independent of the water colour grade.
 export const UNDER = {
+  exposure: 1,
   scattering: 0.03,
   shafts: 2,
   shaftRange: 40,

@@ -20,6 +20,7 @@ import {
 import { TSL, type N } from './tsl.ts';
 import { GRID as DEFAULT_GRID, LOOK as DEFAULT_LOOK, ULTRA } from './tuning.ts';
 import type { WaveSource } from './waves.ts';
+import { derived, scalar, vector, tuningEnabled } from './live.ts';
 
 const { Break, Fn, If, Loop, abs, cameraPosition, clamp, cos, dFdx, dFdy, dot, exp, exp2, float, floor } = TSL;
 const { fract, length, log, log2, max, min, mix, mod, normalize, positionGeometry, positionWorld, pow, reflect } = TSL;
@@ -49,6 +50,8 @@ const {
 } = TSL;
 
 const PI = Math.PI;
+const swellFull = scalar('shore.swellFull', ULTRA, 'swellFull');
+const chopShallow = scalar('shore.chopShallow', ULTRA, 'chopShallow');
 
 // ---------------------------------------------------------------- the grid
 // Camera-centred polar grid. Ring radii grow geometrically so cells stay square and screen density stays about constant.
@@ -88,8 +91,8 @@ function buildGrid(angular: number, GRID: typeof DEFAULT_GRID) {
 // ---------------------------------------------------------------- shared: long waves in the shallows, and breakers
 // FFT cascade weights by water depth: long swell is replaced by shore waves in the shallows, chop survives almost to the beach.
 const cascadeDamp = (depth: N) => {
-  const swell = smoothstep(2, ULTRA.swellFull, depth);
-  const chop = smoothstep(-0.4, 2, depth).mul(mix(ULTRA.chopShallow, 1, smoothstep(0, 10, depth)));
+  const swell = smoothstep(2, swellFull, depth);
+  const chop = smoothstep(-0.4, 2, depth).mul(mix(chopShallow, 1, smoothstep(0, 10, depth)));
   return vec3(swell, chop, chop);
 };
 
@@ -108,6 +111,7 @@ function shoreWaves(
   origin: { x: number; z: number },
 ) {
   const { noisePhase: shoreNoisePhase, group: shoreGroup, exposure: shoreExposure, wave: SHORE_WAVE } = motion;
+  const constant = (read: () => number) => (tuningEnabled ? derived(read) : read());
   const localXZ = (p: N) => p.sub(vec2(origin.x, origin.z));
   const o = {
     disp: vec3(0).toVar(),
@@ -152,14 +156,15 @@ function shoreWaves(
     const group = shoreGroup(xz).toVar();
     const pinch = float(0.85).toVar(); // the total horizontal compression allowed (Jacobian stays > 0.15)
     for (let i = 0; i < 2; i++) {
-      const lambda = SHORE_WAVE.lambda * (i === 0 ? 1 : 0.61);
-      const w = Math.sqrt((9.81 * 2 * PI) / lambda) * SHORE_WAVE.speed;
+      const w = constant(
+        () => Math.sqrt((9.81 * 2 * PI) / (SHORE_WAVE.lambda * (i === 0 ? 1 : 0.61))) * SHORE_WAVE.speed,
+      );
       const k = float(w).div(cel).toVar();
       const a = min(
         env
           .mul(shoal)
           .mul(group)
-          .mul(SHORE_WAVE.amp * (i === 0 ? 1 : 0.45)),
+          .mul(constant(() => SHORE_WAVE.amp * (i === 0 ? 1 : 0.45))),
         amax.mul(i === 0 ? 1 : 0.5),
       ).toVar();
       const ph = tr.x
@@ -191,7 +196,7 @@ function shoreWaves(
       if (i === 0) {
         pitch.assign(
           a
-            .mul(2 * SHORE_WAVE.steep)
+            .mul(constant(() => 2 * SHORE_WAVE.steep))
             .mul(smoothstep(0.16, 0.28, rel))
             .mul(smoothstep(0.4, 0.6, rel).oneMinus())
             .mul(gate),
@@ -202,7 +207,7 @@ function shoreWaves(
         pitch.mulAssign(smoothstep(0.03, 0.1, k.mul(cell).div(2 * PI)).oneMinus());
       }
       pinch.subAssign(pitch.mul(k).mul(1.08));
-      const qak = min(pinch, a.mul(k).mul(SHORE_WAVE.steep * 8)).toVar();
+      const qak = min(pinch, a.mul(k).mul(constant(() => SHORE_WAVE.steep * 8))).toVar();
       pinch.subAssign(qak);
       const c5 = c.mul(c).mul(c).mul(c).mul(c).toVar();
       // The grid slides as the view moves: a crest only a cell or two long gets resampled differently every frame.
@@ -348,7 +353,6 @@ const poisson = Fn(([lam, u]: [N, N]) => {
   ],
 });
 
-const lin3 = (v: number[]) => vec3(v[0]!, v[1]!, v[2]!);
 export type WaterSky = { sunColor: N; skyAt(direction: N, roughness: N): N; skyLod(direction: N, lod: N): N };
 type ShoreMotion = { wave: typeof SHORE_WAVE; noisePhase(xz: N): N; group(xz: N): N; exposure(dir: N): N };
 export type OceanOptions = {
@@ -365,9 +369,12 @@ export type OceanOptions = {
 };
 // Shared by the surface, retained demo volume and snow. The sky source stays an explicit replaceable seam.
 export function waterLighting(sky: WaterSky, look = DEFAULT_LOOK) {
-  const waterSun = () => sky.sunColor.mul(look.sunGain);
-  const waterScatter = () => lin3(look.scatter);
-  const waterAbsorption = () => lin3(look.absorption);
+  const gain = scalar('water.sunGain', look, 'sunGain');
+  const scatter = vector('water.scatter', look, 'scatter');
+  const absorption = vector('water.absorption', look, 'absorption');
+  const waterSun = () => sky.sunColor.mul(gain);
+  const waterScatter = () => scatter;
+  const waterAbsorption = () => absorption;
   const deepWater = (dir: N) =>
     waterScatter()
       .mul(sky.skyLod(vec3(0, 1, 0), float(10)).add(waterSun().mul(max(seaU.uSun.y, 0))))
@@ -399,6 +406,25 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
   };
   const shoreAt = (xz: N, sh: N, surf: N, cell: N) => shoreWaves(xz, sh, f, surf, cell, motion, origin);
   const { waterSun, deepWater } = waterLighting(demoSky, LOOK);
+  scalar('water.roughness', ULTRA, 'roughness');
+  const roughness2 = derived(() => ULTRA.roughness * ULTRA.roughness);
+  const refraction = scalar('water.refraction', ULTRA, 'refraction');
+  const foamBand = scalar('water.shoreFoamBand', ULTRA, 'foamBand');
+  const absorptionNode = vector('water.absorption', LOOK, 'absorption');
+  const scatterNode = vector('water.scatter', LOOK, 'scatter');
+  const sssPeak = scalar('water.sssPeak', ULTRA.sss, '0');
+  const sssView = scalar('water.sssView', ULTRA.sss, '1');
+  const sssShadow = scalar('water.sssShadow', ULTRA.sss, '2');
+  const saturation = scalar('water.saturation', LOOK, 'saturation');
+  const reflectGain = scalar('water.reflectGain', LOOK, 'reflectGain');
+  const reflectCap = scalar('water.reflectCap', LOOK, 'reflectCap');
+  const reflectTint = vector('water.reflectTint', LOOK, 'reflectTint');
+  const glint = scalar('water.glitter', ULTRA, 'glint');
+  const foamTint = vector('water.foamTint', ULTRA, 'foamTint');
+  const foamBright = scalar('water.foamBright', ULTRA, 'foamBright');
+  // Production supplies route fog; only a caller using optical distance fog can tune this coefficient.
+  if (!options.fog) scalar('water.fogDensity', LOOK, 'fogDensity');
+  const fogDensity = options.fog ? -LOOK.fogDensity : derived(() => -LOOK.fogDensity);
   let cameraDepth: N = cameraPosition.y.negate();
   const uGridScale = uniform(1),
     uCellStep = uniform((2 * PI) / GRID.angular),
@@ -527,12 +553,7 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
     const dndx = dFdx(Nrm),
       dndy = dFdy(Nrm);
     const geoVar = min(dot(dndx, dndx).add(dot(dndy, dndy)).mul(0.25), 0.18).toVar();
-    const alpha2 = float(ULTRA.roughness * ULTRA.roughness)
-      .add(surfaces.unresolved)
-      .add(variance.x)
-      .add(variance.y)
-      .add(geoVar)
-      .toVar();
+    const alpha2 = float(roughness2).add(surfaces.unresolved).add(variance.x).add(variance.y).add(geoVar).toVar();
     const alpha = sqrt(alpha2).toVar();
 
     const NoV = max(dot(Nrm, V), 1e-4).toVar();
@@ -582,7 +603,7 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
       const ruv = clamp(
         screenUV.add(
           ns
-            .mul(0.06)
+            .mul(refraction)
             .mul(clamp(thick.mul(0.25), 0, 1))
             .mul(smoothstep(0, 0.8, depthBelow))
             .div(max(waterDepth.mul(0.02), 1)),
@@ -623,7 +644,7 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
         });
       }
       If(depthBelow.lessThan(6).and(act.greaterThan(0)).and(dist.lessThan(600)), () => {
-        const contact = smoothstep(0, mix(ULTRA.foamBand, 1, obst), vth)
+        const contact = smoothstep(0, mix(foamBand, 1, obst), vth)
           .oneMinus()
           .mul(smoothstep(2, 6, depthBelow).oneMinus())
           .mul(act.mul(0.5))
@@ -668,8 +689,8 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
       const ambient = demoSky.skyLod(vec3(0, 1, 0), float(10)).toVar();
       const sunI = waterSun().toVar();
       const sunY = max(seaU.uSun.y, 0).toVar();
-      const absorption = lin3(LOOK.absorption);
-      const scatter = lin3(LOOK.scatter);
+      const absorption = absorptionNode;
+      const scatter = scatterNode;
       const T = exp(absorption.negate().mul(thick)).toVar();
       // In-scatter of the water column (sun and sky), then Atlas-style subsurface scatter on crests.
       const inscatter = scatter
@@ -679,14 +700,14 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
         .toVar();
       const h = max(vWorld.y, 0);
       const toward = clamp(dot(seaU.uSun, V.negate()), 0, 1).toVar();
-      const k1 = float(ULTRA.sss[0]!)
+      const k1 = float(sssPeak)
         .mul(h)
         .mul(pow(toward, 4))
         .mul(pow(NoL.mul(-0.5).add(0.5), 3));
-      const k2 = float(ULTRA.sss[1]!).mul(pow(NoV, 2));
+      const k2 = float(sssView).mul(pow(NoV, 2));
       const sss = scatter
         .mul(sunI)
-        .mul(k1.add(k2).add(max(NoL, 0).mul(ULTRA.sss[2]!)))
+        .mul(k1.add(k2).add(max(NoL, 0).mul(sssShadow)))
         // Thin breaking lips: sunlight through about a metre of water glows turquoise, strongest looking into the sun.
         .add(
           sunI
@@ -718,7 +739,8 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
         body.assign(refracted.mul(Tt).add(mix(glow, inscatter.mul(vec3(1.2, 1.1, 0.75)), wm).mul(vec3(1).sub(Tt))));
       });
       // The grade: saturation of the body only, so foam and the sun stay as they are.
-      if (LOOK.saturation !== 1) body.assign(mix(vec3(dot(body, vec3(0.2126, 0.7152, 0.0722))), body, LOOK.saturation));
+      if (tuningEnabled || LOOK.saturation !== 1)
+        body.assign(mix(vec3(dot(body, vec3(0.2126, 0.7152, 0.0722))), body, saturation));
 
       // Fresnel with roughness-aware F90 (Lagarde), so the rough far field doesn't go white.
       const F0 = 0.02;
@@ -726,14 +748,14 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
       const F = min(
         float(F0)
           .add(F90.sub(F0).mul(pow(float(1).sub(NoV), 5)))
-          .mul(LOOK.reflectGain),
-        LOOK.reflectCap,
+          .mul(reflectGain),
+        reflectCap,
       ).toVar();
 
       // --- reflection: the sky ------------------------------------------------------------
       const Rr = reflect(V.negate(), Nrm).toVar();
       const R = vec3(Rr.x, abs(Rr.y), Rr.z);
-      const refl = demoSky.skyAt(R, alpha).mul(lin3(LOOK.reflectTint)).toVar();
+      const refl = demoSky.skyAt(R, alpha).mul(reflectTint).toVar();
 
       // --- sun specular: GGX, alpha floored so the sun acts as a small area light -----------
       const aS = max(alpha, 0.015).toVar();
@@ -786,7 +808,7 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
             m,
             smoothstep(4, 30, dist)
               .mul(smoothstep(0.05, 0.3, vth))
-              .mul(ULTRA.glint),
+              .mul(glint),
           ),
         );
       });
@@ -898,11 +920,7 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
         const fl = dot(fN, seaU.uSun);
         const ao = mix(0.45, 1, smoothstep(0.15, 0.75, fh)).toVar();
         const solid = smoothstep(0.2, 0.9, dens.mul(fh.mul(0.7).add(0.55))).toVar();
-        const albedo = mix(
-          lin3(ULTRA.foamTint),
-          vec3(0.93, 0.92, 0.88),
-          max(solid, smoothstep(0.3, 0.9, pat).mul(0.6)),
-        );
+        const albedo = mix(foamTint, vec3(0.93, 0.92, 0.88), max(solid, smoothstep(0.3, 0.9, pat).mul(0.6)));
         const lit = sunI
           .mul(clamp(fl.mul(0.8).add(0.2), 0, 1).mul(0.85).add(0.15))
           .mul(mix(ao, 1, 0.4))
@@ -911,7 +929,7 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
           .add(sunI.mul(pow(toward, 4)).mul(0.4).mul(solid.oneMinus()));
         const foamCol = lit
           .mul(albedo)
-          .mul(ULTRA.foamBright)
+          .mul(foamBright)
           .add(
             sunI
               .mul(pow(max(dot(fN, H), 0), 90))
@@ -927,7 +945,7 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
       const fog = options.fog
         ? options.fog(dist)
         : float(1)
-            .sub(exp(dist.mul(-LOOK.fogDensity)))
+            .sub(exp(dist.mul(fogDensity)))
             .toVar();
       col.assign(mix(col, demoSky.skyLod(V.negate(), float(3)), fog));
 

@@ -2,6 +2,8 @@
 
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
+- [dev-menu-plan.md](dev-menu-plan.md) (2026-11-03): engine and shipped-game debug patterns, current tools/flags inventory, nineteen ranked candidates and eight first-version recommendations; touch access, lazy loading, authority boundaries and disposable fixtures for live owner and agent testing.
+
 - [water-load-stall.md](water-load-stall.md) (2026-11-03): M1 Max cold/reload, old/new sea, 90-second callback and GPU-completion baselines; CPU shore-bake attribution, every >50 ms interval and explicit limits. The reported minute-long visible freeze remains unresolved; no gameplay fix claimed.
 
 - [codex-model-routing.md](codex-model-routing.md) (2026-11-03): CLI 0.166 account model/effort inventory, official guidance and system cards, subscription versus credit/API usage, independent benchmarks and nine local job audits; nine recommendations, a routing card and three controlled trials for Terra medium, Sol and higher-effort review.

@@ -62,31 +62,34 @@ function directional(theta: number, w: number, b: Band) {
 }
 
 const rad = (d: number) => (d * Math.PI) / 180;
-const wind = jonswapParams(OCEAN.windSpeed, OCEAN.fetchKm),
-  swellP = jonswapParams(OCEAN.swellWindSpeed, OCEAN.swellFetchKm);
-const BANDS: Band[] = [
-  {
-    scale: OCEAN.waveScale,
-    angle: rad(OCEAN.windDirection),
-    blend: OCEAN.spreadBlend,
-    swell: OCEAN.windSwell,
-    alpha: wind.alpha,
-    peak: wind.peak,
-  },
-  {
-    scale: OCEAN.swellScale * OCEAN.waveScale,
-    angle: rad(OCEAN.swellDirection),
-    blend: 1,
-    swell: OCEAN.swellSwell,
-    alpha: swellP.alpha,
-    peak: swellP.peak,
-  },
-];
+function spectrumBands(): Band[] {
+  const wind = jonswapParams(OCEAN.windSpeed, OCEAN.fetchKm),
+    swellP = jonswapParams(OCEAN.swellWindSpeed, OCEAN.swellFetchKm);
+  return [
+    {
+      scale: OCEAN.waveScale,
+      angle: rad(OCEAN.windDirection),
+      blend: OCEAN.spreadBlend,
+      swell: OCEAN.windSwell,
+      alpha: wind.alpha,
+      peak: wind.peak,
+    },
+    {
+      scale: OCEAN.swellScale * OCEAN.waveScale,
+      angle: rad(OCEAN.swellDirection),
+      blend: 1,
+      swell: OCEAN.swellSwell,
+      alpha: swellP.alpha,
+      peak: swellP.peak,
+    },
+  ];
+}
+const BANDS = spectrumBands();
 
 /** One directional JONSWAP cell's integrated variance, before the source's Gaussian/pair convention.
  * Exported for dev/water-diagnose.ts: the source convention produces 8× this variance, not 1×.
  */
-export function spectrumCellVariance(c: number, i: number, j: number, resolution = N) {
+export function spectrumCellVariance(c: number, i: number, j: number, resolution = N, bands = BANDS) {
   const L = CASCADE_LENGTHS[c]!,
     dk = (2 * Math.PI) / L;
   // Cascade c owns [cut[c-1], cut[c]); each cut sits at 6 fundamentals of the next cascade.
@@ -101,7 +104,7 @@ export function spectrumCellVariance(c: number, i: number, j: number, resolution
     dwdk = (G + 3 * ST * kl * kl) / (2 * w),
     theta = Math.atan2(kz, kx);
   let S = 0;
-  for (const b of BANDS) S += jonswap(w, b) * directional(theta, w, b) * Math.exp(-fade * fade * kl * kl);
+  for (const b of bands) S += jonswap(w, b) * directional(theta, w, b) * Math.exp(-fade * fade * kl * kl);
   return ((S * dwdk) / kl) * dk * dk;
 }
 
@@ -111,6 +114,7 @@ export function spectrumCellVariance(c: number, i: number, j: number, resolution
  */
 export function bakeH0(c: number, resolution = N, waveScale = 1) {
   const N = resolution;
+  const bands = spectrumBands();
   const rng = mulberry32(1337 + c * 7919);
   const re = new Float32Array(N * N),
     im = new Float32Array(N * N);
@@ -121,7 +125,7 @@ export function bakeH0(c: number, resolution = N, waveScale = 1) {
       const r = Math.sqrt(-2 * Math.log(u1)),
         gx = r * Math.cos(2 * Math.PI * u2),
         gy = r * Math.sin(2 * Math.PI * u2);
-      const a = Math.sqrt(2 * spectrumCellVariance(c, i, j, N) * waveScale);
+      const a = Math.sqrt(2 * spectrumCellVariance(c, i, j, N, bands) * waveScale);
       re[j * N + i] = gx * a;
       im[j * N + i] = gy * a;
     }

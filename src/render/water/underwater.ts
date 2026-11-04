@@ -10,6 +10,7 @@ import { uTime } from './shore-nodes.ts';
 import { waterLighting, type Ocean, type WaterSky } from './surface.ts';
 import { TSL, type N } from './tsl.ts';
 import { UNDER } from './tuning.ts';
+import { derived, scalar, tuningEnabled } from './live.ts';
 
 const { Fn, If, Loop, abs, clamp, cos, dot, exp, float, floor, fract, instanceIndex, length, max, min, mix } = TSL;
 const { mod, normalize, pow, refract, rtt, select, sin, smoothstep, storage, storageTexture, texture, textureStore } =
@@ -80,6 +81,13 @@ function droplets(at: N, wet: N, aspect: N, resY: N) {
 
 export function createUnderwater(ocean: Ocean, sky: WaterSky) {
   const { deepWater, waterAbsorption, waterSun } = waterLighting(sky);
+  const scattering = scalar('underwater.scattering', UNDER, 'scattering');
+  scalar('underwater.shafts', UNDER, 'shafts');
+  const shaftStrength = derived(() => UNDER.scattering * UNDER.shafts);
+  const shaftRange = scalar('underwater.shaftRange', UNDER, 'shaftRange');
+  const meniscusStrength = scalar('underwater.meniscus', UNDER, 'meniscus');
+  const drySeconds = scalar('underwater.drySeconds', UNDER, 'drySeconds');
+  const exposure = scalar('underwater.exposure', UNDER, 'exposure');
   const body = uniform(0),
     level = uniform(0),
     ellipse = uniform(new THREE.Vector4(0, 0, 1, 1));
@@ -127,7 +135,7 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
       const state = wetState.element(0);
       const camDepth = bodyDepth(camPos).toVar();
       const submerged = camDepth.greaterThan(0.3);
-      const wet = max(state.y.sub(dt.div(UNDER.drySeconds)), 0).toVar();
+      const wet = max(state.y.sub(dt.div(drySeconds)), 0).toVar();
       If(submerged, () => wet.assign(0)).ElseIf(state.x.greaterThan(0.5), () => wet.assign(1));
       state.assign(vec4(select(submerged, 1, 0), wet, camDepth, 0));
     });
@@ -147,11 +155,11 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
     Fn(() => {
       const at = uv();
       const { dist, dir } = ray(at);
-      const sigT = waterAbsorption().add(UNDER.scattering);
+      const sigT = waterAbsorption().add(scattering);
       const rs = refract(seaU.uSun.negate(), vec3(0, 1, 0), 1 / 1.33).toVar();
       const acc = vec3(0).toVar();
       If(body.equal(1).and(seaU.uSun.y.greaterThan(0.02)).and(rs.y.lessThan(-0.05)), () => {
-        const stepL = min(dist, UNDER.shaftRange).div(UNDER.shaftSteps).toVar();
+        const stepL = min(dist, shaftRange).div(UNDER.shaftSteps).toVar();
         const jitter = fract(
           fract(dot(at.mul(size).mul(0.5), vec2(0.06711056, 0.00583715)))
             .mul(52.9829189)
@@ -239,7 +247,7 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
         });
         const meniscus = edge
           .mul(smoothstep(0.1, 0.35, abs(d)).oneMinus())
-          .mul(UNDER.meniscus)
+          .mul(meniscusStrength)
           .oneMinus();
         If(d.greaterThan(0), () => {
           const wobble = vec2(sin(atDrop.y.mul(37).add(uTime.mul(1.9))), cos(atDrop.x.mul(29).add(uTime.mul(1.6)))).mul(
@@ -250,15 +258,10 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
           // A cave pond transmits its locally lit scene; outdoor sky/sun in-scatter cannot pass through its roof.
           const fog = vec3(0).toVar();
           If(body.equal(1), () => fog.assign(deepWater(dir).mul(exp(waterAbsorption().mul(max(d, 0)).mul(-0.5)))));
-          const trans = exp(waterAbsorption().add(UNDER.scattering).mul(dist).negate());
+          const trans = exp(waterAbsorption().add(scattering).mul(dist).negate());
           col.assign(color.sample(sampleAt).level(0).rgb.mul(trans).add(fog.mul(trans.oneMinus())));
-          If(body.equal(1), () =>
-            col.addAssign(
-              waterSun()
-                .mul(upsample(sampleAt, dist))
-                .mul(UNDER.scattering * UNDER.shafts),
-            ),
-          );
+          If(body.equal(1), () => col.addAssign(waterSun().mul(upsample(sampleAt, dist)).mul(shaftStrength)));
+          if (tuningEnabled) col.mulAssign(exposure);
         });
         col.mulAssign(meniscus);
       });
