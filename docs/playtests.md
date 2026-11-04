@@ -174,3 +174,42 @@ Raw brainstorm from the same session, typed while Matias and Grant talked. Not d
 - Notes on this round: the moment of discovery was nice; the train should show it's waking up without saying so; the sun doesn't go away; what is the platform?; point to the next island; take off the character's ear bumps and rosy cheeks.
 - Tools: dev tools for making levels by hand.
 
+
+## 2026-11-03 (round 4, two players, the default URL)
+- Who: Matias (Mac, Safari, gamepad) and Grant (touch; the browser reports iPhone at 951x669). Whole run together, about 35 minutes: 03:40 to 04:14 UTC. From the Granola transcript and the session data (`npm run playtest -- mw1l43s5-eyp2cnmq`, `mw1l0y9o-1aphq1mf`, `mw1kjao8-f20clw4j`, `mw1klpci-xva7fxio`, crash `mw1kz9dd-y00icjb2`). Matias's survey is still to come; Grant declined it. Neither is a blind player: both know the route and the design.
+- Gut question (hungry for a better way, and did finding one feel great?): yes, twice, and one miss. 8 minutes of walking for logs after the first path, then the little guys arrive: "Whoa!", "Wow, thanks guys." Rails delivered by train at the end: "it was all provided. That's great." The miss: Line 2 stations 4 and 5, running 150 to 250 m back to the rack with nothing to relieve it, which Grant called tedious and a bummer.
+- Against round 3: "together about the same as alone" became "this makes you happy you're not playing on your own". "Trains too soon, no friction" became trains after 31 minutes and real friction. Trains now come so late they get only 3 min 19 s before the end.
+- Best: co-op chopping. The hook shot ("fuck yeah"). The glider, stop and reopen. Double jump while gliding, unplanned and liked, and it could scale with later jump upgrades. "I never thought this would get that deep into platforming. This is sick." Drop, and picking up a whole stack. Walls that animate away indoors. The telescope as a peek at what you can't reach yet. The fireworks. Seamless reload. Jump is the toy: Matias pressed it 2,374 times and double jumped 404 times.
+
+### Broke
+- **Freeze, one time:** the world stopped while the camera and markers kept moving (Grant, video to come). The session logged `GPUValidationError ... strideCount(25) ... bufferSize(1536)`: a 24-slot instance buffer asked to draw 25, about 10 s before Grant reported it and 6 s after taking rails. Reloading cleared it and the same build then ran 21 minutes clean. Cause not found yet.
+- **Launched while riding the cart:** at (1235, -72) Matias left the cart at up to 98 m/s and travelled 376 m in 6 s into the sea. Not reproduced.
+- **Trains with two players:** riders thrown off repeatedly, 12 rides for Matias and 7 for Grant in under 4 minutes, many lasting under a second. Both came off together at 37:41 on the session clock, at the same spot, so some of this is not just desync. Grant's "train is pushing me back". Matias stopped seeing Grant's cart while Grant rode it, with Grant walking in place.
+- **Not shown to the other player:** a carried beam, boiler or rails; a partner's pet.
+- **Get unstuck** went to the old island for one second, (14, 26), then to the start of the map, about 170 m from where Matias was. It calls the shared `backToSpawn` (`src/features/pause.ts:227`).
+- **Gates sit 90 degrees off:** Grant's report holds in code. `src/proto/place/tech.ts:436` adds a quarter turn, which lays the slab along the track.
+- **Cinematics and item cards close on any movement.** Dismissed by accident at least four times, so neither player really saw the town reveal. The town-unlock camera cancels the same way.
+- **Whistle for the cart** does nothing unless the far end needs something.
+- **"Stand on a platform" flickers:** on and off at least 16 times in 41 s for Grant, with `train called` firing 9 times. Doorways may do the same (5 shop entries in 7 s), though Matias may have been testing the walls.
+- **Start fresh split them into separate rooms** (known). They needed an invite link, which cost about 2 minutes.
+- **Small:** a square shadow under the character (both saw it). Double-jump rings off the feet. Rails floating where the line leaves the mountain. Z-fighting on the platform between the canyon rails and the tower. The junction snaps the cart. Pack floats off the body and its load sits outside it. Happy Clam has no way back but the water. Crate boxes can be clipped through. A wobble on some jump surfaces. Can't board the track layer. The reload prompt claims you must reload to stay with friends, and that's not true.
+
+### Calls they raised (not decided)
+- **Remove the objective marker:** both want it gone, and the world should guide you. But Grant was still following it at the end ("that's my objective") and asked why he'd want a second train, so it's what carried that stretch.
+- **Remove orange bands; every tree can be chopped:** both agree. No axe tiers. Tension: Grant also said the long walk to the bands makes you feel the pain the little guys then relieve, and that's the gut question. Needs tuning, not just removal.
+- **Cut or soften the blue shafts at spawn:** both find them heavy-handed.
+- **Little guys bring rails too** (or one mixed shipment) by station 4, which needs somewhere to drop them. Strongest pacing note of the session.
+- **Cart, then trains:** "We unlocked trains but we already had a train." Grant's fix: the first vehicle is clearly a little cart and trains upgrade it. Trains also need a clear pull: "it goes the other way" only landed after the boiler was fitted. The timer sign needs to be subtler.
+- **Spread abilities out:** hook to glider was 49 s; double jump to hook was 10 minutes. Matias wants double jump later; Grant accepts it for the slice. Grant wants a real double-jump challenge where you first get it, not one higher ledge.
+- **Hook as a swing** (Just Cause, Spider-Man), releasing into the glider. An experiment worth a prototype.
+- **Gate puzzles between stations:** one switch moving two gates, "fun friction". Grant's idea, both like it.
+- **Ping comes back** on its own button beside drop.
+- **Item cards need a button press,** so a new item has weight.
+- **"N s! The long way round took you X s."** Nobody understood it. It fires the first time you cross in one go, here 21 minutes after the bridge opened and from a cart, comparing against a walk from half an hour ago (`src/proto/place/index.ts:245`). It reminded Grant of Burnout Paradise's street times: cut it, or make it real route times.
+- **Kept, despite the Granola summary:** the hook platforms stay visible from the start. Matias asked; Grant argued that seeing what you can't reach yet is good, and Matias came round. Matias's other point stands: the blue concrete doesn't fit the world's style yet.
+- **Looks:** train rust looks out of place, so make it a real material. Festival Overalls read as a barrel. Red flag on the hook course meant nothing to either. Dropped items might expire on a long timer. Chop could also be on square. Glide on L1 or jump is open (jump clashes with double jump). Fade on respawn, a far-off nit.
+
+### Barely tried
+- Town: Matias at the end: didn't really look at the rumours or the town. Shop 7 s, house 5 s, the museum never, nothing tried on, `Talk` shown 11 times and pressed 0. One rumour did stop Grant mid-sentence ("never once blinked").
+- Performance was fine: frame p50 17 ms on both, p95 18 on the Mac and 20 on Grant's. Worst stalls 677 ms and 497 ms.
+- Data gaps: `did something together` never marked in 33 minutes of co-op; `chop refused` counts include held presses. Round 4 sessions show no `water=new`, so that run was on the normal sea and sky. The separate `water=new` session (04:32 UTC) stalled 37 s and predates the #775 cold-start fix; that fix is not yet re-checked by a person.
