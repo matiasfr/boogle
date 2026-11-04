@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import type { Rollup } from 'vite';
+import type { Rolldown } from 'vite';
 import wasm from 'vite-plugin-wasm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { atlasFacts } from './dev/atlas/vite-plugin.ts';
@@ -31,9 +31,9 @@ export default defineConfig({
   // Libraries in their own chunks: they change far less often than the game, so returning players keep them cached.
   // Lazy game parts (caves, Boogler talk, debug tools) split off on their own through import() (src/loop.ts).
   build: {
-    target: 'es2022', // top-level await: Rapier's WASM module (src/physics/backend-rapier.ts); every WebGPU browser has it
+    target: 'es2022', // preserve Safari/iPad support, not Vite's moving baseline; Rapier needs top-level await
     chunkSizeWarningLimit: 1200, // three.js with the WebGPU renderer and TSL is ~1.1 MB minified
-    rollupOptions: {
+    rolldownOptions: {
       // The atlas (/atlas/) is a second page; d3 is imported only from atlas/, so it stays out of the game's chunks.
       // The prototype list (/protos/, protos/protos.ts) is a third, the character viewer (/character/) a fourth, and the menu Leave goes to (/menu/) a fifth.
       input: {
@@ -45,10 +45,11 @@ export default defineConfig({
         menu: resolve('menu/index.html'),
       },
       output: {
-        manualChunks(id) {
-          if (id.includes('/three/examples/')) return undefined; // add-ons go with whoever uses them (caves)
-          const m = id.match(/node_modules\/(three)\//);
-          return m ? m[1] : undefined;
+        codeSplitting: {
+          groups: [
+            // Add-ons stay with whoever uses them (caves); only the core library shares this cache boundary.
+            { name: 'three', test: /node_modules\/three\/(?!examples\/)/ },
+          ],
         },
       },
     },
@@ -118,7 +119,7 @@ export default defineConfig({
           c.imports.forEach(add);
           for (const d of c.dynamicImports)
             if (
-              FIRST_DYNAMIC.some((re) => re.test((bundle[d] as Rollup.OutputChunk | undefined)?.facadeModuleId ?? ''))
+              FIRST_DYNAMIC.some((re) => re.test((bundle[d] as Rolldown.OutputChunk | undefined)?.facadeModuleId ?? ''))
             )
               add(d);
         };
