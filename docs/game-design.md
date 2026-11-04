@@ -88,6 +88,7 @@ tick of 100 ms (10 per second).
 - [6.27 Prototype: the line feeds the town (`?proto=net`)](game-design/net.md)
 - [6.28 Prototype: a real place (`?proto=place`)](game-design/place.md)
 - [6.29 Prototype: procedural sky (`?proto=sky`)](game-design/sky-proto.md)
+- [6.30 Dev menu (`?dev=1`)](game-design/dev-menu.md)
 ## 7. Content inventory
 
 - [7.1 Items (gift catalog)](game-design/items.md)
