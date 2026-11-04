@@ -25,7 +25,7 @@ import { dropGot, youGot } from './got.ts';
 import { addFoot } from './sites.ts';
 
 // ---------------------------------------------------------------- shapes: a few primitives, merged, in their own colours
-type Prim = 's' | 'c' | 'k' | 'b' | 't' | 'vest' | 'strap';
+type Prim = 's' | 'c' | 'k' | 'b' | 't' | 'vest' | 'bib' | 'strap';
 type Part = [
   shape: Prim,
   x: number,
@@ -44,16 +44,24 @@ const unit: Record<Prim, () => THREE.BufferGeometry> = {
   k: () => new THREE.ConeGeometry(1, 1, 10),
   b: () => new THREE.BoxGeometry(1, 1, 1),
   t: () => new THREE.TorusGeometry(1, 0.3, 6, 14).rotateX(Math.PI / 2),
+  // A curved front panel, open at the sides: the arms and waist still read through the outfit.
+  bib: () =>
+    new THREE.LatheGeometry(
+      [new THREE.Vector2(1, -0.5), new THREE.Vector2(1, 0), new THREE.Vector2(0.78, 0.5)],
+      12,
+      -0.64,
+      1.28,
+    ),
   strap: () =>
     new THREE.TubeGeometry(
       new THREE.CatmullRomCurve3([
-        new THREE.Vector3(0, 0.03, 0.27),
-        new THREE.Vector3(0, 0.12, 0.21),
-        new THREE.Vector3(0, 0.17, 0.1),
+        new THREE.Vector3(0, 0.07, 0.203),
+        new THREE.Vector3(0, 0.14, 0.17),
+        new THREE.Vector3(0, 0.18, 0.08),
         new THREE.Vector3(0, 0.18, 0),
-        new THREE.Vector3(0, 0.17, -0.1),
-        new THREE.Vector3(0, 0.12, -0.21),
-        new THREE.Vector3(0, 0.03, -0.27),
+        new THREE.Vector3(0, 0.18, -0.08),
+        new THREE.Vector3(0, 0.14, -0.17),
+        new THREE.Vector3(0, 0.07, -0.203),
       ]),
       12,
       0.028,
@@ -143,13 +151,14 @@ export type Tier = 'common' | 'rare' | 'wonder';
 type Gift = { id: GiftId; name: string; line: string; parts: Part[]; slot?: Slot; tier?: Tier; area?: string };
 // Each drawn at about the size it sits on the shelf, base at y = 0.
 const overalls = (body: string, strap: string, trim: string): Part[] => [
-  ['vest', 0, -0.1, 0, 0.31, 0.52, 0.28, body],
+  ['vest', 0, -0.19, 0, 0.283, 0.19, 0.24, body],
+  ['bib', 0, -0.015, 0, 0.283, 0.3, 0.248, body],
+  ['bib', 0, -0.015, 0, 0.283, 0.3, 0.248, body, Math.PI],
   ['strap', -0.14, 0, 0, 1, 1, 1, strap],
   ['strap', 0.14, 0, 0, 1, 1, 1, strap],
-  ['b', 0, -0.06, 0.28, 0.21, 0.15, 0.025, trim],
-  ['b', 0, 0.01, 0.297, 0.21, 0.015, 0.012, strap],
-  ['s', -0.14, 0.06, 0.283, 0.022, 0.022, 0.012, '#d9a23a'],
-  ['s', 0.14, 0.06, 0.283, 0.022, 0.022, 0.012, '#d9a23a'],
+  ['b', 0, -0.055, 0.246, 0.15, 0.11, 0.012, trim],
+  ['s', -0.13, 0.065, 0.225, 0.022, 0.022, 0.012, '#d9a23a'],
+  ['s', 0.13, 0.065, 0.225, 0.022, 0.022, 0.012, '#d9a23a'],
 ];
 // New pieces carry no line yet: those wait for the owner's writing pass. Existing lines stay as they were.
 const GIFTS: Gift[] = [
@@ -258,11 +267,7 @@ const GIFTS: Gift[] = [
     tier: 'wonder',
     name: 'Festival overalls',
     line: '',
-    parts: [
-      ...overalls('#ff5f8f', '#ffcf33', '#ffcf33'),
-      ['b', -0.17, -0.1, 0.255, 0.12, 0.3, 0.05, '#4fb7ff'],
-      ['b', 0.17, -0.1, 0.255, 0.12, 0.3, 0.05, '#62d67a'],
-    ],
+    parts: overalls('#ed6685', '#ed6685', '#ce4e70'),
   },
   {
     id: 'critter',
@@ -1043,12 +1048,12 @@ const crateGeos = Object.fromEntries(
   ]),
 ) as Record<Tier, THREE.BufferGeometry>;
 const TIER_GLOW: Record<Tier, ReturnType<typeof softGlow>> = {
-  common: softGlow('#ffe9b0', 0.32, 'up'),
-  rare: softGlow('#4fa8ff', 0.5, 'up'),
-  wonder: softGlow('#ffb52e', 0.75, 'up'),
+  common: softGlow('#ffe9b0', 0.16, 'up'),
+  rare: softGlow('#4fa8ff', 0.2, 'up'),
+  wonder: softGlow('#ffb52e', 0.24, 'up'),
 };
 for (const g of Object.values(TIER_GLOW)) g.mat.blending = THREE.NormalBlending;
-// A tool chest: iron bands, not gold, and a blue shaft over it. It isn't a surprise: it's the thing you were wishing for.
+// A tool chest: iron bands, not gold, with a low blue glimmer above its lid.
 const CHEST: Part[] = [
   ['b', 0, 0.55, 0, 1.5, 1.1, 1, '#6d5136'],
   ['b', -0.5, 0.55, 0, 0.14, 1.14, 1.04, '#3a3d44'],
@@ -1057,11 +1062,11 @@ const CHEST: Part[] = [
   ['b', 0, 0.75, 0.52, 0.22, 0.28, 0.06, '#f2b134'],
 ];
 const chestGeo = merged(CHEST);
-const chestGlow = softGlow('#7fd0ff', 0.5, 'up');
+const chestGlow = softGlow('#7fd0ff', 0.2, 'up');
 chestGlow.mat.blending = THREE.NormalBlending;
-// The shaft over a waiting crate: soft all the time, reads from across the place, and it flares as the crate lands.
+// A lid-height glimmer keeps waiting crates findable without drawing columns across the skyline.
 let crateFlare = 0;
-const beamGeo = new THREE.CylinderGeometry(0.75, 1.1, 34, 12, 1, true).translate(0, 18.3, 0); // from over the crate's lid
+const beamGeo = new THREE.CylinderGeometry(0.38, 0.85, 1.8, 12, 1, true).translate(0, 2.2, 0);
 /** What's in a crate: the next gift, or a rung of the ladder. */
 export type Content = 'gift' | Extra | GiftId;
 const isChest = (c: Content) => c === 'axe' || c === 'pack';
@@ -1442,8 +1447,8 @@ export function updateGifts(dt: number, now: number) {
     }
   }
   crateFlare = Math.max(0, crateFlare - dt / 1.6);
-  TIER_GLOW.common.strength.value = 0.32 + crateFlare * crateFlare * 0.4;
-  chestGlow.strength.value = 0.5 + Math.sin(now * 0.004) * 0.12;
+  TIER_GLOW.common.strength.value = 0.16 + crateFlare * crateFlare * 0.4;
+  chestGlow.strength.value = 0.2 + Math.sin(now * 0.004) * 0.04;
   for (const c of crates) {
     if (c.t === -1) continue;
     if (c.t < 1) {

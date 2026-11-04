@@ -72,7 +72,7 @@ export const PADS: Pad[] = [
   { id: 't4', x: 23.6, z: -19, top: 76, hx: 3, hz: 3, look: 'float', ring: 't3' },
   { id: 't5', x: 23.6, z: -1, top: 89, hx: 3, hz: 3, look: 'float', ring: 't4' },
   { id: 'summit', x: 15, z: -6, top: 102.4, hx: 5, hz: 4, look: 'wood', ring: 't5' },
-  // The tower's one side trip: a slab round from t3, its ring behind a hanging cloth.
+  // The tower's one side trip: a slab round from t3, with its crate and ring in view.
   { id: 'nook', x: -6, z: -30, top: 63, hx: 2.4, hz: 2.4, look: 'float', ring: 't3' },
   // Gate 1's ledge at the quarry: 2.2 m, past one jump and inside two.
   { id: 'apron', x: 99, z: 44, top: 26.2, hx: 3.6, hz: 3.6, look: 'stone' },
