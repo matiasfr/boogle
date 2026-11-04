@@ -17,13 +17,12 @@ import { pop } from '../minis/common.ts';
 import { shakeView } from './celebrate.ts';
 import { back } from './chop.ts';
 import { coop, pairHook } from './coop.ts';
-import { callCart, cart, cartHere, loadCart, rack } from './depot.ts';
+import { callCart, cart, cartHere, depotRails, loadCart, railsOwed } from './depot.ts';
 import { forge, rackTop, takeRail } from './forge.ts';
 import { COOP, count, job, num, save } from './job.ts';
 import { CART, ORIGIN } from './layout.ts';
 import { TX, TY, TZ } from './lines.ts';
 import { dustRing, send } from './pieces.ts';
-import { activeFrame } from './run.ts';
 import { H } from './terrain.ts';
 import { addStatic } from './land.ts';
 
@@ -113,6 +112,29 @@ function setBeam(yaw: number) {
 
 const at = new THREE.Vector3(TX, TY + 2, TZ);
 const from = new THREE.Vector3();
+const cartLoadAmount = () => Math.max(0, Math.min(railsOwed(), CART.rails - cart.rails, forge.rails));
+/** Both the porter and the little guys draw from the very same forge stock and load. */
+function loadFromForge() {
+  const n = cartLoadAmount();
+  if (!n) return;
+  const here = cartHere();
+  for (let k = 0; k < n; k++) {
+    rackTop(forge.rails, from);
+    takeRail();
+    send('rail', from, new THREE.Vector3(here.x, TY + CART.top + 0.5, here.z), {
+      dur: 0.45,
+      delay: k * 0.06,
+      apex: 1.1,
+    });
+  }
+  loadCart(n);
+  coop.took('rails', n);
+  coop.send({ k: 'cartLoad', n });
+}
+depotRails.enabled = () => coop.railCart();
+depotRails.load = () => {
+  if (!coop.follower()) loadFromForge();
+};
 if (COOP) {
   pairHook.msg = (m) => {
     if (m.k === 'cartCall') callCart();
@@ -248,34 +270,17 @@ if (COOP) {
   );
   registerInteractable(() => {
     const p = me.body?.interpolatedPosition;
-    const st = activeFrame();
     if (!p || !job.rung.depot || job.rung.trains || Math.hypot(p.x - TX, p.z - TZ) > 5) return [];
-    const need = st?.spec.rack === 'cart' ? st.wants('rails') - rack.rails - cart.rails : 0;
-    const n = Math.min(need, CART.rails - cart.rails, forge.rails);
-    if (cart.leg === 'forge' && n > 0)
+    if (cart.leg === 'forge' && !cart.auto && cartLoadAmount() > 0)
       return [
         {
           id: 'place-cart-load',
           verb: 'Load the cart',
           at,
-          run: () => {
-            const here = cartHere();
-            for (let k = 0; k < n; k++) {
-              rackTop(forge.rails, from);
-              takeRail();
-              send('rail', from, new THREE.Vector3(here.x, TY + CART.top + 0.5, here.z), {
-                dur: 0.45,
-                delay: k * 0.06,
-                apex: 1.1,
-              });
-            }
-            loadCart(n);
-            coop.took('rails', n);
-            coop.send({ k: 'cartLoad', n });
-          },
+          run: loadFromForge,
         },
       ];
-    if (!cart.called)
+    if (!cart.called || cart.auto)
       return [
         {
           id: 'place-cart-call',

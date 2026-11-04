@@ -1,6 +1,6 @@
 // Materials brought closer, the ladder's third rung: when line 2's first stretch is laid, two little guys start shoving a cart
-// of logs down your track from the camp, over the turntable, to a rack by the next frame. You do the last carry; rails stay
-// yours to fetch from the forge. It's a real but small job for them: the owner's "hungry" ladder changes "life, not labour"
+// of logs down your track from the camp, over the turntable, to a rack by the next frame. From Q4 it also stops for forge
+// rails; you still do the last carry. It's a real but small job for them: the owner's "hungry" ladder changes "life, not labour"
 // for this rung only. Its rack is what the first train fills at the end, too. docs/research/next-load-motivation.md, rec 1.
 // Local; the room's cart runs on every tab, nudged by ./coop.ts's snapshot.
 import * as THREE from 'three/webgpu';
@@ -27,7 +27,8 @@ import type { StationRun } from './stations.ts';
 
 // ---------------------------------------------------------------- the rack
 const RACK_LOGS = 48,
-  RACK_RAILS = 40;
+  RACK_RAILS = 40,
+  RAIL_BAY = 2;
 const rackLook = new THREE.Group();
 for (const dz of [-1.1, 1.1]) {
   const b = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.16, 0.2), flat('#8a6236'));
@@ -39,6 +40,19 @@ for (const dz of [-1.1, 1.1]) {
     post.position.set(dx, 0.65, dz);
     post.castShadow = true;
     rackLook.add(post);
+  }
+}
+// The empty bearers explain where the steel goes, independently of the log pile.
+for (const dz of [-1.1, 1.1]) {
+  const bearer = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.24, 0.24), flat('#8a6236'));
+  bearer.position.set(RAIL_BAY, 0.12, dz);
+  bearer.castShadow = true;
+  rackLook.add(bearer);
+  for (const dx of [-0.8, 0.8]) {
+    const stop = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.6, 0.16), flat('#7f5630'));
+    stop.position.set(RAIL_BAY + dx, 0.3, dz);
+    stop.castShadow = true;
+    rackLook.add(stop);
   }
 }
 rackLook.visible = false;
@@ -67,7 +81,13 @@ export const rack = {
   at: new THREE.Vector3(),
   promptAt: new THREE.Vector3(),
 };
-let rackBody: Body | null = null;
+let rackBody: Body | null = null,
+  railBody: Body | null = null,
+  pendingLogs = 0,
+  pendingRails = 0,
+  takenLogs = 0,
+  takenRails = 0,
+  dropGeneration = 0;
 const slot = new THREE.Vector3(),
   q0 = new THREE.Quaternion(),
   m4 = new THREE.Matrix4(),
@@ -82,16 +102,11 @@ const logAt = (n: number, out = slot) => {
 const railAt = (n: number, out = slot) => {
   const row = Math.floor(n / 8),
     c = n % 8;
-  const off = 1.15,
-    along = (c - 3.5) * 0.17;
-  return out.set(
-    rack.x + Math.cos(rack.yaw) * along + Math.sin(rack.yaw) * off * 0,
-    rack.y + 0.3 + Math.floor(Math.max(rack.logs, 1) / 6) * 0.27 + 0.28 + row * 0.18,
-    rack.z - Math.sin(rack.yaw) * along,
-  );
+  const along = RAIL_BAY + (c - 3.5) * 0.17;
+  return out.set(rack.x + Math.cos(rack.yaw) * along, rack.y + 0.32 + row * 0.18, rack.z - Math.sin(rack.yaw) * along);
 };
 export function drawRack() {
-  for (let k = 0; k < rack.logs; k++) setStackLog(rackedLogs, k, logAt(k), rack.yaw + Math.PI / 2);
+  for (let k = 0; k < Math.min(RACK_LOGS, rack.logs); k++) setStackLog(rackedLogs, k, logAt(k), rack.yaw + Math.PI / 2);
   rackedLogs.count = Math.min(RACK_LOGS, rack.logs);
   rackedLogs.visible = rack.on && rack.logs > 0;
   rackedLogs.instanceMatrix.needsUpdate = true;
@@ -100,13 +115,19 @@ export function drawRack() {
   for (let k = 0; k < Math.min(RACK_RAILS, rack.rails); k++) rackedRails.setMatrixAt(k, m4.compose(railAt(k), q0, one));
   rackedRails.count = rack.on ? Math.min(RACK_RAILS, rack.rails) : 0;
   rackedRails.instanceMatrix.needsUpdate = true;
+  if (railBody) {
+    const top = Math.max(0.6, 0.4 + Math.floor(Math.max(0, rackedRails.count - 1) / 8) * 0.18);
+    setShapes(railBody, [{ kind: 'box', hx: 0.86, hy: top / 2, hz: 1.3, offset: { x: 0, y: top / 2, z: 0 } }]);
+  }
 }
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 /** The rack stands by this frame, along the line behind it, on its side; none for a frame without one. */
 export function moveRack(st: StationRun | null) {
   const want = !!st?.spec.rack && st !== null;
   if (rackBody) removeBody(rackBody);
+  if (railBody) removeBody(railBody);
   rackBody = null;
+  railBody = null;
   rack.on = want;
   rackLook.visible = want;
   if (want) {
@@ -119,7 +140,7 @@ export function moveRack(st: StationRun | null) {
       q = besideLine(line, s, st.spec.side * 5.2);
       const y = railY(line, s);
       if (
-        [0, 2.4].every((r) =>
+        [0, 3].every((r) =>
           [
             [r, 0],
             [-r, 0],
@@ -144,7 +165,15 @@ export function moveRack(st: StationRun | null) {
       { x: q.x, y: rack.y + 0.8, z: q.z },
       q0.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, rack.yaw),
     );
+    const x = q.x + Math.cos(rack.yaw) * RAIL_BAY,
+      z = q.z - Math.sin(rack.yaw) * RAIL_BAY;
+    railBody = addStatic(
+      { kind: 'box', hx: 0.86, hy: 0.3, hz: 1.3, offset: { x: 0, y: 0.3, z: 0 } },
+      { x, y: rack.y, z },
+      q0,
+    );
     addFoot(q.x, q.z, rack.yaw, 1, 1.3);
+    addFoot(x, z, rack.yaw, 1, 1.4);
   }
   drawRack();
 }
@@ -156,6 +185,13 @@ export function rackAdd(logs: number, rails: number) {
 }
 /** Pieces off it for your back: the caller decides how many. */
 export function rackTake(logs: number, rails: number) {
+  // A corrected follower may already see a flight as settled. Its pickup must consume our reservation too.
+  const flyingLogs = Math.min(pendingLogs, Math.max(0, logs - rack.logs)),
+    flyingRails = Math.min(pendingRails, Math.max(0, rails - rack.rails));
+  pendingLogs -= flyingLogs;
+  pendingRails -= flyingRails;
+  takenLogs += flyingLogs;
+  takenRails += flyingRails;
   rack.logs = Math.max(0, rack.logs - logs);
   rack.rails = Math.max(0, rack.rails - rails);
   drawRack();
@@ -193,7 +229,16 @@ const cartLook = new THREE.Group();
 const cartLogs = logStackMesh(CART.load);
 cartLogs.removeFromParent();
 cartLook.add(cartLogs);
-const cartRailsMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 0.1, 2.4), flat('#8d9299'), CART.rails);
+const cartRailsMesh = LOOK.kit
+  ? kitBatch('rail', STEEL, CART.rails)
+  : new THREE.InstancedMesh(
+      new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z),
+      flat('#4c5058', 0.6),
+      CART.rails,
+    );
+cartRailsMesh.removeFromParent();
+cartRailsMesh.castShadow = true;
+cartRailsMesh.frustumCulled = false;
 cartRailsMesh.count = 0;
 cartLook.add(cartRailsMesh);
 const leg = { LOAD: 'load', OUT: 'out', DROP: 'drop', BACK: 'back', REST: 'rest', FORGE: 'forge' } as const;
@@ -205,6 +250,7 @@ export const cart = {
   load: 0,
   rails: 0,
   called: false,
+  auto: false,
   speed: 0,
 };
 export function loadCart(n: number) {
@@ -214,6 +260,7 @@ export function loadCart(n: number) {
 }
 export function callCart() {
   cart.called = true;
+  cart.auto = false; // An explicit whistle takes over the automatic stop without changing its cargo.
   // A whistle recalls even a loaded outbound cart; demand at the frontier is irrelevant.
   cart.leg = cart.d > FORGE_D ? 'back' : cart.d < FORGE_D ? 'out' : 'forge';
   cart.t = 0;
@@ -221,6 +268,22 @@ export function callCart() {
 }
 let activeStation: () => StationRun | null = () => null;
 export const setDepotFrame = (fn: () => StationRun | null) => void (activeStation = fn);
+/** Installed by pair.ts, which already owns forge/co-op dependencies; no reverse import cycle. */
+export const depotRails = { enabled: () => false, load: () => {} };
+export const automaticRails = () => {
+  const st = activeStation();
+  return (
+    job.rung.depot &&
+    !job.rung.trains &&
+    st?.spec.rack === 'cart' &&
+    (st.spec.id === 'Q4' || st.spec.id === 'Q5') &&
+    depotRails.enabled()
+  );
+};
+export const railsOwed = () => {
+  const st = activeStation();
+  return st?.spec.rack === 'cart' ? Math.max(0, st.wants('rails') - rack.rails - pendingRails - cart.rails) : 0;
+};
 const car: Car = makeCar({ hx: CART.hx, hz: CART.hz, top: CART.top }, cartLook, () => stepCart(FIXED), {});
 car.speedLimit = CART.speed * 1.5;
 export const cartPlatform = car.platform;
@@ -239,14 +302,14 @@ function drawLoad(n: number) {
   if (cartLogs.instanceColor) cartLogs.instanceColor.needsUpdate = true;
   cartRailsMesh.count = Math.max(0, Math.min(cartRailsMesh.instanceMatrix.count, cart.rails));
   for (let k = 0; k < cartRailsMesh.count; k++) {
-    here.set(((k % 8) - 3.5) * 0.16, CART.top + 0.3 + Math.ceil(n / 4) * 0.27 + Math.floor(k / 8) * 0.12, 0);
+    here.set(((k % 8) - 3.5) * 0.16, CART.top + 0.3 + Math.ceil(n / 4) * 0.27 + Math.floor(k / 8) * 0.18, 0);
     cartRailsMesh.setMatrixAt(k, m4.compose(here, new THREE.Quaternion(), one));
   }
   cartRailsMesh.instanceMatrix.needsUpdate = true;
-  // In co-op you ride the cargo, not inside it. Keep the original solo deck unchanged.
-  if (COOP) {
+  // Mixed cargo is solid in solo as well as co-op.
+  if (COOP || cart.rails > 0 || car.platform.top !== car.hy) {
     const cargoTop = cart.rails
-      ? 0.35 + Math.ceil(n / 4) * 0.27 + Math.floor((cart.rails - 1) / 8) * 0.12
+      ? 0.38 + Math.ceil(n / 4) * 0.27 + Math.floor((cart.rails - 1) / 8) * 0.18
       : n
         ? 0.3 + Math.floor((n - 1) / 4) * 0.27
         : 0;
@@ -268,10 +331,11 @@ function stepCart(dt: number) {
   cart.d += correction;
   nudge -= correction;
   const st = activeStation();
-  const owed = st?.spec.rack === 'cart' ? st.wants('logs') - rack.logs - cart.load : 0;
+  const owed = st?.spec.rack === 'cart' ? st.wants('logs') - rack.logs - pendingLogs - cart.load : 0;
+  const railJob = automaticRails() && railsOwed() > 0;
   switch (cart.leg) {
     case 'rest':
-      if ((owed > 0 || cart.called) && !job.rung.trains) {
+      if ((owed > 0 || railJob || cart.called) && !job.rung.trains) {
         cart.leg = 'load';
         cart.t = 0;
       }
@@ -281,7 +345,7 @@ function stepCart(dt: number) {
       if (cart.t >= 1 && !cart.load) {
         const n = Math.min(CART.load, Math.max(0, st ? st.wants('logs') - rack.logs : 0));
         cart.load = n;
-        if (!n && !cart.called) {
+        if (!n && !railJob && !cart.called) {
           cart.leg = 'rest';
           break;
         }
@@ -289,11 +353,13 @@ function stepCart(dt: number) {
         clank(car.x, car.z);
       }
       if (cart.t >= CART.loadS) {
+        if (railJob && !cart.called) cart.called = cart.auto = true;
         cart.leg = 'out';
       }
       break;
     case 'out': {
-      const to = cart.called && cart.d < FORGE_D ? FORGE_D : st ? stopFor(st) : cart.d;
+      // A snapshot nudge may cross the stop by centimetres; a called outbound cart still owes the forge stop.
+      const to = cart.called ? FORGE_D : st ? stopFor(st) : cart.d;
       cart.speed = Math.min(CART.speed, cart.speed + 3 * dt);
       cart.d = Math.min(to, cart.d + cart.speed * dt);
       if (cart.d >= to - 0.02) {
@@ -304,9 +370,17 @@ function stepCart(dt: number) {
       break;
     }
     case 'forge':
+      if (cart.auto && automaticRails() && railsOwed() > 0 && cart.rails < CART.rails) {
+        depotRails.load();
+        if (railsOwed() > 0 && cart.rails < CART.rails) {
+          cart.t = 0; // Actual forge stock is the limit, including when it is completely dry.
+          break;
+        }
+      }
       cart.t += dt;
       if (cart.t >= (cart.rails > 0 ? CART.leaveS : CART.forgeS)) {
         cart.called = false;
+        cart.auto = false;
         cart.leg = 'out';
       }
       break;
@@ -315,18 +389,29 @@ function stepCart(dt: number) {
       if (cart.t > 0.5 && (cart.load > 0 || cart.rails > 0) && rack.on) {
         const n = cart.load;
         const rails = cart.rails;
+        const generation = dropGeneration,
+          firstLog = rack.logs + pendingLogs,
+          firstRail = rack.rails + pendingRails;
+        pendingLogs += n;
+        pendingRails += rails;
         cart.load = 0;
         cart.rails = 0;
         drawLoad(0);
         here.set(car.x, car.y + 1, car.z);
         // They heave them over, in a stream, and they land on the rack.
         for (let k = 0; k < n; k++)
-          send('log', here, logAt(rack.logs + k, new THREE.Vector3()), {
+          send('log', here, logAt(firstLog + k, new THREE.Vector3()), {
             dur: 0.45,
             delay: k * 0.06,
             apex: 1.1,
             size: [1.6, 2.2],
             land: () => {
+              if (generation !== dropGeneration) return;
+              if (takenLogs > 0) {
+                takenLogs--;
+                return;
+              }
+              pendingLogs--;
               rackAdd(1, 0);
               if (k % 3 === 0) pop(Math.min(7, k / 3), 0.35);
               if (k === n - 1) {
@@ -336,13 +421,26 @@ function stepCart(dt: number) {
             },
           });
         for (let k = 0; k < rails; k++)
-          send('rail', here, rack.at, { dur: 0.45, delay: (n + k) * 0.06, apex: 1.1, land: () => rackAdd(0, 1) });
+          send('rail', here, railAt(firstRail + k, new THREE.Vector3()), {
+            dur: 0.45,
+            delay: (n + k) * 0.06,
+            apex: 1.1,
+            land: () => {
+              if (generation !== dropGeneration) return;
+              if (takenRails > 0) {
+                takenRails--;
+                return;
+              }
+              pendingRails--;
+              rackAdd(0, 1);
+            },
+          });
       }
       if (cart.t > 2.2) cart.leg = 'back';
       break;
     case 'back':
       cart.speed = Math.min(CART.speed, cart.speed + 3 * dt);
-      cart.d = Math.max(cart.called && cart.d > FORGE_D ? FORGE_D : 0, cart.d - cart.speed * dt);
+      cart.d = Math.max(cart.called ? FORGE_D : 0, cart.d - cart.speed * dt);
       if (cart.called && cart.d === FORGE_D) {
         cart.leg = 'forge';
         cart.t = 0;
@@ -410,6 +508,9 @@ export function snapCart() {
     cart.load = 0;
     cart.rails = 0;
     cart.called = false;
+    cart.auto = false;
+    dropGeneration++;
+    pendingLogs = pendingRails = takenLogs = takenRails = 0;
     drawLoad(0);
     return;
   }
@@ -427,6 +528,7 @@ export type DepotSave = {
   cartRails: number;
   called: boolean;
   speed?: number;
+  auto?: boolean;
 };
 function readCart(v: unknown) {
   const j = (v ?? {}) as Partial<DepotSave>;
@@ -437,6 +539,7 @@ function readCart(v: unknown) {
     load: count(j.load, CART.load) ? j.load : 0,
     rails: count(j.cartRails, CART.rails) ? j.cartRails : 0,
     called: j.called === true,
+    auto: j.auto === true && j.called === true,
     speed: num(j.speed) ? Math.max(0, Math.min(CART.speed, j.speed)) : cart.speed,
   };
 }
@@ -459,14 +562,16 @@ export function reconcileCart(v: unknown) {
 }
 sharedSlice('depot', {
   get: () => ({
-    logs: rack.logs,
-    rails: rack.rails,
+    // A correcting snapshot settles cargo already in flight, just as the frame's have+coming does.
+    logs: rack.logs + pendingLogs,
+    rails: rack.rails + pendingRails,
     d: +cart.d.toFixed(1),
     leg: cart.leg,
     t: cart.t,
     load: cart.load,
     cartRails: cart.rails,
     called: cart.called,
+    auto: cart.auto,
     speed: cart.speed,
   }),
   set: (v) => {
@@ -482,8 +587,11 @@ sharedSlice('depot', {
     };
     rack.logs = count(j.logs, 400) ? j.logs : 0;
     rack.rails = count(j.rails, 400) ? j.rails : 0;
+    dropGeneration++;
+    pendingLogs = pendingRails = takenLogs = takenRails = 0;
     Object.assign(cart, readCart(v));
     nudge = 0;
     drawLoad(cart.load);
+    drawRack();
   },
 });

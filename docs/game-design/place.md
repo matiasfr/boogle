@@ -40,8 +40,8 @@ All numbers are hypotheses until played, set with `node dev/economy/model.ts rou
    - **A proper axe:** an iron-banded chest with a blue shaft over it, at the village end of the path, beside the old oak. You can see which axe you've got while you swing it. Bigger, brighter, rings: **3 strokes, 5 logs a stroke** (2.5x the logs a swing, half again the logs a tree), with more chips and a little kick. Try it on the oak, right there.
    - **The forge, by hand:** its frame stands by its north wall. Logs roll in and its pieces drop, no scaling: 24 logs for the timber frame. Only the oak's on this side, so it's back over your bridge with 8 on your back.
    - **A pack frame:** a chest when the frame's up. A low canvas pack with a rolled top and two straps, below the shoulders so it stays clear of the follow view, **16 on your back**. Then 32 logs for walls and chimney, and the forge lights, roofless, and pours rails. The machine turns on the turntable for line 2.
-   - **Line 2, station 1:** 16 logs and 6 rails: a long walk for logs, a short one for rails. When it's laid, **the depot**: the camp builds its sawmill, and two little guys start shoving a cart of 24 logs down your track, over the turntable, to **a rack by the next frame**. You do the last carry. Rails stay yours to fetch from the forge.
-6. **The long second route.** Four more frames, each bigger: 24 logs and 12 rails, over the stem of the gorge; 16 and 12, to the quarry; 16 and 16, across the table; 24 and 24, out over the sea, 260 m of trestle in one go, all the way to Far Head. The rack saves the logs; the rails get further and further from the forge, about 100 s there and back by the last, and that's the point. Machine speeds rise, 5 m/s on line 1 to 9 m/s on the sea. Far Head gets rockets at both ends, a big "Far Head!" and lamps along the trestle.
+   - **Line 2, station 1:** 16 logs and 6 rails: a long walk for logs, a short one for rails. When it's laid, **the depot**: the camp builds its sawmill, and two little guys start shoving a cart of 24 logs down your track, over the turntable, to **a rack by the next frame**. You do the last carry. Rails stay yours to fetch from the forge through station 3, unless a partner loads the cart.
+6. **The long second route.** Four more frames, each bigger: 24 logs and 12 rails, over the stem of the gorge; 16 and 12, to the quarry; 16 and 16, across the table; 24 and 24, out over the sea, 260 m of trestle in one go, all the way to Far Head. **From station 4, the little guys bring rails too:** the same cart stops at the forge, loads real forge stock onto its logs, and heaves both onto the frontier rack. Rails land on their own low timber shelf beside the log cradle, visible even after the logs are taken. You still take the pieces and carry them into the frame. The cart holds 16 rails: station 4 fits one mixed shipment; station 5 gets a second rail shipment unless a partner brings the balance. An empty forge makes the cart wait for production. Bills, speeds and forge output are unchanged. Machine speeds rise, 5 m/s on line 1 to 9 m/s on the sea. Far Head gets rockets at both ends, a big "Far Head!" and lamps along the trestle.
 7. **Trains come last.** The forge has cast a boiler. It waits on the open apron beside the rail rack and return track, at local (-81, 5.4), rather than behind the forge. The mesh and pickup share that position. It's 546 m home, about 98 s, and the walk is meant to be felt. **Shoulder the boiler**, carry it over your bridge to the old train at the camp, **Fit the boiler**: it wakes as the machine did, with steam, wheels and whistle, and no words. Then the biggest show since the first path: **TRAINS**, and the stations drop into place all along both lines. Line 1's train runs camp to village, line 2's village to quarry to Far Head, at 20 m/s. With someone aboard a train runs straight through to the end of the line.
 8. **Stations and calling a train.** There are no platforms until there are trains, so what they're for is obvious: a platform with a bright edge, a roof, a bench, a signal and a board, one at each stop. **Stand on one and a train comes straight there:** the signal drops, it clanks, and the board says how long. No timetable to learn and nothing to operate. Otherwise trains shuttle with their cargo.
 9. **Cargo.** Timber crates land on the dock and the crane lifts each onto the forge: 8 of them put its **roof** on, the poles come down, and it pours rails twice as fast (hands started it, trains finish it). After that timber goes to the village's heap and the town answers at 6 and 16 crates, buildings rising on scaffolding. Stone from the quarry builds the stone street the same way. A crate sails to the first plot of each step-up.
@@ -101,9 +101,9 @@ Stage-by-stage audit of what the objective text or marker used to explain. These
 | Forge frame and chimney | Scaffolding, receiver/feeder and pieces assembling as the player supplies logs. |
 | Turn onto line 2; get rails | Turning machine and forge pouring rails onto the familiar rack. |
 | Line 2 station 1 | Receiver and material board, rail stub and survey stakes. |
-| Line 2 stations 2–3 | Log cart travels to the frontier rack; next receiver and laid track show the destination. Rails still come from the forge. |
+| Line 2 stations 2–3 | Log cart travels to the frontier rack; next receiver and laid track show the destination. Players still fetch rails from the forge unless a partner loads the cart. |
 | Hook and quarry gate | Device by the route, rings, slab and lever mechanism. |
-| Line 2 stations 4–5; glider and sea gate | Next receivers, tower's rings and summit device, sea gate and visible Far Head. |
+| Line 2 stations 4–5; glider and sea gate | From station 4, the little guys' cart brings forge rails with its logs and visibly unloads them onto the separate rail shelf beside the frame. The player does the final carry; the cart waits when forge stock runs dry. Next receivers, tower's rings and summit device, sea gate and visible Far Head remain the route cues. |
 | Far Head: head home | Rockets at the home end, continuous laid trestle and lamps running homeward. The route persists after the celebration; the reason to return remains a question. The optional Happy Clam sea-stack detour now has a visible return hook beside the trestle, within hook range and at rail height; it solves leaving the stack without a swim, not the reason to travel home. |
 | Find and shoulder the boiler | **Changed:** the actual boiler and pickup move from behind the forge to the open apron beside the rail rack and return track. No new text or symbol. |
 | Carry boiler to the old camp train | Existing rusty locomotive and nearby Fit the boiler interaction. The distant relationship between pickup and receiver is still weak; placement alone does not explain the repair. |
@@ -126,6 +126,8 @@ The forge rack holds 24 rails, including reserved slots for rails still flying o
 
 In co-op, after the depot opens and before trains, **Whistle for the cart** at the turntable calls it to the forge even when the far end needs no materials, reversing an outbound cart immediately. Its round trip can be ridden in either direction, loaded or empty. **Load the cart** sends up to 16 needed rails from the forge rack onto its logs; it leaves three seconds after loading (eight seconds if empty). Rails fly onto the frontier rack, and a partner can ride the cart. Bills stay fixed. Without `coop=1`, these verbs are absent.
 
+Automatic rail loading at Q4/Q5 uses that same cargo and loading path in solo and co-op. The co-op authority alone transfers forge stock; existing reliable take/load events carry it to partners. An explicit whistle takes over automatic dispatch, preserving the manual split. Additive `placeRailCart` capability presence enables automatic service only when all active co-op peers support it; a room with an older participating build keeps the existing manual loading path. Already loaded cargo finishes safely. This is prototype shared state and Local presentation, not lockstep. Snapshots include rails still unloading, invalidate stale landing callbacks and reconcile frontier rail counts as well as logs, so a correction cannot duplicate an in-flight shipment.
+
 Ride corrections preserve the rider's place on the deck. A car pose change faster than 1.5 times its cruise speed
 (13.5 m/s for the cart, 30 m/s for trains) is a relocation, never a collision
 velocity to inherit on leaving. Ordinary turns follow the new heading at at most 2 rad/s and ease into it, rather than snapping at a junction. The physical deck and its drawn pose turn together, so riders follow that same bounded turn. Explicit snapshot relocations still move the rider with the deck and clear correction velocity. The cart reconciles progress, leg, load and speed on every authority snapshot, so a
@@ -136,7 +138,17 @@ and dwell, so a follower does not independently stop at an intermediate halt whi
 The objective and automatic train call share one halt detector: entry keeps its existing bounds, while leaving requires
 another 0.4 m of clearance. Moving along the detection edge does not repeatedly ring the bell; leaving and returning does.
 
-Measured Q5 (3 November, local two-tab broker, real inputs, fixed 24-log/24-rail bill): **solo 162.40 s; two walkers 115.14 s; split 80.90 s**. Split is 49.8% of solo and 29.7% faster than two walkers, so capacity stays 16. Solo starts at the forge; both two-player modes start one at the forge and one at the frame, with empty backs and an empty frontier rack. The porter loads 16, then the unchanged Take rails verb picks up nine (the forge replenishes during the approach), double-jumps onto the solid cargo and rides; the other player carries from the frontier rack. No teleports after positioning. These are Q5 fixture times, not whole-run estimates.
+Historical Q5 measurement (3 November, local two-tab broker, real inputs, fixed 24-log/24-rail bill): solo 162.40 s; two walkers 115.14 s; split 80.90 s. The mixed-cart remeasurement uses the same bill and starting positions: solo at the forge, both two-player modes one at each end, empty backs and frontier rack. The forge-side walker/solo player still takes available rails before leaving, then uses frontier supply. The porter loads 16, takes nine on their back as the forge replenishes, double-jumps aboard, rides, and jumps off before walking to the frame. No teleports after positioning. Authority times, at measured 1x, one successful trial per strategy:
+
+| Q5 strategy | Historical before | Mixed cart | Change |
+| --- | ---: | ---: | ---: |
+| Solo | 162.40 s | 73.78 s | -88.62 s |
+| Two walkers | 115.14 s | 69.16 s | -45.98 s |
+| Split | 80.90 s | 75.80 s | -5.10 s |
+
+**Splitting no longer beats walking together:** it is 6.64 s (9.6%) slower than the walkers, and this trial is also 2.02 s slower than solo. No tuning was applied to restore that advantage. The smallest candidate to test next is a speed bonus only for a manually loaded cart with a rider, around 12–13 m/s instead of 9; the 273 m forge-to-Q5 leg could save roughly 7–9 s including acceleration. Automatic service, bills and forge output would stay as measured. This is an unimplemented proposal, not a claim that the split is fixed; it needs a repeat comparison and the owner's decision.
+
+Fresh before-build attempts are retained rather than substituted for the historical numbers: solo observed 160.86/162.46 s, but the manifests were invalidated by a plan-file write and then an external harness-checkout change respectively; walkers twice fell after an accidental cart ride, and split missed the forge stop. The new code fixes the forge-stop target under snapshot nudges. The existing split fixture now uses a real jump to dismount before asking its ground path planner to walk; its first after-run failed there. Successful after manifests: split `1793774770414-85885`, walkers `1793774914460-89372`, solo `1793775002116-91592`, under `.look/evidence/`. These fixture times are not whole-run estimates or human playtest timings.
 
 Deposit replies are matched to their sender and request, even after the active frame or temporary authority changes. A stalled tab does not refund accepted goods: rejected pieces (including the great beam) return once, and unanswered requests return when their authority actually leaves. This prevents a five-second stall from leaving the same logs both on a back and in the frame.
 
@@ -219,6 +231,39 @@ Most buildings are solid blocks you can't go inside; three you can (above).
 | Walked home | 1533 | |
 | **Trains** | 1597 (26:37) | boiler to the camp |
 | The pier out, the end | 1772 (29:32) | 27 s to carry its kit |
+
+**Mixed-cart model, 3 November:** `node dev/economy/model.ts round4 --json` retains the historical arithmetic; `node dev/economy/model.ts round4-cart --json` changes only Q4/Q5 to the 16 m rack carry and charges supply time. These are solo estimates in seconds from model start, not bot measurements.
+
+| Model beat | Before | Mixed cart | Change |
+| --- | ---: | ---: | ---: |
+| Q3 laid | 875.46 | 875.46 | 0.00 |
+| Q4 laid | 970.74 | 966.01 | -4.73 |
+| Q5 laid | 1230.02 | 1216.15 | -13.87 |
+| Trains unlock | 1365.45 | 1351.58 | -13.87 |
+
+This intentionally conservative variant starts each frame with the cart at camp and an empty forge, charges every shipment before the player's final carries, and credits no existing stock or overlap. Road lengths are 361/469 m; supply wait is `rails / 2 + (2 * batches - 1) * road / 9 + batches * 9.3`, with 24 logs/16 rails per cart and 3 s camp loading, 3 s forge departure and up to 3.3 s unloading. Q4/Q5 supply waits are 57.41/186.93 s; short-carry work is 16.71/25.06 s instead of 78.85/221.13 s. The small net gain exposes the cost of a second Q5 trip under that cold-start assumption. Real play can overlap delivery, production and carrying; the bot comparison below is the observation. The model also omits the ability detours. Train unlock is Q5 completion plus `546 / 5.6 + 190 / 5.6 + 4` for the trip home and boiler; the model's `trains.openS` includes the pier and must not be used as the unlock time.
+
+**Mixed-cart full bot, 3 November:** measured through the local broker, same bills and full route. These station beats mark the **start of laying**, unlike the model's completed stations. Seconds from the saved game clock:
+
+| Bot beat | Before | Mixed cart | Change |
+| --- | ---: | ---: | ---: |
+| Q3 starts laying | 1047.62 | 1046.70 | -0.92 |
+| Q4 starts laying | 1160.03 | 1121.60 | -38.43 |
+| Q5 starts laying | 1452.20 | 1342.55 | -109.65 |
+| Trains unlock | 1578.42 | 1468.75 | -109.67 |
+
+Both runs completed every expected bot action with no page or graphics errors. `npm run playthrough -- --compare .look/evidence/1793772548990-11068/run .look/evidence/1793774348050-66816/run` reproduces the comparison. The after bot uses frontier deliveries from Q4; earlier behavior is unchanged. Its walking share fell from 85% to 77%, but stationary time rose from 4:49 to 7:01, including a **1:49 Q5 shipment wait**. Thus the route is shorter overall, while the retained 16-rail capacity still leaves a noticeable second-trip wait. No capacity, speed, bill or forge-rate retune was made to hide that tradeoff. Whether seeing the shipment arrive feels like earned relief still needs the owner's playtest; this bot already knows where to go.
+
+**Committed-build repeat:** `1793776017482-40382` tested clean commit `150d782e`, with all expected actions, no errors/falls and an inspected end still. The repeat includes more startup waiting; do not replace the first measured run or hide that variance. Raw checkpoint seconds and changes from the same baseline:
+
+| Bot beat | Baseline | Committed repeat | Change |
+| --- | ---: | ---: | ---: |
+| Q3 starts laying | 1047.62 | 1088.38 | +40.77 |
+| Q4 starts laying | 1160.03 | 1163.27 | +3.23 |
+| Q5 starts laying | 1452.20 | 1384.27 | -67.93 |
+| Trains unlock | 1578.42 | 1510.52 | -67.90 |
+
+The repeat is already 41.68 s behind the first after-run at Q3. From Q3 to trains it takes 422.13 s, versus baseline 530.80 s and the first after-run 422.05 s: the affected interval improves by 108.67 s on the repeat. Q5 still waits 1:49; total stationary time is 7:54. Offline comparison: `npm run playthrough -- --compare .look/evidence/1793772548990-11068/run .look/evidence/1793776017482-40382/run`. The trusted harness changed between measurement rounds, with its exact version recorded in each manifest; these are observations, not a deterministic performance guarantee.
 
 **Each rung, before and after** (from `layout.ts` and the model's sums; bills held fixed): the axe doesn't cut much time (a 24-log job 65 m out, 80 s to 77 s, 3%) and isn't meant to: **12 presses to 5**, 8 logs in 2 swings where it took 4, 1.6 trees to 2.4. The pack: the forge's 32-log bill 170 m out, **4 trips to 2, 253 s to 129 s (49%)**, with line 2's first bill (22 pieces) also down to 2. The cart: station 3's logs, 350 m to the trees against 16 m to the rack, **223 s to 104 s for the job's walking (53%)**.
 

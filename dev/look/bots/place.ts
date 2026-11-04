@@ -11,6 +11,8 @@ import { carry, type Platform } from '../../../src/physics/platforms.ts';
 import type { Rock, Tree } from '../../../src/proto/place/chop.ts';
 import { nearest } from '../../../src/proto/place/nearest.ts';
 import { gettingItem, press as putAwayGot } from '../../../src/proto/place/got.ts';
+import { automaticRails } from '../../../src/proto/place/depot.ts';
+import { CART } from '../../../src/proto/place/layout.ts';
 
 const q = new URLSearchParams(location.search);
 
@@ -122,10 +124,12 @@ export async function play() {
         }
       }
       if (st.wants('rails') - b.rails > 0 && b.room() >= Math.min(st.wants('rails') - b.rails, 8)) {
-        if (place.rack.on && place.rack.rails > 0) {
+        if (place.rack.on && (place.rack.rails > 0 || automaticRails())) {
           await travel(place.rack.x, place.rack.z, 2.6);
+          const load = Math.min(st.wants('rails') - b.rails, b.room(), CART.rails);
+          if (!(await waitFor(() => place.rack.rails >= load, 180000, `${st.spec.id} cart rails arrived`))) return;
           press();
-          await wait(800);
+          await waitFor(() => b.incoming === 0, 4000, `${st.spec.id} mixed load on the back`);
         } else {
           await travel(place.RACK.x, place.RACK.z, 3.2);
           let w = 0;
@@ -141,7 +145,7 @@ export async function play() {
           // A delivery lands one log at a time. Taking its first log races the rest of the stream and
           // turns one carry into several trips (and sometimes a whole extra cart cycle).
           const load = Math.min(st.wants('logs') - b.logs, b.room());
-          await waitFor(() => place.rack.logs >= load, 60000, `${st.spec.id} rack load of ${load} logs`);
+          await waitFor(() => place.rack.logs >= load, 180000, `${st.spec.id} rack load of ${load} logs`);
           press();
           await waitFor(() => b.incoming === 0, 3000, `${st.spec.id} logs on the back`);
         } else await chopUntil(() => st.wants('logs') - b.logs <= 0);
