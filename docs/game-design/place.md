@@ -69,7 +69,7 @@ Now and then two of them near you stop and **chatter**: two to four short lines 
 
 **The day moves.** One day is 28 minutes of play (`DAY`, `look.ts`): mostly the accepted look's daylight with the sun swinging across, then a short golden hour, a brief moonlit night and a dawn. `&day=off` holds the morning.
 
-**The stowaway rides.** It stays small, and on a moving deck it hops up onto your shoulder, rather than chasing the train along the ground.
+**The stowaway rides.** It stays small, and on a moving deck it hops up onto your shoulder, rather than chasing the train along the ground. Partners see the same follower and shoulder pose through Owner cosmetic presence `placePet`; its animation follows their interpolated avatar.
 
 **You can sit.** On a train's or the machine's deck, with nothing nearer to press for, Interact reads **Sit**: you sit down on the deck in the avatars' seated pose, a little inboard if you were at the edge, and stay there through curves and stops. The stick does nothing and the camera works as ever, so you can look around. Interact (**Stand up**) or Jump gets you up.
 
@@ -104,6 +104,8 @@ Measured Q5 (3 November, local two-tab broker, real inputs, fixed 24-log/24-rail
 Deposit replies are matched to their sender and request, even after the active frame or temporary authority changes. A stalled tab does not refund accepted goods: rejected pieces (including the great beam) return once, and unanswered requests return when their authority actually leaves. This prevents a five-second stall from leaving the same logs both on a back and in the frame.
 
 If a partner leaves holding the great beam or the boiler, it returns to its pickup spot so the remaining player can finish. Already delivered beams and fitted boilers stay consumed. Owner presence `placeBig` identifies the carrier; snapshots propagate the return and clear stale cargo from a returning shoulder. Reconnecting tabs rejoin behind the surviving authority, including when the carrier used to be the authority. Serves DESIGN.md 8 (Designed for drop-in, drop-out).
+
+**See a partner's load.** Logs, rails, stone, the great beam, boiler and upgraded pack use the same worn meshes and avatar frame as your own. Logs keep `placeBack`, big cargo keeps `placeBig`, and the additive Owner cosmetic field `placeLoad` carries bounded rail/stone counts and the pack flag. None enters lockstep. Missing or invalid fields hide that part, and departure removes attachments and pets. Older builds ignore the new fields and still show legacy logs; new builds show whatever valid fields an older partner sends. Serves DESIGN.md 11 (Show, don't tell).
 
 The optional **9 m beam** starts at the village's west edge (868, -30). **Lift** an end or **Let go** with Interact. Alone, one end lifts while the other stays planted; two people carry it at walking speed. Being more than 11 m apart for a second drops it. A departing partner leaves it at its last midpoint, saved, with the remaining player's grip intact. Carrying its midpoint within 5 m of (944, 6) sets it on a fulcrum. Nothing in progression requires it or pays for it. Once set, it is a see-saw: land from a jump on one end to launch a partner on the other at 15 m/s (pads 3.6 m from its centre, 1.6 m reach; minimum landing speed 5 m/s; 0.5 s cooldown). Alone it only tilts and thumps. The neutral beam is solid; tilt is local and cosmetic, and each tab launches only its own player.
 

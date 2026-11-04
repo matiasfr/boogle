@@ -696,7 +696,7 @@ export const coop = {
     chopHooks.rock = (q: Rock) => msg({ k: 'rock', i: q.index, n: q.strokes });
     addPresenceField('placeCoop', () => (since >= 0 ? since : null));
     keepPresenceWhile(() => since >= 0);
-    // A partner's back reads at a glance: their logs on their avatar (the rails stay personal, a small glitch).
+    // Keep the legacy log count and cargo recovery fields; chop.ts draws the other worn loads.
     addPresenceField('placeBack', () => (back.logs > 0 ? back.logs : null));
     addPresenceField('placeBig', () => back.big);
     backSeam.remote = (peer) => peerBack.get(peer) ?? 0;

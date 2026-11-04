@@ -904,16 +904,39 @@ const critter = new THREE.Mesh(geoOf('critter'), giftMat);
 critter.visible = false;
 critter.castShadow = true;
 scene.add(critter);
-const crit = { on: false, x: 0, y: 0, z: 0, yaw: 0, hop: 0, t: 0, riding: false };
+const critState = () => ({ on: false, x: 0, y: 0, z: 0, yaw: 0, hop: 0, t: 0, riding: false });
+const crit = critState();
 const CRIT = { scale: 0.55, shoulderScale: 0.42, side: 0.3, up: 0.78 }; // small; and up on your shoulder, riding
-function updateCritter(dt: number) {
-  const b = me.body;
-  if (!crit.on || !b) return;
-  const p = b.interpolatedPosition;
+/** Owner cosmetic flag; motion follows the already interpolated partner avatar. */
+export type PlacePet = { riding: boolean };
+addPresenceField('placePet', (): PlacePet | null => (COOP && crit.on ? { riding: !!carry.on } : null));
+const peerPets = new Map<string, PlacePet>();
+const remotePets = new Map<string, { mesh: THREE.Mesh; state: ReturnType<typeof critState> }>();
+onRemotePresence((r, pr) => {
+  const v = pr.placePet;
+  if (
+    COOP &&
+    r.entered &&
+    v &&
+    typeof v === 'object' &&
+    !Array.isArray(v) &&
+    typeof (v as Record<string, unknown>).riding === 'boolean'
+  ) {
+    peerPets.set(r.peer, { riding: (v as PlacePet).riding });
+  } else peerPets.delete(r.peer);
+});
+function updateCritter(
+  dt: number,
+  crit: ReturnType<typeof critState>,
+  critter: THREE.Mesh,
+  p: { x: number; y: number; z: number },
+  yaw: number,
+  riding: boolean,
+) {
   // On a train it hops up onto your shoulder and stays small: no chasing a train along the ground and through its wheels.
-  if (carry.on) {
-    const sx = p.x + Math.cos(me.yaw) * CRIT.side,
-      sz = p.z - Math.sin(me.yaw) * CRIT.side,
+  if (riding) {
+    const sx = p.x + Math.cos(yaw) * CRIT.side,
+      sz = p.z - Math.sin(yaw) * CRIT.side,
       sy = p.y + CRIT.up;
     if (!crit.riding) crit.t = 0;
     crit.riding = true;
@@ -922,15 +945,15 @@ function updateCritter(dt: number) {
     crit.x += (sx - crit.x) * (u < 1 ? u : 1);
     crit.z += (sz - crit.z) * (u < 1 ? u : 1);
     crit.y += (sy - crit.y) * (u < 1 ? u : 1);
-    crit.yaw = me.yaw + Math.PI;
+    crit.yaw = yaw + Math.PI;
     critter.position.set(crit.x, crit.y + (u < 1 ? Math.sin(u * Math.PI) * 0.7 : 0), crit.z);
     critter.rotation.y = crit.yaw;
     critter.scale.setScalar(CRIT.shoulderScale);
     return;
   }
   crit.riding = false;
-  const bx = p.x + Math.sin(me.yaw) * 1.1 + Math.cos(me.yaw) * 0.7,
-    bz = p.z + Math.cos(me.yaw) * 1.1 - Math.sin(me.yaw) * 0.7;
+  const bx = p.x + Math.sin(yaw) * 1.1 + Math.cos(yaw) * 0.7,
+    bz = p.z + Math.cos(yaw) * 1.1 - Math.sin(yaw) * 0.7;
   const dx = bx - crit.x,
     dz = bz - crit.z,
     d = Math.hypot(dx, dz);
@@ -953,6 +976,33 @@ function updateCritter(dt: number) {
   critter.rotation.y = crit.yaw;
   const sq = 1 + (moving ? 0.1 * Math.cos(crit.t * 2) : 0.03 * Math.sin(crit.t));
   critter.scale.set(CRIT.scale / sq, CRIT.scale * sq, CRIT.scale / sq);
+}
+function updatePartnerPets(dt: number) {
+  for (const [peer, pet] of peerPets) {
+    const r = remotes.get(peer);
+    if (!r?.entered || !r.avatar) {
+      peerPets.delete(peer);
+      continue;
+    }
+    let view = remotePets.get(peer);
+    if (!view) {
+      const state = critState();
+      Object.assign(state, r.avatar.position); // first appearance starts beside the owner
+      const mesh = new THREE.Mesh(geoOf('critter'), giftMat);
+      mesh.name = 'place-pet';
+      mesh.castShadow = true;
+      scene.add(mesh);
+      view = { mesh, state };
+      remotePets.set(peer, view);
+    }
+    view.mesh.visible = r.avatar.visible;
+    updateCritter(dt, view.state, view.mesh, r.avatar.position, r.avatar.rotation.y, pet.riding);
+  }
+  for (const [peer, view] of remotePets) {
+    if (peerPets.has(peer)) continue;
+    view.mesh.removeFromParent(); // cached geometry/material belong to gifts, not this peer
+    remotePets.delete(peer);
+  }
 }
 
 // ---------------------------------------------------------------- the crate
@@ -1449,7 +1499,8 @@ export function updateGifts(dt: number, now: number) {
       boards.count = 0;
     }
   }
-  updateCritter(dt);
+  if (crit.on && me.body) updateCritter(dt, crit, critter, me.body.interpolatedPosition, me.yaw, !!carry.on);
+  updatePartnerPets(dt);
   updateWorn(me.avatar as Named | null, worn);
   for (const [peer, entry] of remoteClothes) {
     const avatar = remotes.get(peer)?.avatar ?? null;
