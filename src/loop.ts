@@ -100,10 +100,14 @@ export function mark(name: string) {
   record(name, t - cursor);
   cursor = t;
 }
-export function endFrame(name: string) {
+export function endFrame(name: string, rendered = true) {
   mark(name);
-  last.frames++; // main calls endFrame only after renderFrame returns; browser callbacks alone do not count
   frameId = 0;
+  if (!rendered) {
+    record('frame', cursor - frameStart);
+    return;
+  }
+  last.frames++; // completed renders, not callbacks skipped by the Local output cap
   last.ms = cursor - frameStart;
   record('frame', last.ms);
   last.topMs = 0;

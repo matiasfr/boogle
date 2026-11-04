@@ -5,6 +5,7 @@ import { BUILD } from '../../build-id.ts';
 import { agx, TSL, type N } from '../tone.ts';
 import { bindings, bindingDefaults, tuningEnabled, type Value } from './live.ts';
 import { toySkyEnabled } from './flags.ts';
+import { graphicsOverrides } from '../../graphics-settings.ts';
 
 export const LOOK_STORAGE = 'boogle.dev.looks.v1';
 export const LOOKS = {
@@ -115,9 +116,12 @@ function apply() {
   trimNode.value = trims[selected];
   lift.value = preset.lift;
   expected.clear();
+  const graphics = graphicsOverrides();
   for (const [key, value] of settings(selected)) {
     // Resolution is a device choice, not a look. Restore sky only if it was deliberately edited.
     if (key.startsWith('quality.')) continue;
+    // Explicit cost switches survive look selection; ordinary Water tweaks still reset with the look.
+    if (key === 'post.bloom' && graphics.bloom !== undefined) continue;
     const binding = bindings.get(key);
     if (binding && !same(binding.get(), value)) binding.set(clone(value));
     expected.set(key, clone(value));

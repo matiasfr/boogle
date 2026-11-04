@@ -8,6 +8,7 @@
 // (dev/scenarios/look-lab.ts). bench() measures the cost of a frame by rendering batches back to back (see below).
 import './look-lab.css';
 import { onFrame } from '../loop.ts';
+import { registerGraphics } from '../graphics-settings.ts';
 import { Vector2 } from 'three/webgpu';
 import { renderer, renderFrame, MAX_DPR } from '../render/scene.ts';
 import { buildPost, updatePostUniforms, postU, type PostFlags } from './look-post.ts';
@@ -70,6 +71,8 @@ export const PRESETS: Record<string, string[]> = {
 
 const on = new Set<string>();
 let postKey = '';
+let foliageEnabled = true;
+let effectsEnabled = true;
 
 // Cascades can only be chosen at load: three builds the sun's shadow node once, with the first program that uses
 // it. Switching them later reloads the page with the layers in the URL.
@@ -89,18 +92,18 @@ function apply() {
   setShadows(on.has('soft'), on.has('csm'));
   setDetail(on.has('detail'));
   setSway(on.has('sway'));
-  setGrass(on.has('grass'));
+  setGrass(foliageEnabled && on.has('grass'));
   setRim(on.has('rim'), on.has('plastic'));
   setToon(on.has('toon') ? 'toon' : on.has('paint') ? 'paint' : 'off');
   const f: PostFlags = {
-    ao: on.has('ao'),
-    ssgi: on.has('ssgi'),
-    taa: on.has('taa'),
-    bloom: on.has('bloom'),
-    outline: on.has('outline'),
-    softline: on.has('softline'),
-    grade: on.has('grade'),
-    tilt: on.has('tilt'),
+    ao: effectsEnabled && on.has('ao'),
+    ssgi: effectsEnabled && on.has('ssgi'),
+    taa: effectsEnabled && on.has('taa'),
+    bloom: effectsEnabled && on.has('bloom'),
+    outline: effectsEnabled && on.has('outline'),
+    softline: effectsEnabled && on.has('softline'),
+    grade: effectsEnabled && on.has('grade'),
+    tilt: effectsEnabled && on.has('tilt'),
   };
   const key = JSON.stringify(f);
   if (key !== postKey) {
@@ -241,6 +244,40 @@ const params = new URLSearchParams(location.search);
   set([...ids]);
 }
 if (params.has('lookpanel') && params.get('lookpanel') === '0') panel.remove();
+registerGraphics({
+  id: 'foliage',
+  label: 'Lab grass',
+  choices: [true, false],
+  default: true,
+  applyMode: 'live',
+  cost: 'decorative draw and CPU update',
+  skips: 'Skips the existing 80,000-blade grass draw and update; resource trees remain.',
+  available: () => (on.has('grass') ? null : 'The current lab look has no grass field.'),
+  read: () => foliageEnabled,
+  apply(value) {
+    foliageEnabled = value === true;
+    setGrass(foliageEnabled && on.has('grass'));
+  },
+});
+registerGraphics({
+  id: 'lab-effects',
+  label: 'Lab post effects',
+  choices: [true, false],
+  default: true,
+  applyMode: 'rebuild',
+  cost: 'extra passes and fragment work',
+  skips: 'Bypasses the selected lab post graphs; material-strength controls are not included.',
+  hitch: 'Rebuilding the selected post chain may compile pipelines.',
+  available: () =>
+    ['ao', 'ssgi', 'taa', 'bloom', 'outline', 'softline', 'grade', 'tilt'].some((id) => on.has(id))
+      ? null
+      : 'The current lab look has no post effects.',
+  read: () => effectsEnabled,
+  apply(value) {
+    effectsEnabled = value === true;
+    apply();
+  },
+});
 
 function toggleEra() {
   era.target = era.target ? 0 : 1;
@@ -266,7 +303,7 @@ onFrame(
     postU.eraDesat.value = era.mix * 0.45;
     updateRim(dt);
     updatePostUniforms();
-    if (on.has('grass')) updateGrass();
+    if (foliageEnabled && on.has('grass')) updateGrass();
   },
   { phase: 'late', order: 2900, name: 'look-lab' },
 );

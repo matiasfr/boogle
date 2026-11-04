@@ -27,13 +27,20 @@
   submission/work, not GPU execution; adding GPU render and compute does not give end-to-end latency.
   **Measure 5 seconds** captures a bounded real-frame sample on the owner's iPad; **Copy** copies JSON, including
   start/end view and settings, with a selectable fallback if clipboard access fails. Missing timestamps show
-  **unavailable**, never zero. Frame-tagged timestamp results are deduplicated; reports include sample IDs,
-  missing frames and partial context coverage. Keep the tab visible (hiding invalidates a captured sample).
+  **unavailable**, never zero. Render, compute and combined GPU timings are earliest-start to latest-end
+  **spans**, including intervening gaps, never sums of pass timers. Frame-tagged results are deduplicated;
+  non-advancing raw timestamp ranges are stale and excluded. Reports include sample IDs, missing frames,
+  stale frames and partial context coverage. Keep the tab visible (hiding invalidates a captured sample).
   Timestamp tracking and the observer add debug overhead only behind the flag; no extra `renderFrame()` calls
   are made. The CPU table remains at `window.boogle.prof.table()`. Adapter features/limits are logged once;
   `?gpuinfo=1` displays them without Web Inspector ([gpu-info.ts](../../debug/gpu-info.ts)).
   `npm run perf` prints CPU sections, and `npm run hitches` names the slowest section of each hitch frame.
   `npm run hitches -- --allocs` adds JS heap allocated per frame and the functions that allocate most.
+- Dev's **Graphics → Measure on/off** uses this profiler through `debug/dev/performance.ts`: prepare both
+  variants, require advancing completed frames during warm-up, then on/off/off/on samples at fixed resolution
+  and Display cadence. Route/camera/pixels/unrelated settings must match, and prior overrides restore in
+  `finally`. Reload-only switches require separate matched pages. Preserve the contention label; repeat
+  measurements do not prove exclusive GPU use. [Mac observations and limits](../../../docs/research/graphics-switch-costs.md).
 - `npm run hitches` flies a tour (views, caves, lighthouse, sunset and night, particles, a held throw, swapping what you hold) and
   lists every frame over 33 ms with what changed in it (programs, geometries, textures); use it after touching
   materials or anything lazily built.

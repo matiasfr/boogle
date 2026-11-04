@@ -11,6 +11,8 @@ import { waterLighting, type Ocean, type WaterSky } from './surface.ts';
 import { TSL, type N } from './tsl.ts';
 import { UNDER } from './tuning.ts';
 import { derived, scalar, tuningEnabled } from './live.ts';
+import { registerGraphics } from '../../graphics-settings.ts';
+import { devEnabled } from '../../dev-preferences.ts';
 
 const { Fn, If, Loop, abs, clamp, cos, dot, exp, float, floor, fract, instanceIndex, length, max, min, mix } = TSL;
 const { mod, normalize, pow, refract, rtt, select, sin, smoothstep, storage, storageTexture, texture, textureStore } =
@@ -104,6 +106,35 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
   const active = uniform(false),
     near = uniform(false),
     full = uniform(false);
+  const shaftsEnabled = uniform(true),
+    lensEnabled = uniform(true);
+  const unregisterShafts = registerGraphics({
+    id: 'shafts',
+    label: 'Underwater shafts',
+    choices: [true, false],
+    default: true,
+    applyMode: 'live',
+    cost: 'half-resolution pass and composite samples',
+    skips: 'Skips the shaft target update and four-tap composite; water boundary and fog remain.',
+    hitch: 'If disabled at startup, its first enabled draw can compile the deferred shaft pipeline.',
+    read: () => shaftsEnabled.value,
+    apply: (value) => {
+      shaftsEnabled.value = value === true;
+    },
+  });
+  const unregisterLens = registerGraphics({
+    id: 'lens',
+    label: 'Wet lens droplets',
+    choices: [true, false],
+    default: true,
+    applyMode: 'live',
+    cost: 'fragment arithmetic',
+    skips: 'Branches around droplet evaluation/distortion. Shared 64×36 boundary/depth compute remains.',
+    read: () => lensEnabled.value,
+    apply: (value) => {
+      lensEnabled.value = value === true;
+    },
+  });
   const invProj = uniform(camera.projectionMatrixInverse),
     camWorld = uniform(camera.matrixWorld);
   const camPos = uniform(camera.position),
@@ -227,7 +258,9 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
     If(active, () => {
       const wet = wetState.element(0).y;
       const drop = vec3(0).toVar();
-      If(wet.greaterThan(0.001), () => drop.assign(droplets(at, wet, size.x.div(size.y), size.y)));
+      If(devEnabled ? lensEnabled.and(wet.greaterThan(0.001)) : wet.greaterThan(0.001), () =>
+        drop.assign(droplets(at, wet, size.x.div(size.y), size.y)),
+      );
       const atDrop = clamp(at.add(drop.xy), vec2(0), vec2(1)).toVar();
       col.assign(color.sample(atDrop).level(0).rgb);
       If(near, () => {
@@ -260,7 +293,9 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
           If(body.equal(1), () => fog.assign(deepWater(dir).mul(exp(waterAbsorption().mul(max(d, 0)).mul(-0.5)))));
           const trans = exp(waterAbsorption().add(scattering).mul(dist).negate());
           col.assign(color.sample(sampleAt).level(0).rgb.mul(trans).add(fog.mul(trans.oneMinus())));
-          If(body.equal(1), () => col.addAssign(waterSun().mul(upsample(sampleAt, dist)).mul(shaftStrength)));
+          If(devEnabled ? shaftsEnabled.and(body.equal(1)) : body.equal(1), () =>
+            col.addAssign(waterSun().mul(upsample(sampleAt, dist)).mul(shaftStrength)),
+          );
           if (tuningEnabled) col.mulAssign(exposure);
         });
         col.mulAssign(meniscus);
@@ -293,7 +328,7 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
       // Both branches are conservative: ±4 m exceeds the default near-lens wave envelope.
       full.value = body.value === 1 && camera.position.y < level.value - UNDER.nearHeight;
       renderer.getDrawingBufferSize(size.value);
-      shafts.textureNeedsUpdate = !initialized || (near.value && body.value === 1);
+      shafts.textureNeedsUpdate = shaftsEnabled.value && (!initialized || (near.value && body.value === 1));
       if (!active.value && initialized) return;
       initialized = true; // prime the lens kernel and shaft target on the loading frame, before the first dive
       camera.updateMatrixWorld();
@@ -307,6 +342,8 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
       full: full.value,
     }),
     dispose() {
+      unregisterShafts();
+      unregisterLens();
       lens.dispose();
       wetState.value.dispose();
       lensPass.dispose();

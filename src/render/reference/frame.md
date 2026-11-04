@@ -23,6 +23,9 @@
   node from `scenePass` (`scenePass.getTextureNode()`, MRT outputs), assign `pipeline.outputNode`, and set
   `pipeline.needsUpdate = true`. Each full-screen effect costs fill on phones: measure it on a real device, and plan
   for a quality setting rather than turning it on for everyone.
-- [`features/adaptive-res.ts`](../../features/adaptive-res.ts) moves the pixel ratio between 0.6x and 1x of
-  `min(devicePixelRatio, 2)` from the frame time, starting where this device last settled. Don't call `setPixelRatio`
-  elsewhere.
+- [`quality.ts`](../quality.ts) owns resolution after scene initialization. Adaptive resolution requests 0.6x–1x
+  of `min(devicePixelRatio, 2)` and water requests its ceiling: the scene uses their minimum, never their product.
+  Dev can override the adaptive request with a fixed scale. Output post retains the canvas resolution. Do not call
+  `setPixelRatio` or `scenePass.setResolutionScale` from other owners. The Local frame cap gates only the final
+  `renderFrame()`; every callback still runs physics, input, networking, water FFT/queries and the adaptive observer.
+  Skipped draws close profiling's callback state without incrementing its completed-render count.

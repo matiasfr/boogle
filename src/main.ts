@@ -2,6 +2,7 @@ import './dev-preferences.ts';
 import './style.css';
 import * as THREE from 'three/webgpu';
 import { scene, camera, renderer, rendererReady, renderFrame } from './render/scene.ts';
+import { shouldRender } from './render/quality.ts';
 import { precompile, gpuDone, shadersMark } from './render/precompile.ts';
 import { createTerrainMesh } from './island/terrain.ts';
 import { createWaterMesh, waterReady } from './render/water-render.ts';
@@ -54,8 +55,9 @@ function frame(now = performance.now()) {
   runFrame('world', ctx);
   runFrame('update', ctx);
   runFrame('late', ctx);
-  renderFrame();
-  endFrame('main: render (CPU)');
+  const draw = shouldRender(now);
+  if (draw) renderFrame();
+  endFrame('main: render (CPU)', draw);
 }
 
 // The network and the lobby do not wait for the GPU. Only the first frame does (renderer.render throws until init), and

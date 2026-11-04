@@ -7,6 +7,7 @@ const keys = [
   'boogle.dev.camera.v1',
   'boogle.water-tuning.v1',
   'boogle.dev.water-ui.v1',
+  'boogle.dev.graphics.v1',
   'boogle.dev.looks.v1',
 ];
 const debugFlags = [
@@ -23,6 +24,7 @@ const debugFlags = [
   'test',
   'scenario',
   'destination',
+  'graphicsMsaa',
   'lookPreset',
 ];
 export function clearDevPreferences() {

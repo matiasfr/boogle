@@ -4,6 +4,7 @@
 import * as THREE from 'three/webgpu';
 import { renderer } from '../scene.ts';
 import { TSL, type N } from './tsl.ts';
+import { registerGraphics } from '../../graphics-settings.ts';
 
 const { Fn, abs, clamp, float, floor, log2, max, min, mix, normalize, positionGeometry, refract, texture, uniform } =
   TSL;
@@ -115,6 +116,20 @@ export function createCaustics(slope: N, layer: number, resolution: number, scal
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const savedColor = new THREE.Color();
   let wasFlat = false;
+  let enabled = true;
+  const unregister = registerGraphics({
+    id: 'caustics',
+    label: 'Caustics producer',
+    choices: [true, false],
+    default: true,
+    applyMode: 'live',
+    cost: 'extra passes',
+    skips: 'Clears to flat illumination once, then skips producer draws and mip work; receiver sampling remains.',
+    read: () => enabled,
+    apply: (value) => {
+      enabled = value === true;
+    },
+  });
   const sample: CausticSample = (entryXZ, depth, lod) =>
     Fn(() => {
       const uv = entryXZ.div(PERIOD);
@@ -131,7 +146,7 @@ export function createCaustics(slope: N, layer: number, resolution: number, scal
     passes: 2,
     draws: 3,
     update(sunDirection: THREE.Vector3) {
-      const up = sunDirection.y > 0;
+      const up = enabled && sunDirection.y > 0;
       if (!up && wasFlat) return;
       wasFlat = !up;
       const previous = renderer.getRenderTarget();
@@ -157,6 +172,7 @@ export function createCaustics(slope: N, layer: number, resolution: number, scal
       }
     },
     dispose() {
+      unregister();
       for (const mesh of meshes) {
         mesh.geometry.dispose();
         mesh.material.dispose();

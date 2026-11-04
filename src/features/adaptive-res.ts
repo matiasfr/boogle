@@ -13,7 +13,7 @@
 // because the frame's dt stops at 50 ms, which would hide the slowest devices. A ratio that steps up and is slow again
 // within 10 s doubles the wait before the next try (up to a minute), so a device on the edge settles instead of swinging
 // every few seconds.
-import { renderer, MAX_DPR, FIXED_DPR } from '../render/scene.ts';
+import { MAX_DPR, FIXED_DPR, setAdaptiveResolution } from '../render/quality.ts';
 import { onFrame } from '../loop.ts';
 import { isTouch } from '../constants.ts';
 
@@ -60,7 +60,7 @@ let ratio = MAX,
 
 function apply(r: number) {
   ratio = Math.min(MAX, Math.max(MIN, r));
-  renderer.setPixelRatio(ratio); // resizes the drawing buffer and leaves the canvas's CSS size alone
+  setAdaptiveResolution(ratio / MAX); // the shared owner combines this request with the water ceiling and Dev override
   slow = fast = 0;
   sinceChange = 0;
 }
