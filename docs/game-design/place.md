@@ -578,15 +578,25 @@ included explicitly rather than accepting `H`'s exterior −6 fallback as real g
 instead of evicting a visible shore. Bed/coast stays separate from projected obstacles used by wave shelter.
 This registration does not change the current sea or Round 4 terrain.
 
-`?proto=place&water=new` uses the same staged replacement sea as [home](island.md), sampling the actual gorge/shore
-provider. The old crossing material is hidden and its outer rectangles are not created while this opt-in sea is active;
-the normal page keeps them. The fixed late-morning atmosphere and metered AgX described with home water replace
-the place sky/light cycle on this path; existing camera clip distances, fog range, terrain and material palette remain.
-In this opt-in, swimming follows bounded asynchronous samples of those waves, and splash depth uses the registered
+The default page and `?proto=place` use the staged replacement sea, sampling the actual gorge/shore provider
+(owner, 4 November: “Switch default instead”). `water=old` restores the legacy sea and cycle; `water=new`
+remains valid. Classic home and other prototypes retain their defaults; the separate `proto=water` demo
+continues to own its own sea. No old sea, prototype or seam is removed by this partial step-7 switch.
+The old crossing material is hidden and its outer rectangles are not created while new water is active.
+One late-morning atmosphere bake (`tod=0.24`) completes behind loading, with metered **Neutral** output.
+It replaces the moving day/night sky, sun/moon billboards and faceted clouds; there is no sunset or night
+on this path. Night-gated fireflies and lighthouse beams remain off wherever those systems are present;
+future day/night-only activities need deliberately chosen times. Existing camera clip distances, fog range,
+terrain and material palette remain. Swimming follows bounded asynchronous samples of those waves, and splash depth uses the registered
 bed rather than the home island. Query-age limits, fallback and diagnostics are described with [home water](island.md).
 The beach ball's existing home-island return bounds remain unchanged; this does not introduce a place ball toy.
 
-With the opt-in, the terrain includes its real submerged triangles and receives wave-driven caustics plus swash wetness
+Surface swimming is automatic. Fast falls (at least 14 m/s) retain downward momentum for a plunge, then
+buoyancy returns the player to the surface; there are no manual dive controls or breath mechanics.
+The underwater look, marine snow and surfacing droplets remain when the camera goes under. These are
+existing new-water behaviors, not new gameplay tuning for this switch.
+
+With new water, the terrain includes its real submerged triangles and receives wave-driven caustics plus swash wetness
 through material patches, preserving the look's colour/normal nodes. Only built trestle legs register water contacts;
 resetting/removing their solids removes the corresponding contacts. Their analytic foam/spray footprints do not rebake
 the shore atlas and never treat bridge decks as seabed. Dry bank/deck surfaces remain dry receivers.

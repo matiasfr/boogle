@@ -2,6 +2,15 @@
 
 ## Goal
 
+**4 November owner override — default Place only:** “Switch default instead”. For tonight's human replay,
+new water is enabled on the default Place route and `proto=place` without a water flag. `water=old` explicitly
+selects the legacy production sea; `water=new` remains an opt-in on classic home and other routes. Classic
+home and other prototypes keep their defaults. The retained `proto=water` demo owns its separate sea and
+continues to ignore the production-water selector; changing that demo would exceed this switch.
+This is only the default-switch part of step 7: delete nothing, retain all old-sea/prototype seams, keep
+Neutral, and leave the remainder of step 7 plus step 8 documentation/acceptance open. This supersedes the
+earlier instruction to wait until after the replay. No terrain, gameplay, pacing or copy changes are included.
+
 Replace the sea on the default Round 4 place and the classic home island with the water proved by `?proto=water`, including its waves, shore response and below-water treatment, using the real terrain. Serves DESIGN.md **Show, don't tell** (the visible surface is the water you enter), **Toys before chores** and **Small and readable**; physics remains **Owner**, never Lockstep.
 
 **Approved through steps 1–6 on 3 November 2026.** Steps 7–8 await review. **4 November:** the owner chose Neutral for this route for now, superseding the metered AgX named next and below; AgX stays a comparison. Step 4 started that day behind `water=new`, and the default-sea switch waits until after that night's replay. The owner's subsequent call supersedes the original sky recommendation below: under `water=new`, bake the demo atmosphere **once behind loading**, frozen at late morning (`tod=0.24`), and use metered AgX from `render/tone.ts`. The real light follows that fixed sun. The old path retains Neutral and its 20-minute cycle. Retain `.25` spectral energy, mobile 0.6 world resolution and desktop high. No `scene.ts` edits, push, ship or external network access. Do not graduate or redesign Round 4 along with the water.
@@ -138,6 +147,9 @@ Initial acceptance: sustained 60 fps target in the actual game, report mean/p95 
 Account for the ten FFT dispatches; high caustics' two raster targets, three splat draws and 17 internal mip draws; one colour and one depth snapshot plus pass resumptions; and near-water lens compute, one half-resolution shaft draw and one snow draw. The new query compute/readback is additional and must be measured. The two exposure passes and atmosphere cube/PMREM work do not graduate under the recommended sky/tone path. No savings are promised until measured in place. If insufficient, first tune measured resolution/effect costs with visible comparisons; do not lower wave energy, mesh quality or MSAA just to meet a guessed budget.
 
 ## Steps
+
+Step 7 is partial under the 4 November override above; its original removal scope below is **not authorized**
+for this replay switch. Step 8 remains open. Current switch verification is recorded separately below.
 
 Every numbered item is an implementation commit or small group of commits **after approval**, leaves `npm run check` green, formats only changed files, and updates affected as-built docs in the same commit. No new unit tests or scenarios for this Local rendering/feel work. Use existing diagnostics and harnesses; no source edits during a capture.
 

@@ -23,6 +23,7 @@ import { waterField } from '../../physics/water-field.ts';
 import { peopleChanged, sendPresence, setLocalPresence } from '../../netplay/net.ts';
 import { input, inputState } from '../../player/input-state.ts';
 import { cam, me } from '../../player/state.ts';
+import { newWaterEnabled } from '../../proto/flags.ts';
 
 export { cam, me };
 setLocalPresence(me);
@@ -37,7 +38,8 @@ const LAUNCH_STEER_TIME = 0.1;
 const GROUND_STEER_TIME = 0.1 + FIXED;
 const MAX_FALL = 20; // m/s: see catchFallThrough in src/physics/physics.ts
 // Owner physics only; the old sea keeps its existing forces.
-const plungeEnabled = q.get('water') === 'new';
+// The raw opt-in preserves the retained demo's existing behavior too.
+const plungeEnabled = newWaterEnabled || q.get('water') === 'new';
 const PLUNGE = {
   entrySpeed: 14, // m/s downward: above a normal jump or low-bank hop
   surfaceEntrySpeed: 1, // m/s: slow entries lose their downward momentum at the surface

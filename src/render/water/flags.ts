@@ -1,10 +1,11 @@
 // Temporary graduation gate. Shared without importing the sea's resource owner or terrain.
-import { protoOn } from '../../proto/flags.ts';
+import { newWaterEnabled } from '../../proto/flags.ts';
 
-export const newWaterEnabled = new URLSearchParams(location.search).get('water') === 'new' && !protoOn('water');
+export { newWaterEnabled } from '../../proto/flags.ts';
+
+const query = new URLSearchParams(location.search);
 
 // Local look experiment; never affects the retained demo or the flag-off shader graphs.
-const query = new URLSearchParams(location.search);
 export const toySkyEnabled = newWaterEnabled && query.get('sky') === 'toy';
 export const toyWaterEnabled = toySkyEnabled && query.get('toyWater') !== 'off';
 export const toyNeutral = toySkyEnabled && query.get('toyTone') === 'neutral';
