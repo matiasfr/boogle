@@ -217,15 +217,41 @@ export function prepareDevStage(id: keyof typeof devStages) {
 export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
   const box = document.createElement('div');
   box.className = 'place-proto';
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.textContent = 'Test';
+  const buttons = document.createElement('div');
+  buttons.className = 'place-proto-buttons';
+  let expanded = false;
+  try {
+    expanded = localStorage.getItem('place-test-panel') === 'open';
+  } catch {
+    // Storage may be unavailable in private browsing.
+  }
+  const show = () => {
+    buttons.hidden = !expanded;
+    toggle.setAttribute('aria-expanded', String(expanded));
+  };
+  toggle.addEventListener('click', () => {
+    expanded = !expanded;
+    show();
+    try {
+      localStorage.setItem('place-test-panel', expanded ? 'open' : 'closed');
+    } catch {
+      // The panel still works without storage.
+    }
+  });
+  show();
+  box.append(toggle, buttons);
   const btn = (text: string, fn: () => void) => {
     const e = document.createElement('button');
     e.type = 'button';
     e.textContent = text;
     e.addEventListener('click', fn);
-    box.append(e);
+    buttons.append(e);
   };
   btn(coop.on ? 'Start over (both)' : 'Start over', () => {
-    if (coop.on) return coop.askStartOver(box.firstElementChild as HTMLElement);
+    if (coop.on) return coop.askStartOver(buttons.firstElementChild as HTMLElement);
     a.startOver();
   });
   btn('Skip the walk', skipWalk);

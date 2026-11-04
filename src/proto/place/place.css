@@ -72,6 +72,12 @@ body:not(.playing) .place-proto {
   box-shadow: 0 3px 0 var(--ink);
   cursor: pointer;
 }
+.place-proto-buttons:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
 
 /* The numbers: logs, kilometres, town and money, a comic score. Small, and off to one side. */
 .place-nums {
