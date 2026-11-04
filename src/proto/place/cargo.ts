@@ -10,12 +10,24 @@ import { thump, whistle } from '../../render/machine-sfx.ts';
 import { protoCount } from '../count.ts';
 import { playMark } from '../mark.ts';
 import { fanfare, knock } from '../minis/common.ts';
-import { clearCrates, deckFree, drawHeaps, hopOff, hopOn, hopTo, nextSlot, topSlot, type Kind } from '../net/crates.ts';
+import {
+  clearCrates,
+  deckFree,
+  drawHeaps,
+  hopOff,
+  hopOn,
+  hopTo,
+  nextSlot,
+  putCrate,
+  topSlot,
+  type Kind,
+} from '../net/crates.ts';
+import { back } from './chop.ts';
 import { shakeView, trainsShow, wakeShow, type Waker } from './celebrate.ts';
 import { coop } from './coop.ts';
 import { rack, rackAdd } from './depot.ts';
 import { cheerAround, setCamp, setRiders } from './folk.ts';
-import { craneBusy, craneLift, crateIn, nextDrop, roofed } from './forge.ts';
+import { craneBusy, craneClear, craneLift, crateIn, nextDrop, roofed } from './forge.ts';
 import { halts } from './halts.ts';
 import { TUNE, VILLAGE } from './layout.ts';
 import { count, job, num, save, sharedSlice } from './job.ts';
@@ -41,6 +53,61 @@ function make(l: LineRun, now: number) {
 }
 /** The pier's kit goes out on the first train from the village: 8 crates. Each is 4 rails and 4 logs. */
 const KIT = { crates: 8, rails: 4, logs: 4 };
+// A slot owns its goods from boarding until they LAND at the destination. Flights are only a view;
+// even after hopOff frees its mesh slot, a save still owns that crate here.
+export type TrainCargo = { kind: Kind; logs: number; rails: number };
+const loads: (TrainCargo | null)[][] = lines.map((l) => l.train.tr.load.held.map(() => null));
+const unloading = lines.map(() => new Set<number>());
+let legacyCargo = false;
+let craneCargo = false;
+sharedSlice('craneCargoV1', {
+  get: () => craneCargo,
+  set: (v) => {
+    craneCargo = v === true;
+  },
+});
+export function resetCargo() {
+  for (const load of loads) load.fill(null);
+  trainsSaved = [];
+  legacyCargo = false;
+  craneCargo = false;
+}
+function board(l: LineRun, kind: Kind, from: THREE.Vector3, delay: number) {
+  const k = deckFree(l.train.tr.load);
+  if (k < 0 || loads[l.k]![k]) return false;
+  if (!hopOn(l.train.tr.load, kind, from, delay)) return false;
+  loads[l.k]![k] = { kind, logs: kind === 'fill' ? KIT.logs : 0, rails: kind === 'fill' ? KIT.rails : 0 };
+  return true;
+}
+function unload(l: LineRun, k: number, to: THREE.Vector3, delay: number, landed: () => void) {
+  const goods = loads[l.k]![k];
+  if (!goods || unloading[l.k]!.has(k)) return;
+  unloading[l.k]!.add(k);
+  hopOff(l.train.tr.load, k, to, delay, () => {
+    if (loads[l.k]![k] !== goods) return;
+    unloading[l.k]!.delete(k);
+    loads[l.k]![k] = null;
+    landed();
+  });
+}
+sharedSlice('trainCargoV1', {
+  get: () => loads.map((load) => load.map((c) => c && { ...c })),
+  set: (v) => {
+    legacyCargo = !Array.isArray(v);
+    for (const [n, load] of loads.entries())
+      for (let k = 0; k < load.length; k++) {
+        const c = (Array.isArray(v) && Array.isArray(v[n]) ? v[n][k] : null) as Partial<TrainCargo> | null;
+        load[k] =
+          c &&
+          (c.kind === 'wood' || c.kind === 'stone' || c.kind === 'fill') &&
+          count(c.logs, KIT.logs) &&
+          count(c.rails, KIT.rails)
+            ? { kind: c.kind, logs: c.logs, rails: c.rails }
+            : null;
+      }
+  },
+});
+
 function arrive(l: LineRun, stop: number) {
   const { tr } = l.train;
   const car = tr.cars[0]!;
@@ -54,7 +121,7 @@ function arrive(l: LineRun, stop: number) {
       const kind = c.kind;
       const to = nextSlot(onto, new THREE.Vector3());
       const delay = 0.4 + n++ * 0.22;
-      hopOff(tr.load, k, to, delay, () => {
+      unload(l, k, to, delay, () => {
         onto.list.push(kind);
         thump(to.x, to.z);
         knock(0.5, 0.65);
@@ -72,7 +139,7 @@ function arrive(l: LineRun, stop: number) {
       let m = 0;
       while (job.kitSent < KIT.crates && deckFree(tr.load) >= 0) {
         scr.set(yard.x, VILLAGE.y + 1, yard.z);
-        hopOn(tr.load, 'fill', scr, 0.6 + m++ * 0.14);
+        if (!board(l, 'fill', scr, 0.6 + m++ * 0.14)) break;
         job.kitSent++;
       }
       save();
@@ -85,9 +152,11 @@ function arrive(l: LineRun, stop: number) {
     let n = 0;
     tr.load.held.forEach((c, k) => {
       if (!c || c.kind !== 'fill') return;
+      const goods = loads[l.k]![k];
+      if (!goods) return;
       const to = rack.at.clone();
-      hopOff(tr.load, k, to, 0.4 + n++ * 0.24, () => {
-        rackAdd(KIT.logs, KIT.rails);
+      unload(l, k, to, 0.4 + n++ * 0.24, () => {
+        rackAdd(goods.logs, goods.rails);
         thump(to.x, to.z);
         dustRing(to.x, to.y - 0.3, to.z, 6, 1.8, 0.3);
         save();
@@ -99,7 +168,9 @@ function arrive(l: LineRun, stop: number) {
   let n = 0;
   while (l.pile.list.length && deckFree(tr.load) >= 0) {
     const from = topSlot(l.pile, new THREE.Vector3());
-    hopOn(tr.load, l.pile.list.pop()!, from, 0.4 + n++ * 0.14);
+    if (!board(l, l.pile.list.at(-1)!, from, 0.4 + n * 0.14)) break;
+    l.pile.list.pop();
+    n++;
   }
   if (n) {
     drawHeaps(allHeaps);
@@ -110,10 +181,12 @@ function feedCrane() {
   if (craneBusy() || !dock.list.length) return;
   const from = topSlot(dock, new THREE.Vector3());
   const toForge = !roofed();
+  craneCargo = true;
   dock.list.pop();
   drawHeaps(allHeaps);
   if (toForge)
     craneLift(from, nextDrop(new THREE.Vector3()), () => {
+      craneCargo = false;
       crateIn();
       job.people++;
       if (roofed()) {
@@ -123,6 +196,7 @@ function feedCrane() {
     });
   else
     craneLift(from, nextSlot(hub, new THREE.Vector3()), () => {
+      craneCargo = false;
       hub.list.push('wood');
       if (hub.list.length > 60) hub.list.splice(0, hub.list.length - 60);
       job.wood++;
@@ -228,13 +302,37 @@ function startTrains() {
 }
 /** Back to how it stands, with no show. */
 export function snapTrains() {
+  craneClear();
+  if (craneCargo) {
+    dock.list.push('wood');
+    craneCargo = false;
+    drawHeaps(allHeaps);
+  }
+  // Pre-cargo saves lost every travelling crate. Only the finite kit is reconstructable: count
+  // surviving supply and Q6 work before reissuing the missing crates. Never refill a completed pier.
+  if (legacyCargo && job.rung.trains) {
+    const pier = L2.stations.find((st) => st.spec.id === 'Q6')!;
+    const sent = count(job.kitSent, KIT.crates) ? job.kitSent : 0;
+    const complete = job.ended || L2.stage > L2.stations.indexOf(pier);
+    let logs = complete ? 0 : Math.max(0, sent * KIT.logs - rack.logs - back.logs - pier.have.logs);
+    let rails = complete ? 0 : Math.max(0, sent * KIT.rails - rack.rails - back.rails - pier.have.rails);
+    for (let k = 0; k < KIT.crates && (logs || rails); k++) {
+      const c = { kind: 'fill' as const, logs: Math.min(KIT.logs, logs), rails: Math.min(KIT.rails, rails) };
+      loads[L2.k]![k] = c;
+      logs -= c.logs;
+      rails -= c.rails;
+    }
+  }
+  legacyCargo = false;
+  // clearCrates also cancels global flights: clear EVERY train before rebuilding any load.
+  for (const l of lines) clearCrates(l.train.tr.load);
+  for (const slots of unloading) slots.clear();
   rustTrainU.value = job.rung.trains ? 0 : 1;
   for (const h of halts) h.snap(job.rung.trains);
   called.stop = -1;
   wasOn = null;
   currentHalt = null;
   for (const l of lines) {
-    clearCrates(l.train.tr.load);
     l.train.tr.lastStop = -1;
     const t = trainsSaved[l.k];
     if (job.rung.trains) {
@@ -245,6 +343,9 @@ export function snapTrains() {
       }
     } else if (l === L1) l.train.park();
     else l.train.hide();
+    loads[l.k]!.forEach((c, k) => {
+      if (c) putCrate(l.train.tr.load, k, c.kind);
+    });
     setRiders(l.k, job.rung.trains);
   }
   setCamp(1, job.rung.trains);
