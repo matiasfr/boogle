@@ -32,7 +32,7 @@ const converted = (code: string) =>
 const normalize = (rule: string) => (rule === 'no-unused-vars' ? '@typescript-eslint/no-unused-vars' : rule);
 const has = (diagnostics: Diagnostic[], rule: string) => diagnostics.some((d) => d.rule === rule);
 
-test('170 fixture assertions retain every ESLint catch and every allowed case; JS language gate is preserved', () => {
+test('fixture assertions retain every ESLint catch and every allowed case; JS language gate is preserved', () => {
   temporary((root) => {
     const files = new Map<string, string[]>();
     const cases = fixtures.cases.map((c) => {
@@ -57,7 +57,7 @@ test('170 fixture assertions retain every ESLint catch and every allowed case; J
       );
       return caught !== c.eslint;
     });
-    assert.equal(cases.length, 170);
+    assert.equal(cases.length, 224);
     assert.deepEqual(differences, [], JSON.stringify({ differences, diagnostics }, null, 2));
     assert.ok(diagnostics.some((d) => d.file === js && d.rule === 'boogle/js-language'));
     assert.deepEqual(
