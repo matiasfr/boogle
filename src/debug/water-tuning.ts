@@ -1,7 +1,8 @@
 // Ultra Water's familiar controls over the real sea. Values belong to their renderer bindings, not this UI.
 import { Color } from 'three/webgpu';
 import { defineKind, spawn, despawn } from '../entity/entity.ts';
-import { releaseInput } from '../player/input.ts';
+import { releaseInput, requestLock } from '../player/input.ts';
+import { devInput } from '../player/dev-input.ts';
 import { cancelCharge } from '../player/throw.ts';
 import { releaseJump } from '../entities/player/state.ts';
 import { waterReady } from '../render/water-render.ts';
@@ -128,7 +129,11 @@ defineKind('water-tuning', {});
 let closeCurrent: (() => void) | null = null;
 let visit = 0;
 const productionDefaults = new Map<string, Value>();
-export async function showWaterTuning(restorePointer: () => void, parent: HTMLElement = document.body) {
+export async function showWaterTuning(
+  restorePointer: () => void,
+  parent: HTMLElement = document.body,
+  retainAppearance = false,
+) {
   const token = ++visit;
   closeCurrent?.();
   await waterReady;
@@ -173,11 +178,14 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
   parent.append(panel);
   let removeStatusListener = () => {};
   let restoreOverrides = () => {};
+  let playToggle: HTMLButtonElement | null = null;
   let closed = false;
   const cleanup = () => {
     if (closed) return;
     closed = true;
     panel.remove();
+    playToggle?.remove();
+    if (parent === document.body) devInput.cursor = false;
     style.remove();
     removeStatusListener();
     restoreOverrides();
@@ -224,13 +232,31 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
   closeButton.type = 'button';
   closeButton.addEventListener('click', close);
   panel.append(closeButton);
+  if (parent === document.body) {
+    devInput.cursor = true;
+    if (document.pointerLockElement) document.exitPointerLock();
+    playToggle = node('button', 'Play · Esc for mouse');
+    playToggle.type = 'button';
+    playToggle.dataset.waterPlay = '';
+    playToggle.style.cssText =
+      'position:fixed;z-index:111;left:12px;top:12px;min-height:44px;padding:8px;border-radius:8px;pointer-events:auto';
+    playToggle.onclick = () => {
+      panel.hidden = !panel.hidden;
+      devInput.cursor = !panel.hidden;
+      release();
+      playToggle!.textContent = panel.hidden ? 'Water · Esc for mouse' : 'Play · Esc for mouse';
+      if (panel.hidden) requestLock();
+      else if (document.pointerLockElement) document.exitPointerLock();
+    };
+    document.body.append(playToggle);
+  }
   panel.append(node('p', 'Only your view. The game keeps running. Saved settings apply only with tune=1.'));
   panel.append(
     node(
       'p',
       parent === document.body
         ? 'Drag the scene to look; the cursor stays free while tuning.'
-        : 'Close the menu to look around; reopen Water to continue tuning.',
+        : 'Drag the scene with Free cam, or click the scene to play. Play hides the dock; Esc gives the mouse back.',
     ),
   );
   if (!newWaterEnabled) {
@@ -253,7 +279,7 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
   const previous = new Map(available.map((s) => [s.key, clone(bindings.get(s.key)!.get())]));
   for (const [key, value] of previous) if (!productionDefaults.has(key)) productionDefaults.set(key, clone(value));
   const defaults = new Map(available.map((s) => [s.key, clone(productionDefaults.get(s.key)!)]));
-  if (parent !== document.body)
+  if (parent !== document.body && !retainAppearance)
     restoreOverrides = () => {
       for (const [key, value] of previous) bindings.get(key)?.set(clone(value));
     };
@@ -429,7 +455,7 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
     }
     panel.append(details);
   }
-  const parse = (text: string) => {
+  const parse = (text: string, saved = false) => {
     const value: unknown = JSON.parse(text);
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Expected a settings object.');
     const data = value as Record<string, unknown>;
@@ -441,16 +467,23 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
     for (const [key, candidate] of Object.entries(data.changes)) {
       const s = byKey.get(key),
         initial = defaults.get(key);
-      if (!s || initial === undefined) throw new Error(`Unknown setting: ${key}`);
+      if (!s || initial === undefined) {
+        if (saved) continue;
+        throw new Error(`Unknown setting: ${key}`);
+      }
       const validNumber = (n: unknown): n is number =>
         typeof n === 'number' && Number.isFinite(n) && n >= s.min && n <= s.max;
       if (Array.isArray(initial)) {
-        if (!Array.isArray(candidate) || candidate.length !== initial.length || !candidate.every(validNumber))
+        if (!Array.isArray(candidate) || candidate.length !== initial.length || !candidate.every(validNumber)) {
+          if (saved) continue;
           throw new Error(`Invalid RGB value: ${key}`);
+        }
         changes[key] = [...candidate] as number[];
       } else {
-        if (!validNumber(candidate) || (s.toggle && candidate !== 0 && candidate !== 1))
+        if (!validNumber(candidate) || (s.toggle && candidate !== 0 && candidate !== 1)) {
+          if (saved) continue;
           throw new Error(`Out of range: ${key} (${s.min}–${s.max})`);
+        }
         changes[key] = candidate;
       }
     }
@@ -538,10 +571,15 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
   try {
     const saved = localStorage.getItem(STORAGE);
     if (saved) {
-      apply(parse(saved));
-      say('Saved viewer settings restored.');
+      apply(parse(saved, true));
+      say('Supported saved viewer settings restored; unsupported settings dropped.');
     }
   } catch (e) {
+    try {
+      localStorage.removeItem(STORAGE);
+    } catch {
+      /* storage unavailable */
+    }
     say(`Saved settings not applied: ${e instanceof Error ? e.message : 'storage unavailable'}`);
   }
   return close;

@@ -3,6 +3,13 @@ import { showWaterTuning } from '../water-tuning.ts';
 import { command, note } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
 
+/** Apply saved appearance even when the dock is collapsed; leave no panel or entity behind. */
+export async function restoreWaterSettings() {
+  if (!tuningEnabled) return;
+  const close = await showWaterTuning(() => {}, document.createElement('div'), true);
+  close();
+}
+
 export const tool: Tool = {
   id: 'water',
   label: 'Water',
@@ -35,6 +42,6 @@ export const tool: Tool = {
       command(parent, ctx, 'water', 'Reload with tuning', 'reload');
       return () => {};
     }
-    return showWaterTuning(() => {}, parent);
+    return showWaterTuning(() => {}, parent, true);
   },
 };

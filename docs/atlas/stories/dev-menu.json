@@ -6,12 +6,12 @@
   "steps": [
     {
       "go": [["you.input", "you.features"]],
-      "text": "With dev=1, Pause offers Dev. The existing modal captures your controls while the island keeps running. Without the flag the Dev tools stay unloaded.",
-      "cite": [{ "file": "src/features/dev-menu.ts" }, { "file": "src/player/modal.ts" }]
+      "text": "An origin-local opt-in opens the persistent Dev strip and non-modal dock. Off clears Dev preferences. Without opt-in the tools stay unloaded; friends receive no preference.",
+      "cite": [{ "file": "src/features/dev-menu.ts" }, { "file": "src/dev-preferences.ts" }]
     },
     {
       "hl": ["you.features"],
-      "text": "The selected tool loads on demand. Buttons and the typed agent API run the same bounded commands and return the same results.",
+      "text": "The selected panel loads on demand. Free camera owns input independently of the dock and never moves the body. Buttons and the agent API use the same bounded commands.",
       "cite": [{ "file": "src/debug/dev-menu.ts" }]
     },
     {

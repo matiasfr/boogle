@@ -1,3 +1,117 @@
+.dev-shell {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 120;
+  color: #edf3e8;
+  font:
+    12px/1.4 system-ui,
+    sans-serif;
+}
+.dev-shell [hidden] {
+  display: none !important;
+}
+@media (min-width: 701px) and (pointer: fine) {
+  body:has([data-dev-shell]) .proto-bar {
+    top: calc(64px + env(safe-area-inset-top));
+  }
+}
+.dev-strip {
+  position: absolute;
+  top: max(8px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: calc(100vw - 24px);
+  padding: 4px 7px;
+  border-radius: 10px;
+  background: #132329f0;
+  pointer-events: auto;
+}
+.dev-strip small {
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dev-shell button,
+.dev-shell a {
+  color: inherit;
+  background: #ffffff14;
+  border: 1px solid #ffffff38;
+  border-radius: 7px;
+  padding: 6px 9px;
+  font: inherit;
+  cursor: pointer;
+  min-height: 36px;
+  text-align: center;
+}
+.dev-shell a {
+  display: grid;
+  align-items: center;
+  text-decoration: none;
+}
+.dev-shell button[aria-pressed='true'] {
+  background: #547545;
+}
+.dev-dock {
+  pointer-events: auto;
+  position: absolute;
+  top: 64px;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  width: min(340px, 36vw);
+  padding: 10px;
+  box-sizing: border-box;
+  background: #182327f2;
+  border: 1px solid #ffffff40;
+  border-radius: 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.dev-dock[data-position='right'] {
+  right: max(12px, env(safe-area-inset-right));
+}
+.dev-dock[data-position='left'] {
+  left: max(12px, env(safe-area-inset-left));
+}
+.dev-dock[data-position='bottom'] {
+  top: auto;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  width: auto;
+  max-height: 35dvh;
+}
+.dev-camera-controls[data-dev-camera-controls] {
+  position: absolute;
+  top: 63px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(290px, 32vw);
+  pointer-events: auto;
+  background: #132329e8;
+  padding: 6px;
+  border-radius: 9px;
+}
+[data-dev-camera-moves] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+[data-dev-camera-moves] label {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+[data-dev-camera-moves] input {
+  width: 100%;
+  min-width: 0;
+}
+.dev-islands .dev-actions {
+  margin: 5px 0;
+}
 .dev-page {
   display: flex;
   flex-direction: column;
@@ -13,9 +127,11 @@
   z-index: 2;
   padding: 8px 0;
   background: #182327;
+  flex-wrap: wrap;
 }
 .dev-bar button {
   flex: 1;
+  padding: 5px;
 }
 .dev-tools {
   display: grid;
@@ -54,7 +170,7 @@
   overflow-wrap: anywhere;
 }
 .dev-status {
-  color: #315b26;
+  color: #d5edbc;
 }
 .dev-output {
   white-space: pre-wrap;
@@ -106,11 +222,42 @@
 .dev-page [data-water-panel] input[type='color'] {
   min-height: 44px;
 }
-@media (max-width: 500px) {
-  .pause-card[data-page='dev'] {
-    width: calc(100vw - 16px);
+@media (max-width: 700px), (pointer: coarse) {
+  .dev-strip {
+    top: calc(76px + env(safe-area-inset-top));
+    left: 8px;
+    right: 8px;
+    transform: none;
+    flex-wrap: wrap;
+    max-width: none;
   }
-  .dev-actions {
-    grid-template-columns: 1fr;
+  .dev-strip small {
+    flex: 1;
+    max-width: none;
+  }
+  .dev-shell button,
+  .dev-shell a {
+    min-height: 44px;
+  }
+  .dev-strip [data-dev-play] {
+    font-size: 11px;
+  }
+  .dev-dock[data-position] {
+    top: auto;
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: auto;
+    max-height: 32dvh;
+  }
+  .dev-camera-controls[data-dev-camera-controls] {
+    top: calc(182px + env(safe-area-inset-top));
+    width: min(310px, calc(100vw - 24px));
+  }
+  .dev-bar {
+    gap: 4px;
+  }
+  .dev-page {
+    gap: 6px;
   }
 }
