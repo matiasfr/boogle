@@ -85,6 +85,7 @@ const DOORS = [
       'src/player/pad-diagram.ts', // one-shot, measures after layout
       'src/proto/bar/pad.ts', // one-shot, refocus after a redraw
       'src/debug/look-lab.ts', // waits a frame between captures
+      'src/debug/startup-record.ts', // opt-in wrapper of existing callbacks; no second frame loop
     ],
     selector: "Identifier[name='requestAnimationFrame']",
     message: 'One frame loop: use onFrame (src/loop.ts). A one-shot joins the allow-list in eslint.config.js.',
