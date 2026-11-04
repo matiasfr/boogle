@@ -11,14 +11,26 @@ export function solidTrainLoad(car: Car, load: Deck) {
   let mask = -1;
   let boxes: ReturnType<typeof deckBox>[] = [];
   const local = { x: 0, y: 0, z: 0, yaw: 0 };
-  const topAt = (x: number, z: number) => {
-    let top = car.hy;
+  const boxAt = (x: number, z: number) => {
+    let support: (typeof boxes)[number] | undefined;
     for (const box of boxes)
-      if (Math.abs(x - box.x) <= box.size / 2 + CARRY.edge && Math.abs(z - box.z) <= box.size / 2 + CARRY.edge)
-        top = Math.max(top, car.hy + box.bottom + box.size);
-    return top;
+      if (
+        Math.abs(x - box.x) <= box.size / 2 + CARRY.edge &&
+        Math.abs(z - box.z) <= box.size / 2 + CARRY.edge &&
+        (!support || box.bottom + box.size > support.bottom + support.size)
+      )
+        support = box;
+    return support;
+  };
+  const topAt = (x: number, z: number) => {
+    const box = boxAt(x, z);
+    return car.hy + (box ? box.bottom + box.size : 0);
   };
   car.platform.topAt = topAt;
+  car.supportAt = (x, z) => {
+    const box = boxAt(x, z);
+    return box && { x: box.x, z: box.z, hx: box.size / 2, hz: box.size / 2 };
+  };
   return () => {
     let next = 0;
     load.held.forEach((c, k) => {

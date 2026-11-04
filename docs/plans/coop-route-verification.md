@@ -1,4 +1,96 @@
-# Continuous co-op route: both passengers arrived aboard; Q6 and dry pier passed
+# Co-op route verification: seated route passed; standing cargo edge repaired
+
+## Standing follow-up, 4 November: fixed an idle knock-off; jumps can still miss
+
+Branch `codex/coop-standing-ride`, starting at `f87e0704`. Reproduced **one genuine no-input knock-off from a settled cargo crate**, repaired it in **`9927155c`**, then tested both lines with two standing peers at **1x**, on the same car and neighbouring cars. The four final 100-second cases have **zero uncommanded knock-offs for either player**. They also have **three missed jump landings for P2**. This is not a claim that jumping in place on a moving train always returns you to its deck, or that tonight's human replay is certified safe.
+
+The existing seated continuous-route pass remains below. These new runs are **staged diagnoses**, not another fresh progression route. They do not establish the cause or exact count of the 3 November losses.
+
+### Setup, inputs and counting
+
+Used only the launcher's broker: `node .look/see-client.ts look --players 2 --real`, the existing `--eval` seam, curves and video. The diagnostic invokes the existing co-op train stage, then places each player once on a stopped train. After initial contact, there are **no position/velocity writes, recovery actions, Sit presses, train calls or train-speed changes from the diagnostic**. P1 stands; P2 uses ordinary movement input and jump press/release, walking short fore/aft paths inside the deck and pausing before jumping. The separate edge case holds both players motionless. Initial placement is not real-input boarding evidence. These are bot inputs through the game's controls, not physical gamepad/touch-device tests.
+
+Same-car cases start both on car 1; neighbouring cases use cars 1 and 2, including the loaded rear car on line 1. Jumps can transfer between cars: that is recorded, not silently treated as continuous contact with the original car. Every final arrangement exercised departure, curves, bridge travel and a station arrival; line 2 traversed the sea trestle to Far Head. All reached the unchanged **20 m/s** train cruise. Repeated station stops and sampled train distances are retained in the results.
+
+Each peer is observed for approximately **100.00 seconds**; captures continue to 105 seconds. Contact is checked every **25 ms**, with ordinary state samples every 250 ms and immediate logs on observed transitions. An off interval lasting more than two seconds is classified separately from short contact gaps. A loss immediately following a recorded jump is a **missed jump landing**, not an idle knock-off. The reproduced idle failure had reattached for almost three seconds after its last jump and had no movement input. No post-loss rescue extends ride exposure: a fallen player's remaining window is observation on the ground, not time aboard.
+
+[Every observed contact loss, with player, time, world position, signed train speed, body speed and off duration](../../.look/evidence/1793827548915-69397/standing-events.md). [Machine-readable results](../../.look/evidence/1793827548915-69397/standing-results.json), [reproduction eval](../../.look/evidence/1793827548915-69397/standing.ts), [analysis](../../.look/evidence/1793827548915-69397/analyze.ts). Rates below use the explicitly measured observation window, not an inferred human riding-time denominator.
+
+### Final measurements
+
+All rows use the final game code from `9927155c`. The two early post-fix captures precede that commit but contain the same changed source; subsequent captures are clean commit `9927155c`, tree `41ad975599f827a80faa86d4cfa49b8e274ea20b`. The trusted harness was clean `f87e0704`. No source changed during any run. The documentation commit follows these measurements.
+
+**P1: zero raw contact losses, zero knock-offs, zero jumps in every row.** P1's knock-off rate is **0.00/player-minute** over the four-case **400-second** matrix. P2's uncommanded knock-off rate is also **0.00/player-minute** over its 400-second observation window. Do not count time after a missed jump as successfully riding.
+
+| Final case / manifest                                                                       | Seconds per peer | P2 raw losses (per minute) | P2 jump inputs | P2 uncommanded knock-offs | P2 missed jump landings |
+| ------------------------------------------------------------------------------------------- | ---------------- | -------------------------- | -------------- | ------------------------- | ----------------------- |
+| [Line 1, same car](../../.look/evidence/1793827371397-69234/evidence.json)                  | 100              | 4 (2.40)                   | 4              | 0                         | 1                       |
+| [Line 1, neighbouring cars](../../.look/evidence/1793826790064-68671/evidence.json)         | 100              | 5 (3.00)                   | 4              | 0                         | 1                       |
+| [Line 2, same car](../../.look/evidence/1793827548915-69397/evidence.json)                  | 100              | 11 (6.60)                  | 7              | 0                         | 0                       |
+| [Line 2, neighbouring cars](../../.look/evidence/1793827143010-69089/evidence.json)         | 100              | 6 (3.60)                   | 6              | 0                         | 1                       |
+| [Focused idle crate margin, line 1](../../.look/evidence/1793826983105-68888/evidence.json) | 100 additional   | 0 (0.00)                   | 0              | 0                         | 0                       |
+
+P2's four-case total is **26 raw losses / 6.667 observation minutes = 3.90/minute**: 22 jump-related transitions (including recontact/bounce transitions) and four brief non-jump gaps, with **three** jump departures that did not return. No water samples were recorded in the final matrix. The earlier line-2 same-car jump miss did enter water; absence of final-run water is not a general dry-landing guarantee.
+
+### Reproduced cause and repair
+
+In the [pre-fix neighbouring-car run](../../.look/evidence/1793826350746-67670/evidence.json), P2 jumped at **78.001 s**, reattached at **78.529 s**, then stood without input. At **81.401 s**, it lost the rear car at **(975.134, 32.221, -111.178)**, train speed **20.000 m/s**, body speed **18.634 m/s**, car-local **(0.714, 1.371, -1.534)**. It landed beside the line at approximately **(976.638, 30.655, -123.588)**. This is **one real knock-off / 100 s = 0.60/minute for P2** (0.74/minute if censored at the 81.401-second terminal loss); P1 had zero. This is a current-build defect, not an attribution of the historical 19 marks.
+
+The existing idle hold used the flatbed bounds. A crate's top ends inside those bounds, so the spherical player could creep across its rounded edge while still inside the flatbed guard. `rail.ts` now asks the car for the supporting cargo footprint; `train-load.ts` derives it from the same highest settled crate used for support height. The **existing** idle inset and correction speed apply to that footprint. Movement and jump inputs still release the hold. No train speed, pacing, copy, save, presence or lockstep state changed; this remains Owner player physics. The owning behavior is updated in [place](../game-design/place.md).
+
+The focused post-fix case stages P2 at **local x=0.71, z=-1.50**, near the reproduced margin. The existing correction settles it to about **z=-1.29**, safely inside the crate top. It remains attached through loaded travel, unloading, return and loading again: **zero contact losses for both peers over 100 s each**. The walking/jumping rear-car repeat also has zero uncommanded losses, but its earlier missed jump limits its later ride coverage; the motionless edge case supplies the missing focused check.
+
+### Missed jumps remain visible failures
+
+These final departures follow intentional jump inputs with movement released; each remained off for the rest of its observation window. They are not removed from the report merely because capture health passed. Airborne carry retains momentum rather than following every train turn or acceleration; no speculative sticky-jump change is made.
+
+| Final case           | Player / departure time | World position x, y, z    | Train speed | Body speed |
+| -------------------- | ----------------------- | ------------------------- | ----------- | ---------- |
+| Line 1, same car     | P2, 50.030 s            | 975.405, 31.686, -111.903 | 20.000 m/s  | 20.353 m/s |
+| Line 1, neighbouring | P2, 50.051 s            | 975.172, 31.796, -107.362 | 20.000 m/s  | 20.420 m/s |
+| Line 2, neighbouring | P2, 78.027 s            | 1078.346, 25.686, 37.617  | 20.000 m/s  | 21.153 m/s |
+
+The ledger also retains the earlier missed jumps: line 1 near Camp at **(979.030, 31.686, -145.598), 14.607 m/s** and line 2 at **(980.761, 19.824, 30.586), 20 m/s**, followed by water. Thus the checked-in fix addresses standing on cargo, **not all ways to lose a train**.
+
+### What the 3 November sessions actually count
+
+Read both supplied JSONLs under `/Users/matiasfranco/Developer/boogle-daily/.look/playtest/`; [extracted events and input buckets](../../.look/evidence/1793827548915-69397/historical.json) are retained beside the current evidence. The named sessions contain **12 + 7 = 19 `off` marks**, but three of Matias's occur **before train unlock**. The marks report carrier contact, not confirmed accidental ejections.
+
+| Session / player            | Unlock to last event       | All off marks | Post-unlock off marks | Post-unlock raw marks/minute | In a jump-input bucket |
+| --------------------------- | -------------------------- | ------------- | --------------------- | ---------------------------- | ---------------------- |
+| `mw1l43s5-eyp2cnmq`, Matias | 912.4–1139.9 s; 3.792 min  | 12            | 9                     | 2.37                         | 8 of 9                 |
+| `mw1l0y9o-1aphq1mf`, Grant  | 1060.0–1283.2 s; 3.720 min | 7             | 7                     | 1.88                         | 3 of 7                 |
+
+Inputs are aggregated into roughly five-second buckets; positions are coarse samples, and these off marks do not record train speed. Even a bucket without a jump cannot distinguish walking off, a brief contact bounce and an accidental knock-off. **A verified historical real-knock-off rate cannot be recovered from these JSONLs alone.** Comparing their raw 2.37/1.88 marks per minute directly with the new zero uncommanded rate would mix definitions. The final deliberate-jump P2 raw rate is 3.90/minute, despite zero uncommanded losses. Preserve the owners' qualitative complaint; do not relabel the 19 marks as 19 proven accidental ejections or claim a quantified reduction from that number.
+
+### Cart, lag and visual evidence
+
+The existing [cart trip](../../.look/evidence/1793827781245-71558/evidence.json) and [shorter visual repeat](../../.look/evidence/1793827930086-72376/evidence.json) use `place-coop.ts`, `pair=trip&tripVideo=1`, two peers and `--real`. P2 presses Whistle and Load, then is staged aboard; both record 12 rails delivered. P2 has **zero lost-contact samples out of 340 / 339**, at 20 ms intervals during the roughly 6.8-second measured loaded trips, with peak **13 m/s**. P1 watches rather than riding. The shorter repeat's maximum sampled cart disagreement is **0.248 m**. This does not test the instant of fitting a boiler while someone rides the cart. The proposed cart-to-train upgrade remains unchecked/unbuilt in `round-4-notes.md`; no combined transformation/transfer was exercised.
+
+**Lagged-peer riding is untested.** The trusted broker has no per-peer latency or CPU-throttle option, and no replacement harness, direct Chromium or artificial busy-loop was introduced. Physical devices, human boarding, a fresh standing progression route, crowd sizes above two and real-time subjective smoothness remain unverified.
+
+Visual questions: do standing riders remain on the sampled moving decks through curves/bridges/stops, does the idle crate-edge rider settle safely, and does the cart carry its rider through delivery? Opened **every successful train run's motion PNG**, plus:
+
+- Exploratory line 1: `p2-standing-l1-same-still.png` (camera had stopped following; not rider proof).
+- Pre-fix paired line 1: `standing-l1-paired-curves.png`, `jump-01..03.png` at video 78 s and `landing-01..03.png` at 79 s. Trees obscure part of the latter sequence; telemetry establishes the missed landing.
+- Pre-fix neighbouring line 1: `p2-standing-l1-adjacent-still.png`, `edge-01..03.png` at 81 s. The rider is visibly at the cargo margin as the train curves; the terminal contact loss is in the log.
+- Pre-fix line 2: `p2-standing-l2-same-still.png`; post-fix line 2: both `p2-fixed-l2-*-still.png` images. The final same-car image shows both players dry together aboard; the neighbouring end image shows only P1 aboard after P2's missed jump.
+- Focused repair: `fixed-crate-edge-curves.png`, `edge-fixed-01..03.png` extracted at 10 s. The rider remains at the cargo edge across consecutive frames as scenery passes; the motion sheet shows continued travel and cargo changes. Curves are P1's motion, while the per-peer log supplies P2's attachment evidence.
+- Both cart motion sheets and P2 end stills, the first cart curves, and the shorter repeat's `cart-01..03.png` at 5 s. The repeat clearly shows the standing rider and loaded cart moving toward the rack. The first long capture's post-delivery camera callbacks fight and show under-terrain views; its P1 curves describe the stationary observer, not cart speed. Those frames are not treated as rider-loss evidence.
+
+All extracted sequences used `ffmpeg` on broker videos and were opened with `view_image`. Stills, curves and consecutive frames do **not** verify real-time feel. All completed captures report WebGPU, advancing completed frames and no page/console/graphics errors; that is capture health, not a whole-ride success verdict.
+
+### Attempts, checks and scope
+
+- `look --at list` initially found no saved checkpoints. No continuous playthrough was run for this diagnostic task.
+- [Initial setup failure](../../.look/evidence/1793825845469-66777/evidence.json): waited for nonexistent `tr.running`; failed before riding. Corrected to the existing progression state.
+- [Exploratory run](../../.look/evidence/1793825985707-67031/evidence.json): no sustained loss, but an early-ack barrier allowed P2 to start about 15 s before P1. Excluded from the paired final matrix; the barrier was corrected. Its P2 end camera also stopped early.
+- [Paired pre-fix line 1](../../.look/evidence/1793826159472-67376/evidence.json), [rear-car reproduction](../../.look/evidence/1793826350746-67670/evidence.json), and [pre-fix line 2](../../.look/evidence/1793826528599-67881/evidence.json) all completed capture but retain the losses described above. No failed riding behavior was patched out of the measurement.
+- Required Prettier and `npm run check` passed on Node 26; the golden physics replay matches all **1108 frames** within **0.01**. [Trusted `world-inputs`](../../.look/evidence/1793827897087-71989/evidence.json) passed every fixture assertion, with WebGPU and no graphics errors; it produced no PNG and does not itself test Place riding. No new unit tests or scenarios, no `check:full`-triggering source changes.
+- Production changes are limited to `rail.ts`, `train-load.ts` and the owning game-design paragraph, committed as `9927155c`; this report is a separate documentation commit. DESIGN.md: **Cooperation is automatic, not negotiated** and **Slapstick over precision**. No copy was altered and no suspect copy lines were identified.
+- **Departure from the brief:** `npm run inflight` was run at startup and fetched origin before its network behavior was noticed. That violated the local-only network restriction and was disclosed immediately. No further nonlocal network commands, push or ship were run. All edits stayed in this worktree on its branch; no source changed during a broker run.
+
+## Earlier continuous seated-route pass
 
 4 November 2026, `boogle-codex/coop-train-detach`, branch `codex/coop-train-detach`, starting at `eb06d7eb`. **Passed a fresh continuous two-player long route**, including P2 reload after Q2 and P1 leave/rejoin after Q4, through Q6 to both peers dry at Far Head. This supersedes the transport blocker below. The reproduced cause was the bot accepting momentary deck contact, then approaching Q6 from the village. No production game, pacing or copy change is retained. This does **not** explain away the owner's 19 historical knockoffs; standing, crowded-deck and human-input cases still need tonight's replay.
 

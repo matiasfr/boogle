@@ -323,7 +323,7 @@ const BOTTOM = 0.4;
 // no stick pushed, you're eased back inside instead. Push out and you walk off, and a jump's a jump, so no railing: nothing
 // here looks solid that isn't. Serves "you can stand on it", docs/proposals/boogle-2.md.
 const HOLD = { inset: 0.04, speed: 1.2 }; // m inside the box's edge you settle; m/s you're eased back
-const decks = new Set<Platform>();
+const decks = new Map<Platform, Car>();
 onPreStep(
   () => {
     const b = me.body,
@@ -337,12 +337,17 @@ onPreStep(
       rz = b.position.z - q.z;
     const lx = rx * c - rz * s,
       lz = rx * s + rz * c;
-    const most = HOLD.speed * FIXED,
-      overX = Math.abs(lx) - (p.hx - HOLD.inset),
-      overZ = Math.abs(lz) - (p.hz - HOLD.inset);
+    // Cargo tops have their own edges inside the flatbed. Holding only the flatbed's outline lets an idle
+    // rider creep off a crate's rounded contact and lose the train before reaching that outer guard.
+    const support = decks.get(p)?.supportAt?.(lx, lz);
+    const dx = lx - (support?.x ?? 0),
+      dz = lz - (support?.z ?? 0),
+      most = HOLD.speed * FIXED,
+      overX = Math.abs(dx) - ((support?.hx ?? p.hx) - HOLD.inset),
+      overZ = Math.abs(dz) - ((support?.hz ?? p.hz) - HOLD.inset);
     if (overX <= 0 && overZ <= 0) return;
-    const inX = overX > 0 ? -Math.sign(lx) * Math.min(most, overX) : 0,
-      inZ = overZ > 0 ? -Math.sign(lz) * Math.min(most, overZ) : 0;
+    const inX = overX > 0 ? -Math.sign(dx) * Math.min(most, overX) : 0,
+      inZ = overZ > 0 ? -Math.sign(dz) * Math.min(most, overZ) : 0;
     b.position.set(b.position.x + inX * c + inZ * s, b.position.y, b.position.z - inX * s + inZ * c);
   },
   { order: 20 }, // after the decks move (10), before the player's controller (40)
@@ -361,6 +366,8 @@ export type Car = {
   pitch: number;
   speedLimit: number;
   platform: Platform;
+  /** Footprint of the cargo surface currently supporting a rider; absent means the flatbed. */
+  supportAt?: (x: number, z: number) => { x: number; z: number; hx: number; hz: number } | undefined;
 };
 export function makeCar(
   spec: CarSpec,
@@ -407,7 +414,7 @@ export function makeCar(
     },
   };
   registerPlatform(car.platform);
-  decks.add(car.platform);
+  decks.set(car.platform, car);
   return car;
 }
 function moveCar(c: Car, dt: number) {
