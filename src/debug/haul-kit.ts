@@ -200,7 +200,8 @@ const valuesLine = () =>
   ' | ' +
   LOCAL.map((k) => `${k.key}=${haulFeel[k.key]}`).join(' ') +
   ` | section ${chores.site + 1}: ${choreText()}`;
-copyBtn.addEventListener('click', async () => {
+copyBtn.addEventListener('click', () => void copyValues());
+async function copyValues() {
   const line = valuesLine();
   try {
     await navigator.clipboard.writeText(line);
@@ -208,7 +209,7 @@ copyBtn.addEventListener('click', async () => {
   } catch {
     say(line); // no clipboard (insecure origin): select it by hand
   }
-});
+}
 
 // Room values follow the state (someone else's change, a refused set, a load); a field you're in is left alone.
 let drawn = -1;

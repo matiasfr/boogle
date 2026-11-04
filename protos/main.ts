@@ -160,7 +160,7 @@ function card(p: Proto): HTMLElement {
   copyBtn.type = 'button';
   const said = el('span', 'said');
   said.setAttribute('aria-live', 'polite');
-  copyBtn.addEventListener('click', () => copy(`${header()}\n${body(p)}\n`, said));
+  copyBtn.addEventListener('click', () => void copy(`${header()}\n${body(p)}\n`, said));
   foot.append(copyBtn);
   c.append(foot, said);
   return c;
@@ -261,4 +261,4 @@ if (!reviewId) document.getElementById('list')!.append(...sorted.map(card));
 // Copy all: every prototype with something written, under one date (all the live ones if nothing is written yet).
 document
   .getElementById('copy-all')
-  ?.addEventListener('click', () => copy(allEntries(), document.getElementById('said-all')!));
+  ?.addEventListener('click', () => void copy(allEntries(), document.getElementById('said-all')!));

@@ -9,6 +9,7 @@
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
 import './pause.css';
 import { onStart } from '../loop.ts';
+import { background } from '../async.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { COLORS, DEFAULT_ROOM } from '../constants.ts';
 import { inputState } from '../player/input-state.ts';
@@ -64,10 +65,13 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
   if (text !== undefined) e.textContent = text;
   return e;
 };
-const button = (text: string, onClick: () => void, cls = '') => {
+const button = (text: string, onClick: () => void | Promise<void>, cls = '') => {
   const b = el('button', `pause-btn ${cls}`.trim(), text);
   b.type = 'button';
-  b.addEventListener('click', onClick);
+  b.addEventListener('click', () => {
+    const task = onClick();
+    if (task) background(task, 'pause action');
+  });
   return b;
 };
 
@@ -143,7 +147,7 @@ function fullscreenButton() {
       fs.textContent = 'Fullscreen anyway (touch only)';
       return;
     }
-    toggleFullscreen(fs);
+    void toggleFullscreen(fs); // refusal already updates this button
   });
   fs.dataset.act = 'fullscreen';
   return fs;

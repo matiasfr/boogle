@@ -87,11 +87,11 @@ async function check() {
 
 if (import.meta.env.PROD && !BUILD.startsWith('dev')) {
   onStart(() => {
-    check();
-    setInterval(check, CHECK_MS);
+    void check(); // offline/version-fetch failures are handled inside check
+    setInterval(() => void check(), CHECK_MS);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) reloadIfHidden();
-      else check();
+      else void check();
     });
   });
 }

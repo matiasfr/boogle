@@ -10,6 +10,7 @@
 // Serves DESIGN.md "Determinism from day one" (a desync is found and named, not silently repaired). Sync kind: Local
 // (nothing here is shared with other players).
 import { BUILD_ID } from '../build-id.ts';
+import { background } from '../async.ts';
 import { net, getRoomId, onNetState } from '../netplay/net.ts';
 import { world, onDesync, onSnapFail } from '../world/sync.ts';
 import { mixedBuilds } from '../netplay/builds.ts';
@@ -105,12 +106,13 @@ if (SERVER) {
         okSent = true;
         const ms = Math.round(performance.now() - since); // ms spent 'connecting'
         const at = { ms, retries: failed };
-        setTimeout(async () => {
+        const reportOk = async () => {
           const links = (await net.room?.linkStats?.().catch(() => null)) ?? [];
           const rtts = links.map((l) => l.rttMs).filter((v) => v !== null);
           const path = rtts.length ? { rttMs: Math.max(...rtts) } : {};
           report('connect', { result: 'ok', ...at, ...path, ...base() });
-        }, SETTLE_MS);
+        };
+        setTimeout(() => background(reportOk(), 'connection report'), SETTLE_MS);
       }
       wasLive = true;
     } else if (s === 'solo') {
