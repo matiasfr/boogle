@@ -30,6 +30,9 @@ const { ORIGIN, LINES, lineAt, railY } = (await import(
 const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { playMark } = (await import('/src/proto/mark.ts' as string)) as typeof import('../../../src/proto/mark.ts');
+const { gettingItem } = (await import(
+  '/src/proto/place/got.ts' as string
+)) as typeof import('../../../src/proto/place/got.ts');
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 while (!me.body) await wait(80);
 const body = me.body;
@@ -133,6 +136,16 @@ if (view !== 'play') {
         bot.check('stack contact lies on the actual pad', approached);
         checkpoint(approached ? 'contact' : 'approach failed');
         if (approached) {
+          // The helmet's crate stands mid-pad: bump it, read the card, put it away. The card holds you and takes no other key.
+          await bot.straight(target.x, target.z, 0.9, 2500);
+          const awarded = await bot.until(gettingItem, 3000, 'the helmet is awarded on the stack');
+          await wait(2200);
+          await key('KeyF');
+          bot.check('the hook does not skip the reward card', gettingItem() && !tech.move.pull);
+          await key('KeyE');
+          await wait(300);
+          bot.check('Interact puts the reward card away', awarded && !gettingItem());
+          checkpoint('reward put away');
           const ring = tech.RINGS.find((r) => r.pad.id === 'stack-return');
           if (!ring) throw new Error('Missing stack-return ring');
           face(ring.at.x, ring.at.z);
@@ -140,7 +153,8 @@ if (view !== 'play') {
             0.85,
             Math.atan2(ring.at.y - (body.position.y + 1.35), bot.dist(ring.at.x, ring.at.z)) - 0.3,
           );
-          await wait(350);
+          // The reward's camera is still easing back: wait until the ring is the one on offer, as a person looking at it does.
+          await bot.until(() => tech.move.pick === ring, 3000, 'the return ring is on offer');
           mark('RETURN_AIM', { picked: tech.move.pick?.pad.id, rejection: tech.whyNot(ring), player: pose() });
           await key('KeyF');
           const pulling = !!tech.move.pull;
