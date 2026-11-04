@@ -1,74 +1,95 @@
-# Metal cold-start follow-up: blocked before implementation
+# Exclusive Metal cold-start tool: implemented, headed runs pending
 
 2026-11-03. DESIGN.md: **Small and readable — measure before optimizing**.
 
-**`trueCold` remains false. No isolated browser identity was implemented or verified.**
-The owner required stopping on blockers. The broker accepted a headed baseline, but its first
-sample had two console resource-404 errors. The inspected still shows the place world and no sea.
-After inspecting that failure, I stopped only the test browser (PID 4604, verified against this
-run's exact owned profile). The warm sample was interrupted; its browser-closed error is deliberate.
-No game code, browser bundle, Metal cache, owner's profile or shared cache was changed.
+**The tool now copies/signs a test-exclusive browser, guards Metal clearing, fixes framing and identifies the old
+404s. Its headed cold/warm path has not run; it is not yet verified working and no `trueCold` result is claimed.**
+No game files or other checkouts changed. Nothing was pushed or shipped.
 
-There is also an execution boundary: this broker launches
-`/Users/matiasfranco/Developer/boogle-codex/water-cold-start/dev/cold-start.ts`, not this worker's tool.
-An isolated-launcher implementation here would require promotion to the trusted launching checkout
-and a restarted broker before it could be tested through that broker. Changing another checkout or
-making the broker execute arbitrary worker code is outside this job's scope.
+## Verified here
 
-## Evidence and limits
+- `--prepare-only` copied Playwright Chrome for Testing under this worktree's
+  `.look/cold-start-sandbox/browser-D5sISK/Google Chrome for Testing.app`. All nine app/helper plists and signed
+  identifiers use `club.boogle.coldstart.dee9d56920544fa18f38d64ca4b8dab5` or its helper suffixes.
+  Ad-hoc signing and deep/strict signature verification passed. The Playwright source bundle was only read.
+- Fake-cache exercises rejected shared identities and symlink parents/descendants, deleted only the two exclusive
+  Metal leaves, and preserved shared-cache and unrelated-cache sentinels. No real Metal cache was cleared.
+- Five invalid CLI cases were rejected. Node-only exercises verified immediate camera assignment and interval-union
+  arithmetic (20 ms union versus 25 ms summed overlapping async latency). These do not verify browser execution.
+- [Sandbox evidence](../../.look/evidence/1793758730147-7290/sandbox-evidence.json) is supplemental evidence produced
+  by local exercises, copied beside the broker artifacts for handoff; it is not a browser benchmark.
+- Both production broker captures passed WebGPU, advancing completed frames and zero page/console/graphics errors:
+  [new-sea manifest](../../.look/evidence/1793758632900-6948/evidence.json),
+  [old-sea manifest](../../.look/evidence/1793758730147-7290/evidence.json).
+  Opened `cold-shore-new-still.png` and `cold-shore-old-still.png`. Both show substantial foreground sea and the same
+  shoreline; new sea has turquoise surface detail/caustics, old sea is plain blue. Motion sheets were not opened.
+  No gameplay bot ran, so there are no bot results. Real-time motion, physical occlusion and devices remain unverified.
 
-[Broker manifest](../../.look/evidence/1793758113245-4190/evidence.json),
-[report](../../.look/evidence/1793758113245-4190/report.json),
-[complete stall attribution](../../.look/evidence/1793758113245-4190/1-cold-summary.json).
-Source and harness trees stayed unchanged during the run. The launcher copies these artifacts into its handoff.
+Visual question: does the fixed benchmark shore camera show substantial water for both seas? Yes in these two
+stills. The broker uses its launcher's tool, so these establish only the pose and generated production HTML health.
+They do not establish the new runner's early camera installation or 90-second persistence. No source changed during
+either capture; the second includes the runner's cleanup refinement. Later changes are documentation only.
 
-Requested: three 90-second cold/warm pairs for each sea, plus Metal-versus-browser-cache-only proof.
-Completed: one 90-second browser-cache-only new-sea cold sample; zero completed pairs, zero old-sea
-samples, zero isolated Metal samples. Cold synchronous pipeline total: 0.30 ms. Warm spread and
-Metal contribution are unavailable. Neither timing nor cache-clearing success is claimed.
+The previous sample's two 404s were **both `/favicon.ico`**, at 12905.2 and 13259.8 ms in the historical
+`water-metal-cold/.look/evidence/1793758113245-4190/1-cold-timeline.json` resource entries. They were not fonts.
+The site has PNG icons but no favicon.ico/link: a real ancillary asset omission. Within this no-game-fixes task,
+generated local production HTML now links `/icon-192.png`. Deployed runs retain and classify only an exact
+same-origin `/favicon.ico` 404 as ancillary; every other failed request/error remains unhealthy. Network logs retain
+URLs/statuses and console locations. Font links are still removed only from generated local HTML.
 
-Visual question: is the world visible, with the sea in frame? Opened only
-[`1-cold.png`](../../.look/evidence/1793758113245-4190/1-cold.png): terrain, characters and hat stalls
-are visible; sea is absent. The page reported `hidden: false`; physical window visibility remains
-unverified because computer access to Chrome for Testing was denied. Host audit recorded no other
-matching rendering job at launch, but concurrent rendering throughout the sample cannot be excluded.
-No gameplay bot was run. No real-time motion judgement was made.
+## What the runner does
 
-All callback intervals over 50 ms follow. Times are milliseconds from navigation; attribution is
-overlapping evidence, not a claim that a named script owns the entire interval. Unknown GPU/OS/display
-time stays unknown. The visibility proxy occurred at 12468.4 ms, not a pixel-confirmed first sea frame.
+Each invocation creates a new random `club.boogle.coldstart.<uuid>` identity, copies the installed Playwright app into
+its output directory, edits every app/helper `CFBundleIdentifier`, ad-hoc signs and verifies the copy, and launches
+its executable via `executablePath`. It retains the copy and identity manifest for inspection.
 
-| Interval end | Duration | Relation to visibility | Attribution evidence / unknown owner |
-| ---: | ---: | --- | --- |
-| 1801.6 | 1658.3 | Before | main-B7rCfapN.js evaluation, 1664.7 ms |
-| 2093.3 | 267.9 | Before | index-Cj9bGi4C.js evaluation, 242.1 ms |
-| 2443.3 | 316.9 | Before | Timer 8.8 ms; pipeline call 0.1 ms; remainder unknown |
-| 2685.0 | 233.4 | Before | Repeated index-CVpWZ-gP.js timers; entire-gap owner unknown |
-| 3959.9 | 1249.9 | Before | Async pipelines overlap (1282.4/1277.1 ms elapsed); cause unknown |
-| 5018.3 | 50.5 | Before | Pipeline overlap rounded to 0 ms; unknown |
-| 10051.6 | 66.7 | Before | Unknown |
-| 10843.2 | 749.9 | Before | Unnamed frame callbacks and pipeline overlap; cause unknown |
-| 12884.9 | 2041.7 | Straddles | Unnamed callbacks; compute call rounded to 0 ms; cause unknown |
-| 13218.4 | 299.8 | After | audio-DxF_gMus.js pointerdown 255.5 ms; frame callback 44.6 ms |
-| 13426.6 | 191.3 | After | Unnamed frame callback 10.2 ms; remainder unknown |
+One unmeasured 90-second priming visit precedes three measured cold/warm pairs. Every cold visit gets a fresh profile
+and clears only `<DARWIN_USER_CACHE_DIR>/<exact unique id>[.*]/com.apple.metal` and `com.apple.metalfe`.
+Deletion validates the unique id, direct parent and every descendant, rejecting symlinks before removing anything.
+It never clears shared Chrome/Chromium, owner-browser, OS-wide or filesystem caches. Warm relaunches preserve the
+pair's profile and exclusive Metal caches. Completed pairs delete only their own temporary profile; execution
+failures retain their profiles for inspection. The last exclusive Metal files remain after the invocation.
 
-Two intervals lie wholly after the visibility proxy. This unhealthy Mac M1 Max Chrome/ANGLE Metal
-sample identifies an audio-work candidate; it cannot reproduce or rule out the owner's iPhone 17 Pro
-Safari stall, establish Safari compiler behavior, or measure Metal cold-start contribution.
+`clear-N.json` records paths and removed-file inventory. After every sample, including launch/close failures,
+`N-kind-metal.json` and console output report new/changed exclusive files with paths, sizes and mtimes.
+`identity.json`, disk-cache inventories and browser arguments expose what was used. File size/mtime changes are
+write evidence, not a trace of every filesystem operation; no shared-cache write attribution is claimed.
 
-## Outside-sandbox command
+`trueCold` requires exclusive priming and cold writes, actual nonempty clears for all requested pairs, unchanged
+source, no run failure, and at least three healthy matched-pipeline pairs. The measured metric is the **union of
+async pipeline elapsed intervals**, avoiding double-counting overlap. Every cold-minus-warm delta must exceed 5 ms,
+and their median must exceed 10% of the cold median. The old synchronous total was only 0.30 ms and is now diagnostic
+only. Async elapsed includes queueing and JS scheduling, not isolated compiler time. Browser caches also differ,
+so this smoke criterion cannot quantify Metal's individual contribution or establish statistical significance.
+Failure keeps `trueCold: false` and exits 2; execution failures exit 1.
 
-To reproduce the existing baseline directly, with other rendering jobs stopped by their owners:
+Every sample uses `proto=place`, `debugcam=1`, fixed DPR and the same fixed shore pose:
+camera `(770,10,110)` looking at `(850,0,90)`. An init-script accessor sets the existing camera API as soon as the game
+installs it; health rejects installation after `boot:first`. The game hook holds that pose each frame. Captures at
+join-ready, 30 s, 60 s and end make framing reviewable. Capture overhead applies equally to both seas. Visibility and
+focus are sampled each second; CDP window bounds/state are recorded at start/end, plus actual browser launch flags.
+These signals cannot establish physical window occlusion: that remains explicitly unknown, even with `hidden:false`.
+The video probe is canvas presentation evidence, not monitor scan-out.
+
+## Exact owner commands, outside the sandbox
+
+Run separately from **this worktree**, with other rendering jobs stopped by their owners. Each command records
+three 90-second cold/warm pairs plus the priming visit (seven visits, about 10.5 minutes plus build/launch overhead).
+Deployed commands require a terminal/session permitting external network; none was used in this job. No promotion
+to another checkout or broker modification is needed with `--direct`.
 
 ```sh
-cd /Users/matiasfranco/Developer/boogle-codex/water-metal-cold
+cd /Users/matiasfranco/Developer/boogle-codex/water-metal-tool
 npm run cold-start -- --direct --runs 3 --mode paired --seconds 90 --video-probe --query 'proto=place&water=new'
+npm run cold-start -- --direct --runs 3 --mode paired --seconds 90 --video-probe --query 'proto=place&water=old'
+npm run cold-start -- --direct --url 'https://boogle.club/?proto=place&water=new' --runs 3 --mode paired --seconds 90 --video-probe
+npm run cold-start -- --direct --url 'https://boogle.club/?proto=place&water=old' --runs 3 --mode paired --seconds 90 --video-probe
 ```
 
-This command still uses shared Metal identity and will keep `trueCold: false`; it is not a workaround
-that proves isolated clearing. Implementation and broker promotion remain necessary. Deployed-site
-testing is untouched. `inflight` was skipped because it fetches GitHub, prohibited by this job.
+Read each printed `report.json`, clear/write inventories and all checkpoint PNGs before accepting its result.
+Actual exclusive cache placement, measurable cold/warm differences, the complete runner lifecycle, deployed behavior
+and Safari/iPhone reproduction remain unverified. Do not describe this tool as working until these commands run.
 
-Validation: `npx prettier --write docs/research/water-metal-cold.md` and `npm run check` passed
-(lint, typecheck, unit tests, registry, level, assets and production build). Only this report changed.
-The benchmark manifest records the preceding source tree; the final commit adds documentation only.
+Validation: targeted Prettier and ESLint passed. `npm run check` passed (lint, typecheck, unit tests, registry,
+level checks, assets and production build).
+`inflight` was skipped because it fetches GitHub, prohibited by this task. No new unit tests or scenarios were added.
