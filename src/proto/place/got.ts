@@ -2,7 +2,8 @@
 // you dismiss. Generic finds (logs, stone, rails, money, crystals, gold) never come through here. You stand still while it's
 // up: Interact, Back, a click or a tap puts it away, and the next one in the queue comes up. Local and cosmetic.
 import * as THREE from 'three/webgpu';
-import { cam, me } from '../../player/player.ts';
+import { cam, camConstraints, camForward, me } from '../../player/player.ts';
+import { reducedMotion } from '../../constants.ts';
 import { inputState } from '../../player/input-state.ts';
 import { setPadGrab } from '../../player/controls.ts';
 import { glyph } from '../../player/glyphs.ts';
@@ -13,6 +14,8 @@ import { fanfare, pop } from '../minis/common.ts';
 import { softGlow } from './look.ts';
 
 export type Got = {
+  /** Local presentation identity for a shared unlock; never saved or sent. */
+  key?: string;
   /** As it reads after "You got": "the multi-axe", "a pack frame". */
   name: string;
   line?: string;
@@ -24,11 +27,17 @@ export type Got = {
 };
 
 const queue: Got[] = [];
+const shown = new Set<string>();
+export const rememberGot = (key: string) => void shown.add(key);
+/** A missed shared reset starts new unlock history without cancelling an in-progress personal prize. */
+export const resetGotHistory = () => shown.clear();
 let cur: (Got & { t: number; start: THREE.Vector3 }) | null = null;
 export const gettingItem = () => !!cur || queue.length > 0;
 
+const BUILD_S = 0.45;
 const RISE_S = 0.45;
-const MIN_S = 0.6; // a press that started it can't also put it away
+const REVEAL_S = BUILD_S + RISE_S;
+const MIN_S = REVEAL_S + 0.6; // readable reveal time; its initiating press cannot dismiss it
 const SIZE = 0.95; // m across, whatever it is
 
 const holder = new THREE.Group();
@@ -58,8 +67,13 @@ const title = box.querySelector('b')!,
 
 /** Hold it up: now, or after whatever's up already. */
 export function youGot(g: Got) {
+  if (g.key) {
+    if (shown.has(g.key)) return false;
+    shown.add(g.key);
+  }
   queue.push(g);
   if (!cur) next();
+  return true;
 }
 
 function next() {
@@ -81,7 +95,7 @@ function next() {
   inputState.held = true;
   me.charging = false;
   me.yaw = cam.yaw + Math.PI; // turned to face you
-  setAloft(true);
+  setAloft(false);
   setPadGrab(
     (slot) => {
       if (slot === 'x') press();
@@ -94,11 +108,10 @@ function next() {
   sub.textContent = g.line ?? '';
   sub.hidden = !g.line;
   hint.innerHTML = '';
-  box.hidden = false;
+  box.hidden = true;
   box.classList.remove('on');
-  void box.offsetWidth; // so the pop-in runs again
-  box.classList.add('on');
-  fanfare(true);
+  spin.visible = rays.visible = false;
+  haloGlow.strength.value = 0.08;
 }
 
 function putAway() {
@@ -111,7 +124,7 @@ function putAway() {
   setAloft(false);
   inputState.held = false;
   setPadGrab(null);
-  sparkles(holder.position, 24, 3.4);
+  if (!reducedMotion) sparkles(holder.position, 24, 3.4);
   pop(7, 0.7);
   g.done?.();
   next();
@@ -119,7 +132,9 @@ function putAway() {
 
 /** Start over: whatever's up or waiting goes, with nothing handed over. */
 export function dropGot() {
+  resetGotHistory();
   queue.length = 0;
+  cameraWeight = 0;
   if (!cur) return;
   cur.done = undefined;
   putAway();
@@ -164,22 +179,48 @@ function sparkles(at: THREE.Vector3, n: number, sp: number) {
 }
 
 const top = new THREE.Vector3();
+const focus = new THREE.Vector3(),
+  shot = new THREE.Vector3(),
+  forward = new THREE.Vector3();
+let cameraWeight = 0;
+camConstraints.push((look, pos) => {
+  if (reducedMotion || cameraWeight <= 0 || !me.body) return false;
+  const p = me.body.interpolatedPosition;
+  focus.set(p.x, p.y + 1.1, p.z);
+  shot.set(p.x + Math.sin(cam.yaw) * 3.8, p.y + 2.1, p.z + Math.cos(cam.yaw) * 3.8);
+  camForward(forward);
+  pos.lerp(shot, cameraWeight);
+  look.addScaledVector(forward, 8).lerp(focus, cameraWeight).addScaledVector(forward, -8);
+  return false; // keep the ordinary ground safety constraint
+});
 export function updateGot(dt: number) {
+  cameraWeight += ((cur ? 1 : 0) - cameraWeight) * (1 - Math.exp(-dt * (cur ? 3.5 : 7)));
+  if (cameraWeight < 0.001) cameraWeight = 0;
   if (!cur) return;
   const u = (cur.t += dt);
   overHead(top);
-  const rise = Math.min(1, u / RISE_S),
+  const rise = Math.max(0, Math.min(1, (u - BUILD_S) / RISE_S)),
     ease = 1 - (1 - rise) ** 3;
-  holder.position.lerpVectors(cur.start, top, ease);
-  holder.position.y += Math.sin(u * 2.2) * 0.06 * rise;
-  spin.rotation.y = u * 1.7;
-  spin.scale.setScalar(0.4 + 0.6 * ease);
+  holder.position.lerpVectors(cur.start, top, reducedMotion ? 1 : ease);
+  spin.visible = u >= BUILD_S;
+  rays.visible = u >= REVEAL_S;
+  setAloft(u >= BUILD_S);
+  if (u >= REVEAL_S && box.hidden) {
+    box.hidden = false;
+    box.classList.add('on');
+    fanfare(true);
+  }
+  holder.position.y += reducedMotion ? 0 : Math.sin(u * 2.2) * 0.06 * rise;
+  spin.rotation.y = reducedMotion ? 0 : Math.max(0, u - BUILD_S) * 1.7;
+  spin.scale.setScalar(reducedMotion ? 1 : 0.4 + 0.6 * ease);
   // Turned towards the view, so the rays fan out around it.
   rays.quaternion.copy(camera.quaternion);
-  rays.rotation.z += u * 0.5;
-  haloGlow.strength.value = 0.3 + Math.sin(u * 5) * 0.06;
+  if (!reducedMotion) rays.rotation.z += u * 0.5;
+  haloGlow.strength.value =
+    u < BUILD_S ? 0.08 + (u / BUILD_S) * 0.16 : reducedMotion ? 0.3 : 0.3 + Math.sin(u * 5) * 0.06;
   raysGlow.strength.value = 0.35 * ease;
-  if (Math.floor(u * 6) !== Math.floor((u - dt) * 6)) sparkles(holder.position, 3, 1.6);
+  if (!reducedMotion && u >= REVEAL_S && Math.floor(u * 6) !== Math.floor((u - dt) * 6))
+    sparkles(holder.position, 3, 1.6);
   if (u >= MIN_S && !hint.innerHTML) hint.innerHTML = `${glyph('interact')}<i>▼</i>`;
 }
 

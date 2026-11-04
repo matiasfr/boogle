@@ -41,6 +41,7 @@ import { backSeam } from '../../features/haul-stack.ts';
 import { drawHeaps, type Kind } from '../net/crates.ts';
 import { playMark } from '../mark.ts';
 import { clearMoments, showBanner } from './celebrate.ts';
+import { resetGotHistory } from './got.ts';
 import {
   ROCK_LIST,
   TREES,
@@ -64,7 +65,7 @@ import {
 } from './chop.ts';
 import { cartPlatform, rackTake, reconcileCart } from './depot.ts';
 import { forge, takeRail } from './forge.ts';
-import { COOP, applyShared, captureShared, count, job, num, save } from './job.ts';
+import { COOP, applyShared, captureShared, count, job, num, save, type Rungs } from './job.ts';
 import { GOODS, TUNE, type Goods } from './layout.ts';
 import { allHeaps, frameById, hub, lines, machine } from './lines.ts';
 import { clearTrips } from './pieces.ts';
@@ -91,11 +92,16 @@ type Api = {
   wakeTrains?: (fromPeer: boolean) => void;
   activeFrame?: () => StationRun | null;
   tech?: (what: unknown) => void;
+  rungsChanged?: (before: Rungs, quiet: boolean) => void;
+  techChanged?: (before: typeof job.tech, quiet: boolean) => void;
 };
 let api: Api | null = null;
 let skipsFns: Record<string, () => void> = {};
 /** Later hooks, from modules that import this one. */
-export const coopWire: Pick<Api, 'rung' | 'forgeBill' | 'wakeTrains' | 'activeFrame' | 'tech'> = {};
+export const coopWire: Pick<
+  Api,
+  'rung' | 'forgeBill' | 'wakeTrains' | 'activeFrame' | 'tech' | 'rungsChanged' | 'techChanged'
+> = {};
 export const pairHook = {
   msg: null as ((m: Record<string, unknown>) => void) | null,
   busy: null as (() => boolean) | null,
@@ -141,16 +147,20 @@ function validSnap(j: unknown): j is Snap {
 }
 
 /** Everything shared, from the authority's state. Your back, gifts, crystals and finds stay yours. */
-function applyFull(a: Api, j: Snap) {
+function applyFull(a: Api, j: Snap, announce = true) {
   // A same-generation snapshot can precede our request on the authority's channel.
   // Keep that reservation/receipt alive; only a reset invalidates the transaction.
-  if (j.gen !== gen) clearHarvest();
+  if (j.gen !== gen) {
+    clearHarvest();
+    resetGotHistory();
+    announce = false;
+  }
   gen = j.gen;
   clearMoments();
   clearTrips();
   back.incoming = 0;
   a.clearIncoming();
-  applyCoopShared(j.shared);
+  applyCoopShared(j.shared, announce);
   reconcileBig();
   a.run.mode = 'asleep';
   a.snapAll();
@@ -312,7 +322,7 @@ function onSnap(a: Api, j: Snap, force: boolean) {
     // A fresh room, and you've come with a save: the room takes yours rather than wiping it.
     const mine = snapshot();
     if (!force && score(j.shared) === 0 && score(mine.shared) > 0) return void msg({ k: 'mine', snap: mine });
-    return applyFull(a, j);
+    return applyFull(a, j, false);
   }
   if (j.gen < gen) return; // from before a Start over
   if (force || j.gen > gen) return applyFull(a, j);
@@ -380,11 +390,15 @@ function clearHarvest(resetReceipts = true) {
   harvestPending = null;
   if (resetReceipts) harvestReceipts.clear();
 }
-function applyCoopShared(shared: Record<string, unknown>) {
+function applyCoopShared(shared: Record<string, unknown>, announce = true) {
+  const rung = { ...job.rung },
+    tech = { ...job.tech };
   applyShared(shared);
   // The felled slice rebuilds trees and clears local reservations. A same-generation
   // request still owns this capacity until its receipt, even across full reconciliation.
   if (harvestPending) reserveHarvest(harvestPending.room);
+  coopWire.rungsChanged?.(rung, !announce);
+  coopWire.techChanged?.(tech, !announce);
 }
 function validResult(value: unknown): value is HarvestResult {
   const r = value as HarvestResult | null;
@@ -464,7 +478,7 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
     }
     case 'mine': {
       if (!amAuthority() || !validSnap(m.snap) || score(captureShared()) > 0) return;
-      applyFull(a, m.snap);
+      applyFull(a, m.snap, false);
       msg({ k: 'snap', snap: snapshot(), force: true });
       return;
     }
