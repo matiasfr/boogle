@@ -5,12 +5,9 @@
 .place-fresh .tbtn.ping-btn {
   display: none;
 }
-/* Touch: the main button means nothing until something's in reach (it reads "Grab" then). The objective clears Honk. */
+/* Touch: the main button means nothing until something's in reach (it reads "Grab" then). */
 body.touch.place-no-target .tbtn.grab {
   opacity: 0.4;
-}
-body.touch .place-objective {
-  bottom: calc(150px + env(safe-area-inset-bottom, 0px));
 }
 /* The moves' touch buttons, once you've found them; a right thumb still reaches Jump, and each is a toggle or one press. */
 .tbtn.place-hook-btn,
@@ -49,7 +46,6 @@ body.place-has-glide .tbtn.place-glide-btn {
   display: block;
 }
 /* Not until you're in: the lobby has its own job. */
-body:not(.playing) .place-objective,
 body:not(.playing) .place-nums,
 body:not(.playing) .place-proto {
   display: none;
@@ -79,60 +75,6 @@ body:not(.playing) .place-proto {
   cursor: pointer;
 }
 
-/* The objective: one short line that comes up when it changes or you seem unsure, and fades (signs.ts). */
-.place-objective {
-  position: absolute;
-  left: 50%;
-  bottom: calc(112px + env(safe-area-inset-bottom, 0px)); /* above the log-count chip (haul-stack.css) */
-  transform: translateX(-50%);
-  max-width: min(56vw, 560px);
-  padding: 6px 14px;
-  font: 700 15px/1.25 var(--font-body);
-  color: var(--ink);
-  text-align: center;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  border-radius: 12px;
-  box-shadow: 0 2px 0 var(--ink);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.6s;
-}
-.place-objective.on {
-  opacity: 1;
-  transition: opacity 0.15s;
-}
-.place-objective.place-pop {
-  animation: place-pop 0.28s ease-out;
-}
-@keyframes place-pop {
-  0% {
-    transform: translateX(-50%) scale(0.92);
-  }
-  60% {
-    transform: translateX(-50%) scale(1.05);
-  }
-  100% {
-    transform: translateX(-50%) scale(1);
-  }
-}
-/* Turned away from where to go: a chevron at the screen's edge, in the beacon's orange, pointing the way (signs.ts). */
-.place-arrow {
-  position: absolute;
-  left: -19px;
-  top: -19px;
-  width: 38px;
-  height: 38px;
-  background: #ff8a1a;
-  clip-path: polygon(50% 0, 100% 100%, 50% 72%, 0 100%);
-  filter: drop-shadow(0 0 1px var(--ink)) drop-shadow(0 2px 0 var(--ink));
-  opacity: 0;
-  transition: opacity 0.25s;
-  pointer-events: none;
-}
-.place-arrow.on {
-  opacity: 1;
-}
 /* The numbers: logs, kilometres, town and money, a comic score. Small, and off to one side. */
 .place-nums {
   position: absolute;
@@ -361,7 +303,4 @@ body.touch .place-talk-opts button.talk-sel {
 }
 body.place-has-load .tbtn.place-drop-btn {
   display: block;
-}
-body.place-getting .place-objective {
-  visibility: hidden;
 }

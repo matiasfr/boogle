@@ -1,6 +1,6 @@
 // What the Interact button does in ?proto=place: one list of everything in reach right now. Also the way back up if you fall.
 import * as THREE from 'three/webgpu';
-import { NO_TARGETS, onInteractPress, registerInteractable, type Interactable } from '../../player/hands.ts';
+import { NO_TARGETS, registerInteractable, type Interactable } from '../../player/hands.ts';
 import { myBundleNext } from '../../features/haul-stack.ts';
 import { me } from '../../player/player.ts';
 import { fallArrival } from '../../fall/arrival.ts';
@@ -39,7 +39,6 @@ import { send } from './pieces.ts';
 import { SCOPE_AT, boilerAt, lookThrough } from './props.ts';
 import { activeFrame, mark, run, wake } from './run.ts';
 import { seated, sitDown, standUp } from './seat.ts';
-import { showObjective } from './signs.ts';
 
 const SHELF_AT = { x: toWorld(SHELF.x), z: SHELF.z };
 const atPrompt = new THREE.Vector3();
@@ -366,8 +365,4 @@ registerInteractable(() => {
     (out ??= []).push({ id: 'place-sit', verb: 'Sit', at: sitAt, r: -100, run: sitDown });
   }
   return out ?? NO_TARGETS;
-});
-// Pressing with nothing in reach: you're wondering what to do.
-onInteractPress((t) => {
-  if (!t && !fallArrival.active) showObjective();
 });

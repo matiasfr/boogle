@@ -142,8 +142,9 @@ function buildStops() {
 buildStops();
 
 // ---------------------------------------------------------------- the boiler by the forge
-const BX = toWorld(FORGE.x - 8),
-  BZ = FORGE.z - 1;
+// On the open apron beside the rail rack, visible from the return track rather than behind the forge.
+const BX = toWorld(FORGE.x + 6),
+  BZ = FORGE.z + 8.4;
 const BY = H(BX, BZ);
 const boiler = boilerShape();
 boiler.position.set(BX, BY + 0.55, BZ);
