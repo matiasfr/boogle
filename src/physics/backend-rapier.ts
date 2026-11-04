@@ -41,6 +41,7 @@ class MBody {
   quaternion = new Quat();
   interpolatedPosition = new Vec();
   previousPosition = new Vec();
+  previousRotation = new Quat();
   last = { x: 0, y: 0, z: 0, qx: 0, qy: 0, qz: 0, qw: 1 }; // the pose Rapier last reported
   kind: BodyKind = 'static';
   mass = 0;
@@ -209,6 +210,7 @@ export function createBody(o: BodyOptions = {}): Body {
   if (o.position) b.position.set(o.position.x, o.position.y, o.position.z);
   if (o.rotation) b.quaternion.set(o.rotation.x, o.rotation.y, o.rotation.z, o.rotation.w);
   b.previousPosition.set(b.position.x, b.position.y, b.position.z);
+  b.previousRotation.set(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w);
   b.interpolatedPosition.set(b.position.x, b.position.y, b.position.z);
   return b as unknown as Body;
 }
@@ -261,6 +263,7 @@ export function teleport(body: Body, x: number, y: number, z: number) {
   const b = m(body);
   b.position.set(x, y, z);
   b.previousPosition.set(x, y, z);
+  b.previousRotation.set(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w);
   b.interpolatedPosition.set(x, y, z);
 }
 
@@ -285,6 +288,9 @@ function push(b: MBody) {
     l = b.last;
   if (p.x !== l.x || p.y !== l.y || p.z !== l.z) rb.setTranslation(p, true);
   if (q.x !== l.qx || q.y !== l.qy || q.z !== l.qz || q.w !== l.qw) rb.setRotation(q, true);
+  // After pre-step teleports/riding edits, before integration: actual f32 poses for contact timing.
+  rb.translation(b.previousPosition);
+  rb.rotation(b.previousRotation);
   if (b.kind === 'static') return;
   rb.setLinvel(b.velocity, true);
   rb.setAngvel(b.angularVelocity, true);
@@ -295,7 +301,6 @@ function push(b: MBody) {
 }
 function pull(b: MBody) {
   const rb = b.rb!;
-  b.previousPosition.set(b.position.x, b.position.y, b.position.z);
   if (b.kind === 'static') return;
   const t = rb.translation(),
     r = rb.rotation(),
@@ -368,6 +373,46 @@ const pairContact: RAPIER.ShapeContact = {
   normal1: new Vec(),
   normal2: new Vec(),
 };
+const startContactPosition = new Vec(),
+  startContactRotation = new Quat(),
+  startOtherPosition = new Vec(),
+  startOtherRotation = new Quat(),
+  startRotationDelta = new Quat();
+function multiplyRotation(a: RAPIER.Rotation, b: RAPIER.Rotation, out: Quat) {
+  out.set(
+    a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+    a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+    a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+    a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
+  );
+}
+function touchingAtStepStart(own: RAPIER.Collider, collider: RAPIER.Collider, other: MBody) {
+  const body = contactBody!,
+    p = body.previousPosition,
+    q = body.previousRotation,
+    op = other.previousPosition,
+    oq = other.previousRotation;
+  // Move the small queried shape's old pose into the other body's current frame. This tests both old poses
+  // without copying the terrain shape, moving a live collider, or needing a pair in the old narrow phase.
+  own.translationWrtParent(startContactPosition);
+  own.rotationWrtParent(startContactRotation);
+  rotateContact(startContactPosition, q);
+  startContactPosition.x += p.x - op.x;
+  startContactPosition.y += p.y - op.y;
+  startContactPosition.z += p.z - op.z;
+  multiplyRotation(q, startContactRotation, startContactRotation);
+  other.rb!.translation(startOtherPosition);
+  other.rb!.rotation(startOtherRotation);
+  startRotationDelta.set(-oq.x, -oq.y, -oq.z, oq.w);
+  multiplyRotation(startOtherRotation, startRotationDelta, startRotationDelta);
+  rotateContact(startContactPosition, startRotationDelta);
+  startContactPosition.x += startOtherPosition.x;
+  startContactPosition.y += startOtherPosition.y;
+  startContactPosition.z += startOtherPosition.z;
+  multiplyRotation(startRotationDelta, startContactRotation, startContactRotation);
+  const contact = collider.contactShape(own.shape, startContactPosition, startContactRotation, 0, pairContact);
+  return !!contact && contact.distance <= 0;
+}
 let contactCast: { ray: RAPIER.Ray; hit: RAPIER.RayIntersection } | undefined;
 function rotateContact(v: V3, q: RAPIER.Rotation) {
   const tx = 2 * (q.y * v.z - q.z * v.y),
@@ -419,6 +464,8 @@ function touching(manifold: RAPIER.TempContactManifold, flipped: boolean) {
 // Reuse callbacks and transform buffers. Not reentrant: a `fn` can't call forEachContact.
 type ContactFn = (nx: number, ny: number, nz: number, other: Body) => boolean | void;
 let contactFn: ContactFn,
+  contactBody: MBody | undefined,
+  contactSinceStepStart = false,
   contactCol = 0,
   contactOther: MBody | undefined,
   contactOtherCollider: RAPIER.Collider | undefined,
@@ -437,6 +484,7 @@ function contactPairWith(handle: number) {
   // Anchors alone extend a finite floor's plane past its edge. Require actual pair overlap as well.
   // Solver-contact counts/impulses cannot replace this: both can be zero on resting heightfield contacts.
   const own = world!.getCollider(contactCol);
+  if (contactSinceStepStart && !touchingAtStepStart(own, collider, other)) return;
   const contact = own.contactCollider(collider, 0, pairContact);
   if (!contact || contact.distance > 0) return;
   // The fresh normal is already a valid contact. Only search cached manifolds if a caller needs another surface
@@ -463,10 +511,12 @@ function contactPairWith(handle: number) {
   collider.rotation(contactRotation2);
   world!.narrowPhase.contactPair(contactCol, handle, world!.bodies, contactManifold);
 }
-export function forEachContact(body: Body, fn: ContactFn) {
+export function forEachContact(body: Body, fn: ContactFn, { sinceStepStart = false } = {}) {
   const b = m(body);
   if (!world) return;
   contactFn = fn;
+  contactBody = b;
+  contactSinceStepStart = sinceStepStart;
   contactDone = false;
   for (let k = 0; k < b.colliders.length && !contactDone; k++) {
     contactCol = b.colliders[k]!.handle;

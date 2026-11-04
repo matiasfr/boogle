@@ -33,6 +33,8 @@ const q = new URLSearchParams(globalThis.location?.search);
 const AIR_ACCEL = Number(q.get('air')) || 14;
 // Preserve 0.19's first 0.1s of takeoff steering, formerly supplied by stale contacts, without renewing jump eligibility.
 const LAUNCH_STEER_TIME = 0.1;
+// 0.19's contacts supplied one extra steering step at a ledge. Preserve that inertia, never jump eligibility.
+const GROUND_STEER_TIME = 0.1 + FIXED;
 const MAX_FALL = 20; // m/s: see catchFallThrough in src/physics/physics.ts
 // Owner physics only; the old sea keeps its existing forces.
 const plungeEnabled = q.get('water') === 'new';
@@ -51,6 +53,7 @@ export const JUMP = {
   apexSpeed: 1.6, // m/s: "near the top"
 };
 export const MOVE = {
+  snapMinGap: 0.06, // m: the existing snap deadband also distinguishes uneven ground from a true ledge at takeoff
   snapMaxGap: 0.45, // m: ground this close below the feet pulls you back down after a crest
   // m/s: rising faster than this is a launch (a mushroom cap, a bounce pad), never a crest. Walking or sprinting over
   // a crest rises a few m/s at most; the slowest mushroom bounce is about 9. Without it the snap's ray found the cap
@@ -146,8 +149,8 @@ export function shapeJump() {
   if (me.jumpQueued > 0 && me.coyote > 0 && !under) jumpActive = true; // the jump happens this step
   if (!under) {
     let g = 1;
-    // Preserve the launch-step force when the solver rests at exactly zero; rising hop/apex shaping starts after launch.
-    if (vy < 0 || (vy === 0 && jumpActive)) g = JUMP.fallGravity;
+    // Preserve hill launch gravity at exact rest. A carried deck already rested at zero in 0.19 and keeps its old arc.
+    if (vy < 0 || (vy === 0 && jumpActive && !carry.on)) g = JUMP.fallGravity;
     else if (jumpActive && !me.jumpHeld) g = JUMP.cutGravity;
     else if (jumpActive && vy < JUMP.apexSpeed) g = JUMP.apexGravity;
     b.force.y -= PLAYER_MASS * GRAVITY * (g - 1);
@@ -155,7 +158,7 @@ export function shapeJump() {
     // whatever floor is under you (stairs, decks, cave floors), not the terrain: walking up a ramp is not a crest.
     if (!jumpActive && me.coyote > 0 && vy > 0.4 && vy < MOVE.snapMaxVy) {
       const gap = floorGap();
-      if (gap > 0.06 && gap < MOVE.snapMaxGap) b.velocity.y = 0;
+      if (gap > MOVE.snapMinGap && gap < MOVE.snapMaxGap) b.velocity.y = 0;
     }
   }
 }
@@ -167,12 +170,15 @@ function turnedBack(p: number, v: number) {
   return out > -2 ? v - Math.sign(p) * (out + 2) : v;
 }
 
-let launchSteerTime = 0;
+let launchSteerTime = 0,
+  groundSteerTime = 0;
 // Each physics step: steer the body's velocity toward what you want, jump, swim, and stay inside the map.
 export function steerPlayer() {
   const b = me.body!;
+  const supportedLaunch = me.coyote === 0.1;
   me.coyote -= FIXED;
   launchSteerTime -= FIXED;
+  groundSteerTime -= FIXED;
   carryStep(b, me); // a deck under you (src/physics/platforms.ts): steering below is relative to its motion
   const water = waterField.sampleAt('player', b.position);
   const surfY = water.height;
@@ -187,7 +193,7 @@ export function steerPlayer() {
   const rvx = b.velocity.x - carry.x,
     rvz = b.velocity.z - carry.z;
   const braking = me.wish.x * rvx + me.wish.z * rvz < 0;
-  const accel = me.coyote > 0 || launchSteerTime > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : AIR_ACCEL;
+  const accel = groundSteerTime > 0 || launchSteerTime > 0 ? (braking ? 115 : 70) : me.swimming ? 18 : AIR_ACCEL;
   let dx = me.wish.x * speed - rvx,
     dz = me.wish.z * speed - rvz;
   const dl = Math.hypot(dx, dz),
@@ -204,7 +210,9 @@ export function steerPlayer() {
       b.velocity.y = Math.min(Math.max(b.velocity.y, 0), 6) + JUMP_SPEED; // adds to an upward bounce: bounces chain
       me.coyote = 0;
       me.jumpQueued = 0;
-      launchSteerTime = LAUNCH_STEER_TIME;
+      // Coyote jumps over empty air never had the old contact-driven launch steering. Uneven ground did.
+      launchSteerTime = supportedLaunch || floorGap() <= MOVE.snapMinGap ? LAUNCH_STEER_TIME : 0;
+      groundSteerTime = 0;
     } else if (me.swimming) {
       b.velocity.y = Math.max(b.velocity.y, SWIM_JUMP_SPEED);
       me.jumpQueued = 0;
@@ -230,11 +238,17 @@ export function steerPlayer() {
 export function groundPlayer() {
   const b = me.body!;
   catchFallThrough(b, PLAYER_R);
-  forEachContact(b, (nx, ny) => {
-    if (ny <= WALKABLE_NY) return false;
-    me.coyote = 0.1;
-    return true;
-  });
+  forEachContact(
+    b,
+    (nx, ny) => {
+      if (ny <= WALKABLE_NY) return false;
+      me.coyote = 0.1;
+      groundSteerTime = GROUND_STEER_TIME;
+      return true;
+    },
+    // Old manifolds described the start of the step. Delay a new landing, but retain contact continuity on uneven ground.
+    { sinceStepStart: me.coyote <= 0 },
+  );
 }
 
 // After the ball's respawn check (src/entities/ball/, -300): falling off the world puts you back at the spawn.
