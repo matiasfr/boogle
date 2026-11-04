@@ -23,7 +23,13 @@ export async function startProduction(dataRoot: string): Promise<Stack> {
     throw new Error('Production build failed');
   }
   const html = path.join(dist, 'index.html');
-  fs.writeFileSync(html, fs.readFileSync(html, 'utf8').replace(/<link\b[^>]*href="https:\/\/fonts\.[^"]*"[^>]*>/g, ''));
+  fs.writeFileSync(
+    html,
+    fs
+      .readFileSync(html, 'utf8')
+      .replace(/<link\b[^>]*href="https:\/\/fonts\.[^"]*"[^>]*>/g, '')
+      .replace('</head>', '<link rel="icon" href="/icon-192.png"></head>'),
+  );
   const http = await freePort();
   const preview = spawn(
     process.execPath,

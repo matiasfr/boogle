@@ -51,7 +51,7 @@ import { waterField } from '../physics/water-field.ts';
 import { GRID } from './water/tuning.ts';
 import { TSL } from './water/tsl.ts';
 import { camera, rendererReady, scene, sun } from './scene.ts';
-import { precompile } from './precompile.ts';
+import { warmUp, warmDraw } from './precompile.ts';
 export { seaU, seaRipples } from './water/state.ts';
 export { registerShoreProvider } from './water/shore-providers.ts';
 
@@ -284,13 +284,37 @@ function createRealSea() {
   });
   waterRuntime.inspect = () => entity.describe!();
   waterRuntime.dispose = () => despawn(entity);
+  // Compile while the frozen sky is baking; the warm-up below awaits this INSIDE its existing deadline.
+  const prepared = rendererReady.then(async () => {
+    if (disposed || !entity.alive) return;
+    atlas.sync();
+    await source.prepare();
+    await queries.prepare();
+    await underwater.prepare();
+  });
   // CPU resources exist before the loading precompile. GPU work begins only after the existing renderer is ready.
   waterReady = Promise.all([rendererReady, frozen.ready]).then(() => {
     if (disposed || !entity.alive) return;
     atlas.sync();
-    source.update(0);
-    ready = true;
-    void precompile(ocean.mesh);
+  });
+  warmUp(
+    async () => {
+      await waterReady;
+      if (disposed || !entity.alive) return;
+      // Both FFT parities, both readback slots and the wet lens must exist before the first update.
+      // computeAsync only waits for renderer.init in r187; compileComputeAsync waits for native pipelines.
+      await prepared;
+      if (disposed || !entity.alive) return;
+      source.update(0);
+      ready = true;
+      // main's whole-scene warm-up includes this mesh; a separate queued compile duplicates that work.
+    },
+    { beforeScene: true },
+  );
+  warmDraw(() => {
+    if (!ready || disposed) return;
+    caustics.update(seaU.uSun.value);
+    underwater.update(0, 0);
   });
   return ocean.mesh;
 }

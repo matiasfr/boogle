@@ -10,14 +10,19 @@
 //                         returns a throwaway Object3D with the same materials; it is compiled at start, never drawn.
 //                         Work that draws off-screen itself (the item icons) does it in make() and returns a
 //                         promise of anything else; it is awaited in turn
-import { renderer, scene, camera, rendererReady } from './scene.ts';
+import { renderer, scene, camera, rendererReady, renderFrame } from './scene.ts';
 import { bootMark, bootSpan, bootSpanMs } from '../boot/timeline.ts';
 
 import type * as THREE from 'three/webgpu';
 
 type Warmup = () => THREE.Object3D | Promise<unknown> | unknown;
 const warmups: Warmup[] = [];
-export const warmUp = (make: Warmup) => warmups.push(make);
+const preparations: Warmup[] = [];
+const draws: (() => void)[] = [];
+/** Offscreen passes normally submitted by the first update, using their real targets and materials. */
+export const warmDraw = (draw: () => void) => draws.push(draw);
+/** beforeScene prepares resources the scene's shaders read, within the same boot escape deadline. */
+export const warmUp = (make: Warmup, { beforeScene = false } = {}) => (beforeScene ? preparations : warmups).push(make);
 
 // three keeps one precompilation state per renderer, so two compileAsync calls must never overlap: one at a time.
 let queue: Promise<unknown> = Promise.resolve();
@@ -69,6 +74,41 @@ async function compileNow(root: THREE.Object3D) {
 // (docs/research/webgpu-on-ipad.md, recommendation 8). Remove once WebKit fixes it.
 rendererReady.then(
   () => {
+    // Opt-in startup evidence: native pipeline labels contain material IDs, not their scene owners.
+    // Keep the actual cache key and object alongside the GPUDevice timings recorded by startup-record.ts.
+    if (new URLSearchParams(location.search).get('startup') === '1') {
+      type RenderObject = {
+        object: THREE.Object3D & { geometry?: THREE.BufferGeometry };
+        material: THREE.Material;
+        pipeline: { cacheKey: string };
+        context: { textures: THREE.Texture[] | null; sampleCount: number };
+      };
+      const backend = renderer.backend as unknown as {
+        createRenderPipeline(o: RenderObject, promises: unknown[] | null): void;
+        getRenderCacheKey(o: RenderObject): string;
+      };
+      const create = backend.createRenderPipeline.bind(backend);
+      backend.createRenderPipeline = (o, promises) => {
+        const parents: string[] = [];
+        for (let p: THREE.Object3D | null = o.object; p; p = p.parent) parents.push(p.name || `${p.type}#${p.id}`);
+        // PerformanceEntry.toJSON omits mark.detail in the benchmark browser.
+        performance.mark(
+          'startup:render-pipeline:' +
+            JSON.stringify({
+              material: `${o.material.name || o.material.type}_${o.material.id}`,
+              object: parents.join(' / '),
+              position: o.object.position.toArray(),
+              geometry: o.object.geometry?.type,
+              async: promises !== null,
+              key: o.pipeline.cacheKey,
+              state: backend.getRenderCacheKey(o),
+              targets: o.context.textures?.map((t) => ({ name: t.name, type: t.type, colorSpace: t.colorSpace })),
+              samples: o.context.sampleCount,
+            }),
+        );
+        create(o, promises);
+      };
+    }
     type Backend = {
       get(o: object): { initialized?: boolean; externalTexture?: boolean };
       createTexture(t: THREE.Texture, o?: object): void;
@@ -138,7 +178,7 @@ rendererReady.then(
   () => {},
 );
 let warmStart = 0;
-/** main.ts, when the boot warm-up is over: the 'shaders' mark, with the programs and pipelines built so far. */
+/** main.ts, when the warm-up wait ends (completion or deadline): programs and pipelines built so far. */
 export function shadersMark() {
   const p = (
     renderer as unknown as {
@@ -163,16 +203,49 @@ export function gpuDone(): Promise<void> {
   return device.queue.onSubmittedWorkDone();
 }
 
+// r187 has no RenderPipeline.compileAsync. Visit its REAL draw path (QuadMesh installs its vertex node
+// temporarily; RTT/shadow/fullscreen passes choose their own target and MSAA), but compile asynchronously.
+// Never hold renderer target/material overrides across an await. This also retains #35069's guard.
+async function compileFrame() {
+  type RenderObject = { pipeline: object };
+  const backend = renderer.backend as unknown as {
+    createRenderPipeline(o: RenderObject, promises: Promise<unknown>[] | null): void;
+  };
+  const create = backend.createRenderPipeline;
+  const promises: Promise<unknown>[] = [];
+  try {
+    backend.createRenderPipeline = (o, pending) => create.call(backend, o, pending ?? promises);
+    for (const prepare of draws) prepare();
+    renderFrame();
+  } finally {
+    backend.createRenderPipeline = create;
+  }
+  // Unlike compute(), r187's render path checks _pipelines.isReady before drawing. Escape remains safe.
+  await Promise.all(promises);
+  await gpuDone();
+  bootMark('frame-pipelines');
+}
+
 // Resolves when the pipelines are built; never rejects (a failed compile is only a hitch later).
 export async function precompile(root: THREE.Object3D | null = null, onProgress: (f: number) => void = () => {}) {
   if (root) return compile(root);
   warmStart = performance.now();
-  const parts = warmups.length + 2; // the scene counts as two: it is most of the work
-  await compile(scene);
-  onProgress(2 / parts);
+  const parts = preparations.length + warmups.length + 1;
+  for (let i = 0; i < preparations.length; i++) {
+    await preparations[i]!();
+    onProgress((i + 1) / parts);
+  }
+  // Submit the real passes first, then build the whole scene while those native pipelines compile.
+  // compileFrame restores renderer state before its first await; only compileNow uses three's mutable
+  // compileAsync state. Await BOTH: scene compilation can reuse still-pending wrappers from the frame.
+  await (queue = queue.then(() =>
+    Promise.all([compileFrame().catch((e) => console.warn('[precompile frame]', e)), compileNow(scene)]),
+  ));
+  onProgress((preparations.length + 1) / parts);
   for (let i = 0; i < warmups.length; i++) {
     const made = await warmups[i]!();
     if ((made as THREE.Object3D | null)?.isObject3D) await compile(made as THREE.Object3D);
-    onProgress((i + 3) / parts);
+    onProgress((preparations.length + i + 2) / parts);
   }
+  bootMark('warmup-complete'); // unlike boot:shaders, never means the escape deadline won
 }

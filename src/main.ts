@@ -70,8 +70,9 @@ function start() {
 
 async function play() {
   await waterReady; // the opt-in frozen sky completes its single bake behind loading, before the shader deadline
-  // Slow GPUs (and software rendering) can take many seconds: past 8 s the game opens anyway and the rest builds on.
-  const giveUp = new Promise((r) => setTimeout(r, 8000));
+  // A cold Metal cache takes about 14 s on an M1 Max (docs/research/water-metal-cold.md). Slow GPUs (and software
+  // rendering) can take longer: past 16 s the game opens anyway and the rest builds on.
+  const giveUp = new Promise((r) => setTimeout(r, 16000));
   splashStage(0.45, 0.95, 'Warming up the shaders');
   await Promise.race([precompile(null, splashProgress), giveUp]);
   shadersMark();

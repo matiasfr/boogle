@@ -132,6 +132,7 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
       state.assign(vec4(select(submerged, 1, 0), wet, camDepth, 0));
     });
   })().compute(UNDER.lensWidth * UNDER.lensHeight);
+  lensPass.setName('water wet lens');
   const color: N = scenePass.getTextureNode();
   const depth: N = scenePass.getTextureNode('depth');
   const ray = (at: N) => {
@@ -269,6 +270,7 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
     initialized = false;
   return {
     outputNode,
+    prepare: () => renderer.compileComputeAsync(lensPass),
     update(time: number, delta: number) {
       const sample = waterField.nearby(camera.position);
       body.value = sample.body === 'sea' ? 1 : sample.body === 'pond' ? 2 : 0;

@@ -1,5 +1,9 @@
 # Cold-start recorder: true-cold reproduction remains blocked
 
+Historical report. The current exclusive-browser implementation, validation limits and exact owner commands are in
+[water-metal-cold.md](water-metal-cold.md). The shared-Metal and synchronous-threshold descriptions below describe
+the earlier runner, not the current implementation; headed cold/warm validation remains pending.
+
 2026-11-03. DESIGN.md: **Small and readable — measure before optimizing**. Local diagnostic state only.
 
 **No true-cold headed sample was obtained. The owner's visible stall remains unresolved; no rendering fix or quality

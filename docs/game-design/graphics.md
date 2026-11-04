@@ -13,8 +13,13 @@
 - **What.** The island draws with WebGPU only: Chrome and Edge, Safari 26 on iPhone, iPad and Mac, Firefox on
   Windows and Apple Silicon. Any other browser sees a note in the lobby naming the browsers that work. A loading screen
   (key art, the title, a progress bar and a gear that keeps turning: download, graphics device, shaders) paints before the game's code arrives and
-  covers the lobby until the graphics device is up, the player's body is on, every shader is built and the GPU has
-  finished the first frame (8 s at most), so Jump in is the moment nothing is left to stall a frame; the room connects meanwhile ([src/boot/](../../src/boot/)). `?dpr=fixed`
+  covers the lobby while the graphics device, player's body, shaders and first GPU frame prepare; the room connects meanwhile ([src/boot/](../../src/boot/)).
+  Shader warm-up keeps a 16 s escape deadline (a cold Metal cache needs about 14 s on an M1 Max) after the frozen sky bake. It awaits water and particle compute,
+  submits the real caustics/post passes, then compiles the whole scene while those native pipelines build.
+  Hidden objects and objects outside the provisional camera are included.
+  If the deadline expires, unfinished compute stays dormant until its native pipelines exist; remaining warm-ups
+  continue after reveal. This is a bounded wait, not a guarantee of stall-free startup on every device.
+  `?dpr=fixed`
   keeps the render resolution at full (for testing). Light is linear HDR through Neutral tone mapping (exposure 1.0, up to 1.12 at night),
   with 4x MSAA and PCF sun shadows (2048 px, 1024 on touch). The render resolution follows the frame rate: it starts where this
   device last settled (0.8x on a first touch visit), drops in 10 % steps to 0.6x after 2 s of slow frames and climbs back

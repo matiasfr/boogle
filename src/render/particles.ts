@@ -87,7 +87,16 @@ const updatePass = Fn(() => {
 })().compute(MAX);
 
 // The first dust of a session would build both passes mid-frame.
-warmUp(() => renderer.compileComputeAsync([spawnPass, updatePass]));
+spawnPass.setName('particles spawn');
+updatePass.setName('particles update');
+let computeReady = false;
+warmUp(
+  async () => {
+    await renderer.compileComputeAsync([spawnPass, updatePass]);
+    computeReady = true;
+  },
+  { beforeScene: true },
+);
 
 // ---------------------------------------------------------------- soft dots
 const softMat = new THREE.SpriteNodeMaterial({ transparent: true, depthWrite: false, fog: false });
@@ -154,6 +163,9 @@ export function emit(p: Particle) {
 // ---------------------------------------------------------------- update
 onFrame(
   ({ dt: frameDt }) => {
+    // The loading deadline can expire while compilation continues. Three caches its wrapper before
+    // createComputePipelineAsync resolves; dispatching it then would call setPipeline(undefined).
+    if (!computeReady) return;
     if (queued) {
       queue.value.needsUpdate = true;
       spawnCount.value = queued;
