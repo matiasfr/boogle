@@ -81,6 +81,7 @@ import { updateGot } from './got.ts';
 import { resetDrops, updateDrop } from './drop.ts';
 import { updateLamps } from './lamps.ts';
 import './pair.ts';
+import './great-carry.ts';
 import {
   activeFrame,
   beginFeed,

@@ -34,6 +34,7 @@ import {
   onPeerRemoved,
   onRemotePresence,
   onRoomReady,
+  remotes,
 } from '../../netplay/net.ts';
 import { world } from '../../world/sync.ts';
 import { carry } from '../../physics/platforms.ts';
@@ -330,8 +331,18 @@ function onSnap(a: Api, j: Snap, force: boolean) {
   reconcileBig();
 }
 
+let returningBig: BigThing = null;
+const beamDelivered = () => lines.some((l) => l.stations.some((st) => st.have.beam > 0 || st.coming.beam > 0));
 function reconcileBig() {
-  if ((back.big === 'beam' && !trunkTaken()) || (back.big === 'boiler' && job.boiler !== 2)) putDownBig();
+  if (returningBig !== back.big) returningBig = null;
+  // Availability alone is insufficient after reconnect: a survivor may already have picked up the returned cargo.
+  // Only our pre-disconnect shoulder yields here. A lone/transient reconnect keeps it if nobody reclaimed it.
+  const reclaimed = returningBig && [...peerBig].some(([peer, big]) => remotes.has(peer) && big === returningBig);
+  const consumed = returningBig === 'beam' && beamDelivered();
+  if ((back.big === 'beam' && !trunkTaken()) || (back.big === 'boiler' && job.boiler !== 2) || reclaimed || consumed) {
+    putDownBig();
+    returningBig = null;
+  }
 }
 
 // ---------------------------------------------------------------- who's here, and who decides
@@ -870,6 +881,7 @@ export const coop = {
         railCart: pr.placeRailCart === 1,
         rideCart: pr.placeCartRide === 1 || pr.placeCartRide === 2 ? pr.placeCartRide : 0,
       });
+      if (synced) reconcileBig();
     });
     onPeerRemoved((r) => {
       if (harvestPending?.to === r.peer) {
@@ -885,8 +897,7 @@ export const coop = {
         }
       const big = peerBig.get(r.peer);
       // A last presence packet may precede a deposit/fit; never return a consumed piece.
-      const beamDelivered = lines.some((l) => l.stations.some((st) => st.have.beam > 0 || st.coming.beam > 0));
-      if (big === 'beam' && trunkTaken() && !beamDelivered) {
+      if (big === 'beam' && trunkTaken() && !beamDelivered()) {
         setTrunkTaken(false);
         save();
       } else if (big === 'boiler' && job.boiler === 2) {
@@ -903,6 +914,7 @@ export const coop = {
         // The survivors may have returned our cargo while we were gone. Rejoin
         // behind them, just as a newly visible tab does, and take their snapshot.
         if (!connected && since >= 0) {
+          returningBig = back.big;
           clearHarvest(false);
           since = world.tick;
           synced = false;
