@@ -513,6 +513,8 @@ export function forgeBillFromPeer() {
   forgeFrame.spec = FORGE_BILLS[1]!;
   forgeFrame.have.logs = 0;
   forgeFrame.drawStock(forgeFrame.have);
+  // The bill event can arrive before a full snapshot. The partner earns the same waiting chest.
+  if (!job.rung.pack && job.chest !== 'pack') grantChest('pack');
   setStationTags();
 }
 
