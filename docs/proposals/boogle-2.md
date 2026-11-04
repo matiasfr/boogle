@@ -8,7 +8,7 @@ Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`
 
 ### Current build and next round
 
-[The shape of the game](#the-shape-of-the-game): **4 November, Place gets the top-level room** names the bare entry `boogle`, preserves classic's `beach` save and explicit prototype rooms, and carries old local progress forward. **3 November, bring the default switch forward** puts round 4 on the main URL, with explicit flags/rooms winning and classic retained. The **2 November Design Table call** still supplies the after-round-4 multiplayer and architecture direction. AGENTS' **Stop at the owner's playtest** controls when development pauses.
+[The shape of the game](#the-shape-of-the-game): **4 November, Place gets the top-level room**, with the owner's follow-up, names the bare entry `boogle`, preserves classic's `beach` save and explicit prototype rooms, and starts fresh without importing old progress. The old save is unused by `boogle`, not deleted; installed-app recall still reopens the new default. **3 November, bring the default switch forward** puts round 4 on the main URL, with explicit flags/rooms winning and classic retained. The **2 November Design Table call** still supplies the after-round-4 multiplayer and architecture direction. AGENTS' **Stop at the owner's playtest** controls when development pauses.
 
 ### Core loop, pacing and progression
 
@@ -117,7 +117,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### The shape of the game
 
-- **2026-11-04, Place gets the top-level room** (owner). Place is the game for now: the bare URL joins `boogle`, its invite is `https://boogle.club/`, and the pause title reads `boogle`. Classic and headless tools retain `beach` and its saved world. Explicit rooms win, explicit prototype links keep their isolated rooms, and old `?room=proto-place-coop` invites still work. Copy the old co-op local save to the new room only when the destination is absent, retaining the old key; delete no saved data as part of this move. Start over and Start fresh must work without allowing public-room tuning or changing rules/world namespace. This supersedes the previous default room name, not the entry mode or the later architecture work.
+- **2026-11-04, Place gets the top-level room** (owner, including follow-up). Place is the game for now: the bare URL joins `boogle`, its invite is `https://boogle.club/`, and the pause title reads `boogle`. Classic and headless tools retain `beach` and its saved world. Explicit rooms win, explicit prototype links keep their isolated rooms, and old `?room=proto-place-coop` invites still work. **Follow-up: no progress migration; the owner will start fresh in `boogle`.** The old co-op save is simply unused there, not deleted. Keep `reopenQuery` so an installed app remembering the old room-only default still reopens in `boogle`. Start over and Start fresh must work without allowing public-room tuning or changing rules/world namespace. This supersedes the previous default room name, not the entry mode or the later architecture work.
 
 - **2026-11-03, bring the default switch forward** (owner). The bare main URL now opens round 4, equivalent to `?proto=place&fresh=1&coop=1`, in the existing shared `proto-place-coop` room. Explicit URL flags and rooms win; `?classic=1` opens the old island, which stays for later. Solo remains fully playable. This is the entry switch only: `src/proto/place` stays where it is; retiring prototype code and the architecture pass still follow after the round.
 
