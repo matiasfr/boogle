@@ -7,47 +7,17 @@ import { groundHeight } from '../../island/terrain.ts';
 import type { Block } from '../era/blocks.ts';
 
 export type Smoke = { x: number; y: number; z: number };
-/** One box: where it stands, and `local`, the unit box placed relative to that point. `pop`: s to rise. */
-export type Box = {
-  x: number;
-  y: number;
-  z: number;
-  local: THREE.Matrix4;
-  color: THREE.Color;
-  tall: boolean;
-  pop: number;
-};
+import { place, boxAt, type Box } from './box-plan.ts';
+export { place, type Box } from './box-plan.ts';
 
 const Y = new THREE.Vector3(0, 1, 0);
 const tq = new THREE.Quaternion(),
   tp = new THREE.Vector3(),
   ts = new THREE.Vector3(),
   tm = new THREE.Matrix4();
-/** The local matrix of a box w x h x d whose base middle is at (dx, dy, dz) in a frame turned by yaw, then tilted. */
-export function place(
-  dx: number,
-  dy: number,
-  dz: number,
-  w: number,
-  h: number,
-  d: number,
-  yaw = 0,
-  tilt?: THREE.Euler,
-) {
-  const m = new THREE.Matrix4().makeRotationY(yaw);
-  m.multiply(tm.makeTranslation(dx, dy, dz));
-  if (tilt) m.multiply(tm.makeRotationFromEuler(tilt));
-  return m.multiply(tm.makeScale(w, h, d));
-}
-export const box = (x: number, z: number, local: THREE.Matrix4, color: string, tall = false, pop = 0.7): Box => ({
-  x,
-  y: groundHeight(x, z),
-  z,
-  local,
-  color: new THREE.Color(color),
-  tall,
-  pop,
-});
+
+export const box = (x: number, z: number, local: THREE.Matrix4, color: string, tall = false, pop = 0.7): Box =>
+  boxAt(x, groundHeight(x, z), z, local, color, tall, pop);
 
 export function blockBoxes(b: Block, smokes: Smoke[]): Box[] {
   const yaw = b.yaw ?? 0,

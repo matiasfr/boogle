@@ -53,6 +53,7 @@ const BUILD: Record<string, (g: THREE.Group) => void> = {
   },
 };
 
+export const itemModelIds = Object.keys(BUILD);
 const templates = new Map<string, THREE.Group>();
 export function itemModel(id: string) {
   if (!templates.has(id)) {
