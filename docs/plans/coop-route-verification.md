@@ -1,4 +1,95 @@
-# Continuous co-op route: Q5 complete; passengers failed to reach Far Head
+# Continuous co-op route: both passengers arrived aboard; Q6 and dry pier passed
+
+4 November 2026, `boogle-codex/coop-train-detach`, branch `codex/coop-train-detach`, starting at `eb06d7eb`. **Passed a fresh continuous two-player long route**, including P2 reload after Q2 and P1 leave/rejoin after Q4, through Q6 to both peers dry at Far Head. This supersedes the transport blocker below. The reproduced cause was the bot accepting momentary deck contact, then approaching Q6 from the village. No production game, pacing or copy change is retained. This does **not** explain away the owner's 19 historical knockoffs; standing, crowded-deck and human-input cases still need tonight's replay.
+
+## Current evidence and exact boundary
+
+[Passing manifest](../../.look/evidence/1793824428206-60849/evidence.json), [full report](../../.look/evidence/1793824428206-60849/run/report.txt), [checkpoints](../../.look/evidence/1793824428206-60849/run/checkpoints.json), [paired final state](../../.look/evidence/1793824428206-60849/run/final-state.json). Tested clean **`0e99f253`**, tree **`8d8c8dc6f61c2f984d5c310b94b7fe1338e33196`**; trusted launcher harness `eb06d7eb`. No source changed during execution. Documentation commits follow this tested code.
+
+```sh
+node .look/see-client.ts playthrough --players 2 --long --warp-speed 2 --query 'proto=place&shot=play'
+```
+
+**785.395 wall seconds; all 22 checkpoints released.** Both interruption entry paths said `already playing`, retained identities and restored one partner. Leave/rejoin means navigation away for five seconds, not the menu Leave button. No staged save, skip, relocation or recovery advanced this route. All four telemetry segments report zero water falls and no errors. Read the complete report, including each segment's missing beats; those lists reset on navigation and are not whole-route absence claims.
+
+The passenger checks now observe each player, not just the train:
+
+- P1 began at Quarry, sat at **350.2 s**, arrived **aboard and dry at Far Head at 396.3 s**, then disembarked before checkpoint 20 at **397.1 s**.
+- P2 began at Camp, sat at **497.3 s**, arrived aboard line 1 at Village at **516.5 s**, walked to the line 2 platform, waited **81.7 s**, sat at **605.7 s**, and arrived aboard and dry at Far Head at **641.3 s**. Its checkpoint 20 was **642.1 s**.
+- Q6's **32 logs / 32 rails** were carried from the train-supplied rack. P2's Q6 carry phase took **28.7 s**. Both ended at checkpoint 22, P1 **538.9 s**, P2 **715.4 s**. These are resumed per-page bot clocks, not a shared elapsed timeline.
+
+Four `no way yet` planner warnings remain: one per peer near T2 and one per peer approaching the final platform. Each subsequently arrived; there were **zero `NEVER` failures, zero refused recoveries**, and no detachment during the monitored rides. Internal replanning and harvest retries are not individually counted, so this is not a retry-free navigation claim.
+
+## Cause: contact was counted as a ride
+
+The old solo and co-op routes used the same helper. It stopped steering at the first `carry.on === car.platform`, logged `aboard`, and later checked the train's stop. A brief brush at the platform edge satisfied it. Neither route pressed **Sit**. Solo's historical completion therefore did not prove that its boarding validation was sound; its later walking could conceal a missed ride. Co-op then tried the Far Head rack from the village.
+
+There is no separate **Board** interaction in this build. Boarding is a jump onto the deck; **Sit** is the existing interaction once aboard. Real jump/Interact input in staged diagnoses retained a seated passenger solo and with a partner present. The final fresh route exercised both peers' real Sit presses and arrivals, at their actual stations. The helper now aims inside the deck, checks Sit/Stand up, monitors carrier contact throughout travel, requires the correct destination plus dry contact within 12 m of its platform, then stands and jumps onto the platform. The ride checkpoint cannot pass merely because an empty train arrived. Peers use different interior approach points.
+
+Read the train/platform ride handling, place movement, co-op correction code, and the intended behavior in `docs/game-design/place.md`. No game detach after an actual Sit press was reproduced, so no speculative movement or synchronization patch is retained. The game's `ride`/`off` marks remain instantaneous carrier-contact observations, including the boarding jump; they are not trip-completion evidence. No new state owner, event delivery, lockstep math, wire shape or save field is introduced.
+
+Q6 now uses the nearest station from the player's actual location, including the Camp→Village transfer. Its rail supply waits for the train's rack unloading; an empty rack no longer sends the bot walking back to the forge while the kit is arriving. Disembarkation uses the ordinary jump over the platform lip because the static ground planner excludes moving bodies. A settled-ground check now accepts small contact velocity while requiring actual ground contact and no swimming; the old exact nonpositive vertical velocity rejected dry landings.
+
+## Water: the recovery action was never pressed
+
+The old failed session's four `recovered` marks only meant `me.swimming` became false (`src/proto/playdata/record.ts`), not that **Back up the path** ran. Its trace shows that prompt, then the forbidden-recovery callback throwing; no recovery Interact followed. The bot left W held while failure capture continued, moving the avatar through repeated buoyancy transitions. This happened in the historical **1x** run, so acceleration is not required for that failure.
+
+At the reported **(1200, -0.3, -55)**, a real recovery press in separate **1x solo and co-op diagnoses** placed the player at **(1204.626, 24.850, -47.914)**, dry and grounded for **15 seconds**. In the co-op diagnosis the partner stayed elsewhere. The final [recovery manifest](../../.look/evidence/1793824369221-60547/evidence.json) additionally invokes the bot's deliberate recovery refusal, verifies W/Shift were released, then presses the actual game prompt and samples the dry landing. That validates the bot cleanup and the unchanged game's recovery at the reported location; it is **diagnosis, never route evidence**.
+
+Earlier diagnostics staged both peers at the exact same water coordinate and launched them into each other during recovery. They are confounded collision tests, not evidence that an isolated prompt fails. A trial landing-clearance patch did not resolve that setup and was reverted. No recovery teleport or automatic-rescue behavior was added to the game. Recovery with overlapping partners or arbitrary other shoreline geometry remains unverified.
+
+## Partner banners were visible harness-induced disconnects
+
+A read-only peer review correlated the previous 1x run's three extra left/returned pairs with P1 main-thread stalls of **11.946, 14.595 and 14.573 seconds** during synchronous path searches. The room's five-second timeout and the co-op banner's 1.5-second grace explain the visible departures. P2 recorded three displayed left banners (8.5 seconds total) and three returned banners (8 seconds total); these were real disconnects a player could see, induced by harness load, not duplicate report entries. The previous 2x run's five pairs are consistent with the same mechanism, but its individual stalls were not separately attributed.
+
+Path planning now yields at entry and every 128 expansions; callers await it and release forward movement while planning. In the passing run **P2's pre-reload observer has zero partner-left/returned lines**. Later banners correspond to the requested interruptions. This removes the reproduced harness starvation; it is not a general network reliability or performance claim.
+
+## Final agreement, cargo and visuals
+
+The paired success gate passed three consecutive samples. Both peers agree exactly on line 1 **stage 3/open**, line 2 **stage 6/open**, every paid station bill, disabled/empty Far Head rack, and shared rungs, abilities, gates and score: **$14,480 / 280 logs / 102 rails / 8 stone / 896 metres**. Both see one remote, have distinct identities, positive contribution counters **160 / 161**, empty backs, `ended=true` and `atPier=true`. Contributions are shared-score deltas, not a material-conservation ledger. Personal cosmetics differ as intended.
+
+Both final `CARGO` records match exactly: **eight ordinary wood crates on line 1, eight ordinary stone crates on line 2, `crane=false`, `kitSent=8`**. Their logs/rails fields are zero because these are ordinary cargo, not pier-kit fill crates. The complete kit is paid into Q6 and the rack is empty. Cargo snapshots are logged at each peer's finish, not captured atomically; no reload with cargo aboard was tested.
+
+Both trains keep running with matching targets. The final paired state has line 1/2 position gaps **0.027 / 0.020 m**, within the existing **2 m** read/wire-skew tolerance. Do not compare the sequential end-still state files as simultaneous train poses. Across the final segment, sampled maxima were **4.932 / 7.680 m**, p95 **0.222 / 0.300 m**; the later convergence gate is the final agreement evidence. The 2x clock was not perfectly maintained: measured from each segment's first paired sample, peak page deficits were **6.059 / 0.556 s** before reload and **1.683 / 0.907 s** in the final segment. This is not a stable-acceleration or human pacing measurement.
+
+Visual question: **do both passengers finish dry together at Far Head with matching progress?** Opened the passing run's `end-still.png` and `p2-end-still.png`: both avatars are together on the Far Head platform, visibly out of water, with matching **280 logs / $14,480** HUDs. Bot overlays and the platform roof/bench obscure some detail. Also opened both end images from each failed fresh run and the diagnostic images listed below.
+
+Motion question: **does a seated passenger remain on the moving deck through departure?** The final [1x ride diagnosis](../../.look/evidence/1793825376861-61303/evidence.json) stages the station, then uses only jump/movement/Interact. It reached Far Head aboard/dry after **36.4 s**. Opened `ride-motion-final-still.png`, `ride-motion-final-curves.png` and three consecutive frames extracted at five seconds from `ride-motion-final-realtime.webm`: the avatar remains seated on the deck with Stand up visible as track lamps pass. Curves show acceleration to **20 m/s**, flat height near **25.4 m**, and no vertical departure. The initial camera-distance spike comes from releasing the capture camera. Still frames/curves do not establish real-time smoothness or feel; this staged capture is not fresh-route evidence.
+
+## Attempts, including failures
+
+Three fresh continuous executions in this worktree, **two failed and the third passed**. Reports were read in full; failed-run end images were opened.
+
+| Manifest                                                                      | Result                                                                                                                                                                                                             |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [1793822897975-46704](../../.look/evidence/1793822897975-46704/evidence.json) | `9da95b4d`, **688.692 wall s**, last released checkpoint **19/trains**. Both interruptions passed. P2 arrived aboard at Village but ground-based disembarkation failed; P1 was seated at Quarry. Zero water falls. |
+| [1793824154230-59370](../../.look/evidence/1793824154230-59370/evidence.json) | `7af796d4`, **121.541 wall s**, last checkpoint **3/T2**. The strict landing guard falsely rejected dry contact before T3; neither interruption ran. Both images show dry players by the frame. Zero water falls.  |
+| [1793824428206-60849](../../.look/evidence/1793824428206-60849/evidence.json) | Clean `0e99f253`, **785.395 wall s**, all **22** checkpoints, both interruptions and dry pier arrivals passed.                                                                                                     |
+
+Staged diagnoses, **excluded from route evidence**:
+
+- `1793822287344-35321`: solo real Sit reached Far Head. Opened image had the wrong distant camera, so it is not visual rider proof.
+- `1793822411434-35988`: co-op P1 sat and arrived; P2 missed its jump. Both images opened; not two successful passengers.
+- `1793822520798-36363` and `1793822719222-38447`: overlapping-player water setup failed, including the reverted clearance experiment. Both pairs of images opened; confounded as described above.
+- `1793822578476-36876` and `1793822834924-42138`: isolated solo/co-op real recovery stayed dry 15 seconds; images opened.
+- `1793823648517-55858`: solo arrival succeeded but disembarkation failed before capture; no successful image.
+- `1793823741480-56532`: targeted solo reached Q6 after jump disembarkation, but the unloading race caused a long forge detour. Opened ending image; its celebration camera obscures the avatar. This prompted the rack-wait fix.
+- `1793824369221-60547`: final refused-recovery input cleanup and real recovery passed; both images opened. The train occludes P1, so the 15 grounded/dry samples supply the landing evidence.
+- `1793825376861-61303`: final solo moving-deck diagnosis and inspected video frames/curves above.
+
+An initial `look --at list` found no saved run; listing succeeded once checkpoints existed. No alternate harness or direct Chromium was used. Diagnostic scripts are retained under `.look/diagnosis/`; their final versions are copied alongside the final relevant manifests.
+
+## Changes, checks and handoff
+
+Small commits: **`9da95b4d` Require dry passenger arrivals in route verification**, **`7af796d4` Disembark onto platforms and wait for the pier kit**, **`0e99f253` Accept settled landings and release failed bot input**. Each body names a DESIGN.md principle. Only `dev/look/bot.ts`, `dev/look/bots/place.ts` and this verification document changed. The applicable principles are **Small and readable**, **Cooperation is automatic, not negotiated**, and **Designed for drop-in, drop-out**. No player-facing behavior changed, so the owning game-design behavior remains unchanged.
+
+Required Prettier and Node 26 `npm run check` passed: lint, TypeScript, **298/298 unit tests**, registry/level/assets checks and build. [Check log](../../.look/evidence/1793824428206-60849/check.txt). Existing broker [world-inputs scenario](../../.look/evidence/1793825359209-61188/evidence.json) passed with WebGPU and no graphics errors. It checks the trusted world-input contract, not train behavior. No new tests/scenarios or unrelated `check:full` run. The final ride capture also reports no page/console/graphics errors.
+
+**Departure:** I mistakenly ran `npm run inflight` at the start; it fetched origin, contrary to the local-network-only brief. This was disclosed immediately. No further external network, push or ship occurred. Work stayed in this worktree on its branch; old evidence was read only. Source remained unchanged during every broker run.
+
+Stop here for the owner's replay. Still unverified: the historical 19 knockoffs, standing/crowded-deck riding, full fresh solo replay on the final bot, cargo across an interruption, arbitrary recovery locations, human discovery/pacing, sound, mobile/device behavior, remote latency and real-time feel. The launcher creates its final `handoff.md`/`evidence.json` after this worker returns; the operation manifests above already exist.
+
+## Previous attempt: Q5 complete; passengers failed to reach Far Head
 
 4 November 2026, rerun in `boogle-codex/coop-route-full`, branch `codex/coop-route-full`, starting at **`3791b4f6`**, the locally available `origin/main` at launch. No remote fetch under the local-network-only brief. **Partial: no honest first-chop-to-pier completion.** The entry fix, original-bill guard, real reload and real leave/rejoin all worked. The final run completed Q5, opened both lines and unlocked trains, but neither passenger reached Far Head; Q6 stayed empty. Stop here for the larger transport/navigation investigation before claiming readiness for tonight.
 
