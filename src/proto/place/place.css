@@ -1,7 +1,6 @@
 /* The tester's link (&fresh=1): nothing that primes them or lets them skip. The counters still run. */
 .place-fresh .proto-bar,
 .place-fresh .place-proto,
-.place-fresh .guide-row[data-id='proto-bar'],
 .place-fresh .tbtn.honk-btn,
 .place-fresh .tbtn.ping-btn {
   display: none;

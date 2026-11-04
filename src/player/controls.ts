@@ -355,9 +355,13 @@ const groupIndex = (g: string | undefined) => {
   return i < 0 ? GROUPS.length : i;
 };
 
+// A page that has no use for a control hides it from the guide and the drawn pad; its binding stays as it was.
+const hidden = new Set<string>();
+export const hideControls = (ids: string[]) => ids.forEach((id) => hidden.add(id));
+
 export function listControls() {
   return [...actions.values(), ...described.values()]
-    .filter((c) => c.guide !== false)
+    .filter((c) => c.guide !== false && !hidden.has(c.id))
     .sort(bySort)
     .map(row);
 }
@@ -425,5 +429,5 @@ export const padGrab = () => grab;
 let swap = false;
 export const setMenuSwap = (on: boolean) => (swap = on);
 export const menuSlot = (what: 'confirm' | 'back') => ((what === 'confirm') !== swap ? 'a' : 'b');
-export const listActions = () => PAD.map((p) => bySlot.get(p)).filter((a): a is Action => !!a);
+export const listActions = () => PAD.map((p) => bySlot.get(p)).filter((a): a is Action => !!a && !hidden.has(a.id));
 export const freeSlots = () => PAD.filter((p) => !bySlot.has(p));
