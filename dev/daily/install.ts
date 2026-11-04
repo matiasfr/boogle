@@ -44,7 +44,8 @@ for (const [job, spec] of Object.entries(jobs)) {
     continue;
   }
   const date = new Date();
-  date.setUTCHours(spec.utcHour, spec.minute, 0, 0);
+  if (job === 'scenarios') date.setHours(3, 30, 0, 0);
+  else date.setUTCHours(spec.utcHour, spec.minute, 0, 0);
   const hour = date.getHours(),
     minute = date.getMinutes();
   const plist = `<?xml version="1.0" encoding="UTF-8"?>
@@ -61,7 +62,7 @@ for (const [job, spec] of Object.entries(jobs)) {
 </dict></plist>
 `;
   console.log(
-    `${file}: daily ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} local (${Intl.DateTimeFormat().resolvedOptions().timeZone}); converted from ${spec.utcHour}:${spec.minute} UTC today.`,
+    `${file}: daily ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} local (${Intl.DateTimeFormat().resolvedOptions().timeZone})${job === 'scenarios' ? '' : `; converted from ${spec.utcHour}:${spec.minute} UTC today`}.`,
   );
   if (dry) {
     console.log(plist);

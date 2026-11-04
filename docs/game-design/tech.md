@@ -29,7 +29,7 @@ folder map in [src/README.md](../../src/README.md).
   guest-play, haul-loop, interact, lighthouse, one-hand, particles, pause, reconnect-edit, shared-kinds, smoke, splash,
   world-inputs. PR CI runs single-player
   scenarios only (`world-inputs`, must pass; two software-rendered tabs are too slow there); seven others (reconnect-edit,
-  shared-kinds, one-hand, interact, caves, lighthouse, atlas) run nightly in `scenarios-nightly.yml` and never block; the
+  shared-kinds, one-hand, interact, caves, lighthouse, atlas) run nightly on the owner Mac via `dev/daily` and never block; the
   rest run only by hand. `smoke` needs a GPU: `npm run check:gpu` runs it in `npm run ship` on a
   Mac, and `smoke.yml` runs it against the live site after every deploy and nightly. Every run is WebGPU (SwiftShader on Linux and CI, Metal on a Mac). `npm run island-map` renders the composed island.
 - **Perf.** `npm run perf`: draw calls, shadow calls, triangles, shader stages, main-thread CPU per frame section and ms per lockstep tick, with rows tagged by handler. `?prof=1` shows the frame sections live (any build).

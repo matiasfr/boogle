@@ -13,7 +13,7 @@ const noteIndex = args.indexOf('--notes');
 const notes = noteIndex >= 0 ? args[noteIndex + 1] : '';
 const known = args.filter((_, i) => i !== noteIndex && (noteIndex < 0 || i !== noteIndex + 1));
 if (known.some((a) => !['--dry-run', '--force'].includes(a)) || notes === undefined)
-  throw new Error('Usage: npm run daily -- atlas|patch-video [--dry-run] [--force] [--notes "..."]');
+  throw new Error('Usage: npm run daily -- atlas|patch-video|scenarios [--dry-run] [--force] [--notes "..."]');
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const spec = jobs[job];
 const env = { ...process.env, SHIP_NO_AI: '1', PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1', GIT_TERMINAL_PROMPT: '0' };
@@ -63,7 +63,39 @@ function codex(work: string, report: string, brief: string) {
   }
 }
 
-if (dry) {
+const scenarios = [
+  'reconnect-edit',
+  'shared-kinds',
+  'one-hand',
+  'interact',
+  'caves',
+  'lighthouse',
+  'atlas',
+  'second-tab',
+];
+if (dry && job === 'scenarios') {
+  console.log(
+    JSON.stringify(
+      {
+        job,
+        stateDir,
+        lock: path.join(stateDir, 'active'),
+        time: '03:30 local',
+        scenarios,
+        steps: [
+          'acquire shared lock',
+          'fetch origin/main and create fresh worktree',
+          'npm ci',
+          'run scenarios sequentially on Mac GPU',
+          'update scenarios issue once',
+          'preserve artifacts and release lock',
+        ],
+      },
+      null,
+      2,
+    ),
+  );
+} else if (dry) {
   console.log(
     JSON.stringify(
       {
@@ -126,141 +158,220 @@ if (dry) {
   let succeeded = false;
   const result: Record<string, unknown> = { job, dir, branch, started: new Date().toISOString() };
   try {
-    const login = spawnSync('codex', ['login', 'status'], {
-      env,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    if (login.status !== 0 || !/ChatGPT/i.test(login.stdout + login.stderr))
-      throw new Error('Use codex login with the owner ChatGPT account; subscription login was not confirmed');
+    if (job !== 'scenarios') {
+      const login = spawnSync('codex', ['login', 'status'], {
+        env,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      if (login.status !== 0 || !/ChatGPT/i.test(login.stdout + login.stderr))
+        throw new Error('Use codex login with the owner ChatGPT account; subscription login was not confirmed');
+    }
     run('gh', ['auth', 'status']);
     run('git', ['fetch', '--prune', '--tags', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
     run('git', ['worktree', 'add', '-b', branch, work, 'origin/main']);
     created = true;
     const base = run('git', ['rev-parse', 'HEAD'], work);
     result.base = base;
-    const prs = JSON.parse(
-      run('gh', ['pr', 'list', '--state', 'open', '--limit', '1000', '--json', 'number,title,headRefName'], work),
-    ) as { number: number; title: string; headRefName: string }[];
-    const pending = prs.find((p) => p.title.startsWith(`Daily ${job}:`) || p.headRefName.startsWith(`claude/${job}-`));
-    const gate =
-      job === 'atlas'
-        ? run(process.execPath, ['dev/atlas/cli.ts', '--gate', '--event', 'schedule'], work)
-        : run(process.execPath, ['dev/video/changes.ts', '--count', '--no-fetch', '--until', base], work);
-    const go = job === 'atlas' ? /^go=1$/m.test(gate) : /^\d+$/.test(gate) && Number(gate) >= 3;
-    if (pending || (!force && !go)) {
-      result.status = 'skipped';
-      result.reason = pending ? `PR #${pending.number} is still open; inspect it before replacing` : gate;
-      console.log(result.reason);
-    } else {
+    if (job === 'scenarios') {
       run('npm', ['ci'], work);
-      if (job === 'patch-video') {
-        run('ffmpeg', ['-version'], work);
-        run('ffprobe', ['-version'], work);
-        run('npx', ['playwright', 'install', 'chromium'], work);
-      }
-      codex(work, path.join(dir, 'report.md'), prompt(job, base, notes));
-      const publish = path.join(work, '.look/publish.json');
-      if (job === 'patch-video' && fs.existsSync(publish)) {
-        fs.rmSync(path.join(work, '.look/review.json'), { force: true });
-        codex(work, path.join(dir, 'review.md'), reviewPrompt);
-        const review = JSON.parse(fs.readFileSync(path.join(work, '.look/review.json'), 'utf8'));
-        if (review.approved !== true || !Array.isArray(review.images) || !review.images.length)
-          throw new Error('No independent visual approval; retaining the cut without publishing');
-        const request = JSON.parse(fs.readFileSync(publish, 'utf8'));
-        if (
-          request.target !== base ||
-          typeof request.file !== 'string' ||
-          !request.file.startsWith('.look/reels/') ||
-          !request.file.endsWith('.mp4') ||
-          !fs.realpathSync(path.resolve(work, request.file)).startsWith(work + '/.look/reels/') ||
-          typeof request.title !== 'string' ||
-          !request.title.trim() ||
-          typeof request.summary !== 'string' ||
-          !Array.isArray(request.features) ||
-          request.features.length < 3 ||
-          request.features.some((f: unknown) => typeof f !== 'string')
-        )
-          throw new Error(
-            'Invalid publish request; expected this main commit, a local reel and at least three features',
+      const failures: string[] = [];
+      for (const name of scenarios) {
+        const execution = spawnSync('npm', ['run', 'scenario', '--', name], {
+          cwd: work,
+          env,
+          encoding: 'utf8',
+          maxBuffer: 64 * 1024 * 1024,
+        });
+        const output = (execution.stdout ?? '') + (execution.stderr ?? '');
+        fs.writeFileSync(path.join(dir, `${name}.log`), output);
+        if (execution.status !== 0) {
+          const lines = output.split('\n').filter((line) => /\bFAIL\b/i.test(line));
+          failures.push(
+            `- ${name}: ${lines.length ? lines.join('\n  ') : `exit ${execution.status}: ${execution.error?.message ?? 'no FAIL line'}`}`,
           );
-        const allowed = ['file', 'title', 'summary', 'features', 'target'];
-        if (Object.keys(request).some((key) => !allowed.includes(key))) throw new Error('Unexpected publish fields');
+        }
       }
-      if (run('git', ['rev-parse', 'HEAD'], work) !== base || run('git', ['branch', '--show-current'], work) !== branch)
-        throw new Error('Agent changed the branch or committed unexpectedly; inspect worktree');
-      const changed = [
-        ...new Set(
-          [
-            ...run('git', ['diff', 'HEAD', '--name-only', '-z'], work).split('\0'),
-            ...run('git', ['ls-files', '--others', '--exclude-standard', '-z'], work).split('\0'),
-          ].filter(Boolean),
+      result.failures = failures;
+      const issues = JSON.parse(
+        run(
+          'gh',
+          ['issue', 'list', '--label', 'scenarios', '--state', 'open', '--limit', '100', '--json', 'number'],
+          work,
         ),
-      ];
-      if (changed.some((f) => !f.startsWith(spec.scope)))
-        throw new Error('Agent edited outside the job scope; inspect worktree');
-      if (changed.length) {
-        const existing = changed.filter((f) => fs.existsSync(path.join(work, f)));
-        if (existing.length) run('npx', ['prettier', '--write', ...existing], work);
-        if (job === 'atlas') {
-          const check = run('npm', ['run', '--silent', 'atlas', '--', '--check'], work);
-          if (!/^0 problems$/m.test(check)) throw new Error(`Atlas still needs fixes:\n${check}`);
-        }
-        run('npm', ['run', 'check'], work);
-        run('git', ['add', '--', ...changed], work);
-        // Formatting can undo the only diff. Never create an empty commit.
-        if (run('git', ['diff', '--cached', '--name-only'], work)) {
-          run(
-            'git',
-            [
-              'commit',
-              '-m',
-              `Daily ${job}: update ${new Date().toISOString().slice(0, 10)}`,
-              '-m',
-              `DESIGN.md principle: ${job === 'atlas' ? 'Understandable at a glance' : "Show, don't tell"}.\n\nMaintain the daily ${job} output using Codex on the owner Mac.`,
-            ],
-            work,
-          );
-          run('npm', ['run', 'ship', '--', '--wait'], work);
-          result.shipped = true;
-        }
+      ) as { number: number }[];
+      if (issues.length > 1) throw new Error('Multiple open scenarios issues; resolve duplicates before reporting');
+      const body = path.join(dir, 'notification.md');
+      fs.writeFileSync(
+        body,
+        failures.length
+          ? `Nightly scenarios failed on ${base}:\n\n${failures.join('\n')}\n\nMac run: ${dir}\n`
+          : `Nightly scenarios passed on ${base}.\n\nMac run: ${dir}\n`,
+      );
+      if (failures.length && !issues.length) {
+        run(
+          'gh',
+          [
+            'label',
+            'create',
+            'scenarios',
+            '--color',
+            'd93f0b',
+            '--description',
+            'Nightly browser scenarios',
+            '--force',
+          ],
+          work,
+        );
+        run(
+          'gh',
+          [
+            'issue',
+            'create',
+            '--title',
+            'Nightly browser scenarios are failing',
+            '--label',
+            'scenarios',
+            '--body-file',
+            body,
+          ],
+          work,
+        );
+      } else if (issues.length) {
+        run('gh', ['issue', 'comment', String(issues[0]!.number), '--body-file', body], work);
+        if (!failures.length) run('gh', ['issue', 'close', String(issues[0]!.number)], work);
       }
-      if (job === 'patch-video' && fs.existsSync(publish)) {
-        const output = path.join(dir, 'publish-output.txt');
-        run('npm', ['run', 'video:publish', '--', '--from', '.look/publish.json'], work, { GITHUB_OUTPUT: output });
-        const url = /^url=(.+)$/m.exec(fs.readFileSync(output, 'utf8'))?.[1];
-        if (!url || !url.startsWith('https://')) throw new Error('Publisher did not return a share URL');
-        result.url = url;
-        const owner = run('gh', ['repo', 'view', '--json', 'owner', '-q', '.owner.login'], work);
-        const issues = JSON.parse(
-          run(
-            'gh',
-            ['issue', 'list', '--state', 'open', '--search', 'Patch videos in:title', '--json', 'number,title'],
-            work,
+      result.status = failures.length ? 'failed' : 'passed';
+      succeeded = !failures.length;
+    } else {
+      const prs = JSON.parse(
+        run('gh', ['pr', 'list', '--state', 'open', '--limit', '1000', '--json', 'number,title,headRefName'], work),
+      ) as { number: number; title: string; headRefName: string }[];
+      const pending = prs.find(
+        (p) => p.title.startsWith(`Daily ${job}:`) || p.headRefName.startsWith(`claude/${job}-`),
+      );
+      const gate =
+        job === 'atlas'
+          ? run(process.execPath, ['dev/atlas/cli.ts', '--gate', '--event', 'schedule'], work)
+          : run(process.execPath, ['dev/video/changes.ts', '--count', '--no-fetch', '--until', base], work);
+      const go = job === 'atlas' ? /^go=1$/m.test(gate) : /^\d+$/.test(gate) && Number(gate) >= 3;
+      if (pending || (!force && !go)) {
+        result.status = 'skipped';
+        result.reason = pending ? `PR #${pending.number} is still open; inspect it before replacing` : gate;
+        console.log(result.reason);
+      } else {
+        run('npm', ['ci'], work);
+        if (job === 'patch-video') {
+          run('ffmpeg', ['-version'], work);
+          run('ffprobe', ['-version'], work);
+          run('npx', ['playwright', 'install', 'chromium'], work);
+        }
+        codex(work, path.join(dir, 'report.md'), prompt(job, base, notes));
+        const publish = path.join(work, '.look/publish.json');
+        if (job === 'patch-video' && fs.existsSync(publish)) {
+          fs.rmSync(path.join(work, '.look/review.json'), { force: true });
+          codex(work, path.join(dir, 'review.md'), reviewPrompt);
+          const review = JSON.parse(fs.readFileSync(path.join(work, '.look/review.json'), 'utf8'));
+          if (review.approved !== true || !Array.isArray(review.images) || !review.images.length)
+            throw new Error('No independent visual approval; retaining the cut without publishing');
+          const request = JSON.parse(fs.readFileSync(publish, 'utf8'));
+          if (
+            request.target !== base ||
+            typeof request.file !== 'string' ||
+            !request.file.startsWith('.look/reels/') ||
+            !request.file.endsWith('.mp4') ||
+            !fs.realpathSync(path.resolve(work, request.file)).startsWith(work + '/.look/reels/') ||
+            typeof request.title !== 'string' ||
+            !request.title.trim() ||
+            typeof request.summary !== 'string' ||
+            !Array.isArray(request.features) ||
+            request.features.length < 3 ||
+            request.features.some((f: unknown) => typeof f !== 'string')
+          )
+            throw new Error(
+              'Invalid publish request; expected this main commit, a local reel and at least three features',
+            );
+          const allowed = ['file', 'title', 'summary', 'features', 'target'];
+          if (Object.keys(request).some((key) => !allowed.includes(key))) throw new Error('Unexpected publish fields');
+        }
+        if (
+          run('git', ['rev-parse', 'HEAD'], work) !== base ||
+          run('git', ['branch', '--show-current'], work) !== branch
+        )
+          throw new Error('Agent changed the branch or committed unexpectedly; inspect worktree');
+        const changed = [
+          ...new Set(
+            [
+              ...run('git', ['diff', 'HEAD', '--name-only', '-z'], work).split('\0'),
+              ...run('git', ['ls-files', '--others', '--exclude-standard', '-z'], work).split('\0'),
+            ].filter(Boolean),
           ),
-        ) as { number: number; title: string }[];
-        let issue = String(issues.find((i) => i.title === 'Patch videos')?.number ?? '');
-        if (!issue)
-          issue = run(
-            'gh',
-            [
-              'issue',
-              'create',
-              '--title',
-              'Patch videos',
-              '--body',
-              'Every published patch video is posted here by the owner Mac daily Codex job (dev/daily/README.md).',
-            ],
-            work,
-          );
-        const request = JSON.parse(fs.readFileSync(publish, 'utf8'));
-        const body = path.join(dir, 'notification.md');
-        fs.writeFileSync(body, `@${owner} new patch video, **${request.title}**: ${url}\n\nMac run: ${id}`);
-        run('gh', ['issue', 'comment', issue, '--body-file', body], work);
+        ];
+        if (changed.some((f) => !f.startsWith(spec.scope)))
+          throw new Error('Agent edited outside the job scope; inspect worktree');
+        if (changed.length) {
+          const existing = changed.filter((f) => fs.existsSync(path.join(work, f)));
+          if (existing.length) run('npx', ['prettier', '--write', ...existing], work);
+          if (job === 'atlas') {
+            const check = run('npm', ['run', '--silent', 'atlas', '--', '--check'], work);
+            if (!/^0 problems$/m.test(check)) throw new Error(`Atlas still needs fixes:\n${check}`);
+          }
+          run('npm', ['run', 'check'], work);
+          run('git', ['add', '--', ...changed], work);
+          // Formatting can undo the only diff. Never create an empty commit.
+          if (run('git', ['diff', '--cached', '--name-only'], work)) {
+            run(
+              'git',
+              [
+                'commit',
+                '-m',
+                `Daily ${job}: update ${new Date().toISOString().slice(0, 10)}`,
+                '-m',
+                `DESIGN.md principle: ${job === 'atlas' ? 'Understandable at a glance' : "Show, don't tell"}.\n\nMaintain the daily ${job} output using Codex on the owner Mac.`,
+              ],
+              work,
+            );
+            run('npm', ['run', 'ship', '--', '--wait'], work);
+            result.shipped = true;
+          }
+        }
+        if (job === 'patch-video' && fs.existsSync(publish)) {
+          const output = path.join(dir, 'publish-output.txt');
+          run('npm', ['run', 'video:publish', '--', '--from', '.look/publish.json'], work, { GITHUB_OUTPUT: output });
+          const url = /^url=(.+)$/m.exec(fs.readFileSync(output, 'utf8'))?.[1];
+          if (!url || !url.startsWith('https://')) throw new Error('Publisher did not return a share URL');
+          result.url = url;
+          const owner = run('gh', ['repo', 'view', '--json', 'owner', '-q', '.owner.login'], work);
+          const issues = JSON.parse(
+            run(
+              'gh',
+              ['issue', 'list', '--state', 'open', '--search', 'Patch videos in:title', '--json', 'number,title'],
+              work,
+            ),
+          ) as { number: number; title: string }[];
+          let issue = String(issues.find((i) => i.title === 'Patch videos')?.number ?? '');
+          if (!issue)
+            issue = run(
+              'gh',
+              [
+                'issue',
+                'create',
+                '--title',
+                'Patch videos',
+                '--body',
+                'Every published patch video is posted here by the owner Mac daily Codex job (dev/daily/README.md).',
+              ],
+              work,
+            );
+          const request = JSON.parse(fs.readFileSync(publish, 'utf8'));
+          const body = path.join(dir, 'notification.md');
+          fs.writeFileSync(body, `@${owner} new patch video, **${request.title}**: ${url}\n\nMac run: ${id}`);
+          run('gh', ['issue', 'comment', issue, '--body-file', body], work);
+        }
+        result.status = result.shipped || result.url ? 'delivered' : 'no changes';
       }
-      result.status = result.shipped || result.url ? 'delivered' : 'no changes';
+      succeeded = true;
     }
-    succeeded = true;
   } catch (error) {
     result.status = 'failed';
     result.error = error instanceof Error ? error.message : String(error);

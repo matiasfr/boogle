@@ -1,8 +1,9 @@
 # Daily jobs on the owner's Mac
 
-`npm run daily -- atlas|patch-video [--dry-run] [--force] [--notes "..."]` replaces the two Opus CI agents with
+`npm run daily -- atlas|patch-video|scenarios [--dry-run] [--force] [--notes "..."]` replaces the two Opus CI agents with
 subscription-authenticated Codex. Atlas uses GPT-6.1-Terra at low effort; patch video and its independent visual review
 use GPT-6-Astra at high effort. DESIGN.md: **Understandable at a glance**, **Show, don't tell**, **Small and readable**.
+The scenarios job uses no model: at 03:30 local it runs the eight nightly scenarios sequentially on the Mac GPU in a fresh worktree, reports failures to the scenarios issue, and closes it after a passing run. Logs and images remain under the run folder.
 
 ## What moved, and what CI still does
 
@@ -28,10 +29,10 @@ Claude usage from these two daily jobs, not from unrelated CI. Nothing changes i
    allowed to push branches, create releases/issues and dispatch Actions. Git must also authenticate to origin without
    an interactive prompt (`gh auth setup-git` for HTTPS, or the existing SSH setup). Confirm `codex login status` and
    `gh auth status`. No credentials are copied into the repo or plists.
-2. Preview `npm run daily -- atlas --dry-run` and `npm run daily -- patch-video --dry-run`. These only print plans and
+2. Preview `npm run daily -- atlas --dry-run`, `npm run daily -- patch-video --dry-run`, and `npm run daily -- scenarios --dry-run`. These only print plans and
    prompts: no fetch, auth request, worktree, Codex session, install, publish, or post. `--force` skips the cheap gate,
-   not the video feature judgment, independent review, scope checks or open-PR protection.
-3. Preview `npm run daily:install -- --dry-run`, then run **`npm run daily:install` yourself**. The implementation task
+   not the video feature judgment, independent review, scope checks or open-PR protection. Install the matching Playwright Chromium with `npx playwright install chromium` before the first scenarios run.
+3. Preview `npm run daily:install -- --dry-run`, then reinstall with **`npm run daily:uninstall && npm run daily:install`**. The implementation task
    does not install anything. Install records this checkout's absolute script path, Node executable and PATH; it saves
    no other environment. After updating the durable checkout to Node 26, run `nvm use` there and reinstall with `npm run daily:uninstall` followed by `npm run daily:install`; existing plists keep their recorded Node 24.11.1 until reinstalled. Reinstall also after moving that checkout, changing tool locations, or changing the schedule.
 4. Run each job once while online and inspect its reports before relying on the schedule. The current implementation
@@ -40,7 +41,7 @@ Claude usage from these two daily jobs, not from unrelated CI. Nothing changes i
    tools can run on the Mac; this is not an isolation boundary. The dedicated worktree and scope checks protect delivery,
    but the agent is trusted with the owner's machine access. Usage-limit or auth failures stop; no Claude fallback.
 
-`npm run daily:uninstall [-- --dry-run]` boots out these two services and removes only their plists, leaving reports,
+`npm run daily:uninstall [-- --dry-run]` boots out these three services and removes only their plists, leaving reports,
 artifacts and failed worktrees. Uninstall while a job runs terminates it; inspect any retained lock/children afterward.
 
 ## Schedule, sleep and offline behavior
@@ -56,7 +57,7 @@ loaded. It does not wake a powered-off Mac or guarantee a catch-up after shutdow
 interrupt tools; don't judge a partial output as a completed video. Offline failures stop, keep evidence and wait for
 manual rerun or the next daily event; there is no automatic reconnect retry.
 
-One atomic `active/` lock covers **both** jobs, even across checkouts. Another run skips cleanly before any auth/network
+One atomic `active/` lock covers **all three** jobs, even across checkouts. Another run skips cleanly before any auth/network
 or model use. If both missed jobs start at wake, one may skip; rerun that job when the other finishes (or wait until
 its next day). This deliberately avoids two expensive jobs competing for the GPU. A crash can leave a lock: inspect
 `active/owner.json`, its PID and any surviving Codex/Chromium children before removing that directory. Never blindly

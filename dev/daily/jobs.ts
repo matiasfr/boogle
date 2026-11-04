@@ -5,11 +5,13 @@ export const stateDir = path.join(os.homedir(), '.boogle', 'daily');
 export const jobs = {
   atlas: { utcHour: 13, minute: 7, scope: 'docs/atlas/', model: 'gpt-6.1-terra', effort: 'low' },
   'patch-video': { utcHour: 14, minute: 23, scope: 'dev/video/shots/', model: 'gpt-6-astra', effort: 'high' },
+  scenarios: { utcHour: 11, minute: 30, scope: '', model: '', effort: '' },
 } as const;
 export type Job = keyof typeof jobs;
 
 export function jobName(value: string | undefined): Job {
-  if (value !== 'atlas' && value !== 'patch-video') throw new Error('Expected atlas or patch-video');
+  if (value !== 'atlas' && value !== 'patch-video' && value !== 'scenarios')
+    throw new Error('Expected atlas, patch-video or scenarios');
   return value;
 }
 
