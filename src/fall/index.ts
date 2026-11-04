@@ -14,7 +14,8 @@ import { clamp, smoothstep } from '../math.ts';
 import { defineKind, despawn, spawn } from '../entity/entity.ts';
 import { getMask, setMask, teleport } from '../physics/engine.ts';
 import { GROUP } from '../physics/physics.ts';
-import { AVATAR_FILL, animateAvatar, makeAvatar, makeLabel, paintAvatar, type Avatar } from '../player/avatars.ts';
+import { AVATAR_FILL, animateAvatar, makeAvatar, paintAvatar, type Avatar } from '../player/avatars.ts';
+import { createNameLabel, type NameLabel } from '../components/name-label/view.ts';
 import { input, inputState } from '../player/input-state.ts';
 import { cam, me } from '../player/player.ts';
 import { getAudio } from '../render/audio.ts';
@@ -69,10 +70,19 @@ document.body.append(white);
 // Not the player yet (me.entered would start the game): another avatar in your colour, swapped for you on Jump in.
 defineKind('fall-preview', { update: 15 });
 const previewHolder = new THREE.Group();
-const previewProp = spawn({ kind: 'fall-preview', mesh: previewHolder, update: ({ dt }) => updatePreview(dt) });
+const previewProp = spawn({
+  kind: 'fall-preview',
+  mesh: previewHolder,
+  nameLabel: null as NameLabel | null,
+  update: ({ dt }) => updatePreview(dt),
+  describe(): Record<string, unknown> {
+    return { components: { nameLabel: previewProp.nameLabel?.describe() ?? null } };
+  },
+  dispose(): void {
+    previewProp.nameLabel?.dispose();
+  },
+});
 let preview: Avatar | null = null;
-let label: THREE.Sprite | null = null;
-let labelText = '';
 let hop = 1; // s since the last colour change
 let shownColor = -1;
 let shownMaterial: THREE.MeshStandardMaterial | null = null;
@@ -93,8 +103,7 @@ function updatePreview(dt: number) {
     preview = makeAvatar(me.colorIdx);
     preview.rotation.y = YAW;
     previewHolder.add(preview);
-    label = null;
-    labelText = '';
+    previewProp.nameLabel = createNameLabel(preview);
     shownColor = -1;
   }
   if (!preview) return;
@@ -112,16 +121,7 @@ function updatePreview(dt: number) {
   preview.position.y += up;
   animateAvatar(preview, 0, up > 0, dt);
   const text = nameBox?.value.trim() ?? '';
-  if (text !== labelText) {
-    labelText = text;
-    if (label) {
-      preview.remove(label);
-      label.material.map?.dispose();
-      label.material.dispose();
-    }
-    label = makeLabel(text || ' ');
-    preview.add(label);
-  }
+  previewProp.nameLabel!.setText(text, text || ' ');
 }
 
 // ---------------------------------------------------------------- the camera on the card
