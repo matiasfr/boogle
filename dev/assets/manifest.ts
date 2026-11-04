@@ -31,28 +31,28 @@ const SOURCE_EXT = ['.py', '.blend', '.glb', '.gltf'];
 export const sha = (buf: Buffer | string) => crypto.createHash('sha256').update(buf).digest('hex').slice(0, 16);
 export const kb = (n: number) => (n / 1024).toFixed(1) + ' KB';
 
-export function sources() {
+export function sources(dir = SRC) {
   return fs
-    .readdirSync(SRC)
+    .readdirSync(dir)
     .filter((f) => SOURCE_EXT.includes(path.extname(f)))
     .map((f) => ({ name: path.basename(f, path.extname(f)), file: f }));
 }
-export function sidecar(name: string): Sidecar {
-  const p = path.join(SRC, name + '.json');
+export function sidecar(name: string, dir = SRC): Sidecar {
+  const p = path.join(dir, name + '.json');
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : {};
 }
 /** Same source-plus-sidecar byte hash used by the build and freshness check. */
-export function sourceHash(file: string, name: string) {
-  const side = path.join(SRC, name + '.json');
+export function sourceHash(file: string, name: string, dir = SRC) {
+  const side = path.join(dir, name + '.json');
   return sha(
     Buffer.concat([
-      fs.readFileSync(path.join(SRC, file)),
+      fs.readFileSync(path.join(dir, file)),
       fs.existsSync(side) ? fs.readFileSync(side) : Buffer.alloc(0),
     ]),
   );
 }
-export function readManifest(): Manifest {
-  return fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : {};
+export function readManifest(file = MANIFEST): Manifest {
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
 }
 
 export type AssetHealth = Entry & {
