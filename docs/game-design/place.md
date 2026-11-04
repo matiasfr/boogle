@@ -89,6 +89,16 @@ The forge rack holds 24 rails, including reserved slots for rails still flying o
 
 In co-op, after the depot opens and before trains, **Whistle for the cart** at the turntable calls it to the forge. **Load the cart** sends up to 16 needed rails from the forge rack onto its logs; it leaves three seconds after loading (eight seconds if empty). Rails fly onto the frontier rack, and a partner can ride the cart. Bills stay fixed. Without `coop=1`, these verbs are absent.
 
+Ride corrections preserve the rider's place on the deck. A car pose change faster than 1.5 times its cruise speed
+(13.5 m/s for the cart, 30 m/s for trains), or a yaw change faster than 4 rad/s, is a relocation, never a collision
+velocity to inherit on leaving. The cart reconciles progress, leg, load and speed on every authority snapshot, so a
+partner rides the cart everyone sees. Routine reconciliation adjusts motion, leaving delivery transitions to the existing
+events and settled-inventory correction. Riders follow the cargo deck's height when it unloads. Snapshot cart speed and
+train express status are additive; older snapshots retain the predicted values. Train corrections also retain velocity
+and dwell, so a follower does not independently stop at an intermediate halt while the authority runs express.
+The objective and automatic train call share one halt detector: entry keeps its existing bounds, while leaving requires
+another 0.4 m of clearance. Moving along the detection edge does not repeatedly ring the bell; leaving and returning does.
+
 Measured Q5 (3 November, local two-tab broker, real inputs, fixed 24-log/24-rail bill): **solo 162.40 s; two walkers 115.14 s; split 80.90 s**. Split is 49.8% of solo and 29.7% faster than two walkers, so capacity stays 16. Solo starts at the forge; both two-player modes start one at the forge and one at the frame, with empty backs and an empty frontier rack. The porter loads 16, then the unchanged Take rails verb picks up nine (the forge replenishes during the approach), double-jumps onto the solid cargo and rides; the other player carries from the frontier rack. No teleports after positioning. These are Q5 fixture times, not whole-run estimates.
 
 Deposit replies are matched to their sender and request, even after the active frame or temporary authority changes. A stalled tab does not refund accepted goods: rejected pieces (including the great beam) return once, and unanswered requests return when their authority actually leaves. This prevents a five-second stall from leaving the same logs both on a back and in the frame.

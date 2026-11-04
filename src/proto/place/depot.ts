@@ -9,7 +9,9 @@ import { FIXED } from '../../constants.ts';
 import { scene } from '../../render/scene.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
-import { removeBody, setShapes, stepAlpha, type Body } from '../../physics/engine.ts';
+import { removeBody, setShapes, stepAlpha, teleport, type Body } from '../../physics/engine.ts';
+import { carry, CARRY } from '../../physics/platforms.ts';
+import { me } from '../../player/player.ts';
 import { flat } from '../flat.ts';
 import { pop } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
@@ -19,7 +21,7 @@ import { CART, STUB, lineAt, railY, type LinePoint } from './layout.ts';
 import { COOP, count, job, num, sharedSlice } from './job.ts';
 import { L1, L2 } from './lines.ts';
 import { RAIL_SIZE, dustRing, logStackMesh, send, setStackLog } from './pieces.ts';
-import { besideLine, drawCar, makeCar, poseCarOnLine, type Car } from './rail.ts';
+import { besideLine, drawCar, makeCar, poseCarOnLine, snapCar, type Car } from './rail.ts';
 import { addFoot } from './sites.ts';
 import type { StationRun } from './stations.ts';
 
@@ -216,7 +218,9 @@ export function callCart() {
 let activeStation: () => StationRun | null = () => null;
 export const setDepotFrame = (fn: () => StationRun | null) => void (activeStation = fn);
 const car: Car = makeCar({ hx: CART.hx, hz: CART.hz, top: CART.top }, cartLook, () => stepCart(FIXED), {});
+car.speedLimit = CART.speed * 1.5;
 export const cartPlatform = car.platform;
+let nudge = 0;
 const here = new THREE.Vector3();
 function drawLoad(n: number) {
   n = Math.max(0, Math.min(cartLogs.instanceMatrix.count, n));
@@ -242,7 +246,13 @@ function drawLoad(n: number) {
       : n
         ? 0.3 + Math.floor((n - 1) / 4) * 0.27
         : 0;
-    car.platform.top = car.hy + cargoTop;
+    const top = car.hy + cargoTop;
+    const rider = carry.on === car.platform ? me.body : null;
+    if (rider && rider.velocity.y - carry.y <= CARRY.leaveVy) {
+      const p = rider.position;
+      teleport(rider, p.x, p.y + top - car.platform.top, p.z);
+    }
+    car.platform.top = top;
     setShapes(car.body, [
       { kind: 'box', hx: CART.hx, hy: car.hy + cargoTop / 2, hz: CART.hz, offset: { x: 0, y: cargoTop / 2, z: 0 } },
     ]);
@@ -250,6 +260,9 @@ function drawLoad(n: number) {
 }
 function stepCart(dt: number) {
   if (!job.rung.depot) return;
+  const correction = Math.max(-1.5 * dt, Math.min(1.5 * dt, nudge));
+  cart.d += correction;
+  nudge -= correction;
   const st = activeStation();
   const owed = st?.spec.rack === 'cart' ? st.wants('logs') - rack.logs - cart.load : 0;
   switch (cart.leg) {
@@ -399,6 +412,47 @@ export function snapCart() {
   poseOnRoad(car, cart.d);
   drawLoad(cart.load);
 }
+// Additive save/snapshot field: old tabs omit speed; a running follower keeps its predicted speed in that case.
+export type DepotSave = {
+  logs: number;
+  rails: number;
+  d: number;
+  leg: Leg;
+  t: number;
+  load: number;
+  cartRails: number;
+  called: boolean;
+  speed?: number;
+};
+function readCart(v: unknown) {
+  const j = (v ?? {}) as Partial<DepotSave>;
+  return {
+    d: num(j.d) ? Math.max(0, Math.min(L1_FROM + L2.spec.line.len, j.d)) : 0,
+    leg: Object.values(leg).includes(j.leg as Leg) ? j.leg! : ('rest' as Leg),
+    t: num(j.t) ? Math.max(0, j.t) : 0,
+    load: count(j.load, CART.load) ? j.load : 0,
+    rails: count(j.cartRails, CART.rails) ? j.cartRails : 0,
+    called: j.called === true,
+    speed: num(j.speed) ? Math.max(0, Math.min(CART.speed, j.speed)) : cart.speed,
+  };
+}
+/** A follower's cart must follow the authority even when no inventory count changes. */
+export function reconcileCart(v: unknown) {
+  if (!v || typeof v !== 'object' || !num((v as Partial<DepotSave>).d)) return;
+  const next = readCart(v),
+    d = next.d;
+  // Only motion here. Replaying an older cargo/leg snapshot just after local unloading would deliver it twice.
+  // Reliable call/load events and the existing settled-inventory reconciliation own those transitions.
+  cart.speed = next.speed;
+  if (cart.leg === next.leg) cart.t = next.t;
+  nudge = d - cart.d;
+  if (Math.abs(nudge) > 8) {
+    cart.d = d;
+    nudge = 0;
+    poseOnRoad(car, cart.d);
+    snapCar(car);
+  }
+}
 sharedSlice('depot', {
   get: () => ({
     logs: rack.logs,
@@ -409,6 +463,7 @@ sharedSlice('depot', {
     load: cart.load,
     cartRails: cart.rails,
     called: cart.called,
+    speed: cart.speed,
   }),
   set: (v) => {
     const j = (v ?? {}) as {
@@ -423,12 +478,8 @@ sharedSlice('depot', {
     };
     rack.logs = count(j.logs, 400) ? j.logs : 0;
     rack.rails = count(j.rails, 400) ? j.rails : 0;
-    cart.d = num(j.d) ? j.d : 0;
-    cart.leg = Object.values(leg).includes(j.leg as Leg) ? (j.leg as Leg) : 'rest';
-    cart.t = num(j.t) ? j.t : 0;
-    cart.load = count(j.load, CART.load) ? j.load : 0;
-    cart.rails = count(j.cartRails, CART.rails) ? j.cartRails : 0;
-    cart.called = typeof j.called === 'boolean' ? j.called : false;
-    cart.speed = 0;
+    Object.assign(cart, readCart(v));
+    nudge = 0;
+    drawLoad(cart.load);
   },
 });

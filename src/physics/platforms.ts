@@ -128,7 +128,9 @@ function deckUnder(b: Body) {
     if (Math.abs(lx) > p.hx + CARRY.edge || Math.abs(lz) > p.hz + CARRY.edge) continue;
     const g = b.position.y - PLAYER_R - (q.y + p.top);
     if (g > CARRY.above || g < -CARRY.below) continue;
-    if (b.velocity.y - p.body.velocity.y > CARRY.leaveVy) continue;
+    // An attached rider has last step's vertical speed. A crest changes the deck's next speed, not the rider's
+    // intent: comparing against that new speed mistakes a descending deck for a jump.
+    if (b.velocity.y - (carry.on === p ? carry.y : p.body.velocity.y) > CARRY.leaveVy) continue;
     gap = g;
     return p;
   }
@@ -150,7 +152,8 @@ export function carryStep(b: Body, me: { coyote: number; swimming: boolean }) {
       s = Math.sin(th);
     const px = v.x + (rx * c + rz * s - rx) / FIXED,
       pz = v.z + (-rx * s + rz * c - rz) / FIXED;
-    if (carry.on !== p) {
+    const staying = carry.on === p;
+    if (!staying) {
       carry.on = p;
       boardT = 0;
       fromX = carry.x;
@@ -158,8 +161,16 @@ export function carryStep(b: Body, me: { coyote: number; swimming: boolean }) {
     }
     boardT += FIXED;
     const w = Math.min(1, boardT / CARRY.boardS);
-    carry.x = fromX + (px - fromX) * w;
-    carry.z = fromZ + (pz - fromZ) * w;
+    const nextX = fromX + (px - fromX) * w,
+      nextZ = fromZ + (pz - fromZ) * w;
+    // Steering accelerates in the deck's frame. Its acceleration/turn is transport, not something the player's
+    // limited walking acceleration must catch up with (or a tight bend slides an idle rider off).
+    if (staying) {
+      b.velocity.x += nextX - carry.x;
+      b.velocity.z += nextZ - carry.z;
+    }
+    carry.x = nextX;
+    carry.z = nextZ;
     carry.y = v.y;
     carry.spin += th;
     airborne = false;

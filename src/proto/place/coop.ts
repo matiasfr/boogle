@@ -53,13 +53,14 @@ import {
   type Rock,
   type Tree,
 } from './chop.ts';
-import { cartPlatform, rackTake } from './depot.ts';
+import { cartPlatform, rackTake, reconcileCart } from './depot.ts';
 import { forge, takeRail } from './forge.ts';
 import { COOP, applyShared, captureShared, count, job, num, save } from './job.ts';
 import { GOODS, TUNE, type Goods } from './layout.ts';
 import { allHeaps, frameById, hub, lines, machine } from './lines.ts';
 import { chips, clearTrips } from './pieces.ts';
 import { callTrain } from './rail.ts';
+import type { TrainSave } from './cargo.ts';
 import { flyToStock, type StationRun } from './stations.ts';
 
 type Api = {
@@ -187,6 +188,7 @@ const volatile = (j: Record<string, unknown>) => {
 
 /** Each second, on a follower: the same run? Small numbers settle on their own; what stays different gets put right. */
 function reconcile(a: Api, j: Snap) {
+  reconcileCart(j.shared.depot);
   const mine = captureShared();
   miss = discrete(j.shared) === discrete(mine) ? 0 : miss + 1;
   const theirRun = j.shared.run as { mode: string; k: number; head: number };
@@ -204,17 +206,39 @@ function reconcile(a: Api, j: Snap) {
   )
     if (Math.abs(theirRun.head - myRun.head) > 1.5) myRun.head = theirRun.head;
   // The trains: nudged to the authority's place, so a rider stays on your copy of the deck.
-  const trains = j.shared.trains as
-    ({ s: number; v: number; target: number; sweep: 1 | -1; dwell: number } | null)[] | undefined;
+  const trains = Array.isArray(j.shared.trains) ? (j.shared.trains as (TrainSave | null)[]) : [];
   lines.forEach((l, k) => {
     const t = trains?.[k];
-    if (!t || !l.train.clockRunning()) return;
+    if (
+      !t ||
+      !l.train.clockRunning() ||
+      !num(t.s) ||
+      !num(t.v) ||
+      Math.abs(t.v) > TUNE.cruise ||
+      !count(t.target, l.train.tr.stops.length - 1) ||
+      !num(t.dwell) ||
+      (t.sweep !== 1 && t.sweep !== -1)
+    )
+      return;
     const d = t.s - l.train.tr.s;
-    if (Math.abs(d) > 8) l.train.put(t.s, t.v, t.target, t.sweep, t.dwell);
-    else {
+    if (Math.abs(d) > 8) {
+      nudge[k] = 0;
+      l.train.put(
+        t.s,
+        t.v,
+        t.target,
+        t.sweep,
+        t.dwell,
+        typeof t.express === 'boolean' ? t.express : l.train.tr.express,
+      );
+    } else {
       nudge[k] = d;
       l.train.tr.target = t.target;
       l.train.tr.sweep = t.sweep;
+      l.train.tr.v = t.v;
+      l.train.tr.dwell = t.dwell;
+      l.train.tr.stop = t.dwell > 0 ? t.target : -1;
+      if (typeof t.express === 'boolean') l.train.tr.express = t.express;
     }
   });
   // The current frame's stack, when nothing's in the air here.
