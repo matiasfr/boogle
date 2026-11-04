@@ -7,7 +7,24 @@ import { makeLife } from '../src/player/buddy/life.ts';
 import { retargetClip } from '../src/player/buddy/retarget.ts';
 export const SAMPLE_FPS = 30;
 export type BuddyMode = 'raw' | 'played';
-export function prepareBuddy(model: Asset, source: Asset) {
+export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
+  // Stage-only trial: decorate a fresh rest-pose instance, leaving Buddy's source and production loader untouched.
+  const original = model;
+  if (headwear)
+    model = {
+      ...original,
+      instance(node?: string) {
+        const figure = original.instance(node);
+        const head = figure.getObjectByName('Head');
+        if (!head) throw new Error('Buddy trial needs the existing Head bone');
+        const cap = headwear.instance();
+        cap.name = 'wear_head_conductor';
+        cap.position.y = 1.12;
+        figure.updateMatrixWorld(true);
+        head.attach(cap);
+        return figure;
+      },
+    };
   const rest = model.instance(),
     src = source.instance();
   let ratio = 1;

@@ -1,0 +1,59 @@
+{
+  "source": ".look/trial/roller-initial/reimport.glb",
+  "parts": [
+    {
+      "name": "roller_drum",
+      "triangles": 76,
+      "vertices": 52,
+      "pivotBlender": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "degenerates": 0,
+      "badNormals": 0,
+      "materials": [
+        "steel"
+      ],
+      "normalLengthRange": [
+        0.9999999535848463,
+        1.0000001176667797
+      ]
+    }
+  ],
+  "triangles": 76,
+  "degenerates": 0,
+  "nonfiniteNormals": 0,
+  "boundsGame": {
+    "min": [
+      -0.07133641093969345,
+      -0.07501083612442017,
+      -0.4300000071525574
+    ],
+    "max": [
+      0.07133641093969345,
+      0.07501083612442017,
+      0.4300000071525574
+    ],
+    "size": [
+      0.1426728218793869,
+      0.15002167224884033,
+      0.8600000143051147
+    ]
+  },
+  "nodes": [
+    {
+      "name": "roller_drum",
+      "positionBlender": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        0.4300000071525574,
+        0.4300000071525574,
+        0.4300000071525574
+      ]
+    }
+  ]
+}

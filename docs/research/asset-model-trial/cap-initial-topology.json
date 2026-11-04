@@ -1,0 +1,37 @@
+[
+  {
+    "name": "wear_head_conductor_badge",
+    "weldedVertices": 5,
+    "boundaryEdges": 0,
+    "nonManifoldNonBoundaryEdges": 0,
+    "signedLocalVolume": 0.1955893438941795
+  },
+  {
+    "name": "wear_head_conductor_brass_band",
+    "weldedVertices": 96,
+    "boundaryEdges": 0,
+    "nonManifoldNonBoundaryEdges": 0,
+    "signedLocalVolume": 0.005445028436829896
+  },
+  {
+    "name": "wear_head_conductor_brass_crown",
+    "weldedVertices": 96,
+    "boundaryEdges": 0,
+    "nonManifoldNonBoundaryEdges": 0,
+    "signedLocalVolume": 0.002248223203587585
+  },
+  {
+    "name": "wear_head_conductor_drum",
+    "weldedVertices": 48,
+    "boundaryEdges": 24,
+    "nonManifoldNonBoundaryEdges": 0,
+    "signedLocalVolume": 1.7895912540098435
+  },
+  {
+    "name": "wear_head_conductor_peak",
+    "weldedVertices": 52,
+    "boundaryEdges": 0,
+    "nonManifoldNonBoundaryEdges": 0,
+    "signedLocalVolume": 0.03856954893248425
+  }
+]
