@@ -4,7 +4,14 @@ import path from 'node:path';
 import { buildAt, sameBuild, type Build } from './source.ts';
 
 export type Operation = 'look' | 'playthrough' | 'scenario' | 'cold-start';
-export type Request = { operation: Operation; url: string; dataDir: string; args: string[]; query: string };
+export type Request = {
+  operation: Operation;
+  url: string;
+  dataDir: string;
+  args: string[];
+  query: string;
+  clockUrl?: string;
+};
 export type Evidence = {
   id: string;
   operation: Operation;

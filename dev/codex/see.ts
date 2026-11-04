@@ -33,6 +33,11 @@ function brokerAlive() {
 brokerAlive();
 const production = args.includes('--production');
 if (production) args.splice(args.indexOf('--production'), 1);
+const { coopWarpOptions } = (await import(
+  pathToFileURL(path.resolve('dev/look/coop-warp.ts')).href
+)) as typeof import('../look/coop-warp.ts');
+const warp = (operation === 'look' || operation === 'playthrough') && coopWarpOptions(args).enabled;
+if (production && warp) throw new Error('Two-player warp requires the disposable local development server');
 const stack =
   operation === 'cold-start' || production
     ? await (
@@ -40,7 +45,7 @@ const stack =
           pathToFileURL(path.resolve('dev/cold-start/production.ts')).href
         )) as typeof import('../cold-start/production.ts')
       ).startProduction(dir)
-    : await startStack({ dataRoot: dir });
+    : await startStack({ dataRoot: dir, warp });
 let status: number;
 try {
   const request: Request = {
@@ -49,11 +54,12 @@ try {
     dataDir: stack.dataDir!,
     args,
     query: process.env.BOOGLE_QUERY ?? '',
+    clockUrl: stack.clockUrl,
   };
   fs.writeFileSync(path.join(dir, `${id}.tmp`), JSON.stringify(request));
   fs.renameSync(path.join(dir, `${id}.tmp`), path.join(dir, `${id}.json`)); // the broker never reads half a request
   const done = path.join(dir, `${id}.done.json`);
-  const deadline = Date.now() + (operation === 'cold-start' ? 36 : 8) * 60_000;
+  const deadline = Date.now() + (operation === 'cold-start' || args.includes('--long') ? 36 : 8) * 60_000;
   while (!fs.existsSync(done)) {
     if (Date.now() > deadline)
       throw new Error('No answer from the look broker (is this running under dev/codex/run.ts?)');
