@@ -12,6 +12,7 @@ import { createService, loadConfig } from '../../server/src/server.ts';
 import { installWarp, SKIP_DRAWS } from './warp.ts';
 import type { WarpHandle } from './warp.ts';
 import { startWarpServer } from './server-process.ts';
+import { checkInstall } from './install-check.ts';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -63,6 +64,7 @@ export async function startStack({
   warp = false,
 }: { url?: string | null; root?: string; dataRoot?: string; warp?: boolean } = {}): Promise<Stack> {
   if (url) return { base: url, close: async () => {} };
+  checkInstall(dir);
   const dataDir = fs.mkdtempSync(path.join(dataRoot, 'boogle-look-'));
   // `npm run scenarios` opens every player of every scenario from one address on one stack: no limit meant for strangers.
   const env = {
