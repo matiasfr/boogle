@@ -63,3 +63,22 @@ test('every named lockstep file exists and is linted', async () => {
 test('Math.sqrt and plain arithmetic are allowed', async () => {
   assert.deepEqual(await lint('export const x = Math.sqrt(2) * 3 + 1 / 4 - Math.floor(0.5);\n'), []);
 });
+
+test('lockstep registration imports are restricted to rules and the world installer', async () => {
+  for (const name of ['registerOp', 'registerState', 'onTick']) {
+    for (const ext of ['js', 'ts']) {
+      for (const [file, path] of [
+        ['src/probe.ts', `./world/sync.${ext}`],
+        ['src/physics/backend-probe.ts', `../world/sync.${ext}`],
+        ['src/world/probe.ts', `./sync.${ext}`],
+      ]) {
+        const code = `import { ${name} } from '${path}'; ${name}();`;
+        assert.ok((await lint(code, file)).includes('no-restricted-imports'), `${file}: ${code}`);
+      }
+      const installer = `import { ${name} } from './sync.${ext}'; ${name}();`;
+      assert.ok(!(await lint(installer, 'src/world/game-world.ts')).includes('no-restricted-imports'), installer);
+    }
+    // Rules receive the registration functions through their sync argument, not a direct sync.ts import.
+    assert.deepEqual(await lint(`export const install = (sync) => sync.${name}();`, 'src/world/rules/probe.js'), []);
+  }
+});
