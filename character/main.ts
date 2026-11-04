@@ -9,6 +9,7 @@ import { inspectAsset, formatBytes, cloneMaterials } from './inspect.ts';
 import { createBrowser } from './browser.ts';
 import { createThumbnails } from './thumbnails.ts';
 import { background } from '../src/async.ts';
+import { material } from '../src/render/materials.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -66,8 +67,21 @@ const load = async (id: string) => {
   if (entry?.sourceKind !== 'built' || !entry.url) throw new Error('No built output for ' + id);
   return loader.load(entry.url);
 };
-const [buddyAsset, clipAsset] = await Promise.all([load('buddy'), load('hero-clips')]);
-const buddy = prepareBuddy(buddyAsset, clipAsset);
+const [buddyAsset, clipAsset, capAsset] = await Promise.all([load('buddy'), load('hero-clips'), load('conductor-cap')]);
+// Deliberate preset opt-in for this trial only. The stage owns these clones; cached presets remain untouched.
+const capPaint = material('paintedToy').clone();
+capPaint.color.set('#31566d');
+const capPeak = material('paintedToy').clone();
+capPeak.color.set('#252e36');
+const capBrass = material('steel').clone();
+capBrass.color.set('#d9a93a');
+capAsset.gltf.scene.traverse((o) => {
+  const mesh = o as THREE.Mesh;
+  if (!mesh.isMesh) return;
+  mesh.material =
+    o.name.includes('brass') || o.name.includes('badge') ? capBrass : o.name.includes('peak') ? capPeak : capPaint;
+});
+const buddy = prepareBuddy(buddyAsset, clipAsset, capAsset);
 const reference = buddy.create('raw', 'Idle_Loop', 'free', '');
 reference.seek(0.4);
 stage.add(reference.group);
@@ -123,6 +137,8 @@ const browser = createBrowser(selectEntry, thumbnails.get);
 function generic(asset: Asset): Preview {
   const group = asset.instance(state.node || undefined),
     own = cloneMaterials(group);
+  // An axle-centred prop otherwise disappears halfway into the inspection floor. Its authored pivot stays intact.
+  if (state.asset === 'feeder-roller') group.position.y = 0.075;
   const mixer = new THREE.AnimationMixer(group);
   const clip = state.clip ? asset.clip(state.clip, state.node || undefined) : undefined;
   const action = clip ? mixer.clipAction(clip).setLoop(THREE.LoopOnce, 1).play() : undefined;
@@ -627,6 +643,9 @@ addEventListener('pagehide', () => {
   controls.dispose();
   lighting.dispose();
   loader.dispose();
+  capPaint.dispose();
+  capPeak.dispose();
+  capBrass.dispose();
   floor.geometry.dispose();
   floor.material.dispose();
   grid.dispose();

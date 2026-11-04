@@ -1,0 +1,187 @@
+{
+  "source": ".look/trial/cap-final/reimport.glb",
+  "parts": [
+    {
+      "name": "wear_head_conductor_badge",
+      "triangles": 6,
+      "vertices": 16,
+      "pivotBlender": [
+        0.0,
+        -0.2634999752044678,
+        0.4449999928474426
+      ],
+      "degenerates": 0,
+      "badNormals": 0,
+      "materials": [
+        "tintedSteel"
+      ],
+      "normalLengthRange": [
+        1.0,
+        1.000000093132253
+      ]
+    },
+    {
+      "name": "wear_head_conductor_brass_band",
+      "triangles": 192,
+      "vertices": 288,
+      "pivotBlender": [
+        0.0,
+        0.0,
+        0.38050001859664917
+      ],
+      "degenerates": 0,
+      "badNormals": 0,
+      "materials": [
+        "tintedSteel"
+      ],
+      "normalLengthRange": [
+        0.999999933876095,
+        1.0000000745058037
+      ]
+    },
+    {
+      "name": "wear_head_conductor_brass_crown",
+      "triangles": 192,
+      "vertices": 288,
+      "pivotBlender": [
+        0.0,
+        0.0,
+        0.5264999866485596
+      ],
+      "degenerates": 0,
+      "badNormals": 0,
+      "materials": [
+        "tintedSteel"
+      ],
+      "normalLengthRange": [
+        0.9999999254941913,
+        1.0000001043081377
+      ]
+    },
+    {
+      "name": "wear_head_conductor_drum",
+      "triangles": 70,
+      "vertices": 120,
+      "pivotBlender": [
+        0.0,
+        0.0,
+        0.4475000202655792
+      ],
+      "degenerates": 0,
+      "badNormals": 0,
+      "materials": [
+        "paintedToy"
+      ],
+      "normalLengthRange": [
+        0.9999999105930306,
+        1.000000094063581
+      ]
+    },
+    {
+      "name": "wear_head_conductor_peak",
+      "triangles": 100,
+      "vertices": 200,
+      "pivotBlender": [
+        0.0,
+        -0.22921419143676758,
+        0.35202500224113464
+      ],
+      "degenerates": 0,
+      "badNormals": 0,
+      "materials": [
+        "paintedToyPeak"
+      ],
+      "normalLengthRange": [
+        0.9999998537823451,
+        1.000000111893308
+      ]
+    }
+  ],
+  "triangles": 560,
+  "degenerates": 0,
+  "nonfiniteNormals": 0,
+  "boundsGame": {
+    "min": [
+      -0.27300000190734863,
+      0.33725813031196594,
+      -0.25500383973121643
+    ],
+    "max": [
+      0.27300000190734863,
+      0.5349841117858887,
+      0.35700997710227966
+    ],
+    "size": [
+      0.5460000038146973,
+      0.19772598147392273,
+      0.6120138168334961
+    ]
+  },
+  "nodes": [
+    {
+      "name": "wear_head_conductor_badge",
+      "positionBlender": [
+        0.0,
+        -0.2634999752044678,
+        0.4449999928474426
+      ],
+      "scale": [
+        0.030000001192092896,
+        0.030000001192092896,
+        0.030000001192092896
+      ]
+    },
+    {
+      "name": "wear_head_conductor_brass_band",
+      "positionBlender": [
+        0.0,
+        0.0,
+        0.38050001859664917
+      ],
+      "scale": [
+        0.27300000190734863,
+        0.27300000190734863,
+        0.27300000190734863
+      ]
+    },
+    {
+      "name": "wear_head_conductor_brass_crown",
+      "positionBlender": [
+        0.0,
+        0.0,
+        0.5264999866485596
+      ],
+      "scale": [
+        0.2720000147819519,
+        0.2720000147819519,
+        0.2720000147819519
+      ]
+    },
+    {
+      "name": "wear_head_conductor_drum",
+      "positionBlender": [
+        0.0,
+        0.0,
+        0.4475000202655792
+      ],
+      "scale": [
+        0.27000001072883606,
+        0.27000001072883606,
+        0.27000001072883606
+      ]
+    },
+    {
+      "name": "wear_head_conductor_peak",
+      "positionBlender": [
+        0.0,
+        -0.22921419143676758,
+        0.35202500224113464
+      ],
+      "scale": [
+        0.2618323266506195,
+        0.2618323266506195,
+        0.2618323266506195
+      ]
+    }
+  ]
+}
