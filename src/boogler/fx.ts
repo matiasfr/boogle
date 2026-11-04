@@ -76,9 +76,9 @@ function spawnHeart(size: number, spread: number, speed: number, delay: number) 
   h.s.visible = false;
 }
 
-// 'pet': a couple of small hearts. 'level': a big fountain for reaching a new friendship level.
-export function booglerHearts(kind: 'pet' | 'level') {
-  if (kind === 'level') {
+// Gifts use a couple of small hearts. Older tabs can still send the retired celebration fountain.
+export function booglerHearts(kind: 'pet' | 'legacyCelebration') {
+  if (kind === 'legacyCelebration') {
     const n = reducedMotion ? 8 : 30;
     for (let k = 0; k < n; k++) spawnHeart(0.42, 0.9, 2.4, (k / n) * 1.1);
   } else for (let k = 0; k < 3; k++) spawnHeart(0.24, 0.4, 1.4, k * 0.12);

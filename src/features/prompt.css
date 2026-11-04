@@ -66,7 +66,7 @@ body.touch .prompt-chip {
   white-space: nowrap;
 }
 
-/* In The Boogler's name tag, under his hearts; the tag's own arrow points at him. */
+/* In The Boogler's name tag; the tag's own arrow points at him. */
 .boogler-tag-prompt {
   display: flex;
   margin-top: 7px;

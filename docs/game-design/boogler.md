@@ -4,7 +4,7 @@ A lavender blob (`#b99cff`, about three times as wide as tall) with a face and f
 dreams of a restaurant. He wears a comically tall black top hat (cosmetic, no collider): brim radius a third of his,
 crown half the brim's, about 0.9 m tall (one and a half times his height). It lags and wobbles on springs when he hops and
 walks, and is crushed flat like an opera hat while someone rides him, popping back up after. His HUD stays quiet, like Fortnite's NPC markers: a small talk-bubble mark over his head at range, and within
-10 m his name plate with your friendship hearts and the interact prompt (hidden again past 12 m). His speech bubbles
+10 m his name plate and the interact prompt (hidden again past 12 m). While wary, the plate says "avoiding you". His speech bubbles
 show at any range. Off screen, the same mark sits on the screen edge with his distance (full within 35 m, gone by 60 m).
 
 ## Wander
@@ -22,36 +22,16 @@ show at any range. Off screen, the same mark sits on the screen edge with his di
 - **Files.** [src/boogler/boogler.ts](../../src/boogler/boogler.ts), [src/boogler/hud.ts](../../src/boogler/hud.ts),
   [src/boogler/fx.ts](../../src/boogler/fx.ts), [src/features/boogler.ts](../../src/features/boogler.ts).
 
-## Friendship
+## What he remembers
 
 - **Sync kind.** Local (localStorage `boogle.boogler`, one global key); each player publishes `bg: [act, wary, ev, evN]`
-  so the lead's brain knows who is talking, riding or wary, and every client plays the hearts and launches.
-- **Levels** ([src/boogler/friendship.ts](../../src/boogler/friendship.ts)):
-
-| Level | Name | Points |
-|---|---|---|
-| 0 | Stranger | 0 |
-| 1 | Familiar face | 20 |
-| 2 | Pal | 60 |
-| 3 | Friend | 120 |
-| 4 | Close friend | 190 |
-| 5 | Best friend | 270 |
-
-- **Points.**
-
-| Action | Points | Limits |
-|---|---|---|
-| Present: love / like / meh / dislike | +12 / +7 / +3 / −3 (no live item is loved or disliked) | Repeats of the same kind halve each time; 4 scoring presents per 20 min |
-| New story chapter | +8, plus answer points | once per chapter |
-| Answers | about −2 to +3 each | small talk scores at most every 3 min (rude answers still cost) |
-| Kicked off (launched) | −6 | |
-| Too nosy | −4 | goes quiet for 90 s |
-
-Points never drop below 0. Each new level bursts hearts and plays a level-up line. A 15-minute visit (a pet
-every 2.5 min, a talk every 5) reaches Best friend in about five visits with no presents; presents (a seed, the
-frisbee) shave off about one. (`test/boogler-pace.test.ts` models it.) There is no petting since 2026-11-02 (not in
-his nature, the owner's call), but the pace model and `pet()` in friendship.ts still count a pet (+4) every 2.5 min,
-so without them it takes longer: a retune is pending.
+  so the lead's brain knows who is talking, riding or wary, and clients play ride and gift reactions.
+- **Memory** ([src/boogler/memory.ts](../../src/boogler/memory.ts)): whether you have met, learned chapters, answer
+  flags, bookmarks, recent small-talk topics, presents and the short-lived grudge after rides. There is no score or
+  relationship progression. Existing saves keep their story progress; positive old points or any learned chapters
+  count as having met him, and retired fields are dropped when saved.
+- **Presents.** He reacts by taste, refuses key items, and remembers repeated kinds and the four-present window
+  over 20 minutes for his repeat/capped remarks. Presents still forgive rides; they do not unlock conversations.
 
 ## Talk
 
@@ -69,33 +49,32 @@ so without them it takes longer: a retune is pending.
 - **Easy in, easy out.** Talks are short. You stand still while one is open (the camera turns to frame him), and
   pressing Esc / pad B / the close button (on a phone, also the main button, which says Leave while you talk), opening
   the pause view, hopping on his back or ending up more than 4.6 m away (a ball knocks you) ends it at once, with his
-  farewell (by level) as a
-  speech bubble over his head (none while he is cross: a kick-off, wary or quiet talk). A finished chapter, small talk
-  or present also ends the talk, with a "What else?" line as a bubble (or the level-up line); E opens the menu again.
+  farewell as a speech bubble over his head (none while he is cross: a kick-off or wary talk). A finished chapter,
+  small talk or present also ends the talk, with a "What else?" line as a bubble; E opens the menu again.
   The kick-off telling-off ignores distance (you may have flown far), but Esc / pad B still close it.
 - **Bookmarks.** Leave a story chapter halfway and he remembers where (flag `at.<thread>` = `<chapter>.<node>`); asking
   about that thread again picks it up there, opened with "Now, where was I? Ah, yes." or "As I was saying, before you
   ran off..." (`RESUME`).
 - **Menu:** "How's it going?" (small talk), one entry per story thread, a present, and goodbye (one press: his farewell
-  is a bubble). Greetings and farewells change with your level.
+  is a bubble). The first-ever talk uses the introductory greetings and the farewell explaining "goodbye".
+  After that, greetings and farewells are picked randomly from all the other former tiers: his instant familiarity
+  is the joke. The saved `met` flag remembers the introduction.
 - **Loading.** The conversations (`talk.ts` and `lines.ts`) are their own chunk, fetched right after start; a talk
-  opened before it arrives waits for it. What he says outside a talk (level-ups, ride complaints, "Nope!") is in
+  opened before it arrives waits for it. What he says outside a talk (ride complaints, "Nope!") is in
   the small eager [src/boogler/barks.ts](../../src/boogler/barks.ts) ([src/boogler/play.ts](../../src/boogler/play.ts)).
 - **Story threads** ([src/boogler/lines.ts](../../src/boogler/lines.ts), [src/boogler/talk.ts](../../src/boogler/talk.ts)):
-  `home`, `mom`, `biz`, six, five and six chapters, each unlocking at a level (list in 7.2). The `mom` thread shows
-  from level 1 or once `home` has started.
-- **Nosiness.** Asking for a chapter above your level deflects (+1 nosy); pushing ("Oh, come on, tell me!") is +2
-  nosy and −2 points; some answers are trust-gated and send you elsewhere below a level (+1 nosy). At 5 nosy he goes
-  quiet for 90 s. Nosiness wears off at one per minute.
+  `home`, `mom`, `biz`, six, five and six chapters (see [the lore and chapter list](boogler-lore.md)). Every thread
+  appears from the first talk; chapters play in order within each thread, with retells and bookmarks preserved.
+  Asking questions never causes a nosiness lockout, and answers have no trust gate.
 - **Flags** set by answers fill later lines: `mom`, `idea`, `slogan`, plus `kicked` (count) and `recent` (last three
   small-talk topics, so they rotate).
 - **As Mario** (6.17, the guest) he is starstruck whatever his mood: one of four short conversations (not the one from
   last time; melon pitch, autograph, haggling, questions), every answer a Mario catchphrase ("Wahoo!", "It's-a me,
-  Mario!"). Unscored, though a present still counts.
+  Mario!"). Presents keep their usual reactions and forgiveness.
 
 ## Riding and launch
 
-- Stand on him and he carries you. He puts up with a rider for 3.5 + 1.2 × level seconds (1.5 s if wary), complaining
+- Stand on him and he carries you. He puts up with a rider for 3.5 seconds (1.5 s if wary), complaining
   at 35 %, 60 % and 82 % of that ("Um.", "Hey. Hey!", "Okay, that is enough..."). Then he puffs up for 750 ms and, if
   you are still on, launches you at 10.5 m/s up and 5.5 m/s out (air control is locked for up to 1.1 s), and tells you
   off once you land. Jump off in time and he says "Hmph. Smart."
@@ -109,8 +88,10 @@ so without them it takes longer: a retune is pending.
 
 ## Known issues and limits
 
-His position restarts with whoever leads next. Friendship is per browser, shared by every room. The `ACT` value 3 (old PET)
-must never be reused. Related ideas: [proposals/boogler-tech-tree.md](../proposals/boogler-tech-tree.md).
+His position restarts with whoever leads next. His memory is per browser, shared by every room. The `bg` presence
+shape and all `ACT`/`EV` numbers stay reserved, including retired reactions sent by older tabs. The `ACT` value 3
+(old PET) must never be reused. His existing dialogue is preserved, including lines that assume closeness or
+patting; inaccessible lines are parked outside the player bundle for the owner's later narrative pass.
 
 ---
 

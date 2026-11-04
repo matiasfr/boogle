@@ -1,12 +1,11 @@
 // Screen-space HUD for The Boogler, kept quiet the way Fortnite marks its NPCs: at range only a small talk-bubble mark
-// floats over his head; walk within NAME_NEAR and it gives way to his name plate (your friendship hearts, and the
+// floats over his head; walk within NAME_NEAR and it gives way to his name plate (whether he's avoiding you, and the
 // interact prompt when he is what you would interact with). His speech bubbles show at any range. While he's off
 // screen and nearby, the same mark sits on the nearest screen edge, aimed at him, with his distance. Past FIND_NEAR it
 // fades out, gone by FIND_FAR: far off you are doing your own thing, and he is mostly pottering about at home anyway.
 import { boogler, booglerScreen } from './boogler.ts';
 import { me } from '../player/player.ts';
 import { clamp } from '../math.ts';
-import { heartsText } from './friendship.ts';
 import { replay } from './dialogue.ts';
 
 const EDGE_X = 46; // pointer inset from the left/right edges, px
@@ -29,7 +28,7 @@ const MARKUP = `
       <div class="boogler-say" hidden><div class="boogler-say-text"></div></div>
       <div class="boogler-tag-sign">
         <div class="boogler-tag-mark">${MARK}</div>
-        <div class="boogler-tag-plate">The Boogler<span class="boogler-tag-bond"></span><span class="boogler-tag-prompt" hidden></span></div>
+        <div class="boogler-tag-plate">The Boogler<span class="boogler-tag-wary"></span><span class="boogler-tag-prompt" hidden></span></div>
       </div>
     </div>
   </div>
@@ -42,7 +41,7 @@ const MARKUP = `
 // Built here rather than in index.html, so this feature stays out of the shared HUD markup.
 type TagDom = {
   tag: HTMLElement;
-  bond: HTMLElement;
+  wary: HTMLElement;
   prompt: HTMLElement;
   say: HTMLElement;
   sayText: HTMLElement;
@@ -60,7 +59,7 @@ function dom() {
   const q = (c: string) => wrap.querySelector(c) as HTMLElement; // in MARKUP
   el = {
     tag: q('.boogler-tag'),
-    bond: q('.boogler-tag-bond'),
+    wary: q('.boogler-tag-wary'),
     prompt: q('.boogler-tag-prompt'),
     say: q('.boogler-say'),
     sayText: q('.boogler-say-text'),
@@ -78,14 +77,13 @@ export function booglerSay(text: string, ms = 1600) {
   bubble.until = performance.now() + ms;
 }
 
-// Your friendship hearts in the tag (blank until you are in), set every frame by src/boogler/play.ts.
-let bondShown = '';
-export function setTagBond(level: number, wary: boolean) {
+// His short-lived grudge in the tag (blank until you are in), set every frame by src/boogler/play.ts.
+let waryShown = '';
+export function setTagWary(wary: boolean) {
   const d = dom();
-  const text = !me.entered ? '' : wary ? 'avoiding you' : heartsText(level);
-  if (!d || text === bondShown) return;
-  d.bond.textContent = bondShown = text;
-  d.bond.classList.toggle('wary', wary);
+  const text = me.entered && wary ? 'avoiding you' : '';
+  if (!d || text === waryShown) return;
+  d.wary.textContent = waryShown = text;
 }
 
 // The interact prompt in the tag: his target's show() (see talkTargets in src/boogler/play.ts), called by

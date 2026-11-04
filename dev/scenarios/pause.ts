@@ -6,8 +6,8 @@
 import type { T } from './run.ts';
 const PAUSE = `const { openPause, closePause } = await import('/src/features/pause.ts');`;
 const TALK = `const D = await import('/src/boogler/dialogue.ts');
-  const open = () => D.showDialogue({ say: 'Hello', mood: 'smile', opts: ['Hi'] }, { level: 1, name: 'Stranger', frac: 0.3 },
-    () => {}, () => D.closeDialogue(), () => {});`;
+  const open = () => D.showDialogue({ say: 'Hello', mood: 'smile', opts: ['Hi'] },
+    () => {}, () => D.closeDialogue());`;
 const isOpen = `document.querySelector('dialog.pause')?.open === true`;
 
 export default {

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   THREADS,
   SMALL_TALK,
+  GREETINGS,
   AFTER,
   FAREWELL,
   RESUME,
@@ -11,24 +12,14 @@ import {
   MARIO_AFTER,
 } from '../src/boogler/lines.ts';
 import { openTalk, talkView, pickTalk, leaveTalk, threadState } from '../src/boogler/talk.ts';
-import {
-  LEVELS,
-  RULES,
-  createFriend,
-  addPts,
-  levelOf,
-  kickedOff,
-  isWary,
-  loadFriend,
-  serializeFriend,
-} from '../src/boogler/friendship.ts';
+import { RULES, createMemory, kickedOff, isWary, loadMemory, serializeMemory } from '../src/boogler/memory.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
 import type { Talk, TalkCtx } from '../src/boogler/talk.ts';
 
 type Tree = {
   id: string;
-  nodes: Record<string, { say: string; opts: { to?: string; else?: string; trust?: number }[] }>;
+  nodes: Record<string, { say: string; opts: { to?: string }[] }>;
 };
 
 const trees = [
@@ -61,8 +52,7 @@ test('every message offers at least two answers and every link resolves', () => 
     for (const [id, n] of Object.entries(ch.nodes)) {
       assert.ok(n.say && n.opts.length >= 2, `${ch.id}.${id} has 2+ answers`);
       for (const o of n.opts) {
-        for (const to of [o.to, o.else]) if (to) assert.ok(ch.nodes[to], `${ch.id}.${id} -> ${to}`);
-        if (o.trust !== undefined) assert.ok(o.else, `${ch.id}.${id} trust needs else`);
+        if (o.to) assert.ok(ch.nodes[o.to], `${ch.id}.${id} -> ${o.to}`);
       }
     }
   }
@@ -71,8 +61,7 @@ test('every message offers at least two answers and every link resolves', () => 
 test('every message in a talk offers at least two answers', () => {
   for (let seed = 0; seed < 40; seed++) {
     const rng = mulberry32(seed);
-    const f = createFriend();
-    addPts(f, Math.floor(rng() * 400));
+    const f = createMemory();
     if (seed % 4 === 0) for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
     const t = openTalk(f, ctx({ rng, pocket: [giftIndex('seeds'), giftIndex('frisbee')] }));
     for (let step = 0; step < 30 && talkView(t); step++) {
@@ -83,34 +72,38 @@ test('every message in a talk offers at least two answers', () => {
   }
 });
 
-test('each thread has a chapter for every level it covers, in order', () => {
+test('every thread is open immediately and its chapters play in order', () => {
   for (const [id, th] of Object.entries(THREADS)) {
-    const lv = th.chapters.map((c) => c.lvl);
-    assert.deepEqual(
-      lv,
-      [...lv].sort((a, b) => a - b),
-      id,
-    );
-    assert.equal(lv.at(-1), LEVELS.length - 1, `${id} reaches the top level`);
+    const f = createMemory();
+    for (const ch of th.chapters) {
+      const t = openTalk(f, ctx());
+      assert.equal(threadState(f, id).next!.id, ch.id);
+      pickTalk(t, optIndex(t, th.ask[f.learned.length ? 1 : 0]!));
+      assert.equal(talkView(t)!.say, ch.nodes.a.say.replaceAll('{name}', 'Ideen'));
+      for (let k = 0; k < 20 && talkView(t); k++) pickTalk(t, 0);
+      assert.equal(talkView(t), null);
+      assert.ok(f.learned.includes(ch.id));
+    }
+    assert.equal(threadState(f, id).done, true);
   }
 });
 
-test('a stranger cannot ask about his mother yet', () => {
-  const t = openTalk(createFriend(), ctx());
+test('the first menu includes every thread', () => {
+  const t = openTalk(createMemory(), ctx());
   const v = talkView(t)!;
   assert.ok(v.opts.some((o) => o === THREADS.home.ask[0]));
-  assert.ok(!v.opts.some((o) => o === THREADS.mom.ask[0]));
+  assert.ok(v.opts.some((o) => o === THREADS.mom.ask[0]));
+  assert.ok(v.opts.some((o) => o === THREADS.biz.ask[0]));
 });
 
 test('finishing a chapter teaches it once and ends the talk with a line over his head', () => {
-  const f = createFriend();
+  const f = createMemory();
   const t = openTalk(f, ctx());
   pickTalk(t, optIndex(t, THREADS.home.ask[0]!));
   let out: Talk['out'] | null = null;
   for (let steps = 0; talkView(t) && steps < 10; steps++) out = pickTalk(t, 0);
   assert.equal(talkView(t), null);
   assert.ok(f.learned.includes('home0'));
-  assert.ok(f.pts >= RULES.chapterPts);
   assert.ok(AFTER.map((s) => s.replace('{name}', 'Ideen')).includes(out!.bubble!), out!.bubble!);
   const again = openTalk(f, ctx());
   assert.ok(talkView(again)!.opts.includes(THREADS.home.ask[1]!), 'next time, the next chapter is offered');
@@ -118,15 +111,15 @@ test('finishing a chapter teaches it once and ends the talk with a line over his
 });
 
 test('bye is one press, and his farewell is a bubble', () => {
-  const f = createFriend();
+  const f = createMemory();
   const t = openTalk(f, ctx());
   const out = pickTalk(t, talkView(t)!.opts.length - 1);
   assert.equal(talkView(t), null);
-  assert.equal(out.bubble, FAREWELL[0]!.replace('{name}', 'Ideen'));
+  assert.equal(out.bubble, FAREWELL.first);
 });
 
 test('small talk ends the talk', () => {
-  const t = openTalk(createFriend(), ctx());
+  const t = openTalk(createMemory(), ctx());
   pickTalk(t, optIndex(t, "How's it going?"));
   let out: Talk['out'] | null = null;
   for (let steps = 0; talkView(t) && steps < 10; steps++) out = pickTalk(t, 0);
@@ -135,14 +128,14 @@ test('small talk ends the talk', () => {
 });
 
 test('walking off mid-chapter bookmarks it, and asking again picks it back up', () => {
-  const f = createFriend();
+  const f = createMemory();
   const t = openTalk(f, ctx());
   pickTalk(t, optIndex(t, THREADS.home.ask[0]!));
   pickTalk(t, 0); // home0 a -> b
   const at = talkView(t)!.say;
-  assert.equal(leaveTalk(t), FAREWELL[0]!.replace('{name}', 'Ideen'));
+  assert.equal(leaveTalk(t), FAREWELL.first);
   assert.equal(f.flags['at.home'], 'home0.b');
-  const back = loadFriend(serializeFriend(f)); // and it survives a reload
+  const back = loadMemory(serializeMemory(f)); // and it survives a reload
   const t2 = openTalk(back, ctx());
   pickTalk(t2, optIndex(t2, THREADS.home.ask[0]!));
   const say = talkView(t2)!.say;
@@ -164,37 +157,27 @@ test('walking off mid-chapter bookmarks it, and asking again picks it back up', 
 });
 
 test('a cross Boogler says no goodbye when you walk off', () => {
-  const f = createFriend();
+  const f = createMemory();
   for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
   assert.equal(leaveTalk(openTalk(f, ctx())), null);
   assert.equal(leaveTalk(openTalk(f, ctx({ start: 'kick' }))), null);
 });
 
-test('asking ahead of the friendship gets deflected, and pushing makes him go quiet', () => {
-  const f = createFriend();
-  f.learned.push('home0');
-  const c = ctx();
-  const t = openTalk(f, c);
-  let quiet = false;
-  for (let k = 0; k < 5 && !quiet; k++) {
-    pickTalk(t, optIndex(t, THREADS.home.ask[1]!));
-    const v = talkView(t)!;
-    assert.equal(v.mood === 'worry' || v.mood === 'grump', true);
-    const push = optIndex(t, 'tell me');
-    if (push < 0) quiet = true;
-    else {
-      pickTalk(t, push);
-      if (!talkView(t)!.opts.includes('Sorry.')) quiet = true;
-      else pickTalk(t, 0);
-    }
-  }
-  assert.equal(quiet, true);
-  assert.ok(f.quietUntil > c.now);
-  assert.equal(talkView(openTalk(f, ctx()))!.mood, 'grump');
+test('the island question always opens d2, including a saved bookmark at retired d', () => {
+  const f = createMemory();
+  const t = openTalk(f, ctx());
+  pickTalk(t, optIndex(t, THREADS.home.ask[0]!));
+  pickTalk(t, optIndex(t, 'How did you end up'));
+  const expected = THREADS.home.chapters[0]!.nodes.d2!.say;
+  assert.equal(talkView(t)!.say, expected);
+  const old = loadMemory(JSON.stringify({ pts: 10, flags: { 'at.home': 'home0.d' } }));
+  const resumed = openTalk(old, ctx());
+  pickTalk(resumed, optIndex(resumed, THREADS.home.ask[0]!));
+  assert.ok(talkView(resumed)!.say.endsWith(expected));
 });
 
 test('he takes what is in your hand and it can forgive a wary Boogler', () => {
-  const f = createFriend();
+  const f = createMemory();
   for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
   const seeds = giftIndex('seeds');
   const pocket = [seeds];
@@ -222,8 +205,8 @@ test('each gift answer carries its item for the icon, every other answer -1', ()
     }
     assert.deepEqual(v.gifts, want);
   };
-  check(openTalk(createFriend(), ctx({ pocket: [...kinds] })));
-  const wary = createFriend();
+  check(openTalk(createMemory(), ctx({ pocket: [...kinds] })));
+  const wary = createMemory();
   for (let k = 0; k < RULES.waryAt; k++) kickedOff(wary, 1e6);
   const t = openTalk(wary, ctx({ pocket: [...kinds] }));
   assert.equal(talkView(t)!.mood, 'grump');
@@ -234,7 +217,7 @@ test('he turns down key items and leaves them in your hand', () => {
   for (const id of ['ball']) {
     const kind = giftIndex(id);
     const pocket = [kind];
-    const t = openTalk(createFriend(), ctx({ pocket }));
+    const t = openTalk(createMemory(), ctx({ pocket }));
     const out = pickTalk(t, optIndex(t, `gift ${kind}`));
     assert.equal(out.gave, null);
     assert.deepEqual(pocket, [kind]);
@@ -243,7 +226,7 @@ test('he turns down key items and leaves them in your hand', () => {
 });
 
 test('the kick-off talk ends after one exchange', () => {
-  const f = createFriend();
+  const f = createMemory();
   kickedOff(f, 1e6);
   const t = openTalk(f, ctx({ start: 'kick' }));
   assert.equal(talkView(t)!.say, 'Hey! No free rides!');
@@ -252,20 +235,24 @@ test('the kick-off talk ends after one exchange', () => {
   assert.equal(talkView(t), null);
 });
 
-test('reaching a new level is reported to the caller', () => {
-  const f = createFriend();
-  addPts(f, LEVELS[1]!.at - 1);
+test('first talk introduces him; later talks draw from every familiar greeting and farewell', () => {
+  const f = createMemory();
   const t = openTalk(f, ctx());
-  pickTalk(t, optIndex(t, THREADS.home.ask[0]!));
-  let up = 0;
-  for (let k = 0; k < 10 && !up; k++) up = pickTalk(t, 0).levelUp || up;
-  assert.equal(up, 1);
-  assert.equal(levelOf(f.pts) >= 1, true);
+  assert.ok(GREETINGS.first.includes(talkView(t)!.say));
+  assert.equal(f.met, true);
+  assert.equal(leaveTalk(t), FAREWELL.first);
+  for (let i = 0; i < GREETINGS.again.length; i++) {
+    const again = openTalk(f, ctx({ rng: () => i / GREETINGS.again.length }));
+    assert.equal(talkView(again)!.say, GREETINGS.again[i]!.replaceAll('{name}', 'Ideen'));
+  }
+  for (let i = 0; i < FAREWELL.again.length; i++) {
+    const again = openTalk(f, ctx({ rng: () => i / FAREWELL.again.length }));
+    assert.equal(leaveTalk(again), FAREWELL.again[i]!.replaceAll('{name}', 'Ideen'));
+  }
 });
 
 test('names are filled in', () => {
-  const f = createFriend();
-  addPts(f, LEVELS[2]!.at);
+  const f = createMemory();
   for (let s = 0; s < 6; s++) {
     const v = talkView(openTalk(f, ctx({ rng: mulberry32(s) })))!;
     assert.ok(!v.say.includes('{name}'));
@@ -273,8 +260,7 @@ test('names are filled in', () => {
 });
 
 test('a finished thread retells one of its chapters, a different one each time, then a retell line', () => {
-  const f = createFriend();
-  addPts(f, LEVELS.at(-1)!.at);
+  const f = createMemory();
   f.learned = THREADS.home.chapters.map((c) => c.id);
   const firsts = THREADS.home.chapters.map((c) => c.nodes.a.say);
   let last = null;
@@ -293,9 +279,8 @@ test('a finished thread retells one of its chapters, a different one each time, 
 test('as Mario he is starstruck even when wary, and every answer is something Mario says', () => {
   for (let seed = 0; seed < 20; seed++) {
     const rng = mulberry32(seed);
-    const f = createFriend();
+    const f = createMemory();
     for (let k = 0; k < RULES.waryAt; k++) kickedOff(f, 1e6);
-    const pts = f.pts;
     const t = openTalk(f, ctx({ rng, mario: true, pocket: [giftIndex('seeds')] }));
     for (let step = 0; step < 10 && talkView(t); step++) {
       const v = talkView(t)!;
@@ -304,12 +289,11 @@ test('as Mario he is starstruck even when wary, and every answer is something Ma
       if (!talkView(t)) assert.ok(MARIO_AFTER.includes(out!.bubble!), out!.bubble!);
     }
     assert.equal(talkView(t), null);
-    if (!f.gifts?.length) assert.equal(f.pts, pts, 'chatting as Mario does not score');
   }
 });
 
 test('as Mario he does not open with the same conversation twice in a row', () => {
-  const f = createFriend();
+  const f = createMemory();
   let last = null;
   for (let seed = 0; seed < 20; seed++) {
     const say = talkView(openTalk(f, ctx({ rng: mulberry32(seed), mario: true })))!.say;

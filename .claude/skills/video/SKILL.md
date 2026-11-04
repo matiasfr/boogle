@@ -50,7 +50,7 @@ export default {
 
 - `c.open(opts)`: a player (`Game`, see the look skill) with the clock installed. `hud: false` hides the HUD,
   `'play'` keeps hints, dialogue and pocket (hides the roster and net pill), `true` keeps all. `init` runs
-  before the page's code (seed localStorage: friendship, pocket).
+  before the page's code (seed localStorage: Boogler memories, pocket).
 - `g.record(label, { seconds, each(t, k) })`: `each` runs before every frame. Move the camera (`g.view({ cam, look }, fov)`),
   send input (`g.key`, `g.down/up`), call game modules (`g.eval`), or fast-forward the shared sim for a time-lapse
   (`updateWorld(0.1)` in a loop from `/src/world/sync.ts`).
@@ -104,7 +104,7 @@ make a smaller copy (`-crf 23`) for sending.
 
 ```
 npm run video:publish -- .look/reels/x.mp4 --title "Patch notes: Nov 5" --summary "One sentence." \
-  --feature "The island grew 12x" --feature "Befriend The Boogler" [--target <commit>] [--dry]
+  --feature "The island grew 12x" --feature "Meet The Boogler" [--target <commit>] [--dry]
 ```
 
 Hosting: the video file lives on a GitHub release `video-<date>` (video.mp4 about 15-25 MB, poster.jpg, meta.json),

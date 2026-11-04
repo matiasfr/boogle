@@ -41,7 +41,7 @@ so hashed file names don't depend on it).
 - `ui/`: the HUD's shared kit (Local, cosmetic): UI sounds (`ui-sound.ts`), motion and colour tokens (`ui-kit.css`),
   and the one notification lane (`notify.ts`). Features import it; it imports nothing from `features/`.
 - `debug/`: dev-only tools behind URL flags (`?netdebug=1`, `?debugcam=1`), loaded lazily by their stubs in `features/`.
-- `boogler/`: The Boogler NPC: brain and model (`boogler.ts`), play, talk, lines, dialogue box, friendship, HUD, fx.
+- `boogler/`: The Boogler NPC: brain and model (`boogler.ts`), play, talk, lines, dialogue box, memory, HUD, fx.
 - `decomp/`: shared pieces for characters run by an engine and files the player brings (the files dialog, the
   IndexedDB store); the plan for more is [docs/plans/decomp-characters.md](../docs/plans/decomp-characters.md).
 - `guest/`: playing as the guest (engine glue in `native/guest/`), and the dino who offers it; the eager glue is
