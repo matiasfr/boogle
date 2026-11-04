@@ -18,6 +18,28 @@ One small Node 24 service (Express + `ws`): Boogle's game server. It hosts every
 
 Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp file + rename). Reports are appended, one JSON line each with a server timestamp `at`, to `DATA_DIR/reports/YYYY-MM-DD.jsonl`; the first report of each UTC day deletes files older than 30 days. Playtest data is one JSON-lines file per session in `DATA_DIR/playdata/`; past the caps below the sessions written to longest ago are deleted, sessions that look played (a name, over a minute, not an automated browser) only after all the others. No database. CORS applies to every endpoint.
 
+## Internal review cards
+
+`/protos/?review=<uuid>` opens one retained comparison; no player navigation links to it. The link is a capability: anyone who has it can read that card and submit a verdict. It contains no report-reader token. Production uses the page's configured `VITE_BOOGLE_SERVER`; a `reviewServer` loopback HTTP override exists only in development for broker verification.
+
+- `POST /reviews` requires the existing report token before parsing an upload. Send card fields `question`, `change`, `topic`, `build`, `launcher`, optional `context`, and base64 `before`/`after` images. It returns the immutable version-1 card with ID and SHA-256 evidence hashes. PNG/JPEG/WebP signatures only; 4 MiB per image, 12 MiB request, 12,000-character context, at most 50 retained cards. The limit fails with 507; nothing is silently evicted.
+- `GET /reviews/:id` and `GET /reviews/:id/before|after` use the card capability. Metadata is uncached; image bytes have fixed content types, `nosniff`, and immutable private caching.
+- `POST /report` additionally accepts `{ kind: 'review-v1', reviewId, submissionId, verdict: 'accept'|'changes'|'cant', pin?: { image: 'before'|'after', x, y, text } }`. IDs are UUIDv4; coordinates are normalized to the image and bounded 0–1; pin text is 1–2000 characters. Existing report limits/rate limits still apply. The response is `{ status: 'received', reviewId, submissionId, at, duplicate }`. Same ID and content returns the original receipt; changed content at that ID returns 409. Each card allows 100 receipts. File and directory sync precede the acknowledgement; failed writes do not say Received.
+- `GET /reviews` requires the report token and returns all bounded receipts with authoritative card/build/topic/launcher/evidence attached. It is distinct from the legacy `/reports` daily log.
+
+Cards, media and receipts are under `DATA_DIR/reviews/`, on the existing `/data` volume in production, independent of Vite assets and the 30-day report-log pruning. One service process owns this volume. Back up/archive complete review directories before manually freeing capacity; there is no deletion UI in this slice. Disk/volume loss is outside its durability guarantee. Failed upload temporary directories may require manual cleanup after a process crash.
+
+Create a card from captures already produced by `dev/look`:
+
+```sh
+npm run --silent review-card -- --before .look/before-still.png --after .look/after-still.png --question "Is the change clear?" --change "One sentence of change." --topic review-inbox --build <source-revision> --launcher <launching-checkout> --site https://boogle.club/ --server https://boogle-server.fly.dev --context .look/comparison-context.json
+npm run --silent verdicts -- --reviews --json --server https://boogle-server.fly.dev
+```
+
+`--context` is optional JSON for route, camera, checks and broker manifests; do not imply exact-build reproduction without evidence. Credentials come only from `REPORT_TOKEN` or the existing local token-file lookup, never the link. The create command checks returned hashes against input bytes. The browser persists its pending submission before sending; only a matching server receipt changes Pending to Received. An unchanged retry keeps the ID across reloads; editing creates a new ID. Download note is the fallback when storage or connectivity is unavailable.
+
+A director reads the JSON, preserves the owner's words and evidence, then uses `node dev/codex/run.ts resume <topic> "<feedback>"` from the recorded launcher once that named job is idle. If its checkout/build is gone or changed, start a new explicitly based job. Neither acceptance nor the page executes an agent or deploys anything. Production deploy/restart, CORS and physical-phone access need live verification; local proof does not establish them.
+
 ## Environment variables
 
 | Var | Default | Meaning |
