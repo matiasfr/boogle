@@ -6,16 +6,16 @@ Files: [src/entities/player/state.ts](../../src/entities/player/state.ts), [view
 
 ## Movement and jump
 
-Rapier 0.21.0 keeps the previous 0.002 m prediction distance in the physics facade. Standing jumps and the two Place
-glide beats pass again without changing the tuning below. An eligible launch at exactly zero vertical velocity uses the
-same first-step gravity as the old tiny negative resting velocity: held jump 1.552 m, hop 0.664 m. Controlled swimming
-is identical; golden swim differences follow entry and buffered-jump phase. Crest/ground drift still needs owner
-review; see the [upgrade assessment](../research/rapier-021-upgrade.md).
+The physics facade uses current-pose contacts, with the previous 0.002 m prediction distance. Grounding still requires
+a walkable normal; stale contacts cannot renew jump eligibility after takeoff. An eligible launch at exactly zero
+vertical velocity uses falling gravity on its first step: held jump 1.552 m, hop 0.664 m.
+Version comparisons and verification limits live in the [upgrade assessment](../research/rapier-021-upgrade.md).
 
 - Body: two spheres of radius 0.45 m stacked 0.8 m apart, 70 kg, fixed rotation, zero friction (velocity is steered,
   not pushed).
 - Gravity 18 m/s². Walk 5.6 m/s, sprint 9.5 m/s, both × 0.55 in water. Acceleration 70 m/s² on the ground, 14 in the
-  air, 18 swimming. Braking against your velocity uses 115 m/s².
+  air, 18 swimming. Braking against your velocity uses 115 m/s². A ground jump retains ground steering for its first
+  0.1 s, preserving the old takeoff acceleration independently of coyote time or permission to jump again.
 - Falls top out at 20 m/s (about an 11 m drop), so a step never moves the body further than its radius and long falls
   can't tunnel through the ground. A player or ball whose centre still ends up under the terrain is put back on top
   (`catchFallThrough`, [src/physics/physics.ts](../../src/physics/physics.ts); `npm run scenario -- falls`).
@@ -78,6 +78,7 @@ moving deck blends you to its speed over 0.12 s. Jump or walk off and you keep i
 ground it bleeds away at 9 m/s² (a short skid), and landing above 3 m/s tumbles you (the tumble flop).
 
 Deck acceleration and turns transport an attached rider before their own steering; a descending deck is not a jump.
+Boarding can close a small air gap, but only actual walkable contact refreshes jump eligibility.
 On a shared deck, a partner's interpolated collision proxy cannot push its co-rider off. Ordinary player collisions
 return when they stop sharing that deck.
 
