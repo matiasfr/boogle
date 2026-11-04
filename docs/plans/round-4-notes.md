@@ -19,11 +19,11 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
 ## Running
 
-- [ ] `little-guys-rails`: little guys bring rails from Line 2 station 4.
-- [ ] `no-objective`: remove the objective marker.
+- [x] `little-guys-rails`: little guys bring rails from Line 2 station 4, with a 13 m/s bonus on a cart you load and ride. Shipped. Splitting pays by only 2 to 4 s at station 5: judge on the replay.
+- [x] `no-objective`: remove the objective marker. Shipped.
 - [ ] `tree-tiers` (research): any tree can be attempted; tougher trees read as a different kind. Bands go with it. Why it's awkward now: "you have to go all the way there to get logs".
-- [ ] `place-bugs-look`: square shadow; double-jump rings; floating rails; Z-fighting at the canyon platform; pack floating and load outside it; no way back from Happy Clam, and the water-recovery loop there; boxes on the train not solid; wall parts disappearing in the cutaway; jump wobble.
-- [ ] `place-bugs-run`: pinned at the Camp halt; first-use hitches; cart junction snap; boarding the track layer; false reload prompt; Start fresh splitting a co-op room.
+- [x] `place-bugs-look`, shipped (jump wobble and the recovery loop not reproduced; check the Z-fighting spot): square shadow; double-jump rings; floating rails; Z-fighting at the canyon platform; pack floating and load outside it; no way back from Happy Clam, and the water-recovery loop there; boxes on the train not solid; wall parts disappearing in the cutaway; jump wobble.
+- [x] `place-bugs-run`, shipped (track layer boarding not reproduced): pinned at the Camp halt; first-use hitches; cart junction snap; boarding the track layer; false reload prompt; Start fresh splitting a co-op room.
 
 ## No job yet
 
@@ -31,7 +31,7 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
 - [ ] Great beam: carrying should be slower, and it should sit further from the station.
 - [ ] Find out whether two people can actually co-carry the beam, and make that the point.
-- [ ] Mark `did something together`: it never fired in 33 minutes of co-op.
+- [x] Mark `did something together`: it never fired in 33 minutes of co-op.
 - [ ] Say when a shared unlock arrives: Grant earned the multi-axe and Matias got it with no idea how.
 - [ ] Crates give each player different things, and Grant got something else where Matias got the pet. Confirm it's wanted. Two trinket shelves also puzzled Matias at first.
 
@@ -63,13 +63,11 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
 ### Look
 
-The first five notes are implemented on `codex/look-notes` for review, not shipped: solid aged engine materials, low crate glows and softer device shafts, fitted simple overalls, the nook cloth removed, and warm stone/brass puzzle platforms. The branch includes broker before/after evidence and a timber-platform comparison. Warm stone is the recommendation within the approved repair scope; no blocking owner choice. Keep these boxes unticked until shipped or closed by the owner.
-
-- [ ] Train rust looks out of place: nothing else is textured that way, so make it a real material.
-- [ ] Blue shafts at spawn feel heavy-handed: cut or soften.
-- [ ] Festival Overalls read as a barrel; the blue thing on the front is unclear; "a lot of accessories".
-- [ ] Red flag on the hook course means nothing.
-- [ ] Blue concrete platforms don't fit the world's style yet. The platforms themselves stay visible from the start: seeing what you can't reach yet is good.
+- [x] Train rust looks out of place: nothing else is textured that way, so make it a real material.
+- [x] Blue shafts at spawn feel heavy-handed: cut or soften.
+- [x] Festival Overalls read as a barrel; the blue thing on the front is unclear; "a lot of accessories".
+- [x] Red flag on the hook course means nothing.
+- [x] Blue concrete platforms don't fit the world's style yet. The platforms themselves stay visible from the start: seeing what you can't reach yet is good.
 - [ ] Night: Matias likes the lamps but asked whether night cycles are staying.
 - [ ] Build out what you see through the telescope: the peek at unreachable places is liked.
 

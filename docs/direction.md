@@ -15,7 +15,7 @@ Reviewed: 3 November 2026, at `0562c947`, against boogle-2.md, [round-4-notes.md
 | | Proof | Prerequisites | Done when | Owner |
 |---|---|---|---|---|
 | **Now** | The corrected loop still makes you hungry, then relieved, without an objective marker or bands | Rails, tree and objective work on main ([tracker](plans/round-4-notes.md)) | Owner replays it; someone who hasn't seen it is watched | Round 4 tracker |
-| **Next** | Friends build one railway that stays built: one material to station to track to payoff path with real saves, for solo and two players, surviving leaving and rejoining | Now is settled. The railway still runs on the temporary tab protocol ([findings](plans/mainline-architecture.md)). Conversion plan needs the owner's scope approval | Race, departure, rejoin and restart proofs pass, and working apart still feels like one railway | Conversion plan, not yet written |
+| **Next** | Friends build one railway that stays built: one material to station to track to payoff path with real saves, for solo and two players, surviving leaving and rejoining | Now is settled. The railway still runs on the temporary tab protocol ([findings](plans/mainline-architecture.md)). [Plan](plans/production-core.md) scope approved 4 November; code waits for the replay | Race, departure, rejoin and restart proofs pass, and working apart still feels like one railway | [production-core.md](plans/production-core.md) |
 | **Later** | A vertical slice: a full session at the target quality, a fresh player observed, a second area's cost measured | Next. Beautiful corner runs in parallel inside its own [stages](plans/beautiful-corner.md); it isn't the slice | Owner accepts the experience and quality | Not yet planned |
 
 Bounded experiment waiting on the owner: **cart first, then trains** (leans yes), comparing a simple cart with a clearly better train on the same route, asking "was the train an upgrade you wanted?".
@@ -40,4 +40,3 @@ The graph can step back for an affected risk. Exit evidence for each is in the [
 
 - Cart then trains: run the comparison, or not.
 - Who is the first person to play blind, and when.
-- Approve the conversion plan's scope when it's written.
