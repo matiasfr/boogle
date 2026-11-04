@@ -15,11 +15,24 @@
         <h1>Asset stage</h1>
         <span>Isolated · metres · WebGPU</span>
       </header>
-      <label>Find an asset<input id="search" type="search" placeholder="Buddy, scaffold…" /></label>
-      <label>Asset<select id="asset"></select></label><label>Part<select id="node"></select></label>
+      <details id="browse" open>
+        <summary>Browse assets</summary>
+        <div class="browser-filters">
+          <label>Search<input id="search" type="search" placeholder="Name or source…" /></label>
+          <label
+            >Type<select id="asset-type">
+              <option value="">All types</option>
+            </select></label
+          >
+        </div>
+        <p id="catalogue-count" role="status"></p>
+        <div id="catalogue-grid" aria-label="Asset catalogue"></div>
+      </details>
       <p id="status" role="status">Loading…</p>
-      <section>
-        <h2>Animation</h2>
+      <p id="selection-facts"></p>
+      <details>
+        <summary>Parts &amp; animation</summary>
+        <label>Part<select id="node"></select></label>
         <label>Clip<select id="clip"></select></label>
         <div class="row">
           <button id="play" class="primary">Play</button><button id="reset">Reset</button
@@ -59,9 +72,9 @@
           >
         </div>
         <p id="mode-note"></p>
-      </section>
-      <section>
-        <h2>View</h2>
+      </details>
+      <details>
+        <summary>View &amp; overlays</summary>
         <div id="views" class="row"></div>
         <div class="checks">
           <label><input id="spin" type="checkbox" />Turntable</label
@@ -75,9 +88,9 @@
         </div>
         <p id="dimensions"></p>
         <p id="root-note"></p>
-      </section>
-      <section>
-        <h2>Lighting</h2>
+      </details>
+      <details>
+        <summary>Lighting</summary>
         <select id="light" aria-label="Lighting">
           <option value="studio">Neutral studio</option>
           <option value="shipped">Shipped frozen sky · .24</option>
@@ -86,7 +99,7 @@
           >Fixed review exposure<input id="exposure" type="number" min="0.01" max="4" step="0.01" value="1"
         /></label>
         <p id="light-note"></p>
-      </section>
+      </details>
       <details>
         <summary>Geometry, textures &amp; budgets</summary>
         <pre id="stats"></pre>
@@ -96,8 +109,11 @@
         </p>
         <p id="health"></p>
       </details>
-      <button id="copy">Copy this view</button><input id="link" aria-label="Reproducible view URL" readonly />
-      <p>Drag to orbit · two fingers to pan/pinch. Camera and exact time are saved in the link.</p>
+      <details>
+        <summary>Share this view</summary>
+        <button id="copy">Copy this view</button><input id="link" aria-label="Reproducible view URL" readonly />
+        <p>Drag to orbit · two fingers to pan/pinch. Camera and exact time are saved in the link.</p>
+      </details>
     </aside>
   </body>
 </html>

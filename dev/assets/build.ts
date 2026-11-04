@@ -208,9 +208,11 @@ async function build(names: string[], force: boolean) {
 }
 
 const args = process.argv.slice(2);
+const { checkCatalogue } = await import('./catalogue-check.ts');
 if (args.includes('--check')) check();
 else
   await build(
     args.filter((a) => !a.startsWith('--')),
     args.includes('--force'),
   );
+checkCatalogue();
