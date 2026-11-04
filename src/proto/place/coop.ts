@@ -3,14 +3,16 @@
 // recommendations 2, 3, 9, 11 and 12. Without the flag every hook here is a no-op and nothing is sent.
 //
 // How it stays together, cheapest thing that works:
-// - One authority: the oldest visible coop tab (presence key `placeCoop`, the world tick it got here). Not the room's lead,
+// - One authority: the oldest visible coop tab (presence key `placeCoopTrees1`, the world tick it got here). Not the room's lead,
 //   which could be a tab without the flag, and not the lowest id, which a newcomer could take. It is the only tab that
 //   accepts a deposit, starts a station's run and ends a stretch, so the last log can't start two runs and a frame can't
 //   overfill: a deposit it can't take goes back on the sender's back.
 // - Deposit answers match sender + request id before authority/frame guards. Slow presence isn't a rejection: only
 //   an explicit rejection or actual peer removal returns a pending piece, never a wall-clock timeout.
-// - Every tab runs the rest of the game as ever, so nothing waits on the network. Chops, wakes, rungs and calls go out as they
-//   happen and anyone can send them; the machine, cart, trains and town run on each tab.
+// - Tree harvest is accepted once by that authority before material is awarded. A follower reserves capacity until its
+//   matching receipt arrives; duplicate receipts cannot issue another log. The rest of the prototype still runs locally.
+// - Trees use a versioned whole-place message/presence identity. Legacy clients remain visible in the underlying room,
+//   but neither elect nor apply this prototype's state. This is still local-save prototype persistence, not server lockstep.
 // - Once a second the authority sends the whole shared state (`captureShared`, ./job.ts: every slice registered there, so a new
 //   system's state comes along for free). A newcomer takes it and is caught up, a follower that stays different for a few
 //   seconds is put right, and a follower that takes over already has everything it needs.
@@ -40,27 +42,32 @@ import { drawHeaps, type Kind } from '../net/crates.ts';
 import { playMark } from '../mark.ts';
 import { clearMoments, showBanner } from './celebrate.ts';
 import {
-  MOST_STROKES,
   ROCK_LIST,
   TREES,
   back,
   chopHooks,
+  harvestTree,
+  applyTreeHarvest,
+  validTreeHarvest,
+  receiveHarvest,
+  reserveHarvest,
+  releaseHarvest,
   putDownBig,
   shoulder,
   rockStruck,
   setTrunkTaken,
-  standing,
   trunkTaken,
   type BigThing,
   type Rock,
   type Tree,
+  type HarvestResult,
 } from './chop.ts';
 import { cartPlatform, rackTake, reconcileCart } from './depot.ts';
 import { forge, takeRail } from './forge.ts';
 import { COOP, applyShared, captureShared, count, job, num, save } from './job.ts';
 import { GOODS, TUNE, type Goods } from './layout.ts';
 import { allHeaps, frameById, hub, lines, machine } from './lines.ts';
-import { chips, clearTrips } from './pieces.ts';
+import { clearTrips } from './pieces.ts';
 import { callTrain } from './rail.ts';
 import type { TrainSave } from './cargo.ts';
 import { flyToStock, type StationRun } from './stations.ts';
@@ -135,12 +142,15 @@ function validSnap(j: unknown): j is Snap {
 
 /** Everything shared, from the authority's state. Your back, gifts, crystals and finds stay yours. */
 function applyFull(a: Api, j: Snap) {
+  // A same-generation snapshot can precede our request on the authority's channel.
+  // Keep that reservation/receipt alive; only a reset invalidates the transaction.
+  if (j.gen !== gen) clearHarvest();
   gen = j.gen;
   clearMoments();
   clearTrips();
   back.incoming = 0;
   a.clearIncoming();
-  applyShared(j.shared);
+  applyCoopShared(j.shared);
   reconcileBig();
   a.run.mode = 'asleep';
   a.snapAll();
@@ -260,19 +270,16 @@ function reconcile(a: Api, j: Snap) {
       st.setTag(true);
     }
   }
-  // What's fallen stays fallen; money follows the authority.
-  const felled = j.shared.felled as { trees?: unknown[] } | undefined;
-  if (Array.isArray(felled?.trees)) {
-    const q = (j.shared.felled as { trees: number[]; yaw: number[]; trunk?: boolean }) ?? {};
-    q.trees.forEach((k, n) => {
-      const t = TREES[k];
-      if (t && standing(t)) {
-        t.fallYaw = q.yaw?.[n] ?? 0;
-        t.fall = 0;
-      }
-    });
-    if ((q.trunk === true) !== trunkTaken()) setTrunkTaken(q.trunk === true);
-  }
+  // Partial work and finite remaining output reconcile too, not just fallen IDs.
+  const harvest = j.shared.treeHarvestV1;
+  if (Array.isArray(harvest))
+    for (const row of harvest) {
+      if (!Array.isArray(row) || !count(row[0], TREES.length - 1) || !validTreeHarvest(row[1])) continue;
+      const tree = TREES[row[0]]!;
+      if (row[1].revision > tree.revision) applyTreeHarvest(tree, row[1]);
+    }
+  const felled = j.shared.felled as { trunk?: boolean } | undefined;
+  if (felled && (felled.trunk === true) !== trunkTaken()) setTrunkTaken(felled.trunk === true);
   Object.assign(job.score, (j.shared.job as typeof job).score);
   const theirs = (j.shared.job as typeof job).longBeam;
   if (!pairHook.busy?.() && theirs && typeof theirs === 'object' && num(theirs.x) && num(theirs.z) && num(theirs.yaw))
@@ -281,8 +288,13 @@ function reconcile(a: Api, j: Snap) {
   numMiss = volatile(j.shared) === volatile(mine) ? 0 : numMiss + 1;
   if (numMiss < 4) return;
   numMiss = 0;
-  applyShared({
+  // Tree receipts above may be newer than `mine`, captured at the start of reconciliation.
+  // Correcting a crate count must not roll their accepted work back to that earlier snapshot.
+  const current = captureShared();
+  applyCoopShared({
     ...mine,
+    felled: current.felled,
+    treeHarvestV1: current.treeHarvestV1,
     job: pairHook.busy?.() ? { ...(j.shared.job as typeof job), longBeam: { ...job.longBeam } } : j.shared.job,
     heaps: j.shared.heaps,
     lines: j.shared.lines,
@@ -337,7 +349,7 @@ const amAuthority = () => authorityPeer() === null;
 
 function msg(m: Record<string, unknown>) {
   try {
-    net.room?.send({ t: 'placeCoop', ...m });
+    net.room?.send({ t: 'placeCoopTrees1', ...m });
   } catch (e) {
     console.warn('[place coop] send failed', e);
   }
@@ -353,6 +365,56 @@ function allow(from: string) {
   if (b.n < 1) return false;
   b.n--;
   return true;
+}
+
+// ---------------------------------------------------------------- finite tree harvest
+// One outstanding request per player. No timeout or election can manufacture an award.
+type HarvestPending = { q: number; i: number; room: number; to: string; gen: number };
+export type HarvestReceipt = { q: number; i: number; gen: number; by: string; result: HarvestResult };
+let harvestPending: HarvestPending | null = null;
+let harvestQ = 0;
+const harvestReceipts = new Map<string, HarvestReceipt>();
+let harvestAuthority: string | null = null;
+function clearHarvest(resetReceipts = true) {
+  if (harvestPending) releaseHarvest(harvestPending.room);
+  harvestPending = null;
+  if (resetReceipts) harvestReceipts.clear();
+}
+function applyCoopShared(shared: Record<string, unknown>) {
+  applyShared(shared);
+  // The felled slice rebuilds trees and clears local reservations. A same-generation
+  // request still owns this capacity until its receipt, even across full reconciliation.
+  if (harvestPending) reserveHarvest(harvestPending.room);
+}
+function validResult(value: unknown): value is HarvestResult {
+  const r = value as HarvestResult | null;
+  return !!(
+    r &&
+    validTreeHarvest(r.state) &&
+    count(r.logs, 5) &&
+    ['bite', 'rebound', 'full', 'gone'].includes(r.outcome) &&
+    (r.outcome === 'bite' || r.logs === 0)
+  );
+}
+function broadcastHarvest(receipt: HarvestReceipt) {
+  msg({ k: 'harvested', ...receipt });
+}
+function requestHarvest(t: Tree, room: number, axe: number, yaw: number) {
+  if (!ready || harvestPending) return;
+  const to = authorityPeer();
+  harvestAuthority = to;
+  if (to === null) {
+    const result = harvestTree(t, room, axe, yaw);
+    receiveHarvest(t, result, true);
+    broadcastHarvest({ q: ++harvestQ, i: t.index, gen, by: net.myPeer ?? '', result });
+    return;
+  }
+  // Do not spend a tree from a private save before the first shared snapshot arrives.
+  if (!synced) return;
+  const q = ++harvestQ;
+  harvestPending = { q, i: t.index, room, to, gen };
+  reserveHarvest(room);
+  msg({ k: 'harvest', q, i: t.index, room, axe, yaw, to, gen });
 }
 
 // ---------------------------------------------------------------- deposits
@@ -396,7 +458,7 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
   const { run } = a;
   switch (m.k) {
     case 'snap': {
-      if (from !== authorityPeer() && !m.force) return;
+      if (from !== authorityPeer()) return;
       if (validSnap(m.snap)) onSnap(a, m.snap, !!m.force);
       return;
     }
@@ -408,6 +470,7 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
     }
     case 'reset': {
       if (!count(m.gen) || m.gen <= gen) return;
+      clearHarvest();
       gen = m.gen;
       a.startOver();
       showBanner('Started over', 'Your partner reset the railway for you both.', 3);
@@ -425,15 +488,52 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
     case 'wake':
       if (ready && run.mode === 'asleep') a.wake(true);
       return;
-    case 'chop': {
-      const t = count(m.i, TREES.length - 1) ? TREES[m.i] : null;
-      if (!t || !count(m.n, MOST_STROKES) || !num(m.y) || !ready || !standing(t)) return;
-      t.strokes = Math.max(t.strokes, m.n);
-      t.shake = 1;
-      chips(t.x, t.y + 1.1, t.z, 8);
-      if (m.fell === true) {
-        t.fall = 0;
-        t.fallYaw = m.y;
+    case 'harvest': {
+      if (!ready || m.to !== net.myPeer || !count(m.q) || m.q === 0 || !count(m.i, TREES.length - 1)) return;
+      if (
+        !amAuthority() ||
+        m.gen !== gen ||
+        !peers.has(from) ||
+        !job.rung.multi ||
+        !count(m.room, 5) ||
+        !count(m.axe, 1) ||
+        m.axe > job.rung.axe ||
+        !num(m.yaw) ||
+        Math.abs(m.yaw) > Math.PI * 2
+      )
+        return msg({ k: 'harvestNo', to: from, q: m.q, i: m.i, gen: m.gen });
+      const previous = harvestReceipts.get(from);
+      if (previous && previous.gen === gen && m.q <= previous.q) {
+        if (m.q === previous.q && m.i === previous.i) broadcastHarvest(previous);
+        return;
+      }
+      const tree = TREES[m.i]!;
+      const result = harvestTree(tree, m.room, m.axe, m.yaw);
+      receiveHarvest(tree, result, false);
+      const receipt = { q: m.q, i: m.i, gen, by: from, result };
+      harvestReceipts.set(from, receipt);
+      broadcastHarvest(receipt);
+      return;
+    }
+    case 'harvested': {
+      if (!ready || m.gen !== gen || !count(m.i, TREES.length - 1) || !count(m.q) || !validResult(m.result)) return;
+      const p = harvestPending;
+      const own = !!(p && m.by === net.myPeer && p.to === from && p.q === m.q && p.i === m.i && p.gen === m.gen);
+      if (from !== authorityPeer()) return;
+      const tree = TREES[m.i]!;
+      if (own) {
+        if (m.result.logs > p!.room) return;
+        releaseHarvest(p!.room);
+        harvestPending = null; // consume before effects/save: a duplicate receipt cannot award again
+        receiveHarvest(tree, m.result, true);
+      } else if (m.result.state.revision > tree.revision) receiveHarvest(tree, m.result, false);
+      return;
+    }
+    case 'harvestNo': {
+      const p = harvestPending;
+      if (p && m.to === net.myPeer && p.to === from && p.q === m.q && p.i === m.i && p.gen === m.gen) {
+        releaseHarvest(p.room);
+        harvestPending = null;
       }
       return;
     }
@@ -651,6 +751,7 @@ export const coop = {
     }
     startOverArmed = 0;
     el.textContent = 'Start over (both)';
+    clearHarvest();
     gen++;
     msg({ k: 'reset', gen });
     api?.startOver();
@@ -685,6 +786,12 @@ export const coop = {
     if (!COOP || !api || !ready) return;
     const a = api,
       lead = amAuthority();
+    const treeLead = authorityPeer();
+    if (treeLead !== harvestAuthority) {
+      // An uncertain request belongs to its former authority. Never reissue it under a new ID.
+      clearHarvest(false);
+      harvestAuthority = treeLead;
+    }
     // Trains drift back to the authority's place.
     lines.forEach((l, k) => {
       const d = nudge[k]!;
@@ -719,9 +826,9 @@ export const coop = {
     ids(machine.flatbed.platform, 'place:flatbed');
     ids(machine.loco.platform, 'place:loco');
     for (const l of lines) l.train.tr.cars.forEach((c, n) => ids(c.platform, `place:train${l.k}:car${n}`));
-    chopHooks.stroke = (t: Tree) => msg({ k: 'chop', i: t.index, n: t.strokes, y: t.fallYaw, fell: t.fall >= 0 });
+    chopHooks.harvest = requestHarvest;
     chopHooks.rock = (q: Rock) => msg({ k: 'rock', i: q.index, n: q.strokes });
-    addPresenceField('placeCoop', () => (since >= 0 ? since : null));
+    addPresenceField('placeCoopTrees1', () => (since >= 0 ? since : null));
     addPresenceField('placeRailCart', () => (since >= 0 ? 1 : null));
     addPresenceField('placeCartRide', () => (since >= 0 ? (carry.on === cartPlatform ? 2 : 1) : null));
     keepPresenceWhile(() => since >= 0);
@@ -730,12 +837,17 @@ export const coop = {
     addPresenceField('placeBig', () => back.big);
     backSeam.remote = (peer) => peerBack.get(peer) ?? 0;
     onRemotePresence((r, pr) => {
+      const v = (pr as { placeCoopTrees1?: unknown }).placeCoopTrees1;
+      if (!count(v, Number.MAX_SAFE_INTEGER)) {
+        peers.delete(r.peer);
+        peerBack.delete(r.peer);
+        peerBig.delete(r.peer);
+        return;
+      }
       const b = (pr as { placeBack?: unknown }).placeBack;
       peerBack.set(r.peer, count(b, 64) ? b : 0);
       const big = (pr as { placeBig?: unknown }).placeBig;
       peerBig.set(r.peer, big === 'beam' || big === 'boiler' ? big : null);
-      const v = (pr as { placeCoop?: unknown }).placeCoop;
-      if (!count(v, Number.MAX_SAFE_INTEGER)) return void peers.delete(r.peer);
       if (!peers.has(r.peer)) showBanner('Your partner is here', 'Same railway, same job.', 2.6);
       peers.set(r.peer, {
         since: v,
@@ -746,6 +858,12 @@ export const coop = {
       });
     });
     onPeerRemoved((r) => {
+      if (harvestPending?.to === r.peer) {
+        releaseHarvest(harvestPending.room);
+        harvestPending = null;
+      }
+      // Keep the last receipt until reset: reconnecting with this identity must not
+      // make an already accepted request spend the tree a second time.
       for (let k = pending.length - 1; k >= 0; k--)
         if (pending[k]!.to === r.peer) {
           refund(pending[k]!.kind);
@@ -771,18 +889,23 @@ export const coop = {
         // The survivors may have returned our cargo while we were gone. Rejoin
         // behind them, just as a newly visible tab does, and take their snapshot.
         if (!connected && since >= 0) {
+          clearHarvest(false);
           since = world.tick;
           synced = false;
         }
       });
       room.onMessage((raw, from) => {
         const m = raw as Record<string, unknown> | null;
-        if (m?.t !== 'placeCoop' || typeof from !== 'string') return;
-        const answer = m.k === 'stock' || m.k === 'no';
-        const expected = answer && pending.some((p) => p.to === from && p.kind === m.kind && (!m.q || p.q === m.q));
+        if (m?.t !== 'placeCoopTrees1' || typeof from !== 'string') return;
+        const answer = m.k === 'stock' || m.k === 'no' || m.k === 'harvested' || m.k === 'harvestNo';
+        const expected =
+          answer &&
+          (pending.some((p) => p.to === from && p.kind === m.kind && (!m.q || p.q === m.q)) ||
+            (harvestPending?.to === from && harvestPending.q === m.q && harvestPending.i === m.i));
         if (!(answer && (from === authorityPeer() || expected)) && !allow(from)) {
           if (m.k === 'dep' && (m.to === net.myPeer || (!m.to && amAuthority())) && isKind(m.kind))
             msg({ k: 'no', to: from, kind: m.kind, q: count(m.q) ? m.q : 0 });
+          if (m.k === 'harvest' && m.to === net.myPeer) msg({ k: 'harvestNo', to: from, q: m.q, i: m.i, gen: m.gen });
           return;
         }
         try {
@@ -798,6 +921,14 @@ export const coop = {
     });
   },
   /** For the test run. */
-  debug: () => ({ amAuthority: amAuthority(), since, gen, peers: [...peers.keys()], shared: captureShared() }),
+  debug: () => ({
+    amAuthority: amAuthority(),
+    since,
+    gen,
+    peers: [...peers.keys()],
+    shared: captureShared(),
+    harvestPending,
+    harvestReceipts: [...harvestReceipts.values()],
+  }),
 };
 export type { Kind };

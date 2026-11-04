@@ -241,12 +241,11 @@ registerInteractable(() => {
       at: promptAt('wake', machine.flatbed.x, machine.flatbed.y + 2.4, machine.flatbed.z),
       run: () => wake(),
     });
-  if (job.awake) {
+  if (job.awake && job.rung.multi) {
     for (const t of TREES) {
       if (!standing(t)) continue;
       const reach = t.great ? 4.6 : 3.2;
       if (Math.hypot(p.x - t.x, p.z - t.z) > reach) continue;
-      const room = back.room();
       if (t.great) {
         (out ??= []).push(
           back.big
@@ -255,11 +254,13 @@ registerInteractable(() => {
         );
         continue;
       }
-      (out ??= []).push(
-        room <= 0
-          ? { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, click: true, blocked: 'Your back is full' }
-          : { id: `place-tree${t.index}`, verb: 'Chop', at: t.at, click: true, run: () => void chopTree(t) },
-      );
+      (out ??= []).push({
+        id: `place-tree${t.index}`,
+        verb: 'Chop',
+        at: t.at,
+        click: true,
+        run: () => void chopTree(t),
+      });
     }
     for (const q of job.rung.multi ? ROCK_LIST : []) {
       if (!whole(q) || Math.hypot(p.x - q.x, p.z - q.z) > q.r + 2.6) continue;

@@ -7,10 +7,10 @@
     {
       "go": [["you.netplay", "lane:owner", "fr.netplay"]],
       "text": "In the default place game or ?proto=place&coop=1, each tab puts its arrival tick in its presence. The oldest visible tab is the authority: the one that decides.",
-      "code": "addPresenceField('placeCoop', () => since)",
+      "code": "addPresenceField('placeCoopTrees1', () => since)",
       "cite": [
         {
-          "presence": "placeCoop"
+          "presence": "placeCoopTrees1"
         },
         {
           "file": "src/proto/place/coop.ts"
@@ -30,10 +30,10 @@
     {
       "go": [["you.input", "you.features", "lane:msg", "fr.features"]],
       "text": "You drop a log at a station. It flies in on your screen, and one message asks the authority to count it.",
-      "code": "room.send({ t: 'placeCoop', k: 'dep', … })",
+      "code": "room.send({ t: 'placeCoopTrees1', k: 'dep', … })",
       "cite": [
         {
-          "message": "placeCoop"
+          "message": "placeCoopTrees1"
         }
       ]
     },
@@ -53,12 +53,24 @@
       "code": "msg({ k: 'snap', snap: snapshot() })",
       "cite": [
         {
-          "message": "placeCoop"
+          "message": "placeCoopTrees1"
         },
         {
           "file": "src/proto/place/coop.ts"
         }
       ]
+    },
+    {
+      "go": [["you.input", "you.features", "lane:msg", "fr.features"]],
+      "text": "Tree contact reserves room on your back and asks the authority to harvest. It orders simultaneous hits and returns a receipt. Only that accepted receipt awards wood, once; a full bag or hardwood rebound spends no tree progress.",
+      "code": "harvest request → harvestTree → harvested receipt → receiveHarvest",
+      "cite": [{ "file": "src/proto/place/chop.ts" }, { "file": "src/proto/place/coop.ts" }]
+    },
+    {
+      "hl": ["you.features", "fr.features"],
+      "text": "Partial tree work and felled IDs use local saves and authority snapshots. Versioned messages isolate older place builds. This is not server-durable lockstep persistence; a crash before replication can still lose recent progress.",
+      "code": "sharedSlice('treeHarvestV1', …) · placeCoopTrees1",
+      "cite": [{ "file": "src/proto/place/job.ts" }, { "file": "src/proto/place/chop.ts" }]
     },
     {
       "go": [["fr.netplay", "lane:owner", "you.netplay", "you.features"]],

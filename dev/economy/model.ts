@@ -406,10 +406,11 @@ for (const [era, speed, lay, carry, kit, sourceM, rate, length, contentMin, walk
 
 // Round 4 of ?proto=place (docs/plans/round-4.md), hypotheses until played: a slog by hand that's starting to feel long by the
 // end, then each rung. Bills and spans are src/proto/place/layout.ts's. A press every 0.38 s (a person, not the 0.24 s cooldown),
-// 2 logs a stroke, then 4 with the proper axe. sourceM is the average one-way carry: real distances from layout.ts, weighted by
+// 2 logs a stroke, then 5 with the proper axe. sourceM is the historical grove-based one-way carry, weighted by
 // how many of a station's loads go that far (Q3 is one load of rails 130 m and one of logs 16 m from the rack, so 73).
+// Universal finite trees change the nearest reachable source; use the playthrough trace for current elapsed times.
 const axe1 = 0.38 / 2,
-  axe2 = 0.38 / 4;
+  axe2 = 0.38 / 5;
 const round4Recipes: Table['recipes'] = {
   t1: [item('logs', 24, false, axe1)],
   t2: [item('logs', 32, false, axe1), item('stone', 8, false, axe1)],

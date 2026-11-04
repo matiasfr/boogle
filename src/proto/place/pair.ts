@@ -155,7 +155,8 @@ if (COOP) {
   pairHook.busy = () => grip !== null || [...grips.keys()].some((peer) => fresh(peer, performance.now()));
   addPresenceField('placeLongBeam', () => grip);
   onRemotePresence((r, pr) => {
-    const end = pr.placeLongBeam;
+    // Legacy place peers share the transport, but not this version's railway or beam.
+    const end = count(pr.placeCoopTrees1, Number.MAX_SAFE_INTEGER) ? pr.placeLongBeam : null;
     if (end === 0 || end === 1) grips.set(r.peer, { end, seen: performance.now() });
     else grips.delete(r.peer);
   });

@@ -1,17 +1,17 @@
 // The chop and the back of ?proto=place. The swing starts on the frame you press, the axe meets the bark about 60 ms later,
-// the tree shakes and logs fly straight to your back. All of it Local, in this file: no waiting on the host, no spill and
-// rest and notice (the delay the owner felt). docs/research/harvest-feel.md, summary 1-3. Your back is the game's bundle,
+// the tree answers and accepted logs fly straight to your back. Solo accepts locally; coop.ts serializes shared harvest
+// before awarding material. Animation stays Local. docs/research/tree-tiers.md, recommendations 1-7. Your back is the game's bundle,
 // drawn from a count kept here through `backSeam`, with rails strapped upright behind it, stone in a sack and a big thing on
 // your shoulder.
-// What you hit, round 4: trees with an orange band (nearby ones run out), rocks with one, and one great tree whose trunk you
-// shoulder. Felled trees stay felled. The axe and the back are the ladder's first two rungs (`AXE2`, `PACK`, ./ladder.ts);
+// Every ordinary tree works; two broad hardwoods need the proper axe. Only rocks keep their bands. The great tree's trunk
+// goes on your shoulder with either axe. Trees stay finite. The axe and back are the first two rungs (`AXE2`, `PACK`, ./ladder.ts);
 // which rung you're on comes from `job.rung`.
 import * as THREE from 'three/webgpu';
 import { material } from '../../render/materials.ts';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { warmUp } from '../../render/precompile.ts';
-import { removeBody, type Body } from '../../physics/engine.ts';
+import { removeBody, teleport, sweepSphere, type Body } from '../../physics/engine.ts';
 import { input } from '../../player/input-state.ts';
 import { me } from '../../player/player.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../../netplay/net.ts';
@@ -22,18 +22,26 @@ import { mulberry32 } from '../../sim/rng.ts';
 import { knock, pop } from '../minis/common.ts';
 import { flat } from '../flat.ts';
 import { H, addStatic } from './land.ts';
-import { COOP, count, job, personalSlice, sharedSlice } from './job.ts';
-import { LOOK, STEEL, paint } from './look.ts';
+import { COOP, count, job, personalSlice, sharedSlice, save } from './job.ts';
+import { LOOK, STEEL, paint, addBlob } from './look.ts';
 import { AXE2, GREAT, GREAT_TREE, GROVES, OAK, ORIGIN, PACK, ROCKS, ROCK_WORK, TUNE } from './layout.ts';
 import { RAIL_SIZE, chips, dustRing, send } from './pieces.ts';
 import { shakeView } from './celebrate.ts';
 import { addFoot } from './sites.ts';
 import { packFrameMesh } from './gifts.ts';
+import { LAND_TREES, safeTreeFall } from './tree-catalog.ts';
 
 // ---------------------------------------------------------------- your back
 /** One big thing on your shoulder: it fills your back, and you can't sprint with it. */
 export type BigThing = 'beam' | 'boiler' | null;
 export const carryNow = () => (job.rung.pack ? PACK.carry : TUNE.carry);
+let harvestReserved = 0;
+export const reserveHarvest = (n: number) => {
+  harvestReserved += n;
+};
+export const releaseHarvest = (n: number) => {
+  harvestReserved = Math.max(0, harvestReserved - n);
+};
 export const back = {
   logs: 0,
   rails: 0,
@@ -41,7 +49,7 @@ export const back = {
   beam: 0,
   big: null as BigThing,
   incoming: 0, // pieces in the air on their way here
-  room: () => (back.big ? 0 : carryNow() - back.logs - back.rails - back.stone - back.incoming),
+  room: () => (back.big ? 0 : carryNow() - back.logs - back.rails - back.stone - back.incoming - harvestReserved),
   empty: () => back.logs + back.rails + back.stone + back.incoming === 0 && !back.big,
 };
 backSeam.flyIns = false;
@@ -205,6 +213,15 @@ export type Tree = {
   z: number;
   size: number;
   great: boolean;
+  hardwood: boolean;
+  work: number;
+  issued: number;
+  ceiling: number;
+  revision: number;
+  collapsed: boolean;
+  scuff: boolean;
+  hitAt: number;
+  cutYaw: number;
   strokes: number;
   shake: number; // 1 on a hit, decaying
   fall: number; // s since it was felled, -1 standing
@@ -215,7 +232,7 @@ export type Tree = {
 };
 
 const rng = mulberry32(77);
-function makeTree(x: number, z: number, size: number, great = false): Tree {
+function makeTree(x: number, z: number, size: number, great = false, hardwood = false): Tree {
   const y = H(x, z);
   return {
     index: 0,
@@ -224,6 +241,15 @@ function makeTree(x: number, z: number, size: number, great = false): Tree {
     z,
     size,
     great,
+    hardwood,
+    work: 0,
+    issued: 0,
+    ceiling: great ? 0 : hardwood ? 15 : 10,
+    revision: 0,
+    collapsed: false,
+    scuff: false,
+    hitAt: 0,
+    cutYaw: 0,
     strokes: 0,
     shake: 0,
     fall: -1,
@@ -245,11 +271,98 @@ export const TREES: Tree[] = GROVES.flatMap((g) => {
 TREES.push(makeTree(OAK.x + ORIGIN.x, OAK.z + ORIGIN.z, 1.1));
 export const greatTree = makeTree(GREAT_TREE.x + ORIGIN.x, GREAT_TREE.z + ORIGIN.z, 2.1, true);
 TREES.push(greatTree);
+TREES.push(
+  ...LAND_TREES.map((t) => {
+    const tree = makeTree(t.x, t.z, t.size, false, t.hardwood);
+    tree.y = t.y;
+    tree.at.y = t.y + 1.7;
+    return tree;
+  }),
+);
 TREES.forEach((t, k) => (t.index = k));
 const strokesFor = (t: Tree) => (t.great ? GREAT.strokes : job.rung.axe ? AXE2.strokes : TUNE.strokes);
-const logsPerStroke = () => (job.rung.axe ? AXE2.logsPerStroke : TUNE.logsPerStroke);
 /** The most strokes anything takes, for checking another tab's message. */
 export const MOST_STROKES = Math.max(GREAT.strokes, TUNE.strokes);
+
+/** Accepted finite harvest, separate from local animation and the owner's back. */
+export type TreeHarvest = {
+  work: number;
+  issued: number;
+  ceiling: number;
+  revision: number;
+  fallYaw: number;
+  collapsed: boolean;
+  fell: boolean;
+};
+export type HarvestResult = { state: TreeHarvest; logs: number; outcome: 'bite' | 'rebound' | 'full' | 'gone' };
+export const readTreeHarvest = (t: Tree): TreeHarvest => ({
+  work: t.work,
+  issued: t.issued,
+  ceiling: t.ceiling,
+  revision: t.revision,
+  fallYaw: t.fallYaw,
+  collapsed: t.collapsed,
+  fell: t.fall >= 0,
+});
+export function validTreeHarvest(v: unknown): v is TreeHarvest {
+  const s = v as TreeHarvest | null;
+  return (
+    !!s &&
+    count(s.work, 15) &&
+    count(s.issued, 15) &&
+    [0, 10, 15].includes(s.ceiling) &&
+    s.issued <= s.ceiling &&
+    count(s.revision) &&
+    typeof s.fallYaw === 'number' &&
+    Number.isFinite(s.fallYaw) &&
+    Math.abs(s.fallYaw) <= Math.PI * 2 &&
+    typeof s.collapsed === 'boolean' &&
+    typeof s.fell === 'boolean'
+  );
+}
+/** Computes one authority-ordered result; no inventory, animation or sound here. */
+export function harvestTree(t: Tree, room: number, axe: number, yaw: number): HarvestResult {
+  const state = readTreeHarvest(t);
+  if (state.fell) return { state, logs: 0, outcome: 'gone' };
+  if (!t.great && room <= 0) return { state, logs: 0, outcome: 'full' };
+  if (t.hardwood && !axe) return { state, logs: 0, outcome: 'rebound' };
+  const maxWork = t.great ? GREAT.strokes : 15;
+  state.ceiling = t.great ? 0 : Math.max(state.ceiling, axe ? 15 : 10);
+  const logs = t.great
+    ? 0
+    : Math.min(room, axe ? AXE2.logsPerStroke : TUNE.logsPerStroke, state.ceiling - state.issued);
+  state.issued += logs;
+  state.work = Math.min(maxWork, state.work + (t.great ? 1 : axe ? 5 : 3));
+  state.revision++;
+  // A clipped payout remains on the standing tree. The last unclaimed log is never thrown away.
+  state.fell = state.work >= maxWork && state.issued === state.ceiling;
+  if (state.fell) {
+    const safe = safeTreeFall(t.x, t.z, t.size, yaw, t.great);
+    state.fallYaw = safe.yaw;
+    state.collapsed = safe.collapsed;
+  }
+  return { state, logs, outcome: 'bite' };
+}
+export function applyTreeHarvest(t: Tree, state: TreeHarvest): boolean {
+  if (!validTreeHarvest(state) || state.revision < t.revision) return false;
+  if (t.great ? state.ceiling !== 0 || state.work > GREAT.strokes : state.ceiling === 0) return false;
+  if (state.fell && (state.work < (t.great ? GREAT.strokes : 15) || state.issued !== state.ceiling)) return false;
+  const falling = state.fell && t.fall < 0;
+  t.work = state.work;
+  t.issued = state.issued;
+  t.ceiling = state.ceiling;
+  t.revision = state.revision;
+  t.strokes = t.great ? state.work : Math.ceil(state.work / (job.rung.axe ? 5 : 3));
+  t.fallYaw = state.fallYaw;
+  t.collapsed = state.collapsed;
+  if (falling) {
+    t.fall = 0;
+    if (t.body) removeBody(t.body);
+    t.body = null;
+  }
+  pose(t, 0);
+  return true;
+}
 
 // ---------------------------------------------------------------- solid: standing, and where it lies
 /** The great tree's trunk has been shouldered. */
@@ -260,10 +373,16 @@ function solidTree(t: Tree) {
   if (t.body) removeBody(t.body);
   if (t.stump) removeBody(t.stump);
   t.body = t.stump = null;
-  const h = 5 * t.size;
+  const h = (t.collapsed ? 0.8 : 5) * t.size;
   if (t.fall < 0) {
     t.body = addStatic(
-      { kind: 'cylinder', rTop: 0.38 * t.size, rBottom: 0.38 * t.size, h, segments: 6 },
+      {
+        kind: 'cylinder',
+        rTop: (t.hardwood ? 0.8 : 0.38) * t.size,
+        rBottom: (t.hardwood ? 0.8 : 0.38) * t.size,
+        h,
+        segments: 6,
+      },
       { x: t.x, y: t.y + h / 2, z: t.z },
     );
     return;
@@ -274,6 +393,39 @@ function solidTree(t: Tree) {
   );
   // The great tree's trunk goes on your shoulder; it isn't in the way after that.
   if (t.great && trunk.taken) return;
+  // A settled log must never appear around the local player's capsule. Move only the intersecting player,
+  // sideways off the new footprint, before adding its static solid; every peer performs this for itself.
+  const player = me.body;
+  if (player) {
+    const p = player.position,
+      dx = p.x - t.x,
+      dz = p.z - t.z;
+    const along = dx * Math.sin(t.fallYaw) + dz * Math.cos(t.fallYaw);
+    const across = dx * Math.cos(t.fallYaw) - dz * Math.sin(t.fallYaw);
+    if (along > -0.8 && along < h + 1 && Math.abs(across) < 0.3 * t.size + 0.65 && Math.abs(p.y - t.y) < 2) {
+      let clear: { x: number; y: number; z: number } | null = null;
+      for (let attempt = 0; attempt < 64 && !clear; attempt++) {
+        const angle = t.fallYaw + ((attempt % 16) * Math.PI) / 8,
+          radius = 2 + Math.floor(attempt / 16) * 2,
+          x = p.x + Math.cos(angle) * radius,
+          z = p.z - Math.sin(angle) * radius,
+          y = H(x, z);
+        if (y < 3 || Math.abs(y - t.y) > 1.2) continue;
+        const ax = x - t.x,
+          az = z - t.z;
+        const on = ax * Math.sin(t.fallYaw) + az * Math.cos(t.fallYaw),
+          side = ax * Math.cos(t.fallYaw) - az * Math.sin(t.fallYaw);
+        if (on > -1 && on < h + 1 && Math.abs(side) < t.size + 0.8) continue;
+        if (TREES.some((other) => other.fall < 0 && Math.hypot(x - other.x, z - other.z) < other.size + 0.8)) continue;
+        if (sweepSphere({ x, y: y + 128, z }, { x, y: y + 1.1, z }, 0.6, { mask: 0xffff, thin: 'skip' }) >= 0) continue;
+        clear = { x, y: y + 1.1, z };
+      }
+      // If every side is occupied, stand above the low log, never inside it; walking/jumping remains available.
+      teleport(player, clear?.x ?? p.x, clear?.y ?? Math.max(p.y, t.y + 2.5), clear?.z ?? p.z);
+      player.velocity.set(0, 0, 0);
+    }
+  }
+  if (t.collapsed) return; // the compact fall leaves exactly the visible, low stump
   lie.setFromAxisAngle(AXIS_Y, t.fallYaw);
   t.body = addStatic(
     { kind: 'box', hx: 0.3 * t.size, hy: 0.3 * t.size, hz: h / 2 },
@@ -289,8 +441,8 @@ const leaf = new THREE.Color('#4f9c44'),
   leaf2 = new THREE.Color('#3f8a3a');
 /** The crown comes apart as it lands: what stays is a bare trunk, solid, and you can see how much you've cut. */
 function shedCrown(t: Tree) {
-  for (let k = 0; k < 70 * t.size; k++) {
-    const along = (5 + Math.random() * 7) * t.size,
+  for (let k = 0; k < (t.great ? 90 : 36); k++) {
+    const along = (t.collapsed ? 0.5 : 5 + Math.random() * 7) * t.size,
       a = Math.random() * Math.PI * 2,
       sp = 1 + Math.random() * 3;
     emit({
@@ -311,12 +463,29 @@ function shedCrown(t: Tree) {
 }
 
 const n = TREES.length;
+const hardwoodIndices = new Map(TREES.filter((t) => t.hardwood).map((t, k) => [t.index, k]));
+const hardwoodCount = hardwoodIndices.size;
+// Alternating radial ridges give hardwood actual bark relief and a flared root base, even in grayscale.
+const hardwoodGeo = new THREE.CylinderGeometry(0.52, 0.95, 5, 12, 1);
+const barkVertices = hardwoodGeo.getAttribute('position');
+for (let k = 0; k < barkVertices.count; k++) {
+  const x = barkVertices.getX(k),
+    z = barkVertices.getZ(k);
+  const ridge = 1 + 0.13 * Math.cos(Math.atan2(z, x) * 6);
+  barkVertices.setXYZ(k, x * ridge, barkVertices.getY(k), z * ridge);
+}
+hardwoodGeo.computeVertexNormals();
 const parts = {
   trunk: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.28, 0.46, 5, 6), flat('#7a5430'), n),
   crown: new THREE.InstancedMesh(new THREE.ConeGeometry(2.6, 6.5, 6), flat('#3f8a3a'), n),
   crown2: new THREE.InstancedMesh(new THREE.ConeGeometry(1.9, 4.6, 6), flat('#4f9c44'), n),
-  ribbon: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.42, 0.48, 0.36, 8), flat('#f0752c'), n),
   stump: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.44, 0.5, 0.6, 6), flat('#c9a06a'), n),
+  notch: new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.16, 0.16), flat('#39291e'), n),
+  hardwood: new THREE.InstancedMesh(hardwoodGeo, flat('#686359'), hardwoodCount),
+  forks: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.42, 3.5, 8), flat('#686359'), hardwoodCount * 2),
+  broad: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), flat('#657a37'), hardwoodCount * 3),
+  branch: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.17, 0.21, 1.5, 8), flat('#686359'), hardwoodCount),
+  cutEnd: new THREE.InstancedMesh(new THREE.CircleGeometry(0.17, 8), flat('#ddc89b'), hardwoodCount),
 };
 for (const m of Object.values(parts)) {
   m.castShadow = true;
@@ -334,16 +503,19 @@ const Q0 = new THREE.Quaternion(),
   S1 = new THREE.Vector3(),
   P1 = new THREE.Vector3();
 function pose(t: Tree, now: number) {
+  const hardwoodIndex = hardwoodIndices.get(t.index);
   let a = 0,
     b = 0;
   if (t.fall >= 0) {
     const u = Math.min(1, t.fall / 0.75);
-    a = (u * u * Math.PI) / 2 - 0.04 * u;
+    a = t.collapsed ? 0 : (u * u * Math.PI) / 2 - 0.04 * u;
   } else if (t.shake > 0) {
-    a = Math.sin(now * 0.05) * t.shake * 0.1;
-    b = Math.cos(now * 0.043) * t.shake * 0.06;
+    const age = Math.max(0, now - t.hitAt);
+    a = Math.sin(age * 0.028) * t.shake * 0.052;
+    b = Math.sin(age * 0.022) * t.shake * 0.018;
   }
-  base.makeTranslation(t.x, t.y, t.z);
+  const drop = t.collapsed && t.fall >= 0 ? Math.min(1, t.fall / 0.75) ** 2 * 12 * t.size : 0;
+  base.makeTranslation(t.x, t.y - drop, t.z);
   turn.makeRotationY(t.fallYaw).multiply(local.makeRotationFromEuler(e.set(a, 0, b)));
   base.multiply(turn);
   sv.setScalar(t.size);
@@ -353,15 +525,70 @@ function pose(t: Tree, now: number) {
       .multiply(local.makeTranslation(0, y * t.size, 0))
       .scale(sv);
   const taken = t.great && trunk.taken;
-  parts.trunk.setMatrixAt(t.index, taken ? ZERO : at(2.5));
   const bare = t.fall >= 0.75;
-  parts.crown.setMatrixAt(t.index, bare ? ZERO : at(7.2));
-  parts.crown2.setMatrixAt(t.index, bare ? ZERO : at(10));
-  parts.ribbon.setMatrixAt(t.index, taken ? ZERO : at(1.15));
+  const compact = bare && t.collapsed;
+  parts.trunk.setMatrixAt(t.index, taken || t.hardwood || compact ? ZERO : at(2.5));
+  if (hardwoodIndex !== undefined) parts.hardwood.setMatrixAt(hardwoodIndex, taken || compact ? ZERO : at(2.5));
+  // A crown follows the trunk's contact by 80 ms rather than twitching as one rigid stick.
+  if (t.fall < 0 && t.shake > 0 && now - t.hitAt < 80) base.makeTranslation(t.x, t.y, t.z);
+  parts.crown.setMatrixAt(t.index, bare || t.hardwood ? ZERO : at(7.2));
+  parts.crown2.setMatrixAt(t.index, bare || t.hardwood ? ZERO : at(10));
+  for (let k = 0; hardwoodIndex !== undefined && k < 2; k++) {
+    out4
+      .copy(base)
+      .multiply(local.makeTranslation((k ? 1 : -1) * 0.7 * t.size, 4.5 * t.size, 0))
+      .multiply(turn.makeRotationZ((k ? -1 : 1) * 0.45))
+      .scale(sv);
+    parts.forks.setMatrixAt(hardwoodIndex * 2 + k, !bare ? out4 : ZERO);
+  }
+  for (let k = 0; hardwoodIndex !== undefined && k < 3; k++) {
+    const dx = (k - 1) * 2.1;
+    out4
+      .copy(base)
+      .multiply(local.makeTranslation(dx * t.size, (k === 1 ? 7.2 : 6.3) * t.size, (k === 1 ? 0.8 : 0) * t.size))
+      .scale(S1.set(2.8 * t.size, 2.3 * t.size, 2.6 * t.size));
+    parts.broad.setMatrixAt(hardwoodIndex * 3 + k, !bare ? out4 : ZERO);
+  }
+  // The notch gets wider only with accepted work; refusal leaves one shallow scuff.
+  const cut = t.work / (t.great ? GREAT.strokes : 15);
+  const cutYaw = t.cutYaw;
+  local.compose(
+    P1.set(
+      t.x + Math.sin(cutYaw) * (t.hardwood ? 0.7 : 0.4) * t.size,
+      t.y + 1.1,
+      t.z + Math.cos(cutYaw) * (t.hardwood ? 0.7 : 0.4) * t.size,
+    ),
+    Q0.setFromAxisAngle(AXIS_Y, cutYaw),
+    S1.set(t.size * (t.scuff && !cut ? 0.35 : 0.5 + cut), t.scuff && !cut ? 0.2 : 0.5 + cut, 1),
+  );
+  parts.notch.setMatrixAt(t.index, t.fall >= 0 || (!cut && !t.scuff) ? ZERO : local);
   parts.stump.setMatrixAt(
     t.index,
-    t.fall >= 0 ? local.compose(P1.set(t.x, t.y + 0.3, t.z), Q0, S1.setScalar(t.size)) : ZERO,
+    t.fall >= 0
+      ? local.compose(
+          P1.set(t.x, t.y + 0.3, t.z),
+          Q0.identity(),
+          S1.set(t.size * (t.hardwood ? 1.8 : 1), 1, t.size * (t.hardwood ? 1.8 : 1)),
+        )
+      : ZERO,
   );
+  // A naturally fallen branch with a pale end shows what this dense wood is good for before the axe upgrade.
+  if (hardwoodIndex !== undefined) {
+    const branchX = t.x + 1.5 * t.size,
+      branchZ = t.z + 1.1 * t.size;
+    local.compose(
+      P1.set(branchX, H(branchX, branchZ) + 0.22, branchZ),
+      Q0.setFromEuler(e.set(Math.PI / 2, 0, -0.6)),
+      S1.setScalar(1),
+    );
+    parts.branch.setMatrixAt(hardwoodIndex, local);
+    local.compose(
+      P1.set(branchX + Math.sin(0.6) * 0.755, H(branchX, branchZ) + 0.22, branchZ + Math.cos(0.6) * 0.755),
+      Q0.setFromAxisAngle(AXIS_Y, 0.6),
+      S1.setScalar(1),
+    );
+    parts.cutEnd.setMatrixAt(hardwoodIndex, local);
+  }
   for (const m of Object.values(parts)) m.instanceMatrix.needsUpdate = true;
 }
 export const trunkDown = () => greatTree.fall >= 0.75 && !trunk.taken;
@@ -375,10 +602,15 @@ export const trunkAt = () => {
 };
 export function resetTrees() {
   trunk.taken = false;
+  harvestReserved = 0;
   for (const t of TREES) {
     t.strokes = 0;
     t.shake = 0;
     t.fall = -1;
+    t.work = t.issued = t.revision = 0;
+    t.ceiling = t.great ? 0 : t.hardwood ? 15 : 10;
+    t.collapsed = t.scuff = false;
+    t.fallYaw = 0;
     pose(t, 0);
     solidTree(t);
   }
@@ -391,6 +623,9 @@ export function restoreFellen(list: number[]) {
     if (!t || t.fall >= 0) continue;
     t.fall = 1;
     t.strokes = strokesFor(t);
+    t.work = t.great ? GREAT.strokes : 15;
+    t.issued = t.ceiling;
+    t.revision = Math.max(1, t.revision);
     if (!t.fallYaw) t.fallYaw = (k * 2.4) % 6.28;
     pose(t, 0);
     solidTree(t);
@@ -514,7 +749,13 @@ const axe = new THREE.Group();
 axe.add(AXES[0]!, AXES[1]!);
 axe.visible = false;
 
-const swing = { t: 99, target: null as Tree | null, rock: null as Rock | null, hit: true };
+const swing = {
+  t: 99,
+  target: null as Tree | null,
+  rock: null as Rock | null,
+  hit: true,
+  response: 'bite' as HarvestResult['outcome'],
+};
 const RAISED = 1.5,
   STRUCK = -1.35;
 const bundleTo = new THREE.Vector3(),
@@ -526,6 +767,7 @@ const inner = () => (me.avatar?.userData as Worn | undefined)?.inner;
 function startSwing(x: number, z: number) {
   swing.t = 0;
   swing.hit = false;
+  swing.response = 'bite';
   // Square up to it: you hit what you meant to.
   const p = me.body!.position;
   me.yaw = Math.atan2(-(x - p.x), -(z - p.z));
@@ -547,31 +789,67 @@ export function breakRock(q: Rock) {
   startSwing(q.x, q.z);
   return true;
 }
-/** Under `&coop=1`, ./coop.ts tells the other tab about each stroke. */
+/** Under `&coop=1`, ./coop.ts accepts tree work before the local award; rock messages retain their existing meaning. */
 export const chopHooks = {
-  stroke: null as ((t: Tree) => void) | null,
+  harvest: null as ((t: Tree, room: number, axe: number, yaw: number) => void) | null,
   rock: null as ((q: Rock) => void) | null,
 };
 function contact(t: Tree) {
   if (!me.body || t.fall >= 0) return; // someone else's stroke can fell it mid-swing
-  t.strokes++;
-  t.shake = 1;
   const p = me.body.position;
+  const room = Math.max(0, Math.min(back.room(), job.rung.axe ? AXE2.logsPerStroke : TUNE.logsPerStroke));
+  const yaw = Math.atan2(t.x - p.x, t.z - p.z);
+  // Refusal changes no shared work: answer at contact even before a co-op receipt can make the round trip.
+  if ((!t.great && room === 0) || (t.hardwood && !job.rung.axe)) {
+    receiveHarvest(t, harvestTree(t, room, job.rung.axe, yaw), true);
+    return;
+  }
+  if (chopHooks.harvest) chopHooks.harvest(t, room, job.rung.axe, yaw);
+  else receiveHarvest(t, harvestTree(t, room, job.rung.axe, yaw), true);
+}
+/** Accepted output belongs to the back immediately; flights are only its presentation, including across saves. */
+export function receiveHarvest(t: Tree, result: HarvestResult, localPlayer: boolean) {
+  const s = result.state;
+  if (
+    !validTreeHarvest(s) ||
+    !count(result.logs, 5) ||
+    (t.great ? s.ceiling !== 0 || s.work > GREAT.strokes : s.ceiling === 0) ||
+    (s.fell && (s.work < (t.great ? GREAT.strokes : 15) || s.issued !== s.ceiling))
+  )
+    return;
+  const wasStanding = t.fall < 0;
+  applyTreeHarvest(t, result.state);
+  if (localPlayer) swing.response = result.outcome;
+  if (result.outcome === 'gone') return;
+  const p = me.body?.position ?? t;
   const dx = t.x - p.x,
     dz = t.z - p.z,
     d = Math.hypot(dx, dz) || 1;
   const bark = popOut.set(t.x - (dx / d) * 0.4, t.y + 1.1, t.z - (dz / d) * 0.4);
+  t.cutYaw = Math.atan2(-dx, -dz);
   const good = !!job.rung.axe;
-  // The proper axe rings, and it bites.
-  knock((good ? 0.8 : 0.5) + t.strokes * 0.12, good ? 1.5 : 1.05);
-  if (good) clank(t.x, t.z);
-  chips(bark.x, bark.y, bark.z, good ? 22 : 10);
-  if (good) shakeView(0.035);
+  if (result.outcome === 'full') {
+    if (localPlayer) placeSound('bagFull', p.x, p.z);
+    return;
+  }
+  if (result.outcome === 'rebound') {
+    t.shake = 0.1;
+    t.scuff = true;
+    t.hitAt = performance.now();
+    chips(bark.x, bark.y, bark.z, 2);
+    placeSound('treeRebound', t.x, t.z);
+    pose(t, performance.now());
+    return;
+  }
+  t.shake = 1;
+  t.hitAt = performance.now();
+  placeSound(t.hardwood ? 'hardwoodBite' : 'treeBite', t.x, t.z);
+  chips(bark.x, bark.y, bark.z, good ? 18 : 9);
   const i = inner();
-  if (i) i.rotation.x = -0.5; // the lean into it; the walk's spring brings it back
-  const yields = t.great ? 0 : Math.min(logsPerStroke(), back.room());
+  if (localPlayer && i) i.rotation.x = -0.5;
+  const yields = localPlayer ? result.logs : 0;
+  back.logs += yields;
   for (let k = 0; k < yields; k++) {
-    back.incoming++;
     send('log', bark, bark, {
       dur: TUNE.flyS + k * 0.03,
       apex: 1.1 + k * 0.15,
@@ -579,22 +857,16 @@ function contact(t: Tree) {
         if (myBundleNext(back.logs, bundleTo, bundleRot)) to.copy(bundleTo);
       },
       land: () => {
-        back.incoming--;
-        back.logs++;
         pop(Math.min(7, logsLanded++ % 8), 0.5);
       },
     });
   }
-  if (t.strokes >= strokesFor(t)) {
-    t.fall = 0;
-    t.fallYaw = Math.atan2(dx, dz);
+  if (wasStanding && t.fall >= 0) {
     logsLanded = 0;
-    if (t.body) removeBody(t.body);
-    t.body = null;
     if (t.great) placeSound('treeFall', t.x, t.z);
     else thump(t.x, t.z);
   }
-  chopHooks.stroke?.(t);
+  save();
 }
 const spark = new THREE.Color('#ffe2a0');
 function contactRock(q: Rock) {
@@ -705,6 +977,23 @@ sharedSlice('felled', {
   },
 });
 
+// Appended after legacy felled data: old IDs retain their meaning, partial work overlays their safe defaults.
+sharedSlice('treeHarvestV1', {
+  get: () => TREES.filter((t) => t.revision > 0).map((t) => [t.index, readTreeHarvest(t)]),
+  set: (v) => {
+    if (!Array.isArray(v)) return;
+    for (const row of v) {
+      if (!Array.isArray(row) || !count(row[0], TREES.length - 1) || !validTreeHarvest(row[1])) continue;
+      const t = TREES[row[0]]!;
+      if (applyTreeHarvest(t, row[1])) {
+        if (row[1].fell) t.fall = 1;
+        pose(t, 0);
+        solidTree(t);
+      }
+    }
+  },
+});
+
 export const felled = { n: 0 };
 /** Each frame. */
 export function updateChop(dt: number, now: number) {
@@ -735,8 +1024,21 @@ export function updateChop(dt: number, now: number) {
   swing.t += dt;
   const c = TUNE.contactS;
   axe.visible = swing.t < 0.9;
+  axe.rotation.z = 0;
   if (swing.t < c) axe.rotation.x = RAISED + (STRUCK - RAISED) * (swing.t / c);
-  else if (swing.t < 0.3) axe.rotation.x = STRUCK + (0.2 - STRUCK) * ((swing.t - c) / (0.3 - c));
+  else if (swing.response === 'full' && swing.t < 0.55) {
+    // Lift the hand back toward the bundle instead of repeating a success pose at the trunk.
+    const u = Math.sin(Math.min(1, (swing.t - c) / 0.49) * Math.PI);
+    axe.rotation.x = 0.2 + u * 2.2;
+    axe.rotation.z = -u * 0.9;
+    const body = inner();
+    if (body) body.rotation.x = u * 0.16;
+  } else if (swing.response === 'rebound' && swing.t < 0.32) {
+    const u = Math.min(1, (swing.t - c) / 0.09);
+    axe.rotation.x = STRUCK + (RAISED - STRUCK) * Math.sin(u * Math.PI * 0.5);
+    axe.rotation.z = -0.45 * Math.sin(u * Math.PI);
+  } else if (swing.response === 'bite' && swing.t < c + 0.035) axe.rotation.x = STRUCK;
+  else if (swing.t < 0.3) axe.rotation.x = STRUCK + (0.2 - STRUCK) * ((swing.t - c - 0.035) / (0.3 - c - 0.035));
   else axe.rotation.x = 0.2;
   if (!swing.hit && swing.t >= c) {
     swing.hit = true;
@@ -757,9 +1059,9 @@ export function updateChop(dt: number, now: number) {
         if (t.great) placeSound('treeLand', t.x, t.z);
         else thump(t.x, t.z);
         dustRing(
-          t.x + Math.sin(t.fallYaw) * 5,
+          t.x + Math.sin(t.fallYaw) * (t.collapsed ? 0 : 5),
           t.y + 0.2,
-          t.z + Math.cos(t.fallYaw) * 5,
+          t.z + Math.cos(t.fallYaw) * (t.collapsed ? 0 : 5),
           t.great ? 40 : 16,
           t.great ? 6 : 3.4,
           t.great ? 1 : 0.6,
@@ -782,4 +1084,5 @@ export function updateChop(dt: number, now: number) {
 for (const t of TREES) {
   pose(t, 0);
   solidTree(t);
+  if (LOOK.contact) addBlob(t.x, t.y, t.z, t.size * (t.hardwood ? 0.9 : 0.5), t.size * (t.hardwood ? 0.9 : 0.5));
 }
