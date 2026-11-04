@@ -43,7 +43,15 @@ export async function play() {
   const body = me.body!;
   const O = place.ORIGIN.x;
   const [L1, L2] = place.lines;
-  const go = (x: number, z: number, r = 1.2, limit = 0) => bot.walk(x, z, r, { limit });
+  const go = async (x: number, z: number, r = 1.2, limit = 0) => {
+    // A short walk can finish mid-hop. Let physics land before planning the next leg from the ground.
+    if (
+      coopRoute &&
+      !(await bot.until(() => me.coyote > 0 && body.velocity.y <= 0 && !me.swimming, 10000, 'dry co-op landing'))
+    )
+      throw new Error('Co-op player did not land before the next walk');
+    return bot.walk(x, z, r, { limit });
+  };
   const travel = go;
   const waitFor = (fn: () => unknown, ms = 60000, what = '') => bot.until(fn, ms, what);
   const lobe = (x: number, z: number) => {
@@ -133,8 +141,15 @@ export async function play() {
   }) => {
     const started = now();
     const b = place.back;
+    const spec = st.spec;
     let guard = 0;
-    while (!st.full() && place.activeFrame() === st && guard++ < 200) {
+    while (!st.full() && place.activeFrame() === st && (!coopRoute || st.spec === spec) && guard++ < 200) {
+      // A follower's accepted stock and local flights can temporarily leave nothing to fetch or unload.
+      // Yield so receipts/landings settle instead of spending all 200 retries in one microtask turn.
+      if (coopRoute) {
+        await wait(100);
+        if (st.spec !== spec || place.activeFrame() !== st) break;
+      }
       await openCrates();
       if (st.wants('beam') > 0 && st.wants('logs') - b.logs <= 0 && !b.big && b.logs === 0) {
         const g = place.greatTree;
@@ -198,7 +213,9 @@ export async function play() {
         await wait(Math.max(600, 120 * (b.logs + b.rails + b.stone)));
       }
     }
-    note(`${st.spec.id} full (${(now() - started).toFixed(1)} s chop and carry)`);
+    if (coopRoute && st.spec === spec && !st.full() && place.activeFrame() === st)
+      throw new Error(`${st.spec.id}: bill retries exhausted before completion`);
+    note(`${spec.id} full (${(now() - started).toFixed(1)} s chop and carry)`);
   };
   const lay = async (st: { spec: { id: string } }) => {
     await waitFor(() => place.run.mode === 'laying', 15000, `${st.spec.id} laying`);
