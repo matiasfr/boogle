@@ -14,7 +14,7 @@ Before capturing, name one question, the action that reveals it, the camera/devi
 Read capture-health for every capture, then only the details used by the task. AGENTS.md and tests.md decide required checks; examples here do not add checks.
 
 - Setting up a capture (camera, eval, action, warm-up): [capture](references/capture.md).
-- Pacing changes, checkpoints, filmstrips or motion curves: [playthrough-motion](references/playthrough-motion.md).
+- Owner contact sheets (`npm run sheet`), pacing, checkpoints, filmstrips or motion curves: [playthrough-motion](references/playthrough-motion.md).
 - Before/after evidence or two-player captures: [comparison-multiplayer](references/comparison-multiplayer.md).
 - Live sessions, first-time playtests or heatmaps: [session-diagnostics](references/session-diagnostics.md).
 - Every capture: health, backend and inspection limits: [capture-health](references/capture-health.md).
