@@ -224,10 +224,11 @@ export function stationKit(
   for (const sz of [-1, 1]) at('beam_short', SHORT, 0, 0.16, (sz * FRAME_W) / 2);
   at('frame_floor', FLOOR, 0, 0.01, 0);
   at('frame_board', CREAM, away * (FRAME_D / 2 + 0.1), 0.15, 0);
-  stationPict.setMatrixAt(
-    stationPict.count++,
-    stationM.makeTranslation(away * (FRAME_D / 2 + 0.15), 0.42, 0).premultiply(g.matrix),
-  );
+  if (stationPict.count < stationPict.instanceMatrix.count)
+    stationPict.setMatrixAt(
+      stationPict.count++,
+      stationM.makeTranslation(away * (FRAME_D / 2 + 0.15), 0.42, 0).premultiply(g.matrix),
+    );
   stationPict.instanceMatrix.needsUpdate = true;
   at('feeder_bed', BED, 0, 0, 0, feederAt);
   if (corner) {
@@ -257,6 +258,7 @@ function stationPiece(name: string, p: Paint, m: THREE.Matrix4) {
     stationBatches.set(name, b);
     scene.add(b);
   }
+  if (b.count >= b.instanceMatrix.count) return;
   b.setMatrixAt(b.count++, m);
   b.instanceMatrix.needsUpdate = true;
 }
@@ -323,7 +325,9 @@ function kitCars(trailers: number, working: boolean): MachineLook {
   const wheels = (hz: number, r: number) => {
     const list: Wheel[] = [];
     for (const sx of [-0.5, 0.5])
-      for (const sz of [-1, 1]) list.push({ x: sx, y: r + 0.15, z: sz * (hz - 0.5), at: wheelBatch.count++ });
+      for (const sz of [-1, 1])
+        if (wheelBatch.count < wheelBatch.instanceMatrix.count)
+          list.push({ x: sx, y: r + 0.15, z: sz * (hz - 0.5), at: wheelBatch.count++ });
     return list;
   };
   const loco = new THREE.Group();

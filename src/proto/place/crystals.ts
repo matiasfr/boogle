@@ -61,7 +61,7 @@ const hudNote: { fn: (n: number) => void } = { fn: () => {} };
 export const onCrystal = (fn: (n: number) => void) => void (hudNote.fn = fn);
 
 function drawLit() {
-  lit.count = crystals.found.length;
+  lit.count = Math.min(lit.instanceMatrix.count, crystals.found.length);
   for (let k = 0; k < lit.count; k++) lit.setMatrixAt(k, pm.makeTranslation(crystalPeg(k, CRYSTALS, pv)));
   lit.instanceMatrix.needsUpdate = true;
   for (let k = 0; k < CRYSTALS; k++)

@@ -1436,10 +1436,11 @@ export function updateGifts(dt: number, now: number) {
         f.vz *= 0.6;
         f.va *= 0.5;
       }
-      boards.setMatrixAt(
-        n++,
-        m4.compose(p4.set(f.x, f.y, f.z), q4.setFromEuler(e4.set(f.a, f.a * 0.6, 0)), s4.set(1, 1, 1)),
-      );
+      if (n < boards.instanceMatrix.count)
+        boards.setMatrixAt(
+          n++,
+          m4.compose(p4.set(f.x, f.y, f.z), q4.setFromEuler(e4.set(f.a, f.a * 0.6, 0)), s4.set(1, 1, 1)),
+        );
     }
     boards.count = n;
     boards.instanceMatrix.needsUpdate = true;

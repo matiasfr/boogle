@@ -219,6 +219,7 @@ const car: Car = makeCar({ hx: CART.hx, hz: CART.hz, top: CART.top }, cartLook, 
 export const cartPlatform = car.platform;
 const here = new THREE.Vector3();
 function drawLoad(n: number) {
+  n = Math.max(0, Math.min(cartLogs.instanceMatrix.count, n));
   cartLogs.count = n;
   cartLogs.visible = n > 0;
   for (let k = 0; k < n; k++) {
@@ -228,11 +229,11 @@ function drawLoad(n: number) {
   }
   cartLogs.instanceMatrix.needsUpdate = true;
   if (cartLogs.instanceColor) cartLogs.instanceColor.needsUpdate = true;
-  for (let k = 0; k < cart.rails; k++) {
+  cartRailsMesh.count = Math.max(0, Math.min(cartRailsMesh.instanceMatrix.count, cart.rails));
+  for (let k = 0; k < cartRailsMesh.count; k++) {
     here.set(((k % 8) - 3.5) * 0.16, CART.top + 0.3 + Math.ceil(n / 4) * 0.27 + Math.floor(k / 8) * 0.12, 0);
     cartRailsMesh.setMatrixAt(k, m4.compose(here, new THREE.Quaternion(), one));
   }
-  cartRailsMesh.count = cart.rails;
   cartRailsMesh.instanceMatrix.needsUpdate = true;
   // In co-op you ride the cargo, not inside it. Keep the original solo deck unchanged.
   if (COOP) {

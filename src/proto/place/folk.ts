@@ -686,6 +686,7 @@ const limb = (k: number, part: number, x: number, y: number, z: number, rx: numb
 // Who's drawn this frame go in the first `slot` instances: someone indoors or behind you costs nothing.
 let slot = 0;
 function pose(g: Guy) {
+  if (slot >= COUNT) return;
   const k = slot++;
   coats.setColorAt(k, g.tint ?? COLORS[g.k % COLORS.length]!);
   const t = g.t;
