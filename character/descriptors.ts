@@ -1,4 +1,9 @@
 // Human context only. Catalogue membership and build facts come from the generated build manifest.
+export type Motion =
+  | { kind: 'none'; source: string }
+  | { kind: 'clips'; source: string }
+  | { kind: 'attachment'; bone: string; node: string; asset: string; source: string }
+  | { kind: 'spin'; axis: 'z'; node: string; source: string };
 export type AssetDescriptor = {
   label: string;
   category: string;
@@ -6,26 +11,37 @@ export type AssetDescriptor = {
   clipAsset?: string;
   expectedClips?: readonly string[];
   rootNote?: string;
+  motion: Motion;
 };
 export const descriptors: Record<string, AssetDescriptor> = {
   'feeder-roller': {
+    motion: { kind: 'none', source: 'src/proto/place/look-kit.ts: stationKit static roller matrices' },
     label: 'Feeder roller trial',
     category: 'props',
     rootNote: 'Z axle pivot; 20% length revision. Original 0.86 m span retained in trial evidence.',
   },
   'conductor-cap': {
+    motion: {
+      kind: 'attachment',
+      bone: 'Head',
+      node: 'wear_head_conductor',
+      asset: 'buddy',
+      source: 'character/buddy-preview.ts: Head.attach',
+    },
     label: 'Conductor cap trial',
     category: 'props',
     rootNote:
       'Rigid Head attachment. Inspect worn via Buddy → Hat → Conductor trial; origin is Head rest [0, 1.12, 0].',
   },
   buddy: {
+    motion: { kind: 'clips', source: 'src/player/buddy/rig.ts and assets/built/hero-clips.glb' },
     label: 'Buddy',
     category: 'characters',
     clipAsset: 'hero-clips',
     rootNote: 'Retargeted in-place clips; As played adds the real body blend and life layers.',
   },
   'hero-clips': {
+    motion: { kind: 'clips', source: 'assets/built/hero-clips.glb' },
     label: 'Buddy animation library',
     category: 'characters',
     expectedClips: [
@@ -43,8 +59,13 @@ export const descriptors: Record<string, AssetDescriptor> = {
     rootNote:
       'Authored library supplied without root motion. Inspect its source skeleton; camera motion is not root travel.',
   },
-  'place-kit': { label: 'Place kit', category: 'kit' },
+  'place-kit': {
+    label: 'Place kit',
+    category: 'kit',
+    motion: { kind: 'none', source: 'Static kit; assembly motion belongs to game owners' },
+  },
   'scaffold-kit': {
+    motion: { kind: 'clips', source: 'assets/built/scaffold-kit.glb' },
     label: 'Scaffold kit',
     category: 'kit',
     defaultNode: 'plank',

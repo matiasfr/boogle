@@ -1,5 +1,5 @@
 import { entries, totals } from 'virtual:asset-catalogue';
-import { descriptors } from './descriptors.ts';
+import { descriptors, type Motion } from './descriptors.ts';
 import { codeDescriptors, type CodeId } from './code-descriptors.ts';
 import type { AssetHealth } from '../dev/assets/manifest.ts';
 
@@ -18,6 +18,7 @@ type Context = {
   defaultNode?: string;
   clipAsset?: string;
   rootNote?: string;
+  motion: Motion;
 };
 export type CatalogueEntry = Context &
   ({ sourceKind: 'built'; url: string | null; health: AssetHealth } | { sourceKind: 'code'; codeId: CodeId });
@@ -26,6 +27,7 @@ export const catalogue: CatalogueEntry[] = entries.flatMap((entry): CatalogueEnt
   const base: CatalogueEntry = {
     ...entry,
     ...descriptor,
+    motion: descriptor?.motion ?? { kind: 'none', source: entry.source },
     assetId: entry.id,
     node: '',
     label: descriptor?.label ?? entry.id,
@@ -53,6 +55,10 @@ export const catalogue: CatalogueEntry[] = entries.flatMap((entry): CatalogueEnt
 catalogue.push(
   ...codeDescriptors.map((d): CatalogueEntry => ({
     ...d,
+    motion:
+      d.motion === 'windmill'
+        ? { kind: 'spin', axis: 'z', node: 'stage-rotor', source: 'src/pois/windmills/motion.ts: sailAngle' }
+        : { kind: 'none', source: d.source },
     id: `code:${d.id}`,
     codeId: d.id,
     assetId: `code:${d.id}`,

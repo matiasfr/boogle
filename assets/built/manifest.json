@@ -11,10 +11,10 @@
   },
   "conductor-cap": {
     "source": "conductor-cap.py",
-    "sourceHash": "ec2d025e2833e997",
-    "outHash": "122efbf52ad904b4",
+    "sourceHash": "bc8d77c5a6143607",
+    "outHash": "8b7bcd59566c69ff",
     "rawBytes": 28192,
-    "bytes": 11680,
+    "bytes": 11648,
     "triangles": 560,
     "animations": [],
     "textures": []

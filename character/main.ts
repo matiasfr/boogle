@@ -10,6 +10,9 @@ import { createBrowser } from './browser.ts';
 import { createThumbnails } from './thumbnails.ts';
 import { background } from '../src/async.ts';
 import { material } from '../src/render/materials.ts';
+import { createMotionCapture, bonePoses, endpointSeam } from './motion.ts';
+import { descriptors } from './descriptors.ts';
+import { sailCycleSeconds } from '../src/pois/windmills/motion.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -41,6 +44,13 @@ await renderer.init();
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 1000);
 const controls = new OrbitControls(camera, canvas);
+const motionCapture = createMotionCapture(canvas, camera);
+const diagnosticRate = q.has('probeRate') ? number('probeRate', NaN) : null;
+if (
+  diagnosticRate !== null &&
+  (!Number.isFinite(diagnosticRate) || diagnosticRate === 0 || Math.abs(diagnosticRate) > 20)
+)
+  throw new Error('probeRate must be a finite, nonzero diagnostic rate up to 20 rad/s');
 controls.enableDamping = true;
 const lighting = await createStageLighting(renderer, scene, camera);
 const loader = createAssetLoader(renderer);
@@ -146,6 +156,7 @@ function generic(asset: Asset): Preview {
   let time = 0;
   const seek = (t: number) => {
     time = t;
+    if (diagnosticRate !== null) group.rotation.z = t * diagnosticRate;
     if (action) {
       action.enabled = true;
       action.paused = false;
@@ -377,11 +388,13 @@ async function choose(reframe = true) {
     );
     select('clip').value = state.clip;
     duration = clips.find((clip) => clip.name === state.clip)?.duration ?? 0;
+    if (diagnosticRate !== null) duration = (Math.PI * 2) / Math.abs(diagnosticRate);
+    else if (entry.motion.kind === 'spin') duration = sailCycleSeconds();
     preview =
       state.asset === 'buddy'
         ? buddy.create(state.mode, state.clip, state.pose, state.hat, q.has('blink') ? number('blink', 1) : undefined)
         : code
-          ? { ...code, figure: code.group, seek() {}, advance() {} }
+          ? { ...code, figure: code.group }
           : generic(asset!);
     stage.add(preview.group);
     $('buddy-controls').hidden = state.asset !== 'buddy';
@@ -578,6 +591,37 @@ const api = {
   state,
   camera,
   controls,
+  motion: {
+    start() {
+      if (!preview || !ready) throw new Error('Stage not ready');
+      const declaration =
+        state.asset === 'buddy' && state.hat === 'conductor'
+          ? descriptors['conductor-cap']!.motion
+          : assetsById.get(state.asset)!.motion;
+      if (declaration.kind === 'none' && diagnosticRate === null) return { motion: 'none', declaration };
+      input('spin').checked = false;
+      controls.enabled = false;
+      controls.enableDamping = false;
+      controls.update();
+      state.speed = 1;
+      state.loop = true;
+      seek(0);
+      let seam = null;
+      if (state.mode === 'raw' && state.clip) {
+        const first = bonePoses(preview.figure);
+        seek(duration);
+        seam = endpointSeam(first, bonePoses(preview.figure));
+        seek(0);
+      }
+      motionCapture.start(declaration, duration, diagnosticRate, seam, state.clip, state.mode);
+      setPlaying(true);
+      last = performance.now();
+      return { motion: 'recording', duration, declaration, diagnosticRate };
+    },
+    get result() {
+      return motionCapture.report;
+    },
+  },
   get figure() {
     return preview?.figure;
   },
@@ -595,21 +639,26 @@ const api = {
     };
   },
 };
+export type AssetStage = typeof api;
 Object.assign(window, { assetStage: api, character: api });
 let last = performance.now(),
   uiAt = 0;
 const loopStarted = renderer.setAnimationLoop(() => {
   const now = performance.now(),
-    dt = Math.min(0.05, (now - last) / 1000);
+    dt = motionCapture.active ? (now - last) / 1000 : Math.min(0.05, (now - last) / 1000);
   last = now;
   if (ready && state.playing && duration > 0 && preview) {
     let next = state.time + dt * state.speed;
     if (next > duration) {
       if (state.loop) {
         next %= duration;
-        clearHelpers();
-        preview.seek(next);
-        overlays();
+        if ((state.asset === 'buddy' && state.mode === 'played') || assetsById.get(state.asset)?.motion.kind === 'spin')
+          preview.advance(dt * state.speed);
+        else {
+          clearHelpers();
+          preview.seek(next);
+          overlays();
+        }
       } else {
         next = duration;
         state.playing = false;
@@ -624,6 +673,13 @@ const loopStarted = renderer.setAnimationLoop(() => {
   lighting.update();
   lighting.pipeline.render();
   frames++;
+  if (preview)
+    motionCapture.sample(
+      frames,
+      state.time,
+      preview.figure,
+      preview.group.getObjectByName('stage-rotor') ?? preview.group,
+    );
   if (now - uiAt > 100) {
     syncClock();
     $('draws').textContent =
