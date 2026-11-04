@@ -5,9 +5,9 @@ const { triggerAction } = await import('/src/player/controls.ts' as string);
 const { job } = await import('/src/proto/place/job.ts' as string);
 if (!job.tech.hook || !me.body) throw new Error('No earned hook at this prior checkpoint');
 const here = me.body.position;
-// The first pull in the bot route leaves the hub for p2; aim at that same destination.
-const ring = tech.RINGS.find((r: { pad: { id: string } }) => r.pad.id === 'p2');
-if (!ring) throw new Error('The first hook destination p2 is absent');
+// From the hub checkpoint, t0 is the nearby tower landing. p2 is beyond this pose's reach.
+const ring = tech.RINGS.find((r: { pad: { id: string } }) => r.pad.id === 't0');
+if (!ring) throw new Error('The nearby hook destination t0 is absent');
 cam.yaw = me.yaw = Math.atan2(-(ring.at.x - here.x), -(ring.at.z - here.z));
 cam.pitch = Math.min(
   0.85,
@@ -15,7 +15,7 @@ cam.pitch = Math.min(
 );
 setTimeout(() => {
   if (!tech.move.pick || tech.whyNot(tech.move.pick) !== 'nothing') {
-    console.error('SHEET no reachable ring in the saved pose after aiming');
+    console.error(`SHEET no reachable ring after aiming at t0: ${tech.whyNot(ring)}`);
     return;
   }
   triggerAction('hook', 'down');

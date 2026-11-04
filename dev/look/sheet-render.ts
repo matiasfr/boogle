@@ -87,6 +87,7 @@ async function paint(board: Board) {
     wrap(tile.label, 22, w - 16).forEach((line, i) => text(line, x + 8, y + 27 + i * 26));
     const im = images.get(tile);
     if (im) {
+      if (tile.note) text(tile.note, x + 8, y + 70, 14, '#ffd18a');
       const scale = Math.min(w / im.width, (h - 88) / im.height);
       ctx.drawImage(im, x + (w - im.width * scale) / 2, y + 78, im.width * scale, im.height * scale);
     } else

@@ -6,6 +6,7 @@ import { buildAt, sameBuild } from '../codex/source.ts';
 import type { Evidence } from '../codex/evidence.ts';
 import type { Save } from './saves.ts';
 import { composition, type Tile } from './sheet-render.ts';
+import type { RestorePair } from './restore-pair.ts';
 
 // Exact names, not substring selectors. Aliases are deliberately not photographed twice.
 const CURATED = [
@@ -31,14 +32,14 @@ const args = process.argv.slice(2),
   flags = new Set<string>();
 for (let i = 0; i < args.length; i++) {
   const flag = args[i]!;
-  if (['--moments', '--coop'].includes(flag)) flags.add(flag);
+  if (flag === '--moments') flags.add(flag);
   else if (['--run', '--name', '--beats', '--before'].includes(flag)) {
     const value = args[++i];
     if (!value || value.startsWith('--')) throw new Error(flag + ' needs a value');
     values.set(flag, value);
   } else if (flag === '--help') {
     console.log(
-      'npm run sheet -- [--run name-or-directory] [--name output-name] [--beats "forge lit,path opened"] [--before ref] [--moments] [--coop]\nDefault: play the bot, curate stills and capture the real opening. Explicit --beats omits opening. Existing broker is used automatically. Serial captures; no visual pass.',
+      'npm run sheet -- [--run name-or-directory] [--name output-name] [--beats "forge lit,path opened"] [--before ref] [--moments]\nDefault: play the bot, curate stills and capture the real opening. Explicit --beats omits opening. Existing broker is used automatically. Serial captures; no visual pass.',
     );
     process.exit(0);
   } else throw new Error('Unknown sheet option: ' + flag);
@@ -177,6 +178,7 @@ const requested = values.has('--beats')
 if (!requested.length) throw new Error('--beats needs at least one exact beat name');
 const before = values.get('--before');
 let comparisonProblem = '';
+let saveOwnersDiffer = false;
 if (before) {
   const ref = execFileSync('git', ['rev-parse', '--verify', `${before}^{commit}`], { encoding: 'utf8' }).trim();
   notices.push('Before: ' + ref.slice(0, 8) + ' · after: ' + build.commit.slice(0, 8));
@@ -185,9 +187,7 @@ if (before) {
       'Before unavailable: this broker owns --root and has no comparison operation. No different moment substituted.';
   else {
     const runRef = runEvidence?.before?.tree ?? runEvidence?.before?.commit;
-    if (!runRef)
-      comparisonProblem = 'Run source is unknown; cross-build restore cannot be substantiated. Comparison omitted.';
-    // Conservative compatibility gate: a changed save owner needs an explicit restore audit, not a new bot run.
+    // Source drift is context for the reviewer; the live readbacks decide whether the pair is comparable.
     const owners = fs
       .readdirSync('src/proto/place')
       .filter(
@@ -205,17 +205,16 @@ if (before) {
             stdio: ['ignore', 'pipe', 'ignore'],
           }) !== fs.readFileSync(relative, 'utf8')
         )
-          comparisonProblem =
-            'Reused run has different save-owner code; cross-build restore is unverified. Comparison omitted.';
+          saveOwnersDiffer = true;
         if (
           execFileSync('git', ['show', `${ref}:${relative}`], {
             encoding: 'utf8',
             stdio: ['ignore', 'pipe', 'ignore'],
           }) !== fs.readFileSync(relative, 'utf8')
         )
-          comparisonProblem = 'Save-owner code differs; cross-build restore is unverified. Comparison omitted.';
+          saveOwnersDiffer = true;
       } catch {
-        comparisonProblem = 'Earlier build has no matching save owner. Comparison omitted.';
+        saveOwnersDiffer = true;
       }
     }
   }
@@ -262,23 +261,38 @@ for (const [i, beat] of requested.entries()) {
     }
     const result = capture(
       before && !comparisonProblem ? 'before-after' : 'look',
-      before && !comparisonProblem ? [before, ...options] : options,
+      before && !comparisonProblem ? [before, '--verify-restore', ...options] : options,
       label,
     );
+    let refused = false;
     if (before && !comparisonProblem) {
+      const proof = path.join(result.directory, 'capture-restore-pair.json');
+      const decision: RestorePair = fs.existsSync(proof)
+        ? (JSON.parse(fs.readFileSync(proof, 'utf8')) as RestorePair)
+        : { pair: false, reason: failure(result.output) };
+      refused = !decision.pair;
+      if (refused) console.log(`${beat}: NOT COMPARED: ${decision.reason}`);
       tiles.push({
         label: tile.label + ' · BEFORE',
-        ...(result.status
-          ? { note: 'CAPTURE FAILED' }
-          : { image: path.join(result.directory, 'capture-before-still.png') }),
+        ...(refused || result.status
+          ? { note: 'NOT COMPARED: ' + decision.reason }
+          : {
+              image: path.join(result.directory, 'capture-before-still.png'),
+              ...(saveOwnersDiffer ? { note: 'Save-owner code differs; restore matched.' } : {}),
+            }),
       });
-      tile.label += ' · AFTER';
+      tile.label += refused ? ' · AFTER ONLY' : ' · AFTER';
+      failed ||= refused || !!result.status;
     }
     const image = path.join(
       result.directory,
       before && !comparisonProblem ? 'capture-after-still.png' : 'capture-still.png',
     );
-    if (!result.status && fs.existsSync(image)) tile.image = image;
+    if (
+      (!result.status || (refused && fs.existsSync(path.join(result.directory, 'capture-restore-pair.json')))) &&
+      fs.existsSync(image)
+    )
+      tile.image = image;
     else {
       tile.note = 'CAPTURE FAILED — see ' + label + '/output.txt';
       failed = true;
@@ -407,40 +421,6 @@ if (flags.has('--moments')) {
     ['Run end', 'Saves omit the show; no verified final-input checkpoint before the run-end sequence.'],
   ])
     strips.push({ label: moment!, note: 'OMITTED: ' + reason });
-}
-if (flags.has('--coop')) {
-  const result = capture(
-    'look',
-    [
-      '--query',
-      'proto=place&coop=1',
-      '--players',
-      '2',
-      '--eval',
-      'dev/look/evals/place-coop.ts',
-      '--until',
-      'window.__placeExplore?.done',
-      '--warm',
-      '90',
-      '--hud',
-      '--frames',
-      '4',
-      '--seconds',
-      '2',
-      '--name',
-      'coop',
-      '--question',
-      'Can both peers be seen in the existing co-op eval? This is a staged diagnostic, not a natural playthrough.',
-    ],
-    'coop',
-  );
-  failed ||= !!result.status;
-  strips.push({
-    label: 'Co-op · existing staged diagnostic · player 1 samples',
-    ...(result.status
-      ? { note: 'OMITTED: ' + failure(result.output) }
-      : { image: path.join(result.directory, 'coop-motion.png') }),
-  });
 }
 for (const strip of strips) if (strip.note) console.log(strip.label + ': ' + strip.note);
 const script = path.join(out, 'compose.ts');
