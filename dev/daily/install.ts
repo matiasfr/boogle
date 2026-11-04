@@ -67,7 +67,7 @@ for (const [job, spec] of Object.entries(jobs)) {
     console.log(plist);
     continue;
   }
-  if (Number(process.versions.node.split('.')[0]) < 24) throw new Error('Install using Node 24 or newer');
+  if (Number(process.versions.node.split('.')[0]) < 26) throw new Error('Install using Node 26 or newer');
   if (fs.existsSync(file)) throw new Error(`${file} already exists; uninstall first to replace it`);
   for (const command of ['codex', 'gh', 'npm', 'ffmpeg', 'ffprobe'])
     execFileSync('/usr/bin/which', [command], { env: { ...process.env, PATH: searchPath } });

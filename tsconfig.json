@@ -1,5 +1,5 @@
 {
-  // TypeScript everywhere (AGENTS.md, "TypeScript"): strict, type-stripped as-is by Vite and by Node 24 (tests, tools),
+  // TypeScript everywhere (AGENTS.md, "TypeScript"): strict, type-stripped as-is by Vite and by Node 26 (tests, tools),
   // so only erasable syntax (no enums, namespaces or parameter properties) and imports name their `.ts` file.
   "compilerOptions": {
     "target": "ES2022",
@@ -18,5 +18,14 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "dev/**/*.ts", "atlas/**/*.ts", "protos/**/*.ts", "character/**/*.ts", "scripts/**/*.ts", "server/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "dev/**/*.ts",
+    "atlas/**/*.ts",
+    "protos/**/*.ts",
+    "character/**/*.ts",
+    "scripts/**/*.ts",
+    "server/**/*.ts"
+  ]
 }

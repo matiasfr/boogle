@@ -6,24 +6,24 @@ use GPT-6-Astra at high effort. DESIGN.md: **Understandable at a glance**, **Sho
 
 ## What moved, and what CI still does
 
-| Need in the old workflow | Now |
-| --- | --- |
-| `CLAUDE_CODE_OAUTH_TOKEN`, action OIDC | Neither needed. Local `codex login` with the owner's ChatGPT account; API-key variables removed from children and `forced_login_method=chatgpt` enforced. |
-| Checkout with full main history and video tags | Fetch origin/main and tags; create a unique `daily/<job>-<id>` branch and worktree. Never reset, switch or copy working files from the caller. |
-| Atlas gate, open PR check, narrative edits | Same daily gate; skip any open daily or legacy atlas PR, including stuck PRs (director inspects them rather than automatically closing work). Advisory citation report remains in `atlas.yml` on dispatch/push, including automerge's existing dispatch. No merge-triggered model work. |
-| Chromium / GPU / ffmpeg for video | Local Metal GPU, per-worktree `npm ci`, Playwright Chromium, installed ffmpeg/ffprobe. No shared node_modules or saves. Reels can be `.ts` paths; existing `.mjs` reels still work. |
-| Video selection and cut review | Same three-game-commit gate, then three actual new player-visible features; independent second Codex session inspects/fixes the cut. Only main's features; no prototypes. |
-| PR creation and merging | Runner validates the edited paths, formats, checks and commits, then uses `npm run ship -- --wait`. No direct PR/push by the model. `SHIP_NO_AI=1` prevents ship from invoking Claude for conflicts. |
-| Artifact upload | Local run reports and `.look` artifacts preserved under the state directory below. No Actions artifact retention; director manages local disk space. |
-| Release upload and link post | Existing `video:publish` creates the release, dispatches `deploy.yml`, waits for the share page; runner comments in “Patch videos” mentioning the repository owner. Local `gh` authentication replaces `GITHUB_TOKEN`. |
-| Hosting | Existing `deploy.yml` and Pages still publish the site and release share pages. `patch-video.yml` is removed: none of its rendering, uploading or posting requires a CI runner. |
+| Need in the old workflow                       | Now                                                                                                                                                                                                                                                                                     |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE_CODE_OAUTH_TOKEN`, action OIDC         | Neither needed. Local `codex login` with the owner's ChatGPT account; API-key variables removed from children and `forced_login_method=chatgpt` enforced.                                                                                                                               |
+| Checkout with full main history and video tags | Fetch origin/main and tags; create a unique `daily/<job>-<id>` branch and worktree. Never reset, switch or copy working files from the caller.                                                                                                                                          |
+| Atlas gate, open PR check, narrative edits     | Same daily gate; skip any open daily or legacy atlas PR, including stuck PRs (director inspects them rather than automatically closing work). Advisory citation report remains in `atlas.yml` on dispatch/push, including automerge's existing dispatch. No merge-triggered model work. |
+| Chromium / GPU / ffmpeg for video              | Local Metal GPU, per-worktree `npm ci`, Playwright Chromium, installed ffmpeg/ffprobe. No shared node_modules or saves. Reels can be `.ts` paths; existing `.mjs` reels still work.                                                                                                     |
+| Video selection and cut review                 | Same three-game-commit gate, then three actual new player-visible features; independent second Codex session inspects/fixes the cut. Only main's features; no prototypes.                                                                                                               |
+| PR creation and merging                        | Runner validates the edited paths, formats, checks and commits, then uses `npm run ship -- --wait`. No direct PR/push by the model. `SHIP_NO_AI=1` prevents ship from invoking Claude for conflicts.                                                                                    |
+| Artifact upload                                | Local run reports and `.look` artifacts preserved under the state directory below. No Actions artifact retention; director manages local disk space.                                                                                                                                    |
+| Release upload and link post                   | Existing `video:publish` creates the release, dispatches `deploy.yml`, waits for the share page; runner comments in “Patch videos” mentioning the repository owner. Local `gh` authentication replaces `GITHUB_TOKEN`.                                                                  |
+| Hosting                                        | Existing `deploy.yml` and Pages still publish the site and release share pages. `patch-video.yml` is removed: none of its rendering, uploading or posting requires a CI runner.                                                                                                         |
 
 Neither `ci-autofix.yml` nor `claude.yml` changes. Ship PRs still pass through the existing CI/autofix system; this removes
 Claude usage from these two daily jobs, not from unrelated CI. Nothing changes in the game.
 
 ## Director setup (do this after the change reaches main)
 
-1. Use a durable, updated checkout on the owner's Mac. Install Node 24+, Codex CLI, GitHub CLI and ffmpeg (including
+1. Use a durable, updated checkout on the owner's Mac. Install Node 26+, Codex CLI, GitHub CLI and ffmpeg (including
    ffprobe). Sign into `codex login` with the owner's **ChatGPT subscription**, and `gh auth login` with the account
    allowed to push branches, create releases/issues and dispatch Actions. Git must also authenticate to origin without
    an interactive prompt (`gh auth setup-git` for HTTPS, or the existing SSH setup). Confirm `codex login status` and
@@ -33,7 +33,7 @@ Claude usage from these two daily jobs, not from unrelated CI. Nothing changes i
    not the video feature judgment, independent review, scope checks or open-PR protection.
 3. Preview `npm run daily:install -- --dry-run`, then run **`npm run daily:install` yourself**. The implementation task
    does not install anything. Install records this checkout's absolute script path, Node executable and PATH; it saves
-   no other environment. Reinstall after moving that checkout, changing Node/tool locations, or changing the schedule.
+   no other environment. After updating the durable checkout to Node 26, run `nvm use` there and reinstall with `npm run daily:uninstall` followed by `npm run daily:install`; existing plists keep their recorded Node 24.11.1 until reinstalled. Reinstall also after moving that checkout, changing tool locations, or changing the schedule.
 4. Run each job once while online and inspect its reports before relying on the schedule. The current implementation
    was checked offline with dry runs; actual subscription/model access, GPU recording, shipping and publication need
    this first live run. Codex runs unattended with `danger-full-access` and approval policy `never` so Chromium and

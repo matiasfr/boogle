@@ -1,18 +1,18 @@
 # Boogle server
 
-One small Node 24 service (Express + `ws`): Boogle's game server. It hosts every room and runs its world.
+One small Node 26 service (Express + `ws`): Boogle's game server. It hosts every room and runs its world.
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /rooms/:roomId/snapshot` | The room's world as the server last saved it, `{ tick, writerId: 'server', data, updatedAt }` (200 JSON), or 404. |
-| `GET /rooms/:roomId/host` | `{ mode: 'server', boot, tick, players, max, noSave }` for a room this server hosts (404 otherwise). `noSave`: the world holds a state saved by a newer build, so the server stopped saving (deploy the server). |
-| `/room/:roomId?self=<id>&b=<build>` | WebSocket (subprotocol `boogle.1`) into a hosted room; wire in `src/net/ws-wire.ts`. Refusals: `peer` 4000 (not hosted here), `bad` 4400, `full` 4008; a second socket for the same `self` replaces the first (4009). 20 upgrades/min/IP. |
-| `POST /report` | Problem reports from players' browsers (`src/features/telemetry.ts`): one `{ room, kind, detail, tick?, build?, ua? }` or an array of up to 10. `kind` is `error`, `desync`, `snapshot`, `connect` or `playtest`; a `playtest` detail is `{ proto, verdict: 'yes'|'no'|'cant', variant?, note? (1000 chars), counts? ({ name: number }, 12), trace?, values?, build? }` from the prototype bar, read with `npm run verdicts`; any other `detail` is a string (cut to 500 chars) or a flat object of strings/numbers/booleans (12 keys, strings cut to 200). Other fields are dropped; no IP or headers are kept. Accepts `text/plain` (what `navigator.sendBeacon` sends) or JSON. 204 stored, 400 invalid, 413 over 8 KB, 429 over `REPORT_RATE_PER_MIN`, 507 when today's file is full. |
-| `GET /reports?day=YYYY-MM-DD` | That UTC day's reports as JSON lines (default today; empty if none). Only exists when `REPORT_TOKEN` is set (404 otherwise) and needs `Authorization: Bearer <REPORT_TOKEN>` (401). |
-| `POST /playdata` | Playtest data from `?proto=` pages (`src/proto/playdata/record.ts`, `server/src/playdata.ts`): `{ s: session, card, n, now, ev: [{ t, k, ...flat primitives }] }`, up to 500 events. Accepts `text/plain` or JSON. `card` is any short id (`[a-z0-9-]`, 40 chars). Control characters in strings are stripped. 204 stored, 400 invalid, 413 over 64 KB, 429 over `PLAY_RATE_PER_MIN` or `PLAY_NEW_SESSIONS_PER_HOUR`, 507 session full. No IP or headers kept. |
-| `GET /playdata?limit=N` | Newest sessions first, `{ id, card, bytes, first, last, meta }` (default 50, at most 200). Same token rule as `GET /reports`. Read with `npm run playtest`. |
-| `GET /playdata/:session` | One session as JSON lines, a line per batch. Same token rule. |
-| `GET /healthz` | `ok` |
+| Endpoint                            | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /rooms/:roomId/snapshot`       | The room's world as the server last saved it, `{ tick, writerId: 'server', data, updatedAt }` (200 JSON), or 404.                                                                                                                                                                                                                                                                                                                                              |
+| `GET /rooms/:roomId/host`           | `{ mode: 'server', boot, tick, players, max, noSave }` for a room this server hosts (404 otherwise). `noSave`: the world holds a state saved by a newer build, so the server stopped saving (deploy the server).                                                                                                                                                                                                                                               |
+| `/room/:roomId?self=<id>&b=<build>` | WebSocket (subprotocol `boogle.1`) into a hosted room; wire in `src/net/ws-wire.ts`. Refusals: `peer` 4000 (not hosted here), `bad` 4400, `full` 4008; a second socket for the same `self` replaces the first (4009). 20 upgrades/min/IP.                                                                                                                                                                                                                      |
+| `POST /report`                      | Problem reports from players' browsers (`src/features/telemetry.ts`): one `{ room, kind, detail, tick?, build?, ua? }` or an array of up to 10. `kind` is `error`, `desync`, `snapshot`, `connect` or `playtest`; a `playtest` detail is `{ proto, verdict: 'yes'                                                                                                                                                                                              | 'no' | 'cant', variant?, note? (1000 chars), counts? ({ name: number }, 12), trace?, values?, build? }`from the prototype bar, read with`npm run verdicts`; any other `detail`is a string (cut to 500 chars) or a flat object of strings/numbers/booleans (12 keys, strings cut to 200). Other fields are dropped; no IP or headers are kept. Accepts`text/plain`(what`navigator.sendBeacon`sends) or JSON. 204 stored, 400 invalid, 413 over 8 KB, 429 over`REPORT_RATE_PER_MIN`, 507 when today's file is full. |
+| `GET /reports?day=YYYY-MM-DD`       | That UTC day's reports as JSON lines (default today; empty if none). Only exists when `REPORT_TOKEN` is set (404 otherwise) and needs `Authorization: Bearer <REPORT_TOKEN>` (401).                                                                                                                                                                                                                                                                            |
+| `POST /playdata`                    | Playtest data from `?proto=` pages (`src/proto/playdata/record.ts`, `server/src/playdata.ts`): `{ s: session, card, n, now, ev: [{ t, k, ...flat primitives }] }`, up to 500 events. Accepts `text/plain` or JSON. `card` is any short id (`[a-z0-9-]`, 40 chars). Control characters in strings are stripped. 204 stored, 400 invalid, 413 over 64 KB, 429 over `PLAY_RATE_PER_MIN` or `PLAY_NEW_SESSIONS_PER_HOUR`, 507 session full. No IP or headers kept. |
+| `GET /playdata?limit=N`             | Newest sessions first, `{ id, card, bytes, first, last, meta }` (default 50, at most 200). Same token rule as `GET /reports`. Read with `npm run playtest`.                                                                                                                                                                                                                                                                                                    |
+| `GET /playdata/:session`            | One session as JSON lines, a line per batch. Same token rule.                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `GET /healthz`                      | `ok`                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 **Hosting rooms** (`SERVER_ROOMS`, `src/host/`; design: `docs/plans/server-host.md`). Production hosts every room (`SERVER_ROOMS=*` in `fly.toml`), so this is how every game is played; `npm run dev` runs the same service in-process (`vite.config.ts`, saves in `.boogle-data/`). For each hosted room the server runs the game's lockstep world itself (`src/world/sync.ts` and every rules module on the land in `src/world/home-land.json`), from start to shutdown with or without players, saving it every `SERVER_SAVE_MS` as `writerId: 'server'`. Tabs join over `/room/:id`; the server relays presence and messages, picks the lead (the oldest visible tab) (`w:edit` and `w:need` go to its sync only; the `pid` in the upgrade URL is the player, stamped on its edits; a newer socket with the same pid and `key` closes the older with 4010, and one with another key while that pid is in the room is refused with 4011). `SIGTERM` says `bye`, saves and closes the sockets with 1012.
 
@@ -20,27 +20,27 @@ Snapshots are one JSON file per room in `DATA_DIR`, written atomically (temp fil
 
 ## Environment variables
 
-| Var | Default | Meaning |
-|---|---|---|
-| `PORT` | `9000` | Listen port. |
-| `DATA_DIR` | `./data` | Where room snapshot files live (use a persistent volume in production). |
-| `ALLOWED_ORIGINS` | `*` | Comma-separated allowed browser origins. Set this in production. |
-| `MAX_ROOMS` | `1000` | Max distinct rooms stored. New rooms beyond this get 507; existing rooms keep updating. |
-| `REPORT_RATE_PER_MIN` | `12` | Per-IP token bucket for `POST /report` (the client batches, so one POST carries several reports). |
-| `REPORT_MAX_BYTES_PER_DAY` | `5242880` | Cap on each day's report file (5 MB); further reports that day get 507. |
-| `REPORT_TOKEN` | unset | Enables `GET /reports` for whoever sends this bearer token. Unset: reports are write-only (read them on the volume). |
-| `PLAY_RATE_PER_MIN` | `240` | Per-IP token bucket for `POST /playdata` (a tab sends a batch every 5 s; friends may share an IP). |
-| `PLAY_NEW_SESSIONS_PER_HOUR` | `40` | New sessions per IP per hour on `POST /playdata`; each page load is one. |
-| `PLAY_MAX_SESSION_BYTES` | `4194304` | Cap on one session's file (4 MB); further batches get 507. |
-| `PLAY_MAX_TOTAL_BYTES` | `209715200` | Cap on all sessions (200 MB; the volume is 1 GB); the oldest go first. |
-| `PLAY_MAX_SESSIONS` | `2000` | Cap on the number of sessions; the oldest go first. |
-| `TRUST_PROXY` | `1` | Express `trust proxy` (hops, `true`, or `false`). `1` suits Fly/Render/Railway; needed so the rate limit sees the real client IP. |
-| `SERVER_ROOMS` | `*` | Rooms this server hosts (above): `*` for every valid room id (production, `npm run dev` and the test harnesses), or a comma-separated list (loaded at start and kept).  |
-| `ROOM_IDLE_MS` | `600000` | With `*`: a room nobody has been in this long is saved and unloaded (it loads again on the next join). |
-| `MAX_HOSTED_ROOMS` | `20` | With `*`: rooms loaded at once; a join past it gets `full` with `rooms: true`. |
-| `UPGRADES_PER_MIN` | `20` | Room sockets opened per IP per minute; past it a 429. |
-| `MAX_PLAYERS` | `8` | Players per hosted room (the server is not one). A reconnecting player is always let back in. |
-| `SERVER_SAVE_MS` | `2000` | How often a hosted room saves its world (when it changed). |
+| Var                          | Default     | Meaning                                                                                                                                                                |
+| ---------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                       | `9000`      | Listen port.                                                                                                                                                           |
+| `DATA_DIR`                   | `./data`    | Where room snapshot files live (use a persistent volume in production).                                                                                                |
+| `ALLOWED_ORIGINS`            | `*`         | Comma-separated allowed browser origins. Set this in production.                                                                                                       |
+| `MAX_ROOMS`                  | `1000`      | Max distinct rooms stored. New rooms beyond this get 507; existing rooms keep updating.                                                                                |
+| `REPORT_RATE_PER_MIN`        | `12`        | Per-IP token bucket for `POST /report` (the client batches, so one POST carries several reports).                                                                      |
+| `REPORT_MAX_BYTES_PER_DAY`   | `5242880`   | Cap on each day's report file (5 MB); further reports that day get 507.                                                                                                |
+| `REPORT_TOKEN`               | unset       | Enables `GET /reports` for whoever sends this bearer token. Unset: reports are write-only (read them on the volume).                                                   |
+| `PLAY_RATE_PER_MIN`          | `240`       | Per-IP token bucket for `POST /playdata` (a tab sends a batch every 5 s; friends may share an IP).                                                                     |
+| `PLAY_NEW_SESSIONS_PER_HOUR` | `40`        | New sessions per IP per hour on `POST /playdata`; each page load is one.                                                                                               |
+| `PLAY_MAX_SESSION_BYTES`     | `4194304`   | Cap on one session's file (4 MB); further batches get 507.                                                                                                             |
+| `PLAY_MAX_TOTAL_BYTES`       | `209715200` | Cap on all sessions (200 MB; the volume is 1 GB); the oldest go first.                                                                                                 |
+| `PLAY_MAX_SESSIONS`          | `2000`      | Cap on the number of sessions; the oldest go first.                                                                                                                    |
+| `TRUST_PROXY`                | `1`         | Express `trust proxy` (hops, `true`, or `false`). `1` suits Fly/Render/Railway; needed so the rate limit sees the real client IP.                                      |
+| `SERVER_ROOMS`               | `*`         | Rooms this server hosts (above): `*` for every valid room id (production, `npm run dev` and the test harnesses), or a comma-separated list (loaded at start and kept). |
+| `ROOM_IDLE_MS`               | `600000`    | With `*`: a room nobody has been in this long is saved and unloaded (it loads again on the next join).                                                                 |
+| `MAX_HOSTED_ROOMS`           | `20`        | With `*`: rooms loaded at once; a join past it gets `full` with `rooms: true`.                                                                                         |
+| `UPGRADES_PER_MIN`           | `20`        | Room sockets opened per IP per minute; past it a 429.                                                                                                                  |
+| `MAX_PLAYERS`                | `8`         | Players per hosted room (the server is not one). A reconnecting player is always let back in.                                                                          |
+| `SERVER_SAVE_MS`             | `2000`      | How often a hosted room saves its world (when it changed).                                                                                                             |
 
 ## Run locally
 
@@ -86,4 +86,3 @@ Reading reports:
 ```sh
 curl -H "Authorization: Bearer $REPORT_TOKEN" "https://<app>.fly.dev/reports?day=2026-10-29" | jq -c 'select(.kind=="connect")'
 ```
-

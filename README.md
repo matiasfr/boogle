@@ -14,7 +14,7 @@ npm run dev
 # then open the URL Vite prints (http://localhost:5173)
 ```
 
-Use Node 24 (`.nvmrc`). Installation also installs the server dependencies and pre-push hook. Other scripts: `npm run check` (lint, typecheck, unit tests, registry, asset checks and build), `npm run build` (production bundle in `dist/`), `npm run preview` (serve the build), `npm run ship` (ship your commits to `main` through a PR that merges itself; see [CONTRIBUTING.md](CONTRIBUTING.md)). Pick a room with `/?room=my-friends` (letters, digits and dashes; defaults to `beach`).
+Use Node 26 (`.nvmrc`). Installation also installs the server dependencies and pre-push hook. Other scripts: `npm run check` (lint, typecheck, unit tests, registry, asset checks and build), `npm run build` (production bundle in `dist/`), `npm run preview` (serve the build), `npm run ship` (ship your commits to `main` through a PR that merges itself; see [CONTRIBUTING.md](CONTRIBUTING.md)). Pick a room with `/?room=my-friends` (letters, digits and dashes; defaults to `beach`).
 
 ## Code layout
 

@@ -5,7 +5,7 @@
   "type": "module",
   "description": "One island, one beach ball, and everyone who has the page open.",
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "scripts": {
     "dev": "vite",
@@ -85,7 +85,7 @@
     "@types/d3-selection": "^3.0.12",
     "@types/d3-shape": "^3.2.0",
     "@types/d3-transition": "^3.0.9",
-    "@types/node": "^24.19.2",
+    "@types/node": "^26.6.6",
     "@types/three": "^0.187.0",
     "@types/ws": "^8.18.2",
     "@typescript-eslint/scope-manager": "8.72.1",

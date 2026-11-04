@@ -1,7 +1,7 @@
 # Built from the repo root (docker build -f server/Dockerfile .): the server host runs the game's lockstep world, so
 # the image carries src/world, src/sim and the shared net modules beside server/ (docs/plans/server-host.md, step 7).
-# Node 24 runs the .ts modules as they are (type stripping); the root package.json only gives src/ "type": "module".
-FROM node:24-alpine
+# Node 26 runs the .ts modules as they are (type stripping); the root package.json only gives src/ "type": "module".
+FROM node:26-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 COPY package.json ./

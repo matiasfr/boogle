@@ -102,8 +102,8 @@ if (dry) {
     ),
   );
 } else {
-  if (process.platform !== 'darwin' || Number(process.versions.node.split('.')[0]) < 24)
-    throw new Error('Daily jobs require macOS and Node 24 or newer');
+  if (process.platform !== 'darwin' || Number(process.versions.node.split('.')[0]) < 26)
+    throw new Error('Daily jobs require macOS and Node 26 or newer');
   fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
   const lock = path.join(stateDir, 'active');
   try {
