@@ -6,7 +6,6 @@ Goofy co-op browser game: three.js WebGPU + TSL, Rapier and Vite; a WebSocket se
 - No ROM data or anything cut from it, on any branch or in builds.
 - Codex first; pause and tell the owner at a usage limit.
 - Stop at the owner's playtest; full exceptions are in owner-calls.
-- Usage is no reason to hold back: read and verify what the work needs.
 - Decisions live in the repo and bind every agent.
 - Never force-push, skip hooks or push main unless a human asks.
 - Ship with npm run ship; report only verified states.

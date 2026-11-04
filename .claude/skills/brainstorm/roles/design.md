@@ -18,11 +18,11 @@ Don't reopen a decision the index records as rejected unless its revisit trigger
 - **The verb**: what the player does, in two sentences, and the principle it serves.
 - **Gut question**: the one feeling a playtest answers.
 - **Variants**: 2–3 that differ in one thing each.
-- **Amplify**: up to five suggestions, ranked, one line each with why.
+- **Amplify**: your suggestions, strongest first, one line each with why.
 - **Risk**: the most likely way this isn't fun.
-- **Questions**: up to three for the owner, each with your recommended answer.
+- **Questions**: only what the owner must decide, each with your recommended answer.
 
 ## Round 2 format
 
-Up to five bullets: what the other panelists changed in your view, which of their suggestions you'd back or push
+A few bullets: what the other panelists changed in your view, which of their suggestions you'd back or push
 back on and why, and any new idea that comes from combining angles. Then your final top three, one line each.

@@ -23,22 +23,28 @@ make no design decisions the owner hasn't. If Codex hits a usage limit, stop and
    `.look/codex/<topic>/report.md`.
 3. **Round 2, cross-read.** When all three finish, resume each with the other two reports' paths:
    `node dev/codex/run.ts resume $0-design "Round 2. Read .look/codex/$0-systems/report.md and .look/codex/$0-creative/report.md."`
-   (and the same for the other two). This is where ideas compound; don't skip it.
-4. **Synthesize.** Read all six reports, then run the game-direction skill's fit and ordering check on the result
-   (decision index, rejected ideas, current gate, "Stop at the owner's playtest"). Write `docs/brainstorms/$0.md`,
-   starting with `> **Status: proposed (YYYY-MM-DD).**`, then:
-   - **Pitch**: the amplified idea in three sentences, and the DESIGN.md principle it serves (one it bends is a question).
+   (and the same for the other two). This round is where the angles build on each other.
+4. **Synthesize.** Read all six reports, run `npm run inflight` for branches touching the same files, then run the
+   game-direction skill's fit and ordering check (decision index, rejected ideas, current gate, "Stop at the owner's
+   playtest"). Write `docs/brainstorms/$0.md` for an owner who reads it in a couple of minutes, starting with
+   `> **Status: proposed (YYYY-MM-DD).**`, then:
+   - **Pitch**: the amplified idea in a short paragraph, and the DESIGN.md principle it serves (one it bends is a question).
    - **Gut question**: the one feeling a playtest answers, and 2–3 variants that differ in one thing.
-   - **Best suggestions**: at most six across the panel, ranked, each tagged with its lens and one line on why.
+   - **Best suggestions**: the panel's strongest, ranked, each tagged with its lens and one line on why.
    - **Tensions**: where the panelists disagree, with your recommendation.
    - **Shape**: sync kind, the code it reuses, the smallest first build, and its risks, in a few lines.
-   - **Open questions**: at most five, each with a recommended answer first and a free field
-     (`Answer: ___`). Recommendations aren't owner answers.
+   - **Done means**: the moments the builder captures with `look` (each with its `?proto=` spawn or `--eval` setup)
+     and what should be visible or measurable there. Whether it's fun stays the playtest's question.
+   - **Open questions**: at most five (owner-calls, "Call-first playtest feedback"), each with a recommended answer
+     first and a free field (`Answer: ___`). Recommendations aren't owner answers.
    - **Parked**: good ideas for later (polish after a "yes", follow-on features), one line each.
    - **Disposition**: from game-direction (proceed, prerequisite first, bounded experiment, defer, owner decision).
 5. **Show the owner.** Give the pitch, the gut question, the top three suggestions and the open questions in chat,
    with the file path. Stop and wait.
 6. **Build.** Record the owner's answers in the brief, set its status to `approved (owner, YYYY-MM-DD)`, and commit it
-   ("Brainstorm: <name>"). The brief is the build spec: hand it to a Codex `task` citing `docs/brainstorms/$0.md` (the codex skill); no separate plan unless the
-   owner asks for one. Parked items the owner wants kept go to `docs/ideas.md`. Remove the panel's
-   `.look/codex/$0-*` folders once the brief is committed.
+   ("Brainstorm: <name>"). The brief is the build spec: hand it to a Codex `task` citing `docs/brainstorms/$0.md` (the
+   codex skill); no separate plan unless the owner asks for one. The builder checks its own captures against Done
+   means (docs/agents/verification.md); the review tiers in docs/agents/shipping.md still apply. Parked items the
+   owner wants kept go to `docs/ideas.md`. Remove the panel's `.look/codex/$0-*` folders once the brief is committed.
+7. **Track it.** Move the brief's status as the work moves: `building` when the task starts, `ready to playtest`
+   when it ships, `answered` with the owner's verdict after the playtest.

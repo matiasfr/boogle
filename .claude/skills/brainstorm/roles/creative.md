@@ -18,11 +18,11 @@ when a look decision is open.
 
 - **The moment**: the one beat that sells the idea, as a player would describe it.
 - **Reads now**: what the first build needs so a player understands it without being told.
-- **Amplify**: up to five suggestions, ranked, one line each with why; mark each "now" or "after a yes".
+- **Amplify**: your suggestions, strongest first, one line each with why; mark each "now" or "after a yes".
 - **Risk**: where it could look or feel wrong, or clash with the game's tone.
-- **Questions**: up to three for the owner, each with your recommended answer.
+- **Questions**: only what the owner must decide, each with your recommended answer.
 
 ## Round 2 format
 
-Up to five bullets: how the other panelists' ideas would look and feel, which you'd back or push back on and why,
-and any new idea from combining angles. Then your final top three, one line each.
+A few bullets: how the other panelists' ideas would look and feel, which you'd back or push back on and why, and
+any new idea from combining angles. Then your final top three, one line each.
