@@ -9,7 +9,7 @@ Files: [src/entities/player/state.ts](../../src/entities/player/state.ts), [view
 The physics facade uses current-pose contacts, with the previous 0.002 m prediction distance. Grounding still requires
 a walkable normal; stale contacts cannot renew jump eligibility after takeoff. After airborne grace expires, a new
 landing needs overlap at both the start and end of the fixed step, preserving landing timing without granting ground
-in the air. An eligible stationary launch uses falling gravity on its first step: held jump 1.552 m, hop 0.664 m.
+in the air. An eligible stationary launch uses falling gravity on its first step: held jump 1.552 m, hop 0.664 m. That holds on all ground: the 1.70 m flat-ground jump before Rapier 0.21 came from exact-zero resting speed, and the owner chose one height (4 November).
 Carried-deck launches keep their existing first-step shaping and upward deck motion.
 Version comparisons and verification limits live in the [upgrade assessment](../research/rapier-021-upgrade.md).
 
