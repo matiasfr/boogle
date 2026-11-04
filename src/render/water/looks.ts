@@ -5,7 +5,19 @@ import { BUILD } from '../../build-id.ts';
 import { agx, TSL, type N } from '../tone.ts';
 import { bindings, bindingDefaults, tuningEnabled, type Value } from './live.ts';
 import { toySkyEnabled } from './flags.ts';
-import { graphicsOverrides } from '../../graphics-settings.ts';
+import { graphicsOverrides, registerGraphics } from '../../graphics-settings.ts';
+import {
+  createLookLayers,
+  EMPTY_LAYERS,
+  RECIPES,
+  isRecipe,
+  LAYER_LIMITS,
+  type Layers,
+  type LayerId,
+  type RecipeId,
+  type LookLayerContext,
+} from './look-layers.ts';
+export { RECIPES, isRecipe, isLayer, LAYER_LIMITS } from './look-layers.ts';
 
 export const LOOK_STORAGE = 'boogle.dev.looks.v1';
 export const LOOKS = {
@@ -30,6 +42,13 @@ let explicit = false,
   ready = false,
   readMeter: (() => Promise<number>) | undefined;
 let meterGain: number | null = null;
+let recipe: RecipeId = 'A';
+let layerSettings: Layers = { ...EMPTY_LAYERS };
+let layers: ReturnType<typeof createLookLayers> | undefined;
+let comparisonEnabled = true;
+let comparisonGain: number | null = null;
+let gainNode: N;
+let unregisterComparison = () => {};
 const subscribers = new Set<() => void>();
 if (tuningEnabled && !toySkyEnabled) {
   try {
@@ -64,7 +83,7 @@ function changed() {
 function remember() {
   explicit = true;
   // A reproduction URL does not replace the owner's saved choice.
-  if (!isLook(queryLook)) {
+  if (!isLook(queryLook) && !isRecipe(query.get('lookRecipe'))) {
     try {
       localStorage.setItem(LOOK_STORAGE, JSON.stringify({ version: 1, selected, a, b, locked, trims }));
     } catch {
@@ -84,6 +103,9 @@ export const activeLookCurve = () => LOOKS[selected].curve;
 export const exposureLocked = () => locked;
 export const looksReady = () => ready;
 export function disposeLooks() {
+  unregisterComparison();
+  layers?.dispose();
+  layers = undefined;
   ready = false;
   readMeter = undefined;
   changed();
@@ -130,7 +152,40 @@ function apply() {
 export function selectLook(id: LookId) {
   selected = id;
   apply();
+  applyLayers();
   remember();
+}
+function applyLayers() {
+  layers?.configure(comparisonEnabled ? layerSettings : { ...EMPTY_LAYERS });
+  // A deliberate Graphics bloom override wins. The comparison switch otherwise bypasses the entire existing chain.
+  if (graphicsOverrides().bloom === undefined) {
+    bindings.get('post.bloomStrength')?.set(layerSettings.bloom || 0.05);
+    bindings.get('post.bloomThreshold')?.set(1.5);
+    bindings.get('post.bloom')?.set(comparisonEnabled && layerSettings.bloom > 0 ? 1 : 0);
+  }
+}
+export function selectRecipe(id: RecipeId) {
+  selected = 'current';
+  recipe = id;
+  layerSettings = { ...EMPTY_LAYERS, ...RECIPES[id].layers };
+  apply();
+  applyLayers();
+  remember();
+}
+export function setLookLayer(id: LayerId, value: number) {
+  const [low, high] = LAYER_LIMITS[id];
+  if (!Number.isFinite(value) || value < low || value > high) throw new Error(`Invalid ${id} layer value.`);
+  layerSettings[id] = value;
+  applyLayers();
+  remember();
+}
+/** A measured, explicit gain for matched reload captures; null resumes the ordinary meter path. */
+export function setComparisonGain(value: number | null) {
+  if (value !== null && (!Number.isFinite(value) || value <= 0 || value > 100)) throw new Error('Invalid gain.');
+  comparisonGain = value;
+  if (gainNode) gainNode.value = value ?? -1;
+  if (value !== null) locked = true;
+  changed();
 }
 export function setLookSlots(nextA: LookId, nextB: LookId) {
   a = nextA;
@@ -148,6 +203,10 @@ export function setLookTrim(ev: number) {
 }
 export async function lockExposure(value: boolean) {
   locked = value;
+  if (!value) {
+    comparisonGain = null;
+    if (gainNode) gainNode.value = -1;
+  }
   meterGain = null;
   remember();
   if (value && readMeter) {
@@ -177,6 +236,14 @@ export function lookSnapshot() {
     sky: toySkyEnabled ? 'toy (unsupported)' : 'procedural frozen late morning',
     curve: LOOKS[selected].curve,
     midtoneChromaLift: LOOKS[selected].lift,
+    comparison: {
+      recipe,
+      label: RECIPES[recipe].label,
+      enabled: comparisonEnabled,
+      layers: { ...layerSettings },
+      gain: comparisonGain,
+      ...layers?.inspect(),
+    },
     exposure: {
       locked,
       trim: trims[selected],
@@ -189,31 +256,61 @@ export function lookSnapshot() {
   };
 }
 /** Installed once, before loading's real output warm draw. All A/B choices share this graph and meter. */
-export function prepareLooks(power: N, saturation: N, read: () => Promise<number>) {
+export function prepareLooks(power: N, saturation: N, read: () => Promise<number>, context: LookLayerContext) {
   curve = uniform(0);
   trimNode = uniform(1);
   lift = uniform(0);
+  gainNode = uniform(-1);
+  layers = createLookLayers(context);
   readMeter = read;
   ready = true;
   apply();
+  unregisterComparison = registerGraphics({
+    id: 'postLooks',
+    label: 'Dev post look layers',
+    choices: [true, false],
+    default: true,
+    applyMode: 'rebuild',
+    cost: 'Selected Dev layers, optional coverage MRT and painterly materialization',
+    costDependencies: ['bloom'],
+    skips: 'Restores original fog and disconnects the mask, filters and recipe bloom; keeps selected settings.',
+    hitch: 'First structural enable compiles scene/output variants; warm both sides before measurement.',
+    read: () => comparisonEnabled,
+    apply(value) {
+      comparisonEnabled = value === true;
+      applyLayers();
+      changed();
+    },
+  });
+  const requested = query.get('lookRecipe');
+  if (isRecipe(requested)) selectRecipe(requested);
   changed();
-  return (hdr: N, gain: N) => {
-    // Sampled inputs stay outside uniform control flow (WGSL derivative/sampling rule).
-    const input = hdr.rgb.mul(gain).mul(trimNode).toVar();
-    const c = vec3(0).toVar();
-    If(curve.greaterThan(0.5), () => {
-      c.assign(toneMapping(NeutralToneMapping, 1, vec4(input, 1)).rgb);
-    }).Else(() => {
-      c.assign(agx(input, power, saturation));
-    });
-    If(lift.greaterThan(0), () => {
-      const y = dot(c, vec3(0.2126, 0.7152, 0.0722));
-      // Display-linear finishing grade: smooth midtone window protects dark shade and white glints.
-      const weight = smoothstep(0.03, 0.16, y)
-        .mul(smoothstep(0.55, 0.9, y).oneMinus())
-        .mul(lift);
-      c.assign(clamp(mix(vec3(y), c, weight.add(1)), 0, 1));
-    });
-    return c;
+  return {
+    structuralKey: () => layers!.structuralKey(),
+    releaseTargets: () => layers!.releaseTargets(),
+    finish: (c: N) => layers!.finish(c),
+    encode: (c: N) => layers!.encode(c),
+    tone: (hdr: N, gain: N) => {
+      // Sampled inputs stay outside uniform control flow (WGSL derivative/sampling rule).
+      const input = hdr.rgb
+        .mul(TSL.select(gainNode.greaterThan(0), gainNode, gain))
+        .mul(trimNode)
+        .toVar();
+      const c = vec3(0).toVar();
+      If(curve.greaterThan(0.5), () => {
+        c.assign(toneMapping(NeutralToneMapping, 1, vec4(input, 1)).rgb);
+      }).Else(() => {
+        c.assign(agx(input, power, saturation));
+      });
+      If(lift.greaterThan(0), () => {
+        const y = dot(c, vec3(0.2126, 0.7152, 0.0722));
+        // Display-linear finishing grade: smooth midtone window protects dark shade and white glints.
+        const weight = smoothstep(0.03, 0.16, y)
+          .mul(smoothstep(0.55, 0.9, y).oneMinus())
+          .mul(lift);
+        c.assign(clamp(mix(vec3(y), c, weight.add(1)), 0, 1));
+      });
+      return c;
+    },
   };
 }

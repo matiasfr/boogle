@@ -365,7 +365,7 @@ export type OceanOptions = {
   shoreMotion?: ShoreMotion;
   repeatColorCopy?: boolean;
   foamObstacles?: readonly { x: number; z: number; radius: number }[];
-  fog?: (distance: N) => N;
+  fog?: (distance: N, position: N) => N;
   fitCameraRange?: boolean;
   contactDistance?: (xz: N) => N;
 };
@@ -386,6 +386,7 @@ export function waterLighting(sky: WaterSky, look = toyWaterEnabled ? toyWater :
 
 export type Ocean = {
   mesh: THREE.Mesh;
+  refreshFog(): void;
   /** Bind the existing lens kernel's signed camera depth (positive under water). */
   setCameraDepth(depth: N): void;
   /** World-height query for the near-plane grid, including shore waves and horizontal displacement inversion. */
@@ -525,7 +526,7 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
   })();
 
   // ---------------------------------------------------------------- fragment
-  material.colorNode = Fn(() => {
+  const makeColor = Fn(() => {
     const vWorld = positionWorld;
     const toCam = cameraPosition.sub(vWorld).toVar();
     const dist = length(toCam).toVar();
@@ -946,7 +947,7 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
 
       // --- aerial perspective into the horizon sky --------------------------------------------
       const fog = options.fog
-        ? options.fog(dist)
+        ? options.fog(dist, vWorld)
         : float(1)
             .sub(exp(dist.mul(fogDensity)))
             .toVar();
@@ -959,7 +960,8 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
       );
     });
     return result;
-  })();
+  });
+  material.colorNode = makeColor();
 
   let geo = buildGrid(GRID.angular, GRID),
     lastFar = GRID.far;
@@ -968,6 +970,10 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
   mesh.renderOrder = -1; // before the other see-through things: it writes depth
   return {
     mesh,
+    refreshFog() {
+      material.colorNode = makeColor();
+      material.needsUpdate = true;
+    },
     heightAt,
     setCameraDepth(depth) {
       cameraDepth = depth;

@@ -11,6 +11,8 @@ export type GraphicsAdapter = {
   scope?: 'Local';
   applyMode: 'live' | 'rebuild' | 'reload';
   cost: string;
+  /** Effective settings deliberately controlled by this composite cost switch. */
+  costDependencies?: readonly string[];
   skips: string;
   hitch?: string;
   available?(): string | null;
@@ -62,7 +64,7 @@ export function graphicsInitial(id: string, choices: readonly GraphicsValue[], b
 }
 async function apply(owner: GraphicsAdapter, value: GraphicsValue) {
   errors.delete(owner.id);
-  if (owner.applyMode === 'reload' || owner.read() === value) return;
+  if (owner.applyMode === 'reload' || (owner.read() === value && !owner.costDependencies?.length)) return;
   try {
     await owner.prepare?.(value);
     await owner.apply(value);
@@ -103,6 +105,7 @@ export function graphicsSnapshot() {
       persistence: 'Dev only',
       applyMode: owner.applyMode,
       cost: owner.cost,
+      costDependencies: owner.costDependencies ?? [],
       skips: owner.skips,
       hitch: owner.hitch ?? null,
       available: reason === null,

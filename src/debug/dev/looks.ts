@@ -11,6 +11,13 @@ import {
   swapLook,
   lockExposure,
   setLookTrim,
+  RECIPES,
+  isRecipe,
+  isLayer,
+  LAYER_LIMITS,
+  selectRecipe,
+  setLookLayer,
+  setComparisonGain,
   type LookId,
 } from '../../render/water/looks.ts';
 import { button, copy, el, more, note } from './ui.ts';
@@ -28,12 +35,28 @@ export const tool: Tool = {
   id: 'looks',
   label: 'Looks',
   scope: 'Local appearance preview; procedural sky stays. No default changes.',
-  commands: ['settings', 'select', 'slots', 'swap', 'lock', 'trim', 'copy'],
+  commands: ['settings', 'select', 'recipe', 'layer', 'gain', 'slots', 'swap', 'lock', 'trim', 'copy'],
   available: unavailable,
   async run(command, args) {
     const reason = unavailable();
     if (reason) return no(reason);
-    if (command === 'select') {
+    if (command === 'recipe') {
+      if (!isRecipe(args.id)) return no('Choose A–H, strong or toon.');
+      selectRecipe(args.id);
+    } else if (command === 'layer') {
+      if (!isLayer(args.id) || typeof args.value !== 'number' || !Number.isFinite(args.value))
+        return no('Choose a layer and numeric value.');
+      const [low, high] = LAYER_LIMITS[args.id];
+      if (args.value < low || args.value > high) return no(`Use ${low}–${high} for ${args.id}.`);
+      setLookLayer(args.id, args.value);
+    } else if (command === 'gain') {
+      if (
+        args.value !== null &&
+        (typeof args.value !== 'number' || !Number.isFinite(args.value) || args.value <= 0 || args.value > 100)
+      )
+        return no('Use null for the meter or a measured gain greater than 0 and at most 100.');
+      setComparisonGain(args.value as number | null);
+    } else if (command === 'select') {
       if (!isLook(args.id)) return no('Choose current, clean, sunny, punchy or sunshine.');
       selectLook(args.id);
     } else if (command === 'slots') {
@@ -135,6 +158,29 @@ export const tool: Tool = {
       status,
     );
     const details = more(layout);
+    const recipes = el('div', '', 'dev-actions');
+    for (const [id, recipe] of Object.entries(RECIPES))
+      recipes.append(button(recipe.label, () => run('recipe', { id })));
+    layout.append(recipes);
+    const layerInputs = new Map<string, HTMLInputElement>();
+    for (const [id, limits] of Object.entries(LAYER_LIMITS)) {
+      const label = el('label', `${id} `),
+        input = el('input');
+      input.type = 'number';
+      input.min = String(limits[0]);
+      input.max = String(limits[1]);
+      input.step = id === 'haze' ? '0.0005' : '0.05';
+      input.style.width = '80px';
+      input.setAttribute('aria-label', `Look layer ${id}`);
+      input.onchange = () => void run('layer', { id, value: Number(input.value) });
+      label.append(input);
+      details.append(label);
+      layerInputs.set(id, input);
+    }
+    note(
+      details,
+      'A–H use Current Neutral and trim 1. D+ is stronger ink; Toon is a dark-line reference. F repeats B: existing town/Buddy contact shadows did not meet the AO revisit gate. Coverage RGB: opaque/water/protected. Structural toggles can compile; warm before measuring.',
+    );
     note(
       details,
       'Only this browser. Select a look to restore its water and post settings. Lock freezes the shared exposure meter; each look keeps its recorded trim. Backslash switches A/B while this panel is open.',
@@ -158,6 +204,8 @@ export const tool: Tool = {
       a.value = snap.a;
       b.value = snap.b;
       lock.checked = snap.exposure.locked;
+      for (const [id, input] of layerInputs)
+        if (document.activeElement !== input && isLayer(id)) input.value = String(snap.comparison.layers[id]);
       trim.disabled = snap.selected === 'current';
       if (document.activeElement !== trim) trim.value = snap.exposure.trimEV.toFixed(3);
       summary.textContent =

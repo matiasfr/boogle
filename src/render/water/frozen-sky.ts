@@ -13,6 +13,7 @@ import { createWaterSky } from './sky.ts';
 import { bind, tuningEnabled } from './live.ts';
 import { toySkyEnabled } from './flags.ts';
 import { toySky } from './toy.ts';
+import type { N } from './tsl.ts';
 
 export const WATER_TOD = 0.24;
 export let frozenSkyActive = false;
@@ -97,7 +98,8 @@ export function createFrozenWaterSky() {
     vec3(CAVE.fog.r, CAVE.fog.g, CAVE.fog.b),
     underground,
   );
-  const fogNode = fog(haze, rangeFogFactor(near, far));
+  const baseFog = rangeFogFactor(near, far);
+  let fogNode = fog(haze, baseFog);
   let disposed = false,
     baked = false;
   function update() {
@@ -214,6 +216,10 @@ export function createFrozenWaterSky() {
     );
   return {
     sky: environment,
+    setFogTransform(transform?: (base: N, position: N) => N) {
+      fogNode = fog(haze, transform ? transform(baseFog, positionWorld) : baseFog);
+      scene.fogNode = fogNode;
+    },
     ready,
     update,
     inspect: () => ({ tod: timeOfDay, ready: baked, disposed, ...environment.inspect() }),

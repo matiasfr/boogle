@@ -103,8 +103,9 @@ export async function measureGraphics(
         pixels: value.internalPixels,
         ratio: value.rendererPixelRatio,
       });
-    const settingsSignature = (rows: ReturnType<typeof graphicsSnapshot>) =>
-      JSON.stringify(rows.filter((row) => row.id !== id));
+    const dependencies = setting.costDependencies;
+    const settingsSignature = (rows: ReturnType<typeof graphicsSnapshot>, includeDependencies = false) =>
+      JSON.stringify(rows.filter((row) => row.id !== id && (includeDependencies || !dependencies.includes(row.id))));
     const originalSettings = settingsSignature(samples[0]!.settings);
     const matched = samples.every(
       (s) =>
@@ -113,6 +114,10 @@ export async function measureGraphics(
         signature(s.timing.end) === signature(first) &&
         settingsSignature(s.settings) === originalSettings &&
         settingsSignature(s.endSettings) === originalSettings &&
+        settingsSignature(s.settings, true) === settingsSignature(s.endSettings, true) &&
+        samples
+          .filter((other) => other.enabled === s.enabled)
+          .every((other) => settingsSignature(other.settings, true) === settingsSignature(s.settings, true)) &&
         s.endSettings.find((row) => row.id === id)?.effective === s.enabled,
     );
     const gpuMeans = samples.map((s) => s.timing.gpu.span.stats?.avgMs ?? null);
@@ -138,6 +143,7 @@ export async function measureGraphics(
         seconds,
         warmSeconds,
         repeated: true,
+        compositeDependencies: dependencies,
         resolution: 'fixed full route scale',
         frameLimit: 'display',
         physicalOcclusion: 'unknown',

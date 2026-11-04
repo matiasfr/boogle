@@ -7,10 +7,11 @@ import { NeutralToneMapping } from 'three/webgpu';
 import { toneMapping } from 'three/tsl';
 import { registerGraphics } from '../../graphics-settings.ts';
 import { toyNeutral, toySkyEnabled } from './flags.ts';
+import type { LookLayerContext } from './look-layers.ts';
 
 const { Fn, If, OnAfterRenderPipeline, pow, select, vec3, vec4, float, mix, dot, max } = TSL;
 
-export function installWaterPost(source: N) {
+export function installWaterPost(source: N, context: LookLayerContext) {
   const previous = pipeline.outputNode;
   const transform = pipeline.outputColorTransform;
   const meter = createExposureMeter(scenePass.getTextureNode());
@@ -29,35 +30,46 @@ export function installWaterPost(source: N) {
   let locked = () => false;
   let curve = () => (neutral ? 'neutral' : 'agx');
   let stopCompare = () => {};
-  const makeOutput = (hdr: N) =>
-    Fn(() => {
-      OnAfterRenderPipeline(() => meter.save(renderer));
-      const gain = tuningEnabled ? mix(1, meter.value.mul(float(key).div(0.18)), auto).mul(exposure) : meter.value;
-      let c = compare
-        ? compare(hdr, gain)
-        : neutral
-          ? toneMapping(NeutralToneMapping, 1, vec4(hdr.rgb.mul(gain), 1)).rgb
-          : tuningEnabled
-            ? agx(hdr.rgb.mul(gain), agxPower, agxSaturation)
-            : agx(hdr.rgb.mul(gain));
-      if (tuningEnabled) {
-        c = c.toVar();
-        If(contrast.notEqual(1), () => {
-          c.assign(pow(max(c, 0), vec3(contrast)));
-        });
-        If(saturation.notEqual(1), () => {
-          c.assign(mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, saturation));
-        });
-      }
-      const srgb = select(
-        c.lessThanEqual(vec3(0.0031308)),
-        c.mul(12.92),
-        pow(c, vec3(1 / 2.4))
-          .mul(1.055)
-          .sub(0.055),
-      );
-      return vec4(srgb, 1);
-    })();
+  let finish: ((c: N) => N) | undefined;
+  let encode: ((c: N) => N) | undefined;
+  const displayColor = (hdr: N) => {
+    OnAfterRenderPipeline(() => meter.save(renderer));
+    const gain = tuningEnabled ? mix(1, meter.value.mul(float(key).div(0.18)), auto).mul(exposure) : meter.value;
+    let c = compare
+      ? compare(hdr, gain)
+      : neutral
+        ? toneMapping(NeutralToneMapping, 1, vec4(hdr.rgb.mul(gain), 1)).rgb
+        : tuningEnabled
+          ? agx(hdr.rgb.mul(gain), agxPower, agxSaturation)
+          : agx(hdr.rgb.mul(gain));
+    if (tuningEnabled) {
+      c = c.toVar();
+      If(contrast.notEqual(1), () => {
+        c.assign(pow(max(c, 0), vec3(contrast)));
+      });
+      If(saturation.notEqual(1), () => {
+        c.assign(mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, saturation));
+      });
+    }
+    return c;
+  };
+  const encodedColor = (c: N) => {
+    const srgb = select(
+      c.lessThanEqual(vec3(0.0031308)),
+      c.mul(12.92),
+      pow(c, vec3(1 / 2.4))
+        .mul(1.055)
+        .sub(0.055),
+    );
+    return vec4(encode ? encode(srgb) : srgb, 1);
+  };
+  const makeOutput = (hdr: N) => {
+    // Non-Dev visits construct the same single Fn graph. Optional materialization consumes a complete
+    // display-linear expression, never a variable assigned only in the enclosing output shader.
+    if (!finish) return Fn(() => encodedColor(displayColor(hdr)))();
+    const c = finish(Fn(() => vec4(displayColor(hdr), 1))().rgb);
+    return Fn(() => encodedColor(c))();
+  };
   let output = makeOutput(source);
   let bloom: ReturnType<typeof createWaterBloom> | undefined;
   let bloomOutput: N;
@@ -117,14 +129,29 @@ export function installWaterPost(source: N) {
     async prepare() {
       if (!tuningEnabled || toySkyEnabled) return;
       const looks = await import('./looks.ts');
-      compare = looks.prepareLooks(agxPower, agxSaturation, () => meter.read(renderer));
+      const prepared = looks.prepareLooks(agxPower, agxSaturation, () => meter.read(renderer), context);
+      compare = prepared.tone;
+      finish = prepared.finish;
+      encode = prepared.encode;
       locked = looks.exposureLocked;
       curve = looks.activeLookCurve;
-      stopCompare = looks.disposeLooks;
-      output = makeOutput(source);
-      // A saved Graphics override may have built bloom before Looks was prepared.
-      if (bloom) bloomOutput = makeOutput(bloom.hdr.add(bloom.glow.mul(strength)));
-      updateBloom();
+      let structuralKey: string | undefined;
+      const rebuild = () => {
+        const nextKey = prepared.structuralKey();
+        if (nextKey === structuralKey) return;
+        structuralKey = nextKey;
+        prepared.releaseTargets();
+        output = makeOutput(source);
+        // A saved Graphics override may have built bloom before Looks was prepared.
+        if (bloom) bloomOutput = makeOutput(bloom.hdr.add(bloom.glow.mul(strength)));
+        updateBloom();
+      };
+      const unsubscribe = looks.onLookChange(rebuild);
+      stopCompare = () => {
+        unsubscribe();
+        looks.disposeLooks();
+      };
+      rebuild();
     },
     update: tuningEnabled ? (dt: number) => meter.update(locked() ? 0 : dt) : meter.update,
     tone: () => curve(),

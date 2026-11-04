@@ -149,7 +149,8 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
   const wetState = storage(new THREE.StorageBufferAttribute(new Float32Array(4), 4), 'vec4', 1);
   // Reuse the same GPU water-height query as the lens, without a second query or a delayed CPU readback.
   // Far above water the lens sleeps, so its last submerged value must not keep culling the top surface.
-  ocean.setCameraDepth(select(near.and(body.equal(1)), wetState.element(0).z, -1e4));
+  const cameraDepth = select(near.and(body.equal(1)), wetState.element(0).z, -1e4);
+  ocean.setCameraDepth(cameraDepth);
   const viewPos = (at: N, depth: N) => {
     // WebGPU NDC depth is 0..1, y is up. Do not apply the source WebGL z*2-1 conversion.
     const v = invProj.mul(vec4(at.x.mul(2).sub(1), at.y.mul(-2).add(1), depth, 1));
@@ -308,6 +309,7 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
     initialized = false;
   return {
     outputNode,
+    cameraDepth,
     prepare: () => renderer.compileComputeAsync(lensPass),
     update(time: number, delta: number) {
       const sample = waterField.nearby(camera.position);

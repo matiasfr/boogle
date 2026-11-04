@@ -49,7 +49,7 @@ import { createFrozenWaterSky } from './water/frozen-sky.ts';
 import { installWaterPost } from './water/post.ts';
 import { waterField } from '../physics/water-field.ts';
 import { GRID } from './water/tuning.ts';
-import { TSL } from './water/tsl.ts';
+import { TSL, type N } from './water/tsl.ts';
 import { camera, rendererReady, scene, sun } from './scene.ts';
 import { warmUp, warmDraw } from './precompile.ts';
 export { seaU, seaRipples } from './water/state.ts';
@@ -204,6 +204,7 @@ function createRealSea() {
     foam = bakeFoam(),
     quality = createWaterQuality();
   const fogRange = TSL.uniform(new THREE.Vector2(110, 520));
+  let fogTransform: ((base: N, position: N) => N) | undefined;
   const field = shoreFields(atlas);
   const caustics = createCaustics(source.fft.moments, source.fft.bands.indexOf(2), source.fft.size);
   const removeReceivers = installWaterReceivers(field, caustics.sample);
@@ -212,12 +213,23 @@ function createRealSea() {
     contactDistance,
     grid: { ...GRID, far: camera.far, outer: Math.min(3000, camera.far * 0.5) },
     fitCameraRange: true,
-    fog: (distance) => TSL.smoothstep(fogRange.x, fogRange.y, distance),
+    fog: (distance, position) => {
+      const base = TSL.smoothstep(fogRange.x, fogRange.y, distance);
+      return fogTransform ? fogTransform(base, position) : base;
+    },
   });
   const queries = createWaterQueries(ocean.heightAt, atlas);
   const underwater = createUnderwater(ocean, frozen.sky);
   const snow = createSnow(ocean, frozen.sky);
-  const post = installWaterPost(underwater.outputNode);
+  const post = installWaterPost(underwater.outputNode, {
+    ocean: ocean.mesh,
+    cameraDepth: underwater.cameraDepth,
+    setFog(transform) {
+      fogTransform = transform;
+      frozen.setFogTransform(transform);
+      ocean.refreshFog();
+    },
+  });
   const removeProvider = waterField.install(queries.provider);
   const spray = createSpray(atlas);
   let ready = false,
