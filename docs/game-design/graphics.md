@@ -14,6 +14,8 @@
   Windows and Apple Silicon. Any other browser sees a note in the lobby naming the browsers that work. A loading screen
   (key art, the title, a progress bar and a gear that keeps turning: download, graphics device, shaders) paints before the game's code arrives and
   covers the lobby while the graphics device, player's body, shaders and first GPU frame prepare; the room connects meanwhile ([src/boot/](../../src/boot/)).
+  A readiness or startup failure removes the loading screen and shows the existing graphics failure note in the lobby,
+  with Jump in disabled. This recovery is Local.
   Shader warm-up keeps a 16 s escape deadline (a cold Metal cache needs about 14 s on an M1 Max) after the frozen sky bake. It awaits water and particle compute,
   submits the real caustics/post passes, then compiles the whole scene while those native pipelines build.
   Hidden objects and objects outside the provisional camera are included.

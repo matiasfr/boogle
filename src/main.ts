@@ -1,7 +1,7 @@
 import './dev-preferences.ts';
 import './style.css';
 import * as THREE from 'three/webgpu';
-import { scene, camera, renderer, rendererReady, renderFrame } from './render/scene.ts';
+import { scene, camera, renderer, rendererReady, renderFrame, graphicsFailed } from './render/scene.ts';
 import { shouldRender } from './render/quality.ts';
 import { precompile, gpuDone, shadersMark } from './render/precompile.ts';
 import { createTerrainMesh } from './island/terrain.ts';
@@ -104,4 +104,9 @@ window.boogle = { THREE, scene, camera, me, ball, net, remotes, inspect } as Win
 
 start();
 splashStage(0.3, 0.45, 'Waking up the graphics');
-Promise.all([rendererReady, physicsReady]).then(play, splashDone); // no graphics: the lobby says why
+Promise.all([rendererReady, physicsReady])
+  .then(play)
+  .catch(() => {
+    graphicsFailed();
+    splashDone();
+  });
