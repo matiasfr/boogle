@@ -22,7 +22,8 @@ commit and cited sources with the current checkout and relevant local changes.
 Refresh changed facts from their owning files. If it is absent or stale, answer
 from the authoritative sources; do not invent a current roadmap or block the answer.
 
-Read the relevant current plan, playtest evidence and as-built section. Use map and
+Read the relevant current plan, the newest dated entry in docs/playtests.md, its
+notes tracker if it has one (docs/plans/round-4-notes.md today) and the as-built section. Use map and
 focused code reads where implementation matters. For substantial proposed work run
 `npm run inflight`; consult `npm run codex-status` when existing jobs may own it.
 Never restart an unknown job without checking it, or create a duplicate assignment.
