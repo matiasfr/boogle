@@ -117,7 +117,7 @@ The optional **9 m beam** starts at the village's west edge (868, -30). **Lift**
 
 ## Ancient technology (round 4, exploring)
 
-The jump rings track the animated foot pivots, including during a running jump.
+The jump rings track the animated foot pivots, including during a running jump. The first pillar's approach lip sits 4 cm below its landing top, avoiding overlapping coplanar faces. The sea-stack secret has a return hook slab beside the trestle, within 24 m of the stack; the hook returns you to rail height so leaving does not require a swim. Recovery selects existing track surface colliders, including stubs, rather than treating an open line's unfinished pier as built.
 
 Numbers and places: `src/proto/place/tech-layout.ts`. Research: [movement abilities](../research/movement-abilities.md), [BotW glide target](../research/botw-glide-target.md). Connecting a line gets you to where a device is; you still go and take it (**Take it**, Interact). Devices are one family: a stone drum, turning rings of teal light and a thin teal shaft you can see across the place. All three are shared; what you wear for them shows (rings at the ankles, a spool on the forearm, a pack).
 
@@ -136,6 +136,8 @@ Both sealed gates have paired stone leaves, recessed courses, pale edge strips a
 **Reach:** `node dev/economy/place-level.ts` checks what each state of the run can stand on, and that nothing is reachable early. Known harmless skip: riding the machine across the stem as it lays gets you up onto the second pillar with one jump. The second device is still there on your way.
 
 ## The town you can go into
+
+Corner posts sink with whichever adjacent wall is cut away, using the same reveal timing and easing. Roof lift, the retained bottom course, wall collisions and shadow proxies are unchanged.
 
 An optional side activity: nothing here gates the job (DESIGN.md 3), and it adds no line to the objective. Serves DESIGN.md 1, 6, 9 and 11; research: [town interiors](../research/town-interiors.md). Open doors, in the same world, no loading.
 
@@ -228,7 +230,7 @@ Quiet ambience under everything (`src/proto/place/ambience.ts`, on the ambience 
 
 ## How it's built
 
-Round 4 visual repairs: the avatar uses its articulated sun shadow without a second square terrain patch.
+Round 4 visual repairs: the avatar uses its articulated sun shadow without a second square terrain patch. Short timber feet support sleepers at shallow ground transitions.
 
 Local, all of it, in localStorage per room (`boogle-place-v4`, a new key so an old save can't break it). What's kept is in one place: `job.ts` holds `job` (the shared state, including `rung`, `score` and `ways`) and a list of **slices**: `sharedSlice(key, { get, set })` for what a `&coop=1` room has in common (saved and in the snapshot), `personalSlice` for what's this tab's own (saved only). Your position and facing are personal: while moving they save about every five seconds and on leaving. Reloading returns you to safe ground there; water, building footprints and moving platforms return you to spawn. Start over returns you to spawn. `index.ts` is thin; its comment maps the modules. Your back's log count is kept in `chop.ts` and drawn by the
 game's bundle through `backSeam` (`src/features/haul-stack.ts`), with rails, a sack of stone, a pack frame and a big thing on your shoulder on the avatar. Pieces in the air are one instanced pool (`pieces.ts`, `send`); pieces joining a build fall from above

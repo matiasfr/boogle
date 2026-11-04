@@ -60,6 +60,7 @@ const TOP = 0.1; // the sleepers' top over the rail height
 const DECK_W = 3.6,
   BED_W = 2.8;
 type Solid = {
+  s?: number; // track surface midpoint; legs have no recovery landing
   u: number;
   add: () => Body | Body[];
   on: Body | Body[] | null;
@@ -127,7 +128,16 @@ export function buildTrack(
       y = railY(line, s),
       lean = new THREE.Euler(-Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2), 0, 0);
     if (onDeck) add(s, 'plank', q.x, q.z, y - 0.02, place(0, 0, 0, DECK_W, 0.12, 0.84, yaw, lean), '#a97a45', 0, 1.1);
-    else add(s, 'sleeper', q.x, q.z, y - 0.02, place(0, 0, 0, 2.3, 0.12, 0.42, yaw, lean), '#8a6236', 0, 1.1);
+    else {
+      add(s, 'sleeper', q.x, q.z, y - 0.02, place(0, 0, 0, 2.3, 0.12, 0.42, yaw, lean), '#8a6236', 0, 1.1);
+      // Low sleepers need support too: the tall trestle bents only start beyond a metre of clearance.
+      for (const side of [-0.75, 0.75]) {
+        lateral(side, q);
+        const foot = H(q.x, q.z) - 0.08;
+        const height = y - 0.02 - foot;
+        if (height > 0.18) add(s, 'leg', q.x, q.z, foot, place(0, 0, 0, 0.35, height, 0.35, yaw), '#a2743f', 0.4, 0.5);
+      }
+    }
     s += onDeck ? 1 : 1.2;
   }
   // Rails: fixed lengths, one pair after another, a little behind the head (they lie on sleepers that are down).
@@ -239,6 +249,7 @@ export function buildTrack(
       cx = c.x,
       cz = c.z;
     solids.push({
+      s: (s + s1) / 2,
       u: stubbed(s + 1) ? -Infinity : u(s + 1),
       add: () => slab(ax, az, cx, cz, ya, yc, wide ? DECK_W : BED_W),
       on: null,

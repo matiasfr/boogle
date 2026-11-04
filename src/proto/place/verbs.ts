@@ -33,7 +33,7 @@ import { forge, rackFrom, rackTop, takeRail } from './forge.ts';
 import { nearestCrate, openCrate, owned, shelfSpot, showing, swapSlot } from './gifts.ts';
 import { H, PATH_SAMPLES } from './land.ts';
 import { job, save } from './job.ts';
-import { ORIGIN, SHELF, SPAWN, TUNE, VILLAGE, railY, toWorld } from './layout.ts';
+import { ORIGIN, SHELF, SPAWN, TUNE, VILLAGE, lineAt, railY, toWorld } from './layout.ts';
 import { L1, allHeaps, hub, lines, machine } from './lines.ts';
 import { send } from './pieces.ts';
 import { SCOPE_AT, boilerAt, lookThrough } from './props.ts';
@@ -63,19 +63,18 @@ const nearestSample = (x: number, z: number) => {
       }
     }
   // The track you've laid counts as a path: a long swim home off a trestle isn't anybody's idea of fun.
+  const at = { x: 0, z: 0, ux: 0, uz: 1 };
   for (const l of lines) {
-    const { line, dir } = l.spec;
-    // Only what's down: a line's laid from its stub up to wherever the machine's got to.
-    const head =
-      l.open || run.line !== l ? (l.open ? (dir > 0 ? line.len : 30) : dir > 0 ? 8 : line.len - 10) : run.head;
-    const lo = dir > 0 ? 8 : head,
-      hi = dir > 0 ? head : line.len - 10;
-    for (let s = lo; s < hi; s += 3) {
-      const k = Math.floor(s);
-      const d = (line.xs[k]! + ORIGIN.x - x) ** 2 + (line.zs[k]! - z) ** 2;
+    const { line } = l.spec;
+    // Opening Far Head does not build the pier. Recover only onto an existing two-metre track collider.
+    for (const solid of l.track.solids) {
+      if (!solid.on || solid.s === undefined) continue;
+      const s = solid.s;
+      lineAt(line, s, at);
+      const d = (at.x + ORIGIN.x - x) ** 2 + (at.z - z) ** 2;
       if (d < bd) {
         bd = d;
-        best = [line.xs[k]!, line.zs[k]!, railY(line, s) + 0.2];
+        best = [at.x, at.z, railY(line, s) + 0.2];
       }
     }
   }

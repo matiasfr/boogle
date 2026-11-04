@@ -52,7 +52,8 @@ export type Pad = {
 const N = LINES.north,
   E = LINES.east;
 const P1 = beside(N, 92, -1, 6.2),
-  P2 = beside(E, 92, -1, 7);
+  P2 = beside(E, 92, -1, 7),
+  STACK_RETURN = beside(E, 477, 1, 4);
 export const PILLARS = [
   { id: 'p1', x: P1.x, z: P1.z, top: P1.y, r: 3.6, foot: -3, lipTo: beside(N, 92, -1, 1.7) },
   { id: 'p2', x: P2.x, z: P2.z, top: P2.y + 2.2, r: 3.6, foot: -3, lipTo: null },
@@ -81,6 +82,17 @@ export const PADS: Pad[] = [
   { id: 'loft', x: 110.5, z: 64, top: 28.4, hx: 2.4, hz: 2.8, look: 'stone', ring: 'camp' },
   { id: 'balcony', x: -122, z: 36, top: 24.4, hx: 3, hz: 3, look: 'wood' },
   { id: 'stack', x: 326.8, z: -123.4, top: 15, hx: 3.6, hz: 3.6, look: 'stone' },
+  // A hook back up from the sea stack, meeting the trestle. Append so existing presence ring indices stay stable.
+  {
+    id: 'stack-return',
+    x: STACK_RETURN.x,
+    z: STACK_RETURN.z,
+    top: STACK_RETURN.y + 0.2,
+    hx: 2,
+    hz: 2,
+    look: 'float',
+    ring: 'stack',
+  },
 ];
 export const padById = (id: string) => PADS.find((p) => p.id === id)!;
 const RING_FACES: Record<string, { x: number; z: number }> = { bridge: { x: -48, z: -83 }, camp: { x: 102, z: 69 } };
