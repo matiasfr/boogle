@@ -12,7 +12,7 @@
 //   ./layout.ts   the map and every number; ./terrain.ts the land as numbers (no three.js), ./land.ts drawn
 //   ./lines.ts    what stands on the lines; ./run.ts the machine and the order of the job; ./ladder.ts the rungs; ./depot.ts the
 //                 cart and rack; ./cargo.ts trains, ./halts.ts their stations; ./verbs.ts the Interact button; ./objective.ts the
-//                 small line and the beacon; ./panel.ts the tester's panel and `window.__place`; ./coop.ts `&coop=1`
+//                 internal playdata labels; ./panel.ts the tester's panel and `window.__place`; ./coop.ts `&coop=1`
 //   ./tech.ts     ancient technology: devices, gates, rings, secrets; ./tech-layout.ts its numbers; ./moves.ts the moves; ./moves-view.ts their look
 //   ./town-life.ts the town you can go into: ./rooms.ts, ./house.ts, ./shop.ts, ./museum.ts, ./residents.ts; every word in ./town-lines.ts
 //
@@ -75,7 +75,7 @@ import { job, resetJob, restore, save, personalSlice, num, forgetSaves } from '.
 import { L1, L2, allHeaps, dock, forgeFrame, hub, lines, machine, solidHeaps, stepsOf, yard } from './lines.ts';
 import { buildHalt } from './halts.ts';
 import { cartFolk } from './depot.ts';
-import { haltUnder, snapTrains, updateCargo, wakeTrains } from './cargo.ts';
+import { snapTrains, updateCargo, wakeTrains } from './cargo.ts';
 import { showing, nearestCrate, openCrate, snapGifts, updateGifts, onGiftSaved } from './gifts.ts';
 import { updateGot } from './got.ts';
 import { resetDrops, updateDrop } from './drop.ts';
@@ -101,9 +101,9 @@ import {
 } from './run.ts';
 import { clearFinds, updateBoiler, updateBuoys, updateFinds } from './props.ts';
 import { backUp, incoming } from './verbs.ts';
-import { arrowTarget, objective } from './objective.ts';
+import { objective } from './objective.ts';
 import { buildPanel } from './panel.ts';
-import { buildSigns, pointArrow, setNumbers, setObjective, updateObjective } from './signs.ts';
+import { buildSigns, setNumbers } from './signs.ts';
 import { onStepUp, snapTown, updateTown } from './town.ts';
 import { buildTech, resetFinds, techApi, updateTech } from './tech.ts';
 import { resetTownLife, updateTownLife } from './town-life.ts';
@@ -436,6 +436,7 @@ let ready = false,
   wasRiding = false;
 const smokeCol = new THREE.Color('#f2efe8');
 let smokeAcc = 0;
+let lastObjective = '';
 onFrame(
   ({ dt, now }) => {
     const b = me.body;
@@ -532,12 +533,10 @@ onFrame(
           drag: 0.02,
         });
       }
-    // What's on screen.
-    const line = objective(now);
-    if (line) playObjective(line);
-    setObjective(line);
-    updateObjective(dt, me.wish.lengthSq() > 0.01 || run.mode === 'laying' || !!showing() || !!haltUnder());
-    pointArrow(showing() ? null : arrowTarget());
+    // Internal progression labels still reach playdata; none are shown to the player.
+    const line = objective();
+    if (line || line !== lastObjective) playObjective(line);
+    lastObjective = line;
     document.body.classList.toggle('place-no-target', !interactTarget()?.run);
     setNumbers(job.score, job.people);
     // What the owner does.
