@@ -28,7 +28,7 @@ Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`
 
 ### Graphics, water, sky and devices
 
-[Look](#look): 3 November **surface swimming and automatic high-fall plunges, no dive controls** supersedes water-graduation step 5's manual dive. **Real sea uses the demo's sky**, intentionally chosen frozen times and desktop/mobile starting settings; **Neutral is open** pending a character comparison; **original sky and clouds stay; sky is parked**. These qualify the older cycle/rounded-cloud entries. Read the 2 November Ultra Water and crossing-previz targets too. [Process](#process) and AGENTS set M1 Max as average and M4 iPad Pro as floor.
+[Look](#look): 3 November **procedural sky preferred over toy sky** keeps `sky=toy` unused and opt-in; Sunshine continues through colour and water. **Surface swimming and automatic high-fall plunges, no dive controls** supersedes water-graduation step 5's manual dive. **Real sea uses the demo's sky**, intentionally frozen, with desktop/mobile starting settings; **Neutral is open** pending a character comparison. Older cycle, original-sky and rounded-cloud calls are qualified by those later entries. Read the 2 November Ultra Water and crossing-previz targets too. [Process](#process) and AGENTS set M1 Max as average and M4 iPad Pro as floor.
 
 ### Audio
 
@@ -264,6 +264,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### Look
 
+- **2026-11-03, procedural sky preferred over toy sky** (owner, comparing `sky=toy` with the current procedural sky): the procedural sky feels more naturally populated, and the current look was nicer on that board. Keep the procedural sky; toy sky stays an unused opt-in experiment. The Sunshine direction continues through colour and water, not a cartoon skybox.
 - **2026-11-03, lower home island preferred** (owner, after testing `island=low`): prefers its lower, more varied elevation; floating props on it are not yet checked, and this island is outdated anyway, so no fix now.
 - **2026-11-03, surface swimming and automatic high-fall plunges, no dive controls** (owner, on `?water=new`, water-graduation step 5): "Even though I like the underwater feature, I don't think we need new controls for diving. You should just swim on the surface by default. Maybe if falling from a great height, you can penetrate the surface, and then your character will just swim up. The water looks really great." Remove manual dive; fast falls carry the player under, faster hits go deeper, then buoyancy returns them to surface swimming without input or a breath mechanic. Keep the underwater look, surfacing droplets and marine snow whenever the camera dips under. This supersedes step 5's dive-control decision.
 - **2026-11-03, demo sky with AgX is the best starting point for the look** (owner, after the `&sky=demo&tone=agx` boards: "so far I really like Demo Sky AGX"). A frozen late morning (`tod=0.24`) is the comparison's pick. Rolling it out goes with the real-sea work; expect to tune trees and the avatar under it.
