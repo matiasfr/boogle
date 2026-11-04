@@ -5,9 +5,9 @@ import { bind, onChange, scalar, tuningEnabled } from './live.ts';
 import { createWaterBloom } from './bloom.ts';
 import { NeutralToneMapping } from 'three/webgpu';
 import { toneMapping } from 'three/tsl';
-import { toyNeutral } from './flags.ts';
+import { toyNeutral, toySkyEnabled } from './flags.ts';
 
-const { Fn, OnAfterRenderPipeline, pow, select, vec3, vec4, float, mix, dot, max } = TSL;
+const { Fn, If, OnAfterRenderPipeline, pow, select, vec3, vec4, float, mix, dot, max } = TSL;
 
 export function installWaterPost(source: N) {
   const previous = pipeline.outputNode;
@@ -22,18 +22,29 @@ export function installWaterPost(source: N) {
   const look = { power: 1.12, saturation: 1.3 };
   const agxPower = scalar('post.agxPower', look, 'power');
   const agxSaturation = scalar('post.agxSaturation', look, 'saturation');
+  let compare: ((hdr: N, gain: N) => N) | undefined;
+  let locked = () => false;
+  let curve = () => (toyNeutral ? 'neutral' : 'agx');
+  let stopCompare = () => {};
   const makeOutput = (hdr: N) =>
     Fn(() => {
       OnAfterRenderPipeline(() => meter.save(renderer));
       const gain = tuningEnabled ? mix(1, meter.value.mul(float(key).div(0.18)), auto).mul(exposure) : meter.value;
-      let c = toyNeutral
-        ? toneMapping(NeutralToneMapping, 1, vec4(hdr.rgb.mul(gain), 1)).rgb
-        : tuningEnabled
-          ? agx(hdr.rgb.mul(gain), agxPower, agxSaturation)
-          : agx(hdr.rgb.mul(gain));
+      let c = compare
+        ? compare(hdr, gain)
+        : toyNeutral
+          ? toneMapping(NeutralToneMapping, 1, vec4(hdr.rgb.mul(gain), 1)).rgb
+          : tuningEnabled
+            ? agx(hdr.rgb.mul(gain), agxPower, agxSaturation)
+            : agx(hdr.rgb.mul(gain));
       if (tuningEnabled) {
-        c = pow(max(c, 0), vec3(contrast));
-        c = mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, saturation);
+        c = c.toVar();
+        If(contrast.notEqual(1), () => {
+          c.assign(pow(max(c, 0), vec3(contrast)));
+        });
+        If(saturation.notEqual(1), () => {
+          c.assign(mix(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), c, saturation));
+        });
       }
       const srgb = select(
         c.lessThanEqual(vec3(0.0031308)),
@@ -44,7 +55,7 @@ export function installWaterPost(source: N) {
       );
       return vec4(srgb, 1);
     })();
-  const output = makeOutput(source);
+  let output = makeOutput(source);
   let bloom: ReturnType<typeof createWaterBloom> | undefined;
   let bloomOutput: N;
   const bloomParams = { enabled: 0, strength: 0.05, threshold: 1.5 };
@@ -73,9 +84,22 @@ export function installWaterPost(source: N) {
   pipeline.outputColorTransform = false;
   pipeline.needsUpdate = true;
   return {
-    update: meter.update,
+    async prepare() {
+      if (!tuningEnabled || toySkyEnabled) return;
+      const looks = await import('./looks.ts');
+      compare = looks.prepareLooks(agxPower, agxSaturation, () => meter.read(renderer));
+      locked = looks.exposureLocked;
+      curve = looks.activeLookCurve;
+      stopCompare = looks.disposeLooks;
+      output = makeOutput(source);
+      pipeline.outputNode = output;
+      pipeline.needsUpdate = true;
+    },
+    update: tuningEnabled ? (dt: number) => meter.update(locked() ? 0 : dt) : meter.update,
+    tone: () => curve(),
     dispose() {
       stop();
+      stopCompare();
       if (pipeline.outputNode === output || pipeline.outputNode === bloomOutput) {
         pipeline.outputNode = previous;
         pipeline.outputColorTransform = transform;

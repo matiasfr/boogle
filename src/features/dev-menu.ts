@@ -2,6 +2,11 @@
 import { onStart } from '../loop.ts';
 import { devEnabled } from '../dev-preferences.ts';
 
-if (devEnabled) {
-  onStart(() => import('../debug/dev-menu.ts').then((m) => m.installDevMenu()));
+if (devEnabled || new URLSearchParams(location.search).get('tune') === '1') {
+  onStart(() =>
+    import('../debug/dev-menu.ts').then((m) => {
+      m.registerDockPanel({ id: 'looks', label: 'Looks', load: () => import('../debug/dev/looks.ts') });
+      m.installDevMenu();
+    }),
+  );
 }

@@ -7,7 +7,8 @@ import { cancelCharge } from '../player/throw.ts';
 import { releaseJump } from '../entities/player/state.ts';
 import { waterReady } from '../render/water-render.ts';
 import { newWaterEnabled } from '../render/water/flags.ts';
-import { bindings, type Value } from '../render/water/live.ts';
+import { bindings, bindingDefaults, type Value } from '../render/water/live.ts';
+import { hasLookChoice } from '../render/water/looks.ts';
 
 type Spec = { key: string; label: string; min: number; max: number; step: number; color?: boolean; toggle?: boolean };
 type Group = { name: string; note?: string; specs: Spec[] };
@@ -99,8 +100,18 @@ const groups: Group[] = [
     ],
   },
   {
+    name: 'Light fill',
+    note: 'Local sun and open-shade fill only. No sky rebake; keep exposure locked while comparing.',
+    specs: [
+      spec('sky.keyGain', 'key gain', 0.5, 1.5),
+      color('sky.keyTint', 'key tint'),
+      spec('sky.fillGain', 'fill gain', 0.5, 1.5),
+      color('sky.fillTint', 'fill tint'),
+    ],
+  },
+  {
     name: 'Post',
-    note: 'Bloom and exposure run before AgX. Bloom starts off; first enable builds its filters and may briefly stall. Off or zero strength skips them.',
+    note: 'Bloom and exposure run before the active Looks curve. AgX controls affect AgX looks. Bloom starts off; first enable builds its filters and may briefly stall. Off or zero strength skips them.',
     specs: [
       { ...spec('post.bloom', 'bloom on', 0, 1, 1), toggle: true },
       spec('post.bloomStrength', 'bloomStrength', 0, 0.5, 0.001),
@@ -129,7 +140,6 @@ defineKind('water-tuning', {});
 
 let closeCurrent: (() => void) | null = null;
 let visit = 0;
-const productionDefaults = new Map<string, Value>();
 export async function showWaterTuning(
   restorePointer: () => void,
   parent: HTMLElement = document.body,
@@ -282,7 +292,9 @@ export async function showWaterTuning(
     };
     document.body.append(playToggle);
   }
-  moreContent.append(node('p', 'Only your view. The game keeps running. Saved settings apply only with tune=1.'));
+  moreContent.append(
+    node('p', 'Only your view. The game keeps running. Saved settings apply only in Dev or tuning visits.'),
+  );
   moreContent.append(
     node(
       'p',
@@ -336,8 +348,7 @@ export async function showWaterTuning(
   };
   saveUi();
   const previous = new Map(available.map((s) => [s.key, clone(bindings.get(s.key)!.get())]));
-  for (const [key, value] of previous) if (!productionDefaults.has(key)) productionDefaults.set(key, clone(value));
-  const defaults = new Map(available.map((s) => [s.key, clone(productionDefaults.get(s.key)!)]));
+  const defaults = new Map(available.map((s) => [s.key, clone(bindingDefaults.get(s.key)!)]));
   if (parent !== document.body && !retainAppearance)
     restoreOverrides = () => {
       for (const [key, value] of previous) bindings.get(key)?.set(clone(value));
@@ -758,9 +769,11 @@ export async function showWaterTuning(
   refresh();
   try {
     const saved = localStorage.getItem(STORAGE);
-    if (saved) {
+    if (saved && !hasLookChoice()) {
       apply(parse(saved, true));
       restored.textContent = 'Supported saved viewer settings restored; unsupported settings dropped.';
+    } else if (hasLookChoice()) {
+      restored.textContent = 'The selected Look owns this visit; older Water overrides were not reapplied.';
     }
   } catch (e) {
     try {

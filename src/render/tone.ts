@@ -126,6 +126,10 @@ export function createExposureMeter(hdr: N) {
   let frames = 0;
   return {
     value,
+    async read(renderer: THREE.WebGPURenderer) {
+      const pixels = (await renderer.readRenderTargetPixelsAsync(adaptation.renderTarget, 0, 0, 1, 1)) as Float32Array;
+      return Math.max(0.05, Math.min(20, 0.18 * 2 ** -pixels[0]!));
+    },
     dispose() {
       meter.dispose();
       adaptation.dispose();

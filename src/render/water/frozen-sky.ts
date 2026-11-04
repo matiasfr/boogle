@@ -66,6 +66,32 @@ export function createFrozenWaterSky() {
     underground = uniform(0);
   const upper = new THREE.Color(),
     lower = new THREE.Color();
+  const preview = tuningEnabled
+    ? {
+        keyGain: 1,
+        fillGain: 1,
+        keyTint: new THREE.Color(1, 1, 1),
+        fillTint: new THREE.Color(1, 1, 1),
+      }
+    : undefined;
+  if (preview) {
+    for (const key of ['keyGain', 'fillGain'] as const)
+      bind(
+        `sky.${key}`,
+        () => preview[key],
+        (value) => {
+          preview[key] = value as number;
+        },
+      );
+    for (const key of ['keyTint', 'fillTint'] as const)
+      bind(
+        `sky.${key}`,
+        () => preview[key].toArray(),
+        (value) => {
+          preview[key].fromArray(value as number[]);
+        },
+      );
+  }
   const haze = mix(
     environment.skyLod(normalize(positionWorld.sub(cameraPosition)), 3),
     vec3(CAVE.fog.r, CAVE.fog.g, CAVE.fog.b),
@@ -92,13 +118,20 @@ export function createFrozenWaterSky() {
       r = Math.max(c.x, 1e-4);
     sun.color.setRGB(c.x / r, c.y / r, c.z / r);
     sun.intensity = Math.PI * r;
+    if (preview) {
+      sun.color.multiply(preview.keyTint);
+      sun.intensity *= preview.keyGain;
+    }
     sun.shadow.intensity = 1;
     sun.shadow.autoUpdate = true;
     const ug = atmosphere.underground;
     if (hemi) {
-      hemi.color.copy(upper).lerp(CAVE.sky, ug);
+      hemi.color.copy(upper);
+      if (preview) hemi.color.multiply(preview.fillTint);
+      hemi.color.lerp(CAVE.sky, ug);
       hemi.groundColor.copy(lower).lerp(CAVE.ground, ug);
       hemi.intensity = Math.PI * THREE.MathUtils.lerp(1, 0.8, ug);
+      if (preview) hemi.intensity *= THREE.MathUtils.lerp(preview.fillGain, 1, ug);
     }
     const f = scene.fog as THREE.Fog;
     near.value = f.near;
