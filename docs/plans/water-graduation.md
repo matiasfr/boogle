@@ -144,7 +144,7 @@ Every numbered item is an implementation commit or small group of commits **afte
 - [x] **1. Establish the production water contract and real shore providers.** Create `src/render/water/{state,shore,shore-nodes,shore-providers,tuning,tsl}.ts`, extracting the existing bake and removing fixed demo coordinates; add `src/proto/place/water.ts` and its minimal registration in `place/index.ts`. Register home from finalized `island/heights.ts` data through the water facade. Keep the current renderer active until the replacement is complete. Verify axis orientation, known home/place bed samples, invalid exterior, wet/dry-only regions, paired region borders and obstacle-vs-bed separation with inspection/diagnostic outputs; inspect the gorge and home shore in the broker. Run `npm run check`.
 - [x] **2. Move the surface/FFT/refraction/foam into one owned sea and lighting adapter.** Move reusable `surface.ts`, `fft.ts`, `spectrum.ts`, `foam.ts` into `src/render/water/`; keep the prototype scene temporarily as a client of those same modules, with explicit demo settings. Make `water-render.ts` the resource/lifecycle facade; keep one sea instance and update ordering, no duplicate FFT or particle pools. Create `sky-radiance.ts` and adjust `sky.ts` to share its existing sky calculation, without changing its look or scene.ts. Verify reference Lagoon/Breakers and real-bank captures, one colour/depth copy, shader health and resource disposal; run `npm run check` and record a before/after performance baseline on an idle GPU. New real-world rendering can remain a local debug opt-in until step 7.
 - [x] **3. Connect moving-water queries to swimming, the ball, splashes and cave volumes.** Create `water/queries.ts`; edit `physics/water-field.ts`, `entities/player/state.ts`, `entities/ball/state.ts`, `render/splash.ts`, `physics/flight.ts`, `pois/caves/index.ts`, `entities/camera/index.ts`, and the fixed-SEA contact readers in `features/impact.ts`, `features/ping.ts`, `player/throw.ts`. Preserve ownership APIs and existing wire data. Exercise jumps, entry, a stationary crest, fast throws, teleport, ownership/held changes, late readbacks, and the cave pond with captured query-age/error readings. Run `npm run sim -- replay` because player/ball physics changed; explain intended replay differences rather than silently replacing fixtures. Run existing broker `scenario caves` on the classic route (make that existing scenario select `classic=1` if needed) and `scenario smoke` for two-player ball authority, plus `npm run check`.
-- [ ] **4. Apply caustics, swash/wetness and spray to real receivers.** Create `water/{receivers,caustics,spray}.ts`; minimally attach receiver patches in `island/terrain.ts` and `proto/place/land.ts`/`look.ts`, retaining terrain colour, roughness, shadow and cave mask nodes through `patchNode`. Register real contact obstacles, generate world-fixed emitter sites, and spawn a spray entity before the shared particle upload. Gate receiver light by depth, orientation, daylight and shelter; verify no caustics shine through dry bridges or cave roofs. Compare a bank, rock/support and beach at dawn/noon/night; inspect stills and consecutive recorded frames, count mip work and run `npm run check`.
+- [x] **4. Apply caustics, swash/wetness and spray to real receivers.** Create `water/{receivers,caustics,spray}.ts`; minimally attach receiver patches in `island/terrain.ts` and `proto/place/land.ts`/`look.ts`, retaining terrain colour, roughness, shadow and cave mask nodes through `patchNode`. Register real contact obstacles, generate world-fixed emitter sites, and spawn a spray entity before the shared particle upload. Gate receiver light by depth, orientation, daylight and shelter; verify no caustics shine through dry bridges or cave roofs. Compare a bank, rock/support and beach at dawn/noon/night; inspect stills and consecutive recorded frames, count mip work and run `npm run check`.
 - [x] **5. Integrate underwater composition and automatic high-fall plunges (owner revision, 3 November 2026).** Keep production `underwater.ts`/`snow.ts`, their body masks, HDR output and surfacing droplets. Remove the entire manual dive action (C, D-pad right, touch button/CSS, generated guide row and controller intent). Swimming defaults to the surface; entry at ≥14 m/s retains downward momentum, faster falls go deeper (existing 20 m/s fall cap), and buoyancy floats the player up without input or breath mechanics. Slow entries limit downward speed to 1 m/s relative to the surface; downward drag 1.2/s, upward drag 3/s, passive ascent cap 2.5 m/s with gain 8/s. Keep Rapier collisions and existing Owner pose delivery; old sea forces stay unchanged without `water=new`. Verify high drops and a low-bank jump using broker `--action --video --curves`, extract consecutive frames and report measured depths. Check controls are absent and camera-only submersion still shows the underwater look. Run `npm run sim -- replay` and `npm run check`. Real-time feel remains for the owner. The earlier manual-dive evidence below is historical, superseded by this revision.
 - [x] **6. Fit route ranges, day/night and quality without changing scene.ts.** Add range/quality helpers under `src/render/water/`; adapt `crossing/sky.ts` and the small place setup to use one polar surface at existing clip ranges, removing rectangle creation and obsolete sea-only colour writes. Retain unrelated crossing fog/day behavior and place's lighting. Extract only the mobile resolution normalization from `proto/water/post.ts`. Inspect horizon, region transitions, Far Head, 20/50 m/s train views, high fall/glide, near-face/held-object views, rooms/caves, sunset/moonlight and resize/resume. Run `npm run check` and matched M1 Max before/after `npm run perf`; use the supplied broker for browser work when running in a launched task, never another Chromium.
 - [ ] **7. Switch the real sea and remove the replaced prototype/seams.** Enable the completed water for default place and classic home in `water-render.ts`; delete `dressSea()` imports/calls and `src/proto/crossing/sea.ts` after checking every caller. Tag the last intact demo `archive/water`, then remove `src/proto/water/` and `features/proto-water.ts`, retire the local opt-in switch, and mark the water card `archived` in `protos/protos.ts` with its graduation destination. Update its playlist entry. Remove the old packed home texture, sine material, `seaDepth`/`seaFoam`/`seaRings` material-patch API, hidden-old-sea traversal, demo teleport/CCD/soft-wall overrides, camera/sun/fog overrides and superseded diagnostics/URL options. Migrate reusable `dev/water-diagnose.ts` and `dev/look/evals/water-*.ts` imports; archive demo-only diagnostics with the tag instead of leaving broken imports. The parked sky prototype must stop depending on the removed water horizon seam: remove `water-render.ts`'s `protoOn('sky')`/`uHaze` branch and its write in `proto/sky/index.ts`, without graduating or deleting that unrelated prototype. Prune only removed ESLint suppressions. Search all references to old exports, `ISLAND_AT`, `ROCK`, `dressSea`, `proto=water` and old module paths; classify documentation/archive references explicitly. Run `npm run check`.
@@ -311,9 +311,9 @@ The existing enabled Looks preset `tune=1&lookPreset=sunny` still reports AgX; o
 ([manifest](../../.look/evidence/1793818905927-86180/evidence.json)). A first preset probe omitted `tune=1`
 and correctly stayed Neutral; it is not used as AgX evidence.
 
-### Step 4 receiver follow-up (4 November 2026; partial)
+### Step 4 receiver follow-up (4 November 2026; historical partial)
 
-Step 4 remains **unchecked**. Existing receiver patches show moving caustics and a thin wet/swash edge on real
+At this checkpoint step 4 remained **unchecked**; the spray follow-up below closes its remaining gap. Existing receiver patches show moving caustics and a thin wet/swash edge on real
 ground, and the observed dry bridge/cave roof remain unlit by caustics. However, neither the lee-rock nor the
 exposed-rock recordings gives convincing visual proof of airborne crest spray. The remaining step-4 work is to
 qualify or repair that visibility on real contacts, then inspect consecutive frames again. Counts alone do not
@@ -399,6 +399,76 @@ of deterministic bot timings. Broker rejects `--compare`, so the existing browse
 locally after broker runs; no second browser was launched. No push, ship or external network access was performed. Local `origin/main` advanced afterward to `f2dc0afa`
 with unrelated building-plan/production-harness changes and no overlap in these six changed files; this handoff
 remains pinned to the tested `3791b4f6` base, not a claim about that later tree.
+
+### Step 4 spray visibility follow-up (4 November 2026)
+
+**Step 4 is checked**, combining the receiver/exclusion evidence above with these real-place spray views.
+No default switch or step 7/8 work. This supersedes the earlier incomplete qualifications, not their all-angle
+limitations. Only `render/water/spray.ts` changed: breakers emit three separated drops on the existing fresh-crest
+event, with stronger opacity, 20% larger size and enough launch height/upward speed to clear the visible lip.
+Contact launches, crest/energy gates, quiet periods, shared pool and 96/frame + 420/second caps remain unchanged.
+
+Diagnosis: the shared pool works. An exposed constructed trestle already produces visible contact droplets in the
+[baseline](../../.look/evidence/1793820394983-9286/evidence.json). Real contacts use eight sites each; the retained
+demo uses 128 incoming-face sites and samples upstream of its baked rock. Its setup is not the calm home lee-rock.
+At the actual breaking-bank site `(1220.906,43.082)`, uploads previously showed one small drop per 4.38-second crest;
+a stronger-opacity first iteration still did not separate clearly from the sea. Raising the short ballistic arc
+made separation visible. The crest timer was firing; counts could not prove visibility, particularly because
+nominal particle lifetimes outlast GPU floor kills. A remote debug camera also fades emissions when the player is
+far away; the final bank view puts the player nearby, away from the inspected site.
+
+Visual question: **do detached droplets rise at a real contact and breaking shore, then stop between crests?**
+Opened final stills, motion sheets and every `crest-01..04.png` consecutive native 30-fps frame:
+
+- [Breaking bank](../../.look/evidence/1793820892900-18930/evidence.json): zero-based recorded frames **14–17**,
+  **0.467–0.567 s**, show small gray-blue dots above the foam lip near pixels `(570–600,315–335)`, at the site above.
+  `quiet.png` at 2 s has no detached dots there. Upload probe records three bursts of three drops in 12 seconds.
+- [Constructed trestle](../../.look/evidence/1793820894023-19077/evidence.json): frames **66–69**, **2.200–2.300 s**,
+  show separated rising drops left of the near-shore support row, foremost contact `(1201.68,-42.82)`.
+  `quiet.png` at 4.1 s shows its foot clear; the motion sheet repeats bursts near 2.18, 6.55 and 10.91 s.
+  This uses the existing `place-job.ts` trestle staging, real supports and the production contact registry.
+- [Retained demo rock](../../.look/evidence/1793820114283-1646/evidence.json): opened its proper surf-rock camera
+  still, cycle sheet and frames **60–63** (2.0–2.1 s). Strong foam/crests cross the rock, but detached dots are not
+  convincing in those frames. The comparison does not establish identical spray art; demo/wave/colour/terrain
+  settings were not retuned. Production droplets remain modest, not a constant fountain.
+
+Three visual rounds used: baseline, opacity/cluster change, then crest clearance. Launch height approximates the
+combined crest; universal FFT-phase clearance and real-time feel/smoothness remain unverified.
+
+Cost: earliest GPU start to latest end (not timer sums), three ~180-frame windows, Apple M1 Max 32-core / Metal 3,
+Chrome 156, DPR 1, stored 4x MSAA, 2048-square shadows. Same camera `(972,22,55) -> (1000,0,20)`, 1920x1200 output;
+all four cost stills opened. Mobile changes world resolution only, not the physical device.
+
+| Window set | World size | Mean spans (ms) | p95 spans (ms) |
+| --- | --- | --- | --- |
+| [High baseline](../../.look/evidence/1793820122482-1655/evidence.json) | 1920x1200 | 9.46 / 9.22 / 9.17 | 10.75 / 10.86 / 10.78 |
+| [High final](../../.look/evidence/1793820905376-19377/evidence.json) | 1920x1200 | 10.65 / 10.80 / 10.60 | 11.02 / 11.24 / 11.10 |
+| [Mobile baseline](../../.look/evidence/1793820123694-1686/evidence.json) | 1152x720 | 5.33 / 5.52 / 5.52 | 6.20 / 6.68 / 6.71 |
+| [Mobile final](../../.look/evidence/1793820906538-19386/evidence.json) | 1152x720 | 7.77 / 7.68 / 7.80 | 8.33 / 8.34 / 8.42 |
+
+Final counters: 26 native raster passes, 248 direct draws, 17 mip bundle executions / actual mip draws,
+one opaque colour/depth copy pair; zero missing span frames, max sampled animation interval 16.8 ms, none >33 ms.
+Worst high p95 leaves 5.46 ms against 16.7 ms. Mean deltas are about +1.40 ms high / +2.29 ms mobile, but without
+exclusive GPU reservation or clock telemetry these are observed whole-scene changes, not isolated spray cost.
+Raw `cost.json` and the restoring capture-only timestamp/counter probe accompany each cost manifest.
+No sustained ten-minute or physical-mobile performance claim.
+
+Literal default safeguard, run before and after:
+`node .look/see-client.ts playthrough --query '' --eval .look/default-play.ts`.
+[Baseline](../../.look/evidence/1793819962693-830/evidence.json) and
+[final](../../.look/evidence/1793820908862-19402/evidence.json) both pass every expected beat, with legacy water,
+tone 7, zero contacts/spray, 77 saves, no errors/pushing/water falls. Both reports read and end stills opened.
+The [offline comparison](../../.look/evidence/1793820908862-19402/compare.txt) has identical rounded objective
+durations, 8m17s idle, 23:00 end beat and first-beat shifts at most three game seconds. Optional rumour count differs
+(3 vs 2); neither solo run marks crystal/co-op beats, which are not required. Gameplay/copy/default code is unchanged.
+
+`npm run check` passes (298 tests), and trusted [world-inputs](../../.look/evidence/1793820907698-19394/evidence.json)
+passes without graphics errors. Final captures share source tree fingerprint `84930768d31cf6781e7751d54e36c5ee61f5aaeb`
+on base `0ccf98b1`, unchanged during each run; subsequent edits only document this evidence.
+Setup failures were corrected, not counted as visual passes: unsupported broker flags, a duplicate-export eval,
+a demo camera aimed elsewhere, and a restored checkpoint with no built contacts. The existing trestle staging
+replaced that checkpoint. No bot failure, external network use, push or ship in this task; `inflight` stopped locally
+on FETCH_HEAD permissions. Local evidence replaces an uploaded PR still because networking/shipping is forbidden.
 
 ### Step 4 evidence (3 November 2026)
 

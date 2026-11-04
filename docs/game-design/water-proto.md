@@ -160,6 +160,12 @@ Production `water=new` also serves the opt-in home shore slice (`classic=1&shore
 Real registered rock/support contacts each retain eight world-fixed spray sites, including later-built supports;
 the 512-contact registry bounds that list. Provider obstacles retain their separate 256-site cap. Spray still
 uses the shared particle pool with at most 96 emissions per frame and 420 per rolling second, before particle upload.
+Breaking-shore spray emits three separated droplets per fresh crest, with a short upward arc that clears the
+combined shore-wave lip. Stronger opacity and 20% larger breaker droplets keep sparse real-bank bursts readable;
+rock/support launches retain four droplets per site. Existing energy/crest gates and quiet intervals remain, so
+calm or sheltered water does not become a constant fountain. This is Local cosmetic behavior under `water=new`;
+legacy/default water is unchanged. See the [step-4 spray evidence](../plans/water-graduation.md#step-4-spray-visibility-follow-up-4-november-2026)
+for consecutive breaking-bank/support frames, measured costs and the retained-demo comparison.
 Its receivers carry the demo-strength shallow caustic net, moving wetness and swash lace; contacts and bed data
 follow the slice. Wet receiver sheen uses continuous vertex normals instead of turning dry terrain facets into
 white triangles. The surface rejects faces on the wrong side of the camera, using the existing GPU lens-depth

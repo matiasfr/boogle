@@ -23,7 +23,8 @@ let SWASH_OMEGA = Math.sqrt((9.81 * SWASH_TAU) / SHORE_WAVE.lambda) * SHORE_WAVE
 const DISTANCE = 350; // Spray.params.distance, metres; fade over the last 30%.
 const MAX_PER_SECOND = 420,
   MAX_PER_FRAME = 96,
-  ROCK_CLUSTER = 4; // droplets per rock site per crest
+  ROCK_CLUSTER = 4,
+  BREAKER_CLUSTER = 3; // separate droplets per site, only on a fresh crest
 const BREAKER_SITES = 768,
   CROWN_DROPS = 32;
 const f = Math.fround;
@@ -279,7 +280,7 @@ export function createSpray(atlas: ShoreAtlas) {
     return (1 - smoothstep(DISTANCE * 0.7, DISTANCE, d)) * smoothstep(near, full, viewZ);
   };
   const spray = (e: Site, t: number, dt: number, now: number, rock: boolean) => {
-    const visible = visibility(e.x, 0, e.z, rock ? 1 : 2.5, rock ? 4 : 10);
+    const visible = visibility(e.x, 0, e.z, 1, 4);
     if (!visible) return;
     const group = shoreGroup(e.x, e.z, t);
     const a = Math.min(e.base * group, e.amax);
@@ -295,7 +296,9 @@ export function createSpray(atlas: ShoreAtlas) {
       period = TAU / OMEGA,
       delay = e.r1 * 0.3;
     let strength = breaking * smoothstep(0.25, 0.55, a),
-      y0 = 1.1 * a,
+      // The displayed crest includes the second shore train as well as the first train timed here.
+      // Clear that lip: a dot launched inside it can spend its whole short arc below the depth-writing sea.
+      y0 = 1.6 * a + 0.05,
       reach = 0;
     if (rock) {
       delay = e.r2 * 0.25;
@@ -333,7 +336,9 @@ export function createSpray(atlas: ShoreAtlas) {
     drop.z = e.z;
     drop.y = y0;
     drop.floor = rock ? y0 - 0.3 : -0.3;
-    drop.alpha = Math.min(1, (rock ? 2 : 1) * strength) * visible;
+    // A sparse real coast has far fewer dots in view than the demo. Keep the breaking/energy gate above,
+    // but don't make its already-small airborne dots disappear against bright foam and caustics.
+    drop.alpha = Math.min(1, rock ? 2 * strength : Math.sqrt(strength)) * visible;
     if (rock) {
       const r3 = fract(e.r1 * 23.17 + 0.71);
       drop.vx = e.nx * (0.15 + 0.5 * e.r2) * reach + e.dx * 0.3;
@@ -349,12 +354,21 @@ export function createSpray(atlas: ShoreAtlas) {
       const speed = e.cel * (0.25 + 0.45 * fract(e.r2 * 17.3)); // omega/k = shallow-water c
       drop.vx = e.dx * speed;
       drop.vz = e.dz * speed;
-      drop.vy = (1.2 + 3.2 * fract(e.r1 * 7.9)) * Math.sqrt(a);
+      drop.vy = (2.4 + 3.2 * fract(e.r1 * 7.9)) * Math.sqrt(a);
       drop.life = 0.9 + 1.5 * e.r2;
       drop.drag = 1.7;
-      drop.size = 0.1 * (0.6 + 0.8 * fract(e.r2 * 5.3)) * Math.sqrt(a / 0.5);
+      drop.size = 0.12 * (0.6 + 0.8 * fract(e.r2 * 5.3)) * Math.sqrt(a / 0.5);
     }
     send(now);
+    if (!rock)
+      for (let k = 1; k < BREAKER_CLUSTER; k++) {
+        // Spread across the same breaking crest, not along its travel: all three share its event/quiet interval.
+        const side = k === 1 ? -0.35 : 0.7;
+        drop.x -= e.dz * side;
+        drop.z += e.dx * side;
+        drop.vy *= 1.15;
+        send(now);
+      }
     if (rock)
       for (let k = 1; k < ROCK_CLUSTER; k++) {
         const j = fract(e.r1 * (11.3 + k * 7.1));
