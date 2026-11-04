@@ -2,7 +2,7 @@
 // (imports, frame hooks, presence keys, ops, messages, actions, routes). Pure apart from listSources (reads the tree)
 // and gitFacts (runs git). Never throws on bad input: a file the reader cannot parse gets a `parseError` record. Same
 // tree and history give the same JSON (no timestamps). Schema: docs/plans/atlas.md, "Facts schema".
-import ts from 'typescript';
+import { parseSync, type StringLiteral } from 'oxc-parser';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -20,13 +20,16 @@ const uniq = <T>(list: T[]): T[] => [...new Set(list)];
 function readLockstepGlobs(root: string): string[] {
   try {
     const text = fs.readFileSync(path.join(root, 'eslint.config.js'), 'utf8');
-    const sf = ts.createSourceFile('eslint.config.js', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-    for (const st of sf.statements) {
-      if (!ts.isVariableStatement(st)) continue;
-      for (const d of st.declarationList.declarations) {
-        const init = d.initializer;
-        if (ts.isIdentifier(d.name) && d.name.text === 'LOCKSTEP_FILES' && init && ts.isArrayLiteralExpression(init))
-          return init.elements.filter(ts.isStringLiteral).map((e) => e.text);
+    const sf = parseSync('eslint.config.js', text).program;
+    for (const st of sf.body) {
+      const declaration = st.type === 'ExportNamedDeclaration' ? st.declaration : st;
+      if (declaration?.type !== 'VariableDeclaration') continue;
+      for (const d of declaration.declarations) {
+        const init = d.init;
+        if (d.id.type === 'Identifier' && d.id.name === 'LOCKSTEP_FILES' && init?.type === 'ArrayExpression')
+          return init.elements
+            .filter((e): e is StringLiteral => e?.type === 'Literal' && typeof e.value === 'string')
+            .map((e) => e.value);
       }
     }
   } catch {
