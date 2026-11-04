@@ -38,16 +38,17 @@ const VALUES: Record<Operation, string[]> = {
     '--at',
     '--saves',
     '--players',
+    '--warp-speed',
     '--curves-vs',
     '--target',
   ],
-  playthrough: ['--query', '--eval', '--stall'],
+  playthrough: ['--query', '--eval', '--stall', '--players', '--warp-speed'],
   scenario: [],
   'cold-start': ['--runs', '--mode', '--seconds', '--query'],
 };
 const FLAGS: Record<Operation, string[]> = {
   look: ['--video', '--heatmap', '--hud', '--warp', '--real', '--curves'],
-  playthrough: ['--full'],
+  playthrough: ['--full', '--long', '--real'],
   scenario: ['--no-trace'],
   'cold-start': ['--video-probe'],
 };
@@ -86,6 +87,11 @@ function vet(value: unknown): Request {
   if (typeof r.url !== 'string' || !/^http:\/\/127\.0\.0\.1:\d+\/$/.test(r.url))
     throw new Error('url must be on 127.0.0.1');
   if (typeof r.query !== 'string' || typeof r.dataDir !== 'string') throw new Error('Missing query or data directory');
+  if (
+    r.clockUrl !== undefined &&
+    (typeof r.clockUrl !== 'string' || !/^http:\/\/127\.0\.0\.1:\d+\/clock$/.test(r.clockUrl))
+  )
+    throw new Error('clockUrl must be a local server clock');
   if (!Array.isArray(r.args) || r.args.some((a) => typeof a !== 'string')) throw new Error('args must be strings');
   const args = [...r.args];
   let scenarios = 0;
@@ -112,7 +118,8 @@ function vet(value: unknown): Request {
   const localTemp =
     path.dirname(dataDir) === fs.realpathSync(os.tmpdir()) && path.basename(dataDir).startsWith('boogle-look-');
   if (!localTemp && !dataDir.startsWith(dir + path.sep)) throw new Error('Unexpected server data directory');
-  return { operation, url: r.url, query: r.query, dataDir, args };
+  if (r.clockUrl && operation !== 'look' && operation !== 'playthrough') throw new Error('This operation cannot warp');
+  return { operation, url: r.url, query: r.query, dataDir, args, clockUrl: r.clockUrl };
 }
 
 async function execute(id: string, request: Request) {
@@ -123,6 +130,7 @@ async function execute(id: string, request: Request) {
   const started = new Date().toISOString();
   const { operation, url, query } = request;
   const args = [...request.args];
+  if (request.clockUrl) args.push('--clock-url', request.clockUrl);
   if (operation === 'cold-start') args.push('--direct');
   if (operation === 'look' && args.includes('--at') && !args.includes('--saves')) {
     const latest = path.join(dir, 'latest-playthrough.json');
@@ -131,8 +139,9 @@ async function execute(id: string, request: Request) {
     args.push('--saves', inside(saves.directory));
   }
   if (operation === 'playthrough') {
-    if (!args.includes('--eval')) args.push('--eval', inside('dev/look/evals/place-job.ts'));
-    args.push('--data-dir', request.dataDir, '--name', 'run');
+    const twoPlayers = args[args.indexOf('--players') + 1] === '2' && args.includes('--players');
+    if (!twoPlayers && !args.includes('--eval')) args.push('--eval', inside('dev/look/evals/place-job.ts'));
+    args.push('--data-dir', request.dataDir, '--name', 'run', '--root', worktree);
   }
   const outputFile = path.join(out, 'output.txt');
   const status = await new Promise<number>((resolve) => {
@@ -148,7 +157,8 @@ async function execute(id: string, request: Request) {
       },
     ));
     let timedOut = false;
-    const timeout = operation === 'cold-start' ? 35 * 60_000 : 7 * 60_000;
+    const timeout =
+      operation === 'cold-start' || (operation === 'playthrough' && args.includes('--long')) ? 35 * 60_000 : 7 * 60_000;
     const timer = setTimeout(() => {
       timedOut = true;
       stopChild();

@@ -21,7 +21,13 @@ const q = new URLSearchParams(location.search);
 export async function play() {
   // oxlint-disable-next-line typescript/no-explicit-any
   const place = window.__place as any;
-  const bot = makeBot({ recover: () => place.backUp() });
+  const coopRoute = q.get('coopRoute') === '1';
+  const bot = makeBot({
+    recover: () => {
+      if (coopRoute) throw new Error('Co-op route needed a recovery; no fixture relocation allowed');
+      place.backUp();
+    },
+  });
   const { note, wait, now, press } = bot;
   // "You got ___": read it for a second, then put it away, as a person would.
   let gotFor = 0;
@@ -54,6 +60,7 @@ export async function play() {
       const before = place.giftState.count();
       await travel(c.x, c.z, 1);
       if (Math.hypot(c.x - body.position.x, c.z - body.position.z) > 3) {
+        if (coopRoute) throw new Error('Co-op route could not walk to a reward crate');
         // Past the machine, off the deck: down from the track and across.
         place.backUp();
         await wait(400);
@@ -352,6 +359,174 @@ export async function play() {
     }
   };
   const from = q.get('from');
+  if (coopRoute && from) throw new Error('The continuous co-op route must start fresh');
+  if (coopRoute) {
+    // Only harness progress is stored here. Reloads restore the game through its normal save/network path.
+    const peer = Number(q.get('player'));
+    if (peer !== 1 && peer !== 2) throw new Error('Co-op route needs player=1 or player=2');
+    const progress = window as unknown as {
+      __coopStep: number;
+      __coopPhase: string;
+      __coopRelease: number;
+    };
+    const saved = Number(sessionStorage.getItem('look.coop.step') ?? 0);
+    progress.__coopStep = saved;
+    progress.__coopRelease = Math.max(0, saved - 1);
+    let step = 0;
+    const phase = async (name: string, work: () => Promise<unknown>) => {
+      const n = ++step;
+      if (n <= saved) return;
+      if (!(await waitFor(() => progress.__coopRelease >= n - 1, 600000, `release ${name}`)))
+        throw new Error(`Co-op coordinator did not release ${name}`);
+      note(`split plan: ${name}`);
+      await work();
+      sessionStorage.setItem('look.coop.step', String(n));
+      progress.__coopPhase = name;
+      progress.__coopStep = n;
+      note(`checkpoint ${n}: ${name}`);
+    };
+    const assigned = async (owner: number, work: () => Promise<unknown>, done: () => boolean, label: string) => {
+      if (peer === owner) await work();
+      if (!(await waitFor(done, 600000, label))) throw new Error(`Co-op route stopped at ${label}`);
+    };
+    const station = async (line: typeof L1, index: number, owner: number) => {
+      const st = line.stations[index];
+      await phase(st.spec.id, async () => {
+        await assigned(
+          owner,
+          async () => {
+            const before = place.job.score.logs + place.job.score.rails + place.job.score.stone;
+            await bill(st);
+            const delivered = place.job.score.logs + place.job.score.rails + place.job.score.stone - before;
+            if (delivered <= 0) throw new Error(`${st.spec.id}: assigned player delivered no materials`);
+            const total = Number(sessionStorage.getItem('look.coop.delivered') ?? 0) + delivered;
+            sessionStorage.setItem('look.coop.delivered', String(total));
+            note(`contributed ${delivered} materials at ${st.spec.id}; total ${total}`);
+          },
+          () => line.stage > index,
+          `${st.spec.id} completed`,
+        );
+        // Follow only once the route exists; do not route the idle partner into the gorge.
+        await travel(st.x, st.z, 3);
+      });
+    };
+    const chest = async (id: 'axe' | 'pack', owner: number) => {
+      await phase(id, () =>
+        assigned(
+          owner,
+          async () => {
+            const c = place.giftState.crates().find((c: { content: string }) => c.content === id);
+            if (!c) throw new Error(`Missing earned ${id} chest`);
+            await travel(c.x, c.z, 1);
+            await wait(2500);
+          },
+          () => place.job.rung[id] > 0,
+          `shared ${id}`,
+        ),
+      );
+    };
+    await phase('wake', async () => {
+      const path = place.PATH_SAMPLES[0] as number[][];
+      for (let n = 0; n < path.length; n += 3) await go(path[n]![0]! + O, path[n]![1]!, 1.8);
+      await go(place.machine.flatbed.x, place.machine.flatbed.z, 5);
+      await assigned(
+        1,
+        async () => {
+          press();
+          await wait(500);
+        },
+        () => place.job.awake && place.job.rung.multi && place.run.mode === 'idle',
+        'machine ready for chopping',
+      );
+    });
+    for (let k = 0; k < L1.stations.length; k++) await station(L1, k, (k % 2) + 1);
+    await phase('jump', () =>
+      assigned(
+        1,
+        async () => {
+          await wait(6000); // the first-path celebration, as in the solo route
+          await firstDevice();
+        },
+        () => place.job.tech.jump,
+        'shared jump',
+      ),
+    );
+    await chest('axe', 2);
+    await phase('forge frame', () =>
+      assigned(
+        2,
+        async () => {
+          if (!(await waitFor(() => place.activeFrame() === place.forgeFrame, 30000, 'forge frame ready')))
+            throw new Error('Forge frame did not become active');
+          await bill(place.forgeFrame);
+        },
+        () => place.job.forgeBill === 1,
+        'forge frame',
+      ),
+    );
+    await chest('pack', 1);
+    await phase('forge lit', () =>
+      assigned(
+        1,
+        () => bill(place.forgeFrame),
+        () => place.forge.lit,
+        'forge lit',
+      ),
+    );
+    await phase('line 2', async () => {
+      if (!(await waitFor(() => place.run.line === L2 && place.run.mode === 'idle', 30000, 'line 2 ready')))
+        throw new Error('Machine did not reach line 2');
+    });
+    for (let k = 0; k < 5; k++) {
+      const st = L2.stations[k];
+      if (st.spec.gate === 'quarry')
+        await phase('quarry gate', () => assigned(2, firstGate, () => place.job.gate.quarry, 'quarry gate'));
+      if (st.spec.gate === 'sea')
+        await phase('sea gate', () =>
+          assigned(
+            1,
+            async () => {
+              await climb();
+              await wait(4500);
+              await glideTo(st.x, st.z);
+            },
+            () => place.job.gate.sea,
+            'sea gate',
+          ),
+        );
+      await station(L2, k, (k % 2) + 1);
+      if (st.spec.id === 'Q2')
+        await phase('hook', () => assigned(2, secondDevice, () => place.job.tech.hook, 'shared hook'));
+    }
+    await phase('trains', () =>
+      assigned(
+        2,
+        async () => {
+          const bo = place.boilerAt();
+          await bot.use(bo.x, bo.z, 'the boiler');
+          const c = L1.train.tr.cars[0]!.body.position;
+          await bot.use(c.x + 3, c.z + 3, 'the old train');
+        },
+        () => place.job.rung.trains,
+        'shared trains',
+      ),
+    );
+    await phase('ride to Far Head', async () => {
+      const village = place.halts.find((h: { name: string }) => h.name === 'Village, line 2');
+      await ride(L2, village);
+      if (!(await waitFor(() => L2.train.tr.stop === 2, 120000, 'ride to Far Head')))
+        throw new Error('Train did not reach Far Head');
+      await wait(4000);
+    });
+    await station(L2, 5, 2);
+    await phase('pier', async () => {
+      const head = place.halts.find((h: { name: string }) => h.name === 'Far Head');
+      await travel(head.x, head.z, 1);
+      if (!place.job.ended || me.swimming) throw new Error('Pier unfinished or player stranded in water');
+    });
+    bot.finish('continuous co-op route: both at the pier, without skips or relocations');
+    return;
+  }
   note('start');
   if (from === 'path') place.skipPath();
   else if (from === 'line2') place.skipLine2();
@@ -431,13 +606,13 @@ export async function play() {
     await wait(5000);
   }
   // Ride home on line 1, then out on line 2, to the pier.
-  const ride = async (
+  async function ride(
     l: {
       k: number;
       train: { tr: { stop: number; cars: { body: { position: { x: number; z: number } }; platform: Platform }[] } };
     },
     h: { x: number; z: number; stop: number; k: number },
-  ) => {
+  ) {
     await travel(h.x, h.z, 1);
     note(`on the platform: ${place.haltUnder()?.name ?? 'no'}, eta ${place.trainEta(l.train.tr, h.stop)}`);
     const callAt = now();
@@ -459,7 +634,7 @@ export async function play() {
     input.keys.delete('KeyW');
     bot.check('aboard the train', carry.on === car.platform);
     note('aboard');
-  };
+  }
   const halts = place.halts;
   if (lobe(body.position.x, body.position.z) === 'n') {
     const camp = halts.find((h: { name: string }) => h.name === 'Camp');
