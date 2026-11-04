@@ -2,6 +2,8 @@
 
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
+- [entity-components.md](entity-components.md) (2026-11-03): measured entity/prototype audit, live Unity/Unreal/Verse/Godot comparison and seven recommendations; typed owned behaviours with explicit calls, two name-label conversions as a bounded proof, no component runtime or mass conversion. Plan awaits approval.
+
 - [direction-skill-test.md](direction-skill-test.md) (2026-11-03): four manual prompt tests of the installed game-direction skill; seven acceptance passes, current playtest/tracker reconciliation, reading cost, stale guidance and six recommendations; no gameplay or skill changes.
 - [color-sources.md](color-sources.md) (2026-11-03): live-source companion to the offline colour-and-post report; AgX/Punchy, Neutral, GT7 and engine corrections, fourteen game-source checks and browser HDR status; recommends metered Neutral as the leading comparison, with explicit source-access gaps. No renderer changes.
 - [material-pipeline.md](material-pipeline.md) (2026-11-03): material/channel and duplication audit, historical shader/pipeline counts, engine and stylized-game precedents, five options and five ordered recommendations; a small shared preset library, material fixes before post, and shared asset-stage/Dev controls. Research only.
