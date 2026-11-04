@@ -2,6 +2,8 @@
 
 _4 November 2026; source/live research began 3 November. Research, source audit and measured Node checks at `279cbc7167913401254113a21a9fe337daedcd51`, on `codex/level-design-tools`. Scope: reliable placement and traversal while Boogle grows into more authored locations; engine/studio practice, agent tooling, authoring options and a smallest proof. Recommendations only; no game changes, editor installation, browser playthrough or historical runtime replay. Not tested on a device._
 
+**Implementation update:** [Executed results, 4 November](#executed-results--4-november-2026) supersedes the paper predictions where tested. The bounded implementation is **partial**, with failed coverage and a missed historical discriminator; it has not met section 9's acceptance.
+
 ## Answer
 
 **Extend the existing checks around one inspectable description of each place's physical content. Keep TypeScript authoring; integrate Rapier queries and the existing bots before buying a new authoring workflow.** Agents need to ask which surface supports an object, what blocks its approach, what changes after construction, and which source owns the answer. A better editor or a larger language model cannot answer those questions reliably when the description omits the relevant geometry. [I]
@@ -439,4 +441,95 @@ Later decisions should each have one question:
 
 Evidence that would change the recommendation: repeated multilayer routing failures after complete collision export would favor Recast; frequent human gizmo work with measured round-trip savings would favor an editor integration; many identical assembly fixes would move templates earlier; a proven engine/browser port with lower total iteration cost could reopen migration. Conversely, source extraction that duplicates gameplay or produces many false positives would shrink the manifest to a supported subset and move exact probes into runtime readback. [I]
 
-**Limits:** no browser/GPU run, no human fun/discovery test, no external editor/MCP performance comparison, no complete scene exporter and no historical runtime replay were performed. Local command results prove their stated coverage only. Estimated budgets and effort are hypotheses to measure in the first proof. Relative-link and cited-hash checks passed. The new report passed explicit Prettier formatting with the Markdown ignore overridden; the index keeps its one-line insertion. Default Prettier and ESLint exclude these Markdown files, so neither is evidence of code validation. `npm run check` is not required for a documentation-only commit with no push under the current test rules. [L/U]
+**Limits of the original research:** no browser/GPU run, no human fun/discovery test, no external editor/MCP performance comparison, no complete scene exporter and no historical runtime replay were performed in that research. The executed results below supersede this statement for the subsequent implementation. Estimated budgets and effort above remain hypotheses except where measured below. [L/U]
+
+## Executed results — 4 November 2026
+
+**PARTLY / MISSED / PARTLY. Section 9 acceptance is not met.** These are executed historical **source fixtures**, not complete historical builds. The owner authorized starting this tooling before the Round 4 playtest. No object moved, no layout or gameplay tuning, no save/schema/wire/catalog change, no allowance increase, no new unit test or CI browser scenario, and no push/ship. The only runtime edit is the narrow station-description extraction below. [L]
+
+### What now runs
+
+`npm run level-check` is the one entry point: classic and its layout fixtures, plus all **63 existing place assertions and 12 printed facts**. The old `node dev/economy/place-level.ts` remains an alias to that same implementation. Text and JSON name coverage, place states and exclusions. `--island=low` explicitly selects classic-low; unknown selectors such as `--proto=place` fail instead of silently checking classic. Existing allowance matching retains its internal `today` key without presenting classic as the default browser experience. No allowance was added or enlarged. [L]
+
+```sh
+npm run level-check -- --place=place --region=T3 --state=empty --physics --json
+npm run level-check -- --place=place --region=T3 --state=stocked --physics --json
+npm run level-check -- --place=place --region=T3 --state=path-built --physics --json
+npm run level-check -- --place=place --region=stack --state=glide --physics --json
+npm run level-check -- --replay
+```
+
+Physics is opt-in Node/Rapier WASM, with no renderer imports or GPU. `scene.ts` executes the checkout's actual `makePlayerBody` and `colliderDesc` functions with explicit dependencies; the player is two spheres, including its head offset. The terrain uses `buildMesh`'s heightfield orientation. `spatial-station.ts` shares the station's exact shapes/transforms with `stations.ts`. Pad/tile/ring records are a bounded adapter of pure `tech-layout` data; their whole creator remains marked incomplete. Source-function evaluation accepts trusted repository/Git source only, not external code. [L]
+
+Packets are `.look/level-check/<sourceHash>/<region>/<state>/{manifest.json,report.json,map.svg}`. The tested hash is `ad976fdce608bf17e5776f867d79df4ec3dbcd95da20695c726027407aa5b787`. It covers 740 source/tool/layout/asset/lock files; each dependency has its own SHA-256. The manifest names state assumptions and player shapes. Maps show partial collider footprints and sampled stance positions, prominently labelled **INCOMPLETE**; height bands and runtime collider-overlay parity remain unimplemented. [L/U]
+
+### Historical fixtures: actual outputs
+
+The replay command writes exact `git show` source snapshots and dependency hashes under `.look/level-check/replays/`, with `report.json` and a hash of the replay adapter. It executes the historical pure geometry/selection functions, including the old crate owner in `index.ts`. It does not mix current terrain into historical results. [L]
+
+| Pair                     | Outcome    | Executed old → fixed result                                                                                                                                                                                                        | Limits                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `87104df0^` → `87104df0` | **PARTLY** | `blocked: true` (both body spheres) → `false`; one head-high box → low base and four posts                                                                                                                                         | Deliberately specified stepped stance 0.60 m above terrain, at T3's frame center. This is a case-specific clearance witness above the low base, not a demonstrated swept ground approach. Feeder, stock and neighboring solids omitted.                                                                                                                    |
+| `a65eef4f^` → `a65eef4f` | **MISSED** | `unsafeApproach: true` → `true`; maximum cardinal residual 1.596631 → 1.563852 m against the source policy's 1 m limit                                                                                                             | Both primary candidates fail the new 3.5 m cardinal-margin policy; the fixed function falls back. The old candidate is `(961.564,19.337,-40.303)`, fixed fallback `(960.223,20.508,-43.122)`. This contradicts the paper expectation of fixed-clean. No threshold was tuned to clear it. Cardinal sampling is not a continuous footprint/controller proof. |
+| `c9e654e7^` → `c9e654e7` | **PARTLY** | No stack return edge → `stack-return` at 17.263536 m from a synthetic standing **body origin**, within 24 m. Recovery candidate outside active slab footprint → inside; nearest active slab-center distance 11.979840 → 0.008508 m | Recovery executes historical `nearestSample`, slab generation and `growSolids` for Q5 open/Q6 unbuilt near Far Head, beyond the stack region. No collision-free recovery pose, runtime recovery loop, sleeper support, hook cone or uninterrupted dry-return proof.                                                                                        |
+
+The frame stance and crate margin are intentionally case-specific fixtures, not evidence that a universal placement rule discovers these cases unaided. A fixture result never earns CAUGHT. The installed physics version is **0.19.3**. Final replay work measured **3,129 ms**, including source extraction and WASM load; no historical browser build was run. [L]
+
+### Fault injection and the current place
+
+Append `--fixture=support-gap`, `--fixture=blocked-stance` or `--fixture=missing-descriptor` to the T3 empty command. These mutate only scratch descriptors and emit separate `<state>-fixture-<name>` packets. All executed, all exited 1: [L]
+
+| Injection                      | Source-linked result                                                                                            |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Raised scratch support         | Four `support-gap` findings, measured gaps 1.757–1.827 m; `stations.ts:buildStation`, named support `terrain`   |
+| Box over stance samples        | `stance-blocked`, all 32 candidates rejected; `verbs.ts:registerInteractable`                                   |
+| Omitted expected scratch solid | `coverage-missing` for `scratch/missing`, also present in coverage denominator/list; `stations.ts:buildStation` |
+
+**Current-place findings:** each of T3 empty/stocked/path-built and stack glide reports **39 source-linked coverage failures**, not a clean region. The syntactic inventory has 40 creator sites; only terrain's entire creator is certified. T3's shared station is a partial instance adapter, so its creator remains missing for other callers. Unknown creator bounds conservatively fail coverage rather than claiming the creator is outside the region. These are exporter findings, **not 39 observed layout defects**. Every owner is in the JSON. They include active track/legs, tree/rock collision, remaining land/tech geometry, lamps/signs, depot/forge/heap and town assemblies. The scanner itself does not prove closure over aliased or external creators. [L/U]
+
+No additional geometric defect was found in the exported subset after correcting the audit mistakes listed below. The current `handCrate` source selects `(976.396,30.270,-92.346)` with maximum cardinal residual **0.156997 m**, below 1 m. This is a sampled source fixture, not a certificate for the crate's runtime approach. Stack has a range-compatible return ring. **Current active-track recovery, continuous footprint/support along a route, real interaction activation/priority, assembly overlap policy, and complete region/state solids remain unverified.** `path-built` explicitly reports track unexported; stack stock has no meaning. [L/U]
+
+During review, the first support query could hit another part of the same station and falsely treat it as ground; it now queries named terrain. Shape offsets/rotations now follow the real backend. Stock constants come from their actual owners, including `render/haul-pieces.ts`, without importing that renderer module. An initial stack walk-approach failure was a tool false positive: the stack intentionally requires glide, so it now requests an ability witness. Hook range originally used head height; it now uses the source body's origin. These changes are disclosed corrections to the audit, not layout changes or hidden allowances. [L]
+
+The export boundary is where this implementation stops: complete active-solids coverage would require further ownership/extraction across the intertwined place factories. It did not expand the narrow station extraction into a broad `src/proto/place` refactor or implement a second game. Recommendation 1 is implemented; recommendations 2–3 and the bounded acceptance remain partial. The present failed-coverage packet is useful evidence, but not permission to treat a placement as safe. [L/U]
+
+### Behavior preservation and measured costs
+
+Executed original source snippets against extracted renderer snippets with the actual quaternion conversion and current terrain: **10 real frames, 66 static bodies, 1,250 stock updates, 240 stock creations/removals, rows 0–12**. Deep equality included shapes, positions, quaternions, call order, footprint and rail-bearer transforms. Both digests are `d8dddbed09e23bf6116bc290f7899c493b7c1112601e838c7042ad8eea441145`. Reproducer and report: `.look/level-check/station-equivalence.ts` and `.json`; the original source is pinned to `5022dd29f3b104d7aa50a5c0f1b126b1393674ac`. No unit test was added. [L]
+
+`npm run check` passes: lint, typecheck, **293 existing tests**, registry, unified level-check, assets, production build. Only the existing place progression checks and provenance hashing join its existing level-check step; physics/replay/browser work stays opt-in. Adjacent single runs measured classic-only **1.50 s CPU / 1.94 s wall**, combined **1.67 s CPU / 1.57 s wall**: approximately **0.17 s added CPU**, with noisy shared-host wall time. The place assertions/import measured 181 ms during one full check. [L]
+
+| Current packet | Export ms | Physics init ms | Queries ms |
+| -------------- | --------: | --------------: | ---------: |
+| T3 empty       |       741 |             434 |       1096 |
+| T3 stocked     |      1331 |             126 |        364 |
+| T3 path-built  |       588 |              38 |        326 |
+| Stack glide    |       629 |              48 |        443 |
+
+These were single runs while browser/check work shared the machine, not controlled performance benchmarks. Export includes hashing/parsing; physics init includes WASM, collider construction and query-world setup. Queries include current crate-source evaluation when selected. The cold T3 query exceeds the proposed 1 s target; no result was suppressed to meet it. `.look/level-check/executed.json` retains the exact timings and injected results. [L]
+
+### Exact-source visual and input evidence
+
+The existing broker, `look`, checkpoint/session recording and `makeBot` drive the evidence; there is no new browser harness. `dev/look/evals/placement-audit.ts` uses explicit synthetic `path` state for T3 and `head` plus `ended=true` for stack, logging abilities and exactly one setup teleport. Travel uses real inputs; it has no recovery callback. The session's 1 Hz position samples, bot logs, setup teleport, water and >12 m/100 ms discontinuity markers are retained. This does not detect every smaller automatic teleport or establish frame-level motion. [L/U]
+
+```sh
+# Run the real-input witness; inspect report.txt and bot.txt even on exit 1.
+node .look/see-client.ts playthrough --query 'proto=place&auditRegion=T3&auditView=play' --eval dev/look/evals/placement-audit.ts --stall 60 --full
+# Substitute auditRegion=stack. For images substitute auditView=topdown or contact:
+node .look/see-client.ts look --query 'proto=place&auditRegion=T3&auditView=contact' --eval dev/look/evals/placement-audit.ts --name T3-contact --warm 2 --frames 2 --seconds 1
+node .look/see-client.ts look --at list
+# Restore an explicit run/saves checkpoint with --at '<beat>' --saves <directory>.
+# That restoration teleport is setup, never an uninterrupted traversal witness.
+```
+
+First generate the matching physics packet and record its source hash. Freeze source during every run. The broker's `evidence.json` records before/after Git trees and flags changes during capture. Recompute `sourceBuild()` from `dev/level/build.ts`; if its hash differs, invalidate the packet and repeat affected captures. Store the broker manifest, session trace and any action source/hash in the packet's `witness.json`. Documentation-only commits can change Git tree identity while the source hash stays identical; record that distinction rather than claiming those earlier manifests match the final Git tree. [L]
+
+Executed observations, with all initial broker manifests on unchanged tree `5f0802f8747ee0256400e4711555f9a5d37b060f`: [L]
+
+- T3 approach and return succeeded, zero reported water/discontinuities/recovery teleports. Contact `(976.617,30.759,-91.657)`, return `(977.937,30.648,-98.439)`. Manifest `.look/evidence/1793781297088-58897/evidence.json`.
+- Stack glide landed inside the pad, but uninterrupted return **failed** while the diving-helmet reward modal was open. Its end image visibly shows the modal and return ring; the hook target was selectable, but registered F did not start pulling. Manifest `.look/evidence/1793781318725-60095/evidence.json`.
+- A **separate checkpoint-restored** stack return succeeded: F started the hook, then walking reached trestle height `(1323.560,24.889,-139.177)`. The restored state had no modal, so this did not test dismissal or repair the uninterrupted failure. Curves/video and copied action SHA-256 `db5dba9630a96849b178b756105c98815bfde062ab51ceaff766adcc395f8d84` are under `.look/evidence/1793781509082-67817/`.
+- The full place bot **stalled after T2**, with T3 at logs 32/40 and great beam 0/1; stop after 120 s without another beat, 5m19 game time. Manifest `.look/evidence/1793781355516-62199/evidence.json`. No complete progression claim follows from the focused T3 run.
+- Opened both Node map thumbnails, T3 and stack top-down/contact stills, both focused end images, full-bot end image and continuation motion evidence. T3's empty frame stands inland beside the track with clear grass frontage. Stack views show the isolated stone landing below the return pad/trestle. Initial HUD panels obstructed some geometry; clean follow-up stills were requested. These visual observations do not establish collider/mesh parity. All observed capture runs used WebGPU with no reported graphics/page errors.
+
+Remaining unverified: complete regional export, renderer/readback identity, all requested geometric probes over complete active states, historical full builds, uninterrupted stack return, full-bot progression, exact-frame recovery/teleport attribution, real-time smoothness/feel and device performance. No gameplay repair follows this tooling run before the owner's playtest. [U]
