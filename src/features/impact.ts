@@ -8,6 +8,7 @@
 import type { Avatar } from '../player/avatars.ts';
 import * as THREE from 'three';
 import { camera } from '../render/scene.ts';
+import { newWaterEnabled } from '../render/water/flags.ts';
 import { emit } from '../render/particles.ts';
 import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA, reducedMotion } from '../constants.ts';
 import { waterField } from '../physics/water-field.ts';
@@ -265,6 +266,8 @@ function onRemoteDown(r: Remote) {
 }
 
 // ---------------------------------------------------------------- flop + stars
+// Linear HDR radiance: metered water AgX needs more than the default sea's Neutral output.
+const STAR_BRIGHTNESS = newWaterEnabled ? 6 : 1.5;
 const starTex = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
@@ -281,9 +284,16 @@ const starTex = (() => {
   g.closePath();
   g.fill();
   g.stroke();
-  return new THREE.CanvasTexture(c);
+  const texture = new THREE.CanvasTexture(c);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 })();
-const starMat = new THREE.SpriteMaterial({ map: starTex, transparent: true, depthWrite: false });
+const starMat = new THREE.SpriteMaterial({
+  map: starTex,
+  color: new THREE.Color().setScalar(STAR_BRIGHTNESS),
+  transparent: true,
+  depthWrite: false,
+});
 const ents = new WeakMap<THREE.Object3D, { amt: number; stars: THREE.Group }>(); // avatar -> its flop state
 function entOf(avatar: THREE.Object3D) {
   let e = ents.get(avatar);
