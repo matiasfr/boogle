@@ -6,7 +6,6 @@
 import * as THREE from 'three/webgpu';
 import kitUrl from '../../../assets/built/place-kit.glb?url';
 import { onFrame } from '../../loop.ts';
-import { me } from '../../player/player.ts';
 import { scene } from '../../render/scene.ts';
 import { LOCO, TRAILER } from '../wagon/look.ts';
 import { H } from './land.ts';
@@ -421,22 +420,12 @@ function kitCars(trailers: number, working: boolean): MachineLook {
 
 // ---------------------------------------------------------------- what sits on the ground and moves
 type Ground = { x: number; y: number; z: number; yaw: number };
-/** The blobs under what moves (you, the machine) and under what stands (the trees you chop, the frames). */
+/** Ground contact for the machine and trees. The avatar already casts its own articulated shadow. */
 export function installContact(cars: Ground[], standing: { x: number; y: number; z: number }[]) {
-  const you = addBlob(0, -999, 0, 0.01, 0.01);
   const under = cars.map(() => addBlob(0, -999, 0, 0.01, 0.01));
   for (const t of standing) addBlob(t.x, t.y, t.z, 1.6, 1.6);
   onFrame(
     () => {
-      const b = me.body;
-      if (b) {
-        const p = b.interpolatedPosition,
-          h = H(p.x, p.z),
-          up = Math.max(0, p.y - h - 0.5),
-          s = Math.max(0, 1.5 - up * 0.25);
-        if (up < 5) setBlob(you, p.x, h, p.z, s, s);
-        else setBlob(you, 0, -999, 0, 0.01, 0.01);
-      }
       cars.forEach((c, n) => {
         const h = H(c.x, c.z);
         const near = c.y - h < 5;

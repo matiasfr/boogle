@@ -117,6 +117,8 @@ The optional **9 m beam** starts at the village's west edge (868, -30). **Lift**
 
 ## Ancient technology (round 4, exploring)
 
+The jump rings track the animated foot pivots, including during a running jump.
+
 Numbers and places: `src/proto/place/tech-layout.ts`. Research: [movement abilities](../research/movement-abilities.md), [BotW glide target](../research/botw-glide-target.md). Connecting a line gets you to where a device is; you still go and take it (**Take it**, Interact). Devices are one family: a stone drum, turning rings of teal light and a thin teal shaft you can see across the place. All three are shared; what you wear for them shows (rings at the ankles, a spool on the forearm, a pack).
 
 1. **A second jump.** On a pillar beside the first path's deck, seen from the footbridge on your first walk, with a stone lip reaching for where the trestle will go. Taking it hops you up and up again, once. Press Jump in the air: at least 6.8 m/s up, once per take-off, back when you stand on something, and it turns you towards the stick. Beside it, a block 2.2 m high with a box on it.
@@ -141,7 +143,7 @@ An optional side activity: nothing here gates the job (DESIGN.md 3), and it adds
 
 The room dressing stays on existing furniture footprints: a folded quilt, reading lamp, drawer pulls and kettle at home; folded cloth, hangers and a panelled counter in Fine Prices; brass-edged display cabinetry, reflector dishes and bench cushions in the museum. The shop's striped awning has a scalloped edge. Furniture shares one rough material with restrained ambient fill, and town walls retain their instanced construction mesh. This is visual dressing only: solids, prices, objectives and dialogue are unchanged.
 
-Work and festival overalls have continuous torso shells, shoulder straps and a stitched pocket; the raincoat has a continuous hem, collar and pockets. They use a shared matte cloth material on the existing Buddy attachment. The pack's reward model and worn silhouette share the same canvas bag, folded flap, pocket, straps and buckles; the worn pack is one merged mesh below the shoulders. Capacity and unlocks are unchanged.
+Work and festival overalls have continuous torso shells, shoulder straps and a stitched pocket; the raincoat has a continuous hem, collar and pockets. They use a shared matte cloth material on the existing Buddy attachment. The pack's reward model and worn silhouette share an open timber frame, shoulder straps, buckles and a low canvas cradle. It uses the load's back socket with no extra stand-off, so logs remain visible inside the frame. Capacity and unlocks are unchanged.
 
 **The shop, Fine Prices,** and **the museum** rise when the first path opens, each with a board on its plot till then (Fine Prices, coming soon; A museum, once there is something to show). You can tell them by their shape: an awning, a table of goods and a big tag; columns, a pediment and a sliver of blue through the door.
 
@@ -225,6 +227,8 @@ Render the same recipes without normalization via `node dev/audio/render.ts --of
 Quiet ambience under everything (`src/proto/place/ambience.ts`, on the ambience bus, so it starts with the first press, ducks under voices and follows the volume): slow swells of low-passed brown noise, one on each side on its own clock; far gulls every half a minute to two minutes (a lone mew, a pair, a long call, sometimes an answer), panned around; a faint wandering breeze that gives way to the sea at the shore. The sea is loudest within about 18 m of the shore, a little under that on the river bank, and fades by 150 m to 11 dB down, with height counting as distance; it leans towards the water's side as you turn. Numbers: `LEVELS` and `FEEL`. `&ambience=off` turns it off and `&ambience=-6` moves it in dB. Hear it away from the game: `node dev/audio/render.ts --only place`.
 
 ## How it's built
+
+Round 4 visual repairs: the avatar uses its articulated sun shadow without a second square terrain patch.
 
 Local, all of it, in localStorage per room (`boogle-place-v4`, a new key so an old save can't break it). What's kept is in one place: `job.ts` holds `job` (the shared state, including `rung`, `score` and `ways`) and a list of **slices**: `sharedSlice(key, { get, set })` for what a `&coop=1` room has in common (saved and in the snapshot), `personalSlice` for what's this tab's own (saved only). Your position and facing are personal: while moving they save about every five seconds and on leaving. Reloading returns you to safe ground there; water, building footprints and moving platforms return you to spawn. Start over returns you to spawn. `index.ts` is thin; its comment maps the modules. Your back's log count is kept in `chop.ts` and drawn by the
 game's bundle through `backSeam` (`src/features/haul-stack.ts`), with rails, a sack of stone, a pack frame and a big thing on your shoulder on the avatar. Pieces in the air are one instanced pool (`pieces.ts`, `send`); pieces joining a build fall from above

@@ -121,9 +121,8 @@ export const boilerShape = () => {
   g.position.set(0, 0.55, 0);
   return g;
 };
-// A low canvas pack with a rolled top: the upgrade stays below the shoulders, clear of the follow view.
+// An open carrying frame in the same back socket as the load, with a shelf under the bundle.
 const packFrame = new THREE.Group();
-packFrame.position.z = 0.43;
 packFrame.visible = false;
 
 // These meshes attach to the avatar after loading, so the scene warm-up cannot see them.
