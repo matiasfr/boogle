@@ -37,6 +37,7 @@ import { world } from '../../world/sync.ts';
 import { carry } from '../../physics/platforms.ts';
 import { backSeam } from '../../features/haul-stack.ts';
 import { drawHeaps, type Kind } from '../net/crates.ts';
+import { playMark } from '../mark.ts';
 import { clearMoments, showBanner } from './celebrate.ts';
 import {
   MOST_STROKES,
@@ -355,6 +356,17 @@ function allow(from: string) {
 }
 
 // ---------------------------------------------------------------- deposits
+// Authority observes accepted contributions only; keep this telemetry local and out of the shared job.
+const recentDeposits = new Map<string, { by: string; at: number }>();
+function markContribution(st: StationRun, by: string | null) {
+  if (!by) return;
+  const now = performance.now();
+  const previous = recentDeposits.get(st.spec.id);
+  if (previous && previous.by !== by && now - previous.at <= 30000) {
+    playMark('co-op station work', { frame: st.spec.id });
+  }
+  recentDeposits.set(st.spec.id, { by, at: now });
+}
 const pending: { q: number; kind: Goods; to: string }[] = [];
 let depQ = 0;
 function settle(q: number, kind: Goods, from: string) {
@@ -463,6 +475,7 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       const q = count(m.q) ? m.q : 0;
       if (!amAuthority() || coopWire.activeFrame?.() !== st || st.wants(m.kind) <= 0)
         return msg({ k: 'no', to: from, kind: m.kind, q });
+      markContribution(st, from);
       st.coming[m.kind]++;
       const slot = st.have[m.kind] + st.coming[m.kind] - 1;
       flyIn(a, st, m.kind, m.x, m.y, m.z, slot, true);
@@ -596,6 +609,7 @@ export const coop = {
     if (!COOP) return true;
     const to = authorityPeer();
     if (to === null) {
+      markContribution(st, net.myPeer);
       sendStock(st, net.myPeer, kind, p.x, p.y, p.z);
       return true;
     }
