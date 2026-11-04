@@ -647,9 +647,9 @@ export function updateChop(dt: number, now: number) {
     }
     f.add(railsWorn, stoneWorn, beamWorn, boilerWorn, packFrame);
   }
-  railsWorn.count = back.rails;
+  railsWorn.count = Math.max(0, Math.min(railsWorn.instanceMatrix.count, back.rails));
   railsWorn.visible = back.rails > 0;
-  stoneWorn.count = back.stone;
+  stoneWorn.count = Math.max(0, Math.min(stoneWorn.instanceMatrix.count, back.stone));
   stoneWorn.visible = back.stone > 0;
   beamWorn.visible = back.big === 'beam';
   boilerWorn.visible = back.big === 'boiler';

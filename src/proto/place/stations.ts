@@ -230,7 +230,10 @@ export function buildStation(spec0: Station, place: FrameAt) {
     railSlot,
     stoneAt,
     drawStock(n: Stock) {
-      const rows = Math.ceil(n.logs / PER_ROW);
+      logs.count = Math.max(0, Math.min(logs.instanceMatrix.count, n.logs));
+      rails.count = Math.max(0, Math.min(rails.instanceMatrix.count, n.rails));
+      if (stones) stones.count = Math.max(0, Math.min(stones.instanceMatrix.count, n.stone));
+      const rows = Math.ceil(logs.count / PER_ROW);
       if (rows !== stockRows) {
         if (stockBody) removeBody(stockBody);
         stockBody = null;
@@ -250,17 +253,14 @@ export function buildStation(spec0: Station, place: FrameAt) {
       run.shown.rails = n.rails;
       run.shown.stone = n.stone;
       run.shown.beam = n.beam;
-      for (let k = 0; k < n.logs; k++) setStackLog(logs, k, logSlot(k), yaw);
-      logs.count = n.logs;
-      logs.visible = n.logs > 0;
+      for (let k = 0; k < logs.count; k++) setStackLog(logs, k, logSlot(k), yaw);
+      logs.visible = logs.count > 0;
       logs.instanceMatrix.needsUpdate = true;
       if (logs.instanceColor) logs.instanceColor.needsUpdate = true;
-      for (let k = 0; k < n.rails; k++) rails.setMatrixAt(k, railM.compose(railSlot(k), railQ, one));
-      rails.count = n.rails;
+      for (let k = 0; k < rails.count; k++) rails.setMatrixAt(k, railM.compose(railSlot(k), railQ, one));
       rails.instanceMatrix.needsUpdate = true;
       if (stones) {
-        for (let k = 0; k < n.stone; k++) stones.setMatrixAt(k, railM.compose(stoneAt(k), railQ, one));
-        stones.count = n.stone;
+        for (let k = 0; k < stones.count; k++) stones.setMatrixAt(k, railM.compose(stoneAt(k), railQ, one));
         stones.instanceMatrix.needsUpdate = true;
       }
       if (beam) beam.visible = n.beam > 0;
