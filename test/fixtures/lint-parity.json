@@ -2,6 +2,90 @@
   "source": "Current ESLint 10.14.0, measured before removal on 2026-11-03; fixed syncBan patterns. Original 170 assertions from the linter study.",
   "cases": [
     {
+      "group": "global socket alias",
+      "file": "src/lint-probe.ts",
+      "code": "const { WebSocket: W } = globalThis; new W('x');",
+      "rule": "no-restricted-syntax",
+      "expected": true
+    },
+    {
+      "group": "global audio alias",
+      "file": "src/lint-probe.ts",
+      "code": "const { AudioContext: A } = globalThis; new A();",
+      "rule": "no-restricted-syntax",
+      "expected": true
+    },
+    {
+      "group": "window webkit alias",
+      "file": "src/lint-probe.ts",
+      "code": "const { webkitAudioContext: A } = window; new A();",
+      "rule": "no-restricted-syntax",
+      "expected": true
+    },
+    {
+      "group": "global webkit alias",
+      "file": "src/lint-probe.ts",
+      "code": "const { webkitAudioContext: A } = globalThis; new A();",
+      "rule": "no-restricted-syntax",
+      "expected": true
+    },
+    {
+      "group": "socket value alias",
+      "file": "src/lint-probe.ts",
+      "code": "const W = WebSocket; new W('x');",
+      "rule": "no-restricted-syntax",
+      "expected": true
+    },
+    {
+      "group": "audio value alias",
+      "file": "src/lint-probe.ts",
+      "code": "const A = AudioContext; new A();",
+      "rule": "no-restricted-syntax",
+      "expected": true
+    },
+    {
+      "group": "webkit value alias",
+      "file": "src/lint-probe.ts",
+      "code": "const A = globalThis.webkitAudioContext; new A();",
+      "rule": "no-restricted-syntax",
+      "expected": true
+    },
+    {
+      "group": "allowed socket alias",
+      "file": "src/net/ws-room.ts",
+      "code": "const { WebSocket: W } = window; new W('x');",
+      "rule": "no-restricted-syntax",
+      "expected": false
+    },
+    {
+      "group": "allowed audio alias",
+      "file": "src/render/audio.ts",
+      "code": "const { AudioContext: A } = globalThis; new A();",
+      "rule": "no-restricted-syntax",
+      "expected": false
+    },
+    {
+      "group": "allowed webkit alias",
+      "file": "src/render/audio.ts",
+      "code": "const { webkitAudioContext: A } = window; new A();",
+      "rule": "no-restricted-syntax",
+      "expected": false
+    },
+    {
+      "group": "socket type is not a door",
+      "file": "src/lint-probe.ts",
+      "code": "let socket: WebSocket;",
+      "rule": "no-restricted-syntax",
+      "expected": false
+    },
+    {
+      "group": "audio type is not a door",
+      "file": "src/lint-probe.ts",
+      "code": "let audio: AudioContext; type Constructor = typeof AudioContext;",
+      "rule": "no-restricted-syntax",
+      "expected": false
+    },
+    {
       "group": "base Rapier",
       "file": "src/lint-probe.ts",
       "code": "import '@dimforge/rapier3d';",
@@ -1142,7 +1226,7 @@
       "file": "src/lint-probe.ts",
       "code": "const { WebSocket: Socket } = window; new Socket();",
       "rule": "no-restricted-syntax",
-      "expected": false,
+      "expected": true,
       "eslint": false
     },
     {
@@ -1150,7 +1234,7 @@
       "file": "src/lint-probe.ts",
       "code": "const { AudioContext: Audio } = window; new Audio();",
       "rule": "no-restricted-syntax",
-      "expected": false,
+      "expected": true,
       "eslint": false
     },
     {

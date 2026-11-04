@@ -37,19 +37,26 @@ const lobbyNote = (text: string) => {
 let started = false;
 export const gfx = () => (started ? 'webgpu' : null);
 
+export function graphicsFailed() {
+  lobbyNote(
+    'gpu' in navigator
+      ? "This device's graphics can't start WebGPU, which Boogle needs to draw the island."
+      : 'Boogle needs WebGPU: open it in Chrome, Edge or Safari 26 (iPhone, iPad and Mac), or Firefox on Windows or a Mac.',
+  );
+  const enter = document.getElementById('enter') as HTMLButtonElement | null;
+  if (enter) {
+    enter.textContent = "Can't draw the island";
+    enter.disabled = true;
+  }
+}
+
 export const rendererReady = renderer.init().then(
   (r) => {
     started = true;
     return r;
   },
   (e) => {
-    lobbyNote(
-      'gpu' in navigator
-        ? "This device's graphics can't start WebGPU, which Boogle needs to draw the island."
-        : 'Boogle needs WebGPU: open it in Chrome, Edge or Safari 26 (iPhone, iPad and Mac), or Firefox on Windows or a Mac.',
-    );
-    const enter = document.getElementById('enter');
-    if (enter) enter.textContent = "Can't draw the island";
+    graphicsFailed();
     throw e;
   },
 );
