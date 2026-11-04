@@ -7,6 +7,7 @@ Served with the game at `/THIRD_PARTY_NOTICES.md`. Scope: code adapted into Boog
 - Source: https://github.com/Humpalumps/Ultra-Water, revision `30ea65ecb0a66b137aa200d099965634bdd84d51`
 - Adapted in: `src/proto/water/` (`shore.ts` from `src/water/shoreMap.js`; `surface.ts`, `shore-nodes.ts` and `island.ts` from `src/water/OceanSurface.js` and `src/scene/terrain.js`; `spectrum.ts` and `fft.ts` from `src/water/OceanSim.js`; `foam.ts` from `src/water/bakeTextures.js`; `ground.ts` from `src/scene/terrain.js`; `caustics.ts` from `src/water/Caustics.js`; `atmosphere.ts` and `sky.ts` from `src/scene/atmosphere.js` and `src/scene/sky.js`; `post.ts` from the metered exposure and AgX in `src/engine/PostFX.js`; `spray.ts` from `src/water/Spray.js`; `underwater.ts` from `src/water/UnderwaterPass.js` and the lens droplets in `src/engine/PostFX.js`; `snow.ts` from `src/water/MarineSnow.js`; `height.ts` from `src/scene/islandHeight.js` and `src/scene/noise.js`; values in `tuning.ts`), rewritten in TypeScript and TSL.
 - Copyright (c) 2026 Humpalumps
+- Production bloom: `src/render/water/bloom.ts`, adapted from the six-level filter chain in `src/engine/PostFX.js`.
 - MIT License
 
 ## Hash without Sine (Dave Hoskins)
