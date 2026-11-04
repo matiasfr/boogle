@@ -17,7 +17,7 @@
     "test:net": "node dev/peer-test/ws-run.ts",
     "load": "WS_LOAD=1 node dev/peer-test/ws-run.ts",
     "format:check": "prettier --check .",
-    "typecheck": "tsc -p .",
+    "typecheck": "node node_modules/typescript-native/bin/tsc -p .",
     "check": "npm run lint && npm run typecheck && npm run test:unit && npm run registry && npm run level-check && npm run assets -- --check && npm run build",
     "test:unit": "node --test --test-timeout=5000 'test/**/*.test.ts'",
     "check:full": "npm run check && npm --prefix server test && npm run test:net",
@@ -60,7 +60,8 @@
     "level-check": "node --import ./dev/sim/hooks.ts dev/level/check.ts",
     "transcript": "node dev/transcript.ts",
     "queue": "node dev/codex/queue.ts",
-    "ship-watch": "node dev/codex/ship-watch.ts"
+    "ship-watch": "node dev/codex/ship-watch.ts",
+    "typecheck:legacy": "node node_modules/typescript/bin/tsc -p ."
   },
   "dependencies": {
     "@dimforge/rapier3d": "0.19.3",
@@ -94,8 +95,9 @@
     "playwright": "1.64.1",
     "pngjs": "7.0.0",
     "prettier": "3.9.10",
-    "typescript": "^5.9.3",
+    "typescript": "6.0.3",
     "typescript-eslint": "^8.72.1",
+    "typescript-native": "npm:typescript@7.0.2",
     "vite": "6.4.5",
     "vite-plugin-wasm": "^3.6.0"
   }

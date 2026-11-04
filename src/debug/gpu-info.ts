@@ -24,7 +24,7 @@ const LIMITS = [
 ] as const;
 
 type Limits = Record<string, number | undefined>;
-// The DOM lib has no WebGPU types (and no @webgpu/types here): just the parts read below.
+// The limits include optional and nonstandard WebGPU properties; describe just the parts read below.
 type Adapter = {
   info?: { vendor?: string; architecture?: string; device?: string; description?: string };
   features: Set<string>;
@@ -33,7 +33,7 @@ type Adapter = {
 type Gpu = { requestAdapter(o?: { powerPreference?: string }): Promise<Adapter | null> };
 
 export async function gpuInfo(): Promise<string> {
-  const gpu = (navigator as Navigator & { gpu?: Gpu }).gpu;
+  const gpu = (navigator as unknown as { gpu?: Gpu }).gpu;
   if (!gpu) return 'navigator.gpu: missing';
   const adapter = await gpu.requestAdapter({ powerPreference: 'high-performance' });
   if (!adapter) return 'requestAdapter: null';
