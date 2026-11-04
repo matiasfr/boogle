@@ -24,7 +24,7 @@ const RULES_GLOBALS = [
 ];
 // Lockstep registration belongs to the rules modules; everything else in src/ reacts to them (B1, docs/tech-plan.md).
 const syncBan = {
-  group: ['**/world/sync.{js,ts}', './sync.{js,ts}'],
+  group: ['**/world/sync.js', '**/world/sync.ts', './sync.js', './sync.ts'],
   importNames: ['registerOp', 'registerState', 'onTick'],
   message:
     'Lockstep ops/state/ticks live in src/world/rules/<name>.ts (docs/agents/lockstep.md). Adapters use submitEdit, onApplied, onAfterTick, onSnapshot.',
