@@ -21,14 +21,14 @@ See [Sunshine sky research](../research/sunshine-sky.md) for the visual verdict 
 ## Production water tuning
 
 Open `?proto=place&water=new&tune=1` to tune the real sea on the place page, or append `&tune=1` to another
-`water=new` room link. The dependency-free panel is dynamically imported on the deployed build as well as locally.
-Without the flag it loads no panel code, CSS, DOM or saved overrides. These preferences belong to this viewer;
+`water=new` room link. Dev visits also enable editable uniforms without `tune=1`. The dependency-free panel is dynamically imported into the Dev dock on the deployed build as well as locally.
+Without Dev/tuning opt-in it loads no panel code, CSS, DOM or saved overrides. These preferences belong to this viewer;
 they add no room state, messages, controls or gamepad slot. The cursor stays free on tuning visits; drag the scene
 to look around. The game keeps running while the panel takes mouse and keyboard events aimed at its controls.
 
 Groups follow the Ultra Water reference: **Sun & sky**, **Waves**, **Shore waves**, **Water**,
-**Floaters & underwater**, **Post** and **Quality**. Each group and the whole panel can reset to production defaults.
-Changes persist in localStorage only for tuning visits. **Copy settings** exports one JSON object containing only
+**Floaters & underwater**, **Light fill**, **Post** and **Quality**. Light fill adjusts the existing frozen-sky key/hemisphere without rebaking; use Looks' exposure lock to judge it. Each group and the whole panel can reset to production defaults.
+Changes persist in localStorage only for Dev/tuning visits. A saved [Looks](dev-menu.md#looks) choice takes precedence over old Water overrides. **Copy settings** exports one JSON object containing only
 overrides; **Apply settings** accepts the same block, so the owner can send a look back to an agent to make permanent.
 
 The saved format is `{ "version": 1, "changes": { "wave.waveScale": 0.5, "post.exposure": 1.2 } }`, under
@@ -95,10 +95,10 @@ These are **earliest GPU start to latest GPU end across render and compute**, no
 The capture corrects r187's resumed-pass timestamp ownership, following the shore-water measurement.
 All 4,285 sampled frames had valid ranges, with no missing or partial timestamp coverage.
 
-| Physical pixels | Off: segment means | .05 / 1.5: segment means | Zero strength: segment means | Off / on p95 ranges |
-| --- | --- | --- | --- | --- |
-| 1210×702 | 6.28–7.02 ms | 6.79–9.04 ms | 6.13–6.57 ms | 7.66–9.59 / 8.05–15.13 ms |
-| 2880×1800 | 10.89–21.19 ms | 10.58–26.80 ms | 10.89–13.90 ms | 12.70–40.19 / 11.67–38.49 ms |
+| Physical pixels | Off: segment means | .05 / 1.5: segment means | Zero strength: segment means | Off / on p95 ranges          |
+| --------------- | ------------------ | ------------------------ | ---------------------------- | ---------------------------- |
+| 1210×702        | 6.28–7.02 ms       | 6.79–9.04 ms             | 6.13–6.57 ms                 | 7.66–9.59 / 8.05–15.13 ms    |
+| 2880×1800       | 10.89–21.19 ms     | 10.58–26.80 ms           | 10.89–13.90 ms               | 12.70–40.19 / 11.67–38.49 ms |
 
 **Shared GPU, contended even on repeat:** other headless Chromium groups and WebKit GPU activity were observed.
 The drift can exceed the bloom increment or reverse its sign; these samples do not establish isolated incremental

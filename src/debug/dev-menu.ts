@@ -58,9 +58,7 @@ try {
   if (saved?.version === 1) {
     if (['left', 'right', 'bottom'].includes(saved.position)) position = saved.position;
     if (typeof saved.collapsed === 'boolean') collapsed = saved.collapsed;
-    if (typeof saved.selected === 'string' && entries.some((entry) => entry.id === saved.selected))
-      selected = saved.selected;
-    else if (saved.selected) settingsNotice = 'An unavailable panel preference was dropped.';
+    if (typeof saved.selected === 'string') selected = saved.selected;
   } else if (saved) settingsNotice = 'Unsupported dock settings were dropped; Dev stays on.';
 } catch {
   settingsNotice = 'Dock preferences unavailable; this visit still works.';
@@ -124,6 +122,11 @@ const context: Context = {
 defineKind('dev-launch', { update: 10 });
 defineKind('dev-dock', {});
 export function installDevMenu() {
+  // Optional panels register after this module loads, before installation.
+  if (selected && !entries.some((entry) => entry.id === selected)) {
+    selected = undefined;
+    settingsNotice = 'An unavailable panel preference was dropped.';
+  }
   const shell = el('section', '', 'dev-shell');
   shell.dataset.devShell = '';
   shell.dataset.devUi = '';
@@ -151,7 +154,7 @@ export function installDevMenu() {
     } catch {
       /* optional storage */
     }
-    if (!saved || new URLSearchParams(location.search).get('tune') !== '1') return;
+    if (!saved) return;
     const water = await import('./dev/water.ts');
     if (alive) await water.restoreWaterSettings();
   })();
