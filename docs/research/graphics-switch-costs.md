@@ -1,5 +1,120 @@
 # Graphics switches: Mac observations
 
+## Mac verification — 4 November 2026
+
+**Partial sign-off: the gable gap is real; the native Looks PNGs do not reproduce severe posterization. Sunny’s blotchy grass is real surface shading. MSAA and lab grass are the largest clearly resolved costs.** Shadows and bloom now have visible on/off evidence; spray and active point-light removal remain unverified. No game code changed.
+
+Tested production build `88a7b8e5d894fdf67f1743d614586669ed7d9840`, tree `7d57970cd29f4498fdde06c970ec710127dd961c` (main at the start), on **Apple M1 Max**, Darwin 27, Chromium 156 / Apple Metal WebGPU, non-fallback adapter. All runs used this worktree and the existing broker. Every completed manifest records unchanged source during its run. This report-only commit changes the final tree fingerprint; the game/build inputs are unchanged. Earlier sections below are historical.
+
+**Since fixed:** the gable gap (#861) and the production `--curves` and bot failures (#862). The findings below describe the build tested. Spray, active point lights and the startup stalls remain open.
+
+### Contention and method
+
+Before measuring, process inspection found idle Vite/broker processes and no competing Chromium capture. Other local jobs then started: `call-feedback` playthrough and `coop-route` two-player captures, plus short Chromium jobs. No other cold-start job was observed. I waited for the competing renderer to exit and reran the shore sweep; contention returned during that retry and town/MSAA sampling. A later snapshot contained only this job’s renderer. Thus contention was intermittent and **did not stay clear through the full sweeps**; other jobs were left alone.
+
+1440×900, DPR 1, Current look, locked exposure, fixed camera, default graphics except the tested switch. Shore: camera `(770,10,110)` → `(850,0,90)`; town: `(910,28,38)` → `(885,21,10)`, FOV 62. Each live switch used **three warmed ABBA measurements**, preparing both variants and continuously rendering through at least one second of warm-up per state, then one-second sample windows. The original town shadow measurement could overlap construction; the table replaces it with three measurements after all construction settled. MSAA used three matched four-sample/one-sample reload pairs per view, two seconds of additional settling and five-second measurements. Lab grass/post used three ABBA repetitions on `proto=look&look=ipad&water=old`.
+
+Tables show **median [minimum, maximum] of the three window means**, in milliseconds. Δ is the median of paired on-minus-off results, not subtraction of independently sorted medians. Live results are unresolved unless every paired delta exceeds both 0.10 ms and the largest same-state drift within its ABBA repetitions. MSAA reload spread is a separate, weaker control. GPU spans include the frame’s timestamped render/compute extent; missing span samples were zero. These are observations, **not a budget**, and an unresolved or negative delta does not establish free work.
+
+#### Shore GPU span
+
+| Switch   | On, ms               | Off, ms              | Paired Δ, ms        | Verdict           |
+| -------- | -------------------- | -------------------- | ------------------- | ----------------- |
+| shadows  | 11.34 [10.39, 11.57] | 10.81 [9.67, 10.89]  | 0.68 [0.52, 0.72]   | Unresolved: noise |
+| msaa     | 10.98 [10.05, 11.01] | 9.59 [9.37, 9.89]    | 1.39 [0.15, 1.65]   | Unresolved: noise |
+| caustics | 10.92 [10.64, 11.45] | 11.28 [10.52, 11.99] | -0.36 [-0.54, 0.11] | Unresolved: noise |
+| spray    | 10.61 [9.21, 11.07]  | 10.78 [8.77, 11.40]  | -0.17 [-0.33, 0.44] | Unresolved: noise |
+| snow     | 10.83 [10.50, 11.37] | 10.78 [10.49, 11.42] | 0.01 [-0.04, 0.05]  | Unresolved: noise |
+| shafts   | 10.89 [9.83, 11.79]  | 10.92 [9.50, 11.52]  | 0.27 [-0.03, 0.33]  | Unresolved: noise |
+| lens     | 10.77 [9.74, 11.69]  | 10.70 [8.95, 10.93]  | 0.76 [0.07, 0.79]   | Unresolved: noise |
+| bloom    | 11.27 [9.89, 11.69]  | 10.89 [9.86, 11.01]  | 0.38 [0.03, 0.68]   | Unresolved: noise |
+| meter    | 9.67 [9.26, 11.36]   | 9.76 [9.41, 10.71]   | -0.09 [-0.16, 0.65] | Unresolved: noise |
+| lights   | 9.51 [8.26, 11.92]   | 9.44 [6.95, 10.62]   | 1.31 [0.08, 1.31]   | Unresolved: noise |
+
+#### Town GPU span
+
+| Switch   | On, ms              | Off, ms           | Paired Δ, ms         | Verdict                   |
+| -------- | ------------------- | ----------------- | -------------------- | ------------------------- |
+| shadows  | 9.73 [9.70, 9.93]   | 9.30 [9.28, 9.36] | 0.42 [0.37, 0.63]    | Resolved in these samples |
+| msaa     | 9.67 [9.63, 9.84]   | 7.07 [6.79, 7.31] | 2.60 [2.32, 3.05]    | Resolved in these samples |
+| caustics | 9.54 [7.83, 9.88]   | 9.45 [8.32, 9.67] | 0.09 [-0.49, 0.21]   | Unresolved: noise         |
+| spray    | 9.80 [8.64, 9.88]   | 9.40 [8.61, 9.78] | 0.10 [0.02, 0.39]    | Unresolved: noise         |
+| snow     | 9.20 [9.00, 9.84]   | 9.55 [8.48, 9.74] | 0.09 [-0.35, 0.51]   | Unresolved: noise         |
+| shafts   | 8.27 [7.61, 9.89]   | 8.73 [7.95, 9.95] | -0.34 [-0.46, -0.06] | Unresolved: noise         |
+| lens     | 9.60 [6.92, 9.79]   | 9.74 [7.31, 9.89] | -0.29 [-0.39, 0.05]  | Unresolved: noise         |
+| bloom    | 10.43 [7.64, 10.54] | 9.77 [7.57, 9.87] | 0.66 [0.07, 0.67]    | Unresolved: noise         |
+| meter    | 9.57 [7.49, 9.72]   | 9.40 [7.42, 9.60] | 0.12 [0.07, 0.17]    | Unresolved: noise         |
+| lights   | 9.23 [7.68, 9.75]   | 8.96 [7.38, 9.37] | 0.29 [0.27, 0.38]    | Unresolved: noise         |
+
+#### Lab GPU span
+
+| Switch      | On, ms            | Off, ms           | Paired Δ, ms      | Verdict                   |
+| ----------- | ----------------- | ----------------- | ----------------- | ------------------------- |
+| foliage     | 2.91 [2.90, 3.09] | 1.40 [1.38, 1.48] | 1.50 [1.43, 1.71] | Resolved in these samples |
+| lab-effects | 3.07 [2.89, 3.11] | 2.87 [2.87, 3.06] | 0.02 [0.01, 0.25] | Unresolved: noise         |
+
+Lab owners are absent on place, so their shore/town cells are not applicable. Conversely, these above-water shore/town samples do not establish underwater snow/shaft/lens cost. Point-light intensities were both zero on place. The resolved town shadow Δ is 0.42 ms (same-state drift ≤0.13 ms); lab grass is 1.50 ms (drift ≤0.19 ms). Town MSAA is 2.60 ms, versus 0.21/0.52 ms on/off reload ranges. Bloom’s 0.66 ms town median is still unresolved because one repeat was only 0.07 ms.
+
+**Total frame interval:** approximately 16.666 ms throughout these warmed captures (headless callback cadence, not physical presentation). Place median CPU window times were approximately 3.97–4.87 ms; lab approximately 2.29–2.63 ms. CPU submission and GPU execution overlap; do not add them. Cold/transition stalls are reported separately.
+
+Raw samples and settings: [initial shore](../../.look/evidence/1793812600075-44510/evidence.json), [shore retry](../../.look/evidence/1793812904585-48484/evidence.json), [town](../../.look/evidence/1793813223419-57942/evidence.json), [settled shadows](../../.look/evidence/1793815003416-86138/evidence.json), [lab](../../.look/evidence/1793815235856-89537/evidence.json). All twelve MSAA manifests and derived ranges are indexed in [measurement data](../../.look/evidence/1793812600075-44510/mac-review/summary.json).
+
+### Switch appearance and baseline
+
+Question: does the named effect disappear at a fixed camera and return to baseline? The following images were actually opened. Standard sheets show on at 0 s, off at 5.3 s, restored baseline at 10.7/16 s. Waves/residents advance, so these are not pixel-identical whole-scene comparisons. Bloom’s baseline is off. All completed switch captures passed WebGPU/advancing-frame checks without page or console errors. All 23 inspected reset snapshots matched the available owners’ requested/effective baselines.
+
+| Switch      | Observation                                                                                                                                                                   | Opened evidence                                                                                                                                        |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Shadows     | Player shadow disappears and returns. The shadow frustum follows the player; the detached town camera alone missed it.                                                        | [PNG](../../.look/evidence/1793814216616-73003/mac-switch-shadows-motion.png) · [manifest](../../.look/evidence/1793814216616-73003/evidence.json)     |
+| MSAA        | Single-sample roof/tree edges are visibly rougher; scene remains intact. Baseline reset clears the URL override, honestly stays pending, then reload restores four samples.   | [PNG](../../.look/evidence/1793815071204-88151/mac-msaa-native-off-still.png) · [manifest](../../.look/evidence/1793815071204-88151/evidence.json)     |
+| Caustics    | Bright floor lace disappears to flat illumination and returns.                                                                                                                | [PNG](../../.look/evidence/1793814272712-73962/mac-switch-caustics-motion.png) · [manifest](../../.look/evidence/1793814272712-73962/evidence.json)    |
+| Spray       | Unresolved. Closer shore stills and consecutive recorded frames show a thin foam line, but no confidently separable airborne spray change. Do not count foam as a spray pass. | [PNG](../../.look/evidence/1793815543216-91556/mac-final-spray-motion.png) · [manifest](../../.look/evidence/1793815543216-91556/evidence.json)        |
+| Snow        | Faint underwater flecks disappear off and return.                                                                                                                             | [PNG](../../.look/evidence/1793815116911-88657/mac-second-snow-motion.png) · [manifest](../../.look/evidence/1793815116911-88657/evidence.json)        |
+| Shafts      | Underwater medium becomes darker off and brighter after reset; distinct rays remain hard to resolve.                                                                          | [PNG](../../.look/evidence/1793815146582-88861/mac-second-shafts-motion.png) · [manifest](../../.look/evidence/1793815146582-88861/evidence.json)      |
+| Lens        | Droplets disappear off and return after reset plus a fresh dunk. Compare 0 / 7.2 / 14.4 s at the same emerged camera; 10.8 s is the deliberate dunk.                          | [PNG](../../.look/evidence/1793815629708-92126/mac-lens-restored-motion.png) · [manifest](../../.look/evidence/1793815629708-92126/evidence.json)      |
+| Bloom       | Subtle but real broader sun halo on; off and reset are narrower. Daylight town/stars were insufficiently discriminating.                                                      | [PNG](../../.look/evidence/1793815572871-91752/mac-final-bloom-motion.png) · [manifest](../../.look/evidence/1793815572871-91752/evidence.json)        |
+| Meter       | Steady-view stills stay stable as expected. GPU gain remains exactly held through a large reframe while disabled, then adapts after reset; see readbacks below.               | [PNG](../../.look/evidence/1793814486585-78517/mac-switch-meter-motion.png) · [manifest](../../.look/evidence/1793814486585-78517/evidence.json)       |
+| Lights      | No visible change; both pooled PointLights have intensity 0 at the origin on place. No active source owner here, so visible light removal is unverified.                      | [PNG](../../.look/evidence/1793814522807-78821/mac-switch-lights-motion.png) · [manifest](../../.look/evidence/1793814522807-78821/evidence.json)      |
+| Foliage     | Lab grass disappears and returns; trees/terrain stay.                                                                                                                         | [PNG](../../.look/evidence/1793814579425-79864/mac-switch-foliage-motion.png) · [manifest](../../.look/evidence/1793814579425-79864/evidence.json)     |
+| Lab effects | Subtle contrast/colour change with geometry intact; baseline returns.                                                                                                         | [PNG](../../.look/evidence/1793814611043-80822/mac-switch-lab-effects-motion.png) · [manifest](../../.look/evidence/1793814611043-80822/evidence.json) |
+
+MSAA comparison uses the four-sample Current town PNG below; [PNG](../../.look/evidence/1793815601603-91938/mac-msaa-restore-still.png) · [manifest](../../.look/evidence/1793815601603-91938/evidence.json) shows the restored Graphics dock. Bloom also has opened native [on](../../.look/evidence/1793815572871-91752/mac-final-bloom-still.png) / [off](../../.look/evidence/1793815785173-93692/mac-bloom-native-off-matched-still.png) PNGs and unamplified sun crops. In the same-run static sky crop, on-minus-off is 0–8 RGB code values (mean 0.59); reset-versus-off is exactly zero. [Crop arithmetic](../../.look/evidence/1793815572871-91752/sun-difference.json) supports the subtle visual judgment; it is not a GPU measurement.
+
+### Looks, grass, banding and stars
+
+All fifteen native PNGs linked here were opened: five looks at both requested views, plus the actual knockdown stars. Sky gradients look smooth at native capture size; the conspicuously posterized-board appearance does **not** reproduce. Sand’s broad triangular facets and strata are real geometry/shading. This does not rule out fine 8-bit quantization or prove the cause of an unavailable original board.
+
+Sunny’s grass blotches **are in the game**, also present in Current/Clean at the same locations. `src/proto/place/look.ts:53–106` combines slow/mid/fine sine tint and dry-patch modulation over vertex colour; Sunny’s smooth 8% midtone chroma lift (`src/render/water/looks.ts:195–218`) makes that pattern more noticeable. It is not a capture artifact or a posterization operation. Clean/Sunshine give warmer, lighter sand and cream walls; Punchy darkens the scene. No look is selected for shipping.
+
+| Look           | Shore native                                                                                                                                              | Town native                                                                                                                                              | Knockdown stars native                                                                                                                            |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current        | [PNG](../../.look/evidence/1793813541486-65022/mac-looks-shore-current-0-still.png) · [manifest](../../.look/evidence/1793813541486-65022/evidence.json)  | [PNG](../../.look/evidence/1793813624490-66795/mac-looks-town-current-0-still.png) · [manifest](../../.look/evidence/1793813624490-66795/evidence.json)  | [PNG](../../.look/evidence/1793815306285-89789/mac-stars-current-still.png) · [manifest](../../.look/evidence/1793815306285-89789/evidence.json)  |
+| Clean toys     | [PNG](../../.look/evidence/1793813558378-65470/mac-looks-shore-clean-1-still.png) · [manifest](../../.look/evidence/1793813558378-65470/evidence.json)    | [PNG](../../.look/evidence/1793813661591-67208/mac-looks-town-clean-1-still.png) · [manifest](../../.look/evidence/1793813661591-67208/evidence.json)    | [PNG](../../.look/evidence/1793815322028-89977/mac-stars-clean-still.png) · [manifest](../../.look/evidence/1793815322028-89977/evidence.json)    |
+| Sunny toys     | [PNG](../../.look/evidence/1793813574847-65914/mac-looks-shore-sunny-2-still.png) · [manifest](../../.look/evidence/1793813574847-65914/evidence.json)    | [PNG](../../.look/evidence/1793813699322-67408/mac-looks-town-sunny-2-still.png) · [manifest](../../.look/evidence/1793813699322-67408/evidence.json)    | [PNG](../../.look/evidence/1793815337831-90156/mac-stars-sunny-still.png) · [manifest](../../.look/evidence/1793815337831-90156/evidence.json)    |
+| AgX Punchy     | [PNG](../../.look/evidence/1793813591271-66123/mac-looks-shore-punchy-3-still.png) · [manifest](../../.look/evidence/1793813591271-66123/evidence.json)   | [PNG](../../.look/evidence/1793813736966-67696/mac-looks-town-punchy-3-still.png) · [manifest](../../.look/evidence/1793813736966-67696/evidence.json)   | [PNG](../../.look/evidence/1793815353606-90343/mac-stars-punchy-still.png) · [manifest](../../.look/evidence/1793815353606-90343/evidence.json)   |
+| Sunshine water | [PNG](../../.look/evidence/1793813608122-66587/mac-looks-shore-sunshine-4-still.png) · [manifest](../../.look/evidence/1793813608122-66587/evidence.json) | [PNG](../../.look/evidence/1793813774758-68652/mac-looks-town-sunshine-4-still.png) · [manifest](../../.look/evidence/1793813774758-68652/evidence.json) | [PNG](../../.look/evidence/1793815369424-90524/mac-stars-sunshine-still.png) · [manifest](../../.look/evidence/1793815369424-90524/evidence.json) |
+
+Stars are readable gold with a darker outline, brighter under Clean/Sunshine and more muted under Punchy; no blown-out white blobs. This is the real local knockdown pose held for capture, not a collision-trigger test or a pre-fix brightness comparison. Current source uses an sRGB texture and linear feedback gain 6 on new water.
+
+A/B Clean ↔ Sunny and saved Clean / A=Clean / B=Sunny / exposure lock survived an actual child-page reload at both views: [PNG](../../.look/evidence/1793814838314-82761/mac-reload-shore-still.png) · [manifest](../../.look/evidence/1793814838314-82761/evidence.json); [PNG](../../.look/evidence/1793814867975-83546/mac-reload-town-still.png) · [manifest](../../.look/evidence/1793814867975-83546/evidence.json). The broker owns the top-level route, so reload/default/character checks used visible same-origin child pages; their own readiness and advancing frames were asserted.
+
+Fresh GPU meter readback after three seconds at a different sky framing: shore **0.112349 → 0.112349 locked → 0.112349 meter-off → 0.437162 restored/adaptive**; town **0.093138 → 0.093138 → 0.093138 → 0.433147**. [Shore readback](../../.look/evidence/1793815384884-90703/evidence.json) and [town readback](../../.look/evidence/1793815410928-90890/evidence.json). Their restored-scene native stills were also opened.
+
+### Production regressions, failures and limits
+
+- **Default Dev off passes:** bare default route with `dev=0`, secure loopback production context, no dock/API or lazy Dev menu/Graphics/Looks/Perf chunks, 60 advancing frames in one second. Small normal graphics-registry/preferences and gameplay camera modules remain expected. [PNG](../../.look/evidence/1793815512086-91362/mac-default-final-still.png) · [manifest](../../.look/evidence/1793815512086-91362/evidence.json). This is HTTPS-equivalent secure-context behavior, not a deployed TLS/CDN test.
+- **Gable defect reproduced:** [PNG](../../.look/evidence/1793814939631-85418/mac-character-still.png) · [manifest](../../.look/evidence/1793814939631-85418/evidence.json) versus [PNG](../../.look/evidence/1793814964884-85824/mac-gable-world-still.png) · [manifest](../../.look/evidence/1793814964884-85824/evidence.json). Both show open stepped gaps under the roof, through which the background is visible. The asset example and placed cottage share `housePlan`; their dimensions/materials differ. The three rectangular gable strips at `src/proto/place/building-plans.ts:158–164` do not meet the sloped roof continuously. No geometry fix attempted.
+- **No-freeze sign-off fails:** the requested one cold/warm pair loaded in **12.751 / 9.420 s**, with longest post-visibility intervals **316.7 / 267.1 ms**, zero graphics/page health errors and no pipelines pending at reveal. One cold 258.7 ms interval overlaps 222 ms of pointer-triggered audio initialization; the other stall is not causally attributed to graphics. [Cold-start manifest](../../.look/evidence/1793814642650-81007/evidence.json), [report](../../.look/evidence/1793814642650-81007/report.json). Opened cold ready/loading and cold/warm 30-second PNGs. The tool used exclusive nonempty Metal-cache clears/writes, but exits **2**, `trueCold:false`, `measurable:false`: its proof rule requires three or more pairs. One pair is a startup observation, not verified cache-effect proof or a physical-display freeze verdict.
+- **Production harness failures:** `--curves` requests `/src/player/player.ts` ([failure](../../.look/evidence/1793815105368-88455/evidence.json)); the production playthrough requests `/src/render/scene.ts` ([failure](../../.look/evidence/1793815670178-92349/evidence.json)). Both imports fail on the production server before useful curves/bot progress. The bot log was read; no report, end still or saves were produced. No expected beats were verified. No new scenario harness or game-code workaround was added.
+- Two default-page assertions falsely classified normal modules as Dev chunks; corrected filename matching produced the passing capture above. Initial classic-island shore framing, an extra daytime sky shot intended as night, and one mismatched bloom-off camera were rejected, not used as visual evidence. `look --at list` found no usable latest checkpoint index in this worktree.
+- Spray video succeeded without the broken curves option. Opened its sheet and extracted consecutive `spray-on-01/02.png`, plus `spray-off-01.png` and `spray-reset-01.png`, beside the [video manifest](../../.look/evidence/1793815543216-91556/evidence.json). Real-time feel/smoothness, active place point lights, visible spray removal, isolated full-sweep timing, Safari/mobile, and a production bot pass remain unverified.
+- **Checks:** `npx prettier --write --ignore-path /dev/null` and `npm run check` passed: lint, typecheck, **298/298 tests**, registries, level/assets checks and production build. The ignore override formats the requested Markdown despite the repository’s Markdown exclusion. [Check log](../../.look/evidence/1793812600075-44510/mac-review/check.log). No new tests; only this research document is committed.
+- **Departure:** the early required `npm run inflight` command fetched GitHub despite the local-network-only instruction. This was disclosed and not repeated. All browser work thereafter used the local broker. No push, ship, upload or game-code change.
+
+The remaining work is owner review of the visual evidence and a separately scoped fix for the gable/startup findings; no default or graphics preset is approved by these numbers.
+
+---
+
 ## Follow-up: baseline restore and Looks merge
 
 The reported reset bug is fixed in `705d270d`: restore reaches every registered owner, including one whose
