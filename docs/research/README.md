@@ -2,6 +2,8 @@
 
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
+- [post-look-sheets.md](post-look-sheets.md) (2026-11-04): real-render A–H/Toon comparisons, stronger ink, 28 lossless boards, 175 native cells, reviewed consecutive motion frames and warmed ABBA GPU costs; recommends C then D visually, preserves the AO gate and normal-player graph, and leaves the style choice to the owner.
+
 - [low-poly-post-looks.md](low-poly-post-looks.md) (2026-11-04): shipped-game evidence, Unity/Unreal/Godot/TSL comparisons, water/MSAA/overlay constraints, six recommendations and eight ranked look recipes with exact parameters, combinations and fixed views; lead with shade colour, dither and atmosphere, then masked tinted depth edges. Research only; no game changes, images or new GPU measurements.
 
 - [main-clean-dev-channel.md](main-clean-dev-channel.md) (2026-11-04): complete prototype/card/lab inventory, Place graduation dependencies, isolated hosting and server costs, branch/workflow tradeoffs and five recommendations; keep main deploying, use a selected prototype branch on dev.boogle.club, and archive only after extraction and owner approval. Proposed policy wording only; no implementation.

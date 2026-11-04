@@ -1,0 +1,2509 @@
+{
+  "graph": [
+    {
+      "route": "default-after",
+      "before": {
+        "manifest": ".look/evidence/1793830267501-14627/evidence.json",
+        "status": 0,
+        "source": {
+          "commit": "faeb33a963d40a4c8f2d135a6b523bea1e3aa879",
+          "tree": "8a85c0d187406ed0c15f02bad26e731b9468d871",
+          "dirty": true
+        },
+        "changedDuringRun": false
+      },
+      "after": {
+        "manifest": ".look/evidence/1793834964659-7719/evidence.json",
+        "status": 0,
+        "source": {
+          "commit": "136da55e18ff1b805d0e46af49c5d3017be34376",
+          "tree": "3b2dcf4a47471ead864215c6abe2802c74cef8d6",
+          "dirty": false
+        },
+        "changedDuringRun": false
+      },
+      "equal": true,
+      "normalizedBefore": {
+        "mrt": null,
+        "targets": [
+          {
+            "name": "output",
+            "type": 1016,
+            "format": 1023
+          }
+        ],
+        "samples": 4,
+        "outputTransform": false,
+        "outputType": "ShaderCallNodeInternal",
+        "bindings": [],
+        "gpu": {
+          "renderPasses": 7,
+          "internalPixels": {
+            "width": 1440,
+            "height": 900
+          },
+          "devicePixelRatio": 1,
+          "rendererPixelRatio": 1,
+          "msaaSamples": 4,
+          "renderTargets": [
+            {
+              "name": null,
+              "width": 512,
+              "height": 512,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1028,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 512,
+                    "height": 512,
+                    "layers": 1,
+                    "format": "r16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 512,
+                      "height": 512,
+                      "layers": 1,
+                      "format": "r16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": null,
+              "width": 256,
+              "height": 256,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1030,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 256,
+                    "height": 256,
+                    "layers": 1,
+                    "format": "rg16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 256,
+                      "height": 256,
+                      "layers": 1,
+                      "format": "rg16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": "output",
+              "width": 1440,
+              "height": 900,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": "output",
+                  "format": 1023,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 1440,
+                    "height": 900,
+                    "layers": 1,
+                    "format": "rgba16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 1440,
+                      "height": 900,
+                      "layers": 1,
+                      "format": "rgba16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": {
+                "name": "depth",
+                "format": 1026,
+                "type": 1014,
+                "gpu": {
+                  "width": 1440,
+                  "height": 900,
+                  "layers": 1,
+                  "format": "depth24plus",
+                  "samples": 4
+                },
+                "multisampled": []
+              }
+            },
+            {
+              "name": "ShadowMap",
+              "width": 2048,
+              "height": 2048,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": "ShadowMap",
+                  "format": 1023,
+                  "type": 1009,
+                  "gpu": {
+                    "width": 2048,
+                    "height": 2048,
+                    "layers": 1,
+                    "format": "rgba8unorm",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": {
+                "name": "ShadowDepthTexture",
+                "format": 1026,
+                "type": 1014,
+                "gpu": {
+                  "width": 2048,
+                  "height": 2048,
+                  "layers": 1,
+                  "format": "depth24plus",
+                  "samples": 1
+                },
+                "multisampled": []
+              }
+            },
+            {
+              "name": null,
+              "width": 1,
+              "height": 1,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1023,
+                  "type": 1015,
+                  "gpu": {
+                    "width": 1,
+                    "height": 1,
+                    "layers": 1,
+                    "format": "rgba32float",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": null,
+              "width": 32,
+              "height": 32,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1023,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 32,
+                    "height": 32,
+                    "layers": 1,
+                    "format": "rgba16float",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": null
+            }
+          ]
+        }
+      },
+      "normalizedAfter": {
+        "mrt": null,
+        "targets": [
+          {
+            "name": "output",
+            "type": 1016,
+            "format": 1023
+          }
+        ],
+        "samples": 4,
+        "outputTransform": false,
+        "outputType": "ShaderCallNodeInternal",
+        "bindings": [],
+        "gpu": {
+          "renderPasses": 7,
+          "internalPixels": {
+            "width": 1440,
+            "height": 900
+          },
+          "devicePixelRatio": 1,
+          "rendererPixelRatio": 1,
+          "msaaSamples": 4,
+          "renderTargets": [
+            {
+              "name": null,
+              "width": 512,
+              "height": 512,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1028,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 512,
+                    "height": 512,
+                    "layers": 1,
+                    "format": "r16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 512,
+                      "height": 512,
+                      "layers": 1,
+                      "format": "r16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": null,
+              "width": 256,
+              "height": 256,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1030,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 256,
+                    "height": 256,
+                    "layers": 1,
+                    "format": "rg16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 256,
+                      "height": 256,
+                      "layers": 1,
+                      "format": "rg16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": "output",
+              "width": 1440,
+              "height": 900,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": "output",
+                  "format": 1023,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 1440,
+                    "height": 900,
+                    "layers": 1,
+                    "format": "rgba16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 1440,
+                      "height": 900,
+                      "layers": 1,
+                      "format": "rgba16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": {
+                "name": "depth",
+                "format": 1026,
+                "type": 1014,
+                "gpu": {
+                  "width": 1440,
+                  "height": 900,
+                  "layers": 1,
+                  "format": "depth24plus",
+                  "samples": 4
+                },
+                "multisampled": []
+              }
+            },
+            {
+              "name": "ShadowMap",
+              "width": 2048,
+              "height": 2048,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": "ShadowMap",
+                  "format": 1023,
+                  "type": 1009,
+                  "gpu": {
+                    "width": 2048,
+                    "height": 2048,
+                    "layers": 1,
+                    "format": "rgba8unorm",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": {
+                "name": "ShadowDepthTexture",
+                "format": 1026,
+                "type": 1014,
+                "gpu": {
+                  "width": 2048,
+                  "height": 2048,
+                  "layers": 1,
+                  "format": "depth24plus",
+                  "samples": 1
+                },
+                "multisampled": []
+              }
+            },
+            {
+              "name": null,
+              "width": 1,
+              "height": 1,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1023,
+                  "type": 1015,
+                  "gpu": {
+                    "width": 1,
+                    "height": 1,
+                    "layers": 1,
+                    "format": "rgba32float",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": null,
+              "width": 32,
+              "height": 32,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1023,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 32,
+                    "height": 32,
+                    "layers": 1,
+                    "format": "rgba16float",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": null
+            }
+          ]
+        }
+      },
+      "executedComputeBefore": {
+        "computePasses": 5,
+        "computeDispatches": 14
+      },
+      "executedComputeAfter": {
+        "computePasses": 5,
+        "computeDispatches": 14
+      },
+      "scope": "Graph outputs, bindings, attachments and observed target descriptors; executed compute varies with live work."
+    },
+    {
+      "route": "default-place-after",
+      "before": {
+        "manifest": ".look/evidence/1793830436075-18783/evidence.json",
+        "status": 0,
+        "source": {
+          "commit": "faeb33a963d40a4c8f2d135a6b523bea1e3aa879",
+          "tree": "8a85c0d187406ed0c15f02bad26e731b9468d871",
+          "dirty": true
+        },
+        "changedDuringRun": false
+      },
+      "after": {
+        "manifest": ".look/evidence/1793835425327-15503/evidence.json",
+        "status": 0,
+        "source": {
+          "commit": "136da55e18ff1b805d0e46af49c5d3017be34376",
+          "tree": "3b2dcf4a47471ead864215c6abe2802c74cef8d6",
+          "dirty": false
+        },
+        "changedDuringRun": false
+      },
+      "equal": true,
+      "normalizedBefore": {
+        "mrt": null,
+        "targets": [
+          {
+            "name": "output",
+            "type": 1016,
+            "format": 1023
+          }
+        ],
+        "samples": 4,
+        "outputTransform": false,
+        "outputType": "ShaderCallNodeInternal",
+        "bindings": [],
+        "gpu": {
+          "renderPasses": 7,
+          "internalPixels": {
+            "width": 1440,
+            "height": 900
+          },
+          "devicePixelRatio": 1,
+          "rendererPixelRatio": 1,
+          "msaaSamples": 4,
+          "renderTargets": [
+            {
+              "name": null,
+              "width": 512,
+              "height": 512,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1028,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 512,
+                    "height": 512,
+                    "layers": 1,
+                    "format": "r16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 512,
+                      "height": 512,
+                      "layers": 1,
+                      "format": "r16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": null,
+              "width": 256,
+              "height": 256,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1030,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 256,
+                    "height": 256,
+                    "layers": 1,
+                    "format": "rg16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 256,
+                      "height": 256,
+                      "layers": 1,
+                      "format": "rg16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": "output",
+              "width": 1440,
+              "height": 900,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": "output",
+                  "format": 1023,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 1440,
+                    "height": 900,
+                    "layers": 1,
+                    "format": "rgba16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 1440,
+                      "height": 900,
+                      "layers": 1,
+                      "format": "rgba16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": {
+                "name": "depth",
+                "format": 1026,
+                "type": 1014,
+                "gpu": {
+                  "width": 1440,
+                  "height": 900,
+                  "layers": 1,
+                  "format": "depth24plus",
+                  "samples": 4
+                },
+                "multisampled": []
+              }
+            },
+            {
+              "name": "ShadowMap",
+              "width": 2048,
+              "height": 2048,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": "ShadowMap",
+                  "format": 1023,
+                  "type": 1009,
+                  "gpu": {
+                    "width": 2048,
+                    "height": 2048,
+                    "layers": 1,
+                    "format": "rgba8unorm",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": {
+                "name": "ShadowDepthTexture",
+                "format": 1026,
+                "type": 1014,
+                "gpu": {
+                  "width": 2048,
+                  "height": 2048,
+                  "layers": 1,
+                  "format": "depth24plus",
+                  "samples": 1
+                },
+                "multisampled": []
+              }
+            },
+            {
+              "name": null,
+              "width": 1,
+              "height": 1,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1023,
+                  "type": 1015,
+                  "gpu": {
+                    "width": 1,
+                    "height": 1,
+                    "layers": 1,
+                    "format": "rgba32float",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": null,
+              "width": 32,
+              "height": 32,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1023,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 32,
+                    "height": 32,
+                    "layers": 1,
+                    "format": "rgba16float",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": null
+            }
+          ]
+        }
+      },
+      "normalizedAfter": {
+        "mrt": null,
+        "targets": [
+          {
+            "name": "output",
+            "type": 1016,
+            "format": 1023
+          }
+        ],
+        "samples": 4,
+        "outputTransform": false,
+        "outputType": "ShaderCallNodeInternal",
+        "bindings": [],
+        "gpu": {
+          "renderPasses": 7,
+          "internalPixels": {
+            "width": 1440,
+            "height": 900
+          },
+          "devicePixelRatio": 1,
+          "rendererPixelRatio": 1,
+          "msaaSamples": 4,
+          "renderTargets": [
+            {
+              "name": null,
+              "width": 512,
+              "height": 512,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1028,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 512,
+                    "height": 512,
+                    "layers": 1,
+                    "format": "r16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 512,
+                      "height": 512,
+                      "layers": 1,
+                      "format": "r16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": null,
+              "width": 256,
+              "height": 256,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1030,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 256,
+                    "height": 256,
+                    "layers": 1,
+                    "format": "rg16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 256,
+                      "height": 256,
+                      "layers": 1,
+                      "format": "rg16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": "output",
+              "width": 1440,
+              "height": 900,
+              "depth": 1,
+              "samples": 4,
+              "colors": [
+                {
+                  "name": "output",
+                  "format": 1023,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 1440,
+                    "height": 900,
+                    "layers": 1,
+                    "format": "rgba16float",
+                    "samples": 1
+                  },
+                  "multisampled": [
+                    {
+                      "width": 1440,
+                      "height": 900,
+                      "layers": 1,
+                      "format": "rgba16float",
+                      "samples": 4
+                    }
+                  ]
+                }
+              ],
+              "depthStencil": {
+                "name": "depth",
+                "format": 1026,
+                "type": 1014,
+                "gpu": {
+                  "width": 1440,
+                  "height": 900,
+                  "layers": 1,
+                  "format": "depth24plus",
+                  "samples": 4
+                },
+                "multisampled": []
+              }
+            },
+            {
+              "name": "ShadowMap",
+              "width": 2048,
+              "height": 2048,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": "ShadowMap",
+                  "format": 1023,
+                  "type": 1009,
+                  "gpu": {
+                    "width": 2048,
+                    "height": 2048,
+                    "layers": 1,
+                    "format": "rgba8unorm",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": {
+                "name": "ShadowDepthTexture",
+                "format": 1026,
+                "type": 1014,
+                "gpu": {
+                  "width": 2048,
+                  "height": 2048,
+                  "layers": 1,
+                  "format": "depth24plus",
+                  "samples": 1
+                },
+                "multisampled": []
+              }
+            },
+            {
+              "name": null,
+              "width": 1,
+              "height": 1,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1023,
+                  "type": 1015,
+                  "gpu": {
+                    "width": 1,
+                    "height": 1,
+                    "layers": 1,
+                    "format": "rgba32float",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": null
+            },
+            {
+              "name": null,
+              "width": 32,
+              "height": 32,
+              "depth": 1,
+              "samples": 1,
+              "colors": [
+                {
+                  "name": null,
+                  "format": 1023,
+                  "type": 1016,
+                  "gpu": {
+                    "width": 32,
+                    "height": 32,
+                    "layers": 1,
+                    "format": "rgba16float",
+                    "samples": 1
+                  },
+                  "multisampled": []
+                }
+              ],
+              "depthStencil": null
+            }
+          ]
+        }
+      },
+      "executedComputeBefore": {
+        "computePasses": 5,
+        "computeDispatches": 14
+      },
+      "executedComputeAfter": {
+        "computePasses": 4,
+        "computeDispatches": 13
+      },
+      "scope": "Graph outputs, bindings, attachments and observed target descriptors; executed compute varies with live work."
+    }
+  ],
+  "firstLoad": {
+    "beforeCount": 111,
+    "afterCount": 111,
+    "added": [],
+    "removed": [],
+    "beforeGzipBytes": 1836688,
+    "afterGzipBytes": 1836921,
+    "gzipDelta": 233,
+    "candidateOwners": [],
+    "before": {
+      "rows": [
+        {
+          "file": "assets/__vite-plugin-wasm-helper-Y7WR0nsT.js",
+          "owner": "__vite-plugin-wasm-helper",
+          "bytes": 694,
+          "gzip": 398
+        },
+        {
+          "file": "assets/conversation-By57rQuO.css",
+          "owner": "_conversation-By57rQuO.css",
+          "bytes": 454,
+          "gzip": 284
+        },
+        {
+          "file": "assets/glyphs-Ci6DPHcm.css",
+          "owner": "_glyphs-Ci6DPHcm.css",
+          "bytes": 2570,
+          "gzip": 635
+        },
+        {
+          "file": "assets/haul-stack-BKXVyHAO.css",
+          "owner": "_haul-stack-BKXVyHAO.css",
+          "bytes": 1270,
+          "gzip": 611
+        },
+        {
+          "file": "assets/input-BfYuxhlA.css",
+          "owner": "_input-BfYuxhlA.css",
+          "bytes": 617,
+          "gzip": 302
+        },
+        {
+          "file": "assets/notify-ChuW_YPu.css",
+          "owner": "_notify-ChuW_YPu.css",
+          "bytes": 1866,
+          "gzip": 748
+        },
+        {
+          "file": "assets/splash-CkzrnoxW.css",
+          "owner": "_splash-CkzrnoxW.css",
+          "bytes": 2269,
+          "gzip": 1031
+        },
+        {
+          "file": "assets/ui-sound-CbSmJVW8.css",
+          "owner": "_ui-sound-CbSmJVW8.css",
+          "bytes": 724,
+          "gzip": 397
+        },
+        {
+          "file": "assets/arrival-Bc6Icc9x.js",
+          "owner": "arrival",
+          "bytes": 100,
+          "gzip": 113
+        },
+        {
+          "file": "assets/arrival-BzWfDzH_.js",
+          "owner": "arrival",
+          "bytes": 2266,
+          "gzip": 1155
+        },
+        {
+          "file": "assets/asset-manifest-Du_K472n.js",
+          "owner": "asset-manifest",
+          "bytes": 859,
+          "gzip": 498
+        },
+        {
+          "file": "assets/clock-worker-DlVjzWKR.js",
+          "owner": "assets/clock-worker-HASH.js",
+          "bytes": 51,
+          "gzip": 71
+        },
+        {
+          "file": "assets/main-CZojx6OG.css",
+          "owner": "assets/main-HASH.css",
+          "bytes": 31385,
+          "gzip": 7130
+        },
+        {
+          "file": "assets/async-CkIh8y1D.js",
+          "owner": "async",
+          "bytes": 86,
+          "gzip": 101
+        },
+        {
+          "file": "assets/audio-BKYK7FuU.js",
+          "owner": "audio",
+          "bytes": 1499,
+          "gzip": 855
+        },
+        {
+          "file": "assets/avatars-DxDg-irV.js",
+          "owner": "avatars",
+          "bytes": 2162,
+          "gzip": 1172
+        },
+        {
+          "file": "assets/BufferGeometryUtils-3lN9R7b4.js",
+          "owner": "BufferGeometryUtils",
+          "bytes": 6421,
+          "gzip": 1924
+        },
+        {
+          "file": "assets/build-id-DTSa-zCj.js",
+          "owner": "build-id",
+          "bytes": 121,
+          "gzip": 131
+        },
+        {
+          "file": "assets/builds-J8l2TMz9.js",
+          "owner": "builds",
+          "bytes": 316,
+          "gzip": 245
+        },
+        {
+          "file": "assets/camera-arm-utHeHFI5.js",
+          "owner": "camera-arm",
+          "bytes": 1032,
+          "gzip": 636
+        },
+        {
+          "file": "assets/caustics-DnfQ_BWO.js",
+          "owner": "caustics",
+          "bytes": 3487,
+          "gzip": 1823
+        },
+        {
+          "file": "assets/clink-De0MEVHj.js",
+          "owner": "clink",
+          "bytes": 1376,
+          "gzip": 778
+        },
+        {
+          "file": "assets/constants-C-DXbsiV.js",
+          "owner": "constants",
+          "bytes": 574,
+          "gzip": 369
+        },
+        {
+          "file": "assets/contacts-BTIP9NxE.js",
+          "owner": "contacts",
+          "bytes": 715,
+          "gzip": 479
+        },
+        {
+          "file": "assets/controls-DybuurUJ.js",
+          "owner": "controls",
+          "bytes": 4406,
+          "gzip": 2134
+        },
+        {
+          "file": "assets/conversation-CZj1Mw6J.js",
+          "owner": "conversation",
+          "bytes": 3672,
+          "gzip": 1927
+        },
+        {
+          "file": "assets/dev-input-Bm_0XelH.js",
+          "owner": "dev-input",
+          "bytes": 108,
+          "gzip": 103
+        },
+        {
+          "file": "assets/dev-preferences-RQDMBnU5.js",
+          "owner": "dev-preferences",
+          "bytes": 838,
+          "gzip": 447
+        },
+        {
+          "file": "assets/dom-BxPGxLV_.js",
+          "owner": "dom",
+          "bytes": 384,
+          "gzip": 229
+        },
+        {
+          "file": "assets/engine-9DA66v1R.js",
+          "owner": "engine",
+          "bytes": 11641,
+          "gzip": 4835
+        },
+        {
+          "file": "assets/entity-CrvCOyjD.js",
+          "owner": "entity",
+          "bytes": 2568,
+          "gzip": 1259
+        },
+        {
+          "file": "assets/fft-Dwbw-8Pw.js",
+          "owner": "fft",
+          "bytes": 6807,
+          "gzip": 3077
+        },
+        {
+          "file": "assets/flags-9EEjCkmH.js",
+          "owner": "flags",
+          "bytes": 784,
+          "gzip": 382
+        },
+        {
+          "file": "assets/friendship-Du8qoEqO.js",
+          "owner": "friendship",
+          "bytes": 3308,
+          "gzip": 1505
+        },
+        {
+          "file": "assets/game-world-D90nSod1.js",
+          "owner": "game-world",
+          "bytes": 26978,
+          "gzip": 10286
+        },
+        {
+          "file": "assets/gift-catalog-CzMiAm1s.js",
+          "owner": "gift-catalog",
+          "bytes": 613,
+          "gzip": 364
+        },
+        {
+          "file": "assets/glyphs-D6nvSkKM.js",
+          "owner": "glyphs",
+          "bytes": 2628,
+          "gzip": 1383
+        },
+        {
+          "file": "assets/graphics-settings-DbhD4QZp.js",
+          "owner": "graphics-settings",
+          "bytes": 2514,
+          "gzip": 1199
+        },
+        {
+          "file": "assets/hands-D16l24NE.js",
+          "owner": "hands",
+          "bytes": 25976,
+          "gzip": 11581
+        },
+        {
+          "file": "assets/haul-feel-DdGJ_YrO.js",
+          "owner": "haul-feel",
+          "bytes": 68,
+          "gzip": 81
+        },
+        {
+          "file": "assets/haul-pieces-DIojit2Q.js",
+          "owner": "haul-pieces",
+          "bytes": 978,
+          "gzip": 627
+        },
+        {
+          "file": "assets/haul-stack-Be4H_Yax.js",
+          "owner": "haul-stack",
+          "bytes": 4438,
+          "gzip": 2343
+        },
+        {
+          "file": "assets/haul-variant-CHboYNMP.js",
+          "owner": "haul-variant",
+          "bytes": 255,
+          "gzip": 216
+        },
+        {
+          "file": "assets/heights-DZaUJjj3.js",
+          "owner": "heights",
+          "bytes": 11064,
+          "gzip": 5084
+        },
+        {
+          "file": "assets/hero-clips-CB2Ql2y8.js",
+          "owner": "hero-clips",
+          "bytes": 88,
+          "gzip": 97
+        },
+        {
+          "file": "assets/hut-blueprint-mBScM55y.js",
+          "owner": "hut-blueprint",
+          "bytes": 1769,
+          "gzip": 797
+        },
+        {
+          "file": "assets/main-DlbOP9eg.js",
+          "owner": "index.html",
+          "bytes": 4736,
+          "gzip": 2296
+        },
+        {
+          "file": "assets/input-Df3ClHjc.js",
+          "owner": "input",
+          "bytes": 6392,
+          "gzip": 2691
+        },
+        {
+          "file": "assets/input-state-FlGSmVzQ.js",
+          "owner": "input-state",
+          "bytes": 215,
+          "gzip": 178
+        },
+        {
+          "file": "assets/inspect-BqnEKbgF.js",
+          "owner": "inspect",
+          "bytes": 1063,
+          "gzip": 632
+        },
+        {
+          "file": "assets/item-models-QveswjLH.js",
+          "owner": "item-models",
+          "bytes": 1054,
+          "gzip": 645
+        },
+        {
+          "file": "assets/lights-CmtGgDGG.js",
+          "owner": "lights",
+          "bytes": 1485,
+          "gzip": 853
+        },
+        {
+          "file": "assets/live-ClaRFy-7.js",
+          "owner": "live",
+          "bytes": 1318,
+          "gzip": 665
+        },
+        {
+          "file": "assets/loop-BACyQijE.js",
+          "owner": "loop",
+          "bytes": 1360,
+          "gzip": 769
+        },
+        {
+          "file": "assets/machine-sfx-BwZJOu0s.js",
+          "owner": "machine-sfx",
+          "bytes": 2391,
+          "gzip": 935
+        },
+        {
+          "file": "assets/mark-CcyAyGMv.js",
+          "owner": "mark",
+          "bytes": 388,
+          "gzip": 248
+        },
+        {
+          "file": "assets/materials-ErwwGIQd.js",
+          "owner": "materials",
+          "bytes": 1502,
+          "gzip": 807
+        },
+        {
+          "file": "assets/math-pure-IZwqsMQ0.js",
+          "owner": "math-pure",
+          "bytes": 576,
+          "gzip": 358
+        },
+        {
+          "file": "assets/modal-BM1cUy8v.js",
+          "owner": "modal",
+          "bytes": 466,
+          "gzip": 300
+        },
+        {
+          "file": "assets/model-CdhuYCng.js",
+          "owner": "model",
+          "bytes": 1527,
+          "gzip": 804
+        },
+        {
+          "file": "assets/modulepreload-polyfill-P2Xu9kJm.js",
+          "owner": "modulepreload-polyfill",
+          "bytes": 670,
+          "gzip": 389
+        },
+        {
+          "file": "assets/motion-CrGdKhrX.js",
+          "owner": "motion",
+          "bytes": 871,
+          "gzip": 476
+        },
+        {
+          "file": "assets/net-BsQypKmZ.js",
+          "owner": "net",
+          "bytes": 4277,
+          "gzip": 2133
+        },
+        {
+          "file": "assets/rapier_wasm3d_bg-Z_KLso_L.wasm",
+          "owner": "node_modules/@dimforge/rapier3d-simd/rapier_wasm3d_bg.wasm",
+          "bytes": 3292228,
+          "gzip": 1151160
+        },
+        {
+          "file": "assets/rapier-B-xeHNxw.js",
+          "owner": "node_modules/@dimforge/rapier3d-simd/rapier.js",
+          "bytes": 295023,
+          "gzip": 51264
+        },
+        {
+          "file": "assets/noise-CPE7lStG.js",
+          "owner": "noise",
+          "bytes": 712,
+          "gzip": 419
+        },
+        {
+          "file": "assets/notify-D3_AARGN.js",
+          "owner": "notify",
+          "bytes": 1484,
+          "gzip": 798
+        },
+        {
+          "file": "assets/npc-voice-BHBtVnHL.js",
+          "owner": "npc-voice",
+          "bytes": 4851,
+          "gzip": 2370
+        },
+        {
+          "file": "assets/particles-CeZGkX2A.js",
+          "owner": "particles",
+          "bytes": 2428,
+          "gzip": 1273
+        },
+        {
+          "file": "assets/pause-pages-DxqO4lBE.js",
+          "owner": "pause-pages",
+          "bytes": 31,
+          "gzip": 51
+        },
+        {
+          "file": "assets/physics-BzlO37s8.js",
+          "owner": "physics",
+          "bytes": 1301,
+          "gzip": 738
+        },
+        {
+          "file": "assets/player-CMsna2PN.js",
+          "owner": "player",
+          "bytes": 80,
+          "gzip": 83
+        },
+        {
+          "file": "assets/precompile-B5pVcep1.js",
+          "owner": "precompile",
+          "bytes": 3131,
+          "gzip": 1414
+        },
+        {
+          "file": "assets/preload-helper-BLdHbfdN.js",
+          "owner": "preload-helper",
+          "bytes": 1519,
+          "gzip": 797
+        },
+        {
+          "file": "assets/prop-models-yPyj1pI2.js",
+          "owner": "prop-models",
+          "bytes": 2149,
+          "gzip": 1086
+        },
+        {
+          "file": "assets/props-D0VP7OsF.js",
+          "owner": "props",
+          "bytes": 2930,
+          "gzip": 1411
+        },
+        {
+          "file": "assets/props-DI95mF3j.js",
+          "owner": "props",
+          "bytes": 3216,
+          "gzip": 1705
+        },
+        {
+          "file": "assets/receivers-De4vQ14D.js",
+          "owner": "receivers",
+          "bytes": 3268,
+          "gzip": 1739
+        },
+        {
+          "file": "assets/rng-BsERB_me.js",
+          "owner": "rng",
+          "bytes": 161,
+          "gzip": 148
+        },
+        {
+          "file": "assets/rolldown-runtime-DK3Fl9T5.js",
+          "owner": "rolldown-runtime",
+          "bytes": 158,
+          "gzip": 154
+        },
+        {
+          "file": "assets/route--bZhGS1G.js",
+          "owner": "route",
+          "bytes": 311,
+          "gzip": 232
+        },
+        {
+          "file": "assets/scene-DGNAMgPE.js",
+          "owner": "scene",
+          "bytes": 4526,
+          "gzip": 2354
+        },
+        {
+          "file": "assets/shape-CtPtbFrj.js",
+          "owner": "shape",
+          "bytes": 1649,
+          "gzip": 891
+        },
+        {
+          "file": "assets/shared-time-ONIOctbz.js",
+          "owner": "shared-time",
+          "bytes": 199,
+          "gzip": 187
+        },
+        {
+          "file": "assets/shore-nodes-A1CDeF-h.js",
+          "owner": "shore-nodes",
+          "bytes": 17374,
+          "gzip": 7275
+        },
+        {
+          "file": "assets/shore-options-QKCYyFFk.js",
+          "owner": "shore-options",
+          "bytes": 335,
+          "gzip": 255
+        },
+        {
+          "file": "assets/sky-D-atu3-X.js",
+          "owner": "sky",
+          "bytes": 109,
+          "gzip": 110
+        },
+        {
+          "file": "assets/sky-KEcG-LUh.js",
+          "owner": "sky",
+          "bytes": 8003,
+          "gzip": 3598
+        },
+        {
+          "file": "assets/sky-clock-DNsFR1In.js",
+          "owner": "sky-clock",
+          "bytes": 410,
+          "gzip": 271
+        },
+        {
+          "file": "assets/sky-core-Chv03HKg.js",
+          "owner": "sky-core",
+          "bytes": 8198,
+          "gzip": 3817
+        },
+        {
+          "file": "assets/spectrum-Br-vpwsH.js",
+          "owner": "spectrum",
+          "bytes": 3820,
+          "gzip": 1807
+        },
+        {
+          "file": "assets/splash-O1KXWd6S.js",
+          "owner": "splash",
+          "bytes": 2714,
+          "gzip": 1271
+        },
+        {
+          "file": "assets/splash-art-D6cO98ar.js",
+          "owner": "splash-art",
+          "bytes": 55,
+          "gzip": 75
+        },
+        {
+          "file": "assets/splash-art-CUf4wrPt.jpg",
+          "owner": "src/boot/splash-art.jpg",
+          "bytes": 96508,
+          "gzip": 94032
+        },
+        {
+          "file": "assets/main-C0pBNcHT.js",
+          "owner": "src/main.ts",
+          "bytes": 160082,
+          "gzip": 64410
+        },
+        {
+          "file": "assets/state-C2U8oIn7.js",
+          "owner": "state",
+          "bytes": 6494,
+          "gzip": 3055
+        },
+        {
+          "file": "assets/state-D9qy7prz.js",
+          "owner": "state",
+          "bytes": 1169,
+          "gzip": 647
+        },
+        {
+          "file": "assets/state-DGOBxF9K.js",
+          "owner": "state",
+          "bytes": 5704,
+          "gzip": 2573
+        },
+        {
+          "file": "assets/state-DezVpp5T.js",
+          "owner": "state",
+          "bytes": 814,
+          "gzip": 508
+        },
+        {
+          "file": "assets/state-DiUWpQZg.js",
+          "owner": "state",
+          "bytes": 1558,
+          "gzip": 823
+        },
+        {
+          "file": "assets/state-DpKcltzF.js",
+          "owner": "state",
+          "bytes": 9730,
+          "gzip": 4310
+        },
+        {
+          "file": "assets/sync-BKKBKbWy.js",
+          "owner": "sync",
+          "bytes": 11217,
+          "gzip": 4970
+        },
+        {
+          "file": "assets/terrain-BraNcTsJ.js",
+          "owner": "terrain",
+          "bytes": 4434,
+          "gzip": 2193
+        },
+        {
+          "file": "assets/three-B7pxkY6V.js",
+          "owner": "three",
+          "bytes": 1130368,
+          "gzip": 306488
+        },
+        {
+          "file": "assets/timeline-DyF6aVBF.js",
+          "owner": "timeline",
+          "bytes": 2262,
+          "gzip": 1222
+        },
+        {
+          "file": "assets/tone-BPJHMtlt.js",
+          "owner": "tone",
+          "bytes": 2751,
+          "gzip": 1458
+        },
+        {
+          "file": "assets/tsl-yDOv8a4K.js",
+          "owner": "tsl",
+          "bytes": 59,
+          "gzip": 76
+        },
+        {
+          "file": "assets/ui-sound-CGl6Ti-3.js",
+          "owner": "ui-sound",
+          "bytes": 2574,
+          "gzip": 1178
+        },
+        {
+          "file": "assets/view-YWEmtgPu.js",
+          "owner": "view",
+          "bytes": 358,
+          "gzip": 257
+        },
+        {
+          "file": "assets/water-field-CdfwdDYP.js",
+          "owner": "water-field",
+          "bytes": 1137,
+          "gzip": 613
+        },
+        {
+          "file": "assets/water-render-BZN58zW7.js",
+          "owner": "water-render",
+          "bytes": 52980,
+          "gzip": 22101
+        }
+      ],
+      "owners": [
+        "__vite-plugin-wasm-helper",
+        "_conversation-By57rQuO.css",
+        "_glyphs-Ci6DPHcm.css",
+        "_haul-stack-BKXVyHAO.css",
+        "_input-BfYuxhlA.css",
+        "_notify-ChuW_YPu.css",
+        "_splash-CkzrnoxW.css",
+        "_ui-sound-CbSmJVW8.css",
+        "arrival",
+        "arrival",
+        "asset-manifest",
+        "assets/clock-worker-HASH.js",
+        "assets/main-HASH.css",
+        "async",
+        "audio",
+        "avatars",
+        "BufferGeometryUtils",
+        "build-id",
+        "builds",
+        "camera-arm",
+        "caustics",
+        "clink",
+        "constants",
+        "contacts",
+        "controls",
+        "conversation",
+        "dev-input",
+        "dev-preferences",
+        "dom",
+        "engine",
+        "entity",
+        "fft",
+        "flags",
+        "friendship",
+        "game-world",
+        "gift-catalog",
+        "glyphs",
+        "graphics-settings",
+        "hands",
+        "haul-feel",
+        "haul-pieces",
+        "haul-stack",
+        "haul-variant",
+        "heights",
+        "hero-clips",
+        "hut-blueprint",
+        "index.html",
+        "input",
+        "input-state",
+        "inspect",
+        "item-models",
+        "lights",
+        "live",
+        "loop",
+        "machine-sfx",
+        "mark",
+        "materials",
+        "math-pure",
+        "modal",
+        "model",
+        "modulepreload-polyfill",
+        "motion",
+        "net",
+        "node_modules/@dimforge/rapier3d-simd/rapier_wasm3d_bg.wasm",
+        "node_modules/@dimforge/rapier3d-simd/rapier.js",
+        "noise",
+        "notify",
+        "npc-voice",
+        "particles",
+        "pause-pages",
+        "physics",
+        "player",
+        "precompile",
+        "preload-helper",
+        "prop-models",
+        "props",
+        "props",
+        "receivers",
+        "rng",
+        "rolldown-runtime",
+        "route",
+        "scene",
+        "shape",
+        "shared-time",
+        "shore-nodes",
+        "shore-options",
+        "sky",
+        "sky",
+        "sky-clock",
+        "sky-core",
+        "spectrum",
+        "splash",
+        "splash-art",
+        "src/boot/splash-art.jpg",
+        "src/main.ts",
+        "state",
+        "state",
+        "state",
+        "state",
+        "state",
+        "state",
+        "sync",
+        "terrain",
+        "three",
+        "timeline",
+        "tone",
+        "tsl",
+        "ui-sound",
+        "view",
+        "water-field",
+        "water-render"
+      ],
+      "gzip": 1836688,
+      "devLooksInFirst": []
+    },
+    "after": {
+      "rows": [
+        {
+          "file": "assets/__vite-plugin-wasm-helper-Y7WR0nsT.js",
+          "owner": "__vite-plugin-wasm-helper",
+          "bytes": 694,
+          "gzip": 398
+        },
+        {
+          "file": "assets/conversation-By57rQuO.css",
+          "owner": "_conversation-By57rQuO.css",
+          "bytes": 454,
+          "gzip": 284
+        },
+        {
+          "file": "assets/glyphs-Ci6DPHcm.css",
+          "owner": "_glyphs-Ci6DPHcm.css",
+          "bytes": 2570,
+          "gzip": 635
+        },
+        {
+          "file": "assets/haul-stack-BKXVyHAO.css",
+          "owner": "_haul-stack-BKXVyHAO.css",
+          "bytes": 1270,
+          "gzip": 611
+        },
+        {
+          "file": "assets/input-BfYuxhlA.css",
+          "owner": "_input-BfYuxhlA.css",
+          "bytes": 617,
+          "gzip": 302
+        },
+        {
+          "file": "assets/notify-ChuW_YPu.css",
+          "owner": "_notify-ChuW_YPu.css",
+          "bytes": 1866,
+          "gzip": 748
+        },
+        {
+          "file": "assets/splash-CkzrnoxW.css",
+          "owner": "_splash-CkzrnoxW.css",
+          "bytes": 2269,
+          "gzip": 1031
+        },
+        {
+          "file": "assets/ui-sound-CbSmJVW8.css",
+          "owner": "_ui-sound-CbSmJVW8.css",
+          "bytes": 724,
+          "gzip": 397
+        },
+        {
+          "file": "assets/arrival-Bc6Icc9x.js",
+          "owner": "arrival",
+          "bytes": 100,
+          "gzip": 113
+        },
+        {
+          "file": "assets/arrival-BzWfDzH_.js",
+          "owner": "arrival",
+          "bytes": 2266,
+          "gzip": 1155
+        },
+        {
+          "file": "assets/asset-manifest-Du_K472n.js",
+          "owner": "asset-manifest",
+          "bytes": 859,
+          "gzip": 498
+        },
+        {
+          "file": "assets/clock-worker-DlVjzWKR.js",
+          "owner": "assets/clock-worker-HASH.js",
+          "bytes": 51,
+          "gzip": 71
+        },
+        {
+          "file": "assets/main-CZojx6OG.css",
+          "owner": "assets/main-HASH.css",
+          "bytes": 31385,
+          "gzip": 7130
+        },
+        {
+          "file": "assets/async-CkIh8y1D.js",
+          "owner": "async",
+          "bytes": 86,
+          "gzip": 101
+        },
+        {
+          "file": "assets/audio-BKYK7FuU.js",
+          "owner": "audio",
+          "bytes": 1499,
+          "gzip": 855
+        },
+        {
+          "file": "assets/avatars-B9n2u1g3.js",
+          "owner": "avatars",
+          "bytes": 2162,
+          "gzip": 1168
+        },
+        {
+          "file": "assets/BufferGeometryUtils-BFuYqpyv.js",
+          "owner": "BufferGeometryUtils",
+          "bytes": 6421,
+          "gzip": 1918
+        },
+        {
+          "file": "assets/build-id-DTSa-zCj.js",
+          "owner": "build-id",
+          "bytes": 121,
+          "gzip": 131
+        },
+        {
+          "file": "assets/builds-J8l2TMz9.js",
+          "owner": "builds",
+          "bytes": 316,
+          "gzip": 245
+        },
+        {
+          "file": "assets/camera-arm-CA4iHy-t.js",
+          "owner": "camera-arm",
+          "bytes": 1032,
+          "gzip": 631
+        },
+        {
+          "file": "assets/caustics-Ccu0AHZ5.js",
+          "owner": "caustics",
+          "bytes": 3487,
+          "gzip": 1819
+        },
+        {
+          "file": "assets/clink-De0MEVHj.js",
+          "owner": "clink",
+          "bytes": 1376,
+          "gzip": 778
+        },
+        {
+          "file": "assets/constants-C-DXbsiV.js",
+          "owner": "constants",
+          "bytes": 574,
+          "gzip": 369
+        },
+        {
+          "file": "assets/contacts-B-YRfyfT.js",
+          "owner": "contacts",
+          "bytes": 715,
+          "gzip": 472
+        },
+        {
+          "file": "assets/controls-DybuurUJ.js",
+          "owner": "controls",
+          "bytes": 4406,
+          "gzip": 2134
+        },
+        {
+          "file": "assets/conversation-UhOCpuno.js",
+          "owner": "conversation",
+          "bytes": 3672,
+          "gzip": 1930
+        },
+        {
+          "file": "assets/dev-input-Bm_0XelH.js",
+          "owner": "dev-input",
+          "bytes": 108,
+          "gzip": 103
+        },
+        {
+          "file": "assets/dev-preferences-RQDMBnU5.js",
+          "owner": "dev-preferences",
+          "bytes": 838,
+          "gzip": 447
+        },
+        {
+          "file": "assets/dom-BxPGxLV_.js",
+          "owner": "dom",
+          "bytes": 384,
+          "gzip": 229
+        },
+        {
+          "file": "assets/engine-9DA66v1R.js",
+          "owner": "engine",
+          "bytes": 11641,
+          "gzip": 4835
+        },
+        {
+          "file": "assets/entity-Ba_7aQ-L.js",
+          "owner": "entity",
+          "bytes": 2568,
+          "gzip": 1258
+        },
+        {
+          "file": "assets/fft-BCTiL3pA.js",
+          "owner": "fft",
+          "bytes": 6807,
+          "gzip": 3074
+        },
+        {
+          "file": "assets/flags-9EEjCkmH.js",
+          "owner": "flags",
+          "bytes": 784,
+          "gzip": 382
+        },
+        {
+          "file": "assets/friendship-Du8qoEqO.js",
+          "owner": "friendship",
+          "bytes": 3308,
+          "gzip": 1505
+        },
+        {
+          "file": "assets/game-world-D90nSod1.js",
+          "owner": "game-world",
+          "bytes": 26978,
+          "gzip": 10286
+        },
+        {
+          "file": "assets/gift-catalog-CzMiAm1s.js",
+          "owner": "gift-catalog",
+          "bytes": 613,
+          "gzip": 364
+        },
+        {
+          "file": "assets/glyphs-D6nvSkKM.js",
+          "owner": "glyphs",
+          "bytes": 2628,
+          "gzip": 1383
+        },
+        {
+          "file": "assets/graphics-settings-lUBbWy2w.js",
+          "owner": "graphics-settings",
+          "bytes": 2586,
+          "gzip": 1224
+        },
+        {
+          "file": "assets/hands-BYou6nfz.js",
+          "owner": "hands",
+          "bytes": 25973,
+          "gzip": 11567
+        },
+        {
+          "file": "assets/haul-feel-DdGJ_YrO.js",
+          "owner": "haul-feel",
+          "bytes": 68,
+          "gzip": 81
+        },
+        {
+          "file": "assets/haul-pieces-DOQBEjZM.js",
+          "owner": "haul-pieces",
+          "bytes": 978,
+          "gzip": 626
+        },
+        {
+          "file": "assets/haul-stack-DpMPRF6z.js",
+          "owner": "haul-stack",
+          "bytes": 4438,
+          "gzip": 2343
+        },
+        {
+          "file": "assets/haul-variant-CHboYNMP.js",
+          "owner": "haul-variant",
+          "bytes": 255,
+          "gzip": 216
+        },
+        {
+          "file": "assets/heights-DZaUJjj3.js",
+          "owner": "heights",
+          "bytes": 11064,
+          "gzip": 5084
+        },
+        {
+          "file": "assets/hero-clips-CB2Ql2y8.js",
+          "owner": "hero-clips",
+          "bytes": 88,
+          "gzip": 97
+        },
+        {
+          "file": "assets/hut-blueprint-mBScM55y.js",
+          "owner": "hut-blueprint",
+          "bytes": 1769,
+          "gzip": 797
+        },
+        {
+          "file": "assets/main-Cw-Z0o9L.js",
+          "owner": "index.html",
+          "bytes": 4736,
+          "gzip": 2300
+        },
+        {
+          "file": "assets/input-DdGHKBUn.js",
+          "owner": "input",
+          "bytes": 6392,
+          "gzip": 2685
+        },
+        {
+          "file": "assets/input-state-FlGSmVzQ.js",
+          "owner": "input-state",
+          "bytes": 215,
+          "gzip": 178
+        },
+        {
+          "file": "assets/inspect-DxXQo-0F.js",
+          "owner": "inspect",
+          "bytes": 1063,
+          "gzip": 633
+        },
+        {
+          "file": "assets/item-models-CrX5hr8N.js",
+          "owner": "item-models",
+          "bytes": 1054,
+          "gzip": 642
+        },
+        {
+          "file": "assets/lights-CQUCKAk8.js",
+          "owner": "lights",
+          "bytes": 1485,
+          "gzip": 839
+        },
+        {
+          "file": "assets/live--Tae42pA.js",
+          "owner": "live",
+          "bytes": 1318,
+          "gzip": 661
+        },
+        {
+          "file": "assets/loop-BACyQijE.js",
+          "owner": "loop",
+          "bytes": 1360,
+          "gzip": 769
+        },
+        {
+          "file": "assets/machine-sfx-pTyrvIVu.js",
+          "owner": "machine-sfx",
+          "bytes": 2391,
+          "gzip": 934
+        },
+        {
+          "file": "assets/mark-CcyAyGMv.js",
+          "owner": "mark",
+          "bytes": 388,
+          "gzip": 248
+        },
+        {
+          "file": "assets/materials-CC-AS1Di.js",
+          "owner": "materials",
+          "bytes": 1507,
+          "gzip": 806
+        },
+        {
+          "file": "assets/math-pure-IZwqsMQ0.js",
+          "owner": "math-pure",
+          "bytes": 576,
+          "gzip": 358
+        },
+        {
+          "file": "assets/modal-Dika9fQO.js",
+          "owner": "modal",
+          "bytes": 466,
+          "gzip": 299
+        },
+        {
+          "file": "assets/model-2NA5QJPG.js",
+          "owner": "model",
+          "bytes": 1527,
+          "gzip": 804
+        },
+        {
+          "file": "assets/modulepreload-polyfill-P2Xu9kJm.js",
+          "owner": "modulepreload-polyfill",
+          "bytes": 670,
+          "gzip": 389
+        },
+        {
+          "file": "assets/motion-CrGdKhrX.js",
+          "owner": "motion",
+          "bytes": 871,
+          "gzip": 476
+        },
+        {
+          "file": "assets/net-BsQypKmZ.js",
+          "owner": "net",
+          "bytes": 4277,
+          "gzip": 2133
+        },
+        {
+          "file": "assets/rapier_wasm3d_bg-Z_KLso_L.wasm",
+          "owner": "node_modules/@dimforge/rapier3d-simd/rapier_wasm3d_bg.wasm",
+          "bytes": 3292228,
+          "gzip": 1151160
+        },
+        {
+          "file": "assets/rapier-B-xeHNxw.js",
+          "owner": "node_modules/@dimforge/rapier3d-simd/rapier.js",
+          "bytes": 295023,
+          "gzip": 51264
+        },
+        {
+          "file": "assets/noise-CPE7lStG.js",
+          "owner": "noise",
+          "bytes": 712,
+          "gzip": 419
+        },
+        {
+          "file": "assets/notify-D3_AARGN.js",
+          "owner": "notify",
+          "bytes": 1484,
+          "gzip": 798
+        },
+        {
+          "file": "assets/npc-voice-BHBtVnHL.js",
+          "owner": "npc-voice",
+          "bytes": 4851,
+          "gzip": 2370
+        },
+        {
+          "file": "assets/particles-DnXfnhzL.js",
+          "owner": "particles",
+          "bytes": 2429,
+          "gzip": 1273
+        },
+        {
+          "file": "assets/pause-pages-DxqO4lBE.js",
+          "owner": "pause-pages",
+          "bytes": 31,
+          "gzip": 51
+        },
+        {
+          "file": "assets/physics-BzlO37s8.js",
+          "owner": "physics",
+          "bytes": 1301,
+          "gzip": 738
+        },
+        {
+          "file": "assets/player-BvjqGIV9.js",
+          "owner": "player",
+          "bytes": 80,
+          "gzip": 82
+        },
+        {
+          "file": "assets/precompile-DO4o3AMa.js",
+          "owner": "precompile",
+          "bytes": 3131,
+          "gzip": 1414
+        },
+        {
+          "file": "assets/preload-helper-BLdHbfdN.js",
+          "owner": "preload-helper",
+          "bytes": 1519,
+          "gzip": 797
+        },
+        {
+          "file": "assets/prop-models-4wo87GR7.js",
+          "owner": "prop-models",
+          "bytes": 2149,
+          "gzip": 1081
+        },
+        {
+          "file": "assets/props-B3aK-tUO.js",
+          "owner": "props",
+          "bytes": 3216,
+          "gzip": 1711
+        },
+        {
+          "file": "assets/props-D0VP7OsF.js",
+          "owner": "props",
+          "bytes": 2930,
+          "gzip": 1411
+        },
+        {
+          "file": "assets/receivers-MoWAReQD.js",
+          "owner": "receivers",
+          "bytes": 3268,
+          "gzip": 1737
+        },
+        {
+          "file": "assets/rng-BsERB_me.js",
+          "owner": "rng",
+          "bytes": 161,
+          "gzip": 148
+        },
+        {
+          "file": "assets/rolldown-runtime-DK3Fl9T5.js",
+          "owner": "rolldown-runtime",
+          "bytes": 158,
+          "gzip": 154
+        },
+        {
+          "file": "assets/route--bZhGS1G.js",
+          "owner": "route",
+          "bytes": 311,
+          "gzip": 232
+        },
+        {
+          "file": "assets/scene-ClgDcSrT.js",
+          "owner": "scene",
+          "bytes": 4526,
+          "gzip": 2352
+        },
+        {
+          "file": "assets/shape-CtPtbFrj.js",
+          "owner": "shape",
+          "bytes": 1649,
+          "gzip": 891
+        },
+        {
+          "file": "assets/shared-time-ONIOctbz.js",
+          "owner": "shared-time",
+          "bytes": 199,
+          "gzip": 187
+        },
+        {
+          "file": "assets/shore-nodes-DjvAMJWR.js",
+          "owner": "shore-nodes",
+          "bytes": 17374,
+          "gzip": 7294
+        },
+        {
+          "file": "assets/shore-options-QKCYyFFk.js",
+          "owner": "shore-options",
+          "bytes": 335,
+          "gzip": 255
+        },
+        {
+          "file": "assets/sky-CKJetaoc.js",
+          "owner": "sky",
+          "bytes": 8009,
+          "gzip": 3616
+        },
+        {
+          "file": "assets/sky-CvtrQ1I_.js",
+          "owner": "sky",
+          "bytes": 109,
+          "gzip": 110
+        },
+        {
+          "file": "assets/sky-clock-DNsFR1In.js",
+          "owner": "sky-clock",
+          "bytes": 410,
+          "gzip": 271
+        },
+        {
+          "file": "assets/sky-core-DkUxDpFc.js",
+          "owner": "sky-core",
+          "bytes": 8198,
+          "gzip": 3812
+        },
+        {
+          "file": "assets/spectrum-CaSQn7Wh.js",
+          "owner": "spectrum",
+          "bytes": 3820,
+          "gzip": 1804
+        },
+        {
+          "file": "assets/splash-O1KXWd6S.js",
+          "owner": "splash",
+          "bytes": 2714,
+          "gzip": 1271
+        },
+        {
+          "file": "assets/splash-art-D6cO98ar.js",
+          "owner": "splash-art",
+          "bytes": 55,
+          "gzip": 75
+        },
+        {
+          "file": "assets/splash-art-CUf4wrPt.jpg",
+          "owner": "src/boot/splash-art.jpg",
+          "bytes": 96508,
+          "gzip": 94032
+        },
+        {
+          "file": "assets/main-cDy9cRM9.js",
+          "owner": "src/main.ts",
+          "bytes": 160084,
+          "gzip": 64415
+        },
+        {
+          "file": "assets/state-BgqPqXW4.js",
+          "owner": "state",
+          "bytes": 814,
+          "gzip": 505
+        },
+        {
+          "file": "assets/state-BpXToKBr.js",
+          "owner": "state",
+          "bytes": 6494,
+          "gzip": 3056
+        },
+        {
+          "file": "assets/state-CWzsqhd9.js",
+          "owner": "state",
+          "bytes": 1558,
+          "gzip": 820
+        },
+        {
+          "file": "assets/state-CunA1UWZ.js",
+          "owner": "state",
+          "bytes": 9730,
+          "gzip": 4312
+        },
+        {
+          "file": "assets/state-D9qy7prz.js",
+          "owner": "state",
+          "bytes": 1169,
+          "gzip": 647
+        },
+        {
+          "file": "assets/state-DE3iaycv.js",
+          "owner": "state",
+          "bytes": 5704,
+          "gzip": 2575
+        },
+        {
+          "file": "assets/sync-BKKBKbWy.js",
+          "owner": "sync",
+          "bytes": 11217,
+          "gzip": 4970
+        },
+        {
+          "file": "assets/terrain-BQ-NNoDU.js",
+          "owner": "terrain",
+          "bytes": 4434,
+          "gzip": 2192
+        },
+        {
+          "file": "assets/three-Baranu9e.js",
+          "owner": "three",
+          "bytes": 1130371,
+          "gzip": 306488
+        },
+        {
+          "file": "assets/timeline-DyF6aVBF.js",
+          "owner": "timeline",
+          "bytes": 2262,
+          "gzip": 1222
+        },
+        {
+          "file": "assets/tone-BV0v9c-1.js",
+          "owner": "tone",
+          "bytes": 2751,
+          "gzip": 1456
+        },
+        {
+          "file": "assets/tsl-YrbbTpr5.js",
+          "owner": "tsl",
+          "bytes": 59,
+          "gzip": 76
+        },
+        {
+          "file": "assets/ui-sound-CGl6Ti-3.js",
+          "owner": "ui-sound",
+          "bytes": 2574,
+          "gzip": 1178
+        },
+        {
+          "file": "assets/view-DMXFCx8Q.js",
+          "owner": "view",
+          "bytes": 358,
+          "gzip": 258
+        },
+        {
+          "file": "assets/water-field-CdfwdDYP.js",
+          "owner": "water-field",
+          "bytes": 1137,
+          "gzip": 613
+        },
+        {
+          "file": "assets/water-render-G0M2ZoY_.js",
+          "owner": "water-render",
+          "bytes": 53555,
+          "gzip": 22349
+        }
+      ],
+      "owners": [
+        "__vite-plugin-wasm-helper",
+        "_conversation-By57rQuO.css",
+        "_glyphs-Ci6DPHcm.css",
+        "_haul-stack-BKXVyHAO.css",
+        "_input-BfYuxhlA.css",
+        "_notify-ChuW_YPu.css",
+        "_splash-CkzrnoxW.css",
+        "_ui-sound-CbSmJVW8.css",
+        "arrival",
+        "arrival",
+        "asset-manifest",
+        "assets/clock-worker-HASH.js",
+        "assets/main-HASH.css",
+        "async",
+        "audio",
+        "avatars",
+        "BufferGeometryUtils",
+        "build-id",
+        "builds",
+        "camera-arm",
+        "caustics",
+        "clink",
+        "constants",
+        "contacts",
+        "controls",
+        "conversation",
+        "dev-input",
+        "dev-preferences",
+        "dom",
+        "engine",
+        "entity",
+        "fft",
+        "flags",
+        "friendship",
+        "game-world",
+        "gift-catalog",
+        "glyphs",
+        "graphics-settings",
+        "hands",
+        "haul-feel",
+        "haul-pieces",
+        "haul-stack",
+        "haul-variant",
+        "heights",
+        "hero-clips",
+        "hut-blueprint",
+        "index.html",
+        "input",
+        "input-state",
+        "inspect",
+        "item-models",
+        "lights",
+        "live",
+        "loop",
+        "machine-sfx",
+        "mark",
+        "materials",
+        "math-pure",
+        "modal",
+        "model",
+        "modulepreload-polyfill",
+        "motion",
+        "net",
+        "node_modules/@dimforge/rapier3d-simd/rapier_wasm3d_bg.wasm",
+        "node_modules/@dimforge/rapier3d-simd/rapier.js",
+        "noise",
+        "notify",
+        "npc-voice",
+        "particles",
+        "pause-pages",
+        "physics",
+        "player",
+        "precompile",
+        "preload-helper",
+        "prop-models",
+        "props",
+        "props",
+        "receivers",
+        "rng",
+        "rolldown-runtime",
+        "route",
+        "scene",
+        "shape",
+        "shared-time",
+        "shore-nodes",
+        "shore-options",
+        "sky",
+        "sky",
+        "sky-clock",
+        "sky-core",
+        "spectrum",
+        "splash",
+        "splash-art",
+        "src/boot/splash-art.jpg",
+        "src/main.ts",
+        "state",
+        "state",
+        "state",
+        "state",
+        "state",
+        "state",
+        "sync",
+        "terrain",
+        "three",
+        "timeline",
+        "tone",
+        "tsl",
+        "ui-sound",
+        "view",
+        "water-field",
+        "water-render"
+      ],
+      "gzip": 1836921,
+      "devLooksInFirst": []
+    },
+    "scope": "Logical first-load owners; content hashes and bytes are not identical."
+  },
+  "controls": {
+    "manifest": ".look/evidence/1793831774653-45281/evidence.json",
+    "status": 0,
+    "source": {
+      "commit": "136da55e18ff1b805d0e46af49c5d3017be34376",
+      "tree": "3b2dcf4a47471ead864215c6abe2802c74cef8d6",
+      "dirty": false
+    },
+    "changedDuringRun": false
+  }
+}
