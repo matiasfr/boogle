@@ -70,7 +70,8 @@ const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh
 const GL_ONLY = 'WebGL-only: use a NodeMaterial with TSL node slots (src/render/README.md).';
 const glOnly = {
   selector:
-    'MemberExpression[property.name=/^(ShaderMaterial|RawShaderMaterial|ShaderChunk|ShaderLib|UniformsLib|UniformsUtils|WebGLRenderer|Points|onBeforeCompile|customProgramCacheKey|readRenderTargetPixels)$/]',
+    'MemberExpression[property.name=/^(ShaderMaterial|RawShaderMaterial|ShaderChunk|ShaderLib|UniformsLib|UniformsUtils|WebGLRenderer|Points|onBeforeCompile|customProgramCacheKey|readRenderTargetPixels)$/], ' +
+    'ImportDeclaration[source.value=/^three(\\/webgpu|\\/tsl)?$/]:has(ImportSpecifier[imported.name=/^(ShaderMaterial|RawShaderMaterial|ShaderChunk|ShaderLib|UniformsLib|UniformsUtils|WebGLRenderer|Points)$/])',
   message: GL_ONLY,
 };
 // One door per shared service: one socket, one audio context, one frame loop. A file on `allow` may use that service;
