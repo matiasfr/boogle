@@ -170,7 +170,13 @@ try {
         const browserCDP = await context.browser()!.newBrowserCDPSession();
         const gpu = await browserCDP.send('SystemInfo.getInfo');
         write(`${label}-gpu.json`, gpu);
-        write(`${label}-browser-arguments.json`, await browserCDP.send('Browser.getBrowserCommandLine'));
+        // Only returned with --enable-automation, which this headed run leaves off.
+        write(
+          `${label}-browser-arguments.json`,
+          await browserCDP
+            .send('Browser.getBrowserCommandLine')
+            .catch((error: unknown) => ({ unavailable: String(error) })),
+        );
         if (!/metal/i.test(JSON.stringify(gpu.gpu))) health.push('Metal backend not confirmed by CDP');
         await page.bringToFront();
         const windowBefore = await cdp
