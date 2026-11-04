@@ -135,7 +135,10 @@ export function moveRack(st: StationRun | null) {
     // Behind the frame along the track, on solid ground: not hanging off a trestle's end.
     let s = st.spec.s - dir * 16,
       q = besideLine(line, s, st.spec.side * 5.2);
-    for (const back of [16, 13, 10, 8, 20, 24]) {
+    // Q2's receiving pile belongs in the approach toward the arriving cart, not behind the player.
+    // The cart keeps its existing stop, route and delivery cadence.
+    const backs = st.spec.id === 'Q2' ? [24, 20, 16, 13, 10, 8] : [16, 13, 10, 8, 20, 24];
+    for (const back of backs) {
       s = st.spec.s - dir * back;
       q = besideLine(line, s, st.spec.side * 5.2);
       const y = railY(line, s);

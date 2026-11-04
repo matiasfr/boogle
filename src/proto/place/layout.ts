@@ -473,7 +473,7 @@ export const TOWN: {
         { type: 'shed', x: 9, z: -163, w: 6, d: 5, h: 2.6 },
       ],
       awake: [
-        { type: 'shed', x: 20, z: -137, w: 12, d: 7, h: 4.5 },
+        { type: 'shed', x: 13, z: -126, w: 12, d: 7, h: 4.5 },
         { type: 'block', x: 27.2, z: -137, w: 1.4, h: 6, d: 6, color: '#8a6a48' },
         { type: 'block', x: 32, z: -144, w: 5, h: 2.4, d: 3 },
       ],
