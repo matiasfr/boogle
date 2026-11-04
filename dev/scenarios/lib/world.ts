@@ -29,29 +29,53 @@ export async function roles(A: Game, B: Game) {
   return { modes, ok, host, client };
 }
 
-// Both tabs hash every state at the end of the same tick. A software-rendered tab (smoke.yml) can take seconds to answer
-// and a resync can skip a tick, so this marks one tick a second for the next 2 minutes and compares the first both reached (run 41430080992: 30 s was not enough).
+// Record ticks while this check is active, then wait for an actual overlap. Installing a fixed future range after
+// separate tick reads races slow evaluations, and snapshots can skip it. A rolling history keeps recording across
+// those jumps and retains the faster tab's samples until the slower tab arrives. No extra hashing in normal play.
 export async function hashesAtOneTick(host: Game, client: Game) {
-  const now = `return window.boogle.sync.world.tick;`;
-  const start = Math.max(await host.eval(now), await client.eval(now)) + 10;
-  const ticks = Array.from({ length: 120 }, (_, k) => start + k * 10);
-  const list = JSON.stringify(ticks);
-  for (const g of [host, client]) await g.eval(`for (const t of ${list}) window.boogle.sync.markHashes(t);`);
-  const read = `return ${list}.map((t) => window.boogle.sync.hashesAt(t));`;
-  let a: unknown = null,
-    b: unknown = null,
-    tick = start;
-  for (const t0 = Date.now(); !(a && b) && Date.now() - t0 < 120000;) {
-    const as = await host.eval(read);
-    const bs = await client.eval(read);
-    const k = ticks.findIndex((_, k) => as[k] && bs[k]);
-    if (k < 0) await new Promise((r) => setTimeout(r, 200));
-    else [tick, a, b] = [ticks[k]!, as[k], bs[k]];
+  const deadline = Date.now() + EDIT_WAIT_MS;
+  const supported = await Promise.all(
+    [host, client].map((g) => g.eval<boolean>(`return typeof window.boogle.sync.captureHashes === 'function';`)),
+  );
+  if (!supported.every(Boolean))
+    return { same: false, status: 'unavailable', detail: 'build lacks bounded hash capture' };
+  let detail = 'no samples';
+  try {
+    await Promise.all([host, client].map((g) => g.eval(`window.boogle.sync.captureHashes(true);`)));
+    while (Date.now() < deadline) {
+      const samples = await host.eval<{ tick: number; hashes: Record<string, number> }[]>(`
+        const s = window.boogle.sync;
+        return s.hashTicks().map((tick) => ({ tick, hashes: s.hashesAt(tick) }));`);
+      const ticks = samples.map((s) => s.tick);
+      const list = JSON.stringify(ticks);
+      // If the client has already passed this whole batch (e.g. by loading a snapshot), refresh it as the host
+      // records more. Otherwise wait for a recorded common tick, not an assumed number of rendered frames.
+      await client.waitFor(
+        `${list}.some((t) => window.boogle.sync.hashesAt(t) !== null) || window.boogle.sync.world.tick > ${Math.max(...ticks)}`,
+        { timeout: Math.max(1, Math.min(1000, deadline - Date.now())) },
+      );
+      const match = await client.eval<{ tick: number; hashes: Record<string, number> } | null>(`
+        const s = window.boogle.sync, tick = ${list}.find((t) => s.hashesAt(t) !== null);
+        return tick === undefined ? null : { tick, hashes: s.hashesAt(tick) };`);
+      if (match) {
+        const a = samples.find((s) => s.tick === match.tick)!.hashes,
+          b = match.hashes;
+        const same = JSON.stringify(a) === JSON.stringify(b);
+        return {
+          same,
+          status: same ? 'matched' : 'mismatch',
+          detail: `tick ${match.tick} host ${JSON.stringify(a)} client ${JSON.stringify(b)}`,
+        };
+      }
+      detail = `host recorded ${ticks.length} ticks (${ticks[0]}..${ticks.at(-1)}), client has no overlap`;
+      await host.waitFor(`window.boogle.sync.hashTicks().some((t) => t > ${Math.max(...ticks)})`, {
+        timeout: Math.max(1, Math.min(1000, deadline - Date.now())),
+      });
+    }
+    return { same: false, status: 'unavailable', detail: `no shared tick before deadline; ${detail}` };
+  } finally {
+    await Promise.all([host, client].map((g) => g.eval(`window.boogle.sync.captureHashes(false);`)));
   }
-  return {
-    same: !!a && !!b && JSON.stringify(a) === JSON.stringify(b),
-    detail: `tick ${tick} host ${JSON.stringify(a)} client ${JSON.stringify(b)}`,
-  };
 }
 
 // ---- Game modules (dev server only).
