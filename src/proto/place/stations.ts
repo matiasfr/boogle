@@ -17,6 +17,7 @@ import { addFoot } from './sites.ts';
 import {
   FRAME_D,
   FRAME_W,
+  OUT,
   PER_ROW,
   RAIL_OUT,
   SPAN,
