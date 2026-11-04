@@ -25,7 +25,7 @@ folder map in [src/README.md](../../src/README.md).
   [test/world-replay.test.ts](../../test/world-replay.test.ts) (seeded edits for every op, host killed midway, late
   joiner, identical hashes) and [test/world-snapshots.test.ts](../../test/world-snapshots.test.ts).
 - **Scenarios.** `npm run scenario -- <name>` and `npm run look` (stills, motion sheets, heatmaps). Scenarios in
-  [dev/scenarios/](../../dev/scenarios/): atlas, boogler-tag, caves, controls-guide, dino, falls, first-run,
+  [dev/scenarios/](../../dev/scenarios/): atlas, boogler-tag, caves, controls-guide, dino, falls,
   guest-play, haul-loop, interact, lighthouse, one-hand, particles, pause, reconnect-edit, shared-kinds, smoke, splash,
   world-inputs. PR CI runs single-player
   scenarios only (`world-inputs`, must pass; two software-rendered tabs are too slow there); seven others (reconnect-edit,

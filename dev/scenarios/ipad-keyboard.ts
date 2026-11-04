@@ -44,7 +44,6 @@ export default {
     const room = 'proto-era' + Math.random().toString(36).slice(2, 6);
     const g = await t.open({ name: 'ipad', room, hud: true, touch: true, size: [1194, 834], query: 'proto=era' });
     await g.waitFor(`!!document.querySelector('.era-proto button') && window.boogle?.me?.entered`, { timeout: 90000 });
-    await g.eval(`document.querySelector('.first-run-close')?.click();`);
     t.check('starts in touch mode', !!(await g.eval(`return ${touchMode};`)));
     t.check('still: touch mode', true, await g.still('ipad-touch'));
 

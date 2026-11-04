@@ -73,7 +73,6 @@ export default {
     const room = 'ipadtp' + Math.random().toString(36).slice(2, 6);
     const g = await t.open({ name: 'ipad', room, hud: true, touch: true, size: [1194, 834], init: ipad });
     await g.waitFor(`window.boogle?.me?.entered`, { timeout: 90000 });
-    await g.eval(`document.querySelector('.first-run-close')?.click();`);
     const { page } = g;
     t.check('no Pointer Lock, as on iPad', !(await g.eval(`return 'requestPointerLock' in Element.prototype;`)));
     t.check('starts in touch mode', !!(await g.eval(`return ${touchMode};`)));

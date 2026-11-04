@@ -50,7 +50,6 @@ export default {
     const total = Number(String(await g.eval(`return ${STEP};`)).split('/')[1]);
     t.check('it starts at step 1', String(await g.eval(`return ${STEP};`)).startsWith('1/'), String(total));
     await g.waitFor(`window.boogle?.me?.entered`, { timeout: 30000 });
-    await g.eval(`document.querySelector('.first-run-close')?.click();`);
     await t.sleep(1500);
     t.check('step 1: at its spawn', Number(await g.eval(OFF)) < 2.5);
     t.check('still: the bar at step 1', true, await g.still('play-start'));

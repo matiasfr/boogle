@@ -26,7 +26,6 @@ export default {
     const room = 'mush' + Math.random().toString(36).slice(2, 6);
     const g = await t.open({ name: 'bouncer', room });
     await g.waitFor(`window.boogle?.me?.entered && window.boogle.sync.worldStatus().ready`, { timeout: 90000 });
-    await g.eval(`document.querySelector('.first-run-close')?.click();`);
     const friend = await t.open({ name: 'friend', room });
     await friend.waitFor(`window.boogle?.me?.entered && window.boogle.remotes.size >= 1`, { timeout: 90000 });
     await g.waitFor(`window.boogle.remotes.size >= 1`, { timeout: 90000 });

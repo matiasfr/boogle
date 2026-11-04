@@ -1,4 +1,4 @@
-/* The look lab's panel (src/debug/look-lab.ts, ?proto=look): top right under the net chip (the controls card owns the left), collapsible. */
+/* The look lab's panel (src/debug/look-lab.ts, ?proto=look): top right under the net chip, collapsible. */
 .look-lab {
   position: fixed;
   top: calc(56px + env(safe-area-inset-top, 0px));

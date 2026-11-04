@@ -439,7 +439,6 @@ const PAGES: Page[] = [
     key: 'build',
     query: '',
     setup: `await until(() => window.boogle.me.entered, 90000);
-      document.querySelector('.first-run-close')?.click();
       ${TP(8, 16)}
       window.__debugCam.set([12, 4.3, 11], [17, 2.4, 5.8]);
       await sleep(1500);`,
@@ -475,7 +474,6 @@ const PAGES: Page[] = [
     query: 'proto=era',
     room: 'proto-era',
     setup: `await until(() => document.querySelector('.era-proto button') && window.boogle.me.entered, 90000);
-      document.querySelector('.first-run-close')?.click();
       ${TP(12, 38)}
       await sleep(1000);`,
     takes: [
@@ -517,7 +515,6 @@ const PAGES: Page[] = [
     query: 'proto=place',
     room: 'proto-place',
     setup: `await until(() => window.boogle.me.entered && window.boogle.me.body, 90000);
-      document.querySelector('.first-run-close')?.click();
       await sleep(1000);`,
     takes: [
       {
@@ -570,8 +567,7 @@ const PAGES: Page[] = [
     key: 'lay',
     query: 'proto=lay&v=quick',
     room: 'proto-lay',
-    setup: `await until(() => document.querySelector('.lay-proto button') && window.boogle.me.entered, 90000);
-      document.querySelector('.first-run-close')?.click();`,
+    setup: `await until(() => document.querySelector('.lay-proto button') && window.boogle.me.entered, 90000);`,
     takes: [
       {
         id: 'track-machine',

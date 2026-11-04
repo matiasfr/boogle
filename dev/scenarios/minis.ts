@@ -38,7 +38,7 @@ export default {
     const room = 'minis' + Math.random().toString(36).slice(2, 6);
     const g = await t.open({ name: 'solo', room, query: 'proto=minis' });
     await g.waitFor(`window.boogle?.me?.entered`, { timeout: 90000 });
-    await g.eval(`document.querySelector('.first-run-close')?.click(); await ${M('index')}.loaded;`);
+    await g.eval(`await ${M('index')}.loaded;`);
     await g.eval(`localStorage.clear();`);
 
     // ---- Golf: tee off, one long throw west, then a lob into the bucket from 3 m.

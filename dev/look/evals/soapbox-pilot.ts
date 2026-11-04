@@ -42,11 +42,6 @@ async function soapbox() {
   return win.__soapbox;
 }
 
-// Sheets without the first-run card over the cart.
-const style = document.createElement('style');
-style.textContent = '.first-run { display: none !important }';
-document.head.append(style);
-
 /** Get in (from wherever the cart is), or go back to the top if already in, then drive `plan`. */
 export async function drive(plan: Plan) {
   const box = await soapbox();
