@@ -1,0 +1,134 @@
+.review-page {
+  margin: 0;
+  background: #171c20;
+  color: #f1eee7;
+  font:
+    16px/1.45 system-ui,
+    sans-serif;
+}
+.review-page #review-card {
+  max-width: 1000px;
+  margin: auto;
+  padding: 20px;
+}
+.review-page h1 {
+  font-size: clamp(22px, 4vw, 32px);
+  margin: 4px 0;
+}
+.review-page p {
+  margin: 8px 0;
+}
+.review-page .review-change {
+  color: #cbd3d8;
+}
+.review-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0;
+}
+.review-compare figure {
+  margin: 0;
+  min-width: 0;
+}
+.review-compare figcaption {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.review-page button {
+  min-height: 44px;
+  border: 1px solid #74838a;
+  border-radius: 8px;
+  padding: 8px 14px;
+  background: #29363d;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.review-page button:focus-visible,
+.review-page textarea:focus-visible {
+  outline: 3px solid #ffcf5b;
+  outline-offset: 3px;
+}
+.review-page button:disabled {
+  opacity: 0.6;
+}
+.review-page button[aria-pressed='true'] {
+  background: #ffcf5b;
+  color: #171c20;
+  border-color: #ffcf5b;
+}
+.review-page .review-image {
+  position: relative;
+  display: block;
+  padding: 0;
+  width: 100%;
+  overflow: hidden;
+  border: 0;
+  border-radius: 4px;
+}
+.review-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.review-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffcf5b;
+  color: #171c20;
+  border: 2px solid white;
+  box-shadow: 0 1px 6px #000;
+  font-weight: bold;
+  pointer-events: none;
+}
+.review-pin[hidden] {
+  display: none;
+}
+.review-page textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 5px 0 12px;
+  background: #11181c;
+  color: inherit;
+  border: 1px solid #74838a;
+  border-radius: 6px;
+  padding: 8px;
+  font: inherit;
+}
+.review-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#review-status {
+  font-weight: 700;
+  color: #ffcf5b;
+}
+#review-status[data-state='received'] {
+  color: #a6e2b4;
+}
+.review-page details {
+  margin-top: 16px;
+  color: #bac7cd;
+}
+.review-page pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .review-page #review-card {
+    padding: 12px;
+  }
+  .review-compare {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}

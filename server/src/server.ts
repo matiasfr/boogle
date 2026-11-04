@@ -7,6 +7,7 @@ import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { createStore } from './store.ts';
 import { addPlaydata } from './playdata.ts';
+import { addReviews } from './reviews.ts';
 import { routeUpgrades } from './host/upgrade.ts';
 import { createRoomHost } from './host/rooms.ts';
 import type { RoomHost } from './host/rooms.ts';
@@ -217,7 +218,7 @@ export function createService(cfg: ServerConfig) {
       res.append('Vary', 'Origin');
     }
     if (req.method === 'OPTIONS') {
-      res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
       res.set('Access-Control-Allow-Headers', req.get('access-control-request-headers') || 'Content-Type');
       res.set('Access-Control-Max-Age', '600');
       return res.status(204).end();
@@ -291,6 +292,7 @@ export function createService(cfg: ServerConfig) {
     createRateLimiter({ perMinute: cfg.reportRatePerMin }),
     express.json({ limit: '8kb', type: ['application/json', 'text/plain'] }),
     async (req: Request, res: Response, next: NextFunction) => {
+      if (req.body?.kind === 'review-v1') return reviewReport(req, res);
       const list: (Report | null)[] = (Array.isArray(req.body) ? req.body : [req.body])
         .slice(0, REPORT_BATCH)
         .map(cleanReport);
@@ -333,6 +335,13 @@ export function createService(cfg: ServerConfig) {
     }
     return true;
   };
+
+  const reviewReport = addReviews(app, cfg, {
+    authed,
+    withLock,
+    readLimit: createRateLimiter({ perMinute: 60 }),
+    uploadLimit: createRateLimiter({ perMinute: 6 }),
+  });
 
   // Read back one day's reports.
   app.get('/reports', async (req: Request, res: Response, next: NextFunction) => {

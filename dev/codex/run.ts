@@ -221,7 +221,7 @@ async function main(job?: JobControl): Promise<number> {
   let cwd: string;
   let argv: string[];
   let prompt: string;
-  if (!previous && job && mode !== 'previz' && !opts.snapshot && !opts['base-ref'])
+  if (!previous && job && mode !== 'previz' && !opts.snapshot && !opts['base-ref'] && !opts['ref-branch'])
     await job.command('git', ['fetch', '-q', 'origin', 'main'], repo);
   const sourceCommit = previous
     ? previous.sourceCommit
@@ -258,9 +258,12 @@ async function main(job?: JobControl): Promise<number> {
     argv = ['exec', ...base, '-C', cwd, '-s', 'workspace-write', '--skip-git-repo-check', '-'];
   } else if (mode === 'review') {
     cwd = job ? await worktree(job, sourceCommit) : repo;
-    argv = ['exec', 'review', ...base, '--base', 'origin/main'];
-    argv.push('-');
-    prompt = brief;
+    // The CLI makes --base and a custom prompt mutually exclusive. Keep the native base review when there is
+    // no brief; a focused review supplies its comparison explicitly in the custom instructions instead.
+    argv = ['exec', 'review', ...base, ...(brief ? ['-'] : ['--base', 'origin/main'])];
+    prompt = brief
+      ? `${HOUSE}\n\nReview the committed diff from the merge base of origin/main and HEAD to HEAD (git diff origin/main...HEAD). This is a read-only review: do not edit, commit, push or ship.\n\nFocus: ${brief}`
+      : '';
   } else {
     if (opts.dry) cwd = repo;
     else cwd = await worktree(job!, sourceCommit, `codex/${topic}`);
@@ -284,8 +287,9 @@ async function main(job?: JobControl): Promise<number> {
     argv.push('-');
   }
 
-  prompt +=
-    '\n\nEnd your final message with a fenced json block containing {outcome: done|partial|blocked, summary, numbers, unverified, departures}. Keep the whole final message under about 150 words.';
+  if (mode !== 'review' || brief)
+    prompt +=
+      '\n\nEnd your final message with a fenced json block containing {outcome: done|partial|blocked, summary, numbers, unverified, departures}. Keep the whole final message under about 150 words.';
   if (!argv.includes('--json')) argv.splice(1, 0, '--json');
   Object.assign(meta, { cwd, sourceCommit, argv, launchArgv: previous?.launchArgv ?? previous?.argv ?? argv });
   if (opts.dry) {
