@@ -195,6 +195,7 @@ Raw brainstorm from the same session, typed while Matias and Grant talked. Not d
 - **Small:** a square shadow under the character (both saw it). Double-jump rings off the feet. Rails floating where the line leaves the mountain. Z-fighting on the platform between the canyon rails and the tower. The junction snaps the cart. Pack floats off the body and its load sits outside it. Happy Clam has no way back but the water. Crate boxes can be clipped through. A wobble on some jump surfaces. Can't board the track layer. The reload prompt claims you must reload to stay with friends, and that's not true.
 
 ### Calls they raised (not decided)
+Owner's answers on the objective marker, trees, rails and the cart: [boogle-2.md](proposals/boogle-2.md), "2026-11-03, after round 4". The tree answer differs from this list: tougher trees may stay, as long as any tree can be attempted.
 - **Remove the objective marker:** both want it gone, and the world should guide you. But Grant was still following it at the end ("that's my objective") and asked why he'd want a second train, so it's what carried that stretch.
 - **Remove orange bands; every tree can be chopped:** both agree. No axe tiers. Tension: Grant also said the long walk to the bands makes you feel the pain the little guys then relieve, and that's the gut question. Needs tuning, not just removal.
 - **Cut or soften the blue shafts at spawn:** both find them heavy-handed.
