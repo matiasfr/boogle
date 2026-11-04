@@ -134,12 +134,16 @@ function feedCrane() {
 }
 
 // ---------------------------------------------------------------- calling one
+let currentHalt: (typeof halts)[number] | null = null;
 /** The halt you're standing on, or null. */
 export function haltUnder() {
   const b = me.body;
-  if (!b) return null;
-  for (const h of halts) if (h.onIt(b.position.x, b.position.y, b.position.z)) return h;
-  return null;
+  if (!b) return (currentHalt = null);
+  const { x, y, z } = b.position;
+  // One decision for the objective and calls: a small step at an edge must not leave and re-enter the halt.
+  if (currentHalt?.onIt(x, y, z, 0.4)) return currentHalt;
+  currentHalt = halts.find((h) => h.onIt(x, y, z)) ?? null;
+  return currentHalt;
 }
 const lineOfHalt = (h: { k: number }) => lines[h.k]!;
 const called: { l: LineRun; stop: number } = { l: L1, stop: -1 };
@@ -228,12 +232,13 @@ export function snapTrains() {
   for (const h of halts) h.snap(job.rung.trains);
   called.stop = -1;
   wasOn = null;
+  currentHalt = null;
   for (const l of lines) {
     clearCrates(l.train.tr.load);
     l.train.tr.lastStop = -1;
     const t = trainsSaved[l.k];
     if (job.rung.trains) {
-      if (t) l.train.put(t.s, 0, t.target, t.sweep, t.dwell || 0.1);
+      if (t) l.train.put(t.s, t.v, t.target, t.sweep, t.dwell, t.express ?? l.train.tr.express);
       else {
         l.train.park(0);
         l.train.start();
@@ -244,21 +249,36 @@ export function snapTrains() {
   }
   setCamp(1, job.rung.trains);
 }
-let trainsSaved: ({ s: number; target: number; sweep: 1 | -1; dwell: number } | null)[] = [];
+export type TrainSave = { s: number; v: number; target: number; sweep: 1 | -1; dwell: number; express?: boolean };
+let trainsSaved: (TrainSave | null)[] = [];
 sharedSlice('trains', {
   get: () =>
     lines.map((l) => {
       const t = l.train.tr;
       return l.train.clockRunning()
-        ? { s: +t.s.toFixed(2), v: +t.v.toFixed(2), target: t.target, sweep: t.sweep, dwell: +t.dwell.toFixed(2) }
+        ? {
+            s: +t.s.toFixed(2),
+            v: +t.v.toFixed(2),
+            target: t.target,
+            sweep: t.sweep,
+            dwell: +t.dwell.toFixed(2),
+            express: t.express,
+          }
         : null;
     }),
   set: (v) => {
     const a = Array.isArray(v) ? v : [];
     trainsSaved = lines.map((l, k) => {
-      const q = a[k] as { s?: unknown; target?: unknown; sweep?: unknown; dwell?: unknown } | null | undefined;
+      const q = a[k] as Partial<TrainSave> | null | undefined;
       if (!q || !num(q.s) || !count(q.target, l.spec.stops.length - 1)) return null;
-      return { s: q.s, target: q.target, sweep: q.sweep === -1 ? -1 : 1, dwell: num(q.dwell) ? q.dwell : 0 };
+      return {
+        s: q.s,
+        v: num(q.v) ? Math.max(-TUNE.cruise, Math.min(TUNE.cruise, q.v)) : 0,
+        target: q.target,
+        sweep: q.sweep === -1 ? -1 : 1,
+        dwell: num(q.dwell) ? q.dwell : 0,
+        express: typeof q.express === 'boolean' ? q.express : undefined,
+      };
     });
   },
 });

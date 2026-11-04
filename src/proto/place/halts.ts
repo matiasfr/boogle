@@ -203,8 +203,8 @@ function makeHalt(name: string, k: number, line: Line, s0: number, s1: number, l
       board.sprite.visible = false;
       if (on) addBodies();
     },
-    /** A body at (x, y, z) stands on it. */
-    onIt(x: number, y: number, z: number) {
+    /** A body at (x, y, z) stands on it; margin retains an already occupied halt through edge jitter. */
+    onIt(x: number, y: number, z: number, margin = 0) {
       if (!halt.up) return false;
       const dx = x - c.x,
         dz = z - c.z;
@@ -212,7 +212,7 @@ function makeHalt(name: string, k: number, line: Line, s0: number, s1: number, l
         sinY = Math.sin(yaw);
       const l = dx * cosY - dz * sinY,
         s = dx * sinY + dz * cosY;
-      return Math.abs(l) < 1.6 && Math.abs(s) < half + 0.4 && Math.abs(y - low) < 1.6;
+      return Math.abs(l) < 1.6 + margin && Math.abs(s) < half + 0.4 + margin && Math.abs(y - low) < 1.6 + margin;
     },
     /** The signal and the board, for a train on its way in `eta` s; null for nothing coming. */
     signal(eta: number | null) {
