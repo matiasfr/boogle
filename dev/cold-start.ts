@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
 import { installStartupRecorder } from '../src/debug/startup-record.ts';
 import { hostAudit, profileInventory } from './cold-start/cache.ts';
-import { summarize, spread } from './cold-start/report.ts';
+import { summarize, spread, comparePairs, comparisonThreshold } from './cold-start/report.ts';
 import { prepareIdentity, metalInventory, clearExclusiveMetal } from './cold-start/identity.ts';
 import { installSampleView } from './cold-start/page.ts';
 import { buildAt, sameBuild } from './codex/source.ts';
@@ -295,16 +295,7 @@ try {
   const warm = results.filter((r) => r.kind === 'warm');
   const paired = cold.map((c) => ({ cold: c, warm: warm.find((w) => w.run === c.run) })).filter((p) => p.warm);
   const deltas = paired.map((p) => p.cold.summary.asyncPipelineElapsedMs - p.warm!.summary.asyncPipelineElapsedMs);
-  const measurable =
-    paired.length >= 3 &&
-    paired.every(
-      (p) =>
-        p.cold.summary.pipelineSignature === p.warm!.summary.pipelineSignature &&
-        !p.cold.health.length &&
-        !p.warm!.health.length,
-    ) &&
-    deltas.every((d) => d > 5) &&
-    spread(deltas).median! > spread(cold.map((r) => r.summary.asyncPipelineElapsedMs)).median! * 0.1;
+  const { measurable, comparison } = comparePairs(results);
   const after = buildAt(process.cwd());
   const exclusiveCleared = clears.length === runs && clears.every((clear) => clear.cleared && clear.before.length > 0);
   const exclusiveWrites =
@@ -322,6 +313,7 @@ try {
     identity,
     clears,
     metalSamples,
+    comparison,
     spread: {
       coldSyncMs: spread(cold.map((r) => r.summary.syncPipelineMs)),
       warmSyncMs: spread(warm.map((r) => r.summary.syncPipelineMs)),
@@ -331,8 +323,7 @@ try {
     },
     cacheProof: {
       measurable,
-      threshold:
-        '3+ matched healthy pairs, every async interval-union delta >5ms, median >10% of cold median. Includes scheduling/queueing, not isolated compiler time; browser caches also differ, so Metal contribution is not isolated.',
+      threshold: comparisonThreshold,
       exclusiveCleared,
       exclusiveWrites,
       trueCold,
