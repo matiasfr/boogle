@@ -1,6 +1,6 @@
 # Rapier 0.21.0 upgrade assessment
 
-Updated 4 November 2026. **Owner decision: 0.21 is final; seek 0.19 feel parity, with recorded retuning allowed. No fallback, push or ship.** Old baseline: `75526a2a`; current round is on rebased `fff841dc` (Node 26/Vite 8/TS 7/Oxlint). The owner accepts ball rebound exactness, crest motion, lighthouse stairs and the steep-corner miss. This round restores standing landing timing, ledge/coyote steering and old deck carry deliberately. Sustained glide is identical, but some ground-entry and short landing-stop comparisons still exceed ±2%; **partial, references unchanged**. See the final follow-up table and complete remaining-movement list below.
+Updated 4 November 2026. The owner played the shipped Rapier 0.21 and accepted its feel for now. Accepted differences include ball rebounds, the sea crest, lighthouse stairs, steep-corner support, running-glide entry and one jump height on all ground. Old baseline: `75526a2a`; the parity investigation below records the remaining measured differences, not a claim of numerical equivalence.
 
 ## API and upstream changes
 
@@ -280,6 +280,8 @@ Final `sim player` still has 15 fields differing from the old browser reference.
 Final `npm run check` passes: zero lint/type errors, all 298 tests, registries, levels, assets and production build (`.look/inertia-final-check.log`). The owner reported `check:full` passing before this round, including 23/23 network checks, and will run it for this revision. No blocked network retry or external network use occurred. Port 5199's owner server was left running and untouched; browser evidence used the provided broker's separate server.
 
 ## Reference decisions and owner playtest
+
+On 4 November the owner accepted the shipped feel, including ball rebounds, sea crest, lighthouse stairs, steep-corner support, running-glide entry and one jump height on all ground. The table below records the earlier parity gate, superseded by that playtest decision.
 
 | Reference | Decision this round |
 | --- | --- |
