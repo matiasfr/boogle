@@ -1,14 +1,7 @@
 // Prototype counters and traces in this browser's localStorage, read by the protos page and game trace view.
 // Every counter write re-reads the key so game tabs preserve each other's counts and older stored fields.
 // Nothing here talks to a server.
-import { PROTOS, type Proto } from './protos.ts';
-
-export type Saved = {
-  /** Behaviour counters (`protoCount`): rides, runs, seconds in the prototype. */
-  counts: Record<string, number>;
-  /** The same per variant, by name (`vName`). */
-  byV: Record<string, { counts: Record<string, number> }>;
-};
+import type { Proto } from './protos.ts';
 
 /** A variant's name for the store: `v`, else the card's own url's `v`, else 'default'. */
 export const vName = (p: Proto, v: string) => v || urlParam(p, 'v') || 'default';
@@ -25,14 +18,8 @@ function loadAll(): Record<string, Record<string, unknown>> {
   }
 }
 
-export function read(id: string, all = loadAll()): Saved {
-  const s = all[id] ?? {};
-  return {
-    counts: obj(s.counts) as Record<string, number>,
-    byV: Object.fromEntries(
-      Object.entries(obj(s.byV)).map(([k, v]) => [k, { counts: obj(obj(v).counts) as Record<string, number> }]),
-    ),
-  };
+export function readCounts(id: string): Record<string, number> {
+  return obj(loadAll()[id]?.counts) as Record<string, number>;
 }
 
 /** Add counters to a card and its variant (`vName`), preserving any historical stored fields. */
@@ -60,12 +47,6 @@ export function write(id: string, addCounts: Record<string, number>, v: string):
 
 /** The value of `name` in a prototype's url (`proto`, `room`, ...), or null. */
 export const urlParam = (p: Proto, name: string) => new URLSearchParams(p.url.split('?')[1] ?? '').get(name);
-
-/** The card a game address belongs to: the one whose url has the same `proto=`. */
-export function cardFor(search: string): Proto | undefined {
-  const proto = new URLSearchParams(search).get('proto');
-  return proto ? PROTOS.find((p) => urlParam(p, 'proto') === proto) : undefined;
-}
 
 /** The counters as one plain line: "3 rides, 6 min in prototype". */
 export function countsLine(counts: Record<string, number>): string {
