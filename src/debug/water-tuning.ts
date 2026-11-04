@@ -107,6 +107,8 @@ const groups: Group[] = [
       spec('post.exposure', 'exposure comp', 0.25, 4),
       spec('post.autoExposure', 'autoExposure', 0, 1, 1),
       spec('post.keyValue', 'keyValue', 0.05, 0.6),
+      spec('post.agxPower', 'agxPower', 0.5, 2),
+      spec('post.agxSaturation', 'agxSaturation', 0, 2),
       spec('post.contrast', 'contrast', 0.7, 1.6),
       spec('post.saturation', 'saturation', 0, 2),
     ],
@@ -151,10 +153,12 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
       border-radius:7px; padding:5px 8px; font:inherit; }
     [data-water-panel] button:hover { background:#ffffff28; }
     [data-water-panel] button:focus-visible, [data-water-panel] input:focus-visible,
-    [data-water-panel] textarea:focus-visible, [data-water-panel] summary:focus-visible { outline:2px solid #b7e4c7; outline-offset:2px; }
+    [data-water-panel] textarea:focus-visible, [data-water-panel] select:focus-visible,
+    [data-water-panel] summary:focus-visible { outline:2px solid #b7e4c7; outline-offset:2px; }
     [data-water-panel] details { margin-top:7px; border-top:1px solid #ffffff25; padding-top:7px; }
     [data-water-panel] summary { min-height:44px; cursor:pointer; font-weight:700; padding:3px 0; }
     [data-water-panel] input { min-height:44px; }
+    [data-water-panel] select { min-height:44px; color:inherit; background:#0c181d; font:inherit; border-radius:5px; }
     [data-water-panel] .water-row { display:grid; grid-template-columns:1fr 70px; align-items:center; gap:5px; margin:7px 0; }
     [data-water-panel] .water-row input[type=range] { grid-column:1 / -1; width:100%; margin:0; accent-color:#b7e4c7; }
     [data-water-panel] input[type=number], [data-water-panel] textarea { width:100%; min-width:0; border:1px solid #ffffff35;
@@ -320,6 +324,38 @@ export async function showWaterTuning(restorePointer: () => void, parent: HTMLEl
     const groupReset = button('Reset group', () => reset(specs));
     groupReset.dataset.waterGroup = group.name;
     details.append(groupReset);
+    if (group.name === 'Post' && bindings.has('post.agxPower') && bindings.has('post.agxSaturation')) {
+      const looks = [
+        { name: 'Current', power: 1.12, saturation: 1.3 },
+        { name: 'Stock AgX', power: 1, saturation: 1 },
+        { name: 'Punchy', power: 1.35, saturation: 1.4 },
+      ];
+      const row = node('label', 'AgX look ');
+      const select = node('select');
+      select.setAttribute('aria-label', 'AgX look');
+      for (const look of looks) select.append(node('option', look.name));
+      const custom = node('option', 'Custom');
+      custom.disabled = true;
+      select.append(custom);
+      refreshers.push(() => {
+        select.value =
+          looks.find(
+            (look) =>
+              look.power === bindings.get('post.agxPower')!.get() &&
+              look.saturation === bindings.get('post.agxSaturation')!.get(),
+          )?.name ?? 'Custom';
+      });
+      select.addEventListener('change', () => {
+        const look = looks.find((look) => look.name === select.value);
+        if (!look) return;
+        bindings.get('post.agxPower')!.set(look.power);
+        bindings.get('post.agxSaturation')!.set(look.saturation);
+        refresh();
+        persist();
+      });
+      row.append(select);
+      details.append(row);
+    }
     for (const s of specs) {
       const initial = defaults.get(s.key)!;
       if (s.toggle) {
