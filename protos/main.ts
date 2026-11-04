@@ -174,12 +174,12 @@ addEventListener('focus', () => redraws.forEach((fn) => fn()));
 // "Start here": the playlist (protos.ts, `playlist`) as numbered steps of big buttons, one per variant to compare, each
 // opening the `?play` island at that step and variant (a chapter's own page for the ones that can't share it), ticked
 // once the game's bar has a verdict for that variant. The big button resumes wherever the playlist got to.
-const playHref = (q: string) => `${import.meta.env.BASE_URL}?play${q ? `=${encodeURIComponent(q)}` : ''}`;
 function startHere(): HTMLElement {
   const steps = playlist();
   const wrap = el('section', 'start');
   const go = el('a', 'btn leg go', 'Play the playlist');
-  go.href = playHref('');
+  go.href =
+    import.meta.env.BASE_URL + (steps[0] ? variantUrl(steps[0].card, steps[0].legs[0] ?? '') : '').replace(/^\//, '');
   wrap.append(
     el('h2', '', 'Start here'),
     el(
@@ -202,7 +202,7 @@ function startHere(): HTMLElement {
         // A lone default is just "Play"; "default" only beside the variants it's compared with.
         const name = vName(r.card, leg);
         const a = el('a', 'btn leg', r.legs.length === 1 && !leg ? 'Play' : leg || 'default');
-        a.href = playHref(`${r.card.id}:${leg}`);
+        a.href = import.meta.env.BASE_URL + variantUrl(r.card, leg).replace(/^\//, '');
         a.title = variantUrl(r.card, leg);
         const tick = el('span', 'tick', '✓');
         tick.setAttribute('aria-label', 'verdict saved');

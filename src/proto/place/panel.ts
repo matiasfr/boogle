@@ -5,7 +5,6 @@ import { teleport } from '../../physics/engine.ts';
 import { carry } from '../../physics/platforms.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { submitEdit } from '../../world/sync.ts';
-import { playPanel } from '../flags.ts';
 import { drawHeaps } from '../net/crates.ts';
 import { DAY } from './look.ts';
 import { ROCK_LIST, TREES, back, greatTree, shoulder, setTrunkTaken } from './chop.ts';
@@ -238,7 +237,6 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
   btn('Skip to Far Head', () => coop.skip('head', skipHead));
   btn('Skip to trains', () => coop.skip('trains', skipTrains));
   (document.querySelector('.hud') ?? document.body).append(box);
-  playPanel('place', box);
   coop.skips({
     delivery: skipDelivery,
     path: skipPath,

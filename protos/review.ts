@@ -36,7 +36,7 @@ export async function showReview(id: string) {
     const card = (await response.json()) as ReviewCard;
     if (card.version !== 1 || card.id !== id || !card.evidence?.before || !card.evidence.after)
       throw new Error('This review format is unavailable.');
-    const { acknowledgeReport } = await import('../src/proto/bar/report-transport.ts');
+    const { acknowledgeReport } = await import('./report-transport.ts');
     const key = `boogle-review-v1:${new URL(server).origin}:${id}`;
     let draft: ReviewSubmission = {
       kind: 'review-v1',

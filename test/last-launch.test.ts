@@ -14,9 +14,9 @@ test('room and prototype are kept with their parameters, debug flags dropped', (
   assert.equal(launchQuery('?room=a&proto=lay&hero=bare'), 'room=a&proto=lay&hero=bare');
 });
 
-test('the playtest playlist is kept, and named', () => {
-  assert.equal(launchQuery('?play&dpr=fixed'), 'play=');
-  assert.equal(describeLaunch('play='), 'the playtest playlist');
+test('a retired playlist link opens nothing special', () => {
+  assert.equal(launchQuery('?play&dpr=fixed'), '');
+  assert.equal(describeLaunch('play='), '');
 });
 
 test('the Continue label names the room and the prototype', () => {

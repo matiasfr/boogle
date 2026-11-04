@@ -102,7 +102,7 @@ onFrame(
       protoCount('crossings');
     } else if (train.stop === 0) arrived = false;
   },
-  { phase: 'world', order: 41 }, // after the prototype bar places you (order 40)
+  { phase: 'world', order: 41 }, // after the prototype session places you (order 40)
 );
 
 // Off the map the sea is deep, and a fall from the viaduct plunges: the camera's swimming floor (3 m under) would see

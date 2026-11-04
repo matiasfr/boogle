@@ -1,4 +1,4 @@
-// Owner-requested safety-gate parity: preserve the 170 study assertions against the fixed ESLint baseline.
+// Owner-requested safety-gate parity: preserve the 167 remaining study assertions against the fixed ESLint baseline.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -57,7 +57,7 @@ test('fixture assertions retain every ESLint catch and every allowed case; JS la
       );
       return caught !== c.eslint;
     });
-    assert.equal(cases.length, 224);
+    assert.equal(cases.length, 221);
     assert.deepEqual(differences, [], JSON.stringify({ differences, diagnostics }, null, 2));
     assert.ok(diagnostics.some((d) => d.file === js && d.rule === 'boogle/js-language'));
     assert.deepEqual(

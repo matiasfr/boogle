@@ -2,7 +2,7 @@
 // Never render an extra frame: RenderPipeline's scene pass only runs once per animation frame.
 import { onFrame, onStart, prof } from '../loop.ts';
 import { camera, renderer, rendererReady, scenePass } from '../render/scene.ts';
-import { ISLAND, ON_ISLAND, PROTO, protoV } from '../proto/flags.ts';
+import { PROTO, protoV } from '../proto/flags.ts';
 import { gpuInfo } from './gpu-info.ts';
 import { bootDone, bootLine } from '../boot/timeline.ts';
 import type { RenderTarget, Texture } from 'three/webgpu';
@@ -100,7 +100,7 @@ export async function observeGpu() {
     snapshot() {
       touch();
       const q = new URLSearchParams(location.search);
-      const prototypes = ON_ISLAND ? [...ISLAND] : PROTO ? [PROTO] : [];
+      const prototypes = PROTO ? [PROTO] : [];
       return {
         ...work(),
         internalPixels: { width: renderer.domElement.width, height: renderer.domElement.height },

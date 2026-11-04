@@ -7,7 +7,7 @@
 //   Inputs in summary: presses per action, which device, interact presses with their verbs, prompts shown.
 //   Stuck: standing still, walking into something, falling in the water, being moved far (a respawn).
 //   Performance: frame times per few seconds, resolution steps, errors once each.
-// No audio, no typed text but the player's name and the verdict's note.
+// No audio, no typed text but the player's name.
 //
 // Never in a frame's way: a frame does a few comparisons; the sort and the JSON run on a timer. Batches leave every few
 // seconds with a keepalive fetch and a `sendBeacon` when the tab hides, text/plain so there is no preflight. Offline
@@ -22,8 +22,9 @@ import { renderer, rendererReady, gfx } from '../../render/scene.ts';
 import { getRoomId, onNetState, onPeopleChanged, remotes } from '../../netplay/net.ts';
 import { coarseUa, firstFrame, scrub } from '../../netplay/report-format.ts';
 import { BUILD } from '../../build-id.ts';
-import { IDLE_S, cardFor } from '../../../protos/store.ts';
-import { ISLAND, ON_ISLAND, PROTO, currentStep, onStep, protoV, pageQuery } from '../flags.ts';
+import { IDLE_S } from '../../../protos/store.ts';
+import { PROTO, protoV, pageQuery } from '../flags.ts';
+import { currentCard } from '../card.ts';
 import { hookActivity, onPlayMark, playWhereNow, type PlayData } from '../mark.ts';
 import type { PlayEvent } from '../../../server/src/playdata.ts';
 
@@ -60,7 +61,7 @@ let backoff = SEND_MS;
 let sentBytes = 0;
 let stopped = false;
 
-const card = () => cardFor(location.search)?.id ?? (ON_ISLAND ? currentStep() || ISLAND[0] : PROTO);
+const card = () => currentCard?.id ?? PROTO;
 const firstCard = card();
 
 function push(k: string, fields: Record<string, string | number | boolean | null> = {}, ms?: number) {
@@ -233,9 +234,7 @@ onPlayMark((name, data: PlayData | undefined, ms) => {
     if (v !== undefined && !(k in fields) && k !== 't' && k !== 'k') fields[k] = v;
   push('m', fields, ms);
 });
-onStep((id) => {
-  push('step', { card: id, v: protoV(id) });
-});
+push('step', { card: PROTO, v: protoV(PROTO) });
 
 // ---------------------------------------------------------------- inputs, in summary
 const acts: Record<string, number> = {};

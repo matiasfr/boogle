@@ -63,7 +63,7 @@ import { createRunHud, type RunHud } from './run-hud.ts';
 import { createGhost } from './ghost.ts';
 import { protoMark, protoActivity } from '../mark.ts';
 import { LINE, START, START_GO, FINISH, crossedFinish, buildMarkers } from './course.ts';
-import { onVariant, protoV } from '../flags.ts';
+import { protoV } from '../flags.ts';
 
 // ---------------------------------------------------------------- tuning (window.__soapbox.T in the console)
 const T = {
@@ -162,11 +162,7 @@ const VARIANTS: Record<string, Partial<typeof T>> = {
     boostScale: 1,
   },
 };
-// They switch live from the prototype bar (src/proto/flags.ts): back to the tuning above, then the variant's changes.
-const BASE = { ...T };
-const handling = (v: string) => Object.assign(T, BASE, VARIANTS[v] ?? {});
-handling(protoV('soapbox'));
-onVariant('soapbox', ['', 'bouncy', 'tight', 'drift'], handling);
+Object.assign(T, VARIANTS[protoV('soapbox')] ?? {});
 const MAX_FALL = 22; // m/s, as the player's: no continuous collision against the heightfield
 
 // ---------------------------------------------------------------- the route

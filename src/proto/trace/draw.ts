@@ -1,14 +1,15 @@
 // `?trace=1` on a `?proto=` page (docs/research/playtest-telemetry.md, rec 7): the last sitting of this prototype (of
 // the playing variant if it has one) drawn back in the world. Its path is a ribbon on the ground coloured by what you
 // were doing, failure marks are short poles with a coloured head, idle spots are see-through rings sized by how long
-// you stood, and where it ended is a tall white pole. Loaded by the prototype bar; such a page records no sitting of its
+// you stood, and where it ended is a tall white pole. Loaded by the prototype session; such a page records no sitting of its
 // own (src/proto/trace/record.ts). Local and cosmetic: never synced.
 import * as THREE from 'three/webgpu';
 import { onStart } from '../../loop.ts';
 import { scene } from '../../render/scene.ts';
 import { groundHeight } from '../../island/terrain.ts';
 import { SEA } from '../../constants.ts';
-import { ACTIVITY_COLORS, cardFor, markColor, sittings, urlParam, type Sitting } from '../../../protos/store.ts';
+import { ACTIVITY_COLORS, markColor, sittings, urlParam, type Sitting } from '../../../protos/store.ts';
+import { currentCard } from '../card.ts';
 
 const WIDTH = 0.35; // m, the ribbon
 const LIFT = 0.12; // m above the ground
@@ -91,7 +92,7 @@ function ring(x: number, z: number, r: number) {
   return m;
 }
 
-const card = cardFor(location.search);
+const card = currentCard;
 if (card) {
   const v = new URLSearchParams(location.search).get('v') ?? urlParam(card, 'v') ?? '';
   const all = sittings(card.id);
