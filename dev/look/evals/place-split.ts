@@ -134,7 +134,20 @@ void (async () => {
     input.stickY = 0;
     await require(() => carry.on === cartPlatform, 1000, 'boarded cargo');
     bot.note(`riding with ${b.rails} rails on back`);
+    let rideSamples = 0;
+    let lostRide = 0;
+    let maxRelativeVy = 0;
+    let maxSpeed = 0;
+    const rideProbe = setInterval(() => {
+      rideSamples++;
+      if (carry.on !== cartPlatform) lostRide++;
+      maxRelativeVy = Math.max(maxRelativeVy, Math.abs(me.body!.velocity.y - carry.y));
+      maxSpeed = Math.max(maxSpeed, cart.speed);
+    }, 20);
     await require(() => cart.leg === 'drop', 100000, 'cart reached frontier');
+    clearInterval(rideProbe);
+    console.log(`SPLIT ride ${JSON.stringify({ rideSamples, lostRide, maxRelativeVy, maxSpeed })}`);
+    if (lostRide) throw new Error('SPLIT rider left cargo before frontier');
     // The route planner deliberately rejects a step down from the tall cargo. Jump off with real input first.
     pressJump();
     const leaving = performance.now();
