@@ -346,10 +346,14 @@ function reconcileBig() {
 }
 
 // ---------------------------------------------------------------- who's here, and who decides
-const peers = new Map<string, { since: number; visible: boolean; seen: number; railCart: boolean; rideCart: number }>();
+type Peer = { since: number; visible: boolean; seen: number; railCart: boolean; rideCart: number };
+const peers = new Map<string, Peer>();
 const peerBack = new Map<string, number>();
 const peerBig = new Map<string, BigThing>();
 const SEEN_MS = 5000; // no presence for this long (a tab stuck or gone): it doesn't decide
+const present = (p: Peer, now = performance.now()) => p.visible && now - p.seen <= SEEN_MS;
+const allPeersSupport = (supports: (p: Peer) => boolean) =>
+  !COOP || [...peers.values()].every((p) => !present(p) || supports(p));
 /** The tab that decides, null for this one. */
 function authorityPeer(): string | null {
   const now = performance.now();
@@ -357,7 +361,7 @@ function authorityPeer(): string | null {
     bestSince = document.hidden ? Infinity : since < 0 ? Infinity : since,
     bestId = net.myPeer ?? '';
   for (const [id, p] of peers) {
-    if (!p.visible || now - p.seen > SEEN_MS) continue;
+    if (!present(p, now)) continue;
     if (p.since < bestSince || (p.since === bestSince && id < bestId)) {
       best = id;
       bestSince = p.since;
@@ -714,13 +718,10 @@ export const coop = {
   /** Under the flag, and another tab decides. */
   follower: () => COOP && !amAuthority(),
   /** Legacy participants keep the existing manual cart: they cannot predict a dry-forge wait. */
-  railCart: () =>
-    !COOP || [...peers.values()].every((p) => !p.visible || performance.now() - p.seen > SEEN_MS || p.railCart),
+  railCart: () => allPeersSupport((p) => p.railCart),
   /** 1 = supports the bonus, 2 = riding. Missing/invalid capability keeps every cart at the legacy speed. */
-  rideCart: () =>
-    !COOP || [...peers.values()].every((p) => !p.visible || performance.now() - p.seen > SEEN_MS || p.rideCart > 0),
-  cartRider: () =>
-    COOP && [...peers.values()].some((p) => p.visible && performance.now() - p.seen <= SEEN_MS && p.rideCart === 2),
+  rideCart: () => allPeersSupport((p) => p.rideCart > 0),
+  cartRider: () => COOP && [...peers.values()].some((p) => present(p) && p.rideCart === 2),
   /** The authority is running someone else's Skip: it doesn't move its own player. */
   noHop: false,
   /** What this tab has decided a station shows. */

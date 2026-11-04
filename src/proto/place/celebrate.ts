@@ -11,6 +11,7 @@ import { emit } from '../../render/particles.ts';
 import { fanfare } from '../minis/common.ts';
 import { SHELLS } from '../net/town-fx.ts';
 import { dustRing } from './pieces.ts';
+import { dismissPointer } from './dismiss-pointer.ts';
 import type { Car } from './rail.ts';
 
 // ---------------------------------------------------------------- a little timeline
@@ -119,57 +120,16 @@ addEventListener(
   },
   { capture: true },
 );
-let touch: { id: number; x: number; y: number; moved: boolean } | null = null;
-addEventListener(
-  'pointerdown',
-  (e) => {
-    if (!pull.on) return;
-    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
-      const target = e.target instanceof Element ? e.target : null;
-      if (target?.closest('.tbtn, #stick') || (target?.closest('#touch') && e.clientX < innerWidth * 0.45)) return;
-      if (pull.t < 0.6) return;
-      touch = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
-    } else {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      stop();
-    }
-  },
-  { capture: true },
-);
-addEventListener(
-  'pointermove',
-  (e) => {
-    if (touch?.id === e.pointerId && Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 10) touch.moved = true;
-  },
-  { capture: true },
-);
-addEventListener(
-  'pointerup',
-  (e) => {
-    if (touch?.id !== e.pointerId) return;
-    const tap = !touch.moved;
-    touch = null;
-    if (pull.on && tap) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      stop();
-    }
-  },
-  { capture: true },
-);
-addEventListener(
-  'pointercancel',
-  () => {
-    touch = null;
-  },
-  { capture: true },
+const resetTouch = dismissPointer(
+  () => pull.on,
+  () => pull.t >= 0.6,
+  stop,
 );
 /** The camera eases out to `shot`, looking at `at`, drifting to `shotTo`. A deliberate press brings it straight back. */
 export function pullOut(shot: THREE.Vector3, shotTo: THREE.Vector3, at: THREE.Vector3, seconds = 3) {
   if (reducedMotion) return;
   pull.on = true;
-  touch = null;
+  resetTouch();
   pull.t = 0;
   pull.dur = seconds;
   pull.cut = 1;
