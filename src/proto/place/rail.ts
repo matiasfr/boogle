@@ -42,6 +42,7 @@ import { flat } from '../flat.ts';
 import { LOOK, STEEL, paint, rustTrainU, rustU, softGlow } from './look.ts';
 import { merged } from './gifts.ts';
 import { kitBatch, lookTrack, machineLook, trainLook } from './look-kit.ts';
+import { solidTrainLoad } from './train-load.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const lateral = (l: number, out: { x: number; z: number }) => {
@@ -857,12 +858,14 @@ export function buildTrain(line: Line, stops: number[]) {
     lastStop: -1,
   };
   const plan = () => tr.cars.forEach((c, k) => poseCarOnLine(c, line, tr.s + CARS[k]!.off, 1));
+  let updateLoad = () => {};
   CARS.forEach(({ spec }, k) => {
     tr.cars.push(
       makeCar(
         spec,
         look.cars[k]!,
         () => {
+          if (k === CARS.length - 1) updateLoad();
           if (k === 0 && clock.running) {
             stepTrain(tr, FIXED);
             plan();
@@ -873,6 +876,7 @@ export function buildTrain(line: Line, stops: number[]) {
     );
   });
   tr.load = deck(tr.cars[tr.cars.length - 1]!.rock.children[0]!, () => {});
+  updateLoad = solidTrainLoad(tr.cars[tr.cars.length - 1]!, tr.load);
   const smoke = new THREE.Color('#ece8e0'),
     chimney = new THREE.Vector3();
   let puffs = 0,
