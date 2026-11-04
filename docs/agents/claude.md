@@ -13,6 +13,7 @@ For Claude setup, skills, delegation, bot runs or GitHub Actions, read the relev
 - `/new-feature <name>`: one self-contained plug-in in `src/features/`.
 - `/brainstorm <name> <idea>`: flesh out a seeded idea before it's built. Three Codex panelists (play designer, systems architect, creative director) work it alone, then read each other; you synthesize `docs/brainstorms/<name>.md` with ranked suggestions and at most five open questions, and the approved brief goes straight to a Codex task. `/idea` still parks a line without any of that. The `planner` and `implementer` agents remain for when the owner asks for a written plan.
 - `/look`: see the running game (stills, motion, scenarios). Use it for any visual, feel, physics or multiplayer change.
+- `/asset-author`: measured small props and rigid attachments, canonical Blender recipes, built-GLB inspection and Buddy stage review.
 - `/concept-art`: painted concept images from prompts (`npm run concepts`, OpenAI key or Codex CLI) for design exploration.
 - `/codex`: hand a job to Codex (GPT-6-Astra on the owner's subscription): previz of a prototype or effect at its idealized look, a research doc, a second-opinion review, or a self-contained task on its own branch.
 - `/architecture-review`: read-only check for architecture drift, at most three findings; decisions go in `docs/architecture-review/ledger.md`.

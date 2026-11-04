@@ -5,6 +5,8 @@
 //   npm run assets -- scaffold-kit build one (or several), changed or not; --force rebuilds them all
 //   npm run assets -- --check      no Blender, no encoders: every source has a fresh output, within budget (in `check`)
 //
+//   npm run assets -- --scratch .look/lamp lamp  same builder, isolated src/ and built/; no catalogue registration
+//
 // Sources, by extension:
 // - <name>.py     a Blender script that builds the asset from nothing and exports it to the path after `--`
 //                 (assets/src/scaffold-kit.py). Agents can write these: models as code, run headless.
@@ -96,8 +98,8 @@ const EXPORT_BLEND = (out: string) =>
   `export_animation_mode='ACTIONS', export_optimize_animation_size=True, export_draco_mesh_compression_enable=False)`;
 
 /** The unoptimized glTF for a source, as bytes. */
-function exportRaw(file: string, tmp: string): Buffer {
-  const src = path.join(SRC, file);
+function exportRaw(file: string, tmp: string, sourceDir: string): Buffer {
+  const src = path.join(sourceDir, file);
   const ext = path.extname(file);
   if (ext === '.glb' || ext === '.gltf') return fs.readFileSync(src);
   const raw = path.join(tmp, 'raw.glb');
@@ -106,7 +108,10 @@ function exportRaw(file: string, tmp: string): Buffer {
   return fs.readFileSync(raw);
 }
 
-async function build(names: string[], force: boolean) {
+async function build(names: string[], force: boolean, scratch?: string) {
+  const sourceDir = scratch ? path.join(scratch, 'src') : SRC;
+  const outputDir = scratch ? path.join(scratch, 'built') : OUT;
+  const manifestFile = scratch ? path.join(outputDir, 'manifest.json') : MANIFEST;
   const { NodeIO, Logger } = await import('@gltf-transform/core');
   const { ALL_EXTENSIONS, KHRTextureBasisu } = await import('@gltf-transform/extensions');
   const fn = await import('@gltf-transform/functions');
@@ -119,18 +124,18 @@ async function build(names: string[], force: boolean) {
     .registerDependencies({ 'meshopt.encoder': MeshoptEncoder, 'meshopt.decoder': MeshoptDecoder });
   const ktx = which('ktx');
 
-  const manifest = readManifest();
-  fs.mkdirSync(OUT, { recursive: true });
-  const all = sources();
+  const manifest = readManifest(manifestFile);
+  fs.mkdirSync(outputDir, { recursive: true });
+  const all = sources(sourceDir);
   const unknown = names.filter((n) => !all.some((s) => s.name === n));
-  if (unknown.length) throw new Error(`assets: no source named ${unknown.join(', ')} in assets/src`);
+  if (unknown.length) throw new Error(`assets: no source named ${unknown.join(', ')} in ${sourceDir}`);
   for (const { name, file } of all) {
-    const hash = sourceHash(file, name);
+    const hash = sourceHash(file, name, sourceDir);
     if (names.length ? !names.includes(name) : !force && manifest[name]?.sourceHash === hash) continue;
-    const opts = { maxTexture: BUDGET.maxTexture, ...sidecar(name) };
+    const opts = { maxTexture: BUDGET.maxTexture, ...sidecar(name, sourceDir) };
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-asset-'));
     try {
-      const raw = exportRaw(file, tmp);
+      const raw = exportRaw(file, tmp, sourceDir);
       const doc = (await io.readBinary(new Uint8Array(raw))).setLogger(logger);
       await doc.transform(
         fn.dedup(),
@@ -172,7 +177,7 @@ async function build(names: string[], force: boolean) {
       // meshopt() reorders and quantizes (KHR_mesh_quantization) before compressing.
       await doc.transform(fn.meshopt({ encoder: MeshoptEncoder, level: 'high' }));
       const bytes = Buffer.from(await io.writeBinary(doc));
-      fs.writeFileSync(path.join(OUT, name + '.glb'), bytes);
+      fs.writeFileSync(path.join(outputDir, name + '.glb'), bytes);
       let triangles = 0;
       for (const mesh of doc.getRoot().listMeshes())
         for (const p of mesh.listPrimitives())
@@ -201,18 +206,30 @@ async function build(names: string[], force: boolean) {
   for (const name of Object.keys(manifest))
     if (!all.some((s) => s.name === name)) {
       delete manifest[name];
-      fs.rmSync(path.join(OUT, name + '.glb'), { force: true });
+      fs.rmSync(path.join(outputDir, name + '.glb'), { force: true });
     }
   const sorted = Object.fromEntries(Object.entries(manifest).sort(([a], [b]) => a.localeCompare(b)));
-  fs.writeFileSync(MANIFEST, JSON.stringify(sorted, null, 2) + '\n');
+  fs.writeFileSync(manifestFile, JSON.stringify(sorted, null, 2) + '\n');
 }
 
 const args = process.argv.slice(2);
+const scratchIndex = args.indexOf('--scratch');
+let scratch: string | undefined;
+if (scratchIndex >= 0) {
+  const value = args[scratchIndex + 1];
+  if (!value || value.startsWith('--')) throw new Error('--scratch needs a directory under .look/');
+  scratch = path.resolve(value);
+  const look = path.resolve('.look') + path.sep;
+  if (!scratch.startsWith(look) || args.includes('--check'))
+    throw new Error('Scratch builds must be under .look/ and cannot use --check');
+  args.splice(scratchIndex, 2);
+}
 const { checkCatalogue } = await import('./catalogue-check.ts');
 if (args.includes('--check')) check();
 else
   await build(
     args.filter((a) => !a.startsWith('--')),
     args.includes('--force'),
+    scratch,
   );
-checkCatalogue();
+if (!scratch) checkCatalogue();
