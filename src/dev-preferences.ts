@@ -1,7 +1,7 @@
 // Tiny origin-local gate, evaluated before feature flags. No game or debug dependencies.
 const ENABLED = 'boogle.dev.enabled';
 export const DEV_SETTINGS = 'boogle.dev.dock.v1';
-const keys = [ENABLED, DEV_SETTINGS, 'boogle.dev.camera.v1', 'boogle.water-tuning.v1'];
+const keys = [ENABLED, DEV_SETTINGS, 'boogle.dev.camera.v1', 'boogle.water-tuning.v1', 'boogle.dev.water-ui.v1'];
 const debugFlags = [
   'debugcam',
   'prof',
