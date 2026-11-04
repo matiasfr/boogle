@@ -244,6 +244,7 @@ const slot = (k: number, out: THREE.Vector3) => {
 };
 const m4 = new THREE.Matrix4();
 function drawRack(n: number) {
+  n = Math.max(0, Math.min(racked.instanceMatrix.count, n));
   racked.count = n;
   for (let k = 0; k < n; k++) racked.setMatrixAt(k, m4.makeTranslation(slot(k, a)));
   racked.instanceMatrix.needsUpdate = true;
@@ -315,6 +316,8 @@ sharedSlice('forge', {
     forge.lit = forge.logs >= HAND_LOGS;
     forge.pour = 0;
     inFlight = 0;
+    pourGeneration++;
+    drawRack(forge.rails);
   },
 });
 
@@ -351,12 +354,16 @@ export function updateForge(dt: number, onLit: () => void) {
   if (forge.pour >= (roofed() ? TUNE.railEveryRoofed : TUNE.railEvery) && forge.rails + inFlight < TUNE.rackMax) {
     forge.pour = 0;
     const n = forge.made++;
+    const generation = pourGeneration;
     const to = slot(Math.min(TUNE.rackMax - 1, forge.rails + inFlight), new THREE.Vector3());
     inFlight++;
     send('rail', mouth.position, to, {
       dur: 0.55,
       apex: 1.1,
       land: () => {
+        // Soft co-op reconciliation replaces this rack without clearing cosmetic trips.
+        // A flight from that older state must not credit it or release a new reservation.
+        if (generation !== pourGeneration) return;
         inFlight--;
         forge.rails++;
         drawRack(forge.rails);
@@ -377,6 +384,7 @@ function poles(on: boolean) {
 }
 const poleBodies: ReturnType<typeof addStatic>[] = [];
 let inFlight = 0;
+let pourGeneration = 0;
 export function takeRail() {
   forge.rails--;
   drawRack(forge.rails);
@@ -389,6 +397,7 @@ export function resetForge() {
   forge.lit = false;
   forge.pour = 0;
   inFlight = 0;
+  pourGeneration++;
   craneClear();
   snapForge();
 }
