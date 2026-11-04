@@ -457,7 +457,10 @@ export const round4: Table = {
           before: [beat('harvest', 12 * 0.38), { activity: 'haul', seconds: 0, metres: 0 }, beat('handling', 2)],
         },
       ],
-      after: [beat('content', 8, 'celebration'), { activity: 'walk', seconds: 0, metres: 90, newThing: 'the walk home' }],
+      after: [
+        beat('content', 8, 'celebration'),
+        { activity: 'walk', seconds: 0, metres: 90, newThing: 'the walk home' },
+      ],
     },
     {
       id: 'forge frame',
@@ -513,6 +516,27 @@ export const round4: Table = {
   ],
 };
 
+// Keep round4 as the historical comparison. This is a deliberately conservative
+// cold-start estimate: empty forge, cart at camp, all shipments before carrying.
+// No credit for stock already made, a cart already travelling, or overlapping the
+// first short carry with the second shipment. Abilities remain outside this model.
+export const round4Cart: Table = structuredClone(round4);
+round4Cart.name = 'round 4: mixed cart from Q4 (cold-start estimate)';
+for (const station of round4Cart.links.flatMap((link) => link.stations)) {
+  if (station.id !== 'Q4' && station.id !== 'Q5') continue;
+  // layout.ts/depot.ts: camp road 196 m, stop 13 m before s=178/286.
+  const roadM = station.id === 'Q4' ? 361 : 469;
+  const recipe = round4Cart.recipes[station.recipe]!;
+  const rails = recipe.find((item) => item.good === 'rails')!.units;
+  const logs = recipe.find((item) => item.good === 'logs')!.units;
+  const batches = Math.max(Math.ceil(logs / 24), Math.ceil(rails / 16));
+  // Forge: 2 rails/s. Cart: 9 m/s, camp load 3 s, forge departure 3 s,
+  // last piece lands within 3.3 s. Return to camp between batches.
+  const supplyS = rails / 2 + ((2 * batches - 1) * roadM) / 9 + batches * (3 + 3 + 3.3);
+  station.sourceM = 16;
+  station.before = [...(station.before ?? []), beat('wait', supplyS, 'rails arrive with the cart')];
+}
+
 function report(result: ReturnType<typeof model>) {
   console.log(`\n${result.name} | ${result.players} player(s)`);
   console.table(
@@ -542,7 +566,7 @@ function report(result: ReturnType<typeof model>) {
 if (import.meta.main) {
   const args = process.argv.slice(2);
   const mode = args.find((a) => !a.startsWith('--')) ?? 'all';
-  const tables: Record<string, Table> = { prototype, chapter, eras, round4 };
+  const tables: Record<string, Table> = { prototype, chapter, eras, round4, 'round4-cart': round4Cart };
   const options: Options = {};
   const allowed = ['carry', 'distance', 'supply', 'content', 'train', 'coordination'] as const;
   for (const arg of args.filter((a) => a.startsWith('--') && a !== '--json')) {

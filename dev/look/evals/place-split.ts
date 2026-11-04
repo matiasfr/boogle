@@ -13,7 +13,7 @@ const { input } = (await import('/src/player/input.ts' as string)) as typeof imp
 const { pressJump, releaseJump } = await import('/src/entities/player/state.ts' as string);
 const { teleport } = await import('/src/physics/engine.ts' as string);
 const { carry } = await import('/src/physics/platforms.ts' as string);
-const { cart, cartHere, cartPlatform } = await import('/src/proto/place/depot.ts' as string);
+const { cart, cartHere, cartPlatform, automaticRails } = await import('/src/proto/place/depot.ts' as string);
 const { TX, TZ } = await import('/src/proto/place/lines.ts' as string);
 const hands = await import('/src/player/hands.ts' as string);
 const { net } = await import('/src/netplay/net.ts' as string);
@@ -58,6 +58,14 @@ void (async () => {
   await wait(600);
   await barrier('positioned');
   console.log(`SPLIT setup ${mode} player ${who} forge ${atForge} bill ${st.need('logs')}/${st.need('rails')}`);
+  if (q.has('trace'))
+    setInterval(
+      () =>
+        console.log(
+          `SPLIT state ${who} ${JSON.stringify({ cart, rack: [place.rack.logs, place.rack.rails], forge: place.forge.rails })}`,
+        ),
+      1000,
+    );
   const timer = setInterval(() => {
     if (done || (!st.full() && place.run.mode !== 'feeding')) return;
     done = true;
@@ -86,11 +94,15 @@ void (async () => {
     await require(() => done || !['rails', 'logs'].some((g) => b[g] > 0 && st.wants(g) > 0), 12000, 'back deposited');
     await wait(500);
   };
+  // Keep the fixture's useful starting position: take available rails before leaving the forge.
+  if (atForge && !porter) await fetchRails();
   if (porter) {
     await bot.use(TX + 2, TZ + 1, 'call the cart', /Whistle for the cart/);
     await require(() => cart.leg === 'forge', 90000, 'cart reached forge');
-    await require(() => hands.interactTarget()?.verb === 'Load the cart', 3000, 'Load offered');
-    bot.press();
+    if (cart.rails < 16) {
+      await require(() => hands.interactTarget()?.verb === 'Load the cart', 3000, 'Load offered');
+      bot.press();
+    }
     bot.note(`loaded cart ${cart.rails}`);
     await fetchRails();
     // Board the moving cargo with real jump input. No pose teleport after the starting fixture.
@@ -123,6 +135,31 @@ void (async () => {
     await require(() => carry.on === cartPlatform, 1000, 'boarded cargo');
     bot.note(`riding with ${b.rails} rails on back`);
     await require(() => cart.leg === 'drop', 100000, 'cart reached frontier');
+    // The route planner deliberately rejects a step down from the tall cargo. Jump off with real input first.
+    pressJump();
+    const leaving = performance.now();
+    const landed = () => {
+      const body = me.body!;
+      return (
+        carry.on !== cartPlatform &&
+        body.position.y - place.H(body.position.x, body.position.z) < 1.3 &&
+        Math.abs(body.velocity.y) < 1
+      );
+    };
+    while (performance.now() - leaving < 5000) {
+      const p = me.body!.position;
+      cam.yaw = Math.atan2(p.x - st.x, p.z - st.z);
+      input.stickY = -1;
+      if (performance.now() - leaving > 250) {
+        releaseJump();
+        if (landed()) break;
+      }
+      await wait(20);
+    }
+    releaseJump();
+    input.stickY = 0;
+    await require(landed, 1000, 'jumped off cargo onto ground');
+    bot.note('off the cart onto ground');
     await deposit();
   }
   let turns = 0;
@@ -131,7 +168,8 @@ void (async () => {
       await deposit();
       continue;
     }
-    const frontier = mode === 'split';
+    // With service earned, choose its short final carry instead of leaving for an empty frontier rack.
+    const frontier = mode === 'split' || automaticRails();
     if (!frontier && st.wants('rails') > 0 && b.room() > 0 && place.rack.rails === 0) {
       await fetchRails();
       continue;
@@ -142,8 +180,8 @@ void (async () => {
       await travel(place.rack.x, place.rack.z, 2.6);
       await require(() =>
         done ||
-        (place.rack.rails > 0 && railNeed > 0) ||
-        place.rack.logs >= Math.min(logNeed, b.room()), 100000, 'frontier rack load');
+        (railNeed > 0 && place.rack.rails >= Math.min(railNeed, b.room(), 16)) ||
+        (logNeed > 0 && place.rack.logs >= Math.min(logNeed, b.room())), 180000, 'frontier rack load');
       if (done) break;
       bot.press();
       await require(() => b.incoming === 0, 4000, 'rack load on back');
