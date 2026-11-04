@@ -6,6 +6,8 @@ import { catalogue, catalogueTotals, catalogueScope } from './catalogue.ts';
 import { prepareBuddy, SAMPLE_FPS, type BuddyMode } from './buddy-preview.ts';
 import { createStageLighting, type LightPreset } from './lighting.ts';
 import { inspectAsset, formatBytes, cloneMaterials } from './inspect.ts';
+import { createBrowser } from './browser.ts';
+import { createThumbnails } from './thumbnails.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -60,7 +62,7 @@ stage.add(helpers);
 const assetsById = new Map(catalogue.map((entry) => [entry.id, entry]));
 const load = async (id: string) => {
   const entry = assetsById.get(id);
-  if (!entry?.url) throw new Error('No built output for ' + id);
+  if (entry?.sourceKind !== 'built' || !entry.url) throw new Error('No built output for ' + id);
   return loader.load(entry.url);
 };
 const [buddyAsset, clipAsset] = await Promise.all([load('buddy'), load('hero-clips')]);
@@ -95,18 +97,28 @@ const options = (element: HTMLSelectElement, entries: [string, string][]) => {
     }),
   );
 };
-function showCatalogue() {
-  const search = input('search').value.toLowerCase();
-  options(
-    select('asset'),
-    catalogue
-      .filter((e) => (e.label + ' ' + e.id).toLowerCase().includes(search))
-      .map((e) => [e.id, e.label + (e.flags.length ? ' ⚠' : '')]),
-  );
-  select('asset').value = state.asset;
-  for (const option of select('asset').options) option.disabled = !assetsById.get(option.value)?.url;
+const selectedId = () => catalogue.find((e) => e.assetId === state.asset && e.node === state.node)?.id ?? state.asset;
+async function selectEntry(id: string) {
+  const entry = assetsById.get(id);
+  if (!entry) throw new Error('Unknown catalogue entry: ' + id);
+  state.asset = entry.assetId;
+  state.node = entry.node;
+  state.clip = '';
+  state.time = 0;
+  await choose();
+  history.replaceState(null, '', input('link').value);
 }
-showCatalogue();
+const thumbnails = createThumbnails(renderer, async (entry) => {
+  if (entry.sourceKind === 'code') return (await import('./code-preview.ts')).codePreview(entry.codeId);
+  if (entry.id === 'buddy') {
+    const pose = buddy.create('raw', 'Idle_Loop', 'free', '');
+    pose.seek(0.4);
+    return pose;
+  }
+  const asset = await load(entry.assetId);
+  return { group: asset.instance(entry.node || undefined), dispose() {} };
+});
+const browser = createBrowser(selectEntry, thumbnails.get);
 function generic(asset: Asset): Preview {
   const group = asset.instance(state.node || undefined),
     own = cloneMaterials(group);
@@ -221,10 +233,24 @@ function stats() {
   if (!preview) return;
   const e = assetsById.get(state.asset)!,
     s = inspectAsset(preview.figure);
+  const build =
+    e.sourceKind === 'built'
+      ? `${formatBytes(e.health.bytes)} GLB / ${e.health.budgetKB} KB budget\nsource hash ${e.health.sourceHash}\noutput hash ${e.health.outHash}`
+      : 'Live code · no build/download budget';
   $('stats').textContent =
-    `${s.triangles.toLocaleString()} triangles · ${s.vertices.toLocaleString()} vertices\n${s.materialSlots} material slots · ${s.geometries} geometries\n${formatBytes(e.bytes)} GLB / ${e.budgetKB} KB budget\n${formatBytes(s.estimatedBytes)} estimated GPU memory\n${formatBytes(s.geometryBytes)} geometry + ${formatBytes(s.textureBytes)} textures\n${s.textures.map((t) => `${t.name}: ${t.width}×${t.height}, ${t.format}, ${formatBytes(t.bytes)} estimated`).join('\n') || 'No textures'}\nsource ${e.source}\nsource hash ${e.sourceHash}\noutput hash ${e.outHash}\nTotal catalogue ${formatBytes(catalogueTotals.bytes)} / ${catalogueTotals.budgetKB} KB`;
+    `${s.triangles.toLocaleString()} triangles · ${s.vertices.toLocaleString()} vertices\n${s.materialSlots} material slots · ${s.geometries} geometries\n${build}\n${formatBytes(s.estimatedBytes)} estimated GPU memory\n${formatBytes(s.geometryBytes)} geometry + ${formatBytes(s.textureBytes)} textures\n${s.textures.map((t) => `${t.name}: ${t.width}×${t.height}, ${t.format}, ${formatBytes(t.bytes)} estimated`).join('\n') || 'No textures'}\nsource ${e.source}\nTotal built catalogue ${formatBytes(catalogueTotals.bytes)} / ${catalogueTotals.budgetKB} KB`;
+  const card = assetsById.get(selectedId());
+  if (card) {
+    card.triangles = s.triangles;
+    browser.refresh(card.id);
+  }
+  $('selection-facts').textContent =
+    `${s.triangles.toLocaleString()} triangles · ${e.animations.length} clips · ${e.sourceKind === 'code' ? 'in code' : 'built'}${e.flags.length ? ' · ⚠ ' + e.flags.join(' · ') : ''}`;
   $('health').textContent =
-    [...e.flags, ...catalogueTotals.flags].join(' · ') || 'Fresh output · within budget · expected clips present';
+    [...e.flags, ...catalogueTotals.flags].join(' · ') ||
+    (e.sourceKind === 'built'
+      ? 'Fresh output · within budget · expected clips present'
+      : 'Live code geometry · no authored clips or build budget');
   $('health').title = catalogueScope;
   $('memory-note').textContent =
     'Resident asset meshes include hidden wear parts. GPU bytes are estimates; exclude render targets, driver overhead and the rest of the stage.';
@@ -298,15 +324,20 @@ async function choose(reframe = true) {
   const token = ++generation;
   try {
     const entry = assetsById.get(state.asset);
-    if (!entry?.url) throw new Error('Missing built asset: ' + state.asset);
-    const asset = await load(state.asset);
-    if (token !== generation) return;
+    if (!entry) throw new Error('Missing asset: ' + state.asset);
+    const asset = entry.sourceKind === 'built' ? await load(state.asset) : undefined;
+    const code =
+      entry.sourceKind === 'code' ? await (await import('./code-preview.ts')).codePreview(entry.codeId) : undefined;
+    if (token !== generation) {
+      code?.dispose();
+      return;
+    }
     clearHelpers();
     preview?.group.removeFromParent();
     preview?.dispose();
     currentAsset = asset;
     const nodes: string[] = [];
-    if (state.asset !== 'buddy')
+    if (asset && state.asset !== 'buddy')
       asset.gltf.scene.traverse((o) => {
         if (!o.name || o === asset.gltf.scene || (o as THREE.Bone).isBone) return;
         let hasMesh = false;
@@ -318,7 +349,7 @@ async function choose(reframe = true) {
     options(select('node'), [['', 'Whole asset'], ...nodes.map((n): [string, string] => [n, n])]);
     if (state.node && !nodes.includes(state.node)) state.node = '';
     select('node').value = state.node;
-    const clips = state.asset === 'buddy' ? [...buddy.clips.values()] : asset.gltf.animations;
+    const clips = state.asset === 'buddy' ? [...buddy.clips.values()] : (asset?.gltf.animations ?? []);
     if (!clips.some((clip) => clip.name === state.clip))
       state.clip = state.asset === 'buddy' && buddy.clips.has('Idle_Loop') ? 'Idle_Loop' : (clips[0]?.name ?? '');
     options(
@@ -332,7 +363,9 @@ async function choose(reframe = true) {
     preview =
       state.asset === 'buddy'
         ? buddy.create(state.mode, state.clip, state.pose, state.hat, q.has('blink') ? number('blink', 1) : undefined)
-        : generic(asset);
+        : code
+          ? { ...code, figure: code.group, seek() {}, advance() {} }
+          : generic(asset!);
     stage.add(preview.group);
     $('buddy-controls').hidden = state.asset !== 'buddy';
     $('mode-note').textContent =
@@ -340,14 +373,17 @@ async function choose(reframe = true) {
         ? state.mode === 'played'
           ? 'Real body stride/blend + retarget + life. Clip selects movement inputs; pose and preview clock reset on seek.'
           : 'Retargeted authored clip only; no body blend or procedural life. Inspect hero-clips for the original skeleton.'
-        : 'Authored glTF clip; no game placement or procedural layers.';
+        : entry.sourceKind === 'code'
+          ? 'Shared code factory · static representative geometry; no game behavior.'
+          : 'Authored glTF clip; no game placement or procedural layers.';
     stats();
     seek(state.time);
     measure();
     reference.group.position.set(selectionBox.max.x + 1.1, 0, 0);
-    if (reframe) view(q.get('view') ?? 'Three');
+    if (reframe) view(q.get('view') ?? (state.asset.startsWith('code:windmill') ? 'Back' : 'Three'));
     $('status').textContent = entry.label + (state.node ? ' / ' + state.node : '') + ' · ready';
     ready = true;
+    browser.select(selectedId());
     updateLink();
   } catch (error) {
     $('status').textContent = String(error);
@@ -384,18 +420,12 @@ function updateLink() {
     yaw: stage.rotation.y,
   }))
     if (value !== '') p.set(key, String(value));
+  // Explicit empty part means whole kit; absent node preserves the legacy scaffold default.
+  p.set('node', state.node);
   for (const id of ['spin', 'bounds', 'reference', 'wire', 'bones', 'sockets', 'trajectory', 'crowd'])
     p.set(id, input(id).checked ? '1' : '0');
   input('link').value = url.href;
 }
-input('search').oninput = showCatalogue;
-select('asset').onchange = () => {
-  state.asset = select('asset').value;
-  state.node = assetsById.get(state.asset)?.defaultNode ?? '';
-  state.clip = '';
-  state.time = 0;
-  void choose();
-};
 select('node').onchange = () => {
   state.node = select('node').value;
   state.time = 0;
@@ -519,6 +549,8 @@ camera.updateProjectionMatrix();
 controls.update();
 updateLink();
 const api = {
+  catalogue,
+  select: selectEntry,
   get ready() {
     return ready;
   },
@@ -584,6 +616,8 @@ renderer.setAnimationLoop(() => {
 });
 addEventListener('pagehide', () => {
   renderer.setAnimationLoop(null);
+  browser.dispose();
+  thumbnails.dispose();
   clearHelpers();
   preview?.dispose();
   reference.dispose();

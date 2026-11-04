@@ -1,6 +1,27 @@
 # Asset and animation stage
 
-`/character/` inspects built assets without an island, room, physics or game features. `/assets/` redirects here, retaining query parameters. All selection, camera, lighting and playback state is Local to this document. The catalogue is generated from the asset build manifest and side-effect-free descriptors; names and search list Buddy, hero-clips, place-kit and scaffold-kit. Kit meshes are individually selectable.
+`/character/` browses and inspects built and code-generated assets without an island, room, physics or game features. `/assets/` redirects here, retaining query parameters. All selection, filtering, thumbnails, camera, lighting and playback state is Local to this document. The catalogue comes from the build manifest, actual mesh-bearing GLB nodes and side-effect-free code descriptors. The current set has 48 cards: four built roots, 32 kit parts and twelve code previews.
+
+Browse the thumbnail grid with a name/source search and type filter (characters, kit, nature, props, buildings, POIs). Each native link opens its asset on the stage; Tab/Enter and touch work, and modified clicks can open a separate tab. Every card has a direct URL, source badge, triangle and authored-clip counts, and build warning text. Code triangle counts are measured when a visible thumbnail or stage preview is created; pending counts show an ellipsis. Filtering to no results leaves the current stage selection intact. The catalogue scrolls within a bounded pane; animation, overlays, lighting, detailed metrics and sharing collapse independently. Phone width keeps the stage above a bounded panel.
+
+Thumbnails render only as cards enter the visible grid, through the existing stage WebGPU renderer into a 112-pixel offscreen target. A serialized queue and document-local cache (up to 96 entries) reuse them. Reload discards the cache, so changed source cannot leave a persistent stale thumbnail. No thumbnail binaries, capture pipeline or additional first-load image downloads are added. Failed thumbnails have a labelled fallback and do not prevent opening the asset. Every descriptor exposes `reviewStatus: 'unreviewed'` for a future review inbox; there are no review controls or automation.
+
+## Catalogue coverage
+
+| Covered | Actual shared source and limits |
+| --- | --- |
+| Buddy and animation library | Existing built assets and real rig/clip adapter. |
+| Place kit and scaffold kit | Whole kits and every named mesh-bearing node, derived from built GLB metadata (29 + 3 parts). No second part list. |
+| Palm, broadleaf tree, rock | World geometry moved intact to `src/render/prop-models.ts`; representative explicit placement inputs, no island scatter or water contacts. |
+| Seed bag and frisbee | Existing `src/player/item-models.ts` templates; previews own cloned resources. |
+| House, tower, block stack, house scaffold | Shared construction functions in `src/proto/place/building-plans.ts`, with explicit ground height and pure `src/proto/net/box-plan.ts` records. Labelled plan examples, not exact town instances. Geometry/colours match those inputs; world-only board shading, growth, interiors and collision are excluded. |
+| Windmill, body and rotor | Shared `src/pois/windmills/model.ts` geometry, including rotor mounting/tilt. Static inspection only, no POI placement, clock or physics. |
+
+Not covered: complete town interiors/furniture and room cutaways (coupled to growth/room interactions); full lighthouse/cave environments (terrain, collision, light/ambient services); folk/critter behavior and active vehicles (game/entity ownership); particles and live effects (clock/pool/world context); guest models (external runtime data). Water/sky are not catalogue assets; the existing frozen-sky lighting preset remains available. Hats remain in Buddy's existing inspector rather than duplicate cards. Additional prototype-only embedded geometry is not exhaustively indexed. These omissions keep the inspector isolated and avoid copying art or starting behavior.
+
+`npm run assets` and `--check` now validate built descriptor coverage, source paths and the exported item/nature factory registries. New items or registered nature factories without a descriptor fail with their id. Kit-node additions appear automatically. This narrow check does not claim to detect arbitrary meshes embedded in behavior modules. Building/POI preview membership is explicit in `character/code-descriptors.ts`.
+
+## Inspection
 
 The viewport has mouse/touch orbit, pan and zoom, turntable, a one-metre grid, bounds/dimensions and an actual Buddy for scale. Wireframe, bones, named hand/back socket axes and authored local root/pelvis trajectory are optional. Hero-clips has no meshes and shows its skeleton. Root trajectory never includes camera motion; the character library is in place.
 
