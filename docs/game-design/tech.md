@@ -18,6 +18,7 @@ folder map in [src/README.md](../../src/README.md).
   conversations and the debug tools; never sync ops, state, rules or anything seen in the first seconds. Shared
   registries: controls (`registerAction`), interactables (`registerInteractable`) and particles (`emit(...)` in
   [src/render/particles.ts](../../src/render/particles.ts)).
+- **Draw safety.** Shared instance factories bound visual counts to their buffers and mark rejected counts with batch identity. GPU errors retain their console logging and add a bounded diagnostic mark; neither changes gameplay state, adds copy, or reloads on validation errors. See the [capacity audit](../research/freeze-draw-audit.md) for coverage and limits. Existing device-loss recovery is unchanged.
 - **Checks.** `npm run check`: lint (determinism rules on lockstep files, import boundaries, `registerOp`/
   `registerState`/`onTick` only in `world/rules/`), `tsc` typecheck, unit tests (`node:test`, pure logic only), the
   registry check (`npm run registry`: wire shapes against `main`, for mixed builds) and build.

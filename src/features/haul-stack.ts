@@ -139,7 +139,7 @@ function draw(a: THREE.Object3D | null, n: number, k: number): void {
     fit = fitOf(a);
   const len = lenOf(n) * fit.len,
     shown = shownOf(n);
-  for (let m = 0; m < shown; m++) {
+  for (let m = 0; m < shown && c < mesh.instanceMatrix.count; m++) {
     mesh.setMatrixAt(c, pieceAt(f, fit, m, len, m4));
     mesh.setColorAt(c++, pieceColor(k));
   }

@@ -33,6 +33,7 @@ import {
 import { renderer, scene } from './scene.ts';
 import { onFrame } from '../loop.ts';
 import { warmUp } from './precompile.ts';
+import { guardDrawCount } from './draw-count.ts';
 
 const MAX = 720; // slots
 const SPAWN = 256; // particles one frame can emit (more are dropped)
@@ -109,7 +110,9 @@ softMat.colorNode = Fn(() => {
   const c = drawCol.toAttribute();
   return vec4(c.xyz, c.w.mul(d.mul(d).oneMinus()));
 })();
-const softPoints = new THREE.Sprite(softMat);
+drawPos.value.name = 'particles positions';
+drawCol.value.name = 'particles colors';
+const softPoints = guardDrawCount(new THREE.Sprite(softMat), () => MAX, 'particles');
 softPoints.count = MAX;
 softPoints.frustumCulled = false;
 softPoints.visible = false;

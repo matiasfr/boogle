@@ -4,6 +4,7 @@ import { FOG_HEX, FOG_NEAR, FOG_FAR, isTouch } from '../constants.ts';
 import { scene } from './scene-graph.ts';
 import { MAX_DPR, installQuality } from './quality.ts';
 import { graphicsInitial, registerGraphics } from '../graphics-settings.ts';
+import { playMark } from '../proto/mark.ts';
 
 export const canvas = document.getElementById('view') as HTMLCanvasElement; // in index.html
 
@@ -19,6 +20,22 @@ export const renderer = new THREE.WebGPURenderer({
   trackTimestamp: Number(params.get('prof')) > 0, // GPU ms per frame in the ?prof=1 overlay (src/debug/prof-overlay.ts)
 });
 (renderer as unknown as { _getFallback: null })._getFallback = null; // three would quietly swap in its WebGL 2 backend when WebGPU can't start; fail instead
+// Pinned three passes an object here; its declarations still describe the older string callback.
+// Keep its console error (and the harness failure), plus a bounded, untruncated-enough diagnostic mark.
+const errorSource = renderer as unknown as {
+  onError(info: { api: string; type: string; message: string }): void;
+};
+const reportError = errorSource.onError.bind(renderer);
+const gpuErrors = new Set<string>();
+errorSource.onError = (info) => {
+  const message = info.message.slice(0, 2000);
+  const key = `${info.type}:${message}`;
+  if (gpuErrors.size < 8 && !gpuErrors.has(key)) {
+    gpuErrors.add(key);
+    playMark('gpu error', { api: info.api, type: info.type, message });
+  }
+  reportError(info);
+};
 export { MAX_DPR, FIXED_DPR } from './quality.ts';
 renderer.setPixelRatio(MAX_DPR);
 renderer.shadowMap.enabled = true;

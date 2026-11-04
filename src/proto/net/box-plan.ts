@@ -1,5 +1,6 @@
 // Pure box records and transforms. No scene, terrain or game lifecycle.
 import * as THREE from 'three/webgpu';
+import { guardInstances } from '../../render/draw-count.ts';
 /** One box: where it stands, and `local`, the unit box placed relative to that point. `pop`: s to rise. */
 export type Box = {
   x: number;
@@ -36,7 +37,7 @@ export function partMesh(boxes: Box[], material: THREE.Material) {
       shapes.set(b.taper, slots);
     }
   });
-  if (!shapes.size) return mesh;
+  if (!shapes.size) return guardInstances(mesh, 'box plan');
   const routes = new Map<number, { mesh: THREE.InstancedMesh; at: number }>();
   const batches: { mesh: THREE.InstancedMesh; slots: number[] }[] = [];
   for (const [taper, slots] of shapes) {
@@ -55,6 +56,7 @@ export function partMesh(boxes: Box[], material: THREE.Material) {
   // count remains a prefix of the original piece list, including pieces routed to children.
   let count = mesh.count;
   Object.defineProperty(mesh, 'count', {
+    configurable: true,
     get: () => count,
     set: (next: number) => {
       count = next;
@@ -90,7 +92,7 @@ export function partMesh(boxes: Box[], material: THREE.Material) {
     for (const batch of batches) batch.mesh.dispose();
     dispose();
   };
-  return mesh;
+  return guardInstances(mesh, 'box plan');
 }
 
 const tm = new THREE.Matrix4();

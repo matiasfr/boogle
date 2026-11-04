@@ -4,6 +4,7 @@
 // and takes its piece when the kit arrives. With `mats` or `contact` and no kit, the same routing draws today's unit boxes
 // with those looks. The machine keeps its cars' sizes, so its colliders still fit. Local and cosmetic.
 import * as THREE from 'three/webgpu';
+import { guardInstances } from '../../render/draw-count.ts';
 import kitUrl from '../../../assets/built/place-kit.glb?url';
 import { onFrame } from '../../loop.ts';
 import { scene } from '../../render/scene.ts';
@@ -85,7 +86,7 @@ const piece = (name: string, p: Paint) => want(name, new THREE.Mesh(SPECK, paint
 export function kitBatch(name: string, p: Paint, n: number) {
   const m = want(name, new THREE.InstancedMesh(SPECK, paint(p), Math.max(1, n)));
   m.frustumCulled = false;
-  return m;
+  return guardInstances(m, `place kit ${name}`);
 }
 /** The same contract as pieceMesh: a log batch, hidden until committed. Its colours are its own, so its tint is white. */
 export function kitLogs(max: number) {
