@@ -4,6 +4,7 @@ Background reports that design and technical decisions lean on. Each file states
 
 - [main-clean-dev-channel.md](main-clean-dev-channel.md) (2026-11-04): complete prototype/card/lab inventory, Place graduation dependencies, isolated hosting and server costs, branch/workflow tradeoffs and five recommendations; keep main deploying, use a selected prototype branch on dev.boogle.club, and archive only after extraction and owner approval. Proposed policy wording only; no implementation.
 
+- [agent-model-pipelines.md](agent-model-pipelines.md) (2026-11-04): agent-authored Blender assets, MCP, procedural/CAD/SDF and image-to-3D workflows; live model benchmarks, service costs and limitations, licensed skill ideas and six recommendations for a parametric-source inspection loop. Proposes a roller/cap proof; no generation, installation or paid tasks.
 - [entity-components.md](entity-components.md) (2026-11-03): measured entity/prototype audit, live Unity/Unreal/Verse/Godot comparison and seven recommendations; typed owned behaviours with explicit calls, two name-label conversions as a bounded proof, no component runtime or mass conversion. Plan awaits approval.
 
 - [level-design-tools.md](level-design-tools.md) (2026-11-04): classic/default-place coverage audit, timed Node checks, thirteen historical placement fixes, studio/engine and agent-authoring comparisons, eight ranked recommendations and a bounded station/return proof; shared physical descriptions and existing checks/bots before a new editor. Research only.
