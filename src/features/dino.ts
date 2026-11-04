@@ -10,6 +10,7 @@
 import './dino.css';
 import * as THREE from 'three';
 import { onStart } from '../loop.ts';
+import { background } from '../async.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { camera } from '../render/scene.ts';
 import { emit } from '../render/particles.ts';
@@ -93,14 +94,14 @@ async function useFile(file: File) {
     const data = await readRom(file).catch(() => null);
     if (!data) return filesDialogSays("That's not the ROM the engine is built for.");
     rom = data;
-    saveFile(ROM_KEY, data);
+    void saveFile(ROM_KEY, data); // saveFile handles unavailable storage; this visit keeps the data
   }
   filesDialogSays('');
   filesDialogNeeds(needs());
   if (!ready()) return;
-  showRealDino(rom!);
+  background(showRealDino(rom!), 'dino model');
   await filesDialogAccepts(WORD);
-  if (!guest.active && me.body) becomeGuest();
+  if (!guest.active && me.body) background(becomeGuest(), 'guest character');
 }
 
 async function talk() {
@@ -114,12 +115,17 @@ async function talk() {
   if (!hasEngine()) {
     switching = true;
     askEngine = !(await findEngine(true).finally(() => (switching = false)));
-    if (hasEngine() && rom) showRealDino(rom);
+    if (hasEngine() && rom) background(showRealDino(rom), 'dino model');
   }
   if (ready()) {
-    becomeGuest();
+    background(becomeGuest(), 'guest character');
   } else {
-    openFilesDialog({ title: '...rawr?', needs: needs(), ext: [...ENGINE_EXT, ...ROM_EXT], onFile: useFile });
+    openFilesDialog({
+      title: '...rawr?',
+      needs: needs(),
+      ext: [...ENGINE_EXT, ...ROM_EXT],
+      onFile: (file) => background(useFile(file), 'guest file'),
+    });
   }
 }
 
@@ -131,14 +137,14 @@ addEventListener('drop', (e) => {
   const ext = file?.name.slice(file.name.lastIndexOf('.')).toLowerCase() ?? '';
   if (!file || !(filesDialogOpen() || ENGINE_EXT.includes(ext) || ROM_EXT.includes(ext))) return;
   e.preventDefault();
-  useFile(file);
+  background(useFile(file), 'guest file');
 });
 
 registerInteractable(() => {
   if (!me.entered || !me.body) return NO_TARGETS;
   const p = me.body.position;
   if (Math.abs(p.y - dino.pos.y) > 2 || Math.hypot(p.x - dino.pos.x, p.z - dino.pos.z) > TALK_R) return NO_TARGETS;
-  return [{ id: 'dino', verb: 'Talk', at: dino.head, r: 0.3, run: talk }];
+  return [{ id: 'dino', verb: 'Talk', at: dino.head, r: 0.3, run: () => background(talk(), 'dino conversation') }];
 });
 
 // B (punch, kick, dive) is the main action (click, pad RT, the touch main button with nothing to act on) with empty hands;
@@ -153,10 +159,13 @@ emptyHands.up = () => (guest.bHeld = false);
 
 // Files this browser already has; the hosted engine is fetched only once someone talks to the dino.
 onStart(() => {
-  Promise.all([findEngine(), loadFile<RomPieces>(ROM_KEY)]).then(([, data]) => {
-    rom ??= data;
-    if (ready()) showRealDino(rom!);
-  });
+  background(
+    Promise.all([findEngine(), loadFile<RomPieces>(ROM_KEY)]).then(([, data]) => {
+      rom ??= data;
+      if (ready()) background(showRealDino(rom!), 'dino model');
+    }),
+    'guest preload',
+  );
   registerAction('guest-crouch', {
     pad: 'lt',
     label: 'Crouch, ground pound',
