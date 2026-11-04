@@ -46,7 +46,7 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 ### Abilities and movement
 
 - [ ] Spread abilities out: hook to glider was 49 s. Double jump later in the game.
-- [ ] A real double-jump challenge where you first get it, not one higher ledge.
+- [ ] A real double-jump challenge where you first get it, not one higher ledge. Implemented on `codex/double-jump-challenge`: eight broad warm stone blocks, dry recovery below, existing reward and unlock timing. [Plan and verification](double-jump-challenge.md); remains unticked until shipped or closed by the owner.
 - [ ] Hook as a swing (Just Cause, Spider-Man), releasing into the glider, instead of an on-rails pull. Prototype.
 - [ ] Jump upgrades later that also benefit the glider, since double jump while gliding felt good.
 - [ ] Glide on L1 or jump: open, because jump clashes with double jump.

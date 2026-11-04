@@ -5,7 +5,18 @@
 // and laid track). It doesn't know about props in the way, which only the play-through (dev/look/evals/place-job.ts) tests.
 import { WALKABLE_NY } from '../../src/constants.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at as cellAt, cellX, cellZ, heights } from '../../src/proto/place/terrain.ts';
-import { DEVICES, GATES, LEVER, MOVE, PADS, SECRETS, padById, ringAt } from '../../src/proto/place/tech-layout.ts';
+import {
+  DEVICES,
+  GATES,
+  JUMP_COURSE,
+  JUMP_RECOVERY,
+  LEVER,
+  MOVE,
+  PADS,
+  SECRETS,
+  padById,
+  ringAt,
+} from '../../src/proto/place/tech-layout.ts';
 import {
   BUOYS,
   FORGE_FRAME,
@@ -188,6 +199,10 @@ export function runPlaceLevelCheck() {
     TWO_JUMPS = 3.03,
     JUMP_REACH = 4.7, // walking pace, one jump
     TWO_REACH = 8; // two
+  // Course-only sprint envelopes; browser inputs supply the collision witness. Include coyote grace and body diameter.
+  const COURSE_SINGLE = 9.5 * (0.842 + 0.1) + 0.9;
+  const COURSE_DOUBLE = 9.5 * (0.511 + 0.466 + Math.sqrt((2 * 3.03) / 30.6));
+  const courseIds = new Set(JUMP_COURSE.slice(1).map((p) => p.id));
   const GLIDE = (drop: number) => Math.max(0, (drop - 2) * (MOVE.glideSpeed / MOVE.glideSink) * 0.8 - 2.8);
   const groundAt = (seen: Uint8Array, x: number, z: number, y: number, rise: number, reach: number) => {
     // Any walkable cell within reach, whose ground is at most `rise` under y.
@@ -228,7 +243,13 @@ export function runPlaceLevelCheck() {
         let ok = p.id === 'p1' && fromTrack(p.x, p.z, p.top, r, 0.3, 2.5);
         // Jumps, from the ground or a deck.
         const rise = have.jump ? TWO_JUMPS : ONE_JUMP,
-          reach = have.jump ? TWO_REACH : JUMP_REACH;
+          reach = courseIds.has(p.id)
+            ? have.jump
+              ? COURSE_DOUBLE
+              : COURSE_SINGLE
+            : have.jump
+              ? TWO_REACH
+              : JUMP_REACH;
         ok ||= groundAt(seen, p.x, p.z, p.top, rise, reach + r) || fromTrack(p.x, p.z, p.top, r, rise, reach);
         for (const id of got) {
           const q = padById(id);
@@ -283,6 +304,33 @@ export function runPlaceLevelCheck() {
     const ok = got.has(id);
     assertion(ok, `${id}: ${why}`);
   };
+  section('double-jump-course', '\nDouble-jump course: edge gaps and dry recovery');
+  for (let i = 1; i < JUMP_COURSE.length; i++) {
+    const a = JUMP_COURSE[i - 1]!,
+      b = JUMP_COURSE[i]!;
+    const dx = Math.max(0, Math.abs(b.x - a.x) - a.hx - b.hx);
+    const dz = Math.max(0, Math.abs(b.z - a.z) - a.hz - b.hz);
+    const gap = Math.hypot(dx, dz);
+    assertion(
+      a.top === b.top && gap > COURSE_SINGLE && gap < COURSE_DOUBLE - 1,
+      `${a.id} -> ${b.id}: ${gap.toFixed(2)} m; single upper estimate ${COURSE_SINGLE.toFixed(2)}, double ${COURSE_DOUBLE.toFixed(2)} m`,
+    );
+  }
+  const drop = JUMP_COURSE[0]!.top - JUMP_RECOVERY.top;
+  assertion(drop > TWO_JUMPS && drop <= 4, `catch floor ${drop.toFixed(2)} m down; below double-jump reach`);
+  // Keep a 1.5 m rail corridor and 4.2 m overhead for a rider on cargo. Slabs are 1.2 m thick.
+  let railConflicts = 0;
+  for (const line of Object.values(LINES)) {
+    for (let s = 0; s <= line.len; s += 0.25) {
+      lineAt(line, s, P);
+      const y = railY(line, s);
+      for (const slab of JUMP_RECOVERY.slabs) {
+        if (Math.abs(P.x - slab.x) > slab.hx + 1.5 || Math.abs(P.z - slab.z) > slab.hz + 1.5) continue;
+        if (JUMP_RECOVERY.top > y - 0.3 && JUMP_RECOVERY.top - 1.2 < y + 4.2) railConflicts++;
+      }
+    }
+  }
+  assertion(railConflicts === 0, `recovery slab/rail corridor conflicts: ${railConflicts}`);
   {
     const N1: [Line, number, number][] = [[N, 30, N.len]];
     const st1 = flood([]);
@@ -290,7 +338,7 @@ export function runPlaceLevelCheck() {
     section('first-path', '\nAbilities: the first path is open, before the second jump');
     let got = padsReachable(st2, { jump: false, hook: false, glide: false }, N1);
     must(got, DEVICES.jump.pad, 'the first device, walking off the new deck');
-    mustNot(got, 'p1-block', 'the block needs two jumps');
+    for (const p of JUMP_COURSE.slice(1)) mustNot(got, p.id, 'the course needs the air jump, even at sprint speed');
     mustNot(got, 'apron', "gate 1's ledge needs two jumps");
     mustNot(got, 'p2', 'the second device: its line is not there yet, and it needs two jumps');
     mustNot(
@@ -302,7 +350,7 @@ export function runPlaceLevelCheck() {
 
     section('second-jump', '\nWith the second jump, before line 2 crosses the stem');
     got = padsReachable(st2, { jump: true, hook: false, glide: false }, N1);
-    must(got, 'p1-block', 'the block');
+    for (const p of JUMP_COURSE.slice(1)) must(got, p.id, 'the sprint double-jump course');
     must(got, 'lookout', 'the lookout shelf');
     must(got, 'apron', "gate 1's ledge");
     mustNot(got, 'p2', 'the second device, until the line reaches it');

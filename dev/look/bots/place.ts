@@ -13,6 +13,8 @@ import { nearest } from '../../../src/proto/place/nearest.ts';
 import { gettingItem, press as putAwayGot } from '../../../src/proto/place/got.ts';
 import { automaticRails } from '../../../src/proto/place/depot.ts';
 import { CART } from '../../../src/proto/place/layout.ts';
+import { runDoubleJumpCourse } from './double-jump.ts';
+import { JUMP_COURSE, JUMP_RECOVERY } from '../../../src/proto/place/tech-layout.ts';
 
 const q = new URLSearchParams(location.search);
 
@@ -243,6 +245,12 @@ export async function play() {
     await waitFor(() => place.job.tech[id], 3000, `took ${id}`);
     note(`ability: ${id}`);
     await wait(id === 'hook' ? 3800 : 3000); // its show
+    if (id === 'jump') {
+      // The reward's anticipation can outlast the old fixed wait. Its dismissal schedules the demo 0.3 s later.
+      await waitFor(() => !gettingItem(), 8000, 'put away the jump reward');
+      await wait(400);
+      await waitFor(() => me.coyote > 0 && body.velocity.y <= 0, 4000, 'landed after the jump demonstration');
+    }
   };
   const glideTo = async (x: number, z: number, limit = 90000) => {
     // Walk off the edge towards it; open as soon as you're off; steer to it, and land.
@@ -278,13 +286,18 @@ export async function play() {
     const d1 = deck(L1);
     await bot.walk(d1.x, d1.z, 1.2);
     await takeTech('jump');
-    // The block beside it, straight away.
-    const b = padOf('p1-block');
-    await bot.walk(b.x + O + 3.2, b.z, 0.8);
-    await twoJumps(b.x + O, b.z);
+    // The optional block course, with the same personal reward at its end.
+    await runDoubleJumpCourse(bot);
     await waitFor(() => tech.found.has('block'), 5000, 'the box on the block');
     await wait(2500);
-    await bot.straight(d1.x, d1.z, 1.2, 5000); // back down onto the deck
+    const last = JUMP_COURSE.at(-1)!;
+    await bot.straight(last.x + O + last.hx + 1.2, last.z, 0.3, 3000);
+    await wait(500); // onto the lower dry return, then up its ramp
+    await bot.straight(JUMP_RECOVERY.returnX + O, last.z, 0.5, 9000);
+    await bot.straight(JUMP_RECOVERY.returnX + O, JUMP_RECOVERY.ramp.z + JUMP_RECOVERY.ramp.hz, 0.5, 9000);
+    await bot.straight(JUMP_RECOVERY.ramp.x + O, JUMP_RECOVERY.ramp.z + JUMP_RECOVERY.ramp.hz, 0.5, 9000);
+    await bot.straight(JUMP_COURSE[0]!.x + O, JUMP_COURSE[0]!.z, 0.6, 5000);
+    await bot.straight(d1.x, d1.z, 1.2, 5000);
   };
   const ontoSecondPillar = async () => {
     const d2 = deck(L2);
