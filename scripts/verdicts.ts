@@ -28,12 +28,19 @@ const SERVER = serverUrl.origin;
 if (args.includes('--reviews')) {
   const auth = reportToken();
   if (!auth) throw new Error('Set REPORT_TOKEN in the environment or .env.local');
-  const response = await fetch(new URL('/reviews', SERVER), {
+  const url = new URL('/reviews', SERVER);
+  for (const name of ['after', 'limit', 'review']) {
+    if (!args.includes(`--${name}`)) continue;
+    const value = args[args.indexOf(`--${name}`) + 1];
+    if (!value || value.startsWith('--')) throw new Error(`--${name} needs a value`);
+    url.searchParams.set(name, value);
+  }
+  const response = await fetch(url, {
     headers: { authorization: `Bearer ${auth}` },
     signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) throw new Error(`Review retrieval: HTTP ${response.status}`);
-  console.log(JSON.stringify({ server: new URL(SERVER).origin, receipts: await response.json() }, null, 2));
+  console.log(JSON.stringify({ server: new URL(SERVER).origin, ...((await response.json()) as object) }, null, 2));
   process.exit(0);
 }
 const days = Math.max(1, Math.min(30, Number(args[args.indexOf('--days') + 1]) || 3));

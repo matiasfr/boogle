@@ -17,6 +17,13 @@ export async function acknowledgeReport(server: string, body: unknown): Promise<
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15000),
   });
-  if (!response.ok) throw new Error(`Server returned ${response.status}; retry keeps the same note ID.`);
+  if (!response.ok) {
+    const detail: unknown = await response.json().catch(() => null);
+    const message =
+      detail && typeof detail === 'object' && 'error' in detail && typeof detail.error === 'string'
+        ? detail.error.slice(0, 300)
+        : `Server returned ${response.status}; retry keeps the same note ID.`;
+    throw new Error(message);
+  }
   return response.json();
 }

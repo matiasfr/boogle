@@ -24,4 +24,5 @@ export type ReviewSubmission = {
   pin?: ReviewPin;
 };
 export type ReviewReceipt = { status: 'received'; at: string; submission: ReviewSubmission; card: ReviewCard };
+export type StoredReviewReceipt = Omit<ReviewReceipt, 'card'>;
 export type ReviewAck = { status: 'received'; reviewId: string; submissionId: string; at: string; duplicate: boolean };

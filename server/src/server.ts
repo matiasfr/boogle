@@ -218,7 +218,7 @@ export function createService(cfg: ServerConfig) {
       res.append('Vary', 'Origin');
     }
     if (req.method === 'OPTIONS') {
-      res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
       res.set('Access-Control-Allow-Headers', req.get('access-control-request-headers') || 'Content-Type');
       res.set('Access-Control-Max-Age', '600');
       return res.status(204).end();
@@ -336,7 +336,12 @@ export function createService(cfg: ServerConfig) {
     return true;
   };
 
-  const reviewReport = addReviews(app, cfg, { authed, withLock });
+  const reviewReport = addReviews(app, cfg, {
+    authed,
+    withLock,
+    readLimit: createRateLimiter({ perMinute: 60 }),
+    uploadLimit: createRateLimiter({ perMinute: 6 }),
+  });
 
   // Read back one day's reports.
   app.get('/reports', async (req: Request, res: Response, next: NextFunction) => {
