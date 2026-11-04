@@ -169,13 +169,13 @@ onFrame(
     if (queued) {
       queue.value.needsUpdate = true;
       spawnCount.value = queued;
-      renderer.compute(spawnPass);
+      void renderer.compute(spawnPass); // computeReady guarantees initialization; dispatch stays in this frame
       queued = 0;
     }
     if (performance.now() > liveUntil) return (softPoints.visible = false); // nothing alive: no pass, no draw
     softPoints.visible = true;
     dt.value = frameDt;
-    renderer.compute(updatePass);
+    void renderer.compute(updatePass);
   },
   { phase: 'late', order: -20 },
 );

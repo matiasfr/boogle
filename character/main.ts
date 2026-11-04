@@ -8,6 +8,7 @@ import { createStageLighting, type LightPreset } from './lighting.ts';
 import { inspectAsset, formatBytes, cloneMaterials } from './inspect.ts';
 import { createBrowser } from './browser.ts';
 import { createThumbnails } from './thumbnails.ts';
+import { background } from '../src/async.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -581,7 +582,7 @@ const api = {
 Object.assign(window, { assetStage: api, character: api });
 let last = performance.now(),
   uiAt = 0;
-renderer.setAnimationLoop(() => {
+const loopStarted = renderer.setAnimationLoop(() => {
   const now = performance.now(),
     dt = Math.min(0.05, (now - last) / 1000);
   last = now;
@@ -614,8 +615,9 @@ renderer.setAnimationLoop(() => {
     uiAt = now;
   }
 });
+background(loopStarted, 'asset stage loop');
 addEventListener('pagehide', () => {
-  renderer.setAnimationLoop(null);
+  background(renderer.setAnimationLoop(null), 'stop asset stage');
   browser.dispose();
   thumbnails.dispose();
   clearHelpers();
@@ -629,5 +631,5 @@ addEventListener('pagehide', () => {
   floor.material.dispose();
   grid.dispose();
   bounds.dispose();
-  renderer.dispose();
+  background(renderer.dispose(), 'dispose asset stage');
 });

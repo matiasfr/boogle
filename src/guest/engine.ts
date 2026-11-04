@@ -43,7 +43,7 @@ export async function findEngine(hosted = false) {
   if (!compiled && hosted && !DEV_URL) {
     const fetched = await get(ENGINE_URL);
     compiled ??= fetched && (await compile(fetched));
-    if (compiled) saveFile(STORE_KEY, fetched);
+    if (compiled) void saveFile(STORE_KEY, fetched); // saveFile handles unavailable storage; this visit keeps the engine
   }
   return !!compiled;
 }
@@ -54,7 +54,7 @@ export async function takeEngineFile(file: Blob) {
   const mod = await compile(bytes);
   if (!mod) return false;
   compiled ??= mod;
-  saveFile(STORE_KEY, bytes);
+  void saveFile(STORE_KEY, bytes); // saveFile handles unavailable storage; this visit keeps the engine
   return true;
 }
 

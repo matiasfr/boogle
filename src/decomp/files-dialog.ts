@@ -59,7 +59,7 @@ function build() {
   const form = dlg.querySelector<HTMLFormElement>('.files-link')!;
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    fromLink(form.elements[0] as HTMLInputElement);
+    void fromLink(form.elements[0] as HTMLInputElement); // fetchLinkedFile handles failed downloads
   });
   dlg.addEventListener('cancel', (e) => {
     e.preventDefault();

@@ -5,7 +5,8 @@ import { createService, loadConfig } from '../../server/src/server.ts';
 
 const server = createService(loadConfig(JSON.parse(process.env.LOOK_SERVER_ENV!), { log: () => {} }));
 const port = await server.listen(0);
-const control = http.createServer(async (req, res) => {
+const control = http.createServer((req, res) => void handleClock(req, res));
+async function handleClock(req: http.IncomingMessage, res: http.ServerResponse) {
   if (req.url !== '/clock') {
     res.writeHead(404).end();
     return;
@@ -24,7 +25,7 @@ const control = http.createServer(async (req, res) => {
   } catch (e) {
     res.writeHead(400).end(String(e));
   }
-});
+}
 await new Promise<void>((resolve) => control.listen(0, '127.0.0.1', resolve));
 const address = control.address() as { port: number };
 process.send!({ port, clockUrl: `http://127.0.0.1:${address.port}/clock` });

@@ -72,7 +72,8 @@ const T = (window.T = {
     return new Promise<void>((res) => {
       let n = 0;
       const t = setInterval(() => {
-        T.room!.presence({ kind: 'lat', n: n++, ts: Date.now() });
+        // Fixed primitive-only patches are below the presence size limit; sending stays synchronous.
+        void T.room!.presence({ kind: 'lat', n: n++, ts: Date.now() });
         if (n < count) return;
         clearInterval(t);
         res();
@@ -85,7 +86,7 @@ const T = (window.T = {
     let n = 0;
     const r = () => Math.round(Math.random() * 2000) / 100;
     const t = setInterval(
-      () => T.room!.presence({ kind: 'load', n: n++, ts: Date.now(), p: [r(), r(), r()], r: r(), s: 1, c: 3 }),
+      () => void T.room!.presence({ kind: 'load', n: n++, ts: Date.now(), p: [r(), r(), r()], r: r(), s: 1, c: 3 }),
       1000 / hz,
     );
     return new Promise<number>((res) => setTimeout(() => (clearInterval(t), res(T.got)), ms));

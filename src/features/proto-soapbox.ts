@@ -6,8 +6,9 @@
 import { onFrame } from '../loop.ts';
 import { remotes, onRemotePresence } from '../netplay/net.ts';
 import { protoOn } from '../proto/flags.ts';
+import { background } from '../async.ts';
 
-if (protoOn('soapbox')) import('../proto/soapbox/index.ts');
+if (protoOn('soapbox')) background(import('../proto/soapbox/index.ts'), 'soapbox prototype');
 else {
   const driving = new Set<string>();
   onRemotePresence((r, pr) => {

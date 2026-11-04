@@ -334,7 +334,7 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
       camera.updateMatrixWorld();
       dt.value = Math.min(delta, 0.1);
       frame.value = (frame.value + 1) % 64;
-      renderer.compute(lensPass);
+      void renderer.compute(lensPass); // initialized renderer: keep the lens dispatch in this frame
     },
     inspect: () => ({
       body: body.value === 1 ? 'sea' : body.value === 2 ? 'pond' : 'dry',

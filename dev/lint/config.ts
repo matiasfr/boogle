@@ -13,6 +13,17 @@ export function nativeConfig() {
     ...base,
     overrides: [
       ...base.overrides,
+      // node:test owns registration failures and reports them through the test runner. Keep every other
+      // floating promise in tests checked; a same-named local function is not an allowed call.
+      {
+        files: ['test/**/*.ts'],
+        rules: {
+          'typescript/no-floating-promises': [
+            'error',
+            { allowForKnownSafeCalls: [{ from: 'package', package: '@types/node', name: 'test' }] },
+          ],
+        },
+      },
       { files: ['**/*.js', '**/*.mjs', '**/*.ts'], globals: readonly(globals.browser) },
       ...policy
         .filter((b) => b.files)

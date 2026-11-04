@@ -21,7 +21,7 @@ async function unregister() {
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   if (off) unregister().catch(() => {});
   else
-    bootDone.then(() =>
+    void bootDone.then(() =>
       navigator.serviceWorker
         .register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL, updateViaCache: 'none' })
         .catch((e) => console.warn('[sw] not registered:', e)),

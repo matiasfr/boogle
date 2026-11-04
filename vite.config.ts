@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { background } from './src/async.ts';
 import type { Rolldown } from 'vite';
 import wasm from 'vite-plugin-wasm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -90,7 +91,9 @@ export default defineConfig({
         };
       },
       configureServer(server) {
-        server.httpServer?.on('close', () => localServer?.close());
+        server.httpServer?.on('close', () => {
+          if (localServer) background(localServer.close(), 'local server close');
+        });
       },
     },
     {

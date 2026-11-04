@@ -10,6 +10,7 @@
 //   the darkness with depth is baked per vertex (aAmb, ambient.ts), on the rock and the props alike.
 // All of it is local and cosmetic apart from collisions, which only affect bodies this client simulates.
 import * as THREE from 'three/webgpu';
+import { background } from '../../async.ts';
 import {
   Fn,
   abs,
@@ -211,7 +212,7 @@ function* build() {
   caveMesh.castShadow = true; // the rock over the tunnels is what keeps the sun out (the heightfield above casts only its back faces)
   scene.add(caveMesh);
   freezeStatic(caveMesh); // never moves: no per-frame matrix work
-  precompile(caveMesh); // their pipelines build now, not when the first player walks in
+  background(precompile(caveMesh), 'cave shaders'); // build now, not when the first player walks in
 
   addBody(
     createBody({
@@ -225,11 +226,11 @@ function* build() {
   collarMesh = makeCollars(yield* buildCollarMeshSteps());
   scene.add(collarMesh);
   freezeStatic(collarMesh);
-  precompile(collarMesh);
+  background(precompile(collarMesh), 'cave mouth shaders');
   yield;
 
   decorRoot = buildDecor({ scene });
-  precompile(decorRoot);
+  background(precompile(decorRoot), 'cave decor shaders');
   setTerrainHoles(
     MOUTHS.map((mo) => ({
       a: [mo.x + mo.ox * 1.5, mo.y + FLOOR_CUT, mo.z + mo.oz * 1.5],

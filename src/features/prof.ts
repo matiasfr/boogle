@@ -3,6 +3,7 @@
 // `window.boogle.boot`: the boot timeline (src/boot/timeline.ts): .line() for one line, .timeline() for the marks,
 // .done (a promise) once the game is interactive and in a room.
 import { onStart, prof } from '../loop.ts';
+import { background } from '../async.ts';
 import { bootLine, bootTimeline, bootDone } from '../boot/timeline.ts';
 
 onStart(() => {
@@ -11,6 +12,12 @@ onStart(() => {
   window.boogle.boot = { line: bootLine, timeline: bootTimeline, done: bootDone };
 });
 const params = new URLSearchParams(location.search);
-if (Number(params.get('prof')) > 0) import('../debug/prof-overlay.ts');
+if (Number(params.get('prof')) > 0) background(import('../debug/prof-overlay.ts'), 'profiler');
 // `?gpuinfo=1`: the adapter's features and limits in a panel, to read on a device without Web Inspector.
-if (Number(params.get('gpuinfo')) > 0) onStart(() => import('../debug/gpu-info.ts').then((m) => m.showGpuInfo()));
+if (Number(params.get('gpuinfo')) > 0)
+  onStart(() =>
+    background(
+      import('../debug/gpu-info.ts').then((m) => m.showGpuInfo()),
+      'GPU info',
+    ),
+  );

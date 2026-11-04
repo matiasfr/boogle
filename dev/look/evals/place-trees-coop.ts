@@ -166,7 +166,8 @@ net.room!.presence = (p) =>
     placeCartRide: 2,
     placeLongBeam: 0,
   });
-net.room!.presence({});
+// This fixed, empty patch cannot fail validation; presence sends synchronously.
+void net.room!.presence({});
 await until(() => coop.debug().peers.length === 0, 'legacy peer excluded');
 await wait(300);
 check(
