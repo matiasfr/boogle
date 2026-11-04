@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      recovery_attempt:
+        description: Internal Pages recovery counter (0 for a fresh deploy)
+        default: '0'
+        type: string
 
 permissions:
   contents: read
@@ -61,6 +66,64 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  # A build failure skips deploy, so it never enters this retry chain. Dispatch (unlike a push by GITHUB_TOKEN)
+  # starts another workflow; carry the counter because each dispatch resets github.run_attempt to 1.
+  recover:
+    needs: [build, deploy]
+    if: always() && needs.build.result == 'success' && needs.deploy.result == 'failure' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      actions: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      ATTEMPT: ${{ inputs.recovery_attempt || '0' }}
+    steps:
+      - name: Cancel the stuck Pages deployment and retry latest main
+        shell: bash
+        run: |
+          # Workflow-level concurrency keeps this recovery and any newer deploy from running together.
+          # A newer main run can already be pending (or successful); let it take over instead of replacing it.
+          superseded() {
+            main=$(gh api "repos/$GH_REPO/commits/main" --jq .sha) || return 2
+            [ "$main" != "$GITHUB_SHA" ] || return 1
+            runs=$(gh api --paginate "repos/$GH_REPO/actions/workflows/deploy.yml/runs?branch=main&per_page=100") || return 2
+            jq -e --arg sha "$main" --argjson id "$GITHUB_RUN_ID" \
+              '.workflow_runs[] | select(.id > $id and .head_sha == $sha and (.status != "completed" or .conclusion == "success"))' \
+              <<< "$runs" >/dev/null
+          }
+          if superseded; then exit 0; else status=$?; [ "$status" = 1 ] || exit "$status"; fi
+          [[ "$ATTEMPT" =~ ^[0-3]$ ]] || { echo 'Invalid recovery counter'; exit 1; }
+          [ "$ATTEMPT" -lt 3 ] || { echo 'Pages recovery exhausted after three retries'; exit 1; }
+          job=$(gh api "repos/$GH_REPO/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" \
+            --jq '.jobs[] | select(.name == "deploy") | .id')
+          gh api "repos/$GH_REPO/actions/jobs/$job/logs" > deploy.log
+          # A rejected create names the older blocking deployment. A timeout after creating our own deployment
+          # uses this run's SHA. Never cancel an arbitrary latest deployment.
+          blocker=$(sed -nE 's/.*Please cancel ([0-9a-fA-F]{40}) first.*/\1/p' deploy.log | tail -1)
+          gh api --method POST "repos/$GH_REPO/pages/deployments/${blocker:-$GITHUB_SHA}/cancel" || \
+            echo 'Cancellation failed or deployment already cleared; retry remains bounded.'
+          # Pages can retain updating_pages after cancellation. Three ten-minute waits cover that incident.
+          sleep 600
+          if superseded; then exit 0; else status=$?; [ "$status" = 1 ] || exit "$status"; fi
+          gh workflow run deploy.yml --repo "$GH_REPO" --ref main -f recovery_attempt="$((ATTEMPT + 1))"
+      - name: Open or update the Pages recovery issue
+        if: failure()
+        run: |
+          gh label create deploy --color d93f0b --description 'Pages deployment recovery failed' 2>/dev/null || true
+          run="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          body="Pages deployment recovery stopped at attempt $ATTEMPT ($run). Main may not be live and Smoke was skipped. Inspect the deploy and recovery logs before retrying."
+          num=$(gh issue list --label deploy --state open --limit 1 --json number --jq '.[0].number')
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --body "$body"
+          else
+            gh issue create --title 'Pages deployment recovery is failing' --label deploy --body "$body"
+          fi
 
   # Check the live site with what just went out (smoke.yml says why this is a dispatch). Needs deploy, so a failed
   # deploy starts nothing. In a burst of merges GitHub keeps only the newest waiting run of the smoke group.
