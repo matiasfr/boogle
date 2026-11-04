@@ -8,15 +8,13 @@
 //   4. Trains (./cargo.ts): a boiler from the forge wakes the old train.
 // `job.rung` is where you are on it. To add a rung: a field in `Rungs`, a chest or an event here, and what it changes.
 import * as THREE from 'three/webgpu';
-import { fanfare } from '../minis/common.ts';
 import { playMark } from '../mark.ts';
 import { H } from './land.ts';
-import { job, type ChestId } from './job.ts';
+import { job, type ChestId, type Rungs } from './job.ts';
 import { OAK, toWorld } from './layout.ts';
-import { deliver, dropChest, partsMesh, prizeHooks } from './gifts.ts';
-import { youGot } from './got.ts';
-import { showBanner } from './celebrate.ts';
-import { coop } from './coop.ts';
+import { deliver, dropChest, partsMesh, prizeHooks, showChestPrize } from './gifts.ts';
+import { rememberGot, youGot } from './got.ts';
+import { coop, coopWire } from './coop.ts';
 
 /** Where each chest waits. The axe's stands by the oak you'll try it on. */
 const CHEST_AT: Record<ChestId, { x: number; z: number }> = {
@@ -39,7 +37,11 @@ export function grantMultiAxe() {
   if (job.rung.multi) return;
   job.rung.multi = true;
   playMark('rung earned', { rung: 'multi' });
+  showMultiAxe();
+}
+function showMultiAxe() {
   youGot({
+    key: 'multi',
     name: 'The multi-axe',
     line: 'Chops trees, breaks rocks, and more.',
     model: partsMesh([
@@ -64,11 +66,21 @@ function applyRung(id: ChestId) {
 /** Someone else opened it. */
 export function rungFromPeer(id: unknown) {
   if (id !== 'axe' && id !== 'pack') return;
+  const had = job.rung[id] > 0;
   applyRung(id);
   dropChest(id);
-  fanfare(false);
-  showBanner(id === 'axe' ? 'A proper axe' : 'A pack frame', '', 2.4);
+  if (!had) showChestPrize(id);
 }
+
+/** Snapshot-before-message still presents the newly accepted tool exactly once. */
+coopWire.rungsChanged = (before: Rungs, quiet) => {
+  if (quiet) {
+    for (const id of ['multi', 'axe', 'pack'] as const) if (job.rung[id]) rememberGot(id);
+    return;
+  }
+  if (!before.multi && job.rung.multi) showMultiAxe();
+  for (const id of ['axe', 'pack'] as const) if (!before[id] && job.rung[id]) showChestPrize(id);
+};
 
 prizeHooks.opened = (c) => {
   playMark('crate opened', { kind: c });

@@ -26,7 +26,7 @@ import { protoCount } from '../count.ts';
 import { playMark } from '../mark.ts';
 import { knock, pop } from '../minis/common.ts';
 import { flat } from '../flat.ts';
-import { after, barrage, pullOut, shakeView, showBanner } from './celebrate.ts';
+import { after, barrage, pullOut, shakeView } from './celebrate.ts';
 import { coop, coopWire } from './coop.ts';
 import { deliver, dropChest, giftState, merged, prizeHooks, type GiftId } from './gifts.ts';
 import { H, addStatic, addStatics } from './land.ts';
@@ -37,7 +37,7 @@ import { dustRing } from './pieces.ts';
 import { gateHere, snapHooks } from './run.ts';
 import { RINGS, cancelPull, fireHook, move, resetMoves, syncControls, toggleGlide, whyNot } from './moves.ts';
 import { flashCanopy } from './moves-view.ts';
-import { youGot } from './got.ts';
+import { rememberGot, youGot } from './got.ts';
 import {
   DEVICES,
   FINDERS,
@@ -369,6 +369,7 @@ function gainTech(id: TechId, here: boolean) {
     const b = d;
     barrage(b.x, b.y, b.z, id === 'glide' ? 12 : 6, 0.3, 26, 1.8);
     youGot({
+      key: id,
       name: NAMES[id],
       line: LINES[id],
       model: new THREE.Mesh(merged(WORN_SHAPE[id]), partMat),
@@ -384,12 +385,20 @@ function gainTech(id: TechId, here: boolean) {
       openGate('sea', true);
     }
   } else {
-    pop(7, 0.7);
-    showBanner(NAMES[id], '', 2.6);
+    showPeerTech(id);
     if (id === 'glide') openGate('sea', false);
   }
   save();
 }
+function showPeerTech(id: TechId) {
+  youGot({ key: id, name: NAMES[id], model: new THREE.Mesh(merged(WORN_SHAPE[id]), partMat) });
+}
+coopWire.techChanged = (before, quiet) => {
+  for (const id of ['jump', 'hook', 'glide'] as const) {
+    if (quiet && job.tech[id]) rememberGot(id);
+    else if (!before[id] && job.tech[id]) showPeerTech(id);
+  }
+};
 /** It does it for you, once, so you've felt it: up, and up again off nothing. */
 function demoJump() {
   const b = me.body;

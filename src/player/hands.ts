@@ -3,7 +3,7 @@
 //   useDown/useUp            the main action (click, pad RT): use what is in your hand. A thing (ball, frisbee, ...)
 //                            winds up a throw and flies on release; a bag of seeds sprouts mushrooms ahead of you. Empty
 //                            hands act on the nearest `click` target, or do nothing.
-//   interactDown/interactUp  E, pad X: act on the pick among targets without `click`; nothing while a throw winds up,
+//   interactDown/interactUp  E, pad X: prefer a target without `click`, then a click target with empty hands; nothing while a throw winds up,
 //                            and the release never throws.
 //   touchDown                the touch main button, the one button for both: acts on interactTarget() when it can;
 //                            otherwise uses
@@ -31,7 +31,7 @@
 //     at       a world point (THREE.Vector3) where the prompt floats; its x, z also rank the pick
 //     r        metres to measure to the edge of something big (The Boogler), default 0
 //     run      () what the press does; or blocked: why it cannot ('Full load'), shown greyed, and the press does nothing
-//     click    the main action (click, pad RT) acts on it with empty hands, and E doesn't; the touch main button still does
+//     click    the main action (click, pad RT) acts on it with empty hands; E/X use it only without an ordinary target
 //     show     (html) optional: draw the prompt yourself (The Boogler shows it in his name tag) instead of floating it at
 //              `at`; called each frame with the prompt markup while this is the pick, and with '' once when it stops
 //     Other fields are yours (gifts put the item id on theirs).
@@ -131,7 +131,7 @@ let picked: Interactable | null = null;
 export function interactTarget() {
   const f = currentFrame();
   if (!f || f !== pickFrame) {
-    picked = pickNow();
+    picked = pressTarget();
     pickFrame = f;
   }
   return picked;
@@ -197,17 +197,17 @@ export function useDown() {
 
 export const useUp = releaseThrow;
 
-export const interactDown = () => (me.entered && me.body ? interact(pickNow('press')) : false);
+// Even a blocked ordinary target wins: pressing beside a full station must not chop the tree behind it.
+function pressTarget() {
+  return pickNow('press') ?? (heldId() ? null : pickNow('click'));
+}
+export const interactDown = () => (me.entered && me.body ? interact(pressTarget()) : false);
 // E never throws. Its release only clears the guard grabTheBall set, so the next click release still throws.
 export const interactUp = () => {
   me.suppressUp = false;
 };
-function mainTarget() {
-  const t = me.charging ? null : interactTarget();
-  return t?.run ? t : null;
-}
 export function touchDown() {
-  const t = mainTarget();
+  const t = me.charging ? null : pressTarget();
   return t ? interact(t) : useDown();
 }
 export const throwDown = windUp;
@@ -217,7 +217,7 @@ export function useVerb() {
   return id ? (USE_VERB[id] ?? 'Throw') : null;
 }
 
-export const mainVerb = () => mainTarget()?.verb ?? useVerb() ?? 'Grab';
+export const mainVerb = () => (me.charging ? null : interactTarget())?.verb ?? useVerb() ?? 'Grab';
 
 // Every frame, before what you hold is drawn.
 export function updateHands() {

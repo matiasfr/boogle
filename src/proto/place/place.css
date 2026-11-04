@@ -1,8 +1,7 @@
 /* The tester's link (&fresh=1): nothing that primes them or lets them skip. The counters still run. */
 .place-fresh .proto-bar,
 .place-fresh .place-proto,
-.place-fresh .tbtn.honk-btn,
-.place-fresh .tbtn.ping-btn {
+.place-fresh .tbtn.honk-btn {
   display: none;
 }
 /* Touch: the main button means nothing until something's in reach (it reads "Grab" then). */
@@ -303,4 +302,18 @@ body.touch .place-talk-opts button.talk-sel {
 }
 body.place-has-load .tbtn.place-drop-btn {
   display: block;
+}
+/* Its own button beside Drop, clear of the hook/glider column. */
+body .tbtn.ping-btn {
+  right: calc(124px + env(safe-area-inset-right, 0px));
+  bottom: calc(182px + env(safe-area-inset-bottom, 0px));
+  width: 56px;
+  height: 56px;
+  font-size: 14px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .place-got.on,
+  .place-got-hint i {
+    animation: none;
+  }
 }

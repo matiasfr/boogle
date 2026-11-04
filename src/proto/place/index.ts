@@ -24,7 +24,7 @@ import { onFrame } from '../../loop.ts';
 import { worldStatus, world, onApplied } from '../../world/sync.ts';
 import { FOG_FAR, PLAYER_R } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
-import { hideControls } from '../../player/controls.ts';
+import { describeControl, hideControls } from '../../player/controls.ts';
 import { freshStart } from '../../player/arrival.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { interactTarget } from '../../player/hands.ts';
@@ -110,6 +110,15 @@ import { resetTownLife, updateTownLife } from './town-life.ts';
 
 // The controls guide lists only what this place uses.
 hideControls(['respawn', 'use', 'toss', 'guest-crouch', 'guest-punch']);
+describeControl('place-chop', {
+  label: 'Chop',
+  context: 'Chop',
+  keys: ['KeyE', 'Mouse0'],
+  pad: ['x', 'rt'],
+  touch: 'Chop',
+  group: 'hands',
+  order: 2,
+});
 // A clean view for someone playing it cold (the tester's link, `&fresh=1`): place.css hides the bar and the panel.
 if (pageQuery().get('fresh') === '1') {
   document.body.classList.add('place-fresh');

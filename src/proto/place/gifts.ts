@@ -559,6 +559,11 @@ const byId = (id: GiftId) => GIFTS.find((g) => g.id === id) ?? STOCK.find((g) =>
 export const giftParts = (id: GiftId) => byId(id).parts;
 /** Parts as one mesh in the gifts' material: for showing a thing that isn't a gift. */
 export const partsMesh = (parts: Part[]) => new THREE.Mesh(merged(parts), giftMat);
+/** The same chest prize, held up by a partner's recipient without opening another chest. */
+export function showChestPrize(id: Extra) {
+  const gift = EXTRAS[id];
+  youGot({ key: id, name: gift.name, line: gift.line, model: partsMesh(gift.parts) });
+}
 const geos = new Map<GiftId, THREE.BufferGeometry>();
 const geoOf = (id: GiftId) => {
   let g = geos.get(id);
@@ -1351,7 +1356,8 @@ function updateShow(dt: number) {
     flash.position.set(s.x, s.y + 0.9, s.z);
     shaft.position.set(s.x, s.y, s.z);
     const tier = !isChest(s.content) ? byId(s.gift.id as GiftId).tier : null;
-    youGot({
+    const queued = youGot({
+      key: isChest(s.content) ? s.content : undefined,
       name: s.gift.name,
       line: s.gift.line || (tier ? TIER_MARKS[tier] : ''),
       color: tier ? TIER_COLOR[tier] : undefined,
@@ -1359,6 +1365,8 @@ function updateShow(dt: number) {
       from: new THREE.Vector3(s.x, s.y + 0.9, s.z),
       done: () => handOver(s),
     });
+    // A partner may already have presented this chest's shared unlock. Finish the local crate lifecycle anyway.
+    if (!queued) handOver(s);
   }
   const u = s.t - SHAKE; // since the boom
   const fb = Math.min(1, u / 0.42);
