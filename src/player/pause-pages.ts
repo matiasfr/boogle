@@ -2,6 +2,7 @@
 export type PausePage = {
   id: string;
   label: string;
+  compact?: boolean;
   mount(parent: HTMLElement, resume: () => void): () => void;
   open?(): void;
 };

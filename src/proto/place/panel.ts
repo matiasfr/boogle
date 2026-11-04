@@ -1,7 +1,7 @@
 // The tester's panel on ?proto=place (not on the `&fresh=1` link), and `window.__place` for the look evals
 // (dev/look/evals/place-job.ts). The skips jump the state to a beat with no show, so a beat can be looked at by itself.
 import { me, cam } from '../../player/player.ts';
-import { pauseSections } from '../../player/pause-pages.ts';
+import { pauseNavigation, pausePages } from '../../player/pause-pages.ts';
 import { teleport } from '../../physics/engine.ts';
 import { carry } from '../../physics/platforms.ts';
 import { PLAYER_R } from '../../constants.ts';
@@ -240,7 +240,25 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
   btn('Skip to the tower', () => coop.skip('tower', skipTower));
   btn('Skip to Far Head', () => coop.skip('head', skipHead));
   btn('Skip to trains', () => coop.skip('trains', skipTrains));
-  pauseSections.push(box);
+  if (!document.body.classList.contains('place-fresh')) {
+    pausePages.push({
+      id: 'place-debug',
+      label: 'Debug',
+      compact: true,
+      mount(parent) {
+        const back = document.createElement('button');
+        back.type = 'button';
+        back.className = 'pause-btn pause-back';
+        back.textContent = 'Back';
+        back.addEventListener('click', () => pauseNavigation.open?.('main'));
+        const page = document.createElement('div');
+        page.className = 'pause-page';
+        page.append(box, back);
+        parent.append(page);
+        return () => {};
+      },
+    });
+  }
   coop.skips({
     delivery: skipDelivery,
     path: skipPath,

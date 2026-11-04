@@ -55,6 +55,19 @@ dialog.pause::backdrop {
 .pause-head {
   flex: none;
 }
+.pause-head.has-debug {
+  padding-right: 80px;
+}
+.pause-btn.pause-debug {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  min-height: 44px;
+  padding: 6px 10px;
+  font: 700 13px var(--font-body);
+  letter-spacing: 0;
+  border-radius: 999px;
+}
 .pause-title {
   margin: 0;
   font: 400 40px/1 var(--font-display);

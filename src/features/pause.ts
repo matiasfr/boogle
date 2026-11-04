@@ -230,7 +230,8 @@ function renderMain() {
   room.dataset.act = 'room';
   const list = el('div', 'pause-list');
   list.append(resume, ...pauseSections.filter((section) => section.classList.contains('place-nums')), controls, room);
-  for (const extra of pausePages) list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
+  for (const extra of pausePages.filter((entry) => !entry.compact))
+    list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
   if (canFullscreen()) list.append(fullscreenButton());
   list.append(soundRow());
   // Get unstuck: one press, nothing lost. A saved spot you were stuck in mustn't bring you back there.
@@ -247,7 +248,7 @@ function renderMain() {
     unstuck.dataset.act = 'unstuck';
     list.append(unstuck);
   }
-  list.append(...freshButton(), leave, ...pauseSections.filter((section) => !section.classList.contains('place-nums')));
+  list.append(...freshButton(), leave);
   return list;
 }
 
@@ -359,6 +360,12 @@ function show(next: Page) {
   clearTimeout(leaveTimer);
   leaveTimer = 0;
   card.dataset.page = page;
+  const head = card.querySelector<HTMLElement>('.pause-head')!;
+  head.querySelector('.pause-debug')?.remove();
+  const compact = page === 'main' ? pausePages.find((entry) => entry.compact) : undefined;
+  head.classList.toggle('has-debug', !!compact);
+  if (compact)
+    head.append(button(compact.label, () => (compact.open ? compact.open() : show(compact.id)), 'pause-debug'));
   card
     .querySelector('.pause-body')!
     .replaceChildren(page === 'controls' ? renderControls() : page === 'room' ? renderRoom() : renderMain());
@@ -382,6 +389,7 @@ const stops = () => {
     ...card.querySelectorAll<HTMLElement>(
       '.pause-body button:not(:disabled), .pause-body input, .pause-body textarea, .pause-body summary, .pause-body select',
     ),
+    ...card.querySelectorAll<HTMLElement>('.pause-head .pause-debug'),
   ].filter((target) => {
     // Chromium can retain layout rects for descendants of a closed details element. Only its direct summary
     // participates in focus navigation; an inner summary is still hidden when an outer details is closed.
