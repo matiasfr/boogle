@@ -45,11 +45,11 @@ Files: [src/entities/player/state.ts](../../src/entities/player/state.ts), [view
 Every avatar gets a render-only spring: landing squash (about 15 % on a normal landing, max 45 %), take-off stretch,
 lean toward acceleration (max 0.35 rad). Your own client starts flops and publishes them as presence `fl`:
 
-| Flop | Trigger | Length |
-|---|---|---|
-| splat | Landing faster than 13.5 m/s | 700 ms |
-| stomp | A friend landing on your head | 550 ms |
-| bonk | Losing 6.5 m/s in one frame while sprinting over 7 m/s | 650 ms |
+| Flop   | Trigger                                                                   | Length |
+| ------ | ------------------------------------------------------------------------- | ------ |
+| splat  | Landing faster than 13.5 m/s                                              | 700 ms |
+| stomp  | A friend landing on your head                                             | 550 ms |
+| bonk   | Losing 6.5 m/s in one frame while sprinting over 7 m/s                    | 650 ms |
 | tumble | Landing above 3 m/s after jumping off a moving deck (the wagon, the ride) | 700 ms |
 
 The tumble opens on a held beat (docs/research/comedy-in-games.md, rec 4): 70 ms frozen squashed flat where you landed
@@ -59,6 +59,9 @@ there is no shiver and no freeze in place (the pose still holds).
 
 A ball to the head faster than 11 m/s knocks you flat for 800 ms with stars, then 1 s of immunity
 ([src/features/impact.ts](../../src/features/impact.ts), presence `kd`). While down you cannot move or jump.
+The four gold head stars use an sRGB canvas and explicit linear HDR brightness: 6 with new water's metered AgX,
+1.5 with the default sea's Neutral output. One shared material gives your own and other players' stars the same
+Local appearance; the lower default-sea value keeps the gold from washing out.
 
 ## Riding a moving deck
 
@@ -71,7 +74,6 @@ ground it bleeds away at 9 m/s² (a short skid), and landing above 3 m/s tumbles
 Deck acceleration and turns transport an attached rider before their own steering; a descending deck is not a jump.
 On a shared deck, a partner's interpolated collision proxy cannot push its co-rider off. Ordinary player collisions
 return when they stop sharing that deck.
-
 
 ## Camera
 
