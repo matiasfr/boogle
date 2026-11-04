@@ -2,6 +2,7 @@
 // npm run playtest -- latest             download the newest session (and whoever played in its room at the same time)
 // npm run playtest -- <id or tail>       the same for one session; prints a summary, keeps it all in .look/playtest/
 // npm run playtest -- --compare <a> <b>  two sessions side by side
+// npm run playtest -- call <transcript.json> <ids|latest> [--sessions-dir <dir>] [--offset <seconds>]
 //   --all     in the list and `latest`, include automated browsers (the look and scenario harnesses)
 //   --solo    only this session, not its room-mates
 //   --no-map  skip the heat map (it starts headless Chromium for a second)
@@ -20,6 +21,17 @@ import { cleanText } from '../../server/src/clean-text.ts';
 const SERVER = process.env.BOOGLE_SERVER || 'https://boogle-server.fly.dev';
 const OUT = path.join(ROOT, '.look/playtest');
 const args = process.argv.slice(2);
+// Call digestion is entirely local, including latest; it needs neither credentials nor a browser.
+if (args[0] === 'call') {
+  try {
+    const { callDigest } = await import('./call.ts');
+    console.log(callDigest(args.slice(1), OUT));
+  } catch (e) {
+    console.error(cleanText(e instanceof Error ? e.message : String(e)));
+    process.exit(1);
+  }
+  process.exit(0);
+}
 const flag = (name: string) => {
   const i = args.indexOf(name);
   if (i < 0) return false;
