@@ -38,6 +38,14 @@
   loads [src/debug/netdebug.ts](../../src/debug/netdebug.ts) only with the flag; `?debugcam=1` likewise loads
   [src/debug/debug-cam.ts](../../src/debug/debug-cam.ts).
 
+- **Startup recorder (opt-in diagnostic).** `&startup=1` loads a Local recorder before the game module, reusing the
+  boot timeline's marks. For 90 seconds it observes existing rAF callbacks, pipeline API durations and supported
+  Long Animation Frames. The bottom-left panel copies or saves JSON, with selectable text when clipboard access is
+  unavailable. `&startupVideo=1` adds a tiny canvas-capture video and its presentation callbacks; that extra workload
+  is explicitly labeled and is not physical screen presentation. Water visibility is a splash-removal proxy.
+  No recorder module, observers, GPU hooks or DOM are installed without `startup=1`. No new upload endpoint or game
+  state. Files: [startup-record.ts](../../src/debug/startup-record.ts), [cold-start procedure](../research/water-cold-start.md).
+
 ---
 
 Part of the [game design document](../game-design.md) (as built). Update this file in the same commit as a change a player can see.

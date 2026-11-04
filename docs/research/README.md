@@ -2,6 +2,8 @@
 
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
+- [water-load-stall.md](water-load-stall.md) (2026-11-03): M1 Max cold/reload, old/new sea, 90-second callback and GPU-completion baselines; CPU shore-bake attribution, every >50 ms interval and explicit limits. The reported minute-long visible freeze remains unresolved; no gameplay fix claimed.
+
 - [codex-model-routing.md](codex-model-routing.md) (2026-11-03): CLI 0.166 account model/effort inventory, official guidance and system cards, subscription versus credit/API usage, independent benchmarks and nine local job audits; nine recommendations, a routing card and three controlled trials for Terra medium, Sol and higher-effort review.
 - [goofy-physics-coop.md](goofy-physics-coop.md) (2026-11-02): co-op-only hangout games and friend-group returns; Human: Fall Flat, PEAK, PICO PARK, Heave Ho, Totally Reliable Delivery Service, Octodad and Moving Out; recoverable comedy, 2–8-player roles, connected physics authority and durable cosmetic boxes, with twelve recommendations and parcel, cooperative golf and shared-tray prototypes.
 - [cosmetic-rarity.md](cosmetic-rarity.md) (2026-11-02): earned cosmetic boxes without real money; primary-source collecting and pity precedents, three tiers, starting odds and duplicate protection, a 48-item eight-hour catalogue, area pools, shared reveals and personal ownership, modular Buddy production, twelve recommendations and a nine-item round-4 character set.
