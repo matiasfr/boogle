@@ -63,6 +63,8 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
 ### Look
 
+The first five notes are implemented on `codex/look-notes` for review, not shipped: solid aged engine materials, low crate glows and softer device shafts, fitted simple overalls, the nook cloth removed, and warm stone/brass puzzle platforms. The branch includes broker before/after evidence and a timber-platform comparison. Warm stone is the recommendation within the approved repair scope; no blocking owner choice. Keep these boxes unticked until shipped or closed by the owner.
+
 - [ ] Train rust looks out of place: nothing else is textured that way, so make it a real material.
 - [ ] Blue shafts at spawn feel heavy-handed: cut or soften.
 - [ ] Festival Overalls read as a barrel; the blue thing on the front is unclear; "a lot of accessories".

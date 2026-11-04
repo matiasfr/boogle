@@ -56,8 +56,8 @@ import {
 
 const TEAL = '#39e6c6',
   TEAL_DIM = '#1a5a52',
-  STONE = '#6d6a60',
-  STONE2 = '#807c70',
+  STONE = '#917b5e',
+  STONE2 = '#b6a080',
   BRASS = '#c79a3e';
 const glow = new THREE.MeshStandardNodeMaterial({
   color: TEAL,
@@ -71,12 +71,24 @@ const ox = ORIGIN.x;
 const v = new THREE.Vector3();
 
 // ---------------------------------------------------------------- the pads, the pillars and the rock
-const padMat = (look: string) =>
-  look === 'wood' ? flat('#8a6238', 0.9) : look === 'float' ? flat(STONE2, 0.9) : flat(STONE, 0.9);
+// Pale landing cap, warm stone body and four brass corner keys. One merged mesh, the same solid footprint.
+function stonePad(hx: number, hz: number, thick: number) {
+  const parts: Parameters<typeof merged>[0] = [
+    ['b', 0, -0.08, 0, hx * 2, thick - 0.16, hz * 2, STONE],
+    ['b', 0, thick / 2 - 0.08, 0, hx * 2, 0.16, hz * 2, '#c6b28d'],
+    ['b', 0, -thick / 2 + 0.06, 0, hx * 2 + 0.04, 0.12, hz * 2 + 0.04, '#6f604b'],
+  ];
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1]) parts.push(['b', sx * (hx - 0.34), -0.02, sz * hz, 0.18, thick - 0.24, 0.045, BRASS]);
+  return new THREE.Mesh(merged(parts), partMat);
+}
 function buildPads() {
   for (const p of PADS) {
     const thick = p.look === 'float' ? 0.9 : p.look === 'wood' ? 0.4 : 1.2;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(p.hx * 2, thick, p.hz * 2), padMat(p.look));
+    const m =
+      p.look === 'wood'
+        ? new THREE.Mesh(new THREE.BoxGeometry(p.hx * 2, thick, p.hz * 2), flat('#8a6238', 0.9))
+        : stonePad(p.hx, p.hz, thick);
     m.position.set(p.x + ox, p.top - thick / 2, p.z);
     m.castShadow = m.receiveShadow = true;
     scene.add(m);
@@ -227,7 +239,7 @@ function updateRings(now: number) {
 }
 
 // ---------------------------------------------------------------- the devices
-// Three of the same family: an old stone drum with a ring of light turning round it and a thin teal shaft you can see across
+// Three of the same family: an old stone drum with a ring of light turning round it and a faint teal shaft you can see across
 // the place. Not gold and not orange: those are boxes and the next job. Taking one ends something.
 type Device = {
   id: TechId;
@@ -244,7 +256,7 @@ type Device = {
 const shaftMat = new THREE.MeshBasicNodeMaterial({
   color: TEAL,
   transparent: true,
-  opacity: 0.32,
+  opacity: 0.1,
   depthWrite: false,
   blending: THREE.AdditiveBlending,
 });
@@ -812,18 +824,7 @@ function buildClues() {
     true,
   );
   bellAt.set(-36.4 + ox, by + 1, -78);
-  // The nook: a cloth hung from the tower slab, and the feet of something on the far side.
-  const nk = padById('nook');
-  prop(
-    [
-      ['b', 0, 2.6, 0, 3.6, 2.2, 0.05, '#c4453a'],
-      ['b', 0, 3.8, 0, 3.8, 0.1, 0.1, '#6e4c2a'],
-    ],
-    nk.x + 2.8,
-    nk.top - 2,
-    nk.z + 0.4,
-    Math.PI / 2,
-  );
+  // The nook's crate and hook ring explain the side trip. Its old red cloth read as a meaningless course flag.
   // The loft: a yellow hard hat's worth of colour up on the rock, and a boot-scuffed ring post.
   const lf = padById('loft');
   prop([['b', 0, 0.3, 0, 0.6, 0.6, 0.6, '#f2c81a']], lf.x + 1.5, lf.top, lf.z + 1.8, 0.3);
