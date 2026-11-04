@@ -277,7 +277,7 @@ export async function showWaterTuning(
   if (parent === document.body) {
     devInput.cursor = true;
     if (document.pointerLockElement) document.exitPointerLock();
-    playToggle = node('button', 'Play · Esc for mouse');
+    playToggle = node('button', 'Play · ` for mouse');
     playToggle.type = 'button';
     playToggle.dataset.waterPlay = '';
     playToggle.style.cssText =
@@ -286,7 +286,7 @@ export async function showWaterTuning(
       panel.hidden = !panel.hidden;
       devInput.cursor = !panel.hidden;
       release();
-      playToggle!.textContent = panel.hidden ? 'Water · Esc for mouse' : 'Play · Esc for mouse';
+      playToggle!.textContent = panel.hidden ? 'Water · ` for mouse' : 'Play · ` for mouse';
       if (panel.hidden) requestLock();
       else if (document.pointerLockElement) document.exitPointerLock();
     };
