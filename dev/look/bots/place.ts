@@ -92,7 +92,7 @@ export async function play() {
       let distance = Infinity;
       for (const candidate of candidates) {
         if (candidate.direct > distance + 3) break;
-        const route = bot.plan(candidate.t.x, candidate.t.z, 2.6);
+        const route = await bot.plan(candidate.t.x, candidate.t.z, 2.6);
         if (!route.arrives || route.path.some((p) => p.y < 3)) continue;
         let metres = 0;
         for (let k = 1; k < route.path.length; k++) {
@@ -534,17 +534,27 @@ export async function play() {
       ),
     );
     await phase('ride to Far Head', async () => {
+      // Start where this peer really is: the boiler carrier is at Camp, the other peer at Q5/Far Head.
+      const nearestHalt = nearest(
+        place.halts as { x: number; z: number; k: number; stop: number }[],
+        body.position,
+        () => true,
+      );
+      if (!nearestHalt) throw new Error('No station for the ride to Far Head');
+      if (nearestHalt.k === L1.k && nearestHalt.stop !== 0) await ride(L1, nearestHalt, 0);
+      else if (nearestHalt.stop !== 0) await ride(L2, nearestHalt, 0);
       const village = place.halts.find((h: { name: string }) => h.name === 'Village, line 2');
-      await ride(L2, village);
-      if (!(await waitFor(() => L2.train.tr.stop === 2, 120000, 'ride to Far Head')))
-        throw new Error('Train did not reach Far Head');
-      await wait(4000);
+      await ride(L2, village, 2);
     });
     await station(L2, 5, 2);
     await phase('pier', async () => {
       const head = place.halts.find((h: { name: string }) => h.name === 'Far Head');
       await travel(head.x, head.z, 1);
       if (!place.job.ended || me.swimming) throw new Error('Pier unfinished or player stranded in water');
+      const shared = place.coop.debug().shared;
+      note(
+        `final cargo ${JSON.stringify({ train: shared.trainCargoV1, crane: shared.craneCargoV1, kitSent: shared.job.kitSent })}`,
+      );
     });
     bot.finish('continuous co-op route: both at the pier, without skips or relocations');
     return;
@@ -634,11 +644,15 @@ export async function play() {
       train: { tr: { stop: number; cars: { body: { position: { x: number; z: number } }; platform: Platform }[] } };
     },
     h: { x: number; z: number; stop: number; k: number },
+    destination: number,
   ) {
     await travel(h.x, h.z, 1);
     note(`on the platform: ${place.haltUnder()?.name ?? 'no'}, eta ${place.trainEta(l.train.tr, h.stop)}`);
     const callAt = now();
-    await waitFor(() => l.train.tr.stop === h.stop, 90000, 'the train coming');
+    if (
+      !(await waitFor(() => l.train.tr.stop === h.stop && me.coyote > 0 && !gettingItem(), 90000, 'the train coming'))
+    )
+      throw new Error('Train did not arrive for boarding');
     note(`waited ${(now() - callAt).toFixed(1)} s`);
     const car = l.train.tr.cars[1]!;
     const c = car.body.position;
@@ -648,39 +662,64 @@ export async function play() {
     await wait(330);
     releaseJump();
     const end = performance.now() + 3500;
-    while (carry.on !== car.platform && performance.now() < end) {
+    // A brush against the edge is not boarding. Keep steering to the middle, then use the real Sit prompt.
+    while (performance.now() < end) {
       face(c.x, c.z);
-      if (bot.dist(c.x, c.z) < 0.5) input.keys.delete('KeyW');
+      if (bot.dist(c.x, c.z) < 0.6) {
+        input.keys.delete('KeyW');
+        if (carry.on === car.platform && interactTarget()?.id === 'place-sit') break;
+      } else input.keys.add('KeyW');
       await wait(40);
     }
     input.keys.delete('KeyW');
-    bot.check('aboard the train', carry.on === car.platform);
-    note('aboard');
+    if (carry.on !== car.platform || interactTarget()?.id !== 'place-sit')
+      throw new Error('Passenger failed to settle aboard the train');
+    press();
+    await wait(100);
+    if (interactTarget()?.id !== 'place-stand') throw new Error('Passenger did not sit');
+    note('seated aboard; arrival still pending');
+    const until = performance.now() + 120000;
+    let detachedAt = 0;
+    while (l.train.tr.stop !== destination && performance.now() < until) {
+      if (carry.on === car.platform && !me.swimming) detachedAt = 0;
+      else {
+        detachedAt ||= performance.now();
+        if (performance.now() - detachedAt > 250) throw new Error('Passenger detached during the ride');
+      }
+      await wait(40);
+    }
+    const arrival = place.halts.find((at: { k: number; stop: number }) => at.k === h.k && at.stop === destination);
+    if (
+      l.train.tr.stop !== destination ||
+      carry.on !== car.platform ||
+      me.swimming ||
+      !arrival ||
+      bot.dist(arrival.x, arrival.z) > 12
+    )
+      throw new Error('No dry passenger arrival aboard at the destination');
+    note(
+      `arrived aboard line ${l.k + 1} stop ${destination}, dry at (${body.position.x.toFixed(2)}, ${body.position.z.toFixed(2)})`,
+    );
+    press(); // Stand up before walking off. Do not let the next departure carry a waiting peer away.
+    await wait(100);
+    if (!(await travel(arrival.x, arrival.z, 1))) throw new Error('Could not disembark at the destination');
+    if (!(await waitFor(() => me.coyote > 0 && !me.swimming, 4000, 'dry station landing')))
+      throw new Error('Passenger did not land dry at the station');
   }
   const halts = place.halts;
   if (lobe(body.position.x, body.position.z) === 'n') {
     const camp = halts.find((h: { name: string }) => h.name === 'Camp');
-    await ride(L1, camp);
-    const t = now();
-    await waitFor(() => L1.train.tr.stop === 0, 60000, 'the ride home');
-    note(`rode home (${(now() - t).toFixed(1)} s)`);
-    await wait(500);
+    await ride(L1, camp, 0);
   }
   const v2 = halts.find((h: { name: string }) => h.name === 'Village, line 2');
-  await ride(L2, v2);
-  const t2 = now();
-  await waitFor(() => L2.train.tr.stop === 2, 120000, 'the ride out');
-  note(`rode out to Far Head (${(now() - t2).toFixed(1)} s)`);
-  await wait(4000);
+  await ride(L2, v2, 2);
   const pier = L2.stations[5];
   await bill(pier);
   await lay(pier);
   note(`THE JOB IS DONE at ${now().toFixed(1)}`);
   // Home the way a person would by now: the train.
   const head = halts.find((h: { name: string }) => h.name === 'Far Head');
-  await ride(L2, head);
-  await waitFor(() => L2.train.tr.stop === 0, 120000, 'the ride home from Far Head');
-  await wait(800);
+  await ride(L2, head, 0);
   await townTour(bot, place);
   await tour();
   bot.finish(

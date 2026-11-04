@@ -142,7 +142,13 @@ export function makeBot(opts: BotOptions = {}) {
   // ---------------------------------------------------------------- finding a way
   const blocked = new Map<string, number>(); // cells that held you up, until this game time
   let lastSeen = new Map<string, number>();
-  function plan(goalX: number, goalZ: number, r: number): { path: Point[]; arrives: boolean; gaveUp: boolean } {
+  async function plan(
+    goalX: number,
+    goalZ: number,
+    r: number,
+  ): Promise<{ path: Point[]; arrives: boolean; gaveUp: boolean }> {
+    // The browser also sends room heartbeats. A harvest's batch of searches must not disconnect a peer.
+    await wait(0);
     const p = body().position;
     const y0 = ground(p.x, p.y - PLAYER_R, p.z) ?? p.y - PLAYER_R;
     const start: Node = {
@@ -192,6 +198,7 @@ export function makeBot(opts: BotOptions = {}) {
     let expanded = 0;
     const clock = performance.now();
     while (open.length && expanded++ < MAX_NODES) {
+      if (expanded % 128 === 0) await wait(0);
       const a = pop();
       if (a.g > (seen.get(a.key) ?? Infinity)) continue;
       const d = h(a.x, a.z);
@@ -272,7 +279,6 @@ export function makeBot(opts: BotOptions = {}) {
     if (dist(x, z) <= r) return true;
     const budget = (limit || Math.max(30000, dist(x, z) * 1000)) + performance.now();
     if (sprint) input.keys.add('ShiftLeft');
-    input.keys.add('KeyW');
     let holdups = 0;
     let recovered = false;
     let forgiven = false;
@@ -285,7 +291,8 @@ export function makeBot(opts: BotOptions = {}) {
         why = performance.now() > budget ? 'out of time' : 'kept replanning';
         break;
       }
-      const { path, arrives, gaveUp } = plan(x, z, Math.max(0.6, r - 0.4));
+      input.keys.delete('KeyW');
+      const { path, arrives, gaveUp } = await plan(x, z, Math.max(0.6, r - 0.4));
       if (!arrives && tries === 0)
         note(
           `no way yet to (${x.toFixed(0)}, ${z.toFixed(0)}): as near as ${dist(path.at(-1)!.x, path.at(-1)!.z).toFixed(0)} m from here`,
@@ -311,6 +318,7 @@ export function makeBot(opts: BotOptions = {}) {
       }
       let k = 1;
       motion = 'follow';
+      input.keys.add('KeyW');
       let lookedAt = 0;
       let target = path[Math.min(k, path.length - 1)]!;
       let was = { x: body().position.x, z: body().position.z, at: performance.now() };
