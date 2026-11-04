@@ -50,7 +50,7 @@ function reloadIfHidden() {
   if (served && document.hidden && session.get() !== served && net.error !== 'elsewhere') reload();
 }
 
-const TEXT = 'Boogle was updated – reload to stay in sync with friends';
+const TEXT = 'Boogle was updated – reload for the latest version';
 function showToast() {
   if (toast) return;
   // A pad slot only if one is free (AGENTS.md); otherwise the click and the reload-when-hidden cover it. D-pad up first:

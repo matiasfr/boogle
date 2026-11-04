@@ -7,5 +7,5 @@ import { warmUp } from '../render/precompile.ts';
 
 if (protoOn('place')) {
   const loaded = import('../proto/place/index.ts');
-  warmUp(() => loaded); // the opening must never become playable before its land and colliders exist
+  warmUp(() => loaded, { beforeScene: true }); // include its first-use meshes in the loading frame, too
 }

@@ -405,11 +405,12 @@ function moveCar(c: Car, dt: number) {
     dy = c.y - p.position.y,
     dz = c.z - p.position.z;
   const turn = angleLerp(c.prevYaw, c.yaw, 1) - c.prevYaw;
-  // A 1.65 m correction used to become ~99 m/s; a junction's yaw jump could fling an off-centre rider too.
-  // Corrections relocate the deck and its rider together, with no collision or carried correction velocity.
-  if (Math.hypot(dx, dy, dz) > c.speedLimit * dt || Math.abs(turn) > 4 * dt) return snapCar(c);
+  // A 1.65 m correction used to become ~99 m/s. Position corrections still relocate deck and rider
+  // together. A road junction's new heading is ordinary travel: turn towards it at a bounded rate
+  // and ease the last part, keeping the collider, drawn deck and rider on the same smooth heading.
+  if (Math.hypot(dx, dy, dz) > c.speedLimit * dt) return snapCar(c);
   p.velocity.set(dx / dt, dy / dt, dz / dt);
-  p.angularVelocity.set(0, turn / dt, 0);
+  p.angularVelocity.set(0, Math.max(-2, Math.min(2, turn * Math.min(8, 1 / dt))), 0);
 }
 const riderLocal = { x: 0, y: 0, z: 0, yaw: 0 },
   riderWorld = { ...riderLocal };

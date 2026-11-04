@@ -11,8 +11,9 @@
   you on this device (name, colour, pid and key, room memories, The Boogler's friendship, mini-game and soapbox bests) and
   reloads into the first visit's fall. Settings stay. In round 4, every solo/co-op save
   on this device is cleared too: your back, dropped pieces, gifts, finds, crystals, conversations and saved position.
-  Solo restarts the railway; co-op moves you to a new room, leaving partners and their railway intact, as the confirmation
-  explains. On classic, the island keeps everything and your old plaque lines keep your old name. There's no undo.
+  Solo restarts the railway; co-op reloads into the same room as a newcomer and takes an existing partner's railway
+  through the normal join snapshot. With no partner, the railway starts fresh too, as the confirmation explains.
+  No shared reset is sent. On classic, the island keeps everything and your old plaque lines keep your old name. There's no undo.
 - **No rank on the player.** Contribution tiers ([haul.md](haul.md)) stay as data; nothing shows them until rewards
   are designed (owner, 2 Nov 2026).
 - **Sync kind.** Local storage for this browser; presence (`name`, colour) and the lockstep roster carry them to others.

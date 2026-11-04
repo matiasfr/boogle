@@ -18,9 +18,9 @@ import type * as THREE from 'three/webgpu';
 type Warmup = () => THREE.Object3D | Promise<unknown> | unknown;
 const warmups: Warmup[] = [];
 const preparations: Warmup[] = [];
-const draws: (() => void)[] = [];
-/** Offscreen passes normally submitted by the first update, using their real targets and materials. */
-export const warmDraw = (draw: () => void) => draws.push(draw);
+const draws: (() => void | (() => void))[] = [];
+/** First-use passes on their real targets. Optional cleanup runs immediately after submission, before any await. */
+export const warmDraw = (draw: () => void | (() => void)) => draws.push(draw);
 /** beforeScene prepares resources the scene's shaders read, within the same boot escape deadline. */
 export const warmUp = (make: Warmup, { beforeScene = false } = {}) => (beforeScene ? preparations : warmups).push(make);
 
@@ -213,12 +213,17 @@ async function compileFrame() {
   };
   const create = backend.createRenderPipeline;
   const promises: Promise<unknown>[] = [];
+  const cleanups: (() => void)[] = [];
   try {
     backend.createRenderPipeline = (o, pending) => create.call(backend, o, pending ?? promises);
-    for (const prepare of draws) prepare();
+    for (const prepare of draws) {
+      const cleanup = prepare();
+      if (cleanup) cleanups.push(cleanup);
+    }
     renderFrame();
   } finally {
     backend.createRenderPipeline = create;
+    for (const cleanup of cleanups.reverse()) cleanup();
   }
   // Unlike compute(), r187's render path checks _pipelines.isReady before drawing. Escape remains safe.
   await Promise.all(promises);

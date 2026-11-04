@@ -116,16 +116,13 @@ if (pageQuery().get('fresh') === '1') {
   hideControls(['proto-bar']);
 }
 freshStart.warning = coop.on
-  ? "Are you sure? You'll lose your own progress and fall in as someone new on a fresh railway. Your partners keep this room and its railway."
+  ? "Are you sure? You'll lose your own progress and fall in as someone new in this room. If partners are here, you'll rejoin their railway; otherwise the railway starts fresh too."
   : "Are you sure? You'll lose your own progress and railway, and fall in as someone new.";
 freshStart.prepare = () => {
   forgetSaves();
-  if (!coop.on) return;
-  // Joining this room again would inherit its railway. Leave it intact and start in a new room instead.
-  const url = new URL(location.href);
-  url.search = pageQuery().toString();
-  url.searchParams.set('room', `place-${crypto.randomUUID().slice(0, 8)}`);
-  return url.href;
+  // Rejoin as a newcomer: an existing partner supplies the railway through the usual co-op snapshot.
+  // Never send the developer panel's shared reset, or retain a snapshot with this person's carried unique item.
+  return undefined;
 };
 
 buildLand();

@@ -12,6 +12,7 @@ import { getAudio } from '../../render/audio.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { noiseBuffer } from '../../render/noise.ts';
 import { emit } from '../../render/particles.ts';
+import { warmDraw } from '../../render/precompile.ts';
 import { camera, scene } from '../../render/scene.ts';
 import { glyph } from '../../player/glyphs.ts';
 import { pop } from '../minis/common.ts';
@@ -203,6 +204,17 @@ const gear = {
   spool: new THREE.Mesh(spool, gearMat),
   pack: new THREE.Mesh(pack, gearMat),
 };
+// Detached until earned. The real loading frame also warms the wing's double-sided shadow pipeline.
+warmDraw(() => {
+  const g = makeCanopy().g;
+  g.add(...Object.values(gear).map((m) => m.clone()));
+  g.traverse((o) => {
+    o.visible = true;
+    o.frustumCulled = false;
+  });
+  scene.add(g);
+  return () => g.removeFromParent();
+});
 function wear(root: Named, m: THREE.Mesh, bone: string, on: boolean, dy = 0) {
   m.visible = on;
   if (!on) return;
