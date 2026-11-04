@@ -75,7 +75,12 @@ export type LifeState = {
   aloft?: boolean; // holding something up over its head
 };
 
-export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
+export type LifeClock = { now: () => number; random: () => number };
+export function makeLife(
+  root: THREE.Object3D,
+  rest: THREE.Object3D,
+  clock: LifeClock = { now: () => performance.now(), random: Math.random },
+) {
   const eyes = ['eye_l', 'eye_r'].map((n) => root.getObjectByName(n)).filter(Boolean) as THREE.Object3D[];
   rest.updateMatrixWorld(true);
   const named = (n: string) => root.getObjectByName(n)!,
@@ -144,7 +149,7 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
   let air = 0,
     wasAir = false,
     side = 0,
-    nextBlink = BLINK.every + Math.random() * BLINK.more,
+    nextBlink = BLINK.every + clock.random() * BLINK.more,
     blinkT = 1,
     leanNow = 0;
   return {
@@ -196,7 +201,7 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
       if (s.down > 0.01) premultiplyAll(sprawl, s.down);
 
       // Arms: each takes one pose at a time, faded in over the clip.
-      const now = performance.now();
+      const now = clock.now();
       if (wasCharging && !s.charging) releasedAt = now;
       wasCharging = !!s.charging;
       const releasing = now - releasedAt < RELEASE_MS;
@@ -240,7 +245,7 @@ export function makeLife(root: THREE.Object3D, rest: THREE.Object3D) {
 
       nextBlink -= dt;
       if (nextBlink <= 0) {
-        nextBlink = BLINK.every + Math.random() * BLINK.more;
+        nextBlink = BLINK.every + clock.random() * BLINK.more;
         blinkT = 0;
       }
       blinkT += dt;
