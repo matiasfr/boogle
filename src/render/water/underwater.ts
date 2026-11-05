@@ -308,6 +308,12 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
     initialized = false;
   return {
     outputNode,
+    // A select eagerly fetches storage even on dry land. Branch before the read in the output quad.
+    cameraDepth: Fn(() => {
+      const depth = float(-1e4).toVar();
+      If(near, () => depth.assign(wetState.element(0).z));
+      return depth;
+    })(),
     prepare: () => renderer.compileComputeAsync(lensPass),
     update(time: number, delta: number) {
       const sample = waterField.nearby(camera.position);

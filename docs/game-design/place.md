@@ -306,23 +306,23 @@ Projection runs after the current camera/avatar update, anchored to a stable bod
 
 ## Readable ink and rewards
 
-Station and halt names, sign/room boards, shop prices and work-site plaques use a shared fixed reference gain
-of **0.09157925** (10.9195 times linear RGB) on the production-water route. Crystal and gold pickup glints,
+Station and halt names, sign/room boards, shop prices and work-site plaques divide linear RGB by the shared
+**surfaceExposure** in `render/exposure.ts`. There is no separate 10.9195 multiplier. Crystal and gold pickup glints,
 chest/box sparkles, reward-show sparkles, confetti and celebration fireworks use the same policy in the existing
 particle pool. Dust, smoke, steam, cloth puffs, water spray and already-HDR impact stars retain intensity one.
 Alpha, soft edges, fade/shrink, fog, depth occlusion and underwater attenuation are preserved; classic home and
 other routes retain their original brightness. This is Local presentation, with no shared state or save change.
 
-Implements recommendations 1 and 3 of `docs/research/dark-unlit-exposure.md` on `codex/dark-unlit-exposure`
-(research branch head `40cf32c0`). The fixed authored reference is deliberately independent
-of the adaptive meter, so no current-frame scene/meter dependency or CPU GPU readback is introduced. It restores
-the measured calibration, not exact brightness under every camera exposure. Tone mapping, exposure, lighting,
-sky and water are unchanged. Serves **DESIGN.md 7, Telegraph everything**.
+Implements recommendations 1 and 3 of `docs/research/dark-unlit-exposure.md`, joined to the owner's fixed-exposure
+decision on 5 November. Compensation follows the authored surface gain in Dev and production; the explicit
+underwater lift and attenuation remain intentional. No scene/meter dependency or CPU GPU readback is introduced.
+The material helper applies at most once per owned material. Lights, sky and water are unchanged.
+Serves **DESIGN.md 7, Telegraph everything**.
 
-The existing Dev Water/Post panel owns `readable.referenceGain` (0.05–1; 1 disables the boost), including its
-existing reset, persistence and copied binding snapshot. Newly emitted particles pick up changes immediately;
-living particles retain their authored intensity until they expire. The `codex/color-vibrance-3` bounded exposure
-bindings were inspected; its fixed/narrow exposure experiment is outside this material-only fix.
+The existing Dev Water/Post **fixed gain** control owns both exposure and inverse compensation;
+`readable.referenceGain` is retired. Newly emitted reward particles pick up changes immediately;
+living particles retain their spawn intensity until they expire. Smoke, dust and the pool's default intensity
+are not compensated. No call site applies both the material helper and particle intensity.
 
 ## The town you can go into
 
