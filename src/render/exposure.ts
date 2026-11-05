@@ -3,7 +3,7 @@ import { TSL, type N } from './tone.ts';
 import { scalar } from './water/live.ts';
 import { newWaterEnabled } from './water/flags.ts';
 
-export const exposureSettings = { centre: newWaterEnabled ? 0.12 : 1, underwaterEV: 1.22 };
+export const exposureSettings = { centre: newWaterEnabled ? 0.16 : 1, underwaterEV: 0.81 };
 export const surfaceExposure = scalar('post.centre', exposureSettings, 'centre');
 const underwaterEV = scalar('post.underwaterEV', exposureSettings, 'underwaterEV');
 

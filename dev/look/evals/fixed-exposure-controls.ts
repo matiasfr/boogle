@@ -8,6 +8,15 @@ const { bindings } = (await import(
 const { lookSnapshot } = (await import(
   '/src/render/water/looks.ts' as string
 )) as typeof import('../../../src/render/water/looks.ts');
+const { readableUnlit, readableIntensity } = (await import(
+  '/src/render/readable-unlit.ts' as string
+)) as typeof import('../../../src/render/readable-unlit.ts');
+const { MeshBasicNodeMaterial } = await import('three/webgpu');
+const material = readableUnlit(new MeshBasicNodeMaterial());
+const patched = material.colorNode;
+if (readableUnlit(material).colorNode !== patched) throw new Error('Repeated readable patch doubled compensation');
+material.dispose();
+if (bindings.has('readable.referenceGain')) throw new Error('Independent readable gain survived');
 await showWaterTuning(() => {});
 const panel = document.querySelector<HTMLElement>('[data-water-panel]')!;
 const section = panel.querySelector<HTMLDetailsElement>('[data-water-section="Post"]')!;
@@ -26,14 +35,17 @@ for (const [key, value] of [
 const saved = JSON.parse(localStorage.getItem('boogle.water-tuning.v1') ?? 'null');
 if (saved?.changes?.['post.centre'] !== 0.18 || saved?.changes?.['post.underwaterEV'] !== 0.8)
   throw new Error('Fixed exposure controls did not persist');
+if (Math.abs(readableIntensity() * 0.18 - 1) > 1e-12)
+  throw new Error('Reward compensation did not follow surface gain');
 panel.querySelector<HTMLButtonElement>('[data-water-action="copy"]')!.click();
 const copied = JSON.parse(panel.querySelector('textarea')!.value);
 if (copied.changes['post.centre'] !== 0.18 || copied.changes['post.underwaterEV'] !== 0.8)
   throw new Error('Copy settings omitted fixed calibration');
 console.log('EXPOSURE CONTROLS ' + JSON.stringify({ saved, snapshot: lookSnapshot() }));
 panel.querySelector<HTMLButtonElement>('[data-water-group="Post"]')!.click();
-if (input('post.centre').valueAsNumber !== 0.12 || input('post.underwaterEV').valueAsNumber !== 1.22)
+if (input('post.centre').valueAsNumber !== 0.16 || input('post.underwaterEV').valueAsNumber !== 0.81)
   throw new Error('Post reset did not restore fixed calibration');
+if (readableIntensity() !== 6.25) throw new Error('Reward compensation did not reset');
 section.open = true;
 section.scrollIntoView({ block: 'start' });
 console.log('EXPOSURE CONTROLS reset passed');

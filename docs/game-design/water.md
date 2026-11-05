@@ -41,13 +41,16 @@ including obsolete demo addresses and paths. The original demo design/options re
 ## Real-sea output (5 November 2026)
 
 The default Place and crossing sea uses Neutral after the underwater HDR composite, with an authored fixed
-surface gain **0.12** for the frozen late-morning lighting. The signed camera-depth signal adds **+1.22 EV**
-through smoothstep over **0–1.5 m**, reaching **0.27954** submerged. These are starting calibration values,
+surface gain **0.16** for the frozen late-morning lighting. The signed camera-depth signal adds **+0.81 EV**
+through smoothstep over **0–1.5 m**, reaching **0.28051** submerged. These are starting calibration values,
 not an owner-approved final brightness. This reuses `codex/color-vibrance-3`'s width-zero bounded output;
 the meter is no longer constructed, so both meter draws and the history copy stop. HDR targets, sky,
 lights, materials and water optics retain their existing values. Looks' **Current** matches
 this output; **Sunny toys** and **AgX Punchy** retain AgX comparisons. The frozen late-morning sky, water
 parameters and terrain are unchanged. The explicit `sky=toy` experiment keeps its own output choices.
+The follow-up bracket selected .16 over .10/.12/.20: the shop is clearer, but remains darker than metering;
+sand is brighter and the sky slightly darker. [Measurements](../research/fixed-exposure.md) retain these limits.
+Scoped ink and new reward particles compensate the inverse surface gain; smoke and dust do not.
 
 ## Opt-in Sunshine sky comparison
 
