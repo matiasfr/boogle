@@ -22,7 +22,9 @@
   If the deadline expires, unfinished compute stays dormant until its native pipelines exist; remaining warm-ups
   continue after reveal. This is a bounded wait, not a guarantee of stall-free startup on every device.
   Buddy readiness precedes that shader deadline, so slow body downloads stay behind loading and avatar warm-ups use
-  the dressed body. The water resolution ceiling applies before warm-up to avoid resizing its targets on the first frame.
+  the dressed body. A separate 45 s Buddy deadline releases that wait with a recoverable capsule if preparation stalls;
+  it keeps the original preparation alive and dresses the avatar when it finishes. The water resolution ceiling applies
+  before warm-up to avoid resizing its targets on the first frame.
   Resolution changes and bounded first-20-second hitch diagnostics join the invisible session marks; CPU section and
   pipeline labels identify observed work, while an unexplained callback gap remains unassigned rather than blamed on water.
   `?dpr=fixed`

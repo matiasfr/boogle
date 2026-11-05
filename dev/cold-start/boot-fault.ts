@@ -16,6 +16,7 @@ export async function bootFaultProxy(upstream: string, dist: string, report: str
   if (chunks.length !== 1) throw new Error('Identify exactly one dynamic game chunk before injecting faults');
   const gameChunk = `/assets/${chunks[0]}`;
   let mode = '';
+  const heldBuddy: (() => void)[] = [];
   const requests: { url: string; status: number; at: number }[] = [];
   const proxy = http.createServer((req, res) => {
     const url = new URL(req.url!, upstream);
@@ -32,6 +33,8 @@ export async function bootFaultProxy(upstream: string, dist: string, report: str
         let failed = false;
         window.fetch = async (input, init) => {
           const u = typeof input === 'string' ? input : input.url || input.href;
+          if (new URLSearchParams(location.search).has('avatarHold') && /buddy.*\\.glb/.test(u))
+            return nativeFetch(u + '?__holdBuddy=1', init);
           if (!failed && new URLSearchParams(location.search).has('avatarFailure') && /buddy.*\\.glb/.test(u)) {
             failed = true;
             throw new TypeError('Injected transient Buddy fetch failure');
@@ -73,12 +76,32 @@ export async function bootFaultProxy(upstream: string, dist: string, report: str
       res.end('Injected temporary outage');
       return;
     }
-    const forward = http.request(url, { method: req.method, headers: { ...req.headers, host: url.host } }, (reply) => {
-      res.writeHead(reply.statusCode!, { ...reply.headers, 'cache-control': 'no-store' });
-      reply.pipe(res);
-    });
-    forward.on('error', () => res.writeHead(502).end());
-    req.pipe(forward);
+    const forward = () => {
+      const request = http.request(
+        url,
+        { method: req.method, headers: { ...req.headers, host: url.host } },
+        (reply) => {
+          res.writeHead(reply.statusCode!, { ...reply.headers, 'cache-control': 'no-store' });
+          reply.pipe(res);
+        },
+      );
+      request.on('error', () => res.writeHead(502).end());
+      if (req.method === 'GET' || req.method === 'HEAD') request.end();
+      else req.pipe(request);
+    };
+    if (url.pathname === '/__buddy_release') {
+      const count = heldBuddy.length;
+      for (const release of heldBuddy.splice(0)) release();
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ released: count }));
+      return;
+    }
+    if (url.searchParams.has('__holdBuddy') && /\/buddy-[^/]+\.glb$/.test(url.pathname)) {
+      url.searchParams.delete('__holdBuddy');
+      heldBuddy.push(forward);
+      return; // deliberately leave this HTTP response pending until the probe releases it
+    }
+    forward();
   });
   await new Promise<void>((resolve) => proxy.listen(0, '127.0.0.1', resolve));
   const address = proxy.address();

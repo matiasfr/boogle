@@ -47,9 +47,9 @@ export type AvatarSkin = {
 };
 let skin: AvatarSkin | null = null;
 const forcedCapsule = new URLSearchParams(location.search).get('body') === 'capsule';
-let failed = false;
+let fallbackReason: 'load-error' | 'load-deadline' | null = null;
 let ready!: () => void;
-/** Loading waits for a prepared Buddy or a genuine failure; slow preparation is not a failure. */
+/** Loading waits for Buddy, a genuine failure, or the recoverable loading deadline. */
 export const avatarReady = new Promise<void>((resolve) => {
   ready = resolve;
 });
@@ -63,25 +63,26 @@ function shown(a: Avatar, body: 'buddy' | 'capsule' | 'hidden', reason: string) 
 }
 export function setAvatarSkin(s: AvatarSkin) {
   if (forcedCapsule) return false;
+  if (skin) return skin === s; // a completed load owns the skin; never dress an avatar twice
   for (const a of waiting) {
     s.dress(a, a.userData.colorIdx);
     a.userData.inner.visible = true;
-    shown(a, 'buddy', failed ? 'recovered' : 'ready');
+    shown(a, 'buddy', fallbackReason ? 'recovered' : 'ready');
   }
   skin = s;
-  failed = false;
+  fallbackReason = null;
   waiting.clear();
   ready();
   return true;
 }
 
-/** A genuine failure permits entry; keep the avatars so a later successful retry can dress them. */
-export function failAvatarSkin() {
+/** Permit entry without cancelling preparation; late success still dresses every waiting avatar. */
+export function failAvatarSkin(reason: 'load-error' | 'load-deadline' = 'load-error') {
   if (skin) return;
-  failed = true;
+  fallbackReason = reason;
   for (const a of waiting) {
     a.userData.inner.visible = true;
-    shown(a, 'capsule', 'load-error');
+    shown(a, 'capsule', reason);
   }
   ready();
 }
@@ -115,13 +116,13 @@ export function makeAvatar(colorIdx: number, role?: 'local' | 'preview'): Avatar
   group.userData = { inner, mat, phase: 0, colorIdx } satisfies AvatarData;
   const avatar = group as Avatar;
   if (role) roles.set(avatar, role);
-  inner.visible = !!skin || forcedCapsule || failed;
+  inner.visible = !!skin || forcedCapsule || fallbackReason !== null;
   if (!skin && !forcedCapsule) waiting.add(avatar);
   skin?.dress(avatar, colorIdx);
   shown(
     avatar,
     skin ? 'buddy' : inner.visible ? 'capsule' : 'hidden',
-    skin ? 'ready' : forcedCapsule ? 'requested-capsule' : failed ? 'load-error' : 'loading',
+    skin ? 'ready' : forcedCapsule ? 'requested-capsule' : (fallbackReason ?? 'loading'),
   );
   return avatar;
 }

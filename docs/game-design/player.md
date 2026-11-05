@@ -103,7 +103,8 @@ you enter, it slowly circles the island.
 
 - Avatar: the Buddy (below). Its model and clips preload from the HTML, alongside the game modules. Local players,
   partners, late arrivals and the sky-card preview stay hidden until Buddy is ready. The loading screen waits for its
-  preparation, including on saved-name returns: elapsed time alone never selects the capsule. A genuine load failure
+  preparation, including on saved-name returns, for up to 45 seconds. That long escape marks the capsule `load-deadline`
+  without cancelling or retrying the pending preparation; its eventual success dresses the same avatar once. A genuine load failure
   permits entry with the older coloured capsule; automatic retries after 1.5 s and 5 s replace it with Buddy if loading
   recovers. Session telemetry marks the local player and arrival preview's body and reason whenever they change.
   `?body=capsule` explicitly selects that capsule with two eyes, bobbing and squashing with speed
