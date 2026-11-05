@@ -13,6 +13,7 @@
     "bank.wake",
     "ball.rest",
     "tune.set",
+    "tune.commit",
     "tune.fill",
     "tune.reset",
     "open.start",

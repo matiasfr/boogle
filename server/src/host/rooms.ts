@@ -15,6 +15,8 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { WS_PROTOCOL, CLOSE, encode } from '../../../src/net/ws-wire.ts';
 import { SERVER_ID, okId, okKey } from '../../../src/net/ids.ts';
 import { okPid } from '../../../src/sim/roster.ts';
+import { TUNE_CATALOG } from '../../../src/sim/tune.ts';
+import { WORLD_NS } from '../../../src/world/namespace.ts';
 import { createHostedRoom, type HostCfg, type HostedRoom } from './hosted-room.ts';
 import type { Store } from '../store.ts';
 
@@ -138,6 +140,8 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
         )
           return refuseWs(ws, { t: 'bad' }, CLOSE.BAD);
         if (!hosts(id)) return refuseWs(ws, { t: 'peer' }, CLOSE.NOT_HOSTED);
+        if (id.startsWith(`${WORLD_NS}-`) && params.get('tc') !== TUNE_CATALOG)
+          return refuseWs(ws, { t: 'incompatible', catalog: TUNE_CATALOG }, CLOSE.INCOMPATIBLE);
         if (closing.has(id)) return refuseWs(ws, { t: 'bye', why: 'restart' }, CLOSE.RESTART);
         const room = rooms.get(id) ?? (rooms.size < cfg.maxHostedRooms ? load(id) : null);
         if (!room) return refuseWs(ws, { t: 'full', max: cfg.maxPlayers, rooms: true }, CLOSE.FULL);

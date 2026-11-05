@@ -71,6 +71,7 @@ export async function startStack({
     UPGRADES_PER_MIN: '1000000',
     MAX_HOSTED_ROOMS: '1000',
     PLAY_RATE_PER_MIN: '1000000', // a warped page's five-second batches arrive many times a second
+    TUNE_CONTROLLER_KEY: process.env.TUNE_CONTROLLER_KEY ?? '',
   };
   const child = warp ? await startWarpServer(env) : null;
   const server = child ? null : createService(loadConfig(env, { log: () => {} }));

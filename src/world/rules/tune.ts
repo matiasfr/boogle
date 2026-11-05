@@ -11,9 +11,11 @@ import {
   costIn,
   serializeTune,
   loadTune,
+  migrateTune,
   hashTune,
   specOf,
   TUNABLES,
+  TUNE_CATALOG,
   type TuneKey,
 } from '../../sim/tune.ts';
 import { createStacks } from '../../sim/stacks.ts';
@@ -22,7 +24,7 @@ import { refillAll } from '../../sim/sources.ts';
 import { ROUTE, TRACK, HELPER } from '../../sim/route.ts';
 import { JUNK, bad } from './edit-gen.ts';
 
-import type { SyncView, Land, Stream, Ctx } from './types.ts';
+import type { SyncView, Land, Stream, Ctx, Rules } from './types.ts';
 import type { StacksApi } from './stacks.ts';
 import type { PilesApi } from './piles.ts';
 import type { SitesApi } from './sites.ts';
@@ -30,7 +32,10 @@ import type { SourcesApi } from './sources.ts';
 
 export const name = 'tune';
 export type TuneApi = ReturnType<typeof install>;
+export type TuneCommit = { key: string; v: number; expectedRevision: number; catalog: string; requestId: string };
 const allowed = (ctx: Ctx) => ctx.env.protoRoom === true;
+const controlled = (ctx: Ctx) =>
+  allowed(ctx) && typeof ctx.env.tuneController === 'function' && ctx.env.tuneController(ctx.from) === true;
 
 export function install(
   sync: SyncView,
@@ -55,11 +60,27 @@ export function install(
   }
   const ok = (key: unknown, v: unknown): key is TuneKey => okTune(key, v) && fits(key as TuneKey, v as number);
   sync.registerOp<{ key: string; v: number }>('tune.set', {
-    validate: (e, ctx) => allowed(ctx) && ok(e.key, e.v),
+    validate: (e, ctx) => controlled(ctx) && ok(e.key, e.v),
     apply: (e) => {
       if (!ok(e.key, e.v)) return null; // the world moved on between stamp and apply
       setTune(tune, e.key, e.v);
       return { key: e.key, v: e.v };
+    },
+  });
+  sync.registerOp<TuneCommit>('tune.commit', {
+    validate: (e, ctx) =>
+      controlled(ctx) &&
+      typeof e.requestId === 'string' &&
+      e.requestId.length > 0 &&
+      e.requestId.length <= 80 &&
+      e.catalog === TUNE_CATALOG &&
+      e.expectedRevision === tune.revision &&
+      ok(e.key, e.v),
+    apply: (e) => {
+      if (e.expectedRevision !== tune.revision || e.catalog !== TUNE_CATALOG || !ok(e.key, e.v))
+        return { requestId: e.requestId, status: 'rejected', revision: tune.revision };
+      setTune(tune, e.key, e.v);
+      return { requestId: e.requestId, status: 'applied', key: e.key, v: e.v, revision: tune.revision };
     },
   });
   // The solo tester's shortcut (?proto=lay): fill the open site's Track ring at once, as freight (no plaque credit), so
@@ -87,6 +108,8 @@ export function install(
     },
   });
   sync.registerState('tune', {
+    version: 1,
+    migrate: { 1: migrateTune },
     serialize: () => serializeTune(tune),
     load: (json: unknown) => loadTune(tune, json),
     hash: () => hashTune(tune),
@@ -97,6 +120,16 @@ export function install(
 // Replay-test generators (./README.md): set a key somewhere in its bounds (the host refuses what doesn't fit the
 // world), or reset the haul now and then.
 export const edits = {
+  'tune.commit': (r: Stream, view: { rules: Rules }) => ({
+    op: 'tune.commit',
+    i: 0,
+    j: 0,
+    key: 'yield',
+    v: r.int(1, 60),
+    expectedRevision: view.rules.tune.tune.revision,
+    catalog: TUNE_CATALOG,
+    requestId: 'replay',
+  }),
   'tune.set': (r: Stream) => {
     if (r.chance(JUNK)) return bad(r, 'tune.set');
     const t = r.pick(TUNABLES);

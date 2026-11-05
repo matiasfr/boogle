@@ -21,7 +21,7 @@ tests install the rules on their own sync instances (`test/helpers/net.ts`).
 
 ```js
 // Rules modules get registerOp/registerState/onTick through install(sync, ...); adapters import the rest.
-import { TICK_MS, world, submitEdit, onApplied, onAfterTick, onSnapshot, setEnv } from './world/sync.ts';
+import { TICK_MS, world, submitEdit, onApplied, onRejected, onAfterTick, onSnapshot, setEnv } from './world/sync.ts';
 
 TICK_MS                      // 100: sim runs at 10 ticks/s
 world.tick                   // integer, current sim tick (same on every client once synced)
@@ -55,6 +55,7 @@ submitEdit({ op, i, j, ...args })  // any client. `i, j` are integer grid cells.
                                    // while reconnecting can be dropped (see sync.ts header). Use onApplied for
                                    // anything irreversible.
 setPid(pid)                  // this tab's player id (src/player/identity.ts), for edits it stamps itself (local)
+onRejected(fn)              // fn({op, requestId}) for a host admission refusal; returns unsubscribe, never success
 pidOf(selfId)                // a session's pid, or null
 setEnv(partial)              // host-only facts for validate (ctx.env), e.g. a render-side check; may differ per machine,
                              // so never read it in apply or ticks. A missing fact makes validate throw: the edit is rejected.
@@ -62,6 +63,12 @@ registry()                   // { ops, states }: registered keys in order
 ```
 
 Edits arrive at every client as `{ op, i, j, p, ...args }` and are applied at the host-assigned tick, so all clients apply the same edits in the same order on the same tick. Ties within a tick are ordered by the host's sequence number.
+
+An edit with nonempty `op` and `requestId` strings of at most 80 characters receives a targeted `w:rejected`
+when the host refuses admission. The edit must fit the existing message size limit. Clients accept the receipt
+only from an already-pinned host and only for their own session; it cannot elect a host or advance simulation.
+The server blocks client-origin receipts. Accepted edits still resolve through `onApplied`; a disconnect or lost
+receipt may leave a caller's outcome unknown, so a timeout is never a success or a proved refusal.
 
 Grid cells use the heightfield indexing from `src/island/terrain.ts`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
 

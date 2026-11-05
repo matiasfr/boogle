@@ -7,6 +7,7 @@ import { createSync } from '../src/world/sync.ts';
 import { installRules } from '../src/world/rules/index.ts';
 import fs from 'node:fs';
 import { homeLand } from './helpers/land.ts';
+import { createTune, hashTune, migrateTune, loadTune } from '../src/sim/tune.ts';
 
 const v02 = JSON.parse(fs.readFileSync(new URL('./fixtures/snap-v02.json', import.meta.url), 'utf8'));
 
@@ -41,7 +42,10 @@ test('a v02 save (test/fixtures/snap-v02.json) still loads to the same hashes', 
   const s = peer();
   assert.equal(s.loadSnapshot(copy(v02.snap)), true);
   const now = s.stateHashes();
-  for (const [k, h] of Object.entries(v02.hashes)) assert.equal(now[k], h, `${k} loads differently`);
+  const migrated = createTune();
+  loadTune(migrated, migrateTune(v02.snap.data.tune ?? {}));
+  for (const [k, h] of Object.entries(v02.hashes))
+    assert.equal(now[k], k === 'tune' ? hashTune(migrated) : h, `${k} loads differently`);
   assert.equal(s.worldStatus().loadErrors, 0);
   assert.equal(s.worldStatus().newerSave, false);
 });

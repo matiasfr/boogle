@@ -4,6 +4,7 @@
 // The host is our server (server/src/host/world-host.ts attaches with host: true); every tab is a client. All wire messages are `room.send` JSON with a `w:` type. NOTE room.send reaches every
 // OTHER peer; a client's message also reaches the other clients (relayed, `from` = origin), so each side ignores types it does not own.
 //
+//   host -> client   { t:'w:rejected', to, op, requestId }   bounded correlated admission refusal; never state
 //   client -> host   { t:'w:edit', e }                      an edit request (host overwrites e.p with the real sender id
 //                                                           and e.u with that sender's pid)
 //                    { t:'w:need' }                         please send me a snapshot (late join, desync, late edit)
@@ -112,7 +113,9 @@ const HELD_EVERY_MS = 210;
 const HELD_MAX_MS = 5000; // drop held edits older than this
 const HOST_STALE_MS = 3000;
 const SAVE_MS = 30000;
-const HOST_TYPES = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap']); // what a client accepts, only from the host
+const HOST_TYPES = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap', 'w:rejected']); // what a client accepts, only from the host
+export type EditRejection = { op: string; requestId: string };
+const correlation = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length <= 80;
 const isObj = (v: unknown): v is Obj => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
@@ -132,6 +135,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   const tickFns: ((tick: number) => void)[] = [];
   const afterFns: ((tick: number) => void)[] = []; // fn(tick) after every onTick handler (render work that reads the tick's final state)
   const appliedFns: ((e: Obj, tick: number, result: unknown) => void)[] = [];
+  const rejectedFns = new Set<(e: EditRejection) => void>();
   const labels = new Map<unknown, string>(); // handler fn -> name shown by profileTicks
   const snapFns: ((tick: number) => void)[] = [];
   const desyncFns: ((d: Desync) => void)[] = []; // fn({ tick, keys }) on a client whose hash disagreed with the host's (keys = diverged states)
@@ -583,11 +587,25 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   function onMessage(msg: unknown, from: string) {
     if (!isObj(msg) || typeof msg.t !== 'string' || !msg.t.startsWith('w:') || from === selfId) return;
     if (mode === 'host') {
-      if (msg.t === 'w:edit' && isObj(msg.e) && JSON.stringify(msg.e).length <= MAX_EDIT_JSON) stamp(msg.e, from);
-      else if (msg.t === 'w:need') serveSnapshot(from);
+      if (msg.t === 'w:edit' && isObj(msg.e) && JSON.stringify(msg.e).length <= MAX_EDIT_JSON) {
+        if (!stamp(msg.e, from) && correlation(msg.e.op) && correlation(msg.e.requestId))
+          send({ t: 'w:rejected', to: from, op: msg.e.op, requestId: msg.e.requestId });
+      } else if (msg.t === 'w:need') serveSnapshot(from);
       return;
     }
     if (mode !== 'client') return;
+    // A refusal never elects a host or advances its clock. Only an already-pinned host can settle our request.
+    if (msg.t === 'w:rejected') {
+      if (from !== hostId || msg.to !== selfId || !correlation(msg.op) || !correlation(msg.requestId)) return;
+      for (const fn of rejectedFns) {
+        try {
+          fn({ op: msg.op, requestId: msg.requestId });
+        } catch (err) {
+          console.warn('[world] onRejected failed', err);
+        }
+      }
+      return;
+    }
     if (!HOST_TYPES.has(msg.t) || !acceptHost(from)) return;
     if (msg.t === 'w:snap') return onSnapChunk(msg);
     noteHostTick(msg.ht);
@@ -916,6 +934,10 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     // edit as stamped and apply's return value.
     onApplied: (fn: (e: never, tick: number, result: never) => void, label?: string) =>
       addHandler(appliedFns, fn as (e: Obj, tick: number, result: unknown) => void, label), // fn(edit, tick, result of apply)
+    onRejected: (fn: (e: EditRejection) => void) => {
+      rejectedFns.add(fn);
+      return () => rejectedFns.delete(fn);
+    },
     onSnapshot: (fn: (tick: number) => void) => snapFns.push(fn), // fn(tick) after state was replaced from a snapshot/persisted copy (rebuild meshes)
     onDesync: (fn: (d: Desync) => void) => desyncFns.push(fn),
     onHashSent: (fn: (tick: number) => void) => hashFns.push(fn),
@@ -929,7 +951,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     },
     pidOf, // a session's pid, or null
     submitEdit,
-    // Opt-in room coordinators can correlate a refused admission; the legacy w:edit route remains unchanged.
+    // Opt-in room coordinators own their receipts; the w:edit route correlates bounded requestId refusals itself.
     receiveEdit: (edit: unknown, from: string) =>
       mode === 'host' && isObj(edit) && JSON.stringify(edit).length <= MAX_EDIT_JSON && stamp(edit, from),
     updateWorld,
@@ -967,6 +989,7 @@ export const {
   onTick,
   onAfterTick,
   onApplied,
+  onRejected,
   onSnapshot,
   onDesync,
   onHashSent,

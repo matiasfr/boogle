@@ -9,11 +9,12 @@ import { homeLand, fixture } from './helpers/land.ts';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
 import type { Rules } from '../src/world/rules/types.ts';
+import { TUNE_CATALOG } from '../src/sim/tune.ts';
 
 const CANONICAL = ['gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'ball', 'tune', 'opening']; // production order (test/fixtures/world-inputs.json)
 
 function peer() {
-  const s = createSync({ env: { protoRoom: true } });
+  const s = createSync({ env: { protoRoom: true, tuneController: () => true } });
   s.setSelfId('a');
   const rules = installRules(s, homeLand());
   return { s, rules, after: {} as Record<string, number> };
@@ -47,6 +48,16 @@ const SCRIPTS: Partial<Record<keyof Rules, (x: Peer) => Step[]>> = {
   tune: () => [
     { op: 'tune.reset', i: 0, j: 0 },
     { op: 'tune.set', i: 0, j: 0, key: 'hard', v: 30 },
+    ({ rules }) => ({
+      op: 'tune.commit',
+      i: 0,
+      j: 0,
+      key: 'yield',
+      v: 7,
+      expectedRevision: rules.tune.tune.revision,
+      catalog: TUNE_CATALOG,
+      requestId: 'script',
+    }),
     { op: 'tune.fill', i: 0, j: 0 },
   ],
   sites: () => [
