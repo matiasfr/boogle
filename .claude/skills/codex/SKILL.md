@@ -41,11 +41,13 @@ Effort: previz is mostly image prompts, so `medium` (or `high`) is enough; `xhig
 
 ## Previz
 
+The owner's 5 November experiment also uses real-screenshot previz before asset modelling and generated references before simple animation. Give `$imagegen` real Buddy views and explicit identity constraints, verify this session's image/animation capability from primary sources, and record the actual route/model receipt and cost rather than a configured default. If native GIF is unavailable, label a pose-sheet/frame-sequence fallback; it does not prove timing. Network restrictions still bind; do not upgrade global tools to bypass a missing route. Keep the separately owned animation code untouched. [Scope and current evidence](../../../docs/research/motion-references.md).
+
 Previz is not concept art: it pictures *this* game at its best (DESIGN.md, the real places and characters, the game's camera), pushed in light, colour, composition and juice, and stays buildable in our renderer. Use it before building a prototype or effect, to pick a direction, or to brainstorm several looks for one moment.
 1. Grab what the game looks like today with `/look` at a pose that frames the subject (`BOOGLE_QUERY='proto=<id>'` for a prototype) and pass the still as `--ref`, so Codex raises today's look instead of inventing another game.
 2. Brief the moment, not the picture: what the player does, the feel target, and what to vary across shots ("3 alternative directions for the dig splash", or "a sequence: pull away, mid-ride, jump off").
 3. Read every `shot-<n>.png` and `board.md`. Show the user the board (an artifact or the PNGs), with your own one-line take per shot on what's worth chasing.
-4. Previz never ships and is never committed. What carries over is the "how we'd build it" notes: cite them in the plan or brief for the build.
+4. Previz never ships as game content. Normally only the "how we'd build it" notes carry over; an explicit research-evidence request may commit the few small images its report needs. This is not approval to ship generated assets.
 
 ## Research, task, review
 

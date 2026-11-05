@@ -1,0 +1,46 @@
+{
+  "id": "1793899326430-3538",
+  "operation": "look",
+  "args": [
+    "--eval",
+    "/Users/matiasfranco/Developer/boogle-codex/motion-references/.look/motion-references/flat-stage.ts",
+    "--query",
+    "stage=asset%3Dbuddy%26hat%3Dconductor%26mode%3Draw%26clip%3DIdle_Loop%26t%3D0.4%26reference%3D0%26bounds%3D0%26grid%3D0%26cam%3D4%2C1.1%2C0%26target%3D0%2C0.9%2C0%26light%3Dstudio%26exposure%3D1",
+    "--name",
+    "buddy-flat-side",
+    "--warm",
+    "1",
+    "--question",
+    "Does flat side lighting preserve head depth, short limbs and conductor hat brim?"
+  ],
+  "query": "",
+  "started": "2026-11-05T17:22:07.801Z",
+  "finished": "2026-11-05T17:22:18.823Z",
+  "status": 0,
+  "before": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "after": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "harness": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "harnessAfter": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "changedDuringRun": false,
+  "artifacts": [
+    "buddy-flat-side-motion.png",
+    "buddy-flat-side-still.png",
+    "output.txt"
+  ]
+}

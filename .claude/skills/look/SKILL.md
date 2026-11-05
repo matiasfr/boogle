@@ -40,6 +40,8 @@ Name the visual question, set up the action and view, capture, inspect and fix w
 
 ## Asset motion review
 
+For the owner's generated-motion experiment, keep real Buddy identity views, generated reference and actual rig captures distinct. Match camera, hat, cargo and pose when comparing; report proportions/hat, rigid tool/grips, silhouette at game distance and transferable poses. A generated key-pose sheet or locally assembled GIF does not establish motion timing. Separate requested timings, encoded-frame timestamps and stage-owned curves. Under shared-machine load, frame numbers and wall times do not establish cadence or performance: report counts/code paths and what needs a quiet rerun. Preserve exact source identities for prior-branch evidence. [Experiment](../../../docs/research/motion-references.md).
+
 Anything with motion gets an agent motion review in `/character/` before the owner's final check. Use the existing stage and broker/local look path through `node dev/look/asset-motion.ts`; its command help lists asset, clip, pose and camera options. Declare motion in the catalogue, including explicit `none` for static assets. Reuse the game's actual clip or procedural formula; an inspection-only spin must be labelled diagnostic and must never be reported as a production rate.
 
 ```sh

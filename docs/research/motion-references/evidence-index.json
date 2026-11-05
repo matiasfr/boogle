@@ -1,0 +1,112 @@
+{
+  "status": "partial",
+  "generations": 0,
+  "imageModelUsed": null,
+  "flatEval": {
+    "path": ".look/motion-references/flat-stage.ts",
+    "sha256": "1944788b970fcb44a6de650ada52635b433597509e1bb7566bc2ab2fb95e9a20"
+  },
+  "captures": [
+    {
+      "name": "buddy-flat-front",
+      "manifest": "manifests/buddy-flat-front.json",
+      "original": ".look/evidence/1793899295079-3065",
+      "sourceImage": "buddy-flat-front-still.png",
+      "sha256": "386eac15a1efe1ccc1a956a9a0a19b5da1241048fd18bc664bf0652f4a2a220f"
+    },
+    {
+      "name": "buddy-flat-side",
+      "manifest": "manifests/buddy-flat-side.json",
+      "original": ".look/evidence/1793899326430-3538",
+      "sourceImage": "buddy-flat-side-still.png",
+      "sha256": "81cadf52b165ce801041a08d669f93beed690012265b7aa872789e5fe7cc89c5"
+    },
+    {
+      "name": "buddy-flat-back",
+      "manifest": "manifests/buddy-flat-back.json",
+      "original": ".look/evidence/1793899360393-3991",
+      "sourceImage": "buddy-flat-back-still.png",
+      "sha256": "4a456c2a356bf3eb0db3c4af6f793ed1e95050bd1da4fbd904d53b8a417dca0c"
+    },
+    {
+      "name": "buddy-flat-three",
+      "manifest": "manifests/buddy-flat-three.json",
+      "original": ".look/evidence/1793899405261-4941",
+      "sourceImage": "buddy-flat-three-still.png",
+      "sha256": "e14c5a3fd9b44cf36c4e38b7b6b8bb4d317106d6604bcbd2b8303c0074432ccb"
+    },
+    {
+      "name": "buddy-studio-front",
+      "manifest": "manifests/buddy-studio-front.json",
+      "original": ".look/evidence/1793899156691-99793",
+      "sourceImage": "buddy-front-still.png",
+      "sha256": "cc82be1c5172a2ed8de77cc8a69c52bb946808a84321519aef79d13a678aad3c"
+    },
+    {
+      "name": "gameplay",
+      "manifest": "manifests/gameplay.json",
+      "original": ".look/evidence/1793900126065-24432",
+      "sourceImage": "recovery-rack-context-still.png",
+      "sha256": "aa704adf8a242639c6d7ab4e7db4a310be831e34bbedf8066afe5f678ab13e43"
+    },
+    {
+      "name": "bot-setup-failure",
+      "manifest": "manifests/bot-setup-failure.json",
+      "original": ".look/evidence/1793899506526-7121",
+      "sourceImage": null,
+      "sha256": null
+    },
+    {
+      "name": "bot-incomplete",
+      "manifest": "manifests/bot-incomplete.json",
+      "original": ".look/evidence/1793899574141-8341",
+      "sourceImage": null,
+      "sha256": null
+    }
+  ],
+  "retainedImages": [
+    {
+      "file": "buddy-flat-front.png",
+      "bytes": 15636,
+      "sha256": "386eac15a1efe1ccc1a956a9a0a19b5da1241048fd18bc664bf0652f4a2a220f"
+    },
+    {
+      "file": "buddy-flat-side.png",
+      "bytes": 15245,
+      "sha256": "81cadf52b165ce801041a08d669f93beed690012265b7aa872789e5fe7cc89c5"
+    },
+    {
+      "file": "buddy-flat-back.png",
+      "bytes": 13922,
+      "sha256": "4a456c2a356bf3eb0db3c4af6f793ed1e95050bd1da4fbd904d53b8a417dca0c"
+    },
+    {
+      "file": "buddy-flat-three.png",
+      "bytes": 14377,
+      "sha256": "e14c5a3fd9b44cf36c4e38b7b6b8bb4d317106d6604bcbd2b8303c0074432ccb"
+    },
+    {
+      "file": "buddy-studio-front.png",
+      "bytes": 62187,
+      "sha256": "cc82be1c5172a2ed8de77cc8a69c52bb946808a84321519aef79d13a678aad3c"
+    },
+    {
+      "file": "gameplay.jpg",
+      "bytes": 90534,
+      "sha256": "9fe20a7c37a5f03dabc384ff51ea94dfb99d26093b733ae3e048f9f12f8cc69a"
+    },
+    {
+      "file": "prior-trial-side.jpg",
+      "bytes": 145251,
+      "sha256": "46edb6bc8667db89c6764a170615c573e1b22acedee94e62789616117cbbe617"
+    }
+  ],
+  "priorTrial": {
+    "source": "../chop-animation-timing/.look/chop-animation-timing/old-left-new-right-proper-bite-side-key-times.png",
+    "tree": "b198863f69de711391592f3b1bf8c3e45f2bfb5e",
+    "revision": "b19f14ca",
+    "derivative": "prior-trial-side.jpg",
+    "conversion": "sips JPEG quality 65; longest edge 1600; no pose edits",
+    "currentBranchAtInspection": "b12c7fedfb00851cb97f65812e6a272fc293a27d"
+  }
+}

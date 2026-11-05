@@ -1,0 +1,46 @@
+{
+  "id": "1793900126065-24432",
+  "operation": "look",
+  "args": [
+    "--at",
+    "forge lit",
+    "--query",
+    "proto=place",
+    "--name",
+    "recovery-rack-context",
+    "--warm",
+    "1",
+    "--question",
+    "Does the real follow view show Buddy scale and a clear path margin for a recovery-rack previz?"
+  ],
+  "query": "",
+  "started": "2026-11-05T17:35:27.161Z",
+  "finished": "2026-11-05T17:35:48.362Z",
+  "status": 0,
+  "before": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "after": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "harness": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "harnessAfter": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "changedDuringRun": false,
+  "artifacts": [
+    "output.txt",
+    "recovery-rack-context-motion.png",
+    "recovery-rack-context-still.png"
+  ]
+}

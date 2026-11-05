@@ -1,0 +1,48 @@
+{
+  "id": "1793899506526-7121",
+  "operation": "playthrough",
+  "args": [
+    "--query",
+    "proto=place",
+    "--stall",
+    "60"
+  ],
+  "query": "",
+  "started": "2026-11-05T17:25:07.510Z",
+  "finished": "2026-11-05T17:25:31.499Z",
+  "status": 1,
+  "before": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "after": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "harness": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "harnessAfter": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "changedDuringRun": false,
+  "artifacts": [
+    "output.txt",
+    "run/bot.log",
+    "run/bot.txt",
+    "run/end-still.png",
+    "run/report.txt",
+    "run/saves/00-objective-follow-the-path-.json",
+    "run/saves/01-reached-town.json",
+    "run/saves/02-ask-heard.json",
+    "run/session.jsonl",
+    "run/summary.txt",
+    "run/text.json"
+  ]
+}
