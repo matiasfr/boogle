@@ -3,6 +3,7 @@ export type Motion =
   | { kind: 'none'; source: string }
   | { kind: 'clips'; source: string }
   | { kind: 'chop'; source: string }
+  | { kind: 'rail-wheels'; source: string }
   | { kind: 'attachment'; bone: string; node: string; asset: string; source: string }
   | { kind: 'spin'; axis: 'z'; node: string; source: string };
 export type AssetDescriptor = {
@@ -70,8 +71,9 @@ export const descriptors: Record<string, AssetDescriptor> = {
     label: 'Track-layer shell',
     category: 'props',
     motion: {
-      kind: 'none',
-      source: 'assets/src/track-layer.py: rigid shell; travelled fork belongs to Place assembly',
+      kind: 'rail-wheels',
+      source:
+        'machine-model.ts: signed distance/radius; machine-motion.ts supplies a labelled inspection travel profile',
     },
     rootNote:
       'Working deck origin; rear power unit at Z -3.7 m. Existing game seats, cargo and moving fork added by Place.',

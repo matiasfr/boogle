@@ -2,6 +2,8 @@
 import * as THREE from 'three/webgpu';
 import type { Motion } from './descriptors.ts';
 import { sailAngle } from '../src/pois/windmills/motion.ts';
+import { wheelAngle } from '../src/proto/place/machine-model.ts';
+import { machineReviewDistance } from './machine-motion.ts';
 import { CHOP_CONTACT, CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
 
 type Pose = { p: number[]; q: number[] };
@@ -372,18 +374,25 @@ export function createMotionCapture(canvas: HTMLCanvasElement, camera: THREE.Per
       }
       const pivot = spin.getWorldPosition(new THREE.Vector3()),
         rotation = spin.getWorldQuaternion(new THREE.Quaternion());
-      const axis = new THREE.Vector3(0, 0, 1).applyQuaternion(rotation);
+      const railWheels = report.declaration.kind === 'rail-wheels';
+      const axis = new THREE.Vector3(railWheels ? 1 : 0, 0, railWheels ? 0 : 1).applyQuaternion(rotation);
       const deltaRotation = previousSpin ? previousSpin.clone().invert().multiply(rotation) : new THREE.Quaternion();
       const signedAngle =
-        THREE.MathUtils.euclideanModulo(2 * Math.atan2(deltaRotation.z, deltaRotation.w) + Math.PI, Math.PI * 2) -
-        Math.PI;
+        THREE.MathUtils.euclideanModulo(
+          2 * Math.atan2(railWheels ? deltaRotation.x : deltaRotation.z, deltaRotation.w) + Math.PI,
+          Math.PI * 2,
+        ) - Math.PI;
       const absoluteTime = time + cycle * report.duration;
       const previousTime = previous ? previous.time + previous.cycle * report.duration : absoluteTime;
       const expectedRate =
         report.diagnosticRate ??
-        (report.declaration.kind === 'spin' && dt > 0 ? (sailAngle(absoluteTime) - sailAngle(previousTime)) / dt : 0);
+        (railWheels && dt > 0
+          ? wheelAngle(machineReviewDistance(absoluteTime) - machineReviewDistance(previousTime)) / dt
+          : report.declaration.kind === 'spin' && dt > 0
+            ? (sailAngle(absoluteTime) - sailAngle(previousTime)) / dt
+            : 0);
       const centre =
-        report.declaration.kind === 'spin' || report.diagnosticRate !== null
+        report.declaration.kind === 'spin' || railWheels || report.diagnosticRate !== null
           ? centroid(spin).sub(pivot)
           : new THREE.Vector3();
       const centroidOrbit = centre.addScaledVector(axis, -centre.dot(axis)).length();
@@ -457,7 +466,7 @@ export function createMotionCapture(canvas: HTMLCanvasElement, camera: THREE.Per
         0.002,
         row.signedNearest,
       );
-      if (report.declaration.kind === 'spin' || report.diagnosticRate !== null) {
+      if (report.declaration.kind === 'spin' || railWheels || report.diagnosticRate !== null) {
         warn('pivot drift (m)', row.pivotDrift, 0.001);
         warn('axis drift (rad)', row.axisDrift, 0.01);
         warn('geometry centroid off axle (m)', row.centroidOrbit, 0.001);

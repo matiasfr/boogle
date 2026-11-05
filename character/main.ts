@@ -18,7 +18,8 @@ import { COLORS } from '../src/constants.ts';
 import { CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
 import { createParticlePool } from '../src/render/particle-pool.ts';
 import type { AxeTier } from '../src/proto/place/axe-models.ts';
-import { dressMachine } from '../src/proto/place/machine-model.ts';
+import { dressMachine, machineWheelPivots, wheelAngle } from '../src/proto/place/machine-model.ts';
+import { MACHINE_REVIEW_SECONDS, machineReviewDistance } from './machine-motion.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -190,6 +191,7 @@ function generic(asset: Asset): Preview {
   const group = asset.instance(state.node || undefined),
     own = cloneMaterials(group);
   const machineFinish = state.asset === 'track-layer' ? dressMachine(group) : undefined;
+  const machineWheels = state.asset === 'track-layer' ? machineWheelPivots(group).flat() : [];
   // An axle-centred prop otherwise disappears halfway into the inspection floor. Its authored pivot stays intact.
   if (state.asset === 'feeder-roller') group.position.y = 0.075;
   const mixer = new THREE.AnimationMixer(group);
@@ -200,6 +202,7 @@ function generic(asset: Asset): Preview {
   const seek = (t: number) => {
     time = t;
     if (diagnosticRate !== null) group.rotation.z = t * diagnosticRate;
+    for (const wheel of machineWheels) wheel.rotation.x = wheelAngle(machineReviewDistance(t));
     if (action) {
       action.enabled = true;
       action.paused = false;
@@ -456,6 +459,7 @@ async function choose(reframe = true) {
     if (state.asset === 'buddy' && state.chop !== 'off') duration = CHOP_PREVIEW_DURATION;
     if (diagnosticRate !== null) duration = (Math.PI * 2) / Math.abs(diagnosticRate);
     else if (entry.motion.kind === 'spin') duration = sailCycleSeconds();
+    else if (entry.motion.kind === 'rail-wheels') duration = MACHINE_REVIEW_SECONDS;
     preview =
       state.asset === 'buddy'
         ? buddy.create(state.mode, state.clip, state.pose, state.hat, q.has('blink') ? number('blink', 1) : undefined, {
@@ -503,7 +507,9 @@ async function choose(reframe = true) {
             : 'Retargeted authored clip only; no body blend or procedural life. Inspect hero-clips for the original skeleton.'
         : entry.sourceKind === 'code'
           ? 'Shared code factory · static representative geometry; no game behavior.'
-          : 'Authored glTF clip; no game placement or procedural layers.';
+          : state.asset === 'track-layer'
+            ? 'Production distance/radius wheel formula; synthetic 4 m pull-away/cruise/stop inspection input. Game travel is checked separately.'
+            : 'Authored glTF clip; no game placement or procedural layers.';
     stats();
     seek(state.time);
     measure();
@@ -869,7 +875,10 @@ const loopStarted = renderer.setAnimationLoop(() => {
     if (next > duration) {
       if (state.loop) {
         next %= duration;
-        if ((state.asset === 'buddy' && state.mode === 'played') || assetsById.get(state.asset)?.motion.kind === 'spin')
+        if (
+          (state.asset === 'buddy' && state.mode === 'played') ||
+          ['spin', 'rail-wheels'].includes(assetsById.get(state.asset)?.motion.kind ?? '')
+        )
           preview.advance(dt * state.speed);
         else {
           clearHelpers();
@@ -898,7 +907,9 @@ const loopStarted = renderer.setAnimationLoop(() => {
       frames,
       state.time,
       preview.figure,
-      preview.group.getObjectByName('stage-rotor') ?? preview.group,
+      preview.group.getObjectByName('stage-rotor') ??
+        preview.group.getObjectByName('power_wheel_0-axle') ??
+        preview.group,
       preview.chop,
     );
   if (now - uiAt > 100) {

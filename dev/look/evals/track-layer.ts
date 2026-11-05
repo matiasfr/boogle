@@ -86,18 +86,25 @@ const put = (x: number, z: number) => {
 const camera = () => {
   const rear = view !== 'lay';
   const eyeLocal =
-    view === 'pair'
-      ? { x: 4.5, y: 3.1, z: -2.9 }
-      : view === 'forward'
-        ? { x: 0, y: 3.5, z: -4.3 }
-        : view === 'side'
-          ? { x: 8, y: 4.3, z: -2.8 }
-          : { x: 8, y: rear ? 4.8 : 4.5, z: rear ? -7 : 5.5 };
+    view === 'wheels'
+      ? { x: 2.3, y: -0.12, z: -4.1 }
+      : view === 'pair'
+        ? { x: 4.5, y: 3.1, z: -2.9 }
+        : view === 'forward'
+          ? { x: 0, y: 3.5, z: -4.3 }
+          : view === 'side'
+            ? { x: 8, y: 4.3, z: -2.8 }
+            : { x: 8, y: rear ? 4.8 : 4.5, z: rear ? -7 : 5.5 };
   fromPlatform(car.platform, { ...eyeLocal, yaw: 0 }, true, pose);
   const eye: [number, number, number] = [pose.x, pose.y, pose.z];
   fromPlatform(
     car.platform,
-    { x: 0, y: 1.1, z: view === 'forward' ? 1.2 : view === 'pair' ? -0.6 : -1.3, yaw: 0 },
+    {
+      x: view === 'wheels' ? 0.5 : 0,
+      y: view === 'wheels' ? -0.385 : 1.1,
+      z: view === 'wheels' ? -3.7 : view === 'forward' ? 1.2 : view === 'pair' ? -0.6 : -1.3,
+      yaw: 0,
+    },
     true,
     pose,
   );
