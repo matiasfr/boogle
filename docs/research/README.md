@@ -2,6 +2,8 @@
 
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
+- [dark-unlit-exposure.md](dark-unlit-exposure.md) (2026-11-05): matched pre-water/current label and particle measurements, affected surface census, compensation/fixed/narrow/LDR-ablation stills and Metal cost samples; six recommendations, reuse of color-vibrance-3 Dev bindings, and explicit full-LDR/device limits. No game-source changes.
+
 - [carried-resource-display.md](carried-resource-display.md) (2026-11-04): fifteen carrying/inventory comparisons, chip/capacity audit, five display options and seven recommendations. Owner approved the hybrid 4 November; built in Place with mixed contents, reveal on all Drop inputs, truthful pending slots and Pause recall. Four scratch mockups informed placement; owner feel remains for the playtest.
 
 - [water-times-of-day.md](water-times-of-day.md) (2026-11-04): four prepared-sky strategies, cube/PMREM memory arithmetic, fresh Mac CPU LUT timings and labelled mobile estimates, coordinated evening/night lighting, co-op/save semantics and six recommendations; proposes one loading-prepared evening and a fade after the current water/replay gates. No source changes; browser broker unavailable, device/GPU costs unverified.

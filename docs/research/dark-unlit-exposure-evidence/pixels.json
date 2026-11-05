@@ -1,0 +1,109 @@
+{
+  "maskPixels": 4671,
+  "rows": [
+    {
+      "name": "current",
+      "label": [64, 60, 52],
+      "crystal": [32, 57, 68],
+      "gold": [80, 63, 4],
+      "white": [64, 64, 64],
+      "relativeLuminance": {
+        "label": 0.05624293120142019,
+        "crystal": 0.05549741856876964,
+        "gold": 0.08630495649345478,
+        "white": 0.0588379538823824
+      }
+    },
+    {
+      "name": "compensated",
+      "label": [240, 232, 217],
+      "crystal": [177, 218, 240],
+      "gold": [240, 201, 91],
+      "white": [240, 240, 240],
+      "relativeLuminance": {
+        "label": 1,
+        "crystal": 1,
+        "gold": 1,
+        "white": 1
+      }
+    },
+    {
+      "name": "fixed",
+      "label": [80, 76, 67],
+      "crystal": [43, 69, 81],
+      "gold": [91, 73, 6],
+      "white": [80, 80, 80],
+      "relativeLuminance": {
+        "label": 0.0895970599750115,
+        "crystal": 0.08154179350403933,
+        "gold": 0.1146918404846133,
+        "white": 0.09206202362584978
+      }
+    },
+    {
+      "name": "narrow",
+      "label": [70, 66, 57],
+      "crystal": [36, 61, 72],
+      "gold": [84, 67, 4],
+      "white": [70, 70, 70],
+      "relativeLuminance": {
+        "label": 0.0676190388722124,
+        "crystal": 0.0635506069309627,
+        "gold": 0.09676523104948258,
+        "white": 0.07028731390270039
+      }
+    },
+    {
+      "name": "no-tone",
+      "label": [255, 247, 232],
+      "crystal": [191, 233, 255],
+      "gold": [255, 215, 106],
+      "white": [255, 255, 255],
+      "relativeLuminance": {
+        "label": 1.1521199556037154,
+        "crystal": 1.1640743105685682,
+        "gold": 1.161293596057438,
+        "white": 1.1476219127013627
+      }
+    },
+    {
+      "name": "ldr-scene",
+      "label": [255, 247, 232],
+      "crystal": [191, 233, 255],
+      "gold": [255, 215, 106],
+      "white": [255, 255, 255],
+      "relativeLuminance": {
+        "label": 1.1521199556037154,
+        "crystal": 1.1640743105685682,
+        "gold": 1.161293596057438,
+        "white": 1.1476219127013627
+      }
+    },
+    {
+      "name": "historic-old",
+      "label": [240, 232, 217],
+      "crystal": [177, 218, 240],
+      "gold": [240, 201, 91],
+      "white": [240, 240, 240],
+      "relativeLuminance": {
+        "label": 1,
+        "crystal": 1,
+        "gold": 1,
+        "white": 1
+      }
+    },
+    {
+      "name": "historic-new",
+      "label": [64, 60, 52],
+      "crystal": [32, 57, 68],
+      "gold": [80, 63, 4],
+      "white": [64, 64, 64],
+      "relativeLuminance": {
+        "label": 0.05624293120142019,
+        "crystal": 0.05549741856876964,
+        "gold": 0.08630495649345478,
+        "white": 0.0588379538823824
+      }
+    }
+  ]
+}
