@@ -30,7 +30,7 @@ const errorSource = renderer as unknown as {
 };
 const reportError = errorSource.onError.bind(renderer);
 const gpuErrors = new Set<string>();
-errorSource.onError = (info) => {
+const recordGpuError: typeof errorSource.onError = (info) => {
   const message = info.message.slice(0, 2000);
   const key = `${info.type}:${message}`;
   if (gpuErrors.size < 8 && !gpuErrors.has(key)) {
@@ -38,7 +38,11 @@ errorSource.onError = (info) => {
     playMark('gpu error', { api: info.api, type: info.type, message, ...graphicsContext() });
   }
   reportError(info);
-  stopGraphics('gpu-error', message);
+};
+errorSource.onError = (info) => {
+  recordGpuError(info);
+  checkGpuFrames = true;
+  gpuErrorVersion++;
 };
 export { MAX_DPR, FIXED_DPR } from './quality.ts';
 renderer.setPixelRatio(MAX_DPR);
@@ -60,17 +64,31 @@ export const gfx = () => (started ? 'webgpu' : null);
 
 // Local failure latch: the server still owns the room. Never reset it or automatically navigate away.
 let graphicsStopped = false;
+// One bad submission can recover. Only 60 consecutive GPU-checked draw submissions may latch the fallback.
+// Not seconds, rAFs or console-message counts: a clean draw (or an unobserved gap) breaks the streak.
+const FAILED_DRAW_LIMIT = 60;
+const MAX_GPU_CHECKS = 8;
+let checkGpuFrames = false;
+let gpuErrorVersion = 0;
+let failedDraws = 0;
+let gpuChecks = 0;
+let gpuCheckGeneration = 0;
+let gpuChecksDone: Promise<void> = Promise.resolve();
 let visibilityAt = performance.now();
 const graphicsContext = () => ({
   visibility: document.visibilityState,
   sinceVisibilityMs: Math.round(performance.now() - visibilityAt),
   stopped: graphicsStopped,
   calls: renderer.info.render.calls,
+  drawCalls: renderer.info.render.drawCalls,
   triangles: renderer.info.render.triangles,
+  failedDraws,
 });
 document.addEventListener('visibilitychange', () => {
   playMark('graphics visibility', graphicsContext());
   visibilityAt = performance.now();
+  failedDraws = 0;
+  gpuCheckGeneration++;
 });
 
 function stopGraphics(cause: string, message: string) {
@@ -95,11 +113,67 @@ function stopGraphics(cause: string, message: string) {
 // Catch the entire callback: water compute can throw before the final draw. No timer/second frame loop.
 export const guardGraphicsFrame = (frame: (now: number) => void) => (now: number) => {
   if (graphicsStopped || document.hidden) return;
+  // Scopes only after an uncaptured error. Include compute before the draw, and fence submitted work without
+  // awaiting it in the game loop. Bound in-flight checks; an unchecked draw invalidates the streak, never proves failure.
+  const device =
+    checkGpuFrames && gpuChecks < MAX_GPU_CHECKS ? (renderer.backend as unknown as { device: GPUDevice }).device : null;
+  const calls = renderer.info.render.calls;
+  const version = gpuErrorVersion;
+  const generation = gpuCheckGeneration;
+  if (device) {
+    device.pushErrorScope('validation');
+    device.pushErrorScope('internal');
+    device.pushErrorScope('out-of-memory');
+  }
   try {
     frame(now);
   } catch (error) {
     stopGraphics('frame-error', error instanceof Error ? error.message : String(error));
     console.error('[graphics] frame failed:', error);
+  } finally {
+    const drew = renderer.info.render.calls > calls;
+    if (device) {
+      const result = Promise.all([
+        device.popErrorScope(),
+        device.popErrorScope(),
+        device.popErrorScope(),
+        device.queue.onSubmittedWorkDone(),
+      ]).then(
+        (values) => ({ errors: values.slice(0, 3) as (GPUError | null)[] }),
+        (error: unknown) => ({ unavailable: String(error) }),
+      );
+      gpuChecks++;
+      // Process in submission order even if GPU promises settle out of order. No more than MAX_GPU_CHECKS are queued.
+      gpuChecksDone = gpuChecksDone.then(async () => {
+        const checked = await result;
+        gpuChecks--;
+        if (graphicsStopped) return;
+        if ('unavailable' in checked) {
+          failedDraws = 0;
+          gpuCheckGeneration++;
+          playMark('graphics check unavailable', { message: checked.unavailable.slice(0, 2000) });
+          return; // an unavailable check is not a GPU failure
+        }
+        const errors = checked.errors.filter((e): e is GPUError => e !== null);
+        for (const error of errors)
+          recordGpuError({ api: 'WebGPU', type: error.constructor.name, message: error.message });
+        if (generation !== gpuCheckGeneration || !drew) return;
+        if (errors.length) {
+          checkGpuFrames = true;
+          if (++failedDraws >= FAILED_DRAW_LIMIT) stopGraphics('persistent-gpu-error', errors[0]!.message);
+        } else {
+          const recoveredAfter = failedDraws;
+          failedDraws = 0;
+          if (version === gpuErrorVersion && checkGpuFrames) {
+            checkGpuFrames = false;
+            playMark('graphics recovered', { recoveredAfter, ...graphicsContext() });
+          }
+        }
+      });
+    } else if (drew && (checkGpuFrames || gpuChecks > 0)) {
+      failedDraws = 0;
+      gpuCheckGeneration++;
+    }
   }
 };
 
