@@ -32,6 +32,9 @@ export function sparkleAxe(
       intensity,
       shrink: 0.85,
       fade: 0.65,
+      shape: 'glint',
+      rotation: side * 0.15,
+      spin: side * 2,
     });
   }
 }
