@@ -3,19 +3,10 @@ import { TUNABLES } from '../sim/tune.ts';
 import { EXPOSURE_SPEC } from '../render/exposure-tuning.ts';
 import { FEEL_SPRING_SPEC } from '../player/feel-tuning.ts';
 
-export type NumberSpec = {
-  id: string;
-  type: 'number';
-  scope: 'local' | 'owner' | 'lockstep';
-  default: number;
-  min: number;
-  max: number;
-  integer: boolean;
-  units: string;
-  at: string;
-  owner: string;
-  meaning?: string;
-};
+import { validValue, type NumberSpec } from './spec.ts';
+export { validValue, type NumberSpec };
+/** Commands the dev tool and `npm run tune` both accept. */
+export const TUNE_COMMANDS = ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'] as const;
 export const CATALOG: readonly NumberSpec[] = [
   ...TUNABLES.map((t) => ({
     id: `haul.${t.key}`,
@@ -35,13 +26,3 @@ export const CATALOG: readonly NumberSpec[] = [
 ];
 const byId = new Map(CATALOG.map((spec) => [spec.id, spec]));
 export const tunableSpec = (id: unknown) => (typeof id === 'string' ? byId.get(id) : undefined);
-export function validValue(spec: NumberSpec, value: unknown): value is number {
-  return (
-    typeof value === 'number' &&
-    Number.isFinite(value) &&
-    !Object.is(value, -0) &&
-    (!spec.integer || Number.isSafeInteger(value)) &&
-    value >= spec.min &&
-    value <= spec.max
-  );
-}

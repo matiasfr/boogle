@@ -31,7 +31,6 @@ type Ride = {
   snaps: ReturnType<typeof createSnaps<RideSample>>;
   on: boolean;
   leaving: boolean; // they stopped sending `riding`: blending back to world presence
-  w: number; // the blend, 0 world presence .. 1 on the deck
   bodyOn: boolean; // preserve the collision proxy's existing world-distance guard
   bodyW: number;
   lastSeen: number; // existing presence sample time, in this page's clock
@@ -109,7 +108,6 @@ onRemotePresence((r, pr, time) => {
       snaps: createSnaps<RideSample>(),
       on: false,
       leaving: false,
-      w: 0,
       bodyOn: false,
       bodyW: 0,
       lastSeen: time,
@@ -191,7 +189,6 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
   if (ride.blendLeft === 0) ride.boarding = false;
   const u = ride.blendLeft / RIDE_BLEND_S;
   const ease = u * u * (3 - 2 * u);
-  ride.w = on ? 1 - ease : ease;
   r.target.set(at.x + ride.drawOffset.x * ease, at.y + ride.drawOffset.y * ease, at.z + ride.drawOffset.z * ease);
   r.yaw = yaw + ride.drawOffset.yaw * ease;
   if (ride.leaving && ride.bodyW === 0 && ride.blendLeft === 0) r.ride = null;

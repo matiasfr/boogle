@@ -4,7 +4,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { CATALOG } from '../src/tunables/catalog.ts';
+import { CATALOG, TUNE_COMMANDS } from '../src/tunables/catalog.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const argv = process.argv.slice(2);
@@ -32,10 +32,7 @@ function main() {
   const output = option('--out');
   const revision = option('--expect-revision');
   const [command = 'list', id, value, ...extra] = argv;
-  if (
-    !['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'].includes(command) ||
-    extra.length
-  )
+  if (!(TUNE_COMMANDS as readonly string[]).includes(command) || extra.length)
     throw new Error(
       'tune list|get|validate|set|status|snapshot|diff|reset-local [id] [JSON value] [--session|--broker]',
     );
