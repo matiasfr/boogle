@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-05).**
+> **Status: proposed, partly answered (owner, 2026-11-05).** Answered: crystal (3), paper before code, ability upgrades. Still open: route (1), double jump (2), upgrade kinds (4), first proof (5).
 
 # Progression: places and the upgrade tree
 
@@ -80,9 +80,14 @@ Variants differ in one thing: the material's first use is **demonstrated where y
 
 1. **Route:** three bold big areas with small stops between them? **Recommended: yes, Glasshouse (fibre) → Split Shell (cement) → Exhibition (steel), then the old island.** The alternative is the research's five-area route. Answer: ___
 2. **Double jump:** move it to a small stop later in the game? **Recommended: yes; the hook and glider stay on the starter island.** Answer: ___
-3. **Crystal:** keep your liked crystal pillars as one exceptional crossing, rather than a whole area? **Recommended: yes.** Answer: ___
+3. **Crystal:** keep your liked crystal pillars as one exceptional crossing, rather than a whole area? **Recommended: yes.** Answer: **yes, maybe a deep-sea crossing between certain islands** (owner, 5 November).
 4. **Upgrade kinds:** adopt F, C, A, M, R and E as the vocabulary? **Recommended: yes.** Answer: ___
 5. **First proof:** which material first? **Recommended: fibre at the Glasshouse. Two friends wrestle a loom spindle through the shutters, then a crane loads an even bigger bundle for them.** Answer: ___
+
+## Owner additions, 5 November
+
+- **Paper before code:** simulate as much of the progression and economy as possible first, especially the rail network if it's added later.
+- **Abilities get iterative upgrades:** double jump, glider and hook are each upgradable over the game. Examples: extra jumps, glider speed, a longer hook, and different kinds of hook. These are kind A or F upgrades spread across areas, not one-time awards.
 
 ## Parked
 
