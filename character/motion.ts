@@ -37,6 +37,7 @@ export type MotionRow = {
   bladeY: number | null;
   bladeZ: number | null;
   contactDistance: number | null;
+  axeVisible: boolean | null;
   handleBodyClearance: number | null;
   handleHeadClearance: number | null;
   handleBodyDistance: number | null;
@@ -427,7 +428,8 @@ export function createMotionCapture(canvas: HTMLCanvasElement, camera: THREE.Per
         handleHeadClearance: null,
         handleBodyDistance: null,
         handleHeadDistance: null,
-        ...(chop ? chopMeasurements(figure, chop.axe, chop.trunk) : {}),
+        axeVisible: chop ? chop.axe.visible : null,
+        ...(chop?.axe.visible ? chopMeasurements(figure, chop.axe, chop.trunk) : {}),
       };
       row.sampleMs = performance.now() - begin;
       const imageAt = performance.now();
@@ -485,7 +487,7 @@ export function createMotionCapture(canvas: HTMLCanvasElement, camera: THREE.Per
       lastWall = wall;
       lastTime = time;
       previousSpin = rotation;
-      if (wall >= report.duration * 2 + 0.1 && report.consecutive.length === 12) report.complete = true;
+      if (cycle >= 2 && report.consecutive.length === 12) report.complete = true;
     },
   };
 }

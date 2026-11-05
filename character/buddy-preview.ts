@@ -18,6 +18,11 @@ import { makeCarryModels, cargoCapacity, type CargoKind } from '../src/proto/pla
 import { makeBundlePreview } from '../src/render/haul-bundle.ts';
 import { makeAxes, type AxeTier } from '../src/proto/place/axe-models.ts';
 import { applyChopPose, CHOP_DURATION, CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
+import { sparkleAxe } from '../src/proto/place/axe-sparkle.ts';
+import type { Particle } from '../src/render/particle-pool.ts';
+// Inspection-only lead-in and gap expose both production visibility edges.
+export const CHOP_PREVIEW_LEAD = 0.2;
+export const CHOP_PREVIEW_DURATION = CHOP_PREVIEW_LEAD + CHOP_DURATION + 0.3;
 type WornPreview = GearState & {
   cargo: CargoKind;
   amount: number;
@@ -27,6 +32,8 @@ type WornPreview = GearState & {
   chop?: 'off' | 'bite' | 'rebound' | 'full';
   reducedMotion?: boolean;
   trunkDistance?: number;
+  emit?: (particle: Particle) => void;
+  sparkleIntensity?: () => number;
 };
 export const SAMPLE_FPS = 30;
 export type BuddyMode = 'raw' | 'played';
@@ -194,6 +201,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
           }
           if (worn.axe && worn.axe !== 'none') {
             axes = makeAxes();
+            axes.root.visible = false;
             axes.setTier(worn.axe);
             sockets.back.add(axes.root);
             axes.root.traverse((o) => {
@@ -223,14 +231,18 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         if (!axes) return;
         const response = worn?.chop;
         const chopping = response && response !== 'off';
+        const elapsed = (time % CHOP_PREVIEW_DURATION) - CHOP_PREVIEW_LEAD;
+        const wasVisible = axes.root.visible;
         applyChopPose(
           figure,
           axes.root,
-          chopping ? (time <= CHOP_DURATION ? time : time % CHOP_DURATION) : 0,
+          chopping ? (elapsed < 0 ? CHOP_DURATION + 1 : elapsed) : 0,
           response && response !== 'off' ? response : 'bite',
           { reducedMotion: worn?.reducedMotion ?? false, frame: sockets.back },
         );
-        axes.root.visible = true;
+        if (!chopping) axes.root.visible = true;
+        else if (worn?.emit)
+          sparkleAxe(axes.root, wasVisible, worn.reducedMotion ?? false, worn.emit, worn.sparkleIntensity?.() ?? 1);
       }
       function update(dt: number) {
         time += dt;
