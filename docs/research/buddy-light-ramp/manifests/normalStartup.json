@@ -1,0 +1,44 @@
+{
+  "id": "1793844220959-14504",
+  "operation": "look",
+  "args": [
+    "--query",
+    "proto=place&water=new&shot=pack",
+    "--action",
+    "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/dev/look/evals/buddy-ramp-audit.ts",
+    "--name",
+    "ramp-normal-final",
+    "--warm",
+    "2",
+    "--frames",
+    "2",
+    "--seconds",
+    ".1"
+  ],
+  "query": "",
+  "started": "2026-11-05T02:03:42.298Z",
+  "finished": "2026-11-05T02:03:54.925Z",
+  "status": 0,
+  "before": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "ffbcf1846329b37e20055a098486b49e26e8b0c9",
+    "dirty": true
+  },
+  "after": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "ffbcf1846329b37e20055a098486b49e26e8b0c9",
+    "dirty": true
+  },
+  "harness": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "fec92818f47a316a54e3186cf614f5db43e8671d",
+    "dirty": false
+  },
+  "harnessAfter": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "fec92818f47a316a54e3186cf614f5db43e8671d",
+    "dirty": false
+  },
+  "changedDuringRun": false,
+  "artifacts": ["output.txt", "ramp-normal-final-motion.png", "ramp-normal-final-still.png"]
+}

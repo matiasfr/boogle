@@ -1,4 +1,4 @@
-> **Status: building (approved by owner for question 1 only, 2026-11-04).**
+> **Status: answered (2026-11-04).** Owner chose Current over both Buddy light ramps. Ground boards and outline cost remain unanswered. Ramp code: tag `archive/buddy-light-ramp`. [Findings](../research/buddy-light-ramp.md).
 
 # Rendering options we never really tried
 

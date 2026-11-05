@@ -1,0 +1,57 @@
+{
+  "id": "1793843140663-94063",
+  "operation": "look",
+  "args": [
+    "--real",
+    "--eval",
+    "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/dev/look/evals/asset-stage.ts",
+    "--action",
+    "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/dev/look/evals/asset-motion.ts",
+    "--query",
+    "stage=asset%3Dbuddy%26t%3D0%26play%3D0%26reference%3D0%26bounds%3D0%26grid%3D0%26spin%3D0%26light%3Dshipped%26mode%3Dplayed%26cam%3D3%252C2%252C5%26target%3D0%252C0.9%252C0%26clip%3DJump_Start%26hat%3Dconductor%26dev%3D1%26ramp%3Dcurrent",
+    "--video",
+    "--warm",
+    "0",
+    "--frames",
+    "2",
+    "--seconds",
+    "0.2",
+    "--size",
+    "960x720",
+    "--name",
+    "ramp-current-jump",
+    "--question",
+    "Does the declared asset motion keep its attachment, surface clearance, clip continuity and axle stable?"
+  ],
+  "query": "",
+  "started": "2026-11-05T01:45:58.266Z",
+  "finished": "2026-11-05T01:46:07.352Z",
+  "status": 0,
+  "before": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "b53d177536fe9d343cb479069f98a7174212ad04",
+    "dirty": true
+  },
+  "after": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "b53d177536fe9d343cb479069f98a7174212ad04",
+    "dirty": true
+  },
+  "harness": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "fec92818f47a316a54e3186cf614f5db43e8671d",
+    "dirty": false
+  },
+  "harnessAfter": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "fec92818f47a316a54e3186cf614f5db43e8671d",
+    "dirty": false
+  },
+  "changedDuringRun": false,
+  "artifacts": [
+    "output.txt",
+    "ramp-current-jump-motion.png",
+    "ramp-current-jump-realtime.webm",
+    "ramp-current-jump-still.png"
+  ]
+}

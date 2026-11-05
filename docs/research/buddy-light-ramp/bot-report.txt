@@ -1,0 +1,233 @@
+place: 25 min of game in 5 min 1 s (5x)
+THE BOT DID NOT FINISH: see the last bot lines and the still.
+
+Beats (first time, then the wait before it; x how often):
+    1:28  +85 s      verb x19
+    1:28  +0 s       woke
+    1:31  +3 s       awake
+    1:31  +0 s       rung earned x5
+    1:37  +6 s       chops x18
+    1:37  +0 s       chop x18
+    1:40  +3 s       deposit x34
+    1:57  +16 s      stretches x9
+    1:57  +0 s       lay Station 1
+    2:05  +8 s       stretch laid x9
+    2:12  +7 s       crate opened x10
+    2:12  +0 s       gifts x10
+    3:12  +60 s      lay Station 2
+    7:31  +4 min 20 s great beam shouldered
+    7:57  +25 s      lay Station 3
+    8:14  +17 s      links x2
+    8:14  +0 s       path opened x2
+    8:26  +12 s      ability gained x3
+    8:26  +0 s       abilities x3
+    8:29  +3 s       second jumps x13
+    8:29  +0 s       double jumped
+    8:49  +21 s      secret found x2
+    8:49  +0 s       secrets x2
+    9:16  +27 s      resident noticed x6
+   10:27  +71 s      rumour overheard x2
+   10:31  +4 s       forge lit
+   10:31  +0 s       forge
+   10:31  +0 s       turning
+   10:39  +8 s       took rails x3
+   11:28  +48 s      lay Line 2, station 1
+   11:35  +7 s       depots
+   12:20  +45 s      lay Line 2, station 2
+   12:44  +24 s      secret at the hub x8
+   12:47  +3 s       hooks x9
+   12:47  +0 s       hook pulled
+   13:52  +65 s      lay Line 2, station 3
+   14:21  +30 s      gate opened x2
+   14:21  +0 s       gates x2
+   15:07  +46 s      lay Line 2, station 4
+   16:04  +57 s      sheet: before glide
+   16:10  +6 s       glides
+   16:10  +0 s       glide opened
+   18:48  +2 min 39 s lay Line 2, station 5
+   20:45  +1 min 57 s shortcuts
+   20:45  +0 s       shortcut
+   20:48  +3 s       boiler fitted
+   20:51  +3 s       trains
+   20:51  +0 s       train unlocked
+   20:56  +5 s       calls x7
+   20:56  +0 s       train called x7
+   21:09  +13 s      rides x5
+   21:09  +0 s       ride x5
+   21:29  +20 s      off x5
+   21:36  +7 s       missed train x3
+   23:17  +1 min 42 s lay The pier
+   23:39  +22 s      ends
+   23:39  +0 s       run ended
+   24:56  +77 s      entered building house
+   24:57  +1 s       talked to resident x2
+   25:00  +3 s       rumour heard
+   25:10  +10 s      entered building shop
+   25:14  +5 s       shop tried on
+   25:15  +1 s       shop kept
+   25:16  +2 s       shop swapped
+
+Objective, time on each:
+    0:06  78 s       Follow the path.
+    1:24  7 s        (nothing showing)
+    1:31  6 s        Chop an ordinary tree.
+    1:37  4 s        (nothing showing)
+    1:42  5 min 34 s (nothing showing)
+    7:16  14 s       Fell the great tree.
+    7:30  55 s       (nothing showing)
+    8:26  49 s       Walk home across your bridge.
+    9:15  10 min 2 s (nothing showing)
+   19:17  44 s       Head home.
+   20:02  12 s       (nothing showing)
+   20:13  34 s       Take it to the old train, at the camp.
+   20:48  3 s        (nothing showing)
+   20:51  5 s        Stand on a platform.
+   20:56  12 s       (nothing showing)
+   21:09  20 s       (nothing showing)
+   21:32  4 s        Stand on a platform.
+   21:36  2 min 4 s  (nothing showing)
+   23:39  1 min 40 s That was the whole test. Wander as long as you like.
+  (and 4 under 3 s: summary.txt has them all)
+
+Never happened (or isn't marked): found a crystal, did something together
+
+Time doing: walking 67%, idle 27%, riding 6%
+Stalls: stood still 26 times (8 min 57 s), walked into something 0 times (0 s), fell in water 0 times
+   16:45  still 1 min 49 s at (1157, -20)
+   18:43  still 41 s at (1165, -25)
+   23:11  still 32 s at (1372, -180)
+   21:36  still 31 s at (928, 26)
+    5:37  still 27 s at (974, -92)
+
+On screen (Show, don't tell): shown for, times, first at, the line. Cut what the world already shows:
+     25 min x1     0:07  "DEV dev-mw2w5dg7 Free cam Go to Report Tools Play · ` for mouse Off"  [dev-strip, at start]
+  3 min 57 s x28    1:37  "2 logs"  [haul-chip, at chop]
+  2 min 2 s x43    1:41  "$54"  [place-money-live, at deposit]
+        9 s x6    12:45  "F"  [place-key, at secret at the hub]
+        7 s x1    23:40  "Thanks for playing!"  [place-banner, at run ended]
+        5 s x1    20:45  "25 s! The long way round took you 79 s."  [place-banner, at shortcut]
+        4 s x1     8:14  "A way across!"  [place-banner, at path opened]
+        4 s x1    20:51  "TRAINS"  [place-banner, at train unlocked]
+        4 s x1    10:28  "They say The Boogler can walk through walls. Expensive ones."  [place-bark, at rumour overheard]
+        4 s x1    19:18  "Far Head!"  [place-banner, at lay Line 2, station 5]
+        4 s x1    25:15  "Yours. The receipt would cost more paper than the hat."  [place-bark, at shop kept]
+        3 s x1    25:11  "Everything on the floor is free. The prices are for looking at."  [place-bark, at entered building shop]
+        3 s x1    10:34  "Smell that? That's a lit forge."  [place-bark, at turning]
+        3 s x1    21:35  "My cousin says he's never once blinked."  [place-bark, at off]
+        3 s x1    25:01  "Oh! Come in. Mind the filing."  [place-bark, at rumour heard]
+        2 s x1    11:38  "Did you see the cart?"  [place-bark, at depots]
+        2 s x1    20:14  "They got to Far Head! Whoever they are!"  [place-bark, at lay Line 2, station 5]
+        2 s x2    21:30  "Trains! Actual trains!"  [place-bark, at off]
+        2 s x1    24:50  "Where's that pier going?"  [place-bark, at run ended]
+        1 s x1     3:32  "You got a very long scarf! Knitted by someone in the village, probably. E ▼"  [place-got, at lay Station 2]
+        1 s x1     8:27  "You got a second jump! Jump again in the air."  [place-got, at abilities]
+        1 s x1     8:51  "You got a lamplighter's cap! ★"  [place-got, at secrets]
+        1 s x1     9:17  "You can walk it! All the way!"  [place-bark, at resident noticed]
+        1 s x1     9:20  "You got a proper axe! E ▼"  [place-got, at resident noticed]
+        1 s x1     9:54  "You got a pack frame! E ▼"  [place-got, at resident noticed]
+        1 s x1    12:46  "You got the hook shot! Pull yourself to a ring. E ▼"  [place-got, at secret at the hub]
+        1 s x1    12:50  "You got a bucket! ★ E ▼"  [place-got, at hook pulled]
+        1 s x1    13:01  "You got a teacup! ★★★ E ▼"  [place-got, at hook pulled]
+        1 s x1    14:33  "You got work overalls! ★ E ▼"  [place-got, at gates]
+        1 s x1    16:36  "You got festival overalls! ★★★ E ▼"  [place-got, at glide opened]
+        1 s x1    22:49  "You got round glasses! ★"  [place-got, at missed train]
+        1 s x2    24:58  "Pip"  [place-talk-name, at talked to resident]
+        1 s x2    24:58  "E Answer ↑ ↓ Pick Esc Leave"  [talk-hints, at talked to resident]
+        1 s x1    24:59  "Pip Something sitting down. I've been practising. Who are the stamps for? The Boogler? Bye"  [place-talk, at talked to resident]
+        1 s x1    25:17  "You got a paper work hat! E ▼"  [place-got, at shop swapped]
+        1 s x1     1:33  "You got the multi-axe! Chops trees, breaks rocks, and more."  [place-got, at rung earned]
+        1 s x1     1:33  "You got the multi-axe! Chops trees, breaks rocks, and more. E ▼"  [place-got, at rung earned]
+        1 s x1     2:14  "You got a conductor's hat! Yours. It suits you."  [place-got, at gifts]
+        1 s x1     2:14  "You got a conductor's hat! Yours. It suits you. E ▼"  [place-got, at gifts]
+        1 s x1     3:32  "You got a very long scarf! Knitted by someone in the village, probably."  [place-got, at lay Station 2]
+        1 s x1     8:28  "You got a second jump! Jump again in the air. E ▼"  [place-got, at abilities]
+        1 s x1     8:52  "You got a lamplighter's cap! ★ E ▼"  [place-got, at secrets]
+        1 s x1     9:19  "You got a proper axe!"  [place-got, at resident noticed]
+        1 s x1     9:54  "You got a pack frame!"  [place-got, at resident noticed]
+        1 s x1    12:46  "You got the hook shot! Pull yourself to a ring."  [place-got, at secret at the hub]
+        1 s x1    12:50  "You got a bucket! ★"  [place-got, at hook pulled]
+        1 s x1    13:01  "You got a teacup! ★★★"  [place-got, at hook pulled]
+        1 s x1    14:32  "You got work overalls! ★"  [place-got, at gates]
+        1 s x1    16:02  "You got the glider! Open it in the air."  [place-got, at lay Line 2, station 4]
+        1 s x1    16:03  "You got the glider! Open it in the air. E ▼"  [place-got, at lay Line 2, station 4]
+        1 s x1    16:35  "You got festival overalls! ★★★"  [place-got, at glide opened]
+        1 s x1    22:50  "You got round glasses! ★ E ▼"  [place-got, at missed train]
+        1 s x1    24:57  "Pip I just moved in here for the jobs. Go on E Next Esc Leave"  [place-talk, at talked to resident]
+        1 s x1    24:58  "Pip Haven't f E Next Esc Leave"  [place-talk, at talked to resident]
+        1 s x1    24:58  "Haven't found one yet. But the desk's ready."  [place-talk-say, at talked to resident]
+        1 s x1    24:58  "What sort of job? Who are the stamps for? The Boogler? Bye"  [place-talk-opts, at talked to resident]
+        1 s x1    24:59  "Pip Som E Next Esc Leave"  [place-talk, at talked to resident]
+        1 s x1    25:00  "Pip The Boogler? E Next Esc Leave"  [place-talk, at rumour heard]
+        1 s x1    25:01  "The Boogler? A prophet, I reckon. Everything he points at costs more by morning."  [place-talk-say, at rumour heard]
+        1 s x1    25:01  "Who are the stamps for? The Boogler? Bye"  [place-talk-opts, at rumour heard]
+        1 s x1    25:16  "You got a paper work hat!"  [place-got, at shop kept]
+        1 s x1    25:19  "Button Welcome to Fine Prices. We've got the finest in the village. Go on E Next Esc Leave"  [place-talk, at shop swapped]
+
+Painted in the world (signs and boards; drawn, not necessarily seen):
+    0:01 x1    "Mushroom seeds"
+    0:03 x1    "JOBS"
+    0:03 x1    "none yet"
+    0:03 x1    "PIP"
+    0:03 x1    "OPEN TO OFFERS"
+    0:03 x1    "A stone,"
+    0:03 x1    "with its inside on the outside"
+    0:03 x1    "THE PLACE, SO FAR"
+    0:03 x1    "please do not lean on the sea"
+    0:03 x1    "MUSEUM"
+    0:03 x2    "FINE PRICES"
+    0:03 x1    "COMING SOON"
+    0:03 x1    "A MUSEUM"
+    0:03 x1    "ONCE THERE IS SOMETHING TO SHOW"
+    0:03 x1    "↑ TIMBER CAMP"
+    0:03 x1    "QUARRY, LATER ↓"
+    0:03 x1    "Caves"
+    0:03 x1    "Old mine"
+    0:03 x1    "Pond cave"
+    0:03 x1    "Cellar"
+    0:03 x1    "Old mine →"
+    0:03 x1    "← Old mine"
+    0:03 x1    "Pond →"
+    0:03 x1    "← Pond"
+    0:03 x1    "Cellar →"
+    0:03 x1    "← Cellar"
+    0:03 x1    "Way out →"
+    0:03 x1    "← Way out"
+    0:03 x1    "Old Boogle Mine"
+    0:03 x1    "Wine Cellar"
+    0:06 x1    "Boogle"
+    0:06 x3    "Track"
+    0:06 x2    "0 / 60 logs"
+    0:06 x3    "Helper hut"
+    0:06 x3    "Section 1"
+    0:06 x4    "0 / 60 logs · later"
+    1:31 x277  "Station 1"
+    1:31 x83   "logs 0/24"
+    2:05 x41   "logs 0/32  stone 0/8"
+    3:18 x42   "logs 0/40  great beam 0/1"
+    8:19 x58   "The forge"
+   10:35 x233  "logs 0/16  rails 0/6"
+   20:56 x67   "12 s"
+   22:54 x64   "The pier"
+   24:51 x2    "A paper work hat"
+   24:51 x10   "$54,480,000"
+   24:51 x9    "TODAY: $0"
+   24:51 x2    "A very large button"
+   24:51 x2    "A sandwich board"
+   24:51 x2    "A very tall hat"
+   24:51 x2    "A station master's whistle"
+   25:15 x1    "YOURS"
+
+The bot's last lines:
+  PLAY 1497.6 (+1.8) out of the house
+  PLAY 1501.1 (+3.5) in the shop
+  PLAY 1504.3 (+3.3) no way yet to (881, 29): as near as 6 m from here
+  PLAY 1507.3 (+2.9) put away a "You got"
+  PLAY 1508.5 (+1.3) put away a "You got"
+  PLAY 1510.1 (+1.6) button: Welcome to Fine Prices. We've got the finest in the village.
+  (all of them: 147 lines, bot.log)
+
+Errors: none
+
+Saved in /Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843575443-3997/run
+Still: /Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843575443-3997/run/end-still.png
+Saves: 77 (npm run look -- --at "<beat>")
