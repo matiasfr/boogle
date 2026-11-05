@@ -24,6 +24,7 @@ import { RAIL_SIZE, dustRing, logStackMesh, send, setStackLog } from './pieces.t
 import { besideLine, drawCar, makeCar, poseCarOnLine, snapCar, type Car } from './rail.ts';
 import { addFoot } from './sites.ts';
 import type { StationRun } from './stations.ts';
+import { makeProp } from './prop-kit.ts';
 
 // ---------------------------------------------------------------- the rack
 const RACK_LOGS = 48,
@@ -213,25 +214,7 @@ function poseOnRoad(c: Car, d: number) {
   else poseCarOnLine(c, L2.spec.line, d - L1_FROM, 1);
 }
 const cartLook = new THREE.Group();
-{
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(CART.hx * 2, 0.12, CART.hz * 2), flat('#a9794c'));
-  deck.position.y = CART.top - 0.06;
-  deck.castShadow = true;
-  cartLook.add(deck);
-  for (const sx of [-1, 1]) {
-    const side = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.32, CART.hz * 2), flat('#7f5630'));
-    side.position.set(sx * CART.hx, CART.top + 0.14, 0);
-    cartLook.add(side);
-    for (const sz of [-1, 1]) {
-      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.08, 10).rotateZ(Math.PI / 2), flat('#2c2e34'));
-      w.position.set(sx * 0.5, 0.2, sz * (CART.hz - 0.35));
-      cartLook.add(w);
-    }
-  }
-  const bar = new THREE.Mesh(new THREE.BoxGeometry(CART.hx * 2, 0.08, 0.08), flat('#c9a86a'));
-  bar.position.set(0, CART.top + 0.5, -CART.hz - 0.1);
-  cartLook.add(bar);
-}
+cartLook.add(makeProp('cart'));
 const cartLogs = logStackMesh(CART.load);
 cartLogs.removeFromParent();
 cartLook.add(cartLogs);
