@@ -23,7 +23,7 @@
   continue after reveal. This is a bounded wait, not a guarantee of stall-free startup on every device.
   `?dpr=fixed`
   keeps the render resolution at full (for testing). Light is linear HDR through Neutral tone mapping (exposure 1.0, up to 1.12 at night),
-  with 4x MSAA and PCF sun shadows (2048 px, 1024 on touch). The render resolution follows the frame rate: it starts where this
+  with 4x MSAA on desktop, none on touch, and PCF sun shadows (2048 px, 1024 on touch). The render resolution follows the frame rate: it starts where this
   device last settled (0.8x on a first touch visit), drops in 10 % steps to 0.6x after 2 s of slow frames and climbs back
   after 5 s at the display's cadence. Slow is over 18.5 ms, or over 1.08x the cadence the browser delivers frames at, a
   cadence that stops at 34 ms (Safari's 30 Hz in Low Power Mode is a cap, not a slow GPU; anything slower is the

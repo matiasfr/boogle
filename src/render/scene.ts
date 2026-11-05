@@ -12,7 +12,8 @@ export const canvas = document.getElementById('view') as HTMLCanvasElement; // i
 // second path (src/render/README.md). A browser without WebGPU gets a note in the lobby instead of the island.
 // render() throws until init() resolves, so main.ts starts the game from rendererReady.
 const params = new URLSearchParams(location.search);
-const msaa = graphicsInitial('msaa', [true, false], true) === true;
+const msaaDefault = !isTouch; // Owner call, 4 November: touch devices skip scene MSAA; desktop keeps 4x.
+const msaa = graphicsInitial('msaa', [true, false], msaaDefault) === true;
 export const renderer = new THREE.WebGPURenderer({
   canvas,
   antialias: msaa,
@@ -122,7 +123,7 @@ registerGraphics({
   id: 'msaa',
   label: 'Scene MSAA',
   choices: [true, false],
-  default: true,
+  default: msaaDefault,
   applyMode: 'reload',
   cost: 'multisample rendering',
   skips: 'Off uses one scene sample instead of four; caustics MSAA is independent.',
