@@ -56,8 +56,9 @@ def part(name, color, build):
 
 def power_paint(bm):
     # Covers the unchanged 1.6 x 3 x 1.75 m rideable block; no boiler or cab.
-    box(bm, 0, 1.15, -GAP, 1.6, 1.2, 3)
-    box(bm, 0, 1.61, -GAP + 1.45, 1.3, 0.28, 0.16)
+    # Body ends at 1.71; the trim alone supplies the unchanged 1.75 m standing top.
+    box(bm, 0, 1.13, -GAP, 1.6, 1.16, 3)
+    box(bm, 0, 1.57, -GAP + 1.45, 1.3, 0.28, 0.16)
 
 
 def power_iron(bm):
