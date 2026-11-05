@@ -5,6 +5,8 @@ import { flat } from '../flat.ts';
 import { LOOK, groundMaterial, spireRock } from './look.ts';
 import { scene } from '../../render/scene.ts';
 import { registerWaterReceiver } from '../../render/water/receivers.ts';
+import { shoreApronHeight } from '../../render/water/shore-providers.ts';
+import { SEA } from '../../constants.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
 import { smoothstep } from '../../math.ts';
@@ -18,8 +20,14 @@ export { H, PATH_SAMPLES, insidePlace };
 const FLAT = (color: string) => flat(color);
 
 function buildMesh() {
-  const pos = new Float32Array(NX * NZ * 3),
-    col = new Float32Array(NX * NZ * 3);
+  // Continue the visible bed into the atlas's offshore apron. Ending the opaque mesh at the shallow
+  // grid edge made refraction switch straight from sand to sky, even though bathymetry was continuous.
+  // Six rings follow bathymetry; four more sink below optical visibility (blue transmission < 0.05%).
+  // All share the terrain's draw/material; the authored grid and its collider stay untouched.
+  const rings = 10,
+    perimeter = 2 * (NX + NZ - 2);
+  const pos = new Float32Array((NX * NZ + rings * perimeter) * 3),
+    col = new Float32Array(pos.length);
   const c = new THREE.Color();
   const SAND = new THREE.Color('#e8d39a'),
     GRASS = new THREE.Color(LOOK.ground ? '#6c9a42' : '#79b84a'),
@@ -56,6 +64,36 @@ function buildMesh() {
         d = at(i + 1, j + 1);
       idx.push(a, c0, b, b, c0, d);
     }
+  const edge: number[] = [];
+  for (let i = 0; i < NX - 1; i++) edge.push(at(i, 0));
+  for (let j = 0; j < NZ - 1; j++) edge.push(at(NX - 1, j));
+  for (let i = NX - 1; i > 0; i--) edge.push(at(i, NZ - 1));
+  for (let j = NZ - 1; j > 0; j--) edge.push(at(0, j));
+  for (let ring = 0; ring < rings; ring++) {
+    const reach = ring < 6 ? ((ring + 1) / 6) * 160 : 160 + (ring - 5) * 40;
+    for (let n = 0; n < perimeter; n++) {
+      const source = edge[n]!,
+        i = source % NX,
+        j = Math.floor(source / NX);
+      const dx = i === 0 ? -reach : i === NX - 1 ? reach : 0;
+      const dz = j === 0 ? -reach : j === NZ - 1 ? reach : 0;
+      const k = NX * NZ + ring * perimeter + n;
+      pos.set(
+        [
+          cellX(i) + ORIGIN.x + dx,
+          SEA + shoreApronHeight(heights[source]! - SEA, Math.hypot(dx, dz), 1024) - 180 * smoothstep(160, 320, reach),
+          cellZ(j) + ORIGIN.z + dz,
+        ],
+        k * 3,
+      );
+      col.set(col.subarray(source * 3, source * 3 + 3), k * 3);
+      const next = (n + 1) % perimeter;
+      const a = ring === 0 ? source : k - perimeter;
+      const b = ring === 0 ? edge[next]! : NX * NZ + (ring - 1) * perimeter + next;
+      const d = NX * NZ + ring * perimeter + next;
+      idx.push(a, b, k, b, d, k);
+    }
+  }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));

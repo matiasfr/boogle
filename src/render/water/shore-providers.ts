@@ -130,6 +130,12 @@ function edgeCheck(ps: readonly ShoreProvider[]) {
 
 // A verified underwater edge may continue into an explicit water apron. This is separate from bed validity.
 // Its depth reaches OPEN_BED before the resident region ends, so no clamped edge texel fabricates a square coastline.
+export function shoreApronHeight(edgeHeight: number, distance: number, extent: number) {
+  const t = clamp(distance / ((extent / SHORE_CORE_SIZE) * (SHORE_HALO - 4)), 0, 1);
+  const fade = t * t * (3 - 2 * t);
+  return edgeHeight * (1 - fade) + OPEN_BED * fade;
+}
+
 function bedForBake(ps: readonly ShoreProvider[], x: number, z: number, level: number) {
   for (const p of ps) {
     if (!within(p.bounds, x, z)) continue;
@@ -146,9 +152,8 @@ function bedForBake(ps: readonly ShoreProvider[], x: number, z: number, level: n
     if (d >= nearest) continue;
     const bed = p.bedAt(ex, ez);
     if (!bed.valid || bed.height > level) continue;
-    const t = clamp(d / ((p.extent / SHORE_CORE_SIZE) * (SHORE_HALO - 4)), 0, 1);
     nearest = d;
-    height = (bed.height - level) * (1 - t * t * (3 - 2 * t)) + OPEN_BED * t * t * (3 - 2 * t);
+    height = shoreApronHeight(bed.height - level, d, p.extent);
   }
   return height;
 }

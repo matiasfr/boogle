@@ -25,6 +25,14 @@ once behind loading at `tod=0.24`; Neutral remains the default output after unde
 Surface swimming and automatic high-fall plunges are unchanged; there is no new input or breath mechanic.
 Desktop remains high and coarse-pointer/mobile quality remains 0.6 world resolution. Camera and fog ranges stay.
 
+Place's visible seabed continues beyond its rectangular terrain grid along the shore atlas's smooth offshore
+apron. A deeper render-only tail ends at 240 m below sea level, where even blue seabed transmission is below
+0.05%, so refraction cannot expose another bright rectangle. The extension shares the terrain draw and material;
+the authored shore, collider and bed-validity/query bounds are unchanged. Near-shore turquoise, Neutral output
+and the frozen sky retain their existing parameters.
+Submerged receivers skip swash samples below its existing −0.3 m cutoff and shore/caustic samples past
+the existing 24 m caustic fade; wetness and absorption still apply, with no new draw or texture pass.
+
 The bounded GPU query contract and cave composition are described in [island water](island.md); the force
 values remain in [player swimming](player.md#swim). Research under `docs/research/` is historical evidence,
 including obsolete demo addresses and paths. The original demo design/options remain in `archive/water`.
