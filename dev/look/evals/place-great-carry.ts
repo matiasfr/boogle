@@ -113,11 +113,90 @@ async function run() {
       check('walk opening path', await makeBot().walk(path[n]![0]! + place.ORIGIN.x, path[n]![1]!, 1.8));
   }
   await barrier('opening path');
+  if (!saved) {
+    if (authority) place.wake();
+    await until(() => place.job.awake && place.run.mode === 'idle', 'Station 1 active');
+    if (authority) {
+      tree.applyTreeHarvest(tree.greatTree, {
+        work: 12,
+        issued: 0,
+        ceiling: 0,
+        revision: 1,
+        fell: true,
+        fallYaw: 0,
+        collapsed: false,
+      });
+      net.room!.send({
+        t: COOP_IDENTITY,
+        k: 'snap',
+        snap: { gen: coop.debug().gen, shared: captureShared() },
+        force: true,
+      });
+    }
+    await until(() => tree.trunkDown(), 'tree felled during Station 1');
+    const early = tree.trunkAt();
+    await put(early.x + 2.5, early.z);
+    await wait(700);
+    check('Station 1 has no trunk prompt', hands.interactTarget()?.verb !== 'Shoulder the trunk');
+    const { save, restore } = (await import(
+      '/src/proto/place/job.ts' as string
+    )) as typeof import('../../../src/proto/place/job.ts');
+    const { bigCargo } = (await import(
+      '/src/proto/place/big-cargo.ts' as string
+    )) as typeof import('../../../src/proto/place/big-cargo.ts');
+    const { triggerAction } = (await import(
+      '/src/player/controls.ts' as string
+    )) as typeof import('../../../src/player/controls.ts');
+    // Two old saves have each adopted their personal shoulder at revision zero.
+    save();
+    const key = Object.keys(localStorage).find((k) => k.startsWith('boogle-place-coop-v2:'))!;
+    const old = JSON.parse(localStorage.getItem(key)!);
+    old.shared.bigCargoV1.beam = { revision: 0, holder: net.myPeer, ground: null };
+    old.shared.felled.trunk = true;
+    old.personal.back = { logs: 0, rails: 0, stone: 0, big: 'beam' };
+    localStorage.setItem(key, JSON.stringify(old));
+    check('legacy adopted shoulder loads', restore() && tree.back.big === 'beam');
+    await barrier('legacy shoulders loaded');
+    if (authority)
+      net.room!.send({
+        t: COOP_IDENTITY,
+        k: 'snap',
+        snap: { gen: coop.debug().gen, shared: captureShared() },
+        force: true,
+      });
+    await until(() => authority || tree.back.big === null, 'legacy duplicate shoulder cleared');
+    check(
+      'one authoritative legacy shoulder at revision zero',
+      bigCargo.beam.revision === 0 && (authority ? tree.back.big === 'beam' : tree.back.big === null),
+    );
+    await barrier('legacy shoulder reconciled');
+    if (authority) {
+      teleport(me.body!, place.ORIGIN.x + 1000, 5, 1000);
+      triggerAction('place-drop', 'down');
+      await put(early.x + 2.5, early.z);
+    }
+    await until(() => tree.back.big === null && tree.trunkDown(), 'early legacy Drop frees both backs');
+    check('legacy room can carry logs again', tree.back.room() > 0);
+    await barrier('legacy room recovered');
+    tree.back.logs = 2;
+    coop.big('beam');
+    await until(() => !coop.bigBusy(), 'early request rejected');
+    check(
+      'authority rejects early pickup without spending logs',
+      tree.back.big === null && tree.back.logs === 2 && tree.trunkDown(),
+    );
+    await barrier('early pickup refused');
+    tree.back.logs = 0;
+  }
   while (!saved && place.lines[0].stage < 2) {
     const stage = place.lines[0].stage;
     if (authority) coop.skip('delivery', place.skipDelivery);
     await until(() => place.lines[0].stage > stage, 'earlier station laid');
     await barrier(`stage ${stage}`);
+    if (place.lines[0].stage === 1) {
+      await wait(400);
+      check('Station 2 has no trunk prompt', hands.interactTarget()?.verb !== 'Shoulder the trunk');
+    }
   }
   if (!saved) tree.back.logs = tree.back.rails = tree.back.stone = tree.back.incoming = 0;
   const st = place.lines[0].stations[2];
@@ -253,6 +332,15 @@ async function run() {
     save();
     check('save restores ground pose', restore() && JSON.stringify(bigCargo.beam.ground) === JSON.stringify(ground));
     await barrier('ground saved');
+    await wait(1500);
+    check('reachable dropped beam survives periodic recovery', !!bigCargo.beam.ground);
+    if (authority) bigCargo.beam.ground = { ...ground, x: place.ORIGIN.x + 1000, z: 1000 };
+    await until(() => bigCargo.beam.ground === null, 'displaced beam returned on both peers');
+    check(
+      'unreachable ground beam returns once to pickup',
+      tree.trunkDown() && tree.trunkAt().distanceTo(start) < 0.01,
+    );
+    await barrier('displaced beam recovered');
     if (!authority) coop.big('beam');
     await until(() => bigCargo.beam.holder !== null && !coop.bigBusy(), 'follower claim accepted');
     if (!authority) tree.putDownBig(); // lost local receipt/reservation across an election
@@ -319,8 +407,18 @@ async function run() {
     const b = { ...bigCargo.boiler.ground! };
     save();
     check('boiler ground survives restore', restore() && JSON.stringify(bigCargo.boiler.ground) === JSON.stringify(b));
+    await barrier('boiler ground saved');
+    await wait(1500);
+    check('reachable dropped boiler survives periodic recovery', !!bigCargo.boiler.ground);
+    if (authority) place.job.boiler = 2; // the ground prop disappeared without an accepted holder
+    await until(
+      () => bigCargo.boiler.ground === null && place.job.boiler === 1,
+      'missing boiler returned on both peers',
+    );
+    await barrier('missing boiler recovered');
     if (!carrier) {
-      await put(b.x + 1.5, b.z);
+      const source = place.boilerAt();
+      await put(source.x + 1.5, source.z);
       await press('Shoulder the boiler');
     }
     await until(() => bigCargo.boiler.holder !== null, 'partner reclaimed boiler');
