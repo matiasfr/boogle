@@ -10,7 +10,7 @@ export type LookLayerContext = {
   setFog(transform?: (base: N, position: N) => N): void;
 };
 export const LAYER_LIMITS = {
-  shade: [0, 3],
+  shade: [0, 8],
   dither: [0, 1],
   haze: [0, 0.06],
   hazeCap: [0, 0.9],
