@@ -77,7 +77,7 @@ export type HouseSpec = {
   post: string;
   roof: string;
   /** A gap in the +z wall. */
-  door?: { w: number; rows: number };
+  door?: { w: number; rows: number; x?: number };
   /** The forge's stands open. */
   closed?: boolean;
   windows?: string;
@@ -101,11 +101,12 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
   for (let k = 0; k <= postsZ; k++) {
     const px = -w / 2 + (k * w) / postsZ;
     pieces.push(part(px, floor, -d / 2, 0.42, high - floor, 0.42, post));
-    if (!s.door || Math.abs(px) > s.door.w / 2) pieces.push(part(px, floor, d / 2, 0.42, high - floor, 0.42, post));
+    if (!s.door || Math.abs(px - (s.door.x ?? 0)) > s.door.w / 2)
+      pieces.push(part(px, floor, d / 2, 0.42, high - floor, 0.42, post));
   }
   if (s.door)
     for (const sx of [-1, 1])
-      pieces.push(part((sx * s.door.w) / 2 + sx * 0.2, floor, d / 2, 0.42, high - floor, 0.42, post));
+      pieces.push(part((s.door.x ?? 0) + (sx * s.door.w) / 2 + sx * 0.2, floor, d / 2, 0.42, high - floor, 0.42, post));
   for (let k = 1; k < postsX; k++)
     for (const sx of [-1, 1])
       pieces.push(part((sx * w) / 2, floor, -d / 2 + (k * d) / postsX, 0.42, high - floor, 0.42, post));
@@ -133,8 +134,11 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
     }
     const gap = s.door && row < s.door.rows ? s.door.w : 0;
     if (gap) {
-      const side = (w - gap) / 2;
-      for (const sx of [-1, 1]) pieces.push(part((sx * (gap + side)) / 2, yy, d / 2, side, h, 0.18, wall));
+      for (const sx of [-1, 1]) {
+        const edge = (s.door?.x ?? 0) + (sx * gap) / 2;
+        const side = w / 2 - sx * edge;
+        pieces.push(part(edge + (sx * side) / 2, yy, d / 2, side, h, 0.18, wall));
+      }
     } else
       for (let k = 0; k < boardsW; k++) {
         const bw = w / boardsW;
@@ -153,7 +157,7 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
     }
   }
   if (s.door && s.closed !== false)
-    pieces.push(part(0, floor, d / 2 - 0.02, s.door.w, s.door.rows * h, 0.1, '#5c3a20'));
+    pieces.push(part(s.door.x ?? 0, floor, d / 2 - 0.02, s.door.w, s.door.rows * h, 0.1, '#5c3a20'));
   const WALLS = pieces.length;
   // Gable ends, then boards up each slope, then the ridge.
   const eave = d / 2 + 0.5,
