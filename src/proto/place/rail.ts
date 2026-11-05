@@ -21,7 +21,7 @@ import {
   teleport,
   type Body,
 } from '../../physics/engine.ts';
-import { NOT_SCENERY, groundMat } from '../../physics/physics.ts';
+import { NOT_SCENERY, GROUP, groundMat } from '../../physics/physics.ts';
 import {
   carry,
   CARRY,
@@ -40,7 +40,8 @@ import { ORIGIN, STUB, TUNE, lineAt, railY, type Line, type LinePoint, type Line
 import { RAIL_SIZE, dropSet, dustRing, logStackMesh, setStackLog, type DropSet } from './pieces.ts';
 import { flat } from '../flat.ts';
 import { LOOK, STEEL, paint, rustTrainU, rustU, softGlow } from './look.ts';
-import { merged } from './gifts.ts';
+import { merged } from './part-geometry.ts';
+import type { OwnedView } from '../../render/owned-view.ts';
 import { kitBatch, lookTrack, machineLook, trainLook } from './look-kit.ts';
 import { solidTrainLoad } from './train-load.ts';
 import { registerSeat } from './seat.ts';
@@ -88,6 +89,7 @@ type PieceKind = 'sleeper' | 'plank' | 'rail' | 'cap' | 'stringer' | 'leg' | 'br
 export function buildTrack(
   spec: LineSpec,
   thudAt: (k: number, kind: PieceKind, x: number, y: number, z: number) => void,
+  owner?: OwnedView,
 ) {
   const { line, dir } = spec;
   const u = (s: number) => (dir > 0 ? s : line.len - s);
@@ -222,11 +224,16 @@ export function buildTrack(
   }
 
   const set = lookTrack(
-    dropSet(boxes, (k) => {
-      const b = boxes[k]!;
-      thudAt(k, kinds[k]!, b.x, b.y, b.z);
-    }),
+    dropSet(
+      boxes,
+      (k) => {
+        const b = boxes[k]!;
+        thudAt(k, kinds[k]!, b.x, b.y, b.z);
+      },
+      owner,
+    ),
     kinds,
+    owner,
   );
   const order = boxes
     .map((_, k) => k)
@@ -253,7 +260,7 @@ export function buildTrack(
     solids.push({
       s: (s + s1) / 2,
       u: stubbed(s + 1) ? -Infinity : u(s + 1),
-      add: () => slab(ax, az, cx, cz, ya, yc, wide ? DECK_W : BED_W),
+      add: () => slab(ax, az, cx, cz, ya, yc, wide ? DECK_W : BED_W, owner),
       on: null,
     });
   }
@@ -265,7 +272,13 @@ export function buildTrack(
           ? () => registerWaterContact({ x: l.x, z: l.z, radius: Math.SQRT2 * 0.25, top: l.top })
           : undefined,
       add: () =>
-        addStatic({ kind: 'box', hx: 0.25, hy: (l.top - l.g) / 2, hz: 0.25 }, { x: l.x, y: (l.top + l.g) / 2, z: l.z }),
+        addStatic(
+          { kind: 'box', hx: 0.25, hy: (l.top - l.g) / 2, hz: 0.25 },
+          { x: l.x, y: (l.top + l.g) / 2, z: l.z },
+          undefined,
+          GROUP.SCENERY,
+          owner,
+        ),
       on: null,
     });
   solids.sort((p, r) => p.u - r.u);
@@ -294,12 +307,16 @@ export function buildTrack(
       boxes.forEach((_, k) => set.snap(k, pre[k]! || t.us[k]! <= to));
       t.next = order.findIndex((k) => t.us[k]! > to);
       if (t.next < 0) t.next = order.length;
-      for (const so of solids) if (so.on) removeBodies(so);
+      for (const so of solids) if (so.on) removeBodies(so, owner);
       t.nextSolid = 0;
       growSolids(t, to);
     },
     update: (dt) => set.update(dt),
   };
+  owner?.cleanup(() => {
+    for (const solid of solids) removeBodies(solid, owner);
+    set.clear();
+  });
   return t;
 }
 function growSolids(t: Track, to: number) {
@@ -309,10 +326,14 @@ function growSolids(t: Track, to: number) {
     so.removeWater = so.water?.();
   }
 }
-function removeBodies(so: Solid) {
+function removeBodies(so: Solid, owner?: OwnedView) {
   so.removeWater?.();
   so.removeWater = undefined;
-  for (const b of [so.on].flat()) if (b) removeBody(b);
+  for (const b of [so.on].flat())
+    if (b) {
+      if (owner) owner.removeBody(b);
+      else removeBody(b);
+    }
   so.on = null;
 }
 
@@ -375,6 +396,7 @@ export function makeCar(
   rock: THREE.Object3D,
   before: () => void,
   extra: Parameters<typeof createBody>[0],
+  owner?: OwnedView,
 ) {
   const hy = (spec.top - BOTTOM) / 2;
   const body = createBody({
@@ -385,11 +407,13 @@ export function makeCar(
     shapes: [{ kind: 'box', hx: spec.hx, hy, hz: spec.hz }, ...(extra?.shapes ?? [])],
   });
   addBody(body);
+  owner?.body(body);
   const mesh = new THREE.Group();
   rock.position.y = -(BOTTOM + hy);
   mesh.add(rock);
   mesh.visible = false;
-  scene.add(mesh);
+  if (owner) owner.add(mesh);
+  else scene.add(mesh);
   const car: Car = {
     spec,
     hy,
@@ -414,8 +438,12 @@ export function makeCar(
       },
     },
   };
-  registerPlatform(car.platform);
+  const unregister = registerPlatform(car.platform);
   decks.set(car.platform, car);
+  owner?.cleanup(() => {
+    unregister();
+    decks.delete(car.platform);
+  });
   return car;
 }
 function moveCar(c: Car, dt: number) {
@@ -488,30 +516,41 @@ const RACK_RAILS = 12,
 const F = 2.4, // m from the head (where pieces land) back to the flatbed's middle
   GAP = 3.7; // m between the cars' middles
 export type Machine = ReturnType<typeof buildMachine>;
-export function buildMachine() {
-  const kitLook = LOOK.kit ? machineLook() : null;
-  const look = kitLook ?? wagonLook(1, false);
+export function buildMachine(owner?: OwnedView) {
+  const kitLook = LOOK.kit ? machineLook(owner) : null;
+  const look = kitLook ?? wagonLook(1, false, owner);
   const flatRock = look.cars[1]!,
     locoRock = look.cars[0]!;
   const pose = { line: null as Line | null, s: 0, sign: 1 };
   const onDeck = TRAILER.top;
   const step = { hx: 1.4, hz: 0.3, h: 0.16, z: -1.9 };
-  const flatbed = makeCar(TRAILER, flatRock, () => m.onStep(FIXED), {
-    shapes: [
-      {
-        kind: 'box',
-        hx: step.hx,
-        hy: step.h / 2,
-        hz: step.hz,
-        offset: { x: 0, y: (TRAILER.top - BOTTOM) / 2 - step.h / 2, z: step.z },
-      },
-    ],
-  });
+  const flatbed = makeCar(
+    TRAILER,
+    flatRock,
+    () => m.onStep(FIXED),
+    {
+      shapes: [
+        {
+          kind: 'box',
+          hx: step.hx,
+          hy: step.h / 2,
+          hz: step.hz,
+          offset: { x: 0, y: (TRAILER.top - BOTTOM) / 2 - step.h / 2, z: step.z },
+        },
+      ],
+    },
+    owner,
+  );
   flatbed.platform.hx = step.hx;
   flatbed.platform.hz = Math.abs(step.z) + step.hz;
   flatbed.supportAt = (_x, z) =>
     z < -TRAILER.hz ? { x: 0, z: step.z, hx: step.hx, hz: step.hz } : { x: 0, z: 0, hx: TRAILER.hx, hz: TRAILER.hz };
-  const loco = makeCar(LOCO, locoRock, () => {}, {});
+  const loco = makeCar(LOCO, locoRock, () => {}, {}, owner);
+  if (owner) {
+    flatbed.platform.id = 'railway:T1:flatbed';
+    loco.platform.id = 'railway:T1:loco';
+    flatbed.platform.shared = loco.platform.shared = true;
+  }
   const box3 = (w: number, h: number, d: number, color: string, x: number, y: number, z: number, rx = 0) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color, 0.8));
     m.position.set(x, y, z);
@@ -537,7 +576,7 @@ export function buildMachine() {
 
   const railGeo = new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z);
   const rackRails = LOOK.kit
-    ? kitBatch('rail', STEEL, RACK_RAILS)
+    ? kitBatch('rail', STEEL, RACK_RAILS, owner)
     : new THREE.InstancedMesh(railGeo, LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6), RACK_RAILS);
   rackRails.castShadow = true;
   rackRails.frustumCulled = false;
@@ -551,7 +590,7 @@ export function buildMachine() {
     rackRails.setMatrixAt(k, o.matrix);
   }
   flatRock.add(rackRails);
-  const cradle = logStackMesh(CRADLE_LOGS);
+  const cradle = logStackMesh(CRADLE_LOGS, owner);
   cradle.removeFromParent();
   flatRock.add(cradle);
   const cradleAt = new THREE.Vector3(),
@@ -695,13 +734,13 @@ export function buildMachine() {
       snapCar(flatbed);
       snapCar(loco);
     },
-    wake(on: boolean) {
+    wake(on: boolean, silent = false) {
       st.awake = on;
       st.shudder = 0;
       rustU.value = on ? 0 : 1;
       setLamps(on);
       fireOn = on ? 1 : 0;
-      if (on) for (let k = 0; k < 3; k++) puff(1);
+      if (on && !silent) for (let k = 0; k < 3; k++) puff(1);
     },
     /** For the waking: how hard it shakes (0 stops), how rusty (1) or clean (0), the fire, the lamps. */
     shudder: (a: number) => void (st.shudder = a),
@@ -732,51 +771,59 @@ export function buildMachine() {
     F,
     GAP,
   };
-  onFrame(
-    ({ dt, now }) => {
-      const alpha = stepAlpha();
-      drawCar(flatbed, alpha);
-      drawCar(loco, alpha);
-      fire.emissiveIntensity = fireOn * (1 + Math.sin(now * 0.0025) * 0.05 + Math.sin(now * 0.0047) * 0.03);
-      if (st.shudder > 0 || st.was) {
-        st.was = st.shudder > 0;
-        for (const [rock, phase] of [
-          [flatRock, 0],
-          [locoRock, 1.3],
-        ] as const) {
-          rock.rotation.z = Math.sin(now * 0.073 + phase) * 0.018 * st.shudder;
-          rock.position.x = Math.sin(now * 0.097 + phase) * 0.035 * st.shudder;
-        }
+  const animate = ({ dt, now }: { dt: number; now: number }) => {
+    const alpha = stepAlpha();
+    drawCar(flatbed, alpha);
+    drawCar(loco, alpha);
+    fire.emissiveIntensity = fireOn * (1 + Math.sin(now * 0.0025) * 0.05 + Math.sin(now * 0.0047) * 0.03);
+    if (st.shudder > 0 || st.was) {
+      st.was = st.shudder > 0;
+      for (const [rock, phase] of [
+        [flatRock, 0],
+        [locoRock, 1.3],
+      ] as const) {
+        rock.rotation.z = Math.sin(now * 0.073 + phase) * 0.018 * st.shudder;
+        rock.position.x = Math.sin(now * 0.097 + phase) * 0.035 * st.shudder;
       }
-      if (st.bump > 0) {
-        st.bump = Math.max(0, st.bump - dt * 7);
-        flatRock.position.y = flatY - st.bump * 0.04;
-        flatbed.mesh.scale.set(1 + st.bump * 0.02, 1 - st.bump * 0.04, 1 + st.bump * 0.02);
+    }
+    if (st.bump > 0) {
+      st.bump = Math.max(0, st.bump - dt * 7);
+      flatRock.position.y = flatY - st.bump * 0.04;
+      flatbed.mesh.scale.set(1 + st.bump * 0.02, 1 - st.bump * 0.04, 1 + st.bump * 0.02);
+    }
+    if (st.awake) {
+      st.idle += dt;
+      if (st.idle > 1.4) {
+        st.idle = 0;
+        look.chimneyTop.getWorldPosition(v);
+        emit({
+          x: v.x,
+          y: v.y,
+          z: v.z,
+          vx: 0.2,
+          vy: 1.6,
+          vz: 0,
+          life: 2,
+          size: 0.35,
+          color: smoke,
+          alpha: 0.4,
+          grow: [1, 3],
+          fade: 0.6,
+        });
       }
-      if (st.awake) {
-        st.idle += dt;
-        if (st.idle > 1.4) {
-          st.idle = 0;
-          look.chimneyTop.getWorldPosition(v);
-          emit({
-            x: v.x,
-            y: v.y,
-            z: v.z,
-            vx: 0.2,
-            vy: 1.6,
-            vz: 0,
-            life: 2,
-            size: 0.35,
-            color: smoke,
-            alpha: 0.4,
-            grow: [1, 3],
-            fade: 0.6,
-          });
-        }
-      }
-    },
-    { phase: 'update', order: 7 },
-  );
+    }
+  };
+  if (owner) {
+    // Revisit the completed groups: some attached details were made after makeCar mounted their roots.
+    owner.add(flatbed.mesh, loco.mesh);
+    owner.animate(animate, 7);
+    owner.cleanup(() => {
+      glass.dispose();
+      shine.dispose();
+      beamMat.dispose();
+      fire.dispose();
+    });
+  } else onFrame(animate, { phase: 'update', order: 7 });
   return m;
 }
 

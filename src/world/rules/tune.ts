@@ -12,6 +12,7 @@ import {
   serializeTune,
   loadTune,
   migrateTune,
+  migrateTuneV1,
   hashTune,
   specOf,
   TUNABLES,
@@ -108,8 +109,8 @@ export function install(
     },
   });
   sync.registerState('tune', {
-    version: 1,
-    migrate: { 1: migrateTune },
+    version: 2,
+    migrate: { 1: migrateTune, 2: migrateTuneV1 },
     serialize: () => serializeTune(tune),
     load: (json: unknown) => loadTune(tune, json),
     hash: () => hashTune(tune),

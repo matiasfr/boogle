@@ -1,7 +1,8 @@
 import { worldStatus } from '../../world/sync.ts';
 import { net, getRoomId, remotes } from '../../netplay/net.ts';
 import { BUILD } from '../../build-id.ts';
-import { PROTO } from '../../proto/flags.ts';
+import { PROTO, productionRailway } from '../../proto/flags.ts';
+import { inspectRailway } from '../../entities/railway/state.ts';
 import { command, note, more } from './ui.ts';
 import { ok, type Tool } from './types.ts';
 
@@ -20,8 +21,14 @@ export async function roomSummary() {
     heldDropped: status.heldDropped,
     rejected: 'unavailable: no per-command rejection stream exposed by the current room adapter',
     hash: { ok: status.hashOk, bad: status.hashBad, lastBad: status.lastBad, subsystems: status.subsystems },
-    placeAuthority: PROTO === 'place' ? (await import('./place.ts')).inspectPlace().authority : 'not a place route',
-    note: 'Server Lockstep hashes and temporary place snapshots are separate. Place snapshot agreement is not Lockstep verification.',
+    placeAuthority: productionRailway
+      ? inspectRailway()
+      : PROTO === 'place'
+        ? (await import('./place.ts')).inspectPlace().authority
+        : 'not a place route',
+    note: productionRailway
+      ? 'T1 material and completion use server Lockstep authority.'
+      : 'Server Lockstep hashes and temporary place snapshots are separate. Place snapshot agreement is not Lockstep verification.',
   };
 }
 export const tool: Tool = {

@@ -10,6 +10,7 @@ import {
 } from './fixtures.ts';
 import { command, note, el, more, button } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
+import { productionRailway } from '../../proto/flags.ts';
 
 export const tool: Tool = {
   id: 'scenarios',
@@ -27,7 +28,8 @@ export const tool: Tool = {
     if (!scenarioName(args.scenario)) return no('Choose a named scenario.');
     if (command === 'start') return launch(args.scenario, args.destination ?? 'spawn');
     const why = fixtureReason();
-    if (why) return no(why);
+    if (productionRailway || why)
+      return no(why ?? 'Only an explicitly launched disposable solo place run can move or skip. Start a test below.');
     return (await import('./place.ts')).stage(args.scenario);
   },
   snapshot: fixture,
