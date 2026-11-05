@@ -21,6 +21,10 @@
   Hidden objects and objects outside the provisional camera are included.
   If the deadline expires, unfinished compute stays dormant until its native pipelines exist; remaining warm-ups
   continue after reveal. This is a bounded wait, not a guarantee of stall-free startup on every device.
+  Buddy readiness precedes that shader deadline, so slow body downloads stay behind loading and avatar warm-ups use
+  the dressed body. The water resolution ceiling applies before warm-up to avoid resizing its targets on the first frame.
+  Resolution changes and bounded first-20-second hitch diagnostics join the invisible session marks; CPU section and
+  pipeline labels identify observed work, while an unexplained callback gap remains unassigned rather than blamed on water.
   `?dpr=fixed`
   keeps the render resolution at full (for testing). Light is linear HDR through Neutral tone mapping (exposure 1.0, up to 1.12 at night),
   with 4x MSAA on desktop, no MSAA on touch, and PCF sun shadows (2048 px, 1024 on touch). Smooth edges in Pause can override MSAA on either device.
