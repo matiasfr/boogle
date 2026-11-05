@@ -53,10 +53,10 @@ export async function play() {
         10000,
         'dry co-op landing',
       ))
-    )
-      throw new Error(
-        `Co-op player did not land before the next walk: ${JSON.stringify({ position: body.position, velocity: body.velocity, coyote: me.coyote })}`,
-      );
+    ) {
+      const { diagnoseLanding } = await import('./place-landing.ts');
+      throw new Error(`Co-op player did not land before the next walk: ${JSON.stringify(await diagnoseLanding(bot))}`);
+    }
     return bot.walk(x, z, r, { limit });
   };
   const travel = go;
@@ -437,6 +437,10 @@ export async function play() {
           `${st.spec.id} completed`,
         );
         // Follow only once the route exists; do not route the idle partner into the gorge.
+        if (st.spec.id === 'Q6') {
+          const { landingEvidence } = await import('./place-landing.ts');
+          console.log(`Q6 LIVE ${JSON.stringify({ ended: place.job.ended, landing: landingEvidence() })}`);
+        }
         await travel(st.x, st.z, 3);
       });
     };

@@ -2,11 +2,203 @@
 
 ## Goal
 
+**4 November owner override — default Place only:** “Switch default instead”. For tonight's human replay,
+new water is enabled on the default Place route and `proto=place` without a water flag. `water=old` explicitly
+selects the legacy production sea; `water=new` remains an opt-in on classic home and other routes. Classic
+home and other prototypes keep their defaults. The retained `proto=water` demo owns its separate sea and
+continues to ignore the production-water selector; changing that demo would exceed this switch.
+This is only the default-switch part of step 7: delete nothing, retain all old-sea/prototype seams, keep
+Neutral, and leave the remainder of step 7 plus step 8 documentation/acceptance open. This supersedes the
+earlier instruction to wait until after the replay. No terrain, gameplay, pacing or copy changes are included.
+
 Replace the sea on the default Round 4 place and the classic home island with the water proved by `?proto=water`, including its waves, shore response and below-water treatment, using the real terrain. Serves DESIGN.md **Show, don't tell** (the visible surface is the water you enter), **Toys before chores** and **Small and readable**; physics remains **Owner**, never Lockstep.
 
 **Approved through steps 1–6 on 3 November 2026.** Steps 7–8 await review. **4 November:** the owner chose Neutral for this route for now, superseding the metered AgX named next and below; AgX stays a comparison. Step 4 started that day behind `water=new`, and the default-sea switch waits until after that night's replay. The owner's subsequent call supersedes the original sky recommendation below: under `water=new`, bake the demo atmosphere **once behind loading**, frozen at late morning (`tod=0.24`), and use metered AgX from `render/tone.ts`. The real light follows that fixed sun. The old path retains Neutral and its 20-minute cycle. Retain `.25` spectral energy, mobile 0.6 world resolution and desktop high. No `scene.ts` edits, push, ship or external network access. Do not graduate or redesign Round 4 along with the water.
 
 ## Design
+
+### Default-switch handoff (4 November 2026): checks pass; original pier stop did not repeat
+
+Implementation commit `4edc988d` shares the route selector in `proto/flags.ts`, re-exported through
+`render/water/flags.ts`. Its consumers retain their existing new/legacy branches. The raw `water=new`
+plunge check in `entities/player/state.ts` now also consumes this selector, so flagless Place gets the
+existing automatic plunge behavior. The retained demo's explicit opt-in behavior is preserved. No force,
+threshold, terrain, copy, pacing, tone or renderer setting was retuned; no old path was deleted.
+
+The earlier legacy capture was a harness query mistake, now superseded. Verification restarted on clean
+`9735fe20`, tree `4e8eb7656e9f69c8d14f1d13f44fecfc9e9ec1e3`, including the plunge-selector correction.
+All new manifests record `changedDuringRun=false`; the trusted broker is `906ddad4`. No production game source changed
+in either follow-up. The latest full co-op rerun passed; the original transient landing failure remains
+unexplained. **These are automated checks, not the owner's Mac/iPhone replay or step-8 acceptance.**
+
+**1. Startup and fallback passed.** [Literal `--query ''`](../../.look/evidence/1793836203868-22679/evidence.json)
+selected Place, new water, Neutral enum 7 and production post `neutral`, ready at `tod=0.24` with exactly
+one sky bake after loading and during play. Existing `main.play()` awaits `waterReady` before shader
+warm-up/first play. First frame and interactive were **6157 ms**, with **316.6 ms** sky-bake CPU/submission
+duration. [Explicit `--query 'proto=place&water=old'`](../../.look/evidence/1793836229069-23087/evidence.json)
+selected Place, legacy water, Neutral and automatic output transform; first play was **2548 ms**.
+These are individual local development loads, not phone timings or a cold-cache benchmark. Both runs had
+advancing WebGPU frames and no page/console/graphics errors.
+
+Opened `default-final-still.png` and `legacy-final-still.png`. Visual question: is replacement water visible
+at the same readable Place bank? At `(972,22,55)` looking at `(1000,0,20)`, new water has transparent
+turquoise shallows and caustic detail between the banks and support; legacy is a flat blue strip. This is
+one bank angle, not all-angle acceptance. New water retains surface swimming, automatic high-fall plunges
+and surfacing droplets; frozen daylight replaces the day/night cycle and night-triggered effects.
+
+**2. Full solo comparison passed.** Both the [legacy baseline](../../.look/evidence/1793836253146-23448/evidence.json)
+(`proto=place&shot=play&water=old`) and [new default](../../.look/evidence/1793836475510-26067/evidence.json)
+(`proto=place&shot=play`) finished every expected beat. Read both complete reports and opened both
+`run/end-still.png` images: dry players, banks and track supports remain readable, with the new sky/sea
+visible behind the final avatar. Bot overlays obstruct part of each frame; these are completion evidence.
+The existing offline `node dev/look/playthrough.ts --compare <legacy-run> <new-run>` produced
+[the saved comparison](../../.look/evidence/1793836475510-26067/solo-compare.txt); it launches no browser.
+No shared beat shifted beyond the harness's approximately one-minute noise band. Largest first-mark shift:
+resident noticed, **18 s later**; pier completion **3 s earlier** (23:37 vs 23:40). Both had **zero water
+falls, zero pushing time and zero errors**. Idle was 9:03 vs 9:21. One incidental tumble, one extra second
+jump and one extra rumour mark occurred only in legacy; optional cosmetic rewards also differed. Neither
+solo run marked a crystal or co-op moment; these were not expected-beat failures. Runtime was **4:59 vs
+3:31 wall time** for about 27 game minutes: new water reduced accelerated throughput (about 5x vs 8x).
+This is a measured harness-runtime increase, not a gameplay-pacing change or real-time frame benchmark.
+
+**3. Initial continuous co-op failed after checkpoint 20; the diagnostic rerun below passed.** Exact requested command:
+`node .look/see-client.ts playthrough --players 2 --long --warp-speed 2 --query 'proto=place&shot=play'`.
+[Manifest](../../.look/evidence/1793836793609-27730/evidence.json),
+[full report](../../.look/evidence/1793836793609-27730/run/report.txt),
+[checkpoints](../../.look/evidence/1793836793609-27730/run/checkpoints.json). **755.699 wall seconds**.
+Both P2 reload after Q2 and P1 five-second leave/rejoin after Q4 returned as `already playing` and passed
+the coordinator's identity/partner checks. Both rode to Far Head and arrived dry: P1 at page-clock
+**399.2 s**, P2 at **573.2 s**. Q6 received all **32 logs / 32 rails**, but P2 then failed
+`NEVER: dry co-op landing` before the next walk, at **640.9 s** of its resumed page clock. It was nearly
+stationary at **(1372.365, 24.588, -180.404)** with `coyote=-32.067`; P1 was beside it and had reached
+checkpoint 21, but that checkpoint was not jointly released. All four telemetry segments recorded **zero
+water falls**; two segments each recorded a 2-second pushing interval. This is an actual route failure,
+not the earlier query mistake, and its cause is not established as a water regression.
+
+Opened `run/end-still.png` and `run/p2-end-still.png`: both avatars are visibly on the dry pier worksite,
+close together. Static appearance does not establish the missing grounded contact. Both last-state files
+have `ended=true`, one partner, matching stations/rack/shared rewards and contributions **158 / 164**,
+but **both `atPier=false`**. The route never reached the three-sample final convergence check. Separate
+last-state train positions were sampled at different times and are not a valid final train comparison.
+The final synchronized warp sample had equal ticks **14734** and millimetre train-position differences;
+sampled moving-train gaps peaked at **0.343 / 0.979 m**. Every segment averaged **2.00x**, with transient
+clock deficits up to **11.370 s** in segment 0 and **2.534 s** in segment 2 that caught up by segment end.
+These acceleration warnings remain part of the result. Graphics errors were **none**.
+
+A [short staged contact diagnosis](../../.look/evidence/1793837634626-36051/evidence.json) placed both peers
+once at their recorded positions through the existing broker eval seam, then observed real contacts.
+Opened `pier-contact-still.png` and `p2-pier-contact-still.png`: both stand dry beside the worksite. They
+shifted about 1–3 m during settling and regained `coyote=0.1` with upward contacts. The restored scene's
+job was asleep and trains stopped, so this did **not** reproduce the failed completed-room state. It is
+not a route pass, final-state comparison, or basis for a speculative grounding/bot-assertion change.
+No production physics threshold was changed to force a pass.
+
+**Latest continuation: checks 4–6 first, then one complete two-peer rerun.** Commit `f7dc11b1` adds
+`dev/look/bots/place-landing.ts`: failures name actual contacting entities/static bodies, nearby authored
+station solids, the support ray, players and reward crates. Only after a failed landing does it probe
+jump/walk and Get unstuck in the live room, then throw the original failure. A separate pose reset for
+the recovery probe is explicitly recorded and cannot make the route pass. No production collider,
+grounding rule or bot landing assertion was weakened.
+
+The [full rerun](../../.look/evidence/1793838370086-51804/evidence.json), on clean `f7dc11b1`, used the exact
+command above and **passed all 22 checkpoints in 758.697 wall seconds**. P2 reload and P1 leave/rejoin
+passed. Both arrived dry at Far Head, completed Q6, and walked to the pier without recovery. Final
+three-sample comparison passed: both `ended=true`, `atPier=true`, one partner each, contributions
+**158 / 164**, matching stations/rack/shared rewards and trains within **2 m**. The synchronized final
+tick was **14772** on both peers; train gaps were **0.012 / 0.410 m**, with sampled maxima **0.331 / 0.602 m**.
+All four telemetry segments had zero water falls and errors; one had **2 s pushing** early in the run.
+Each clock segment achieved **2.00x**; transient page-clock deficits reached **11.539 s** initially and
+**2.550 s** in the final segment, then caught up. The report's per-session aggregate “1x” labels are not
+the synchronized warp measurements. Read the complete report, not just the zero exit code.
+Opened both `run/end-still.png` and `run/p2-end-still.png`: both avatars are dry at the platform; the
+large bot overlay obscures part of the scene. This proves route completion, not visual or human-feel acceptance.
+
+**Pier investigation.** The successful live route did not reproduce the failure. For the short comparison,
+loaded the failed run's real `run ended` checkpoint into its correct **`proto-place` room**, with `coop=1`.
+Both peers explicitly asserted `awake=true`, `ended=true`, `run.mode=done`, stages **3 / 6**, and retained
+running trains before staging the original two positions. This supersedes the earlier asleep-scene probe.
+The [new-water probe](../../.look/evidence/1793839206873-63254/evidence.json) and
+[legacy-water probe](../../.look/evidence/1793839256422-64275/evidence.json) found:
+
+- The local player rests on the Place **heightfield**, normal approximately **(-0.0545, 0.9970, -0.0548)**,
+  with a downward-ray foot gap of about **1.12 mm**. The other player is about **0.924 m** away, outside
+  the two 0.45 m body radii at the sampled instant; neither player nor worksite is a reported contact.
+- Nearby named solids are **Q6/frame-base**, four **Q6/frame-post** bodies, **Q6/feeder** and
+  **Q6/rail-bearers**. Q6 has received **32 logs / 32 rails**, but `shown` is zero: no stock collider remains.
+  There are **no reward crates within 5 m**; reward crates are visual meshes, not collision bodies.
+  The kit dresses the same station assembly; no separate invisible kit block was found at the player.
+- New / old: stationary jump rose **1.550 / 1.546 m**, ordinary forward input walked **3.13 / 3.22 m**
+  clear, and the menu's actual `getUnstuck()` function moved the player **4.09 / 4.30 m** to dry grounded
+  terrain. The recovery probe first returned to the sampled position in the still-running completed room.
+  This tests the function, not a physical tap/click on the pause menu.
+- A [final new-water repeat](../../.look/evidence/1793839299543-64935/evidence.json) also restored the
+  recorded **`coyote=-32.067`** before settling. It regained `coyote=0.1`, jumped **1.546 m**, walked
+  **3.13 m**, and recovered **4.43 m** to grounded terrain. The strict failure still did not reproduce.
+
+Thus ordinary human movement/jump and Get unstuck work **at this location in the completed room**.
+They were not tested inside the original transient failed contact state, which was not recaptured.
+There is no reproduced water-dependent difference and no established small collider/assertion bug to fix;
+the original root cause remains open. Do not relabel that failure as a known false assertion or a water regression.
+The helper's Q6 console trace was filtered out by the trusted route logger; the recorded contact evidence
+above comes from the explicitly labelled completed-state probes, not a claimed live failure trace.
+
+Opened both peers' stills and the curves for all three probes. Also opened new-water `start-01..03.png`
+and `jump-01..03.png` extracted from the recorded video at **0.8 / 1.3 s**, and legacy `jump-01..03.png`
+at **1.3 s**. The consecutive frames show the avatar beside the empty frame, then visibly airborne;
+the end stills show dry separation after recovery. Curves corroborate the jump and walking phases;
+their later spikes include the deliberately staged reset/recovery, not uncommanded gameplay motion.
+Real-time feel and smoothness remain unverified.
+
+**4. Existing CI scenarios passed on the final production source**, before adding bot-only diagnostics:
+[world-inputs](../../.look/evidence/1793837860981-43443/evidence.json) **2.5 s**,
+[smoke](../../.look/evidence/1793837875729-43637/evidence.json) **5.2 s**, and
+[caves](../../.look/evidence/1793837898563-43846/evidence.json) **6.4 s**. These use their existing classic
+fixtures, preserving the CI route. World grid/op/state fixtures matched; smoke had matching hashes,
+zero bad hashes/resyncs and **517 ms** toss delivery; caves passed **11/11** route points, zero stuck
+points and **0.01 m** maximum floor intrusion. No new harness or scenario was added. A paired pre-switch
+scenario-runtime benchmark was not collected; the solo accelerated-runtime increase is disclosed above.
+Opened smoke's Alice/Bob stills and caves' hub/pond stills: both players and the ball are visible; cave
+signs, paths, pond and crystals remain readable. World-inputs produces no PNG.
+
+**5. No GPU error marks** in any of these runs, the full rerun or the completed-state probes. No instance
+overflow was forced or repeated. Capture health is separate from the route and visual findings.
+
+**6. Phone viewport/profile comparison completed.** Existing `q=mobile`, **844×390**, DPR **1**, MSAA **4**,
+real-time broker Chromium on Apple Metal hardware. Used default routing via `play=1` with no `proto`
+or water flag, compared with the same query plus `water=old`; `prof=1` enables existing hardware timing.
+[New measurements](../../.look/evidence/1793837935939-44048/evidence.json),
+[legacy measurements](../../.look/evidence/1793837968474-44231/evidence.json):
+
+| Measurement | New default | Legacy |
+| --- | --- | --- |
+| First play / interactive | **5601 ms** | **2083 ms** |
+| Actual world target | **506×234, scale 0.6** | **844×390, scale 1** |
+| CPU average, two 5 s samples | **4.85 / 4.83 ms** | **3.98 / 3.96 ms** |
+| GPU span average | **7.18 / 7.18 ms** | **3.65 / 3.68 ms** |
+| GPU span p95 | **7.96 / 7.95 ms** | **3.98 / 4.04 ms** |
+
+Each sample completed **300 frames**, zero missing GPU samples; maximum callback interval **16.8 ms**,
+none over 33 ms. New water really selected `quality=mobile`, `waterCeiling=0.6`, `adaptiveRatio=1`,
+`scale=0.6` on the default Place route. That is **3.52 s more first-play latency** and roughly **3.51 ms
+more GPU span** in this local comparison, despite the lower world resolution. These are individual dev
+loads and differently sized render targets, not cold-cache or equal-resolution GPU cost measurements.
+
+Opened both measurement stills; their profiler covered the bank. Opened the subsequent clean
+[new](../../.look/evidence/1793838014851-44449/evidence.json) and
+[old](../../.look/evidence/1793838038183-45285/evidence.json) phone-sized stills: the bank and bridge support
+remain readable; new water shows turquoise depth/caustics with visibly softer edges, versus sharp flat
+blue legacy water. This uses the actual mobile quality settings and viewport, **not a touch-device browser**:
+the readback was `coarsePointer=false`. **A real iPhone is untested**, as are Safari, physical gamepad/touch,
+Retina/mobile thermal performance and real-time feel. Frozen daylight/night effects and swim/plunge
+tradeoffs are stated above and in the owning [Place design section](../game-design/place.md#how-its-built).
+
+Changed docs were passed through `npx prettier --write`; final `npm run check` **passed** lint, types,
+**297 tests**, registry, levels, assets and build (latest log: `.look/water-final-check.log`).
+The implementation's existing physics replay matched **1108 frames**
+within **0.01**; no physics source or fixture changed in this follow-up. No external network, push or ship;
+remote `inflight` remains skipped under the local-only restriction. Classic/prototype defaults and the
+water demo's separately owned sea remain unchanged; the demo still ignores the production `water=old`
+selector. Step 7 remains partial, and step 8 documentation/acceptance remains open.
 
 ### Evidence and the starting point
 
@@ -138,6 +330,9 @@ Initial acceptance: sustained 60 fps target in the actual game, report mean/p95 
 Account for the ten FFT dispatches; high caustics' two raster targets, three splat draws and 17 internal mip draws; one colour and one depth snapshot plus pass resumptions; and near-water lens compute, one half-resolution shaft draw and one snow draw. The new query compute/readback is additional and must be measured. The two exposure passes and atmosphere cube/PMREM work do not graduate under the recommended sky/tone path. No savings are promised until measured in place. If insufficient, first tune measured resolution/effect costs with visible comparisons; do not lower wave energy, mesh quality or MSAA just to meet a guessed budget.
 
 ## Steps
+
+Step 7 is partial under the 4 November override above; its original removal scope below is **not authorized**
+for this replay switch. Step 8 remains open. Current switch verification is recorded separately below.
 
 Every numbered item is an implementation commit or small group of commits **after approval**, leaves `npm run check` green, formats only changed files, and updates affected as-built docs in the same commit. No new unit tests or scenarios for this Local rendering/feel work. Use existing diagnostics and harnesses; no source edits during a capture.
 
