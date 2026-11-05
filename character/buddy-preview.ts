@@ -16,7 +16,7 @@ import {
 import { BUDDY_LOAD_FIT } from '../src/player/buddy/load-fit.ts';
 import { makeCarryModels, cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
 import { makeBundlePreview } from '../src/render/haul-bundle.ts';
-type WornPreview = GearState & { cargo: CargoKind; amount: number };
+type WornPreview = GearState & { cargo: CargoKind; amount: number; bodyColor?: string };
 export const SAMPLE_FPS = 30;
 export type BuddyMode = 'raw' | 'played';
 export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
@@ -104,6 +104,10 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
             if (o.name.startsWith('wear_')) o.visible = !!hat && o.name.startsWith('wear_head_' + hat);
           });
           ownMaterials(figure);
+          if (worn?.bodyColor)
+            for (const material of owned)
+              if (material.name === 'M_Main' && 'color' in material && material.color instanceof THREE.Color)
+                material.color.set(worn.bodyColor);
           group.add(figure);
           mixer = new THREE.AnimationMixer(figure);
           const clip = clips.get(clipName);
@@ -131,7 +135,9 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
             radius: 0.45,
             hat: 'wear_head_' + (hat || 'none'),
             charging: () => pose === 'windup',
-            paint: (material) => material.color.set('#1fbfc4'),
+            paint: (material) => {
+              if (worn?.bodyColor) material.color.set(worn.bodyColor);
+            },
           });
           skin.dress(avatar, 0);
           // The skin owns a per-avatar main material; retain it for disposal before cloning inspection materials.

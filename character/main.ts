@@ -14,6 +14,7 @@ import { createMotionCapture, bonePoses, endpointSeam } from './motion.ts';
 import { descriptors, gearAttachments } from './descriptors.ts';
 import { sailCycleSeconds } from '../src/pois/windmills/motion.ts';
 import { cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
+import { COLORS } from '../src/constants.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -33,6 +34,8 @@ const state = {
   mode: (q.get('mode') === 'played' || (!q.has('mode') && q.has('pose')) ? 'played' : 'raw') as BuddyMode,
   pose: q.get('pose') ?? (number('amount', q.has('cargo') ? 1 : 0) > 0 ? 'carrying' : 'free'),
   hat: q.get('hat') ?? '',
+  bodyColor:
+    COLORS.includes(q.get('bodyColor') ?? '') || q.get('bodyColor') === 'authored' ? q.get('bodyColor')! : 'auto',
   rings: gearOn('rings'),
   spool: gearOn('spool'),
   glider: gearOn('glider'),
@@ -426,6 +429,14 @@ async function choose(reframe = true) {
             canopy: state.canopy,
             cargo: state.cargo,
             amount: state.amount,
+            bodyColor:
+              state.bodyColor === 'auto'
+                ? state.rings || state.spool || state.glider || state.frame || state.canopy || state.amount > 0
+                  ? COLORS[1]
+                  : undefined
+                : state.bodyColor === 'authored'
+                  ? undefined
+                  : state.bodyColor,
           })
         : code
           ? { ...code, figure: code.group }
@@ -466,6 +477,7 @@ function updateLink() {
     mode: state.mode,
     pose: state.pose,
     hat: state.hat,
+    bodyColor: state.bodyColor,
     rings: state.rings ? '1' : '0',
     spool: state.spool ? '1' : '0',
     glider: state.glider ? '1' : '0',
@@ -525,6 +537,19 @@ function syncGearControls() {
   select('cargo').value = state.cargo;
   for (const key of ['rings', 'spool', 'glider', 'frame', 'canopy'] as const) input(key).checked = state[key];
 }
+options(select('body-color'), [
+  ['auto', 'Auto · yellow with gear or cargo'],
+  ['authored', 'Authored Buddy colour'],
+  ...COLORS.map((color, i): [string, string] => [
+    color,
+    i === 1 ? `Game yellow · ${color}` : `Game colour ${i + 1} · ${color}`,
+  ]),
+]);
+select('body-color').value = state.bodyColor;
+select('body-color').onchange = () => {
+  state.bodyColor = select('body-color').value;
+  void choose(false);
+};
 syncGearControls();
 for (const key of ['rings', 'spool', 'glider', 'frame', 'canopy'] as const)
   input(key).onchange = () => {
@@ -619,11 +644,15 @@ $('copy').onclick = async () => {
   }
 };
 controls.addEventListener('end', updateLink);
+let drawable = false;
 const resize = () => {
   const w = canvas.clientWidth,
     h = canvas.clientHeight;
+  drawable = w > 0 && h > 0;
+  // A hidden stage/iframe can report zero: keep the last valid GPU extent until it is visible again.
+  if (!drawable) return;
   renderer.setSize(w, h, false);
-  camera.aspect = w / Math.max(1, h);
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
 };
 new ResizeObserver(resize).observe(canvas);
@@ -732,6 +761,7 @@ const loopStarted = renderer.setAnimationLoop(() => {
   const now = performance.now(),
     dt = motionCapture.active ? (now - last) / 1000 : Math.min(0.05, (now - last) / 1000);
   last = now;
+  if (!drawable) return;
   if (ready && state.playing && duration > 0 && preview) {
     let next = state.time + dt * state.speed;
     if (next > duration) {
