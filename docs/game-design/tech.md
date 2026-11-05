@@ -19,6 +19,10 @@ folder map in [src/README.md](../../src/README.md).
   registries: controls (`registerAction`), interactables (`registerInteractable`) and particles (`emit(...)` in
   [src/render/particles.ts](../../src/render/particles.ts)).
 - **Draw safety.** Shared instance factories bound visual counts to their buffers and mark rejected counts with batch identity. GPU errors retain console logging and bounded diagnostic marks. Isolated uncaptured errors are non-fatal; device loss, a thrown frame or 60 consecutive GPU-checked failing draws offer Reload without resetting the room; see [graphics recovery](graphics.md). See the [capacity audit](../research/freeze-draw-audit.md) for coverage and limits.
+- **Instance uploads.** Local blob-shadow and critter pools retain their fixed capacity, bounds and draw counts.
+  After initial allocation, refills upload only the current live matrix prefix. Each refill replaces pending ranges
+  from culled or skipped draws; empty fills transfer no matrix bytes, including when an earlier update is pending.
+  Particle uploads use their separate owner.
 - **Checks.** `npm run check`: lint (determinism rules on lockstep files, import boundaries, `registerOp`/
   `registerState`/`onTick` only in `world/rules/`), `tsc` typecheck, unit tests (`node:test`, pure logic only), the
   registry check (`npm run registry`: wire shapes against `main`, for mixed builds) and build.
