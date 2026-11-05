@@ -112,7 +112,15 @@ export function restore() {
     const j = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!j) return false;
     applyShared(j.shared ?? {});
-    for (const s of personal) s.set(j.personal?.[s.key]);
+    // Two old readers shared `finds`: only the last writer's array or object survived.
+    // Recover that history by shape; explicit new slices (including empty ones) win.
+    const p = j.personal ?? {};
+    const histories = {
+      goldFinds: Array.isArray(p.finds) ? p.finds : undefined,
+      secretFinds: p.finds && typeof p.finds === 'object' && !Array.isArray(p.finds) ? p.finds : undefined,
+      ...p,
+    };
+    for (const s of personal) s.set(histories[s.key]);
     return true;
   } catch {
     return false; // an old shape: start fresh

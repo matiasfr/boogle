@@ -1101,7 +1101,8 @@ export const giftState = {
   bought: [] as GiftId[], // what you took from the shop: apart from `got`, which sets what the next box is
   dry: 0, // boxes in a row with no Wonder: saved, so a reload can't dodge the ceiling
   /** Crates waiting to be opened, as where they stand. */
-  crates: () => crates.map((c) => ({ x: c.x, y: c.y, z: c.z, content: c.content })),
+  // A shaking crate already awarded its item. Keep its mesh for the show, never its claim in a save.
+  crates: () => crates.filter((c) => c.t !== -1).map((c) => ({ x: c.x, y: c.y, z: c.z, content: c.content })),
   count: () => crates.length,
 };
 /** What a crate does when it's opened, beyond the show: ./ladder.ts fills it in. */
