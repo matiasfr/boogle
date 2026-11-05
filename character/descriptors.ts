@@ -53,6 +53,13 @@ export const gearAttachments: Record<string, Extract<Motion, { kind: 'attachment
   },
 };
 export const descriptors: Record<string, AssetDescriptor> = {
+  'boiler-cart': {
+    label: 'Boiler, saddle and cart',
+    category: 'kit',
+    defaultNode: 'boiler',
+    rootNote: 'Rigid shells; game pivots and cargo positions unchanged. Train wheels/rods remain game-owned.',
+    motion: { kind: 'none', source: 'assets/src/boiler-cart.py; rigid assembly motion belongs to Place' },
+  },
   'recovery-rack': {
     label: 'Recovery rack',
     category: 'props',
