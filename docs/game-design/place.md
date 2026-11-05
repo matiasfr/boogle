@@ -126,6 +126,8 @@ Settled train crates use the same idle edge hold on their own top footprint. A s
 
 When a halt appears, anyone intersecting its new foundation, ramps, bench or posts is moved onto its clear middle lane, at the same place along the platform. Each player's tab checks their own body, including when a partner unlocks trains or a snapshot restores a halt. Players already clear of the new solids stay put.
 
+Benches face arriving trains from the platform's outer edge. Each shelter sits 4.8 m along from the middle rear ramp, keeping the entrance and track-side aisle clear. The bench and posts' colliders follow the visible pieces.
+
 The track layer's flatbed is standable. Following the owner's 5 November choice (solo design pass topic 5), each laying departure eases out to its existing speed over two seconds. The pale rear boarding step is 2.8 m wide by 0.6 m deep, with its kinematic collider top exactly level with the visible deck. The existing run snapshot adds bounded departure elapsed time; old snapshots default to cruise. No machine art pass or seat changes. Boarding without sprinting still needs a person's playtest.
 
 First-use carry meshes and the glider's cloth and shadow pipelines warm behind loading; temporary canopy samples are removed before play. The 16-second escape deadline is unchanged. See [first-use measurements](../research/round4-first-use.md) for warm-cache counts and device limits.
