@@ -1,0 +1,1120 @@
+{
+  "before": [
+    {
+      "path": "assets/BufferGeometryUtils-BFuYqpyv.js",
+      "owner": "assets/BufferGeometryUtils.js",
+      "gzip": 1920
+    },
+    {
+      "path": "assets/__vite-plugin-wasm-helper-Y7WR0nsT.js",
+      "owner": "assets/__vite-plugin-wasm-helper.js",
+      "gzip": 398
+    },
+    {
+      "path": "assets/arrival-Bc6Icc9x.js",
+      "owner": "assets/arrival.js",
+      "gzip": 113
+    },
+    {
+      "path": "assets/arrival-BzWfDzH_.js",
+      "owner": "assets/arrival.js",
+      "gzip": 1155
+    },
+    {
+      "path": "assets/asset-manifest-Du_K472n.js",
+      "owner": "assets/asset-manifest.js",
+      "gzip": 498
+    },
+    {
+      "path": "assets/async-CkIh8y1D.js",
+      "owner": "assets/async.js",
+      "gzip": 101
+    },
+    {
+      "path": "assets/audio-BKYK7FuU.js",
+      "owner": "assets/audio.js",
+      "gzip": 855
+    },
+    {
+      "path": "assets/avatars-B9n2u1g3.js",
+      "owner": "assets/avatars.js",
+      "gzip": 1168
+    },
+    {
+      "path": "assets/build-id-DTSa-zCj.js",
+      "owner": "assets/build-id.js",
+      "gzip": 131
+    },
+    {
+      "path": "assets/builds-J8l2TMz9.js",
+      "owner": "assets/builds.js",
+      "gzip": 245
+    },
+    {
+      "path": "assets/camera-arm-CA4iHy-t.js",
+      "owner": "assets/camera-arm.js",
+      "gzip": 631
+    },
+    {
+      "path": "assets/caustics-Ccu0AHZ5.js",
+      "owner": "assets/caustics.js",
+      "gzip": 1819
+    },
+    {
+      "path": "assets/clink-De0MEVHj.js",
+      "owner": "assets/clink.js",
+      "gzip": 778
+    },
+    {
+      "path": "assets/clock-worker-DlVjzWKR.js",
+      "owner": "assets/clock-worker.js",
+      "gzip": 71
+    },
+    {
+      "path": "assets/constants-C-DXbsiV.js",
+      "owner": "assets/constants.js",
+      "gzip": 369
+    },
+    {
+      "path": "assets/contacts-B-YRfyfT.js",
+      "owner": "assets/contacts.js",
+      "gzip": 472
+    },
+    {
+      "path": "assets/controls-DybuurUJ.js",
+      "owner": "assets/controls.js",
+      "gzip": 2134
+    },
+    {
+      "path": "assets/conversation-By57rQuO.css",
+      "owner": "assets/conversation.css",
+      "gzip": 284
+    },
+    {
+      "path": "assets/conversation-UhOCpuno.js",
+      "owner": "assets/conversation.js",
+      "gzip": 1930
+    },
+    {
+      "path": "assets/dev-input-Bm_0XelH.js",
+      "owner": "assets/dev-input.js",
+      "gzip": 103
+    },
+    {
+      "path": "assets/dev-preferences-RQDMBnU5.js",
+      "owner": "assets/dev-preferences.js",
+      "gzip": 447
+    },
+    {
+      "path": "assets/dom-BxPGxLV_.js",
+      "owner": "assets/dom.js",
+      "gzip": 229
+    },
+    {
+      "path": "assets/engine-9DA66v1R.js",
+      "owner": "assets/engine.js",
+      "gzip": 4836
+    },
+    {
+      "path": "assets/entity-Ba_7aQ-L.js",
+      "owner": "assets/entity.js",
+      "gzip": 1258
+    },
+    {
+      "path": "assets/fft-BCTiL3pA.js",
+      "owner": "assets/fft.js",
+      "gzip": 3074
+    },
+    {
+      "path": "assets/flags-9EEjCkmH.js",
+      "owner": "assets/flags.js",
+      "gzip": 382
+    },
+    {
+      "path": "assets/friendship-Du8qoEqO.js",
+      "owner": "assets/friendship.js",
+      "gzip": 1505
+    },
+    {
+      "path": "assets/game-world-D90nSod1.js",
+      "owner": "assets/game-world.js",
+      "gzip": 10290
+    },
+    {
+      "path": "assets/gift-catalog-CzMiAm1s.js",
+      "owner": "assets/gift-catalog.js",
+      "gzip": 364
+    },
+    {
+      "path": "assets/glyphs-Ci6DPHcm.css",
+      "owner": "assets/glyphs.css",
+      "gzip": 647
+    },
+    {
+      "path": "assets/glyphs-D6nvSkKM.js",
+      "owner": "assets/glyphs.js",
+      "gzip": 1383
+    },
+    {
+      "path": "assets/graphics-settings-lUBbWy2w.js",
+      "owner": "assets/graphics-settings.js",
+      "gzip": 1224
+    },
+    {
+      "path": "assets/hands-BYou6nfz.js",
+      "owner": "assets/hands.js",
+      "gzip": 11569
+    },
+    {
+      "path": "assets/haul-feel-DdGJ_YrO.js",
+      "owner": "assets/haul-feel.js",
+      "gzip": 81
+    },
+    {
+      "path": "assets/haul-pieces-DOQBEjZM.js",
+      "owner": "assets/haul-pieces.js",
+      "gzip": 626
+    },
+    {
+      "path": "assets/haul-stack-BKXVyHAO.css",
+      "owner": "assets/haul-stack.css",
+      "gzip": 611
+    },
+    {
+      "path": "assets/haul-stack-DpMPRF6z.js",
+      "owner": "assets/haul-stack.js",
+      "gzip": 2343
+    },
+    {
+      "path": "assets/haul-variant-CHboYNMP.js",
+      "owner": "assets/haul-variant.js",
+      "gzip": 216
+    },
+    {
+      "path": "assets/heights-DZaUJjj3.js",
+      "owner": "assets/heights.js",
+      "gzip": 5084
+    },
+    {
+      "path": "assets/hero-clips-CB2Ql2y8.js",
+      "owner": "assets/hero-clips.js",
+      "gzip": 97
+    },
+    {
+      "path": "assets/hut-blueprint-mBScM55y.js",
+      "owner": "assets/hut-blueprint.js",
+      "gzip": 797
+    },
+    {
+      "path": "assets/input-BfYuxhlA.css",
+      "owner": "assets/input.css",
+      "gzip": 302
+    },
+    {
+      "path": "assets/input-DdGHKBUn.js",
+      "owner": "assets/input.js",
+      "gzip": 2688
+    },
+    {
+      "path": "assets/input-state-FlGSmVzQ.js",
+      "owner": "assets/input-state.js",
+      "gzip": 178
+    },
+    {
+      "path": "assets/inspect-DxXQo-0F.js",
+      "owner": "assets/inspect.js",
+      "gzip": 633
+    },
+    {
+      "path": "assets/item-models-CrX5hr8N.js",
+      "owner": "assets/item-models.js",
+      "gzip": 642
+    },
+    {
+      "path": "assets/lights-CQUCKAk8.js",
+      "owner": "assets/lights.js",
+      "gzip": 839
+    },
+    {
+      "path": "assets/live--Tae42pA.js",
+      "owner": "assets/live.js",
+      "gzip": 661
+    },
+    {
+      "path": "assets/loop-BACyQijE.js",
+      "owner": "assets/loop.js",
+      "gzip": 769
+    },
+    {
+      "path": "assets/machine-sfx-pTyrvIVu.js",
+      "owner": "assets/machine-sfx.js",
+      "gzip": 934
+    },
+    {
+      "path": "assets/main-CZojx6OG.css",
+      "owner": "assets/main.css",
+      "gzip": 7168
+    },
+    {
+      "path": "assets/main-Cw-Z0o9L.js",
+      "owner": "assets/main.js",
+      "gzip": 2305
+    },
+    {
+      "path": "assets/main-cDy9cRM9.js",
+      "owner": "assets/main.js",
+      "gzip": 64468
+    },
+    {
+      "path": "assets/mark-CcyAyGMv.js",
+      "owner": "assets/mark.js",
+      "gzip": 248
+    },
+    {
+      "path": "assets/materials-CC-AS1Di.js",
+      "owner": "assets/materials.js",
+      "gzip": 806
+    },
+    {
+      "path": "assets/math-pure-IZwqsMQ0.js",
+      "owner": "assets/math-pure.js",
+      "gzip": 358
+    },
+    {
+      "path": "assets/modal-Dika9fQO.js",
+      "owner": "assets/modal.js",
+      "gzip": 299
+    },
+    {
+      "path": "assets/model-2NA5QJPG.js",
+      "owner": "assets/model.js",
+      "gzip": 804
+    },
+    {
+      "path": "assets/modulepreload-polyfill-P2Xu9kJm.js",
+      "owner": "assets/modulepreload-polyfill.js",
+      "gzip": 389
+    },
+    {
+      "path": "assets/motion-CrGdKhrX.js",
+      "owner": "assets/motion.js",
+      "gzip": 476
+    },
+    {
+      "path": "assets/net-BsQypKmZ.js",
+      "owner": "assets/net.js",
+      "gzip": 2133
+    },
+    {
+      "path": "assets/noise-CPE7lStG.js",
+      "owner": "assets/noise.js",
+      "gzip": 419
+    },
+    {
+      "path": "assets/notify-ChuW_YPu.css",
+      "owner": "assets/notify.css",
+      "gzip": 749
+    },
+    {
+      "path": "assets/notify-D3_AARGN.js",
+      "owner": "assets/notify.js",
+      "gzip": 798
+    },
+    {
+      "path": "assets/npc-voice-BHBtVnHL.js",
+      "owner": "assets/npc-voice.js",
+      "gzip": 2370
+    },
+    {
+      "path": "assets/particles-DnXfnhzL.js",
+      "owner": "assets/particles.js",
+      "gzip": 1273
+    },
+    {
+      "path": "assets/pause-pages-DxqO4lBE.js",
+      "owner": "assets/pause-pages.js",
+      "gzip": 51
+    },
+    {
+      "path": "assets/physics-BzlO37s8.js",
+      "owner": "assets/physics.js",
+      "gzip": 738
+    },
+    {
+      "path": "assets/player-BvjqGIV9.js",
+      "owner": "assets/player.js",
+      "gzip": 82
+    },
+    {
+      "path": "assets/precompile-DO4o3AMa.js",
+      "owner": "assets/precompile.js",
+      "gzip": 1414
+    },
+    {
+      "path": "assets/preload-helper-BLdHbfdN.js",
+      "owner": "assets/preload-helper.js",
+      "gzip": 797
+    },
+    {
+      "path": "assets/prop-models-4wo87GR7.js",
+      "owner": "assets/prop-models.js",
+      "gzip": 1081
+    },
+    {
+      "path": "assets/props-B3aK-tUO.js",
+      "owner": "assets/props.js",
+      "gzip": 1711
+    },
+    {
+      "path": "assets/props-D0VP7OsF.js",
+      "owner": "assets/props.js",
+      "gzip": 1411
+    },
+    {
+      "path": "assets/rapier-B-xeHNxw.js",
+      "owner": "assets/rapier.js",
+      "gzip": 51514
+    },
+    {
+      "path": "assets/rapier_wasm3d_bg-Z_KLso_L.wasm",
+      "owner": "assets/rapier_wasm3d_bg.wasm",
+      "gzip": 1152732
+    },
+    {
+      "path": "assets/receivers-MoWAReQD.js",
+      "owner": "assets/receivers.js",
+      "gzip": 1737
+    },
+    {
+      "path": "assets/rng-BsERB_me.js",
+      "owner": "assets/rng.js",
+      "gzip": 148
+    },
+    {
+      "path": "assets/rolldown-runtime-DK3Fl9T5.js",
+      "owner": "assets/rolldown-runtime.js",
+      "gzip": 154
+    },
+    {
+      "path": "assets/route--bZhGS1G.js",
+      "owner": "assets/route.js",
+      "gzip": 232
+    },
+    {
+      "path": "assets/scene-ClgDcSrT.js",
+      "owner": "assets/scene.js",
+      "gzip": 2352
+    },
+    {
+      "path": "assets/shape-CtPtbFrj.js",
+      "owner": "assets/shape.js",
+      "gzip": 891
+    },
+    {
+      "path": "assets/shared-time-ONIOctbz.js",
+      "owner": "assets/shared-time.js",
+      "gzip": 187
+    },
+    {
+      "path": "assets/shore-nodes-DjvAMJWR.js",
+      "owner": "assets/shore-nodes.js",
+      "gzip": 7296
+    },
+    {
+      "path": "assets/shore-options-QKCYyFFk.js",
+      "owner": "assets/shore-options.js",
+      "gzip": 255
+    },
+    {
+      "path": "assets/sky-CKJetaoc.js",
+      "owner": "assets/sky.js",
+      "gzip": 3616
+    },
+    {
+      "path": "assets/sky-CvtrQ1I_.js",
+      "owner": "assets/sky.js",
+      "gzip": 110
+    },
+    {
+      "path": "assets/sky-clock-DNsFR1In.js",
+      "owner": "assets/sky-clock.js",
+      "gzip": 271
+    },
+    {
+      "path": "assets/sky-core-DkUxDpFc.js",
+      "owner": "assets/sky-core.js",
+      "gzip": 3812
+    },
+    {
+      "path": "assets/spectrum-CaSQn7Wh.js",
+      "owner": "assets/spectrum.js",
+      "gzip": 1804
+    },
+    {
+      "path": "assets/splash-CkzrnoxW.css",
+      "owner": "assets/splash.css",
+      "gzip": 1031
+    },
+    {
+      "path": "assets/splash-O1KXWd6S.js",
+      "owner": "assets/splash.js",
+      "gzip": 1273
+    },
+    {
+      "path": "assets/splash-art-CUf4wrPt.jpg",
+      "owner": "assets/splash-art.jpg",
+      "gzip": 94032
+    },
+    {
+      "path": "assets/splash-art-D6cO98ar.js",
+      "owner": "assets/splash-art.js",
+      "gzip": 75
+    },
+    {
+      "path": "assets/state-BgqPqXW4.js",
+      "owner": "assets/state.js",
+      "gzip": 505
+    },
+    {
+      "path": "assets/state-BpXToKBr.js",
+      "owner": "assets/state.js",
+      "gzip": 3056
+    },
+    {
+      "path": "assets/state-CWzsqhd9.js",
+      "owner": "assets/state.js",
+      "gzip": 820
+    },
+    {
+      "path": "assets/state-CunA1UWZ.js",
+      "owner": "assets/state.js",
+      "gzip": 4312
+    },
+    {
+      "path": "assets/state-D9qy7prz.js",
+      "owner": "assets/state.js",
+      "gzip": 647
+    },
+    {
+      "path": "assets/state-DE3iaycv.js",
+      "owner": "assets/state.js",
+      "gzip": 2575
+    },
+    {
+      "path": "assets/sync-BKKBKbWy.js",
+      "owner": "assets/sync.js",
+      "gzip": 4970
+    },
+    {
+      "path": "assets/terrain-BQ-NNoDU.js",
+      "owner": "assets/terrain.js",
+      "gzip": 2192
+    },
+    {
+      "path": "assets/three-Baranu9e.js",
+      "owner": "assets/three.js",
+      "gzip": 307534
+    },
+    {
+      "path": "assets/timeline-DyF6aVBF.js",
+      "owner": "assets/timeline.js",
+      "gzip": 1222
+    },
+    {
+      "path": "assets/tone-BV0v9c-1.js",
+      "owner": "assets/tone.js",
+      "gzip": 1456
+    },
+    {
+      "path": "assets/tsl-YrbbTpr5.js",
+      "owner": "assets/tsl.js",
+      "gzip": 76
+    },
+    {
+      "path": "assets/ui-sound-CGl6Ti-3.js",
+      "owner": "assets/ui-sound.js",
+      "gzip": 1178
+    },
+    {
+      "path": "assets/ui-sound-CbSmJVW8.css",
+      "owner": "assets/ui-sound.css",
+      "gzip": 397
+    },
+    {
+      "path": "assets/view-DMXFCx8Q.js",
+      "owner": "assets/view.js",
+      "gzip": 258
+    },
+    {
+      "path": "assets/water-field-CdfwdDYP.js",
+      "owner": "assets/water-field.js",
+      "gzip": 613
+    },
+    {
+      "path": "assets/water-render-G0M2ZoY_.js",
+      "owner": "assets/water-render.js",
+      "gzip": 22368
+    }
+  ],
+  "after": [
+    {
+      "path": "assets/BufferGeometryUtils-BFuYqpyv.js",
+      "owner": "assets/BufferGeometryUtils.js",
+      "gzip": 1920
+    },
+    {
+      "path": "assets/__vite-plugin-wasm-helper-Y7WR0nsT.js",
+      "owner": "assets/__vite-plugin-wasm-helper.js",
+      "gzip": 398
+    },
+    {
+      "path": "assets/arrival-Bc6Icc9x.js",
+      "owner": "assets/arrival.js",
+      "gzip": 113
+    },
+    {
+      "path": "assets/arrival-BzWfDzH_.js",
+      "owner": "assets/arrival.js",
+      "gzip": 1155
+    },
+    {
+      "path": "assets/asset-manifest-Du_K472n.js",
+      "owner": "assets/asset-manifest.js",
+      "gzip": 498
+    },
+    {
+      "path": "assets/async-CkIh8y1D.js",
+      "owner": "assets/async.js",
+      "gzip": 101
+    },
+    {
+      "path": "assets/audio-BKYK7FuU.js",
+      "owner": "assets/audio.js",
+      "gzip": 855
+    },
+    {
+      "path": "assets/avatars-B9n2u1g3.js",
+      "owner": "assets/avatars.js",
+      "gzip": 1168
+    },
+    {
+      "path": "assets/build-id-DTSa-zCj.js",
+      "owner": "assets/build-id.js",
+      "gzip": 131
+    },
+    {
+      "path": "assets/builds-J8l2TMz9.js",
+      "owner": "assets/builds.js",
+      "gzip": 245
+    },
+    {
+      "path": "assets/camera-arm-CA4iHy-t.js",
+      "owner": "assets/camera-arm.js",
+      "gzip": 631
+    },
+    {
+      "path": "assets/caustics-Ccu0AHZ5.js",
+      "owner": "assets/caustics.js",
+      "gzip": 1819
+    },
+    {
+      "path": "assets/clink-De0MEVHj.js",
+      "owner": "assets/clink.js",
+      "gzip": 778
+    },
+    {
+      "path": "assets/clock-worker-DlVjzWKR.js",
+      "owner": "assets/clock-worker.js",
+      "gzip": 71
+    },
+    {
+      "path": "assets/constants-C-DXbsiV.js",
+      "owner": "assets/constants.js",
+      "gzip": 369
+    },
+    {
+      "path": "assets/contacts-B-YRfyfT.js",
+      "owner": "assets/contacts.js",
+      "gzip": 472
+    },
+    {
+      "path": "assets/controls-DybuurUJ.js",
+      "owner": "assets/controls.js",
+      "gzip": 2134
+    },
+    {
+      "path": "assets/conversation-By57rQuO.css",
+      "owner": "assets/conversation.css",
+      "gzip": 284
+    },
+    {
+      "path": "assets/conversation-YxaTORtj.js",
+      "owner": "assets/conversation.js",
+      "gzip": 1929
+    },
+    {
+      "path": "assets/dev-input-Bm_0XelH.js",
+      "owner": "assets/dev-input.js",
+      "gzip": 103
+    },
+    {
+      "path": "assets/dev-preferences-RQDMBnU5.js",
+      "owner": "assets/dev-preferences.js",
+      "gzip": 447
+    },
+    {
+      "path": "assets/dom-BxPGxLV_.js",
+      "owner": "assets/dom.js",
+      "gzip": 229
+    },
+    {
+      "path": "assets/engine-9DA66v1R.js",
+      "owner": "assets/engine.js",
+      "gzip": 4836
+    },
+    {
+      "path": "assets/entity-Ba_7aQ-L.js",
+      "owner": "assets/entity.js",
+      "gzip": 1258
+    },
+    {
+      "path": "assets/fft-BCTiL3pA.js",
+      "owner": "assets/fft.js",
+      "gzip": 3074
+    },
+    {
+      "path": "assets/flags-9EEjCkmH.js",
+      "owner": "assets/flags.js",
+      "gzip": 382
+    },
+    {
+      "path": "assets/friendship-Du8qoEqO.js",
+      "owner": "assets/friendship.js",
+      "gzip": 1505
+    },
+    {
+      "path": "assets/game-world-D90nSod1.js",
+      "owner": "assets/game-world.js",
+      "gzip": 10290
+    },
+    {
+      "path": "assets/gift-catalog-CzMiAm1s.js",
+      "owner": "assets/gift-catalog.js",
+      "gzip": 364
+    },
+    {
+      "path": "assets/glyphs-Ci6DPHcm.css",
+      "owner": "assets/glyphs.css",
+      "gzip": 647
+    },
+    {
+      "path": "assets/glyphs-D6nvSkKM.js",
+      "owner": "assets/glyphs.js",
+      "gzip": 1383
+    },
+    {
+      "path": "assets/graphics-settings-lUBbWy2w.js",
+      "owner": "assets/graphics-settings.js",
+      "gzip": 1224
+    },
+    {
+      "path": "assets/hands-pj9P-DbD.js",
+      "owner": "assets/hands.js",
+      "gzip": 11568
+    },
+    {
+      "path": "assets/haul-feel-DdGJ_YrO.js",
+      "owner": "assets/haul-feel.js",
+      "gzip": 81
+    },
+    {
+      "path": "assets/haul-pieces-DOQBEjZM.js",
+      "owner": "assets/haul-pieces.js",
+      "gzip": 626
+    },
+    {
+      "path": "assets/haul-stack-BKXVyHAO.css",
+      "owner": "assets/haul-stack.css",
+      "gzip": 611
+    },
+    {
+      "path": "assets/haul-stack-DpMPRF6z.js",
+      "owner": "assets/haul-stack.js",
+      "gzip": 2343
+    },
+    {
+      "path": "assets/haul-variant-CHboYNMP.js",
+      "owner": "assets/haul-variant.js",
+      "gzip": 216
+    },
+    {
+      "path": "assets/heights-DZaUJjj3.js",
+      "owner": "assets/heights.js",
+      "gzip": 5084
+    },
+    {
+      "path": "assets/hero-clips-CB2Ql2y8.js",
+      "owner": "assets/hero-clips.js",
+      "gzip": 97
+    },
+    {
+      "path": "assets/hut-blueprint-mBScM55y.js",
+      "owner": "assets/hut-blueprint.js",
+      "gzip": 797
+    },
+    {
+      "path": "assets/input-BfYuxhlA.css",
+      "owner": "assets/input.css",
+      "gzip": 302
+    },
+    {
+      "path": "assets/input-DM6nirNE.js",
+      "owner": "assets/input.js",
+      "gzip": 2689
+    },
+    {
+      "path": "assets/input-state-FlGSmVzQ.js",
+      "owner": "assets/input-state.js",
+      "gzip": 178
+    },
+    {
+      "path": "assets/inspect-DxXQo-0F.js",
+      "owner": "assets/inspect.js",
+      "gzip": 633
+    },
+    {
+      "path": "assets/item-models-CrX5hr8N.js",
+      "owner": "assets/item-models.js",
+      "gzip": 642
+    },
+    {
+      "path": "assets/lights-CQUCKAk8.js",
+      "owner": "assets/lights.js",
+      "gzip": 839
+    },
+    {
+      "path": "assets/live--Tae42pA.js",
+      "owner": "assets/live.js",
+      "gzip": 661
+    },
+    {
+      "path": "assets/loop-BACyQijE.js",
+      "owner": "assets/loop.js",
+      "gzip": 769
+    },
+    {
+      "path": "assets/machine-sfx-pTyrvIVu.js",
+      "owner": "assets/machine-sfx.js",
+      "gzip": 934
+    },
+    {
+      "path": "assets/main-CZojx6OG.css",
+      "owner": "assets/main.css",
+      "gzip": 7168
+    },
+    {
+      "path": "assets/main-DoSmy_7N.js",
+      "owner": "assets/main.js",
+      "gzip": 64471
+    },
+    {
+      "path": "assets/main-qXl-mpL5.js",
+      "owner": "assets/main.js",
+      "gzip": 2305
+    },
+    {
+      "path": "assets/mark-CcyAyGMv.js",
+      "owner": "assets/mark.js",
+      "gzip": 248
+    },
+    {
+      "path": "assets/materials-CC-AS1Di.js",
+      "owner": "assets/materials.js",
+      "gzip": 806
+    },
+    {
+      "path": "assets/math-pure-IZwqsMQ0.js",
+      "owner": "assets/math-pure.js",
+      "gzip": 358
+    },
+    {
+      "path": "assets/modal-DhJBpr1P.js",
+      "owner": "assets/modal.js",
+      "gzip": 299
+    },
+    {
+      "path": "assets/model-2NA5QJPG.js",
+      "owner": "assets/model.js",
+      "gzip": 804
+    },
+    {
+      "path": "assets/modulepreload-polyfill-P2Xu9kJm.js",
+      "owner": "assets/modulepreload-polyfill.js",
+      "gzip": 389
+    },
+    {
+      "path": "assets/motion-CrGdKhrX.js",
+      "owner": "assets/motion.js",
+      "gzip": 476
+    },
+    {
+      "path": "assets/net-BsQypKmZ.js",
+      "owner": "assets/net.js",
+      "gzip": 2133
+    },
+    {
+      "path": "assets/noise-CPE7lStG.js",
+      "owner": "assets/noise.js",
+      "gzip": 419
+    },
+    {
+      "path": "assets/notify-ChuW_YPu.css",
+      "owner": "assets/notify.css",
+      "gzip": 749
+    },
+    {
+      "path": "assets/notify-D3_AARGN.js",
+      "owner": "assets/notify.js",
+      "gzip": 798
+    },
+    {
+      "path": "assets/npc-voice-BHBtVnHL.js",
+      "owner": "assets/npc-voice.js",
+      "gzip": 2370
+    },
+    {
+      "path": "assets/particles-DnXfnhzL.js",
+      "owner": "assets/particles.js",
+      "gzip": 1273
+    },
+    {
+      "path": "assets/pause-pages-DxqO4lBE.js",
+      "owner": "assets/pause-pages.js",
+      "gzip": 51
+    },
+    {
+      "path": "assets/physics-BzlO37s8.js",
+      "owner": "assets/physics.js",
+      "gzip": 738
+    },
+    {
+      "path": "assets/player-BvjqGIV9.js",
+      "owner": "assets/player.js",
+      "gzip": 82
+    },
+    {
+      "path": "assets/precompile-DO4o3AMa.js",
+      "owner": "assets/precompile.js",
+      "gzip": 1414
+    },
+    {
+      "path": "assets/preload-helper-BLdHbfdN.js",
+      "owner": "assets/preload-helper.js",
+      "gzip": 797
+    },
+    {
+      "path": "assets/prop-models-4wo87GR7.js",
+      "owner": "assets/prop-models.js",
+      "gzip": 1081
+    },
+    {
+      "path": "assets/props-B3aK-tUO.js",
+      "owner": "assets/props.js",
+      "gzip": 1711
+    },
+    {
+      "path": "assets/props-D0VP7OsF.js",
+      "owner": "assets/props.js",
+      "gzip": 1411
+    },
+    {
+      "path": "assets/rapier-B-xeHNxw.js",
+      "owner": "assets/rapier.js",
+      "gzip": 51514
+    },
+    {
+      "path": "assets/rapier_wasm3d_bg-Z_KLso_L.wasm",
+      "owner": "assets/rapier_wasm3d_bg.wasm",
+      "gzip": 1152732
+    },
+    {
+      "path": "assets/receivers-MoWAReQD.js",
+      "owner": "assets/receivers.js",
+      "gzip": 1737
+    },
+    {
+      "path": "assets/rng-BsERB_me.js",
+      "owner": "assets/rng.js",
+      "gzip": 148
+    },
+    {
+      "path": "assets/rolldown-runtime-DK3Fl9T5.js",
+      "owner": "assets/rolldown-runtime.js",
+      "gzip": 154
+    },
+    {
+      "path": "assets/route--bZhGS1G.js",
+      "owner": "assets/route.js",
+      "gzip": 232
+    },
+    {
+      "path": "assets/scene-ClgDcSrT.js",
+      "owner": "assets/scene.js",
+      "gzip": 2352
+    },
+    {
+      "path": "assets/shape-CtPtbFrj.js",
+      "owner": "assets/shape.js",
+      "gzip": 891
+    },
+    {
+      "path": "assets/shared-time-ONIOctbz.js",
+      "owner": "assets/shared-time.js",
+      "gzip": 187
+    },
+    {
+      "path": "assets/shore-nodes-DjvAMJWR.js",
+      "owner": "assets/shore-nodes.js",
+      "gzip": 7296
+    },
+    {
+      "path": "assets/shore-options-QKCYyFFk.js",
+      "owner": "assets/shore-options.js",
+      "gzip": 255
+    },
+    {
+      "path": "assets/sky-CKJetaoc.js",
+      "owner": "assets/sky.js",
+      "gzip": 3616
+    },
+    {
+      "path": "assets/sky-CvtrQ1I_.js",
+      "owner": "assets/sky.js",
+      "gzip": 110
+    },
+    {
+      "path": "assets/sky-clock-DNsFR1In.js",
+      "owner": "assets/sky-clock.js",
+      "gzip": 271
+    },
+    {
+      "path": "assets/sky-core-DkUxDpFc.js",
+      "owner": "assets/sky-core.js",
+      "gzip": 3812
+    },
+    {
+      "path": "assets/spectrum-CaSQn7Wh.js",
+      "owner": "assets/spectrum.js",
+      "gzip": 1804
+    },
+    {
+      "path": "assets/splash-CkzrnoxW.css",
+      "owner": "assets/splash.css",
+      "gzip": 1031
+    },
+    {
+      "path": "assets/splash-O1KXWd6S.js",
+      "owner": "assets/splash.js",
+      "gzip": 1273
+    },
+    {
+      "path": "assets/splash-art-CUf4wrPt.jpg",
+      "owner": "assets/splash-art.jpg",
+      "gzip": 94032
+    },
+    {
+      "path": "assets/splash-art-D6cO98ar.js",
+      "owner": "assets/splash-art.js",
+      "gzip": 75
+    },
+    {
+      "path": "assets/state-BgqPqXW4.js",
+      "owner": "assets/state.js",
+      "gzip": 505
+    },
+    {
+      "path": "assets/state-BpXToKBr.js",
+      "owner": "assets/state.js",
+      "gzip": 3056
+    },
+    {
+      "path": "assets/state-CWzsqhd9.js",
+      "owner": "assets/state.js",
+      "gzip": 820
+    },
+    {
+      "path": "assets/state-CunA1UWZ.js",
+      "owner": "assets/state.js",
+      "gzip": 4312
+    },
+    {
+      "path": "assets/state-D9qy7prz.js",
+      "owner": "assets/state.js",
+      "gzip": 647
+    },
+    {
+      "path": "assets/state-DE3iaycv.js",
+      "owner": "assets/state.js",
+      "gzip": 2575
+    },
+    {
+      "path": "assets/sync-BKKBKbWy.js",
+      "owner": "assets/sync.js",
+      "gzip": 4970
+    },
+    {
+      "path": "assets/terrain-BQ-NNoDU.js",
+      "owner": "assets/terrain.js",
+      "gzip": 2192
+    },
+    {
+      "path": "assets/three-Baranu9e.js",
+      "owner": "assets/three.js",
+      "gzip": 307534
+    },
+    {
+      "path": "assets/timeline-DyF6aVBF.js",
+      "owner": "assets/timeline.js",
+      "gzip": 1222
+    },
+    {
+      "path": "assets/tone-BV0v9c-1.js",
+      "owner": "assets/tone.js",
+      "gzip": 1456
+    },
+    {
+      "path": "assets/tsl-YrbbTpr5.js",
+      "owner": "assets/tsl.js",
+      "gzip": 76
+    },
+    {
+      "path": "assets/ui-sound-CGl6Ti-3.js",
+      "owner": "assets/ui-sound.js",
+      "gzip": 1178
+    },
+    {
+      "path": "assets/ui-sound-CbSmJVW8.css",
+      "owner": "assets/ui-sound.css",
+      "gzip": 397
+    },
+    {
+      "path": "assets/view-DMXFCx8Q.js",
+      "owner": "assets/view.js",
+      "gzip": 258
+    },
+    {
+      "path": "assets/water-field-CdfwdDYP.js",
+      "owner": "assets/water-field.js",
+      "gzip": 613
+    },
+    {
+      "path": "assets/water-render-B4nMstYh.js",
+      "owner": "assets/water-render.js",
+      "gzip": 22367
+    }
+  ],
+  "unchangedOwners": true,
+  "beforeBytes": 1839933,
+  "afterBytes": 1839934,
+  "gzipLevel": 6
+}

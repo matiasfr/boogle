@@ -1,0 +1,832 @@
+{
+  "beforeManifest": {
+    "id": "1793838315308-50993",
+    "operation": "look",
+    "args": [
+      "--query",
+      "proto=place&coop=0&water=new",
+      "--name",
+      "water-default-before",
+      "--size",
+      "1440x900",
+      "--cam",
+      "922,32,42",
+      "--look",
+      "900,20,14",
+      "--real",
+      "--warm",
+      "2",
+      "--frames",
+      "2",
+      "--seconds",
+      "1",
+      "--action",
+      "/Users/matiasfranco/Developer/boogle-codex/post-look-round2/.look/round2/default.ts",
+      "--question",
+      "Does the normal real-sea graph vary by particle spawn or water-query dispatch?"
+    ],
+    "query": "",
+    "started": "2026-11-05T00:25:15.757Z",
+    "finished": "2026-11-05T00:25:31.522Z",
+    "status": 0,
+    "before": {
+      "commit": "18744e396beddb55ecc69563741f8f0b4a604248",
+      "tree": "3354c5737488709bb39c844cbcf63097a846bd96",
+      "dirty": false
+    },
+    "after": {
+      "commit": "18744e396beddb55ecc69563741f8f0b4a604248",
+      "tree": "3354c5737488709bb39c844cbcf63097a846bd96",
+      "dirty": false
+    },
+    "harness": {
+      "commit": "f6fce38d232455e82bb37ce5f781c15f23033a50",
+      "tree": "83685cb30e0b715020256c7bef92225e7f4ff645",
+      "dirty": false
+    },
+    "harnessAfter": {
+      "commit": "f6fce38d232455e82bb37ce5f781c15f23033a50",
+      "tree": "83685cb30e0b715020256c7bef92225e7f4ff645",
+      "dirty": false
+    },
+    "changedDuringRun": false,
+    "artifacts": ["output.txt", "water-default-before-motion.png", "water-default-before-still.png"]
+  },
+  "afterManifest": {
+    "id": "1793839792039-78762",
+    "operation": "look",
+    "args": [
+      "--at",
+      "train unlocked",
+      "--query",
+      "proto=place&coop=0&water=new",
+      "--name",
+      "water-default-after",
+      "--size",
+      "1440x900",
+      "--cam",
+      "922,32,42",
+      "--look",
+      "900,20,14",
+      "--real",
+      "--warm",
+      "2",
+      "--frames",
+      "2",
+      "--seconds",
+      "1",
+      "--action",
+      "/Users/matiasfranco/Developer/boogle-codex/post-look-round2/.look/round2/default-after.ts",
+      "--question",
+      "Are normal graph resources unchanged and compute-count changes frame-conditional?"
+    ],
+    "query": "",
+    "started": "2026-11-05T00:49:52.707Z",
+    "finished": "2026-11-05T00:50:09.813Z",
+    "status": 0,
+    "before": {
+      "commit": "05ca502abc853f9a1cb74013e71f4a6309b85d44",
+      "tree": "0a32f8b60ede348e8ad6f2d8ac5a37fc7b70b86d",
+      "dirty": false
+    },
+    "after": {
+      "commit": "05ca502abc853f9a1cb74013e71f4a6309b85d44",
+      "tree": "0a32f8b60ede348e8ad6f2d8ac5a37fc7b70b86d",
+      "dirty": false
+    },
+    "harness": {
+      "commit": "f6fce38d232455e82bb37ce5f781c15f23033a50",
+      "tree": "83685cb30e0b715020256c7bef92225e7f4ff645",
+      "dirty": false
+    },
+    "harnessAfter": {
+      "commit": "f6fce38d232455e82bb37ce5f781c15f23033a50",
+      "tree": "83685cb30e0b715020256c7bef92225e7f4ff645",
+      "dirty": false
+    },
+    "changedDuringRun": false,
+    "artifacts": ["output.txt", "water-default-after-motion.png", "water-default-after-still.png"]
+  },
+  "before": {
+    "graph": {
+      "mrt": null,
+      "outputs": [
+        {
+          "name": "output",
+          "type": 1016,
+          "format": 1023
+        }
+      ],
+      "samples": 4,
+      "output": "ShaderCallNodeInternal",
+      "transform": false
+    },
+    "observed": {
+      "frame": 481,
+      "renderPasses": 7,
+      "computeDispatches": 13,
+      "computePasses": 4,
+      "internalPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "rendererPixelRatio": 1,
+      "msaaSamples": 4,
+      "adapter": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "device": "",
+        "description": "",
+        "isFallbackAdapter": false
+      },
+      "workCountScope": "backend beginRender contexts and compute dispatches; excludes internal copy/clear/mipmap passes and XR layer splits",
+      "renderTargets": [
+        {
+          "id": "597e0d5d-ba1d-4ea9-a17e-03215951ffdd",
+          "name": null,
+          "width": 512,
+          "height": 512,
+          "depth": 1,
+          "samples": 4,
+          "colors": [
+            {
+              "name": null,
+              "format": 1028,
+              "type": 1016,
+              "gpu": {
+                "width": 512,
+                "height": 512,
+                "layers": 1,
+                "format": "r16float",
+                "samples": 1
+              },
+              "multisampled": [
+                {
+                  "width": 512,
+                  "height": 512,
+                  "layers": 1,
+                  "format": "r16float",
+                  "samples": 4
+                }
+              ]
+            }
+          ],
+          "depthStencil": null
+        },
+        {
+          "id": "15996fb2-105e-44e1-b42c-48a8a1d4a9ce",
+          "name": null,
+          "width": 256,
+          "height": 256,
+          "depth": 1,
+          "samples": 4,
+          "colors": [
+            {
+              "name": null,
+              "format": 1030,
+              "type": 1016,
+              "gpu": {
+                "width": 256,
+                "height": 256,
+                "layers": 1,
+                "format": "rg16float",
+                "samples": 1
+              },
+              "multisampled": [
+                {
+                  "width": 256,
+                  "height": 256,
+                  "layers": 1,
+                  "format": "rg16float",
+                  "samples": 4
+                }
+              ]
+            }
+          ],
+          "depthStencil": null
+        },
+        {
+          "id": "f5b6ccef-4e53-422a-ae05-43be1f87535c",
+          "name": "output",
+          "width": 1440,
+          "height": 900,
+          "depth": 1,
+          "samples": 4,
+          "colors": [
+            {
+              "name": "output",
+              "format": 1023,
+              "type": 1016,
+              "gpu": {
+                "width": 1440,
+                "height": 900,
+                "layers": 1,
+                "format": "rgba16float",
+                "samples": 1
+              },
+              "multisampled": [
+                {
+                  "width": 1440,
+                  "height": 900,
+                  "layers": 1,
+                  "format": "rgba16float",
+                  "samples": 4
+                }
+              ]
+            }
+          ],
+          "depthStencil": {
+            "name": "depth",
+            "format": 1026,
+            "type": 1014,
+            "gpu": {
+              "width": 1440,
+              "height": 900,
+              "layers": 1,
+              "format": "depth24plus",
+              "samples": 4
+            },
+            "multisampled": []
+          }
+        },
+        {
+          "id": "0219228c-8f1e-47b2-bccc-5babb46b6040",
+          "name": "ShadowMap",
+          "width": 2048,
+          "height": 2048,
+          "depth": 1,
+          "samples": 1,
+          "colors": [
+            {
+              "name": "ShadowMap",
+              "format": 1023,
+              "type": 1009,
+              "gpu": {
+                "width": 2048,
+                "height": 2048,
+                "layers": 1,
+                "format": "rgba8unorm",
+                "samples": 1
+              },
+              "multisampled": []
+            }
+          ],
+          "depthStencil": {
+            "name": "ShadowDepthTexture",
+            "format": 1026,
+            "type": 1014,
+            "gpu": {
+              "width": 2048,
+              "height": 2048,
+              "layers": 1,
+              "format": "depth24plus",
+              "samples": 1
+            },
+            "multisampled": []
+          }
+        },
+        {
+          "id": "bd5ff122-7449-4667-a742-d1657b767d37",
+          "name": null,
+          "width": 1,
+          "height": 1,
+          "depth": 1,
+          "samples": 1,
+          "colors": [
+            {
+              "name": null,
+              "format": 1023,
+              "type": 1015,
+              "gpu": {
+                "width": 1,
+                "height": 1,
+                "layers": 1,
+                "format": "rgba32float",
+                "samples": 1
+              },
+              "multisampled": []
+            }
+          ],
+          "depthStencil": null
+        },
+        {
+          "id": "abe52e73-110d-40a2-935f-19eada4a62ce",
+          "name": null,
+          "width": 32,
+          "height": 32,
+          "depth": 1,
+          "samples": 1,
+          "colors": [
+            {
+              "name": null,
+              "format": 1023,
+              "type": 1016,
+              "gpu": {
+                "width": 32,
+                "height": 32,
+                "layers": 1,
+                "format": "rgba16float",
+                "samples": 1
+              },
+              "multisampled": []
+            }
+          ],
+          "depthStencil": null
+        }
+      ],
+      "targetInventoryScope": "offscreen targets observed since collection began; not total residency; GPU descriptors are actual allocations, null means unavailable",
+      "route": {
+        "pathname": "/",
+        "query": {
+          "dpr": "fixed",
+          "debugcam": "1",
+          "room": "look9swms",
+          "proto": "place",
+          "coop": "0",
+          "water": "new"
+        },
+        "hash": ""
+      },
+      "view": {
+        "position": [922, 32, 42],
+        "quaternion": [-0.15291822797255483, 0.3225579153657357, 0.05288876840785336, 0.9326173840139079],
+        "fov": 62,
+        "near": 0.25,
+        "far": 4680
+      },
+      "flags": {
+        "prototypes": [
+          {
+            "id": "place",
+            "variant": "default"
+          }
+        ],
+        "look": null,
+        "fx": null,
+        "activeLook": {
+          "ground": true,
+          "light": true,
+          "contact": true,
+          "kit": true,
+          "mats": true,
+          "gtao": false
+        },
+        "dpr": "fixed"
+      }
+    },
+    "hist": {
+      "[\"particles update\",\"water FFT rows\",\"water FFT columns 1\",\"water FFT mip 1:1\",\"water FFT mip 1:2\",\"water FFT mip 1:3\",\"water FFT mip 1:4\",\"water FFT mip 1:5\",\"water FFT mip 1:6\",\"water FFT mip 1:7\",\"water FFT mip 1:8\",\"water query 0\",\"water wet lens\"]": 29,
+      "[\"particles spawn\",\"particles update\",\"water FFT rows\",\"water FFT columns 0\",\"water FFT mip 0:1\",\"water FFT mip 0:2\",\"water FFT mip 0:3\",\"water FFT mip 0:4\",\"water FFT mip 0:5\",\"water FFT mip 0:6\",\"water FFT mip 0:7\",\"water FFT mip 0:8\",\"water query 0\",\"water wet lens\"]": 26,
+      "[\"particles spawn\",\"particles update\",\"water FFT rows\",\"water FFT columns 1\",\"water FFT mip 1:1\",\"water FFT mip 1:2\",\"water FFT mip 1:3\",\"water FFT mip 1:4\",\"water FFT mip 1:5\",\"water FFT mip 1:6\",\"water FFT mip 1:7\",\"water FFT mip 1:8\",\"water query 0\",\"water wet lens\"]": 32,
+      "[\"particles update\",\"water FFT rows\",\"water FFT columns 0\",\"water FFT mip 0:1\",\"water FFT mip 0:2\",\"water FFT mip 0:3\",\"water FFT mip 0:4\",\"water FFT mip 0:5\",\"water FFT mip 0:6\",\"water FFT mip 0:7\",\"water FFT mip 0:8\",\"water query 0\",\"water wet lens\"]": 34,
+      "[\"particles update\",\"water FFT rows\",\"water FFT columns 0\",\"water FFT mip 0:1\",\"water FFT mip 0:2\",\"water FFT mip 0:3\",\"water FFT mip 0:4\",\"water FFT mip 0:5\",\"water FFT mip 0:6\",\"water FFT mip 0:7\",\"water FFT mip 0:8\",\"water query 0\"]": 28,
+      "[\"particles spawn\",\"particles update\",\"water FFT rows\",\"water FFT columns 1\",\"water FFT mip 1:1\",\"water FFT mip 1:2\",\"water FFT mip 1:3\",\"water FFT mip 1:4\",\"water FFT mip 1:5\",\"water FFT mip 1:6\",\"water FFT mip 1:7\",\"water FFT mip 1:8\",\"water query 0\"]": 34,
+      "[\"particles update\",\"water FFT rows\",\"water FFT columns 1\",\"water FFT mip 1:1\",\"water FFT mip 1:2\",\"water FFT mip 1:3\",\"water FFT mip 1:4\",\"water FFT mip 1:5\",\"water FFT mip 1:6\",\"water FFT mip 1:7\",\"water FFT mip 1:8\",\"water query 0\"]": 24,
+      "[\"particles spawn\",\"particles update\",\"water FFT rows\",\"water FFT columns 0\",\"water FFT mip 0:1\",\"water FFT mip 0:2\",\"water FFT mip 0:3\",\"water FFT mip 0:4\",\"water FFT mip 0:5\",\"water FFT mip 0:6\",\"water FFT mip 0:7\",\"water FFT mip 0:8\",\"water query 0\"]": 31
+    },
+    "particles": {
+      "soft": 174
+    },
+    "modules": []
+  },
+  "after": {
+    "graph": {
+      "mrt": null,
+      "outputs": [
+        {
+          "name": "output",
+          "type": 1016,
+          "format": 1023
+        }
+      ],
+      "samples": 4,
+      "output": "ShaderCallNodeInternal",
+      "transform": false
+    },
+    "observed": {
+      "frame": 500,
+      "renderPasses": 7,
+      "computeDispatches": 13,
+      "computePasses": 4,
+      "internalPixels": {
+        "width": 1440,
+        "height": 900
+      },
+      "devicePixelRatio": 1,
+      "rendererPixelRatio": 1,
+      "msaaSamples": 4,
+      "adapter": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "device": "",
+        "description": "",
+        "isFallbackAdapter": false
+      },
+      "workCountScope": "backend beginRender contexts and compute dispatches; excludes internal copy/clear/mipmap passes and XR layer splits",
+      "renderTargets": [
+        {
+          "id": "c4a63a73-536b-40f2-b41e-6ef8e221763c",
+          "name": null,
+          "width": 512,
+          "height": 512,
+          "depth": 1,
+          "samples": 4,
+          "colors": [
+            {
+              "name": null,
+              "format": 1028,
+              "type": 1016,
+              "gpu": {
+                "width": 512,
+                "height": 512,
+                "layers": 1,
+                "format": "r16float",
+                "samples": 1
+              },
+              "multisampled": [
+                {
+                  "width": 512,
+                  "height": 512,
+                  "layers": 1,
+                  "format": "r16float",
+                  "samples": 4
+                }
+              ]
+            }
+          ],
+          "depthStencil": null
+        },
+        {
+          "id": "584bc6e9-ed94-4bd1-b0a9-fb9b3695b953",
+          "name": null,
+          "width": 256,
+          "height": 256,
+          "depth": 1,
+          "samples": 4,
+          "colors": [
+            {
+              "name": null,
+              "format": 1030,
+              "type": 1016,
+              "gpu": {
+                "width": 256,
+                "height": 256,
+                "layers": 1,
+                "format": "rg16float",
+                "samples": 1
+              },
+              "multisampled": [
+                {
+                  "width": 256,
+                  "height": 256,
+                  "layers": 1,
+                  "format": "rg16float",
+                  "samples": 4
+                }
+              ]
+            }
+          ],
+          "depthStencil": null
+        },
+        {
+          "id": "4bd7de4e-51dc-448e-ac88-a3a4cdfe11ee",
+          "name": "output",
+          "width": 1440,
+          "height": 900,
+          "depth": 1,
+          "samples": 4,
+          "colors": [
+            {
+              "name": "output",
+              "format": 1023,
+              "type": 1016,
+              "gpu": {
+                "width": 1440,
+                "height": 900,
+                "layers": 1,
+                "format": "rgba16float",
+                "samples": 1
+              },
+              "multisampled": [
+                {
+                  "width": 1440,
+                  "height": 900,
+                  "layers": 1,
+                  "format": "rgba16float",
+                  "samples": 4
+                }
+              ]
+            }
+          ],
+          "depthStencil": {
+            "name": "depth",
+            "format": 1026,
+            "type": 1014,
+            "gpu": {
+              "width": 1440,
+              "height": 900,
+              "layers": 1,
+              "format": "depth24plus",
+              "samples": 4
+            },
+            "multisampled": []
+          }
+        },
+        {
+          "id": "aa596937-ca81-4ec9-b869-7ae7f4a7cc37",
+          "name": "ShadowMap",
+          "width": 2048,
+          "height": 2048,
+          "depth": 1,
+          "samples": 1,
+          "colors": [
+            {
+              "name": "ShadowMap",
+              "format": 1023,
+              "type": 1009,
+              "gpu": {
+                "width": 2048,
+                "height": 2048,
+                "layers": 1,
+                "format": "rgba8unorm",
+                "samples": 1
+              },
+              "multisampled": []
+            }
+          ],
+          "depthStencil": {
+            "name": "ShadowDepthTexture",
+            "format": 1026,
+            "type": 1014,
+            "gpu": {
+              "width": 2048,
+              "height": 2048,
+              "layers": 1,
+              "format": "depth24plus",
+              "samples": 1
+            },
+            "multisampled": []
+          }
+        },
+        {
+          "id": "c229f2e3-011f-4e48-b941-98c2c55428f9",
+          "name": null,
+          "width": 1,
+          "height": 1,
+          "depth": 1,
+          "samples": 1,
+          "colors": [
+            {
+              "name": null,
+              "format": 1023,
+              "type": 1015,
+              "gpu": {
+                "width": 1,
+                "height": 1,
+                "layers": 1,
+                "format": "rgba32float",
+                "samples": 1
+              },
+              "multisampled": []
+            }
+          ],
+          "depthStencil": null
+        },
+        {
+          "id": "7237a73c-0efe-4057-bd4a-c3d3bce11995",
+          "name": null,
+          "width": 32,
+          "height": 32,
+          "depth": 1,
+          "samples": 1,
+          "colors": [
+            {
+              "name": null,
+              "format": 1023,
+              "type": 1016,
+              "gpu": {
+                "width": 32,
+                "height": 32,
+                "layers": 1,
+                "format": "rgba16float",
+                "samples": 1
+              },
+              "multisampled": []
+            }
+          ],
+          "depthStencil": null
+        }
+      ],
+      "targetInventoryScope": "offscreen targets observed since collection began; not total residency; GPU descriptors are actual allocations, null means unavailable",
+      "route": {
+        "pathname": "/",
+        "query": {
+          "dpr": "fixed",
+          "debugcam": "1",
+          "room": "proto-place",
+          "proto": "place",
+          "coop": "0",
+          "water": "new"
+        },
+        "hash": ""
+      },
+      "view": {
+        "position": [922, 32, 42],
+        "quaternion": [-0.15291822797255483, 0.3225579153657357, 0.05288876840785336, 0.9326173840139079],
+        "fov": 62,
+        "near": 0.25,
+        "far": 4680
+      },
+      "flags": {
+        "prototypes": [
+          {
+            "id": "place",
+            "variant": "default"
+          }
+        ],
+        "look": null,
+        "fx": null,
+        "activeLook": {
+          "ground": true,
+          "light": true,
+          "contact": true,
+          "kit": true,
+          "mats": true,
+          "gtao": false
+        },
+        "dpr": "fixed"
+      }
+    },
+    "hist": {
+      "{\"names\":[\"particles update\",\"water FFT rows\",\"water FFT columns 1\",\"water FFT mip 1:1\",\"water FFT mip 1:2\",\"water FFT mip 1:3\",\"water FFT mip 1:4\",\"water FFT mip 1:5\",\"water FFT mip 1:6\",\"water FFT mip 1:7\",\"water FFT mip 1:8\",\"water query 0\",\"water wet lens\"],\"passes\":4}": 4,
+      "{\"names\":[\"particles update\",\"water FFT rows\",\"water FFT columns 0\",\"water FFT mip 0:1\",\"water FFT mip 0:2\",\"water FFT mip 0:3\",\"water FFT mip 0:4\",\"water FFT mip 0:5\",\"water FFT mip 0:6\",\"water FFT mip 0:7\",\"water FFT mip 0:8\",\"water query 0\",\"water wet lens\"],\"passes\":4}": 7,
+      "{\"names\":[\"particles spawn\",\"particles update\",\"water FFT rows\",\"water FFT columns 0\",\"water FFT mip 0:1\",\"water FFT mip 0:2\",\"water FFT mip 0:3\",\"water FFT mip 0:4\",\"water FFT mip 0:5\",\"water FFT mip 0:6\",\"water FFT mip 0:7\",\"water FFT mip 0:8\",\"water query 0\",\"water wet lens\"],\"passes\":5}": 45,
+      "{\"names\":[\"particles spawn\",\"particles update\",\"water FFT rows\",\"water FFT columns 1\",\"water FFT mip 1:1\",\"water FFT mip 1:2\",\"water FFT mip 1:3\",\"water FFT mip 1:4\",\"water FFT mip 1:5\",\"water FFT mip 1:6\",\"water FFT mip 1:7\",\"water FFT mip 1:8\",\"water query 0\",\"water wet lens\"],\"passes\":5}": 49,
+      "{\"names\":[\"particles spawn\",\"particles update\",\"water FFT rows\",\"water FFT columns 0\",\"water FFT mip 0:1\",\"water FFT mip 0:2\",\"water FFT mip 0:3\",\"water FFT mip 0:4\",\"water FFT mip 0:5\",\"water FFT mip 0:6\",\"water FFT mip 0:7\",\"water FFT mip 0:8\",\"water query 0\"],\"passes\":4}": 59,
+      "{\"names\":[\"particles spawn\",\"particles update\",\"water FFT rows\",\"water FFT columns 1\",\"water FFT mip 1:1\",\"water FFT mip 1:2\",\"water FFT mip 1:3\",\"water FFT mip 1:4\",\"water FFT mip 1:5\",\"water FFT mip 1:6\",\"water FFT mip 1:7\",\"water FFT mip 1:8\",\"water query 0\"],\"passes\":4}": 61,
+      "{\"names\":[\"particles update\",\"water FFT rows\",\"water FFT columns 0\",\"water FFT mip 0:1\",\"water FFT mip 0:2\",\"water FFT mip 0:3\",\"water FFT mip 0:4\",\"water FFT mip 0:5\",\"water FFT mip 0:6\",\"water FFT mip 0:7\",\"water FFT mip 0:8\",\"water query 0\"],\"passes\":3}": 8,
+      "{\"names\":[\"particles update\",\"water FFT rows\",\"water FFT columns 1\",\"water FFT mip 1:1\",\"water FFT mip 1:2\",\"water FFT mip 1:3\",\"water FFT mip 1:4\",\"water FFT mip 1:5\",\"water FFT mip 1:6\",\"water FFT mip 1:7\",\"water FFT mip 1:8\",\"water query 0\"],\"passes\":3}": 5
+    },
+    "particles": {
+      "soft": 480
+    },
+    "modules": []
+  },
+  "unchangedGraph": true,
+  "unchangedTargets": true,
+  "histogram": [
+    {
+      "names": [
+        "particles update",
+        "water FFT rows",
+        "water FFT columns 1",
+        "water FFT mip 1:1",
+        "water FFT mip 1:2",
+        "water FFT mip 1:3",
+        "water FFT mip 1:4",
+        "water FFT mip 1:5",
+        "water FFT mip 1:6",
+        "water FFT mip 1:7",
+        "water FFT mip 1:8",
+        "water query 0",
+        "water wet lens"
+      ],
+      "passes": 4,
+      "frames": 4
+    },
+    {
+      "names": [
+        "particles update",
+        "water FFT rows",
+        "water FFT columns 0",
+        "water FFT mip 0:1",
+        "water FFT mip 0:2",
+        "water FFT mip 0:3",
+        "water FFT mip 0:4",
+        "water FFT mip 0:5",
+        "water FFT mip 0:6",
+        "water FFT mip 0:7",
+        "water FFT mip 0:8",
+        "water query 0",
+        "water wet lens"
+      ],
+      "passes": 4,
+      "frames": 7
+    },
+    {
+      "names": [
+        "particles spawn",
+        "particles update",
+        "water FFT rows",
+        "water FFT columns 0",
+        "water FFT mip 0:1",
+        "water FFT mip 0:2",
+        "water FFT mip 0:3",
+        "water FFT mip 0:4",
+        "water FFT mip 0:5",
+        "water FFT mip 0:6",
+        "water FFT mip 0:7",
+        "water FFT mip 0:8",
+        "water query 0",
+        "water wet lens"
+      ],
+      "passes": 5,
+      "frames": 45
+    },
+    {
+      "names": [
+        "particles spawn",
+        "particles update",
+        "water FFT rows",
+        "water FFT columns 1",
+        "water FFT mip 1:1",
+        "water FFT mip 1:2",
+        "water FFT mip 1:3",
+        "water FFT mip 1:4",
+        "water FFT mip 1:5",
+        "water FFT mip 1:6",
+        "water FFT mip 1:7",
+        "water FFT mip 1:8",
+        "water query 0",
+        "water wet lens"
+      ],
+      "passes": 5,
+      "frames": 49
+    },
+    {
+      "names": [
+        "particles spawn",
+        "particles update",
+        "water FFT rows",
+        "water FFT columns 0",
+        "water FFT mip 0:1",
+        "water FFT mip 0:2",
+        "water FFT mip 0:3",
+        "water FFT mip 0:4",
+        "water FFT mip 0:5",
+        "water FFT mip 0:6",
+        "water FFT mip 0:7",
+        "water FFT mip 0:8",
+        "water query 0"
+      ],
+      "passes": 4,
+      "frames": 59
+    },
+    {
+      "names": [
+        "particles spawn",
+        "particles update",
+        "water FFT rows",
+        "water FFT columns 1",
+        "water FFT mip 1:1",
+        "water FFT mip 1:2",
+        "water FFT mip 1:3",
+        "water FFT mip 1:4",
+        "water FFT mip 1:5",
+        "water FFT mip 1:6",
+        "water FFT mip 1:7",
+        "water FFT mip 1:8",
+        "water query 0"
+      ],
+      "passes": 4,
+      "frames": 61
+    },
+    {
+      "names": [
+        "particles update",
+        "water FFT rows",
+        "water FFT columns 0",
+        "water FFT mip 0:1",
+        "water FFT mip 0:2",
+        "water FFT mip 0:3",
+        "water FFT mip 0:4",
+        "water FFT mip 0:5",
+        "water FFT mip 0:6",
+        "water FFT mip 0:7",
+        "water FFT mip 0:8",
+        "water query 0"
+      ],
+      "passes": 3,
+      "frames": 8
+    },
+    {
+      "names": [
+        "particles update",
+        "water FFT rows",
+        "water FFT columns 1",
+        "water FFT mip 1:1",
+        "water FFT mip 1:2",
+        "water FFT mip 1:3",
+        "water FFT mip 1:4",
+        "water FFT mip 1:5",
+        "water FFT mip 1:6",
+        "water FFT mip 1:7",
+        "water FFT mip 1:8",
+        "water query 0"
+      ],
+      "passes": 3,
+      "frames": 5
+    }
+  ]
+}

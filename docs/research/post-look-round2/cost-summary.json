@@ -1,0 +1,238 @@
+{
+  "cost-T-d2": {
+    "manifest": ".look/evidence/1793839827349-80082/evidence.json",
+    "repeats": [
+      {
+        "status": "complete",
+        "contention": "unknown",
+        "gpu": {
+          "onMs": 13.501812862687641,
+          "offMs": 7.534357947773404,
+          "deltaMs": 5.967454914914238
+        },
+        "means": [13.292493085066477, 7.4903720670276215, 7.578343828519185, 13.711132640308804],
+        "conditions": {
+          "order": "on/off/off/on",
+          "seconds": 3,
+          "warmSeconds": 2,
+          "repeated": true,
+          "compositeDependencies": ["bloom"],
+          "resolution": "fixed full route scale",
+          "frameLimit": "display",
+          "physicalOcclusion": "unknown",
+          "actualPresentation": "unavailable",
+          "preparation": [
+            {
+              "enabled": true,
+              "elapsedMs": 2013.7999999523163
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2005.3999998569489
+            }
+          ],
+          "warmups": [
+            {
+              "enabled": true,
+              "elapsedMs": 2022.7999999523163
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2011.0999999046326
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2012.3999998569489
+            },
+            {
+              "enabled": true,
+              "elapsedMs": 2012.2999999523163
+            }
+          ]
+        }
+      },
+      {
+        "status": "complete",
+        "contention": "unknown",
+        "gpu": {
+          "onMs": 13.512920185592439,
+          "offMs": 7.452384736140569,
+          "deltaMs": 6.060535449451869
+        },
+        "means": [13.282153409057193, 7.4637622806761, 7.441007191605038, 13.743686962127686],
+        "conditions": {
+          "order": "on/off/off/on",
+          "seconds": 3,
+          "warmSeconds": 2,
+          "repeated": true,
+          "compositeDependencies": ["bloom"],
+          "resolution": "fixed full route scale",
+          "frameLimit": "display",
+          "physicalOcclusion": "unknown",
+          "actualPresentation": "unavailable",
+          "preparation": [
+            {
+              "enabled": true,
+              "elapsedMs": 2011.7000000476837
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2007
+            }
+          ],
+          "warmups": [
+            {
+              "enabled": true,
+              "elapsedMs": 2013.4000000953674
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2006.2000000476837
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2012
+            },
+            {
+              "enabled": true,
+              "elapsedMs": 2010.5
+            }
+          ]
+        }
+      }
+    ],
+    "on": {
+      "n": 720,
+      "mean": 13.507366524140041,
+      "p50": 13.459335088729858,
+      "p95": 14.463361978530884
+    },
+    "off": {
+      "n": 720,
+      "mean": 7.493371341956986,
+      "p50": 7.4919281005859375,
+      "p95": 8.284122943878174
+    },
+    "missing": 0,
+    "stale": 0,
+    "partial": 0
+  },
+  "cost-T-combo": {
+    "manifest": ".look/evidence/1793839936465-84549/evidence.json",
+    "repeats": [
+      {
+        "status": "complete",
+        "contention": "unknown",
+        "gpu": {
+          "onMs": 14.266648400492139,
+          "offMs": 7.522813084390428,
+          "deltaMs": 6.743835316101711
+        },
+        "means": [13.915863088766734, 7.403466235266792, 7.6421599335140655, 14.617433712217544],
+        "conditions": {
+          "order": "on/off/off/on",
+          "seconds": 3,
+          "warmSeconds": 2,
+          "repeated": true,
+          "compositeDependencies": ["bloom"],
+          "resolution": "fixed full route scale",
+          "frameLimit": "display",
+          "physicalOcclusion": "unknown",
+          "actualPresentation": "unavailable",
+          "preparation": [
+            {
+              "enabled": true,
+              "elapsedMs": 2023.5
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2020.5999999046326
+            }
+          ],
+          "warmups": [
+            {
+              "enabled": true,
+              "elapsedMs": 2050.399999856949
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2016.9000000953674
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2011.7000000476837
+            },
+            {
+              "enabled": true,
+              "elapsedMs": 2049.399999856949
+            }
+          ]
+        }
+      },
+      {
+        "status": "complete",
+        "contention": "unknown",
+        "gpu": {
+          "onMs": 14.850883697869044,
+          "offMs": 6.530235975980759,
+          "deltaMs": 8.320647721888285
+        },
+        "means": [15.385123403032841, 6.40893802775277, 6.6515339242087475, 14.313675994343228],
+        "conditions": {
+          "order": "on/off/off/on",
+          "seconds": 3,
+          "warmSeconds": 2,
+          "repeated": true,
+          "compositeDependencies": ["bloom"],
+          "resolution": "fixed full route scale",
+          "frameLimit": "display",
+          "physicalOcclusion": "unknown",
+          "actualPresentation": "unavailable",
+          "preparation": [
+            {
+              "enabled": true,
+              "elapsedMs": 2013
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2077.899999856949
+            }
+          ],
+          "warmups": [
+            {
+              "enabled": true,
+              "elapsedMs": 2091.0999999046326
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2035.7000000476837
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2013.7999999523163
+            },
+            {
+              "enabled": true,
+              "elapsedMs": 3050.7999999523163
+            }
+          ]
+        }
+      }
+    ],
+    "on": {
+      "n": 721,
+      "mean": 14.559171205420103,
+      "p50": 14.320613861083984,
+      "p95": 16.702327966690063
+    },
+    "off": {
+      "n": 720,
+      "mean": 7.026524530185593,
+      "p50": 6.814729928970337,
+      "p95": 9.020778894424438
+    },
+    "missing": 0,
+    "stale": 0,
+    "partial": 0
+  }
+}
