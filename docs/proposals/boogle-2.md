@@ -273,6 +273,8 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### Look
 
+- **2026-11-04, ground boundary comparison only** (owner, ground-edges brief: yes to render-options open question 2). Make one Current/Narrow/Crisp board, diagnose softness, review motion and measure cost. Current stays the default; adoption remains part of the deferred terrain and level-design pass below. [Comparison and findings](../research/ground-edges.md).
+
 - **2026-11-04, finish the water switch and keep the old sea only in history** (owner: "it's okay to remove and switch to the new water for now. We can always bring that back later if we decide to do that as a performance option"). Complete step 7; the old sea and demo stay at tag `archive/old-sea`. A low-end fallback is a low-priority maybe, not planned work. Update the docs and run a light simplify pass for performance that doesn't change the look ("it does work well"). Step 8 needs no separate acceptance beyond that.
 - **2026-11-04, keep the current look; post looks are parked** (owner, choosing Current over Drawn toys and Drawn + air: "stick with the current for now, but park these as rendering options for later if we take another pass"). Toy-only outlines were the strongest candidate, but cost about 6 ms on the M1 Max and crawl in motion. Findings: [round two](../research/post-look-round2.md); working layers: tag `archive/post-looks-round2`, not on `main`.
 - **2026-11-04, the room owns the time of day** (owner: "Room should own time for sure"). If several times of day come, everyone in a room sees the same time. It's shared room state, not a local look. How many times and how they change is still open; [research](../research/water-times-of-day.md) is under way.
