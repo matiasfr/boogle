@@ -243,7 +243,7 @@ registerInteractable(() => {
     });
   if (job.awake && job.rung.multi) {
     for (const t of TREES) {
-      if (!standing(t)) continue;
+      if (!standing(t) || (t.great && !beamNeeded())) continue;
       const reach = t.great ? 4.6 : 3.2;
       if (Math.hypot(p.x - t.x, p.z - t.z) > reach) continue;
       if (t.great) {

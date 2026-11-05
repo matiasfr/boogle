@@ -478,7 +478,27 @@ function recoverGroundCargo(now: number) {
     }
   }
 }
-let bigPending: { what: BigCargo; to: string; revision: number; action: 'pick' | 'drop' } | null = null;
+let bigPending: (Omit<BigCargoRequest, 'k'> & { retryAt: number }) | null = null;
+function retryBig(now: number) {
+  const p = bigPending;
+  if (!p || !synced || now < p.retryAt) return;
+  // Retry the original compare-and-swap, never a new claim at the latest revision.
+  // A newer accepted state, reset or different authority ends this request.
+  if (p.gen !== gen || p.to !== authorityPeer() || p.revision !== bigCargo[p.what].revision) {
+    bigPending = null;
+    return;
+  }
+  p.retryAt = now + 1000;
+  msg({
+    k: 'bigMove',
+    what: p.what,
+    action: p.action,
+    revision: p.revision,
+    p: p.p,
+    to: p.to,
+    gen: p.gen,
+  } satisfies BigCargoRequest);
+}
 function acceptBig(what: BigCargo, state: CargoState) {
   const changed = JSON.stringify(bigCargo[what]) !== JSON.stringify(state);
   bigCargo[what] = structuredClone(state);
@@ -546,8 +566,8 @@ function requestBig(what: BigCargo, action: 'pick' | 'drop') {
   const revision = bigCargo[what].revision,
     to = COOP ? authorityPeer() : null;
   if (to) {
-    bigPending = { what, to, revision, action };
-    msg({ k: 'bigMove', what, action, revision, p, to, gen } satisfies BigCargoRequest);
+    bigPending = { what, to, revision, action, p, gen, retryAt: 0 };
+    retryBig(performance.now());
   } else {
     if (!decideBig(what, action, cargoPeer(), revision, p)) return false;
     if (COOP) msg({ k: 'bigState', what, state: bigCargo[what], gen } satisfies BigCargoReply);
@@ -1040,6 +1060,7 @@ export const coop = {
       acceptBig(bigPending.what, bigCargo[bigPending.what]);
       bigPending = null;
     }
+    retryBig(now);
     if (treeLead !== harvestAuthority) {
       // An uncertain request belongs to its former authority. Never reissue it under a new ID.
       clearHarvest(false);
@@ -1082,6 +1103,7 @@ export const coop = {
   },
   /** Everything from ./index.ts; platforms get their stable ids for riders. */
   setup(a: Api) {
+    chopHooks.greatReady = beamNeeded;
     if (!COOP) return;
     api = a;
     Object.assign(a, coopWire);
@@ -1157,6 +1179,7 @@ export const coop = {
           clearHarvest(false);
           since = world.tick;
           synced = false;
+          if (bigPending) bigPending.retryAt = 0; // retry after the reconnect's authoritative snapshot
         }
       });
       room.onMessage((raw, from) => {
@@ -1193,6 +1216,7 @@ export const coop = {
     peers: [...peers.keys()],
     shared: captureShared(),
     harvestPending,
+    bigPending,
     harvestReceipts: [...harvestReceipts.values()],
   }),
 };

@@ -321,6 +321,7 @@ export function validTreeHarvest(v: unknown): v is TreeHarvest {
 export function harvestTree(t: Tree, room: number, axe: number, yaw: number): HarvestResult {
   const state = readTreeHarvest(t);
   if (state.fell) return { state, logs: 0, outcome: 'gone' };
+  if (t.great && !chopHooks.greatReady()) return { state, logs: 0, outcome: 'rebound' };
   if (!t.great && room <= 0) return { state, logs: 0, outcome: 'full' };
   if (t.hardwood && !axe) return { state, logs: 0, outcome: 'rebound' };
   const maxWork = t.great ? GREAT.strokes : 15;
@@ -771,7 +772,7 @@ function startSwing(x: number, z: number) {
 }
 /** Press: the swing starts now. False while the last one is still going. */
 export function chop(t: Tree) {
-  if (swing.t < TUNE.swingS || !me.body) return false;
+  if (swing.t < TUNE.swingS || !me.body || (t.great && !chopHooks.greatReady())) return false;
   swing.target = t;
   swing.rock = null;
   startSwing(t.x, t.z);
@@ -800,11 +801,13 @@ export function breakRock(q: Rock) {
 }
 /** Under `&coop=1`, ./coop.ts accepts tree work before the local award; rock messages retain their existing meaning. */
 export const chopHooks = {
+  greatReady: () => false,
   harvest: null as ((t: Tree, room: number, axe: number, yaw: number) => void) | null,
   rock: null as ((q: Rock) => void) | null,
 };
 function contact(t: Tree) {
   if (!me.body || t.fall >= 0) return; // someone else's stroke can fell it mid-swing
+  if (t.great && !chopHooks.greatReady()) return;
   const p = me.body.position;
   const room = Math.max(0, Math.min(back.room(), job.rung.axe ? AXE2.logsPerStroke : TUNE.logsPerStroke));
   const yaw = Math.atan2(t.x - p.x, t.z - p.z);
