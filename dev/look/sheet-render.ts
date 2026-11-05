@@ -9,6 +9,8 @@ export type Board = {
   columns: number;
   tiles: Tile[];
   strips: Tile[];
+  reference?: Tile;
+  grid?: { rows: string[]; columns: string[]; baseline: string; legend?: string };
 };
 
 export function composition(board: Board) {
@@ -19,7 +21,7 @@ export function composition(board: Board) {
   return `await (${paint.toString()})(${JSON.stringify({ ...board, tiles: board.tiles.map(embed), strips: board.strips.map(embed) })});\nexport {};\n`;
 }
 
-/** Frozen comparisons retain every source pixel. One column stays legible at phone width. */
+/** Frozen comparisons retain every source pixel; wedges use matched rows/columns. */
 export async function paintNative(board: Board, name = 'board.png') {
   const images = await Promise.all(
     board.tiles.map(async (tile) => {
@@ -29,17 +31,108 @@ export async function paintNative(board: Board, name = 'board.png') {
       return im;
     }),
   );
-  const width = Math.max(480, ...images.map((im) => im.width)) + 32;
+  const columnWidth = Math.max(480, ...images.map((im) => im.width)) + 32;
+  let reference: HTMLImageElement | undefined;
+  if (board.reference?.image) {
+    reference = new Image();
+    reference.src = board.reference.image;
+    await reference.decode();
+  }
+  const emit = (canvas: HTMLCanvasElement) => {
+    const data = canvas.toDataURL('image/png').split(',')[1]!;
+    console.log(`SHOTS BEGIN ${name} ${data.length}`);
+    for (let i = 0; i < data.length; i += 16000) console.log('SHOTS DATA ' + data.slice(i, i + 16000));
+    console.log('SHOTS END');
+  };
+  if (board.grid) {
+    const grid = board.grid;
+    if (images.length !== grid.rows.length * grid.columns.length || !images.length)
+      throw new Error('Grid axes must match the captured cells');
+    const w = images[0]!.width,
+      h = images[0]!.height;
+    if (images.some((im) => im.width !== w || im.height !== h))
+      throw new Error('Grid cells must have equal dimensions');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    ctx.font = '30px system-ui';
+    const pad = 24,
+      gap = 20,
+      caption = 40,
+      left = Math.max(176, Math.ceil(Math.max(...grid.rows.map((label) => ctx.measureText(label).width))) + 44),
+      top = 160;
+    const gridWidth = grid.columns.length * (w + gap) - gap;
+    const referenceX = left + gridWidth + 48;
+    canvas.width = reference ? referenceX + w + pad : left + gridWidth + pad;
+    canvas.height = top + grid.rows.length * (h + caption + gap) + pad;
+    ctx.fillStyle = '#15202b';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#eaf0f6';
+    ctx.font = '32px system-ui';
+    ctx.fillText(board.title, pad, 42);
+    ctx.font = '24px system-ui';
+    if (grid.legend) ctx.fillText(grid.legend, pad, 80);
+    ctx.fillStyle = '#a7bacb';
+    ctx.fillText('Native pixels · full settings in manifest.json · frozen stills only', pad, 112);
+    ctx.fillStyle = '#eaf0f6';
+    ctx.font = '30px system-ui';
+    ctx.textAlign = 'center';
+    grid.columns.forEach((label, col) => ctx.fillText(label, left + col * (w + gap) + w / 2, top - 16));
+    grid.rows.forEach((label, row) => {
+      ctx.textAlign = 'right';
+      ctx.fillText(label, left - 20, top + row * (h + caption + gap) + h / 2);
+    });
+    images.forEach((im, i) => {
+      const x = left + (i % grid.columns.length) * (w + gap);
+      const y = top + Math.floor(i / grid.columns.length) * (h + caption + gap);
+      ctx.drawImage(im, x, y);
+      if (board.tiles[i]!.label === grid.baseline) {
+        ctx.strokeStyle = '#ffd166';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(x - 4, y - 4, w + 8, h + 8);
+      }
+      ctx.textAlign = 'center';
+      ctx.fillText(board.tiles[i]!.label, x + w / 2, y + h + 32);
+    });
+    if (reference) {
+      const y = top + Math.floor(grid.rows.length / 2) * (h + caption + gap);
+      ctx.textAlign = 'left';
+      ctx.fillText('Reference', referenceX, y - 16);
+      // Fit the same cell-sized viewport, once; matching-size captures remain at native scale.
+      const scale = Math.min(w / reference.width, h / reference.height);
+      ctx.drawImage(
+        reference,
+        referenceX + (w - reference.width * scale) / 2,
+        y,
+        reference.width * scale,
+        reference.height * scale,
+      );
+      ctx.font = '22px system-ui';
+      let line = '',
+        lineY = y + h + 32;
+      for (const word of board.reference!.label.split(/\s+/)) {
+        if (ctx.measureText(line + ' ' + word).width > w && line) {
+          ctx.fillText(line, referenceX, lineY);
+          lineY += 28;
+          line = '';
+        }
+        line += (line ? ' ' : '') + word;
+      }
+      ctx.fillText(line, referenceX, lineY);
+    }
+    emit(canvas);
+    return;
+  }
+  const width = columnWidth * (reference ? 2 : 1);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   const ctx = canvas.getContext('2d')!;
-  const font = Math.ceil(width / 24);
+  const font = Math.ceil(columnWidth / 24);
   const wrap = (value: string) => {
     ctx.font = `${font}px system-ui`;
     const lines = [''];
     for (const word of value.split(/\s+/)) {
       const i = lines.length - 1;
-      if (ctx.measureText(lines[i] + ' ' + word).width > width - 32) lines.push(word);
+      if (ctx.measureText(lines[i] + ' ' + word).width > columnWidth - 32) lines.push(word);
       else lines[i] += (lines[i] ? ' ' : '') + word;
     }
     return lines;
@@ -68,12 +161,14 @@ export async function paintNative(board: Board, name = 'board.png') {
     labels[i]!.forEach(text);
     y += 8;
     ctx.drawImage(im, 16, y);
+    if (reference) {
+      ctx.fillText(board.reference!.label, columnWidth + 16, y - 8, columnWidth - 32);
+      const scale = Math.min(1, (columnWidth - 32) / reference.width, im.height / reference.height);
+      ctx.drawImage(reference, columnWidth + 16, y, reference.width * scale, reference.height * scale);
+    }
     y += im.height + 8;
   });
-  const data = canvas.toDataURL('image/png').split(',')[1]!;
-  console.log(`SHOTS BEGIN ${name} ${data.length}`);
-  for (let i = 0; i < data.length; i += 16000) console.log('SHOTS DATA ' + data.slice(i, i + 16000));
-  console.log('SHOTS END');
+  emit(canvas);
 }
 
 async function paint(board: Board) {

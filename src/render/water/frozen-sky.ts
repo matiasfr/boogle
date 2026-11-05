@@ -14,10 +14,22 @@ import { bind, tuningEnabled } from './live.ts';
 import { toySkyEnabled } from './flags.ts';
 import { toySky } from './toy.ts';
 import { bootMark } from '../../boot/timeline.ts';
+import { LIGHTING_SPECS } from '../lighting-tuning.ts';
 import { createEveningTransition, eveningPreview, prepareEvening } from './evening-transition.ts';
 
 export const WATER_TOD = 0.24;
 export let frozenSkyActive = false;
+let flushLighting: (() => void) | undefined;
+/** Local presentation only: no world tick, shader time, sky bake or transition advancement. */
+export function flushFrozenLighting() {
+  if (!flushLighting) throw new Error('Frozen lighting is not ready');
+  flushLighting();
+  const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as THREE.HemisphereLight;
+  return {
+    key: { intensity: sun.intensity, color: sun.color.toArray(), position: sun.position.toArray() },
+    fill: { intensity: hemi.intensity, color: hemi.color.toArray(), ground: hemi.groundColor.toArray() },
+  };
+}
 const noon = new THREE.Vector3(0.45, 0.78, 0.32).normalize();
 const east = new THREE.Vector3().crossVectors(noon, new THREE.Vector3(0, 1, 0)).normalize();
 const angle = skyState(WATER_TOD, 0.5).sunAngle;
@@ -79,8 +91,8 @@ export function createFrozenWaterSky() {
   let selectedEnvironment: THREE.Texture = environment.cube;
   // Owner's round-two light choice, 5 November: local scene lights, not a sky rebake.
   const lighting = {
-    keyGain: 1.12,
-    fillGain: 3.2,
+    keyGain: LIGHTING_SPECS[0]!.default,
+    fillGain: LIGHTING_SPECS[1]!.default,
     keyTint: new THREE.Color(1, 1, 1),
     fillTint: new THREE.Color(1, 1, 1),
   };
@@ -112,7 +124,7 @@ export function createFrozenWaterSky() {
     baked = false;
   function update(dt = 0) {
     if (!baked || disposed) return;
-    transition?.update(dt);
+    if (dt) transition?.update(dt);
     scene.backgroundNode = environment.background;
     scene.environment = selectedEnvironment;
     scene.environmentIntensity = 1 - atmosphere.underground; // the outdoor cube cannot reflect through cave roofs
@@ -181,6 +193,7 @@ export function createFrozenWaterSky() {
     upper.copy(fill.upper);
     lower.copy(fill.lower);
     baked = true;
+    flushLighting = update;
     updateFrozenDay();
     update();
     bootMark('sky-ready');
@@ -280,6 +293,7 @@ export function createFrozenWaterSky() {
       transition: transition?.inspect(),
     }),
     dispose() {
+      if (flushLighting === update) flushLighting = undefined;
       if (disposed) return;
       disposed = true;
       transition?.dispose();

@@ -10,8 +10,10 @@ export type ShotCamera = {
 };
 export type ShotVariant = {
   name: string;
+  cell?: number;
   look?: string;
   values?: Record<string, Value>;
+  tunables?: Record<string, number>;
   graphics?: Record<string, GraphicsValue>;
   query?: string;
   size?: [number, number];
@@ -25,6 +27,13 @@ export type ShotBeat = {
   warm?: number;
   cameras: ShotCamera[];
   variants: ShotVariant[];
+  wedge?: {
+    rows: { id: string; label: string; values: [number, number, number] };
+    columns: { id: string; label: string; values: [number, number, number] };
+    legend?: string;
+  };
+  reference?: { image: string; path: string; sha256: string; provenance: string; colorSpace: string; crop: string };
+  keepPaused?: boolean;
 };
 export type ShotList = { question: string; size?: [number, number]; beats: ShotBeat[] };
 export type ShotGroup = ShotBeat & { size: [number, number]; query: string };

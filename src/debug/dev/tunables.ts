@@ -22,10 +22,13 @@ const enabled = () => {
   const q = pageQuery();
   return q.get('dev') !== '0' && (devEnabled || q.get('tune') === '1');
 };
-let localRevision = 0;
-let exposureSource = 'default';
-let exposureWriteSource: string | null = null;
-let lastExposure = exposureSettings.centre;
+const local = new Map(
+  CATALOG.filter((s) => s.scope === 'local').map((s) => [
+    s.id,
+    { value: bindings.get(s.id)?.get() ?? s.default, revision: 0, source: 'default' },
+  ]),
+);
+let localWrite: { id: string; source: string } | null = null;
 let snapshotSequence = 0;
 let startingSetup: ReturnType<typeof setup> | null = null;
 let startupReady = false;
@@ -55,12 +58,13 @@ function read(id: string) {
     ? rules.tune.tune.v[id.slice(5) as TuneKey]
     : spec.scope === 'owner'
       ? feel.value
-      : exposureSettings.centre;
+      : ((bindings.get(id)?.get() as number | undefined) ??
+        (id === 'post.centre' ? exposureSettings.centre : spec.default));
   return {
     ...spec,
     value,
-    source: shared ? 'room' : spec.scope === 'owner' ? (feel.revision ? 'session' : 'default') : exposureSource,
-    revision: shared ? rules.tune.tune.revision : spec.scope === 'owner' ? feel.revision : localRevision,
+    source: shared ? 'room' : spec.scope === 'owner' ? (feel.revision ? 'session' : 'default') : local.get(id)!.source,
+    revision: shared ? rules.tune.tune.revision : spec.scope === 'owner' ? feel.revision : local.get(id)!.revision,
     available: shared ? worldStatus().ready : spec.scope === 'owner' || bindings.has(id),
     ...(spec.scope === 'owner' ? { active: feel.active, chopLocked: feel.chopLocked } : {}),
   };
@@ -151,10 +155,12 @@ function set(args: Args, source = 'session'): Result {
     return { ok: result.ok, message: result.status, data: result };
   }
   if (spec.scope === 'local') {
-    exposureSource = source;
-    exposureWriteSource = source;
-    bindings.get(spec.id)!.set(value);
-    exposureWriteSource = null;
+    localWrite = { id: spec.id, source };
+    try {
+      bindings.get(spec.id)!.set(value);
+    } finally {
+      localWrite = null;
+    }
     return ok('Applied locally.', { status: 'applied', ...read(spec.id) });
   }
   if (requests.size >= 32) requests.delete(requests.keys().next().value!);
@@ -178,13 +184,15 @@ function set(args: Args, source = 'session'): Result {
   };
 }
 onChange(() => {
-  const value = exposureSettings.centre;
-  if (value === lastExposure) return;
-  const old = lastExposure;
-  exposureSource = exposureWriteSource ?? 'owner';
-  lastExposure = value;
-  localRevision++;
-  emitTuneRecord('tune.change', { id: 'post.centre', old, value, revision: localRevision, source: exposureSource });
+  for (const [id, state] of local) {
+    const value = bindings.get(id)?.get();
+    if (typeof value !== 'number' || value === state.value) continue;
+    const old = state.value as number;
+    state.source = localWrite?.id === id ? localWrite.source : 'owner';
+    state.value = value;
+    state.revision++;
+    emitTuneRecord('tune.change', { id, old, value, revision: state.revision, source: state.source });
+  }
 });
 onFeelSpringChange((event, state) => {
   emitTuneRecord(event === 'change' ? 'tune.change' : 'tune.active', {
