@@ -21,3 +21,4 @@ Apply these standing calls whenever their subject arises; the root summaries do 
 ## Deferring to direction
 
 Agents follow recorded owner direction and approved scope. For an ordering conflict, use the [game-direction skill](../../.claude/skills/game-direction/SKILL.md) and give its source-backed recommendation to the planner; pause only dependent work needing an owner decision. It cannot approve new scope, overrule the owner, or require a review for routine work already covered by a plan. [direction.md](../direction.md) is a derived view, not authority.
+- **Contact sheets are for specific beats or sequences being evaluated, not the full game** (owner, 4 November).
