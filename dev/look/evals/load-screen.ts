@@ -28,13 +28,28 @@ frame.src =
       (mode === 'avatar' ? '&avatarHold=1' : '') +
       (mode === 'details' ? '&tune=1' : '');
 document.body.append(frame);
+let previousLabel = '';
+const labels: { t: number; text: string; visible: boolean }[] = [];
+const observe = setInterval(() => {
+  const doc = frame.contentDocument;
+  const child = frame.contentWindow;
+  const label = doc?.querySelector<HTMLElement>('.splash-label');
+  if (!label || !child) return;
+  const text = label.textContent ?? '';
+  const visible = label.style.visibility !== 'hidden';
+  const key = `${visible}:${text}`;
+  if (previousLabel === key) return;
+  previousLabel = key;
+  const entry = { t: Math.round(child.performance.now()), text, visible };
+  labels.push(entry);
+  console.log('LOAD label ' + JSON.stringify(entry));
+}, 20);
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 // The action returns so look records the actual load. The observer reports failures without hiding the evidence.
 void (async () => {
   const until = performance.now() + 80000;
   while (!frame.contentWindow?.performance.getEntriesByName('boot:interactive').length) {
-    if (mode === 'failure' && frame.contentDocument?.querySelector('.load-carry')?.textContent === 'Loading failed')
-      break;
+    if (mode === 'failure' && frame.contentWindow?.performance.getEntriesByName('boot:failed').length) break;
     if (performance.now() > until) throw new Error('Load did not reach its expected handoff');
     await wait(100);
   }
@@ -46,6 +61,12 @@ void (async () => {
       .filter((m) => m.name.startsWith('boot:'))
       .map((m) => ({ name: m.name, t: Math.round(m.startTime) }));
   const carry = () => doc.querySelector('.load-carry')?.textContent ?? '';
+  clearInterval(observe);
+  if (doc.querySelector('.load-strip, .load-room, .load-carry, .splash .load-details'))
+    throw new Error('Removed public load UI remains');
+  const visibleLabels = labels.filter((entry) => entry.visible);
+  if (visibleLabels.some((entry, i) => i > 0 && entry.t - visibleLabels[i - 1]!.t < 1950))
+    throw new Error('Load labels changed faster than two seconds (50 ms sampling tolerance)');
   console.log(
     'LOAD handoff ' +
       JSON.stringify({
@@ -55,6 +76,7 @@ void (async () => {
         carry: carry(),
         entered: child.boogle?.me.entered,
         overflow: doc.documentElement.scrollWidth > child.innerWidth,
+        labels,
       }),
   );
   if (mode === 'failure') {
@@ -63,22 +85,21 @@ void (async () => {
     if (
       boot().some((m) => m.name === 'boot:interactive') ||
       !entry?.disabled ||
-      carry() !== 'Loading failed' ||
       faults.requests.filter((r) => r.status === 503).length !== 3
     )
       throw new Error('Expected three failed downloads and disabled entry, without interactive');
     console.log('LOAD failure verified ' + JSON.stringify({ disabled: entry.disabled, faults }));
   }
   if (mode === 'avatar') {
-    if (!carry().includes('Your character still preparing') || !boot().some((m) => m.name === 'boot:buddy-deadline'))
-      throw new Error('Avatar deadline was presented as complete');
+    if (carry() || !boot().some((m) => m.name === 'boot:buddy-deadline'))
+      throw new Error('Avatar deadline changed or public notice returned');
     await wait(5000);
     await fetch('/__buddy_release');
   }
   if (mode === 'avatar' || mode === 'graphics') {
-    if (mode === 'graphics' && !carry().includes('Graphics still preparing'))
-      throw new Error('Graphics escape was presented as complete');
-    while (carry()) {
+    if (carry()) throw new Error('Public unfinished notice returned');
+    const completed = mode === 'graphics' ? 'boot:warmup-complete' : 'boot:buddy-ready';
+    while (!boot().some((mark) => mark.name === completed)) {
       if (performance.now() > until) throw new Error('Unfinished notice did not clear after real completion');
       await wait(100);
     }
@@ -118,6 +139,7 @@ void (async () => {
   }
   await renderer.setAnimationLoop(loop);
 })().catch(async (error: unknown) => {
+  clearInterval(observe);
   console.error('LOAD proof failed', error);
   await renderer.setAnimationLoop(loop);
 });

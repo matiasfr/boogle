@@ -1,5 +1,46 @@
 # Load screen build assessment
 
+## 4 November: restore the original after the owner's mock review
+
+The [owner's answered brief](../brainstorms/load-screen.md) supersedes the public status-strip proposal below.
+The original art, title, bar and gear remain with one changing draft label. Public groups, room row, details/copy
+and post-entry notices are removed. Pause's developer record and telemetry remain; only the unused `bootStatus`
+export and public UI/CSS were deleted. No assets, entry gates, deadlines or awaits changed.
+
+Literal `/` selects Place and its frozen sky. Added `sky-start` / `sky-ready` marks bracket that existing bake;
+“Baking the sky” therefore precedes shader warm-up. Other warm-up drafts follow aggregate precompile progress,
+not invented per-resource percentages. New labels are at least two seconds apart. A completed specific phase
+hides immediately during that hold, reserving the line's space; fast phases are skipped without delaying entry.
+
+`npm run check` passed (lint, types, unit tests, registry, level/assets and build). Formatted changed files with
+`npx prettier --write`. No new tests or scenarios. The Place bot was not run; no bot result or real-time feel claim.
+`npm run inflight` was omitted because it fetches from GitHub and this task permits only local-server networking.
+
+Broker manifests: [initial baseline](../../.look/evidence/1793860991538-58090/evidence.json),
+[matched refreshed baseline](../../.look/evidence/1793861325712-63444/evidence.json),
+[desktop](../../.look/evidence/1793861202120-62385/evidence.json),
+[375×812 phone viewport](../../.look/evidence/1793861270686-63072/evidence.json),
+[retained Dev record](../../.look/evidence/1793861369217-63844/evidence.json).
+First play (`boot:interactive`, entered verified): baseline 5.210 then 4.965 s; final desktop 4.928 s and phone
+viewport 4.938 s. Desktop's −37 ms against the matched refresh is within the observed 245 ms baseline drift.
+This is local capture noise, not statistical equivalence or a device-speed claim. Baseline refresh temporarily
+restored only this task's runtime edits; SHA-256 verified exact final-source restoration afterwards.
+
+Opened the initial baseline motion sheet; desktop sky, bake and warm-up consecutive sheets; phone bake and
+warm-up consecutive sheets; and the Dev-details still. The six-frame sheets were extracted at 2.1, 2.4 and 4.4 s
+(desktop) and 2.4 / 4.4 s (phone) from each manifest's video, beside it. They show the original unobstructed art,
+title, bar and gear, with “Baking the sky” changing to “Filling the sea”, no strip, controls or overflow. The early
+desktop sheet shows the reserved blank line between phases. Logs also record “Loading the game”. Dev copy
+matches every retained timestamp and reopening preserves its expanded preference. All captures passed WebGPU,
+advancing-frame and no-error checks; all manifests report no source changes during capture.
+
+These are literal default-page loads in a same-origin iframe, with the parent's render loop paused during boot.
+The phone run is a narrow Chromium viewport, not DPR/coarse-pointer emulation, Safari or a physical device.
+Encoded consecutive frames and parent motion curves do not establish display smoothness. Synchronous world
+labels and the full slow-load warm-up vocabulary were not visually exercised by these fast local runs.
+
+## Earlier status-strip implementation (historical)
+
 Ready to playtest the approved brief. The four groups and separate room row read the existing boot timeline;
 they add no scheduler, asset, gameplay step or entry wait. The decorative bar and gear remain, with no numeric
 percentage, including accessibility attributes. Graphics completes only after `warmup-complete` and `first`;
