@@ -105,7 +105,7 @@ const groups: Group[] = [
     specs: [
       spec('sky.keyGain', 'key gain', 0.5, 1.5),
       color('sky.keyTint', 'key tint'),
-      spec('sky.fillGain', 'fill gain', 0.5, 1.5),
+      spec('sky.fillGain', 'fill gain', 0.5, 4),
       color('sky.fillTint', 'fill tint'),
     ],
   },

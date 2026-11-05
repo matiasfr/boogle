@@ -36,12 +36,15 @@ Read [direction](reference/direction.md) when changing render architecture.
 `water-render.ts` owns the production Place/crossing sea, its FFT, shore atlas, queries, underwater HDR and
 once-baked late-morning sky. Neutral stays the output. [Water design](../../docs/game-design/water.md) records
 the fixed-exposure calibration and the classic-home CI exception. `exposure.ts` owns the Local surface gain
-and signed-depth underwater adjustment: 0.16, +0.81 EV through 0–1.5 m. `water/post.ts` uses the width-zero
+and signed-depth underwater adjustment: 0.12, +0.81 EV through 0–1.5 m. The existing frozen-sky scene lights
+use key gain 1.12 and fill gain 3.2; the sky bake and water optics retain their values. `water/post.ts` uses the width-zero
 form of the bounded colour-research output; no exposure meter targets, draws or history copy are constructed.
 HDR scene targets, Neutral and the water/sky shader values remain. Dev Water/Post binds `post.centre` and
 `post.underwaterEV` through the existing reset/persist/copy path.
 
-`readable-unlit.ts` divides scoped ink's **linear RGB** by `surfaceExposure` from `exposure.ts`, preserving
+Physical Place boards and the shop price atlas use rough lit materials, their same sRGB canvas textures and
+received shadows, with no emissive floor or gain compensation. Camera-facing labels and rewards keep their policy.
+`readable-unlit.ts` divides scoped unlit ink's **linear RGB** by `surfaceExposure` from `exposure.ts`, preserving
 alpha and underwater attenuation. Scoped reward emitters fold the inverse of the same CPU setting into RGB
 once at spawn; living particles retain their spawn intensity until expiry. Smoke/dust keep intensity one.
 The material helper ignores repeat calls on the same owned material. The explicit underwater lift remains

@@ -3,7 +3,7 @@ export const EXPOSURE_SPEC = {
   id: 'post.centre',
   type: 'number',
   scope: 'local',
-  default: 0.16,
+  default: 0.12,
   min: 0.01,
   max: 2,
   integer: false,

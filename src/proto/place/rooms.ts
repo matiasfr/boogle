@@ -317,6 +317,7 @@ export function plate(
   yaw = 0,
 ) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), paintBoard(lines, w, h));
+  m.receiveShadow = true;
   m.position.set(x, y, z);
   m.rotation.y = yaw;
   return m;

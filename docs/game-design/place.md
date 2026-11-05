@@ -314,7 +314,7 @@ Projection runs after the current camera/avatar update, anchored to a stable bod
 
 ## Readable ink and rewards
 
-Station and halt names, sign/room boards, shop prices and work-site plaques divide linear RGB by the shared
+Camera-facing station and halt names and work-site plaques divide linear RGB by the shared
 **surfaceExposure** in `render/exposure.ts`. There is no separate 10.9195 multiplier. Crystal and gold pickup glints,
 chest/box sparkles, reward-show sparkles, confetti and celebration fireworks use the same policy in the existing
 particle pool. Dust, smoke, steam, cloth puffs, water spray and already-HDR impact stars retain intensity one.
@@ -324,13 +324,23 @@ other routes retain their original brightness. This is Local presentation, with 
 Implements recommendations 1 and 3 of `docs/research/dark-unlit-exposure.md`, joined to the owner's fixed-exposure
 decision on 5 November. Compensation follows the authored surface gain in Dev and production; the explicit
 underwater lift and attenuation remain intentional. No scene/meter dependency or CPU GPU readback is introduced.
-The material helper applies at most once per owned material. Lights, sky and water are unchanged.
+The material helper applies at most once per owned material. Sky and water settings are unchanged.
 Serves **DESIGN.md 7, Telegraph everything**.
 
 The existing Dev Water/Post **fixed gain** control owns both exposure and inverse compensation;
 `readable.referenceGain` is retired. Newly emitted reward particles pick up changes immediately;
 living particles retain their spawn intensity until they expire. Smoke, dust and the pool's default intensity
 are not compensated. No call site applies both the material helper and particle intensity.
+
+**Owner colour defaults (5 November, for now).** Real-sea Place and crossing use surface gain **0.12**, retained
+underwater **+0.81 EV**, key gain **1.12** and fill gain **3.2**. Place's grass pigment strength is **0.35** and
+its albedo gain **0.7**. Selective green/timber/accent adjustments, the building instance palette and Buddy's
+albedo-only saturation adjustment reproduce round five's pick at their material owners. Classic home is unchanged.
+Physical painted boards and the shop price atlas use roughness-1, metalness-0 `MeshStandardNodeMaterial`,
+the same sRGB canvas textures, scene lights and received shadows; no emissive floor or inverse-gain compensation.
+Indoor paper is greyer than the former unlit paper. Sprite labels and rewards keep readableUnlit exactly once.
+There is no `colourCase` route, restored research fork board or alternate preview path. TIMBER CAMP/QUARRY fork
+signs stay retired. No copy, gameplay, shared state, save, water or sky parameter changes accompany this choice.
 
 ## The town you can go into
 
@@ -715,11 +725,11 @@ This registration supplies the production sea without reshaping Round 4 terrain.
 The default page and `?proto=place` use the [production water](water.md), sampling the actual gorge/shore
 provider. The old sea, crossing rectangles and separate demo are archived. `water=old` and `water=new` no
 longer select a sea. Classic home retains its own cheaper sea pending CI qualification.
-One late-morning atmosphere bake (`tod=0.24`) completes behind loading, with metered **Neutral** output.
+One late-morning atmosphere bake (`tod=0.24`) completes behind loading, with fixed-gain **Neutral** output.
 It replaces the moving day/night sky, sun/moon billboards and faceted clouds; there is no sunset or night
 on this path. Night-gated fireflies and lighthouse beams remain off wherever those systems are present;
 future day/night-only activities need deliberately chosen times. Existing camera clip distances, fog range,
-terrain and material palette remain. Swimming follows bounded asynchronous samples of those waves, and splash depth uses the registered
+terrain remain; the 5 November colour defaults above own the palette. Swimming follows bounded asynchronous samples of those waves, and splash depth uses the registered
 bed rather than the home island. Query-age limits, fallback and diagnostics are described with [home water](island.md).
 The beach ball's existing home-island return bounds remain unchanged; this does not introduce a place ball toy.
 
