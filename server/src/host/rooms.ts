@@ -21,6 +21,11 @@ import { createHostedRoom, type HostCfg, type HostedRoom } from './hosted-room.t
 import type { Store } from '../store.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
+const classicNamespace = (id: string) => /^v\d+-/.exec(id)?.[0];
+const supportedNamespace = (id: string) => {
+  const namespace = classicNamespace(id);
+  return namespace === undefined || namespace === `${WORLD_NS}-`;
+};
 
 export type RoomHostCfg = HostCfg & {
   serverRooms: string[];
@@ -36,7 +41,8 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   const boot = crypto.randomBytes(4).toString('hex');
   const rooms = new Map<string, HostedRoom>();
   const all = cfg.serverRooms.includes('*');
-  const listed = new Set(cfg.serverRooms.filter((id) => ROOM_ID_RE.test(id)));
+  // A listed legacy room must not boot the new rules against its old save before a client is even admitted.
+  const listed = new Set(cfg.serverRooms.filter((id) => ROOM_ID_RE.test(id) && supportedNamespace(id)));
   const hosts = (id: string) => ROOM_ID_RE.test(id) && (all || listed.has(id));
   const load = (id: string) => {
     const room = createHostedRoom({ roomId: id, store, cfg, boot, log: cfg.log });
@@ -139,9 +145,12 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
           !okKey(key)
         )
           return refuseWs(ws, { t: 'bad' }, CLOSE.BAD);
-        if (!hosts(id)) return refuseWs(ws, { t: 'peer' }, CLOSE.NOT_HOSTED);
-        if (id.startsWith(`${WORLD_NS}-`) && params.get('tc') !== TUNE_CATALOG)
+        // Reject legacy/future classic namespaces as well as mismatched current catalogs. Otherwise an old tab
+        // can join its old room after deploy, skip the host's migrated tune state, and simulate different yields.
+        // The isolated t1v01 railway and unversioned service rooms keep their own contracts.
+        if (!supportedNamespace(id) || (classicNamespace(id) && params.get('tc') !== TUNE_CATALOG))
           return refuseWs(ws, { t: 'incompatible', catalog: TUNE_CATALOG }, CLOSE.INCOMPATIBLE);
+        if (!hosts(id)) return refuseWs(ws, { t: 'peer' }, CLOSE.NOT_HOSTED);
         if (closing.has(id)) return refuseWs(ws, { t: 'bye', why: 'restart' }, CLOSE.RESTART);
         const room = rooms.get(id) ?? (rooms.size < cfg.maxHostedRooms ? load(id) : null);
         if (!room) return refuseWs(ws, { t: 'full', max: cfg.maxPlayers, rooms: true }, CLOSE.FULL);

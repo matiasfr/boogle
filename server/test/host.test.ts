@@ -86,6 +86,37 @@ test('current classic rooms refuse missing or different tuning catalogs before j
   }
 });
 
+test('legacy namespaces are refused before loading or rewriting their saved tuning', async () => {
+  const seed = await start();
+  const snapshot = seed.svc.roomHost()!.room('beach')!.world.sync.snapshot();
+  await seed.svc.close({ save: false });
+  // A v06 save held only overrides at tune version 0. Loading it in the new host would migrate yield to 9,
+  // while a v06 tab skips tune v1 and keeps its compiled default 4. Refuse the room before that can happen.
+  snapshot.data.tune = { yield: 9 };
+  snapshot.vers.tune = 0;
+  const room = 'v06-proto-legacy';
+  const file = path.join(seed.dataDir, `${room}.json`);
+  const saved = JSON.stringify({ tick: snapshot.tick, writerId: 'server', data: snapshot, updatedAt: 'legacy' });
+  await fs.writeFile(file, saved);
+  for (const serverRooms of ['*', room]) {
+    const { svc, base } = await start({ SERVER_ROOMS: serverRooms }, seed.dataDir);
+    try {
+      assert.equal(svc.roomHost()!.room(room), undefined, 'configured legacy rooms must not load at boot');
+      for (const catalog of [undefined, 'old-defaults', TUNE_CATALOG]) {
+        const c = connect(base, room, 'legacy', undefined, undefined, catalog);
+        assert.deepEqual(await c.next(is('incompatible')), { t: 'incompatible', catalog: TUNE_CATALOG });
+        assert.equal(await c.closed, 4412);
+        assert.ok(!c.msgs.some(is('welcome')));
+        assert.ok(!c.msgs.some(isWorld('w:snap')));
+        assert.equal(svc.roomHost()!.room(room), undefined, 'refusal must not load or migrate the saved room');
+      }
+    } finally {
+      await svc.close({ save: true });
+    }
+    assert.equal(await fs.readFile(file, 'utf8'), saved, 'shutdown must leave the legacy save byte-for-byte intact');
+  }
+});
+
 test('join: welcome then list, presence relays with ids, left after a close, the lead moves', async () => {
   const { svc, base } = await start();
   try {

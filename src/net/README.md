@@ -38,6 +38,7 @@ one means (docs/agents/mixed-builds.md, "Mixed builds").
 
 Current classic `v07-` rooms require the client's `tc` catalog fingerprint at admission. It includes shared tuning
 defaults, bounds, keys and interpretation; different fingerprints get `incompatible` and close code 4412 before a
-room is created or joined. A matching fingerprint permits different build SHAs. The transport stops reconnecting
+room is created or joined. Older classic `vNN-` namespaces are refused before loading or migrating their saves,
+even when explicitly configured or presenting the current catalog. A matching fingerprint permits different build SHAs. The transport stops reconnecting
 on this refusal. The isolated railway namespace keeps its own contract. Shared tuning writes additionally need an
 explicit server `TUNE_CONTROLLER_KEY` matching the sender's bound socket key; being the room lead grants nothing.
