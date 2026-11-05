@@ -9,13 +9,13 @@ button does what) and 8 (designed for drop-in). Local: no sim or network state.
 
 Place uses the shared speaker framing, including its initial pitch reset. The camera arm stays anchored at player shoulder height when the card offsets the look target, avoiding a collision pivot below the ground. Touch action buttons and the stick hide while the talk owns them, with looking still available outside the card. Place cards fit inside the viewport and scroll; a nearby speaker's floating line sits above its Talk prompt.
 
-D-pad up/down, vertical stick and up/down keys pick answers. Left/right ownership remains unfinished: those directions can still fire Ping/Flag during a conversation. Touch keeps direct answer buttons and its tap guard. The round 4 tracker records the missing horizontal controls.
+All four D-pad directions and arrow keys pick answers, including left/right for options across a row. The talk owns left/right throughout, so they cannot fire Ping or Flag. Horizontal stick picks repeat too. The Pick hint follows the first row's layout; touch keeps direct answer buttons and its tap guard.
 
 | | Pad | Keyboard | Touch |
 |---|---|---|---|
 | Open | X / □ / Y (the interact button) | E | the main button (it says Talk) |
 | Skip the typing, or go on | A / ✕ | E, Space, Enter | tap the box (with one answer, the tap says it) |
-| Pick an answer | D-pad ↑ ↓ or the left stick (repeats while held) | ↑ ↓ or W S; 1-9 answer at once | tap it |
+| Pick an answer | D-pad ↑ ↓ ← → or the left stick (repeats while held) | ↑ ↓ ← → or W S; 1-9 answer at once | tap it |
 | Say the picked answer | A / ✕ | E, Space, Enter | (the tap) |
 | Leave | B / ○ | Esc (with the mouse locked, Esc ends the lock, which also leaves) | the close button |
 
@@ -30,9 +30,9 @@ D-pad up/down, vertical stick and up/down keys pick answers. Left/right ownershi
   others) and his close button is 44 px.
 - A hint row on the box shows the buttons for the input in use, named for the pad's brand: "A Next, B Leave" while the
   line types or there is only one way on, "A Answer, ↑↓ Pick, B Leave" when there are choices (✕ / ○ on a PlayStation
-  pad); "E Next" / "E Answer", "↑↓ Pick", "Esc Leave" on a keyboard; on touch only "Tap to go on ▸" when there is one
+  pad); "E Next" / "E Answer", "↑↓ Pick" or "←→ Pick" to match the layout, "Esc Leave" on a keyboard; on touch only "Tap to go on ▸" when there is one
   answer.
-- D-pad ↑ ↓ (buttons 12 and 13, or the D-pad axes of a pad without the standard mapping) and the left stick repeat
+- D-pad ↑ ↓ ← → (buttons 12–15, or the D-pad axes of a pad without the standard mapping) and the left stick repeat
   while held: first after 380 ms, then every 170 ms.
 - **You stand still.** Move and jump are held for the whole talk (`inputState.held`); looking around still works.
   In the first 1.4 s the camera eases round to face the NPC (a little to one side, so you share the shot) and you turn
