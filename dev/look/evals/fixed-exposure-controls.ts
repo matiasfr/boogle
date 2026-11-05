@@ -11,10 +11,10 @@ const { lookSnapshot } = (await import(
 const { readableUnlit, readableIntensity } = (await import(
   '/src/render/readable-unlit.ts' as string
 )) as typeof import('../../../src/render/readable-unlit.ts');
-const { paintBoard } = (await import(
-  '/src/proto/place/signs.ts' as string
-)) as typeof import('../../../src/proto/place/signs.ts');
-const material = paintBoard([], 1, 1);
+const { label } = (await import(
+  '/src/proto/minis/common.ts' as string
+)) as typeof import('../../../src/proto/minis/common.ts');
+const material = label(1, 1).sprite.material as unknown as import('three/webgpu').SpriteNodeMaterial;
 const patched = material.colorNode;
 if (readableUnlit(material).colorNode !== patched) throw new Error('Repeated readable patch doubled compensation');
 material.dispose();
@@ -46,9 +46,22 @@ if (copied.changes['post.centre'] !== 0.18 || copied.changes['post.underwaterEV'
   throw new Error('Copy settings omitted fixed calibration');
 console.log('EXPOSURE CONTROLS ' + JSON.stringify({ saved, snapshot: lookSnapshot() }));
 panel.querySelector<HTMLButtonElement>('[data-water-group="Post"]')!.click();
-if (input('post.centre').valueAsNumber !== 0.16 || input('post.underwaterEV').valueAsNumber !== 0.81)
+if (input('post.centre').valueAsNumber !== 0.12 || input('post.underwaterEV').valueAsNumber !== 0.81)
   throw new Error('Post reset did not restore fixed calibration');
-if (readableIntensity() !== 6.25) throw new Error('Reward compensation did not reset');
+if (Math.abs(readableIntensity() * 0.12 - 1) > 1e-12) throw new Error('Reward compensation did not reset');
+for (const [key, expected] of [
+  ['sky.keyGain', 1.12],
+  ['sky.fillGain', 3.2],
+] as const) {
+  const field = input(key);
+  if (field.valueAsNumber !== expected || Number(field.max) < expected)
+    throw new Error('Light control does not show its production default: ' + key);
+  field.value = '1';
+  field.dispatchEvent(new Event('input', { bubbles: true }));
+}
+panel.querySelector<HTMLButtonElement>('[data-water-group="Light fill"]')!.click();
+if (bindings.get('sky.keyGain')!.get() !== 1.12 || bindings.get('sky.fillGain')!.get() !== 3.2)
+  throw new Error('Light reset did not restore production defaults');
 section.open = true;
 section.scrollIntoView({ block: 'start' });
 console.log('EXPOSURE CONTROLS reset passed');

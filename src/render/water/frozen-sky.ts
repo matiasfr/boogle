@@ -77,29 +77,28 @@ export function createFrozenWaterSky() {
   let transition: ReturnType<typeof createEveningTransition> | undefined;
   const filtered: THREE.RenderTarget[] = [];
   let selectedEnvironment: THREE.Texture = environment.cube;
-  const preview = tuningEnabled
-    ? {
-        keyGain: 1,
-        fillGain: 1,
-        keyTint: new THREE.Color(1, 1, 1),
-        fillTint: new THREE.Color(1, 1, 1),
-      }
-    : undefined;
-  if (preview) {
+  // Owner's round-two light choice, 5 November: local scene lights, not a sky rebake.
+  const lighting = {
+    keyGain: 1.12,
+    fillGain: 3.2,
+    keyTint: new THREE.Color(1, 1, 1),
+    fillTint: new THREE.Color(1, 1, 1),
+  };
+  if (tuningEnabled) {
     for (const key of ['keyGain', 'fillGain'] as const)
       bind(
         `sky.${key}`,
-        () => preview[key],
+        () => lighting[key],
         (value) => {
-          preview[key] = value as number;
+          lighting[key] = value as number;
         },
       );
     for (const key of ['keyTint', 'fillTint'] as const)
       bind(
         `sky.${key}`,
-        () => preview[key].toArray(),
+        () => lighting[key].toArray(),
         (value) => {
-          preview[key].fromArray(value as number[]);
+          lighting[key].fromArray(value as number[]);
         },
       );
   }
@@ -130,20 +129,18 @@ export function createFrozenWaterSky() {
       r = Math.max(c.x, 1e-4);
     sun.color.setRGB(c.x / r, c.y / r, c.z / r);
     sun.intensity = Math.PI * r;
-    if (preview) {
-      sun.color.multiply(preview.keyTint);
-      sun.intensity *= preview.keyGain;
-    }
+    sun.color.multiply(lighting.keyTint);
+    sun.intensity *= lighting.keyGain;
     sun.shadow.intensity = 1;
     sun.shadow.autoUpdate = true;
     const ug = atmosphere.underground;
     if (hemi) {
       hemi.color.copy(upper);
-      if (preview) hemi.color.multiply(preview.fillTint);
+      hemi.color.multiply(lighting.fillTint);
       hemi.color.lerp(CAVE.sky, ug);
       hemi.groundColor.copy(lower).lerp(CAVE.ground, ug);
       hemi.intensity = Math.PI * THREE.MathUtils.lerp(1, 0.8, ug);
-      if (preview) hemi.intensity *= THREE.MathUtils.lerp(preview.fillGain, 1, ug);
+      hemi.intensity *= THREE.MathUtils.lerp(lighting.fillGain, 1, ug);
     }
     const f = scene.fog as THREE.Fog;
     near.value = f.near;

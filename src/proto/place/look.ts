@@ -49,6 +49,16 @@ export const LOOK = {
 // oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
 
+/** Owner's selective pigment choice. Paths, sand, steel and authored vertex colours keep their own treatment. */
+export function selectiveColour(base: N, family: 'grass' | 'green' | 'timber' | 'accent') {
+  if (family === 'accent') {
+    const peak = max(max(base.r, base.g), base.b).max(0.001);
+    return base.mul(base.div(peak).mul(0.45).add(0.72));
+  }
+  const target = base.mul(family === 'green' || family === 'grass' ? vec3(0.88, 1.18, 0.94) : vec3(1.35, 1.19, 0.84));
+  return family === 'grass' ? mix(base, target, 0.35).mul(0.7) : target;
+}
+
 // ---------------------------------------------------------------- ground: smooth grass, faceted rock
 const ROCK = new THREE.Color('#d0a872'),
   ROCK_DEEP = new THREE.Color('#a98558');
@@ -87,7 +97,7 @@ export function groundMaterial() {
     .mul(0.05);
   const tint: N = mix(vec3(0.74, 0.9, 0.78), vec3(1.04, 1.04, 0.82), breathe);
   const lawn: N = mix(v.mul(tint), v.mul(vec3(1.24, 1.1, 0.72)), dry.mul(0.55)).mul(mottle.add(1));
-  const grass: N = mix(lawn, v.mul(0.85), paths);
+  const grass: N = mix(selectiveColour(lawn, 'grass'), v.mul(0.85), paths);
   // Rock: warm tan, darker low down, in soft strata that lean a little.
   const strata: N = sin(
     p.y
@@ -156,6 +166,7 @@ export function paint(p: Paint) {
     vertexColors: LOOK.contact || p.own === true,
   });
   if (wood) m.colorNode = materialColor.mul(grainOf(p.grain!.axis, p.grain!.scale ?? [1, 1, 1]));
+  if (!steel && !p.own) m.colorNode = selectiveColour(m.colorNode ?? materialColor, wood ? 'timber' : 'accent');
   if (steel) m.emissiveNode = skyOnSteel();
   if (p.rust) {
     // Broad material changes fit the painted kit; world-space mottling made moving metal look camouflaged.

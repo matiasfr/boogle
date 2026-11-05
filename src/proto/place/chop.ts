@@ -7,6 +7,8 @@
 // goes on your shoulder with either axe. Trees stay finite. The axe and back are the first two rungs (`AXE2`, `PACK`, ./ladder.ts);
 // which rung you're on comes from `job.rung`.
 import * as THREE from 'three/webgpu';
+import { materialColor } from 'three/tsl';
+import { patchNode } from '../../render/material-patch.ts';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { warmUp } from '../../render/precompile.ts';
@@ -23,7 +25,7 @@ import { knock, pop } from '../minis/common.ts';
 import { flat } from '../flat.ts';
 import { H, addStatic } from './land.ts';
 import { COOP, count, job, personalSlice, sharedSlice, save } from './job.ts';
-import { LOOK, addBlob } from './look.ts';
+import { LOOK, addBlob, selectiveColour } from './look.ts';
 import { AXE2, GREAT, GREAT_TREE, GROVES, OAK, ORIGIN, PACK, ROCKS, ROCK_WORK, TUNE } from './layout.ts';
 import { chips, dustRing, send } from './pieces.ts';
 import { BEAM_CARRY_POSITION, makeCarryModels } from './carry-models.ts';
@@ -525,7 +527,13 @@ const parts = {
   split: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.16, 0.28, 3.5, 8), flat('#c7c2aa'), 2),
   greatCrown: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), flat('#4f7941'), 2),
 };
-for (const m of Object.values(parts)) {
+for (const [name, m] of Object.entries(parts)) {
+  if (['crown', 'crown2', 'broad', 'trunk', 'stump'].includes(name)) {
+    m.material = m.material.clone(); // flat() is shared; this tree owns its pigment patch.
+    patchNode(m.material, 'colorNode', (previous) =>
+      selectiveColour(previous ?? materialColor, ['crown', 'crown2', 'broad'].includes(name) ? 'green' : 'timber'),
+    );
+  }
   m.castShadow = true;
   m.frustumCulled = false;
   scene.add(m);
