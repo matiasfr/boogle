@@ -15,6 +15,10 @@ owner's fallback, classic migration stops here. Its packed height texture and si
 allocated only when classic creates its sea; production exposes no old material-patch API. This is a route
 choice, not an opt-in switch. Live tuning and Looks remain available on Place and crossing.
 
+The [removal handoff](../plans/water-graduation.md#step-78-removal-handoff-4-november-2026) records
+matched frame costs, opened views, final solo/co-op routes, retained failures and device limits.
+The real iPhone and the owner's replay remain untested; the code is committed for review, not shipped.
+
 The surface retains four 256² FFT cascades, `.25` spectral energy, real terrain bathymetry, shallow caustics,
 swash, foam, spray, refraction, underwater shafts/snow and exit droplets. The frozen late-morning sky bakes
 once behind loading at `tod=0.24`; Neutral remains the default output after underwater HDR and exposure.

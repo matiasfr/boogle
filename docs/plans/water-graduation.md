@@ -351,8 +351,8 @@ Every numbered item is an implementation commit or small group of commits **afte
 - [x] **4. Apply caustics, swash/wetness and spray to real receivers.** Create `water/{receivers,caustics,spray}.ts`; minimally attach receiver patches in `island/terrain.ts` and `proto/place/land.ts`/`look.ts`, retaining terrain colour, roughness, shadow and cave mask nodes through `patchNode`. Register real contact obstacles, generate world-fixed emitter sites, and spawn a spray entity before the shared particle upload. Gate receiver light by depth, orientation, daylight and shelter; verify no caustics shine through dry bridges or cave roofs. Compare a bank, rock/support and beach at dawn/noon/night; inspect stills and consecutive recorded frames, count mip work and run `npm run check`.
 - [x] **5. Integrate underwater composition and automatic high-fall plunges (owner revision, 3 November 2026).** Keep production `underwater.ts`/`snow.ts`, their body masks, HDR output and surfacing droplets. Remove the entire manual dive action (C, D-pad right, touch button/CSS, generated guide row and controller intent). Swimming defaults to the surface; entry at ≥14 m/s retains downward momentum, faster falls go deeper (existing 20 m/s fall cap), and buoyancy floats the player up without input or breath mechanics. Slow entries limit downward speed to 1 m/s relative to the surface; downward drag 1.2/s, upward drag 3/s, passive ascent cap 2.5 m/s with gain 8/s. Keep Rapier collisions and existing Owner pose delivery; old sea forces stay unchanged without `water=new`. Verify high drops and a low-bank jump using broker `--action --video --curves`, extract consecutive frames and report measured depths. Check controls are absent and camera-only submersion still shows the underwater look. Run `npm run sim -- replay` and `npm run check`. Real-time feel remains for the owner. The earlier manual-dive evidence below is historical, superseded by this revision.
 - [x] **6. Fit route ranges, day/night and quality without changing scene.ts.** Add range/quality helpers under `src/render/water/`; adapt `crossing/sky.ts` and the small place setup to use one polar surface at existing clip ranges, removing rectangle creation and obsolete sea-only colour writes. Retain unrelated crossing fog/day behavior and place's lighting. Extract only the mobile resolution normalization from `proto/water/post.ts`. Inspect horizon, region transitions, Far Head, 20/50 m/s train views, high fall/glide, near-face/held-object views, rooms/caves, sunset/moonlight and resize/resume. Run `npm run check` and matched M1 Max before/after `npm run perf`; use the supplied broker for browser work when running in a launched task, never another Chromium.
-- [ ] **7. Switch the real sea and remove the replaced prototype/seams.** Enable the completed water for default place and classic home in `water-render.ts`; delete `dressSea()` imports/calls and `src/proto/crossing/sea.ts` after checking every caller. Tag the last intact demo `archive/water`, then remove `src/proto/water/` and `features/proto-water.ts`, retire the local opt-in switch, and mark the water card `archived` in `protos/protos.ts` with its graduation destination. Update its playlist entry. Remove the old packed home texture, sine material, `seaDepth`/`seaFoam`/`seaRings` material-patch API, hidden-old-sea traversal, demo teleport/CCD/soft-wall overrides, camera/sun/fog overrides and superseded diagnostics/URL options. Migrate reusable `dev/water-diagnose.ts` and `dev/look/evals/water-*.ts` imports; archive demo-only diagnostics with the tag instead of leaving broken imports. The parked sky prototype must stop depending on the removed water horizon seam: remove `water-render.ts`'s `protoOn('sky')`/`uHaze` branch and its write in `proto/sky/index.ts`, without graduating or deleting that unrelated prototype. Prune only removed ESLint suppressions. Search all references to old exports, `ISLAND_AT`, `ROCK`, `dressSea`, `proto=water` and old module paths; classify documentation/archive references explicitly. Run `npm run check`.
-- [ ] **8. Document, verify the real round, and hand it to the owner.** Move/replace `docs/game-design/water-proto.md` with `docs/game-design/water.md`; update the index, island/player/ball/place/crossing/cave/control entries that changed, `src/render/README.md`, the related find-the-fun checkbox and `docs/atlas/stories/` water story. Keep research as historical evidence and retain `public/THIRD_PARTY_NOTICES.md` attribution in the built output. Run the supplied broker's full `playthrough`, read its report even on failure, inspect saved relevant shore/train/dive views, and run existing `world-inputs`, `caves` and `smoke` scenarios with the appropriate route. Run `npm run check`, `npm run atlas -- --check` (advisory), final matched perf/device checks and a diff simplification review. No `check:full` solely for rendering; protected network/world files should be unchanged. Stop when ready for the owner's playtest; do not start additional development/check-in loops while waiting. One line: “The new water now meets our real shores and you can dive into it.” One question: “Does this water feel at home here, from the bank and when you jump in?”
+- [x] **7. Switch the real sea and remove the replaced prototype/seams.** Completed under the latest owner call above, including its classic-home cost exception; existing archive tags were reused. Enable the completed water for default place and classic home in `water-render.ts`; delete `dressSea()` imports/calls and `src/proto/crossing/sea.ts` after checking every caller. Tag the last intact demo `archive/water`, then remove `src/proto/water/` and `features/proto-water.ts`, retire the local opt-in switch, and mark the water card `archived` in `protos/protos.ts` with its graduation destination. Update its playlist entry. Remove the old packed home texture, sine material, `seaDepth`/`seaFoam`/`seaRings` material-patch API, hidden-old-sea traversal, demo teleport/CCD/soft-wall overrides, camera/sun/fog overrides and superseded diagnostics/URL options. Migrate reusable `dev/water-diagnose.ts` and `dev/look/evals/water-*.ts` imports; archive demo-only diagnostics with the tag instead of leaving broken imports. The parked sky prototype must stop depending on the removed water horizon seam: remove `water-render.ts`'s `protoOn('sky')`/`uHaze` branch and its write in `proto/sky/index.ts`, without graduating or deleting that unrelated prototype. Prune only removed ESLint suppressions. Search all references to old exports, `ISLAND_AT`, `ROCK`, `dressSea`, `proto=water` and old module paths; classify documentation/archive references explicitly. Run `npm run check`.
+- [x] **8. Document, verify the real round, and hand it to the owner.** Automated handoff complete; human replay and the device/performance limits at the end remain open. Move/replace `docs/game-design/water-proto.md` with `docs/game-design/water.md`; update the index, island/player/ball/place/crossing/cave/control entries that changed, `src/render/README.md`, the related find-the-fun checkbox and `docs/atlas/stories/` water story. Keep research as historical evidence and retain `public/THIRD_PARTY_NOTICES.md` attribution in the built output. Run the supplied broker's full `playthrough`, read its report even on failure, inspect saved relevant shore/train/dive views, and run existing `world-inputs`, `caves` and `smoke` scenarios with the appropriate route. Run `npm run check`, `npm run atlas -- --check` (advisory), final matched perf/device checks and a diff simplification review. No `check:full` solely for rendering; protected network/world files should be unchanged. Stop when ready for the owner's playtest; do not start additional development/check-in loops while waiting. One line: “The new water now meets our real shores and you can dive into it.” One question: “Does this water feel at home here, from the bank and when you jump in?”
 
 ### Step 1 evidence (3 November 2026)
 
@@ -761,3 +761,144 @@ backfaces viewed upward; the matched Place bank and a genuine underwater view we
 Finer terrain alone was not the repair. This supersedes the slit observation at that tested angle, not every
 view or the outstanding owner/device acceptance gates. Keep step 4 partial. The follow-up includes all six
 shore/rock combinations, demo comparison boards, exact sand collision, bed-bake limits and GPU spans.
+
+### Step 7–8 removal handoff (4 November 2026)
+
+The latest owner call at the top authorizes this removal. Place (including the default page) and crossing
+use the production sea; `water=old` and `water=new` are inert compatibility parameters. The demo, its
+loaders/diagnostics, crossing's sea material/rectangles and public old-material patch API are removed.
+`archive/water` and `archive/old-sea` already existed at `66a98438`; no tag or branch was created.
+Classic retains its own sea under the explicit owner exception: the trial passed all three scenarios, but
+2.9/5.4/5.8 s became 5.2/13.8/9.1 s locally, and this Metal broker cannot establish Linux software-WebGPU
+CI cost. That private factory allocates its packed height texture/material only on a classic client.
+There is no old-sea selector on Place. The cloud prototype remains parked, without its obsolete sea-horizon seam.
+
+Reusable terrain/noise helpers moved from the demo into `proto/shore/`; the shore-arrival prototype,
+terrain comparisons, live tuning, Looks and all third-party notices remain. The passive `__place.day` handle
+remains solely because trusted bot/capture tools use it; it no longer runs a clock. The prototype card points
+to Place and its existing archive tag. There was no remaining playlist entry to edit. The game-design entry
+is now `water.md`, with the owning index/sections, rendering ownership, atlas story and direction note updated.
+Research and older plan evidence are history, including old URLs and paths; current research links point to
+the successor and identify the archive for removed options. Remaining `water=new` tool examples are harmless
+old links, deliberately compatible with active Looks/capture work. No gameplay constants, Boogler/player copy, pacing,
+network/world/lockstep files, tone defaults, FFT/surface/post/underwater shaders or wave settings changed.
+Dev's unavailable/reload help now points to the production route rather than the retired selector.
+
+**Simplify review.** An unchanged water-resolution ceiling now returns before renderer/pass resizing; adaptive
+resolution and explicit Graphics changes still update through their own setters. The production path no longer
+constructs an unused packed classic sea texture/material. No GPU pass or query cadence was changed. Riskier
+options were left alone: caching frozen-sky assignments across mutable preview/prototype state, suppressing
+cloud scans before late-created clouds are known, reducing FFT/query/caustic cadence, skipping the exposure
+meter or rebake work, bypassing shared classic-sky initialization/warm-up, and changing atlas resolution.
+Those could change look, restoration, startup ownership or force freshness.
+
+**Matched costs.** Rebased on the locally available `origin/main` `3f07bf77` without network, including the
+new Graphics settings and headless railway/recovery work. To compare today's
+main in this worktree, temporarily restored its source while keeping the task commits on this branch; its
+manifest tree is exactly main's `7f40a172c83a6304ff2fecaa97bccda398806074`. Verified all 1,446 file blobs
+before restoring the task source. Final captures use clean `8cd0450b`. No source changed
+during a run. Hardware timing is the existing profiler's real-frame CPU submission and earliest GPU start to
+latest end, never summed overlapping timers: three ~180-frame windows, M1 Max / Apple Metal 3, DPR 1,
+4x MSAA, 2048-square shadows, camera `(972,22,55) → (1000,0,20)`. Desktop output/world is 1210×702;
+phone-setting output is 844×390 with 506×234 world (0.6), on the same Mac, not a coarse-pointer device.
+
+| View                                                                                | CPU means, ms      | GPU span means, ms  | GPU span p95, ms      | First/interactive, ms |
+| ----------------------------------------------------------------------------------- | ------------------ | ------------------- | --------------------- | --------------------- |
+| [Current main desktop](../../.look/evidence/1793844077424-9134/evidence.json)       | 4.69 / 4.70 / 4.73 | 7.80 / 7.84 / 7.68  | 8.48 / 8.42 / 8.20    | 5530                  |
+| [Final desktop](../../.look/evidence/1793844182461-11467/evidence.json)             | 4.73 / 4.96 / 4.68 | 7.95 / 7.78 / 7.39  | 8.72 / 8.81 / 8.41    | 5601                  |
+| [Current main phone setting](../../.look/evidence/1793844134178-9800/evidence.json) | 4.98 / 4.91 / 4.90 | 6.52 / 6.41 / 6.15  | 7.84 / 8.03 / 7.52    | 5583                  |
+| [Final phone setting](../../.look/evidence/1793844245039-15815/evidence.json)       | 5.53 / 5.82 / 5.60 | 7.89 / 10.25 / 8.92 | 12.24 / 13.21 / 14.28 | 7193                  |
+
+Zero missing GPU-span frames; maximum sampled animation interval 16.8 ms. First/interactive is the broker's
+local development load timeline with uncontrolled caches, not a cold-download or sustained-mobile test.
+The mean-of-window desktop GPU change is 7.777→7.706 ms; phone is 6.359→9.021 ms. CPU is
+4.708→4.791 ms and 4.930→5.652 ms respectively. The final phone sample regresses; it is not proof of
+equivalent performance or a speedup. Other headless browser/GPU processes were active on this shared machine,
+so attribution remains inconclusive. No other run from this task overlapped these four captures. Earlier
+serial phone captures on `b3e5831b` ([main](../../.look/evidence/1793843231928-95889/evidence.json),
+[final](../../.look/evidence/1793843498987-3246/evidence.json)) gave GPU 7.631→7.825 ms,
+CPU 5.141→5.093 ms and load 6196→5999 ms. Retain this variation rather than selecting the favorable sample.
+The intermediate phone run `1793842846960-88368` overlapped this task's bot startup and was
+replaced with the serial baseline above. A real iPhone remains untested; Retina/DPR-2, sustained thermal cost,
+exclusive-GPU performance and Linux CI performance remain unverified.
+
+**Opened visual evidence.** The main/final desktop and phone stills above show the same bank/support geometry,
+turquoise shallow water, visible caustics and wet sand; phase differs between waves. Phone edges remain softer
+at 0.6 scale. This does not close the previously recorded all-angle shore-slit issue. Opened both smoke player
+stills and cave hub/pond stills: avatars/ball remain visible, cave signs and crystals readable, the ball above the
+pond. [Final scenarios](../../.look/evidence/1793844296185-16908/evidence.json) pass world-inputs/smoke/caves
+in 2.1/5.0/5.8 s; caves reach all 11 points, zero stuck points, 0.01 m worst floor intrusion and no graphics errors.
+
+Opened the [crossing](../../.look/evidence/1793843561185-3902/evidence.json) still, motion sheet, curves and
+four consecutive video frames at 1.0 s. The sea reaches the viaduct and distant island without the old outer
+rectangles; the player stays on the train at about 50 m/s. Opened the [underwater rise](../../.look/evidence/1793842560992-78983/evidence.json)
+motion sheet, curves and all four consecutive frames at 2.0 s: the gorge bed and support stay readable under
+water, then the sheet shows the surface transition and exit droplets. This is a camera-only optical probe,
+not player dive-input or real-time smoothness proof. It predates the Graphics-page rebase; its water/sky source
+is unchanged. The [final retired-link/tuning proof](../../.look/evidence/1793843604378-4326/evidence.json),
+whose still was opened, keeps Neutral, one ready sky bake and 68 bindings, and changes/restores resolution.
+The earlier explicit [Place water=old proof](../../.look/evidence/1793842607233-80401/evidence.json) also passes.
+An initial unqualified water=old query was auto-routed to classic by the harness; it was not tuning proof.
+
+**Full solo and comparison.** [Final full solo](../../.look/evidence/1793844344810-17807/evidence.json)
+passes every expected beat: 27 game minutes in 4m52s, 78 checkpoints, no errors, pushing or water falls.
+Its complete report was read and its end still opened: the avatar stands on the dry stack platform with
+the ocean behind it. The [offline --compare](../../.look/evidence/1793844344810-17807/compare.txt) against
+the [full main baseline](../../.look/evidence/1793842859993-88470/evidence.json) shows the end beat at
+23:37 versus 23:38 and idle 9m10s versus 9m08s; rounded named objective durations differ by at most one second.
+Both leave the optional crystal/co-op marks unobserved; neither is an expected solo beat. Main was
+`b3e5831b` for that baseline; the final run includes `3f07bf77`'s later headless recovery changes. Cosmetic
+rewards and incidental bark timing vary. No pacing or copy was changed. The earlier five-minute-capped
+[baseline](../../.look/evidence/1793841415331-36322/evidence.json) stopped aboard the train without
+finishing, and is superseded by the complete `--long` baseline, not presented as a passing full run.
+The pre-second-rebase full run `1793843628463-4579` also passed; its captured "1 logs" is a suspect existing
+haul-label plural for the owner, left unchanged along with The Boogler's copy.
+
+**Co-op failure retained.** The [2x long route](../../.look/evidence/1793844344810-17808/evidence.json)
+failed after 12m22s, last shared checkpoint 19. Player 2 timed out after 90 game seconds waiting for the
+Line 2 train at Village; player 1 had reached Far Head dry. Reload and leave/rejoin completed. The full report
+was read and both end stills opened, confirming the separate dry stations, not a completed pier arrival.
+No graphics errors. Peak clock deficits included 12.015 game seconds before reload and 2.772 after rejoin;
+the harness recommends reducing warp speed. Clock drift is observed, not an established cause of the train
+failure. The clean [real-1x repeat](../../.look/evidence/1793845529644-34137/evidence.json) **passed all 22 checkpoints** in 1500.753 wall seconds, including reload, leave/rejoin, both train rides and both players dry at the completed pier. No skips, fixture poses or recovery teleports. Both contributed (160/159 materials), and shared stations, rack, trains and rewards agreed. Final train position-gap p95/max were 0.200/0.795 m and 0.229/1.491 m (2 m tolerance, including read skew/network lag). The full report and both end stills were inspected: both avatars are on the dry station/pier approach, with completed track and water behind. A transient hemmed-in bot recovered through existing inputs; no gameplay or expectation was changed.
+
+Opened the [saved solo run-end view](../../.look/evidence/1793845219087-29992/evidence.json), restored from
+the final solo checkpoint: the avatar and completed dry Far Head ground/track are readable. The sea is mostly
+at the image edges/horizon, so this framing does not establish detailed pier-water contact; use the bank and
+crossing captures above for those tested contacts. A save does not restore a train's in-flight position. The reframed [pier-sea capture](../../.look/evidence/1793846989002-45937/evidence.json), also opened, clearly shows completed track, tall supports above the sea and the submerged bank. It also reveals a straight turquoise/dark-water boundary offshore; this remains a visual limitation, not a seam fix or all-angle acceptance.
+
+**Other checks and limits.** `npx prettier --write` was run on the changed files, then `npm run check`;
+the merged-tree run passes all **323 tests**, lint/typecheck, registries, levels, assets and build.
+The advisory `npm run atlas -- --check` reports five inherited findings: three retired `placeCoopTrees1`
+citations in `coop.json`, and the newly merged `railway-recovery.json`'s 252-character paragraph and rejected
+plan-file citation. Both stories match main; the updated water story has no findings.
+`npm run sim -- replay` matches all **1,108 frames** within 0.01, with no fixture update. The third-party
+notices are unchanged and match `dist/THIRD_PARTY_NOTICES.md` byte for byte. The task diff against
+`3f07bf77` contains no network/world/simulation/server changes. No new UI tests, scenarios or harnesses
+were added, no hooks skipped, and no external network, push or ship was used. Local `inflight` could not
+fetch under the no-network constraint; local worktree/status/ref information supplied coordination instead.
+Real iPhone testing, physical inputs, real-time smoothness, all-angle shore seams and isolated/sustained
+performance remain open for review. Stop here for the owner's replay; do not retune water or gameplay.
+
+**Final upstream integration.** Rebased the three task commits again onto local `origin/main` `a9358e1f` (#910–912), yielding `3f01d53c`. This adds main's startup-download retry and Buddy asset-stage/shared gear changes. Water/sky modules, render quality, Place route/job state and network/world/simulation are byte-identical to the preceding `8cd0450b` test tree. No merge conflict or task-source retune was needed. The first successful 25-minute co-op evidence above is from that preceding tree. Final-build startup/scenarios, solo route, matched costs and the additional real-1x co-op repeat below cover the integrated tree; do not confuse their manifest hashes.
+
+A temporary latest-main benchmark used its exact source (1,508 blobs verified). The first return path list omitted two renamed task files; typecheck reported the missing terrain-demo import, and capture `1793847475418-49898` was cancelled without a visual result. Both files were restored from the committed task and the worktree verified clean before the replacement captures. No user changes were lost.
+
+**Latest-main matched repeat (`a9358e1f` → `3f01d53c`).** Same camera, sizes and profiler procedure as above; all four stills opened. No new visual difference established: bank/support geometry, turquoise shallows and caustics are retained; phone remains softer. These serial captures followed the latest rebase; CPU/GPU costs are the whole frame, not the isolated water cost.
+
+| View                                                                                | CPU means, ms      | GPU span means, ms | GPU span p95, ms   | First/interactive, ms |
+| ----------------------------------------------------------------------------------- | ------------------ | ------------------ | ------------------ | --------------------- |
+| [Latest main desktop](../../.look/evidence/1793847386251-48577/evidence.json)       | 4.77 / 4.96 / 4.98 | 8.04 / 7.86 / 7.61 | 8.98 / 9.93 / 9.57 | 5782                  |
+| [Final desktop](../../.look/evidence/1793847637735-51303/evidence.json)             | 5.16 / 5.04 / 5.03 | 6.80 / 6.73 / 6.54 | 7.66 / 7.69 / 7.56 | 6196                  |
+| [Latest main phone setting](../../.look/evidence/1793847427194-49340/evidence.json) | 4.85 / 5.01 / 5.05 | 7.23 / 7.60 / 7.35 | 8.16 / 8.79 / 8.28 | 5909                  |
+| [Final phone setting](../../.look/evidence/1793847670181-51470/evidence.json)       | 5.15 / 5.09 / 5.03 | 6.83 / 6.79 / 6.76 | 8.41 / 8.00 / 8.23 | 5847                  |
+
+Desktop mean-of-window CPU 4.903→5.076 ms, GPU 7.834→6.692 ms; phone CPU 4.967→5.089 ms, GPU 7.395→6.795 ms. Zero missing GPU-span frames. The changing shared-GPU results do not establish a repeatable speedup or regression; retain the earlier slower phone sample above. Phone load 5909→5847 ms is a local cached-development measurement. Physical iPhone remains untested.
+
+The final [world-inputs/smoke/caves run](../../.look/evidence/1793847705077-51684/evidence.json) passes in 3.5/5.1/5.8 seconds; cave reach 11/11, stuck 0, worst floor intrusion 0.01 m, no graphics errors. Both smoke stills and cave hub/pond stills were opened again: players/ball visible, signs/crystals readable and ball afloat. The broker's fixture path names its trusted checkout; the browser runs this worktree's build and the manifest records the clean task tree. `npm run check` after the restoration/rebase passes 323/323.
+
+[Final integrated-tree solo](../../.look/evidence/1793847729271-52906/evidence.json): all expected beats pass, 27 game minutes in 5m46s, 78 checkpoints, zero errors/pushing/water falls. Complete report read, end still opened: avatar dry on the stack platform, water and pier supports behind. [--compare](../../.look/evidence/1793847729271-52906/compare.txt) against the complete main baseline gives idle 9m15s versus 9m08s, end beat 23:39 versus 23:38, named objective durations within one second. Earlier/later incidental barks and cosmetic rewards vary; no pacing or copy changes. Final replay still matches 1,108 frames within 0.01. Atlas still has the same five inherited findings.
+
+**Final integrated-tree co-op.** The [real-1x long repeat](../../.look/evidence/1793847791577-53451/evidence.json) passes all **22 checkpoints** in **1575.186 wall seconds**, including reload/rejoin, both riders arriving dry at Far Head and both at the completed pier. Both contributed (156/163 materials); stations, rack, trains and shared rewards agree. Final train position-gap p95/max are **0.140/0.341 m** and **0.233/0.345 m**, within the existing 2 m tolerance (includes network lag/read skew). No errors or water falls; one telemetry segment reports 2 s pushing. Player 2 waited **81.8 s** at Village before boarding, close to the unchanged 90 s limit: retain this observation beside the earlier 2x timeout, without attributing it to water or changing pacing/bot expectations. Full report read and both end stills opened: both avatars stand dry at the Far Head station/pier approach, with completed track and the sea visible. No skips, relocations or recovery teleports.
+
+The final scenarios, solo, co-op and matched final-cost manifests all record clean **`3f01d53c` / tree `01f3e559f5df6b6cecdbfcdf27260ae48c08f3b8`**, `status: 0`, `changedDuringRun: false`. The final evidence/documentation commit adds only this handoff and a link; runtime source stays identical. Steps 7–8 are complete under the explicit classic exception, with the documented device/performance/visual limits. Human acceptance remains the owner's replay; nothing was pushed or shipped.
