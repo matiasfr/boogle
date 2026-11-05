@@ -1,0 +1,926 @@
+[
+  {
+    "run": 0,
+    "variant": "current",
+    "status": "complete",
+    "elapsedMs": 3000.640000104904,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 7,
+    "compute": 12,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 360,
+        "avgMs": 6.280706028805839,
+        "p95Ms": 8.380579948425293,
+        "maxMs": 10.043846130371094
+      },
+      "eligibleFrames": 360,
+      "missingFrames": 0
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "6fe1c9c3-aaef-4e37-bfb0-292ce300c00e",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1016,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba16float",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba16float",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  },
+  {
+    "run": 0,
+    "variant": "compensated",
+    "status": "complete",
+    "elapsedMs": 3001.340000152588,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 7,
+    "compute": 12,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 359,
+        "avgMs": 6.123198487300395,
+        "p95Ms": 7.8369221687316895,
+        "maxMs": 9.792018175125122
+      },
+      "eligibleFrames": 360,
+      "missingFrames": 1
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "6fe1c9c3-aaef-4e37-bfb0-292ce300c00e",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1016,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba16float",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba16float",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  },
+  {
+    "run": 0,
+    "variant": "fixed",
+    "status": "complete",
+    "elapsedMs": 3000.7699999809265,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 7,
+    "compute": 12,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 360,
+        "avgMs": 5.458323103851742,
+        "p95Ms": 6.773645877838135,
+        "maxMs": 8.128083944320679
+      },
+      "eligibleFrames": 360,
+      "missingFrames": 0
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "6fe1c9c3-aaef-4e37-bfb0-292ce300c00e",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1016,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba16float",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba16float",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  },
+  {
+    "run": 0,
+    "variant": "fixed-meter-off",
+    "status": "complete",
+    "elapsedMs": 3001.1549999713898,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 5,
+    "compute": 12,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 360,
+        "avgMs": 5.142514967256123,
+        "p95Ms": 6.0184080600738525,
+        "maxMs": 7.261721849441528
+      },
+      "eligibleFrames": 360,
+      "missingFrames": 0
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "6fe1c9c3-aaef-4e37-bfb0-292ce300c00e",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1016,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba16float",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba16float",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  },
+  {
+    "run": 0,
+    "variant": "narrow",
+    "status": "complete",
+    "elapsedMs": 3000.3650000095367,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 7,
+    "compute": 12,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 355,
+        "avgMs": 7.5378345019380815,
+        "p95Ms": 11.819026947021484,
+        "maxMs": 17.252527952194214
+      },
+      "eligibleFrames": 356,
+      "missingFrames": 1
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "6fe1c9c3-aaef-4e37-bfb0-292ce300c00e",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1016,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba16float",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba16float",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  },
+  {
+    "run": 1,
+    "variant": "current",
+    "status": "complete",
+    "elapsedMs": 3001.0099999904633,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 7,
+    "compute": 13,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 360,
+        "avgMs": 5.196106425921122,
+        "p95Ms": 6.1345319747924805,
+        "maxMs": 7.145599842071533
+      },
+      "eligibleFrames": 360,
+      "missingFrames": 0
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "6fe1c9c3-aaef-4e37-bfb0-292ce300c00e",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1016,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba16float",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba16float",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  },
+  {
+    "run": 1,
+    "variant": "compensated",
+    "status": "complete",
+    "elapsedMs": 3000.369999885559,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 7,
+    "compute": 13,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 360,
+        "avgMs": 5.338337528043323,
+        "p95Ms": 6.215739011764526,
+        "maxMs": 7.839213848114014
+      },
+      "eligibleFrames": 360,
+      "missingFrames": 0
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "6fe1c9c3-aaef-4e37-bfb0-292ce300c00e",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1016,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba16float",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba16float",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  },
+  {
+    "run": 1,
+    "variant": "fixed",
+    "status": "complete",
+    "elapsedMs": 3005.7249999046326,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 7,
+    "compute": 12,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 361,
+        "avgMs": 5.747504878902699,
+        "p95Ms": 7.252264022827148,
+        "maxMs": 9.186401844024658
+      },
+      "eligibleFrames": 361,
+      "missingFrames": 0
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "6fe1c9c3-aaef-4e37-bfb0-292ce300c00e",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1016,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba16float",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba16float",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  },
+  {
+    "run": 1,
+    "variant": "fixed-meter-off",
+    "status": "complete",
+    "elapsedMs": 3000.164999961853,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 5,
+    "compute": 13,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 360,
+        "avgMs": 5.405975385506948,
+        "p95Ms": 6.514525890350342,
+        "maxMs": 7.448553800582886
+      },
+      "eligibleFrames": 360,
+      "missingFrames": 0
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "6fe1c9c3-aaef-4e37-bfb0-292ce300c00e",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1016,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba16float",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba16float",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  },
+  {
+    "run": 1,
+    "variant": "narrow",
+    "status": "complete",
+    "elapsedMs": 3001.1500000953674,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 7,
+    "compute": 12,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 360,
+        "avgMs": 5.350604492425918,
+        "p95Ms": 6.309737920761108,
+        "maxMs": 8.919363975524902
+      },
+      "eligibleFrames": 360,
+      "missingFrames": 0
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "6fe1c9c3-aaef-4e37-bfb0-292ce300c00e",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1016,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba16float",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba16float",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  },
+  {
+    "run": 0,
+    "variant": "ldr-scene",
+    "status": "complete",
+    "elapsedMs": 3001.0700001716614,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 5,
+    "compute": 13,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 360,
+        "avgMs": 6.301243691311942,
+        "p95Ms": 8.218583822250366,
+        "maxMs": 10.874583959579468
+      },
+      "eligibleFrames": 360,
+      "missingFrames": 0
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "e05f6428-5dfd-4441-a0c5-ddab6e3857db",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1009,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba8unorm",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba8unorm",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  },
+  {
+    "run": 1,
+    "variant": "ldr-scene",
+    "status": "complete",
+    "elapsedMs": 3000.2249999046326,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "device": "",
+      "description": "",
+      "isFallbackAdapter": false
+    },
+    "pixels": {
+      "width": 1180,
+      "height": 820
+    },
+    "msaa": 4,
+    "passes": 5,
+    "compute": 13,
+    "span": {
+      "status": "available",
+      "stats": {
+        "samples": 360,
+        "avgMs": 6.5440642495950065,
+        "p95Ms": 8.195457935333252,
+        "maxMs": 10.964998960494995
+      },
+      "eligibleFrames": 360,
+      "missingFrames": 0
+    },
+    "scope": "earliest GPU start to latest GPU end per frame, including intervening gaps; never summed pass timers. Partial frames excluded. Not presentation latency.",
+    "sceneTarget": {
+      "id": "e05f6428-5dfd-4441-a0c5-ddab6e3857db",
+      "name": "output",
+      "width": 1180,
+      "height": 820,
+      "depth": 1,
+      "samples": 4,
+      "colors": [
+        {
+          "name": "output",
+          "format": 1023,
+          "type": 1009,
+          "gpu": {
+            "width": 1180,
+            "height": 820,
+            "layers": 1,
+            "format": "rgba8unorm",
+            "samples": 1
+          },
+          "multisampled": [
+            {
+              "width": 1180,
+              "height": 820,
+              "layers": 1,
+              "format": "rgba8unorm",
+              "samples": 4
+            }
+          ]
+        }
+      ],
+      "depthStencil": {
+        "name": "depth",
+        "format": 1026,
+        "type": 1014,
+        "gpu": {
+          "width": 1180,
+          "height": 820,
+          "layers": 1,
+          "format": "depth24plus",
+          "samples": 4
+        },
+        "multisampled": []
+      }
+    }
+  }
+]
