@@ -6,6 +6,7 @@ import { MAX_DPR, installQuality } from './quality.ts';
 import { graphicsInitial, registerGraphics } from '../graphics-settings.ts';
 import { playMark } from '../proto/mark.ts';
 import { bootMark } from '../boot/timeline.ts';
+import { splashDone } from '../boot/splash.ts';
 
 export const canvas = document.getElementById('view') as HTMLCanvasElement; // in index.html
 
@@ -34,9 +35,10 @@ errorSource.onError = (info) => {
   const key = `${info.type}:${message}`;
   if (gpuErrors.size < 8 && !gpuErrors.has(key)) {
     gpuErrors.add(key);
-    playMark('gpu error', { api: info.api, type: info.type, message });
+    playMark('gpu error', { api: info.api, type: info.type, message, ...graphicsContext() });
   }
   reportError(info);
+  stopGraphics('gpu-error', message);
 };
 export { MAX_DPR, FIXED_DPR } from './quality.ts';
 renderer.setPixelRatio(MAX_DPR);
@@ -56,6 +58,51 @@ const lobbyNote = (text: string) => {
 let started = false;
 export const gfx = () => (started ? 'webgpu' : null);
 
+// Local failure latch: the server still owns the room. Never reset it or automatically navigate away.
+let graphicsStopped = false;
+let visibilityAt = performance.now();
+const graphicsContext = () => ({
+  visibility: document.visibilityState,
+  sinceVisibilityMs: Math.round(performance.now() - visibilityAt),
+  stopped: graphicsStopped,
+  calls: renderer.info.render.calls,
+  triangles: renderer.info.render.triangles,
+});
+document.addEventListener('visibilitychange', () => {
+  playMark('graphics visibility', graphicsContext());
+  visibilityAt = performance.now();
+});
+
+function stopGraphics(cause: string, message: string) {
+  if (graphicsStopped) return;
+  playMark('graphics stopped', { cause, message: message.slice(0, 2000), ...graphicsContext() });
+  graphicsStopped = true;
+  lobbyNote('The graphics stopped. Reload to keep playing in this room.');
+  splashDone(true);
+  document.exitPointerLock?.();
+  const enter = document.getElementById('enter') as HTMLButtonElement | null;
+  if (enter) {
+    enter.textContent = 'Reload';
+    enter.disabled = false;
+    enter.type = 'button';
+    enter.addEventListener('click', () => {
+      playMark('graphics reload', graphicsContext());
+      location.reload();
+    });
+  }
+}
+
+// Catch the entire callback: water compute can throw before the final draw. No timer/second frame loop.
+export const guardGraphicsFrame = (frame: (now: number) => void) => (now: number) => {
+  if (graphicsStopped || document.hidden) return;
+  try {
+    frame(now);
+  } catch (error) {
+    stopGraphics('frame-error', error instanceof Error ? error.message : String(error));
+    console.error('[graphics] frame failed:', error);
+  }
+};
+
 export function graphicsFailed() {
   bootMark('graphics-failed');
   lobbyNote(
@@ -74,6 +121,12 @@ bootMark('graphics-start');
 export const rendererReady = renderer.init().then(
   (r) => {
     started = true;
+    // three ignores deliberate destruction. Observe it too so a forced loss exercises the real recovery path.
+    const device = (renderer.backend as unknown as { device: GPUDevice }).device;
+    void device.lost.then((info) => {
+      if (info.reason === 'destroyed')
+        renderer.onDeviceLost({ api: 'WebGPU', reason: info.reason, message: info.message, originalEvent: info });
+    });
     return r;
   },
   (e) => {
@@ -82,29 +135,12 @@ export const rendererReady = renderer.init().then(
   },
 );
 
-// A lost device is not recovered by three: reload once the tab is visible, at most once a minute.
+// Preserve three's lost-device guard; replacing it used to leave compute/render using the dead device.
+const reportDeviceLost = renderer.onDeviceLost.bind(renderer);
 renderer.onDeviceLost = (info) => {
-  console.error(`THREE.WebGPURenderer: device lost: ${info?.message ?? ''}`);
-  const reload = () => {
-    let last = 0;
-    try {
-      last = Number(sessionStorage.getItem('boogle.gfxReload')) || 0;
-    } catch {
-      /* private mode: reload anyway, the minute guard is best effort */
-    }
-    if (Date.now() - last < 60000) return lobbyNote('The graphics device was reset. Reload to keep playing.');
-    try {
-      sessionStorage.setItem('boogle.gfxReload', String(Date.now()));
-    } catch {
-      /* ignore */
-    }
-    location.reload();
-  };
-  if (document.visibilityState === 'visible') reload();
-  else
-    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && reload(), {
-      once: true,
-    });
+  playMark('graphics device lost', { reason: info.reason, message: info.message.slice(0, 2000), ...graphicsContext() });
+  reportDeviceLost(info);
+  stopGraphics('device-lost', info.message);
 };
 
 export { scene };

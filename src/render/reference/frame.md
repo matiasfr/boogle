@@ -9,8 +9,9 @@
   "Texture already initialized" for the shadow map (three.js #35069, a WebKit bug); `precompile.ts` skips the second
   create and warns once (`[precompile] three.js #35069`), so look for that line in Web Inspector on an iPad. `main.ts` hands the frame to `renderer.setAnimationLoop`, so three
   resets `renderer.info`, ticks the TSL `time` and then runs ours, in that order; `renderer.info.render` holds the
-  last frame's counts until the next one starts. A lost GPU device
-  reloads the page once it is visible, at most once a minute.
+  last frame's counts until the next one starts. `guardGraphicsFrame` skips hidden callbacks, and latches device loss,
+  uncaptured GPU errors and thrown callbacks into a visible Reload instruction. It preserves three's lost-device guard.
+  The page never automatically navigates or resets the room; the existing background world clock is unchanged.
 - Every frame goes through one `RenderPipeline`: `scenePass` (`pass(scene, camera)`, a linear HDR target with MSAA)
   whose 4x samples are stored (the default). Discarding them (`storeMultisampled*Buffer: false`, which makes three use a
   `TRANSIENT_ATTACHMENT` memoryless texture on Safari 27) blanked the scene on iPad Safari 27 (1 Nov 2026: only the clear
