@@ -2,6 +2,7 @@ import { prof } from '../../loop.ts';
 import { command, note, copy, el, more } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
 import { graphicsSnapshot, graphicsOverrides, setGraphics, restoreGraphics } from '../../graphics-settings.ts';
+import { mountLoadDetails } from '../../boot/timeline.ts';
 
 let matching = false;
 export const graphicsMeasuring = () => matching;
@@ -210,6 +211,7 @@ export const tool: Tool = {
   },
   snapshot,
   mount(parent, ctx) {
+    const disposeLoad = mountLoadDetails(parent);
     const details = more(parent);
     note(
       details,
@@ -230,6 +232,6 @@ export const tool: Tool = {
     text.value = JSON.stringify(snapshot(), null, 2);
     details.append(text);
     parent.append(details);
-    return () => {};
+    return disposeLoad;
   },
 };

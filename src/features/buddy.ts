@@ -25,6 +25,7 @@ async function prepareBuddy() {
       if (q.has('buddies')) void import('../debug/buddy-crowd.ts');
       return;
     } catch (e) {
+      bootMark('buddy-failed');
       failAvatarSkin();
       console.warn('buddy: model unavailable', e);
       const delay = retryMs[attempt];
@@ -36,7 +37,10 @@ async function prepareBuddy() {
 
 onStart(() => {
   void import('../player/buddy/camera.ts').then((m) => m.startFollowCamera());
-  if (q.get('body') === 'capsule') return;
+  if (q.get('body') === 'capsule') {
+    bootMark('buddy-skipped');
+    return;
+  }
   bootMark('buddy-wait');
   const deadline = setTimeout(() => {
     bootMark('buddy-deadline');

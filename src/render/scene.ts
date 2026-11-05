@@ -5,6 +5,7 @@ import { scene } from './scene-graph.ts';
 import { MAX_DPR, installQuality } from './quality.ts';
 import { graphicsInitial, registerGraphics } from '../graphics-settings.ts';
 import { playMark } from '../proto/mark.ts';
+import { bootMark } from '../boot/timeline.ts';
 
 export const canvas = document.getElementById('view') as HTMLCanvasElement; // in index.html
 
@@ -56,6 +57,7 @@ let started = false;
 export const gfx = () => (started ? 'webgpu' : null);
 
 export function graphicsFailed() {
+  bootMark('graphics-failed');
   lobbyNote(
     'gpu' in navigator
       ? "This device's graphics can't start WebGPU, which Boogle needs to draw the island."
@@ -68,6 +70,7 @@ export function graphicsFailed() {
   }
 }
 
+bootMark('graphics-start');
 export const rendererReady = renderer.init().then(
   (r) => {
     started = true;
