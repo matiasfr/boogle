@@ -118,7 +118,6 @@ const groups: Group[] = [
       spec('post.bloomThreshold', 'bloomThreshold', 0, 10),
       spec('post.centre', 'fixed gain', 0.01, 2, 0.001),
       spec('post.underwaterEV', 'underwater offset (EV)', 0, 2, 0.01),
-      spec('readable.referenceGain', 'ink/reward reference gain (1 = off)', 0.05, 1, 0.001),
       spec('post.agxPower', 'agxPower', 0.5, 2),
       spec('post.agxSaturation', 'agxSaturation', 0, 2),
       spec('post.contrast', 'contrast', 0.7, 1.6),
