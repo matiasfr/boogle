@@ -27,6 +27,7 @@ const number = (key: string, fallback: number) => {
 const cargoKinds: CargoKind[] = ['logs', 'rails', 'stone', 'beam', 'boiler'];
 const cargo = cargoKinds.find((kind) => kind === q.get('cargo')) ?? 'logs';
 const gearOn = (key: string) => (q.has(key) ? q.get(key) === '1' : q.get('gear') === 'all');
+let legacyCarrying = q.get('pose') === 'carrying' && !q.has('cargo') && !q.has('amount');
 const state = {
   asset: q.get('asset') ?? 'buddy',
   node: q.get('node') ?? '',
@@ -429,6 +430,7 @@ async function choose(reframe = true) {
             canopy: state.canopy,
             cargo: state.cargo,
             amount: state.amount,
+            legacyCarrying,
             bodyColor:
               state.bodyColor === 'auto'
                 ? state.rings || state.spool || state.glider || state.frame || state.canopy || state.amount > 0
@@ -504,6 +506,11 @@ function updateLink() {
     yaw: stage.rotation.y,
   }))
     if (value !== '') p.set(key, String(value));
+  // Preserve the old pose-only link without adding a visible cargo load.
+  if (legacyCarrying && state.pose === 'carrying') {
+    p.delete('cargo');
+    p.delete('amount');
+  }
   // Explicit empty part means whole kit; absent node preserves the legacy scaffold default.
   p.set('node', state.node);
   for (const id of ['spin', 'bounds', 'reference', 'wire', 'bones', 'sockets', 'trajectory', 'crowd'])
@@ -569,6 +576,7 @@ function carryingPose() {
   }
 }
 select('cargo').onchange = () => {
+  legacyCarrying = false;
   state.cargo = cargoKinds.find((kind) => kind === select('cargo').value) ?? 'logs';
   state.amount = Math.max(1, state.amount);
   syncGearControls();
@@ -576,6 +584,7 @@ select('cargo').onchange = () => {
   void choose(false);
 };
 input('amount').onchange = () => {
+  legacyCarrying = false;
   state.amount = Number(input('amount').value) || 0;
   syncGearControls();
   carryingPose();

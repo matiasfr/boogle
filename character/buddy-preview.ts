@@ -16,7 +16,7 @@ import {
 import { BUDDY_LOAD_FIT } from '../src/player/buddy/load-fit.ts';
 import { makeCarryModels, cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
 import { makeBundlePreview } from '../src/render/haul-bundle.ts';
-type WornPreview = GearState & { cargo: CargoKind; amount: number; bodyColor?: string };
+type WornPreview = GearState & { cargo: CargoKind; amount: number; legacyCarrying?: boolean; bodyColor?: string };
 export const SAMPLE_FPS = 30;
 export type BuddyMode = 'raw' | 'played';
 export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
@@ -202,7 +202,11 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
                     : 0;
           const airborne = clipName === 'Jump_Start' || clipName === 'Jump_Loop';
           avatar.userData.load =
-            pose === 'carrying' ? (worn ? Math.min(worn.amount, cargoCapacity(worn.cargo, worn.frame)) : 16) : 0;
+            pose === 'carrying'
+              ? worn && !worn.legacyCarrying
+                ? Math.min(worn.amount, cargoCapacity(worn.cargo, worn.frame))
+                : 16
+              : 0;
           avatar.userData.holdKind =
             pose === 'item' ? 'item' : pose === 'can' ? 'hang' : pose === 'ball' ? 'ball' : null;
           avatar.userData.flopAmt = pose === 'knocked' ? 1 : 0;
