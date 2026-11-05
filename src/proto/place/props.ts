@@ -4,6 +4,7 @@
 import * as THREE from 'three/webgpu';
 import { me } from '../../player/player.ts';
 import { emit } from '../../render/particles.ts';
+import { readableIntensity } from '../../render/readable-unlit.ts';
 import { scene } from '../../render/scene.ts';
 import { protoCount } from '../count.ts';
 import { flat } from '../flat.ts';
@@ -76,6 +77,7 @@ export function updateFinds(dt: number) {
         life: 0.8,
         size: 0.3,
         color: sparkle,
+        intensity: readableIntensity(),
         gravity: 7,
         shrink: 0.4,
       });

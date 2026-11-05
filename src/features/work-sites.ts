@@ -29,6 +29,7 @@ import type { Site } from '../sim/sites.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { uiSound } from '../ui/ui-sound.ts';
 import { emit } from '../render/particles.ts';
+import { readableUnlit } from '../render/readable-unlit.ts';
 
 const SLEEPERS = 12; // drawn in a full Track ring
 const { sites } = rules.sites;
@@ -72,7 +73,9 @@ function label(w = 512, h = 128): Label {
   c.height = h;
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  const sprite = new THREE.Sprite(
+    readableUnlit(new THREE.SpriteNodeMaterial({ map: tex, transparent: true, depthWrite: false })),
+  );
   sprite.renderOrder = 10;
   const g = c.getContext('2d')!;
   if (!g) throw new Error('work-sites: no 2D canvas');

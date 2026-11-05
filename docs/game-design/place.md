@@ -277,6 +277,26 @@ Projection runs after the current camera/avatar update, anchored to a stable bod
 **What's new:** Slots pop as pieces land beside your load, with empty cells showing capacity, then fade out of the way.
 **Playtest question:** Does watching the slots fill feel satisfying, and can you tell how much room you have left at a glance?
 
+## Readable ink and rewards
+
+Station and halt names, sign/room boards, shop prices and work-site plaques use a shared fixed reference gain
+of **0.09157925** (10.9195 times linear RGB) on the production-water route. Crystal and gold pickup glints,
+chest/box sparkles, reward-show sparkles, confetti and celebration fireworks use the same policy in the existing
+particle pool. Dust, smoke, steam, cloth puffs, water spray and already-HDR impact stars retain intensity one.
+Alpha, soft edges, fade/shrink, fog, depth occlusion and underwater attenuation are preserved; classic home and
+other routes retain their original brightness. This is Local presentation, with no shared state or save change.
+
+Implements recommendations 1 and 3 of `docs/research/dark-unlit-exposure.md` on `codex/dark-unlit-exposure`
+(research branch head `40cf32c0`). The fixed authored reference is deliberately independent
+of the adaptive meter, so no current-frame scene/meter dependency or CPU GPU readback is introduced. It restores
+the measured calibration, not exact brightness under every camera exposure. Tone mapping, exposure, lighting,
+sky and water are unchanged. Serves **DESIGN.md 7, Telegraph everything**.
+
+The existing Dev Water/Post panel owns `readable.referenceGain` (0.05–1; 1 disables the boost), including its
+existing reset, persistence and copied binding snapshot. Newly emitted particles pick up changes immediately;
+living particles retain their authored intensity until they expire. The `codex/color-vibrance-3` bounded exposure
+bindings were inspected; its fixed/narrow exposure experiment is outside this material-only fix.
+
 ## The town you can go into
 
 Nell stands clear of the station-whistle stand's approach. Previously her closer Talk target won over Try on from the aisle; the whistle's equip/keep/remove state worked when approached from the side. Its train unlock remains unchanged, and this fix does not change wearable geometry.

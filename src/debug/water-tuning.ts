@@ -119,6 +119,7 @@ const groups: Group[] = [
       spec('post.exposure', 'exposure comp', 0.25, 4),
       spec('post.autoExposure', 'autoExposure', 0, 1, 1),
       spec('post.keyValue', 'keyValue', 0.05, 0.6),
+      spec('readable.referenceGain', 'ink/reward reference gain (1 = off)', 0.05, 1, 0.001),
       spec('post.agxPower', 'agxPower', 0.5, 2),
       spec('post.agxSaturation', 'agxSaturation', 0, 2),
       spec('post.contrast', 'contrast', 0.7, 1.6),

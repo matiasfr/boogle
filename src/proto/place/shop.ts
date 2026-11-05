@@ -6,6 +6,7 @@
 // once, and neither takes the other's stock, because there's no stock.
 // Docs: docs/research/town-interiors.md, "A shop when money is a joke"; docs/research/cosmetic-rarity.md.
 import * as THREE from 'three/webgpu';
+import { readableUnlit } from '../../render/readable-unlit.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { NO_TARGETS, registerInteractable, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
@@ -160,7 +161,7 @@ const tagGeo = mergeGeometries(
     return g;
   }),
 )!;
-r.near.add(new THREE.Mesh(tagGeo, new THREE.MeshBasicNodeMaterial({ map: tex })));
+r.near.add(new THREE.Mesh(tagGeo, readableUnlit(new THREE.MeshBasicNodeMaterial({ map: tex }))));
 let tagKey = '';
 function redrawTags() {
   const key = `${Math.round(money())}|${STOCK.map((s) => `${available(s) ? 1 : 0}${isOwned(s.id) ? 1 : 0}`).join('')}`;
