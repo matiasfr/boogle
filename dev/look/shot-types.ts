@@ -27,6 +27,11 @@ export type ShotBeat = {
   warm?: number;
   cameras: ShotCamera[];
   variants: ShotVariant[];
+  wedge?: {
+    rows: { id: string; label: string; values: [number, number, number] };
+    columns: { id: string; label: string; values: [number, number, number] };
+    legend?: string;
+  };
   reference?: { image: string; path: string; sha256: string; provenance: string; colorSpace: string; crop: string };
   keepPaused?: boolean;
 };

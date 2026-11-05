@@ -10,6 +10,7 @@ export type Board = {
   tiles: Tile[];
   strips: Tile[];
   reference?: Tile;
+  grid?: { rows: string[]; columns: string[]; baseline: string; legend?: string };
 };
 
 export function composition(board: Board) {
@@ -20,7 +21,7 @@ export function composition(board: Board) {
   return `await (${paint.toString()})(${JSON.stringify({ ...board, tiles: board.tiles.map(embed), strips: board.strips.map(embed) })});\nexport {};\n`;
 }
 
-/** Frozen comparisons retain every source pixel. One column stays legible at phone width. */
+/** Frozen comparisons retain every source pixel; wedges use matched rows/columns. */
 export async function paintNative(board: Board, name = 'board.png') {
   const images = await Promise.all(
     board.tiles.map(async (tile) => {
@@ -36,6 +37,89 @@ export async function paintNative(board: Board, name = 'board.png') {
     reference = new Image();
     reference.src = board.reference.image;
     await reference.decode();
+  }
+  const emit = (canvas: HTMLCanvasElement) => {
+    const data = canvas.toDataURL('image/png').split(',')[1]!;
+    console.log(`SHOTS BEGIN ${name} ${data.length}`);
+    for (let i = 0; i < data.length; i += 16000) console.log('SHOTS DATA ' + data.slice(i, i + 16000));
+    console.log('SHOTS END');
+  };
+  if (board.grid) {
+    const grid = board.grid;
+    if (images.length !== grid.rows.length * grid.columns.length || !images.length)
+      throw new Error('Grid axes must match the captured cells');
+    const w = images[0]!.width,
+      h = images[0]!.height;
+    if (images.some((im) => im.width !== w || im.height !== h))
+      throw new Error('Grid cells must have equal dimensions');
+    const pad = 24,
+      gap = 20,
+      caption = 40,
+      left = 176,
+      top = 160;
+    const gridWidth = grid.columns.length * (w + gap) - gap;
+    const referenceX = left + gridWidth + 48;
+    const canvas = document.createElement('canvas');
+    canvas.width = reference ? referenceX + w + pad : left + gridWidth + pad;
+    canvas.height = top + grid.rows.length * (h + caption + gap) + pad;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#15202b';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#eaf0f6';
+    ctx.font = '32px system-ui';
+    ctx.fillText(board.title, pad, 42);
+    ctx.font = '24px system-ui';
+    if (grid.legend) ctx.fillText(grid.legend, pad, 80);
+    ctx.fillStyle = '#a7bacb';
+    ctx.fillText('Native pixels · full settings in manifest.json · frozen stills only', pad, 112);
+    ctx.fillStyle = '#eaf0f6';
+    ctx.font = '30px system-ui';
+    ctx.textAlign = 'center';
+    grid.columns.forEach((label, col) => ctx.fillText(label, left + col * (w + gap) + w / 2, top - 16));
+    grid.rows.forEach((label, row) => {
+      ctx.textAlign = 'right';
+      ctx.fillText(label, left - 20, top + row * (h + caption + gap) + h / 2);
+    });
+    images.forEach((im, i) => {
+      const x = left + (i % grid.columns.length) * (w + gap);
+      const y = top + Math.floor(i / grid.columns.length) * (h + caption + gap);
+      ctx.drawImage(im, x, y);
+      if (board.tiles[i]!.label === grid.baseline) {
+        ctx.strokeStyle = '#ffd166';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(x - 4, y - 4, w + 8, h + 8);
+      }
+      ctx.textAlign = 'center';
+      ctx.fillText(board.tiles[i]!.label, x + w / 2, y + h + 32);
+    });
+    if (reference) {
+      const y = top + Math.floor(grid.rows.length / 2) * (h + caption + gap);
+      ctx.textAlign = 'left';
+      ctx.fillText('Reference', referenceX, y - 16);
+      // Fit the same cell-sized viewport, once; matching-size captures remain at native scale.
+      const scale = Math.min(w / reference.width, h / reference.height);
+      ctx.drawImage(
+        reference,
+        referenceX + (w - reference.width * scale) / 2,
+        y,
+        reference.width * scale,
+        reference.height * scale,
+      );
+      ctx.font = '22px system-ui';
+      let line = '',
+        lineY = y + h + 32;
+      for (const word of board.reference!.label.split(/\s+/)) {
+        if (ctx.measureText(line + ' ' + word).width > w && line) {
+          ctx.fillText(line, referenceX, lineY);
+          lineY += 28;
+          line = '';
+        }
+        line += (line ? ' ' : '') + word;
+      }
+      ctx.fillText(line, referenceX, lineY);
+    }
+    emit(canvas);
+    return;
   }
   const width = columnWidth * (reference ? 2 : 1);
   const canvas = document.createElement('canvas');
@@ -83,10 +167,7 @@ export async function paintNative(board: Board, name = 'board.png') {
     }
     y += im.height + 8;
   });
-  const data = canvas.toDataURL('image/png').split(',')[1]!;
-  console.log(`SHOTS BEGIN ${name} ${data.length}`);
-  for (let i = 0; i < data.length; i += 16000) console.log('SHOTS DATA ' + data.slice(i, i + 16000));
-  console.log('SHOTS END');
+  emit(canvas);
 }
 
 async function paint(board: Board) {

@@ -48,7 +48,7 @@ if (file === '--pick') {
 }
 if (!file || file === '--help') {
   console.log(
-    'node dev/look/shots.ts <list.json|list.ts> [--name name] [--reuse] [--repeat 5] [--preview 5] [--reference image.png --reference-note provenance] [--baseline]\nStop a reused session with node dev/look/session.ts stop to finalize broker health/evidence.\nshots --pick <group manifest.json> <1-based cell> <new favourite.json>',
+    'node dev/look/shots.ts <list.json|list.ts> [--name name] [--reuse] [--spread 0.5..4] [--repeat 5] [--preview 5] [--reference image.png --reference-note provenance] [--baseline]\nSpread scales wedge axis distances from the accepted centre (default 1; 3 for a wide pass, 0.5 for fine). Stop a reused session with node dev/look/session.ts stop to finalize broker health/evidence.\nshots --pick <group manifest.json> <1-based cell> <new favourite.json>',
   );
   process.exit(0);
 }
@@ -56,6 +56,7 @@ let name = new Date().toISOString().replace(/[^0-9]/g, ''),
   baseline = false;
 let reuse = false,
   repeat = 1,
+  spread = 1,
   preview: number | undefined,
   reference: string | undefined,
   referenceNote = '';
@@ -64,6 +65,7 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === '--baseline') baseline = true;
   else if (args[i] === '--reuse') reuse = true;
   else if (args[i] === '--repeat') repeat = Number(args[++i]);
+  else if (args[i] === '--spread') spread = Number(args[++i]);
   else if (args[i] === '--preview') preview = Number(args[++i]);
   else if (args[i] === '--reference') reference = args[++i];
   else if (args[i] === '--reference-note') referenceNote = args[++i]!;
@@ -74,12 +76,40 @@ if (!Number.isSafeInteger(repeat) || repeat < 1 || repeat > 5) throw new Error('
 if (preview !== undefined && (!Number.isSafeInteger(preview) || preview < 1))
   throw new Error('preview must name a cell');
 if (baseline && reuse) throw new Error('Stop reuse before running the cold lifecycle baseline');
+if (!Number.isFinite(spread) || spread <= 0 || spread > 4)
+  throw new Error('spread must be greater than 0 and at most 4');
 const list = (
   file.endsWith('.json')
     ? JSON.parse(fs.readFileSync(file, 'utf8'))
     : (await import(pathToFileURL(path.resolve(file)).href)).default
 ) as ShotList;
 if (!list.question || !list.beats?.length) throw new Error('List needs question and beats');
+if (spread !== 1 && !list.beats.every((beat) => beat.wedge))
+  throw new Error('spread requires wedge axes on every beat');
+for (const beat of list.beats) {
+  if (!beat.wedge) continue;
+  if (beat.variants.length !== 9) throw new Error('A wedge needs nine row-major variants');
+  for (const axis of [beat.wedge.rows, beat.wedge.columns]) {
+    if (axis.values.length !== 3 || axis.values.some((value) => !Number.isFinite(value)))
+      throw new Error('Wedge axes need three finite values');
+    const centre = axis.values[1];
+    axis.values = axis.values.map((value) => Number((centre + (value - centre) * spread).toFixed(6))) as [
+      number,
+      number,
+      number,
+    ];
+  }
+  beat.variants = beat.variants.map((variant, i) => {
+    const { rows, columns } = beat.wedge!;
+    const row = rows.values[Math.floor(i / 3)]!,
+      column = columns.values[i % 3]!;
+    return {
+      ...variant,
+      name: `${rows.label} ${row} / ${columns.label} ${column}${i === 4 ? ' — accepted baseline' : ''}`,
+      tunables: { ...variant.tunables, [rows.id]: row, [columns.id]: column },
+    };
+  });
+}
 const out = path.resolve('.look/shots', name);
 fs.mkdirSync(out, { recursive: true });
 if (fs.existsSync(path.join(out, 'manifest.json'))) throw new Error('Choose a new output name');
@@ -293,11 +323,11 @@ let failure: string | undefined;
 try {
   for (const [index, group] of [...groups.values()].entries()) {
     const label = `group-${index}`;
-    console.log(
-      `${label}: one load, ${group.cameras.length * group.variants.length} cells; route/MSAA/size/resolution grouped: ${group.query} ${group.size}`,
-    );
     const selected = preview === undefined ? group : { ...group, variants: [group.variants[preview - 1]!] };
     if (selected.variants.some((v) => !v)) throw new Error('Preview cell not found');
+    console.log(
+      `${label}: one load, ${selected.cameras.length * selected.variants.length} cells; route/MSAA/size/resolution grouped: ${group.query} ${group.size}`,
+    );
     for (let iteration = 0; iteration < repeat; iteration++) {
       const id = repeat === 1 ? label : `${label}-r${iteration + 1}`;
       run(options(group, action(selected, id)), id);
@@ -328,6 +358,7 @@ const manifest = {
   status: failure ? 'failed' : 'captured; inspect boards',
   failure,
   list,
+  spread,
   sessionToken,
   brokerHealth: broker && reuse ? 'pending; stop session to finalize' : 'see run evidence',
   groups: [...groups.values()],

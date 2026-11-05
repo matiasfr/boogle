@@ -39,6 +39,8 @@ bloom off and fixed resolution. One authored Place fixture and the existing town
 
 ```sh
 node .look/see-client.ts shots dev/look/beats/lighting-wedge.ts --reuse --name town-prepare
+node .look/see-client.ts shots dev/look/beats/lighting-wedge.ts --reuse --spread 3 --name town-wide
+node .look/see-client.ts shots dev/look/beats/lighting-wedge.ts --reuse --spread 0.5 --name town-fine
 node .look/see-client.ts shots dev/look/beats/lighting-wedge.ts --reuse --repeat 5 --name town-warm
 node .look/see-client.ts shots dev/look/beats/lighting-wedge.ts --reuse --preview 5 --name town-preview
 node dev/look/session.ts stop
@@ -56,13 +58,19 @@ Only `capture` and `stop` are supported in a broker session. Do not run another 
 Capture results remain provisional until `stop` completes the broker's health checks; it prints the evidence
 manifest and copies each queue's artifacts beside it. Do not edit source while that run is open.
 
-Each native-pixel PNG board labels exact requested settings and cell filenames. Manifests include resolved
+The lighting board is a native-pixel 3×3 grid: key down the rows, fill across the columns, numeric cell
+captions and a gold outline on accepted baseline cell 5. Axis values sit on the edges; the optional shared
+legend states fixed settings. Full settings stay in the manifest. `--spread N` (greater than 0, at most 4)
+multiplies both axes' distances from their unchanged centres: 3 is a wide first pass, 0.5 a fine pass, 1
+the original spacing. This numeric change reuses the same frozen session. For example, spread 3 gives key
+`0.64/1.12/1.6` and fill `0.8/3.2/5.6`. Manifests include resolved
 baseline, effective tunables/bindings, actual scene lights, camera, frozen clocks and exact repeat/switch-back
 probes. Tunable patches are validated before mutation, then the light owner flushes presentation without
 advancing the game. A changed gain with unchanged actual light fails. `--pick` writes a new JSON with the
 selected patch, full effective state, baseline and build; it never changes source defaults.
-Add `--reference image.png --reference-note 'provenance / approval status'` to pair an ungraded reference beside
-each cell, preserving aspect ratio. Path, SHA-256, assumed sRGB and uncropped status are recorded.
+Add `--reference image.png --reference-note 'provenance / approval status'` to show one ungraded reference beside
+the grid, aligned with its middle row in the same cell-sized viewport. Matching-size captures stay at native
+scale; other aspect ratios fit without stretching or cropping. Path, SHA-256 and assumed sRGB are recorded.
 
 Compare warm queue wall time (including dispatch/extraction) against **30 s**, and `--preview` against **1 s**.
 Page manifests also separate resource warm-up, apply/flush, draw submission, GPU completion, copy/encode,
