@@ -3,6 +3,7 @@
 // here overhangs; footbridges and platforms are their own boxes. Local: nothing here reaches the sim.
 import { smoothstep } from '../../math.ts';
 import { frameBesideLine, FRAME_D, FRAME_W, SPAN } from './spatial-station.ts';
+import { COVE, coveGround, coveSurface, coveWeight } from './cove.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';
 import {
   ARMS,
@@ -388,6 +389,40 @@ export function surfaceHeight(x: number, z: number) {
   return u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
 }
 
+// The pilot composes after catalog capture and shore grading. Preserve complete route shoulders,
+// the landing fade and rail formation, including a 2 m cell margin.
+export function coveProtection(x: number, z: number) {
+  let clearance = Math.hypot(x - SHORE_LANDING.x, z - SHORE_LANDING.z) - 16;
+  for (const [px, pz] of SHORE_SAMPLES) clearance = Math.min(clearance, Math.hypot(x - px, z - pz) - 16);
+  PATH_SAMPLES.forEach((samples, n) => {
+    for (const [px, pz] of samples)
+      clearance = Math.min(clearance, Math.hypot(x - px, z - pz) - (PATHS[n]!.bold ? 8.5 : 6.8));
+  });
+  const p: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
+  for (const line of Object.values(LINES))
+    for (let s = -12; s <= line.len + 8; s += 2) {
+      lineAt(line, s, p);
+      clearance = Math.min(clearance, Math.hypot(x - p.x, z - p.z) - 11);
+    }
+  return smoothstep(0, 3, clearance);
+}
+if (COVE) {
+  for (let j = 0; j < NZ; j++)
+    for (let i = 0; i < NX; i++) {
+      const x = cellX(i),
+        z = cellZ(j),
+        k = at(i, j);
+      const weight = coveWeight(x, z);
+      if (!weight) continue;
+      const protectedWeight = weight * coveProtection(x, z);
+      const shaped = coveGround(x, z);
+      const raised = Math.max(heights[k]!, shaped);
+      const target = raised + (shaped - raised) * smoothstep(42, 54, z);
+      heights[k] = heights[k]! + (target - heights[k]!) * protectedWeight;
+      clearMask[k] = Math.max(clearMask[k]!, protectedWeight);
+    }
+}
+
 /** The land's height at a world point. */
 export function H(wx: number, wz: number) {
   const fx = (wx - ORIGIN.x - GRID.x0) / CELL,
@@ -401,7 +436,13 @@ export function H(wx: number, wz: number) {
     b = heights[at(i + 1, j)]!,
     c = heights[at(i, j + 1)]!,
     d = heights[at(i + 1, j + 1)]!;
-  return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
+  const pilot = COVE && coveWeight(wx - ORIGIN.x, wz - ORIGIN.z) > 0;
+  const h = pilot
+    ? u + v <= 1
+      ? a + (b - a) * u + (c - a) * v
+      : d + (c - d) * (1 - u) + (b - d) * (1 - v)
+    : a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
+  return COVE ? coveSurface(wx - ORIGIN.x, wz - ORIGIN.z, h) : h;
 }
 export const insidePlace = (wx: number, wz: number) =>
   wx - ORIGIN.x > GRID.x0 + 4 &&

@@ -892,6 +892,21 @@ the shore atlas and never treat bridge decks as seabed. Dry bank/deck surfaces r
 
 ### Shore profile comparison
 
+**West-cove art pilot (5 November, branch review only).** `?proto=place&terrain=cove&room=proto-place-cove&fresh=1`
+keeps the ordinary grey box as default. The flag selects its own comparison room, including room-only invites,
+because static collision changes. One 24 m headland at local z 42–66 projects into the positive-z cove shoulder;
+the bounded inland blend stops before town and protects the complete landing fade, path shoulders and rail formation.
+The 2 m finished heightfield owns the sandy pocket, submerged shelf and backing slope. Six joined bedded modules,
+three substantial waterline rocks and three partly buried fragments use two opaque cullable batches and the exact same
+1,224 triangles for collision. The broken end is a broad solid ramp onto the pocket. There are no added textures, post passes, lights or runtime terrain uploads.
+World-Y beds, a thin turf/soil cap and restrained facets follow the [pilot references](../plans/terrain-pilot.md).
+Water depth comes from the same terrain/solid surface; rounded rock footprints supply wave obstacles. Existing receiver
+wetness, caustics and swash stay separate from water foam. `&coveView=shape` retains the clay comparison;
+`&coveView=dry` removes the kit's wet receiver for the material comparison. Neither changes collision.
+Local presentation/static Owner collision; no new save or lockstep state. H uses the actual grid triangles plus kit
+surfaces under the flag. Catalog inputs, IDs, progression and The Boogler's copy stay unchanged. Not adopted beyond
+this corner; owner playtest and device validation remain pending. Serves DESIGN.md 11, Show, don't tell.
+
 `?proto=place&water=new&shelf=demo` is a Local geometry-only A/B experiment. It copies the owner's measured Ultra
 Water bearing-95 beach profile onto the east shore at world (1219.513, 8.505), oriented 95° clockwise from north.
 The exact-profile strip is 70 m wide, blending to unchanged terrain by 110 m; cross-shore blending runs from

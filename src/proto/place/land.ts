@@ -16,6 +16,8 @@ import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from './shore-layout.ts';
 import { boxFootprint, sampleFootprint } from './support.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { tagStepSupport, segmentStepSupport, type StepSurface } from '../../render/locomotion-surfaces.ts';
+import { COVE, COVE_CLAY, coveWeight } from './cove.ts';
+import { buildCove } from './cove-view.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -56,6 +58,15 @@ function buildMesh(owner?: OwnedView) {
       if (h < 3.2) c.lerp(gorgeD(x, z) < 18 ? BANK : SAND, smoothstep(3.2, 1.6, h));
       if (!LOOK.ground) c.lerp(h < 9 ? ROCK_LOW : ROCK, smoothstep(0.55, 1.1, slope)); // with it, rock is per pixel
       c.lerp(DIRT, pathMask[k]!);
+      if (COVE && coveWeight(x, z) > 0 && pathMask[k]! < 0.01) {
+        // Wetness stays in the production receiver; this is dry surface coverage only.
+        const tint = COVE_CLAY
+          ? new THREE.Color(0.65, 0.63, 0.59)
+          : h < 2
+            ? new THREE.Color(0.72, 0.57, 0.32)
+            : new THREE.Color(0.19, 0.32, 0.04);
+        c.lerp(tint, coveWeight(x, z));
+      }
       col.set([c.r, c.g, c.b], k * 3);
     }
   const idx: number[] = [];
@@ -137,6 +148,7 @@ function buildMesh(owner?: OwnedView) {
     // Authored coastal ground band, independent of rendered grass colour/pigment.
     return { top, surface: top < 2.4 && gorgeD(x - ORIGIN.x, z - ORIGIN.z) >= 18 ? 'sand' : 'grass' };
   });
+  if (COVE) buildCove();
 }
 
 /** Walls and roofs of buildings you can walk into: solid to you (your mask has every bit), and the indoor camera leaves this
