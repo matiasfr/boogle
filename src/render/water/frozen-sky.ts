@@ -1,5 +1,5 @@
-// One late-morning atmosphere bake per sea lifetime, completed behind the loading screen.
-// Owner call, 3 November: demo-sky.ts's sky at tod=.24, fixed real sun; no runtime rebakes or cycle.
+// Late morning by default; the opt-in evening proof prepares both skies behind loading.
+// Owner calls, 3–5 November: fixed authored sunlight, no runtime cycle.
 import * as THREE from 'three/webgpu';
 import { cameraPosition, fog, mix, normalize, positionWorld, rangeFogFactor, uniform, uv, vec3, vec4 } from 'three/tsl';
 import { FOG_NEAR, FOG_FAR } from '../../constants.ts';
@@ -14,6 +14,7 @@ import { bind, tuningEnabled } from './live.ts';
 import { toySkyEnabled } from './flags.ts';
 import { toySky } from './toy.ts';
 import { bootMark } from '../../boot/timeline.ts';
+import { createEveningTransition, eveningPreview, prepareEvening } from './evening-transition.ts';
 
 export const WATER_TOD = 0.24;
 export let frozenSkyActive = false;
@@ -41,6 +42,8 @@ export function updateFrozenDay() {
 
 export function createFrozenWaterSky() {
   frozenSkyActive = true;
+  timeOfDay = WATER_TOD;
+  direction.copy(east).multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
   const environment = createWaterSky(toySkyEnabled ? toySky : undefined);
   environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(direction.y));
   environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z));
@@ -67,6 +70,10 @@ export function createFrozenWaterSky() {
     underground = uniform(0);
   const upper = new THREE.Color(),
     lower = new THREE.Color();
+  const evening = prepareEvening ? createWaterSky() : undefined;
+  let transition: ReturnType<typeof createEveningTransition> | undefined;
+  const filtered: THREE.RenderTarget[] = [];
+  let selectedEnvironment: THREE.Texture = environment.cube;
   const preview = tuningEnabled
     ? {
         keyGain: 1,
@@ -101,10 +108,11 @@ export function createFrozenWaterSky() {
   const fogNode = fog(haze, rangeFogFactor(near, far));
   let disposed = false,
     baked = false;
-  function update() {
+  function update(dt = 0) {
     if (!baked || disposed) return;
+    transition?.update(dt);
     scene.backgroundNode = environment.background;
-    scene.environment = environment.cube;
+    scene.environment = selectedEnvironment;
     scene.environmentIntensity = 1 - atmosphere.underground; // the outdoor cube cannot reflect through cave roofs
     scene.fogNode = fogNode;
     sky.visible = false;
@@ -143,15 +151,11 @@ export function createFrozenWaterSky() {
     seaU.uLight.value.setRGB(1, 1, 1);
     renderer.toneMappingExposure = 1;
   }
-  async function bake() {
-    if (disposed) return;
-    bootMark('sky-start');
-    environment.bake();
-    if (tuningEnabled) direction.copy(environment.sunDirection.value);
+  async function readFill(source: ReturnType<typeof createWaterSky>) {
     // Lambert toy materials need the same cube's coarse irradiance as their hemisphere fill.
     const target = new THREE.RenderTarget(2, 1, { type: THREE.FloatType, depthBuffer: false });
     const material = new THREE.MeshBasicNodeMaterial({ depthTest: false, depthWrite: false });
-    material.fragmentNode = vec4(environment.ambient(vec3(0, uv().x.lessThan(0.5).select(1, -1), 0)), 1);
+    material.fragmentNode = vec4(source.ambient(vec3(0, uv().x.lessThan(0.5).select(1, -1), 0)), 1);
     const previous = renderer.getRenderTarget(),
       face = renderer.getActiveCubeFace(),
       mip = renderer.getActiveMipmapLevel();
@@ -160,27 +164,73 @@ export function createFrozenWaterSky() {
       new THREE.QuadMesh(material).render(renderer);
       renderer.setRenderTarget(previous, face, mip);
       const pixels = (await renderer.readRenderTargetPixelsAsync(target, 0, 0, 2, 1)) as Float32Array;
-      if (disposed) return;
-      upper.fromArray(pixels, 0);
-      lower.fromArray(pixels, 4);
-      baked = true;
-      updateFrozenDay();
-      update();
-      bootMark('sky-ready');
-      console.info(
-        'WATER FROZEN SKY ' +
-          JSON.stringify({ tod: timeOfDay, ...environment.inspect(), upper: upper.toArray(), lower: lower.toArray() }),
-      );
+      return { upper: new THREE.Color().fromArray(pixels, 0), lower: new THREE.Color().fromArray(pixels, 4) };
     } finally {
       renderer.setRenderTarget(previous, face, mip);
       target.dispose();
       material.dispose();
     }
   }
-  const ready = rendererReady.then(bake);
+  async function bake() {
+    if (disposed) return;
+    bootMark('sky-start');
+    environment.bake();
+    if (tuningEnabled) direction.copy(environment.sunDirection.value);
+    const fill = await readFill(environment);
+    if (disposed) return;
+    upper.copy(fill.upper);
+    lower.copy(fill.lower);
+    baked = true;
+    updateFrozenDay();
+    update();
+    bootMark('sky-ready');
+    console.info('WATER FROZEN SKY ' + JSON.stringify({ tod: timeOfDay, ...environment.inspect() }));
+  }
+  async function prepare() {
+    await bake();
+    if (!evening || disposed) return;
+    // Research water-times-of-day recommendations 1–4: two prepared endpoints, no live sunset.
+    // Keep the accepted 1024 day cube; a smaller-cube comparison is a separate proof.
+    evening.bake({ elevation: 12, azimuth: 255, turbidity: 3.2, sunIntensity: 9, cloudCoverage: 0.3 });
+    const eveningFill = await readFill(evening);
+    if (disposed) return;
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    try {
+      filtered.push(pmrem.fromCubemap(environment.cube));
+      filtered.push(pmrem.fromCubemap(evening.cube));
+    } finally {
+      pmrem.dispose();
+    }
+    const day = {
+      direction: direction.clone(),
+      radiance: environment.sunColor.value.clone(),
+      upper: upper.clone(),
+      lower: lower.clone(),
+    };
+    const select = (isEvening: boolean) => {
+      timeOfDay = isEvening ? 0.55 : WATER_TOD;
+      direction.copy(isEvening ? evening.sunDirection.value : day.direction);
+      environment.selectPrepared(
+        isEvening ? evening.cube : environment.cube,
+        direction,
+        isEvening ? evening.sunColor.value : day.radiance,
+      );
+      selectedEnvironment = filtered[isEvening ? 1 : 0]!.texture;
+      upper.copy(isEvening ? eveningFill.upper : day.upper);
+      lower.copy(isEvening ? eveningFill.lower : day.lower);
+      updateFrozenDay();
+    };
+    const initial = eveningPreview === '1';
+    select(initial);
+    transition = createEveningTransition(initial, select);
+    update();
+  }
+  const ready = rendererReady.then(prepare);
   let pending = ready;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const scheduleBake = () => {
+    // Authoring rebakes and prepared endpoints must not mutate one another.
+    if (evening) return;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = undefined;
@@ -198,6 +248,7 @@ export function createFrozenWaterSky() {
     'sky.time',
     () => timeOfDay,
     (value) => {
+      if (evening) return;
       timeOfDay = value as number;
       const next = skyState(timeOfDay, 0.5).sunAngle;
       const dir = east.clone().multiplyScalar(Math.cos(next)).addScaledVector(noon, Math.sin(next));
@@ -211,6 +262,7 @@ export function createFrozenWaterSky() {
       `sky.${key}`,
       () => environment.params[key],
       (value) => {
+        if (evening) return;
         environment.params[key] = value as number;
         scheduleBake();
       },
@@ -219,10 +271,18 @@ export function createFrozenWaterSky() {
     sky: environment,
     ready,
     update,
-    inspect: () => ({ tod: timeOfDay, ready: baked, disposed, ...environment.inspect() }),
+    inspect: () => ({
+      tod: timeOfDay,
+      ready: baked,
+      disposed,
+      ...environment.inspect(),
+      evening: evening?.inspect(),
+      transition: transition?.inspect(),
+    }),
     dispose() {
       if (disposed) return;
       disposed = true;
+      transition?.dispose();
       if (timer) clearTimeout(timer);
       frozenSkyActive = false;
       scene.backgroundNode = prior.background;
@@ -244,7 +304,13 @@ export function createFrozenWaterSky() {
         hemi.intensity = prior.hemi.intensity;
       }
       // A pending readback owns its source textures until it settles; never dispose a GPU resource beneath it.
-      void pending.finally(() => environment.dispose()).catch(() => {});
+      void pending
+        .finally(() => {
+          environment.dispose();
+          evening?.dispose();
+          for (const target of filtered) target.dispose();
+        })
+        .catch(() => {});
     },
   };
 }
