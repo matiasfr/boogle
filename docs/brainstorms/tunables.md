@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-05).**
+> **Status: building (approved, owner, 2026-11-05: all four recommendations). First proof on `codex/tunables-build`.**
 
 # Tunables
 
