@@ -4,6 +4,7 @@
 // last reported was set by the game (a teleport, a ride) and is written through.
 import type * as RAPIER from '@dimforge/rapier3d';
 import { FIXED, GRAVITY } from '../constants.ts';
+import { AssetDownloadError } from '../boot/asset-fetch.ts';
 import type { Body, BodyKind, BodyOptions, Material, MaterialProps, RayHit, Shape, StepOpts, V3 } from './engine.ts';
 
 type R = typeof RAPIER;
@@ -83,12 +84,14 @@ let acc = 0,
 // 16.4); if it fails to instantiate anyway, the plain build loads instead. Same version, same API.
 const load = (): Promise<R> =>
   (import('@dimforge/rapier3d-simd') as Promise<unknown> as Promise<R>).catch((e) => {
+    if (e instanceof AssetDownloadError) throw e; // another engine cannot fix an exhausted HTTP download
     console.warn('[physics] Rapier SIMD build failed to load, using the plain one:', e);
     return import('@dimforge/rapier3d');
   });
 
 export function ready() {
   return load().then((mod) => {
+    if (!mod?.World) throw new Error('Boogle could not load its physics engine. Please reload to try again.');
     R = mod;
     world = new R.World({ x: 0, y: -GRAVITY, z: 0 });
     world.timestep = FIXED;

@@ -16,6 +16,9 @@
   covers the lobby while the graphics device, player's body, shaders and first GPU frame prepare; the room connects meanwhile ([src/boot/](../../src/boot/)).
   A readiness or startup failure removes the loading screen and shows the existing graphics failure note in the lobby,
   with Jump in disabled. This recovery is Local.
+  A physics download returning HTTP 503 gets two retries after 0.5 and 1.5 seconds, without delaying successful loads.
+  Exhaustion shows a physics-download message in that same lobby, with the HTTP status and a request to reload;
+  an HTTP error page is never passed to the WASM compiler. Game-chunk download failures also use the lobby failure route.
   Shader warm-up keeps a 16 s escape deadline (a cold Metal cache needs about 14 s on an M1 Max) after the frozen sky bake. It awaits water and particle compute,
   submits the real caustics/post passes, then compiles the whole scene while those native pipelines build.
   Hidden objects and objects outside the provisional camera are included.

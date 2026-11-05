@@ -20,6 +20,8 @@ import { splashStage, splashProgress, splashDone } from './boot/splash.ts';
 import { bootMark } from './boot/timeline.ts';
 import { prefetchAssets } from './render/asset-manifest.ts';
 import { background } from './async.ts';
+import { AssetDownloadError, isChunkFetchError } from './boot/asset-fetch.ts';
+import { bootFailed } from './boot/failure.ts';
 
 // Every feature module in src/features/ registers its own hooks (see src/loop.ts).
 import.meta.glob('./features/*.{js,ts}', { eager: true });
@@ -107,6 +109,7 @@ splashStage(0.3, 0.45, 'Waking up the graphics');
 Promise.all([rendererReady, physicsReady])
   .then(play)
   .catch((e: unknown) => {
+    if (e instanceof AssetDownloadError || isChunkFetchError(e)) return bootFailed(e);
     console.error('[boot] startup failed:', e); // the lobby note can't say what went wrong
     graphicsFailed();
     splashDone();

@@ -60,6 +60,20 @@ export default defineConfig({
   plugins: [
     wasm(), // Rapier ships its WASM as an ES module import
     {
+      name: 'boogle-wasm-retry',
+      transform(code, id) {
+        if (id !== '/__vite-plugin-wasm-helper') return;
+        const fetchCall = 'const response = await fetch(url);';
+        if (!code.includes(fetchCall)) this.error('WASM helper changed: verify the bounded download retry.');
+        return {
+          code:
+            `import { fetchWasm } from ${JSON.stringify(resolve('src/boot/asset-fetch.ts'))};\n` +
+            code.replace(fetchCall, 'const response = await fetchWasm(url);'),
+          map: null,
+        };
+      },
+    },
+    {
       // Names each onFrame hook after its module, for the profiler (src/loop.ts): `onFrame(` becomes
       // `onFrame.in('features/foo.js')(`, in dev and build alike.
       name: 'boogle-hook-names',
