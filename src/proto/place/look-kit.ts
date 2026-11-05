@@ -73,7 +73,11 @@ if (LOOK.kit)
         });
         if (!found) throw new Error(`place-kit has no ${name}`);
         const g = bake(found, name);
-        for (const m of meshes) m.geometry = g;
+        for (const m of meshes) {
+          m.geometry = g;
+          // Static station bounds must include the loaded piece, not the startup speck.
+          if (m instanceof THREE.InstancedMesh && m.frustumCulled) m.computeBoundingSphere();
+        }
       }
     });
 function want<M extends THREE.Mesh>(name: string, mesh: M) {
@@ -233,6 +237,7 @@ export function stationKit(
       stationM.makeTranslation(away * (FRAME_D / 2 + 0.15), 0.42, 0).premultiply(g.matrix),
     );
   stationPict.instanceMatrix.needsUpdate = true;
+  stationPict.computeBoundingSphere();
   at('feeder_bed', BED, 0, 0, 0, feederAt);
   if (corner) {
     // Rough Station 3 composition: two existing bottom-pivoted timbers lead the eye from receiver to machine.
@@ -258,12 +263,15 @@ function stationPiece(name: string, p: Paint, m: THREE.Matrix4) {
   if (!b) {
     b = kitBatch(name, p, name === 'roller' ? ROLLERS : STATION_PIECES);
     b.count = 0;
+    // Trial just the static posts; the other kit batches keep their existing policy.
+    b.frustumCulled = name === 'frame_post';
     stationBatches.set(name, b);
     scene.add(b);
   }
   if (b.count >= b.instanceMatrix.count) return;
   b.setMatrixAt(b.count++, m);
   b.instanceMatrix.needsUpdate = true;
+  if (b.frustumCulled) b.computeBoundingSphere();
 }
 // The board's log pictogram.
 const stationPictGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.75, 10).rotateX(Math.PI / 2);
@@ -273,7 +281,6 @@ const stationPict = new THREE.InstancedMesh(
   16,
 );
 stationPict.count = 0;
-stationPict.frustumCulled = false;
 scene.add(stationPict);
 
 // ---------------------------------------------------------------- the machine
