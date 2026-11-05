@@ -320,6 +320,7 @@ function tickCarry(load: CarryReadout, now: number) {
         (load.incoming ? ` · ${load.incoming} incoming` : '') +
         (load.reserved ? ` · ${load.reserved} reserved` : '');
     pauseCarry.textContent = `Carrying: ${exact}`;
+    pauseCarry.hidden = !load.big && !held && !pending;
     tag.setAttribute('aria-label', exact);
   }
   fillSlots(load, now);

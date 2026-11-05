@@ -578,7 +578,7 @@ onFrame(
     if (line || line !== lastObjective) playObjective(line);
     lastObjective = line;
     document.body.classList.toggle('place-no-target', !interactTarget()?.run);
-    setNumbers(job.score, job.people);
+    setNumbers(job.score);
     // What the owner does.
     const riding_ = lines.some((l) => l.train.onTrain(carry.on));
     if (riding_ && !wasRiding) {

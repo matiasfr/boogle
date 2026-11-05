@@ -14,6 +14,7 @@ import { defineKind, spawn } from '../entity/entity.ts';
 import { COLORS, DEFAULT_ROOM, CLASSIC_ROOM } from '../constants.ts';
 import { inputState } from '../player/input-state.ts';
 import { me } from '../player/player.ts';
+import { dom } from '../player/dom.ts';
 import { remotes, getRoomId } from '../netplay/net.ts';
 import { requestLock } from '../player/input.ts';
 import { canvas } from '../render/scene.ts';
@@ -260,7 +261,10 @@ function renderMain() {
   const more = button('More', () => show('more'));
   more.dataset.act = 'more';
   const list = el('div', 'pause-list');
+  const identity = el('div', 'pause-identity');
+  identity.append(dom.rosterEl, dom.netEl);
   list.append(
+    identity,
     ...pauseSections,
     resume,
     controls,
@@ -629,6 +633,9 @@ document.addEventListener('pointerlockchange', () => {
 defineKind('pause', { lateUpdate: 0 });
 
 onStart(() => {
+  // These live elements keep their existing updates, now inside Pause instead of the play view.
+  dom.rosterEl.remove();
+  dom.netEl.remove();
   menuBtn = el('button', 'menu-btn');
   menuBtn.type = 'button';
   menuBtn.setAttribute('aria-label', 'Menu and controls');

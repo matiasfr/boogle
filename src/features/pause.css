@@ -435,8 +435,22 @@ dialog.pause::backdrop {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-body.playing .menu-btn {
+body.touch.playing .menu-btn {
   display: inline-flex;
+}
+.pause-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pause-identity .roster li,
+.pause-identity .net {
+  padding: 0;
+  border: 0;
+  color: var(--ink);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .menu-icon {
   width: 22px;
