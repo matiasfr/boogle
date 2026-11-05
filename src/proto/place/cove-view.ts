@@ -6,8 +6,9 @@ import { GROUP, groundMat } from '../../physics/physics.ts';
 import { registerWaterReceiver } from '../../render/water/receivers.ts';
 import { COVE_DRY, coveMeshes } from './cove.ts';
 import { ORIGIN } from './layout.ts';
+import { holdCoveStop } from './cove-stop.ts';
 
-defineKind('place-cove', {});
+defineKind('place-cove', { fixedPre: 44 });
 export function buildCove() {
   const group = new THREE.Group();
   group.name = 'west-cove-sandstone';
@@ -38,6 +39,7 @@ export function buildCove() {
     kind: 'place-cove',
     mesh: group,
     bodies,
+    fixedPre: holdCoveStop,
     describe: () => ({
       triangles: coveMeshes.reduce((n, m) => n + m.indices.length / 3, 0),
       batches: 2,

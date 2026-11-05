@@ -1,7 +1,8 @@
 // Matched terrain evidence through the existing broker/look harness. No alternate browser or renderer.
 const q = new URLSearchParams(location.search);
 const { me, cam } = await import('/src/player/player.ts' as string);
-const { teleport } = await import('/src/physics/engine.ts' as string);
+const { teleport, physicsTime, forEachContact } = await import('/src/physics/engine.ts' as string);
+const { WALKABLE_NY } = await import('/src/constants.ts' as string);
 const { H } = await import('/src/proto/place/terrain.ts' as string);
 const { renderer, sun } = await import('/src/render/scene.ts' as string);
 const { skyDebug } = await import('/src/render/sky.ts' as string);
@@ -67,6 +68,36 @@ if (q.get('coveWalk') === '1') {
       (async () => {
         const { makeBot } = await import('/dev/look/bot.ts' as string);
         const bot = makeBot({ doneFlag: '__coveWalkDone' });
+        const stopped = async (label: string) => {
+          const body = me.body!;
+          const brake = physicsTime();
+          while (physicsTime() - brake < 0.5) await wait(20);
+          const origin = { x: body.position.x, y: body.position.y, z: body.position.z };
+          const start = physicsTime();
+          let drift = 0,
+            dryGrounded = true;
+          while (physicsTime() - start < 8) {
+            let supported = false;
+            forEachContact(body, (_x: number, y: number) => {
+              if (y > WALKABLE_NY) supported = true;
+            });
+            dryGrounded &&= supported && !me.swimming;
+            drift = Math.max(
+              drift,
+              Math.hypot(body.position.x - origin.x, body.position.y - origin.y, body.position.z - origin.z),
+            );
+            await wait(20);
+          }
+          const speed = Math.hypot(body.velocity.x, body.velocity.y, body.velocity.z);
+          console.log(
+            'PLAY COVE_STOP ' +
+              JSON.stringify({ label, origin, seconds: physicsTime() - start, drift, speed, dryGrounded }),
+          );
+          const stable = drift <= 0.1 && speed <= 0.05 && dryGrounded;
+          bot.check(`cove post-stop ${label}`, stable);
+          if (!stable) throw new Error(`Cove post-stop failed: ${label}, drift=${drift}, speed=${speed}`);
+        };
+        await stopped('original 806,38 start');
         for (const [x, z] of [
           [808, 40],
           [810, 42],
@@ -78,6 +109,7 @@ if (q.get('coveWalk') === '1') {
           const reached = await bot.straight(x!, z!, 0.65, 30000);
           bot.check(`cove filmed leg ${x},${z}`, reached && !me.swimming);
           if (!reached || me.swimming) throw new Error(`Cove filmed leg failed: ${x},${z}`);
+          await stopped(`${x},${z}`);
         }
         bot.finish('cove foot approach and return');
       })(),

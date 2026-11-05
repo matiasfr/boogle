@@ -6,7 +6,8 @@ import { interactTarget } from '../../../src/player/hands.ts';
 import { cam, me } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
-import { teleport } from '../../../src/physics/engine.ts';
+import { teleport, forEachContact } from '../../../src/physics/engine.ts';
+import { WALKABLE_NY } from '../../../src/constants.ts';
 import { carry, fromPlatform, toPlatform, type Platform } from '../../../src/physics/platforms.ts';
 import type { Rock, Tree } from '../../../src/proto/place/chop.ts';
 import { nearest } from '../../../src/proto/place/nearest.ts';
@@ -73,7 +74,7 @@ async function playRoute() {
   const place = window.__place as any;
   const coopRoute = q.get('coopRoute') === '1';
   let coveWalking = q.get('terrain') === 'cove';
-  if (coopRoute) watchLanding();
+  if (coopRoute || coveWalking) watchLanding();
   const bot = makeBot({
     recover: () => {
       if (coveWalking) throw new Error('Cove route needed recovery; dry return is not proven');
@@ -348,10 +349,19 @@ async function playRoute() {
   const padOf = (id: string) => tech.PADS.find((p: { id: string }) => p.id === id);
   const face = (x: number, z: number) =>
     void (cam.yaw = me.yaw = Math.atan2(-(x - body.position.x), -(z - body.position.z)));
+  const landed = () => {
+    // Solver residuals can have either sign at rest. Require actual walkable contact, not an exact vy sign.
+    if (me.coyote <= 0 || Math.abs(body.velocity.y) > 0.05) return false;
+    let supported = false;
+    forEachContact(body, (_x, y) => {
+      if (y > WALKABLE_NY) supported = true;
+    });
+    return supported;
+  };
   /** Off the ground and up onto a ledge: jump, near the top jump again, steering at it all the way. */
   const twoJumps = async (x: number, z: number) => {
     // The walking planner can arrive mid-hop. Land before spending the two presses on the ledge.
-    await waitFor(() => me.coyote > 0 && body.velocity.y <= 0, 2000, 'landed before the double jump');
+    await waitFor(landed, 2000, 'landed before the double jump');
     face(x, z);
     input.keys.add('KeyW');
     await wait(120);
@@ -395,10 +405,11 @@ async function playRoute() {
     note(`ability: ${id}`);
     await wait(id === 'hook' ? 3800 : 3000); // its show
     if (id === 'jump') {
-      // The reward's anticipation can outlast the old fixed wait. Its dismissal schedules the demo 0.3 s later.
+      // Let the reward finish, then require a real grounded stance before starting the course.
       await waitFor(() => !gettingItem(), 8000, 'put away the jump reward');
       await wait(400);
-      await waitFor(() => me.coyote > 0 && body.velocity.y <= 0, 4000, 'landed after the jump demonstration');
+      await waitFor(landed, 4000, 'grounded after the jump reward');
+      note(`jump reward stance: grounded=${landed()}, vy=${body.velocity.y}, coyote=${me.coyote}`);
     }
   };
   const glideTo = async (x: number, z: number, limit = 90000) => {
