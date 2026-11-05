@@ -13,6 +13,7 @@ import { H } from './land.ts';
 import { LOOK, STEEL, addBlob, bakeContact, honeyOf, paint, setBlob, type Paint } from './look.ts';
 import type { DropSet } from './pieces.ts';
 import { makeBoiler } from './carry-models.ts';
+import { makeProp } from './prop-kit.ts';
 import { job } from './job.ts';
 
 // ---------------------------------------------------------------- the file
@@ -340,24 +341,8 @@ function kitCars(trailers: number, working: boolean): MachineLook {
     add(loco, 'loco_brass', BRASS);
     add(loco, 'loco_black', BLACK);
   } else {
-    // Keep the frame and cab, with an unmistakable gap where the boiler seats.
-    for (const [w, h, d, x, y, z, p] of [
-      [1.6, 0.2, 3, 0, 0.6, 0, BLACK],
-      [1.5, 1.18, 1, 0, 0.82, -1, RED],
-      [1.72, 0.1, 1.2, 0, 2, -1, BLACK],
-      [1.4, 0.32, 0.24, 0, 0.36, 1.58, RED],
-    ] as const) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), paint({ ...p, rust: 'train' }));
-      m.position.set(x, y, z);
-      m.castShadow = true;
-      loco.add(m);
-    }
-    for (const z of [0, 1]) {
-      const saddle = new THREE.Mesh(new THREE.TorusGeometry(0.59, 0.09, 6, 12, Math.PI), paint(BRASS));
-      saddle.rotation.z = Math.PI;
-      saddle.position.set(0, 1.2, z);
-      loco.add(saddle);
-    }
+    // Shared band dimensions author both the boiler and open receiver in the Blender recipe.
+    loco.add(makeProp('train_shell'));
     boiler!.position.set(0, 1.2, 0.5);
     boiler!.rotation.y = Math.PI;
     boiler!.visible = job.boiler >= 3 || job.rung.trains;

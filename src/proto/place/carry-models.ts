@@ -5,6 +5,7 @@ import { flat } from '../flat.ts';
 import { PACK, TUNE } from './layout.ts';
 import { merged } from './part-geometry.ts';
 import { sideCarryOffset } from './head-clearance.ts';
+import { makeProp } from './prop-kit.ts';
 
 export type CargoKind = 'logs' | 'rails' | 'stone' | 'beam' | 'boiler';
 export const cargoCapacity = (kind: CargoKind, frame: boolean): number =>
@@ -15,25 +16,7 @@ export const BEAM_CARRY_POSITION = [sideCarryOffset(0.26), 0.85, 0.2] as const;
 
 /** The same part on the pedestal, shoulder and locomotive saddle. */
 export function makeBoiler() {
-  const boiler = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.55, 0.55, 1.5, 12).rotateX(Math.PI / 2),
-    flat('#c83a2a').clone(),
-  );
-  boiler.add(body);
-  for (const z of [-0.5, 0.5]) {
-    const band = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.57, 0.57, 0.14, 12).rotateX(Math.PI / 2),
-      flat('#d9a23a').clone(),
-    );
-    band.position.z = z;
-    boiler.add(band);
-  }
-  const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 8), flat('#24262c').clone());
-  stack.position.set(0, 0.62, -0.4);
-  boiler.add(stack);
-  boiler.traverse((o) => (o.castShadow = true));
-  return boiler;
+  return makeProp('boiler');
 }
 
 /** Owned materials and geometry, including the same readable worn steel in game and stage. */

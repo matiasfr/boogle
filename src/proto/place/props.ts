@@ -12,6 +12,8 @@ import { clank } from '../../render/machine-sfx.ts';
 import { draw } from '../net/boxes.ts';
 import { H, PATH_SAMPLES, addStatic } from './land.ts';
 import { boilerShape } from './chop.ts';
+import { makeProp } from './prop-kit.ts';
+import { frameCtx } from '../../loop.ts';
 import { pullOut } from './celebrate.ts';
 import { job, personalSlice, save } from './job.ts';
 import { BUOYS, FAR, FORGE, ORIGIN, SCOPE, lineAt, toWorld, LINES, type LinePoint } from './layout.ts';
@@ -182,7 +184,7 @@ const BY = H(BX, BZ);
 const boiler = boilerShape();
 boiler.position.set(BX, BY + 1.15, BZ);
 boiler.visible = false;
-const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.3, 0.6, 8), flat('#b6a080'));
+const pedestal = makeProp('pedestal');
 // The stand stays at the forge when a dropped boiler lies elsewhere.
 pedestal.position.set(BX, BY + 0.3, BZ);
 pedestal.castShadow = pedestal.receiveShadow = true;
@@ -193,11 +195,35 @@ export const boilerAt = () => {
   return p ? { x: p.x, y: p.y + 1.4, z: p.z } : { x: BX, y: BY + 2, z: BZ };
 };
 /** Each frame: it stands there while it's waiting. */
+let nextBoilerMote = 0;
+let boilerMote = 0;
+const boilerGold = new THREE.Color('#ffdc7a');
 export const updateBoiler = () => {
   boiler.visible = job.boiler === 1;
   const p = boilerAt();
   boiler.position.set(p.x, p.y - 0.85, p.z);
   boiler.rotation.y = bigCargo.boiler.ground?.yaw ?? 0;
+  // Local invitation, only on its stand: at most two live motes, no emitter or new draw pool.
+  if (boiler.visible && !bigCargo.boiler.ground && frameCtx.elapsed >= nextBoilerMote) {
+    nextBoilerMote = frameCtx.elapsed + 0.8;
+    const side = boilerMote++ % 2 ? 1 : -1;
+    emit({
+      x: BX + side * 0.42,
+      y: BY + 1.55,
+      z: BZ + side * 0.5,
+      vx: side * 0.025,
+      vy: 0.14,
+      vz: 0,
+      life: 1.1,
+      size: 0.055,
+      color: boilerGold,
+      intensity: readableIntensity() * 1.4,
+      alpha: 0.75,
+      grow: [0.6, 1],
+      shrink: 0.5,
+      fade: 0.7,
+    });
+  }
 };
 
 // ---------------------------------------------------------------- what points at the next island
