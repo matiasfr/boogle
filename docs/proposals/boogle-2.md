@@ -270,6 +270,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### Look
 
+- **2026-11-04, keep the current look; post looks are parked** (owner, choosing Current over Drawn toys and Drawn + air: "stick with the current for now, but park these as rendering options for later if we take another pass"). Toy-only outlines were the strongest candidate, but cost about 6 ms on the M1 Max and crawl in motion. Findings: [round two](../research/post-look-round2.md); working layers: tag `archive/post-looks-round2`, not on `main`.
 - **2026-11-04, the room owns the time of day** (owner: "Room should own time for sure"). If several times of day come, everyone in a room sees the same time. It's shared room state, not a local look. How many times and how they change is still open; [research](../research/water-times-of-day.md) is under way.
 - **2026-11-04, new water is the default for tonight's Place replay** (owner: “Switch default instead”). Default Place and `proto=place` use new water without a flag; `water=old` selects the legacy production sea, and `water=new` remains valid. Keep classic home and other prototypes on their existing defaults, including the water demo's separately owned sea. Keep Neutral and the once-baked late-morning sky. This authorizes only water-graduation step 7's default switch: remove nothing, leave step 8 documentation and acceptance open, and change no terrain, gameplay, pacing or copy. Verify the solo comparison and continuous two-player route before claiming readiness for the Mac/iPhone human replay.
 
