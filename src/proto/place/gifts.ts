@@ -985,7 +985,8 @@ const CHEST: Part[] = [
   ['b', 0, 0.55, 0, 1.5, 1.1, 1, '#6d5136'],
   ['b', -0.5, 0.55, 0, 0.14, 1.14, 1.04, '#3a3d44'],
   ['b', 0.5, 0.55, 0, 0.14, 1.14, 1.04, '#3a3d44'],
-  ['c', 0, 1.1, 0, 0.5, 1.5, 0.5, '#7f5f3f', 0, Math.PI / 2],
+  // Overhang the box ends so the lid's caps never share their plane.
+  ['c', 0, 1.1, 0, 0.5, 1.54, 0.5, '#7f5f3f', 0, Math.PI / 2],
   ['b', 0, 0.75, 0.52, 0.22, 0.28, 0.06, '#f2b134'],
 ];
 const chestGeo = merged(CHEST);

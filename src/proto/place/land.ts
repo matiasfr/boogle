@@ -219,13 +219,12 @@ function buildSpire() {
   }
   // The lookout and the orange vane that say "that one" from every lobe.
   const top = y;
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(6, 0.6, 6), FLAT('#7f5630'));
-  deck.position.set(X + 8, top - 2.4, Z - 1);
+  // tech.ts owns the summit's walkable deck; the old lookout deck shared its top plane.
   const mast = new THREE.Mesh(new THREE.BoxGeometry(0.4, 6, 0.4), FLAT('#3a302c'));
   mast.position.set(X + 8, top + 2, Z - 1);
   const vane = new THREE.Mesh(new THREE.BoxGeometry(5, 1.6, 0.25), FLAT('#f0752c'));
   vane.position.set(X + 9.6, top + 4.4, Z - 1);
-  scene.add(deck, mast, vane);
+  scene.add(mast, vane);
 }
 
 // ---------------------------------------------------------------- footbridges, trees, a few places to stop at

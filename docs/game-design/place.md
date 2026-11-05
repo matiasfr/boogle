@@ -90,7 +90,7 @@ Along the way, seven **crystals** are tucked at spots worth stopping at, the sam
 
 **Shared unlock arrival** (DESIGN.md 4 and 11): when a partner earns the multi-axe, proper axe, pack or movement device, your own copy appears above you through the same reward queue, with its existing name and model. Partner devices do not replay the local tutorial. A newly accepted snapshot transition also presents it, so a snapshot arriving before the event cannot make it silent. Local presentation keys prevent duplicate shows within the run, including a regressed snapshot followed by recovery; reset clears those keys. Initial join/reload snapshots silently remember existing unlocks. No new prose, messages or saved fields; earning remains shared state and the show is Local.
 
-Waiting crates and tool chests have a soft 1.8 m glimmer just above the lid, replacing the 34 m columns. Their physical seals, bob, sparkles and landing flare remain; the brief opening burst is unchanged. Secret crates still have no glimmer. This is Local presentation only.
+Waiting crates and tool chests have a soft 1.8 m glimmer just above the lid, replacing the 34 m columns. Their physical seals, bob, sparkles and landing flare remain; the brief opening burst is unchanged. Secret crates still have no glimmer. The tool chest's rounded lid overhangs the body ends by 2 cm, keeping their faces out of the same plane. This is Local presentation only.
 
 Shop clothes use the same remote validation as box gifts, so a partner also sees the paper hat and other shop stock.
 
@@ -257,7 +257,7 @@ The platforms remain visible from the start. Warm stone bodies, pale landing cap
 
 The jump rings track the animated calf pivots, including during a running jump. The first pillar's approach lip sits 4 cm below its landing top, avoiding overlapping coplanar faces. The sea-stack secret has a return hook slab beside the trestle, within 24 m of the stack; the hook returns you to rail height so leaving does not require a swim. Recovery selects existing track surface colliders, including stubs, rather than treating an open line's unfinished pier as built.
 
-Course landings and the lower return clear intersecting tree crowns while retaining harvest IDs. The alcove catwalk and its goggles box sit at local `(-40, -80.5)`, clear of the cliff and trestle, with the original bank approach outside its footprint so the slab cannot mask the hook ring. Height, hook access and the jump puzzle's gaps are unchanged.
+Course landings and the lower return clear intersecting tree crowns while retaining harvest IDs. The alcove catwalk and its goggles box sit at local `(-40, -80.5)`, clear of the cliff and trestle, with the original bank approach outside its footprint so the slab cannot mask the hook ring. Height, hook access and the jump puzzle's gaps are unchanged. Needle Bell has one summit deck; the older overlapping lookout floor is removed.
 
 Numbers and places: `src/proto/place/tech-layout.ts`. Research: [movement abilities](../research/movement-abilities.md), [BotW glide target](../research/botw-glide-target.md). Connecting a line gets you to where a device is; you still go and take it (**Take it**, Interact). Devices are one family: a stone drum, turning rings of teal light and a thin teal shaft you can see across the place. All three are shared; what you wear for them shows (rings at the ankles, a spool on the forearm, a pack).
 
