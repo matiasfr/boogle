@@ -19,6 +19,32 @@ export async function bootFaultProxy(upstream: string, dist: string, report: str
   const requests: { url: string; status: number; at: number }[] = [];
   const proxy = http.createServer((req, res) => {
     const url = new URL(req.url!, upstream);
+    // Existing broker evals can open a phone-profile document without changing the trusted browser harness.
+    // This is Mac Chromium emulation, not Safari or device performance evidence.
+    if (url.pathname === '/' && url.searchParams.has('phoneStartup')) {
+      const setup = `<script>
+        Object.defineProperty(window, 'devicePixelRatio', {value: 2});
+        Object.defineProperty(navigator, 'maxTouchPoints', {value: 5});
+        const mm = matchMedia.bind(window);
+        window.matchMedia = q => q === '(pointer: coarse)' ? {matches: true, media:q, addEventListener(){}, removeEventListener(){}} : mm(q);
+        localStorage.setItem('boogle.resolution', '0.60');
+        const nativeFetch = fetch.bind(window);
+        let failed = false;
+        window.fetch = async (input, init) => {
+          const u = typeof input === 'string' ? input : input.url || input.href;
+          if (!failed && new URLSearchParams(location.search).has('avatarFailure') && /buddy.*\\.glb/.test(u)) {
+            failed = true;
+            throw new TypeError('Injected transient Buddy fetch failure');
+          }
+          if (new URLSearchParams(location.search).has('avatarDelay') && /(?:buddy|hero-clips).*\\.glb/.test(u))
+            await new Promise(r => setTimeout(r, 18000));
+          return nativeFetch(input, init);
+        };
+      </script>`;
+      res.writeHead(200, { 'content-type': 'text/html', 'cache-control': 'no-store' });
+      res.end(fs.readFileSync(path.join(dist, 'index.html'), 'utf8').replace('<head>', '<head>' + setup));
+      return;
+    }
     if (url.pathname === '/__boot_fault') {
       if (req.method === 'POST') {
         const next = url.searchParams.get('mode') ?? '';
