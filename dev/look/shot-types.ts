@@ -7,6 +7,8 @@ export type ShotCamera = {
   cam: [number, number, number];
   look: [number, number, number];
   fov?: number;
+  /** Native-pixel subject rectangle; repeat/freeze checks still cover the entire frame. */
+  region?: [number, number, number, number];
 };
 export type ShotVariant = {
   name: string;

@@ -143,12 +143,18 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
       rgba: ctx.getImageData(0, 0, copy.width, copy.height).data,
     };
   };
-  const diff = (a: Uint8ClampedArray, b: Uint8ClampedArray) => {
+  const diff = (a: Uint8ClampedArray, b: Uint8ClampedArray, region?: [number, number, number, number]) => {
     if (a.length !== b.length) throw new Error('Pixel dimensions differ; separate resolution groups');
     let changed = 0,
       sum = 0,
-      max = 0;
+      max = 0,
+      total = 0;
     for (let i = 0; i < a.length; i += 4) {
+      const x = (i / 4) % canvas.width,
+        y = Math.floor(i / 4 / canvas.width);
+      if (region && (x < region[0] || y < region[1] || x >= region[0] + region[2] || y >= region[1] + region[3]))
+        continue;
+      total++;
       let pixel = false;
       for (let c = 0; c < 4; c++) {
         const delta = Math.abs(a[i + c]! - b[i + c]!);
@@ -158,7 +164,7 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
       }
       if (pixel) changed++;
     }
-    return { changedPixels: changed, totalPixels: a.length / 4, meanAbsoluteChannel: sum / a.length, maxChannel: max };
+    return { changedPixels: changed, totalPixels: total, meanAbsoluteChannel: sum / (total * 4), maxChannel: max };
   };
   try {
     await looks.run('lock', { locked: true });
@@ -178,6 +184,10 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
     const repeats = [];
     for (const [ci, pose] of cameras.entries()) {
       setCamera(pose);
+      // Re-prime view-dependent caches after returning from the last warm-up camera. Time stays frozen.
+      await apply(group.variants[0]!);
+      await draw();
+      await draw();
       let first: Uint8ClampedArray | undefined;
       const tiles = [];
       for (const [vi, variant] of group.variants.entries()) {
@@ -187,11 +197,11 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
         first ??= image.rgba;
         const name = `c${ci}-v${vi}.png`;
         emit(name, image.png);
-        const difference = diff(first, image.rgba);
+        const difference = diff(first, image.rgba, pose.region);
         tiles.push({
           label: `${vi + 1}. ${variant.name}`,
           image: 'data:image/png;base64,' + image.png,
-          note: `Changed ${difference.changedPixels} px; mean channel delta ${difference.meanAbsoluteChannel.toFixed(3)}`,
+          note: `${pose.region ? 'Subject region' : 'Frame'}: ${difference.changedPixels} changed px; mean channel delta ${difference.meanAbsoluteChannel.toFixed(3)}`,
         });
         shots.push({
           name,
@@ -205,7 +215,8 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
             height: canvas.height,
           },
           render,
-          difference: diff(first, image.rgba),
+          difference,
+          frameDifference: diff(first, image.rgba),
           milliseconds: wall() - began,
         });
         const immediate = diff(image.rgba, (await draw()).image.rgba);

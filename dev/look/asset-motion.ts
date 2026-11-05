@@ -9,19 +9,33 @@ import { descriptors } from '../../character/descriptors.ts';
 const args = process.argv.slice(2);
 const options = new Map<string, string>();
 let local = false,
-  dry = false;
+  dry = false,
+  turnCamera = false;
 for (let i = 0; i < args.length; i++) {
   const flag = args[i]!;
   if (flag === '--local') local = true;
   else if (flag === '--broker') local = false;
   else if (flag === '--dry-run') dry = true;
+  else if (flag === '--turn-camera') turnCamera = true;
   else if (flag === '--help') {
     console.log(
-      'node dev/look/asset-motion.ts --asset buddy --clip Walk_Loop [--hat conductor] [--mode raw|played] [--pose carrying] [--name label] [--cam x,y,z --target x,y,z] [--spin-rate rad/s] [--local|--broker] [--dry-run]\nUses the running broker by default when available; --local uses the same look harness. Static assets explicitly report none. --spin-rate is a labelled inspection probe, never a production rate.',
+      'node dev/look/asset-motion.ts --asset buddy --clip Walk_Loop [--hat conductor] [--mode raw|played] [--pose carrying] [--ramp current|soft|strong] [--light studio|shipped] [--turn-camera] [--name label] [--cam x,y,z --target x,y,z] [--spin-rate rad/s] [--local|--broker] [--dry-run]\nUses the running broker by default when available; --local uses the same look harness. Static assets explicitly report none. --spin-rate is a labelled inspection probe, never a production rate. --turn-camera is a diagnostic 0.6 rad/s orbit sampled every 50 ms, with fixed light; it does not establish camera smoothness.',
     );
     process.exit(0);
   } else if (
-    ['--asset', '--clip', '--hat', '--mode', '--pose', '--name', '--cam', '--target', '--spin-rate'].includes(flag)
+    [
+      '--asset',
+      '--clip',
+      '--hat',
+      '--mode',
+      '--pose',
+      '--ramp',
+      '--light',
+      '--name',
+      '--cam',
+      '--target',
+      '--spin-rate',
+    ].includes(flag)
   ) {
     const value = args[++i];
     if (!value || value.startsWith('--')) throw new Error(flag + ' needs a value');
@@ -50,8 +64,17 @@ if (asset === 'buddy' || asset === 'feeder-roller') {
   query.set('cam', asset === 'feeder-roller' ? '1,0.55,1.4' : '3,2,5');
   query.set('target', asset === 'feeder-roller' ? '0,0.075,0' : '0,0.9,0');
 }
-for (const key of ['clip', 'hat', 'mode', 'pose', 'cam', 'target'])
+for (const key of ['clip', 'hat', 'mode', 'pose', 'cam', 'target', 'light'])
   if (options.has(key)) query.set(key, options.get(key)!);
+if (options.has('light') && !['studio', 'shipped'].includes(options.get('light')!))
+  throw new Error('Light must be studio or shipped');
+if (options.has('ramp')) {
+  const ramp = options.get('ramp')!;
+  if (!['current', 'soft', 'strong'].includes(ramp)) throw new Error('Ramp must be current, soft or strong');
+  query.set('dev', '1');
+  query.set('ramp', ramp);
+}
+if (turnCamera) query.set('diagnosticTurn', '1');
 if (options.has('spin-rate')) {
   const rate = Number(options.get('spin-rate'));
   if (!Number.isFinite(rate) || rate === 0 || Math.abs(rate) > 20)
