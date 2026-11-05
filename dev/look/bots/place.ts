@@ -419,6 +419,9 @@ export async function play() {
     await waitFor(() => place.job.gate.sea, 8000, 'the sea slab');
     note('gate: the sea');
     bot.check('the sea gate opens before the glider', !place.job.tech.glide);
+    await wait(1000); // the switch's existing camera reveal starts after its light sequence begins
+    if (!(await waitFor(() => !place.pullOn() && !gettingItem(), 10000, 'put away the sea-gate reveal')))
+      throw new Error('Sea-gate reveal still owns the camera');
     await returnFromTower(bot);
     const d2 = deck(L2);
     await bot.straight(d2.x, d2.z, 1.2, 4000);
