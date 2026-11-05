@@ -30,6 +30,8 @@ frame.src =
 document.body.append(frame);
 let previousLabel = '';
 const labels: { t: number; text: string; visible: boolean }[] = [];
+let labelSamples = 0;
+let blankLabelSamples = 0;
 const observe = setInterval(() => {
   const doc = frame.contentDocument;
   const child = frame.contentWindow;
@@ -37,6 +39,10 @@ const observe = setInterval(() => {
   if (!label || !child) return;
   const text = label.textContent ?? '';
   const visible = label.style.visibility !== 'hidden';
+  if (!doc!.querySelector('.splash.gone')) {
+    labelSamples++;
+    if (!visible || !text.trim()) blankLabelSamples++;
+  }
   const key = `${visible}:${text}`;
   if (previousLabel === key) return;
   previousLabel = key;
@@ -62,6 +68,8 @@ void (async () => {
       .map((m) => ({ name: m.name, t: Math.round(m.startTime) }));
   const carry = () => doc.querySelector('.load-carry')?.textContent ?? '';
   clearInterval(observe);
+  if (mode !== 'failure' && (!labelSamples || blankLabelSamples))
+    throw new Error(`Blank label before entry: ${blankLabelSamples}/${labelSamples} samples`);
   if (doc.querySelector('.load-strip, .load-room, .load-carry, .splash .load-details'))
     throw new Error('Removed public load UI remains');
   const visibleLabels = labels.filter((entry) => entry.visible);
@@ -77,6 +85,8 @@ void (async () => {
         entered: child.boogle?.me.entered,
         overflow: doc.documentElement.scrollWidth > child.innerWidth,
         labels,
+        labelSamples,
+        blankLabelSamples,
       }),
   );
   if (mode === 'failure') {

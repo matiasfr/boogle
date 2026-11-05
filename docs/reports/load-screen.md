@@ -9,8 +9,25 @@ export and public UI/CSS were deleted. No assets, entry gates, deadlines or awai
 
 Literal `/` selects Place and its frozen sky. Added `sky-start` / `sky-ready` marks bracket that existing bake;
 “Baking the sky” therefore precedes shader warm-up. Other warm-up drafts follow aggregate precompile progress,
-not invented per-resource percentages. New labels are at least two seconds apart. A completed specific phase
-hides immediately during that hold, reserving the line's space; fast phases are skipped without delaying entry.
+not invented per-resource percentages. New labels are at least two seconds apart. After owner follow-up, the
+current line stays visible during that hold even if its phase finishes; fast phases are skipped without delaying
+entry. Only failure hides the label. The earlier blank-line captures below predate this follow-up.
+
+### Follow-up: keep text through the readability hold
+
+Fresh [phone-viewport manifest](../../.look/evidence/1793861585250-71206/evidence.json) supersedes the earlier
+blank-line evidence. Literal `/`, 375×812: 49 pre-entry DOM samples, zero blank labels; first play at 5.094 s.
+Labels changed from “Loading the game” to “Baking the sky” to “Filling the sea”, with sampled changes 2.367 and
+2.053 seconds apart. Capture health passed with no page, console or graphics errors.
+
+Opened `phone-hold-early.png`, `phone-hold-late.png` and `phone-hold-225-consecutive.png` beside that manifest.
+The first two sample video at quarter-second intervals across loading; the last shows six consecutive encoded
+frames starting at 2.25 s. Every inspected pre-entry frame contains label text, including “Loading the game” at
+the previously blank hold. No strip or overflow is visible. `npm run check` passes, including all 323 tests.
+The runtime and capture action were unchanged after this run; subsequent edits only clarified these docs.
+Physical-phone/Safari behavior and real-time smoothness remain unverified; no Place bot was needed or run.
+
+### Original restoration verification (before the hold follow-up)
 
 `npm run check` passed (lint, types, unit tests, registry, level/assets and build). Formatted changed files with
 `npx prettier --write`. No new tests or scenarios. The Place bot was not run; no bot result or real-time feel claim.

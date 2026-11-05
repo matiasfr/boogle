@@ -29,12 +29,13 @@
   [4 November owner call](../brainstorms/load-screen.md). No public groups, room row, details/copy or post-entry notice.
   Draft labels follow real work: “Loading the game” before modules; “Building the island” then “Planting the trees”
   during world construction; “Waking up the graphics” during initialization. On the default Place route,
-  “Baking the sky” belongs to the frozen sky bake, before precompile, never after it.
+  “Baking the sky” is selected during the frozen sky bake, before precompile.
   Shader progress selects “Warming up the shaders”, “Filling the sea”, “Oiling the train”, “Waking up the island”
   in order: thematic warm-up drafts, not separate sea/train task measurements. New labels are at least two seconds
-  apart; completed phases are skipped, and a stale line hides until the next label is eligible (space remains).
-  No wait or yield is added for copy; synchronous world steps can finish without painting. Warm-up labels stop at
-  actual completion. Reduced motion disables gear, fades and bar creep. Pause → Dev → Perf alone retains load groups,
+  apart; the current line stays visible during that short hold even if its phase finishes, per the owner's follow-up.
+  The next eligible label describes current work; completed steps are not queued. Failure still hides the line.
+  No wait or yield is added for copy; synchronous world steps can finish without painting. New warm-up labels stop
+  being selected at actual completion. Reduced motion disables gear, fades and bar creep. Pause → Dev → Perf alone retains load groups,
   navigation-relative timings and Copy last load, with its expanded preference, backed by the same invisible marks
   and telemetry. Entry gates, retries, avatar behavior and gameplay are unchanged.
   Resolution changes and bounded first-20-second hitch diagnostics join the invisible session marks; CPU section and

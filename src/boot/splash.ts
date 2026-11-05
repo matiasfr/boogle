@@ -66,9 +66,8 @@ function statusText(now = performance.now()) {
     phase = 'first';
     text = 'Waking up the island';
   }
-  // A finished phase cannot keep claiming work during the readability hold. Reserve the line's space
-  // until the latest active phase can be shown; never extend a boot gate to make copy visible.
-  if (phase !== labelPhase) label.style.visibility = 'hidden';
+  // Keep the current line through the readability hold, even if its phase just finished (owner follow-up).
+  // Then show the latest active phase; never extend a boot gate or queue completed steps for copy.
   if (now - labelSince < 2000) return;
   if (label.textContent !== text || labelPhase !== phase) {
     label.textContent = text;
