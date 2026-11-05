@@ -12,6 +12,8 @@ import { LOCO, TRAILER } from '../wagon/look.ts';
 import { H } from './land.ts';
 import { LOOK, STEEL, addBlob, bakeContact, honeyOf, paint, setBlob, type Paint } from './look.ts';
 import type { DropSet } from './pieces.ts';
+import { makeBoiler } from './carry-models.ts';
+import { job } from './job.ts';
 
 // ---------------------------------------------------------------- the file
 const SPECK = new THREE.BufferGeometry();
@@ -332,12 +334,38 @@ function kitCars(trailers: number, working: boolean): MachineLook {
     return list;
   };
   const loco = new THREE.Group();
-  add(loco, 'loco_body', RED);
-  add(loco, 'loco_brass', BRASS);
-  add(loco, 'loco_black', BLACK);
+  const boiler = working ? null : makeBoiler();
+  if (working) {
+    add(loco, 'loco_body', RED);
+    add(loco, 'loco_brass', BRASS);
+    add(loco, 'loco_black', BLACK);
+  } else {
+    // Keep the frame and cab, with an unmistakable gap where the boiler seats.
+    for (const [w, h, d, x, y, z, p] of [
+      [1.6, 0.2, 3, 0, 0.6, 0, BLACK],
+      [1.5, 1.18, 1, 0, 0.82, -1, RED],
+      [1.72, 0.1, 1.2, 0, 2, -1, BLACK],
+      [1.4, 0.32, 0.24, 0, 0.36, 1.58, RED],
+    ] as const) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), paint({ ...p, rust: 'train' }));
+      m.position.set(x, y, z);
+      m.castShadow = true;
+      loco.add(m);
+    }
+    for (const z of [0, 1]) {
+      const saddle = new THREE.Mesh(new THREE.TorusGeometry(0.59, 0.09, 6, 12, Math.PI), paint(BRASS));
+      saddle.rotation.z = Math.PI;
+      saddle.position.set(0, 1.2, z);
+      loco.add(saddle);
+    }
+    boiler!.position.set(0, 1.2, 0.5);
+    boiler!.rotation.y = Math.PI;
+    boiler!.visible = job.boiler >= 3 || job.rung.trains;
+    loco.add(boiler!);
+  }
   const locoWheels = wheels(LOCO.hz, 0.36);
   const chimneyTop = new THREE.Object3D();
-  chimneyTop.position.set(0, 2.5, 1.05);
+  chimneyTop.position.set(0, working ? 2.5 : 2.07, working ? 1.05 : 0.9);
   loco.add(chimneyTop);
   // The side rods, so the drive reads: they ride the front and back wheels' crank pins.
   const rods = [-1, 1].map((side) => {
@@ -382,6 +410,7 @@ function kitCars(trailers: number, working: boolean): MachineLook {
   const slip = { rate: 0 };
   onFrame(
     ({ dt }) => {
+      if (boiler) boiler.visible = job.boiler >= 3 || job.rung.trains;
       cars.forEach((car, n) => {
         const parent = car.parent;
         const { wheels: list, r } = sets[n]!;

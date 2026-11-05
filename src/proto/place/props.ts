@@ -180,12 +180,17 @@ const BX = toWorld(FORGE.x + 6),
   BZ = FORGE.z + 8.4;
 const BY = H(BX, BZ);
 const boiler = boilerShape();
-boiler.position.set(BX, BY + 0.55, BZ);
+boiler.position.set(BX, BY + 1.15, BZ);
 boiler.visible = false;
-scene.add(boiler);
+const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.3, 0.6, 8), flat('#b6a080'));
+// The stand stays at the forge when a dropped boiler lies elsewhere.
+pedestal.position.set(BX, BY + 0.3, BZ);
+pedestal.castShadow = pedestal.receiveShadow = true;
+scene.add(boiler, pedestal);
+addStatic({ kind: 'cylinder', rTop: 1.15, rBottom: 1.3, h: 0.6, segments: 8 }, { x: BX, y: BY + 0.3, z: BZ });
 export const boilerAt = () => {
   const p = bigCargo.boiler.ground;
-  return p ? { x: p.x, y: p.y + 1.4, z: p.z } : { x: BX, y: BY + 1.4, z: BZ };
+  return p ? { x: p.x, y: p.y + 1.4, z: p.z } : { x: BX, y: BY + 2, z: BZ };
 };
 /** Each frame: it stands there while it's waiting. */
 export const updateBoiler = () => {

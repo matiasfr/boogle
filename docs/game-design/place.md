@@ -128,6 +128,8 @@ First-use carry meshes and the glider's cloth and shadow pipelines warm behind l
 
 ### Guidance after removing the objective
 
+**Boiler repair (5 November, solo design pass topic 2).** The old train exposes empty brass saddles matching the carried boiler's two bands. The boiler waits on a low pedestal at the forge apron; fitting seats the same part before the existing wake. This supersedes the earlier relationship weakness recorded below. Local presentation follows existing boiler/trains state; carrying, drop ownership and delivery stay with the cargo work.
+
 **Walking-in composition, 4 November:** Station 3's existing bill sits on the source side of its pile so
 the unchanged `great beam 0/1` row stays visible. The 53 m uphill great-tree source, receiver, feeder,
 machine and crossing fit are retained; seeing the source still requires turning uphill. The proper-axe

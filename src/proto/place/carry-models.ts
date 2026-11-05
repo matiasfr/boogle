@@ -12,6 +12,29 @@ export const cargoCapacity = (kind: CargoKind, frame: boolean): number =>
 export const RAIL_SIZE = new THREE.Vector3(0.14, 0.16, 2.6);
 export const BEAM_CARRY_POSITION = [0.32, 1.05, 0.2] as const;
 
+/** The same part on the pedestal, shoulder and locomotive saddle. */
+export function makeBoiler() {
+  const boiler = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.55, 0.55, 1.5, 12).rotateX(Math.PI / 2),
+    flat('#c83a2a').clone(),
+  );
+  boiler.add(body);
+  for (const z of [-0.5, 0.5]) {
+    const band = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.57, 0.57, 0.14, 12).rotateX(Math.PI / 2),
+      flat('#d9a23a').clone(),
+    );
+    band.position.z = z;
+    boiler.add(band);
+  }
+  const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 8), flat('#24262c').clone());
+  stack.position.set(0, 0.62, -0.4);
+  boiler.add(stack);
+  boiler.traverse((o) => (o.castShadow = true));
+  return boiler;
+}
+
 /** Owned materials and geometry, including the same readable worn steel in game and stage. */
 export function makeCarryModels() {
   const root = new THREE.Group();
@@ -52,19 +75,8 @@ export function makeCarryModels() {
   );
   beam.name = 'wear_carried_beam';
   beam.position.set(...BEAM_CARRY_POSITION);
-  const boiler = new THREE.Group();
+  const boiler = makeBoiler();
   boiler.name = 'wear_carried_boiler';
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.55, 0.55, 1.5, 12).rotateX(Math.PI / 2),
-    flat('#c83a2a').clone(),
-  );
-  const band = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.57, 0.57, 0.14, 12).rotateX(Math.PI / 2),
-    flat('#d9a23a').clone(),
-  );
-  const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 8), flat('#24262c').clone());
-  stack.position.set(0, 0.62, -0.4);
-  boiler.add(body, band, stack);
   boiler.position.set(0, 1.55, 0.05);
   root.add(rails, stone, beam, boiler);
   root.traverse((o) => {
