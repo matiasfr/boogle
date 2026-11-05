@@ -38,11 +38,14 @@ values remain in [player swimming](player.md#swim). Research under `docs/researc
 including obsolete demo addresses and paths. The original demo design/options remain in `archive/water`.
 `public/THIRD_PARTY_NOTICES.md` retains Ultra Water, atmosphere, cloud, AgX and noise attribution in builds.
 
-## Real-sea output (4 November 2026)
+## Real-sea output (5 November 2026)
 
-The default Place and crossing sea uses Neutral after the underwater HDR composite, with the existing exposure meter and no extra
-exposure trim. Keeping adaptation isolates the owner's tone-curve change from lighting and preserves the
-surface/underwater exposure response. The two meter draws and history copy remain. Looks' **Current** matches
+The default Place and crossing sea uses Neutral after the underwater HDR composite, with an authored fixed
+surface gain **0.12** for the frozen late-morning lighting. The signed camera-depth signal adds **+1.22 EV**
+through smoothstep over **0–1.5 m**, reaching **0.27954** submerged. These are starting calibration values,
+not an owner-approved final brightness. This reuses `codex/color-vibrance-3`'s width-zero bounded output;
+the meter is no longer constructed, so both meter draws and the history copy stop. HDR targets, sky,
+lights, materials and water optics retain their existing values. Looks' **Current** matches
 this output; **Sunny toys** and **AgX Punchy** retain AgX comparisons. The frozen late-morning sky, water
 parameters and terrain are unchanged. The explicit `sky=toy` experiment keeps its own output choices.
 
@@ -57,7 +60,7 @@ No room state or gameplay changes. No change without `sky=toy`.
 
 `toyWater=off` isolates sky/fill from water tuning; omit `toyTone=neutral` for this experiment's retained AgX.
 `toyVariant=soft|clear|punch` compares softer blue, the default clear balance, and stronger cyan water.
-Neutral uses the same existing exposure meter and gain, with no per-curve exposure trim or second output pass.
+Neutral uses the shared fixed gain and underwater offset, with no per-curve exposure trim or second output pass.
 The normal `tone=` flag remains inactive on new water. AgX Punchy is a separate experiment.
 Optional `tune=1` keeps the existing controls and Copy/Apply settings; these reset to the selected experiment's
 values on this route. Toy cloud shape/coverage is authored in code, so the physical sky's cloud-coverage control
@@ -73,11 +76,11 @@ they add no room state, messages, controls or gamepad slot. The cursor stays fre
 to look around. The game keeps running while the panel takes mouse and keyboard events aimed at its controls.
 
 Groups follow the Ultra Water reference: **Sun & sky**, **Waves**, **Shore waves**, **Water**,
-**Floaters & underwater**, **Light fill**, **Post** and **Quality**. Light fill adjusts the existing frozen-sky key/hemisphere without rebaking; use Looks' exposure lock to judge it. Each group and the whole panel can reset to production defaults.
+**Floaters & underwater**, **Light fill**, **Post** and **Quality**. Light fill adjusts the existing frozen-sky key/hemisphere without rebaking; fixed exposure keeps the gain stable while judging it. Each group and the whole panel can reset to production defaults.
 Changes persist in localStorage only for Dev/tuning visits. A saved [Looks](dev-menu.md#looks) choice takes precedence over old Water overrides. **Copy settings** exports one JSON object containing only
 overrides; **Apply settings** accepts the same block, so the owner can send a look back to an agent to make permanent.
 
-The saved format is `{ "version": 1, "changes": { "wave.waveScale": 0.5, "post.exposure": 1.2 } }`, under
+The saved format is `{ "version": 1, "changes": { "wave.waveScale": 0.5, "post.centre": 0.12 } }`, under
 `boogle.water-tuning.v1`. Pasting replaces current overrides after validating every key, range and RGB array.
 Colour pickers display sRGB; exported scatter, reflection tint and foam tint arrays are linear RGB. Absorption
 is editable per channel in inverse metres. Invalid pasted data changes nothing; Copy leaves selectable JSON
@@ -90,7 +93,10 @@ amplitude, wavelength, speed and steepness update the shared surface/receiver mo
 foam, reflection gain/cap/tint, caustics, spray amount/size and underwater scattering/shafts/meniscus are live.
 Sun elevation, azimuth, intensity, cloud coverage, turbidity and time of day rebake the existing sky cube and
 matching sun/hemisphere lighting after editing; a brief stall is possible. This does not start a day/night cycle.
-Post controls cover exposure compensation, automatic exposure, key value, contrast and saturation around the
+Post controls expose **fixed gain** (0.01–2, step .001) and **underwater offset (EV)** (0–2, step .01),
+with numeric fields beside sliders; existing reset, persistence and copied settings include both.
+Looks reports surface gain/EV and fully submerged gain; there is no adaptive lock to operate.
+The old exposure-compensation, auto-exposure and key-value controls are retired. Contrast and saturation surround the
 selected tone curve, plus optional **bloom on**, **bloomStrength** (0–0.5, step .001) and **bloomThreshold**
 (0–10, step .01). Bloom starts off on desktop and mobile; first enable uses the reference's .05 strength and
 1.5 threshold. All three controls join Copy, Apply, group/all Reset and tuning-only persistence. The JSON keys
@@ -123,7 +129,7 @@ uses five separable Gaussian levels and a different high-pass/weighting, so its 
 This extends the one `pipeline.outputNode`: underwater HDR → bloom addition → exposure → selected tone curve → sRGB.
 The reference's 11 filtering draws need one extra HDR materialization here because underwater is an expression;
 there are **12 additional draws while enabled**, no second scene render, renderer or frame loop. Upsampling uses
-separate additive targets instead of attachment blending. The exposure meter still reads the unbloomed scene.
+separate additive targets instead of attachment blending. Bloom does not influence the authored fixed gain.
 
 The optional graph and native pipelines are built **when first enabled**, on the next real draw, which can briefly
 stall. Saved tuning overrides restored before the loading warm-up are included in `precompile`'s normal frame

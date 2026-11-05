@@ -108,14 +108,6 @@ export const tool: Tool = {
     swap.dataset.lookSwap = '';
     swap.style.minHeight = '44px';
     layout.append(swap);
-    const lockLabel = el('label', ' Lock exposure');
-    lockLabel.style.cssText = 'display:flex;align-items:center;gap:8px';
-    const lock = el('input');
-    lock.type = 'checkbox';
-    lock.style.minHeight = '44px';
-    lock.onchange = () => void run('lock', { locked: lock.checked });
-    lockLabel.prepend(lock);
-    layout.append(lockLabel);
     const trimLabel = el('label', 'Exposure trim (EV) ');
     trimLabel.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px';
     const trim = el('input');
@@ -137,7 +129,7 @@ export const tool: Tool = {
     const details = more(layout);
     note(
       details,
-      'Only this browser. Select a look to restore its water and post settings. Lock freezes the shared exposure meter; each look keeps its recorded trim. Backslash switches A/B while this panel is open.',
+      'Only this browser. Water → Post sets fixed gain and underwater offset. Select a look to restore its settings; each look keeps its recorded trim. Backslash switches A/B while this panel is open.',
     );
     note(
       details,
@@ -157,12 +149,11 @@ export const tool: Tool = {
       }
       a.value = snap.a;
       b.value = snap.b;
-      lock.checked = snap.exposure.locked;
       trim.disabled = snap.selected === 'current';
       if (document.activeElement !== trim) trim.value = snap.exposure.trimEV.toFixed(3);
       summary.textContent =
         reason ??
-        `${snap.label}${snap.modified ? ' · modified in Water/Post' : ''} · ${snap.exposure.locked ? 'exposure locked' : 'adaptive exposure'} · ${snap.exposure.trimEV.toFixed(3)} EV trim`;
+        `${snap.label}${snap.modified ? ' · modified in Water/Post' : ''} · fixed gain ${snap.exposure.surfaceGain.toFixed(3)} (${snap.exposure.surfaceEV.toFixed(2)} EV) · underwater +${snap.exposure.underwaterEV.toFixed(2)} EV · ${snap.exposure.trimEV.toFixed(3)} EV trim`;
     };
     const key = (event: KeyboardEvent) => {
       if (

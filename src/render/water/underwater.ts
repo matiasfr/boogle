@@ -308,6 +308,8 @@ export function createUnderwater(ocean: Ocean, sky: WaterSky) {
     initialized = false;
   return {
     outputNode,
+    // Reuse the lens kernel's signed depth; dry land must never inherit its last underwater value.
+    cameraDepth: select(near, wetState.element(0).z, -1e4),
     prepare: () => renderer.compileComputeAsync(lensPass),
     update(time: number, delta: number) {
       const sample = waterField.nearby(camera.position);

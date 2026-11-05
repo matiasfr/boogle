@@ -1,6 +1,7 @@
 // One production Neutral output, after underwater HDR. AgX remains in the opt-in look comparisons.
-import { pipeline, renderer, scenePass } from '../scene.ts';
-import { agx, createExposureMeter, TSL, type N } from '../tone.ts';
+import { pipeline } from '../scene.ts';
+import { agx, TSL, type N } from '../tone.ts';
+import { fixedExposureGain } from '../exposure.ts';
 import { bind, onChange, scalar, tuningEnabled } from './live.ts';
 import { createWaterBloom } from './bloom.ts';
 import { NeutralToneMapping } from 'three/webgpu';
@@ -8,31 +9,25 @@ import { toneMapping } from 'three/tsl';
 import { registerGraphics } from '../../graphics-settings.ts';
 import { toyNeutral, toySkyEnabled } from './flags.ts';
 
-const { Fn, If, OnAfterRenderPipeline, pow, select, vec3, vec4, float, mix, dot, max } = TSL;
+const { Fn, If, pow, select, vec3, vec4, float, mix, dot, max } = TSL;
 
-export function installWaterPost(source: N) {
+export function installWaterPost(source: N, cameraDepth: N) {
   const previous = pipeline.outputNode;
   const transform = pipeline.outputColorTransform;
-  const meter = createExposureMeter(scenePass.getTextureNode());
-  // Keep the same adaptation for surface/underwater and comparisons: this changes the curve, not the lighting.
+  // Authored fixed gain for the frozen lighting state; no meter draws or history copy.
   const neutral = !toySkyEnabled || toyNeutral;
-  const params = { exposure: 1, autoExposure: 1, keyValue: 0.18, contrast: 1, saturation: 1 };
-  const exposure = scalar('post.exposure', params, 'exposure');
-  const auto = scalar('post.autoExposure', params, 'autoExposure');
-  const key = scalar('post.keyValue', params, 'keyValue');
+  const params = { contrast: 1, saturation: 1 };
   const contrast = scalar('post.contrast', params, 'contrast');
   const saturation = scalar('post.saturation', params, 'saturation');
   const look = { power: 1.12, saturation: 1.3 };
   const agxPower = scalar('post.agxPower', look, 'power');
   const agxSaturation = scalar('post.agxSaturation', look, 'saturation');
   let compare: ((hdr: N, gain: N) => N) | undefined;
-  let locked = () => false;
   let curve = () => (neutral ? 'neutral' : 'agx');
   let stopCompare = () => {};
   const makeOutput = (hdr: N) =>
     Fn(() => {
-      OnAfterRenderPipeline(() => meter.save(renderer));
-      const gain = tuningEnabled ? mix(1, meter.value.mul(float(key).div(0.18)), auto).mul(exposure) : meter.value;
+      const gain = fixedExposureGain(cameraDepth);
       let c = compare
         ? compare(hdr, gain)
         : neutral
@@ -102,23 +97,11 @@ export function installWaterPost(source: N) {
       updateBloom();
     },
   });
-  const unregisterMeter = registerGraphics({
-    id: 'meter',
-    label: 'Exposure meter',
-    choices: [true, false],
-    default: true,
-    applyMode: 'live',
-    cost: 'two meter passes and history copy',
-    skips: 'Skips metering, adaptation and history copy; holds the last exposure texture.',
-    read: () => meter.enabled,
-    apply: (value) => meter.setEnabled(value === true),
-  });
   return {
     async prepare() {
       if (!tuningEnabled || toySkyEnabled) return;
       const looks = await import('./looks.ts');
-      compare = looks.prepareLooks(agxPower, agxSaturation, () => meter.read(renderer));
-      locked = looks.exposureLocked;
+      compare = looks.prepareLooks(agxPower, agxSaturation);
       curve = looks.activeLookCurve;
       stopCompare = looks.disposeLooks;
       output = makeOutput(source);
@@ -126,11 +109,9 @@ export function installWaterPost(source: N) {
       if (bloom) bloomOutput = makeOutput(bloom.hdr.add(bloom.glow.mul(strength)));
       updateBloom();
     },
-    update: tuningEnabled ? (dt: number) => meter.update(locked() ? 0 : dt) : meter.update,
     tone: () => curve(),
     dispose() {
       unregisterBloom();
-      unregisterMeter();
       stop();
       stopCompare();
       if (pipeline.outputNode === output || pipeline.outputNode === bloomOutput) {
@@ -138,7 +119,6 @@ export function installWaterPost(source: N) {
         pipeline.outputColorTransform = transform;
         pipeline.needsUpdate = true;
       }
-      meter.dispose();
       bloom?.dispose();
     },
   };

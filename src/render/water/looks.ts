@@ -6,6 +6,7 @@ import { agx, TSL, type N } from '../tone.ts';
 import { bindings, bindingDefaults, tuningEnabled, type Value } from './live.ts';
 import { toySkyEnabled } from './flags.ts';
 import { graphicsOverrides } from '../../graphics-settings.ts';
+import { exposureSettings } from '../exposure.ts';
 
 export const LOOK_STORAGE = 'boogle.dev.looks.v1';
 export const LOOKS = {
@@ -27,9 +28,7 @@ let selected: LookId = 'current',
   b: LookId = 'sunshine',
   locked = false;
 let explicit = false,
-  ready = false,
-  readMeter: (() => Promise<number>) | undefined;
-let meterGain: number | null = null;
+  ready = false;
 const subscribers = new Set<() => void>();
 if (tuningEnabled && !toySkyEnabled) {
   try {
@@ -81,11 +80,9 @@ export function onLookChange(fn: () => void) {
 }
 export const hasLookChoice = () => explicit;
 export const activeLookCurve = () => LOOKS[selected].curve;
-export const exposureLocked = () => locked;
 export const looksReady = () => ready;
 export function disposeLooks() {
   ready = false;
-  readMeter = undefined;
   changed();
 }
 function settings(id: LookId) {
@@ -146,15 +143,11 @@ export function setLookTrim(ev: number) {
   if (ready) trimNode.value = trims[selected];
   remember();
 }
-export async function lockExposure(value: boolean) {
+// Retained for existing capture callers. Fixed gain has no adaptation to freeze; depth still follows the camera.
+export function lockExposure(value: boolean) {
   locked = value;
-  meterGain = null;
   remember();
-  if (value && readMeter) {
-    const gain = await readMeter();
-    if (locked && Number.isFinite(gain)) meterGain = gain;
-    changed();
-  }
+  return Promise.resolve();
 }
 export function lookSnapshot() {
   const values = Object.fromEntries([...bindings].map(([key, binding]) => [key, clone(binding.get())]));
@@ -178,22 +171,26 @@ export function lookSnapshot() {
     curve: LOOKS[selected].curve,
     midtoneChromaLift: LOOKS[selected].lift,
     exposure: {
+      mode: 'fixed',
       locked,
       trim: trims[selected],
       trimEV: Math.log2(trims[selected]),
-      meterGain,
+      meterGain: null,
+      surfaceGain: exposureSettings.centre,
+      surfaceEV: Math.log2(exposureSettings.centre),
+      underwaterEV: exposureSettings.underwaterEV,
+      submergedGain: exposureSettings.centre * 2 ** exposureSettings.underwaterEV,
       meaning:
-        'Trim multiplies the shared GPU meter. meterGain is sampled once on lock, not a portable lighting calibration.',
+        'Fixed lighting gain; no meter. Underwater adds EV smoothly over signed depth 0–1.5 m. Lock is a capture compatibility marker only. Look trim multiplies this gain.',
     },
     values,
   };
 }
-/** Installed once, before loading's real output warm draw. All A/B choices share this graph and meter. */
-export function prepareLooks(power: N, saturation: N, read: () => Promise<number>) {
+/** Installed once, before loading's real output warm draw. All A/B choices share the fixed lighting gain. */
+export function prepareLooks(power: N, saturation: N) {
   curve = uniform(0);
   trimNode = uniform(1);
   lift = uniform(0);
-  readMeter = read;
   ready = true;
   apply();
   changed();

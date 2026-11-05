@@ -35,7 +35,19 @@ Read [direction](reference/direction.md) when changing render architecture.
 
 `water-render.ts` owns the production Place/crossing sea, its FFT, shore atlas, queries, underwater HDR and
 once-baked late-morning sky. Neutral stays the output. [Water design](../../docs/game-design/water.md) records
-the unchanged look and the classic-home CI exception. `classic-sea.ts` is a private fallback factory for
+the fixed-exposure calibration and the classic-home CI exception. `exposure.ts` owns the Local surface gain
+and signed-depth underwater adjustment: 0.12, +1.22 EV through 0–1.5 m. `water/post.ts` uses the width-zero
+form of the bounded colour-research output; no exposure meter targets, draws or history copy are constructed.
+HDR scene targets, Neutral and the water/sky shader values remain. Dev Water/Post binds `post.centre` and
+`post.underwaterEV` through the existing reset/persist/copy path.
+
+The separate readable-unlit job should divide selected surfaces' **linear RGB** by `surfaceExposure` from
+`exposure.ts`, preserving alpha and underwater attenuation. This is fixed-reference compensation: the explicit
+underwater lift remains intentional. Do not hardcode 8.33, sample the framebuffer, boost all unlit materials,
+or compensate an already-boosted material twice. `fixedExposureGain(depth)` exposes the exact medium-dependent
+gain if a future material policy explicitly needs it. Classic-home reference gain remains 1.
+
+`classic-sea.ts` is a private fallback factory for
 home clients only; it exposes no material-patch API and allocates no legacy texture for Place.
 Live tuning/Looks and shore helpers remain; the demo is in `archive/water`, with notices retained in public/.
 

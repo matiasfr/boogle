@@ -61,7 +61,7 @@ function createRealSea() {
   const queries = createWaterQueries(ocean.heightAt, atlas);
   const underwater = createUnderwater(ocean, frozen.sky);
   const snow = createSnow(ocean, frozen.sky);
-  const post = installWaterPost(underwater.outputNode);
+  const post = installWaterPost(underwater.outputNode, underwater.cameraDepth);
   const removeProvider = waterField.install(queries.provider);
   const spray = createSpray(atlas);
   let ready = false,
@@ -84,7 +84,6 @@ function createRealSea() {
       queries.dispatch(elapsed);
       quality.update(); // after adaptive-res, normalize once against its actual DPR
       underwater.update(elapsed, dt);
-      post.update(dt);
       snow.update(underwater.near.value && waterField.nearby(camera.position).body === 'sea');
     },
     describe: () => ({
