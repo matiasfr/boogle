@@ -66,6 +66,16 @@ export const descriptors: Record<string, AssetDescriptor> = {
     rootNote: 'Owner-preferred reference-guided rack; base-centre origin. Unplaced; slice 2 owns stock and placement.',
     motion: { kind: 'none', source: 'assets/src/recovery-rack.py' },
   },
+  'track-layer': {
+    label: 'Track-layer shell',
+    category: 'props',
+    motion: {
+      kind: 'none',
+      source: 'assets/src/track-layer.py: rigid shell; travelled fork belongs to Place assembly',
+    },
+    rootNote:
+      'Working deck origin; rear power unit at Z -3.7 m. Existing game seats, cargo and moving fork added by Place.',
+  },
   'feeder-roller': {
     motion: { kind: 'none', source: 'src/proto/place/look-kit.ts: stationKit static roller matrices' },
     label: 'Feeder roller trial',

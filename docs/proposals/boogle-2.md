@@ -205,6 +205,8 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### Trains and the world
 
+- **2026-11-05, branch-only early track-layer art exception** (owner task). Start the distinct crawler/open-gantry machine art ahead of the round-4 replay, assuming it goes well, and continue proper seats from trains to two fixed deck places. Research real track-laying machines; preserve collision, stand points, laying behavior, the broad rear step and two-second ease-out. Work only on `codex/track-layer-machine`, commit locally, and do not push or ship: main must not change before replay. This authorizes the bounded [machine plan](../plans/track-layer-machine.md), not final art acceptance or broader gameplay work.
+
 - **2026-11-01, laying a section runs quick** (about 14 s; full run-through: "Yes it's wonderful. Quick feels pretty good"). Fix the jump at the end of the laying animation.
 - **2026-11-01, construction you can watch is how things get built** ("I absolutely love this kind of animation"). The piece-by-piece build leaves the prototype for the game.
 - **2026-11-01, today's island and line aren't the target** (owner, run-through: the current island "is not in line with the overall vision"; the line should be meaningful, and the map follows the activities and locales). The layout lab's three options on today's island are parked and lighthouse-line is out; the redesign is the next entry.

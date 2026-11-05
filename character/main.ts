@@ -18,6 +18,7 @@ import { COLORS } from '../src/constants.ts';
 import { CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
 import { createParticlePool } from '../src/render/particle-pool.ts';
 import type { AxeTier } from '../src/proto/place/axe-models.ts';
+import { dressMachine } from '../src/proto/place/machine-model.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -188,6 +189,7 @@ const browser = createBrowser(selectEntry, thumbnails.get);
 function generic(asset: Asset): Preview {
   const group = asset.instance(state.node || undefined),
     own = cloneMaterials(group);
+  const machineFinish = state.asset === 'track-layer' ? dressMachine(group) : undefined;
   // An axle-centred prop otherwise disappears halfway into the inspection floor. Its authored pivot stays intact.
   if (state.asset === 'feeder-roller') group.position.y = 0.075;
   const mixer = new THREE.AnimationMixer(group);
@@ -216,6 +218,7 @@ function generic(asset: Asset): Preview {
       mixer.stopAllAction();
       mixer.uncacheRoot(group);
       own.dispose();
+      machineFinish?.dispose();
     },
   };
 }
