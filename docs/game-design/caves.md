@@ -1,11 +1,11 @@
 # 6.12 Caves
 
-The pond is a named still-water volume (`cave-pond`, level 3 m, existing ellipse `q < .81`). With `water=new`,
+The pond is a named still-water volume (`cave-pond`, level 3 m, existing ellipse `q < .81`). On the production-water routes,
 the cave's 3D interior predicate excludes the outdoor ocean under its roof; the pond supplies its own floor and
 zero surface velocity. Pond entry splashes use the shared particles without adding sea rings. Above-roof queries
-remain outdoor, and the old default sea stays active unless opted in. See [island water](island.md) for query limits.
+remain outdoor, and classic home keeps its own sea pending CI qualification; water URL selectors are ignored. See [island water](island.md) for query limits.
 
-Under `water=new`, the near-plane lens grid uses that pond's level and actual ellipse, including when the lens
+On those routes, the near-plane lens grid uses that pond's level and actual ellipse, including when the lens
 straddles its bank. It does not use ocean waves inside the pond. Dry cave interiors have no underwater volume;
 the pond transmits the locally lit cave through absorption, with a wet-lens exit but no outdoor sky/sun in-scatter,
 ocean sun shafts or marine snow. These are Local optics,

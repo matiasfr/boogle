@@ -38,7 +38,7 @@ function buildPoiPaint() {
 const TILE = 51;
 const terrainMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
 if (new URLSearchParams(location.search).get('terrain') === 'demo')
-  void import('../proto/water/terrain-demo.ts').then((m) => m.applyTerrainDemo(terrainMat));
+  void import('../proto/shore/terrain-demo.ts').then((m) => m.applyTerrainDemo(terrainMat));
 registerWaterReceiver(terrainMat);
 
 // Writes the colour of grid vertex k (j*GRID_RES+i) into out[o*3..]. x/z/h are world coords, ny the normal's y.

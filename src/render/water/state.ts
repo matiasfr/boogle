@@ -10,5 +10,4 @@ export const seaU = {
   uSky: uniform(new Color('#a9dcf3')),
   uLight: uniform(new Color(1, 1, 1)),
   uSpecCol: uniform(new Color(1, 0.97, 0.88)),
-  uHaze: uniform(new Color()), // retained for the parked sky prototype
 };

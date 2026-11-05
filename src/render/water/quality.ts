@@ -1,4 +1,4 @@
-// Shared scene resolution only; never renderer DPR, tone mapping or MSAA. The demo keeps its independent post owner.
+// Shared scene resolution only; never renderer DPR, tone mapping or MSAA.
 import { setWaterResolution } from '../quality.ts';
 import { bind } from './live.ts';
 export function createWaterQuality() {

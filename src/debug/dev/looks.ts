@@ -18,7 +18,7 @@ import { no, ok, type Tool } from './types.ts';
 
 const unavailable = () =>
   !tuningEnabled
-    ? 'Open with water=new and Dev or tune=1.'
+    ? 'Open Place with Dev or tune=1.'
     : toySkyEnabled
       ? 'Looks compares the procedural sky. Reload without sky=toy.'
       : !looksReady()

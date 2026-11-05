@@ -1,17 +1,16 @@
 # 6.26 Prototype: the long crossing (`?proto=crossing`)
 
-With `water=new`, the shared range-fitted polar sea replaces the outer water rectangles; the existing route clip
+The shared range-fitted polar sea replaces the removed outer water rectangles; the existing route clip
 and fog distances stay. Actual viaduct pillars register conservative circular water contacts, removed with their
-geometry. The shared frozen late-morning sky and metered AgX own the light on this opt-in path. Without the flag,
-the original sea, sky palette and clock remain unchanged.
+geometry. The shared frozen late-morning sky and metered Neutral own the light. The old crossing sea/sky overrides are archived, and water URL selectors are ignored.
 
-*A throwaway greybox for [find-the-fun](../plans/find-the-fun.md), step 7: "Does the crossing feel vast in a good way,
+_A throwaway greybox for [find-the-fun](../plans/find-the-fun.md), step 7: "Does the crossing feel vast in a good way,
 and would you ride it again?" The owner's direction is that the train is far faster than walking and islands may be
 vastly far apart ([boogle-2.md](../proposals/boogle-2.md), "Trains and the world"); this finds what that means in
 seconds and metres. Serves DESIGN.md 1 (Toys before chores). Research: [sea-crossings.md](../research/sea-crossings.md)
 (the destination in view, control kept), [train-riding.md](../research/train-riding.md), section 20 (Death Stranding's
 quiet screen). Without the flag nothing loads: `src/features/proto-crossing.ts` imports `src/proto/crossing/` only with
-it. Its own room, `proto-crossing`, and Local: no ops, states, presence or messages.*
+it. Its own room, `proto-crossing`, and Local: no ops, states, presence or messages._
 
 ## What you see and do
 
@@ -42,11 +41,11 @@ it. Its own room, `proto-crossing`, and Local: no ops, states, presence or messa
 
 Each differs in one thing, and all the numbers are in `src/proto/crossing/tuning.ts`.
 
-| | length | cruise | accel | ride |
-| --- | --- | --- | --- | --- |
-| default | 1.2 km | 20 m/s | 3 m/s² | 64 s |
+|              | length | cruise | accel  | ride |
+| ------------ | ------ | ------ | ------ | ---- |
+| default      | 1.2 km | 20 m/s | 3 m/s² | 64 s |
 | `&v=express` | 1.2 km | 50 m/s | 8 m/s² | 29 s |
-| `&v=vast` | 4 km | 50 m/s | 8 m/s² | 85 s |
+| `&v=vast`    | 4 km   | 50 m/s | 8 m/s² | 85 s |
 
 On foot: sprinting (9.5 m/s) takes about 2 min over 1.2 km and 7 min over 4 km; walking is 5.6 m/s.
 

@@ -2,6 +2,16 @@
 
 ## Goal
 
+**Latest owner call, 4 November — finish removal:** "it's okay to remove and switch to the new water for now... We can always bring that back later."
+This supersedes the default-only hold below. Existing `archive/old-sea` and `archive/water` tags preserve the old
+code; create no tags or branches. Steps 7–8 are authorized, with unchanged appearance/behavior and Neutral.
+Classic migration is conditional on safe scenario/CI cost. Trial: world-inputs/smoke/caves all passed, but
+local Metal times grew **2.9/5.4/5.8 → 5.2/13.8/9.1 seconds**; software-WebGPU CI cannot be qualified by
+this Mac broker. The owner's exception applies: retain classic's own sea in a private lazy factory and finish
+the Place/crossing removal. The old URL selectors are ignored even on classic. Live tuning and shore experiments stay.
+No push or ship; this waits for review and the owner's replay. The following earlier decisions/evidence are history
+where superseded by this call. Final verification is recorded at the end.
+
 **4 November owner override — default Place only:** “Switch default instead”. For tonight's human replay,
 new water is enabled on the default Place route and `proto=place` without a water flag. `water=old` explicitly
 selects the legacy production sea; `water=new` remains an opt-in on classic home and other routes. Classic
@@ -169,13 +179,13 @@ or water flag, compared with the same query plus `water=old`; `prof=1` enables e
 [New measurements](../../.look/evidence/1793837935939-44048/evidence.json),
 [legacy measurements](../../.look/evidence/1793837968474-44231/evidence.json):
 
-| Measurement | New default | Legacy |
-| --- | --- | --- |
-| First play / interactive | **5601 ms** | **2083 ms** |
-| Actual world target | **506×234, scale 0.6** | **844×390, scale 1** |
-| CPU average, two 5 s samples | **4.85 / 4.83 ms** | **3.98 / 3.96 ms** |
-| GPU span average | **7.18 / 7.18 ms** | **3.65 / 3.68 ms** |
-| GPU span p95 | **7.96 / 7.95 ms** | **3.98 / 4.04 ms** |
+| Measurement                  | New default            | Legacy               |
+| ---------------------------- | ---------------------- | -------------------- |
+| First play / interactive     | **5601 ms**            | **2083 ms**          |
+| Actual world target          | **506×234, scale 0.6** | **844×390, scale 1** |
+| CPU average, two 5 s samples | **4.85 / 4.83 ms**     | **3.98 / 3.96 ms**   |
+| GPU span average             | **7.18 / 7.18 ms**     | **3.65 / 3.68 ms**   |
+| GPU span p95                 | **7.96 / 7.95 ms**     | **3.98 / 4.04 ms**   |
 
 Each sample completed **300 frames**, zero missing GPU samples; maximum callback interval **16.8 ms**,
 none over 33 ms. New water really selected `quality=mobile`, `waterCeiling=0.6`, `adaptiveRatio=1`,
@@ -331,8 +341,7 @@ Account for the ten FFT dispatches; high caustics' two raster targets, three spl
 
 ## Steps
 
-Step 7 is partial under the 4 November override above; its original removal scope below is **not authorized**
-for this replay switch. Step 8 remains open. Current switch verification is recorded separately below.
+Steps 7–8 are authorized by the latest owner call above. Classic uses its explicit fallback exception; final human/device acceptance remains open.
 
 Every numbered item is an implementation commit or small group of commits **after approval**, leaves `npm run check` green, formats only changed files, and updates affected as-built docs in the same commit. No new unit tests or scenarios for this Local rendering/feel work. Use existing diagnostics and harnesses; no source edits during a capture.
 
@@ -496,7 +505,6 @@ contrast and broader colour preference remain for the owner; no terrain adoption
 healthy WebGPU. `npm run check` passed. Early captures without explicit `proto=place` hit the look harness's classic
 fallback and were rejected as Place evidence. The frozen sky makes dawn/noon/night comparisons inapplicable here.
 
-
 Opened side-by-side boards (AgX left, Neutral right):
 [shore](../../.look/evidence/1793817888222-62253/bank-agx-neutral.png),
 [player bank](../../.look/evidence/1793817889421-62384/player-agx-neutral.png),
@@ -543,13 +551,13 @@ Performance follows water-demo-validation's follow-up: earliest GPU start to lat
 overlapping timers; three ~180-frame windows, Apple Metal-3 / Chrome 156, DPR 1, stored 4x MSAA and 2048-square
 shadows. Same place camera `(972,22,55) -> (1000,0,20)`, 1920x1200 output. All cost stills were opened.
 
-| Window set | World size | Mean spans (ms) | p95 spans (ms) |
-| --- | --- | --- | --- |
-| [AgX baseline](../../.look/evidence/1793817739000-60752/evidence.json) | 1920x1200 | 9.74 / 8.46 / 9.60 | 12.56 / 12.35 / 12.14 |
-| [Neutral + contact fix](../../.look/evidence/1793818061310-67216/evidence.json) | 1920x1200 | 8.96 / 9.65 / 9.94 | 11.59 / 12.42 / 12.24 |
-| [Mobile](../../.look/evidence/1793818062442-67272/evidence.json) | 1152x720 | 7.64 / 7.59 / 7.50 | 9.08 / 9.26 / 9.30 |
-| [High after promise-handling rebase](../../.look/evidence/1793818541760-80913/evidence.json) | 1920x1200 | 7.27 / 7.25 / 7.24 | 8.49 / 8.14 / 8.14 |
-| [Mobile after rebase](../../.look/evidence/1793818555678-81666/evidence.json) | 1152x720 | 5.93 / 5.95 / 5.90 | 6.75 / 6.87 / 6.84 |
+| Window set                                                                                   | World size | Mean spans (ms)    | p95 spans (ms)        |
+| -------------------------------------------------------------------------------------------- | ---------- | ------------------ | --------------------- |
+| [AgX baseline](../../.look/evidence/1793817739000-60752/evidence.json)                       | 1920x1200  | 9.74 / 8.46 / 9.60 | 12.56 / 12.35 / 12.14 |
+| [Neutral + contact fix](../../.look/evidence/1793818061310-67216/evidence.json)              | 1920x1200  | 8.96 / 9.65 / 9.94 | 11.59 / 12.42 / 12.24 |
+| [Mobile](../../.look/evidence/1793818062442-67272/evidence.json)                             | 1152x720   | 7.64 / 7.59 / 7.50 | 9.08 / 9.26 / 9.30    |
+| [High after promise-handling rebase](../../.look/evidence/1793818541760-80913/evidence.json) | 1920x1200  | 7.27 / 7.25 / 7.24 | 8.49 / 8.14 / 8.14    |
+| [Mobile after rebase](../../.look/evidence/1793818555678-81666/evidence.json)                | 1152x720   | 5.93 / 5.95 / 5.90 | 6.75 / 6.87 / 6.84    |
 
 All sampled windows have zero missing span frames and max animation interval 16.8 ms. Both qualities retain
 512-square and 256-square caustic targets, three caustic draws and **9+8=17 actual mip draws**: 26 native raster
@@ -634,12 +642,12 @@ Cost: earliest GPU start to latest end (not timer sums), three ~180-frame window
 Chrome 156, DPR 1, stored 4x MSAA, 2048-square shadows. Same camera `(972,22,55) -> (1000,0,20)`, 1920x1200 output;
 all four cost stills opened. Mobile changes world resolution only, not the physical device.
 
-| Window set | World size | Mean spans (ms) | p95 spans (ms) |
-| --- | --- | --- | --- |
-| [High baseline](../../.look/evidence/1793820122482-1655/evidence.json) | 1920x1200 | 9.46 / 9.22 / 9.17 | 10.75 / 10.86 / 10.78 |
-| [High final](../../.look/evidence/1793820905376-19377/evidence.json) | 1920x1200 | 10.65 / 10.80 / 10.60 | 11.02 / 11.24 / 11.10 |
-| [Mobile baseline](../../.look/evidence/1793820123694-1686/evidence.json) | 1152x720 | 5.33 / 5.52 / 5.52 | 6.20 / 6.68 / 6.71 |
-| [Mobile final](../../.look/evidence/1793820906538-19386/evidence.json) | 1152x720 | 7.77 / 7.68 / 7.80 | 8.33 / 8.34 / 8.42 |
+| Window set                                                               | World size | Mean spans (ms)       | p95 spans (ms)        |
+| ------------------------------------------------------------------------ | ---------- | --------------------- | --------------------- |
+| [High baseline](../../.look/evidence/1793820122482-1655/evidence.json)   | 1920x1200  | 9.46 / 9.22 / 9.17    | 10.75 / 10.86 / 10.78 |
+| [High final](../../.look/evidence/1793820905376-19377/evidence.json)     | 1920x1200  | 10.65 / 10.80 / 10.60 | 11.02 / 11.24 / 11.10 |
+| [Mobile baseline](../../.look/evidence/1793820123694-1686/evidence.json) | 1152x720   | 5.33 / 5.52 / 5.52    | 6.20 / 6.68 / 6.71    |
+| [Mobile final](../../.look/evidence/1793820906538-19386/evidence.json)   | 1152x720   | 7.77 / 7.68 / 7.80    | 8.33 / 8.34 / 8.42    |
 
 Final counters: 26 native raster passes, 248 direct draws, 17 mip bundle executions / actual mip draws,
 one opaque colour/depth copy pair; zero missing span frames, max sampled animation interval 16.8 ms, none >33 ms.
@@ -709,15 +717,14 @@ Opened [home still](../../.look/evidence/1793734039742-66962/step6-home-still.pn
 
 GPU measurement: `system_profiler` identifies the host as a **32-core Apple M1 Max**. All costs below use earliest observed GPU start to latest observed GPU end per frame, never sums of overlapping timers. Three ~180-frame windows each, 1210×702 scene/output, DPR 1, stored 4× MSAA, fixed 2048² shadow map; no sampled >33 ms gaps or gfx errors. Scene composition differs between place and home, so submerged cost is not a direct subtraction from the place view.
 
-| Final view | Mean GPU spans (ms) | p95 spans (ms) | Native raster / direct draws / mip bundle executions |
-| --- | --- | --- | --- |
-| [Place overhead](../../.look/evidence/1793734804864-96163/evidence.json), camera (972,22,55) → (1000,0,20) | 7.079 / 7.016 / 6.724 | 8.321 / 8.386 / 7.885 | 26 / 240 / 17 |
-| [Home submerged](../../.look/evidence/1793734856641-96652/evidence.json), camera (58,−4.8,−9) → (55,−4.5,−12) | 6.383 / 6.438 / 6.767 | 7.319 / 7.114 / 7.353 | 27 / 136 / 17 |
+| Final view                                                                                                    | Mean GPU spans (ms)   | p95 spans (ms)        | Native raster / direct draws / mip bundle executions |
+| ------------------------------------------------------------------------------------------------------------- | --------------------- | --------------------- | ---------------------------------------------------- |
+| [Place overhead](../../.look/evidence/1793734804864-96163/evidence.json), camera (972,22,55) → (1000,0,20)    | 7.079 / 7.016 / 6.724 | 8.321 / 8.386 / 7.885 | 26 / 240 / 17                                        |
+| [Home submerged](../../.look/evidence/1793734856641-96652/evidence.json), camera (58,−4.8,−9) → (55,−4.5,−12) | 6.383 / 6.438 / 6.767 | 7.319 / 7.114 / 7.353 | 27 / 136 / 17                                        |
 
 Both cost stills were opened. The underwater view shows the bed/caustics and surface underside without the cyan terrain fan. Both retain one opaque colour/depth snapshot pair; the exposure meter also maintains its one-texel history copy. Underwater adds its 605×351 shaft target and lens compute; shader dispatch counts are 12 dry / 13 submerged in these samples. These are steady-state spans, not a startup sky-bake GPU benchmark, full-round contact stress measurement, native Retina/DPR-2 result or M4 iPad acceptance.
 
 Final implementation checks: changed TS/docs formatted; `npm run lint -- --prune-suppressions` made no suppression growth; `git diff --check` clean; latest full `npm run check` log `.look/final-optics-check.log` passed 292 tests, registry, levels, assets and build (5.22 s). The final broker checks and local commits are recorded below. No push, ship, external network use, step-7 switch/removal or step-8 graduation was performed. The initial restricted `inflight` attempt rejected HTTPS transport; live remote inflight state remains unverified.
-
 
 ### Final step 4–6 review checks (3 November 2026)
 
@@ -744,7 +751,6 @@ Remaining acceptance limits: the confirmed shore/refraction slit; real-time feel
 5. **Neutral versus AgX:** the separate side-by-side with characters owns this decision. This plan leaves Neutral and `scene.ts` unchanged. Any renderer/depth/global output change needs explicit approval of its concrete diff; approving water alone does not choose AgX.
 
 Coordination prerequisite, not an art decision: identify who owns the current Round 4 integration hunks and refresh `inflight` before building. Stop after committing this plan; no push or ship in this task.
-
 
 ### Shore-slice follow-up (3 November 2026)
 

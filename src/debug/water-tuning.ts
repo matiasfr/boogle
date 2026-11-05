@@ -307,13 +307,14 @@ export async function showWaterTuning(
     panel.append(
       node(
         'p',
-        'This panel tunes the production sea. Add water=new to this URL; the separate proto=water demo owns its own controls.',
+        'This panel tunes the Place and crossing sea. Classic home retains its own sea pending CI qualification.',
       ),
     );
     const link = node('a', 'Open production water');
     const url = new URL(location.href);
-    url.searchParams.set('water', 'new');
-    if (url.searchParams.get('proto') === 'water') url.searchParams.set('proto', 'place');
+    url.searchParams.delete('water');
+    url.searchParams.set('proto', 'place');
+    url.searchParams.delete('room');
     link.href = url.href;
     panel.append(link);
     panel.append(more);
@@ -738,7 +739,7 @@ export async function showWaterTuning(
   limits.append(
     node(
       'p',
-      'Camera presets and benchmark belong to the demo. Floater spawn, drop, clear, drag, angularDrag and buoyancy are not local water looks; Boogle owns its gameplay bodies.',
+      'Camera presets and benchmark are archived with the demo. Floater spawn, drop, clear, drag, angularDrag and buoyancy are not local water looks; Boogle owns its gameplay bodies.',
     ),
   );
   limits.append(
@@ -756,7 +757,7 @@ export async function showWaterTuning(
   limits.append(
     node(
       'p',
-      'Colour presets and clarity are represented by editable linear scatter, absorption and foam tint. AgX remains the shared production curve. Distance fog follows the place/cave route and is not a water setting.',
+      'Colour presets and clarity are represented by editable linear scatter, absorption and foam tint. Neutral is the production curve; AgX stays a comparison. Distance fog follows the place/cave route and is not a water setting.',
     ),
   );
   const unavailable = groups.flatMap((group) => group.specs).filter((s) => !bindings.has(s.key));

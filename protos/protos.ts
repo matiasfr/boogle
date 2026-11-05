@@ -100,19 +100,17 @@ export const PROTOS: Proto[] = [
     id: 'water',
     title: 'That water, in our world',
     step: 'depth',
-    status: 'live',
-    url: '/?room=proto-water&proto=water',
+    status: 'graduated',
+    archived: 'archive/water',
+    answer: {
+      on: '2026-11-04',
+      verdict: "it's okay to remove and switch to the new water for now... We can always bring that back later.",
+      next: 'The real Place and crossing sea; classic home keeps its cheaper sea pending CI qualification.',
+    },
+    url: '/?proto=place',
     question: 'Does this look like the demo, here?',
     what: "Ultra Water's full-scale island, small waves, caustics and atmosphere inside our renderer.",
     since: '2026-11-02',
-    spawn: { x: 2081.037, z: 88.249, yaw: 2.688 },
-    variants: [
-      {
-        name: 'pop',
-        url: '/?room=proto-water&proto=water&v=pop',
-        what: 'Our poppier water grade over the same demo scene.',
-      },
-    ],
   },
   {
     id: 'place',

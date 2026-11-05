@@ -29,10 +29,8 @@ import {
   vertexColor,
 } from 'three/tsl';
 import { onFrame } from '../../loop.ts';
-import { scene, sun } from '../../render/scene.ts';
-import { newWaterEnabled } from '../../render/water/flags.ts';
-import { atmosphere, skyColors, skyDebug, skyNow, skyU } from '../../render/sky.ts';
-import { smoothstep as ss_ } from '../../math.ts';
+import { scene } from '../../render/scene.ts';
+import { atmosphere } from '../../render/sky.ts';
 import { flat } from '../flat.ts';
 import { dressBundleLogs } from '../../render/haul-bundle.ts';
 
@@ -110,82 +108,19 @@ export function groundMaterial() {
 /** The spire's rock, when the land's is warm too. */
 export const spireRock = (color: string) => (LOOK.ground ? (color === '#8c8478' ? '#c6a274' : '#d6b688') : color);
 
-// ---------------------------------------------------------------- light: warm sun, cool open shadow
-const LIGHT = {
-  frac: 0.2,
-  sun: new THREE.Color('#ffe6bf'),
-  sunI: 3.1,
-  hemiSky: new THREE.Color('#b4cffa'), // the shade's colour: sky
-  hemiGround: new THREE.Color('#c4b48c'), // bounce off the grass
-  hemiI: 2.3,
-  top: new THREE.Color('#2a6fe0'),
-  horizon: new THREE.Color('#a8d0f5'),
-  curve: 0.42,
-  fog: new THREE.Color('#a6c8ef'),
-  fogNear: 170,
-  fogFar: 1500,
-};
-// The owner, round 3: "the sun doesn't go away"; then "mostly daylight, with a brief night". The day moves, slowly, and most of it
-// is the accepted look's daylight: the sun swings across, then a short golden hour, a brief moonlit night and a dawn.
-// One cycle is DAY.seconds of play. Where the sun's up, LIGHT's palette holds; as it sinks, the game's sky takes over.
-export const DAY = {
-  seconds: 1680, // s for a whole day
-  u: 0.23, // where in it we are: the look's morning, at the start
-  hold: new URLSearchParams(location.search).get('day') === 'off', // `&day=off` holds this morning; evals can set `u` too
-  low: 0.14, // the sun's height where LIGHT's palette is gone
-  high: 0.42, // and where it's all there
-};
-/** How the sky's own clock (0 sunrise, 0.3 noon, 0.6 sunset, 0.8 midnight) runs through a day of ours. */
-const DAY_KEYS: [u: number, frac: number][] = [
-  [0, 0.09],
-  [0.82, 0.46],
-  [0.88, 0.6],
-  [0.94, 0.86],
-  [1, 1.09],
-];
-export function dayFrac(u: number) {
-  for (let k = 0; k < DAY_KEYS.length - 1; k++) {
-    const [u0, f0] = DAY_KEYS[k]!,
-      [u1, f1] = DAY_KEYS[k + 1]!;
-    if (u <= u1) return (f0 + ((f1 - f0) * (u - u0)) / (u1 - u0)) % 1;
-  }
-  return DAY_KEYS[0]![1];
-}
+// The frozen water sky owns light. Preserve only this route's existing fog range.
+// Passive compatibility handle for the trusted capture/bot tools; it no longer drives a clock.
+export const DAY = { seconds: 1680, u: 0.23, hold: true, low: 0.14, high: 0.42 };
 export function installLight() {
-  // A late morning to start: a higher sun, for short shadows and lit grass. Phase 0.5 keeps the moon opposite the sun, under
-  // the horizon by day, where its pale disc can't stand out against the deeper sky, and full at night.
-  if (!newWaterEnabled) skyDebug.preview(dayFrac(DAY.u), 0.5);
-  const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
-    THREE.HemisphereLight | undefined;
   onFrame(
-    ({ dt }) => {
-      if (newWaterEnabled) {
-        if (atmosphere.underground <= 0) {
-          const fog = scene.fog as THREE.Fog;
-          fog.near = LIGHT.fogNear;
-          fog.far = LIGHT.fogFar;
-        }
-        return;
+    () => {
+      if (atmosphere.underground <= 0) {
+        const fog = scene.fog as THREE.Fog;
+        fog.near = 170;
+        fog.far = 1500;
       }
-      if (!DAY.hold) DAY.u = (DAY.u + dt / DAY.seconds) % 1;
-      skyDebug.preview(dayFrac(DAY.u), 0.5);
-      const d = ss_(DAY.low, DAY.high, skyNow.sunDir.y);
-      sun.color.lerp(LIGHT.sun, d);
-      sun.intensity += (LIGHT.sunI - sun.intensity) * d;
-      if (hemi) {
-        hemi.color.lerp(LIGHT.hemiSky, d);
-        hemi.groundColor.lerp(LIGHT.hemiGround, d);
-        hemi.intensity += (LIGHT.hemiI - hemi.intensity) * d;
-      }
-      skyColors.top.lerp(LIGHT.top, d);
-      skyColors.horizon.lerp(LIGHT.horizon, d);
-      skyU.uCurve.value = skyU.uCurve.value + (LIGHT.curve - skyU.uCurve.value) * d;
-      const fog = scene.fog as THREE.Fog;
-      fog.color.lerp(LIGHT.fog, d);
-      fog.near = LIGHT.fogNear;
-      fog.far = LIGHT.fogFar;
     },
-    { phase: 'update', order: -2 }, // after the crossing's day (-4) and the place's fog (-3)
+    { phase: 'update', order: -2 },
   );
 }
 

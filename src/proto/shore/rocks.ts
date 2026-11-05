@@ -2,8 +2,8 @@
 import * as THREE from 'three/webgpu';
 import type { PropPlacement } from '../../blueprints/props.ts';
 import { freezeStatic } from '../../render/instances.ts';
-import { rockGeometry } from '../water/ground.ts';
-import { fbm } from '../water/height.ts';
+import { rockGeometry } from './ground.ts';
+import { fbm } from './noise.ts';
 import { registerWaterReceiver } from '../../render/water/receivers.ts';
 import { registerWaterContact, type WaterContact } from '../../render/water/contacts.ts';
 

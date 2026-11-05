@@ -1,10 +1,10 @@
 # Boogle: game design document (as built)
 
-*It describes what exists on `main` today, not what is planned, and is kept current by the rule in
+_It describes what exists on `main` today, not what is planned, and is kept current by the rule in
 [AGENTS.md](../AGENTS.md) (player-facing changes update their file in [game-design/](game-design/) in the same commit). Every number is read from the code or the docs it links. Where the code does not say,
 the doc says "unclear from code". Current design lives in [DESIGN.md](../DESIGN.md) and the
 [decision log](proposals/boogle-2.md); prototype work is in [find-the-fun.md](plans/find-the-fun.md), engineering work
-in [tech-plan.md](tech-plan.md). Undecided ideas live in [proposals/](proposals/README.md) and are only linked as "related ideas".*
+in [tech-plan.md](tech-plan.md). Undecided ideas live in [proposals/](proposals/README.md) and are only linked as "related ideas"._
 
 This page is the index: sections 1 and 2 are here, everything else has one file per section or system, so changes to
 different systems don't touch the same file. A new system adds its file and one line below.
@@ -34,17 +34,17 @@ lockstep world and saves its snapshots (section 8). Live at
 
 The principles are in [DESIGN.md](../DESIGN.md); read it there. In one line each:
 
-| # | Principle | What it means in practice today |
-|---|---|---|
-| 1 | Toys before chores | Ball, throwing and The Boogler have no score. |
-| 2 | Physics toys are optional fun | The beach ball, frisbee and mushroom bounces are optional. |
-| 3 | Side activities are never required | Mushrooms are optional; nothing is gated on them. |
-| 4 | Cooperation is automatic, not negotiated | Anyone can stock the same work site; nearby honks harmonize. |
-| 6 | Communal world, personal rewards | Work sites are shared; what you hold and The Boogler's conversation memories are per player. |
-| 7 | Telegraph everything | Interact prompts, ping markers and work-site rings show what can be done and what is being built. |
-| 8 | Designed for drop-in, drop-out | Solo play and joining an existing room need no group start; returning players skip the identity card. |
-| 9 | Leave something for the next visitor | Items, piles, haul stacks and work sites persist in server snapshots. |
-| 10 | Slapstick over precision | Face-plants, flops, sail bonks, Boogler launches. |
+| #   | Principle                                | What it means in practice today                                                                       |
+| --- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 1   | Toys before chores                       | Ball, throwing and The Boogler have no score.                                                         |
+| 2   | Physics toys are optional fun            | The beach ball, frisbee and mushroom bounces are optional.                                            |
+| 3   | Side activities are never required       | Mushrooms are optional; nothing is gated on them.                                                     |
+| 4   | Cooperation is automatic, not negotiated | Anyone can stock the same work site; nearby honks harmonize.                                          |
+| 6   | Communal world, personal rewards         | Work sites are shared; what you hold and The Boogler's conversation memories are per player.          |
+| 7   | Telegraph everything                     | Interact prompts, ping markers and work-site rings show what can be done and what is being built.     |
+| 8   | Designed for drop-in, drop-out           | Solo play and joining an existing room need no group start; returning players skip the identity card. |
+| 9   | Leave something for the next visitor     | Items, piles, haul stacks and work sites persist in server snapshots.                                 |
+| 10  | Slapstick over precision                 | Face-plants, flops, sail bonks, Boogler launches.                                                     |
 
 Technical principles (sync kinds, determinism, sync edits not state, clear authority, server hosts every room,
 understandable at a glance, small and readable, code first, images by approval) are in the same file, and section 8 maps every feature to its kind.
@@ -84,16 +84,18 @@ tick of 100 ms (10 per second).
 - [6.24 Identity: name and colour](game-design/identity.md)
 - [6.25 HUD feedback: sounds, motion, notices](game-design/hud.md)
 - [6.26 Prototype: the long crossing (`?proto=crossing`)](game-design/crossing.md)
-- [6.26b Prototype: Ultra Water in our renderer (`?proto=water`)](game-design/water-proto.md)
+- [6.26b Water](game-design/water.md)
 - [6.27 Prototype: the line feeds the town (`?proto=net`)](game-design/net.md)
 - [6.28 Prototype: a real place (`?proto=place`)](game-design/place.md)
 - [6.29 Prototype: procedural sky (`?proto=sky`)](game-design/sky-proto.md)
 - [6.30 Dev menu (`?dev=1`)](game-design/dev-menu.md)
+
 ## 7. Content inventory
 
 - [7.1 Items (gift catalog)](game-design/items.md)
 - [7.2 The Boogler's lore and chapters](game-design/boogler-lore.md)
 - [7.3 POIs](game-design/pois.md)
+
 ## 8. [Multiplayer and persistence](game-design/multiplayer.md)
 
 ## 9. [Tech and tooling](game-design/tech.md)

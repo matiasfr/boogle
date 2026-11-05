@@ -4,7 +4,6 @@ import * as THREE from 'three/webgpu';
 import { flat } from '../flat.ts';
 import { LOOK, groundMaterial, spireRock } from './look.ts';
 import { scene } from '../../render/scene.ts';
-import { newWaterEnabled } from '../../render/water/flags.ts';
 import { registerWaterReceiver } from '../../render/water/receivers.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
@@ -55,7 +54,6 @@ function buildMesh() {
         b = at(i + 1, j),
         c0 = at(i, j + 1),
         d = at(i + 1, j + 1);
-      if (!newWaterEnabled && Math.max(heights[a]!, heights[b]!, heights[c0]!, heights[d]!) < -3.5) continue;
       idx.push(a, c0, b, b, c0, d);
     }
   const geo = new THREE.BufferGeometry();
@@ -71,7 +69,7 @@ function buildMesh() {
   );
   mesh.receiveShadow = true;
   if (new URLSearchParams(location.search).get('terrain') === 'demo')
-    void import('../water/terrain-demo.ts').then((m) => m.applyTerrainDemo(mesh.material, ORIGIN.x));
+    void import('../shore/terrain-demo.ts').then((m) => m.applyTerrainDemo(mesh.material, ORIGIN.x));
   registerWaterReceiver(mesh.material);
   mesh.frustumCulled = false;
   scene.add(mesh);

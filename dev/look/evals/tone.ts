@@ -1,4 +1,4 @@
-// Shared pose/palette for the tone boards. Use with --query '...&toneShot=home|place|crossing|beach'.
+// Shared pose/palette for the tone boards. Use with --query '...&toneShot=home|place|crossing'.
 // The timeout places the debug camera after look's own --view setup; all candidates use these exact coordinates.
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -16,16 +16,7 @@ const q = new URLSearchParams(location.search),
   shot = q.get('toneShot') ?? 'home';
 let pos: [number, number, number] = [-18, 5, -20];
 let cam: [number, number, number], target: [number, number, number];
-if (shot === 'beach') {
-  const { islandHeight } = (await import(
-    '/src/proto/water/height.ts' as string
-  )) as typeof import('../../../src/proto/water/height.ts');
-  let x = 100;
-  while (islandHeight(x, -100) > 2) x += 1;
-  pos = [2400 + x - 3, islandHeight(x - 3, -100) + 0.5, -100];
-  cam = [pos[0] - 5, pos[1] + 2.2, pos[2] - 6];
-  target = [pos[0] + 2, pos[1] + 0.8, pos[2] + 2];
-} else if (shot === 'place') {
+if (shot === 'place') {
   const place = window.__place as { skipTrains(): void; day: { hold: boolean; u: number } };
   place.skipTrains();
   place.day.hold = true;
