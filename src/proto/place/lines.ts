@@ -116,6 +116,20 @@ disc.add(discBase);
 const discBars = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, TURNTABLE.r * 2 - 0.3), FLAT('#5c5046'));
 discBars.position.y = TY + 0.13 - disc.position.y;
 disc.add(discBars);
+// A simple rim and paired rails make the graybox read as a turntable, within its existing footprint.
+const discRim = new THREE.Mesh(
+  new THREE.RingGeometry(TURNTABLE.r - 0.28, TURNTABLE.r, 20).rotateX(-Math.PI / 2),
+  FLAT('#b2ad9f'),
+);
+discRim.position.y = TY + 0.14 - disc.position.y;
+discRim.receiveShadow = true;
+disc.add(discRim);
+for (const side of [-1, 1]) {
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, TURNTABLE.r * 2 - 0.6), FLAT('#3f4145'));
+  rail.position.set(side * 0.63, TY + 0.21 - disc.position.y, 0);
+  rail.castShadow = true;
+  disc.add(rail);
+}
 scene.add(disc);
 addStatic(
   { kind: 'cylinder', rTop: TURNTABLE.r, rBottom: TURNTABLE.r, h: 0.24, segments: 12 },

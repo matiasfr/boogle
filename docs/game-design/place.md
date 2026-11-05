@@ -344,7 +344,7 @@ Work and festival overalls have a fitted low waist, curved front/back bibs, open
 
 ## Departures from the brief
 
-The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2.
+The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2. The graybox turntable has a pale rim and paired dark rails within its existing disc footprint; collision and turning motion are unchanged.
 Far Head and the extended grid aren't in `npm run level-check`, which doesn't know this land: `node dev/economy/place-level.ts` floods it from spawn at the player's slope limit and lists what's reachable in each state of the job.
 Its cradle isn't solid, unlike the rest of it: a second shape on the flatbed's body made you fall through the deck (see below).
 Most buildings are solid blocks you can't go inside; three you can (above).
