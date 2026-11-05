@@ -397,7 +397,6 @@ function gainTech(id: TechId, here: boolean) {
       model: new THREE.Mesh(merged(WORN_SHAPE[id]), partMat),
       from: new THREE.Vector3(b.x, b.y + 1.45, b.z),
       done: () => {
-        if (id === 'jump') after(0.3, demoJump);
         if (id === 'hook') after(0.3, demoHook);
       },
     });
@@ -421,16 +420,6 @@ coopWire.techChanged = (before, quiet) => {
     else if (!before[id] && job.tech[id]) showPeerTech(id);
   }
 };
-/** It does it for you, once, so you've felt it: up, and up again off nothing. */
-function demoJump() {
-  const b = me.body;
-  if (!b || me.coyote <= 0) return;
-  b.velocity.y = 7.6;
-  me.coyote = 0;
-  after(0.42, () => {
-    me.jumpQueued = 0.15;
-  });
-}
 /** And across to the first slab, the first time: the ring tells you the rest. */
 function demoHook() {
   const r = RINGS.find((q) => q.pad.id === 't0');
