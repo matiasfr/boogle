@@ -3,7 +3,106 @@
 Local work on `codex/gpu-recovery`, under the owner's early-start exception. Not pushed or shipped.
 Serves DESIGN.md **Show, don't tell**, **Leave something for the next visitor**, and **Small and readable**.
 
-## Finding and scope
+## Follow-up: isolated errors remain playable
+
+The coordinator correctly identified a regression in the first patch: every uncaptured GPU error stopped play.
+Commit `fb86cfb1` replaces that policy. One error, or many errors in one turn, retains the mark and console error
+and lets rendering continue. Device loss and a thrown game callback still immediately show Reload.
+
+After an uncaptured error, subsequent callbacks receive GPU validation/internal/out-of-memory scopes and a
+submitted-work fence. Results are processed in submission order without awaiting them inside the game loop.
+Only **60 consecutive checked callbacks that submit a render and report GPU errors** stop graphics. This counts
+repeated failing submissions, not messages, rAF callbacks, elapsed time or throughput. Sixty is a conservative
+policy allowance, not a measured device timeout. A clean checked submission resets the streak and marks
+`graphics recovered`; two 40-error runs separated by a clean draw remain playable.
+
+At most eight checks are pending. An unchecked draw, unavailable check or visibility transition invalidates the
+streak: contention cannot turn missing evidence into failure. Normal never-errored frames add no scopes/fences;
+no render passes or draw calls were added. Clean scopes/completion prove API-level recovery, not pixel
+presentation. A GPU that never resolves checks cannot be declared failed from elapsed time by this policy.
+Telemetry now includes real draw-call counts, the failed-draw streak and recovery marks alongside the existing
+bounded error/visibility/loss/reload context. Room ownership and the manual same-URL Reload are unchanged.
+
+### Cached playdata
+
+This worktree has no `.look/playtest`. The existing cache in `../boogle-daily/.look/playtest` was read without
+modification or network download.
+
+- Grant session `mw1kz9dd-y00icjb2`: instance-buffer overflow at session t=19.1. After it: 48 position records
+  (10 distinct rounded positions), 10 perf records and 7 input records, then hides at t=67.2 and 74.6. Simulation
+  and recording continued; that does **not** establish visible rendering recovery. The existing video review
+  describes a frozen world. The next session, `mw1l0y9o-1aphq1mf`, has no recorded errors after reload.
+- iPhone session `mw390tiz-5ucocwxd`: hide at t=2873.7, show and `InvalidStateError` from
+  `GPUDevice.createCommandEncoder` at t=2897.2 (48:17). No later position, perf or gameplay records exist, only
+  a two-touch input batch and the final hide/end at t=2901.1. The cache does not show play carrying on.
+- `src/proto/playdata/record.ts` deduplicates error text with `seen`. One logged record does not prove one
+  occurrence, so neither recording establishes a repetition rate or successful GPU recovery.
+
+**Grant's freeze remains unexplained by this patch.** Its relationship to the iPhone error is unproven.
+
+### Fresh checks and visual inspection
+
+All runs used the broker against this worktree's local build, with `changedDuringRun=false` and no concurrent
+source edits. These probes cover final production code; the final two-burst probe also covers the last test-only
+edit increasing each burst from 12 to 40. Full bot/scenarios/Reload tested clean `fb86cfb1`; later edits only
+update this report and the round-4 tracker.
+
+| Check | Verified result and manifest |
+| --- | --- |
+| Single real validation error | Recovery mark, continued rendering, no Reload. [Manifest](../../.look/evidence/1793901170893-62116/evidence.json). |
+| 80 errors in one turn | Continued rendering, no Reload. [Manifest](../../.look/evidence/1793901194636-62774/evidence.json). |
+| Two 40-error runs | 80 injections, two recovery marks (`recoveredAfter=39` each), continued rendering, no Reload. [Manifest](../../.look/evidence/1793901379719-67998/evidence.json). |
+| Sustained errors | 61 injections (initial error plus 60 checked failing draws); stop at streak 60, zero later render calls, usable Reload. [Manifest](../../.look/evidence/1793901252924-65052/evidence.json). |
+| Hide/restore | Zero hidden render calls, resumes without failure UI; health passes. [Manifest](../../.look/evidence/1793901269559-65507/evidence.json). |
+| Hidden device loss | Real destruction, three's lost flag, zero later render calls, same URL/room, usable Reload. [Manifest](../../.look/evidence/1793901286848-65754/evidence.json). |
+| Thrown callback | Immediate fallback assertions pass. Injected exception, not Safari's native cause. [Manifest](../../.look/evidence/1793901302953-66234/evidence.json). |
+| Actual Reload | Accepted gift ID 2 remains ID 2 after Reload and rejoining the same URL. [Manifest](../../.look/evidence/1793901958957-80530/evidence.json). |
+| `world-inputs` | All 7 assertions pass; no GPU errors. [Manifest](../../.look/evidence/1793901954466-80253/evidence.json). |
+| `smoke` | All 8 assertions pass, matching world hashes; no GPU errors. [Manifest](../../.look/evidence/1793901945485-79927/evidence.json). |
+| Full place bot | Finished with every expected beat and no GPU errors. [Manifest](../../.look/evidence/1793901511994-73014/evidence.json), [report](../../.look/evidence/1793901511994-73014/run/report.txt). |
+
+Fault-injection assertions pass but generic capture health exits 1 because injected console errors remain,
+including survivable-error and successful Reload checks. Errors were not filtered to make health green.
+Ordinary visibility, both scenarios and the full bot exit 0.
+
+Opened fresh images: `gpu-final-error-still.png`, `gpu-final-burst-still.png`, `gpu-final-recovered-still.png`,
+`gpu-final-sustained-still.png`, `gpu-final-hidden-still.png`, `gpu-final-hidden-loss-still.png`,
+`gpu-final-throw-still.png`, `gpu-final-reload-still.png`, bot `run/end-still.png`, and smoke `Alice-still.png` /
+`Bob-still.png`, beside the linked manifests. Visual question: does a survivable error leave the island visible,
+while a terminal failure gives a readable Reload instruction? Survivable/burst/recovered/ordinary-hidden stills
+show the island without Reload. Sustained/loss/throw show a centered, unclipped Reload card. The Reload still
+shows the island and welcome-back message; smoke shows both peers. The bot end still shows the avatar on a
+platform and `THE END` in its debug overlay. These are still observations, not motion-quality judgments.
+
+`npx prettier --write` ran on changed files. `npm run check` passed after the last code/test edit: lint, typecheck,
+**330/330 tests**, registries, levels, assets and build. [Check log](../../.look/check-gpu-revised.log).
+
+### Earlier pier cutoff
+
+The earlier failed run used the default harness budget. `dev/look/playthrough.ts` grants 300 seconds by default,
+1800 with `--long`. The pier's `THE JOB IS DONE` is not `bot.finish()`: the place bot still rides home, visits town
+and tours secrets before setting `__placeDone`. `no way yet to (1364, -164)` is a partial-route diagnostic, not
+a terminal failure.
+
+The available comparison, `../final-tree-bots/.look/evidence/1793898623828-80489/evidence.json`, tested base
+`1b19093f` with `--long --stall 1800 --query 'proto=place&shot=play'`. It logged the same route diagnostic, then
+completed. This branch changes no bot/navigation code, and its earlier run contained no GPU error or graphics
+stop. The fresh run with those exact flags completes every expected beat. The earlier failure is explained by
+the shorter harness budget, not a demonstrated branch regression. These budget/code-path facts are not a
+performance comparison; shared-machine timings and frame numbers are not evidence of speed or smoothness.
+
+### Remaining limits
+
+Visibility is synthetic Page Visibility, not real OS suspension/eviction. Real Safari background/restore, device
+loss behavior and original-failure attribution remain unverified. A quiet device rerun is needed for real-time
+feel and background recovery; bot completion itself is now verified. No push or ship command ran.
+No Boogler copy was edited; no suspect Boogler lines were found in scope. No ROM data. Stop here;
+not tested on a device.
+
+## Historical first-patch finding and scope
+
+The sections below retain the first patch's evidence. Its fatal-single-error policy and incomplete bot result
+are superseded by the follow-up above; they are not the current behavior or verification status.
 
 **This does not explain Grant's freeze.** His recorded instance-buffer overflow and the iPhone's background-return
 `createCommandEncoder` error remain distinct observations; their relationship is unproven. The original Safari error
@@ -36,7 +135,7 @@ They retain cause/reason, a bounded message, visibility, time since the last vis
 triangles; `gpu error` gains the same context. They use the existing bounded playdata queue and upload path. Console
 errors remain visible to the harness. No frame-rate or timing threshold decides that the GPU failed.
 
-## Regression evidence
+## Historical first-patch regression evidence
 
 All browser work used the already-running broker against this worktree's local server. No source was edited during
 a run. Manifests retain tested commit/tree and `changedDuringRun=false`. Production `src/` is unchanged since
@@ -74,11 +173,11 @@ level checks, asset checks and production build. [Check log](../../.look/check-g
 and regression actions were re-read for scope and simplification. `inflight` was skipped because it fetches remotely,
 contrary to this task's network restriction; only cached branch refs were inspected. No push or ship command ran.
 
-## Reproduce and limits
+## Reproduce and historical limits
 
 ```sh
 node .look/see-client.ts look --real --warm 1 --hud --query 'proto=place&gpuCase=hidden-loss' --action dev/look/evals/gpu-recovery.ts --name gpu-loss --question 'Is Reload readable after hidden device loss?'
-# Other gpuCase values: hidden, loss, error, throw. gpuBaseline=1 records rather than asserts.
+# Other gpuCase values: hidden, loss, error, burst, recovered, sustained, throw. gpuBaseline=1 records rather than asserts.
 node .look/see-client.ts look --real --warm 1 --hud --action dev/look/evals/gpu-reload.ts --name gpu-reload --question 'Does accepted room progress survive Reload?'
 node .look/see-client.ts scenario world-inputs
 node .look/see-client.ts scenario smoke
