@@ -1,7 +1,15 @@
 import './dev-preferences.ts';
 import './style.css';
 import * as THREE from 'three/webgpu';
-import { scene, camera, renderer, rendererReady, renderFrame, graphicsFailed } from './render/scene.ts';
+import {
+  scene,
+  camera,
+  renderer,
+  rendererReady,
+  renderFrame,
+  graphicsFailed,
+  guardGraphicsFrame,
+} from './render/scene.ts';
 import { shouldRender } from './render/quality.ts';
 import { precompile, gpuDone, shadersMark } from './render/precompile.ts';
 import { createTerrainMesh } from './island/terrain.ts';
@@ -95,7 +103,7 @@ async function play() {
   lobbyReady(); // a returning player joins here, so their avatar's first draw is behind the loading screen too
   last = performance.now();
   // three resets its info, ticks the TSL clock, then runs ours: one loop, one order
-  background(renderer.setAnimationLoop(frame), 'game loop');
+  background(renderer.setAnimationLoop(guardGraphicsFrame(frame)), 'game loop');
   await new Promise((r) => requestAnimationFrame(r)); // one frame drawn: the output and shadow pipelines exist too
   await Promise.race([gpuDone(), giveUp]); // submitted is not finished: the screen lifts once the GPU has caught up
   bootMark('first');

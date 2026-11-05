@@ -54,8 +54,19 @@
   lays fixed full-screen layers out a status bar short there and left an unrendered strip along the bottom
   ([src/boot/app-fill.ts](../../src/boot/app-fill.ts)). The Home Screen app opens its bare start URL, so a visit to
   a `?room=` or `?proto=` is remembered and a bare launch of the app goes back there (a first visit in the app offers
-  "Continue in room x · prototype y" under Jump in instead) ([src/features/home-app.ts](../../src/features/home-app.ts)). If the GPU device is lost (an iPhone backgrounding the tab, a driver reset), the page reloads when visible, at most
-  once a minute.
+  "Continue in room x · prototype y" under Jump in instead) ([src/features/home-app.ts](../../src/features/home-app.ts)).
+  Hidden tabs skip the game frame callback, including compute and drawing; the existing background world clock remains.
+  A lost GPU device, thrown game frame or 60 consecutive GPU-checked failing draw submissions stops local frame work and shows
+  "The graphics stopped. Reload to keep playing in this room." with a Reload button in the lobby.
+  It never automatically reloads or resets the room. Reload uses the same URL and existing server-owned progress;
+  it does not promise to restore unsaved personal state. The renderer's own lost-device guard is retained.
+  Visibility transitions and failures record cause, visibility, time since transition and draw counts in session marks.
+  A single uncaptured error only logs and arms checks; gameplay continues. While armed, WebGPU error scopes cover
+  synchronous frame work, including compute, and queue completion fences submitted work without blocking the loop.
+  A checked clean draw resets the streak and disarms checks; a new error arms them again. At most eight checks are
+  pending, processed in submission order. An unchecked draw, unavailable result or visibility transition invalidates
+  the streak instead of inferring failure from a busy GPU. This counts failed draw submissions, not elapsed time,
+  rAF callbacks or repeated console messages. Recovery and the failed-draw count join session marks.
 - **Sync kind.** Local: nothing about rendering crosses the network.
 - **Player Graphics.** Pause → Graphics lazily loads a small page using the existing modal's keyboard,
   gamepad and touch navigation. Desktop puts it beside the scene; phone uses a scrollable card with the

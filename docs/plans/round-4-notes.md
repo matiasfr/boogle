@@ -52,7 +52,7 @@ Answers are being collected on the [review page](https://claude.ai/artifact/4MQm
 - [x] Update banner clipping and touch glyph (`cdc84269`).
 - [x] Automatic demonstration double-jump removed (`45f4181d`).
 - [x] Glider/cinematic sequencing (`ea180fda`), construction before glider (`9f986ad6`), gate reveal before return hook (`2147f451`).
-- [ ] Background GPU error at 48:17 (`createCommandEncoder`): recovery fix/reproduction not established; relationship to Grant's freeze remains unproven.
+- [ ] Background GPU error at 48:17 (`createCommandEncoder`): local recovery fallback and forced-loss/error regressions implemented on `codex/gpu-recovery`, not pushed or shipped ([evidence](../research/gpu-recovery.md)). Isolated errors now continue rendering; only loss, thrown callbacks or 60 consecutive checked failing draws stop it. Same-room Reload preserves an accepted edit. The full bot passes with the matching long budget; its earlier cutoff was a harness-budget mismatch. Original Safari cause and relationship to Grant's freeze remain unproven; actual device background/restore still needs verification.
 
 **Looks and clipping**
 
