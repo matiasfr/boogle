@@ -34,6 +34,33 @@ export function machineWheelPivots(source: THREE.Object3D) {
   }
   return wheels;
 }
+export const MACHINE_CRANK_RADIUS = 0.07;
+/** Independent, rigid side rods; their two eyes follow equal-phase wheel crank pins. */
+export function machineRodPivots(source: THREE.Object3D) {
+  const parts: THREE.Object3D[] = [];
+  source.traverse((part) => {
+    if (/^power_rod_[01]$/.test(part.name)) parts.push(part);
+  });
+  return parts.map((part) => {
+    const pivot = new THREE.Group();
+    pivot.name = `${part.name}-slide`;
+    pivot.position.set(
+      part.name.endsWith('0') ? -0.72 : 0.72,
+      0.235 + MACHINE_WHEEL_RADIUS + MACHINE_CRANK_RADIUS,
+      -MACHINE_GAP,
+    );
+    part.parent!.add(pivot);
+    part.position.sub(pivot.position);
+    pivot.add(part);
+    return pivot;
+  });
+}
+export function poseMachineRods(rods: THREE.Object3D[], angle: number) {
+  for (const rod of rods) {
+    rod.position.y = 0.235 + MACHINE_WHEEL_RADIUS + MACHINE_CRANK_RADIUS * Math.cos(angle);
+    rod.position.z = -MACHINE_GAP + MACHINE_CRANK_RADIUS * Math.sin(angle);
+  }
+}
 /** The shell is rigid. The existing fork action stays owned by rail.ts. */
 export function dressMachine(source: THREE.Object3D) {
   const recipes = {
@@ -46,7 +73,8 @@ export function dressMachine(source: THREE.Object3D) {
     cream: ['paintedToy', [197 / 255, 171 / 255, 104 / 255]],
     teal: ['paintedToy', [36 / 255, 86 / 255, 83 / 255]],
     bogie: ['steel', [16 / 255, 28 / 255, 41 / 255]],
-    wheel: ['steel', [0.27, 0.32, 0.36]],
+    wheel: ['steel', [1, 1, 1]], // Authored vertex colours distinguish pale hubs/spokes from the dark tread.
+    rod: ['paintedToy', [197 / 255, 171 / 255, 104 / 255]],
   } as const;
   const owned = new Map<string, { mat: THREE.MeshStandardNodeMaterial; clean: THREE.Color; aged: THREE.Color }>();
   source.traverse((o) => {
@@ -58,6 +86,7 @@ export function dressMachine(source: THREE.Object3D) {
     let entry = owned.get(role);
     if (!entry) {
       const mat = material(recipe[0], { normals: 'authored' }).clone();
+      mat.vertexColors = role === 'wheel';
       const [r, g, b] = recipe[1];
       mat.color.setRGB(r, g, b, THREE.LinearSRGBColorSpace);
       const clean = mat.color.clone();
@@ -96,6 +125,7 @@ export function mountMachine(
   const copy = source.clone(true);
   const finish = dressMachine(copy);
   const wheels = machineWheelPivots(copy);
+  const rods = machineRodPivots(copy);
   const rear = new THREE.Group();
   rear.position.z = MACHINE_GAP;
   power.add(rear);
@@ -103,14 +133,14 @@ export function mountMachine(
   rearGear.position.z = MACHINE_GAP;
   gear[0]!.add(rearGear);
   for (const part of [...copy.children]) {
-    if (part.name.includes('_wheel_') || part.name.endsWith('_bogie'))
+    if (part.name.includes('_wheel_') || part.name.includes('_rod_') || part.name.endsWith('_bogie'))
       (part.name.startsWith('power_') ? rearGear : gear[1]!).add(part);
     else if (part.name.startsWith('power_')) rear.add(part);
     else if (part.name.startsWith('deck_')) deck.add(part);
     else if (part.name.startsWith('chair_')) chairs.add(part);
     else throw new Error(`Unexpected track-layer root: ${part.name}`);
   }
-  return { ...finish, wheels };
+  return { ...finish, wheels, rods };
 }
 
 export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D, sleeper: THREE.Object3D) {
@@ -179,6 +209,7 @@ export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D,
         o.last.copy(at);
         o.yaw = yaw;
         for (const wheel of finish?.wheels[i] ?? []) wheel.rotation.x = wheelAngle(o.distance);
+        if (i === 0 && finish) poseMachineRods(finish.rods, wheelAngle(o.distance));
       });
       const parent = cars[1]!.parent;
       if (!parent?.visible) return void last.set(NaN, 0, 0);

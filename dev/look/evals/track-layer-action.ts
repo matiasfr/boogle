@@ -1,4 +1,6 @@
 // Existing debug delivery fills the active bill, then actual feed/lay code runs unchanged.
+// The broker applies its default still camera after the setup eval; restore gameplay here.
+if (new URLSearchParams(location.search).get('machineView') === 'normal') window.__debugCam!.clear();
 const place = window.__place as { skipDelivery(): void; coop: { skip(name: string, fn: () => void): void } };
 if (new URLSearchParams(location.search).get('wheelMotion') === '1') {
   const { machine } = (await import(
@@ -17,12 +19,22 @@ if (new URLSearchParams(location.search).get('wheelMotion') === '1') {
     error = 0,
     displacementError = 0,
     rigidError = 0,
+    rodError = 0,
     stationaryAngle = 0;
   const beats = new Set<string>();
   const sample = () => {
     const at = (performance.now() - started) / 1000;
     const states = machine.look.wheelState();
     const cars = [machine.loco, machine.flatbed];
+    for (let side = 0; side < 2; side++) {
+      const rod = machine.loco.mesh.getObjectByName(`power_rod_${side}-slide`)!;
+      for (let axle = 0; axle < 2; axle++) {
+        const wheel = machine.loco.mesh.getObjectByName(`power_wheel_${axle * 2 + side}-axle`)!;
+        const eye = rod.localToWorld(positions[0]!.clone().set(0, 0, axle ? 0.8 : -0.8));
+        const pin = wheel.localToWorld(positions[0]!.clone().set(side ? 0.2 : -0.2, 0.07, 0));
+        rodError = Math.max(rodError, eye.distanceTo(pin));
+      }
+    }
     const rows = states.map((s, i) => {
       const prior = previous[i]!;
       const displacement = cars[i]!.mesh.position.distanceTo(positions[i]!);
@@ -57,12 +69,22 @@ if (new URLSearchParams(location.search).get('wheelMotion') === '1') {
         error > 1e-8 ||
         displacementError > 1e-6 ||
         rigidError > 1e-6 ||
+        rodError > 1e-6 ||
         stationaryAngle > 1e-8
       )
         throw new Error('Wheel travel/stop contract failed');
       console.log(
         'WHEEL VERIFIED ' +
-          JSON.stringify({ samples, radius, error, displacementError, rigidError, stationaryAngle, beats: [...beats] }),
+          JSON.stringify({
+            samples,
+            radius,
+            error,
+            displacementError,
+            rigidError,
+            rodError,
+            stationaryAngle,
+            beats: [...beats],
+          }),
       );
       return;
     } else if (at > 22) {

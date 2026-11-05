@@ -84,6 +84,7 @@ const put = (x: number, z: number) => {
   me.body!.velocity.set(0, 0, 0);
 };
 const camera = () => {
+  if (view === 'normal') return; // Retain the actual gameplay camera and its 62-degree lens.
   const rear = view !== 'lay';
   const eyeLocal =
     view === 'wheels'
@@ -168,6 +169,9 @@ if (pair) {
     await until(() => Object.keys(seatState().grants).length === 2, 'both capture grants');
     await wait(1000); // Settled local and remote seated poses before the still.
   }
+} else if (view === 'normal') {
+  sitDown();
+  await until(() => !!seatState().sitting, 'normal-camera rider');
 } else if (view === 'ride') {
   for (const [i, x] of [-0.55, 0.55].entries()) {
     put(x, -1.85);

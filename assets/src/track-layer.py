@@ -69,6 +69,15 @@ def part(name, color, build, origin=(0, 0, 0)):
     bm = bmesh.new()
     bm.edges.layers.float.new('bevel_weight_edge')
     build(bm)
+    coloured_wheel = '_wheel_' in name
+    if coloured_wheel:
+        colours = bm.loops.layers.float_color.new('Color')
+        for face in bm.faces:
+            centre = face.calc_center_median()
+            # Hub, spokes and crank pins are pale; the tread/flange stays steel.
+            rgb = (0.82, 0.75, 0.54) if math.hypot(centre.y, centre.z) < 0.085 else (0.27, 0.32, 0.36)
+            for loop in face.loops:
+                loop[colours] = (*rgb, 1)
     mesh = bpy.data.meshes.new(name)
     bm.to_mesh(mesh)
     bm.free()
@@ -87,13 +96,26 @@ def part(name, color, build, origin=(0, 0, 0)):
     mat.diffuse_color = (*color, 1)
     mat.use_nodes = True
     mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = mat.diffuse_color
+    if coloured_wheel:
+        attr = mat.node_tree.nodes.new('ShaderNodeVertexColor')
+        attr.layer_name = 'Color'
+        mat.node_tree.links.new(attr.outputs['Color'], mat.node_tree.nodes['Principled BSDF'].inputs['Base Color'])
     mesh.materials.append(mat)
 
 
 def power_paint(bm):
     # Covers the unchanged 1.6 x 3 x 1.75 m rideable block; no boiler or cab.
     # Body ends at 1.71; the trim alone supplies the unchanged 1.75 m standing top.
-    box(bm, 0, 1.13, -GAP, 1.6, 1.16, 3, BIG_BEVEL)
+    # Inset the bottom skirt; the unchanged broad standing top still covers the collider.
+    profile = [(-0.52, 0.55), (0.52, 0.55), (0.8, 0.95),
+               (0.8, 1.71), (-0.8, 1.71), (-0.8, 0.95)]
+    ends = [[bm.verts.new((x, -z, y)) for x, y in profile] for z in (-GAP - 1.5, -GAP + 1.5)]
+    bm.faces.new(ends[0])
+    bm.faces.new(list(reversed(ends[1])))
+    for k in range(6):
+        bm.faces.new((ends[0][k], ends[1][k], ends[1][(k + 1) % 6], ends[0][(k + 1) % 6]))
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    weight_edges(bm, ends[0] + ends[1], BIG_BEVEL)
     box(bm, 0, 1.57, -GAP + 1.45, 1.3, 0.28, 0.16, BIG_BEVEL)
 
 
@@ -177,7 +199,7 @@ def bogie(bm, middle, half_span, top):
     box(bm, 0, (top + 0.45) / 2, middle, 1.38, top - 0.45, 0.18, 0.004)
 
 
-def wheel(bm, side):
+def wheel(bm, side, crank=False):
     # Closed annular profile: inner flange, narrow tread and an open spoked centre.
     profile = [(-0.105, 0.09), (-0.105, 0.15), (-0.07, 0.15),
                (-0.07, WHEEL_R), (0.07, WHEEL_R), (0.07, 0.09)]
@@ -188,6 +210,8 @@ def wheel(bm, side):
         for k in range(16):
             bm.faces.new((a[k], a[(k + 1) % 16], b[(k + 1) % 16], b[k]))
     cylinder(bm, 0, 0, 0, 0.038, 0.17)
+    if crank:
+        cylinder(bm, side * 0.14, 0.07, 0, 0.027, 0.16)
     for k in range(3):
         vs = bmesh.ops.create_cube(bm, size=1)['verts']
         bmesh.ops.scale(bm, verts=vs, vec=(0.05, 0.025, 0.085))
@@ -195,6 +219,12 @@ def wheel(bm, side):
         bmesh.ops.rotate(bm, verts=vs, cent=(0, 0, 0), matrix=Matrix.Rotation(k * math.tau / 3, 3, 'X'))
         weight_edges(bm, vs, 0.003)
     bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+
+
+def coupling_rod(bm):
+    box(bm, 0, 0, 0, 0.045, 0.045, 1.6, 0.004)
+    for z in (-0.8, 0.8):
+        cylinder(bm, 0, 0, z, 0.045, 0.06)
 
 
 ORANGE = (198 / 255, 90 / 255, 22 / 255)
@@ -216,7 +246,9 @@ for body, zs in [('power', (-GAP - 0.8, -GAP + 0.8)), ('deck', (-1.35, -0.45))]:
         for side in (-1, 1):
             index = axle * 2 + (1 if side > 0 else 0)
             part(f'{body}_wheel_{index}', (0.27, 0.32, 0.36),
-                 lambda bm, s=side: wheel(bm, s), (side * 0.52, AXLE_Y, z))
+                 lambda bm, s=side, powered=body == 'power': wheel(bm, s, powered), (side * 0.52, AXLE_Y, z))
+for i, side in enumerate((-1, 1)):
+    part(f'power_rod_{i}', CREAM, coupling_rod, (side * 0.72, AXLE_Y + 0.07, -GAP))
 
 bpy.ops.export_scene.gltf(filepath=sys.argv[sys.argv.index('--') + 1], export_format='GLB',
                           export_yup=True, export_apply=True, export_normals=True,

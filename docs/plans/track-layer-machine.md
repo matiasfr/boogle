@@ -1,5 +1,11 @@
 # Track-layer machine art and deck places
 
+## 5 November follow-up: readable running gear and approved gantry storyboard
+
+The owner approved `boogle-daily/.look/previz/track-layer-motion/board.md` and its six shots. The gantry integration has a surfaced mapping conflict: existing rail pairs commit every 3 m (0.6 s at normal 5 m/s cruise), while stock decreases proportionally over much longer distances. L1's stock interval is 2.683 s at cruise; later stretches range from 0.681–1.204 s. A literal conserved one-stock-item/one-track-rail cycle cannot describe all existing rail meshes without changing gameplay. Owner clarification is pending between representative stock-decrement cycles and pausing that mechanism. No dependent gantry change starts until that choice is resolved.
+
+Independent approved wheel revision: retain 0.13 m tread radius, ±0.5 m rail gauge and every collision/seat/exit anchor. Give the existing wheel meshes pale hubs/spokes with dark steel treads through vertex colours, retaining one draw per wheel. Two separately pivoted cream side rods join the power bogie's two axles (1.6 m spacing); 0.07 m crank radius, X ±0.72 m, within the power body's ±0.8 m collision width. A chamfered lower power-pack skirt exposes the wheels without changing the 1.6 × 3 m standing top. Wheel shape/axle heights and the sleeper fork remain unchanged. Normal-camera and close travel video must show the resulting motion; counts, not shared-machine timing, determine the budget. Shell ≤10k triangles/22 draws/128KB, loaded ≤16k triangles/36 main draws. New geometry is closed, with only the four existing warning-stripe quads intentionally open.
+
 ## 5 November follow-up: rail bogies
 
 The owner's later direction supersedes the crawler silhouette below: the machine rides on the rails just laid. This bounded revision keeps every gameplay/collision/seat/exit anchor and the existing fork action. Rail pick-and-place waits for a separately approved storyboard.
