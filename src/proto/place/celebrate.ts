@@ -8,6 +8,7 @@ import { camConstraints, camForward, me } from '../../player/player.ts';
 import { chuff, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
+import { readableIntensity } from '../../render/readable-unlit.ts';
 import { fanfare } from '../minis/common.ts';
 import { SHELLS } from '../net/town-fx.ts';
 import { dustRing } from './pieces.ts';
@@ -73,6 +74,7 @@ function burst(x: number, y: number, z: number, c: THREE.Color, size: number) {
       life: 1.5 + Math.random() * 0.5,
       size: 0.55 * size,
       color: c,
+      intensity: readableIntensity(),
       gravity: 7,
       drag: 1.4,
       shrink: 0.4,
@@ -425,6 +427,7 @@ export function updateMoments(dt: number) {
       life: 0.5,
       size: 0.35 * r.big,
       color: trail,
+      intensity: readableIntensity(),
       shrink: 0.5,
     });
   }

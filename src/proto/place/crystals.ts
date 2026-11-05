@@ -4,6 +4,7 @@
 // place in a glowing row on the curio shelf. They do nothing yet. Local.
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';
+import { readableIntensity } from '../../render/readable-unlit.ts';
 import { scene } from '../../render/scene.ts';
 import { me } from '../../player/player.ts';
 import { pop } from '../minis/common.ts';
@@ -91,6 +92,7 @@ function sparkleAt(x: number, y: number, z: number, n: number, sp: number) {
       life: 0.7 + Math.random() * 0.5,
       size: 0.15,
       color: sparkle,
+      intensity: readableIntensity(),
       drag: 1,
       gravity: 2,
       shrink: 0.5,

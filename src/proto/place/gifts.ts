@@ -10,6 +10,7 @@ import { merged, type Part } from './part-geometry.ts';
 import { packParts } from './gear-models.ts';
 import { makeAxeModel } from './axe-models.ts';
 import { emit } from '../../render/particles.ts';
+import { readableIntensity } from '../../render/readable-unlit.ts';
 import { scene } from '../../render/scene.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
@@ -638,6 +639,7 @@ function reveal(id: GiftId, show: boolean) {
       life: 1,
       size: 0.14,
       color: k % 3 ? sheet : glint,
+      intensity: k % 3 ? 1 : readableIntensity(),
       gravity: 3,
       shrink: 0.4,
     });
@@ -1057,6 +1059,7 @@ function sparkles(x: number, y: number, z: number, n: number, sp: number, color 
       life: 0.7 + Math.random() * 0.6,
       size: 0.16 + Math.random() * 0.1,
       color,
+      intensity: readableIntensity(),
       gravity: 5,
       drag: 1,
       shrink: 0.5,
@@ -1077,6 +1080,7 @@ function confettiBurst(x: number, y: number, z: number) {
       life: 1.6 + Math.random() * 1,
       size: 0.17 + Math.random() * 0.13,
       color: CONFETTI[k % CONFETTI.length]!,
+      intensity: readableIntensity(),
       gravity: 8,
       drag: 1.5,
       shrink: 0.3,

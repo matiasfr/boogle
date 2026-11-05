@@ -2,6 +2,7 @@
 // localStorage, synthesized sounds, confetti and your own ball shots. All Local: cosmetic, Math.random is fine.
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';
+import { readableIntensity, readableUnlit } from '../../render/readable-unlit.ts';
 import { getAudio } from '../../render/audio.ts';
 import { noiseBuffer } from '../../render/noise.ts';
 import { camera } from '../../render/scene.ts';
@@ -22,7 +23,9 @@ export function label(w: number, h: number): Label {
   const g = c.getContext('2d')!;
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  const sprite = new THREE.Sprite(
+    readableUnlit(new THREE.SpriteNodeMaterial({ map: tex, transparent: true, depthWrite: false })),
+  );
   sprite.scale.set(w, h, 1);
   sprite.renderOrder = 10;
   const entry = { sprite, w, h, punchAt: -1e9 };
@@ -210,6 +213,7 @@ export function confetti(x: number, y: number, z: number, n = 90) {
       life: 1.4 + Math.random() * 1.2,
       size: 0.16 + Math.random() * 0.14,
       color: CONFETTI[k % CONFETTI.length]!,
+      intensity: readableIntensity(),
       gravity: 9,
       drag: 1.6,
       shrink: 0.3,

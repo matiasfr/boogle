@@ -3,7 +3,7 @@
 // (src/render/splash.ts), the ball's sand puff (features/impact.ts) and skid and splat dust (features/feel.ts).
 //
 //   emit(p)   one particle. p: { x, y, z, vx, vy, vz (m/s), life (s), size (m), color (THREE.Color),
-//                    alpha (default 1), gravity (m/s², default 0), drag (1/s, default 0),
+//                    alpha (default 1), intensity (linear RGB only, default 1), gravity (m/s², default 0), drag (1/s, default 0),
 //                    floor: a height it dies falling through (water level),
 //                    grow: [start, end] size multipliers over its life (default [1, 1]),
 //                    shrink: the last fraction of its life it shrinks to nothing over (default 0, none),
@@ -139,6 +139,7 @@ export type Particle = {
   size: number;
   color: THREE.Color;
   alpha?: number;
+  intensity?: number;
   gravity?: number;
   drag?: number;
   floor?: number | null;
@@ -153,9 +154,10 @@ export function emit(p: Particle) {
     slot = next;
   next = (next + 1) % MAX;
   p.color.getRGB(rgb); // linear: the output pass tone maps and encodes
+  const intensity = p.intensity ?? 1;
   q.set([p.x, p.y, p.z, p.life], o);
   q.set([p.vx ?? 0, p.vy ?? 0, p.vz ?? 0, p.life], o + 4);
-  q.set([rgb.r, rgb.g, rgb.b, p.alpha ?? 1], o + 8);
+  q.set([rgb.r * intensity, rgb.g * intensity, rgb.b * intensity, p.alpha ?? 1], o + 8);
   q.set([p.size, p.grow?.[0] ?? 1, p.grow?.[1] ?? 1, p.shrink ?? 0], o + 12);
   q.set([p.fade ?? 0, p.gravity ?? 0, p.drag ?? 0, typeof p.floor === 'number' ? p.floor : NO_FLOOR], o + 16);
   q[o + 20] = slot;

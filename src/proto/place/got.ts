@@ -9,6 +9,7 @@ import { setPadGrab } from '../../player/controls.ts';
 import { glyph } from '../../player/glyphs.ts';
 import type { Avatar } from '../../player/avatars.ts';
 import { emit } from '../../render/particles.ts';
+import { readableIntensity } from '../../render/readable-unlit.ts';
 import { camera, scene } from '../../render/scene.ts';
 import { fanfare, pop } from '../minis/common.ts';
 import { softGlow } from './look.ts';
@@ -172,6 +173,7 @@ function sparkles(at: THREE.Vector3, n: number, sp: number) {
       life: 0.6 + Math.random() * 0.5,
       size: 0.12 + Math.random() * 0.08,
       color: gold,
+      intensity: readableIntensity(),
       gravity: 3,
       drag: 1.2,
       shrink: 0.5,

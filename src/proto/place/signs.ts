@@ -1,5 +1,6 @@
 // Material boards and HUD counters (logs, kilometres, town, money). Local.
 import * as THREE from 'three/webgpu';
+import { readableUnlit } from '../../render/readable-unlit.ts';
 import { pauseSections } from '../../player/pause-pages.ts';
 
 // ---------------------------------------------------------------- boards you can read
@@ -28,7 +29,7 @@ export function paintBoard(lines: { t: string; px: number; color?: string }[], w
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
-  return new THREE.MeshBasicNodeMaterial({ map: tex });
+  return readableUnlit(new THREE.MeshBasicNodeMaterial({ map: tex }));
 }
 
 // ---------------------------------------------------------------- the HUD
