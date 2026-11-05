@@ -21,11 +21,27 @@
 
 import { BUILD } from '../build-id.ts';
 import { startStartupFrames } from './startup-frames.ts';
+import { loadStatus } from './load-status.ts';
+import { loadDetails } from './load-details.ts';
 
 performance.setResourceTimingBufferSize(1500); // dev's unbundled modules must not hide the later model downloads
 
 export type BootMark = { name: string; t: number; detail?: Record<string, number | string> };
 const marks: BootMark[] = [];
+const listeners = new Set<() => void>();
+/** Read the existing record without collecting resource timings on every splash update. */
+export const bootMarks = (): readonly BootMark[] => marks;
+export const bootStatus = () => loadStatus(marks);
+/** Both views enter through this existing chunk, keeping the first-load request count unchanged. */
+export function mountLoadDetails(parent: HTMLElement) {
+  return loadDetails(parent, bootTimeline, onBootMark);
+}
+export function onBootMark(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
 const spans: Record<string, number> = {};
 const round = (x: number) => Math.round(x);
 
@@ -38,6 +54,7 @@ export function bootMark(name: string, detail?: Record<string, number | string>)
     // an old browser's mark takes no options: the line below still has it
   }
   marks.push({ name, t: round(t), detail });
+  for (const listener of listeners) listener();
   if (name === 'interactive') {
     startStartupFrames(t);
     resolveInteractive();

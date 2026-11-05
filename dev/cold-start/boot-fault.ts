@@ -22,13 +22,47 @@ export async function bootFaultProxy(upstream: string, dist: string, report: str
     const url = new URL(req.url!, upstream);
     // Existing broker evals can open a phone-profile document without changing the trusted browser harness.
     // This is Mac Chromium emulation, not Safari or device performance evidence.
-    if (url.pathname === '/' && url.searchParams.has('phoneStartup')) {
+    if (url.pathname === '/' && (url.searchParams.has('phoneStartup') || url.searchParams.has('loadProof'))) {
       const setup = `<script>
+        const proof = new URLSearchParams(location.search);
+        if (proof.has('phoneStartup')) {
         Object.defineProperty(window, 'devicePixelRatio', {value: 2});
         Object.defineProperty(navigator, 'maxTouchPoints', {value: 5});
         const mm = matchMedia.bind(window);
         window.matchMedia = q => q === '(pointer: coarse)' ? {matches: true, media:q, addEventListener(){}, removeEventListener(){}} : mm(q);
         localStorage.setItem('boogle.resolution', '0.60');
+        }
+        if (proof.has('reduceMotion')) {
+          const mm = matchMedia.bind(window);
+          window.matchMedia = q => q === '(prefers-reduced-motion: reduce)' ? {matches: true, media:q, addEventListener(){}, removeEventListener(){}} : mm(q);
+          // Match the media-query CSS too, without changing the production stylesheet.
+          const applyReduced = () => {
+            let applied = false;
+            for (const sheet of document.styleSheets) for (const rule of sheet.cssRules)
+              if (rule instanceof CSSMediaRule && rule.conditionText === '(prefers-reduced-motion: reduce)') {
+                rule.media.mediaText = 'all';
+                applied = true;
+              }
+            if (applied) reducedObserver.disconnect();
+          };
+          // Run before the first splash paint, not after module evaluation at DOMContentLoaded.
+          const reducedObserver = new MutationObserver(applyReduced);
+          reducedObserver.observe(document.documentElement, {childList:true, subtree:true});
+          document.addEventListener('DOMContentLoaded', applyReduced, {once:true});
+        }
+        if (proof.has('slowGraphics')) {
+          const compile = GPUDevice.prototype.createRenderPipelineAsync;
+          let until = 0;
+          GPUDevice.prototype.createRenderPipelineAsync = function(...args) {
+            const result = compile.apply(this, args);
+            if (!performance.getEntriesByName('boot:buddy-ready').length) return result;
+            if (!until) until = performance.now() + 26000;
+            return result.then(async pipeline => {
+              await new Promise(r => setTimeout(r, Math.max(0, until - performance.now())));
+              return pipeline;
+            });
+          };
+        }
         const nativeFetch = fetch.bind(window);
         let failed = false;
         window.fetch = async (input, init) => {
@@ -43,6 +77,19 @@ export async function bootFaultProxy(upstream: string, dist: string, report: str
             await new Promise(r => setTimeout(r, 18000));
           return nativeFetch(input, init);
         };
+        if (proof.has('loadProof')) {
+          let previous = '';
+          new MutationObserver(() => {
+            const groups = [...document.querySelectorAll('.load-groups > div')].map(el => el.innerText);
+            const state = {groups, room: document.querySelector('.load-room')?.textContent, label: document.querySelector('.splash-label')?.textContent, carry: document.querySelector('.load-carry')?.textContent};
+            const key = JSON.stringify(state);
+            if (previous === key) return;
+            previous = key;
+            const marks = performance.getEntriesByType('mark').filter(m => m.name.startsWith('boot:')).map(m => ({name:m.name, t:Math.round(m.startTime)}));
+            const splashAnimations = document.querySelector('.splash')?.getAnimations({subtree:true}).length ?? 0;
+            console.log('LOAD state ' + JSON.stringify({t:Math.round(performance.now()), ...state, marks, splashAnimations, overflow:document.documentElement.scrollWidth > innerWidth}));
+          }).observe(document.documentElement, {childList:true, subtree:true, characterData:true});
+        }
       </script>`;
       res.writeHead(200, { 'content-type': 'text/html', 'cache-control': 'no-store' });
       res.end(fs.readFileSync(path.join(dist, 'index.html'), 'utf8').replace('<head>', '<head>' + setup));

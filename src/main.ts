@@ -40,6 +40,7 @@ rendererReady.then(
 );
 onRoomReady(() => bootMark('room'));
 
+bootMark('world-start');
 createTerrainMesh();
 bootMark('terrain');
 createWaterMesh();
@@ -77,6 +78,7 @@ function frame(now = performance.now()) {
 function start() {
   initInput();
   initLobby();
+  bootMark('room-start');
   background(connectRoom(), 'room connect');
   renderPeople();
   runStart();
@@ -87,7 +89,7 @@ async function play() {
   // A cold Metal cache takes about 14 s on an M1 Max (docs/research/water-metal-cold.md). Slow GPUs (and software
   // rendering) can take longer: past 16 s the game opens anyway and the rest builds on.
   const giveUp = new Promise((r) => setTimeout(r, 16000));
-  splashStage(0.45, 0.95, 'Warming up the shaders');
+  splashStage(0.45, 0.95);
   await Promise.race([precompile(null, splashProgress), giveUp]);
   shadersMark();
   lobbyReady(); // a returning player joins here, so their avatar's first draw is behind the loading screen too
@@ -106,12 +108,12 @@ async function play() {
 window.boogle = { THREE, scene, camera, me, ball, net, remotes, inspect } as Window['boogle'];
 
 start();
-splashStage(0.3, 0.45, 'Waking up the graphics');
+splashStage(0.3, 0.45);
 Promise.all([rendererReady, physicsReady])
   .then(play)
   .catch((e: unknown) => {
     if (e instanceof AssetDownloadError || isChunkFetchError(e)) return bootFailed(e);
     console.error('[boot] startup failed:', e); // the lobby note can't say what went wrong
     graphicsFailed();
-    splashDone();
+    splashDone(true);
   });

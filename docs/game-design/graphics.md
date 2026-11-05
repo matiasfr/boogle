@@ -25,6 +25,15 @@
   the dressed body. A separate 45 s Buddy deadline releases that wait with a recoverable capsule if preparation stalls;
   it keeps the original preparation alive and dresses the avatar when it finishes. The water resolution ceiling applies
   before warm-up to avoid resizing its targets on the first frame.
+  The load strip shows Game files, Your character, World and Graphics from actual boot marks, with Room connection
+  on its own row. Waiting work never says Preparing. Completion requires the real completion marks: the 16 s
+  graphics escape and 45 s Buddy escape do not count. Failures never flash Ready. The original decorative bar and
+  gear stay, without a numeric or accessibility percentage. Reduced motion disables gear, fades and bar creep.
+  At 375 px the groups use two columns. Load details folds away navigation-relative milliseconds and remembers
+  that choice locally; Copy last load copies the displayed record. Pause → Dev → Perf exposes the same timeline
+  after entry, without another recorder. Unfinished graphics or character preparation stays in a quiet notice
+  after reveal and clears on actual completion. All new load-screen words are owner-review drafts;
+  [the build report](../reports/load-screen.md) lists them. Entry gates, retries, avatar behavior and gameplay are unchanged.
   Resolution changes and bounded first-20-second hitch diagnostics join the invisible session marks; CPU section and
   pipeline labels identify observed work, while an unexplained callback gap remains unassigned rather than blamed on water.
   `?dpr=fixed`
