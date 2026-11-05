@@ -238,6 +238,8 @@ Both beam grips use `currentCoopPeer` from `coop-identity.ts`, the same compatib
 
 ## Ancient technology (round 4, exploring)
 
+The glider's sea-gate cinematic waits until the player dismisses the reward reveal and any queued reward cards. The shared unlock, gate state, save and broadcast still happen immediately; only the local camera waits. Reset cancels a pending cinematic.
+
 The platforms remain visible from the start. Warm stone bodies, pale landing caps and brass corner keys match the island stone and device brass; the existing hook rings and teal undersides identify puzzle surfaces. The relief shares each pad's existing draw call. Device shafts use 0.1 opacity instead of 0.32, keeping a quiet distant cue in the spawn view. The tower nook's red cloth was a screen in front of its cosmetic crate, not a finish/checkpoint flag; it is removed so the crate and hook ring explain the side trip. These material changes are Local presentation; the optional double-jump course below replaces the first pillar's old reward ledge. Serves DESIGN.md 7 and 11.
 
 The jump rings track the animated calf pivots, including during a running jump. The first pillar's approach lip sits 4 cm below its landing top, avoiding overlapping coplanar faces. The sea-stack secret has a return hook slab beside the trestle, within 24 m of the stack; the hook returns you to rail height so leaving does not require a swim. Recovery selects existing track surface colliders, including stubs, rather than treating an open line's unfinished pier as built.

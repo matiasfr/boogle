@@ -37,7 +37,7 @@ import { dustRing } from './pieces.ts';
 import { gateHere, snapHooks } from './run.ts';
 import { RINGS, cancelPull, fireHook, move, resetMoves, syncControls, toggleGlide, whyNot } from './moves.ts';
 import { flashCanopy } from './moves-view.ts';
-import { rememberGot, youGot } from './got.ts';
+import { gettingItem, rememberGot, youGot } from './got.ts';
 import {
   DEVICES,
   FINDERS,
@@ -556,6 +556,7 @@ function placeSlab(g: Gate) {
   }
   if (g.t < 0) g.slab.position.y = down ? g.y0 - g.drop : g.y0;
 }
+let seaCameraPending = false;
 function openGate(id: GateId, here: boolean) {
   if (job.gate[id]) return;
   job.gate[id] = true;
@@ -576,17 +577,7 @@ function openGate(id: GateId, here: boolean) {
   if (id === 'sea') {
     // Light down the posts, one by one, from the tower to the slab; then it falls.
     litT = 0;
-    if (here) {
-      const from = padById('summit');
-      after(0.8, () =>
-        pullOut(
-          v.set(from.x + ox - 12, from.top + 14, from.z + 22).clone(),
-          v.set(from.x + ox - 4, from.top + 18, from.z + 26).clone(),
-          v.set(spec.x + ox, spec.y + 4, spec.z).clone(),
-          4.4,
-        ),
-      );
-    }
+    if (here) seaCameraPending = true;
     after(POSTS.length * POST_GAP + 0.4, drop);
   } else drop();
   save();
@@ -936,6 +927,18 @@ export function hasTechGoal() {
 
 // ---------------------------------------------------------------- the frame, and putting it all right
 export function updateTech(dt: number, now: number) {
+  // Unlock/save/broadcast immediately; only this player's camera waits for every reward card to be dismissed.
+  if (seaCameraPending && !gettingItem()) {
+    seaCameraPending = false;
+    const from = padById('summit'),
+      spec = GATES.sea;
+    pullOut(
+      v.set(from.x + ox - 12, from.top + 14, from.z + 22).clone(),
+      v.set(from.x + ox - 4, from.top + 18, from.z + 26).clone(),
+      v.set(spec.x + ox, spec.y + 4, spec.z).clone(),
+      4.4,
+    );
+  }
   updateRings(now);
   updateDevices(dt, now);
   updateGates(dt);
@@ -957,6 +960,7 @@ export function snapTech() {
 }
 snapHooks.push(snapTech);
 export function resetFinds() {
+  seaCameraPending = false;
   found.clear();
   hubbed.clear();
   move.jumps = move.pulls = move.flights = move.opened = 0;
