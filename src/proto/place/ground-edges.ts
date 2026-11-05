@@ -44,7 +44,8 @@ export function installGroundEdges(mesh: THREE.Mesh<THREE.BufferGeometry, THREE.
     // Narrow allows a restrained overlap; crisp keeps only a one-pixel tie band.
     const win = (a: typeof w.x, b: typeof w.x, c: typeof w.x) => {
       const d = a.sub(max(b, c));
-      const half = max(float(width), fwidth(d).mul(0.75));
+      // Uniform interiors have zero derivatives: keep smoothstep's bounds distinct there too.
+      const half = max(float(Math.max(width, 0.00001)), fwidth(d).mul(0.75));
       return ss(half.negate(), half, d);
     };
     const g = win(w.x, w.y, w.z),
