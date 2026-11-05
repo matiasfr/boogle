@@ -21,7 +21,6 @@
 
 import { BUILD } from '../build-id.ts';
 import { startStartupFrames } from './startup-frames.ts';
-import { loadStatus } from './load-status.ts';
 import { loadDetails } from './load-details.ts';
 
 performance.setResourceTimingBufferSize(1500); // dev's unbundled modules must not hide the later model downloads
@@ -31,8 +30,7 @@ const marks: BootMark[] = [];
 const listeners = new Set<() => void>();
 /** Read the existing record without collecting resource timings on every splash update. */
 export const bootMarks = (): readonly BootMark[] => marks;
-export const bootStatus = () => loadStatus(marks);
-/** Both views enter through this existing chunk, keeping the first-load request count unchanged. */
+/** Pause's developer view reads the retained record through this existing chunk. */
 export function mountLoadDetails(parent: HTMLElement) {
   return loadDetails(parent, bootTimeline, onBootMark);
 }
