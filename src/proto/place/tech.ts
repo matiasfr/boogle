@@ -31,7 +31,7 @@ import { coop, coopWire } from './coop.ts';
 import { deliver, dropChest, giftState, merged, prizeHooks, type GiftId } from './gifts.ts';
 import { H, addStatic, addStatics } from './land.ts';
 import { job, personalSlice, save } from './job.ts';
-import { ORIGIN, toWorld } from './layout.ts';
+import { ORIGIN, toWorld, lineAt } from './layout.ts';
 import { L1, L2 } from './lines.ts';
 import { dustRing } from './pieces.ts';
 import { gateHere, snapHooks } from './run.ts';
@@ -467,6 +467,43 @@ function buildGates() {
     const frame = new THREE.Group();
     frame.position.set(x, g.y, g.z);
     frame.rotation.y = g.yaw;
+    if (id === 'quarry') {
+      // Prepared earth follows the authored route on both sides, without granting any track.
+      const formation = new THREE.Group();
+      formation.rotation.y = -g.yaw;
+      const vertices: number[] = [];
+      const p = { x: 0, z: 0, ux: 0, uz: 1 };
+      const edge = (s: number, side: number) => {
+        lineAt(L2.spec.line, s, p);
+        const wx = p.x + ox + p.uz * side,
+          wz = p.z - p.ux * side;
+        return [wx - x, H(wx, wz) + 0.045 - g.y, wz - g.z];
+      };
+      for (let s = g.s - 20; s < g.s + 20; s += 2) {
+        const a = edge(s, -2),
+          b = edge(s, 2),
+          c = edge(s + 2, -2),
+          d = edge(s + 2, 2);
+        vertices.push(...a, ...b, ...c, ...b, ...d, ...c);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geo.computeVertexNormals();
+      const earth = new THREE.Mesh(geo, flat('#806546').clone());
+      earth.material.side = THREE.DoubleSide;
+      earth.receiveShadow = true;
+      formation.add(earth);
+      for (const offset of [-16, -8, 8, 16])
+        for (const side of [-2.3, 2.3]) {
+          const at = edge(g.s + offset, side);
+          const stake = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.3, 0.16), flat('#f5cf84'));
+          stake.position.set(at[0]!, at[1]! + 0.65, at[2]!);
+          stake.castShadow = true;
+          formation.add(stake);
+        }
+      frame.add(formation);
+      buildChestStands(frame);
+    }
     for (const side of [-1, 1]) {
       const jamb = new THREE.Mesh(new THREE.BoxGeometry(SLAB.pillar, SLAB.h + 0.8, SLAB.pillar), flat(STONE, 0.9));
       jamb.position.set((side * (SLAB.w + SLAB.pillar)) / 2, (SLAB.h + 0.8) / 2, 0);
@@ -735,6 +772,19 @@ function putFinds() {
       const q = hubSlot(SECRETS.indexOf(s));
       deliver(q.x, H(q.x, q.z), q.z, null, s.gift as GiftId);
     }
+  }
+}
+function buildChestStands(root: THREE.Group) {
+  for (const s of SECRETS.filter((s) => s.area === 'tower')) {
+    const x = s.x + ox,
+      y = yOf(s) - 0.5;
+    const stand = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1, 1.2), flat(STONE2));
+    stand.position.set(x, y, s.z);
+    stand.castShadow = stand.receiveShadow = true;
+    stand.position.sub(root.position).applyQuaternion(root.quaternion.clone().invert());
+    stand.quaternion.copy(root.quaternion).invert();
+    root.add(stand);
+    addStatic({ kind: 'box', hx: 0.85, hy: 0.5, hz: 0.6 }, { x, y, z: s.z });
   }
 }
 function updateMissed() {

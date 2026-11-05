@@ -58,6 +58,7 @@ export const run = {
   rack0: 0,
   stretch0: 0,
   turnT: 0,
+  departT: 2,
 };
 const headAtTurntable = () => -machine.GAP / 2 - machine.F; // on line 1's far side of s=0, the machine centred on the disc
 
@@ -172,6 +173,7 @@ function stepFeed(dt: number) {
     run.cradle0 = run.cradle;
     run.rack0 = run.rack;
     run.stretch0 = run.head;
+    run.departT = 0;
     protoCount('stretches');
     mark(`lay ${st.spec.label}`);
     setStationTags();
@@ -183,7 +185,11 @@ function stepLay(dt: number) {
   const { dir, line } = l.spec;
   const to = st.spec.to;
   const left = (to - run.head) * dir;
-  const step = Math.min(left, laySpeedOf(st) * dt);
+  // Integral of the two-second quadratic ease-out in speed, then the existing cruise.
+  const distance = (t: number) => (t < 2 ? (t * t) / 2 - (t * t * t) / 12 : t - 2 / 3);
+  const nextT = run.departT + dt;
+  const step = Math.min(left, laySpeedOf(st) * (distance(nextT) - distance(run.departT)));
+  run.departT = Math.min(2, nextT);
   run.head += dir * step;
   job.score.metres += step;
   l.track.layTo(l.track.u(run.head));
@@ -602,6 +608,7 @@ sharedSlice('run', {
     r0: run.rack0,
     c: run.cradle,
     r: run.rack,
+    depart: run.departT,
   }),
   set: () => {}, // ./coop.ts puts a moving machine right; a saved one stands at its station (`placeMachine`)
 });
@@ -616,6 +623,7 @@ export function putMachine(j: unknown) {
     r0?: unknown;
     c?: unknown;
     r?: unknown;
+    depart?: unknown;
   };
   const l = lines[q.k === 1 ? 1 : 0]!,
     st = stationOf(l);
@@ -629,6 +637,7 @@ export function putMachine(j: unknown) {
     run.rack0 = num(q.r0) ? q.r0 : 0;
     run.cradle = num(q.c) ? q.c : 0;
     run.rack = num(q.r) ? q.r : 0;
+    run.departT = num(q.depart) ? Math.max(0, Math.min(2, q.depart)) : 2;
     machine.at(l.spec.line, run.head, q.mode === 'running' ? -1 : l.spec.dir);
     machine.snap();
     machine.setCradle(run.cradle);

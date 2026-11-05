@@ -29,7 +29,7 @@ import {
 import { beamNeeded, coop } from './coop.ts';
 import { onCart, rack, rackTake } from './depot.ts';
 import { forge, rackFrom, rackTop, takeRail } from './forge.ts';
-import { nearestCrate, openCrate, owned, shelfSpot, showing, swapSlot } from './gifts.ts';
+import { nearestCrate, openCrate, owned, shelfSpot, showing, swapSlot, swapLabel } from './gifts.ts';
 import { H, PATH_SAMPLES } from './land.ts';
 import { job, save } from './job.ts';
 import { ORIGIN, SHELF, SPAWN, TUNE, VILLAGE, lineAt, railY, toWorld } from './layout.ts';
@@ -348,7 +348,7 @@ registerInteractable(() => {
       if (owned(slot).length)
         (out ??= []).push({
           id: `place-swap-${slot}`,
-          verb: `Swap ${slot}`,
+          verb: swapLabel(slot),
           at: shelfSpot(slot, promptAt(slot, 0, 0, 0)),
           run: () => swapSlot(slot),
         });

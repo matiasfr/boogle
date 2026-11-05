@@ -94,6 +94,8 @@ Shop clothes use the same remote validation as box gifts, so a partner also sees
 
 **Money** is a comic score: $15 a log, $25 a stone, $40 a rail, $1,500 for the beam, $500 a stretch. It buys nothing: the shop's tags chase it (below). `earn`, `spend`, `money` and `onMoney` are in `score.ts`, for The Boogler's prices.
 
+**Trail finds** (5 November owner choice, [solo design pass topic 1](../research/solo-design-pass.md)): yellow finds are flat stamped brass trinkets with a short metallic clank. Their existing personal IDs fill a small board beside the crystal row, including after reload. Blue crystals retain their specimen silhouette, magnet and chime. Neither collection awards currency, is spent, or gates progress. Presentation is Local; save ownership is unchanged.
+
 **The little guys** are mostly life, not labour; the depot's two are the one exception, a real but small job (the owner's "hungry" ladder). Round and stubby, in six colours, carrying logs, hammering at scaffolds, riding the machine and the trains' cab roofs, strolling, waving and following you for a few seconds (at most two at a time), and hopping at milestones. They stand on the ground at the frames. The village's number is how many you can see, up to 28, with someone new coming out of a cottage door each time it rises; three more at each camp, two helpers, four riders, five walking the first path, two at the cart. They walk round buildings and plots not yet built, by the nearer corner, give up on a goal that takes far too long, and have no colliders. Their walk is a waddle driven by how fast they really go: a rock from foot to foot, a bob over each step, feet that lift, hands swinging against them.
 
 Their boots stay planted during each stance while the other foot returns, separately from the torso's smaller rock and bob; soles follow the ground or their existing deck. Idle weight shifts and bounded glances at a nearby player are Local poses. A wave raises its hand first; milestone cheers stagger a crouch, a small hop and a soft landing with a grounded pause between hops. Workers give one brief cheer when their building finishes. These poses follow existing routes and construction facts; they change no deliveries, costs or round timing (DESIGN.md 11, Show, don't tell; little-guys research recommendations 3 and 7).
@@ -118,13 +120,15 @@ Settled train crates use the same idle edge hold on their own top footprint. A s
 
 When a halt appears, anyone intersecting its new foundation, ramps, bench or posts is moved onto its clear middle lane, at the same place along the platform. Each player's tab checks their own body, including when a partner unlocks trains or a snapshot restores a halt. Players already clear of the new solids stay put.
 
-The track layer's flatbed is already standable: a held normal jump from beside it lands on its deck and stays attached. The round-4 report of being unable to board was not reproduced in the local capture; its collider and jump tuning are unchanged.
+The track layer's flatbed is standable. Following the owner's 5 November choice (solo design pass topic 5), each laying departure eases out to its existing speed over two seconds. The pale rear boarding step is 2.8 m wide by 0.6 m deep, with its kinematic collider top exactly level with the visible deck. The existing run snapshot adds bounded departure elapsed time; old snapshots default to cruise. No machine art pass or seat changes. Boarding without sprinting still needs a person's playtest.
 
 First-use carry meshes and the glider's cloth and shadow pipelines warm behind loading; temporary canopy samples are removed before play. The 16-second escape deadline is unchanged. See [first-use measurements](../research/round4-first-use.md) for warm-cache counts and device limits.
 
 **The way back.** The first bridge has its reveal, edge lamps and commuters. Far Head has rockets at both ends and lamps sequencing along the trestle toward home; its reveal does not turn the player's camera. The continuous track is the lasting route home. Rails remain visible at the forge rack and its nearby Interact prompt remains **Take rails**. No replacement arrow, new instruction or marker was added. The Boogler's copy, gift lines, other prompts and banners are unchanged.
 
 ### Guidance after removing the objective
+
+**Boiler repair (5 November, solo design pass topic 2).** The old train exposes empty brass saddles matching the carried boiler's two bands. The boiler waits on a low pedestal at the forge apron; fitting seats the same part before the existing wake. This supersedes the earlier relationship weakness recorded below. Local presentation follows existing boiler/trains state; carrying, drop ownership and delivery stay with the cargo work.
 
 **Walking-in composition, 4 November:** Station 3's existing bill sits on the source side of its pile so
 the unchanged `great beam 0/1` row stays visible. The 53 m uphill great-tree source, receiver, feeder,
@@ -241,6 +245,7 @@ Both beam grips use `currentCoopPeer` from `coop-identity.ts`, the same compatib
 ## Ancient technology (round 4, exploring)
 
 The glider's sea-gate cinematic waits until the player dismisses the reward reveal and any queued reward cards. The shared unlock, gate state, save and broadcast still happen immediately; only the local camera waits. Reset cancels a pending cinematic.
+**Quarry route continuity (5 November, solo design pass topic 3).** A 40 m strip of graded earth follows the authored railway through the switch gate, with paired alignment stakes at 8 m and 16 m on each side. It remains earth before delivery: no rails, rail collider, station-cost or lever-reach change. Local scenery explains what the gate blocks.
 
 The platforms remain visible from the start. Warm stone bodies, pale landing caps and brass corner keys match the island stone and device brass; the existing hook rings and teal undersides identify puzzle surfaces. The relief shares each pad's existing draw call. Device shafts use 0.1 opacity instead of 0.32, keeping a quiet distant cue in the spawn view. The tower nook's red cloth was a screen in front of its cosmetic crate, not a finish/checkpoint flag; it is removed so the crate and hook ring explain the side trip. These material changes are Local presentation; the optional double-jump course below replaces the first pillar's old reward ledge. Serves DESIGN.md 7 and 11.
 
@@ -265,6 +270,8 @@ Both sealed gates have paired stone leaves, recessed courses, pale edge strips a
 **Reach:** `node dev/economy/place-level.ts` checks what each state of the run can stand on, and that nothing is reachable early. Known harmless skip: riding the machine across the stem as it lays gets you up onto the second pillar with one jump. The second device is still there on your way.
 
 ## Carried-resource display
+
+**Approach feedback (5 November, solo design pass topic 10).** Tower secret chests stand 1 m higher on plinths, with the nook chest shifted toward the preceding platform and clear of its central landing. The shop highlights the selected hanger; both wardrobe interactions preview the next owned item's existing name or “Take it off”. Draft composite wording for owner review: `Swap [slot]: [existing item name / Take it off]`. No Boogler lines are changed. Only a newly filled log UI cell pulses 1 → 1.12 → 1 over 0.16 s; reduced motion retains the fill/count response without a pulse. No avatar or collider scales, and no axe placement changes.
 
 Owner approved 4 November, following [the carried-tag look brief](../brainstorms/carried-tag-look.md), "Four rows of 4". Buddy's worn load is the continuous display. Place replaces the bottom-centre haul pill with a background-free block beside the load: four columns, two rows at capacity 8 and four with the frame at capacity 16. Cells are 19 px square with 3 px gaps, a 2.5 px dark border and a soft 2 px drop shadow. Empty cells stay translucent cream (`#fff3e099`); filled cells use logs `#c98a4b`, blue rails `#579fbc` and grey-violet stone `#a49bad`, in that fixed order. "Full" appears only when the last cell fills. Beam and boiler retain their icon and name, without slots or a background. Text uses the display font with a thick dark outline. Classic Haul and its variants keep their existing chip.
 

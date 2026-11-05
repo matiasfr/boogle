@@ -8,7 +8,7 @@
 import * as THREE from 'three/webgpu';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { NO_TARGETS, registerInteractable, type Interactable } from '../../player/hands.ts';
+import { NO_TARGETS, registerInteractable, interactTarget, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { playMark } from '../mark.ts';
 import { hasFact } from './growth.ts';
@@ -24,6 +24,7 @@ import {
   tryOn,
   wearOwned,
   swapSlot,
+  swapLabel,
   type Slot,
   type Stock,
 } from './gifts.ts';
@@ -208,6 +209,13 @@ function take() {
 const prompts = STOCK.map(() => new THREE.Vector3());
 const rail = new Map<Slot, THREE.Vector3>();
 const RAIL_X: Record<Slot, number> = { hat: -0.2, accessory: 0.65, outfit: 1.5, pet: 2.3 };
+const hangerHighlight = roomMesh([
+  ['b', -0.11, 1.29, -3.4, 0.34, 0.07, 0.06, '#fff0a0', 0, 0.5],
+  ['b', 0.11, 1.29, -3.4, 0.34, 0.07, 0.06, '#fff0a0', 0, -0.5],
+  ['b', 0, 1.22, -3.4, 0.55, 0.07, 0.06, '#fff0a0'],
+]);
+hangerHighlight.visible = false;
+r.near.add(hangerHighlight);
 registerInteractable(() => {
   const b = me.body;
   if (!b || !r.ready) return NO_TARGETS;
@@ -245,7 +253,7 @@ registerInteractable(() => {
       roomToWorld(r, RAIL_X[slot], 1.55, -3.3, at);
       (out ??= []).push({
         id: `place-rail-${slot}`,
-        verb: `Swap ${slot}`,
+        verb: swapLabel(slot),
         at,
         run: () => {
           swapSlot(slot);
@@ -266,6 +274,10 @@ onRoom((room, inside) => {
 });
 export function updateShop() {
   if (!r.near.visible) return;
+  const target = interactTarget()?.id;
+  const slot = (Object.keys(RAIL_X) as Slot[]).find((s) => target === `place-rail-${s}`);
+  hangerHighlight.visible = !!slot;
+  if (slot) hangerHighlight.position.x = RAIL_X[slot];
   redrawItems();
   redrawTags();
 }

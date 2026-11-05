@@ -8,7 +8,7 @@ import { readableIntensity } from '../../render/readable-unlit.ts';
 import { scene } from '../../render/scene.ts';
 import { protoCount } from '../count.ts';
 import { flat } from '../flat.ts';
-import { pop } from '../minis/common.ts';
+import { clank } from '../../render/machine-sfx.ts';
 import { draw } from '../net/boxes.ts';
 import { H, PATH_SAMPLES, addStatic } from './land.ts';
 import { boilerShape } from './chop.ts';
@@ -18,6 +18,7 @@ import { BUOYS, FAR, FORGE, ORIGIN, SCOPE, lineAt, toWorld, LINES, type LinePoin
 import { addFoot } from './sites.ts';
 import { staticPart } from './town.ts';
 import { bigCargo } from './big-cargo.ts';
+import { shelfGroup } from './gifts.ts';
 
 // ---------------------------------------------------------------- small finds on the way
 const FIND_SPOTS = [
@@ -38,20 +39,44 @@ const FIND_SPOTS = [
   ].map(([x, z], k) => ({ id: 50 + k, x: toWorld(x!), z: z!, y: H(toWorld(x!), z!) + 1 })),
 ];
 const found: number[] = [];
-const findGeo = new THREE.OctahedronGeometry(0.42);
+const findGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.09, 8).rotateX(Math.PI / 2);
 const findMat = new THREE.MeshStandardNodeMaterial({
   color: '#ffcf33',
   roughness: 0.35,
   metalness: 0.4,
   emissive: '#7a5a08',
 });
-const findMeshes = FIND_SPOTS.map((f) => {
+function trinket() {
   const m = new THREE.Mesh(findGeo, findMat);
+  // A raised crossed stamp reads as worked brass, rather than another crystal.
+  for (const angle of [-0.6, 0.6]) {
+    const stamp = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.48, 0.025), flat('#79501e'));
+    stamp.position.z = 0.055;
+    stamp.rotation.z = angle;
+    m.add(stamp);
+  }
+  return m;
+}
+const findMeshes = FIND_SPOTS.map((f) => {
+  const m = trinket();
   m.position.set(f.x, f.y, f.z);
   m.castShadow = true;
   scene.add(m);
   return m;
 });
+// A small pinned board beside the specimens; existing personal find IDs fill it.
+const findBoard = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.2, 0.12), flat('#493b2c'));
+findBoard.position.set(3.6, 1.55, -0.2);
+shelfGroup.add(findBoard);
+const displayedFinds = FIND_SPOTS.map((f, k) => {
+  const m = trinket();
+  m.scale.setScalar(0.42);
+  m.position.set(((k % 3) - 1) * 0.44, 0.8 - Math.floor(k / 3) * 0.43, 0.1);
+  m.visible = false;
+  findBoard.add(m);
+  return { id: f.id, m };
+});
+const drawFinds = () => displayedFinds.forEach(({ id, m }) => (m.visible = found.includes(id)));
 const sparkle = new THREE.Color('#ffe08a');
 export function updateFinds(dt: number) {
   const b = me.body;
@@ -63,7 +88,8 @@ export function updateFinds(dt: number) {
     if (!b || Math.hypot(b.position.x - f.x, b.position.z - f.z) > 2.2) return;
     if (Math.abs(b.position.y - f.y) > 3) return;
     found.push(f.id);
-    pop(5, 0.6);
+    clank(f.x, f.z);
+    drawFinds();
     protoCount('finds');
     for (let n = 0; n < 14; n++) {
       const a = (n / 14) * Math.PI * 2;
@@ -85,12 +111,16 @@ export function updateFinds(dt: number) {
     save();
   });
 }
-export const clearFinds = () => void (found.length = 0);
+export const clearFinds = () => {
+  found.length = 0;
+  drawFinds();
+};
 personalSlice('goldFinds', {
   get: () => found.slice(),
   set: (v) => {
     found.length = 0;
     if (Array.isArray(v)) for (const f of FIND_SPOTS) if (v.includes(f.id)) found.push(f.id);
+    drawFinds();
   },
 });
 
@@ -150,12 +180,17 @@ const BX = toWorld(FORGE.x + 6),
   BZ = FORGE.z + 8.4;
 const BY = H(BX, BZ);
 const boiler = boilerShape();
-boiler.position.set(BX, BY + 0.55, BZ);
+boiler.position.set(BX, BY + 1.15, BZ);
 boiler.visible = false;
-scene.add(boiler);
+const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.3, 0.6, 8), flat('#b6a080'));
+// The stand stays at the forge when a dropped boiler lies elsewhere.
+pedestal.position.set(BX, BY + 0.3, BZ);
+pedestal.castShadow = pedestal.receiveShadow = true;
+scene.add(boiler, pedestal);
+addStatic({ kind: 'cylinder', rTop: 1.15, rBottom: 1.3, h: 0.6, segments: 8 }, { x: BX, y: BY + 0.3, z: BZ });
 export const boilerAt = () => {
   const p = bigCargo.boiler.ground;
-  return p ? { x: p.x, y: p.y + 1.4, z: p.z } : { x: BX, y: BY + 1.4, z: BZ };
+  return p ? { x: p.x, y: p.y + 1.4, z: p.z } : { x: BX, y: BY + 2, z: BZ };
 };
 /** Each frame: it stands there while it's waiting. */
 export const updateBoiler = () => {

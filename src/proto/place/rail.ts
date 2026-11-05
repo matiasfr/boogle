@@ -494,7 +494,22 @@ export function buildMachine() {
     locoRock = look.cars[0]!;
   const pose = { line: null as Line | null, s: 0, sign: 1 };
   const onDeck = TRAILER.top;
-  const flatbed = makeCar(TRAILER, flatRock, () => m.onStep(FIXED), {});
+  const step = { hx: 1.4, hz: 0.3, h: 0.16, z: -1.9 };
+  const flatbed = makeCar(TRAILER, flatRock, () => m.onStep(FIXED), {
+    shapes: [
+      {
+        kind: 'box',
+        hx: step.hx,
+        hy: step.h / 2,
+        hz: step.hz,
+        offset: { x: 0, y: (TRAILER.top - BOTTOM) / 2 - step.h / 2, z: step.z },
+      },
+    ],
+  });
+  flatbed.platform.hx = step.hx;
+  flatbed.platform.hz = Math.abs(step.z) + step.hz;
+  flatbed.supportAt = (_x, z) =>
+    z < -TRAILER.hz ? { x: 0, z: step.z, hx: step.hx, hz: step.hz } : { x: 0, z: 0, hx: TRAILER.hx, hz: TRAILER.hz };
   const loco = makeCar(LOCO, locoRock, () => {}, {});
   const box3 = (w: number, h: number, d: number, color: string, x: number, y: number, z: number, rx = 0) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color, 0.8));
@@ -504,6 +519,7 @@ export function buildMachine() {
     flatRock.add(m);
     return m;
   };
+  box3(step.hx * 2, step.h, step.hz * 2, '#f4d58a', 0, onDeck - step.h / 2, step.z);
   // Cradle sides, in the flatbed's +z half (its front), open at the top.
   let heldRail: THREE.Object3D;
   if (kitLook) heldRail = kitLook.heldRail;
