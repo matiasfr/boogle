@@ -6,26 +6,32 @@
 // Barks: a short line in a bubble over someone's head when you walk in or pass by, so growth reaches you with no talk to open:
 // on the door of a room, or from a stroller in the street once the town's changed. At most one at a time. Local.
 import * as THREE from 'three/webgpu';
+import { angleLerp } from '../../math.ts';
 import { conversation } from '../../player/conversation.ts';
+import { isFirstVisit } from '../../player/arrival.ts';
 import { NO_TARGETS, registerInteractable, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { playMark } from '../mark.ts';
 import { camera } from '../../render/scene.ts';
+import { rayHit, raycastClosest } from '../../physics/engine.ts';
+import { GROUP } from '../../physics/physics.ts';
 import type { VoiceSpec } from '../../render/npc-voice.ts';
 import { pullOn } from './celebrate.ts';
 import { babble } from './chatter.ts';
-import { addResident, folk, type Guy, type Mood } from './folk.ts';
+import { addGreeter, addResident, folk, type Guy, type Mood } from './folk.ts';
 import { showing } from './gifts.ts';
 import { newestFact } from './growth.ts';
-import { personalSlice } from './job.ts';
+import { job, personalSlice, save } from './job.ts';
 import { VILLAGE, toWorld, type RoomId } from './layout.ts';
 import { indoors, onRoom, roomToWorld, rooms, type Room } from './rooms.ts';
-import { startTalk, type Answer, type Beat } from './talk.ts';
+import { endTalk, startTalk, type Answer, type Beat } from './talk.ts';
+import { SHORE_ARRIVAL } from './shore-layout.ts';
 import {
   BYE,
   GO_ON,
   RESIDENTS,
   RUMOUR_ASK,
+  SHORE_ASK,
   STREET_NOTICE,
   STREET_RUMOURS,
   type Fact,
@@ -103,6 +109,12 @@ for (const id of IDS) {
   guys[id] = addResident(V.x, V.y + (c.up ?? 0), V.z, r.yaw + c.yaw, c.act, c.color);
 }
 const inRoom = (r: Room) => IDS.filter((id) => CAST[id].room === r.id);
+const shoreWorker = SHORE_ARRIVAL ? addGreeter(toWorld(-95), VILLAGE.y, 12) : null;
+const shoreLine = SHORE_ARRIVAL && new URLSearchParams(location.search).get('greeting') !== 'off';
+let shoreGesture = -1;
+let shoreTalking = false;
+const shorePrompt = new THREE.Vector3();
+const shoreSight = rayHit();
 
 // ---------------------------------------------------------------- what each of you remembers
 const seen = {
@@ -113,6 +125,9 @@ const seen = {
   hello: {} as Partial<Record<ResidentId, boolean>>,
   street: null as Fact | null,
   streetRumour: 0,
+  // A reload on the walk retains eligibility; an ordinary returning player doesn't acquire it.
+  shoreNewcomer: SHORE_ARRIVAL && isFirstVisit(),
+  shoreAsk: false,
 };
 personalSlice('town', {
   get: () => seen,
@@ -125,6 +140,8 @@ personalSlice('town', {
     seen.hello = j.hello ?? {};
     seen.street = j.street ?? null;
     seen.streetRumour = typeof j.streetRumour === 'number' ? j.streetRumour : 0;
+    seen.shoreNewcomer = j.shoreNewcomer === true;
+    seen.shoreAsk = j.shoreAsk === true;
   },
 });
 const turn = (list: string[], book: Partial<Record<ResidentId, number>>, id: ResidentId) => {
@@ -208,6 +225,37 @@ registerInteractable(() => {
     at.set(g.x, (g.fy ?? g.y) + 1.5, g.z);
     (out ??= []).push({ id: `place-talk-${id}`, verb: 'Talk', at, run: () => open(id) });
   }
+  if (
+    shoreWorker &&
+    shoreLine &&
+    !job.awake &&
+    !indoors.room &&
+    Math.hypot(p.x - shoreWorker.x, p.z - shoreWorker.z) < 3.3 &&
+    Math.abs(p.y - VILLAGE.y) < 3
+  ) {
+    shorePrompt.set(shoreWorker.x, VILLAGE.y + 1.5, shoreWorker.z);
+    (out ??= []).push({
+      id: 'place-talk-shore',
+      verb: 'Talk',
+      at: shorePrompt,
+      run: () => {
+        if (job.awake) return;
+        stopBark();
+        const started = startTalk(
+          { name: 'Worker', voice: CAST.pip.voice, x: shoreWorker.x, z: shoreWorker.z, color: '#f0c030' },
+          { say: SHORE_ASK, answers: [{ label: BYE, then: () => null }] },
+          () => {
+            shoreTalking = false;
+          },
+        );
+        if (started) {
+          shoreTalking = true;
+          seen.shoreNewcomer = false;
+          heardShoreAsk('talk');
+        }
+      },
+    });
+  }
   return out ?? NO_TARGETS;
 });
 
@@ -268,6 +316,51 @@ onRoom((r, inside) => {
 });
 const VX = toWorld(VILLAGE.x);
 const screen = new THREE.Vector3();
+function heardShoreAsk(via: 'bark' | 'talk') {
+  if (!seen.shoreAsk) playMark('ask heard', { via });
+  seen.shoreAsk = true;
+  save();
+}
+/** Per-person presentation only: the railway never waits for this invitation. */
+function shoreGreeting(dt: number) {
+  const g = shoreWorker;
+  if (!g) return;
+  if (job.awake) {
+    // Also cancels a step-out or bubble if a partner wakes it during the approach.
+    seen.shoreNewcomer = false;
+    shoreGesture = -1;
+    g.mood = 'idle';
+    if (barker === g) stopBark();
+    if (shoreTalking) endTalk();
+    return;
+  }
+  const b = me.body;
+  if (!b) return;
+  if (shoreGesture < 0) {
+    if (!seen.shoreNewcomer || me.down || me.swimming || me.coyote <= 0 || conversation.open || barker || indoors.room)
+      return;
+    if (Math.hypot(b.position.x - g.x, b.position.z - g.z) > 6 || Math.abs(b.position.y - VILLAGE.y) > 3) return;
+    screen.set(g.x, VILLAGE.y + 0.7, g.z).project(camera);
+    if (screen.z < -1 || screen.z > 1 || Math.abs(screen.x) > 0.85 || Math.abs(screen.y) > 0.85) return;
+    shorePrompt.set(g.x, VILLAGE.y + 0.7, g.z);
+    if (raycastClosest(camera.position, shorePrompt, { mask: GROUP.SCENERY }, shoreSight)) return;
+    seen.shoreNewcomer = false;
+    shoreGesture = 0;
+    save();
+  }
+  const was = shoreGesture;
+  shoreGesture += dt;
+  g.x = toWorld(-95) - 1.5 * Math.min(1, shoreGesture / 0.9);
+  const yaw =
+    shoreGesture < 2.6 ? Math.atan2(b.position.x - g.x, b.position.z - g.z) : Math.atan2(toWorld(-104) - g.x, -4 - g.z);
+  g.yaw = angleLerp(g.yaw, yaw, Math.min(1, dt * 5));
+  g.mood = shoreGesture < 0.9 ? 'walk' : shoreGesture < 2.6 ? 'wave' : 'idle';
+  if (was < 0.9 && shoreGesture >= 0.9 && shoreLine && !conversation.open) {
+    bark(g, SHORE_ASK);
+    barkLeft = 5;
+    heardShoreAsk('bark');
+  }
+}
 function street(dt: number) {
   const b = me.body;
   if (!b || indoors.room || barker || barkGap > 0) return;
@@ -307,6 +400,10 @@ export function resetResidents() {
   seen.hello = {};
   seen.street = null;
   seen.streetRumour = 0;
+  seen.shoreNewcomer = SHORE_ARRIVAL && isFirstVisit();
+  seen.shoreAsk = false;
+  shoreGesture = -1;
+  if (shoreWorker) shoreWorker.x = toWorld(-95);
   pending.length = 0;
   stopBark();
 }
@@ -316,6 +413,7 @@ export function updateResidents(dt: number) {
     guys[id].on = near;
   }
   barkGap = Math.max(0, barkGap - dt);
+  shoreGreeting(dt);
   if (conversation.open || showing() || pullOn()) {
     stopBark();
     return;

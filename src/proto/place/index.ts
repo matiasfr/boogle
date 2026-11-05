@@ -41,7 +41,8 @@ import { fanfare } from '../minis/common.ts';
 import { drawHeaps, hopTo, topSlot, updateCrates, type Kind } from '../net/crates.ts';
 import { protoCount } from '../count.ts';
 import { pageQuery } from '../flags.ts';
-import { playObjective, playWhere } from '../mark.ts';
+import { playMark, playObjective, playWhere } from '../mark.ts';
+import { SHORE_ARRIVAL } from './shore-layout.ts';
 import { H, buildLand, insidePlace } from './land.ts';
 import { registerPlaceShore } from './water.ts';
 import { clearMoments, showBanner, updateMoments } from './celebrate.ts';
@@ -446,6 +447,14 @@ let ready = false,
 const smokeCol = new THREE.Color('#f2efe8');
 let smokeAcc = 0;
 let lastObjective = '';
+// Local playtest timestamps; never drive progress or a shared scene.
+let shoreFalling = false,
+  shoreStood = false,
+  shoreTown = false,
+  shoreWet = false;
+let shoreAwake: boolean | null = null;
+let shoreStandAt = 0,
+  shoreTownAt = 0;
 onFrame(
   ({ dt, now }) => {
     const b = me.body;
@@ -493,8 +502,27 @@ onFrame(
     });
     updatePieces(dt);
     if (fallArrival.active) {
+      if (SHORE_ARRIVAL) shoreFalling = true;
       coop.tick(dt, now);
       return; // keep the shared railway running while the opening owns this player's camera and input
+    }
+    if (SHORE_ARRIVAL && b) {
+      if (shoreFalling && !shoreStood && me.coyote > 0 && !me.down && !me.swimming) {
+        shoreStood = true;
+        shoreStandAt = now;
+        playMark('stood up');
+      }
+      if (!shoreTown && Math.hypot(b.position.x - toWorld(-98), b.position.z - 9) < 6) {
+        shoreTown = true;
+        shoreTownAt = now;
+        playMark('reached town', { seconds: shoreStood ? (now - shoreStandAt) / 1000 : null });
+      }
+      if (shoreAwake === false && job.awake) {
+        playMark('machine woken', { seconds: shoreTown ? (now - shoreTownAt) / 1000 : null });
+      }
+      shoreAwake = job.awake;
+      if (me.swimming && !shoreWet) playMark('entered water');
+      shoreWet = me.swimming;
     }
     updateMoments(dt);
     updateGifts(dt, now);

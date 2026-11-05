@@ -1,5 +1,26 @@
 # 6.14 Arrival
 
+## Shore arrival comparison
+
+`?proto=place&v=shore-arrival&intro=1` moves a newcomer's existing trolley/title fall to a disposable
+west-shore clearing at local `(-199,10)`, facing inland. Its level 16 m clearing is 3 m high; a broad
+ramp reaches village height by x=-150, with a 130 m path between the cottages to the town threshold
+and one low optional rock hop. Mesh and collision use the same variant-only height grid. The village
+SPAWN remains the fallback for returning players, unsafe restores and recovery. Saved valid positions
+still restore on reload. The bare URL and other variants retain their terrain and arrival.
+
+The variant uses `proto-place-shore-arrival`, or `proto-place-shore-arrival-coop` with `&coop=1`;
+each newcomer has their own fall while partners keep playing. Today's `?proto=place&intro=1` is the
+village control with the same solo/co-op rules. `&greeting=off` keeps the shore and removes the ask.
+A threshold worker gives a grounded newcomer one visible passing wave and a five-second bubble while
+the machine sleeps: “Machine's asleep. Give us a hand?” Optional Talk can recover it. The ask and heard
+history are Local; a partner waking the shared machine cancels it. There is no camera lock or response gate.
+Playtest marks record stood up, reached town, ask heard, machine woken and entered water, including
+stand-up-to-town and town-to-machine durations. This implements the bounded option A comparison in
+[shore-arrival research](../research/shore-arrival.md), recommendations 1–6; it does not adopt a lasting shore grade.
+
+## Existing arrival
+
 - **First visit.** With no name saved on this device (`boogle.name`), you fall into the world (below). The card asks for
   nothing but a name box already filled with a friendly random name ("Sunny Otter", "Jolly Puffin", ...), the eight colour
   swatches (one picked at random) and one big Jump in. Pressing Jump in straight away is fine. The loading screen covers it
