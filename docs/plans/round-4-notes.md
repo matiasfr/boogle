@@ -114,7 +114,7 @@ Answers are being collected on the [review page](https://claude.ai/artifact/4MQm
 
 - [ ] Spread abilities out: hook to glider was 49 s. Double jump later in the game.
 - [x] A real double-jump challenge where you first get it, not one higher ledge. Implemented on `codex/double-jump-challenge`: eight broad warm stone blocks, dry recovery below, existing reward and unlock timing. [Plan and verification](double-jump-challenge.md); remains unticked until shipped or closed by the owner.
-- [ ] Hook as a swing (Just Cause, Spider-Man), releasing into the glider, instead of an on-rails pull. Prototype.
+- [x] Hook as a swing: rejected (owner, 5 November). The hook stays a zip-line pull to its target, and the prototype was stopped with nothing built.
 - [ ] Jump upgrades later that also benefit the glider, since double jump while gliding felt good.
 - [ ] Glide on L1 or jump: open, because jump clashes with double jump.
 - [ ] Device cinematic goes only to whoever takes it, and suggests you can glide to the island when you can't. Decide whether that's right.
