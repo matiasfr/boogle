@@ -1,5 +1,27 @@
 # Track-layer machine art and deck places
 
+## 5 November follow-up: prefabricated panels
+
+The owner now directs one prefabricated panel (both rails and their sleepers) per existing stock decrement. The approved trolley, three-stage hoist and two clamps pick from stacked panels, carry forward, lower, release with a small clunk/contact dust, then return empty. Every moving part remains rigid. Collision, authority, throughput, seats and exits stay unchanged; normal-camera evidence must not stage the camera. This supersedes the prior single-rail mapping question.
+
+Measured stock-grid lengths and cruise periods, derived from the current route spans, rack counts and speeds:
+
+| Stretch | Panel length (m) | Cruise cycle (s) |
+| --- | ---: | ---: |
+| L1 | 13.4167 | 2.6833 |
+| Q1 | 5.8333 | 1.1667 |
+| Q2 | 6.6667 | 1.1111 |
+| Q3 | 4.6667 | 0.7778 |
+| Q4 | 6.7500 | 0.84375 |
+| Q5 | 10.8333 | 1.2037 |
+| Q6 | 6.1250 | 0.68056 |
+
+The two-second departure ease naturally stretches the early cycles. Q5/Q6 stock can reach 24/32, so the old twelve-visible-rail cap cannot describe a conserved panel magazine. Curved/sloped panels must reuse the actual existing piece matrices; a straight long prop will not match the committed bed.
+
+**Unresolved integration constraint, verified by code review:** `stepLay` commits track continuously with `track.layTo` before calculating each stock decrement. At a decrement head H, the proposed whole panel occupies approximately H−L−2.2 through H−2.2; the deck and power bogies already ride within that span. Keeping those committed pieces visible duplicates a carried panel; hiding them until release exposes invisible collidable track; placing ahead shows uncommitted track. Side-loading below the body can avoid physical intersection but cannot solve this visibility conflict. L1 also stops between stock boundaries: T1 at s=150 is 0.75 m past the stock boundary s=150.75, requiring either a partial-panel reveal or a release without a decrement.
+
+A narrow owner clarification is pending: permit batching only the visuals at stock boundaries (with an explicit partial reveal at station stops), or retain continuous visible track and pause whole-panel implementation. No timing, collision, visibility or magazine workaround has been implemented. This is distinct from the now-settled choice of panels over individual rails.
+
 ## 5 November follow-up: readable running gear and approved gantry storyboard
 
 The owner approved `boogle-daily/.look/previz/track-layer-motion/board.md` and its six shots. The gantry integration has a surfaced mapping conflict: existing rail pairs commit every 3 m (0.6 s at normal 5 m/s cruise), while stock decreases proportionally over much longer distances. L1's stock interval is 2.683 s at cruise; later stretches range from 0.681–1.204 s. A literal conserved one-stock-item/one-track-rail cycle cannot describe all existing rail meshes without changing gameplay. Owner clarification is pending between representative stock-decrement cycles and pausing that mechanism. No dependent gantry change starts until that choice is resolved.
