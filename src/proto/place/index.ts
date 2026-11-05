@@ -35,7 +35,6 @@ import { softWall } from '../../entities/player/state.ts';
 import { carry } from '../../physics/platforms.ts';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { dressSea } from '../crossing/sea.ts';
 import { extendSky } from '../crossing/sky.ts';
 import { fanfare } from '../minis/common.ts';
 import { drawHeaps, hopTo, topSlot, updateCrates, type Kind } from '../net/crates.ts';
@@ -139,7 +138,6 @@ freshStart.prepare = () => {
 buildLand();
 registerPlaceShore();
 buildTech();
-dressSea();
 extendSky();
 buildSigns();
 haulHooks.moved = () => true; // today's island's bundles aren't in this world

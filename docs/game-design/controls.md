@@ -10,24 +10,24 @@ in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/
 [ping.ts](../../src/features/ping.ts), [pause.ts](../../src/features/pause.ts), [dino.ts](../../src/features/dino.ts),
 and [updates.ts](../../src/features/updates.ts).
 
-| Control (id) | Kind | Keyboard / mouse | Pad | Touch | Group | Context |
-|---|---|---|---|---|---|---|
-| Move (`move`) | described | WASD, ↑ ↓ (← → too while the mouse is locked) | Left stick | Drag on the left | Getting around | |
-| Jump, or swim up (`jump`) | action | Space | A | Jump | Getting around | |
-| Sprint (`sprint`) | action | Left Shift | L3 (latches) | Push the stick far | Getting around | |
-| Look around (`look`) | described | Mouse; unlocked: drag, two-finger scroll, ← → | Right stick | Drag on the right | Camera | |
-| Bring the ball back (`respawn`) | action | R | View | none | The ball | |
-| Talk, pick up, take (`interact`) | action | E | X | Grab (the main button; its label follows what it would do) | Hands | |
-| Use what you hold (`use`) | action | Left click | RT | the main button: Throw or Sprout when it has no target | Hands | |
-| Throw what you hold (`toss`) | described | (use) | RT | Toss | Hands | holding |
-| Crouch, ground pound (`guest-crouch`) | action | Left Shift (read by hand) | LT | none | Getting around | as the guest |
-| Punch, kick, dive (`guest-punch`) | described | Left click (the `use` action's empty hands) | RT | Grab, when nothing is in reach | Getting around | as the guest |
-| Answer in a talk (`talk-answer`) | described | 1-8, ↑ ↓ (E, Space, Enter: next or say it; Esc leaves) | D-pad ↑ ↓ or left stick, A: next or say it (B leaves; X does nothing) | Tap an answer | Friends | talking |
-| Honk (`honk`) | action | T | Y | Honk | Friends | |
-| Ping where you look (`ping`) | action | G, middle click | D-pad ← | Ping | Friends | |
-| Menu and controls (`pause`) | action | Esc, H (opens on Controls) | Menu | corner menu button | Menu | |
-| Back (`back`) | action | (Esc, in each menu and talk) | B: closes talks and menus, leaves a text box, puts a wound-up throw away | close buttons | Menu | |
-| Reload for the new version (`update-reload`) | action, hidden | (notice button) | first free slot, only while the update notice shows | notice button | none | |
+| Control (id)                                 | Kind           | Keyboard / mouse                                       | Pad                                                                      | Touch                                                      | Group          | Context      |
+| -------------------------------------------- | -------------- | ------------------------------------------------------ | ------------------------------------------------------------------------ | ---------------------------------------------------------- | -------------- | ------------ |
+| Move (`move`)                                | described      | WASD, ↑ ↓ (← → too while the mouse is locked)          | Left stick                                                               | Drag on the left                                           | Getting around |              |
+| Jump, or swim up (`jump`)                    | action         | Space                                                  | A                                                                        | Jump                                                       | Getting around |              |
+| Sprint (`sprint`)                            | action         | Left Shift                                             | L3 (latches)                                                             | Push the stick far                                         | Getting around |              |
+| Look around (`look`)                         | described      | Mouse; unlocked: drag, two-finger scroll, ← →          | Right stick                                                              | Drag on the right                                          | Camera         |              |
+| Bring the ball back (`respawn`)              | action         | R                                                      | View                                                                     | none                                                       | The ball       |              |
+| Talk, pick up, take (`interact`)             | action         | E                                                      | X                                                                        | Grab (the main button; its label follows what it would do) | Hands          |              |
+| Use what you hold (`use`)                    | action         | Left click                                             | RT                                                                       | the main button: Throw or Sprout when it has no target     | Hands          |              |
+| Throw what you hold (`toss`)                 | described      | (use)                                                  | RT                                                                       | Toss                                                       | Hands          | holding      |
+| Crouch, ground pound (`guest-crouch`)        | action         | Left Shift (read by hand)                              | LT                                                                       | none                                                       | Getting around | as the guest |
+| Punch, kick, dive (`guest-punch`)            | described      | Left click (the `use` action's empty hands)            | RT                                                                       | Grab, when nothing is in reach                             | Getting around | as the guest |
+| Answer in a talk (`talk-answer`)             | described      | 1-8, ↑ ↓ (E, Space, Enter: next or say it; Esc leaves) | D-pad ↑ ↓ or left stick, A: next or say it (B leaves; X does nothing)    | Tap an answer                                              | Friends        | talking      |
+| Honk (`honk`)                                | action         | T                                                      | Y                                                                        | Honk                                                       | Friends        |              |
+| Ping where you look (`ping`)                 | action         | G, middle click                                        | D-pad ←                                                                  | Ping                                                       | Friends        |              |
+| Menu and controls (`pause`)                  | action         | Esc, H (opens on Controls)                             | Menu                                                                     | corner menu button                                         | Menu           |              |
+| Back (`back`)                                | action         | (Esc, in each menu and talk)                           | B: closes talks and menus, leaves a text box, puts a wound-up throw away | close buttons                                              | Menu           |              |
+| Reload for the new version (`update-reload`) | action, hidden | (notice button)                                        | first free slot, only while the update notice shows                      | notice button                                              | none           |              |
 
 Notes:
 
@@ -65,7 +65,7 @@ Notes:
   slot if that is ever taken), so AGENTS.md requires at least one to stay unclaimed.
 - Touch buttons for Honk and Ping are built by the registry; Jump and the main button are in `index.html`;
   Toss is built by [held.ts](../../src/features/held.ts).
-- There is no Dive action, C binding, touch button or guide row. On `water=new`, high falls plunge and resurface
+- There is no Dive action, C binding, touch button or guide row. On Place and crossing, high falls plunge and resurface
   automatically; ordinary entries stay at the surface ([player swimming](player.md#swim)).
 - **Seated in a vehicle** (`setSeated` in [src/player/input.ts](../../src/player/input.ts); the soapbox): ← → only
   steer (no arrow-key camera turn), a two-finger scroll does not look, and `body.seated` shows the driving touch layout:

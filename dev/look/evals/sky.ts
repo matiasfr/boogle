@@ -1,5 +1,5 @@
-// Matched sky boards: --room proto-<page> --eval dev/look/evals/sky.ts, &skyShot=home|wide|town|gorge|crossing|beach.
-// The toon water background is a capture-only override; its custom water reflections still sample the demo cube.
+// Matched sky boards: --room proto-<page> --eval dev/look/evals/sky.ts, &skyShot=home|wide|town|gorge|crossing.
+// Demo-only beach framing is archived; Place's production sky stays frozen.
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const q = new URLSearchParams(location.search);
 const shot = q.get('skyShot') ?? 'home';
@@ -12,14 +12,8 @@ const { paintAvatar } = (await import(
   '/src/player/avatars.ts' as string
 )) as typeof import('../../../src/player/avatars.ts');
 const { onFrame } = (await import('/src/loop.ts' as string)) as typeof import('../../../src/loop.ts');
-const { skyDebug, updateSky } = (await import(
-  '/src/render/sky.ts' as string
-)) as typeof import('../../../src/render/sky.ts');
-const { scene, sky, camera } = (await import(
-  '/src/render/scene.ts' as string
-)) as typeof import('../../../src/render/scene.ts');
+const { skyDebug } = (await import('/src/render/sky.ts' as string)) as typeof import('../../../src/render/sky.ts');
 while (!me.body || !me.avatar) await wait(50);
-if (q.get('sky') === 'demo') await import('/src/proto/demo-sky.ts' as string);
 await wait(1200);
 me.colorIdx = 5;
 paintAvatar(me.avatar!.userData.mat, 5);
@@ -72,38 +66,6 @@ if (shot === 'wide') {
   pos = [p.x - p.uz * 2.1, y + 1.2, p.z + p.ux * 2.1];
   cam = [p.x - 9, y + 5, p.z - 16];
   target = [p.x + 8, y + 4, p.z + 110];
-} else if (shot === 'beach') {
-  const { islandHeight } = (await import(
-    '/src/proto/water/height.ts' as string
-  )) as typeof import('../../../src/proto/water/height.ts');
-  let x = 100;
-  while (islandHeight(x, -100) > 2) x++;
-  pos = [2400 + x - 6, islandHeight(x - 6, -100) + 0.5, -100];
-  cam = [pos[0] - 6, pos[1] + 2.4, pos[2] - 7];
-  target = [pos[0] + 8, pos[1] + 2.2, pos[2] + 6];
-  if (q.get('sky') !== 'demo') {
-    const { demoSky } = (await import(
-      '/src/proto/water/sky.ts' as string
-    )) as typeof import('../../../src/proto/water/sky.ts');
-    skyDebug.preview(tod, 0.5);
-    updateSky(0);
-    const d = skyDebug.state.sunDir;
-    demoSky.update({ elevation: (Math.asin(d.y) * 180) / Math.PI, azimuth: (Math.atan2(d.x, d.z) * 180) / Math.PI });
-    demoSky.update = () => {};
-    onFrame(
-      () => {
-        updateSky(0);
-        sky.visible = true;
-        sky.position.copy(camera.position);
-        scene.backgroundNode = null;
-        scene.environment = null;
-        const f = scene.fog as { near: number; far: number };
-        f.near = 18000;
-        f.far = 80000;
-      },
-      { phase: 'late', order: 1090 },
-    );
-  }
 }
 // Place's own day writes preview after updateSky; override before the next sky update for a truly identical sun.
 onFrame(() => skyDebug.preview(tod, 0.5), { phase: 'update', order: -6 });

@@ -34,3 +34,9 @@ Without the flag, the original dome and sea graphs, clouds, lighting, fog and cl
 `src/features/proto-sky.ts`, presentation lives in `src/proto/sky/`, and the small marked seams in
 `src/render/sky.ts` and `src/render/water-render.ts` select horizon haze only. `?proto=water` owns the sea's future.
 Build choices and offline source limits: [procedural-sky research](../research/procedural-sky.md).
+
+## Water graduation update (4 November 2026)
+
+This remains a parked cloud/sky experiment on the classic home client. The sea-horizon `uHaze` seam
+and its frame writer were removed with the replaced sea. The descriptions above of that seam are historical;
+there is no `proto=water` demo in the current build. No cloud or sky art was graduated here.

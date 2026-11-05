@@ -15,7 +15,9 @@ export function setAdaptiveResolution(ratio: number) {
   update();
 }
 export function setWaterResolution(ceiling: number) {
-  waterCeiling = Math.min(1, Math.max(0.25, ceiling));
+  const next = Math.min(1, Math.max(0.25, ceiling));
+  if (next === waterCeiling) return;
+  waterCeiling = next;
   update();
 }
 export const qualitySnapshot = () => ({

@@ -1,10 +1,9 @@
 // Dry Ultra Water terrain comparison, Local only. DESIGN.md: Small and readable; Show, don't tell.
-// Research: docs/research/ultra-water.md recommendations 4/7. Water optics remain with water=new.
+// Research: docs/research/ultra-water.md recommendations 4/7. Production water optics are unchanged.
 import type { MeshStandardNodeMaterial } from 'three/webgpu';
 import { patchNode } from '../../render/material-patch.ts';
-import { groundNoise, sandNormal, rockNormal, seabedAlbedo } from './ground.ts';
-import { waterQuality } from './quality.ts';
-import { TSL } from './tsl.ts';
+import { groundNoise, sandNormal, rockNormal, seabedAlbedo, fineTerrain } from './ground.ts';
+import { TSL } from '../../render/water/tsl.ts';
 
 const { cameraViewMatrix, clamp, float, mix, normalWorldGeometry, positionWorld, smoothstep: ss, vec3, vec4 } = TSL;
 export type TerrainMode = 'today' | 'demo' | 'biomes' | 'no-noise' | 'no-ripples' | 'coarse' | 'rock';
@@ -13,7 +12,7 @@ const patches: { material: MeshStandardNodeMaterial; original: MeshStandardNodeM
 
 /** Capture-only A/B switches reuse the actual material, including masks and shadow slots. */
 export function setTerrainDemoMode(mode: TerrainMode) {
-  waterQuality.fineTerrain.value = mode !== 'coarse';
+  fineTerrain.value = mode !== 'coarse';
   for (const { material: m, original, origin } of patches) {
     m.vertexColors = original.vertexColors;
     m.colorNode = original.colorNode;

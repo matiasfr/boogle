@@ -37,18 +37,18 @@ Version comparisons and verification limits live in the [upgrade assessment](../
 
 - You swim when the water surface (the sea or the cave pond) is above your body point + 0.35 m. Buoyancy pushes up to 2.4× your weight with
   damping. Jump swims up at 4.5 m/s.
-- With the staged `water=new` opt-in, that surface is a bounded asynchronous sample of the visible waves, and damping
+- On Place and crossing, that surface is a bounded asynchronous sample of the visible waves, and damping
   is relative to bounded surface velocity. The threshold and Jump swim-up stay the same; stale samples ease to mean
-  water. The old default path is unchanged. Query limits and cave composition: [island water](island.md).
-- With `water=new`, swimming stays at the surface unless you enter falling at least **14 m/s**. Slower entries shed
+  water. Classic home keeps its original sea forces. Query limits and cave composition: [island water](island.md).
+- On Place and crossing, swimming stays at the surface unless you enter falling at least **14 m/s**. Slower entries shed
   downward momentum to **1 m/s relative to the surface**, so walking in and ordinary low-bank jumps stay afloat.
   Fast entries retain momentum (the existing fall cap is **20 m/s**); downward water drag is **1.2/s**, versus **3/s**
   upward. Existing depth buoyancy (up to **2.4× weight**) arrests the fall: faster hits go deeper, bounded by the bed.
   Passive ascent targets at most **2.5 m/s**, gain **8/s**, then settles back to wave-following surface swimming.
   Space/A/Jump retains its existing swim-up impulse and bypasses that passive cap. No input is needed to resurface;
   no breath mechanic. This is the existing Owner body, with no new presence field or lockstep state.
-  Manual Dive, C, D-pad Right and its touch/guide entry are removed, including from the retained water demo.
-  Without `water=new`, the old sea's forces are unchanged.
+  Manual Dive, C, D-pad Right and its touch/guide entry are removed, and the demo is archived.
+  Classic home retains its old sea forces; water URL selectors are ignored.
 
 ## Flops (cosmetic)
 
@@ -69,7 +69,7 @@ there is no shiver and no freeze in place (the pose still holds).
 
 A ball to the head faster than 11 m/s knocks you flat for 800 ms with stars, then 1 s of immunity
 ([src/features/impact.ts](../../src/features/impact.ts), presence `kd`). While down you cannot move or jump.
-The four gold head stars use an sRGB canvas and explicit linear HDR brightness: 6 with new water's metered AgX,
+The four gold head stars use an sRGB canvas and explicit linear HDR brightness: 6 with new water's metered Neutral,
 1.5 with the default sea's Neutral output. One shared material gives your own and other players' stars the same
 Local appearance; the lower default-sea value keeps the gold from washing out.
 

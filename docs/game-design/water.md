@@ -1,22 +1,51 @@
-# 6.26b Prototype: Ultra Water demo scene (`?proto=water`)
+# 6.26b Water
+
+## Graduation scope (4 November 2026)
+
+Place (including the default address) and crossing now own the replacement sea without a URL switch.
+`water=new` and `water=old` are ignored; old links run their route normally. The demo is archived under
+`archive/water`, and the replaced sea under `archive/old-sea`; both tags already existed. The water card is archived.
+No demo island, teleport, CCD/soft-wall override, demo camera/sky/fog owner or crossing sea rectangles remain.
+The parked sky prototype retains its clouds, but its obsolete water-horizon seam is removed.
+
+**Classic-home exception:** classic and its home-based prototype clients retain the isolated `classic-sea.ts`.
+The trial passed world-inputs, smoke and caves, but their local Metal times rose from 2.9/5.4/5.8 s to
+5.2/13.8/9.1 s. Linux software-WebGPU CI cost could not be qualified through this Mac-only broker. Per the
+owner's fallback, classic migration stops here. Its packed height texture and sine material are private and
+allocated only when classic creates its sea; production exposes no old material-patch API. This is a route
+choice, not an opt-in switch. Live tuning and Looks remain available on Place and crossing.
+
+The [removal handoff](../plans/water-graduation.md#step-78-removal-handoff-4-november-2026) records
+matched frame costs, opened views, final solo/co-op routes, retained failures and device limits.
+The real iPhone and the owner's replay remain untested; the code is committed for review, not shipped.
+
+The surface retains four 256² FFT cascades, `.25` spectral energy, real terrain bathymetry, shallow caustics,
+swash, foam, spray, refraction, underwater shafts/snow and exit droplets. The frozen late-morning sky bakes
+once behind loading at `tod=0.24`; Neutral remains the default output after underwater HDR and exposure.
+Surface swimming and automatic high-fall plunges are unchanged; there is no new input or breath mechanic.
+Desktop remains high and coarse-pointer/mobile quality remains 0.6 world resolution. Camera and fog ranges stay.
+
+The bounded GPU query contract and cave composition are described in [island water](island.md); the force
+values remain in [player swimming](player.md#swim). Research under `docs/research/` is historical evidence,
+including obsolete demo addresses and paths. The original demo design/options remain in `archive/water`.
+`public/THIRD_PARTY_NOTICES.md` retains Ultra Water, atmosphere, cloud, AgX and noise attribution in builds.
 
 ## Real-sea output (4 November 2026)
 
-`water=new` uses Neutral after the underwater HDR composite, with the existing exposure meter and no extra
+The default Place and crossing sea uses Neutral after the underwater HDR composite, with the existing exposure meter and no extra
 exposure trim. Keeping adaptation isolates the owner's tone-curve change from lighting and preserves the
 surface/underwater exposure response. The two meter draws and history copy remain. Looks' **Current** matches
 this output; **Sunny toys** and **AgX Punchy** retain AgX comparisons. The frozen late-morning sky, water
-parameters, terrain and default legacy route are unchanged. The retained `proto=water` demo and explicit
-`sky=toy` experiment keep their own output choices.
+parameters and terrain are unchanged. The explicit `sky=toy` experiment keeps its own output choices.
 
 ## Opt-in Sunshine sky comparison
 
-`?proto=place&water=new&sky=toy&toyTone=neutral` selects original stylized sky art baked into the existing
+`?proto=place&sky=toy&toyTone=neutral` selects original stylized sky art baked into the existing
 1024² HDR cube: a blue gradient and six sparse cumulus groups. The same cube supplies background, fog,
 environment and hemisphere fill; the physical late-morning sun direction/colour and cloud-alpha sun disc stay.
 FFT waves, shore geometry, caustics, foam coverage, refraction and underwater features remain. Only local optical
 tuning changes: cyan scatter/absorption, restrained reflection tint/cap, sun gain and foam/glitter brightness.
-No room state or gameplay changes. No change without `water=new&sky=toy`; the demo is excluded.
+No room state or gameplay changes. No change without `sky=toy`.
 
 `toyWater=off` isolates sky/fill from water tuning; omit `toyTone=neutral` for this experiment's retained AgX.
 `toyVariant=soft|clear|punch` compares softer blue, the default clear balance, and stronger cyan water.
@@ -25,12 +54,12 @@ The normal `tone=` flag remains inactive on new water. AgX Punchy is a separate 
 Optional `tune=1` keeps the existing controls and Copy/Apply settings; these reset to the selected experiment's
 values on this route. Toy cloud shape/coverage is authored in code, so the physical sky's cloud-coverage control
 does not reshape it. Saved tuning overrides can supersede the preset; use clean settings for comparisons.
-See [Sunshine sky research](../research/sunshine-sky.md) for the visual verdict and settings. This is not graduation.
+See [Sunshine sky research](../research/sunshine-sky.md) for the visual verdict and settings. This optional sky experiment is not the default.
 
 ## Production water tuning
 
-Open `?proto=place&water=new&tune=1` to tune the real sea on the place page, or append `&tune=1` to another
-`water=new` room link. Dev visits also enable editable uniforms without `tune=1`. The dependency-free panel is dynamically imported into the Dev dock on the deployed build as well as locally.
+Open `?proto=place&tune=1` to tune the real sea on the place page, or append `&tune=1` to another
+Place or crossing room link. Dev visits also enable editable uniforms without `tune=1`. The dependency-free panel is dynamically imported into the Dev dock on the deployed build as well as locally.
 Without Dev/tuning opt-in it loads no panel code, CSS, DOM or saved overrides. These preferences belong to this viewer;
 they add no room state, messages, controls or gamepad slot. The cursor stays free on tuning visits; drag the scene
 to look around. The game keeps running while the panel takes mouse and keyboard events aimed at its controls.
@@ -156,15 +185,14 @@ cascade topology, polar mesh resolution, foam/shore bake dimensions, shaft steps
 rebuilds and are intentionally omitted. Additional uniforms and grading arithmetic are enabled only on tuning visits;
 the flag-off shader graphs retain their constants and do not restore saved overrides.
 
-Production `water=new` also serves the opt-in home shore slice (`classic=1&shore=smooth-detail&shoreRocks=1`).
+The home shore slice (`classic=1&shore=smooth-detail&shoreRocks=1`) and dry-terrain comparisons are retained in `src/proto/shore/`; classic keeps its own sea.
 Real registered rock/support contacts each retain eight world-fixed spray sites, including later-built supports;
 the 512-contact registry bounds that list. Provider obstacles retain their separate 256-site cap. Spray still
 uses the shared particle pool with at most 96 emissions per frame and 420 per rolling second, before particle upload.
 Breaking-shore spray emits three separated droplets per fresh crest, with a short upward arc that clears the
 combined shore-wave lip. Stronger opacity and 20% larger breaker droplets keep sparse real-bank bursts readable;
 rock/support launches retain four droplets per site. Existing energy/crest gates and quiet intervals remain, so
-calm or sheltered water does not become a constant fountain. This is Local cosmetic behavior under `water=new`;
-legacy/default water is unchanged. See the [step-4 spray evidence](../plans/water-graduation.md#step-4-spray-visibility-follow-up-4-november-2026)
+calm or sheltered water does not become a constant fountain. This is the existing Local cosmetic behavior of the production sea. See the [step-4 spray evidence](../plans/water-graduation.md#step-4-spray-visibility-follow-up-4-november-2026)
 for consecutive breaking-bank/support frames, measured costs and the retained-demo comparison.
 Its receivers carry the demo-strength shallow caustic net, moving wetness and swash lace; contacts and bed data
 follow the slice. Wet receiver sheen uses continuous vertex normals instead of turning dry terrain facets into
@@ -176,110 +204,3 @@ Place's 2 m bed is stored on its actual terrain vertices and sampled on the same
 bed clamping and receivers therefore follow the drawn bank, instead of a twice-filtered approximation. Travel-time
 and shore-distance fields keep their smoothing. These are Local rendering/query changes; Owner physics and all
 shared state retain their existing ownership and messages.
-
-Ultra Water's scene, rewritten in TypeScript and TSL inside Boogle's single WebGPU renderer. The default starts
-from the demo's Lagoon view; `&v=pop` keeps our previous colour grade over the same scene. The gut question is
-**Does this look like the demo, here?** Serves DESIGN.md **Toys before chores** and **Show, don't tell**.
-
-The owner's 2 November feedback is recorded under Look in [boogle-2.md](../proposals/boogle-2.md). The supplied
-1210×702 desktop demo shots take precedence over an inferred look. Research and architecture comparison:
-[ultra-water.md](../research/ultra-water.md); numerical diagnosis, source audit and reproducible measurements:
-[water-demo-diagnosis.md](../research/water-demo-diagnosis.md). Adapted code is attributed in
-`public/THIRD_PARTY_NOTICES.md`, including Ultra Water, Epic's Hillaire atmosphere, three.js clouds/AgX and Hoskins hashes.
-
-## What you see and do
-
-- The unscaled source island sits at world `(2400,0)`: 2400 m terrain, 384 segments, its mountain ridges and the
-  seabed down to −34 m. A 512² shore field covers 1800 m. One height function feeds terrain, collider and shore bake.
-- The source's 90 shore rocks and hero rock use its positions, RNG sequence and orientation; the hero scale is
-  `(9,6,7.5)`, placed at ground height minus 1.6 m. The old toy terrain/tree branch is removed rather than maintained.
-- The camera opens on the source Lagoon shot (50° FOV); movement returns to normal player follow. Walk, wade and
-  swim as usual; Space / A / Jump swims up. Manual dive controls were removed on 3 November; the underwater look
-  remains whenever the camera dips under. The automatic plunge is staged on `water=new` in the player controller.
-  Rendering is Local; the existing Rapier player remains Owner.
-- Four FFT cascades are the default. Source depth damping replaces long swell with shore waves near land, and
-  troughs clamp above the bed at the displaced position. Shore wavelength is 30 m and amplitude .55 m.
-- Actual opaque terrain and rock colour/depth are read **in-pass** using TSL `viewportTexture` and
-  `viewportDepthTexture`. The colour snapshot uses `viewportTexture` so all refraction offsets reuse one copy
-  per frame (r187's `viewportSharedTexture` repeats the copy for each sample node). Depth validation rejects
-  refraction offsets into foreground objects; Beer–Lambert
-  absorption colours the real bed. Actual obstacle depth drives contact foam. No synthesized bed remains.
-- Wave-driven caustics refract the cubic-filtered 12 m FFT slope grid onto 1.5, 4 and 10 m depth planes. Additive
-  area-ratio rasterization makes the bright sand net; it multiplies direct sunlight on both ground and rocks.
-- Hillaire transmittance, multiple-scattering and sky-view LUTs plus clouds are baked into a mipmapped HDR cube
-  when the sun changes. The cube feeds background, roughness-dependent water reflection, terrain ambient and fog.
-- This **prototype's starting point** uses the source's metered exposure and AgX through `pipeline.outputNode`.
-  Its curve and meter are shared from `src/render/tone.ts`; the optional `&tone=neutral|agx|agx-sat|aces`
-  comparison changes the curve/exposure trim before the existing vignette and dither, retaining the underwater composite.
-  **The game's standing Neutral choice is unchanged.** No edits to `src/render/scene.ts`, second renderer or
-  second frame loop are needed. Bloom is omitted: the source's faint .05 bloom did not justify its 12 passes here.
-- The source near/far planes are .5 / 80000 m. Terrain/water aerial fog uses 1/18000 m; source shadow bounds are
-  ±900 m with a 4096 map. These settings apply only on this prototype page.
-- Underwater treatment remains: Snell's window now transmits opaque objects, depth-dependent absorption,
-  half-resolution light shafts, 6000 marine-snow sprites, a GPU near-plane waterline grid and wet-lens droplets.
-  Shafts still use plain illumination rather than caustic or floater shadow modulation.
-
-## Tuning and measurements
-
-`ULTRA.waveScale = .25` is an **energy** multiplier, halving every source spectral amplitude without reshaping it.
-The seeded field's deep-water significant height is **13.899 m before → 6.949 m after**; chopped RMS slope is
-**.579 → .277**. This remains a large stylized swell, not a physical 9 m/s wind sea. The source itself measures
-13.236 m with its PCG realization; its Gaussian/pair convention produces eight times the integrated directional
-variance, and it adds a strong long-fetch swell. The wind-only JONSWAP integral is about 2.026 m Hs.
-
-A .02 energy candidate gave 1.966 m Hs, but visibly erased the supplied demo's caustic net and fine-wave detail;
-it also restored broad unresolved Cox–Munk roughness. The visual target won over that physical normalization.
-The final source-shaped .25 setting is a measured art choice, not a claim that the source's spectrum is physically normalized.
-
-In 601 samples over a minute, the sheltered Lagoon waterline's vertical range is **.058 → .044 m**; horizontal FFT
-excursion is **.032 → .018 m**. Long-swell weight is exactly zero there. At .5/1/2/5 m Lagoon depths, full ranges
-are **.327/.966/1.363/.882 m** after; exposed-coast ranges are larger. Full before/after tables and coordinates are
-in the diagnosis. These are CPU mirrors of the rendered field, including half-float maps, LOD, horizontal inversion
-and trough clamp; finite GPU triangulation and the 10 Hz sample interval limit their precision.
-
-## Options
-
-- `?proto=water`: demo scene and Lagoon opening; `&v=pop`: previous saturation/absorption/reflection grade.
-- `&q=high|mobile`: touch devices start on mobile, the demo's 0.6 resolution; everything else on high. `q=` overrides.
-  Mobile draws the world at 0.6 of the maximum device pixel ratio, normalized against adaptive resolution's
-  current 0.6–1 ratio so the scales never multiply down to 0.36. AgX/output remains at the adaptive canvas size.
-  Stored 4× MSAA, all four FFT bands, wave energy, 384-segment grid and the 4096 shadow map stay the same.
-  Both profiles retain full caustic and terrain detail and omit bloom. The cheap caustic/terrain options below are
-  diagnostics, not the mobile defaults.
-- `&shot=lagoon|breakers|surf-rock|open-ocean`: source camera and sun presets, translated only by the island offset.
-- `&waves=analytic`: earlier analytic wave diagnostic; it has no FFT caustics.
-- `&n=128`, `&cascades=1..4`, `&band=0..3`: FFT cost diagnostics. Caustics require band 2.
-- `&ocean=off`, `&grid=192`, `&groundFlat=1`, `&rockFlat=1`: visual/cost diagnostics.
-- `&waterCopy=repeat`: the old redundant colour copies, for cost comparisons only.
-- `&waterScale=0.6|1`, `&waterTerrain=full|cheap`, `&waterCaustics=full|cheap`: isolate the mobile settings.
-  They do not change `q` or saved adaptive-resolution preferences. Timing and device requests are in the
-  [validation report](../research/water-demo-validation.md).
-- `raw` is no longer a distinct variant; toy terrain is not carried forward.
-
-## Render budget and limits
-
-- FFT: one compute pass containing 10 dispatches; no additional ocean simulation for caustics.
-- Caustics: two 4× MSAA raster targets, three grid draws. High's mip chains add 17 internal reductions: **19 GPU
-  passes / 20 draws** total. Mobile has 15 reductions: **17 passes / 18 draws**. Renderer counters omit these mip draws.
-- Exposure: two tiny raster passes/draws (32² meter and 1² adaptation), plus a 16-byte history copy; AgX shares
-  the existing fullscreen output draw. No CPU readback and no new full-screen composite.
-- Refraction: opaque HDR colour and depth snapshot copies interrupt/resume the current scene pass, without
-  drawing the scene again. The original 4× MSAA colour/depth store settings are preserved.
-- Sky changes: CPU atmosphere LUT quadrature (about 1 s measured at the first sun), six 1024² cube draws, cube mips
-  and native environment PMREM. None of this rebakes every frame.
-- The source terrain remains one draw and rocks one instanced draw. The former toy trees are gone.
-- Underwater: the existing 64×36 lens compute, one half-resolution shaft draw and one snow draw activate near
-  or below water; the existing output composite handles lens drops. Far above water they add no draws.
-- Remaining omissions are planar terrain/rock reflections, water-surface shadow sampling and floater shadows.
-  Source PCG versus our mulberry32 gives different wave phases; reduced spectrum energy intentionally gives
-  calmer ocean relief and somewhat weaker Lagoon caustic contrast. Terrain noise remains the existing filtered
-  periodic bake rather than evaluating all source noise per fragment.
-
-Final camera tables, comparison boards, consecutive recording frames and validation are recorded in
-[water-demo-validation.md](../research/water-demo-validation.md). Captured frames are not real-time viewing:
-feel, frame pacing and iPad performance remain unverified.
-
-The staged [water graduation](../plans/water-graduation.md) makes this demo a client of the shared production
-surface, FFT, spectrum, foam and shore bake under `src/render/water/`. Its wrapper supplies the same explicit demo
-origin, look, reference sky, hero-rock foam and diagnostic settings. Its sky files, scene and `post.ts` remain;
-`water=new` is ignored on this demo page, preventing a second FFT/sea instance. The default game still uses its old sea.

@@ -3,11 +3,10 @@
 The ball uses Rapier 0.21.0 and the material/drag values below. Version comparisons and reference decisions live in
 the [upgrade assessment](../research/rapier-021-upgrade.md).
 
-The staged `water=new` opt-in replaces the ball's old sine sea with bounded samples of the visible FFT/shore waves.
+The production sea on Place and crossing replaces the ball's old sine sea with bounded samples of the visible FFT/shore waves.
 Vertical drag is relative to surface velocity (bounded ±3 m/s); gentle wash-in follows the registered coast's normal
 and tangent. Ponds have explicit still-water identity, so a sea crest is never mistaken for a pond. Ownership, held
-changes and teleports invalidate delayed samples without changing presence data or claim rules. The default sea and
-home-island respawn bounds remain unchanged. Query limits and fallback: [island water](island.md).
+changes and teleports invalidate delayed samples without changing presence data or claim rules. Classic home retains its own sea; home-island respawn bounds remain unchanged. Query limits and fallback: [island water](island.md).
 
 - **What and how it plays.** One of the island's physics toys: one shared beach ball (radius 0.45 m, 0.6 kg). Grab it (E / pad X),
   carry it (it rides on your back while something else is in your hand), throw it with a charged throw,

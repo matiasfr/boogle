@@ -88,11 +88,15 @@ switch variant (another reload) → back to the page to copy notes. Research rec
 
 ## Depth tracks (off the critical path)
 
+- [x] **Water graduation (4 November):** the real Place/crossing sea replaces the archived demo and old crossing sea.
+      Classic home migration is deferred because of the measured scenario slowdown and unqualified CI cost.
+      The playlist was already removed; there is no remaining water playlist entry. See [water](../game-design/water.md).
+
 - [x] **Procedural sky (3 November, owner verdict revision):** `?proto=sky` keeps the original lighter blue,
-  improves five rounded cloud groups and softens the sea horizon across the normal day/night cycle. Owner question:
-  “Do these clouds and this horizon keep the sky you liked and make it better?” [As built](../game-design/sky-proto.md).
-  This completes the revised prototype build, not look approval. Parked the same day: the owner prefers the original
-  sky and cloud shape (`docs/proposals/boogle-2.md`).
+      improves five rounded cloud groups and softens the sea horizon across the normal day/night cycle. Owner question:
+      “Do these clouds and this horizon keep the sky you liked and make it better?” [As built](../game-design/sky-proto.md).
+      This completes the revised prototype build, not look approval. Parked the same day: the owner prefers the original
+      sky and cloud shape (`docs/proposals/boogle-2.md`).
 
 Work that can run beside the prototypes when there's attention or agents to spare. None of it ships into the game
 until a look is picked; none of it blocks a playtest.

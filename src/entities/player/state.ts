@@ -37,9 +37,8 @@ const LAUNCH_STEER_TIME = 0.1;
 // 0.19's contacts supplied one extra steering step at a ledge. Preserve that inertia, never jump eligibility.
 const GROUND_STEER_TIME = 0.1 + FIXED;
 const MAX_FALL = 20; // m/s: see catchFallThrough in src/physics/physics.ts
-// Owner physics only; the old sea keeps its existing forces.
-// The raw opt-in preserves the retained demo's existing behavior too.
-const plungeEnabled = newWaterEnabled || q.get('water') === 'new';
+// Owner physics only; classic home keeps its existing forces.
+const plungeEnabled = newWaterEnabled;
 const PLUNGE = {
   entrySpeed: 14, // m/s downward: above a normal jump or low-bank hop
   surfaceEntrySpeed: 1, // m/s: slow entries lose their downward momentum at the surface

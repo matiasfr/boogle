@@ -23,12 +23,6 @@ const curves: Record<Tone, (rgb: N) => N> = {
 };
 
 export async function installTone(tone: Tone) {
-  if (protoOn('water')) {
-    // Await the actual installation, not a timer: avoid metering or tone mapping its display output twice.
-    const { post } = await import('./water/index.ts');
-    post.setTone(curves[tone], trims[tone]);
-    return;
-  }
   let hdr: N = scenePass.getTextureNode();
   if (protoOn('place')) {
     await import('./place/index.ts');

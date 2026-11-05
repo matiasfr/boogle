@@ -3,7 +3,7 @@
 2026-11-03. Local branch `codex/water-demo-scene`; no push or deployment. Serves DESIGN.md **Toys before chores**
 and **Show, don't tell**. The owner's supplied desktop screenshots are the target, ahead of source inference.
 See [the numerical diagnosis](water-demo-diagnosis.md) for the spectrum audit and complete before/after shore tables,
-and [the game-design entry](../game-design/water-proto.md) for current behaviour and limitations.
+and [the game-design entry](../game-design/water.md) for current behaviour and limitations.
 
 ## Result
 
@@ -136,7 +136,7 @@ node .look/see-client.ts look --query 'proto=water&q=high&prof=1&timestampFix=1&
 
 Other one-at-a-time capture switches are `cost=resolution|detail|shadow|ocean|terrain|sky|caustics|adaptive`.
 Shadow, ocean, flat terrain, sky and caustic disabling are diagnostics, not shipped quality settings. The permanent diagnostic
-URL options are documented in [water-proto.md](../game-design/water-proto.md#options).
+URL options are documented in [water-proto.md](../game-design/water.md#options).
 
 ### Kept changes and measured savings
 

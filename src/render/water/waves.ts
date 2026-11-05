@@ -1,4 +1,4 @@
-// Contract shared by the FFT renderer and the demo's retained analytic diagnostic.
+// Wave-source contract used by the production FFT renderer.
 import type { N } from './tsl.ts';
 export type WaveSource = {
   displace(xz: N, cell: N, damp: N): N;

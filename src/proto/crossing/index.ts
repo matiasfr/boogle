@@ -20,11 +20,9 @@ import { LENGTH, RUN_SECONDS, STOP_B, WALK, lineAt, nearestS, railY, type LinePo
 import { cars, clock, onTrain, seekS, start, train } from './train.ts';
 import { PADS, buildWorld } from './world.ts';
 import { extendSky } from './sky.ts';
-import { dressSea } from './sea.ts';
 import { CROSSING, FEEL } from './tuning.ts';
 
 buildWorld();
-dressSea();
 extendSky();
 
 // ---------------------------------------------------------------- past the edge of the map

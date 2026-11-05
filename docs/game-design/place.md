@@ -583,7 +583,7 @@ Each line's track is one instanced set sorted by where the machine drops each pi
 machine is the kit's look on two kinematic platforms; it advances in the physics step. Trains are the same kind of car on a small state machine (`rail.ts`: target stop, signed speed, dwell), not a clock, so a call can send one straight somewhere; `&coop=1` nudges it to the authority's. A flatbed with a compound shape lost its deck collider in testing, so the flatbed stays a single box.
 
 The land is one height function on a 2 m grid (`terrain.ts`, no three.js; 760 x 540 m with Far Head), drawn as one faceted mesh and collided as one heightfield. From the crossing: the
-sea, sky and far plane (`src/proto/crossing/sea.ts`, `sky.ts`), the speed put back past the 237 m soft wall, the player's CCD
+far plane and fog range (`src/proto/crossing/sky.ts`); production water owns the sea and frozen sky, the speed put back past the 237 m soft wall, the player's CCD
 off. Numbers: `TUNE`, the bills (`LINKS`, `FORGE_BILLS`) and the plots (`TOWN`) in `src/proto/place/layout.ts`. The run: `run.ts`. Rungs: `ladder.ts`. Cart and rack: `depot.ts`. Trains and cargo: `cargo.ts`; stations: `halts.ts`. Moments and the pull-out: `celebrate.ts`, through the existing `camConstraints` seam. Gifts, shelf and mounts: `gifts.ts`. Little guys: `folk.ts`. Crystals: `crystals.ts`. The town you go into: `town-life.ts` wires `rooms.ts`, `house.ts`, `shop.ts`, `museum.ts`, `residents.ts`, `talk.ts`, `growth.ts`; every word in `town-lines.ts`. Look evals: `dev/look/evals/place-job.ts`, `place-act.ts` and `place-town-coop.ts`.
 
 The look (`src/proto/place/look.ts`) is the default. It overrides `tod`. `&look=off` gives the old look; `&look=ground,light,contact,kit,mats,gtao` gives single layers (`all`, the default, leaves `gtao` out). To-dos: [look-pass.md](../plans/look-pass.md).
@@ -593,13 +593,11 @@ The staged [water graduation](../plans/water-graduation.md) registers the finali
 included explicitly rather than accepting `H`'s exterior −6 fallback as real ground. The Local shore atlas uses a
 1024 m / 512² core and an 80-texel halo (2 m/texel); all eight resident layers are bounded, and an overflow reports
 instead of evicting a visible shore. Bed/coast stays separate from projected obstacles used by wave shelter.
-This registration does not change the current sea or Round 4 terrain.
+This registration supplies the production sea without reshaping Round 4 terrain.
 
-The default page and `?proto=place` use the staged replacement sea, sampling the actual gorge/shore provider
-(owner, 4 November: “Switch default instead”). `water=old` restores the legacy sea and cycle; `water=new`
-remains valid. Classic home and other prototypes retain their defaults; the separate `proto=water` demo
-continues to own its own sea. No old sea, prototype or seam is removed by this partial step-7 switch.
-The old crossing material is hidden and its outer rectangles are not created while new water is active.
+The default page and `?proto=place` use the [production water](water.md), sampling the actual gorge/shore
+provider. The old sea, crossing rectangles and separate demo are archived. `water=old` and `water=new` no
+longer select a sea. Classic home retains its own cheaper sea pending CI qualification.
 One late-morning atmosphere bake (`tod=0.24`) completes behind loading, with metered **Neutral** output.
 It replaces the moving day/night sky, sun/moon billboards and faceted clouds; there is no sunset or night
 on this path. Night-gated fireflies and lighthouse beams remain off wherever those systems are present;

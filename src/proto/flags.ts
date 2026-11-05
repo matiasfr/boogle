@@ -41,6 +41,6 @@ export const PROTO = q.get('proto') ?? '';
 export const protoOn = (id: string): boolean => PROTO === id;
 /** The addressed variant ('' for the default). */
 export const protoV = (id: string): string => (PROTO === id ? (q.get('v') ?? '') : '');
-/** Production sea selection, shared by rendering and headless Owner physics. The demo owns its own sea. */
-export const newWaterEnabled =
-  !protoOn('water') && q.get('water') !== 'old' && (q.get('water') === 'new' || protoOn('place'));
+/** Real Place/crossing sea. Classic home clients retain their cheaper sea pending CI qualification.
+ * Retired water=old/new parameters are deliberately ignored. Shared with headless Owner physics. */
+export const newWaterEnabled = protoOn('place') || protoOn('crossing');

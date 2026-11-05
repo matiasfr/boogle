@@ -1,11 +1,8 @@
-// Page code: BOOGLE_QUERY='proto=water&waves=fft&n=256&cascades=1' npm run look --
-// --eval dev/look/evals/water-fft-check.ts --cam 2610,6,-36 --look 2700,0,-70
-// --video --question "Do the moving swells retain fine ripples and a stable distant sun lane?"
-// Repeat with n=128 and band=1/2/3. This checks one isolated cascade at exactly t=0 on the game's renderer.
-const fftModule = '/src/proto/water/fft.ts';
-const spectrumModule = '/src/proto/water/spectrum.ts';
-const { readFftCheck } = (await import(fftModule)) as typeof import('../../../src/proto/water/fft.ts');
-const { bakeSlopeTile } = (await import(spectrumModule)) as typeof import('../../../src/proto/water/spectrum.ts');
+// Isolated FFT readback against the CPU reference, through production modules. Use proto=place.
+const fftModule = '/src/render/water/fft.ts';
+const spectrumModule = '/src/render/water/spectrum.ts';
+const { readFftCheck } = (await import(fftModule)) as typeof import('../../../src/render/water/fft.ts');
+const { bakeSlopeTile } = (await import(spectrumModule)) as typeof import('../../../src/render/water/spectrum.ts');
 const params = new URLSearchParams(location.search);
 const size = params.get('n') === '128' ? 128 : 256;
 const cascade = Number(params.get('band') ?? 0);

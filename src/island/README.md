@@ -64,7 +64,7 @@ the railway for that tab only (`layout.ts`; options and the layout lab: [docs/pr
 
 ## Low-island comparison
 
-`?classic=1&water=new&island=low&room=island-low` lowers the natural ground before the same POI stamps,
+`?classic=1&island=low&room=island-low` lowers the natural ground before the same POI stamps,
 court levelling and centimetre quantization. Most shores gain a shallow shelf and softer beach; the north-west
 headland retains its cliff. Lighthouse and cave geometry retain their authored elevations. The original footprint,
 POI x/z coordinates, materials and faceting remain. Mesh, heightfield, prop heights and water shore data read the
