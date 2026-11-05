@@ -7,7 +7,6 @@
 // goes on your shoulder with either axe. Trees stay finite. The axe and back are the first two rungs (`AXE2`, `PACK`, ./ladder.ts);
 // which rung you're on comes from `job.rung`.
 import * as THREE from 'three/webgpu';
-import { material } from '../../render/materials.ts';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { warmUp } from '../../render/precompile.ts';
@@ -25,10 +24,11 @@ import { H, addStatic } from './land.ts';
 import { COOP, count, job, personalSlice, sharedSlice, save } from './job.ts';
 import { LOOK, STEEL, paint, addBlob } from './look.ts';
 import { AXE2, GREAT, GREAT_TREE, GROVES, OAK, ORIGIN, PACK, ROCKS, ROCK_WORK, TUNE } from './layout.ts';
-import { RAIL_SIZE, chips, dustRing, send } from './pieces.ts';
+import { chips, dustRing, send } from './pieces.ts';
+import { BEAM_CARRY_POSITION, makeCarryModels } from './carry-models.ts';
 import { shakeView } from './celebrate.ts';
 import { addFoot } from './sites.ts';
-import { packFrameMesh } from './gifts.ts';
+import { packFrameMesh } from './gear-models.ts';
 import { LAND_TREES, safeTreeFall } from './tree-catalog.ts';
 
 // ---------------------------------------------------------------- your back
@@ -73,52 +73,12 @@ const frameOf = (avatar: THREE.Object3D | null = me.avatar) => {
   return u?.loadFit?.frame ?? u?.inner ?? null;
 };
 const MAX_WORN = PACK.carry;
-const railsWorn = new THREE.InstancedMesh(
-  new THREE.BoxGeometry(RAIL_SIZE.x * 0.6, RAIL_SIZE.z * 0.5, RAIL_SIZE.y * 0.6),
-  LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6),
-  MAX_WORN,
-);
-railsWorn.castShadow = true;
-railsWorn.frustumCulled = false;
-railsWorn.count = 0;
-const worn = new THREE.Object3D();
-for (let k = 0; k < MAX_WORN; k++) {
-  worn.position.set((k % 4) * 0.12 - 0.18, 0.9, 0.62 + Math.floor(k / 4) * 0.11);
-  worn.rotation.x = 0.12;
-  worn.updateMatrix();
-  railsWorn.setMatrixAt(k, worn.matrix);
-}
-// Stone: lumps in a sack on your back.
-const stoneWorn = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.16, 0), material('stone'), MAX_WORN);
-stoneWorn.castShadow = true;
-stoneWorn.frustumCulled = false;
-stoneWorn.count = 0;
-for (let k = 0; k < MAX_WORN; k++) {
-  worn.rotation.set(k, k * 2, 0);
-  worn.position.set((k % 3) * 0.2 - 0.2, 0.4 + Math.floor(k / 6) * 0.22, 0.48 + (Math.floor(k / 3) % 2) * 0.2);
-  worn.updateMatrix();
-  stoneWorn.setMatrixAt(k, worn.matrix);
-}
-// The trunk on your shoulder, or the boiler in your arms.
-const beamWorn = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.26, 5.4, 8).rotateX(Math.PI / 2), flat('#7a5430'));
-beamWorn.castShadow = true;
-beamWorn.position.set(0.32, 1.05, 0.2);
-beamWorn.visible = false;
-const boilerWorn = new THREE.Group();
-const boilerBody = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.55, 0.55, 1.5, 12).rotateX(Math.PI / 2),
-  flat('#c83a2a'),
-);
-const boilerBand = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.57, 0.57, 0.14, 12).rotateX(Math.PI / 2),
-  flat('#d9a23a'),
-);
-const boilerStack = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 8), flat('#24262c'));
-boilerStack.position.set(0, 0.62, -0.4);
-boilerWorn.add(boilerBody, boilerBand, boilerStack);
-boilerWorn.traverse((o) => void (o.castShadow = true));
-boilerWorn.position.set(0, 1.55, 0.05);
-boilerWorn.visible = false;
+const {
+  rails: railsWorn,
+  stone: stoneWorn,
+  beam: beamWorn,
+  boiler: boilerWorn,
+} = makeCarryModels(LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6));
 /** A boiler to stand by the forge, the shape you'll carry. */
 export const boilerShape = () => {
   const g = boilerWorn.clone();
@@ -165,13 +125,13 @@ export const greatBeamView: { helper: (owner: string | null) => THREE.Object3D |
 const support = new THREE.Vector3();
 const alongBeam = new THREE.Vector3(0, 0, 1);
 function poseCarriedBeam(beam: THREE.Mesh, frame: THREE.Object3D, owner: string | null) {
-  beam.position.set(0.32, 1.05, 0.2);
+  beam.position.set(...BEAM_CARRY_POSITION);
   beam.quaternion.identity();
   const other = frameOf(greatBeamView.helper(owner));
   if (!other) return;
   other.updateWorldMatrix(true, false);
   frame.updateWorldMatrix(true, false);
-  support.set(0.32, 1.05, 0.2);
+  support.set(...BEAM_CARRY_POSITION);
   other.localToWorld(support);
   frame.worldToLocal(support);
   support.sub(beam.position);

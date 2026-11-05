@@ -6,7 +6,9 @@
 // dust sheets. The stowaway has a slot of its own. No curios or train ornaments as prizes: train slots wait for the roundhouse.
 // No duplicates. The ladder's tool chests use the same show (./ladder.ts). Personal, and Local.
 import * as THREE from 'three/webgpu';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { merged, type Part } from './part-geometry.ts';
+import { packParts } from './gear-models.ts';
+export { packFrameMesh } from './gear-models.ts';
 import { emit } from '../../render/particles.ts';
 import { scene } from '../../render/scene.ts';
 import { thump } from '../../render/machine-sfx.ts';
@@ -25,90 +27,12 @@ import { dropGot, youGot } from './got.ts';
 import { addFoot } from './sites.ts';
 
 // ---------------------------------------------------------------- shapes: a few primitives, merged, in their own colours
-type Prim = 's' | 'c' | 'k' | 'b' | 't' | 'vest' | 'bib' | 'strap';
-type Part = [
-  shape: Prim,
-  x: number,
-  y: number,
-  z: number,
-  sx: number,
-  sy: number,
-  sz: number,
-  color: string,
-  rx?: number,
-  rz?: number,
-];
-const unit: Record<Prim, () => THREE.BufferGeometry> = {
-  s: () => new THREE.SphereGeometry(1, 10, 8),
-  c: () => new THREE.CylinderGeometry(1, 1, 1, 12),
-  k: () => new THREE.ConeGeometry(1, 1, 10),
-  b: () => new THREE.BoxGeometry(1, 1, 1),
-  t: () => new THREE.TorusGeometry(1, 0.3, 6, 14).rotateX(Math.PI / 2),
-  // A curved front panel, open at the sides: the arms and waist still read through the outfit.
-  bib: () =>
-    new THREE.LatheGeometry(
-      [new THREE.Vector2(1, -0.5), new THREE.Vector2(1, 0), new THREE.Vector2(0.78, 0.5)],
-      12,
-      -0.64,
-      1.28,
-    ),
-  strap: () =>
-    new THREE.TubeGeometry(
-      new THREE.CatmullRomCurve3([
-        new THREE.Vector3(0, 0.07, 0.203),
-        new THREE.Vector3(0, 0.14, 0.17),
-        new THREE.Vector3(0, 0.18, 0.08),
-        new THREE.Vector3(0, 0.18, 0),
-        new THREE.Vector3(0, 0.18, -0.08),
-        new THREE.Vector3(0, 0.14, -0.17),
-        new THREE.Vector3(0, 0.07, -0.203),
-      ]),
-      12,
-      0.028,
-      4,
-      false,
-    ),
-  // One continuous pear-shaped shell: open hem and neck, with an inward lip at each edge.
-  // Buddy's belly is broader than its shoulders (assets/src/buddy.py).
-  vest: () =>
-    new THREE.LatheGeometry(
-      [
-        new THREE.Vector2(0.85, -0.5),
-        new THREE.Vector2(0.94, -0.5),
-        new THREE.Vector2(1, -0.27),
-        new THREE.Vector2(1, 0),
-        new THREE.Vector2(0.96, 0.24),
-        new THREE.Vector2(0.82, 0.5),
-        new THREE.Vector2(0.74, 0.5),
-      ],
-      24,
-    ),
-};
+export { merged } from './part-geometry.ts';
 const m4 = new THREE.Matrix4(),
   e4 = new THREE.Euler(),
   q4 = new THREE.Quaternion(),
   p4 = new THREE.Vector3(),
-  s4 = new THREE.Vector3(),
-  c4 = new THREE.Color();
-export function merged(parts: Part[], grow = 1) {
-  const geos = parts.map(([kind, x, y, z, sx, sy, sz, color, rx, rz]) => {
-    const g = unit[kind]();
-    g.applyMatrix4(
-      m4.compose(
-        p4.set(x, y, z),
-        q4.setFromEuler(e4.set(rx ?? 0, 0, rz ?? 0)),
-        s4.set(sx * grow, sy * grow, sz * grow),
-      ),
-    );
-    const n = g.getAttribute('position').count;
-    c4.set(color);
-    const col = new Float32Array(n * 3);
-    for (let k = 0; k < n; k++) col.set([c4.r, c4.g, c4.b], k * 3);
-    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    return g;
-  });
-  return mergeGeometries(geos)!;
-}
+  s4 = new THREE.Vector3();
 const giftMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.08 });
 const clothMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.92 });
 const sheetMat = new THREE.MeshStandardNodeMaterial({ color: '#ded5c2', roughness: 1, flatShading: true });
@@ -517,27 +441,6 @@ export const STOCK: Stock[] = [
 // The ladder's tool chests.
 type Extra = 'axe' | 'pack';
 /** An open frame, shoulder straps and a low cradle, in the load socket's coordinates (+z behind you). */
-function packParts(): Part[] {
-  const parts: Part[] = [
-    ['b', 0, 0.23, 0.23, 0.82, 0.07, 0.07, '#a98249'],
-    ['b', 0, 0.76, 0.23, 0.82, 0.07, 0.07, '#a98249'],
-    ['b', 0, 0.14, 0.58, 0.82, 0.055, 0.7, '#c5a466'],
-    ['b', 0, 0.23, 0.94, 0.82, 0.07, 0.07, '#a98249'],
-  ];
-  for (const x of [-0.38, 0.38])
-    parts.push(['b', x, 0.49, 0.23, 0.065, 0.72, 0.065, '#a98249'], ['b', x, 0.22, 0.58, 0.055, 0.12, 0.76, '#69472e']);
-  for (const x of [-0.21, 0.21])
-    parts.push(
-      ['b', x, 0.49, 0.17, 0.07, 0.6, 0.045, '#c9a86a'],
-      ['b', x, 0.78, 0.06, 0.07, 0.045, 0.25, '#c9a86a'],
-      ['b', x, 0.33, 0.2, 0.09, 0.07, 0.025, '#d9a23a'],
-    );
-  return parts;
-}
-let packGeometry: THREE.BufferGeometry | undefined;
-export function packFrameMesh() {
-  return new THREE.Mesh((packGeometry ??= merged(packParts())), clothMat);
-}
 const EXTRAS: Record<Extra, { name: string; line: string; parts: Part[] }> = {
   axe: {
     name: 'A proper axe',

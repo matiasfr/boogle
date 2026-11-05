@@ -16,147 +16,12 @@ import { warmDraw } from '../../render/precompile.ts';
 import { camera, scene } from '../../render/scene.ts';
 import { glyph } from '../../player/glyphs.ts';
 import { pop } from '../minis/common.ts';
-import { merged } from './gifts.ts';
+import { makeCanopy, makeGear, wearGear, placeCanopy, armToRing, type Canopy } from './gear-models.ts';
 import { COOP, count, job } from './job.ts';
 import { RINGS, move } from './moves.ts';
 
 const TEAL = '#39e6c6';
-const clothMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, side: THREE.DoubleSide });
-const gearMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.3 });
-
-// ---------------------------------------------------------------- the canopy
-// Our own glider, not a parachute: a broad curved wing of cloth in panels on an old brass bar, wide enough to read from any
-// distance and open at the back so the cargo stays in sight. About 2.5 m across, held in both hands, built in code.
-function canopyGeometry() {
-  const W = 12,
-    D = 4;
-  const pos: number[] = [],
-    col: number[] = [],
-    idx: number[] = [];
-  const c = new THREE.Color();
-  const A = new THREE.Color('#f2e6c8'),
-    B = new THREE.Color('#2fb7a0');
-  for (let j = 0; j <= D; j++)
-    for (let i = 0; i <= W; i++) {
-      const u = i / W - 0.5,
-        v = j / D - 0.5;
-      const x = u * 2.5;
-      const y = 0.62 * (1 - (2 * u) ** 2) * 0.5 + 0.1 * (1 - (2 * v) ** 2);
-      const z = v * 1.15 + Math.abs(u) * 0.18;
-      pos.push(x, y, z);
-      c.copy(Math.floor(i / 2) % 2 ? A : B);
-      col.push(c.r, c.g, c.b);
-    }
-  for (let j = 0; j < D; j++)
-    for (let i = 0; i < W; i++) {
-      const a = i + j * (W + 1),
-        b = a + 1,
-        d = a + W + 1,
-        e = d + 1;
-      idx.push(a, d, b, b, d, e);
-    }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  g.setIndex(idx);
-  g.computeVertexNormals();
-  return g;
-}
-const canopyGeo = canopyGeometry();
-const barGeo = merged([
-  ['b', 0, -0.02, -0.56, 2.5, 0.05, 0.06, '#c79a3e'],
-  ['b', -0.34, -0.42, -0.3, 0.035, 0.85, 0.035, '#8a6a2c', 0.18, -0.22],
-  ['b', 0.34, -0.42, -0.3, 0.035, 0.85, 0.035, '#8a6a2c', 0.18, 0.22],
-]);
-type Canopy = { g: THREE.Group; w: number };
-function makeCanopy(): Canopy {
-  const g = new THREE.Group();
-  const cloth = new THREE.Mesh(canopyGeo, clothMat);
-  cloth.castShadow = true;
-  const bar = new THREE.Mesh(barGeo, gearMat);
-  g.add(cloth, bar);
-  g.visible = false;
-  return { g, w: 0 };
-}
-
-// ---------------------------------------------------------------- arms, from directions in the world
-const a = new THREE.Vector3(),
-  b = new THREE.Vector3(),
-  cur = new THREE.Vector3(),
-  q1 = new THREE.Quaternion(),
-  q2 = new THREE.Quaternion(),
-  q3 = new THREE.Quaternion();
-type Named = THREE.Object3D & { getObjectByName: (n: string) => THREE.Object3D | undefined };
-/** Turns `bone` so the way to `child` points along `dir` (world), by `w`. The mixer rewrites it next frame. */
-function aim(bone: THREE.Object3D, child: THREE.Object3D, dir: THREE.Vector3, w: number) {
-  const p = bone.parent;
-  if (!p) return;
-  bone.getWorldPosition(a);
-  child.getWorldPosition(b);
-  cur.subVectors(b, a).normalize();
-  q1.setFromUnitVectors(cur, dir);
-  bone.getWorldQuaternion(q2);
-  q1.multiply(q2); // what its world rotation would be
-  p.getWorldQuaternion(q3).invert();
-  q3.multiply(q1); // in its parent's terms
-  bone.quaternion.slerp(q3, w);
-}
-const dirL = new THREE.Vector3(),
-  dirR = new THREE.Vector3(),
-  right = new THREE.Vector3(),
-  up = new THREE.Vector3();
-function armsToCanopy(root: Named, w: number) {
-  const ul = root.getObjectByName('upperarm_l'),
-    ll = root.getObjectByName('lowerarm_l'),
-    hl = root.getObjectByName('hand_l'),
-    ur = root.getObjectByName('upperarm_r'),
-    lr = root.getObjectByName('lowerarm_r'),
-    hr = root.getObjectByName('hand_r');
-  if (!ul || !ll || !hl || !ur || !lr || !hr) return;
-  right.subVectors(ul.getWorldPosition(a), ur.getWorldPosition(b)).normalize();
-  up.set(0, 1, 0);
-  dirL.copy(up).multiplyScalar(0.92).addScaledVector(right, 0.42).normalize();
-  dirR.copy(up).multiplyScalar(0.92).addScaledVector(right, -0.42).normalize();
-  aim(ul, ll, dirL, w);
-  aim(ur, lr, dirR, w);
-  dirL.copy(up).multiplyScalar(0.97).addScaledVector(right, 0.12).normalize();
-  dirR.copy(up).multiplyScalar(0.97).addScaledVector(right, -0.12).normalize();
-  aim(ll, hl, dirL, w);
-  aim(lr, hr, dirR, w);
-}
-const toRing = new THREE.Vector3();
-function armToRing(root: Named, ring: THREE.Vector3, w: number) {
-  const ur = root.getObjectByName('upperarm_r'),
-    lr = root.getObjectByName('lowerarm_r'),
-    hr = root.getObjectByName('hand_r');
-  if (!ur || !lr || !hr) return;
-  toRing.subVectors(ring, ur.getWorldPosition(a)).normalize();
-  aim(ur, lr, toRing, w);
-  aim(lr, hr, toRing, w);
-}
-
-/** The canopy over someone's head, in their avatar's space so a fast frame can't leave it behind. */
-function placeCanopy(root: Named, c: Canopy, want: number, dt: number, now: number) {
-  c.w += (want - c.w) * (1 - Math.exp(-dt / (want > c.w ? 0.04 : 0.05)));
-  if (c.w < 0.01) {
-    c.w = 0;
-    c.g.visible = false;
-    return;
-  }
-  if (c.g.parent !== root) root.add(c.g);
-  c.g.visible = true;
-  armsToCanopy(root, Math.min(1, c.w * 1.3));
-  const head = root.getObjectByName('Head');
-  if (head) root.worldToLocal(head.getWorldPosition(a));
-  else a.set(0, 0.9, 0);
-  // Opens fast: from a bundle at your shoulders to the full width. The wing rides with you; no lean of the whole body.
-  const s = c.w,
-    flutter = Math.sin(now * 0.011) * 0.008;
-  c.g.position.set(0, a.y + 0.22 + 0.45 * s, 0);
-  c.g.scale.set(Math.max(0.12, s), Math.max(0.3, s) * (1 + flutter), Math.max(0.2, s));
-  c.g.rotation.z = Math.sin(now * 0.0023) * 0.012;
-}
-
+type Named = THREE.Object3D;
 // ---------------------------------------------------------------- the cable
 const cableMat = new THREE.MeshStandardNodeMaterial({ color: '#2b2a33', emissive: TEAL, emissiveIntensity: 0.5 });
 const cableGeo = new THREE.CylinderGeometry(0.018, 0.018, 1, 5).translate(0, 0.5, 0);
@@ -189,21 +54,7 @@ const lastTo = new THREE.Vector3();
 
 // ---------------------------------------------------------------- what you wear once you've found them
 // Rings at the ankles, a spool on the forearm and a folded pack: you can see what you've got, as with the axe.
-const anklet = merged([['t', 0, 0, 0, 0.1, 0.09, 0.1, TEAL]]);
-const spool = merged([
-  ['c', 0, 0, 0, 0.1, 0.16, 0.1, '#c79a3e', 0, Math.PI / 2],
-  ['c', 0, 0, 0, 0.11, 0.06, 0.11, TEAL, 0, Math.PI / 2],
-]);
-const pack = merged([
-  ['b', 0, 0, -0.26, 0.44, 0.34, 0.16, '#2fb7a0'],
-  ['b', 0, 0.2, -0.26, 0.5, 0.05, 0.05, '#c79a3e'],
-]);
-const gear = {
-  ankleL: new THREE.Mesh(anklet, gearMat),
-  ankleR: new THREE.Mesh(anklet, gearMat),
-  spool: new THREE.Mesh(spool, gearMat),
-  pack: new THREE.Mesh(pack, gearMat),
-};
+const gear = makeGear();
 // Detached until earned. The real loading frame also warms the wing's double-sided shadow pipeline.
 warmDraw(() => {
   const g = makeCanopy().g;
@@ -215,15 +66,6 @@ warmDraw(() => {
   scene.add(g);
   return () => g.removeFromParent();
 });
-function wear(root: Named, m: THREE.Mesh, bone: string, on: boolean, dy = 0) {
-  m.visible = on;
-  if (!on) return;
-  if (m.parent !== root) root.add(m);
-  const o = root.getObjectByName(bone);
-  if (o) root.worldToLocal(o.getWorldPosition(m.position));
-  m.position.y += dy;
-}
-
 // ---------------------------------------------------------------- the puff and the sounds
 const PUFF = new THREE.Color('#f4efe4'),
   PUFF2 = new THREE.Color(TEAL);
@@ -388,11 +230,13 @@ onFrame(
     drawCable(myCable, hand, ring, dt);
     if (!ring && myCable.t <= 0) myCable.on = false;
     // What you've found, on you.
-    // The calf's pivot is the knee: a vertical offset from it leaves the ring behind a swinging foot.
-    wear(root, gear.ankleL, 'foot_l', job.tech.jump, 0.02);
-    wear(root, gear.ankleR, 'foot_r', job.tech.jump, 0.02);
-    wear(root, gear.spool, 'lowerarm_r', job.tech.hook);
-    wear(root, gear.pack, 'spine_02', job.tech.glide && !move.open);
+    wearGear(root, me.avatar?.userData.loadFit?.frame, gear, {
+      rings: job.tech.jump,
+      spool: job.tech.hook,
+      glider: job.tech.glide,
+      frame: !!job.rung.pack,
+      canopy: move.open,
+    });
     // Two threads of air off the wing's tips while you're moving: it reads as speed, against the sky.
     const speed = Math.hypot(body.velocity.x, body.velocity.z);
     if (move.holding && !reducedMotion) {
