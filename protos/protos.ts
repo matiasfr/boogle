@@ -125,6 +125,13 @@ export const PROTOS: Proto[] = [
     since: '2026-11-02',
     spawn: { x: 903, z: 14, yaw: -0.25 }, // at the village's edge, with the shelf, the path, the forge and the stub ahead
     verb: 'chops',
+    variants: [
+      {
+        name: 'shore-arrival',
+        url: '/?proto=place&v=shore-arrival&intro=1',
+        what: 'Did landing on the shore make you want to head into town and help?',
+      },
+    ],
   },
   {
     id: 'net',

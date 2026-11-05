@@ -5,6 +5,9 @@ import { DEFAULT_ROOM } from '../constants.ts';
  * Round 4 is the default entry, without rewriting the URL or moving prototype code. */
 export function pageQuery(): URLSearchParams {
   const q = new URLSearchParams(typeof location === 'undefined' ? 'classic=1' : location.search);
+  // Disposable shore geometry must never enter the village/control or public room.
+  if (q.get('proto') === 'place' && q.get('v') === 'shore-arrival')
+    q.set('room', q.get('coop') === '1' ? 'proto-place-shore-arrival-coop' : 'proto-place-shore-arrival');
   // Explicit prototypes win over the home comparison and may never join its reserved room.
   if (q.has('proto')) {
     q.delete('island');

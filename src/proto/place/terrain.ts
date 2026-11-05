@@ -2,6 +2,7 @@
 // can walk it in Node. ./land.ts draws it and makes it solid. The gorge's walls are near-vertical cells of the grid, so nothing
 // here overhangs; footbridges and platforms are their own boxes. Local: nothing here reaches the sim.
 import { smoothstep } from '../../math.ts';
+import { SHORE_ARRIVAL, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';
 import {
   ARMS,
   GORGE,
@@ -217,6 +218,57 @@ function bake() {
   });
 }
 bake();
+
+if (SHORE_ARRIVAL) {
+  // A shallow way back from the water beside the level landing. Blend into the original coast beyond
+  // the cove; this modifies the finished grid shared by the mesh, heightfield and water shore provider.
+  for (let j = 0; j < NZ; j++)
+    for (let i = 0; i < NX; i++) {
+      const x = cellX(i),
+        z = cellZ(j),
+        weight = smoothstep(-238, -226, x) * smoothstep(-182, -190, x) * smoothstep(38, 18, Math.abs(z - 10));
+      if (!weight) continue;
+      const y = -2 + 5 * smoothstep(-224, -208, x),
+        k = at(i, j);
+      heights[k] = heights[k]! + (y - heights[k]!) * weight;
+      clearMask[k] = Math.max(clearMask[k]!, weight);
+    }
+  // Wrap the cove around the clearing's right side, so the inland view has sea beside it.
+  // Keep a shallow shoulder; the path and level landing are restored below.
+  for (let j = 0; j < NZ; j++)
+    for (let i = 0; i < NX; i++) {
+      const x = cellX(i),
+        z = cellZ(j);
+      const side = 10 + 1.8 * Math.max(0, Math.min(10, x + 187));
+      if (z - side <= 6) continue;
+      const weight = smoothstep(-238, -226, x) * smoothstep(-176, -187, x) * smoothstep(78, 58, z);
+      if (!weight) continue;
+      const k = at(i, j),
+        target = -2 + 5 * (1 - smoothstep(6, 20, z - side));
+      heights[k] = heights[k]! + (Math.min(heights[k]!, target) - heights[k]!) * weight;
+      clearMask[k] = Math.max(clearMask[k]!, weight);
+    }
+  const samples: [number, number, number][] = [];
+  SHORE_PATH.slice(0, -1).forEach((a, k) => {
+    const b = SHORE_PATH[k + 1]!,
+      n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]));
+    for (let m = 0; m <= n; m++) {
+      const t = m / n;
+      samples.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
+    }
+  });
+  // Grade a broad grass shoulder first; paint with the ordinary bold-path widths on top.
+  strip(
+    samples.filter(([x]) => x < -150),
+    6,
+    14,
+    false,
+  );
+  strip(samples, 3.6, 6.5, true);
+  pad(SHORE_HOP.x, SHORE_HOP.z, SHORE_HOP.y, 2.5, 3);
+  // Last: an 18 m disc (16 m clear after grid interpolation), including the steering funnel.
+  pad(SHORE_LANDING.x, SHORE_LANDING.z, 3, 9, 5);
+}
 
 // Local A/B only: the owner's measured Ultra Water bearing-95 profile, in metres over sea level.
 // Apply once to the finished grid so mesh, Owner collision, H and the shore provider all see the same bed.
