@@ -18,6 +18,7 @@ import {
 } from '../../netplay/net.ts';
 import { me } from '../../player/player.ts';
 import { flat } from '../flat.ts';
+import { merged } from './part-geometry.ts';
 
 export type Seat = {
   id: string;
@@ -219,22 +220,23 @@ onFrame(
   },
   { phase: 'update', order: 20 },
 );
+// Rigid Local geometry: all chairs share one colored mesh instead of four separate draws.
+// The host surface still owns the matching solid and every seat anchor.
+const chairGeometry = merged([
+  ['b', 0, 0.49, 0, 0.8, 0.12, 0.65, '#bd8a50'],
+  ['b', 0, 0.95, -0.3, 0.8, 0.8, 0.12, '#56847b'],
+  ['b', -0.3, 0.23, 0, 0.12, 0.46, 0.55, '#bd8a50'],
+  ['b', 0.3, 0.23, 0, 0.12, 0.46, 0.55, '#bd8a50'],
+]);
+const chairMaterial = flat('#ffffff').clone();
+chairMaterial.vertexColors = true;
 /** A low chair with a back. Its matching solid is owned by the host surface. */
 export function seatMesh() {
   const g = new THREE.Group();
-  const wood = flat('#bd8a50'),
-    back = flat('#56847b');
-  for (const [x, y, z, w, h, d, mat] of [
-    [0, 0.49, 0, 0.8, 0.12, 0.65, wood],
-    [0, 0.95, -0.3, 0.8, 0.8, 0.12, back],
-    [-0.3, 0.23, 0, 0.12, 0.46, 0.55, wood],
-    [0.3, 0.23, 0, 0.12, 0.46, 0.55, wood],
-  ] as const) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-    m.position.set(x, y, z);
-    m.castShadow = m.receiveShadow = true;
-    g.add(m);
-  }
+  const m = new THREE.Mesh(chairGeometry, chairMaterial);
+  m.name = 'place chair';
+  m.castShadow = m.receiveShadow = true;
+  g.add(m);
   return g;
 }
 export const seatHeight = 0.55 + PLAYER_R;

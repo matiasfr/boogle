@@ -17,7 +17,8 @@ switch together. Water chemistry, FFT, caustic simulation and fixed exposure (0.
 The fade is a Local DOM veil owned/disposed by the sea, with no extra render pass or light. Authoring sky-rebake
 controls are inactive while prepared evening is enabled. No sky allocation/bake is added on ordinary visits.
 The two raw/filtered pairs model approximately 256 MiB before scratch/LUTs, not measured residency;
-512-face comparison and device memory acceptance remain separate work. The experiment makes no device budget claim.
+the opt-in `skySize` comparison applies the same selected size to both prepared endpoints. The default remains
+1024; smaller-sky visual acceptance and device memory acceptance remain separate work. The experiment makes no device budget claim.
 
 ### Evening verification (5 November)
 
@@ -82,6 +83,13 @@ swash, foam, spray, refraction, underwater shafts/snow and exit droplets. The fr
 once behind loading at `tod=0.24`; Neutral remains the default output after underwater HDR and exposure.
 Surface swimming and automatic high-fall plunges are unchanged; there is no new input or breath mechanic.
 Desktop remains high and coarse-pointer/mobile quality remains 0.6 world resolution. Camera and fog ranges stay.
+
+`skySize=512` and `skySize=256` are Local, reload-only comparisons of the same atmosphere/cloud bake,
+prepared behind the existing loading screen. The default remains 1024; other values also select 1024.
+Water/fog LODs adjust for cube size to retain their original angular blur, and ambient fill samples the final mip.
+The HDR cube's texel payload including all six mip chains is approximately 64/16/4 MiB for 1024/512/256;
+this excludes atmosphere LUTs, generated PMREM and GPU allocation padding. The comparison changes neither
+the bake parameters nor the once-per-load production cadence. Smaller skies are not yet approved as the default.
 
 Place's visible seabed continues beyond its rectangular terrain grid along the shore atlas's smooth offshore
 apron. A deeper render-only tail ends at 240 m below sea level, where even blue seabed transmission is below
