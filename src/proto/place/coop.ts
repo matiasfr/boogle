@@ -65,7 +65,7 @@ import {
   type Tree,
   type HarvestResult,
 } from './chop.ts';
-import { cartPlatform, rackTake, reconcileCart } from './depot.ts';
+import { callCart, cart, cartHasDelivery, cartPlatform, rackTake, recallCart, reconcileCart } from './depot.ts';
 import { forge, takeRail } from './forge.ts';
 import { COOP, applyShared, captureShared, count, job, num, save, type Rungs } from './job.ts';
 import { GOODS, TUNE, type Goods } from './layout.ts';
@@ -171,6 +171,7 @@ function applyFull(a: Api, j: Snap, announce = true) {
   // Keep that reservation/receipt alive; only a reset invalidates the transaction.
   if (j.gen !== gen) {
     bigPending = null;
+    recallPending = null;
     clearHarvest();
     resetGotHistory();
     announce = false;
@@ -230,6 +231,7 @@ const volatile = (j: Record<string, unknown>) => {
     j.depot && (j.depot as { logs: number }).logs,
     j.depot && (j.depot as { rails: number }).rails,
     j.depot && (j.depot as { cartRails: number }).cartRails,
+    (j.depot as { recallQueued?: boolean } | undefined)?.recallQueued === true,
   ]);
 };
 
@@ -384,7 +386,7 @@ function reconcileBig() {
 }
 
 // ---------------------------------------------------------------- who's here, and who decides
-type Peer = { since: number; visible: boolean; seen: number; railCart: boolean; rideCart: number };
+type Peer = { since: number; visible: boolean; seen: number; railCart: boolean; rideCart: number; recallCart: boolean };
 const peers = new Map<string, Peer>();
 const peerBack = new Map<string, number>();
 const peerBig = new Map<string, BigThing>();
@@ -578,6 +580,17 @@ function requestBig(what: BigCargo, action: 'pick' | 'drop') {
   return true;
 }
 
+export type CartRecallMessage =
+  | { k: 'cartRecall'; gen: number; to: string }
+  | { k: 'cartRecallAccepted'; gen: number; queued: boolean }
+  | { k: 'cartRecallRejected'; gen: number; to: string };
+let recallPending: string | null = null;
+function acceptRecall() {
+  recallCart();
+  if (COOP) msg({ k: 'cartRecallAccepted', gen, queued: cart.recallQueued } satisfies CartRecallMessage);
+  save();
+}
+
 function msg(m: Record<string, unknown>) {
   try {
     net.room?.send({ t: COOP_IDENTITY, ...m });
@@ -707,11 +720,35 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       if (!count(m.gen) || m.gen <= gen) return;
       bigPending = null;
       clearHarvest();
+      recallPending = null;
       gen = m.gen;
       a.startOver();
       showBanner('Started over', 'Your partner reset the railway for you both.', 3);
       return;
     }
+    case 'cartRecall':
+      if (m.to !== net.myPeer || !count(m.gen)) return;
+      if (
+        ready &&
+        amAuthority() &&
+        m.to === net.myPeer &&
+        m.gen === gen &&
+        peers.has(from) &&
+        job.rung.depot &&
+        !job.rung.trains
+      )
+        acceptRecall();
+      else msg({ k: 'cartRecallRejected', gen: m.gen, to: from } satisfies CartRecallMessage);
+      return;
+    case 'cartRecallRejected':
+      if (from === recallPending && m.to === net.myPeer && m.gen === gen) recallPending = null;
+      return;
+    case 'cartRecallAccepted':
+      if (!ready || from !== authorityPeer() || m.gen !== gen || typeof m.queued !== 'boolean') return;
+      recallPending = null;
+      if (m.queued) cart.recallQueued = true;
+      else if (!cart.called || cart.auto) callCart();
+      return;
     case 'cartCall':
     case 'cartLoad':
     case 'beamSet':
@@ -956,6 +993,28 @@ export const coop = {
   /** 1 = supports the bonus, 2 = riding. Missing/invalid capability keeps every cart at the legacy speed. */
   rideCart: () => allPeersSupport((p) => p.rideCart > 0),
   cartRider: () => COOP && [...peers.values()].some((p) => present(p) && p.rideCart === 2),
+  recallPending: () => recallPending !== null,
+  recallSupported: () => allPeersSupport((p) => p.recallCart),
+  recallAvailable: () => coop.recallSupported() || !cartHasDelivery(),
+  /** An older arrival cannot predict the queue. Settle its rack and return destination atomically. */
+  finishRecall() {
+    if (COOP && amAuthority() && !coop.recallSupported()) msg({ k: 'snap', snap: snapshot(), force: true });
+  },
+  /** New request/acceptance names; cartCall retains the legacy immediate recall. */
+  recallCart() {
+    if (!job.rung.depot || job.rung.trains || recallPending !== null || !coop.recallAvailable()) return;
+    if (!coop.recallSupported()) {
+      callCart();
+      if (COOP) msg({ k: 'cartCall' });
+      return;
+    }
+    const to = COOP ? authorityPeer() : null;
+    if (to === null) acceptRecall();
+    else {
+      recallPending = to;
+      msg({ k: 'cartRecall', gen, to } satisfies CartRecallMessage);
+    }
+  },
   /** The authority is running someone else's Skip: it doesn't move its own player. */
   noHop: false,
   /** What this tab has decided a station shows. */
@@ -1021,6 +1080,7 @@ export const coop = {
     el.textContent = 'Start over (both)';
     bigPending = null;
     clearHarvest();
+    recallPending = null;
     gen++;
     msg({ k: 'reset', gen });
     api?.startOver();
@@ -1058,6 +1118,11 @@ export const coop = {
     if (!COOP || !api || !ready) return;
     const a = api,
       lead = amAuthority();
+    // A request not yet accepted can follow the election; acceptance is idempotent.
+    if (recallPending !== null && recallPending !== authorityPeer()) {
+      recallPending = null;
+      coop.recallCart();
+    }
     const treeLead = authorityPeer();
     if (bigPending && treeLead === null) {
       acceptBig(bigPending.what, bigCargo[bigPending.what]);
@@ -1123,6 +1188,7 @@ export const coop = {
     addPresenceField(COOP_IDENTITY, () => (since >= 0 ? since : null));
     addPresenceField('placeRailCart', () => (since >= 0 ? 1 : null));
     addPresenceField('placeCartRide', () => (since >= 0 ? (carry.on === cartPlatform ? 2 : 1) : null));
+    addPresenceField('placeCartRecall', () => (since >= 0 ? 1 : null));
     keepPresenceWhile(() => since >= 0);
     // Keep the legacy log count and cargo recovery fields; chop.ts draws the other worn loads.
     addPresenceField('placeBack', () => (back.logs > 0 ? back.logs : null));
@@ -1146,6 +1212,7 @@ export const coop = {
         seen: performance.now(),
         railCart: pr.placeRailCart === 1,
         rideCart: pr.placeCartRide === 1 || pr.placeCartRide === 2 ? pr.placeCartRide : 0,
+        recallCart: pr.placeCartRecall === 1,
       });
       if (synced) reconcileBig();
     });
@@ -1193,10 +1260,16 @@ export const coop = {
           answer &&
           (pending.some((p) => p.to === from && p.kind === m.kind && (!m.q || p.q === m.q)) ||
             (harvestPending?.to === from && harvestPending.q === m.q && harvestPending.i === m.i));
-        if (!(answer && (from === authorityPeer() || expected)) && !allow(from)) {
+        const recallAnswer =
+          m.gen === gen &&
+          ((m.k === 'cartRecallAccepted' && from === authorityPeer() && typeof m.queued === 'boolean') ||
+            (m.k === 'cartRecallRejected' && from === recallPending && m.to === net.myPeer));
+        if (!recallAnswer && !(answer && (from === authorityPeer() || expected)) && !allow(from)) {
           if (m.k === 'dep' && (m.to === net.myPeer || (!m.to && amAuthority())) && isKind(m.kind))
             msg({ k: 'no', to: from, kind: m.kind, q: count(m.q) ? m.q : 0 });
           if (m.k === 'harvest' && m.to === net.myPeer) msg({ k: 'harvestNo', to: from, q: m.q, i: m.i, gen: m.gen });
+          if (m.k === 'cartRecall' && m.to === net.myPeer && count(m.gen))
+            msg({ k: 'cartRecallRejected', gen: m.gen, to: from } satisfies CartRecallMessage);
           return;
         }
         try {

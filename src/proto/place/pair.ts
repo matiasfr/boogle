@@ -14,12 +14,12 @@ import { scene } from '../../render/scene.ts';
 import { thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { flat } from '../flat.ts';
-import { pop } from '../minis/common.ts';
+import { label, pop } from '../minis/common.ts';
 import { shakeView } from './celebrate.ts';
 import { back } from './chop.ts';
 import { coop, pairHook } from './coop.ts';
 import { currentCoopPeer } from './coop-identity.ts';
-import { callCart, cart, cartHere, depotRails, depotRide, loadCart, onCart, railsOwed } from './depot.ts';
+import { callCart, cart, cartHere, depotRails, depotRecall, depotRide, loadCart, onCart, railsOwed } from './depot.ts';
 import { forge, rackTop, takeRail } from './forge.ts';
 import { COOP, count, job, num, save } from './job.ts';
 import { CART, ORIGIN } from './layout.ts';
@@ -113,6 +113,20 @@ function setBeam(yaw: number) {
 }
 
 const at = new THREE.Vector3(TX, TY + 2, TZ);
+// Beside the turntable stop, leaving the cart's running line clear.
+const callAt = new THREE.Vector3(TX - 2.8, H(TX - 2.8, TZ + 2.8) + 1.5, TZ + 2.8);
+const callHandle = new THREE.Group();
+callHandle.visible = false;
+callHandle.position.set(callAt.x, callAt.y - 1.5, callAt.z);
+const post = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.35, 0.45), flat('#5b5145'));
+post.position.y = 0.675;
+const gripBar = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.3, 0.4), flat('#e6a33e'));
+gripBar.position.y = 1.5;
+callHandle.add(post, gripBar);
+const callTag = label(5.4, 1.6);
+callTag.sprite.position.y = 3.8;
+callHandle.add(callTag.sprite);
+scene.add(callHandle);
 const from = new THREE.Vector3();
 const cartLoadAmount = () => Math.max(0, Math.min(railsOwed(), CART.rails - cart.rails, forge.rails));
 /** Both the porter and the little guys draw from the very same forge stock and load. */
@@ -134,11 +148,26 @@ function loadFromForge(manual = true) {
   coop.send({ k: 'cartLoad', n, manual });
 }
 depotRails.enabled = () => coop.railCart();
+depotRails.stock = () => forge.rails;
+depotRecall.finished = () => {
+  // Current peers finish their own flights; mixed rooms settle inventory and destination together.
+  coop.finishRecall();
+};
 depotRails.load = () => {
   if (!coop.follower()) loadFromForge(false);
 };
 depotRide.enabled = () => coop.rideCart();
 depotRide.update = () => {
+  callHandle.visible = job.rung.depot && !job.rung.trains;
+  const pending = coop.recallPending();
+  const recalled = cart.called && !cart.auto;
+  const acknowledged = pending || cart.recallQueued || recalled;
+  gripBar.position.y = acknowledged ? 1.25 : 1.5;
+  callTag.set(
+    pending ? 'Call sent' : cart.recallQueued ? 'After unloading' : recalled ? 'Cart called' : 'Call cart to forge',
+    cart.recallQueued ? 'Then back to forge' : '',
+    acknowledged ? '#8edbff' : '#ffd26e',
+  );
   if (coop.follower()) return;
   const boost = cart.manual && coop.rideCart() && (onCart(carry.on) || coop.cartRider());
   if (boost === cart.boost) return;
@@ -280,31 +309,36 @@ if (COOP) {
     },
     { phase: 'world', order: 15 },
   );
-  registerInteractable(() => {
-    const p = me.body?.interpolatedPosition;
-    if (!p || !job.rung.depot || job.rung.trains || Math.hypot(p.x - TX, p.z - TZ) > 5) return [];
-    if (cart.leg === 'forge' && !cart.auto && cartLoadAmount() > 0)
-      return [
-        {
-          id: 'place-cart-load',
-          verb: 'Load the cart',
-          at,
-          run: () => loadFromForge(),
-        },
-      ];
-    if (!cart.called || cart.auto)
-      return [
-        {
-          id: 'place-cart-call',
-          verb: 'Whistle for the cart',
-          at,
-          run: () => {
-            whistle(TX, TZ);
-            callCart();
-            coop.send({ k: 'cartCall' });
-          },
-        },
-      ];
-    return [];
-  });
 }
+registerInteractable(() => {
+  const p = me.body?.interpolatedPosition;
+  if (!p || !job.rung.depot || job.rung.trains) return [];
+  if (Math.hypot(p.x - TX, p.z - TZ) <= 5 && cart.leg === 'forge' && !cart.auto && cartLoadAmount() > 0)
+    return [
+      {
+        id: 'place-cart-load',
+        verb: 'Load the cart',
+        at,
+        run: () => loadFromForge(),
+      },
+    ];
+  if (
+    Math.hypot(p.x - callAt.x, p.z - callAt.z) <= 3 &&
+    !cart.recallQueued &&
+    !coop.recallPending() &&
+    (!cart.called || cart.auto)
+  )
+    return [
+      {
+        id: 'place-cart-call',
+        verb: 'Call cart to forge',
+        at: callAt,
+        blocked: coop.recallAvailable() ? undefined : 'Cart is delivering',
+        run: () => {
+          whistle(TX, TZ);
+          coop.recallCart();
+        },
+      },
+    ];
+  return [];
+});
