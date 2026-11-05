@@ -1,4 +1,6 @@
-> **Status: building. Approved (owner, 2026-11-04): "Yeah let's proceed", all four recommendations as written.**
+> **Status: ready to playtest. Approved (owner, 2026-11-04): "Yeah let's proceed", all four recommendations as written.**
+>
+> Built and checked on desktop and 375 px Chromium profiles. [Evidence, timings, draft words and device limits](../reports/load-screen.md). A real iPhone is untested.
 
 # Load screen you can read
 
