@@ -30,7 +30,7 @@ Seats use the deck's actual cargo-top surface and refresh it while sitting. A lo
 
 Fixed chairs keep their authored horizontal anchors and safe aisle exits, with body height clamped above the platform's current `topAt` surface. The floating **Stand up** hint stays visible for three seconds, then fades over 0.35 seconds; the target and Interact/Jump exits remain available. Sitting again restores the hint. On a room lead change, transient claims release and occupants stand at their authored exits; they can sit again after the new lead assigns a fresh claim.
 
-The four rigid chair parts share one vertex-colored geometry and material across trains: one color draw and one shadow draw per visible chair instead of four each. Dimensions, colors, roughness, anchors, solids and sitting behavior are unchanged; this is Local drawing only.
+The four rigid chair parts share one vertex-colored geometry and material across trains and the workshop: one color draw and one shadow draw per visible chair instead of four each. Dimensions, colors, roughness, anchors, solids and sitting behavior are unchanged; this is Local drawing only.
 
 Cosmetic reveals show rarity stars on their own row beneath the name, alongside the complete original gift line. A line no longer replaces the stars (including the scarf); the text column can shrink and wrap on portrait phones.
 

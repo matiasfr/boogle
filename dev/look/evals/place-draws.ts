@@ -25,7 +25,8 @@ backend.draw = function (draw, info) {
     path.unshift(node.name || `${node.type}[${node.parent?.children.indexOf(node) ?? 0}]`);
     node = node.parent;
   }
-  const shadow = draw.material.type === 'ShadowMaterial';
+  // r187 ShadowBaseNode names its override; its type is still NodeMaterial.
+  const shadow = draw.material.name === 'ShadowMaterial';
   const key = `${draw.object.id}:${draw.material.id}:${shadow}`;
   const before = renderer.info.render.drawCalls;
   original.call(backend, draw, info);
