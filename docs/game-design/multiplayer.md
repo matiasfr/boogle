@@ -31,34 +31,42 @@ are held (up to 64, 5 s) and released one per 210 ms.
 
 ## 8.3 Sync kind per feature
 
-| Feature | Kind | Channel / API |
-|---|---|---|
-| Your avatar (name, colour, position, yaw, state) | Owner | presence `n`, `c`, `p`, `r`, `s` |
-| Your player id (pid) | Owner + bound by the server | presence `pid`; `pid` in the `/room` URL; stamped on every edit as `e.u` |
-| Who each pid is (name, colour) | Lockstep | op `who.set`; state `roster` |
-| Beach ball | Owner (epoch rule) | presence `b` |
-| What you hold | Owner | presence `hd` |
-| Flops, face-plant | Owner | presence `fl`, `kd` |
-| Your build id | Owner | presence `bv` |
-| How you treat the Boogler | Owner | presence `bg` |
-| The Boogler's position and mode | Host | `addHostField('g')` |
-| Ground piles | Lockstep | ops `pile.drop`, `pile.take`; state `piles` |
-| Haul stacks (what each player carries) | Lockstep, by roster index | state `stacks`; the spill is your call (Owner), applied as `pile.drop` |
-| Work sites, plaques (tier derived), machine runs | Lockstep (a run is a pure function of its start tick) | ops `site.stock`, `site.run`; state `sites` |
-| Log sources (the bundles at the home palms) | Lockstep | op `src.take`; state `sources`; refills on a section laid and a seeded tick |
-| Ball resting spot | Lockstep (the ball's physics stays Owner) | op `ball.rest` (integer cm; one per 2 s); state `ball`; restored once when a tab loads the world |
-| Offline helper bank | Lockstep, from a host-only measurement | op `bank.wake` (`hostOnly`: only the host's own submit is stamped); state `bank` |
-| Mushrooms | Local, from a one-off message | message `mush` (6.4) |
-| Thrown things, frisbee | Lockstep | ops `gift.take`, `gift.toss`; state `gifts` |
-| Sky, sails, lighthouse beam | Lockstep without state | function of `world.tick` |
-| Flights of thrown things | Local replay, Lockstep landing | `gift.toss` |
-| Honk, ping | Messages (not state) | `room.send` `{ t: 'honk' }`, `{ t: 'ping' }` |
-| The guest's pose | Owner | presence `mr` |
-| What you hold | Local | none |
-| The Boogler's memory of you | Local | localStorage |
-| Critters, splashes, impact juice, blob shadows, pause view, guide | Local | none |
+| Feature                                                           | Kind                                                  | Channel / API                                                                                    |
+| ----------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Your avatar (name, colour, position, yaw, state)                  | Owner                                                 | presence `n`, `c`, `p`, `r`, `s`                                                                 |
+| Your player id (pid)                                              | Owner + bound by the server                           | presence `pid`; `pid` in the `/room` URL; stamped on every edit as `e.u`                         |
+| Who each pid is (name, colour)                                    | Lockstep                                              | op `who.set`; state `roster`                                                                     |
+| Beach ball                                                        | Owner (epoch rule)                                    | presence `b`                                                                                     |
+| What you hold                                                     | Owner                                                 | presence `hd`                                                                                    |
+| Flops, face-plant                                                 | Owner                                                 | presence `fl`, `kd`                                                                              |
+| Your build id                                                     | Owner                                                 | presence `bv`                                                                                    |
+| How you treat the Boogler                                         | Owner                                                 | presence `bg`                                                                                    |
+| The Boogler's position and mode                                   | Host                                                  | `addHostField('g')`                                                                              |
+| Ground piles                                                      | Lockstep                                              | ops `pile.drop`, `pile.take`; state `piles`                                                      |
+| Haul stacks (what each player carries)                            | Lockstep, by roster index                             | state `stacks`; the spill is your call (Owner), applied as `pile.drop`                           |
+| Work sites, plaques (tier derived), machine runs                  | Lockstep (a run is a pure function of its start tick) | ops `site.stock`, `site.run`; state `sites`                                                      |
+| Log sources (the bundles at the home palms)                       | Lockstep                                              | op `src.take`; state `sources`; refills on a section laid and a seeded tick                      |
+| Ball resting spot                                                 | Lockstep (the ball's physics stays Owner)             | op `ball.rest` (integer cm; one per 2 s); state `ball`; restored once when a tab loads the world |
+| Offline helper bank                                               | Lockstep, from a host-only measurement                | op `bank.wake` (`hostOnly`: only the host's own submit is stamped); state `bank`                 |
+| Mushrooms                                                         | Local, from a one-off message                         | message `mush` (6.4)                                                                             |
+| Thrown things, frisbee                                            | Lockstep                                              | ops `gift.take`, `gift.toss`; state `gifts`                                                      |
+| Sky, sails, lighthouse beam                                       | Lockstep without state                                | function of `world.tick`                                                                         |
+| Flights of thrown things                                          | Local replay, Lockstep landing                        | `gift.toss`                                                                                      |
+| Honk, ping                                                        | Messages (not state)                                  | `room.send` `{ t: 'honk' }`, `{ t: 'ping' }`                                                     |
+| The guest's pose                                                  | Owner                                                 | presence `mr`                                                                                    |
+| What you hold                                                     | Local                                                 | none                                                                                             |
+| The Boogler's memory of you                                       | Local                                                 | localStorage                                                                                     |
+| Critters, splashes, impact juice, blob shadows, pause view, guide | Local                                                 | none                                                                                             |
 
 Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms behind (`INTERP_MS`).
+
+Remote riders use the existing Owner `riding` platform ID and local pose. While that advertisement is fresh and
+the platform exists here, the avatar follows our drawn deck regardless of the world-space gap between train
+copies. Leaving, an unknown platform, or a riding sample older than 1 second blends back to world presence.
+New boarding blends current world presence onto the deck over 0.2 seconds, so a completed approach does not
+replay an obsolete avatar offset. Later attachment changes ease from the last displayed pose, including switching platforms. This is
+Local presentation only: collision proxies retain their prior distance guard, and wire fields, authority,
+lockstep and Place train reconciliation are unchanged. Serves DESIGN.md 4, Cooperation is automatic, not negotiated.
 
 ## 8.4 Lockstep world, snapshots and saves
 
@@ -80,15 +88,15 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 
 ## 8.5 What persists and where
 
-| What | Where | Key or route | Scope |
-|---|---|---|---|
-| World snapshot (every state in `RULES`, tick) | The server's disk, every 2 s if changed, every 30 s and on shutdown regardless | `DATA_DIR/v02-<room>.json` (`GET /rooms/v02-<room>/snapshot`) | per room |
-| Name, colour | localStorage | `boogle.name`, `boogle.color` | global |
-| Player id (pid) | localStorage | `boogle.pid` (10 random `[a-z0-9]`) | global, per browser |
-| The browser's key behind the pid | localStorage | `boogle.key` (24 random `[a-z0-9]`, never shown or relayed) | global, per browser |
-| The Boogler's memory of you | localStorage | `boogle.boogler` | global, not per room |
-| Guest engine, the pieces cut from the ROM | IndexedDB | `boogle-decomp` / `files`: `guest-engine`, `guest-rom` | per browser, never uploaded |
-| Update reload guard | sessionStorage | `boogle-update-reloaded-for` | per tab session |
+| What                                          | Where                                                                          | Key or route                                                  | Scope                       |
+| --------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------- | --------------------------- |
+| World snapshot (every state in `RULES`, tick) | The server's disk, every 2 s if changed, every 30 s and on shutdown regardless | `DATA_DIR/v02-<room>.json` (`GET /rooms/v02-<room>/snapshot`) | per room                    |
+| Name, colour                                  | localStorage                                                                   | `boogle.name`, `boogle.color`                                 | global                      |
+| Player id (pid)                               | localStorage                                                                   | `boogle.pid` (10 random `[a-z0-9]`)                           | global, per browser         |
+| The browser's key behind the pid              | localStorage                                                                   | `boogle.key` (24 random `[a-z0-9]`, never shown or relayed)   | global, per browser         |
+| The Boogler's memory of you                   | localStorage                                                                   | `boogle.boogler`                                              | global, not per room        |
+| Guest engine, the pieces cut from the ROM     | IndexedDB                                                                      | `boogle-decomp` / `files`: `guest-engine`, `guest-rom`        | per browser, never uploaded |
+| Update reload guard                           | sessionStorage                                                                 | `boogle-update-reloaded-for`                                  | per tab session             |
 
 Saves from before 0.1 (`boogle.world.<room>`, the server's `<room>`) are never loaded: the namespace bump of
 2026-10-31 started every room's world fresh, and each tab deletes its old local key on connect. Not persisted: the ball, the Boogler's position.

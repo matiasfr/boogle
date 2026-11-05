@@ -66,7 +66,7 @@ background(
       const p = { x: 0, y: 0, z: 0, yaw: 0 };
       const cameraTimer = setInterval(() => {
         const b = car.body.position;
-        window.__debugCam?.set([b.x + 6, b.y + 4, b.z + 6], [b.x, b.y + 1, b.z]);
+        window.__debugCam?.set([b.x + 6, b.y + (q.has('lowcam') ? 2 : 4), b.z + 6], [b.x, b.y + 1, b.z]);
       }, 50);
       fromPlatform(car.platform, { x: 0.65, y: car.platform.top + 0.48, z: -0.8, yaw: 0 }, false, p);
       put(p.x, p.y, p.z);
@@ -146,7 +146,7 @@ background(
         console.log(`MIGRATION ${who} reclaimed lead=${net.room.isLead()} ${JSON.stringify(seatState())}`);
       }
       // Keep framing the moving chairs through the captured real-time interval.
-      setTimeout(() => clearInterval(cameraTimer), 60000);
+      setTimeout(() => clearInterval(cameraTimer), q.has('transitions') ? 120000 : 60000);
     } else {
       const complete = () => {
         forge.logs = HAND_LOGS;

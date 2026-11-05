@@ -8,9 +8,10 @@ import {
   rayHit,
   raycastClosest,
   teleport,
+  onPostStep,
   type Body,
 } from '../../../src/physics/engine.ts';
-import { PLAYER_R } from '../../../src/constants.ts';
+import { PLAYER_R, WALKABLE_NY } from '../../../src/constants.ts';
 import { GROUP } from '../../../src/physics/physics.ts';
 import { input } from '../../../src/player/input.ts';
 import { cam, me } from '../../../src/player/player.ts';
@@ -23,6 +24,48 @@ import type { Bot } from '../bot.ts';
 type Point = { x: number; y: number; z: number };
 const point = (p: Point) => ({ x: p.x, y: p.y, z: p.z });
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+
+// Keep approach/contact history, not only the pose left after a failed landing. Diagnostic only;
+// the ray is evidence of nearby support, never permission to jump or a replacement for contacts.
+const history: { position: Point; velocity: Point; coyote: number; contacts: number; at: number }[] = [];
+let watching = false;
+export function watchLanding() {
+  if (watching) return;
+  watching = true;
+  let step = 0;
+  let reported = false;
+  onPostStep(() => {
+    const b = me.body;
+    if (!b || ++step % 6) return;
+    let contacts = 0;
+    forEachContact(b, (_nx, ny) => {
+      if (ny > WALKABLE_NY) contacts++;
+    });
+    history.push({
+      position: point(b.position),
+      velocity: point(b.velocity),
+      coyote: me.coyote,
+      contacts,
+      at: performance.now(),
+    });
+    if (history.length > 60) history.shift();
+    if (me.coyote > 0) reported = false;
+    if (reported || me.coyote > -1 || me.swimming || Math.hypot(b.velocity.x, b.velocity.y, b.velocity.z) > 0.1) return;
+    const hit = rayHit();
+    if (
+      !raycastClosest(
+        b.position,
+        { ...point(b.position), y: b.position.y - PLAYER_R - 0.03 },
+        { mask: getMask(b) & ~GROUP.DEFAULT },
+        hit,
+      )
+    )
+      return;
+    if (hit.hitNormalWorld.y <= WALKABLE_NY) return;
+    reported = true;
+    console.log(`GROUNDING OUTAGE ${JSON.stringify({ history: [...history], failed: landingEvidence() })}`);
+  });
+}
 
 export function landingEvidence() {
   const body = me.body!;
@@ -71,6 +114,7 @@ export function landingEvidence() {
     ? { point: point(down.hitPointWorld), normal: point(down.hitNormalWorld), footGap: down.distance - PLAYER_R }
     : null;
   return {
+    history: [...history],
     position: point(body.position),
     velocity: point(body.velocity),
     coyote: me.coyote,

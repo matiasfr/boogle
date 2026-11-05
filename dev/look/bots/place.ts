@@ -18,6 +18,8 @@ import { runDoubleJumpCourse } from './double-jump.ts';
 import { GLIDE_RAMP, JUMP_COURSE, JUMP_RECOVERY } from '../../../src/proto/place/tech-layout.ts';
 import { playMark } from '../../../src/proto/mark.ts';
 import { RINGS, fireHook, move, whyNot } from '../../../src/proto/place/moves.ts';
+import { watchLanding } from './place-landing.ts';
+import { seatState } from '../../../src/proto/place/seat.ts';
 
 const q = new URLSearchParams(location.search);
 
@@ -59,6 +61,7 @@ export async function play() {
   // oxlint-disable-next-line typescript/no-explicit-any
   const place = window.__place as any;
   const coopRoute = q.get('coopRoute') === '1';
+  if (coopRoute) watchLanding();
   const bot = makeBot({
     recover: () => {
       if (coopRoute) throw new Error('Co-op route needed a recovery; no fixture relocation allowed');
@@ -802,7 +805,10 @@ export async function play() {
       if (carry.on === car.platform && !me.swimming) detachedAt = 0;
       else {
         detachedAt ||= performance.now();
-        if (performance.now() - detachedAt > 250) throw new Error('Passenger detached during the ride');
+        if (performance.now() - detachedAt > 250)
+          throw new Error(
+            `Passenger detached during the ride: ${JSON.stringify({ seat: seatState(), carry: carry.on?.id, position: body.position, velocity: body.velocity, coyote: me.coyote, swimming: me.swimming })}`,
+          );
       }
       await wait(40);
     }
