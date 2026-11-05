@@ -1,6 +1,6 @@
-> **Status: ready to playtest. Approved (owner, 2026-11-04): "Yeah let's proceed", all four recommendations as written.**
+> **Status: answered (owner, 2026-11-04, after seeing mocks): "I actually like the original at this rate, maybe we can just update the text from warming up shaders to be more varied?"**
 >
-> Built and checked on desktop and 375 px Chromium profiles. [Evidence, timings, draft words and device limits](../reports/load-screen.md). A real iPhone is untested.
+> Restore the original art, title, bar, gear and one changing label. Remove the public groups, room row, details/copy and post-entry notice; retain developer load details and invisible telemetry. The earlier approval ("Yeah let's proceed") and built proposal below are history, superseded by this call. [Earlier evidence, timings, draft words and device limits](../reports/load-screen.md).
 
 # Load screen you can read
 

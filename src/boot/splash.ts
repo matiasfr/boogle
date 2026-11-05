@@ -5,13 +5,13 @@
 //
 //   splashStage(from, to)          a new step: the decorative bar creeps toward `to` until the next call
 //   splashProgress(f)              how far through the current step (0..1), when a step can tell
-//   splashDone(failed?)             fade out at the existing handoff; retain unfinished work below the game
+//   splashDone(failed?)             fade out at the existing handoff
 //
 // A step that cannot report progress (a single compileAsync, a download) still moves: the bar eases toward `to`
 // and slows as it gets near, so it never sits still and never claims to be done early.
 import './splash.css';
 import art from './splash-art.jpg'; // prompt and reference: dev/concepts/splash.json; 1280 px, picked from a contact sheet
-import { bootMark, bootMarks, onBootMark, bootStatus, mountLoadDetails } from './timeline.ts';
+import { bootMark, bootMarks, onBootMark } from './timeline.ts';
 
 const CREEP_S = 2.5; // time constant of the creep toward a step's end
 const CREEP_MAX = 0.85; // a step that cannot report gets this far through on its own, at most
@@ -33,7 +33,6 @@ root.innerHTML = `
       <div class="splash-bar"><div class="splash-fill"></div></div>
     </div>
     <div class="splash-label" role="status"></div>
-    <div class="load-strip"><div class="load-groups"></div><div class="load-room"></div></div>
   </div>`;
 const img = root.querySelector<HTMLImageElement>('.splash-art')!;
 const fill = root.querySelector<HTMLElement>('.splash-fill')!;
@@ -41,44 +40,44 @@ const label = root.querySelector<HTMLElement>('.splash-label')!;
 img.addEventListener('load', () => img.classList.add('in'), { once: true });
 img.src = art;
 document.body.append(root);
-const groups = root.querySelector<HTMLElement>('.load-groups')!;
-const room = root.querySelector<HTMLElement>('.load-room')!;
-const strip = root.querySelector<HTMLElement>('.load-strip')!;
-const disposeDetails = mountLoadDetails(strip);
-const carry = document.createElement('div');
-carry.className = 'load-carry';
-carry.setAttribute('role', 'status');
-function statusText() {
-  const rows = bootStatus();
-  groups.replaceChildren(
-    ...rows.slice(0, 4).map((row) => {
-      const cell = document.createElement('div');
-      const title = document.createElement('strong');
-      const state = document.createElement('span');
-      title.textContent = row.name;
-      state.textContent = row.state;
-      cell.dataset.state = row.state;
-      cell.append(title, state);
-      return cell;
-    }),
-  );
-  room.textContent = `${rows[4]!.name}: ${rows[4]!.state}`;
-  const failed = bootMarks().some((m) => m.name === 'failed');
-  const pending = rows.slice(0, 4).filter((r) => r.state !== 'Done');
-  const active = pending.find((r) => r.state !== 'Waiting');
-  label.textContent = failed ? 'Loading failed' : active ? `${active.name}: ${active.state}` : 'Opening island';
-  if (done) {
-    carry.textContent = failed
-      ? 'Loading failed'
-      : pending
-          .map((r) => (r.state.startsWith('Failed') ? `${r.name}: ${r.state}` : `${r.name} still preparing`))
-          .join(' · ');
-    if (carry.textContent) document.body.append(carry);
-    else carry.remove();
-    if (!pending.length && !failed) disposeStatus();
+// Draft owner copy. Sky baking precedes precompile on the default Place route.
+// No timer advances reported shader progress; fast steps are skipped, never queued after completion.
+const warmLabels = ['Warming up the shaders', 'Filling the sea', 'Oiling the train', 'Waking up the island'];
+let warming = false;
+let labelSince = -Infinity;
+let labelPhase = '';
+function statusText(now = performance.now()) {
+  const has = (name: string) => bootMarks().some((m) => m.name === name);
+  let phase = 'graphics';
+  let text = 'Waking up the graphics';
+  if (!has('modules')) {
+    phase = 'files';
+    text = 'Loading the game';
+  } else if (has('world-start') && !has('props')) {
+    phase = has('terrain') ? 'trees' : 'world';
+    text = has('terrain') ? 'Planting the trees' : 'Building the island';
+  } else if (has('sky-start') && !has('sky-ready')) {
+    phase = 'sky';
+    text = 'Baking the sky';
+  } else if (warming && !has('warmup-complete')) {
+    phase = 'warmup';
+    text = warmLabels[Math.min(warmLabels.length - 1, Math.floor(at * warmLabels.length))]!;
+  } else if (has('warmup-complete')) {
+    phase = 'first';
+    text = 'Waking up the island';
   }
+  // A finished phase cannot keep claiming work during the readability hold. Reserve the line's space
+  // until the latest active phase can be shown; never extend a boot gate to make copy visible.
+  if (phase !== labelPhase) label.style.visibility = 'hidden';
+  if (now - labelSince < 2000) return;
+  if (label.textContent !== text || labelPhase !== phase) {
+    label.textContent = text;
+    labelPhase = phase;
+    labelSince = now;
+  }
+  label.style.visibility = '';
 }
-const disposeStatus = onBootMark(statusText);
+const disposeStatus = onBootMark(() => statusText());
 
 let from = 0;
 let to = 0;
@@ -90,6 +89,7 @@ let last = performance.now();
 
 function draw(now: number) {
   if (done) return;
+  statusText(now);
   const creep = CREEP_MAX * (1 - Math.exp(-(now - since) / 1000 / CREEP_S));
   const target = from + (to - from) * Math.max(at, reduced ? 0 : creep);
   const k = reduced ? 1 : 1 - Math.exp(-(now - last) / 120); // eases in about a tenth of a second, at any frame rate
@@ -110,6 +110,7 @@ export function splashStage(a: number, b: number) {
   to = Math.max(b, from);
   at = 0;
   since = performance.now();
+  warming = a === 0.45;
 }
 
 export function splashProgress(f: number) {
@@ -120,19 +121,13 @@ export function splashDone(failed = false) {
   if (done) return;
   if (failed) bootMark('failed');
   done = true;
-  statusText();
-  if (
-    !failed &&
-    bootStatus()
-      .slice(0, 4)
-      .every((r) => r.state === 'Done')
-  )
-    show(1);
+  disposeStatus();
+  if (failed) label.style.visibility = 'hidden';
+  else show(1);
   root.classList.add('gone'); // fades while the bar fills; the lobby under it takes clicks from now on
   setTimeout(
     () => {
       root.remove();
-      disposeDetails();
     },
     reduced ? 0 : 500,
   );

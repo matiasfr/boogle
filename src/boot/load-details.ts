@@ -1,4 +1,4 @@
-// The splash and Pause use the same retained marks, view and copy payload. No recorder or polling loop.
+// Pause's developer tools expose the retained marks and copy payload. No recorder or polling loop.
 import type { bootTimeline, onBootMark } from './timeline.ts';
 import { loadStatus } from './load-status.ts';
 

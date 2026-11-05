@@ -13,6 +13,7 @@ import { createWaterSky } from './sky.ts';
 import { bind, tuningEnabled } from './live.ts';
 import { toySkyEnabled } from './flags.ts';
 import { toySky } from './toy.ts';
+import { bootMark } from '../../boot/timeline.ts';
 
 export const WATER_TOD = 0.24;
 export let frozenSkyActive = false;
@@ -144,6 +145,7 @@ export function createFrozenWaterSky() {
   }
   async function bake() {
     if (disposed) return;
+    bootMark('sky-start');
     environment.bake();
     if (tuningEnabled) direction.copy(environment.sunDirection.value);
     // Lambert toy materials need the same cube's coarse irradiance as their hemisphere fill.
@@ -164,6 +166,7 @@ export function createFrozenWaterSky() {
       baked = true;
       updateFrozenDay();
       update();
+      bootMark('sky-ready');
       console.info(
         'WATER FROZEN SKY ' +
           JSON.stringify({ tod: timeOfDay, ...environment.inspect(), upper: upper.toArray(), lower: lower.toArray() }),
