@@ -24,6 +24,9 @@ const { pauseNavigation } = (await import(
   '/src/player/pause-pages.ts' as string
 )) as typeof import('../../../src/player/pause-pages.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
+const { backSeam } = (await import(
+  '/src/features/haul-stack.ts' as string
+)) as typeof import('../../../src/features/haul-stack.ts');
 const mode = new URLSearchParams(location.search).get('carry') ?? 'mixed';
 if (mode === 'touch' || innerWidth < 600) document.body.classList.add('touch');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -41,12 +44,30 @@ job.chest = null;
 job.rung.pack = 1;
 job.rung.axe = 1;
 const tree = TREES.find((t) => t.index >= 29 && !t.hardwood && t.fall < 0)!;
-if (mode === 'gather' || mode === 'blocked') {
-  job.rung.pack = 0;
+if (mode === 'gather' || mode === 'single' || mode === 'blocked' || mode === 'reduced') {
+  job.rung.pack = mode === 'gather' || mode === 'reduced' ? 1 : 0;
   put(tree.x + 2.3, tree.z + 0.7, Math.atan2(2.3, 0.7));
   cam.yaw += 1.2; // keep the adjacent trunk out of the harvest view
 }
 setTimeout(() => window.__debugCam!.clear(), 700);
+if (mode === 'sky' || mode === 'sand') {
+  setTimeout(() => {
+    // The real low shore has sand; look out over the sea for an unobstructed sky.
+    const x = 788;
+    const z = 20;
+    put(x, z);
+    const y = H(x, z);
+    window.__debugCam!.set(
+      [x + (mode === 'sand' ? 0 : 6), y + (mode === 'sand' ? 10 : 0.7), z + (mode === 'sand' ? 6 : 0)],
+      [x, y + 1.3, z],
+      62,
+    );
+  }, 800);
+}
+// Exercise the exact CSS preference branch; OS preference emulation is not exposed by this broker.
+if (mode === 'reduced') document.querySelector<HTMLElement>('.carry-tag')!.style.setProperty('--carry-motion', '0');
+const slotRead = () =>
+  [...document.querySelectorAll<HTMLElement>('.carry-slot')].map((s) => s.dataset.material ?? 'empty');
 const read = (label: string) => {
   const tag = document.querySelector<HTMLElement>('.carry-tag')!;
   const rect = tag.getBoundingClientRect();
@@ -63,15 +84,42 @@ const read = (label: string) => {
       inside: rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight,
       oldChip: !!document.querySelector('.haul-chip'),
       touch: document.body.classList.contains('touch'),
+      slots: slotRead(),
+      animations: tag.getAnimations({ subtree: true }).length,
       body: me.body?.interpolatedPosition,
       avatar: me.avatar?.position,
     })}`,
   );
 };
 const act = async () => {
-  if (mode === 'gather' || mode === 'blocked') {
+  const started = performance.now();
+  let frame = 0;
+  let sampling = true;
+  const sample = () => {
+    if (!sampling) return;
+    const tag = document.querySelector<HTMLElement>('.carry-tag')!;
+    console.log(
+      `CARRY frame ${JSON.stringify({
+        frame: frame++,
+        ms: Math.round(performance.now() - started),
+        load: backSeam.carry?.(),
+        slots: slotRead(),
+        x: tag.offsetLeft,
+        y: tag.offsetTop,
+        w: tag.offsetWidth,
+        h: tag.offsetHeight,
+        opacity: tag.style.opacity,
+        scales: [...tag.querySelectorAll('.carry-slot')].map((s) => getComputedStyle(s).transform),
+      })}`,
+    );
+    requestAnimationFrame(sample);
+  };
+  if (['gather', 'single', 'reduced', 'pending', 'capacity'].includes(mode)) requestAnimationFrame(sample);
+  if (mode === 'gather' || mode === 'single' || mode === 'blocked' || mode === 'reduced') {
     if (mode === 'blocked') back.logs = 8;
-    for (let k = 0; k < 4; k++) {
+    if (mode === 'single') back.logs = 7;
+    await wait(650); // separate the fixture's initial fill from the real stroke
+    for (let k = 0; k < (mode === 'single' ? 1 : 4); k++) {
       interactDown();
       interactUp();
       await wait(700);
@@ -81,6 +129,20 @@ const act = async () => {
     await wait(3000);
     input.keys.delete('KeyS');
     read('walking-faded');
+  } else if (['grass', 'sand', 'sky', 'noframe', 'capacity'].includes(mode)) {
+    job.rung.pack = mode === 'noframe' || mode === 'capacity' ? 0 : 1;
+    back.logs = 3;
+    back.rails = 2;
+    back.stone = 1;
+    await wait(650);
+    read('part-full');
+    if (slotRead().length !== (job.rung.pack ? 16 : 8)) throw new Error('Wrong slot capacity');
+    if (mode === 'capacity') {
+      job.rung.pack = 1;
+      await wait(650);
+      read('frame-added');
+      if (slotRead().length !== 16) throw new Error('Frame did not add eight slots');
+    }
   } else if (mode === 'deposit') {
     back.logs = 8;
     back.rails = 4;
@@ -195,7 +257,13 @@ const act = async () => {
       back.stone = mode === 'mixed2' ? 0 : 1;
     }
     await wait(350);
+    await wait(300); // allow the explicit slot cascade to settle
     read('visible');
+    if (
+      mode === 'mixed' &&
+      slotRead().join(',') !== [...Array<string>(10).fill('logs'), ...Array<string>(5).fill('rails'), 'stone'].join(',')
+    )
+      throw new Error('Mixed slots differ from accepted contents');
     if (mode === 'pause') {
       pauseNavigation.open?.('main');
       await wait(300);
@@ -209,6 +277,7 @@ const act = async () => {
       read('walking-faded');
     }
   }
+  sampling = false;
   read('end');
 };
 (window as unknown as { __carryAct: () => void }).__carryAct = () => background(act(), 'carry tag evidence');

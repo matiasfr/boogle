@@ -130,7 +130,7 @@ export function send(
     land?: () => void;
   },
 ) {
-  trips.push({
+  const trip: Trip = {
     kind,
     t: -(o.delay ?? 0),
     dur: o.dur,
@@ -141,7 +141,10 @@ export function send(
     size0: o.size?.[0] ?? 1,
     size1: o.size?.[1] ?? 1,
     land: o.land ?? (() => {}),
-  });
+  };
+  trips.push(trip);
+  // Local presentation can follow this flight, including cancellation by clearTrips.
+  return () => trips.includes(trip);
 }
 export const sending = () => trips.length;
 export function clearTrips() {

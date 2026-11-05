@@ -46,6 +46,7 @@ type CarryReadout = {
   capacity: number;
   incoming: number;
   reserved: number;
+  flyingLogs: number;
   attention: boolean;
 };
 
@@ -199,7 +200,7 @@ function tickChip(host: Stack, now: number): void {
   chip.classList.toggle('full', !!shown.n && shown.n >= rules.stacks.hard());
 }
 
-// One temporary tag, refreshed in place. No count tween: a displayed count is already yours.
+// One temporary tag; only landed pieces fill its slots. Pause retains exact accepted inventory.
 const carryLane = document.createElement('div');
 carryLane.className = 'carry-lane';
 const tag = document.createElement('div');
@@ -208,9 +209,12 @@ carryLane.append(tag);
 document.body.append(carryLane);
 const contents = document.createElement('div');
 contents.className = 'carry-contents';
+const slots = document.createElement('div');
+slots.className = 'carry-slots';
 const capacity = document.createElement('div');
 capacity.className = 'carry-capacity';
-tag.append(contents, capacity);
+tag.append(contents, slots, capacity);
+capacity.textContent = 'Full';
 const pauseCarry = document.createElement('div');
 pauseCarry.className = 'carry-pause';
 const icons = {
@@ -228,6 +232,61 @@ let carryKey = '',
   carrySide = 1;
 const carryPoint = new THREE.Vector3();
 const carryScreen = { x: 0, y: 0, behind: false };
+const materials = ['logs', 'rails', 'stone'] as const;
+type CarryMaterial = (typeof materials)[number];
+type CarrySlot = { el: HTMLSpanElement; at: number; filled: boolean };
+const carrySlots: Record<CarryMaterial, CarrySlot[]> = { logs: [], rails: [], stone: [] };
+const emptySlots = Array.from({ length: 16 }, () => {
+  const el = document.createElement('span');
+  el.className = 'carry-slot';
+  return el;
+});
+let nextPop = 0;
+function fillSlots(load: CarryReadout, now: number) {
+  const reduced = getComputedStyle(tag).getPropertyValue('--carry-motion').trim() === '0';
+  const nodes: HTMLSpanElement[] = [];
+  let filled = 0;
+  for (const kind of materials) {
+    const count = load.big ? 0 : Math.max(0, load[kind] - (kind === 'logs' ? load.flyingLogs : 0));
+    const row = carrySlots[kind];
+    while (row.length > count) {
+      const slot = row.pop()!;
+      for (const animation of slot.el.getAnimations()) animation.cancel();
+      slot.el.remove();
+    }
+    while (row.length < count) {
+      const el = document.createElement('span');
+      el.className = 'carry-slot';
+      const at = reduced ? now : Math.max(now, nextPop);
+      row.push({ el, at, filled: false });
+      nextPop = at + 35;
+    }
+    for (const slot of row) {
+      if (!slot.filled && (reduced || now >= slot.at)) {
+        slot.filled = true;
+        slot.el.dataset.material = kind;
+        if (!reduced)
+          slot.el.animate(
+            [{ transform: 'scale(0.6)' }, { transform: 'scale(1.2)', offset: 0.55 }, { transform: 'scale(1)' }],
+            { duration: 200, easing: 'ease-out' },
+          );
+      }
+      if (reduced) for (const animation of slot.el.getAnimations()) animation.cancel();
+      if (slot.filled) filled++;
+      nodes.push(slot.el);
+    }
+  }
+  // No layout animation: fixed cells and a reserved Full line keep projection stable.
+  if (!load.big) nodes.push(...emptySlots.slice(0, Math.max(0, load.capacity - nodes.length)));
+  for (let i = 0; i < nodes.length; i++) {
+    if (slots.children[i] !== nodes[i]) slots.insertBefore(nodes[i]!, slots.children[i] ?? null);
+  }
+  while (slots.children.length > nodes.length) slots.lastElementChild!.remove();
+  slots.hidden = !!load.big;
+  capacity.hidden = !!load.big;
+  capacity.style.visibility = filled >= load.capacity ? 'visible' : 'hidden';
+  if (reduced || filled === nodes.length) nextPop = now;
+}
 const overlaps = (x: number, y: number, w: number, h: number, r: DOMRect) =>
   r.width > 0 && r.height > 0 && x < r.right + 12 && x + w > r.left - 12 && y < r.bottom + 12 && y + h > r.top - 12;
 
@@ -244,10 +303,8 @@ function tickCarry(load: CarryReadout, now: number) {
   if (key !== carryKey) {
     if (carryKey || held || pending || load.big) carryUntil = now + 2000;
     carryKey = key;
-    const rows = (['logs', 'rails', 'stone'] as const).filter((k) => load[k]).map((k) => item(k, `${load[k]} ${k}`));
-    contents.innerHTML = load.big ? item(load.big, load.big === 'beam' ? 'Great beam' : 'Boiler') : rows.join('');
+    contents.innerHTML = load.big ? item(load.big, load.big === 'beam' ? 'Great beam' : 'Boiler') : '';
     const fraction = `${held + pending}/${load.capacity}${full ? ' · Full' : ''}`;
-    capacity.textContent = load.big ? '' : `${fraction}${pending ? ` · ${pending} pending` : ''}`;
     const exact = load.big
       ? load.big === 'beam'
         ? 'Great beam'
@@ -263,8 +320,9 @@ function tickCarry(load: CarryReadout, now: number) {
     pauseCarry.textContent = `Carrying: ${exact}`;
     tag.setAttribute('aria-label', exact);
   }
+  fillSlots(load, now);
   if (load.attention) carryUntil = now + 2000;
-  // Fade only, with no pop or position transition (also under reduced motion).
+  // The tag's original hold and fade do not depend on the slot animation.
   const opacity = me.entered && !padModal() ? Math.min(1, Math.max(0, (carryUntil + 200 - now) / 200)) : 0;
   tag.style.opacity = String(opacity);
   if (!opacity || !me.body) return;
