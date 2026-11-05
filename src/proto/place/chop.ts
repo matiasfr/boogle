@@ -37,6 +37,8 @@ import { LAND_TREES, safeTreeFall, shoreTreeCleared } from './tree-catalog.ts';
 export type BigThing = 'beam' | 'boiler' | null;
 export const carryNow = () => (job.rung.pack ? PACK.carry : TUNE.carry);
 let harvestReserved = 0;
+// Accepted inventory is unchanged; the tag waits for the actual cosmetic landings.
+let harvestFlights: (() => boolean)[] = [];
 export const reserveHarvest = (n: number) => {
   harvestReserved += n;
 };
@@ -56,16 +58,20 @@ export const back = {
 backSeam.flyIns = false;
 backSeam.count = () => back.logs;
 // Read-only Local presentation: reserved/incoming slots aren't advertised as landed material.
-backSeam.carry = () => ({
-  logs: back.logs,
-  rails: back.rails,
-  stone: back.stone,
-  big: back.big,
-  capacity: carryNow(),
-  incoming: back.incoming,
-  reserved: harvestReserved,
-  attention: interactTarget()?.blocked === 'Your back is full' || (swing.response === 'full' && swing.t < 0.55),
-});
+backSeam.carry = () => {
+  harvestFlights = harvestFlights.filter((active) => active());
+  return {
+    logs: back.logs,
+    rails: back.rails,
+    stone: back.stone,
+    big: back.big,
+    capacity: carryNow(),
+    incoming: back.incoming,
+    reserved: harvestReserved,
+    flyingLogs: Math.min(back.logs, harvestFlights.length),
+    attention: interactTarget()?.blocked === 'Your back is full' || (swing.response === 'full' && swing.t < 0.55),
+  };
+};
 personalSlice('back', {
   get: () => ({ logs: back.logs, rails: back.rails, stone: back.stone, big: back.big }),
   set: (v) => {
@@ -849,16 +855,18 @@ export function receiveHarvest(t: Tree, result: HarvestResult, localPlayer: bool
   const yields = localPlayer ? result.logs : 0;
   back.logs += yields;
   for (let k = 0; k < yields; k++) {
-    send('log', bark, bark, {
-      dur: TUNE.flyS + k * 0.03,
-      apex: 1.1 + k * 0.15,
-      aim: (to) => {
-        if (myBundleNext(back.logs, bundleTo, bundleRot)) to.copy(bundleTo);
-      },
-      land: () => {
-        pop(Math.min(7, logsLanded++ % 8), 0.5);
-      },
-    });
+    harvestFlights.push(
+      send('log', bark, bark, {
+        dur: TUNE.flyS + k * 0.03,
+        apex: 1.1 + k * 0.15,
+        aim: (to) => {
+          if (myBundleNext(back.logs, bundleTo, bundleRot)) to.copy(bundleTo);
+        },
+        land: () => {
+          pop(Math.min(7, logsLanded++ % 8), 0.5);
+        },
+      }),
+    );
   }
   if (wasStanding && t.fall >= 0) {
     logsLanded = 0;
