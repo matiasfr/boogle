@@ -1,5 +1,8 @@
 # Fixed HDR exposure — 5 November 2026
 
+**Historical first pass:** [the follow-up](fixed-exposure-followup.md) supersedes its calibration,
+integration status, GPU measurements and bot comparison with fresh rebased evidence.
+
 Implemented the owner's fixed-exposure decision in `d8bdd02b`, on `codex/fixed-exposure`; no push.
 **Starting calibration, not final owner approval:** surface gain **0.12**, underwater **+1.22 EV**,
 smoothstep over signed wave depth **0–1.5 m**, fully submerged gain **0.27954**.
