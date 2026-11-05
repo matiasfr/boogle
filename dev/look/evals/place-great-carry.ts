@@ -197,7 +197,171 @@ async function run() {
     window.__debugCam!.set([start.x - 18, p.y + 14, start.z + 8], [start.x, p.y + 0.6, start.z + 9]);
   };
   frame();
-  if (mode === 'helper-leave' || mode === 'carrier-leave') {
+  if (mode === 'drop') {
+    const { bigCargo, cargoGround } = (await import(
+      '/src/proto/place/big-cargo.ts' as string
+    )) as typeof import('../../../src/proto/place/big-cargo.ts');
+    const { sweepSphere } = (await import(
+      '/src/physics/engine.ts' as string
+    )) as typeof import('../../../src/physics/engine.ts');
+    const { triggerAction } = (await import(
+      '/src/player/controls.ts' as string
+    )) as typeof import('../../../src/player/controls.ts');
+    const { save, restore } = (await import(
+      '/src/proto/place/job.ts' as string
+    )) as typeof import('../../../src/proto/place/job.ts');
+    let spot: { x: number; z: number } | null = null;
+    for (let dz = 0; dz <= 35 && !spot; dz += 2) {
+      for (let dx = -12; dx <= 12 && !spot; dx += 2) {
+        const p = { x: start.x + dx, y: place.H(start.x + dx, start.z + dz), z: start.z + dz, yaw: Math.PI };
+        if (Math.hypot(p.x - st.x, p.z - st.z) < 14) continue;
+        if (
+          cargoGround(
+            'beam',
+            p,
+            place.H,
+            (x, y, z) =>
+              sweepSphere({ x: p.x, y: p.y + 1.1, z: p.z }, { x, y, z }, 0.7, { mask: 0xfffe, thin: 'skip' }) < 0,
+          )
+        )
+          spot = p;
+      }
+    }
+    check('reachable dry test spot', !!spot);
+    await put(spot!.x, spot!.z - (carrier ? 0 : 3.4));
+    await wait(800);
+    await barrier('drop position');
+    if (!carrier && !greatCarry.helping()) await press('Help carry');
+    await until(() => (carrier ? greatCarry.assisted() : !!greatCarry.helping()), 'drop assistance');
+    await barrier('drop grip');
+    if (carrier) {
+      document.body.classList.add('touch');
+      check('touch Drop stays visible with beam', document.body.classList.contains('place-has-load'));
+      const button = document.querySelector('.place-drop-btn')!;
+      button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 1 }));
+      button.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }));
+    }
+    await until(() => !!bigCargo.beam.ground && tree.back.big === null, 'ground beam on both peers');
+    await until(() => !greatCarry.helping() && !greatCarry.assisted(), 'drop releases helper');
+    const ground = { ...bigCargo.beam.ground! };
+    check(
+      'dropped beam uses existing shoulder prompt',
+      tree.trunkDown() &&
+        tree.trunkAt().distanceTo(new (await import('three/webgpu')).Vector3(ground.x, ground.y + 1.4, ground.z)) <
+          0.01,
+    );
+    save();
+    check('save restores ground pose', restore() && JSON.stringify(bigCargo.beam.ground) === JSON.stringify(ground));
+    await barrier('ground saved');
+    if (!authority) coop.big('beam');
+    await until(() => bigCargo.beam.holder !== null && !coop.bigBusy(), 'follower claim accepted');
+    if (!authority) tree.putDownBig(); // lost local receipt/reservation across an election
+    await barrier('lost receipt');
+    if (authority)
+      net.room!.send({
+        t: COOP_IDENTITY,
+        k: 'snap',
+        snap: { gen: coop.debug().gen, shared: captureShared() },
+        force: true,
+      });
+    await until(() => authority || tree.back.big === 'beam', 'accepted snapshot restores shoulder without reservation');
+    await barrier('receipt reconciled');
+    if (!authority) triggerAction('place-drop', 'down');
+    await until(() => !bigCargo.beam.holder, 'reconciled claim dropped');
+    await barrier('claim returned');
+    // Both contenders request the same revision; only the accepted owner loses their old back load.
+    tree.back.logs = 2;
+    coop.big('beam');
+    await until(() => bigCargo.beam.holder !== null && !coop.bigBusy(), 'race settled');
+    await wait(400);
+    const won = bigCargo.beam.holder === net.myPeer;
+    check(
+      'race has exactly one shoulder',
+      won ? tree.back.big === 'beam' && tree.back.logs === 0 : tree.back.big === null && tree.back.logs === 2,
+    );
+    await barrier('race checked');
+    tree.back.logs = 0;
+    if (won) {
+      teleport(me.body!, place.ORIGIN.x + 1000, 5, 1000);
+      triggerAction('place-drop', 'down');
+    }
+    await until(() => tree.trunkDown() && bigCargo.beam.holder === null, 'unsafe drop returned');
+    check(
+      'unsafe drop returns original pickup',
+      bigCargo.beam.ground === null && tree.trunkAt().distanceTo(start) < 0.01,
+    );
+    await barrier('returned');
+    // Repeat with the boiler under the same owner and save path.
+    if (authority) {
+      place.job.boiler = 1;
+      net.room!.send({
+        t: COOP_IDENTITY,
+        k: 'snap',
+        snap: { gen: coop.debug().gen, shared: captureShared() },
+        force: true,
+      });
+    }
+    await until(() => place.job.boiler === 1, 'boiler shared');
+    await put(spot!.x, spot!.z - (carrier ? 0 : 6));
+    await wait(500);
+    await barrier('boiler ready');
+    if (carrier) {
+      const source = place.boilerAt();
+      await put(source.x + 1.5, source.z);
+      await press('Shoulder the boiler');
+      await put(spot!.x, spot!.z);
+      await wait(500);
+    }
+    await until(() => bigCargo.boiler.holder !== null, 'boiler accepted');
+    await barrier('boiler held');
+    if (carrier) triggerAction('place-drop', 'down');
+    await until(() => !!bigCargo.boiler.ground && !tree.back.big, 'boiler dropped');
+    const b = { ...bigCargo.boiler.ground! };
+    save();
+    check('boiler ground survives restore', restore() && JSON.stringify(bigCargo.boiler.ground) === JSON.stringify(b));
+    if (!carrier) {
+      await put(b.x + 1.5, b.z);
+      await press('Shoulder the boiler');
+    }
+    await until(() => bigCargo.boiler.holder !== null, 'partner reclaimed boiler');
+    check('partner owns one boiler', carrier ? tree.back.big === null : tree.back.big === 'boiler');
+    await barrier('boiler reclaimed');
+    if (!carrier) net.room!.pause(10000);
+    else {
+      await until(() => coop.debug().peers.length === 0, 'boiler holder departed');
+      await until(() => place.job.boiler === 1 && bigCargo.boiler.holder === null, 'boiler returns to source');
+      check('departed boiler returns original pickup', bigCargo.boiler.ground === null);
+      const source = place.boilerAt();
+      await put(source.x + 1.5, source.z);
+      await press('Shoulder the boiler');
+    }
+    await until(() => coop.debug().peers.length > 0, 'boiler holder rejoined', 40000);
+    await barrier('boiler rejoined');
+    await wait(1500);
+    check('boiler rejoin has one surviving shoulder', carrier ? tree.back.big === 'boiler' : tree.back.big === null);
+    if (carrier) {
+      await put(spot!.x - 3, spot!.z - 4);
+      await wait(500);
+      triggerAction('place-drop', 'down');
+    }
+    await until(() => !bigCargo.boiler.holder, 'final boiler drop');
+    check('recovered boiler can be put down nearby', bigCargo.boiler.ground !== null);
+    // Put the beam down once more for a framed still of both reachable cargo objects.
+    await put(start.x + 2.5, start.z);
+    if (carrier) await press('Shoulder the trunk');
+    await until(() => tree.trunkTaken(), 'final beam claimed');
+    await put(spot!.x, spot!.z - (carrier ? 0 : 7));
+    await wait(500);
+    await barrier('final beam');
+    if (carrier) triggerAction('place-drop', 'down');
+    await until(() => !!bigCargo.beam.ground, 'final ground beam');
+    window.__debugCam!.set(
+      [spot!.x - 12, place.H(spot!.x, spot!.z) + 10, spot!.z - 14],
+      [spot!.x, place.H(spot!.x, spot!.z) + 0.8, spot!.z + 2],
+    );
+    check('all drops leave both shoulders empty', tree.back.big === null);
+    await barrier('drop done');
+  } else if (mode === 'helper-leave' || mode === 'carrier-leave') {
     const leaving = mode === 'carrier-leave' ? carrier : !carrier;
     await barrier('departure');
     if (leaving) net.room!.pause(10000);
