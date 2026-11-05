@@ -103,3 +103,5 @@ Departure: the repository-required `npm run inflight` was mistakenly run before 
 it fetched remote Git refs despite the local-only network instruction. This was disclosed immediately. No
 further external commands were used. Server-side interception substitutes for unavailable broker Playwright
 routes; the GPU smoke command used the broker equivalent. No original CI failure is declared resolved.
+
+**Director correction:** the strict smoke change above was reverted. A fatal missing file still fails smoke's gameplay checks, and a recovered 503 alone must not open an issue. The filter now also covers the service worker wording from run 41883882018.
