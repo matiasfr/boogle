@@ -84,14 +84,13 @@ export async function play() {
     // A short walk can finish mid-hop. Let physics land before planning the next leg from the ground.
     if (
       coopRoute &&
-      !(await bot.until(
-        () => me.coyote > 0 && Math.abs(body.velocity.y) < 0.5 && !me.swimming,
-        10000,
-        'dry co-op landing',
-      ))
+      !(await bot.until(() => me.coyote > 0 && Math.abs(body.velocity.y) < 0.5 && !me.swimming, 10000))
     ) {
       const { diagnoseLanding } = await import('./place-landing.ts');
-      throw new Error(`Co-op player did not land before the next walk: ${JSON.stringify(await diagnoseLanding(bot))}`);
+      // The coordinator stops on NEVER; finish the stationary-jump/walk probes before reporting the failed beat.
+      const evidence = await diagnoseLanding(bot);
+      bot.check('dry co-op landing', false);
+      throw new Error(`Co-op player did not land before the next walk: ${JSON.stringify(evidence)}`);
     }
     return bot.walk(x, z, r, { limit });
   };
