@@ -25,6 +25,8 @@ type WornPreview = GearState & {
   bodyColor?: string;
   axe?: AxeTier | 'none';
   chop?: 'off' | 'bite' | 'rebound' | 'full';
+  reducedMotion?: boolean;
+  trunkDistance?: number;
 };
 export const SAMPLE_FPS = 30;
 export type BuddyMode = 'raw' | 'played';
@@ -205,7 +207,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
                 new THREE.MeshStandardNodeMaterial({ color: '#795536', roughness: 0.95 }),
               );
               trunk.name = 'stage-contact-trunk';
-              trunk.position.set(0, CHOP_TRUNK.height / 2, CHOP_TRUNK.distance);
+              trunk.position.set(0, CHOP_TRUNK.height / 2, worn.trunkDistance ?? CHOP_TRUNK.distance);
               trunk.castShadow = trunk.receiveShadow = true;
               group.add(trunk);
               geometries.add(trunk.geometry);
@@ -224,8 +226,9 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         applyChopPose(
           figure,
           axes.root,
-          chopping ? time % CHOP_DURATION : 0,
+          chopping ? (time <= CHOP_DURATION ? time : time % CHOP_DURATION) : 0,
           response && response !== 'off' ? response : 'bite',
+          { reducedMotion: worn?.reducedMotion ?? false },
         );
         axes.root.visible = true;
       }

@@ -12,7 +12,8 @@ import { playMark } from '../mark.ts';
 import { H } from './land.ts';
 import { job, type ChestId, type Rungs } from './job.ts';
 import { OAK, toWorld } from './layout.ts';
-import { deliver, dropChest, partsMesh, prizeHooks, showChestPrize } from './gifts.ts';
+import { deliver, dropChest, prizeHooks, showChestPrize } from './gifts.ts';
+import { makeAxeModel, type AxeTier } from './axe-models.ts';
 import { rememberGot, youGot } from './got.ts';
 import { coop, coopWire } from './coop.ts';
 
@@ -39,17 +40,16 @@ export function grantMultiAxe() {
   playMark('rung earned', { rung: 'multi' });
   showMultiAxe();
 }
+const multiModels = new Map<AxeTier, THREE.Group>();
 function showMultiAxe() {
+  const tier = job.rung.axe ? 'proper-multi' : 'multi';
+  let model = multiModels.get(tier);
+  if (!model) multiModels.set(tier, (model = makeAxeModel(tier)));
   youGot({
     key: 'multi',
     name: 'The multi-axe',
     line: 'Chops trees, breaks rocks, and more.',
-    model: partsMesh([
-      ['b', 0, 0.55, 0, 0.11, 1.3, 0.11, '#a9794c'],
-      ['b', 0, 1.06, -0.2, 0.15, 0.34, 0.4, '#c9ced8'],
-      ['k', 0, 1.06, 0.3, 0.09, 0.5, 0.09, '#8d929c', Math.PI / 2],
-      ['b', 0, 1.06, 0, 0.17, 0.12, 0.17, '#39e6c6'],
-    ]),
+    model: model.clone(true),
   });
 }
 /** As the state says: for a reload, a Start over, or taking a partner's state. */

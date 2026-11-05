@@ -1,4 +1,4 @@
-// The chop and the back of ?proto=place. The swing starts on the frame you press, the axe meets the bark about 60 ms later,
+// The chop and the back of ?proto=place. The swing starts on the frame you press, the axe meets the bark about 120 ms later,
 // the tree answers and accepted logs fly straight to your back. Solo accepts locally; coop.ts serializes shared harvest
 // before awarding material. Animation stays Local. docs/research/tree-tiers.md, recommendations 1-7. Your back is the game's bundle,
 // drawn from a count kept here through `backSeam`, with rails strapped upright behind it, stone in a sack and a big thing on
@@ -32,7 +32,8 @@ import { addFoot } from './sites.ts';
 import { packFrameMesh } from './gear-models.ts';
 import { LAND_TREES, safeTreeFall, shoreTreeCleared } from './tree-catalog.ts';
 import { makeAxes } from './axe-models.ts';
-import { applyChopPose } from './chop-motion.ts';
+import { applyChopPose, CHOP_SIDE } from './chop-motion.ts';
+import { reducedMotion } from '../../constants.ts';
 
 // ---------------------------------------------------------------- your back
 /** One big thing on your shoulder: it fills your back, and you can't sprint with it. */
@@ -729,7 +730,10 @@ const swing = {
   rock: null as Rock | null,
   hit: true,
   response: 'bite' as HarvestResult['outcome'],
+  contact: new THREE.Vector3(),
 };
+const contactRay = new THREE.Raycaster();
+const contactDirection = new THREE.Vector3();
 const bundleTo = new THREE.Vector3(),
   bundleRot = new THREE.Quaternion(),
   popOut = new THREE.Vector3();
@@ -743,8 +747,8 @@ function startSwing(x: number, z: number) {
   // Square up to it: you hit what you meant to.
   const p = me.body!.position;
   me.yaw = Math.atan2(-(x - p.x), -(z - p.z));
-  const i = inner();
-  if (i) i.rotation.x = 0.28; // the wind-up, for this one frame's start
+  contactDirection.set(x - p.x, 0, z - p.z).normalize();
+  swing.contact.set(x - contactDirection.x * 0.4, p.y + 0.55, z - contactDirection.z * 0.4);
 }
 /** Press: the swing starts now. False while the last one is still going. */
 export function chop(t: Tree) {
@@ -752,6 +756,20 @@ export function chop(t: Tree) {
   swing.target = t;
   swing.rock = null;
   startSwing(t.x, t.z);
+  // Aim at the actual faceted bark from this approach, rather than a fixed-radius point inside every tree.
+  contactRay.set(
+    new THREE.Vector3(
+      me.body.position.x - contactDirection.z * CHOP_SIDE,
+      me.body.position.y + 0.55,
+      me.body.position.z + contactDirection.x * CHOP_SIDE,
+    ),
+    contactDirection,
+  );
+  const trunk = t.hardwood ? parts.hardwood : parts.trunk;
+  const index = t.hardwood ? hardwoodIndices.get(t.index) : t.index;
+  trunk.updateMatrixWorld(true);
+  const contact = contactRay.intersectObject(trunk, false).find((hit) => hit.instanceId === index);
+  if (contact) swing.contact.copy(contact.point);
   return true;
 }
 export function breakRock(q: Rock) {
@@ -803,7 +821,10 @@ export function receiveHarvest(t: Tree, result: HarvestResult, localPlayer: bool
   const dx = t.x - p.x,
     dz = t.z - p.z,
     d = Math.hypot(dx, dz) || 1;
-  const bark = popOut.set(t.x - (dx / d) * 0.4, t.y + 1.1, t.z - (dz / d) * 0.4);
+  const bark =
+    localPlayer && swing.target === t
+      ? popOut.copy(swing.contact)
+      : popOut.set(t.x - (dx / d) * 0.4, t.y + 1.1, t.z - (dz / d) * 0.4);
   t.cutYaw = Math.atan2(-dx, -dz);
   const good = !!job.rung.axe;
   if (result.outcome === 'full') {
@@ -823,8 +844,6 @@ export function receiveHarvest(t: Tree, result: HarvestResult, localPlayer: bool
   t.hitAt = performance.now();
   placeSound(t.hardwood ? 'hardwoodBite' : 'treeBite', t.x, t.z);
   chips(bark.x, bark.y, bark.z, good ? 18 : 9);
-  const i = inner();
-  if (localPlayer && i) i.rotation.x = -0.5;
   const yields = localPlayer ? result.logs : 0;
   back.logs += yields;
   for (let k = 0; k < yields; k++) {
@@ -978,9 +997,7 @@ export const felled = { n: 0 };
 /** Each frame. */
 export function updateChop(dt: number, now: number) {
   const f = frameOf();
-  if (f && axe.parent !== f) {
-    f.add(axe);
-    axe.position.set(0.42, 0.72, -0.2);
+  if (f && packFrame.parent !== f) {
     // Build after the prototype's modules have loaded; gifts and the carry view share the frame parts.
     if (!packFrame.children.length) {
       const pack = packFrameMesh();
@@ -1002,13 +1019,13 @@ export function updateChop(dt: number, now: number) {
   axes.setTier(job.rung.axe ? (job.rung.multi ? 'proper-multi' : 'proper') : job.rung.multi ? 'multi' : 'starter');
   swing.t += dt;
   const c = TUNE.contactS;
-  const body = inner();
-  if (body) applyChopPose(body, axe, swing.t, swing.response);
   if (!swing.hit && swing.t >= c) {
     swing.hit = true;
     if (swing.target) contact(swing.target);
     else if (swing.rock) contactRock(swing.rock);
   }
+  const body = inner();
+  if (body) applyChopPose(body, axe, swing.t, swing.response, { reducedMotion, target: swing.contact });
   for (const t of TREES) {
     if (t.shake > 0) {
       t.shake = Math.max(0, t.shake - dt * 3.2);

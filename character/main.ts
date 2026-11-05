@@ -15,7 +15,7 @@ import { descriptors, gearAttachments } from './descriptors.ts';
 import { sailCycleSeconds } from '../src/pois/windmills/motion.ts';
 import { cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
 import { COLORS } from '../src/constants.ts';
-import { CHOP_DURATION } from '../src/proto/place/chop-motion.ts';
+import { CHOP_DURATION, CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
 import type { AxeTier } from '../src/proto/place/axe-models.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -41,6 +41,8 @@ const state = {
   hat: q.get('hat') ?? '',
   axe: axeKinds.find((kind) => kind === q.get('axe')) ?? 'none',
   chop: chopKinds.find((kind) => kind === q.get('chop')) ?? 'off',
+  reducedMotion: q.get('reducedMotion') === '1',
+  trunkDistance: Math.max(0.8, Math.min(3.2, number('trunkDistance', CHOP_TRUNK.distance))),
   bodyColor:
     COLORS.includes(q.get('bodyColor') ?? '') || q.get('bodyColor') === 'authored' ? q.get('bodyColor')! : 'auto',
   rings: gearOn('rings'),
@@ -58,6 +60,10 @@ const state = {
   light: (q.get('light') === 'shipped' ? 'shipped' : 'studio') as LightPreset,
   exposure: Math.max(0.01, Math.min(4, number('exposure', q.get('light') === 'shipped' ? 0.16 : 1))),
 };
+if (state.chop === 'full' && !q.has('amount')) {
+  state.amount = cargoCapacity(state.cargo, state.frame);
+  if (!q.has('pose')) state.pose = 'carrying';
+}
 const canvas = $<HTMLCanvasElement>('view');
 const renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
 (renderer as unknown as { _getFallback: null })._getFallback = null;
@@ -388,9 +394,9 @@ async function choose(reframe = true) {
   ready = false;
   const token = ++generation;
   try {
-    if (state.asset === 'buddy' && state.chop !== 'off') {
+    if (state.asset === 'buddy' && (state.chop !== 'off' || state.axe !== 'none')) {
       state.mode = 'played';
-      state.clip = 'Idle_Loop';
+      if (state.chop !== 'off') state.clip = 'Idle_Loop';
       if (state.axe === 'none') state.axe = 'starter';
       select('mode').value = state.mode;
       select('axe').value = state.axe;
@@ -447,6 +453,8 @@ async function choose(reframe = true) {
             amount: state.amount,
             axe: state.axe,
             chop: state.chop,
+            reducedMotion: state.reducedMotion,
+            trunkDistance: state.trunkDistance,
             legacyCarrying,
             bodyColor:
               state.bodyColor === 'auto'
@@ -506,6 +514,8 @@ function updateLink() {
     hat: state.hat,
     axe: state.axe,
     chop: state.chop,
+    reducedMotion: state.reducedMotion ? '1' : '0',
+    trunkDistance: state.trunkDistance,
     bodyColor: state.bodyColor,
     rings: state.rings ? '1' : '0',
     spool: state.spool ? '1' : '0',
@@ -574,7 +584,23 @@ select('axe').onchange = () => {
 select('chop').value = state.chop;
 select('chop').onchange = () => {
   state.chop = chopKinds.find((kind) => kind === select('chop').value) ?? 'off';
+  if (state.chop === 'full') {
+    state.amount = cargoCapacity(state.cargo, state.frame);
+    syncGearControls();
+    carryingPose();
+  }
   state.time = 0;
+  void choose(false);
+};
+input('trunk-distance').value = String(state.trunkDistance);
+input('trunk-distance').onchange = () => {
+  state.trunkDistance = Math.max(0.8, Math.min(3.2, Number(input('trunk-distance').value) || CHOP_TRUNK.distance));
+  input('trunk-distance').value = String(state.trunkDistance);
+  void choose(false);
+};
+input('reduced-motion').checked = state.reducedMotion;
+input('reduced-motion').onchange = () => {
+  state.reducedMotion = input('reduced-motion').checked;
   void choose(false);
 };
 function syncGearControls() {
@@ -774,7 +800,7 @@ const api = {
       state.loop = true;
       seek(0);
       let seam = null;
-      if (state.mode === 'raw' && state.clip && state.chop === 'off') {
+      if (state.mode === 'raw' && state.clip && (state.asset !== 'buddy' || state.chop === 'off')) {
         const first = bonePoses(preview.figure);
         seek(duration);
         seam = endpointSeam(first, bonePoses(preview.figure));

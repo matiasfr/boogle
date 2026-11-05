@@ -42,6 +42,34 @@ The generated catalogue checks source-plus-sidecar/output hashes, actual output 
 
 ## Agent motion review
 
+Buddy's Local panel also selects `axe=starter|multi|proper|proper-multi` (or `none`) and
+`chop=bite|rebound|full` (or `off`). Axe inspection uses As played so the real production
+rig adapter and coordinate frame apply. Copy this view retains these controls, the Local
+`reducedMotion=1` preference and `trunkDistance` (default 1.35 m). Full-back selection fills
+the current capacity unless the URL explicitly supplies `amount`; use `frame=1&amount=16`
+for the full worn-frame case. `chop=off` removes the trunk for unobstructed front, side,
+back and three-quarter proportion views. The reference cylinder has 0.4 m radius; its
+distance slider moves the inspection reference only, exposing reach limits rather than
+moving or stretching Buddy. It is not a copy of every tapered/ridged game tree.
+
+Example: `/character/?asset=buddy&axe=proper-multi&chop=bite&mode=played&frame=1&cargo=logs&amount=16&play=1&cam=3,1.8,3&target=0,0.9,0.4&reference=0&bounds=0`.
+The stage and game share `axe-models.ts`, `chop-timing.ts` and `chop-motion.ts`; the stage
+does not maintain a second swing. Each 0.90 s preview includes anticipation, contact and
+recovery. The game's next press may restart after 0.24 s; the preview clock does not change
+that cadence. Pose endpoint seeks preserve the endpoint rather than wrapping early.
+
+`node dev/look/asset-motion.ts --broker --asset buddy --axe proper-multi --chop full --frame 1 --cargo logs --amount 16 --name axe-full`
+records the production pose. `--reduced-motion 1` exercises the Local preference and
+`--trunk-distance 3.2` exposes the outer interaction-distance mismatch. Curves include
+both wrist-bone distances to the handle centreline (the mitten extends beyond its wrist),
+the leading cutting-edge position and radial trunk error, plus shaft proximity to posed
+torso/head triangles. Unsigned distances and signed nearest-face candidates are distinct:
+open head/torso subsets can produce negative signed readings for a shaft outside the body.
+The frame/cargo remains visible for inspection but is not included in this clearance proof.
+The 4 November pass retains before media, an initial result and diagnosed repair media in
+`.look/axe-chop/` and linked broker evidence. Art approval and real-time feel remain the
+owner's check; no capture score approves the swing.
+
 The owner's 4 November standing call requires an agent motion review here before the owner's final check. `node dev/look/asset-motion.ts` orchestrates the existing look harness, broker and real-time video capture; it does not launch a second inspection application. Use its help for selection and capture arguments. A brokered job uses its existing `.look/see-client.ts`; local use routes through `dev/look/look.ts`. Both inspect the same `/character/` page and its Local preview state.
 
 The stage owns the measurements and frame IDs. The background game's player curves are not asset curves. A run retains successive completed canvas renders, a lower-rate view across the cycle, the wall-time video, numeric samples and frame-numbered diagnostic outliers. Camera, playback selection, source provenance and capture timing accompany the evidence. Keep the camera fixed, disable the turntable and use normal speed. A render ID is not a monitor presentation timestamp; encoded video may repeat or drop stage frames, and collection overhead affects timing.

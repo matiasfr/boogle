@@ -91,9 +91,13 @@
                 <option value="full">Full-back refusal</option>
               </select></label
             >
+            <label
+              >Inspection trunk distance<input id="trunk-distance" type="number" min="0.8" max="3.2" step="0.05"
+            /></label>
+            <label class="check"><input id="reduced-motion" type="checkbox" />Reduced chop motion</label>
             <p>
-              Chop uses the production pose, clock and rig. The trunk marks contact distance; effects and harvesting
-              stay in the game.
+              Chop uses the production pose, clock and rig. Trunk distance moves the inspection reference only. Effects
+              and harvesting stay in the game.
             </p>
             <button id="all-gear">Wear all gear</button>
             <div class="checks">

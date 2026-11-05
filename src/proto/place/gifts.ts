@@ -8,6 +8,7 @@
 import * as THREE from 'three/webgpu';
 import { merged, type Part } from './part-geometry.ts';
 import { packParts } from './gear-models.ts';
+import { makeAxeModel } from './axe-models.ts';
 import { emit } from '../../render/particles.ts';
 import { scene } from '../../render/scene.ts';
 import { thump } from '../../render/machine-sfx.ts';
@@ -17,7 +18,7 @@ import { addPresenceField, onPeerRemoved, onRemotePresence, remotes } from '../.
 import { carry } from '../../physics/platforms.ts';
 import { knock, pop } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
-import { COOP, personalSlice } from './job.ts';
+import { COOP, job, personalSlice } from './job.ts';
 import { SHELF, toWorld } from './layout.ts';
 import { FINDERS } from './tech-layout.ts';
 import { dustRing } from './pieces.ts';
@@ -439,20 +440,14 @@ export const STOCK: Stock[] = [
 ];
 // The ladder's tool chests.
 type Extra = 'axe' | 'pack';
-const EXTRAS: Record<Extra, { name: string; line: string; parts: Part[] }> = {
+const EXTRAS: Record<Extra, { name: string; line: string }> = {
   axe: {
     name: 'A proper axe',
     line: '',
-    parts: [
-      ['b', 0, 0.55, 0, 0.11, 1.3, 0.11, '#a9794c'],
-      ['b', 0, 1.02, -0.2, 0.15, 0.38, 0.42, '#dfe4ec'],
-      ['b', 0, 1.02, -0.43, 0.16, 0.46, 0.08, '#f2b134'],
-    ],
   },
   pack: {
     name: 'A pack frame',
     line: '',
-    parts: packParts(),
   },
 };
 const byId = (id: GiftId) => GIFTS.find((g) => g.id === id) ?? STOCK.find((g) => g.id === id)!;
@@ -463,7 +458,7 @@ export const partsMesh = (parts: Part[]) => new THREE.Mesh(merged(parts), giftMa
 /** The same chest prize, held up by a partner's recipient without opening another chest. */
 export function showChestPrize(id: Extra) {
   const gift = EXTRAS[id];
-  youGot({ key: id, name: gift.name, line: gift.line, model: partsMesh(gift.parts) });
+  youGot({ key: id, name: gift.name, line: gift.line, model: extraModel(id) });
 }
 const geos = new Map<GiftId, THREE.BufferGeometry>();
 const geoOf = (id: GiftId) => {
@@ -471,11 +466,17 @@ const geoOf = (id: GiftId) => {
   if (!g) geos.set(id, (g = merged(byId(id).parts)));
   return g;
 };
-const extraGeos = new Map<Extra, THREE.BufferGeometry>();
-const extraGeo = (id: Extra) => {
-  let g = extraGeos.get(id);
-  if (!g) extraGeos.set(id, (g = merged(EXTRAS[id].parts)));
-  return g;
+const extraModels = new Map<string, THREE.Object3D>();
+const extraModel = (id: Extra) => {
+  const tier = job.rung.multi ? 'proper-multi' : 'proper';
+  const key = id === 'axe' ? tier : id;
+  let model = extraModels.get(key);
+  if (!model) {
+    model = id === 'axe' ? makeAxeModel(tier) : partsMesh(packParts());
+    extraModels.set(key, model);
+  }
+  // The reveal owns transforms; its source geometry/materials remain cached like ordinary gift geometry.
+  return model.clone(true);
 };
 // The box each crate is, in the order they come. The first Rare box is after the first path (./layout.ts: stations 1 and 2 first).
 const BOXES: Tier[] = ['common', 'common', 'rare', 'common', 'rare', 'common', 'wonder'];
@@ -1091,7 +1092,7 @@ type Show = {
   y: number;
   z: number;
   boomed: boolean;
-  geo: THREE.BufferGeometry;
+  model: THREE.Object3D;
 };
 let show: Show | null = null;
 export const showing = () => !!show;
@@ -1174,7 +1175,7 @@ export function openCrate(c: { x: number; z: number }) {
     y: crate.y,
     z: crate.z,
     boomed: false,
-    geo: chest ? extraGeo(id as Extra) : geoOf(id as GiftId),
+    model: chest ? extraModel(id as Extra) : new THREE.Mesh(geoOf(id as GiftId), giftMat),
   };
   saveHook();
 }
@@ -1262,7 +1263,7 @@ function updateShow(dt: number) {
       name: s.gift.name,
       line: s.gift.line || (tier ? TIER_MARKS[tier] : ''),
       color: tier ? TIER_COLOR[tier] : undefined,
-      model: new THREE.Mesh(s.geo, giftMat),
+      model: s.model,
       from: new THREE.Vector3(s.x, s.y + 0.9, s.z),
       done: () => handOver(s),
     });

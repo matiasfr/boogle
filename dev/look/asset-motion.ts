@@ -19,6 +19,9 @@ for (let i = 0; i < args.length; i++) {
     console.log(
       'node dev/look/asset-motion.ts --asset buddy --clip Walk_Loop [--hat conductor] [--mode raw|played] [--pose carrying] [--gear all] [--attachment ring-left|ring-right|spool|glider|frame] [--cargo logs|rails|stone|beam|boiler --amount N] [--rings 0|1 --spool 0|1 --glider 0|1 --frame 0|1 --canopy 0|1] [--name label] [--cam x,y,z --target x,y,z] [--spin-rate rad/s] [--local|--broker] [--dry-run]\nUses the running broker by default when available; --local uses the same look harness. Static assets explicitly report none. --spin-rate is a labelled inspection probe, never a production rate.',
     );
+    console.log(
+      'Chopping: --axe starter|multi|proper|proper-multi --chop bite|rebound|full [--reduced-motion 0|1] [--trunk-distance metres]. The trunk-distance option moves only the inspection reference.',
+    );
     process.exit(0);
   } else if (
     [
@@ -42,6 +45,8 @@ for (let i = 0; i < args.length; i++) {
       '--canopy',
       '--axe',
       '--chop',
+      '--reduced-motion',
+      '--trunk-distance',
     ].includes(flag)
   ) {
     const value = args[++i];
@@ -93,6 +98,8 @@ for (const key of [
   'chop',
 ])
   if (options.has(key)) query.set(key, options.get(key)!);
+if (options.has('reduced-motion')) query.set('reducedMotion', options.get('reduced-motion')!);
+if (options.has('trunk-distance')) query.set('trunkDistance', options.get('trunk-distance')!);
 if (options.has('spin-rate')) {
   const rate = Number(options.get('spin-rate'));
   if (!Number.isFinite(rate) || rate === 0 || Math.abs(rate) > 20)
@@ -288,6 +295,8 @@ const columns = [
   'contactDistance',
   'handleBodyClearance',
   'handleHeadClearance',
+  'handleBodyDistance',
+  'handleHeadDistance',
 ] as const;
 fs.writeFileSync(
   path.join(out, `${name}-curves.csv`),

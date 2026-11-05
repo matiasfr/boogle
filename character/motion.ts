@@ -39,6 +39,8 @@ export type MotionRow = {
   contactDistance: number | null;
   handleBodyClearance: number | null;
   handleHeadClearance: number | null;
+  handleBodyDistance: number | null;
+  handleHeadDistance: number | null;
 };
 export type MotionImage = { frame: number; wall: number; time: number; png: string };
 export type MotionReport = {
@@ -228,6 +230,8 @@ function chopMeasurements(figure: THREE.Object3D, axe: THREE.Object3D, trunk: TH
     const point = hand.getWorldPosition(new THREE.Vector3());
     return line.closestPointToPoint(point, true, new THREE.Vector3()).distanceTo(point);
   };
+  const bodySurface = surface(figure, handle, 'body'),
+    headSurface = surface(figure, handle, 'head');
   return {
     leftGrip: grip('hand_l'),
     rightGrip: grip('hand_r'),
@@ -235,8 +239,10 @@ function chopMeasurements(figure: THREE.Object3D, axe: THREE.Object3D, trunk: TH
     bladeY: bladePosition.y,
     bladeZ: bladePosition.z,
     contactDistance: Math.hypot(localBlade.x, localBlade.z) - CHOP_TRUNK.radius,
-    handleBodyClearance: surface(figure, handle, 'body').signed,
-    handleHeadClearance: surface(figure, handle, 'head').signed,
+    handleBodyClearance: bodySurface.signed,
+    handleHeadClearance: headSurface.signed,
+    handleBodyDistance: bodySurface.distance,
+    handleHeadDistance: headSurface.distance,
   };
 }
 
@@ -313,7 +319,7 @@ export function createMotionCapture(canvas: HTMLCanvasElement, camera: THREE.Per
           'Frame timestamps are completed stage renders, not GPU presentation. Canvas extraction and measurements perturb timing; sampleMs/imageMs disclose overhead.',
           'As played is the production body/life adapter, with grounded display, synthetic vertical input and selected presentation cargo; no physics travel or collision simulation.',
           'Encoded video may duplicate/drop rendered frames. Consecutive canvas frames are separately numbered. No automatic acceptance.',
-          'Chop grip is wrist-bone distance to the handle centreline. Shaft clearance uses posed torso/head triangles selected by at least 50% matching bone weight; hands are excluded as intentional grip contacts. Signed samples are candidates, not a watertight collision proof. Trunk distance is blade landmark to cylindrical surface, not a harvesting simulation.',
+          'Chop grip is wrist-bone distance to the handle centreline. Shaft distance uses posed torso/head triangles selected by at least 50% matching bone weight; hands are excluded as intentional grip contacts. handleBodyDistance/handleHeadDistance are unsigned closest distances. handleBodyClearance/handleHeadClearance retain signed nearest-face candidates; these open subsets can give a negative sign to a safely separated shaft below the chin or beside the torso. Inspect the frame and unsigned distance; this is not a watertight collision proof. Trunk distance is blade landmark to cylindrical surface, not a harvesting simulation.',
         ],
       };
     },
@@ -419,6 +425,8 @@ export function createMotionCapture(canvas: HTMLCanvasElement, camera: THREE.Per
         contactDistance: null,
         handleBodyClearance: null,
         handleHeadClearance: null,
+        handleBodyDistance: null,
+        handleHeadDistance: null,
         ...(chop ? chopMeasurements(figure, chop.axe, chop.trunk) : {}),
       };
       row.sampleMs = performance.now() - begin;

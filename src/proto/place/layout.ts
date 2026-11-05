@@ -5,6 +5,7 @@
 // docs/research/big-walk-level-design.md, sections 5 and 9, recs 5-7 and 10. Local: nothing here reaches the sim.
 import { smoothstep } from '../../math.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
+import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
 
 /** Far from today's island, past its soft wall, as the crossing does. */
 export const ORIGIN = { x: 1000, z: 0 };
@@ -15,8 +16,8 @@ export const TUNE = {
   carry: 8, // pieces on your back at first; the pack frame makes it PACK.carry
   strokes: 5, // chops to fell a tree with the first axe
   logsPerStroke: 2,
-  swingS: 0.24, // s before the next chop can start
-  contactS: 0.06, // s from the press to the axe meeting the bark
+  swingS: CHOP_RESTART, // s before the next chop can start
+  contactS: CHOP_CONTACT, // s from the press to the axe meeting the bark
   flyS: 0.26, // s a log takes from the bark to your back
   unloadS: 0.09, // s between pieces leaving your back at a station
   feedS: 0.07, // s between pieces rolling from a frame into the machine
