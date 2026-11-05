@@ -91,7 +91,17 @@ capAsset.gltf.scene.traverse((o) => {
   mesh.material =
     o.name.includes('brass') || o.name.includes('badge') ? capBrass : o.name.includes('peak') ? capPeak : capPaint;
 });
-const buddy = prepareBuddy(buddyAsset, clipAsset, capAsset);
+const ramp = q.get('dev') === '1' ? q.get('ramp') : null;
+// The comparison loads only by an explicit Dev stage query; ordinary stage and game graphs stay untouched.
+const decorateMain =
+  ramp === 'soft' || ramp === 'strong'
+    ? (
+        ({ rampMaterial }) =>
+        (original: THREE.Material) =>
+          rampMaterial(original, ramp)
+      )(await import('../src/debug/diffuse-ramp.ts'))
+    : undefined;
+const buddy = prepareBuddy(buddyAsset, clipAsset, capAsset, decorateMain);
 const reference = buddy.create('raw', 'Idle_Loop', 'free', '');
 reference.seek(0.4);
 stage.add(reference.group);

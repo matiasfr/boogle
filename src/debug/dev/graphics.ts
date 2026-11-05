@@ -1,4 +1,5 @@
 // Local Dev surface only. Owners register their work; this panel never imports an absent effect.
+import './buddy-ramp.ts';
 import { graphicsSnapshot, setGraphics, resetGraphics, type GraphicsValue } from '../../graphics-settings.ts';
 import { camera, renderer } from '../../render/scene.ts';
 import { graphicsMeasuring, measureGraphics } from './performance.ts';

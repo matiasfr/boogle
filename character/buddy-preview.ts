@@ -7,7 +7,12 @@ import { makeLife } from '../src/player/buddy/life.ts';
 import { retargetClip } from '../src/player/buddy/retarget.ts';
 export const SAMPLE_FPS = 30;
 export type BuddyMode = 'raw' | 'played';
-export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
+export function prepareBuddy(
+  model: Asset,
+  source: Asset,
+  headwear?: Asset,
+  decorateMain?: (material: THREE.Material) => THREE.Material,
+) {
   // Stage-only trial: decorate a fresh rest-pose instance, leaving Buddy's source and production loader untouched.
   const original = model;
   if (headwear)
@@ -48,22 +53,19 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
       const owned = new Set<THREE.Material>();
       const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
       const clock = { now: () => time * 1000, random };
+      const ownMaterial = (material: THREE.Material) => {
+        const clone = material.clone();
+        const decorated = clone.name === 'M_Main' && decorateMain ? decorateMain(clone) : clone;
+        if (decorated !== clone) clone.dispose();
+        owned.add(decorated);
+        return decorated;
+      };
       const ownMaterials = (root: THREE.Object3D) =>
         root.traverse((o) => {
           const mesh = o as THREE.Mesh;
           if (!mesh.isMesh) return;
           mesh.frustumCulled = false;
-          mesh.material = Array.isArray(mesh.material)
-            ? mesh.material.map((m) => {
-                const c = m.clone();
-                owned.add(c);
-                return c;
-              })
-            : (() => {
-                const c = mesh.material.clone();
-                owned.add(c);
-                return c;
-              })();
+          mesh.material = Array.isArray(mesh.material) ? mesh.material.map(ownMaterial) : ownMaterial(mesh.material);
         });
       function clear() {
         if (avatar) disposeBuddy(avatar);

@@ -37,6 +37,12 @@
   "Continue in room x · prototype y" under Jump in instead) ([src/features/home-app.ts](../../src/features/home-app.ts)). If the GPU device is lost (an iPhone backgrounding the tab, a driver reset), the page reloads when visible, at most
   once a minute.
 - **Sync kind.** Local: nothing about rendering crosses the network.
+- **Buddy diffuse ramp comparison (Dev only).** Graphics offers a soft or two-band direct diffuse ramp for
+  currently loaded Buddy bodies and carried log bundles. Current stays the default and restores original materials;
+  reapply the switch after an avatar arrives. Only the lazy Dev panel and explicit asset-stage comparison load the
+  experiment. Specular, emissive fill, ambient, paint, shadows, fog, eyes, hats, water and output stay fixed. No post
+  effect or screen buffer is added. This is the approved first comparison in
+  [render options](../brainstorms/render-options.md), not an adopted player look; ground, outlines and fill remain deferred.
 - **Production-water Looks.** `water=new` with Dev or `tune=1` adds the [Looks dock comparison](dev-menu.md#looks) at the active water-post owner: Current, metered Neutral, restrained Sunny AgX, AgX Punchy and Sunshine water. All use the procedural frozen sky and one shared meter/output pass. A/B only changes uniforms; saved choices prepare behind loading. This is a Local preview, not a default change. Ordinary visits keep the shipped graph and do not load comparison code.
   Explicit Graphics bloom overrides survive look selection, including Neutral. A saved bloom-on choice uses
   the same prepared comparison graph as bloom-off. Graphics meter-off holds exposure and skips meter work;
