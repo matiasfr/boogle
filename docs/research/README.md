@@ -2,6 +2,8 @@
 
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
+- [water-times-of-day.md](water-times-of-day.md) (2026-11-04): four prepared-sky strategies, cube/PMREM memory arithmetic, fresh Mac CPU LUT timings and labelled mobile estimates, coordinated evening/night lighting, co-op/save semantics and six recommendations; proposes one loading-prepared evening and a fade after the current water/replay gates. No source changes; browser broker unavailable, device/GPU costs unverified.
+
 - [shore-arrival.md](shore-arrival.md) (2026-11-04): ten opening-route comparisons, NPC asks, shore failure modes and co-op/return handling; three round-4 shore approaches and six recommendations, with a west-cove comparison first. Reference timings are estimates and metric lengths unverified; no gameplay changes or decisions.
 
 - [main-clean-dev-channel.md](main-clean-dev-channel.md) (2026-11-04): complete prototype/card/lab inventory, Place graduation dependencies, isolated hosting and server costs, branch/workflow tradeoffs and five recommendations; keep main deploying, use a selected prototype branch on dev.boogle.club, and archive only after extraction and owner approval. Proposed policy wording only; no implementation.
