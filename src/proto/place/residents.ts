@@ -9,7 +9,7 @@ import * as THREE from 'three/webgpu';
 import { angleLerp } from '../../math.ts';
 import { conversation } from '../../player/conversation.ts';
 import { isFirstVisit } from '../../player/arrival.ts';
-import { NO_TARGETS, registerInteractable, type Interactable } from '../../player/hands.ts';
+import { NO_TARGETS, interactTarget, registerInteractable, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { playMark } from '../mark.ts';
 import { pageQuery } from '../flags.ts';
@@ -442,7 +442,12 @@ export function updateResidents(dt: number) {
   if (barkLeft <= 0 || !g.on || away) return stopBark();
   const onScreen = inView(g.x, (g.fy ?? g.y) + 1.25, g.z, 1.1);
   bubble.classList.toggle('on', onScreen || shouting);
-  const x = onScreen ? ((screen.x + 1) / 2) * innerWidth : innerWidth / 2,
-    y = onScreen ? ((1 - screen.y) / 2) * innerHeight : innerHeight * 0.3;
+  const x = onScreen ? ((screen.x + 1) / 2) * innerWidth : innerWidth / 2;
+  let y = onScreen ? ((1 - screen.y) / 2) * innerHeight : innerHeight * 0.3;
+  const target = interactTarget();
+  if (target?.verb === 'Talk' && Math.hypot(target.at.x - g.x, target.at.z - g.z) < 0.1) {
+    const prompt = document.querySelector<HTMLElement>('.prompt:not([hidden]) .prompt-in');
+    if (prompt) y = Math.min(y, prompt.getBoundingClientRect().top - 8);
+  }
   bubble.style.transform = `translate(-50%, -100%) translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
 }

@@ -48,7 +48,7 @@ function updateCamera(elapsed: number) {
       // Up over the ground first, so a slope lifts the camera instead of pulling it in; then the arm, out of whatever's
       // left in the way (a ridge, a wall). It collides with what you collide with: outside the caves, not their rock.
       camPos.y = Math.max(camPos.y, camFloor(camPos.x, camPos.z));
-      camArm.solve(camFrom.set(ip.x, camLook.y, ip.z), camPos, getMask(me.body));
+      camArm.solve(camFrom.set(ip.x, ip.y + 1.35, ip.z), camPos, getMask(me.body));
       camPos.y = Math.max(camPos.y, camFloor(camPos.x, camPos.z));
     } else camArm.reset();
     camera.position.copy(camPos);

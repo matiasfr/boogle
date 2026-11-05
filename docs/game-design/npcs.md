@@ -7,6 +7,10 @@ button does what) and 8 (designed for drop-in). Local: no sim or network state.
 
 ## Controls in a talk
 
+Place uses the shared speaker framing, including its initial pitch reset. The camera arm stays anchored at player shoulder height when the card offsets the look target, avoiding a collision pivot below the ground. Touch action buttons and the stick hide while the talk owns them, with looking still available outside the card. Place cards fit inside the viewport and scroll; a nearby speaker's floating line sits above its Talk prompt.
+
+All four D-pad directions and arrow keys pick answers, including left/right for options across a row. The talk owns left/right throughout, so they cannot fire Ping or Flag. Horizontal stick picks repeat too. The Pick hint follows the first row's layout; touch keeps direct answer buttons and its tap guard.
+
 | | Pad | Keyboard | Touch |
 |---|---|---|---|
 | Open | X / □ / Y (the interact button) | E | the main button (it says Talk) |

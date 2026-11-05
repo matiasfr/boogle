@@ -24,6 +24,11 @@ body.gamepad .talk-sel {
   align-items: center;
   gap: 6px;
 }
+/* Keep looking available outside the card, without inactive actions beneath it. */
+body.touch.talking .tbtn,
+body.touch.talking .stick {
+  visibility: hidden;
+}
 .talk-hint .g-cluster {
   gap: 2px;
 }

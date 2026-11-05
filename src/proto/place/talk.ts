@@ -1,11 +1,9 @@
 // Talking to a little guy in ?proto=place: a small card low on the screen, typed out with their own babble, through the shared
 // talk input (src/player/conversation.ts), so it works on a pad, a keyboard and a touch screen. You stand still and the world
-// keeps going. It gives no `focus`: that steers the camera for its first 1.4 s, and indoors the shot stays yours. You turn to
-// face them, and the view eases round once unless you look around first. Local: two people can talk to the same one at once.
+// keeps going. The shared conversation camera frames the speaker, then leaves looking to you. Local: two people can talk to the same one at once.
 import { reducedMotion } from '../../constants.ts';
-import { angleLerp } from '../../math.ts';
 import { closeConversation, openConversation } from '../../player/conversation.ts';
-import { cam, me } from '../../player/player.ts';
+import { me } from '../../player/player.ts';
 import { speak, type LineSpeech, type VoiceSpec } from '../../render/npc-voice.ts';
 
 export type Answer = { label: string; then: () => Beat | null };
@@ -72,6 +70,7 @@ export function startTalk(w: Who, first: Beat, ended?: () => void) {
     choices: () => (cur.typing ? [] : [...optsEl.querySelectorAll<HTMLButtonElement>('button')]),
     close: endTalk,
     hints: hintsEl,
+    focus: () => ({ x: w.x, y: me.body?.position.y ?? 0, z: w.z }),
   });
   if (!ok) return false;
   who = w;
@@ -79,9 +78,6 @@ export function startTalk(w: Who, first: Beat, ended?: () => void) {
   nameEl.textContent = w.name;
   nameEl.style.setProperty('--who', w.color);
   root.hidden = false;
-  framing.t = 0;
-  framing.yaw = cam.yaw;
-  framing.on = true;
   show(first);
   return true;
 }
@@ -94,20 +90,11 @@ export function endTalk() {
   onEnd?.();
   onEnd = null;
 }
-const framing = { on: false, t: 0, yaw: 0 };
-export function updateTalkCard(dt: number) {
+export function updateTalkCard() {
   const w = who,
     b = me.body;
   if (!w) return;
   if (!b || Math.hypot(b.position.x - w.x, b.position.z - w.z) > 6) return endTalk();
-  const face = Math.atan2(-(w.x - b.position.x), -(w.z - b.position.z));
-  me.yaw = angleLerp(me.yaw, face, 1 - Math.exp(-dt * 8));
-  // The view comes round once, about a second, to see them over your shoulder; your own look ends it.
-  if (framing.on) {
-    framing.t += dt;
-    if (Math.abs(cam.yaw - framing.yaw) > 1e-4 || framing.t > 1.1) framing.on = false;
-    else cam.yaw = framing.yaw = angleLerp(cam.yaw, face + 0.7, 1 - Math.exp(-dt * 3));
-  }
   const ms = performance.now() - cur.at;
   speech?.update(ms);
   if (cur.typing) {
