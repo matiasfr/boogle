@@ -41,10 +41,30 @@ import type { OpHandlers, StateHandlers, Edit } from './rules/types.ts';
 // Wire messages and edits arrive as unchecked JSON objects: every field is read as unknown and checked before use.
 type Obj = Record<string, unknown>;
 /** A stamped edit waiting for its tick. */
-type Queued = { tick: number; seq: number; e: Obj };
+export type Queued = { tick: number; seq: number; e: Obj };
 type State = StateHandlers & { version: number; migrate: Record<number, (json: unknown) => unknown>; fresh: string };
 /** The world as saved and served: tick, seed, epoch, each state's serialized form and version. */
 export type Snapshot = { tick: number; seed: number; epochMs: number; data: Obj; vers: Obj };
+/** Opt-in production recovery. The legacy world/snapshot protocol does not use this document. */
+export type RecoveryEnvelope = {
+  version: 1;
+  namespace: string;
+  catalog: string;
+  checkpoint: Snapshot;
+  hash: number;
+  tail: Queued[];
+  seq: number;
+  checksum: number;
+};
+export type RecoveryStore = {
+  namespace: string;
+  catalog: string;
+  read(): unknown;
+  /** Resolve only after atomic replacement succeeds; refusal and I/O errors must reject. */
+  write(envelope: RecoveryEnvelope): Promise<void>;
+};
+export const MAX_RECOVERY_BYTES = 60000;
+const MAX_RECOVERY_TAIL = 64;
 /** The part of a room (src/net/README.md) the world uses. */
 export type WorldRoom = {
   selfId: string;
@@ -60,12 +80,14 @@ export type AttachOptions = {
   storage?: SaveStore | null; // the host's save (synchronous, like localStorage)
   now?: () => number;
   saveMs?: number; // how often the host saves a changed world; default SAVE_MS (30 s), the server uses 2 s
+  recovery?: RecoveryStore; // isolated production rooms only; replaces legacy storage, never falls back to it
 };
 type Cfg = {
   roomId: string;
   storage: SaveStore | null;
   now: () => number;
   saveMs: number;
+  recovery?: RecoveryStore;
 };
 type Desync = { tick: number; keys: string[] };
 /** Where the host keeps the world: the server's store (world-host.ts), or a stand-in in tests. */
@@ -94,6 +116,12 @@ const HOST_TYPES = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap']); // what a cl
 const isObj = (v: unknown): v is Obj => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
+function recoveryChecksum(value: Omit<RecoveryEnvelope, 'checksum'>) {
+  const text = JSON.stringify(value);
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619) >>> 0;
+  return h;
+}
 
 // opts.env: host-only facts handed to validate as ctx.env (they may differ per machine, so never to apply or ticks).
 export function createSync({ env: env0 }: { env?: Obj } = {}) {
@@ -159,6 +187,11 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   let nextHashTick = HASH_EVERY;
   let lastSavedHash: number | null = null;
   let nextSave = SAVE_MS;
+  let recoveryPending = false;
+  let recoveryError: string | null = null;
+  let recoveryWork: Promise<void> = Promise.resolve();
+  let attachment = 0; // a completed old write cannot publish into a different attachment
+  let processingTick = false;
 
   // Listeners are guarded: callers report from inside catch blocks, so a throwing listener would report twice.
   const snapFail = (from: string, reason: string) => {
@@ -209,6 +242,9 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   function stamp(edit: Obj, from: string) {
     const h = ops.get(String(edit.op));
     if (!ready || !h || !isInt(edit.i) || !isInt(edit.j)) return false;
+    if (cfg.recovery && (recoveryPending || recoveryError || badSave || newerSave || queue.length >= MAX_RECOVERY_TAIL))
+      return false;
+    if (cfg.recovery && (seq >= Number.MAX_SAFE_INTEGER || world.tick > Number.MAX_SAFE_INTEGER - DELAY)) return false;
     const u = pidOf(from);
     if (!u) return false;
     if (h.hostOnly && from !== selfId) return false; // an op only the host itself submits (a broadcast can't be replayed)
@@ -230,9 +266,12 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
   function flush() {
     if (!out.length) return;
+    if (cfg.recovery && (recoveryPending || recoveryError || badSave || newerSave)) return;
     const list = out;
     out = [];
-    send({ t: 'w:edits', ht: world.tick, list });
+    const publish = () => send({ t: 'w:edits', ht: world.tick, list });
+    if (cfg.recovery) checkpointRecovery(publish);
+    else publish();
   }
 
   function submitEdit(edit: unknown) {
@@ -291,6 +330,17 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
 
   // ------------------------------------------------------------ tick
   function step() {
+    processingTick = true;
+    try {
+      runTick();
+    } catch (e) {
+      if (cfg.recovery) failRecovery('accepted production tick failed');
+      throw e;
+    } finally {
+      processingTick = false;
+    }
+  }
+  function runTick() {
     const t = world.tick + 1;
     const due = queue.filter((q) => q.tick <= t).sort((a, b) => a.tick - b.tick || a.seq - b.seq);
     queue = queue.filter((q) => q.tick > t);
@@ -307,12 +357,16 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
           }
         }
       } catch (err) {
+        if (cfg.recovery) {
+          failRecovery(`accepted edit failed in apply: ${String(e.op)}`);
+          throw err; // never silently discard a durably accepted production edit
+        }
         console.error('[world] apply failed', err);
       }
     }
     for (const fn of tickFns) fn(t);
     for (const fn of afterFns) fn(t);
-    if (mode === 'host') {
+    if (mode === 'host' && (!cfg.recovery || (ready && !out.length && !recoveryPending && !recoveryError))) {
       if (t % CLOCK_EVERY === 0) send({ t: 'w:c', ht: t });
       if (t >= nextHashTick) {
         nextHashTick = t + HASH_EVERY;
@@ -329,6 +383,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   // Called from the frame loop with real elapsed seconds; runs whole ticks only.
   function updateWorld(dt: number) {
     wall += dt * 1000;
+    // A production clock cannot overtake an unpublished stamp or a replacement checkpoint.
+    if (mode === 'host' && cfg.recovery && (recoveryPending || recoveryError || out.length || !ready)) return;
     releaseHeld();
     if (mode === 'client') {
       if (awaiting && wall - needAt > 2000) {
@@ -354,6 +410,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     while (acc >= TICK_MS && n++ < MAX_STEPS) {
       acc -= TICK_MS;
       step();
+      if (cfg.recovery && (out.length || recoveryPending || recoveryError || !ready)) break;
     }
     if (n >= MAX_STEPS) acc = 0;
     saveSoon();
@@ -457,11 +514,13 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
 
   function serveSnapshot(to: string) {
-    if (!ready || wall - (served.get(to) ?? -1e9) < 1500) return;
+    // A failed-load fallback is not an authoritative world, even if its fresh state hashes consistently.
+    if (!ready || badSave || wall - (served.get(to) ?? -1e9) < 1500) return;
+    if (cfg.recovery && (recoveryPending || recoveryError || out.length || newerSave)) return;
     served.set(to, wall);
     const pend = queue.map(({ tick, seq: s, e }) => ({ tick, seq: s, e }));
     // noSave: this tab skipped a state from a newer build, so what it serves must not become anyone's save either.
-    const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick, noSave: newerSave });
+    const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick, noSave: newerSave || badSave });
     stats.snapBytes = json.length;
     const id = ++snapId;
     const n = Math.ceil(json.length / CHUNK);
@@ -600,14 +659,161 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
 
   // ------------------------------------------------------------ roles + persistence
+  function failRecovery(reason: string) {
+    recoveryError = reason;
+    ready = false;
+    snapFail('recovery', reason);
+  }
+  // One immutable envelope, one outstanding replacement. Stamps, ticking and serving are paused until it resolves.
+  // The tail contains every published-but-not-applied edit, so replacement never drops the future queue.
+  function checkpointRecovery(publish: () => void = () => {}) {
+    const recovery = cfg.recovery;
+    if (!recovery || recoveryPending || recoveryError || badSave || newerSave) return;
+    let envelope: RecoveryEnvelope;
+    try {
+      const body: Omit<RecoveryEnvelope, 'checksum'> = {
+        version: 1,
+        namespace: recovery.namespace,
+        catalog: recovery.catalog,
+        checkpoint: snapshot(),
+        hash: worldHash(),
+        tail: queue.map(({ tick, seq: sequence, e }) => ({ tick, seq: sequence, e })),
+        seq,
+      };
+      const text = JSON.stringify({ ...body, checksum: recoveryChecksum(body) });
+      const bytes = new TextEncoder().encode(text).length;
+      if (bytes > MAX_RECOVERY_BYTES || queue.length > MAX_RECOVERY_TAIL) throw new Error('recovery budget exceeded');
+      stats.snapBytes = bytes;
+      envelope = JSON.parse(text) as RecoveryEnvelope;
+    } catch (e) {
+      failRecovery(e instanceof Error ? e.message : 'recovery serialization failed');
+      return;
+    }
+    recoveryPending = true;
+    const generation = attachment;
+    recoveryWork = Promise.resolve()
+      .then(() => recovery.write(envelope))
+      .then(() => {
+        if (attachment !== generation) return;
+        recoveryPending = false;
+        stats.saves++;
+        lastSavedHash = combine(0);
+        publish();
+      })
+      .catch((e: unknown) => {
+        if (attachment !== generation) return;
+        recoveryPending = false;
+        failRecovery(e instanceof Error ? e.message : 'recovery write failed');
+      });
+  }
+  // Used by server close and tests. Also drains a stamp queued by a startup onSnapshot handler (offline resume).
+  async function whenDurable() {
+    if (!cfg.recovery) return;
+    do {
+      if (out.length && !recoveryPending && !recoveryError) flush();
+      await recoveryWork;
+      if (recoveryError) throw new Error(recoveryError);
+    } while (recoveryPending || out.length);
+  }
+  function restoreRecovery(raw: unknown) {
+    const recovery = cfg.recovery!;
+    if (isObj(raw) && isInt(raw.version) && raw.version > 1) newerSave = true;
+    if (!isObj(raw) || raw.version !== 1 || raw.namespace !== recovery.namespace || raw.catalog !== recovery.catalog)
+      throw new Error('unsupported recovery version, namespace or catalog');
+    if (new TextEncoder().encode(JSON.stringify(raw)).length > MAX_RECOVERY_BYTES)
+      throw new Error('recovery budget exceeded');
+    if (
+      !validSnap(raw.checkpoint) ||
+      raw.checkpoint.epochMs < 0 ||
+      !isObj(raw.checkpoint.vers) ||
+      !isInt(raw.hash) ||
+      !isInt(raw.seq) ||
+      raw.seq < 0 ||
+      !isInt(raw.checksum) ||
+      !Array.isArray(raw.tail) ||
+      raw.tail.length > MAX_RECOVERY_TAIL
+    )
+      throw new Error('invalid recovery envelope');
+    const checkpoint = raw.checkpoint;
+    const keys = [...states.keys()];
+    if (keys.some((key) => isInt(checkpoint.vers[key]) && checkpoint.vers[key] > states.get(key)!.version))
+      newerSave = true;
+    if (
+      Object.keys(checkpoint.data).length !== keys.length ||
+      Object.keys(checkpoint.vers).length !== keys.length ||
+      keys.some((key) => !(key in checkpoint.data) || checkpoint.vers[key] !== states.get(key)!.version)
+    )
+      throw new Error('recovery registry/version mismatch');
+    const tail: Queued[] = [];
+    let previous = 0;
+    for (const q of raw.tail) {
+      if (
+        !isObj(q) ||
+        !isInt(q.tick) ||
+        q.tick <= checkpoint.tick ||
+        q.tick > checkpoint.tick + DELAY ||
+        !isInt(q.seq) ||
+        q.seq <= previous ||
+        q.seq > raw.seq ||
+        !isObj(q.e) ||
+        !ops.has(String(q.e.op)) ||
+        !isInt(q.e.i) ||
+        !isInt(q.e.j) ||
+        typeof q.e.p !== 'string' ||
+        typeof q.e.u !== 'string' ||
+        JSON.stringify(q.e).length > MAX_EDIT_JSON
+      )
+        throw new Error('invalid recovery tail');
+      previous = q.seq;
+      tail.push({ tick: q.tick, seq: q.seq, e: q.e });
+    }
+    const body: Omit<RecoveryEnvelope, 'checksum'> = {
+      version: 1,
+      namespace: recovery.namespace,
+      catalog: recovery.catalog,
+      checkpoint,
+      hash: raw.hash,
+      tail,
+      seq: raw.seq,
+    };
+    if (recoveryChecksum(body) !== raw.checksum) throw new Error('recovery checksum mismatch');
+    const errors = stats.loadErrors;
+    if (!loadSnapshot(checkpoint) || stats.loadErrors !== errors || newerSave || worldHash() !== raw.hash)
+      throw new Error('recovery checkpoint hash/load mismatch');
+    queue = tail;
+    seq = raw.seq;
+    // Host sends are disabled while ready=false. Replay uses the ordinary tick order and stored host stamps.
+    while (queue.length) step();
+  }
+  function becomeRecoveryHost() {
+    try {
+      const raw = cfg.recovery!.read();
+      if (raw === null) world.epochMs = cfg.now();
+      else restoreRecovery(raw);
+    } catch (e) {
+      badSave = true;
+      failRecovery(e instanceof Error ? e.message : 'recovery load failed');
+      return;
+    }
+    nextHashTick = world.tick + HASH_EVERY;
+    checkpointRecovery(() => {
+      ready = true;
+      for (const fn of snapFns) fn(world.tick);
+    });
+  }
   const storageKey = () => `boogle.world.${cfg.roomId}`;
   // The host (our server: server/src/host/world-host.ts) keeps the world in its storage; tabs keep nothing.
   // force: write even if no state changed (the tick still moved on: the server's 30 s and shutdown saves).
   // Returns true when it wrote.
   function persist(force = false) {
     if (mode !== 'host' || !ready || newerSave || badSave) return false;
+    if (cfg.recovery && (processingTick || recoveryPending || recoveryError || out.length)) return false;
     const hsh = combine(0);
     if (hsh === lastSavedHash && !force) return false;
+    if (cfg.recovery) {
+      checkpointRecovery();
+      return !recoveryError;
+    }
     const text = JSON.stringify(snapshot());
     stats.snapBytes = text.length;
     try {
@@ -638,6 +844,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     hostId = null;
     out = [];
     lastSavedHash = null;
+    if (cfg.recovery) return becomeRecoveryHost();
     const snap = loadPersisted();
     const errs = stats.loadErrors;
     if (!snap || !loadSnapshot(snap)) world.epochMs = cfg.now();
@@ -668,18 +875,27 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       storage: opts.storage ?? null,
       now: opts.now ?? Date.now,
       saveMs: opts.saveMs ?? SAVE_MS,
+      recovery: opts.recovery,
     };
     nextSave = wall + cfg.saveMs;
     ready = false;
     queue = [];
     held = [];
     connected = true;
+    recoveryPending = false;
+    recoveryError = null;
+    recoveryWork = Promise.resolve();
     cleanup = [r.onMessage(onMessage), r.onConnection(onConnected)];
     if (opts.host) becomeHost();
     else becomeClient();
     return detachWorld;
   }
   function detachWorld() {
+    attachment++;
+    if (cfg.recovery) {
+      recoveryPending = false;
+      out = [];
+    }
     for (const fn of cleanup) fn();
     cleanup = [];
     room = null;
@@ -713,10 +929,14 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     },
     pidOf, // a session's pid, or null
     submitEdit,
+    // Opt-in room coordinators can correlate a refused admission; the legacy w:edit route remains unchanged.
+    receiveEdit: (edit: unknown, from: string) =>
+      mode === 'host' && isObj(edit) && JSON.stringify(edit).length <= MAX_EDIT_JSON && stamp(edit, from),
     updateWorld,
     snapshot,
     loadSnapshot,
     saveNow: (force = false) => persist(force), // force: even if no state changed since the last save
+    whenDurable,
     worldHash,
     attachWorld,
     detachWorld,
@@ -728,6 +948,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       ...stats,
       newerSave,
       badSave,
+      recoveryPending,
+      recoveryError,
       subsystems,
       lastBad,
     }),
