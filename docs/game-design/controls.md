@@ -77,8 +77,10 @@ Notes:
   interact does nothing mid-talk), the D-pad ↑ ↓ and the left stick, picking with repeat while held. The other buttons
   keep their actions (Y still honks). The pause view is still a modal ([src/player/modal.ts](../../src/player/modal.ts)), and opening it ends a talk.
 - With a pad, B (back) also leaves a focused text field without doing anything else.
-- While a pad is in use the touch overlay hides and the reticle shows; the next touch brings the touch controls back
-  ([src/features/gamepad.ts](../../src/features/gamepad.ts)). Analog triggers count as pressed at 0.4. On an iPad
+- While a pad is in use the touch overlay hides and the reticle shows; the next touch brings the touch controls back,
+  and a key press (outside a text field, and not while a pad button is held) or a mouse click brings keyboard and mouse
+  back: prompts, the pause view's first tab and the pointer lock follow. The next pad press or stick push returns to
+  the pad ([src/features/gamepad.ts](../../src/features/gamepad.ts)). Analog triggers count as pressed at 0.4. On an iPad
   `body.touch` stays on while the pad plays, so pad-only styles key on `body.gamepad`. A pad without the standard
   mapping that reports its D-pad as axes works like D-pad buttons 12-15: a hat axis (the one resting past ±1;
   SDL_GameControllerDB lists MFi pads, Backbone included, with a hat D-pad), or else a pair on axes 6 and 7.

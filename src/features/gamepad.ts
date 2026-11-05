@@ -1,6 +1,6 @@
 // Gamepad play (Backbone on iPhone/iPad, or any controller with the "standard" mapping): left stick moves, right
 // stick looks, buttons dispatch the actions in src/player/controls.ts. While a pad is in use the touch overlay hides and the
-// reticle shows; the next touch brings the touch controls back. body.touch stays on an iPad while its pad plays (only a
+// reticle shows; the next touch brings the touch controls back, and a key or a mouse click keyboard and mouse. body.touch stays on an iPad while its pad plays (only a
 // key or a click clears it), so pad styles key on body.gamepad, never on body:not(.touch). Menu opens the pause view (src/features/pause.ts).
 // The pad's brand (from its id) names the buttons in prompts (body[data-pad], src/player/glyphs.ts): Xbox letters,
 // PlayStation shapes, Switch letters; on a Switch pad confirm and back swap places in menus and talks (menuSlot). B
@@ -26,7 +26,7 @@ import { me, cam } from '../player/player.ts';
 import { clamp } from '../math.ts';
 import { dom } from '../player/hud.ts';
 import { canvas } from '../render/scene.ts';
-import { PAD, actionForSlot, padModal, padGrab, setMenuSwap, menuSlot } from '../player/controls.ts';
+import { PAD, actionForSlot, padModal, padGrab, setMenuSwap, menuSlot, isTyping } from '../player/controls.ts';
 import { standalone } from '../boot/app-fill.ts';
 import { devInputBlocked } from '../player/dev-input.ts';
 
@@ -287,6 +287,10 @@ onStart(() => {
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && scan());
   // Touching the screen hands control back to the touch overlay.
   addEventListener('touchstart', () => setActive(false), { passive: true });
+  // So do a key and a mouse click, for keyboard and mouse. Not during a pad press: iPadOS may turn one into a key. A key
+  // aimed at a text field may come from the on-screen keyboard.
+  addEventListener('keydown', (e) => !isTyping(e) && !pressed.includes(true) && setActive(false), { capture: true });
+  addEventListener('pointerdown', (e) => e.pointerType === 'mouse' && setActive(false), { capture: true });
   // input.ts zeroes the stick on blur; the next poll reads the pad afresh.
   addEventListener('blur', releaseAll);
   scan(); // once after load: a pad connected before the page was
