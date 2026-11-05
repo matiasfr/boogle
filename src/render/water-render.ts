@@ -76,7 +76,7 @@ function createRealSea() {
     lateUpdate({ elapsed, dt }) {
       if (!ready || disposed) return;
       atlas.sync();
-      frozen.update();
+      frozen.update(dt);
       const fog = scene.fog as THREE.Fog;
       fogRange.value.set(fog.near, fog.far);
       ocean.update(camera, elapsed, sun);

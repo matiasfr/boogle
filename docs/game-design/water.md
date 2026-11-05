@@ -1,5 +1,63 @@
 # 6.26b Water
 
+## Prepared evening preview (5 November 2026)
+
+Local, off by default: `?proto=place&evening=1` opens the authored evening; `&evening=preview`
+prepares both looks but opens in day. `setEveningLook(true | false)` from
+`src/render/water/evening-transition.ts` is the single future milestone seam: it starts a 0.45 s cover,
+exchanges the prepared package while fully covered, then reveals over 0.65 s. It returns false without
+the opt-in sea or during an active fade. No room state, save, milestone trigger or night is implemented.
+DESIGN.md 11, Show, don't tell: the future completed line earns a warmer view, without changing activities.
+
+Following [research recommendations 1–4](../research/water-times-of-day.md#numbered-recommendations-for-boogle-d),
+loading prepares the existing 1024-face day cube and a second 1024-face evening cube, both filtered environments
+and both hemisphere fills. Evening uses 12° solar elevation, 255° azimuth, turbidity 3.2 and cloud coverage .3.
+The same stable sampling nodes feed water, underwater, snow, fog and sky; the existing key and hemisphere lights
+switch together. Water chemistry, FFT, caustic simulation and fixed exposure (0.16 / +0.81 underwater EV) stay intact.
+The fade is a Local DOM veil owned/disposed by the sea, with no extra render pass or light. Authoring sky-rebake
+controls are inactive while prepared evening is enabled. No sky allocation/bake is added on ordinary visits.
+The two raw/filtered pairs model approximately 256 MiB before scratch/LUTs, not measured residency;
+512-face comparison and device memory acceptance remain separate work. The experiment makes no device budget claim.
+
+### Evening verification (5 November)
+
+Rendering code is committed at `6ae679d6`; these final manifests report that clean tree unchanged throughout:
+[day](../../.look/evidence/1793899706630-10609/evidence.json),
+[evening](../../.look/evidence/1793899707685-10662/evidence.json),
+[fade](../../.look/evidence/1793899705251-10605/evidence.json),
+[world-inputs](../../.look/evidence/1793899709238-10674/evidence.json),
+[full evening bot](../../.look/evidence/1793899840118-18102/evidence.json).
+`npm run check` passed, including 330 unit tests; repeated successfully with the installed Node 26.13.0.
+The final bot completed every expected beat with 83 checkpoints and no page/graphics errors. Its report and
+end still were read. The solo bot does not mark co-op or crystal collection; the latter was exercised in the
+explicit visual fixture, not inferred from the bot.
+
+Opened both final `station`, `town`, `shore`, `sign`, `crate`, `crystal` and `crystal-burst` PNGs.
+The fixture stages Station 2; matched camera coordinates were checked in the logs. Actors, gifts and particles
+are live, not pixel-frozen. Evening gives long warm shadows and a gold reflection over teal water. Station bills,
+sign ink, crate glow and pale crystal particles remain distinct; shaded walls and the crate body are darker.
+The bank's stippled edge exists in both looks and was not changed. No copy was edited, and no suspect Boogler
+line was identified in this visual review.
+
+Opened the fade motion sheet, end still, curves and a consecutive-frame strip decoded with ffmpeg from its
+recorded video. The veil covers the exchange and day returns; a finished roof obstructs much of that camera.
+The sampled day/evening/restored counts are **284/284/284 draws, five render passes and 92 textures**,
+with one bake per sky throughout and exposure fixed at .16 / +.81 EV. These are counts, not timing evidence.
+The [shore repeat](../../.look/evidence/1793899797008-16026/evidence.json) retains a clearer opened motion sheet,
+stills and curves, and **320/320/320 draws**, five passes and 92 textures, but timed out at video export
+(status 124, no video). It is a failed capture, not a substitute video pass.
+
+Retained failures: [first bot](../../.look/evidence/1793898921105-89949/evidence.json) omitted `shot=play`;
+[second bot](../../.look/evidence/1793899034816-94958/evidence.json) completed the pier but hit the ordinary
+wall cutoff before the remaining visits. Their reports and end stills were inspected. The final `--long` run
+above resolves completion without gameplay changes. Quiet reruns are still needed for transition smoothness,
+load/first-switch timing and sustained GPU cost; mobile memory, device behavior and human feel are unverified.
+
+Execution departures: `npm run inflight` fetched remote refs before its network behavior was noticed, contrary
+to this task's local-only network constraint. No push or ship was performed. Initial commands and broker clients
+used the shell's Node 24; the final full check used Node 26. No room-time, wire, milestone or night work was added.
+Not tested on a device.
+
 ## Graduation scope (4 November 2026)
 
 Place (including the default address) and crossing now own the replacement sea without a URL switch.

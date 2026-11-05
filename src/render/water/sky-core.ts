@@ -157,13 +157,21 @@ export function createWaterSkyFor(renderer: THREE.WebGPURenderer, bakedArt?: (di
     return select(d.y.lessThan(0), vec4(down, 1), vec4(col, alpha.oneMinus()));
   })();
   const quad = new THREE.QuadMesh(material);
+  // Stable sampling nodes: prepared looks exchange textures, never rebuild consumer graphs.
+  const samples: ReturnType<typeof cubeTexture>[] = [];
+  let sampledCube = cube;
+  const sample = (direction: N) => {
+    const node = cubeTexture(sampledCube, direction);
+    samples.push(node);
+    return node;
+  };
   const skyLod = (direction: N, lod: N | number = 0) =>
-    cubeTexture(cube, vec3(direction.x, max(direction.y, 0), direction.z)).level(lod).rgb;
+    sample(vec3(direction.x, max(direction.y, 0), direction.z)).level(lod).rgb;
   const skyAt = (direction: N, roughness: N | number = 0) =>
     skyLod(direction, clamp(log2(max(float(roughness).mul(650), 1)), 0, 10));
   const background = Fn(() => {
     const d = normalize(positionWorldDirection),
-      sampled = cubeTexture(cube, vec3(d.x, max(d.y, 0), d.z)).level(0);
+      sampled = sample(vec3(d.x, max(d.y, 0), d.z)).level(0);
     const cs = dot(d, sunDirection),
       disc = smoothstep(0.999985, 0.999992, cs).mul(smoothstep(0.999985, 1, cs).mul(0.4).add(0.6));
     return sampled.rgb.add(
@@ -184,7 +192,13 @@ export function createWaterSkyFor(renderer: THREE.WebGPURenderer, bakedArt?: (di
     background,
     skyAt,
     skyLod,
-    ambient: (normal: N) => cubeTexture(cube, normal).level(10).rgb,
+    ambient: (normal: N) => sample(normal).level(10).rgb,
+    selectPrepared(texture: THREE.CubeTexture, direction: THREE.Vector3, radiance: THREE.Vector3) {
+      sampledCube = texture;
+      for (const node of samples) node.value = texture;
+      sunDirection.value.copy(direction);
+      sunColor.value.copy(radiance);
+    },
     inspect: () => ({ bakes, bakeMs, cubeSize: 1024, sunDirection: sunDirection.value.toArray() }),
     dispose() {
       cubeTarget.dispose();
