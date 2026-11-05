@@ -4,6 +4,8 @@ import { CHOP_CONTACT, CHOP_DURATION } from './chop-timing.ts';
 export { CHOP_CONTACT, CHOP_DURATION } from './chop-timing.ts';
 export const CHOP_TRUNK = { distance: 1.35, radius: 0.4, height: 2.3 };
 export const CHOP_SIDE = 0.18;
+/** Local Dev trial; never saved or sent. The floating tool remains the default. */
+export const chopPresentation = { twoHanded: false };
 export type ChopResponse = 'bite' | 'rebound' | 'full' | 'gone';
 type Pose = { x: number; y: number; z: number; rx: number; rz: number; lean: number; contact: number };
 const REST: Pose = { x: 0.03, y: 0.3, z: -0.32, rx: -0.6, rz: -0.18, lean: 0, contact: 0 };
@@ -106,7 +108,7 @@ function grip(arm: Arm, at: THREE.Vector3, figure: THREE.Object3D) {
   aim(arm.upper, arm.lower, nextElbow);
   aim(arm.lower, arm.hand, at);
 }
-export type ChopPoseOptions = { reducedMotion?: boolean; target?: THREE.Vector3 };
+export type ChopPoseOptions = { reducedMotion?: boolean; target?: THREE.Vector3; frame?: THREE.Object3D };
 export function applyChopPose(
   figure: THREE.Object3D,
   axe: THREE.Object3D,
@@ -114,6 +116,29 @@ export function applyChopPose(
   response: ChopResponse,
   options: ChopPoseOptions = {},
 ) {
+  if (!chopPresentation.twoHanded) {
+    const frame = options.frame ?? figure;
+    if (axe.parent !== frame) frame.add(axe);
+    axe.position.set(0.42, 0.72, -0.2);
+    axe.rotation.set(0, 0, 0);
+    axe.visible = time < CHOP_DURATION;
+    const raised = 1.5,
+      struck = -1.35,
+      c = CHOP_CONTACT;
+    if (time < c) axe.rotation.x = raised + (struck - raised) * (time / c);
+    else if (response === 'full' && time < 0.55) {
+      const u = Math.sin(Math.min(1, (time - c) / 0.49) * Math.PI);
+      axe.rotation.x = 0.2 + u * 2.2;
+      axe.rotation.z = -u * 0.9;
+    } else if (response === 'rebound' && time < 0.32) {
+      const u = Math.min(1, (time - c) / 0.09);
+      axe.rotation.x = struck + (raised - struck) * Math.sin(u * Math.PI * 0.5);
+      axe.rotation.z = -0.45 * Math.sin(u * Math.PI);
+    } else if (response === 'bite' && time < c + 0.035) axe.rotation.x = struck;
+    else if (time < 0.3) axe.rotation.x = struck + (0.2 - struck) * ((time - c - 0.035) / (0.3 - c - 0.035));
+    else axe.rotation.x = 0.2;
+    return;
+  }
   const pose = sampleChop(time, response);
   axe.visible = pose.visible;
   if (!pose.visible) return;

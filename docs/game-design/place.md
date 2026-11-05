@@ -573,14 +573,13 @@ with the reward displays and Buddy's Local asset stage. Their handles are 0.64 a
 The pick points out from an overlapping metal eye on the back of the head. These are
 code-authored toy primitives, not a new GLB, skeleton or skin-weight pipeline.
 
-`chop-motion.ts` owns the single production/stage curve and two-arm pose on the existing
-rig. A short lift precedes the strike, the bite holds for 35 ms, then the tool settles
-into a low two-handed ready pose. Full-back refusal lifts the tool sideways and leans
-back; hardwood refusal recoils sooner. The normal visible tail remains 0.90 s. Contact
-moves from **0.06 to 0.12 s** because the old strike crossed almost its whole arc in
-two rendered frames. The **0.24 s restart interval** and all strokes, logs per stroke,
-work, capacities, costs and saved/wire state remain unchanged. Reduced motion removes
-the additional body lean; the essential tool action and contact timing stay visible.
+`chop-motion.ts` defaults to the pre-#924 floating axe arc in the back socket, without
+two-arm posing or extra body lean (owner: Start animation simple). The current axe meshes,
+**0.12 s contact**, **0.24 s restart interval**, 35 ms bite hold and 0.90 s visible tail remain.
+Dev → Tests → **Two-handed chop (retuning trial)** retains the experimental two-arm pose
+for later work; it is Local, off on every reload and never saved or sent. The asset stage
+uses the same default floating arc and socket. Strokes, yields, costs and saved/wire state
+remain unchanged. Full-back refusal lifts sideways; hardwood refusal recoils sooner.
 
 Local tree contact raycasts the real faceted trunk from the approach direction; accepted
 chips/log flights use that same point. Arm reach is bounded to preserve Buddy's proportions:
