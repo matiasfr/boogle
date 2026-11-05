@@ -31,6 +31,8 @@ import { shakeView } from './celebrate.ts';
 import { addFoot } from './sites.ts';
 import { packFrameMesh } from './gear-models.ts';
 import { LAND_TREES, safeTreeFall, shoreTreeCleared } from './tree-catalog.ts';
+import { makeAxes } from './axe-models.ts';
+import { applyChopPose } from './chop-motion.ts';
 
 // ---------------------------------------------------------------- your back
 /** One big thing on your shoulder: it fills your back, and you can't sprint with it. */
@@ -717,35 +719,8 @@ export function resetRocks() {
 }
 
 // ---------------------------------------------------------------- the axes
-function makeAxe(handleLen: number, headW: number, headH: number, col: string, shine: number) {
-  const g = new THREE.Group();
-  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.07, handleLen, 0.07), flat('#a9794c'));
-  handle.position.y = handleLen * 0.44;
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.1, headH, headW), flat(col, shine));
-  head.position.set(0, handleLen * 0.86, -headW * 0.41);
-  g.add(handle, head);
-  g.traverse((o) => void (o.castShadow = true));
-  return g;
-}
-// The first one's a poor old thing. The proper one is bigger, brighter and rings.
-const AXES = [makeAxe(0.8, 0.26, 0.17, '#6b6f78', 0.7), makeAxe(1.08, 0.52, 0.34, '#dfe4ec', 0.25)];
-const edge = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.36, 0.06), flat('#f2b134', 0.4));
-edge.position.set(0, 1.08 * 0.86, -0.52 * 0.76);
-AXES[1]!.add(edge);
-// The multi-axe's pick, on the back of whichever head: it breaks rocks.
-const PICKS = AXES.map((a, k) => {
-  const len = k ? 1.08 : 0.8;
-  const pick = new THREE.Mesh(
-    new THREE.ConeGeometry(0.05, k ? 0.42 : 0.3, 6).rotateX(-Math.PI / 2),
-    flat('#8d929c', 0.5),
-  );
-  pick.position.set(0, len * 0.86, k ? 0.3 : 0.2);
-  pick.castShadow = true;
-  a.add(pick);
-  return pick;
-});
-const axe = new THREE.Group();
-axe.add(AXES[0]!, AXES[1]!);
+const axes = makeAxes();
+const axe = axes.root;
 axe.visible = false;
 
 const swing = {
@@ -755,8 +730,6 @@ const swing = {
   hit: true,
   response: 'bite' as HarvestResult['outcome'],
 };
-const RAISED = 1.5,
-  STRUCK = -1.35;
 const bundleTo = new THREE.Vector3(),
   bundleRot = new THREE.Quaternion(),
   popOut = new THREE.Vector3();
@@ -1026,28 +999,11 @@ export function updateChop(dt: number, now: number) {
   packFrame.visible = !!job.rung.pack;
   updatePartnerLoads();
   if (back.big) input.sprint = false; // you can't run with that
-  AXES[0]!.visible = !job.rung.axe;
-  AXES[1]!.visible = !!job.rung.axe;
-  for (const p of PICKS) p.visible = job.rung.multi;
+  axes.setTier(job.rung.axe ? (job.rung.multi ? 'proper-multi' : 'proper') : job.rung.multi ? 'multi' : 'starter');
   swing.t += dt;
   const c = TUNE.contactS;
-  axe.visible = swing.t < 0.9;
-  axe.rotation.z = 0;
-  if (swing.t < c) axe.rotation.x = RAISED + (STRUCK - RAISED) * (swing.t / c);
-  else if (swing.response === 'full' && swing.t < 0.55) {
-    // Lift the hand back toward the bundle instead of repeating a success pose at the trunk.
-    const u = Math.sin(Math.min(1, (swing.t - c) / 0.49) * Math.PI);
-    axe.rotation.x = 0.2 + u * 2.2;
-    axe.rotation.z = -u * 0.9;
-    const body = inner();
-    if (body) body.rotation.x = u * 0.16;
-  } else if (swing.response === 'rebound' && swing.t < 0.32) {
-    const u = Math.min(1, (swing.t - c) / 0.09);
-    axe.rotation.x = STRUCK + (RAISED - STRUCK) * Math.sin(u * Math.PI * 0.5);
-    axe.rotation.z = -0.45 * Math.sin(u * Math.PI);
-  } else if (swing.response === 'bite' && swing.t < c + 0.035) axe.rotation.x = STRUCK;
-  else if (swing.t < 0.3) axe.rotation.x = STRUCK + (0.2 - STRUCK) * ((swing.t - c - 0.035) / (0.3 - c - 0.035));
-  else axe.rotation.x = 0.2;
+  const body = inner();
+  if (body) applyChopPose(body, axe, swing.t, swing.response);
   if (!swing.hit && swing.t >= c) {
     swing.hit = true;
     if (swing.target) contact(swing.target);

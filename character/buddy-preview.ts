@@ -16,7 +16,16 @@ import {
 import { BUDDY_LOAD_FIT } from '../src/player/buddy/load-fit.ts';
 import { makeCarryModels, cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
 import { makeBundlePreview } from '../src/render/haul-bundle.ts';
-type WornPreview = GearState & { cargo: CargoKind; amount: number; legacyCarrying?: boolean; bodyColor?: string };
+import { makeAxes, type AxeTier } from '../src/proto/place/axe-models.ts';
+import { applyChopPose, CHOP_DURATION, CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
+type WornPreview = GearState & {
+  cargo: CargoKind;
+  amount: number;
+  legacyCarrying?: boolean;
+  bodyColor?: string;
+  axe?: AxeTier | 'none';
+  chop?: 'off' | 'bite' | 'rebound' | 'full';
+};
 export const SAMPLE_FPS = 30;
 export type BuddyMode = 'raw' | 'played';
 export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
@@ -62,6 +71,8 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
       const instances = new Set<THREE.InstancedMesh>();
       let gear: ReturnType<typeof makeGear> | undefined;
       let canopy: ReturnType<typeof makeCanopy> | undefined;
+      let axes: ReturnType<typeof makeAxes> | undefined;
+      let trunk: THREE.Mesh | undefined;
       const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
       const clock = { now: () => time * 1000, random };
       const ownMaterials = (root: THREE.Object3D) =>
@@ -92,6 +103,8 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         instances.clear();
         gear = undefined;
         canopy = undefined;
+        axes = undefined;
+        trunk = undefined;
         group.clear();
       }
       function reset() {
@@ -177,8 +190,44 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
               for (const material of Array.isArray(o.material) ? o.material : [o.material]) owned.add(material);
             });
           }
+          if (worn.axe && worn.axe !== 'none') {
+            axes = makeAxes();
+            axes.setTier(worn.axe);
+            sockets.back.add(axes.root);
+            axes.root.traverse((o) => {
+              if (!(o instanceof THREE.Mesh)) return;
+              geometries.add(o.geometry);
+              for (const material of Array.isArray(o.material) ? o.material : [o.material]) owned.add(material);
+            });
+            if (worn.chop && worn.chop !== 'off') {
+              trunk = new THREE.Mesh(
+                new THREE.CylinderGeometry(CHOP_TRUNK.radius, CHOP_TRUNK.radius, CHOP_TRUNK.height, 12),
+                new THREE.MeshStandardNodeMaterial({ color: '#795536', roughness: 0.95 }),
+              );
+              trunk.name = 'stage-contact-trunk';
+              trunk.position.set(0, CHOP_TRUNK.height / 2, CHOP_TRUNK.distance);
+              trunk.castShadow = trunk.receiveShadow = true;
+              group.add(trunk);
+              geometries.add(trunk.geometry);
+              for (const material of Array.isArray(trunk.material) ? trunk.material : [trunk.material])
+                owned.add(material);
+            }
+            applyAxe();
+          }
         }
         group.updateMatrixWorld(true);
+      }
+      function applyAxe() {
+        if (!axes) return;
+        const response = worn?.chop;
+        const chopping = response && response !== 'off';
+        applyChopPose(
+          figure,
+          axes.root,
+          chopping ? time % CHOP_DURATION : 0,
+          response && response !== 'off' ? response : 'bite',
+        );
+        axes.root.visible = true;
       }
       function update(dt: number) {
         time += dt;
@@ -219,6 +268,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         if (blink !== undefined) for (const name of ['eye_l', 'eye_r']) figure.getObjectByName(name)?.scale.setY(blink);
         if (gear && worn) wearGear(figure, sockets.back, gear, worn);
         if (canopy && worn) placeCanopy(avatar ?? figure, canopy, worn.canopy ? 1 : 0, 0, time * 1000);
+        applyAxe();
         group.updateMatrixWorld(true);
       }
       reset();
@@ -229,6 +279,9 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         },
         get sockets() {
           return sockets;
+        },
+        get chop() {
+          return axes && trunk ? { axe: axes.root, trunk } : undefined;
         },
         get time() {
           return time;

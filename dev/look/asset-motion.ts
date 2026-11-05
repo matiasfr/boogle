@@ -40,6 +40,8 @@ for (let i = 0; i < args.length; i++) {
       '--glider',
       '--frame',
       '--canopy',
+      '--axe',
+      '--chop',
     ].includes(flag)
   ) {
     const value = args[++i];
@@ -87,6 +89,8 @@ for (const key of [
   'glider',
   'frame',
   'canopy',
+  'axe',
+  'chop',
 ])
   if (options.has(key)) query.set(key, options.get(key)!);
 if (options.has('spin-rate')) {
@@ -276,6 +280,14 @@ const columns = [
   'axisDrift',
   'sampleMs',
   'imageMs',
+  'leftGrip',
+  'rightGrip',
+  'bladeX',
+  'bladeY',
+  'bladeZ',
+  'contactDistance',
+  'handleBodyClearance',
+  'handleHeadClearance',
 ] as const;
 fs.writeFileSync(
   path.join(out, `${name}-curves.csv`),

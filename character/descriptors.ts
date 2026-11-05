@@ -2,6 +2,7 @@
 export type Motion =
   | { kind: 'none'; source: string }
   | { kind: 'clips'; source: string }
+  | { kind: 'chop'; source: string }
   | { kind: 'attachment'; bone: string; node: string; asset: string; source: string }
   | { kind: 'spin'; axis: 'z'; node: string; source: string };
 export type AssetDescriptor = {
