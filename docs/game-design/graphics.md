@@ -133,6 +133,11 @@
   and bind-group mismatches, so the requested value stays pending until reload. With Dev enabled,
   `graphicsMsaa=0|1` selects the startup value for matched reload captures. Water, colliders, navigation and
   interaction cues stay intact.
+- **Agent lighting comparisons.** The existing numeric Tunables API also exposes Local `sky.keyGain` and
+  `sky.fillGain` (0–8, defaults 1.12 and 3.2). It reports per-control revisions and sources; no in-game UI is added.
+  The frozen-shot queue validates patches, flushes the light owner's presentation without advancing simulation
+  or shader time, and records actual directional/hemisphere light state. Exposure stays `post.centre=0.12` in
+  the first town wedge. Ordinary lighting defaults and the baked sky remain unchanged.
 - **Measurement and hitches.** Graphics **Measure on/off** uses Performance's real-frame profiler for warmed
   on/off/off/on samples, freezes resolution and Display cadence during collection, then restores prior Dev
   overrides. It reports frame-interval proxy, CPU submission and GPU timestamp span separately, never summed
