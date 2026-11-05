@@ -72,6 +72,7 @@ import { allHeaps, frameById, hub, lines, machine } from './lines.ts';
 import { clearTrips } from './pieces.ts';
 import { callTrain } from './rail.ts';
 import type { TrainSave } from './cargo.ts';
+import { COOP_IDENTITY, currentCoopPeer } from './coop-identity.ts';
 import { flyToStock, type StationRun } from './stations.ts';
 
 type Api = {
@@ -377,7 +378,7 @@ const amAuthority = () => authorityPeer() === null;
 
 function msg(m: Record<string, unknown>) {
   try {
-    net.room?.send({ t: 'placeCoopCargo1', ...m });
+    net.room?.send({ t: COOP_IDENTITY, ...m });
   } catch (e) {
     console.warn('[place coop] send failed', e);
   }
@@ -857,7 +858,7 @@ export const coop = {
     for (const l of lines) l.train.tr.cars.forEach((c, n) => ids(c.platform, `place:train${l.k}:car${n}`));
     chopHooks.harvest = requestHarvest;
     chopHooks.rock = (q: Rock) => msg({ k: 'rock', i: q.index, n: q.strokes });
-    addPresenceField('placeCoopCargo1', () => (since >= 0 ? since : null));
+    addPresenceField(COOP_IDENTITY, () => (since >= 0 ? since : null));
     addPresenceField('placeRailCart', () => (since >= 0 ? 1 : null));
     addPresenceField('placeCartRide', () => (since >= 0 ? (carry.on === cartPlatform ? 2 : 1) : null));
     keepPresenceWhile(() => since >= 0);
@@ -866,8 +867,7 @@ export const coop = {
     addPresenceField('placeBig', () => back.big);
     backSeam.remote = (peer) => peerBack.get(peer) ?? 0;
     onRemotePresence((r, pr) => {
-      const v = (pr as { placeCoopCargo1?: unknown }).placeCoopCargo1;
-      if (!count(v, Number.MAX_SAFE_INTEGER)) {
+      if (!currentCoopPeer(pr)) {
         peers.delete(r.peer);
         peerBack.delete(r.peer);
         peerBig.delete(r.peer);
@@ -879,7 +879,7 @@ export const coop = {
       peerBig.set(r.peer, big === 'beam' || big === 'boiler' ? big : null);
       if (!peers.has(r.peer)) showBanner('Your partner is here', 'Same railway, same job.', 2.6);
       peers.set(r.peer, {
-        since: v,
+        since: pr[COOP_IDENTITY],
         visible: r.visible,
         seen: performance.now(),
         railCart: pr.placeRailCart === 1,
@@ -926,7 +926,7 @@ export const coop = {
       });
       room.onMessage((raw, from) => {
         const m = raw as Record<string, unknown> | null;
-        if (m?.t !== 'placeCoopCargo1' || typeof from !== 'string') return;
+        if (m?.t !== COOP_IDENTITY || typeof from !== 'string') return;
         const answer = m.k === 'stock' || m.k === 'no' || m.k === 'harvested' || m.k === 'harvestNo';
         const expected =
           answer &&
