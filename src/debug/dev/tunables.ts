@@ -1,6 +1,7 @@
 // Bounded agent adapter. Owners keep execution and state; no catalog work runs per frame.
 import { CATALOG, tunableSpec, validValue } from '../../tunables/catalog.ts';
 import { emitTuneRecord, tuneDigest } from '../../tunables/events.ts';
+import { createTuneStartup } from '../../tunables/startup.ts';
 import { TUNE_CATALOG, type TuneKey } from '../../sim/tune.ts';
 import { BUILD_ID } from '../../build-id.ts';
 import { WORLD_NS } from '../../world/namespace.ts';
@@ -220,7 +221,10 @@ onApplied(
     }
   },
 );
-onSnapshot(() => recordTuneSnapshot());
+onSnapshot(() => {
+  queryStartup.snapshot();
+  recordTuneSnapshot();
+});
 onRejected((event) => {
   if (event.op !== 'tune.commit') return;
   const request = requests.get(event.requestId);
@@ -233,8 +237,20 @@ onNetState((state) => {
       if (request.status === 'pending') requests.set(id, { ...request, status: 'unknown' });
 });
 
-/** Called once after saved appearance restoration. Shared URL edits are never retried after reconnect. */
+const queryStartup = createTuneStartup(() => {
+  const status = worldStatus();
+  return status.mode === 'client' && status.ready;
+}, submitTuneQuery);
+
+/** Appearance and initial authoritative room state may arrive in either order. */
 export function applyTuneQuery() {
+  const shared = [...pageQuery()].some(
+    ([key]) => key.startsWith('t.') && tunableSpec(key.slice(2))?.scope === 'lockstep',
+  );
+  queryStartup.start(shared);
+}
+
+function submitTuneQuery() {
   startupReady = true;
   try {
     const entries = [...pageQuery()].filter(([key]) => key.startsWith('t.'));

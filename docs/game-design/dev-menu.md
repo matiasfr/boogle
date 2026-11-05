@@ -23,6 +23,8 @@ Player movement and stage setup recheck the disposable route/version/marker, exa
 
 ## Tunables agent proof
 
+Shared URL edits wait for both appearance restoration and the initial authoritative room snapshot, then submit once. A later snapshot or reconnect never repeats that intent. Local-only URL edits do not wait for the room.
+
 The bounded `tunables` API has no new panel. `boogle.dev.run('tunables', command, args)` lists owner-adjacent definitions, reads effective values, validates and sets values, checks a queued request's status, exports a snapshot or defaults diff, and resets Local settings. `post.centre` changes only this browser's exposure; `feel.spring.stiffness` is owner-written cosmetic state captured at the next action; `haul.yield` requests a host-accepted room edit. An action already underway keeps its captured profile. The API's queued result is not an accepted change: inspect `status` before reporting success. Confirmed host rejection is distinct from an unknown outcome after disconnect or timeout. A defaults diff is review material, never an automatic change to source defaults.
 
 `npm run tune -- list --json` lists authored defaults without starting anything. Add `--session` to read the existing harness session. For example, `npm run tune -- set post.centre 0.18 --session --expect-revision 0` uses the same validator. `--wait` observes a shared request until it resolves; rejected, pending and unknown results exit nonzero. `--broker` uses the job's existing browser broker for an explicitly fresh capture; Local changes last only on that page. `--query 'proto=place&tune=1&t.post.centre=0.18'` and `--out .look/tuning.json` make its setup and output explicit. It never silently starts a persistent browser.
