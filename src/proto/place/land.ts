@@ -72,6 +72,11 @@ function buildMesh() {
   if (new URLSearchParams(location.search).get('terrain') === 'demo')
     void import('../water/terrain-demo.ts').then((m) => m.applyTerrainDemo(mesh.material, ORIGIN.x));
   registerWaterReceiver(mesh.material);
+  if (
+    new URLSearchParams(location.search).get('dev') === '1' &&
+    new URLSearchParams(location.search).get('groundEdges') === '1'
+  )
+    void import('./ground-edges.ts').then((m) => m.installGroundEdges(mesh));
   mesh.frustumCulled = false;
   scene.add(mesh);
 

@@ -24,6 +24,8 @@ and a bright shard in the ring's middle. Two physical things point at it: a line
 
 ## The run
 
+**Ground edge comparison (4 November):** explicit `dev=1&groundEdges=1` loads a Local material comparison through Dev Graphics and the saved [ground beat](../../dev/look/beats/ground-edges.ts). Current remains the original default graph. Narrow and strongest-channel crisp treatments reuse grass/path/shore weights from the existing 2 m grid, the warm palette, smooth grass and faceted cliffs; geometry, collision, water and progression are unchanged. This is evidence for the deferred terrain/level-design pass, not an adopted look. Findings: [ground edges](../research/ground-edges.md).
+
 The sleeping machine and old trains use solid, dull oxidized paint and iron, with no spatial rust pattern. Their existing wake uniforms restore paint roughness and the wheels' steel response. Timber decks and sleepers retain their grain while the engine sleeps. This is Local material presentation (DESIGN.md 11, Show, don't tell); wake timing and shared progression are unchanged.
 
 **Trees, 3 November (owner's approved comparison):** 391 trees now share one harvest catalog:

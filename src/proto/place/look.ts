@@ -54,7 +54,7 @@ type N = any;
 const ROCK = new THREE.Color('#d0a872'),
   ROCK_DEEP = new THREE.Color('#a98558');
 /** The land's material. Grass takes the mesh's smooth normals and rock keeps its facets, per pixel, so no geometry changes. */
-export function groundMaterial() {
+export function groundMaterial(surface?: { colour: N; path: N }) {
   const m = new THREE.MeshStandardNodeMaterial({ roughness: 0.95 }); // vertex colours are read below: rock doesn't want them
   const p: N = positionWorld;
   // A wandering line where grass gives way to rock, so the rim isn't a contour of the 2 m grid.
@@ -72,8 +72,8 @@ export function groundMaterial() {
   const mid: N = sin(p.x.mul(0.11).add(p.z.mul(0.07))).mul(0.42);
   const fine: N = sin(p.x.mul(0.37).sub(p.z.mul(0.29))).mul(0.2);
   const breathe: N = slow.add(mid).add(fine).mul(0.5).add(0.5);
-  const v: N = vertexColor().rgb;
-  const paths: N = ss(float(-0.05), float(0.1), v.r.sub(v.g)); // the green shift is for green: dirt and sand stay themselves
+  const v: N = surface?.colour ?? vertexColor().rgb;
+  const paths: N = surface?.path ?? ss(float(-0.05), float(0.1), v.r.sub(v.g)); // the green shift is for green: dirt and sand stay themselves
   // Dry patches where two slow fields agree, and a little mottling up close, so no two lawns match.
   const dry: N = ss(
     float(0.25),
