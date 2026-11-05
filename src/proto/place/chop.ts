@@ -512,7 +512,7 @@ const parts = {
   crown: new THREE.InstancedMesh(new THREE.ConeGeometry(2.6, 6.5, 6), flat('#3f8a3a'), n),
   crown2: new THREE.InstancedMesh(new THREE.ConeGeometry(1.9, 4.6, 6), flat('#4f9c44'), n),
   stump: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.44, 0.5, 0.6, 6), flat('#c9a06a'), n),
-  notch: new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.16, 0.16), flat('#39291e'), n),
+  notch: new THREE.InstancedMesh(new THREE.OctahedronGeometry(1, 0).scale(0.25, 0.08, 0.055), flat('#c9a06a'), n),
   hardwood: new THREE.InstancedMesh(hardwoodGeo, flat('#686359'), hardwoodCount),
   forks: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.42, 3.5, 8), flat('#686359'), hardwoodCount * 2),
   broad: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), flat('#657a37'), hardwoodCount * 3),
@@ -619,7 +619,7 @@ function pose(t: Tree, now: number) {
       .scale(S1.set(2.8 * t.size, 2.3 * t.size, 2.6 * t.size));
     parts.broad.setMatrixAt(hardwoodIndex * 3 + k, !bare ? out4 : ZERO);
   }
-  // The notch gets wider only with accepted work; refusal leaves one shallow scuff.
+  // A pale, tapered wood bite sits partly in the bark. Accepted work widens it; refusal leaves one shallow scuff.
   const cut = t.work / (t.great ? GREAT.strokes : 15);
   const cutYaw = t.cutYaw;
   local.compose(

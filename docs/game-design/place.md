@@ -614,6 +614,7 @@ torso proximity; signed nearest-face samples are candidates, not collision proof
 
 Tree contact distinguishes three local cues: a dry bite with a low wooden body and splinters,
 a short hard woody rebound with a blade ring, and a soft strap/wood rattle for a full bag.
+The visible cut is a thin, pale, faceted wood bite seated partly in the bark, rather than a projecting dark box. Accepted work still widens it; a refusal leaves only the existing shallow scuff.
 The bite holds the axe pose briefly, bends the trunk and delays the crown; the rebound pulls
 the axe back and leaves one shallow scuff; the full-bag gesture points back toward the bundle.
 Repeated refusals within a second are quieter. Neither refusal plays a collection melody or
