@@ -1,5 +1,7 @@
 # Research
 
+- [solo-design-pass.md](solo-design-pass.md) (2026-11-05): twelve concise solo-play proposals covering finds, boiler/gate/rail clarity, boarding and seats, forge interior, ability pacing, the great-tree axe order, small discovery moments and counted resource renewal; primary game and track-construction sources, tap choices and smallest builds. Money and cart-first stay after the replay. Research only.
+
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
 - [carried-resource-display.md](carried-resource-display.md) (2026-11-04): fifteen carrying/inventory comparisons, chip/capacity audit, five display options and seven recommendations. Owner approved the hybrid 4 November; built in Place with mixed contents, reveal on all Drop inputs, truthful pending slots and Pause recall. Four scratch mockups informed placement; owner feel remains for the playtest.
