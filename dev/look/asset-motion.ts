@@ -4,7 +4,7 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import type { MotionReport, MotionImage } from '../../character/motion.ts';
 import { buildAt, sameBuild } from '../codex/source.ts';
-import { descriptors } from '../../character/descriptors.ts';
+import { descriptors, gearAttachments } from '../../character/descriptors.ts';
 
 const args = process.argv.slice(2);
 const options = new Map<string, string>();
@@ -17,11 +17,30 @@ for (let i = 0; i < args.length; i++) {
   else if (flag === '--dry-run') dry = true;
   else if (flag === '--help') {
     console.log(
-      'node dev/look/asset-motion.ts --asset buddy --clip Walk_Loop [--hat conductor] [--mode raw|played] [--pose carrying] [--name label] [--cam x,y,z --target x,y,z] [--spin-rate rad/s] [--local|--broker] [--dry-run]\nUses the running broker by default when available; --local uses the same look harness. Static assets explicitly report none. --spin-rate is a labelled inspection probe, never a production rate.',
+      'node dev/look/asset-motion.ts --asset buddy --clip Walk_Loop [--hat conductor] [--mode raw|played] [--pose carrying] [--gear all] [--attachment ring-left|ring-right|spool|glider|frame] [--cargo logs|rails|stone|beam|boiler --amount N] [--rings 0|1 --spool 0|1 --glider 0|1 --frame 0|1 --canopy 0|1] [--name label] [--cam x,y,z --target x,y,z] [--spin-rate rad/s] [--local|--broker] [--dry-run]\nUses the running broker by default when available; --local uses the same look harness. Static assets explicitly report none. --spin-rate is a labelled inspection probe, never a production rate.',
     );
     process.exit(0);
   } else if (
-    ['--asset', '--clip', '--hat', '--mode', '--pose', '--name', '--cam', '--target', '--spin-rate'].includes(flag)
+    [
+      '--asset',
+      '--clip',
+      '--hat',
+      '--mode',
+      '--pose',
+      '--name',
+      '--cam',
+      '--target',
+      '--spin-rate',
+      '--gear',
+      '--attachment',
+      '--cargo',
+      '--amount',
+      '--rings',
+      '--spool',
+      '--glider',
+      '--frame',
+      '--canopy',
+    ].includes(flag)
   ) {
     const value = args[++i];
     if (!value || value.startsWith('--')) throw new Error(flag + ' needs a value');
@@ -31,6 +50,8 @@ for (let i = 0; i < args.length; i++) {
 const name = options.get('name') ?? 'asset-motion';
 if (!/^[a-zA-Z0-9_-]+$/.test(name)) throw new Error('Use a simple name');
 const requestedAsset = options.get('asset') ?? 'buddy';
+if (options.has('attachment') && !gearAttachments[options.get('attachment')!])
+  throw new Error('Unknown attachment; choose ' + Object.keys(gearAttachments).join(', '));
 const attachment = descriptors[requestedAsset]?.motion;
 const asset = attachment?.kind === 'attachment' ? attachment.asset : requestedAsset;
 if (attachment?.kind === 'attachment') options.set('hat', attachment.node.replace(/^wear_head_/, ''));
@@ -50,7 +71,23 @@ if (asset === 'buddy' || asset === 'feeder-roller') {
   query.set('cam', asset === 'feeder-roller' ? '1,0.55,1.4' : '3,2,5');
   query.set('target', asset === 'feeder-roller' ? '0,0.075,0' : '0,0.9,0');
 }
-for (const key of ['clip', 'hat', 'mode', 'pose', 'cam', 'target'])
+for (const key of [
+  'clip',
+  'hat',
+  'mode',
+  'pose',
+  'cam',
+  'target',
+  'gear',
+  'attachment',
+  'cargo',
+  'amount',
+  'rings',
+  'spool',
+  'glider',
+  'frame',
+  'canopy',
+])
   if (options.has(key)) query.set(key, options.get(key)!);
 if (options.has('spin-rate')) {
   const rate = Number(options.get('spin-rate'));

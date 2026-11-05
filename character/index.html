@@ -71,6 +71,29 @@
               <option value="beanie">Beanie</option>
             </select></label
           >
+          <details open>
+            <summary>Gear &amp; cargo · Local only</summary>
+            <label>Body colour<select id="body-color"></select></label>
+            <button id="all-gear">Wear all gear</button>
+            <div class="checks">
+              <label><input id="rings" type="checkbox" />Ankle rings</label>
+              <label><input id="spool" type="checkbox" />Forearm spool</label>
+              <label><input id="glider" type="checkbox" />Glider pack</label>
+              <label><input id="frame" type="checkbox" />Pack frame</label>
+              <label><input id="canopy" type="checkbox" />Open canopy</label>
+            </div>
+            <label
+              >Cargo<select id="cargo">
+                <option value="logs">Logs</option>
+                <option value="rails">Rails</option>
+                <option value="stone">Stone</option>
+                <option value="beam">Beam</option>
+                <option value="boiler">Boiler</option>
+              </select></label
+            >
+            <label>Amount<input id="amount" type="number" min="0" max="16" step="1" value="0" /></label>
+            <p id="cargo-capacity"></p>
+          </details>
         </div>
         <p id="mode-note"></p>
       </details>

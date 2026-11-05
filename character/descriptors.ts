@@ -13,6 +13,44 @@ export type AssetDescriptor = {
   rootNote?: string;
   motion: Motion;
 };
+// Local Buddy inspection targets; the geometry and attachment transforms remain production-owned.
+export const gearAttachments: Record<string, Extract<Motion, { kind: 'attachment' }>> = {
+  'ring-left': {
+    kind: 'attachment',
+    bone: 'calf_l',
+    node: 'wear_ankle_l',
+    asset: 'buddy',
+    source: 'src/proto/place/gear-models.ts',
+  },
+  'ring-right': {
+    kind: 'attachment',
+    bone: 'calf_r',
+    node: 'wear_ankle_r',
+    asset: 'buddy',
+    source: 'src/proto/place/gear-models.ts',
+  },
+  spool: {
+    kind: 'attachment',
+    bone: 'lowerarm_r',
+    node: 'wear_spool',
+    asset: 'buddy',
+    source: 'src/proto/place/gear-models.ts',
+  },
+  glider: {
+    kind: 'attachment',
+    bone: 'spine_02',
+    node: 'wear_glider',
+    asset: 'buddy',
+    source: 'src/proto/place/gear-models.ts',
+  },
+  frame: {
+    kind: 'attachment',
+    bone: 'spine_02',
+    node: 'wear_frame',
+    asset: 'buddy',
+    source: 'src/proto/place/gear-models.ts',
+  },
+};
 export const descriptors: Record<string, AssetDescriptor> = {
   'feeder-roller': {
     motion: { kind: 'none', source: 'src/proto/place/look-kit.ts: stationKit static roller matrices' },

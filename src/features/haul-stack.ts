@@ -15,8 +15,19 @@ import { identity } from '../player/identity.ts';
 import { me } from '../player/player.ts';
 import { remotes, onRemotePresence } from '../netplay/net.ts';
 import { okPid } from '../sim/roster.ts';
-import { HARD_CAP } from '../sim/stacks.ts';
-import { pieceMesh, pieceColor, commitPieces, PIECE, onFly } from '../render/haul-pieces.ts';
+import { pieceMesh, pieceColor, commitPieces, onFly } from '../render/haul-pieces.ts';
+import {
+  SHOWN,
+  BUNDLE_SCALE,
+  shownOf,
+  lenOf,
+  frameOf,
+  fitOf,
+  slotAt,
+  pieceAt,
+  bandAt,
+  makeBundleBands,
+} from '../render/haul-bundle.ts';
 import { haulFeel } from '../player/haul-feel.ts';
 import { MATERIALS } from '../sim/materials.ts';
 import { uiSound, replay } from '../ui/ui-sound.ts';
@@ -26,45 +37,14 @@ import { protoActivity } from '../proto/mark.ts';
 // it fills out rather than up), with two rope bands round it. At most SHOWN pieces drawn, growing more slowly than the
 // count (shownOf), and the logs get longer as the count grows: 4 and 60 read differently without ever towering. No
 // motion of its own: it rides the avatar's walk bob and lean.
-const SHOWN = 22;
-const RS = 0.75; // piece radius in the bundle, as a fraction of a ground piece's
-const R = PIECE.r * RS;
-const BACK = 0.45; // the avatar's back (PLAYER_R), local +z
-const FLOOR = 0.16; // the bundle's bottom, in the avatar's space (the foot sphere's centre is 0)
-// [y, z] per slot: height above the bundle's bottom, distance out from the back.
-const slotsFor = (tall: number): [number, number][] => {
-  const pts: [number, number][] = [];
-  for (let j = 0; j < 8; j++) for (let i = 0; i < 9; i++) pts.push([(i + (j % 2) * 0.5) * 2 * R, j * 2 * R * 0.866]);
-  const score = ([y, z]: [number, number]) => (y / tall) ** 2 + z ** 2;
-  return pts.sort((p, r) => score(p) - score(r) || p[0] - r[0]).slice(0, SHOWN);
-};
-const extentsOf = (slots: [number, number][]) =>
-  slots.map((_, k): [number, number] => [
-    Math.max(...slots.slice(0, k + 1).map((s) => s[0])),
-    Math.max(...slots.slice(0, k + 1).map((s) => s[1])),
-  ]);
-const TALL = slotsFor(1.4); // a little taller than deep
-const ROUND = slotsFor(0.9); // for a small body: lower and deeper, so its head shows over the top
-const EXTENTS = new Map([TALL, ROUND].map((s) => [s, extentsOf(s)]));
-const shownOf = (n: number): number => (n <= 12 ? n : Math.min(SHOWN, Math.round(12 + (n - 12) * 0.21)));
-const lenOf = (n: number): number => 1 + 0.55 * Math.min(1, n / HARD_CAP);
-
 const mesh = pieceMesh(9 * SHOWN + 48);
-const bands = new THREE.InstancedMesh(
-  new THREE.CylinderGeometry(1, 1, 0.09, 18, 1, true).rotateZ(Math.PI / 2), // an open ring round the x axis
-  new THREE.MeshStandardNodeMaterial({ color: '#d6b878', roughness: 1, side: THREE.DoubleSide, flatShading: true }),
-  18,
-);
-bands.count = 0;
-bands.frustumCulled = false;
-bands.castShadow = true;
+const bands = makeBundleBands(18);
 const bundles = new THREE.Group();
 bundles.add(mesh, bands);
 const m4 = new THREE.Matrix4(),
   q = new THREE.Quaternion(),
   e = new THREE.Euler(),
   v = new THREE.Vector3(),
-  sc = new THREE.Vector3(),
   one = new THREE.Vector3(1, 1, 1),
   top = new THREE.Vector3();
 
@@ -78,37 +58,6 @@ const stackOf = (pid: string | null | undefined): Stack => {
 const myStack = () => stackOf(identity.pid);
 protoActivity(() => (myStack().n ? 'carrying' : null)); // for the playtest trace (src/proto/trace/)
 
-// The bundle's frame: the avatar's inner group (it bobs, leans and squashes with the walk), so the logs ride along, or
-// on a body with a back of its own, that back, and where that body wears it (AvatarData.loadFit).
-type Worn = {
-  inner?: THREE.Object3D;
-  loadFit?: { frame: THREE.Object3D; back: number; floor: number; len: number; round: boolean };
-};
-const frameOf = (a: THREE.Object3D): THREE.Object3D => {
-  const u = a.userData as Worn;
-  return u.loadFit?.frame ?? u.inner ?? a;
-};
-const fitOf = (a: THREE.Object3D) => (a.userData as Worn).loadFit ?? { back: BACK, floor: FLOOR, len: 1, round: false };
-type Fit = ReturnType<typeof fitOf>;
-// Slot m in the frame's space, its log end a little ragged.
-const slotAt = (m: number, fit: Fit, out: THREE.Vector3): THREE.Vector3 => {
-  const [y, z] = (fit.round ? ROUND : TALL)[m]!;
-  return out.set((((m * 37) % 7) - 3) * 0.012, fit.floor + R + y, fit.back + R + z);
-};
-function pieceAt(f: THREE.Object3D, fit: Fit, m: number, len: number, out: THREE.Matrix4): THREE.Matrix4 {
-  q.setFromEuler(e.set(0, (((m * 13) % 5) - 2) * 0.03, (((m * 7) % 5) - 2) * 0.02));
-  sc.set(len * (1 + (((m * 11) % 5) - 2) * 0.03), RS, RS);
-  return out.compose(slotAt(m, fit, v), q, sc).premultiply(f.matrixWorld);
-}
-// The two rope bands round k pieces: an ellipse a little outside the bundle's cross-section.
-function bandAt(f: THREE.Object3D, fit: Fit, k: number, len: number, side: number, out: THREE.Matrix4): THREE.Matrix4 {
-  const [y1, z1] = EXTENTS.get(fit.round ? ROUND : TALL)![k - 1]!;
-  v.set(side * 0.28 * PIECE.len * len, fit.floor + R + y1 / 2, fit.back + R + z1 / 2);
-  const lip = fit.round ? 0.6 : 1.05; // a round bundle's corners are rarely filled
-  sc.set(1, y1 / 2 + R * lip, z1 / 2 + R * lip);
-  return out.compose(v, q.identity(), sc).premultiply(f.matrixWorld);
-}
-
 // Seams for a haul variant that draws pickups its own way (?proto=haul&v=magnet, src/proto/haul/magnet.ts): with
 // `flyIns` false this module draws no fly-ins; `count(n)` is what your chip and your own bundle show while the host's
 // count is n (the magnet moves it one arrival at a time). Local.
@@ -117,7 +66,7 @@ export const backSeam = {
   count: (n: number) => n,
   remote: null as ((peer: string) => number) | null, // ?proto=place&coop=1: a partner's logs, from their presence
 };
-export const BUNDLE_SCALE = RS;
+export { BUNDLE_SCALE };
 /** Where the next piece onto your bundle goes, holding `n` now: its world position and the bundle's world rotation. */
 export function myBundleNext(n: number, out: THREE.Vector3, rot: THREE.Quaternion): boolean {
   if (!me.avatar || !me.entered) return false;

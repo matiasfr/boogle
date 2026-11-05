@@ -34,6 +34,7 @@ import { newWaterEnabled } from '../../render/water/flags.ts';
 import { atmosphere, skyColors, skyDebug, skyNow, skyU } from '../../render/sky.ts';
 import { smoothstep as ss_ } from '../../math.ts';
 import { flat } from '../flat.ts';
+import { dressBundleLogs } from '../../render/haul-bundle.ts';
 
 const asked = new Set((new URLSearchParams(location.search).get('look') ?? 'all').split(','));
 const on = (name: string) => asked.has('all') || asked.has(name);
@@ -253,29 +254,7 @@ export const STEEL: Paint = { color: '#4c5058', steel: true, rough: 0.6 };
 // The logs on your back, in the game's own piece meshes (src/render/haul-pieces.ts share one material): bark, one amber
 // band and pale cut ends, as the kit's log has. The game tints each piece by its kind; this divides that tint back out.
 export function lookBackLogs(mat: THREE.Material, tint: THREE.Color) {
-  if (!LOOK.mats) return;
-  const m = mat as THREE.MeshStandardNodeMaterial;
-  m.flatShading = false;
-  const p: N = positionGeometry;
-  const c = (hex: string): N => {
-    const k = new THREE.Color(hex);
-    return vec3(k.r / tint.r, k.g / tint.g, k.b / tint.b);
-  };
-  const band: N = ss(float(0.11), float(0.12), p.x).mul(ss(float(0.17), float(0.16), p.x));
-  const grain: N = sin(
-    p.y
-      .add(p.z)
-      .mul(90)
-      .add(sin(p.x.mul(9)).mul(1.4)),
-  )
-    .mul(0.08)
-    .add(1);
-  m.colorNode = mix(
-    mix(c('#6a4526').mul(grain), c('#f2a51a'), band),
-    c('#e3b877'),
-    ss(float(0.7), float(0.9), abs(normalGeometry.x)),
-  );
-  m.needsUpdate = true;
+  if (LOOK.mats) dressBundleLogs(mat as THREE.MeshStandardNodeMaterial, tint);
 }
 
 // A little wood: bands across the grain's axis that wander slowly along it, and rings on the cut ends. Each piece its own.

@@ -4,6 +4,7 @@
 // (measured from the library's root-motion file), so the feet don't slide; they share one phase so a blend between them
 // stays in step. Everything comes from speed and airborne, so remote players need no new presence. Render only.
 import * as THREE from 'three/webgpu';
+import { BUDDY_LOAD_FIT } from './load-fit.ts';
 import { clamp } from '../../math.ts';
 import type { Asset } from '../../render/asset-loader.ts';
 import type { Avatar } from '../../player/avatars.ts';
@@ -212,7 +213,7 @@ export function createBuddySkin(
     a.userData.mat = mat;
     a.userData.leanScale = 0; // the clips lean on their own
     a.userData.flopY = -0.24; // flat on its back, a slimmer body than the capsule's
-    a.userData.loadFit = { frame: sockets.back, back: 0.215, floor: 0.14, len: 0.86, round: true };
+    a.userData.loadFit = { frame: sockets.back, ...BUDDY_LOAD_FIT };
     a.userData.handSocket = sockets.hand;
   };
   return { dress, animate: animateBuddy };

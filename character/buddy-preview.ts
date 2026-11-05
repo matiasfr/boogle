@@ -5,6 +5,18 @@ import type { Avatar } from '../src/player/avatars.ts';
 import { ARM_OUT, createBuddySkin, disposeBuddy } from '../src/player/buddy/rig.ts';
 import { makeLife } from '../src/player/buddy/life.ts';
 import { retargetClip } from '../src/player/buddy/retarget.ts';
+import {
+  makeGear,
+  wearGear,
+  packFrameMesh,
+  makeCanopy,
+  placeCanopy,
+  type GearState,
+} from '../src/proto/place/gear-models.ts';
+import { BUDDY_LOAD_FIT } from '../src/player/buddy/load-fit.ts';
+import { makeCarryModels, cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
+import { makeBundlePreview } from '../src/render/haul-bundle.ts';
+type WornPreview = GearState & { cargo: CargoKind; amount: number; legacyCarrying?: boolean; bodyColor?: string };
 export const SAMPLE_FPS = 30;
 export type BuddyMode = 'raw' | 'played';
 export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
@@ -37,7 +49,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
   );
   return {
     clips,
-    create(mode: BuddyMode, clipName: string, pose: string, hat: string, blink?: number) {
+    create(mode: BuddyMode, clipName: string, pose: string, hat: string, blink?: number, worn?: WornPreview) {
       const group = new THREE.Group();
       let figure: THREE.Group, avatar: Avatar | undefined;
       let mixer: THREE.AnimationMixer | undefined, action: THREE.AnimationAction | undefined;
@@ -46,6 +58,10 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
       let skin: ReturnType<typeof createBuddySkin> | undefined;
       let sockets: { back: THREE.Object3D; hand: THREE.Object3D };
       const owned = new Set<THREE.Material>();
+      const geometries = new Set<THREE.BufferGeometry>();
+      const instances = new Set<THREE.InstancedMesh>();
+      let gear: ReturnType<typeof makeGear> | undefined;
+      let canopy: ReturnType<typeof makeCanopy> | undefined;
       const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
       const clock = { now: () => time * 1000, random };
       const ownMaterials = (root: THREE.Object3D) =>
@@ -70,6 +86,12 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         mixer?.stopAllAction();
         for (const material of owned) material.dispose();
         owned.clear();
+        for (const geometry of geometries) geometry.dispose();
+        geometries.clear();
+        for (const mesh of instances) mesh.dispose();
+        instances.clear();
+        gear = undefined;
+        canopy = undefined;
         group.clear();
       }
       function reset() {
@@ -82,6 +104,10 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
             if (o.name.startsWith('wear_')) o.visible = !!hat && o.name.startsWith('wear_head_' + hat);
           });
           ownMaterials(figure);
+          if (worn?.bodyColor)
+            for (const material of owned)
+              if (material.name === 'M_Main' && 'color' in material && material.color instanceof THREE.Color)
+                material.color.set(worn.bodyColor);
           group.add(figure);
           mixer = new THREE.AnimationMixer(figure);
           const clip = clips.get(clipName);
@@ -90,7 +116,9 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
             action.clampWhenFinished = true;
             action.play();
           }
-          sockets = makeLife(figure, rest, clock).sockets(new THREE.Matrix4());
+          // Same inverse holder placement used by the production skin: the socket's +Z is behind Buddy.
+          const holder = new THREE.Matrix4().makeRotationY(Math.PI).setPosition(0, -0.45, 0);
+          sockets = makeLife(figure, rest, clock).sockets(holder);
           mixer.update(0);
         } else {
           avatar = new THREE.Group() as Avatar;
@@ -107,7 +135,9 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
             radius: 0.45,
             hat: 'wear_head_' + (hat || 'none'),
             charging: () => pose === 'windup',
-            paint: (material) => material.color.set('#1fbfc4'),
+            paint: (material) => {
+              if (worn?.bodyColor) material.color.set(worn.bodyColor);
+            },
           });
           skin.dress(avatar, 0);
           // The skin owns a per-avatar main material; retain it for disposal before cloning inspection materials.
@@ -118,6 +148,35 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
           if (clipName === 'Jump_Land') skin.animate(avatar, 0, true, 1e-6, false);
           update(1e-6);
           time = 0;
+        }
+        if (worn) {
+          gear = makeGear();
+          wearGear(figure, sockets.back, gear, worn);
+          const frame = packFrameMesh(true);
+          frame.visible = worn.frame;
+          const cargo = makeCarryModels();
+          const amount = Math.min(worn.amount, cargoCapacity(worn.cargo, worn.frame));
+          cargo.setCargo(worn.cargo, amount, worn.frame);
+          const logs = makeBundlePreview(avatar?.userData.loadFit ?? BUDDY_LOAD_FIT);
+          logs.setCount(worn.cargo === 'logs' ? amount : 0);
+          logs.root.name = 'wear_cargo_logs';
+          cargo.root.name = 'wear_cargo';
+          sockets.back.add(frame, cargo.root, logs.root);
+          canopy = makeCanopy(true);
+          canopy.w = worn.canopy ? 1 : 0;
+          canopy.g.name = 'wear_canopy';
+          // Raw model faces +Z; the production avatar frame faces -Z around its model holder.
+          canopy.g.rotation.y = mode === 'raw' ? Math.PI : 0;
+          placeCanopy(avatar ?? figure, canopy, worn.canopy ? 1 : 0, 0, time * 1000);
+          for (const object of [...Object.values(gear), frame, cargo.root, logs.root, canopy.g]) {
+            // Pure factories return owned resources, including clones of shared presets.
+            object.traverse((o) => {
+              if (!(o instanceof THREE.Mesh)) return;
+              geometries.add(o.geometry);
+              if (o instanceof THREE.InstancedMesh) instances.add(o);
+              for (const material of Array.isArray(o.material) ? o.material : [o.material]) owned.add(material);
+            });
+          }
         }
         group.updateMatrixWorld(true);
       }
@@ -142,7 +201,12 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
                     ? 2
                     : 0;
           const airborne = clipName === 'Jump_Start' || clipName === 'Jump_Loop';
-          avatar.userData.load = pose === 'carrying' ? 16 : 0;
+          avatar.userData.load =
+            pose === 'carrying'
+              ? worn && !worn.legacyCarrying
+                ? Math.min(worn.amount, cargoCapacity(worn.cargo, worn.frame))
+                : 16
+              : 0;
           avatar.userData.holdKind =
             pose === 'item' ? 'item' : pose === 'can' ? 'hang' : pose === 'ball' ? 'ball' : null;
           avatar.userData.flopAmt = pose === 'knocked' ? 1 : 0;
@@ -153,6 +217,8 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
           avatar.position.y = 0.45;
         }
         if (blink !== undefined) for (const name of ['eye_l', 'eye_r']) figure.getObjectByName(name)?.scale.setY(blink);
+        if (gear && worn) wearGear(figure, sockets.back, gear, worn);
+        if (canopy && worn) placeCanopy(avatar ?? figure, canopy, worn.canopy ? 1 : 0, 0, time * 1000);
         group.updateMatrixWorld(true);
       }
       reset();

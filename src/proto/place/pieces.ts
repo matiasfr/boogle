@@ -10,6 +10,8 @@ import { PIECE, pieceColor, pieceMesh, commitPieces } from '../../render/haul-pi
 import { makeSet, type Box, type BoxSet } from '../net/boxes.ts';
 import { LOOK, STEEL, lookBackLogs } from './look.ts';
 import { kitBatch, kitLogs } from './look-kit.ts';
+import { RAIL_SIZE } from './carry-models.ts';
+export { RAIL_SIZE };
 
 // ---------------------------------------------------------------- falling into place
 const GRAVITY = 24; // m/s²
@@ -83,8 +85,6 @@ export function dropSet(boxes: Box[], onLand: (k: number) => void): DropSet {
 
 // ---------------------------------------------------------------- pieces in the air
 export type PieceKind = 'log' | 'rail' | 'stone';
-/** Where the machine and the racks draw a rail: one length of steel. */
-export const RAIL_SIZE = new THREE.Vector3(0.14, 0.16, 2.6);
 const railGeo = new THREE.BoxGeometry(1, 1, 1);
 const railMat = new THREE.MeshStandardNodeMaterial({ color: '#4c5058', roughness: 0.45, metalness: 0.6 });
 const MAX = 96;

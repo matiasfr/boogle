@@ -128,7 +128,6 @@ function surface(figure: THREE.Object3D, attachment: THREE.Object3D) {
         name: `${mesh.name}:v${i}`,
       });
   }
-  const capBox = new THREE.Box3().setFromPoints(points.map((p) => p.point)).expandByScalar(0.15);
   const triangles: { triangle: THREE.Triangle; box: THREE.Box3; name: string }[] = [];
   for (const mesh of body) {
     const count = mesh.geometry.getAttribute('position').count;
@@ -141,8 +140,9 @@ function surface(figure: THREE.Object3D, attachment: THREE.Object3D) {
         b = vertices[index ? index.getX(i + 1) : i + 1]!,
         c = vertices[index ? index.getX(i + 2) : i + 2]!;
       const box = new THREE.Box3().setFromPoints([a, b, c]);
-      if (box.intersectsBox(capBox))
-        triangles.push({ triangle: new THREE.Triangle(a, b, c), box, name: `${mesh.name}:triangle${i / 3}` });
+      // Keep distant surfaces too: a safely separated attachment still needs a nearest-body measurement.
+      // Per-point box distance below prunes triangles only after a measured upper bound exists.
+      triangles.push({ triangle: new THREE.Triangle(a, b, c), box, name: `${mesh.name}:triangle${i / 3}` });
     }
   }
   let distance = Infinity,
@@ -254,7 +254,7 @@ export function createMotionCapture(canvas: HTMLCanvasElement, camera: THREE.Per
         limits: [
           'Closest surface uses up to 96 vertices per attachment mesh against all nearby actual posed body triangles; signed nearest-face distance flags possible penetration, not a watertight intersection proof.',
           'Frame timestamps are completed stage renders, not GPU presentation. Canvas extraction and measurements perturb timing; sampleMs/imageMs disclose overhead.',
-          'As played is the production body/life adapter, with grounded display and synthetic vertical input; no physics travel or cargo load.',
+          'As played is the production body/life adapter, with grounded display, synthetic vertical input and selected presentation cargo; no physics travel or collision simulation.',
           'Encoded video may duplicate/drop rendered frames. Consecutive canvas frames are separately numbered. No automatic acceptance.',
         ],
       };
