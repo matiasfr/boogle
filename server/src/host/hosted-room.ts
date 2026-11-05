@@ -20,6 +20,7 @@ import type { Store } from '../store.ts';
 export type HostCfg = {
   maxPlayers: number;
   serverSaveMs: number;
+  tuneControllerKey?: string;
   reconnectGraceMs?: number;
   deadMs?: number;
   leadHiddenMs?: number;
@@ -33,7 +34,7 @@ const MSG_RATE = 50; // messages/s per client (burst MSG_BURST)
 const MSG_BURST = 100;
 const PRESENCE_RATE = 40; // presence packets/s per client
 const CLIENT_ONLY = new Set(['w:edit', 'w:need']); // for the server's sync alone
-const HOST_ONLY = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap']); // only the host sends these
+const HOST_ONLY = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap', 'w:rejected']); // only the host sends these
 
 type Bucket = { tokens: number; at: number };
 type Client = {
@@ -88,6 +89,7 @@ export function createHostedRoom({
     saveMs: cfg.serverSaveMs,
     log,
     pidOf: (sid: string) => clients.get(sid)?.pid ?? null,
+    tuneController: (sid: string) => !!cfg.tuneControllerKey && clients.get(sid)?.key === cfg.tuneControllerKey,
   };
   const world = railway
     ? createRailwayWorldHost({
@@ -119,7 +121,7 @@ export function createHostedRoom({
 
   // The sync's messages: w:snap chunks to the client they name, the rest to everyone, encoded once.
   world.onSend((msg) => {
-    if (msg.t === 'w:snap' || (railway && RAILWAY_HOST_MESSAGES.has(String(msg.t)))) {
+    if (msg.t === 'w:snap' || msg.t === 'w:rejected' || (railway && RAILWAY_HOST_MESSAGES.has(String(msg.t)))) {
       const c = clients.get(String(msg.to));
       if (c) write(c, encode({ t: 'm', from: SERVER_ID, d: msg }));
     } else toAll(encode({ t: 'm', from: SERVER_ID, d: msg }));

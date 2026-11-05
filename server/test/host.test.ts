@@ -6,6 +6,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createService, loadConfig } from '../src/server.ts';
+import { TUNE_CATALOG } from '../../src/sim/tune.ts';
+import { WORLD_NS } from '../../src/world/namespace.ts';
 
 type Msg = Record<string, any>;
 const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
@@ -18,9 +20,19 @@ async function start(env: Record<string, string> = {}, dataDir?: string) {
 }
 
 // pid: the player (default one per self; '' leaves it out); key: its browser's secret (default one per pid).
-function connect(base: string, room: string, self: string, pid = self + 'pid', key = pid + 'key0000000000') {
+function connect(
+  base: string,
+  room: string,
+  self: string,
+  pid = self + 'pid',
+  key = pid + 'key0000000000',
+  catalog?: string,
+) {
   const q = (pid ? `&pid=${pid}` : '') + (key ? `&key=${key}` : '');
-  const ws = new WebSocket(`${base}/room/${room}?self=${self}${q}&b=test`, ['boogle.1']);
+  const ws = new WebSocket(
+    `${base}/room/${room}?self=${self}${q}&b=test${catalog === undefined ? '' : `&tc=${catalog}`}`,
+    ['boogle.1'],
+  );
   const msgs: Msg[] = [];
   const waiters = new Set<() => void>();
   ws.onmessage = (e) => {
@@ -54,6 +66,56 @@ function connect(base: string, room: string, self: string, pid = self + 'pid', k
 const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+test('current classic rooms refuse missing or different tuning catalogs before joining', async () => {
+  const { svc, base } = await start({ SERVER_ROOMS: '*' });
+  const room = `${WORLD_NS}-proto-tunables`;
+  try {
+    for (const catalog of [undefined, 'different-defaults']) {
+      const c = connect(base, room, 'mismatch', undefined, undefined, catalog);
+      assert.deepEqual(await c.next(is('incompatible')), { t: 'incompatible', catalog: TUNE_CATALOG });
+      assert.equal(await c.closed, 4412);
+      assert.ok(!c.msgs.some(is('welcome')));
+      assert.equal(svc.roomHost()?.rooms(), 0, 'refusal never creates the room');
+    }
+    const a = connect(base, room, 'matching', undefined, undefined, TUNE_CATALOG);
+    await a.next(is('welcome'));
+    a.ws.close();
+  } finally {
+    await svc.close({ save: false });
+  }
+});
+
+test('legacy namespaces are refused before loading or rewriting their saved tuning', async () => {
+  const seed = await start();
+  const snapshot = seed.svc.roomHost()!.room('beach')!.world.sync.snapshot();
+  await seed.svc.close({ save: false });
+  // A v06 save held only overrides at tune version 0. Loading it in the new host would migrate yield to 9,
+  // while a v06 tab skips tune v1 and keeps its compiled default 4. Refuse the room before that can happen.
+  snapshot.data.tune = { yield: 9 };
+  snapshot.vers.tune = 0;
+  const room = 'v06-proto-legacy';
+  const file = path.join(seed.dataDir, `${room}.json`);
+  const saved = JSON.stringify({ tick: snapshot.tick, writerId: 'server', data: snapshot, updatedAt: 'legacy' });
+  await fs.writeFile(file, saved);
+  for (const serverRooms of ['*', room]) {
+    const { svc, base } = await start({ SERVER_ROOMS: serverRooms }, seed.dataDir);
+    try {
+      assert.equal(svc.roomHost()!.room(room), undefined, 'configured legacy rooms must not load at boot');
+      for (const catalog of [undefined, 'old-defaults', TUNE_CATALOG]) {
+        const c = connect(base, room, 'legacy', undefined, undefined, catalog);
+        assert.deepEqual(await c.next(is('incompatible')), { t: 'incompatible', catalog: TUNE_CATALOG });
+        assert.equal(await c.closed, 4412);
+        assert.ok(!c.msgs.some(is('welcome')));
+        assert.ok(!c.msgs.some(isWorld('w:snap')));
+        assert.equal(svc.roomHost()!.room(room), undefined, 'refusal must not load or migrate the saved room');
+      }
+    } finally {
+      await svc.close({ save: true });
+    }
+    assert.equal(await fs.readFile(file, 'utf8'), saved, 'shutdown must leave the legacy save byte-for-byte intact');
+  }
+});
 
 test('join: welcome then list, presence relays with ids, left after a close, the lead moves', async () => {
   const { svc, base } = await start();
@@ -168,10 +230,19 @@ test('relay: messages reach the others with from; oversize and host-only types d
     await Promise.all([a.next(is('list')), b.next(is('list'))]);
     a.send({ t: 'm', d: { t: 'honk', big: 'x'.repeat(16001) } });
     a.send({ t: 'm', d: { t: 'w:c', ht: 5 } });
+    a.send({ t: 'm', d: { t: 'w:rejected', to: 'bbb', op: 'tune.commit', requestId: 'forged' } });
     a.send({ t: 'm', d: { t: 'honk', n: 1 } });
     const got = await b.next(isWorld('honk'));
     assert.deepEqual(got, { t: 'm', from: 'aaa', d: { t: 'honk', n: 1 } });
     assert.ok(!b.msgs.some((m) => m.from === 'aaa' && m.d?.t === 'w:c'));
+    assert.ok(!b.msgs.some((m) => m.d?.t === 'w:rejected'));
+    a.send({ t: 'm', d: { t: 'w:edit', e: { op: 'tune.commit', i: 0, j: 0, requestId: 'refused' } } });
+    assert.deepEqual(await a.next(isWorld('w:rejected')), {
+      t: 'm',
+      from: 'server',
+      d: { t: 'w:rejected', to: 'aaa', op: 'tune.commit', requestId: 'refused' },
+    });
+    assert.ok(!b.msgs.some((m) => m.d?.t === 'w:rejected'), 'receipts are routed only to their requester');
     a.ws.close();
     b.ws.close();
   } finally {

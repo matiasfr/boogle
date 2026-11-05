@@ -100,7 +100,8 @@ op names.
 
 | Key | Set by | Server | Used by |
 |---|---|---|---|
-| `protoRoom` | `src/features/proto-haul.ts` (`isProtoRoom(getRoomId())`) | `isProtoRoom(roomId)` in `server/src/host/world-host.ts` | `tune.set`, `tune.fill`, `tune.reset`, `open.lay` validate |
+| `protoRoom` | `src/features/proto-haul.ts` (`isProtoRoom(getRoomId())`) | `isProtoRoom(roomId)` in `server/src/host/world-host.ts` | `tune.set`, `tune.commit`, `tune.fill`, `tune.reset`, `open.lay` validate |
+| `tuneController` | No browser assignment; absent means writes are refused | Explicit `TUNE_CONTROLLER_KEY` compared with the sender's bound socket key in `server/src/host/hosted-room.ts` | `tune.set`, `tune.commit` validate; a room lead has no tuning authority by election |
 
 The server hosts rooms with no renderer (docs/plans/server-host.md), so a new key needs a "Server" source too:
 `server/test/world-host.test.ts` feeds every op's generators to the server's world and fails until it does.
@@ -144,7 +145,7 @@ The isolated headless production proof uses `railway-index.ts` and its own names
 | `sources.ts` | `src.take` | `sources` | `{ sources, charges(id), list() }`: the current age's material sources (`../../sim/sources.ts`; wood: the log bundles at the palm cells in `land.layout.trees`), stored as charges spent; refills on `sites.onSectionDone` and a seeded trickle tick |
 | `bank.ts` | `bank.wake` (`hostOnly`) | `bank` | `{ bank, ms() }`: offline time already turned into helper freight (`../../sim/bank.ts`); only the host's own wake is stamped |
 | `ball.ts` | `ball.rest` | `ball` | `{ ball, rest() }`: the beach ball's last resting spot in cm (`../../sim/ball-rest.ts`); no tick; the adapter `src/features/ball-rest.ts` saves it and puts the ball back |
-| `tune.ts` | `tune.set`, `tune.fill`, `tune.reset` (`proto-` rooms only, env `protoRoom`) | `tune` | `{ tune, cost(s, ring), get(key) }`: playtest tuning of the haul's lockstep numbers (`../../sim/tune.ts`; defaults are today's constants, only overrides saved); `tune.fill` fills the open Track ring (as freight); `tune.reset` empties stacks, piles, sites and bundles. `stacks`, `sites` and `sources` read `rules.tune` at run time (it installs after them) |
+| `tune.ts` | `tune.set`, `tune.commit`, `tune.fill`, `tune.reset` (`proto-` rooms only, env `protoRoom`) | `tune` | `{ tune, cost(s, ring), get(key) }`: haul lockstep values (`../../sim/tune.ts`), with all resolved defaults, catalog and revision saved and hashed. `tune.commit` compares the expected revision and catalog, and returns a correlated applied/rejected result after application; admission refusal returns `w:rejected` through `onRejected`. Both value-write ops require `tuneController`. `tune.fill` fills the open Track ring (as freight); `tune.reset` empties stacks, piles, sites and bundles without undoing tuning. `stacks`, `sites` and `sources` read `rules.tune` at run time (it installs after them) |
 | `opening.ts` | `open.start`, `open.here`, `open.lay` (`proto-` rooms only, env `protoRoom`) | `opening` | `{ opening, ready(), bell(tick), era(tick) }`: opening day (`../../sim/era.ts`): the tick it started, once the age's last section is laid (first start wins), and the tick everyone was at the platform (`open.here`, which ends the gathering call early, once); `bell` is its run (phase `call`, then `bell`), `era` the derived era (2 once the bell has run out). `open.lay` is the playtest shortcut that lays the rest of the route; `tune.reset` also undoes opening day |
 | `edit-gen.ts` | none | none | Not a rules module (not in `RULES`): `JUNK` and `bad(r, op)` for the modules' `edits` generators |
 

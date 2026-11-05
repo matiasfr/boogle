@@ -1,0 +1,47 @@
+// Discovery only. Runtime owners read direct fields, never this catalog in a frame loop.
+import { TUNABLES } from '../sim/tune.ts';
+import { EXPOSURE_SPEC } from '../render/exposure-tuning.ts';
+import { FEEL_SPRING_SPEC } from '../player/feel-tuning.ts';
+
+export type NumberSpec = {
+  id: string;
+  type: 'number';
+  scope: 'local' | 'owner' | 'lockstep';
+  default: number;
+  min: number;
+  max: number;
+  integer: boolean;
+  units: string;
+  at: string;
+  owner: string;
+  meaning?: string;
+};
+export const CATALOG: readonly NumberSpec[] = [
+  ...TUNABLES.map((t) => ({
+    id: `haul.${t.key}`,
+    type: 'number' as const,
+    scope: 'lockstep' as const,
+    default: t.def,
+    min: t.min,
+    max: t.max,
+    integer: true,
+    units: t.label,
+    at: t.key === 'yield' ? 'next accepted take' : 'existing rule boundary',
+    owner: 'src/sim/tune.ts',
+    meaning: t.label,
+  })),
+  EXPOSURE_SPEC,
+  FEEL_SPRING_SPEC,
+];
+const byId = new Map(CATALOG.map((spec) => [spec.id, spec]));
+export const tunableSpec = (id: unknown) => (typeof id === 'string' ? byId.get(id) : undefined);
+export function validValue(spec: NumberSpec, value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isFinite(value) &&
+    !Object.is(value, -0) &&
+    (!spec.integer || Number.isSafeInteger(value)) &&
+    value >= spec.min &&
+    value <= spec.max
+  );
+}

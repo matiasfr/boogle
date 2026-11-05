@@ -18,12 +18,22 @@ import { JUMP, MOVE } from '../entities/player/state.ts';
 import { me } from '../player/player.ts';
 import { protoMark } from '../proto/mark.ts';
 import { remotes, addPresenceField, onRemotePresence } from '../netplay/net.ts';
+import {
+  FEEL_SPRING_SPEC,
+  activeFeelSpring,
+  beginFeelAction,
+  feelSpringPresence,
+  readFeelSpringPresence,
+  snapshotFeelSpring,
+  type FeelProfile,
+} from '../player/feel-tuning.ts';
+import type { Remote } from '../netplay/net.ts';
 
 // ---------------------------------------------------------------- tunables (starting points)
 const SPRING = {
   // The squash spring is integrated exactly (src/render/motion.ts), so it bounces the same at 20 fps as at 120. These
   // four numbers reproduce the old Euler-stepped spring (k 260, damping 14, kicks 0.45 and 3) at 60 fps.
-  k: 298, // stiffness (1/s²): about 2.75 Hz
+  k: FEEL_SPRING_SPEC.default, // authored stiffness; action-latched value comes from the owner below
   damp: 16, // damping (1/s): a damping ratio of about 0.46, so a landing bounces once
   landK: 0.4, // squash-spring velocity per m/s of fall speed (a normal landing squashes ~15%)
   takeoffK: 2.67, // stretch kick on takeoff
@@ -44,6 +54,13 @@ const FLOP = {
 };
 const HOLD_CAP_MS = 120;
 const KINDS = ['splat', 'stomp', 'bonk', 'tumble']; // append only: an old tab ignores an index it doesn't know
+const remoteSprings = new WeakMap<Remote, FeelProfile>();
+addPresenceField('feelSpring', () => (me.entered ? feelSpringPresence() : null));
+onRemotePresence((remote, presence) => {
+  const profile = readFeelSpringPresence(presence.feelSpring);
+  if (profile) remoteSprings.set(remote, profile);
+  else remoteSprings.delete(remote);
+});
 
 // ---------------------------------------------------------------- my flops
 type Flop = { kind: string; until: number };
@@ -128,7 +145,14 @@ function stateOf(a: THREE.Object3D) {
   return s;
 }
 
-function spring(a: THREE.Object3D, dt: number, t: number, flopOf: () => Flop | null | undefined, isMe: boolean) {
+function spring(
+  a: THREE.Object3D,
+  dt: number,
+  t: number,
+  flopOf: () => Flop | null | undefined,
+  isMe: boolean,
+  stiffness?: number,
+) {
   // A wall's grounded recoil must not shake a deliberate jump from side to side.
   if (isMe && flop?.kind === 'bonk' && (me.jumpQueued > 0 || me.coyote <= 0)) flop = null;
   const s = stateOf(a);
@@ -148,13 +172,17 @@ function spring(a: THREE.Object3D, dt: number, t: number, flopOf: () => Flop | n
   s.pz = a.position.z;
   // landing and takeoff kicks
   if (prevVy < -3 && s.vy > -1) {
+    if (isMe) beginFeelAction('landing');
     s.sq.v += -prevVy * SPRING.landK;
     if (isMe && -prevVy > FLOP.splatSpeed) {
       startFlop('splat', FLOP.splatMs);
       puff(a.position.x, a.position.y - PLAYER_R, a.position.z, 14, 3);
     }
-  } else if (prevVy < 2 && s.vy > 4) s.sq.v -= SPRING.takeoffK;
-  springStep(s.sq, 0, SPRING.k, SPRING.damp, dt); // exact: the same bounce at any frame rate
+  } else if (prevVy < 2 && s.vy > 4) {
+    if (isMe) beginFeelAction('takeoff');
+    s.sq.v -= SPRING.takeoffK;
+  }
+  springStep(s.sq, 0, isMe ? activeFeelSpring() : (stiffness ?? SPRING.k), SPRING.damp, dt);
   s.sq.x = clamp(s.sq.x, -SPRING.maxSquash, SPRING.maxSquash);
   // lean toward acceleration, in the avatar's own frame (it faces -Z at yaw 0)
   const yaw = a.rotation.y;
@@ -252,7 +280,8 @@ onFrame(
   ({ dt, elapsed }) => {
     if (dt <= 0) return;
     if (me.avatar) spring(me.avatar, dt, elapsed, () => flop, true);
-    for (const r of remotes.values()) if (r.avatar) spring(r.avatar, dt, elapsed, () => r.flop, false);
+    for (const r of remotes.values())
+      if (r.avatar) spring(r.avatar, dt, elapsed, () => r.flop, false, remoteSprings.get(r)?.value);
   },
   { phase: 'update', order: 20 },
 );
@@ -262,6 +291,15 @@ window.__feel = {
   MOVE,
   SPRING,
   FLOP,
+  get tuning() {
+    return snapshotFeelSpring();
+  },
+  get remoteTuning() {
+    return Array.from(remotes.values(), (remote) => ({
+      peer: remote.peer,
+      profile: remoteSprings.get(remote) ?? null,
+    }));
+  },
   get flop() {
     return flop;
   },

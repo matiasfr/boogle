@@ -10,7 +10,7 @@ its peer table is `peer-table.ts`. Changes must keep this interface; run `npm ru
 ```js
 const room = await createWsRoom({ roomId, server /* our server's http(s) base */, pid /* this player */, build /* optional */, debug /* optional */ });
 // rejects with code 'room_full' (and `max`), 'peer_hosted' (a server not hosting this room), 'unreachable' or
-// 'browser-incompatible'; after joining, a reconnect turned away as full, or 'elsewhere' (a newer tab with the same
+// 'browser-incompatible', or 'incompatible' (shared tuning catalog differs); after joining, a reconnect turned away as full, or 'elsewhere' (a newer tab with the same
 // pid joined), reports a fatal error to onPeers/onConnection
 room.selfId            // string, stable per tab for the life of the page
 room.presence(patch)   // Promise<void>; shallow-merges patch into my presence (value null deletes key) and broadcasts
@@ -35,3 +35,10 @@ The room id comes from the effective page flags (`src/proto/flags.ts`): the bare
 
 Messages are wire format shared with tabs on older builds: add new `t` types and fields, never change what an existing
 one means (docs/agents/mixed-builds.md, "Mixed builds").
+
+Current classic `v07-` rooms require the client's `tc` catalog fingerprint at admission. It includes shared tuning
+defaults, bounds, keys and interpretation; different fingerprints get `incompatible` and close code 4412 before a
+room is created or joined. Older classic `vNN-` namespaces are refused before loading or migrating their saves,
+even when explicitly configured or presenting the current catalog. A matching fingerprint permits different build SHAs. The transport stops reconnecting
+on this refusal. The isolated railway namespace keeps its own contract. Shared tuning writes additionally need an
+explicit server `TUNE_CONTROLLER_KEY` matching the sender's bound socket key; being the room lead grants nothing.

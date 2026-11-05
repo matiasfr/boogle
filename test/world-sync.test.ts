@@ -86,6 +86,46 @@ async function setup(n = 2) {
   return { net, host, clients, all };
 }
 
+test('admission refusals are bounded, correlated and accepted only from the pinned host for this client', async () => {
+  const { net, host, clients, all } = await setup();
+  const client = clients[0]!;
+  const other = clients[1]!;
+  const received: singleton.EditRejection[] = [];
+  const elsewhere: singleton.EditRejection[] = [];
+  const unsubscribe = client.s.onRejected((e) => received.push(e));
+  other.s.onRejected((e) => elsewhere.push(e));
+  client.s.submitEdit({ op: 'add', i: 0, j: 0, v: 'invalid', requestId: 'bounded' });
+  await run(net, all, 5);
+  assert.deepEqual(received, [{ op: 'add', requestId: 'bounded' }]);
+  assert.equal(elsewhere.length, 0);
+  assert.equal(host.grid[0], 0, 'a refusal never applies state');
+
+  const forged = { t: 'w:rejected', to: client.p.id, op: 'add', requestId: 'forged' };
+  other.p.room.send(forged);
+  host.p.room.send({ ...forged, to: other.p.id });
+  host.p.room.send({ ...forged, requestId: 'x'.repeat(81) });
+  await run(net, all, 5);
+  assert.equal(received.length, 1, 'other peers, recipients and oversized correlations cannot settle a request');
+  client.s.submitEdit({ op: 'add', i: 0, j: 0, v: 'invalid', requestId: 'x'.repeat(81) });
+  await run(net, all, 5);
+  assert.equal(received.length, 1, 'oversized requests get no reflected correlation');
+  unsubscribe();
+  client.s.submitEdit({ op: 'add', i: 0, j: 0, v: 'invalid', requestId: 'unsubscribed' });
+  await run(net, all, 5);
+  assert.equal(received.length, 1);
+});
+
+test('a rejection cannot establish a host before a snapshot or clock message', () => {
+  const net = makeNet();
+  const client = makePeer(net, 'client', false);
+  const attacker = net.add('attacker');
+  const received: singleton.EditRejection[] = [];
+  client.s.onRejected((e) => received.push(e));
+  attacker.room.send({ t: 'w:rejected', to: 'client', op: 'add', requestId: 'forged-first' });
+  net.flush();
+  assert.equal(received.length, 0);
+});
+
 test('edits from all peers converge in identical order', async () => {
   const { net, host, clients, all } = await setup();
   assert.ok(clients.every((c) => c.s.worldStatus().ready));

@@ -1,11 +1,11 @@
 // Playtest tuning (docs/playtest-kits/haul.md): the haul loop's lockstep numbers as a room-wide state, so a `proto-`
-// room can change a cap or a cost for everyone at the same tick. Every key defaults to today's constant, and only
-// overrides are saved and hashed, so a room that never tunes anything is unchanged. Pure and deterministic (lockstep).
+// room can change a cap or a cost for everyone at the same tick. The complete effective configuration, including
+// defaults, is saved and hashed. Pure and deterministic (lockstep).
 import { AGES, ROUTE, TRACK, costOf } from './route.ts';
 import { HARD_CAP, HARD_MAX } from './stacks.ts';
 import { FULL, YIELD, TRICKLE_EVERY, FULL_MAX } from './sources.ts';
 import { WAGON_CRUISE, WAGON_ACCEL, type WagonPace } from './wagon.ts';
-import { FNV_SEED, foldAll } from './hash.ts';
+import { FNV_SEED, foldAll, foldStr } from './hash.ts';
 import type { CostFn } from './sites.ts';
 
 // APPEND ONLY: a key's index is folded into the hash. A key that goes away moves to RETIRED.
@@ -25,17 +25,26 @@ export const TUNABLES = [
 const RETIRED: readonly string[] = ['soft', 'spill', 'run'];
 export type TuneKey = (typeof TUNABLES)[number]['key'];
 export type TuneSpec = (typeof TUNABLES)[number];
-/** v: every key's current value; rev counts every change, for views (neither saved nor hashed). */
-export type Tune = { v: Record<TuneKey, number>; rev: number };
-/** Saved form: the overrides only, by key. */
-export type TuneJson = Partial<Record<TuneKey, number>>;
+/** revision is authoritative; rev only invalidates views after edits or loads. */
+export type Tune = { v: Record<TuneKey, number>; revision: number; rev: number };
+export type TuneJson = { catalog: string; revision: number; values: Record<TuneKey, number> };
+
+// The schema, key meanings and defaults are admission identity, even when a room never overrides anything.
+export function tuneCatalog(
+  specs: readonly { key: string; def: number; min: number; max: number; label: string }[],
+): string {
+  let h = foldStr(FNV_SEED, 'classic-tune:1:integer:next-action');
+  for (const spec of specs) h = foldAll(foldStr(foldStr(h, spec.key), spec.label), [spec.def, spec.min, spec.max]);
+  return h.toString(16).padStart(8, '0');
+}
+export const TUNE_CATALOG = tuneCatalog(TUNABLES);
 
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
 const defaults = (): Record<TuneKey, number> =>
   Object.fromEntries(TUNABLES.map((t) => [t.key, t.def])) as Record<TuneKey, number>;
 
 export function createTune(): Tune {
-  return { v: defaults(), rev: 0 };
+  return { v: defaults(), revision: 0, rev: 0 };
 }
 export const specOf = (key: unknown): TuneSpec | null => TUNABLES.find((t) => t.key === key) ?? null;
 // A known key and an integer within its bounds (state-free; the rules add what depends on the world).
@@ -45,6 +54,7 @@ export function okTune(key: unknown, v: unknown): boolean {
 }
 export function setTune(t: Tune, key: TuneKey, v: number): void {
   t.v[key] = v;
+  t.revision++;
   t.rev++;
 }
 // A ring's cost under this tuning: the wood age's from the tuning, every later age's default.
@@ -60,25 +70,36 @@ export const paceIn = (t: Tune): WagonPace => ({ cruise: t.v.wagonCruise, accel:
 export const isProtoRoom = (id: unknown): boolean => typeof id === 'string' && /^(v\d+-)?proto-/.test(id);
 
 export function serializeTune(t: Tune): TuneJson {
-  const out: TuneJson = {};
-  for (const { key, def } of TUNABLES) if (t.v[key] !== def) out[key] = t.v[key];
-  return out;
+  return { catalog: TUNE_CATALOG, revision: t.revision, values: { ...t.v } };
 }
-export function loadTune(t: Tune, json: unknown): void {
+export function migrateTune(json: unknown): TuneJson {
   if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('tune: bad snapshot');
+  // Some tools remove the version map from a current snapshot. Accept the already-versioned shape idempotently.
+  if ('catalog' in json) return json as TuneJson;
   const v = defaults();
   for (const [key, n] of Object.entries(json)) {
     if (RETIRED.includes(key)) continue;
     if (!okTune(key, n)) throw new Error(`tune: bad ${key}`);
     v[key as TuneKey] = n;
   }
-  Object.assign(t, { v, rev: t.rev + 1 });
+  return { catalog: TUNE_CATALOG, revision: 0, values: v };
 }
-// Overrides only, as [key index, value] in key order: a key at its default adds nothing.
+export function loadTune(t: Tune, json: unknown): void {
+  if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('tune: bad snapshot');
+  const j = json as Partial<TuneJson>;
+  if (j.catalog !== TUNE_CATALOG) throw new Error('tune: incompatible catalog');
+  if (!isInt(j.revision) || j.revision < 0) throw new Error('tune: bad revision');
+  if (!j.values || typeof j.values !== 'object' || Array.isArray(j.values)) throw new Error('tune: missing values');
+  const entries = Object.entries(j.values);
+  if (entries.length !== TUNABLES.length || entries.some(([key, n]) => !okTune(key, n)))
+    throw new Error('tune: incomplete or invalid values');
+  Object.assign(t, { v: { ...j.values }, revision: j.revision, rev: t.rev + 1 });
+}
+// Full values and revision in stable key order; defaults never disappear from the identity.
 export function hashTune(t: Tune): number {
-  let h = FNV_SEED;
-  TUNABLES.forEach(({ key, def }, k) => {
-    if (t.v[key] !== def) h = foldAll(h, [k, t.v[key]]);
+  let h = foldAll(foldStr(FNV_SEED, TUNE_CATALOG), [t.revision]);
+  TUNABLES.forEach(({ key }, k) => {
+    h = foldAll(h, [k, t.v[key]]);
   });
   return h;
 }

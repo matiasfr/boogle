@@ -38,7 +38,7 @@ const generators: Record<string, Gen> = Object.assign({}, ...MODULES.map((m) => 
 
 // One tab. protoRoom: a playtest room, so the tune ops and the open.lay shortcut run too.
 function makePeer(seed: number, net: FakeNet | null, id: string, host?: boolean) {
-  const s = createSync({ env: { protoRoom: true } });
+  const s = createSync({ env: { protoRoom: true, tuneController: () => true } });
   const rules = installRules(s, homeLand());
   const x = {
     id,

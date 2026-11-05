@@ -1,0 +1,28 @@
+{
+  "id": "tunables",
+  "title": "An agent changes a playtest value",
+  "kind": "lock",
+  "order": 71,
+  "steps": [
+    {
+      "hl": ["you.features"],
+      "text": "The lazy catalog describes defaults beside their owners. Exposure uses its Local binding; the cosmetic spring captures an Owner profile on the next action.",
+      "cite": [{ "file": "src/tunables/catalog.ts" }, { "file": "src/player/feel-tuning.ts" }]
+    },
+    {
+      "go": [["you.features", "you.world"]],
+      "text": "Haul yield submits a bounded request with catalog and expected revision. The server checks its explicitly assigned controller. Queued is not applied; refusals have correlated receipts.",
+      "cite": [{ "op": "tune.commit" }, { "file": "src/world/rules/tune.ts" }]
+    },
+    {
+      "hl": ["you.world", "fr.world"],
+      "text": "Both peers apply the accepted profile at its tick. Complete values, defaults-inclusive catalog and revision are saved and hashed. Incompatible catalogs cannot join current rooms.",
+      "cite": [{ "state": "tune" }, { "file": "src/sim/tune.ts" }, { "file": "server/src/host/rooms.ts" }]
+    },
+    {
+      "hl": ["you.features"],
+      "text": "Playtest snapshots record build, starting setup, configured values and active spring profile. Incomplete records are marked incomplete. A defaults diff is review material, never an automatic promotion.",
+      "cite": [{ "file": "src/proto/playdata/record.ts" }, { "file": "src/tunables/events.ts" }]
+    }
+  ]
+}

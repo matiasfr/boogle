@@ -1,5 +1,13 @@
 # 6.26b Water
 
+## Agent tuning proof (5 November 2026)
+
+`?proto=place&tune=1&t.post.centre=0.24` applies a Local surface gain after saved appearance restoration.
+`boogle.dev.run('tunables', 'get', {id: 'post.centre'})` reports its resolved value and provenance; `set`
+uses the existing uniform binding, with no new pass, draw call or frame scan. Unsupported routes report
+reload-required. The value is transient, bounded to 0.01–2, and included with defaults, build and starting
+setup in tuning snapshots and playtest data. Resetting it changes appearance only.
+
 ## Prepared evening preview (5 November 2026)
 
 Local, off by default: `?proto=place&evening=1` opens the authored evening; `&evening=preview`

@@ -35,6 +35,8 @@ import { makeAxes } from './axe-models.ts';
 import { applyChopPose, CHOP_SIDE } from './chop-motion.ts';
 import { reducedMotion } from '../../constants.ts';
 import { bigCargo, freshCargo, validCargo } from './big-cargo.ts';
+import { beginFeelAction, endFeelChop } from '../../player/feel-tuning.ts';
+import { CHOP_DURATION } from './chop-timing.ts';
 
 // ---------------------------------------------------------------- your back
 /** One big thing on your shoulder: it fills your back, and you can't sprint with it. */
@@ -811,6 +813,7 @@ let logsLanded = 0;
 
 const inner = () => (me.avatar?.userData as Worn | undefined)?.inner;
 function startSwing(x: number, z: number) {
+  beginFeelAction('chop');
   swing.t = 0;
   swing.hit = false;
   swing.response = 'bite';
@@ -1102,6 +1105,7 @@ export function updateChop(dt: number, now: number) {
   if (back.big) input.sprint = false; // you can't run with that
   axes.setTier(job.rung.axe ? (job.rung.multi ? 'proper-multi' : 'proper') : job.rung.multi ? 'multi' : 'starter');
   swing.t += dt;
+  if (swing.t >= CHOP_DURATION) endFeelChop();
   const c = TUNE.contactS;
   if (!swing.hit && swing.t >= c) {
     swing.hit = true;

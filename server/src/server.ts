@@ -73,6 +73,7 @@ export function loadConfig(
     reportMaxBytesPerDay: Number(env.REPORT_MAX_BYTES_PER_DAY ?? 5 * 1024 * 1024),
     reportToken: env.REPORT_TOKEN || '',
     serverRooms: env.SERVER_ROOMS ? list(env.SERVER_ROOMS) : ['*'], // rooms it hosts (docs/plans/server-host.md); default all
+    tuneControllerKey: env.TUNE_CONTROLLER_KEY || '',
     maxPlayers: Number(env.MAX_PLAYERS ?? 8),
     serverSaveMs: Number(env.SERVER_SAVE_MS ?? 2000),
     roomIdleMs: Number(env.ROOM_IDLE_MS ?? 600000), // with SERVER_ROOMS=*: unload a room this long after it emptied
@@ -99,6 +100,7 @@ export type ServerConfig = {
   reportMaxBytesPerDay: number;
   reportToken: string;
   serverRooms: string[];
+  tuneControllerKey: string;
   maxPlayers: number;
   upgradesPerMin: number;
   playRatePerMin: number;

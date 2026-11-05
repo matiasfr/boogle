@@ -11,6 +11,8 @@ import { createStore, type Store } from '../src/store.ts';
 import { createRoomHost } from '../src/host/rooms.ts';
 import type { HostedRoom } from '../src/host/hosted-room.ts';
 import { RAILWAY_ROOM } from '../../src/world/railway-namespace.ts';
+import { WORLD_NS } from '../../src/world/namespace.ts';
+import { TUNE_CATALOG } from '../../src/sim/tune.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
 import { CLOSE } from '../../src/net/ws-wire.ts';
 
@@ -24,7 +26,10 @@ async function until(predicate: () => boolean, label: string) {
   }
 }
 function connect(base: string, room: string, sid: string) {
-  const ws = new WebSocket(`${base}/room/${room}?self=${sid}&pid=alice&key=alicekey000000000000&b=test`, ['boogle.1']);
+  const ws = new WebSocket(
+    `${base}/room/${room}?self=${sid}&pid=alice&key=alicekey000000000000&b=test&tc=${TUNE_CATALOG}`,
+    ['boogle.1'],
+  );
   const messages: Obj[] = [];
   ws.onmessage = (e) => messages.push(JSON.parse(String(e.data)) as Obj);
   const closed = new Promise<number>((resolve) => {
@@ -128,7 +133,7 @@ function upgradeStatus(base: string) {
   });
 }
 
-for (const id of ['v06-boogle', 'v06-beach', RAILWAY_ROOM]) {
+for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM]) {
   test(`real room manager preserves the closing authority before rejoin: ${id}`, async (t) => {
     const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-manager-eviction-'));
     const store = createStore({ dataDir, maxRooms: 8 });
@@ -228,7 +233,7 @@ for (const id of ['v06-boogle', 'v06-beach', RAILWAY_ROOM]) {
 }
 
 for (const [id, failure] of [
-  ['v06-boogle', 'refused'],
+  [`${WORLD_NS}-boogle`, 'refused'],
   [RAILWAY_ROOM, 'io'],
 ] as const) {
   test(`failed close keeps one blocked authority and its last good file: ${id}`, async (t) => {
@@ -309,7 +314,7 @@ test('shutdown fences new upgrades and drains other writes before reporting a re
   const store: Store = {
     ...base,
     async write(...args) {
-      if (refuse && args[0] === 'v06-boogle') return { status: 507, body: { error: 'refused shutdown write' } };
+      if (refuse && args[0] === `${WORLD_NS}-boogle`) return { status: 507, body: { error: 'refused shutdown write' } };
       return base.write(...args);
     },
   };
@@ -320,16 +325,16 @@ test('shutdown fences new upgrades and drains other writes before reporting a re
     await app.close();
     await fs.rm(dataDir, { recursive: true, force: true });
   });
-  const a = connect(app.base, 'v06-boogle', 'a');
-  const b = connect(app.base, 'v06-beach', 'b');
+  const a = connect(app.base, `${WORLD_NS}-boogle`, 'a');
+  const b = connect(app.base, `${WORLD_NS}-beach`, 'b');
   await a.first();
   await b.first();
-  await drain(app.rooms.room('v06-boogle')!, store, 'v06-boogle');
-  await drain(app.rooms.room('v06-beach')!, store, 'v06-beach');
+  await drain(app.rooms.room(`${WORLD_NS}-boogle`)!, store, `${WORLD_NS}-boogle`);
+  await drain(app.rooms.room(`${WORLD_NS}-beach`)!, store, `${WORLD_NS}-beach`);
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const blocked = base.withLock('v06-beach', () => gate);
+  const blocked = base.withLock(`${WORLD_NS}-beach`, () => gate);
   refuse = true;
   const closing = app.rooms.close({ save: true });
   let settled = false;
@@ -342,7 +347,7 @@ test('shutdown fences new upgrades and drains other writes before reporting a re
     },
   );
   await until(
-    () => app.logs.some((line) => String(line[0]).includes('v06-boogle: close blocked')),
+    () => app.logs.some((line) => String(line[0]).includes(`${WORLD_NS}-boogle: close blocked`)),
     'refused shutdown close',
   );
   assert.equal(settled, false, 'failure in one room must not return while another writer is blocked');
@@ -352,7 +357,7 @@ test('shutdown fences new upgrades and drains other writes before reporting a re
   release();
   await blocked;
   await assert.rejects(closing, /rooms failed to close/);
-  assert.ok(base.readSync('v06-beach'), 'the other room finished its durable close');
+  assert.ok(base.readSync(`${WORLD_NS}-beach`), 'the other room finished its durable close');
   await a.closed;
   await b.closed;
   await evidence('manager-shutdown.json', { refusedCloseReported: true, otherWriterDrained: true, lateUpgrade: 503 });
@@ -360,10 +365,12 @@ test('shutdown fences new upgrades and drains other writes before reporting a re
 
 test('service shutdown closes HTTP even when its room reports a save failure', async (t) => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-service-close-'));
-  const service = createService(loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: 'v06-beach' }, { log: () => {} }));
+  const service = createService(
+    loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: `${WORLD_NS}-beach` }, { log: () => {} }),
+  );
   const port = await service.listen(0);
   t.after(() => fs.rm(dataDir, { recursive: true, force: true }));
-  const room = service.roomHost()!.room('v06-beach')!;
+  const room = service.roomHost()!.room(`${WORLD_NS}-beach`)!;
   const close = room.close.bind(room);
   room.close = async () => {
     await close({ save: false });

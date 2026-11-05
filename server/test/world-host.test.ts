@@ -11,6 +11,7 @@ import { createStore } from '../src/store.ts';
 import { loadHomeLand } from '../src/host/land.ts';
 import { RULES } from '../../src/world/rules/index.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
+import { TUNE_CATALOG } from '../../src/sim/tune.ts';
 
 type Msg = Record<string, any>;
 const generators: Record<string, (r: unknown, view: unknown) => Msg | null> = Object.assign(
@@ -28,13 +29,63 @@ const settle = () => new Promise((r) => setImmediate(r));
 async function makeHost(dir: string, saveMs = 2000, roomId = 'beach') {
   const store = createStore({ dataDir: dir, maxRooms: 10 });
   await store.init();
-  const wh = createWorldHost({ roomId, store, saveMs, tick: false, pidOf: (sid) => sid + 'pid' });
+  const wh = createWorldHost({
+    roomId,
+    store,
+    saveMs,
+    tick: false,
+    pidOf: (sid) => sid + 'pid',
+    tuneController: (sid) => sid === 'c1',
+  });
   const sent: Msg[] = [];
   wh.onSend((m) => sent.push(m));
   await settle(); // becomeHost reads the save, then marks the world ready
   return { store, wh, sent };
 }
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-world-'));
+
+test('tuning commits require the assigned controller, matching catalog and current revision, and persist defaults', async () => {
+  const dir = tmp();
+  const { wh } = await makeHost(dir, 1, 'v07-proto-tunables');
+  const edit = {
+    op: 'tune.commit',
+    i: 0,
+    j: 0,
+    key: 'yield',
+    v: 9,
+    expectedRevision: 0,
+    catalog: TUNE_CATALOG,
+    requestId: 'proof',
+  };
+  const applied: Msg[] = [];
+  wh.sync.onApplied((e: Msg, tick, result) => {
+    if (e.op === 'tune.commit') applied.push({ e, tick, result });
+  });
+  wh.deliver({ t: 'w:edit', e: edit }, 'c2');
+  wh.deliver({ t: 'w:edit', e: { op: 'tune.set', i: 0, j: 0, key: 'yield', v: 20 } }, 'c2');
+  wh.deliver({ t: 'w:edit', e: { ...edit, catalog: 'different' } }, 'c1');
+  wh.deliver({ t: 'w:edit', e: { ...edit, expectedRevision: 1 } }, 'c1');
+  for (let f = 0; f < 6; f++) wh.step(0.1);
+  assert.equal(wh.rules.tune.tune.revision, 0);
+  assert.equal(applied.length, 0);
+  wh.deliver({ t: 'w:edit', e: edit }, 'c1');
+  wh.deliver({ t: 'w:edit', e: { ...edit, requestId: 'racing', v: 10 } }, 'c1');
+  for (let f = 0; f < 6; f++) wh.step(0.1);
+  assert.equal(wh.rules.tune.get('yield'), 9);
+  assert.equal(wh.rules.tune.tune.revision, 1);
+  assert.deepEqual(
+    applied.map((x) => x.result.status),
+    ['applied', 'rejected'],
+  );
+  const hash = wh.sync.stateHashes().tune;
+  await wh.close({ save: true });
+  const loaded = await makeHost(dir, 1, 'v07-proto-tunables');
+  assert.equal(loaded.wh.rules.tune.get('yield'), 9);
+  assert.equal(loaded.wh.rules.tune.tune.revision, 1);
+  assert.equal(loaded.wh.sync.stateHashes().tune, hash);
+  assert.equal(Object.keys(loaded.wh.sync.snapshot().data.tune as object).length, 3);
+  await loaded.wh.close({ save: false });
+});
 
 test('every op of every rules module is accepted from a client or, host-only, from the server', async () => {
   const { wh, sent } = await makeHost(tmp(), 2000, 'v02-proto-beach'); // a playtest room: the tune ops run too
