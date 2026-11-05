@@ -60,18 +60,8 @@
     "animations": [],
     "textures": []
   },
-  "recovery-rack-a": {
-    "source": "recovery-rack-a.py",
-    "sourceHash": "23ed2fd7b007d673",
-    "outHash": "fb5a7f8c473624f5",
-    "rawBytes": 66300,
-    "bytes": 17816,
-    "triangles": 520,
-    "animations": [],
-    "textures": []
-  },
-  "recovery-rack-b": {
-    "source": "recovery-rack-b.py",
+  "recovery-rack": {
+    "source": "recovery-rack.py",
     "sourceHash": "d0cc367b09e1d19c",
     "outHash": "8c3594f474792be9",
     "rawBytes": 118044,
