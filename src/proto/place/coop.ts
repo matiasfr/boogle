@@ -3,7 +3,7 @@
 // recommendations 2, 3, 9, 11 and 12. Without the flag every hook here is a no-op and nothing is sent.
 //
 // How it stays together, cheapest thing that works:
-// - One authority: the oldest visible coop tab (presence key `placeCoopCargo1`, the world tick it got here). Not the room's lead,
+// - One authority: the oldest visible coop tab (presence key `placeCoopCargo2`, the world tick it got here). Not the room's lead,
 //   which could be a tab without the flag, and not the lowest id, which a newcomer could take. It is the only tab that
 //   accepts a deposit, starts a station's run and ends a stretch, so the last log can't start two runs and a frame can't
 //   overfill: a deposit it can't take goes back on the sender's back.
@@ -17,8 +17,8 @@
 //   system's state comes along for free). A newcomer takes it and is caught up, a follower that stays different for a few
 //   seconds is put right, and a follower that takes over already has everything it needs.
 // - Trains are nudged to the authority's place, and platforms get stable ids so a rider stands on your copy of the deck.
-// - Owner presence tracks a carried great beam or boiler. Departure returns it to its pickup; snapshots clear a
-//   returning carrier's stale shoulder, including ordinary reconciliation after reconnecting.
+// - Big cargo claims and ground poses belong to this authority. Owner presence draws the carried cargo.
+//   Departure returns it to its pickup; snapshots clear stale shoulders, including after reconnecting.
 // - Cart calls and rail loads are reliable events; cargo rides on a stable platform on each tab. Bills stay fixed.
 // - The optional long beam has Owner grips (`placeLongBeam`) and a saved shared pose. While held, snapshots leave its
 //   midpoint alone; only the authority sets it on the fulcrum. A departing grip leaves the other end usable.
@@ -59,6 +59,7 @@ import {
   rockStruck,
   setTrunkTaken,
   trunkTaken,
+  trunkDown,
   type BigThing,
   type Rock,
   type Tree,
@@ -74,6 +75,21 @@ import { callTrain } from './rail.ts';
 import type { TrainSave } from './cargo.ts';
 import { COOP_IDENTITY, currentCoopPeer } from './coop-identity.ts';
 import { flyToStock, type StationRun } from './stations.ts';
+import {
+  bigCargo,
+  cargoGround,
+  isBigCargo,
+  moveCargo,
+  validCargo,
+  validGround,
+  type BigCargo,
+  type CargoState,
+  type GroundCargo,
+} from './big-cargo.ts';
+import { H, insidePlace } from './terrain.ts';
+import { me } from '../../player/player.ts';
+import { PLAYER_R } from '../../constants.ts';
+import { sweepSphere } from '../../physics/engine.ts';
 
 type Api = {
   snapAll: () => void;
@@ -153,6 +169,7 @@ function applyFull(a: Api, j: Snap, announce = true) {
   // A same-generation snapshot can precede our request on the authority's channel.
   // Keep that reservation/receipt alive; only a reset invalidates the transaction.
   if (j.gen !== gen) {
+    bigPending = null;
     clearHarvest();
     resetGotHistory();
     announce = false;
@@ -163,6 +180,7 @@ function applyFull(a: Api, j: Snap, announce = true) {
   back.incoming = 0;
   a.clearIncoming();
   applyCoopShared(j.shared, announce);
+  for (const what of ['beam', 'boiler'] as const) acceptBig(what, bigCargo[what]);
   reconcileBig();
   a.run.mode = 'asleep';
   a.snapAll();
@@ -217,6 +235,9 @@ const volatile = (j: Record<string, unknown>) => {
 /** Each second, on a follower: the same run? Small numbers settle on their own; what stays different gets put right. */
 function reconcile(a: Api, j: Snap) {
   reconcileCart(j.shared.depot);
+  const cargo = j.shared.bigCargoV1 as Partial<typeof bigCargo> | undefined;
+  for (const kind of ['beam', 'boiler'] as const) if (validCargo(cargo?.[kind])) acceptBig(kind, cargo[kind]);
+  if (bigPending && bigPending.to !== authorityPeer()) bigPending = null;
   const mine = captureShared();
   miss = discrete(j.shared) === discrete(mine) ? 0 : miss + 1;
   const theirRun = j.shared.run as { mode: string; k: number; head: number };
@@ -341,9 +362,19 @@ function reconcileBig() {
   if (returningBig !== back.big) returningBig = null;
   // Availability alone is insufficient after reconnect: a survivor may already have picked up the returned cargo.
   // Only our pre-disconnect shoulder yields here. A lone/transient reconnect keeps it if nobody reclaimed it.
-  const reclaimed = returningBig && [...peerBig].some(([peer, big]) => remotes.has(peer) && big === returningBig);
-  const consumed = returningBig === 'beam' && beamDelivered();
-  if ((back.big === 'beam' && !trunkTaken()) || (back.big === 'boiler' && job.boiler !== 2) || reclaimed || consumed) {
+  const reclaimed =
+    returningBig &&
+    bigCargo[returningBig].revision === 0 &&
+    [...peerBig].some(([peer, big]) => remotes.has(peer) && big === returningBig);
+  const consumed = back.big === 'beam' && beamDelivered();
+  const lost = back.big && bigCargo[back.big].revision > 0 && bigCargo[back.big].holder !== cargoPeer();
+  if (
+    lost ||
+    (back.big === 'beam' && !trunkTaken()) ||
+    (back.big === 'boiler' && job.boiler !== 2) ||
+    reclaimed ||
+    consumed
+  ) {
     putDownBig();
     returningBig = null;
   }
@@ -375,6 +406,103 @@ function authorityPeer(): string | null {
   return best;
 }
 const amAuthority = () => authorityPeer() === null;
+
+// Pickup and Drop share the existing prototype authority, never the personal dropped-pile save.
+const cargoPeer = () => (COOP ? (net.myPeer ?? '') : 'solo');
+export type BigCargoRequest = {
+  k: 'bigMove';
+  what: BigCargo;
+  action: 'pick' | 'drop';
+  revision: number;
+  p: GroundCargo;
+  to: string;
+  gen: number;
+};
+export type BigCargoReply = {
+  k: 'bigState';
+  what: BigCargo;
+  state: CargoState;
+  gen: number;
+  to?: string;
+  revision?: number;
+};
+let cargoReadyAt = 0;
+let bigPending: { what: BigCargo; to: string; revision: number; action: 'pick' | 'drop' } | null = null;
+function acceptBig(what: BigCargo, state: CargoState) {
+  const changed = JSON.stringify(bigCargo[what]) !== JSON.stringify(state);
+  bigCargo[what] = structuredClone(state);
+  if (what === 'beam') {
+    const taken = state.holder !== null || beamDelivered();
+    if (changed || trunkTaken() !== taken) setTrunkTaken(taken);
+  } else if (job.boiler !== 0 && job.boiler !== 3) job.boiler = state.holder !== null ? 2 : 1;
+  if (bigPending?.what === what && state.revision > bigPending.revision) {
+    bigPending = null;
+  }
+  // The accepted holder survives an election or a lost local request. A deposit
+  // reservation still owns its in-flight beam and must never regrow a shoulder.
+  if (
+    state.holder === cargoPeer() &&
+    back.big !== what &&
+    !pending.some((p) => p.kind === what) &&
+    (what === 'beam' ? !beamDelivered() : job.boiler === 2)
+  ) {
+    shoulder(what);
+    if (what === 'beam') playMark('great beam shouldered');
+  }
+  reconcileBig();
+}
+function returnBig(what: BigCargo) {
+  // Same source recovery as departure; consumed cargo must never reappear.
+  const s = bigCargo[what];
+  acceptBig(what, { revision: s.revision + 1, holder: null, ground: null });
+  save();
+}
+function finishBig(what: BigCargo) {
+  const s = bigCargo[what];
+  if (s.holder !== null || s.ground !== null) bigCargo[what] = { revision: s.revision + 1, holder: null, ground: null };
+}
+function decideBig(what: BigCargo, action: 'pick' | 'drop', by: string, revision: number, p: GroundCargo) {
+  // Freshness can elect a temporary authority before a stalled peer actually leaves.
+  // Do not grant a second claim during that uncertainty; actual departure removes the gate.
+  if (COOP && (document.hidden || [...peers.values()].some((p) => !present(p)))) return false;
+  if (action === 'pick' && Object.values(bigCargo).some((s) => s.holder === by)) return false;
+  const available = what === 'beam' ? trunkDown() && !beamDelivered() : job.boiler === 1;
+  if (action === 'pick' && !available) return false;
+  if (action === 'drop' && (what === 'beam' ? beamDelivered() : job.boiler === 3)) return false;
+  const ground =
+    action === 'drop'
+      ? cargoGround(
+          what,
+          p,
+          (x, z) => (insidePlace(x, z) ? H(x, z) : null),
+          (x, y, z) =>
+            sweepSphere({ x: p.x, y: p.y + 1.1, z: p.z }, { x, y, z }, 0.7, { mask: 0xfffe, thin: 'skip' }) < 0,
+        )
+      : null;
+  const next = moveCargo(bigCargo[what], by, revision, action, ground);
+  if (!next) return false;
+  if (action === 'drop' && !ground) returnBig(what);
+  else acceptBig(what, next);
+  save();
+  return true;
+}
+function requestBig(what: BigCargo, action: 'pick' | 'drop') {
+  if (!me.body || bigPending || (action === 'pick' && back.big)) return false;
+  if (COOP && (!ready || (!amAuthority() && !synced))) return false;
+  const p = { x: me.body.position.x, y: me.body.position.y - PLAYER_R, z: me.body.position.z, yaw: me.yaw };
+  // Adopt a legacy personal shoulder once; subsequent requests always require its accepted owner.
+  if (action === 'drop' && bigCargo[what].revision === 0 && back.big === what) bigCargo[what].holder = cargoPeer();
+  const revision = bigCargo[what].revision,
+    to = COOP ? authorityPeer() : null;
+  if (to) {
+    bigPending = { what, to, revision, action };
+    msg({ k: 'bigMove', what, action, revision, p, to, gen } satisfies BigCargoRequest);
+  } else {
+    if (!decideBig(what, action, cargoPeer(), revision, p)) return false;
+    if (COOP) msg({ k: 'bigState', what, state: bigCargo[what], gen } satisfies BigCargoReply);
+  }
+  return true;
+}
 
 function msg(m: Record<string, unknown>) {
   try {
@@ -503,6 +631,7 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
     }
     case 'reset': {
       if (!count(m.gen) || m.gen <= gen) return;
+      bigPending = null;
       clearHarvest();
       gen = m.gen;
       a.startOver();
@@ -584,14 +713,39 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
     case 'bill':
       if (ready) a.forgeBill?.();
       return;
-    case 'big':
-      if (!ready) return;
-      if (m.what === 'beam' || m.what === 'boiler') peerBig.set(from, m.what);
-      if (m.what === 'beam') setTrunkTaken(true);
-      else if (m.what === 'boiler') job.boiler = 2;
+    case 'bigMove':
+      if (
+        !ready ||
+        !amAuthority() ||
+        m.to !== net.myPeer ||
+        m.gen !== gen ||
+        !isBigCargo(m.what) ||
+        (m.action !== 'pick' && m.action !== 'drop') ||
+        !count(m.revision) ||
+        !validGround(m.p)
+      )
+        return;
+      decideBig(m.what, m.action, from, m.revision, m.p);
+      msg({
+        k: 'bigState',
+        what: m.what,
+        state: bigCargo[m.what],
+        gen,
+        to: from,
+        revision: m.revision,
+      } satisfies BigCargoReply);
+      return;
+    case 'bigState':
+      if (!ready || from !== authorityPeer() || m.gen !== gen || !isBigCargo(m.what) || !validCargo(m.state)) return;
+      acceptBig(m.what, m.state);
+      if (m.to === net.myPeer && bigPending?.what === m.what && bigPending.revision === m.revision) bigPending = null;
+      save();
       return;
     case 'fit':
-      if (ready) a.wakeTrains?.(true);
+      if (ready) {
+        finishBig('boiler');
+        a.wakeTrains?.(true);
+      }
       return;
     case 'express':
       if (count(m.l, lines.length - 1)) expressNow(lines[m.l]!.train.tr);
@@ -622,6 +776,7 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       if (!ready) return;
       const st = frameById(m.id);
       if (!st || !isKind(m.kind) || !Array.isArray(m.have) || !num(m.x) || !num(m.y) || !num(m.z)) return;
+      if (m.kind === 'beam') finishBig('beam');
       if (m.by === net.myPeer) {
         // Acceptance stays acceptance even if a presence gap briefly made us the authority,
         // or the frame already advanced. Never refund an accepted piece.
@@ -696,6 +851,7 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
   }
 }
 function sendStock(st: StationRun, by: string | null, kind: Goods, x: number, y: number, z: number, q = 0) {
+  if (kind === 'beam') finishBig('beam');
   msg({
     k: 'stock',
     id: st.spec.id,
@@ -736,7 +892,10 @@ export const coop = {
   woke: () => COOP && msg({ k: 'wake' }),
   /** A piece left your back for a frame. True: it counts when it lands (solo, or you decide). */
   deposited(st: StationRun, kind: Goods, p: { x: number; y: number; z: number }) {
-    if (!COOP) return true;
+    if (!COOP) {
+      if (kind === 'beam') finishBig('beam');
+      return true;
+    }
     const to = authorityPeer();
     if (to === null) {
       markContribution(st, net.myPeer);
@@ -756,8 +915,13 @@ export const coop = {
   /** A device taken or a slab let down, here: the room's. */
   tech: (what: string) => COOP && msg({ k: 'tech', what }),
   forgeBill: () => COOP && msg({ k: 'bill' }),
-  big: (what: Exclude<BigThing, null>) => COOP && msg({ k: 'big', what }),
-  boilerFitted: () => COOP && msg({ k: 'fit' }),
+  big: (what: Exclude<BigThing, null>) => requestBig(what, 'pick'),
+  dropBig: () => (back.big ? requestBig(back.big, 'drop') : false),
+  bigBusy: () => bigPending !== null,
+  boilerFitted: () => {
+    finishBig('boiler');
+    if (COOP) msg({ k: 'fit' });
+  },
   express(l: number) {
     const tr = lines[l]!.train.tr;
     if (tr.express) return;
@@ -781,6 +945,7 @@ export const coop = {
     }
     startOverArmed = 0;
     el.textContent = 'Start over (both)';
+    bigPending = null;
     clearHarvest();
     gen++;
     msg({ k: 'reset', gen });
@@ -805,6 +970,8 @@ export const coop = {
     if (!COOP || !api) return;
     since = world.tick;
     ready = true;
+    cargoReadyAt = performance.now() + SEEN_MS;
+    if (back.big && bigCargo[back.big].revision === 0) bigCargo[back.big].holder = cargoPeer();
     if (waiting) {
       const j = waiting;
       waiting = null;
@@ -817,6 +984,10 @@ export const coop = {
     const a = api,
       lead = amAuthority();
     const treeLead = authorityPeer();
+    if (bigPending && treeLead === null) {
+      acceptBig(bigPending.what, bigCargo[bigPending.what]);
+      bigPending = null;
+    }
     if (treeLead !== harvestAuthority) {
       // An uncertain request belongs to its former authority. Never reissue it under a new ID.
       clearHarvest(false);
@@ -831,6 +1002,20 @@ export const coop = {
       nudge[k] = d - step;
     });
     if (!lead) return;
+    if (now >= cargoReadyAt) {
+      for (const what of ['beam', 'boiler'] as const) {
+        const holder = bigCargo[what].holder;
+        if (
+          holder &&
+          (holder !== cargoPeer()
+            ? !remotes.has(holder)
+            : back.big !== what &&
+              !pending.some((p) => p.kind === what) &&
+              !(what === 'beam' ? beamDelivered() : job.boiler === 3))
+        )
+          returnBig(what);
+      }
+    }
     // Taking over: a full frame nobody started (the last authority left between the last log and the start).
     const l = lines[a.run.line.k]!;
     const st = a.stationOf(l);
@@ -899,14 +1084,12 @@ export const coop = {
           refund(pending[k]!.kind);
           pending.splice(k, 1);
         }
-      const big = peerBig.get(r.peer);
+      const big = (['beam', 'boiler'] as const).find((what) => bigCargo[what].holder === r.peer) ?? peerBig.get(r.peer);
       // A last presence packet may precede a deposit/fit; never return a consumed piece.
       if (big === 'beam' && trunkTaken() && !beamDelivered()) {
-        setTrunkTaken(false);
-        save();
+        if (bigCargo.beam.holder === r.peer || bigCargo.beam.revision === 0) returnBig('beam');
       } else if (big === 'boiler' && job.boiler === 2) {
-        job.boiler = 1;
-        save();
+        if (bigCargo.boiler.holder === r.peer || bigCargo.boiler.revision === 0) returnBig('boiler');
       }
       budget.delete(r.peer);
       peerBack.delete(r.peer);

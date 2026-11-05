@@ -1,6 +1,7 @@
 // Dropping what's on your back in ?proto=place: each press (right click, pad R3, the touch Drop button) puts one piece on
 // the ground in front of you, rails first, then stone, then logs. Nothing vanishes: dropped pieces stay where they land, in a
 // pile you can pick up again (Interact). Your own, like your back: saved, and not shared in co-op.
+// A great beam or boiler instead goes through the existing shared cargo authority and shoulder interaction.
 import * as THREE from 'three/webgpu';
 import { material } from '../../render/materials.ts';
 import { registerAction, triggerAction } from '../../player/controls.ts';
@@ -11,6 +12,8 @@ import { scene } from '../../render/scene.ts';
 import { flat } from '../flat.ts';
 import { knock, pop } from '../minis/common.ts';
 import { back } from './chop.ts';
+import { coop } from './coop.ts';
+import { bigCargo, freshCargo } from './big-cargo.ts';
 import { count, num, personalSlice, save } from './job.ts';
 import { H } from './land.ts';
 import { LOOK, STEEL } from './look.ts';
@@ -71,7 +74,8 @@ function draw() {
 /** One piece off your back, onto the ground in front of you. */
 function dropOne() {
   const b = me.body;
-  if (!b || back.big) return false;
+  if (!b) return false;
+  if (back.big) return coop.dropBig();
   const kind: PieceKind | null = back.rails ? 'rail' : back.stone ? 'stone' : back.logs ? 'log' : null;
   if (!kind) return false;
   if (kind === 'rail') back.rails--;
@@ -169,6 +173,8 @@ addEventListener('mousedown', (e) => {
 
 /** Start over: the piles go with everything else. */
 export function resetDrops() {
+  bigCargo.beam = freshCargo();
+  bigCargo.boiler = freshCargo();
   flying.clear();
   piles.length = 0;
   draw();
@@ -176,7 +182,7 @@ export function resetDrops() {
 
 /** Each frame: the touch button shows while there's something on your back to drop. */
 export function updateDrop() {
-  document.body.classList.toggle('place-has-load', !back.big && back.logs + back.rails + back.stone > 0);
+  document.body.classList.toggle('place-has-load', !!back.big || back.logs + back.rails + back.stone > 0);
 }
 
 personalSlice('dropped', {

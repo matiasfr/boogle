@@ -419,7 +419,7 @@ function endOfTheRun() {
 let unloadT = 0;
 export function unload(dt: number) {
   unloadT -= dt;
-  if (unloadT > 0 || !me.body) return;
+  if (unloadT > 0 || !me.body || coop.bigBusy()) return;
   const st = activeFrame();
   if (!st) return;
   const p = me.body.position;

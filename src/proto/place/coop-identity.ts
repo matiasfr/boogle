@@ -1,6 +1,6 @@
 // Whole-place wire version: older peers can be visible without sharing this railway.
 // Keep publishing and every capability consumer on the same identity.
-export const COOP_IDENTITY = 'placeCoopCargo1';
+export const COOP_IDENTITY = 'placeCoopCargo2';
 export function currentCoopPeer(pr: Record<string, unknown>): pr is Record<string, unknown> & {
   [COOP_IDENTITY]: number;
 } {

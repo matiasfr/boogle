@@ -20,7 +20,6 @@ import {
   breakRock,
   chop,
   putDownBig,
-  shoulder,
   standing,
   trunkAt,
   trunkDown,
@@ -280,10 +279,7 @@ registerInteractable(() => {
           at: promptAt('trunk', q.x, q.y, q.z),
           r: 10,
           run: () => {
-            shoulder('beam');
-            playMark('great beam shouldered');
             coop.big('beam');
-            save();
           },
         });
     }
@@ -327,10 +323,7 @@ registerInteractable(() => {
         verb: 'Shoulder the boiler',
         at: promptAt('boiler', q.x, q.y + 0.6, q.z),
         run: () => {
-          shoulder('boiler');
-          job.boiler = 2;
           coop.big('boiler');
-          save();
         },
       });
   }
@@ -342,6 +335,7 @@ registerInteractable(() => {
         verb: 'Fit the boiler',
         at: promptAt('fit', c.x, c.y + 2, c.z),
         run: () => {
+          if (coop.bigBusy()) return;
           putDownBig();
           wakeTrains();
           playMark('boiler fitted');

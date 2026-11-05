@@ -16,6 +16,7 @@ import { job, personalSlice, save } from './job.ts';
 import { BUOYS, FAR, FORGE, ORIGIN, SCOPE, lineAt, toWorld, LINES, type LinePoint } from './layout.ts';
 import { addFoot } from './sites.ts';
 import { staticPart } from './town.ts';
+import { bigCargo } from './big-cargo.ts';
 
 // ---------------------------------------------------------------- small finds on the way
 const FIND_SPOTS = [
@@ -150,9 +151,17 @@ const boiler = boilerShape();
 boiler.position.set(BX, BY + 0.55, BZ);
 boiler.visible = false;
 scene.add(boiler);
-export const boilerAt = () => ({ x: BX, y: BY + 1.4, z: BZ });
+export const boilerAt = () => {
+  const p = bigCargo.boiler.ground;
+  return p ? { x: p.x, y: p.y + 1.4, z: p.z } : { x: BX, y: BY + 1.4, z: BZ };
+};
 /** Each frame: it stands there while it's waiting. */
-export const updateBoiler = () => void (boiler.visible = job.boiler === 1);
+export const updateBoiler = () => {
+  boiler.visible = job.boiler === 1;
+  const p = boilerAt();
+  boiler.position.set(p.x, p.y - 0.85, p.z);
+  boiler.rotation.y = bigCargo.boiler.ground?.yaw ?? 0;
+};
 
 // ---------------------------------------------------------------- what points at the next island
 // A big brass telescope on the ridge's top, aimed at the shard. Look through it and you see where this is all going.
