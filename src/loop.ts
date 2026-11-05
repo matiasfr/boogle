@@ -48,6 +48,8 @@
 // anything that registers sync ops or state (src/world/sync.ts), the rules modules (src/world/rules/), or anything a
 // player sees in the first seconds near spawn. Lockstep must not depend on load timing.
 
+import { beginStartupFrame, recordStartupFrame } from './boot/startup-frames.ts';
+
 export type FrameCtx = { now: number; dt: number; elapsed: number };
 /** The one object every hook of every frame gets (no per-frame garbage); main.ts fills it before prePhysics. */
 export const frameCtx: FrameCtx = { now: 0, dt: 0, elapsed: 0 };
@@ -93,6 +95,7 @@ export function beginFrame() {
     list[k]!.last = 0;
   }
   cursor = frameStart = performance.now();
+  beginStartupFrame(frameStart);
   frameId = ++frames;
 }
 export function mark(name: string) {
@@ -105,6 +108,7 @@ export function endFrame(name: string, rendered = true) {
   frameId = 0;
   if (!rendered) {
     record('frame', cursor - frameStart);
+    recordStartupFrame(frameStart, null);
     return;
   }
   last.frames++; // completed renders, not callbacks skipped by the Local output cap
@@ -118,6 +122,7 @@ export function endFrame(name: string, rendered = true) {
       last.top = s.name;
     }
   }
+  recordStartupFrame(frameStart, last);
 }
 export const prof = {
   last,
