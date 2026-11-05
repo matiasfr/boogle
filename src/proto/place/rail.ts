@@ -10,6 +10,8 @@ import { emit } from '../../render/particles.ts';
 import { registerWaterContact } from '../../render/water/contacts.ts';
 import { chuff, clank, thump } from '../../render/machine-sfx.ts';
 import { FIXED, PLAYER_R } from '../../constants.ts';
+import { background } from '../../async.ts';
+import machineUrl from '../../../assets/built/track-layer.glb?url';
 import { angleLerp } from '../../math.ts';
 import {
   BODY,
@@ -42,7 +44,8 @@ import { flat } from '../flat.ts';
 import { LOOK, STEEL, paint, rustTrainU, rustU, softGlow } from './look.ts';
 import { merged } from './part-geometry.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { kitBatch, lookTrack, machineLook, trainLook } from './look-kit.ts';
+import { kitBatch, lookTrack, trainLook } from './look-kit.ts';
+import { machineModel, MACHINE_CHAIRS, MACHINE_GAP } from './machine-model.ts';
 import { solidTrainLoad } from './train-load.ts';
 import { registerSeat } from './seat.ts';
 
@@ -514,11 +517,20 @@ const a = { ...P },
 const RACK_RAILS = 12,
   CRADLE_LOGS = 40;
 const F = 2.4, // m from the head (where pieces land) back to the flatbed's middle
-  GAP = 3.7; // m between the cars' middles
+  GAP = MACHINE_GAP; // m between the cars' middles
 export type Machine = ReturnType<typeof buildMachine>;
 export function buildMachine(owner?: OwnedView) {
-  const kitLook = LOOK.kit ? machineLook(owner) : null;
-  const look = kitLook ?? wagonLook(1, false, owner);
+  const look = machineModel(
+    kitBatch('rail', STEEL, 1, owner),
+    kitBatch('fork', { color: '#f0752c', rough: 0.55 }, 1, owner),
+    kitBatch('sleeper', { color: '#8a6236', grain: { axis: 'x', honey: '#c98a3e' } }, 1, owner),
+  );
+  background(
+    import('../../render/assets.ts').then(async ({ loadAsset }) =>
+      look.install((await loadAsset(machineUrl)).gltf.scene),
+    ),
+    'track-layer model',
+  );
   const flatRock = look.cars[1]!,
     locoRock = look.cars[0]!;
   const pose = { line: null as Line | null, s: 0, sign: 1 };
@@ -551,6 +563,20 @@ export function buildMachine(owner?: OwnedView) {
     loco.platform.id = 'railway:T1:loco';
     flatbed.platform.shared = loco.platform.shared = true;
   }
+  MACHINE_CHAIRS.forEach((x, i) => {
+    const chair = seatMesh();
+    chair.position.set(x, flatbed.hy, -0.65);
+    chair.rotation.y = Math.PI;
+    flatbed.mesh.add(chair);
+    registerSeat({
+      id: `machine-deck-${i}`,
+      group: 'machine-deck',
+      platform: flatbed.platform,
+      at: { x, y: flatbed.hy + seatHeight, z: -0.9, yaw: Math.PI },
+      exit: { x, y: flatbed.hy + PLAYER_R, z: -1.85, yaw: Math.PI },
+      available: () => flatbed.y > -30,
+    });
+  });
   const box3 = (w: number, h: number, d: number, color: string, x: number, y: number, z: number, rx = 0) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color, 0.8));
     m.position.set(x, y, z);
@@ -560,19 +586,7 @@ export function buildMachine(owner?: OwnedView) {
     return m;
   };
   box3(step.hx * 2, step.h, step.hz * 2, '#f4d58a', 0, onDeck - step.h / 2, step.z);
-  // Cradle sides, in the flatbed's +z half (its front), open at the top.
-  let heldRail: THREE.Object3D;
-  if (kitLook) heldRail = kitLook.heldRail;
-  else {
-    box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, 1.45);
-    box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, -0.05);
-    box3(0.08, 0.42, 1.5, '#e8d3a2', -0.75, onDeck + 0.21, 0.7);
-    box3(0.08, 0.42, 1.5, '#e8d3a2', 0.75, onDeck + 0.21, 0.7);
-    // The sleeper chute off the front and the orange arm that holds the next rail out over the head.
-    box3(1.3, 0.05, 0.9, '#e8d3a2', 0, onDeck - 0.3, 1.95, 0.5);
-    box3(0.08, 0.08, 1.2, '#f0752c', 0.62, onDeck + 0.5, 1.9, 0.25);
-    heldRail = box3(RAIL_SIZE.x, RAIL_SIZE.y, 1.9, '#4c5058', 0.62, onDeck + 0.28, 2.1);
-  }
+  const heldRail = look.heldRail;
 
   const railGeo = new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z);
   const rackRails = LOOK.kit
@@ -775,6 +789,7 @@ export function buildMachine(owner?: OwnedView) {
     const alpha = stepAlpha();
     drawCar(flatbed, alpha);
     drawCar(loco, alpha);
+    look.update(rustU.value);
     fire.emissiveIntensity = fireOn * (1 + Math.sin(now * 0.0025) * 0.05 + Math.sin(now * 0.0047) * 0.03);
     if (st.shudder > 0 || st.was) {
       st.was = st.shudder > 0;
