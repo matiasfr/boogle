@@ -46,6 +46,7 @@ function createRealSea() {
     source = fftWaves(),
     foam = bakeFoam(),
     quality = createWaterQuality();
+  quality.update(); // allocate the loading frame at the same scene resolution as the first playable frame
   const fogRange = TSL.uniform(new THREE.Vector2(110, 520));
   const field = shoreFields(atlas);
   const caustics = createCaustics(source.fft.moments, source.fft.bands.indexOf(2), source.fft.size);

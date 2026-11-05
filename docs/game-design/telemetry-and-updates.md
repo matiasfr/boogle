@@ -25,6 +25,12 @@
   `src/proto/mark.ts`; `protoMark` and `protoCount` already reach it. Local.
   Files: [src/proto/playdata/record.ts](../../src/proto/playdata/record.ts),
   [server/src/playdata.ts](../../server/src/playdata.ts), [dev/playtest/cli.ts](../../dev/playtest/cli.ts).
+- **Startup hitches.** For the first 20 seconds after loading, at most 120 invisible `startup frame` marks identify
+  rendered callback intervals or CPU work over 33 ms. Each keeps current and previous CPU sections, the largest named
+  work span in each callback and between callbacks, skipped draws and visibility. A long interval includes the previous
+  callback's work; named spans can overlap and are never summed. These are CPU/API timings, not GPU duration or proof
+  of display presentation. The opt-in startup timeline retains the same marks. Local.
+  File: [src/boot/startup-frames.ts](../../src/boot/startup-frames.ts).
 - **Mixed builds.** Each tab checks `version.json` on start, every 5 min and when it comes back into view. A hidden tab
   reloads onto a newer build at once; a visible one shows "Boogle was updated – reload for the latest version"
   as a sticky notice in the notification lane ([hud.md](hud.md)) with a Reload button, and reloads the next time it is

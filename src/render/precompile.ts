@@ -12,6 +12,7 @@
 //                         promise of anything else; it is awaited in turn
 import { renderer, scene, camera, rendererReady, renderFrame } from './scene.ts';
 import { bootMark, bootSpan, bootSpanMs } from '../boot/timeline.ts';
+import { startupWork } from '../boot/startup-frames.ts';
 
 import type * as THREE from 'three/webgpu';
 
@@ -76,7 +77,8 @@ rendererReady.then(
   () => {
     // Opt-in startup evidence: native pipeline labels contain material IDs, not their scene owners.
     // Keep the actual cache key and object alongside the GPUDevice timings recorded by startup-record.ts.
-    if (new URLSearchParams(location.search).get('startup') === '1') {
+    {
+      const detailed = new URLSearchParams(location.search).get('startup') === '1';
       type RenderObject = {
         object: THREE.Object3D & { geometry?: THREE.BufferGeometry };
         material: THREE.Material;
@@ -92,21 +94,30 @@ rendererReady.then(
         const parents: string[] = [];
         for (let p: THREE.Object3D | null = o.object; p; p = p.parent) parents.push(p.name || `${p.type}#${p.id}`);
         // PerformanceEntry.toJSON omits mark.detail in the benchmark browser.
-        performance.mark(
-          'startup:render-pipeline:' +
-            JSON.stringify({
-              material: `${o.material.name || o.material.type}_${o.material.id}`,
-              object: parents.join(' / '),
-              position: o.object.position.toArray(),
-              geometry: o.object.geometry?.type,
-              async: promises !== null,
-              key: o.pipeline.cacheKey,
-              state: backend.getRenderCacheKey(o),
-              targets: o.context.textures?.map((t) => ({ name: t.name, type: t.type, colorSpace: t.colorSpace })),
-              samples: o.context.sampleCount,
-            }),
-        );
-        create(o, promises);
+        if (detailed)
+          performance.mark(
+            'startup:render-pipeline:' +
+              JSON.stringify({
+                material: `${o.material.name || o.material.type}_${o.material.id}`,
+                object: parents.join(' / '),
+                position: o.object.position.toArray(),
+                geometry: o.object.geometry?.type,
+                async: promises !== null,
+                key: o.pipeline.cacheKey,
+                state: backend.getRenderCacheKey(o),
+                targets: o.context.textures?.map((t) => ({ name: t.name, type: t.type, colorSpace: t.colorSpace })),
+                samples: o.context.sampleCount,
+              }),
+          );
+        const t = performance.now();
+        try {
+          create(o, promises);
+        } finally {
+          startupWork(
+            `pipeline ${o.material.name || o.material.type}_${o.material.id}: ${parents.slice(0, 3).join(' / ')}`,
+            performance.now() - t,
+          );
+        }
       };
     }
     type Backend = {
@@ -148,20 +159,26 @@ rendererReady.then(
           try {
             return build();
           } finally {
-            bootSpan('wgsl', performance.now() - t);
+            const ms = performance.now() - t;
+            bootSpan('wgsl', ms);
+            startupWork('WGSL generation', ms);
           }
         };
         b.buildAsync = async (y) => {
           let t = performance.now();
           const paused = async () => {
-            bootSpan('wgsl', performance.now() - t);
+            const ms = performance.now() - t;
+            bootSpan('wgsl', ms);
+            startupWork('WGSL generation', ms);
             await y();
             t = performance.now();
           };
           try {
             return await buildAsync(paused);
           } finally {
-            bootSpan('wgsl', performance.now() - t);
+            const ms = performance.now() - t;
+            bootSpan('wgsl', ms);
+            startupWork('WGSL generation', ms);
           }
         };
         return b;
@@ -172,7 +189,9 @@ rendererReady.then(
       backend.createProgram = (p) => {
         const t = performance.now();
         createProgram(p);
-        bootSpan('shaderModule', performance.now() - t);
+        const ms = performance.now() - t;
+        bootSpan('shaderModule', ms);
+        startupWork('shader module', ms);
       };
   },
   () => {},

@@ -11,6 +11,7 @@ import { createProps, createClouds } from './render/props.ts';
 import { ball } from './entities/ball/state.ts';
 import { inspect } from './entity/inspect.ts';
 import { me } from './player/player.ts';
+import { avatarReady } from './player/avatars.ts';
 import { net, remotes, connectRoom, onRoomReady } from './netplay/net.ts';
 import { renderPeople, initLobby, lobbyReady } from './player/hud.ts';
 import { initInput } from './player/input.ts';
@@ -82,7 +83,7 @@ function start() {
 }
 
 async function play() {
-  await waterReady; // the opt-in frozen sky completes its single bake behind loading, before the shader deadline
+  await Promise.all([waterReady, avatarReady]); // the real body and frozen sky precede the shader escape deadline
   // A cold Metal cache takes about 14 s on an M1 Max (docs/research/water-metal-cold.md). Slow GPUs (and software
   // rendering) can take longer: past 16 s the game opens anyway and the rest builds on.
   const giveUp = new Promise((r) => setTimeout(r, 16000));

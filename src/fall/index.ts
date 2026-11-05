@@ -100,7 +100,7 @@ const stageAt = new THREE.Vector3();
 function updatePreview(dt: number) {
   // makeAvatar keeps the body hidden until Buddy is ready, including this preview.
   if (!preview) {
-    preview = makeAvatar(me.colorIdx);
+    preview = makeAvatar(me.colorIdx, 'preview');
     preview.rotation.y = YAW;
     previewHolder.add(preview);
     previewProp.nameLabel = createNameLabel(preview);

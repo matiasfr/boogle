@@ -1,7 +1,7 @@
 // The boot timeline: when each loading phase finished, in ms since the navigation started (performance.now()), so a
 // load can be read phase by phase and compared across browsers, cold and warm (docs/plans/loading.md). Local only,
 // always on (a few performance.mark calls). The page's entry (./index.ts) imports it first, so it imports
-// only ../build-id.ts, which has no imports.
+// only lightweight build identity and startup-frame telemetry (no game or renderer imports).
 //
 //   bootMark(name, detail?)   a phase just finished: also a performance.mark('boot:<name>') for the browser's profiler
 //   bootSpan(name, ms)        a duration that isn't a point on the line (WGSL generation inside the shader warm-up)
@@ -20,6 +20,7 @@
 // room (joined a room on our server; it races the GPU, so it can come before or after).
 
 import { BUILD } from '../build-id.ts';
+import { startStartupFrames } from './startup-frames.ts';
 
 performance.setResourceTimingBufferSize(1500); // dev's unbundled modules must not hide the later model downloads
 
@@ -37,7 +38,10 @@ export function bootMark(name: string, detail?: Record<string, number | string>)
     // an old browser's mark takes no options: the line below still has it
   }
   marks.push({ name, t: round(t), detail });
-  if (name === 'interactive') resolveInteractive();
+  if (name === 'interactive') {
+    startStartupFrames(t);
+    resolveInteractive();
+  }
   beacon(JSON.stringify({ mark: name, t: round(t), hidden: document.hidden }));
   if (name === 'interactive' || name === 'room') maybeDone();
 }
