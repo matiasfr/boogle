@@ -108,18 +108,14 @@ export async function play() {
       if (c.content !== 'gift') continue; // a find stays where it's hidden: `tour`, below
       if (Math.hypot(c.x - body.position.x, c.z - body.position.z) > 60) continue;
       const before = place.giftState.count();
-      await travel(c.x, c.z, 1);
-      if (Math.hypot(c.x - body.position.x, c.z - body.position.z) > 3) {
-        if (coopRoute) throw new Error('Co-op route could not walk to a reward crate');
-        // Past the machine, off the deck: down from the track and across.
-        place.backUp();
-        await wait(400);
-        await go(c.x, c.z, 1, 8000);
-      }
-      const t = performance.now();
-      while (place.giftState.count() === before && performance.now() - t < 3000) await wait(50);
+      // Open from the offered interaction range; another player or the feeder can block the crate's centre.
+      await travel(c.x, c.z, 3);
+      if (place.giftState.count() === before) await bot.use(c.x, c.z, 'the reward crate', /Open/);
+      if (!(await bot.until(() => place.giftState.count() < before, 3000, 'opened the reward crate')))
+        throw new Error('Reward crate did not open');
       note(`opened: ${c.content}`);
-      await wait(2200);
+      if (!(await bot.until(() => !showingGift() && !gettingItem(), 8000, 'put away the reward crate')))
+        throw new Error('Reward crate still owns the player');
     }
   };
   const chopUntil = async (fn: () => boolean) => {
