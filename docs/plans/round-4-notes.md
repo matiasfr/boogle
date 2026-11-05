@@ -29,6 +29,62 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 - [x] World cues, shipped; the forge's rail pickup and the great tree from a straight-in walk stay weak.
 - [x] Two-player route, first chop to pier with a reload and a leave-and-rejoin, passed by bots seated on trains ([record](coop-route-verification.md)); standing rides are being tested.
 
+## Solo play, 4 November (owner on iPhone, not yet triaged)
+
+Answers are being collected on the [review page](https://claude.ai/artifact/4MQmeWfAe2nw57T85B7juu). Sessions `mw38b15m`, `mw38s7vf`, `mw390tiz`.
+
+**Owner decisions, 5 November**
+
+- The great trunk can't be shouldered until Station 3 needs it. A dropped log that can't be reached respawns.
+
+**Bugs**
+
+- [ ] Great log soft-lock: shouldered with Station 1 active, no Drop, no room for logs, kept on reload (fix in progress, `codex/big-cargo-drop`).
+- [ ] Ping marks a point about 700 m away: its ray stops at 90 m and falls back to a far point along the view.
+- [ ] D-pad during conversations: across options still need down, and left and right appear to fire Ping and Flag (all 7 flags came in town).
+- [ ] Try-on: the whistle wouldn't go on or back. Top hat worked.
+- [ ] Sprinting into a wall and jumping wobbles left and right.
+- [ ] NPC line split: "Out there", then "the ground does that" after next.
+- [ ] Scarf at Station 3: star rarity not visible, maybe portrait layout.
+- [ ] Landscape on mobile: wasted space on top, pause menu doesn't fit when scrolled.
+- [ ] Update banner cut off, and shows D-pad on touch.
+- [ ] Double jump is performed for you on getting it. Discover it yourself instead.
+- [ ] Glider reveal and the other island's cinematic overlap. Sequence them.
+- [ ] GPU error on returning from the background at 48:17 (`createCommandEncoder`). Possibly related to Grant's freeze; unproven.
+
+**Looks and clipping**
+
+- [ ] Dark particles (crystal, chest, box) and station names, and odd exposure (research: `dark-unlit-exposure`). Owner wants to test fixed exposure or no HDR, with Dev controls.
+- [ ] Shallows look square (fix in progress, `codex/sea-colour-edge`).
+- [ ] New chop: looks buggy, hat stays still while the head moves. Prefers the floating axe from before #924. Leans away from skeletal animation for now.
+- [ ] Clips: straw hat, multi-axe, great log and tall hat with the head; little guys through the train; boiler hides the character.
+- [ ] Jump puzzle platforms cut through terrain and trees; tan platform cuts through the trestle and cliff.
+- [ ] Z-fighting: chest cylinder, tower floor.
+- [ ] Dark brown rectangle on trees. Stones float at stations and should pile on the ground.
+- [ ] Worker's text overlaps Talk; talk camera ends low over the water; dialogue card covers Ping and Jump.
+- [ ] Bench at the first station faces the wrong way and is too near the track. Rotunda needs polish.
+- [ ] Firebox on the track layer's back flashes and reads as a bug. Bell by the bridge read as a reaction to falling in.
+- [ ] Water and sky may be too good next to the world. Performance dipped: 2x down to 1.2x from 18:11, up to 568 draw calls.
+
+**Design**
+
+- [ ] Signs feel heavy handed ([brief](../brainstorms/signposts.md)). Entry into town isn't curated: maybe start at a dock.
+- [ ] Yellow and blue crystals: unclear difference and purpose.
+- [ ] Money: why you earn it, a goofier currency, icon and number display.
+- [ ] Dropped resources despawn; cut trees respawn.
+- [ ] Boiler: nothing says where it goes, and the old train doesn't look incomplete.
+- [ ] Switch gate isn't in front of the train; maybe hint where the rail continues.
+- [ ] Whistling for the cart is unclear (used twice); had to return to the forge for the final rails.
+- [ ] Catching the track layer: slower start or similar. Maybe a distinct machine from the engine you unlock.
+- [ ] Log pickup: scale up and back as each slot fills. Stand prompt fades after sitting.
+- [ ] Hook tower chests are invisible until you land on them; proper axe easy to miss; hanger swapping unclear.
+- [ ] HUD: name and Live count into pause, options button on mobile only, fewer pause stats.
+- [ ] Proper seats with preset poses; enterable finished buildings; museum zoom; hat buyer's reaction (for The Boogler).
+
+**Liked**
+
+- Forge coming together from train supplies, zoom-out on connecting town, "thanks for playing" cutaway, jump puzzle, museum, NPCs (especially the free hat), the water and shallows, crystal pickup animation and sound.
+
 ## No job yet
 
 ### Co-op and carrying

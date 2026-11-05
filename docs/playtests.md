@@ -223,3 +223,11 @@ Owner's answers on the objective marker, trees, rails and the cart: [boogle-2.md
 - Performance was fine: frame p50 17 ms on both, p95 18 on the Mac and 20 on Grant's. Worst stalls 677 ms and 497 ms.
 - Unclear from the audio: Grant first loaded "an old version" and needed Start fresh; Matias mentioned annoying separate pop-ups just before starting.
 - Data gaps: `did something together` never marked in 33 minutes of co-op; `chop refused` counts include held presses. Round 4 sessions show no `water=new`, so that run was on the normal sea and sky. The separate `water=new` session (04:32 UTC) stalled 37 s and predates the #775 cold-start fix; that fix is not yet re-checked by a person.
+
+## 2026-11-04 (owner solo on iPhone, the default URL)
+
+Not the replay: Grant couldn't play, so this doesn't answer the two-player questions. First real iPhone play of the new water. Full notes in the [tracker](plans/round-4-notes.md#solo-play-4-november-owner-on-iphone-not-yet-triaged). Finished the run, pier laid at 41:27 on the session clock, including backgrounded time.
+
+- **Works on a device:** loaded fine; the avatar fix held. Performance stepped down from 2x to 1.2x from 18:11.
+- **Broke:** soft-lock from shouldering the great trunk at Station 1. One GPU error on returning from the background.
+- **Loved:** building the forge, the town zoom-out, the NPCs, the museum.
