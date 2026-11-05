@@ -97,16 +97,26 @@ for (const view of views) {
     }
     await wait(6000);
     if (view.name === 'town' && !q.has('noGPU')) {
-      for (let run = 0; run < 2; run++)
+      const { setGraphics } = (await import(
+        '/src/graphics-settings.ts' as string
+      )) as typeof import('../../../src/graphics-settings.ts');
+      const meterCases = q.has('meterAblation') ? [true, false, false, true] : [null, null];
+      for (const [run, meter] of meterCases.entries()) {
+        if (meter !== null) {
+          await setGraphics('meter', meter);
+          await wait(2000);
+        }
         console.log(
           'EXPOSURE GPU ' +
             JSON.stringify({
               run,
               variant: q.get('exposureCase'),
+              meter,
               contention: 'unknown: shared Mac; task runs serially',
               timing: await hardwareTiming(5),
             }),
         );
+      }
     }
     await lockExposure(true);
     const exposure = lookSnapshot().exposure;
