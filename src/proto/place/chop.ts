@@ -34,6 +34,7 @@ import { LAND_TREES, safeTreeFall, shoreTreeCleared } from './tree-catalog.ts';
 import { makeAxes } from './axe-models.ts';
 import { applyChopPose, CHOP_SIDE } from './chop-motion.ts';
 import { reducedMotion } from '../../constants.ts';
+import { bigCargo, freshCargo, validCargo } from './big-cargo.ts';
 
 // ---------------------------------------------------------------- your back
 /** One big thing on your shoulder: it fills your back, and you can't sprint with it. */
@@ -320,6 +321,7 @@ export function validTreeHarvest(v: unknown): v is TreeHarvest {
 export function harvestTree(t: Tree, room: number, axe: number, yaw: number): HarvestResult {
   const state = readTreeHarvest(t);
   if (state.fell) return { state, logs: 0, outcome: 'gone' };
+  if (t.great && !chopHooks.greatReady()) return { state, logs: 0, outcome: 'rebound' };
   if (!t.great && room <= 0) return { state, logs: 0, outcome: 'full' };
   if (t.hardwood && !axe) return { state, logs: 0, outcome: 'rebound' };
   const maxWork = t.great ? GREAT.strokes : 15;
@@ -390,6 +392,16 @@ function solidTree(t: Tree) {
   );
   // The great tree's trunk goes on your shoulder; it isn't in the way after that.
   if (t.great && trunk.taken) return;
+  const ground = t.great ? bigCargo.beam.ground : null;
+  if (ground) {
+    lie.setFromAxisAngle(AXIS_Y, ground.yaw);
+    t.body = addStatic(
+      { kind: 'box', hx: 0.3 * t.size, hy: 0.3 * t.size, hz: h / 2 },
+      { x: ground.x, y: ground.y + 0.3 * t.size, z: ground.z },
+      lie,
+    );
+    return;
+  }
   // A settled log must never appear around the local player's capsule. Move only the intersecting player,
   // sideways off the new footprint, before adding its static solid; every peer performs this for itself.
   const player = me.body;
@@ -530,6 +542,12 @@ function pose(t: Tree, now: number) {
   const bare = t.fall >= 0.75;
   const compact = bare && t.collapsed;
   parts.trunk.setMatrixAt(t.index, taken || t.hardwood || compact ? ZERO : at(2.5));
+  const ground = t.great && !taken ? bigCargo.beam.ground : null;
+  if (ground) {
+    // Cylinder's Y axis lies along the dropped trunk's local Z axis.
+    Q0.setFromEuler(e.set(Math.PI / 2, ground.yaw, 0, 'YXZ'));
+    parts.trunk.setMatrixAt(t.index, out4.compose(P1.set(ground.x, ground.y + 0.63, ground.z), Q0, sv));
+  }
   if (hardwoodIndex !== undefined) parts.hardwood.setMatrixAt(hardwoodIndex, taken || compact ? ZERO : at(2.5));
   // A crown follows the trunk's contact by 80 ms rather than twitching as one rigid stick.
   if (t.fall < 0 && t.shake > 0 && now - t.hitAt < 80) base.makeTranslation(t.x, t.y, t.z);
@@ -595,6 +613,8 @@ function pose(t: Tree, now: number) {
 }
 export const trunkDown = () => greatTree.fall >= 0.75 && !trunk.taken;
 export const trunkAt = () => {
+  const ground = bigCargo.beam.ground;
+  if (ground) return new THREE.Vector3(ground.x, ground.y + 1.4, ground.z);
   const h = 5 * greatTree.size * 0.5;
   return new THREE.Vector3(
     greatTree.x + Math.sin(greatTree.fallYaw) * h,
@@ -752,7 +772,7 @@ function startSwing(x: number, z: number) {
 }
 /** Press: the swing starts now. False while the last one is still going. */
 export function chop(t: Tree) {
-  if (swing.t < TUNE.swingS || !me.body) return false;
+  if (swing.t < TUNE.swingS || !me.body || (t.great && !chopHooks.greatReady())) return false;
   swing.target = t;
   swing.rock = null;
   startSwing(t.x, t.z);
@@ -781,11 +801,13 @@ export function breakRock(q: Rock) {
 }
 /** Under `&coop=1`, ./coop.ts accepts tree work before the local award; rock messages retain their existing meaning. */
 export const chopHooks = {
+  greatReady: () => false,
   harvest: null as ((t: Tree, room: number, axe: number, yaw: number) => void) | null,
   rock: null as ((q: Rock) => void) | null,
 };
 function contact(t: Tree) {
   if (!me.body || t.fall >= 0) return; // someone else's stroke can fell it mid-swing
+  if (t.great && !chopHooks.greatReady()) return;
   const p = me.body.position;
   const room = Math.max(0, Math.min(back.room(), job.rung.axe ? AXE2.logsPerStroke : TUNE.logsPerStroke));
   const yaw = Math.atan2(t.x - p.x, t.z - p.z);
@@ -945,6 +967,15 @@ export const putDownBig = () => {
   back.big = null;
   back.beam = 0;
 };
+
+sharedSlice('bigCargoV1', {
+  get: () => structuredClone(bigCargo),
+  set: (v) => {
+    const j = v as Partial<typeof bigCargo> | null;
+    for (const kind of ['beam', 'boiler'] as const)
+      bigCargo[kind] = validCargo(j?.[kind]) ? structuredClone(j[kind]) : freshCargo();
+  },
+});
 
 sharedSlice('felled', {
   get: () => ({

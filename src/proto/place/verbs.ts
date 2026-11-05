@@ -20,14 +20,13 @@ import {
   breakRock,
   chop,
   putDownBig,
-  shoulder,
   standing,
   trunkAt,
   trunkDown,
   whole,
   type Tree,
 } from './chop.ts';
-import { coop } from './coop.ts';
+import { beamNeeded, coop } from './coop.ts';
 import { onCart, rack, rackTake } from './depot.ts';
 import { forge, rackFrom, rackTop, takeRail } from './forge.ts';
 import { nearestCrate, openCrate, owned, shelfSpot, showing, swapSlot } from './gifts.ts';
@@ -244,7 +243,7 @@ registerInteractable(() => {
     });
   if (job.awake && job.rung.multi) {
     for (const t of TREES) {
-      if (!standing(t)) continue;
+      if (!standing(t) || (t.great && !beamNeeded())) continue;
       const reach = t.great ? 4.6 : 3.2;
       if (Math.hypot(p.x - t.x, p.z - t.z) > reach) continue;
       if (t.great) {
@@ -271,7 +270,7 @@ registerInteractable(() => {
           : { id: `place-rock${q.index}`, verb: 'Break', at: q.at, click: true, run: () => void breakRock(q) },
       );
     }
-    if (trunkDown()) {
+    if (trunkDown() && beamNeeded()) {
       const q = trunkAt();
       if (Math.hypot(p.x - q.x, p.z - q.z) < 6.5)
         (out ??= []).push({
@@ -280,10 +279,7 @@ registerInteractable(() => {
           at: promptAt('trunk', q.x, q.y, q.z),
           r: 10,
           run: () => {
-            shoulder('beam');
-            playMark('great beam shouldered');
             coop.big('beam');
-            save();
           },
         });
     }
@@ -327,10 +323,7 @@ registerInteractable(() => {
         verb: 'Shoulder the boiler',
         at: promptAt('boiler', q.x, q.y + 0.6, q.z),
         run: () => {
-          shoulder('boiler');
-          job.boiler = 2;
           coop.big('boiler');
-          save();
         },
       });
   }
@@ -342,6 +335,7 @@ registerInteractable(() => {
         verb: 'Fit the boiler',
         at: promptAt('fit', c.x, c.y + 2, c.z),
         run: () => {
+          if (coop.bigBusy()) return;
           putDownBig();
           wakeTrains();
           playMark('boiler fitted');

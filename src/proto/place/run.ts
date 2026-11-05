@@ -426,6 +426,9 @@ export function unload(dt: number) {
   if (Math.hypot(p.x - st.x, p.z - st.z) > TUNE.reachStation) return;
   const kind = GOODS.find((g) => back[g] > 0 && st.wants(g) > 0);
   if (!kind) return;
+  // Only the beam competes with a pending Drop. A lost cargo request must never
+  // prevent ordinary logs, rails or stone from reaching their receiver.
+  if (kind === 'beam' && coop.bigBusy()) return;
   unloadT = TUNE.unloadS;
   st.coming[kind]++;
   const counted = coop.deposited(st, kind, p);
