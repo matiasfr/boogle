@@ -2,6 +2,14 @@
 
 _5 November 2026. Partial experiment, not art approval. Work confined to `codex/motion-references`; no push or ship. DESIGN principles: **11. Show, don't tell**, **Small and readable**, and **Code first, images by approval** (generated work remains reference material)._
 
+## Later results, 5 November
+
+This job's generation step was blocked, so later jobs ran it, and the sections below describe that blocked run.
+
+- **Modelling:** [rack-model-compare](rack-model-compare.md) built a recovery rack from text alone and from references. The owner preferred the reference-guided build, with the condition that previz stays steered to the game's look.
+- **GIFs:** Images 2.6 lists GIF output, but `codex exec`'s image tool returned static 12-panel PNGs when asked twice. A native GIF from the Codex app is still being tested.
+- **Keyframes:** six generated stills were useful as silhouettes, mainly low-hand ready and the shoulder cock. Blade direction in the strike and bite was wrong, and shoulders and feet drifted, so don't copy them as measurements.
+
 ## Result and blocking constraint
 
 Captured real Buddy references in `/character/`, inspected an earlier two-handed chop comparison, and prepared the bounded motion/rack experiment. **No image generation was attempted, no generated GIF or frame sequence exists, and neither rack model was built.** There is no evidence yet that an image reference improves the mesh or animation.
