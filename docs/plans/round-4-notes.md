@@ -64,7 +64,7 @@ Answers are being collected on the [review page](https://claude.ai/artifact/4MQm
 - [x] Chest cap and summit floor z-fighting (`633d6ad6`).
 - [x] Pale tree cuts (`8b3d43c6`) and supported stone piles (`590d200a`).
 - [x] Worker text/prompt and conversation framing changes (`ff27ba5b`).
-- [ ] First-stage worker framing still needs its targeted check; do not treat the general conversation patch as proof.
+- [ ] First-stage worker framing: targeted desktop and touch-profile portrait/landscape checks passed on `1b19093f` ([evidence](../research/final-tree-replay-verification.md#first-stage-worker-framing)); actual worker and full card visible. Owner/device approval remains open; not tested on a device.
 - [x] Station bench orientation/aisle (`02582583`) and turntable rim/rails (`02f58ef6`).
 - [x] Firebox grate and calmer glow (`c423fb11`).
 - [ ] Bridge bell's apparent reaction to falling in remains unaddressed.
