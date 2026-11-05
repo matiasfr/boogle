@@ -245,6 +245,7 @@ Both beam grips use `currentCoopPeer` from `coop-identity.ts`, the same compatib
 ## Ancient technology (round 4, exploring)
 
 The glider's sea-gate cinematic waits until the player dismisses the reward reveal and any queued reward cards. The shared unlock, gate state, save and broadcast still happen immediately; only the local camera waits. Reset cancels a pending cinematic.
+**Quarry route continuity (5 November, solo design pass topic 3).** A 40 m strip of graded earth follows the authored railway through the switch gate, with paired alignment stakes at 8 m and 16 m on each side. It remains earth before delivery: no rails, rail collider, station-cost or lever-reach change. Local scenery explains what the gate blocks.
 
 The platforms remain visible from the start. Warm stone bodies, pale landing caps and brass corner keys match the island stone and device brass; the existing hook rings and teal undersides identify puzzle surfaces. The relief shares each pad's existing draw call. Device shafts use 0.1 opacity instead of 0.32, keeping a quiet distant cue in the spawn view. The tower nook's red cloth was a screen in front of its cosmetic crate, not a finish/checkpoint flag; it is removed so the crate and hook ring explain the side trip. These material changes are Local presentation; the optional double-jump course below replaces the first pillar's old reward ledge. Serves DESIGN.md 7 and 11.
 
