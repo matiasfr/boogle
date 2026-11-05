@@ -14,6 +14,7 @@ import { camera, scene } from '../../render/scene.ts';
 import { fanfare, pop } from '../minis/common.ts';
 import { softGlow } from './look.ts';
 import { dismissPointer } from './dismiss-pointer.ts';
+import { headwearTop } from './head-clearance.ts';
 
 export type Got = {
   /** Local presentation identity for a shared unlock; never saved or sent. */
@@ -159,7 +160,12 @@ function setAloft(on: boolean) {
 
 function overHead(out: THREE.Vector3) {
   const b = me.body;
-  if (b) out.set(b.interpolatedPosition.x, b.interpolatedPosition.y + 1.72, b.interpolatedPosition.z);
+  if (b) {
+    const p = b.interpolatedPosition;
+    const crown = me.avatar ? headwearTop(me.avatar) : p.y + 1.18;
+    // Every reward is centred inside SIZE; include the downward half of its bob.
+    out.set(p.x, Math.max(p.y + 1.72, crown + SIZE / 2 + 0.12), p.z);
+  }
   return out;
 }
 
@@ -194,8 +200,13 @@ let cameraWeight = 0;
 camConstraints.push((look, pos) => {
   if (reducedMotion || cameraWeight <= 0 || !me.body) return false;
   const p = me.body.interpolatedPosition;
-  focus.set(p.x, p.y + 1.1, p.z);
-  shot.set(p.x + Math.sin(cam.yaw) * 3.8, p.y + 2.1, p.z + Math.cos(cam.yaw) * 3.8);
+  overHead(top);
+  const middle = Math.max(p.y + 1.1, (p.y - 0.45 + top.y + SIZE / 2) / 2);
+  // Fit feet through reward with room for the reveal box and top HUD, even over a tall hat.
+  const height = top.y + SIZE / 2 - (p.y - 0.45);
+  const distance = Math.max(3.8, height / (2 * Math.tan((camera.fov * Math.PI) / 360) * 0.7));
+  focus.set(p.x, middle, p.z);
+  shot.set(p.x + Math.sin(cam.yaw) * distance, middle + 1, p.z + Math.cos(cam.yaw) * distance);
   camForward(forward);
   pos.lerp(shot, cameraWeight);
   look.addScaledVector(forward, 8).lerp(focus, cameraWeight).addScaledVector(forward, -8);

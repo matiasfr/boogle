@@ -66,15 +66,17 @@ function makeHalt(name: string, k: number, line: Line, s0: number, s1: number, l
   for (const sl of [-1, 1]) part(sl * 1.1, -0.04, 0, 0.3, 0.05, half * 2, '#f2d36a'); // a bright edge: this is the place
   // Under it, down to the ground.
   part(0, ground - low, 0, 2.5, low - 0.5 - ground, half * 2, '#9a9184');
-  // Roof posts, the roof, a bench under it.
-  const post = 3.2;
-  for (const ds of [-3, 3]) part(-sign * -0.8, 0, ds, 0.22, post, 0.22, POST);
-  part(sign * 0.8, post, 0, 2.4, 0.16, 8, WOOD);
-  part(sign * 0.8, post + 0.16, 0, 2.7, 0.14, 8.4, ROOF);
-  part(sign * 0.75, 0, -1.2, 0.5, 0.42, 0.16, POST);
-  part(sign * 0.75, 0, 1.2, 0.5, 0.42, 0.16, POST);
-  part(sign * 0.75, 0.42, 0, 0.56, 0.1, 3, WOOD);
-  part(sign * 1.02, 0.5, 0, 0.1, 0.5, 3, WOOD);
+  // Local +sign x points toward the rails. Face the train from the outer edge,
+  // along from the middle entrance so the rear ramp and the aisle stay clear.
+  const post = 3.2,
+    shelter = -4.8;
+  for (const ds of [-3, 3]) part(-sign * 0.95, 0, shelter + ds, 0.22, post, 0.22, POST);
+  part(-sign * 0.4, post, shelter, 2.4, 0.16, 8, WOOD);
+  part(-sign * 0.4, post + 0.16, shelter, 2.7, 0.14, 8.4, ROOF);
+  part(-sign * 0.75, 0, shelter - 1.2, 0.5, 0.42, 0.16, POST);
+  part(-sign * 0.75, 0, shelter + 1.2, 0.5, 0.42, 0.16, POST);
+  part(-sign * 0.75, 0.42, shelter, 0.56, 0.1, 3, WOOD);
+  part(-sign * 1.02, 0.5, shelter, 0.1, 0.5, 3, WOOD);
   // The signal's mast, at the end the train comes in.
   part(sign * 0.95, 0, half - 0.8, 0.14, 4.4, 0.14, IRON);
   const set = dropSet(boxes, (k) => {
@@ -123,8 +125,10 @@ function makeHalt(name: string, k: number, line: Line, s0: number, s1: number, l
       ),
     );
     for (const ds of [-3, 3])
-      bodies.push(addStatic({ kind: 'box', hx: 0.11, hy: post / 2, hz: 0.11 }, at(-sign * -0.8, post / 2, ds), q));
-    bodies.push(addStatic({ kind: 'box', hx: 0.3, hy: 0.28, hz: 1.5 }, at(sign * 0.8, 0.28, 0), q));
+      bodies.push(
+        addStatic({ kind: 'box', hx: 0.11, hy: post / 2, hz: 0.11 }, at(-sign * 0.95, post / 2, shelter + ds), q),
+      );
+    bodies.push(addStatic({ kind: 'box', hx: 0.3, hy: 0.28, hz: 1.5 }, at(-sign * 0.8, 0.28, shelter), q));
     bodies.push(addStatic({ kind: 'box', hx: 0.07, hy: 2.2, hz: 0.07 }, at(sign * 0.95, 2.2, half - 0.8), q));
     // Ramps: off each end, and off the back at the middle.
     const a = { x: 0, z: 0 },

@@ -78,7 +78,8 @@ export const PADS: Pad[] = [
   { id: 'apron', x: 99, z: 44, top: 26.2, hx: 3.6, hz: 3.6, look: 'stone' },
   // Secrets.
   { id: 'lookout', x: -134, z: -119, top: 19.3, hx: 2, hz: 2, look: 'stone' },
-  { id: 'alcove', x: -36.2, z: -85.5, top: 12, hx: 2.2, hz: 1.6, look: 'wood', ring: 'bridge' },
+  // Keep the original bank approach north of the slab, so its underside cannot mask the ring.
+  { id: 'alcove', x: -40, z: -80.5, top: 12, hx: 2.2, hz: 1.6, look: 'wood', ring: 'bridge' },
   { id: 'loft', x: 110.5, z: 64, top: 28.4, hx: 2.4, hz: 2.8, look: 'stone', ring: 'camp' },
   { id: 'balcony', x: -122, z: 36, top: 24.4, hx: 3, hz: 3, look: 'wood' },
   { id: 'stack', x: 326.8, z: -123.4, top: 15, hx: 3.6, hz: 3.6, look: 'stone' },
@@ -246,8 +247,8 @@ export const SECRETS: Secret[] = [
     gift: 'goggles',
     area: 'timber',
     how: 'hook',
-    x: -36.2,
-    z: -85.5,
+    x: -40,
+    z: -80.5,
     y: top('alcove'),
     after: 'glide',
     from: { x: -41, z: -84 },

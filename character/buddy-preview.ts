@@ -228,7 +228,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
           axes.root,
           chopping ? (time <= CHOP_DURATION ? time : time % CHOP_DURATION) : 0,
           response && response !== 'off' ? response : 'bite',
-          { reducedMotion: worn?.reducedMotion ?? false },
+          { reducedMotion: worn?.reducedMotion ?? false, frame: sockets.back },
         );
         axes.root.visible = true;
       }

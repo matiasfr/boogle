@@ -9,15 +9,21 @@ import {
   destinationName,
 } from './fixtures.ts';
 import { command, note, el, more, button } from './ui.ts';
-import { no, type Tool } from './types.ts';
+import { no, ok, type Tool } from './types.ts';
 
 export const tool: Tool = {
   id: 'scenarios',
   label: 'Test scenarios',
   scope: 'Each Start creates a new disposable solo place room. No grants or shared-room skips.',
-  commands: ['start', 'apply'],
+  commands: ['start', 'apply', 'chop'],
   available: () => null,
   async run(command, args) {
+    if (command === 'chop') {
+      if (typeof args.twoHanded !== 'boolean') return no('twoHanded must be true or false.');
+      const { chopPresentation } = await import('../../proto/place/chop-motion.ts');
+      chopPresentation.twoHanded = args.twoHanded;
+      return ok('Local chop preview updated.', { ...chopPresentation });
+    }
     if (!scenarioName(args.scenario)) return no('Choose a named scenario.');
     if (command === 'start') return launch(args.scenario, args.destination ?? 'spawn');
     const why = fixtureReason();
@@ -25,7 +31,15 @@ export const tool: Tool = {
     return (await import('./place.ts')).stage(args.scenario);
   },
   snapshot: fixture,
-  mount(parent, ctx) {
+  async mount(parent, ctx) {
+    const { chopPresentation } = await import('../../proto/place/chop-motion.ts');
+    const chopLabel = el('label', ' Two-handed chop (retuning trial)');
+    const chop = el('input');
+    chop.type = 'checkbox';
+    chop.checked = chopPresentation.twoHanded;
+    chop.onchange = () => void ctx.run('scenarios', 'chop', { twoHanded: chop.checked });
+    chopLabel.prepend(chop);
+    parent.append(chopLabel);
     note(parent, 'Start creates a new disposable solo room. Current saves stay intact.');
     const picker = el('select');
     picker.setAttribute('aria-label', 'Test scenario');

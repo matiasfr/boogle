@@ -90,7 +90,7 @@ Along the way, seven **crystals** are tucked at spots worth stopping at, the sam
 
 **Shared unlock arrival** (DESIGN.md 4 and 11): when a partner earns the multi-axe, proper axe, pack or movement device, your own copy appears above you through the same reward queue, with its existing name and model. Partner devices do not replay the local tutorial. A newly accepted snapshot transition also presents it, so a snapshot arriving before the event cannot make it silent. Local presentation keys prevent duplicate shows within the run, including a regressed snapshot followed by recovery; reset clears those keys. Initial join/reload snapshots silently remember existing unlocks. No new prose, messages or saved fields; earning remains shared state and the show is Local.
 
-Waiting crates and tool chests have a soft 1.8 m glimmer just above the lid, replacing the 34 m columns. Their physical seals, bob, sparkles and landing flare remain; the brief opening burst is unchanged. Secret crates still have no glimmer. This is Local presentation only.
+Waiting crates and tool chests have a soft 1.8 m glimmer just above the lid, replacing the 34 m columns. Their physical seals, bob, sparkles and landing flare remain; the brief opening burst is unchanged. Secret crates still have no glimmer. The tool chest's rounded lid overhangs the body ends by 2 cm, keeping their faces out of the same plane. This is Local presentation only.
 
 Shop clothes use the same remote validation as box gifts, so a partner also sees the paper hat and other shop stock.
 
@@ -101,6 +101,10 @@ Shop clothes use the same remote validation as box gifts, so a partner also sees
 **The little guys** are mostly life, not labour; the depot's two are the one exception, a real but small job (the owner's "hungry" ladder). Round and stubby, in six colours, carrying logs, hammering at scaffolds, riding the machine and the trains' cab roofs, strolling, waving and following you for a few seconds (at most two at a time), and hopping at milestones. They stand on the ground at the frames. The village's number is how many you can see, up to 28, with someone new coming out of a cottage door each time it rises; three more at each camp, two helpers, four riders, five walking the first path, two at the cart. They walk round buildings and plots not yet built, by the nearer corner, give up on a goal that takes far too long, and have no colliders. Their walk is a waddle driven by how fast they really go: a rock from foot to foot, a bob over each step, feet that lift, hands swinging against them.
 
 Their boots stay planted during each stance while the other foot returns, separately from the torso's smaller rock and bob; soles follow the ground or their existing deck. Idle weight shifts and bounded glances at a nearby player are Local poses. A wave raises its hand first; milestone cheers stagger a crouch, a small hop and a soft landing with a grounded pause between hops. Workers give one brief cheer when their building finishes. These poses follow existing routes and construction facts; they change no deliveries, costs or round timing (DESIGN.md 11, Show, don't tell; little-guys research recommendations 3 and 7).
+
+Machine helpers sit on the clear cab roof during waking and travel, outside the flatbed's cutter guard. Both machine and train riders follow the rendered roof's full transform, including wake shudder and track pitch. Other little guys are kept outside visible car envelopes when their heights overlap; someone below an elevated train is left alone. This is Local visual clearance, preserving routes, train physics and shared state.
+
+The track layer's firebox has a dark iron frame and grate over amber embers. Once awake, its glow varies slowly by at most eight percent instead of flashing by fifty percent. Wake timing, smoke and the surrounding lighting are unchanged.
 
 Their hammering is a small tap, heard only within 16 m and at most five a second, so distant work stays quiet.
 
@@ -126,11 +130,15 @@ Settled train crates use the same idle edge hold on their own top footprint. A s
 
 When a halt appears, anyone intersecting its new foundation, ramps, bench or posts is moved onto its clear middle lane, at the same place along the platform. Each player's tab checks their own body, including when a partner unlocks trains or a snapshot restores a halt. Players already clear of the new solids stay put.
 
+Benches face arriving trains from the platform's outer edge. Each shelter sits 4.8 m along from the middle rear ramp, keeping the entrance and track-side aisle clear. The bench and posts' colliders follow the visible pieces.
+
 The track layer's flatbed is standable. Following the owner's 5 November choice (solo design pass topic 5), each laying departure eases out to its existing speed over two seconds. The pale rear boarding step is 2.8 m wide by 0.6 m deep, with its kinematic collider top exactly level with the visible deck. The existing run snapshot adds bounded departure elapsed time; old snapshots default to cruise. No machine art pass or seat changes. Boarding without sprinting still needs a person's playtest.
 
 First-use carry meshes and the glider's cloth and shadow pipelines warm behind loading; temporary canopy samples are removed before play. The 16-second escape deadline is unchanged. See [first-use measurements](../research/round4-first-use.md) for warm-cache counts and device limits.
 
 **The way back.** The first bridge has its reveal, edge lamps and commuters. Far Head has rockets at both ends and lamps sequencing along the trestle toward home; its reveal does not turn the player's camera. The continuous track is the lasting route home. Rails remain visible at the forge rack and its nearby Interact prompt remains **Take rails**. No replacement arrow, new instruction or marker was added. The Boogler's copy, gift lines, other prompts and banners are unchanged.
+
+Station stone bills form a low pile: six stones rest at their own terrain heights and support the two above. Deposit flights and the settled stock use the same positions.
 
 ### Guidance after removing the objective
 
@@ -257,6 +265,8 @@ The platforms remain visible from the start. Warm stone bodies, pale landing cap
 
 The jump rings track the animated calf pivots, including during a running jump. The first pillar's approach lip sits 4 cm below its landing top, avoiding overlapping coplanar faces. The sea-stack secret has a return hook slab beside the trestle, within 24 m of the stack; the hook returns you to rail height so leaving does not require a swim. Recovery selects existing track surface colliders, including stubs, rather than treating an open line's unfinished pier as built.
 
+Course landings and the lower return clear intersecting tree crowns while retaining harvest IDs. The alcove catwalk and its goggles box sit at local `(-40, -80.5)`, clear of the cliff and trestle, with the original bank approach outside its footprint so the slab cannot mask the hook ring. Height, hook access and the jump puzzle's gaps are unchanged. Needle Bell has one summit deck; the older overlapping lookout floor is removed.
+
 Numbers and places: `src/proto/place/tech-layout.ts`. Research: [movement abilities](../research/movement-abilities.md), [BotW glide target](../research/botw-glide-target.md). Connecting a line gets you to where a device is; you still go and take it (**Take it**, Interact). Devices are one family: a stone drum, turning rings of teal light and a thin teal shaft you can see across the place. All three are shared; what you wear for them shows (rings at the ankles, a spool on the forearm, a pack).
 
 The worn equipment uses the same pure builders and attachment transforms as [Buddy's asset stage](asset-stage.md). Chunky teal bands sit close around the ankle above the foot dome and follow the calf through motion (deep leg folds still produce body intersections); a brass/teal spool sits outside the right forearm on a cuff. The glider folds into a cream roll with teal panels and its brass bar. Without the frame it sits between the shoulders; with the frame the smaller roll is tucked against the underside of the shallow cradle, visible under a full load. It disappears while the canopy is open. The open frame shares the existing bone-driven load socket: narrow rounded straps curve over the shoulders and tuck under the arms with small toggles; its shelf seats a more compact log bundle. Short grey rails with broad flanges lie crosswise in shallow rows in the cradle instead of hiding the head, and stone is seated closer to the body. Full logs still cover the lower edge of the head from behind. All of this is presentation: capacities, costs, unlocks, saves and presence fields are unchanged. Known limitation: partners see the existing shared frame/cargo presentation, but not the rings, spool or folded glider; `moves-view.ts` still owns only one local set of worn technology meshes.
@@ -338,7 +348,7 @@ Work and festival overalls have a fitted low waist, curved front/back bibs, open
 
 ## Departures from the brief
 
-The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2.
+The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2. The graybox turntable has a pale rim and paired dark rails within its existing disc footprint; collision and turning motion are unchanged.
 Far Head and the extended grid aren't in `npm run level-check`, which doesn't know this land: `node dev/economy/place-level.ts` floods it from spawn at the player's slope limit and lists what's reachable in each state of the job.
 Its cradle isn't solid, unlike the rest of it: a second shape on the flatbed's body made you fall through the deck (see below).
 Most buildings are solid blocks you can't go inside; three you can (above).
@@ -567,20 +577,31 @@ Cost: not measured on an iPad this round. M1 Max held 60 fps in every capture (n
 
 ### Axe presentation and stage review
 
+Earned hats use a common head-centred fit for local and remote wearers and shop try-on.
+Shallow bases clear the forehead; enclosing shells retain their authored seating depth.
+Reward reveals clear the current hat's actual bounds plus the
+item's half-height and bob, with camera distance fitted to the whole show's height and
+vertical field of view. Great beams sit
+beside the shared brim envelope instead of crossing through it. These are Local visual
+fits; clothing presence, cargo ownership and interactions are unchanged (DESIGN.md 11).
+
+The boiler uses the same side-clearance envelope at a low carrying height, leaving the
+face and hat visible instead of hovering above the crown. Its world pickup mesh, size,
+ownership and fitting interaction stay unchanged; game and asset stage share this fit.
+
 The equipped starter, multi-axe, proper axe and proper multi-axe share `axe-models.ts`
 with the reward displays and Buddy's Local asset stage. Their handles are 0.64 and 0.80 m
 (previously 0.80 and 1.08 m); the proper head remains broader, brighter and gold-edged.
 The pick points out from an overlapping metal eye on the back of the head. These are
 code-authored toy primitives, not a new GLB, skeleton or skin-weight pipeline.
 
-`chop-motion.ts` owns the single production/stage curve and two-arm pose on the existing
-rig. A short lift precedes the strike, the bite holds for 35 ms, then the tool settles
-into a low two-handed ready pose. Full-back refusal lifts the tool sideways and leans
-back; hardwood refusal recoils sooner. The normal visible tail remains 0.90 s. Contact
-moves from **0.06 to 0.12 s** because the old strike crossed almost its whole arc in
-two rendered frames. The **0.24 s restart interval** and all strokes, logs per stroke,
-work, capacities, costs and saved/wire state remain unchanged. Reduced motion removes
-the additional body lean; the essential tool action and contact timing stay visible.
+`chop-motion.ts` defaults to the pre-#924 floating axe arc in the back socket, without
+two-arm posing or extra body lean (owner: Start animation simple). The current axe meshes,
+**0.12 s contact**, **0.24 s restart interval**, 35 ms bite hold and 0.90 s visible tail remain.
+Dev → Tests → **Two-handed chop (retuning trial)** retains the experimental two-arm pose
+for later work; it is Local, off on every reload and never saved or sent. The asset stage
+uses the same default floating arc and socket. Strokes, yields, costs and saved/wire state
+remain unchanged. Full-back refusal lifts sideways; hardwood refusal recoils sooner.
 
 Local tree contact raycasts the real faceted trunk from the approach direction; accepted
 chips/log flights use that same point. Arm reach is bounded to preserve Buddy's proportions:
@@ -595,6 +616,7 @@ torso proximity; signed nearest-face samples are candidates, not collision proof
 
 Tree contact distinguishes three local cues: a dry bite with a low wooden body and splinters,
 a short hard woody rebound with a blade ring, and a soft strap/wood rattle for a full bag.
+The visible cut is a thin, pale, faceted wood bite seated partly in the bark, rather than a projecting dark box. Accepted work still widens it; a refusal leaves only the existing shallow scuff.
 The bite holds the axe pose briefly, bends the trunk and delays the crown; the rebound pulls
 the axe back and leaves one shallow scuff; the full-bag gesture points back toward the bundle.
 Repeated refusals within a second are quieter. Neither refusal plays a collection melody or

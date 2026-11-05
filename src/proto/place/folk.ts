@@ -259,6 +259,8 @@ export type FolkEnv = {
   machineBusy: () => boolean;
   machine: () => { mesh: THREE.Object3D; top: number };
   trainCar: (line: number) => { mesh: THREE.Object3D; top: number } | null;
+  /** Local drawn car envelopes; walkers give way without changing the train or its physics. */
+  traffic: readonly { mesh: THREE.Object3D; spec: { hx: number; hz: number }; hy: number }[];
   /** The platform and where people gather when a line opens. */
   gather: { x: number; z: number; ux: number; uz: number; lx: number; lz: number; len: number };
   platform: { x: number; y: number; z: number; ux: number; uz: number; up: () => boolean };
@@ -883,12 +885,30 @@ const BEHIND = 6; // m behind the camera's plane before someone isn't drawn: pas
 const look = new THREE.Vector3();
 const wp = new THREE.Vector3();
 function ride(g: Guy, car: { mesh: THREE.Object3D; top: number }, x: number, z: number, yaw: number) {
-  car.mesh.updateWorldMatrix(false, false);
-  wp.set(x, 0, z).applyMatrix4(car.mesh.matrixWorld);
+  car.mesh.updateWorldMatrix(true, false);
+  wp.set(x, car.top + 0.14, z).applyMatrix4(car.mesh.matrixWorld);
   g.x = wp.x;
   g.z = wp.z;
-  g.fy = wp.y + car.top + 0.14; // the car's `top`: its deck over the mesh's origin
-  g.yaw = car.mesh.rotation.y + yaw;
+  g.fy = wp.y; // Follow the actual roof through pitch and wake shudder, including its local height.
+  car.mesh.getWorldQuaternion(q);
+  g.yaw = Math.atan2(2 * (q.w * q.y + q.x * q.z), 1 - 2 * (q.y * q.y + q.z * q.z)) + yaw;
+}
+const trafficFoot: Foot = { x: 0, z: 0, c: 1, s: 0, hw: 0, hd: 0 };
+function clearTraffic(g: Guy) {
+  const ground = g.fy ?? H(g.x, g.z);
+  for (const car of env?.traffic ?? []) {
+    if (!car.mesh.visible) continue;
+    const at = car.mesh.position;
+    // A car on a trestle must not displace someone walking underneath it.
+    if (ground + 0.95 < at.y - car.hy || ground > at.y + car.hy + 0.4) continue;
+    trafficFoot.x = at.x;
+    trafficFoot.z = at.z;
+    trafficFoot.c = Math.cos(car.mesh.rotation.y);
+    trafficFoot.s = Math.sin(car.mesh.rotation.y);
+    trafficFoot.hw = car.spec.hx + 0.15; // include the side racks
+    trafficFoot.hd = car.spec.hz + 0.25;
+    if (outOf(trafficFoot, g, WALL)) g.route.left = -1;
+  }
 }
 
 // ---------------------------------------------------------------- what the rest of the prototype tells them
@@ -1148,7 +1168,7 @@ export function updateFolk(dt: number) {
     else brain(g, dt);
     if (e_ && g.job === 'station' && g.mood === 'ride') {
       const car = e_.machine();
-      ride(g, car, g.seat ? 0.62 : -0.62, -1.15, g.seat ? -0.7 : 0.7);
+      ride(g, car, g.seat ? 0.42 : -0.42, -1.1, g.seat ? -0.7 : 0.7);
     } else if (e_ && g.job === 'rider') {
       const car = e_.trainCar(g.camp);
       if (!car) continue;
@@ -1157,7 +1177,7 @@ export function updateFolk(dt: number) {
       const car = e_.cart();
       if (!car) continue;
       ride(g, car, g.seat ? 0.35 : -0.35, -car.hz - 0.5, 0);
-    }
+    } else clearTraffic(g);
     g.poseTime = g.poseMood === g.mood ? g.poseTime + dt : 0;
     g.poseMood = g.mood;
     let glance = 0;

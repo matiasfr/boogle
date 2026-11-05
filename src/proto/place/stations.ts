@@ -39,6 +39,8 @@ export function flyToStock(st: StationRun, kind: Goods, n: number, from: THREE.V
 }
 const stoneGeo = new THREE.DodecahedronGeometry(0.22, 0),
   stoneMat = material('stone');
+stoneGeo.computeBoundingBox();
+const stoneFoot = -stoneGeo.boundingBox!.min.y;
 export function buildStation(spec0: Station, place: FrameAt) {
   const { x, z, yaw, lx, lz } = place;
   const y = H(x, z);
@@ -191,12 +193,22 @@ export function buildStation(spec0: Station, place: FrameAt) {
       row = Math.floor(n / 8);
     return out.set(railAt.x + lx * across * 0.17, y + 0.28 + row * 0.18, railAt.z + lz * across * 0.17);
   };
-  const stoneAt = (n: number, out = slot) =>
-    out.set(
-      railAt.x + Math.sin(n * 2.4) * (0.3 + n * 0.06),
-      y + 0.18 + (n % 3) * 0.14,
-      railAt.z + Math.cos(n * 2.4) * (0.3 + n * 0.06),
-    );
+  const stoneSlots: THREE.Vector3[] = [];
+  for (let n = 0; n < (spec0.stone ?? 0); n++) {
+    // Six grounded stones support the two upper stones of the bill's small pile.
+    const upper = n >= 6,
+      across = (upper ? n - 6 - 0.5 : (n % 3) - 1) * 0.38,
+      along = upper ? 0 : (Math.floor(n / 3) - 0.5) * 0.38;
+    const px = railAt.x + lx * across - lz * along,
+      pz = railAt.z + lz * across + lx * along;
+    let py = H(px, pz) + stoneFoot;
+    if (upper) {
+      const first = n - 6;
+      py = Math.max(...[first, first + 1, first + 3, first + 4].map((k) => stoneSlots[k]!.y)) + 0.28;
+    }
+    stoneSlots.push(new THREE.Vector3(px, py, pz));
+  }
+  const stoneAt = (n: number, out = slot) => out.copy(stoneSlots[n] ?? railAt);
   const railM = new THREE.Matrix4(),
     railQ = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw),
     one = new THREE.Vector3(1, 1, 1);

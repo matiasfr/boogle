@@ -27,6 +27,7 @@ import {
   heights,
 } from './terrain.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
+import { JUMP_COURSE, JUMP_RECOVERY } from './tech-layout.ts';
 
 export type LandTree = { x: number; y: number; z: number; size: number; hardwood: boolean };
 export const LAND_TREES: LandTree[] = [];
@@ -66,8 +67,22 @@ const hardwoods = LAND_TREES.map((t, i) => ({ t, i }))
   .slice(0, 2);
 for (const { t } of hardwoods) t.hardwood = true;
 
-/** Local clearance only: retain every harvest ID and its accepted state across old/new tabs. */
+const puzzleDecks = [...JUMP_COURSE, ...JUMP_RECOVERY.slabs.map((p) => ({ ...p, top: JUMP_RECOVERY.top }))];
+/** Local scenery clearance only: retain every harvest ID and its accepted state across old/new tabs. */
 export function shoreTreeCleared(x: number, z: number, size: number) {
+  const ground = H(x, z);
+  // Clear the whole crown from both the jumping landings and the lower return walk.
+  // The authored course, heights and gaps stay put; hidden trees retain their catalog slots.
+  if (
+    puzzleDecks.some(
+      (p) =>
+        Math.abs(x - ORIGIN.x - p.x) < p.hx + 2.8 * size &&
+        Math.abs(z - ORIGIN.z - p.z) < p.hz + 2.8 * size &&
+        ground + 13 * size > p.top - 1.2 &&
+        ground < p.top + 2,
+    )
+  )
+    return true;
   if (!SHORE_COAST) return false;
   if (H(x, z) < 3) return true;
   // Include the crown footprint, so neither trunks nor branches intrude on the new grass shoulders.
