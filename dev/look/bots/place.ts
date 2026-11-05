@@ -11,6 +11,7 @@ import { carry, fromPlatform, type Platform } from '../../../src/physics/platfor
 import type { Rock, Tree } from '../../../src/proto/place/chop.ts';
 import { nearest } from '../../../src/proto/place/nearest.ts';
 import { gettingItem, press as putAwayGot } from '../../../src/proto/place/got.ts';
+import { showing as showingGift } from '../../../src/proto/place/gifts.ts';
 import { automaticRails } from '../../../src/proto/place/depot.ts';
 import { CART } from '../../../src/proto/place/layout.ts';
 import { runDoubleJumpCourse } from './double-jump.ts';
@@ -396,7 +397,7 @@ export async function play() {
     const slab = padOf('t0');
     if (
       !(await waitFor(
-        () => !gettingItem() && !tech.move.pull && me.coyote > 0 && bot.dist(slab.x + O, slab.z) < 3,
+        () => !showingGift() && !gettingItem() && !tech.move.pull && me.coyote > 0 && bot.dist(slab.x + O, slab.z) < 3,
         8000,
         'landed on the first hook slab',
       ))
@@ -408,7 +409,7 @@ export async function play() {
       await bot.use(box.x + O, box.z, "the first slab's box", /Open/);
     }
     await waitFor(() => tech.found.has('firstpull'), 3000, "the first slab's box");
-    if (!(await waitFor(() => !gettingItem(), 8000, 'put away the first slab reward')))
+    if (!(await waitFor(() => !showingGift() && !gettingItem(), 8000, 'put away the first slab reward')))
       throw new Error('The first slab reward still owns the player');
   };
   const secondDevice = async () => {
