@@ -19,6 +19,63 @@ export function composition(board: Board) {
   return `await (${paint.toString()})(${JSON.stringify({ ...board, tiles: board.tiles.map(embed), strips: board.strips.map(embed) })});\nexport {};\n`;
 }
 
+/** Frozen comparisons retain every source pixel. One column stays legible at phone width. */
+export async function paintNative(board: Board, name = 'board.png') {
+  const images = await Promise.all(
+    board.tiles.map(async (tile) => {
+      const im = new Image();
+      im.src = tile.image!;
+      await im.decode();
+      return im;
+    }),
+  );
+  const width = Math.max(480, ...images.map((im) => im.width)) + 32;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  const ctx = canvas.getContext('2d')!;
+  const font = Math.ceil(width / 24);
+  const wrap = (value: string) => {
+    ctx.font = `${font}px system-ui`;
+    const lines = [''];
+    for (const word of value.split(/\s+/)) {
+      const i = lines.length - 1;
+      if (ctx.measureText(lines[i] + ' ' + word).width > width - 32) lines.push(word);
+      else lines[i] += (lines[i] ? ' ' : '') + word;
+    }
+    return lines;
+  };
+  const heading = [board.title, board.subtitle, ...board.notices].flatMap(wrap);
+  const labels = board.tiles.map((tile) => [tile.label, tile.note ?? ''].flatMap(wrap));
+  // Integer origins preserve the source pixels; fractional image placement would interpolate rows.
+  const lineHeight = Math.ceil(font * 1.35);
+  canvas.height = Math.ceil(
+    32 +
+      heading.length * lineHeight +
+      images.reduce((n, im, i) => n + im.height + labels[i]!.length * lineHeight + 32, 0),
+  );
+  ctx.fillStyle = '#15202b';
+  ctx.fillRect(0, 0, width, canvas.height);
+  ctx.font = `${font}px system-ui`;
+  ctx.fillStyle = '#eaf0f6';
+  let y = 16;
+  const text = (line: string) => {
+    y += lineHeight;
+    ctx.fillText(line, 16, y);
+  };
+  heading.forEach(text);
+  images.forEach((im, i) => {
+    y += 16;
+    labels[i]!.forEach(text);
+    y += 8;
+    ctx.drawImage(im, 16, y);
+    y += im.height + 8;
+  });
+  const data = canvas.toDataURL('image/png').split(',')[1]!;
+  console.log(`SHOTS BEGIN ${name} ${data.length}`);
+  for (let i = 0; i < data.length; i += 16000) console.log('SHOTS DATA ' + data.slice(i, i + 16000));
+  console.log('SHOTS END');
+}
+
 async function paint(board: Board) {
   const width = 1080,
     pad = 24,
