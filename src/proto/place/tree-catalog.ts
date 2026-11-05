@@ -14,7 +14,19 @@ import {
   TOWN,
   lineAt,
 } from './layout.ts';
-import { CELL, H, PATH_SAMPLES, at, clearMask, gorgeD, heights } from './terrain.ts';
+import {
+  CELL,
+  H,
+  PATH_SAMPLES,
+  SHORE_SAMPLES,
+  at,
+  catalogClearMask,
+  catalogHeights,
+  clearMask,
+  gorgeD,
+  heights,
+} from './terrain.ts';
+import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 
 export type LandTree = { x: number; y: number; z: number; size: number; hardwood: boolean };
 export const LAND_TREES: LandTree[] = [];
@@ -26,14 +38,20 @@ for (let n = 0; n < 2600 && LAND_TREES.length < 400; n++) {
     z = old ? (rng() * 2 - 1) * 248 : HEAD.z + (rng() * 2 - 1) * HEAD.r;
   const i = Math.round((x - GRID.x0) / CELL),
     j = Math.round((z - GRID.z0) / CELL),
-    h = heights[at(i, j)]!;
-  if (h < 4 || clearMask[at(i, j)]! > 0.05 || gorgeD(x, z) < 21) continue;
+    h = catalogHeights[at(i, j)]!;
+  if (h < 4 || catalogClearMask[at(i, j)]! > 0.05 || gorgeD(x, z) < 21) continue;
   if (Math.hypot(x - SPIRE.x, z - SPIRE.z) < 30) continue;
   if (GROVES.some((g) => Math.hypot(x - g.x, z - g.z) < g.r + 6)) continue;
   const grove = Math.sin(x * 0.036 + 1.2) * Math.cos(z * 0.041 - 0.4) + (z < -100 ? 0.8 : 0);
   if (old && grove < 0.15 + rng() * 0.25) continue;
   if (!old && rng() < 0.4) continue;
-  LAND_TREES.push({ x: x + ORIGIN.x, y: h, z: z + ORIGIN.z, size: 0.8 + rng() * 0.7, hardwood: false });
+  LAND_TREES.push({
+    x: x + ORIGIN.x,
+    y: heights[at(i, j)]!,
+    z: z + ORIGIN.z,
+    size: 0.8 + rng() * 0.7,
+    hardwood: false,
+  });
 }
 
 // The two nearest existing trees north of the forge: visible on the later walk back along the village ridge.
@@ -48,10 +66,29 @@ const hardwoods = LAND_TREES.map((t, i) => ({ t, i }))
   .slice(0, 2);
 for (const { t } of hardwoods) t.hardwood = true;
 
+/** Local clearance only: retain every harvest ID and its accepted state across old/new tabs. */
+export function shoreTreeCleared(x: number, z: number, size: number) {
+  if (!SHORE_COAST) return false;
+  if (H(x, z) < 3) return true;
+  // Include the crown footprint, so neither trunks nor branches intrude on the new grass shoulders.
+  for (let n = 0; n <= 8; n++) {
+    const r = n === 8 ? 0 : 2.6 * size;
+    const px = x - ORIGIN.x + Math.cos((n * Math.PI) / 4) * r;
+    const pz = z - ORIGIN.z + Math.sin((n * Math.PI) / 4) * r;
+    const k = at(Math.round((px - GRID.x0) / CELL), Math.round((pz - GRID.z0) / CELL));
+    if (clearMask[k]! > catalogClearMask[k]! + 0.05) return true;
+  }
+  return false;
+}
+
 type Point = { x: number; z: number; r: number };
 const protectedPoints: Point[] = [];
 for (const path of PATH_SAMPLES)
   for (const [x, z] of path) protectedPoints.push({ x: x + ORIGIN.x, z: z + ORIGIN.z, r: 3 });
+if (SHORE_COAST) {
+  protectedPoints.push({ x: SHORE_LANDING.x + ORIGIN.x, z: SHORE_LANDING.z, r: 9 });
+  for (const [x, z] of SHORE_SAMPLES) protectedPoints.push({ x: x + ORIGIN.x, z, r: 6 });
+}
 for (const link of LINKS) {
   for (let s = 0; s <= link.line.len; s += 1) {
     const p = lineAt(link.line, s, { x: 0, z: 0, ux: 0, uz: 0 });
@@ -63,8 +100,9 @@ for (const link of LINKS) {
     protectedPoints.push({ x: p.x + ORIGIN.x, z: p.z + ORIGIN.z, r: 10 });
   }
 }
-for (const p of [TOWN.start, ...TOWN.wood, ...TOWN.stone, ...TOWN.camps.flatMap((c) => [c.asleep, c.awake])].flat())
+for (const p of [TOWN.start, ...TOWN.wood, ...TOWN.stone, ...TOWN.camps.flatMap((c) => [c.asleep, c.awake])].flat()) {
   protectedPoints.push({ x: p.x + ORIGIN.x, z: p.z + ORIGIN.z, r: Math.hypot(p.w ?? 6, p.d ?? 6) / 2 + 3 });
+}
 for (const p of Object.values(ROOM_PLOTS))
   protectedPoints.push({ x: p.x + ORIGIN.x, z: p.z + ORIGIN.z, r: Math.hypot(p.w, p.d) / 2 + 4 });
 protectedPoints.push(

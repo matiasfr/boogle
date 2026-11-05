@@ -4,6 +4,7 @@
 // the walls hide the seam. Foot paths are polylines with explicit heights; rail lines are curves with explicit ends.
 // docs/research/big-walk-level-design.md, sections 5 and 9, recs 5-7 and 10. Local: nothing here reaches the sim.
 import { smoothstep } from '../../math.ts';
+import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 
 /** Far from today's island, past its soft wall, as the crossing does. */
 export const ORIGIN = { x: 1000, z: 0 };
@@ -408,6 +409,7 @@ export const YARD = { x: -62, z: 20 }; // where the stone lands
 export const SHELF = { x: -90.5, z: 8.5, yaw: -0.87 };
 /** Spawn: at the village's edge, with the path, the shelf, the forge, the stub and the gorge ahead. */
 export const SPAWN = { x: -97, z: 14, yaw: -0.25 };
+export const LANDING = SHORE_COAST ? SHORE_LANDING : SPAWN;
 
 // ---------------------------------------------------------------- the town's plots
 export type Plot = {
@@ -450,7 +452,7 @@ export const TOWN: {
     [
       { type: 'shed', x: -71, z: -21, w: 8, d: 6, yaw: -0.5 },
       { type: 'hall', x: -96, z: -25, w: 8, d: 6, yaw: 0.2, smoke: true },
-      { type: 'water', x: -131, z: 8 },
+      { type: 'water', x: -131, z: SHORE_COAST ? 17 : 8 },
     ],
   ],
   stone: [

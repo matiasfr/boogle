@@ -1,11 +1,37 @@
 # 6.14 Arrival
 
+## Round 4 shore arrival
+
+Round 4's bare URL (room `boogle`) and `?proto=place` land a newcomer's existing trolley/title fall on
+the west-shore clearing at local `(-199,10)`, facing inland. Its level 16 m clearing is 3 m high; a broad
+ramp reaches village height by x=-150. The village is reached by walking a 130 m path between the
+cottages, with one low optional rock hop. The target is 25–35 seconds with looking; the measured walk
+is 27.34 seconds including a three-second look. Mesh, collision and Node tools use one default height grid. Tree IDs retain their original seeded order;
+trees cleared for the shore stay in the catalog but have no local mesh or collider. This terrain, clearance
+and prop placement are local; no sim state or shared snapshot shape changes. Old tabs retain their local coast.
+SPAWN stays at the village: returning players skip the fall, valid saved positions restore, and unsafe
+positions fall back there. Position saves include the ground height; moved ground, water, or an older
+save without that sample falls back to SPAWN. Get unstuck keeps its existing nearby-ground/path recovery.
+
+Each newcomer has their own fall while partners keep playing. `?proto=place&v=village&intro=1`
+keeps the previous landing and terrain in `proto-place-village` (`proto-place-village-coop` with `&coop=1`),
+including room-only invites. It cannot join a shore room. `&greeting=off` keeps the shore and removes the ask.
+Classic (`?classic=1`, room `beach`) is unchanged. Automated look bots still start at SPAWN unless capturing the intro.
+A threshold worker gives a grounded newcomer one visible passing wave and a five-second bubble while
+the machine sleeps: “Machine's asleep. Give us a hand?” Optional Talk can recover it. The ask and heard
+history are Local; a partner waking the shared machine cancels it. There is no camera lock or response gate.
+Playtest marks record stood up, reached town, ask heard, machine woken and entered water, including
+stand-up-to-town and town-to-machine durations. The shore follows option A in
+[shore-arrival research](../research/shore-arrival.md), recommendations 1–6.
+
+## Existing arrival
+
 - **First visit.** With no name saved on this device (`boogle.name`), you fall into the world (below). The card asks for
   nothing but a name box already filled with a friendly random name ("Sunny Otter", "Jolly Puffin", ...), the eight colour
   swatches (one picked at random) and one big Jump in. Pressing Jump in straight away is fine. The loading screen covers it
   until the island can be drawn; Jump in reads "Loading island" until then. Pad A presses it. In the Home Screen app, a first
   visit there (the app's storage starts empty) also offers "Continue in room x · prototype y" under Jump in. Round 4 on the
-  bare URL and `?proto=place` uses this same opening, landing at its village spawn before the existing opening walk.
+  bare URL and `?proto=place` uses this same opening, landing on the shore before the walk into the village.
   Other `?proto=` and `?play` pages, and automated browsers, get the plain card instead. `intro=1` lets a harness inspect
   a new player's opening; `intro=0` skips the fall. These debug flags are not kept by the Home Screen launch memory.
   The card and sky can draw while Buddy finishes preparing; its preview stays hidden until ready, with the same
@@ -41,7 +67,7 @@
   and a shake) and the letters tumble in a loose ring around you at your speed. You land flat with stars (1.8 s; any input
   stands you up after 0.9 s), the letters crash down around you and the cart lands next to you 0.8 s later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's usual 20 m/s, so the 150 m drop is about 7.5 s in the air. Local: only
   your body and the existing flop and knockdown presence go to others, so a friend sees you land on nothing. The same
-  director uses round 4's spawn, facing and terrain height for the player, letters and trolley; classic keeps its original
+  director uses round 4's landing, facing and terrain height for the player, letters and trolley; classic keeps its original
   target. Round 4 waits for the landing before starting its objective and local interactions. Returning players skip the
   opening and restore their round 4 position; no sky position is saved, including a reload during the fall. During the
   opening, your body collides with terrain rather than other arrivals or loose props: simultaneous arrivals cannot land

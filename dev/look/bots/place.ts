@@ -66,8 +66,8 @@ export async function play() {
     return a > -38 && a < 16 ? 'n' : a > -164 && a < -38 ? 'w' : 'e';
   };
   const unreachable = new Set<unknown>();
-  const standing = (t: Tree) =>
-    t.fall < 0 && !t.great && (!t.hardwood || place.job.rung.axe > 0) && !unreachable.has(t);
+  const harvestable = (t: Tree) =>
+    place.standing(t) && !t.great && (!t.hardwood || place.job.rung.axe > 0) && !unreachable.has(t);
   const openCrates = async () => {
     for (const c of place.giftState.crates()) {
       if (c.content !== 'gift') continue; // a find stays where it's hidden: `tour`, below
@@ -92,7 +92,7 @@ export async function play() {
       // Compare walkable approaches, not straight lines across the gorge. A harvesting detour along the
       // river's low shelf is not a useful source route; the ordinary traversal bot still uses real bridges.
       const candidates = (place.TREES as Tree[])
-        .filter(standing)
+        .filter(harvestable)
         .map((t) => ({ t, direct: Math.hypot(t.x - body.position.x, t.z - body.position.z) }))
         .sort((a, b) => a.direct - b.direct);
       let t: Tree | undefined;

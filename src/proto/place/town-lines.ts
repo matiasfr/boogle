@@ -27,6 +27,8 @@ export type ResidentLines = {
 export const RUMOUR_ASK = 'The Boogler?';
 export const BYE = 'Bye';
 export const GO_ON = 'Go on';
+/** Draft shore invitation; not The Boogler's copy. */
+export const SHORE_ASK = "Machine's asleep. Give us a hand?";
 
 export const RESIDENTS: Record<ResidentId, ResidentLines> = {
   // The first resident, in the house: earnest, unemployed, fully set up.

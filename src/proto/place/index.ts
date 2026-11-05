@@ -41,7 +41,8 @@ import { fanfare } from '../minis/common.ts';
 import { drawHeaps, hopTo, topSlot, updateCrates, type Kind } from '../net/crates.ts';
 import { protoCount } from '../count.ts';
 import { pageQuery } from '../flags.ts';
-import { playObjective, playWhere } from '../mark.ts';
+import { playMark, playObjective, playWhere } from '../mark.ts';
+import { SHORE_COAST, SHORE_TOWN } from './shore-layout.ts';
 import { H, buildLand, insidePlace } from './land.ts';
 import { registerPlaceShore } from './water.ts';
 import { clearMoments, showBanner, updateMoments } from './celebrate.ts';
@@ -354,9 +355,10 @@ personalSlice('crystals', {
   get: () => crystals.found.slice(),
   set: (v) => snapCrystals(Array.isArray(v) ? (v as number[]) : []),
 });
-type SavedPose = { x: number; z: number; yaw: number };
-let savedPose: SavedPose | null = null;
-function safePose(p: SavedPose) {
+type Pose = { x: number; z: number; yaw: number };
+type SavedPose = Pose & { ground: number };
+let savedPose: Pose | null = null;
+function safePose(p: Pose) {
   if (![p.x, p.z, p.yaw].every(num) || !insidePlace(p.x, p.z) || H(p.x, p.z) <= 1.6) return false;
   if (feet.some((f) => outOf(f, { x: p.x, z: p.z }, PLAYER_R + 0.2))) return false;
   return !Object.values(rooms).some((r) => {
@@ -365,12 +367,14 @@ function safePose(p: SavedPose) {
   });
 }
 personalSlice('position', {
-  get: () => savedPose,
+  get: () => savedPose && { ...savedPose, ground: H(savedPose.x, savedPose.z) },
   set: (v) => {
     savedPose = null;
     if (!v || typeof v !== 'object') return;
     const p = v as SavedPose;
-    if (safePose(p)) savedPose = { x: p.x, z: p.z, yaw: p.yaw };
+    // Old saves without a ground sample cannot prove the ground has stayed put: use SPAWN.
+    if (num(p.ground) && Math.abs(H(p.x, p.z) - p.ground) < 0.2 && safePose(p))
+      savedPose = { x: p.x, z: p.z, yaw: p.yaw };
   },
 });
 function capturePose() {
@@ -446,6 +450,35 @@ let ready = false,
 const smokeCol = new THREE.Color('#f2efe8');
 let smokeAcc = 0;
 let lastObjective = '';
+// Local playtest timestamps; never drive progress or a shared scene.
+let shoreFalling = false,
+  shoreWet = false;
+let shoreAwake: boolean | null = null;
+let shoreStandAt: number | null = null,
+  shoreTownAt: number | null = null;
+function updateShoreMarks(now: number) {
+  if (!SHORE_COAST) return;
+  if (fallArrival.active) {
+    shoreFalling = true;
+    return;
+  }
+  const b = me.body;
+  if (!b) return;
+  if (shoreFalling && shoreStandAt === null && me.coyote > 0 && !me.down && !me.swimming) {
+    shoreStandAt = now;
+    playMark('stood up');
+  }
+  if (shoreTownAt === null && Math.hypot(b.position.x - toWorld(SHORE_TOWN.x), b.position.z - SHORE_TOWN.z) < 6) {
+    shoreTownAt = now;
+    playMark('reached town', { seconds: shoreStandAt === null ? null : (now - shoreStandAt) / 1000 });
+  }
+  if (shoreAwake === false && job.awake) {
+    playMark('machine woken', { seconds: shoreTownAt === null ? null : (now - shoreTownAt) / 1000 });
+  }
+  shoreAwake = job.awake;
+  if (me.swimming && !shoreWet) playMark('entered water');
+  shoreWet = me.swimming;
+}
 onFrame(
   ({ dt, now }) => {
     const b = me.body;
@@ -492,6 +525,7 @@ onFrame(
       save();
     });
     updatePieces(dt);
+    updateShoreMarks(now);
     if (fallArrival.active) {
       coop.tick(dt, now);
       return; // keep the shared railway running while the opening owns this player's camera and input

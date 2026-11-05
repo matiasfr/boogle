@@ -4,6 +4,7 @@ import { registerShoreProvider } from '../../render/water-render.ts';
 import { gridBedAt } from '../../render/water/shore-providers.ts';
 import { GRID, ORIGIN } from './layout.ts';
 import { heights, NX, NZ, at } from './terrain.ts';
+import { SHORE_COAST } from './shore-layout.ts';
 
 export function registerPlaceShore() {
   const bounds = {
@@ -16,7 +17,7 @@ export function registerPlaceShore() {
     id: 'place',
     bounds,
     seaLevel: SEA,
-    revision: 'finished-place-triangles-2',
+    revision: SHORE_COAST ? 'shore-place-triangles-3' : 'finished-place-triangles-2',
     extent: 1024,
     vertexBed: true, // 2 m atlas corners align with land.ts's 2 m vertices and anti-diagonal.
     bedAt: gridBedAt({

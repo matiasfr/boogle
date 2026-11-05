@@ -7,7 +7,7 @@ import { carry } from '../../physics/platforms.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { drawHeaps } from '../net/crates.ts';
 import { DAY } from './look.ts';
-import { ROCK_LIST, TREES, back, greatTree, shoulder, setTrunkTaken } from './chop.ts';
+import { ROCK_LIST, TREES, back, greatTree, shoulder, setTrunkTaken, standing } from './chop.ts';
 import { clearMoments, pullOn } from './celebrate.ts';
 import { coop } from './coop.ts';
 import { cart, drawRack, rack, snapCart } from './depot.ts';
@@ -285,6 +285,7 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
     log,
     coop,
     TREES,
+    standing,
     ROCK_LIST,
     greatTree,
     TUNE,

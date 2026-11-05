@@ -62,7 +62,17 @@ const HAND = new THREE.Color(SKIN),
 
 // ---------------------------------------------------------------- what each one is doing
 type Job =
-  'stroll' | 'scaffold' | 'hauler' | 'platform' | 'camp' | 'station' | 'rider' | 'commuter' | 'pusher' | 'resident';
+  | 'stroll'
+  | 'scaffold'
+  | 'hauler'
+  | 'platform'
+  | 'camp'
+  | 'station'
+  | 'rider'
+  | 'commuter'
+  | 'pusher'
+  | 'resident'
+  | 'greeter';
 type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat';
 type Guy = {
   k: number;
@@ -235,6 +245,10 @@ const pushers = Array.from({ length: PUSHERS }, (_, k) => make('pusher', 0, 0, {
 /** Someone who lives in a building and stays put (./residents.ts): same on every tab, so two people can talk to them at once. */
 export function addResident(x: number, y: number, z: number, yaw: number, act: Mood, color: string) {
   return make('resident', x, z, { on: false, fy: y, yaw, act, a: { x: yaw, z: 0 }, tint: new THREE.Color(color) });
+}
+/** The shore worker uses the same meshes/poses, directed locally by residents.ts. */
+export function addGreeter(x: number, y: number, z: number) {
+  return make('greeter', x, z, { fy: y, yaw: -Math.PI / 2, tint: new THREE.Color('#f0c030') });
 }
 export type { Guy, Mood };
 
@@ -644,6 +658,8 @@ function brain(g: Guy, dt: number) {
     }
     case 'pusher':
       g.mood = 'walk';
+      return;
+    case 'greeter':
       return;
     case 'resident': {
       // They look up when you come close, and go back to it when you've gone. Local: nobody else's copy has to agree.
@@ -1127,7 +1143,8 @@ export function updateFolk(dt: number) {
     } else g.t += dt * (g.mood === 'hammer' ? 0 : 3);
     g.px = g.x;
     g.pz = g.z;
-    if (g.chat && g.job !== 'station' && g.job !== 'rider' && g.job !== 'resident') chatBrain(g, dt);
+    if (g.chat && g.job !== 'station' && g.job !== 'rider' && g.job !== 'resident' && g.job !== 'greeter')
+      chatBrain(g, dt);
     else brain(g, dt);
     if (e_ && g.job === 'station' && g.mood === 'ride') {
       const car = e_.machine();
