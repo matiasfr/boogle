@@ -394,7 +394,21 @@ export async function play() {
   };
   const secondDevice = async () => {
     await ontoSecondPillar();
-    await takeTech('hook'); // and it pulls you over to the first slab, where a box is waiting: you land on it
+    await takeTech('hook');
+    const slab = padOf('t0');
+    if (
+      !(await waitFor(
+        () => !gettingItem() && !tech.move.pull && me.coyote > 0 && bot.dist(slab.x + O, slab.z) < 3,
+        8000,
+        'landed on the first hook slab',
+      ))
+    )
+      throw new Error('The hook demonstration did not land on the first slab');
+    // The raised chest stands beyond the landing's bump radius. Open it before starting the return pull.
+    if (!tech.found.has('firstpull')) {
+      const box = tech.SECRETS.find((s: { id: string }) => s.id === 'firstpull');
+      await bot.use(box.x + O, box.z, "the first slab's box", /Open/);
+    }
     await waitFor(() => tech.found.has('firstpull'), 3000, "the first slab's box");
     await wait(2500);
     await hookTo('p2');
@@ -560,6 +574,10 @@ export async function play() {
         async () => {
           if (!(await waitFor(() => place.activeFrame() === place.forgeFrame, 30000, 'forge frame ready')))
             throw new Error('Forge frame did not become active');
+          // Cross the completed bridge before choosing timber near the new work site.
+          const d1 = deck(L1);
+          await travel(d1.x, d1.z, 1.2);
+          await travel(place.forgeFrame.x, place.forgeFrame.z, 3);
           await bill(place.forgeFrame);
         },
         () => place.job.forgeBill === 1,
