@@ -52,10 +52,12 @@ const barrier = async (beat: string) => {
 await until(() => !!me.body && (q.get('coop') !== '1' || remotes.size > 0), 'arrival');
 await wait(1800);
 if (who === '1') {
-  if (q.get('coop') === '1') place.coop.skip('trains', place.skipTrains);
-  else place.skipTrains();
+  const stage = q.get('probe') === 'seats' ? 'trains' : 'line2';
+  const skip = stage === 'trains' ? place.skipTrains : place.skipLine2;
+  if (q.get('coop') === '1') place.coop.skip(stage, skip);
+  else skip();
 }
-await until(() => place.job.rung.trains, 'trains staged');
+await until(() => (q.get('probe') === 'seats' ? place.job.rung.trains : place.job.turned), 'stage shared');
 await wait(1800);
 background(
   (async () => {
@@ -124,7 +126,10 @@ background(
       input.keys.add('KeyW');
       await wait(700);
       input.keys.delete('KeyW');
-      if (me.body.position.z < z + FORGE.d / 2 + 0.3) throw new Error('Unfinished forge allowed entry');
+      if (me.body.position.z < z + FORGE.d / 2 + 0.3)
+        throw new Error(
+          `Unfinished forge allowed entry: ${JSON.stringify({ position: me.body.position, crates: forge.crates })}`,
+        );
       console.log(`WORKSHOP ${who} unfinished doorway blocked at ${me.body.position.z}`);
       await barrier('unfinished-checked');
       if (q.get('coop') !== '1') crateIn();
