@@ -17,7 +17,7 @@ Replace the sea on the default Round 4 place and the classic home island with th
 
 ## Design
 
-### Default-switch handoff (4 November 2026): partial, stopped at gate 1
+### Default-switch handoff (4 November 2026): startup and solo pass; co-op route failure
 
 Implementation commit `4edc988d` shares the route selector in `proto/flags.ts`, re-exported through
 `render/water/flags.ts`. Its consumers retain their existing new/legacy branches. The raw `water=new`
@@ -25,44 +25,87 @@ plunge check in `entities/player/state.ts` now also consumes this selector, so f
 existing automatic plunge behavior. The retained demo's explicit opt-in behavior is preserved. No force,
 threshold, terrain, copy, pacing, tone or renderer setting was retuned; no old path was deleted.
 
-**Do not claim tonight's replay is verified.** The owner required stopping at the first failed ordered
-check. Gate 1's second capture failed, and gates 2–6 were not started:
+The earlier legacy capture was a harness query mistake, now superseded. Verification restarted on clean
+`9735fe20`, tree `4e8eb7656e9f69c8d14f1d13f44fecfc9e9ec1e3`, including the plunge-selector correction.
+All new manifests record `changedDuringRun=false`; the trusted broker is `906ddad4`. No game source changed
+in this follow-up. **Do not claim the full human replay is verified: check 3 failed after dry train arrival.**
 
-- [Literal `--query ''` capture](../../.look/evidence/1793836008310-19251/evidence.json): passed on the
-  initial selector edit. Effective route Place, new water ready, Neutral (renderer enum 7 and production
-  post `neutral`), `tod=0.24`, exactly one completed sky bake both after loading and during play, no
-  page/console/GPU errors. Existing `main.play()` awaits `waterReady` before shader warm-up and first
-  play. Boot first frame **5732 ms**, interactive **5733 ms**, sky-bake CPU/submission **304.3 ms**;
-  these are local development-load diagnostics, not phone or GPU timings. Completed-frame sample
-  **59.8/s** is capture health, not a frame-cost benchmark.
-- Opened **only** `default-water-still.png` from that manifest. Visual question: does the literal default
-  Place bank show the replacement water while preserving readable shores? At camera `(972,22,55)`
-  looking at `(1000,0,20)`, transparent turquoise water and caustic detail are visible between faceted
-  banks and the support. This is one bank angle, not all-angle shore acceptance or real-time feel.
-- [Failed `--query 'water=old'` capture](../../.look/evidence/1793836032053-19486/evidence.json): the
-  broker adds `classic=1` to a nonempty query without an explicit route selector. Readback was correctly
-  **legacy**, Neutral, automatic output transform enabled, but the eval expected Place and threw
-  `Wrong route or water mode`. No legacy still was produced. This is a diagnostic setup failure,
-  not evidence of a broken legacy renderer, and not proof of the Place fallback. A resumed check must
-  use `--query 'proto=place&water=old'` for that comparison.
-- Both manifests have `changedDuringRun=false`, source tree `ffb5408a23b7e516b807e01b61ce51b78b403409`.
-  **They predate the shared-selector/plunge correction** in `4edc988d`; browser verification must restart
-  at gate 1 on the final source before advancing. No edits occurred during a run. No forced overflow
-  was attempted. The successful run reported no GPU errors; the failed eval ended before its final
-  graphics-health sample, so it does not supply a second complete GPU verdict.
-- Final code: changed files passed `npx prettier --write`; `npm run check` passed lint, typecheck, unit,
-  registry, levels, assets and build. `npm run sim -- replay` matched **1108 frames** within **0.01**,
-  with no differences or fixture changes. This headless legacy replay does not test new-water plunges.
-- No solo bot, `--compare`, two-player long route, reload/rejoin, final-state comparison, `world-inputs`,
-  `smoke` or `caves` run followed the failure. There are no measured bot failures, beat deltas, water-fall
-  counts or scenario-runtime comparisons from this task. CI speed/regression status remains unverified.
-- Phone emulation was not reached: no mobile first-play or frame-cost measurements, and no runtime proof
-  of mobile quality on default Place. Source still selects `q=mobile` or coarse pointer at **0.6** world
-  resolution. **A real iPhone is untested**, as are Safari, physical gamepad/touch and real-time feel.
-- All work stayed on this branch/worktree. No nonlocal network, push or ship; remote `inflight` was
-  skipped under the local-only restriction. The demo's separately owned sea still ignores `water=old`:
-  the requested any-URL override is implemented for production sea selection, with this explicitly
-  retained prototype exception. Step 7 remains partial and step 8 acceptance remains open.
+**1. Startup and fallback passed.** [Literal `--query ''`](../../.look/evidence/1793836203868-22679/evidence.json)
+selected Place, new water, Neutral enum 7 and production post `neutral`, ready at `tod=0.24` with exactly
+one sky bake after loading and during play. Existing `main.play()` awaits `waterReady` before shader
+warm-up/first play. First frame and interactive were **6157 ms**, with **316.6 ms** sky-bake CPU/submission
+duration. [Explicit `--query 'proto=place&water=old'`](../../.look/evidence/1793836229069-23087/evidence.json)
+selected Place, legacy water, Neutral and automatic output transform; first play was **2548 ms**.
+These are individual local development loads, not phone timings or a cold-cache benchmark. Both runs had
+advancing WebGPU frames and no page/console/graphics errors.
+
+Opened `default-final-still.png` and `legacy-final-still.png`. Visual question: is replacement water visible
+at the same readable Place bank? At `(972,22,55)` looking at `(1000,0,20)`, new water has transparent
+turquoise shallows and caustic detail between the banks and support; legacy is a flat blue strip. This is
+one bank angle, not all-angle acceptance. New water retains surface swimming, automatic high-fall plunges
+and surfacing droplets; frozen daylight replaces the day/night cycle and night-triggered effects.
+
+**2. Full solo comparison passed.** Both the [legacy baseline](../../.look/evidence/1793836253146-23448/evidence.json)
+(`proto=place&shot=play&water=old`) and [new default](../../.look/evidence/1793836475510-26067/evidence.json)
+(`proto=place&shot=play`) finished every expected beat. Read both complete reports and opened both
+`run/end-still.png` images: dry players, banks and track supports remain readable, with the new sky/sea
+visible behind the final avatar. Bot overlays obstruct part of each frame; these are completion evidence.
+The existing offline `node dev/look/playthrough.ts --compare <legacy-run> <new-run>` produced
+[the saved comparison](../../.look/evidence/1793836475510-26067/solo-compare.txt); it launches no browser.
+No shared beat shifted beyond the harness's approximately one-minute noise band. Largest first-mark shift:
+resident noticed, **18 s later**; pier completion **3 s earlier** (23:37 vs 23:40). Both had **zero water
+falls, zero pushing time and zero errors**. Idle was 9:03 vs 9:21. One incidental tumble, one extra second
+jump and one extra rumour mark occurred only in legacy; optional cosmetic rewards also differed. Neither
+solo run marked a crystal or co-op moment; these were not expected-beat failures. Runtime was **4:59 vs
+3:31 wall time** for about 27 game minutes: new water reduced accelerated throughput (about 5x vs 8x).
+This is a measured harness-runtime increase, not a gameplay-pacing change or real-time frame benchmark.
+
+**3. Continuous co-op failed after checkpoint 20.** Exact requested command:
+`node .look/see-client.ts playthrough --players 2 --long --warp-speed 2 --query 'proto=place&shot=play'`.
+[Manifest](../../.look/evidence/1793836793609-27730/evidence.json),
+[full report](../../.look/evidence/1793836793609-27730/run/report.txt),
+[checkpoints](../../.look/evidence/1793836793609-27730/run/checkpoints.json). **755.699 wall seconds**.
+Both P2 reload after Q2 and P1 five-second leave/rejoin after Q4 returned as `already playing` and passed
+the coordinator's identity/partner checks. Both rode to Far Head and arrived dry: P1 at page-clock
+**399.2 s**, P2 at **573.2 s**. Q6 received all **32 logs / 32 rails**, but P2 then failed
+`NEVER: dry co-op landing` before the next walk, at **640.9 s** of its resumed page clock. It was nearly
+stationary at **(1372.365, 24.588, -180.404)** with `coyote=-32.067`; P1 was beside it and had reached
+checkpoint 21, but that checkpoint was not jointly released. All four telemetry segments recorded **zero
+water falls**; two segments each recorded a 2-second pushing interval. This is an actual route failure,
+not the earlier query mistake, and its cause is not established as a water regression.
+
+Opened `run/end-still.png` and `run/p2-end-still.png`: both avatars are visibly on the dry pier worksite,
+close together. Static appearance does not establish the missing grounded contact. Both last-state files
+have `ended=true`, one partner, matching stations/rack/shared rewards and contributions **158 / 164**,
+but **both `atPier=false`**. The route never reached the three-sample final convergence check. Separate
+last-state train positions were sampled at different times and are not a valid final train comparison.
+The final synchronized warp sample had equal ticks **14734** and millimetre train-position differences;
+sampled moving-train gaps peaked at **0.343 / 0.979 m**. Every segment averaged **2.00x**, with transient
+clock deficits up to **11.370 s** in segment 0 and **2.534 s** in segment 2 that caught up by segment end.
+These acceleration warnings remain part of the result. Graphics errors were **none**.
+
+A [short staged contact diagnosis](../../.look/evidence/1793837634626-36051/evidence.json) placed both peers
+once at their recorded positions through the existing broker eval seam, then observed real contacts.
+Opened `pier-contact-still.png` and `p2-pier-contact-still.png`: both stand dry beside the worksite. They
+shifted about 1–3 m during settling and regained `coyote=0.1` with upward contacts. The restored scene's
+job was asleep and trains stopped, so this did **not** reproduce the failed completed-room state. It is
+not a route pass, final-state comparison, or basis for a speculative grounding/bot-assertion change.
+No small verified fix was established; no production physics threshold was changed to force a pass.
+
+**4–6 remain unrun after the real route failure.** No new `world-inputs`, `smoke` or `caves` result or
+scenario-runtime comparison is claimed. All five ordered runs plus the staged diagnosis reported **no
+GPU errors**; no forced instance overflow was attempted. Mobile emulation was not reached, so mobile
+load-to-first-play, frame cost and runtime quality selection remain unverified. Source still selects
+`q=mobile` or coarse pointer at **0.6** world resolution. **A real iPhone is untested**, as are Safari,
+physical gamepad/touch, Retina/mobile thermal performance and real-time feel.
+
+Changed docs were passed through `npx prettier --write`; final `npm run check` **passed** lint, types,
+**297 tests**, registry, levels, assets and build (log: `.look/water-followup-check.log`).
+The implementation's existing physics replay matched **1108 frames**
+within **0.01**; no physics source or fixture changed in this follow-up. No external network, push or ship;
+remote `inflight` remains skipped under the local-only restriction. Classic/prototype defaults and the
+water demo's separately owned sea remain unchanged; the demo still ignores the production `water=old`
+selector. Step 7 remains partial, and step 8 documentation/acceptance remains open.
 
 ### Evidence and the starting point
 
