@@ -48,6 +48,8 @@ for (let i = 0; i < args.length; i++) {
       '--reduced-motion',
       '--trunk-distance',
       '--speed',
+      '--light',
+      '--sparkle',
     ].includes(flag)
   ) {
     const value = args[++i];
@@ -98,6 +100,8 @@ for (const key of [
   'axe',
   'chop',
   'speed',
+  'light',
+  'sparkle',
 ])
   if (options.has(key)) query.set(key, options.get(key)!);
 if (options.has('reduced-motion')) query.set('reducedMotion', options.get('reduced-motion')!);

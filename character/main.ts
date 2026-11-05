@@ -58,8 +58,15 @@ const state = {
   speed: Math.max(0.05, Math.min(4, number('speed', 1))),
   playing: q.get('play') === '1' || !q.has('t'),
   loop: q.get('loop') !== '0',
-  light: (q.get('light') === 'shipped' ? 'shipped' : 'studio') as LightPreset,
-  exposure: Math.max(0.01, Math.min(4, number('exposure', q.get('light') === 'shipped' ? 0.16 : 1))),
+  light: (q.get('light') === 'production'
+    ? 'production'
+    : q.get('light') === 'shipped'
+      ? 'shipped'
+      : 'studio') as LightPreset,
+  exposure: Math.max(
+    0.01,
+    Math.min(4, number('exposure', ['shipped', 'production'].includes(q.get('light') ?? '') ? 0.16 : 1)),
+  ),
 };
 if (state.chop === 'full' && !q.has('amount')) {
   state.amount = cargoCapacity(state.cargo, state.frame);
@@ -460,7 +467,8 @@ async function choose(reframe = true) {
             chop: state.chop,
             reducedMotion: state.reducedMotion,
             trunkDistance: state.trunkDistance,
-            emit: particles.emit,
+            // Inspection-only old-dot control; production always uses the emitter's glint payload.
+            emit: q.get('sparkle') === 'round' ? (p) => particles.emit({ ...p, shape: 'round' }) : particles.emit,
             sparkleIntensity: () => 1 / state.exposure,
             legacyCarrying,
             bodyColor:
@@ -536,6 +544,7 @@ function updateLink() {
     loop: state.loop ? '1' : '0',
     play: state.playing ? '1' : '0',
     light: state.light,
+    sparkle: q.get('sparkle') === 'round' ? 'round' : 'glint',
     exposure: state.exposure,
     fps: SAMPLE_FPS,
     cam: camera.position
@@ -710,7 +719,7 @@ const light = () => {
 };
 select('light').onchange = () => {
   state.light = select('light').value as LightPreset;
-  state.exposure = state.light === 'shipped' ? 0.16 : 1;
+  state.exposure = state.light === 'studio' ? 1 : 0.16;
   light();
 };
 input('exposure').onchange = () => {
@@ -761,6 +770,10 @@ for (let i = 0; i < 7; i++) {
 }
 overlays();
 light();
+// Both shapes live in this one graph; compile it before an inspection playback can summon the axe.
+particles.object.visible = true;
+await lighting.prepare();
+particles.object.visible = false;
 const vector = (key: string) => {
   const v = q.get(key)?.split(',').map(Number);
   return v?.length === 3 && v.every(Number.isFinite) ? v : undefined;
@@ -832,6 +845,7 @@ const api = {
       duration,
       frames,
       draws: renderer.info.render.drawCalls,
+      lighting: lighting.note,
       bounds: selectionBox.min.toArray().concat(selectionBox.max.toArray()),
       link: input('link').value,
       clips: Array.from(select('clip').options).map((o) => o.value),
