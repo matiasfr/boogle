@@ -1,0 +1,34 @@
+{
+  "materialAudit": {
+    "devEnabled": true,
+    "subjects": 2,
+    "comparisons": [
+      {
+        "value": 1,
+        "unchanged": true
+      },
+      {
+        "value": 2,
+        "unchanged": true
+      },
+      {
+        "value": 0,
+        "unchanged": true
+      }
+    ],
+    "originalMaterialsRestored": true,
+    "outputCameraExposureFixed": true,
+    "rampResources": [
+      "http://127.0.0.1:63980/src/debug/dev/buddy-ramp.ts",
+      "http://127.0.0.1:63980/src/debug/diffuse-ramp.ts"
+    ]
+  },
+  "normalStartup": {
+    "devEnabled": false,
+    "subjects": 2,
+    "comparisons": [],
+    "originalMaterialsRestored": true,
+    "outputCameraExposureFixed": true,
+    "rampResources": []
+  }
+}

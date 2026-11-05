@@ -1,0 +1,60 @@
+{
+  "capturedTree": "b53d177536fe9d343cb479069f98a7174212ad04",
+  "files": [
+    {
+      "file": "src/debug/diffuse-ramp.ts",
+      "sha256": "432fe73cb4080ef769ba92c14b46515a3a8ce7a142e0c4feb68017ab076b7a41",
+      "matchesCapturedTree": true
+    },
+    {
+      "file": "src/debug/dev/buddy-ramp.ts",
+      "sha256": "26cd7d4d3be9b6192b9e6af4fab931cad0dd84632779eb793cf39151431f08d1",
+      "matchesCapturedTree": true
+    },
+    {
+      "file": "src/debug/dev/graphics.ts",
+      "sha256": "9a494e8cf5058a4b8c3c599e7851a0cabb3ab46b970bb483ce6d887a11365815",
+      "matchesCapturedTree": true
+    },
+    {
+      "file": "character/main.ts",
+      "sha256": "c15208ed867a3744c06301980fc3fbbddf3873b560ab745129a85a933f5609a4",
+      "matchesCapturedTree": true
+    },
+    {
+      "file": "character/buddy-preview.ts",
+      "sha256": "0a6eb7cba1e46e81d06cc9c89f17eb9323a97efe66b722854f3d52713ed136a6",
+      "matchesCapturedTree": true
+    },
+    {
+      "file": "dev/look/shot-page.ts",
+      "sha256": "f77c80111d261f4d174296b3017b45d693d89527571fe9942cddd8e17cd6946e",
+      "matchesCapturedTree": true
+    },
+    {
+      "file": "dev/look/shot-types.ts",
+      "sha256": "f10e53f47000423d1ec510045afc1844457e297728b04d32c6a8889a84798504",
+      "matchesCapturedTree": true
+    },
+    {
+      "file": "dev/look/beats/buddy-light-ramp.ts",
+      "sha256": "cbb53ebe22d0a4ab138f82521b4c526c4da6901e9ff485784ef215051a4448e2",
+      "matchesCapturedTree": true
+    },
+    {
+      "file": "dev/look/evals/buddy-ramp.ts",
+      "sha256": "d9b8d79300477ea58324f146614b1799466a27ba82fd8ee95307f6cdf23ef54f",
+      "matchesCapturedTree": true
+    },
+    {
+      "file": "dev/look/asset-motion.ts",
+      "sha256": "ab45a181c88bee99227492470ad51283f53763fc6234ecfa95cdef85a657c90c",
+      "matchesCapturedTree": true
+    },
+    {
+      "file": "dev/look/evals/asset-motion.ts",
+      "sha256": "aa870b5941ba826a795abfa19c00a2324d200ba70a194403268a542a31c1d4b0",
+      "matchesCapturedTree": true
+    }
+  ]
+}

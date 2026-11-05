@@ -1,0 +1,1093 @@
+{
+  "question": "Can you read Buddy and the carried logs at a glance without flattening shoulders or cutting the face?",
+  "checks": "check.txt",
+  "sourceProof": "source-proof.json",
+  "sourceBuild": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "b53d177536fe9d343cb479069f98a7174212ad04",
+    "dirty": true
+  },
+  "boards": [
+    {
+      "name": "coral",
+      "file": "coral.png",
+      "sha256": "429006ba75121daaa68235bea109fad2ffa66fa1b620ec8fe4d11b3d0255f0f7",
+      "cells": [
+        {
+          "name": "Current",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 0,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "frameDifference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 2667,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.3544460227272727,
+            "maxChannel": 20
+          },
+          "frameDifference": {
+            "changedPixels": 2667,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.04061360677083333,
+            "maxChannel": 20
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 2706,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.6848579545454545,
+            "maxChannel": 51
+          },
+          "frameDifference": {
+            "changedPixels": 2706,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.07847330729166667,
+            "maxChannel": 51
+          }
+        }
+      ],
+      "repeats": [
+        {
+          "name": "c0-v0.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c0-v1.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c0-v2.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "blue",
+      "file": "blue.png",
+      "sha256": "07cfc3c8b8ab8abe496c949cb6205785d54dd9b6f1c9d96828e4848338828544",
+      "cells": [
+        {
+          "name": "Current",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 0,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "frameDifference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 2692,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.3078693181818182,
+            "maxChannel": 16
+          },
+          "frameDifference": {
+            "changedPixels": 2692,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.035276692708333335,
+            "maxChannel": 16
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 2726,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.5848082386363637,
+            "maxChannel": 36
+          },
+          "frameDifference": {
+            "changedPixels": 2726,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.06700927734375,
+            "maxChannel": 36
+          }
+        }
+      ],
+      "repeats": [
+        {
+          "name": "c0-v0.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c0-v1.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c0-v2.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "violet",
+      "file": "violet.png",
+      "sha256": "64ef4377d54744861a1cb3c3a44db870d6d6ccac5d38de66fbb5f9fa13d9bb97",
+      "cells": [
+        {
+          "name": "Current",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 0,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "frameDifference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 2669,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.3969815340909091,
+            "maxChannel": 16
+          },
+          "frameDifference": {
+            "changedPixels": 2669,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.045487467447916666,
+            "maxChannel": 16
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 2693,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.7486576704545455,
+            "maxChannel": 35
+          },
+          "frameDifference": {
+            "changedPixels": 2693,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.08578369140625,
+            "maxChannel": 35
+          }
+        }
+      ],
+      "repeats": [
+        {
+          "name": "c0-v0.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c0-v1.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c0-v2.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "dark-rear",
+      "file": "dark-rear.png",
+      "sha256": "b9fb60420f89cb9884edd09c84e9a4abd41af5ef58686bbb2e7f88087ed1bd1a",
+      "cells": [
+        {
+          "name": "Current",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 0,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "frameDifference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 2432,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.08651988636363636,
+            "maxChannel": 5
+          },
+          "frameDifference": {
+            "changedPixels": 2432,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.009913736979166667,
+            "maxChannel": 5
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 2574,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.15939630681818182,
+            "maxChannel": 9
+          },
+          "frameDifference": {
+            "changedPixels": 2574,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.01826416015625,
+            "maxChannel": 9
+          }
+        }
+      ],
+      "repeats": [
+        {
+          "name": "c0-v0.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c0-v1.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c0-v2.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "dark-face",
+      "file": "dark-face.png",
+      "sha256": "95ab9528fbb429aad7463e7098a2669e6122ac6e5e6b7de5dc7fb9342e49115a",
+      "cells": [
+        {
+          "name": "Current",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 0,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "frameDifference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 460,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.01028409090909091,
+            "maxChannel": 4
+          },
+          "frameDifference": {
+            "changedPixels": 460,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.0011783854166666668,
+            "maxChannel": 4
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 474,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.02595880681818182,
+            "maxChannel": 8
+          },
+          "frameDifference": {
+            "changedPixels": 474,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.0029744466145833334,
+            "maxChannel": 8
+          }
+        }
+      ],
+      "repeats": [
+        {
+          "name": "c1-v0.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c1-v1.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c1-v2.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "loaded-rear",
+      "file": "loaded-rear.png",
+      "sha256": "81b17a01b019c8ae3b22ceef8b59f853c8199d249d51b8b425a46687a0c528d2",
+      "cells": [
+        {
+          "name": "Current",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 0,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "frameDifference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 3986,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.3425497159090909,
+            "maxChannel": 19
+          },
+          "frameDifference": {
+            "changedPixels": 3986,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.03925048828125,
+            "maxChannel": 19
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 4212,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 1.0098508522727272,
+            "maxChannel": 47
+          },
+          "frameDifference": {
+            "changedPixels": 4212,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.11571207682291666,
+            "maxChannel": 47
+          }
+        }
+      ],
+      "repeats": [
+        {
+          "name": "c0-v0.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c0-v1.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c0-v2.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "loaded-face",
+      "file": "loaded-face.png",
+      "sha256": "344d3a91feaaaeb3ab7517724c97df01a2cc335f40aba341683595c8586bd4bf",
+      "cells": [
+        {
+          "name": "Current",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 0,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "frameDifference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 870,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.05410511363636364,
+            "maxChannel": 15
+          },
+          "frameDifference": {
+            "changedPixels": 870,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.006199544270833334,
+            "maxChannel": 15
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "region": [240, 145, 160, 220],
+          "difference": {
+            "changedPixels": 875,
+            "totalPixels": 35200,
+            "meanAbsoluteChannel": 0.12500710227272727,
+            "maxChannel": 31
+          },
+          "frameDifference": {
+            "changedPixels": 875,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.01432373046875,
+            "maxChannel": 31
+          }
+        }
+      ],
+      "repeats": [
+        {
+          "name": "c1-v0.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c1-v1.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c1-v2.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "close",
+      "file": "close.png",
+      "sha256": "14433f55c675f3752017895fcf6fb244f007a3416e0cc1835205e98a9720e7a1",
+      "cells": [
+        {
+          "name": "Current",
+          "region": [160, 50, 320, 420],
+          "difference": {
+            "changedPixels": 0,
+            "totalPixels": 134400,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "frameDifference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "region": [160, 50, 320, 420],
+          "difference": {
+            "changedPixels": 5202,
+            "totalPixels": 134400,
+            "meanAbsoluteChannel": 0.08551339285714285,
+            "maxChannel": 17
+          },
+          "frameDifference": {
+            "changedPixels": 5202,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.037412109375,
+            "maxChannel": 17
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "region": [160, 50, 320, 420],
+          "difference": {
+            "changedPixels": 5223,
+            "totalPixels": 134400,
+            "meanAbsoluteChannel": 0.20692150297619047,
+            "maxChannel": 30
+          },
+          "frameDifference": {
+            "changedPixels": 5223,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0.09052815755208334,
+            "maxChannel": 30
+          }
+        }
+      ],
+      "repeats": [
+        {
+          "name": "c2-v0.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c2-v1.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c2-v2.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "shore",
+      "file": "shore.png",
+      "sha256": "edd3ea1e78bc7de602adb411c0f7214db003145c965ef4ce9ad335ae29db0fc4",
+      "cells": [
+        {
+          "name": "Current",
+          "region": "whole frame",
+          "difference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "frameDifference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "region": "whole frame",
+          "difference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "frameDifference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "region": "whole frame",
+          "difference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "frameDifference": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        }
+      ],
+      "repeats": [
+        {
+          "name": "c3-v0.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c3-v1.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        },
+        {
+          "name": "c3-v2.png",
+          "immediate": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          },
+          "returned": {
+            "changedPixels": 0,
+            "totalPixels": 307200,
+            "meanAbsoluteChannel": 0,
+            "maxChannel": 0
+          }
+        }
+      ]
+    }
+  ],
+  "motion": [
+    {
+      "mode": "current",
+      "pose": "walk",
+      "evidence": "manifests/ramp-current-walk.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843089397-93090",
+      "nativeConsecutive": "ramp-current-walk-consecutive.png",
+      "fullCycle": "ramp-current-walk-cycle.png",
+      "encodedConsecutive": "ramp-current-walk-video-consecutive.png",
+      "curves": "ramp-current-walk-curves.json",
+      "outliers": "ramp-current-walk-outliers.json",
+      "video": "ramp-current-walk-realtime.webm"
+    },
+    {
+      "mode": "current",
+      "pose": "carry",
+      "evidence": "manifests/ramp-current-carry.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843127905-93600",
+      "nativeConsecutive": "ramp-current-carry-consecutive.png",
+      "fullCycle": "ramp-current-carry-cycle.png",
+      "encodedConsecutive": "ramp-current-carry-video-consecutive.png",
+      "curves": "ramp-current-carry-curves.json",
+      "outliers": "ramp-current-carry-outliers.json",
+      "video": "ramp-current-carry-realtime.webm"
+    },
+    {
+      "mode": "current",
+      "pose": "jump",
+      "evidence": "manifests/ramp-current-jump.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843140663-94063",
+      "nativeConsecutive": "ramp-current-jump-consecutive.png",
+      "fullCycle": "ramp-current-jump-cycle.png",
+      "encodedConsecutive": "ramp-current-jump-video-consecutive.png",
+      "curves": "ramp-current-jump-curves.json",
+      "outliers": "ramp-current-jump-outliers.json",
+      "video": "ramp-current-jump-realtime.webm"
+    },
+    {
+      "mode": "current",
+      "pose": "turn",
+      "evidence": "manifests/ramp-current-turn.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843169398-94541",
+      "nativeConsecutive": "ramp-current-turn-consecutive.png",
+      "fullCycle": "ramp-current-turn-cycle.png",
+      "encodedConsecutive": "ramp-current-turn-video-consecutive.png",
+      "curves": "ramp-current-turn-curves.json",
+      "outliers": "ramp-current-turn-outliers.json",
+      "video": "ramp-current-turn-realtime.webm"
+    },
+    {
+      "mode": "soft",
+      "pose": "walk",
+      "evidence": "manifests/ramp-soft-walk.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843198813-95052",
+      "nativeConsecutive": "ramp-soft-walk-consecutive.png",
+      "fullCycle": "ramp-soft-walk-cycle.png",
+      "encodedConsecutive": "ramp-soft-walk-video-consecutive.png",
+      "curves": "ramp-soft-walk-curves.json",
+      "outliers": "ramp-soft-walk-outliers.json",
+      "video": "ramp-soft-walk-realtime.webm"
+    },
+    {
+      "mode": "soft",
+      "pose": "carry",
+      "evidence": "manifests/ramp-soft-carry.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843227970-95805",
+      "nativeConsecutive": "ramp-soft-carry-consecutive.png",
+      "fullCycle": "ramp-soft-carry-cycle.png",
+      "encodedConsecutive": "ramp-soft-carry-video-consecutive.png",
+      "curves": "ramp-soft-carry-curves.json",
+      "outliers": "ramp-soft-carry-outliers.json",
+      "video": "ramp-soft-carry-realtime.webm"
+    },
+    {
+      "mode": "soft",
+      "pose": "jump",
+      "evidence": "manifests/ramp-soft-jump.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843239621-96203",
+      "nativeConsecutive": "ramp-soft-jump-consecutive.png",
+      "fullCycle": "ramp-soft-jump-cycle.png",
+      "encodedConsecutive": "ramp-soft-jump-video-consecutive.png",
+      "curves": "ramp-soft-jump-curves.json",
+      "outliers": "ramp-soft-jump-outliers.json",
+      "video": "ramp-soft-jump-realtime.webm"
+    },
+    {
+      "mode": "soft",
+      "pose": "turn",
+      "evidence": "manifests/ramp-soft-turn.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843251287-96515",
+      "nativeConsecutive": "ramp-soft-turn-consecutive.png",
+      "fullCycle": "ramp-soft-turn-cycle.png",
+      "encodedConsecutive": "ramp-soft-turn-video-consecutive.png",
+      "curves": "ramp-soft-turn-curves.json",
+      "outliers": "ramp-soft-turn-outliers.json",
+      "video": "ramp-soft-turn-realtime.webm"
+    },
+    {
+      "mode": "strong",
+      "pose": "walk",
+      "evidence": "manifests/ramp-strong-walk.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843263276-97064",
+      "nativeConsecutive": "ramp-strong-walk-consecutive.png",
+      "fullCycle": "ramp-strong-walk-cycle.png",
+      "encodedConsecutive": "ramp-strong-walk-video-consecutive.png",
+      "curves": "ramp-strong-walk-curves.json",
+      "outliers": "ramp-strong-walk-outliers.json",
+      "video": "ramp-strong-walk-realtime.webm"
+    },
+    {
+      "mode": "strong",
+      "pose": "carry",
+      "evidence": "manifests/ramp-strong-carry.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843318625-98993",
+      "nativeConsecutive": "ramp-strong-carry-consecutive.png",
+      "fullCycle": "ramp-strong-carry-cycle.png",
+      "encodedConsecutive": "ramp-strong-carry-video-consecutive.png",
+      "curves": "ramp-strong-carry-curves.json",
+      "outliers": "ramp-strong-carry-outliers.json",
+      "video": "ramp-strong-carry-realtime.webm"
+    },
+    {
+      "mode": "strong",
+      "pose": "jump",
+      "evidence": "manifests/ramp-strong-jump.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843419707-1232",
+      "nativeConsecutive": "ramp-strong-jump-consecutive.png",
+      "fullCycle": "ramp-strong-jump-cycle.png",
+      "encodedConsecutive": "ramp-strong-jump-video-consecutive.png",
+      "curves": "ramp-strong-jump-curves.json",
+      "outliers": "ramp-strong-jump-outliers.json",
+      "video": "ramp-strong-jump-realtime.webm"
+    },
+    {
+      "mode": "strong",
+      "pose": "turn",
+      "evidence": "manifests/ramp-strong-turn.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843439629-1787",
+      "nativeConsecutive": "ramp-strong-turn-consecutive.png",
+      "fullCycle": "ramp-strong-turn-cycle.png",
+      "encodedConsecutive": "ramp-strong-turn-video-consecutive.png",
+      "curves": "ramp-strong-turn-curves.json",
+      "outliers": "ramp-strong-turn-outliers.json",
+      "video": "ramp-strong-turn-realtime.webm"
+    }
+  ],
+  "manifests": {
+    "gpu": "manifests/gpu.json",
+    "materialAudit": "manifests/materialAudit.json",
+    "normalStartup": "manifests/normalStartup.json",
+    "bot": "manifests/bot.json"
+  },
+  "audits": "audits.json",
+  "gpu": "gpu.json",
+  "firstLoad": "first-load.json",
+  "botReport": "bot-report.txt",
+  "limits": [
+    "Real-time smoothness and mobile unverified",
+    "Stage carry is a pose without cargo; jump is grounded clip playback",
+    "GPU contention unknown",
+    "Newly arriving avatars need the Dev switch reapplied"
+  ],
+  "botStatus": "failed: found a crystal and did something together were never marked; no graphics errors"
+}
