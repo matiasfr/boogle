@@ -759,7 +759,11 @@ export async function play() {
     note(`on the platform: ${place.haltUnder()?.name ?? 'no'}, eta ${place.trainEta(l.train.tr, h.stop)}`);
     const callAt = now();
     if (
-      !(await waitFor(() => l.train.tr.stop === h.stop && me.coyote > 0 && !gettingItem(), 90000, 'the train coming'))
+      !(await waitFor(
+        () => l.train.tr.stop === h.stop && me.coyote > 0 && !gettingItem(),
+        coopRoute ? 180000 : 90000, // A partner can call the train away just before it reaches this platform.
+        'the train coming',
+      ))
     )
       throw new Error('Train did not arrive for boarding');
     note(`waited ${(now() - callAt).toFixed(1)} s`);
