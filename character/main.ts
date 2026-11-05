@@ -11,8 +11,9 @@ import { createThumbnails } from './thumbnails.ts';
 import { background } from '../src/async.ts';
 import { material } from '../src/render/materials.ts';
 import { createMotionCapture, bonePoses, endpointSeam } from './motion.ts';
-import { descriptors } from './descriptors.ts';
+import { descriptors, gearAttachments } from './descriptors.ts';
 import { sailCycleSeconds } from '../src/pois/windmills/motion.ts';
+import { cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -22,13 +23,24 @@ const number = (key: string, fallback: number) => {
   const n = Number(q.get(key));
   return q.has(key) && Number.isFinite(n) ? n : fallback;
 };
+const cargoKinds: CargoKind[] = ['logs', 'rails', 'stone', 'beam', 'boiler'];
+const cargo = cargoKinds.find((kind) => kind === q.get('cargo')) ?? 'logs';
+const gearOn = (key: string) => (q.has(key) ? q.get(key) === '1' : q.get('gear') === 'all');
 const state = {
   asset: q.get('asset') ?? 'buddy',
   node: q.get('node') ?? '',
   clip: q.get('clip') ?? '',
   mode: (q.get('mode') === 'played' || (!q.has('mode') && q.has('pose')) ? 'played' : 'raw') as BuddyMode,
-  pose: q.get('pose') ?? 'free',
+  pose: q.get('pose') ?? (number('amount', q.has('cargo') ? 1 : 0) > 0 ? 'carrying' : 'free'),
   hat: q.get('hat') ?? '',
+  rings: gearOn('rings'),
+  spool: gearOn('spool'),
+  glider: gearOn('glider'),
+  frame: gearOn('frame'),
+  canopy: q.get('canopy') === '1',
+  cargo,
+  amount: Math.max(0, Math.floor(number('amount', q.has('cargo') ? 1 : 0))),
+  attachment: q.get('attachment') ?? '',
   time: Math.max(0, number('t', number('hop', 0))),
   speed: Math.max(0.05, Math.min(4, number('speed', 1))),
   playing: q.get('play') === '1' || !q.has('t'),
@@ -249,8 +261,22 @@ function measure() {
   if (!preview) return;
   preview.group.updateMatrixWorld(true);
   selectionBox.makeEmpty();
-  preview.group.traverse((object) => {
-    if ((object as THREE.Mesh).isMesh) selectionBox.expandByObject(object, true);
+  const point = new THREE.Vector3(),
+    instance = new THREE.Matrix4();
+  preview.group.traverseVisible((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const count = object.geometry.getAttribute('position').count;
+    if (object instanceof THREE.InstancedMesh) {
+      // Only drawn instances contribute: hidden cargo and unused capacity must not enlarge the fitted camera.
+      for (let i = 0; i < object.count; i++) {
+        object.getMatrixAt(i, instance);
+        instance.premultiply(object.matrixWorld);
+        for (let v = 0; v < count; v++)
+          selectionBox.expandByPoint(object.getVertexPosition(v, point).applyMatrix4(instance));
+      }
+    } else
+      for (let v = 0; v < count; v++)
+        selectionBox.expandByPoint(object.getVertexPosition(v, point).applyMatrix4(object.matrixWorld));
   });
   if (selectionBox.isEmpty()) selectionBox.set(new THREE.Vector3(-0.5, 0, -0.5), new THREE.Vector3(0.5, 2, 0.5));
   bounds.box.copy(selectionBox);
@@ -392,7 +418,15 @@ async function choose(reframe = true) {
     else if (entry.motion.kind === 'spin') duration = sailCycleSeconds();
     preview =
       state.asset === 'buddy'
-        ? buddy.create(state.mode, state.clip, state.pose, state.hat, q.has('blink') ? number('blink', 1) : undefined)
+        ? buddy.create(state.mode, state.clip, state.pose, state.hat, q.has('blink') ? number('blink', 1) : undefined, {
+            rings: state.rings,
+            spool: state.spool,
+            glider: state.glider,
+            frame: state.frame,
+            canopy: state.canopy,
+            cargo: state.cargo,
+            amount: state.amount,
+          })
         : code
           ? { ...code, figure: code.group }
           : generic(asset!);
@@ -432,6 +466,14 @@ function updateLink() {
     mode: state.mode,
     pose: state.pose,
     hat: state.hat,
+    rings: state.rings ? '1' : '0',
+    spool: state.spool ? '1' : '0',
+    glider: state.glider ? '1' : '0',
+    frame: state.frame ? '1' : '0',
+    canopy: state.canopy ? '1' : '0',
+    cargo: state.cargo,
+    amount: state.amount,
+    attachment: state.attachment,
     speed: state.speed,
     loop: state.loop ? '1' : '0',
     play: state.playing ? '1' : '0',
@@ -474,6 +516,46 @@ for (const key of ['mode', 'pose', 'hat'] as const) {
     void choose(false);
   };
 }
+function syncGearControls() {
+  const capacity = cargoCapacity(state.cargo, state.frame);
+  state.amount = Math.max(0, Math.min(capacity, Math.floor(state.amount)));
+  input('amount').max = String(capacity);
+  input('amount').value = String(state.amount);
+  $('cargo-capacity').textContent = `0–${capacity} ${state.cargo} · ${state.frame ? 'with frame' : 'without frame'}`;
+  select('cargo').value = state.cargo;
+  for (const key of ['rings', 'spool', 'glider', 'frame', 'canopy'] as const) input(key).checked = state[key];
+}
+syncGearControls();
+for (const key of ['rings', 'spool', 'glider', 'frame', 'canopy'] as const)
+  input(key).onchange = () => {
+    state[key] = input(key).checked;
+    syncGearControls();
+    void choose(false);
+  };
+$('all-gear').onclick = () => {
+  state.rings = state.spool = state.glider = state.frame = true;
+  syncGearControls();
+  void choose(false);
+};
+function carryingPose() {
+  if (state.amount > 0) {
+    state.pose = 'carrying';
+    select('pose').value = state.pose;
+  }
+}
+select('cargo').onchange = () => {
+  state.cargo = cargoKinds.find((kind) => kind === select('cargo').value) ?? 'logs';
+  state.amount = Math.max(1, state.amount);
+  syncGearControls();
+  carryingPose();
+  void choose(false);
+};
+input('amount').onchange = () => {
+  state.amount = Number(input('amount').value) || 0;
+  syncGearControls();
+  carryingPose();
+  void choose(false);
+};
 $('play').onclick = () => setPlaying(!state.playing);
 $('reset').onclick = () => {
   setPlaying(false);
@@ -595,9 +677,12 @@ const api = {
     start() {
       if (!preview || !ready) throw new Error('Stage not ready');
       const declaration =
-        state.asset === 'buddy' && state.hat === 'conductor'
-          ? descriptors['conductor-cap']!.motion
-          : assetsById.get(state.asset)!.motion;
+        state.asset === 'buddy' && state.attachment
+          ? gearAttachments[state.attachment]
+          : state.asset === 'buddy' && state.hat === 'conductor'
+            ? descriptors['conductor-cap']!.motion
+            : assetsById.get(state.asset)!.motion;
+      if (!declaration) throw new Error('Unknown attachment: ' + state.attachment);
       if (declaration.kind === 'none' && diagnosticRate === null) return { motion: 'none', declaration };
       input('spin').checked = false;
       controls.enabled = false;
