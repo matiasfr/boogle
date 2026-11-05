@@ -1,5 +1,23 @@
 # Track-layer machine art and deck places
 
+## 5 November follow-up: rail bogies
+
+The owner's later direction supersedes the crawler silhouette below: the machine rides on the rails just laid. This bounded revision keeps every gameplay/collision/seat/exit anchor and the existing fork action. Rail pick-and-place waits for a separately approved storyboard.
+
+Reference roles: `boogle-daily/.look/previz/track-layer-details/shot-2.png`, `shot-3.png` and `shot-4.png` retain chunky gantry, chair, power-pack, bevel and colour language. Their crawler/discs, proportions and extra supports are not measurements or authority. Existing generated sheets and this task's explicit wheel direction supply the revision brief; no new external generation/network use.
+
+Measured: rail centres X ±0.5 m (`rail.ts`), default kit top Y 0.235 m (0.1 m sleeper-top placement + native 0.135 m profile), deck underside Y 0.52 m, deck top 0.7 m. Inferred wheel design: tread radius 0.13 m, flange radius 0.15 m, axle Y 0.365 m, tread centres X ±0.52 m with tread width 0.14 m spanning the rail heads; inward flange outer face at |X| 0.45 m clears the rail head's inner face at 0.462 m. Compact wheels preserve the low deck instead of raising collision or seats.
+
+| Rigid part | Pivot / range | Purpose |
+| --- | --- | --- |
+| Eight open-spoke flanged wheels | Own X axle; unlimited signed rotation = travelled metres / 0.13 | Four beneath power pack (local Z ±0.8), four beneath rear deck (Z -1.35, -0.45) |
+| Two simple bogie frames | Fixed in each body's pitched frame, isolated from wake shudder and shell squash | Support the power pack and rear deck; no front gantry wheels |
+| Existing gantry / fork | Existing pivots and formulas unchanged | Cantilever ahead over unlaid ground; no new pick-and-place mechanism |
+
+Motion storyboard: **rest → pull away:** wheel angle holds during wake/slip, then increases with actual signed rendered body displacement through the existing ease-out. **cruise:** each body's wheels cover the same 3D path distance as that body; no independent clock spin. **stop:** angle holds when position holds. Explicit pose snaps rebase the odometer, not roll through a teleport. Turntable lateral/yaw motion is not forward wheel travel. No coupling rod in this pass.
+
+All wheel geometry is canonical in the Blender recipe. Closed annular flanges/treads, solid hubs/spokes and frames; overlapping closed pieces are deliberate. Existing four rear warning faces remain the only open surfaces. Moving wheel roots retain explicit pivots despite GLB decode transforms. Budget: shell ≤10,000 triangles / 20 main draws /128 KB; loaded machine ≤16,000 triangles /34 main draws, excluding avatars. Baseline loaded count: 11,614 triangles /22 main draws /14 shadow meshes. Runtime motion is Local presentation, with no new shared state. Check actual wheel angles/displacements and stills/video, never timing/frame counts as performance evidence under shared load.
+
 ## Goal
 
 Give the track layer a recognizable crawler-and-open-gantry construction silhouette, with two proper places to sit on its deck, while preserving its current material-to-track action and physical envelope. Serves DESIGN.md **11. Show, don't tell**, **8. Designed for drop-in, drop-out**, and **Small and readable**.

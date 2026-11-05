@@ -5,6 +5,35 @@ import { material } from '../../render/materials.ts';
 export const MACHINE_GAP = 3.7;
 export const MACHINE_DECK = 0.7;
 export const MACHINE_CHAIRS = [-0.55, 0.55] as const;
+export const MACHINE_WHEEL_RADIUS = 0.13;
+export const wheelAngle = (distance: number) => distance / MACHINE_WHEEL_RADIUS;
+/** Wrap logical axle pivots without discarding GLB quantization/decode transforms. Also used by the asset stage. */
+export function machineWheelPivots(source: THREE.Object3D) {
+  const wheels: [THREE.Group[], THREE.Group[]] = [[], []];
+  const parts: THREE.Object3D[] = [];
+  source.traverse((part) => {
+    if (/^(power|deck)_wheel_[0-3]$/.test(part.name)) parts.push(part);
+  });
+  for (const part of parts) {
+    const match = /^(power|deck)_wheel_([0-3])$/.exec(part.name);
+    if (!match) continue;
+    const body = match[1] === 'power' ? 0 : 1,
+      index = Number(match[2]),
+      axle = Math.floor(index / 2);
+    const pivot = new THREE.Group();
+    pivot.name = `${part.name}-axle`;
+    pivot.position.set(
+      index % 2 ? 0.52 : -0.52,
+      0.235 + MACHINE_WHEEL_RADIUS,
+      body === 0 ? -MACHINE_GAP + (axle ? 0.8 : -0.8) : axle ? -0.45 : -1.35,
+    );
+    part.parent!.add(pivot);
+    part.position.sub(pivot.position);
+    pivot.add(part);
+    wheels[body].push(pivot);
+  }
+  return wheels;
+}
 /** The shell is rigid. The existing fork action stays owned by rail.ts. */
 export function dressMachine(source: THREE.Object3D) {
   const recipes = {
@@ -16,6 +45,8 @@ export function dressMachine(source: THREE.Object3D) {
     gantry: ['paintedToy', [198 / 255, 90 / 255, 22 / 255]],
     cream: ['paintedToy', [197 / 255, 171 / 255, 104 / 255]],
     teal: ['paintedToy', [36 / 255, 86 / 255, 83 / 255]],
+    bogie: ['steel', [16 / 255, 28 / 255, 41 / 255]],
+    wheel: ['steel', [0.27, 0.32, 0.36]],
   } as const;
   const owned = new Map<string, { mat: THREE.MeshStandardNodeMaterial; clean: THREE.Color; aged: THREE.Color }>();
   source.traverse((o) => {
@@ -60,19 +91,26 @@ export function mountMachine(
   power: THREE.Object3D,
   deck: THREE.Object3D,
   chairs: THREE.Object3D,
+  gear: THREE.Object3D[],
 ) {
   const copy = source.clone(true);
   const finish = dressMachine(copy);
+  const wheels = machineWheelPivots(copy);
   const rear = new THREE.Group();
   rear.position.z = MACHINE_GAP;
   power.add(rear);
+  const rearGear = new THREE.Group();
+  rearGear.position.z = MACHINE_GAP;
+  gear[0]!.add(rearGear);
   for (const part of [...copy.children]) {
-    if (part.name.startsWith('power_')) rear.add(part);
+    if (part.name.includes('_wheel_') || part.name.endsWith('_bogie'))
+      (part.name.startsWith('power_') ? rearGear : gear[1]!).add(part);
+    else if (part.name.startsWith('power_')) rear.add(part);
     else if (part.name.startsWith('deck_')) deck.add(part);
     else if (part.name.startsWith('chair_')) chairs.add(part);
     else throw new Error(`Unexpected track-layer root: ${part.name}`);
   }
-  return finish;
+  return { ...finish, wheels };
 }
 
 export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D, sleeper: THREE.Object3D) {
@@ -96,7 +134,17 @@ export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D,
     outer.add(inner);
     return outer;
   });
-  let finish: ReturnType<typeof dressMachine> | undefined;
+  const runningGear = [new THREE.Group(), new THREE.Group()];
+  runningGear.forEach((g, i) => {
+    g.name = `track-layer-bogie-${i}`;
+  });
+  const pitchedGear = runningGear.map((outer) => {
+    const inner = new THREE.Group();
+    outer.add(inner);
+    return inner;
+  });
+  const odometers = runningGear.map(() => ({ last: new THREE.Vector3(NaN, 0, 0), yaw: 0, distance: 0 }));
+  let finish: ReturnType<typeof mountMachine> | undefined;
   let travel = 0;
   const last = new THREE.Vector3(NaN, 0, 0);
   return {
@@ -104,13 +152,34 @@ export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D,
     chairs,
     chimneyTop,
     heldRail,
-    // Retain the wake interface. This first crawler shell has static rollers, not locomotive drive rods.
+    runningGear,
+    resetWheelTravel: (i: number) => odometers[i]!.last.set(NaN, 0, 0),
+    wheelState: () =>
+      odometers.map((o, i) => ({ distance: o.distance, angles: finish?.wheels[i]!.map((w) => w.rotation.x) ?? [] })),
+    // Retain the wake interface; rail wheels roll only with travel, never this stationary slip request.
     slip: { rate: 0 },
     install: (source: THREE.Object3D) => {
-      finish = mountMachine(source, power, deck, chairs);
+      finish = mountMachine(source, power, deck, chairs, pitchedGear);
     },
     update(wear: number) {
       finish?.wear(wear);
+      runningGear.forEach((gear, i) => {
+        const parent = gear.parent,
+          o = odometers[i]!;
+        if (!parent?.visible) return void o.last.set(NaN, 0, 0);
+        pitchedGear[i]!.rotation.x = cars[i]!.rotation.x; // Track pitch, without the shell's cosmetic wake shudder.
+        const at = parent.position,
+          yaw = parent.rotation.y;
+        const dx = at.x - o.last.x,
+          dy = at.y - o.last.y,
+          dz = at.z - o.last.z;
+        // Mid-heading projection excludes lateral turntable orbit; 3D length includes slopes.
+        const along = dx * (Math.sin(yaw) + Math.sin(o.yaw)) + dz * (Math.cos(yaw) + Math.cos(o.yaw));
+        if (Math.abs(along) > 1e-7) o.distance += Math.sign(along) * Math.hypot(dx, dy, dz);
+        o.last.copy(at);
+        o.yaw = yaw;
+        for (const wheel of finish?.wheels[i] ?? []) wheel.rotation.x = wheelAngle(o.distance);
+      });
       const parent = cars[1]!.parent;
       if (!parent?.visible) return void last.set(NaN, 0, 0);
       const at = parent.position,

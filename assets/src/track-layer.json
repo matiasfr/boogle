@@ -1,4 +1,4 @@
 {
-  "provenance": "Original Boogle parametric crawler and open gantry. Manufacturer mechanism references recorded in docs/research/solo-design-pass.md section 5; no external geometry.",
+  "provenance": "Original Boogle rail-bogie and open-gantry machine. Owner wheel direction supersedes crawler references; parts/axes and retained detail reference roles in docs/plans/track-layer-machine.md. No external geometry.",
   "budgetKB": 128
 }

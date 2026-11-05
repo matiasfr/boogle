@@ -1,4 +1,4 @@
-"""Original compact crawler/gantry; metres, game +Y up/+Z working end.
+"""Original rail-mounted gantry; metres, game +Y up/+Z working end.
 
 Canonical recipe: closed primitive solids, one mesh per material/body frame.
 Game (x,y,z) -> Blender (x,-z,y); Y-up glTF restores game axes.
@@ -17,6 +17,8 @@ BEVEL = 0.008  # Narrow rack/grille solids must not clamp into zero-area bevel f
 BIG_BEVEL = 0.015  # One segment, same envelope: highlight the large forms, step and chair shells.
 CHAIR_X = (-0.55, 0.55)
 CHAIR_Z = -1.15
+WHEEL_R = 0.13
+AXLE_Y = 0.235 + WHEEL_R  # Native place-kit rail top; deck underside stays 0.52.
 
 
 def weight_edges(bm, vs, width, angle_only=False):
@@ -63,7 +65,7 @@ def grab_rail(bm, x):
     bm.faces.new(tuple(rings[-1]))
 
 
-def part(name, color, build):
+def part(name, color, build, origin=(0, 0, 0)):
     bm = bmesh.new()
     bm.edges.layers.float.new('bevel_weight_edge')
     build(bm)
@@ -72,6 +74,7 @@ def part(name, color, build):
     bm.free()
     mesh.shade_smooth()
     obj = bpy.data.objects.new(name, mesh)
+    obj.location = (origin[0], -origin[2], origin[1])
     bpy.context.collection.objects.link(obj)
     bevel = obj.modifiers.new('broad_edges', 'BEVEL')
     bevel.width = BIG_BEVEL
@@ -95,10 +98,6 @@ def power_paint(bm):
 
 
 def power_iron(bm):
-    for x in (-0.58, 0.58):
-        box(bm, x, 0.39, -GAP, 0.44, 0.6, 3)
-        for k in range(10):
-            box(bm, x, 0.12, -GAP - 1.32 + k * 0.294, 0.48, 0.13, 0.12)
     # Broad radiator slits and a short work-machine exhaust at the old smoke socket.
     for x in (-0.48, -0.24, 0, 0.24, 0.48):
         box(bm, x, 1.25, -GAP + 1.51, 0.1, 0.48, 0.035)
@@ -107,9 +106,6 @@ def power_iron(bm):
 
 
 def power_trim(bm):
-    for x in (-0.81, 0.81):
-        for z in (-1.12, -0.37, 0.37, 1.12):
-            cylinder(bm, x, 0.4, -GAP + z, 0.23, 0.07)
     # Bright flat top tells the truth about the existing standable surface.
     box(bm, 0, 1.73, -GAP, 1.58, 0.04, 2.98, BIG_BEVEL)
 
@@ -132,9 +128,6 @@ def chair_teal(bm):
 
 
 def deck_iron(bm):
-    box(bm, 0, 0.37, 0, 1.76, 0.3, 3.04)
-    for x in (-0.82, 0.82):
-        box(bm, x, 0.28, 0, 0.4, 0.3, 2.9)
     for side in (-1, 1):
         for z in (-1.05, 1.05):
             box(bm, side * 1.3, 0.59, z, 0.5, 0.06, 0.1)
@@ -173,6 +166,37 @@ def deck_cream(bm):
         box(bm, x, 0.65, 1.85, 0.16, 0.18, 0.65)
 
 
+def bogie(bm, middle, half_span, top):
+    # Inboard frame and bearings leave the outer wheel faces readable. No gameplay shapes.
+    for x in (-0.32, 0.32):
+        box(bm, x, 0.435, middle, 0.12, 0.11, 2 * half_span + 0.32, 0.004)
+        for z in (middle - half_span, middle + half_span):
+            box(bm, x, AXLE_Y, z, 0.14, 0.13, 0.18, 0.004)
+    for z in (middle - half_span, middle + half_span):
+        cylinder(bm, 0, AXLE_Y, z, 0.035, 1.38)
+    box(bm, 0, (top + 0.45) / 2, middle, 1.38, top - 0.45, 0.18, 0.004)
+
+
+def wheel(bm, side):
+    # Closed annular profile: inner flange, narrow tread and an open spoked centre.
+    profile = [(-0.105, 0.09), (-0.105, 0.15), (-0.07, 0.15),
+               (-0.07, WHEEL_R), (0.07, WHEEL_R), (0.07, 0.09)]
+    rings = [[bm.verts.new((side * x, -r * math.sin(k * math.tau / 16),
+                           r * math.cos(k * math.tau / 16))) for k in range(16)]
+             for x, r in profile]
+    for a, b in zip(rings, rings[1:] + rings[:1]):
+        for k in range(16):
+            bm.faces.new((a[k], a[(k + 1) % 16], b[(k + 1) % 16], b[k]))
+    cylinder(bm, 0, 0, 0, 0.038, 0.17)
+    for k in range(3):
+        vs = bmesh.ops.create_cube(bm, size=1)['verts']
+        bmesh.ops.scale(bm, verts=vs, vec=(0.05, 0.025, 0.085))
+        bmesh.ops.translate(bm, verts=vs, vec=(0, 0, 0.065))
+        bmesh.ops.rotate(bm, verts=vs, cent=(0, 0, 0), matrix=Matrix.Rotation(k * math.tau / 3, 3, 'X'))
+        weight_edges(bm, vs, 0.003)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+
+
 ORANGE = (198 / 255, 90 / 255, 22 / 255)
 CREAM = (197 / 255, 171 / 255, 104 / 255)
 STEEL = (16 / 255, 28 / 255, 41 / 255)
@@ -185,6 +209,14 @@ part('deck_iron', STEEL, deck_iron)
 part('deck_gantry', ORANGE, deck_gantry)
 part('deck_cream', CREAM, deck_cream)
 part('chair_teal', (36 / 255, 86 / 255, 83 / 255), chair_teal)
+part('power_bogie', STEEL, lambda bm: bogie(bm, -GAP, 0.8, 0.57))
+part('deck_bogie', STEEL, lambda bm: bogie(bm, -0.9, 0.45, 0.52))
+for body, zs in [('power', (-GAP - 0.8, -GAP + 0.8)), ('deck', (-1.35, -0.45))]:
+    for axle, z in enumerate(zs):
+        for side in (-1, 1):
+            index = axle * 2 + (1 if side > 0 else 0)
+            part(f'{body}_wheel_{index}', (0.27, 0.32, 0.36),
+                 lambda bm, s=side: wheel(bm, s), (side * 0.52, AXLE_Y, z))
 
 bpy.ops.export_scene.gltf(filepath=sys.argv[sys.argv.index('--') + 1], export_format='GLB',
                           export_yup=True, export_apply=True, export_normals=True,

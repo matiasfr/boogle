@@ -393,6 +393,8 @@ export type Car = {
   platform: Platform;
   /** Footprint of the cargo surface currently supporting a rider; absent means the flatbed. */
   supportAt?: (x: number, z: number) => { x: number; z: number; hx: number; hz: number } | undefined;
+  /** Local presentation odometers must not roll through an explicit physics relocation. */
+  onSnap?: () => void;
 };
 export function makeCar(
   spec: CarSpec,
@@ -466,6 +468,7 @@ function moveCar(c: Car, dt: number) {
 const riderLocal = { x: 0, y: 0, z: 0, yaw: 0 },
   riderWorld = { ...riderLocal };
 export function snapCar(c: Car) {
+  c.onSnap?.();
   const p = c.body;
   const rider =
     c.y > -30 && carry.on === c.platform && me.body && me.body.velocity.y - carry.y <= CARRY.leaveVy ? me.body : null;
@@ -563,6 +566,14 @@ export function buildMachine(owner?: OwnedView) {
     loco.platform.id = 'railway:T1:loco';
     flatbed.platform.shared = loco.platform.shared = true;
   }
+  [loco, flatbed].forEach((car, i) => {
+    const gear = look.runningGear[i]!;
+    gear.position.y = -(BOTTOM + car.hy);
+    car.mesh.add(gear);
+    car.onSnap = () => {
+      look.resetWheelTravel(i);
+    };
+  });
   // Match the original chair frame: body-relative, without the deck's pitch or shudder.
   look.chairs.position.y = flatbed.hy - MACHINE_DECK;
   flatbed.mesh.add(look.chairs);
@@ -820,6 +831,11 @@ export function buildMachine(owner?: OwnedView) {
         });
       }
     }
+    // Cancel shell squash outside the rigid bogie frame.
+    const gear = look.runningGear[1]!;
+    const scale = flatbed.mesh.scale;
+    gear.scale.set(1 / scale.x, 1 / scale.y, 1 / scale.z);
+    gear.position.y = -(BOTTOM + flatbed.hy) / scale.y;
   };
   if (owner) {
     // Revisit the completed groups: some attached details were made after makeCar mounted their roots.

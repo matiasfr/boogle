@@ -87,16 +87,18 @@
     "rawBytes": 12320,
     "bytes": 8828,
     "triangles": 152,
-    "animations": ["drop"],
+    "animations": [
+      "drop"
+    ],
     "textures": []
   },
   "track-layer": {
     "source": "track-layer.py",
-    "sourceHash": "18e7907d9040a1d2",
-    "outHash": "17709d5503d66bbf",
-    "rawBytes": 110744,
-    "bytes": 37744,
-    "triangles": 4016,
+    "sourceHash": "0cc0452d61f11aa7",
+    "outHash": "2b8dacf24061b260",
+    "rawBytes": 147868,
+    "bytes": 41528,
+    "triangles": 3996,
     "animations": [],
     "textures": []
   }
