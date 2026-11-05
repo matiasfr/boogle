@@ -1,0 +1,46 @@
+{
+  "id": "1793899295079-3065",
+  "operation": "look",
+  "args": [
+    "--eval",
+    "/Users/matiasfranco/Developer/boogle-codex/motion-references/.look/motion-references/flat-stage.ts",
+    "--query",
+    "stage=asset%3Dbuddy%26hat%3Dconductor%26mode%3Draw%26clip%3DIdle_Loop%26t%3D0.4%26reference%3D0%26bounds%3D0%26grid%3D0%26cam%3D0%2C1.1%2C4%26target%3D0%2C0.9%2C0%26light%3Dstudio%26exposure%3D1",
+    "--name",
+    "buddy-flat-front",
+    "--warm",
+    "1",
+    "--question",
+    "Does flat front lighting retain the real proportions, hat and face without shadow hiding the silhouette?"
+  ],
+  "query": "",
+  "started": "2026-11-05T17:21:35.762Z",
+  "finished": "2026-11-05T17:21:46.380Z",
+  "status": 0,
+  "before": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "after": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "harness": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "harnessAfter": {
+    "commit": "1b19093f8986b95098dd8e3d33e61b654bbb637b",
+    "tree": "6ce5e90cbeddbeb33887d0316372a45ba008c6c8",
+    "dirty": false
+  },
+  "changedDuringRun": false,
+  "artifacts": [
+    "buddy-flat-front-motion.png",
+    "buddy-flat-front-still.png",
+    "output.txt"
+  ]
+}
