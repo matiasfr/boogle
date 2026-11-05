@@ -279,6 +279,8 @@ Projection runs after the current camera/avatar update, anchored to a stable bod
 
 ## The town you can go into
 
+Nell stands clear of the station-whistle stand's approach. Previously her closer Talk target won over Try on from the aisle; the whistle's equip/keep/remove state worked when approached from the side. Its train unlock remains unchanged, and this fix does not change wearable geometry.
+
 Corner posts sink with whichever adjacent wall is cut away, using the same reveal timing and easing. Roof lift, the retained bottom course, wall collisions and shadow proxies are unchanged.
 
 An optional side activity: nothing here gates the job (DESIGN.md 3), and it adds no line to the objective. Serves DESIGN.md 1, 6, 9 and 11; research: [town interiors](../research/town-interiors.md). Open doors, in the same world, no loading.

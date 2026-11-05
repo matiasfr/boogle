@@ -82,7 +82,7 @@ export const CAST: Record<ResidentId, Cast> = {
   },
   nell: {
     room: 'shop',
-    x: -2.75,
+    x: -1.0,
     z: 2.3,
     yaw: -1.57,
     act: 'idle',
