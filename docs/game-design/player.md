@@ -62,6 +62,8 @@ lean toward acceleration (max 0.35 rad). Your own client starts flops and publis
 | bonk   | Losing 6.5 m/s in one frame while sprinting over 7 m/s                    | 650 ms |
 | tumble | Landing above 3 m/s after jumping off a moving deck (the wagon, the ride) | 700 ms |
 
+Bonk recoil ends when you jump or leave the ground, so its left/right roll does not continue through a wall jump. Player physics and jump height are unchanged.
+
 The tumble opens on a held beat (docs/research/comedy-in-games.md, rec 4): 70 ms frozen squashed flat where you landed
 (capped at 120 ms), shivering sideways, while your body slides on underneath; then a few frames' blend into a
 face-plant tipped forward on your nose while the skid carries you, and a pop back up as it ends. With reduced motion
