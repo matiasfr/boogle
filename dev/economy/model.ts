@@ -1,4 +1,7 @@
-// Offline design arithmetic, not game/sync code. Node 24; no dependencies.
+// Offline design arithmetic, not game/sync code. Node 26; no dependencies.
+// Campaign stock/events are separate from these preserved historical arithmetic fixtures.
+export { simulateCampaign, validateCampaign } from './campaign.ts';
+export type { Campaign, CampaignOptions } from './campaign-types.ts';
 // Evidence, units, assumptions and reproduction: docs/research/rail-economy-model.md.
 // Edit/export the typed tables or call model(table, players, options) from another .ts file.
 type Activity = 'harvest' | 'handling' | 'haul' | 'walk' | 'ride' | 'build' | 'wait' | 'orient' | 'content';
