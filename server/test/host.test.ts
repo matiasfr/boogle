@@ -219,6 +219,7 @@ test('world: a joiner gets the snapshot alone; an edit comes back stamped to eve
     const world = again.svc.roomHost()!.room('beach')!.world;
     await sleep(20);
     assert.ok(world.sync.world.tick >= saved, `resumed at ${world.sync.world.tick}, saved ${saved}`);
+    assert.ok('gifts' in world.rules, 'ordinary rooms retain the classic registry');
     assert.ok(world.rules.gifts.gifts.items.some((it: Msg) => it.i === toss.i && it.j === toss.j));
   } finally {
     await again.svc.close({ save: false });
