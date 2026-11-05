@@ -52,17 +52,18 @@ export async function paintNative(board: Board, name = 'board.png') {
       h = images[0]!.height;
     if (images.some((im) => im.width !== w || im.height !== h))
       throw new Error('Grid cells must have equal dimensions');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    ctx.font = '30px system-ui';
     const pad = 24,
       gap = 20,
       caption = 40,
-      left = 176,
+      left = Math.max(176, Math.ceil(Math.max(...grid.rows.map((label) => ctx.measureText(label).width))) + 44),
       top = 160;
     const gridWidth = grid.columns.length * (w + gap) - gap;
     const referenceX = left + gridWidth + 48;
-    const canvas = document.createElement('canvas');
     canvas.width = reference ? referenceX + w + pad : left + gridWidth + pad;
     canvas.height = top + grid.rows.length * (h + caption + gap) + pad;
-    const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = '#15202b';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#eaf0f6';
