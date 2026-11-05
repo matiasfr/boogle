@@ -6,8 +6,7 @@
 //   The first path crosses the gorge beside a pillar you saw from the bridge below: the second jump.
 //   Line 2 crosses the stem beside another, up a ledge you can only get onto with that jump: the hook shot.
 //   Gate 1, the quarry: a slab across the line, its chain up to a lever on a ledge. Same jump.
-//   Gate 2, the rim: a slab across the line, dark posts leading from it to Needle Bell. Rings up the tower, and at the top the glider,
-//   and light runs down the posts and drops the slab. It's a glide back to the frame.
+//   Gate 2, the rim: dark posts lead to Needle Bell's summit switch. The next construction job reaches the glider at Far Head.
 //
 // Everything here is shared through `job.tech` and `job.gate` (./job.ts, the `job` slice), so the save and the co-op snapshot read it;
 // `coop.tech` says it the moment it happens. What's in the secret boxes is yours (`personalSlice('secretFinds')`). No words but the
@@ -42,6 +41,7 @@ import {
   DEVICES,
   FINDERS,
   GATES,
+  GLIDE_RAMP,
   JUMP_COURSE,
   JUMP_RECOVERY,
   LEVER,
@@ -49,6 +49,7 @@ import {
   PILLARS,
   POSTS,
   SECRETS,
+  SEA_SWITCH,
   padById,
   type GateId,
   type Pad,
@@ -86,19 +87,17 @@ function stonePad(hx: number, hz: number, thick: number) {
   return new THREE.Mesh(merged(parts), partMat);
 }
 function buildPads() {
-  const ramp = JUMP_RECOVERY.ramp;
-  const rise = ramp.high - ramp.low;
   const pads: (Pad & { pitch?: number })[] = [
     ...PADS,
     ...JUMP_RECOVERY.slabs.map((p, i): Pad => ({ ...p, id: `jump-catch-${i}`, top: JUMP_RECOVERY.top, look: 'stone' })),
-    {
+    ...[JUMP_RECOVERY.ramp, GLIDE_RAMP].map((ramp, i): Pad & { pitch: number } => ({
       ...ramp,
-      id: 'jump-return',
+      id: i ? 'glide-ramp' : 'jump-return',
       top: (ramp.high + ramp.low) / 2,
-      hz: Math.hypot(ramp.hz, rise / 2),
-      pitch: Math.atan2(rise, ramp.hz * 2),
+      hz: Math.hypot(ramp.hz, (ramp.high - ramp.low) / 2),
+      pitch: Math.atan2(ramp.high - ramp.low, ramp.hz * 2),
       look: 'stone',
-    },
+    })),
   ];
   for (const p of pads) {
     const thick = p.look === 'float' ? 0.9 : p.look === 'wood' ? 0.4 : 1.2;
@@ -400,14 +399,9 @@ function gainTech(id: TechId, here: boolean) {
         if (id === 'hook') after(0.3, demoHook);
       },
     });
-    if (id === 'glide') {
-      flashCanopy(2.6);
-      // The whole point of the climb: what it opened, from up here.
-      openGate('sea', true);
-    }
+    if (id === 'glide') flashCanopy(2.6);
   } else {
     showPeerTech(id);
-    if (id === 'glide') openGate('sea', false);
   }
   save();
 }
@@ -633,10 +627,13 @@ function updateGates(dt: number) {
     if (u >= 1) g.t = -1;
   }
   lever.rotation.z += ((job.gate.quarry ? -0.85 : 0.75) - lever.rotation.z) * Math.min(1, dt * 10);
+  const handle = seaSwitch.children[0];
+  if (handle) handle.rotation.z = job.gate.sea ? -0.7 : 0.7;
 }
 
 // ---------------------------------------------------------------- gate 1: the chain, the winch, the lever
 const lever = new THREE.Group();
+const seaSwitch = new THREE.Mesh(DRUM, partMat);
 const chainLink = new THREE.TorusGeometry(0.1, 0.03, 5, 8);
 function buildChain() {
   const g = GATES.quarry;
@@ -941,6 +938,7 @@ registerInteractable(() => {
   let out: Interactable[] | null = null;
   for (const id of Object.keys(DEVICES) as TechId[]) {
     if (job.tech[id]) continue;
+    if (id === 'glide' && !L2.open) continue;
     const d = devices[id];
     if (Math.hypot(p.x - d.x, p.z - d.z) > 3 || Math.abs(p.y - d.y) > 2.2) continue;
     (out ??= []).push({
@@ -964,6 +962,18 @@ registerInteractable(() => {
         },
       });
   }
+  if (
+    !job.gate.sea &&
+    Math.hypot(p.x - SEA_SWITCH.x - ox, p.z - SEA_SWITCH.z) < 3 &&
+    Math.abs(p.y - SEA_SWITCH.y) < 2.2
+  ) {
+    (out ??= []).push({
+      id: 'place-sea-switch',
+      verb: 'Pull',
+      at: new THREE.Vector3(SEA_SWITCH.x + ox, SEA_SWITCH.y + 1.7, SEA_SWITCH.z),
+      run: () => openGate('sea', true),
+    });
+  }
   return out ?? NO_TARGETS;
 });
 
@@ -972,7 +982,7 @@ export function hasTechGoal() {
   if (L1.open && !job.tech.jump) return true;
   if (L2.stage >= 2 && !job.tech.hook) return true;
   const gate = gateHere();
-  return gate === 'quarry' || (gate === 'sea' && !job.tech.glide);
+  return gate === 'quarry' || gate === 'sea';
 }
 
 // ---------------------------------------------------------------- the frame, and putting it all right
@@ -1019,6 +1029,17 @@ export function buildTech() {
   buildPads();
   buildRings();
   buildDevices();
+  seaSwitch.position.set(SEA_SWITCH.x + ox, SEA_SWITCH.y, SEA_SWITCH.z);
+  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.2, 0.18), glow);
+  handle.position.y = 1.4;
+  handle.rotation.z = 0.7;
+  seaSwitch.add(handle);
+  seaSwitch.castShadow = true;
+  scene.add(seaSwitch);
+  addStatic(
+    { kind: 'cylinder', rTop: 0.6, rBottom: 0.72, h: 0.9, segments: 8 },
+    { x: seaSwitch.position.x, y: SEA_SWITCH.y + 0.45, z: SEA_SWITCH.z },
+  );
   buildPosts();
   buildGates();
   buildClues();
@@ -1029,6 +1050,7 @@ export const techApi = {
   DEVICES,
   SECRETS,
   LEVER,
+  SEA_SWITCH,
   GATES,
   PADS,
   JUMP_COURSE,
