@@ -268,10 +268,10 @@ spawn({
 describeControl('talk-answer', {
   label: 'Answer in a talk',
   detail: {
-    kbm: 'E, Space or Enter: next, or say the picked answer; ↑ ↓ or W S pick; Esc leaves',
+    kbm: 'E, Space or Enter: next, or say the picked answer; arrow keys or W S pick; Esc leaves',
     pad: '{confirm}: next, or say the picked answer; the left stick picks too; {back} leaves',
   },
-  keys: ['Digit1-8', ['ArrowUp', 'ArrowDown']],
+  keys: ['Digit1-8', ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']],
   pad: ['up', 'down', 'left', 'right'],
   touch: 'Tap an answer, or the box when there is one',
   group: 'friends',
