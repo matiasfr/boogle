@@ -10,7 +10,7 @@ import { LOOK, ULTRA } from './tuning.ts';
 import { TSL, type N } from './tsl.ts';
 import { scalar, vector, tuningEnabled } from './live.ts';
 
-const { Fn, exp, fwidth, log2, materialColor, materialRoughness, max, min, mix } = TSL;
+const { Fn, If, exp, float, fwidth, log2, materialColor, materialRoughness, max, min, mix } = TSL;
 const { normalWorldGeometry, positionWorld, refract, smoothstep, vec3, vec4 } = TSL;
 type Context = { field: ShoreFields; caustics: CausticSample };
 const materials = new Set<MeshStandardNodeMaterial>();
@@ -23,29 +23,41 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   const previousColor = mat.colorNode,
     previousRoughness = mat.roughnessNode,
     previousNormal = mat.normalNode;
-  const wash = Fn(() => swashNodes(positionWorld.xz, positionWorld.y, field))().toVar();
+  const wash = Fn(() => {
+    const result = vec3(0).toVar();
+    // swashNodes already returns zero below this height; avoid its three atlas lookups on submerged beds.
+    If(positionWorld.y.greaterThan(-0.3), () => {
+      result.assign(swashNodes(positionWorld.xz, positionWorld.y, field));
+    });
+    return result;
+  })().toVar();
   const surface = Fn(() => {
     const p = positionWorld;
-    const sh = field.shore(p.xz).toVar();
     const depth = max(p.y.negate(), 0).toVar();
     // Only exposed receivers: roof/deck tops are dry, and walls/undersides reject projected sunlight.
-    const up = smoothstep(0.05, 0.65, normalWorldGeometry.y);
+    const up = smoothstep(0.05, 0.65, normalWorldGeometry.y).toVar();
     const wet = max(smoothstep(-0.1, 0.18, p.y).oneMinus(), wash.z).mul(up);
     const sunRay = refract(seaU.uSun.negate(), vec3(0, 1, 0), 1 / 1.33);
     const entry = p.xz.add(sunRay.xz.div(min(sunRay.y, -0.05)).mul(depth));
     const fw = fwidth(entry).toVar();
     const lod = log2(max(max(fw.x, fw.y).mul(CAUSTIC_TEXELS_PER_M), 1));
-    const light = caustics(entry, depth, lod).toVar();
-    const exposed = smoothstep(0, 0.25, depth)
-      .mul(smoothstep(12, 24, depth).oneMinus())
-      .mul(smoothstep(0.02, 0.2, seaU.uSun.y))
-      .mul(up)
-      .mul(smoothstep(0.05, 1, field.surf(p.xz)))
-      // The receiver IS the bed. A positive offset requirement erased light on matching triangles.
-      .mul(smoothstep(-0.35, -0.05, p.y.sub(sh.x)))
-      .mul(mix(1.35, 1, smoothstep(1.5, 3, depth)));
+    const focused = float(1).toVar();
+    // The existing depth fade is exactly zero here. Keep derivatives above the branch; all conditional
+    // samples have explicit LOD. The offshore apron needs absorption, not invisible shore/caustic samples.
+    If(depth.lessThan(24), () => {
+      const sh = field.shore(p.xz).toVar();
+      const light = caustics(entry, depth, lod).toVar();
+      const exposed = smoothstep(0, 0.25, depth)
+        .mul(smoothstep(12, 24, depth).oneMinus())
+        .mul(smoothstep(0.02, 0.2, seaU.uSun.y))
+        .mul(up)
+        .mul(smoothstep(0.05, 1, field.surf(p.xz)))
+        // The receiver IS the bed. A positive offset requirement erased light on matching triangles.
+        .mul(smoothstep(-0.35, -0.05, p.y.sub(sh.x)))
+        .mul(mix(1.35, 1, smoothstep(1.5, 3, depth)));
+      focused.assign(max(mix(1, light, tuningEnabled ? exposed.mul(causticStrength) : exposed), 0));
+    });
     const transmission = exp(vector('water.absorption', LOOK, 'absorption').mul(depth).mul(-0.35));
-    const focused = max(mix(1, light, tuningEnabled ? exposed.mul(causticStrength) : exposed), 0);
     // This multiplier stays in the lit albedo path, so the receiver's existing shadow term still occludes it.
     return vec4(transmission.mul(mix(1, 0.72, wet)).mul(focused), wet);
   })().toVar();
