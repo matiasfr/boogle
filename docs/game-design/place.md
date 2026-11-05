@@ -327,6 +327,12 @@ underwater lift and attenuation remain intentional. No scene/meter dependency or
 The material helper applies at most once per owned material. Sky and water settings are unchanged.
 Serves **DESIGN.md 7, Telegraph everything**.
 
+**Remote names (5 November, approved follow-up).** Player-name sprites use that same full surface-gain
+compensation once, at `avatars.makeLabel`, matching station labels. The existing sRGB name canvas,
+translucent backing, alpha, fog, depth and underwater composite remain; classic home's gain of one is neutral.
+Names are Local presentation, with no identity, presence or save change. The three-way main/.12-before/.12-after
+readability comparison is in [colour defaults](../research/color-defaults.md#remote-name-follow-up).
+
 The existing Dev Water/Post **fixed gain** control owns both exposure and inverse compensation;
 `readable.referenceGain` is retired. Newly emitted reward particles pick up changes immediately;
 living particles retain their spawn intensity until they expire. Smoke, dust and the pool's default intensity

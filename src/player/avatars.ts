@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import { SpriteNodeMaterial } from 'three/webgpu';
 import { COLORS, PLAYER_R, HEAD_OFFSET } from '../constants.ts';
 import { clamp, lerp } from '../math.ts';
 import { warmUp } from '../render/precompile.ts';
+import { readableUnlit } from '../render/readable-unlit.ts';
 import { playMark } from '../proto/mark.ts';
 import { newWaterEnabled } from '../proto/flags.ts';
 
@@ -162,7 +164,9 @@ export function makeLabel(text: string) {
   g.fillText(text, 128, 33, 230);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  const sprite = new THREE.Sprite(
+    readableUnlit(new SpriteNodeMaterial({ map: tex, transparent: true, depthWrite: false })),
+  );
   sprite.scale.set(1.9, 0.475, 1);
   sprite.position.y = 2.05;
   sprite.renderOrder = 10;
