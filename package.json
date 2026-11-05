@@ -48,6 +48,7 @@
     "scenario": "node dev/scenarios/run.ts",
     "scenarios": "node dev/scenarios/run.ts",
     "ship": "bash scripts/ship.sh",
+    "ship-branch": "bash dev/codex/ship-branch.sh",
     "prepare": "git config core.hooksPath .githooks || true",
     "clip": "node dev/video/clip.ts",
     "reel": "node dev/video/reel.ts",

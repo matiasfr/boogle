@@ -19,6 +19,7 @@ Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lis
 | Make many edits at once                        | `npm run patch -- <file>`                                                                                                                                                  |
 | See where a session's time and tokens went     | `npm run transcript -- <id>`                                                                                                                                               |
 
+- `npm run ship-branch -- <worktree>` ships one finished job branch: it rebases onto main, keeps both sides of docs-only conflicts and runs `npm run ship -- --wait`. It stops with `CODE CONFLICT` (exit 2) or `EMPTY COMMIT` (exit 3), and ends by printing how many commits are still not on main, so read its output.
 - `npm run friends-report -- [--since YYYY-MM-DD]` lists friends’ merged PRs and flags sensitive paths; it remembers the last report date in `.look/`.
 - `npm run transcript -- <path|id>` summarizes a finished Claude or Codex session; `--latest claude|codex`, `--compare a b`, and `--json` select other views.
 - `.agents/skills` links to `.claude/skills`, so Codex and other agents that read it get the same skills: the workflows plus `threejs-*` (use the WebGPU/TSL parts), `game-feel`, `camera-systems` and `audio-design`. They're written for Claude Code; "Codex" below maps the names.
