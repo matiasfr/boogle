@@ -1,14 +1,11 @@
 # 6.18 Graphics and devices
 
-- **Opt-in frozen demo sky.** `sky=demo` on any page lazily loads Ultra Water's Hillaire atmosphere and cloud cube,
-  with the sun frozen at `tod=0.24` unless specified (the game's clock: 0 sunrise, 0.3 noon, 0.6 sunset).
-  The cube supplies background, directional fog and environment; its upper/lower mip supplies hemisphere fill
-  for the Lambert toys. It hides the game's dome, sun/moon billboards and faceted clouds, and drives the real
-  sun and shadows. `tod=0.56` is golden hour; `tod=0.605` is dusk. Reload to change it deliberately.
-  This is a Local comparison, not the default integration. Combine with `tone=neutral|agx` for the matched meter
-  and curve trims below. Without the sky flag, behaviour is unchanged. Outside `proto=water`, the old sea remains.
-  `skyBake=1&prof=1` measures the initial six cube draws with GPU timestamps. Reproduction and limits:
-  [sky comparison](../research/sky-comparison.md).
+- **Production frozen sky.** Place and crossing use the [graduated water](water.md) and its one-bake
+  late-morning atmosphere at `tod=0.24`, with metered Neutral. The cube supplies background, directional fog,
+  environment and hemisphere fill, with the matching real sun and shadows. Live tuning and Looks remain.
+  The separate `sky=demo` loader, `skyBake` diagnostic and `proto=water` demo are archived; the
+  [sky comparison](../research/sky-comparison.md) is historical evidence. Classic retains its own sea/sky
+  under the owner's scenario-cost exception. `water=new` and `water=old` no longer select a renderer.
 
 - **What.** The island draws with WebGPU only: Chrome and Edge, Safari 26 on iPhone, iPad and Mac, Firefox on
   Windows and Apple Silicon. Any other browser sees a note in the lobby naming the browsers that work. A loading screen
@@ -64,17 +61,17 @@
   in the Mac review; there is no aggregate ambient switch that promises those savings. Presets keep the
   other water effects. This narrows recommendations 1, 2 and 6 of [graphics settings](../research/graphics-settings.md)
   to the current adapters and [measured limitations](../research/graphics-switch-costs.md).
-- **Production-water Looks.** `water=new` with Dev or `tune=1` adds the [Looks dock comparison](dev-menu.md#looks) at the active water-post owner: Current, metered Neutral, restrained Sunny AgX, AgX Punchy and Sunshine water. All use the procedural frozen sky and one shared meter/output pass. A/B only changes uniforms; saved choices prepare behind loading. This is a Local preview, not a default change. Ordinary visits keep the shipped graph and do not load comparison code.
+- **Production-water Looks.** Place or crossing with Dev or `tune=1` adds the [Looks dock comparison](dev-menu.md#looks) at the active water-post owner: Current, metered Neutral, restrained Sunny AgX, AgX Punchy and Sunshine water. All use the procedural frozen sky and one shared meter/output pass. A/B only changes uniforms; saved choices prepare behind loading. This is a Local preview, not a default change. Ordinary visits keep the shipped graph and do not load comparison code.
   Explicit Graphics bloom overrides survive look selection, including Neutral. A saved bloom-on choice uses
   the same prepared comparison graph as bloom-off. Graphics meter-off holds exposure and skips meter work;
   Looks exposure lock independently freezes adaptation. Neither control selects the other tool's settings.
-- **Opt-in tone comparison.** Add `tone=neutral`, `tone=agx`, `tone=agx-sat` or `tone=aces` to any game page.
-  A lazy module uses the water demo's metered exposure with fixed middle-grey-matched trims (1 / 0.771116 /
-  0.771116 / 0.729587). AgX is the demo's existing contrast/saturation look; AgX-sat adds up to 30% chroma,
+- **Opt-in classic tone comparison.** Add `tone=neutral`, `tone=agx`, `tone=agx-sat` or `tone=aces` to classic.
+  A lazy module uses the archived demo's metered exposure with fixed middle-grey-matched trims (1 / 0.771116 /
+  0.771116 / 0.729587). AgX retains that contrast/saturation look; AgX-sat adds up to 30% chroma,
   fading the extra lift out in highlights. ACES uses Three.js's filmic curve. All four share the existing output
-  pass; the meter adds two tiny draws except on water, which already has it. Absent or invalid flags leave the
-  page's original appearance unchanged. The unflagged game still uses Neutral; the water demo still uses its
-  original AgX. See [comparison rationale and reproduction](../research/tone-comparison.md).
+  pass; the meter adds two tiny draws. Absent or invalid flags leave classic's original Neutral appearance
+  unchanged. Production water ignores `tone=` and uses its own post owner; use Looks for comparisons there.
+  See the historical [comparison rationale and reproduction](../research/tone-comparison.md).
 - **Files.** [src/render/scene.ts](../../src/render/scene.ts), [src/features/adaptive-res.ts](../../src/features/adaptive-res.ts),
   [src/features/wake-lock.ts](../../src/features/wake-lock.ts);
   rules for drawing things in [src/render/README.md](../../src/render/README.md).

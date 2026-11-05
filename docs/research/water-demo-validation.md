@@ -3,7 +3,7 @@
 2026-11-03. Local branch `codex/water-demo-scene`; no push or deployment. Serves DESIGN.md **Toys before chores**
 and **Show, don't tell**. The owner's supplied desktop screenshots are the target, ahead of source inference.
 See [the numerical diagnosis](water-demo-diagnosis.md) for the spectrum audit and complete before/after shore tables,
-and [the game-design entry](../game-design/water-proto.md) for current behaviour and limitations.
+and [the graduated game-design entry](../game-design/water.md) for current behaviour and limitations. This report preserves the archived demo's historical findings; its old addresses/options are not current controls.
 
 ## Result
 
@@ -24,12 +24,12 @@ Positions are source `main.js` views translated by island offset `(2400,0,0)`. T
 belonged to temporary capture servers; on a newly started server use the same query at its current port.
 The default `/?room=proto-water&proto=water` starts at Lagoon; append `&v=pop` for the previous grade.
 
-| Shot | Camera x,y,z | Look-at x,y,z | Sun elevation | Recorded capture URL |
-| --- | --- | --- | ---: | --- |
-| Lagoon | 2081.037438,16,88.248989 | 2059.019789,0,133.373518 | 50° | `http://127.0.0.1:53430/?proto=water&shot=lagoon` |
-| Breakers | 2752.205328,10,-73.078089 | 2727.038942,0,-45.227541 | 38° | `http://127.0.0.1:53449/?proto=water&shot=breakers` |
-| Surf rock | 2718.653987,14,-62.607002 | 2740.005891,0,-91.104304 | 40° | `http://127.0.0.1:53282/?proto=water&shot=surf-rock` |
-| Open ocean | 2495.437023,9,-1496.960846 | 2552.699237,0,-1795.137354 | 14° | `http://127.0.0.1:53462/?proto=water&shot=open-ocean` |
+| Shot       | Camera x,y,z               | Look-at x,y,z              | Sun elevation | Recorded capture URL                                  |
+| ---------- | -------------------------- | -------------------------- | ------------: | ----------------------------------------------------- |
+| Lagoon     | 2081.037438,16,88.248989   | 2059.019789,0,133.373518   |           50° | `http://127.0.0.1:53430/?proto=water&shot=lagoon`     |
+| Breakers   | 2752.205328,10,-73.078089  | 2727.038942,0,-45.227541   |           38° | `http://127.0.0.1:53449/?proto=water&shot=breakers`   |
+| Surf rock  | 2718.653987,14,-62.607002  | 2740.005891,0,-91.104304   |           40° | `http://127.0.0.1:53282/?proto=water&shot=surf-rock`  |
+| Open ocean | 2495.437023,9,-1496.960846 | 2552.699237,0,-1795.137354 |           14° | `http://127.0.0.1:53462/?proto=water&shot=open-ocean` |
 
 ## Inspected artifacts and visible differences
 
@@ -38,12 +38,12 @@ Reference directory: `/Users/matiasfranco/Developer/boogle-codex/demo-shots/`.
 Artifact directory: `/Users/matiasfranco/Developer/boogle/.claude/worktrees/boogle-codex/water-demo-scene/.look/`.
 These PNGs and recordings are local ignored artifacts, not committed or uploaded.
 
-| Shot | Final still | Opened comparison board | Remaining visible difference |
-| --- | --- | --- | --- |
-| Lagoon | [still](../../.look/water-r4-lagoon-still.png) | [board](../../.look/water-r4-lagoon-board.png) | Weaker caustic contrast at the nearest sand and a smoother distant wave field; the source-shaped spectrum has half amplitude. |
-| Breakers | [still](../../.look/water-r4-breakers-still.png) | [board](../../.look/water-r4-breakers-board.png) | Different crest positions and slightly sparser near waves. Different phase RNG and capture time prevent identical crests. Terrain shading retains the filtered periodic noise bake. |
-| Surf rock | [still](../../.look/water-r4-surf-rock-still.png) | [board](../../.look/water-r4-surf-rock-board.png) | The rock's reflected silhouette and shadow on the water are absent; occasional glints are stronger. Rock geometry/placement and bright submerged caustics match closely. |
-| Open ocean | [still](../../.look/water-r4-open-ocean-still.png) | [board](../../.look/water-r4-open-ocean-board.png) | Lower swell ridges and a wider sun lane over smaller waves. Sky/cloud/horizon colour is close; the faint source bloom is omitted. |
+| Shot       | Final still                                        | Opened comparison board                            | Remaining visible difference                                                                                                                                                        |
+| ---------- | -------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lagoon     | [still](../../.look/water-r4-lagoon-still.png)     | [board](../../.look/water-r4-lagoon-board.png)     | Weaker caustic contrast at the nearest sand and a smoother distant wave field; the source-shaped spectrum has half amplitude.                                                       |
+| Breakers   | [still](../../.look/water-r4-breakers-still.png)   | [board](../../.look/water-r4-breakers-board.png)   | Different crest positions and slightly sparser near waves. Different phase RNG and capture time prevent identical crests. Terrain shading retains the filtered periodic noise bake. |
+| Surf rock  | [still](../../.look/water-r4-surf-rock-still.png)  | [board](../../.look/water-r4-surf-rock-board.png)  | The rock's reflected silhouette and shadow on the water are absent; occasional glints are stronger. Rock geometry/placement and bright submerged caustics match closely.            |
+| Open ocean | [still](../../.look/water-r4-open-ocean-still.png) | [board](../../.look/water-r4-open-ocean-board.png) | Lower swell ridges and a wider sun lane over smaller waves. Sky/cloud/horizon colour is close; the faint source bloom is omitted.                                                   |
 
 The [pop still](../../.look/water-r4-pop-still.png) was also opened: the same Lagoon scene has a visibly stronger
 colour grade. No separate raw variant remains.
@@ -136,19 +136,19 @@ node .look/see-client.ts look --query 'proto=water&q=high&prof=1&timestampFix=1&
 
 Other one-at-a-time capture switches are `cost=resolution|detail|shadow|ocean|terrain|sky|caustics|adaptive`.
 Shadow, ocean, flat terrain, sky and caustic disabling are diagnostics, not shipped quality settings. The permanent diagnostic
-URL options are documented in [water-proto.md](../game-design/water-proto.md#options).
+Historical URL options remain in `archive/water:docs/game-design/water-proto.md`; current controls are in [water.md](../game-design/water.md).
 
 ### Kept changes and measured savings
 
 Savings are milliseconds of GPU span at a 1920×1200 canvas. They are not additive across runs.
 
-| Change | Saving and noise | Rendering work / visual verdict |
-| --- | --- | --- |
-| Reuse one opaque colour snapshot for all water samples | **0.41 ms**, baseline drift ±0.18; optimized 7.35 / repeated copies 7.94 / optimized 7.71; per-window p95 9.39–9.99 | `viewportTexture()` keys updates by the shared texture; the old shared-node clones copied colour three times. One colour plus one depth copy remain. **28 → 26 native raster passes**, draws unchanged. All four high boards retained the look. [Paired evidence](../../.look/evidence/1793694627416-3909/evidence.json). |
-| Mobile world resolution 0.6, normalized against adaptive DPR | **1.81 ms**, baseline drift ±0.27; high 7.78 / scale 0.6 6.25 / high 8.33 | 1920×1200 world → 1152×720, full adaptive-size output. Pass/draw counts unchanged. The main mobile saving; visibly softer fine detail. [Paired evidence](../../.look/evidence/1793695676273-15358/evidence.json). |
-| Mobile omits the finest sand ripple octave and rock bump octave | Apparent **0.06 ms**, drift ±0.06: **no resolved saving at Lagoon** | Same passes/draws. Kept as the requested cheaper terrain profile; macro shading and the first ripple octave remain. High keeps both octaves. [Paired evidence](../../.look/evidence/1793695705073-15626/evidence.json). |
-| Mobile halves caustic targets and splat-grid dimensions | **No attributable ms result**: full-size targets 4.89–5.03 vs reduced targets 4.60–6.94 across runs; between-run drift exceeds the apparent ~0.20 ms difference in the quieter samples | Targets 512²/256² → 256²/128²; grids 128/64/32 → 64/32/16. Mips **17 → 15 passes/draws**, quarter as many splat cells. Bright caustic net retained with softer fine structure. [Full-target evidence](../../.look/evidence/1793695732374-15804/evidence.json), [reduced targets](../../.look/evidence/1793695165024-10406/evidence.json). |
-| No bloom in mobile | **0 ms newly saved** | Bloom was already absent in high and remains absent in both profiles. Do not credit the source demo's omitted twelve bloom passes as a new saving. |
+| Change                                                          | Saving and noise                                                                                                                                                                       | Rendering work / visual verdict                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reuse one opaque colour snapshot for all water samples          | **0.41 ms**, baseline drift ±0.18; optimized 7.35 / repeated copies 7.94 / optimized 7.71; per-window p95 9.39–9.99                                                                    | `viewportTexture()` keys updates by the shared texture; the old shared-node clones copied colour three times. One colour plus one depth copy remain. **28 → 26 native raster passes**, draws unchanged. All four high boards retained the look. [Paired evidence](../../.look/evidence/1793694627416-3909/evidence.json).                 |
+| Mobile world resolution 0.6, normalized against adaptive DPR    | **1.81 ms**, baseline drift ±0.27; high 7.78 / scale 0.6 6.25 / high 8.33                                                                                                              | 1920×1200 world → 1152×720, full adaptive-size output. Pass/draw counts unchanged. The main mobile saving; visibly softer fine detail. [Paired evidence](../../.look/evidence/1793695676273-15358/evidence.json).                                                                                                                         |
+| Mobile omits the finest sand ripple octave and rock bump octave | Apparent **0.06 ms**, drift ±0.06: **no resolved saving at Lagoon**                                                                                                                    | Same passes/draws. Kept as the requested cheaper terrain profile; macro shading and the first ripple octave remain. High keeps both octaves. [Paired evidence](../../.look/evidence/1793695705073-15626/evidence.json).                                                                                                                   |
+| Mobile halves caustic targets and splat-grid dimensions         | **No attributable ms result**: full-size targets 4.89–5.03 vs reduced targets 4.60–6.94 across runs; between-run drift exceeds the apparent ~0.20 ms difference in the quieter samples | Targets 512²/256² → 256²/128²; grids 128/64/32 → 64/32/16. Mips **17 → 15 passes/draws**, quarter as many splat cells. Bright caustic net retained with softer fine structure. [Full-target evidence](../../.look/evidence/1793695732374-15804/evidence.json), [reduced targets](../../.look/evidence/1793695165024-10406/evidence.json). |
+| No bloom in mobile                                              | **0 ms newly saved**                                                                                                                                                                   | Bloom was already absent in high and remains absent in both profiles. Do not credit the source demo's omitted twelve bloom passes as a new saving.                                                                                                                                                                                        |
 
 Both profiles retain stored **4× MSAA colour and depth**, all four 256² FFT bands, wave energy, the 384-segment
 polar grid, per-frame caustic updates and the dynamic 4096² shadow map. The source demo's coarse-pointer selection
@@ -157,25 +157,25 @@ not adopted. Coarse pointers default to mobile, desktop to high; `q=` overrides 
 
 ### Final counts and timings
 
-| Work counted | Original | Final high | Final mobile |
-| --- | ---: | ---: | ---: |
-| Added steady water raster passes / draws (caustics, their mips, exposure) | 21 / 22 | 21 / 22 | 19 / 20 |
-| Whole-frame native raster passes, including copy resumptions and mips | 28 | 26 | 24 |
-| Whole-frame raster draws, including one draw in each mip bundle | 35–36 | 35–36 | 33–34 |
-| Backend render contexts (not native passes) | 7 | 7 | 7 |
-| Water FFT dispatches | 10 | 10 | 10 |
-| Opaque colour / depth snapshots | 3 / 1 | 1 / 1 | 1 / 1 |
+| Work counted                                                              | Original | Final high | Final mobile |
+| ------------------------------------------------------------------------- | -------: | ---------: | -----------: |
+| Added steady water raster passes / draws (caustics, their mips, exposure) |  21 / 22 |    21 / 22 |      19 / 20 |
+| Whole-frame native raster passes, including copy resumptions and mips     |       28 |         26 |           24 |
+| Whole-frame raster draws, including one draw in each mip bundle           |    35–36 |      35–36 |        33–34 |
+| Backend render contexts (not native passes)                               |        7 |          7 |            7 |
+| Water FFT dispatches                                                      |       10 |         10 |           10 |
+| Opaque colour / depth snapshots                                           |    3 / 1 |      1 / 1 |        1 / 1 |
 
 Native counters wrap command encoders during capture. Direct draws are 18–19 plus 17 high / 15 mobile mip-bundle
 draws; the extra occasional draw and eleventh compute dispatch belong to existing game work. Sky regeneration on
 sun changes is excluded from steady counts. Removing a copy resumes fewer passes; it does not remove a scene draw.
 
-| Setting / canvas | World target | Final GPU-span window means | Window p95 range | Evidence |
-| --- | --- | --- | --- | --- |
-| High, 1920×1200 | 1920×1200 | **7.78–8.56 ms** (six unchanged-baseline windows, mean 8.31) | **11.22–12.32 ms** | [resolution pair](../../.look/evidence/1793695676273-15358/evidence.json), [shadow pair](../../.look/evidence/1793695755109-17003/evidence.json), [surface pair](../../.look/evidence/1793695782387-17604/evidence.json) |
-| Mobile, 1920×1200 | 1152×720 | **4.60–6.94 ms** (seven unchanged-baseline windows across three runs) | **6.06–7.69 ms** | [first](../../.look/evidence/1793695165024-10406/evidence.json), [terrain pair](../../.look/evidence/1793695705073-15626/evidence.json), [DPR pair](../../.look/evidence/1793695853382-18481/evidence.json) |
-| High, 1210×702 | 1210×702 | **6.87 / 6.37 / 6.75 ms** | **7.52–7.66 ms** | [three windows](../../.look/evidence/1793695809664-17983/evidence.json) |
-| Mobile, 1210×702 | 726×421 | **5.31 / 5.23 / 4.64 ms** | **5.26–5.87 ms** | [three windows](../../.look/evidence/1793695831524-18215/evidence.json) |
+| Setting / canvas  | World target | Final GPU-span window means                                           | Window p95 range   | Evidence                                                                                                                                                                                                                 |
+| ----------------- | ------------ | --------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| High, 1920×1200   | 1920×1200    | **7.78–8.56 ms** (six unchanged-baseline windows, mean 8.31)          | **11.22–12.32 ms** | [resolution pair](../../.look/evidence/1793695676273-15358/evidence.json), [shadow pair](../../.look/evidence/1793695755109-17003/evidence.json), [surface pair](../../.look/evidence/1793695782387-17604/evidence.json) |
+| Mobile, 1920×1200 | 1152×720     | **4.60–6.94 ms** (seven unchanged-baseline windows across three runs) | **6.06–7.69 ms**   | [first](../../.look/evidence/1793695165024-10406/evidence.json), [terrain pair](../../.look/evidence/1793695705073-15626/evidence.json), [DPR pair](../../.look/evidence/1793695853382-18481/evidence.json)              |
+| High, 1210×702    | 1210×702     | **6.87 / 6.37 / 6.75 ms**                                             | **7.52–7.66 ms**   | [three windows](../../.look/evidence/1793695809664-17983/evidence.json)                                                                                                                                                  |
+| Mobile, 1210×702  | 726×421      | **5.31 / 5.23 / 4.64 ms**                                             | **5.26–5.87 ms**   | [three windows](../../.look/evidence/1793695831524-18215/evidence.json)                                                                                                                                                  |
 
 The DPR diagnostic changed the renderer from 1 to 0.6 and back: the world stayed **1152×720**, with scene scale
 0.6 → 1 → 0.6. It never fell to a compounded 0.36 scale. All windows confirmed samples=4 and both storage flags.
@@ -184,15 +184,15 @@ cross-run timing overlap between smaller and larger views is another reason not 
 
 ### Rejected experiments and remaining options
 
-| Experiment / candidate | Evidence and decision |
-| --- | --- |
-| Skip zero-mask ripples and swash samples; branch out of foam/above-water caustics; move coarsest variance to a varying | Trial 8.04 / original work 8.11 / trial 8.20 ms: essentially **0.00 ms**, baseline drift ±0.08. Reverted the extra shader branches and complexity. [Evidence](../../.look/evidence/1793694780007-5925/evidence.json). |
-| 192-segment polar grid | Means 7.80 / 7.31 / 7.45 ms were not a clean gain over the nearby full-grid run. All four trial boards were opened; Breakers acquired visibly straighter, angular crests. Rejected for high and mobile. The source's aerial tier is an option for a separate high-camera test, not a saving for these 9–16 m cameras. [Evidence](../../.look/evidence/1793694898764-7471/evidence.json), [Breakers board](../../.look/water-grid192-breakers-board.png). |
-| Replace terrain shading with a flat material | Diagnostic ceiling: 9.02 / flat 6.64 / 9.50 ms, **2.62 ms ±0.24**. Destroys the beach/rock look, so not a quality setting. Terrain remains worth further targeted investigation. [Evidence](../../.look/evidence/1793694301820-97867/evidence.json). |
-| Hide the ocean surface | 8.56 / hidden 4.42 / 8.35 ms: surface plus its snapshots accounts for **4.04 ms ±0.11** in that run. FFT and caustic generation still run; this is not the cost of the entire water system. Diagnostic only. [Evidence](../../.look/evidence/1793695782387-17604/evidence.json). |
-| Freeze the shadow map | **0.11 ms ±0.014** baseline drift, with per-frame p95 around 11.5 ms. Removes a pass and 5–6 draws but would need correct invalidation for moving casters. Not worth leaving stale shadows; keep 4096² dynamic. [Evidence](../../.look/evidence/1793695755109-17003/evidence.json). |
-| Throttle caustics/mips or exposure | Not kept or assigned a saving. Caustics visibly move through the four views; skipped updates risk stepping. Exposure is already two tiny targets and AgX shares the output draw. Any cadence change needs its own temporal comparison. |
-| Sky cube / MSAA | Sky already bakes only when the sun changes; no steady saving to claim. Stored 4× MSAA remains required. No MSAA-removal benchmark was passed off as an acceptable optimization. |
+| Experiment / candidate                                                                                                 | Evidence and decision                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Skip zero-mask ripples and swash samples; branch out of foam/above-water caustics; move coarsest variance to a varying | Trial 8.04 / original work 8.11 / trial 8.20 ms: essentially **0.00 ms**, baseline drift ±0.08. Reverted the extra shader branches and complexity. [Evidence](../../.look/evidence/1793694780007-5925/evidence.json).                                                                                                                                                                                                                                    |
+| 192-segment polar grid                                                                                                 | Means 7.80 / 7.31 / 7.45 ms were not a clean gain over the nearby full-grid run. All four trial boards were opened; Breakers acquired visibly straighter, angular crests. Rejected for high and mobile. The source's aerial tier is an option for a separate high-camera test, not a saving for these 9–16 m cameras. [Evidence](../../.look/evidence/1793694898764-7471/evidence.json), [Breakers board](../../.look/water-grid192-breakers-board.png). |
+| Replace terrain shading with a flat material                                                                           | Diagnostic ceiling: 9.02 / flat 6.64 / 9.50 ms, **2.62 ms ±0.24**. Destroys the beach/rock look, so not a quality setting. Terrain remains worth further targeted investigation. [Evidence](../../.look/evidence/1793694301820-97867/evidence.json).                                                                                                                                                                                                     |
+| Hide the ocean surface                                                                                                 | 8.56 / hidden 4.42 / 8.35 ms: surface plus its snapshots accounts for **4.04 ms ±0.11** in that run. FFT and caustic generation still run; this is not the cost of the entire water system. Diagnostic only. [Evidence](../../.look/evidence/1793695782387-17604/evidence.json).                                                                                                                                                                         |
+| Freeze the shadow map                                                                                                  | **0.11 ms ±0.014** baseline drift, with per-frame p95 around 11.5 ms. Removes a pass and 5–6 draws but would need correct invalidation for moving casters. Not worth leaving stale shadows; keep 4096² dynamic. [Evidence](../../.look/evidence/1793695755109-17003/evidence.json).                                                                                                                                                                      |
+| Throttle caustics/mips or exposure                                                                                     | Not kept or assigned a saving. Caustics visibly move through the four views; skipped updates risk stepping. Exposure is already two tiny targets and AgX shares the output draw. Any cadence change needs its own temporal comparison.                                                                                                                                                                                                                   |
+| Sky cube / MSAA                                                                                                        | Sky already bakes only when the sun changes; no steady saving to claim. Stored 4× MSAA remains required. No MSAA-removal benchmark was passed off as an acceptable optimization.                                                                                                                                                                                                                                                                         |
 
 ### Opened comparison boards and motion evidence
 
@@ -201,11 +201,11 @@ Each board has the supplied reference on the left and Boogle on the right at 121
 single-copy, rejected-grid and final-high boards were opened; all four final-mobile boards were opened too.
 The final production source is the same as the source recorded in these manifests; subsequent edits only document it.
 
-| View | Final high board / manifest | Final mobile board / manifest | Observation |
-| --- | --- | --- | --- |
-| Lagoon | [board](../../.look/water-high-lagoon-board.png) / [manifest](../../.look/evidence/1793695294744-11567/evidence.json) | [board](../../.look/water-mobile-lagoon-board.png) / [manifest](../../.look/evidence/1793695421056-12320/evidence.json) | High keeps the clear sand and caustic net; mobile softens its finest lines. The weaker nearest-sand contrast against the source predates this cost pass. |
-| Breakers | [board](../../.look/water-high-breakers-board.png) / [manifest](../../.look/evidence/1793695319834-11783/evidence.json) | [board](../../.look/water-mobile-breakers-board.png) / [manifest](../../.look/evidence/1793695446019-12793/evidence.json) | Curved foam fronts, beach colour and rock placement remain. Mobile softens terrain and distant detail; unlike the rejected grid, crest geometry is unchanged. |
-| Surf rock | [board](../../.look/water-high-surf-rock-board.png) / [manifest](../../.look/evidence/1793695343460-11952/evidence.json) | [board](../../.look/water-mobile-surf-rock-board.png) / [manifest](../../.look/evidence/1793695470835-13729/evidence.json) | Rock silhouette and bright submerged net remain. Mobile is softer. The missing planar reflected silhouette is an existing gap. |
+| View       | Final high board / manifest                                                                                               | Final mobile board / manifest                                                                                               | Observation                                                                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lagoon     | [board](../../.look/water-high-lagoon-board.png) / [manifest](../../.look/evidence/1793695294744-11567/evidence.json)     | [board](../../.look/water-mobile-lagoon-board.png) / [manifest](../../.look/evidence/1793695421056-12320/evidence.json)     | High keeps the clear sand and caustic net; mobile softens its finest lines. The weaker nearest-sand contrast against the source predates this cost pass.          |
+| Breakers   | [board](../../.look/water-high-breakers-board.png) / [manifest](../../.look/evidence/1793695319834-11783/evidence.json)   | [board](../../.look/water-mobile-breakers-board.png) / [manifest](../../.look/evidence/1793695446019-12793/evidence.json)   | Curved foam fronts, beach colour and rock placement remain. Mobile softens terrain and distant detail; unlike the rejected grid, crest geometry is unchanged.     |
+| Surf rock  | [board](../../.look/water-high-surf-rock-board.png) / [manifest](../../.look/evidence/1793695343460-11952/evidence.json)  | [board](../../.look/water-mobile-surf-rock-board.png) / [manifest](../../.look/evidence/1793695470835-13729/evidence.json)  | Rock silhouette and bright submerged net remain. Mobile is softer. The missing planar reflected silhouette is an existing gap.                                    |
 | Open ocean | [board](../../.look/water-high-open-ocean-board.png) / [manifest](../../.look/evidence/1793695367707-12123/evidence.json) | [board](../../.look/water-mobile-open-ocean-board.png) / [manifest](../../.look/evidence/1793695494930-14020/evidence.json) | Sky/horizon, rolling surface and sun lane remain. Smaller swells and broader glints relative to the source predate this work; mobile blurs the finest highlights. |
 
 Also opened all eight `water-{high,mobile}-{lagoon,breakers,surf-rock,open-ocean}-consecutive.png` strips in `.look/`,
