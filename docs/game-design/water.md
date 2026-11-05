@@ -17,7 +17,8 @@ switch together. Water chemistry, FFT, caustic simulation and fixed exposure (0.
 The fade is a Local DOM veil owned/disposed by the sea, with no extra render pass or light. Authoring sky-rebake
 controls are inactive while prepared evening is enabled. No sky allocation/bake is added on ordinary visits.
 The two raw/filtered pairs model approximately 256 MiB before scratch/LUTs, not measured residency;
-512-face comparison and device memory acceptance remain separate work. The experiment makes no device budget claim.
+the opt-in `skySize` comparison applies the same selected size to both prepared endpoints. The default remains
+1024; smaller-sky visual acceptance and device memory acceptance remain separate work. The experiment makes no device budget claim.
 
 ### Evening verification (5 November)
 

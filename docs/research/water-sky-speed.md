@@ -5,6 +5,38 @@ No push or ship. The water and default 1024 sky retain their existing look. No c
 no suspect Boogler lines were identified in this scope. No ROM data or new art assets.
 Serves DESIGN.md **Small and readable**: measure submissions before changing geometry.
 
+## Evening integration follow-up (5 November)
+
+Rebased this branch onto local `origin/main` at `ab86ab75`, retaining the evening preparation/refactor.
+The resolved sky uses stable texture sampling nodes and size-adjusted LODs together. Ordinary visits
+still bake one 1024 cube; `evening=1` prepares day and evening at the same selected `skySize`, then selects
+evening. No authored parameters, default mip expressions, water optics or transition behavior were retuned.
+
+The fresh [six-variant queue](../../.look/shots/sky-evening-final/manifest.json) links every broker manifest:
+[day 1024](../../.look/evidence/1793901751612-75220/evidence.json),
+[evening 1024](../../.look/evidence/1793901789810-76172/evidence.json),
+[day 512](../../.look/evidence/1793901821085-77227/evidence.json),
+[evening 512](../../.look/evidence/1793901835535-77834/evidence.json),
+[day 256](../../.look/evidence/1793901855294-78371/evidence.json), and
+[evening 256](../../.look/evidence/1793901875744-78950/evidence.json).
+All completed with no graphics errors and unchanged source during each run. The setup verifies actual
+cube sizes, mip counts, one bake per cube, absence of an evening cube on ordinary visits, and idle evening
+selection on opted-in visits. The runtime/fixtures match the final code; this evidence note was added afterward.
+
+Opened all twelve `c0-v0.png`/`c1-v0.png` cells and both 1024 `board-c1.png` boards. At the same two cameras,
+day retains turquoise water and pale clouds; evening has a gold sun reflection, warm clouds and darker bank.
+Smaller cubes soften cloud edges, clearly at 256, so neither becomes the default. The stippled bank edge is
+present in both looks. Reloaded wave states differ; these are not pixel-identical before/after-main images.
+Capture success establishes execution health, not visual equivalence, timing, or smoothness.
+
+Node 26 `npm run check` passed (330 tests, lint, types, registry, levels, assets, build), as did fresh
+[world-inputs](../../.look/evidence/1793901741780-74968/evidence.json).
+The first check caught a shot-list indexing type error; it was fixed before these final runs.
+The earlier capture queue remains diagnostic only. No new bot run was requested; earlier bot and timing
+evidence is historical, not verification of this rebased tree. No push, ship, network fetch, copy edit or
+ROM data. No suspect Boogler lines identified. The original 568-call peak and +5.4% cause remain unresolved.
+Not tested on a device.
+
 ## Draw attribution and the bounded change
 
 `dev/look/evals/place-draws.ts` observes actual backend submissions in one completed game frame,
@@ -120,6 +152,7 @@ node .look/see-client.ts playthrough --long
 node .look/see-client.ts scenario world-inputs
 node .look/see-client.ts shots dev/look/beats/chair-comparison.ts --name quiet-chair
 node .look/see-client.ts shots dev/look/beats/sky-size.ts --name quiet-skies
+node .look/see-client.ts shots dev/look/beats/sky-evening.ts --name quiet-sky-evening
 node .look/see-client.ts look --at 'train unlocked' \
   --saves .look/evidence/1793898658469-82762/run/saves \
   --query 'proto=place&prof=1' --cam 939,27,30 --look 930,19,5 \
@@ -141,7 +174,9 @@ done
 
 Exposure isolation **reconstructed from commit history**, not a verified copy of the original shell
 command: these are exactly the seven modified existing render/debug runtime files between
-`19c4c94e` and replay `1599ed02`. They remained unchanged through this task. The unused new
+`19c4c94e` and replay `1599ed02`. They remained unchanged before the evening rebase; main now passes `dt`
+to the frozen sky update in `water-render.ts`. The historical isolation recipe below has not been rerun
+on this rebased tree and is for default day only, not the prepared evening transition. The unused new
 `exposure.ts` may remain when restoring them. This holds today's sky and chair code constant.
 Start clean; the trap restores only those seven files and never changes branch, index or main.
 
