@@ -8,6 +8,7 @@ For Claude setup, skills, delegation, bot runs or GitHub Actions, read the relev
 
 ### Project skills
 
+- `/orchestrate`: run the studio loop (decide, dispatch Codex jobs, review, merge, playtest cycle, record the owner's calls). State lives in [orchestrator-state](orchestrator-state.md).
 - `/ship`: commit and ship with `npm run ship`.
 - `/simplify` is the cleanup pass and `/code-review` the code review required by docs/agents/shipping.md, "Shipping" (procedure: docs/agents/shipping.md).
 - `/new-feature <name>`: one self-contained plug-in in `src/features/`.

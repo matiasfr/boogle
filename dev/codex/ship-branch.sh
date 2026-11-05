@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Ship one finished job branch from its worktree: rebase onto origin/main, keep both sides of docs-only conflicts,
+# then `npm run ship -- --wait`. Usage: npm run ship-branch -- ../boogle-codex/<topic>
+# Exit codes: 2 code conflict (nothing shipped, rebase aborted), 3 a commit became empty on rebase (aborted, check it
+# isn't already on main), otherwise ship's own status. Always read the output: it says whether main has the commits.
+set -uo pipefail
+cd "${1:?worktree path}" || exit 1
+git fetch -q origin
+git rebase origin/main >/dev/null 2>&1
+while [ -d "$(git rev-parse --git-path rebase-merge)" ]; do
+  conflicted=$(git diff --name-only --diff-filter=U)
+  if echo "$conflicted" | grep -qv '^docs/'; then
+    echo "CODE CONFLICT in $1:"
+    echo "$conflicted"
+    git rebase --abort
+    exit 2
+  fi
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    python3 -I -c '
+import re, sys
+p = sys.argv[1]; s = open(p).read()
+open(p, "w").write(re.sub(r"<<<<<<< [^\n]*\n(.*?)=======\n(.*?)>>>>>>> [^\n]*\n", r"\1\2", s, flags=re.S))' "$f"
+    git add "$f"
+    echo "union: $f"
+  done <<<"$conflicted"
+  if ! GIT_EDITOR=true git rebase --continue >/dev/null 2>&1; then
+    if [ -z "$(git diff --name-only --diff-filter=U)" ] && git diff --cached --quiet; then
+      echo "EMPTY COMMIT at rebase: $(git log -1 --format=%s REBASE_HEAD)"
+      git rebase --abort
+      exit 3
+    fi
+  fi
+done
+npm ci --silent >/dev/null 2>&1
+SHIP_NO_AI=1 npm run --silent ship -- --wait 2>&1 | tail -3
+status=${PIPESTATUS[0]}
+git fetch -q origin
+left=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
+echo "unshipped commits: $left"
+[ "$left" = 0 ] || exit "${status:-1}"
+exit "$status"
