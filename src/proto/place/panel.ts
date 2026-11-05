@@ -250,7 +250,7 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
         back.type = 'button';
         back.className = 'pause-btn pause-back';
         back.textContent = 'Back';
-        back.addEventListener('click', () => pauseNavigation.open?.('main'));
+        back.addEventListener('click', () => pauseNavigation.open?.('more'));
         const page = document.createElement('div');
         page.className = 'pause-page';
         page.append(box, back);
