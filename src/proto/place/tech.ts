@@ -502,6 +502,7 @@ function buildGates() {
           formation.add(stake);
         }
       frame.add(formation);
+      buildChestStands(frame);
     }
     for (const side of [-1, 1]) {
       const jamb = new THREE.Mesh(new THREE.BoxGeometry(SLAB.pillar, SLAB.h + 0.8, SLAB.pillar), flat(STONE, 0.9));
@@ -771,6 +772,19 @@ function putFinds() {
       const q = hubSlot(SECRETS.indexOf(s));
       deliver(q.x, H(q.x, q.z), q.z, null, s.gift as GiftId);
     }
+  }
+}
+function buildChestStands(root: THREE.Group) {
+  for (const s of SECRETS.filter((s) => s.area === 'tower')) {
+    const x = s.x + ox,
+      y = yOf(s) - 0.5;
+    const stand = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1, 1.2), flat(STONE2));
+    stand.position.set(x, y, s.z);
+    stand.castShadow = stand.receiveShadow = true;
+    stand.position.sub(root.position).applyQuaternion(root.quaternion.clone().invert());
+    stand.quaternion.copy(root.quaternion).invert();
+    root.add(stand);
+    addStatic({ kind: 'box', hx: 0.85, hy: 0.5, hz: 0.6 }, { x, y, z: s.z });
   }
 }
 function updateMissed() {

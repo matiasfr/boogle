@@ -267,8 +267,10 @@ function fillSlots(load: CarryReadout, now: number) {
         slot.el.dataset.material = kind;
         if (!reduced)
           slot.el.animate(
-            [{ transform: 'scale(0.6)' }, { transform: 'scale(1.2)', offset: 0.55 }, { transform: 'scale(1)' }],
-            { duration: 200, easing: 'ease-out' },
+            kind === 'logs'
+              ? [{ transform: 'scale(1)' }, { transform: 'scale(1.12)', offset: 0.5 }, { transform: 'scale(1)' }]
+              : [{ transform: 'scale(0.6)' }, { transform: 'scale(1.2)', offset: 0.55 }, { transform: 'scale(1)' }],
+            { duration: kind === 'logs' ? 160 : 200, easing: 'ease-out' },
           );
       }
       if (reduced) for (const animation of slot.el.getAnimations()) animation.cancel();

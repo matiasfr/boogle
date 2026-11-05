@@ -26,6 +26,7 @@ import { dustRing } from './pieces.ts';
 import { softGlow } from './look.ts';
 import { dropGot, youGot } from './got.ts';
 import { addFoot } from './sites.ts';
+import { SHOP } from './town-lines.ts';
 
 // ---------------------------------------------------------------- shapes: a few primitives, merged, in their own colours
 export { merged } from './part-geometry.ts';
@@ -799,11 +800,16 @@ export function takeOff(id: GiftId) {
   saveHook();
 }
 /** On to the next thing you own in this slot, or nothing. */
+const nextInSlot = (slot: Slot) => {
+  const list = owned(slot);
+  const current = trying?.slot === slot ? trying.was : on[slot];
+  return list[list.findIndex((g) => g.id === current) + 1];
+};
+/** Preview the very same cycle as the action, using existing names and shop wording. */
+export const swapLabel = (slot: Slot) => `Swap ${slot}: ${nextInSlot(slot)?.name ?? SHOP.offVerb}`;
 export function swapSlot(slot: Slot) {
   untry();
-  const list = owned(slot),
-    k = list.findIndex((g) => g.id === on[slot]);
-  const next = list[k + 1];
+  const next = nextInSlot(slot);
   putOn(next?.id ?? null, slot);
   pop(next ? 5 : 2, 0.5);
   saveHook();
