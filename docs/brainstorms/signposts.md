@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-04).**
+> **Status: approved (owner, 2026-11-05).**
 
 # Signposts: a fork without instructions
 
@@ -54,13 +54,13 @@ Whether it feels good stays the playtest's question. Not tested on a device.
 ## Open questions
 
 1. Does the game still need to say the quarry comes later? **Recommended: no, an early visit is fine, and the slab and lever explain the railway when you get there.**
-   Answer: ___
+   Answer (owner): no, an early visit is fine.
 2. Are plain place names still welcome? **Recommended: yes as the fallback, but try no boards first.**
-   Answer: ___
+   Answer (owner): yes as recommended.
 3. When should this go in? **Recommended: build it behind a link now, keep today's boards for the replay so "Finding the way" still answers the same question, and compare after.**
-   Answer: ___
+   Answer (owner): remove the signs now.
 4. Should the dock start and the entry into town join this? **Recommended: no, this stays one fork, and those go with the terrain and level design pass.**
-   Answer: ___
+   Answer (owner): yes, they join this work.
 
 ## Parked
 
@@ -71,4 +71,4 @@ Whether it feels good stays the playtest's question. Not tested on a device.
 
 ## Disposition
 
-**Bounded experiment**, proposed. It's a visual and wayfinding change behind a flag, so it doesn't alter the default build under test in the replay. A blind first-time player is the only real check of discovery, and that remains later. The owner decides.
+**Proceed.** The owner chose to remove the signs now, so the replay plays without them, and its "Finding the way" answer reads against this change. A blind first-time player is still the only real check of discovery.
