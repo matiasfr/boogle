@@ -70,6 +70,16 @@
     "animations": [],
     "textures": []
   },
+  "recovery-rack-b": {
+    "source": "recovery-rack-b.py",
+    "sourceHash": "d0cc367b09e1d19c",
+    "outHash": "8c3594f474792be9",
+    "rawBytes": 118044,
+    "bytes": 24952,
+    "triangles": 1016,
+    "animations": [],
+    "textures": []
+  },
   "scaffold-kit": {
     "source": "scaffold-kit.py",
     "sourceHash": "4a239fc3e45106f9",

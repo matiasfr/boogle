@@ -1,6 +1,6 @@
 # Asset and animation stage
 
-`/character/` browses and inspects built and code-generated assets without an island, room, physics or game features. `/assets/` redirects here, retaining query parameters. All selection, filtering, thumbnails, camera, lighting and playback state is Local to this document. The catalogue comes from the build manifest, actual mesh-bearing GLB nodes and side-effect-free code descriptors. The current set has 50 cards: six built roots, 32 kit parts and twelve code previews.
+`/character/` browses and inspects built and code-generated assets without an island, room, physics or game features. `/assets/` redirects here, retaining query parameters. All selection, filtering, thumbnails, camera, lighting and playback state is Local to this document. The catalogue comes from the build manifest, actual mesh-bearing GLB nodes and side-effect-free code descriptors. The current set has 52 cards: eight built roots, 32 kit parts and twelve code previews.
 
 Browse the thumbnail grid with a name/source search and type filter (characters, kit, nature, props, buildings, POIs). Each native link opens its asset on the stage; Tab/Enter and touch work, and modified clicks can open a separate tab. Every card has a direct URL, source badge, triangle and authored-clip counts, and build warning text. Code triangle counts are measured when a visible thumbnail or stage preview is created; pending counts show an ellipsis. Filtering to no results leaves the current stage selection intact. The catalogue scrolls within a bounded pane; animation, overlays, lighting, detailed metrics and sharing collapse independently. Phone width keeps the stage above a bounded panel.
 
@@ -24,7 +24,7 @@ Not covered: complete town interiors/furniture and room cutaways (coupled to gro
 
 ## Inspection
 
-The recovery rack comparison adds `recovery-rack-a`, a static text-only timber rack with three logs, for Buddy-scale review. It is catalogue geometry only; slice 2 retains game placement and stock ownership. The comparison and exact evidence live in [rack-model-compare](../research/rack-model-compare.md).
+The recovery rack comparison adds `recovery-rack-a` (text only) and `recovery-rack-b` (reference guided), static timber racks with three logs for Buddy-scale review. Both are catalogue geometry only; slice 2 retains game placement and stock ownership. The comparison and exact evidence live in [rack-model-compare](../research/rack-model-compare.md).
 
 The [two-asset authoring trial](../research/asset-model-trial.md) adds a feeder roller and a separate conductor cap to the catalogue. The roller retains its axle-centred origin; only its stage holder is lifted 0.075 m above the floor. Buddy's Hat selector adds **Conductor trial** (`hat=conductor`), rigidly attached to the existing Head bone on cloned preview instances. Its paintedToy and deliberately brass-tinted steel materials are owned clones. Buddy's production source, rig, wardrobe and gameplay remain unchanged. The independent cap card inspects the Head-relative asset; use the Buddy hat selector for worn clips. Resident Buddy preview counts include the hidden trial cap, as they already include other hidden wear parts.
 

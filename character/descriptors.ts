@@ -53,6 +53,12 @@ export const gearAttachments: Record<string, Extract<Motion, { kind: 'attachment
   },
 };
 export const descriptors: Record<string, AssetDescriptor> = {
+  'recovery-rack-b': {
+    label: 'Recovery rack B — reference guided',
+    category: 'props',
+    rootNote: 'Static comparison; base-centre origin. Six-board gable from the generated design intent.',
+    motion: { kind: 'none', source: 'assets/src/recovery-rack-b.py' },
+  },
   'recovery-rack-a': {
     label: 'Recovery rack A — text only',
     category: 'props',
