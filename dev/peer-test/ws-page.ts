@@ -4,20 +4,36 @@
 import { createWsRoom, type Room } from '../../src/net/ws-room.ts';
 import { createSync } from '../../src/world/sync.ts';
 import { installRules } from '../../src/world/rules/index.ts';
-import { installRailwayRules } from '../../src/world/rules/railway-index.ts';
-import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
+import { installRailwayRules, installPlayableRailwayRules } from '../../src/world/rules/railway-index.ts';
+import { isRailwayRoom, isPlayableRailwayRoom } from '../../src/world/railway-namespace.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import type { RailAction, RailAccount, railCounts, railPhase } from '../../src/sim/railway.ts';
+import {
+  createRailwayAdapter,
+  type RailwayAccepted,
+  type RailwayInspection,
+  type RailwayIntent,
+} from '../../src/adapters/railway.ts';
 import home from '../../src/world/home-land.json';
 
 export type RailwayProbe = {
+  pid: string;
   tick: number;
   ready: boolean;
   phase: ReturnType<typeof railPhase>;
   counts: ReturnType<typeof railCounts>;
   accounts: RailAccount[];
   messages: Record<string, unknown>[];
+  registry: { states: string[]; ops: string[] };
+  sources: { id: number; remaining: number }[];
+  people: { pid: string; name: string }[];
+  classicItems: number;
+};
+export type RailwayAdapterProbe = {
+  state: RailwayInspection;
+  effects: readonly RailwayAccepted[];
+  resets: number;
 };
 
 declare global {
@@ -122,29 +138,65 @@ const T = (window.T = {
   toss: null as unknown as (i: number, j: number) => boolean, // set by startWorld
   world: (): unknown => null,
   rail: (): RailwayProbe | null => null,
+  railAdapter: (): RailwayAdapterProbe | null => null,
+  railIntent: null as unknown as (intent: RailwayIntent) => boolean,
+  railSnapshot: null as unknown as () => void,
   railOpen: () => T.room!.send({ t: 'r:open' }),
   railEdit: (e: RailAction) => T.room!.send({ t: 'r:edit', e }),
   railStatus: (epoch: number, request: number) => T.room!.send({ t: 'r:status', epoch, request }),
-  railPose(target: 'station' | 'source') {
-    const point = target === 'station' ? [RAILWAY_T1.x, RAILWAY_T1.z] : RAILWAY_SOURCES[0]!.slice(1);
-    void T.room!.presence({ p: [point[0]! / 100, 0, point[1]! / 100], v: 1 });
+  railBaseEdit: (e: Record<string, unknown>) => T.room!.send({ t: 'w:edit', e }),
+  railPose(target: 'station' | 'source', id = RAILWAY_SOURCES[0]![0]) {
+    const source = RAILWAY_SOURCES.find((row) => row[0] === id);
+    if (target === 'source' && !source) throw new Error(`unknown railway source ${id}`);
+    const point = target === 'station' ? [RAILWAY_T1.x, RAILWAY_T1.z] : source!.slice(1);
+    void T.room!.presence({ p: [point[0]! / 100, 30, point[1]! / 100], v: 1 });
   },
 });
 
 function startWorld(room: Room) {
   const w = createSync();
+  T.railSnapshot = w.requestResync;
   const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
-  const railway = isRailwayRoom(q.get('room') ?? '') ? installRailwayRules(w, land) : null;
+  const roomId = q.get('room') ?? '';
+  const playable = isPlayableRailwayRoom(roomId) ? installPlayableRailwayRules(w, land) : null;
+  const railway = playable ?? (isRailwayRoom(roomId) ? installRailwayRules(w, land) : null);
   const rules = railway ? null : installRules(w, land);
+  const adapter =
+    railway && q.get('adapter') === '1' ? createRailwayAdapter({ api: railway.railway, sync: w, pid: PID }) : null;
+  if (adapter) {
+    const effects: RailwayAccepted[] = [];
+    let resets = 0;
+    adapter.onAccepted((event) => effects.push(event));
+    adapter.onReset(() => resets++);
+    T.railAdapter = () => ({ state: adapter.inspect(), effects: effects.map((e) => ({ ...e })), resets });
+    T.railIntent = (intent) => {
+      switch (intent.op) {
+        case 'rail.wake':
+          return adapter.wake();
+        case 'rail.chop':
+          return adapter.chop(intent.id, intent.yaw, intent.collapsed);
+        case 'rail.deposit':
+          return adapter.deposit(intent.n);
+        case 'rail.drop':
+          return intent.y !== undefined && adapter.drop(intent.x, intent.y, intent.z, intent.n);
+        case 'rail.take':
+          return adapter.take(intent.id);
+        case 'rail.rackTake':
+          return adapter.rackTake();
+      }
+    };
+  }
   w.onAfterTick((t) => {
     if (t % HASH_EVERY === 0) T.hashes[t] = JSON.stringify(w.stateHashes());
   });
   w.setPid(PID);
   w.attachWorld(room, { roomId: q.get('room') ?? 'test' });
+  adapter?.attach(room);
   let last = performance.now();
   setInterval(() => {
     const now = performance.now();
     w.updateWorld((now - last) / 1000);
+    adapter?.update(now);
     last = now;
   }, 50);
   T.toss = (i, j) => w.submitEdit({ op: 'gift.toss', i, j, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] });
@@ -155,11 +207,16 @@ function startWorld(room: Room) {
   });
   if (railway)
     T.rail = () => ({
+      pid: PID,
       tick: w.world.tick,
       ready: w.worldStatus().ready,
       phase: railway.railway.phase(),
       counts: railway.railway.counts(),
       accounts: railway.railway.railway.accounts.map((a) => ({ ...a })),
       messages: T.railMessages.map((m) => ({ ...m })),
+      registry: w.registry(),
+      sources: RAILWAY_SOURCES.map(([id], k) => ({ id, remaining: railway.railway.railway.sources[k]! })),
+      people: railway.roster.roster.pids.map((pid, k) => ({ pid, name: railway.roster.nameOf(k) })),
+      classicItems: playable?.gifts.gifts.items.length ?? 0,
     });
 }

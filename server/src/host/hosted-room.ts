@@ -13,8 +13,9 @@ import type { WebSocket } from 'ws';
 import { CLOSE, MAX_MSG, encode, decode, type WireMsg } from '../../../src/net/ws-wire.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
 import { createWorldHost, createRailwayWorldHost } from './world-host.ts';
-import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
+import { isRailwayRoom, isPlayableRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_CLIENT_MESSAGES, RAILWAY_HOST_MESSAGES } from '../../../src/world/railway-wire.ts';
+import { validatePing, honkShape } from '../../../src/sim/social.ts';
 import type { Store } from '../store.ts';
 
 export type HostCfg = {
@@ -94,6 +95,19 @@ export function createHostedRoom({
   const world = railway
     ? createRailwayWorldHost({
         ...hostOptions,
+        positions() {
+          return [...clients].map(([sid, client]) => {
+            const p = client.d && typeof client.d === 'object' ? (client.d as { p?: unknown }).p : null;
+            const at = poseAt.get(sid);
+            return Array.isArray(p) && typeof p[0] === 'number' && typeof p[2] === 'number' && at !== undefined
+              ? {
+                  x: p[0],
+                  z: p[2],
+                  at,
+                }
+              : null;
+          });
+        },
         positionOf(sid) {
           const d = clients.get(sid)?.d;
           const p = d && typeof d === 'object' ? (d as { p?: unknown }).p : null;
@@ -197,8 +211,20 @@ export function createHostedRoom({
     const t = (m.d as WireMsg | null)?.t;
     if (HOST_ONLY.has(t as string)) return void c.dropped++;
     if (railway) {
+      // Existing cosmetic one-offs remain peer messages. Strip unrelated fields; none enters the material host.
+      if (isPlayableRailwayRoom(roomId) && (t === 'ping' || t === 'honk')) {
+        const cosmetic = t === 'ping' ? validatePing(m.d) : { v: honkShape(m.d) };
+        if (!cosmetic) return void c.dropped++;
+        toAll(encode({ t: 'm', from: c.id, d: { t, ...cosmetic } }), c.id);
+        return;
+      }
       // Isolated production requests go only to the host. Never relay a forged receipt or old edit protocol.
-      if (t !== 'w:need' && !RAILWAY_CLIENT_MESSAGES.has(String(t))) return void c.dropped++;
+      if (
+        t !== 'w:need' &&
+        !(t === 'w:edit' && isPlayableRailwayRoom(roomId)) &&
+        !RAILWAY_CLIENT_MESSAGES.has(String(t))
+      )
+        return void c.dropped++;
       world.deliver(m.d, c.id);
       return;
     }

@@ -1,0 +1,83 @@
+{
+  "sourceCommit": "e7fbc853a9b3189a55f821de33499fe69e290d11",
+  "roomId": "v07-proto-main-fixture",
+  "accepted": ["who.set", "tune.commit", "src.take", "pile.drop"],
+  "snapshot": {
+    "tick": 16,
+    "seed": 20261028,
+    "epochMs": 1793906400000,
+    "data": {
+      "gifts": {
+        "pa": [0, 0, 0, 0],
+        "it": [1, 1, 210, 249, 1, 1, -2],
+        "n": 2
+      },
+      "roster": [["mainplayer", "Durable builder", 2]],
+      "stacks": [[0, 0, 6]],
+      "piles": {
+        "id": 2,
+        "p": [1, 176, 200, 0, 3]
+      },
+      "sites": {
+        "o": 0,
+        "s": [
+          [0, 0, 0, 0, 0, 0, -1, -1, 0, []],
+          [0, 0, 0, 0, 0, 0, -1, -1, 0, []],
+          [0, 0, 0, 0, 0, 0, -1, -1, 0, []]
+        ]
+      },
+      "sources": {
+        "a": 0,
+        "s": [0, 1]
+      },
+      "bank": {
+        "ms": 0
+      },
+      "ball": {
+        "p": null,
+        "at": 0
+      },
+      "tune": {
+        "catalog": "e0d64927",
+        "revision": 1,
+        "values": {
+          "cost0": 60,
+          "helper0": 36,
+          "hard": 60,
+          "yield": 9,
+          "full": 2,
+          "trickle": 200,
+          "wagonCruise": 30,
+          "wagonAccel": 30
+        }
+      },
+      "opening": {
+        "t0": -1
+      }
+    },
+    "vers": {
+      "gifts": 0,
+      "roster": 0,
+      "stacks": 0,
+      "piles": 0,
+      "sites": 0,
+      "sources": 0,
+      "bank": 0,
+      "ball": 0,
+      "tune": 1,
+      "opening": 0
+    }
+  },
+  "hashes": {
+    "gifts": 2589574624,
+    "roster": 2086111794,
+    "stacks": 1219556497,
+    "piles": 488026701,
+    "sites": 1249462927,
+    "sources": 1236334116,
+    "bank": 292984781,
+    "ball": 3412691020,
+    "tune": 2311329795,
+    "opening": 84696351
+  }
+}

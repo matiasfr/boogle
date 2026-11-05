@@ -15,42 +15,20 @@ import { removeBody, teleport } from '../../physics/engine.ts';
 import { flat } from '../flat.ts';
 import { draw, makeSet } from '../net/boxes.ts';
 import { smooth } from '../net/town-fx.ts';
-import { H, addStatic } from './land.ts';
-import { CRANE, FORGE, FORGE_BILLS, ORIGIN, RACK, TUNE } from './layout.ts';
+import { addStatic } from './land.ts';
+import { FORGE_BILLS, TUNE } from './layout.ts';
 import { count, sharedSlice } from './job.ts';
 import { LOOK, STEEL, boardMaterial } from './look.ts';
 import { kitBatch } from './look-kit.ts';
 import { RAIL_SIZE, dropSet, dustRing, send } from './pieces.ts';
-import { addFoot, housePlan, hullBodies, outOf } from './sites.ts';
-import { makeWorkshop, WORKSHOP_DOOR } from './workshop.ts';
+import { addFoot, hullBodies, outOf } from './sites.ts';
+import { makeWorkshop } from './workshop.ts';
 
-const WOOD = '#a9794c',
-  WOOD2 = '#8a6236',
-  BRICK = '#9a4a3a',
-  ROOF = '#5a5f6b';
-
-const X = FORGE.x + ORIGIN.x,
-  Z = FORGE.z + ORIGIN.z;
-const W = FORGE.w,
-  D = FORGE.d,
-  HIGH = 4.6; // to the wall tops
+import { forgePlan, X, Z, W, D, HIGH } from './opening-plans.ts';
+import { craneModel, rackModel } from './opening-models.ts';
 
 // ---------------------------------------------------------------- the plan: the standard every building copies
-const plan = housePlan({
-  x: X,
-  z: Z,
-  w: W,
-  d: D,
-  high: HIGH,
-  rise: 2.1,
-  wall: WOOD,
-  post: WOOD2,
-  roof: ROOF,
-  door: WORKSHOP_DOOR,
-  closed: false,
-  chimney: { dx: -W / 2 + 1.4, dz: -D / 2 + 1.2, n: 8, a: BRICK, b: '#8a4032' },
-  poleTop: HIGH + 3,
-});
+const plan = forgePlan();
 const Y = plan.y;
 // Keep the original furnace/output opening beside the new walk-in door. Trim only the low front boards;
 // piece counts and construction bills stay identical, and the furnace/rail flight remains at its original position.
@@ -127,35 +105,10 @@ function wallsSolid(on: boolean) {
 }
 
 // ---------------------------------------------------------------- the crane
-const MAST = 13;
-const CX = CRANE.x + ORIGIN.x,
-  CZ = CRANE.z + ORIGIN.z,
-  CY = H(CX, CZ);
-const crane = new THREE.Group();
-crane.position.set(CX, CY, CZ);
-const pole = new THREE.Mesh(new THREE.BoxGeometry(0.7, MAST, 0.7), flat('#d9a03a'));
-pole.position.y = MAST / 2;
-pole.castShadow = true;
-const jib = new THREE.Group();
-jib.position.y = MAST;
-const arm = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 19), flat('#e0b04a'));
-arm.position.z = 7.5;
-arm.castShadow = true;
-const counter = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1, 1.6), flat('#3a302c'));
-counter.position.set(0, -0.3, -2);
-jib.add(arm, counter);
-crane.add(pole, jib);
-scene.add(crane);
+const { MAST, CX, CY, CZ, crane, jib, rope, hook, crateMesh } = craneModel();
+scene.add(crane, rope, hook, crateMesh);
 addStatic({ kind: 'box', hx: 0.35, hy: MAST / 2, hz: 0.35 }, { x: CX, y: CY + MAST / 2, z: CZ });
 addFoot(CX, CZ, 0, 0.6, 0.6);
-const rope = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1, 0.06), flat('#2a2a2e'));
-const hook = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.2, 0.34), flat('#2a2a2e'));
-scene.add(rope, hook);
-const crateMesh = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.82, 0.82), flat('#a8703a', 0.85));
-crateMesh.castShadow = true;
-crateMesh.visible = false;
-scene.add(crateMesh);
-
 type Job = { t: number; from: THREE.Vector3; to: THREE.Vector3; land: () => void };
 let job: Job | null = null;
 const hookAt = new THREE.Vector3(CX + 3, CY + 8, CZ),
@@ -221,23 +174,7 @@ function updateCrane(dt: number) {
 }
 
 // ---------------------------------------------------------------- the rack
-const RX = RACK.x + ORIGIN.x,
-  RZ = RACK.z + ORIGIN.z,
-  RY = H(RX, RZ);
-const rackPosts = new THREE.Group();
-rackPosts.position.set(RX, RY, RZ);
-for (const dz of [-1.2, 1.2])
-  for (const dx of [-1.25, 1.25]) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.8, 0.2), flat(WOOD2));
-    m.position.set(dx, 0.9, dz);
-    m.castShadow = true;
-    rackPosts.add(m);
-  }
-for (const dz of [-1.2, 1.2]) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.14, 0.2), flat(WOOD2));
-  m.position.set(0, 0.32, dz);
-  rackPosts.add(m);
-}
+const { RX, RY, RZ, rackPosts } = rackModel();
 scene.add(rackPosts);
 addStatic({ kind: 'box', hx: 1.35, hy: 0.45, hz: 1.3 }, { x: RX, y: RY + 0.45, z: RZ });
 addFoot(RX, RZ, 0, 1.5, 1.5);

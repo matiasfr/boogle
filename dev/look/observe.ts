@@ -149,8 +149,11 @@ export const WATCH_MARKS = `
     const p = me.body?.position;
     return p ? { x: p.x, y: p.y, z: p.z, yaw: me.yaw, pitch: cam.pitch } : null;
   };
-  // Round 4's save, so a state holds this very moment. An older place saves on its own and this finds nothing.
-  await import('/src/proto/place/job.ts').then((m) => (o.flush = m.save)).catch(() => {});
+  // Legacy checkpoints flush their own save. Production checkpoints hold pose/profile only; the server owns work.
+  // Never load a legacy save owner merely to observe the production entry.
+  const { productionRailway } = await import('/src/proto/flags.ts');
+  if (!productionRailway)
+    await import('/src/proto/place/job.ts').then((m) => (o.flush = m.save)).catch(() => {});
   const marks = await import('/src/proto/mark.ts');
   if (!marks.watchPlayMarks) return false;
   let line = '';

@@ -14,7 +14,8 @@ import { me } from '../../player/player.ts';
 import { flat } from '../flat.ts';
 import { babble, CHATTER } from './chatter.ts';
 import { H } from './land.ts';
-import { merged } from './gifts.ts';
+import { merged } from './part-geometry.ts';
+import type { OwnedView } from '../../render/owned-view.ts';
 import { TOWN, toWorld, FORGE } from './layout.ts';
 import { feet, outOf, underway, type Foot, type Site } from './sites.ts';
 
@@ -274,6 +275,16 @@ export type FolkEnv = {
 };
 let env: FolkEnv | null = null;
 export const setFolkEnv = (e: FolkEnv) => void (env = e);
+/** The same local cast, attached to the production view's lifetime. */
+export function mountFolk(owner: OwnedView, next: FolkEnv) {
+  resetFolk();
+  env = next;
+  owner.add(heads, coats, limbs, held);
+  owner.cleanup(() => {
+    resetFolk();
+    env = null;
+  });
+}
 
 // ---------------------------------------------------------------- moving
 const SPEED = { walk: 1.7, run: 4.6 };

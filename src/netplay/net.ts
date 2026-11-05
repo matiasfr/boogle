@@ -1,11 +1,12 @@
 import { BUILD } from '../build-id.ts';
 import { background } from '../async.ts';
-import { pageQuery } from '../proto/flags.ts';
+import { pageQuery, productionRailway } from '../proto/flags.ts';
 import { COLORS, DEFAULT_NAME, CLASSIC_ROOM, SEND_MS } from '../constants.ts';
 import { finiteArr, r2, sanitizeName } from '../math.ts';
 import { createWsRoom, type Room } from '../net/ws-room.ts';
 import { attachWorld, detachWorld, setPid, setSelfId } from '../world/sync.ts';
 import { worldRoomId } from '../world/namespace.ts';
+import { railwayRoomId } from '../world/railway-namespace.ts';
 import { identity } from '../player/identity.ts';
 import { createSnaps } from './snaps.ts';
 import { addField, mergeFields, hostField } from './presence-fields.ts';
@@ -351,7 +352,7 @@ function dropOldSaves() {
 export async function connectRoom() {
   // The room and its world live under the namespaced id; the plain name stays for the URL, titles and telemetry.
   dropOldSaves();
-  const roomId = worldRoomId(getRoomId());
+  const roomId = productionRailway ? railwayRoomId(getRoomId()) : worldRoomId(getRoomId());
   setPid(identity.pid); // for anything this tab stamps itself while solo
   let room: Room;
   try {

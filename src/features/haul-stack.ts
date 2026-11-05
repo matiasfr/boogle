@@ -7,6 +7,9 @@
 // Local look. The chip is a play-size wood pill with a log icon, and its number ticks one by one toward the
 // host-confirmed count with a pop and a count sound per step (docs/research/ui-patterns.md, rec 3).
 import { rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
+import { backSeam, type CarryReadout } from '../player/haul-back.ts';
+export { backSeam, myBundleNext } from '../player/haul-back.ts';
+export { BUNDLE_SCALE } from '../render/haul-bundle.ts';
 import '../ui/ui-kit.css';
 import './haul-stack.css';
 import * as THREE from 'three/webgpu';
@@ -18,7 +21,6 @@ import { okPid } from '../sim/roster.ts';
 import { pieceMesh, pieceColor, commitPieces, onFly } from '../render/haul-pieces.ts';
 import {
   SHOWN,
-  BUNDLE_SCALE,
   shownOf,
   lenOf,
   frameOf,
@@ -36,19 +38,6 @@ import { camera, toScreen } from '../render/scene.ts';
 import { PLAYER_R } from '../constants.ts';
 import { pauseSections } from '../player/pause-pages.ts';
 import { padModal } from '../player/controls.ts';
-
-/** Place's Local readout. Counts retain their owner's acceptance/landing semantics. */
-type CarryReadout = {
-  logs: number;
-  rails: number;
-  stone: number;
-  big: 'beam' | 'boiler' | null;
-  capacity: number;
-  incoming: number;
-  reserved: number;
-  flyingLogs: number;
-  attention: boolean;
-};
 
 // The bundle: logs lying crosswise, stacked up and out from the back on a hex lattice (slots filled nearest-first, so
 // it fills out rather than up), with two rope bands round it. At most SHOWN pieces drawn, growing more slowly than the
@@ -74,26 +63,6 @@ const stackOf = (pid: string | null | undefined): Stack => {
 };
 const myStack = () => stackOf(identity.pid);
 protoActivity(() => (myStack().n ? 'carrying' : null)); // for the playtest trace (src/proto/trace/)
-
-// Seams for a haul variant that draws pickups its own way (?proto=haul&v=magnet, src/proto/haul/magnet.ts): with
-// `flyIns` false this module draws no fly-ins; `count(n)` is what your chip and your own bundle show while the host's
-// count is n (the magnet moves it one arrival at a time). Local.
-export const backSeam = {
-  flyIns: true,
-  count: (n: number) => n,
-  remote: null as ((peer: string) => number) | null, // ?proto=place&coop=1: a partner's logs, from their presence
-  carry: null as (() => CarryReadout) | null,
-};
-export { BUNDLE_SCALE };
-/** Where the next piece onto your bundle goes, holding `n` now: its world position and the bundle's world rotation. */
-export function myBundleNext(n: number, out: THREE.Vector3, rot: THREE.Quaternion): boolean {
-  if (!me.avatar || !me.entered) return false;
-  me.avatar.updateMatrixWorld();
-  const f = frameOf(me.avatar);
-  f.localToWorld(slotAt(Math.min(SHOWN, shownOf(n + 1)) - 1, fitOf(me.avatar), out));
-  f.getWorldQuaternion(rot);
-  return true;
-}
 
 // One stack of n pieces of kind k on avatar a, into the bundle and band meshes from slot c and b on.
 let c = 0,

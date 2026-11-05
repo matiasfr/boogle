@@ -7,11 +7,11 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createWorldHost, createRailwayWorldHost, type RailwayPosition } from '../src/host/world-host.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
-import { RAILWAY_ROOM } from '../../src/world/railway-namespace.ts';
+import { RAILWAY_ROOM, isPlayableRailwayRoom, railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayInvariant } from '../../src/sim/railway.ts';
 
 type Obj = Record<string, unknown>;
-async function fixture() {
+async function fixture(roomId = RAILWAY_ROOM) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-railway-host-'));
   const store = createStore({ dataDir: dir, maxRooms: 10 });
   await store.init();
@@ -26,7 +26,7 @@ async function fixture() {
   let host = create();
   function create() {
     const h = createRailwayWorldHost({
-      roomId: RAILWAY_ROOM,
+      roomId,
       store,
       tick: false,
       now: () => now,
@@ -59,7 +59,14 @@ async function fixture() {
   const edit = async (sid: string, fields: Obj, epoch = 1) => {
     const request = (requests.get(sid) ?? 0) + 1;
     requests.set(sid, request);
-    host.deliver({ t: 'r:edit', e: { ...fields, epoch, request } }, sid);
+    const placement = roomId.startsWith('t1v02-')
+      ? fields.op === 'rail.chop'
+        ? { yaw: 0, collapsed: false }
+        : fields.op === 'rail.drop'
+          ? { y: 3000 }
+          : {}
+      : {};
+    host.deliver({ t: 'r:edit', e: { ...placement, ...fields, epoch, request } }, sid);
     await host.sync.whenDurable();
     await step(3);
     const result = sent.findLast(
@@ -141,47 +148,103 @@ test('ordinary rooms keep the classic registry; isolated missing reach is a dura
   }
 });
 
-test('host last-piece race transfers one of eight logs, starts once and restores the funded queue', async () => {
-  const f = await fixture();
-  try {
-    await f.open('a');
-    await f.open('b');
-    await f.wake();
-    await f.harvest('a', 8);
-    await f.deposit('a', 8);
-    await f.harvest('a', 8);
-    await f.deposit('a', 8);
-    await f.harvest('a', 8);
-    await f.deposit('a', 7);
-    await f.harvest('a', 4);
-    f.pose('a', T1.x, T1.z);
-    await f.edit('a', { op: 'rail.drop', x: T1.x, z: T1.z, n: 1 });
-    await f.harvest('b', 4);
-    assert.equal(f.host.rules.railway.railway.stock, 23);
-    for (const sid of ['a', 'b']) {
-      f.pose(sid, T1.x, T1.z);
-      const request = (f.requests.get(sid) ?? 0) + 1;
-      f.requests.set(sid, request);
-      f.host.deliver({ t: 'r:edit', e: { op: 'rail.deposit', station: 'T1', n: 4, epoch: 1, request } }, sid);
+for (const roomId of [RAILWAY_ROOM, 't1v02-boogle'])
+  test(`host last-piece race transfers one of eight logs and restores once: ${roomId}`, async () => {
+    const f = await fixture(roomId);
+    try {
+      await f.open('a');
+      await f.open('b');
+      await f.wake();
+      await f.harvest('a', 8);
+      await f.deposit('a', 8);
+      await f.harvest('a', 8);
+      await f.deposit('a', 8);
+      await f.harvest('a', 8);
+      await f.deposit('a', 7);
+      await f.harvest('a', 4);
+      f.pose('a', T1.x, T1.z);
+      await f.edit('a', { op: 'rail.drop', x: T1.x, z: T1.z, n: 1 });
+      await f.harvest('b', 4);
+      assert.equal(f.host.rules.railway.railway.stock, 23);
+      for (const sid of ['a', 'b']) {
+        f.pose(sid, T1.x, T1.z);
+        const request = (f.requests.get(sid) ?? 0) + 1;
+        f.requests.set(sid, request);
+        f.host.deliver({ t: 'r:edit', e: { op: 'rail.deposit', station: 'T1', n: 4, epoch: 1, request } }, sid);
+      }
+      await f.host.sync.whenDurable();
+      const stamps = f.sent.filter((m) => m.t === 'w:edits').at(-1)!;
+      assert.equal((stamps.list as unknown[]).length, 2);
+      // Neither edit has applied yet; restart consumes the durably published tail in its original order.
+      await f.restart();
+      const api = f.host.rules.railway;
+      assert.equal(api.account('alice')!.carry + api.account('bob')!.carry, 7);
+      assert.equal(api.railway.allocation, 24);
+      assert.equal(api.railway.delivered, 24);
+      assert.equal(api.railway.piles[0]!.n, 1);
+      if (isPlayableRailwayRoom(roomId)) {
+        assert.equal(api.railway.piles[0]!.y, 3000, 'settled drop elevation survives the published-tail restart');
+        assert.equal(api.railway.falls?.yaw[0], 0);
+        assert.equal(api.railway.falls?.collapsed[0], false);
+      }
+      assert.equal(railwayInvariant(api.railway), null);
+      assert.equal(api.outcome('alice', 1, f.requests.get('a')!)!.accepted, 1);
+      assert.equal(api.outcome('bob', 1, f.requests.get('b')!)!.accepted, 0);
+      await f.step(110);
+      assert.equal(api.railway.used, 24);
+      assert.equal(api.railway.completion, 1);
+      await f.restart();
+      assert.equal(f.host.rules.railway.railway.completion, 1);
+      assert.equal(f.host.rules.railway.counts().total, 3880);
+    } finally {
+      await f.close();
     }
-    await f.host.sync.whenDurable();
-    const stamps = f.sent.filter((m) => m.t === 'w:edits').at(-1)!;
-    assert.equal((stamps.list as unknown[]).length, 2);
-    // Neither edit has applied yet; restart consumes the durably published tail in its original order.
+  });
+
+test('playable registry accepts bounded identity but rejects every legacy material op and snapshot import', async () => {
+  const f = await fixture('t1v02-boogle');
+  try {
+    assert.deepEqual(f.host.sync.registry().states, [
+      'gifts',
+      'roster',
+      'stacks',
+      'piles',
+      'sites',
+      'sources',
+      'bank',
+      'ball',
+      'tune',
+      'opening',
+      'railway',
+    ]);
+    await f.open('a');
+    f.host.deliver({ t: 'w:edit', e: { op: 'who.set', n: 'Alice', c: 2, ignored: 'x'.repeat(10000) } }, 'a');
+    await f.step(4);
+    assert.equal(f.host.rules.roster.nameOf(0), 'Alice');
+    f.host.deliver({ t: 'w:edit', e: { op: 'who.set', n: '\ud800'.repeat(16), c: 2 } }, 'a');
+    await f.step(4);
+    assert.equal(f.host.rules.roster.nameOf(0), '\ufffd'.repeat(16));
+    const nameStamp = f.sent.filter((m) => m.t === 'w:edits').at(-1)!;
+    assert.ok(Buffer.byteLength(JSON.stringify(nameStamp)) < 500, 'name is normalized before entering the tail');
+    f.host.deliver({ t: 'w:edit', e: { op: 'who.set', n: 'Alice', c: 2 } }, 'a');
+    await f.step(4);
+    const before = f.host.sync.snapshot().data;
+    for (const op of [
+      'src.take',
+      'pile.take',
+      'pile.drop',
+      'site.stock',
+      'site.run',
+      'gift.toss',
+      'tune.fill',
+      'rail.chop',
+    ])
+      f.host.deliver({ t: 'w:edit', e: { op, i: 0, j: 0, id: 0, n: 8, k: 0, epoch: 1, request: 1 } }, 'a');
+    f.host.deliver({ t: 'placeCoop', shared: { back: { logs: 24 } } }, 'a');
+    await f.step(4);
+    assert.deepEqual(f.host.sync.snapshot().data, before);
     await f.restart();
-    const api = f.host.rules.railway;
-    assert.equal(api.account('alice')!.carry + api.account('bob')!.carry, 7);
-    assert.equal(api.railway.allocation, 24);
-    assert.equal(api.railway.delivered, 24);
-    assert.equal(api.railway.piles[0]!.n, 1);
-    assert.equal(railwayInvariant(api.railway), null);
-    assert.equal(api.outcome('alice', 1, f.requests.get('a')!)!.accepted, 1);
-    assert.equal(api.outcome('bob', 1, f.requests.get('b')!)!.accepted, 0);
-    await f.step(110);
-    assert.equal(api.railway.used, 24);
-    assert.equal(api.railway.completion, 1);
-    await f.restart();
-    assert.equal(f.host.rules.railway.railway.completion, 1);
+    assert.equal(f.host.rules.roster.nameOf(0), 'Alice');
     assert.equal(f.host.rules.railway.counts().total, 3880);
   } finally {
     await f.close();
@@ -212,68 +275,70 @@ test('same-pid takeover fences the old session and eight outstanding tokens boun
   }
 });
 
-test('offline time completes only funded work and consumes its absolute interval once', async () => {
-  const f = await fixture();
-  try {
-    await f.open('a');
-    await f.wake();
-    await f.harvest('a', 8);
-    await f.deposit('a', 8);
-    await f.harvest('a', 8);
-    await f.deposit('a', 8);
-    f.host.sync.saveNow(true);
-    await f.host.sync.whenDurable();
-    f.advance(10000);
-    await f.restart();
-    assert.equal(f.host.rules.railway.railway.stock, 16);
-    assert.equal(f.host.rules.railway.railway.start, -1);
-    assert.equal(f.host.rules.railway.railway.completion, 0);
-    await f.open('a');
-    f.requests.set('a', 0);
-    // Reconnected account's new epoch is two; harvest through its ordinary request interface.
-    for (let k = 0; k < 12 && f.host.rules.railway.account('alice')!.carry < 8; k++) {
-      const index = f.host.rules.railway.railway.sources.findIndex((n) => n > 0);
-      const source = RAILWAY_SOURCES[index]!;
-      f.pose('a', source[1], source[2]);
-      await f.edit('a', { op: 'rail.chop', id: source[0] }, 2);
+for (const roomId of [RAILWAY_ROOM, railwayRoomId('recovery')])
+  test(`offline time completes only funded work and consumes its absolute interval once: ${roomId}`, async () => {
+    const f = await fixture(roomId);
+    try {
+      await f.open('a');
+      await f.wake();
+      await f.harvest('a', 8);
+      await f.deposit('a', 8);
+      await f.harvest('a', 8);
+      await f.deposit('a', 8);
+      f.host.sync.saveNow(true);
+      await f.host.sync.whenDurable();
+      f.advance(10000);
+      await f.restart();
+      assert.equal(f.host.rules.railway.railway.stock, 16);
+      assert.equal(f.host.rules.railway.railway.start, -1);
+      assert.equal(f.host.rules.railway.railway.completion, 0);
+      await f.open('a');
+      f.requests.set('a', 0);
+      // Reconnected account's new epoch is two; harvest through its ordinary request interface.
+      for (let k = 0; k < 12 && f.host.rules.railway.account('alice')!.carry < 8; k++) {
+        const index = f.host.rules.railway.railway.sources.findIndex((n) => n > 0);
+        const source = RAILWAY_SOURCES[index]!;
+        f.pose('a', source[1], source[2]);
+        await f.edit('a', { op: 'rail.chop', id: source[0] }, 2);
+      }
+      f.pose('a', T1.x, T1.z);
+      await f.edit('a', { op: 'rail.deposit', station: 'T1', n: 8 }, 2);
+      f.host.sync.saveNow(true);
+      await f.host.sync.whenDurable();
+      const before = f.host.rules.railway.railway.elapsed;
+      f.advance(2000);
+      await f.restart();
+      assert.equal(f.host.rules.railway.railway.elapsed, before + 23, '20 absent and three live startup ticks');
+      const elapsed = f.host.rules.railway.railway.elapsed;
+      const marker = f.host.rules.railway.railway.resumeMarker;
+      assert.ok(marker > 2147483647, 'absolute wall tick survives beyond signed32');
+      await f.restart();
+      assert.equal(f.host.rules.railway.railway.elapsed, elapsed);
+      assert.equal(f.host.rules.railway.railway.resumeMarker, marker);
+      f.advance(60000);
+      await f.restart();
+      await f.restart();
+      assert.equal(f.host.rules.railway.railway.completion, 1);
+      assert.equal(f.host.rules.railway.railway.used, 24);
+      assert.equal(f.host.rules.railway.counts().total, 3880);
+    } finally {
+      await f.close();
     }
-    f.pose('a', T1.x, T1.z);
-    await f.edit('a', { op: 'rail.deposit', station: 'T1', n: 8 }, 2);
-    f.host.sync.saveNow(true);
-    await f.host.sync.whenDurable();
-    const before = f.host.rules.railway.railway.elapsed;
-    f.advance(2000);
-    await f.restart();
-    assert.equal(f.host.rules.railway.railway.elapsed, before + 23, '20 absent and three live startup ticks');
-    const elapsed = f.host.rules.railway.railway.elapsed;
-    const marker = f.host.rules.railway.railway.resumeMarker;
-    assert.ok(marker > 2147483647, 'absolute wall tick survives beyond signed32');
-    await f.restart();
-    assert.equal(f.host.rules.railway.railway.elapsed, elapsed);
-    assert.equal(f.host.rules.railway.railway.resumeMarker, marker);
-    f.advance(60000);
-    await f.restart();
-    await f.restart();
-    assert.equal(f.host.rules.railway.railway.completion, 1);
-    assert.equal(f.host.rules.railway.railway.used, 24);
-    assert.equal(f.host.rules.railway.counts().total, 3880);
-  } finally {
-    await f.close();
-  }
-});
+  });
 
-test('refused recovery writes report storage and never serve a fresh fallback', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-railway-refused-'));
-  const store = createStore({ dataDir: dir, maxRooms: 0 });
-  await store.init();
-  const host = createRailwayWorldHost({ roomId: RAILWAY_ROOM, store, tick: false, pidOf: () => 'alice' });
-  const sent: Obj[] = [];
-  host.onSend((m) => sent.push(m));
-  await assert.rejects(host.whenReady(), /refused/);
-  host.deliver({ t: 'w:need' }, 'a');
-  host.deliver({ t: 'r:open' }, 'a');
-  assert.ok(sent.every((m) => m.t === 'r:state' && m.state === 'storage'));
-  assert.equal(host.status().ready, false);
-  await assert.rejects(host.close({ save: false }), /refused/);
-  await fs.rm(dir, { recursive: true, force: true });
-});
+for (const roomId of [RAILWAY_ROOM, railwayRoomId('recovery')])
+  test(`refused recovery writes report storage and never serve a fresh fallback: ${roomId}`, async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-railway-refused-'));
+    const store = createStore({ dataDir: dir, maxRooms: 0 });
+    await store.init();
+    const host = createRailwayWorldHost({ roomId, store, tick: false, pidOf: () => 'alice' });
+    const sent: Obj[] = [];
+    host.onSend((m) => sent.push(m));
+    await assert.rejects(host.whenReady(), /refused/);
+    host.deliver({ t: 'w:need' }, 'a');
+    host.deliver({ t: 'r:open' }, 'a');
+    assert.ok(sent.every((m) => m.t === 'r:state' && m.state === 'storage'));
+    assert.equal(host.status().ready, false);
+    await assert.rejects(host.close({ save: false }), /refused/);
+    await fs.rm(dir, { recursive: true, force: true });
+  });

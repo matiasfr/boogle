@@ -18,6 +18,8 @@ export const TUNABLES = [
   { key: 'trickle', def: TRICKLE_EVERY, min: 10, max: 6000, label: 'Bundle refill every (ticks)' },
   { key: 'wagonCruise', def: WAGON_CRUISE, min: 10, max: 100, label: 'Wagon cruise (cm per tick)' },
   { key: 'wagonAccel', def: WAGON_ACCEL, min: 5, max: 100, label: 'Wagon speed-up (ticks to cruise)' },
+  { key: 'railRegrowMinutes', def: 31, min: 1, max: 1440, label: 'Railway regrowth wait (minutes)' },
+  { key: 'railRecoveryMinutes', def: 21, min: 1, max: 1440, label: 'Railway drop recovery (minutes)' },
 ] as const;
 // Keys a save may still hold from an older build, skipped on load: the soft cap and spill per jump (the haul stack's
 // wobble and jump spill, removed after the first playtest) and the machine run variant (one run since the laying
@@ -83,6 +85,39 @@ export function migrateTune(json: unknown): TuneJson {
     v[key as TuneKey] = n;
   }
   return { catalog: TUNE_CATALOG, revision: 0, values: v };
+}
+// The one published v1 profile (main e7fbc853) had these eight integer keys. Do not
+// derive its identity/ranges from a future catalog: unknown defaults must stay refused.
+const MAIN_V1_BOUNDS = {
+  cost0: [2, 600],
+  helper0: [1, 600],
+  hard: [1, 200],
+  yield: [1, 60],
+  full: [1, 20],
+  trickle: [10, 6000],
+  wagonCruise: [10, 100],
+  wagonAccel: [5, 100],
+} as const;
+export function migrateTuneV1(json: unknown): TuneJson {
+  if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('tune: bad v1 snapshot');
+  const j = json as Partial<TuneJson>;
+  // Legacy v0 migration and tools that strip versions may already produce the current shape.
+  // loadTune still validates every field afterward; this is not an admission compatibility rule.
+  if (j.catalog === TUNE_CATALOG) return j as TuneJson;
+  if (j.catalog !== 'e0d64927') throw new Error('tune: incompatible v1 catalog');
+  if (!isInt(j.revision) || j.revision < 0) throw new Error('tune: bad v1 revision');
+  if (!j.values || typeof j.values !== 'object' || Array.isArray(j.values)) throw new Error('tune: missing v1 values');
+  const entries = Object.entries(j.values);
+  if (
+    entries.length !== 8 ||
+    entries.some(([key, n]) => {
+      if (!Object.hasOwn(MAIN_V1_BOUNDS, key)) return true;
+      const [min, max] = MAIN_V1_BOUNDS[key as keyof typeof MAIN_V1_BOUNDS];
+      return !isInt(n) || n < min || n > max;
+    })
+  )
+    throw new Error('tune: incomplete or invalid v1 values');
+  return { catalog: TUNE_CATALOG, revision: j.revision, values: { ...defaults(), ...j.values } };
 }
 export function loadTune(t: Tune, json: unknown): void {
   if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('tune: bad snapshot');

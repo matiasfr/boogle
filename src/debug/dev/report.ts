@@ -1,6 +1,6 @@
 import { BUILD } from '../../build-id.ts';
 import { WORLD_NS } from '../../world/namespace.ts';
-import { pageQuery, PROTO } from '../../proto/flags.ts';
+import { pageQuery, PROTO, productionRailway } from '../../proto/flags.ts';
 import { me } from '../../player/state.ts';
 import { camera, canvas } from '../../render/scene.ts';
 import { defineKind, spawn, despawn } from '../../entity/entity.ts';
@@ -12,7 +12,7 @@ let latest: unknown = null;
 let textArea: HTMLTextAreaElement | null = null;
 defineKind('dev-screenshot', { lateUpdate: 2000 });
 async function currentSetup() {
-  return setupLink(PROTO === 'place' ? (await import('./place.ts')).lastDestination : 'spawn');
+  return setupLink(!productionRailway && PROTO === 'place' ? (await import('./place.ts')).lastDestination : 'spawn');
 }
 async function report() {
   const [{ inspectSummary }, { roomSummary }] = await Promise.all([import('./inspect.ts'), import('./room.ts')]);

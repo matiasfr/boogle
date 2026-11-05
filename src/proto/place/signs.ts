@@ -1,6 +1,7 @@
 // Material boards and HUD counters (logs, kilometres, town, money). Local.
 import * as THREE from 'three/webgpu';
 import { pauseSections } from '../../player/pause-pages.ts';
+import type { OwnedView } from '../../render/owned-view.ts';
 
 // ---------------------------------------------------------------- boards you can read
 /** Physical painted paper takes scene light and shadows, without inverse gain or an emissive floor. */
@@ -39,17 +40,39 @@ export function paintBoard(lines: { t: string; px: number; color?: string }[], w
 // ---------------------------------------------------------------- the HUD
 const nums = document.createElement('div');
 nums.className = 'place-nums';
-pauseSections.push(nums);
 const moneyPill = document.createElement('span');
 moneyPill.className = 'place-money-live';
-(document.querySelector('.hud') ?? document.body).append(moneyPill);
+let hudAttached = false;
 // The numbers: logs, kilometres, town and a running money count, a comic score. They tick up one by one, so you can feel them.
 const shownNum = { money: 0 };
 let lastNums = '';
 let previousMoney: number | undefined;
 let hideMoney: ReturnType<typeof setTimeout> | undefined;
-export function setNumbers(score: { money: number; logs: number; metres: number }) {
-  if (previousMoney !== undefined && score.money > previousMoney) {
+export function mountNumbers(owner: OwnedView) {
+  shownNum.money = 0;
+  lastNums = '';
+  previousMoney = undefined;
+  owner.cleanup(() => {
+    clearTimeout(hideMoney);
+    nums.remove();
+    moneyPill.remove();
+    moneyPill.classList.remove('on');
+    const at = pauseSections.indexOf(nums);
+    if (at >= 0) pauseSections.splice(at, 1);
+    hudAttached = false;
+  });
+}
+export function setNumbers(score: { money: number; logs: number; metres: number }, _people = 0, snapshot = false) {
+  if (!hudAttached) {
+    hudAttached = true;
+    pauseSections.push(nums);
+    (document.querySelector('.hud') ?? document.body).append(moneyPill);
+  }
+  if (snapshot) {
+    shownNum.money = score.money;
+    clearTimeout(hideMoney);
+    moneyPill.classList.remove('on');
+  } else if (previousMoney !== undefined && score.money > previousMoney) {
     moneyPill.classList.add('on');
     clearTimeout(hideMoney);
     hideMoney = setTimeout(() => moneyPill.classList.remove('on'), 2000);

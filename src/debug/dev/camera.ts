@@ -5,7 +5,7 @@ import { releaseInput } from '../../player/input.ts';
 import { modalOpen } from '../../player/modal.ts';
 import { devInput } from '../../player/dev-input.ts';
 import { onKey, describeControl, isTyping } from '../../player/controls.ts';
-import { PROTO } from '../../proto/flags.ts';
+import { PROTO, productionRailway } from '../../proto/flags.ts';
 import { SEA, SPAWN } from '../../constants.ts';
 import { groundHeight } from '../../island/heights.ts';
 import { MASSIF } from '../../island/shape.ts';
@@ -390,6 +390,7 @@ export const tool: Tool = {
       rotation.x -= Math.max(-100, Math.min(100, args.y)) * 0.005;
     } else if (commandName === 'bookmark') {
       if (!destinationName(args.destination)) return no('Choose a named bookmark.');
+      if (productionRailway) return no('This bookmark is unavailable at this stage.');
       if (PROTO === 'place') {
         const target = (await import('./place.ts')).destination(args.destination);
         if (!target) return no('This bookmark is unavailable at this stage.');
