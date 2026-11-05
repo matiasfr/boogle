@@ -9,6 +9,7 @@ export type Board = {
   columns: number;
   tiles: Tile[];
   strips: Tile[];
+  reference?: Tile;
 };
 
 export function composition(board: Board) {
@@ -29,17 +30,24 @@ export async function paintNative(board: Board, name = 'board.png') {
       return im;
     }),
   );
-  const width = Math.max(480, ...images.map((im) => im.width)) + 32;
+  const columnWidth = Math.max(480, ...images.map((im) => im.width)) + 32;
+  let reference: HTMLImageElement | undefined;
+  if (board.reference?.image) {
+    reference = new Image();
+    reference.src = board.reference.image;
+    await reference.decode();
+  }
+  const width = columnWidth * (reference ? 2 : 1);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   const ctx = canvas.getContext('2d')!;
-  const font = Math.ceil(width / 24);
+  const font = Math.ceil(columnWidth / 24);
   const wrap = (value: string) => {
     ctx.font = `${font}px system-ui`;
     const lines = [''];
     for (const word of value.split(/\s+/)) {
       const i = lines.length - 1;
-      if (ctx.measureText(lines[i] + ' ' + word).width > width - 32) lines.push(word);
+      if (ctx.measureText(lines[i] + ' ' + word).width > columnWidth - 32) lines.push(word);
       else lines[i] += (lines[i] ? ' ' : '') + word;
     }
     return lines;
@@ -68,6 +76,11 @@ export async function paintNative(board: Board, name = 'board.png') {
     labels[i]!.forEach(text);
     y += 8;
     ctx.drawImage(im, 16, y);
+    if (reference) {
+      ctx.fillText(board.reference!.label, columnWidth + 16, y - 8, columnWidth - 32);
+      const scale = Math.min(1, (columnWidth - 32) / reference.width, im.height / reference.height);
+      ctx.drawImage(reference, columnWidth + 16, y, reference.width * scale, reference.height * scale);
+    }
     y += im.height + 8;
   });
   const data = canvas.toDataURL('image/png').split(',')[1]!;

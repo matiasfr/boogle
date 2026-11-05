@@ -7,11 +7,12 @@ import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { stripTypeScriptTypes } from 'node:module';
+import { buildAt } from '../codex/source.ts';
 import { setTimeout as sleep } from 'node:timers/promises';
 import type { Browser } from 'playwright';
 import type { Game, Stack } from './lib.ts';
 
-type Address = { pid: number; token: string; url?: string; ready?: boolean };
+type Address = { pid: number; token: string; url?: string; ready?: boolean; identity?: string };
 type Request = { command: string; args: string[] };
 type Reply = { result?: unknown; error?: string; seconds: number };
 // Keep short commands free of the server/game module graph; only the daemon loads the harness.
@@ -28,8 +29,9 @@ const alive = (pid: number) => {
   try {
     process.kill(pid, 0);
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    // A daemon started by another sandboxed command exists even when signal 0 is forbidden.
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
   }
 };
 const removeAddress = (token: string) => {
@@ -55,9 +57,16 @@ async function send(address: Address, request: Request): Promise<Reply> {
 
 async function start() {
   fs.mkdirSync(dir, { recursive: true });
+  const identity = JSON.stringify([buildAt(root).tree, args]);
   if (fs.existsSync(addressFile)) {
     const old = readAddress();
-    if (alive(old.pid)) throw new Error(`Session already running (pid ${old.pid}); use stop first`);
+    if (alive(old.pid)) {
+      if (!option('--reuse-key')) throw new Error(`Session already running (pid ${old.pid}); use stop first`);
+      if (old.ready && old.identity === identity) return `reused pid ${old.pid}; ${addressFile}`;
+      const answer = await send(old, { command: 'stop', args: [] });
+      if (answer.error) throw new Error(answer.error);
+      while (fs.existsSync(addressFile) && readAddress().token === old.token) await sleep(50);
+    }
     removeAddress(old.token);
   }
   // Exclusive creation prevents two simultaneous starts. The child inherits this ownership token.
@@ -94,6 +103,20 @@ async function start() {
 
 async function serve() {
   const token = args.shift()!;
+  const identity = JSON.stringify([buildAt(root).tree, args]);
+  if (fs.existsSync(path.join(dir, 'see/ready.json'))) {
+    const { serveBroker } = await import('./session-broker.ts');
+    try {
+      await serveBroker(args, token, dir, (url, ready) => {
+        const temp = `${addressFile}.${process.pid}`;
+        fs.writeFileSync(temp, JSON.stringify({ pid: process.pid, token, url, ready, identity }), { mode: 0o600 });
+        fs.renameSync(temp, addressFile);
+      });
+    } finally {
+      removeAddress(token);
+    }
+    return;
+  }
   const { Game, launch, startStack } = await import('./lib.ts');
   const { IGNORE_TEXT, installObserver } = await import('./observe.ts');
   const { findSave, POSE_AT, SEED } = await import('./saves.ts');
@@ -105,7 +128,7 @@ async function serve() {
   let lastUsed = Date.now();
   let idle: ReturnType<typeof setInterval> | undefined;
   const server = http.createServer();
-  const address: Address = { pid: process.pid, token };
+  const address: Address = { pid: process.pid, token, identity };
   const publish = () => {
     const temp = `${addressFile}.${process.pid}`;
     fs.writeFileSync(temp, JSON.stringify(address), { mode: 0o600 });
@@ -368,7 +391,10 @@ async function main() {
         stripTypeScriptTypes(fs.readFileSync(args[0], 'utf8')).replace(/^export \{\};.*$/m, ''),
       );
     const answer = await send(address, { command, args });
-    if (answer.error) throw new Error(answer.error);
+    if (answer.error) {
+      if (typeof answer.result === 'string') console.log(answer.result);
+      throw new Error(answer.error);
+    }
     if (command === 'stop') {
       const deadline = Date.now() + 15_000;
       while (fs.existsSync(addressFile) && readAddress().token === address.token) {
@@ -377,6 +403,8 @@ async function main() {
       }
     }
     console.log(typeof answer.result === 'string' ? answer.result : JSON.stringify(answer.result ?? null));
+    if (command === 'stop' && typeof answer.result === 'object' && answer.result && 'evidence' in answer.result)
+      console.log(`Evidence: ${String(answer.result.evidence)}`);
   }
 }
 await main()

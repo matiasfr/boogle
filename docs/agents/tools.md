@@ -10,6 +10,7 @@ Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lis
 | See a beat of the run                          | `npm run look -- --at "<beat>"` (`--at list` names them); warm-ups are warped, so `--warm` costs little                                                                          |
 | Pacing, what never happened, on-screen text    | `npm run playthrough` (about 90 s); new beats go in `dev/look/bots/place.ts`                                                                                                     |
 | Ask several questions of the running game      | `npm run session -- start`, then `keys`, `press`, `state`, `still` (under a second each)                                                                                         |
+| Compare lighting in one frozen town scene      | `node .look/see-client.ts shots dev/look/beats/lighting-wedge.ts --reuse --name town` (outside a broker: `node dev/look/shots.ts` with the same arguments) |
 | Judge motion or feel from evidence             | `look --curves`, `--target glide`; `look --filmstrip N` for exact frames                                                                                                         |
 | Compare with an earlier build                  | `npm run before-after -- <ref>`                                                                                                                                                  |
 | Two players                                    | `look --players 2` (warped at 5x)                                                                                                                                                |
@@ -29,6 +30,49 @@ Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lis
 - `npm run patch -- <file>`: many edits across files in one go. Nothing is written if any edit's text is missing or appears twice, then it runs Prettier, the full lint runner and a typecheck. Use it instead of a throwaway script, whose `replace` misses in silence and which skips the format hook. The format is at the top of `dev/patch.ts`.
 - `startStack` (`look`, `playthrough`, `session`, `scenario` and the rest) stops if `node_modules` doesn't match `package-lock.json`, and says to run `npm ci`. It never reinstalls by itself. A symlinked `node_modules` is skipped, since `before-after` plays an old commit on current packages on purpose.
 - One Mac GPU is shared: `look` runs are fine in parallel but slower; `perf` and `hitches` numbers need the machine to themselves.
+
+### First look-development loop
+
+The [look-dev research](../research/lookdev-loop.md)'s first build keeps Current/Neutral, gain `0.12`,
+bloom off and fixed resolution. One authored Place fixture and the existing town camera compare key
+`0.96/1.12/1.28` against fill `2.4/3.2/4`; cell 5 is the accepted baseline. This is not played progression.
+
+```sh
+node .look/see-client.ts shots dev/look/beats/lighting-wedge.ts --reuse --name town-prepare
+node .look/see-client.ts shots dev/look/beats/lighting-wedge.ts --reuse --repeat 5 --name town-warm
+node .look/see-client.ts shots dev/look/beats/lighting-wedge.ts --reuse --preview 5 --name town-preview
+node dev/look/session.ts stop
+node dev/look/shots.ts --pick .look/shots/town-warm/group-0-r1/manifest.json 5 .look/town-favourite.json
+```
+
+`--reuse` retains one page and frozen clock between lists. Source tree, fixture/checkpoint, route, camera,
+viewport and resource settings form the reuse identity; an incompatible request stops and recreates it.
+Numeric patches in a JSON list under `.look/` can change without invalidating the source tree. Editing a tracked
+TS list changes the source fingerprint, intentionally. Stop the session **before editing source**.
+Local sessions use the existing browser owner. Broker sessions keep one existing trusted `look --action`
+open, using an authenticated loopback mailbox for the same capture actions; they launch no browser themselves.
+They expire after 120 idle seconds or 330 seconds total to stay within the broker's seven-minute limit.
+Only `capture` and `stop` are supported in a broker session. Do not run another broker operation until stopping it.
+Capture results remain provisional until `stop` completes the broker's health checks; it prints the evidence
+manifest and copies each queue's artifacts beside it. Do not edit source while that run is open.
+
+Each native-pixel PNG board labels exact requested settings and cell filenames. Manifests include resolved
+baseline, effective tunables/bindings, actual scene lights, camera, frozen clocks and exact repeat/switch-back
+probes. Tunable patches are validated before mutation, then the light owner flushes presentation without
+advancing the game. A changed gain with unchanged actual light fails. `--pick` writes a new JSON with the
+selected patch, full effective state, baseline and build; it never changes source defaults.
+Add `--reference image.png --reference-note 'provenance / approval status'` to pair an ungraded reference beside
+each cell, preserving aspect ratio. Path, SHA-256, assumed sRGB and uncropped status are recorded.
+
+Compare warm queue wall time (including dispatch/extraction) against **30 s**, and `--preview` against **1 s**.
+Page manifests also separate resource warm-up, apply/flush, draw submission, GPU completion, copy/encode,
+console transfer, repeat probes and composition. Probe time overlaps its component stages; do not sum it again.
+After broker finalization, preparation reports client dispatch, local stack plus queue wait, page/load,
+setup/restore and fixture warm-up separately. Stack startup and broker queue wait remain combined in this
+older transport. Queue manifests log load average and top CPU processes (or sandbox unavailability) before/after each
+capture. Loaded runs are **not timing evidence**, and low CPU load cannot prove exclusive GPU use. On a quiet
+machine, report median, maximum and failures for five warm batches; cold preparation is separate. Frozen stills
+do not establish motion, feel or device performance. See the local evidence for observed timings; not tested on a device.
 - `/development/` publishes `docs/agents/orchestrator-state.md` as static HTML at build time (missing file shows an unpublished notice); its last-update time comes from Git, with a labelled file-time fallback for local edits, and it loads no game code or API.
 
 The two-player playthrough alternates station and forge bills between peers, reloads player 2 after Q2, and has player 1 leave the page for five seconds and rejoin after Q4. It uses real inputs, no staged game state or recovery teleports, and stops at the pier. It checks both peers' contributions, dry arrival, stations, rack, shared rewards and moving trains (2 m position tolerance). Personal cosmetics are recorded separately. Each uninterrupted clock segment retains achieved rates and drift; navigation runs at 1x. Ordinary broker runs retain the seven-minute cutoff. `playthrough --long` explicitly allows 30 minutes of work, with a 35-minute broker cutoff and 36-minute client wait. Reports, per-peer observers, checkpoints, clock samples and end stills survive failures. A worker's edits do not upgrade the already-running trusted broker: the caller must review these commits and relaunch with the updated harness before this command is supported.
