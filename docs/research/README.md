@@ -2,6 +2,8 @@
 
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
+- [carried-resource-display.md](carried-resource-display.md) (2026-11-04): fifteen carrying/inventory comparisons, chip/capacity audit, five display options and seven recommendations. Owner approved the hybrid 4 November; built in Place with mixed contents, reveal on all Drop inputs, truthful pending slots and Pause recall. Four scratch mockups informed placement; owner feel remains for the playtest.
+
 - [water-times-of-day.md](water-times-of-day.md) (2026-11-04): four prepared-sky strategies, cube/PMREM memory arithmetic, fresh Mac CPU LUT timings and labelled mobile estimates, coordinated evening/night lighting, co-op/save semantics and six recommendations; proposes one loading-prepared evening and a fade after the current water/replay gates. No source changes; browser broker unavailable, device/GPU costs unverified.
 - [state-ownership-audit.md](state-ownership-audit.md) (2026-11-04): 44 player-facing state groups across default Place, adapters and server/classic; reload, empty-room, restart, join and contention contracts, recorded co-op failures, live primary-source comparisons and seven recommendations. Preserve approved T1 scope and Owner physics; identify beam capability, personal-save and classic capacity defects without implementing them.
 

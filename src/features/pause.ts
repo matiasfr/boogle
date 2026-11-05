@@ -261,7 +261,7 @@ function renderMain() {
   more.dataset.act = 'more';
   const list = el('div', 'pause-list');
   list.append(
-    ...pauseSections.filter((section) => section.classList.contains('place-nums')),
+    ...pauseSections,
     resume,
     controls,
     button('Graphics', () => show('graphics')),

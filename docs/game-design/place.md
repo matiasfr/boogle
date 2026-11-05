@@ -246,6 +246,19 @@ Both sealed gates have paired stone leaves, recessed courses, pale edge strips a
 
 **Reach:** `node dev/economy/place-level.ts` checks what each state of the run can stand on, and that nothing is reachable early. Known harmless skip: riding the machine across the stem as it lays gets you up onto the second pillar with one jump. The second device is still there on your way.
 
+## Carried-resource display
+
+Owner approved 4 November, following [carried-resource display](../research/carried-resource-display.md), mockup 03. Buddy's worn load is the continuous display. Place replaces the bottom-centre haul pill with one small wood-and-cream tag beside the load: material pictograms and exact logs, rails and stone, hiding zero types, with one shared 8/16-slot capacity line. Three materials fit within three short rows including the footer. A beam or boiler shows its name without an ordinary-slot count. Classic Haul and its variants keep their existing chip.
+
+Pickup, Drop (right click, pad R3, touch Drop), deposit, restored contents and capacity changes refresh the same tag for **2 seconds**, followed by a **200 ms opacity fade**. Successive pickups update in place without count tweening, restacking or bouncing. A full-capacity refusal refreshes it; a selected capacity-blocked source keeps it readable. Quiet walking, including with a full load, lets it fade. Empty briefly shows `0/8` or `0/16`. Pause's main surface always provides exact carried contents and capacity.
+
+The fraction counts occupied slots, including incoming pieces and reserved harvest; a separate `pending` amount identifies those slots rather than pretending the pieces have landed. Pause distinguishes incoming from reserved. Accepted tree logs already belong to the player while their cosmetic flight plays, matching the owner's inventory semantics. Deposits remove pieces as they leave; the frame's own bill still changes as they land. No inventory, cost, capacity, presence, wire or save behavior changes.
+
+Projection runs after the current camera/avatar update, anchored to a stable body/load envelope with 16 px clearance. Side choice persists until it no longer fits. The big cargo's bounds extend the avoidance envelope. Close/behind-camera and edge cases dock instead of clipping. Narrow portrait uses a safe-area upper-left lane, 16 px below the actual roster, clear of Drop and Ping. The tag is read-only, solid-backed, 18 px type; no travel or pop animation, including reduced motion.
+
+**What's new:** The number sits beside your load when it changes, then fades out of the way.
+**Playtest question:** Did the load tell you enough while walking, or did you want the number to stay?
+
 ## The town you can go into
 
 Corner posts sink with whichever adjacent wall is cut away, using the same reveal timing and easing. Roof lift, the retained bottom course, wall collisions and shadow proxies are unchanged.

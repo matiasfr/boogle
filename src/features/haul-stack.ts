@@ -32,6 +32,22 @@ import { haulFeel } from '../player/haul-feel.ts';
 import { MATERIALS } from '../sim/materials.ts';
 import { uiSound, replay } from '../ui/ui-sound.ts';
 import { protoActivity } from '../proto/mark.ts';
+import { camera, toScreen } from '../render/scene.ts';
+import { PLAYER_R } from '../constants.ts';
+import { pauseSections } from '../player/pause-pages.ts';
+import { padModal } from '../player/controls.ts';
+
+/** Place's Local readout. Counts retain their owner's acceptance/landing semantics. */
+type CarryReadout = {
+  logs: number;
+  rails: number;
+  stone: number;
+  big: 'beam' | 'boiler' | null;
+  capacity: number;
+  incoming: number;
+  reserved: number;
+  attention: boolean;
+};
 
 // The bundle: logs lying crosswise, stacked up and out from the back on a hex lattice (slots filled nearest-first, so
 // it fills out rather than up), with two rope bands round it. At most SHOWN pieces drawn, growing more slowly than the
@@ -65,6 +81,7 @@ export const backSeam = {
   flyIns: true,
   count: (n: number) => n,
   remote: null as ((peer: string) => number) | null, // ?proto=place&coop=1: a partner's logs, from their presence
+  carry: null as (() => CarryReadout) | null,
 };
 export { BUNDLE_SCALE };
 /** Where the next piece onto your bundle goes, holding `n` now: its world position and the bundle's world rotation. */
@@ -105,7 +122,8 @@ const chip = document.createElement('div');
 chip.className = 'haul-chip';
 document.body.append(chip);
 
-defineKind('haul-stack', { update: 32 });
+// Project after late camera overrides as well as the normal follow camera.
+defineKind('haul-stack', { update: 32, lateUpdate: 1100 });
 spawn({
   kind: 'haul-stack',
   mesh: bundles,
@@ -142,7 +160,10 @@ spawn({
       bands.count = b;
       bands.instanceMatrix.needsUpdate = true;
     }
-    tickChip(mine, now);
+    if (!backSeam.carry) tickChip(mine, now);
+  },
+  lateUpdate({ now }) {
+    if (backSeam.carry) tickCarry(backSeam.carry(), now);
   },
 });
 
@@ -176,4 +197,144 @@ function tickChip(host: Stack, now: number): void {
   chipWhat!.textContent = shown.n ? (MATERIALS[Math.max(0, mine.k)] ?? '') : '';
   chip.classList.toggle('on', !!shown.n);
   chip.classList.toggle('full', !!shown.n && shown.n >= rules.stacks.hard());
+}
+
+// One temporary tag, refreshed in place. No count tween: a displayed count is already yours.
+const carryLane = document.createElement('div');
+carryLane.className = 'carry-lane';
+const tag = document.createElement('div');
+tag.className = 'carry-tag';
+carryLane.append(tag);
+document.body.append(carryLane);
+const contents = document.createElement('div');
+contents.className = 'carry-contents';
+const capacity = document.createElement('div');
+capacity.className = 'carry-capacity';
+tag.append(contents, capacity);
+const pauseCarry = document.createElement('div');
+pauseCarry.className = 'carry-pause';
+const icons = {
+  logs: '<rect x="2" y="7" width="18" height="10" rx="5"/><ellipse cx="19" cy="12" rx="3" ry="5"/><ellipse cx="19" cy="12" rx="1" ry="2"/>',
+  rails: '<path d="M4 3h16v4h-6v10h6v4H4v-4h6V7H4z"/>',
+  stone: '<path d="m3 16 3-10 10-3 6 10-6 8H7z"/><path d="m6 6 7 6 9 1m-9-1 3 9"/>',
+  beam: '<path d="m2 7 15-4 5 4v10L7 21l-5-4zM2 7l5 4 15-4M7 11v10"/>',
+  boiler: '<rect x="3" y="7" width="18" height="14" rx="6"/><path d="M9 7V2h6v5M11 7v14"/>',
+};
+const item = (kind: keyof typeof icons, text: string) =>
+  `<span class="carry-item"><svg class="carry-${kind}" viewBox="0 0 24 24" aria-hidden="true">${icons[kind]}</svg>${text}</span>`;
+let carryKey = '',
+  carryUntil = 0,
+  carryStarted = false,
+  carrySide = 1;
+const carryPoint = new THREE.Vector3();
+const carryScreen = { x: 0, y: 0, behind: false };
+const overlaps = (x: number, y: number, w: number, h: number, r: DOMRect) =>
+  r.width > 0 && r.height > 0 && x < r.right + 12 && x + w > r.left - 12 && y < r.bottom + 12 && y + h > r.top - 12;
+
+function tickCarry(load: CarryReadout, now: number) {
+  if (!carryStarted) {
+    carryStarted = true;
+    chip.remove(); // classic Haul still owns its chip; Place replaces it entirely.
+    pauseSections.push(pauseCarry);
+  }
+  const held = load.logs + load.rails + load.stone;
+  const pending = load.incoming + load.reserved;
+  const full = !load.big && held + pending >= load.capacity;
+  const key = `${load.logs}/${load.rails}/${load.stone}/${load.big}/${load.capacity}/${load.incoming}/${load.reserved}`;
+  if (key !== carryKey) {
+    if (carryKey || held || pending || load.big) carryUntil = now + 2000;
+    carryKey = key;
+    const rows = (['logs', 'rails', 'stone'] as const).filter((k) => load[k]).map((k) => item(k, `${load[k]} ${k}`));
+    contents.innerHTML = load.big ? item(load.big, load.big === 'beam' ? 'Great beam' : 'Boiler') : rows.join('');
+    const fraction = `${held + pending}/${load.capacity}${full ? ' · Full' : ''}`;
+    capacity.textContent = load.big ? '' : `${fraction}${pending ? ` · ${pending} pending` : ''}`;
+    const exact = load.big
+      ? load.big === 'beam'
+        ? 'Great beam'
+        : 'Boiler'
+      : `${
+          (['logs', 'rails', 'stone'] as const)
+            .filter((k) => load[k])
+            .map((k) => `${load[k]} ${k}`)
+            .join(' · ') || 'Empty'
+        } — ${fraction}` +
+        (load.incoming ? ` · ${load.incoming} incoming` : '') +
+        (load.reserved ? ` · ${load.reserved} reserved` : '');
+    pauseCarry.textContent = `Carrying: ${exact}`;
+    tag.setAttribute('aria-label', exact);
+  }
+  if (load.attention) carryUntil = now + 2000;
+  // Fade only, with no pop or position transition (also under reduced motion).
+  const opacity = me.entered && !padModal() ? Math.min(1, Math.max(0, (carryUntil + 200 - now) / 200)) : 0;
+  tag.style.opacity = String(opacity);
+  if (!opacity || !me.body) return;
+  placeCarry(load.big);
+}
+
+function placeCarry(big: CarryReadout['big']) {
+  const safe = carryLane.getBoundingClientRect();
+  const roster = document.querySelector('.roster')?.getBoundingClientRect();
+  const top = Math.max(safe.top, (roster?.bottom ?? safe.top - 16) + 16);
+  const w = tag.offsetWidth,
+    h = tag.offsetHeight;
+  const p = me.body!.interpolatedPosition;
+  // Stable body/load envelope, independent of walking bones and individual log ends.
+  let left = Infinity,
+    right = -Infinity,
+    high = Infinity,
+    low = -Infinity,
+    behind = false;
+  const project = (x: number, y: number, z: number) => {
+    toScreen(carryPoint.set(x, y, z), carryScreen, innerWidth, innerHeight);
+    behind ||= carryScreen.behind;
+    left = Math.min(left, carryScreen.x);
+    right = Math.max(right, carryScreen.x);
+    high = Math.min(high, carryScreen.y);
+    low = Math.max(low, carryScreen.y);
+  };
+  camera.updateMatrixWorld();
+  for (const x of [-0.55, 0.55])
+    for (const y of [0, 2]) for (const z of [-0.55, 0.55]) project(p.x + x, p.y - PLAYER_R + y, p.z + z);
+  if (big && me.avatar) {
+    const cargo = me.avatar.getObjectByName(`wear_carried_${big}`);
+    if (cargo) {
+      cargo.updateWorldMatrix(true, true);
+      cargo.traverse((part) => {
+        if (!(part instanceof THREE.Mesh)) return;
+        if (!part.geometry.boundingBox) part.geometry.computeBoundingBox();
+        const box = part.geometry.boundingBox;
+        if (!box) return;
+        // Project the oriented mesh bounds, not a rotated world's much larger empty box.
+        for (const x of [box.min.x, box.max.x])
+          for (const y of [box.min.y, box.max.y])
+            for (const z of [box.min.z, box.max.z]) {
+              carryPoint.set(x, y, z).applyMatrix4(part.matrixWorld);
+              project(carryPoint.x, carryPoint.y, carryPoint.z);
+            }
+      });
+    }
+  }
+  toScreen(carryPoint.set(p.x, p.y - PLAYER_R + 0.75, p.z), carryScreen, innerWidth, innerHeight);
+  const y = Math.min(safe.bottom - h, Math.max(top, carryScreen.y - h / 2));
+  const obstacles = [...document.querySelectorAll('.prompt, .held-tag, .reticle, .tbtn')].map((el) =>
+    el.getBoundingClientRect(),
+  );
+  const fits = (x: number, margin = 0) =>
+    x >= safe.left + margin &&
+    x + w <= safe.right - margin &&
+    y >= top &&
+    y + h <= safe.bottom &&
+    !obstacles.some((r) => overlaps(x, y, w, h, r));
+  const rightX = right + 16,
+    leftX = left - w - 16;
+  let x = carrySide === 1 ? rightX : leftX;
+  // Keep the chosen side until it fails; require spare room before switching.
+  if (!fits(x) && fits(carrySide === 1 ? leftX : rightX, 24)) {
+    carrySide *= -1;
+    x = carrySide === 1 ? rightX : leftX;
+  }
+  const dock = innerWidth < 600 || behind || !Number.isFinite(x) || !fits(x) || high > innerHeight || low < 0;
+  tag.dataset.placement = dock ? 'dock' : carrySide === 1 ? 'right' : 'left';
+  tag.style.left = `${(dock ? safe.left : x) - safe.left}px`;
+  tag.style.top = `${Math.min(safe.bottom - h, dock ? top : y) - safe.top}px`;
 }

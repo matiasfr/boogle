@@ -12,6 +12,7 @@ import { emit } from '../../render/particles.ts';
 import { warmUp } from '../../render/precompile.ts';
 import { removeBody, teleport, sweepSphere, type Body } from '../../physics/engine.ts';
 import { input } from '../../player/input-state.ts';
+import { interactTarget } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { backSeam, myBundleNext } from '../../features/haul-stack.ts';
@@ -54,6 +55,17 @@ export const back = {
 };
 backSeam.flyIns = false;
 backSeam.count = () => back.logs;
+// Read-only Local presentation: reserved/incoming slots aren't advertised as landed material.
+backSeam.carry = () => ({
+  logs: back.logs,
+  rails: back.rails,
+  stone: back.stone,
+  big: back.big,
+  capacity: carryNow(),
+  incoming: back.incoming,
+  reserved: harvestReserved,
+  attention: interactTarget()?.blocked === 'Your back is full' || (swing.response === 'full' && swing.t < 0.55),
+});
 personalSlice('back', {
   get: () => ({ logs: back.logs, rails: back.rails, stone: back.stone, big: back.big }),
   set: (v) => {
