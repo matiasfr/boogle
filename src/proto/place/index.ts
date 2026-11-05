@@ -44,7 +44,7 @@ import { playMark, playObjective, playWhere } from '../mark.ts';
 import { SHORE_COAST, SHORE_TOWN } from './shore-layout.ts';
 import { H, buildLand, insidePlace } from './land.ts';
 import { registerPlaceShore } from './water.ts';
-import { clearMoments, showBanner, updateMoments } from './celebrate.ts';
+import { clearMoments, updateMoments } from './celebrate.ts';
 import { snapCrystals, updateCrystals, onCrystal, crystals } from './crystals.ts';
 import { resetFolk, setFolkEnv, setPopulation, setRiders, updateFolk } from './folk.ts';
 import { resetForge, forge, updateForge, craneClear } from './forge.ts';
@@ -250,12 +250,6 @@ function updateWays() {
   const zone = home ? 1 : camp ? 2 : 0;
   if (zone && ways.zone && zone !== ways.zone) {
     job.ways.short = (now - ways.zoneAt) / 1000;
-    const long = job.ways.long;
-    showBanner(
-      `${Math.round(job.ways.short)} s!`,
-      long ? `The long way round took you ${Math.round(long)} s.` : 'Across your own bridge.',
-      4.2,
-    );
     fanfare(false);
     protoCount('shortcuts');
     mark('shortcut');
