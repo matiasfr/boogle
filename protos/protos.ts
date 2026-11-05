@@ -28,7 +28,7 @@ export type Proto = {
   since: string;
   /** One extra line under the title. */
   note?: string;
-  /** Other takes on the same question (`&v=<name>`), each a link under Play. A variant's
+  /** Other takes on the same question (`&v=<name>`, or Place's `&arrival=<name>`), each a link under Play. A variant's
    * own `spawn` replaces the card's when that variant is playing. */
   variants?: { name: string; url: string; what: string; spawn?: Spawn }[];
   /** Where the prototype session drops you on load, next to the verb (world metres; yaw as the camera's, 0 looks
@@ -127,9 +127,9 @@ export const PROTOS: Proto[] = [
     verb: 'chops',
     variants: [
       {
-        name: 'shore-arrival',
-        url: '/?proto=place&v=shore-arrival&intro=1',
-        what: 'Did landing on the shore make you want to head into town and help?',
+        name: 'village',
+        url: '/?proto=place&arrival=village&intro=1',
+        what: 'The previous village landing and coast, for comparison with the walk up from shore.',
       },
     ],
   },

@@ -7,8 +7,10 @@ test('variant names are unique per card and the variant urls name their variant'
   for (const p of PROTOS) {
     const names = (p.variants ?? []).map((v) => v.name);
     assert.equal(new Set(names).size, names.length, p.id);
-    for (const v of p.variants ?? [])
-      assert.equal(new URLSearchParams(v.url.split('?')[1]).get('v'), v.name, `${p.id}/${v.name}: add &v=${v.name}`);
+    for (const v of p.variants ?? []) {
+      const q = new URLSearchParams(v.url.split('?')[1]);
+      assert.equal((p.id === 'place' ? q.get('arrival') : null) ?? q.get('v'), v.name, `${p.id}/${v.name}`);
+    }
   }
 });
 

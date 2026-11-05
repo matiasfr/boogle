@@ -67,7 +67,7 @@ export async function play() {
   };
   const unreachable = new Set<unknown>();
   const standing = (t: Tree) =>
-    t.fall < 0 && !t.great && (!t.hardwood || place.job.rung.axe > 0) && !unreachable.has(t);
+    !t.cleared && t.fall < 0 && !t.great && (!t.hardwood || place.job.rung.axe > 0) && !unreachable.has(t);
   const openCrates = async () => {
     for (const c of place.giftState.crates()) {
       if (c.content !== 'gift') continue; // a find stays where it's hidden: `tour`, below

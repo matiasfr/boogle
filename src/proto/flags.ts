@@ -5,9 +5,6 @@ import { DEFAULT_ROOM } from '../constants.ts';
  * Round 4 is the default entry, without rewriting the URL or moving prototype code. */
 export function pageQuery(): URLSearchParams {
   const q = new URLSearchParams(typeof location === 'undefined' ? 'classic=1' : location.search);
-  // Disposable shore geometry must never enter the village/control or public room.
-  if (q.get('proto') === 'place' && q.get('v') === 'shore-arrival')
-    q.set('room', q.get('coop') === '1' ? 'proto-place-shore-arrival-coop' : 'proto-place-shore-arrival');
   // Explicit prototypes win over the home comparison and may never join its reserved room.
   if (q.has('proto')) {
     q.delete('island');
@@ -24,8 +21,15 @@ export function pageQuery(): URLSearchParams {
     if (!q.has('fresh')) q.set('fresh', '1');
     if (!q.has('coop')) q.set('coop', '1');
   }
-  if (q.get('proto') === 'place' && !q.has('room'))
-    q.set('room', q.get('coop') === '1' ? 'proto-place-coop' : 'proto-place');
+  if (q.get('proto') === 'place') {
+    const room = q.get('room');
+    const villageRoom = room === 'proto-place-village' || room === 'proto-place-village-coop';
+    // The old coast stays in its own comparison room, including room-only invite links.
+    if (q.get('arrival') === 'village' || villageRoom) {
+      q.set('arrival', 'village');
+      q.set('room', villageRoom ? room : q.get('coop') === '1' ? 'proto-place-village-coop' : 'proto-place-village');
+    } else if (!room) q.set('room', q.get('coop') === '1' ? 'proto-place-coop' : 'proto-place');
+  }
   return q;
 }
 
@@ -35,8 +39,9 @@ export const LOW_ISLAND = q.get('island') === 'low' && !q.has('proto');
 export const PROTO = q.get('proto') ?? '';
 /** Whether prototype `id` runs on this page. */
 export const protoOn = (id: string): boolean => PROTO === id;
-/** The addressed variant ('' for the default). */
-export const protoV = (id: string): string => (PROTO === id ? (q.get('v') ?? '') : '');
+/** The addressed variant ('' for the default); Place's comparison uses `arrival`. */
+export const protoV = (id: string): string =>
+  PROTO === id ? ((id === 'place' ? q.get('arrival') : null) ?? q.get('v') ?? '') : '';
 /** Production sea selection, shared by rendering and headless Owner physics. The demo owns its own sea. */
 export const newWaterEnabled =
   !protoOn('water') && q.get('water') !== 'old' && (q.get('water') === 'new' || protoOn('place'));

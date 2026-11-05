@@ -29,7 +29,7 @@ import { BEAM_CARRY_POSITION, makeCarryModels } from './carry-models.ts';
 import { shakeView } from './celebrate.ts';
 import { addFoot } from './sites.ts';
 import { packFrameMesh } from './gear-models.ts';
-import { LAND_TREES, safeTreeFall } from './tree-catalog.ts';
+import { LAND_TREES, safeTreeFall, shoreTreeCleared } from './tree-catalog.ts';
 
 // ---------------------------------------------------------------- your back
 /** One big thing on your shoulder: it fills your back, and you can't sprint with it. */
@@ -189,6 +189,7 @@ export type Tree = {
   size: number;
   great: boolean;
   hardwood: boolean;
+  cleared: boolean; // Local shore clearance only; never written to a save, snapshot or harvest result
   work: number;
   issued: number;
   ceiling: number;
@@ -217,6 +218,7 @@ function makeTree(x: number, z: number, size: number, great = false, hardwood = 
     size,
     great,
     hardwood,
+    cleared: shoreTreeCleared(x, z, size),
     work: 0,
     issued: 0,
     ceiling: great ? 0 : hardwood ? 15 : 10,
@@ -329,7 +331,7 @@ export function applyTreeHarvest(t: Tree, state: TreeHarvest): boolean {
   t.fallYaw = state.fallYaw;
   t.collapsed = state.collapsed;
   if (falling) {
-    t.fall = 0;
+    t.fall = t.cleared ? 1 : 0;
     if (t.body) removeBody(t.body);
     t.body = null;
   }
@@ -346,6 +348,7 @@ function solidTree(t: Tree) {
   if (t.body) removeBody(t.body);
   if (t.stump) removeBody(t.stump);
   t.body = t.stump = null;
+  if (t.cleared) return;
   const h = (t.collapsed ? 0.8 : 5) * t.size;
   if (t.fall < 0) {
     t.body = addStatic(
@@ -477,6 +480,16 @@ const Q0 = new THREE.Quaternion(),
   P1 = new THREE.Vector3();
 function pose(t: Tree, now: number) {
   const hardwoodIndex = hardwoodIndices.get(t.index);
+  if (t.cleared) {
+    for (const m of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch]) m.setMatrixAt(t.index, ZERO);
+    if (hardwoodIndex !== undefined) {
+      for (const m of [parts.hardwood, parts.branch, parts.cutEnd]) m.setMatrixAt(hardwoodIndex, ZERO);
+      for (let k = 0; k < 2; k++) parts.forks.setMatrixAt(hardwoodIndex * 2 + k, ZERO);
+      for (let k = 0; k < 3; k++) parts.broad.setMatrixAt(hardwoodIndex * 3 + k, ZERO);
+    }
+    for (const m of Object.values(parts)) m.instanceMatrix.needsUpdate = true;
+    return;
+  }
   let a = 0,
     b = 0;
   if (t.fall >= 0) {
@@ -604,7 +617,7 @@ function restoreFellen(list: number[]) {
     solidTree(t);
   }
 }
-export const standing = (t: Tree) => t.fall < 0;
+export const standing = (t: Tree) => !t.cleared && t.fall < 0;
 
 // ---------------------------------------------------------------- rocks
 export type Rock = {
@@ -749,7 +762,7 @@ function startSwing(x: number, z: number) {
 }
 /** Press: the swing starts now. False while the last one is still going. */
 export function chop(t: Tree) {
-  if (swing.t < TUNE.swingS || !me.body) return false;
+  if (t.cleared || swing.t < TUNE.swingS || !me.body) return false;
   swing.target = t;
   swing.rock = null;
   startSwing(t.x, t.z);
@@ -793,6 +806,12 @@ export function receiveHarvest(t: Tree, result: HarvestResult, localPlayer: bool
   const wasStanding = t.fall < 0;
   applyTreeHarvest(t, result.state);
   if (localPlayer) swing.response = result.outcome;
+  if (t.cleared) {
+    // An old tab can still harvest this ID. Keep the accepted result, without a phantom local tree or its effects.
+    if (localPlayer && result.outcome === 'bite') back.logs += result.logs;
+    save();
+    return;
+  }
   if (result.outcome === 'gone') return;
   const p = me.body?.position ?? t;
   const dx = t.x - p.x,
@@ -1058,5 +1077,6 @@ export function updateChop(dt: number, now: number) {
 for (const t of TREES) {
   pose(t, 0);
   solidTree(t);
-  if (LOOK.contact) addBlob(t.x, t.y, t.z, t.size * (t.hardwood ? 0.9 : 0.5), t.size * (t.hardwood ? 0.9 : 0.5));
+  if (LOOK.contact && !t.cleared)
+    addBlob(t.x, t.y, t.z, t.size * (t.hardwood ? 0.9 : 0.5), t.size * (t.hardwood ? 0.9 : 0.5));
 }

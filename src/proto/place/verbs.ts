@@ -39,7 +39,7 @@ import { send } from './pieces.ts';
 import { SCOPE_AT, boilerAt, lookThrough } from './props.ts';
 import { activeFrame, mark, run, wake } from './run.ts';
 import { seated, sitDown, standUp } from './seat.ts';
-import { SHORE_ARRIVAL, SHORE_PATH } from './shore-layout.ts';
+import { SHORE_COAST, SHORE_PATH } from './shore-layout.ts';
 
 const SHELF_AT = { x: toWorld(SHELF.x), z: SHELF.z };
 const atPrompt = new THREE.Vector3();
@@ -81,7 +81,7 @@ const nearestSample = (x: number, z: number) => {
   return best;
 };
 export const offThePath = (x: number, z: number) => {
-  if (SHORE_ARRIVAL && SHORE_PATH.some(([px, pz]) => Math.hypot(px + ORIGIN.x - x, pz - z) < 20)) return false;
+  if (SHORE_COAST && SHORE_PATH.some(([px, pz]) => Math.hypot(px + ORIGIN.x - x, pz - z) < 20)) return false;
   const q = nearestSample(x, z);
   return Math.hypot(q[0] + ORIGIN.x - x, q[1] - z) > 20;
 };

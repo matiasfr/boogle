@@ -11,7 +11,7 @@ import { GROUP, groundMat } from '../../physics/physics.ts';
 import { smoothstep } from '../../math.ts';
 import { FAR, GRID, ORIGIN, PATHS, SPIRE } from './layout.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at, cellX, cellZ, gorgeD, heights, insidePlace, pathMask } from './terrain.ts';
-import { SHORE_ARRIVAL, SHORE_HOP } from './shore-layout.ts';
+import { SHORE_COAST, SHORE_HOP } from './shore-layout.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -259,7 +259,7 @@ function buildFar() {
 
 export function buildLand() {
   buildMesh();
-  if (SHORE_ARRIVAL) {
+  if (SHORE_COAST) {
     // Reuse the spire's faceted rock drum: a low hop with broad grass on both sides, never a gate.
     const { x, z, y, height, top, bottom } = SHORE_HOP;
     const rock = new THREE.Mesh(new THREE.CylinderGeometry(top, bottom, height, 7), FLAT(spireRock('#8c8478')));

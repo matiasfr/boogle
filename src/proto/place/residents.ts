@@ -25,7 +25,7 @@ import { job, personalSlice, save } from './job.ts';
 import { VILLAGE, toWorld, type RoomId } from './layout.ts';
 import { indoors, onRoom, roomToWorld, rooms, type Room } from './rooms.ts';
 import { endTalk, startTalk, type Answer, type Beat } from './talk.ts';
-import { SHORE_ARRIVAL } from './shore-layout.ts';
+import { SHORE_COAST } from './shore-layout.ts';
 import {
   BYE,
   GO_ON,
@@ -109,8 +109,8 @@ for (const id of IDS) {
   guys[id] = addResident(V.x, V.y + (c.up ?? 0), V.z, r.yaw + c.yaw, c.act, c.color);
 }
 const inRoom = (r: Room) => IDS.filter((id) => CAST[id].room === r.id);
-const shoreWorker = SHORE_ARRIVAL ? addGreeter(toWorld(-95), VILLAGE.y, 12) : null;
-const shoreLine = SHORE_ARRIVAL && new URLSearchParams(location.search).get('greeting') !== 'off';
+const shoreWorker = SHORE_COAST ? addGreeter(toWorld(-95), VILLAGE.y, 12) : null;
+const shoreLine = SHORE_COAST && new URLSearchParams(location.search).get('greeting') !== 'off';
 let shoreGesture = -1;
 let shoreTalking = false;
 const shorePrompt = new THREE.Vector3();
@@ -126,7 +126,7 @@ const seen = {
   street: null as Fact | null,
   streetRumour: 0,
   // A reload on the walk retains eligibility; an ordinary returning player doesn't acquire it.
-  shoreNewcomer: SHORE_ARRIVAL && isFirstVisit(),
+  shoreNewcomer: SHORE_COAST && isFirstVisit(),
   shoreAsk: false,
 };
 personalSlice('town', {
@@ -400,7 +400,7 @@ export function resetResidents() {
   seen.hello = {};
   seen.street = null;
   seen.streetRumour = 0;
-  seen.shoreNewcomer = SHORE_ARRIVAL && isFirstVisit();
+  seen.shoreNewcomer = SHORE_COAST && isFirstVisit();
   seen.shoreAsk = false;
   shoreGesture = -1;
   if (shoreWorker) shoreWorker.x = toWorld(-95);

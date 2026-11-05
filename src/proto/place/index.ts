@@ -42,7 +42,7 @@ import { drawHeaps, hopTo, topSlot, updateCrates, type Kind } from '../net/crate
 import { protoCount } from '../count.ts';
 import { pageQuery } from '../flags.ts';
 import { playMark, playObjective, playWhere } from '../mark.ts';
-import { SHORE_ARRIVAL } from './shore-layout.ts';
+import { SHORE_COAST } from './shore-layout.ts';
 import { H, buildLand, insidePlace } from './land.ts';
 import { registerPlaceShore } from './water.ts';
 import { clearMoments, showBanner, updateMoments } from './celebrate.ts';
@@ -355,9 +355,10 @@ personalSlice('crystals', {
   get: () => crystals.found.slice(),
   set: (v) => snapCrystals(Array.isArray(v) ? (v as number[]) : []),
 });
-type SavedPose = { x: number; z: number; yaw: number };
+type Pose = { x: number; z: number; yaw: number };
+type SavedPose = Pose & { ground: number };
 let savedPose: SavedPose | null = null;
-function safePose(p: SavedPose) {
+function safePose(p: Pose) {
   if (![p.x, p.z, p.yaw].every(num) || !insidePlace(p.x, p.z) || H(p.x, p.z) <= 1.6) return false;
   if (feet.some((f) => outOf(f, { x: p.x, z: p.z }, PLAYER_R + 0.2))) return false;
   return !Object.values(rooms).some((r) => {
@@ -371,19 +372,28 @@ personalSlice('position', {
     savedPose = null;
     if (!v || typeof v !== 'object') return;
     const p = v as SavedPose;
-    if (safePose(p)) savedPose = { x: p.x, z: p.z, yaw: p.yaw };
+    // Old saves without a ground sample cannot prove the ground has stayed put: use SPAWN.
+    if (num(p.ground) && Math.abs(H(p.x, p.z) - p.ground) < 0.2 && safePose(p))
+      savedPose = { x: p.x, z: p.z, yaw: p.yaw, ground: p.ground };
   },
 });
 function capturePose() {
   const b = me.body;
   if (!b || fallArrival.active) return;
-  const p = { x: b.position.x, z: b.position.z, yaw: me.yaw };
+  const p = { x: b.position.x, z: b.position.z, yaw: me.yaw, ground: H(b.position.x, b.position.z) };
   // Never leave a stale safe position behind when quitting on a moving deck or in an unsafe spot.
   savedPose = !carry.on && !me.swimming && safePose(p) ? p : null;
 }
 function restorePose() {
   const b = me.body;
-  if (!b || fallArrival.active || !savedPose || !safePose(savedPose)) return;
+  if (
+    !b ||
+    fallArrival.active ||
+    !savedPose ||
+    Math.abs(H(savedPose.x, savedPose.z) - savedPose.ground) >= 0.2 ||
+    !safePose(savedPose)
+  )
+    return;
   teleport(b, savedPose.x, H(savedPose.x, savedPose.z) + PLAYER_R + 0.4, savedPose.z);
   b.velocity.set(0, 0, 0);
   cam.yaw = me.yaw = savedPose.yaw;
@@ -419,7 +429,7 @@ export function getUnstuck() {
         )
       )
         continue;
-      savedPose = p;
+      savedPose = { ...p, ground: h };
       restorePose();
       return;
     }
@@ -502,11 +512,11 @@ onFrame(
     });
     updatePieces(dt);
     if (fallArrival.active) {
-      if (SHORE_ARRIVAL) shoreFalling = true;
+      if (SHORE_COAST) shoreFalling = true;
       coop.tick(dt, now);
       return; // keep the shared railway running while the opening owns this player's camera and input
     }
-    if (SHORE_ARRIVAL && b) {
+    if (SHORE_COAST && b) {
       if (shoreFalling && !shoreStood && me.coyote > 0 && !me.down && !me.swimming) {
         shoreStood = true;
         shoreStandAt = now;

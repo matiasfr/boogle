@@ -246,7 +246,7 @@ const pushers = Array.from({ length: PUSHERS }, (_, k) => make('pusher', 0, 0, {
 export function addResident(x: number, y: number, z: number, yaw: number, act: Mood, color: string) {
   return make('resident', x, z, { on: false, fy: y, yaw, act, a: { x: yaw, z: 0 }, tint: new THREE.Color(color) });
 }
-/** The disposable shore worker uses the same meshes/poses, directed locally by residents.ts. */
+/** The shore worker uses the same meshes/poses, directed locally by residents.ts. */
 export function addGreeter(x: number, y: number, z: number) {
   return make('greeter', x, z, { fy: y, yaw: -Math.PI / 2, tint: new THREE.Color('#f0c030') });
 }

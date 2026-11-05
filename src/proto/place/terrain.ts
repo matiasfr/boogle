@@ -2,7 +2,7 @@
 // can walk it in Node. ./land.ts draws it and makes it solid. The gorge's walls are near-vertical cells of the grid, so nothing
 // here overhangs; footbridges and platforms are their own boxes. Local: nothing here reaches the sim.
 import { smoothstep } from '../../math.ts';
-import { SHORE_ARRIVAL, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';
+import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';
 import {
   ARMS,
   GORGE,
@@ -219,7 +219,11 @@ function bake() {
 }
 bake();
 
-if (SHORE_ARRIVAL) {
+// Harvest IDs were planted on this grid. Later local grading must not reorder a saved/shared tree catalog.
+export const catalogHeights = heights.slice();
+export const catalogClearMask = clearMask.slice();
+
+if (SHORE_COAST) {
   // A shallow way back from the water beside the level landing. Blend into the original coast beyond
   // the cove; this modifies the finished grid shared by the mesh, heightfield and water shore provider.
   for (let j = 0; j < NZ; j++)
