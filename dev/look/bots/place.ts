@@ -11,6 +11,7 @@ import { carry, fromPlatform, type Platform } from '../../../src/physics/platfor
 import type { Rock, Tree } from '../../../src/proto/place/chop.ts';
 import { nearest } from '../../../src/proto/place/nearest.ts';
 import { gettingItem, press as putAwayGot } from '../../../src/proto/place/got.ts';
+import { showing as showingGift } from '../../../src/proto/place/gifts.ts';
 import { automaticRails } from '../../../src/proto/place/depot.ts';
 import { CART } from '../../../src/proto/place/layout.ts';
 import { runDoubleJumpCourse } from './double-jump.ts';
@@ -83,14 +84,13 @@ export async function play() {
     // A short walk can finish mid-hop. Let physics land before planning the next leg from the ground.
     if (
       coopRoute &&
-      !(await bot.until(
-        () => me.coyote > 0 && Math.abs(body.velocity.y) < 0.5 && !me.swimming,
-        10000,
-        'dry co-op landing',
-      ))
+      !(await bot.until(() => me.coyote > 0 && Math.abs(body.velocity.y) < 0.5 && !me.swimming, 10000))
     ) {
       const { diagnoseLanding } = await import('./place-landing.ts');
-      throw new Error(`Co-op player did not land before the next walk: ${JSON.stringify(await diagnoseLanding(bot))}`);
+      // The coordinator stops on NEVER; finish the stationary-jump/walk probes before reporting the failed beat.
+      const evidence = await diagnoseLanding(bot);
+      bot.check('dry co-op landing', false);
+      throw new Error(`Co-op player did not land before the next walk: ${JSON.stringify(evidence)}`);
     }
     return bot.walk(x, z, r, { limit });
   };
@@ -108,18 +108,14 @@ export async function play() {
       if (c.content !== 'gift') continue; // a find stays where it's hidden: `tour`, below
       if (Math.hypot(c.x - body.position.x, c.z - body.position.z) > 60) continue;
       const before = place.giftState.count();
-      await travel(c.x, c.z, 1);
-      if (Math.hypot(c.x - body.position.x, c.z - body.position.z) > 3) {
-        if (coopRoute) throw new Error('Co-op route could not walk to a reward crate');
-        // Past the machine, off the deck: down from the track and across.
-        place.backUp();
-        await wait(400);
-        await go(c.x, c.z, 1, 8000);
-      }
-      const t = performance.now();
-      while (place.giftState.count() === before && performance.now() - t < 3000) await wait(50);
+      // Open from the offered interaction range; another player or the feeder can block the crate's centre.
+      await travel(c.x, c.z, 3);
+      if (place.giftState.count() === before) await bot.use(c.x, c.z, 'the reward crate', /Open/);
+      if (!(await bot.until(() => place.giftState.count() < before, 3000, 'opened the reward crate')))
+        throw new Error('Reward crate did not open');
       note(`opened: ${c.content}`);
-      await wait(2200);
+      if (!(await bot.until(() => !showingGift() && !gettingItem(), 8000, 'put away the reward crate')))
+        throw new Error('Reward crate still owns the player');
     }
   };
   const chopUntil = async (fn: () => boolean) => {
@@ -392,11 +388,29 @@ export async function play() {
     await twoJumps(p.x + O, p.z);
     bot.check('the second jump up onto the second pillar', body.position.y > p.top);
   };
+  const firstSlabBox = async () => {
+    const slab = padOf('t0');
+    if (
+      !(await waitFor(
+        () => !showingGift() && !gettingItem() && !tech.move.pull && me.coyote > 0 && bot.dist(slab.x + O, slab.z) < 3,
+        8000,
+        'landed on the first hook slab',
+      ))
+    )
+      throw new Error('The hook demonstration did not land on the first slab');
+    // The raised chest stands beyond the landing's bump radius. Open it before starting the return pull.
+    if (!tech.found.has('firstpull')) {
+      const box = tech.SECRETS.find((s: { id: string }) => s.id === 'firstpull');
+      await bot.use(box.x + O, box.z, "the first slab's box", /Open/);
+    }
+    await waitFor(() => tech.found.has('firstpull'), 3000, "the first slab's box");
+    if (!(await waitFor(() => !showingGift() && !gettingItem(), 8000, 'put away the first slab reward')))
+      throw new Error('The first slab reward still owns the player');
+  };
   const secondDevice = async () => {
     await ontoSecondPillar();
-    await takeTech('hook'); // and it pulls you over to the first slab, where a box is waiting: you land on it
-    await waitFor(() => tech.found.has('firstpull'), 3000, "the first slab's box");
-    await wait(2500);
+    await takeTech('hook');
+    await firstSlabBox();
     await hookTo('p2');
     const d2 = deck(L2);
     await bot.straight(d2.x, d2.z, 1.2, 4000);
@@ -413,7 +427,11 @@ export async function play() {
   };
   const climb = async () => {
     await ontoSecondPillar();
-    for (const id of ['t0', 't1', 't2', 't3', 't4', 't5', 'summit']) await hookTo(id);
+    for (const id of ['t0', 't1', 't2', 't3', 't4', 't5', 'summit']) {
+      await hookTo(id);
+      // The partner who skipped the device still has their own chest here. Finish its reward before climbing.
+      if (id === 't0') await firstSlabBox();
+    }
     note('at the top');
     await bot.use(tech.SEA_SWITCH.x + O, tech.SEA_SWITCH.z, 'the summit switch', /Pull/);
     await waitFor(() => place.job.gate.sea, 8000, 'the sea slab');
@@ -560,6 +578,10 @@ export async function play() {
         async () => {
           if (!(await waitFor(() => place.activeFrame() === place.forgeFrame, 30000, 'forge frame ready')))
             throw new Error('Forge frame did not become active');
+          // Cross the completed bridge before choosing timber near the new work site.
+          const d1 = deck(L1);
+          await travel(d1.x, d1.z, 1.2);
+          await travel(place.forgeFrame.x, place.forgeFrame.z, 3);
           await bill(place.forgeFrame);
         },
         () => place.job.forgeBill === 1,
@@ -737,7 +759,11 @@ export async function play() {
     note(`on the platform: ${place.haltUnder()?.name ?? 'no'}, eta ${place.trainEta(l.train.tr, h.stop)}`);
     const callAt = now();
     if (
-      !(await waitFor(() => l.train.tr.stop === h.stop && me.coyote > 0 && !gettingItem(), 90000, 'the train coming'))
+      !(await waitFor(
+        () => l.train.tr.stop === h.stop && me.coyote > 0 && !gettingItem(),
+        coopRoute ? 180000 : 90000, // A partner can call the train away just before it reaches this platform.
+        'the train coming',
+      ))
     )
       throw new Error('Train did not arrive for boarding');
     note(`waited ${(now() - callAt).toFixed(1)} s`);

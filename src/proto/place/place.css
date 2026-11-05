@@ -73,13 +73,16 @@ body:not(.playing) .place-money-live {
 }
 .place-money-live {
   position: absolute;
-  top: 76px;
-  right: 14px;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  right: calc(14px + env(safe-area-inset-right, 0px));
   color: var(--ink);
   font: 700 16px var(--font-body);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.4s ease;
+}
+body.touch .place-money-live {
+  right: calc(72px + env(safe-area-inset-right, 0px));
 }
 .place-money-live.on {
   opacity: 1;

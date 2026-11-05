@@ -20,7 +20,7 @@
 //                            types or there is only one way on, Answer when there are choices; Pick; Leave always.
 //                            On touch only "Tap to go on", when the one answer can be said by tapping the box
 //
-// Controls: confirm (pad A / ✕; E, Space, Enter) skips the typing, then says the selected answer. Up and down (D-pad,
+// Controls: confirm (pad A / ✕; E, Space, Enter) skips the typing, then says the selected answer. All four directions (D-pad,
 // left stick, arrow keys, W and S) move the selection, repeating while held; number keys say an answer at once. Back
 // (pad B / ○, Esc) leaves. Pad X / □ (interact, which opened the talk) does nothing in one. A Switch pad swaps confirm
 // and back (menuSlot in src/player/controls.ts). Touch: tap the box to skip; with one answer, tap anywhere on the box
@@ -112,7 +112,8 @@ function padPress(slot: string) {
   if (!cur) return;
   if (slot === menuSlot('back')) cur.close();
   else if (slot === menuSlot('confirm')) confirm();
-  else if (slot === 'up' || slot === 'down') move(slot === 'down' ? 1 : -1);
+  else if (slot === 'up' || slot === 'down' || slot === 'left' || slot === 'right')
+    move(slot === 'down' || slot === 'right' ? 1 : -1);
   // x: taken so interact does nothing mid-talk (it would leave)
 }
 
@@ -137,7 +138,7 @@ export function openConversation(talk: Talk) {
   selFirst = null;
   hintHtml = '';
   watchLock();
-  setPadGrab(padPress, ['a', 'b', 'x', 'up', 'down'], { stick: true });
+  setPadGrab(padPress, ['a', 'b', 'x', 'up', 'down', 'left', 'right'], { stick: true });
   if (!tapped.has(talk.box)) {
     tapped.add(talk.box);
     const box = talk.box;
@@ -180,19 +181,33 @@ export function talkHints() {
   const kind = inputKind();
   if (!cur) return '';
   const n = cur.typing() ? 0 : sync().length; // answers shown
+  const buttons = cur.choices();
+  const across = buttons.length > 1 && Math.abs(buttons[0]!.offsetTop - buttons[1]!.offsetTop) < 4;
   if (kind === 'touch') return n === 1 ? `<span class="talk-hint talk-tap"><span>Tap to go on</span></span>` : '';
   const pick =
     n < 2
       ? ''
       : kind === 'pad'
-        ? hint(padGlyph('up') + padGlyph('down'), 'Pick')
-        : hint(keyGlyph(['ArrowUp', 'ArrowDown']), 'Pick');
+        ? hint(padGlyph(across ? 'left' : 'up') + padGlyph(across ? 'right' : 'down'), 'Pick')
+        : hint(keyGlyph(across ? ['ArrowLeft', 'ArrowRight'] : ['ArrowUp', 'ArrowDown']), 'Pick');
   return hint(glyph('confirm'), n >= 2 ? 'Answer' : 'Next') + pick + hint(glyph('close'), 'Leave');
 }
 
 // Capture phase on window, before the game's own key handlers: it stops only the keys it answers with (Space would
 // jump) and lets the rest through (H still opens the pause view).
-const KEYS = new Set(['Escape', 'KeyE', 'Space', 'Enter', 'NumpadEnter', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyS']);
+const KEYS = new Set([
+  'Escape',
+  'KeyE',
+  'Space',
+  'Enter',
+  'NumpadEnter',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'KeyW',
+  'KeyS',
+]);
 addEventListener(
   'keydown',
   (e) => {
@@ -204,8 +219,8 @@ addEventListener(
     if (e.repeat && !e.code.startsWith('Arrow') && e.code !== 'KeyW' && e.code !== 'KeyS') return;
     if (e.code === 'Escape') cur.close();
     else if (digit) say(Number(digit[1]) - 1);
-    else if (e.code === 'ArrowUp' || e.code === 'KeyW') move(-1);
-    else if (e.code === 'ArrowDown' || e.code === 'KeyS') move(1);
+    else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft' || e.code === 'KeyW') move(-1);
+    else if (e.code === 'ArrowDown' || e.code === 'ArrowRight' || e.code === 'KeyS') move(1);
     else if (
       e.code.endsWith('Enter') &&
       document.activeElement?.closest?.('button') &&
@@ -253,11 +268,11 @@ spawn({
 describeControl('talk-answer', {
   label: 'Answer in a talk',
   detail: {
-    kbm: 'E, Space or Enter: next, or say the picked answer; ↑ ↓ or W S pick; Esc leaves',
+    kbm: 'E, Space or Enter: next, or say the picked answer; arrow keys or W S pick; Esc leaves',
     pad: '{confirm}: next, or say the picked answer; the left stick picks too; {back} leaves',
   },
-  keys: ['Digit1-8', ['ArrowUp', 'ArrowDown']],
-  pad: ['up', 'down'],
+  keys: ['Digit1-8', ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']],
+  pad: ['up', 'down', 'left', 'right'],
   touch: 'Tap an answer, or the box when there is one',
   group: 'friends',
   context: 'talking',

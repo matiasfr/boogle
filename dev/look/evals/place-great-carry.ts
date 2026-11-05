@@ -99,8 +99,13 @@ const put = async (x: number, z: number) => {
 };
 const press = async (verb: string) => {
   await until(() => hands.interactTarget()?.verb === verb, `${verb} offered`);
-  hands.interactDown();
-  hands.interactUp();
+  if (hands.interactTarget()?.click) {
+    hands.useDown();
+    hands.useUp();
+  } else {
+    hands.interactDown();
+    hands.interactUp();
+  }
   await wait(250);
 };
 async function run() {
@@ -132,8 +137,9 @@ async function run() {
         !inputState.held &&
         Math.hypot(me.body!.position.x - tree.greatTree.x, me.body!.position.z - tree.greatTree.z) < 4.6,
     );
-    check('Station 1 has no great-tree Chop prompt', hands.interactTarget()?.id !== 'place-great');
-    check('Station 1 rejects direct great-tree swing', !tree.chop(tree.greatTree));
+    check('Station 1 offers a rebound attempt', hands.interactTarget()?.id === 'place-great');
+    await press('Chop');
+    await wait(500);
     tree.chopHooks.harvest!(tree.greatTree, 0, 0, 0); // bypass UI: authority must still reject the stroke
     await until(() => !coop.debug().harvestPending, 'early harvest request settled');
     check(
@@ -283,28 +289,23 @@ async function run() {
     if (place.lines[0].stage === 1) {
       await wait(400);
       check('Station 2 has no trunk prompt', hands.interactTarget()?.verb !== 'Shoulder the trunk');
-      if (mode === 'gate')
+      if (mode === 'gate') {
+        await press('Chop');
+        await wait(500);
         check(
-          'Station 2 has no great-tree Chop or accepted swing',
-          hands.interactTarget()?.id !== 'place-great' && !tree.chop(tree.greatTree) && tree.greatTree.work === 0,
+          'Station 2 great-tree attempts rebound without work',
+          tree.greatTree.work === 0 && tree.greatTree.fall < 0,
         );
+      }
     }
   }
   if (!saved) tree.back.logs = tree.back.rails = tree.back.stone = tree.back.incoming = 0;
   const st = place.lines[0].stations[2];
   if (authority && !saved) {
+    // Keep the legacy-save assertions above, then earn a fresh beam through the current safe fall path.
+    tree.resetTrees();
     st.have.logs = 40;
     st.drawStock(st.have);
-    if (mode !== 'gate')
-      tree.applyTreeHarvest(tree.greatTree, {
-        work: 12,
-        issued: 0,
-        ceiling: 0,
-        revision: 1,
-        fell: true,
-        fallYaw: 0,
-        collapsed: false,
-      });
     net.room!.send({
       t: COOP_IDENTITY,
       k: 'snap',
@@ -312,15 +313,28 @@ async function run() {
       force: true,
     });
   }
-  if (mode === 'gate') {
+  if (!saved) {
     await until(() => place.run.mode === 'idle' && place.lines[0].stage === 2, 'Station 3 active');
+    await until(() => place.job.chest === 'axe', 'forty logs earn the axe chest');
+    check(
+      'Station 3 still rejects felling without the earned axe',
+      !place.job.rung.axe && tree.harvestTree(tree.greatTree, 0, 0, 0).outcome === 'rebound',
+    );
+    await barrier('axe remains required');
+    if (authority) {
+      const chest = place.giftState.crates().find((c: { content: string }) => c.content === 'axe');
+      if (!chest) throw new Error('Earned Station 3 axe chest missing');
+      await put(chest.x + 2.4, chest.z);
+      await press('Open the chest');
+    }
+    await until(() => place.job.rung.axe > 0 && !got.gettingItem(), 'proper axe shared and dismissed');
+    await barrier('proper axe earned');
     await put(tree.greatTree.x + (authority ? -1.3 : 1.3), tree.greatTree.z + 1.5);
     await until(() => hands.interactTarget()?.id === 'place-great', 'Station 3 great-tree Chop appears');
     await barrier('chop together');
     while (tree.greatTree.fall < 0) {
       if (hands.interactTarget()?.id === 'place-great') {
-        hands.interactDown();
-        hands.interactUp();
+        await press('Chop');
       }
       await wait(400);
     }

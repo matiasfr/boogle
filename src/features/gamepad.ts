@@ -243,11 +243,28 @@ function poll(dt: number) {
     return;
   }
 
-  // A grab with stick: true picks with D-pad up and down and the left stick alike (with repeat), in the loop below's stead.
+  // A grab with stick: true picks with captured D-pad directions and the left stick alike (with repeat), in the loop below's stead.
   const picks = !!grab?.stick;
   if (picks) {
     input.stickX = input.stickY = 0;
-    const dir = down[UP] ? 'up' : down[DOWN] ? 'down' : ly < -STICK_PICK ? 'up' : ly > STICK_PICK ? 'down' : '';
+    const across = grab!.slots.includes('left') && grab!.slots.includes('right');
+    const dir = down[UP]
+      ? 'up'
+      : down[DOWN]
+        ? 'down'
+        : across && down[PAD.indexOf('left')]
+          ? 'left'
+          : across && down[PAD.indexOf('right')]
+            ? 'right'
+            : ly < -STICK_PICK
+              ? 'up'
+              : ly > STICK_PICK
+                ? 'down'
+                : across && lx < -STICK_PICK
+                  ? 'left'
+                  : across && lx > STICK_PICK
+                    ? 'right'
+                    : '';
     pick(dir, performance.now(), grab!.fn);
   } else {
     input.stickX = lx;
@@ -265,7 +282,7 @@ function poll(dt: number) {
       claimFocus();
       grabbed[i] = true;
     } else if (down[i] && !pressed[i]) {
-      const picked = picks && (i === UP || i === DOWN); // pick() above sent it
+      const picked = picks && (i === UP || i === DOWN || (takes(i) && (PAD[i] === 'left' || PAD[i] === 'right'))); // pick() above sent it
       grabbed[i] = picked || takes(i);
       if (!grabbed[i]) action?.down?.();
       else if (!picked) grab!.fn(PAD[i]!);

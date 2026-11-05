@@ -17,6 +17,7 @@
   a small menu page with the game stopped ([first-run.md](first-run.md)).
 - **Sync kind.** Local, through [src/player/modal.ts](../../src/player/modal.ts) (one modal at a time; it takes keys and pad).
 - **Phone layout.** The bounded card keeps a scrolling body whose contents cannot shrink underneath it. Short landscape screens use smaller padding and a compact heading, keeping every final action reachable by scrolling.
+- **Play HUD moved here (5 November).** The main page holds the live name chips and connection/Live count on every platform. Place keeps money and nonempty carried contents; track distance, town population and empty-load bookkeeping are no longer main-menu stats. Touch alone shows the corner menu button during play. The money increase pill uses the freed top row instead of leaving a blank band above it.
 - **Optional pages.** The opt-in [Dev menu](dev-menu.md) shares this modal. Navigation skips disabled controls and closed details; focused controls scroll into view on optional pages. Leaving a page disposes its tools.
 - **Files.** [src/features/pause.ts](../../src/features/pause.ts), [src/player/guide.ts](../../src/player/guide.ts),
   [src/player/pad-diagram.ts](../../src/player/pad-diagram.ts),

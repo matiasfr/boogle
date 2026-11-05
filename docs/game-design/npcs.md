@@ -15,7 +15,7 @@ All four D-pad directions and arrow keys pick answers, including left/right for 
 |---|---|---|---|
 | Open | X / □ / Y (the interact button) | E | the main button (it says Talk) |
 | Skip the typing, or go on | A / ✕ | E, Space, Enter | tap the box (with one answer, the tap says it) |
-| Pick an answer | D-pad ↑ ↓ or the left stick (repeats while held) | ↑ ↓ or W S; 1-9 answer at once | tap it |
+| Pick an answer | D-pad ↑ ↓ ← → or the left stick (repeats while held) | ↑ ↓ ← → or W S; 1-9 answer at once | tap it |
 | Say the picked answer | A / ✕ | E, Space, Enter | (the tap) |
 | Leave | B / ○ | Esc (with the mouse locked, Esc ends the lock, which also leaves) | the close button |
 
@@ -29,10 +29,10 @@ All four D-pad directions and arrow keys pick answers, including left/right for 
   meant for the typing never answers. Answers are thumb-sized on touch (48 px tall on The Boogler's card, 44 px on the
   others) and his close button is 44 px.
 - A hint row on the box shows the buttons for the input in use, named for the pad's brand: "A Next, B Leave" while the
-  line types or there is only one way on, "A Answer, ↑↓ Pick, B Leave" when there are choices (✕ / ○ on a PlayStation
-  pad); "E Next" / "E Answer", "↑↓ Pick", "Esc Leave" on a keyboard; on touch only "Tap to go on ▸" when there is one
+  line types or there is only one way on, "A Answer, ↑↓ Pick, B Leave" (or ←→ Pick for a horizontal row) when there are choices (✕ / ○ on a PlayStation
+  pad); "E Next" / "E Answer", "↑↓ Pick" or "←→ Pick" to match the layout, "Esc Leave" on a keyboard; on touch only "Tap to go on ▸" when there is one
   answer.
-- D-pad ↑ ↓ (buttons 12 and 13, or the D-pad axes of a pad without the standard mapping) and the left stick repeat
+- D-pad ↑ ↓ ← → (buttons 12–15, or the D-pad axes of a pad without the standard mapping) and the left stick repeat
   while held: first after 380 ms, then every 170 ms.
 - **You stand still.** Move and jump are held for the whole talk (`inputState.held`); looking around still works.
   In the first 1.4 s the camera eases round to face the NPC (a little to one side, so you share the shot) and you turn

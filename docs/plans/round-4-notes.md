@@ -33,53 +33,60 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
 Answers are being collected on the [review page](https://claude.ai/artifact/4MQmeWfAe2nw57T85B7juu). Sessions `mw38b15m`, `mw38s7vf`, `mw390tiz`.
 
+**Replay audit, 5 November:** checked against local `origin/main` `fd54894e`. A tick means implemented in the cited commit, not owner/device approval. Mixed items are split below so unfinished work remains visible. No design expansion is part of this replay preparation. [Combined replay evidence](../research/round-4-replay-preparation.md): solo and continuous co-op pass after bot repairs (`60838d35`, `320c0eb3`, `8c642ecf`, `f2d3710e`) and a co-op boarding-budget correction (`1599ed02`). Axe/Drop/respawn probes and world-inputs pass. Phone-profile render GPU is +5.4%; load is roughly unchanged. An intermittent grounding outage and transient train-position gaps remain unresolved; not tested on a device.
+
 **Owner decisions, 5 November**
 
 - The great trunk can't be shouldered until Station 3 needs it. A dropped log that can't be reached respawns.
 
 **Bugs**
 
-- [ ] Great log soft-lock: shouldered with Station 1 active, no Drop, no room for logs, kept on reload (fix in progress, `codex/big-cargo-drop`).
-- [ ] Ping marks a point about 700 m away: its ray stops at 90 m and falls back to a far point along the view.
-- [ ] D-pad during conversations: across options still need down, and left and right appear to fire Ping and Flag (all 7 flags came in town).
-- [ ] Try-on: the whistle wouldn't go on or back. Top hat worked.
-- [ ] Sprinting into a wall and jumping wobbles left and right.
-- [ ] NPC line split: "Out there", then "the ground does that" after next.
-- [ ] Scarf at Station 3: star rarity not visible, maybe portrait layout.
-- [ ] Landscape on mobile: wasted space on top, pause menu doesn't fit when scrolled.
-- [ ] Update banner cut off, and shows D-pad on touch.
-- [ ] Double jump is performed for you on getting it. Discover it yourself instead.
-- [ ] Glider reveal and the other island's cinematic overlap. Sequence them.
-- [ ] GPU error on returning from the background at 48:17 (`createCommandEncoder`). Possibly related to Grant's freeze; unproven.
+- [x] Great log soft-lock: early pickup gate, Drop and unreachable recovery (`1a5c17b7`, `8434c5c4`, `22e1a318`); proper axe before the beam (`2236d075`).
+- [x] Ping's far fallback (`3470c329`).
+- [x] D-pad conversations: restore missing `af0e4239` as local `5296357b`; all four directions belong to the talk, including horizontal repeat, without Ping/Flag. `ce5b3144` corrects the keyboard guide and adds focused acceptance captures. The earlier main audit correctly found this missing; it is now restored on the replay branch, not pushed. Standard/axes/hat D-pads and arrow keys pass; physical pad verification remains.
+- [x] Whistle try-on aisle access (`6403073e`); top hat behavior retained.
+- [x] Wall-jump wobble (`96445aae`).
+- [x] Split NPC answer, "Out there" / "the ground does that" (`03fee5c2`).
+- [x] Reward star rarity (`74362637`).
+- [x] Landscape pause layout (`f9ebd059`); physical phone verification remains.
+- [x] Update banner clipping and touch glyph (`cdc84269`).
+- [x] Automatic demonstration double-jump removed (`45f4181d`).
+- [x] Glider/cinematic sequencing (`ea180fda`), construction before glider (`9f986ad6`), gate reveal before return hook (`2147f451`).
+- [ ] Background GPU error at 48:17 (`createCommandEncoder`): recovery fix/reproduction not established; relationship to Grant's freeze remains unproven.
 
 **Looks and clipping**
 
-- [ ] Dark particles (crystal, chest, box) and station names, and odd exposure (research: `dark-unlit-exposure`). Owner wants to test fixed exposure or no HDR, with Dev controls.
-- [ ] Shallows look square (fix in progress, `codex/sea-colour-edge`).
-- [ ] New chop: looks buggy, hat stays still while the head moves. Prefers the floating axe from before #924. Leans away from skeletal animation for now.
-- [ ] Clips: straw hat, multi-axe, great log and tall hat with the head; little guys through the train; boiler hides the character.
-- [ ] Jump puzzle platforms cut through terrain and trees; tan platform cuts through the trestle and cliff.
-- [ ] Z-fighting: chest cylinder, tower floor.
-- [ ] Dark brown rectangle on trees. Stones float at stations and should pile on the ground.
-- [ ] Worker's text overlaps Talk; talk camera ends low over the water; dialogue card covers Ping and Jump.
-- [ ] Bench at the first station faces the wrong way and is too near the track. Rotunda needs polish.
-- [ ] Firebox on the track layer's back flashes and reads as a bug. Bell by the bridge read as a reaction to falling in.
+- [x] Readable unlit particles/names (`84cceb92`); fixed HDR with Dev controls (`33a941ab`), shared compensation (`fa7fd698`), calibration/dry-path guards (`adae2172`, `09539c45`, `85aa245a`). Brighter sand and darker shop/sun-facing sky remain reported tradeoffs, not owner approval.
+- [x] Square shallows (`b0763291`).
+- [x] Floating axe restored as default, new chop retained as an option (`5cd242d6`).
+- [x] Head/hat/axe/beam clearance (`1544624c`), little guys clear train bodies (`807da81b`), side-carried boiler (`d1dcb2de`).
+- [x] Optional platform terrain/tree/cliff clearance (`48896b72`).
+- [x] Chest cap and summit floor z-fighting (`633d6ad6`).
+- [x] Pale tree cuts (`8b3d43c6`) and supported stone piles (`590d200a`).
+- [x] Worker text/prompt and conversation framing changes (`ff27ba5b`).
+- [ ] First-stage worker framing still needs its targeted check; do not treat the general conversation patch as proof.
+- [x] Station bench orientation/aisle (`02582583`) and turntable rim/rails (`02f58ef6`).
+- [x] Firebox grate and calmer glow (`c423fb11`).
+- [ ] Bridge bell's apparent reaction to falling in remains unaddressed.
 - [ ] Water and sky may be too good next to the world. Performance dipped: 2x down to 1.2x from 18:11, up to 568 draw calls.
 
 **Design**
 
-- [ ] Signs feel heavy handed ([brief](../brainstorms/signposts.md)). Entry into town isn't curated: maybe start at a dock.
-- [ ] Yellow and blue crystals: unclear difference and purpose.
-- [ ] Money: why you earn it, a goofier currency, icon and number display.
-- [ ] Dropped resources despawn; cut trees respawn.
-- [ ] Boiler: nothing says where it goes, and the old train doesn't look incomplete.
-- [ ] Switch gate isn't in front of the train; maybe hint where the rail continues.
-- [ ] Whistling for the cart is unclear (used twice); had to return to the forge for the final rails.
-- [ ] Catching the track layer: slower start or similar. Maybe a distinct machine from the engine you unlock.
-- [ ] Log pickup: scale up and back as each slot fills. Stand prompt fades after sitting.
-- [ ] Hook tower chests are invisible until you land on them; proper axe easy to miss; hanger swapping unclear.
-- [ ] HUD: name and Live count into pause, options button on mobile only, fewer pause stats.
-- [ ] Proper seats with preset poses; enterable finished buildings; museum zoom; hat buyer's reaction (for The Boogler).
+- [x] Fork signs removed; dock and town approach (`32a21e81`; [brief](../brainstorms/signposts.md)).
+- [x] Brass trinkets versus blue specimens (`55668f81`).
+- [ ] Money purpose/currency/icon/display: design pass after replay.
+- [ ] Dropped-resource despawn and tree regrowth: wait for the production plan's supply accounting and safe-rack policy before slice 2. Not implemented here.
+- [x] Boiler saddle and matching pedestal (`06df8aba`).
+- [x] Prepared earth/stakes beyond the gate (`88f34a3a`).
+- [x] Cart recall/delivery cues (`bfea44df`, checked in `c1c16342`); cart-first progression remains after replay.
+- [x] Track-layer ease-out and broader rear step (`74dcab6c`).
+- [ ] Distinct track-layer machine art remains for the art pass.
+- [x] Log-cell pickup pulse (`76f01598`) and fading seated Stand hint (`b7dd93f7`).
+- [x] Raised tower chests and hanger preview (`76f01598`); Station 3's earned axe stand (`2236d075`).
+- [x] Unnecessary long-way-round comparison banner removed (`eac11383`); crossing record and fanfare retained.
+- [x] HUD name/Live into pause on every platform, touch-only options and fewer pause stats: restore missing `6f46f171` as local `3bae8f40`, retaining later changes. Fresh desktop and phone-profile captures show identity/Live in Pause, money only when empty-handed, and the options button in touch play. Portrait and landscape inspected; not tested on a device. `c6447faa` alone had moved tester controls/counters only.
+- [x] Fixed train seats (`fd5eeed2`, `7e64deed`) and enterable completed forge (`8340a1e2`).
+- [ ] Museum zoom and hat-buyer reaction remain; preserve The Boogler's copy.
 
 **Liked**
 
@@ -125,7 +132,7 @@ Answers are being collected on the [review page](https://claude.ai/artifact/4MQm
 - [x] Chop also on square, not just R2.
 - [ ] Dropped items: maybe expire on a long timer. Keep picking up the whole stack.
 - [ ] Fade on respawn rather than a teleport (a far-off nit).
-- [ ] "N s! The long way round took you X s" confused both: cut it, or make it real route times (Burnout Paradise).
+- [x] "N s! The long way round took you X s": cut the comparison banner (`eac11383`); crossing record and fanfare retained. [Verified crossing](../research/round-4-replay-preparation.md#focused-verification). Local replay branch, not pushed.
 
 ### Look
 
