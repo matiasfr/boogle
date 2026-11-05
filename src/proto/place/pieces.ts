@@ -85,7 +85,6 @@ export function dropSet(boxes: Box[], onLand: (k: number) => void): DropSet {
 
 // ---------------------------------------------------------------- pieces in the air
 export type PieceKind = 'log' | 'rail' | 'stone';
-/** Where the machine and the racks draw a rail: one length of steel. */
 const railGeo = new THREE.BoxGeometry(1, 1, 1);
 const railMat = new THREE.MeshStandardNodeMaterial({ color: '#4c5058', roughness: 0.45, metalness: 0.6 });
 const MAX = 96;

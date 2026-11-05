@@ -974,7 +974,7 @@ export function updateChop(dt: number, now: number) {
   if (f && axe.parent !== f) {
     f.add(axe);
     axe.position.set(0.42, 0.72, -0.2);
-    // Build after the prototype's modules have loaded; gifts and the carry view share the mesh.
+    // Build after the prototype's modules have loaded; gifts and the carry view share the frame parts.
     if (!packFrame.children.length) {
       const pack = packFrameMesh();
       pack.castShadow = pack.receiveShadow = true;

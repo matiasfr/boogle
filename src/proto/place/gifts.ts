@@ -8,7 +8,6 @@
 import * as THREE from 'three/webgpu';
 import { merged, type Part } from './part-geometry.ts';
 import { packParts } from './gear-models.ts';
-export { packFrameMesh } from './gear-models.ts';
 import { emit } from '../../render/particles.ts';
 import { scene } from '../../render/scene.ts';
 import { thump } from '../../render/machine-sfx.ts';
@@ -440,7 +439,6 @@ export const STOCK: Stock[] = [
 ];
 // The ladder's tool chests.
 type Extra = 'axe' | 'pack';
-/** An open frame, shoulder straps and a low cradle, in the load socket's coordinates (+z behind you). */
 const EXTRAS: Record<Extra, { name: string; line: string; parts: Part[] }> = {
   axe: {
     name: 'A proper axe',

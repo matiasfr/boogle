@@ -1,7 +1,7 @@
 // Side-effect-free coloured primitives shared by rewards and worn gear.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-type Prim = 's' | 'c' | 'k' | 'b' | 't' | 'vest' | 'bib' | 'strap';
+type Prim = 's' | 'c' | 'k' | 'b' | 't' | 'vest' | 'bib' | 'strap' | 'packstrap';
 export type Part = [
   shape: Prim,
   x: number,
@@ -42,6 +42,27 @@ const unit: Record<Prim, () => THREE.BufferGeometry> = {
       12,
       0.028,
       4,
+      false,
+    ),
+  // A narrow, soft pack strap: from the back rail, over the shoulder and under the arm.
+  packstrap: () =>
+    new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, -0.09, 0.23),
+        new THREE.Vector3(0, 0.04, 0.23),
+        new THREE.Vector3(0, 0.14, 0.17),
+        new THREE.Vector3(0, 0.18, 0.08),
+        new THREE.Vector3(0, 0.18, 0),
+        new THREE.Vector3(0, 0.18, -0.08),
+        new THREE.Vector3(0, 0.14, -0.17),
+        new THREE.Vector3(0, 0.07, -0.205),
+        new THREE.Vector3(0, -0.01, -0.21),
+        new THREE.Vector3(0, -0.08, -0.195),
+        new THREE.Vector3(0, -0.13, -0.16),
+      ]),
+      24,
+      0.022,
+      8,
       false,
     ),
   // One continuous pear-shaped shell: open hem and neck, with an inward lip at each edge.
