@@ -9,6 +9,8 @@ const TALK = `const D = await import('/src/boogler/dialogue.ts');
   const open = () => D.showDialogue({ say: 'Hello', mood: 'smile', opts: ['Hi'] },
     () => {}, () => D.closeDialogue());`;
 const isOpen = `document.querySelector('dialog.pause')?.open === true`;
+// A real controller on this machine reaches the headless page: it turns body.gamepad on and its presses drive the view.
+const NO_PAD = `navigator.getGamepads = () => []; dispatchEvent(new Event('gamepaddisconnected'));`;
 
 export default {
   about: 'the pause view: H, focus, input held back, room page, Leave, over the talk box, pad tab, phone button',
@@ -16,6 +18,7 @@ export default {
   async run(t: T) {
     const room = 'sc' + Math.random().toString(36).slice(2, 8);
     const g = await t.open({ name: 'pauser', room, hud: true, size: [1280, 720] });
+    await g.eval(NO_PAD);
     await g.wait(0.8);
 
     // 1. H opens it on the controls page; every keyed control is in it. H again closes.
@@ -150,10 +153,12 @@ export default {
     await g.wait(0.3);
     await g.eval(`${TALK} open();`);
     await g.wait(0.3);
+    const noTalk = await g.eval(`const D = await import('/src/boogler/dialogue.ts');
+      return { pause: ${isOpen}, talk: D.dialogue.open };`);
     t.check(
       'with the pause view open, the talk box does not open',
-      (await g.eval(`return ${isOpen};`)) &&
-        (await g.eval(`const D = await import('/src/boogler/dialogue.ts'); return D.dialogue.open;`)) === false,
+      noTalk.pause && !noTalk.talk,
+      JSON.stringify(noTalk),
     );
     await g.eval(`${PAUSE} closePause();`);
 
@@ -185,10 +190,42 @@ export default {
     );
     await g.eval(`document.body.classList.remove('gamepad');`);
 
+    // 6b. A pad left connected: a key or a mouse click hands back to keyboard and mouse, the next press to the pad.
+    await g.eval(`const pad = { id: 'Test pad', index: 0, connected: true, mapping: 'standard', timestamp: 1, axes: [0, 0, 0, 0],
+        buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })) };
+      window.__pad = pad; navigator.getGamepads = () => [pad];
+      dispatchEvent(Object.assign(new Event('gamepadconnected'), { gamepad: pad }));`);
+    const padOn = `document.body.classList.contains('gamepad')`;
+    const press = (on: boolean) => g.eval(`window.__pad.buttons[2].pressed = ${on};`);
+    const modes: Record<string, boolean> = { connected: await g.eval(`return ${padOn};`) };
+    await g.key('KeyJ');
+    await g.wait(0.2);
+    modes.key = await g.eval(`return ${padOn};`);
+    await press(true);
+    await g.wait(0.3);
+    modes.press = await g.eval(`return ${padOn};`);
+    await g.key('KeyJ'); // iPadOS can send a key for a pad press: the press keeps the pad
+    await g.wait(0.2);
+    modes.keyDuringPress = await g.eval(`return ${padOn};`);
+    await press(false);
+    await g.wait(0.3);
+    await g.page.mouse.click(640, 360);
+    await g.wait(0.2);
+    modes.click = await g.eval(`return ${padOn};`);
+    await g.key('KeyH');
+    await g.wait(0.4);
+    const padLeft = await g.eval(`return document.querySelector('dialog.pause [aria-selected=true]')?.dataset.tab;`);
+    t.check(
+      'with a pad connected, a key or a mouse click switches to keyboard and H opens the Keyboard tab',
+      modes.connected && !modes.key && modes.press && modes.keyDuringPress && !modes.click && padLeft === 'kbm',
+      JSON.stringify({ ...modes, padLeft }),
+    );
+
     await g.ctx.close(); // fewer live pages keeps the software renderer quick
 
     // 7. A phone: the menu button clears the name tag and the connection pill; both pages fit.
     const phone = await t.open({ name: 'phone', hud: true, touch: true, size: [390, 844] });
+    await phone.eval(NO_PAD);
     await phone.wait(0.8);
     await phone.eval(`const I = await import('/src/player/inventory.ts'); I.take('frisbee');`);
     await phone.wait(0.5);
