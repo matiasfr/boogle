@@ -92,15 +92,18 @@ export function failAvatarSkin(reason: 'load-error' | 'load-deadline' = 'load-er
 
 // A little of a Buddy's own colour as light, so its shaded side and a night-time Buddy still read as that player.
 export const AVATAR_FILL = 0.15;
+// Round-five's selective Buddy pigment, worked out once per colour: paintAvatar runs every frame of the fall-camera blend.
+const PIGMENTED = COLORS.map((c) => {
+  const color = new THREE.Color(c);
+  const hsl = color.getHSL({ h: 0, s: 0, l: 0 });
+  return color.lerp(new THREE.Color().setHSL(hsl.h, Math.min(1, hsl.s + 0.22), hsl.l), 0.5);
+});
 export function paintAvatar(mat: THREE.MeshStandardMaterial, colorIdx: number, fill = AVATAR_FILL) {
   mat.color.set(COLORS[colorIdx]!);
   mat.emissive.copy(mat.color);
   mat.emissiveIntensity = fill;
-  // Round-five's selective Buddy pigment changes albedo only; keep the original emissive fill.
-  if (newWaterEnabled && mat.name === 'M_Main') {
-    const hsl = mat.color.getHSL({ h: 0, s: 0, l: 0 });
-    mat.color.lerp(new THREE.Color().setHSL(hsl.h, Math.min(1, hsl.s + 0.22), hsl.l), 0.5);
-  }
+  // The pigment changes albedo only; keep the original emissive fill.
+  if (newWaterEnabled && mat.name === 'M_Main') mat.color.copy(PIGMENTED[colorIdx]!);
 }
 
 // Group origin is the center of the foot sphere; the avatar faces -Z at rotation 0.

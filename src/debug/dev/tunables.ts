@@ -1,5 +1,5 @@
 // Bounded agent adapter. Owners keep execution and state; no catalog work runs per frame.
-import { CATALOG, tunableSpec, validValue } from '../../tunables/catalog.ts';
+import { CATALOG, TUNE_COMMANDS, tunableSpec, validValue } from '../../tunables/catalog.ts';
 import { emitTuneRecord, tuneDigest } from '../../tunables/events.ts';
 import { createTuneStartup } from '../../tunables/startup.ts';
 import { TUNE_CATALOG, type TuneKey } from '../../sim/tune.ts';
@@ -18,9 +18,10 @@ import { pageQuery, PROTO } from '../../proto/flags.ts';
 import { fixture } from './fixtures.ts';
 import { ok, no, type Tool, type Args, type Result } from './types.ts';
 
-const enabled = () =>
-  new URLSearchParams(location.search).get('dev') !== '0' &&
-  (devEnabled || new URLSearchParams(location.search).get('tune') === '1');
+const enabled = () => {
+  const q = pageQuery();
+  return q.get('dev') !== '0' && (devEnabled || q.get('tune') === '1');
+};
 let localRevision = 0;
 let exposureSource = 'default';
 let exposureWriteSource: string | null = null;
@@ -284,7 +285,7 @@ export const tool: Tool = {
   id: 'tunables',
   label: 'Tunables',
   scope: 'Local, Owner and host-accepted Lockstep settings',
-  commands: ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'],
+  commands: [...TUNE_COMMANDS],
   available: () => (enabled() ? null : 'Tuning is disabled.'),
   async run(command, args) {
     await startup;

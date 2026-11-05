@@ -1,3 +1,5 @@
+import { validValue } from '../tunables/spec.ts';
+
 // Owner-written cosmetic configuration. Physics and rewards never read these values.
 export const FEEL_SPRING_SPEC = {
   id: 'feel.spring.stiffness',
@@ -20,19 +22,11 @@ export type FeelProfile = { value: number; revision: number; action: FeelAction 
 let value: number = FEEL_SPRING_SPEC.default;
 let revision = 0;
 let active: FeelProfile = { value, revision, action: 'idle' };
+let presence = [value, revision, 'idle'] as readonly [number, number, FeelAction];
 let chopLocked = false;
 const listeners = new Set<(event: 'change' | 'action', snapshot: ReturnType<typeof snapshotFeelSpring>) => void>();
 
-export function validFeelSpring(next: unknown): next is number {
-  return (
-    typeof next === 'number' &&
-    Number.isFinite(next) &&
-    !Object.is(next, -0) &&
-    next >= FEEL_SPRING_SPEC.min &&
-    next <= FEEL_SPRING_SPEC.max
-  );
-}
-export const getFeelSpring = () => value;
+const validFeelSpring = (next: unknown): next is number => validValue(FEEL_SPRING_SPEC, next);
 export const activeFeelSpring = () => active.value;
 export function snapshotFeelSpring() {
   return { value, revision, active: { ...active }, chopLocked };
@@ -62,6 +56,7 @@ export function setFeelSpring(next: unknown, expectedRevision?: number) {
 export function beginFeelAction(action: Exclude<FeelAction, 'idle'>) {
   if (chopLocked && action !== 'chop') return;
   active = { value, revision, action };
+  presence = [value, revision, action];
   chopLocked = action === 'chop';
   notify('action');
 }
@@ -71,7 +66,7 @@ export function endFeelChop() {
   notify('action');
 }
 /** Latest active profile is included in Owner presence, including for a late joiner. */
-export const feelSpringPresence = () => [active.value, active.revision, active.action] as const;
+export const feelSpringPresence = () => presence;
 export function readFeelSpringPresence(input: unknown): FeelProfile | null {
   if (!Array.isArray(input) || input.length !== 3) return null;
   const [value, revision, action] = input;

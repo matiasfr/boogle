@@ -76,24 +76,26 @@ function remember() {
     /* storage is optional */
   }
 }
+const allTools = () => [...entries, ...agentTools];
+const known = (entry: ReturnType<typeof allTools>[number]) => entries.includes(entry) || agentTools.includes(entry);
 async function tool(id: string) {
   if (!alive) return null;
   const existing = loaded.get(id);
   if (existing) return existing;
-  const entry = [...entries, ...agentTools].find((e) => e.id === id);
+  const entry = allTools().find((e) => e.id === id);
   if (!entry) return null;
   let pending = loading.get(id);
   if (!pending) {
     pending = entry.load().then(({ tool: value }) => {
       loading.delete(id);
-      if (alive && (entries.includes(entry) || agentTools.includes(entry))) loaded.set(id, value);
+      if (alive && known(entry)) loaded.set(id, value);
       else value.dispose?.();
       return value;
     });
     loading.set(id, pending);
   }
   const value = await pending;
-  return alive && (entries.includes(entry) || agentTools.includes(entry)) ? value : null;
+  return alive && known(entry) ? value : null;
 }
 async function run(id: string, command: string, args: Args = {}): Promise<Result> {
   let result: Result;
@@ -441,7 +443,7 @@ export function installDevMenu() {
   addEventListener('pagehide', dispose);
   window.boogle.dev = {
     tools: () =>
-      [...entries, ...agentTools].map(({ id, label }) => ({
+      allTools().map(({ id, label }) => ({
         id,
         label,
         scope: loaded.get(id)?.scope,

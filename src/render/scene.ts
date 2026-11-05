@@ -31,11 +31,13 @@ const errorSource = renderer as unknown as {
 const reportError = errorSource.onError.bind(renderer);
 const gpuErrors = new Set<string>();
 const recordGpuError: typeof errorSource.onError = (info) => {
-  const message = info.message.slice(0, 2000);
-  const key = `${info.type}:${message}`;
-  if (gpuErrors.size < 8 && !gpuErrors.has(key)) {
-    gpuErrors.add(key);
-    playMark('gpu error', { api: info.api, type: info.type, message, ...graphicsContext() });
+  if (gpuErrors.size < 8) {
+    const message = info.message.slice(0, 2000);
+    const key = `${info.type}:${message}`;
+    if (!gpuErrors.has(key)) {
+      gpuErrors.add(key);
+      playMark('gpu error', { api: info.api, type: info.type, message, ...graphicsContext() });
+    }
   }
   reportError(info);
 };
