@@ -539,12 +539,17 @@ const Q0 = new THREE.Quaternion(),
   S1 = new THREE.Vector3(),
   P1 = new THREE.Vector3();
 function pose(t: Tree, now: number) {
+  const hardwoodIndex = hardwoodIndices.get(t.index);
   if (t.cleared) {
     for (const m of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch]) m.setMatrixAt(t.index, ZERO);
+    if (hardwoodIndex !== undefined) {
+      for (const m of [parts.hardwood, parts.branch, parts.cutEnd]) m.setMatrixAt(hardwoodIndex, ZERO);
+      for (let k = 0; k < 2; k++) parts.forks.setMatrixAt(hardwoodIndex * 2 + k, ZERO);
+      for (let k = 0; k < 3; k++) parts.broad.setMatrixAt(hardwoodIndex * 3 + k, ZERO);
+    }
     for (const m of Object.values(parts)) m.instanceMatrix.needsUpdate = true;
     return;
   }
-  const hardwoodIndex = hardwoodIndices.get(t.index);
   let a = 0,
     b = 0;
   if (t.fall >= 0) {
