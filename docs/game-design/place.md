@@ -512,6 +512,34 @@ Cost: not measured on an iPad this round. M1 Max held 60 fps in every capture (n
 
 ## Sound
 
+### Axe presentation and stage review
+
+The equipped starter, multi-axe, proper axe and proper multi-axe share `axe-models.ts`
+with the reward displays and Buddy's Local asset stage. Their handles are 0.64 and 0.80 m
+(previously 0.80 and 1.08 m); the proper head remains broader, brighter and gold-edged.
+The pick points out from an overlapping metal eye on the back of the head. These are
+code-authored toy primitives, not a new GLB, skeleton or skin-weight pipeline.
+
+`chop-motion.ts` owns the single production/stage curve and two-arm pose on the existing
+rig. A short lift precedes the strike, the bite holds for 35 ms, then the tool settles
+into a low two-handed ready pose. Full-back refusal lifts the tool sideways and leans
+back; hardwood refusal recoils sooner. The normal visible tail remains 0.90 s. Contact
+moves from **0.06 to 0.12 s** because the old strike crossed almost its whole arc in
+two rendered frames. The **0.24 s restart interval** and all strokes, logs per stroke,
+work, capacities, costs and saved/wire state remain unchanged. Reduced motion removes
+the additional body lean; the essential tool action and contact timing stay visible.
+
+Local tree contact raycasts the real faceted trunk from the approach direction; accepted
+chips/log flights use that same point. Arm reach is bounded to preserve Buddy's proportions:
+the existing 3.2 m ordinary / 4.6 m great-tree interaction radius exceeds a natural held
+axe reach, so distant valid presses can still award wood while the blade falls short.
+No physics travel or interaction-range change is hidden in this presentation pass.
+Partners retain the existing accepted tree/chip/audio effects; there was no remote axe
+animation or chop-presence field, and this pass adds neither. Co-op success effects still
+wait for the accepted receipt, so network-delayed effects are not guaranteed to coincide
+with the local pose. The stage review measures grip, cutting-edge contact and shaft/head/
+torso proximity; signed nearest-face samples are candidates, not collision proof.
+
 Tree contact distinguishes three local cues: a dry bite with a low wooden body and splinters,
 a short hard woody rebound with a blade ring, and a soft strap/wood rattle for a full bag.
 The bite holds the axe pose briefly, bends the trunk and delays the crown; the rebound pulls

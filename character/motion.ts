@@ -2,6 +2,7 @@
 import * as THREE from 'three/webgpu';
 import type { Motion } from './descriptors.ts';
 import { sailAngle } from '../src/pois/windmills/motion.ts';
+import { CHOP_CONTACT, CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
 
 type Pose = { p: number[]; q: number[] };
 export type MotionRow = {
@@ -30,6 +31,16 @@ export type MotionRow = {
   sampleMs: number;
   imageMs: number;
   bones: Record<string, Pose>;
+  leftGrip: number | null;
+  rightGrip: number | null;
+  bladeX: number | null;
+  bladeY: number | null;
+  bladeZ: number | null;
+  contactDistance: number | null;
+  handleBodyClearance: number | null;
+  handleHeadClearance: number | null;
+  handleBodyDistance: number | null;
+  handleHeadDistance: number | null;
 };
 export type MotionImage = { frame: number; wall: number; time: number; png: string };
 export type MotionReport = {
@@ -104,7 +115,7 @@ export function endpointSeam(first: Record<string, Pose>, last: Record<string, P
     root: new THREE.Vector3().fromArray(first.$root!.p).distanceTo(new THREE.Vector3().fromArray(last.$root!.p)),
   };
 }
-function surface(figure: THREE.Object3D, attachment: THREE.Object3D) {
+function surface(figure: THREE.Object3D, attachment: THREE.Object3D, region?: 'body' | 'head') {
   const body: THREE.Mesh[] = [],
     caps: THREE.Mesh[] = [];
   figure.traverse((o) => {
@@ -115,8 +126,10 @@ function surface(figure: THREE.Object3D, attachment: THREE.Object3D) {
       if (p === attachment) inCap = true;
       if (p.name.startsWith('wear_')) wear = true;
     }
-    if (inCap) caps.push(o);
-    else if (!wear) body.push(o);
+    if (!inCap && !wear) body.push(o);
+  });
+  attachment.traverse((o) => {
+    if (o instanceof THREE.Mesh && visible(o)) caps.push(o);
   });
   const points: { point: THREE.Vector3; name: string }[] = [];
   for (const mesh of caps) {
@@ -135,7 +148,21 @@ function surface(figure: THREE.Object3D, attachment: THREE.Object3D) {
       mesh.getVertexPosition(i, new THREE.Vector3()).applyMatrix4(mesh.matrixWorld),
     );
     const index = mesh.geometry.index;
+    const belongs = (i: number) => {
+      if (!region) return true;
+      if (!(mesh instanceof THREE.SkinnedMesh)) return false;
+      const indices = mesh.geometry.getAttribute('skinIndex'),
+        weights = mesh.geometry.getAttribute('skinWeight');
+      if (!indices || !weights) return false;
+      let sum = 0;
+      for (let k = 0; k < 4; k++) {
+        const name = mesh.skeleton.bones[indices.getComponent(i, k)]?.name ?? '';
+        if ((region === 'head' ? /head|neck/i : /pelvis|spine/i).test(name)) sum += weights.getComponent(i, k);
+      }
+      return sum >= 0.5;
+    };
     for (let i = 0; i < (index?.count ?? count); i += 3) {
+      if (region && ![0, 1, 2].some((k) => belongs(index ? index.getX(i + k) : i + k))) continue;
       const a = vertices[index ? index.getX(i) : i]!,
         b = vertices[index ? index.getX(i + 1) : i + 1]!,
         c = vertices[index ? index.getX(i + 2) : i + 2]!;
@@ -180,6 +207,42 @@ function surface(figure: THREE.Object3D, attachment: THREE.Object3D) {
     signed: Number.isFinite(signed) ? signed : null,
     nearest,
     signedNearest,
+  };
+}
+
+function chopMeasurements(figure: THREE.Object3D, axe: THREE.Object3D, trunk: THREE.Object3D) {
+  const start = axe.getObjectByName('axe-handle-start'),
+    end = axe.getObjectByName('axe-handle-end'),
+    blade = axe.getObjectByName('axe-blade-contact');
+  let handle: THREE.Object3D | undefined;
+  axe.traverse((o) => {
+    if (o.name === 'axe-handle' && visible(o)) handle = o;
+  });
+  if (!start || !end || !blade || !handle) throw new Error('Shared axe is missing inspection landmarks');
+  const a = start.getWorldPosition(new THREE.Vector3()),
+    b = end.getWorldPosition(new THREE.Vector3()),
+    line = new THREE.Line3(a, b),
+    bladePosition = blade.getWorldPosition(new THREE.Vector3()),
+    localBlade = trunk.worldToLocal(bladePosition.clone());
+  const grip = (name: string) => {
+    const hand = figure.getObjectByName(name);
+    if (!hand) throw new Error('Buddy is missing ' + name);
+    const point = hand.getWorldPosition(new THREE.Vector3());
+    return line.closestPointToPoint(point, true, new THREE.Vector3()).distanceTo(point);
+  };
+  const bodySurface = surface(figure, handle, 'body'),
+    headSurface = surface(figure, handle, 'head');
+  return {
+    leftGrip: grip('hand_l'),
+    rightGrip: grip('hand_r'),
+    bladeX: bladePosition.x,
+    bladeY: bladePosition.y,
+    bladeZ: bladePosition.z,
+    contactDistance: Math.hypot(localBlade.x, localBlade.z) - CHOP_TRUNK.radius,
+    handleBodyClearance: bodySurface.signed,
+    handleHeadClearance: headSurface.signed,
+    handleBodyDistance: bodySurface.distance,
+    handleHeadDistance: headSurface.distance,
   };
 }
 
@@ -256,10 +319,17 @@ export function createMotionCapture(canvas: HTMLCanvasElement, camera: THREE.Per
           'Frame timestamps are completed stage renders, not GPU presentation. Canvas extraction and measurements perturb timing; sampleMs/imageMs disclose overhead.',
           'As played is the production body/life adapter, with grounded display, synthetic vertical input and selected presentation cargo; no physics travel or collision simulation.',
           'Encoded video may duplicate/drop rendered frames. Consecutive canvas frames are separately numbered. No automatic acceptance.',
+          'Chop grip is wrist-bone distance to the handle centreline. Shaft distance uses posed torso/head triangles selected by at least 50% matching bone weight; hands are excluded as intentional grip contacts. handleBodyDistance/handleHeadDistance are unsigned closest distances. handleBodyClearance/handleHeadClearance retain signed nearest-face candidates; these open subsets can give a negative sign to a safely separated shaft below the chin or beside the torso. Inspect the frame and unsigned distance; this is not a watertight collision proof. Trunk distance is blade landmark to cylindrical surface, not a harvesting simulation.',
         ],
       };
     },
-    sample(frame: number, time: number, figure: THREE.Object3D, spin: THREE.Object3D) {
+    sample(
+      frame: number,
+      time: number,
+      figure: THREE.Object3D,
+      spin: THREE.Object3D,
+      chop?: { axe: THREE.Object3D; trunk: THREE.Object3D },
+    ) {
       if (!report || report.complete) return;
       const begin = performance.now(),
         wall = (begin - started) / 1000,
@@ -347,6 +417,17 @@ export function createMotionCapture(canvas: HTMLCanvasElement, camera: THREE.Per
         sampleMs: 0,
         imageMs: 0,
         bones,
+        leftGrip: null,
+        rightGrip: null,
+        bladeX: null,
+        bladeY: null,
+        bladeZ: null,
+        contactDistance: null,
+        handleBodyClearance: null,
+        handleHeadClearance: null,
+        handleBodyDistance: null,
+        handleHeadDistance: null,
+        ...(chop ? chopMeasurements(figure, chop.axe, chop.trunk) : {}),
       };
       row.sampleMs = performance.now() - begin;
       const imageAt = performance.now();
@@ -381,6 +462,26 @@ export function createMotionCapture(canvas: HTMLCanvasElement, camera: THREE.Per
         if (previous) warn('rotation rate error (rad/s)', Math.abs(row.angularRate - row.expectedRate), 0.15);
       }
       warn('wall frame gap (s)', dt, 0.05);
+      if (chop) {
+        warn('left hand to handle centreline (m)', row.leftGrip, 0.08);
+        warn('right hand to handle centreline (m)', row.rightGrip, 0.08);
+        warn(
+          'possible handle torso penetration (m)',
+          row.handleBodyClearance === null ? null : -row.handleBodyClearance,
+          0.002,
+        );
+        warn(
+          'possible handle head penetration (m)',
+          row.handleHeadClearance === null ? null : -row.handleHeadClearance,
+          0.002,
+        );
+        if (Math.abs(time - CHOP_CONTACT) <= 1 / 60)
+          warn(
+            'blade contact surface error (m)',
+            row.contactDistance === null ? null : Math.abs(row.contactDistance),
+            0.04,
+          );
+      }
       lastWall = wall;
       lastTime = time;
       previousSpin = rotation;

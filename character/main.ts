@@ -15,6 +15,8 @@ import { descriptors, gearAttachments } from './descriptors.ts';
 import { sailCycleSeconds } from '../src/pois/windmills/motion.ts';
 import { cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
 import { COLORS } from '../src/constants.ts';
+import { CHOP_DURATION, CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
+import type { AxeTier } from '../src/proto/place/axe-models.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -25,6 +27,8 @@ const number = (key: string, fallback: number) => {
   return q.has(key) && Number.isFinite(n) ? n : fallback;
 };
 const cargoKinds: CargoKind[] = ['logs', 'rails', 'stone', 'beam', 'boiler'];
+const axeKinds: (AxeTier | 'none')[] = ['none', 'starter', 'multi', 'proper', 'proper-multi'];
+const chopKinds = ['off', 'bite', 'rebound', 'full'] as const;
 const cargo = cargoKinds.find((kind) => kind === q.get('cargo')) ?? 'logs';
 const gearOn = (key: string) => (q.has(key) ? q.get(key) === '1' : q.get('gear') === 'all');
 let legacyCarrying = q.get('pose') === 'carrying' && !q.has('cargo') && !q.has('amount');
@@ -35,6 +39,10 @@ const state = {
   mode: (q.get('mode') === 'played' || (!q.has('mode') && q.has('pose')) ? 'played' : 'raw') as BuddyMode,
   pose: q.get('pose') ?? (number('amount', q.has('cargo') ? 1 : 0) > 0 ? 'carrying' : 'free'),
   hat: q.get('hat') ?? '',
+  axe: axeKinds.find((kind) => kind === q.get('axe')) ?? 'none',
+  chop: chopKinds.find((kind) => kind === q.get('chop')) ?? 'off',
+  reducedMotion: q.get('reducedMotion') === '1',
+  trunkDistance: Math.max(0.8, Math.min(3.2, number('trunkDistance', CHOP_TRUNK.distance))),
   bodyColor:
     COLORS.includes(q.get('bodyColor') ?? '') || q.get('bodyColor') === 'authored' ? q.get('bodyColor')! : 'auto',
   rings: gearOn('rings'),
@@ -52,6 +60,10 @@ const state = {
   light: (q.get('light') === 'shipped' ? 'shipped' : 'studio') as LightPreset,
   exposure: Math.max(0.01, Math.min(4, number('exposure', q.get('light') === 'shipped' ? 0.16 : 1))),
 };
+if (state.chop === 'full' && !q.has('amount')) {
+  state.amount = cargoCapacity(state.cargo, state.frame);
+  if (!q.has('pose')) state.pose = 'carrying';
+}
 const canvas = $<HTMLCanvasElement>('view');
 const renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
 (renderer as unknown as { _getFallback: null })._getFallback = null;
@@ -119,6 +131,7 @@ type Preview = {
   advance(dt: number): void;
   dispose(): void;
   sockets?: { back: THREE.Object3D; hand: THREE.Object3D };
+  chop?: { axe: THREE.Object3D; trunk: THREE.Object3D };
 };
 let preview: Preview | undefined, currentAsset: Asset | undefined;
 let duration = 0,
@@ -381,6 +394,13 @@ async function choose(reframe = true) {
   ready = false;
   const token = ++generation;
   try {
+    if (state.asset === 'buddy' && (state.chop !== 'off' || state.axe !== 'none')) {
+      state.mode = 'played';
+      if (state.chop !== 'off') state.clip = 'Idle_Loop';
+      if (state.axe === 'none') state.axe = 'starter';
+      select('mode').value = state.mode;
+      select('axe').value = state.axe;
+    }
     const entry = assetsById.get(state.asset);
     if (!entry) throw new Error('Missing asset: ' + state.asset);
     const asset = entry.sourceKind === 'built' ? await load(state.asset) : undefined;
@@ -418,6 +438,7 @@ async function choose(reframe = true) {
     );
     select('clip').value = state.clip;
     duration = clips.find((clip) => clip.name === state.clip)?.duration ?? 0;
+    if (state.asset === 'buddy' && state.chop !== 'off') duration = CHOP_DURATION;
     if (diagnosticRate !== null) duration = (Math.PI * 2) / Math.abs(diagnosticRate);
     else if (entry.motion.kind === 'spin') duration = sailCycleSeconds();
     preview =
@@ -430,10 +451,20 @@ async function choose(reframe = true) {
             canopy: state.canopy,
             cargo: state.cargo,
             amount: state.amount,
+            axe: state.axe,
+            chop: state.chop,
+            reducedMotion: state.reducedMotion,
+            trunkDistance: state.trunkDistance,
             legacyCarrying,
             bodyColor:
               state.bodyColor === 'auto'
-                ? state.rings || state.spool || state.glider || state.frame || state.canopy || state.amount > 0
+                ? state.rings ||
+                  state.spool ||
+                  state.glider ||
+                  state.frame ||
+                  state.canopy ||
+                  state.amount > 0 ||
+                  state.axe !== 'none'
                   ? COLORS[1]
                   : undefined
                 : state.bodyColor === 'authored'
@@ -447,9 +478,11 @@ async function choose(reframe = true) {
     $('buddy-controls').hidden = state.asset !== 'buddy';
     $('mode-note').textContent =
       state.asset === 'buddy'
-        ? state.mode === 'played'
-          ? 'Real body stride/blend + retarget + life. Clip selects movement inputs; pose and preview clock reset on seek.'
-          : 'Retargeted authored clip only; no body blend or procedural life. Inspect hero-clips for the original skeleton.'
+        ? state.chop !== 'off'
+          ? 'Production chop pose and rig; representative trunk at gameplay contact distance. Local loop repeats a single stroke including its recovery; no harvesting or hit effects.'
+          : state.mode === 'played'
+            ? 'Real body stride/blend + retarget + life. Clip selects movement inputs; pose and preview clock reset on seek.'
+            : 'Retargeted authored clip only; no body blend or procedural life. Inspect hero-clips for the original skeleton.'
         : entry.sourceKind === 'code'
           ? 'Shared code factory · static representative geometry; no game behavior.'
           : 'Authored glTF clip; no game placement or procedural layers.';
@@ -479,6 +512,10 @@ function updateLink() {
     mode: state.mode,
     pose: state.pose,
     hat: state.hat,
+    axe: state.axe,
+    chop: state.chop,
+    reducedMotion: state.reducedMotion ? '1' : '0',
+    trunkDistance: state.trunkDistance,
     bodyColor: state.bodyColor,
     rings: state.rings ? '1' : '0',
     spool: state.spool ? '1' : '0',
@@ -535,6 +572,37 @@ for (const key of ['mode', 'pose', 'hat'] as const) {
     void choose(false);
   };
 }
+select('axe').value = state.axe;
+select('axe').onchange = () => {
+  state.axe = axeKinds.find((kind) => kind === select('axe').value) ?? 'none';
+  if (state.axe === 'none') {
+    state.chop = 'off';
+    select('chop').value = state.chop;
+  }
+  void choose(false);
+};
+select('chop').value = state.chop;
+select('chop').onchange = () => {
+  state.chop = chopKinds.find((kind) => kind === select('chop').value) ?? 'off';
+  if (state.chop === 'full') {
+    state.amount = cargoCapacity(state.cargo, state.frame);
+    syncGearControls();
+    carryingPose();
+  }
+  state.time = 0;
+  void choose(false);
+};
+input('trunk-distance').value = String(state.trunkDistance);
+input('trunk-distance').onchange = () => {
+  state.trunkDistance = Math.max(0.8, Math.min(3.2, Number(input('trunk-distance').value) || CHOP_TRUNK.distance));
+  input('trunk-distance').value = String(state.trunkDistance);
+  void choose(false);
+};
+input('reduced-motion').checked = state.reducedMotion;
+input('reduced-motion').onchange = () => {
+  state.reducedMotion = input('reduced-motion').checked;
+  void choose(false);
+};
 function syncGearControls() {
   const capacity = cargoCapacity(state.cargo, state.frame);
   state.amount = Math.max(0, Math.min(capacity, Math.floor(state.amount)));
@@ -715,11 +783,13 @@ const api = {
     start() {
       if (!preview || !ready) throw new Error('Stage not ready');
       const declaration =
-        state.asset === 'buddy' && state.attachment
-          ? gearAttachments[state.attachment]
-          : state.asset === 'buddy' && state.hat === 'conductor'
-            ? descriptors['conductor-cap']!.motion
-            : assetsById.get(state.asset)!.motion;
+        state.asset === 'buddy' && state.chop !== 'off'
+          ? { kind: 'chop' as const, source: 'src/proto/place/chop-motion.ts and axe-models.ts' }
+          : state.asset === 'buddy' && state.attachment
+            ? gearAttachments[state.attachment]
+            : state.asset === 'buddy' && state.hat === 'conductor'
+              ? descriptors['conductor-cap']!.motion
+              : assetsById.get(state.asset)!.motion;
       if (!declaration) throw new Error('Unknown attachment: ' + state.attachment);
       if (declaration.kind === 'none' && diagnosticRate === null) return { motion: 'none', declaration };
       input('spin').checked = false;
@@ -730,7 +800,7 @@ const api = {
       state.loop = true;
       seek(0);
       let seam = null;
-      if (state.mode === 'raw' && state.clip) {
+      if (state.mode === 'raw' && state.clip && (state.asset !== 'buddy' || state.chop === 'off')) {
         const first = bonePoses(preview.figure);
         seek(duration);
         seam = endpointSeam(first, bonePoses(preview.figure));
@@ -803,6 +873,7 @@ const loopStarted = renderer.setAnimationLoop(() => {
       state.time,
       preview.figure,
       preview.group.getObjectByName('stage-rotor') ?? preview.group,
+      preview.chop,
     );
   if (now - uiAt > 100) {
     syncClock();
