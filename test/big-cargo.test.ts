@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { cargoGround, freshCargo, moveCargo, validCargo, validGround } from '../src/proto/place/big-cargo.ts';
+import {
+  cargoFootprint,
+  cargoGround,
+  freshCargo,
+  moveCargo,
+  validCargo,
+  validGround,
+} from '../src/proto/place/big-cargo.ts';
 
 test('one claimant, one ground object; stale pickup/drop cannot spend a new hold', () => {
   const source = freshCargo();
@@ -19,6 +26,44 @@ test('one claimant, one ground object; stale pickup/drop cannot spend a new hold
   assert.equal(moveCargo(b, 'a', 1, 'drop', ground), null);
   assert.equal(moveCargo(b, 'a', 2, 'pick', null), null);
   assert.deepEqual(moveCargo(b, 'b', 3, 'drop', null), { revision: 4, holder: null, ground: null });
+});
+
+test('previously dropped cargo recovers after terrain, pose or clearance becomes unsafe', () => {
+  for (const kind of ['beam', 'boiler'] as const) {
+    const p = { x: 10, y: 4, z: 20, yaw: 0 };
+    assert.equal(
+      cargoFootprint(
+        kind,
+        p,
+        () => 4,
+        () => true,
+      ),
+      true,
+    );
+    for (const height of [() => null, () => 1, () => 7, () => NaN])
+      assert.equal(
+        cargoFootprint(kind, p, height, () => true),
+        false,
+      );
+    assert.equal(
+      cargoFootprint(
+        kind,
+        p,
+        () => 4,
+        () => false,
+      ),
+      false,
+    );
+    assert.equal(
+      cargoFootprint(
+        kind,
+        { ...p, x: NaN },
+        () => 4,
+        () => true,
+      ),
+      false,
+    );
+  }
 });
 
 test('wire/save validation rejects ambiguous ownership and malformed poses', () => {

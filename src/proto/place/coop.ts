@@ -78,6 +78,7 @@ import { flyToStock, type StationRun } from './stations.ts';
 import {
   bigCargo,
   cargoGround,
+  cargoFootprint,
   isBigCargo,
   moveCargo,
   validCargo,
@@ -367,7 +368,9 @@ function reconcileBig() {
     bigCargo[returningBig].revision === 0 &&
     [...peerBig].some(([peer, big]) => remotes.has(peer) && big === returningBig);
   const consumed = back.big === 'beam' && beamDelivered();
-  const lost = back.big && bigCargo[back.big].revision > 0 && bigCargo[back.big].holder !== cargoPeer();
+  const state = back.big ? bigCargo[back.big] : null;
+  // An adopted legacy holder is binding even before its first revisioned move.
+  const lost = state && (state.revision > 0 || state.holder !== null) && state.holder !== cargoPeer();
   if (
     lost ||
     (back.big === 'beam' && !trunkTaken()) ||
@@ -427,6 +430,54 @@ export type BigCargoReply = {
   revision?: number;
 };
 let cargoReadyAt = 0;
+let groundCheckAt = 0;
+/** The active receiver must have room before this one-off load can fill a back. */
+export const beamNeeded = () => (coopWire.activeFrame?.()?.wants('beam') ?? 0) > 0;
+const cargoHeight = (x: number, z: number) => (insidePlace(x, z) ? H(x, z) : null);
+function recoverGroundCargo(now: number) {
+  if (now < groundCheckAt) return;
+  groundCheckAt = now + 1000;
+  // A freshness election is not a departure. Do not return an old ground pose
+  // while a connected but stalled authority may already have accepted a pickup.
+  if (COOP && (document.hidden || [...peers.values()].some((p) => !present(p)))) return;
+  for (const what of ['beam', 'boiler'] as const) {
+    const s = bigCargo[what],
+      p = s.ground;
+    if (!p || s.holder !== null || (what === 'beam' ? beamDelivered() : job.boiler === 3)) continue;
+    // A dropped beam is itself solid. Check overhead clearance and a standing
+    // approach on either side or end, without treating its own collider as a blockage.
+    const clear = (x: number, y: number, z: number) =>
+      sweepSphere({ x, y: y + 1.5, z }, { x, y: y + 1, z }, 0.35, { mask: 0xfffe, thin: 'skip' }) < 0;
+    const approaches = [
+      [2.4, 0],
+      [-2.4, 0],
+    ];
+    if (what === 'beam') approaches.push([0, 5.9], [0, -5.9]);
+    const approach =
+      validGround(p) &&
+      approaches.some(([side = 0, end = 0]) => {
+        const x = p.x + Math.cos(p.yaw) * side + Math.sin(p.yaw) * end,
+          z = p.z - Math.sin(p.yaw) * side + Math.cos(p.yaw) * end,
+          h = cargoHeight(x, z);
+        return (
+          h !== null &&
+          h >= 2.5 &&
+          Math.abs(h - p.y) < 0.4 &&
+          sweepSphere({ x, y: h + 2.4, z }, { x, y: h + 0.9, z }, 0.45, { mask: 0xfffe, thin: 'skip' }) < 0 &&
+          sweepSphere({ x, y: h + 2.1, z }, { x: p.x, y: p.y + 2.1, z: p.z }, 0.35, { mask: 0xfffe, thin: 'skip' }) < 0
+        );
+      });
+    if (
+      (what === 'beam' ? !trunkDown() : job.boiler !== 1) ||
+      !cargoFootprint(what, p, cargoHeight, clear) ||
+      !approach
+    ) {
+      if (what === 'boiler') job.boiler = 1;
+      returnBig(what);
+      if (COOP) msg({ k: 'bigState', what, state: bigCargo[what], gen } satisfies BigCargoReply);
+    }
+  }
+}
 let bigPending: { what: BigCargo; to: string; revision: number; action: 'pick' | 'drop' } | null = null;
 function acceptBig(what: BigCargo, state: CargoState) {
   const changed = JSON.stringify(bigCargo[what]) !== JSON.stringify(state);
@@ -466,7 +517,7 @@ function decideBig(what: BigCargo, action: 'pick' | 'drop', by: string, revision
   // Do not grant a second claim during that uncertainty; actual departure removes the gate.
   if (COOP && (document.hidden || [...peers.values()].some((p) => !present(p)))) return false;
   if (action === 'pick' && Object.values(bigCargo).some((s) => s.holder === by)) return false;
-  const available = what === 'beam' ? trunkDown() && !beamDelivered() : job.boiler === 1;
+  const available = what === 'beam' ? trunkDown() && !beamDelivered() && beamNeeded() : job.boiler === 1;
   if (action === 'pick' && !available) return false;
   if (action === 'drop' && (what === 'beam' ? beamDelivered() : job.boiler === 3)) return false;
   const ground =
@@ -474,7 +525,7 @@ function decideBig(what: BigCargo, action: 'pick' | 'drop', by: string, revision
       ? cargoGround(
           what,
           p,
-          (x, z) => (insidePlace(x, z) ? H(x, z) : null),
+          cargoHeight,
           (x, y, z) =>
             sweepSphere({ x: p.x, y: p.y + 1.1, z: p.z }, { x, y, z }, 0.7, { mask: 0xfffe, thin: 'skip' }) < 0,
         )
@@ -980,6 +1031,7 @@ export const coop = {
   },
   /** Each frame, once loaded. */
   tick(dt: number, now: number) {
+    if (!COOP || (ready && amAuthority())) recoverGroundCargo(now);
     if (!COOP || !api || !ready) return;
     const a = api,
       lead = amAuthority();

@@ -26,7 +26,7 @@ import {
   whole,
   type Tree,
 } from './chop.ts';
-import { coop } from './coop.ts';
+import { beamNeeded, coop } from './coop.ts';
 import { onCart, rack, rackTake } from './depot.ts';
 import { forge, rackFrom, rackTop, takeRail } from './forge.ts';
 import { nearestCrate, openCrate, owned, shelfSpot, showing, swapSlot } from './gifts.ts';
@@ -270,7 +270,7 @@ registerInteractable(() => {
           : { id: `place-rock${q.index}`, verb: 'Break', at: q.at, click: true, run: () => void breakRock(q) },
       );
     }
-    if (trunkDown()) {
+    if (trunkDown() && beamNeeded()) {
       const q = trunkAt();
       if (Math.hypot(p.x - q.x, p.z - q.z) < 6.5)
         (out ??= []).push({

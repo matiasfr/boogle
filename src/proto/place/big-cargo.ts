@@ -42,6 +42,18 @@ export function cargoGround(
   const y = height(x, z);
   if (y === null || y < 2.5 || Math.abs(y - p.y) > 0.8) return null;
   const yaw = p.yaw + Math.PI / 2;
+  const ground = { x, y, z, yaw };
+  return cargoFootprint(kind, ground, height, clear) ? ground : null;
+}
+/** Recheck saved ground cargo too: terrain and obstructions can change after Drop. */
+export function cargoFootprint(
+  kind: BigCargo,
+  p: GroundCargo,
+  height: (x: number, z: number) => number | null,
+  clear: (x: number, y: number, z: number) => boolean,
+): boolean {
+  if (!validGround(p)) return false;
+  const { x, y, z, yaw } = p;
   const half = kind === 'beam' ? 5.25 : 0.8;
   for (let d = -half; d <= half + 0.01; d += half / 6) {
     const sx = x + Math.sin(yaw) * d,
@@ -50,8 +62,9 @@ export function cargoGround(
       const px = sx + Math.cos(yaw) * side,
         pz = sz - Math.sin(yaw) * side;
       const h = height(px, pz);
-      if (h === null || h < 2.5 || Math.abs(h - y) > 0.4 || !clear(px, y + 1.1, pz)) return null;
+      if (h === null || !Number.isFinite(h) || h < 2.5 || Math.abs(h - y) > 0.4 || !clear(px, y + 1.1, pz))
+        return false;
     }
   }
-  return { x, y, z, yaw };
+  return true;
 }
