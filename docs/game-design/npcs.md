@@ -37,6 +37,8 @@ button does what) and 8 (designed for drop-in). Local: no sim or network state.
 
 ## Adding an NPC
 
+Place residents' answers to a chosen question appear as one complete line immediately, with their existing babble. This includes Moss's full "Out there. The ground here does that. Nobody asked it to." response; no extra Next is needed to reveal the rest. Introductory beats retain their typewriter and skip behavior. Copy is unchanged.
+
 1. Give it an interactable (`registerInteractable` in [src/player/hands.ts](../../src/player/hands.ts)) whose `run`
    opens your talk box: that puts "Talk" on the interact button for every input.
 2. Build the box, then `openConversation(talk)` when it opens and `closeConversation()` however it ends:

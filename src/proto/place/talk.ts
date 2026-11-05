@@ -9,7 +9,7 @@ import { cam, me } from '../../player/player.ts';
 import { speak, type LineSpeech, type VoiceSpec } from '../../render/npc-voice.ts';
 
 export type Answer = { label: string; then: () => Beat | null };
-export type Beat = { say: string; answers: Answer[] };
+export type Beat = { say: string; answers: Answer[]; whole?: boolean };
 export type Who = { name: string; voice: VoiceSpec; x: number; z: number; color: string };
 
 const root = document.createElement('div');
@@ -41,7 +41,7 @@ function show(b: Beat) {
   cur.text = b.say;
   cur.at = performance.now();
   cur.shown = 0;
-  cur.typing = !reducedMotion;
+  cur.typing = !reducedMotion && !b.whole;
   sayEl.textContent = cur.typing ? '' : b.say;
   optsEl.replaceChildren(
     ...b.answers.map((a) => {
@@ -59,7 +59,7 @@ function show(b: Beat) {
   );
   optsEl.hidden = cur.typing;
   hush();
-  if (cur.typing && who) speech = speak(b.say, 'smile', who.voice);
+  if (!reducedMotion && who) speech = speak(b.say, 'smile', who.voice);
 }
 export const talking = () => who;
 /** Opens the card. False if another talk or the pause view is up. */
@@ -108,9 +108,9 @@ export function updateTalkCard(dt: number) {
     if (Math.abs(cam.yaw - framing.yaw) > 1e-4 || framing.t > 1.1) framing.on = false;
     else cam.yaw = framing.yaw = angleLerp(cam.yaw, face + 0.7, 1 - Math.exp(-dt * 3));
   }
+  const ms = performance.now() - cur.at;
+  speech?.update(ms);
   if (cur.typing) {
-    const ms = performance.now() - cur.at;
-    speech?.update(ms);
     const n = speech?.shownAt(ms) ?? cur.text.length;
     if (n !== cur.shown) {
       cur.shown = n;

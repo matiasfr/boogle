@@ -168,7 +168,7 @@ function menu(id: ResidentId, say: string, asked: Set<string>): Beat {
         label: q.ask,
         then: () => {
           asked.add(q.ask);
-          return menu(id, q.say, asked);
+          return { ...menu(id, q.say, asked), whole: true };
         },
       });
   answers.push({
