@@ -12,6 +12,7 @@ import { LOCO, TRAILER } from '../wagon/look.ts';
 import { H } from './land.ts';
 import { LOOK, STEEL, addBlob, bakeContact, honeyOf, paint, setBlob, type Paint } from './look.ts';
 import type { DropSet } from './pieces.ts';
+import { setViewGeometry, type OwnedView } from '../../render/owned-view.ts';
 import { makeBoiler } from './carry-models.ts';
 import { makeProp } from './prop-kit.ts';
 import { job } from './job.ts';
@@ -22,6 +23,21 @@ SPECK.setAttribute('position', new THREE.BufferAttribute(new Float32Array(9), 3)
 SPECK.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(9), 3));
 if (LOOK.contact) SPECK.setAttribute('color', new THREE.BufferAttribute(new Float32Array(9), 3));
 const waiting = new Map<string, THREE.Mesh[]>();
+const baked = new Map<string, THREE.BufferGeometry>();
+let loadedKit: THREE.Object3D | null = null;
+function kitGeometry(name: string) {
+  const cached = baked.get(name);
+  if (cached) return cached;
+  const src = loadedKit?.getObjectByName(name);
+  let found: THREE.Mesh | undefined;
+  src?.traverse((o) => {
+    if (o instanceof THREE.Mesh) found = o;
+  });
+  if (!found) throw new Error(`place-kit has no ${name}`);
+  const geometry = bake(found, name);
+  baked.set(name, geometry);
+  return geometry;
+}
 const LOG_COLORS = {
   bark: new THREE.Color('#5a3a1f'),
   band: new THREE.Color('#f2a51a'),
@@ -65,35 +81,44 @@ if (LOOK.kit)
     .then((a) => a.loadAsset(kitUrl))
     .then((asset) => {
       asset.gltf.scene.updateMatrixWorld(true);
+      loadedKit = asset.gltf.scene;
       for (const [name, meshes] of waiting) {
-        const src = asset.gltf.scene.getObjectByName(name) as THREE.Mesh | undefined;
-        let found: THREE.Mesh | undefined;
-        src?.traverse((o) => {
-          if ((o as THREE.Mesh).isMesh) found = o as THREE.Mesh;
-        });
-        if (!found) throw new Error(`place-kit has no ${name}`);
-        const g = bake(found, name);
-        for (const m of meshes) m.geometry = g;
+        const g = kitGeometry(name);
+        for (const m of meshes) setViewGeometry(m, g);
       }
+      waiting.clear();
     });
-function want<M extends THREE.Mesh>(name: string, mesh: M) {
-  let list = waiting.get(name);
-  if (!list) waiting.set(name, (list = []));
-  list.push(mesh);
+function want<M extends THREE.Mesh>(name: string, mesh: M, owner?: OwnedView) {
+  if (loadedKit) setViewGeometry(mesh, kitGeometry(name));
+  else {
+    let list = waiting.get(name);
+    if (!list) waiting.set(name, (list = []));
+    list.push(mesh);
+    owner?.cleanup(() => {
+      const pending = waiting.get(name);
+      const at = pending?.indexOf(mesh) ?? -1;
+      if (pending && at >= 0) pending.splice(at, 1);
+    });
+  }
   mesh.castShadow = mesh.receiveShadow = true;
   return mesh;
 }
 /** One kit piece, drawn once. */
-const piece = (name: string, p: Paint) => want(name, new THREE.Mesh(SPECK, paint(p)));
+const piece = (name: string, p: Paint, owner?: OwnedView) => want(name, new THREE.Mesh(SPECK, paint(p)), owner);
 /** A batch of a kit piece. */
-export function kitBatch(name: string, p: Paint, n: number) {
-  const m = want(name, new THREE.InstancedMesh(SPECK, paint(p), Math.max(1, n)));
+export function kitBatch(name: string, p: Paint, n: number, owner?: OwnedView) {
+  const m = want(name, new THREE.InstancedMesh(SPECK, paint(p), Math.max(1, n)), owner);
   m.frustumCulled = false;
   return guardInstances(m, `place kit ${name}`);
 }
 /** The same contract as pieceMesh: a log batch, hidden until committed. Its colours are its own, so its tint is white. */
-export function kitLogs(max: number) {
-  const m = kitBatch('log', { color: '#ffffff', own: true, rough: 0.9, grain: { axis: 'x', honey: '#ffffff' } }, max);
+export function kitLogs(max: number, owner?: OwnedView) {
+  const m = kitBatch(
+    'log',
+    { color: '#ffffff', own: true, rough: 0.9, grain: { axis: 'x', honey: '#ffffff' } },
+    max,
+    owner,
+  );
   m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(max * 3), 3);
   m.count = 0;
   m.visible = false;
@@ -126,9 +151,9 @@ if (LOOK.contact && !LOOK.kit) bakeContact(unitBox, 0.42, 1);
 const tm = new THREE.Matrix4();
 
 /** Draws a track's pieces by kind, in the looks that are on. The set keeps its timing: only its matrices are redirected. */
-export function lookTrack(set: DropSet, kinds: string[]): DropSet {
+export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView): DropSet {
   if (!LOOK.kit && !LOOK.mats && !LOOK.contact) return set;
-  scene.remove(set.mesh);
+  set.mesh.removeFromParent();
   const counts = new Map<string, number>();
   kinds.forEach((k) => counts.set(k, (counts.get(k) ?? 0) + 1));
   const parts = new Map<string, Part[]>();
@@ -145,7 +170,7 @@ export function lookTrack(set: DropSet, kinds: string[]): DropSet {
         }
       : STEEL;
     const list: Part[] = [];
-    if (LOOK.kit) list.push({ mesh: kitBatch(KIT_NAME[kind] ?? kind, p, n), inv });
+    if (LOOK.kit) list.push({ mesh: kitBatch(KIT_NAME[kind] ?? kind, p, n, owner), inv });
     else {
       const mesh = new THREE.InstancedMesh(unitBox, paint(p), n);
       mesh.frustumCulled = false;
@@ -153,13 +178,16 @@ export function lookTrack(set: DropSet, kinds: string[]): DropSet {
       list.push({ mesh, inv });
     }
     if (LOOK.kit && kind === 'sleeper') {
-      const plates = kitBatch('sleeper_steel', STEEL, n);
+      const plates = kitBatch('sleeper_steel', STEEL, n, owner);
       plates.castShadow = false;
       list.push({ mesh: plates, inv });
     }
     // What lies flat on its bed has no shadow worth a second draw: the bed's contact blobs already ground it.
     if (kind === 'sleeper' || kind === 'rail') for (const q of list) q.mesh.castShadow = false;
-    for (const q of list) scene.add(q.mesh);
+    for (const q of list) {
+      if (owner) owner.add(q.mesh);
+      else scene.add(q.mesh);
+    }
     parts.set(kind, list);
   }
   const next = new Map<string, number>();
@@ -175,23 +203,23 @@ export function lookTrack(set: DropSet, kinds: string[]): DropSet {
       q.mesh.setMatrixAt(r.at, tm.copy(m).scale(q.inv));
       q.mesh.instanceMatrix.needsUpdate = true;
     }
-    if (LOOK.contact && kinds[k] === 'sleeper') sleeperBlob(set, k, m, blobs);
+    if (LOOK.contact && kinds[k] === 'sleeper') sleeperBlob(set, k, m, blobs, owner);
     return set.mesh;
   };
   return set;
 }
-function sleeperBlob(set: DropSet, k: number, m: THREE.Matrix4, blobs: Map<number, number>) {
+function sleeperBlob(set: DropSet, k: number, m: THREE.Matrix4, blobs: Map<number, number>, owner?: OwnedView) {
   const b = set.boxes[k]!;
   const down = m.elements[0] !== 0 && Math.abs(m.elements[13]! - b.y) < 0.2;
   const yaw = Math.atan2(b.local.elements[8]!, b.local.elements[10]!);
   const h = blobs.get(k);
   if (!down) {
-    if (h !== undefined) setBlob(h, 0, -999, 0, 0.01, 0.01);
+    if (h !== undefined) setBlob(h, 0, -999, 0, 0.01, 0.01, 0, owner);
     return;
   }
   const y = H(b.x, b.z);
-  if (h === undefined) blobs.set(k, addBlob(b.x, y, b.z, 2.75, 0.8, yaw));
-  else setBlob(h, b.x, y, b.z, 2.75, 0.8, yaw);
+  if (h === undefined) blobs.set(k, addBlob(b.x, y, b.z, 2.75, 0.8, yaw, owner));
+  else setBlob(h, b.x, y, b.z, 2.75, 0.8, yaw, owner);
 }
 
 // ---------------------------------------------------------------- the stack frame and its feeder
@@ -212,12 +240,14 @@ export function stationKit(
   FRAME_W: number,
   SPAN: number,
   corner = false,
+  owner?: OwnedView,
 ) {
+  const { batches: stationBatches, pict: stationPict } = stationViews(owner);
   // Every station's pieces go in one batch per piece: nothing here moves, and six stations are no more draws than one.
   g.updateMatrix();
   const feederAt = new THREE.Matrix4().makeTranslation(-away * (FRAME_D / 2 + SPAN / 2), 0, 0).premultiply(g.matrix);
   const at = (name: string, p: Paint, x: number, y: number, z: number, frame = g.matrix) =>
-    stationPiece(name, p, stationM.makeTranslation(x, y, z).premultiply(frame));
+    stationPiece(name, p, stationM.makeTranslation(x, y, z).premultiply(frame), stationBatches, owner);
   for (const sx of [-1, 1])
     for (const sz of [-1, 1]) {
       at('frame_post', POST, (sx * FRAME_D) / 2, 0, (sz * FRAME_W) / 2);
@@ -242,7 +272,7 @@ export function stationKit(
     const turn = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, Math.PI / 2);
     for (const side of [-1, 1]) {
       runner.compose(new THREE.Vector3(0, 0.16, side * 0.38), turn, new THREE.Vector3(1, 1, SPAN / 2.6));
-      stationPiece('beam_long', LONG, runner.premultiply(feederAt));
+      stationPiece('beam_long', LONG, runner.premultiply(feederAt), stationBatches, owner);
     }
   }
   const rollers = Math.round(SPAN / 0.3);
@@ -252,29 +282,51 @@ export function stationKit(
 const STATION_PIECES = 64, // the most of a piece, all stations together; only what's placed is drawn
   ROLLERS = 256;
 const stationM = new THREE.Matrix4();
-const stationBatches = new Map<string, THREE.InstancedMesh>();
-function stationPiece(name: string, p: Paint, m: THREE.Matrix4) {
+function stationPiece(
+  name: string,
+  p: Paint,
+  m: THREE.Matrix4,
+  stationBatches: Map<string, THREE.InstancedMesh>,
+  owner?: OwnedView,
+) {
   let b = stationBatches.get(name);
   if (!b) {
-    b = kitBatch(name, p, name === 'roller' ? ROLLERS : STATION_PIECES);
+    b = kitBatch(name, p, name === 'roller' ? ROLLERS : STATION_PIECES, owner);
     b.count = 0;
     stationBatches.set(name, b);
-    scene.add(b);
+    if (owner) owner.add(b);
+    else scene.add(b);
   }
   if (b.count >= b.instanceMatrix.count) return;
   b.setMatrixAt(b.count++, m);
   b.instanceMatrix.needsUpdate = true;
 }
 // The board's log pictogram.
-const stationPictGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.75, 10).rotateX(Math.PI / 2);
-const stationPict = new THREE.InstancedMesh(
-  LOOK.contact ? bakeContact(stationPictGeo) : stationPictGeo,
-  paint({ color: '#3a2a1a' }),
-  16,
-);
-stationPict.count = 0;
-stationPict.frustumCulled = false;
-scene.add(stationPict);
+function createStationView(owner?: OwnedView) {
+  const stationPictGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.75, 10).rotateX(Math.PI / 2);
+  const stationPict = new THREE.InstancedMesh(
+    LOOK.contact ? bakeContact(stationPictGeo) : stationPictGeo,
+    paint({ color: '#3a2a1a' }),
+    16,
+  );
+  stationPict.count = 0;
+  stationPict.frustumCulled = false;
+  if (owner) owner.add(stationPict);
+  else scene.add(stationPict);
+  return { batches: new Map<string, THREE.InstancedMesh>(), pict: stationPict };
+}
+let legacyStations: ReturnType<typeof createStationView> | undefined;
+const ownedStations = new WeakMap<OwnedView, ReturnType<typeof createStationView>>();
+function stationViews(owner?: OwnedView) {
+  if (!owner) return (legacyStations ??= createStationView());
+  let view = ownedStations.get(owner);
+  if (!view) {
+    view = createStationView(owner);
+    ownedStations.set(owner, view);
+    owner.cleanup(() => ownedStations.delete(owner));
+  }
+  return view;
+}
 
 // ---------------------------------------------------------------- the machine
 const RED: Paint = { color: '#e8392a', rough: 0.55 },
@@ -300,32 +352,33 @@ const WHEEL_ZERO = new THREE.Matrix4().makeScale(0, 0, 0),
   wheelP = new THREE.Vector3(),
   wheelS = new THREE.Vector3(),
   wheelM = new THREE.Matrix4();
-const wheelSet = (p: Paint, n: number) => {
+const wheelSet = (p: Paint, n: number, owner?: OwnedView) => {
   let b: THREE.InstancedMesh | null = null;
   return () => {
     if (b) return b;
-    b = kitBatch('wheel', p, n);
+    b = kitBatch('wheel', p, n, owner);
     b.castShadow = false;
     b.count = 0;
-    scene.add(b);
+    if (owner) owner.add(b);
+    else scene.add(b);
     return b;
   };
 };
 const machineWheels = wheelSet({ ...IRON, rust: true }, 8),
   trainWheels = wheelSet({ ...IRON, rust: 'train' }, 24); // two lines: three cars each, four wheels each
-export const machineLook = (): MachineLook => kitCars(1, true);
+export const machineLook = (owner?: OwnedView): MachineLook => kitCars(1, true, owner);
 /** A train's look: the same loco, the same livery, and plain flatbeds. */
 export const trainLook = (trailers: number): MachineLook => kitCars(trailers, false);
-function kitCars(trailers: number, working: boolean): MachineLook {
+function kitCars(trailers: number, working: boolean, owner?: OwnedView): MachineLook {
   const add = (parent: THREE.Object3D, name: string, p: Paint, x = 0, y = 0, z = 0) => {
     // The timber keeps its grain; only painted and bare metal age with the engine.
-    const m = piece(name, { ...p, rust: p.grain ? false : working ? true : 'train' });
+    const m = piece(name, { ...p, rust: p.grain ? false : working ? true : 'train' }, owner);
     m.position.set(x, y, z);
     parent.add(m);
     return m;
   };
   // The wheels of all the cars are one batch, posed each frame, and cast no shadow: they're under the deck.
-  const wheelBatch = working ? machineWheels() : trainWheels();
+  const wheelBatch = owner ? wheelSet({ ...IRON, rust: true }, 8, owner)() : working ? machineWheels() : trainWheels();
   const wheels = (hz: number, r: number) => {
     const list: Wheel[] = [];
     for (const sx of [-0.5, 0.5])
@@ -393,61 +446,59 @@ function kitCars(trailers: number, working: boolean): MachineLook {
   const angle = cars.map(() => 0);
   let travel = 0;
   const slip = { rate: 0 };
-  onFrame(
-    ({ dt }) => {
-      if (boiler) boiler.visible = job.boiler >= 3 || job.rung.trains;
-      cars.forEach((car, n) => {
-        const parent = car.parent;
-        const { wheels: list, r } = sets[n]!;
-        if (!parent?.visible) {
-          for (const w of list) wheelBatch.setMatrixAt(w.at, WHEEL_ZERO);
-          wheelBatch.instanceMatrix.needsUpdate = true;
-          return void last[n]!.set(NaN, 0, 0);
-        }
-        const at = parent.position,
-          yaw = parent.rotation.y;
-        const dx = at.x - last[n]!.x,
-          dz = at.z - last[n]!.z;
-        const ds = Math.abs(dx) + Math.abs(dz) < 2 ? dx * Math.sin(yaw) + dz * Math.cos(yaw) : 0;
-        last[n]!.copy(at);
-        angle[n]! += ds / r + slip.rate * dt;
-        // In the car's own frame, rock and shudder included, as when they were its children.
-        const inner = car.children[0]!;
-        inner.updateWorldMatrix(true, false);
-        wheelQ.setFromAxisAngle(WHEEL_AXIS, angle[n]!);
-        wheelS.set(1, r, r);
-        for (const w of list) {
-          wheelP.set(w.x, w.y, w.z);
-          wheelBatch.setMatrixAt(w.at, wheelM.compose(wheelP, wheelQ, wheelS).premultiply(inner.matrixWorld));
-        }
+  const animate = ({ dt }: { dt: number }) => {
+    if (boiler) boiler.visible = job.boiler >= 3 || job.rung.trains;
+    cars.forEach((car, n) => {
+      const parent = car.parent;
+      const { wheels: list, r } = sets[n]!;
+      if (!parent?.visible) {
+        for (const w of list) wheelBatch.setMatrixAt(w.at, WHEEL_ZERO);
         wheelBatch.instanceMatrix.needsUpdate = true;
-        if (n === 1) travel += Math.abs(ds);
-      });
-      for (const { m } of rods) {
-        m.position.y = 0.51 + 0.12 * Math.cos(angle[0]!);
-        m.position.z = 0.12 * Math.sin(angle[0]!);
+        return void last[n]!.set(NaN, 0, 0);
       }
-      if (working) fork.position.y = 0.2 + 0.3 * Math.abs(Math.cos((travel / 1.2) * Math.PI));
-    },
-    { phase: 'update', order: 8 },
-  );
+      const at = parent.position,
+        yaw = parent.rotation.y;
+      const dx = at.x - last[n]!.x,
+        dz = at.z - last[n]!.z;
+      const ds = Math.abs(dx) + Math.abs(dz) < 2 ? dx * Math.sin(yaw) + dz * Math.cos(yaw) : 0;
+      last[n]!.copy(at);
+      angle[n]! += ds / r + slip.rate * dt;
+      // In the car's own frame, rock and shudder included, as when they were its children.
+      const inner = car.children[0]!;
+      inner.updateWorldMatrix(true, false);
+      wheelQ.setFromAxisAngle(WHEEL_AXIS, angle[n]!);
+      wheelS.set(1, r, r);
+      for (const w of list) {
+        wheelP.set(w.x, w.y, w.z);
+        wheelBatch.setMatrixAt(w.at, wheelM.compose(wheelP, wheelQ, wheelS).premultiply(inner.matrixWorld));
+      }
+      wheelBatch.instanceMatrix.needsUpdate = true;
+      if (n === 1) travel += Math.abs(ds);
+    });
+    for (const { m } of rods) {
+      m.position.y = 0.51 + 0.12 * Math.cos(angle[0]!);
+      m.position.z = 0.12 * Math.sin(angle[0]!);
+    }
+    if (working) fork.position.y = 0.2 + 0.3 * Math.abs(Math.cos((travel / 1.2) * Math.PI));
+  };
+  if (owner) owner.animate(animate, 8);
+  else onFrame(animate, { phase: 'update', order: 8 });
   return { cars, chimneyTop, heldRail, slip };
 }
 
 // ---------------------------------------------------------------- what sits on the ground and moves
 type Ground = { x: number; y: number; z: number; yaw: number };
 /** Ground contact for the machine and trees. The avatar already casts its own articulated shadow. */
-export function installContact(cars: Ground[], standing: { x: number; y: number; z: number }[]) {
-  const under = cars.map(() => addBlob(0, -999, 0, 0.01, 0.01));
-  for (const t of standing) addBlob(t.x, t.y, t.z, 1.6, 1.6);
-  onFrame(
-    () => {
-      cars.forEach((c, n) => {
-        const h = H(c.x, c.z);
-        const near = c.y - h < 5;
-        setBlob(under[n]!, c.x, near ? h : -999, c.z, 3.1, 4.3, c.yaw);
-      });
-    },
-    { phase: 'update', order: 9 },
-  );
+export function installContact(cars: Ground[], standing: { x: number; y: number; z: number }[], owner?: OwnedView) {
+  const under = cars.map(() => addBlob(0, -999, 0, 0.01, 0.01, 0, owner));
+  for (const t of standing) addBlob(t.x, t.y, t.z, 1.6, 1.6, 0, owner);
+  const update = () => {
+    cars.forEach((c, n) => {
+      const h = H(c.x, c.z);
+      const near = c.y - h < 5;
+      setBlob(under[n]!, c.x, near ? h : -999, c.z, 3.1, 4.3, c.yaw, owner);
+    });
+  };
+  if (owner) owner.animate(update, 9);
+  else onFrame(update, { phase: 'update', order: 9 });
 }

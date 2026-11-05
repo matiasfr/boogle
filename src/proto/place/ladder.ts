@@ -19,6 +19,7 @@ import { deliver, dropChest, prizeHooks, showChestPrize } from './gifts.ts';
 import { makeAxeModel, type AxeTier } from './axe-models.ts';
 import { rememberGot, youGot } from './got.ts';
 import { coop, coopWire } from './coop.ts';
+import { MULTI_AXE_REWARD } from '../../render/t1-reward-parts.ts';
 
 const timber = LINKS[0]!;
 const station3 = frameBesideLine(timber.stations[2]!, timber.line, timber.dir);
@@ -63,9 +64,9 @@ function showMultiAxe() {
   let model = multiModels.get(tier);
   if (!model) multiModels.set(tier, (model = makeAxeModel(tier)));
   youGot({
-    key: 'multi',
-    name: 'The multi-axe',
-    line: 'Chops trees, breaks rocks, and more.',
+    key: MULTI_AXE_REWARD.key,
+    name: MULTI_AXE_REWARD.name,
+    line: MULTI_AXE_REWARD.line,
     model: model.clone(true),
   });
 }

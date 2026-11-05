@@ -4,7 +4,7 @@
 // A great beam or boiler instead goes through the existing shared cargo authority and shoulder interaction.
 import * as THREE from 'three/webgpu';
 import { material } from '../../render/materials.ts';
-import { registerAction, triggerAction } from '../../player/controls.ts';
+import { bindCargoDrop } from '../../player/cargo-drop.ts';
 import { NO_TARGETS, registerInteractable, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { PLAYER_R } from '../../constants.ts';
@@ -156,20 +156,7 @@ registerInteractable(() => {
   return out ?? NO_TARGETS;
 });
 
-// R3 is free of every core and prototype claim (`npm run registry -- --json`, 3 November); D-pad up stays unclaimed.
-registerAction('place-drop', {
-  pad: 'r3',
-  keys: ['Mouse2'],
-  label: 'Drop one thing off your back',
-  touch: { label: 'Drop', className: 'place-drop-btn' },
-  group: 'hands',
-  order: 3,
-  down: () => void dropOne(),
-});
-addEventListener('mousedown', (e) => {
-  if (e.button === 2 && me.entered && (e.target as Element | null)?.tagName === 'CANVAS')
-    triggerAction('place-drop', 'down');
-});
+bindCargoDrop(dropOne);
 
 /** Start over: the piles go with everything else. */
 export function resetDrops() {

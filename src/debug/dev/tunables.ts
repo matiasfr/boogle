@@ -1,10 +1,11 @@
 // Bounded agent adapter. Owners keep execution and state; no catalog work runs per frame.
-import { CATALOG, TUNE_COMMANDS, tunableSpec, validValue } from '../../tunables/catalog.ts';
+import { CATALOG, TUNE_COMMANDS, tunableSpec, sharedTunableSpec, validValue } from '../../tunables/catalog.ts';
 import { emitTuneRecord, tuneDigest } from '../../tunables/events.ts';
 import { createTuneStartup } from '../../tunables/startup.ts';
-import { TUNE_CATALOG, type TuneKey } from '../../sim/tune.ts';
+import { TUNE_CATALOG } from '../../sim/tune.ts';
 import { BUILD_ID } from '../../build-id.ts';
 import { WORLD_NS } from '../../world/namespace.ts';
+import { RAILWAY_PLAY_NS } from '../../world/railway-namespace.ts';
 import { rules } from '../../world/game-world.ts';
 import { world, worldStatus, submitEdit, onApplied, onSnapshot, onRejected } from '../../world/sync.ts';
 import { getRoomId, onNetState } from '../../netplay/net.ts';
@@ -14,7 +15,7 @@ import { snapshotFeelSpring, setFeelSpring, onFeelSpringChange } from '../../pla
 import { bindings, onChange } from '../../render/water/live.ts';
 import { exposureSettings } from '../../render/exposure.ts';
 import { devEnabled } from '../../dev-preferences.ts';
-import { pageQuery, PROTO } from '../../proto/flags.ts';
+import { pageQuery, PROTO, productionRailway } from '../../proto/flags.ts';
 import { fixture } from './fixtures.ts';
 import { ok, no, type Tool, type Args, type Result } from './types.ts';
 
@@ -34,7 +35,10 @@ const startup = new Promise<void>((resolve) => {
   finishStartup = resolve;
 });
 const queryResults: Result[] = [];
-const requests = new Map<string, { status: string; at: number; revision?: number; appliedTick?: number }>();
+const requests = new Map<
+  string,
+  { status: string; at: number; revision?: number; appliedTick?: number; code?: string }
+>();
 function setup() {
   const p = me.body?.position;
   const f = fixture();
@@ -52,7 +56,7 @@ function read(id: string) {
   const feel = snapshotFeelSpring();
   const shared = spec.scope === 'lockstep';
   const value = shared
-    ? rules.tune.tune.v[id.slice(5) as TuneKey]
+    ? rules.tune.tune.v[spec.sharedKey]
     : spec.scope === 'owner'
       ? feel.value
       : exposureSettings.centre;
@@ -61,7 +65,9 @@ function read(id: string) {
     value,
     source: shared ? 'room' : spec.scope === 'owner' ? (feel.revision ? 'session' : 'default') : exposureSource,
     revision: shared ? rules.tune.tune.revision : spec.scope === 'owner' ? feel.revision : localRevision,
-    available: shared ? worldStatus().ready : spec.scope === 'owner' || bindings.has(id),
+    available: shared
+      ? worldStatus().ready && (!id.startsWith('railway.') || productionRailway)
+      : spec.scope === 'owner' || bindings.has(id),
     ...(spec.scope === 'owner' ? { active: feel.active, chopLocked: feel.chopLocked } : {}),
   };
 }
@@ -69,7 +75,7 @@ export function tuneSnapshot() {
   return {
     schema: 1,
     build: BUILD_ID || 'dev',
-    namespace: WORLD_NS,
+    namespace: productionRailway ? RAILWAY_PLAY_NS : WORLD_NS,
     catalog: TUNE_CATALOG,
     revision: rules.tune.tune.revision,
     tick: world.tick,
@@ -86,6 +92,7 @@ export function recordTuneSnapshot() {
   emitTuneRecord('tune.begin', {
     snapshot,
     build: data.build,
+    namespace: data.namespace,
     catalog: data.catalog,
     revision: data.revision,
     tick: data.tick,
@@ -137,7 +144,14 @@ function validate(args: Args): Result {
     (!Number.isSafeInteger(args.expectedRevision) || args.expectedRevision !== read(spec.id)!.revision)
   )
     return rejected('stale-revision');
-  if (spec.scope === 'lockstep' && spec.id !== 'haul.yield') return rejected('read-only-in-first-proof');
+  if (
+    spec.scope === 'lockstep' &&
+    spec.sharedKey !== 'yield' &&
+    spec.sharedKey !== 'railRegrowMinutes' &&
+    spec.sharedKey !== 'railRecoveryMinutes'
+  )
+    return rejected('read-only-in-first-proof');
+  if (spec.id.startsWith('railway.') && !productionRailway) return rejected('unsupported-route');
   if (!read(spec.id)!.available) return rejected(spec.scope === 'local' ? 'reload-required' : 'not-ready');
   return ok('Valid request; shared acceptance remains host-owned.', { status: 'validated' });
 }
@@ -164,7 +178,7 @@ function set(args: Args, source = 'session'): Result {
     op: 'tune.commit',
     i: 0,
     j: 0,
-    key: 'yield',
+    key: spec.sharedKey,
     v: value,
     catalog: TUNE_CATALOG,
     expectedRevision: args.expectedRevision ?? rules.tune.tune.revision,
@@ -211,8 +225,10 @@ onApplied(
         appliedTick: tick,
       });
     if (result && result.status !== 'rejected') {
+      const spec = sharedTunableSpec(e.key);
+      if (!spec) return;
       emitTuneRecord('tune.change', {
-        id: `haul.${e.key}`,
+        id: spec.id,
         value: e.v ?? null,
         revision: rules.tune.tune.revision,
         tick,
@@ -229,7 +245,8 @@ onSnapshot(() => {
 onRejected((event) => {
   if (event.op !== 'tune.commit') return;
   const request = requests.get(event.requestId);
-  if (request?.status === 'pending') requests.set(event.requestId, { ...request, status: 'rejected' });
+  if (request?.status === 'pending')
+    requests.set(event.requestId, { ...request, status: 'rejected', ...(event.reason ? { code: event.reason } : {}) });
 });
 onEntered(() => recordTuneSnapshot());
 onNetState((state) => {

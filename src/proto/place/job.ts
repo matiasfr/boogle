@@ -8,7 +8,7 @@
 // something's missing. Local, or shared by ./coop.ts behind the flag. Never read by the sim.
 import { getRoomId } from '../../netplay/net.ts';
 import { TUNE } from './layout.ts';
-import { pageQuery } from '../flags.ts';
+import { pageQuery, productionRailway } from '../flags.ts';
 
 export const COOP = pageQuery().get('coop') === '1';
 
@@ -63,8 +63,12 @@ function fill<T extends object>(to: T, from: unknown) {
 type Slice = { key: string; get: () => unknown; set: (v: unknown) => void };
 const shared: Slice[] = [],
   personal: Slice[] = [];
-export const sharedSlice = (key: string, s: Omit<Slice, 'key'>) => void shared.push({ key, ...s });
-export const personalSlice = (key: string, s: Omit<Slice, 'key'>) => void personal.push({ key, ...s });
+export const sharedSlice = (key: string, s: Omit<Slice, 'key'>) => {
+  if (!productionRailway) shared.push({ key, ...s });
+};
+export const personalSlice = (key: string, s: Omit<Slice, 'key'>) => {
+  if (!productionRailway) personal.push({ key, ...s });
+};
 sharedSlice('job', {
   get: () => JSON.parse(JSON.stringify(job)),
   set: (v) => {
@@ -99,7 +103,7 @@ export function forgetSaves() {
   }
 }
 export function save() {
-  if (!saving) return;
+  if (productionRailway || !saving) return;
   try {
     localStorage.setItem(KEY, JSON.stringify({ shared: captureShared(), personal: gather(personal) }));
   } catch {
@@ -108,6 +112,7 @@ export function save() {
 }
 /** True if there was a save. */
 export function restore() {
+  if (productionRailway) return false;
   try {
     const j = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!j) return false;

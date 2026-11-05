@@ -5,11 +5,16 @@ import path from 'node:path';
 import { createRailwayWorldHost } from '../../src/host/world-host.ts';
 import { createStore } from '../../src/store.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../../src/sim/railway-layout.ts';
+import { isPlayableRailwayRoom, isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 
-const [dataDir, boundary] = process.argv.slice(2);
-if (!dataDir || !['published', 'replacement', 'recovery-checkpoint'].includes(boundary ?? ''))
+const [dataDir, boundary, roomId] = process.argv.slice(2);
+if (
+  !dataDir ||
+  !roomId ||
+  !isRailwayRoom(roomId) ||
+  !['published', 'replacement', 'recovery-checkpoint'].includes(boundary ?? '')
+)
   throw new Error('bad crash fixture arguments');
-const roomId = 't1v01-proto-crash';
 const pid = 'crashtester';
 const startedAt = boundary === 'recovery-checkpoint' ? Date.UTC(2026, 10, 4) : 1000000;
 const now = () => startedAt;
@@ -58,7 +63,11 @@ await ticks(RAILWAY_T1.wakeTicks);
 for (let stroke = 0; stroke < 12; stroke++) {
   const source = RAILWAY_SOURCES[Math.floor(stroke / 5)]!;
   position = { x: source[1] / 100, z: source[2] / 100, at: now() };
-  await action({ op: 'rail.chop', id: source[0] });
+  await action({
+    op: 'rail.chop',
+    id: source[0],
+    ...(isPlayableRailwayRoom(roomId) ? { yaw: 0.5, collapsed: false } : {}),
+  });
   position = { x: RAILWAY_T1.x / 100, z: RAILWAY_T1.z / 100, at: now() };
   if (stroke < 11) await action({ op: 'rail.deposit', station: 'T1', n: 2 });
 }

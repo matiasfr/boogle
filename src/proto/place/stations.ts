@@ -7,6 +7,8 @@ import { guardInstances } from '../../render/draw-count.ts';
 import { material } from '../../render/materials.ts';
 import { scene } from '../../render/scene.ts';
 import { removeBody, type Body } from '../../physics/engine.ts';
+import { GROUP } from '../../physics/physics.ts';
+import type { OwnedView } from '../../render/owned-view.ts';
 import { flat } from '../flat.ts';
 import { label } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
@@ -30,18 +32,27 @@ export { frameBesideLine, type FrameAt } from './spatial-station.ts';
 
 export type StationRun = ReturnType<typeof buildStation>;
 /** The same deposit flight locally and on a partner's screen. Origins and landing effects belong to the caller. */
-export function flyToStock(st: StationRun, kind: Goods, n: number, from: THREE.Vector3, land: () => void) {
+export function flyToStock(
+  st: StationRun,
+  kind: Goods,
+  n: number,
+  from: THREE.Vector3,
+  land: () => void,
+  owner?: OwnedView,
+) {
   if (kind === 'logs')
-    send('log', from, st.logSlot(n, new THREE.Vector3()), { dur: 0.32, apex: 0.9, size: [1, 2.2], land });
-  else if (kind === 'rails') send('rail', from, st.railSlot(n, new THREE.Vector3()), { dur: 0.36, apex: 0.9, land });
-  else if (kind === 'stone') send('stone', from, st.stoneAt(n, new THREE.Vector3()), { dur: 0.34, apex: 0.9, land });
-  else send('log', from, st.at, { dur: 0.5, apex: 1.4, size: [4, 4], land });
+    send('log', from, st.logSlot(n, new THREE.Vector3()), { dur: 0.32, apex: 0.9, size: [1, 2.2], land }, owner);
+  else if (kind === 'rails')
+    send('rail', from, st.railSlot(n, new THREE.Vector3()), { dur: 0.36, apex: 0.9, land }, owner);
+  else if (kind === 'stone')
+    send('stone', from, st.stoneAt(n, new THREE.Vector3()), { dur: 0.34, apex: 0.9, land }, owner);
+  else send('log', from, st.at, { dur: 0.5, apex: 1.4, size: [4, 4], land }, owner);
 }
 const stoneGeo = new THREE.DodecahedronGeometry(0.22, 0),
   stoneMat = material('stone');
 stoneGeo.computeBoundingBox();
 const stoneFoot = -stoneGeo.boundingBox!.min.y;
-export function buildStation(spec0: Station, place: FrameAt) {
+export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) {
   const { x, z, yaw, lx, lz } = place;
   const y = H(x, z);
   const at = new THREE.Vector3(x, y + 0.12, z);
@@ -58,8 +69,16 @@ export function buildStation(spec0: Station, place: FrameAt) {
   };
   const away = lx * Math.cos(yaw) - lz * Math.sin(yaw) > 0 ? 1 : -1; // the track's on the frame's -away side
   if (LOOK.contact) {
-    addBlob(x, y, z, FRAME_D + 1.4, FRAME_W + 1.4, yaw);
-    addBlob(x - lx * (FRAME_D / 2 + SPAN / 2), y, z - lz * (FRAME_D / 2 + SPAN / 2), SPAN + 1, 1.5, yaw + Math.PI / 2);
+    addBlob(x, y, z, FRAME_D + 1.4, FRAME_W + 1.4, yaw, owner);
+    addBlob(
+      x - lx * (FRAME_D / 2 + SPAN / 2),
+      y,
+      z - lz * (FRAME_D / 2 + SPAN / 2),
+      SPAN + 1,
+      1.5,
+      yaw + Math.PI / 2,
+      owner,
+    );
   }
   if (LOOK.kit)
     stationKit(
@@ -69,6 +88,7 @@ export function buildStation(spec0: Station, place: FrameAt) {
       FRAME_W,
       SPAN,
       spec0.id === 'T3' && new URLSearchParams(location.search).get('corner') === '1',
+      owner,
     );
   else {
     // In the frame's own space: +z along the line, +x across it.
@@ -113,17 +133,20 @@ export function buildStation(spec0: Station, place: FrameAt) {
     }
     g.add(feeder);
   }
-  scene.add(g);
+  if (owner) owner.add(g);
+  else scene.add(g);
   // The empty frame is low rails and four posts, not a head-high solid block. In particular, T3 must not
   // trap the player or collapse the camera just as the first path opens. Stock gets its own body below.
   const turn = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
   const solids = stationColliders(place, y, !!spec0.rails);
-  for (const solid of solids.frame) addStatic(solid.shape, solid.position, turn);
-  addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3);
+  for (const solid of solids.frame) addStatic(solid.shape, solid.position, turn, GROUP.SCENERY, owner);
+  addFoot(x, z, yaw, FRAME_D / 2 + 0.3, FRAME_W / 2 + 0.3, owner);
   addStatic(
     solids.feeder.shape,
     solids.feeder.position,
     new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, solids.feeder.yaw),
+    GROUP.SCENERY,
+    owner,
   );
   // The rails' bearers, beside the frame on the far side, for stations that ask for rails.
   const railAt = new THREE.Vector3(x + lx * RAIL_OUT, y, z + lz * RAIL_OUT);
@@ -132,19 +155,22 @@ export function buildStation(spec0: Station, place: FrameAt) {
       solids.rails.shape,
       solids.rails.position,
       new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, solids.rails.yaw),
+      GROUP.SCENERY,
+      owner,
     );
     for (const off of [-0.9, 0.9]) {
       const b = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.2, 0.2), flat('#8a6236'));
       b.position.set(railAt.x + Math.sin(yaw) * off, y + 0.1, railAt.z + Math.cos(yaw) * off);
       b.rotation.y = yaw;
       b.castShadow = true;
-      scene.add(b);
+      if (owner) owner.add(b);
+      else scene.add(b);
     }
   }
 
-  const logs = logStackMesh(Math.max(1, 56));
+  const logs = logStackMesh(Math.max(1, 56), owner);
   const rails = LOOK.kit
-    ? kitBatch('rail', STEEL, Math.max(1, spec0.rails))
+    ? kitBatch('rail', STEEL, Math.max(1, spec0.rails), owner)
     : new THREE.InstancedMesh(
         new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z),
         LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6),
@@ -153,7 +179,8 @@ export function buildStation(spec0: Station, place: FrameAt) {
   rails.castShadow = true;
   rails.frustumCulled = false;
   rails.count = 0;
-  scene.add(rails);
+  if (owner) owner.add(rails);
+  else scene.add(rails);
   // Stone in a low heap beside the frame; the great beam, when it comes, across the frame's top.
   const stones = spec0.stone ? new THREE.InstancedMesh(stoneGeo, stoneMat, spec0.stone) : null;
   guardInstances(logs, `station ${spec0.id} logs`);
@@ -163,7 +190,8 @@ export function buildStation(spec0: Station, place: FrameAt) {
     stones.castShadow = true;
     stones.frustumCulled = false;
     stones.count = 0;
-    scene.add(stones);
+    if (owner) owner.add(stones);
+    else scene.add(stones);
   }
   const beam = spec0.beam
     ? new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.32, 5.6, 8).rotateX(Math.PI / 2), flat('#7a5430'))
@@ -173,7 +201,8 @@ export function buildStation(spec0: Station, place: FrameAt) {
     beam.position.set(x, y + 1.7, z);
     beam.rotation.y = yaw;
     beam.visible = false;
-    scene.add(beam);
+    if (owner) owner.add(beam);
+    else scene.add(beam);
   }
 
   const tag = label(3.4, 1.7);
@@ -184,7 +213,12 @@ export function buildStation(spec0: Station, place: FrameAt) {
   // The pack is on the working apron: put this existing bill on the building frontage,
   // not between the follow camera and the receiver as the player collects it.
   if (spec0.id === 'F1') tag.sprite.position.set(x, y + 3.6, z + 6);
-  scene.add(tag.sprite);
+  if (owner) owner.add(tag.sprite);
+  else scene.add(tag.sprite);
+  owner?.cleanup(() => {
+    tag.sprite.material.map?.dispose();
+    tag.sprite.material.dispose();
+  });
 
   const slot = new THREE.Vector3();
   const logSlot = (n: number, out = slot) => stackSlot(n, PER_ROW, at, yaw, out);
@@ -236,7 +270,10 @@ export function buildStation(spec0: Station, place: FrameAt) {
       if (stones) stones.count = Math.max(0, Math.min(stones.instanceMatrix.count, n.stone));
       const rows = Math.ceil(logs.count / PER_ROW);
       if (rows !== stockRows) {
-        if (stockBody) removeBody(stockBody);
+        if (stockBody) {
+          if (owner) owner.removeBody(stockBody);
+          else removeBody(stockBody);
+        }
         stockBody = null;
         stockRows = rows;
         if (rows) {
@@ -244,7 +281,7 @@ export function buildStation(spec0: Station, place: FrameAt) {
           const radius = stackSlot(0, PER_ROW, at, yaw, slot).y - at.y;
           const top = stackSlot((rows - 1) * PER_ROW, PER_ROW, at, yaw, slot).y + radius;
           const solid = stationStockCollider(place, y, top);
-          stockBody = addStatic(solid.shape, solid.position, turn);
+          stockBody = addStatic(solid.shape, solid.position, turn, GROUP.SCENERY, owner);
         }
       }
       run.shown.logs = n.logs;

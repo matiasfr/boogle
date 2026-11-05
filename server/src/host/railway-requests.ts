@@ -1,4 +1,4 @@
-// Bounded request coordination on the existing room transport. Only the isolated T1 host installs this.
+// Bounded request coordination on the existing room transport, installed only in the isolated/playable T1 namespaces.
 import { railInt, RAILWAY_MAX_INT, RAILWAY_WINDOW, type RailResult } from '../../../src/sim/railway.ts';
 import type { RailwayApi } from '../../../src/world/rules/railway.ts';
 import type { createSync } from '../../../src/world/sync.ts';
@@ -126,10 +126,16 @@ export function createRailwayRequests({
         return;
       }
       // Host-only ops cannot enter through a material request. Invalid material requests become durable rejections.
-      const allowed = ['rail.wake', 'rail.chop', 'rail.take', 'rail.drop', 'rail.deposit'].includes(String(e.op));
+      const allowed = ['rail.wake', 'rail.chop', 'rail.take', 'rail.rackTake', 'rail.drop', 'rail.deposit'].includes(
+        String(e.op),
+      );
       // Strip unrelated client fields so the bounded recovery tail contains only this op's wire shape.
       const clean: Obj = { op: e.op, epoch, request, i: 0, j: 0 };
       if (e.op === 'rail.chop' || e.op === 'rail.take') clean.id = e.id;
+      if (e.op === 'rail.chop' && api.railway.falls) {
+        clean.yaw = e.yaw;
+        clean.collapsed = e.collapsed;
+      }
       if (e.op === 'rail.deposit') {
         clean.station = e.station;
         clean.n = e.n;
@@ -138,6 +144,7 @@ export function createRailwayRequests({
         clean.x = e.x;
         clean.z = e.z;
         clean.n = e.n;
+        if (api.railway.falls) clean.y = e.y;
       }
       const accepted = allowed && sync.receiveEdit(clean, from);
       if (!accepted && !sync.submitEdit({ op: 'rail.reject', i: 0, j: 0, pid, epoch, request })) {

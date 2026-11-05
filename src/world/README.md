@@ -69,6 +69,9 @@ when the host refuses admission. The edit must fit the existing message size lim
 only from an already-pinned host and only for their own session; it cannot elect a host or advance simulation.
 The server blocks client-origin receipts. Accepted edits still resolve through `onApplied`; a disconnect or lost
 receipt may leave a caller's outcome unknown, so a timeout is never a success or a proved refusal.
+The receipt may carry a bounded `reason`: `recovery-budget` means no stamp was issued because the durable tail
+is full; `request-id-too-long` means the T1 tuning correlation exceeds 64 UTF-16 code units. Unknown reasons
+are ignored. After budget pressure clears, callers may submit a new request using the current revision.
 
 Grid cells use the heightfield indexing from `src/island/terrain.ts`: `heights[i][j]` is world `x = i*CELL - HALF`, `z = HALF - j*CELL`.
 
@@ -105,7 +108,7 @@ The headless T1 spine opts into `attachWorld(..., { recovery })` only in its sep
 
 Sync freezes production stamps, ticking and snapshot serving while a replacement is pending. A stamp batch is written before publication; reentrant edits submitted by a tick callback also stop advancement at that boundary. Recovery validates the whole envelope, replays its tail using the existing tick order, then checkpoints before readiness. `whenDurable()` drains the barrier and rejects on failure. `receiveEdit(edit, authenticatedSession)` exposes admission to the isolated request coordinator; admission is still not a terminal material receipt.
 
-The complete envelope is capped at **60,000 UTF-8 bytes**, including its at-most-64 future stamps. Oversize, unsupported, corrupt or refused recovery stops production publication and never overwrites the last good file. The old `badSave` guard also prevents serving a failed-load fallback in ordinary rooms; `noSave` includes both bad and newer load state. Process-crash durability is the guarantee; disk loss and power-loss flush guarantees are outside it.
+The complete envelope is capped at **60,000 UTF-8 bytes**, including its at-most-64 future stamps. Admission checks the serialized checkpoint and complete candidate tail before consuming a sequence number, accounting for JSON escaping, UTF-8 and maximum tick/hash/checksum widths. A full tail refuses new work with `recovery-budget`; it does not poison the room. The write boundary retains its independent size guard. Oversize, unsupported, corrupt or refused recovery stops production publication and never overwrites the last good file. The old `badSave` guard also prevents serving a failed-load fallback in ordinary rooms; `noSave` includes both bad and newer load state. Process-crash durability is the guarantee; disk loss and power-loss flush guarantees are outside it.
 
 ## The land as data
 
@@ -113,3 +116,7 @@ The complete envelope is capped at **60,000 UTF-8 bytes**, including its at-most
 and Node tests read it (`test/helpers/land.ts`); `dev/scenarios/world-inputs.ts` checks it against the running game
 and rewrites it with `UPDATE_FIXTURE=1 npm run scenario -- world-inputs` when a tree, rock or POI
 moves on purpose.
+
+Playable railway uses the same complete tuning catalog, controller authorization and correlated receipts as classic. Its transport permits only the two supply timers in prototype rooms. Tune state v2 explicitly migrates main's known eight-key v1 profile, preserving values/revision and adding timer defaults. Legacy accepted T1 recovery verifies its frozen registry/hash/tail and frozen tuning defaults before live migration and atomic replacement; unknown profiles fail closed. See [the bounded integration contract](../../docs/plans/production-core.md#supply-branch-integration-5-november).
+
+T1 forwards only known tuning fields, never arbitrary client padding. Its commit request IDs are preserved exactly and capped at 64 UTF-16 code units; the usual UUID fits. IDs of 65–80 units receive `request-id-too-long`; larger IDs are outside the existing receipt correlation limit and are discarded. This adds no authority and changes no accepted edit, recovery version, namespace or catalog.

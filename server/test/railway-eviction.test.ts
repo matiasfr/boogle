@@ -10,7 +10,12 @@ import { createService, loadConfig } from '../src/server.ts';
 import { createStore, type Store } from '../src/store.ts';
 import { createRoomHost } from '../src/host/rooms.ts';
 import type { HostedRoom } from '../src/host/hosted-room.ts';
-import { RAILWAY_ROOM } from '../../src/world/railway-namespace.ts';
+import {
+  RAILWAY_ROOM,
+  isRailwayRoom,
+  isPlayableRailwayRoom,
+  railwayRoomId,
+} from '../../src/world/railway-namespace.ts';
 import { WORLD_NS } from '../../src/world/namespace.ts';
 import { TUNE_CATALOG } from '../../src/sim/tune.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
@@ -133,7 +138,7 @@ function upgradeStatus(base: string) {
   });
 }
 
-for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM]) {
+for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM, railwayRoomId('eviction')]) {
   test(`real room manager preserves the closing authority before rejoin: ${id}`, async (t) => {
     const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-manager-eviction-'));
     const store = createStore({ dataDir, maxRooms: 8 });
@@ -147,7 +152,7 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM]) {
       await app.close();
       await fs.rm(dataDir, { recursive: true, force: true });
     });
-    const railway = id === RAILWAY_ROOM;
+    const railway = isRailwayRoom(id);
     const original = connect(app.base, id, 'old');
     clients.push(original);
     assert.equal((await original.first()).t, 'welcome');
@@ -168,7 +173,19 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM]) {
     if (railway) {
       const source = RAILWAY_SOURCES[0]!;
       original.send({ t: 'p', s: 2, d: { v: 1, p: [source[1] / 100, 0, source[2] / 100] } });
-      original.send({ t: 'm', d: { t: 'r:edit', e: { op: 'rail.chop', id: source[0], epoch: 1, request: 2 } } });
+      original.send({
+        t: 'm',
+        d: {
+          t: 'r:edit',
+          e: {
+            op: 'rail.chop',
+            id: source[0],
+            epoch: 1,
+            request: 2,
+            ...(isPlayableRailwayRoom(id) ? { yaw: 0.5, collapsed: false } : {}),
+          },
+        },
+      });
       await until(() => old.world.status().recoveryPending, 'durable chop write');
     } else {
       original.send({
@@ -211,7 +228,11 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM]) {
     await drain(replacement, store, id);
     const result = {
       room: id,
-      kind: railway ? 'isolated railway' : 'live server W state (not Place localStorage railway)',
+      kind: isPlayableRailwayRoom(id)
+        ? 'playable railway'
+        : railway
+          ? 'isolated railway'
+          : 'live server W state (not Place localStorage railway)',
       initial,
       published,
       overlapping,
@@ -235,6 +256,7 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM]) {
 for (const [id, failure] of [
   [`${WORLD_NS}-boogle`, 'refused'],
   [RAILWAY_ROOM, 'io'],
+  [railwayRoomId('eviction'), 'io'],
 ] as const) {
   test(`failed close keeps one blocked authority and its last good file: ${id}`, async (t) => {
     const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-manager-refusal-'));
@@ -262,12 +284,24 @@ for (const [id, failure] of [
     clients.push(client);
     assert.equal((await client.first()).t, 'welcome');
     const room = app.rooms.room(id)!;
-    const railway = id === RAILWAY_ROOM;
+    const railway = isRailwayRoom(id);
     await prepare(room, client, railway);
     if (railway) {
       const source = RAILWAY_SOURCES[0]!;
       client.send({ t: 'p', s: 2, d: { v: 1, p: [source[1] / 100, 0, source[2] / 100] } });
-      client.send({ t: 'm', d: { t: 'r:edit', e: { op: 'rail.chop', id: source[0], epoch: 1, request: 2 } } });
+      client.send({
+        t: 'm',
+        d: {
+          t: 'r:edit',
+          e: {
+            op: 'rail.chop',
+            id: source[0],
+            epoch: 1,
+            request: 2,
+            ...(isPlayableRailwayRoom(id) ? { yaw: 0.5, collapsed: false } : {}),
+          },
+        },
+      });
     } else
       client.send({
         t: 'm',

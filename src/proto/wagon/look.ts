@@ -8,6 +8,7 @@
 // a function of the shared tick, so every tab draws the same. Local, cosmetic.
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
+import type { OwnedView } from '../../render/owned-view.ts';
 import { reducedMotion } from '../../constants.ts';
 import { clamp } from '../../math.ts';
 import { damp, springStep, stiffnessOf, dampingOf, type Spring } from '../../render/motion.ts';
@@ -29,9 +30,12 @@ export const CRATES = [
 export type WagonLook = { cars: THREE.Object3D[]; chimneyTop: THREE.Object3D };
 
 /** Builds one loco and `trailers` flatbeds, in train order from the outbound end. */
-export function wagonLook(trailers: number, crated = true): WagonLook {
-  const mat = (color: string, metal = 0) =>
-    new THREE.MeshStandardNodeMaterial({ color, roughness: metal ? 0.45 : 0.85, metalness: metal });
+export function wagonLook(trailers: number, crated = true, owner?: OwnedView): WagonLook {
+  const mat = (color: string, metal = 0) => {
+    const material = new THREE.MeshStandardNodeMaterial({ color, roughness: metal ? 0.45 : 0.85, metalness: metal });
+    owner?.cleanup(() => material.dispose());
+    return material;
+  };
   const brass = mat('#c9a24a', 0.6),
     iron = mat('#33343a', 0.5),
     red = mat('#c8452f'),
@@ -124,7 +128,7 @@ export function wagonLook(trailers: number, crated = true): WagonLook {
     outer.add(inner);
     return outer;
   });
-  animate(cars, bodies, [locoWheels, ...trailerWheels], gear);
+  animate(cars, bodies, [locoWheels, ...trailerWheels], gear, owner);
   return { cars, chimneyTop };
 }
 
@@ -143,7 +147,13 @@ const SLACK = {
 };
 type Gear = { side: number; siderod: THREE.Mesh; conrod: THREE.Mesh; crosshead: THREE.Mesh; piston: THREE.Mesh };
 
-function animate(cars: THREE.Object3D[], bodies: THREE.Object3D[], wheelSets: THREE.Mesh[][], gear: Gear[]): void {
+function animate(
+  cars: THREE.Object3D[],
+  bodies: THREE.Object3D[],
+  wheelSets: THREE.Mesh[][],
+  gear: Gear[],
+  owner?: OwnedView,
+): void {
   const radius = wheelSets.map((ws) => (ws[0]!.geometry as THREE.CylinderGeometry).parameters.radiusTop);
   const angle = cars.map(() => 0);
   const last = cars.map(() => new THREE.Vector3(NaN, 0, 0));
@@ -152,50 +162,49 @@ function animate(cars: THREE.Object3D[], bodies: THREE.Object3D[], wheelSets: TH
     accel = 0;
   const k = stiffnessOf(SLACK.hz),
     d = dampingOf(SLACK.hz, SLACK.zeta);
-  onFrame(
-    ({ dt }) => {
-      if (dt <= 0) return;
-      cars.forEach((car, n) => {
-        const at = car.parent?.position;
-        if (!at || !car.parent!.visible) return void last[n]!.set(NaN, 0, 0);
-        const yaw = car.parent!.rotation.y;
-        // the distance covered along the car's own +z (a jump of metres is a reset: don't spin)
-        const dx = at.x - last[n]!.x,
-          dz = at.z - last[n]!.z;
-        const ds = Math.abs(dx) + Math.abs(dz) < 2 ? dx * Math.sin(yaw) + dz * Math.cos(yaw) : 0;
-        last[n]!.copy(at);
-        angle[n]! += ds / radius[n]!;
-        for (const w of wheelSets[n]!) w.rotation.x = angle[n]!;
-        if (n === 0) {
-          const v = damp(speed, ds / dt, 0.05, dt);
-          accel = damp(accel, (v - speed) / dt, 0.08, dt);
-          speed = v;
-        }
-      });
-      // The loco's rods: crank pins on the right side lead the left by a quarter turn.
-      for (const g of gear) {
-        const th = angle[0]! + (g.side > 0 ? Math.PI / 2 : 0);
-        const py = AXLE + ROD.crank * Math.cos(th),
-          pz = ROD.crank * Math.sin(th); // a pin's offset from its wheel's centre (rotation about +x)
-        const front = ROD.wheelbase / 2;
-        g.siderod.position.set(g.siderod.position.x, py, pz);
-        // the crosshead stays on the axle line; the connecting rod spans pin to crosshead
-        const dy = AXLE - py,
-          cz = front + pz + Math.sqrt(ROD.con * ROD.con - dy * dy);
-        g.crosshead.position.z = cz;
-        g.piston.position.z = cz + 0.14;
-        g.conrod.position.set(g.conrod.position.x, (py + AXLE) / 2, (front + pz + cz) / 2);
-        g.conrod.rotation.x = Math.atan2(-dy, cz - front - pz);
+  const step = ({ dt }: { dt: number }) => {
+    if (dt <= 0) return;
+    cars.forEach((car, n) => {
+      const at = car.parent?.position;
+      if (!at || !car.parent!.visible) return void last[n]!.set(NaN, 0, 0);
+      const yaw = car.parent!.rotation.y;
+      // the distance covered along the car's own +z (a jump of metres is a reset: don't spin)
+      const dx = at.x - last[n]!.x,
+        dz = at.z - last[n]!.z;
+      const ds = Math.abs(dx) + Math.abs(dz) < 2 ? dx * Math.sin(yaw) + dz * Math.cos(yaw) : 0;
+      last[n]!.copy(at);
+      angle[n]! += ds / radius[n]!;
+      for (const w of wheelSets[n]!) w.rotation.x = angle[n]!;
+      if (n === 0) {
+        const v = damp(speed, ds / dt, 0.05, dt);
+        accel = damp(accel, (v - speed) / dt, 0.08, dt);
+        speed = v;
       }
-      // Buffer slack: each coupling stretches with the train's acceleration, on a bouncy spring, so a start or a stop
-      // ripples down the train. The loco leads; car n trails by n couplings.
-      bodies.forEach((b, n) => {
-        if (!n) return;
-        const goal = reducedMotion ? 0 : clamp(-accel * SLACK.perAccel * n, -SLACK.max, SLACK.max);
-        springStep(slack[n]!, goal, k, d, dt);
-        b.position.z = slack[n]!.x;
-      });
-    },
-    { phase: 'update', order: 8 }, // after ./index.ts places the cars (order 6)
-  );
+    });
+    // The loco's rods: crank pins on the right side lead the left by a quarter turn.
+    for (const g of gear) {
+      const th = angle[0]! + (g.side > 0 ? Math.PI / 2 : 0);
+      const py = AXLE + ROD.crank * Math.cos(th),
+        pz = ROD.crank * Math.sin(th); // a pin's offset from its wheel's centre (rotation about +x)
+      const front = ROD.wheelbase / 2;
+      g.siderod.position.set(g.siderod.position.x, py, pz);
+      // the crosshead stays on the axle line; the connecting rod spans pin to crosshead
+      const dy = AXLE - py,
+        cz = front + pz + Math.sqrt(ROD.con * ROD.con - dy * dy);
+      g.crosshead.position.z = cz;
+      g.piston.position.z = cz + 0.14;
+      g.conrod.position.set(g.conrod.position.x, (py + AXLE) / 2, (front + pz + cz) / 2);
+      g.conrod.rotation.x = Math.atan2(-dy, cz - front - pz);
+    }
+    // Buffer slack: each coupling stretches with the train's acceleration, on a bouncy spring, so a start or a stop
+    // ripples down the train. The loco leads; car n trails by n couplings.
+    bodies.forEach((b, n) => {
+      if (!n) return;
+      const goal = reducedMotion ? 0 : clamp(-accel * SLACK.perAccel * n, -SLACK.max, SLACK.max);
+      springStep(slack[n]!, goal, k, d, dt);
+      b.position.z = slack[n]!.x;
+    });
+  };
+  if (owner) owner.animate(step, 8);
+  else onFrame(step, { phase: 'update', order: 8 });
 }
