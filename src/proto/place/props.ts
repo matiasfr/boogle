@@ -12,7 +12,7 @@ import { draw } from '../net/boxes.ts';
 import { H, PATH_SAMPLES, addStatic } from './land.ts';
 import { boilerShape } from './chop.ts';
 import { pullOut } from './celebrate.ts';
-import { count, job, personalSlice, save } from './job.ts';
+import { job, personalSlice, save } from './job.ts';
 import { BUOYS, FAR, FORGE, ORIGIN, SCOPE, lineAt, toWorld, LINES, type LinePoint } from './layout.ts';
 import { addFoot } from './sites.ts';
 import { staticPart } from './town.ts';
@@ -83,11 +83,11 @@ export function updateFinds(dt: number) {
   });
 }
 export const clearFinds = () => void (found.length = 0);
-personalSlice('finds', {
+personalSlice('goldFinds', {
   get: () => found.slice(),
   set: (v) => {
     found.length = 0;
-    if (Array.isArray(v)) for (const k of v) if (count(k, 99)) found.push(k);
+    if (Array.isArray(v)) for (const f of FIND_SPOTS) if (v.includes(f.id)) found.push(f.id);
   },
 });
 

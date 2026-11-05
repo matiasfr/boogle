@@ -10,7 +10,7 @@
 //   and light runs down the posts and drops the slab. It's a glide back to the frame.
 //
 // Everything here is shared through `job.tech` and `job.gate` (./job.ts, the `job` slice), so the save and the co-op snapshot read it;
-// `coop.tech` says it the moment it happens. What's in the secret boxes is yours (`personalSlice('finds')`). No words but the
+// `coop.tech` says it the moment it happens. What's in the secret boxes is yours (`personalSlice('secretFinds')`). No words but the
 // devices' names: the shafts, rings, chain and posts say the rest.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
@@ -777,7 +777,7 @@ prizeHooks.found = (id) => {
   chord(330, 0.45);
   save();
 };
-personalSlice('finds', {
+personalSlice('secretFinds', {
   get: () => ({ found: [...found], hubbed: [...hubbed] }),
   set: (j) => {
     const q = (j ?? {}) as { found?: unknown; hubbed?: unknown };
