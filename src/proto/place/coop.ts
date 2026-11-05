@@ -254,7 +254,11 @@ function reconcile(a: Api, j: Snap) {
   if (bigPending && bigPending.to !== authorityPeer()) bigPending = null;
   const mine = captureShared();
   miss = discrete(j.shared) === discrete(mine) ? 0 : miss + 1;
-  const theirRun = j.shared.run as { mode: string; k: number; head: number };
+  const theirRun = ((j.shared.trackPanelsV1 as { motion?: unknown } | undefined)?.motion ?? j.shared.run) as {
+    mode: string;
+    k: number;
+    head: number;
+  };
   const myRun = a.run;
   modeMiss = theirRun.mode === myRun.mode ? 0 : modeMiss + 1;
   if (miss >= 3 || modeMiss >= 5) {
@@ -263,6 +267,7 @@ function reconcile(a: Api, j: Snap) {
   }
   // Riding the machine together: the same head, near enough.
   if (
+    !j.shared.trackPanelsV1 &&
     theirRun.mode === myRun.mode &&
     theirRun.k === myRun.line.k &&
     (myRun.mode === 'laying' || myRun.mode === 'running')

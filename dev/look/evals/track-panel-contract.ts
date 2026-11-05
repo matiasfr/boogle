@@ -26,7 +26,9 @@ let restored = false,
   oldRack = run.rack;
 let oldMode = run.mode,
   frames = 0,
-  finished = false;
+  finished = false,
+  closed = false,
+  early = false;
 const started = performance.now();
 const read = () => ({
   head: run.head,
@@ -35,6 +37,8 @@ const read = () => ({
   cursors: lines.map((l) => l.track.cursor),
   frontiers: lines.map((l) => l.track.head),
   colliders: lines.map((l) => l.track.solids.filter((s) => !!s.on).length),
+  setback: run.setback,
+  parking: run.parking,
 });
 const vector = (o: THREE.Object3D) => o.position.toArray();
 const frame = () => {
@@ -42,6 +46,11 @@ const frame = () => {
     t = l.track,
     next = t.panels[t.cursor];
   const phase = next ? (t.u(run.head) - next.from) / (next.to - next.from) : 0;
+  if (q.get('panelEarly') === '1' && !early && run.mode === 'feeding' && run.feedAir > 0 && run.feedLeft < 3) {
+    early = true;
+    coopWire.panelCommit?.(l.k, l.stage, t.cursor);
+    console.log('PANEL EARLY RECEIPT FIXTURE ' + JSON.stringify(read()));
+  }
   if (run.mode === 'laying') {
     const frontier = t.cursor ? t.panels[t.cursor - 1]!.to : t.panels[0]!.from;
     assert(Math.abs(t.head - frontier) < 1e-7, 'frontier is not a whole panel');
@@ -68,6 +77,24 @@ const frame = () => {
       assert(JSON.stringify(read()) === JSON.stringify(before), 'cross-stage event committed track');
       restored = true;
       console.log('PANEL RESTORE VERIFIED ' + JSON.stringify(read()));
+      // A follower can save a just-accepted cursor before its presentation head catches up.
+      run.head = t.panels[t.cursor - 1]!.end - l.spec.dir * 0.2;
+      const lagged = JSON.parse(JSON.stringify(captureShared()));
+      clearTrips();
+      applyShared(lagged);
+      snapRun();
+      assert(
+        t.cursor === before.cursors[l.k] && run.rack === before.rack && Math.abs(t.u(run.head) - t.head) < 1e-7,
+        'lagging follower restore lost accepted panel',
+      );
+      clearTrips();
+      applyShared(shared);
+      snapRun();
+      assert(
+        JSON.stringify(read()) === JSON.stringify(before),
+        'restoring normal motion after lag fixture changed state',
+      );
+      console.log('PANEL LAG RESTORE VERIFIED ' + JSON.stringify(read()));
     }
   }
   if (frames++ % 10 === 0) {
@@ -85,11 +112,34 @@ const frame = () => {
         }),
     );
   }
-  if (!finished && oldMode === 'laying' && run.mode !== 'laying') {
-    finished = true;
+  if (!closed && oldMode === 'laying' && run.mode !== 'laying') {
+    closed = true;
     assert(t.head === t.panels[t.cursor - 1]!.to, 'closure frontier differs');
     if (q.get('panelRestore') === '1') assert(restored, 'restore beat missed');
     console.log('PANEL VERIFIED ' + JSON.stringify({ commits: commits + t.cursor - oldCursor, restored, ...read() }));
+    if (q.get('panelRestore') === '1') {
+      const before = read(),
+        shared = JSON.parse(JSON.stringify(captureShared()));
+      shared.trackPanelsV1.motion.head -= 1e-12;
+      clearTrips();
+      applyShared(shared);
+      snapRun();
+      assert(
+        run.parking === before.parking && run.setback === before.setback && t.cursor === before.cursors[l.k],
+        'parking restore lost offset to station rounding',
+      );
+      console.log('PANEL PARK RESTORE VERIFIED ' + JSON.stringify(read()));
+    }
+  }
+  if (early && run.mode === 'laying')
+    assert(
+      run.rack === t.panels.filter((p, i) => i >= t.cursor && p.stage === l.stage).length,
+      'late feed flight restored spent stock',
+    );
+  if (closed && !run.parking) {
+    finished = true;
+    assert(Math.abs(run.setback - 2.4) < 1e-7, 'station parking did not return to its original position');
+    console.log('PANEL PARK VERIFIED ' + JSON.stringify(read()));
   }
   oldCursor = t.cursor;
   oldRack = run.rack;
