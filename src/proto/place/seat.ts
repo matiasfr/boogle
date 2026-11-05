@@ -38,11 +38,31 @@ const requests = new Map<string, SeatRequest>();
 let grants: Record<string, SeatGrant> = {};
 const pose: Local = { x: 0, y: 0, z: 0, yaw: 0 };
 const surfacePose: Local = { x: 0, y: 0, z: 0, yaw: 0 };
+// Local diagnostics only: retain the cause before a transient release destroys its evidence.
+let lastRelease: {
+  reason: string;
+  seat: string | null;
+  request: SeatRequest | null;
+  platform: string | null;
+  distance: number | null;
+  at: number;
+} | null = null;
+function recordRelease(reason: string, distance: number | null = null) {
+  if (!sitting && !request) return;
+  lastRelease = {
+    reason,
+    seat: sitting?.id ?? null,
+    request,
+    platform: carry.on?.id ?? null,
+    distance,
+    at: performance.now(),
+  };
+}
 export const registerSeat = (seat: Seat) => seats.push(seat);
 const find = (id: unknown) => (typeof id === 'string' ? seats.find((s) => s.id === id) : undefined);
 export const seated = () => sitting !== null || request !== null;
 /** Read-only capture diagnostics for pending claims versus actual sitting. */
-export const seatState = () => ({ request, sitting: sitting?.id ?? null, grants: { ...grants } });
+export const seatState = () => ({ request, sitting: sitting?.id ?? null, grants: { ...grants }, lastRelease });
 const world = (s: Seat, exit = false, interpolated = false) => {
   const local = exit ? s.exit : s.at;
   if (!s.platform) return Object.assign(pose, local);
@@ -79,14 +99,15 @@ export function sitDown(s = freeSeat()) {
   if (!net.room || net.state !== 'live') occupy(s);
 }
 function occupy(s: Seat) {
-  if (!me.body || !reachable(s)) return standUp();
+  if (!me.body || !reachable(s)) return standUp('unreachable grant');
   sitting = s;
   const p = world(s);
   teleport(me.body, p.x, p.y, p.z);
   me.yaw = p.yaw;
   me.body.velocity.set(carry.x, carry.y, carry.z);
 }
-export function standUp() {
+export function standUp(reason = 'stand input') {
+  recordRelease(reason);
   const s = sitting;
   sitting = null;
   request = null;
@@ -155,7 +176,7 @@ onPeerRemoved((r) => {
   for (const id of Object.keys(grants)) if (grants[id]?.peer === r.peer) delete grants[id];
 });
 const reset = () => {
-  standUp();
+  standUp('network state');
   requests.clear();
   grants = {};
 };
@@ -164,14 +185,14 @@ onNetState((state, prev) => {
 });
 onRoomReady((room) =>
   room.onLeadChange(() => {
-    standUp();
+    standUp('lead change');
   }),
 );
 onPreStep(
   () => {
     if (request && me.jumpQueued > 0) {
       me.jumpQueued = 0;
-      standUp();
+      standUp('jump input');
       return;
     }
     if (request && !sitting && net.myPeer) {
@@ -185,7 +206,10 @@ onPreStep(
       b = me.body;
     if (!s || !b) return;
     const p = world(s);
-    if (!s.available() || Math.hypot(p.x - b.position.x, p.y - b.position.y, p.z - b.position.z) > 3) {
+    const available = s.available();
+    const distance = Math.hypot(p.x - b.position.x, p.y - b.position.y, p.z - b.position.z);
+    if (!available || distance > 3) {
+      recordRelease(available ? 'anchor distance' : 'seat unavailable', distance);
       sitting = null;
       request = null;
       return;
