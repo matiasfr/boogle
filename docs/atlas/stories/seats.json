@@ -1,0 +1,23 @@
+{
+  "id": "seats",
+  "title": "Two friends find a seat",
+  "kind": "host",
+  "order": 81,
+  "steps": [
+    {
+      "go": [["you.input", "you.features", "lane:owner", "fr.netplay"]],
+      "text": "Interact requests an authored chair with a fresh ticket. The avatar waits for a grant instead of snapping into a contested seat.",
+      "cite": [{ "presence": "placeSeatRequest" }, { "file": "src/proto/place/seat.ts" }]
+    },
+    {
+      "go": [["fr.netplay", "lane:host", "you.features"]],
+      "text": "The lead keeps existing occupants and assigns each remaining chair once. Two requests for the same chair may receive different chairs in that group.",
+      "cite": [{ "hostField": "placeSeatGrants" }]
+    },
+    {
+      "go": [["you.features", "lane:owner", "fr.screen"]],
+      "text": "Movement remains Owner-driven in the platform frame. Presence supplies the seated pose; Jump or Interact moves the rider to the authored exit and releases the claim. Seats are never saved.",
+      "cite": [{ "presence": "placeSeatPose" }, { "file": "src/proto/place/seat.ts" }]
+    }
+  ]
+}

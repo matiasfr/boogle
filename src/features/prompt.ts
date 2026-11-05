@@ -19,6 +19,7 @@ const ui = {
   root: null as HTMLElement | null,
   html: '',
   id: '',
+  since: 0,
   show: null as ((html: string) => void) | null,
   showId: '',
 };
@@ -61,11 +62,17 @@ spawn({
     }
     if (id !== ui.id) {
       ui.id = id;
+      ui.since = performance.now();
       inner.classList.remove('pop');
       void inner.offsetWidth; // restart the pop-in animation
       inner.classList.add('pop');
       uiSound('pop');
     }
+    root.style.opacity = String(
+      t.fadeAfter === undefined
+        ? 1
+        : Math.max(0, Math.min(1, 1 - (performance.now() - ui.since - t.fadeAfter * 1000) / 350)),
+    );
     const { x, y, behind } = toScreen(t.at, onScreen);
     const visible = !behind && x > 0 && x < view.w && y > 0 && y < view.h;
     root.hidden = !visible;

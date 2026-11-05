@@ -77,6 +77,8 @@ These are track-construction systems, not passenger locomotives. They require pr
 
 ## 6. Snap sitting to a few proper places
 
+**Owner approval, 5 November:** Option A is approved for fixed train seats, then the track layer only if its deck has safe space; station benches coordinate with `solo-clips-looks`. Movement stays Owner-driven and contested seats must be exclusive.
+
 **Problem / today [C].** Sitting works, but positions and pose feel improvised. [`seat.ts`](../../src/proto/place/seat.ts) holds the player's current deck-local point, clamps it inboard and drives the existing seated clip; Interact or Jump stands up. [`verbs.ts`](../../src/proto/place/verbs.ts) supplies Sit/Stand prompts. There is no authored seat selection.
 
 **Reference [S].** Sea of Thieves added prompted sitting at particular ship/world locations with a view camera ([Rare's 2.4.0 notes](https://www.seaofthieves.com/release-notes/2.4.0); indexed text read, direct fetch returned 403). This supports chosen places to enjoy a view, not a claim about Rare's animation implementation.
@@ -88,6 +90,8 @@ These are track-construction systems, not passenger locomotives. They require pr
 **Tap:** Start with fixed places and one pose? **A — yes (recommended)** / B — anywhere / C — full transitions.
 
 ## 7. Let the finished forge become a place to enter
+
+**Owner approval, 5 November:** Option A is approved as a free completion reward with one doorway, safe floor, guarded furnace and rack-facing seat. Preserve production, pickup and freight paths; verify entry, exit, cutaways and two-player passage.
 
 **Problem / today [C].** Finishing a liked building should reward being there. [`forge.ts`](../../src/proto/place/forge.ts) builds frame/walls by hand, adds its roof from freight and improves rail output; wall collision closes its shell. [`rooms.ts`](../../src/proto/place/rooms.ts) already provides enterable town rooms and camera cutaways, but the forge is separate.
 

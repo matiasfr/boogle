@@ -22,6 +22,7 @@ import { LOOK, STEEL, boardMaterial } from './look.ts';
 import { kitBatch } from './look-kit.ts';
 import { RAIL_SIZE, dropSet, dustRing, send } from './pieces.ts';
 import { addFoot, housePlan, hullBodies, outOf } from './sites.ts';
+import { makeWorkshop, WORKSHOP_DOOR } from './workshop.ts';
 
 const WOOD = '#a9794c',
   WOOD2 = '#8a6236',
@@ -45,12 +46,24 @@ const plan = housePlan({
   wall: WOOD,
   post: WOOD2,
   roof: ROOF,
-  door: { w: W - 5.4, rows: 3 },
+  door: WORKSHOP_DOOR,
   closed: false,
   chimney: { dx: -W / 2 + 1.4, dz: -D / 2 + 1.2, n: 8, a: BRICK, b: '#8a4032' },
   poleTop: HIGH + 3,
 });
 const Y = plan.y;
+// Keep the original furnace/output opening beside the new walk-in door. Trim only the low front boards;
+// piece counts and construction bills stay identical, and the furnace/rail flight remains at its original position.
+for (let k = 0; k < plan.WALLS; k++) {
+  const b = plan.pieces[k]!;
+  if (Math.abs(b.z - (Z + D / 2)) > 0.01) continue;
+  if (k < plan.FRAME && Math.abs(b.x - X) < 0.01) b.x = X + 1.65;
+  else if (k >= plan.FRAME && b.x > X && b.local.elements[13]! < 2.9) {
+    const right = b.x + b.local.elements[0]! / 2;
+    b.local.elements[0] = right - (X + 1.5);
+    b.x = (right + X + 1.5) / 2;
+  }
+}
 addFoot(X, Z, 0, plan.hw, plan.hd);
 /** Bare foundations and poles, from the start. */
 const scaffold = makeSet(plan.scaffold);
@@ -265,6 +278,7 @@ export const forge = {
   lit: false,
 };
 export const roofed = () => forge.crates >= TUNE.roofCrates;
+const workshop = makeWorkshop(plan, set, () => roofed() && forge.lit && !set.busy());
 /** Where the crane lowers the next crate: into the part it builds. */
 export function nextDrop(out: THREE.Vector3) {
   const k = ORDER[Math.min(TOTAL - 1, piecesFor(HAND_LOGS, forge.crates))]!;
@@ -299,8 +313,9 @@ export function crateIn() {
 export function snapForge() {
   const shown = piecesFor(forge.logs, forge.crates);
   ORDER.forEach((k, n) => set.snap(k, n < shown));
+  workshop.snap();
   set.mesh.visible = true;
-  wallsSolid(shown >= FRAME);
+  wallsSolid(shown >= FRAME && !roofed());
   forge.lit = forge.logs >= HAND_LOGS;
   mouth.visible = forge.lit;
   poles(!roofed());
@@ -326,6 +341,8 @@ sharedSlice('forge', {
 export function updateForge(dt: number, onLit: () => void) {
   set.update(dt);
   updateCrane(dt);
+  if (roofed() && !set.busy()) wallsSolid(false);
+  workshop.update(dt);
   if (!forge.lit && forge.logs >= HAND_LOGS && !set.busy()) {
     forge.lit = true;
     mouth.visible = true;

@@ -37,7 +37,7 @@ import { L1, allHeaps, hub, lines, machine } from './lines.ts';
 import { send } from './pieces.ts';
 import { SCOPE_AT, boilerAt, lookThrough } from './props.ts';
 import { activeFrame, mark, run, wake } from './run.ts';
-import { seated, sitDown, standUp } from './seat.ts';
+import { freeSeat, seated, sitDown, standUp } from './seat.ts';
 import { SHORE_SAMPLES } from './terrain.ts';
 
 const SHELF_AT = { x: toWorld(SHELF.x), z: SHELF.z };
@@ -216,7 +216,7 @@ registerInteractable(() => {
   // Sitting, the one thing the button does is stand you up.
   if (seated()) {
     sitAt.set(p.x, p.y + 1.1, p.z);
-    return [{ id: 'place-stand', verb: 'Stand up', at: sitAt, r: 100, run: standUp }];
+    return [{ id: 'place-stand', verb: 'Stand up', at: sitAt, r: 100, fadeAfter: 3, run: standUp }];
   }
   // In the water, or down on a shore or a river bank well off every path: never stuck with no way back.
   if (me.swimming || (p.y < VILLAGE.y - 6 && offThePath(p.x, p.z))) {
@@ -356,9 +356,10 @@ registerInteractable(() => {
   if (Math.hypot(p.x - SCOPE_AT.x, p.z - SCOPE_AT.z) < 3.4)
     (out ??= []).push({ id: 'place-scope', verb: 'Look through it', at: SCOPE_AT, run: lookThrough });
   // On a deck, with nothing else to press for: sit. Far down the pick's order (r), so anything nearer that acts wins.
-  if (onDeck() && !out?.some((t) => t.run)) {
+  const seat = freeSeat();
+  if (seat && !out?.some((t) => t.run)) {
     sitAt.set(p.x, p.y + 1.1, p.z);
-    (out ??= []).push({ id: 'place-sit', verb: 'Sit', at: sitAt, r: -100, run: sitDown });
+    (out ??= []).push({ id: 'place-sit', verb: 'Sit', at: sitAt, r: -100, run: () => sitDown(seat) });
   }
   return out ?? NO_TARGETS;
 });

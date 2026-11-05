@@ -76,7 +76,7 @@ export const lines: LineRun[] = LINKS.map((spec, k) => {
     stations: spec.stations.map((q) => buildStation(q, frameBesideLine(q, line, spec.dir))),
     stage: 0,
     open: false,
-    train: buildTrain(line, spec.stops),
+    train: buildTrain(line, spec.stops, spec.id),
     pile: heap(pileAt.x, pileAt.z, 3, H(pileAt.x, pileAt.z)),
     smoke: campSmoke(k),
     madeAt: 0,

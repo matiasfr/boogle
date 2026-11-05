@@ -61,6 +61,7 @@ export type Interactable = InteractTarget & {
   at: THREE.Vector3;
   click?: boolean;
   show?: (html: string) => void; // draws the prompt itself (the Boogler's name tag); src/features/prompt.ts
+  fadeAfter?: number; // seconds before the floating hint fades; the interaction stays available
 };
 
 const USE_VERB: Record<string, string> = { seeds: 'Sprout' };
