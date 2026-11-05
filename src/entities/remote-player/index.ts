@@ -25,14 +25,19 @@ import {
 import { createSnaps } from '../../netplay/snaps.ts';
 
 type RideSample = { l: number[]; r: number };
-/** A remote standing on a shared platform: their pose in its frame (presence key `riding`). on: drawn on our copy of
- * it this frame (false: the platform is missing here, or our copy is somewhere else, so world presence it is). */
+/** A remote standing on a shared platform. Visual attachment follows fresh Owner intent, not train agreement. */
 type Ride = {
   id: string;
   snaps: ReturnType<typeof createSnaps<RideSample>>;
   on: boolean;
   leaving: boolean; // they stopped sending `riding`: blending back to world presence
   w: number; // the blend, 0 world presence .. 1 on the deck
+  bodyOn: boolean; // preserve the collision proxy's existing world-distance guard
+  bodyW: number;
+  lastSeen: number; // existing presence sample time, in this page's clock
+  drawn: boolean;
+  blendLeft: number;
+  drawOffset: Local; // continuity from the last displayed pose when attachment changes
   world: THREE.Vector3; // their world presence pose this frame
   worldYaw: number;
   l: Local;
@@ -74,11 +79,11 @@ onPeerRemoved(leave);
 // corner), so a rider on another tab would slide about on it. While you stand on a shared platform
 // (src/physics/platforms.ts) you also send `riding`: [platform id, x, y, z, yaw] in its frame; other tabs smooth that
 // and draw you on their own copy of the platform. Missing key: not riding. Old tabs ignore it. Serves DESIGN.md 4.
-// Boarding and leaving blend between world and deck space over RIDE_BLEND_S, so the switch never pops. Our copy of
-// the deck is trusted while the rider's world presence is near it: within RIDE_TRUST plus the distance the deck covers
-// in the presence delay (presence trails a moving deck by that much, so the check is relative to the deck).
+// Presentation follows fresh riding intent even when local train copies disagree. Missing/expired state blends
+// back to world presence. The collision proxy retains its prior distance guard; this is not a physics correction.
 const RIDE_TRUST = 1.5; // m
 const RIDE_BLEND_S = 0.2;
+const RIDE_MAX_AGE_MS = 1000;
 const mine: Local = { x: 0, y: 0, z: 0, yaw: 0 };
 addPresenceField('riding', () => {
   const p = carry.on,
@@ -104,19 +109,26 @@ onRemotePresence((r, pr, time) => {
       on: false,
       leaving: false,
       w: 0,
+      bodyOn: false,
+      bodyW: 0,
+      lastSeen: time,
+      drawn: false,
+      blendLeft: 0,
+      drawOffset: { x: 0, y: 0, z: 0, yaw: 0 },
       world: new THREE.Vector3(),
       worldYaw: 0,
       l: { x: 0, y: 0, z: 0, yaw: 0 },
       prev: { x: 0, y: 0, z: 0, yaw: NaN },
     };
   r.ride.leaving = false;
+  r.ride.lastSeen = time;
   r.ride.snaps.push(time, { l: [x!, y!, z!], r: yaw! });
 });
 const rideAt: Local = { x: 0, y: 0, z: 0, yaw: 0 },
   rideV = new THREE.Vector3();
 // Moves r.target and r.yaw (world presence, from samplePose) onto our copy of the platform r rides, by the blend.
-// Before the step it keeps the world pose and decides whether our copy is trusted; in the frame hook (interpolated:
-// the deck where its mesh is drawn this frame) it advances the blend. Returns whether r is fully on the deck.
+// Before the step it keeps the existing collision-proxy behavior. In update it independently blends the avatar
+// onto the drawn deck. Returns whether the avatar is fully attached (for deck-relative walking animation).
 function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
   const ride = r.ride;
   if (!ride) return false;
@@ -136,24 +148,42 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
     if (!interpolated) {
       const v = p.body.velocity;
       const trust = RIDE_TRUST + (Math.hypot(v.x, v.y, v.z) * INTERP_MS) / 1000;
-      ride.on = ride.world.distanceTo(rideV.set(rideAt.x, rideAt.y, rideAt.z)) < trust;
+      ride.bodyOn = ride.world.distanceTo(rideV.set(rideAt.x, rideAt.y, rideAt.z)) < trust;
     }
-  } else ride.on = false;
-  if (interpolated) {
-    const to = ride.on && !ride.leaving ? 1 : 0;
-    const step = dt / RIDE_BLEND_S;
-    ride.w = to > ride.w ? Math.min(to, ride.w + step) : Math.max(to, ride.w - step);
-    if (ride.leaving && ride.w === 0) r.ride = null;
+  } else if (!interpolated) ride.bodyOn = false;
+  if (!interpolated) {
+    if (!ride.bodyOn || ride.bodyW === 0) return false; // samplePose already supplied world presence
+    r.target.set(
+      lerp(ride.world.x, rideAt.x, ride.bodyW),
+      lerp(ride.world.y, rideAt.y, ride.bodyW),
+      lerp(ride.world.z, rideAt.z, ride.bodyW),
+    );
+    r.yaw = angleLerp(ride.worldYaw, rideAt.yaw, ride.bodyW);
+    return ride.bodyW === 1;
   }
-  if (!ride.on || ride.w === 0) {
-    r.target.copy(ride.world);
-    r.yaw = ride.worldYaw;
-    return false;
+  const step = dt / RIDE_BLEND_S;
+  ride.bodyW = ride.bodyOn && !ride.leaving ? Math.min(1, ride.bodyW + step) : Math.max(0, ride.bodyW - step);
+  const on = !!p && !!s && !ride.leaving && rt + INTERP_MS - ride.lastSeen <= RIDE_MAX_AGE_MS;
+  const at = on ? rideAt : ride.world;
+  const yaw = on ? rideAt.yaw : ride.worldYaw;
+  if (!ride.drawn || on !== ride.on) {
+    const shown = r.avatar;
+    ride.drawOffset.x = (shown?.position.x ?? ride.world.x) - at.x;
+    ride.drawOffset.y = (shown?.position.y ?? ride.world.y) - at.y;
+    ride.drawOffset.z = (shown?.position.z ?? ride.world.z) - at.z;
+    ride.drawOffset.yaw = angleLerp(yaw, shown?.rotation.y ?? ride.worldYaw, 1) - yaw;
+    ride.blendLeft = RIDE_BLEND_S;
+    ride.drawn = true;
   }
-  const w = ride.w;
-  r.target.set(lerp(ride.world.x, rideAt.x, w), lerp(ride.world.y, rideAt.y, w), lerp(ride.world.z, rideAt.z, w));
-  r.yaw = angleLerp(ride.worldYaw, rideAt.yaw, w);
-  return w === 1;
+  ride.on = on;
+  ride.blendLeft = Math.max(0, ride.blendLeft - dt);
+  const u = ride.blendLeft / RIDE_BLEND_S;
+  const ease = u * u * (3 - 2 * u);
+  ride.w = on ? 1 - ease : ease;
+  r.target.set(at.x + ride.drawOffset.x * ease, at.y + ride.drawOffset.y * ease, at.z + ride.drawOffset.z * ease);
+  r.yaw = yaw + ride.drawOffset.yaw * ease;
+  if (ride.leaving && ride.bodyW === 0 && ride.blendLeft === 0) r.ride = null;
+  return on && ride.blendLeft === 0;
 }
 
 // ---------------------------------------------------------------- the entity
