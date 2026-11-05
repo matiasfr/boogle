@@ -56,6 +56,10 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 - [ ] Glide on L1 or jump: open, because jump clashes with double jump.
 - [ ] Device cinematic goes only to whoever takes it, and suggests you can glide to the island when you can't. Decide whether that's right.
 
+### New water
+
+- [ ] Swimming: when waves roll over the character, bits of the falling animation seem to play as it bobs (owner, 4 November, small nit). Not investigated yet; check whether surface bobbing briefly counts as airborne.
+
 ### Controls and feedback
 
 - [x] Ping back on its own button beside drop.
