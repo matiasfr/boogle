@@ -95,8 +95,6 @@ export default {
     const errs = [...worldErrors.get(host)!, ...worldErrors.get(client)!];
     const shots = [await A.still('Alice'), await B.still('Bob')];
     t.check('no [world] errors in either console', !errs.length, [...errs.slice(0, 2), ...shots].join(' | '));
-    // Last, since the runner reads these after this returns. The CDN just after a deploy can 503 a file for a moment (run
-    // 41425998584: the splash art). A file the game needs fails the checks above; lib.ts prints which file it was.
-    for (const g of [A, B]) g.consoleErrors = g.consoleErrors.filter((e: string) => !e.includes('status of 503'));
+    // Keep console errors strict: an HTTP 503 alone does not prove that a retry recovered that resource.
   },
 };

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { createService, loadConfig } from '../../server/src/server.ts';
 import { freePort, sleep, type Stack } from '../look/lib.ts';
+import { bootFaultProxy } from './boot-fault.ts';
 
 export async function startProduction(dataRoot: string, { harness = false } = {}): Promise<Stack> {
   const dataDir = fs.mkdtempSync(path.join(dataRoot, 'boogle-cold-'));
@@ -41,14 +42,19 @@ export async function startProduction(dataRoot: string, { harness = false } = {}
     { env, stdio: 'ignore' },
   );
   const base = `http://127.0.0.1:${http}/`;
+  const fault =
+    process.env.BOOGLE_BOOT_FAULTS === '1'
+      ? await bootFaultProxy(base, dist, path.join(dataDir, 'boot-faults.json'))
+      : undefined;
   const close = async () => {
+    await fault?.close();
     preview.kill();
     await server.close({ save: false });
     // Keep the built files as evidence. No owner's saves were loaded.
   };
   for (let i = 0; i < 100; i++) {
     try {
-      if ((await fetch(base)).ok) return { base, dataDir: rooms, close };
+      if ((await fetch(base)).ok) return { base: fault?.base ?? base, dataDir: rooms, close };
     } catch {
       /* starting */
     }
