@@ -21,6 +21,8 @@ export type WarpHandle = {
   step: (n: number) => Promise<void>;
   /** Stop page time. Socket traffic and the server still run on wall time. */
   pause: () => void;
+  /** Harness I/O barrier while the page clock is stopped; never advances game time. */
+  settle: (milliseconds: number) => Promise<void>;
   /** From a pause: fixed 60 Hz frames for this long, mostly undrawn, then pause again. `step` draws one to look at. */
   run: (seconds: number) => Promise<void>;
   /** Draw one frame in this many while warped. */
@@ -135,6 +137,9 @@ export function installWarp() {
     frames: 0,
     skipped: 0,
     skip: false,
+    settle(milliseconds) {
+      return new Promise<void>((resolve) => real.setTimeout(resolve, milliseconds));
+    },
     pause() {
       handle.speed = 0;
       handle.skip = false;

@@ -6,6 +6,13 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { Operation, Request } from './evidence.ts';
 
+// Frontend-only queue: each reload group still uses the trusted broker's existing look operation.
+if (process.argv[2] === 'shots') {
+  process.argv.splice(2, 1);
+  await import(pathToFileURL(path.resolve('dev/look/shots.ts')).href);
+  process.exit(process.exitCode ?? 0);
+}
+
 // run.ts also copies this client to .look/see-client.ts, so --base-ref can target a build predating the broker.
 // Load that build's server inside the worker sandbox, never in the trusted broker process.
 const { startStack, sleep } = (await import(

@@ -152,6 +152,27 @@ async function serve() {
     switch (command) {
       case 'eval':
         return g.eval(a.join(' '));
+      case 'capture': {
+        // Reuse the persistent page for a shot-list action and return its lossless evidence transport.
+        const lines: string[] = [];
+        const log = (message: import('playwright').ConsoleMessage) => {
+          if (message.text().startsWith('SHOTS ')) lines.push(message.text());
+        };
+        g.page.on('console', log);
+        try {
+          const body = stripTypeScriptTypes(fs.readFileSync(path.resolve(a[0]!), 'utf8')).replace(
+            /^export \{\};.*$/m,
+            '',
+          );
+          await g.eval(body);
+          const errors = g.healthErrors();
+          if (errors.length) throw new Error(errors.join('\n'));
+          return lines.join('\n');
+        } finally {
+          g.page.off('console', log);
+          await pause();
+        }
+      }
       case 'step': {
         const n = seconds(a[0]);
         await step(n);
@@ -230,7 +251,7 @@ async function serve() {
   }
   try {
     const at = option('--at');
-    const save = at ? findSave(at) : undefined;
+    const save = at ? findSave(at, option('--saves')) : undefined;
     const query = new URLSearchParams(save?.pageQuery);
     for (const [key, value] of new URLSearchParams(option('--query'))) query.set(key, value);
     if (save) query.delete('fresh');
@@ -239,13 +260,18 @@ async function serve() {
     game = await Game.open(browser, stack, {
       out: path.join(dir, 'session'),
       hud: true,
-      size: [1180, 820],
+      size: option('--size')?.split('x').map(Number) ?? [1180, 820],
       room: option('--room') ?? save?.room,
       query: query.toString(),
       warp: true,
       init: `${save ? SEED(save) : ''}\n(${installObserver.toString()})(${JSON.stringify(IGNORE_TEXT)});`,
     });
     if (save) await game.eval(POSE_AT(save));
+    const setup = option('--eval');
+    if (setup) await game.eval(stripTypeScriptTypes(fs.readFileSync(setup, 'utf8')).replace(/^export \{\};.*$/m, ''));
+    const warm = Number(option('--warm') ?? 0);
+    if (!Number.isFinite(warm) || warm < 0 || warm > 60) throw new Error('warm must be 0–60 seconds');
+    if (warm) await game.warp({ seconds: warm });
     await pause();
     await step(1 / 60);
     // The handler owns request failures and writes the error response itself.

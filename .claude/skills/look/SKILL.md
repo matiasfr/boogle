@@ -23,6 +23,19 @@ Read capture-health for every capture, then only the details used by the task. A
 - Producing clips or video: [video](references/video.md).
 
 ## Loop for a feature
+
+For repeated still comparisons use `node .look/see-client.ts shots dev/look/beats/dev-looks.ts --name looks`
+(outside a brokered job: `node dev/look/shots.ts ...`, which uses the persistent local session). An older copied
+client can use `node dev/look/shots.ts ...` with the existing broker; no broker restart is needed. A small TS
+default export or JSON list names beats (`at`/`saves` or authored `setup`), cameras and named variants. The example
+has town play distance, Buddy close and shore, three Dev Looks and a six-step bloom-strength bracket. Route,
+MSAA, viewport and resolution groups load once each; other settings apply live with effective-value readback.
+Every variant warms first. Frozen captures require exact repeat pixels, including switching away and back,
+and fresh scene draws. Boards use one native-pixel column, large labels and lossless PNG; open the boards and
+cells. `--baseline` measures the same list with one old look lifecycle per cell on the shared Mac GPU.
+See [frozen-shot-lists](../../../docs/research/frozen-shot-lists.md) for the schema rationale and limits.
+Frozen frames are not evidence of motion, GPU cost, load stalls or feel. Unmapped reload-only settings and
+temporal-history drift fail explicitly. The broker evidence folder includes `shots/` and `shot-list.json`.
 Name the visual question, set up the action and view, capture, inspect and fix what is off (up to three rounds per docs/agents/verification.md). Include a concrete observation and any unverified behavior in the handoff. Only add a scenario when a sync contract needs one; visual changes use targeted evidence rather than another test suite.
 
 ## Asset motion review
