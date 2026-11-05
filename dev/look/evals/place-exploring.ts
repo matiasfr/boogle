@@ -7,6 +7,7 @@ import { scene } from '../../../src/render/scene.ts';
 import { job } from '../../../src/proto/place/job.ts';
 import { ORIGIN } from '../../../src/proto/place/layout.ts';
 import { coop } from '../../../src/proto/place/coop.ts';
+import { COOP_IDENTITY } from '../../../src/proto/place/coop-identity.ts';
 import { techApi, snapTech } from '../../../src/proto/place/tech.ts';
 import { snapHooks } from '../../../src/proto/place/run.ts';
 import { giftState, openCrate } from '../../../src/proto/place/gifts.ts';
@@ -69,7 +70,7 @@ export async function explore(who: string | null) {
     await until('co-op partner ready', () => coop.debug().peers.length === 1 && net.room);
     net.room!.onMessage((raw) => {
       const m = raw as { t?: unknown; k?: unknown; what?: unknown };
-      if (m?.t === 'placeCoop' && m.k === 'tech' && typeof m.what === 'string') received.add(m.what);
+      if (m?.t === COOP_IDENTITY && m.k === 'tech' && typeof m.what === 'string') received.add(m.what);
     });
     const barrier = async () => {
       stage++;

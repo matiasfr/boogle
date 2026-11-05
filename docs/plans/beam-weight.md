@@ -1,5 +1,37 @@
 # Great beam: weight and help
 
+## Capability repair — 4 November, evening replay
+
+`4d726713` moved the whole-place identity to `placeCoopCargo1` while both beam consumers still required `placeCoopTrees1`. `coop-identity.ts` now owns the versioned identity and `currentCoopPeer`: a nonnegative safe-integer arrival tick under the current name. Publishing, message dispatch, election, great-beam help and optional-beam grips use it. Snapshot/harvest generation checks and all other grip validation stay unchanged. A repository-wide source search found no other stale runtime capability consumer; corrected stale current-message/capability checks in the existing co-op, tree, great-carry and exploration look fixtures. Retired literals remain only in deliberate exclusion assertions and historical text.
+
+The cheapest regression is in those existing fixtures: current publication must enable actual help/carry, malformed and retired capabilities must fail, and claimed old ride/beam presence must not affect the current railway. No new test framework, unit test or scenario.
+
+### Evidence
+
+All links below are broker manifests with logs, tested tree and artifact paths. No game source changed between the successful beam runs. Later fixture-only edits synchronized the optional-beam assertions; its final run follows those edits. The final documentation records the results afterward.
+
+| Check | Result and manifest |
+| --- | --- |
+| Real solo save source | [Full solo bot](../../.look/evidence/1793838630524-57659/evidence.json): finished every expected beat; no page/graphics errors. Optional crystal/cooperation marks absent. Read report and opened `run/end-still.png`. |
+| Great beam, assisted | [Pair](../../.look/evidence/1793839041395-61624/evidence.json): real Help carry, 15 m in 3.250 s, 4.999 m/s, no lost assistance; Let go, rejoin and separation pass. Real-time capture curves settle at 5.0 m/s. |
+| Great beam, solo | [Solo](../../.look/evidence/1793839151148-62534/evidence.json): same 15 m in 7.250 s; repeated 2.20 m/s samples, endpoint 2.131 m/s while stopping. No sprint or duplicate cargo. |
+| Helper departure | [Great-beam recovery](../../.look/evidence/1793839239852-63926/evidence.json): real transport pause/removal/rejoin; owner retains exactly one beam, helper returns without stale help, owner walks to T3, accepted delivery opens the crossing. |
+| Optional long beam | [Long-beam recovery](../../.look/evidence/1793839425969-69622/evidence.json): lone grip does not move pose; both carry about 20 m without sprint, Let go/regrip works, helper departure preserves the surviving grip and midpoint within 0.5 m, Lift remains usable and both recover. |
+| Compatibility regression | [Existing tree fixture](../../.look/evidence/1793839362415-67777/evidence.json): invalid/retired capability exclusion, current peers, duplicate receipts, same-generation snapshot reservation, conservation and old messages all pass. This separate protocol fixture stages tree state; the beam proof does not. |
+| Trusted scenario | [world-inputs](../../.look/evidence/1793839353856-67332/evidence.json): all assertions pass, no graphics errors. |
+
+The beam runs use `saved=1`: the solo bot's `objective: Fell the great tree.` and `path opened` saves were copied to `.look/beam-saves`, changing only the storage key from solo to `boogle-place-coop-v2:look-two` and query to co-op. Their gameplay payload and recorded pose were preserved. The broker restores player 1; player 2 joins through ordinary snapshots. For the great beam, player 2 walks the authored opening path. All subsequent approach, chopping, pickup, carrying, release, separation and delivery use real movement/interaction inputs, with no stage skip, inventory assignment or recovery teleport.
+
+Opened pair and both recovery runs' two peer stills, pair/optional motion sheets, pair curves and six consecutive frames extracted from its real-time video at 1 s. One great beam spans two shoulders; helper shows Let go. Optional beam is shared at both ends with Let go on both clients after recovery. Recovery stills show the crossing banner; assertions establish delivery. Also opened the solo still and compatibility peer stills (foliage obscures the latter; they establish no visual claim about compatibility).
+
+Failures retained: [first great-beam attempt](../../.look/evidence/1793838978834-60673/evidence.json) failed before pickup when player 2's pathfinder tried a cliff shortcut; switched to the authored opening path. [First optional attempt](../../.look/evidence/1793839152280-62617/evidence.json) acknowledged the end-position barrier too early. [Second optional attempt](../../.look/evidence/1793839352528-67007/evidence.json) let player 2 release before player 1 checked its carry. Both fixture races were fixed; third optional run passed. No gameplay workaround or timing/bill/copy change.
+
+`npm run check` on Node 26.13.0 passed lint, types, **297/297 tests**, registry, level checks, assets and production build. All changed files were passed to `npx prettier --write`. No `check:full` trigger. No load test outside the required broker. Source diff reviewed; no lockstep math or state ownership changed. Real-time feel/smoothness, sound and devices remain for the owner. Warped setup showed transient player-2 clock deficits around 1.2 s; intentional ten-second disconnects produced 8.4–9.6 s world-tick deficits, caught up at the end. These are not performance measurements.
+
+**Continuous route:** yes, T3 should exercise co-carry. Its current alternating whole-bill worker must gain coordinated helper approach, grip, follow/release and accepted-deposit barriers; adding only a split label would still silently run solo. That is larger than this repair, so the executable route is unchanged and was not rerun. The focused saved route covers tonight's bug. The optional toy should remain outside the required progression route.
+
+**Departures:** the required `npm run inflight` was run before inspecting its implementation and fetched origin, violating the local-network-only restriction; no further nonlocal requests, push or ship. Initial tools/check used shell Node 24; final checks and later clients used installed Node 26. The audit file named in the brief is absent from this checkout; source, history and actual runs supplied the evidence. Work stayed on `codex/beam-help-capability`; stop for the owner's playtest.
+
 ## Goal and authorization
 
 Make Station 3's great beam a short, perceptibly heavy solo delivery that becomes plainly quicker with a partner. Serves DESIGN.md 4, **Cooperation is automatic, not negotiated**, 8, **Designed for drop-in, drop-out**, and 11, **Show, don't tell**. The owner explicitly authorized heavier/further tuning and the smallest co-carry implementation if absent; this plan needs no additional scope approval.
