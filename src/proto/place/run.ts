@@ -13,7 +13,7 @@ import { playMark, protoMark, type PlayData } from '../mark.ts';
 import { fanfare, knock } from '../minis/common.ts';
 import { clearMoments, firstPathShow, headShow, pierShow, shakeView, wakeShow } from './celebrate.ts';
 import { back, putDownBig } from './chop.ts';
-import { coop } from './coop.ts';
+import { coop, coopWire } from './coop.ts';
 import { cart, drawRack, moveRack, rack, setDepotFrame, snapCart } from './depot.ts';
 import { cheerAround, pourOut, setCamp, setCommuters, setPushers, setRiders } from './folk.ts';
 import { forge, logIn, nextPiece, snapForge } from './forge.ts';
@@ -21,7 +21,7 @@ import { deliver } from './gifts.ts';
 import { H } from './land.ts';
 import { lampRow, snapLamps } from './lamps.ts';
 import { grantChest, grantMultiAxe, snapChest } from './ladder.ts';
-import { job, save, sharedSlice, num } from './job.ts';
+import { job, save, sharedSlice, num, count } from './job.ts';
 import {
   FAR,
   FORGE_BILLS,
@@ -61,6 +61,10 @@ export const run = {
   departT: 2,
 };
 const headAtTurntable = () => -machine.GAP / 2 - machine.F; // on line 1's far side of s=0, the machine centred on the disc
+// Q1 has only seven metres of initial rail. Hold the bodies on that stub while the
+// head/gantry builds the first panels, then travel continuously at the full setback.
+const laySetback = (l: LineRun, head: number) =>
+  l === L2 ? Math.min(machine.F, 2.4 + Math.max(0, head - STUB.east)) : machine.F;
 
 const scratch = new THREE.Vector3(),
   bundleRot = new THREE.Quaternion();
@@ -192,21 +196,110 @@ function stepLay(dt: number) {
   run.departT = Math.min(2, nextT);
   run.head += dir * step;
   job.score.metres += step;
-  l.track.layTo(l.track.u(run.head));
-  machine.at(line, run.head, dir);
+  machine.at(line, run.head, dir, laySetback(l, run.head));
   machine.moved(step);
   const span = (to - run.stretch0) * dir,
     done = span > 0 ? ((run.head - run.stretch0) * dir) / span : 1;
-  const cradleNow = Math.ceil(run.cradle0 * (1 - done)),
-    rackNow = l === L1 ? rackForLine1(run.head) : Math.ceil(run.rack0 * (1 - done));
+  const cradleNow = Math.ceil(run.cradle0 * (1 - done));
   if (cradleNow !== run.cradle) machine.setCradle((run.cradle = cradleNow));
-  if (rackNow !== run.rack) machine.setRack((run.rack = rackNow));
+  if (!coop.follower()) {
+    let next = l.track.panels[l.track.cursor];
+    while (next && next.stage === l.stage && next.to <= l.track.u(run.head) + 1e-7) {
+      commitPanel(l);
+      next = l.track.panels[l.track.cursor];
+    }
+  }
   if (left - step <= 0.001 && !coop.follower()) finishStretch(l);
 }
 /** Line 1's rails come off the machine's own rack: it's empty when the line is done. */
-const rackForLine1 = (head: number) => {
-  const total = STUB.camp - STUB.village;
-  return Math.ceil(TUNE.rackStart * Math.max(0, (head - STUB.village) / total));
+const rackForLine1 = (head: number) =>
+  TUNE.rackStart - L1.track.panels.filter((p) => p.to <= L1.track.u(head) + 1e-7).length;
+const panelRackCount = (l: LineRun) =>
+  l === L1
+    ? TUNE.rackStart - l.track.cursor
+    : l.track.panels.filter((p, i) => p.stage === l.stage && i >= l.track.cursor).length;
+const validPanelCursor = (l: LineRun, cursor: unknown): cursor is number =>
+  count(cursor, l.track.panels.length) &&
+  cursor >= l.track.panels.filter((p) => p.stage < l.stage).length &&
+  cursor <= l.track.panels.filter((p) => p.stage <= l.stage).length;
+/** One accepted event: full visual panel, collider frontier and one magazine unit. */
+function commitPanel(l: LineRun, silent = false, publish = true) {
+  const index = l.track.cursor;
+  const panel = l.track.panels[index];
+  if (!panel || panel.stage !== l.stage) return;
+  if (!silent && run.line === l) posePanel(l, index, 1);
+  l.track.layTo(panel.to);
+  if (run.line === l) machine.setRack((run.rack = Math.max(0, run.rack - 1)));
+  if (!silent) {
+    const at = besideLine(l.spec.line, panel.end, 0);
+    clank(at.x, at.z);
+    dustRing(at.x, railY(l.spec.line, panel.end) + 0.1, at.z, 4, 0.5, 0.12);
+  }
+  if (publish) coop.panelCommitted(l.k, l.stage, index);
+}
+coopWire.panelCommit = (k, stage, index) => {
+  const l = lines[k];
+  if (!l || stage !== l.stage || index < l.track.cursor || l.track.panels[index]?.stage !== stage) return;
+  // Reliable messages are ordered; a snapshot may already have applied this identity.
+  while (l.track.cursor <= index && l.track.panels[l.track.cursor]?.stage === stage) commitPanel(l, false, false);
+};
+coopWire.panelSnapshot = (value) => {
+  const q = value as { cursors?: unknown; motion?: { r?: unknown; k?: unknown; mode?: unknown } } | null;
+  if (!Array.isArray(q?.cursors)) return;
+  const cursors = q.cursors;
+  lines.forEach((l, k) => {
+    const cursor = cursors[k];
+    if (!validPanelCursor(l, cursor) || cursor <= l.track.cursor) return;
+    while (l.track.cursor < cursor && l.track.panels[l.track.cursor]?.stage === l.stage) commitPanel(l, true, false);
+  });
+  if (
+    run.mode === 'laying' &&
+    q?.motion?.mode === 'laying' &&
+    q.motion.k === run.line.k &&
+    cursors[run.line.k] === run.line.track.cursor &&
+    count(q.motion.r, 64)
+  )
+    machine.setRack((run.rack = panelRackCount(run.line)));
+};
+// Exact upcoming rail/sleeper matrices move together as one rigid compound. No view creates collision.
+const panelRestFrame = new THREE.Matrix4(),
+  panelLocalFrame = new THREE.Matrix4();
+const panelTarget = new THREE.Vector3(0, 0, 10),
+  panelRotation = new THREE.Quaternion(),
+  panelScale = new THREE.Vector3();
+let panelReturn = 1;
+function posePanel(l: LineRun, index: number, phase: number) {
+  const rig = machine.look.panelRig;
+  rig.root.updateWorldMatrix(true, false);
+  l.track.panelFrame(index, panelRestFrame);
+  panelLocalFrame.copy(rig.root.matrixWorld).invert().multiply(panelRestFrame);
+  panelLocalFrame.decompose(panelTarget, panelRotation, panelScale);
+  const yaw = Math.atan2(panelLocalFrame.elements[8]!, panelLocalFrame.elements[10]!);
+  return rig.pose(phase, run.rack, panelTarget, yaw);
+}
+machine.onPanelFrame = (dt) => {
+  const l = run.line,
+    track = l.track,
+    index = track.cursor,
+    panel = track.panels[index];
+  const active = run.mode === 'laying' && panel?.stage === l.stage && run.rack > 0;
+  machine.panelRack(
+    track.panels
+      .slice(index)
+      .filter((p) => l === L1 || p.stage === l.stage)
+      .map((p) => p.to - p.from),
+    active,
+  );
+  const rig = machine.look.panelRig;
+  if (active) {
+    panelReturn = 0;
+    // A follower holds above the bed until the authority accepts the contact.
+    const phase = Math.max(0, Math.min(0.98, (track.u(run.head) - panel.from) / (panel.to - panel.from)));
+    track.presentPanel(index, posePanel(l, index, phase));
+  } else {
+    panelReturn = Math.min(1, panelReturn + dt / 0.65);
+    rig.pose(panelReturn, run.rack, panelTarget, 0, true);
+  }
 };
 // The machine hands a crate down beside where it stopped, on ground you can stand on, by the next frame on the side you'll
 // come from, so the beacon and your logs bring you to it. What's in it: ./gifts.ts.
@@ -250,6 +343,7 @@ function handCrate(l: LineRun, to: number, side: number) {
 }
 export function finishStretch(l: LineRun) {
   const st = stationOf(l)!;
+  while (l.track.panels[l.track.cursor]?.stage === l.stage) commitPanel(l, false, !coop.follower());
   coop.stretched(st);
   whistle(st.x, st.z);
   dustRing(st.x, st.y, st.z, 8, 2, 0.3);
@@ -293,8 +387,8 @@ function stepTurn(dt: number) {
   if (u >= 1) {
     run.mode = 'shunting';
     run.line = L2;
-    run.head = machine.GAP / 2 + machine.F;
-    machine.at(L2.spec.line, run.head, 1);
+    run.head = machine.GAP / 2 + 2.4;
+    machine.at(L2.spec.line, run.head, 1, 2.4);
     whistle(TX, TZ);
   }
 }
@@ -302,7 +396,7 @@ function stepShunt(dt: number) {
   const to = STUB.east;
   const step = Math.min(to - run.head, TUNE.laySpeed * 0.6 * dt);
   run.head += step;
-  machine.at(L2.spec.line, run.head, 1);
+  machine.at(L2.spec.line, run.head, 1, 2.4);
   machine.moved(step);
   if (to - run.head < 0.001) {
     run.mode = 'idle';
@@ -558,7 +652,7 @@ export function placeMachine() {
   } else {
     const st = stationOf(l);
     run.head = st ? st.spec.s : l.spec.line.len - 1;
-    machine.at(l.spec.line, run.head, l.spec.dir);
+    machine.at(l.spec.line, run.head, l.spec.dir, laySetback(l, run.head));
     if (!job.awake) run.mode = 'asleep';
     else run.mode = st ? 'idle' : 'done';
   }
@@ -580,7 +674,12 @@ export function placeMachine() {
   setStationTags();
   const st = stationOf(l);
   moveRack(l === L2 && st?.spec.rack ? st : null);
-  if (run.mode === 'idle' && st?.full() && !coop.follower()) {
+  if (
+    run.mode === 'idle' &&
+    st?.full() &&
+    !coop.follower() &&
+    (restoredPanels?.motion as { mode?: unknown } | undefined)?.mode !== 'laying'
+  ) {
     st.drawStock(st.have);
     beginFeed(l, st);
   }
@@ -601,7 +700,58 @@ export function snapRun() {
   setCommuters(L1.open);
   setPushers(job.rung.depot && !job.rung.trains);
   for (const fn of snapHooks) fn();
+  if (restoredPanels) {
+    const saved = restoredPanels;
+    restoredPanels = null;
+    lines.forEach((l, k) =>
+      l.track.snapTo(saved.cursors[k] === 0 ? l.track.panels[0]!.from : l.track.panels[saved.cursors[k]! - 1]!.to),
+    );
+    putMachine(saved.motion);
+  }
 }
+const motionState = () => ({
+  mode: run.mode,
+  k: run.line.k,
+  head: run.head,
+  s0: run.stretch0,
+  c0: run.cradle0,
+  r0: run.rack0,
+  c: run.cradle,
+  r: run.rack,
+  depart: run.departT,
+});
+let restoredPanels: { cursors: number[]; motion: unknown } | null = null;
+export function resetTrackPanels() {
+  restoredPanels = null;
+}
+sharedSlice('trackPanelsV1', {
+  get: () => ({ cursors: lines.map((l) => l.track.cursor), motion: motionState() }),
+  set: (value) => {
+    restoredPanels = null;
+    const q = value as { cursors?: unknown; motion?: unknown } | null;
+    if (!Array.isArray(q?.cursors) || q.cursors.length !== lines.length) return;
+    if (!q.cursors.every((n, k) => validPanelCursor(lines[k]!, n))) return;
+    const motion = q.motion as { mode?: unknown; k?: unknown; head?: unknown } | null;
+    if (
+      q.cursors.some(
+        (n, k) =>
+          n > lines[k]!.track.panels.filter((p) => p.stage < lines[k]!.stage).length &&
+          (motion?.mode !== 'laying' || motion.k !== k),
+      )
+    )
+      return;
+    if (motion?.mode === 'laying') {
+      if (!count(motion.k, 1) || !num(motion.head)) return;
+      const l = lines[motion.k]!;
+      const st = stationOf(l);
+      if (!st || l.track.u(motion.head) < l.track.u(st.spec.s) || l.track.u(motion.head) > l.track.u(st.spec.to) + 1e-7)
+        return;
+      const latest = q.cursors[motion.k] as number;
+      if (latest > 0 && l.track.panels[latest - 1]!.to > l.track.u(motion.head) + 1e-7) return;
+    }
+    restoredPanels = { cursors: [...q.cursors], motion: q.motion };
+  },
+});
 sharedSlice('run', {
   get: () => ({
     mode: run.mode,
@@ -629,25 +779,33 @@ export function putMachine(j: unknown) {
     r?: unknown;
     depart?: unknown;
   };
-  const l = lines[q.k === 1 ? 1 : 0]!,
+  if (!count(q.k, 1)) return;
+  const l = lines[q.k]!,
     st = stationOf(l);
   if (q.mode === 'feeding' && st && run.mode === 'idle') beginFeed(l, st);
   else if ((q.mode === 'running' || (q.mode === 'laying' && st)) && num(q.head)) {
+    if (q.head < headAtTurntable() || q.head > l.spec.line.len) return;
+    if (
+      q.mode === 'laying' &&
+      st &&
+      (l.track.u(q.head) < l.track.u(st.spec.s) || l.track.u(q.head) > l.track.u(st.spec.to) + 1e-7)
+    )
+      return;
     run.line = l;
     run.mode = q.mode;
     run.head = q.head;
     run.stretch0 = num(q.s0) ? q.s0 : q.head;
-    run.cradle0 = num(q.c0) ? q.c0 : 0;
-    run.rack0 = num(q.r0) ? q.r0 : 0;
-    run.cradle = num(q.c) ? q.c : 0;
-    run.rack = num(q.r) ? q.r : 0;
+    run.cradle0 = count(q.c0, 64) ? q.c0 : 0;
+    run.rack0 = count(q.r0, 64) ? q.r0 : 0;
+    run.cradle = count(q.c, 64) ? q.c : 0;
+    run.rack = q.mode === 'laying' ? panelRackCount(l) : count(q.r, 64) ? q.r : 0;
     run.departT = num(q.depart) ? Math.max(0, Math.min(2, q.depart)) : 2;
-    machine.at(l.spec.line, run.head, q.mode === 'running' ? -1 : l.spec.dir);
+    machine.at(l.spec.line, run.head, q.mode === 'running' ? -1 : l.spec.dir, laySetback(l, run.head));
     machine.snap();
     machine.setCradle(run.cradle);
     machine.setRack(run.rack);
     if (q.mode === 'laying' && st) {
-      l.track.snapTo(l.track.u(run.head));
+      // The additive panel slice already restored the accepted frontier; head may be between commits.
       st.drawStock({ logs: 0, rails: 0, stone: 0, beam: 0 });
     }
     setStationTags();

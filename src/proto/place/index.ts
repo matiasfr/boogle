@@ -95,6 +95,7 @@ import {
   run,
   setStationTags,
   snapRun,
+  resetTrackPanels,
   startStepping,
   stationOf,
   updateRun,
@@ -294,6 +295,7 @@ function snapAll() {
 function startOver() {
   resetJob();
   resetCargo();
+  resetTrackPanels();
   for (const l of lines) {
     l.stage = 0;
     l.open = false;

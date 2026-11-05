@@ -113,13 +113,23 @@ type Api = {
   tech?: (what: unknown) => void;
   rungsChanged?: (before: Rungs, quiet: boolean) => void;
   techChanged?: (before: typeof job.tech, quiet: boolean) => void;
+  panelCommit?: (k: number, stage: number, index: number) => void;
+  panelSnapshot?: (value: unknown) => void;
 };
 let api: Api | null = null;
 let skipsFns: Record<string, () => void> = {};
 /** Later hooks, from modules that import this one. */
 export const coopWire: Pick<
   Api,
-  'rung' | 'forgeBill' | 'wakeTrains' | 'activeFrame' | 'tech' | 'rungsChanged' | 'techChanged'
+  | 'rung'
+  | 'forgeBill'
+  | 'wakeTrains'
+  | 'activeFrame'
+  | 'tech'
+  | 'rungsChanged'
+  | 'techChanged'
+  | 'panelCommit'
+  | 'panelSnapshot'
 > = {};
 export const pairHook = {
   msg: null as ((m: Record<string, unknown>) => void) | null,
@@ -186,7 +196,7 @@ function applyFull(a: Api, j: Snap, announce = true) {
   reconcileBig();
   a.run.mode = 'asleep';
   a.snapAll();
-  a.putMachine(j.shared.run);
+  a.putMachine((j.shared.trackPanelsV1 as { motion?: unknown } | undefined)?.motion ?? j.shared.run);
   save();
 }
 
@@ -237,6 +247,7 @@ const volatile = (j: Record<string, unknown>) => {
 
 /** Each second, on a follower: the same run? Small numbers settle on their own; what stays different gets put right. */
 function reconcile(a: Api, j: Snap) {
+  coopWire.panelSnapshot?.(j.shared.trackPanelsV1);
   reconcileCart(j.shared.depot);
   const cargo = j.shared.bigCargoV1 as Partial<typeof bigCargo> | undefined;
   for (const kind of ['beam', 'boiler'] as const) if (validCargo(cargo?.[kind])) acceptBig(kind, cargo[kind]);
@@ -705,6 +716,19 @@ const isKind = (v: unknown): v is Goods => GOODS.includes(v as Goods);
 function onMsg(a: Api, m: Record<string, unknown>, from: string) {
   const { run } = a;
   switch (m.k) {
+    case 'trackPanelV1': {
+      if (
+        !ready ||
+        from !== authorityPeer() ||
+        m.gen !== gen ||
+        !count(m.line, 1) ||
+        !count(m.stage, 32) ||
+        !count(m.index, 256)
+      )
+        return;
+      coopWire.panelCommit?.(m.line, m.stage, m.index);
+      return;
+    }
     case 'snap': {
       if (from !== authorityPeer()) return;
       if (validSnap(m.snap)) onSnap(a, m.snap, !!m.force);
@@ -917,7 +941,7 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       return;
     }
     case 'stretch': {
-      if (!ready) return;
+      if (!ready || from !== authorityPeer()) return;
       const st = frameById(m.id);
       const l = lines[run.line.k]!;
       if (!st || a.stationOf(l) !== st) return;
@@ -925,7 +949,6 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       const to = st.spec.to;
       run.head = to;
       machine.at(l.spec.line, to, l.spec.dir);
-      l.track.layTo(l.track.u(to));
       a.finishStretch(l);
       return;
     }
@@ -1042,6 +1065,8 @@ export const coop = {
   },
   fed: (st: StationRun) => COOP && amAuthority() && msg({ k: 'feed', id: st.spec.id }),
   stretched: (st: StationRun) => COOP && amAuthority() && msg({ k: 'stretch', id: st.spec.id }),
+  panelCommitted: (line: number, stage: number, index: number) =>
+    COOP && amAuthority() && msg({ k: 'trackPanelV1', gen, line, stage, index }),
   took: (what: 'rails' | 'timber' | 'rack', n: number, r = 0) => COOP && n + r > 0 && msg({ k: 'took', what, n, r }),
   /** A chest opened here: the rung is everyone's. */
   rung: (id: string) => COOP && msg({ k: 'rung', id }),

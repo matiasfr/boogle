@@ -1,6 +1,7 @@
 // Pure mesh assembly: no scene, physics, loop or game state. Both the stage and Place use these materials.
 import * as THREE from 'three/webgpu';
 import { material } from '../../render/materials.ts';
+import { panelMechanism } from './machine-panels.ts';
 
 export const MACHINE_GAP = 3.7;
 export const MACHINE_DECK = 0.7;
@@ -132,15 +133,17 @@ export function mountMachine(
   const rearGear = new THREE.Group();
   rearGear.position.z = MACHINE_GAP;
   gear[0]!.add(rearGear);
+  const layParts = new Map<string, THREE.Object3D>();
   for (const part of [...copy.children]) {
     if (part.name.includes('_wheel_') || part.name.includes('_rod_') || part.name.endsWith('_bogie'))
       (part.name.startsWith('power_') ? rearGear : gear[1]!).add(part);
     else if (part.name.startsWith('power_')) rear.add(part);
     else if (part.name.startsWith('deck_')) deck.add(part);
     else if (part.name.startsWith('chair_')) chairs.add(part);
+    else if (part.name.startsWith('lay_')) layParts.set(part.name, part);
     else throw new Error(`Unexpected track-layer root: ${part.name}`);
   }
-  return { ...finish, wheels, rods };
+  return { ...finish, wheels, rods, layParts };
 }
 
 export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D, sleeper: THREE.Object3D) {
@@ -173,6 +176,7 @@ export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D,
     outer.add(inner);
     return inner;
   });
+  const panelRig = panelMechanism(deck);
   const odometers = runningGear.map(() => ({ last: new THREE.Vector3(NaN, 0, 0), yaw: 0, distance: 0 }));
   let finish: ReturnType<typeof mountMachine> | undefined;
   let travel = 0;
@@ -183,6 +187,7 @@ export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D,
     chimneyTop,
     heldRail,
     runningGear,
+    panelRig,
     resetWheelTravel: (i: number) => odometers[i]!.last.set(NaN, 0, 0),
     wheelState: () =>
       odometers.map((o, i) => ({ distance: o.distance, angles: finish?.wheels[i]!.map((w) => w.rotation.x) ?? [] })),
@@ -190,6 +195,7 @@ export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D,
     slip: { rate: 0 },
     install: (source: THREE.Object3D) => {
       finish = mountMachine(source, power, deck, chairs, pitchedGear);
+      panelRig.install(finish.layParts);
     },
     update(wear: number) {
       finish?.wear(wear);

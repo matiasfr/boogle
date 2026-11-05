@@ -1,5 +1,17 @@
 # Track-layer machine art and deck places
 
+## Current: coordinator authorizes whole-panel commits (5 November)
+
+This supersedes the blocked proposals below. The head retains continuous travel and the two-second departure, but only the authority accepts a complete panel at its end boundary. One accepted panel index commits its rail/sleeper instances and supporting colliders together, removes one stock unit, and triggers local contact clunk/dust. The upcoming panel is a rigid in-transit compound of those same eventual track instances; it has no collider while carried. No hidden committed track is used.
+
+L1 uses 12 panels partitioned 3/3/6 at the three stops. Ordinary panels are 86/6 = 14.333333 m, or 2.866667 s at 5 m/s cruise. T1 and T2 finish with 12.333333 m and 5.333333 m closure panels. L2 divides each stretch into its existing rail-stock count, so one stock decrement represents one cycle and the final panel ends exactly at the station. This redistributes L1 decrement timing; total stock, station bills and head throughput remain unchanged. Shorter/faster cycles compress the same distance-normalized choreography.
+
+To keep both bogies behind the last committed frontier, the body follows the head by one maximum panel plus the former 2.4 m (16.733333 m). Q1 has only a 7 m initial stub: it retains the original short approach, then the bodies wait there while the head builds up that setback, without a teleport or reversing shunt. This changes machine motion and its position relative to stations; body shapes, stand surfaces, seat/exits and rear-step local anchors stay unchanged. The gantry extends over the pending panel; rigid trolley, three nested hoist slides and two jaws use their own transforms. Two side stacks hold panels clear of the rear aisle. The existing sleeper fork stays.
+
+**Shared/saved contract, independent coordinator review required:** additive `trackPanelsV1` slice records integer per-line commit cursors and full-precision motion; additive `trackPanelV1` accepted authority messages carry generation, line, stage and index. Duplicate/old commits do nothing. Quiet snapshots repair missed commits and restore without contact effects. Old saves without the slice retain the station-based fallback. The prototype capability becomes `placeCoopPanels1` so old continuous-collider peers cannot join this room. This is prototype Host state, not a new lockstep operation. Restore, late join and full routes must be evidenced before declaring completion.
+
+Current validation is pending. Art budgets are provisional: shell 9k decoded triangles/29 main draws, loaded machine 30k triangles/44 main draws, excluding avatars and the world's in-transit panel batch. These are draw/count budgets, not performance claims. Reference shots are targets rather than measurements; no new external generation/research is used.
+
 ## 5 November follow-up: prefabricated panels
 
 The owner now directs one prefabricated panel (both rails and their sleepers) per existing stock decrement. The approved trolley, three-stage hoist and two clamps pick from stacked panels, carry forward, lower, release with a small clunk/contact dust, then return empty. Every moving part remains rigid. Collision, authority, throughput, seats and exits stay unchanged; normal-camera evidence must not stage the camera. This supersedes the prior single-rail mapping question.

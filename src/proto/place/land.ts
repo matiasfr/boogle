@@ -171,6 +171,7 @@ export function slab(
   topB: number,
   width: number,
   owner?: OwnedView,
+  overlap = 0.05,
 ) {
   const dx = bx - ax,
     dz = bz - az,
@@ -180,7 +181,7 @@ export function slab(
     thick = 0.4;
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.atan2(dy, len), Math.atan2(dx, dz), 0, 'YXZ'));
   const c = { x: (ax + bx) / 2, y: (topA + topB) / 2 - thick / 2, z: (az + bz) / 2 };
-  return addStatic({ kind: 'box', hx: width / 2, hy: thick / 2, hz: full / 2 + 0.05 }, c, q, GROUP.SCENERY, owner);
+  return addStatic({ kind: 'box', hx: width / 2, hy: thick / 2, hz: full / 2 + overlap }, c, q, GROUP.SCENERY, owner);
 }
 
 /** A solid box between two world points, top at y. */
