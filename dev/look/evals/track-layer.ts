@@ -87,15 +87,17 @@ const camera = () => {
   if (view === 'normal') return; // Retain the actual gameplay camera and its 62-degree lens.
   const rear = view !== 'lay';
   const eyeLocal =
-    view === 'wheels'
-      ? { x: 2.3, y: -0.12, z: -4.1 }
-      : view === 'pair'
-        ? { x: 4.5, y: 3.1, z: -2.9 }
-        : view === 'forward'
-          ? { x: 0, y: 3.5, z: -4.3 }
-          : view === 'side'
-            ? { x: 8, y: 4.3, z: -2.8 }
-            : { x: 8, y: rear ? 4.8 : 4.5, z: rear ? -7 : 5.5 };
+    view === 'panel'
+      ? { x: -5.5, y: 3.2, z: -13 }
+      : view === 'wheels'
+        ? { x: 2.3, y: -0.12, z: -4.1 }
+        : view === 'pair'
+          ? { x: 4.5, y: 3.1, z: -2.9 }
+          : view === 'forward'
+            ? { x: 0, y: 3.5, z: -4.3 }
+            : view === 'side'
+              ? { x: 8, y: 4.3, z: -2.8 }
+              : { x: 8, y: rear ? 4.8 : 4.5, z: rear ? -7 : 5.5 };
   fromPlatform(car.platform, { ...eyeLocal, yaw: 0 }, true, pose);
   const eye: [number, number, number] = [pose.x, pose.y, pose.z];
   fromPlatform(
@@ -103,13 +105,13 @@ const camera = () => {
     {
       x: view === 'wheels' ? 0.5 : 0,
       y: view === 'wheels' ? -0.385 : 1.1,
-      z: view === 'wheels' ? -3.7 : view === 'forward' ? 1.2 : view === 'pair' ? -0.6 : -1.3,
+      z: view === 'panel' ? 4 : view === 'wheels' ? -3.7 : view === 'forward' ? 1.2 : view === 'pair' ? -0.6 : -1.3,
       yaw: 0,
     },
     true,
     pose,
   );
-  window.__debugCam!.set(eye, [pose.x, pose.y, pose.z], 48);
+  window.__debugCam!.set(eye, [pose.x, pose.y, pose.z], view === 'panel' ? 62 : 48);
 };
 camera();
 const timer = setInterval(camera, 30);
@@ -198,8 +200,8 @@ if (pair) {
   sitDown();
   await until(() => !!seatState().sitting, 'recapture seat');
 }
-machine.setCradle(40); // Maximum-cargo clearance still; action restores the real bill through skipDelivery.
-machine.setRack(12);
+machine.setCradle(q.has('machineMax') ? 40 : run.cradle);
+machine.setRack(q.has('machineMax') ? 12 : run.rack);
 await wait(300);
 let meshes = 0,
   triangles = 0,
@@ -221,7 +223,7 @@ console.log(
       shadowMeshes,
       triangles,
       render: renderer.info.render,
-      scope: 'machine hierarchy draw upper bound, full 40 logs/12 rails; scene counts are this camera, no timing claim',
+      scope: 'machine hierarchy draw upper bound; machineMax explicitly stages 40 logs/12 panels; no timing claim',
     }),
 );
 console.log('MACHINE READY ' + JSON.stringify({ view, mode: run.mode, seat: seatState() }));

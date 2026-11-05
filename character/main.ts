@@ -26,6 +26,7 @@ import {
   wheelAngle,
 } from '../src/proto/place/machine-model.ts';
 import { MACHINE_REVIEW_SECONDS, machineReviewDistance } from './machine-motion.ts';
+import { panelMechanism } from '../src/proto/place/machine-panels.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -199,6 +200,15 @@ function generic(asset: Asset): Preview {
   const machineFinish = state.asset === 'track-layer' ? dressMachine(group) : undefined;
   const machineWheels = state.asset === 'track-layer' ? machineWheelPivots(group).flat() : [];
   const machineRods = state.asset === 'track-layer' ? machineRodPivots(group) : [];
+  const panelRig = state.asset === 'track-layer' ? panelMechanism(group) : undefined;
+  if (panelRig) {
+    const parts = new Map<string, THREE.Object3D>();
+    group.traverse((part) => {
+      if (part.name.startsWith('lay_')) parts.set(part.name, part);
+    });
+    panelRig.install(parts);
+  }
+  const panelTarget = new THREE.Vector3(0, 0, 9.5667);
   // An axle-centred prop otherwise disappears halfway into the inspection floor. Its authored pivot stays intact.
   if (state.asset === 'feeder-roller') group.position.y = 0.075;
   const mixer = new THREE.AnimationMixer(group);
@@ -211,6 +221,7 @@ function generic(asset: Asset): Preview {
     if (diagnosticRate !== null) group.rotation.z = t * diagnosticRate;
     for (const wheel of machineWheels) wheel.rotation.x = wheelAngle(machineReviewDistance(t));
     poseMachineRods(machineRods, wheelAngle(machineReviewDistance(t)));
+    panelRig?.pose((t % 2.866667) / 2.866667, 12, panelTarget, 0);
     if (action) {
       action.enabled = true;
       action.paused = false;

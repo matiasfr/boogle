@@ -94,11 +94,11 @@
   },
   "track-layer": {
     "source": "track-layer.py",
-    "sourceHash": "57a8e5e06cade5d3",
-    "outHash": "70b9426b1e7713aa",
-    "rawBytes": 209348,
-    "bytes": 54508,
-    "triangles": 5264,
+    "sourceHash": "adc9497519e99733",
+    "outHash": "f7898f79eb492b58",
+    "rawBytes": 240892,
+    "bytes": 67840,
+    "triangles": 6408,
     "animations": [],
     "textures": []
   }

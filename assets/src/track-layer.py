@@ -173,12 +173,22 @@ def deck_gantry(bm):
     box(bm, 0.5, 1.27, 1.75, 0.1, 0.1, 1.5)
     box(bm, 0.5, 1.0, 1.1, 0.1, 0.5, 0.1)
     box(bm, 0.5, 1.11, 2.45, 0.12, 0.26, 0.12)
+    # Fixed high header carries the articulated panel beam, without a front wheel or support.
+    for side in (-1, 1):
+        box(bm, side * 1.02, 3.25, 0, 0.18, 1.5, 0.22, BIG_BEVEL)
+    box(bm, 0, 4.0, 0, 7.0, 0.22, 0.3, BIG_BEVEL)
 
 
 def deck_cream(bm):
     box(bm, 0, DECK - 0.08, -1.9, 2.8, 0.16, 0.6, BIG_BEVEL)
     for x in (-1.3, 1.3):
         grab_rail(bm, x)
+    # Panel magazines: fixed side saddles, leaving the original centre aisle/step clear.
+    for side in (-1, 1):
+        for z in (-1.0, 1.0):
+            box(bm, side * 2.2, 0.48, z, 2.5, 0.16, 0.18, BIG_BEVEL)
+        for x in (-0.5, 0.5):
+            box(bm, side * 3.4 + x, 0.52, 0, 0.16, 0.16, 14.45, BIG_BEVEL)
     for z in (-0.05, 1.45):
         box(bm, 0, DECK + 0.21, z, 1.5, 0.42, 0.08)
     for side in (-1, 1):
@@ -249,6 +259,20 @@ for body, zs in [('power', (-GAP - 0.8, -GAP + 0.8)), ('deck', (-1.35, -0.45))]:
                  lambda bm, s=side, powered=body == 'power': wheel(bm, s, powered), (side * 0.52, AXLE_Y, z))
 for i, side in enumerate((-1, 1)):
     part(f'power_rod_{i}', CREAM, coupling_rod, (side * 0.72, AXLE_Y + 0.07, -GAP))
+
+# Logical origins are explicit runtime slide/pivot frames. Decode transforms stay on the meshes.
+# Sleeve geometry extends UP from its sliding bottom; the three 1.45 m pieces overlap at full stroke.
+part('lay_gantry_beam', ORANGE, lambda bm: box(bm, 0, 0, 7, 0.26, 0.24, 14, BIG_BEVEL))
+part('lay_paint_trolley', ORANGE, lambda bm: box(bm, 0, 0, 0, 0.65, 0.35, 0.7, BIG_BEVEL))
+for name, width in [('upper', 0.32), ('middle', 0.25), ('lower', 0.18)]:
+    part(f'lay_cream_{name}', CREAM, lambda bm, w=width: box(bm, 0, 0.725, 0, w, 1.45, w, BIG_BEVEL))
+def jaw(bm, side):
+    for z in (-1.0, 1.0):
+        box(bm, side * 0.58, -0.12, z, 0.12, 0.32, 0.22)
+        box(bm, side * 0.51, -0.25, z, 0.22, 0.08, 0.22)
+    box(bm, side * 0.58, 0, 0, 0.13, 0.12, 2.25)
+part('lay_iron_left', STEEL, lambda bm: jaw(bm, -1))
+part('lay_iron_right', STEEL, lambda bm: jaw(bm, 1))
 
 bpy.ops.export_scene.gltf(filepath=sys.argv[sys.argv.index('--') + 1], export_format='GLB',
                           export_yup=True, export_apply=True, export_normals=True,
