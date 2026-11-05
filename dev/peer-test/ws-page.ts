@@ -4,7 +4,20 @@
 import { createWsRoom, type Room } from '../../src/net/ws-room.ts';
 import { createSync } from '../../src/world/sync.ts';
 import { installRules } from '../../src/world/rules/index.ts';
+import { installRailwayRules } from '../../src/world/rules/railway-index.ts';
+import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
+import { SERVER_ID } from '../../src/net/ids.ts';
+import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
+import type { RailAction, RailAccount, railCounts } from '../../src/sim/railway.ts';
 import home from '../../src/world/home-land.json';
+
+export type RailwayProbe = {
+  tick: number;
+  ready: boolean;
+  counts: ReturnType<typeof railCounts>;
+  accounts: RailAccount[];
+  messages: Record<string, unknown>[];
+};
 
 declare global {
   interface Window {
@@ -27,6 +40,7 @@ const T = (window.T = {
   fatal: null as string | null, // a fatal room error's code (elsewhere, room_full)
   hashes: {} as Record<number, string>,
   got: 0,
+  railMessages: [] as Record<string, unknown>[],
   async start() {
     let room: Room;
     try {
@@ -49,6 +63,10 @@ const T = (window.T = {
     room.onLeadChange((lead) => T.leads.push({ at: Date.now(), lead }));
     room.onMessage((m, from) => {
       const msg = m as { t?: unknown; from?: string; n: number };
+      if (typeof msg.t === 'string' && msg.t.startsWith('r:') && from === SERVER_ID) {
+        const response = m as Record<string, unknown>;
+        if (response.to === room.selfId) T.railMessages.push(response);
+      }
       if (typeof msg.t === 'string') return; // the world's own messages (w:...)
       if (msg.from !== from) T.errors.push('from mismatch');
       (T.msgs[from] ||= []).push(msg.n);
@@ -102,11 +120,21 @@ const T = (window.T = {
   },
   toss: null as unknown as (i: number, j: number) => boolean, // set by startWorld
   world: (): unknown => null,
+  rail: (): RailwayProbe | null => null,
+  railOpen: () => T.room!.send({ t: 'r:open' }),
+  railEdit: (e: RailAction) => T.room!.send({ t: 'r:edit', e }),
+  railStatus: (epoch: number, request: number) => T.room!.send({ t: 'r:status', epoch, request }),
+  railPose(target: 'station' | 'source') {
+    const point = target === 'station' ? [RAILWAY_T1.x, RAILWAY_T1.z] : RAILWAY_SOURCES[0]!.slice(1);
+    void T.room!.presence({ p: [point[0]! / 100, 0, point[1]! / 100], v: 1 });
+  },
 });
 
 function startWorld(room: Room) {
   const w = createSync();
-  const rules = installRules(w, { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1]);
+  const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
+  const railway = isRailwayRoom(q.get('room') ?? '') ? installRailwayRules(w, land) : null;
+  const rules = railway ? null : installRules(w, land);
   w.onAfterTick((t) => {
     if (t % HASH_EVERY === 0) T.hashes[t] = JSON.stringify(w.stateHashes());
   });
@@ -121,7 +149,15 @@ function startWorld(room: Room) {
   T.toss = (i, j) => w.submitEdit({ op: 'gift.toss', i, j, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] });
   T.world = () => ({
     tick: w.world.tick,
-    items: rules.gifts.gifts.items.map((p) => [p.i, p.j]),
+    items: rules?.gifts.gifts.items.map((p) => [p.i, p.j]) ?? [],
     status: w.worldStatus(),
   });
+  if (railway)
+    T.rail = () => ({
+      tick: w.world.tick,
+      ready: w.worldStatus().ready,
+      counts: railway.railway.counts(),
+      accounts: railway.railway.railway.accounts.map((a) => ({ ...a })),
+      messages: T.railMessages.map((m) => ({ ...m })),
+    });
 }
