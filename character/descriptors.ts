@@ -53,6 +53,12 @@ export const gearAttachments: Record<string, Extract<Motion, { kind: 'attachment
   },
 };
 export const descriptors: Record<string, AssetDescriptor> = {
+  'recovery-rack-a': {
+    label: 'Recovery rack A — text only',
+    category: 'props',
+    rootNote: 'Static comparison; base-centre origin. No game placement or stock behavior.',
+    motion: { kind: 'none', source: 'assets/src/recovery-rack-a.py' },
+  },
   'feeder-roller': {
     motion: { kind: 'none', source: 'src/proto/place/look-kit.ts: stationKit static roller matrices' },
     label: 'Feeder roller trial',
