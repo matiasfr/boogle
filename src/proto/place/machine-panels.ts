@@ -1,11 +1,31 @@
 // Local rigid transforms only. Both the live machine and asset stage use this choreography.
 import * as THREE from 'three/webgpu';
+import { material } from '../../render/materials.ts';
+import { merged } from './part-geometry.ts';
 import { panelEase, panelPose } from './track-panels.ts';
 
 export const PANEL_BEAM_Y = 4;
 export const PANEL_STACK_X = 3.4;
 export const panelSlot = (n: number, out: THREE.Vector3) =>
   out.set(n % 2 ? PANEL_STACK_X : -PANEL_STACK_X, 0.6 + Math.floor(n / 2) * 0.18, 0);
+
+/** Stored panels share one 36-triangle slab/rail silhouette. The carried track stays detailed. */
+export function panelMagazine(capacity: number) {
+  const geometry = merged([
+    ['b', 0, 0, 0, 2.3, 0.12, 1, '#c98a3e'],
+    ['b', -0.5, 0.1, 0, 0.1, 0.12, 1, '#4c5058'],
+    ['b', 0.5, 0.1, 0, 0.1, 0.12, 1, '#4c5058'],
+  ]);
+  const mat = material('paintedToy', { normals: 'authored' }).clone();
+  mat.color.set('#ffffff');
+  mat.vertexColors = true;
+  const mesh = new THREE.InstancedMesh(geometry, mat, capacity);
+  mesh.name = 'panel-magazine';
+  mesh.castShadow = mesh.receiveShadow = true;
+  mesh.frustumCulled = false;
+  mesh.count = 0;
+  return mesh;
+}
 
 export function panelMechanism(parent: THREE.Object3D) {
   const root = new THREE.Group();
@@ -27,6 +47,19 @@ export function panelMechanism(parent: THREE.Object3D) {
   const payload = new THREE.Object3D();
   payload.name = 'panel-payload-frame';
   root.add(payload);
+  const batches: { mesh: THREE.InstancedMesh; pivots: THREE.Object3D[]; local: THREE.Matrix4[] }[] = [];
+  const inverse = new THREE.Matrix4(),
+    matrix = new THREE.Matrix4();
+  const updateBatches = () => {
+    inverse.copy(root.matrixWorld).invert();
+    for (const { mesh, pivots, local } of batches) {
+      pivots.forEach((pivot, i) => {
+        matrix.multiplyMatrices(inverse, pivot.matrixWorld).multiply(local[i]!);
+        mesh.setMatrixAt(i, matrix);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+  };
   const stock = new THREE.Vector3(),
     aim = new THREE.Vector3(),
     last = new THREE.Vector3(),
@@ -49,8 +82,28 @@ export function panelMechanism(parent: THREE.Object3D) {
       };
       attach('lay_gantry_beam', beam);
       attach('lay_paint_trolley', trolley);
-      ['upper', 'middle', 'lower'].forEach((name, i) => attach(`lay_cream_${name}`, sleeves[i]!));
-      ['left', 'right'].forEach((name, i) => attach(`lay_iron_${name}`, jaws[i]!));
+      const instance = (name: string, pivots: THREE.Object3D[], local: THREE.Matrix4[]) => {
+        const source = parts.get(name);
+        if (!(source instanceof THREE.Mesh)) return;
+        source.updateMatrix();
+        // Retain GLB decode transforms. Only the fixed section width differs between sleeves;
+        // motion still comes from three independent slides, never animated scaling.
+        for (const transform of local) transform.multiply(source.matrix);
+        const mesh = new THREE.InstancedMesh(source.geometry, source.material, pivots.length);
+        mesh.name = `${name}-instances`;
+        mesh.castShadow = mesh.receiveShadow = true;
+        mesh.frustumCulled = false;
+        root.add(mesh);
+        batches.push({ mesh, pivots, local });
+      };
+      instance(
+        'lay_cream_upper',
+        sleeves,
+        [1, 0.25 / 0.32, 0.18 / 0.32].map((width) => new THREE.Matrix4().makeScale(width, 1, width)),
+      );
+      instance('lay_iron_left', jaws, [new THREE.Matrix4(), new THREE.Matrix4().makeRotationY(Math.PI)]);
+      root.updateWorldMatrix(true, true);
+      updateBatches();
     },
     /** Target is the exact bed panel frame expressed in this rigid body frame. */
     pose(phase: number, n: number, target: THREE.Vector3, yaw: number, finalReturn = false) {
@@ -110,6 +163,7 @@ export function panelMechanism(parent: THREE.Object3D) {
         hasContact = true;
       }
       root.updateWorldMatrix(true, true);
+      updateBatches();
       return payload.matrixWorld;
     },
   };

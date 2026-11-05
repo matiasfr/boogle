@@ -39,9 +39,8 @@ import { box, place } from '../net/boxes.ts';
 import { deck, type Deck } from '../net/crates.ts';
 import { H, addStatic, slab } from './land.ts';
 import { ORIGIN, TUNE, lineAt, railY, type Line, type LinePoint, type LineSpec } from './layout.ts';
-import { RAIL_SIZE, dropSet, dustRing, logStackMesh, setStackLog, type DropSet } from './pieces.ts';
-import { flat } from '../flat.ts';
-import { LOOK, STEEL, paint, rustTrainU, rustU, softGlow } from './look.ts';
+import { dropSet, dustRing, logStackMesh, setStackLog, type DropSet } from './pieces.ts';
+import { LOOK, STEEL, rustTrainU, rustU, softGlow } from './look.ts';
 import { merged } from './part-geometry.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { kitBatch, lookTrack, trainLook } from './look-kit.ts';
@@ -49,7 +48,7 @@ import { machineModel, MACHINE_CHAIRS, MACHINE_DECK, MACHINE_GAP } from './machi
 import { solidTrainLoad } from './train-load.ts';
 import { registerSeat, seatHeight } from './seat.ts';
 import { MAX_PANEL_LENGTH, trackPanels, type TrackPanel } from './track-panels.ts';
-import { panelSlot } from './machine-panels.ts';
+import { panelMagazine, panelSlot } from './machine-panels.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const lateral = (l: number, out: { x: number; z: number }) => {
@@ -684,18 +683,8 @@ export function buildMachine(owner?: OwnedView) {
   flatbed.mesh.add(rig.root);
   rig.root.position.y = -(BOTTOM + flatbed.hy);
 
-  const railGeo = new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z);
-  const rackRails = LOOK.kit
-    ? kitBatch('rail', STEEL, RACK_RAILS * 2, owner)
-    : new THREE.InstancedMesh(railGeo, LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6), RACK_RAILS * 2);
-  rackRails.castShadow = true;
-  rackRails.frustumCulled = false;
-  const rackSleepers = kitBatch(
-    'sleeper',
-    { color: '#8a6236', grain: { axis: 'x', honey: '#c98a3e' } },
-    RACK_RAILS * 12,
-  );
-  rig.root.add(rackRails, rackSleepers);
+  const rack = panelMagazine(RACK_RAILS);
+  rig.root.add(rack);
   const o = new THREE.Object3D(),
     slot = new THREE.Vector3();
   let rackCount = 0,
@@ -704,31 +693,16 @@ export function buildMachine(owner?: OwnedView) {
     selecting = false;
   function drawPanelRack() {
     const n = Math.max(0, rackCount - (selecting ? 1 : 0));
-    let sleeperCount = 0;
     for (let k = 0; k < n; k++) {
       const rackLength = rackLengths[rackCount - 1 - k] ?? MAX_PANEL_LENGTH;
-      const sleepers = Math.ceil(rackLength / 1.2);
       panelSlot(k, slot);
-      for (let side = 0; side < 2; side++) {
-        o.position.copy(slot);
-        o.position.x += side ? 0.5 : -0.5;
-        o.position.y += 0.1;
-        o.scale.set(1, 1, rackLength / (LOOK.kit ? 3.05 : RAIL_SIZE.z));
-        o.updateMatrix();
-        rackRails.setMatrixAt(k * 2 + side, o.matrix);
-      }
-      for (let j = 0; j < sleepers; j++) {
-        o.position.copy(slot);
-        o.position.z += ((j + 0.5) / sleepers - 0.5) * rackLength;
-        o.scale.set(1, 1, 1);
-        o.updateMatrix();
-        rackSleepers.setMatrixAt(sleeperCount++, o.matrix);
-      }
+      o.position.copy(slot);
+      o.scale.set(1, 1, rackLength);
+      o.updateMatrix();
+      rack.setMatrixAt(k, o.matrix);
     }
-    rackRails.count = n * 2;
-    rackSleepers.count = sleeperCount;
-    rackRails.instanceMatrix.needsUpdate = true;
-    rackSleepers.instanceMatrix.needsUpdate = true;
+    rack.count = n;
+    rack.instanceMatrix.needsUpdate = true;
   }
   const cradle = logStackMesh(CRADLE_LOGS, owner);
   cradle.removeFromParent();
