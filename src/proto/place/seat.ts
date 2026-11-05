@@ -26,7 +26,7 @@ export function sitDown() {
   toPlatform(p, b.position, 0, seat.l);
   seat.l.x = Math.max(-p.hx + INBOARD, Math.min(p.hx - INBOARD, seat.l.x));
   seat.l.z = Math.max(-p.hz + INBOARD, Math.min(p.hz - INBOARD, seat.l.z));
-  seat.l.y = p.top + PLAYER_R;
+  seat.l.y = (p.topAt?.(seat.l.x, seat.l.z) ?? p.top) + PLAYER_R;
   seat.on = p;
   seat.yaw = me.yaw;
   b.velocity.set(carry.x, carry.y, carry.z);
@@ -48,6 +48,8 @@ onPreStep(
       return;
     }
     me.wish.set(0, 0, 0);
+    // Cargo can change the deck beneath a seated player; follow the same surface as platform carry.
+    seat.l.y = (p.topAt?.(seat.l.x, seat.l.z) ?? p.top) + PLAYER_R;
     fromPlatform(p, seat.l, false, at);
     const dx = at.x - b.position.x,
       dy = at.y - b.position.y,
