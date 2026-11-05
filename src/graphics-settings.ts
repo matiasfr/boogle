@@ -19,6 +19,56 @@ export type GraphicsAdapter = {
   prepare?(value: GraphicsValue): void | Promise<void>;
 };
 const KEY = 'boogle.dev.graphics.v1';
+const PLAYER_KEY = 'boogle.graphics.v1';
+// Deliberate player allow-list: no look, gameplay or unverified cosmetic switches.
+const playerChoices: Record<string, readonly GraphicsValue[]> = {
+  resolution: ['auto', 1, 0.8, 0.6],
+  frameLimit: ['display', 60, 30],
+  msaa: [true, false],
+  caustics: [true, false],
+};
+export const graphicsPresets = {
+  quality: { resolution: 1, frameLimit: 60, caustics: true },
+  performance: { resolution: 0.8, frameLimit: 60, caustics: true },
+  battery: { resolution: 0.6, frameLimit: 30, caustics: true },
+} satisfies Record<string, Record<string, GraphicsValue>>;
+let playerValues: Record<string, GraphicsValue> = {};
+let preset = 'auto';
+let storageFailed = false;
+const listeners = new Set<() => void>();
+const changed = () => listeners.forEach((fn) => fn());
+export function onGraphicsChange(fn: () => void) {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
+try {
+  const saved = JSON.parse(localStorage.getItem(PLAYER_KEY) ?? 'null');
+  if (saved?.version === 1 && saved.values && typeof saved.values === 'object') {
+    for (const [id, value] of Object.entries(saved.values))
+      if (playerChoices[id]?.includes(value as GraphicsValue)) playerValues[id] = value as GraphicsValue;
+    if (Object.keys(playerValues).length) {
+      preset = 'custom';
+      for (const [name, values] of Object.entries(graphicsPresets))
+        if (saved.preset === name && Object.entries(values).every(([id, value]) => playerValues[id] === value))
+          preset = name;
+    }
+  }
+} catch {
+  /* Storage is optional. */
+}
+function savePlayer() {
+  storageFailed = false;
+  try {
+    if (Object.keys(playerValues).length)
+      localStorage.setItem(PLAYER_KEY, JSON.stringify({ version: 1, preset, values: playerValues }));
+    else localStorage.removeItem(PLAYER_KEY);
+  } catch {
+    storageFailed = true;
+  }
+}
+export const playerGraphics = () => ({ preset, values: { ...playerValues }, storageFailed });
 const owners = new Map<string, GraphicsAdapter>();
 const errors = new Map<string, string>();
 let overrides: Record<string, GraphicsValue> = {};
@@ -57,8 +107,10 @@ function save() {
   }
 }
 export function graphicsInitial(id: string, choices: readonly GraphicsValue[], baseline: GraphicsValue) {
-  const value = overrides[id];
-  return devEnabled && value !== undefined && choices.includes(value) ? value : baseline;
+  const dev = devEnabled ? overrides[id] : undefined;
+  if (dev !== undefined && choices.includes(dev)) return dev;
+  const value = playerValues[id];
+  return value !== undefined && choices.includes(value) ? value : baseline;
 }
 async function apply(owner: GraphicsAdapter, value: GraphicsValue) {
   errors.delete(owner.id);
@@ -72,7 +124,6 @@ async function apply(owner: GraphicsAdapter, value: GraphicsValue) {
   }
 }
 export function registerGraphics(owner: GraphicsAdapter) {
-  if (!devEnabled) return () => {};
   if (owners.has(owner.id)) throw new Error(`Graphics owner already registered: ${owner.id}`);
   if (!owner.choices.includes(owner.default)) throw new Error(`Invalid graphics baseline: ${owner.id}`);
   owners.set(owner.id, owner);
@@ -81,26 +132,34 @@ export function registerGraphics(owner: GraphicsAdapter) {
     delete overrides[owner.id];
     save();
   }
-  if (overrides[owner.id] !== undefined && !owner.available?.())
-    void apply(owner, overrides[owner.id]!).catch(() => {});
+  const value = graphicsInitial(owner.id, owner.choices, owner.default);
+  const explicit = (devEnabled && overrides[owner.id] !== undefined) || playerValues[owner.id] !== undefined;
+  if (explicit && !owner.available?.())
+    void apply(owner, value)
+      .catch(() => {})
+      .finally(changed);
+  changed();
   return () => {
     if (owners.get(owner.id) === owner) owners.delete(owner.id);
     errors.delete(owner.id);
+    changed();
   };
 }
 export function graphicsSnapshot() {
   return [...owners.values()].map((owner) => {
     const effective = owner.read();
-    const requested = overrides[owner.id] ?? owner.default;
+    const requested = graphicsInitial(owner.id, owner.choices, owner.default);
     const reason = owner.available?.() ?? null;
     return {
       id: owner.id,
       label: owner.label,
       choices: owner.choices,
       baseline: owner.default,
-      audience: 'dev' as const,
+      audience: playerChoices[owner.id] ? 'player' : 'dev',
       scope: 'Local' as const,
-      persistence: 'Dev only',
+      persistence: playerChoices[owner.id] ? 'Local player and Dev' : 'Dev only',
+      playerRequested: playerValues[owner.id] ?? owner.default,
+      devOverride: devEnabled && overrides[owner.id] !== undefined,
       applyMode: owner.applyMode,
       cost: owner.cost,
       skips: owner.skips,
@@ -124,6 +183,7 @@ export async function setGraphics(id: string, value: GraphicsValue) {
   if (id === 'msaa') syncMsaaUrl(value, true);
   save();
   await apply(owner, value);
+  changed();
   return graphicsSnapshot().find((row) => row.id === id)!;
 }
 export const graphicsOverrides = () => ({ ...overrides });
@@ -139,11 +199,42 @@ export async function restoreGraphics(values: Record<string, GraphicsValue>) {
   // Availability gates user edits, not restoring the owner's setting for a later preset.
   for (const owner of owners.values()) {
     try {
-      await apply(owner, overrides[owner.id] ?? owner.default);
+      await apply(owner, graphicsInitial(owner.id, owner.choices, owner.default));
     } catch (error) {
       failures.push(error);
     }
   }
+  changed();
   if (failures.length) throw new AggregateError(failures, 'Some graphics owners could not restore; see their errors.');
 }
 export const resetGraphics = () => restoreGraphics({});
+
+async function applyPlayer() {
+  savePlayer();
+  try {
+    for (const owner of owners.values())
+      if (playerChoices[owner.id]) await apply(owner, graphicsInitial(owner.id, owner.choices, owner.default));
+  } finally {
+    changed();
+  }
+}
+export async function setPlayerGraphics(id: string, value: GraphicsValue) {
+  const owner = owners.get(id);
+  if (!owner || !playerChoices[id]?.includes(value) || !owner.choices.includes(value))
+    throw new Error('This graphics choice is unavailable.');
+  const reason = owner.available?.();
+  if (reason) throw new Error(reason);
+  playerValues[id] = value;
+  preset = 'custom';
+  await applyPlayer();
+}
+export async function setGraphicsPreset(name: string) {
+  if (name === 'auto') playerValues = {};
+  else {
+    if (!Object.hasOwn(graphicsPresets, name)) throw new Error('Unknown graphics preset.');
+    const values = graphicsPresets[name as keyof typeof graphicsPresets];
+    playerValues = { ...values, ...(playerValues.msaa === undefined ? {} : { msaa: playerValues.msaa }) };
+  }
+  preset = name;
+  await applyPlayer();
+}

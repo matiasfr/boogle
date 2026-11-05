@@ -12,8 +12,16 @@ Object.defineProperty(globalThis, 'localStorage', {
   },
   configurable: true,
 });
-const { registerGraphics, setGraphics, resetGraphics, graphicsSnapshot, graphicsOverrides } =
-  await import('../src/graphics-settings.ts');
+const {
+  registerGraphics,
+  setGraphics,
+  resetGraphics,
+  graphicsSnapshot,
+  graphicsOverrides,
+  restoreGraphics,
+  setPlayerGraphics,
+  setGraphicsPreset,
+} = await import('../src/graphics-settings.ts');
 
 test('baseline restores absent owners before their effects become available again', async () => {
   let absent = false;
@@ -47,5 +55,61 @@ test('baseline restores absent owners before their effects become available agai
     assert.ok(graphicsSnapshot().every((row) => row.available && row.effective === true && !row.pending));
   } finally {
     for (const stop of stops) stop();
+  }
+});
+
+test('Dev overrides and reset preserve the saved player choice', async () => {
+  let resolution: string | number = 'auto';
+  const stop = registerGraphics({
+    id: 'resolution',
+    label: 'Resolution',
+    choices: ['auto', 1, 0.8, 0.6],
+    default: 'auto',
+    applyMode: 'live',
+    cost: 'pixels',
+    skips: 'pixels',
+    read: () => resolution,
+    apply: (value) => {
+      resolution = value as string | number;
+    },
+  });
+  try {
+    await setPlayerGraphics('resolution', 0.6);
+    const player = saved.get('boogle.graphics.v1');
+    await setGraphics('resolution', 1);
+    assert.equal(resolution, 1);
+    await resetGraphics();
+    assert.equal(resolution, 0.6);
+    assert.equal(saved.get('boogle.graphics.v1'), player);
+    await setGraphicsPreset('auto');
+    assert.equal(resolution, 'auto');
+    assert.equal(saved.has('boogle.graphics.v1'), false);
+  } finally {
+    stop();
+  }
+});
+
+test('an explicit baseline override still applies to a late owner with another current look', async () => {
+  await restoreGraphics({ bloom: false });
+  let bloom = true;
+  const stop = registerGraphics({
+    id: 'bloom',
+    label: 'Bloom',
+    choices: [true, false],
+    default: false,
+    applyMode: 'live',
+    cost: 'passes',
+    skips: 'passes',
+    read: () => bloom,
+    apply: (value) => {
+      bloom = value === true;
+    },
+  });
+  try {
+    await Promise.resolve();
+    assert.equal(bloom, false);
+  } finally {
+    stop();
+    await resetGraphics();
   }
 });
