@@ -1,0 +1,1437 @@
+{
+  "date": "2026-11-04",
+  "implementationCommits": [
+    "3bfe629a",
+    "171410c3"
+  ],
+  "scope": "Dev-only Local comparison; Current default; adoption deferred",
+  "evidence": {
+    "stills": ".look/evidence/1793846341763-39934/evidence.json",
+    "board": ".look/evidence/1793846469051-40685/evidence.json",
+    "currentMotion": ".look/evidence/1793845515796-34080/evidence.json",
+    "narrowMotion": ".look/evidence/1793845545654-34258/evidence.json",
+    "crispMotion": ".look/evidence/1793846381545-40346/evidence.json",
+    "waterIsolation": ".look/evidence/1793846016336-38531/evidence.json",
+    "costOverview": ".look/evidence/1793845626038-34688/evidence.json",
+    "costPlay": ".look/evidence/1793845775441-36773/evidence.json",
+    "defaultRoute": ".look/evidence/1793846063828-38764/evidence.json",
+    "resolutionFull": ".look/evidence/1793845712517-35629/evidence.json",
+    "resolution60": ".look/evidence/1793845727698-36061/evidence.json",
+    "bot": ".look/evidence/1793845117250-29352/evidence.json"
+  },
+  "diagnosis": {
+    "section": {
+      "xRange": [
+        -98,
+        -90
+      ],
+      "z": 0,
+      "units": "metres, local place coordinates"
+    },
+    "samplingStepMetres": 0.001,
+    "sourcePathSmoothstep": {
+      "outer": 4.6,
+      "inner": 3.1
+    },
+    "gridVertices": [
+      [
+        -98,
+        1
+      ],
+      [
+        -96,
+        1
+      ],
+      [
+        -94,
+        0.35199999809265137
+      ],
+      [
+        -92,
+        0
+      ],
+      [
+        -90,
+        0
+      ]
+    ],
+    "maskWidths10to90": {
+      "source": 0.913,
+      "interpolatedGrid": 3.123,
+      "ratio": 3.420591456736035
+    },
+    "maskHalfCrossingX": {
+      "source": -94.15,
+      "grid": -94.456
+    },
+    "linearRGBWidths": {
+      "withoutProceduralVariation": 3.252,
+      "withProceduralVariation": 3.256,
+      "method": "Project onto endpoint RGB vector along x=-96..-92 at z=0; 1 mm samples; land palette/interpolation and groundMaterial equations evaluated on CPU, no light or tone."
+    },
+    "resolution": {
+      "full": {
+        "canvas": [
+          640,
+          400
+        ],
+        "row": 330,
+        "crossings": [
+          426,
+          510,
+          569
+        ],
+        "nativeWidth": 143
+      },
+      "sixtyPercent": {
+        "canvas": [
+          384,
+          240
+        ],
+        "row": 198,
+        "crossings": [
+          255,
+          307,
+          342
+        ],
+        "nativeWidth": 87,
+        "widthAt640": 145
+      },
+      "method": "Static path, RGB endpoint projection from x=380 to 630 at full resolution, coordinates scaled for 60 percent. Separate restored pages; no claim of exact pixel registration."
+    }
+  },
+  "staticMeasurements": {
+    "widths": [
+      {
+        "variant": 0,
+        "method": "row 330, RGB endpoint projection at x=380 and 630",
+        "cross": [
+          426,
+          511,
+          570
+        ],
+        "width": 144
+      },
+      {
+        "variant": 1,
+        "method": "row 330, RGB endpoint projection at x=380 and 630",
+        "cross": [
+          458,
+          485,
+          508
+        ],
+        "width": 50
+      },
+      {
+        "variant": 2,
+        "method": "row 330, RGB endpoint projection at x=380 and 630",
+        "cross": [
+          479,
+          480,
+          481
+        ],
+        "width": 2
+      }
+    ],
+    "metrics": [
+      {
+        "camera": 0,
+        "variant": 1,
+        "label": "static path edge",
+        "region": [
+          400,
+          280,
+          180,
+          110
+        ],
+        "changed": 18267,
+        "total": 19800,
+        "meanRGB": 10.949983164983164,
+        "max": 46
+      },
+      {
+        "camera": 0,
+        "variant": 2,
+        "label": "static path edge",
+        "region": [
+          400,
+          280,
+          180,
+          110
+        ],
+        "changed": 18267,
+        "total": 19800,
+        "meanRGB": 15.66131313131313,
+        "max": 63
+      },
+      {
+        "camera": 1,
+        "variant": 1,
+        "label": "static overview path",
+        "region": [
+          200,
+          270,
+          140,
+          110
+        ],
+        "changed": 4622,
+        "total": 15400,
+        "meanRGB": 3.102943722943723,
+        "max": 50
+      },
+      {
+        "camera": 1,
+        "variant": 2,
+        "label": "static overview path",
+        "region": [
+          200,
+          270,
+          140,
+          110
+        ],
+        "changed": 4622,
+        "total": 15400,
+        "meanRGB": 3.7696969696969695,
+        "max": 59
+      },
+      {
+        "camera": 2,
+        "variant": 1,
+        "label": "open water",
+        "region": [
+          0,
+          100,
+          120,
+          290
+        ],
+        "changed": 0,
+        "total": 34800,
+        "meanRGB": 0,
+        "max": 0
+      },
+      {
+        "camera": 2,
+        "variant": 1,
+        "label": "shore contact",
+        "region": [
+          0,
+          200,
+          155,
+          190
+        ],
+        "changed": 0,
+        "total": 29450,
+        "meanRGB": 0,
+        "max": 0
+      },
+      {
+        "camera": 2,
+        "variant": 1,
+        "label": "broader water",
+        "region": [
+          0,
+          35,
+          155,
+          365
+        ],
+        "changed": 178,
+        "total": 56575,
+        "meanRGB": 0.0011017822948887906,
+        "max": 1
+      },
+      {
+        "camera": 2,
+        "variant": 1,
+        "label": "bank and grass",
+        "region": [
+          200,
+          80,
+          420,
+          310
+        ],
+        "changed": 4050,
+        "total": 130200,
+        "meanRGB": 0.05177675371223758,
+        "max": 9
+      },
+      {
+        "camera": 2,
+        "variant": 2,
+        "label": "open water",
+        "region": [
+          0,
+          100,
+          120,
+          290
+        ],
+        "changed": 0,
+        "total": 34800,
+        "meanRGB": 0,
+        "max": 0
+      },
+      {
+        "camera": 2,
+        "variant": 2,
+        "label": "shore contact",
+        "region": [
+          0,
+          200,
+          155,
+          190
+        ],
+        "changed": 0,
+        "total": 29450,
+        "meanRGB": 0,
+        "max": 0
+      },
+      {
+        "camera": 2,
+        "variant": 2,
+        "label": "broader water",
+        "region": [
+          0,
+          35,
+          155,
+          365
+        ],
+        "changed": 178,
+        "total": 56575,
+        "meanRGB": 0.0011017822948887906,
+        "max": 1
+      },
+      {
+        "camera": 2,
+        "variant": 2,
+        "label": "bank and grass",
+        "region": [
+          200,
+          80,
+          420,
+          310
+        ],
+        "changed": 4212,
+        "total": 130200,
+        "meanRGB": 0.07661802355350743,
+        "max": 18
+      }
+    ]
+  },
+  "waterIsolation": {
+    "region": [
+      0,
+      35,
+      155,
+      365
+    ],
+    "water": 56575,
+    "changed": 176,
+    "explained": 176,
+    "extra": 0,
+    "max": 1
+  },
+  "frozen": {
+    "clocks": {
+      "pageSeconds": 10.549600000143052,
+      "shaderSeconds": 7.76470000004769,
+      "gameFrames": 249
+    },
+    "repeats": [
+      {
+        "name": "c0-v0.png",
+        "immediate": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        },
+        "returned": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        }
+      },
+      {
+        "name": "c0-v1.png",
+        "immediate": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        },
+        "returned": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        }
+      },
+      {
+        "name": "c0-v2.png",
+        "immediate": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        },
+        "returned": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        }
+      },
+      {
+        "name": "c1-v0.png",
+        "immediate": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        },
+        "returned": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        }
+      },
+      {
+        "name": "c1-v1.png",
+        "immediate": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        },
+        "returned": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        }
+      },
+      {
+        "name": "c1-v2.png",
+        "immediate": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        },
+        "returned": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        }
+      },
+      {
+        "name": "c2-v0.png",
+        "immediate": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        },
+        "returned": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        }
+      },
+      {
+        "name": "c2-v1.png",
+        "immediate": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        },
+        "returned": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        }
+      },
+      {
+        "name": "c2-v2.png",
+        "immediate": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        },
+        "returned": {
+          "changedPixels": 0,
+          "totalPixels": 256000,
+          "meanAbsoluteChannel": 0,
+          "maxChannel": 0
+        }
+      }
+    ],
+    "computeDispatches": 0,
+    "notFrozen": [
+      "Server/socket traffic and asset promises are not paused; use an isolated settled beat. Pixel probes fail on visible drift.",
+      "Temporal accumulation effects must supply their own freeze adapter; repeat probes reject history drift."
+    ]
+  },
+  "board": {
+    "width": 672,
+    "height": 6682,
+    "nativeCells": [
+      {
+        "file": "c0-v0.png",
+        "origin": [
+          16,
+          420
+        ],
+        "width": 640,
+        "height": 400,
+        "exact": true
+      },
+      {
+        "file": "c0-v1.png",
+        "origin": [
+          16,
+          928
+        ],
+        "width": 640,
+        "height": 400,
+        "exact": true
+      },
+      {
+        "file": "c0-v2.png",
+        "origin": [
+          16,
+          1436
+        ],
+        "width": 640,
+        "height": 400,
+        "exact": true
+      },
+      {
+        "file": "c1-v0.png",
+        "origin": [
+          16,
+          1944
+        ],
+        "width": 640,
+        "height": 400,
+        "exact": true
+      },
+      {
+        "file": "c1-v1.png",
+        "origin": [
+          16,
+          2452
+        ],
+        "width": 640,
+        "height": 400,
+        "exact": true
+      },
+      {
+        "file": "c1-v2.png",
+        "origin": [
+          16,
+          2960
+        ],
+        "width": 640,
+        "height": 400,
+        "exact": true
+      },
+      {
+        "file": "c2-v0.png",
+        "origin": [
+          16,
+          3468
+        ],
+        "width": 640,
+        "height": 400,
+        "exact": true
+      },
+      {
+        "file": "c2-v1.png",
+        "origin": [
+          16,
+          3976
+        ],
+        "width": 640,
+        "height": 400,
+        "exact": true
+      },
+      {
+        "file": "c2-v2.png",
+        "origin": [
+          16,
+          4560
+        ],
+        "width": 640,
+        "height": 400,
+        "exact": true
+      }
+    ]
+  },
+  "motion": {
+    "encodedFrameRate": 30,
+    "walkingFrames": [
+      30,
+      31,
+      32
+    ],
+    "turnFrames": [
+      65,
+      66,
+      67
+    ],
+    "walkingCrops": [
+      336,
+      200,
+      304,
+      180
+    ],
+    "turnCrops": [
+      0,
+      170,
+      304,
+      180
+    ],
+    "columns": [
+      "Current",
+      "Narrow"
+    ],
+    "peakSpeed": 5.6,
+    "units": "m/s",
+    "cameraArm": 5.2,
+    "limits": "Encoded consecutive frames may repeat/drop game frames. Separate NPC positions; real-time shimmer and smoothness unverified."
+  },
+  "gpu": {
+    "machine": "Apple M1 Max (sysctl verified)",
+    "overview": [
+      {
+        "repeat": 0,
+        "status": "complete",
+        "contention": "unknown",
+        "conditions": {
+          "order": "on/off/off/on",
+          "seconds": 3,
+          "warmSeconds": 2,
+          "repeated": true,
+          "resolution": "fixed full route scale",
+          "frameLimit": "display",
+          "physicalOcclusion": "unknown",
+          "actualPresentation": "unavailable",
+          "preparation": [
+            {
+              "enabled": true,
+              "elapsedMs": 3011.699999809265
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2013.8999998569489
+            }
+          ],
+          "warmups": [
+            {
+              "enabled": true,
+              "elapsedMs": 2006.4000000953674
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2011.5999999046326
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2011.5999999046326
+            },
+            {
+              "enabled": true,
+              "elapsedMs": 2012.8000001907349
+            }
+          ]
+        },
+        "results": {
+          "frameInterval": {
+            "onMs": 16.66601671309194,
+            "offMs": 16.666201117318447,
+            "deltaMs": -0.00018440422650911614
+          },
+          "cpu": {
+            "onMs": 5.566481993799394,
+            "offMs": 5.494166660308838,
+            "deltaMs": 0.07231533349055663
+          },
+          "gpuSpan": {
+            "onMs": 6.628528814236543,
+            "offMs": 6.5826119628217485,
+            "deltaMs": 0.045916851414794735
+          }
+        },
+        "samples": [
+          {
+            "enabled": true,
+            "status": "complete",
+            "span": {
+              "samples": 181,
+              "avgMs": 6.65187898261771,
+              "p95Ms": 7.8125059604644775,
+              "maxMs": 8.842281818389893
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 640,
+              "height": 400
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": false,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 6.661638128757477,
+              "p95Ms": 7.637923955917358,
+              "maxMs": 8.643577098846436
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 640,
+              "height": 400
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": false,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 6.5035857968860205,
+              "p95Ms": 7.414929151535034,
+              "maxMs": 8.570159912109375
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 640,
+              "height": 400
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": true,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 6.605048922697703,
+              "p95Ms": 7.247097015380859,
+              "maxMs": 11.788695096969604
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 640,
+              "height": 400
+            },
+            "msaa": 4
+          }
+        ]
+      },
+      {
+        "repeat": 1,
+        "status": "complete",
+        "contention": "unknown; repeated samples drifted: contention, scene activity or thermal state possible",
+        "conditions": {
+          "order": "on/off/off/on",
+          "seconds": 3,
+          "warmSeconds": 2,
+          "repeated": true,
+          "resolution": "fixed full route scale",
+          "frameLimit": "display",
+          "physicalOcclusion": "unknown",
+          "actualPresentation": "unavailable",
+          "preparation": [
+            {
+              "enabled": true,
+              "elapsedMs": 2005.3000001907349
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2013.5
+            }
+          ],
+          "warmups": [
+            {
+              "enabled": true,
+              "elapsedMs": 2014.5
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2016.0999999046326
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2012
+            },
+            {
+              "enabled": true,
+              "elapsedMs": 2011.2000000476837
+            }
+          ]
+        },
+        "results": {
+          "frameInterval": {
+            "onMs": 16.665642458100567,
+            "offMs": 16.66592178770952,
+            "deltaMs": -0.0002793296089542707
+          },
+          "cpu": {
+            "onMs": 5.131666657659743,
+            "offMs": 5.137499990728166,
+            "deltaMs": -0.005833333068423485
+          },
+          "gpuSpan": {
+            "onMs": 6.246276205115848,
+            "offMs": 6.618251240253448,
+            "deltaMs": -0.37197503513760033
+          }
+        },
+        "samples": [
+          {
+            "enabled": true,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 5.932585333453284,
+              "p95Ms": 6.4911088943481445,
+              "maxMs": 8.423411846160889
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 640,
+              "height": 400
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": false,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 5.996999547216627,
+              "p95Ms": 6.862769842147827,
+              "maxMs": 8.911447048187256
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 640,
+              "height": 400
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": false,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 7.23950293329027,
+              "p95Ms": 8.77165699005127,
+              "maxMs": 9.858224153518677
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 640,
+              "height": 400
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": true,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 6.5599670767784115,
+              "p95Ms": 8.260499000549316,
+              "maxMs": 10.866333961486816
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 640,
+              "height": 400
+            },
+            "msaa": 4
+          }
+        ]
+      }
+    ],
+    "play": [
+      {
+        "repeat": 0,
+        "status": "complete",
+        "contention": "unknown",
+        "conditions": {
+          "order": "on/off/off/on",
+          "seconds": 3,
+          "warmSeconds": 2,
+          "repeated": true,
+          "resolution": "fixed full route scale",
+          "frameLimit": "display",
+          "physicalOcclusion": "unknown",
+          "actualPresentation": "unavailable",
+          "preparation": [
+            {
+              "enabled": true,
+              "elapsedMs": 2010.8999998569489
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2005.2000000476837
+            }
+          ],
+          "warmups": [
+            {
+              "enabled": true,
+              "elapsedMs": 2012.1000001430511
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2011.5999999046326
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2013.5
+            },
+            {
+              "enabled": true,
+              "elapsedMs": 2013
+            }
+          ]
+        },
+        "results": {
+          "frameInterval": {
+            "onMs": 16.66592178770949,
+            "offMs": 16.6659217877095,
+            "deltaMs": -1.0658141036401503e-14
+          },
+          "cpu": {
+            "onMs": 5.0716666724946755,
+            "offMs": 4.92527777618832,
+            "deltaMs": 0.14638889630635532
+          },
+          "gpuSpan": {
+            "onMs": 6.510994293954638,
+            "offMs": 6.452590033743117,
+            "deltaMs": 0.05840426021152112
+          }
+        },
+        "samples": [
+          {
+            "enabled": true,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 6.59775210486518,
+              "p95Ms": 7.749340057373047,
+              "maxMs": 8.611953020095825
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 1210,
+              "height": 702
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": false,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 6.490423883332147,
+              "p95Ms": 7.811131000518799,
+              "maxMs": 8.338248014450073
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 1210,
+              "height": 702
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": false,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 6.414756184154086,
+              "p95Ms": 7.552885055541992,
+              "maxMs": 8.067126989364624
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 1210,
+              "height": 702
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": true,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 6.424236483044094,
+              "p95Ms": 7.810797929763794,
+              "maxMs": 9.155025959014893
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 1210,
+              "height": 702
+            },
+            "msaa": 4
+          }
+        ]
+      },
+      {
+        "repeat": 1,
+        "status": "complete",
+        "contention": "unknown",
+        "conditions": {
+          "order": "on/off/off/on",
+          "seconds": 3,
+          "warmSeconds": 2,
+          "repeated": true,
+          "resolution": "fixed full route scale",
+          "frameLimit": "display",
+          "physicalOcclusion": "unknown",
+          "actualPresentation": "unavailable",
+          "preparation": [
+            {
+              "enabled": true,
+              "elapsedMs": 2011.4000000953674
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2012.0999999046326
+            }
+          ],
+          "warmups": [
+            {
+              "enabled": true,
+              "elapsedMs": 2009.3000001907349
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2011
+            },
+            {
+              "enabled": false,
+              "elapsedMs": 2011.6000001430511
+            },
+            {
+              "enabled": true,
+              "elapsedMs": 2012.9000000953674
+            }
+          ]
+        },
+        "results": {
+          "frameInterval": {
+            "onMs": 16.66601671309194,
+            "offMs": 16.66564245810059,
+            "deltaMs": 0.0003742549913496873
+          },
+          "cpu": {
+            "onMs": 5.490858727214739,
+            "offMs": 5.461111117071575,
+            "deltaMs": 0.02974761014316396
+          },
+          "gpuSpan": {
+            "onMs": 6.565754283498198,
+            "offMs": 6.745646915170881,
+            "deltaMs": -0.17989263167268277
+          }
+        },
+        "samples": [
+          {
+            "enabled": true,
+            "status": "complete",
+            "span": {
+              "samples": 181,
+              "avgMs": 6.768062931398002,
+              "p95Ms": 8.160874843597412,
+              "maxMs": 9.661351919174194
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 1210,
+              "height": 702
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": false,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 6.961553924613529,
+              "p95Ms": 8.753657817840576,
+              "maxMs": 10.282051801681519
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 1210,
+              "height": 702
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": false,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 6.529739905728234,
+              "p95Ms": 8.371039152145386,
+              "maxMs": 12.352727890014648
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 1210,
+              "height": 702
+            },
+            "msaa": 4
+          },
+          {
+            "enabled": true,
+            "status": "complete",
+            "span": {
+              "samples": 180,
+              "avgMs": 6.362321698665619,
+              "p95Ms": 8.020918846130371,
+              "maxMs": 11.368910074234009
+            },
+            "missing": 0,
+            "renderPartial": 0,
+            "computePartial": 0,
+            "adapter": {
+              "vendor": "apple",
+              "architecture": "metal-3",
+              "device": "",
+              "description": "",
+              "isFallbackAdapter": false
+            },
+            "pixels": {
+              "width": 1210,
+              "height": 702
+            },
+            "msaa": 4
+          }
+        ]
+      }
+    ],
+    "note": "Narrow graph unchanged by final crisp epsilon. Shared-machine exclusivity unknown. Negative deltas are not savings."
+  },
+  "normal": {
+    "defaultGroundGraphSourceIdentical": true,
+    "routeReadback": {
+      "devEnabled": false,
+      "resources": [],
+      "weightMeshes": 0,
+      "comparisonAdapter": false
+    },
+    "experimentChunk": "ground-edges-CJ689kj8.js",
+    "experimentInFirst": false,
+    "firstLoadGzipKiB": {
+      "js": 569.5166015625,
+      "wasm": 1124.1796875,
+      "css": 10.837890625,
+      "other": 91.828125
+    },
+    "baselineRoundedKiB": {
+      "js": 569,
+      "wasm": 1124,
+      "css": 11,
+      "other": 92
+    },
+    "first": [
+      "assets/BufferGeometryUtils-pA5bf8ah.js",
+      "assets/__vite-plugin-wasm-helper-Y7WR0nsT.js",
+      "assets/arrival-Bn8HlqsO.js",
+      "assets/arrival-CEQqsMC0.js",
+      "assets/asset-manifest-BetF-7JJ.js",
+      "assets/async-CkIh8y1D.js",
+      "assets/audio-BKYK7FuU.js",
+      "assets/avatars-Cd_1Cebg.js",
+      "assets/build-id-DTSa-zCj.js",
+      "assets/builds-DkReookX.js",
+      "assets/camera-arm-BxRy2m2e.js",
+      "assets/caustics-DYk0RNiK.js",
+      "assets/clink-De0MEVHj.js",
+      "assets/clock-worker-DlVjzWKR.js",
+      "assets/constants-C-DXbsiV.js",
+      "assets/contacts-CUI4DvfM.js",
+      "assets/controls-DybuurUJ.js",
+      "assets/conversation-BvHDSoP0.css",
+      "assets/conversation-Cqc9sRCy.js",
+      "assets/dev-input-Bm_0XelH.js",
+      "assets/dev-preferences-RQDMBnU5.js",
+      "assets/dom-BxPGxLV_.js",
+      "assets/draw-count-Bxs5W9my.js",
+      "assets/engine-9DA66v1R.js",
+      "assets/entity-CS94kmXo.js",
+      "assets/fft-Dr9FIEQk.js",
+      "assets/flags-DSw5gGnv.js",
+      "assets/game-world-CRvRakMW.js",
+      "assets/gift-catalog-CzMiAm1s.js",
+      "assets/glyphs-Ci6DPHcm.css",
+      "assets/glyphs-D6nvSkKM.js",
+      "assets/graphics-settings-fln9oFMc.js",
+      "assets/hands-WmT44pCF.js",
+      "assets/haul-feel-DdGJ_YrO.js",
+      "assets/haul-pieces-CwRPLOYQ.js",
+      "assets/haul-stack-BKXVyHAO.css",
+      "assets/haul-stack-Ck2ExTKS.js",
+      "assets/haul-variant-D0U6x8dx.js",
+      "assets/heights-CGXhP7PJ.js",
+      "assets/hero-clips-CB2Ql2y8.js",
+      "assets/hut-blueprint-mBScM55y.js",
+      "assets/input-BfYuxhlA.css",
+      "assets/input-DYp0bF0B.js",
+      "assets/input-state-FlGSmVzQ.js",
+      "assets/inspect-D-O5SOss.js",
+      "assets/item-models-So5ujo15.js",
+      "assets/lights-rrPp73x_.js",
+      "assets/live-BflU0DGc.js",
+      "assets/loop-BACyQijE.js",
+      "assets/machine-sfx-HVgcKCHg.js",
+      "assets/main-CH48jbja.css",
+      "assets/main-CNTnElRm.js",
+      "assets/main-DCoi2pWI.js",
+      "assets/mark-CcyAyGMv.js",
+      "assets/materials-BNpr1NAW.js",
+      "assets/math-pure-IZwqsMQ0.js",
+      "assets/memory-DNddKdeN.js",
+      "assets/modal-D_6LH44U.js",
+      "assets/model-BLFtO-mw.js",
+      "assets/modulepreload-polyfill-P2Xu9kJm.js",
+      "assets/motion-CrGdKhrX.js",
+      "assets/motion-DCv308K5.js",
+      "assets/net-QL9-tsvk.js",
+      "assets/noise-CPE7lStG.js",
+      "assets/notify-ChuW_YPu.css",
+      "assets/notify-D3_AARGN.js",
+      "assets/npc-voice-BvJUb_Dv.js",
+      "assets/particles-CHgbgb8f.js",
+      "assets/pause-pages-U1c1KZD_.js",
+      "assets/physics-BbZ7RNNh.js",
+      "assets/player-CAikRT1F.js",
+      "assets/precompile-Qi4Ju8mC.js",
+      "assets/preload-helper-BLdHbfdN.js",
+      "assets/prop-models-CUqSTpmd.js",
+      "assets/props-DYIw1lcL.js",
+      "assets/props-VeJoyI28.js",
+      "assets/quality-BWG8sHtF.js",
+      "assets/rapier-B-xeHNxw.js",
+      "assets/rapier_wasm3d_bg-Z_KLso_L.wasm",
+      "assets/receivers-1BVSSoHe.js",
+      "assets/rng-BsERB_me.js",
+      "assets/rolldown-runtime-DK3Fl9T5.js",
+      "assets/route--bZhGS1G.js",
+      "assets/scene-BLN_yYU1.js",
+      "assets/shape-DyrNdCn0.js",
+      "assets/shared-time-H9n7K3Mm.js",
+      "assets/shore-nodes-Dngh_6-E.js",
+      "assets/shore-options-QKCYyFFk.js",
+      "assets/sky-DcWhvJPc.js",
+      "assets/sky-FTO-83eu.js",
+      "assets/sky-clock-DNsFR1In.js",
+      "assets/sky-core-BeKCMFv-.js",
+      "assets/spectrum-C279Zz6c.js",
+      "assets/splash-CkzrnoxW.css",
+      "assets/splash-O1KXWd6S.js",
+      "assets/splash-art-CUf4wrPt.jpg",
+      "assets/splash-art-D6cO98ar.js",
+      "assets/state-B6fvTOre.js",
+      "assets/state-C5RZ5nLY.js",
+      "assets/state-CDXn7afn.js",
+      "assets/state-COzdR3fQ.js",
+      "assets/state-DZRnVjW6.js",
+      "assets/state-ruHHr2g-.js",
+      "assets/sync-wnwiAZrb.js",
+      "assets/terrain-Ch1_6WTR.js",
+      "assets/three-DQGcMvy3.js",
+      "assets/timeline-DyF6aVBF.js",
+      "assets/tone-BNFEH049.js",
+      "assets/tsl-5pqv_pex.js",
+      "assets/ui-sound-CGl6Ti-3.js",
+      "assets/ui-sound-CbSmJVW8.css",
+      "assets/view-Bg84WAwR.js",
+      "assets/water-field-lac_h6_0.js",
+      "assets/water-render-CpJhc1ld.js"
+    ]
+  },
+  "retainedFailures": [
+    {
+      "id": "1793844960133-27579",
+      "reason": "Staging preset pack, not a bot run."
+    },
+    {
+      "id": "1793845004172-28045",
+      "reason": "Missing shot=play; default hat staging, not a bot run."
+    },
+    {
+      "id": "1793845117250-29352",
+      "reason": "Real bot stopped at harvest after Station 2 under stall 180; later expected beats missed."
+    },
+    {
+      "id": "1793845932402-37950",
+      "reason": "Isolation eval bare three/tsl import did not resolve."
+    },
+    {
+      "id": "1793845958228-38126",
+      "reason": "Conditional isolation material failed exact frozen-repeat check; superseded by unconditional mix."
+    }
+  ],
+  "departures": [
+    "npm run inflight fetched origin before its implementation was inspected, contrary to local-only network restriction. No push or ship."
+  ],
+  "unverified": [
+    "Real-time smoothness and shimmer",
+    "Mobile device appearance/performance",
+    "Exclusive GPU cost",
+    "Sand/grass look on gentler authored beaches",
+    "Completed full playthrough"
+  ]
+}

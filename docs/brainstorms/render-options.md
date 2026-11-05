@@ -1,4 +1,4 @@
-> **Status: answered (2026-11-04).** Owner chose Current over both Buddy light ramps. Ground boards and outline cost remain unanswered. Ramp code: tag `archive/buddy-light-ramp`. [Findings](../research/buddy-light-ramp.md).
+> **Status: answered (2026-11-04).** Owner chose Current over both Buddy light ramps and over narrower ground edges; outline cost remains unanswered. Code: tags `archive/buddy-light-ramp` and `archive/ground-edges`. Findings: [ramp](../research/buddy-light-ramp.md), [ground](../research/ground-edges.md).
 
 # Rendering options we never really tried
 
@@ -46,7 +46,7 @@ Frozen-frame boards from `dev/look/shots.ts` on `proto=place&water=new&dev=1&sho
 ## Open questions
 
 1. Run the Buddy ramp comparison now, or hold everything for the later rendering pass? **Recommended: run it now as stills and motion only, since it costs little and doesn't touch the replay.** Answer (owner): "Yes, run it now."
-2. Make ground boundary comparison stills now, with adoption left to the terrain pass? **Recommended: yes, one board only.** Answer: not answered; recommendation is not approval.
+2. Make ground boundary comparison stills now, with adoption left to the terrain pass? **Recommended: yes, one board only.** Answer (owner): "Sure, yeah." Verdict after the board: "Keep Current."
 3. Measure the outline cost breakdown now? **Recommended: no, wait until the ramp result, unless outlines are still wanted after it.** Answer: not answered; recommendation is not approval.
 
 ## Parked
