@@ -1,0 +1,48 @@
+{
+  "id": "railway-recovery",
+  "title": "An isolated T1 deposit survives a crash",
+  "kind": "lock",
+  "order": 61,
+  "steps": [
+    {
+      "hl": ["server"],
+      "text": "The headless T1 proof uses an isolated test namespace; default gameplay and registry are unchanged. The shared room manager retains exclusive authority until closing is durable and fences reconnects after a refused close, protecting existing rooms too.",
+      "cite": [
+        { "file": "src/world/railway-namespace.ts" },
+        { "file": "src/world/rules/railway-index.ts" },
+        { "file": "server/src/host/rooms.ts" }
+      ]
+    },
+    {
+      "go": [["you.world", "server"]],
+      "text": "The server binds a request to the authenticated player and issued epoch. Reach and cadence are host facts. A bounded receipt window prevents retries from spending twice.",
+      "cite": [{ "file": "server/src/host/railway-requests.ts" }, { "file": "src/world/rules/railway.ts" }]
+    },
+    {
+      "hl": ["server"],
+      "text": "Before publishing a stamp, the existing sync durably replaces a verified checkpoint plus its ordered future queue. Refused writes pause production; a bad load is never served as fresh progress.",
+      "cite": [{ "file": "src/world/sync.ts", "symbol": "checkpointRecovery" }, { "file": "server/src/store.ts" }]
+    },
+    {
+      "go": [
+        ["server", "you.world"],
+        ["server", "fr.world"]
+      ],
+      "text": "Apply transfers only available cargo into the fixed 24-log bill. At 23/24, competing four-log offers move one then zero. That one transfer starts one funded job, independently of any animation.",
+      "cite": [{ "file": "src/sim/railway.ts", "symbol": "railApply" }]
+    },
+    {
+      "hl": ["server"],
+      "text": "Restart verifies the envelope and replays the stored tail once. Bounded offline completion advances only funded work. Persistent personal carry and shared drops remain in the conservation equation.",
+      "cite": [
+        { "file": "src/world/sync.ts", "symbol": "restoreRecovery" },
+        { "file": "src/sim/railway.ts", "symbol": "railCounts" }
+      ]
+    },
+    {
+      "hl": ["you.features"],
+      "text": "The separate headless personal-profile contract writes a claim and cosmetic together under an exclusive lock. Browser locking, accepted effects and the playable adapter still wait for slice 2.",
+      "cite": [{ "file": "src/railway-profile.ts" }, { "file": "docs/plans/production-core.md" }]
+    }
+  ]
+}

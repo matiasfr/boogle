@@ -132,6 +132,8 @@ This sketch shows the wiring; copy `piles.ts` for typed `SyncView`, `Land`, edit
 
 ## Modules
 
+The isolated headless production proof uses `railway-index.ts` and its own namespace rather than appending to default `RULES`. Its ordered registry is `[roster, railway]`; `RailwayRules` exposes `RailwayApi` without changing classic's API or saved states. `railway.ts` owns session epochs, terminal rejections, wake/chop/take/drop/deposit and bounded funded-job resume. `railReach` and `railCadence` are fail-closed host facts supplied by `createRailwayWorldHost` from fresh Owner presence and the host clock. Source positions are world centimetres, not classic grid cells. The full transaction/recovery contract and slice-2 gate remain in `docs/plans/production-core.md`.
+
 | Module | Ops | State | API |
 |---|---|---|---|
 | `gifts.ts` | `gift.take`, `gift.toss` | `gifts` | `{ gifts }`: thrown items and the frisbee perch over `land.layout`; exports `SEEDS`, `LOST` |

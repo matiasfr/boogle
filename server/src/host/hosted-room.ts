@@ -12,7 +12,9 @@
 import type { WebSocket } from 'ws';
 import { CLOSE, MAX_MSG, encode, decode, type WireMsg } from '../../../src/net/ws-wire.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
-import { createWorldHost } from './world-host.ts';
+import { createWorldHost, createRailwayWorldHost } from './world-host.ts';
+import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
+import { RAILWAY_CLIENT_MESSAGES, RAILWAY_HOST_MESSAGES } from '../../../src/world/railway-wire.ts';
 import type { Store } from '../store.ts';
 
 export type HostCfg = {
@@ -78,13 +80,28 @@ export function createHostedRoom({
   const deadMs = cfg.deadMs ?? 5000;
   const leadHiddenMs = cfg.leadHiddenMs ?? 5000;
   const clients = new Map<string, Client>(); // ready clients by selfId
-  const world = createWorldHost({
+  const railway = isRailwayRoom(roomId);
+  const poseAt = new Map<string, number>();
+  const hostOptions = {
     roomId,
     store,
     saveMs: cfg.serverSaveMs,
     log,
-    pidOf: (sid) => clients.get(sid)?.pid ?? null,
-  });
+    pidOf: (sid: string) => clients.get(sid)?.pid ?? null,
+  };
+  const world = railway
+    ? createRailwayWorldHost({
+        ...hostOptions,
+        positionOf(sid) {
+          const d = clients.get(sid)?.d;
+          const p = d && typeof d === 'object' ? (d as { p?: unknown }).p : null;
+          const at = poseAt.get(sid);
+          return Array.isArray(p) && typeof p[0] === 'number' && typeof p[2] === 'number' && at !== undefined
+            ? { x: p[0], z: p[2], at }
+            : null;
+        },
+      })
+    : createWorldHost(hostOptions);
   const gone = new Map<string, { s: number; pid: string; key: string; timer: NodeJS.Timeout }>(); // closed, waiting out the grace period
   let lead: string | null = null;
   const retired = new Set<string>(); // sessions a newer tab of their player replaced: turned away if they come back
@@ -102,7 +119,7 @@ export function createHostedRoom({
 
   // The sync's messages: w:snap chunks to the client they name, the rest to everyone, encoded once.
   world.onSend((msg) => {
-    if (msg.t === 'w:snap') {
+    if (msg.t === 'w:snap' || (railway && RAILWAY_HOST_MESSAGES.has(String(msg.t)))) {
       const c = clients.get(String(msg.to));
       if (c) write(c, encode({ t: 'm', from: SERVER_ID, d: msg }));
     } else toAll(encode({ t: 'm', from: SERVER_ID, d: msg }));
@@ -166,6 +183,7 @@ export function createHostedRoom({
       if (!take(c.pres, PRESENCE_RATE, PRESENCE_RATE, now)) return void c.dropped++;
       c.s = m.s as number;
       c.d = m.d;
+      if (railway) poseAt.set(c.id, Date.now());
       c.hiddenSince = visible(c) ? 0 : c.hiddenSince || now;
       const out = encode({ t: 'p', id: c.id, s: c.s, d: c.d });
       for (const to of audience(c.id)) queuePresence(to, c.id, out);
@@ -176,6 +194,12 @@ export function createHostedRoom({
     if (!take(c.msgs, MSG_RATE, MSG_BURST, now)) return void c.dropped++;
     const t = (m.d as WireMsg | null)?.t;
     if (HOST_ONLY.has(t as string)) return void c.dropped++;
+    if (railway) {
+      // Isolated production requests go only to the host. Never relay a forged receipt or old edit protocol.
+      if (t !== 'w:need' && !RAILWAY_CLIENT_MESSAGES.has(String(t))) return void c.dropped++;
+      world.deliver(m.d, c.id);
+      return;
+    }
     if (!CLIENT_ONLY.has(t as string)) toAll(encode({ t: 'm', from: c.id, d: m.d }), c.id);
     world.deliver(m.d, c.id);
   }
@@ -183,6 +207,7 @@ export function createHostedRoom({
   function leave(c: Client) {
     if (clients.get(c.id) !== c) return; // replaced by a newer socket
     clients.delete(c.id);
+    poseAt.delete(c.id);
     if (c.timer) clearTimeout(c.timer);
     for (const o of clients.values()) o.pending.delete(c.id);
     if (closing) return;
@@ -199,6 +224,7 @@ export function createHostedRoom({
   // Takes c out of the room now, without the grace period (its close is then not a leave).
   function drop(c: Client, code: number) {
     clients.delete(c.id);
+    poseAt.delete(c.id);
     if (c.timer) clearTimeout(c.timer);
     for (const x of clients.values()) x.pending.delete(c.id);
     c.ws.close(code);
@@ -317,8 +343,11 @@ export function createHostedRoom({
       for (const g of gone.values()) clearTimeout(g.timer);
       gone.clear();
       toAll(encode({ t: 'bye', why: 'restart' }));
-      await world.close({ save });
-      for (const c of [...clients.values()]) c.ws.close(CLOSE.RESTART);
+      try {
+        await world.close({ save });
+      } finally {
+        for (const c of [...clients.values()]) c.ws.close(CLOSE.RESTART);
+      }
       log(`room ${roomId}: closed at tick ${world.sync.world.tick}`);
     },
   };

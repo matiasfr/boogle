@@ -92,6 +92,14 @@ tick). Tabs run ~2-3 ticks behind the server; edits apply 3 ticks after it stamp
 - `profileTicks()`: `npm run perf -- --sim` only. Times every op apply, handler and state hash until `stop()`, which
   returns `{ rows, kinds }` (one `{ label: ms }` row per tick; each label's registry: `'sim'`, `'applied'` or `'view'`).
 
+## Isolated production recovery
+
+The headless T1 spine opts into `attachWorld(..., { recovery })` only in its separate namespace. Ordinary rooms retain their registry, save format and wire messages. `recovery.read` supplies a versioned envelope containing the checkpoint/hash, catalog/namespace, ordered future stamps, sequence watermark and checksum. `recovery.write` must reject refusal or I/O failure and resolve only after atomic replacement succeeds.
+
+Sync freezes production stamps, ticking and snapshot serving while a replacement is pending. A stamp batch is written before publication; reentrant edits submitted by a tick callback also stop advancement at that boundary. Recovery validates the whole envelope, replays its tail using the existing tick order, then checkpoints before readiness. `whenDurable()` drains the barrier and rejects on failure. `receiveEdit(edit, authenticatedSession)` exposes admission to the isolated request coordinator; admission is still not a terminal material receipt.
+
+The complete envelope is capped at **60,000 UTF-8 bytes**, including its at-most-64 future stamps. Oversize, unsupported, corrupt or refused recovery stops production publication and never overwrites the last good file. The old `badSave` guard also prevents serving a failed-load fallback in ordinary rooms; `noSave` includes both bad and newer load state. Process-crash durability is the guarantee; disk loss and power-loss flush guarantees are outside it.
+
 ## The land as data
 
 `home-land.json` holds the land the rules run on: the grid size `n`, and the gifts layout (palm cells, the log spots, and perch cells). The server
