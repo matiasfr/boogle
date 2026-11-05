@@ -12,6 +12,7 @@
 // Kill switch: a build with BOOGLE_SW=off ships a sw.ts that deletes every boogle- cache and unregisters itself, and
 // ./sw.ts unregisters instead of registering; `?sw=0` does the same for one browser and one load.
 import { cacheable, cacheName, stale, CACHE_PREFIX } from './sw-policy.ts';
+import { fetchAsset } from './asset-fetch.ts';
 
 type Config = { build: string; first: string[]; off: boolean };
 declare const SW_CONFIG: Config; // replaced at build time
@@ -40,7 +41,7 @@ async function precache() {
     first.map(async (path) => {
       const url = new URL(path, scope()).href;
       if (await cache.match(url, MATCH)) return;
-      const res = (await caches.match(url, MATCH)) ?? (await fetch(url));
+      const res = (await caches.match(url, MATCH)) ?? (await fetchAsset(url));
       if (res.ok) await cache.put(url, res);
     }),
   );
@@ -55,7 +56,8 @@ async function purge(all: boolean) {
 async function respond(req: Request) {
   const hit = await caches.match(req, MATCH).catch(() => undefined);
   if (hit) return hit;
-  const res = await fetch(req);
+  // WASM retries belong to its loader, including first visits without a controlling worker.
+  const res = await (new URL(req.url).pathname.endsWith('.wasm') ? fetch(req) : fetchAsset(req));
   if (res.ok && res.status === 200 && res.type === 'basic') {
     const copy = res.clone();
     // Only into a cache that exists: one the page deleted (its kill switch, ./sw.ts) stays deleted.

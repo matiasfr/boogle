@@ -6,7 +6,7 @@ import './app-fill.ts';
 import './splash.ts';
 import './sw.ts';
 import './chunk-reload.ts';
-import { background } from '../async.ts';
+import { bootFailed } from './failure.ts';
 if (new URLSearchParams(location.search).get('startup') === '1')
   (await import('../debug/startup-record.ts')).installStartupRecorder();
-background(import('../main.ts'), 'boot');
+void import('../main.ts').catch(bootFailed);
