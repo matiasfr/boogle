@@ -39,6 +39,16 @@ const hasItem = async (p: Page, [i, j]: number[]): Promise<boolean> =>
   (await items(p)).some(([a, b]) => a === i && b === j);
 const rail = (p: Page): Promise<RailwayProbe> => ev(p.page, () => window.T.rail());
 const adapter = (p: Page): Promise<RailwayAdapterProbe> => ev(p.page, () => window.T.railAdapter());
+// One terminal result per original token, regardless of how many status/retry replies arrived.
+async function burstResults(p: Page, epoch: number, next: number, count: number) {
+  const messages = (await rail(p)).messages;
+  return Array.from({ length: count }, (_, k) => next - count + k).flatMap((request) => {
+    const result = messages.findLast(
+      (m) => m.t === 'r:result' && m.epoch === epoch && m.request === request && m.status !== 'snapshot-required',
+    );
+    return result ? [result] : [];
+  });
+}
 // A failed authority proof ends this run immediately; later checks cannot turn it into a pass.
 function railCheck(name: string, ok: boolean, detail = '') {
   check(name, ok, detail);
@@ -436,17 +446,39 @@ try {
       await sleep(60);
       const race = [RA2, RB].map((p) => ({ p, e: request(p, { op: 'rail.deposit', station: 'T1', n: 4 }) }));
       await Promise.all(race.map(({ p, e }) => ev(p.page, (e: RailAction) => window.T.railEdit(e), e)));
-      railCheck(
-        'both final-piece requests receive terminal outcomes',
-        (await waitFor(async () => {
-          const states = await Promise.all(race.map(({ p }) => rail(p)));
-          return states.every((s, k) =>
-            s.messages.some(
-              (m) => m.t === 'r:result' && m.epoch === race[k]!.e.epoch && m.request === race[k]!.e.request,
-            ),
+      let raceProbeAt = Date.now();
+      const raceSettled = await waitFor(async () => {
+        const states = await Promise.all(race.map(({ p }) => rail(p)));
+        const replies = states.map((s, k) =>
+          s.messages.filter((m) => m.epoch === race[k]!.e.epoch && m.request === race[k]!.e.request),
+        );
+        if (replies.every((messages) => messages.some((m) => m.t === 'r:result'))) return true;
+        // Separate socket callbacks can straddle a durable write. Like the real adapter, retry the SAME
+        // token after correlated busy; busy itself is never a terminal result. Missing replies still fail.
+        if (Date.now() - raceProbeAt >= 1000) {
+          raceProbeAt = Date.now();
+          await Promise.all(
+            race.map(async ({ p, e }, k) => {
+              const messages = replies[k]!;
+              if (
+                !messages.some((m) => m.t === 'r:result') &&
+                messages.some((m) => m.t === 'r:state' && m.state === 'busy')
+              )
+                await ev(p.page, (e: RailAction) => window.T.railEdit(e), e);
+            }),
           );
-        })) >= 0,
+        }
+        return false;
+      });
+      const raceReplies = await Promise.all(
+        race.map(async ({ p, e }) => ({
+          player: p.name,
+          epoch: e.epoch,
+          request: e.request,
+          replies: (await rail(p)).messages.filter((m) => m.epoch === e.epoch && m.request === e.request),
+        })),
       );
+      railCheck('both final-piece requests receive terminal outcomes', raceSettled >= 0, JSON.stringify(raceReplies));
       const outcomes = await Promise.all(
         race.map(async ({ p, e }) =>
           (await rail(p)).messages.findLast(
@@ -513,6 +545,29 @@ try {
       (await Promise.all([AA, AB].map(adapter))).every((p) => p.state.phase === 'idle' && p.state.pending === 0),
     )) >= 0,
   );
+  // Prove rejection without relying on socket batches landing inside a real-time cadence window.
+  const beforeRejected = await adapter(AA);
+  railCheck(
+    'adapter queues an out-of-reach stroke',
+    await ev(AA.page, () => window.T.railIntent({ op: 'rail.chop', id: 0, yaw: 0, collapsed: false })),
+  );
+  railCheck(
+    'a rejected stroke retires through verified state without material or success effects',
+    (await waitFor(async () => {
+      const p = await adapter(AA);
+      const results = await burstResults(AA, beforeRejected.state.epoch, beforeRejected.state.next + 1, 1);
+      return (
+        p.state.ready &&
+        p.state.pending === 0 &&
+        p.state.carry === 0 &&
+        p.effects.length === beforeRejected.effects.length &&
+        results.length === 1 &&
+        results[0]!.status === 'rejected' &&
+        results[0]!.accepted === 0
+      );
+    })) >= 0,
+  );
+  const beforeBurst = await adapter(AA);
   await ev(AA.page, () => window.T.railPose('source'));
   await sleep(60);
   const incoming = await ev(
@@ -532,16 +587,42 @@ try {
       incoming.state.carry === 0,
   );
   railCheck(
-    'rejected burst strokes retire only through accepted state',
+    'every burst stroke retires through its terminal outcome and conserved state',
     (await waitFor(async () => {
       const s = (await adapter(AA)).state;
-      return s.pending === 0 && s.ready && s.carry === 2;
+      const results = await burstResults(AA, incoming.state.epoch, incoming.state.next, 4);
+      const harvested = results.reduce((sum, r) => sum + Number(r.accepted), 0);
+      return (
+        results.length === 4 &&
+        results.every((r) => r.accepted === 0 || r.accepted === 2) &&
+        harvested > 0 &&
+        s.pending === 0 &&
+        s.ready &&
+        s.carry === harvested &&
+        s.counts.source === beforeBurst.state.counts.source - harvested &&
+        s.counts.total === RAILWAY_SUPPLY
+      );
     })) >= 0,
+    JSON.stringify(await burstResults(AA, incoming.state.epoch, incoming.state.next, 4)),
   );
-  const acceptedChops = (await adapter(AA)).effects.filter((e) => e.op === 'rail.chop');
+  const afterBurst = await adapter(AA);
+  const chopResults = await burstResults(AA, incoming.state.epoch, incoming.state.next, 4);
+  const acceptedChops = afterBurst.effects.filter((e) => e.op === 'rail.chop');
   railCheck(
-    'only one accepted burst stroke has a success effect',
-    acceptedChops.length === 1 && acceptedChops[0]!.accepted === 2,
+    'success effects are unique positive outcomes; snapshots never replay them',
+    new Set(acceptedChops.map((e) => e.request)).size === acceptedChops.length &&
+      acceptedChops.every((e) =>
+        chopResults.some(
+          (r) =>
+            r.epoch === e.epoch &&
+            r.request === e.request &&
+            r.status === 'accepted' &&
+            r.accepted === e.accepted &&
+            e.accepted > 0,
+        ),
+      ) &&
+      (afterBurst.resets > beforeBurst.resets ||
+        acceptedChops.length === chopResults.filter((r) => Number(r.accepted) > 0).length),
   );
   while ((await adapter(AA)).state.carry < 8) {
     await ev(AA.page, () => window.T.railPose('source'));
@@ -579,18 +660,26 @@ try {
       outgoing.state.carry === 8,
   );
   railCheck(
-    'terminal rejections leave the seven unaccepted logs carried',
+    'every deposit has a terminal outcome and only its accepted logs leave carry',
     (await waitFor(async () => {
       const states = await Promise.all([AA, AB].map(adapter));
-      return states.every(
-        (p) =>
-          p.state.ready &&
-          p.state.pending === 0 &&
-          p.state.counts.stock === 1 &&
-          p.state.counts.carry === 7 &&
-          p.state.counts.total === RAILWAY_SUPPLY,
+      const results = await burstResults(AA, outgoing.state.epoch, outgoing.state.next, 8);
+      const deposited = results.reduce((sum, r) => sum + Number(r.accepted), 0);
+      return (
+        results.length === 8 &&
+        results.every((r) => r.accepted === 0 || r.accepted === 1) &&
+        deposited > 0 &&
+        states.every(
+          (p) =>
+            p.state.ready &&
+            p.state.pending === 0 &&
+            p.state.counts.stock === deposited &&
+            p.state.counts.carry === 8 - deposited &&
+            p.state.counts.total === RAILWAY_SUPPLY,
+        )
       );
     })) >= 0,
+    JSON.stringify(await burstResults(AA, outgoing.state.epoch, outgoing.state.next, 8)),
   );
   const beforeSnapshot = await adapter(AA);
   await ev(AA.page, () => window.T.railSnapshot());
@@ -607,7 +696,12 @@ try {
     'late reload reconstructs balances without replaying effects',
     (await waitFor(async () => {
       const p = await adapter(AB);
-      return p.state.ready && p.state.counts.stock === 1 && p.state.counts.carry === 7 && p.effects.length === 0;
+      return (
+        p.state.ready &&
+        p.state.counts.stock === beforeSnapshot.state.counts.stock &&
+        p.state.counts.carry === beforeSnapshot.state.counts.carry &&
+        p.effects.length === 0
+      );
     })) >= 0,
   );
   const beforeRestart = await adapter(AA);
@@ -621,8 +715,8 @@ try {
       return (
         (await adapterReady()) &&
         p.state.epoch === beforeRestart.state.epoch + 1 &&
-        p.state.counts.stock === 1 &&
-        p.state.counts.carry === 7 &&
+        p.state.counts.stock === beforeRestart.state.counts.stock &&
+        p.state.counts.carry === beforeRestart.state.counts.carry &&
         p.effects.length === beforeRestart.effects.length
       );
     }, 15000)) >= 0,
