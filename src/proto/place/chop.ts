@@ -392,7 +392,7 @@ function solidTree(t: Tree) {
         const on = ax * Math.sin(t.fallYaw) + az * Math.cos(t.fallYaw),
           side = ax * Math.cos(t.fallYaw) - az * Math.sin(t.fallYaw);
         if (on > -1 && on < h + 1 && Math.abs(side) < t.size + 0.8) continue;
-        if (TREES.some((other) => other.fall < 0 && Math.hypot(x - other.x, z - other.z) < other.size + 0.8)) continue;
+        if (TREES.some((other) => standing(other) && Math.hypot(x - other.x, z - other.z) < other.size + 0.8)) continue;
         if (sweepSphere({ x, y: y + 128, z }, { x, y: y + 1.1, z }, 0.6, { mask: 0xffff, thin: 'skip' }) >= 0) continue;
         clear = { x, y: y + 1.1, z };
       }
@@ -479,17 +479,12 @@ const Q0 = new THREE.Quaternion(),
   S1 = new THREE.Vector3(),
   P1 = new THREE.Vector3();
 function pose(t: Tree, now: number) {
-  const hardwoodIndex = hardwoodIndices.get(t.index);
   if (t.cleared) {
     for (const m of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch]) m.setMatrixAt(t.index, ZERO);
-    if (hardwoodIndex !== undefined) {
-      for (const m of [parts.hardwood, parts.branch, parts.cutEnd]) m.setMatrixAt(hardwoodIndex, ZERO);
-      for (let k = 0; k < 2; k++) parts.forks.setMatrixAt(hardwoodIndex * 2 + k, ZERO);
-      for (let k = 0; k < 3; k++) parts.broad.setMatrixAt(hardwoodIndex * 3 + k, ZERO);
-    }
     for (const m of Object.values(parts)) m.instanceMatrix.needsUpdate = true;
     return;
   }
+  const hardwoodIndex = hardwoodIndices.get(t.index);
   let a = 0,
     b = 0;
   if (t.fall >= 0) {
@@ -762,7 +757,7 @@ function startSwing(x: number, z: number) {
 }
 /** Press: the swing starts now. False while the last one is still going. */
 export function chop(t: Tree) {
-  if (t.cleared || swing.t < TUNE.swingS || !me.body) return false;
+  if (swing.t < TUNE.swingS || !me.body) return false;
   swing.target = t;
   swing.rock = null;
   startSwing(t.x, t.z);
