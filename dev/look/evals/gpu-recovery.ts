@@ -79,5 +79,6 @@ if (!baseline) {
   }
   if (mode.includes('loss') && !result.stopped) throw new Error('three device-loss guard was not preserved');
   console.log('GPU assertions passed');
+  document.documentElement.dataset.gpuRecovery = 'passed';
 }
 export {};
