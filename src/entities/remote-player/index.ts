@@ -36,6 +36,7 @@ type Ride = {
   bodyW: number;
   lastSeen: number; // existing presence sample time, in this page's clock
   drawn: boolean;
+  boarding: boolean; // a new boarding blends current world presence, not an obsolete pre-boarding avatar pose
   blendLeft: number;
   drawOffset: Local; // continuity from the last displayed pose when attachment changes
   world: THREE.Vector3; // their world presence pose this frame
@@ -113,6 +114,7 @@ onRemotePresence((r, pr, time) => {
       bodyW: 0,
       lastSeen: time,
       drawn: false,
+      boarding: !r.ride,
       blendLeft: 0,
       drawOffset: { x: 0, y: 0, z: 0, yaw: 0 },
       world: new THREE.Vector3(),
@@ -167,6 +169,7 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
   const at = on ? rideAt : ride.world;
   const yaw = on ? rideAt.yaw : ride.worldYaw;
   if (!ride.drawn || on !== ride.on) {
+    if (ride.drawn) ride.boarding = false;
     const shown = r.avatar;
     ride.drawOffset.x = (shown?.position.x ?? ride.world.x) - at.x;
     ride.drawOffset.y = (shown?.position.y ?? ride.world.y) - at.y;
@@ -175,8 +178,17 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
     ride.blendLeft = RIDE_BLEND_S;
     ride.drawn = true;
   }
+  if (on && ride.boarding) {
+    // As on main, let incoming world presence finish the approach instead of replaying a frozen old offset.
+    // Later attachment changes retain the last-displayed-pose easing above for continuity across train gaps.
+    ride.drawOffset.x = ride.world.x - at.x;
+    ride.drawOffset.y = ride.world.y - at.y;
+    ride.drawOffset.z = ride.world.z - at.z;
+    ride.drawOffset.yaw = angleLerp(yaw, ride.worldYaw, 1) - yaw;
+  }
   ride.on = on;
   ride.blendLeft = Math.max(0, ride.blendLeft - dt);
+  if (ride.blendLeft === 0) ride.boarding = false;
   const u = ride.blendLeft / RIDE_BLEND_S;
   const ease = u * u * (3 - 2 * u);
   ride.w = on ? 1 - ease : ease;

@@ -63,7 +63,8 @@ Presence goes out every 50 ms (20 Hz, `SEND_MS`); remote poses are drawn 120 ms 
 Remote riders use the existing Owner `riding` platform ID and local pose. While that advertisement is fresh and
 the platform exists here, the avatar follows our drawn deck regardless of the world-space gap between train
 copies. Leaving, an unknown platform, or a riding sample older than 1 second blends back to world presence.
-Attachment changes ease over 0.2 seconds from the last displayed pose, including switching platforms. This is
+New boarding blends current world presence onto the deck over 0.2 seconds, so a completed approach does not
+replay an obsolete avatar offset. Later attachment changes ease from the last displayed pose, including switching platforms. This is
 Local presentation only: collision proxies retain their prior distance guard, and wire fields, authority,
 lockstep and Place train reconciliation are unchanged. Serves DESIGN.md 4, Cooperation is automatic, not negotiated.
 
