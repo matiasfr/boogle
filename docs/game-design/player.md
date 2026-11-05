@@ -55,6 +55,12 @@ Version comparisons and verification limits live in the [upgrade assessment](../
 Every avatar gets a render-only spring: landing squash (about 15 % on a normal landing, max 45 %), take-off stretch,
 lean toward acceleration (max 0.35 rad). Your own client starts flops and publishes them as presence `fl`:
 
+The owner-written `feel.spring.stiffness` tunable captures a new profile at the next landing, takeoff or Place chop.
+Its default remains 298 /s² (allowed 50–600). A chop already underway keeps its captured profile until the existing
+chop presentation ends or the next swing begins; changing this cosmetic setting never changes contact, rewards,
+physics or railway timings. Presence `feelSpring` carries the active profile so peers and late joiners render that
+player with the same stiffness. The configured and active revisions are separately inspectable in the tuning API.
+
 | Flop   | Trigger                                                                   | Length |
 | ------ | ------------------------------------------------------------------------- | ------ |
 | splat  | Landing faster than 13.5 m/s                                              | 700 ms |
