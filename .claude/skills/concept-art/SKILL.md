@@ -9,6 +9,10 @@ description: Generate images from text prompts with the OpenAI Images API or Cod
 
 ## Routes
 
+For the owner's 5 November **image-first experiment**, capture a real game screenshot before prop previz, then use the chosen concept for a `refsheet`. Start with front/side/back; add three-quarter for assembly or top for footprint only when they answer a concrete modelling question. Hold geometry and scale fixed when comparing view sets. This is an experiment, not evidence that references improve assets; see [motion-references](../../../docs/research/motion-references.md).
+
+Label each input's role: edit target, identity/geometry reference, or style. The current `concepts` wrapper labels all `refs` as style-only and explicitly excludes subject/composition matching; use `$imagegen` with explicit roles when identity must survive. Verify the available route first. Record requested versus returned model, native animation versus a labelled frame-sequence fallback, attempts and reported cost (or unknown). Never infer a native GIF capability from an image-model name or silently update global tools. Respect the task's network limits.
+
 The script picks the first one that is available. Force one with `--via api` or `--via codex`.
 
 1. **OpenAI Images API.** Needs `OPENAI_API_KEY` in the environment. It works in cloud sessions too, because `api.openai.com` is reachable from them. Add the key as an environment secret in the environment's settings (cloud), or export it in your shell (local). Never paste a key into chat or commit it.
@@ -96,5 +100,5 @@ Prompting rules for assets:
   - Downscale it to the size it is drawn at (`sips -Z <px>` on macOS) and keep it under about 100 KB.
   - Import it from the feature that uses it, so Vite hashes it.
   - Concepts and reference sheets never ship.
-- Don't commit raw generations or contact sheets; they stay in `.look/`.
+- Don't commit raw generations or contact sheets; they stay in `.look/`. An explicit research-evidence request may retain only the small images needed by its report, separate from runtime assets; that does not approve shipping them in the game.
 - Respect cost: draft at `low`, and only regenerate what changed (`--only`, `--recut`).
