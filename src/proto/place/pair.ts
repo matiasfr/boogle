@@ -18,6 +18,7 @@ import { pop } from '../minis/common.ts';
 import { shakeView } from './celebrate.ts';
 import { back } from './chop.ts';
 import { coop, pairHook } from './coop.ts';
+import { currentCoopPeer } from './coop-identity.ts';
 import { callCart, cart, cartHere, depotRails, depotRide, loadCart, onCart, railsOwed } from './depot.ts';
 import { forge, rackTop, takeRail } from './forge.ts';
 import { COOP, count, job, num, save } from './job.ts';
@@ -156,7 +157,7 @@ if (COOP) {
   addPresenceField('placeLongBeam', () => grip);
   onRemotePresence((r, pr) => {
     // Legacy place peers share the transport, but not this version's railway or beam.
-    const end = count(pr.placeCoopTrees1, Number.MAX_SAFE_INTEGER) ? pr.placeLongBeam : null;
+    const end = currentCoopPeer(pr) ? pr.placeLongBeam : null;
     if (end === 0 || end === 1) grips.set(r.peer, { end, seen: performance.now() });
     else grips.delete(r.peer);
   });

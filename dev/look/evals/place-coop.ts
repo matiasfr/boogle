@@ -4,6 +4,9 @@
 // Does the new job stay together: a wake, a deposit from the follower, a chest opened by the follower (the rung is everyone's),
 // a skip to trains, and a train called from a platform. Each says what it sees; read the COOP lines side by side.
 const q = new URLSearchParams(location.search);
+const { COOP_IDENTITY, currentCoopPeer } = (await import(
+  '/src/proto/place/coop-identity.ts' as string
+)) as typeof import('../../../src/proto/place/coop-identity.ts');
 const who = q.get('player');
 // oxlint-disable-next-line typescript/no-explicit-any
 const place = window.__place as any;
@@ -42,17 +45,30 @@ if (q.has('greatCarry')) {
   const { input } = await import('/src/player/input.ts' as string);
   const hands = await import('/src/player/hands.ts' as string);
   const bot = makeBot();
+  const approach = async (x: number, z: number) => {
+    if (q.has('saved')) {
+      if (!(await bot.walk(x, z, 0.5, { limit: 120000 }))) throw new Error('Beam approach failed');
+    } else put(x, z);
+  };
   const marks = new Set<string>();
+  const entered = new Set<string>();
+  const acknowledged = new Set<string>();
   net.room.onMessage((m: { t: string; k: string; ack?: boolean }) => {
     if (m.t !== 'beamProbe') return;
+    if (m.ack) {
+      acknowledged.add(m.k);
+      return;
+    }
     marks.add(m.k);
-    if (!m.ack) net.room.send({ t: 'beamProbe', k: m.k, ack: true });
+    if (entered.has(m.k)) net.room.send({ t: 'beamProbe', k: m.k, ack: true });
   });
   const barrier = async (k: string) => {
+    entered.add(k);
+    if (marks.has(k)) net.room.send({ t: 'beamProbe', k, ack: true });
     net.room.send({ t: 'beamProbe', k });
     const retry = setInterval(() => net.room.send({ t: 'beamProbe', k }), 200);
     try {
-      await until(() => marks.has(k), k, 30000);
+      await until(() => marks.has(k) && acknowledged.has(k), k, 120000);
     } finally {
       clearInterval(retry);
     }
@@ -71,11 +87,11 @@ if (q.has('greatCarry')) {
     await until(() => place.coop.debug().peers.length > 0, 'partner arrived');
     await barrier('ready');
     await wait(1500); // the initial authority snapshot must precede the skip
-    if (who === '1') place.coop.skip('path', place.skipPath);
+    if (who === '1' && !q.has('saved')) place.coop.skip('path', place.skipPath);
     await until(() => place.job.awake && place.lines[0].open, 'path opened');
     await wait(1200);
     const at = beamEnd(end);
-    put(at.x, at.z);
+    await approach(at.x, at.z);
     await wait(600);
     await barrier('at ends');
     const before = { ...place.job.longBeam };
@@ -99,6 +115,38 @@ if (q.has('greatCarry')) {
     if (!pair.carrying() || place.job.longBeam.x < before.x + 15 || me.sprint)
       throw new Error('Beam carry or walking-only check failed');
     console.log(`COOP ${who} carried beam ${JSON.stringify(place.job.longBeam)} sprint ${me.sprint}`);
+    if (q.has('saved')) {
+      await barrier('carry checked');
+      if (who === '2') await press('Let go');
+      await until(() => !pair.carrying(), 'release stops joint carry');
+      await barrier('released');
+      if (who === '2') await press('Lift');
+      await until(() => pair.carrying(), 'both carry again');
+      await barrier('regripped');
+      const beforeDrop = { ...place.job.longBeam };
+      if (who === '2') net.room.pause(10000);
+      else {
+        await until(() => place.coop.debug().peers.length === 0, 'helper departed', 20000);
+        if (
+          pair.carrying() ||
+          pair.grip() !== 0 ||
+          Math.hypot(place.job.longBeam.x - beforeDrop.x, place.job.longBeam.z - beforeDrop.z) > 0.5
+        )
+          throw new Error('Departure lost surviving grip or long beam pose');
+        await press('Let go');
+        await wait(300);
+        await press('Lift');
+        console.log('COOP PASS long beam departure preserves pose and usable Lift');
+      }
+      await wait(12000);
+      await until(() => place.coop.debug().peers.length > 0, 'helper rejoined', 30000);
+      await barrier('returned');
+      if (pair.grip() === null) await press('Lift');
+      await until(() => pair.carrying(), 'long beam recovered');
+      console.log(`COOP PASS long beam release and recovery ${pair.grip()}`);
+      Object.assign(window, { __coopDone: true });
+      return;
+    }
     if (q.get('beam') === 'carry') {
       Object.assign(window, { __coopDone: true });
       return;
@@ -164,7 +212,7 @@ if (q.has('greatCarry')) {
         peak = Math.max(peak, me.body!.position.y);
       }, 20);
       net.room.onMessage((m: { t: string; k: string; end?: number }) => {
-        if (m.t === 'placeCoopTrees1' && m.k === 'beamBounce') console.log(`COOP ${who} bounce end ${m.end}`);
+        if (m.t === COOP_IDENTITY && m.k === 'beamBounce') console.log(`COOP ${who} bounce end ${m.end}`);
       });
       setTimeout(() => {
         clearInterval(watch);
@@ -199,7 +247,7 @@ if (q.has('greatCarry')) {
       return presence({ ...p, placeRailCart: null });
     };
     onRemotePresence((_r: unknown, pr: Record<string, unknown>) => {
-      if (typeof pr.placeCoopTrees1 === 'number') sawLegacy = !('placeRailCart' in pr);
+      if (currentCoopPeer(pr)) sawLegacy = !('placeRailCart' in pr);
     });
   }
   const setup = () => {
@@ -310,7 +358,7 @@ if (q.has('greatCarry')) {
     const presence = net.room.presence.bind(net.room);
     net.room.presence = (p: Record<string, unknown>) => presence({ ...p, placeCartRide: null });
     onRemotePresence((_r: unknown, pr: Record<string, unknown>) => {
-      if (typeof pr.placeCoopTrees1 === 'number') sawLegacyRide = !('placeCartRide' in pr);
+      if (currentCoopPeer(pr)) sawLegacyRide = !('placeCartRide' in pr);
     });
   }
   const { cart, cartHere, cartPlatform, snapCart } = await import('/src/proto/place/depot.ts' as string);
@@ -440,7 +488,7 @@ if (q.has('greatCarry')) {
     if (m.t === 'coopProbe' && m.k === 'ready' && who === '1') go = true;
     if (m.t === 'coopProbe' && m.k === 'go' && who === '2') go = true;
     if (m.t === 'coopProbe' && m.k === 'back') otherBack = Number(m.n);
-    if (q.has('trace') && m.t === 'placeCoopTrees1' && ['dep', 'stock', 'no'].includes(String(m.k))) trace(m);
+    if (q.has('trace') && m.t === COOP_IDENTITY && ['dep', 'stock', 'no'].includes(String(m.k))) trace(m);
   });
   void (async () => {
     while (!me.body || !net.room || place.coop.debug().peers.length < 1) await wait(100);

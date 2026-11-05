@@ -2,6 +2,10 @@
 // --until window.__coopDone --warm 180. greatCarry=solo|pair|helper-leave|carrier-leave; &follower=1 swaps cargo owner.
 const q = new URLSearchParams(location.search);
 const mode = q.get('greatCarry') ?? 'pair';
+const saved = q.has('saved');
+const { COOP_IDENTITY, currentCoopPeer } = (await import(
+  '/src/proto/place/coop-identity.ts' as string
+)) as typeof import('../../../src/proto/place/coop-identity.ts');
 // oxlint-disable-next-line typescript/no-explicit-any
 const place = window.__place as any;
 const { net, remotes } = (await import(
@@ -67,7 +71,7 @@ const barrier = async (phase: string) => {
   send(phase);
   const timer = setInterval(() => send(phase), 200);
   try {
-    await until(() => messages.has(phase) && ack.has(phase), phase);
+    await until(() => messages.has(phase) && ack.has(phase), phase, 120000);
   } finally {
     clearInterval(timer);
   }
@@ -76,10 +80,13 @@ const stop = () => {
   input.stickX = input.stickY = 0;
   input.keys.clear();
 };
-const put = (x: number, z: number) => {
+const put = async (x: number, z: number) => {
   stop();
-  teleport(me.body!, x, place.H(x, z) + 0.9, z);
-  me.body!.velocity.set(0, 0, 0);
+  if (saved) check('walk to beam position', await makeBot().walk(x, z, 0.5, { limit: 120000 }));
+  else {
+    teleport(me.body!, x, place.H(x, z) + 0.9, z);
+    me.body!.velocity.set(0, 0, 0);
+  }
   cam.yaw = me.yaw = Math.PI;
 };
 const press = async (verb: string) => {
@@ -98,15 +105,23 @@ async function run() {
   await wait(2000);
   const authority = coop.debug().amAuthority;
   const carrier = q.has('follower') ? !authority : authority;
-  while (place.lines[0].stage < 2) {
+  // The broker restores only player 1. Player 2 walks the authored opening path,
+  // whose switchbacks the general pathfinder cannot shortcut across the cliff.
+  if (saved && q.get('player') === '2') {
+    const path = place.PATH_SAMPLES[0] as number[][];
+    for (let n = 0; n < path.length; n += 3)
+      check('walk opening path', await makeBot().walk(path[n]![0]! + place.ORIGIN.x, path[n]![1]!, 1.8));
+  }
+  await barrier('opening path');
+  while (!saved && place.lines[0].stage < 2) {
     const stage = place.lines[0].stage;
     if (authority) coop.skip('delivery', place.skipDelivery);
     await until(() => place.lines[0].stage > stage, 'earlier station laid');
     await barrier(`stage ${stage}`);
   }
-  tree.back.logs = tree.back.rails = tree.back.stone = tree.back.incoming = 0;
+  if (!saved) tree.back.logs = tree.back.rails = tree.back.stone = tree.back.incoming = 0;
   const st = place.lines[0].stations[2];
-  if (authority) {
+  if (authority && !saved) {
     st.have.logs = 40;
     st.drawStock(st.have);
     tree.applyTreeHarvest(tree.greatTree, {
@@ -119,23 +134,27 @@ async function run() {
       collapsed: false,
     });
     net.room!.send({
-      t: 'placeCoopTrees1',
+      t: COOP_IDENTITY,
       k: 'snap',
       snap: { gen: coop.debug().gen, shared: captureShared() },
       force: true,
     });
   }
-  await until(() => tree.trunkDown() && st.have.logs === 40, 'T3 and fallen trunk shared');
+  if (saved && authority && !tree.trunkDown()) {
+    await put(tree.greatTree.x, tree.greatTree.z + 3.5);
+    while (tree.greatTree.fall < 0) await press('Chop');
+  }
+  await until(() => tree.trunkDown() && st.have.logs === 40, 'T3 and fallen trunk shared', 120000);
   await wait(2000);
   await until(() => !got.gettingItem(), 'staged rewards dismissed');
   const start = tree.trunkAt();
-  put(start.x + (carrier ? 2.5 : 15), start.z);
+  await put(start.x + (carrier ? 2.5 : 15), start.z);
   await wait(700);
   await barrier('at source');
   if (carrier) await press('Shoulder the trunk');
   await until(() => tree.trunkTaken(), 'pickup shared');
   // The fallen trunk is solid until pickup. Start the actual segment only after it has gone on both tabs.
-  put(start.x + (!carrier && mode === 'solo' ? 15 : 0), start.z - (carrier ? 0 : 3.4));
+  await put(start.x + (!carrier && mode === 'solo' ? 15 : 0), start.z - (carrier ? 0 : 3.4));
   await wait(700);
   await barrier('clear source');
   cam.yaw = me.yaw = Math.PI;
@@ -164,6 +183,13 @@ async function run() {
     })}`,
   );
   if (!carrier && mode !== 'solo') await press('Help carry');
+  check(
+    'shared capability accepts current publication and excludes retired builds',
+    currentCoopPeer({ [COOP_IDENTITY]: 0 }) &&
+      !currentCoopPeer({ placeCoopTrees1: 0 }) &&
+      !currentCoopPeer({ [COOP_IDENTITY]: -1 }) &&
+      !currentCoopPeer({ [COOP_IDENTITY]: 0.5 }),
+  );
   if (mode !== 'solo') await until(() => (carrier ? greatCarry.assisted() : !!greatCarry.helping()), 'assistance');
   await barrier('grip');
   const frame = () => {
@@ -186,7 +212,7 @@ async function run() {
       else {
         await until(() => tree.trunkDown(), 'carrier departure returns beam');
         check('returned beam is at source', tree.trunkAt().distanceTo(start) < 0.01);
-        put(start.x + 2.5, start.z);
+        await put(start.x + 2.5, start.z);
         await wait(400);
         await press('Shoulder the trunk');
         await wait(300);
@@ -257,11 +283,11 @@ async function run() {
       if (!carrier) await press('Help carry');
       await until(() => (carrier ? greatCarry.assisted() : !!greatCarry.helping()), 'rejoined grip');
       await barrier('regripped');
-      if (!carrier) put(me.body!.position.x + 10, me.body!.position.z);
+      if (!carrier) await put(me.body!.position.x + 10, me.body!.position.z);
       await until(() => !greatCarry.assisted() && !greatCarry.helping(), 'separation releases');
       await barrier('apart');
-      // Staged return solely for the inspection capture; no teleport enters the measured segment.
-      put(start.x, start.z - (carrier ? 0 : 3.4));
+      // Saved runs walk back too; the old staged fixture retains its diagnostic positioning.
+      await put(start.x, start.z - (carrier ? 0 : 3.4));
       await wait(800);
       await barrier('capture position');
       if (!carrier) await press('Help carry');

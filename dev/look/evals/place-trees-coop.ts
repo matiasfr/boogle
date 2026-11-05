@@ -1,5 +1,8 @@
 // Imported by place-coop's &trees=1 route. Real two-peer harvest, replay, legacy-message and snapshot assertions.
 const { net } = (await import('/src/netplay/net.ts' as string)) as typeof import('../../../src/netplay/net.ts');
+const { COOP_IDENTITY, currentCoopPeer } = (await import(
+  '/src/proto/place/coop-identity.ts' as string
+)) as typeof import('../../../src/proto/place/coop-identity.ts');
 const { coop, pairHook } = (await import(
   '/src/proto/place/coop.ts' as string
 )) as typeof import('../../../src/proto/place/coop.ts');
@@ -54,6 +57,14 @@ const barrier = async (phase: string) => {
 await barrier('ready');
 await wait(2000);
 check('current peers retain rail and ride capabilities', coop.railCart() && coop.rideCart());
+check(
+  'current identity accepts zero and rejects retired or malformed capabilities',
+  currentCoopPeer({ [COOP_IDENTITY]: 0 }) &&
+    [undefined, null, -1, 0.5, Infinity, Number.MAX_SAFE_INTEGER + 1, '1'].every(
+      (value) => !currentCoopPeer({ [COOP_IDENTITY]: value }),
+    ) &&
+    !currentCoopPeer({ placeCoopTrees1: 0, placeCoop: 0 }),
+);
 const authority = coop.debug().amAuthority;
 const t = tree.TREES[29]!;
 const empty = () => {
@@ -68,7 +79,7 @@ if (authority) {
 }
 const snapshot = () =>
   net.room!.send({
-    t: 'placeCoopTrees1',
+    t: COOP_IDENTITY,
     k: 'snap',
     snap: { gen: coop.debug().gen, shared: state.captureShared() },
     force: true,
@@ -92,7 +103,7 @@ if (!authority) {
   let held: Parameters<typeof room.send>[0] | null = null;
   room.send = (m) => {
     const message = m as Record<string, unknown>;
-    if (message.t === 'placeCoopTrees1' && message.k === 'harvest') held = m;
+    if (message.t === COOP_IDENTITY && message.k === 'harvest') held = m;
     else send(m);
   };
   try {
@@ -111,7 +122,7 @@ await barrier('follower award');
 if (authority) {
   const receipt = coop.debug().harvestReceipts[0];
   check('authority retained receipt', !!receipt);
-  for (let n = 0; n < 3; n++) net.room!.send({ t: 'placeCoopTrees1', k: 'harvested', ...receipt! });
+  for (let n = 0; n < 3; n++) net.room!.send({ t: COOP_IDENTITY, k: 'harvested', ...receipt! });
 }
 await wait(500);
 check('duplicate receipt awards once', tree.back.logs === (authority ? 0 : 5), tree.back.logs);
@@ -160,7 +171,8 @@ const presence = net.room!.presence.bind(net.room);
 net.room!.presence = (p) =>
   presence({
     ...(p && typeof p === 'object' ? p : {}),
-    placeCoopTrees1: null,
+    [COOP_IDENTITY]: null,
+    placeCoopTrees1: 0,
     placeCoop: 0,
     placeRailCart: 1,
     placeCartRide: 2,

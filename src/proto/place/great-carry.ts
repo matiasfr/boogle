@@ -10,7 +10,8 @@ import { heldId } from '../../player/inventory.ts';
 import { input } from '../../player/input-state.ts';
 import { me } from '../../player/player.ts';
 import { back, greatBeamView } from './chop.ts';
-import { COOP, count, job } from './job.ts';
+import { COOP, job } from './job.ts';
+import { currentCoopPeer } from './coop-identity.ts';
 import { GREAT } from './layout.ts';
 import { pair } from './pair.ts';
 
@@ -64,7 +65,7 @@ if (COOP) {
     return helping;
   });
   onRemotePresence((r, pr) => {
-    if (!count(pr.placeCoopTrees1, Number.MAX_SAFE_INTEGER)) return void peers.delete(r.peer);
+    if (!currentCoopPeer(pr)) return void peers.delete(r.peer);
     const h = pr.placeGreatBeamHelp;
     const load = pr.placeLoad as { rails?: unknown; stone?: unknown } | undefined;
     peers.set(r.peer, {
