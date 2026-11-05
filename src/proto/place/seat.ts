@@ -216,9 +216,11 @@ onPreStep(
     }
     me.wish.set(0, 0, 0);
     b.position.set(p.x, p.y, p.z);
+    // carryStep compares against last step's carry before applying the new deck motion. Pre-applying the deck's
+    // next vertical speed here makes a slope/correction look like a jump and drops seated contact.
     b.velocity.set(
       s.platform?.body.velocity.x ?? 0,
-      s.platform?.body.velocity.y ?? 0,
+      s.platform && carry.on === s.platform ? carry.y : (s.platform?.body.velocity.y ?? 0),
       s.platform?.body.velocity.z ?? 0,
     );
   },

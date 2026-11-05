@@ -28,6 +28,8 @@ and a bright shard in the ring's middle. Two physical things point at it: a line
 
 Seats use the deck's actual cargo-top surface and refresh it while sitting. A loaded train no longer pulls a seated player toward the bare deck and silently ends the seat (and its Stand up prompt) when that error grows.
 
+A seated rider keeps the previous carry vertical speed until the ordinary carry controller applies the deck's next motion. This prevents a sharp slope or snapshot correction from looking like a jump during carry detection. Jump/Interact still release the seat first; no contact thresholds or shared state change.
+
 Fixed chairs keep their authored horizontal anchors and safe aisle exits, with body height clamped above the platform's current `topAt` surface. The floating **Stand up** hint stays visible for three seconds, then fades over 0.35 seconds; the target and Interact/Jump exits remain available. Sitting again restores the hint. On a room lead change, transient claims release and occupants stand at their authored exits; they can sit again after the new lead assigns a fresh claim.
 
 The four rigid chair parts share one vertex-colored geometry and material across trains and the workshop: one color draw and one shadow draw per visible chair instead of four each. Dimensions, colors, roughness, anchors, solids and sitting behavior are unchanged; this is Local drawing only.
