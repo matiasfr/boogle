@@ -7,7 +7,7 @@ import { PIECE, pieceMesh, pieceColor, commitPieces } from './haul-pieces.ts';
 export const SHOWN = 22;
 export const BUNDLE_SCALE = 0.75;
 const R = PIECE.r * BUNDLE_SCALE;
-export type BundleFit = { back: number; floor: number; len: number; round: boolean };
+export type BundleFit = { back: number; floor: number; len: number; round: boolean; radius?: number };
 type Worn = { inner?: THREE.Object3D; loadFit?: BundleFit & { frame: THREE.Object3D } };
 export const frameOf = (a: THREE.Object3D): THREE.Object3D => {
   const u = a.userData as Worn;
@@ -37,11 +37,13 @@ const q = new THREE.Quaternion(),
   sc = new THREE.Vector3();
 export const slotAt = (m: number, fit: BundleFit, out: THREE.Vector3): THREE.Vector3 => {
   const [y, z] = (fit.round ? ROUND : TALL)[m]!;
-  return out.set((((m * 37) % 7) - 3) * 0.012, fit.floor + R + y, fit.back + R + z);
+  const radius = fit.radius ?? 1;
+  return out.set((((m * 37) % 7) - 3) * 0.012, fit.floor + (R + y) * radius, fit.back + (R + z) * radius);
 };
 export function pieceAt(f: THREE.Object3D, fit: BundleFit, m: number, len: number, out: THREE.Matrix4): THREE.Matrix4 {
   q.setFromEuler(e.set(0, (((m * 13) % 5) - 2) * 0.03, (((m * 7) % 5) - 2) * 0.02));
-  sc.set(len * (1 + (((m * 11) % 5) - 2) * 0.03), BUNDLE_SCALE, BUNDLE_SCALE);
+  const radius = BUNDLE_SCALE * (fit.radius ?? 1);
+  sc.set(len * (1 + (((m * 11) % 5) - 2) * 0.03), radius, radius);
   return out.compose(slotAt(m, fit, v), q, sc).premultiply(f.matrixWorld);
 }
 export function bandAt(
@@ -53,9 +55,10 @@ export function bandAt(
   out: THREE.Matrix4,
 ): THREE.Matrix4 {
   const [y1, z1] = EXTENTS.get(fit.round ? ROUND : TALL)![k - 1]!;
-  v.set(side * 0.28 * PIECE.len * len, fit.floor + R + y1 / 2, fit.back + R + z1 / 2);
+  const radius = fit.radius ?? 1;
+  v.set(side * 0.28 * PIECE.len * len, fit.floor + (R + y1 / 2) * radius, fit.back + (R + z1 / 2) * radius);
   const lip = fit.round ? 0.6 : 1.05;
-  sc.set(1, y1 / 2 + R * lip, z1 / 2 + R * lip);
+  sc.set(1, (y1 / 2 + R * lip) * radius, (z1 / 2 + R * lip) * radius);
   return out.compose(v, q.identity(), sc).premultiply(f.matrixWorld);
 }
 export function makeBundleBands(capacity: number) {

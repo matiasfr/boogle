@@ -22,7 +22,7 @@ import { knock, pop } from '../minis/common.ts';
 import { flat } from '../flat.ts';
 import { H, addStatic } from './land.ts';
 import { COOP, count, job, personalSlice, sharedSlice, save } from './job.ts';
-import { LOOK, STEEL, paint, addBlob } from './look.ts';
+import { LOOK, addBlob } from './look.ts';
 import { AXE2, GREAT, GREAT_TREE, GROVES, OAK, ORIGIN, PACK, ROCKS, ROCK_WORK, TUNE } from './layout.ts';
 import { chips, dustRing, send } from './pieces.ts';
 import { BEAM_CARRY_POSITION, makeCarryModels } from './carry-models.ts';
@@ -73,12 +73,7 @@ const frameOf = (avatar: THREE.Object3D | null = me.avatar) => {
   return u?.loadFit?.frame ?? u?.inner ?? null;
 };
 const MAX_WORN = PACK.carry;
-const {
-  rails: railsWorn,
-  stone: stoneWorn,
-  beam: beamWorn,
-  boiler: boilerWorn,
-} = makeCarryModels(LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6));
+const { rails: railsWorn, stone: stoneWorn, beam: beamWorn, boiler: boilerWorn } = makeCarryModels();
 /** A boiler to stand by the forge, the shape you'll carry. */
 export const boilerShape = () => {
   const g = boilerWorn.clone();

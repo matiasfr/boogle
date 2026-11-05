@@ -3,6 +3,7 @@ import * as THREE from 'three/webgpu';
 import { material } from '../../render/materials.ts';
 import { flat } from '../flat.ts';
 import { PACK, TUNE } from './layout.ts';
+import { merged } from './part-geometry.ts';
 
 export type CargoKind = 'logs' | 'rails' | 'stone' | 'beam' | 'boiler';
 export const cargoCapacity = (kind: CargoKind, frame: boolean): number =>
@@ -11,13 +12,17 @@ export const cargoCapacity = (kind: CargoKind, frame: boolean): number =>
 export const RAIL_SIZE = new THREE.Vector3(0.14, 0.16, 2.6);
 export const BEAM_CARRY_POSITION = [0.32, 1.05, 0.2] as const;
 
-/** Materials are owned by this view; the game may inject its sky-responsive rail paint. */
-export function makeCarryModels(railMaterial?: THREE.Material) {
+/** Owned materials and geometry, including the same readable worn steel in game and stage. */
+export function makeCarryModels() {
   const root = new THREE.Group();
   root.name = 'wear_place_cargo';
   const rails = new THREE.InstancedMesh(
-    new THREE.BoxGeometry(RAIL_SIZE.x * 0.6, RAIL_SIZE.z * 0.5, RAIL_SIZE.y * 0.6),
-    (railMaterial ?? material('steel', { colour: '#59616b', normals: 'authored' })).clone(),
+    merged([
+      ['b', 0, 0, 0, 0.035, 0.68, 0.06, '#ffffff'],
+      ['b', 0, 0, -0.04, 0.085, 0.68, 0.02, '#ffffff'],
+      ['b', 0, 0, 0.04, 0.085, 0.68, 0.02, '#ffffff'],
+    ]),
+    new THREE.MeshStandardNodeMaterial({ color: '#899baa', roughness: 0.55, metalness: 0.25 }),
     PACK.carry,
   );
   rails.name = 'wear_carried_rails';
@@ -25,8 +30,9 @@ export function makeCarryModels(railMaterial?: THREE.Material) {
   rails.count = 0;
   const worn = new THREE.Object3D();
   for (let k = 0; k < PACK.carry; k++) {
-    worn.position.set((k % 4) * 0.12 - 0.18, 0.8, 0.62 + Math.floor(k / 4) * 0.11);
-    worn.rotation.x = 0.12;
+    // Crosswise rails rest on the shelf in four shallow rows, leaving the head visible.
+    worn.position.set(0, 0.205 + Math.floor(k / 4) * 0.11, 0.33 + (k % 4) * 0.11);
+    worn.rotation.set(0, 0, Math.PI / 2);
     worn.updateMatrix();
     rails.setMatrixAt(k, worn.matrix);
   }
@@ -36,7 +42,7 @@ export function makeCarryModels(railMaterial?: THREE.Material) {
   stone.count = 0;
   for (let k = 0; k < PACK.carry; k++) {
     worn.rotation.set(k, k * 2, 0);
-    worn.position.set((k % 3) * 0.2 - 0.2, 0.3 + Math.floor(k / 6) * 0.22, 0.48 + (Math.floor(k / 3) % 2) * 0.2);
+    worn.position.set((k % 3) * 0.2 - 0.2, 0.3 + Math.floor(k / 6) * 0.22, 0.42 + (Math.floor(k / 3) % 2) * 0.2);
     worn.updateMatrix();
     stone.setMatrixAt(k, worn.matrix);
   }

@@ -144,11 +144,11 @@ export function packParts(): Part[] {
   const parts: Part[] = [
     ['b', 0, 0.23, 0.25, 0.62, 0.06, 0.06, '#a98249'],
     ['b', 0, 0.6, 0.25, 0.62, 0.06, 0.06, '#a98249'],
-    ['b', 0, 0.14, 0.57, 0.62, 0.045, 0.68, '#c5a466'],
-    ['b', 0, 0.2, 0.9, 0.62, 0.06, 0.06, '#a98249'],
+    ['b', 0, 0.14, 0.5, 0.62, 0.045, 0.5, '#c5a466'],
+    ['b', 0, 0.2, 0.75, 0.62, 0.06, 0.06, '#a98249'],
   ];
   for (const x of [-0.28, 0.28])
-    parts.push(['b', x, 0.4, 0.25, 0.055, 0.46, 0.055, '#a98249'], ['b', x, 0.2, 0.57, 0.045, 0.1, 0.68, '#69472e']);
+    parts.push(['b', x, 0.4, 0.25, 0.055, 0.46, 0.055, '#a98249'], ['b', x, 0.2, 0.5, 0.045, 0.1, 0.5, '#69472e']);
   for (const x of [-0.205, 0.205])
     parts.push(
       ['strap', x, 0.49, 0.015, 1, 1, 1.13, '#c9a86a'],
@@ -170,9 +170,9 @@ export function packFrameMesh(owned = false) {
 
 export type GearState = { rings: boolean; spool: boolean; glider: boolean; frame: boolean; canopy: boolean };
 export function makeGear() {
-  // Buddy source calf radius at y=.27 is .091 m; foot dome ends at .196 m.
-  // Inner radius .104 leaves 13 mm for blended ankle deformation, with a broad 36 mm band.
-  const ring = new THREE.TorusGeometry(0.122, 0.018, 8, 24).rotateX(Math.PI / 2);
+  // Decoded Buddy ankle radius at y=.225 is .088 m; foot dome ends at .196 m.
+  // Inner radius .091 leaves a small rest gap; the 56 mm height reads as a fitted band.
+  const ring = new THREE.TorusGeometry(0.105, 0.014, 8, 24).rotateX(Math.PI / 2).scale(1, 2, 1);
   const ringMat = new THREE.MeshStandardNodeMaterial({ color: TEAL, roughness: 0.4, metalness: 0.25 });
   const ankleL = new THREE.Mesh(ring, ringMat),
     ankleR = new THREE.Mesh(ring, ringMat);
@@ -194,12 +194,12 @@ export function makeGear() {
   pack.name = 'wear_glider';
   const roll = new THREE.Mesh(
     merged([
-      ['c', 0, 0, 0, 0.105, 0.6, 0.105, '#f2e6c8', 0, Math.PI / 2],
-      ['c', -0.2, 0, 0, 0.11, 0.095, 0.11, '#2fb7a0', 0, Math.PI / 2],
-      ['c', 0.2, 0, 0, 0.11, 0.095, 0.11, '#2fb7a0', 0, Math.PI / 2],
-      ['b', 0, -0.09, 0.05, 0.66, 0.035, 0.035, '#c79a3e'],
-      ['b', -0.2, 0.06, -0.07, 0.045, 0.2, 0.035, '#69472e'],
-      ['b', 0.2, 0.06, -0.07, 0.045, 0.2, 0.035, '#69472e'],
+      ['c', 0, 0, 0, 0.068, 0.48, 0.068, '#f2e6c8', 0, Math.PI / 2],
+      ['c', -0.16, 0, 0, 0.072, 0.065, 0.072, '#2fb7a0', 0, Math.PI / 2],
+      ['c', 0.16, 0, 0, 0.072, 0.065, 0.072, '#2fb7a0', 0, Math.PI / 2],
+      ['b', 0, -0.057, 0.025, 0.53, 0.028, 0.028, '#c79a3e'],
+      ['b', -0.16, 0.07, -0.04, 0.035, 0.15, 0.025, '#69472e'],
+      ['b', 0.16, 0.07, -0.04, 0.035, 0.15, 0.025, '#69472e'],
     ]),
     clothMat.clone(),
   );
@@ -233,8 +233,8 @@ function attachAtRest(root: THREE.Object3D, mesh: THREE.Object3D, name: string, 
 
 /** Both owners call this after posing. Bone parenting preserves rotation as well as position. */
 export function wearGear(root: THREE.Object3D, back: THREE.Object3D | undefined, gear: Gear, state: GearState) {
-  attachAtRest(root, gear.ankleL, 'calf_l', new THREE.Vector3(0.002, -0.11, 0));
-  attachAtRest(root, gear.ankleR, 'calf_r', new THREE.Vector3(-0.002, -0.11, 0));
+  attachAtRest(root, gear.ankleL, 'calf_l', new THREE.Vector3(0.002, -0.155, 0));
+  attachAtRest(root, gear.ankleR, 'calf_r', new THREE.Vector3(-0.002, -0.155, 0));
   attachAtRest(root, gear.spool, 'lowerarm_r', new THREE.Vector3(-0.09, 0, 0));
   gear.ankleL.visible = gear.ankleR.visible = state.rings;
   gear.spool.visible = state.spool;
@@ -242,6 +242,6 @@ export function wearGear(root: THREE.Object3D, back: THREE.Object3D | undefined,
   if (back) {
     if (gear.pack.parent !== back) back.add(gear.pack);
     // The frame roll is tied below the cradle: even a full stack leaves it visible and off the body.
-    gear.pack.position.set(0, state.frame ? 0.015 : 0.57, state.frame ? 0.59 : 0.3);
+    gear.pack.position.set(0, state.frame ? 0.045 : 0.57, state.frame ? 0.49 : 0.3);
   }
 }
