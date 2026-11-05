@@ -206,6 +206,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 ### Trains and the world
 
 - **2026-11-05, branch-only early track-layer art exception** (owner task). Start the distinct crawler/open-gantry machine art ahead of the round-4 replay, assuming it goes well, and continue proper seats from trains to two fixed deck places. Research real track-laying machines; preserve collision, stand points, laying behavior, the broad rear step and two-second ease-out. Work only on `codex/track-layer-machine`, commit locally, and do not push or ship: main must not change before replay. This authorizes the bounded [machine plan](../plans/track-layer-machine.md), not final art acceptance or broader gameplay work.
+- **2026-11-05, machine riders face the work** (owner follow-up). Turn both deck chairs 180 degrees to face the direction of travel, the gantry and new rails. Move chairs and seat anchors only enough to clear seated knees from the forward cradle wall. Keep collision, stand points, broad step, two-second ease-out and both exits' rear-step access unchanged. Check both occupied seats, boarding/leaving from the step and the laying view; commit locally without shipping.
 
 - **2026-11-01, laying a section runs quick** (about 14 s; full run-through: "Yes it's wonderful. Quick feels pretty good"). Fix the jump at the end of the laying animation.
 - **2026-11-01, construction you can watch is how things get built** ("I absolutely love this kind of animation"). The piece-by-piece build leaves the prototype for the game.

@@ -565,13 +565,14 @@ export function buildMachine(owner?: OwnedView) {
   }
   MACHINE_CHAIRS.forEach((x, i) => {
     const chair = seatMesh();
-    chair.position.set(x, flatbed.hy, -0.65);
-    chair.rotation.y = Math.PI;
+    // Turn around the existing hip anchor; the knees stay behind the cradle's rear wall.
+    chair.position.set(x, flatbed.hy, -1.15);
     flatbed.mesh.add(chair);
     registerSeat({
       id: `machine-deck-${i}`,
       group: 'machine-deck',
       platform: flatbed.platform,
+      // Avatars face -Z at zero yaw; the gantry and travel direction are local +Z.
       at: { x, y: flatbed.hy + seatHeight, z: -0.9, yaw: Math.PI },
       exit: { x, y: flatbed.hy + PLAYER_R, z: -1.85, yaw: Math.PI },
       available: () => flatbed.y > -30,
