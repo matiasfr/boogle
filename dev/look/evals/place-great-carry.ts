@@ -302,18 +302,10 @@ async function run() {
   if (!saved) tree.back.logs = tree.back.rails = tree.back.stone = tree.back.incoming = 0;
   const st = place.lines[0].stations[2];
   if (authority && !saved) {
+    // Keep the legacy-save assertions above, then earn a fresh beam through the current safe fall path.
+    tree.resetTrees();
     st.have.logs = 40;
     st.drawStock(st.have);
-    if (mode !== 'gate')
-      tree.applyTreeHarvest(tree.greatTree, {
-        work: 12,
-        issued: 0,
-        ceiling: 0,
-        revision: 1,
-        fell: true,
-        fallYaw: 0,
-        collapsed: false,
-      });
     net.room!.send({
       t: COOP_IDENTITY,
       k: 'snap',
@@ -321,7 +313,7 @@ async function run() {
       force: true,
     });
   }
-  if (mode === 'gate') {
+  if (!saved) {
     await until(() => place.run.mode === 'idle' && place.lines[0].stage === 2, 'Station 3 active');
     await until(() => place.job.chest === 'axe', 'forty logs earn the axe chest');
     check(
