@@ -14,10 +14,45 @@ import { gettingItem, press as putAwayGot } from '../../../src/proto/place/got.t
 import { automaticRails } from '../../../src/proto/place/depot.ts';
 import { CART } from '../../../src/proto/place/layout.ts';
 import { runDoubleJumpCourse } from './double-jump.ts';
-import { JUMP_COURSE, JUMP_RECOVERY } from '../../../src/proto/place/tech-layout.ts';
+import { GLIDE_RAMP, JUMP_COURSE, JUMP_RECOVERY } from '../../../src/proto/place/tech-layout.ts';
 import { playMark } from '../../../src/proto/mark.ts';
+import { RINGS, fireHook, move, whyNot } from '../../../src/proto/place/moves.ts';
 
 const q = new URLSearchParams(location.search);
+
+/** Walk to each downward sightline before pulling: the slab beneath your feet otherwise blocks it. */
+export async function returnFromTower(bot: Bot) {
+  const body = me.body!;
+  for (const id of ['t5', 't4', 't3', 't2', 't1', 't0', 'p2']) {
+    const r = RINGS.find((r) => r.pad.id === id)!;
+    const departureY = body.position.y;
+    const started = performance.now();
+    let clear = false;
+    while (performance.now() - started < 3500) {
+      cam.yaw = me.yaw = Math.atan2(-(r.at.x - body.position.x), -(r.at.z - body.position.z));
+      cam.pitch = Math.atan2(r.at.y - body.position.y - 1.35, bot.dist(r.at.x, r.at.z)) - 0.3;
+      if (body.position.y < departureY - 1.5 && move.pick === r && whyNot(r) === 'nothing') {
+        clear = true;
+        break;
+      }
+      input.keys.add('KeyW');
+      await bot.wait(30);
+    }
+    input.keys.delete('KeyW');
+    if (!clear || !fireHook()) throw new Error(`Return hook ${id}: ${whyNot(r)}`);
+    await bot.until(() => !move.pull, 5000, `return pull to ${id}`);
+    if (
+      !(await bot.until(
+        () => me.coyote > 0 && Math.abs(body.position.y - r.pad.top - 1) < 2 && bot.dist(r.land.x, r.land.z) < 4,
+        3000,
+        `dry return landing ${id}`,
+      ))
+    )
+      throw new Error(`Missed return landing ${id}: ${JSON.stringify(body.position)}`);
+    bot.note(`return: ${id}`);
+  }
+  cam.pitch = -0.1;
+}
 
 export async function play() {
   // oxlint-disable-next-line typescript/no-explicit-any
@@ -159,6 +194,20 @@ export async function play() {
       }
       await openCrates();
       if (st.wants('beam') > 0 && st.wants('logs') - b.logs <= 0 && !b.big && b.logs === 0) {
+        if (!place.job.rung.axe) {
+          await waitFor(() => place.job.chest === 'axe', 5000, 'Station 3 earned the proper axe');
+          const chest = place.giftState.crates().find((c: { content: string }) => c.content === 'axe');
+          if (!chest) throw new Error('Station 3 axe chest missing');
+          playMark('sheet: axe stand');
+          await travel(chest.x, chest.z, 2);
+          if (!place.job.rung.axe) {
+            if (interactTarget()?.id !== 'place-crate') throw new Error('Station 3 chest is not in reach');
+            press();
+          }
+          if (!(await waitFor(() => place.job.rung.axe > 0, 5000, 'proper axe before the beam')))
+            throw new Error('Station 3 axe was not acquired');
+          await waitFor(() => !gettingItem(), 8000, 'put away the proper axe');
+        }
         const g = place.greatTree;
         if (g.fall < 0) {
           note('the great tree');
@@ -366,9 +415,27 @@ export async function play() {
     await ontoSecondPillar();
     for (const id of ['t0', 't1', 't2', 't3', 't4', 't5', 'summit']) await hookTo(id);
     note('at the top');
-    await takeTech('glide');
+    await bot.use(tech.SEA_SWITCH.x + O, tech.SEA_SWITCH.z, 'the summit switch', /Pull/);
     await waitFor(() => place.job.gate.sea, 8000, 'the sea slab');
     note('gate: the sea');
+    bot.check('the sea gate opens before the glider', !place.job.tech.glide);
+    await wait(1000); // the switch's existing camera reveal starts after its light sequence begins
+    if (!(await waitFor(() => !place.pullOn() && !gettingItem(), 10000, 'put away the sea-gate reveal')))
+      throw new Error('Sea-gate reveal still owns the camera');
+    await returnFromTower(bot);
+    const d2 = deck(L2);
+    await bot.straight(d2.x, d2.z, 1.2, 4000);
+  };
+  const farGlider = async () => {
+    bot.check('construction reaches the glider first', L2.open && !place.job.tech.glide);
+    await travel(O + GLIDE_RAMP.x, GLIDE_RAMP.z + GLIDE_RAMP.hz + 1, 1);
+    const landing = padOf('glide-home');
+    await bot.straight(O + landing.x, landing.z, 1.4, 12000);
+    bot.check('walked dry onto the glider landing', !me.swimming && body.position.y > 32);
+    await takeTech('glide');
+    await waitFor(() => !gettingItem(), 8000, 'put away the glider before returning');
+    playMark('sheet: before glide');
+    await glideTo(O + L2.spec.line.xs[510], L2.spec.line.zs[510]);
   };
   /** Everything hidden that the run didn't pass through, to show it can be had: put near it, then the real move. */
   const tour = async () => {
@@ -449,6 +516,7 @@ export async function play() {
         assigned(
           owner,
           async () => {
+            if (place.job.rung[id]) return;
             const c = place.giftState.crates().find((c: { content: string }) => c.content === id);
             if (!c) throw new Error(`Missing earned ${id} chest`);
             await travel(c.x, c.z, 1);
@@ -522,7 +590,7 @@ export async function play() {
             async () => {
               await climb();
               await wait(4500);
-              await glideTo(st.x, st.z);
+              await travel(st.x, st.z, 3);
             },
             () => place.job.gate.sea,
             'sea gate',
@@ -532,6 +600,7 @@ export async function play() {
       if (st.spec.id === 'Q2')
         await phase('hook', () => assigned(2, secondDevice, () => place.job.tech.hook, 'shared hook'));
     }
+    await phase('glider', () => assigned(1, farGlider, () => place.job.tech.glide, 'shared glider'));
     await phase('trains', () =>
       assigned(
         2,
@@ -630,15 +699,15 @@ export async function play() {
       if (st.spec.gate === 'quarry' && !place.job.gate.quarry) await firstGate();
       if (st.spec.gate === 'sea' && !place.job.gate.sea) {
         await climb();
-        playMark('sheet: before glide');
         await wait(4500);
-        await glideTo(st.x, st.z);
+        await travel(st.x, st.z, 3);
       }
       await bill(st);
       await lay(st);
       if (st.spec.id === 'Q2' && !place.job.tech.hook) await secondDevice();
     }
     note(`FAR HEAD OPEN at ${now().toFixed(1)}`);
+    if (!place.job.tech.glide) await farGlider();
     await wait(5000);
     await openCrates();
   }

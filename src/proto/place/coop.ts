@@ -432,7 +432,10 @@ export type BigCargoReply = {
 let cargoReadyAt = 0;
 let groundCheckAt = 0;
 /** The active receiver must have room before this one-off load can fill a back. */
-export const beamNeeded = () => (coopWire.activeFrame?.()?.wants('beam') ?? 0) > 0;
+export const beamNeeded = () => {
+  const st = coopWire.activeFrame?.();
+  return st?.spec.id === 'T3' && st.wants('beam') > 0;
+};
 const cargoHeight = (x: number, z: number) => (insidePlace(x, z) ? H(x, z) : null);
 function recoverGroundCargo(now: number) {
   if (now < groundCheckAt) return;
@@ -1103,7 +1106,7 @@ export const coop = {
   },
   /** Everything from ./index.ts; platforms get their stable ids for riders. */
   setup(a: Api) {
-    chopHooks.greatReady = beamNeeded;
+    chopHooks.greatReady = () => job.rung.axe > 0 && beamNeeded();
     if (!COOP) return;
     api = a;
     Object.assign(a, coopWire);

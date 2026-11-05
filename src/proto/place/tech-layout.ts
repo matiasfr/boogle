@@ -101,6 +101,8 @@ export const PADS: Pad[] = [
   { id: 'j5', x: P1.x - 64.4, z: P1.z + 16, top: P1.y, hx: 3, hz: 3, look: 'stone' },
   { id: 'j6', x: P1.x - 64.4, z: P1.z + 32, top: P1.y, hx: 3, hz: 3, look: 'stone' },
   { id: 'j7', x: P1.x - 48.4, z: P1.z + 32, top: P1.y, hx: 3, hz: 3, look: 'stone' },
+  // Far Head: a broad, ramp-accessed launch overlooking the newly built route home.
+  { id: 'glide-home', x: 367, z: -169, top: 32.3, hx: 5, hz: 5, look: 'stone' },
 ];
 export const padById = (id: string) => PADS.find((p) => p.id === id)!;
 /** Optional sprint/double-jump loop, from the unchanged device to its existing personal reward. */
@@ -148,8 +150,10 @@ export const DEVICES: Record<TechId, { pad: string; x: number; z: number; y: num
   jump: { pad: 'p1', x: P1.x + 1.5, z: P1.z - 1.6, y: P1.y },
   // Approach from the railway faces the first floating slab instead of the village behind you.
   hook: { pad: 'p2', x: P2.x + 1, z: P2.z - 1.2, y: P2.y + 2.2 },
-  glide: { pad: 'summit', x: 11.8, z: -6, y: 102.4 },
+  glide: { pad: 'glide-home', x: 369, z: -169, y: 32.3 },
 };
+export const GLIDE_RAMP = { x: 367, z: -154, hx: 3, hz: 10, low: 24.3, high: 32.3 };
+export const SEA_SWITCH = { x: 11.8, z: -6, y: 102.4 };
 
 // ---------------------------------------------------------------- the two gates on the line
 // A slab across the track bed where the next stretch would go, so you can see why the machine stopped.

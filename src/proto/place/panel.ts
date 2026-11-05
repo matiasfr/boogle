@@ -17,7 +17,6 @@ import { HAND_LOGS } from './forge.ts';
 import { deliver, giftState, nearestCrate, openCrate, snapGifts, type GiftId } from './gifts.ts';
 import { crystals, crystalAt, CRYSTALS, snapCrystals } from './crystals.ts';
 import { H, PATH_SAMPLES } from './land.ts';
-import { grantChest } from './ladder.ts';
 import { job, save } from './job.ts';
 import {
   CRANE,
@@ -96,7 +95,7 @@ function skipDelivery() {
   beginFeed(run.line, st);
   save();
 }
-/** Line 1 through, no train, the axe's chest waiting. */
+/** Line 1 through, no train; the proper axe was earned before the beam. */
 function skipPath() {
   if (L1.open) return hop(toWorld(-68), 2, -2.3);
   clearMoments();
@@ -108,9 +107,9 @@ function skipPath() {
   L1.stations.forEach((st) => st.drawStock({ logs: 0, rails: 0, stone: 0, beam: 0 }));
   run.line = L1;
   job.rung.multi = true;
+  job.rung.axe = 1;
   job.score.metres = 161;
   snapRun();
-  grantChest('axe', true);
   hop(toWorld(-68), 2, -2.3);
   save();
 }
