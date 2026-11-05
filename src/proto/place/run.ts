@@ -1,6 +1,6 @@
 // The run of ?proto=place: the machine, what it asks for, and what happens when a frame fills. `run` is where the machine is
 // and what it's doing; `activeFrame()` is the one frame that takes what you carry right now. The run goes:
-//   line 1's three frames (by hand) -> the first path opens, with no train -> the axe's chest -> the forge's frame (by hand,
+//   line 1's three frames (axe after T3 logs, then its beam) -> the first path opens, with no train -> the forge's frame (by hand,
 //   over your shortcut) -> the pack's chest -> the forge lights -> the machine turns onto line 2 -> its first frame -> the depot
 //   -> four more frames, out over the sea -> Far Head -> the boiler -> trains -> the pier -> the end.
 // Local, or shared by ./coop.ts: the tab that decides (`coop.follower()` is false) ends stretches and starts runs.
@@ -11,7 +11,7 @@ import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { protoCount } from '../count.ts';
 import { playMark, protoMark, type PlayData } from '../mark.ts';
 import { fanfare, knock } from '../minis/common.ts';
-import { after, clearMoments, firstPathShow, headShow, pierShow, shakeView, wakeShow } from './celebrate.ts';
+import { clearMoments, firstPathShow, headShow, pierShow, shakeView, wakeShow } from './celebrate.ts';
 import { back, putDownBig } from './chop.ts';
 import { coop } from './coop.ts';
 import { cart, drawRack, moveRack, rack, setDepotFrame, snapCart } from './depot.ts';
@@ -383,8 +383,6 @@ export function openPath(l: LineRun) {
     pourOut(10);
     setCommuters(true, 14);
     lampRow(0, 60, 116, 0.6);
-    // It's yours to walk: the axe is at the far end of it.
-    after(1.2, () => grantChest('axe'));
   } else {
     const end = besideLine(l.spec.line, l.spec.stations[l.spec.freeUpTo]!.to, 0);
     headShow(v1.set(end.x, HEAD.y + 6, end.z), v2.set(TX - 4, VILLAGE.y, TZ + 8));
@@ -529,6 +527,12 @@ export function forgeBillFromPeer() {
 
 // ---------------------------------------------------------------- the machine turns, once the forge is lit
 export function updateRun(dt: number) {
+  const st = activeFrame();
+  if (st?.spec.id === 'T3' && st.have.logs >= st.spec.logs && !job.rung.axe && job.chest !== 'axe') {
+    grantChest('axe');
+    playMark('axe chest ready');
+    save();
+  }
   if (run.mode === 'feeding') stepFeed(dt);
   if (run.mode === 'waiting' && forge.lit) {
     job.turned = true;

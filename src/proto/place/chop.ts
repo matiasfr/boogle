@@ -321,7 +321,7 @@ export function validTreeHarvest(v: unknown): v is TreeHarvest {
 export function harvestTree(t: Tree, room: number, axe: number, yaw: number): HarvestResult {
   const state = readTreeHarvest(t);
   if (state.fell) return { state, logs: 0, outcome: 'gone' };
-  if (t.great && !chopHooks.greatReady()) return { state, logs: 0, outcome: 'rebound' };
+  if (t.great && (!axe || !chopHooks.greatReady())) return { state, logs: 0, outcome: 'rebound' };
   if (!t.great && room <= 0) return { state, logs: 0, outcome: 'full' };
   if (t.hardwood && !axe) return { state, logs: 0, outcome: 'rebound' };
   const maxWork = t.great ? GREAT.strokes : 15;
@@ -474,6 +474,29 @@ function shedCrown(t: Tree) {
 const n = TREES.length;
 const hardwoodIndices = new Map(TREES.filter((t) => t.hardwood).map((t, k) => [t.index, k]));
 const hardwoodCount = hardwoodIndices.size;
+const greatGeo = new THREE.CylinderGeometry(0.3, 0.46, 5, 16, 1);
+const greatVertices = greatGeo.getAttribute('position');
+for (let k = 0; k < greatVertices.count; k++) {
+  const x = greatVertices.getX(k),
+    z = greatVertices.getZ(k);
+  const ridge = 1 + 0.18 * Math.cos(Math.atan2(z, x) * 8);
+  greatVertices.setXYZ(k, x * ridge, greatVertices.getY(k), z * ridge);
+}
+greatGeo.computeVertexNormals();
+const rootGeo = new THREE.CylinderGeometry(0.45, 1.5, 0.6, 16);
+const rootVertices = rootGeo.getAttribute('position');
+for (let k = 0; k < rootVertices.count; k++) {
+  const x = rootVertices.getX(k),
+    z = rootVertices.getZ(k);
+  const ridge = 0.7 + 0.3 * Math.cos(Math.atan2(z, x) * 8);
+  rootVertices.setXYZ(k, x * ridge, rootVertices.getY(k), z * ridge);
+}
+rootGeo.computeVertexNormals();
+const solidRoots = rootGeo.clone().translate(0, 0.3, 0).scale(greatTree.size, greatTree.size, greatTree.size);
+addStatic(
+  { kind: 'trimesh', vertices: solidRoots.getAttribute('position').array, indices: solidRoots.index!.array },
+  greatTree,
+);
 // Alternating radial ridges give hardwood actual bark relief and a flared root base, even in grayscale.
 const hardwoodGeo = new THREE.CylinderGeometry(0.52, 0.95, 5, 12, 1);
 const barkVertices = hardwoodGeo.getAttribute('position');
@@ -495,6 +518,10 @@ const parts = {
   broad: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), flat('#657a37'), hardwoodCount * 3),
   branch: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.17, 0.21, 1.5, 8), flat('#686359'), hardwoodCount),
   cutEnd: new THREE.InstancedMesh(new THREE.CircleGeometry(0.17, 8), flat('#ddc89b'), hardwoodCount),
+  great: new THREE.InstancedMesh(greatGeo, flat('#c7c2aa'), 1),
+  roots: new THREE.InstancedMesh(rootGeo, flat('#c7c2aa'), 1),
+  split: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.16, 0.28, 3.5, 8), flat('#c7c2aa'), 2),
+  greatCrown: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), flat('#4f7941'), 2),
 };
 for (const m of Object.values(parts)) {
   m.castShadow = true;
@@ -541,18 +568,36 @@ function pose(t: Tree, now: number) {
   const taken = t.great && trunk.taken;
   const bare = t.fall >= 0.75;
   const compact = bare && t.collapsed;
-  parts.trunk.setMatrixAt(t.index, taken || t.hardwood || compact ? ZERO : at(2.5));
+  parts.trunk.setMatrixAt(t.index, taken || t.hardwood || t.great || compact ? ZERO : at(2.5));
+  if (t.great) parts.great.setMatrixAt(0, taken || compact ? ZERO : at(2.5));
   const ground = t.great && !taken ? bigCargo.beam.ground : null;
   if (ground) {
     // Cylinder's Y axis lies along the dropped trunk's local Z axis.
     Q0.setFromEuler(e.set(Math.PI / 2, ground.yaw, 0, 'YXZ'));
-    parts.trunk.setMatrixAt(t.index, out4.compose(P1.set(ground.x, ground.y + 0.63, ground.z), Q0, sv));
+    parts.great.setMatrixAt(0, out4.compose(P1.set(ground.x, ground.y + 0.63, ground.z), Q0, sv));
   }
   if (hardwoodIndex !== undefined) parts.hardwood.setMatrixAt(hardwoodIndex, taken || compact ? ZERO : at(2.5));
   // A crown follows the trunk's contact by 80 ms rather than twitching as one rigid stick.
   if (t.fall < 0 && t.shake > 0 && now - t.hitAt < 80) base.makeTranslation(t.x, t.y, t.z);
-  parts.crown.setMatrixAt(t.index, bare || t.hardwood ? ZERO : at(7.2));
-  parts.crown2.setMatrixAt(t.index, bare || t.hardwood ? ZERO : at(10));
+  parts.crown.setMatrixAt(t.index, bare || t.hardwood || t.great ? ZERO : at(7.2));
+  parts.crown2.setMatrixAt(t.index, bare || t.hardwood || t.great ? ZERO : at(10));
+  if (t.great) {
+    parts.roots.setMatrixAt(0, local.compose(P1.set(t.x, t.y + 0.3 * t.size, t.z), Q0.identity(), sv));
+    for (let k = 0; k < 2; k++) {
+      const side = k ? 1 : -1;
+      out4
+        .copy(base)
+        .multiply(local.makeTranslation(side * 0.7 * t.size, 5 * t.size, 0))
+        .multiply(turn.makeRotationZ(-side * 0.45))
+        .scale(sv);
+      parts.split.setMatrixAt(k, bare ? ZERO : out4);
+      out4
+        .copy(base)
+        .multiply(local.makeTranslation(side * 2 * t.size, (k ? 8 : 7.3) * t.size, 0))
+        .scale(S1.set(1.8 * t.size, 2.4 * t.size, 2 * t.size));
+      parts.greatCrown.setMatrixAt(k, bare ? ZERO : out4);
+    }
+  }
   for (let k = 0; hardwoodIndex !== undefined && k < 2; k++) {
     out4
       .copy(base)
@@ -772,7 +817,7 @@ function startSwing(x: number, z: number) {
 }
 /** Press: the swing starts now. False while the last one is still going. */
 export function chop(t: Tree) {
-  if (swing.t < TUNE.swingS || !me.body || (t.great && !chopHooks.greatReady())) return false;
+  if (swing.t < TUNE.swingS || !me.body) return false;
   swing.target = t;
   swing.rock = null;
   startSwing(t.x, t.z);
@@ -785,8 +830,8 @@ export function chop(t: Tree) {
     ),
     contactDirection,
   );
-  const trunk = t.hardwood ? parts.hardwood : parts.trunk;
-  const index = t.hardwood ? hardwoodIndices.get(t.index) : t.index;
+  const trunk = t.great ? parts.great : t.hardwood ? parts.hardwood : parts.trunk;
+  const index = t.great ? 0 : t.hardwood ? hardwoodIndices.get(t.index) : t.index;
   trunk.updateMatrixWorld(true);
   const contact = contactRay.intersectObject(trunk, false).find((hit) => hit.instanceId === index);
   if (contact) swing.contact.copy(contact.point);
@@ -807,12 +852,15 @@ export const chopHooks = {
 };
 function contact(t: Tree) {
   if (!me.body || t.fall >= 0) return; // someone else's stroke can fell it mid-swing
-  if (t.great && !chopHooks.greatReady()) return;
   const p = me.body.position;
   const room = Math.max(0, Math.min(back.room(), job.rung.axe ? AXE2.logsPerStroke : TUNE.logsPerStroke));
   const yaw = Math.atan2(t.x - p.x, t.z - p.z);
   // Refusal changes no shared work: answer at contact even before a co-op receipt can make the round trip.
-  if ((!t.great && room === 0) || (t.hardwood && !job.rung.axe)) {
+  if (
+    (t.great && (!job.rung.axe || !chopHooks.greatReady())) ||
+    (!t.great && room === 0) ||
+    (t.hardwood && !job.rung.axe)
+  ) {
     receiveHarvest(t, harvestTree(t, room, job.rung.axe, yaw), true);
     return;
   }
