@@ -52,6 +52,12 @@ export async function runSpatialAudit(args: string[]) {
   const region = option('region', 'T3'),
     state = option('state', region === 'stack' ? 'glide' : 'empty');
   const fixture = option('fixture', '');
+  if (region === 'cove') {
+    if (fixture) throw new Error('Cove audit does not accept fixtures');
+    const { auditCove } = await import('./cove.ts');
+    await auditCove();
+    return;
+  }
   if (!['T3', 'stack'].includes(region) || !['empty', 'stocked', 'path-built', 'glide'].includes(state))
     throw new Error('Supported regions: T3, stack; states: empty, stocked, path-built, glide');
   if (fixture && !['support-gap', 'blocked-stance', 'missing-descriptor'].includes(fixture))

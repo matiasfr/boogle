@@ -1,0 +1,87 @@
+// Matched terrain evidence through the existing broker/look harness. No alternate browser or renderer.
+const q = new URLSearchParams(location.search);
+const { me, cam } = await import('/src/player/player.ts' as string);
+const { teleport } = await import('/src/physics/engine.ts' as string);
+const { H } = await import('/src/proto/place/terrain.ts' as string);
+const { renderer, sun } = await import('/src/render/scene.ts' as string);
+const { skyDebug } = await import('/src/render/sky.ts' as string);
+const { observeGpu } = await import('/src/debug/prof-overlay.ts' as string);
+const { background } = await import('/src/async.ts' as string);
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+while (!me.body) await wait(80);
+const reverse = q.get('coveShot') === 'reverse';
+const wide = q.get('coveShot') === 'wide';
+const x = wide ? 801 : reverse ? 814 : 806,
+  z = wide ? 10 : reverse ? 46 : q.get('coveWalk') === '1' ? 38 : 40;
+teleport(me.body, x, H(x, z) + 1.2, z);
+me.body.velocity.set(0, 0, 0);
+cam.yaw = me.yaw = reverse ? 0.6 : -2.7;
+cam.pitch = -0.22;
+cam.dist = 5.2;
+setTimeout(() => (wide ? window.__debugCam!.set([775, 9, 16], [806, 3, 43], 62) : window.__debugCam!.clear()), 600);
+
+// Same count method as dev/look/perf.ts: completed animation frames, shadows on/off, restored in finally.
+async function counts() {
+  const observer = await observeGpu();
+  const autoShadow = sun.shadow.autoUpdate;
+  const castShadow = sun.castShadow;
+  const frame = async () => {
+    const n = window.boogle!.prof.last.frames;
+    while (window.boogle!.prof.last.frames === n) await wait(20);
+    return { ...renderer.info.render };
+  };
+  try {
+    await frame();
+    const lit = await frame();
+    skyDebug.shadowPass(false);
+    // The frozen production sea does not run sky.update's debug setter each frame.
+    sun.shadow.autoUpdate = false;
+    sun.castShadow = false;
+    sun.shadow.needsUpdate = false;
+    await frame();
+    const unshadowed = await frame();
+    console.log(
+      'WATER COVE_COUNTS ' +
+        JSON.stringify({
+          draws: lit.drawCalls,
+          triangles: lit.triangles,
+          shadowDraws: lit.drawCalls - unshadowed.drawCalls,
+          shadowTriangles: lit.triangles - unshadowed.triangles,
+          geometry: renderer.info.memory.geometries,
+          measurement: observer.snapshot(),
+          scope: 'separate completed frames; counts only, no timing interpretation',
+        }),
+    );
+  } finally {
+    skyDebug.shadowPass(true);
+    sun.shadow.autoUpdate = autoShadow;
+    sun.castShadow = castShadow;
+    observer.stop();
+  }
+}
+// Shadow toggling compiles alternate pipelines. Keep that diagnostic out of real-time motion captures.
+if (q.get('coveWalk') !== '1') setTimeout(() => background(counts(), 'cove render counts'), 1200);
+if (q.get('coveWalk') === '1') {
+  (window as unknown as { __placeAct: () => void }).__placeAct = () =>
+    background(
+      (async () => {
+        const { makeBot } = await import('/dev/look/bot.ts' as string);
+        const bot = makeBot({ doneFlag: '__coveWalkDone' });
+        for (const [x, z] of [
+          [808, 40],
+          [810, 42],
+          [810, 44],
+          [810, 42],
+          [808, 40],
+          [806, 38],
+        ]) {
+          const reached = await bot.straight(x!, z!, 0.65, 30000);
+          bot.check(`cove filmed leg ${x},${z}`, reached && !me.swimming);
+          if (!reached || me.swimming) throw new Error(`Cove filmed leg failed: ${x},${z}`);
+        }
+        bot.finish('cove foot approach and return');
+      })(),
+      'cove camera walk',
+    );
+}
+export {};
