@@ -43,13 +43,32 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
   };
   for (const id of listed) load(id);
   const unloading = new Set<Promise<unknown>>();
-  // Rooms nobody is in, loaded only because someone was: saved and dropped after roomIdleMs.
+  const closing = new Set<string>();
+  const blocked = new Map<string, unknown>();
+  let stopping = false;
+  function closeRoom(id: string, room: HostedRoom, save: boolean) {
+    if (closing.has(id)) return;
+    closing.add(id);
+    const p = Promise.resolve()
+      .then(() => room.close({ save }))
+      .then(() => {
+        if (rooms.get(id) === room) rooms.delete(id);
+        closing.delete(id);
+      })
+      .catch((error: unknown) => {
+        // Keep the failed authority fenced until process restart/recovery, preserving its last good file.
+        blocked.set(id, error);
+        cfg.log(`room ${id}: close blocked`, String(error));
+      })
+      .finally(() => unloading.delete(p));
+    unloading.add(p);
+  }
+  // Keep the authority's map slot until its close has durably drained. A reconnect must never load an older
+  // checkpoint while the previous writer still owns a pending write to the same room file.
   const idle = setInterval(() => {
     for (const [id, room] of rooms)
-      if (!listed.has(id) && room.idleMs() > cfg.roomIdleMs) {
-        rooms.delete(id);
-        const p = room.close({ save: true }).finally(() => unloading.delete(p));
-        unloading.add(p);
+      if (!listed.has(id) && !closing.has(id) && room.idleMs() > cfg.roomIdleMs) {
+        closeRoom(id, room, true);
       }
   }, 1000);
   idle.unref();
@@ -80,9 +99,10 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       const room = rooms.get(id);
       if (!room) return { mode: 'server', tick: store.readSync(id)?.tick ?? 0, players: 0, max: cfg.maxPlayers };
       const { boot: b, tick, players, max, noSave } = room.status();
-      return { mode: 'server', boot: b, tick, players, max, noSave };
+      return { mode: 'server', boot: b, tick, players, max, noSave: noSave || blocked.has(id) };
     },
     upgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
+      if (stopping) return refuse(socket, '503 Service Unavailable');
       const origin = req.headers.origin;
       if (!cfg.allowedOrigins.includes('*') && !(origin && cfg.allowedOrigins.includes(origin)))
         return refuse(socket, '403 Forbidden');
@@ -107,6 +127,7 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       const pid = params.get('pid');
       const key = params.get('key');
       wss.handleUpgrade(req, socket, head, (ws) => {
+        if (stopping) return refuseWs(ws, { t: 'bye', why: 'restart' }, CLOSE.RESTART);
         if (
           ws.protocol !== WS_PROTOCOL ||
           !ROOM_ID_RE.test(id) ||
@@ -117,17 +138,24 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
         )
           return refuseWs(ws, { t: 'bad' }, CLOSE.BAD);
         if (!hosts(id)) return refuseWs(ws, { t: 'peer' }, CLOSE.NOT_HOSTED);
+        if (closing.has(id)) return refuseWs(ws, { t: 'bye', why: 'restart' }, CLOSE.RESTART);
         const room = rooms.get(id) ?? (rooms.size < cfg.maxHostedRooms ? load(id) : null);
         if (!room) return refuseWs(ws, { t: 'full', max: cfg.maxPlayers, rooms: true }, CLOSE.FULL);
         room.join(ws, self, pid, key);
       });
     },
     async close({ save = true } = {}) {
+      stopping = true;
       clearInterval(sweep);
       clearInterval(idle);
-      await Promise.all([...rooms.values()].map((r) => r.close({ save })));
-      await Promise.all(unloading);
-      wss.close();
+      try {
+        for (const [id, room] of rooms) closeRoom(id, room, save);
+        // Drain every writer before reporting any failure: another room may still have accepted edits.
+        await Promise.all(unloading);
+        if (save && blocked.size) throw new AggregateError([...blocked.values()], 'one or more rooms failed to close');
+      } finally {
+        wss.close();
+      }
     },
   };
 }

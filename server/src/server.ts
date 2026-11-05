@@ -392,19 +392,22 @@ export function createService(cfg: ServerConfig) {
     },
     // The hosted rooms first (bye, save, close 1012), so index.ts's shutdown needs nothing else.
     async close({ save = true } = {}) {
-      await roomHost?.close({ save });
-      return new Promise<void>((resolve) => {
-        const force = setTimeout(() => {
-          server.closeAllConnections?.();
-          resolve();
-        }, 5000);
-        force.unref();
-        server.close(() => {
-          clearTimeout(force);
-          resolve();
+      try {
+        await roomHost?.close({ save });
+      } finally {
+        await new Promise<void>((resolve) => {
+          const force = setTimeout(() => {
+            server.closeAllConnections?.();
+            resolve();
+          }, 5000);
+          force.unref();
+          server.close(() => {
+            clearTimeout(force);
+            resolve();
+          });
+          server.closeIdleConnections?.();
         });
-        server.closeIdleConnections?.();
-      });
+      }
     },
   };
 }

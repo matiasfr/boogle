@@ -56,6 +56,8 @@ export function createWorldHost({
   const sendFns = new Set<(msg: Msg) => void>();
   const msgFns = new Set<(msg: unknown, from: string) => void>();
   let writing: Promise<unknown> = Promise.resolve();
+  let writeError: Error | null = null;
+  let writeSequence = 0;
 
   // Synchronous like localStorage: the sync reads it once on becoming host, and writes on every save.
   const storage = {
@@ -66,10 +68,18 @@ export function createWorldHost({
     setItem(_key: string, json: string) {
       const data = JSON.parse(json);
       const doc = { tick: data.tick, writerId: SERVER_ID, data, updatedAt: new Date().toISOString() };
+      const sequence = ++writeSequence;
       writing = store
         .write(roomId, doc)
-        .then((r) => r.status !== 200 && log(`world ${roomId}: save refused (${r.status})`, JSON.stringify(r.body)))
-        .catch((e: Error) => log(`world ${roomId}: save failed`, e.message));
+        .then((r) => {
+          if (r.status !== 200) throw new Error(`save refused (${r.status}): ${JSON.stringify(r.body)}`);
+          if (sequence === writeSequence) writeError = null;
+        })
+        .catch((error: unknown) => {
+          const failure = error instanceof Error ? error : new Error(String(error));
+          if (sequence === writeSequence) writeError = failure;
+          log(`world ${roomId}: save failed`, failure.message);
+        });
     },
   };
   sync.onSnapshot(() => {
@@ -123,6 +133,9 @@ export function createWorldHost({
       if (save) sync.saveNow(true);
       sync.detachWorld();
       await writing;
+      if (save && writeError) throw writeError;
+      if (save && (sync.worldStatus().badSave || sync.worldStatus().newerSave))
+        throw new Error(`world ${roomId}: saved state did not load cleanly`);
     },
   };
 }
