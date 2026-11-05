@@ -4,13 +4,14 @@ import { material } from '../../render/materials.ts';
 import { flat } from '../flat.ts';
 import { PACK, TUNE } from './layout.ts';
 import { merged } from './part-geometry.ts';
+import { sideCarryOffset } from './head-clearance.ts';
 
 export type CargoKind = 'logs' | 'rails' | 'stone' | 'beam' | 'boiler';
 export const cargoCapacity = (kind: CargoKind, frame: boolean): number =>
   kind === 'beam' || kind === 'boiler' ? 1 : frame ? PACK.carry : TUNE.carry;
 /** One length of steel, shared with the world piece view. */
 export const RAIL_SIZE = new THREE.Vector3(0.14, 0.16, 2.6);
-export const BEAM_CARRY_POSITION = [0.32, 1.05, 0.2] as const;
+export const BEAM_CARRY_POSITION = [sideCarryOffset(0.26), 0.85, 0.2] as const;
 
 /** The same part on the pedestal, shoulder and locomotive saddle. */
 export function makeBoiler() {

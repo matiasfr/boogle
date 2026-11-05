@@ -567,6 +567,14 @@ Cost: not measured on an iPad this round. M1 Max held 60 fps in every capture (n
 
 ### Axe presentation and stage review
 
+Earned hats use a common head-centred fit for local and remote wearers and shop try-on.
+Shallow bases clear the forehead; enclosing shells retain their authored seating depth.
+Reward reveals clear the current hat's actual bounds plus the
+item's half-height and bob, with camera distance fitted to the whole show's height and
+vertical field of view. Great beams sit
+beside the shared brim envelope instead of crossing through it. These are Local visual
+fits; clothing presence, cargo ownership and interactions are unchanged (DESIGN.md 11).
+
 The equipped starter, multi-axe, proper axe and proper multi-axe share `axe-models.ts`
 with the reward displays and Buddy's Local asset stage. Their handles are 0.64 and 0.80 m
 (previously 0.80 and 1.08 m); the proper head remains broader, brighter and gold-edged.

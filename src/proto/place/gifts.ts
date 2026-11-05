@@ -6,6 +6,7 @@
 // dust sheets. The stowaway has a slot of its own. No curios or train ornaments as prizes: train slots wait for the roundhouse.
 // No duplicates. The ladder's tool chests use the same show (./ladder.ts). Personal, and Local.
 import * as THREE from 'three/webgpu';
+import { HAT_SEAT, headCenter } from './head-clearance.ts';
 import { merged, type Part } from './part-geometry.ts';
 import { packParts } from './gear-models.ts';
 import { makeAxeModel } from './axe-models.ts';
@@ -720,6 +721,8 @@ function makeWorn(id: GiftId, avatar: THREE.Object3D) {
   const w = WEAR[id]!;
   const m = new THREE.Mesh(geoOf(id), byId(id).slot === 'outfit' ? clothMat : giftMat);
   m.castShadow = true;
+  m.geometry.computeBoundingBox();
+  if (byId(id).slot === 'hat') m.name = 'wear_place_hat';
   m.scale.setScalar(w.scale);
   m.rotation.y = Math.PI;
   avatar.add(m);
@@ -747,6 +750,15 @@ function updateWorn(a: Named | null | undefined, items: Map<Slot, { id: GiftId; 
   a.updateWorldMatrix(true, false);
   for (const { id, m } of items.values()) {
     const w = WEAR[id]!;
+    if (byId(id).slot === 'hat') {
+      a.worldToLocal(headCenter(a, m.position));
+      // Enclosing shells (beanies, helmets) keep their authored seating depth.
+      // Shallow bases/brims need room for the forehead below their narrower crown.
+      const seat = m.geometry.boundingBox!.min.y < -0.02 ? w.y : Math.max(HAT_SEAT, w.y);
+      m.position.y += seat - 0.24;
+      m.position.z += w.z;
+      continue;
+    }
     const bone = a.getObjectByName(w.bone);
     if (bone) a.worldToLocal(bone.getWorldPosition(m.position));
     else m.position.set(0, 0.9, 0);
