@@ -575,6 +575,10 @@ vertical field of view. Great beams sit
 beside the shared brim envelope instead of crossing through it. These are Local visual
 fits; clothing presence, cargo ownership and interactions are unchanged (DESIGN.md 11).
 
+The boiler uses the same side-clearance envelope at a low carrying height, leaving the
+face and hat visible instead of hovering above the crown. Its world pickup mesh, size,
+ownership and fitting interaction stay unchanged; game and asset stage share this fit.
+
 The equipped starter, multi-axe, proper axe and proper multi-axe share `axe-models.ts`
 with the reward displays and Buddy's Local asset stage. Their handles are 0.64 and 0.80 m
 (previously 0.80 and 1.08 m); the proper head remains broader, brighter and gold-edged.

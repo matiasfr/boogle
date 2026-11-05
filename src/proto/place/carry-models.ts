@@ -78,7 +78,8 @@ export function makeCarryModels() {
   beam.position.set(...BEAM_CARRY_POSITION);
   const boiler = makeBoiler();
   boiler.name = 'wear_carried_boiler';
-  boiler.position.set(0, 1.55, 0.05);
+  // A low side carry keeps the face and hat readable through the carrying sway.
+  boiler.position.set(sideCarryOffset(0.55), 0.45, 0.12);
   root.add(rails, stone, beam, boiler);
   root.traverse((o) => {
     o.castShadow = true;
