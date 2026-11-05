@@ -199,11 +199,12 @@ setFolkEnv({
   },
   machineBusy: () =>
     run.mode === 'laying' || run.mode === 'running' || run.mode === 'shunting' || run.mode === 'turning',
-  machine: () => ({ mesh: machine.flatbed.mesh, top: 0.15 }),
+  machine: () => ({ mesh: machine.loco.rock, top: LOOK.kit ? 2.1 : 2.05 }),
   trainCar: (k) => {
     const l = lines[k]!;
-    return job.rung.trains ? { mesh: l.train.tr.cars[0]!.mesh, top: 0.97 } : null; // up on the cab's roof
+    return job.rung.trains ? { mesh: l.train.tr.cars[0]!.rock, top: LOOK.kit ? 2.1 : 2.05 } : null;
   },
+  traffic: [machine.loco, machine.flatbed, ...lines.flatMap((l) => l.train.tr.cars)],
   gather: {
     x: gatherFrom.x,
     z: gatherFrom.z,
