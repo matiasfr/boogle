@@ -9,6 +9,7 @@ import { clamp } from '../../math.ts';
 import type { Asset } from '../../render/asset-loader.ts';
 import type { Avatar } from '../../player/avatars.ts';
 import { makeLife, type LifeState, type LifeClock } from './life.ts';
+import { swimPoseGrace } from './swim-pose.ts';
 export type RigOptions = LifeClock & {
   radius: number;
   hat: string;
@@ -44,6 +45,7 @@ type Rig = {
   strideK: number; // the stride's scale: the figure's, against the clips'
   life: ReturnType<typeof makeLife>;
   lastY: number;
+  swimFor: number;
   options: RigOptions;
 };
 const FADED = 1e-3; // a fading clip's weight under this is 0: exponential fades otherwise take 45 s to get there
@@ -55,6 +57,10 @@ const lifeState: LifeState = { vy: 0, airborne: false, load: 0, hold: null, seat
 export function animateBuddy(a: Avatar, speed: number, airborne: boolean, dt: number, swimming: boolean) {
   const r = rigs.get(a);
   if (!r || dt <= 0) return;
+  const vy = (a.position.y - r.lastY) / dt;
+  r.swimFor = swimPoseGrace(r.swimFor, swimming, airborne, vy, dt);
+  swimming = r.swimFor > 0;
+  airborne = airborne && !swimming;
   const inner = a.userData.inner;
   inner.rotation.x = 0;
   inner.scale.set(1, 1, 1);
@@ -119,7 +125,7 @@ export function animateBuddy(a: Avatar, speed: number, airborne: boolean, dt: nu
   }
   r.mixer.update(0);
   const u = a.userData;
-  lifeState.vy = (a.position.y - r.lastY) / dt;
+  lifeState.vy = vy;
   lifeState.airborne = airborne && !seated;
   lifeState.load = seated ? 0 : (u.load ?? 0);
   lifeState.hold = seated ? null : (u.holdKind ?? null);
@@ -205,6 +211,7 @@ export function createBuddySkin(
       strideK: ratio,
       life,
       lastY: a.position.y,
+      swimFor: 0,
       options,
     });
     // Install only after the whole rig is valid; a failure must leave the capsule usable.

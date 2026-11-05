@@ -142,7 +142,7 @@ The rest of the game fits this body. A haul bundle rides its spine,
 lower, deeper and a little shorter than on the capsule, so its head shows over the top from the follow camera. It leans
 forward under a load (5° to 11° by 16 logs, head level) with both hands gripping at its chest. A held item hangs from its right
 mitt: a bag of seeds carried down at the hip by the handle, anything else with that arm out in front; holding the beach ball, both arms reach for it. It swims on the library's swim clips with its
-eyes clear of the water, wades where it can stand, and sits in the soapbox on the library's driving clip with its hands down at its sides, instead of
+eyes clear of the water. The Buddy holds the swim pose through up to 0.3 s of wave-induced airborne input; landing/wading or an upward exit faster than 3 m/s clears that presentation grace immediately. Both the clips and the procedural airborne pose use this filtered input; physics and presence still use the original swimming state. It wades where it can stand, and sits in the soapbox on the library's driving clip with its hands down at its sides, instead of
 being squashed into the tub. Throwing, its arm winds up behind its shoulder and flings forward. The beach ball rides lower on its back. Knocked down, it lies flat, sprawled, with the stars over its head.
 
 `/character/` is the isolated [asset and animation stage](asset-stage.md), with every Buddy clip, Raw/As played playback through the real body functions, exact seek/frame stepping, hats, views, a crowd of 8 and inspection overlays. Existing clip/time/view/pose/hat links remain supported; `/assets/` redirects to it.
