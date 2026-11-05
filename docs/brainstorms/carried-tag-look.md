@@ -1,4 +1,4 @@
-> **Status: building (approved by owner, 2026-11-04).**
+> **Status: ready to playtest (approved by owner, 2026-11-04).**
 
 # The carried tag's look
 
