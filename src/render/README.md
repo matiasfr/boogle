@@ -38,3 +38,7 @@ once-baked late-morning sky. Neutral stays the output. [Water design](../../docs
 the unchanged look and the classic-home CI exception. `classic-sea.ts` is a private fallback factory for
 home clients only; it exposes no material-patch API and allocates no legacy texture for Place.
 Live tuning/Looks and shore helpers remain; the demo is in `archive/water`, with notices retained in public/.
+
+The water ceiling is requested each frame but only reapplied when its clamped value changes. Adaptive DPR
+and Dev resolution changes still apply through their existing setters. This skips redundant renderer/pass
+resolution work without changing either the resolution policy or water update cadence.
