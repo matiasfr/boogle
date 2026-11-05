@@ -5,10 +5,11 @@
 import './ping.css';
 import * as THREE from 'three';
 import { camera, toScreen, view } from '../render/scene.ts';
-import { COLORS, HALF, SEA, reducedMotion } from '../constants.ts';
+import { COLORS, SEA, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
-import { clamp } from '../math.ts';
+import { raycastClosest, rayHit } from '../physics/engine.ts';
+import { GROUP } from '../physics/physics.ts';
 import { me, camForward } from '../player/player.ts';
 import { ball } from '../entities/ball/state.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
@@ -29,6 +30,7 @@ const TUNE = {
 const incoming = createLimiter(1, 800); // a little looser than our own 1 s gap, so honest senders never get dropped
 const fwd = new THREE.Vector3(),
   tmp = new THREE.Vector3();
+const hit = rayHit();
 const contact = (x: number, y: number, z: number) =>
   Math.max(groundHeight(x, z), waterField.moving ? waterField.nearby({ x, y, z }).height : SEA);
 
@@ -36,16 +38,22 @@ const contact = (x: number, y: number, z: number) =>
 function aimPing() {
   camForward(fwd);
   const o = camera.position;
+  // Authored places sit outside the original island grid; use their actual solid surfaces too.
+  tmp.copy(o).addScaledVector(fwd, TUNE.maxRange);
+  const solid = raycastClosest(o, tmp, { mask: GROUP.SCENERY | GROUP.CAVE, skipBackfaces: true }, hit);
   const bp = ball.pose.p;
   const t = tmp.copy(bp).sub(o).dot(fwd);
-  if (t > 0 && t < TUNE.maxRange && tmp.copy(o).addScaledVector(fwd, t).distanceTo(bp) < TUNE.ballRadius)
+  if (
+    t > 0 &&
+    t < (solid ? hit.distance : TUNE.maxRange) &&
+    tmp.copy(o).addScaledVector(fwd, t).distanceTo(bp) < TUNE.ballRadius
+  )
     return { x: bp.x, y: bp.y, z: bp.z, k: 'ball' };
   let prev = 0;
-  for (let s = 0.5; s < TUNE.maxRange; s += 0.5) {
+  for (let s = 0.5; s < (solid ? hit.distance : TUNE.maxRange); s += 0.5) {
     const x = o.x + fwd.x * s,
       y = o.y + fwd.y * s,
       z = o.z + fwd.z * s;
-    if (Math.abs(x) > HALF - 1 || Math.abs(z) > HALF - 1) break;
     const floor = contact(x, y, z);
     if (y <= floor) {
       let lo = prev,
@@ -63,12 +71,13 @@ function aimPing() {
     }
     prev = s;
   }
-  // Sky or beyond the island: a far point along the view, kept inside the bounds.
-  const d = 40;
+  if (solid) return { ...hit.hitPointWorld, k: 'look' };
+  // A miss stays near the view, never clamped back to the original island hundreds of metres away.
+  const d = 30;
   return {
-    x: clamp(o.x + fwd.x * d, -HALF + 2, HALF - 2),
+    x: o.x + fwd.x * d,
     y: o.y + fwd.y * d,
-    z: clamp(o.z + fwd.z * d, -HALF + 2, HALF - 2),
+    z: o.z + fwd.z * d,
     k: 'look',
   };
 }

@@ -13,11 +13,12 @@ import {
 
 test('validatePing accepts good pings and rejects junk', () => {
   assert.deepEqual(validatePing({ t: 'ping', x: 1.234, y: 2, z: -3, k: 'ball' }), { x: 1.2, y: 2, z: -3, k: 'ball' });
+  assert.deepEqual(validatePing({ t: 'ping', x: 999, y: 120, z: -3, k: 'look' }), { x: 999, y: 120, z: -3, k: 'look' });
   for (const bad of [
     null,
     { t: 'ping', x: NaN, y: 0, z: 0, k: 'ball' },
     { t: 'ping', x: 1, y: 0, z: 0, k: 'toString' },
-    { t: 'ping', x: 999, y: 0, z: 0, k: 'look' },
+    { t: 'ping', x: 4097, y: 0, z: 0, k: 'look' },
     { t: 'ping', x: 0, y: 0, z: 0, k: 'dig' }, // retired kind
     { t: 'ping', x: '1', y: 0, z: 0, k: 'look' },
     { t: 'ping', x: 1, y: 0, z: 0 },

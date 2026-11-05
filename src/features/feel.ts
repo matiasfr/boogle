@@ -129,6 +129,8 @@ function stateOf(a: THREE.Object3D) {
 }
 
 function spring(a: THREE.Object3D, dt: number, t: number, flopOf: () => Flop | null | undefined, isMe: boolean) {
+  // A wall's grounded recoil must not shake a deliberate jump from side to side.
+  if (isMe && flop?.kind === 'bonk' && (me.jumpQueued > 0 || me.coyote <= 0)) flop = null;
   const s = stateOf(a);
   const k = dampK(halfLifeOf(20), dt); // smooth the velocity estimate (remote positions are interpolated)
   const nvx = (a.position.x - s.px) / dt,

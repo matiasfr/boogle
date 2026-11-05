@@ -131,6 +131,7 @@ export function openConversation(talk: Talk) {
   if (cur || modalOpen()) return false;
   cur = talk;
   conversation.open = true;
+  document.body.classList.add('talking');
   inputState.held = true;
   openedAt = performance.now();
   selFirst = null;
@@ -169,6 +170,7 @@ export function closeConversation() {
   for (const b of cur.choices()) b.classList.remove('talk-sel');
   cur = null;
   conversation.open = false;
+  document.body.classList.remove('talking');
   inputState.held = false;
   setPadGrab(null);
 }

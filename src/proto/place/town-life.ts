@@ -28,7 +28,7 @@ export function updateTownLife(dt: number) {
   updateShop();
   updateMuseum(dt);
   updateResidents(dt);
-  updateTalkCard(dt);
+  updateTalkCard();
 }
 export const resetTownLife = resetResidents;
 /** For the evals. */

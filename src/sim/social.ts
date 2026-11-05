@@ -2,7 +2,7 @@
 // pitch table and the "three honks within a second make a chord" detector. No DOM, no randomness, runs in Node tests.
 
 export const PING_KINDS = { ball: 'Ball!', look: 'Look!' };
-const BOUND = 255; // map half-size in metres (HALF in src/constants.ts)
+const BOUND = 4096; // finite cosmetic message envelope, including authored places outside the classic island
 
 // Returns a clean { x, y, z, k } or null. Anything unexpected is rejected, never trusted.
 export type Ping = { x: number; y: number; z: number; k: keyof typeof PING_KINDS };
@@ -11,7 +11,7 @@ export function validatePing(msg: unknown): Ping | null {
   const { x, y, z, k } = msg as Record<string, unknown>;
   if (typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number') return null;
   if (![x, y, z].every((n) => Number.isFinite(n))) return null;
-  if (Math.abs(x) > BOUND || Math.abs(z) > BOUND || y < -30 || y > 80) return null;
+  if (Math.abs(x) > BOUND || Math.abs(z) > BOUND || y < -100 || y > 1024) return null;
   if (typeof k !== 'string' || !Object.hasOwn(PING_KINDS, k)) return null;
   return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, z: Math.round(z * 10) / 10, k: k as Ping['k'] };
 }

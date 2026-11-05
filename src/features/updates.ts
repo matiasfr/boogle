@@ -10,7 +10,7 @@
 // Serves DESIGN.md "Designed for drop-in, drop-out" (a tab left open for hours still plays with the friends who just
 // arrived) and "Determinism from day one" (mixed builds are a desync waiting to happen).
 import { onStart } from '../loop.ts';
-import { registerAction, freeSlots, PAD_LABEL } from '../player/controls.ts';
+import { registerAction, freeSlots } from '../player/controls.ts';
 import { BUILD } from '../build-id.ts';
 import { net } from '../netplay/net.ts';
 import { notify } from '../ui/notify.ts';
@@ -57,11 +57,18 @@ function showToast() {
   // the first free slot in PAD's order can be a stick click (R3), too easy to press by accident for a reload.
   const free = freeSlots();
   const pad = free.includes('up') ? 'up' : free[0];
-  const label =
+  const registered =
     pad && registerAction('update-reload', { pad, label: 'Reload for the new version', guide: false, down: reload })
-      ? `Reload (${PAD_LABEL[pad]})`
-      : 'Reload';
-  toast = { remove: notify(TEXT, { kind: 'news', ttl: 0, key: 'update', action: { label, run: reload } }) };
+      ? pad
+      : undefined;
+  toast = {
+    remove: notify(TEXT, {
+      kind: 'news',
+      ttl: 0,
+      key: 'update',
+      action: { label: 'Reload', pad: registered, run: reload },
+    }),
+  };
 }
 
 async function check() {
