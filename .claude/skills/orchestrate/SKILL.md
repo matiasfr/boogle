@@ -38,6 +38,7 @@ Use the [codex skill](../codex/SKILL.md) and `node dev/codex/run.ts`, each job w
 - Ship one branch at a time with `npm run ship-branch -- <worktree>` (see [tools](../../../docs/agents/tools.md)). When branches touch the same files, decide the order and rebase the later one.
 - Read the output every time. `CODE CONFLICT` means nothing shipped: send it back to rebase. If a ship stalls, look at its pull request: a cancelled check usually needs `gh run rerun <id> --failed`, and a conflict needs a fresh ship. Confirm with `git fetch` that main has the commits before saying something merged.
 - Hold every merge while the owner is playing, since main deploys to boogle.club.
+- Owner call "Simplify in batches": after every few code merges, or once a working day, run the `/simplify` skill over the merged range (`git diff <last-pass>..origin/main`) in a fresh worktree, ship the cleanup, and record the pass's end commit in the state file.
 - Mark a merged branch's brief or tracker item, and remove finished worktrees only with the owner's yes.
 
 ## 5. Playtest cycle
