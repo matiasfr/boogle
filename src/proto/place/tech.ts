@@ -800,8 +800,9 @@ function buildClues() {
     if (solid) addStatic({ kind: 'box', hx: 0.15, hy: 1.2, hz: 0.15 }, { x: x + ox, y: y + 1.2, z });
     return m;
   };
-  // The yard: a washing line that carries on round the corner of the cottage, and a low fence with one gap.
-  const gy = H(-118 + ox, 8);
+  // The yard sits behind the cottage: laundry and its optional gift invite a detour,
+  // leaving the shore-to-town approach clear. The fence keeps its opening on the east.
+  const gy = H(-127.5 + ox, 25.5);
   prop(
     [
       ['b', 0, 1.1, 0, 0.12, 2.2, 0.12, '#7f5630'],
@@ -810,15 +811,15 @@ function buildClues() {
       ['b', 2.6, 1.7, -0.7, 0.55, 0.65, 0.04, '#3f6fb0'],
       ['b', 4.0, 1.68, -1.0, 0.6, 0.7, 0.04, '#f2e6c8'],
     ],
-    -122,
+    -130,
     gy,
-    4,
+    22,
     0.25,
     true,
   );
   const fence: [number, number, number, number][] = [
-    [-122.6, 8, 0.14, 8],
-    [-119.5, 12.2, 6.2, 0.14],
+    [-130.6, 26, 0.14, 8],
+    [-127.5, 30.2, 6.2, 0.14],
   ];
   for (const [x, z, hx, hz] of fence) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(hx, 1, hz), flat('#8a6238', 0.9));

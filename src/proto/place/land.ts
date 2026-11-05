@@ -12,7 +12,7 @@ import { GROUP, groundMat } from '../../physics/physics.ts';
 import { smoothstep } from '../../math.ts';
 import { FAR, GRID, ORIGIN, PATHS, SPIRE } from './layout.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at, cellX, cellZ, gorgeD, heights, insidePlace, pathMask } from './terrain.ts';
-import { SHORE_COAST, SHORE_HOP } from './shore-layout.ts';
+import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from './shore-layout.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -296,8 +296,25 @@ function buildFar() {
 export function buildLand() {
   buildMesh();
   if (SHORE_COAST) {
-    // Reuse the spire's faceted rock drum: a low hop with broad grass on both sides, never a gate.
-    const { x, z, y, height, top, bottom } = SHORE_HOP;
+    // A simple solid timber landing over the existing cove. Its inland end rests on the
+    // unchanged dry pad, so arrival and saved-position ground checks still use the terrain.
+    const dx = SHORE_LANDING.x + ORIGIN.x,
+      dz = SHORE_LANDING.z;
+    for (let i = 0; i < 12; i++) plank(dx - 19 + i * 2, dz, dx - 17.02 + i * 2, dz, 3.08, 3.08, 7, '#8a6238');
+    for (const x of [dx - 18, dx - 12])
+      for (const z of [dz - 3.2, dz + 3.2]) {
+        const base = H(x, z),
+          height = 4 - base;
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.4, height, 0.4), FLAT('#7f5630'));
+        post.position.set(x, base + height / 2, z);
+        post.castShadow = post.receiveShadow = true;
+        scene.add(post);
+        addStatic({ kind: 'box', hx: 0.2, hy: height / 2, hz: 0.2 }, post.position);
+      }
+    // Keep the existing low rock as a shoulder detail, clear of the ordinary walk into town.
+    const { x, height, top, bottom } = SHORE_HOP;
+    const z = SHORE_HOP.z + 7,
+      y = H(x + ORIGIN.x, z);
     const rock = new THREE.Mesh(new THREE.CylinderGeometry(top, bottom, height, 7), FLAT(spireRock('#8c8478')));
     rock.position.set(x + ORIGIN.x, y + height / 2, z + ORIGIN.z);
     rock.castShadow = rock.receiveShadow = true;

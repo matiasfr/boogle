@@ -29,7 +29,7 @@ import { freshStart } from '../../player/arrival.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { interactTarget } from '../../player/hands.ts';
 import { haulHooks } from '../../player/haul-variant.ts';
-import { setCcd, sweepSphere, teleport } from '../../physics/engine.ts';
+import { physicsTime, setCcd, sweepSphere, teleport } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { softWall } from '../../entities/player/state.ts';
 import { carry } from '../../physics/platforms.ts';
@@ -58,7 +58,7 @@ import {
   HEAD,
   LINKS,
   ORIGIN,
-  SPAWN,
+  LANDING,
   TUNE,
   VILLAGE,
   lineAt,
@@ -105,7 +105,7 @@ import { clearFinds, updateBoiler, updateBuoys, updateFinds } from './props.ts';
 import { backUp, incoming } from './verbs.ts';
 import { objective } from './objective.ts';
 import { buildPanel } from './panel.ts';
-import { buildSigns, setNumbers } from './signs.ts';
+import { setNumbers } from './signs.ts';
 import { onStepUp, snapTown, updateTown } from './town.ts';
 import { buildTech, resetFinds, techApi, updateTech } from './tech.ts';
 import { resetTownLife, updateTownLife } from './town-life.ts';
@@ -138,8 +138,10 @@ freshStart.prepare = () => {
 buildLand();
 registerPlaceShore();
 buildTech();
+// Rapier's queries see newly added scenery after its next step. Do not validate a
+// returning position against an empty broad phase on a zero-delta first frame.
+const sceneryBuiltAt = physicsTime();
 extendSky();
-buildSigns();
 haulHooks.moved = () => true; // today's island's bundles aren't in this world
 if (LOOK.light) installLight();
 if (LOOK.contact) installContact([machine.flatbed, machine.loco], TREES);
@@ -359,10 +361,21 @@ let savedPose: Pose | null = null;
 function safePose(p: Pose) {
   if (![p.x, p.z, p.yaw].every(num) || !insidePlace(p.x, p.z) || H(p.x, p.z) <= 1.6) return false;
   if (feet.some((f) => outOf(f, { x: p.x, z: p.z }, PLAYER_R + 0.2))) return false;
-  return !Object.values(rooms).some((r) => {
-    const q = worldToRoom(r, p.x, p.z);
-    return Math.abs(q.x) < r.w / 2 + PLAYER_R && Math.abs(q.z) < r.d / 2 + PLAYER_R;
-  });
+  if (
+    Object.values(rooms).some((r) => {
+      const q = worldToRoom(r, p.x, p.z);
+      return Math.abs(q.x) < r.w / 2 + PLAYER_R && Math.abs(q.z) < r.d / 2 + PLAYER_R;
+    })
+  )
+    return false;
+  // Saved positions and recovery both need a clear landing above the terrain. This
+  // rejects ground underneath the dock and relocated yard props without changing saves.
+  const h = H(p.x, p.z);
+  const from = { x: p.x, y: h + 128, z: p.z };
+  const to = { x: p.x, y: h + PLAYER_R + 0.4, z: p.z };
+  return !['skip', 'only'].some(
+    (thin) => sweepSphere(from, to, PLAYER_R, { mask: GROUP.SCENERY, thin: thin as 'skip' | 'only' }) >= 0,
+  );
 }
 personalSlice('position', {
   get: () => savedPose && { ...savedPose, ground: H(savedPose.x, savedPose.z) },
@@ -370,7 +383,7 @@ personalSlice('position', {
     savedPose = null;
     if (!v || typeof v !== 'object') return;
     const p = v as SavedPose;
-    // Old saves without a ground sample cannot prove the ground has stayed put: use SPAWN.
+    // Old saves without a ground sample cannot prove the ground has stayed put: use LANDING.
     if (num(p.ground) && Math.abs(H(p.x, p.z) - p.ground) < 0.2 && safePose(p))
       savedPose = { x: p.x, z: p.z, yaw: p.yaw };
   },
@@ -411,15 +424,6 @@ export function getUnstuck() {
         ].some(([x, z]) => Math.abs(H(p.x + x!, p.z + z!) - h) > 0.5)
       )
         continue;
-      // Start above even Needle Bell: the sweep ignores solids containing its starting point.
-      const from = { x: p.x, y: h + 128, z: p.z };
-      const to = { x: p.x, y: h + PLAYER_R + 0.4, z: p.z };
-      if (
-        ['skip', 'only'].some(
-          (thin) => sweepSphere(from, to, PLAYER_R, { mask: GROUP.SCENERY, thin: thin as 'skip' | 'only' }) >= 0,
-        )
-      )
-        continue;
       savedPose = p;
       restorePose();
       return;
@@ -436,9 +440,9 @@ window.addEventListener('pagehide', () => {
 function atSpawn() {
   const b = me.body;
   if (!b) return;
-  teleport(b, toWorld(SPAWN.x), H(toWorld(SPAWN.x), SPAWN.z) + PLAYER_R + 0.4, SPAWN.z);
+  teleport(b, toWorld(LANDING.x), H(toWorld(LANDING.x), LANDING.z) + PLAYER_R + 0.4, LANDING.z);
   b.velocity.set(0, 0, 0);
-  cam.yaw = me.yaw = SPAWN.yaw;
+  cam.yaw = me.yaw = LANDING.yaw;
   cam.pitch = -0.14;
 }
 
@@ -498,7 +502,7 @@ onFrame(
       }
     }
     if (!ready) {
-      if (!worldStatus().ready || world.tick <= 0) return;
+      if (!worldStatus().ready || world.tick <= 0 || physicsTime() <= sceneryBuiltAt) return;
       ready = true;
       fillPiles();
       restore();
