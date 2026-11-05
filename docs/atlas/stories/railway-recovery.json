@@ -6,8 +6,12 @@
   "steps": [
     {
       "hl": ["server"],
-      "text": "This headless proof is blocked: overlapping idle eviction can lose an accepted edit. Its single-host crash tests pass, but it is not ready for promotion. Default rooms and the playable entry are unchanged.",
-      "cite": [{ "file": "src/world/railway-namespace.ts" }, { "file": "src/world/rules/railway-index.ts" }]
+      "text": "The headless T1 proof uses an isolated test namespace; default gameplay and registry are unchanged. The shared room manager retains exclusive authority until closing is durable and fences reconnects after a refused close, protecting existing rooms too.",
+      "cite": [
+        { "file": "src/world/railway-namespace.ts" },
+        { "file": "src/world/rules/railway-index.ts" },
+        { "file": "server/src/host/rooms.ts" }
+      ]
     },
     {
       "go": [["you.world", "server"]],

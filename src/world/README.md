@@ -4,14 +4,14 @@ Everything players can change and everyone must agree on (items, piles) lives be
 
 ## Pieces
 
-| File                               | Owns                                                                                                                                                                                                                                                 |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sync.ts`                          | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join and the host's saves; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
-| `rules/`                           | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.**                                                                                            |
-| `namespace.ts`                     | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break.                                                                                                                                     |
-| `game-world.ts`                    | The island's `land` and the rules installed on the real sync (`rules.gifts`, ...). Adapters import it first.                                                                                                                                         |
-| `grid.ts`                          | Pure, lockstep: grid constants.                                                                                                                                                                                                                      |
-| `background.ts`, `clock-worker.ts` | Keep the world ticking while the tab is hidden.                                                                                                                                                                                                      |
+| File | Owns |
+|---|---|
+| `sync.ts` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join and the host's saves; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
+| `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
+| `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
+| `game-world.ts` | The island's `land` and the rules installed on the real sync (`rules.gifts`, ...). Adapters import it first. |
+| `grid.ts` | Pure, lockstep: grid constants. |
+| `background.ts`, `clock-worker.ts` | Keep the world ticking while the tab is hidden. |
 
 Pure sim logic lives in `../sim/` (gifts, piles, ...); the game side of lockstep state in `../adapters/`
 and `../features/`. `registerOp`, `registerState` and `onTick` are lint-banned outside `rules/` and `game-world.ts`;
@@ -68,7 +68,6 @@ Grid cells use the heightfield indexing from `src/island/terrain.ts`: `heights[i
 Integer units: base heights are stored in **centimetres** (`Int16`). Base terrain is quantized once with `Math.round(h * 100)`.
 
 ### Ordering inside one tick
-
 1. Apply that tick's edits (host sequence order).
 2. Run `onTick` handlers in registration order (a system that reads another's state registers after it).
 3. Run `onAfterTick` handlers in registration order.
