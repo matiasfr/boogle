@@ -132,6 +132,8 @@ First-use carry meshes and the glider's cloth and shadow pipelines warm behind l
 
 **The way back.** The first bridge has its reveal, edge lamps and commuters. Far Head has rockets at both ends and lamps sequencing along the trestle toward home; its reveal does not turn the player's camera. The continuous track is the lasting route home. Rails remain visible at the forge rack and its nearby Interact prompt remains **Take rails**. No replacement arrow, new instruction or marker was added. The Boogler's copy, gift lines, other prompts and banners are unchanged.
 
+Station stone bills form a low pile: six stones rest at their own terrain heights and support the two above. Deposit flights and the settled stock use the same positions.
+
 ### Guidance after removing the objective
 
 **Boiler repair (5 November, solo design pass topic 2).** The old train exposes empty brass saddles matching the carried boiler's two bands. The boiler waits on a low pedestal at the forge apron; fitting seats the same part before the existing wake. This supersedes the earlier relationship weakness recorded below. Local presentation follows existing boiler/trains state; carrying, drop ownership and delivery stay with the cargo work.
