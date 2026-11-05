@@ -615,10 +615,22 @@ export function buildMachine() {
     parent.add(beam);
     return { lamp, beam };
   });
-  const fire = new THREE.MeshStandardNodeMaterial({ color: '#1c0d05', emissive: '#ff4a08', emissiveIntensity: 0 });
+  const fire = new THREE.MeshStandardNodeMaterial({ color: '#96360c', emissive: '#ff8a23', emissiveIntensity: 0 });
   const firebox = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.3, 0.04), fire);
   firebox.position.set(0, 1.05, -1.57);
   locoRock.add(firebox);
+  const grate = new THREE.Mesh(
+    merged([
+      ['b', 0, 0.87, -1.6, 0.56, 0.06, 0.05, '#24262c'],
+      ['b', 0, 1.23, -1.6, 0.56, 0.06, 0.05, '#24262c'],
+      ['b', -0.25, 1.05, -1.6, 0.06, 0.3, 0.05, '#24262c'],
+      ['b', 0.25, 1.05, -1.6, 0.06, 0.3, 0.05, '#24262c'],
+      ['b', -0.08, 1.05, -1.6, 0.035, 0.3, 0.05, '#24262c'],
+      ['b', 0.08, 1.05, -1.6, 0.035, 0.3, 0.05, '#24262c'],
+    ]),
+    new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.9 }),
+  );
+  locoRock.add(grate);
   let fireOn = 0;
   const setLamps = (on: boolean) => {
     for (const l of lamps) {
@@ -726,7 +738,7 @@ export function buildMachine() {
       const alpha = stepAlpha();
       drawCar(flatbed, alpha);
       drawCar(loco, alpha);
-      fire.emissiveIntensity = fireOn * (1 + Math.sin(now * 0.021) * 0.3 + Math.sin(now * 0.037) * 0.2);
+      fire.emissiveIntensity = fireOn * (1 + Math.sin(now * 0.0025) * 0.05 + Math.sin(now * 0.0047) * 0.03);
       if (st.shudder > 0 || st.was) {
         st.was = st.shudder > 0;
         for (const [rock, phase] of [

@@ -104,6 +104,8 @@ Their boots stay planted during each stance while the other foot returns, separa
 
 Machine helpers sit on the clear cab roof during waking and travel, outside the flatbed's cutter guard. Both machine and train riders follow the rendered roof's full transform, including wake shudder and track pitch. Other little guys are kept outside visible car envelopes when their heights overlap; someone below an elevated train is left alone. This is Local visual clearance, preserving routes, train physics and shared state.
 
+The track layer's firebox has a dark iron frame and grate over amber embers. Once awake, its glow varies slowly by at most eight percent instead of flashing by fifty percent. Wake timing, smoke and the surrounding lighting are unchanged.
+
 Their hammering is a small tap, heard only within 16 m and at most five a second, so distant work stays quiet.
 
 Now and then two of them near you stop and **chatter**: two to four short lines of babble, turn about, facing each other, with whoever's speaking bobbing and talking with a hand. It's the same babble as The Boogler's (`src/render/npc-voice.ts`), small and high, about 15 dB under him and with a pitch of its own for each, and it ducks nothing. One exchange at a time, none in the first 10 s, 20-38 s of quiet after each, only struck up within 11 m of you, silent past 13 m and hushed while a crate opens or a cheer goes up. Numbers: `CHATTER` (`chatter.ts`), `TALK` and `WALK` (`folk.ts`).
