@@ -1,0 +1,49 @@
+{
+  "id": "1793843476862-2878",
+  "operation": "look",
+  "args": [
+    "--real",
+    "--query",
+    "proto=place&water=new&dev=1&shot=pack&paint=4&loaded=1&prof=1",
+    "--eval",
+    "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/dev/look/evals/buddy-ramp.ts",
+    "--action",
+    "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/dev/look/evals/buddy-ramp-cost.ts",
+    "--name",
+    "ramp-gpu",
+    "--warm",
+    "3",
+    "--frames",
+    "2",
+    "--seconds",
+    "0.1",
+    "--size",
+    "1440x900"
+  ],
+  "query": "",
+  "started": "2026-11-05T01:51:17.583Z",
+  "finished": "2026-11-05T01:52:25.748Z",
+  "status": 0,
+  "before": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "7522cb3bf5ae468a27c6e3652fe51b9fe0fe0f11",
+    "dirty": true
+  },
+  "after": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "7522cb3bf5ae468a27c6e3652fe51b9fe0fe0f11",
+    "dirty": true
+  },
+  "harness": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "fec92818f47a316a54e3186cf614f5db43e8671d",
+    "dirty": false
+  },
+  "harnessAfter": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "fec92818f47a316a54e3186cf614f5db43e8671d",
+    "dirty": false
+  },
+  "changedDuringRun": false,
+  "artifacts": ["output.txt", "ramp-gpu-motion.png", "ramp-gpu-still.png"]
+}

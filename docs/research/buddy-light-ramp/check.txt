@@ -1,0 +1,860 @@
+
+> boogle@0.1.0 check
+> npm run lint && npm run typecheck && npm run test:unit && npm run registry && npm run level-check && npm run assets -- --check && npm run build
+
+
+> boogle@0.1.0 lint
+> node dev/lint/run.ts
+
+lint: 0 problems (1.745s)
+
+> boogle@0.1.0 typecheck
+> tsc -p .
+
+
+> boogle@0.1.0 test:unit
+> node --test --test-timeout=5000 'test/**/*.test.ts'
+
+✔ a saved name makes a returning visit, with the last visit read at load (0.743167ms)
+✔ welcome lines compare with the memory read before this visit saved over it (0.263917ms)
+✔ names read naturally (0.106791ms)
+✔ a friendly name is never empty (4.594291ms)
+✔ extractFile reads every registration kind (2.468666ms)
+✔ extractFile reads server routes (0.209625ms)
+✔ extractFile survives a syntax error (0.580083ms)
+✔ extractFile reads names (0.22975ms)
+✔ extractFile reads TypeScript (0.477417ms)
+✔ a module keeps its facts when it moves from .js to .ts (4.969125ms)
+✔ lockstep globs accept {js,ts} choices (0.236958ms)
+✔ extractFacts is deterministic (9.842334ms)
+✔ checkAtlas passes a good narrative (4.604709ms)
+✔ checkAtlas names each problem once (16.858916ms)
+✔ parseNarrative never throws (0.397958ms)
+✔ resolveCite never throws (0.957833ms)
+✔ kindOf classifies (0.137541ms)
+✔ changes parse and render, escaping everything (0.488875ms)
+✔ diffFacts reports files, folders and keys gained and lost (1.707459ms)
+✔ the reader tells senders from receivers, and keeps core presence keys and the frame loop (3.535583ms)
+✔ hooks are core by reserved order, and lockstep comes from the lint globs (0.289209ms)
+✔ background advance: slices elapsed time, caps catch-up, does not double count (0.5615ms)
+✔ canRest rejects floats, out-of-range values and a second rest within REST_GAP (0.566917ms)
+✔ a rest round-trips through serialize and load to the same hash (0.472333ms)
+✔ load throws on a bad shape, so sync starts it fresh (0.184ms)
+✔ a null spot hashes differently from the spot [0, 0, 0] (0.086333ms)
+✔ the horizontal limit is the world half size in centimetres (0.065208ms)
+✔ the gap is wall time not covered by ticks or earlier wakes, never negative (0.616416ms)
+✔ freight: one piece per hut per HELPER_EVERY ticks, capped (0.101ms)
+✔ a host that loads an hour-old save banks the gap once; a client's wake is refused (hostOnly) (15.995709ms)
+✔ present reactions remember repeats and the existing window cap (6.9845ms)
+✔ a stored gift in the old index format is dropped on load (0.22975ms)
+✔ enough kick-offs make him wary; time and gifts forgive (0.1395ms)
+✔ apologies count once per gap and only with something to forgive (0.083792ms)
+✔ memories round-trip through storage and ignore junk (0.207208ms)
+✔ old saves keep stories, bookmarks and grudges while dropping obsolete fields (0.780667ms)
+✔ parked copy stays available for the narrative pass outside the player bundle (0.076166ms)
+✔ every message offers at least two answers and every link resolves (0.78175ms)
+✔ every message in a talk offers at least two answers (1.8135ms)
+✔ every thread is open immediately and its chapters play in order (0.462666ms)
+✔ the first menu includes every thread (0.109458ms)
+✔ finishing a chapter teaches it once and ends the talk with a line over his head (0.142958ms)
+✔ bye is one press, and his farewell is a bubble (0.082083ms)
+✔ small talk ends the talk (0.085542ms)
+✔ walking off mid-chapter bookmarks it, and asking again picks it back up (0.291125ms)
+✔ a cross Boogler says no goodbye when you walk off (0.124708ms)
+✔ the island question always opens d2, including a saved bookmark at retired d (0.165667ms)
+✔ he takes what is in your hand and it can forgive a wary Boogler (0.437209ms)
+✔ each gift answer carries its item for the icon, every other answer -1 (0.165333ms)
+✔ he turns down key items and leaves them in your hand (0.087125ms)
+✔ the kick-off talk ends after one exchange (0.091833ms)
+✔ first talk introduces him; later talks draw from every familiar greeting and farewell (0.1535ms)
+✔ names are filled in (0.088542ms)
+✔ a finished thread retells one of its chapters, a different one each time, then a retell line (0.232208ms)
+✔ as Mario he is starstruck even when wary, and every answer is something Mario says (0.336083ms)
+✔ as Mario he does not open with the same conversation twice in a row (0.6055ms)
+✔ chroma: parses key colours (0.91925ms)
+✔ chroma: keys out the background and its halo, keeps the subject, bleeds its colour outward (6.722208ms)
+✔ chroma: a strong halo next to the key goes, a magenta-free subject colour stays (0.148708ms)
+✔ chroma: a scene background is reported, not keyed (0.729959ms)
+✔ chroma: counts separate subjects (0.337958ms)
+✔ chroma: bleed leaves alpha alone and fills from the nearest opaque pixel (0.0865ms)
+✔ chroma: trimSquare crops to the subject and anchors it (0.26475ms)
+✔ chroma: seam score is about 1 for a wrapping texture and high for one with a hard edge (0.472375ms)
+[controls] hold-test: no label
+[controls] hold-test: group "undefined" is not in GROUPS
+[controls] swim-test: no label
+[controls] swim-test: group "undefined" is not in GROUPS
+✔ controls: one action per pad slot, clashes stay unbound (1.691ms)
+✔ controls: wrapAction keeps the original handler, the last wrap runs first (0.542166ms)
+✔ controls: a wrap waits for its action, and a missing id warns (2.651541ms)
+✔ controls: no two actions in src/ claim the same pad slot (18.072ms)
+✔ controls: listControls sorts by group, then order, then registration; describeControl claims no slot (0.570834ms)
+✔ controls: guide false hides an action (0.110833ms)
+✔ controls: controlProblems finds gaps in the guide (0.205125ms)
+✔ controls: no two bindings in src/ claim the same key (33.922208ms)
+✔ controls: a key presses its action through one guard (0.458583ms)
+✔ controls: an action with a context keeps it, so it may share a key (guest-crouch on Shift beside sprint) (0.224792ms)
+✔ directLink: a Dropbox share page becomes its direct download, keeping the key (0.60025ms)
+✔ directLink: other links pass through, junk and non-web links are refused (0.105917ms)
+✔ every entity state.ts and headless.ts imports in Node (305.883416ms)
+✔ each declared phase gets one hook, named after kind and phase (3.916625ms)
+✔ a kind defined twice throws (1.271042ms)
+✔ spawn throws on an undefined kind, a method with no order, and a double spawn (0.22025ms)
+✔ a spawn whose attach throws leaves nothing walking (0.890875ms)
+✔ alive set by hand: a later despawn still tears it down (0.202333ms)
+✔ entities without a method for a phase are skipped, and spawn order holds (0.130625ms)
+✔ an entity spawned during a walk starts on the next walk (0.115917ms)
+✔ an entity despawned during a walk is skipped at once, and torn down at the flush (0.136667ms)
+✔ despawning itself mid-walk finishes the walk for the rest (0.098334ms)
+✔ a double despawn tears down once (0.131542ms)
+✔ a despawned entity never spawns again, before or after its teardown (0.120417ms)
+✔ a dispose can despawn another entity, in the same flush (0.084833ms)
+✔ despawning something never spawned only marks it dead (0.054375ms)
+✔ a throw skips only that entity: the rest of its kind, other kinds and phases never notice (0.136166ms)
+✔ an entity that throws every walk keeps its turn, its siblings keep theirs, and it reports once (0.293209ms)
+✔ a kind throwing every walk still lets the flush tear down what was despawned (0.0745ms)
+✔ a throwing dispose is reported and the rest of the flush still runs (0.068459ms)
+✔ the era turns over only after the last section is laid and the bell has run out (0.558958ms)
+✔ opening day starts once, after the route: a CALL_S call, then BELL_S of bell (0.767125ms)
+✔ everyone at the platform ends the call early, once; the bell still runs in full (0.29925ms)
+✔ opening state round-trips with the same hash and rejects junk (0.132834ms)
+✔ open.lay's note is saved only once used, round-trips, and resets with opening day (0.430375ms)
+✔ same ticks and edits give the same island on every client (4.285458ms)
+✔ a perch holds its item and refills PERCH_REFILL ticks after it is taken (1.218583ms)
+✔ thrown things land where they were thrown and rot after LIFE ticks (0.507ms)
+✔ a full island sweeps away the oldest thrown thing to make room (0.146042ms)
+✔ taking an item works once (0.08675ms)
+✔ ground items never exceed MAX_ITEMS (0.105375ms)
+✔ snapshot round-trips and hashes match (0.610041ms)
+✔ load drops bad items and survives garbage (0.164042ms)
+✔ only the ball is not carryable (0.131167ms)
+✔ baseline restores absent owners before their effects become available again (1.258292ms)
+✔ mio0 expands literals and back-references (0.578667ms)
+✔ toBigEndian reads .z64, .v64 and .n64 byte orders alike (0.442334ms)
+✔ pieces are listed in the order they appear, scaffold first, the last at completion (0.532375ms)
+✔ the stage follows the stock: nothing when empty, more as it fills, everything once built (0.127334ms)
+✔ the phases come in order: no piece goes back a phase (0.098042ms)
+✔ the nearest target wins (0.63175ms)
+✔ a target straight ahead beats a slightly nearer one beside you, but not a much nearer one (0.126083ms)
+✔ r measures to the edge: The Boogler at 2.6 m beats a ball at 1.9 m, and a ball at his feet (0.09425ms)
+✔ a runnable target wins over a nearer blocked one, in either order (0.090208ms)
+✔ a blocked target shows when nothing runnable is in reach, nearest first (0.081542ms)
+✔ nothing in reach picks nothing (0.070125ms)
+✔ ties go to the earlier target, and standing on one does not divide by zero (1.042833ms)
+✔ among several of one kind the nudge still decides: a palm ahead beats a shell behind (0.126458ms)
+✔ the order targets come in does not change the pick (0.148542ms)
+✔ take refuses an id that is not in the catalog (0.545625ms)
+✔ one thing in your hand: a new one pushes the old one out (0.405875ms)
+✔ findKnots finds cycles, and nothing in a chain, a self-import or an import outside the graph (0.901ms)
+✔ findKnots keeps separate cycles apart and joins overlapping ones (7.926917ms)
+✔ importsOf counts static value imports and re-exports only (0.919625ms)
+✔ the ratchet passes the list as it is (0.153083ms)
+✔ a file joining a knot fails, naming it (0.156875ms)
+✔ a new knot fails, naming its files (0.085625ms)
+✔ two listed knots merging fails (0.076ms)
+✔ a listed file that left its knot fails until its line goes (0.114625ms)
+✔ a listed knot that split fails until the list says so (0.090666ms)
+✔ an empty list means no knots allowed (0.115916ms)
+✔ a bare visit or one with only debug flags opens nothing special (0.543375ms)
+✔ room and prototype are kept with their parameters, debug flags dropped (0.132542ms)
+✔ a retired playlist link opens nothing special (0.097375ms)
+✔ the Continue label names the room and the prototype (0.080042ms)
+✔ the cookie round-trips and ignores other cookies and bad encodings (0.127417ms)
+✔ flat ground is reached, and a wall of blocked nodes cuts it off (2.513041ms)
+✔ a cliff stops you going up, not down (0.455708ms)
+✔ a slope within the limit climbs, one over it does not (0.221083ms)
+✔ sea stops a walk, not a swim (0.311584ms)
+✔ fixture assertions retain every ESLint catch and enforce current policy; JS language gate is preserved (141.193792ms)
+✔ registration imports remain restricted at every fixed sync path (6.729584ms)
+✔ custom directives suppress only their rule and report stale entries (0.815625ms)
+✔ import restrictions include re-exports, namespace imports and mixed physics type/value imports (1.011542ms)
+✔ the JS language guard replaces duplicate-parameter and legacy-octal parser protections (1.210375ms)
+✔ entity count budgets fail overflow and stale entries, prune downward, and relax only stale counts (408.401208ms)
+✔ missing single-file targets and unmatched globs fail instead of reporting a clean lint (1.335542ms)
+✔ root-only exclusions never hide nested source directories; dependency exclusions apply at every depth (52.995875ms)
+✔ renaming the suppression budget preserves the archived baseline and its no-growth check (4.002083ms)
+✔ sw: only hashed build files under the scope are cached (0.595666ms)
+✔ sw: a new build keeps itself and the build before it (0.40675ms)
+✔ manifest: when narrows by prototype, area and era (0.12175ms)
+✔ manifest: only soon files that apply are prefetched, in order (0.107292ms)
+✔ manifest: ids are unique and lookups fail loudly (0.375584ms)
+✔ the spring matches a fine integration: under-, critically and over-damped (7.852958ms)
+✔ the spring lands in the same place at 20 fps as at 120 fps (0.202ms)
+✔ a stiff spring stays stable at a long frame and settles on its goal (0.102833ms)
+✔ frequency and damping ratio convert to stiffness and damping (0.082291ms)
+✔ the damper halves the gap every half-life, whatever the step (0.114292ms)
+✔ ring starts at rest, swings positive first and dies away (0.100875ms)
+✔ the easing curves run 0 to 1 and clamp (0.442916ms)
+✔ world room ids are namespaced and stay inside [a-z0-9-]{1,32} (0.620625ms)
+✔ decode accepts only JSON objects with a string t (0.827708ms)
+✔ roomUrl maps http to ws and https to wss (0.187583ms)
+✔ peer host ids and selfIds (0.183833ms)
+✔ my presence updates show in list() without firing onChange (22.898583ms)
+✔ remote joins, updates and leaves are announced, with my latest presence in peers (74.106209ms)
+✔ a drop near a same-kind pile joins it; another kind or a far spot makes a new pile (0.703208ms)
+✔ past PILE_CAP the rest spills into a new pile beside it; nothing is lost (0.370834ms)
+✔ a full room merges into the nearest same-kind pile; another kind has no room (2.938458ms)
+✔ takes are partial; an emptied pile goes (0.190625ms)
+✔ serialize/load round-trips with the same hash; bad data throws (0.527125ms)
+✔ room() is exact: a drop where every spot is taken and no same-kind pile exists places nothing (0.166625ms)
+✔ a getter that returns null or undefined, or throws, sends key: null so the room deletes it (0.878208ms)
+✔ a field that stops is gone from the published presence, not repeated forever (0.148625ms)
+✔ fields never take core keys or an earlier field (0.123458ms)
+✔ a reused presence object keeps its keys in order and takes each send's values (0.113625ms)
+✔ a host field publishes only while host, and hears only real values (0.139375ms)
+✔ a demoted host clears its host field on the next send (0.095ms)
+✔ variant names are unique per card and the variant urls name their variant (0.7315ms)
+✔ graduated, answered and parked cards carry the owner's verdict and what comes next (0.159208ms)
+✔ the scan ignores calls in strings and comments, and definitions (2.064375ms)
+✔ defineKind orders are read: clashes and the feature range fail, a non-literal order is an error (1.319042ms)
+✔ TypeScript reads like JavaScript: typed locals, `as const`, generics, a moved file (0.426166ms)
+✔ a file the registry cannot parse is an error, not a silent skip (0.1595ms)
+✔ a presence key taken twice (core or field) fails (0.255542ms)
+✔ a message type sent from two files fails; a receiver-only file does not count (0.2535ms)
+✔ pad slots: registerAction claims, describeControl does not, one slot must stay free (0.22025ms)
+✔ pad slots: a prototype's claim leaves the slot free and doesn't clash with the game's (0.165125ms)
+✔ feature onFrame orders stay in the feature range and off core orders (0.276833ms)
+✔ RULES must keep main as a prefix (0.270125ms)
+✔ a new world namespace is a clean break: main's rules, ops and states bind nothing (0.203375ms)
+✔ states: no removal, no version going down, no shape change without a version bump (0.215ms)
+✔ new and dropped wire names are notes, not errors (0.072875ms)
+✔ scrub hides peer ids and id-like tokens, keeps ordinary words (0.756208ms)
+✔ firstFrame keeps the path only: no scheme, host or query string (0.2545ms)
+✔ coarseUa gives browser, major version and system only (0.237792ms)
+✔ pair equal progress with at most one metre of settling in three dimensions (0.727833ms)
+✔ refuse different room, interior or progress and name every measured mismatch (0.16ms)
+✔ refuse missing, malformed and nonfinite readbacks instead of pairing two unknowns (0.121125ms)
+✔ accept only negligible floating point noise in track progress (0.093417ms)
+✔ two identical fresh fallbacks or relocated poses cannot masquerade as the saved moment (0.09575ms)
+✔ read expected progress from the selected room save; refuse unsupported or malformed checkpoints (0.962708ms)
+✔ players get dense indexes in order of first sight (0.569791ms)
+✔ names are cleaned like the lobby does; an unchanged set and a bad colour are refused (0.334667ms)
+✔ the roster caps at MAX_PLAYERS; known players can still rename (0.286833ms)
+✔ serialize/load round-trips with the same hash; bad rows throw (0.888209ms)
+✔ phases play in order with integer progress, and the run is done at t0 + length (0.930833ms)
+✔ the machine run is warm, lay, whistle in integer ticks, 14 s (0.1165ms)
+✔ rings take up to their cost; a full Helper ring builds the hut and closes (0.684833ms)
+✔ plaque points: 1 point per 1% of a section, remainders carried so 60 single logs make exactly 100 (0.443042ms)
+✔ tiers follow points and only rise with them (0.094375ms)
+✔ serialize/load round-trips with the same hash; bad data throws (0.579375ms)
+✔ a run lays its section, credits the starter, refills sources and opens the next site; the age then moves on (7.734125ms)
+✔ two starts stamped for the same run: the first one counts (0.256917ms)
+✔ tune.fill fills the ring with no credit, and the run lays the section (0.514167ms)
+✔ a day lasts DAY_MS (20 minutes) and repeats (0.603583ms)
+✔ the sun is up for DAYLIGHT of the day (0.110792ms)
+✔ moon phases cycle every LUNAR_DAYS days: new rides with the sun, full is opposite (2.792625ms)
+✔ moon illum tracks (1 - cos 2 PI phase) / 2 within 0.011 (0.155542ms)
+✔ same world time gives the same sky (pure) (0.387083ms)
+✔ sample interpolates between the two snapshots around t (0.838125ms)
+✔ before the first snapshot it holds; after the last it reports how far over (0.135875ms)
+✔ the buffer is capped and clear empties it (0.091417ms)
+✔ validatePing accepts good pings and rejects junk (0.831791ms)
+✔ limiter allows N per window per sender (0.150084ms)
+✔ chord needs 3 different players within a second (0.160792ms)
+✔ honk pitch is stable per colour (0.151625ms)
+✔ honks take tones from one shared chord (1.245833ms)
+✔ a take spends a charge and yields a handful; an empty or unknown source gives nothing (0.546542ms)
+✔ the trickle refills one empty source on its tick, the same one for the same seed (0.548458ms)
+✔ a new age reads full, and forgets the old counts once it is matched (0.080959ms)
+✔ serialize/load round-trips with the same hash; bad data throws (0.245375ms)
+✔ one material at a time, up to the hard cap (0.528208ms)
+✔ taking empties the stack and frees its kind (0.106542ms)
+✔ serialize/load round-trips with the same hash; bad rows throw (0.3705ms)
+✔ the charge runs 0 to 1 over 900 ms and clamps (0.557209ms)
+✔ each held thing picks its flight (0.091417ms)
+✔ launchVelocity matches the old throw formula to 1e-9 (0.204334ms)
+✔ defaults are the constants; an untuned room saves and hashes nothing (0.799375ms)
+✔ keys and bounds (0.165209ms)
+✔ round-trip keeps the hash; bad saves throw (0.325333ms)
+✔ a save with retired keys (soft cap, spill) still loads, without them (0.095875ms)
+✔ wood costs follow the tuning (0.087375ms)
+✔ only proto- rooms tune (0.123708ms)
+✔ nothing laid: no wagon (0.699625ms)
+✔ the timetable is integer ticks, and runs never exceed cruise speed or the acceleration cap (0.347542ms)
+✔ deterministic: same inputs, same output (5.42725ms)
+✔ periodic, and t0 shifts the timetable (3.443ms)
+✔ never leaves the laid part, and reaches both ends (6.829833ms)
+✔ dwells for WAGON_DWELL at both ends and at each station, out and back (1.19175ms)
+✔ speed is 0 at stops, never above cruise, and matches the velocity and the heading (6.036625ms)
+✔ continuous everywhere, including stop boundaries and turnarounds; velocity matches the motion (126.943875ms)
+✔ fractional ticks agree with integer ticks at integers, and laid beyond the route clamps (1.519292ms)
+✔ a tuned pace (a playtest room) keeps the caps, stays continuous, and the default pace is unchanged (14.367667ms)
+✔ gaps stay within 60-90 s and depend on the seed (1.127166ms)
+✔ phases run calm, warn, sweep, recede, and the first crest is at WAVE.first (0.150125ms)
+✔ the answer does not depend on the order of the questions (a tab that joins late, a clock that jumps back) (1.451583ms)
+✔ a seeded stream of every op stays in step across a late joiner and a snapshot reload (28.41225ms)
+✔ RULES is the canonical prefix, and states and ops register in its order (3.481791ms)
+✔ every op has an accepted edit, and the same edits give the same state on two peers (8.778416ms)
+✔ a snapshot round-trips through JSON and stays in step for 50 ticks (1.370667ms)
+✔ rules import only pure modules (no three.js, DOM or constants.js) (2.271209ms)
+[world-size] 25946 chars at the caps: {"gifts":1405,"roster":9217,"stacks":2707,"piles":2468,"sites":9808,"sources":14,"bank":17,"ball":40,"tune":2,"opening":9}
+✔ a world filled to every cap serializes under 60 KB (5.499125ms)
+✔ a save without vers loads every state at version 0, and re-saves with versions (4.694042ms)
+✔ a v02 save (test/fixtures/snap-v02.json) still loads to the same hashes (0.709667ms)
+✔ malformed snapshots and states never throw; bad states start fresh and the world keeps ticking (2.558208ms)
+✔ edits from all peers converge in identical order (24.412042ms)
+✔ the host stamps each edit with its sender's pid (u), never one the edit claims (3.402875ms)
+✔ an edit from a session the room has no pid for is rejected (1.559167ms)
+✔ host rejects invalid edits (2.13ms)
+✔ late joiner converges via snapshot (incl. in-flight edits) (3.568167ms)
+[world] desync at tick 40 in: grid
+✔ injected desync is detected by hash and repaired (4.553917ms)
+✔ an edit submitted while the room is reconnecting still reaches the host (2.918417ms)
+✔ edits held while reconnecting are all accepted by a rate-limited op, in order (2.954666ms)
+✔ a fresh edit after a reconnect replaces the held backlog and goes out in the next slot (3.660667ms)
+✔ live input after a reconnect is back to normal latency (4.946292ms)
+✔ an edit held past the age limit is dropped and counted (4.195708ms)
+[world] bad snapshot SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)
+    at JSON.parse (<anonymous>)
+    at onSnapChunk (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:481:30)
+    at onMessage (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:533:36)
+    at TestContext.<anonymous> (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:258:38)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+[world] onSnapFail listener failed Error: a broken listener does not turn one failure into two
+    at file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:255:11
+    at snapFail (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:167:9)
+    at onSnapChunk (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:484:7)
+    at onMessage (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:533:36)
+    at TestContext.<anonymous> (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:258:38)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+[world] onSnapFail listener failed Error: a broken listener does not turn one failure into two
+    at file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:255:11
+    at snapFail (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:167:9)
+    at onSnapChunk (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:481:44)
+    at onMessage (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:533:36)
+    at TestContext.<anonymous> (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:259:38)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+[world] the saved world did not load cleanly: not saving over it
+✔ unloadable snapshots are reported (peer chunk, the host's save) (1.878666ms)
+✔ profileTicks times each handler per tick and changes nothing (0.603875ms)
+✔ validate sees the host env (ctx.env), set at creation or with setEnv; a missing fact rejects (2.174125ms)
+✔ onApplied listeners get the result of apply; a failing listener does not stop the next (0.1855ms)
+[world] thing failed to load; starting it fresh TypeError: Cannot read properties of undefined (reading 'oops')
+    at 1 (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:466:101)
+    at loadState (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:403:86)
+    at Object.loadSnapshot (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:386:54)
+    at TestContext.<anonymous> (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:471:20)
+    at Test.runInAsyncScope (node:async_hooks:226:14)
+    at Test.run (node:internal/test_runner/test:1402:25)
+    at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+    at Test.postRun (node:internal/test_runner/test:1542:19)
+    at Test.run (node:internal/test_runner/test:1467:12)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+[world] thing failed to load; starting it fresh Error: bad thing
+    at Object.load (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:424:74)
+    at loadState (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:404:9)
+    at Object.loadSnapshot (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:386:54)
+    at TestContext.<anonymous> (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:474:7)
+    at Test.runInAsyncScope (node:async_hooks:226:14)
+    at Test.run (node:internal/test_runner/test:1402:25)
+    at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+    at Test.postRun (node:internal/test_runner/test:1542:19)
+    at Test.run (node:internal/test_runner/test:1467:12)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+[world] thing failed to load; starting it fresh Error: bad version one
+    at loadState (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:402:37)
+    at Object.loadSnapshot (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:386:54)
+    at TestContext.<anonymous> (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:475:7)
+    at Test.runInAsyncScope (node:async_hooks:226:14)
+    at Test.run (node:internal/test_runner/test:1402:25)
+    at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+    at Test.postRun (node:internal/test_runner/test:1542:19)
+    at Test.run (node:internal/test_runner/test:1467:12)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+[world] grid was saved by a newer build (v1 > v0): skipped; not saving
+✔ onAfterTick runs after every onTick handler and before the host sends its hash (2.533542ms)
+✔ registering an op or state key twice throws; registry() lists both in registration order (0.184667ms)
+✔ the singleton exports setEnv, onAfterTick and registry (0.055167ms)
+✔ snapshots record each state version, and loads run the migrations from the saved version up, in order (0.188292ms)
+✔ a state that fails to load (or to migrate) starts fresh and is counted; the others still load (0.302584ms)
+[world] the saved world did not load cleanly: not saving over it
+✔ a state saved by a newer build is skipped, and the tab stops saving so it never overwrites that save (10.77425ms)
+[world] grid failed to load; starting it fresh Error: cannot read this grid
+    at Object.load (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:32:31)
+    at loadState (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:404:9)
+    at loadSnapshot (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:386:54)
+    at becomeHost (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:643:19)
+    at Object.attachWorld (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:678:20)
+    at makePeer (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:63:5)
+    at TestContext.<anonymous> (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:510:18)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+[world] grid fresh load failed Error: cannot read this grid
+    at Object.load (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:32:31)
+    at loadState (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:410:11)
+    at loadSnapshot (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:386:54)
+    at becomeHost (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:643:19)
+    at Object.attachWorld (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/src/world/sync.ts:678:20)
+    at makePeer (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:63:5)
+    at TestContext.<anonymous> (file:///Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/test/world-sync.test.ts:510:18)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+[world] the saved world did not load cleanly: not saving over it
+✔ a host whose save fails to load never writes its fresh fallback over that save (20.174166ms)
+✔ a state only the host has does not fail the client's hash check (1.3455ms)
+[world] thing was saved by a newer build (v2 > v1): skipped; not saving
+✔ a state skipped as newer is left out of the hash check (2.716792ms)
+✔ saveMs sets how often a host saves (0.806ms)
+✔ saveNow writes at once and skips an unchanged world (0.391709ms)
+ℹ tests 297
+ℹ suites 0
+ℹ pass 297
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1000.893333
+
+> boogle@0.1.0 registry
+> node dev/registry/check.ts
+
+registry: agent launch docs: 2.15 ms (3,000/1,000-byte budgets and launch imports)
+registry: prototype dependencies: 25 cards, 197.97 ms (JSON has owner-review notes)
+registry: debt now: suppressions 20; knots 0 groups/0 members; allowances 15 entries/24 max
+registry: debt base origin/main: suppressions 20; knots 0 groups/0 members; allowances 15 entries/24 max
+registry: entity migration, 20 suppressions left
+registry: ok (22 presence keys, 10 message types, 16 ops, 10 states)
+
+> boogle@0.1.0 level-check
+> node --import ./dev/sim/hooks.ts dev/level/check.ts
+
+Source: f45f73aa6f32a02dd37fe1dd701b21bc1a2a725eca619daff75eebf9f5fbec39 (815 files; commit ea9ad004cc2368cf5536d0f313b603dca9c734ed).
+Coverage: classic, place. Default browser entry: place (Round 4; ?proto=place&fresh=1&coop=1).
+  Excluded classic-low: Opt-in comparison surface; request --island=low.
+  Excluded classic structure/cave interiors and render-created colliders: The adapter composes terrain, sites, route and prop blueprints without rendering POI structures.
+  Excluded place props, room/station collision, hook visibility and swept player clearance: The progression model uses a 2 m terrain flood, bridge/rail links and approximate ability envelopes.
+  Excluded place controller timing, dynamic train/cargo, directed dry returns and recovery: These checks preserve the existing forward reachability assertions; they are not movement witnesses.
+classic: ok, 4 known; 234/300 objects, 846/1100 collider spheres, 46/60 bodies
+classic/east-bay: ok, 4 known; 237/300 objects, 852/1100 collider spheres, 46/60 bodies
+  Excluded 3 lab-only route sections: The runtime builds only the classic route length.
+classic/lighthouse-line: ok, 4 known; 234/300 objects, 846/1100 collider spheres, 46/60 bodies
+  Excluded 6 lab-only route sections: The runtime builds only the classic route length.
+classic/net-line: ok, 4 known; 200/300 objects, 745/1100 collider spheres, 46/60 bodies
+classic/west-cove: ok, 8 known; 236/300 objects, 850/1100 collider spheres, 46/60 bodies
+  Excluded 2 lab-only route sections: The runtime builds only the classic route length.
+place states: start, far-head-line, double-jump-course, first-path, second-jump, stem-line-second-jump, stem-line-one-jump, hook, glide, summit-glide, second-jump-ground, layout
+
+At the start: only the paths and footbridges (the player's slope limit: rise 3.04 m a cell)
+  ok   the machine, the long way round
+  ok   frame T1
+  ok   frame T2
+  ok   frame T3
+  ok   the grove at 2,-128
+  ok   the grove at -42,-146
+  ok   the grove at -52,-178
+  ok   the grove at 12,-176
+  ok   the great tree
+  ok   the rock at 1,-106
+  ok   the rock at 8,-101
+  ok   the rock at 7,-110
+  ok   the old oak
+  ok   the forge's frame
+  ok   the telescope
+
+Once line 2 reaches Far Head
+  ok   frame Q1
+  ok   frame Q2
+  ok     its rack
+  ok   frame Q3
+  ok     its rack
+  ok   frame Q4
+  ok     its rack
+  ok   frame Q5
+  ok     its rack
+  ok   frame Q6
+  ok     its rack
+  ok   stop at 17
+  ok   stop at 174
+  ok   stop at 524
+  ok   the forge rack
+  ok   Far Head is out of reach until the line gets there
+
+Double-jump course: edge gaps and dry recovery
+  ok   p1 -> j1: 10.00 m; single upper estimate 9.85, double 13.51 m
+  ok   j1 -> j2: 10.00 m; single upper estimate 9.85, double 13.51 m
+  ok   j2 -> j3: 10.00 m; single upper estimate 9.85, double 13.51 m
+  ok   j3 -> j4: 10.00 m; single upper estimate 9.85, double 13.51 m
+  ok   j4 -> j5: 10.00 m; single upper estimate 9.85, double 13.51 m
+  ok   j5 -> j6: 10.00 m; single upper estimate 9.85, double 13.51 m
+  ok   j6 -> j7: 10.00 m; single upper estimate 9.85, double 13.51 m
+  ok   j7 -> p1-block: 10.00 m; single upper estimate 9.85, double 13.51 m
+  ok   catch floor 3.40 m down; below double-jump reach
+  ok   recovery slab/rail corridor conflicts: 0
+
+Abilities: the first path is open, before the second jump
+  ok   p1: the first device, walking off the new deck
+  ok   j1 is out of reach: the course needs the air jump, even at sprint speed
+  ok   j2 is out of reach: the course needs the air jump, even at sprint speed
+  ok   j3 is out of reach: the course needs the air jump, even at sprint speed
+  ok   j4 is out of reach: the course needs the air jump, even at sprint speed
+  ok   j5 is out of reach: the course needs the air jump, even at sprint speed
+  ok   j6 is out of reach: the course needs the air jump, even at sprint speed
+  ok   j7 is out of reach: the course needs the air jump, even at sprint speed
+  ok   p1-block is out of reach: the course needs the air jump, even at sprint speed
+  ok   apron is out of reach: gate 1's ledge needs two jumps
+  ok   p2 is out of reach: the second device: its line is not there yet, and it needs two jumps
+  ok   p1 is out of reach: and before the path, the first device
+
+With the second jump, before line 2 crosses the stem
+  ok   j1: the sprint double-jump course
+  ok   j2: the sprint double-jump course
+  ok   j3: the sprint double-jump course
+  ok   j4: the sprint double-jump course
+  ok   j5: the sprint double-jump course
+  ok   j6: the sprint double-jump course
+  ok   j7: the sprint double-jump course
+  ok   p1-block: the sprint double-jump course
+  ok   lookout: the lookout shelf
+  ok   apron: gate 1's ledge
+  ok   p2 is out of reach: the second device, until the line reaches it
+  ok   summit is out of reach: the top of the tower
+
+Line 2 over the stem, second jump, no hook yet
+  ok   p2: the second device, from the deck with two jumps
+  ok   t1 is out of reach: the first high slab: only the hook gets you up
+  ok   summit is out of reach: the top
+  ok   p2 is out of reach: one jump is not enough for the second pillar
+
+With the hook
+  ok   t0: a ring in range from where you can stand
+  ok   t1: a ring in range from where you can stand
+  ok   t2: a ring in range from where you can stand
+  ok   t3: a ring in range from where you can stand
+  ok   t4: a ring in range from where you can stand
+  ok   t5: a ring in range from where you can stand
+  ok   summit: a ring in range from where you can stand
+  ok   nook: a ring in range from where you can stand
+  ok   alcove: a ring in range from where you can stand
+  ok   loft: a ring in range from where you can stand
+  ok   balcony is out of reach: the balcony needs the glider
+  ok   stack is out of reach: the sea stack needs the glider
+
+With the glider, and the line to Far Head
+  ok   balcony: by air
+  ok   stack: by air
+
+From the summit, by glide (budget: (drop - 2) x ratio x 0.8, less entry)
+  ok   the sea gate, the frame beside it: 168 m away, budget 188 m
+  ok   home, the village: 117 m away, budget 203 m
+  ok   the balcony: 143 m away, budget 187 m
+  ok   Far Head can't be flown to from the tower: 411 m, budget 188 m
+
+What the second jump does to the walking flood: new ground from a 3 m hop up a wall
+  418 more cells (1.7k m²), mostly hopping up gorge walls and shores:
+    the first device pillar: under it, or by it
+    the second pillar: under it, or by it
+    gate 1 lever: under it, or by it
+    Far Head: no
+  (10 secrets, 25 pads.)
+
+Rail grades: the steepest cell on each line
+  north: 26.5%
+  east: 22.5%
+
+Walks, in metres and seconds at 5.6 m/s
+  village to the machine, the long way: 431 m, 77 s
+  village to the machine, the new way: 191 m, 34 s
+  village to Far Head along line 2: 546 m, 98 s
+  (2 paths; 12 buoys; origin 1000; land at Far Head 24.0 m)
+
+All progression assertions passed (approximate reachability).
+place: ok in 156 ms (import + checks)
+level-check: 6 reports in 761 ms
+
+> boogle@0.1.0 assets
+> node dev/assets/build.ts --check
+
+assets: 6 fresh, 604.1 KB in all
+catalogue: 6 built roots + generated kit parts, 12 code previews; coverage registry OK
+
+> boogle@0.1.0 build
+> vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 851 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/version.json                                      0.02 kB │ gzip:     0.04 kB
+dist/assets/clock-worker-DlVjzWKR.js                   0.05 kB
+dist/assets/index.html                                 0.50 kB │ gzip:     0.31 kB
+dist/protos/index.html                                 0.91 kB │ gzip:     0.45 kB
+dist/menu/index.html                                   1.16 kB │ gzip:     0.55 kB
+dist/atlas/index.html                                  2.41 kB │ gzip:     0.92 kB
+dist/index.html                                        3.28 kB │ gzip:     1.19 kB
+dist/sw.js                                             4.79 kB
+dist/character/index.html                              6.79 kB │ gzip:     1.98 kB
+dist/assets/scaffold-kit-CCTdHmgm.glb                  8.82 kB
+dist/assets/conductor-cap-BprIvuIb.glb                11.64 kB
+dist/assets/island-4QamSkAI.png                       25.64 kB
+dist/assets/basis_transcoder-o4Hde_L7.js              57.52 kB
+dist/assets/place-kit-DhcTTOfq.glb                    64.80 kB
+dist/assets/buddy-lsaLg1Va.glb                        66.47 kB
+dist/assets/splash-art-CUf4wrPt.jpg                   96.50 kB
+dist/assets/hero-clips-DORcqj0y.glb                  464.31 kB
+dist/assets/basis_transcoder-VXdx5NbI.wasm           527.33 kB │ gzip:   248.94 kB
+dist/assets/rapier_wasm3d_bg-C6GCbKVJ.wasm         3,082.10 kB │ gzip: 1,187.63 kB
+dist/assets/rapier_wasm3d_bg-Z_KLso_L.wasm         3,292.22 kB │ gzip: 1,163.20 kB
+dist/assets/crossing-DCE9_VuH.css                      0.10 kB │ gzip:     0.09 kB
+dist/assets/record-CXL9Oh3B.css                        0.21 kB │ gzip:     0.18 kB
+dist/assets/fall-Du6acbIB.css                          0.37 kB │ gzip:     0.25 kB
+dist/assets/net-BDmL8pnu.css                           0.44 kB │ gzip:     0.28 kB
+dist/assets/wagon-vZ5A78yC.css                         0.59 kB │ gzip:     0.33 kB
+dist/assets/lay-BrF8rulf.css                           0.60 kB │ gzip:     0.36 kB
+dist/assets/input-BfYuxhlA.css                         0.61 kB │ gzip:     0.30 kB
+dist/assets/conversation-BvHDSoP0.css                  0.67 kB │ gzip:     0.39 kB
+dist/assets/soapbox-D04DbmTU.css                       0.72 kB │ gzip:     0.35 kB
+dist/assets/ui-sound-CbSmJVW8.css                      0.72 kB │ gzip:     0.39 kB
+dist/assets/wave-BgOs6NFu.css                          0.78 kB │ gzip:     0.44 kB
+dist/assets/catalog-Clsep5Ey.css                       0.80 kB │ gzip:     0.40 kB
+dist/assets/menu-D5_y4eR2.css                          1.17 kB │ gzip:     0.58 kB
+dist/assets/haul-stack-BKXVyHAO.css                    1.27 kB │ gzip:     0.61 kB
+dist/assets/look-lab-B_68XHdZ.css                      1.51 kB │ gzip:     0.59 kB
+dist/assets/notify-ChuW_YPu.css                        1.86 kB │ gzip:     0.75 kB
+dist/assets/review-DP7MQLP-.css                        1.92 kB │ gzip:     0.79 kB
+dist/assets/era-DusRz2gE.css                           2.16 kB │ gzip:     0.77 kB
+dist/assets/splash-CkzrnoxW.css                        2.26 kB │ gzip:     1.03 kB
+dist/assets/haul-kit-D7HVjhY-.css                      2.32 kB │ gzip:     0.93 kB
+dist/assets/glyphs-Ci6DPHcm.css                        2.57 kB │ gzip:     0.64 kB
+dist/assets/protos-C0FRPaVw.css                        2.95 kB │ gzip:     1.18 kB
+dist/assets/character-BwwFuo3P.css                     3.41 kB │ gzip:     1.31 kB
+dist/assets/place-CS_TnmQO.css                         5.05 kB │ gzip:     1.54 kB
+dist/assets/dev-menu-DIF99GMv.css                      5.32 kB │ gzip:     1.64 kB
+dist/assets/atlas-CvFIWyjh.css                        12.19 kB │ gzip:     3.23 kB
+dist/assets/main-CH48jbja.css                         30.58 kB │ gzip:     7.06 kB
+dist/assets/look-B9tKfXG8.js                           0.04 kB │ gzip:     0.06 kB
+dist/assets/body-JZaAEA6k.js                           0.04 kB │ gzip:     0.06 kB
+dist/assets/pause-pages-BWkqA0oq.js                    0.04 kB │ gzip:     0.06 kB
+dist/assets/gpu-info-BK1xmLye.js                       0.05 kB │ gzip:     0.07 kB
+dist/assets/place-kit-DghrxQnt.js                      0.05 kB │ gzip:     0.07 kB
+dist/assets/splash-art-D6cO98ar.js                     0.05 kB │ gzip:     0.07 kB
+dist/assets/look-post-BPkwsl4y.js                      0.05 kB │ gzip:     0.07 kB
+dist/assets/scaffold-kit-CwseKjEo.js                   0.05 kB │ gzip:     0.07 kB
+dist/assets/diffuse-ramp-Bx5NXoNF.js                   0.05 kB │ gzip:     0.07 kB
+dist/assets/tsl-Dn7jSGd5.js                            0.05 kB │ gzip:     0.07 kB
+dist/assets/tsl-x7pUR9EC.js                            0.05 kB │ gzip:     0.07 kB
+dist/assets/wagon-DNMgdzEb.js                          0.06 kB │ gzip:     0.07 kB
+dist/assets/haul-feel-DdGJ_YrO.js                      0.06 kB │ gzip:     0.08 kB
+dist/assets/coop-DXI2w8mP.js                           0.07 kB │ gzip:     0.07 kB
+dist/assets/seat-BIiUwXf-.js                           0.07 kB │ gzip:     0.08 kB
+dist/assets/assets-C4BUWIfj.js                         0.07 kB │ gzip:     0.08 kB
+dist/assets/player-BqFV4lm9.js                         0.08 kB │ gzip:     0.08 kB
+dist/assets/types-E_89q4UZ.js                          0.08 kB │ gzip:     0.08 kB
+dist/assets/panel-DnQSKrMN.js                          0.08 kB │ gzip:     0.09 kB
+dist/assets/async-CkIh8y1D.js                          0.08 kB │ gzip:     0.10 kB
+dist/assets/building-plans-D367lHid.js                 0.08 kB │ gzip:     0.09 kB
+dist/assets/hero-clips-CB2Ql2y8.js                     0.08 kB │ gzip:     0.09 kB
+dist/assets/pair-B8MFdQGr.js                           0.09 kB │ gzip:     0.09 kB
+dist/assets/performance-BSF-9POl.js                    0.09 kB │ gzip:     0.10 kB
+dist/assets/arrival-CEQqsMC0.js                        0.10 kB │ gzip:     0.11 kB
+dist/assets/dev-input-Bm_0XelH.js                      0.10 kB │ gzip:     0.10 kB
+dist/assets/assets-BnnnYfBD.js                         0.10 kB │ gzip:     0.10 kB
+dist/assets/sky-CveGPpkF.js                            0.10 kB │ gzip:     0.11 kB
+dist/assets/build-id-DTSa-zCj.js                       0.12 kB │ gzip:     0.13 kB
+dist/assets/rolldown-runtime-DK3Fl9T5.js               0.15 kB │ gzip:     0.15 kB
+dist/assets/rng-BsERB_me.js                            0.16 kB │ gzip:     0.14 kB
+dist/assets/card-du2ipOvL.js                           0.16 kB │ gzip:     0.14 kB
+dist/assets/moves-CombvILV.js                          0.16 kB │ gzip:     0.14 kB
+dist/assets/flat-CgaS5yFP.js                           0.18 kB │ gzip:     0.17 kB
+dist/assets/motion-DCv308K5.js                         0.18 kB │ gzip:     0.15 kB
+dist/assets/terrain-BGcUAU04.js                        0.18 kB │ gzip:     0.16 kB
+dist/assets/fft-luPsV_r2.js                            0.19 kB │ gzip:     0.17 kB
+dist/assets/shared-time-ONIOctbz.js                    0.19 kB │ gzip:     0.18 kB
+dist/assets/input-state-FlGSmVzQ.js                    0.21 kB │ gzip:     0.17 kB
+dist/assets/haul-variant-D0U6x8dx.js                   0.25 kB │ gzip:     0.21 kB
+dist/assets/looks-Dd23kl7d.js                          0.30 kB │ gzip:     0.20 kB
+dist/assets/route--bZhGS1G.js                          0.31 kB │ gzip:     0.23 kB
+dist/assets/builds-AH9Jhi_t.js                         0.31 kB │ gzip:     0.24 kB
+dist/assets/net-line-C-PeOcos.js                       0.32 kB │ gzip:     0.22 kB
+dist/assets/shore-options-QKCYyFFk.js                  0.33 kB │ gzip:     0.25 kB
+dist/assets/view-C-ww7mvc.js                           0.35 kB │ gzip:     0.25 kB
+dist/assets/run-BIVwt6xS.js                            0.36 kB │ gzip:     0.24 kB
+dist/assets/dom-BxPGxLV_.js                            0.38 kB │ gzip:     0.23 kB
+dist/assets/mark-CcyAyGMv.js                           0.38 kB │ gzip:     0.24 kB
+dist/assets/sky-clock-DNsFR1In.js                      0.41 kB │ gzip:     0.27 kB
+dist/assets/modal-CEkQ0clt.js                          0.46 kB │ gzip:     0.29 kB
+dist/assets/chop-BQrpoLPJ.js                           0.50 kB │ gzip:     0.29 kB
+dist/assets/review-D1BXMtVS.js                         0.53 kB │ gzip:     0.35 kB
+dist/assets/layout-WU0NxnF_.js                         0.54 kB │ gzip:     0.32 kB
+dist/assets/count-BWtpuC8p.js                          0.56 kB │ gzip:     0.39 kB
+dist/assets/tuning-Cd8iNc2H.js                         0.56 kB │ gzip:     0.40 kB
+dist/assets/constants-C-DXbsiV.js                      0.57 kB │ gzip:     0.36 kB
+dist/assets/math-pure-IZwqsMQ0.js                      0.57 kB │ gzip:     0.35 kB
+dist/assets/protos-buNeA6DQ.js                         0.58 kB │ gzip:     0.35 kB
+dist/assets/menu-51DnrpVe.js                           0.58 kB │ gzip:     0.42 kB
+dist/assets/look-gtao-CeaD9R6t.js                      0.59 kB │ gzip:     0.37 kB
+dist/assets/gift-catalog-CzMiAm1s.js                   0.61 kB │ gzip:     0.36 kB
+dist/assets/home-land-Cjyl2hva.js                      0.65 kB │ gzip:     0.35 kB
+dist/assets/modulepreload-polyfill-P2Xu9kJm.js         0.67 kB │ gzip:     0.38 kB
+dist/assets/__vite-plugin-wasm-helper-Y7WR0nsT.js      0.69 kB │ gzip:     0.39 kB
+dist/assets/debug-cam-BGO4fLPi.js                      0.70 kB │ gzip:     0.38 kB
+dist/assets/noise-CPE7lStG.js                          0.71 kB │ gzip:     0.41 kB
+dist/assets/contacts-CaR2Koam.js                       0.73 kB │ gzip:     0.49 kB
+dist/assets/sky-bake-CJVB4fdV.js                       0.74 kB │ gzip:     0.47 kB
+dist/assets/sky-CeLsYmUw.js                            0.77 kB │ gzip:     0.46 kB
+dist/assets/state-DRWCUTeb.js                          0.81 kB │ gzip:     0.50 kB
+dist/assets/draw-count-Bxs5W9my.js                     0.82 kB │ gzip:     0.49 kB
+dist/assets/dev-preferences-RQDMBnU5.js                0.83 kB │ gzip:     0.44 kB
+dist/assets/flags-DSw5gGnv.js                          0.85 kB │ gzip:     0.41 kB
+dist/assets/asset-manifest-BetF-7JJ.js                 0.85 kB │ gzip:     0.49 kB
+dist/assets/motion-CrGdKhrX.js                         0.87 kB │ gzip:     0.47 kB
+dist/assets/diffuse-ramp-CXFFPi-8.js                   0.87 kB │ gzip:     0.48 kB
+dist/assets/camera-IsgqTVjP.js                         0.88 kB │ gzip:     0.57 kB
+dist/assets/west-cove-Dkk_cK2T.js                      0.90 kB │ gzip:     0.48 kB
+dist/assets/assets-Bru6dgUB.js                         0.91 kB │ gzip:     0.58 kB
+dist/assets/east-bay-BnAGXKpD.js                       0.91 kB │ gzip:     0.49 kB
+dist/assets/lighthouse-line-BK1w6sbO.js                1.02 kB │ gzip:     0.51 kB
+dist/assets/body-M8e4KW0t.js                           1.02 kB │ gzip:     0.60 kB
+dist/assets/camera-arm-B8NpQZfj.js                     1.03 kB │ gzip:     0.63 kB
+dist/assets/ui-v_3v63qh.js                             1.03 kB │ gzip:     0.57 kB
+dist/assets/item-models-C0fbC4vu.js                    1.05 kB │ gzip:     0.64 kB
+dist/assets/inspect-BqUIcOou.js                        1.06 kB │ gzip:     0.63 kB
+dist/assets/lay-DF0dmibH.js                            1.06 kB │ gzip:     0.57 kB
+dist/assets/haul-pieces-BB5P5vZe.js                    1.07 kB │ gzip:     0.67 kB
+dist/assets/water-field-lac_h6_0.js                    1.13 kB │ gzip:     0.61 kB
+dist/assets/buddy-crowd-mOxioakw.js                    1.14 kB │ gzip:     0.75 kB
+dist/assets/state-C5RZ5nLY.js                          1.16 kB │ gzip:     0.64 kB
+dist/assets/live-BOODvgDW.js                           1.23 kB │ gzip:     0.64 kB
+dist/assets/seat-DR_FXdkg.js                           1.25 kB │ gzip:     0.67 kB
+dist/assets/pickup-feel-iBG8hMkc.js                    1.29 kB │ gzip:     0.78 kB
+dist/assets/physics-BbZ7RNNh.js                        1.30 kB │ gzip:     0.73 kB
+dist/assets/height-BDRL8bCL.js                         1.35 kB │ gzip:     0.77 kB
+dist/assets/loop-BACyQijE.js                           1.36 kB │ gzip:     0.76 kB
+dist/assets/clink-De0MEVHj.js                          1.37 kB │ gzip:     0.77 kB
+dist/assets/notify-D3_AARGN.js                         1.48 kB │ gzip:     0.79 kB
+dist/assets/lights-7lMYDGvQ.js                         1.48 kB │ gzip:     0.85 kB
+dist/assets/audio-BKYK7FuU.js                          1.49 kB │ gzip:     0.85 kB
+dist/assets/materials-DyLrDEA1.js                      1.50 kB │ gzip:     0.80 kB
+dist/assets/preload-helper-BLdHbfdN.js                 1.51 kB │ gzip:     0.79 kB
+dist/assets/model-2mxoYlAW.js                          1.52 kB │ gzip:     0.80 kB
+dist/assets/state-BtGjCCyw.js                          1.55 kB │ gzip:     0.82 kB
+dist/assets/rocks-BxlqYpIT.js                          1.57 kB │ gzip:     0.95 kB
+dist/assets/box-plan-CeAjFmep.js                       1.64 kB │ gzip:     0.88 kB
+dist/assets/shape-DyrNdCn0.js                          1.64 kB │ gzip:     0.89 kB
+dist/assets/record-gzC3z7lK.js                         1.72 kB │ gzip:     1.00 kB
+dist/assets/hut-blueprint-mBScM55y.js                  1.76 kB │ gzip:     0.80 kB
+dist/assets/terrain-demo-DPQ5xcFu.js                   1.79 kB │ gzip:     0.94 kB
+dist/assets/memory-DNddKdeN.js                         1.86 kB │ gzip:     0.91 kB
+dist/assets/gpu-info-B5KDkQip.js                       1.99 kB │ gzip:     1.07 kB
+dist/assets/draw-CEkI5Lyl.js                           2.05 kB │ gzip:     1.12 kB
+dist/assets/sky-C_lVs7CV.js                            2.09 kB │ gzip:     1.11 kB
+dist/assets/waves-BCPN39iw.js                          2.11 kB │ gzip:     1.06 kB
+dist/assets/prop-models-C9uWXOVI.js                    2.14 kB │ gzip:     1.08 kB
+dist/assets/avatars-B0vz5gPr.js                        2.16 kB │ gzip:     1.17 kB
+dist/assets/netdebug-JpoCdqUv.js                       2.18 kB │ gzip:     1.27 kB
+dist/assets/timeline-DyF6aVBF.js                       2.26 kB │ gzip:     1.22 kB
+dist/assets/arrival-Bn8HlqsO.js                        2.26 kB │ gzip:     1.15 kB
+dist/assets/shore-nodes-B0oUxtpm.js                    2.28 kB │ gzip:     1.12 kB
+dist/assets/town-fx-mx3EgCpn.js                        2.34 kB │ gzip:     1.27 kB
+dist/assets/machine-sfx-Qv5aJV5r.js                    2.39 kB │ gzip:     0.93 kB
+dist/assets/session-CVmi7Blh.js                        2.48 kB │ gzip:     1.22 kB
+dist/assets/graphics-settings-DbhD4QZp.js              2.51 kB │ gzip:     1.20 kB
+dist/assets/demo-sky-C4UzOuRQ.js                       2.52 kB │ gzip:     1.34 kB
+dist/assets/particles-C2xPXumj.js                      2.56 kB │ gzip:     1.32 kB
+dist/assets/entity-CW-UktFH.js                         2.56 kB │ gzip:     1.26 kB
+dist/assets/ui-sound-CGl6Ti-3.js                       2.57 kB │ gzip:     1.17 kB
+dist/assets/glyphs-D6nvSkKM.js                         2.62 kB │ gzip:     1.38 kB
+dist/assets/minis-DhauhR4b.js                          2.67 kB │ gzip:     1.25 kB
+dist/assets/splash-O1KXWd6S.js                         2.71 kB │ gzip:     1.27 kB
+dist/assets/code-preview-CvprajgW.js                   2.72 kB │ gzip:     1.40 kB
+dist/assets/tone-CPd-dOmL.js                           2.75 kB │ gzip:     1.45 kB
+dist/assets/fixtures-DOCaTKm4.js                       2.92 kB │ gzip:     1.41 kB
+dist/assets/props-DYIw1lcL.js                          2.93 kB │ gzip:     1.41 kB
+dist/assets/haul-DPBGrsVD.js                           3.05 kB │ gzip:     1.40 kB
+dist/assets/assets-CZs5bNz7.js                         3.09 kB │ gzip:     1.59 kB
+dist/assets/precompile-C2628Hod.js                     3.13 kB │ gzip:     1.41 kB
+dist/assets/props-D2Jewl94.js                          3.28 kB │ gzip:     1.73 kB
+dist/assets/look-B5SdmjUy.js                           3.28 kB │ gzip:     1.73 kB
+dist/assets/receivers-ZNGpmvGd.js                      3.35 kB │ gzip:     1.78 kB
+dist/assets/caustics-VwE39vQd.js                       3.48 kB │ gzip:     1.82 kB
+dist/assets/scenarios-J1l3cv3G.js                      3.68 kB │ gzip:     1.85 kB
+dist/assets/looks-C--unDAL.js                          3.68 kB │ gzip:     1.89 kB
+dist/assets/room-BTAS6x8L.js                           3.80 kB │ gzip:     1.89 kB
+dist/assets/spectrum-CISGuE80.js                       3.82 kB │ gzip:     1.81 kB
+dist/assets/crates-DsstbvbZ.js                         3.88 kB │ gzip:     1.95 kB
+dist/assets/conversation-Brx8AkFz.js                   4.00 kB │ gzip:     2.06 kB
+dist/assets/net-CL3opP4M.js                            4.27 kB │ gzip:     2.13 kB
+dist/assets/controls-DybuurUJ.js                       4.40 kB │ gzip:     2.13 kB
+dist/assets/looks-DBL5A-jn.js                          4.43 kB │ gzip:     2.16 kB
+dist/assets/play-apREtXM9.js                           4.45 kB │ gzip:     2.13 kB
+dist/assets/haul-stack-PF6aOavr.js                     4.46 kB │ gzip:     2.35 kB
+dist/assets/terrain-rks_tUr8.js                        4.52 kB │ gzip:     2.22 kB
+dist/assets/building-plans-DKBSS_Tv.js                 4.55 kB │ gzip:     1.99 kB
+dist/assets/record-CtH9hLjf.js                         4.55 kB │ gzip:     2.13 kB
+dist/assets/hop-BMpTL3Jk.js                            4.64 kB │ gzip:     2.34 kB
+dist/assets/golf-nSrifmJn.js                           4.72 kB │ gzip:     2.31 kB
+dist/assets/common-lExFpbd6.js                         4.74 kB │ gzip:     2.17 kB
+dist/assets/scene-DMvi-S72.js                          4.75 kB │ gzip:     2.49 kB
+dist/assets/haul-kit-BxLmOhzu.js                       4.79 kB │ gzip:     2.33 kB
+dist/assets/main-Dt3jeMEU.js                           4.80 kB │ gzip:     2.32 kB
+dist/assets/terrain-mHKGJeXA.js                        4.83 kB │ gzip:     2.30 kB
+dist/assets/npc-voice-BHBtVnHL.js                      4.85 kB │ gzip:     2.37 kB
+dist/assets/startup-record-Caa_EdyM.js                 4.87 kB │ gzip:     2.24 kB
+dist/assets/destinations-pI2YmfMI.js                   5.14 kB │ gzip:     2.36 kB
+dist/assets/inspect-BCQuJ8v9.js                        5.27 kB │ gzip:     2.64 kB
+dist/assets/pair-s-5Zrll0.js                           5.61 kB │ gzip:     2.82 kB
+dist/assets/spray-D66dqqBU.js                          5.63 kB │ gzip:     2.90 kB
+dist/assets/state-Cv3miWBP.js                          5.70 kB │ gzip:     2.58 kB
+dist/assets/slice-B5cbraB8.js                          5.98 kB │ gzip:     3.04 kB
+dist/assets/layout-DtUbZ1Vj.js                         6.22 kB │ gzip:     2.90 kB
+dist/assets/GTAONode-QNRNJmKm.js                       6.26 kB │ gzip:     2.45 kB
+dist/assets/tone-4SaWNcrm.js                           6.28 kB │ gzip:     2.81 kB
+dist/assets/input-Dng60t8v.js                          6.39 kB │ gzip:     2.69 kB
+dist/assets/BufferGeometryUtils-B42UQayF.js            6.42 kB │ gzip:     1.93 kB
+dist/assets/graphics-ytjAX0ec.js                       6.44 kB │ gzip:     2.99 kB
+dist/assets/tech-layout-Dz01DJaT.js                    6.47 kB │ gzip:     2.76 kB
+dist/assets/report-Cq-6a_wA.js                         6.48 kB │ gzip:     3.06 kB
+dist/assets/state-C-teuqfw.js                          6.53 kB │ gzip:     3.07 kB
+dist/assets/performance-C4viI9-d.js                    6.54 kB │ gzip:     2.96 kB
+dist/assets/catalog-B-vlR264.js                        6.72 kB │ gzip:     3.01 kB
+dist/assets/look-DBrExQg7.js                           6.76 kB │ gzip:     3.31 kB
+dist/assets/fft-Bx3nCwRr.js                            6.80 kB │ gzip:     3.08 kB
+dist/assets/magnet-Bv_XxY9b.js                         7.01 kB │ gzip:     3.35 kB
+dist/assets/sea-O7zvqLo4.js                            7.40 kB │ gzip:     3.79 kB
+dist/assets/moves-R82yfW6M.js                          7.68 kB │ gzip:     3.35 kB
+dist/assets/sky-La_Fkede.js                            8.00 kB │ gzip:     3.60 kB
+dist/assets/sky-core-CxjpKn4F.js                       8.19 kB │ gzip:     3.83 kB
+dist/assets/ground-DpuchNLC.js                         9.42 kB │ gzip:     4.20 kB
+dist/assets/water-DkB2Wr90.js                          9.63 kB │ gzip:     4.59 kB
+dist/assets/state-CO1eUV7o.js                          9.73 kB │ gzip:     4.32 kB
+dist/assets/place-m_b4JK12.js                          9.82 kB │ gzip:     4.40 kB
+dist/assets/retarget-BS--5Uqd.js                       9.95 kB │ gzip:     4.42 kB
+dist/assets/crossing-jbkCxBWL.js                      10.12 kB │ gzip:     4.78 kB
+dist/assets/heights-CGXhP7PJ.js                       11.06 kB │ gzip:     5.10 kB
+dist/assets/sync-BKKBKbWy.js                          11.21 kB │ gzip:     4.98 kB
+dist/assets/wagon-DhhBZGw5.js                         11.30 kB │ gzip:     5.44 kB
+dist/assets/engine-9DA66v1R.js                        11.64 kB │ gzip:     4.85 kB
+dist/assets/prof-overlay-CLdG7x7k.js                  11.82 kB │ gzip:     5.18 kB
+dist/assets/camera-D27h7Rhk.js                        12.42 kB │ gzip:     5.27 kB
+dist/assets/dev-menu-BJKjbXdg.js                      13.32 kB │ gzip:     5.26 kB
+dist/assets/fall-rjwsLiuu.js                          13.54 kB │ gzip:     5.87 kB
+dist/assets/wave-9B60DGSM.js                          16.62 kB │ gzip:     7.70 kB
+dist/assets/shore-nodes-Boz7XmAm.js                   17.37 kB │ gzip:     7.31 kB
+dist/assets/store-DMiiyeXq.js                         18.84 kB │ gzip:     7.42 kB
+dist/assets/era-BO937_pi.js                           19.10 kB │ gzip:     8.28 kB
+dist/assets/net-CUWqLk6_.js                           20.94 kB │ gzip:     9.57 kB
+dist/assets/water-BGIHi3Z3.js                         22.37 kB │ gzip:     8.13 kB
+dist/assets/look-lab-BvigmMb9.js                      22.88 kB │ gzip:     9.51 kB
+dist/assets/look-post-BeEDyUd6.js                     25.77 kB │ gzip:     8.20 kB
+dist/assets/hands-BI108RF-.js                         26.09 kB │ gzip:    11.69 kB
+dist/assets/game-world-D90nSod1.js                    26.97 kB │ gzip:    10.36 kB
+dist/assets/soapbox-BHOwy37x.js                       27.10 kB │ gzip:    11.71 kB
+dist/assets/run-yA6iHl3v.js                           30.89 kB │ gzip:    13.11 kB
+dist/assets/caves-D1_EAGFQ.js                         32.06 kB │ gzip:    12.50 kB
+dist/assets/talk-sPgM5G_z.js                          32.67 kB │ gzip:    12.15 kB
+dist/assets/place-Bm2ISQ5e.js                         47.39 kB │ gzip:    20.23 kB
+dist/assets/water-render-qNDQ5jmN.js                  52.99 kB │ gzip:    22.33 kB
+dist/assets/panel-Cara-0JH.js                         60.36 kB │ gzip:    25.38 kB
+dist/assets/coop-C3mcnYit.js                          66.04 kB │ gzip:    27.33 kB
+dist/assets/character-C7jEVjcp.js                     66.74 kB │ gzip:    23.19 kB
+dist/assets/chop-C7_JneSo.js                          80.25 kB │ gzip:    31.20 kB
+dist/assets/asset-loader-DRY7GEbl.js                 133.10 kB │ gzip:    45.95 kB
+dist/assets/main-DFI2arQF.js                         159.65 kB │ gzip:    64.49 kB
+dist/assets/rapier-B-xeHNxw.js                       295.02 kB │ gzip:    51.57 kB
+dist/assets/rapier-qXE0B_Ht.js                       295.02 kB │ gzip:    51.58 kB
+dist/assets/atlas-DAqQB42A.js                        561.56 kB │ gzip:   172.10 kB
+dist/assets/three-C2v3PuPC.js                      1,130.37 kB │ gzip:   310.03 kB
+
+✓ built in 1.01s

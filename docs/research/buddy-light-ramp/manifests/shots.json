@@ -1,0 +1,496 @@
+{
+  "version": 1,
+  "question": "Can you read Buddy and the carried logs at a glance without flattening shoulders or cutting the face?",
+  "limit": "Frozen stills only: no evidence of motion, GPU cost, load stalls or feel.",
+  "build": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "b53d177536fe9d343cb479069f98a7174212ad04",
+    "dirty": true
+  },
+  "after": {
+    "commit": "ea9ad004cc2368cf5536d0f313b603dca9c734ed",
+    "tree": "b53d177536fe9d343cb479069f98a7174212ad04",
+    "dirty": true
+  },
+  "status": "captured; inspect boards",
+  "list": {
+    "question": "Can you read Buddy and the carried logs at a glance without flattening shoulders or cutting the face?",
+    "size": [640, 480],
+    "beats": [
+      {
+        "name": "Coral",
+        "query": "proto=place&water=new&dev=1&shot=pack&paint=0",
+        "setup": "dev/look/evals/buddy-ramp.ts",
+        "warm": 2,
+        "cameras": [
+          {
+            "name": "Buddy 5.2 m",
+            "anchor": "player",
+            "cam": [2.6, 2.277, 4.196],
+            "look": [0, 0.65, 0],
+            "fov": 62,
+            "region": [240, 145, 160, 220]
+          }
+        ],
+        "variants": [
+          {
+            "name": "Current",
+            "values": {
+              "buddy.ramp": 0
+            }
+          },
+          {
+            "name": "Soft ramp",
+            "values": {
+              "buddy.ramp": 1
+            }
+          },
+          {
+            "name": "Two-band ramp",
+            "values": {
+              "buddy.ramp": 2
+            }
+          }
+        ]
+      },
+      {
+        "name": "Blue",
+        "query": "proto=place&water=new&dev=1&shot=pack&paint=4",
+        "setup": "dev/look/evals/buddy-ramp.ts",
+        "warm": 2,
+        "cameras": [
+          {
+            "name": "Buddy 5.2 m",
+            "anchor": "player",
+            "cam": [2.6, 2.277, 4.196],
+            "look": [0, 0.65, 0],
+            "fov": 62,
+            "region": [240, 145, 160, 220]
+          }
+        ],
+        "variants": [
+          {
+            "name": "Current",
+            "values": {
+              "buddy.ramp": 0
+            }
+          },
+          {
+            "name": "Soft ramp",
+            "values": {
+              "buddy.ramp": 1
+            }
+          },
+          {
+            "name": "Two-band ramp",
+            "values": {
+              "buddy.ramp": 2
+            }
+          }
+        ]
+      },
+      {
+        "name": "Violet",
+        "query": "proto=place&water=new&dev=1&shot=pack&paint=5",
+        "setup": "dev/look/evals/buddy-ramp.ts",
+        "warm": 2,
+        "cameras": [
+          {
+            "name": "Buddy 5.2 m",
+            "anchor": "player",
+            "cam": [2.6, 2.277, 4.196],
+            "look": [0, 0.65, 0],
+            "fov": 62,
+            "region": [240, 145, 160, 220]
+          }
+        ],
+        "variants": [
+          {
+            "name": "Current",
+            "values": {
+              "buddy.ramp": 0
+            }
+          },
+          {
+            "name": "Soft ramp",
+            "values": {
+              "buddy.ramp": 1
+            }
+          },
+          {
+            "name": "Two-band ramp",
+            "values": {
+              "buddy.ramp": 2
+            }
+          }
+        ]
+      },
+      {
+        "name": "Dark paint diagnostic (outside player palette)",
+        "query": "proto=place&water=new&dev=1&shot=pack&paint=4&dark=1",
+        "setup": "dev/look/evals/buddy-ramp.ts",
+        "warm": 2,
+        "cameras": [
+          {
+            "name": "Buddy 5.2 m",
+            "anchor": "player",
+            "cam": [2.6, 2.277, 4.196],
+            "look": [0, 0.65, 0],
+            "fov": 62,
+            "region": [240, 145, 160, 220]
+          },
+          {
+            "name": "Dark face 5.2 m",
+            "anchor": "player",
+            "cam": [-2.6, 2.277, -4.196],
+            "look": [0, 0.65, 0],
+            "fov": 62,
+            "region": [240, 145, 160, 220]
+          }
+        ],
+        "variants": [
+          {
+            "name": "Current",
+            "values": {
+              "buddy.ramp": 0
+            }
+          },
+          {
+            "name": "Soft ramp",
+            "values": {
+              "buddy.ramp": 1
+            }
+          },
+          {
+            "name": "Two-band ramp",
+            "values": {
+              "buddy.ramp": 2
+            }
+          }
+        ]
+      },
+      {
+        "name": "Loaded at rack",
+        "query": "proto=place&water=new&dev=1&shot=pack&paint=4&loaded=1",
+        "setup": "dev/look/evals/buddy-ramp.ts",
+        "warm": 2,
+        "cameras": [
+          {
+            "name": "Buddy 5.2 m",
+            "anchor": "player",
+            "cam": [2.6, 2.277, 4.196],
+            "look": [0, 0.65, 0],
+            "fov": 62,
+            "region": [240, 145, 160, 220]
+          },
+          {
+            "name": "Face 5.2 m",
+            "anchor": "player",
+            "cam": [-2.6, 2.277, -4.196],
+            "look": [0, 0.65, 0],
+            "fov": 62,
+            "region": [240, 145, 160, 220]
+          },
+          {
+            "name": "Close secondary",
+            "anchor": "player",
+            "cam": [-1.6, 1.6, -2.6],
+            "look": [0, 0.65, 0],
+            "fov": 40,
+            "region": [160, 50, 320, 420]
+          },
+          {
+            "name": "Shore water control",
+            "cam": [884, 8, 151],
+            "look": [868, 0, 144],
+            "fov": 62
+          }
+        ],
+        "variants": [
+          {
+            "name": "Current",
+            "values": {
+              "buddy.ramp": 0
+            }
+          },
+          {
+            "name": "Soft ramp",
+            "values": {
+              "buddy.ramp": 1
+            }
+          },
+          {
+            "name": "Two-band ramp",
+            "values": {
+              "buddy.ramp": 2
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "Coral",
+      "query": "dev=1&paint=0&proto=place&shot=pack&water=new",
+      "setup": "dev/look/evals/buddy-ramp.ts",
+      "warm": 2,
+      "cameras": [
+        {
+          "name": "Buddy 5.2 m",
+          "anchor": "player",
+          "cam": [2.6, 2.277, 4.196],
+          "look": [0, 0.65, 0],
+          "fov": 62,
+          "region": [240, 145, 160, 220]
+        }
+      ],
+      "variants": [
+        {
+          "name": "Current",
+          "values": {
+            "buddy.ramp": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "values": {
+            "buddy.ramp": 1
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "values": {
+            "buddy.ramp": 2
+          }
+        }
+      ],
+      "size": [640, 480]
+    },
+    {
+      "name": "Blue",
+      "query": "dev=1&paint=4&proto=place&shot=pack&water=new",
+      "setup": "dev/look/evals/buddy-ramp.ts",
+      "warm": 2,
+      "cameras": [
+        {
+          "name": "Buddy 5.2 m",
+          "anchor": "player",
+          "cam": [2.6, 2.277, 4.196],
+          "look": [0, 0.65, 0],
+          "fov": 62,
+          "region": [240, 145, 160, 220]
+        }
+      ],
+      "variants": [
+        {
+          "name": "Current",
+          "values": {
+            "buddy.ramp": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "values": {
+            "buddy.ramp": 1
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "values": {
+            "buddy.ramp": 2
+          }
+        }
+      ],
+      "size": [640, 480]
+    },
+    {
+      "name": "Violet",
+      "query": "dev=1&paint=5&proto=place&shot=pack&water=new",
+      "setup": "dev/look/evals/buddy-ramp.ts",
+      "warm": 2,
+      "cameras": [
+        {
+          "name": "Buddy 5.2 m",
+          "anchor": "player",
+          "cam": [2.6, 2.277, 4.196],
+          "look": [0, 0.65, 0],
+          "fov": 62,
+          "region": [240, 145, 160, 220]
+        }
+      ],
+      "variants": [
+        {
+          "name": "Current",
+          "values": {
+            "buddy.ramp": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "values": {
+            "buddy.ramp": 1
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "values": {
+            "buddy.ramp": 2
+          }
+        }
+      ],
+      "size": [640, 480]
+    },
+    {
+      "name": "Dark paint diagnostic (outside player palette)",
+      "query": "dark=1&dev=1&paint=4&proto=place&shot=pack&water=new",
+      "setup": "dev/look/evals/buddy-ramp.ts",
+      "warm": 2,
+      "cameras": [
+        {
+          "name": "Buddy 5.2 m",
+          "anchor": "player",
+          "cam": [2.6, 2.277, 4.196],
+          "look": [0, 0.65, 0],
+          "fov": 62,
+          "region": [240, 145, 160, 220]
+        },
+        {
+          "name": "Dark face 5.2 m",
+          "anchor": "player",
+          "cam": [-2.6, 2.277, -4.196],
+          "look": [0, 0.65, 0],
+          "fov": 62,
+          "region": [240, 145, 160, 220]
+        }
+      ],
+      "variants": [
+        {
+          "name": "Current",
+          "values": {
+            "buddy.ramp": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "values": {
+            "buddy.ramp": 1
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "values": {
+            "buddy.ramp": 2
+          }
+        }
+      ],
+      "size": [640, 480]
+    },
+    {
+      "name": "Loaded at rack",
+      "query": "dev=1&loaded=1&paint=4&proto=place&shot=pack&water=new",
+      "setup": "dev/look/evals/buddy-ramp.ts",
+      "warm": 2,
+      "cameras": [
+        {
+          "name": "Buddy 5.2 m",
+          "anchor": "player",
+          "cam": [2.6, 2.277, 4.196],
+          "look": [0, 0.65, 0],
+          "fov": 62,
+          "region": [240, 145, 160, 220]
+        },
+        {
+          "name": "Face 5.2 m",
+          "anchor": "player",
+          "cam": [-2.6, 2.277, -4.196],
+          "look": [0, 0.65, 0],
+          "fov": 62,
+          "region": [240, 145, 160, 220]
+        },
+        {
+          "name": "Close secondary",
+          "anchor": "player",
+          "cam": [-1.6, 1.6, -2.6],
+          "look": [0, 0.65, 0],
+          "fov": 40,
+          "region": [160, 50, 320, 420]
+        },
+        {
+          "name": "Shore water control",
+          "cam": [884, 8, 151],
+          "look": [868, 0, 144],
+          "fov": 62
+        }
+      ],
+      "variants": [
+        {
+          "name": "Current",
+          "values": {
+            "buddy.ramp": 0
+          }
+        },
+        {
+          "name": "Soft ramp",
+          "values": {
+            "buddy.ramp": 1
+          }
+        },
+        {
+          "name": "Two-band ramp",
+          "values": {
+            "buddy.ramp": 2
+          }
+        }
+      ],
+      "size": [640, 480]
+    }
+  ],
+  "runs": [
+    {
+      "label": "group-0",
+      "seconds": 19.969,
+      "status": 0,
+      "evidence": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843079968-92935/evidence.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/shots/buddy-ramp-review/group-0"
+    },
+    {
+      "label": "group-1",
+      "seconds": 29.042,
+      "status": 0,
+      "evidence": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843099903-93171/evidence.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/shots/buddy-ramp-review/group-1"
+    },
+    {
+      "label": "group-2",
+      "seconds": 29.29,
+      "status": 0,
+      "evidence": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843128972-93674/evidence.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/shots/buddy-ramp-review/group-2"
+    },
+    {
+      "label": "group-3",
+      "seconds": 28.967,
+      "status": 0,
+      "evidence": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843158235-94196/evidence.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/shots/buddy-ramp-review/group-3"
+    },
+    {
+      "label": "group-4",
+      "seconds": 30.464,
+      "status": 0,
+      "evidence": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/evidence/1793843187305-94687/evidence.json",
+      "directory": "/Users/matiasfranco/Developer/boogle-codex/buddy-light-ramp/.look/shots/buddy-ramp-review/group-4"
+    }
+  ],
+  "totalSeconds": 138.143,
+  "gpuContext": "Shared Mac GPU; concurrent Codex graphics jobs may be active. Capture throughput, not GPU performance.",
+  "machine": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M1 Max",
+    "memoryGiB": 32,
+    "frontendNode": "v26.13.0"
+  },
+  "baselineMeaning": "One original look lifecycle per cell with the same frozen capture/readback probes and board composition; includes browser, loading and warm-up. Per-shot timings in group manifests exclude warm-up, probes and boards."
+}
