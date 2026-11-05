@@ -22,7 +22,8 @@ Each job's branch is `codex/<topic>`, its worktree is `../boogle-codex/<topic>`,
 | --- | --- | --- |
 | `slice2-supply` | Fixing two review findings (arrival restored under new track, a flaky fixture clock), plus owner changes: regrowth only slow, tunable regrowth and rack timers, the owner-chosen `recovery-rack.glb` | Full solo and co-op bots, then merge |
 | `tunables-build` | First proof: haul yield (shared), exposure (local), one spring; fixing review P1 (refuse old tabs on migrated rooms) and P2 (defer shared URL edits until the room is ready) | world-inputs rerun, full bot, then merge |
-| `track-layer-machine` | Rail wheels, pale spokes and coupling rods done; solo passes; co-op full run failed a clock-drift check under load | Owner question on stock-to-rail mapping (below) before the gantry mechanism; quiet co-op rerun |
+| `track-layer-machine` | Rail wheels, pale spokes and coupling rods done. Now building the panel-laying mechanism (owner, 5 November: lay prefabricated track panels, one per stock unit) | Solo, two-player boarding and real-time capture; then merge after `deck-sitting` |
+| `dev-status-page` | Public status page at boogle.club/development, built from this file at deploy time, no server or tokens | Review, then merge |
 | `deck-sitting` | Train cars lose chairs; riders sit on the deck. The track layer keeps its chairs | Conflicts with `track-layer-machine` in `src/proto/place/seat.ts`; merge one after the other |
 | `next-destinations` and the `destinations-*` panel | Research plus brainstorm: destinations after the starter island, upgrades instead of eras | Panel round 2, then a brief |
 | `chop-animation-timing` | Another session ("Asset placement and editor evaluation") retuning the axe. It has the generated chop references | Merge through the coordinator |
@@ -53,16 +54,12 @@ Hold everything while the owner plays.
 
 ## Open owner questions
 
-1. **Track layer: how does a rail pick map to stock?** Today the track commits a rail pair every 3 m (0.6 s at cruise), while stock counts down more slowly. The options:
-   - **Lays track panels (recommended):** each pick-and-lay places a prefabricated track panel covering several metres, timed to the stock, as real track-laying machines do.
-   - **Representative picks:** one pick per stock decrement, with today's other drops kept.
-   - **Pause:** wait for a fuller stock and choreography decision.
-2. **Colour defaults:** merge before or after the replay? Recommended: after.
-3. **Brief questions** in money, cart first and first evening.
-4. **Suspect copy:**
+1. **Colour defaults:** merge before or after the replay? Recommended: after.
+2. **Brief questions** in money, cart first and first evening.
+3. **Suspect copy:**
    - `SHOP.kept[0]` says "the hat" for any item;
    - "Chops trees, breaks rocks, and more" appears before rocks exist in T1.
-5. **Museum:** inspect the miniature, the crystal specimen, or both. **Worktree cleanup:** about 280 old worktrees.
+4. **Museum:** inspect the miniature, the crystal specimen, or both. **Worktree cleanup:** about 280 old worktrees.
 
 ## Next moves
 
