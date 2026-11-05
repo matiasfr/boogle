@@ -28,6 +28,8 @@ and a bright shard in the ring's middle. Two physical things point at it: a line
 
 Seats use the deck's actual cargo-top surface and refresh it while sitting. A loaded train no longer pulls a seated player toward the bare deck and silently ends the seat (and its Stand up prompt) when that error grows.
 
+Fixed chairs keep their authored horizontal anchors and safe aisle exits, with body height clamped above the platform's current `topAt` surface. The floating **Stand up** hint stays visible for three seconds, then fades over 0.35 seconds; the target and Interact/Jump exits remain available. Sitting again restores the hint. On a room lead change, transient claims release and occupants stand at their authored exits; they can sit again after the new lead assigns a fresh claim.
+
 Cosmetic reveals show rarity stars on their own row beneath the name, alongside the complete original gift line. A line no longer replaces the stars (including the scarf); the text column can shrink and wrap on portrait phones.
 
 The sleeping machine and old trains use solid, dull oxidized paint and iron, with no spatial rust pattern. Their existing wake uniforms restore paint roughness and the wheels' steel response. Timber decks and sleepers retain their grain while the engine sleeps. This is Local material presentation (DESIGN.md 11, Show, don't tell); wake timing and shared progression are unchanged.

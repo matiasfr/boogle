@@ -216,7 +216,7 @@ registerInteractable(() => {
   // Sitting, the one thing the button does is stand you up.
   if (seated()) {
     sitAt.set(p.x, p.y + 1.1, p.z);
-    return [{ id: 'place-stand', verb: 'Stand up', at: sitAt, r: 100, run: standUp }];
+    return [{ id: 'place-stand', verb: 'Stand up', at: sitAt, r: 100, fadeAfter: 3, run: standUp }];
   }
   // In the water, or down on a shore or a river bank well off every path: never stuck with no way back.
   if (me.swimming || (p.y < VILLAGE.y - 6 && offThePath(p.x, p.z))) {

@@ -76,6 +76,9 @@ background(
       // Retain the offered target on both peers, then invoke both requests before refreshing either prompt.
       target.run();
       await until(() => !!seatState().sitting, 'seat granted');
+      await wait(120);
+      const prompt = document.querySelector<HTMLElement>('.prompt');
+      if (!prompt || Number(prompt.style.opacity) < 0.9) throw new Error('Stand hint did not appear');
       await barrier('both-seated');
       await wait(1200);
       const state = seatState();
@@ -88,6 +91,9 @@ background(
         throw new Error('Not held at authored anchor');
       await wait(3000);
       if (carry.on !== car.platform || !seatState().sitting) throw new Error('Detached from moving seat');
+      if (hands.interactTarget()?.id !== 'place-stand' || Number(prompt.style.opacity) > 0.05)
+        throw new Error('Stand hint did not fade while retaining its action');
+      console.log(`SEATS ${who} Stand faded; action remains ${hands.interactTarget()?.id}`);
       if (who === '1') {
         pressJump();
         await wait(80);
@@ -103,6 +109,42 @@ background(
       press();
       await until(() => !!seatState().sitting, 'seated again');
       await barrier('recapture');
+      if (q.get('migration') === '1') {
+        const wasLead = net.room.isLead();
+        console.log(`MIGRATION ${who} before lead=${wasLead} ${JSON.stringify(seatState())}`);
+        await barrier('migration-ready');
+        if (wasLead) {
+          net.room.pause(5000);
+          await until(() => net.state !== 'live', 'host disconnected');
+          await until(() => net.state === 'live' && remotes.size > 0, 'host rejoined');
+        } else {
+          await until(() => net.room.isLead() && remotes.size === 0, 'survivor becomes lead');
+          if (seated()) throw new Error('Survivor kept its old seat on lead change');
+          await until(() => Object.keys(seatState().grants).length === 0, 'old grants cleared');
+          toPlatform(car.platform, me.body.position, me.yaw, l);
+          if (carry.on !== car.platform || Math.abs(l.x - 0.65) > 0.3)
+            throw new Error('Migration did not leave survivor safely in the aisle');
+          console.log(`MIGRATION ${who} survivor safe ${JSON.stringify(l)} ${JSON.stringify(seatState())}`);
+          await until(() => remotes.size > 0, 'departed host returns');
+        }
+        await barrier('migration-returned');
+        if (seated()) throw new Error('Stale seat survived reconnection');
+        // Place both back in reach: a disconnected train can advance while the local connection is paused.
+        fromPlatform(car.platform, { x: 0.65, y: car.platform.top + 0.48, z: -0.8, yaw: 0 }, false, p);
+        put(p.x, p.y, p.z);
+        await until(
+          () => carry.on === car.platform && hands.interactTarget()?.id === 'place-sit',
+          'Sit after migration',
+        );
+        const nextTarget = hands.interactTarget();
+        await barrier('reclaim');
+        nextTarget.run();
+        await until(() => !!seatState().sitting, 'new claim after migration');
+        await barrier('reclaimed');
+        await wait(600);
+        if (Object.keys(seatState().grants).length !== 2) throw new Error('Migration reclaim did not assign two seats');
+        console.log(`MIGRATION ${who} reclaimed lead=${net.room.isLead()} ${JSON.stringify(seatState())}`);
+      }
       // Keep framing the moving chairs through the captured real-time interval.
       setTimeout(() => clearInterval(cameraTimer), 60000);
     } else {
