@@ -13,7 +13,7 @@ import { removeBody, setShapes, stepAlpha, teleport, type Body } from '../../phy
 import { carry, CARRY } from '../../physics/platforms.ts';
 import { me } from '../../player/player.ts';
 import { flat } from '../flat.ts';
-import { pop } from '../minis/common.ts';
+import { label, pop } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
 import { LOOK, STEEL } from './look.ts';
 import { kitBatch } from './look-kit.ts';
@@ -57,6 +57,9 @@ for (const dz of [-1.1, 1.1]) {
 }
 rackLook.visible = false;
 scene.add(rackLook);
+const serviceTag = label(6, 2);
+serviceTag.sprite.position.set(RAIL_BAY, 3.2, 0);
+rackLook.add(serviceTag.sprite);
 const rackedLogs = logStackMesh(RACK_LOGS);
 const rackedRails = LOOK.kit
   ? kitBatch('rail', STEEL, RACK_RAILS)
@@ -253,6 +256,7 @@ export const cart = {
   load: 0,
   rails: 0,
   called: false,
+  recallQueued: false,
   auto: false,
   manual: false,
   boost: false,
@@ -266,6 +270,7 @@ export function loadCart(n: number, manual = false) {
   drawLoad(cart.load);
 }
 export function callCart() {
+  cart.recallQueued = false;
   cart.called = true;
   cart.auto = false; // An explicit whistle takes over the automatic stop without changing its cargo.
   // A whistle recalls even a loaded outbound cart; demand at the frontier is irrelevant.
@@ -273,10 +278,19 @@ export function callCart() {
   cart.t = 0;
   cart.speed = 0;
 }
+/** New calls protect cargo already promised to the frontier. Legacy callCart keeps its wire meaning. */
+export function recallCart() {
+  if (cart.recallQueued || (cart.called && !cart.auto)) return;
+  if (cart.load + cart.rails + pendingLogs + pendingRails > 0) cart.recallQueued = true;
+  else callCart();
+}
+export const cartHasDelivery = () => cart.load + cart.rails + pendingLogs + pendingRails > 0;
+/** Only the authority corrects a mixed room at completion; cargo and destination travel together. */
+export const depotRecall = { finished: () => {} };
 let activeStation: () => StationRun | null = () => null;
 export const setDepotFrame = (fn: () => StationRun | null) => void (activeStation = fn);
 /** Installed by pair.ts, which already owns forge/co-op dependencies; no reverse import cycle. */
-export const depotRails = { enabled: () => false, load: () => {} };
+export const depotRails = { enabled: () => false, load: () => {}, stock: () => 0 };
 /** The prototype authority decides the shared ride bonus; solo reads its own rider. */
 export const depotRide = { enabled: () => false, update: () => {} };
 export const automaticRails = () => {
@@ -293,6 +307,30 @@ export const railsOwed = () => {
   const st = activeStation();
   return st?.spec.rack === 'cart' ? Math.max(0, st.wants('rails') - rack.rails - pendingRails - cart.rails) : 0;
 };
+/** Local view of the entire delivery, including stock in flight after debt reaches zero. */
+export function deliveryStatus() {
+  const st = activeStation();
+  const pending = pendingLogs + pendingRails;
+  const cargo = cart.load + cart.rails;
+  const missing =
+    st?.spec.rack === 'cart'
+      ? Math.max(0, st.wants('logs') - rack.logs) + (automaticRails() ? Math.max(0, st.wants('rails') - rack.rails) : 0)
+      : 0;
+  if (!job.rung.depot || job.rung.trains || !st || st.spec.rack !== 'cart') return 'off';
+  if (pending > 0 || (cart.leg === 'drop' && cargo > 0)) return 'unloading';
+  if (missing === 0 && cargo === 0) return 'done';
+  if (cart.leg === 'forge' && cart.auto && railsOwed() > 0 && depotRails.stock() === 0) return 'waiting';
+  if (cart.leg === 'load' || cart.leg === 'forge' || cart.leg === 'rest') return 'loading';
+  return 'travelling';
+}
+const SERVICE = {
+  off: ['', ''],
+  loading: ['Loading', '#ffd26e'],
+  travelling: ['On the way', '#8edbff'],
+  unloading: ['Unloading', '#ffd26e'],
+  waiting: ['Waiting for forge', '#ffb575'],
+  done: ['Delivered', '#b3e5ac'],
+} as const;
 const car: Car = makeCar({ hx: CART.hx, hz: CART.hz, top: CART.top }, cartLook, () => stepCart(FIXED), {});
 car.speedLimit = CART.speed * 1.5;
 export const cartPlatform = car.platform;
@@ -335,8 +373,13 @@ function drawLoad(n: number) {
   }
 }
 function stepCart(dt: number) {
-  if (!job.rung.depot) return;
   depotRide.update();
+  if (!job.rung.depot) return;
+  // Only return once the last physical piece has landed, including a full mixed load.
+  if (cart.recallQueued && !cartHasDelivery()) {
+    callCart();
+    depotRecall.finished();
+  }
   const cruise = cart.boost && cart.manual && depotRide.enabled() ? CART_RIDE_SPEED : CART.speed;
   car.speedLimit = Math.max(CART.speed, cart.speed, cruise) * 1.5;
   const correction = Math.max(-1.5 * dt, Math.min(1.5 * dt, nudge));
@@ -449,7 +492,7 @@ function stepCart(dt: number) {
             },
           });
       }
-      if (cart.t > 2.2) cart.leg = 'back';
+      if (cart.t > 2.2 && (!cart.recallQueued || pendingLogs + pendingRails === 0)) cart.leg = 'back';
       break;
     case 'back':
       cart.speed = Math.min(cruise, cart.speed + 3 * dt);
@@ -474,6 +517,14 @@ let heardD: number | null = null,
 onFrame(
   ({ dt }) => {
     drawCar(car, stepAlpha());
+    const status = deliveryStatus();
+    serviceTag.sprite.visible = rack.on && status !== 'off';
+    const [title, color] = SERVICE[status];
+    serviceTag.set(
+      title,
+      status === 'done' ? (rack.logs + rack.rails > 0 ? 'Ready on the rack' : 'Service complete') : 'More coming',
+      color,
+    );
     const first = heardD === null;
     const distance = first ? 0 : Math.abs(cart.d - heardD!);
     heardD = cart.d;
@@ -521,6 +572,7 @@ export function snapCart() {
     cart.load = 0;
     cart.rails = 0;
     cart.called = false;
+    cart.recallQueued = false;
     cart.auto = false;
     cart.manual = cart.boost = false;
     dropGeneration++;
@@ -541,6 +593,7 @@ export type DepotSave = {
   load: number;
   cartRails: number;
   called: boolean;
+  recallQueued?: boolean;
   speed?: number;
   auto?: boolean;
   manual?: boolean;
@@ -555,6 +608,7 @@ function readCart(v: unknown) {
     load: count(j.load, CART.load) ? j.load : 0,
     rails: count(j.cartRails, CART.rails) ? j.cartRails : 0,
     called: j.called === true,
+    recallQueued: j.recallQueued === true,
     auto: j.auto === true && j.called === true,
     manual: j.manual === true && count(j.cartRails, CART.rails) && j.cartRails > 0,
     boost:
@@ -593,6 +647,7 @@ sharedSlice('depot', {
     load: cart.load,
     cartRails: cart.rails,
     called: cart.called,
+    recallQueued: cart.recallQueued,
     auto: cart.auto,
     manual: cart.manual,
     boost: cart.boost,
