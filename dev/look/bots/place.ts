@@ -392,9 +392,7 @@ export async function play() {
     await twoJumps(p.x + O, p.z);
     bot.check('the second jump up onto the second pillar', body.position.y > p.top);
   };
-  const secondDevice = async () => {
-    await ontoSecondPillar();
-    await takeTech('hook');
+  const firstSlabBox = async () => {
     const slab = padOf('t0');
     if (
       !(await waitFor(
@@ -410,7 +408,13 @@ export async function play() {
       await bot.use(box.x + O, box.z, "the first slab's box", /Open/);
     }
     await waitFor(() => tech.found.has('firstpull'), 3000, "the first slab's box");
-    await wait(2500);
+    if (!(await waitFor(() => !gettingItem(), 8000, 'put away the first slab reward')))
+      throw new Error('The first slab reward still owns the player');
+  };
+  const secondDevice = async () => {
+    await ontoSecondPillar();
+    await takeTech('hook');
+    await firstSlabBox();
     await hookTo('p2');
     const d2 = deck(L2);
     await bot.straight(d2.x, d2.z, 1.2, 4000);
@@ -427,7 +431,11 @@ export async function play() {
   };
   const climb = async () => {
     await ontoSecondPillar();
-    for (const id of ['t0', 't1', 't2', 't3', 't4', 't5', 'summit']) await hookTo(id);
+    for (const id of ['t0', 't1', 't2', 't3', 't4', 't5', 'summit']) {
+      await hookTo(id);
+      // The partner who skipped the device still has their own chest here. Finish its reward before climbing.
+      if (id === 't0') await firstSlabBox();
+    }
     note('at the top');
     await bot.use(tech.SEA_SWITCH.x + O, tech.SEA_SWITCH.z, 'the summit switch', /Pull/);
     await waitFor(() => place.job.gate.sea, 8000, 'the sea slab');
