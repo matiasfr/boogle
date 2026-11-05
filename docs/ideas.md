@@ -21,6 +21,11 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 - Camera distance as a setting in the pause menu, beside the volume slider, instead of a dedicated control (owner, 2026-11-02)
 - Bring back a hotbar, only if a real gameplay element demands it (owner, 2026-11-02; cut in favour of one thing in your hands)
 
+## HUD
+- Move the counters in the pause menu somewhere in the world later, diegetically (2026-11-04)
+- A select screen with a map and currencies, later (2026-11-04)
+- The name chip and Live pill could move into the menu; design that later (2026-11-04)
+
 ## Tooling
 - [x] **Playtest data that reaches us** (owner, 2 November, after the two-player round 3 test: "build infrastructure to get the most data out of future playtests"). Built: any `?proto=` page uploads on its own and `npm run playtest` reads it, every player in a room together ([telemetry-and-updates.md](game-design/telemetry-and-updates.md)). Still open: survey answers linked to the session.
 - Agent-driven exploratory playtesting, after [ramenvr/autopilot](https://github.com/ramenvr/autopilot) (Unreal/Unity/Godot only, no web support): an agent reads the source and writes a bot from a prompt, with legal options, facts, a plan with stall detection and an effect check per action. Borrow that structure on top of `dev/look/playthrough.ts` if the playthrough bot starts missing real bugs (softlocks, confusing routes). A real integration needs a browser plugin, a Python adapter and the hosted decision model Jev (pricing not found), so it's only worth a spike to test whether it finds a bug in the round that the playthrough bot misses; if tried, set `AUTOPILOT_SHARE=0` (2026-11-03)

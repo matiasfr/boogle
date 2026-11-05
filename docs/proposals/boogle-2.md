@@ -58,7 +58,7 @@ Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`
 | Earlier concept pages | "Boogle Grows Up" https://claude.ai/artifact/9iQwPsUqWHxzy5TLENNZwK, "Boogle Crossroads" https://claude.ai/artifact/DMWtrTw6N8vBjKREKYwLcC |
 | Painted concepts: 8 eras, the era-2 opening day, the mainland port, 13 venue close-ups | Branch `claude/concept-images`, `concepts/` (a scratch branch, never merged to `main`); prompts in `dev/concepts/` |
 | Historical build spec for eras 1–2 | [vertical-slice.md](vertical-slice.md) |
-| Current eras 1–2 plan (awaiting approval; replaces the historical vertical slice) | [rail-slice.md](../plans/rail-slice.md) |
+| Historical eras 1–2 draft, never approved | [rail-slice.md](../plans/rail-slice.md) |
 | Story, gags and finales | [story-and-finale.md](story-and-finale.md), [fourth-melon.md](fourth-melon.md) |
 | Progression without mini-games | [progression-paths.md](progression-paths.md) |
 | Venues and the hub | [hub-and-minigames.md](hub-and-minigames.md) |

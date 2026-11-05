@@ -1,6 +1,6 @@
 # Plan: home and the first two rail eras
 
-> **Draft for owner approval — redrafted 2 November 2026. Nothing gets built from this plan until the owner approves it.**
+> **Historical (owner, 4 November 2026).** This 2 November draft was never approved. Materials replaced eras, round 4's place now has much of this loop, and [production-core.md](production-core.md) is the next plan. Its terrain notes remain useful.
 > Replaces the earlier draft and the historical [vertical slice](../proposals/vertical-slice.md).
 > The audit picks and later decisions in [boogle-2.md](../proposals/boogle-2.md) take precedence over research suggestions.
 > This is docs only: no gameplay, prototype completion or owner acceptance is claimed by writing it.
