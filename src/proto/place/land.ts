@@ -18,6 +18,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { tagStepSupport, segmentStepSupport, type StepSurface } from '../../render/locomotion-surfaces.ts';
 import { COVE, COVE_CLAY, coveWeight } from './cove.ts';
 import { buildCove } from './cove-view.ts';
+import { dressCoveGround } from './cove-ground.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -120,6 +121,7 @@ function buildMesh(owner?: OwnedView) {
       : new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
   );
   mesh.receiveShadow = true;
+  if (COVE) dressCoveGround(geo, mesh.material);
   if (new URLSearchParams(location.search).get('terrain') === 'demo')
     void import('../shore/terrain-demo.ts').then((m) => m.applyTerrainDemo(mesh.material, ORIGIN.x));
   registerWaterReceiver(mesh.material);

@@ -7,7 +7,8 @@ export const COVE = pageQuery().get('terrain') === 'cove';
 export const COVE_CLAY = pageQuery().get('coveView') === 'shape';
 export const COVE_DRY = COVE_CLAY || pageQuery().get('coveView') === 'dry';
 export const COVE_BOUNDS = { x0: -216, x1: -154, z0: 30, z1: 80 };
-export const coveFront = (z: number) => -192 - 5 * Math.sin(((Math.max(42, Math.min(66, z)) - 42) * Math.PI) / 24);
+export const coveFront = (z: number) =>
+  -192 - 5 * Math.sin(((Math.max(42, Math.min(66, z)) - 42) * Math.PI) / 24) + 0.12 * Math.max(0, z - 66) ** 2;
 
 /** Fade is separate from corridor protection, supplied by the finished terrain owner. */
 export function coveWeight(x: number, z: number) {
@@ -55,13 +56,13 @@ function vertex(mesh: CoveMesh, x: number, y: number, z: number, rgb: number[], 
   mesh.bounds.maxZ = Math.max(mesh.bounds.maxZ, z);
 }
 
-/** Six joined 4 m pieces, three resistant beds, shallow seams and a buried flat rear.
+/** Eight joined 4 m pieces wrap back into the shoulder, with three beds and a buried rear.
  * Shared end sockets and world Y preserve bedding across the bend; no arbitrary vertical scaling. */
 function cliff(): CoveMesh {
   const mesh = empty('cove-face');
   const levels = [-2.4, 0.18, 1.15, 1.42, 2.5, 2.78, 4.05, 4.32, 4.48];
   const reach = [-1.6, -1.3, -0.6, -0.92, -0.14, -0.48, 0.12, 0.25, 0.38];
-  for (let part = 0; part < 6; part++) {
+  for (let part = 0; part < 8; part++) {
     const start = mesh.vertices.length / 3;
     const z0 = 42 + part * 4;
     for (let row = 0; row < levels.length; row++) {
@@ -117,9 +118,9 @@ function cliff(): CoveMesh {
 }
 
 export const COVE_ROCKS = [
-  { x: -201.6, z: 44.5, rx: 1.7, rz: 1.35, top: 1.1 },
-  { x: -203.4, z: 55.5, rx: 2.15, rz: 1.65, top: 1.4 },
-  { x: -197.4, z: 66, rx: 1.5, rz: 1.2, top: 0.85 },
+  { x: -198.8, z: 46, rx: 2.4, rz: 1.7, top: 1.45 },
+  { x: -199.5, z: 55.5, rx: 2.8, rz: 2.1, top: 1.9 },
+  { x: -193.8, z: 67.5, rx: 2.2, rz: 1.5, top: 1.15 },
 ] as const;
 function blocks(): CoveMesh {
   const mesh = empty('cove-blocks');
@@ -139,7 +140,7 @@ function blocks(): CoveMesh {
         vertex(
           mesh,
           rock.x + Math.cos(a) * rock.rx * radius,
-          y,
+          y + (row === 2 ? 0.24 * Math.cos(a + n) : 0),
           rock.z + Math.sin(a) * rock.rz * radius,
           stone,
           0.94 + 0.06 * Math.sin(n + col),
