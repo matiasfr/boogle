@@ -1,0 +1,376 @@
+{
+  "runs": {
+    "main-evening": {
+      "id": "1793904624835-20234",
+      "status": 0,
+      "before": {
+        "commit": "82f8381ea7acd781e65dcdd80121f99b0576e8bf",
+        "tree": "711062bba3cb5c46554bcb75f885c322ee18a700",
+        "dirty": false
+      },
+      "changedDuringRun": false,
+      "sky": {
+        "tod": 0.55,
+        "ready": true,
+        "disposed": false,
+        "bakes": 1,
+        "bakeMs": 317.90000009536743,
+        "cubeSize": 1024,
+        "mipLevels": 11,
+        "cubeTexelBytes": 67108848,
+        "sunDirection": [
+          -0.9448180294714709,
+          0.20791169081775945,
+          -0.2531632279912452
+        ],
+        "evening": {
+          "bakes": 1,
+          "bakeMs": 298.2000000476837,
+          "cubeSize": 1024,
+          "mipLevels": 11,
+          "cubeTexelBytes": 67108848,
+          "sunDirection": [
+            -0.9448180294714709,
+            0.20791169081775945,
+            -0.2531632279912452
+          ]
+        },
+        "transition": {
+          "current": "evening",
+          "target": "evening",
+          "phase": "idle"
+        }
+      }
+    },
+    "main-day-land": {
+      "id": "1793904802222-24007",
+      "status": 0,
+      "before": {
+        "commit": "82f8381ea7acd781e65dcdd80121f99b0576e8bf",
+        "tree": "711062bba3cb5c46554bcb75f885c322ee18a700",
+        "dirty": false
+      },
+      "changedDuringRun": false,
+      "sky": {
+        "tod": 0.24,
+        "ready": true,
+        "disposed": false,
+        "bakes": 1,
+        "bakeMs": 329.89999985694885,
+        "cubeSize": 1024,
+        "mipLevels": 11,
+        "cubeTexelBytes": 67108848,
+        "sunDirection": [
+          0.26874619494960866,
+          0.7762367488709012,
+          0.5702911470489791
+        ]
+      }
+    },
+    "main-day-jobs": {
+      "id": "1793904839553-23989",
+      "status": 0,
+      "before": {
+        "commit": "82f8381ea7acd781e65dcdd80121f99b0576e8bf",
+        "tree": "711062bba3cb5c46554bcb75f885c322ee18a700",
+        "dirty": false
+      },
+      "changedDuringRun": false,
+      "sky": {
+        "tod": 0.24,
+        "ready": true,
+        "disposed": false,
+        "bakes": 1,
+        "bakeMs": 316.59999990463257,
+        "cubeSize": 1024,
+        "mipLevels": 11,
+        "cubeTexelBytes": 67108848,
+        "sunDirection": [
+          0.26874619494960866,
+          0.7762367488709012,
+          0.5702911470489791
+        ]
+      }
+    },
+    "branch-evening": {
+      "id": "1793905046178-29265",
+      "status": 0,
+      "before": {
+        "commit": "0f365a63c4eeefa195c6b9a8887db80fa3315709",
+        "tree": "5d14a48a56f3e165b3ddbcb32f97d8fa6bb66dee",
+        "dirty": true
+      },
+      "changedDuringRun": false,
+      "sky": {
+        "tod": 0.55,
+        "ready": true,
+        "disposed": false,
+        "bakes": 1,
+        "bakeMs": 323.09999990463257,
+        "cubeSize": 1024,
+        "mipLevels": 11,
+        "cubeTexelBytes": 67108848,
+        "sunDirection": [
+          -0.9448180294714709,
+          0.20791169081775945,
+          -0.2531632279912452
+        ],
+        "evening": {
+          "bakes": 1,
+          "bakeMs": 302,
+          "cubeSize": 1024,
+          "mipLevels": 11,
+          "cubeTexelBytes": 67108848,
+          "sunDirection": [
+            -0.9448180294714709,
+            0.20791169081775945,
+            -0.2531632279912452
+          ]
+        },
+        "transition": {
+          "current": "evening",
+          "target": "evening",
+          "phase": "idle"
+        }
+      }
+    },
+    "branch-day-land": {
+      "id": "1793905098429-30400",
+      "status": 0,
+      "before": {
+        "commit": "0f365a63c4eeefa195c6b9a8887db80fa3315709",
+        "tree": "5d14a48a56f3e165b3ddbcb32f97d8fa6bb66dee",
+        "dirty": true
+      },
+      "changedDuringRun": false,
+      "sky": {
+        "tod": 0.24,
+        "ready": true,
+        "disposed": false,
+        "bakes": 1,
+        "bakeMs": 316.2999999523163,
+        "cubeSize": 1024,
+        "mipLevels": 11,
+        "cubeTexelBytes": 67108848,
+        "sunDirection": [
+          0.26874619494960866,
+          0.7762367488709012,
+          0.5702911470489791
+        ]
+      }
+    },
+    "branch-day-jobs": {
+      "id": "1793905135607-29263",
+      "status": 0,
+      "before": {
+        "commit": "0f365a63c4eeefa195c6b9a8887db80fa3315709",
+        "tree": "5d14a48a56f3e165b3ddbcb32f97d8fa6bb66dee",
+        "dirty": true
+      },
+      "changedDuringRun": false,
+      "sky": {
+        "tod": 0.24,
+        "ready": true,
+        "disposed": false,
+        "bakes": 1,
+        "bakeMs": 315.60000014305115,
+        "cubeSize": 1024,
+        "mipLevels": 11,
+        "cubeTexelBytes": 67108848,
+        "sunDirection": [
+          0.26874619494960866,
+          0.7762367488709012,
+          0.5702911470489791
+        ]
+      }
+    }
+  },
+  "day": [
+    {
+      "view": "town",
+      "region": "cream",
+      "box": [
+        165,
+        165,
+        34,
+        44
+      ],
+      "main": 168.18802486631014,
+      "branch": 196.58275628342244,
+      "pick": 196.58275628342244,
+      "delta": 0
+    },
+    {
+      "view": "town",
+      "region": "grass",
+      "box": [
+        40,
+        280,
+        120,
+        80
+      ],
+      "main": 149.39087993750002,
+      "branch": 134.24528266666667,
+      "pick": 134.24528266666667,
+      "delta": 0
+    },
+    {
+      "view": "shade",
+      "region": "torso",
+      "box": [
+        380,
+        260,
+        30,
+        55
+      ],
+      "main": 109.93996812121212,
+      "branch": 133.2228086060606,
+      "pick": 133.7917539393939,
+      "delta": -0.5689453333333176
+    },
+    {
+      "view": "shade",
+      "region": "load",
+      "box": [
+        301,
+        247,
+        45,
+        60
+      ],
+      "main": 102.75531844444444,
+      "branch": 111.98256592592593,
+      "pick": 112.26444770370371,
+      "delta": -0.2818817777777838
+    },
+    {
+      "view": "jobs",
+      "region": "paper",
+      "box": [
+        285,
+        175,
+        40,
+        25
+      ],
+      "main": 228.5296,
+      "branch": 163.2138,
+      "pick": 163.2138,
+      "delta": 0
+    },
+    {
+      "view": "horizon",
+      "region": "sea",
+      "box": [
+        220,
+        196,
+        530,
+        30
+      ],
+      "main": 81.86590250314467,
+      "branch": 67.46262413836479,
+      "pick": 67.47077309433962,
+      "delta": -0.008148955974832006
+    }
+  ],
+  "evening": [
+    {
+      "view": "doorway",
+      "variant": "main",
+      "paper": {
+        "pixels": 600,
+        "rgb": [
+          240,
+          228,
+          200
+        ],
+        "luma": 228.5296,
+        "luminance": 0.7818220078813138
+      },
+      "letters": {
+        "pixels": 3870,
+        "rgb": [
+          192.1532299741602,
+          55.89638242894057,
+          36.340568475452194
+        ],
+        "luma": 83.4526584496124,
+        "luminance": 0.14444319766716146
+      },
+      "contrast": 4.277969185145715
+    },
+    {
+      "view": "doorway",
+      "variant": "branch",
+      "paper": {
+        "pixels": 600,
+        "rgb": [
+          126,
+          113,
+          98
+        ],
+        "luma": 114.68079999999999,
+        "luminance": 0.1712771634554529
+      },
+      "letters": {
+        "pixels": 3870,
+        "rgb": [
+          99.97260981912144,
+          16.013953488372092,
+          4.9328165374677
+        ],
+        "luma": 33.06350573643411,
+        "luminance": 0.031110670376210098
+      },
+      "contrast": 2.728089441612529
+    },
+    {
+      "view": "jobs",
+      "variant": "main",
+      "paper": {
+        "pixels": 1000,
+        "rgb": [
+          240,
+          228,
+          200
+        ],
+        "luma": 228.5296,
+        "luminance": 0.7818220078812954
+      },
+      "letters": {
+        "pixels": 918,
+        "rgb": [
+          192.6165577342048,
+          57.73202614379085,
+          38.205882352941174
+        ],
+        "luma": 84.99868997821349,
+        "luminance": 0.14845338020221652
+      },
+      "contrast": 4.191523505589576
+    },
+    {
+      "view": "jobs",
+      "variant": "branch",
+      "paper": {
+        "pixels": 1000,
+        "rgb": [
+          126,
+          113,
+          98
+        ],
+        "luma": 114.68079999999999,
+        "luminance": 0.171277163455451
+      },
+      "letters": {
+        "pixels": 918,
+        "rgb": [
+          100.06971677559913,
+          16.65686274509804,
+          5.625272331154684
+        ],
+        "luma": 33.59395468409586,
+        "luminance": 0.03151133831586552
+      },
+      "contrast": 2.7146795528982404
+    }
+  ]
+}

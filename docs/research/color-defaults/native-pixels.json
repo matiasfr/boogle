@@ -1,0 +1,170 @@
+[
+  {
+    "board": "evening-town",
+    "label": "Main 82f8381e — .16, original lights/unlit boards",
+    "x": 16,
+    "y": 280,
+    "exact": true
+  },
+  {
+    "board": "evening-town",
+    "label": "Owner defaults — .12, key 1.12 / fill 3.2, lit boards",
+    "x": 16,
+    "y": 908,
+    "exact": true
+  },
+  {
+    "board": "evening-shade",
+    "label": "Main 82f8381e — .16, original lights/unlit boards",
+    "x": 16,
+    "y": 280,
+    "exact": true
+  },
+  {
+    "board": "evening-shade",
+    "label": "Owner defaults — .12, key 1.12 / fill 3.2, lit boards",
+    "x": 16,
+    "y": 908,
+    "exact": true
+  },
+  {
+    "board": "evening-doorway",
+    "label": "Main 82f8381e — .16, original lights/unlit boards",
+    "x": 16,
+    "y": 280,
+    "exact": true
+  },
+  {
+    "board": "evening-doorway",
+    "label": "Owner defaults — .12, key 1.12 / fill 3.2, lit boards",
+    "x": 16,
+    "y": 908,
+    "exact": true
+  },
+  {
+    "board": "evening-jobs",
+    "label": "Main 82f8381e — .16, original lights/unlit boards",
+    "x": 16,
+    "y": 280,
+    "exact": true
+  },
+  {
+    "board": "evening-jobs",
+    "label": "Owner defaults — .12, key 1.12 / fill 3.2, lit boards",
+    "x": 16,
+    "y": 908,
+    "exact": true
+  },
+  {
+    "board": "evening-horizon",
+    "label": "Main 82f8381e — .16, original lights/unlit boards",
+    "x": 16,
+    "y": 280,
+    "exact": true
+  },
+  {
+    "board": "evening-horizon",
+    "label": "Owner defaults — .12, key 1.12 / fill 3.2, lit boards",
+    "x": 16,
+    "y": 908,
+    "exact": true
+  },
+  {
+    "board": "evening-sky",
+    "label": "Main 82f8381e — .16, original lights/unlit boards",
+    "x": 16,
+    "y": 280,
+    "exact": true
+  },
+  {
+    "board": "evening-sky",
+    "label": "Owner defaults — .12, key 1.12 / fill 3.2, lit boards",
+    "x": 16,
+    "y": 908,
+    "exact": true
+  },
+  {
+    "board": "town",
+    "label": "Main 82f8381e",
+    "x": 16,
+    "y": 280,
+    "exact": true
+  },
+  {
+    "board": "town",
+    "label": "Rebased owner defaults",
+    "x": 16,
+    "y": 908,
+    "exact": true
+  },
+  {
+    "board": "shade",
+    "label": "Main 82f8381e",
+    "x": 16,
+    "y": 280,
+    "exact": true
+  },
+  {
+    "board": "shade",
+    "label": "Rebased owner defaults",
+    "x": 16,
+    "y": 908,
+    "exact": true
+  },
+  {
+    "board": "jobs",
+    "label": "Main 82f8381e",
+    "x": 16,
+    "y": 280,
+    "exact": true
+  },
+  {
+    "board": "jobs",
+    "label": "Rebased owner defaults",
+    "x": 16,
+    "y": 908,
+    "exact": true
+  },
+  {
+    "board": "horizon",
+    "label": "Main 82f8381e",
+    "x": 16,
+    "y": 280,
+    "exact": true
+  },
+  {
+    "board": "horizon",
+    "label": "Rebased owner defaults",
+    "x": 16,
+    "y": 908,
+    "exact": true
+  },
+  {
+    "board": "summary",
+    "label": "Day main: town / Buddy / JOBS",
+    "x": 16,
+    "y": 200,
+    "exact": true
+  },
+  {
+    "board": "summary",
+    "label": "Day defaults: town / Buddy / JOBS",
+    "x": 16,
+    "y": 416,
+    "exact": true
+  },
+  {
+    "board": "summary",
+    "label": "Evening main: town / Buddy / JOBS",
+    "x": 16,
+    "y": 632,
+    "exact": true
+  },
+  {
+    "board": "summary",
+    "label": "Evening defaults: town / Buddy / JOBS",
+    "x": 16,
+    "y": 848,
+    "exact": true
+  }
+]

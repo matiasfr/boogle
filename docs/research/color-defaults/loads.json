@@ -1,0 +1,15 @@
+{
+  "evening-main": "10:50  3 users, load averages: 25.93 24.48 27.10",
+  "evening-branch": "10:57  3 users, load averages: 23.31 24.29 25.58",
+  "day-main-land": "10:53  3 users, load averages: 18.60 21.44 25.28",
+  "day-main-jobs": "10:53  3 users, load averages: 12.76 19.64 24.45",
+  "day-branch-land": "10:58  3 users, load averages: 25.67 24.49 25.57",
+  "day-branch-jobs": "10:58  3 users, load averages: 29.39 25.69 25.96",
+  "rebased-controls": "11:00  3 users, load averages: 40.91 29.60 27.40",
+  "rebased-world-inputs": "11:00  3 users, load averages: 42.66 30.99 27.97",
+  "rebased-bot": "11:00  3 users, load averages: 41.96 31.04 28.00",
+  "rebased-bot-end": "11:08  3 users, load averages: 34.80 31.68 29.26",
+  "rebased-check": "10:56  3 users, load averages: 30.44 24.74 25.80",
+  "followup-boards": "11:09  3 users, load averages: 21.22 28.12 28.17",
+  "followup-final-check": "11:17  3 users, load averages: 7.02 12.83 20.29"
+}
