@@ -23,7 +23,7 @@ answers"); the owner kept it (2026-11-01). Local and cosmetic: nothing here is s
 - **Haul chip** ([src/features/haul-stack.ts](../../src/features/haul-stack.ts)): a wood pill above the name tag (above the action rows on narrow portrait touch screens) with a log
   icon, a big tabular count and the material, only while you carry something. The count ticks one by one toward the
   host-confirmed one (about 300 ms per change, a clink and a pop per step); at the hard cap it turns sun-yellow and says
-  "full".
+  "full". Place replaces this chip with its [temporary carried-resource tag](place.md#carried-resource-display): all materials, the real shared capacity, and exact recall in Pause. Classic Haul and its variants retain this chip unchanged.
 - **One notification lane** ([src/ui/notify.ts](../../src/ui/notify.ts)): a single pill where the held thing's name tag is
   (under it on touch), for things only you need to know. One notice at a time, at most three waiting,
   the same text refreshing instead of stacking, 2.5 s by default. A hands note ("Can't grow here", "Nothing to plant
