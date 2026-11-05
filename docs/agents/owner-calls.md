@@ -1,6 +1,8 @@
 Apply these standing calls whenever their subject arises; the root summaries do not weaken the full calls.
 
 ## Owner's standing calls
+
+- **Contact sheets are for specific beats or sequences being evaluated, not the full game** (owner, 4 November).
 - **Keep The Boogler's copy.** Cleanups and refactors never trim or reword his lines (dialogue, small talk, gift `line`s, HUD lines), even ones that look unreachable or mention removed systems. List those for the owner instead.
 - **Nintendo names are fine; ROMs are not.** Never rename or reword something to remove a Nintendo reference. The hard line: no ROM data, or anything cut from it, in the repo, on any branch or in the build.
 - **Use references by name.** When the owner points at a game or character, work out the features they're responding to (proportions, clothes, a mechanic's feel) and use those, naming the reference in briefs and docs: "the stubby proportions of Castle Story's Bricktrons, as our own character", not a vague paraphrase. Don't recreate the thing itself.

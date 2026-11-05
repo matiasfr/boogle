@@ -69,6 +69,7 @@ function buildMesh() {
       : new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
   );
   mesh.receiveShadow = true;
+  mesh.userData.postLookTerrain = true;
   if (new URLSearchParams(location.search).get('terrain') === 'demo')
     void import('../water/terrain-demo.ts').then((m) => m.applyTerrainDemo(mesh.material, ORIGIN.x));
   registerWaterReceiver(mesh.material);
@@ -172,6 +173,7 @@ function buildSpire() {
   let y = 0;
   for (const [r0, r1, h, dx, dz, color] of drums) {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, h, 7, 1), FLAT(color));
+    m.userData.postLookTerrain = true;
     m.position.set(X + dx, y + h / 2, Z + dz);
     m.rotation.y = y * 0.7;
     m.castShadow = true;

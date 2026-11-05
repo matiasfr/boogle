@@ -13,12 +13,17 @@ import {
 import { scenePass } from '../scene.ts';
 import { TSL, type N } from './tsl.ts';
 
-const { Fn, output, mrt, vec4, clamp } = TSL;
+const { Fn, output, mrt, vec4, clamp, uniform } = TSL;
 type Builder = { object: Object3D & { isSprite?: boolean }; material: Material & { isSpriteNodeMaterial?: boolean } };
 
 export function createLookCoverage(ocean: Object3D) {
   const previous = scenePass.getMRT();
   const classes = { opaque: new Set<string>(), water: new Set<string>(), protected: new Set<string>() };
+  // Object-updated, not a builder-time constant: rocks can share a material with toys.
+  // Owners tag whole procedural families once. No asset material edits or second attachment.
+  const terrain = uniform(0).onObjectUpdate(({ object }: { object: Object3D }) =>
+    object.userData.postLookTerrain === true ? 1 : 0,
+  );
   const coverage = Fn((_: N[], builder: Builder) => {
     const material = builder.material;
     // r187's Background owner creates this material; it is not an asset naming convention.
@@ -35,7 +40,7 @@ export function createLookCoverage(ocean: Object3D) {
       ? vec4(0, alpha, 0, alpha)
       : kind === 'protected'
         ? vec4(0, 0, alpha, alpha)
-        : vec4(1, 0, 0, 1);
+        : vec4(terrain.oneMinus(), 0, 0, 1);
   })();
   const blend = new BlendMode(CustomBlending);
   blend.blendSrc = blend.blendSrcAlpha = OneFactor;

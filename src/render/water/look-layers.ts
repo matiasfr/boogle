@@ -10,11 +10,13 @@ export type LookLayerContext = {
   setFog(transform?: (base: N, position: N) => N): void;
 };
 export const LAYER_LIMITS = {
-  shade: [0, 0.3],
+  shade: [0, 3],
   dither: [0, 1],
-  haze: [0, 0.003],
+  haze: [0, 0.06],
+  hazeCap: [0, 0.9],
   ink: [0, 1],
-  width: [1, 2],
+  width: [1, 3],
+  toys: [0, 1],
   toon: [0, 1],
   bloom: [0, 0.05],
   bands: [0, 0.35],
@@ -27,8 +29,10 @@ export const EMPTY_LAYERS: Layers = {
   shade: 0,
   dither: 0,
   haze: 0,
+  hazeCap: 0.18,
   ink: 0,
   width: 1,
+  toys: 0,
   toon: 0,
   bloom: 0,
   bands: 0,
@@ -108,7 +112,7 @@ export function createLookLayers(context: LookLayerContext) {
       .mul(distance)
       .mul(integral)
       .mul(smoothstep(40, 80, distance));
-    const extra = min(exp(tau.negate()).oneMinus(), 0.18).mul(dry);
+    const extra = min(exp(tau.negate()).oneMinus(), values.hazeCap).mul(dry);
     return base.add(base.oneMinus().mul(extra));
   };
   function configure(next: Layers) {
@@ -135,7 +139,7 @@ export function createLookLayers(context: LookLayerContext) {
     }
     if (!coverage || !(config.ink || config.bands || config.paint || config.mask)) return c;
     const mask = coverage.sampled;
-    if (config.mask) return mask.rgb;
+    if (config.mask) return mask.rgb.add(vec3(1, 1, 0).mul(mask.a.sub(mask.r.add(mask.g).add(mask.b)).max(0)));
     const depth: N = scenePass.getTextureNode('depth');
     const size = vec2(textureSize(depth));
     const snap = (p: N) =>
@@ -152,7 +156,7 @@ export function createLookLayers(context: LookLayerContext) {
       return maskTaps.get(key)!;
     };
     const centre = maskOffset(0, 0);
-    const eligible = step(0.98, centre.r)
+    const eligible = step(0.98, centre.a)
       .mul(step(centre.g.add(centre.b), 0.01))
       .mul(dry);
     // Symmetric integer scene-texel support avoids asymmetric +/-1.5 rounding on a sloped plane.
@@ -162,7 +166,7 @@ export function createLookLayers(context: LookLayerContext) {
     // A full, conservative square around the kernel; each scene-mask texel is fetched only once.
     const guard = (radius: N) => {
       let safe = float(1);
-      const bound = config.ink || config.paint ? 4 : 2;
+      const bound = config.ink ? 5 : config.paint ? 4 : 2;
       for (let y = -bound; y <= bound; y++)
         for (let x = -bound; x <= bound; x++) {
           const m = maskOffset(x, y);
@@ -190,7 +194,7 @@ export function createLookLayers(context: LookLayerContext) {
         abs(depths[0].add(depths[1]).sub(raw.mul(2))),
         abs(depths[2].add(depths[3]).sub(raw.mul(2))),
       ).div(max(raw.oneMinus(), 1e-6));
-      const gate = eligible.mul(protection);
+      const gate = eligible.mul(protection).mul(mix(1, step(0.98, centre.r), values.toys));
       const edge = smoothstep(0.015, 0.04, rel)
         .mul(smoothstep(0.006, 0.02, bend))
         .mul(smoothstep(30, 100, z).oneMinus())
@@ -220,7 +224,7 @@ export function createLookLayers(context: LookLayerContext) {
           for (let x = -2; x <= 2; x++) {
             const p = at.add(vec2(x, y).mul(texel)),
               m = maskOffset(x, y);
-            gate = gate.mul(step(0.98, m.r));
+            gate = gate.mul(step(0.98, m.a));
             taps.push({ x, y, c: source.sample(snap(p)).level(0).rgb.toVar() });
           }
         let chosen: N, best: N;

@@ -681,6 +681,7 @@ const bandMesh = new THREE.InstancedMesh(
   flat('#f0752c'),
   ROCK_LIST.length,
 );
+lumpMesh.userData.postLookTerrain = true;
 lumpMesh.castShadow = bandMesh.castShadow = true;
 lumpMesh.frustumCulled = bandMesh.frustumCulled = false;
 scene.add(lumpMesh, bandMesh);
