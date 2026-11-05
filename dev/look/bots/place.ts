@@ -199,8 +199,13 @@ export async function play() {
           const chest = place.giftState.crates().find((c: { content: string }) => c.content === 'axe');
           if (!chest) throw new Error('Station 3 axe chest missing');
           playMark('sheet: axe stand');
-          await travel(chest.x, chest.z, 1.5);
-          await waitFor(() => place.job.rung.axe > 0, 5000, 'proper axe before the beam');
+          await travel(chest.x, chest.z, 2);
+          if (!place.job.rung.axe) {
+            if (interactTarget()?.id !== 'place-crate') throw new Error('Station 3 chest is not in reach');
+            press();
+          }
+          if (!(await waitFor(() => place.job.rung.axe > 0, 5000, 'proper axe before the beam')))
+            throw new Error('Station 3 axe was not acquired');
           await waitFor(() => !gettingItem(), 8000, 'put away the proper axe');
         }
         const g = place.greatTree;
