@@ -3,6 +3,7 @@
 Background reports that design and technical decisions lean on. Each file states its date, what it covers and how much of it was verified. When a decision in [DESIGN.md](../../DESIGN.md) or the current [decision log](../proposals/boogle-2.md) rests on one, link it from there; reports are dated evidence, not current implementation contracts.
 
 - [water-times-of-day.md](water-times-of-day.md) (2026-11-04): four prepared-sky strategies, cube/PMREM memory arithmetic, fresh Mac CPU LUT timings and labelled mobile estimates, coordinated evening/night lighting, co-op/save semantics and six recommendations; proposes one loading-prepared evening and a fade after the current water/replay gates. No source changes; browser broker unavailable, device/GPU costs unverified.
+- [state-ownership-audit.md](state-ownership-audit.md) (2026-11-04): 44 player-facing state groups across default Place, adapters and server/classic; reload, empty-room, restart, join and contention contracts, recorded co-op failures, live primary-source comparisons and seven recommendations. Preserve approved T1 scope and Owner physics; identify beam capability, personal-save and classic capacity defects without implementing them.
 
 - [shore-arrival.md](shore-arrival.md) (2026-11-04): ten opening-route comparisons, NPC asks, shore failure modes and co-op/return handling; three round-4 shore approaches and six recommendations, with a west-cove comparison first. Reference timings are estimates and metric lengths unverified; no gameplay changes or decisions.
 
