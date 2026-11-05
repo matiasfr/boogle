@@ -50,6 +50,14 @@ async function run() {
     if (got.gettingItem()) got.press();
   }, 250);
   wakeNow();
+  put(tree.greatTree.x, tree.greatTree.z + 3.5);
+  await wait(700);
+  check('Station 1 offers no great-tree Chop', hands.interactTarget()?.id !== 'place-great');
+  check(
+    'Station 1 refuses direct swing and accepted work',
+    !tree.chop(tree.greatTree) && tree.harvestTree(tree.greatTree, 0, 0, 0).state.work === 0,
+  );
+  // An already-felled historical save remains valid under the updated owner decision.
   tree.applyTreeHarvest(tree.greatTree, {
     work: 12,
     issued: 0,
@@ -59,7 +67,7 @@ async function run() {
     fallYaw: 0,
     collapsed: false,
   });
-  await until(() => tree.trunkDown(), 'early tree fallen');
+  await until(() => tree.trunkDown(), 'historical felled tree restored');
   const source = tree.trunkAt();
   put(source.x + 2.5, source.z);
   await wait(700);

@@ -1,5 +1,6 @@
 // Existing look harness: --players 2 --query 'proto=place&coop=1&greatCarry=pair' --eval dev/look/evals/place-coop.ts
-// --until window.__coopDone --warm 180. greatCarry=solo|pair|helper-leave|carrier-leave; &follower=1 swaps cargo owner.
+// --until window.__coopDone --warm 180. greatCarry=solo|pair|drop|retry|gate|helper-leave|carrier-leave.
+// &follower=1 swaps cargo owner (required for retry); &gateStop=1 frames the unavailable tree at Station 1.
 const q = new URLSearchParams(location.search);
 const mode = q.get('greatCarry') ?? 'pair';
 const saved = q.has('saved');
@@ -41,12 +42,18 @@ const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const until = async (fn: () => boolean, label: string, ms = 30000) => {
   const end = performance.now() + ms;
   while (!fn()) {
-    if (performance.now() > end) throw new Error(`GREAT timeout: ${label}`);
+    if (performance.now() > end)
+      throw new Error(
+        `GREAT timeout: ${label} ${JSON.stringify({ p: me.body?.position, prompt: hands.interactTarget()?.verb, target: hands.interactTarget()?.id, reward: got.gettingItem(), held: heldId(), inputHeld: inputState.held, back: tree.back.big, mode: place.run.mode, stage: place.lines[0].stage, greatReady: tree.chopHooks.greatReady(), work: tree.greatTree.work })}`,
+      );
     await wait(50);
   }
 };
 const check = (label: string, ok: boolean, detail: unknown = '') => {
-  if (!ok) throw new Error(`GREAT FAIL ${label}: ${JSON.stringify(detail)}`);
+  if (!ok)
+    throw new Error(
+      `GREAT FAIL ${label}: ${JSON.stringify({ detail, p: me.body?.position, reward: got.gettingItem(), inputHeld: inputState.held, target: hands.interactTarget()?.id })}`,
+    );
   console.log(`GREAT PASS ${label}: ${JSON.stringify(detail)}`);
 };
 const messages = new Set<string>(),
@@ -81,6 +88,7 @@ const stop = () => {
   input.keys.clear();
 };
 const put = async (x: number, z: number) => {
+  await until(() => !got.gettingItem(), 'reward dismissed before positioning');
   stop();
   if (saved) check('walk to beam position', await makeBot().walk(x, z, 0.5, { limit: 120000 }));
   else {
@@ -116,77 +124,156 @@ async function run() {
   if (!saved) {
     if (authority) place.wake();
     await until(() => place.job.awake && place.run.mode === 'idle', 'Station 1 active');
-    if (authority) {
-      tree.applyTreeHarvest(tree.greatTree, {
-        work: 12,
-        issued: 0,
-        ceiling: 0,
-        revision: 1,
-        fell: true,
-        fallYaw: 0,
-        collapsed: false,
-      });
-      net.room!.send({
-        t: COOP_IDENTITY,
-        k: 'snap',
-        snap: { gen: coop.debug().gen, shared: captureShared() },
-        force: true,
-      });
-    }
-    await until(() => tree.trunkDown(), 'tree felled during Station 1');
-    const early = tree.trunkAt();
-    await put(early.x + 2.5, early.z);
+    await put(tree.greatTree.x + (authority ? -1.3 : 1.3), tree.greatTree.z + 1.5);
     await wait(700);
-    check('Station 1 has no trunk prompt', hands.interactTarget()?.verb !== 'Shoulder the trunk');
-    const { save, restore } = (await import(
-      '/src/proto/place/job.ts' as string
-    )) as typeof import('../../../src/proto/place/job.ts');
-    const { bigCargo } = (await import(
-      '/src/proto/place/big-cargo.ts' as string
-    )) as typeof import('../../../src/proto/place/big-cargo.ts');
-    const { triggerAction } = (await import(
-      '/src/player/controls.ts' as string
-    )) as typeof import('../../../src/player/controls.ts');
-    // Two old saves have each adopted their personal shoulder at revision zero.
-    save();
-    const key = Object.keys(localStorage).find((k) => k.startsWith('boogle-place-coop-v2:'))!;
-    const old = JSON.parse(localStorage.getItem(key)!);
-    old.shared.bigCargoV1.beam = { revision: 0, holder: net.myPeer, ground: null };
-    old.shared.felled.trunk = true;
-    old.personal.back = { logs: 0, rails: 0, stone: 0, big: 'beam' };
-    localStorage.setItem(key, JSON.stringify(old));
-    check('legacy adopted shoulder loads', restore() && tree.back.big === 'beam');
-    await barrier('legacy shoulders loaded');
-    if (authority)
-      net.room!.send({
-        t: COOP_IDENTITY,
-        k: 'snap',
-        snap: { gen: coop.debug().gen, shared: captureShared() },
-        force: true,
-      });
-    await until(() => authority || tree.back.big === null, 'legacy duplicate shoulder cleared');
     check(
-      'one authoritative legacy shoulder at revision zero',
-      bigCargo.beam.revision === 0 && (authority ? tree.back.big === 'beam' : tree.back.big === null),
+      'great-tree prompt checked in reach with hands free',
+      !got.gettingItem() &&
+        !inputState.held &&
+        Math.hypot(me.body!.position.x - tree.greatTree.x, me.body!.position.z - tree.greatTree.z) < 4.6,
     );
-    await barrier('legacy shoulder reconciled');
-    if (authority) {
-      teleport(me.body!, place.ORIGIN.x + 1000, 5, 1000);
-      triggerAction('place-drop', 'down');
-      await put(early.x + 2.5, early.z);
+    check('Station 1 has no great-tree Chop prompt', hands.interactTarget()?.id !== 'place-great');
+    check('Station 1 rejects direct great-tree swing', !tree.chop(tree.greatTree));
+    tree.chopHooks.harvest!(tree.greatTree, 0, 0, 0); // bypass UI: authority must still reject the stroke
+    await until(() => !coop.debug().harvestPending, 'early harvest request settled');
+    check(
+      'early great-tree strokes change no shared work',
+      tree.greatTree.work === 0 && tree.greatTree.revision === 0 && tree.greatTree.fall < 0,
+    );
+    await barrier('early chopping refused');
+    if (q.has('gateStop')) {
+      const t = tree.greatTree;
+      window.__debugCam!.set([t.x - 16, t.y + 12, t.z + 18], [t.x, t.y + 5, t.z]);
+      clearInterval(dismiss);
+      Object.assign(window, { __coopDone: true });
+      return;
     }
-    await until(() => tree.back.big === null && tree.trunkDown(), 'early legacy Drop frees both backs');
-    check('legacy room can carry logs again', tree.back.room() > 0);
-    await barrier('legacy room recovered');
-    tree.back.logs = 2;
-    coop.big('beam');
-    await until(() => !coop.bigBusy(), 'early request rejected');
-    check(
-      'authority rejects early pickup without spending logs',
-      tree.back.big === null && tree.back.logs === 2 && tree.trunkDown(),
-    );
-    await barrier('early pickup refused');
-    tree.back.logs = 0;
+    if (mode !== 'gate') {
+      // Historical already-felled rooms stay valid despite the new felling gate.
+      if (authority) {
+        tree.applyTreeHarvest(tree.greatTree, {
+          work: 12,
+          issued: 0,
+          ceiling: 0,
+          revision: 1,
+          fell: true,
+          fallYaw: 0,
+          collapsed: false,
+        });
+        net.room!.send({
+          t: COOP_IDENTITY,
+          k: 'snap',
+          snap: { gen: coop.debug().gen, shared: captureShared() },
+          force: true,
+        });
+      }
+      await until(() => tree.trunkDown(), 'legacy felled tree loaded during Station 1');
+      const early = tree.trunkAt();
+      await put(early.x + (authority ? -2.5 : 2.5), early.z);
+      await wait(700);
+      check('Station 1 has no trunk prompt', hands.interactTarget()?.verb !== 'Shoulder the trunk');
+      const { save, restore } = (await import(
+        '/src/proto/place/job.ts' as string
+      )) as typeof import('../../../src/proto/place/job.ts');
+      const { bigCargo } = (await import(
+        '/src/proto/place/big-cargo.ts' as string
+      )) as typeof import('../../../src/proto/place/big-cargo.ts');
+      const { triggerAction } = (await import(
+        '/src/player/controls.ts' as string
+      )) as typeof import('../../../src/player/controls.ts');
+      // Two old saves have each adopted their personal shoulder at revision zero.
+      save();
+      const key = Object.keys(localStorage).find((k) => k.startsWith('boogle-place-coop-v2:'))!;
+      const old = JSON.parse(localStorage.getItem(key)!);
+      old.shared.bigCargoV1.beam = { revision: 0, holder: net.myPeer, ground: null };
+      old.shared.felled.trunk = true;
+      old.personal.back = { logs: 0, rails: 0, stone: 0, big: 'beam' };
+      localStorage.setItem(key, JSON.stringify(old));
+      check('legacy adopted shoulder loads', restore() && tree.back.big === 'beam');
+      await barrier('legacy shoulders loaded');
+      if (authority)
+        net.room!.send({
+          t: COOP_IDENTITY,
+          k: 'snap',
+          snap: { gen: coop.debug().gen, shared: captureShared() },
+          force: true,
+        });
+      await until(() => authority || tree.back.big === null, 'legacy duplicate shoulder cleared');
+      check(
+        'one authoritative legacy shoulder at revision zero',
+        bigCargo.beam.revision === 0 && (authority ? tree.back.big === 'beam' : tree.back.big === null),
+      );
+      await barrier('legacy shoulder reconciled');
+      if (authority) {
+        teleport(me.body!, place.ORIGIN.x + 1000, 5, 1000);
+        triggerAction('place-drop', 'down');
+        await put(early.x - 2.5, early.z);
+      }
+      await until(() => tree.back.big === null && tree.trunkDown(), 'early legacy Drop frees both backs');
+      check('legacy room can carry logs again', tree.back.room() > 0);
+      await barrier('legacy room recovered');
+      tree.back.logs = 2;
+      coop.big('beam');
+      await until(() => !coop.bigBusy(), 'early request rejected');
+      check(
+        'authority rejects early pickup without spending logs',
+        tree.back.big === null && tree.back.logs === 2 && tree.trunkDown(),
+      );
+      await barrier('early pickup refused');
+      tree.back.logs = 0;
+      if (mode === 'retry') {
+        if (!authority) {
+          const room = net.room!,
+            original = room.send.bind(room);
+          let disconnected = false,
+            reconnected = false;
+          const attempts: string[] = [];
+          room.onConnection((connected) => {
+            if (!connected) disconnected = true;
+            else if (disconnected) reconnected = true;
+          });
+          room.send = (raw) => {
+            const m = raw as { t?: string; k?: string };
+            if (m.t === COOP_IDENTITY && m.k === 'bigMove') {
+              attempts.push(JSON.stringify(raw));
+              if (attempts.length === 1) room.pause(800); // lost before delivery, shorter than peer removal
+              return;
+            }
+            original(raw);
+          };
+          try {
+            tree.back.logs = 2;
+            check('lost request starts pending', coop.big('beam') && !!coop.debug().bigPending);
+            await until(() => reconnected, 'short same-authority reconnect');
+            await wait(2500); // blackhole retries as well: ordinary delivery must not wait for an answer
+            check(
+              'timeout retries the identical revisioned request',
+              attempts.length >= 2 && attempts.every((m) => m === attempts[0]),
+            );
+            check(
+              'same authority and pending revision survive short reconnect',
+              !coop.debug().amAuthority && !!coop.debug().bigPending,
+            );
+            const station = place.lines[0].stations[0];
+            await put(station.x, station.z);
+            await until(
+              () => tree.back.logs === 0 && station.have.logs >= 2,
+              'ordinary logs unload while cargo replies are unavailable',
+            );
+            check(
+              'ordinary delivery cannot be locked by pending cargo',
+              !!coop.debug().bigPending && station.have.logs >= 2,
+            );
+          } finally {
+            room.send = original;
+          }
+          await until(() => !coop.debug().bigPending && !coop.bigBusy(), 'abandoned request settled after retry');
+          check('rejected retry conserves the legacy trunk', tree.trunkDown() && tree.back.big === null);
+        }
+        await barrier('cargo reconnect regression');
+        check('short reconnect retains original authority', coop.debug().amAuthority === authority);
+      }
+    }
   }
   while (!saved && place.lines[0].stage < 2) {
     const stage = place.lines[0].stage;
@@ -196,6 +283,11 @@ async function run() {
     if (place.lines[0].stage === 1) {
       await wait(400);
       check('Station 2 has no trunk prompt', hands.interactTarget()?.verb !== 'Shoulder the trunk');
+      if (mode === 'gate')
+        check(
+          'Station 2 has no great-tree Chop or accepted swing',
+          hands.interactTarget()?.id !== 'place-great' && !tree.chop(tree.greatTree) && tree.greatTree.work === 0,
+        );
     }
   }
   if (!saved) tree.back.logs = tree.back.rails = tree.back.stone = tree.back.incoming = 0;
@@ -203,21 +295,41 @@ async function run() {
   if (authority && !saved) {
     st.have.logs = 40;
     st.drawStock(st.have);
-    tree.applyTreeHarvest(tree.greatTree, {
-      work: 12,
-      issued: 0,
-      ceiling: 0,
-      revision: 1,
-      fell: true,
-      fallYaw: 0,
-      collapsed: false,
-    });
+    if (mode !== 'gate')
+      tree.applyTreeHarvest(tree.greatTree, {
+        work: 12,
+        issued: 0,
+        ceiling: 0,
+        revision: 1,
+        fell: true,
+        fallYaw: 0,
+        collapsed: false,
+      });
     net.room!.send({
       t: COOP_IDENTITY,
       k: 'snap',
       snap: { gen: coop.debug().gen, shared: captureShared() },
       force: true,
     });
+  }
+  if (mode === 'gate') {
+    await until(() => place.run.mode === 'idle' && place.lines[0].stage === 2, 'Station 3 active');
+    await put(tree.greatTree.x + (authority ? -1.3 : 1.3), tree.greatTree.z + 1.5);
+    await until(() => hands.interactTarget()?.id === 'place-great', 'Station 3 great-tree Chop appears');
+    await barrier('chop together');
+    while (tree.greatTree.fall < 0) {
+      if (hands.interactTarget()?.id === 'place-great') {
+        hands.interactDown();
+        hands.interactUp();
+      }
+      await wait(400);
+    }
+    await until(() => tree.trunkDown(), 'both peers see felled tree');
+    check(
+      'two-player chopping accepts exactly twelve strokes',
+      tree.greatTree.work === 12 && tree.greatTree.revision === 12,
+    );
+    await barrier('great tree felled together');
   }
   if (saved && authority && !tree.trunkDown()) {
     await put(tree.greatTree.x, tree.greatTree.z + 3.5);
@@ -230,7 +342,39 @@ async function run() {
   await put(start.x + (carrier ? 2.5 : 15), start.z);
   await wait(700);
   await barrier('at source');
-  if (carrier) await press('Shoulder the trunk');
+  if (carrier && mode === 'retry') {
+    check('retry fixture uses the follower carrier', !authority);
+    const { bigCargo } = (await import(
+      '/src/proto/place/big-cargo.ts' as string
+    )) as typeof import('../../../src/proto/place/big-cargo.ts');
+    const room = net.room!,
+      original = room.send.bind(room),
+      revision = bigCargo.beam.revision;
+    let attempts = 0;
+    room.send = (raw) => {
+      const m = raw as { t?: string; k?: string };
+      if (m.t === COOP_IDENTITY && m.k === 'bigMove') {
+        attempts++;
+        if (attempts === 1) {
+          room.pause(800);
+          return;
+        }
+        original(raw); // deliver the retry twice: only one can spend its revision
+      }
+      original(raw);
+    };
+    try {
+      await press('Shoulder the trunk');
+      await until(() => tree.back.big === 'beam' && !coop.debug().bigPending, 'legal lost pickup retried and accepted');
+      await wait(500);
+      check(
+        'legal retry picks up exactly once',
+        attempts >= 2 && bigCargo.beam.revision === revision + 1 && tree.back.beam === 1,
+      );
+    } finally {
+      room.send = original;
+    }
+  } else if (carrier) await press('Shoulder the trunk');
   await until(() => tree.trunkTaken(), 'pickup shared');
   // The fallen trunk is solid until pickup. Start the actual segment only after it has gone on both tabs.
   await put(start.x + (!carrier && mode === 'solo' ? 15 : 0), start.z - (carrier ? 0 : 3.4));
@@ -276,7 +420,15 @@ async function run() {
     window.__debugCam!.set([start.x - 18, p.y + 14, start.z + 8], [start.x, p.y + 0.6, start.z + 9]);
   };
   frame();
-  if (mode === 'drop') {
+  if (mode === 'gate') {
+    if (!carrier) await press('Let go');
+    await until(() => !greatCarry.helping() && !greatCarry.assisted(), 'release before delivery');
+    if (carrier) check('walk newly felled trunk to Station 3', await makeBot().walk(st.x, st.z, 3, { limit: 60000 }));
+    await until(() => place.lines[0].open, 'accepted newly felled beam opens crossing', 60000);
+    check('newly felled beam consumed once', tree.back.big === null && tree.trunkTaken());
+    window.__debugCam!.set([st.x - 12, place.H(st.x, st.z) + 9, st.z - 14], [st.x, place.H(st.x, st.z) + 1, st.z]);
+    await barrier('gate delivery complete');
+  } else if (mode === 'drop' || mode === 'retry') {
     const { bigCargo, cargoGround } = (await import(
       '/src/proto/place/big-cargo.ts' as string
     )) as typeof import('../../../src/proto/place/big-cargo.ts');
