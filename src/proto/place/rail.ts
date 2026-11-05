@@ -572,6 +572,7 @@ export function buildMachine(owner?: OwnedView) {
       id: `machine-deck-${i}`,
       group: 'machine-deck',
       platform: flatbed.platform,
+      anchorView: true,
       // Avatars face -Z at zero yaw; the gantry and travel direction are local +Z.
       at: { x, y: flatbed.hy + seatHeight, z: -0.9, yaw: Math.PI },
       exit: { x, y: flatbed.hy + PLAYER_R, z: -1.85, yaw: Math.PI },

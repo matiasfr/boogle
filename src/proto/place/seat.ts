@@ -24,6 +24,8 @@ export type Seat = {
   id: string;
   group: string;
   platform?: Platform;
+  /** Nonblocking chairs have no standing support: draw the granted rider in the platform frame. */
+  anchorView?: boolean;
   at: Local;
   exit: Local;
   available: () => boolean;
@@ -35,6 +37,7 @@ let serial = 0;
 let request: SeatRequest | null = null;
 let sitting: Seat | null = null;
 const requests = new Map<string, SeatRequest>();
+const remoteSeats = new Map<string, Seat>();
 let grants: Record<string, SeatGrant> = {};
 const pose: Local = { x: 0, y: 0, z: 0, yaw: 0 };
 const surfacePose: Local = { x: 0, y: 0, z: 0, yaw: 0 };
@@ -169,15 +172,20 @@ onRemotePresence((r, pr) => {
     requests.set(r.peer, { id: s.id, ticket: req!.ticket! });
   else requests.delete(r.peer);
   const seated = find(pr.placeSeatPose);
-  if (seated && grants[seated.id]?.peer === r.peer && r.avatar) r.avatar.userData.seatedAt = performance.now();
+  if (seated && grants[seated.id]?.peer === r.peer && r.avatar) {
+    r.avatar.userData.seatedAt = performance.now();
+    remoteSeats.set(r.peer, seated);
+  } else remoteSeats.delete(r.peer);
 });
 onPeerRemoved((r) => {
   requests.delete(r.peer);
+  remoteSeats.delete(r.peer);
   for (const id of Object.keys(grants)) if (grants[id]?.peer === r.peer) delete grants[id];
 });
 const reset = () => {
   standUp('network state');
   requests.clear();
+  remoteSeats.clear();
   grants = {};
 };
 onNetState((state, prev) => {
@@ -237,15 +245,27 @@ onFrame(
     if (sitting && me.avatar) me.avatar.userData.seatedAt = performance.now();
     for (const r of remotes.values()) {
       if (!r.avatar) continue;
+      const seat = remoteSeats.get(r.peer);
+      if (seat?.anchorView && grants[seat.id]?.peer === r.peer) drawAtSeat(r.avatar, seat);
       if (performance.now() - (r.avatar.userData.seatedAt ?? -1e9) < 200) {
         const inner = r.avatar.userData.inner as THREE.Object3D | undefined;
         if (inner) inner.position.y -= 0.55;
       }
     }
-    if (sitting && me.avatar?.userData.inner) (me.avatar.userData.inner as THREE.Object3D).position.y -= 0.55;
+    if (sitting && me.avatar) {
+      if (sitting.anchorView) drawAtSeat(me.avatar, sitting);
+      if (me.avatar.userData.inner) (me.avatar.userData.inner as THREE.Object3D).position.y -= 0.55;
+    }
   },
   { phase: 'update', order: 20 },
 );
+function drawAtSeat(avatar: THREE.Object3D, seat: Seat) {
+  // A visual chair leaves carry.on empty, so ordinary world interpolation trails a moving deck.
+  // The accepted seat already supplies the frame; keep this cosmetic and leave body/support/exits alone.
+  const p = world(seat, false, true);
+  avatar.position.set(p.x, p.y, p.z);
+  avatar.rotation.y = p.yaw;
+}
 // Rigid Local geometry: all chairs share one colored mesh instead of four separate draws.
 // The host surface still owns the matching solid and every seat anchor.
 const chairGeometry = merged([
