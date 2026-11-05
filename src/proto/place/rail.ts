@@ -47,7 +47,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { kitBatch, lookTrack, trainLook } from './look-kit.ts';
 import { machineModel, MACHINE_CHAIRS, MACHINE_DECK, MACHINE_GAP } from './machine-model.ts';
 import { solidTrainLoad } from './train-load.ts';
-import { registerSeat } from './seat.ts';
+import { registerSeat, seatHeight } from './seat.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const lateral = (l: number, out: { x: number; z: number }) => {
