@@ -45,56 +45,49 @@ body.place-has-glide .tbtn.place-glide-btn {
 }
 /* Not until you're in: the lobby has its own job. */
 body:not(.playing) .place-nums,
-body:not(.playing) .place-proto {
+body:not(.playing) .place-proto,
+body:not(.playing) .place-money-live {
   display: none;
 }
 
-/* A real place (?proto=place): the solo tester's panel. */
-.place-proto {
-  position: absolute;
-  left: 12px;
-  top: 110px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  font: 600 13px var(--font-body);
-  color: var(--ink);
-  pointer-events: auto;
-}
-.place-proto button {
-  font: inherit;
-  padding: 6px 12px;
-  background: var(--paper);
-  color: var(--ink);
-  border: 3px solid var(--ink);
-  border-radius: 999px;
-  box-shadow: 0 3px 0 var(--ink);
-  cursor: pointer;
-}
-
-/* The numbers: logs, kilometres, town and money, a comic score. Small, and off to one side. */
+/* The numbers remain live in the pause view. */
 .place-nums {
-  position: absolute;
-  right: 14px;
-  top: 76px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
+  flex-wrap: wrap;
+  gap: 4px;
   font: 700 13px var(--font-body);
   color: var(--ink);
   pointer-events: none;
 }
-.place-nums span {
+.place-nums span,
+.place-money-live {
   padding: 2px 8px;
   background: var(--paper);
   border: 2px solid var(--ink);
   border-radius: 9px;
 }
-.place-nums .place-money {
+.place-nums .place-money,
+.place-money-live {
   font-size: 16px;
   background: #e8f5d0;
+}
+.place-money-live {
+  position: absolute;
+  top: 76px;
+  right: 14px;
+  color: var(--ink);
+  font: 700 16px var(--font-body);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.place-money-live.on {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .place-money-live {
+    transition: none;
+  }
 }
 /* The big moments, once each: a line through, the first crystal. */
 .place-banner {

@@ -103,7 +103,7 @@ export default {
 
     // 4b. Fullscreen: a real click toggles it. (The refused path, a gamepad press, can't be tested: page.evaluate is a
     // user gesture to Playwright.)
-    const fsText = `return { text: document.querySelector('[data-act=fullscreen]')?.textContent, on: !!document.fullscreenElement };`;
+    const fsText = `return { text: document.querySelector('[data-act=fullscreen]')?.getAttribute('aria-label'), on: !!document.fullscreenElement };`;
     await g.page.click('[data-act=fullscreen]');
     await g.waitFor(`!!document.fullscreenElement`, { timeout: 3000 }).catch(() => -1);
     await g.wait(0.2);

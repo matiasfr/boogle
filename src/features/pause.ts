@@ -4,7 +4,7 @@
 // The island keeps running behind it (DESIGN.md: a Local feature, never stops the frame loop); it only takes this
 // player's input through src/player/modal.ts. Opens on Esc (the pointer lock ends), H (on the controls),
 // Menu on a gamepad and the corner menu button.
-// The main page also has the mute button and volume slider.
+// The main page has mute and fullscreen icons; the volume slider lives on More.
 // Fullscreen is a toggle on the main page, shown only where the page can go fullscreen and is not already an installed
 // fullscreen app: desktop browsers, Android and iPad; not iPhone Safari (no element fullscreen) or a frame without it.
 import './pause.css';
@@ -31,7 +31,7 @@ import { carry } from '../physics/platforms.ts';
 import { forgetInRoom, leaveIsland, SPOT_KEY } from '../player/arrival.ts';
 import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
 import { uiSound } from '../ui/ui-sound.ts';
-import { pausePages, pauseNavigation } from '../player/pause-pages.ts';
+import { pausePages, pauseNavigation, pauseSections } from '../player/pause-pages.ts';
 import { devCursorFree } from '../player/dev-input.ts';
 import { devEnabled } from '../dev-preferences.ts';
 
@@ -124,8 +124,15 @@ async function toggleFullscreen(b: HTMLElement) {
     }
   } catch {
     // Refused: a gamepad press is not a user gesture to the browser, so it needs a click, a tap or Enter.
-    b.textContent = 'Click or tap for fullscreen';
-    setTimeout(() => b.isConnected && (b.textContent = fsLabel()), 2500);
+    const message = 'Click or tap for fullscreen';
+    setFsLabel(b, message);
+    const note = el('p', 'pause-note', message);
+    note.setAttribute('role', 'status');
+    card.querySelector('.pause-head')?.append(note);
+    setTimeout(() => {
+      note.remove();
+      if (b.isConnected) setFsLabel(b, fsLabel());
+    }, 2500);
   }
 }
 // Safari on iPad goes fullscreen without the keyboard: WebKit grants element fullscreen there only with keyboard access
@@ -141,23 +148,34 @@ const FS_IPAD_NOTE =
   'Safari’s fullscreen on iPad turns off the keyboard’s letter keys and a controller’s shoulder buttons. For a full screen that keeps every control, use Share → Add to Home Screen and play from there.';
 function fullscreenButton() {
   let warned = false;
-  const fs = button(fsLabel(), () => {
-    if (!fsElement() && !warned && iPadOS()) {
-      warned = true;
-      const note = el('p', 'pause-note', FS_IPAD_NOTE);
-      note.setAttribute('role', 'status');
-      fs.after(note);
-      fs.textContent = 'Fullscreen anyway (touch only)';
-      return;
-    }
-    void toggleFullscreen(fs); // refusal already updates this button
-  });
+  const fs = button(
+    '',
+    () => {
+      if (!fsElement() && !warned && iPadOS()) {
+        warned = true;
+        const note = el('p', 'pause-note', FS_IPAD_NOTE);
+        note.setAttribute('role', 'status');
+        card.querySelector('.pause-head')!.append(note);
+        setFsLabel(fs, 'Fullscreen anyway (touch only)');
+        return;
+      }
+      void toggleFullscreen(fs); // refusal already updates this button
+    },
+    'pause-icon',
+  );
   fs.dataset.act = 'fullscreen';
+  fs.innerHTML =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="pause-icon-label"></span>';
+  setFsLabel(fs, fsLabel());
   return fs;
 }
+function setFsLabel(b: HTMLElement, label: string) {
+  b.setAttribute('aria-label', label);
+  b.querySelector('.pause-icon-label')!.textContent = label;
+}
 const syncFsButton = () => {
-  const b = card?.querySelector('[data-act="fullscreen"]');
-  if (b) b.textContent = fsLabel();
+  const b = card?.querySelector<HTMLElement>('[data-act="fullscreen"]');
+  if (b) setFsLabel(b, fsLabel());
 };
 doc.addEventListener('fullscreenchange', syncFsButton);
 doc.addEventListener('webkitfullscreenchange', syncFsButton);
@@ -168,27 +186,15 @@ const WAVES =
 const CROSS =
   '<path d="M15.5 9.5l5 5M20.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>';
 // The mute button and volume slider: every sound in the game (src/render/audio.ts).
-function soundRow() {
-  const row = el('div', 'pause-sound');
+function volumeSlider() {
   const slider = el('input', 'pause-volume');
   slider.type = 'range';
   slider.min = '0';
   slider.max = '1';
   slider.step = '0.05';
   slider.setAttribute('aria-label', 'Volume');
-  const mute = button('', () => {
-    setMuted(!isMuted());
-    sync();
-    if (!isMuted()) uiSound('tick');
-  });
-  mute.classList.add('pause-mute');
-  mute.dataset.act = 'mute';
   function sync() {
-    const off = isMuted() || getVolume() === 0;
     slider.value = String(isMuted() ? 0 : getVolume());
-    mute.setAttribute('aria-label', isMuted() ? 'Unmute' : 'Mute');
-    mute.setAttribute('aria-pressed', String(isMuted()));
-    mute.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${SPEAKER}${off ? CROSS : WAVES}</svg>`;
   }
   slider.addEventListener('input', () => {
     if (isMuted()) setMuted(false);
@@ -197,8 +203,27 @@ function soundRow() {
   });
   slider.addEventListener('change', () => uiSound('tick')); // hear the level you landed on
   sync();
-  row.append(mute, slider);
-  return row;
+  return slider;
+}
+function muteButton() {
+  const mute = button(
+    '',
+    () => {
+      setMuted(!isMuted());
+      sync();
+      if (!isMuted()) uiSound('tick');
+    },
+    'pause-icon',
+  );
+  mute.dataset.act = 'mute';
+  function sync() {
+    const off = isMuted() || getVolume() === 0;
+    mute.setAttribute('aria-label', isMuted() ? 'Unmute' : 'Mute');
+    mute.setAttribute('aria-pressed', String(isMuted()));
+    mute.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${SPEAKER}${off ? CROSS : WAVES}</svg>`;
+  }
+  sync();
+  return mute;
 }
 // Left and right on a pad move the slider.
 function nudgeVolume(dir: number) {
@@ -211,16 +236,20 @@ function nudgeVolume(dir: number) {
 }
 
 function renderMain() {
-  const leave = button('Leave', () => {
-    if (leaveTimer) leaveIsland();
-    leave.textContent = 'Leave the island?';
-    leave.classList.add('sure');
-    leaveTimer = setTimeout(() => {
-      leaveTimer = 0;
-      leave.textContent = 'Leave';
-      leave.classList.remove('sure');
-    }, LEAVE_MS);
-  });
+  const leave = button(
+    'Leave',
+    () => {
+      if (leaveTimer) leaveIsland();
+      leave.textContent = 'Leave the island?';
+      leave.classList.add('sure');
+      leaveTimer = setTimeout(() => {
+        leaveTimer = 0;
+        leave.textContent = 'Leave';
+        leave.classList.remove('sure');
+      }, LEAVE_MS);
+    },
+    'pause-leave',
+  );
   leave.dataset.act = 'leave';
   const resume = button('Resume', closePause, 'primary');
   resume.dataset.act = 'resume';
@@ -228,11 +257,22 @@ function renderMain() {
   controls.dataset.act = 'controls';
   const room = button('Room', () => show('room'));
   room.dataset.act = 'room';
+  const more = button('More', () => show('more'));
+  more.dataset.act = 'more';
   const list = el('div', 'pause-list');
-  list.append(resume, controls, room);
-  for (const extra of pausePages) list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
-  if (canFullscreen()) list.append(fullscreenButton());
-  list.append(soundRow());
+  list.append(
+    ...pauseSections.filter((section) => section.classList.contains('place-nums')),
+    resume,
+    controls,
+    room,
+    more,
+    leave,
+  );
+  return list;
+}
+
+function renderMore() {
+  const list = el('div', 'pause-page');
   // Get unstuck: one press, nothing lost. A saved spot you were stuck in mustn't bring you back there.
   if (!inputState.seated) {
     const unstuck = button('Get unstuck', async () => {
@@ -247,7 +287,13 @@ function renderMain() {
     unstuck.dataset.act = 'unstuck';
     list.append(unstuck);
   }
-  list.append(...freshButton(), leave);
+  const sound = el('div', 'pause-sound');
+  sound.append(el('span', '', 'Volume'), volumeSlider());
+  list.append(...freshButton(), sound);
+  for (const extra of pausePages) list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
+  const back = button('Back', () => show('main'), 'pause-back');
+  back.dataset.act = 'back';
+  list.append(back);
   return list;
 }
 
@@ -359,9 +405,27 @@ function show(next: Page) {
   clearTimeout(leaveTimer);
   leaveTimer = 0;
   card.dataset.page = page;
+  const head = card.querySelector<HTMLElement>('.pause-head')!;
+  head.querySelector('.pause-actions')?.remove();
+  head.querySelector('.pause-note')?.remove();
+  head.classList.toggle('has-actions', page === 'main');
+  if (page === 'main') {
+    const actions = el('div', 'pause-actions');
+    actions.append(muteButton());
+    if (canFullscreen()) actions.append(fullscreenButton());
+    head.append(actions);
+  }
   card
     .querySelector('.pause-body')!
-    .replaceChildren(page === 'controls' ? renderControls() : page === 'room' ? renderRoom() : renderMain());
+    .replaceChildren(
+      page === 'controls'
+        ? renderControls()
+        : page === 'room'
+          ? renderRoom()
+          : page === 'more'
+            ? renderMore()
+            : renderMain(),
+    );
   const extra = pausePages.find((entry) => entry.id === page);
   if (extra) {
     const body = card.querySelector<HTMLElement>('.pause-body')!;
@@ -382,6 +446,7 @@ const stops = () => {
     ...card.querySelectorAll<HTMLElement>(
       '.pause-body button:not(:disabled), .pause-body input, .pause-body textarea, .pause-body summary, .pause-body select',
     ),
+    ...card.querySelectorAll<HTMLElement>('.pause-head .pause-actions button'),
   ].filter((target) => {
     // Chromium can retain layout rects for descendants of a closed details element. Only its direct summary
     // participates in focus navigation; an inner summary is still hidden when an outer details is closed.
@@ -399,6 +464,7 @@ const stops = () => {
 function focusFirst() {
   const target =
     card.querySelector<HTMLElement>('[data-act="resume"]') ??
+    (page === 'place-debug' ? card.querySelector<HTMLElement>('.pause-back') : null) ??
     card.querySelector<HTMLElement>('[aria-selected="true"]') ??
     stops()[0];
   target?.focus({ preventScroll: true });
@@ -409,7 +475,7 @@ function move(dir: number) {
   const k = list.indexOf(document.activeElement as HTMLElement);
   const target = list[k < 0 ? (dir > 0 ? 0 : list.length - 1) : (k + dir + list.length) % list.length]!;
   target.focus({ preventScroll: true });
-  if (pausePages.some((entry) => entry.id === page)) target.scrollIntoView({ block: 'nearest' });
+  target.scrollIntoView({ block: 'nearest' });
 }
 function moveTab(dir: number) {
   if (page !== 'controls') return;
@@ -422,7 +488,7 @@ function onKey(e: KeyboardEvent) {
   if (e.code !== 'Escape' && isTyping(e) && !onSlider) return; // the Room page's name box
   if (e.code === 'Escape') {
     e.preventDefault();
-    if (page !== 'main') show('main');
+    if (page !== 'main') show(page === 'place-debug' ? 'more' : 'main');
   } else if (e.code === 'KeyH') {
     e.preventDefault();
     if (!e.repeat) closePause();
@@ -450,7 +516,7 @@ function onPad(slot: string) {
   else if (slot === menuSlot('confirm')) document.activeElement?.closest<HTMLElement>('.pause button')?.click();
   else if (slot === menuSlot('back')) {
     if (page === 'main') closePause();
-    else show('main');
+    else show(page === 'place-debug' ? 'more' : 'main');
   } else if (slot === 'menu') closePause();
 }
 

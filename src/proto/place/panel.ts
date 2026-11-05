@@ -1,6 +1,7 @@
 // The tester's panel on ?proto=place (not on the `&fresh=1` link), and `window.__place` for the look evals
 // (dev/look/evals/place-job.ts). The skips jump the state to a beat with no show, so a beat can be looked at by itself.
 import { me, cam } from '../../player/player.ts';
+import { pauseNavigation, pausePages } from '../../player/pause-pages.ts';
 import { teleport } from '../../physics/engine.ts';
 import { carry } from '../../physics/platforms.ts';
 import { PLAYER_R } from '../../constants.ts';
@@ -217,15 +218,19 @@ export function prepareDevStage(id: keyof typeof devStages) {
 export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
   const box = document.createElement('div');
   box.className = 'place-proto';
+  const buttons = document.createElement('div');
+  buttons.className = 'place-proto-buttons';
+  box.append(buttons);
   const btn = (text: string, fn: () => void) => {
     const e = document.createElement('button');
     e.type = 'button';
+    e.className = 'pause-btn';
     e.textContent = text;
     e.addEventListener('click', fn);
-    box.append(e);
+    buttons.append(e);
   };
   btn(coop.on ? 'Start over (both)' : 'Start over', () => {
-    if (coop.on) return coop.askStartOver(box.firstElementChild as HTMLElement);
+    if (coop.on) return coop.askStartOver(buttons.firstElementChild as HTMLElement);
     a.startOver();
   });
   btn('Skip the walk', skipWalk);
@@ -235,7 +240,25 @@ export function buildPanel(a: { startOver: () => void; atSpawn: () => void }) {
   btn('Skip to the tower', () => coop.skip('tower', skipTower));
   btn('Skip to Far Head', () => coop.skip('head', skipHead));
   btn('Skip to trains', () => coop.skip('trains', skipTrains));
-  (document.querySelector('.hud') ?? document.body).append(box);
+  if (!document.body.classList.contains('place-fresh')) {
+    pausePages.push({
+      id: 'place-debug',
+      label: 'Debug',
+      compact: true,
+      mount(parent) {
+        const back = document.createElement('button');
+        back.type = 'button';
+        back.className = 'pause-btn pause-back';
+        back.textContent = 'Back';
+        back.addEventListener('click', () => pauseNavigation.open?.('more'));
+        const page = document.createElement('div');
+        page.className = 'pause-page';
+        page.append(box, back);
+        parent.append(page);
+        return () => {};
+      },
+    });
+  }
   coop.skips({
     delivery: skipDelivery,
     path: skipPath,

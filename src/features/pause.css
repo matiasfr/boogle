@@ -55,6 +55,47 @@ dialog.pause::backdrop {
 .pause-head {
   flex: none;
 }
+.pause-head.has-actions {
+  padding-right: 96px;
+}
+.pause-actions {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: flex;
+  gap: 2px;
+}
+.pause-btn.pause-icon {
+  width: 44px;
+  min-height: 44px;
+  padding: 7px;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+}
+.pause-icon svg {
+  display: block;
+  width: 30px;
+  height: 30px;
+}
+.pause-icon-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.pause-btn.pause-leave {
+  align-self: center;
+  min-height: 44px;
+  padding: 8px 18px;
+  font: 700 15px var(--font-body);
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  box-shadow: none;
+  letter-spacing: 0;
+}
 .pause-title {
   margin: 0;
   font: 400 40px/1 var(--font-display);
@@ -99,6 +140,17 @@ dialog.pause::backdrop {
 }
 .pause-btn.primary {
   background: var(--sun);
+}
+.place-proto-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.place-proto-buttons .pause-btn {
+  min-height: 44px;
+  padding: 7px;
+  font: 700 13px/1.2 var(--font-body);
+  letter-spacing: 0;
 }
 .pause-note {
   margin: -4px 4px 0;
