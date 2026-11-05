@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision index](../proposals/boogle-2.md#current-decision-index).
 
-**Updated:** 5 November 2026, evening, by the Claude orchestrator session. The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
+**Updated:** 5 November 2026, late evening, by the Claude orchestrator session. Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
 
 ## Links
 
@@ -21,11 +21,8 @@ Each job's branch is `codex/<topic>`, its worktree is `../boogle-codex/<topic>`,
 | Job | Status | Blocker or next step |
 | --- | --- | --- |
 | `slice2-supply` | Fixing two review findings (arrival restored under new track, a flaky fixture clock), plus owner changes: regrowth only slow, tunable regrowth and rack timers, the owner-chosen `recovery-rack.glb` | Full solo and co-op bots, then merge |
-| `tunables-build` | First proof: haul yield (shared), exposure (local), one spring; fixing review P1 (refuse old tabs on migrated rooms) and P2 (defer shared URL edits until the room is ready) | world-inputs rerun, full bot, then merge |
 | `track-layer-machine` | Rail wheels, pale spokes and coupling rods done. Now building the panel-laying mechanism (owner, 5 November: lay prefabricated track panels, one per stock unit) | Solo, two-player boarding and real-time capture; then merge after `deck-sitting` |
-| `dev-status-page` | Public status page at boogle.club/development, built from this file at deploy time, no server or tokens | Review, then merge |
-| `deck-sitting` | Train cars lose chairs; riders sit on the deck. The track layer keeps its chairs | Conflicts with `track-layer-machine` in `src/proto/place/seat.ts`; merge one after the other |
-| `next-destinations` and the `destinations-*` panel | Research plus brainstorm: destinations after the starter island, upgrades instead of eras | Panel round 2, then a brief |
+| `upgrade-economy` | Upgrade tree and progression economy research, now sorting upgrades into kinds and reconciling with the destinations research and the places panel | Then one progression brief |
 | `chop-animation-timing` | Another session ("Asset placement and editor evaluation") retuning the axe. It has the generated chop references | Merge through the coordinator |
 | `color-defaults` | Another session ("Port Ultra Water…"): lit signs, round 2 lights at gain 0.12, readable names. Reviewed and ready | Owner's timing call: before or after the replay |
 
@@ -34,12 +31,31 @@ Each job's branch is `codex/<topic>`, its worktree is `../boogle-codex/<topic>`,
 Ship each with `npm run ship-branch`, in this order:
 
 1. `slice2-supply`, once it passes.
-2. `tunables-build`.
-3. `deck-sitting`.
-4. `track-layer-machine`, which rebases over the deck seats.
-5. `color-defaults`, whenever the owner chooses.
+2. `track-layer-machine`, after its panel-laying mechanism.
+3. `color-defaults`, whenever the owner chooses.
 
 Hold everything while the owner plays.
+
+## Merged today
+
+Fixes and features:
+
+- the co-op seat and rider fixes;
+- GPU recovery;
+- water and sky speed;
+- the evening look, behind a flag;
+- the boiler, saddle and cart art pass;
+- deck sitting;
+- the tunables first proof (reload old tabs).
+
+Docs and pages:
+
+- the recovery rack asset;
+- the orchestrate skill;
+- the public status page;
+- the slice 3 and room-time plans;
+- the tuning and destinations research;
+- the money, cart first, recovery rack, first evening and tunables briefs.
 
 ## Queued
 
