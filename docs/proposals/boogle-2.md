@@ -10,7 +10,7 @@ Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`
 
 [The shape of the game](#the-shape-of-the-game): **4 November, Place gets the top-level room**, with the owner's follow-up, names the bare entry `boogle`, preserves classic's `beach` save and explicit prototype rooms, and starts fresh without importing old progress. The old save is unused by `boogle`, not deleted; installed-app recall still reopens the new default. **3 November, bring the default switch forward** puts round 4 on the main URL, with explicit flags/rooms winning and classic retained. The **2 November Design Table call** still supplies the after-round-4 multiplayer and architecture direction. AGENTS' **Stop at the owner's playtest** controls when development pauses. **4 November, the production core's scope**: its code waits for the round 4 replay.
 
-**4 November follow-up, move the railway across in steps on main:** supersedes the production-core replay wait for headless slice 1 ("Yes, start slice 1") and drops the separate T1-only playtest stop. Slices land on main without a long-lived parallel build; the old place code goes with the last slice. Slice 1 itself remains invisible, with only isolated test rooms opting into its authority.
+**4 November follow-up:** headless slice 1 starts now; move across main and drop the T1-only stop.
 
 ### Core loop, pacing and progression
 

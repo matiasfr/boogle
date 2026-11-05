@@ -8,7 +8,7 @@ import { startWeb, waitFor, ev, snap, seesAll, sleep } from './harness.ts';
 import { freePort } from '../look/lib.ts';
 import { createService, loadConfig } from '../../server/src/server.ts';
 import { RAILWAY_NS } from '../../src/world/railway-namespace.ts';
-import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
+import { RAILWAY_SOURCES, RAILWAY_SUPPLY } from '../../src/sim/railway-layout.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
 import type { RailwayProbe } from './ws-page.ts';
 
@@ -39,8 +39,8 @@ const hasItem = async (p: Page, [i, j]: number[]): Promise<boolean> =>
   (await items(p)).some(([a, b]) => a === i && b === j);
 const rail = (p: Page): Promise<RailwayProbe> => ev(p.page, () => window.T.rail());
 // A failed authority proof ends this run immediately; later checks cannot turn it into a pass.
-function railCheck(name: string, ok: boolean) {
-  check(name, ok);
+function railCheck(name: string, ok: boolean, detail = '') {
+  check(name, ok, detail);
   if (!ok) throw new Error(`Railway proof stopped: ${name}`);
 }
 async function openRailSession(p: Page) {
@@ -260,8 +260,14 @@ try {
     'wake has one terminal acceptance',
     (await railAction(RA, { op: 'rail.wake', epoch: epochA, request: 1 }, 'station')).accepted === 1,
   );
+  railCheck(
+    'both peers observe the completed wake before harvesting',
+    (await waitFor(async () => (await Promise.all([RA, RB].map(rail))).every((s) => s.ready && s.phase === 'idle'))) >=
+      0,
+  );
   const chopA = { op: 'rail.chop', epoch: epochA, request: 2, id: RAILWAY_SOURCES[0]![0] };
-  railCheck('A harvests two conserved logs', (await railAction(RA, chopA, 'source')).accepted === 2);
+  const harvestedA = await railAction(RA, chopA, 'source');
+  railCheck('A harvests two conserved logs', harvestedA.accepted === 2, JSON.stringify(harvestedA));
   railCheck(
     'B harvests two conserved logs',
     (await railAction(RB, { ...chopA, epoch: epochB, request: 1 }, 'source')).accepted === 2,
@@ -273,7 +279,6 @@ try {
     'duplicate request does not harvest twice',
     (await waitFor(async () => (await rail(RA)).counts.carry === 4 && (await rail(RB)).counts.carry === 4)) >= 0,
   );
-  await sleep(RAILWAY_T1.wakeTicks * 100);
   railCheck(
     'accepted deposit moves two logs to shared stock',
     (await railAction(RA, { op: 'rail.deposit', epoch: epochA, request: 3, station: 'T1', n: 2 }, 'station'))

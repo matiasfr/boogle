@@ -8,12 +8,13 @@ import { installRailwayRules } from '../../src/world/rules/railway-index.ts';
 import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
-import type { RailAction, RailAccount, railCounts } from '../../src/sim/railway.ts';
+import type { RailAction, RailAccount, railCounts, railPhase } from '../../src/sim/railway.ts';
 import home from '../../src/world/home-land.json';
 
 export type RailwayProbe = {
   tick: number;
   ready: boolean;
+  phase: ReturnType<typeof railPhase>;
   counts: ReturnType<typeof railCounts>;
   accounts: RailAccount[];
   messages: Record<string, unknown>[];
@@ -156,6 +157,7 @@ function startWorld(room: Room) {
     T.rail = () => ({
       tick: w.world.tick,
       ready: w.worldStatus().ready,
+      phase: railway.railway.phase(),
       counts: railway.railway.counts(),
       accounts: railway.railway.railway.accounts.map((a) => ({ ...a })),
       messages: T.railMessages.map((m) => ({ ...m })),
