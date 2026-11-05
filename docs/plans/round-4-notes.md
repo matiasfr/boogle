@@ -33,7 +33,7 @@ Serves DESIGN.md 11, Show, don't tell, and 1, Toys before chores.
 
 Answers are being collected on the [review page](https://claude.ai/artifact/4MQmeWfAe2nw57T85B7juu). Sessions `mw38b15m`, `mw38s7vf`, `mw390tiz`.
 
-**Replay audit, 5 November:** checked against local `origin/main` `fd54894e`. A tick means implemented in the cited commit, not owner/device approval. Mixed items are split below so unfinished work remains visible. No design expansion is part of this replay preparation.
+**Replay audit, 5 November:** checked against local `origin/main` `fd54894e`. A tick means implemented in the cited commit, not owner/device approval. Mixed items are split below so unfinished work remains visible. No design expansion is part of this replay preparation. [Combined replay evidence](../research/round-4-replay-preparation.md): solo and continuous co-op pass after bot repairs (`60838d35`, `320c0eb3`, `8c642ecf`, `f2d3710e`) and a co-op boarding-budget correction (`1599ed02`). Axe/Drop/respawn probes and world-inputs pass. Phone-profile render GPU is +5.4%; load is roughly unchanged. An intermittent grounding outage and transient train-position gaps remain unresolved; not tested on a device.
 
 **Owner decisions, 5 November**
 
@@ -84,7 +84,7 @@ Answers are being collected on the [review page](https://claude.ai/artifact/4MQm
 - [x] Log-cell pickup pulse (`76f01598`) and fading seated Stand hint (`b7dd93f7`).
 - [x] Raised tower chests and hanger preview (`76f01598`); Station 3's earned axe stand (`2236d075`).
 - [x] Unnecessary long-way-round comparison banner removed (`eac11383`); crossing record and fanfare retained.
-- [ ] HUD name/Live into pause and mobile-only options: not implemented. `c6447faa` moved tester controls/counters only.
+- [ ] HUD name/Live into pause, mobile-only options and fewer pause stats: not implemented. `c6447faa` moved tester controls/counters only.
 - [x] Fixed train seats (`fd5eeed2`, `7e64deed`) and enterable completed forge (`8340a1e2`).
 - [ ] Museum zoom and hat-buyer reaction remain; preserve The Boogler's copy.
 
@@ -132,7 +132,7 @@ Answers are being collected on the [review page](https://claude.ai/artifact/4MQm
 - [x] Chop also on square, not just R2.
 - [ ] Dropped items: maybe expire on a long timer. Keep picking up the whole stack.
 - [ ] Fade on respawn rather than a teleport (a far-off nit).
-- [ ] "N s! The long way round took you X s" confused both: cut it, or make it real route times (Burnout Paradise).
+- [x] "N s! The long way round took you X s": cut the comparison banner (`eac11383`); crossing record and fanfare retained. [Verified crossing](../research/round-4-replay-preparation.md#focused-verification). Local replay branch, not pushed.
 
 ### Look
 

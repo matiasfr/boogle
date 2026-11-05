@@ -121,7 +121,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 **Implementation audit for the two 5 November entries below** (local `origin/main` `fd54894e`; ticks mean landed, not owner approval). Detailed solo-item status: [round 4 tracker](../plans/round-4-notes.md#solo-play-4-november-owner-on-iphone-not-yet-triaged). The dated decisions remain unchanged.
 
-- [x] Fixed HDR exposure and readable ink/rewards: `33a941ab`, `fa7fd698`, `adae2172`, `09539c45`, `85aa245a`; retains Neutral/sky/water. Calibration and performance limits remain in the replay report.
+- [x] Fixed HDR exposure and readable ink/rewards: `33a941ab`, `fa7fd698`, `adae2172`, `09539c45`, `85aa245a`; retains Neutral/sky/water. The [combined replay report](../research/round-4-replay-preparation.md) records +5.4% phone-profile render GPU, roughly unchanged load, calibration limits and device verification still pending.
 - [x] Brass finds `55668f81`; boiler saddle/pedestal `06df8aba`; graded gate continuation `88f34a3a`.
 - [x] Whistle brainstorm `694111f2` and selected cart recall/delivery cues `bfea44df` (`c1c16342` verification).
 - [x] Track-layer departure/rear step `74dcab6c`; fixed seats `fd5eeed2`, `7e64deed`; walk-in finished forge `8340a1e2`.
@@ -130,7 +130,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 - [x] Great-beam pickup gate, Drop and recovery `1a5c17b7`, `8434c5c4`, `22e1a318`; proper-axe felling gate `2236d075`.
 - [x] Floating-axe default `5cd242d6`; fork signs/dock/town entry `32a21e81`; discovery-save fixes `9ea55880`; original load lines `d15f67c1`, `2e3f3015`.
 - [ ] Supply accounting, safe-rack integration, dropped-resource despawn and tree regrowth wait for the production plan before slice 2; no new design built for replay.
-- [ ] HUD name/Live into pause and mobile-only options remain unimplemented; D-pad conversation ownership and first-stage worker framing also remain in the tracker.
+- [ ] HUD name/Live into pause, mobile-only options and fewer pause stats remain unimplemented; D-pad conversation ownership and first-stage worker framing also remain in the tracker.
 - [ ] Distinct track-layer machine art remains for the art pass.
 - [ ] Prepared warm-evening fade, smaller-sky comparison and room-owned time remain; night remains a stretch goal.
 - [ ] Cart-first and money design remain after replay; classic resource bug remains after T1.
