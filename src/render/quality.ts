@@ -1,6 +1,8 @@
 // One Local authority for scene resolution and output cadence. No frame hook or renderer import/cycle.
 import type { WebGPURenderer } from 'three/webgpu';
 import { registerGraphics, type GraphicsValue } from '../graphics-settings.ts';
+import { playMark } from '../proto/mark.ts';
+import { startupWork } from '../boot/startup-frames.ts';
 
 export const MAX_DPR = Math.min(devicePixelRatio, 2);
 export const FIXED_DPR = new URLSearchParams(location.search).get('dpr') === 'fixed';
@@ -28,10 +30,20 @@ export const qualitySnapshot = () => ({
   scale: Math.min(typeof resolution === 'number' ? resolution : adaptiveRatio, waterCeiling),
 });
 export function installQuality(renderer: WebGPURenderer, scenePass: { setResolutionScale(value: number): unknown }) {
+  let lastScale = NaN;
   update = () => {
     const ratio = typeof resolution === 'number' ? resolution : adaptiveRatio;
+    const dpr = MAX_DPR * ratio;
+    const scale = Math.min(1, waterCeiling / ratio);
+    const changed = renderer.getPixelRatio() !== dpr || scale !== lastScale;
+    const t = performance.now();
     if (renderer.getPixelRatio() !== MAX_DPR * ratio) renderer.setPixelRatio(MAX_DPR * ratio);
-    scenePass.setResolutionScale(Math.min(1, waterCeiling / ratio));
+    scenePass.setResolutionScale(scale);
+    if (changed) {
+      lastScale = scale;
+      startupWork(`resolution DPR ${dpr.toFixed(2)} scene ${scale.toFixed(2)}`, performance.now() - t);
+      playMark('resolution changed', { dpr, sceneScale: scale });
+    }
   };
   registerGraphics({
     id: 'resolution',
