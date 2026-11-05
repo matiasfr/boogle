@@ -1,5 +1,8 @@
 # West-cove pilot assessment — 5 November 2026
 
+> Historical first-pass assessment. The [coordinator follow-up](terrain-pilot-followup.md) supersedes its current status,
+> geometry counts and stopping limitation. Earlier captures and failed runs remain preserved below.
+
 **Partial: implemented and locally committed; awaiting owner playtest, with a filmed stopping/sliding limitation. Not pushed or deployed.** The lower layered headland, pocket transition and submerged shelf occupy the research's positive-z west-cove shoulder. The existing heightfield remains; two small mesh batches provide face/cap/foot, three waterline rocks and three buried fragments. Water depth uses the finished triangle surface; wet substrate uses existing receivers; foam/contact uses existing shore obstacles. These remain separate inputs to the existing water system. No new texture, light, post pass or runtime erosion.
 
 After coordinator merge, compare [sandstone](https://boogle.club/?proto=place&terrain=cove&room=proto-place-cove&fresh=1) with [grey box](https://boogle.club/?proto=place&fresh=1). These URLs are **not evidence of deployment**. Add `&coveView=shape` for clay without water or `&coveView=dry` for dry materials. Default terrain and catalogs are unchanged. The Boogler's copy is untouched; no ROM data is used.

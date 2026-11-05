@@ -894,12 +894,19 @@ the shore atlas and never treat bridge decks as seabed. Dry bank/deck surfaces r
 
 **West-cove art pilot (5 November, branch review only).** `?proto=place&terrain=cove&room=proto-place-cove&fresh=1`
 keeps the ordinary grey box as default. The flag selects its own comparison room, including room-only invites,
-because static collision changes. One 24 m headland at local z 42–66 projects into the positive-z cove shoulder;
+because static collision changes. One 32 m headland at local z 42–74 wraps into the positive-z cove shoulder;
 the bounded inland blend stops before town and protects the complete landing fade, path shoulders and rail formation.
-The 2 m finished heightfield owns the sandy pocket, submerged shelf and backing slope. Six joined bedded modules,
+The 2 m finished heightfield owns the sandy pocket, submerged shelf and backing slope. Eight joined bedded modules,
 three substantial waterline rocks and three partly buried fragments use two opaque cullable batches and the exact same
-1,224 triangles for collision. The broken end is a broad solid ramp onto the pocket. There are no added textures, post passes, lights or runtime terrain uploads.
+1,540 triangles for collision. The broken end is a broad solid ramp onto the pocket. There are no added textures, post passes, lights or runtime terrain uploads.
 World-Y beds, a thin turf/soil cap and restrained facets follow the [pilot references](../plans/terrain-pilot.md).
+The coordinator revision covers the cove's steep heightfield faces with world-height sandstone bands. A continuous
+inset turf boundary replaces the old per-facet green mask; every face beyond the walkable slope limit is rock.
+The curved end joins the shoulder, and tilted fallen blocks cluster at its foot. Heights and collision remain shared.
+Under this flag only, idle Buddy cancels gravity tangent to actual walkable static support while retaining normal
+pressure. Moving input, swimming, moving decks, jumps and upward impulses keep their normal behavior. Seven sampled
+eight-second stops stay dry/supported with at most 1.12 mm drift; this is not exhaustive contact or device coverage.
+The [follow-up assessment](../research/terrain-pilot-followup.md) preserves matched views, motion, failures and reruns.
 Water depth comes from the same terrain/solid surface; rounded rock footprints supply wave obstacles. Existing receiver
 wetness, caustics and swash stay separate from water foam. `&coveView=shape` retains the clay comparison;
 `&coveView=dry` removes the kit's wet receiver for the material comparison. Neither changes collision.
