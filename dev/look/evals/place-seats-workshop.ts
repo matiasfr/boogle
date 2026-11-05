@@ -146,7 +146,7 @@ background(
         console.log(`MIGRATION ${who} reclaimed lead=${net.room.isLead()} ${JSON.stringify(seatState())}`);
       }
       // Keep framing the moving chairs through the captured real-time interval.
-      setTimeout(() => clearInterval(cameraTimer), 60000);
+      setTimeout(() => clearInterval(cameraTimer), q.has('transitions') ? 120000 : 60000);
     } else {
       const complete = () => {
         forge.logs = HAND_LOGS;

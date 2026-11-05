@@ -10,13 +10,16 @@ const { net, remotes } = await import('/src/netplay/net.ts' as string);
 const { COOP_IDENTITY } = await import('/src/proto/place/coop-identity.ts' as string);
 const { lines } = await import('/src/proto/place/lines.ts' as string);
 const { seatState } = await import('/src/proto/place/seat.ts' as string);
-const { carry, toPlatform } = await import('/src/physics/platforms.ts' as string);
+const { carry, toPlatform, fromPlatform, yawOf } = await import('/src/physics/platforms.ts' as string);
 const { teleport } = await import('/src/physics/engine.ts' as string);
 const { watchLanding, landingEvidence } = await import('/dev/look/bots/place-landing.ts' as string);
 const { makeBot } = await import('/dev/look/bot.ts' as string);
 const { pressJump, releaseJump } = await import('/src/entities/player/state.ts' as string);
 const { renderer } = await import('/src/render/scene.ts' as string);
 const { gettingItem, press: putAwayGot } = await import('/src/proto/place/got.ts' as string);
+const hands = await import('/src/player/hands.ts' as string);
+const { input } = await import('/src/player/input.ts' as string);
+const { onFrame } = await import('/src/loop.ts' as string);
 // oxlint-disable-next-line typescript/no-explicit-any
 const place = window.__place as any;
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -82,10 +85,31 @@ background(
     const car = lines[0].train.tr.cars[1];
     const samples: unknown[] = [];
     let failures = 0;
+    let phase = 'ride';
     let peakRemoteOffset = 0;
     let remoteOrigin: { x: number; z: number } | null = null;
     const initialSeat = seatState().sitting;
     const start = performance.now();
+    const visual: { t: number; phase: string; on: boolean; weight: number; x: number; y: number; z: number }[] = [];
+    let recording = true;
+    if (q.has('transitions'))
+      onFrame(
+        () => {
+          const remote = [...remotes.values()][0];
+          if (!recording || !remote?.avatar || visual.length >= 6000) return;
+          const p = car.mesh.worldToLocal(remote.avatar.position.clone());
+          visual.push({
+            t: performance.now() - start,
+            phase,
+            on: !!remote.ride?.on,
+            weight: remote.ride?.w ?? 0,
+            x: p.x,
+            y: p.y,
+            z: p.z,
+          });
+        },
+        { phase: 'late' },
+      );
     const sampler = setInterval(() => {
       const local = { x: 0, y: 0, z: 0, yaw: 0 };
       toPlatform(car.platform, me.body.position, me.yaw, local);
@@ -96,19 +120,33 @@ background(
         const point = car.mesh.worldToLocal(avatar.position.clone());
         drawn = { x: point.x, y: point.y, z: point.z };
         remoteOrigin ??= { x: point.x, z: point.z };
-        peakRemoteOffset = Math.max(peakRemoteOffset, Math.hypot(point.x - remoteOrigin.x, point.z - remoteOrigin.z));
+        if (phase === 'ride')
+          peakRemoteOffset = Math.max(peakRemoteOffset, Math.hypot(point.x - remoteOrigin.x, point.z - remoteOrigin.z));
       }
       const seat = seatState();
-      if (q.get('probe') === 'seats' && (seat.sitting !== initialSeat || carry.on !== car.platform || me.swimming))
+      if (
+        phase === 'ride' &&
+        q.get('probe') === 'seats' &&
+        (seat.sitting !== initialSeat || carry.on !== car.platform || me.swimming)
+      )
         failures++;
       samples.push({
         t: performance.now() - start,
+        phase,
         seat: seat.sitting,
         release: seat.lastRelease,
         carry: carry.on?.id,
         local,
         drawn,
-        ride: remote?.ride ? { on: remote.ride.on, leaving: remote.ride.leaving, weight: remote.ride.w } : null,
+        ride: remote?.ride
+          ? {
+              on: remote.ride.on,
+              leaving: remote.ride.leaving,
+              weight: remote.ride.w,
+              bodyOn: remote.ride.bodyOn,
+              worldGap: remote.ride.world.distanceTo(remote.target),
+            }
+          : null,
         coyote: me.coyote,
         trains: lines.map((l: { train: { tr: { s: number; v: number; target: number } } }) => ({
           s: l.train.tr.s,
@@ -142,15 +180,83 @@ background(
         releaseJump();
         console.log(`CONTACT ${who} ground ${JSON.stringify({ before, rise })}`);
         if (before.coyote <= 0 || rise < 0.5) throw new Error('Ground idle/jump failed');
-      } else await wait(seconds * 1000);
+      } else {
+        await wait(seconds * 1000);
+        if (q.has('transitions')) {
+          const mark = (name: string) => {
+            phase = name;
+            console.log(`CONTACT ${who} ${name} at ${performance.now() - start}`);
+          };
+          const press = () => {
+            hands.interactDown();
+            hands.interactUp();
+          };
+          mark('departure');
+          if (who === '2') {
+            press(); // Stand, then really jump sideways off the moving deck.
+            cam.yaw = yawOf(car.body.quaternion) + Math.PI;
+            input.keys.add('KeyD');
+            pressJump();
+            await wait(800);
+            input.keys.delete('KeyD');
+            releaseJump();
+          } else await wait(800);
+          await wait(1200);
+          if (who === '1' && [...remotes.values()][0]?.ride?.on)
+            throw new Error('Partner still drawn riding after departure');
+          if (who === '2' && carry.on === car.platform) throw new Error('Did not leave the deck');
+          mark('arrival');
+          if (who === '2') {
+            // A staged return, not a claim that the player can jump back from this location.
+            const at = { x: 0, y: 0, z: 0, yaw: 0 };
+            fromPlatform(car.platform, { x: 0.65, y: car.platform.top + 0.48, z: -0.8, yaw: 0 }, false, at);
+            teleport(me.body, at.x, at.y, at.z);
+            me.body.velocity.set(0, 0, 0);
+            await until(() => hands.interactTarget()?.id === 'place-sit', 'return Sit');
+            press();
+            await until(() => !!seatState().sitting, 'return seat');
+          }
+          await wait(1800);
+          if (who === '1' && ![...remotes.values()][0]?.ride?.on) throw new Error('Partner did not reattach');
+          const presence = room.presence.bind(room);
+          try {
+            mark('stale');
+            if (who === '2') room.presence = () => Promise.resolve();
+            await wait(2000);
+            if (who === '1' && [...remotes.values()][0]?.ride?.on) throw new Error('Stale riding did not expire');
+            room.presence = presence;
+            mark('fresh');
+            await wait(1800);
+            if (who === '1' && ![...remotes.values()][0]?.ride?.on) throw new Error('Fresh riding did not reattach');
+            mark('unknown');
+            if (who === '2')
+              room.presence = (pr: Record<string, unknown>) =>
+                presence({
+                  ...pr,
+                  riding: Array.isArray(pr.riding) ? ['contact-unknown-platform', ...pr.riding.slice(1)] : pr.riding,
+                });
+            await wait(1600);
+            if (who === '1' && [...remotes.values()][0]?.ride?.on) throw new Error('Unknown platform stayed attached');
+            room.presence = presence;
+            mark('known');
+            await wait(1800);
+            if (who === '1' && ![...remotes.values()][0]?.ride?.on) throw new Error('Known platform did not reattach');
+          } finally {
+            room.presence = presence;
+          }
+          console.log(`CONTACT ${who} transitions passed`);
+        }
+      }
     } finally {
       clearInterval(busy);
+      recording = false;
       clearInterval(sampler);
       clearInterval(cards);
       room.send = send;
       console.log(
         `CONTACT ${who} result ${JSON.stringify({ delay, load, delayed, failures, peakRemoteOffset, samples })}`,
       );
+      if (visual.length) console.log(`CONTACT ${who} visual ${JSON.stringify(visual)}`);
     }
     if (failures) throw new Error(`Lost seated contact in ${failures} samples`);
     if (q.get('probe') === 'seats' && peakRemoteOffset > 0.5)
