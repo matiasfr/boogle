@@ -2,7 +2,7 @@
 //
 //   npm run concepts -- [--prompts dev/concepts/eras.json] [--only era-2,era-4] [--out .look/concepts]
 //                       [--kind concept|icon|sprite|tile|matcap|refsheet] [--chroma #ff00ff|none] [--ref a.png,b.png]
-//                       [--recut] [--via api|codex] [--model gpt-image-2] [--size 1536x864] [--quality medium]
+//                       [--recut] [--via api|codex] [--model gpt-image-2.6-sunburst] [--size 1536x864] [--quality medium]
 //                       [--n 1] [--dry]
 //
 // Two routes:
@@ -99,7 +99,7 @@ const list = (s: string | undefined) =>
 const promptsFile = opt('prompts', 'dev/concepts/eras.json');
 const out = path.resolve(opt('out', '.look/concepts')!);
 const only = list(opt('only', ''));
-const model = opt('model', 'gpt-image-2');
+const model = opt('model', 'gpt-image-2.6-sunburst');
 const quality = opt('quality', 'medium');
 const n = Math.max(1, Math.min(10, Number(opt('n', '1')) || 1));
 const hasCodex = spawnSync('codex', ['--version'], { stdio: 'ignore' }).status === 0;
