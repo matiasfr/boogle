@@ -65,6 +65,7 @@ background(
       const car = lines[0].train.tr.cars[1];
       const p = { x: 0, y: 0, z: 0, yaw: 0 };
       const cameraTimer = setInterval(() => {
+        if (q.has('normalcam')) return;
         const b = car.body.position;
         window.__debugCam?.set([b.x + 6, b.y + (q.has('lowcam') ? 2 : 4), b.z + 6], [b.x, b.y + 1, b.z]);
       }, 50);
@@ -87,7 +88,7 @@ background(
       const l = { x: 0, y: 0, z: 0, yaw: 0 };
       toPlatform(car.platform, me.body.position, me.yaw, l);
       console.log(`SEATS ${who} contention ${JSON.stringify(state)} local ${JSON.stringify(l)}`);
-      if (Math.abs(l.x + 0.1) > 0.25 || Math.abs(Math.abs(l.z) - 0.8) > 0.2)
+      if (Math.abs(l.x - (car.spec.hx - 0.2)) > 0.25 || Math.abs(Math.abs(l.z) - 0.8) > 0.2)
         throw new Error('Not held at authored anchor');
       await wait(3000);
       if (carry.on !== car.platform || !seatState().sitting) throw new Error('Detached from moving seat');
