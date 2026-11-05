@@ -1,0 +1,70 @@
+.pause:has(.graphics-page) .pause-dim {
+  background: transparent;
+}
+dialog.pause[open]:has(.graphics-page) {
+  justify-items: end;
+}
+.pause-card[data-page='graphics'] {
+  width: min(440px, 100%);
+}
+.pause-card[data-page='graphics'] .pause-head {
+  display: none;
+}
+.graphics-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.graphics-presets,
+.graphics-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.graphics-presets [aria-pressed='true'] {
+  background: var(--sun);
+}
+.graphics-page .pause-btn {
+  font-size: 19px;
+  min-height: 44px;
+  padding: 8px 10px;
+}
+.graphics-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.graphics-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px;
+  align-items: center;
+  gap: 12px;
+}
+.graphics-row .pause-note {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.graphics-row[hidden],
+.graphics-page [hidden] {
+  display: none;
+}
+.graphics-footer > :first-child {
+  grid-column: 1 / -1;
+}
+.graphics-status {
+  padding: 10px;
+  border: 1px solid var(--ink-soft);
+  border-radius: 10px;
+}
+.graphics-page button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+@media (max-width: 600px) {
+  dialog.pause[open]:has(.graphics-page) {
+    align-items: end;
+  }
+  .pause-card[data-page='graphics'] {
+    max-height: 82%;
+  }
+}

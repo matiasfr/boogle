@@ -23,7 +23,8 @@
   continue after reveal. This is a bounded wait, not a guarantee of stall-free startup on every device.
   `?dpr=fixed`
   keeps the render resolution at full (for testing). Light is linear HDR through Neutral tone mapping (exposure 1.0, up to 1.12 at night),
-  with 4x MSAA on desktop, none on touch, and PCF sun shadows (2048 px, 1024 on touch). The render resolution follows the frame rate: it starts where this
+  with 4x MSAA on desktop, no MSAA on touch, and PCF sun shadows (2048 px, 1024 on touch). Smooth edges in Pause can override MSAA on either device.
+  The render resolution follows the frame rate: it starts where this
   device last settled (0.8x on a first touch visit), drops in 10 % steps to 0.6x after 2 s of slow frames and climbs back
   after 5 s at the display's cadence. Slow is over 18.5 ms, or over 1.08x the cadence the browser delivers frames at, a
   cadence that stops at 34 ms (Safari's 30 Hz in Low Power Mode is a cap, not a slow GPU; anything slower is the
@@ -37,6 +38,29 @@
   "Continue in room x · prototype y" under Jump in instead) ([src/features/home-app.ts](../../src/features/home-app.ts)). If the GPU device is lost (an iPhone backgrounding the tab, a driver reset), the page reloads when visible, at most
   once a minute.
 - **Sync kind.** Local: nothing about rendering crosses the network.
+- **Player Graphics.** Pause → Graphics lazily loads a small page using the existing modal's keyboard,
+  gamepad and touch navigation. Desktop puts it beside the scene; phone uses a scrollable card with the
+  scene visible above. No new bindings. Choices are Local, bounded, and stored in `boogle.graphics.v1`;
+  storage failures keep live choices for the visit and explain that reload-only changes cannot apply.
+  Auto (also Reset to Auto) removes that key and uses the existing adaptive resolution, water ceiling,
+  Display cadence and route defaults. With no saved choice, opening the page changes nothing.
+  Quality requests 100% / 60 fps; Performance requests 80% / 60 fps; Battery Saver requests 60% / 30 fps.
+  All three retain seabed light: the native shore comparison found that removing it noticeably flattened
+  shallow water, while the research's cost measurements were unresolved. Its individual control remains
+  optional. The existing water ceiling still wins (normally
+  60% on touch); the page explains a constrained request. These are bounded starting presets, not measured
+  optimal device tiers. They change no tone, colour, bloom, exposure, shadows, geometry, waves, queries,
+  colliders, gameplay or state seen by peers. Smooth edges stays independent across explicit presets;
+  Auto resets it to the device default. Individual changes display Custom.
+- **Four player controls.** Resolution (Auto / 100 / 80 / 60%), Frame limit (Display / 60 / 30), Smooth edges
+  (On / Off) and Seabed light (On / Off). The last uses the real caustics producer skip, hidden with an
+  explanation when its route owner is absent. Smooth edges shows requested versus current state and a
+  Reload now button, including after reset; it never mutates live sample-count attachments. Reduced shadow
+  maps, 30 Hz caustics and camera-comfort adapters from the research are not implemented, so the page does
+  not advertise them. Spray and point lights remain Dev-only because their visible effect was unverified
+  in the Mac review; there is no aggregate ambient switch that promises those savings. Presets keep the
+  other water effects. This narrows recommendations 1, 2 and 6 of [graphics settings](../research/graphics-settings.md)
+  to the current adapters and [measured limitations](../research/graphics-switch-costs.md).
 - **Production-water Looks.** `water=new` with Dev or `tune=1` adds the [Looks dock comparison](dev-menu.md#looks) at the active water-post owner: Current, metered Neutral, restrained Sunny AgX, AgX Punchy and Sunshine water. All use the procedural frozen sky and one shared meter/output pass. A/B only changes uniforms; saved choices prepare behind loading. This is a Local preview, not a default change. Ordinary visits keep the shipped graph and do not load comparison code.
   Explicit Graphics bloom overrides survive look selection, including Neutral. A saved bloom-on choice uses
   the same prepared comparison graph as bloom-off. Graphics meter-off holds exposure and skips meter work;
@@ -56,14 +80,17 @@
   two pooled point lights. Lab grass and lab post effects are available only when their existing owner and
   effects are present; they do not load onto the place page. Each row states the work skipped and whether the
   change is live, rebuild or reload. These are cost experiments, not player presets or an approved low look.
-  There is no Graphics page in Pause yet. No geometry, waves, queries, world population or gameplay controls
-  are included.
+  The separate player page above offers only its four bounded controls. No geometry, waves, queries,
+  world population or gameplay controls are included.
 - **One Local resolution/cap owner.** `render/quality.ts` combines adaptive resolution with the water ceiling
   using their minimum, preserving the existing default scale. Dev offers Auto / 100 / 80 / 60% and Display /
   60 / 30 rendered fps. A cap skips only scene/output rendering: input, physics, networking, FFT and water
   query callbacks continue. Adaptive observations retain uncapped callback timing. Dev choices are bounded
   and stored separately in `boogle.dev.graphics.v1`; **Restore baseline** clears them, and Dev Off removes them.
-  Closing the dock preserves them. Without Dev, adapters do not register and the panel chunk is not loaded.
+  Closing the dock preserves them. Adapters register without Dev for player choices; the Dev panel chunk
+  is still not loaded. Precedence is route baseline → player choice → explicit Dev override while Dev is on.
+  Dev's Restore baseline removes only Dev overrides, returning to player choices; player reset leaves Dev
+  overrides intact and explains their priority. Dev Off clears only Dev keys, retaining player choices.
   Baseline restore also resets registered owners whose effect is temporarily absent from the current lab
   preset, so returning to a grass/post preset restores those effects too.
 - **Actual work removed.** Caustics clear once before skipping producer draws; spray skips ambient scans
@@ -85,7 +112,7 @@
   captures and cannot use the live Measure button. Shadow/light membership, MSAA reload and first bloom
   enable can compile or allocate; spray/shafts disabled at startup can defer first-use pipelines.
   Live does not mean hitch-free. The 16-second startup escape remains in force.
-- **Limits.** No player quality page, presets, mobile validation or approved effects downgrade yet. Device
+- **Limits.** Presets are owner-requested starting settings, not an approved final look or device budget. No physical mobile validation. Device
   cost observations and inspected visual evidence are in the [Mac graphics switch report](../research/graphics-switch-costs.md).
   The repeated 1440×900 captures were contended; smaller differences often changed sign. Spray, daylight
   light/shadow footprints and bloom appearance were not clearly resolved in the inspected views. These

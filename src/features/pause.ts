@@ -264,6 +264,7 @@ function renderMain() {
     ...pauseSections.filter((section) => section.classList.contains('place-nums')),
     resume,
     controls,
+    button('Graphics', () => show('graphics')),
     room,
     more,
     leave,
@@ -290,7 +291,8 @@ function renderMore() {
   const sound = el('div', 'pause-sound');
   sound.append(el('span', '', 'Volume'), volumeSlider());
   list.append(...freshButton(), sound);
-  for (const extra of pausePages) list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
+  for (const extra of pausePages)
+    if (extra.id !== 'graphics') list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
   const back = button('Back', () => show('main'), 'pause-back');
   back.dataset.act = 'back';
   list.append(back);
