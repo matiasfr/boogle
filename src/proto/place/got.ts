@@ -20,6 +20,7 @@ export type Got = {
   /** As it reads after "You got": "the multi-axe", "a pack frame". */
   name: string;
   line?: string;
+  rarity?: string;
   color?: string;
   model: THREE.Object3D;
   /** Where it rises from (an opened crate); over your head when missing. */
@@ -60,8 +61,10 @@ scene.add(holder);
 const box = document.createElement('div');
 box.className = 'place-got';
 box.hidden = true;
-box.innerHTML = '<div class="place-got-text"><b></b><span></span></div><div class="place-got-hint"></div>';
+box.innerHTML =
+  '<div class="place-got-text"><b></b><small></small><span></span></div><div class="place-got-hint"></div>';
 const title = box.querySelector('b')!,
+  rarity = box.querySelector('small')!,
   sub = box.querySelector('span')!,
   hint = box.querySelector<HTMLElement>('.place-got-hint')!;
 (document.querySelector('.hud') ?? document.body).append(box);
@@ -108,6 +111,8 @@ function next() {
   title.style.color = g.color ?? '';
   sub.textContent = g.line ?? '';
   sub.hidden = !g.line;
+  rarity.textContent = g.rarity ?? '';
+  rarity.hidden = !g.rarity;
   hint.innerHTML = '';
   box.hidden = true;
   box.classList.remove('on');

@@ -1262,7 +1262,8 @@ function updateShow(dt: number) {
     const queued = youGot({
       key: isChest(s.content) ? s.content : undefined,
       name: s.gift.name,
-      line: s.gift.line || (tier ? TIER_MARKS[tier] : ''),
+      line: s.gift.line,
+      rarity: tier ? TIER_MARKS[tier] : undefined,
       color: tier ? TIER_COLOR[tier] : undefined,
       model: s.model,
       from: new THREE.Vector3(s.x, s.y + 0.9, s.z),

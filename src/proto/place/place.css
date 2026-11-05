@@ -262,6 +262,7 @@ body.touch .place-talk-opts button:active {
 }
 .place-got-text {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -272,6 +273,10 @@ body.touch .place-talk-opts button:active {
 }
 .place-got span {
   font: 600 17px/1.3 var(--font-body);
+}
+.place-got small {
+  font: 800 18px/1.2 var(--font-body);
+  color: #ffe08a;
 }
 .place-got-hint {
   display: flex;
