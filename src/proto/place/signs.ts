@@ -1,9 +1,5 @@
-// The existing fork signs, material boards and HUD counters (logs, kilometres, town, money). Local.
+// Material boards and HUD counters (logs, kilometres, town, money). Local.
 import * as THREE from 'three/webgpu';
-import { scene } from '../../render/scene.ts';
-import { flat } from '../flat.ts';
-import { H, addStatic } from './land.ts';
-import { toWorld } from './layout.ts';
 import { pauseSections } from '../../player/pause-pages.ts';
 
 // ---------------------------------------------------------------- boards you can read
@@ -33,49 +29,6 @@ export function paintBoard(lines: { t: string; px: number; color?: string }[], w
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
   return new THREE.MeshBasicNodeMaterial({ map: tex });
-}
-/** A board on two posts, facing (fx, fz) in local map coordinates. */
-export function sign(
-  x: number,
-  z: number,
-  fx: number,
-  fz: number,
-  w: number,
-  h: number,
-  up: number,
-  lines: Parameters<typeof paintBoard>[0],
-) {
-  const wx = toWorld(x),
-    y = H(wx, z),
-    yaw = Math.atan2(fx - x, fz - z);
-  const g = new THREE.Group();
-  g.position.set(wx, y, z);
-  g.rotation.y = yaw;
-  const back = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, h + 0.3, 0.2), flat('#7f5630'));
-  back.position.y = up + h / 2;
-  back.castShadow = true;
-  const front = new THREE.Mesh(new THREE.PlaneGeometry(w, h), paintBoard(lines, w, h));
-  front.position.set(0, up + h / 2, 0.11);
-  g.add(back, front);
-  for (const dx of [-w / 2 + 0.3, w / 2 - 0.3]) {
-    const post = new THREE.Mesh(new THREE.BoxGeometry(0.3, up + 0.2, 0.3), flat('#7f5630'));
-    post.position.set(dx, (up + 0.2) / 2, 0);
-    post.castShadow = true;
-    g.add(post);
-  }
-  scene.add(g);
-  const cos = Math.cos(yaw),
-    sin = Math.sin(yaw);
-  const q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
-  addStatic({ kind: 'box', hx: w / 2, hy: h / 2, hz: 0.15 }, { x: wx, y: y + up + h / 2, z }, q);
-  for (const dx of [-w / 2 + 0.3, w / 2 - 0.3])
-    addStatic({ kind: 'box', hx: 0.15, hy: up / 2, hz: 0.15 }, { x: wx + cos * dx, y: y + up / 2, z: z - sin * dx }, q);
-  return g;
-}
-export function buildSigns() {
-  // Only the fork at your feet: the owner found the big sign heavy-handed, and the bold path does the rest.
-  sign(-104, 1, -98, 9, 2.4, 0.8, 1.0, [{ t: '↑ TIMBER CAMP', px: 130 }]);
-  sign(-104.5, 18, -98, 9, 2.4, 0.8, 1.0, [{ t: 'QUARRY, LATER ↓', px: 110 }]);
 }
 
 // ---------------------------------------------------------------- the HUD
