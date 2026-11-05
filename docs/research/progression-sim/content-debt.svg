@@ -1,0 +1,55 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="1000"
+  height="376"
+  viewBox="0 0 1000 376"
+  role="img"
+  aria-label="Solo content counterfactuals (minutes)"
+>
+  <rect width="100%" height="100%" fill="#f8fafc" />
+  <g font-family="Arial,sans-serif" font-size="13" fill="#172033">
+    <text x="24" y="30" font-size="20" font-weight="bold">Solo content counterfactuals (minutes)</text>
+    <rect x="24" y="49" width="13" height="13" fill="#2563eb" />
+    <text x="43" y="61">Authored lane</text>
+    <rect x="204" y="49" width="13" height="13" fill="#d97706" />
+    <text x="223" y="61">Hauling + wait</text>
+    <path d="M190,90 V336" stroke="#dbe2ec" />
+    <text x="190" y="359" text-anchor="middle">0</text>
+    <path d="M284.375,90 V336" stroke="#dbe2ec" />
+    <text x="284.375" y="359" text-anchor="middle">75</text>
+    <path d="M378.75,90 V336" stroke="#dbe2ec" />
+    <text x="378.75" y="359" text-anchor="middle">150</text>
+    <path d="M473.125,90 V336" stroke="#dbe2ec" />
+    <text x="473.125" y="359" text-anchor="middle">225</text>
+    <path d="M567.5,90 V336" stroke="#dbe2ec" />
+    <text x="567.5" y="359" text-anchor="middle">300</text>
+    <path d="M661.875,90 V336" stroke="#dbe2ec" />
+    <text x="661.875" y="359" text-anchor="middle">375</text>
+    <path d="M756.25,90 V336" stroke="#dbe2ec" />
+    <text x="756.25" y="359" text-anchor="middle">450</text>
+    <path d="M850.625,90 V336" stroke="#dbe2ec" />
+    <text x="850.625" y="359" text-anchor="middle">525</text>
+    <path d="M945,90 V336" stroke="#dbe2ec" />
+    <text x="945" y="359" text-anchor="middle">600</text>
+    <text x="178" y="117" text-anchor="end">three-area / all selected</text>
+    <rect x="190" y="100" width="520.7003306878306" height="24" fill="#2563eb" />
+    <rect x="710.7003306878306" y="100" width="42.846849206349404" height="24" fill="#d97706" />
+    <text x="178" y="153" text-anchor="end">three-area / core only</text>
+    <rect x="190" y="136" width="407.4653108465609" height="24" fill="#2563eb" />
+    <rect x="597.4653108465609" y="136" width="74.01976058201063" height="24" fill="#d97706" />
+    <text x="178" y="189" text-anchor="end">three-area / zero authored</text>
+    <rect x="190" y="172" width="1.637830687830685" height="24" fill="#2563eb" />
+    <rect x="191.63783068783067" y="172" width="112.3859444444444" height="24" fill="#d97706" />
+    <text x="178" y="225" text-anchor="end">five-area / all selected</text>
+    <rect x="190" y="208" width="533.0672839506173" height="24" fill="#2563eb" />
+    <rect x="723.0672839506173" y="208" width="55.683846560846774" height="24" fill="#d97706" />
+    <text x="178" y="261" text-anchor="end">five-area / core only</text>
+    <rect x="190" y="244" width="417.49702380952385" height="24" fill="#2563eb" />
+    <rect x="607.4970238095239" y="244" width="73.75868637566144" height="24" fill="#d97706" />
+    <text x="178" y="297" text-anchor="end">five-area / zero authored</text>
+    <rect x="190" y="280" width="0.16311728395060882" height="24" fill="#2563eb" />
+    <rect x="190.1631172839506" y="280" width="138.20295639329808" height="24" fill="#d97706" />
+    <path d="M794,90 V336" stroke="#172033" stroke-dasharray="5 4" />
+    <text x="799" y="83">8 h</text>
+  </g>
+</svg>

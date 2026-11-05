@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "scope": "offline tooling only",
+  "baseCommit": "24732277c86b43850348822c2cf88cd9957758c5",
+  "inputSha256": "21c61c849bdaf88022425523e78728e7c9d3e4ea40019f154d73685105824653",
+  "sourceSha256": "7b4d2c0708b178f6b366e5eafb6e7f0f9b9d825b3de57ec52ee4a11b5ec815de",
+  "sourceFiles": [
+    "dev/economy/campaign.ts",
+    "dev/economy/campaign-types.ts",
+    "dev/economy/three-area.ts",
+    "dev/economy/five-area.ts",
+    "dev/economy/report.ts",
+    "dev/economy/cli.ts",
+    "dev/economy/model.ts"
+  ],
+  "command": "npm run economy -- --report",
+  "node": "v26.13.0",
+  "status": "complete",
+  "baselineRuns": 8,
+  "comparisonRuns": 104,
+  "attendanceRuns": 8,
+  "omissionRuns": 27,
+  "expectedBlockedFreightRuns": 2,
+  "artifacts": [
+    {
+      "path": "docs/research/progression-sim.md",
+      "sha256": "a86f79939f03ee66ebfbed18ca1a6778fea1b23ccdc62eea197db0e7bf55fb94"
+    },
+    {
+      "path": "docs/research/progression-sim/results.json",
+      "sha256": "7f72bc8f2027f9664129345b7f7a5da74ae5d3534d70f0e73237d7668469f806"
+    },
+    {
+      "path": "docs/research/progression-sim/time-mix.svg",
+      "sha256": "6505b078143db9e9e6cb395ef19bdf7ef7ea401d0cf222556ffc921c4dde4888"
+    },
+    {
+      "path": "docs/research/progression-sim/content-debt.svg",
+      "sha256": "189944c4f89192d95d0cd7c2eb3242fd5d67e624e48f2c0b92536c9ffe0f158d"
+    },
+    {
+      "path": "docs/research/progression-sim/kind-cadence.svg",
+      "sha256": "1de012b6f91cf754c4a72a6c48b0adb32475c27fde5af38b10d10c55966d6013"
+    }
+  ]
+}

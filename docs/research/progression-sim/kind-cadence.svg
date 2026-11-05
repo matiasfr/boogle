@@ -1,0 +1,155 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="1000"
+  height="736"
+  viewBox="0 0 1000 736"
+  role="img"
+  aria-label="Solo acquisition cadence (counts, not duration)"
+>
+  <rect width="100%" height="100%" fill="#f8fafc" />
+  <g font-family="Arial,sans-serif" font-size="13" fill="#172033">
+    <text x="24" y="30" font-size="20" font-weight="bold">Solo acquisition cadence (counts, not duration)</text>
+    <rect x="24" y="49" width="13" height="13" fill="#2563eb" />
+    <text x="43" y="61">F</text>
+    <rect x="204" y="49" width="13" height="13" fill="#0891b2" />
+    <text x="223" y="61">C</text>
+    <rect x="384" y="49" width="13" height="13" fill="#7c3aed" />
+    <text x="403" y="61">A</text>
+    <rect x="564" y="49" width="13" height="13" fill="#d97706" />
+    <text x="583" y="61">M</text>
+    <rect x="744" y="49" width="13" height="13" fill="#16a34a" />
+    <text x="763" y="61">R</text>
+    <rect x="924" y="49" width="13" height="13" fill="#db2777" />
+    <text x="943" y="61">E</text>
+    <path d="M190,90 V696" stroke="#dbe2ec" />
+    <text x="190" y="719" text-anchor="middle">0</text>
+    <path d="M284.375,90 V696" stroke="#dbe2ec" />
+    <text x="284.375" y="719" text-anchor="middle">2</text>
+    <path d="M378.75,90 V696" stroke="#dbe2ec" />
+    <text x="378.75" y="719" text-anchor="middle">4</text>
+    <path d="M473.125,90 V696" stroke="#dbe2ec" />
+    <text x="473.125" y="719" text-anchor="middle">6</text>
+    <path d="M567.5,90 V696" stroke="#dbe2ec" />
+    <text x="567.5" y="719" text-anchor="middle">8</text>
+    <path d="M661.875,90 V696" stroke="#dbe2ec" />
+    <text x="661.875" y="719" text-anchor="middle">10</text>
+    <path d="M756.25,90 V696" stroke="#dbe2ec" />
+    <text x="756.25" y="719" text-anchor="middle">12</text>
+    <path d="M850.625,90 V696" stroke="#dbe2ec" />
+    <text x="850.625" y="719" text-anchor="middle">14</text>
+    <path d="M945,90 V696" stroke="#dbe2ec" />
+    <text x="945" y="719" text-anchor="middle">16</text>
+    <text x="178" y="117" text-anchor="end">three-area / hour 1</text>
+    <rect x="190" y="100" width="94.375" height="24" fill="#2563eb" />
+    <rect x="284.375" y="100" width="47.1875" height="24" fill="#0891b2" />
+    <rect x="331.5625" y="100" width="94.375" height="24" fill="#7c3aed" />
+    <rect x="425.9375" y="100" width="94.375" height="24" fill="#d97706" />
+    <rect x="520.3125" y="100" width="47.1875" height="24" fill="#16a34a" />
+    <rect x="567.5" y="100" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="153" text-anchor="end">three-area / hour 2</text>
+    <rect x="190" y="136" width="47.1875" height="24" fill="#2563eb" />
+    <rect x="237.1875" y="136" width="94.375" height="24" fill="#0891b2" />
+    <rect x="331.5625" y="136" width="0" height="24" fill="#7c3aed" />
+    <rect x="331.5625" y="136" width="47.1875" height="24" fill="#d97706" />
+    <rect x="378.75" y="136" width="0" height="24" fill="#16a34a" />
+    <rect x="378.75" y="136" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="189" text-anchor="end">three-area / hour 3</text>
+    <rect x="190" y="172" width="47.1875" height="24" fill="#2563eb" />
+    <rect x="237.1875" y="172" width="47.1875" height="24" fill="#0891b2" />
+    <rect x="284.375" y="172" width="47.1875" height="24" fill="#7c3aed" />
+    <rect x="331.5625" y="172" width="0" height="24" fill="#d97706" />
+    <rect x="331.5625" y="172" width="0" height="24" fill="#16a34a" />
+    <rect x="331.5625" y="172" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="225" text-anchor="end">three-area / hour 4</text>
+    <rect x="190" y="208" width="47.1875" height="24" fill="#2563eb" />
+    <rect x="237.1875" y="208" width="94.375" height="24" fill="#0891b2" />
+    <rect x="331.5625" y="208" width="0" height="24" fill="#7c3aed" />
+    <rect x="331.5625" y="208" width="0" height="24" fill="#d97706" />
+    <rect x="331.5625" y="208" width="94.375" height="24" fill="#16a34a" />
+    <rect x="425.9375" y="208" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="261" text-anchor="end">three-area / hour 5</text>
+    <rect x="190" y="244" width="47.1875" height="24" fill="#2563eb" />
+    <rect x="237.1875" y="244" width="47.1875" height="24" fill="#0891b2" />
+    <rect x="284.375" y="244" width="0" height="24" fill="#7c3aed" />
+    <rect x="284.375" y="244" width="0" height="24" fill="#d97706" />
+    <rect x="284.375" y="244" width="0" height="24" fill="#16a34a" />
+    <rect x="284.375" y="244" width="0" height="24" fill="#db2777" />
+    <text x="178" y="297" text-anchor="end">three-area / hour 6</text>
+    <rect x="190" y="280" width="47.1875" height="24" fill="#2563eb" />
+    <rect x="237.1875" y="280" width="94.375" height="24" fill="#0891b2" />
+    <rect x="331.5625" y="280" width="47.1875" height="24" fill="#7c3aed" />
+    <rect x="378.75" y="280" width="0" height="24" fill="#d97706" />
+    <rect x="378.75" y="280" width="47.1875" height="24" fill="#16a34a" />
+    <rect x="425.9375" y="280" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="333" text-anchor="end">three-area / hour 7</text>
+    <rect x="190" y="316" width="47.1875" height="24" fill="#2563eb" />
+    <rect x="237.1875" y="316" width="0" height="24" fill="#0891b2" />
+    <rect x="237.1875" y="316" width="47.1875" height="24" fill="#7c3aed" />
+    <rect x="284.375" y="316" width="47.1875" height="24" fill="#d97706" />
+    <rect x="331.5625" y="316" width="94.375" height="24" fill="#16a34a" />
+    <rect x="425.9375" y="316" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="369" text-anchor="end">three-area / hour 8</text>
+    <rect x="190" y="352" width="0" height="24" fill="#2563eb" />
+    <rect x="190" y="352" width="0" height="24" fill="#0891b2" />
+    <rect x="190" y="352" width="0" height="24" fill="#7c3aed" />
+    <rect x="190" y="352" width="0" height="24" fill="#d97706" />
+    <rect x="190" y="352" width="0" height="24" fill="#16a34a" />
+    <rect x="190" y="352" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="405" text-anchor="end">five-area / hour 1</text>
+    <rect x="190" y="388" width="94.375" height="24" fill="#2563eb" />
+    <rect x="284.375" y="388" width="47.1875" height="24" fill="#0891b2" />
+    <rect x="331.5625" y="388" width="141.5625" height="24" fill="#7c3aed" />
+    <rect x="473.125" y="388" width="94.375" height="24" fill="#d97706" />
+    <rect x="567.5" y="388" width="47.1875" height="24" fill="#16a34a" />
+    <rect x="614.6875" y="388" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="441" text-anchor="end">five-area / hour 2</text>
+    <rect x="190" y="424" width="47.1875" height="24" fill="#2563eb" />
+    <rect x="237.1875" y="424" width="94.375" height="24" fill="#0891b2" />
+    <rect x="331.5625" y="424" width="0" height="24" fill="#7c3aed" />
+    <rect x="331.5625" y="424" width="47.1875" height="24" fill="#d97706" />
+    <rect x="378.75" y="424" width="94.375" height="24" fill="#16a34a" />
+    <rect x="473.125" y="424" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="477" text-anchor="end">five-area / hour 3</text>
+    <rect x="190" y="460" width="0" height="24" fill="#2563eb" />
+    <rect x="190" y="460" width="94.375" height="24" fill="#0891b2" />
+    <rect x="284.375" y="460" width="94.375" height="24" fill="#7c3aed" />
+    <rect x="378.75" y="460" width="0" height="24" fill="#d97706" />
+    <rect x="378.75" y="460" width="47.1875" height="24" fill="#16a34a" />
+    <rect x="425.9375" y="460" width="0" height="24" fill="#db2777" />
+    <text x="178" y="513" text-anchor="end">five-area / hour 4</text>
+    <rect x="190" y="496" width="141.5625" height="24" fill="#2563eb" />
+    <rect x="331.5625" y="496" width="47.1875" height="24" fill="#0891b2" />
+    <rect x="378.75" y="496" width="0" height="24" fill="#7c3aed" />
+    <rect x="378.75" y="496" width="47.1875" height="24" fill="#d97706" />
+    <rect x="425.9375" y="496" width="47.1875" height="24" fill="#16a34a" />
+    <rect x="473.125" y="496" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="549" text-anchor="end">five-area / hour 5</text>
+    <rect x="190" y="532" width="47.1875" height="24" fill="#2563eb" />
+    <rect x="237.1875" y="532" width="47.1875" height="24" fill="#0891b2" />
+    <rect x="284.375" y="532" width="0" height="24" fill="#7c3aed" />
+    <rect x="284.375" y="532" width="0" height="24" fill="#d97706" />
+    <rect x="284.375" y="532" width="47.1875" height="24" fill="#16a34a" />
+    <rect x="331.5625" y="532" width="0" height="24" fill="#db2777" />
+    <text x="178" y="585" text-anchor="end">five-area / hour 6</text>
+    <rect x="190" y="568" width="47.1875" height="24" fill="#2563eb" />
+    <rect x="237.1875" y="568" width="141.5625" height="24" fill="#0891b2" />
+    <rect x="378.75" y="568" width="47.1875" height="24" fill="#7c3aed" />
+    <rect x="425.9375" y="568" width="0" height="24" fill="#d97706" />
+    <rect x="425.9375" y="568" width="47.1875" height="24" fill="#16a34a" />
+    <rect x="473.125" y="568" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="621" text-anchor="end">five-area / hour 7</text>
+    <rect x="190" y="604" width="47.1875" height="24" fill="#2563eb" />
+    <rect x="237.1875" y="604" width="94.375" height="24" fill="#0891b2" />
+    <rect x="331.5625" y="604" width="0" height="24" fill="#7c3aed" />
+    <rect x="331.5625" y="604" width="47.1875" height="24" fill="#d97706" />
+    <rect x="378.75" y="604" width="47.1875" height="24" fill="#16a34a" />
+    <rect x="425.9375" y="604" width="47.1875" height="24" fill="#db2777" />
+    <text x="178" y="657" text-anchor="end">five-area / hour 8</text>
+    <rect x="190" y="640" width="0" height="24" fill="#2563eb" />
+    <rect x="190" y="640" width="0" height="24" fill="#0891b2" />
+    <rect x="190" y="640" width="0" height="24" fill="#7c3aed" />
+    <rect x="190" y="640" width="0" height="24" fill="#d97706" />
+    <rect x="190" y="640" width="47.1875" height="24" fill="#16a34a" />
+    <rect x="237.1875" y="640" width="47.1875" height="24" fill="#db2777" />
+  </g>
+</svg>

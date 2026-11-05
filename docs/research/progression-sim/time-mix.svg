@@ -1,0 +1,71 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="1000"
+  height="448"
+  viewBox="0 0 1000 448"
+  role="img"
+  aria-label="Campaign clock: where the proposed minutes go"
+>
+  <rect width="100%" height="100%" fill="#f8fafc" />
+  <g font-family="Arial,sans-serif" font-size="13" fill="#172033">
+    <text x="24" y="30" font-size="20" font-weight="bold">Campaign clock: where the proposed minutes go</text>
+    <rect x="24" y="49" width="13" height="13" fill="#2563eb" />
+    <text x="43" y="61">Authored lane</text>
+    <rect x="204" y="49" width="13" height="13" fill="#d97706" />
+    <text x="223" y="61">Hauling only</text>
+    <rect x="384" y="49" width="13" height="13" fill="#dc2626" />
+    <text x="403" y="61">Exposed wait</text>
+    <path d="M190,90 V408" stroke="#dbe2ec" />
+    <text x="190" y="431" text-anchor="middle">0</text>
+    <path d="M284.375,90 V408" stroke="#dbe2ec" />
+    <text x="284.375" y="431" text-anchor="middle">75</text>
+    <path d="M378.75,90 V408" stroke="#dbe2ec" />
+    <text x="378.75" y="431" text-anchor="middle">150</text>
+    <path d="M473.125,90 V408" stroke="#dbe2ec" />
+    <text x="473.125" y="431" text-anchor="middle">225</text>
+    <path d="M567.5,90 V408" stroke="#dbe2ec" />
+    <text x="567.5" y="431" text-anchor="middle">300</text>
+    <path d="M661.875,90 V408" stroke="#dbe2ec" />
+    <text x="661.875" y="431" text-anchor="middle">375</text>
+    <path d="M756.25,90 V408" stroke="#dbe2ec" />
+    <text x="756.25" y="431" text-anchor="middle">450</text>
+    <path d="M850.625,90 V408" stroke="#dbe2ec" />
+    <text x="850.625" y="431" text-anchor="middle">525</text>
+    <path d="M945,90 V408" stroke="#dbe2ec" />
+    <text x="945" y="431" text-anchor="middle">600</text>
+    <text x="178" y="117" text-anchor="end">three-area / 1 player</text>
+    <rect x="190" y="100" width="520.7003306878306" height="24" fill="#2563eb" />
+    <rect x="710.7003306878306" y="100" width="11.15584404761939" height="24" fill="#d97706" />
+    <rect x="721.85617473545" y="100" width="31.69100515873001" height="24" fill="#dc2626" />
+    <text x="178" y="153" text-anchor="end">three-area / 2 players</text>
+    <rect x="190" y="136" width="520.7003306878306" height="24" fill="#2563eb" />
+    <rect x="710.7003306878306" y="136" width="2.4185566137567305" height="24" fill="#d97706" />
+    <rect x="713.1188873015874" y="136" width="24.20653835978834" height="24" fill="#dc2626" />
+    <text x="178" y="189" text-anchor="end">three-area / 3 players</text>
+    <rect x="190" y="172" width="520.7003306878306" height="24" fill="#2563eb" />
+    <rect x="710.7003306878306" y="172" width="1.1467611111112268" height="24" fill="#d97706" />
+    <rect x="711.8470917989418" y="172" width="24.20653835978834" height="24" fill="#dc2626" />
+    <text x="178" y="225" text-anchor="end">three-area / 4 players</text>
+    <rect x="190" y="208" width="520.7003306878306" height="24" fill="#2563eb" />
+    <rect x="710.7003306878306" y="208" width="1.1334587301588455" height="24" fill="#d97706" />
+    <rect x="711.8337894179895" y="208" width="24.20653835978834" height="24" fill="#dc2626" />
+    <text x="178" y="261" text-anchor="end">five-area / 1 player</text>
+    <rect x="190" y="244" width="533.0672839506173" height="24" fill="#2563eb" />
+    <rect x="723.0672839506173" y="244" width="11.668884523810123" height="24" fill="#d97706" />
+    <rect x="734.7361684744274" y="244" width="44.01496203703665" height="24" fill="#dc2626" />
+    <text x="178" y="297" text-anchor="end">five-area / 2 players</text>
+    <rect x="190" y="280" width="533.0672839506173" height="24" fill="#2563eb" />
+    <rect x="723.0672839506173" y="280" width="2.8999989417991805" height="24" fill="#d97706" />
+    <rect x="725.9672828924164" y="280" width="32.135316666666526" height="24" fill="#dc2626" />
+    <text x="178" y="333" text-anchor="end">five-area / 3 players</text>
+    <rect x="190" y="316" width="533.0672839506173" height="24" fill="#2563eb" />
+    <rect x="723.0672839506173" y="316" width="1.6282034391536768" height="24" fill="#d97706" />
+    <rect x="724.695487389771" y="316" width="32.135316666666526" height="24" fill="#dc2626" />
+    <text x="178" y="369" text-anchor="end">five-area / 4 players</text>
+    <rect x="190" y="352" width="533.0672839506173" height="24" fill="#2563eb" />
+    <rect x="723.0672839506173" y="352" width="1.6149010582012955" height="24" fill="#d97706" />
+    <rect x="724.6821850088186" y="352" width="32.135316666666526" height="24" fill="#dc2626" />
+    <path d="M794,90 V408" stroke="#172033" stroke-dasharray="5 4" />
+    <text x="799" y="83">8 h</text>
+  </g>
+</svg>
