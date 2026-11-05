@@ -44,7 +44,10 @@ export function createFrozenWaterSky() {
   frozenSkyActive = true;
   timeOfDay = WATER_TOD;
   direction.copy(east).multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
-  const environment = createWaterSky(toySkyEnabled ? toySky : undefined);
+  // Local loading-time comparison only. Today's 1024 sky remains the default until visual review passes.
+  const size = new URLSearchParams(location.search).get('skySize');
+  const cubeSize = size === '256' ? 256 : size === '512' ? 512 : 1024;
+  const environment = createWaterSky(toySkyEnabled ? toySky : undefined, cubeSize);
   environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(direction.y));
   environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z));
   const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
@@ -70,7 +73,7 @@ export function createFrozenWaterSky() {
     underground = uniform(0);
   const upper = new THREE.Color(),
     lower = new THREE.Color();
-  const evening = prepareEvening ? createWaterSky() : undefined;
+  const evening = prepareEvening ? createWaterSky(undefined, cubeSize) : undefined;
   let transition: ReturnType<typeof createEveningTransition> | undefined;
   const filtered: THREE.RenderTarget[] = [];
   let selectedEnvironment: THREE.Texture = environment.cube;
@@ -190,7 +193,7 @@ export function createFrozenWaterSky() {
     await bake();
     if (!evening || disposed) return;
     // Research water-times-of-day recommendations 1–4: two prepared endpoints, no live sunset.
-    // Keep the accepted 1024 day cube; a smaller-cube comparison is a separate proof.
+    // Both endpoints use the loading-time comparison size; ordinary visits retain 1024.
     evening.bake({ elevation: 12, azimuth: 255, turbidity: 3.2, sunIntensity: 9, cloudCoverage: 0.3 });
     const eveningFill = await readFill(evening);
     if (disposed) return;

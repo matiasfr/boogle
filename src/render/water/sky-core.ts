@@ -14,6 +14,7 @@ export type SkyParams = {
   cloudCoverage: number;
   sunIntensity: number;
 };
+export type SkyCubeSize = 256 | 512 | 1024;
 const gradient = Fn(([i]: [N]) => {
   const p = fract(i.xyx.mul(vec3(0.1031, 0.103, 0.0973))).toVar();
   p.addAssign(dot(p, p.yzx.add(33.33)));
@@ -38,7 +39,11 @@ const fbm = Fn(([p]: [N]) => {
   return sum;
 });
 
-export function createWaterSkyFor(renderer: THREE.WebGPURenderer, bakedArt?: (direction: N, sunColor: N) => N) {
+export function createWaterSkyFor(
+  renderer: THREE.WebGPURenderer,
+  bakedArt?: (direction: N, sunColor: N) => N,
+  cubeSize: SkyCubeSize = 1024,
+) {
   const params: SkyParams = {
     elevation: 50,
     azimuth: 205,
@@ -53,7 +58,8 @@ export function createWaterSkyFor(renderer: THREE.WebGPURenderer, bakedArt?: (di
   const illum = uniform(Math.PI * params.sunIntensity),
     coverage = uniform(params.cloudCoverage),
     face = uniform(0, 'int');
-  const cubeTarget = new THREE.CubeRenderTarget(1024, {
+  const maxMip = Math.log2(cubeSize);
+  const cubeTarget = new THREE.CubeRenderTarget(cubeSize, {
     type: THREE.HalfFloatType,
     generateMipmaps: true,
     depthBuffer: false,
@@ -165,8 +171,12 @@ export function createWaterSkyFor(renderer: THREE.WebGPURenderer, bakedArt?: (di
     samples.push(node);
     return node;
   };
+  // Public LODs retain the original 1024 cube's angular blur for water and fog.
+  // Keep the default graph unchanged; smaller comparisons only lose the unavailable finest levels.
   const skyLod = (direction: N, lod: N | number = 0) =>
-    sample(vec3(direction.x, max(direction.y, 0), direction.z)).level(lod).rgb;
+    sample(vec3(direction.x, max(direction.y, 0), direction.z)).level(
+      cubeSize === 1024 ? lod : clamp(float(lod).add(maxMip - 10), 0, maxMip),
+    ).rgb;
   const skyAt = (direction: N, roughness: N | number = 0) =>
     skyLod(direction, clamp(log2(max(float(roughness).mul(650), 1)), 0, 10));
   const background = Fn(() => {
@@ -192,14 +202,22 @@ export function createWaterSkyFor(renderer: THREE.WebGPURenderer, bakedArt?: (di
     background,
     skyAt,
     skyLod,
-    ambient: (normal: N) => sample(normal).level(10).rgb,
+    ambient: (normal: N) => sample(normal).level(maxMip).rgb,
     selectPrepared(texture: THREE.CubeTexture, direction: THREE.Vector3, radiance: THREE.Vector3) {
       sampledCube = texture;
       for (const node of samples) node.value = texture;
       sunDirection.value.copy(direction);
       sunColor.value.copy(radiance);
     },
-    inspect: () => ({ bakes, bakeMs, cubeSize: 1024, sunDirection: sunDirection.value.toArray() }),
+    inspect: () => ({
+      bakes,
+      bakeMs,
+      cubeSize,
+      mipLevels: maxMip + 1,
+      // RGBA16F, six faces, full mip chain; excludes PMREM, LUTs and allocation padding.
+      cubeTexelBytes: 6 * 8 * ((4 * cubeSize * cubeSize - 1) / 3),
+      sunDirection: sunDirection.value.toArray(),
+    }),
     dispose() {
       cubeTarget.dispose();
       material.dispose();
