@@ -10,16 +10,41 @@ Work stayed on `codex/replay-ready`, starting exactly at the available local `or
 - `60838d35`: explicitly open the raised first-slab chest; route the co-op forge worker across the completed bridge before choosing timber; update the old great-tree probe to the earned proper-axe rules.
 - `0d71b4c5`: reconcile the solo notes and both 5 November proposal entries with implementation commits; leave missing items unchecked.
 - `9e3dd137`: exercise real earned-axe felling in the staged cargo probe, preserve legacy-save coverage, and add focused bridge/phone measurement evals.
-- `320c0eb3`, `8c642ecf`: collect the second climber's personal first-slab reward, and wait for the complete crate/reward lifecycle before the next hook. Correct the NPC documentation's false claim that left/right selection already works.
+- `320c0eb3`, `8c642ecf`: collect the second climber's personal first-slab reward, and wait for the complete crate/reward lifecycle before the next hook. Correct the NPC documentation's claim that left/right selection worked on the initial main snapshot. The missing implementation has since been restored below.
 - `1599ed02`: allow 180 seconds for a co-op train pickup when the partner diverts it; keep the solo deadline and all boarding predicates.
 - `f2d3710e`: open ordinary reward crates from the offered interaction range instead of trying to walk through the partner/feeder to their centre.
 - `91e0ecaa`: let the existing landing probes finish before a failed expected beat stops the coordinator; add a staged idle-position reproduction. The strict landing assertion is unchanged.
 
-Production behavior changed only for the requested banner removal. The first-slab and forge-route failures identified outdated bot assumptions. A later intermittent grounding outage remains unresolved, as detailed below; it is not counted as fixed. No design backlog was built.
+The initial replay pass changed production behavior only for the requested banner removal. The follow-up also restores the two missing input/HUD commits below. The first-slab and forge-route failures identified outdated bot assumptions. A later intermittent grounding outage remains unresolved, as detailed below; it is not counted as fixed. No design backlog was built.
+
+## Follow-up: restore the two omitted commits
+
+The owner identified two commits omitted from main by a ship-script rebase mistake. Both local objects were cherry-picked, preserving the later dock/town, conversation-camera and banner-removal changes:
+
+- `af0e4239` → `5296357b`: capture left/right throughout a conversation and repeat horizontal picks. Restore the NPC documentation to match the now-present implementation.
+- `6f46f171` → `3bae8f40`: move the existing live name/status nodes into Pause on every platform; retain the corner menu for touch input only; show money and useful current carry instead of Track/Town and empty carry rows.
+- `ce5b3144`: advertise all arrow keys in the generated keyboard guide and retain focused broker evals. No Boogler copy or production dialogue changed.
+
+Fresh acceptance uses the real input poll loop with fake standard, axes and hat D-pads. Each run passes **58 assertions**: left/right picks and held repeats, no Ping/Flag while typing or choosing, positive Ping/Flag control after closing, keyboard left/right, hidden identity during play, original populated name/Live nodes in Pause after Room/Controls/back/reopen, touch-only menu, money-only permanent stats, and conditional carry visibility. Carry states are diagnostic Local readouts, not another Drop gameplay proof. The existing earlier cargo probes retain that proof. No new scenario was added.
+
+| Fresh manifest | PNG actually opened | Observation |
+| --- | --- | --- |
+| [Desktop talk](../../.look/evidence/1793885390240-52068/evidence.json) | `custom-still.png` | Second answer has a clear yellow selection/outline; horizontal Pick hints. Diagnostic card, not first-stage worker framing. |
+| [Desktop Pause](../../.look/evidence/1793885453495-52488/evidence.json) | `custom-still.png` | Name and Live readable above $0; no corner options button; full menu fits. |
+| [Phone portrait Pause](../../.look/evidence/1793885378886-51445/evidence.json) | `custom-still.png` | Name, Live and money readable; empty carry absent; all menu actions fit. |
+| [Phone landscape Pause](../../.look/evidence/1793885435293-52279/evidence.json) | `custom-still.png` | Name/Live readable; lower menu continues beyond the visible scroll area. |
+| [Phone play](../../.look/evidence/1793885490846-52789/evidence.json) | `custom-still.png` | Options button remains at top right; name/Live absent from play HUD. |
+| [Landscape scrolled](../../.look/evidence/1793885566144-53425/evidence.json) | `custom-still.png` | After a 77 px scroll, More and Leave are fully inside the card; bounds assertions also pass. |
+
+All six final captures pass WebGPU/advancing-frame/no-page-or-graphics-error checks. The phone proxy sets touch, DPR 2 and .60 scene scale before production boot at 440×796 or 796×440. The broker enters with a mouse; the eval then explicitly returns to finger input. That is Mac Chromium emulation: **not tested on a device**, Safari or a physical controller. Horizontal left-stick behavior and changing peer count/name while Pause is open were reviewed in source, not dynamically tested. These stills do not verify motion, feel or discoverability.
+
+Failed fixture attempts are retained: [initial](../../.look/evidence/1793885076372-48862/evidence.json), [confirm retry](../../.look/evidence/1793885120375-49617/evidence.json), [malformed pad event](../../.look/evidence/1793885155131-49948/evidence.json), [remote Boogler](../../.look/evidence/1793885192359-50223/evidence.json), and [mouse-entered phone](../../.look/evidence/1793885331102-50880/evidence.json). The classic Boogler's distance guard closed the remote diagnostic talk, so these were not valid evidence of a live-talk input leak. The final fixture uses Place's normal talk card at the player's position. Its intermediate voice tuple type error was fixed. The successful preliminary desktop still `1793885286789-50542/custom-still.png` was also opened, but the final desktop capture above supersedes it.
+
+`npm run check` passes 330/330 unit tests, lint, types, registry, level/asset validation and production build (`.look/replay-followup-check.log`). [Fresh world-inputs](../../.look/evidence/1793885468369-52549/evidence.json) passes all seven assertions with no graphics errors. Captures used stable source trees; no source changed during a run. Subsequent documentation changes do not alter those observations. The full solo/co-op bots and exposure measurements below predate the restored HUD/input commits; they were not repeated for this UI-only follow-up and are not represented as final-tree full-route evidence.
 
 ## Route diagnosis and final checks
 
-Final route code: `1599ed02`; solo was verified on `f2d3710e`, before the co-op-only deadline change. Later report edits are documentation only. The gameplay source remains the requested banner removal only.
+Final route code: `1599ed02`; solo was verified on `f2d3710e`, before the co-op-only deadline change. These full-route runs predate the restored HUD/input commits above. Route, cargo and render code are unchanged by that follow-up.
 
 - **Solo PASS:** [manifest](../../.look/evidence/1793881990832-41330/evidence.json), 29 game minutes / 4m35s wall; bot ends at 1704.0 seconds; all expected beats, zero water falls, no graphics/page errors, 84 checkpoints. Three short walking-into-something samples total five seconds; no stalled route. Optional crystal/together telemetry is unmarked, not a failed expectation. The route's final optional-secret tour uses the existing staging teleports; this is the full standard solo bot, not a claim that every optional visit was continuous walking.
 - **Continuous co-op PASS:** [manifest](../../.look/evidence/1793883339750-44394/evidence.json), 18m04s wall at 1.5x, all 23 checkpoints, reload and leave/rejoin, no skips/fixture poses/recovery teleports, zero water falls and no page/graphics errors. Both peers contributed (153 / 162 recorded materials) and reached the completed pier. Stations, rack and shared rewards agree; final train positions agree within the harness's 2 m tolerance (actual gaps 0.013 / 0.006 m). The diverted pickup took 94.6 seconds, confirming why 90 seconds was insufficient.
@@ -47,7 +72,7 @@ The [later 1.5x run](../../.look/evidence/1793881989647-41269/evidence.json) rea
 - [Bridge crossing](../../.look/evidence/1793878844575-30015/evidence.json): restore the actual path-opened checkpoint and walk across with real input. The crossing records 22.515 seconds and the sampled banner list is empty.
 - [world-inputs](../../.look/evidence/1793879951084-34663/evidence.json): seven assertions pass against the running build; no graphics errors. It emits no PNGs.
 
-These targeted manifests retain their exact source fingerprints, including dirty-but-stable trees before their small commits. Later changes only affect the route bot, the diagnostic eval and documentation; the tested production cargo, bridge and rendering code is unchanged. No source was edited during a broker run.
+These targeted manifests retain their exact source fingerprints, including dirty-but-stable trees before their small commits. Later changes affect the route bot, diagnostic evals, documentation and the restored input/HUD behavior verified above; the tested production cargo, bridge and rendering code is unchanged. No source was edited during a broker run.
 
 ## Phone-profile load and GPU
 
@@ -81,6 +106,6 @@ No video or consecutive motion frames were inspected; real-time feel, animation 
 
 ## Still open for the owner
 
-The [solo tracker](../plans/round-4-notes.md#solo-play-4-november-owner-on-iphone-not-yet-triaged) and [proposal audit](../proposals/boogle-2.md#the-shape-of-the-game) now separate landed commits from approval and verification. Remaining: D-pad left/right conversation ownership; HUD name/Live moving to pause, mobile-only options and fewer pause stats; first-stage worker framing; background `createCommandEncoder` recovery and the intermittent co-op grounding outage and transient train-position gaps; bridge-bell interpretation; museum zoom/hat-buyer reaction; water/sky fit and the measured GPU regression. Existing reports also flag darker shop/sky and brighter sand, without owner approval.
+The [solo tracker](../plans/round-4-notes.md#solo-play-4-november-owner-on-iphone-not-yet-triaged) and [proposal audit](../proposals/boogle-2.md#the-shape-of-the-game) separate main's implemented items, the local input/HUD restorations, and owner/device approval. Remaining: first-stage worker framing; background `createCommandEncoder` recovery and the intermittent co-op grounding outage and transient train-position gaps; bridge-bell interpretation; museum zoom/hat-buyer reaction; water/sky fit and the measured GPU regression. Existing reports also flag darker shop/sky and brighter sand, without owner approval.
 
 Tree regrowth, dropped-resource despawn, safe-rack integration and supply accounting wait for the production plan before slice 2. Distinct track-layer machine art remains an art pass. Prepared warm evening, smaller-sky comparison and room-owned time remain; cart-first/money wait until after replay, and the classic resource bug until after T1. Physical gamepad/touch, device load/GPU, first-time discoverability and the owner/Grant feel verdict remain open. Stop here for their replay.

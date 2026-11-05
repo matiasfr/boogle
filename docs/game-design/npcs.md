@@ -29,7 +29,7 @@ All four D-pad directions and arrow keys pick answers, including left/right for 
   meant for the typing never answers. Answers are thumb-sized on touch (48 px tall on The Boogler's card, 44 px on the
   others) and his close button is 44 px.
 - A hint row on the box shows the buttons for the input in use, named for the pad's brand: "A Next, B Leave" while the
-  line types or there is only one way on, "A Answer, ↑↓ Pick, B Leave" when there are choices (✕ / ○ on a PlayStation
+  line types or there is only one way on, "A Answer, ↑↓ Pick, B Leave" (or ←→ Pick for a horizontal row) when there are choices (✕ / ○ on a PlayStation
   pad); "E Next" / "E Answer", "↑↓ Pick" or "←→ Pick" to match the layout, "Esc Leave" on a keyboard; on touch only "Tap to go on ▸" when there is one
   answer.
 - D-pad ↑ ↓ ← → (buttons 12–15, or the D-pad axes of a pad without the standard mapping) and the left stick repeat

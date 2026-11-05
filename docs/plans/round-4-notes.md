@@ -43,7 +43,7 @@ Answers are being collected on the [review page](https://claude.ai/artifact/4MQm
 
 - [x] Great log soft-lock: early pickup gate, Drop and unreachable recovery (`1a5c17b7`, `8434c5c4`, `22e1a318`); proper axe before the beam (`2236d075`).
 - [x] Ping's far fallback (`3470c329`).
-- [ ] D-pad conversations: left/right still escape to Ping/Flag. `ff27ba5b` documents four directions, but `src/player/conversation.ts` still captures only up/down. Not implemented.
+- [x] D-pad conversations: restore missing `af0e4239` as local `5296357b`; all four directions belong to the talk, including horizontal repeat, without Ping/Flag. `ce5b3144` corrects the keyboard guide and adds focused acceptance captures. The earlier main audit correctly found this missing; it is now restored on the replay branch, not pushed. Standard/axes/hat D-pads and arrow keys pass; physical pad verification remains.
 - [x] Whistle try-on aisle access (`6403073e`); top hat behavior retained.
 - [x] Wall-jump wobble (`96445aae`).
 - [x] Split NPC answer, "Out there" / "the ground does that" (`03fee5c2`).
@@ -84,7 +84,7 @@ Answers are being collected on the [review page](https://claude.ai/artifact/4MQm
 - [x] Log-cell pickup pulse (`76f01598`) and fading seated Stand hint (`b7dd93f7`).
 - [x] Raised tower chests and hanger preview (`76f01598`); Station 3's earned axe stand (`2236d075`).
 - [x] Unnecessary long-way-round comparison banner removed (`eac11383`); crossing record and fanfare retained.
-- [ ] HUD name/Live into pause, mobile-only options and fewer pause stats: not implemented. `c6447faa` moved tester controls/counters only.
+- [x] HUD name/Live into pause on every platform, touch-only options and fewer pause stats: restore missing `6f46f171` as local `3bae8f40`, retaining later changes. Fresh desktop and phone-profile captures show identity/Live in Pause, money only when empty-handed, and the options button in touch play. Portrait and landscape inspected; not tested on a device. `c6447faa` alone had moved tester controls/counters only.
 - [x] Fixed train seats (`fd5eeed2`, `7e64deed`) and enterable completed forge (`8340a1e2`).
 - [ ] Museum zoom and hat-buyer reaction remain; preserve The Boogler's copy.
 
