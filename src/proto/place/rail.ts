@@ -45,7 +45,7 @@ import { LOOK, STEEL, paint, rustTrainU, rustU, softGlow } from './look.ts';
 import { merged } from './part-geometry.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { kitBatch, lookTrack, trainLook } from './look-kit.ts';
-import { machineModel, MACHINE_CHAIRS, MACHINE_GAP } from './machine-model.ts';
+import { machineModel, MACHINE_CHAIRS, MACHINE_DECK, MACHINE_GAP } from './machine-model.ts';
 import { solidTrainLoad } from './train-load.ts';
 import { registerSeat } from './seat.ts';
 
@@ -563,11 +563,11 @@ export function buildMachine(owner?: OwnedView) {
     loco.platform.id = 'railway:T1:loco';
     flatbed.platform.shared = loco.platform.shared = true;
   }
+  // Match the original chair frame: body-relative, without the deck's pitch or shudder.
+  look.chairs.position.y = flatbed.hy - MACHINE_DECK;
+  flatbed.mesh.add(look.chairs);
   MACHINE_CHAIRS.forEach((x, i) => {
-    const chair = seatMesh();
-    // Turn around the existing hip anchor; the knees stay behind the cradle's rear wall.
-    chair.position.set(x, flatbed.hy, -1.15);
-    flatbed.mesh.add(chair);
+    // The built machine batches its bevelled chair shells; these gameplay anchors stay unchanged.
     registerSeat({
       id: `machine-deck-${i}`,
       group: 'machine-deck',
@@ -579,15 +579,6 @@ export function buildMachine(owner?: OwnedView) {
       available: () => flatbed.y > -30,
     });
   });
-  const box3 = (w: number, h: number, d: number, color: string, x: number, y: number, z: number, rx = 0) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color, 0.8));
-    m.position.set(x, y, z);
-    m.rotation.x = rx;
-    m.castShadow = true;
-    flatRock.add(m);
-    return m;
-  };
-  box3(step.hx * 2, step.h, step.hz * 2, '#f4d58a', 0, onDeck - step.h / 2, step.z);
   const heldRail = look.heldRail;
 
   const railGeo = new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z);

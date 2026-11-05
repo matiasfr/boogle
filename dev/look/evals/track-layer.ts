@@ -1,6 +1,6 @@
 // Focused art fixture, not a progression proof. Broker: --query 'proto=place&machineView=rear|ride|lay'.
 // Two occupied seats and actual Interact/Jump from the staged rear step: --players 2 --real
-// --query 'proto=place&coop=1&machineView=pair|forward&machineBeat=seated|exit'.
+// --query 'proto=place&coop=1&machineView=pair|forward|side&machineBeat=seated|exit'.
 // For motion add --action dev/look/evals/track-layer-action.ts --curves --video --warm 0.
 import type * as THREE from 'three/webgpu';
 const q = new URLSearchParams(location.search);
@@ -75,6 +75,8 @@ if (pair) {
 } else wakeNow();
 await wait(400);
 const car = machine.flatbed;
+if (car.mesh.getObjectByName('track-layer-chairs')?.parent !== car.mesh)
+  throw new Error('Chair shells must retain the body frame, without deck pitch or shudder');
 const pose = { x: 0, y: 0, z: 0, yaw: 0 };
 const put = (x: number, z: number) => {
   fromPlatform(car.platform, { x, y: car.hy + 0.48, z, yaw: Math.PI }, false, pose);
@@ -88,10 +90,17 @@ const camera = () => {
       ? { x: 4.5, y: 3.1, z: -2.9 }
       : view === 'forward'
         ? { x: 0, y: 3.5, z: -4.3 }
-        : { x: rear ? 6 : 7, y: rear ? 4.2 : 5.5, z: rear ? -7 : 6 };
+        : view === 'side'
+          ? { x: 8, y: 4.3, z: -2.8 }
+          : { x: 8, y: rear ? 4.8 : 4.5, z: rear ? -7 : 5.5 };
   fromPlatform(car.platform, { ...eyeLocal, yaw: 0 }, true, pose);
   const eye: [number, number, number] = [pose.x, pose.y, pose.z];
-  fromPlatform(car.platform, { x: 0, y: 1.1, z: view === 'forward' ? 1.2 : -0.6, yaw: 0 }, true, pose);
+  fromPlatform(
+    car.platform,
+    { x: 0, y: 1.1, z: view === 'forward' ? 1.2 : view === 'pair' ? -0.6 : -1.3, yaw: 0 },
+    true,
+    pose,
+  );
   window.__debugCam!.set(eye, [pose.x, pose.y, pose.z], 48);
 };
 camera();

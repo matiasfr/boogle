@@ -1,18 +1,21 @@
 // Pure mesh assembly: no scene, physics, loop or game state. Both the stage and Place use these materials.
 import * as THREE from 'three/webgpu';
-import { material, type ColourToken } from '../../render/materials.ts';
+import { material } from '../../render/materials.ts';
 
 export const MACHINE_GAP = 3.7;
+export const MACHINE_DECK = 0.7;
 export const MACHINE_CHAIRS = [-0.55, 0.55] as const;
 /** The shell is rigid. The existing fork action stays owned by rail.ts. */
 export function dressMachine(source: THREE.Object3D) {
   const recipes = {
-    paint: ['paintedToy', '#f0752c'],
-    iron: ['paintedToy', '#24262c'],
-    trim: ['paintedToy', '#f4d58a'],
-    wood: ['timber', '#9a7b55'],
-    gantry: ['paintedToy', '#f0752c'],
-    cream: ['paintedToy', '#e8d3a2'],
+    // Previz art swatches are linear RGB, not hex-constructor sRGB or sampled measurements.
+    paint: ['paintedToy', [198 / 255, 90 / 255, 22 / 255]],
+    iron: ['steel', [16 / 255, 28 / 255, 41 / 255]],
+    trim: ['paintedToy', [197 / 255, 171 / 255, 104 / 255]],
+    wood: ['timber', [0.32, 0.2, 0.095]],
+    gantry: ['paintedToy', [198 / 255, 90 / 255, 22 / 255]],
+    cream: ['paintedToy', [197 / 255, 171 / 255, 104 / 255]],
+    teal: ['paintedToy', [36 / 255, 86 / 255, 83 / 255]],
   } as const;
   const owned = new Map<string, { mat: THREE.MeshStandardNodeMaterial; clean: THREE.Color; aged: THREE.Color }>();
   source.traverse((o) => {
@@ -23,7 +26,9 @@ export function dressMachine(source: THREE.Object3D) {
     if (!recipe) throw new Error(`Unknown track-layer part: ${o.name}`);
     let entry = owned.get(role);
     if (!entry) {
-      const mat = material(recipe[0], { colour: recipe[1] as ColourToken, normals: 'authored' }).clone();
+      const mat = material(recipe[0], { normals: 'authored' }).clone();
+      const [r, g, b] = recipe[1];
+      mat.color.setRGB(r, g, b, THREE.LinearSRGBColorSpace);
       const clean = mat.color.clone();
       const aged = clean
         .clone()
@@ -50,7 +55,12 @@ export function dressMachine(source: THREE.Object3D) {
 }
 
 /** Preserve compressed node transforms; only undo the authored inter-body spacing. */
-export function mountMachine(source: THREE.Object3D, power: THREE.Object3D, deck: THREE.Object3D) {
+export function mountMachine(
+  source: THREE.Object3D,
+  power: THREE.Object3D,
+  deck: THREE.Object3D,
+  chairs: THREE.Object3D,
+) {
   const copy = source.clone(true);
   const finish = dressMachine(copy);
   const rear = new THREE.Group();
@@ -59,6 +69,7 @@ export function mountMachine(source: THREE.Object3D, power: THREE.Object3D, deck
   for (const part of [...copy.children]) {
     if (part.name.startsWith('power_')) rear.add(part);
     else if (part.name.startsWith('deck_')) deck.add(part);
+    else if (part.name.startsWith('chair_')) chairs.add(part);
     else throw new Error(`Unexpected track-layer root: ${part.name}`);
   }
   return finish;
@@ -67,9 +78,11 @@ export function mountMachine(source: THREE.Object3D, power: THREE.Object3D, deck
 export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D, sleeper: THREE.Object3D) {
   const power = new THREE.Group(),
     deck = new THREE.Group(),
+    chairs = new THREE.Group(),
     fork = new THREE.Group();
   power.name = 'track-layer-power';
   deck.name = 'track-layer-deck';
+  chairs.name = 'track-layer-chairs';
   heldRail.position.set(0.5, 0.68, 2.3);
   sleeper.position.y = 0.05;
   fork.add(forkIron, sleeper);
@@ -88,12 +101,13 @@ export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D,
   const last = new THREE.Vector3(NaN, 0, 0);
   return {
     cars,
+    chairs,
     chimneyTop,
     heldRail,
     // Retain the wake interface. This first crawler shell has static rollers, not locomotive drive rods.
     slip: { rate: 0 },
     install: (source: THREE.Object3D) => {
-      finish = mountMachine(source, power, deck);
+      finish = mountMachine(source, power, deck, chairs);
     },
     update(wear: number) {
       finish?.wear(wear);
