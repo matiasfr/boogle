@@ -13,9 +13,15 @@
 import './ui-kit.css';
 import './notify.css';
 import { uiSound, replay, type UiSound } from './ui-sound.ts';
+import { padGlyph } from '../player/glyphs.ts';
 
 export type NotifyKind = 'info' | 'deny' | 'news';
-export type NotifyOpts = { kind?: NotifyKind; ttl?: number; key?: string; action?: { label: string; run: () => void } };
+export type NotifyOpts = {
+  kind?: NotifyKind;
+  ttl?: number;
+  key?: string;
+  action?: { label: string; pad?: string; run: () => void };
+};
 type Notice = Required<Pick<NotifyOpts, 'kind' | 'ttl' | 'key'>> &
   Pick<NotifyOpts, 'action'> & {
     text: string;
@@ -70,6 +76,12 @@ function show(n: Notice | null): void {
   textEl.textContent = n.text;
   btn.hidden = !n.action;
   btn.textContent = n.action?.label ?? '';
+  if (n.action?.pad) {
+    const hint = document.createElement('span');
+    hint.className = 'notify-pad';
+    hint.innerHTML = padGlyph(n.action.pad);
+    btn.append(hint);
+  }
   el.dataset.kind = n.kind;
   if (!n.seen) {
     uiSound(SOUND[n.kind]);
