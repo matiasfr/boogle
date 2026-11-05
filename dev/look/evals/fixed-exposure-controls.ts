@@ -11,11 +11,14 @@ const { lookSnapshot } = (await import(
 const { readableUnlit, readableIntensity } = (await import(
   '/src/render/readable-unlit.ts' as string
 )) as typeof import('../../../src/render/readable-unlit.ts');
-const { MeshBasicNodeMaterial } = await import('three/webgpu');
-const material = readableUnlit(new MeshBasicNodeMaterial());
+const { paintBoard } = (await import(
+  '/src/proto/place/signs.ts' as string
+)) as typeof import('../../../src/proto/place/signs.ts');
+const material = paintBoard([], 1, 1);
 const patched = material.colorNode;
 if (readableUnlit(material).colorNode !== patched) throw new Error('Repeated readable patch doubled compensation');
 material.dispose();
+material.map?.dispose();
 if (bindings.has('readable.referenceGain')) throw new Error('Independent readable gain survived');
 await showWaterTuning(() => {});
 const panel = document.querySelector<HTMLElement>('[data-water-panel]')!;
