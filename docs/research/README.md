@@ -1,6 +1,7 @@
 # Research
 
 - [slice3-plan-2.md](slice3-plan-2.md) (2026-11-05): pinned slice-2/supply branch audit and live primary-source research; eight recommendations, six ordered commits for T2/T3, counted stone recovery, the Station 3 axe, unique beam, personal boxes and walking payoff, with migration risks and required proofs. Plan only; stone renewal policy and slice-2 acceptance remain explicit prerequisites.
+- [room-time-plan-2.md](room-time-plan-2.md) (2026-11-05): room-owned day/evening/day plan after T1; bounded phase/tick state, durable recovery upgrade, late-join and mixed-build behavior, exact Station 3/Q1/forge trigger options, prepared-renderer integration and a dusk sign lamp at 0.12 gain. Seven recommendations; research only, night excluded.
 
 - [solo-design-pass.md](solo-design-pass.md) (2026-11-05): twelve concise solo-play proposals covering finds, boiler/gate/rail clarity, boarding and seats, forge interior, ability pacing, the great-tree axe order, small discovery moments and counted resource renewal; primary game and track-construction sources, tap choices and smallest builds. Money and cart-first stay after the replay. Research only.
 
