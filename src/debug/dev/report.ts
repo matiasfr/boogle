@@ -31,6 +31,7 @@ async function report() {
     inspection: await inspectSummary(),
     room: await roomSummary(),
     setup: await currentSetup(),
+    tuning: (await import('./tunables.ts')).tuneSnapshot(),
     limits: [
       'Setup, not exact world replay.',
       'Screenshot contains the game canvas, not menu DOM.',

@@ -3,6 +3,7 @@
 // much they overlapped. Pure: events in, lines out.
 import { beatsOf, placeAt, type Place } from './beats.ts';
 import { clock, num, span, str, type Ev, type Session } from './read.ts';
+import { tuneDigest } from '../../src/tunables/events.ts';
 
 const template = (s: string) => s.replace(/\d+/g, '#');
 const percentile = (sorted: number[], q: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))];
@@ -70,6 +71,67 @@ export const playedS = (s: Session) => (s.end - s.start) / 1000 - s.hiddenS;
 export const idleS = (s: Session) => totalS(of(s, 'idle'));
 export const intoS = (s: Session) => totalS(of(s, 'into'));
 
+/** Only complete, uniquely keyed segments describe an effective configuration. */
+export function tuningSegments(s: Session) {
+  const segments = new Map<string, { begin?: Ev; end?: Ev; setup?: Ev; values: Ev[]; duplicate: boolean }>();
+  for (const e of s.events) {
+    if (!['tune.begin', 'tune.value', 'tune.end', 'tune.setup'].includes(e.k)) continue;
+    const id = str(e.snapshot);
+    const segment = segments.get(id) ?? { values: [], duplicate: false };
+    if (e.k === 'tune.value') segment.values.push(e);
+    else if (e.k === 'tune.begin') {
+      segment.duplicate ||= !!segment.begin;
+      segment.begin = e;
+    } else if (e.k === 'tune.end') {
+      segment.duplicate ||= !!segment.end;
+      segment.end = e;
+    } else segment.setup = e;
+    segments.set(id, segment);
+  }
+  return [...segments].map(([id, segment]) => {
+    const { begin, end, values } = segment;
+    const keys = values.map((value) => str(value.id));
+    const complete = !!(
+      id &&
+      begin &&
+      end &&
+      segment.setup &&
+      !segment.duplicate &&
+      str(begin.build) &&
+      str(begin.catalog) &&
+      Number.isSafeInteger(begin.revision) &&
+      Number.isSafeInteger(begin.tick) &&
+      Number.isSafeInteger(begin.count) &&
+      str(segment.setup.room) &&
+      begin.t <= end.t &&
+      num(begin.count) === values.length &&
+      num(end.count) === values.length &&
+      keys.every(Boolean) &&
+      new Set(keys).size === keys.length &&
+      values.every(
+        (value) =>
+          typeof value.value === 'number' &&
+          Number.isFinite(value.value) &&
+          typeof value.default === 'number' &&
+          Number.isFinite(value.default) &&
+          ['local', 'owner', 'lockstep'].includes(str(value.scope)) &&
+          str(value.source) &&
+          Number.isSafeInteger(value.revision) &&
+          typeof value.available === 'boolean' &&
+          (value.scope !== 'owner' ||
+            (typeof value.activeValue === 'number' &&
+              Number.isFinite(value.activeValue) &&
+              Number.isSafeInteger(value.activeRevision) &&
+              ['idle', 'landing', 'takeoff', 'chop'].includes(str(value.action)) &&
+              typeof value.chopLocked === 'boolean')),
+      ) &&
+      str(end.digest) === tuneDigest(values.map((value) => ({ id: str(value.id), value: num(value.value) }))) &&
+      values.every((value) => value.t >= begin.t && value.t <= end.t)
+    );
+    return { id, ...segment, complete };
+  });
+}
+
 /** Spans clustered on a 6 m grid, longest total first. */
 function hotspots(evs: Ev[], places: Place[]) {
   const cells = new Map<string, { x: number; z: number; s: number; n: number; first: number }>();
@@ -123,6 +185,38 @@ export function summarize(s: Session, others: Session[], places: Place[]): strin
   out.push(`Played: ${span(playedS(s))}${hidden}; ${ended}`);
   if (str(m.v)) out.push(`Variant: ${str(m.v)}`);
   if (str(m.flags)) out.push(`Address: ?${str(m.flags)}`);
+  const tuning = tuningSegments(s);
+  if (tuning.length) {
+    out.push('Tunables (resolved values, including defaults):');
+    for (const segment of tuning) {
+      const { begin, end, setup, values } = segment;
+      out.push(
+        `  ${segment.id}: ${segment.complete ? 'complete' : 'INCOMPLETE'}; build ${str(begin?.build) || '?'}, ` +
+          `catalog ${str(begin?.catalog) || '?'}, revision ${num(begin?.revision)}, ` +
+          `values ${values.length}/${num(begin?.count)}, configured-value checksum ${str(end?.digest) || '?'}`,
+      );
+      if (setup)
+        out.push(
+          `    Start: room ${str(setup.room)}, ${str(setup.proto)} / ${str(setup.scenario)} / ${str(setup.destination)}, ` +
+            `position ${setup.x ?? '?'}, ${setup.y ?? '?'}, ${setup.z ?? '?'}`,
+        );
+      if (segment.complete)
+        for (const value of values)
+          out.push(
+            `    ${str(value.id)}=${String(value.value)}; default ${String(value.default)}, ${str(value.scope)}, ` +
+              `source ${str(value.source)}, revision ${num(value.revision)}, available ${String(value.available)}` +
+              (value.scope === 'owner'
+                ? `; active ${String(value.activeValue)}, active revision ${num(value.activeRevision)}, ` +
+                  `action ${str(value.action)}, chop locked ${String(value.chopLocked)}`
+                : ''),
+          );
+    }
+    for (const change of of(s, 'tune.change'))
+      out.push(
+        `  ${clock(change.t)} accepted ${str(change.id)}=${String(change.value)}; revision ${num(change.revision)}` +
+          (typeof change.tick === 'number' ? `, tick ${change.tick}` : ', Local application'),
+      );
+  }
   const inputs = { key: 0, touch: 0, mouse: 0, pad: 0 };
   const acts = new Map<string, number>();
   for (const e of of(s, 'in')) {

@@ -25,6 +25,8 @@ const entries: DockPanel[] = [
   { id: 'report', label: 'Report', load: () => import('./dev/report.ts') },
   { id: 'scenarios', label: 'Tests', load: () => import('./dev/scenarios.ts') },
 ];
+// Agent commands share the shell's result/permission path without adding a panel.
+const agentTools: DockPanel[] = [{ id: 'tunables', label: 'Tunables', load: () => import('./dev/tunables.ts') }];
 /** Register a lazy panel before or after installation, using the same bounded commands as its agent API. */
 export function registerDockPanel(panel: DockPanel) {
   if (entries.some((entry) => entry.id === panel.id)) throw new Error(`Dev panel already registered: ${panel.id}`);
@@ -78,20 +80,20 @@ async function tool(id: string) {
   if (!alive) return null;
   const existing = loaded.get(id);
   if (existing) return existing;
-  const entry = entries.find((e) => e.id === id);
+  const entry = [...entries, ...agentTools].find((e) => e.id === id);
   if (!entry) return null;
   let pending = loading.get(id);
   if (!pending) {
     pending = entry.load().then(({ tool: value }) => {
       loading.delete(id);
-      if (alive && entries.includes(entry)) loaded.set(id, value);
+      if (alive && (entries.includes(entry) || agentTools.includes(entry))) loaded.set(id, value);
       else value.dispose?.();
       return value;
     });
     loading.set(id, pending);
   }
   const value = await pending;
-  return alive && entries.includes(entry) ? value : null;
+  return alive && (entries.includes(entry) || agentTools.includes(entry)) ? value : null;
 }
 async function run(id: string, command: string, args: Args = {}): Promise<Result> {
   let result: Result;
@@ -152,6 +154,21 @@ export function installDevMenu() {
   let disposePanel = () => {},
     generation = 0;
   const waterReady = (async () => {
+    const water = await import('../render/water-render.ts');
+    await water.waterReady;
+    const flags = await import('../render/water/flags.ts');
+    if (flags.newWaterEnabled && !flags.toySkyEnabled) {
+      const looks = await import('../render/water/looks.ts');
+      if (!looks.looksReady())
+        await new Promise<void>((resolve) => {
+          const off = looks.onLookChange(() => {
+            if (looks.looksReady()) {
+              off();
+              resolve();
+            }
+          });
+        });
+    }
     let saved = false;
     try {
       saved = !!localStorage.getItem('boogle.water-tuning.v1');
@@ -159,9 +176,13 @@ export function installDevMenu() {
       /* optional storage */
     }
     if (!saved) return;
-    const water = await import('./dev/water.ts');
-    if (alive) await water.restoreWaterSettings();
+    const settings = await import('./dev/water.ts');
+    if (alive) await settings.restoreWaterSettings();
   })();
+  void waterReady.then(async () => {
+    const tuning = await import('./dev/tunables.ts');
+    if (alive) tuning.applyTuneQuery();
+  });
   const cameraControls = el('div', '', 'dev-camera-controls');
   cameraControls.dataset.devCameraControls = '';
   let cameraModule: typeof import('./dev/camera.ts') | null = null;
@@ -420,7 +441,12 @@ export function installDevMenu() {
   addEventListener('pagehide', dispose);
   window.boogle.dev = {
     tools: () =>
-      entries.map(({ id, label }) => ({ id, label, scope: loaded.get(id)?.scope, commands: loaded.get(id)?.commands })),
+      [...entries, ...agentTools].map(({ id, label }) => ({
+        id,
+        label,
+        scope: loaded.get(id)?.scope,
+        commands: loaded.get(id)?.commands,
+      })),
     async open(id) {
       await show(id);
       return alive;

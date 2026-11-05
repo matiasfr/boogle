@@ -27,6 +27,9 @@ import { PROTO, protoV, pageQuery } from '../flags.ts';
 import { currentCard } from '../card.ts';
 import { hookActivity, onPlayMark, playWhereNow, type PlayData } from '../mark.ts';
 import type { PlayEvent } from '../../../server/src/playdata.ts';
+import { onTuneRecord } from '../../tunables/events.ts';
+import { devEnabled } from '../../dev-preferences.ts';
+import { background } from '../../async.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const SEND_MS = 5000;
@@ -68,6 +71,19 @@ function push(k: string, fields: Record<string, string | number | boolean | null
   if (queue.length >= QUEUE) dropped += queue.splice(0, QUEUE >> 2).length;
   queue.push({ t: clock(ms), k, ...fields });
 }
+
+// Complete configuration segments bypass the mark-rate budget. Queue loss remains explicit;
+// summaries reject missing begin/value/end records instead of guessing a configuration.
+onTuneRecord(push);
+const tuningVisit = devEnabled || pageQuery().get('tune') === '1';
+function recordTuning() {
+  if (tuningVisit)
+    background(
+      import('../../debug/dev/tunables.ts').then((m) => m.recordTuneSnapshot()),
+      'playdata tuning',
+    );
+}
+onStart(recordTuning);
 
 function makeBatch(): string | null {
   if (dropped) {
@@ -206,6 +222,7 @@ onPeopleChanged(() => {
 onNetState((s) => {
   push('net', { s });
   sayWho(); // the room is settled by now
+  if (s === 'live') recordTuning();
 });
 
 // ---------------------------------------------------------------- marks

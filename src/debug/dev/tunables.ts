@@ -1,0 +1,308 @@
+// Bounded agent adapter. Owners keep execution and state; no catalog work runs per frame.
+import { CATALOG, tunableSpec, validValue } from '../../tunables/catalog.ts';
+import { emitTuneRecord, tuneDigest } from '../../tunables/events.ts';
+import { TUNE_CATALOG, type TuneKey } from '../../sim/tune.ts';
+import { BUILD_ID } from '../../build-id.ts';
+import { WORLD_NS } from '../../world/namespace.ts';
+import { rules } from '../../world/game-world.ts';
+import { world, worldStatus, submitEdit, onApplied, onSnapshot, onRejected } from '../../world/sync.ts';
+import { getRoomId, onNetState } from '../../netplay/net.ts';
+import { me } from '../../player/state.ts';
+import { onEntered } from '../../entities/player/state.ts';
+import { snapshotFeelSpring, setFeelSpring, onFeelSpringChange } from '../../player/feel-tuning.ts';
+import { bindings, onChange } from '../../render/water/live.ts';
+import { exposureSettings } from '../../render/exposure.ts';
+import { devEnabled } from '../../dev-preferences.ts';
+import { pageQuery, PROTO } from '../../proto/flags.ts';
+import { fixture } from './fixtures.ts';
+import { ok, no, type Tool, type Args, type Result } from './types.ts';
+
+const enabled = () =>
+  new URLSearchParams(location.search).get('dev') !== '0' &&
+  (devEnabled || new URLSearchParams(location.search).get('tune') === '1');
+let localRevision = 0;
+let exposureSource = 'default';
+let exposureWriteSource: string | null = null;
+let lastExposure = exposureSettings.centre;
+let snapshotSequence = 0;
+let startingSetup: ReturnType<typeof setup> | null = null;
+let startupReady = false;
+let finishStartup: () => void = () => {};
+const startup = new Promise<void>((resolve) => {
+  finishStartup = resolve;
+});
+const queryResults: Result[] = [];
+const requests = new Map<string, { status: string; at: number; revision?: number; appliedTick?: number }>();
+function setup() {
+  const p = me.body?.position;
+  const f = fixture();
+  return {
+    room: getRoomId(),
+    proto: PROTO,
+    scenario: f.scenario,
+    destination: f.destination,
+    position: p ? { x: p.x, y: p.y, z: p.z } : null,
+  };
+}
+function read(id: string) {
+  const spec = tunableSpec(id);
+  if (!spec) return null;
+  const feel = snapshotFeelSpring();
+  const shared = spec.scope === 'lockstep';
+  const value = shared
+    ? rules.tune.tune.v[id.slice(5) as TuneKey]
+    : spec.scope === 'owner'
+      ? feel.value
+      : exposureSettings.centre;
+  return {
+    ...spec,
+    value,
+    source: shared ? 'room' : spec.scope === 'owner' ? (feel.revision ? 'session' : 'default') : exposureSource,
+    revision: shared ? rules.tune.tune.revision : spec.scope === 'owner' ? feel.revision : localRevision,
+    available: shared ? worldStatus().ready : spec.scope === 'owner' || bindings.has(id),
+    ...(spec.scope === 'owner' ? { active: feel.active, chopLocked: feel.chopLocked } : {}),
+  };
+}
+export function tuneSnapshot() {
+  return {
+    schema: 1,
+    build: BUILD_ID || 'dev',
+    namespace: WORLD_NS,
+    catalog: TUNE_CATALOG,
+    revision: rules.tune.tune.revision,
+    tick: world.tick,
+    setup: startingSetup ?? setup(),
+    values: CATALOG.map((spec) => read(spec.id)!),
+    queryResults: [...queryResults],
+  };
+}
+export function recordTuneSnapshot() {
+  if (!enabled()) return;
+  if (startupReady && me.entered && me.body) startingSetup ??= setup();
+  const data = tuneSnapshot(),
+    snapshot = `${++snapshotSequence}`;
+  emitTuneRecord('tune.begin', {
+    snapshot,
+    build: data.build,
+    catalog: data.catalog,
+    revision: data.revision,
+    tick: data.tick,
+    count: data.values.length,
+  });
+  const s = data.setup;
+  emitTuneRecord('tune.setup', {
+    snapshot,
+    room: s.room,
+    proto: s.proto,
+    scenario: s.scenario,
+    destination: s.destination,
+    x: s.position?.x ?? null,
+    y: s.position?.y ?? null,
+    z: s.position?.z ?? null,
+  });
+  for (const row of data.values)
+    emitTuneRecord('tune.value', {
+      snapshot,
+      id: row.id,
+      value: row.value,
+      default: row.default,
+      scope: row.scope,
+      source: row.source,
+      revision: row.revision,
+      available: row.available,
+      ...(row.active
+        ? {
+            activeValue: row.active.value,
+            activeRevision: row.active.revision,
+            action: row.active.action,
+            chopLocked: row.chopLocked ?? false,
+          }
+        : {}),
+    });
+  // Canonical numeric rows are short enough for the existing flat playdata string bound.
+  const digest = tuneDigest(data.values);
+  emitTuneRecord('tune.end', { snapshot, count: data.values.length, digest });
+}
+function rejected(code: string): Result {
+  return { ok: false, message: code, data: { status: 'rejected', code } };
+}
+function validate(args: Args): Result {
+  const spec = tunableSpec(args.id);
+  if (!enabled()) return rejected('disabled');
+  if (!spec || !validValue(spec, args.value)) return rejected('invalid-value');
+  if (
+    args.expectedRevision !== undefined &&
+    (!Number.isSafeInteger(args.expectedRevision) || args.expectedRevision !== read(spec.id)!.revision)
+  )
+    return rejected('stale-revision');
+  if (spec.scope === 'lockstep' && spec.id !== 'haul.yield') return rejected('read-only-in-first-proof');
+  if (!read(spec.id)!.available) return rejected(spec.scope === 'local' ? 'reload-required' : 'not-ready');
+  return ok('Valid request; shared acceptance remains host-owned.', { status: 'validated' });
+}
+function set(args: Args, source = 'session'): Result {
+  const validation = validate(args);
+  if (!validation.ok) return validation;
+  const spec = tunableSpec(args.id)!,
+    value = args.value as number;
+  if (spec.scope === 'owner') {
+    const result = setFeelSpring(value, args.expectedRevision as number | undefined);
+    return { ok: result.ok, message: result.status, data: result };
+  }
+  if (spec.scope === 'local') {
+    exposureSource = source;
+    exposureWriteSource = source;
+    bindings.get(spec.id)!.set(value);
+    exposureWriteSource = null;
+    return ok('Applied locally.', { status: 'applied', ...read(spec.id) });
+  }
+  if (requests.size >= 32) requests.delete(requests.keys().next().value!);
+  const requestId = crypto.randomUUID();
+  requests.set(requestId, { status: 'pending', at: performance.now() });
+  const queued = submitEdit({
+    op: 'tune.commit',
+    i: 0,
+    j: 0,
+    key: 'yield',
+    v: value,
+    catalog: TUNE_CATALOG,
+    expectedRevision: args.expectedRevision ?? rules.tune.tune.revision,
+    requestId,
+  });
+  if (!queued) requests.set(requestId, { status: 'rejected', at: performance.now() });
+  return {
+    ok: queued,
+    message: queued ? 'Queued; use status to observe acceptance.' : 'Not queued.',
+    data: { requestId, status: queued ? 'pending' : 'rejected' },
+  };
+}
+onChange(() => {
+  const value = exposureSettings.centre;
+  if (value === lastExposure) return;
+  const old = lastExposure;
+  exposureSource = exposureWriteSource ?? 'owner';
+  lastExposure = value;
+  localRevision++;
+  emitTuneRecord('tune.change', { id: 'post.centre', old, value, revision: localRevision, source: exposureSource });
+});
+onFeelSpringChange((event, state) => {
+  emitTuneRecord(event === 'change' ? 'tune.change' : 'tune.active', {
+    id: 'feel.spring.stiffness',
+    value: state.value,
+    revision: state.revision,
+    activeValue: state.active.value,
+    activeRevision: state.active.revision,
+    action: state.active.action,
+  });
+});
+onApplied(
+  (
+    e: { op: string; requestId?: string; key?: string; v?: number },
+    tick,
+    result: { status?: string; revision?: number } | null,
+  ) => {
+    if (e.op !== 'tune.commit' && e.op !== 'tune.set') return;
+    if (e.requestId && requests.has(e.requestId))
+      requests.set(e.requestId, {
+        status: result?.status ?? 'rejected',
+        at: performance.now(),
+        revision: result?.revision,
+        appliedTick: tick,
+      });
+    if (result && result.status !== 'rejected') {
+      emitTuneRecord('tune.change', {
+        id: `haul.${e.key}`,
+        value: e.v ?? null,
+        revision: rules.tune.tune.revision,
+        tick,
+        source: 'room',
+      });
+      recordTuneSnapshot();
+    }
+  },
+);
+onSnapshot(() => recordTuneSnapshot());
+onRejected((event) => {
+  if (event.op !== 'tune.commit') return;
+  const request = requests.get(event.requestId);
+  if (request?.status === 'pending') requests.set(event.requestId, { ...request, status: 'rejected' });
+});
+onEntered(() => recordTuneSnapshot());
+onNetState((state) => {
+  if (state !== 'live')
+    for (const [id, request] of requests)
+      if (request.status === 'pending') requests.set(id, { ...request, status: 'unknown' });
+});
+
+/** Called once after saved appearance restoration. Shared URL edits are never retried after reconnect. */
+export function applyTuneQuery() {
+  startupReady = true;
+  try {
+    const entries = [...pageQuery()].filter(([key]) => key.startsWith('t.'));
+    if (!entries.length) {
+      recordTuneSnapshot();
+      return;
+    }
+    if (
+      entries.length > 32 ||
+      JSON.stringify(entries).length > 4096 ||
+      new Set(entries.map(([key]) => key)).size !== entries.length
+    ) {
+      queryResults.push(rejected('invalid-query'));
+      return;
+    }
+    const edits = entries.map(([key, text]) => ({ id: key.slice(2), value: text.trim() ? Number(text) : NaN }));
+    for (const edit of edits) {
+      const check = validate(edit);
+      if (!check.ok) {
+        queryResults.push(check);
+        return;
+      }
+    }
+    for (const edit of edits) queryResults.push(set(edit, 'url'));
+    recordTuneSnapshot();
+  } finally {
+    finishStartup();
+  }
+}
+export const tool: Tool = {
+  id: 'tunables',
+  label: 'Tunables',
+  scope: 'Local, Owner and host-accepted Lockstep settings',
+  commands: ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'],
+  available: () => (enabled() ? null : 'Tuning is disabled.'),
+  async run(command, args) {
+    await startup;
+    if (command === 'list') return ok('Resolved catalog.', tuneSnapshot().values);
+    if (command === 'snapshot') return ok('Resolved starting setup and values.', tuneSnapshot());
+    if (command === 'diff')
+      return ok(
+        'Review only; source defaults are unchanged.',
+        tuneSnapshot()
+          .values.filter((row) => row.value !== row.default)
+          .map((row) => ({ id: row.id, owner: row.owner, from: row.default, to: row.value })),
+      );
+    if (command === 'get') {
+      const row = typeof args.id === 'string' ? read(args.id) : null;
+      return row ? ok('Effective value.', row) : rejected('unknown-id');
+    }
+    if (command === 'validate') return validate(args);
+    if (command === 'set') return set(args);
+    if (command === 'status') {
+      const request = typeof args.requestId === 'string' ? requests.get(args.requestId) : null;
+      if (!request) return rejected('unknown-request');
+      if (request.status === 'pending' && performance.now() - request.at > 10_000) request.status = 'unknown';
+      return {
+        ok: request.status === 'applied' || request.status === 'pending',
+        message: request.status,
+        data: { ...request },
+      };
+    }
+    if (command === 'reset-local') {
+      const spec = tunableSpec(args.id);
+      return spec && spec.scope !== 'lockstep' ? set({ ...args, value: spec.default }) : rejected('local-id-required');
+    }
+    return no('Unknown command.');
+  },
+  snapshot: tuneSnapshot,
+  mount: () => () => {},
+};
