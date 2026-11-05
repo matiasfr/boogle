@@ -37,7 +37,7 @@ import { L1, allHeaps, hub, lines, machine } from './lines.ts';
 import { send } from './pieces.ts';
 import { SCOPE_AT, boilerAt, lookThrough } from './props.ts';
 import { activeFrame, mark, run, wake } from './run.ts';
-import { seated, sitDown, standUp } from './seat.ts';
+import { freeSeat, seated, sitDown, standUp } from './seat.ts';
 import { SHORE_SAMPLES } from './terrain.ts';
 
 const SHELF_AT = { x: toWorld(SHELF.x), z: SHELF.z };
@@ -356,9 +356,10 @@ registerInteractable(() => {
   if (Math.hypot(p.x - SCOPE_AT.x, p.z - SCOPE_AT.z) < 3.4)
     (out ??= []).push({ id: 'place-scope', verb: 'Look through it', at: SCOPE_AT, run: lookThrough });
   // On a deck, with nothing else to press for: sit. Far down the pick's order (r), so anything nearer that acts wins.
-  if (onDeck() && !out?.some((t) => t.run)) {
+  const seat = freeSeat();
+  if (seat && !out?.some((t) => t.run)) {
     sitAt.set(p.x, p.y + 1.1, p.z);
-    (out ??= []).push({ id: 'place-sit', verb: 'Sit', at: sitAt, r: -100, run: sitDown });
+    (out ??= []).push({ id: 'place-sit', verb: 'Sit', at: sitAt, r: -100, run: () => sitDown(seat) });
   }
   return out ?? NO_TARGETS;
 });

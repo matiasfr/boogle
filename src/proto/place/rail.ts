@@ -17,6 +17,7 @@ import {
   createBody,
   onPreStep,
   removeBody,
+  setShapes,
   stepAlpha,
   teleport,
   type Body,
@@ -43,6 +44,7 @@ import { LOOK, STEEL, paint, rustTrainU, rustU, softGlow } from './look.ts';
 import { merged } from './gifts.ts';
 import { kitBatch, lookTrack, machineLook, trainLook } from './look-kit.ts';
 import { solidTrainLoad } from './train-load.ts';
+import { registerSeat, seatHeight, seatMesh } from './seat.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const lateral = (l: number, out: { x: number; z: number }) => {
@@ -863,7 +865,7 @@ export function callTrain(tr: Train, stop: number) {
 }
 
 /** One train on a line. It stands where it's told until `start`. */
-export function buildTrain(line: Line, stops: number[]) {
+export function buildTrain(line: Line, stops: number[], id: string) {
   const clock = { running: false };
   const look = LOOK.kit ? trainLook(CARS.length - 1) : wagonLook(CARS.length - 1, false);
   const tr: Train = {
@@ -899,6 +901,33 @@ export function buildTrain(line: Line, stops: number[]) {
     );
   });
   tr.load = deck(tr.cars[tr.cars.length - 1]!.rock.children[0]!, () => {});
+  // The middle car is clear of freight. Two side-facing chairs leave a full-length standing aisle.
+  const passenger = tr.cars[1]!;
+  const group = `train-${id}`;
+  const chairZ = [-0.8, 0.8];
+  setShapes(passenger.body, [
+    { kind: 'box', hx: passenger.spec.hx, hy: passenger.hy, hz: passenger.spec.hz },
+    ...chairZ.flatMap((z) => [
+      { kind: 'box' as const, hx: 0.325, hy: 0.275, hz: 0.4, offset: { x: -0.35, y: passenger.hy + 0.275, z } },
+      { kind: 'box' as const, hx: 0.06, hy: 0.4, hz: 0.4, offset: { x: -0.65, y: passenger.hy + 0.95, z } },
+    ]),
+  ]);
+  passenger.platform.topAt = (x, z) =>
+    passenger.hy + (x < 0.2 && chairZ.some((sz) => Math.abs(z - sz) < 0.5) ? 0.55 : 0);
+  chairZ.forEach((z, i) => {
+    const chair = seatMesh();
+    chair.position.set(-0.35, passenger.hy, z);
+    chair.rotation.y = Math.PI / 2;
+    passenger.mesh.add(chair);
+    registerSeat({
+      id: `${group}-${i}`,
+      group,
+      platform: passenger.platform,
+      at: { x: -0.1, y: passenger.hy + seatHeight, z, yaw: Math.PI / 2 },
+      exit: { x: 0.65, y: passenger.hy + 0.46, z, yaw: Math.PI / 2 },
+      available: () => passenger.y > -30,
+    });
+  });
   updateLoad = solidTrainLoad(tr.cars[tr.cars.length - 1]!, tr.load);
   const smoke = new THREE.Color('#ece8e0'),
     chimney = new THREE.Vector3();
