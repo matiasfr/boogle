@@ -9,7 +9,7 @@ test('variant names are unique per card and the variant urls name their variant'
     assert.equal(new Set(names).size, names.length, p.id);
     for (const v of p.variants ?? []) {
       const q = new URLSearchParams(v.url.split('?')[1]);
-      assert.equal((p.id === 'place' ? q.get('arrival') : null) ?? q.get('v'), v.name, `${p.id}/${v.name}`);
+      assert.equal(q.get('v'), v.name, `${p.id}/${v.name}`);
     }
   }
 });

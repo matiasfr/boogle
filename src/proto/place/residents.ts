@@ -12,6 +12,7 @@ import { isFirstVisit } from '../../player/arrival.ts';
 import { NO_TARGETS, registerInteractable, type Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { playMark } from '../mark.ts';
+import { pageQuery } from '../flags.ts';
 import { camera } from '../../render/scene.ts';
 import { rayHit, raycastClosest } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
@@ -25,7 +26,7 @@ import { job, personalSlice, save } from './job.ts';
 import { VILLAGE, toWorld, type RoomId } from './layout.ts';
 import { indoors, onRoom, roomToWorld, rooms, type Room } from './rooms.ts';
 import { endTalk, startTalk, type Answer, type Beat } from './talk.ts';
-import { SHORE_COAST } from './shore-layout.ts';
+import { SHORE_COAST, SHORE_WORKER, SHORE_WORKER_LOOK } from './shore-layout.ts';
 import {
   BYE,
   GO_ON,
@@ -109,8 +110,8 @@ for (const id of IDS) {
   guys[id] = addResident(V.x, V.y + (c.up ?? 0), V.z, r.yaw + c.yaw, c.act, c.color);
 }
 const inRoom = (r: Room) => IDS.filter((id) => CAST[id].room === r.id);
-const shoreWorker = SHORE_COAST ? addGreeter(toWorld(-95), VILLAGE.y, 12) : null;
-const shoreLine = SHORE_COAST && new URLSearchParams(location.search).get('greeting') !== 'off';
+const shoreWorker = SHORE_COAST ? addGreeter(toWorld(SHORE_WORKER.x), VILLAGE.y, SHORE_WORKER.z) : null;
+const shoreLine = SHORE_COAST && pageQuery().get('greeting') !== 'off';
 let shoreGesture = -1;
 let shoreTalking = false;
 const shorePrompt = new THREE.Vector3();
@@ -316,8 +317,16 @@ onRoom((r, inside) => {
 });
 const VX = toWorld(VILLAGE.x);
 const screen = new THREE.Vector3();
+function inView(x: number, y: number, z: number, margin: number, includeNear = false) {
+  screen.set(x, y, z).project(camera);
+  // The shore approach includes its clip edges; the existing bark tests use open screen/far edges.
+  return includeNear
+    ? !(screen.z < -1 || screen.z > 1 || Math.abs(screen.x) > margin || Math.abs(screen.y) > margin)
+    : screen.z < 1 && Math.abs(screen.x) < margin && Math.abs(screen.y) < margin;
+}
 function heardShoreAsk(via: 'bark' | 'talk') {
-  if (!seen.shoreAsk) playMark('ask heard', { via });
+  if (seen.shoreAsk) return;
+  playMark('ask heard', { via });
   seen.shoreAsk = true;
   save();
 }
@@ -340,19 +349,19 @@ function shoreGreeting(dt: number) {
     if (!seen.shoreNewcomer || me.down || me.swimming || me.coyote <= 0 || conversation.open || barker || indoors.room)
       return;
     if (Math.hypot(b.position.x - g.x, b.position.z - g.z) > 6 || Math.abs(b.position.y - VILLAGE.y) > 3) return;
-    screen.set(g.x, VILLAGE.y + 0.7, g.z).project(camera);
-    if (screen.z < -1 || screen.z > 1 || Math.abs(screen.x) > 0.85 || Math.abs(screen.y) > 0.85) return;
+    if (!inView(g.x, VILLAGE.y + 0.7, g.z, 0.85, true)) return;
     shorePrompt.set(g.x, VILLAGE.y + 0.7, g.z);
     if (raycastClosest(camera.position, shorePrompt, { mask: GROUP.SCENERY }, shoreSight)) return;
     seen.shoreNewcomer = false;
     shoreGesture = 0;
-    save();
   }
   const was = shoreGesture;
   shoreGesture += dt;
-  g.x = toWorld(-95) - 1.5 * Math.min(1, shoreGesture / 0.9);
+  g.x = toWorld(SHORE_WORKER.x) - 1.5 * Math.min(1, shoreGesture / 0.9);
   const yaw =
-    shoreGesture < 2.6 ? Math.atan2(b.position.x - g.x, b.position.z - g.z) : Math.atan2(toWorld(-104) - g.x, -4 - g.z);
+    shoreGesture < 2.6
+      ? Math.atan2(b.position.x - g.x, b.position.z - g.z)
+      : Math.atan2(toWorld(SHORE_WORKER_LOOK.x) - g.x, SHORE_WORKER_LOOK.z - g.z);
   g.yaw = angleLerp(g.yaw, yaw, Math.min(1, dt * 5));
   g.mood = shoreGesture < 0.9 ? 'walk' : shoreGesture < 2.6 ? 'wave' : 'idle';
   if (was < 0.9 && shoreGesture >= 0.9 && shoreLine && !conversation.open) {
@@ -375,8 +384,7 @@ function street(dt: number) {
     if (!g.on || g.job !== 'stroll' || g.chat || g.mood === 'hammer') continue;
     const d = Math.hypot(g.x - b.position.x, g.z - b.position.z);
     // Someone you can see: a line from behind you is nobody's line.
-    screen.set(g.x, g.y + 1.2, g.z).project(camera);
-    if (d < bd && screen.z < 1 && Math.abs(screen.x) < 0.85 && Math.abs(screen.y) < 0.85) {
+    if (d < bd && inView(g.x, g.y + 1.2, g.z, 0.85)) {
       bd = d;
       best = g;
     }
@@ -403,7 +411,7 @@ export function resetResidents() {
   seen.shoreNewcomer = SHORE_COAST && isFirstVisit();
   seen.shoreAsk = false;
   shoreGesture = -1;
-  if (shoreWorker) shoreWorker.x = toWorld(-95);
+  if (shoreWorker) shoreWorker.x = toWorld(SHORE_WORKER.x);
   pending.length = 0;
   stopBark();
 }
@@ -430,10 +438,9 @@ export function updateResidents(dt: number) {
   if (!barker) return;
   barkLeft -= dt;
   const g = barker;
-  screen.set(g.x, (g.fy ?? g.y) + 1.25, g.z).project(camera);
   const away = Math.hypot(g.x - camera.position.x, g.z - camera.position.z) > 24;
   if (barkLeft <= 0 || !g.on || away) return stopBark();
-  const onScreen = screen.z < 1 && Math.abs(screen.x) < 1.1 && Math.abs(screen.y) < 1.1;
+  const onScreen = inView(g.x, (g.fy ?? g.y) + 1.25, g.z, 1.1);
   bubble.classList.toggle('on', onScreen || shouting);
   const x = onScreen ? ((screen.x + 1) / 2) * innerWidth : innerWidth / 2,
     y = onScreen ? ((1 - screen.y) / 2) * innerHeight : innerHeight * 0.3;

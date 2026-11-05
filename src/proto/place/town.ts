@@ -27,7 +27,6 @@ import { H } from './land.ts';
 import { snapRooms } from './rooms.ts';
 import { LOOK } from './look.ts';
 import { TOWN, VILLAGE, toWorld, type Plot } from './layout.ts';
-import { shorePlot } from './shore-layout.ts';
 
 const PLASTER = '#e8dcc0',
   THATCH = '#b99a60',
@@ -46,7 +45,6 @@ const PLASTER = '#e8dcc0',
   TERRACOTTA = '#c9663c';
 
 function planOf(p: Plot): Plan {
-  p = shorePlot(p);
   const x = toWorld(p.x),
     z = p.z,
     yaw = p.yaw ?? 0,

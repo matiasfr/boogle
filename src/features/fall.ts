@@ -17,14 +17,12 @@ if (
   fallArrival.active = true; // before the place's asynchronous loader can position the player
   const loaded = (async () => {
     if (PROTO === 'place') {
-      const [{ SPAWN, toWorld }, { H }, { SHORE_COAST, SHORE_LANDING }] = await Promise.all([
+      const [{ LANDING, toWorld }, { H }] = await Promise.all([
         import('../proto/place/layout.ts'),
         import('../proto/place/terrain.ts'),
-        import('../proto/place/shore-layout.ts'),
       ]);
-      const landing = SHORE_COAST ? SHORE_LANDING : SPAWN;
-      fallArrival.target = { x: toWorld(landing.x), z: landing.z };
-      fallArrival.yaw = landing.yaw;
+      fallArrival.target = { x: toWorld(LANDING.x), z: LANDING.z };
+      fallArrival.yaw = LANDING.yaw;
       fallArrival.ground = H;
     }
     return import('../fall/index.ts');

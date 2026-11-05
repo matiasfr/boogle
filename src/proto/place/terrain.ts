@@ -21,6 +21,7 @@ import {
   railY,
   YARD,
   type LinePoint,
+  type Pt,
 } from './layout.ts';
 
 export const CELL = GRID.cell,
@@ -122,6 +123,20 @@ function pad(x0: number, z0: number, y: number, r: number, soft: number) {
     }
 }
 
+/** One-metre ground-strip samples, including each segment's endpoints. */
+function samplePath(pts: Pt[]): Pt[] {
+  const samples: Pt[] = [];
+  pts.slice(0, -1).forEach((a, k) => {
+    const b = pts[k + 1]!,
+      n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]));
+    for (let m = 0; m <= n; m++) {
+      const t = m / n;
+      samples.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
+    }
+  });
+  return samples;
+}
+
 /** Rasterises a strip along samples [x, z, y]: within `inner` it is y, fading to the land by `outer`. */
 function strip(
   samples: [number, number, number][],
@@ -168,6 +183,7 @@ export const PATH_SAMPLES: [number, number, number][][] = PATHS.map((p) => {
   });
   return out;
 });
+export const SHORE_SAMPLES = SHORE_COAST ? samplePath(SHORE_PATH) : [];
 
 function bake() {
   for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) heights[at(i, j)] = ground(cellX(i), cellZ(j));
@@ -204,71 +220,52 @@ function bake() {
   }
   // Paths last: they cut their ramps into the walls and fill across whatever they meet.
   PATHS.forEach((p) => {
-    const samples: [number, number, number][] = [];
-    p.pts.slice(0, -1).forEach((a, k) => {
-      if (k === p.bridgeAt) return;
-      const b = p.pts[k + 1]!;
-      const len = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]));
-      for (let m = 0; m <= len; m++) {
-        const t = m / len;
-        samples.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
-      }
-    });
+    const samples = [...samplePath(p.pts.slice(0, p.bridgeAt + 1)), ...samplePath(p.pts.slice(p.bridgeAt + 1))];
     strip(samples, p.bold ? 3.6 : 2.4, p.bold ? 6.5 : 4.8, true);
   });
 }
 bake();
 
-// Harvest IDs were planted on this grid. Later local grading must not reorder a saved/shared tree catalog.
-export const catalogHeights = heights.slice();
-export const catalogClearMask = clearMask.slice();
+const shelfQuery = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
+const shelfDemo = shelfQuery.get('proto') === 'place' && shelfQuery.get('shelf') === 'demo';
+// Harvest IDs were planted on this grid. Put later terrain edits after this snapshot to keep tree IDs stable.
+export const catalogHeights = SHORE_COAST || shelfDemo ? heights.slice() : heights;
+export const catalogClearMask = SHORE_COAST || shelfDemo ? clearMask.slice() : clearMask;
 
 if (SHORE_COAST) {
   // A shallow way back from the water beside the level landing. Blend into the original coast beyond
   // the cove; this modifies the finished grid shared by the mesh, heightfield and water shore provider.
+  const i0 = Math.max(0, Math.ceil((-238 - GRID.x0) / CELL)),
+    i1 = Math.min(NX - 1, Math.floor((-176 - GRID.x0) / CELL));
   for (let j = 0; j < NZ; j++)
-    for (let i = 0; i < NX; i++) {
+    for (let i = i0; i <= i1; i++) {
       const x = cellX(i),
         z = cellZ(j),
+        k = at(i, j),
         weight = smoothstep(-238, -226, x) * smoothstep(-182, -190, x) * smoothstep(38, 18, Math.abs(z - 10));
-      if (!weight) continue;
-      const y = -2 + 5 * smoothstep(-224, -208, x),
-        k = at(i, j);
-      heights[k] = heights[k]! + (y - heights[k]!) * weight;
-      clearMask[k] = Math.max(clearMask[k]!, weight);
-    }
-  // Wrap the cove around the clearing's right side, so the inland view has sea beside it.
-  // Keep a shallow shoulder; the path and level landing are restored below.
-  for (let j = 0; j < NZ; j++)
-    for (let i = 0; i < NX; i++) {
-      const x = cellX(i),
-        z = cellZ(j);
+      if (weight) {
+        const y = -2 + 5 * smoothstep(-224, -208, x);
+        heights[k] = heights[k]! + (y - heights[k]!) * weight;
+        clearMask[k] = Math.max(clearMask[k]!, weight);
+      }
+      // Wrap the cove around the clearing's right side. Both passes read only this cell,
+      // so retain their order here; the path and level landing are restored below.
       const side = 10 + 1.8 * Math.max(0, Math.min(10, x + 187));
       if (z - side <= 6) continue;
-      const weight = smoothstep(-238, -226, x) * smoothstep(-176, -187, x) * smoothstep(78, 58, z);
-      if (!weight) continue;
-      const k = at(i, j),
-        target = -2 + 5 * (1 - smoothstep(6, 20, z - side));
-      heights[k] = heights[k]! + (Math.min(heights[k]!, target) - heights[k]!) * weight;
-      clearMask[k] = Math.max(clearMask[k]!, weight);
+      const around = smoothstep(-238, -226, x) * smoothstep(-176, -187, x) * smoothstep(78, 58, z);
+      if (!around) continue;
+      const target = -2 + 5 * (1 - smoothstep(6, 20, z - side));
+      heights[k] = heights[k]! + (Math.min(heights[k]!, target) - heights[k]!) * around;
+      clearMask[k] = Math.max(clearMask[k]!, around);
     }
-  const samples: [number, number, number][] = [];
-  SHORE_PATH.slice(0, -1).forEach((a, k) => {
-    const b = SHORE_PATH[k + 1]!,
-      n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]));
-    for (let m = 0; m <= n; m++) {
-      const t = m / n;
-      samples.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
-    }
-  });
   // Grade a broad grass shoulder first; paint with the ordinary bold-path widths on top.
   strip(
-    samples.filter(([x]) => x < -150),
+    SHORE_SAMPLES.filter(([x]) => x < -150),
     6,
     14,
     false,
   );
-  strip(samples, 3.6, 6.5, true);
+  strip(SHORE_SAMPLES, 3.6, 6.5, true);
   pad(SHORE_HOP.x, SHORE_HOP.z, SHORE_HOP.y, 2.5, 3);
   // Last: an 18 m disc (16 m clear after grid interpolation), including the steering funnel.
   pad(SHORE_LANDING.x, SHORE_LANDING.z, 3, 9, 5);
@@ -277,8 +274,7 @@ if (SHORE_COAST) {
 // Local A/B only: the owner's measured Ultra Water bearing-95 profile, in metres over sea level.
 // Apply once to the finished grid so mesh, Owner collision, H and the shore provider all see the same bed.
 // No shared state or saved terrain changes. The unflagged grid and its facets/colour rules are unchanged.
-const shelfQuery = new URLSearchParams(typeof location === 'undefined' ? '' : location.search);
-if (shelfQuery.get('proto') === 'place' && shelfQuery.get('shelf') === 'demo') {
+if (shelfDemo) {
   const distances = [-10, -5, 0, 5, 10, 20, 40, 60];
   const profile = [1.15, 0.48, -0.04, -0.31, -0.12, 0.32, -0.41, -0.16];
   const ux = Math.sin((95 * Math.PI) / 180),

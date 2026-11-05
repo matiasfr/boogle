@@ -13,7 +13,7 @@ SPAWN stays at the village: returning players skip the fall, valid saved positio
 positions fall back there. Position saves include the ground height; moved ground, water, or an older
 save without that sample falls back to SPAWN. Get unstuck keeps its existing nearby-ground/path recovery.
 
-Each newcomer has their own fall while partners keep playing. `?proto=place&arrival=village&intro=1`
+Each newcomer has their own fall while partners keep playing. `?proto=place&v=village&intro=1`
 keeps the previous landing and terrain in `proto-place-village` (`proto-place-village-coop` with `&coop=1`),
 including room-only invites. It cannot join a shore room. `&greeting=off` keeps the shore and removes the ask.
 Classic (`?classic=1`, room `beach`) is unchanged. Automated look bots still start at SPAWN unless capturing the intro.
@@ -31,7 +31,7 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   swatches (one picked at random) and one big Jump in. Pressing Jump in straight away is fine. The loading screen covers it
   until the island can be drawn; Jump in reads "Loading island" until then. Pad A presses it. In the Home Screen app, a first
   visit there (the app's storage starts empty) also offers "Continue in room x · prototype y" under Jump in. Round 4 on the
-  bare URL and `?proto=place` uses this same opening, landing at its village spawn before the existing opening walk.
+  bare URL and `?proto=place` uses this same opening, landing on the shore before the walk into the village.
   Other `?proto=` and `?play` pages, and automated browsers, get the plain card instead. `intro=1` lets a harness inspect
   a new player's opening; `intro=0` skips the fall. These debug flags are not kept by the Home Screen launch memory.
   The card and sky can draw while Buddy finishes preparing; its preview stays hidden until ready, with the same

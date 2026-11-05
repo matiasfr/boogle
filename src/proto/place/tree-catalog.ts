@@ -14,8 +14,19 @@ import {
   TOWN,
   lineAt,
 } from './layout.ts';
-import { CELL, H, PATH_SAMPLES, at, catalogClearMask, catalogHeights, clearMask, gorgeD, heights } from './terrain.ts';
-import { SHORE_COAST, SHORE_LANDING, SHORE_PATH, shorePlot } from './shore-layout.ts';
+import {
+  CELL,
+  H,
+  PATH_SAMPLES,
+  SHORE_SAMPLES,
+  at,
+  catalogClearMask,
+  catalogHeights,
+  clearMask,
+  gorgeD,
+  heights,
+} from './terrain.ts';
+import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 
 export type LandTree = { x: number; y: number; z: number; size: number; hardwood: boolean };
 export const LAND_TREES: LandTree[] = [];
@@ -76,13 +87,7 @@ for (const path of PATH_SAMPLES)
   for (const [x, z] of path) protectedPoints.push({ x: x + ORIGIN.x, z: z + ORIGIN.z, r: 3 });
 if (SHORE_COAST) {
   protectedPoints.push({ x: SHORE_LANDING.x + ORIGIN.x, z: SHORE_LANDING.z, r: 9 });
-  for (let k = 1; k < SHORE_PATH.length; k++) {
-    const a = SHORE_PATH[k - 1]!,
-      b = SHORE_PATH[k]!,
-      n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]));
-    for (let j = 0; j <= n; j++)
-      protectedPoints.push({ x: a[0] + ((b[0] - a[0]) * j) / n + ORIGIN.x, z: a[1] + ((b[1] - a[1]) * j) / n, r: 6 });
-  }
+  for (const [x, z] of SHORE_SAMPLES) protectedPoints.push({ x: x + ORIGIN.x, z, r: 6 });
 }
 for (const link of LINKS) {
   for (let s = 0; s <= link.line.len; s += 1) {
@@ -95,13 +100,7 @@ for (const link of LINKS) {
     protectedPoints.push({ x: p.x + ORIGIN.x, z: p.z + ORIGIN.z, r: 10 });
   }
 }
-for (const original of [
-  TOWN.start,
-  ...TOWN.wood,
-  ...TOWN.stone,
-  ...TOWN.camps.flatMap((c) => [c.asleep, c.awake]),
-].flat()) {
-  const p = shorePlot(original);
+for (const p of [TOWN.start, ...TOWN.wood, ...TOWN.stone, ...TOWN.camps.flatMap((c) => [c.asleep, c.awake])].flat()) {
   protectedPoints.push({ x: p.x + ORIGIN.x, z: p.z + ORIGIN.z, r: Math.hypot(p.w ?? 6, p.d ?? 6) / 2 + 3 });
 }
 for (const p of Object.values(ROOM_PLOTS))
