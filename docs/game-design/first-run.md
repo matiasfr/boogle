@@ -34,8 +34,8 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   bare URL and `?proto=place` uses this same opening, landing on the shore before the walk into the village.
   Other `?proto=` and `?play` pages, and automated browsers, get the plain card instead. `intro=1` lets a harness inspect
   a new player's opening; `intro=0` skips the fall. These debug flags are not kept by the Home Screen launch memory.
-  The card and sky can draw while Buddy finishes preparing; its preview stays hidden until ready, with the same
-  failure/deadline capsule as every other avatar ([player.md](player.md#avatar-colours-and-names)).
+  The loading screen waits for Buddy to finish preparing. A genuine load failure allows the card to open with a capsule;
+  a successful automatic retry replaces it with Buddy ([player.md](player.md#avatar-colours-and-names)).
 - **Returning visit.** With a name saved, there is no card and no fall: the game goes in on its own as soon as the island
   can be drawn, with the saved name and colour, where you last stood in this room and facing the same way (the pause view's Get unstuck forgets that spot)
   ([src/features/return-spot.ts](../../src/features/return-spot.ts)). Only a place you were standing counts, not a deck, a

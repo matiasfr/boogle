@@ -102,9 +102,10 @@ you enter, it slowly circles the island.
 ## Avatar, colours and names
 
 - Avatar: the Buddy (below). Its model and clips preload from the HTML, alongside the game modules. Local players,
-  partners, late arrivals and the sky-card preview stay hidden until Buddy is ready; the loading screen's 8 s deadline
-  does not reveal a temporary capsule. A genuine load failure or 15 s Buddy deadline reveals the older coloured capsule
-  for the rest of that visit, so nobody stays invisible and a late completion cannot switch their body.
+  partners, late arrivals and the sky-card preview stay hidden until Buddy is ready. The loading screen waits for its
+  preparation, including on saved-name returns: elapsed time alone never selects the capsule. A genuine load failure
+  permits entry with the older coloured capsule; automatic retries after 1.5 s and 5 s replace it with Buddy if loading
+  recovers. Session telemetry marks the local player and arrival preview's body and reason whenever they change.
   `?body=capsule` explicitly selects that capsule with two eyes, bobbing and squashing with speed
   ([avatars.ts](../../src/player/avatars.ts)). This loading visibility is Local, with no presence or physics changes.
 - Eight colours ([constants.ts](../../src/constants.ts) `COLORS`): `#ff6b5a`, `#ffc23d`, `#7fd14a`, `#19c3b3`,

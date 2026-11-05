@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { COLORS, PLAYER_R, HEAD_OFFSET } from '../constants.ts';
 import { clamp, lerp } from '../math.ts';
 import { warmUp } from '../render/precompile.ts';
+import { playMark } from '../proto/mark.ts';
 
 const eyeGeo = new THREE.SphereGeometry(0.12, 12, 8);
 const pupilGeo = new THREE.SphereGeometry(0.055, 10, 6);
@@ -45,26 +46,44 @@ export type AvatarSkin = {
   animate(a: Avatar, speed: number, airborne: boolean, dt: number, swimming: boolean): void;
 };
 let skin: AvatarSkin | null = null;
-let fallback = new URLSearchParams(location.search).get('body') === 'capsule';
+const forcedCapsule = new URLSearchParams(location.search).get('body') === 'capsule';
+let failed = false;
+let ready!: () => void;
+/** Loading waits for a prepared Buddy or a genuine failure; slow preparation is not a failure. */
+export const avatarReady = new Promise<void>((resolve) => {
+  ready = resolve;
+});
+if (forcedCapsule) ready();
 // Local presentation only. Includes the sky-card preview and avatars arriving while the model is loading.
 const waiting = new Set<Avatar>();
+const roles = new WeakMap<Avatar, 'local' | 'preview'>();
+function shown(a: Avatar, body: 'buddy' | 'capsule' | 'hidden', reason: string) {
+  const role = roles.get(a);
+  if (role) playMark('avatar shown', { role, body, reason });
+}
 export function setAvatarSkin(s: AvatarSkin) {
-  if (fallback) return false; // a failed/timed-out load stays a capsule for this visit, even if it finishes later
+  if (forcedCapsule) return false;
   for (const a of waiting) {
     s.dress(a, a.userData.colorIdx);
     a.userData.inner.visible = true;
+    shown(a, 'buddy', failed ? 'recovered' : 'ready');
   }
   skin = s;
+  failed = false;
   waiting.clear();
+  ready();
   return true;
 }
 
-/** A real load error or the Buddy deadline: nobody remains invisible indefinitely. */
+/** A genuine failure permits entry; keep the avatars so a later successful retry can dress them. */
 export function failAvatarSkin() {
   if (skin) return;
-  fallback = true;
-  for (const a of waiting) a.userData.inner.visible = true;
-  waiting.clear();
+  failed = true;
+  for (const a of waiting) {
+    a.userData.inner.visible = true;
+    shown(a, 'capsule', 'load-error');
+  }
+  ready();
 }
 
 // A little of a Buddy's own colour as light, so its shaded side and a night-time Buddy still read as that player.
@@ -76,7 +95,7 @@ export function paintAvatar(mat: THREE.MeshStandardMaterial, colorIdx: number, f
 }
 
 // Group origin is the center of the foot sphere; the avatar faces -Z at rotation 0.
-export function makeAvatar(colorIdx: number): Avatar {
+export function makeAvatar(colorIdx: number, role?: 'local' | 'preview'): Avatar {
   const group = new THREE.Group();
   const inner = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({ roughness: 0.55 });
@@ -94,10 +113,17 @@ export function makeAvatar(colorIdx: number): Avatar {
   }
   group.add(inner);
   group.userData = { inner, mat, phase: 0, colorIdx } satisfies AvatarData;
-  inner.visible = !!skin || fallback;
-  if (!skin && !fallback) waiting.add(group as Avatar);
-  skin?.dress(group as Avatar, colorIdx);
-  return group as Avatar;
+  const avatar = group as Avatar;
+  if (role) roles.set(avatar, role);
+  inner.visible = !!skin || forcedCapsule || failed;
+  if (!skin && !forcedCapsule) waiting.add(avatar);
+  skin?.dress(avatar, colorIdx);
+  shown(
+    avatar,
+    skin ? 'buddy' : inner.visible ? 'capsule' : 'hidden',
+    skin ? 'ready' : forcedCapsule ? 'requested-capsule' : failed ? 'load-error' : 'loading',
+  );
+  return avatar;
 }
 
 export function animateAvatar(avatar: Avatar, speed: number, airborne: boolean, dt: number, swimming = false) {

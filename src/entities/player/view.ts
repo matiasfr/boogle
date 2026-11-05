@@ -5,7 +5,7 @@ import { animateAvatar, makeAvatar } from '../../player/avatars.ts';
 import { me } from './state.ts';
 
 export function makePlayerAvatar() {
-  me.avatar = makeAvatar(me.colorIdx);
+  me.avatar = makeAvatar(me.colorIdx, 'local');
   return me.avatar;
 }
 
