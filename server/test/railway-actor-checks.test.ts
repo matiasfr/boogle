@@ -83,10 +83,15 @@ test('reach comes from the action position; cadence from the client action clock
     const far = f.send({ op: 'rail.chop', id: source[0], yaw: 0, collapsed: false, at: [0, 0, 0], ms: 3000 });
     await f.step(3);
     assert.equal(f.result(far), 'rejected');
-    // The loose sanity bound: a client clock running seconds ahead of the server's is refused.
+    // No bound against the server clock: a client clock running far faster (a warped harness page) is still judged
+    // by its own cadence alone.
     const ahead = f.send({ op: 'rail.chop', id: source[0], yaw: 0, collapsed: false, at, ms: 60000 });
     await f.step(3);
-    assert.equal(f.result(ahead), 'rejected');
+    assert.equal(f.result(ahead), 'accepted');
+    // An action time going backwards within a session fails its own cadence.
+    const back = f.send({ op: 'rail.chop', id: source[0], yaw: 0, collapsed: false, at, ms: 59000 });
+    await f.step(3);
+    assert.equal(f.result(back), 'rejected');
   } finally {
     await f.close();
   }

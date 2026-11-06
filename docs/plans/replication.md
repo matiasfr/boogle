@@ -15,8 +15,8 @@ All adopted by the owner; where they change the text below, the text has been ed
 1. **First, fix the server checks that would reject correct predictions.** An action carries the actor's own position
    (the actor owns their body; exploits don't matter), and reach is judged from it, not from the last 20 Hz presence.
    Swing and unload cadence is judged from the client's own action times (`ms` on each request), not server arrival
-   time; the server keeps only a loose sanity bound (the client's action clock may not run more than 1 s ahead of the
-   server's over a session). This lands in R0, before anything is predicted.
+   time, with no bound against the server's clock (R0 tried a 1 s session bound; the playthrough bot's warped page
+   clock tripped it, so it went). This lands in R0, before anything is predicted.
 2. **Rules every 6 physics steps (10 Hz).** Timed things (wake delays, regrowth, laying, departures) are rendered from
    their replicated start tick, so the rule rate doesn't add visible delay.
 3. **Discrete changes go out as soon as they happen, up to 60 Hz.** The server flushes at the end of any step in which a
@@ -315,8 +315,9 @@ chopping and taking feel instant and corrections go unnoticed.
 ### R0: what landed and what it measured (6 November, M1 Max, Node 26)
 
 - **Server checks:** railway requests carry `at` (the actor's position, cm) and `ms` (the client's action clock);
-  `createRailwayWorldHost` judges reach and swing/unload cadence from them, with a 20 ms cadence slack and a 1 s bound
-  on the client clock running ahead of the server's. Requests without them keep the presence and arrival checks
+  `createRailwayWorldHost` judges reach and swing/unload cadence from them, with a 20 ms cadence slack and no bound
+  against the server clock (a session-long 1 s bound refused the playthrough bot, whose page clock is warped and
+  outruns the server's). Requests without them keep the presence and arrival checks
   (server fixtures and host-only ops). `server/test/railway-actor-checks.test.ts`.
 - **Clock:** `src/world/room-clock.ts`; `sync.stepWorld(ms)` is the host clock (60 Hz steps, a rule tick every sixth,
   a held tick runs on the first step after a durable write clears), `roomStep()` the room clock, `onStep` the flush
