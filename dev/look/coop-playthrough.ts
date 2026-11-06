@@ -269,7 +269,6 @@ export async function coopPlaythrough(options: {
       }
       if (!done) await sleep(200);
     }
-    await stopClock().catch((e) => errors.push(String(e)));
     if (!selection.from && !selection.to && (!reloaded || !rejoined))
       throw new Error('The route skipped a required interruption');
     const atEnding = !selection.to || selection.to === 'pier';
@@ -303,6 +302,7 @@ export async function coopPlaythrough(options: {
     say(
       `COOP both peers agree on stations, rack, trains (2m tolerance), shared rewards and population; end=${selection.to ?? 'pier'}`,
     );
+    await stopClock().catch((e) => errors.push(String(e)));
   } catch (e) {
     errors.push(String(e));
   } finally {

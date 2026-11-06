@@ -40,8 +40,9 @@ second, concurrently but not atomically. The report includes:
 
 A peak deficit over one game second prints **DRIFT**, even if the process catches up. Remaining clock or world-tick
 deficit over one game second at the end fails the run. Requested-rate failures are labelled harness capacity;
-world deficits compare against the achieved source clock. Final co-op convergence still runs after a capacity
-failure, so a rate failure cannot hide an independent state mismatch. Population joins the convergence check.
+world deficits compare against the achieved source clock. Final co-op convergence runs with clocks still advancing,
+before their final rate check, so a rate failure cannot hide an independent state mismatch and a final effect's
+temporary lag has the normal convergence interval to catch up. Population joins the convergence check.
 These are harness diagnostics, not proof of tight
 synchronization throughout the run. Use a lower cap on a busy machine. The measured interval covers setup and
 warm-up; shader loading, browser startup and captures add real time. Background work on the shared Mac changes the
