@@ -14,7 +14,8 @@ import { CLOSE, MAX_MSG, encode, decode, type WireMsg } from '../../../src/net/w
 import { SERVER_ID } from '../../../src/net/ids.ts';
 import { createWorldHost, createRailwayWorldHost } from './world-host.ts';
 import { isRailwayRoom, isPlayableRailwayRoom } from '../../../src/world/railway-namespace.ts';
-import { RAILWAY_CLIENT_MESSAGES, RAILWAY_HOST_MESSAGES } from '../../../src/world/railway-wire.ts';
+import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
+import { HOST_TYPES } from '../../../src/world/sync.ts';
 import { validatePing, honkShape } from '../../../src/sim/social.ts';
 import type { Store } from '../store.ts';
 
@@ -35,7 +36,6 @@ const MSG_RATE = 50; // messages/s per client (burst MSG_BURST)
 const MSG_BURST = 100;
 const PRESENCE_RATE = 40; // presence packets/s per client
 const CLIENT_ONLY = new Set(['w:edit', 'w:need']); // for the server's sync alone
-const HOST_ONLY = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap', 'w:rejected']); // only the host sends these
 
 type Bucket = { tokens: number; at: number };
 type Client = {
@@ -133,10 +133,10 @@ export function createHostedRoom({
   // Today every other ready client; the seam interest management will narrow (docs/research/shared-state-at-scale.md).
   const audience = (from: string) => [...clients.values()].filter((c) => c.id !== from);
 
-  // The sync's messages: w:snap chunks to the client they name, the rest to everyone, encoded once.
+  // The host's messages: addressed messages to the client they name, the rest to everyone, encoded once.
   world.onSend((msg) => {
-    if (msg.t === 'w:snap' || msg.t === 'w:rejected' || (railway && RAILWAY_HOST_MESSAGES.has(String(msg.t)))) {
-      const c = clients.get(String(msg.to));
+    if (typeof msg.to === 'string') {
+      const c = clients.get(msg.to);
       if (c) write(c, encode({ t: 'm', from: SERVER_ID, d: msg }));
     } else toAll(encode({ t: 'm', from: SERVER_ID, d: msg }));
   });
@@ -209,7 +209,7 @@ export function createHostedRoom({
     if (m.t !== 'm') return;
     if (!take(c.msgs, MSG_RATE, MSG_BURST, now)) return void c.dropped++;
     const t = (m.d as WireMsg | null)?.t;
-    if (HOST_ONLY.has(t as string)) return void c.dropped++;
+    if (HOST_TYPES.has(t as string)) return void c.dropped++;
     if (railway) {
       // Existing cosmetic one-offs remain peer messages. Strip unrelated fields; none enters the material host.
       if (isPlayableRailwayRoom(roomId) && (t === 'ping' || t === 'honk')) {
