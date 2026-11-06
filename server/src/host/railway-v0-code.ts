@@ -6,6 +6,9 @@
 // an unversioned accepted-tail semantic change. Do not refresh hashes to make a new build pass:
 // preserve the frozen implementation or review this one migration against the old fixture first.
 // server/Dockerfile copies these .ts/.json files unchanged; Node runs the source directly.
+// Slice-3 preparation (3048c924, 5 November 2026): the supply-v1 sim has frozen flat
+// copies. Only the imports named in ORIGINS changed. Both their new bytes and the
+// original source bytes after reversing those substitutions are verified below.
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
@@ -46,13 +49,34 @@ const FROZEN = {
   'server/src/legacy/world/sync-v0.ts': '11aff2a2962a4cc9b30d1b03e8a8b9ff222ac7dde4cbc383425412f0bc92d3b9',
   'src/sim/tune-supply-v1.ts': 'cf712bfcdb2d030a0244181fcd6228075073eefc55d66a1faa73ee95624049ce',
   'src/world/rules/tune-supply-v1.ts': '1b39032d85dad160c19d42ccf8e19e1776b571ed35b64d2dfc69fd82902a6a8c',
-  'src/world/rules/railway-supply-v1.ts': 'e4cb536011c652f6904c3a884b453d44a4ad90c2f30a099edde1c9607e0b6d2a',
+  'src/world/rules/railway-supply-v1.ts': 'ea626ac7f2e572b33a1de1bb818e55fa4993acf8ca698ad954151ee7ec884b6a',
   'src/world/rules/railway-supply-v1-index.ts': 'ce0d0e4aa2a9644ca54f8b5e653fc30ce867beb561f7d8fdedc809b8fec21440',
-  'src/sim/railway.ts': 'a9cd9fa71ad8de49e94b7d29a7cb6114a031a1737697d68615b9780561f50510',
-  'src/sim/railway-supply.ts': 'e31bac3e5026ea34fbd8929d03b0e61cbd1a82230580ce6920a1d18883b2e490',
+  'src/sim/railway-frozen-v1.ts': 'dfd2167fd0554c6cb1ba3832cf71a29e358844444c69f60329039fcfa151b6a9',
+  'src/sim/railway-supply-frozen-v1.ts': '7ef49581891e8cae6d17cdc6537bdcc625a90285254e006e280585ef175f5472',
   'server/src/legacy/sim/roster.ts': 'aff9abbffa2e93e09ebfd2db4bcf992ceb52635807343296165d97c5289837cc',
   'server/src/legacy/world/rules/types.ts': '21d0c560d71c76e2371acf4b11cf5c301e85fddcb7f4c42ad7e025b5d349109f',
 } as const;
+
+const ORIGINS = [
+  {
+    file: 'src/sim/railway-frozen-v1.ts',
+    hash: 'a9cd9fa71ad8de49e94b7d29a7cb6114a031a1737697d68615b9780561f50510',
+    imports: [["'./railway-supply-frozen-v1.ts'", "'./railway-supply.ts'"]],
+  },
+  {
+    file: 'src/sim/railway-supply-frozen-v1.ts',
+    hash: 'e31bac3e5026ea34fbd8929d03b0e61cbd1a82230580ce6920a1d18883b2e490',
+    imports: [["'./railway-frozen-v1.ts'", "'./railway.ts'"]],
+  },
+  {
+    file: 'src/world/rules/railway-supply-v1.ts',
+    hash: 'e4cb536011c652f6904c3a884b453d44a4ad90c2f30a099edde1c9607e0b6d2a',
+    imports: [
+      ["'../../sim/railway-frozen-v1.ts'", "'../../sim/railway.ts'"],
+      ["'../../sim/railway-supply-frozen-v1.ts'", "'../../sim/railway-supply.ts'"],
+    ],
+  },
+] as const;
 
 export async function verifyRailwayV0Code() {
   await Promise.all(
@@ -60,6 +84,14 @@ export async function verifyRailwayV0Code() {
       const bytes = await readFile(new URL(`../../../${file}`, import.meta.url));
       if (createHash('sha256').update(bytes).digest('hex') !== expected)
         throw new Error(`T1 v0 recovery verifier changed: ${file}`);
+    }),
+  );
+  await Promise.all(
+    ORIGINS.map(async ({ file, hash, imports }) => {
+      let source = await readFile(new URL(`../../../${file}`, import.meta.url), 'utf8');
+      for (const [frozen, original] of imports) source = source.replaceAll(frozen, original);
+      if (createHash('sha256').update(source).digest('hex') !== hash)
+        throw new Error(`T1 v1 recovery source changed beyond import isolation: ${file}`);
     }),
   );
 }
