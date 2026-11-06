@@ -389,125 +389,6 @@ const PAGES: Page[] = [
     ],
   },
   {
-    key: 'haul',
-    query: 'proto=haul&v=wave',
-    setup: `const H = await import('/dev/look/evals/haul-pilot.ts'); H.stand(2, 38, Math.PI); await until(() => window.__wave);`,
-    takes: [
-      {
-        id: 'wave',
-        group: 'Haul (?proto=haul)',
-        title: 'Wave: warning to sweep',
-        when: 'The wave variant (&v=wave): horn at the 25 s warning, rumble rising, two blasts at 10 s, the crash as it sweeps the beach (you get caught).',
-        body: `return R.run(34, async () => { window.__wave.next(26.5); });`,
-      },
-      {
-        id: 'pickup-thock',
-        group: 'Haul (?proto=haul)',
-        title: 'Pickup thock',
-        when: 'Each pickup (Take logs, a pile): a wooden thock that rises with what you carry (here 0 to 60 logs).',
-        body: seq(
-          `const { thock } = await import('/src/proto/haul/pickup-feel.ts');`,
-          [0, 6, 12, 20, 30, 40, 50, 60].map((n) => `thock(${n});`),
-          380,
-        ),
-      },
-      {
-        id: 'magnet-burst',
-        group: 'Haul (?proto=haul)',
-        title: 'Magnet: a 5-piece and a 12-piece burst',
-        when: 'The magnet variant (&v=magnet): a swell as pieces leave the pile, a bolt clink per piece landing on your back (climbing, then a payout shimmer), a cha-ching to close each burst.',
-        body: `const { arrivalTick, burstChord, whooshIn } = await import('/src/proto/haul/magnet-sound.ts');
-          return R.run(null, async () => {
-            for (const n of [5, 12]) {
-              whooshIn(n); await sleep(200);
-              for (let k = 0; k < n; k++) { arrivalTick(); await sleep(k < 8 ? 40 : 45); }
-              burstChord(); await sleep(1100);
-            }
-          });`,
-      },
-    ],
-  },
-  // Silence checks: the sounds the owner's audit cut (docs/proposals/boogle-2.md, "Sound", 2026-11-02) must stay cut
-  // until better ones come. These takes play the moment and fail if anything is heard; they write no files.
-  {
-    key: 'soapbox',
-    query: 'proto=soapbox',
-    setup: `await until(() => window.__soapbox && window.boogle.me.body);`,
-    takes: [
-      {
-        id: 'soapbox-silent',
-        group: 'Silence checks',
-        title: 'A whole soapbox run (cut: all soapbox sounds)',
-        when: 'Riding the course start to finish: no rumble, rattle or wind.',
-        silent: true,
-        body: `const { getAudio } = await import('/src/render/audio.ts');
-          // Retained menu confirmations are unrelated to the removed vehicle bed.
-          for (const bus of ['ui', 'music', 'ambience', 'voice']) getAudio(bus).out.gain.value = 0;
-          const P = await import('/dev/look/evals/soapbox-pilot.ts');
-          await P.drive({seconds:14}); await until(() => window.__soapbox.S.seated);
-          await sleep(1000);
-          return R.run(12, null);`,
-      },
-    ],
-  },
-  {
-    key: 'minis',
-    query: 'proto=minis',
-    takes: [
-      {
-        id: 'minis-knock',
-        group: 'Minis (?proto=minis)',
-        title: 'Knock',
-        when: 'A pin or block hit (topple, golf): woody, lower and louder the harder the hit (soft, medium, hard).',
-        body: seq(
-          `const C = await import('/src/proto/minis/common.ts');`,
-          [0, 0.5, 1].map((k) => `C.knock(${k});`),
-          450,
-        ),
-      },
-      {
-        id: 'minis-pop',
-        group: 'Minis (?proto=minis)',
-        title: 'Pop ladder',
-        when: '"One more fell": a bright pop, one step up the scale per count.',
-        body: seq(
-          `const C = await import('/src/proto/minis/common.ts');`,
-          [...Array(8).keys()].map((n) => `C.pop(${n});`),
-          200,
-        ),
-      },
-      {
-        id: 'minis-fanfare',
-        group: 'Minis (?proto=minis)',
-        title: 'Fanfare',
-        when: 'A hole sunk or a finish, then the big one for a new best.',
-        body: seq(
-          `const C = await import('/src/proto/minis/common.ts');`,
-          [`C.fanfare(false);`, `C.fanfare(true);`],
-          1100,
-        ),
-      },
-      {
-        id: 'minis-womp',
-        group: 'Minis (?proto=minis)',
-        title: 'Sad trombone',
-        when: 'The funny failure (a miss, a fall).',
-        body: seq(`const C = await import('/src/proto/minis/common.ts');`, [`C.womp();`], 100),
-      },
-      {
-        id: 'minis-boing',
-        group: 'Minis (?proto=minis)',
-        title: 'Mushroom boing',
-        when: 'Bouncing on a mushroom (hop): soft, medium, hard.',
-        body: seq(
-          `const C = await import('/src/proto/minis/common.ts');`,
-          [0, 0.5, 1].map((k) => `C.boing(${k});`),
-          500,
-        ),
-      },
-    ],
-  },
-  {
     key: 'build',
     query: 'classic=1',
     setup: `await until(() => window.boogle.me.entered, 90000);
@@ -542,47 +423,6 @@ const PAGES: Page[] = [
             // completion until the queue rests, instead of assuming every build takes 34 seconds.
             await until(() => R.ctx.currentTime > R.lastEnd + 1.5, 45000);
           });`,
-      },
-    ],
-  },
-  {
-    key: 'era',
-    query: 'proto=era',
-    room: 'proto-era',
-    setup: `await until(() => document.querySelector('.era-proto button') && window.boogle.me.entered, 90000);
-      ${TP(12, 38)}
-      await sleep(1000);`,
-    takes: [
-      {
-        id: 'era-wood-bed',
-        group: 'Era (?proto=era)',
-        title: 'Wood-age ambience',
-        when: 'Era 1 everywhere on the island (v2): brown-noise surf swells, a soft pad in F, sparse marimba notes through an echo; far off, a gull, a mallet, a creak.',
-        body: `return R.run(24, null, { trim: false });`,
-      },
-      {
-        id: 'era-wood-bed-60',
-        group: 'Era (?proto=era)',
-        title: 'Wood-age ambience, a minute',
-        when: 'The same bed over 60 s: long enough to hear the pad change chord, a rest, the motif and the rarer one-shots.',
-        body: `return R.run(60, null, { trim: false });`,
-      },
-      {
-        id: 'era-opening-day',
-        group: 'Era (?proto=era)',
-        title: 'Opening day: the wood bed through the swap',
-        when: 'The gathering call, everyone arrives, the countdown and the swap to era 2, all silent now: the wood bed plays on unchanged through it (the tolls, bell and steam bed are cut).',
-        body: `const { rules } = await import('/src/world/game-world.ts');
-          const { world, submitEdit } = await import('/src/world/sync.ts');
-          document.querySelector('.era-proto button').click();
-          await until(() => rules.opening.ready(), 20000);
-          return R.run(null, async () => {
-            submitEdit({ op: 'open.start', i: 0, j: 0 });
-            await sleep(7000);
-            ${TP(6, -44)}
-            await until(() => rules.opening.era(world.tick) === 2, 60000);
-            await sleep(26000);
-          }, { tail: 0.5 });`,
       },
     ],
   },
@@ -636,34 +476,6 @@ const PAGES: Page[] = [
           ],
           5000,
         ),
-      },
-    ],
-  },
-  {
-    key: 'lay',
-    query: 'proto=lay&v=quick',
-    room: 'proto-lay',
-    setup: `await until(() => document.querySelector('.lay-proto button') && window.boogle.me.entered, 90000);`,
-    takes: [
-      {
-        id: 'track-machine',
-        group: 'Track machine (?proto=lay)',
-        title: 'A laying run (quick)',
-        when: 'The track machine laying a section: rapid warm-up chuffs, a thump per sleeper, a rail clank every other one, the whistle at the end.',
-        body: `const { rules } = await import('/src/world/game-world.ts');
-          const { submitEdit } = await import('/src/world/sync.ts');
-          const { trackMachine: TM } = await import('/src/features/track-machine.ts');
-          if (!rules.sites.sites.list.length) throw new Error('No track sites in this fixture');
-          document.querySelector('.lay-proto button').click();
-          await until(() => rules.sites.canRun(0), 15000);
-          const follow = setInterval(() => { const p = TM.pose; window.__debugCam.set([p.x + 4, p.y + 3, p.z + 4], [p.x, p.y, p.z]); }, 50);
-          try {
-            return await R.run(null, async () => {
-              submitEdit({ op: 'site.run', i: 0, j: 0, s: 0 });
-              await until(() => rules.sites.sites.open >= 1, 60000);
-              await sleep(2500);
-            });
-          } finally { clearInterval(follow); }`,
       },
     ],
   },

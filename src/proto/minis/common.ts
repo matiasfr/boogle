@@ -1,5 +1,5 @@
-// Shared bits of the mini-game toys (?proto=minis): world labels readable from 20 m, a personal best per toy in
-// localStorage, synthesized sounds, confetti and your own ball shots. All Local: cosmetic, Math.random is fine.
+// Shared bits of the mini-game toys (the mini-game toys' shared code): world labels readable from 20 m, a personal best per toy in
+// localStorage, synthesized sounds, confetti. All Local: cosmetic, Math.random is fine.
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity, readableUnlit } from '../../render/readable-unlit.ts';
@@ -7,7 +7,6 @@ import { dbToGain, getAudio } from '../../render/audio.ts';
 import { audioSettings } from '../../render/audio-tuning.ts';
 import { noiseBuffer } from '../../render/noise.ts';
 import { camera } from '../../render/scene.ts';
-import { ball } from '../../entities/ball/state.ts';
 import { onFrame } from '../../loop.ts';
 
 // ---------------------------------------------------------------- a big label that faces the camera
@@ -81,13 +80,6 @@ export function best(key: string): number | null {
     return null;
   }
 }
-export function saveBest(key: string, v: number) {
-  try {
-    localStorage.setItem('boogle.minis.' + key, String(v));
-  } catch {
-    /* private window: the best lasts this visit only */
-  }
-}
 
 // ---------------------------------------------------------------- sounds
 function noise(ctx: AudioContext) {
@@ -154,45 +146,6 @@ export function fanfare(big: boolean, vol = 1) {
     tone('sine', f * 2, f * 2, k * 0.075, 0.18, 0.06 * vol);
   });
 }
-/** A sad trombone: the funny failure. */
-export function womp(vol = 1) {
-  vol *= dbToGain(audioSettings.minisDb + audioSettings.minisWompDb);
-  const a = getAudio();
-  if (!a) return;
-  const { ctx, out } = a;
-  const notes = [233, 220, 208, 196];
-  notes.forEach((f, k) => {
-    const t = ctx.currentTime + k * 0.32;
-    const last = k === notes.length - 1;
-    const dur = last ? 0.9 : 0.3;
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(500, t);
-    lp.frequency.linearRampToValueAtTime(1400, t + 0.08);
-    lp.frequency.exponentialRampToValueAtTime(400, t + dur);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.22 * vol, t + 0.03);
-    g.gain.setValueAtTime(0.22 * vol, t + dur * 0.7);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    const o = ctx.createOscillator();
-    o.type = 'sawtooth';
-    o.frequency.setValueAtTime(f, t);
-    if (last) {
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 6;
-      const lg = ctx.createGain();
-      lg.gain.value = 7;
-      lfo.connect(lg).connect(o.frequency);
-      lfo.start(t);
-      lfo.stop(t + dur);
-      o.frequency.linearRampToValueAtTime(f * 0.94, t + dur);
-    }
-    o.connect(lp).connect(g).connect(out);
-    o.start(t);
-    o.stop(t + dur + 0.02);
-  });
-}
 /** A springy boing for a mushroom (k 0..1: how hard). */
 export function boing(k: number, vol = 1) {
   const f = 170 + 90 * k + Math.random() * 20;
@@ -244,19 +197,5 @@ export function puff(x: number, y: number, z: number, n: number, speed: number, 
     });
   }
 }
-
-// ---------------------------------------------------------------- your own shots at the ball
-// A throw: the ball leaves your hands.
-const shotFns: (() => void)[] = [];
-export const onShot = (fn: () => void) => shotFns.push(fn);
-let wasHeld = false;
-onFrame(
-  () => {
-    const held = ball.mine && ball.held;
-    if (wasHeld && !held && ball.mine) for (const fn of shotFns) fn();
-    wasHeld = held;
-  },
-  { phase: 'late', order: 41 },
-);
 
 export const flat = (ax: number, az: number, bx: number, bz: number) => Math.hypot(ax - bx, az - bz);

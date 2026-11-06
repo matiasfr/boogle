@@ -3,7 +3,7 @@ import type * as THREE from 'three/webgpu';
 import { PLAYER_R } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
 import { hideControls } from '../../player/controls.ts';
-import { haulHooks } from '../../player/haul-variant.ts';
+import { haulHooks } from '../../player/haul-hooks.ts';
 import { softWall } from '../player/state.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { physicsTime, setCcd, teleport, sweepSphere, type Body } from '../../physics/engine.ts';

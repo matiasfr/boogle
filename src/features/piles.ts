@@ -6,7 +6,6 @@ import { onStart } from '../loop.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { updatePiles, piles, pileMesh } from '../adapters/piles.ts';
 import { identity } from '../player/identity.ts';
-import { pickReach } from '../player/haul-variant.ts';
 import type { Pile } from '../sim/piles.ts';
 
 // Ask for the whole pile, as much as your stack has room for; nothing of a kind you can't carry.
@@ -15,4 +14,4 @@ const want = (p: Pile) => Math.min(p.n, identity.pid ? rules.stacks.room(identit
 const handle = window as unknown as { boogle?: Record<string, unknown> };
 onStart(() => handle.boogle && (handle.boogle.piles = piles)); // debug handle (scenarios)
 defineKind('piles', { update: 30 });
-spawn({ kind: 'piles', mesh: pileMesh, update: ({ now }) => updatePiles(now, want, pickReach) });
+spawn({ kind: 'piles', mesh: pileMesh, update: ({ now }) => updatePiles(now, want, 1.3) });

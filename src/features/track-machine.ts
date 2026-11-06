@@ -497,6 +497,3 @@ void physicsReady.then(() => {
   registerPlatform(platform);
   spawn({ kind: 'track-machine', mesh: machine, bodies: [body], update: frame });
 });
-
-// For the look evals: where the machine is.
-export const trackMachine = { pose, goal, platform: () => platform };

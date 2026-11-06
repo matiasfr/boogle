@@ -26,7 +26,6 @@ const fields = {
   machineThumpDb: db(-6, -24),
   machineWhistleDb: db(-12, -24),
   minisDb: db(-3, -24),
-  minisWompDb: db(-3, -24),
   placeImpactDb: db(-3, -24),
   footstepStyle: number(0, 0, 2, '0=A soft, 1=B textured, 2=C toy', true),
   footstepsDb: db(-19, -40, 0),

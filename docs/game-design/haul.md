@@ -145,7 +145,7 @@ world for everyone at the same tick, and Reset haul empties every stack and pile
 the start, keeping the tuning. Elsewhere the host refuses both. Without the flag nothing changes. Plaque points always
 use the default section cost.
 
-Code: [src/features/proto-haul.ts](../../src/features/proto-haul.ts), [src/debug/haul-kit.ts](../../src/debug/haul-kit.ts),
+Code: [src/features/proto-haul.ts](../../src/features/proto-haul.ts), (the kit panel, `src/debug/haul-kit.ts`, is removed from `main`),
 [src/sim/tune.ts](../../src/sim/tune.ts), [src/world/rules/tune.ts](../../src/world/rules/tune.ts). Lockstep state
 `tune` saves and hashes the complete effective values and revision. Development assumes current clients;
 save reshapes reset `WORLD_NS` instead of migrating old profiles. Ops include
@@ -210,9 +210,9 @@ a clink on top, a pentatonic step higher every 6 logs you carry (rec 3), and the
 open section in this tab: Take-logs presses, palms used, metres walked and seconds from your first take to the
 machine's start (rec 1: is the chore the gathering?). Copy values includes that line.
 
-Code: [src/player/haul-variant.ts](../../src/player/haul-variant.ts) (the flag), [src/proto/haul/](../../src/proto/haul/index.ts)
+Code (removed from `main`): `src/player/haul-variant.ts` (the flag), `src/proto/haul/`
 (`loose-logs.ts`, `pickup-feel.ts`, `wave.ts`, `wave-look.ts`, `wave-time.ts`), the chore counter in
-[src/debug/haul-kit.ts](../../src/debug/haul-kit.ts). Loose logs are Local. Look evals:
+`src/debug/haul-kit.ts`. Loose logs are Local. Look evals:
 `dev/look/evals/haul-wave-warn.ts`, `haul-wave-caught.ts`, `haul-wave-dash.ts`.
 
 ## Prototype: era swap (?proto=era)
@@ -250,8 +250,8 @@ reaches opening day in seconds; Reset haul (the haul kit) also undoes opening da
 and the sky is untouched; the state and ops exist but nothing submits them.
 
 Code: [src/sim/era.ts](../../src/sim/era.ts), [src/world/rules/opening.ts](../../src/world/rules/opening.ts),
-[src/features/proto-era.ts](../../src/features/proto-era.ts), [src/proto/era/](../../src/proto/era/index.ts) (each era's
-kit, blocks and sky tint, is one table, [blocks.ts](../../src/proto/era/blocks.ts); the call, sky,
+`src/features/proto-era.ts`, `src/proto/era/` (removed from `main` except [blocks.ts](../../src/proto/era/blocks.ts); each era's
+kit, blocks and sky tint, is one table, `blocks.ts`; the call, sky,
 ambience and postcard are `call.ts`, `atmosphere.ts`, `ambience.ts` and `postcard.ts`). Lockstep state `opening`
 (`t0`, plus `h` once the call ended early and `la` once the shortcut was used); ops `open.start`, `open.here`,
 `open.lay` (`proto-` rooms only). Scenario: `npm run scenario -- era-swap`.

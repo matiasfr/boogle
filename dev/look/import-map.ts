@@ -35,11 +35,10 @@ export function harnessImports(): Plugin {
         this.addWatchFile(full);
         const code = fs.readFileSync(full, 'utf8');
         // Includes literal imports, string bodies, and IDs stored in variables. Comments can name examples that
-        // don't exist; only real files enter the map. The one computed family (minis) is expanded below.
+        // don't exist; only real files enter the map.
         for (const match of code.matchAll(/['"`]((?:\/src\/|\/dev\/)[\w./-]+\.ts)['"`]/g))
           if (fs.existsSync(path.join(root, match[1]!))) sources.add(match[1]!);
       }
-      for (const name of ['index', 'golf', 'hop']) sources.add(`/src/proto/minis/${name}.ts`);
       const entries = [...sources].sort().map((source) => {
         const ref = this.emitFile({ type: 'chunk', id: path.join(root, source), preserveSignature: 'strict' });
         return `${JSON.stringify(source)}: import.meta.ROLLUP_FILE_URL_${ref}`;

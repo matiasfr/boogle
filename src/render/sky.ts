@@ -47,11 +47,6 @@ export { skyU } from './sky-radiance.ts';
 import { clouds } from './props.ts';
 import { world, TICK_MS } from '../world/sync.ts';
 import { skyAt, skyState } from '../sim/sky-clock.ts';
-import { protoOn } from '../proto/flags.ts';
-
-// Temporary ?proto=sky seam: build the original graph verbatim on every other page.
-// Only a horizon haze blend remains; palettes, lighting and clock are the plain game's.
-const softHorizon = protoOn('sky');
 
 const DIST = 600; // sun/moon billboards sit this far from the camera (inside the 700 sky sphere)
 const SUN_R = 24; // the disc; its billboard is twice as wide, for the glow around it
@@ -110,10 +105,6 @@ const SUN_I = 2.5,
   HEMI_NIGHT = 0.7;
 
 // ---------------------------------------------------------------- sky dome
-// The dome's colours as updateSky left them this frame. A feature may tint them after it (onFrame order > -5) for a
-// Local look; updateSky sets them afresh every frame, so a tint never sticks (the era prototype, src/proto/era/).
-export const skyColors = { top: skyU.uTop.value as THREE.Color, horizon: skyU.uHorizon.value as THREE.Color };
-
 // TSL's typings can't follow a vec3 through fract and back to .x/.y/.z: the node is typed loosely here.
 // oxlint-disable-next-line typescript/no-explicit-any
 const hash = Fn(([p0]: [any]) => {
@@ -144,9 +135,7 @@ const skyColor = Fn(() => {
         .mul(step(0.991, h)),
     );
   });
-  // Temporary ?proto=sky seam: the existing horizon colour meets the fogged sea/land, with a soft shoulder.
-  // Blend after glow so sun-facing and moon-facing horizons meet the same fog colour too. No new palette.
-  return vec4(softHorizon ? mix(skyU.uHorizon, min(col, vec3(1)), tslSmoothstep(0, 0.025, d.y)) : min(col, vec3(1)), 1);
+  return vec4(min(col, vec3(1)), 1);
 });
 
 const skyMat = new MeshBasicNodeMaterial({ side: THREE.BackSide, depthWrite: false, fog: false });

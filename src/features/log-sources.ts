@@ -12,7 +12,7 @@ import { CELL, HALF } from '../constants.ts';
 import { onApplied, submitEdit } from '../world/sync.ts';
 import { registerInteractable, NO_TARGETS, type Interactable } from '../player/hands.ts';
 import { me } from '../player/player.ts';
-import { haulHooks } from '../player/haul-variant.ts';
+import { haulHooks } from '../player/haul-hooks.ts';
 import { net } from '../netplay/net.ts';
 import { cellX, cellZ, groundHeight } from '../island/terrain.ts';
 import { pieceMesh, pieceColor, heapMatrix, commitPieces, fly } from '../render/haul-pieces.ts';

@@ -1,6 +1,6 @@
 // An iPad with a Magic Keyboard (the owner's playtest device): the page starts in touch mode (coarse pointer), a key
 // press or a trackpad click switches to keyboard and mouse (no touch overlay, the reticle), a finger switches back.
-// In both modes the HUD's own buttons take presses: the menu button, and the era prototype's "Lay the whole route".
+// In both modes the HUD's own buttons take presses: the menu button.
 // Serves DESIGN.md "Designed for drop-in, drop-out".
 type Page = {
   touchscreen: { tap: (x: number, y: number) => Promise<void> };
@@ -34,22 +34,19 @@ type Spot = { x: number; y: number; top: boolean };
 const touchMode = `document.body.classList.contains('touch')`;
 const PAUSED = `!!document.querySelector('dialog.pause')?.open`;
 const CLOSE = `const P = await import('/src/features/pause.ts'); P.closePause();`;
-const LAID = `(async () => { const { rules } = await import('/src/world/game-world.ts'); return rules.opening.ready(); })()`;
 
 export default {
   about:
     'iPad + keyboard: the input mode follows the last key, trackpad or finger, and HUD buttons take presses in both',
   timeout: 240000,
   async run(t: Run) {
-    const room = 'proto-era' + Math.random().toString(36).slice(2, 6);
-    const g = await t.open({ name: 'ipad', room, hud: true, touch: true, size: [1194, 834], query: 'proto=era' });
-    await g.waitFor(`!!document.querySelector('.era-proto button') && window.boogle?.me?.entered`, { timeout: 90000 });
+    const room = 'proto-ipad' + Math.random().toString(36).slice(2, 6);
+    const g = await t.open({ name: 'ipad', room, hud: true, touch: true, size: [1194, 834] });
+    await g.waitFor(`window.boogle?.me?.entered`, { timeout: 90000 });
     t.check('starts in touch mode', !!(await g.eval(`return ${touchMode};`)));
     t.check('still: touch mode', true, await g.still('ipad-touch'));
 
-    // Touch: the menu button and the shortcut sit above the touch overlay.
-    const era = (await g.eval(CENTRE('.era-proto button'))) as Spot;
-    t.check('touch: nothing covers "Lay the whole route"', era.top, JSON.stringify(era));
+    // Touch: the menu button sits above the touch overlay.
     let menu = (await g.eval(CENTRE('.menu-btn'))) as Spot;
     await g.page.touchscreen.tap(menu.x, menu.y);
     t.check('touch: a tap on the menu button opens the menu', (await g.waitFor(PAUSED, { timeout: 3000 })) >= 0);
@@ -65,17 +62,13 @@ export default {
       )),
     );
     t.check('still: keyboard mode', true, await g.still('ipad-keyboard'));
-    await g.page.mouse.click(era.x, era.y);
-    t.check('keyboard: a click on "Lay the whole route" lays it', (await g.waitFor(LAID, { timeout: 10000 })) >= 0);
     menu = (await g.eval(CENTRE('.menu-btn'))) as Spot;
     await g.page.mouse.click(menu.x, menu.y);
     t.check('keyboard: a click on the menu button opens the menu', (await g.waitFor(PAUSED, { timeout: 3000 })) >= 0);
     await g.eval(CLOSE);
 
-    // A finger switches back; the shortcut is still uncovered.
+    // A finger switches back.
     await g.page.touchscreen.tap(800, 400);
     t.check('a tap switches back to touch mode', (await g.waitFor(touchMode, { timeout: 3000 })) >= 0);
-    const again = (await g.eval(CENTRE('.era-proto button'))) as Spot;
-    t.check('touch again: nothing covers the shortcut', again.top, JSON.stringify(again));
   },
 };

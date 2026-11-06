@@ -28,7 +28,7 @@ import { describeControl, hideControls } from '../../player/controls.ts';
 import { freshStart } from '../../player/arrival.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { interactTarget } from '../../player/hands.ts';
-import { haulHooks } from '../../player/haul-variant.ts';
+import { haulHooks } from '../../player/haul-hooks.ts';
 import { physicsTime, setCcd, teleport } from '../../physics/engine.ts';
 import { softWall } from '../../entities/player/state.ts';
 import { carry } from '../../physics/platforms.ts';

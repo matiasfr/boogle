@@ -16,7 +16,7 @@ export type CarryReadout = {
   attention: boolean;
 };
 
-// Seams for a haul variant that draws pickups its own way (?proto=haul&v=magnet, src/proto/haul/magnet.ts): with
+// Seams for an owner that draws the carry its own way (Place, the railway): with
 // `flyIns` false this module draws no fly-ins; `count(n)` is what your chip and your own bundle show while the host's
 // count is n (the magnet moves it one arrival at a time). Local.
 export const backSeam = {

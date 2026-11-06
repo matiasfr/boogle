@@ -42,7 +42,6 @@ declare global {
     __warp?: { go(speed: number): void }; // dev/look/warp.ts, in the harness only
     __place?: unknown; // src/proto/place/index.ts (?proto=place) tuning and state
     __crossing?: unknown; // src/proto/crossing/index.ts (?proto=crossing) tuning and state
-    __soapbox?: unknown; // src/proto/soapbox/index.ts: tuning and state, for ?proto=soapbox evals
     __wagon?: unknown; // src/proto/wagon/index.ts (?proto=wagon) state and the look evals' shortcuts
     __net?: unknown; // src/proto/net/index.ts (?proto=net): its state and shortcuts, for the look evals
     __freight?: unknown; // src/proto/wagon/freight.ts: its tunables and drop log, for the look evals

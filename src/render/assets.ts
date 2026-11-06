@@ -2,13 +2,11 @@
 import * as THREE from 'three/webgpu';
 import { renderer, rendererReady } from './scene.ts';
 import { onFrame } from '../loop.ts';
-import { assetUrl } from './asset-manifest.ts';
 import { bootSpan } from '../boot/timeline.ts';
 import { createAssetLoader } from './asset-loader.ts';
 export type { Asset } from './asset-loader.ts';
 const assets = createAssetLoader(renderer, { ready: rendererReady, onParse: (ms) => bootSpan('gltfParse', ms) });
 export const loadAsset = assets.load;
-export const loadAssetById = (id: string) => loadAsset(assetUrl(id));
 // ---------------------------------------------------------------- clips
 // Mixers with something playing, and what: a mixer drops out of the frame hook once all its actions have ended.
 const playing = new Map<THREE.AnimationMixer, Set<THREE.AnimationAction>>();

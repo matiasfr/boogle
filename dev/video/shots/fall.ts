@@ -1,5 +1,5 @@
 // The fall into the world (aa20c27, bf5c9d9): a first visit rides a trolley above the clouds, Jump in runs it off the
-// rail, and you smash through the BOOGLE title on the way down to the island. ?proto=fall replays it (src/features/fall.ts);
+// rail, and you smash through the BOOGLE title on the way down to the island. a first visit plays it (src/features/fall.ts);
 // the shot holds back the harness's own Jump in press, so the card scene is on film before the jump.
 import type { Shot } from '../clip.ts';
 
@@ -25,7 +25,7 @@ const CLEAN = `const s = document.createElement('style');
 
 export default {
   about: 'the first visit: the trolley above the clouds, off the rail, through the BOOGLE title, a flat landing',
-  query: 'proto=fall',
+  query: 'intro=1',
   async run(c) {
     const g = await c.open({ room: 'clipfall', name: 'Sunny Otter', hud: true, init: `(${hold})()` });
     await g.eval(CLEAN);

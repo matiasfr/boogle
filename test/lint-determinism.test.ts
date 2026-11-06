@@ -57,7 +57,7 @@ test('fixture assertions retain every ESLint catch and enforce current policy; J
       );
       return caught !== c.expected;
     });
-    assert.equal(cases.length, 232);
+    assert.equal(cases.length, 231);
     assert.deepEqual(differences, [], JSON.stringify({ differences, diagnostics }, null, 2));
     assert.ok(diagnostics.some((d) => d.file === js && d.rule === 'boogle/js-language'));
     assert.deepEqual(
