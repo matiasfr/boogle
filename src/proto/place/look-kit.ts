@@ -76,18 +76,18 @@ function logColors(g: THREE.BufferGeometry) {
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
 }
-if (LOOK.kit)
-  void import('../../render/assets.ts')
-    .then((a) => a.loadAsset(kitUrl))
-    .then((asset) => {
-      asset.gltf.scene.updateMatrixWorld(true);
-      loadedKit = asset.gltf.scene;
-      for (const [name, meshes] of waiting) {
-        const g = kitGeometry(name);
-        for (const m of meshes) useKitGeometry(m, g);
-      }
-      waiting.clear();
-    });
+// The machine feeder requests kit pieces with look=none too.
+void import('../../render/assets.ts')
+  .then((a) => a.loadAsset(kitUrl))
+  .then((asset) => {
+    asset.gltf.scene.updateMatrixWorld(true);
+    loadedKit = asset.gltf.scene;
+    for (const [name, meshes] of waiting) {
+      const g = kitGeometry(name);
+      for (const m of meshes) useKitGeometry(m, g);
+    }
+    waiting.clear();
+  });
 function useKitGeometry(mesh: THREE.Mesh, geometry: THREE.BufferGeometry) {
   setViewGeometry(mesh, geometry);
   // Static station bounds must include the loaded piece, not the startup speck.

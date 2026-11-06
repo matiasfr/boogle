@@ -10,6 +10,8 @@ import { emit } from '../../render/particles.ts';
 import { registerWaterContact } from '../../render/water/contacts.ts';
 import { chuff, clank, thump } from '../../render/machine-sfx.ts';
 import { FIXED, PLAYER_R } from '../../constants.ts';
+import { background } from '../../async.ts';
+import machineUrl from '../../../assets/built/track-layer.glb?url';
 import { angleLerp } from '../../math.ts';
 import {
   BODY,
@@ -43,8 +45,11 @@ import { LOOK, STEEL, paint, rustTrainU, rustU, softGlow } from './look.ts';
 import { merged } from './part-geometry.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { kitBatch, lookTrack, machineLook, trainLook } from './look-kit.ts';
+import { machineModel, MACHINE_CHAIRS, MACHINE_DECK, MACHINE_GAP } from './machine-model.ts';
 import { solidTrainLoad } from './train-load.ts';
-import { registerSeat } from './seat.ts';
+import { registerSeat, seatHeight } from './seat.ts';
+import { MAX_PANEL_LENGTH, trackPanels, type TrackPanel } from './track-panels.ts';
+import { panelMagazine, panelSlot } from './machine-panels.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const lateral = (l: number, out: { x: number; z: number }) => {
@@ -74,13 +79,19 @@ export type Track = {
   spec: LineSpec;
   set: DropSet;
   order: number[]; // piece indices that aren't there at the start, by the metre the machine drops them
-  us: Float32Array; // by piece: the head's u when it drops
+  us: Float32Array | Float64Array; // Panel frontiers retain full precision; continuous track keeps its original rounding.
   heights: Float32Array; // by piece: how far it falls
   next: number;
   solids: Solid[];
   nextSolid: number;
   u: (s: number) => number;
   head: number; // how far along (in u) the track is down
+  panels: TrackPanel[];
+  cursor: number;
+  panelPieces: number[][];
+  kinds: PieceKind[];
+  panelFrame: (index: number, out: THREE.Matrix4) => THREE.Matrix4;
+  presentPanel: (index: number, frame: THREE.Matrix4) => void;
   layTo: (u: number) => void;
   snapTo: (u: number) => void;
   update: (dt: number) => void;
@@ -90,16 +101,29 @@ export function buildTrack(
   spec: LineSpec,
   thudAt: (k: number, kind: PieceKind, x: number, y: number, z: number) => void,
   owner?: OwnedView,
+  mode: 'panels' | 'continuous' = 'panels',
 ) {
+  const panelled = mode === 'panels';
   const { line, dir } = spec;
   const u = (s: number) => (dir > 0 ? s : line.len - s);
+  const panels = panelled ? trackPanels(spec) : [];
+  const stubbed = (s: number) =>
+    spec.id === 'timber' ? s >= STUB.camp - 0.5 || s <= STUB.village + 0.5 : s <= STUB.east + 0.5;
+  const panelOf = (at: number) => panels.findIndex((p) => at >= p.from - 1e-7 && at < p.to - 1e-7);
+  const frontier = (s: number) => {
+    if (!panelled) return stubbed(s) ? -Infinity : u(s);
+    if (spec.id === 'quarry' && u(s) > panels.at(-1)!.to) return Infinity;
+    const index = panelOf(u(s));
+    return index < 0 ? -Infinity : panels[index]!.to;
+  };
+  const cuts = panelled
+    ? [0, ...panels.map((p) => p.from), panels.at(-1)!.to, line.len].sort((a, b) => a - b)
+    : [0, line.len];
   const boxes: ReturnType<typeof box>[] = [],
     us: number[] = [],
     falls: number[] = [],
     kinds: PieceKind[] = [],
     pre: boolean[] = [];
-  const stubbed = (s: number) =>
-    spec.id === 'timber' ? s >= STUB.camp - 0.5 || s <= STUB.village + 0.5 : s <= STUB.east + 0.5;
   const add = (
     s: number,
     kind: PieceKind,
@@ -114,10 +138,10 @@ export function buildTrack(
     const b = box(x, z, local, color);
     b.y = y;
     boxes.push(b);
-    us.push(u(s) - lead);
+    us.push(panelled ? frontier(s) : u(s) - lead);
     falls.push(fall);
     kinds.push(kind);
-    pre.push(stubbed(s));
+    pre.push(frontier(s) === -Infinity);
   };
   const q = { x: 0, z: 0 };
   const bed = (s: number) => {
@@ -125,44 +149,125 @@ export function buildTrack(
     lateral(0, q);
     return railY(line, s) - H(q.x, q.z);
   };
-  // Sleepers on the land; on the trestle a plank deck wide enough to walk, nearly closed.
-  for (let s = 0.6; s < line.len;) {
-    const onDeck = bed(s) > 1;
-    const yaw = Math.atan2(P.ux, P.uz),
-      y = railY(line, s),
-      lean = new THREE.Euler(-Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2), 0, 0);
-    if (onDeck) add(s, 'plank', q.x, q.z, y - 0.02, place(0, 0, 0, DECK_W, 0.12, 0.84, yaw, lean), '#a97a45', 0, 1.1);
-    else {
-      add(s, 'sleeper', q.x, q.z, y - 0.02, place(0, 0, 0, 2.3, 0.12, 0.42, yaw, lean), '#8a6236', 0, 1.1);
-      // Low sleepers need support too: the tall trestle bents only start beyond a metre of clearance.
-      for (const side of [-0.75, 0.75]) {
-        lateral(side, q);
-        const foot = H(q.x, q.z) - 0.08;
-        const height = y - 0.02 - foot;
-        if (height > 0.18) add(s, 'leg', q.x, q.z, foot, place(0, 0, 0, 0.35, height, 0.35, yaw), '#a2743f', 0.4, 0.5);
+  if (!panelled) {
+    // Sleepers on the land; on the trestle a plank deck wide enough to walk, nearly closed.
+    for (let s = 0.6; s < line.len;) {
+      const onDeck = bed(s) > 1;
+      const yaw = Math.atan2(P.ux, P.uz),
+        y = railY(line, s),
+        lean = new THREE.Euler(-Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2), 0, 0);
+      if (onDeck) add(s, 'plank', q.x, q.z, y - 0.02, place(0, 0, 0, DECK_W, 0.12, 0.84, yaw, lean), '#a97a45', 0, 1.1);
+      else {
+        add(s, 'sleeper', q.x, q.z, y - 0.02, place(0, 0, 0, 2.3, 0.12, 0.42, yaw, lean), '#8a6236', 0, 1.1);
+        // Low sleepers need support too: the tall trestle bents only start beyond a metre of clearance.
+        for (const side of [-0.75, 0.75]) {
+          lateral(side, q);
+          const foot = H(q.x, q.z) - 0.08;
+          const height = y - 0.02 - foot;
+          if (height > 0.18)
+            add(s, 'leg', q.x, q.z, foot, place(0, 0, 0, 0.35, height, 0.35, yaw), '#a2743f', 0.4, 0.5);
+        }
+      }
+      s += onDeck ? 1 : 1.2;
+    }
+    // Rails: fixed lengths, one pair after another, a little behind the head (they lie on sleepers that are down).
+    for (let s = 1.5; s < line.len; s += 3) {
+      lineAt(line, s, P);
+      const yaw = Math.atan2(P.ux, P.uz),
+        y = railY(line, s),
+        pitch = Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2);
+      for (const r of [-0.5, 0.5]) {
+        lateral(r, q);
+        add(
+          s,
+          'rail',
+          q.x,
+          q.z,
+          y + TOP,
+          place(0, 0, 0, 0.1, 0.12, 3.05, yaw, new THREE.Euler(-pitch, 0, 0)),
+          '#4c5058',
+          -2.2,
+          0.8,
+        );
       }
     }
-    s += onDeck ? 1 : 1.2;
-  }
-  // Rails: fixed lengths, one pair after another, a little behind the head (they lie on sleepers that are down).
-  for (let s = 1.5; s < line.len; s += 3) {
-    lineAt(line, s, P);
-    const yaw = Math.atan2(P.ux, P.uz),
-      y = railY(line, s),
-      pitch = Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2);
-    for (const r of [-0.5, 0.5]) {
-      lateral(r, q);
-      add(
-        s,
-        'rail',
-        q.x,
-        q.z,
-        y + TOP,
-        place(0, 0, 0, 0.1, 0.12, 3.05, yaw, new THREE.Euler(-pitch, 0, 0)),
-        '#4c5058',
-        -2.2,
-        0.8,
-      );
+  } else {
+    // Sleepers on the land; on the trestle a plank deck wide enough to walk, nearly closed.
+    for (let cut = 1; cut < cuts.length; cut++) {
+      const from = cuts[cut - 1]!,
+        to = cuts[cut]!;
+      for (let at = from; at < to - 1e-7;) {
+        const probe = dir > 0 ? at + 0.5 : line.len - at - 0.5;
+        const spacing = bed(probe) > 1 ? 1 : 1.2;
+        const length = Math.min(spacing, to - at);
+        const s = dir > 0 ? at + length / 2 : line.len - at - length / 2;
+        const onDeck = bed(s) > 1;
+        const yaw = Math.atan2(P.ux, P.uz),
+          y = railY(line, s),
+          lean = new THREE.Euler(-Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2), 0, 0);
+        if (onDeck)
+          add(
+            s,
+            'plank',
+            q.x,
+            q.z,
+            y - 0.02,
+            place(0, 0, 0, DECK_W, 0.12, Math.min(0.84, length), yaw, lean),
+            '#a97a45',
+            0,
+            1.1,
+          );
+        else {
+          add(
+            s,
+            'sleeper',
+            q.x,
+            q.z,
+            y - 0.02,
+            place(0, 0, 0, 2.3, 0.12, Math.min(0.42, length), yaw, lean),
+            '#8a6236',
+            0,
+            1.1,
+          );
+          // Low sleepers need support too: the tall trestle bents only start beyond a metre of clearance.
+          for (const side of [-0.75, 0.75]) {
+            lateral(side, q);
+            const foot = H(q.x, q.z) - 0.08;
+            const height = y - 0.02 - foot;
+            if (height > 0.18)
+              add(s, 'leg', q.x, q.z, foot, place(0, 0, 0, 0.35, height, 0.35, yaw), '#a2743f', 0.4, 0.5);
+          }
+        }
+        at += length;
+      }
+    }
+    // Split rail pairs at exact panel/closure boundaries, with no former 2.2 m visual lag.
+    for (let cut = 1; cut < cuts.length; cut++) {
+      const from = cuts[cut - 1]!,
+        to = cuts[cut]!;
+      for (let at = from; at < to - 1e-7; at += 3) {
+        const length = Math.min(3, to - at);
+        const centre = at + length / 2;
+        const s = dir > 0 ? centre : line.len - centre;
+        lineAt(line, s, P);
+        const yaw = Math.atan2(P.ux, P.uz),
+          y = railY(line, s),
+          pitch = Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2);
+        for (const r of [-0.5, 0.5]) {
+          lateral(r, q);
+          add(
+            s,
+            'rail',
+            q.x,
+            q.z,
+            y + TOP,
+            place(0, 0, 0, 0.1, 0.12, length, yaw, new THREE.Euler(-pitch, 0, 0)),
+            '#4c5058',
+            -2.2,
+            0.8,
+          );
+        }
+      }
     }
   }
   // Bents where the ground has dropped away: they go in ahead of the machine, legs first, then the cap and stringers.
@@ -244,29 +349,59 @@ export function buildTrack(
   const solids: Solid[] = [];
   const a = { x: 0, z: 0 },
     c = { x: 0, z: 0 };
-  for (let s = 0; s < line.len; s += 2) {
-    const s1 = Math.min(line.len, s + 2);
-    lineAt(line, s, P);
-    lateral(0, a);
-    const ya = railY(line, s) + TOP,
-      wide = railY(line, s + 1) - H(a.x, a.z) > 1;
-    lineAt(line, s1, P);
-    lateral(0, c);
-    const yc = railY(line, s1) + TOP;
-    const ax = a.x,
-      az = a.z,
-      cx = c.x,
-      cz = c.z;
-    solids.push({
-      s: (s + s1) / 2,
-      u: stubbed(s + 1) ? -Infinity : u(s + 1),
-      add: () => slab(ax, az, cx, cz, ya, yc, wide ? DECK_W : BED_W, owner),
-      on: null,
-    });
+  if (!panelled) {
+    for (let s = 0; s < line.len; s += 2) {
+      const s1 = Math.min(line.len, s + 2);
+      lineAt(line, s, P);
+      lateral(0, a);
+      const ya = railY(line, s) + TOP,
+        wide = railY(line, s + 1) - H(a.x, a.z) > 1;
+      lineAt(line, s1, P);
+      lateral(0, c);
+      const yc = railY(line, s1) + TOP;
+      const ax = a.x,
+        az = a.z,
+        cx = c.x,
+        cz = c.z;
+      solids.push({
+        s: (s + s1) / 2,
+        u: stubbed(s + 1) ? -Infinity : u(s + 1),
+        add: () => slab(ax, az, cx, cz, ya, yc, wide ? DECK_W : BED_W, owner),
+        on: null,
+      });
+    }
+  } else {
+    for (let cut = 1; cut < cuts.length; cut++) {
+      const start = cuts[cut - 1]!,
+        end = cuts[cut]!;
+      for (let at = start; at < end - 1e-7; at += 2) {
+        const lo = at,
+          hi = Math.min(end, at + 2);
+        const s = dir > 0 ? lo : line.len - hi;
+        const s1 = dir > 0 ? hi : line.len - lo;
+        lineAt(line, s, P);
+        lateral(0, a);
+        const ya = railY(line, s) + TOP,
+          wide = railY(line, s + 1) - H(a.x, a.z) > 1;
+        lineAt(line, s1, P);
+        lateral(0, c);
+        const yc = railY(line, s1) + TOP;
+        const ax = a.x,
+          az = a.z,
+          cx = c.x,
+          cz = c.z;
+        solids.push({
+          s: (s + s1) / 2,
+          u: frontier((s + s1) / 2),
+          add: () => slab(ax, az, cx, cz, ya, yc, wide ? DECK_W : BED_W, owner, 0),
+          on: null,
+        });
+      }
+    }
   }
   for (const l of legsAt)
     solids.push({
-      u: u(l.s) - 5,
+      u: panelled ? frontier(l.s) : u(l.s) - 5,
       water:
         l.g < 0 && l.top > 0
           ? () => registerWaterContact({ x: l.x, z: l.z, radius: Math.SQRT2 * 0.25, top: l.top })
@@ -282,28 +417,59 @@ export function buildTrack(
       on: null,
     });
   solids.sort((p, r) => p.u - r.u);
+  const panelRest = new THREE.Matrix4(),
+    delta = new THREE.Matrix4(),
+    matrix = new THREE.Matrix4();
 
   const t: Track = {
     spec,
     set,
     order,
-    us: Float32Array.from(us),
+    us: panelled ? Float64Array.from(us) : Float32Array.from(us),
     heights: Float32Array.from(falls),
     next: 0,
     solids,
     nextSolid: 0,
     u,
     head: 0,
+    panels,
+    cursor: 0,
+    kinds,
+    panelPieces: panels.map((p) => boxes.map((_, i) => i).filter((i) => !pre[i] && us[i] === p.to)),
+    panelFrame(index, out) {
+      const panel = panels[index]!;
+      const centre = (panel.from + panel.to) / 2;
+      const s = dir > 0 ? centre : line.len - centre;
+      lineAt(line, s, P);
+      return out
+        .makeRotationY(Math.atan2(P.ux * dir, P.uz * dir))
+        .setPosition(P.x + ORIGIN.x, railY(line, s), P.z + ORIGIN.z);
+    },
+    presentPanel(index, frame) {
+      if (index < t.cursor) return;
+      delta.multiplyMatrices(frame, t.panelFrame(index, panelRest).invert());
+      for (const k of t.panelPieces[index] ?? []) {
+        if (!['rail', 'sleeper', 'plank'].includes(kinds[k]!)) continue;
+        const b = boxes[k]!;
+        matrix.makeTranslation(b.x, b.y, b.z).multiply(b.local).premultiply(delta);
+        set.mesh.setMatrixAt(k, matrix);
+      }
+      set.mesh.instanceMatrix.needsUpdate = true;
+    },
     layTo(to) {
       t.head = to;
       while (t.next < order.length && t.us[order[t.next]!]! <= to) {
         const k = order[t.next++]!;
-        set.drop(k, t.heights[k]!);
+        if (panelled) set.snap(k, true);
+        else set.drop(k, t.heights[k]!);
       }
+      t.cursor = panels.filter((p) => p.to <= to + 1e-7).length;
       growSolids(t, to);
     },
     snapTo(to) {
+      if (panelled) set.clear();
       t.head = to;
+      t.cursor = panels.filter((p) => p.to <= to + 1e-7).length;
       boxes.forEach((_, k) => set.snap(k, pre[k]! || t.us[k]! <= to));
       t.next = order.findIndex((k) => t.us[k]! > to);
       if (t.next < 0) t.next = order.length;
@@ -390,6 +556,8 @@ export type Car = {
   platform: Platform;
   /** Footprint of the cargo surface currently supporting a rider; absent means the flatbed. */
   supportAt?: (x: number, z: number) => { x: number; z: number; hx: number; hz: number } | undefined;
+  /** Local presentation odometers must not roll through an explicit physics relocation. */
+  onSnap?: () => void;
 };
 export function makeCar(
   spec: CarSpec,
@@ -463,6 +631,7 @@ function moveCar(c: Car, dt: number) {
 const riderLocal = { x: 0, y: 0, z: 0, yaw: 0 },
   riderWorld = { ...riderLocal };
 export function snapCar(c: Car) {
+  c.onSnap?.();
   const p = c.body;
   const rider =
     c.y > -30 && carry.on === c.platform && me.body && me.body.velocity.y - carry.y <= CARRY.leaveVy ? me.body : null;
@@ -511,14 +680,29 @@ const a = { ...P },
 
 // ---------------------------------------------------------------- the machine
 /** What the machine carries, drawn in the flatbed's frame: its rack of rails down each side, its cradle of logs. */
-const RACK_RAILS = 12,
+const RACK_RAILS = 32,
   CRADLE_LOGS = 40;
-const F = 2.4, // m from the head (where pieces land) back to the flatbed's middle
-  GAP = 3.7; // m between the cars' middles
 export type Machine = ReturnType<typeof buildMachine>;
-export function buildMachine(owner?: OwnedView) {
-  const kitLook = LOOK.kit ? machineLook(owner) : null;
-  const look = kitLook ?? wagonLook(1, false, owner);
+export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 'panels') {
+  const panelled = mode === 'panels';
+  const F = panelled ? MAX_PANEL_LENGTH + 2.4 : 2.4;
+  const GAP = panelled ? MACHINE_GAP : 3.7;
+  const model = panelled
+    ? machineModel(
+        kitBatch('rail', STEEL, 1),
+        kitBatch('fork', { color: '#f0752c', rough: 0.55 }, 1),
+        kitBatch('sleeper', { color: '#8a6236', grain: { axis: 'x', honey: '#c98a3e' } }, 1),
+      )
+    : null;
+  const kitLook = !panelled && LOOK.kit ? machineLook(owner) : null;
+  const look = model ?? kitLook ?? wagonLook(1, false, owner);
+  if (model)
+    background(
+      import('../../render/assets.ts').then(async ({ loadAsset }) =>
+        model.install((await loadAsset(machineUrl)).gltf.scene),
+      ),
+      'track-layer model',
+    );
   const flatRock = look.cars[1]!,
     locoRock = look.cars[0]!;
   const pose = { line: null as Line | null, s: 0, sign: 1 };
@@ -551,45 +735,100 @@ export function buildMachine(owner?: OwnedView) {
     loco.platform.id = 'railway:T1:loco';
     flatbed.platform.shared = loco.platform.shared = true;
   }
-  const box3 = (w: number, h: number, d: number, color: string, x: number, y: number, z: number, rx = 0) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color, 0.8));
-    m.position.set(x, y, z);
-    m.rotation.x = rx;
-    m.castShadow = true;
-    flatRock.add(m);
-    return m;
-  };
-  box3(step.hx * 2, step.h, step.hz * 2, '#f4d58a', 0, onDeck - step.h / 2, step.z);
-  // Cradle sides, in the flatbed's +z half (its front), open at the top.
+  const o = new THREE.Object3D(),
+    slot = new THREE.Vector3();
   let heldRail: THREE.Object3D;
-  if (kitLook) heldRail = kitLook.heldRail;
-  else {
-    box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, 1.45);
-    box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, -0.05);
-    box3(0.08, 0.42, 1.5, '#e8d3a2', -0.75, onDeck + 0.21, 0.7);
-    box3(0.08, 0.42, 1.5, '#e8d3a2', 0.75, onDeck + 0.21, 0.7);
-    // The sleeper chute off the front and the orange arm that holds the next rail out over the head.
-    box3(1.3, 0.05, 0.9, '#e8d3a2', 0, onDeck - 0.3, 1.95, 0.5);
-    box3(0.08, 0.08, 1.2, '#f0752c', 0.62, onDeck + 0.5, 1.9, 0.25);
-    heldRail = box3(RAIL_SIZE.x, RAIL_SIZE.y, 1.9, '#4c5058', 0.62, onDeck + 0.28, 2.1);
-  }
+  let rack: THREE.InstancedMesh;
+  const rig = model?.panelRig;
+  if (model && rig) {
+    [loco, flatbed].forEach((car, i) => {
+      const gear = model.runningGear[i]!;
+      gear.position.y = -(BOTTOM + car.hy);
+      car.mesh.add(gear);
+      car.onSnap = () => {
+        model.resetWheelTravel(i);
+      };
+    });
+    // Match the original chair frame: body-relative, without the deck's pitch or shudder.
+    model.chairs.position.y = flatbed.hy - MACHINE_DECK;
+    flatbed.mesh.add(model.chairs);
+    MACHINE_CHAIRS.forEach((x, i) => {
+      // The built machine batches its bevelled chair shells; these gameplay anchors stay unchanged.
+      registerSeat({
+        id: `machine-deck-${i}`,
+        group: 'machine-deck',
+        platform: flatbed.platform,
+        anchorView: true,
+        // Avatars face -Z at zero yaw; the gantry and travel direction are local +Z.
+        at: { x, y: flatbed.hy + seatHeight, z: -0.9, yaw: Math.PI },
+        exit: { x, y: flatbed.hy + PLAYER_R, z: -1.85, yaw: Math.PI },
+        available: () => flatbed.y > -30,
+      });
+    });
+    heldRail = model.heldRail;
+    heldRail.visible = false;
+    flatbed.mesh.add(rig.root);
+    rig.root.position.y = -(BOTTOM + flatbed.hy);
+    rack = panelMagazine(RACK_RAILS);
+    rig.root.add(rack);
+  } else {
+    const box3 = (w: number, h: number, d: number, color: string, x: number, y: number, z: number, rx = 0) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color, 0.8));
+      m.position.set(x, y, z);
+      m.rotation.x = rx;
+      m.castShadow = true;
+      flatRock.add(m);
+      return m;
+    };
+    box3(step.hx * 2, step.h, step.hz * 2, '#f4d58a', 0, onDeck - step.h / 2, step.z);
+    // Cradle sides, in the flatbed's +z half (its front), open at the top.
 
-  const railGeo = new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z);
-  const rackRails = LOOK.kit
-    ? kitBatch('rail', STEEL, RACK_RAILS, owner)
-    : new THREE.InstancedMesh(railGeo, LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6), RACK_RAILS);
-  rackRails.castShadow = true;
-  rackRails.frustumCulled = false;
-  const o = new THREE.Object3D();
-  for (let k = 0; k < RACK_RAILS; k++) {
-    const side = k % 2 ? 1 : -1,
-      layer = Math.floor(k / 4),
-      inner = (k >> 1) % 2;
-    o.position.set(side * (1.26 + inner * 0.18), onDeck - 0.1 + layer * 0.2, 0);
-    o.updateMatrix();
-    rackRails.setMatrixAt(k, o.matrix);
+    if (kitLook) heldRail = kitLook.heldRail;
+    else {
+      box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, 1.45);
+      box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, -0.05);
+      box3(0.08, 0.42, 1.5, '#e8d3a2', -0.75, onDeck + 0.21, 0.7);
+      box3(0.08, 0.42, 1.5, '#e8d3a2', 0.75, onDeck + 0.21, 0.7);
+      // The sleeper chute off the front and the orange arm that holds the next rail out over the head.
+      box3(1.3, 0.05, 0.9, '#e8d3a2', 0, onDeck - 0.3, 1.95, 0.5);
+      box3(0.08, 0.08, 1.2, '#f0752c', 0.62, onDeck + 0.5, 1.9, 0.25);
+      heldRail = box3(RAIL_SIZE.x, RAIL_SIZE.y, 1.9, '#4c5058', 0.62, onDeck + 0.28, 2.1);
+    }
+
+    const railGeo = new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z);
+    rack = LOOK.kit
+      ? kitBatch('rail', STEEL, 12, owner)
+      : new THREE.InstancedMesh(railGeo, LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6), 12);
+    rack.castShadow = true;
+    rack.frustumCulled = false;
+
+    for (let k = 0; k < 12; k++) {
+      const side = k % 2 ? 1 : -1,
+        layer = Math.floor(k / 4),
+        inner = (k >> 1) % 2;
+      o.position.set(side * (1.26 + inner * 0.18), onDeck - 0.1 + layer * 0.2, 0);
+      o.updateMatrix();
+      rack.setMatrixAt(k, o.matrix);
+    }
+    flatRock.add(rack);
   }
-  flatRock.add(rackRails);
+  let rackCount = 0,
+    rackLengths: number[] = [],
+    rackKey = '',
+    selecting = false;
+  function drawPanelRack() {
+    const n = Math.max(0, rackCount - (selecting ? 1 : 0));
+    for (let k = 0; k < n; k++) {
+      const rackLength = rackLengths[rackCount - 1 - k] ?? MAX_PANEL_LENGTH;
+      panelSlot(k, slot);
+      o.position.copy(slot);
+      o.scale.set(1, 1, rackLength);
+      o.updateMatrix();
+      rack.setMatrixAt(k, o.matrix);
+    }
+    rack.count = n;
+    rack.instanceMatrix.needsUpdate = true;
+  }
   const cradle = logStackMesh(CRADLE_LOGS, owner);
   cradle.removeFromParent();
   flatRock.add(cradle);
@@ -616,15 +855,23 @@ export function buildMachine(owner?: OwnedView) {
     return flatRock.localToWorld(out.set(0, onDeck + 0.3, 0.7));
   };
   const worldRack = (out: THREE.Vector3) => {
+    if (rig) {
+      rig.root.updateWorldMatrix(true, false);
+      return rig.root.localToWorld(panelSlot(rackCount, out));
+    }
     flatRock.updateWorldMatrix(true, false);
     return flatRock.localToWorld(out.set(1.3, onDeck + 0.1, 0));
   };
 
   function setRack(n: number) {
-    rackRails.count = Math.max(0, Math.min(RACK_RAILS, n));
-    rackRails.visible = rackRails.count > 0;
-    rackRails.instanceMatrix.needsUpdate = true;
-    heldRail.visible = n > 0;
+    rackCount = Math.max(0, Math.min(panelled ? RACK_RAILS : 12, n));
+    if (panelled) drawPanelRack();
+    else {
+      rack.count = rackCount;
+      rack.visible = rackCount > 0;
+      rack.instanceMatrix.needsUpdate = true;
+      heldRail.visible = n > 0;
+    }
   }
 
   // Headlamps, a beam each, and the fire in the cab: all dark until the boiler catches.
@@ -703,17 +950,22 @@ export function buildMachine(owner?: OwnedView) {
   const m = {
     /** Called once per physics step, before the cars move: the run advances the machine here. */
     onStep: (() => {}) as (dt: number) => void,
+    onPanelFrame: (() => {}) as (dt: number) => void,
     look,
+    get panel() {
+      if (!model) throw new Error('continuous railway has no panel mechanism');
+      return model;
+    },
     flatbed,
     loco,
     onMachine: (p: Platform | null) => p === flatbed.platform || p === loco.platform,
     /** Stands on `line`, the head (where pieces land) at `head` metres along, heading `sign` along the line. */
-    at(line: Line, head: number, sign: number) {
+    at(line: Line, head: number, sign: number, setback = F) {
       pose.line = line;
       pose.s = head;
       pose.sign = sign;
-      poseCarOnLine(flatbed, line, head - sign * F, sign);
-      poseCarOnLine(loco, line, head - sign * (F + GAP), sign);
+      poseCarOnLine(flatbed, line, head - sign * setback, sign);
+      poseCarOnLine(loco, line, head - sign * (setback + GAP), sign);
     },
     /** On the turntable, centred on (x, z) in world metres, turned to `yaw`. */
     turn(x: number, y: number, z: number, yaw: number) {
@@ -763,6 +1015,14 @@ export function buildMachine(owner?: OwnedView) {
       st.bump = 1;
     },
     setRack,
+    panelRack(lengths: number[], selected: boolean) {
+      const key = lengths.join(',');
+      if (rackKey === key && selecting === selected) return;
+      rackKey = key;
+      rackLengths = lengths;
+      selecting = selected;
+      drawPanelRack();
+    },
     setCradle,
     worldCradle,
     worldRack,
@@ -775,6 +1035,7 @@ export function buildMachine(owner?: OwnedView) {
     const alpha = stepAlpha();
     drawCar(flatbed, alpha);
     drawCar(loco, alpha);
+    model?.update(rustU.value);
     fire.emissiveIntensity = fireOn * (1 + Math.sin(now * 0.0025) * 0.05 + Math.sin(now * 0.0047) * 0.03);
     if (st.shudder > 0 || st.was) {
       st.was = st.shudder > 0;
@@ -811,6 +1072,16 @@ export function buildMachine(owner?: OwnedView) {
           fade: 0.6,
         });
       }
+    }
+    if (model && rig) {
+      // Cancel shell squash outside the rigid bogie frame.
+      const gear = model.runningGear[1]!;
+      const scale = flatbed.mesh.scale;
+      gear.scale.set(1 / scale.x, 1 / scale.y, 1 / scale.z);
+      gear.position.y = -(BOTTOM + flatbed.hy) / scale.y;
+      rig.root.scale.set(1 / scale.x, 1 / scale.y, 1 / scale.z);
+      rig.root.position.y = -(BOTTOM + flatbed.hy) / scale.y;
+      m.onPanelFrame(dt);
     }
   };
   if (owner) {

@@ -5,6 +5,15 @@
   "order": 80,
   "steps": [
     {
+      "hl": ["fr.features"],
+      "text": "The panel-machine branch isolates continuous-track peers with placeCoopPanels1. Its authority accepts a generation/line/stage/panel index: renderer, colliders and one magazine unit advance together. Additive trackPanelsV1 snapshots preserve the accepted cursor and full-precision motion for quiet restore and late join.",
+      "cite": [
+        { "file": "src/proto/place/track-panels.ts" },
+        { "file": "src/proto/place/run.ts" },
+        { "file": "src/proto/place/coop.ts" }
+      ]
+    },
+    {
       "go": [["you.netplay", "lane:owner", "fr.netplay"]],
       "text": "In the default place game or ?proto=place&coop=1, each tab puts its arrival tick in its presence. The oldest visible tab is the authority: the one that decides.",
       "code": "addPresenceField('placeCoopTrees1', () => since)",

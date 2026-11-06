@@ -3,6 +3,7 @@ export type Motion =
   | { kind: 'none'; source: string }
   | { kind: 'clips'; source: string }
   | { kind: 'chop'; source: string }
+  | { kind: 'rail-wheels'; source: string }
   | { kind: 'attachment'; bone: string; node: string; asset: string; source: string }
   | { kind: 'spin'; axis: 'z'; node: string; source: string };
 export type AssetDescriptor = {
@@ -65,6 +66,17 @@ export const descriptors: Record<string, AssetDescriptor> = {
     category: 'props',
     rootNote: 'Owner-preferred reference-guided rack; base-centre origin. Unplaced; slice 2 owns stock and placement.',
     motion: { kind: 'none', source: 'assets/src/recovery-rack.py' },
+  },
+  'track-layer': {
+    label: 'Track-layer shell',
+    category: 'props',
+    motion: {
+      kind: 'rail-wheels',
+      source:
+        'machine-model.ts: signed distance/radius; machine-panels.ts: rigid panel cycle; stage uses labelled inspection travel and 2.866667 s cycle',
+    },
+    rootNote:
+      'Working deck origin; rear power unit at Z -3.7 m. Existing game seats, cargo and moving fork added by Place.',
   },
   'feeder-roller': {
     motion: { kind: 'none', source: 'src/proto/place/look-kit.ts: stationKit static roller matrices' },

@@ -7,7 +7,7 @@ import { cam, me } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
 import { teleport } from '../../../src/physics/engine.ts';
-import { carry, fromPlatform, type Platform } from '../../../src/physics/platforms.ts';
+import { carry, fromPlatform, toPlatform, type Platform } from '../../../src/physics/platforms.ts';
 import type { Rock, Tree } from '../../../src/proto/place/chop.ts';
 import { nearest } from '../../../src/proto/place/nearest.ts';
 import { gettingItem, press as putAwayGot } from '../../../src/proto/place/got.ts';
@@ -562,6 +562,69 @@ export async function play() {
         'machine ready for chopping',
       );
     });
+    if (q.get('machineBoard') === '1') {
+      const { seatState } = await import('../../../src/proto/place/seat.ts');
+      const car = place.machine.flatbed;
+      const side = peer === 1 ? -1 : 1;
+      const point = (x: number) =>
+        fromPlatform(car.platform, { x, y: car.platform.top, z: -1.85, yaw: 0 }, false, {
+          x: 0,
+          y: 0,
+          z: 0,
+          yaw: 0,
+        });
+      await phase('machine boarded', async () => {
+        const approach = point(side * 2.5);
+        await go(approach.x, approach.z, 0.3);
+        if (
+          !(await waitFor(() => me.coyote > 0 && Math.abs(body.velocity.y) < 0.5, 10000, 'machine approach grounded'))
+        )
+          throw new Error('Machine approach did not settle before jumping');
+        const stepAt = point(side * 0.55);
+        face(stepAt.x, stepAt.z);
+        input.keys.add('KeyW');
+        pressJump();
+        await wait(330);
+        releaseJump();
+        const end = performance.now() + 5000;
+        while (performance.now() < end) {
+          face(stepAt.x, stepAt.z);
+          if (bot.dist(stepAt.x, stepAt.z) < 0.2) {
+            input.keys.delete('KeyW');
+            if (carry.on === car.platform && interactTarget()?.id === 'place-sit') break;
+          } else input.keys.add('KeyW');
+          await wait(40);
+        }
+        input.keys.delete('KeyW');
+        if (carry.on !== car.platform || interactTarget()?.id !== 'place-sit')
+          throw new Error('Machine rear-step boarding did not settle');
+        const local = toPlatform(car.platform, body.position, me.yaw, { x: 0, y: 0, z: 0, yaw: 0 });
+        if (Math.abs(local.x - side * 0.55) > 0.2 || Math.abs(local.z + 1.85) > 0.2)
+          throw new Error('Machine boarding missed the existing rear step');
+        press();
+        if (!(await waitFor(() => seatState().sitting === `machine-deck-${peer - 1}`, 5000, 'machine chair granted')))
+          throw new Error('Machine boarding did not grant the intended chair');
+        if (!(await waitFor(() => Object.keys(seatState().grants).length === 2, 20000, 'both machine chairs occupied')))
+          throw new Error('Both machine chairs were not occupied together');
+        note(`machine seat ${peer - 1} occupied through rear-step approach; both grants observed`);
+        playMark('machine boarded', { peer });
+      });
+      await phase('machine rear-step exit', async () => {
+        press();
+        if (!(await waitFor(() => !seatState().sitting && carry.on === car.platform, 5000, 'machine rear-step exit')))
+          throw new Error('Machine exit did not return to its platform');
+        const local = toPlatform(car.platform, body.position, me.yaw, { x: 0, y: 0, z: 0, yaw: 0 });
+        if (Math.abs(local.x - side * 0.55) > 0.2 || Math.abs(local.z + 1.85) > 0.2)
+          throw new Error('Machine exit missed the existing rear-step anchor');
+        note(`machine rear-step exit ${JSON.stringify(local)}`);
+        const approach = point(side * 2.5);
+        if (!(await bot.straight(approach.x, approach.z, 0.3, 5000)))
+          throw new Error('Machine passenger could not walk off the rear step');
+        if (!(await waitFor(() => me.coyote > 0 && !me.swimming, 5000, 'dry machine disembark')))
+          throw new Error('Machine passenger did not land dry');
+        playMark('machine disembarked', { peer });
+      });
+    }
     for (let k = 0; k < L1.stations.length; k++) await station(L1, k, (k % 2) + 1);
     await phase('jump', () =>
       assigned(

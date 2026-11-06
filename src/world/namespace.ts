@@ -9,8 +9,9 @@
 // v05 (2026-11-02): mushrooms stopped being shared state: the `mushrooms` state, mush.plant and mush.water gone.
 // v06 (2026-11-02): the watering can left the catalog, renumbered: frisbee 1, ball 2.
 // v07 (2026-11-05): classic tunables pin full defaults, revision and catalog; incompatible catalogs cannot join.
+// v08 (2026-11-05): panel track and machine deck seats cannot share a room lead with continuous-track builds.
 // Pure: read by src/netplay/net.ts, the registry check and tests.
-export const WORLD_NS = 'v07';
+export const WORLD_NS = 'v08';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

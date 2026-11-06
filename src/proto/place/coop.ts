@@ -3,7 +3,7 @@
 // recommendations 2, 3, 9, 11 and 12. Without the flag every hook here is a no-op and nothing is sent.
 //
 // How it stays together, cheapest thing that works:
-// - One authority: the oldest visible coop tab (presence key `placeCoopCargo2`, the world tick it got here). Not the room's lead,
+// - One authority: the oldest visible compatible coop tab (COOP_IDENTITY, the world tick it got here). Not the room's lead,
 //   which could be a tab without the flag, and not the lowest id, which a newcomer could take. It is the only tab that
 //   accepts a deposit, starts a station's run and ends a stretch, so the last log can't start two runs and a frame can't
 //   overfill: a deposit it can't take goes back on the sender's back.
@@ -11,8 +11,8 @@
 //   an explicit rejection or actual peer removal returns a pending piece, never a wall-clock timeout.
 // - Tree harvest is accepted once by that authority before material is awarded. A follower reserves capacity until its
 //   matching receipt arrives; duplicate receipts cannot issue another log. The rest of the prototype still runs locally.
-// - Cargo uses a versioned whole-place message/presence identity. Legacy clients remain visible in the underlying room,
-//   but neither elect nor apply this prototype's state. This is still local-save prototype persistence, not server lockstep.
+// - Cargo uses a versioned whole-place message/presence identity. WORLD_NS also separates incompatible transport rooms,
+//   including their seat Host authority. This is still local-save prototype persistence, not server lockstep.
 // - Once a second the authority sends the whole shared state (`captureShared`, ./job.ts: every slice registered there, so a new
 //   system's state comes along for free). A newcomer takes it and is caught up, a follower that stays different for a few
 //   seconds is put right, and a follower that takes over already has everything it needs.
@@ -113,13 +113,23 @@ type Api = {
   tech?: (what: unknown) => void;
   rungsChanged?: (before: Rungs, quiet: boolean) => void;
   techChanged?: (before: typeof job.tech, quiet: boolean) => void;
+  panelCommit?: (k: number, stage: number, index: number) => void;
+  panelSnapshot?: (value: unknown) => void;
 };
 let api: Api | null = null;
 let skipsFns: Record<string, () => void> = {};
 /** Later hooks, from modules that import this one. */
 export const coopWire: Pick<
   Api,
-  'rung' | 'forgeBill' | 'wakeTrains' | 'activeFrame' | 'tech' | 'rungsChanged' | 'techChanged'
+  | 'rung'
+  | 'forgeBill'
+  | 'wakeTrains'
+  | 'activeFrame'
+  | 'tech'
+  | 'rungsChanged'
+  | 'techChanged'
+  | 'panelCommit'
+  | 'panelSnapshot'
 > = {};
 export const pairHook = {
   msg: null as ((m: Record<string, unknown>) => void) | null,
@@ -186,7 +196,7 @@ function applyFull(a: Api, j: Snap, announce = true) {
   reconcileBig();
   a.run.mode = 'asleep';
   a.snapAll();
-  a.putMachine(j.shared.run);
+  a.putMachine((j.shared.trackPanelsV1 as { motion?: unknown } | undefined)?.motion ?? j.shared.run);
   save();
 }
 
@@ -237,13 +247,18 @@ const volatile = (j: Record<string, unknown>) => {
 
 /** Each second, on a follower: the same run? Small numbers settle on their own; what stays different gets put right. */
 function reconcile(a: Api, j: Snap) {
+  coopWire.panelSnapshot?.(j.shared.trackPanelsV1);
   reconcileCart(j.shared.depot);
   const cargo = j.shared.bigCargoV1 as Partial<typeof bigCargo> | undefined;
   for (const kind of ['beam', 'boiler'] as const) if (validCargo(cargo?.[kind])) acceptBig(kind, cargo[kind]);
   if (bigPending && bigPending.to !== authorityPeer()) bigPending = null;
   const mine = captureShared();
   miss = discrete(j.shared) === discrete(mine) ? 0 : miss + 1;
-  const theirRun = j.shared.run as { mode: string; k: number; head: number };
+  const theirRun = ((j.shared.trackPanelsV1 as { motion?: unknown } | undefined)?.motion ?? j.shared.run) as {
+    mode: string;
+    k: number;
+    head: number;
+  };
   const myRun = a.run;
   modeMiss = theirRun.mode === myRun.mode ? 0 : modeMiss + 1;
   if (miss >= 3 || modeMiss >= 5) {
@@ -252,6 +267,7 @@ function reconcile(a: Api, j: Snap) {
   }
   // Riding the machine together: the same head, near enough.
   if (
+    !j.shared.trackPanelsV1 &&
     theirRun.mode === myRun.mode &&
     theirRun.k === myRun.line.k &&
     (myRun.mode === 'laying' || myRun.mode === 'running')
@@ -705,6 +721,19 @@ const isKind = (v: unknown): v is Goods => GOODS.includes(v as Goods);
 function onMsg(a: Api, m: Record<string, unknown>, from: string) {
   const { run } = a;
   switch (m.k) {
+    case 'trackPanelV1': {
+      if (
+        !ready ||
+        from !== authorityPeer() ||
+        m.gen !== gen ||
+        !count(m.line, 1) ||
+        !count(m.stage, 32) ||
+        !count(m.index, 256)
+      )
+        return;
+      coopWire.panelCommit?.(m.line, m.stage, m.index);
+      return;
+    }
     case 'snap': {
       if (from !== authorityPeer()) return;
       if (validSnap(m.snap)) onSnap(a, m.snap, !!m.force);
@@ -917,7 +946,7 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       return;
     }
     case 'stretch': {
-      if (!ready) return;
+      if (!ready || from !== authorityPeer()) return;
       const st = frameById(m.id);
       const l = lines[run.line.k]!;
       if (!st || a.stationOf(l) !== st) return;
@@ -925,7 +954,6 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       const to = st.spec.to;
       run.head = to;
       machine.at(l.spec.line, to, l.spec.dir);
-      l.track.layTo(l.track.u(to));
       a.finishStretch(l);
       return;
     }
@@ -1042,6 +1070,8 @@ export const coop = {
   },
   fed: (st: StationRun) => COOP && amAuthority() && msg({ k: 'feed', id: st.spec.id }),
   stretched: (st: StationRun) => COOP && amAuthority() && msg({ k: 'stretch', id: st.spec.id }),
+  panelCommitted: (line: number, stage: number, index: number) =>
+    COOP && amAuthority() && msg({ k: 'trackPanelV1', gen, line, stage, index }),
   took: (what: 'rails' | 'timber' | 'rack', n: number, r = 0) => COOP && n + r > 0 && msg({ k: 'took', what, n, r }),
   /** A chest opened here: the rung is everyone's. */
   rung: (id: string) => COOP && msg({ k: 'rung', id }),
