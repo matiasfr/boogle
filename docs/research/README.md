@@ -1,5 +1,7 @@
 # Research
 
+- [route-contract.md](route-contract.md) / [interactive Place map](route-contract.html) (2026-11-06): required construction versus movement shortcuts for T1–T3, Q1–Q6, quarry, first hook, Needle Bell and glide returns; seven primary sources, 87 passing baseline assertions and no-extra-jump probes. Recommends a southern expedition find, Q3-built quarry ramp/winch and Q2-built hook access. Paper prerequisite only; new geometry, interaction and device behavior unverified.
+
 - [roundhouse-trains.md](roundhouse-trains.md) (2026-11-06), [interactive brief](roundhouse-trains.html): six primary game references, an early shed versus later steel expansion, finite engine/car bills, discovery-based research and shared contributions without wallets; fresh campaign and upgrade-omission runs, a 30-minute proof budget, eight recommendations and a one-fitting first build. Research only; new bills, management and fun unverified.
 - [next-destination.md](next-destination.md) / [visual comparison](next-destination.html) (2026-11-06): four destinations after Line 1, primary-source research, mapped quarry/pier anchors and earlier-panel reconciliation; recommends quarry footings → ring-island steel, with gorge versus forest alternatives. Eight recommendations, scope estimates and a two-shipment proof. Research only; pacing, implementation cost and published Artifact/device rendering unverified.
 
