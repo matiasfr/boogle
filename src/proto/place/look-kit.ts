@@ -205,6 +205,9 @@ export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView): Dro
       plates.castShadow = false;
       list.push({ mesh: plates, inv });
     }
+    // Keep the existing material roles and instance indices (wood grain uses them).
+    // Bounds are rebuilt lazily after placement, including falling/laying pieces.
+    for (const q of list) q.mesh.frustumCulled = true;
     // What lies flat on its bed has no shadow worth a second draw: the bed's contact blobs already ground it.
     if (kind === 'sleeper' || kind === 'rail') for (const q of list) q.mesh.castShadow = false;
     for (const q of list) {
@@ -225,6 +228,7 @@ export function lookTrack(set: DropSet, kinds: string[], owner?: OwnedView): Dro
     for (const q of r.list) {
       q.mesh.setMatrixAt(r.at, tm.copy(m).scale(q.inv));
       q.mesh.instanceMatrix.needsUpdate = true;
+      q.mesh.boundingSphere = null;
     }
     if (LOOK.contact && kinds[k] === 'sleeper') sleeperBlob(set, k, m, blobs, owner);
     return set.mesh;
@@ -319,8 +323,9 @@ function stationPiece(
   if (!b) {
     b = kitBatch(name, p, name === 'roller' ? ROLLERS : STATION_PIECES, owner);
     b.count = 0;
-    // Trial just the static posts; the other kit batches keep their existing policy.
-    b.frustumCulled = name === 'frame_post';
+    // Settled pieces retain their exact transforms and shader inputs. Cull the
+    // existing shared-material batches in both camera and shadow passes.
+    b.frustumCulled = true;
     stationBatches.set(name, b);
     if (owner) owner.add(b);
     else scene.add(b);
