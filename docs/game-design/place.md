@@ -631,6 +631,21 @@ for later work; it is Local, off on every reload and never saved or sent. The as
 uses the same default floating arc and socket. Strokes, yields, costs and saved/wire state
 remain unchanged. Full-back refusal lifts sideways; hardwood refusal recoils sooner.
 
+**Floating axe summon (owner, 5 November):** the original floating axe stays. Four small ivory
+twinkles at its head and handle mark appearance (115–160 ms); two smaller twinkles mark
+vanishing (95–110 ms). Owner-approved particle research step 1 replaces the soft dots with
+crisp ivory four-point SDF glints: a brief size/opacity pop and at most 0.32 radians of spin.
+The existing pool and material carry this opt-in look; all other emitters retain their round
+dots and envelopes. No smoke, puff cloud, second pool or post pass. Only visibility edges emit: repeated presses while it stays out
+do not summon it again. Reduced motion suppresses these decorative particles. This is Local,
+on the same axe presentation path; no partner axe or new presence is added. The separate
+`codex/chop-animation-timing` two-handed retuning trial is parked and remains unshipped.
+The `/character/` chop loop uses the production pose and sparkle emitter, with an explicitly
+inspection-only 0.2 s lead-in and 0.3 s hidden gap so both edges can be reviewed at speed 0.25.
+The isolated stage hosts the same particle implementation; the game still owns one pool.
+Stage `light=production` uses the frozen sky with production Neutral and 0.16 exposure;
+`sparkle=round` is the old-dot inspection control. Compare both at speed 0.25 and check Place too.
+
 Local tree contact raycasts the real faceted trunk from the approach direction; accepted
 chips/log flights use that same point. Arm reach is bounded to preserve Buddy's proportions:
 the existing 3.2 m ordinary / 4.6 m great-tree interaction radius exceeds a natural held

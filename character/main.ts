@@ -3,7 +3,7 @@ import * as THREE from 'three/webgpu';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createAssetLoader, type Asset } from '../src/render/asset-loader.ts';
 import { catalogue, catalogueTotals, catalogueScope } from './catalogue.ts';
-import { prepareBuddy, SAMPLE_FPS, type BuddyMode } from './buddy-preview.ts';
+import { prepareBuddy, SAMPLE_FPS, CHOP_PREVIEW_DURATION, type BuddyMode } from './buddy-preview.ts';
 import { createStageLighting, type LightPreset } from './lighting.ts';
 import { inspectAsset, formatBytes, cloneMaterials } from './inspect.ts';
 import { createBrowser } from './browser.ts';
@@ -15,7 +15,8 @@ import { descriptors, gearAttachments } from './descriptors.ts';
 import { sailCycleSeconds } from '../src/pois/windmills/motion.ts';
 import { cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
 import { COLORS } from '../src/constants.ts';
-import { CHOP_DURATION, CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
+import { CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
+import { createParticlePool } from '../src/render/particle-pool.ts';
 import type { AxeTier } from '../src/proto/place/axe-models.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -57,8 +58,15 @@ const state = {
   speed: Math.max(0.05, Math.min(4, number('speed', 1))),
   playing: q.get('play') === '1' || !q.has('t'),
   loop: q.get('loop') !== '0',
-  light: (q.get('light') === 'shipped' ? 'shipped' : 'studio') as LightPreset,
-  exposure: Math.max(0.01, Math.min(4, number('exposure', q.get('light') === 'shipped' ? 0.16 : 1))),
+  light: (q.get('light') === 'production'
+    ? 'production'
+    : q.get('light') === 'shipped'
+      ? 'shipped'
+      : 'studio') as LightPreset,
+  exposure: Math.max(
+    0.01,
+    Math.min(4, number('exposure', ['shipped', 'production'].includes(q.get('light') ?? '') ? 0.16 : 1)),
+  ),
 };
 if (state.chop === 'full' && !q.has('amount')) {
   state.amount = cargoCapacity(state.cargo, state.frame);
@@ -70,6 +78,10 @@ const renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 await renderer.init();
 const scene = new THREE.Scene();
+let particleTime = 0;
+const particles = createParticlePool(renderer, () => particleTime * 1000);
+scene.add(particles.object);
+await particles.prepare();
 const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 1000);
 const controls = new OrbitControls(camera, canvas);
 const motionCapture = createMotionCapture(canvas, camera);
@@ -438,7 +450,7 @@ async function choose(reframe = true) {
     );
     select('clip').value = state.clip;
     duration = clips.find((clip) => clip.name === state.clip)?.duration ?? 0;
-    if (state.asset === 'buddy' && state.chop !== 'off') duration = CHOP_DURATION;
+    if (state.asset === 'buddy' && state.chop !== 'off') duration = CHOP_PREVIEW_DURATION;
     if (diagnosticRate !== null) duration = (Math.PI * 2) / Math.abs(diagnosticRate);
     else if (entry.motion.kind === 'spin') duration = sailCycleSeconds();
     preview =
@@ -455,6 +467,9 @@ async function choose(reframe = true) {
             chop: state.chop,
             reducedMotion: state.reducedMotion,
             trunkDistance: state.trunkDistance,
+            // Inspection-only old-dot control; production always uses the emitter's glint payload.
+            emit: q.get('sparkle') === 'round' ? (p) => particles.emit({ ...p, shape: 'round' }) : particles.emit,
+            sparkleIntensity: () => 1 / state.exposure,
             legacyCarrying,
             bodyColor:
               state.bodyColor === 'auto'
@@ -479,7 +494,7 @@ async function choose(reframe = true) {
     $('mode-note').textContent =
       state.asset === 'buddy'
         ? state.chop !== 'off'
-          ? 'Production chop pose and rig; representative trunk at gameplay contact distance. Local loop repeats a single stroke including its recovery; no harvesting or hit effects.'
+          ? 'Production floating axe and summon sparkles; inspection loop adds a 0.2 s lead-in and 0.3 s hidden gap. No harvesting or hit effects.'
           : state.mode === 'played'
             ? 'Real body stride/blend + retarget + life. Clip selects movement inputs; pose and preview clock reset on seek.'
             : 'Retargeted authored clip only; no body blend or procedural life. Inspect hero-clips for the original skeleton.'
@@ -529,6 +544,7 @@ function updateLink() {
     loop: state.loop ? '1' : '0',
     play: state.playing ? '1' : '0',
     light: state.light,
+    sparkle: q.get('sparkle') === 'round' ? 'round' : 'glint',
     exposure: state.exposure,
     fps: SAMPLE_FPS,
     cam: camera.position
@@ -703,7 +719,7 @@ const light = () => {
 };
 select('light').onchange = () => {
   state.light = select('light').value as LightPreset;
-  state.exposure = state.light === 'shipped' ? 0.16 : 1;
+  state.exposure = state.light === 'studio' ? 1 : 0.16;
   light();
 };
 input('exposure').onchange = () => {
@@ -754,6 +770,10 @@ for (let i = 0; i < 7; i++) {
 }
 overlays();
 light();
+// Both shapes live in this one graph; compile it before an inspection playback can summon the axe.
+particles.object.visible = true;
+await lighting.prepare();
+particles.object.visible = false;
 const vector = (key: string) => {
   const v = q.get(key)?.split(',').map(Number);
   return v?.length === 3 && v.every(Number.isFinite) ? v : undefined;
@@ -796,7 +816,6 @@ const api = {
       controls.enabled = false;
       controls.enableDamping = false;
       controls.update();
-      state.speed = 1;
       state.loop = true;
       seek(0);
       let seam = null;
@@ -826,6 +845,7 @@ const api = {
       duration,
       frames,
       draws: renderer.info.render.drawCalls,
+      lighting: lighting.note,
       bounds: selectionBox.min.toArray().concat(selectionBox.max.toArray()),
       link: input('link').value,
       clips: Array.from(select('clip').options).map((o) => o.value),
@@ -865,6 +885,9 @@ const loopStarted = renderer.setAnimationLoop(() => {
   if (input('spin').checked) stage.rotation.y += dt * 0.6;
   controls.update();
   lighting.update();
+  const particleDt = state.playing ? dt * state.speed : 0;
+  particleTime += particleDt;
+  particles.update(particleDt);
   lighting.pipeline.render();
   frames++;
   if (preview)

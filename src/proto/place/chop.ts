@@ -35,6 +35,8 @@ import { packFrameMesh } from './gear-models.ts';
 import { LAND_TREES, safeTreeFall, shoreTreeCleared } from './tree-catalog.ts';
 import { makeAxes } from './axe-models.ts';
 import { applyChopPose, CHOP_SIDE } from './chop-motion.ts';
+import { sparkleAxe } from './axe-sparkle.ts';
+import { readableIntensity } from '../../render/readable-unlit.ts';
 import { reducedMotion } from '../../constants.ts';
 import { bigCargo, freshCargo, validCargo } from './big-cargo.ts';
 import { beginFeelAction, endFeelChop } from '../../player/feel-tuning.ts';
@@ -1121,8 +1123,11 @@ export function updateChop(dt: number, now: number) {
     else if (swing.rock) contactRock(swing.rock);
   }
   const body = inner();
-  if (body)
+  if (body) {
+    const wasVisible = axe.visible;
     applyChopPose(body, axe, swing.t, swing.response, { reducedMotion, target: swing.contact, frame: f ?? body });
+    sparkleAxe(axe, wasVisible, reducedMotion, emit, readableIntensity());
+  }
   for (const t of TREES) {
     if (t.shake > 0) {
       t.shake = Math.max(0, t.shake - dt * 3.2);

@@ -1,4 +1,4 @@
-// Two Local inspection looks, with the same atmosphere and AgX curve as the shipped frozen-water sky.
+// Local inspection looks: studio, legacy AgX sky and production Neutral sky.
 // This document owns its renderer/pipeline; importing this module never starts the game renderer or a room.
 import * as THREE from 'three/webgpu';
 import { pass, uv, vec3, vec4 } from 'three/tsl';
@@ -6,9 +6,11 @@ import { skyState } from '../src/sim/sky-clock.ts';
 import { createWaterSkyFor } from '../src/render/water/sky-core.ts';
 import { agx, TSL } from '../src/render/tone.ts';
 
-export type LightPreset = 'studio' | 'shipped';
+export type LightPreset = 'studio' | 'shipped' | 'production';
 const NOTES: Record<LightPreset, string> = {
   studio: 'Neutral studio · linear HDR → Neutral → sRGB. Neutral key and hemisphere fill.',
+  production:
+    'Production Neutral · frozen sky at 0.24, sun and cube irradiance → Neutral → sRGB. No world fog or underwater effects.',
   shipped:
     'Shipped frozen sky at 0.24 · actual atmosphere, sun and cube irradiance → shipped AgX → sRGB. No adaptive exposure, world fog, underwater effects or bloom.',
 };
@@ -78,7 +80,7 @@ export async function createStageLighting(renderer: THREE.WebGPURenderer, scene:
   let preset: LightPreset = 'studio';
   function set(next: LightPreset) {
     preset = next;
-    if (next === 'shipped') {
+    if (next !== 'studio') {
       scene.background = null;
       scene.backgroundNode = sky.background;
       scene.environment = sky.cube;
@@ -91,8 +93,8 @@ export async function createStageLighting(renderer: THREE.WebGPURenderer, scene:
       hemi.color.copy(upper);
       hemi.groundColor.copy(lower);
       hemi.intensity = Math.PI;
-      pipeline.outputNode = shippedOutput;
-      pipeline.outputColorTransform = false;
+      pipeline.outputNode = next === 'shipped' ? shippedOutput : scenePass;
+      pipeline.outputColorTransform = next !== 'shipped';
     } else {
       scene.backgroundNode = null;
       scene.background = new THREE.Color('#b8bec4');
@@ -111,6 +113,8 @@ export async function createStageLighting(renderer: THREE.WebGPURenderer, scene:
   set('studio');
   return {
     pipeline,
+    // Before the stage loop starts: PassNode prepares the real HDR target and its MSAA configuration.
+    prepare: () => scenePass.compileAsync(renderer),
     set,
     setExposure(value: number) {
       exposure.value = value;

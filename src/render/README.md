@@ -31,6 +31,14 @@ Read [cost](reference/cost.md) when changing render cost or choosing GPU checks.
 
 Read [direction](reference/direction.md) when changing render architecture.
 
+## Cosmetic particles
+
+The shared particle pool defaults to its original soft round dot. `shape: 'glint'` opts into
+a derivative-antialiased four-point TSL SDF, a brief size/opacity attack and optional `rotation`
+(birth radians) / `spin` (radians per second). Shape data is packed into the spawn queue and
+one appearance buffer (eight update storage bindings); both looks use the same precompiled
+material, alpha blend, HDR colour path and draw. Existing grow/shrink/fade and default dots remain unchanged.
+
 ## Water ownership
 
 `water-render.ts` owns the production Place/crossing sea, its FFT, shore atlas, queries, underwater HDR and

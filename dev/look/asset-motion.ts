@@ -20,7 +20,7 @@ for (let i = 0; i < args.length; i++) {
       'node dev/look/asset-motion.ts --asset buddy --clip Walk_Loop [--hat conductor] [--mode raw|played] [--pose carrying] [--gear all] [--attachment ring-left|ring-right|spool|glider|frame] [--cargo logs|rails|stone|beam|boiler --amount N] [--rings 0|1 --spool 0|1 --glider 0|1 --frame 0|1 --canopy 0|1] [--name label] [--cam x,y,z --target x,y,z] [--spin-rate rad/s] [--local|--broker] [--dry-run]\nUses the running broker by default when available; --local uses the same look harness. Static assets explicitly report none. --spin-rate is a labelled inspection probe, never a production rate.',
     );
     console.log(
-      'Chopping: --axe starter|multi|proper|proper-multi --chop bite|rebound|full [--reduced-motion 0|1] [--trunk-distance metres]. The trunk-distance option moves only the inspection reference.',
+      'Chopping: --axe starter|multi|proper|proper-multi --chop bite|rebound|full [--speed 0.25] [--reduced-motion 0|1] [--trunk-distance metres]. The trunk-distance option moves only the inspection reference.',
     );
     process.exit(0);
   } else if (
@@ -47,6 +47,9 @@ for (let i = 0; i < args.length; i++) {
       '--chop',
       '--reduced-motion',
       '--trunk-distance',
+      '--speed',
+      '--light',
+      '--sparkle',
     ].includes(flag)
   ) {
     const value = args[++i];
@@ -96,6 +99,9 @@ for (const key of [
   'canopy',
   'axe',
   'chop',
+  'speed',
+  'light',
+  'sparkle',
 ])
   if (options.has(key)) query.set(key, options.get(key)!);
 if (options.has('reduced-motion')) query.set('reducedMotion', options.get('reduced-motion')!);
@@ -121,6 +127,7 @@ const command = [
   '--query',
   new URLSearchParams({ stage: query.toString() }).toString(),
   '--video',
+  '--curves',
   '--warm',
   '0',
   '--frames',
