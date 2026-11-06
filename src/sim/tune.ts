@@ -5,10 +5,10 @@ import { AGES, ROUTE, TRACK, costOf } from './route.ts';
 import { HARD_CAP, HARD_MAX } from './stacks.ts';
 import { FULL, YIELD, TRICKLE_EVERY, FULL_MAX } from './sources.ts';
 import { WAGON_CRUISE, WAGON_ACCEL, type WagonPace } from './wagon.ts';
-import { FNV_SEED, foldAll, foldStr } from './hash.ts';
+import { FNV_SEED, foldAll } from './hash.ts';
 import type { CostFn } from './sites.ts';
 
-// APPEND ONLY: a key's index is folded into the hash. A key that goes away moves to RETIRED.
+// Stable order: a key's index is folded into the hash.
 export const TUNABLES = [
   { key: 'cost0', def: AGES[0]!.cost, min: 2, max: 600, label: 'Section cost (wood)' },
   { key: 'helper0', def: AGES[0]!.helper, min: 1, max: 600, label: 'Helper hut cost (wood)' },
@@ -54,26 +54,11 @@ export const TUNABLES = [
     label: 'Railway second jump apex threshold (centimetres per second)',
   },
 ] as const;
-// Keys a save may still hold from an older build, skipped on load: the soft cap and spill per jump (the haul stack's
-// wobble and jump spill, removed after the first playtest) and the machine run variant (one run since the laying
-// playtest).
-const RETIRED: readonly string[] = ['soft', 'spill', 'run'];
 export type TuneKey = (typeof TUNABLES)[number]['key'];
 export type TuneSpec = (typeof TUNABLES)[number];
 /** revision is authoritative; rev only invalidates views after edits or loads. */
 export type Tune = { v: Record<TuneKey, number>; revision: number; rev: number };
-export type TuneJson = { catalog: string; revision: number; values: Record<TuneKey, number> };
-
-// The schema, key meanings and defaults are admission identity, even when a room never overrides anything.
-export function tuneCatalog(
-  specs: readonly { key: string; def: number; min: number; max: number; label: string }[],
-): string {
-  let h = foldStr(FNV_SEED, 'classic-tune:1:integer:next-action');
-  for (const spec of specs) h = foldAll(foldStr(foldStr(h, spec.key), spec.label), [spec.def, spec.min, spec.max]);
-  return h.toString(16).padStart(8, '0');
-}
-export const TUNE_CATALOG = tuneCatalog(TUNABLES);
-const HASH_SEED = foldStr(FNV_SEED, TUNE_CATALOG);
+export type TuneJson = { revision: number; values: Record<TuneKey, number> };
 
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
 const defaults = (): Record<TuneKey, number> =>
@@ -106,57 +91,11 @@ export const paceIn = (t: Tune): WagonPace => ({ cruise: t.v.wagonCruise, accel:
 export const isProtoRoom = (id: unknown): boolean => typeof id === 'string' && /^(v\d+-)?proto-/.test(id);
 
 export function serializeTune(t: Tune): TuneJson {
-  return { catalog: TUNE_CATALOG, revision: t.revision, values: { ...t.v } };
-}
-export function migrateTune(json: unknown): TuneJson {
-  if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('tune: bad snapshot');
-  // Some tools remove the version map from a current snapshot. Accept the already-versioned shape idempotently.
-  if ('catalog' in json) return json as TuneJson;
-  const v = defaults();
-  for (const [key, n] of Object.entries(json)) {
-    if (RETIRED.includes(key)) continue;
-    if (!okTune(key, n)) throw new Error(`tune: bad ${key}`);
-    v[key as TuneKey] = n;
-  }
-  return { catalog: TUNE_CATALOG, revision: 0, values: v };
-}
-// The one published v1 profile (main e7fbc853) had these eight integer keys. Do not
-// derive its identity/ranges from a future catalog: unknown defaults must stay refused.
-const MAIN_V1_BOUNDS = {
-  cost0: [2, 600],
-  helper0: [1, 600],
-  hard: [1, 200],
-  yield: [1, 60],
-  full: [1, 20],
-  trickle: [10, 6000],
-  wagonCruise: [10, 100],
-  wagonAccel: [5, 100],
-} as const;
-export function migrateTuneV1(json: unknown): TuneJson {
-  if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('tune: bad v1 snapshot');
-  const j = json as Partial<TuneJson>;
-  // Legacy v0 migration and tools that strip versions may already produce the current shape.
-  // loadTune still validates every field afterward; this is not an admission compatibility rule.
-  if (j.catalog === TUNE_CATALOG) return j as TuneJson;
-  if (j.catalog !== 'e0d64927') throw new Error('tune: incompatible v1 catalog');
-  if (!isInt(j.revision) || j.revision < 0) throw new Error('tune: bad v1 revision');
-  if (!j.values || typeof j.values !== 'object' || Array.isArray(j.values)) throw new Error('tune: missing v1 values');
-  const entries = Object.entries(j.values);
-  if (
-    entries.length !== 8 ||
-    entries.some(([key, n]) => {
-      if (!Object.hasOwn(MAIN_V1_BOUNDS, key)) return true;
-      const [min, max] = MAIN_V1_BOUNDS[key as keyof typeof MAIN_V1_BOUNDS];
-      return !isInt(n) || n < min || n > max;
-    })
-  )
-    throw new Error('tune: incomplete or invalid v1 values');
-  return { catalog: TUNE_CATALOG, revision: j.revision, values: { ...defaults(), ...j.values } };
+  return { revision: t.revision, values: { ...t.v } };
 }
 export function loadTune(t: Tune, json: unknown): void {
   if (!json || typeof json !== 'object' || Array.isArray(json)) throw new Error('tune: bad snapshot');
   const j = json as Partial<TuneJson>;
-  if (j.catalog !== TUNE_CATALOG) throw new Error('tune: incompatible catalog');
   if (!isInt(j.revision) || j.revision < 0) throw new Error('tune: bad revision');
   if (!j.values || typeof j.values !== 'object' || Array.isArray(j.values)) throw new Error('tune: missing values');
   const entries = Object.entries(j.values);
@@ -166,7 +105,7 @@ export function loadTune(t: Tune, json: unknown): void {
 }
 // Full values and revision in stable key order; defaults never disappear from the identity.
 export function hashTune(t: Tune): number {
-  let h = foldAll(HASH_SEED, [t.revision]);
+  let h = foldAll(FNV_SEED, [t.revision]);
   TUNABLES.forEach(({ key }, k) => {
     h = foldAll(h, [k, t.v[key]]);
   });

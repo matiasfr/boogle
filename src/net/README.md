@@ -10,7 +10,7 @@ its peer table is `peer-table.ts`. Changes must keep this interface; run `npm ru
 ```js
 const room = await createWsRoom({ roomId, server /* our server's http(s) base */, pid /* this player */, build /* optional */, debug /* optional */ });
 // rejects with code 'room_full' (and `max`), 'peer_hosted' (a server not hosting this room), 'unreachable' or
-// 'browser-incompatible', or 'incompatible' (shared tuning catalog differs); after joining, a reconnect turned away as full, or 'elsewhere' (a newer tab with the same
+// 'browser-incompatible'; after joining, a reconnect turned away as full, or 'elsewhere' (a newer tab with the same
 // pid joined), reports a fatal error to onPeers/onConnection
 room.selfId            // string, stable per tab for the life of the page
 room.presence(patch)   // Promise<void>; shallow-merges patch into my presence (value null deletes key) and broadcasts
@@ -33,12 +33,8 @@ tie-breaks, so `peer` must be the stable `selfId`.
 
 The room id comes from the effective page flags (`src/proto/flags.ts`): the bare URL opens Place in `boogle`, classic and headless tools default to `beach`, and explicit prototypes retain their rooms. An explicit `?room=` wins, sanitized to `[a-z0-9-]{1,32}`.
 
-Messages are wire format shared with tabs on older builds: add new `t` types and fields, never change what an existing
-one means (docs/agents/mixed-builds.md, "Mixed builds").
-
-Current classic `v07-` and playable railway `t1v02-` rooms require the client's `tc` catalog fingerprint at admission. It includes shared tuning
-defaults, bounds, keys and interpretation; different fingerprints get `incompatible` and close code 4412 before a
-room is created or joined. Older classic `vNN-` namespaces are refused before loading or migrating their saves,
-even when explicitly configured or presenting the current catalog. A matching fingerprint permits different build SHAs. The transport stops reconnecting
-on this refusal. Headless railway `t1v01-` rooms, which have no tuning profile, keep their existing contract. Shared tuning writes additionally need an
-explicit server `TUNE_CONTROLLER_KEY` matching the sender's bound socket key; being the room lead grants nothing.
+During development every client is assumed current. There is no catalog fingerprint or old-build admission fence;
+wire/save reshapes use the dated `WORLD_NS` reset described in [mixed builds](../../docs/agents/mixed-builds.md).
+The server still validates all messages, bounds input and isolates classic and railway room identities.
+Shared tuning writes require an explicit server `TUNE_CONTROLLER_KEY` matching the sender's bound socket key,
+a current revision and valid values; being the room lead grants nothing.

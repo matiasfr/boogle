@@ -16,7 +16,6 @@ import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import { railwayInvariant } from '../../src/sim/railway.ts';
 import type { RecoveryEnvelope } from '../../src/world/sync.ts';
 import type { TuneApi } from '../../src/world/rules/tune.ts';
-import { TUNE_CATALOG } from '../../src/sim/tune.ts';
 import { SUPPLY_SOURCE, supplyFixture } from './fixtures/railway-supply-fixture.ts';
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -65,7 +64,6 @@ test('only controlled T1 proto commits accept the two supply tunes, which surviv
           j: 0,
           key,
           v,
-          catalog: TUNE_CATALOG,
           expectedRevision: tune().tune.revision,
           requestId,
           ...patch,
@@ -82,11 +80,9 @@ test('only controlled T1 proto commits accept the two supply tunes, which surviv
     assert.equal(tune().get('railRegrowMinutes'), 31);
     assert.ok(refusals.some((r) => r.requestId === denied && r.to === 'supplysession'));
     f.host.sync.setEnv({ tuneController: (sid: string) => sid === 'supplysession' });
-    for (const patch of [{ catalog: 'different' }, { expectedRevision: 42 }]) {
-      const refused = await set('railRegrowMinutes', 1, patch);
-      assert.equal(tune().get('railRegrowMinutes'), 31);
-      assert.ok(refusals.some((r) => r.requestId === refused));
-    }
+    const stale = await set('railRegrowMinutes', 1, { expectedRevision: 42 });
+    assert.equal(tune().get('railRegrowMinutes'), 31);
+    assert.ok(refusals.some((r) => r.requestId === stale));
     await set('railRegrowMinutes', 1);
     await set('railRecoveryMinutes', 2);
     assert.equal(tune().get('railRegrowMinutes'), 1);
@@ -326,7 +322,7 @@ test('real idle eviction and rejoin retain the accepted recovery rack and regrow
   });
   async function connect(sid: string) {
     const ws = new WebSocket(
-      `ws://127.0.0.1:${port}/room/${roomId}?self=${sid}&pid=visitor&key=supplykey000000000000&b=test&tc=${TUNE_CATALOG}`,
+      `ws://127.0.0.1:${port}/room/${roomId}?self=${sid}&pid=visitor&key=supplykey000000000000&b=test`,
       ['boogle.1'],
     );
     clients.push(ws);

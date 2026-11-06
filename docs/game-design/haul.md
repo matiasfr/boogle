@@ -147,9 +147,9 @@ use the default section cost.
 
 Code: [src/features/proto-haul.ts](../../src/features/proto-haul.ts), [src/debug/haul-kit.ts](../../src/debug/haul-kit.ts),
 [src/sim/tune.ts](../../src/sim/tune.ts), [src/world/rules/tune.ts](../../src/world/rules/tune.ts). Lockstep state
-`tune` saves the complete effective values, revision and defaults-inclusive catalog. The v07 namespace clean
-break keeps old builds/saves separate; unsupported catalogs are refused before room admission. Ops include
-`tune.set {key, v}`, `tune.commit {key, v, expectedRevision, catalog, requestId}`, and `tune.reset`.
+`tune` saves and hashes the complete effective values and revision. Development assumes current clients;
+save reshapes reset `WORLD_NS` instead of migrating old profiles. Ops include
+`tune.set {key, v}`, `tune.commit {key, v, expectedRevision, requestId}`, and `tune.reset`.
 The first agent proof writes only `haul.yield`: it affects the next accepted `src.take`, with no refund or reset
 of previous work. A queued result is not acceptance; the API's `status` observes the stamped apply result.
 Host admission refusals return a bounded correlated `w:rejected` receipt. A disconnect or missing receipt can
