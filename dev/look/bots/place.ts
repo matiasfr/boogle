@@ -16,13 +16,14 @@ import { showing as showingGift } from '../../../src/proto/place/gifts.ts';
 import { automaticRails } from '../../../src/proto/place/depot.ts';
 import { CART } from '../../../src/proto/place/layout.ts';
 import { runDoubleJumpCourse } from './double-jump.ts';
-import { GLIDE_RAMP, JUMP_COURSE, JUMP_RECOVERY } from '../../../src/proto/place/tech-layout.ts';
+import { GLIDE_RAMP, JUMP_COURSE, JUMP_RECOVERY, SERVICE_ROUTES } from '../../../src/proto/place/tech-layout.ts';
 import { playMark } from '../../../src/proto/mark.ts';
 import { RINGS, fireHook, move, whyNot } from '../../../src/proto/place/moves.ts';
 import { watchLanding } from './place-landing.ts';
 import { seatState } from '../../../src/proto/place/seat.ts';
 
 const q = new URLSearchParams(location.search);
+const routeV2 = q.get('route') === 'v2';
 
 /** Walk to each downward sightline before pulling: the slab beneath your feet otherwise blocks it. */
 async function returnFromTower(bot: Bot) {
@@ -443,6 +444,10 @@ async function playRoute() {
     z: l.spec.line.zs[stem]!,
   });
   const firstDevice = async () => {
+    if (routeV2) {
+      note('route v2: leave the optional extra jump unclaimed');
+      return;
+    }
     const d1 = deck(L1);
     await bot.walk(d1.x, d1.z, 1.2);
     await takeTech('jump');
@@ -462,9 +467,28 @@ async function playRoute() {
   const ontoSecondPillar = async () => {
     const d2 = deck(L2);
     await bot.walk(d2.x, d2.z, 1);
+    if (routeV2) {
+      await serviceWalk('hook');
+      return;
+    }
     const p = padOf('p2');
     await twoJumps(p.x + O, p.z);
     bot.check('the second jump up onto the second pillar', body.position.y > p.top);
+  };
+  const serviceWalk = async (kind: 'hook' | 'quarry', reverse = false) => {
+    const points = [...SERVICE_ROUTES[kind]];
+    if (reverse) points.reverse();
+    const jumps = tech.move.jumps;
+    for (const p of points) {
+      if (!(await bot.straight(O + p.x, p.z, 0.35, 10000)))
+        throw new Error(`Route v2 ${kind} walking connector blocked at ${JSON.stringify(body.position)}`);
+    }
+    await wait(300);
+    bot.check(
+      `route v2 ${kind}: walking, dry, no extra jump`,
+      !place.job.tech.jump && tech.move.jumps === jumps && !me.swimming && me.coyote > 0,
+    );
+    note(`route v2 ${kind}: walked ${reverse ? 'back' : 'up'} without jump inputs`);
   };
   const firstSlabBox = async () => {
     const slab = padOf('t0');
@@ -490,17 +514,30 @@ async function playRoute() {
     await takeTech('hook');
     await firstSlabBox();
     await hookTo('p2');
+    if (routeV2) await serviceWalk('hook', true);
     const d2 = deck(L2);
     await bot.straight(d2.x, d2.z, 1.2, 4000);
   };
   const firstGate = async () => {
     const a = padOf('apron');
-    await bot.walk(a.x + O, a.z + a.hz + 2.1, 1);
-    await twoJumps(a.x + O, a.z);
+    if (routeV2) {
+      const foot = SERVICE_ROUTES.quarry[0]!;
+      await bot.walk(foot.x + O, foot.z + 1, 0.5);
+      await serviceWalk('quarry');
+      if (!(await bot.straight(tech.LEVER.x + O, tech.LEVER.z, 1, 5000)))
+        throw new Error('Route v2 lever landing blocked');
+    } else {
+      await bot.walk(a.x + O, a.z + a.hz + 2.1, 1);
+      await twoJumps(a.x + O, a.z);
+    }
     await bot.use(tech.LEVER.x + O, tech.LEVER.z, 'the lever', /Pull/);
     await waitFor(() => place.job.gate.quarry, 3000, 'the quarry slab');
     note('gate: the quarry');
     await wait(2000);
+    if (routeV2) {
+      await serviceWalk('quarry', true);
+      return;
+    }
     await bot.straight(a.x + O, a.z + a.hz + 3, 1.5, 3000); // off the ledge
   };
   const climb = async () => {
@@ -519,6 +556,7 @@ async function playRoute() {
     if (!(await waitFor(() => !place.pullOn() && !gettingItem(), 10000, 'put away the sea-gate reveal')))
       throw new Error('Sea-gate reveal still owns the camera');
     await returnFromTower(bot);
+    if (routeV2) await serviceWalk('hook', true);
     const d2 = deck(L2);
     await bot.straight(d2.x, d2.z, 1.2, 4000);
   };
@@ -537,6 +575,7 @@ async function playRoute() {
   const tour = async () => {
     for (const s of tech.SECRETS) {
       if (tech.found.has(s.id)) continue;
+      if (routeV2 && s.how === 'jump') continue; // This no-find run deliberately leaves the optional jump rewards.
       const at = s.from;
       teleport(body, at.x + O, (at.y ?? place.H(at.x + O, at.z)) + 1.3, at.z);
       body.velocity.set(0, 0, 0);
@@ -839,6 +878,8 @@ async function playRoute() {
   else if (from === 'line2') place.skipLine2();
   else if (from === 'head') place.skipHead();
   else if (from === 'trains') place.skipTrains();
+  // The existing developer fixture grants jump. Remove that grant for this labelled no-find segment.
+  if (routeV2 && from) place.job.tech.jump = false;
   if (!from) {
     await phase('at-cove', async () => {
       const path = place.PATH_SAMPLES[0] as number[][];
