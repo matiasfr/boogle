@@ -8,7 +8,7 @@
 //                  jitter. The run starts over after 700 ms with nothing landing.
 //   burstChord()   a burst of 4 or more closes with a "cha-ching" 60 ms after its last tick: C6, G6, C7 clinks 40 ms
 //                  apart (E7 too after 10 or more), a detuned octave-and-fifth shimmer, and a low wooden knock under it.
-// About −18 dBFS a tick on the ui bus, at most 8 voices (the oldest is cut). Through `onBeat`, so once music installs
+// Physical pickup feedback on the work bus, at most 8 voices (the oldest is cut). Through `onBeat`, so once music installs
 // a snap the ladder lands on the beat and in the current chord, as Peggle's pegs do (none does today). Local and
 // cosmetic.
 import { getAudio, onBeat } from '../../render/audio.ts';
@@ -61,7 +61,7 @@ function tone(ctx: AudioContext, dest: AudioNode, f: number, at: number, ring: n
 
 /** Pieces set off from a pile: a short swell that rises into the first landing (about 0.2 s later). */
 export function whooshIn(n: number): void {
-  const a = getAudio('ui');
+  const a = getAudio('work');
   if (!a || n <= 0) return;
   const { ctx, out } = a;
   const t = ctx.currentTime + 0.01;
@@ -87,7 +87,7 @@ export function arrivalTick(): number {
   const now = performance.now();
   step = now - lastAt > RESET_MS ? 0 : step + 1;
   lastAt = now;
-  const a = getAudio('ui');
+  const a = getAudio('work');
   if (!a) return step;
   const { ctx, out } = a;
   // climb, then the payout shimmer: one of the top three, never the same twice running
@@ -107,7 +107,7 @@ export function arrivalTick(): number {
 
 /** A burst of 4 or more closes on a "cha-ching", 60 ms after its last tick; bigger after 10 or more. */
 export function burstChord(): void {
-  const a = getAudio('ui');
+  const a = getAudio('work');
   if (!a) return;
   const { ctx, out } = a;
   const big = step >= 9;

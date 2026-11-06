@@ -5,7 +5,8 @@
 import { rules } from '../../world/game-world.ts';
 import { onFrame } from '../../loop.ts';
 import { onFly } from '../../render/haul-pieces.ts';
-import { getAudio } from '../../render/audio.ts';
+import { dbToGain, getAudio } from '../../render/audio.ts';
+import { audioSettings } from '../../render/audio-tuning.ts';
 import { clink, pentatonic } from '../../render/clink.ts';
 import { me } from '../../player/player.ts';
 import { identity } from '../../player/identity.ts';
@@ -22,7 +23,7 @@ const pending: number[] = []; // ms a pickup's pieces arrive
 // octaves under a clink, half wood and half metal, that steps up the pentatonic scale every 6 logs you carry (in key,
 // where v1 slid ±8 % off it), with its bounce two steps higher: "tok-ting".
 export function thock(count: number) {
-  const a = getAudio();
+  const a = getAudio('work');
   if (!a) return;
   const { ctx, out } = a;
   const t = ctx.currentTime + 0.005;
@@ -34,7 +35,7 @@ export function thock(count: number) {
   o.frequency.exponentialRampToValueAtTime(f / 4, t + 0.06);
   const g = ctx.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.26, t + 0.004);
+  g.gain.linearRampToValueAtTime(0.26 * dbToGain(audioSettings.pickupDb), t + 0.004);
   g.gain.setTargetAtTime(0, t + 0.004, 0.03);
   o.connect(g).connect(out);
   o.start(t);
@@ -42,7 +43,7 @@ export function thock(count: number) {
   clink(ctx, out, {
     at: t,
     freq: f,
-    level: 0.13,
+    level: 0.13 * dbToGain(audioSettings.pickupDb),
     metal: 0.5,
     ring: 0.16,
     strike: 1.2,

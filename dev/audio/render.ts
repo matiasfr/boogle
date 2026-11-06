@@ -11,13 +11,13 @@
 //   node dev/audio/render.ts --out <dir>
 //   node dev/audio/render.ts --offline-place       raw round-4 recipes via the existing Codex browser broker
 //
-// Files are peak-normalized to -1 dBFS so they audition at the same loudness on a phone; manifest.json keeps each
-// one's in-game peak and RMS (dBFS at the game's master), so relative loudness is still on record. One-shots are
-// trimmed of leading and trailing silence.
+// WAVs preserve full unnormalized float32 output, including silence, tails and overs. The ledger meters those raw
+// windows; compressed listening derivatives never replace the measurement evidence. Use --broker in Codex jobs.
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { startStack, launch, Game, root } from '../look/lib.ts';
+import { analyze } from './analyze.ts';
 
 type Take = {
   id: string;
@@ -42,6 +42,8 @@ type Result = {
   rmsDb: number;
   clipped: number;
   gainDb: number;
+  activeSeconds: number;
+  nonfinite: number;
 };
 
 // ---------------------------------------------------------------- the recorder (runs in the page before the game)
@@ -101,6 +103,40 @@ const RECORDER = String.raw`(() => {
     return r;
   };
   const R = (window.__rec = { ctx: null, node: null, ready: null, chunks: [], done: null, sleep, until });
+  R.lastEnd = 0;
+  R.ends = new Map();
+  R.note = (source, end) => { R.ends.set(source, end); R.lastEnd = Math.max(0, ...R.ends.values()); };
+  R.attach = async (ctx, output) => {
+    R.ctx = ctx;
+    const url = URL.createObjectURL(new Blob([WORKLET], { type: 'text/javascript' }));
+    await ctx.audioWorklet.addModule(url);
+    URL.revokeObjectURL(url);
+    const node = R.node = new AudioWorkletNode(ctx, 'boogle-rec', {
+      numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2],
+      channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers',
+    });
+    output.connect(node); node.connect(ctx.destination);
+    node.port.onmessage = (e) => e.data === 'done' ? R.done?.() : R.chunks.push(e.data);
+    R.ready = Promise.resolve();
+  };
+  // Every finite oscillator/buffer source already declares its completion to Web Audio. Follow that clock,
+  // including delayed notes, instead of cutting all recipes at the same arbitrary post-trigger duration.
+  for (const prototype of [OscillatorNode.prototype, AudioBufferSourceNode.prototype]) {
+    const stop = prototype.stop;
+    prototype.stop = function(at = 0) {
+      R.note(this, at || this.context.currentTime);
+      return stop.call(this, at);
+    };
+  }
+  const startBuffer = AudioBufferSourceNode.prototype.start;
+  AudioBufferSourceNode.prototype.start = function(at = 0, offset = 0, duration) {
+    if (!this.loop && this.buffer) {
+      const rate = Math.max(0.001, this.playbackRate.value * 2 ** (this.detune.value / 1200));
+      const seconds = Math.max(0, Math.min(duration ?? Infinity, this.buffer.duration - offset)) / rate;
+      R.note(this, Math.max(at, this.context.currentTime) + seconds);
+    }
+    return startBuffer.call(this, at, offset, duration);
+  };
   const Base = window.AudioContext;
   window.AudioContext = class extends Base {
     constructor(o) {
@@ -123,54 +159,51 @@ const RECORDER = String.raw`(() => {
   };
 
   // Records 'seconds' from audio time 'at' (default: just ahead of now) while trigger() plays the sound. seconds null:
-  // until trigger() resolves, plus 'tail' s. Returns a 16-bit WAV (base64) and the raw levels.
-  R.run = async (seconds, trigger, { at, trim = true, tail = 1.2, quiet = -70 } = {}) => {
+  // until trigger() and all scheduled source tails complete. tail covers downstream reverb, not cue duration.
+  // Full unnormalized float32 WAV; previews are derivatives and never replace this evidence.
+  R.run = async (seconds, trigger, { at, tail = 0.25 } = {}) => {
     await until(() => R.ready && R.node && R.ctx.state === 'running', 20000);
     const ctx = R.ctx, sr = ctx.sampleRate;
     const start = at ?? ctx.currentTime + 0.1;
     R.chunks = [];
+    R.ends.clear();
+    R.lastEnd = start;
     const done = new Promise((r) => (R.done = r));
     R.node.port.postMessage({ from: Math.round(start * sr), to: seconds == null ? Infinity : Math.round((start + seconds) * sr) });
-    while (ctx.currentTime < start - 0.005) await sleep(5);
+    while (ctx.currentTime < start) await sleep(5);
     if (trigger) await trigger();
-    if (seconds == null) R.node.port.postMessage({ stopAt: Math.round((ctx.currentTime + tail) * sr) });
+    if (seconds == null) {
+      await until(() => ctx.currentTime >= R.lastEnd, 30000);
+      R.node.port.postMessage({ stopAt: Math.round((Math.max(ctx.currentTime, R.lastEnd) + tail) * sr) });
+    }
     await done;
     const n = R.chunks.reduce((t, c) => t + c[0].length, 0);
     const L = new Float32Array(n), Rr = new Float32Array(n);
     let o = 0;
     for (const [l, r] of R.chunks) { L.set(l, o); Rr.set(r, o); o += l.length; }
-    let peak = 0, sum = 0, clipped = 0;
+    let peak = 0, sum = 0, clipped = 0, nonfinite = 0, first = n, last = -1;
     for (let i = 0; i < n; i++) {
       const a = Math.max(Math.abs(L[i]), Math.abs(Rr[i]));
       if (a > peak) peak = a;
-      if (a >= 0.999) clipped++;
+      if (a > 1) clipped++;
+      if (!Number.isFinite(L[i]) || !Number.isFinite(Rr[i])) nonfinite++;
+      if (a > 1e-5) { first = Math.min(first, i); last = i; }
       sum += (L[i] * L[i] + Rr[i] * Rr[i]) / 2;
     }
     const db = (v) => (v > 0 ? 20 * Math.log10(v) : -200);
-    let a0 = 0, a1 = n;
-    if (trim && peak > 0) {
-      const thr = Math.max(peak * 10 ** (quiet / 20), 1e-6);
-      const loud = (i) => Math.abs(L[i]) > thr || Math.abs(Rr[i]) > thr;
-      while (a0 < n && !loud(a0)) a0++;
-      while (a1 > a0 && !loud(a1 - 1)) a1--;
-      a0 = Math.max(0, a0 - Math.round(0.02 * sr));
-      a1 = Math.min(n, a1 + Math.round(0.25 * sr));
-    }
-    const gain = peak > 0 ? Math.min(10 ** (-1 / 20) / peak, 10 ** (40 / 20)) : 1;
-    const frames = a1 - a0, bytes = new Uint8Array(44 + frames * 4), v = new DataView(bytes.buffer);
+    const frames = n, bytes = new Uint8Array(44 + frames * 8), v = new DataView(bytes.buffer);
     const str = (p, s) => [...s].forEach((c, i) => v.setUint8(p + i, c.charCodeAt(0)));
-    str(0, 'RIFF'); v.setUint32(4, 36 + frames * 4, true); str(8, 'WAVEfmt ');
-    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 2, true); v.setUint32(24, sr, true);
-    v.setUint32(28, sr * 4, true); v.setUint16(32, 4, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, frames * 4, true);
+    str(0, 'RIFF'); v.setUint32(4, 36 + frames * 8, true); str(8, 'WAVEfmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 3, true); v.setUint16(22, 2, true); v.setUint32(24, sr, true);
+    v.setUint32(28, sr * 8, true); v.setUint16(32, 8, true); v.setUint16(34, 32, true); str(36, 'data'); v.setUint32(40, frames * 8, true);
     for (let i = 0; i < frames; i++) {
       for (const [c, ch] of [[0, L], [1, Rr]]) {
-        const s = Math.max(-1, Math.min(1, ch[a0 + i] * gain));
-        v.setInt16(44 + i * 4 + c * 2, Math.round(s * 32767), true);
+        v.setFloat32(44 + i * 8 + c * 4, ch[i], true);
       }
     }
     let b64 = '';
     for (let i = 0; i < bytes.length; i += 0x8000) b64 += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    return { b64: btoa(b64), sampleRate: sr, seconds: frames / sr, peakDb: db(peak), rmsDb: db(Math.sqrt(sum / Math.max(1, n))), clipped, gainDb: db(gain) };
+    return { b64: btoa(b64), sampleRate: sr, seconds: frames / sr, activeSeconds: Math.max(0, last-first+1)/sr, peakDb: db(peak), rmsDb: db(Math.sqrt(sum / Math.max(1, n))), clipped, nonfinite, gainDb: 0 };
   };
 })();`;
 
@@ -190,8 +223,47 @@ const seq = (imports: string, calls: string[], gap: number) => `${imports}
 
 const PAGES: Page[] = [
   {
+    key: 'voice',
+    query: 'classic=1',
+    takes: [
+      {
+        id: 'voice-boogler',
+        group: 'Voice',
+        title: 'Formant phrase',
+        when: 'Fixed representative Boogler phrase; original voice parameters, no text change.',
+        body: `const {buildPlan, createLane} = await import('/src/render/npc-voice.ts');
+        const {getAudio} = await import('/src/render/audio.ts');
+        const voice = {baseHz:155,rangeSemis:2,formantScale:.9,brightnessHz:3500,cps:48,grainMs:[65,95],vowels:[.3,.15,.1,.25,.2]};
+        const plan = buildPlan('Welcome aboard, my friends!', 'smile', voice);
+        const audio = getAudio('voice');
+        return R.run(null, () => {
+          const lane=createLane(audio.ctx,audio.out,voice), start=audio.ctx.currentTime;
+          for(const s of plan.syllables) lane.grain(s,start+s.at/1000);
+          const last=plan.syllables.at(-1); lane.end(start+(last.at+last.ms)/1000+.04);
+        });`,
+      },
+    ],
+  },
+  {
+    key: 'machine',
+    query: 'classic=1',
+    takes: [
+      {
+        id: 'machine-reference',
+        group: 'Machine',
+        title: 'Machine family at listener',
+        when: 'One soft/heavy chuff, sleeper, rail and whistle at the camera.',
+        body: seq(
+          `const M = await import('/src/render/machine-sfx.ts'); const { camera } = await import('/src/render/scene.ts'); const {x,z}=camera.position;`,
+          ['M.chuff(x,z,0);', 'M.chuff(x,z,1);', 'M.thump(x,z);', 'M.clank(x,z);', 'M.whistle(x,z);'],
+          1800,
+        ),
+      },
+    ],
+  },
+  {
     key: 'ui',
-    query: 'jump2=1',
+    query: 'classic=1&jump2=1',
     takes: [
       {
         id: 'ui-tick',
@@ -374,7 +446,13 @@ const PAGES: Page[] = [
         title: 'A whole soapbox run (cut: all soapbox sounds)',
         when: 'Riding the course start to finish: no rumble, rattle or wind.',
         silent: true,
-        body: `const P = await import('/dev/look/evals/soapbox-pilot.ts'); return R.run(14, async () => { await P.drive({}); });`,
+        body: `const { getAudio } = await import('/src/render/audio.ts');
+          // Retained menu confirmations are unrelated to the removed vehicle bed.
+          for (const bus of ['ui', 'music', 'ambience', 'voice']) getAudio(bus).out.gain.value = 0;
+          const P = await import('/dev/look/evals/soapbox-pilot.ts');
+          await P.drive({seconds:14}); await until(() => window.__soapbox.S.seated);
+          await sleep(1000);
+          return R.run(12, null);`,
       },
     ],
   },
@@ -437,7 +515,7 @@ const PAGES: Page[] = [
   },
   {
     key: 'build',
-    query: '',
+    query: 'classic=1',
     setup: `await until(() => window.boogle.me.entered, 90000);
       ${TP(8, 16)}
       window.__debugCam.set([12, 4.3, 11], [17, 2.4, 5.8]);
@@ -454,7 +532,7 @@ const PAGES: Page[] = [
           const { HELPER } = await import('/src/sim/route.ts');
           // Pour the whole ring (logs from the bundles, the usual ops); the hut keeps going up for a while after the
           // ring is full: record the whole build.
-          return R.run(34, async () => {
+          return R.run(null, async () => {
             for (let n = 0; n < 200 && !rules.sites.sites.list[0].helpers; n++) {
               const mine = rules.stacks.count(identity.pid);
               if (mine > 0) submitEdit({ op: 'site.stock', i: 0, j: 0, s: 0, ring: HELPER, n: mine });
@@ -465,6 +543,10 @@ const PAGES: Page[] = [
               }
               await sleep(250);
             }
+            if (!rules.sites.sites.list[0].helpers) throw new Error('Helper stock was not accepted');
+            // Piece arrivals have bounded gaps below 1.5s, including phase pauses. Follow their real source
+            // completion until the queue rests, instead of assuming every build takes 34 seconds.
+            await until(() => R.ctx.currentTime > R.lastEnd + 1.5, 45000);
           });`,
       },
     ],
@@ -577,7 +659,7 @@ const PAGES: Page[] = [
         body: `const { rules } = await import('/src/world/game-world.ts');
           const { submitEdit } = await import('/src/world/sync.ts');
           const { trackMachine: TM } = await import('/src/features/track-machine.ts');
-          await until(() => rules.sites.kind() === 1, 15000);
+          if (!rules.sites.sites.list.length) throw new Error('No track sites in this fixture');
           document.querySelector('.lay-proto button').click();
           await until(() => rules.sites.canRun(0), 15000);
           const follow = setInterval(() => { const p = TM.pose; window.__debugCam.set([p.x + 4, p.y + 3, p.z + 4], [p.x, p.y, p.z]); }, 50);
@@ -597,11 +679,135 @@ const PAGES: Page[] = [
 const args = process.argv.slice(2);
 const opt = (k: string) => (args.includes(k) ? args[args.indexOf(k) + 1] : null);
 const only = opt('--only')?.split(',') ?? null;
-const out = path.resolve(opt('--out') ?? path.join(root, '.look/audio'));
+const out = path.resolve(opt('--out') ?? path.join(root, '.look/audio', String(Date.now())));
 fs.mkdirSync(out, { recursive: true });
+if (fs.readdirSync(out).some((file) => file.endsWith('.wav')))
+  throw new Error(
+    'Capture output already contains WAVs; choose a fresh --out directory to avoid mixing builds. Use audio:analyze to re-meter existing evidence.',
+  );
+// Broker mode opens the same live fixtures through the supplied browser owner. No second browser or server path.
+if (args.includes('--broker') && !args.includes('--offline-place') && !args.includes('--offline-locomotion')) {
+  const failed: string[] = [];
+  const manifest: object[] = [];
+  const evidence: string[] = [];
+  for (const page of PAGES) {
+    const takes = page.takes.filter((t) => !only || only.some((o) => t.id.startsWith(o) || page.key === o));
+    if (!takes.length) continue;
+    const evalPath = path.join(root, '.look', `audio-${page.key}.ts`);
+    fs.writeFileSync(
+      evalPath,
+      `${RECORDER}\n${PRE}
+      const A = await import('/src/render/audio.ts');
+      A.setVolume(1); A.setMuted(false);
+      await until(() => A.audioOutput());
+      const final = A.audioOutput(); await R.attach(final.ctx, final.out);
+      let seed = 0x5b00; Math.random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+      ${page.setup ?? ''}
+      await sleep(1500);
+      ${takes
+        .map(
+          (take) => `try {
+        const result = await (async () => { ${take.body} })();
+        const {b64,...metadata} = result;
+        metadata.audio = A.audioSnapshot();
+        console.log('AUDIOMETA ' + JSON.stringify({id:${JSON.stringify(take.id)}, ...metadata}));
+        for(let p=0;p<b64.length;p+=24000) console.log('AUDIODATA ${take.id} ' + b64.slice(p,p+24000));
+      } catch(error) { console.log('AUDIOFAIL ' + JSON.stringify({id:${JSON.stringify(take.id)},error:String(error)})); }`,
+        )
+        .join('\n')}
+    `,
+    );
+    const evidenceRoot = path.join(root, '.look/evidence');
+    const before = new Set(fs.existsSync(evidenceRoot) ? fs.readdirSync(evidenceRoot) : []);
+    const query = page.query;
+    const run = spawnSync(
+      process.execPath,
+      [
+        '.look/see-client.ts',
+        'look',
+        '--query',
+        query,
+        '--room',
+        `proto-audio-${page.key}-${Date.now()}`,
+        '--eval',
+        evalPath,
+        '--real',
+        '--warm',
+        '0',
+        '--seconds',
+        '0.2',
+        '--frames',
+        '2',
+        '--name',
+        `audio-${page.key}`,
+        '--question',
+        'Does the live sound fixture remain visible and healthy after capture?',
+      ],
+      { encoding: 'utf8', stdio: ['ignore', 'ignore', 'pipe'] },
+    );
+    const matches = (fs.existsSync(evidenceRoot) ? fs.readdirSync(evidenceRoot) : [])
+      .filter((id) => !before.has(id))
+      .map((id) => path.join(evidenceRoot, id, 'evidence.json'))
+      .filter((file) => fs.existsSync(file))
+      .filter((file) => {
+        const e = JSON.parse(fs.readFileSync(file, 'utf8')) as { args: string[] };
+        return e.args.includes(evalPath);
+      });
+    if (matches.length !== 1) {
+      failed.push(`${page.key}: no unique broker manifest (${run.status}): ${run.stderr}`);
+      continue;
+    }
+    const file = matches[0]!;
+    evidence.push(file);
+    const health = JSON.parse(fs.readFileSync(file, 'utf8')) as { status: number; changedDuringRun: boolean };
+    if (run.status !== 0 || health.status !== 0 || health.changedDuringRun)
+      failed.push(`${page.key}: broker health/source failure; ${file}`);
+    const lines = fs.readFileSync(path.join(path.dirname(file), 'output.txt'), 'utf8').split('\n');
+    for (const take of takes) {
+      const line = lines.find(
+        (l) => l.startsWith('AUDIOMETA ') && (JSON.parse(l.slice(10)) as { id: string }).id === take.id,
+      );
+      if (!line) {
+        failed.push(
+          `${take.id}: no capture; ${lines.find((l) => l.startsWith('AUDIOFAIL ') && l.includes(take.id)) ?? file}`,
+        );
+        continue;
+      }
+      const result = JSON.parse(line.slice(10)) as Omit<Result, 'b64'>;
+      const b64 = lines
+        .filter((l) => l.startsWith(`AUDIODATA ${take.id} `))
+        .map((l) => l.slice(take.id.length + 11))
+        .join('');
+      const wav = `${take.id}.wav`;
+      fs.writeFileSync(path.join(out, wav), Buffer.from(b64, 'base64'));
+      const problem = result.nonfinite
+        ? 'nonfinite samples'
+        : take.silent
+          ? result.peakDb >= -60
+            ? 'cut moment audible'
+            : ''
+          : result.peakDb < -80
+            ? 'untriggered or silent'
+            : '';
+      if (problem) failed.push(`${take.id}: ${problem}`);
+      const { id, group, title, when, silent } = take;
+      const description = { id, group, title, when, silent };
+      manifest.push({ ...description, ...result, wav, problem, evidence: file, seed: 0x5b00, tap: 'final output' });
+      console.log(`${take.id}: ${result.peakDb.toFixed(2)} dBFS, ${result.seconds.toFixed(3)} s ${problem}`);
+    }
+    fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify({ manifest, evidence, failed }, null, 2) + '\n');
+  }
+  analyze(out);
+  if (evidence.length) fs.cpSync(out, path.join(path.dirname(evidence.at(-1)!), 'audio'), { recursive: true });
+  console.log(`Raw WAVs, measurements.md, manifest.json: ${out}`);
+  for (const problem of failed) console.error(problem);
+  process.exit(failed.length ? 1 : 0);
+}
 // A Codex worker cannot launch Chromium. Ask its broker to render the same recipes in OfflineAudioContext;
 // preserve unnormalized SFX levels so the owner can judge their relationship. No live mixer/compressor in this mode.
-if (args.includes('--offline-place')) {
+if (args.includes('--offline-place') || args.includes('--offline-locomotion')) {
+  const locomotion = args.includes('--offline-locomotion');
+  const evalFile = locomotion ? 'dev/audio/locomotion-offline.ts' : 'dev/audio/place-offline.ts';
   const evidenceRoot = path.join(root, '.look/evidence');
   const before = new Set(fs.existsSync(evidenceRoot) ? fs.readdirSync(evidenceRoot) : []);
   const run = spawnSync(
@@ -612,7 +818,7 @@ if (args.includes('--offline-place')) {
       '--query',
       'proto=place&ambience=off',
       '--eval',
-      'dev/audio/place-offline.ts',
+      evalFile,
       '--warm',
       '0',
       '--seconds',
@@ -622,7 +828,7 @@ if (args.includes('--offline-place')) {
       '--name',
       'audio-offline',
       '--question',
-      'Does the place still render after all round-4 sound recipes render offline?',
+      'Does the place still render after the production sound recipes render offline?',
     ],
     { encoding: 'utf8', stdio: ['ignore', 'ignore', 'pipe'] },
   );
@@ -634,7 +840,7 @@ if (args.includes('--offline-place')) {
     .filter((file) => fs.existsSync(file))
     .filter((file) => {
       const e = JSON.parse(fs.readFileSync(file, 'utf8')) as { operation: string; args: string[] };
-      return e.operation === 'look' && e.args.includes(path.join(root, 'dev/audio/place-offline.ts'));
+      return e.operation === 'look' && e.args.includes(path.join(root, evalFile));
     });
   if (matches.length !== 1) {
     console.error(`Offline audio: expected one new broker manifest, found ${matches.length}; exit ${run.status}.`);
@@ -644,6 +850,10 @@ if (args.includes('--offline-place')) {
   const evidence = matches[0]!;
   const broker = JSON.parse(fs.readFileSync(evidence, 'utf8')) as { status: number; changedDuringRun: boolean };
   const log = fs.readFileSync(path.join(path.dirname(evidence), 'output.txt'), 'utf8');
+  const catalogueLine = log.split('\n').find((line) => line.startsWith('AUDIOCATALOG '));
+  const catalogue = catalogueLine
+    ? (JSON.parse(catalogueLine.slice(13)) as { expected: number; cues: string[]; seeds: number[] })
+    : null;
   type OfflineTake = Result & { id: string; description: string; scheduled: number; sources: number };
   const takes: OfflineTake[] = log
     .split('\n')
@@ -663,11 +873,14 @@ if (args.includes('--offline-place')) {
     return { ...take, wav: `${take.id}.wav` };
   });
   fs.writeFileSync(
-    path.join(out, 'place-offline.json'),
+    path.join(out, locomotion ? 'locomotion-offline.json' : 'place-offline.json'),
     JSON.stringify(
       {
-        mode: 'Raw mono SFX at unit distance gain; no master, compressor, normalization or live ambience.',
+        mode: locomotion
+          ? 'Raw mono source references and authored character/SFX sum; no compressor/master.'
+          : 'Raw mono SFX at unit distance gain; no master, compressor, normalization or live ambience.',
         evidence,
+        catalogue,
         takes: manifest,
       },
       null,
@@ -675,11 +888,43 @@ if (args.includes('--offline-place')) {
     ) + '\n',
   );
   console.log(`Evidence: ${evidence}`);
-  console.log(`Raw WAVs and place-offline.json: ${out}`);
+  console.log(`Raw WAVs and offline manifest: ${out}`);
   if (run.status !== 0 || broker.status !== 0) console.error(`Offline audio failed; read ${evidence}.`);
-  const bad = takes.some((t) => t.clipped > 0 || t.peakDb < -60 || t.seconds < 0.05 || t.seconds > 1.5);
+  analyze(out);
+  if (locomotion)
+    fs.writeFileSync(
+      path.join(out, 'listening.md'),
+      [
+        '# Locomotion listening sheet',
+        '',
+        'Mono 48 kHz float WAVs from the production procedural recipes. Source references have six takes at unit gain; walking, running, jumping and landing use the current local audio tunables. No peak normalization. Playback device, subjective balance and live cadence remain unverified here.',
+        '',
+        'Each walk/run file plays all six takes with pitch and gain variation at illustrative fixed spacing. Jump files pair each takeoff with normal landing 650 ms later. Landing files progress from soft through normal to capped heavy. This is an audition, not a physics or stride timing simulation.',
+        '',
+        '| Surface | Walk | Run | Jump + land | Impact range | Source reference |',
+        '| --- | --- | --- | --- | --- | --- |',
+        ...['grass', 'sand', 'wood', 'rail', 'water'].map(
+          (s) =>
+            `| ${s} | [WAV](${s}-walk.wav) | [WAV](${s}-run.wav) | [WAV](${s}-jump.wav) | [WAV](${s}-land.wav) | [WAV](${s}-source.wav) |`,
+        ),
+        '',
+        'Settings, exact source completion and cue parameters: locomotion-offline.json. Signal levels: measurements.md; tool version: meter-tool.json.',
+      ].join('\n'),
+    );
+  fs.cpSync(out, path.join(path.dirname(evidence), 'audio'), { recursive: true });
+  const bad = takes.some(
+    (t) =>
+      t.clipped > 0 || t.nonfinite > 0 || t.peakDb < -60 || t.seconds < 0.05 || t.seconds > (locomotion ? 12 : 2.1),
+  );
   process.exit(
-    run.status === 0 && broker.status === 0 && !broker.changedDuringRun && takes.length === 21 && !bad ? 0 : 1,
+    run.status === 0 &&
+      broker.status === 0 &&
+      !broker.changedDuringRun &&
+      catalogue &&
+      takes.length === catalogue.expected &&
+      !bad
+      ? 0
+      : 1,
   );
 }
 const pick = (p: Page, t: Take) => !only || only.some((o) => t.id.startsWith(o) || p.key === o);
@@ -746,9 +991,22 @@ try {
           const problem =
             r.peakDb < -50 ? 'silent' : r.clipped ? `${r.clipped} clipped samples` : r.seconds < 0.05 ? 'empty' : '';
           const { id, group, title, when } = t;
-          const { sampleRate, seconds, peakDb, rmsDb, clipped, gainDb } = r;
+          const { sampleRate, seconds, peakDb, rmsDb, clipped, gainDb, activeSeconds, nonfinite } = r;
           save({
-            ...{ id, group, title, when, sampleRate, seconds, peakDb, rmsDb, clipped, gainDb },
+            ...{
+              id,
+              group,
+              title,
+              when,
+              sampleRate,
+              seconds,
+              peakDb,
+              rmsDb,
+              clipped,
+              gainDb,
+              activeSeconds,
+              nonfinite,
+            },
             ...{ file: encode(wav), wav: path.basename(wav), ...(problem ? { problem } : {}) },
           });
           console.log(

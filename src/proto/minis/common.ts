@@ -3,7 +3,8 @@
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity, readableUnlit } from '../../render/readable-unlit.ts';
-import { getAudio } from '../../render/audio.ts';
+import { dbToGain, getAudio } from '../../render/audio.ts';
+import { audioSettings } from '../../render/audio-tuning.ts';
 import { noiseBuffer } from '../../render/noise.ts';
 import { camera } from '../../render/scene.ts';
 import { ball } from '../../entities/ball/state.ts';
@@ -98,6 +99,7 @@ function noise(ctx: AudioContext) {
 export const near = (x: number, z: number) =>
   1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / 400);
 function tone(type: OscillatorType, f0: number, f1: number, at: number, dur: number, vol: number) {
+  vol *= dbToGain(audioSettings.minisDb);
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;
@@ -128,7 +130,7 @@ export function knock(k: number, vol = 1) {
   bp.Q.value = 3;
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(0.5 * vol * (0.4 + k), t + 0.003);
+  g.gain.linearRampToValueAtTime(0.5 * vol * (0.4 + k) * dbToGain(audioSettings.minisDb), t + 0.003);
   g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09 + 0.08 * k);
   n.connect(bp).connect(g).connect(out);
   n.start(t, Math.random() * 0.3);
@@ -154,6 +156,7 @@ export function fanfare(big: boolean, vol = 1) {
 }
 /** A sad trombone: the funny failure. */
 export function womp(vol = 1) {
+  vol *= dbToGain(audioSettings.minisDb + audioSettings.minisWompDb);
   const a = getAudio();
   if (!a) return;
   const { ctx, out } = a;

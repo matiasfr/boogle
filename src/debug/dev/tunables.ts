@@ -15,14 +15,36 @@ import { snapshotFeelSpring, setFeelSpring, onFeelSpringChange } from '../../pla
 import { bindings, onChange } from '../../render/water/live.ts';
 import { exposureSettings } from '../../render/exposure.ts';
 import { tuningVisit } from '../../dev-preferences.ts';
+import {
+  AUDIO_SPECS,
+  audioSettingKey,
+  audioSettings,
+  setAudioSetting,
+  onAudioSettingChange,
+} from '../../render/audio-tuning.ts';
+import { audioSnapshot } from '../../render/audio.ts';
+import { el, button, more, note, download } from './ui.ts';
+import { background } from '../../async.ts';
 import { pageQuery, PROTO, productionRailway } from '../../proto/flags.ts';
 import { fixture } from './fixtures.ts';
 import { ok, no, type Tool, type Args, type Result } from './types.ts';
 
+// Audio is available on every route, including before gesture unlock. It must not inherit the water binding gate.
+function localBinding(id: string) {
+  const key = audioSettingKey(id);
+  return key
+    ? {
+        get: () => audioSettings[key],
+        set: (value: unknown) => {
+          setAudioSetting(id, value);
+        },
+      }
+    : bindings.get(id);
+}
 const local = new Map(
   CATALOG.filter((s) => s.scope === 'local').map((s) => [
     s.id,
-    { value: bindings.get(s.id)?.get() ?? s.default, revision: 0, source: 'default' },
+    { value: localBinding(s.id)?.get() ?? s.default, revision: 0, source: 'default' },
   ]),
 );
 let localWrite: { id: string; source: string } | null = null;
@@ -38,6 +60,7 @@ const requests = new Map<
   string,
   { status: string; at: number; revision?: number; appliedTick?: number; code?: string }
 >();
+const audioSlots = new Map<'A' | 'B', { name: string; values: { id: string; value: number }[] }>();
 function setup() {
   const p = me.body?.position;
   const f = fixture();
@@ -58,7 +81,7 @@ function read(id: string) {
     ? rules.tune.tune.v[spec.sharedKey]
     : spec.scope === 'owner'
       ? feel.value
-      : ((bindings.get(id)?.get() as number | undefined) ??
+      : ((localBinding(id)?.get() as number | undefined) ??
         (id === 'post.centre' ? exposureSettings.centre : spec.default));
   return {
     ...spec,
@@ -67,7 +90,7 @@ function read(id: string) {
     revision: shared ? rules.tune.tune.revision : spec.scope === 'owner' ? feel.revision : local.get(id)!.revision,
     available: shared
       ? worldStatus().ready && (!id.startsWith('railway.') || productionRailway)
-      : spec.scope === 'owner' || bindings.has(id),
+      : spec.scope === 'owner' || !!localBinding(id),
     ...(spec.scope === 'owner' ? { active: feel.active, chopLocked: feel.chopLocked } : {}),
   };
 }
@@ -82,6 +105,7 @@ export function tuneSnapshot() {
     setup: startingSetup ?? setup(),
     values: CATALOG.map((spec) => read(spec.id)!),
     queryResults: [...queryResults],
+    audio: audioSnapshot(),
   };
 }
 export function recordTuneSnapshot() {
@@ -167,7 +191,7 @@ function set(args: Args, source = 'session'): Result {
   if (spec.scope === 'local') {
     localWrite = { id: spec.id, source };
     try {
-      bindings.get(spec.id)!.set(value);
+      localBinding(spec.id)!.set(value);
     } finally {
       localWrite = null;
     }
@@ -193,9 +217,9 @@ function set(args: Args, source = 'session'): Result {
     data: { requestId, status: queued ? 'pending' : 'rejected' },
   };
 }
-onChange(() => {
+function localChanged() {
   for (const [id, state] of local) {
-    const value = bindings.get(id)?.get();
+    const value = localBinding(id)?.get();
     if (typeof value !== 'number' || value === state.value) continue;
     const old = state.value as number;
     state.source = localWrite?.id === id ? localWrite.source : 'owner';
@@ -203,7 +227,9 @@ onChange(() => {
     state.revision++;
     emitTuneRecord('tune.change', { id, old, value, revision: state.revision, source: state.source });
   }
-});
+}
+onChange(localChanged);
+onAudioSettingChange(localChanged);
 onFeelSpringChange((event, state) => {
   emitTuneRecord(event === 'change' ? 'tune.change' : 'tune.active', {
     id: 'feel.spring.stiffness',
@@ -342,5 +368,125 @@ export const tool: Tool = {
     return no('Unknown command.');
   },
   snapshot: tuneSnapshot,
-  mount: () => () => {},
+  mount(parent, context) {
+    note(parent, 'Audio mix · local to this tab. Buses change live; individual hits use the next trigger.');
+    const status = el('p', '', 'dev-status');
+    status.setAttribute('role', 'status');
+    parent.append(status);
+    const controls = el('div', '', 'dev-actions');
+    const name = el('input');
+    name.value = 'My mix';
+    name.setAttribute('aria-label', 'Audio snapshot name');
+    parent.append(name, controls);
+    for (const slot of ['A', 'B'] as const) {
+      controls.append(
+        button(`Save ${slot}`, () => {
+          audioSlots.set(slot, {
+            name: name.value.trim() || slot,
+            values: AUDIO_SPECS.map((spec) => ({ id: spec.id, value: read(spec.id)!.value as number })),
+          });
+          status.textContent = `Saved ${slot}: ${audioSlots.get(slot)!.name}`;
+        }),
+      );
+      controls.append(
+        button(`Recall ${slot}`, () => {
+          const saved = audioSlots.get(slot);
+          if (!saved) {
+            status.textContent = `Save ${slot} first.`;
+            return;
+          }
+          for (const row of saved.values) set(row);
+          status.textContent = `Recalled ${slot}: ${saved.name}`;
+        }),
+      );
+    }
+    controls.append(
+      button('Reset audio', () => {
+        for (const spec of AUDIO_SPECS) set({ id: spec.id, value: spec.default });
+        status.textContent = 'Audio defaults restored; player volume and mute retained.';
+      }),
+    );
+    controls.append(
+      button('Download snapshot', () =>
+        download(
+          'boogle-audio-mix.json',
+          new Blob([JSON.stringify(tuneSnapshot(), null, 2)], { type: 'application/json' }),
+        ),
+      ),
+    );
+    const advanced = more(parent, 'Recipe, distance and variation');
+    const primary = new Set([
+      'musicDb',
+      'ambienceDb',
+      'sfxDb',
+      'uiDb',
+      'voiceDb',
+      'characterDb',
+      'workDb',
+      'socialDb',
+      'footstepsDb',
+      'runningDb',
+      'jumpDb',
+      'landingDb',
+      'remoteStepsDb',
+    ]);
+    const inputs = new Map<string, HTMLInputElement>();
+    const inputRows = el('div');
+    parent.insertBefore(inputRows, advanced);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    for (const spec of AUDIO_SPECS) {
+      const row = el('label');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0';
+      row.append(el('span', `${spec.id.slice(6)} (${spec.units})`));
+      const input = el('input');
+      input.type = 'number';
+      input.min = String(spec.min);
+      input.max = String(spec.max);
+      input.step = spec.integer ? '1' : '0.1';
+      input.style.cssText = 'width:84px;min-height:36px';
+      input.setAttribute('aria-label', spec.id);
+      inputs.set(spec.id, input);
+      input.addEventListener('change', () => {
+        void context.run('tunables', 'set', { id: spec.id, value: input.valueAsNumber }).then((result) => {
+          status.textContent = result.message;
+          refresh();
+          clearTimeout(timer);
+          timer = setTimeout(refresh, 60);
+        });
+      });
+      row.append(
+        input,
+        button('Reset', () => {
+          set({ id: spec.id, value: spec.default });
+          refresh();
+        }),
+      );
+      (primary.has(spec.id.slice(6)) ? inputRows : advanced).append(row);
+    }
+    const signal = more(parent, 'Actual audio nodes');
+    const output = el('pre', '', 'dev-output');
+    let active = true;
+    let voices: unknown = null;
+    const refreshSignal = async () => {
+      const { locomotionState } = await import('../../render/locomotion.ts');
+      voices = locomotionState();
+      if (active) refresh();
+    };
+    signal.append(
+      button('Refresh signal', () => background(refreshSignal(), 'audio signal snapshot')),
+      output,
+    );
+    function refresh() {
+      for (const [id, input] of inputs) input.value = String(read(id)!.value);
+      output.textContent = JSON.stringify({ ...audioSnapshot(), locomotion: voices }, null, 2);
+    }
+    const unlisten = onAudioSettingChange(refresh);
+    refresh();
+    background(refreshSignal(), 'audio signal snapshot');
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      unlisten();
+    };
+  },
 };

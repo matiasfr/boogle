@@ -1,14 +1,15 @@
 // The track machine's sounds (src/features/track-machine.ts): a steam chuff, a sleeper's thump, a rail's clank and the
 // end-of-run whistle, synthesized on the shared audio context (./audio.ts), quieter with distance from the camera.
 // Local and cosmetic: never read by the simulation, so Math.random is fine.
-import { getAudio } from './audio.ts';
+import { dbToGain, getAudio } from './audio.ts';
+import { audioSettings } from './audio-tuning.ts';
 import { noiseBuffer } from './noise.ts';
 import { camera } from './scene.ts';
 
 const HEAR = 45; // metres: silent beyond
 
 function at(x: number, z: number, gain: number) {
-  const a = getAudio();
+  const a = getAudio('work');
   if (!a) return null;
   const d = Math.hypot(camera.position.x - x, camera.position.z - z);
   const g = gain * Math.max(0, 1 - d / HEAR) ** 2;
@@ -47,7 +48,7 @@ export function chuff(x: number, z: number, heavy = 0): void {
 
 // A sleeper landing: a low pitch-dropping thud plus a short dull knock.
 export function thump(x: number, z: number): void {
-  const a = at(x, z, 0.75);
+  const a = at(x, z, 0.75 * dbToGain(audioSettings.machineThumpDb));
   if (!a) return;
   const { ctx, out, g, t } = a;
   const o = ctx.createOscillator();
@@ -90,7 +91,7 @@ export function clank(x: number, z: number): void {
 
 // The whistle at the end of a run: a two-note steam chord with a little wobble.
 export function whistle(x: number, z: number): void {
-  const a = at(x, z, 0.18);
+  const a = at(x, z, 0.18 * dbToGain(audioSettings.machineWhistleDb));
   if (!a) return;
   const { ctx, out, g, t } = a;
   const amp = ctx.createGain();

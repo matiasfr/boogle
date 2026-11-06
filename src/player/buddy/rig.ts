@@ -15,6 +15,17 @@ export type RigOptions = LifeClock & {
   hat: string;
   charging: (a: Avatar) => boolean;
   paint: (m: THREE.MeshStandardMaterial, color: number) => void;
+  motion?: (a: Avatar, state: BuddyMotion) => void;
+};
+export type BuddyMotion = {
+  speed: number;
+  vy: number;
+  airborne: boolean;
+  swimming: boolean;
+  seated: boolean;
+  dt: number;
+  contact: boolean;
+  foot: THREE.Object3D | null;
 };
 
 // m per cycle, from the root-motion clips' travel: walk 1.3 m in 1.33 s, jog 5 m in 0.93 s, sprint 5.5 m in 0.67 s.
@@ -47,12 +58,23 @@ type Rig = {
   lastY: number;
   swimFor: number;
   options: RigOptions;
+  feet: (THREE.Object3D | null)[];
 };
 const FADED = 1e-3; // a fading clip's weight under this is 0: exponential fades otherwise take 45 s to get there
 const rigs = new WeakMap<Avatar, Rig>();
 // animate's scratch, kept so a frame allocates nothing (npm run hitches). Neither outlives the call.
 const want = Object.fromEntries(NAMES.map((n) => [n, 0])) as Record<string, number>;
 const lifeState: LifeState = { vy: 0, airborne: false, load: 0, hold: null, seated: false, down: 0, aloft: false };
+const motionState: BuddyMotion = {
+  speed: 0,
+  vy: 0,
+  airborne: false,
+  swimming: false,
+  seated: false,
+  dt: 0,
+  contact: false,
+  foot: null,
+};
 
 export function animateBuddy(a: Avatar, speed: number, airborne: boolean, dt: number, swimming: boolean) {
   const r = rigs.get(a);
@@ -111,7 +133,22 @@ export function animateBuddy(a: Avatar, speed: number, airborne: boolean, dt: nu
   // The stride is the blend of the clips' strides, so the feet keep to the ground through a blend.
   const stride =
     r.strideK * (STRIDE.walk * (1 - toJog) + (STRIDE.jog * (1 - toSprint) + STRIDE.sprint * toSprint) * toJog);
-  r.phase = (r.phase + (v * dt) / stride) % 1;
+  const advanced = r.phase + (v * dt) / stride;
+  // Measured from the shipped GLBs after production retargeting (100 phase samples, 5 Nov):
+  // walk's forward planted feet at 0/.50; jog's low-contact onset .02/.52, sprint .01/.52.
+  // Blend one pair of markers with the common stride, never emit from each weighted clip.
+  const marker = 0.02 * toJog;
+  let contactFoot = -1;
+  let latestContact = -Infinity;
+  for (let foot = 0; foot < 2; foot++) {
+    const at = marker + foot * 0.5;
+    const crossed = Math.floor(advanced - at) + at;
+    if (crossed > r.phase && crossed > latestContact) {
+      contactFoot = foot;
+      latestContact = crossed;
+    }
+  }
+  r.phase = advanced % 1;
   if (v < BLEND.idleTo) r.phase = 0;
   for (let j = 0; j < LOCO.length; j++) r.acts[LOCO[j]!]!.time = r.phase * r.acts[LOCO[j]!]!.getClip().duration;
   r.idleT += dt;
@@ -134,6 +171,17 @@ export function animateBuddy(a: Avatar, speed: number, airborne: boolean, dt: nu
   lifeState.aloft = !seated && !!u.aloft;
   lifeState.charging = r.options.charging(a);
   r.life.update(dt, lifeState);
+  if (r.options.motion) {
+    motionState.speed = v;
+    motionState.vy = vy;
+    motionState.airborne = airborne;
+    motionState.swimming = swimming;
+    motionState.seated = seated;
+    motionState.dt = dt;
+    motionState.contact = contactFoot >= 0 && v >= BLEND.idleTo;
+    motionState.foot = contactFoot >= 0 ? r.feet[contactFoot]! : null;
+    r.options.motion(a, motionState);
+  }
   r.lastY = a.position.y;
 }
 
@@ -213,6 +261,7 @@ export function createBuddySkin(
       lastY: a.position.y,
       swimFor: 0,
       options,
+      feet: [root.getObjectByName('foot_l') ?? null, root.getObjectByName('foot_r') ?? null],
     });
     // Install only after the whole rig is valid; a failure must leave the capsule usable.
     for (const child of a.userData.inner.children) child.visible = false;

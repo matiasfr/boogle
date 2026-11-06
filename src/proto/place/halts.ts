@@ -137,16 +137,16 @@ function makeHalt(name: string, k: number, line: Line, s0: number, s1: number, l
     lateral(lat, a);
     lineAt(line, s0 - 6, P);
     lateral(lat, b);
-    bodies.push(slab(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low, 2.5));
+    bodies.push(slab(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low, 2.5, undefined, undefined, 'grass'));
     lineAt(line, s1, P);
     lateral(lat, a);
     lineAt(line, s1 + 6, P);
     lateral(lat, b);
-    bodies.push(slab(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low, 2.5));
+    bodies.push(slab(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low, 2.5, undefined, undefined, 'grass'));
     lineAt(line, mid, P);
     lateral(lat + sign * 1.25, a);
     lateral(lat + sign * 7, b);
-    bodies.push(slab(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low, 2.5));
+    bodies.push(slab(b.x, b.z, a.x, a.z, H(b.x, b.z) + 0.05, low, 2.5, undefined, undefined, 'grass'));
     // A halt can arrive around someone, including a partner who did not fit the boiler. Rapier cannot
     // lift a sphere already trapped between the ground and a new ramp. Only displace actual overlaps,
     // testing in each box's frame so the pitched ramps and every halt's orientation are covered.

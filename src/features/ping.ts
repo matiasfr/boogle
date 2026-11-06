@@ -202,7 +202,7 @@ function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boo
 }
 
 export function chime(colorIdx: number, kind: Ping['k'], own: boolean) {
-  const a = getAudio();
+  const a = getAudio('social');
   if (!a) return;
   const { ctx, out } = a;
   const f = honkFreq(colorIdx)! * 2;
