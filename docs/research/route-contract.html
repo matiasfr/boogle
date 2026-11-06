@@ -1,0 +1,1114 @@
+<title>Place Route Contract</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f5f1e8;
+    --surface: #fffdf7;
+    --ink: #24342e;
+    --muted: #59695f;
+    --border: #c9c9b8;
+    --sea: #d9e8e8;
+    --land: #e2e6ce;
+    --work: #a94324;
+    --walk: #6b796b;
+    --jump: #99600b;
+    --hook: #6d4bb1;
+    --glide: #00758a;
+    --accent: #255e46;
+    --soft: #ebe7d9;
+    --danger: #a33d34;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: #172420;
+      --surface: #21332b;
+      --ink: #eef0df;
+      --muted: #bcc7b7;
+      --border: #526354;
+      --sea: #203e45;
+      --land: #3d5037;
+      --work: #ffad87;
+      --walk: #b1bda4;
+      --jump: #f4c466;
+      --hook: #c5adff;
+      --glide: #78d7e5;
+      --accent: #9cddb8;
+      --soft: #304438;
+      --danger: #ffaca3;
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #172420;
+    --surface: #21332b;
+    --ink: #eef0df;
+    --muted: #bcc7b7;
+    --border: #526354;
+    --sea: #203e45;
+    --land: #3d5037;
+    --work: #ffad87;
+    --walk: #b1bda4;
+    --jump: #f4c466;
+    --hook: #c5adff;
+    --glide: #78d7e5;
+    --accent: #9cddb8;
+    --soft: #304438;
+    --danger: #ffaca3;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font:
+      16px/1.5 ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      sans-serif;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 36px 0 48px;
+  }
+  h1 {
+    font-size: clamp(34px, 5vw, 62px);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    margin: 8px 0 18px;
+    max-width: 850px;
+  }
+  h2 {
+    font-size: 25px;
+    line-height: 1.2;
+    margin: 0 0 12px;
+  }
+  h3 {
+    font-size: 18px;
+    margin: 0 0 8px;
+  }
+  p {
+    margin: 0 0 12px;
+  }
+  .eyebrow {
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+  }
+  .lead {
+    max-width: 800px;
+    font-size: 20px;
+  }
+  .muted,
+  small {
+    color: var(--muted);
+  }
+  .topline,
+  .controls,
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+  .topline {
+    justify-content: space-between;
+  }
+  .controls {
+    margin: 14px 0;
+  }
+  .controls span {
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  button {
+    font: inherit;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 13px;
+    min-height: 44px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button[aria-pressed='true'] {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  button:focus-visible,
+  .map-node:focus-visible {
+    outline: 3px solid var(--glide);
+    outline-offset: 3px;
+  }
+  a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px;
+    min-width: 0;
+  }
+  .map-panel {
+    padding: 16px;
+  }
+  .map-scroll {
+    overflow: auto;
+    border-radius: 10px;
+    max-width: 100%;
+    background: var(--sea);
+  }
+  svg.map {
+    width: 100%;
+    min-width: 770px;
+    height: auto;
+    display: block;
+  }
+  svg text {
+    font-family: inherit;
+    fill: var(--ink);
+    font-size: 14px;
+    font-weight: 700;
+    paint-order: stroke;
+    stroke: var(--sea);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+  }
+  .region {
+    font-size: 18px;
+    fill: var(--muted);
+    stroke: none;
+    letter-spacing: 0.07em;
+  }
+  .small {
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .land {
+    fill: var(--land);
+    stroke: var(--border);
+    stroke-width: 1.5;
+  }
+  .rail {
+    fill: none;
+    stroke: var(--work);
+    stroke-width: 5;
+    stroke-linecap: round;
+  }
+  .foot {
+    fill: none;
+    stroke: var(--walk);
+    stroke-width: 3;
+    stroke-dasharray: 3 5;
+  }
+  .shortcut {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3.5;
+    stroke-dasharray: 10 6;
+    marker-end: url(#arrow);
+  }
+  .candidate {
+    stroke-dasharray: 2 7;
+  }
+  .jump {
+    color: var(--jump);
+  }
+  .hook {
+    color: var(--hook);
+  }
+  .glide {
+    color: var(--glide);
+  }
+  .signal {
+    fill: none;
+    stroke: var(--work);
+    stroke-width: 2;
+    stroke-dasharray: 2 4;
+  }
+  .build-arrow {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 8;
+    opacity: 0.5;
+  }
+  .map-node {
+    cursor: pointer;
+  }
+  .map-node circle {
+    fill: var(--surface);
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+  .map-node:hover circle,
+  .map-node:focus circle {
+    fill: var(--jump);
+  }
+  .legend {
+    font-size: 13px;
+    margin: 12px 0;
+  }
+  .swatch {
+    display: inline-block;
+    width: 24px;
+    margin-right: 5px;
+    border-top: 4px solid var(--work);
+    vertical-align: middle;
+  }
+  .swatch.dash {
+    border-top: 3px dashed var(--glide);
+  }
+  .swatch.walk {
+    border-top: 3px dotted var(--walk);
+  }
+  .swatch.build {
+    border-top: 6px solid var(--accent);
+    opacity: 0.65;
+  }
+  .columns {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    gap: 18px;
+    margin-top: 18px;
+  }
+  .three {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin: 18px 0;
+  }
+  .bill {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--work);
+  }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    background: var(--soft);
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .alert {
+    border-left: 4px solid var(--danger);
+    padding: 10px 14px;
+    background: var(--soft);
+    border-radius: 0 8px 8px 0;
+  }
+  .sequence {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 12px 0;
+  }
+  .sequence b {
+    background: var(--soft);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .detail {
+    min-height: 225px;
+  }
+  .detail .badge {
+    margin-bottom: 10px;
+  }
+  .table-scroll {
+    overflow: auto;
+  }
+  .table-scroll table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 650px;
+    font-size: 14px;
+  }
+  th,
+  td {
+    padding: 12px 10px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    color: var(--muted);
+  }
+  section {
+    margin-top: 25px;
+  }
+  .recs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 0;
+    list-style: none;
+    counter-reset: rec;
+  }
+  .recs li {
+    counter-increment: rec;
+    border-top: 1px solid var(--border);
+    padding: 14px 0;
+  }
+  .recs li:before {
+    content: counter(rec, decimal-leading-zero);
+    font-weight: 800;
+    color: var(--accent);
+    margin-right: 8px;
+  }
+  summary {
+    cursor: pointer;
+    font-weight: 700;
+    padding: 8px 0;
+  }
+  footer {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 24px;
+  }
+  .hidden {
+    display: none !important;
+  }
+  .tower {
+    width: 100%;
+    height: auto;
+    max-height: 350px;
+  }
+  .tower text {
+    stroke: var(--surface);
+    font-size: 13px;
+  }
+  .caption {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+  .mode-note {
+    min-height: 48px;
+    font-size: 14px;
+  }
+  .stat {
+    font-size: 33px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  .spaced {
+    margin-top: 20px;
+  }
+  @media (max-width: 760px) {
+    main {
+      padding-top: 22px;
+    }
+    .columns,
+    .three,
+    .recs {
+      grid-template-columns: 1fr;
+    }
+    .panel {
+      padding: 17px;
+    }
+    .map-panel {
+      padding: 12px;
+    }
+    .lead {
+      font-size: 18px;
+    }
+    .controls button {
+      flex-grow: 1;
+    }
+    .detail {
+      min-height: 0;
+    }
+  }
+</style>
+<main>
+  <div class="topline">
+    <span class="eyebrow">Boogle · paper prerequisite · 6 Nov 2026</span
+    ><button id="theme" type="button" aria-label="Toggle light and dark theme">Switch theme</button>
+  </div>
+  <h1>Movement can skip the walk.<br />Construction still does the work.</h1>
+  <p class="lead">
+    Move the extra jump toward Split-rock Works only with two repairs: a Q3-built quarry approach and a Q2-built route
+    to the first hook.
+  </p>
+  <p class="muted">
+    Research proposal, not a build approval. The rails, paths and station anchors below come from Place. Split-rock
+    Works and its footing exports are proposed.
+  </p>
+  <section class="panel map-panel" aria-labelledby="map-title">
+    <h2 id="map-title">Place, by dependency</h2>
+    <div class="controls" id="mode-controls" aria-label="Contract version">
+      <span>Compare</span><button type="button" data-mode="proposed" aria-pressed="true">Proposed contract</button
+      ><button type="button" data-mode="current" aria-pressed="false">Current dependencies</button>
+    </div>
+    <div class="controls" id="ability-controls" aria-label="Ability overlay">
+      <span>Show shortcuts</span><button type="button" data-ability="all" aria-pressed="true">All</button
+      ><button type="button" data-ability="walk" aria-pressed="false">Base walk</button
+      ><button type="button" data-ability="jump" aria-pressed="false">Extra jump</button
+      ><button type="button" data-ability="hook" aria-pressed="false">Hook</button
+      ><button type="button" data-ability="glide" aria-pressed="false">Glide</button
+      ><button type="button" data-ability="triple" aria-pressed="false">Third jump?</button>
+    </div>
+    <p id="mode-note" class="mode-note" aria-live="polite">
+      Q3 builds the quarry ramp and connects the winch. Q2 builds a walking link to p2. Both remain usable without
+      finding the extra jump.
+    </p>
+    <div
+      class="map-scroll"
+      tabindex="0"
+      role="region"
+      aria-label="Scrollable map of Place; select a station or landmark for details"
+    >
+      <svg class="map" viewBox="0 0 1000 720" role="img" aria-labelledby="svg-title svg-desc">
+        <title id="svg-title">Place travel and required-work map</title>
+        <desc id="svg-desc">
+          North is up. Timber stations T1 through T3 connect the western village to the northern ridge. Q1 through Q6
+          cross the stem, quarry and sea to Far Head and its pier. Solid orange rail is required construction. Dashed
+          ability routes may shorten personal travel. Green strokes show proposed construction approaches, not surveyed
+          ramps.
+        </desc>
+        <defs>
+          <marker
+            id="arrow"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="4"
+            markerHeight="4"
+            orient="auto-start-reverse"
+          >
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
+          </marker>
+        </defs>
+        <path class="land" d="M40 430 Q35 330 100 290 L188 279 L225 330 L213 415 L255 500 L231 589 Q125 595 72 523 Z" />
+        <path class="land" d="M206 278 Q195 210 290 210 Q377 209 397 263 L356 337 L320 394 L284 392 L251 340 Z" />
+        <path
+          class="land"
+          d="M344 397 L388 303 Q453 282 496 346 L540 440 Q530 520 450 586 L342 606 L303 546 L315 469 Z"
+        />
+        <path class="land" d="M704 210 Q753 150 832 182 Q895 212 861 292 Q824 330 751 306 Q699 282 704 210Z" />
+        <ellipse class="land" cx="318" cy="419" rx="19" ry="27" />
+        <text class="region" x="65" y="362">WEST COMMONS</text>
+        <text class="region" x="235" y="238">TIMBER RIDGE</text>
+        <text class="region" x="423" y="539">EAST TABLE</text>
+        <text class="region" x="748" y="199">FAR HEAD</text>
+        <text class="small" x="561" y="344">Sea trestle: Q5 builds to s=546</text>
+        <path d="M70 95 L70 55 M63 66 L70 55 L77 66" fill="none" stroke="var(--ink)" stroke-width="2" />
+        <text x="64" y="44">N</text>
+        <text class="small" x="94" y="70">North = −z · world x = local x + 1,000</text>
+        <polyline
+          class="foot"
+          points="180.8,441.7 180.8,425.5 175.9,416.9 151.3,399.6 126.7,356.4 141.4,297.0 178.3,304.6 200.5,329.4 232.5,348.8 250.3,337.0 226.3,301.3 226.3,273.2 200.5,253.8 239.8,239.8 276.8,257.0 284.1,265.7"
+        />
+        <polyline
+          class="foot"
+          points="180.8,441.7 178.3,499.0 205.4,548.6 215.2,589.7 239.8,594.0 249.7,574.6 256.5,553.4 277.7,558.8 289.1,594.0 325.9,604.8 356.7,572.4 387.4,540.0 414.5,507.6 414.5,480.6"
+        />
+        <polyline
+          class="rail"
+          points="200.5,445.0 203.7,441.7 206.9,438.4 210.1,435.1 213.3,431.8 216.5,428.6 219.8,425.4 223.1,422.2 226.4,418.9 229.4,415.5 232.2,412.0 234.9,408.4 237.6,404.7 240.1,401.0 242.5,397.2 244.6,393.4 246.6,389.4 248.3,385.3 249.8,381.2 251.3,377.1 252.7,373.0 254.1,368.8 255.4,364.7 256.8,360.5 258.0,356.3 259.3,352.2 260.5,348.0 261.7,343.8 263.0,339.6 264.2,335.4 265.7,331.3 267.3,327.2 269.1,323.2 270.6,319.1 271.7,314.9 271.7,310.6 270.7,306.4 269.2,302.3 267.7,298.1 266.9,293.9 267.1,289.6 267.7,285.3 269.2,281.2 271.8,277.6 275.8,275.1 280.4,273.4 285.1,272.3 289.9,271.3 294.8,270.7 299.7,270.6 304.6,270.8 309.5,271.1 314.4,271.1 319.4,271.1 324.3,271.1 329.2,271.1"
+        />
+        <polyline
+          class="rail"
+          points="200.5,445.0 204.0,448.0 207.4,451.1 210.9,454.1 214.4,457.2 217.8,460.3 220.9,463.7 224.1,467.0 227.8,469.8 232.2,471.7 236.9,472.9 241.8,473.4 246.7,473.5 251.6,473.1 256.4,472.2 261.1,470.9 265.7,469.3 270.3,467.8 274.9,466.3 279.6,465.0 284.4,464.2 289.3,463.6 294.2,463.3 299.1,463.4 304.0,463.7 308.9,464.1 313.8,464.8 318.6,465.6 323.4,466.5 328.2,467.6 333.0,468.6 337.8,469.7 342.5,470.7 347.3,471.6 352.2,472.4 357.0,473.1 361.9,473.5 366.8,473.7 371.8,473.8 376.7,473.7 381.6,473.6 386.5,473.4 391.4,473.1 396.3,473.0 401.3,473.3 406.0,472.4 410.4,470.5 414.7,468.3 418.9,466.1 423.0,463.7 427.1,461.3 431.1,458.8 435.2,456.3 439.2,453.8 443.2,451.3 447.2,448.8 451.2,446.3 455.1,443.7 459.1,441.1 463.0,438.5 466.9,435.9 470.8,433.3 474.7,430.6 478.6,428.0 482.6,425.5 486.5,422.9 490.6,420.4 494.6,418.0 498.7,415.6 502.8,413.2 506.9,410.8 511.0,408.4 515.1,406.0 519.1,403.5 523.1,401.0 527.0,398.4 530.9,395.8 534.8,393.1 538.7,390.4 542.5,387.7 546.4,385.0 550.2,382.3 554.0,379.6 557.8,376.8 561.6,374.1 565.4,371.4 569.3,368.7 573.1,366.0 576.9,363.3 580.8,360.6 584.6,357.9 588.4,355.1 592.3,352.4 596.1,349.7 599.9,347.0 603.8,344.3 607.6,341.6 611.5,338.9 615.3,336.2 619.2,333.5 623.0,330.9 626.9,328.2 630.8,325.5 634.6,322.9 638.5,320.2 642.4,317.5 646.3,314.9 650.1,312.2 654.0,309.6 657.9,306.9 661.8,304.3 665.7,301.7 669.6,299.1 673.6,296.5 677.5,293.9 681.5,291.3 685.5,288.8 689.5,286.3 693.5,283.8 697.5,281.3 701.6,278.8 705.6,276.4 709.6,273.9 713.7,271.5 717.8,269.0 721.8,266.6 725.9,264.1 730.0,261.7 734.1,259.4 738.3,257.1 742.5,254.9 746.7,252.7 750.9,250.4 755.0,248.1 759.0,245.5 762.8,242.8 766.3,239.7 769.6,236.5 772.7,233.2 775.5,229.6 778.0,225.9 780.3,222.1 782.4,218.2 784.3,214.2 786.0,210.2 787.5,206.0 788.8,201.9 789.9,197.6 790.9,193.4 791.8,189.2 792.7,184.9 793.5,180.7 794.3,176.4 795.0,172.1 795.7,167.8 796.2,163.6 796.8,159.3 797.2,155.0 797.6,150.6 797.9,146.3 798.2,142.0 798.4,137.7 798.5,133.4 798.7,129.1 798.7,124.8 798.7,120.4 798.7,116.1 798.7,111.8 798.7,107.5 798.6,103.2 798.5,98.8 798.4,94.5 798.4,90.2 798.3,85.9 798.1,81.6 798.0,77.2 797.8,72.9 797.7,68.6 797.5,64.3 797.3,60.0 797.1,55.7 796.9,51.3 796.6,47.0 796.4,42.7 796.2,38.4 796.0,34.1"
+        />
+        <polyline class="foot" points="56.6,442.8 178.3,447.1" />
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect T1" data-key="T1">
+          <circle cx="293.5" cy="270.8" r="7" />
+          <text x="305.5" y="260.8">T1</text>
+          <title>Inspect T1</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect T2" data-key="T2">
+          <circle cx="268.4" cy="300.2" r="7" />
+          <text x="231.4" y="291.2">T2</text>
+          <title>Inspect T2</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect T3" data-key="T3">
+          <circle cx="264.2" cy="335.4" r="7" />
+          <text x="277.2" y="328.4">T3</text>
+          <title>Inspect T3</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Q1" data-key="Q1">
+          <circle cx="206.6" cy="450.3" r="7" />
+          <text x="178.6" y="435.3">Q1</text>
+          <title>Inspect Q1</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Q2" data-key="Q2">
+          <circle cx="239.3" cy="473.2" r="7" />
+          <text x="215.3" y="498.2">Q2</text>
+          <title>Inspect Q2</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Q3" data-key="Q3">
+          <circle cx="335.4" cy="469.2" r="7" />
+          <text x="321.4" y="494.2">Q3</text>
+          <title>Inspect Q3</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Q4" data-key="Q4">
+          <circle cx="403.7" cy="473.1" r="7" />
+          <text x="387.7" y="500.1">Q4</text>
+          <title>Inspect Q4</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Q5" data-key="Q5">
+          <circle cx="513.1" cy="407.2" r="7" />
+          <text x="526.1" y="423.2">Q5</text>
+          <title>Inspect Q5</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Q6" data-key="Q6">
+          <circle cx="768.0" cy="238.2" r="7" />
+          <text x="784.0" y="234.2">Q6</text>
+          <title>Inspect Q6</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Village" data-key="village">
+          <circle cx="178.3" cy="447.1" r="7" />
+          <text x="98.3" y="429.1">Village</text>
+          <title>Inspect Village</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Cove" data-key="cove">
+          <circle cx="56.6" cy="442.8" r="7" />
+          <text x="31.6" y="467.8">Cove</text>
+          <title>Inspect Cove</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Find?" data-key="find">
+          <circle cx="356.7" cy="572.4" r="7" />
+          <text x="368.7" y="576.4">Find?</text>
+          <title>Inspect Find?</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect p1" data-key="p1">
+          <circle cx="244.6" cy="357.7" r="7" />
+          <text x="214.6" y="347.7">p1</text>
+          <title>Inspect p1</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect p2" data-key="p2">
+          <circle cx="299.6" cy="455.8" r="7" />
+          <text x="294.6" y="435.8">p2</text>
+          <title>Inspect p2</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Needle Bell" data-key="tower">
+          <circle cx="319.8" cy="425.5" r="7" />
+          <text x="239.8" y="404.5">Needle Bell</text>
+          <title>Inspect Needle Bell</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Lever" data-key="quarry">
+          <circle cx="423.1" cy="479.5" r="7" />
+          <text x="438.1" y="501.5">Lever</text>
+          <title>Inspect Lever</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Quarry gate" data-key="quarry">
+          <circle cx="412.6" cy="469.4" r="7" />
+          <text x="426.6" y="452.4">Quarry gate</text>
+          <title>Inspect Quarry gate</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Sea gate" data-key="sea">
+          <circle cx="524.0" cy="400.4" r="7" />
+          <text x="536.0" y="389.4">Sea gate</text>
+          <title>Inspect Sea gate</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Glider" data-key="glider">
+          <circle cx="755.2" cy="249.5" r="7" />
+          <text x="727.2" y="277.5">Glider</text>
+          <title>Inspect Glider</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Stack" data-key="stack">
+          <circle cx="703.3" cy="298.7" r="7" />
+          <text x="673.3" y="323.7">Stack</text>
+          <title>Inspect Stack</title>
+        </g>
+        <g class="map-node" tabindex="0" role="button" aria-label="Inspect Pier" data-key="Q6">
+          <circle cx="795.8" cy="30.2" r="7" />
+          <text x="807.8" y="35.2">Pier</text>
+          <title>Inspect Pier</title>
+        </g>
+        <g class="overlay jump" data-ability="jump">
+          <polyline
+            class="shortcut"
+            points="244.6,357.6 224.5,357.6 204.8,357.6 185.1,357.6 165.4,357.6 165.4,374.9 165.4,392.2 185.1,392.2 204.8,392.2"
+          />
+          <polyline class="shortcut candidate" points="178.3,499.0 356.7,572.4" />
+        </g>
+        <g class="overlay hook" data-ability="hook">
+          <polyline class="shortcut" points="299.6,455.8 319.8,425.5" />
+          <polyline class="shortcut" points="703.3,298.7 701.3,284.2" />
+          <polyline class="shortcut" points="426.8,506.5 437.3,501.1" />
+        </g>
+        <g class="overlay glide" data-ability="glide">
+          <polyline class="shortcut" points="319.8,425.5 178.3,447.1" />
+          <polyline class="shortcut" points="319.8,425.5 151.3,470.9" />
+          <polyline class="shortcut" points="319.8,425.5 524.0,400.4" />
+          <polyline class="shortcut" points="689.5,286.3 703.3,298.7" />
+        </g>
+        <polyline class="signal" points="319.8,425.5 524.0,400.4" />
+        <text class="small" x="436" y="399">switch operates sea gate</text>
+        <g class="proposal-only">
+          <polyline class="build-arrow" points="412.1,480.6 423.1,479.5" />
+          <polyline class="build-arrow" points="299.1,463.4 299.6,455.8" />
+        </g>
+        <text class="small" x="402" y="613">Proposed find on the existing southern walk</text>
+        <text class="small" x="40" y="681">
+          Authored paths and rail curves; schematic land. Arrows express route intent, not measured flight paths.
+        </text>
+      </svg>
+    </div>
+    <div class="legend">
+      <span><i class="swatch"></i>Required rail construction</span
+      ><span><i class="swatch walk"></i>Existing walking route</span
+      ><span><i class="swatch dash"></i>Ability shortcut</span
+      ><span><i class="swatch build"></i>Proposed built approach</span>
+    </div>
+    <p class="caption">
+      Tap a node or use Tab + Enter. Orange dotted signal links mean machinery operation. Jump = ochre; hook = violet;
+      glide = blue. The dotted jump line across the southern walk is permission to shorten that route, not a proven
+      single leap. On phones, pan inside the map.
+    </p>
+  </section>
+  <div class="columns">
+    <article class="panel detail" id="detail" aria-live="polite">
+      <span class="badge">Select any station or landmark</span>
+      <h2>Quarry: reaching ≠ operating</h2>
+      <p>
+        Jumping onto the apron is allowed. Before Q3 finishes, its winch is visibly disconnected. After Q3, anyone can
+        walk up and pull the lever.
+      </p>
+      <p class="bill">Q3 → ramp + drive → pull → Q4</p>
+      <p class="muted">No new resource or extra ramp bill. Q4 still needs 16 logs + 16 rails.</p>
+    </article>
+    <aside class="panel">
+      <span class="eyebrow">Needle Bell, vertical inset</span
+      ><svg
+        class="tower"
+        viewBox="0 0 300 350"
+        role="img"
+        aria-label="Hook ascent from p2 at 23.5 metres through t0 to t5 to the 102.4 metre summit switch"
+      >
+        <path d="M94 320 L94 35" stroke="var(--hook)" stroke-width="4" stroke-dasharray="8 5" />
+        <g fill="var(--surface)" stroke="var(--hook)" stroke-width="3">
+          <circle cx="94" cy="320" r="7" />
+          <circle cx="94" cy="292" r="7" />
+          <circle cx="94" cy="252" r="7" />
+          <circle cx="94" cy="212" r="7" />
+          <circle cx="94" cy="172" r="7" />
+          <circle cx="94" cy="132" r="7" />
+          <circle cx="94" cy="92" r="7" />
+          <circle cx="94" cy="35" r="8" />
+        </g>
+        <text x="115" y="325">p2 · hook · 23.5 m</text>
+        <text x="115" y="297">t0 · 24 m</text>
+        <text x="115" y="257">t1 · 37 m</text>
+        <text x="115" y="217">t2 · 50 m</text>
+        <text x="115" y="177">t3 · 63 m + nook</text>
+        <text x="115" y="137">t4 · 76 m</text>
+        <text x="115" y="97">t5 · 89 m</text>
+        <text x="115" y="40">Switch · 102.4 m</text>
+      </svg>
+      <p class="caption">
+        Diagram spacing is schematic. Longer hook may skip pads. Operating the switch still matters. The glider is at
+        Far Head, not the summit.
+      </p>
+    </aside>
+  </div>
+  <section class="panel">
+    <span class="eyebrow">Smallest quarry change</span>
+    <h2>Build a route and engage the mechanism</h2>
+    <div class="sequence">
+      <b>Q3 stock + laying complete</b><span>→</span><b>Ramp + winch drive assemble</b><span>→</span
+      ><b>Anyone pulls the lever</b><span>→</span><b>Q4 accepts its bill</b>
+    </div>
+    <p>
+      Keep the existing apron, lever, chain and slab. Start with a 3 m clear ramp, 9 m run and 2.2 m rise. Final
+      placement needs ground, stock and machine clearance checks.
+    </p>
+    <div class="alert">
+      A ramp alone does not protect the dependency: upgraded movement can reach the ledge before the ramp exists. The
+      visible winch connection must require completed Q3 construction.
+    </div>
+  </section>
+  <div class="three">
+    <article class="panel">
+      <span class="eyebrow">Safe find</span>
+      <h3>Before both gates</h3>
+      <p>
+        Southern path near the (45,130) bend; baseline movement reaches and leaves it. Proposed availability after T3
+        needs an explicit visible reveal.
+      </p>
+      <p class="badge">Location is a candidate, not surveyed</p>
+    </article>
+    <article class="panel">
+      <span class="eyebrow">First hook</span>
+      <h3>Repair the second dependency</h3>
+      <p>
+        p2 sits 2.2 m above the Q2 deck. Q2 should build its connector too. A hook ring cannot help someone who has no
+        hook yet.
+      </p>
+    </article>
+    <article class="panel">
+      <span class="eyebrow">Forbidden cycle</span>
+      <h3>Do not hide jump behind itself</h3>
+      <p>
+        Jump → quarry lever → jump find, or jump → hook → sea switch → Far Head find. Moving the reward without fixing
+        its prerequisites can strand the intended route.
+      </p>
+    </article>
+  </div>
+  <section class="panel">
+    <h2>What remains required, with every ability</h2>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Delivered bill</th>
+            <th>Required result</th>
+            <th>What a shortcut may skip</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>T1</td>
+            <td>24 logs</td>
+            <td>Panels to s=150</td>
+            <td>Walking to T2</td>
+          </tr>
+          <tr>
+            <td>T2</td>
+            <td>32 logs + 8 stone</td>
+            <td>Panels to s=116</td>
+            <td>Walking to T3</td>
+          </tr>
+          <tr>
+            <td>T3</td>
+            <td>40 logs + 1 beam</td>
+            <td>Axe/beam work; first path</td>
+            <td>Later bank detours</td>
+          </tr>
+          <tr>
+            <td>Forge</td>
+            <td>24 + 32 logs</td>
+            <td>Forge operation; rail supply</td>
+            <td>Source-to-forge commute</td>
+          </tr>
+          <tr>
+            <td>Q1</td>
+            <td>16 logs + 6 rails</td>
+            <td>Depot service</td>
+            <td>Village throat walk</td>
+          </tr>
+          <tr>
+            <td>Q2</td>
+            <td>24 logs + 12 rails</td>
+            <td>Stem crossing; proposed p2 access</td>
+            <td>South footbridge loop</td>
+          </tr>
+          <tr>
+            <td>Q3</td>
+            <td>16 logs + 12 rails</td>
+            <td>Approach; proposed ramp/drive</td>
+            <td>Quarry footpath bends</td>
+          </tr>
+          <tr>
+            <td>Q4</td>
+            <td>16 logs + 16 rails</td>
+            <td>Lever operated; track to rim</td>
+            <td>Personal travel around slab</td>
+          </tr>
+          <tr>
+            <td>Q5</td>
+            <td>24 logs + 24 rails</td>
+            <td>Summit switch; sea trestle; glide claim</td>
+            <td>Later scouting/return flights</td>
+          </tr>
+          <tr>
+            <td>Q6</td>
+            <td>32 logs + 32 rails</td>
+            <td>Trains active; pier construction</td>
+            <td>Far Head/pier foot travel</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">
+      Existing Place bills. Split-rock Works proposes fewer meaningful jobs and new footing exports; it has not adopted
+      all six Q stations. Visiting early never counts as delivered materials or completed work.
+    </p>
+  </section>
+  <section>
+    <h2>Proof, with its limits</h2>
+    <div class="three">
+      <article class="panel">
+        <div class="stat">87 / 87</div>
+        <h3>Current progression assertions pass</h3>
+        <p>They assume the existing ability order. This does not validate a relocated find or any new ramp.</p>
+      </article>
+      <article class="panel">
+        <div class="stat">2 blockers</div>
+        <h3>Intended pad access without jump</h3>
+        <p>
+          The counterfactual model cannot reach apron or p2, even with later track. Mid-air interaction tolerances are
+          not modeled; runtime softlock remains unproved.
+        </p>
+      </article>
+      <article class="panel">
+        <div class="stat">411 &gt; 188 m</div>
+        <h3>Summit → Far Head</h3>
+        <p>
+          Distance versus current conservative glide budget. A future ability may cross it; Q5's freight and grant
+          predicates must still hold.
+        </p>
+      </article>
+    </div>
+    <p class="muted">
+      26 pads, 10 optional secrets. The checker uses boolean jump ownership, fixed 1.68/3.03 m rises and 4.7/8 m
+      ordinary reach. A third jump has no measured envelope here. No browser, phone, published Artifact or new gameplay
+      validation.
+    </p>
+  </section>
+  <section class="panel">
+    <h2>Seven recommendations</h2>
+    <ol class="recs">
+      <li>Separate travel shortcuts from required work.</li>
+      <li>Put the find on the baseline southern approach.</li>
+      <li>Make Q3 assemble the ramp and engage the winch.</li>
+      <li>Make Q2 provide baseline access to the first hook.</li>
+      <li>Allow optional and return-route shortcuts.</li>
+      <li>Check missing-find states, each stage and directed returns.</li>
+      <li>Keep room ownership explicit; test triple jump separately.</li>
+    </ol>
+  </section>
+  <section class="panel">
+    <details>
+      <summary>Sources and exact scope</summary>
+      <p>
+        Source commit: <code>500da0df</code>. Map curves and stations sampled from
+        <code>src/proto/place/layout.ts</code>; ability anchors from <code>tech-layout.ts</code>. Rules checked in
+        <code>run.ts</code>, <code>tech.ts</code> and <code>dev/economy/place-level.ts</code>. Full audit,
+        recommendations and caveats: companion <code>docs/research/route-contract.md</code>.
+      </p>
+      <p>
+        <a href="https://pcgworkshop.com/archive/dormans2010adventures.pdf">Dormans: mission and space</a> ·
+        <a
+          href="https://blog.playstation.com/2021/08/05/crafting-a-tiny-open-world-a-look-behind-the-scenes-at-the-creation-of-a-short-hike/"
+          >A Short Hike: exploring against the obvious route</a
+        >
+        · <a href="https://www.gdcvault.com/play/1026613/">GDC postmortem abstract</a>
+      </p>
+      <p>
+        <a href="https://www.nintendo.com/ph/interview/totk/05.html">Nintendo: ability freedom and visible rules</a> ·
+        <a
+          href="https://www.nintendo.com/en-gb/News/2021/August/Metroid-Dread-Report-Vol-4-Unravelling-a-saga-35-years-in-the-making-2018281.html"
+          >Metroid: alternate routes</a
+        >
+        · <a href="https://www.factorio.com/blog/post/fff-378">Wube: visible rail infrastructure</a> ·
+        <a href="https://www.factorio.com/blog/post/fff-443">Wube: convenience without replacing transport</a>
+      </p>
+      <p>
+        Live primary text checked 6 November 2026. Applying those principles to Boogle is a design inference. No talk or
+        game was watched/played for this report.
+      </p>
+    </details>
+  </section>
+  <footer>
+    Paper contract only · HTML prepared for the coordinator's Artifact publisher · no external assets · no runtime code
+    changes
+  </footer>
+</main>
+<script>
+  (() => {
+    const details = {
+      village: [
+        'Travel hub',
+        'Village and forge',
+        'Walking, jumping or gliding may bring you home. The forge still needs its two hand-built log bills, and Line 2 still requires supplied rails.',
+        'Forge: 24 + 32 logs',
+      ],
+      cove: [
+        'Baseline route',
+        'Cove arrival',
+        'Keep the baseline walk from the cove into the village. No ability, railway or optional reward is required to start.',
+        'Travel is free',
+      ],
+      find: [
+        'Proposal',
+        'Southern expedition find',
+        'Candidate near the existing (45,130) bend, before either gate. Walk in and out without the reward. Proposed T3 availability must be explicit; early scouting stays possible.',
+        'Find → room-wide extra jump',
+      ],
+      p1: [
+        'Optional return loop',
+        'Old jump pillar and course',
+        'Keep the built connector and the eight-jump course as return content. The lower catch ramp provides recovery. A third jump reaching back up is an allowed shortcut, not a progression failure.',
+        'Course never gates railway work',
+      ],
+      p2: [
+        'First-hook dependency',
+        'p2, above the Q2 deck',
+        'Current pad is 2.2 m above the deck. Proposed: Q2 builds a broad connector and ramp, so the hook never depends on finding the extra jump. Hook itself cannot solve first-hook access.',
+        'Q2 complete → walk to hook',
+      ],
+      tower: [
+        'Required machinery',
+        'Needle Bell summit',
+        'Keep baseline hook access through t0–t5. Longer hook or extra jumps may skip landings. The player must still operate the summit switch to release the sea gate.',
+        'Operate switch → Q5 can accept stock',
+      ],
+      quarry: [
+        'Construction repair',
+        'Quarry apron and winch',
+        'Current intended approach needs the extra jump. Proposed: completed Q3 assembles the ramp and engages the drive. Early arrival on the ledge cannot operate an unconnected winch.',
+        'Q3 + lever → open quarry gate',
+      ],
+      sea: [
+        'Required machinery',
+        'Sea gate at s=297',
+        'The Q5 frame waits at s=286. A summit switch opens the gate; the full bill and track layer still build the crossing. Crossing it by air never grants completed track.',
+        'Q5: 24 logs + 24 rails',
+      ],
+      glider: [
+        'Construction-gated reward',
+        'Far Head glider',
+        'Q5 opens Line 2 and permits the claim. A 20 m walking ramp reaches the device at 32.3 m. Being here early cannot grant it. A direct flight all the way home is not established.',
+        'Q5 complete → walk up → take glide',
+      ],
+      stack: [
+        'Optional loop',
+        'Sea stack and dry return',
+        'Glide down from the completed trestle, then hook back to its return pad near s=477. The checker is not a dry-return witness. No cosmetic may become a required construction key.',
+        'Glide down · hook back',
+      ],
+      T1: [
+        'Required work',
+        'T1: first timber stretch',
+        'Deliver 24 logs and let the machine finish to s=150. Walking ahead to T2 is fine; visiting it never completes this job.',
+        '24 logs',
+      ],
+      T2: [
+        'Required work',
+        'T2: mixed materials',
+        'Deliver logs and stone, then build to s=116. No jump stands in for stone production, material delivery or laid panels.',
+        '32 logs + 8 stone',
+      ],
+      T3: [
+        'Required work',
+        'T3: first path home',
+        'Deliver 40 logs, receive the proper axe, fell and carry the great beam, then complete the trestle. Later movement may cut the old walk; it never completes the line.',
+        '40 logs + 1 great beam',
+      ],
+      Q1: [
+        'Required work',
+        'Q1: open the depot',
+        'Complete the village throat after forge work. Its completion enables the depot; standing beyond it does not.',
+        '16 logs + 6 rails',
+      ],
+      Q2: [
+        'Required work',
+        'Q2: stem crossing',
+        'Complete the crossing to s=122. Proposed: this job also gives everyone a walking approach to p2 and the hook.',
+        '24 logs + 12 rails',
+      ],
+      Q3: [
+        'Required work',
+        'Q3: quarry approach',
+        'Complete track to s=178. Proposed: the same completed job constructs the apron ramp and connects the winch.',
+        '16 logs + 12 rails',
+      ],
+      Q4: [
+        'Required work',
+        'Q4: quarry to rim',
+        'Pull the construction-enabled quarry lever before this frame accepts goods. Jumping around the slab is allowed; building the next stretch still costs its bill.',
+        '16 logs + 16 rails',
+      ],
+      Q5: [
+        'Required work',
+        'Q5: sea trestle',
+        'Operate the summit switch, deliver the bill and lay to s=546. This opens Line 2, the glider claim and boiler opportunity.',
+        '24 logs + 24 rails',
+      ],
+      Q6: [
+        'Required work',
+        'Q6: Far Head to pier',
+        'Train activation comes before this frame accepts stock. Finish its bill and construction to end the run; reaching the pier is not completion.',
+        '32 logs + 32 rails',
+      ],
+    };
+    let mode = 'proposed',
+      ability = 'all';
+    const proposed =
+      'Q3 builds the quarry ramp and connects the winch. Q2 builds a walking link to p2. Both remain usable without finding the extra jump.';
+    const current =
+      'Today, intended apron and p2 access both need extra jump. The lever has no Q3 construction prerequisite. Moving the find alone preserves those risks.';
+    function refresh() {
+      document
+        .querySelectorAll('.overlay')
+        .forEach((el) => el.classList.toggle('hidden', !(ability === 'all' || el.dataset.ability === ability)));
+      document.querySelectorAll('.proposal-only').forEach((el) => el.classList.toggle('hidden', mode !== 'proposed'));
+      document
+        .querySelectorAll('#mode-controls button')
+        .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+      document
+        .querySelectorAll('#ability-controls button')
+        .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.ability === ability)));
+      document.getElementById('mode-note').textContent =
+        ability === 'triple'
+          ? 'Third jump is unmeasured. No invented range is drawn. More reach may shortcut travel, but every orange construction link and machinery action remains required.'
+          : (mode === 'proposed' ? proposed : current) +
+            (ability === 'glide' ? ' Glide routes are later returns: acquisition is at Far Head after Q5.' : '');
+    }
+    document.querySelectorAll('#mode-controls button').forEach((b) =>
+      b.addEventListener('click', () => {
+        mode = b.dataset.mode;
+        refresh();
+      }),
+    );
+    document.querySelectorAll('#ability-controls button').forEach((b) =>
+      b.addEventListener('click', () => {
+        ability = b.dataset.ability;
+        refresh();
+      }),
+    );
+    function show(key) {
+      const d = details[key];
+      if (!d) return;
+      const box = document.getElementById('detail');
+      box.replaceChildren();
+      for (const [tag, text, cls] of [
+        ['span', d[0], 'badge'],
+        ['h2', d[1], ''],
+        ['p', d[2], ''],
+        ['p', d[3], 'bill'],
+      ]) {
+        const el = document.createElement(tag);
+        el.textContent = text;
+        el.className = cls;
+        box.append(el);
+      }
+    }
+    document.querySelectorAll('.map-node').forEach((n) => {
+      n.addEventListener('click', () => show(n.dataset.key));
+      n.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          show(n.dataset.key);
+        }
+      });
+    });
+    document.getElementById('theme').addEventListener('click', () => {
+      const root = document.documentElement;
+      const dark = root.dataset.theme
+        ? root.dataset.theme === 'dark'
+        : matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+    });
+    refresh();
+  })();
+</script>
