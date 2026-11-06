@@ -94,7 +94,8 @@ export const createRailLine = (): RailLine => ({
 });
 export const railCarry = (a: RailAccount) => a.carry + (a.stone ?? 0) + (a.rails ?? 0);
 /** Balance of one material kind: 0 logs, 1 stone, 2 rails. */
-const balanceOf = (a: RailAccount, kind: number) => (kind === 1 ? (a.stone ?? 0) : kind === 2 ? (a.rails ?? 0) : a.carry);
+const balanceOf = (a: RailAccount, kind: number) =>
+  kind === 1 ? (a.stone ?? 0) : kind === 2 ? (a.rails ?? 0) : a.carry;
 function credit(a: RailAccount, kind: number, n: number) {
   if (kind === 1) a.stone = (a.stone ?? 0) + n;
   else if (kind === 2) a.rails = (a.rails ?? 0) + n;

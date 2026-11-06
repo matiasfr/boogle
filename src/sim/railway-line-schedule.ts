@@ -65,7 +65,10 @@ export function lineSchedule(station: AnyStation, timing: LineTiming) {
     return lo;
   };
   // Line one lays towards smaller s, line two towards larger: distances are absolute.
-  const panels = panelsOf(station).map((panel) => ({ ...panel, tick: contactTick(Math.abs(station.fromCm - panel.toCm)) }));
+  const panels = panelsOf(station).map((panel) => ({
+    ...panel,
+    tick: contactTick(Math.abs(station.fromCm - panel.toCm)),
+  }));
   const layTicks = contactTick(Math.abs(station.fromCm - station.toCm));
   return {
     depositTicks,

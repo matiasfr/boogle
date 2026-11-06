@@ -466,6 +466,11 @@ export async function createRailwayLine2(
       machine.snap();
     }
     panels.restore();
+    // Walls are solid only once the accepted second bill has started; rebuild from state like the decks and gate.
+    if (wallsBody && l.forge.used <= F1) {
+      owner.removeBody(wallsBody);
+      wallsBody = null;
+    }
     shownPieces = piecesFor(l.forge.used);
     building.clear();
     forgePieces.forEach((_, k) => building.snap(k, false));

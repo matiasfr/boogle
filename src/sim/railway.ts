@@ -68,7 +68,14 @@ export const RAILWAY_PILES = 128;
 export const RAILWAY_MAX_INT = 2147483647;
 export const RAILWAY_MAX_MARKER = Number.MAX_SAFE_INTEGER;
 export const RAILWAY_DURATION = T1.depositTicks + T1.feedTicks + T1.layTicks;
-export type RailAccount = { pid: string; carry: number; stone?: number; rails?: number; epoch: number; request: number };
+export type RailAccount = {
+  pid: string;
+  carry: number;
+  stone?: number;
+  rails?: number;
+  epoch: number;
+  request: number;
+};
 export type RailPile = { id: number; x: number; z: number; n: number; kind?: number; y?: number; age?: number };
 export type RailResult = {
   pid: string;
@@ -605,9 +612,7 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
         !okPid(a.pid) ||
         !railInt(a.carry, T1.carry) ||
         (line1 &&
-          (!railInt(a.stone, T1.carry) ||
-            !railInt(a.rails, T1.carry) ||
-            a.carry + a.stone! + a.rails! > T1.carry)) ||
+          (!railInt(a.stone, T1.carry) || !railInt(a.rails, T1.carry) || a.carry + a.stone! + a.rails! > T1.carry)) ||
         !railInt(a.epoch, RAILWAY_MAX_INT, 1) ||
         !railInt(a.request),
     )

@@ -190,7 +190,8 @@ test('rails share the back and loose piles; final-rail race funds once; abandone
   logs(w, 'b', 'Q1', 16);
   for (const pid of ['a', 'b']) {
     const n = railAccount(w.s, pid)!.carry;
-    if (n) assert.equal(act(w, pid, 'rail.drop', { x: 92000 + (pid === 'a' ? 0 : 300), y: 1830, z: 1000, n, kind: 0 }), n);
+    if (n)
+      assert.equal(act(w, pid, 'rail.drop', { x: 92000 + (pid === 'a' ? 0 : 300), y: 1830, z: 1000, n, kind: 0 }), n);
   }
   assert.equal(act(w, 'a', 'rail.forgeTake'), 8);
   act(w, 'b', 'rail.chop', { id: RAILWAY_SOURCES[w.s.sources.findIndex((n) => n >= 5)]![0], yaw: 0, collapsed: false });
@@ -229,13 +230,21 @@ test('malformed line-two documents fail atomically', () => {
   const pids = w.s.accounts.map((a) => a.pid);
   const good = serializeRailway(w.s, pids);
   const hash = hashRailway(w.s, pids);
+  const set = (text: string, i: number, n: number) =>
+    text
+      .split('.')
+      .map((v, k) => (k === i ? n.toString(36) : v))
+      .join('.');
   const cases: [string, (j: ReturnType<typeof serializeRailway>) => void][] = [
     ['lever before Q3', (j) => (j.line2!.v = 1)],
-    ['minted rail', (j) => (j.line2!.f[2]! += 1)],
-    ['unlit pour', (j) => (j.line2!.f[1] = -1)],
-    ['funded without rails', (j) => (j.line2!.j[0]![8] = w.t)],
+    ['hook before Q2', (j) => (j.line2!.v = 2)],
+    ['minted rail', (j) => (j.line2!.f = set(j.line2!.f, 2, w.s.line2!.forge.rack + 1))],
+    ['unlit pour', (j) => (j.line2!.f = set(j.line2!.f, 1, -1))],
+    ['funded without rails', (j) => (j.line2!.j[0] = set(set(j.line2!.j[0]!, 2, w.t), 4, w.t))],
+    ['noncanonical number', (j) => (j.line2!.f = `0${j.line2!.f}`)],
     ['extra key', (j) => ((j.line2 as unknown as Record<string, unknown>).x = 1)],
-    ['early depot', (j) => (j.line2!.d = [8, 8, 5])],
+    ['early depot', (j) => (j.line2!.d = '8.5.0.8.0')],
+    ['depot output over bill', (j) => (j.line2!.d = '0.5.0.25.0')],
   ];
   for (const [name, change] of cases) {
     const j = JSON.parse(JSON.stringify(good)) as ReturnType<typeof serializeRailway>;
@@ -244,4 +253,69 @@ test('malformed line-two documents fail atomically', () => {
     assert.equal(hashRailway(w.s, pids), hash, name);
   }
   assert.equal(LINE2_STATIONS.length, 3);
+});
+
+function toQ2(): World {
+  const w = pathOpen();
+  logs(w, 'a', 'F', 56);
+  advance(w, LINE2_FORGE.turnTicks);
+  logs(w, 'b', 'Q1', 16);
+  rails(w, 'a', 'Q1', 6);
+  finishQ(w, 0);
+  return w;
+}
+
+test('taking depot logs and dropping them elsewhere never makes the depot exceed its stretch bill', () => {
+  const w = toQ2();
+  for (const pid of ['a', 'b']) {
+    const a = railAccount(w.s, pid)!;
+    for (const kind of [0, 2] as const) {
+      const n = kind ? (a.rails ?? 0) : a.carry;
+      if (n) act(w, pid, 'rail.drop', { x: 95000 + kind * 100, y: 2000, z: 3000, n, kind });
+    }
+  }
+  const before = railCounts(w.s).produced;
+  // Ten rounds of take-and-drop: a hoarder cannot make the cart mint past Q2's 24-log bill.
+  for (let round = 0; round < 10; round++) {
+    advance(w, LINE2_DEPOT.everyTicks + 1);
+    const n = act(w, 'a', 'rail.depotTake');
+    if (n) assert.equal(act(w, 'a', 'rail.drop', { x: 96000 + round * 10, y: 2000, z: 3000, n }), n);
+  }
+  assert.equal(w.s.line2!.depotOut[1], 24);
+  assert.equal(railCounts(w.s).produced - before, 24);
+  assert.equal(w.s.line2!.depot, 0);
+  restore(w);
+  assert.equal(railCounts(w.s).total, 3910 + railCounts(w.s).produced);
+});
+
+test('a peer resuming mid-Q2 after a restart matches one that never went offline', () => {
+  const live = toQ2();
+  logs(live, 'a', 'Q2', 24);
+  rails(live, 'b', 'Q2', 12);
+  const job = live.s.line2!.jobs[1]!;
+  assert.ok(job.start >= 0);
+  advance(live, 20);
+  // The host restarts from the saved document; the stretch catches up once for the time it was down.
+  const pids = live.s.accounts.map((a) => a.pid);
+  const saved = JSON.parse(JSON.stringify(serializeRailway(live.s, pids)));
+  const restarted = createRailway(true, true);
+  loadRailway(restarted, saved, pids);
+  assert.equal(hashRailway(restarted, pids), hashRailway(live.s, pids));
+  const gap = 40;
+  // A restarted room's clock resumes from its saved tick: downtime arrives only as the bounded resume.
+  assert.equal(railResume(restarted, gap, 11, live.t), gap);
+  assert.equal(railResume(restarted, gap, 11, live.t), 0, 'a repeated marker never resumes twice');
+  // The peer that stayed online ticked through the same span (the forge pours only while ticking).
+  advance(live, gap);
+  const a = restarted.line2!.jobs[1]!,
+    b = live.s.line2!.jobs[1]!;
+  for (const key of ['elapsed', 'used', 'allocation', 'railUsed', 'railAllocation', 'completion'] as const)
+    assert.equal(a[key], b[key], key);
+  assert.equal(railwayInvariant(restarted), null);
+  // Finishing offline completes Q2 once and never funds Q3.
+  const rest = line2Schedule(1, a).totalTicks - a.elapsed;
+  assert.equal(railResume(restarted, 100000, 12, live.t + 1), rest);
+  assert.equal(a.completion, 1);
+  assert.equal(restarted.line2!.jobs[2]!.start, -1);
+  assert.equal(railwayInvariant(restarted), null);
 });

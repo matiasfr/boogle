@@ -25,8 +25,11 @@ export type RailLine2 = {
   forge: RailForge;
   jobs: RailQJob[];
   depot: number;
+  /** Total minted by the depot; always the sum of `depotOut`. */
   depotProduced: number;
   depotLast: number;
+  /** Depot logs minted for each stretch, in station order; never more than that stretch's log bill. */
+  depotOut: number[];
   lever: boolean;
   hook: boolean;
 };
@@ -51,6 +54,7 @@ export const createRailLine2 = (timing: LineTiming): RailLine2 => ({
   depot: 0,
   depotProduced: 0,
   depotLast: -1,
+  depotOut: LINE2_STATIONS.map(() => 0),
   lever: false,
   hook: false,
 });
@@ -167,11 +171,13 @@ export function railLine2Tick(s: Railway, tick: number) {
   // The depot runs from Q1's completion while a rack-fed stretch still needs logs.
   if (spec.depot && job.start < 0) {
     if (l.depotLast < 0) l.depotLast = tick;
-    const need = spec.bill[0] - job.stock - l.depot;
+    // Logs taken from the rack and dropped elsewhere are not replaced: a stretch's output is capped at its bill.
+    const need = Math.min(spec.bill[0] - job.stock - l.depot, spec.bill[0] - l.depotOut[k]!);
     if (need > 0 && tick - l.depotLast >= DEPOT.everyTicks) {
       const n = Math.min(DEPOT.load, need);
       l.depot += n;
       l.depotProduced += n;
+      l.depotOut[k]! += n;
       l.depotLast = tick;
     } else if (need <= 0) l.depotLast = tick;
   }
@@ -206,7 +212,9 @@ export const line2Rails = (s: Railway) =>
   (s.line2?.jobs.reduce((n, j) => n + j.railStock + j.railAllocation + j.railUsed, 0) ?? 0);
 
 // ---------------------------------------------------------------- durable shape
-const FIELDS = [
+// Compact: only independent fields, base 36, dot-joined. Allocation/used/delivered/completion derive from the
+// pinned schedule on load, so a corrupt document cannot disagree with itself.
+const JOB_FIELDS = [
   'stock',
   'railStock',
   'allocation',
@@ -229,39 +237,61 @@ const CLOCK = [
   'cruiseCmPerTick',
   'departureTicks',
 ] as const;
-export type RailLine2JSON = { f: number[]; j: number[][]; d: number[]; v: number; h: number };
+export type RailLine2JSON = { f: string; j: string[]; d: string; v: number };
+const b36 = (n: number) => n.toString(36);
+const pack = (values: number[]) => values.map(b36).join('.');
+function unpack(text: unknown, count: number): number[] {
+  if (typeof text !== 'string' || text.length > 160) throw new Error('railway: line2 encoding');
+  const parts = text.split('.');
+  if (parts.length !== count) throw new Error('railway: line2 encoding');
+  return parts.map((part) => {
+    if (!/^-?[0-9a-z]{1,7}$/.test(part)) throw new Error('railway: line2 encoding');
+    const n = Number.parseInt(part, 36);
+    if (!Number.isSafeInteger(n) || b36(n) !== part) throw new Error('railway: line2 encoding');
+    return n;
+  });
+}
 export const saveRailLine2 = (l: RailLine2): RailLine2JSON => ({
-  f: [l.forge.used, l.forge.lit, l.forge.rack, l.forge.poured, l.forge.lastPour],
-  j: l.jobs.map((j) => [...FIELDS.map((k) => j[k]), ...CLOCK.map((k) => j.timing[k])]),
-  d: [l.depot, l.depotProduced, l.depotLast],
-  v: Number(l.lever),
-  h: Number(l.hook),
+  f: pack([l.forge.used, l.forge.lit, l.forge.rack, l.forge.poured, l.forge.lastPour]),
+  j: l.jobs.map((j) => pack([j.stock, j.railStock, j.start, j.elapsed, j.lastTick, ...CLOCK.map((k) => j.timing[k])])),
+  d: pack([l.depot, l.depotLast, ...l.depotOut]),
+  v: Number(l.lever) + 2 * Number(l.hook),
 });
 const int = (v: unknown, max = 2147483647, min = 0): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= min && v <= max && !Object.is(v, -0);
+/** Accepted amounts at an integer elapsed clock: the same arithmetic as railLine2Tick. */
+function derive(job: RailQJob, k: number) {
+  const spec = LINE2_STATIONS[k]!;
+  if (job.start < 0) {
+    job.allocation = job.used = job.railAllocation = job.railUsed = job.completion = 0;
+    job.delivered = job.stock;
+    job.railDelivered = job.railStock;
+    return;
+  }
+  const schedule = line2Schedule(k, job);
+  const laying = Math.max(0, job.elapsed - schedule.depositTicks - schedule.feedTicks);
+  job.used = Math.min(spec.bill[0], Math.floor((laying * spec.bill[0]) / schedule.layTicks));
+  job.allocation = spec.bill[0] - job.used;
+  job.railUsed = Math.min(spec.bill[1], Math.floor((laying * spec.bill[1]) / schedule.layTicks));
+  job.railAllocation = spec.bill[1] - job.railUsed;
+  job.delivered = spec.bill[0];
+  job.railDelivered = spec.bill[1];
+  job.completion = Number(job.elapsed === schedule.totalTicks);
+}
 export function loadRailLine2(value: unknown): RailLine2 {
   const j = value as RailLine2JSON | null;
   if (
     !j ||
     typeof j !== 'object' ||
     Array.isArray(j) ||
-    Object.keys(j).sort().join() !== 'd,f,h,j,v' ||
-    !Array.isArray(j.f) ||
-    j.f.length !== 5 ||
-    !Array.isArray(j.d) ||
-    j.d.length !== 3 ||
+    Object.keys(j).sort().join() !== 'd,f,j,v' ||
     !Array.isArray(j.j) ||
     j.j.length !== LINE2_STATIONS.length ||
-    j.j.some(
-      (row) =>
-        !Array.isArray(row) || row.length !== FIELDS.length + CLOCK.length || row.some((n) => !int(n, 2147483647, -1)),
-    ) ||
-    !int(j.v, 1) ||
-    !int(j.h, 1)
+    !int(j.v, 3)
   )
     throw new Error('railway: line2 encoding');
-  const [used, lit, rack, poured, lastPour] = j.f;
-  const [depot, depotProduced, depotLast] = j.d;
+  const [used, lit, rack, poured, lastPour] = unpack(j.f, 5) as [number, number, number, number, number];
+  const [depot, depotLast, ...depotOut] = unpack(j.d, 2 + LINE2_STATIONS.length) as [number, number, ...number[]];
   if (
     !int(used, FORGE.logs) ||
     !int(lit, 2147483647, -1) ||
@@ -269,23 +299,43 @@ export function loadRailLine2(value: unknown): RailLine2 {
     !int(poured) ||
     !int(lastPour) ||
     !int(depot, 64) ||
-    !int(depotProduced) ||
-    !int(depotLast, 2147483647, -1)
+    !int(depotLast, 2147483647, -1) ||
+    depotOut.some((n, k) => !int(n, LINE2_STATIONS[k]!.bill[0]))
   )
     throw new Error('railway: line2 bounds');
+  const jobs = j.j.map((text, k) => {
+    const [stock, railStock, start, elapsed, lastTick, ...clock] = unpack(text, 5 + CLOCK.length);
+    if (
+      !int(stock, LINE2_STATIONS[k]!.bill[0]) ||
+      !int(railStock, LINE2_STATIONS[k]!.bill[1]) ||
+      !int(start, 2147483647, -1) ||
+      !int(elapsed, 1000000) ||
+      !int(lastTick) ||
+      clock.some((n) => !int(n, 60000))
+    )
+      throw new Error('railway: line2 bounds');
+    const job = {
+      stock: stock!,
+      railStock: railStock!,
+      start: start!,
+      elapsed: elapsed!,
+      lastTick: lastTick!,
+      timing: Object.fromEntries(CLOCK.map((key, i) => [key, clock[i]!])) as LineTiming,
+    } as RailQJob;
+    if (job.start < 0 && (job.elapsed || job.lastTick)) throw new Error('railway: line2 unfunded job');
+    if (job.start >= 0 && (job.stock || job.railStock)) throw new Error('railway: line2 funded job');
+    derive(job, k);
+    return job;
+  });
   return {
     forge: { used, lit, rack, poured, lastPour },
-    jobs: j.j.map((row) => {
-      const job = {} as RailQJob;
-      FIELDS.forEach((key, i) => (job[key] = row[i]!));
-      job.timing = Object.fromEntries(CLOCK.map((key, i) => [key, row[FIELDS.length + i]!])) as LineTiming;
-      return job;
-    }),
+    jobs,
     depot,
-    depotProduced,
+    depotProduced: depotOut.reduce((a, b) => a + b, 0),
     depotLast,
-    lever: !!j.v,
-    hook: !!j.h,
+    depotOut,
+    lever: (j.v & 1) === 1,
+    hook: (j.v & 2) === 2,
   };
 }
 /** Whole-document invariants; throws before any live state is replaced. */
@@ -298,7 +348,7 @@ export function validateRailLine2(s: Railway) {
   if (f.lit >= 0 && f.lastPour < f.lit) throw new Error('railway: pour clock');
   l.jobs.forEach((job, k) => {
     const spec = LINE2_STATIONS[k]!;
-    for (const key of FIELDS)
+    for (const key of JOB_FIELDS)
       if (!int(job[key], key === 'completion' ? 1 : 2147483647, key === 'start' ? -1 : 0))
         throw new Error('railway: line2 job bounds');
     const schedule = line2Schedule(k, job);
@@ -340,6 +390,12 @@ export function validateRailLine2(s: Railway) {
   });
   if ((l.depot || l.depotProduced || l.depotLast >= 0) && !l.jobs[0]!.completion)
     throw new Error('railway: early depot');
+  if (
+    l.depotOut.length !== LINE2_STATIONS.length ||
+    l.depotOut.some((n, k) => !int(n, LINE2_STATIONS[k]!.bill[0]) || (n > 0 && !LINE2_STATIONS[k]!.depot)) ||
+    l.depotOut.reduce((a, b) => a + b, 0) !== l.depotProduced
+  )
+    throw new Error('railway: depot output');
   if (l.depot > l.depotProduced) throw new Error('railway: depot stock');
   if (l.lever && line2Completed(s) < 3) throw new Error('railway: lever before Q3');
   if (l.hook && line2Completed(s) < 2) throw new Error('railway: hook before Q2');

@@ -35,13 +35,7 @@ import {
   LINE1_JUMP_DEVICE,
 } from '../../sim/railway-line-layout.ts';
 import { LINE_TIMING } from '../../sim/railway-line.ts';
-import {
-  LINE2_FORGE,
-  LINE2_STATIONS,
-  LINE2_DEPOT,
-  LINE2_LEVER,
-  LINE2_HOOK,
-} from '../../sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_STATIONS, LINE2_DEPOT, LINE2_LEVER, LINE2_HOOK } from '../../sim/railway-line2-layout.ts';
 import { line2Active, line2GateOpen, line2Completed } from '../../sim/railway-line2.ts';
 import { railSupplyPulse, RECOVERY_RACK, RAIL_GROW_MASK_LENGTH, type SupplyPulse } from '../../sim/railway-supply.ts';
 import { okPid } from '../../sim/roster.ts';
