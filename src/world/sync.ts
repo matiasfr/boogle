@@ -12,7 +12,7 @@
 //                    { t:'w:c', ht }                        clock, every CLOCK_EVERY ticks
 //                    { t:'w:hash', tick, h, ht, hs }        worldHash right after `tick` was processed, every HASH_EVERY ticks;
 //                                                           hs = { stateKey: hash } so a client can name what diverged
-//                    { t:'w:snap', to, id, n, k, s }        chunk k of n (string slice) of JSON { snap, pend, seq, ht, noSave };
+//                    { t:'w:snap', to, id, n, k, s }        chunk k of n (string slice) of JSON { snap, pend, seq, ht };
 //                                                           only `to` uses it. pend = stamped edits not yet applied at snap.tick (so a
 //                                                           joiner misses none)
 // Player ids: `p` on an edit is the session (selfId), `u` the player (pid, src/player/identity.ts) that outlives a
@@ -31,10 +31,8 @@
 // SAVE_MS = 30 s; the server uses 2 s) if its states changed, and saveNow(force) at once; it starts from that save, or a
 // fresh world. Tabs keep no copy.
 //
-// Versions: each state registers a `version` (default 0) and `migrate[v]` steps (json at v-1 -> json at v); snapshots
-// record them in `vers` (missing = 0) and loads run the steps in order. A state that fails to load starts fresh
-// (stats.loadErrors). A state saved by a newer build is skipped, and the host stops saving (so an old server never
-// overwrites a newer save); the snapshots it serves carry noSave.
+// Development saves use the current state shapes. A WORLD_NS break replaces migrations. A state that fails to
+// load starts fresh (stats.loadErrors), but that fallback must never be saved or served as authoritative state.
 
 import { okPid } from '../sim/roster.ts';
 import type { OpHandlers, StateHandlers, Edit } from './rules/types.ts';
@@ -43,10 +41,10 @@ import type { OpHandlers, StateHandlers, Edit } from './rules/types.ts';
 type Obj = Record<string, unknown>;
 /** A stamped edit waiting for its tick. */
 export type Queued = { tick: number; seq: number; e: Obj };
-type State = StateHandlers & { version: number; migrate: Record<number, (json: unknown) => unknown>; fresh: string };
-/** The world as saved and served: tick, seed, epoch, each state's serialized form and version. */
-export type Snapshot = { tick: number; seed: number; epochMs: number; data: Obj; vers: Obj };
-/** Opt-in production recovery. The legacy world/snapshot protocol does not use this document. */
+type State = StateHandlers & { fresh: string };
+/** The world as saved and served: tick, seed, epoch and each state's serialized form. */
+export type Snapshot = { tick: number; seed: number; epochMs: number; data: Obj };
+/** Production recovery; ordinary world snapshots do not use this document. */
 export type RecoveryEnvelope = {
   version: 1;
   namespace: string;
@@ -81,7 +79,7 @@ export type AttachOptions = {
   storage?: SaveStore | null; // the host's save (synchronous, like localStorage)
   now?: () => number;
   saveMs?: number; // how often the host saves a changed world; default SAVE_MS (30 s), the server uses 2 s
-  recovery?: RecoveryStore; // isolated production rooms only; replaces legacy storage, never falls back to it
+  recovery?: RecoveryStore; // railway rooms; replaces ordinary storage, never falls back to it
 };
 type Cfg = {
   roomId: string;
@@ -150,14 +148,12 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     lateEdits: 0,
     saves: 0,
     heldDropped: 0,
-    loadErrors: 0, // states that failed to load (bad data or a throwing migration) and started fresh
+    loadErrors: 0, // states that failed to load and started fresh
     snapBytes: 0, // characters of the last snapshot saved or served (budget: 60 KB, test/world-size.test.ts)
   };
-  let newerSave = false;
-  // The host's own save failed to load (corrupt, or a state's load/migrate threw): it runs on a fresh fallback and must
+  // The host's own save failed to load (corrupt, or a state's load threw): it runs on a fresh fallback and must
   // never write that over the real save, which stays on disk for a fix. Cleared only by a restart.
   let badSave = false;
-  const skipped = new Set<string>(); // states a snapshot held from a newer build: left out of hash checks // a loaded snapshot held a state from a newer build: never persist over it
   let subsystems: Record<string, 'ok' | 'bad'> = {}; // stateKey -> 'ok' | 'bad' from the latest hash check (client)
   let lastBad: Desync | null = null; // { tick, keys } of the latest mismatch
   let queue: Queued[] = []; // [{ tick, seq, e }] stamped, not yet applied
@@ -222,16 +218,11 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     if (ops.has(op)) throw new Error('duplicate op ' + op);
     ops.set(op, handlers as unknown as OpHandlers<object>);
   }
-  // handlers: { serialize, load, hash, version = 0, migrate = { [v]: json => json } }. What serialize returns now is the
-  // state's fresh form, loaded when a snapshot's copy fails.
+  // What serialize returns now is the state's fresh form, loaded when a snapshot's copy fails.
   function registerState(key: string, handlers: StateHandlers) {
     if (states.has(key)) throw new Error('duplicate state ' + key);
-    const version = handlers.version ?? 0;
-    if (!isInt(version) || version < 0) throw new Error(`state ${key}: bad version ${version}`);
     states.set(key, {
       ...handlers,
-      version,
-      migrate: handlers.migrate ?? {},
       fresh: JSON.stringify(handlers.serialize()),
     });
   }
@@ -248,7 +239,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     stampRefusal = undefined;
     const h = ops.get(String(edit.op));
     if (!ready || !h || !isInt(edit.i) || !isInt(edit.j)) return false;
-    if (cfg.recovery && (recoveryPending || recoveryError || badSave || newerSave)) return false;
+    if (cfg.recovery && (recoveryPending || recoveryError || badSave)) return false;
     if (cfg.recovery && (seq >= Number.MAX_SAFE_INTEGER || world.tick > Number.MAX_SAFE_INTEGER - DELAY)) return false;
     const u = pidOf(from);
     if (!u) return false;
@@ -290,7 +281,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
   function flush() {
     if (!out.length) return;
-    if (cfg.recovery && (recoveryPending || recoveryError || badSave || newerSave)) return;
+    if (cfg.recovery && (recoveryPending || recoveryError || badSave)) return;
     const list = out;
     out = [];
     const publish = () => send({ t: 'w:edits', ht: world.tick, list });
@@ -447,13 +438,9 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
 
   // ------------------------------------------------------------ snapshots + hashes
   function snapshot(): Snapshot {
-    const data: Obj = {},
-      vers: Obj = {};
-    for (const [k, s] of states) {
-      data[k] = s.serialize();
-      vers[k] = s.version;
-    }
-    return { tick: world.tick, seed: world.seed, epochMs: world.epochMs, data, vers };
+    const data: Obj = {};
+    for (const [k, s] of states) data[k] = s.serialize();
+    return { tick: world.tick, seed: world.seed, epochMs: world.epochMs, data };
   }
   function validSnap(s: unknown): s is Snapshot {
     return isObj(s) && isInt(s.tick) && s.tick >= 0 && isInt(s.seed) && isInt(s.epochMs) && isObj(s.data);
@@ -463,25 +450,15 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     world.tick = snap.tick;
     world.seed = snap.seed;
     world.epochMs = snap.epochMs;
-    const vers: Obj = isObj(snap.vers) ? snap.vers : {};
-    for (const [k, s] of states) if (k in snap.data) loadState(k, s, snap.data[k], vers[k] ?? 0);
+    for (const [k, s] of states) if (k in snap.data) loadState(k, s, snap.data[k]);
     queue = [];
     acc = 0;
     pendingHash.clear();
     return true;
   }
-  // One state from a snapshot: migrate from its saved version up to ours, then load. Never throws.
-  function loadState(k: string, s: State, json: unknown, v: unknown) {
-    if (isInt(v) && v > s.version) {
-      newerSave = true;
-      skipped.add(k);
-      console.warn(`[world] ${k} was saved by a newer build (v${v} > v${s.version}): skipped; not saving`);
-      snapFail('state', `${k} newer`);
-      return;
-    }
+  // Load one current state from a snapshot. Never throws.
+  function loadState(k: string, s: State, json: unknown) {
     try {
-      if (!isInt(v) || v < 0) throw new Error(`bad version ${v}`);
-      for (let x = v + 1; x <= s.version; x++) if (s.migrate[x]) json = s.migrate[x]!(json);
       s.load(json);
     } catch (err) {
       stats.loadErrors++;
@@ -510,14 +487,11 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
 
   function checkHash(tick: number, h: number, hs0: unknown) {
     if (tick !== world.tick) return;
-    // Per-state hashes, when the host sent them, decide: compared over the states both sides have, minus any this tab
-    // skipped as newer (a host, such as the server, may hold states this build lacks, and the reverse). The combined
-    // hash `h` decides only for a host that sent no per-state hashes.
+    // The combined hash checks the complete current registry; per-state hashes identify a mismatch.
     const hs = isObj(hs0) ? hs0 : {};
-    const all = isObj(hs0) ? stateHashes() : null;
-    const mine = all && Object.fromEntries(Object.entries(all).filter(([k]) => k in hs && !skipped.has(k)));
+    const mine = isObj(hs0) ? stateHashes() : null;
     if (mine) subsystems = Object.fromEntries(Object.keys(mine).map((k) => [k, mine[k] === hs[k] ? 'ok' : 'bad']));
-    const agree = mine ? Object.keys(mine).every((k) => mine[k] === hs[k]) : worldHash() === h;
+    const agree = worldHash() === h && (!mine || Object.keys(mine).every((k) => mine[k] === hs[k]));
     if (agree) {
       stats.hashOk++;
     } else {
@@ -540,11 +514,10 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   function serveSnapshot(to: string) {
     // A failed-load fallback is not an authoritative world, even if its fresh state hashes consistently.
     if (!ready || badSave || wall - (served.get(to) ?? -1e9) < 1500) return;
-    if (cfg.recovery && (recoveryPending || recoveryError || out.length || newerSave)) return;
+    if (cfg.recovery && (recoveryPending || recoveryError || out.length)) return;
     served.set(to, wall);
     const pend = queue.map(({ tick, seq: s, e }) => ({ tick, seq: s, e }));
-    // noSave: this tab skipped a state from a newer build, so what it serves must not become anyone's save either.
-    const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick, noSave: newerSave || badSave });
+    const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick });
     stats.snapBytes = json.length;
     const id = ++snapId;
     const n = Math.ceil(json.length / CHUNK);
@@ -570,7 +543,6 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   function applyPayload(p: unknown) {
     if (!isObj(p) || !validSnap(p.snap) || !Array.isArray(p.pend)) return false;
     loadSnapshot(p.snap);
-    if (p.noSave === true) newerSave = true;
     queue = p.pend.filter(
       (q): q is Queued =>
         isObj(q) && isInt(q.tick) && isInt(q.seq) && isObj(q.e) && q.tick > world.tick && ops.has(String(q.e.op)),
@@ -727,7 +699,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
   function checkpointRecovery(publish: () => void = () => {}) {
     const recovery = cfg.recovery;
-    if (!recovery || recoveryPending || recoveryError || badSave || newerSave) return;
+    if (!recovery || recoveryPending || recoveryError || badSave) return;
     let envelope: RecoveryEnvelope;
     try {
       const body = recoveryBody();
@@ -768,7 +740,6 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
   function restoreRecovery(raw: unknown) {
     const recovery = cfg.recovery!;
-    if (isObj(raw) && isInt(raw.version) && raw.version > 1) newerSave = true;
     if (!isObj(raw) || raw.version !== 1 || raw.namespace !== recovery.namespace || raw.catalog !== recovery.catalog)
       throw new Error('unsupported recovery version, namespace or catalog');
     if (new TextEncoder().encode(JSON.stringify(raw)).length > MAX_RECOVERY_BYTES)
@@ -776,7 +747,6 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     if (
       !validSnap(raw.checkpoint) ||
       raw.checkpoint.epochMs < 0 ||
-      !isObj(raw.checkpoint.vers) ||
       !isInt(raw.hash) ||
       !isInt(raw.seq) ||
       raw.seq < 0 ||
@@ -787,14 +757,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       throw new Error('invalid recovery envelope');
     const checkpoint = raw.checkpoint;
     const keys = [...states.keys()];
-    if (keys.some((key) => isInt(checkpoint.vers[key]) && checkpoint.vers[key] > states.get(key)!.version))
-      newerSave = true;
-    if (
-      Object.keys(checkpoint.data).length !== keys.length ||
-      Object.keys(checkpoint.vers).length !== keys.length ||
-      keys.some((key) => !(key in checkpoint.data) || checkpoint.vers[key] !== states.get(key)!.version)
-    )
-      throw new Error('recovery registry/version mismatch');
+    if (Object.keys(checkpoint.data).length !== keys.length || keys.some((key) => !(key in checkpoint.data)))
+      throw new Error('recovery registry mismatch');
     const tail: Queued[] = [];
     let previous = 0;
     for (const q of raw.tail) {
@@ -829,7 +793,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     };
     if (recoveryChecksum(body) !== raw.checksum) throw new Error('recovery checksum mismatch');
     const errors = stats.loadErrors;
-    if (!loadSnapshot(checkpoint) || stats.loadErrors !== errors || newerSave || worldHash() !== raw.hash)
+    if (!loadSnapshot(checkpoint) || stats.loadErrors !== errors || worldHash() !== raw.hash)
       throw new Error('recovery checkpoint hash/load mismatch');
     queue = tail;
     seq = raw.seq;
@@ -857,7 +821,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   // force: write even if no state changed (the tick still moved on: the server's 30 s and shutdown saves).
   // Returns true when it wrote.
   function persist(force = false) {
-    if (mode !== 'host' || !ready || newerSave || badSave) return false;
+    if (mode !== 'host' || !ready || badSave) return false;
     if (cfg.recovery && (processingTick || recoveryPending || recoveryError || out.length)) return false;
     const hsh = combine(0);
     if (hsh === lastSavedHash && !force) return false;
@@ -1002,7 +966,6 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       hostId,
       queued: queue.length,
       ...stats,
-      newerSave,
       badSave,
       recoveryPending,
       recoveryError,

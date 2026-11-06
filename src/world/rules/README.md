@@ -13,8 +13,8 @@ The sim, rules and adapter have distinct owners; registration also updates the t
    test that the same inputs give the same hash and that serialize/load round-trips.
 2. `src/world/rules/<x>.ts`, from the template below: `install(sync, land, rules)` registers its ops, state and ticks
    and returns an API. It exports `edits` (a generator per op) and optionally `invariants`, for the replay test.
-3. One line appended to `RULES` in `index.ts`. Append only: states snapshot, load and hash in its order, so
-   reordering it desyncs rooms where peers run different builds.
+3. One line appended to `RULES` in `index.ts`. States snapshot, load and hash in its order; a reordered registry
+   needs a dated `WORLD_NS` break during development.
    Add its API to `Rules` in `src/world/rules/types.ts` too (see `PilesApi`).
 4. `src/features/<x>.ts`, the adapter. It imports `rules` from `../world/game-world.ts` **first** (so the rules are
    registered before anything else), reads `rules.<x>`, sends `submitEdit`, and reacts in `onApplied`,
@@ -29,8 +29,7 @@ Update the system's `docs/game-design/` chapter (new system: add a chapter and i
   comes in through `setEnv`.
 - `setEnv` is only for validate facts the rules cannot compute (what the render side sees: trees, props). Anything
   derivable from `land` and the rules' state is checked in validate directly.
-- An older snapshot without the new state key leaves it fresh: no fixture change needed. Ids come from a counter in
-  the state, never a per-peer one.
+- Ids come from a counter in the state, never a per-peer one.
 - Players start an action through the registries (docs/agents/registries.md, "Shared registries"); a new carried item is appended to
   `GIFTS` in `src/sim/gift-catalog.ts` (ground items store its index: reorder only with a `WORLD_NS` bump; it also needs The Boogler's `taste` and `line`), and what using it does is a case
   in `useDown` in `src/player/hands.ts`.
@@ -60,10 +59,8 @@ Rules:
   lint allows only `../grid.ts`, `../../sim/*` and sibling rules (no
   three.js, DOM, timers or `performance`).
 - `apply` returns its result (changed cells, the item taken); effects go in the adapter's `onApplied(e, tick, result)`.
-- A new state starts at `version: 0` (the default). Changing what its `serialize` writes means a new `version` and a
-  `migrate[v]` step for older saves
-  (`../README.md`, "Contract"); saves from before the change must keep loading (`test/fixtures/snap-v02.json` is one, checked by
-  `test/world-snapshots.test.ts`).
+- Changing what `serialize` writes requires a dated `WORLD_NS` break during development. States have no version or
+  migration chain. `test/world-snapshots.test.ts` checks current round-trips and malformed input.
 
 ## Edit generators and invariants
 

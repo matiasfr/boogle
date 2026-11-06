@@ -1,5 +1,5 @@
 // Accepted schedule primitives for slice 3. Callers pin room tunables when funding a station.
-// New production only; isolated and legacy T1 retain their original replay semantics.
+// Line-one production only; the isolated T1 proof retains its own schedule.
 import { linePanels, type LineStation } from './railway-line-layout.ts';
 
 export type LineTiming = {

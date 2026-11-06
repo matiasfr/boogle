@@ -10,7 +10,7 @@ import { railSession } from '../src/sim/railway.ts';
 test('line recovery width bound retains sixty-four worst material stamps and maximum roster', (t) => {
   // Deliberately combines mutually exclusive balances: a conservative byte bound, not a reachable state.
   const sync = createSync(),
-    base = installPlayableRailwayRules(sync, homeLand(), { line1: true }),
+    base = installPlayableRailwayRules(sync, homeLand()),
     s = base.railway.railway,
     M = 2147483647;
   for (let k = 0; k < 256; k++) {

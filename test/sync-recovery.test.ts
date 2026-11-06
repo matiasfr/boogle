@@ -194,7 +194,7 @@ test('checkpoint replacement can crash without dropping an already-published fut
   await host.s.whenDurable();
 });
 
-test('corrupt, future, wrong-catalog and modified-tail saves never become healthy fallback', async () => {
+test('corrupt, wrong-schema, wrong-catalog and modified-tail saves never become healthy fallback', async () => {
   const original = disk();
   const host = peer(makeNet(), 'host', original.recovery);
   await host.s.whenDurable();
@@ -208,7 +208,7 @@ test('corrupt, future, wrong-catalog and modified-tail saves never become health
     { ...saved, checkpoint: { ...saved.checkpoint, data: { count: 12 } } },
     { ...saved, tail: [{ ...saved.tail[0]!, e: { ...saved.tail[0]!.e, n: 4 } }] },
     { ...saved, tail: [{ ...saved.tail[0]!, tick: 999999 }] },
-    { ...saved, checkpoint: { ...saved.checkpoint, vers: { count: 1 } } },
+    { ...saved, checkpoint: { ...saved.checkpoint, data: { unexpected: 0 } } },
   ];
   for (const bad of cases) {
     const store = disk();
@@ -237,7 +237,7 @@ test('the recovery envelope has an explicit 60 KB bound and refuses oversized st
   assert.equal(net.queue.length, 0);
 });
 
-test('legacy bad-load guards suppress serving as well as saving the failed fallback', async () => {
+test('ordinary bad-load guards suppress serving as well as saving the failed fallback', async () => {
   const net = makeNet();
   const host = peer(net, 'host');
   host.s.detachWorld();

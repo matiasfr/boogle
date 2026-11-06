@@ -24,7 +24,6 @@ import {
   isPlayableRailwayRoom,
   RAILWAY_NS,
   RAILWAY_PLAY_NS,
-  RAILWAY_LEGACY_PLAY_NS,
   isLineRailwayRoom,
 } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_CATALOG, RAILWAY_T1, RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
@@ -37,7 +36,6 @@ export type { RailwayPosition } from './railway-supply.ts';
 import type { RailReach, RailCadence } from '../../../src/world/rules/railway.ts';
 import { createRailwayRequests } from './railway-requests.ts';
 import { canSet, cleanName } from '../../../src/sim/roster.ts';
-import { migratePlayableRailwayV0 } from './railway-v0-migration.ts';
 
 const STEP_MS = 50;
 // Saves skip a world whose states didn't change, but its tick still moves on, and the helper bank reads the time nobody
@@ -159,8 +157,7 @@ export function createWorldHost({
       sync.detachWorld();
       await writing;
       if (save && writeError) throw writeError;
-      if (save && (sync.worldStatus().badSave || sync.worldStatus().newerSave))
-        throw new Error(`world ${roomId}: saved state did not load cleanly`);
+      if (save && sync.worldStatus().badSave) throw new Error(`world ${roomId}: saved state did not load cleanly`);
     },
   };
 }
@@ -193,13 +190,13 @@ export function createRailwayWorldHost({
   if (!isRailwayRoom(roomId)) throw new Error('railway host requires a T1 namespace');
   const playable = isPlayableRailwayRoom(roomId);
   const line1 = isLineRailwayRoom(roomId);
-  const namespace = line1 ? RAILWAY_PLAY_NS : playable ? RAILWAY_LEGACY_PLAY_NS : RAILWAY_NS;
+  const namespace = playable ? RAILWAY_PLAY_NS : RAILWAY_NS;
   // Preserve the existing playtest-only tune policy; ordinary T1 rooms cannot change shared rates.
   const sync = createSync({
     env: { protoRoom: playable && isProtoRoom(roomId.slice(namespace.length + 1)), tuneController },
   });
   const rules = playable
-    ? installPlayableRailwayRules(sync, home.land as Parameters<typeof installRailwayRules>[1], { line1 })
+    ? installPlayableRailwayRules(sync, home.land as Parameters<typeof installRailwayRules>[1])
     : installRailwayRules(sync, home.land as Parameters<typeof installRailwayRules>[1]);
   const sent = new Set<(message: Msg) => void>();
   const incoming = new Set<(message: unknown, from: string) => void>();
@@ -302,7 +299,6 @@ export function createRailwayWorldHost({
     )
       supplyPending = true;
   };
-  let migrated: Awaited<ReturnType<typeof migratePlayableRailwayV0>>;
   let startupError: string | null = null;
   const attach = () =>
     sync.attachWorld(
@@ -330,7 +326,7 @@ export function createRailwayWorldHost({
             savedTick = doc.tick;
             if (!Number.isFinite(savedAt) || savedAt > now() || !Number.isSafeInteger(savedTick) || savedTick < 0)
               throw new Error('invalid railway recovery timestamp/tick');
-            return migrated ?? doc.data;
+            return doc.data;
           },
           async write(data) {
             const resume = data.tail.findLast((entry) => entry.e.op === 'rail.resume');
@@ -393,11 +389,6 @@ export function createRailwayWorldHost({
     if (line1) releaseDepartedBeam();
   }, 'railway-departure');
   const ready = (async () => {
-    if (playable && !line1)
-      migrated = await migratePlayableRailwayV0(
-        store.readSync(roomId)?.data,
-        home.land as Parameters<typeof installRailwayRules>[1],
-      );
     attach();
     await sync.whenDurable();
     // No session survived a server restart. Recover an orphaned unique beam through the same durable op,
@@ -509,7 +500,6 @@ export function createRailwayWorldHost({
           // authenticated p/u, recovery admission and correlated refusal; queued is not applied.
           const clean: Msg = { op: edit.op, i: edit.i, j: edit.j, key: edit.key, v: edit.v };
           if (edit.op === 'tune.commit') {
-            clean.catalog = edit.catalog;
             clean.expectedRevision = edit.expectedRevision;
             clean.requestId = edit.requestId;
           }

@@ -1,5 +1,5 @@
 // Slice 3's staged numeric catalog. Not installed until recovery and client admission support it.
-// Keep railway-layout.ts byte-identical: published v0/v1 recovery replays depend on it.
+// The line builds on the numeric T1/source layout shared with current headless proofs.
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 } from './railway-layout.ts';
 
 export const LINE1_CATALOG = 2;

@@ -35,14 +35,7 @@ import {
   LINE1_JUMP_DEVICE,
 } from '../../sim/railway-line-layout.ts';
 import { LINE_TIMING } from '../../sim/railway-line.ts';
-import {
-  createRailSupply,
-  saveRailSupply,
-  railSupplyPulse,
-  RECOVERY_RACK,
-  RAIL_GROW_MASK_LENGTH,
-  type SupplyPulse,
-} from '../../sim/railway-supply.ts';
+import { railSupplyPulse, RECOVERY_RACK, RAIL_GROW_MASK_LENGTH, type SupplyPulse } from '../../sim/railway-supply.ts';
 import { okPid } from '../../sim/roster.ts';
 import type { Ctx, Edit, Land, Stream, SyncView } from './types.ts';
 import type { RosterApi } from './roster.ts';
@@ -201,25 +194,6 @@ export function install(
     });
   }
   sync.registerState('railway', {
-    version: line1 ? 2 : playable ? 1 : 0,
-    migrate:
-      playable && !line1
-        ? {
-            1: (value: unknown) => {
-              const old = value as Record<string, unknown>;
-              if (!old || !Array.isArray(old.piles) || Object.hasOwn(old, 'supply'))
-                throw new Error('railway: supply migration');
-              return {
-                ...old,
-                supply: saveRailSupply(createRailSupply()),
-                piles: old.piles.map((pile: unknown) => {
-                  if (!Array.isArray(pile) || pile.length !== 5) throw new Error('railway: legacy pile');
-                  return [...pile, 0];
-                }),
-              };
-            },
-          }
-        : {},
     serialize: () => serializeRailway(railway, rules.roster.roster.pids),
     load: (json) => loadRailway(railway, json, rules.roster.roster.pids),
     hash: () => hashRailway(railway, rules.roster.roster.pids),
