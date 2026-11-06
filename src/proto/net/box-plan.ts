@@ -85,6 +85,17 @@ export function partMesh(boxes: Box[], material: THREE.Material) {
     }
     return mesh;
   };
+  // Palette updates use the same original piece indices as transforms, including tapered gables.
+  const paint = mesh.setColorAt.bind(mesh);
+  mesh.setColorAt = (k, color) => {
+    paint(k, color);
+    const route = routes.get(k);
+    if (route) {
+      route.mesh.setColorAt(route.at, color);
+      if (route.mesh.instanceColor) route.mesh.instanceColor.needsUpdate = true;
+    }
+    return mesh;
+  };
   // InstancedMesh.dispose does not visit children. Release their instance buffers too;
   // shared geometry and caller-owned material retain the same lifetime as ordinary boxes.
   const dispose = mesh.dispose.bind(mesh);

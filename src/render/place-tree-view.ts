@@ -130,10 +130,14 @@ export function createTreeView(
   TREES: readonly Tree[],
   root: THREE.Object3D,
   H: Ground,
-  flat: (color: string, roughness?: number) => THREE.Material,
+  materials: {
+    flat: (color: string, roughness?: number) => THREE.Material;
+    tree: (color: string, family: 'green' | 'timber') => THREE.Material;
+  },
   trunkTaken: () => boolean,
   greatStrokes: number,
 ) {
+  const { flat, tree } = materials;
   const AXIS_Y = new THREE.Vector3(0, 1, 0);
   const n = TREES.length;
   const hardwoodIndices = new Map(TREES.filter((t) => t.hardwood).map((t, k) => [t.index, k]));
@@ -149,14 +153,14 @@ export function createTreeView(
   }
   hardwoodGeo.computeVertexNormals();
   const parts = {
-    trunk: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.28, 0.46, 5, 6), flat('#7a5430'), n),
-    crown: new THREE.InstancedMesh(new THREE.ConeGeometry(2.6, 6.5, 6), flat('#3f8a3a'), n),
-    crown2: new THREE.InstancedMesh(new THREE.ConeGeometry(1.9, 4.6, 6), flat('#4f9c44'), n),
-    stump: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.44, 0.5, 0.6, 6), flat('#ffffff'), n),
+    trunk: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.28, 0.46, 5, 6), tree('#7a5430', 'timber'), n),
+    crown: new THREE.InstancedMesh(new THREE.ConeGeometry(2.6, 6.5, 6), tree('#3f8a3a', 'green'), n),
+    crown2: new THREE.InstancedMesh(new THREE.ConeGeometry(1.9, 4.6, 6), tree('#4f9c44', 'green'), n),
+    stump: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.44, 0.5, 0.6, 6), tree('#ffffff', 'timber'), n),
     notch: new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.16, 0.16), flat('#39291e'), n),
     hardwood: new THREE.InstancedMesh(hardwoodGeo, flat('#686359'), hardwoodCount),
     forks: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.42, 3.5, 8), flat('#686359'), hardwoodCount * 2),
-    broad: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), flat('#657a37'), hardwoodCount * 3),
+    broad: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), tree('#657a37', 'green'), hardwoodCount * 3),
     branch: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.17, 0.21, 1.5, 8), flat('#686359'), hardwoodCount),
     cutEnd: new THREE.InstancedMesh(new THREE.CircleGeometry(0.17, 8), flat('#ddc89b'), hardwoodCount),
   };
@@ -279,6 +283,8 @@ export function createTreeView(
   return {
     pose,
     dispose() {
+      // The pigment factory returns owned clones; flat materials remain in their shared cache.
+      for (const name of ['trunk', 'crown', 'crown2', 'stump', 'broad'] as const) parts[name].material.dispose();
       for (const mesh of Object.values(parts)) {
         mesh.removeFromParent();
         mesh.geometry.dispose();

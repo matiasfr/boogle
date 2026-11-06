@@ -375,6 +375,9 @@ are not compensated. No call site applies both the material helper and particle 
 underwater **+0.81 EV**, key gain **1.12** and fill gain **3.2**. Place's grass pigment strength is **0.35** and
 its albedo gain **0.7**. Selective green/timber/accent adjustments, the building instance palette and Buddy's
 albedo-only saturation adjustment reproduce round five's pick at their material owners. Classic home is unchanged.
+Production opening buildings, forge scaffold and source trees use those same material owners. Tapered gable
+instances receive palette updates through the same piece-index routing as their transforms. The 5 November
+repair restores the treatment omitted by the production extraction; it does not retune the sky, lights or exposure.
 Physical painted boards and the shop price atlas use roughness-1, metalness-0 `MeshStandardNodeMaterial`,
 the same sRGB canvas textures, scene lights and received shadows; no emissive floor or inverse-gain compensation.
 Indoor paper is greyer than the former unlit paper. Sprite labels and rewards keep readableUnlit exactly once.

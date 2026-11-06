@@ -71,7 +71,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     body: null,
     stump: null,
   }));
-  const models = createTreeView(trees, root, H, flat, () => false, GREAT.strokes);
+  const models = createTreeView(trees, root, H, { flat, tree: look.treeMaterial }, () => false, GREAT.strokes);
   if (look.LOOK.contact)
     for (const tree of trees)
       if (!tree.cleared)
