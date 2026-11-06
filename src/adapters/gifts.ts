@@ -104,6 +104,7 @@ const sparkleMat = (() => {
   g.fillRect(30, 4, 4, 56);
   g.fillRect(4, 30, 56, 4);
   const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
   return new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
 })();
 

@@ -178,7 +178,9 @@ const sparkleTex = (() => {
   g.closePath();
   g.stroke();
   g.fill();
-  return new THREE.CanvasTexture(c);
+  const texture = new THREE.CanvasTexture(c);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 })();
 
 const notes: { sprite: THREE.Sprite; avatar: THREE.Object3D; age: number }[] = [];
