@@ -1,4 +1,4 @@
-// Late morning by default; the opt-in evening proof prepares both skies behind loading.
+// Summer late morning by default; the opt-in evening proof prepares both skies behind loading.
 // Owner calls, 3–5 November: fixed authored sunlight, no runtime cycle.
 import * as THREE from 'three/webgpu';
 import { cameraPosition, fog, mix, normalize, positionWorld, rangeFogFactor, uniform, uv, vec3, vec4 } from 'three/tsl';
@@ -11,9 +11,8 @@ import { SUN_DIR } from '../sun-dir.ts';
 import { seaU } from './state.ts';
 import { createWaterSky } from './sky.ts';
 import { bind, tuningEnabled } from './live.ts';
-import { eveningPreview, prepareEvening, skyArt, skyCubeSize, toySkyEnabled } from './flags.ts';
-import { toySky } from './toy.ts';
-import { paintedSky } from './sky-art.ts';
+import { eveningPreview, prepareEvening, SKY_CUBE_SIZE } from './flags.ts';
+import { summerSky } from './sky-art.ts';
 import { bootMark } from '../../boot/timeline.ts';
 import { LIGHTING_SPECS, SKY_AUTHORING_SPECS } from '../lighting-tuning.ts';
 import { createEveningTransition } from './evening-transition.ts';
@@ -64,12 +63,8 @@ export function createFrozenWaterSky() {
   frozenSkyActive = true;
   timeOfDay = WATER_TOD;
   direction.copy(east).multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
-  // Local loading-time comparison only. Today's 1024 sky remains the default until visual review passes.
-  const environment = createWaterSky(
-    skyArt ? paintedSky(skyArt) : toySkyEnabled ? toySky : undefined,
-    skyCubeSize,
-    skyArt === 'windpaint' ? 'painted' : 'physical',
-  );
+  // Owner, 6 November: the summer sky is the daytime sky.
+  const environment = createWaterSky(summerSky, SKY_CUBE_SIZE);
   environment.params.cloudBrightness = SKY_AUTHORING_SPECS[0]!.default;
   environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(direction.y));
   environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z));
@@ -96,7 +91,7 @@ export function createFrozenWaterSky() {
     underground = uniform(0);
   const upper = new THREE.Color(),
     lower = new THREE.Color();
-  const evening = prepareEvening ? createWaterSky(undefined, skyCubeSize) : undefined;
+  const evening = prepareEvening ? createWaterSky(undefined, SKY_CUBE_SIZE) : undefined;
   let transition: ReturnType<typeof createEveningTransition> | undefined;
   const filtered: THREE.RenderTarget[] = [];
   let selectedEnvironment: THREE.Texture = environment.cube;
@@ -299,7 +294,7 @@ export function createFrozenWaterSky() {
   inspectSky = environment.inspect;
   const scheduleBake = (change: () => void) => {
     // Authoring rebakes and prepared endpoints must not mutate one another.
-    if (evening || skyArt) return;
+    if (evening) return;
     change();
     dirtySky = true;
     if (timer) clearTimeout(timer);
@@ -356,7 +351,7 @@ export function createFrozenWaterSky() {
     update,
     inspect: () => ({
       tod: timeOfDay,
-      art: skyArt ?? (toySkyEnabled ? 'toy' : 'current'),
+      art: 'summer',
       readyMs,
       ready: baked,
       disposed,

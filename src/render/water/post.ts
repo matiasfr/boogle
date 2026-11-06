@@ -1,13 +1,12 @@
 // One production Neutral output, after underwater HDR. AgX remains in the opt-in look comparisons.
 import { pipeline } from '../scene.ts';
-import { agx, TSL, type N } from '../tone.ts';
+import { TSL, type N } from '../tone.ts';
 import { fixedExposureGain } from '../exposure.ts';
 import { bind, onChange, scalar, tuningEnabled } from './live.ts';
 import { createWaterBloom } from './bloom.ts';
 import { NeutralToneMapping } from 'three/webgpu';
 import { toneMapping } from 'three/tsl';
 import { registerGraphics } from '../../graphics-settings.ts';
-import { toyNeutral, toySkyEnabled } from './flags.ts';
 
 const { Fn, If, pow, select, vec3, vec4, float, mix, dot, max } = TSL;
 
@@ -15,7 +14,6 @@ export function installWaterPost(source: N, cameraDepth: N) {
   const previous = pipeline.outputNode;
   const transform = pipeline.outputColorTransform;
   // Authored fixed gain for the frozen lighting state; no meter draws or history copy.
-  const neutral = !toySkyEnabled || toyNeutral;
   const params = { contrast: 1, saturation: 1 };
   const contrast = scalar('post.contrast', params, 'contrast');
   const saturation = scalar('post.saturation', params, 'saturation');
@@ -23,18 +21,12 @@ export function installWaterPost(source: N, cameraDepth: N) {
   const agxPower = scalar('post.agxPower', look, 'power');
   const agxSaturation = scalar('post.agxSaturation', look, 'saturation');
   let compare: ((hdr: N, gain: N) => N) | undefined;
-  let curve = () => (neutral ? 'neutral' : 'agx');
+  let curve = () => 'neutral';
   let stopCompare = () => {};
   const makeOutput = (hdr: N) =>
     Fn(() => {
       const gain = fixedExposureGain(cameraDepth);
-      let c = compare
-        ? compare(hdr, gain)
-        : neutral
-          ? toneMapping(NeutralToneMapping, 1, vec4(hdr.rgb.mul(gain), 1)).rgb
-          : tuningEnabled
-            ? agx(hdr.rgb.mul(gain), agxPower, agxSaturation)
-            : agx(hdr.rgb.mul(gain));
+      let c = compare ? compare(hdr, gain) : toneMapping(NeutralToneMapping, 1, vec4(hdr.rgb.mul(gain), 1)).rgb;
       if (tuningEnabled) {
         c = c.toVar();
         If(contrast.notEqual(1), () => {
@@ -99,7 +91,7 @@ export function installWaterPost(source: N, cameraDepth: N) {
   });
   return {
     async prepare() {
-      if (!tuningEnabled || toySkyEnabled) return;
+      if (!tuningEnabled) return;
       const looks = await import('./looks.ts');
       compare = looks.prepareLooks(agxPower, agxSaturation);
       curve = looks.activeLookCurve;

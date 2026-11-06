@@ -1,5 +1,4 @@
 import { tuningEnabled, onChange } from '../../render/water/live.ts';
-import { toySkyEnabled } from '../../render/water/flags.ts';
 import {
   LOOKS,
   isLook,
@@ -19,11 +18,9 @@ import { no, ok, type Tool } from './types.ts';
 const unavailable = () =>
   !tuningEnabled
     ? 'Open Place with Dev or tune=1.'
-    : toySkyEnabled
-      ? 'Looks compares the procedural sky. Reload without sky=toy.'
-      : !looksReady()
-        ? 'Looks is preparing behind loading.'
-        : null;
+    : !looksReady()
+      ? 'Looks is preparing behind loading.'
+      : null;
 export const tool: Tool = {
   id: 'looks',
   label: 'Looks',

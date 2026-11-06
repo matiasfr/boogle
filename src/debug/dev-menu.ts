@@ -158,7 +158,7 @@ export function installDevMenu() {
     const water = await import('../render/water-render.ts');
     await water.waterReady;
     const flags = await import('../render/water/flags.ts');
-    if (flags.newWaterEnabled && !flags.toySkyEnabled) {
+    if (flags.newWaterEnabled) {
       const looks = await import('../render/water/looks.ts');
       if (!looks.looksReady())
         await new Promise<void>((resolve) => {

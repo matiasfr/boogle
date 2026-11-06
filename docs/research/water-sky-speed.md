@@ -1,3 +1,5 @@
+> **Note (6 November):** `skySize`, `dev/look/beats/sky-size.ts` and the 512/256 comparison were removed with the summer-sky default; this page is historical.
+
 # Water and sky speed investigation — 5 November 2026
 
 **Partial.** The owner exception permits early work before the round-4 replay, on this branch only.

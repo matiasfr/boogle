@@ -4,7 +4,6 @@ import { toneMapping } from 'three/tsl';
 import { BUILD } from '../../build-id.ts';
 import { agx, TSL, type N } from '../tone.ts';
 import { bindings, bindingDefaults, tuningEnabled, type Value } from './live.ts';
-import { toySkyEnabled } from './flags.ts';
 import { graphicsOverrides } from '../../graphics-settings.ts';
 import { exposureSettings } from '../exposure.ts';
 
@@ -30,7 +29,7 @@ let selected: LookId = 'current',
 let explicit = false,
   ready = false;
 const subscribers = new Set<() => void>();
-if (tuningEnabled && !toySkyEnabled) {
+if (tuningEnabled) {
   try {
     const saved = JSON.parse(localStorage.getItem(LOOK_STORAGE) ?? 'null');
     if (saved?.version === 1 && isLook(saved.selected)) {
@@ -167,7 +166,7 @@ export function lookSnapshot() {
     b,
     ready,
     modified,
-    sky: toySkyEnabled ? 'toy (unsupported)' : 'procedural frozen late morning',
+    sky: 'summer frozen late morning',
     curve: LOOKS[selected].curve,
     midtoneChromaLift: LOOKS[selected].lift,
     exposure: {
