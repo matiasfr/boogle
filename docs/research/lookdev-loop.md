@@ -88,7 +88,7 @@ npm run tune -- snapshot --session
 node dev/look/shots.ts dev/look/beats/dev-looks.ts --name looks-a
 ```
 
-`dev=1` or `tune=1` enables water live uniforms; ordinary visits fold many settings into constants. The central URL path accepts numeric `t.<id>=<value>` overrides, e.g. `t.post.centre=0.12`. `lookPreset` selects a named Look. `evening=1` prepares day/evening and starts evening; `evening=preview` prepares both and starts day, with [setEveningLook](../../src/render/water/evening-transition.ts) requesting the fade. `skySize=512|256` selects smaller cubes; otherwise 1024. These change startup preparation, not cheap per-cell uniforms. `sky=toy` and its toy controls are retained opt-in experiments. `water=old/new` are retired selectors in [flags.ts](../../src/render/water/flags.ts), even though an older example list still includes `water=new`. **C**
+`dev=1` or `tune=1` enables water live uniforms; ordinary visits fold many settings into constants. The central URL path accepts numeric `t.<id>=<value>` overrides, e.g. `t.post.centre=0.12`. `lookPreset` selects a named Look. `evening=1` prepares day/evening and starts evening; `evening=preview` prepares both and starts day, with [setEveningLook](../../src/render/water/evening-transition.ts) requesting the fade. The sky cube is always 1024 (`skySize` is retired). These change startup preparation, not cheap per-cell uniforms. `sky=toy` and its toy controls are retired. `water=old/new` are retired selectors in [flags.ts](../../src/render/water/flags.ts), even though an older example list still includes `water=new`. **C**
 
 ### What one iteration costs now
 

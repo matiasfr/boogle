@@ -1,7 +1,7 @@
 # 6.18 Graphics and devices
 
 - **Production frozen sky.** Place and crossing use the [graduated water](water.md) and its one-bake
-  late-morning atmosphere at `tod=0.24`, with metered Neutral. The cube supplies background, directional fog,
+  late-morning summer sky (owner, 6 November; original cumulus art, no flag) at `tod=0.24`, with metered Neutral. The cube supplies background, directional fog,
   environment and hemisphere fill, with the matching real sun and shadows. Live tuning and Looks remain.
   The separate `sky=demo` loader, `skyBake` diagnostic and `proto=water` demo are archived; the
   [sky comparison](../research/sky-comparison.md) is historical evidence. Classic retains its own sea/sky
@@ -87,7 +87,7 @@
   retaining masks, transparency, skinning and instance transforms. Lighting, shadows, environment, material AO,
   emissive light, fog and water-receiver caustics/wetness are excluded. `?view=raw` also bypasses the post chain,
   exposure and tone mapping, retaining the required linear-to-sRGB display encoding. Existing unlit effects keep
-  their authored output. The current procedural sky and water remain by default; `viewSky=off` and
+  their authored output. The current sky and water remain by default; `viewSky=off` and
   `viewWater=off` hide them independently. In Dev, Local Tunables `view.mode` (0 lit / 1 unlit / 2 raw),
   `view.sky` and `view.water` (0 hidden / 1 current) switch live. First use compiles diagnostic materials.
   Returning all three to defaults removes the render/draw hooks. Ordinary visits load no diagnostic chunk and

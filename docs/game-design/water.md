@@ -61,8 +61,7 @@ values are unchanged. See [the rebased comparison](../research/color-defaults.md
 The fade is a Local DOM veil owned/disposed by the sea, with no extra render pass or light. Authoring sky-rebake
 controls are inactive while prepared evening is enabled. No sky allocation/bake is added on ordinary visits.
 The two raw/filtered pairs model approximately 256 MiB before scratch/LUTs, not measured residency;
-the opt-in `skySize` comparison applies the same selected size to both prepared endpoints. The default remains
-1024; smaller-sky visual acceptance and device memory acceptance remain separate work. The experiment makes no device budget claim.
+both prepared endpoints use the one 1024 size. Device memory acceptance remains separate work. The experiment makes no device budget claim.
 
 ### Evening verification (5 November)
 
@@ -128,13 +127,6 @@ once behind loading at `tod=0.24`; Neutral remains the default output after unde
 Surface swimming and automatic high-fall plunges are unchanged; there is no new input or breath mechanic.
 Desktop remains high and coarse-pointer/mobile quality remains 0.6 world resolution. Camera and fog ranges stay.
 
-`skySize=512` and `skySize=256` are Local, reload-only comparisons of the same atmosphere/cloud bake,
-prepared behind the existing loading screen. The default remains 1024; other values also select 1024.
-Water/fog LODs adjust for cube size to retain their original angular blur, and ambient fill samples the final mip.
-The HDR cube's texel payload including all six mip chains is approximately 64/16/4 MiB for 1024/512/256;
-this excludes atmosphere LUTs, generated PMREM and GPU allocation padding. The comparison changes neither
-the bake parameters nor the once-per-load production cadence. Smaller skies are not yet approved as the default.
-
 Place's visible seabed continues beyond its rectangular terrain grid along the shore atlas's smooth offshore
 apron. A deeper render-only tail ends at 240 m below sea level, where even blue seabed transmission is below
 0.05%, so refraction cannot expose another bright rectangle. The extension shares the terrain draw and material;
@@ -160,52 +152,28 @@ This reuses `codex/color-vibrance-3`'s width-zero bounded output;
 the meter is no longer constructed, so both meter draws and the history copy stop. HDR targets, sky,
 and water optics retain their existing values. Looks' **Current** matches
 this output; **Sunny toys** and **AgX Punchy** retain AgX comparisons. The frozen late-morning sky, water
-parameters and terrain are unchanged. The explicit `sky=toy` experiment keeps its own output choices.
-The earlier .16 calibration is retained in [measurements](../research/fixed-exposure.md) as history.
+parameters and terrain are unchanged. The earlier .16 calibration is retained in [measurements](../research/fixed-exposure.md) as history.
 Dev Water/Post shows these new defaults and resets to them through the existing bindings. Classic home is unchanged.
 Camera-facing scoped ink and new reward particles compensate the inverse surface gain; physical painted boards,
 the price atlas, smoke and dust do not.
 
-## Bounded sky art comparison (6 November 2026)
+## The summer sky (6 November 2026)
 
-`?sky=windpaint` and `?sky=summer` select Local loading-time art through the same
-`createWaterSkyFor()` cube used by water, fog, PBR reflections and hemisphere fill.
-The default remains the current procedural sky. The [skybox research](../research/skybox.md)
-owns the visual brief; these flags await the owner's comparison, not rollout.
+The owner chose `summer` as the daytime sky ("I like the colors there"), so it is the sky of the real sea
+(Place and crossing) with no flag. `water/sky-art.ts` bakes it through the same `createWaterSkyFor()` cube used by
+water, fog, PBR reflections and hemisphere fill: original direction-space cumulus, thirteen uneven clusters with varied
+aspect/size, soft bases and a saturated blue ramp with horizon haze. It keeps current water, production Neutral post,
+surface gain .12, key/fill 1.12/3.2, cloud radiance .8 and neutral scene lights (owner cell 5); only cloud radiance
+changes with the art, and the physical sun direction and water's solar lobe remain. The cube is always 1024.
+Recipe values live in `sky-art.ts`; edit and reload. Cube RGB contains no sun disc, and alpha remains sun
+transmittance. `inspect()` reports the cube payload, bake count, CPU bake submission time and readiness; none establish
+device residency or real-time smoothness. No shared state, network shapes or gameplay change.
 
-Windpaint uses original direction-space cel clouds, three faint spiral accents, broad softened
-blue palette bands and a cream disc/halo. Summer reuses toySky's cumulus lobe recipe with thirteen
-uneven clusters, varied aspect/size, soft bases and a saturated blue ramp with stronger horizon haze.
-The existing `sky=toy` control is unchanged. Both new flags keep current water and production Neutral
-post, surface gain .12, key/fill 1.12/3.2, cloud radiance .8 and neutral scene lights (owner cell 5).
-Only cloud radiance changes with the art; the physical sun direction and water's solar lobe remain.
-
-Both flags force one 1024 cube and disable the separate evening preparation and in-play authoring
-rebakes. Recipe values live in `water/sky-art.ts`; edit/reload to compare. Cube RGB contains no sun
-disc, and alpha remains sun transmittance. `inspect()` reports recipe, cube payload, bake count,
-CPU bake submission time and readiness through GPU fill readback; none establish device residency
-or real-time smoothness. No shared state, network shapes or gameplay change.
-
-GOBI remains pending the actual pack and source-page licence verification: this job's local-only
-network restriction prevents downloading it. The cached preview JPEG is not used as a game asset.
-
-## Opt-in Sunshine sky comparison
-
-`?proto=place&sky=toy&toyTone=neutral` selects original stylized sky art baked into the existing
-1024² HDR cube: a blue gradient and six sparse cumulus groups. The same cube supplies background, fog,
-environment and hemisphere fill; the physical late-morning sun direction/colour and cloud-alpha sun disc stay.
-FFT waves, shore geometry, caustics, foam coverage, refraction and underwater features remain. Only local optical
-tuning changes: cyan scatter/absorption, restrained reflection tint/cap, sun gain and foam/glitter brightness.
-No room state or gameplay changes. No change without `sky=toy`.
-
-`toyWater=off` isolates sky/fill from water tuning; omit `toyTone=neutral` for this experiment's retained AgX.
-`toyVariant=soft|clear|punch` compares softer blue, the default clear balance, and stronger cyan water.
-Neutral uses the shared fixed gain and underwater offset, with no per-curve exposure trim or second output pass.
-The normal `tone=` flag remains inactive on new water. AgX Punchy is a separate experiment.
-Optional `tune=1` keeps the existing controls and Copy/Apply settings; these reset to the selected experiment's
-values on this route. Toy cloud shape/coverage is authored in code, so the physical sky's cloud-coverage control
-does not reshape it. Saved tuning overrides can supersede the preset; use clean settings for comparisons.
-See [Sunshine sky research](../research/sunshine-sky.md) for the visual verdict and settings. This optional sky experiment is not the default.
+Windpaint, the toy sky (`sky=toy`, `toyWater`, `toyTone`, `toyVariant`), the `sky=` selector and `skySize` are
+archived and removed; the [skybox research](../research/skybox.md) and
+[Sunshine sky](../research/sunshine-sky.md) keep their history. Classic keeps its own sea and day/night sky.
+Evening is decided later: `evening=1|preview` still prepares the procedural evening atmosphere beside the summer day.
+GOBI remains pending the actual pack and source-page licence verification.
 
 ## Production water tuning
 
