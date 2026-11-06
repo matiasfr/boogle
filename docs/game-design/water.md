@@ -2,6 +2,22 @@
 
 ## Visual pipeline stages 0–1 (5 November 2026)
 
+The iPhone follow-up (5 November, 23:45: clouds too bright and lighting too warm) is compared by
+`dev/look/beats/cloud-warmth.ts` at the real first-visit landing camera and the existing town doorway.
+Local authoring controls `sky.cloudBrightness` (1/.8/.6, cloud radiance before atmospheric compositing) and
+`sky.lightColourProfile` (0=current, 1=neutral, 2=slightly cool) retain defaults 1 and 0. The latter preserves
+each light colour's linear luminance while replacing key, upper fill and ground fill chromaticity; profiles
+are not measured Kelvin temperatures. Neutral uses equal linear RGB; cool uses RGB .9/.97/1.1 normalized
+to the source luminance. Gain stays .12, key/fill gains stay 1.12/3.2, and no post white-balance grade is added.
+Cloud edits rebake the sky cube and re-read hemisphere irradiance, affecting sky, haze and water reflections
+together. Coverage and cloud shape stay fixed. `prepareFrozenLighting()` finishes the queued preparation
+without advancing simulation or shader time; frozen capture waits for it before effective light readback.
+Prepared evening visits do not expose the cloud edit. The separate first-visit 3D cloud deck and white
+crossing overlay are unchanged: the fixture captures after landing and control release. Morning-reference
+cell 1 reconstructs the recorded settings on the current build. Owner selection and device replay remain open.
+The actual first gameplay camera points down, with no sky in frame. A separately labelled upward glance
+from that same spawn position supplements its board; it is not presented as the first gameplay framing.
+
 The owner comparison uses `dev/look/beats/visual-pipeline.ts`: fixed Neutral, bloom off and full fixed resolution,
 surface gain 0.12/0.14/0.16 against current key/fill 1.12/3.2, softer 0.96/4, and stronger 1.28/2.4.
 Calibration/Buddy, town/doorway and shore/horizon are authored fixtures, not played progression. Cell 1 rebuilds
