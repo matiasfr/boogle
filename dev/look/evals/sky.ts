@@ -3,7 +3,7 @@
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const q = new URLSearchParams(location.search);
 const shot = q.get('skyShot') ?? 'home';
-const tod = Number(q.get('tod') ?? 0.24);
+const tod = 0.24; // the fixed time of day
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -11,8 +11,6 @@ const { teleport } = (await import(
 const { paintAvatar } = (await import(
   '/src/player/avatars.ts' as string
 )) as typeof import('../../../src/player/avatars.ts');
-const { onFrame } = (await import('/src/loop.ts' as string)) as typeof import('../../../src/loop.ts');
-const { skyDebug } = (await import('/src/render/sky.ts' as string)) as typeof import('../../../src/render/sky.ts');
 while (!me.body || !me.avatar) await wait(50);
 await wait(1200);
 me.colorIdx = 5;
@@ -67,8 +65,6 @@ if (shot === 'wide') {
   cam = [p.x - 9, y + 5, p.z - 16];
   target = [p.x + 8, y + 4, p.z + 110];
 }
-// Place's own day writes preview after updateSky; override before the next sky update for a truly identical sun.
-onFrame(() => skyDebug.preview(tod, 0.5), { phase: 'update', order: -6 });
 teleport(me.body!, ...pos);
 me.body!.velocity.set(0, 0, 0);
 me.yaw = 0;

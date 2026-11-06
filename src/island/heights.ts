@@ -22,7 +22,4 @@ export const cellOf = (x: number, z: number): [number, number] => [
   Math.min(GRID_RES - 2, Math.max(1, Math.round((HALF - z) / CELL))),
 ];
 
-export const baseGroundHeight = (x: number, z: number) => heightIn(heights, x, z);
-// Local surface experiments may replace a bounded patch; authored/lockstep heights stay untouched.
-export const groundSurface: { sample?: (x: number, z: number) => number | null } = {};
-export const groundHeight = (x: number, z: number) => groundSurface.sample?.(x, z) ?? baseGroundHeight(x, z);
+export const groundHeight = (x: number, z: number) => heightIn(heights, x, z);

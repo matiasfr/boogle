@@ -4,9 +4,7 @@
 // terrain is built; its index.ts (meshes, colliders, lights, per-frame updates) is loaded later by
 // src/features/pois.ts. Add or delete a folder to add or remove a POI; nothing else on the island changes.
 import { createIsland } from './stamps.ts';
-import { islandBaseCm, islandSampler } from './ground.ts';
-import { originalNaturalHeight } from './shape.ts';
-import { LOW_ISLAND } from '../proto/flags.ts';
+import { islandBaseCm } from './ground.ts';
 import { placeSite } from './layout.ts';
 import type { Site } from './stamps.ts';
 
@@ -25,5 +23,3 @@ const sites = Object.keys(found)
 export const island = createIsland(sites);
 // Base heights in cm on the world grid (ground.ts): the fixed ground the terrain mesh and heightfield are built from.
 export const baseCm = islandBaseCm(island);
-// Cave trenches differ only outside the home palm scatter region; all home POI stamps remain unchanged.
-export const placementGroundHeight = LOW_ISLAND ? islandSampler(createIsland(sites, originalNaturalHeight)) : undefined;

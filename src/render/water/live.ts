@@ -1,10 +1,10 @@
 // Local rendering controls. Off-route calls return the original constants and allocate no uniforms.
 import { Vector3 } from 'three/webgpu';
-import { newWaterEnabled } from './flags.ts';
+
 import { TSL, type N } from './tsl.ts';
 import { tuningVisit } from '../../dev-preferences.ts';
 
-export const tuningEnabled = newWaterEnabled && tuningVisit;
+export const tuningEnabled = tuningVisit;
 export type Value = number | number[];
 export type Binding = { get(): Value; set(value: Value): void };
 export const bindings = new Map<string, Binding>();

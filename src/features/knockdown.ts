@@ -6,7 +6,7 @@ import type { Avatar } from '../player/avatars.ts';
 import * as THREE from 'three';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { material } from '../render/materials.ts';
-import { newWaterEnabled } from '../render/water/flags.ts';
+
 import { boing, farGain } from '../render/boing.ts';
 import { PLAYER_R, HEAD_OFFSET } from '../constants.ts';
 import { lerp } from '../math.ts';
@@ -27,8 +27,8 @@ function onRemoteDown(r: Remote) {
 }
 
 // ---------------------------------------------------------------- flop + stars
-// Linear HDR radiance: metered water AgX needs more than the default sea's Neutral output.
-const STAR_BRIGHTNESS = newWaterEnabled ? 6 : 1.5;
+// Linear HDR radiance under the real sea's fixed exposure.
+const STAR_BRIGHTNESS = 6;
 const starTex = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 64;

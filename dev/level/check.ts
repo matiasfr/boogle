@@ -1,10 +1,10 @@
-// One entry point for classic composition and Round 4 (place) progression. Known classic issues keep their bounded
-// allowances; place assertions have no allowances. The browser's default URL selects Round 4, not classic.
+// One entry point for the classic island's composition and Round 4 (place) progression. Known classic issues keep their
+// bounded allowances; place assertions have no allowances. The classic island stands in the same world, at the origin.
 //   npm run level-check                           classic + layout fixtures + place progression
 //   npm run level-check -- --all                  also print known classic issues and their reasons
 //   npm run level-check -- --place=place          only place progression, all existing states and facts
 //   npm run level-check -- --place=classic        classic + layout fixtures
-//   npm run level-check -- --island=low --all      only classic-low, including known issues
+
 //   npm run level-check -- my-layout.json         only that classic layout fixture
 //   npm run level-check -- --json                 coverage, issues, allowances and place facts as JSON
 //   npm run level-check -- --place=place --physics --region=T3 --state=empty
@@ -17,7 +17,6 @@ import type { Issue } from './rules.ts';
 
 const argv = process.argv.slice(2);
 const t0 = performance.now();
-const low = argv.includes('--island=low');
 const physics = argv.includes('--physics');
 const replay = argv.includes('--replay');
 const place = argv.find((a) => a.startsWith('--place='))?.slice('--place='.length);
@@ -27,18 +26,18 @@ const json = argv.includes('--json');
 const bad = argv.filter(
   (a) =>
     a.startsWith('--') &&
-    !['--all', '--json', '--island=low', '--place=classic', '--place=place', '--physics', '--replay'].includes(a) &&
+    !['--all', '--json', '--place=classic', '--place=place', '--physics', '--replay'].includes(a) &&
     !((a.startsWith('--region=') || a.startsWith('--state=') || a.startsWith('--fixture=')) && physics),
 );
 if (
   bad.length ||
   argv.filter((a) => a.startsWith('--place=')).length > 1 ||
-  (physics && (place !== 'place' || low || files.length || replay)) ||
+  (physics && (place !== 'place' || files.length || replay)) ||
   (replay && argv.length !== 1) ||
-  (place === 'place' && (low || files.length))
+  (place === 'place' && files.length)
 ) {
   console.error(
-    `level-check: unsupported selection${bad.length ? `: ${bad.join(', ')}` : ''}. Use --place=classic|place, --island=low, or a layout file; --physics requires --place=place; --replay runs alone.`,
+    `level-check: unsupported selection${bad.length ? `: ${bad.join(', ')}` : ''}. Use --place=classic|place or a layout file; --physics requires --place=place; --replay runs alone.`,
   );
   process.exit(2);
 }
@@ -53,14 +52,12 @@ if (physics) {
 async function runChecks() {
   const classic = place !== 'place';
   const build = sourceBuild();
-  const checkPlace = place === 'place' || (!place && !low && !files.length);
+  const checkPlace = place === 'place' || (!place && !files.length);
   const coverage = {
     defaultBrowser: 'place (Round 4; ?proto=place&fresh=1&coop=1)',
-    included: [...(classic ? [low ? 'classic-low' : 'classic'] : []), ...(checkPlace ? ['place'] : [])],
+    included: [...(classic ? ['classic'] : []), ...(checkPlace ? ['place'] : [])],
     excluded: [
-      ...(!low ? [{ scope: 'classic-low', reason: 'Opt-in comparison surface; request --island=low.' }] : []),
       ...(!classic ? [{ scope: 'classic', reason: 'Only --place=place was selected.' }] : []),
-      ...(low ? [{ scope: 'classic', reason: 'The classic-low surface was selected instead.' }] : []),
       ...(!checkPlace ? [{ scope: 'place', reason: 'An explicit classic surface or layout was selected.' }] : []),
       ...(classic
         ? [
@@ -104,9 +101,6 @@ async function runChecks() {
   const report: unknown[] = [];
   let stale: Allow[] = [];
   if (classic) {
-    if (low)
-      Object.defineProperty(globalThis, 'location', { value: { search: '?classic=1&island=low&room=island-low' } });
-    // Site modules read natural heights while composing cave approaches: select the surface before importing them.
     const { loadLevel, root } = await import('./level.ts');
     const { budgets, checkLevel } = await import('./rules.ts');
     const layouts = fs
@@ -114,7 +108,7 @@ async function runChecks() {
       .filter((f) => f.endsWith('.json'))
       .sort()
       .map((f) => `dev/layouts/${f}`);
-    const asked = files.length ? files : low ? [null] : [null, ...layouts];
+    const asked = files.length ? files : [null, ...layouts];
     const allowList = files.length ? ALLOW.filter((a) => a.level === 'all') : ALLOW;
     const usage = new Map<Allow, number>();
     function allowFor(level: Level, i: Issue) {
@@ -130,7 +124,7 @@ async function runChecks() {
     }
     for (const file of asked) {
       const level = loadLevel(file);
-      const name = file ? `${low ? 'classic-low' : 'classic'}/${level.name}` : low ? 'classic-low' : 'classic';
+      const name = file ? `classic/${level.name}` : 'classic';
       const issues = checkLevel(level);
       const fresh: Issue[] = [];
       const allowed: { issue: Issue; reason: string }[] = [];
@@ -163,7 +157,7 @@ async function runChecks() {
           console.log(`    Why it's allowed: ${reason}`);
         }
     }
-    stale = files.length || low ? [] : allowList.filter((a) => (usage.get(a) ?? 0) < (a.max ?? 1));
+    stale = files.length ? [] : allowList.filter((a) => (usage.get(a) ?? 0) < (a.max ?? 1));
     for (const a of stale)
       console.error(
         `dev/level/allow.ts: "${a.level} ${a.rule} ${a.match}" matches ${usage.get(a) ?? 0} of ${a.max ?? 1}: lower or remove it.`,

@@ -1,10 +1,13 @@
 // Local lighting calibration. Shared with readable-unlit material authoring; never sampled from scene colour.
 import { TSL, type N } from './tone.ts';
 import { scalar } from './water/live.ts';
-import { newWaterEnabled } from './water/flags.ts';
+
 import { EXPOSURE_SPEC } from './exposure-tuning.ts';
 
-export const exposureSettings = { centre: newWaterEnabled ? EXPOSURE_SPEC.default : 1, underwaterEV: 0.81 };
+export const exposureSettings: { centre: number; underwaterEV: number } = {
+  centre: EXPOSURE_SPEC.default,
+  underwaterEV: 0.81,
+};
 export const surfaceExposure = scalar('post.centre', exposureSettings, 'centre');
 const underwaterEV = scalar('post.underwaterEV', exposureSettings, 'underwaterEV');
 

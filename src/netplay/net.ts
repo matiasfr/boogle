@@ -1,7 +1,7 @@
 import { BUILD } from '../build-id.ts';
 import { background } from '../async.ts';
 import { pageQuery, productionRailway } from '../proto/flags.ts';
-import { COLORS, DEFAULT_NAME, CLASSIC_ROOM, SEND_MS } from '../constants.ts';
+import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, SEND_MS } from '../constants.ts';
 import { finiteArr, r2, sanitizeName } from '../math.ts';
 import { createWsRoom, type Room } from '../net/ws-room.ts';
 import { attachWorld, detachWorld, setPid, setSelfId } from '../world/sync.ts';
@@ -64,7 +64,7 @@ export const net = {
 };
 export const remotes = new Map<string, Remote>();
 
-// Effective flags assign Place's room; classic and headless tools retain beach and its saved world.
+// Effective flags assign the room: the bare address and headless tools open the current game's.
 // Anything outside [a-z0-9-]{1,32} is stripped from an explicit room.
 export function getRoomId() {
   let raw = '';
@@ -78,7 +78,7 @@ export function getRoomId() {
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, '')
     .slice(0, 32);
-  return id || CLASSIC_ROOM;
+  return id || DEFAULT_ROOM;
 }
 
 function peerColor(peer: string) {

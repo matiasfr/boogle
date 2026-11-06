@@ -26,7 +26,6 @@ export const FOG_FAR = 520;
 export const COLORS = ['#ff6b5a', '#ffc23d', '#7fd14a', '#19c3b3', '#3d9bff', '#9b6bff', '#ff6fb5', '#ff9a3d'];
 export const DEFAULT_NAME = 'Dat Frinco';
 export const DEFAULT_ROOM = 'boogle';
-export const CLASSIC_ROOM = 'beach';
 
 // Absent in Node (state.ts files load there: test/entity-state-node.test.ts).
 export const isTouch = globalThis.matchMedia?.('(pointer: coarse)').matches ?? false;

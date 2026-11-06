@@ -1,5 +1,5 @@
 import { tuningEnabled, bindings } from '../../render/water/live.ts';
-import { newWaterEnabled } from '../../render/water/flags.ts';
+
 import { showWaterTuning } from '../water-tuning.ts';
 import { command, note } from './ui.ts';
 import { no, ok, type Tool } from './types.ts';
@@ -16,16 +16,12 @@ export const tool: Tool = {
   label: 'Water',
   scope: 'Local appearance only. The shipped production-water panel owns these controls.',
   commands: ['settings', 'reload'],
-  available: () => (tuningEnabled ? null : 'Open Place with Dev or tune=1 to tune the sea.'),
+  available: () => (tuningEnabled ? null : 'Open with Dev or tune=1 to tune the sea.'),
   run(command) {
     if (command === 'reload') {
       const url = new URL(location.href);
       url.searchParams.delete('water');
       url.searchParams.set('tune', '1');
-      if (!newWaterEnabled) {
-        url.searchParams.set('proto', 'place');
-        url.searchParams.delete('room');
-      }
       location.assign(url.href);
       return ok('Reloading with tuning.');
     }

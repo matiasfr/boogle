@@ -5,7 +5,6 @@ import { clamp, lerp } from '../math.ts';
 import { warmUp } from '../render/precompile.ts';
 import { readableUnlit } from '../render/readable-unlit.ts';
 import { playMark } from '../proto/mark.ts';
-import { newWaterEnabled } from '../proto/flags.ts';
 
 const eyeGeo = new THREE.SphereGeometry(0.12, 12, 8);
 const pupilGeo = new THREE.SphereGeometry(0.055, 10, 6);
@@ -106,7 +105,7 @@ export function paintAvatar(mat: THREE.MeshStandardMaterial, colorIdx: number, f
   mat.emissive.copy(mat.color);
   mat.emissiveIntensity = fill;
   // The pigment changes albedo only; keep the original emissive fill.
-  if (newWaterEnabled && mat.name === 'M_Main') mat.color.copy(PIGMENTED[colorIdx]!);
+  if (mat.name === 'M_Main') mat.color.copy(PIGMENTED[colorIdx]!);
 }
 
 // Group origin is the center of the foot sphere; the avatar faces -Z at rotation 0.

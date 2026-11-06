@@ -18,7 +18,6 @@ const debugFlags = [
   'record',
   'startup',
   'tune',
-  'devshore',
   'setup',
   'fixture',
   'test',

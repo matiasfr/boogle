@@ -2,7 +2,7 @@
 // Local; Ultra Water research recommendations 4/7. The terrain registers before the sea owns its shared resources.
 import type { Material, MeshStandardNodeMaterial } from 'three/webgpu';
 import { patchNode } from '../material-patch.ts';
-import { newWaterEnabled } from './flags.ts';
+
 import { CAUSTIC_TEXELS_PER_M, type CausticSample } from './caustics.ts';
 import { swashNodes, vnoise, type ShoreFields } from './shore-nodes.ts';
 import { seaU } from './state.ts';
@@ -178,7 +178,6 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
 }
 
 export function registerWaterReceiver<T extends MeshStandardNodeMaterial>(mat: T, sand?: WetSandProfile): T {
-  if (!newWaterEnabled) return mat;
   if (sand) sandProfiles.set(mat, sand);
   materials.add(mat);
   if (current) attach(mat, current);

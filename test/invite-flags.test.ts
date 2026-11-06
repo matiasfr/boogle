@@ -25,17 +25,19 @@ test('production invites remain production even though their effective prototype
   }
 });
 
-test('other explicit prototypes and classic comparison invites retain their launch selection', () => {
+test('other explicit prototypes retain their launch selection', () => {
   const prototype = roomInviteQuery('test-room', '?proto=crossing&v=crawl&coop=1');
   assert.equal(pageQuery(prototype).get('proto'), 'crossing');
   assert.equal(pageQuery(prototype).get('v'), 'crawl');
   assert.equal(pageQuery(prototype).get('coop'), '1');
   assert.equal(isProductionRailway(prototype), false);
-  for (const search of ['?classic=1', '?island=low']) {
-    const room = search.includes('low') ? 'island-low' : 'beach';
-    const invite = roomInviteQuery(room, search);
-    assert.equal(isProductionRailway(invite), false);
-    assert.equal(pageQuery(invite).get('classic'), '1');
-    assert.equal(pageQuery(invite).get('island'), pageQuery(search).get('island'));
+});
+
+test('the bare address and headless tools open the current game; retired classic selectors do not', () => {
+  for (const search of ['', '?classic=1', '?island=low', '?room=island-low']) {
+    assert.equal(isProductionRailway(search), true, search);
+    assert.equal(pageQuery(search).get('proto'), 'place', search);
   }
+  assert.equal(pageQuery('?classic=1').get('room'), 'boogle');
+  assert.equal(pageQuery().get('room'), 'boogle'); // Node has no location
 });

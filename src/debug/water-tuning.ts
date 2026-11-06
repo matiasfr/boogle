@@ -6,7 +6,7 @@ import { devInput } from '../player/dev-input.ts';
 import { cancelCharge } from '../player/throw.ts';
 import { releaseJump } from '../entities/player/state.ts';
 import { waterReady } from '../render/water-render.ts';
-import { newWaterEnabled } from '../render/water/flags.ts';
+
 import { bindings, bindingDefaults, type Value } from '../render/water/live.ts';
 import { hasLookChoice } from '../render/water/looks.ts';
 
@@ -302,23 +302,7 @@ export async function showWaterTuning(
         : 'Drag the scene with Free cam, or click the scene to play. Play hides the dock; Esc gives the mouse back.',
     ),
   );
-  if (!newWaterEnabled) {
-    panel.append(
-      node(
-        'p',
-        'This panel tunes the Place and crossing sea. Classic home retains its own sea pending CI qualification.',
-      ),
-    );
-    const link = node('a', 'Open production water');
-    const url = new URL(location.href);
-    url.searchParams.delete('water');
-    url.searchParams.set('proto', 'place');
-    url.searchParams.delete('room');
-    link.href = url.href;
-    panel.append(link);
-    panel.append(more);
-    return close;
-  }
+
   const available = groups.flatMap((g) => g.specs).filter((s) => bindings.has(s.key));
   const byKey = new Map(available.map((s) => [s.key, s]));
   const knownGroups = new Set([...groups.map((g) => g.name), 'Pinned', 'More']);

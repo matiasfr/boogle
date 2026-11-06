@@ -1,6 +1,4 @@
-// Route ownership and retained Local look experiments; water=old/new are no longer selectors.
-export { newWaterEnabled } from '../../proto/flags.ts';
-
+// Retained Local look experiments; every route uses the real sea, and water=old/new are no longer selectors.
 const query = new URLSearchParams(location.search);
 export const eveningPreview = query.get('evening');
 // The summer sky is the day sky (owner, 6 November); the evening endpoint is still the procedural atmosphere.
