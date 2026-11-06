@@ -353,6 +353,13 @@ export function addBlob(x: number, y: number, z: number, w: number, d: number, y
 export function setBlob(k: number, x: number, y: number, z: number, w: number, d: number, yaw = 0, owner?: OwnedView) {
   const mesh = owner ? ownedBlobs.get(owner) : blobMesh;
   if (!mesh || k < 0) return;
-  mesh.setMatrixAt(k, bm.compose(bp.set(x, y + 0.03, z), bq.setFromAxisAngle(UP, yaw), bs.set(w, 1, d)));
-  mesh.instanceMatrix.needsUpdate = true;
+  bm.compose(bp.set(x, y + 0.03, z), bq.setFromAxisAngle(UP, yaw), bs.set(w, 1, d));
+  // Compare the exact uploaded float values, not an epsilon: stationary cars must not dirty the whole blob pool.
+  const data = mesh.instanceMatrix.array;
+  for (let j = 0; j < 16; j++) {
+    if (data[k * 16 + j] === Math.fround(bm.elements[j]!)) continue;
+    mesh.setMatrixAt(k, bm);
+    mesh.instanceMatrix.needsUpdate = true;
+    break;
+  }
 }

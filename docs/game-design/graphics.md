@@ -147,6 +147,10 @@
   captures and cannot use the live Measure button. Shadow/light membership, MSAA reload and first bloom
   enable can compile or allocate; spray/shafts disabled at startup can defer first-use pipelines.
   Live does not mean hitch-free. The 16-second startup escape remains in force.
+- **Unchanged instance data.** Station stock rebuilds its fixed log, rail and stone slots only when their
+  displayed counts change. The continuous track layer's rack keeps its construction-time matrices when
+  its visible count changes. Contact-shadow blobs skip writes only when all sixteen Float32 matrix values
+  already match; moving blobs still update. Geometry, materials, caster coverage and gameplay state are unchanged.
 - **Limits.** Presets are owner-requested starting settings, not an approved final look or device budget. No physical mobile validation. Device
   cost observations and inspected visual evidence are in the [Mac graphics switch report](../research/graphics-switch-costs.md).
   The repeated 1440×900 captures were contended; smaller differences often changed sign. Spray, daylight
