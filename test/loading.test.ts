@@ -31,13 +31,12 @@ test('sw: only hashed build files under the scope are cached', () => {
   assert.equal(cacheable('GET', 'https://x.github.io/other/assets/a-1.js', 'https://x.github.io/boogle/'), false);
 });
 
-test('sw: a new build keeps itself and the build before it', () => {
+test('sw: activation keeps only the current build and leaves other applications alone', () => {
   const names = ['other-cache', cacheName('a'), cacheName('b'), cacheName('c')];
-  assert.deepEqual(stale(names, 'c'), [cacheName('a')]);
+  assert.deepEqual(stale(names, 'c'), [cacheName('a'), cacheName('b')]);
   assert.deepEqual(stale([cacheName('a')], 'a'), []);
-  assert.deepEqual(stale([cacheName('a')], 'b'), []);
-  // Rolled back to a build whose cache is older than the newest: the newest other one stays.
-  assert.deepEqual(stale([cacheName('a'), cacheName('b'), cacheName('c')], 'a'), [cacheName('b')]);
+  assert.deepEqual(stale([cacheName('a')], 'b'), [cacheName('a')]);
+  assert.deepEqual(stale([cacheName('a'), cacheName('b'), cacheName('c')], 'a'), [cacheName('b'), cacheName('c')]);
 });
 
 const e = (id: string, priority: AssetEntry['priority'], when?: AssetEntry['when']): AssetEntry => ({

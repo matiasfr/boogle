@@ -128,8 +128,7 @@ for an update on navigation; this gate controls the page's registration, not the
   and the plain WASM is absent. Rapier 0.21 SIMD is 3,292,228 bytes (1,151,160 gzip); downloading plain as well would
   waste another 1,175,669 gzip bytes on a successful SIMD load. `npm run counts -- --build-only` measures this list
   without a browser. Unchanged hashed files are copied from earlier caches instead of downloaded. `skipWaiting` and
-  `clients.claim`: safe because the worker is generic (a tab on the old build asks for old hashed URLs, found in the
-  old cache or on the network).
+  `clients.claim` activate the current worker; retaining old builds is outside the development contract.
 - **Optional cache:** individual downloads and CacheStorage failures cannot reject install. Cache lookup failure
   falls through to the network, and failed background writes are ignored. Cached responses retain their headers,
   including `application/wasm` for streaming compilation; JS still references its own content-hashed WASM URL.
@@ -138,30 +137,28 @@ for an update on navigation; this gate controls the page's registration, not the
   Storage failures stay optional and writes retain the existing deleted-cache guard.
   Matches ignore `Vary` only for these immutable same-scope assets: Vite preview's `Vary: Origin` otherwise causes
   module requests to miss entries installed by ordinary fetches. Their hashed URLs identify identical bytes.
-- **Versioned purge:** on activate it deletes every build's cache except this one and the one before it
-  (`KEEP_BUILDS = 2`), so a tab left open on the previous build can still load its lazy chunks after the deploy.
+- **Current-build purge:** on activate it deletes every other build's cache. Old tabs may lose lazy chunks, as
+  accepted by the owner's 5 November "No old builds in development" call.
 - **Deploy flow:** a new deploy changes `sw.js` (the build id and the file list are inlined), the browser notices on
   the next navigation (`updateViaCache: 'none'`), the new worker precaches only what changed, and the reload that
   `updates.ts` triggers already finds most files cached.
-- **Old files stay published:** a Pages deploy replaces the whole site, so `deploy.yml` copies what left the build in
-  the last 30 minutes back from the live site (`scripts/keep-old-assets.ts`). A page loading across a deploy, or on an
-  HTML copy Pages cached for 10 minutes, still finds its files. The worker's caches don't cover that: they only hold
-  files this browser has already fetched.
+- **Current files only:** a Pages deploy publishes only the new build. The old-asset backfill script and deploy step
+  were removed under the same owner call. The existing bounded startup reload still handles missing chunks.
 - **Home Screen app:** same origin and scope (`BASE_URL`), so the app and Safari tabs share the worker. Navigations are
   not intercepted, so a launch with no network shows Safari's offline page as today (the game needs the server anyway).
 - **Kill switch:** build with `BOOGLE_SW=off`: that `sw.js` deletes every `boogle-` cache and unregisters itself, and
   the page unregisters instead of registering. `?sw=0` does the same in one browser, for one load. Deleting caches waits
   for the page to finish loading, and the worker never writes into a cache that was deleted (it would come back).
-- **Checked:** `node dev/look/sw-check.ts` serves local production builds A, B, C and a kill-switch build on one
+- **Harness:** `node dev/look/sw-check.ts` serves local production builds A, B, C and a kill-switch build on one
   origin. A changed hashed fixture script in each HTML proves B executes B's assets while unchanged game assets
-  remain cached. Checks cover stale cached HTML bypass, navigation bypass, lazy-model promotion, offline asset
-  reads after A is purged, repeated loads, kill switch and startup with `navigator.serviceWorker` unavailable.
+  remain cached. Checks cover stale cached HTML bypass, navigation bypass, current lazy-model loading, offline asset
+  reads from the current cache, activation purge, repeated loads, kill switch and startup with `navigator.serviceWorker` unavailable.
   The harness waits for `interactive`, not just the diagnostic boot timeout, before recording a completed load.
   Evidence is `.look/sw-check/report.json` and `build-b.png`. Offline navigation is intentionally not supported.
   `test/loading.test.ts` and `test/sw-worker.test.ts` cover the policy and bundled worker's write lifetime, early
   response delivery, current-cache no-rewrite path, failed writes and the deleted-cache guard. These regression
   tests were explicitly requested by the owner for the two approved fixes; they do not broaden the general test diet.
-  On 5 November the final run passed all 12 assertions, including B's changed fixture, zero unchanged-asset network
+  Before the development-compatibility cleanup, the 5 November run passed all 12 assertions, including B's changed fixture, zero unchanged-asset network
   requests on repeats, a 33,508-byte model read offline after A's purge, and unsupported-SW startup. The full solo
   bot also finished with 84 checkpoints and no page/graphics errors; `npm run check` passed 357 tests. See the
   [audit follow-up](../research/glb-delivery-audit.md#approved-fix-follow-up) for evidence and limits.
@@ -198,6 +195,9 @@ Evidence: [before](../../.look/evidence/1793817021139-36172/evidence.json),
 Opened the before/after second-navigation stills: player, island and HUD render with no loading overlay;
 also opened smoke's Alice still, showing both players. Smoke passed all eight checks, no graphics errors.
 Raw server accounting: `.look/http-before.jsonl`, `.look/http-final.jsonl`; page eval: `.look/precache-measure.ts`.
+
+Historical probes below predate the 5 November cleanup: their two-cache retention and asset-backfill claims are
+superseded by the current-build policy above. The multi-deploy browser harness has not been rerun for that cleanup.
 
 Additional local probes: `.look/check-precache-build.log` checks facade removal and rejects missing game, missing
 SIMD WASM, broken SIMD asset edges and eager plain WASM. `.look/check-sw-lifecycle.log` exercises the bundled worker
