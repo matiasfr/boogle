@@ -170,6 +170,19 @@ async function runChecks() {
       );
   }
   if (checkPlace) {
+    const { checkBuildingGrounding } = await import('./grounding.ts');
+    const grounding = checkBuildingGrounding();
+    failed += grounding.failures;
+    report.push(grounding);
+    if (!json) {
+      console.log(
+        `production foundations: ${grounding.rows.length} placements, ${grounding.failures} problems (${grounding.toleranceCm} cm tolerance)`,
+      );
+      for (const row of grounding.rows.filter((row) => row.failed))
+        console.log(
+          `  ${row.id} (${row.x}, ${row.z}): gap ${row.gapCm.toFixed(1)} cm, sink ${row.sinkCm.toFixed(1)} cm`,
+        );
+    }
     const start = performance.now();
     const { runPlaceLevelCheck, printPlaceLevelCheck } = await import('../economy/place-level.ts');
     const result = runPlaceLevelCheck();

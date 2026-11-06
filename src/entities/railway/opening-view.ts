@@ -34,12 +34,12 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   owner.cleanup(() => {
     for (let k = sites.feet.length - 1; k >= 0; k--) if (footprints.has(sites.feet[k]!)) sites.feet.splice(k, 1);
   });
-  const buildings = [...layout.TOWN.start, ...layout.TOWN.camps.flatMap((camp) => camp.asleep)].map(plans.planOf);
-  const townBoxes = buildings.flatMap((plan) => plan.pieces);
+  const buildings = plans.openingBuildings();
+  const townBoxes = buildings.flatMap(({ boxes }) => boxes);
   const town = pieces.dropSet(townBoxes, () => {}, owner);
   town.mesh.material = look.boardMaterial(town.mesh.material as THREE.Material);
   townBoxes.forEach((_, k) => town.snap(k, true));
-  for (const plan of buildings) {
+  for (const { plan } of buildings) {
     sites.hullBodies(plan, plan.hulls, owner);
     foot(plan.x, plan.z, plan.yaw, plan.hw, plan.hd);
   }

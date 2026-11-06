@@ -28,6 +28,13 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 
 ## The place
 
+**Production foundations (5 November repair).** Completed opening buildings retain their permanent foundation slab,
+matching Place's completed construction state; only the temporary scaffold poles disappear. The level check in
+`npm run check` samples the rendered terrain triangles over every production building/forge footprint at at most
+25 cm spacing, including rotated edges. It rejects exposed foundation gaps or terrain above the seating surface
+over 5 cm. The authored below-ground foundation skirt is intentional. This check does not cover future town growth,
+trees, moving props or the old lookout/cart/arch assemblies.
+
 An island about 440 m across, 1 km east of today's, in the crossing's sea. A Y-shaped gorge, with walls about 16-30 m high
 and a river at the bottom, splits it into three lobes: the village (west, 18 m), the timber camp (north ridge, 30 m) and the
 quarry (east table, 24 m). Needle Bell, a leaning 105 m spire, stands where the gorge forks. Two low footbridges cross the
