@@ -15,9 +15,6 @@ import {
   PADS,
   PILLARS,
   SECRETS,
-  SERVICE_ROUTES,
-  SERVICE_WIDTH,
-  routeReady,
   padById,
   ringAt,
 } from '../../src/proto/place/tech-layout.ts';
@@ -225,7 +222,7 @@ export function runPlaceLevelCheck() {
       }
     return best < Infinity;
   };
-  function padsReachable(seen: Uint8Array, have: Have, tracks: [Line, number, number][], routeStage = 0) {
+  function padsReachable(seen: Uint8Array, have: Have, tracks: [Line, number, number][]) {
     const got = new Set<string>();
     // From track: a pad's edge within reach of a laid deck, at a height you can make.
     const fromTrack = (x: number, z: number, y: number, hx: number, rise: number, reach: number) => {
@@ -262,14 +259,6 @@ export function runPlaceLevelCheck() {
           Math.abs(pillar.z - p.z) < p.hz &&
           Math.abs(p.top - (pillar.top - 0.04)) <= 0.3
         );
-        const hookFoot = SERVICE_ROUTES.hook[0]!,
-          quarryFoot = SERVICE_ROUTES.quarry[0]!;
-        ok ||=
-          p.id === 'p2' && routeReady(routeStage).hook && fromTrack(hookFoot.x, hookFoot.z, hookFoot.y, 0, 0.3, 1.4);
-        ok ||=
-          p.id === 'apron' &&
-          routeReady(routeStage).quarry &&
-          groundAt(seen, quarryFoot.x, quarryFoot.z, quarryFoot.y, 0.3, SERVICE_WIDTH / 2);
         // Jumps, from the ground or a deck.
         const rise = have.jump ? TWO_JUMPS : ONE_JUMP,
           reach = courseIds.has(p.id)
@@ -333,40 +322,6 @@ export function runPlaceLevelCheck() {
     const ok = got.has(id);
     assertion(ok, `${id}: ${why}`);
   };
-  section('route-v2', '\nRoute v2: construction-derived walking approaches (geometric bounds, not a physics witness)');
-  assertion(!routeReady(1).hook && routeReady(2).hook, 'Q2 completion alone enables the hook connector');
-  assertion(!routeReady(2).quarry && routeReady(3).quarry, 'Q3 completion alone enables quarry access and drive');
-  assertion(SERVICE_WIDTH >= 3, 'both service walks are at least three metres wide');
-  for (const [name, points] of Object.entries(SERVICE_ROUTES)) {
-    const first = points[0]!,
-      last = points.at(-1)!;
-    assertion(Math.abs(last.y - first.y - 2.2) < 1e-6, `${name}: 2.2 m rise`);
-    for (let i = 1; i < points.length; i++) {
-      const a = points[i - 1]!,
-        b = points[i]!;
-      const run = Math.hypot(b.x - a.x, b.z - a.z);
-      assertion(run / Math.hypot(run, b.y - a.y) >= WALKABLE_NY, `${name} span ${i}: baseline walkable slope`);
-    }
-    const pad = padById(name === 'hook' ? 'p2' : 'apron');
-    assertion(
-      Math.abs(last.x - pad.x) <= pad.hx + 1e-6 && Math.abs(last.z - pad.z) <= pad.hz + 1e-6 && last.y === pad.top,
-      `${name}: high end meets its existing landing`,
-    );
-  }
-  const quarryFoot = SERVICE_ROUTES.quarry[0]!;
-  assertion(
-    Math.abs(H(quarryFoot.x + ORIGIN.x, quarryFoot.z) - quarryFoot.y) < 0.3,
-    'quarry ramp foot meets southern ground',
-  );
-  for (const stage of [1, 2, 3]) {
-    const tracks: [Line, number, number][] = [
-      [N, 30, N.len],
-      [E, 0, LINKS[1]!.stations[stage - 1]!.to],
-    ];
-    const got = padsReachable(flood(tracks), { jump: false, hook: false, glide: false }, tracks, stage);
-    assertion(got.has('p2') === routeReady(stage).hook, `route v2 Q${stage}: baseline hook approach`);
-    assertion(got.has('apron') === routeReady(stage).quarry, `route v2 Q${stage}: baseline quarry approach`);
-  }
   section('double-jump-course', '\nDouble-jump course: edge gaps and dry recovery');
   for (let i = 1; i < JUMP_COURSE.length; i++) {
     const a = JUMP_COURSE[i - 1]!,

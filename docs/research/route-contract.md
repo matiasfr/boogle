@@ -1,5 +1,7 @@
 # Place route contract
 
+**Status (6 November 2026):** the owner adopted recommendations 3–4 as the default game; the `?route=v2` prototype is removed and the behaviour lands with [production-core slice 4](../plans/production-core.md#reviewable-promotion-slices).
+
 _Research report, 6 November 2026. Paper prerequisite for [jump upgrades](../brainstorms/jump-upgrades.md), checked against Place at `500da0dfcf35665502b5ea34e841df5ad19cfe88`, with live primary-source research, the current level check and isolated counterfactual queries of its reachability model. No gameplay changes or implementation approval. Companion: [interactive route map](route-contract.html)._
 
 **Move the extra jump only with a baseline route to the first hook and a construction-operated quarry approach.** Put the expedition find on the existing southern walk to Split-rock Works, before either gate. Complete Q3 to assemble a broad ramp and engage the quarry winch; pulling its lever then releases Q4. Let stronger movement bypass the walk or reach the ledge early, but never supply missing track, connect the winch or pay a station bill. Give the hook pillar a Q2-built walking connection too, so missing the find cannot strand the campaign.
