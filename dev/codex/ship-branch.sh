@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Ship one finished job branch from its worktree: rebase onto origin/main, keep both sides of docs-only conflicts,
 # then `npm run ship -- --wait`. Usage: npm run ship-branch -- ../boogle-codex/<topic>
-# Exit codes: 2 code conflict (nothing shipped, rebase aborted), 3 a commit became empty on rebase (aborted, check it
+# Cancelled CI runs are rerun automatically (twice at most). Exit codes: 2 code conflict (nothing shipped, rebase aborted), 3 a commit became empty on rebase (aborted, check it
 # isn't already on main), otherwise ship's own status. Always read the output: it says whether main has the commits.
 set -uo pipefail
 cd "${1:?worktree path}" || exit 1
@@ -37,6 +37,21 @@ SHIP_NO_AI=1 npm run --silent ship -- --wait 2>&1 | tail -3
 status=${PIPESTATUS[0]}
 git fetch -q origin
 left=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
+# CI's browser install is sometimes cancelled; rerun only cancelled runs (never real failures), up to twice.
+sha=$(git rev-parse HEAD)
+for attempt in 1 2; do
+  [ "$left" = 0 ] && break
+  cancelled=$(gh run list --commit "$sha" --json databaseId,conclusion -q '.[]|select(.conclusion=="cancelled")|.databaseId' 2>/dev/null)
+  [ -n "$cancelled" ] || break
+  for id in $cancelled; do echo "rerunning cancelled run $id"; gh run rerun "$id" --failed >/dev/null 2>&1; done
+  for _ in $(seq 40); do
+    sleep 30
+    git fetch -q origin
+    left=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
+    [ "$left" = 0 ] && break
+    gh run list --commit "$sha" --json status -q '.[].status' 2>/dev/null | grep -qvx completed || break
+  done
+done
 echo "unshipped commits: $left"
 [ "$left" = 0 ] || exit "${status:-1}"
 exit "$status"
