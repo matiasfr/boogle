@@ -34,6 +34,7 @@ const events: {
   gainDb: number;
   take: number;
   time: number;
+  style: number;
 }[] = [];
 const totals = { walk: 0, run: 0, jump: 0, land: 0, culled: 0, stolen: 0, resets: 0 };
 export const locomotionState = () => ({
@@ -151,6 +152,7 @@ function play(a: Avatar, h: History, motion: BuddyMotion, kind: LocomotionKind, 
     surface,
     kind,
     take: selected,
+    style: settings.footstepStyle,
     gain,
     at: now + (victim ? 0.008 : 0),
     pitch: 2 ** (((Math.random() * 2 - 1) * settings.jitterCents) / 1200),
@@ -165,7 +167,7 @@ function play(a: Avatar, h: History, motion: BuddyMotion, kind: LocomotionKind, 
   voices.push(admitted);
   h.lastAt = now;
   totals[kind]++;
-  events.push({ kind, surface, local, gainDb, take: selected, time: now });
+  events.push({ kind, surface, local, gainDb, take: selected, style: settings.footstepStyle, time: now });
   if (events.length > 48) events.shift();
 }
 

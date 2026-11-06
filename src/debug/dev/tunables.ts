@@ -425,6 +425,7 @@ export const tool: Tool = {
       'workDb',
       'socialDb',
       'footstepsDb',
+      'footstepStyle',
       'runningDb',
       'jumpDb',
       'landingDb',
@@ -437,7 +438,8 @@ export const tool: Tool = {
     for (const spec of AUDIO_SPECS) {
       const row = el('label');
       row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0';
-      row.append(el('span', `${spec.id.slice(6)} (${spec.units})`));
+      const name = spec.id.slice(spec.id.lastIndexOf('.') + 1);
+      row.append(el('span', `${name} (${spec.units})`));
       const input = el('input');
       input.type = 'number';
       input.min = String(spec.min);
@@ -461,7 +463,7 @@ export const tool: Tool = {
           refresh();
         }),
       );
-      (primary.has(spec.id.slice(6)) ? inputRows : advanced).append(row);
+      (primary.has(name) ? inputRows : advanced).append(row);
     }
     const signal = more(parent, 'Actual audio nodes');
     const output = el('pre', '', 'dev-output');

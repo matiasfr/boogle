@@ -153,4 +153,9 @@ mitt: a bag of seeds carried down at the hip by the handle, anything else with t
 eyes clear of the water. The Buddy holds the swim pose through up to 0.3 s of wave-induced airborne input; landing/wading or an upward exit faster than 3 m/s clears that presentation grace immediately. Both the clips and the procedural airborne pose use this filtered input; physics and presence still use the original swimming state. It wades where it can stand, and sits in the soapbox on the library's driving clip with its hands down at its sides, instead of
 being squashed into the tub. Throwing, its arm winds up behind its shoulder and flings forward. The beach ball rides lower on its back. Knocked down, it lies flat, sprawled, with the stars over its head.
 
+Foot contacts use quiet synthesized low-mid thumps with brief surface texture. Local
+`character.footstepStyle` selects A soft (0), B textured (1), or C toy tick (2); walk/run trims are
+11 dB below the first shipped footsteps. Jumps and landings stay slightly more present.
+The [contact and mix recipe](place.md#local-mix-and-buddy-contacts-5-november-2026) owns the levels and listening command.
+
 `/character/` is the isolated [asset and animation stage](asset-stage.md), with every Buddy clip, Raw/As played playback through the real body functions, exact seek/frame stepping, hats, views, a crowd of 8 and inspection overlays. Existing clip/time/view/pose/hat links remain supported; `/assets/` redirects to it.

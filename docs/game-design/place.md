@@ -643,8 +643,9 @@ node readings, reset and named A/B mix snapshots. Nothing is sent to room state.
 Buddy's common distance-driven walk/jog/sprint phase supplies alternating foot
 contacts. Six procedural takes per material avoid the previous two takes;
 pitch varies ±35 cents and level ±1.5 dB. Source contacts are calibrated to
-−12 dBFS peak; walking uses −8 dB, running −5 dB, deliberate first takeoff
-−11 dB and normal landing −4 dB. Landing strength follows the observed airborne
+−12 dBFS peak; walking uses −19 dB, running −16 dB (both 11 dB below #1019), deliberate first takeoff
+−15 dB and normal landing −13 dB. These remain bounded Local dB tunables, with room to turn them down to −40 dB.
+Landing strength follows the observed airborne
 apex, interpolating soft −6 dB through normal to heavy +4 dB, with capped gain.
 A landing consumes its contact moment. Swimming, airborne steps, seated/riding,
 down, stationary, teleport and resume transitions suppress or reset contacts.
@@ -658,6 +659,23 @@ to grass. Remote contacts use the existing smoothed Buddy motion, an additional
 −6 dB trim, body-relative distance and camera-yaw pan. Steps fade from 1.5 to
 18 m (landings reach 30 m), with two events per emitter and eight overall,
 reserving two slots for local contacts. No per-foot network messages are added.
+
+The 5 November owner replay found #1019 too loud and too much like white noise.
+Contacts now use a softly attacked 80–300 Hz body, with a 5–10 ms window of random-phase
+band-limited texture (modes below 1.8 kHz), rather than a sustained noise tail.
+Grass is muffled brush, sand dull scrunch, wood hollow resonance, rail a damped inharmonic tap,
+and shallow water adds a small descending bubble. The next contact reads `character.footstepStyle`:
+**0 = A soft thump** (default), **1 = B textured**, **2 = C toy tick**. The numeric selector uses the
+existing Dev Tunables interface; the source cache includes style. Take bags, pitch jitter, cadence,
+distance rules and bus routing are unchanged. Intended balance: felt under other cues, with jump/land
+a little more present; subjective approval still needs the owner's audition.
+
+Render the matched pack with `node dev/audio/render.ts --offline-locomotion --out .look/codex/footsteps-v2/listen`.
+It contains A/B/C and an offline-only v1 source snapshot: five surfaces × walk/run/jump+land, six identical
+take seeds per file, 48 kHz mono float WAVs and FFmpeg peak/RMS/LUFS metrics beside each style.
+The v1 snapshot is tooling only; it never enters a game build. No old build is launched. Source peaks
+are calibrated; listening files are not normalized. These omit the live master/compressor and other
+sounds, so cannot establish in-game masking or device balance. Not tested on a device.
 
 Hot UI thunk, pickup, minigame and machine recipes are reduced before the bus;
 the thunk's overlapping low body and tail are reduced, and clinks share their
