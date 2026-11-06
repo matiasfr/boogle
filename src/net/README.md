@@ -31,10 +31,10 @@ room.close()
 The game uses `entry.sameTab` to learn its own id (`net.myPeer = entry.peer`) and `entry.peer` for ball-ownership
 tie-breaks, so `peer` must be the stable `selfId`.
 
-The room id comes from the effective page flags (`src/proto/flags.ts`): the bare URL opens Place in `boogle`, classic and headless tools default to `beach`, and explicit prototypes retain their rooms. An explicit `?room=` wins, sanitized to `[a-z0-9-]{1,32}`.
+The room id comes from the effective page flags (`src/proto/flags.ts`): the bare URL and headless tools open the current game in `boogle`, and explicit prototypes retain their rooms. An explicit `?room=` wins, sanitized to `[a-z0-9-]{1,32}`.
 
 During development every client is assumed current. There is no catalog fingerprint or old-build admission fence;
 wire/save reshapes use the dated `WORLD_NS` reset described in [mixed builds](../../docs/agents/mixed-builds.md).
-The server still validates all messages, bounds input and isolates classic and railway room identities.
+The server still validates all messages, bounds input and isolates classic-registry (prototype) and railway room identities.
 Shared tuning writes require an explicit server `TUNE_CONTROLLER_KEY` matching the sender's bound socket key,
 a current revision and valid values; being the room lead grants nothing.

@@ -19,9 +19,8 @@
   whose 4x samples are stored (the default). Discarding them (`storeMultisampled*Buffer: false`, which makes three use a
   `TRANSIENT_ATTACHMENT` memoryless texture on Safari 27) blanked the scene on iPad Safari 27 (1 Nov 2026: only the clear
   colour; Safari 27 on an M1 Mac was fine), so it stays off until tested on an iPad;
-  then one output pass that tone maps and encodes sRGB. Place/crossing uses `water/post.ts`: underwater HDR,
-  authored fixed gain from `exposure.ts`, Neutral, then sRGB; no meter draws or history copy. The classic-home
-  output retains the base exposure in `scene.ts`, which `sky.ts` raises a little at night. Draw with
+  then one output pass that tone maps and encodes sRGB. Every route uses `water/post.ts`: underwater HDR,
+  authored fixed gain from `exposure.ts`, Neutral, then sRGB; no meter draws or history copy. Draw with
   `renderFrame()`. It renders the scene once per animation frame; a second call in the same frame only redraws the
   output quad, so don't call it twice to measure anything.
 - **Post effects** (bloom, TRAA, GTAO, SSGI, god rays, DoF: `three/addons/tsl/display/`) extend that chain: build a

@@ -15,20 +15,23 @@ different systems don't touch the same file. A new system adds its file and one 
 
 Boogle is a drop-in browser game for up to 8 friends. The default URL now opens [round 4 in Threefold Reach](game-design/place.md), with the clean tester view and co-op enabled in `boogle`: chop and carry, open a walking path, earn better tools and abilities, and unlock trains. Explicit prototype and room links still work. The entry switch leaves the prototype code in place; its retirement and the architecture pass follow later.
 
-The old island remains at `?classic=1`. On your first visit you pick a name and a colour, press "Jump in", and land next to a
-sand volleyball court, among the island's toys: a shared beach ball, a frisbee, things to throw, mushrooms to bounce on
-and The Boogler. Returning players go straight in with their saved identity. On the classic island you can throw and chase the ball;
-throw things at each other; take a bag of seeds from the stand and bounce on the mushrooms it sprouts; chat with The Boogler, a purple
-blob NPC from Samarqand who wanders the island, talks in chapters, takes presents and launches you if you ride him;
-honk and ping to friends; climb the lighthouse for the frisbee; walk through the caves; take logs from bundles at the palms and
-carry them on your back to work sites that lay a short railway (the 0.1 testbed, placeholder visuals).
-Wagon rides (`?proto=wagon`), rail-fed town growth (`?proto=net`) and long crossings
-(`?proto=crossing`) remain flagged prototypes.
+**The classic island** (owner, 6 November) has no entry of its own any more: `?classic=1`, its `beach` room and the
+`island=low` comparison are gone. The original island stands in the same world as the current game, at the world's
+origin, about 800 m west of the cove landing: you see it on the horizon from spawn and can swim there. It shares the
+world's summer sky, fixed time of day and real sea; its own day/night cycle, cheaper sea and shore experiments were
+removed. Its content comes with it where it already works: the sand volleyball court and the shared beach ball, The
+Boogler (a purple blob NPC from Samarqand who wanders the island, talks in chapters and launches you if you ride him; his
+speech bubble shows only while you stand on his island), the lighthouse stair, the caves, the mushrooms' stand and the
+windmills. Where the island goes is level design's call. The current game's server accepts only the railway's shared
+edits, so the island's classic lockstep edits are refused there: throwing things (which is also how seeds are planted
+for mushrooms to sprout, and how The Boogler gets presents), picking up the frisbee on the lighthouse deck, and taking
+logs from the palms to the work sites. Wagon rides (`?proto=wagon`), rail-fed town growth (`?proto=net`) and long
+crossings (`?proto=crossing`) remain flagged prototypes.
 
 It runs on desktop (keyboard and mouse, pointer lock), touch screens (virtual stick and buttons) and a Backbone-style
 gamepad (W3C standard mapping, aimed at iPhone and iPad). Our server hosts every room over WebSocket, runs its
 lockstep world and saves its snapshots (section 8). Live at
-**https://boogle.club/** (`?room=<name>` picks a room; default `boogle`, or `beach` with `?classic=1`).
+**https://boogle.club/** (`?room=<name>` picks a room; default `boogle`).
 
 ## 2. Pillars
 
@@ -68,7 +71,7 @@ tick of 100 ms (10 per second).
 - [6.8 The Boogler](game-design/boogler.md)
 - [6.9 Social: honk and ping](game-design/social.md)
 - [6.10 Critters](game-design/critters.md)
-- [6.11 Day and night](game-design/day-night.md)
+- [6.11 Sky and time of day](game-design/day-night.md)
 - [6.12 Caves](game-design/caves.md)
 - [6.13 Pause view and controls guide](game-design/pause.md)
 - [6.14 Arrival](game-design/first-run.md)
@@ -101,8 +104,6 @@ tick of 100 ms (10 per second).
 ## 9. [Tech and tooling](game-design/tech.md)
 
 - [Asset and animation stage](game-design/asset-stage.md)
-
-Opt-in visual comparison: [Dry demo terrain](game-design/terrain-demo.md).
 
 ## 10. [Status](game-design/status.md)
 

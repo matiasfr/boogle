@@ -3,7 +3,7 @@
 The pond is a named still-water volume (`cave-pond`, level 3 m, existing ellipse `q < .81`). On the production-water routes,
 the cave's 3D interior predicate excludes the outdoor ocean under its roof; the pond supplies its own floor and
 zero surface velocity. Pond entry splashes use the shared particles without adding sea rings. Above-roof queries
-remain outdoor, and classic home keeps its own sea pending CI qualification; water URL selectors are ignored. See [island water](island.md) for query limits.
+remain outdoor; water URL selectors are ignored. See [island water](island.md) for query limits.
 
 On those routes, the near-plane lens grid uses that pond's level and actual ellipse, including when the lens
 straddles its bank. It does not use ocean waves inside the pond. Dry cave interiors have no underwater volume;

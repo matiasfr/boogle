@@ -16,7 +16,7 @@ save without that sample falls back to SPAWN. Get unstuck keeps its existing nea
 Each newcomer has their own fall while partners keep playing. `?proto=place&v=village&intro=1`
 keeps the previous landing and terrain in `proto-place-village` (`proto-place-village-coop` with `&coop=1`),
 including room-only invites. It cannot join a shore room. `&greeting=off` keeps the shore and removes the ask.
-Classic (`?classic=1`, room `beach`) is unchanged. Automated look bots still start at SPAWN unless capturing the intro.
+The classic island has no entry of its own (6 November). Automated browsers skip the intro and start at the landing unless capturing it; `look --island` starts at the island's SPAWN.
 A threshold worker gives a grounded newcomer one visible passing wave and a five-second bubble while
 the machine sleeps: “Machine's asleep. Give us a hand?” Optional Talk can recover it. The ask and heard
 history are Local; a partner waking the shared machine cancels it. There is no camera lock or response gate.
@@ -49,7 +49,7 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   device and replays the first visit ([identity.md](identity.md)). Round 4 also forgets all solo/co-op saves, including
   personal slices, gifts and position. In co-op it reloads the same room as a new person, rejoining an existing partner's
   railway through the normal snapshot. With no partner, the railway starts fresh too; the warning explains both cases.
-  It never sends the shared reset. Classic keeps its shared island.
+  It never sends the shared reset.
 - **Welcome back.** A returning player gets a small paper card at the top centre (under the name tag on touch) for
   3.5 s, plus 0.8 s for each line: "Welcome back, <name>", then what changed in this room since this browser was last
   here, when that is known: "Ana and Bo were here" (players new to the room's roster, or whose plaque points rose),
@@ -68,8 +68,7 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   and a shake) and the letters tumble in a loose ring around you at your speed. You land flat with stars (1.8 s; any input
   stands you up after 0.9 s), the letters crash down around you and the cart lands next to you 0.8 s later. You can kick the letters around for 20 s, then they shrink away one at a time. Falls are capped at the player's usual 20 m/s, so the 150 m drop is about 7.5 s in the air. Local: only
   your body and the existing flop and knockdown presence go to others, so a friend sees you land on nothing. The same
-  director uses round 4's landing, facing and terrain height for the player, letters and trolley; classic keeps its original
-  target. Round 4 waits for the landing before starting its objective and local interactions. Returning players skip the
+  director uses round 4's landing, facing and terrain height for the player, letters and trolley. Round 4 waits for the landing before starting its objective and local interactions. Returning players skip the
   opening and restore their round 4 position; no sky position is saved, including a reload during the fall. During the
   opening, your body collides with terrain rather than other arrivals or loose props: simultaneous arrivals cannot land
   on each other in the sky. Knockdown requires ground proximity; normal contacts return when you stand up.

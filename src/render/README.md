@@ -53,9 +53,9 @@ Reduced motion suppresses these contact decorations. Dust and timber keep intens
 
 ## Water ownership
 
-`water-render.ts` owns the production Place/crossing sea, its FFT, shore atlas, queries, underwater HDR and
+`water-render.ts` owns the one sea every route uses, its FFT, shore atlas, queries, underwater HDR and
 once-baked late-morning sky. Neutral stays the output. [Water design](../../docs/game-design/water.md) records
-the fixed-exposure calibration and the classic-home CI exception. `exposure.ts` owns the Local surface gain
+the fixed-exposure calibration. `exposure.ts` owns the Local surface gain
 and signed-depth underwater adjustment: 0.12, +0.81 EV through 0–1.5 m. The existing frozen-sky scene lights
 use key gain 1.12 and fill gain 3.2; the sky bake and water optics retain their values. `water/post.ts` uses the width-zero
 form of the bounded colour-research output; no exposure meter targets, draws or history copy are constructed.
@@ -70,11 +70,9 @@ once at spawn; living particles retain their spawn intensity until expiry. Smoke
 The material helper ignores repeat calls on the same owned material. The explicit underwater lift remains
 intentional. No independent reference multiplier remains. Do not sample the framebuffer, boost all unlit materials,
 or apply both compensation paths to one surface. `fixedExposureGain(depth)` exposes the exact medium-dependent
-gain if a future material policy explicitly needs it. Classic-home reference gain remains 1.
+gain if a future material policy explicitly needs it.
 
-`classic-sea.ts` is a private fallback factory for
-home clients only; it exposes no material-patch API and allocates no legacy texture for Place.
-Live tuning/Looks and shore helpers remain; the demo is in `archive/water`, with notices retained in public/.
+The classic island's cheaper sea (`classic-sea.ts`) was removed when it joined the one world (6 November). Live tuning/Looks and shore helpers remain; the demo is in `archive/water`, with notices retained in public/.
 
 The water ceiling is requested each frame but only reapplied when its clamped value changes. Adaptive DPR
 and Dev resolution changes still apply through their existing setters. This skips redundant renderer/pass

@@ -37,6 +37,6 @@ Build choices and offline source limits: [procedural-sky research](../research/p
 
 ## Water graduation update (4 November 2026)
 
-This remains a parked cloud/sky experiment on the classic home client. The sea-horizon `uHaze` seam
+This remains a parked cloud/sky experiment; the classic home client it ran on was removed (6 November). The sea-horizon `uHaze` seam
 and its frame writer were removed with the replaced sea. The descriptions above of that seam are historical;
 there is no `proto=water` demo in the current build. No cloud or sky art was graduated here.

@@ -153,7 +153,7 @@ the meter is no longer constructed, so both meter draws and the history copy sto
 and water optics retain their existing values. Looks' **Current** matches
 this output; **Sunny toys** and **AgX Punchy** retain AgX comparisons. The frozen late-morning sky, water
 parameters and terrain are unchanged. The earlier .16 calibration is retained in [measurements](../research/fixed-exposure.md) as history.
-Dev Water/Post shows these new defaults and resets to them through the existing bindings. Classic home is unchanged.
+Dev Water/Post shows these new defaults and resets to them through the existing bindings.
 Camera-facing scoped ink and new reward particles compensate the inverse surface gain; physical painted boards,
 the price atlas, smoke and dust do not.
 
@@ -307,7 +307,7 @@ cascade topology, polar mesh resolution, foam/shore bake dimensions, shaft steps
 rebuilds and are intentionally omitted. Additional uniforms and grading arithmetic are enabled only on tuning visits;
 the flag-off shader graphs retain their constants and do not restore saved overrides.
 
-The home shore slice (`classic=1&shore=smooth-detail&shoreRocks=1`) and dry-terrain comparisons are retained in `src/proto/shore/`; classic keeps its own sea.
+The home shore slice and dry-terrain comparisons (`src/proto/shore/`) were removed with classic home (6 November); every route uses this sea.
 Real registered rock/support contacts each retain eight world-fixed spray sites, including later-built supports;
 the 512-contact registry bounds that list. Provider obstacles retain their separate 256-site cap. Spray still
 uses the shared particle pool with at most 96 emissions per frame and 420 per rolling second, before particle upload.
