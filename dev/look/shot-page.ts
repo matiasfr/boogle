@@ -267,13 +267,14 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
         const name = `c${ci}-v${cell - 1}.png`;
         emit(name, image.png);
         tiles.push({
-          label: group.wedge ? String(cell) : `${cell}. ${variant.name}`,
+          label: group.wedge || group.grid ? String(cell) : `${cell}. ${variant.name}`,
           image: 'data:image/png;base64,' + image.png,
-          note: group.wedge
-            ? undefined
-            : `${Object.entries({ look: variant.look, ...variant.tunables, ...variant.values, ...variant.graphics })
-                .map(([id, value]) => `${id} = ${JSON.stringify(value)}`)
-                .join('; ')} | ${name}`,
+          note:
+            group.wedge || group.grid
+              ? undefined
+              : `${Object.entries({ look: variant.look, ...variant.tunables, ...variant.values, ...variant.graphics })
+                  .map(([id, value]) => `${id} = ${JSON.stringify(value)}`)
+                  .join('; ')} | ${name}`,
         });
         shots.push({
           cell,
@@ -326,14 +327,16 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
           strips: [],
           tiles,
           grid:
-            group.wedge && tiles.length === 9
-              ? {
-                  rows: group.wedge.rows.values.map((v) => `${group.wedge!.rows.label} ${v}`),
-                  columns: group.wedge.columns.values.map((v) => `${group.wedge!.columns.label} ${v}`),
-                  baseline: String(group.wedge.baseline ?? 5),
-                  legend: group.wedge.legend,
-                }
-              : undefined,
+            group.grid && tiles.length === group.grid.rows.length * group.grid.columns.length
+              ? { ...group.grid, baseline: String(group.grid.baseline) }
+              : group.wedge && tiles.length === 9
+                ? {
+                    rows: group.wedge.rows.values.map((v) => `${group.wedge!.rows.label} ${v}`),
+                    columns: group.wedge.columns.values.map((v) => `${group.wedge!.columns.label} ${v}`),
+                    baseline: String(group.wedge.baseline ?? 5),
+                    legend: group.wedge.legend,
+                  }
+                : undefined,
           reference: group.reference && {
             label: 'Reference: ' + group.reference.provenance,
             image: group.reference.image,
@@ -363,6 +366,7 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
         baseline,
         fixture: scene.userData.lookFixture ?? null,
         wedge: group.wedge,
+        grid: group.grid,
         reference: group.reference && { ...group.reference, image: undefined },
         totalMs: wall() - started,
         shots,

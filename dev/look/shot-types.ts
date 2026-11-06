@@ -28,6 +28,8 @@ export type ShotBeat = {
   warm?: number;
   cameras: ShotCamera[];
   variants: ShotVariant[];
+  /** Explicit row-major comparison; does not synthesize numeric wedge variants. */
+  grid?: { rows: string[]; columns: string[]; baseline: number; legend?: string };
   wedge?: {
     baseline?: number;
     rows: { id: string; label: string; values: [number, number, number] };

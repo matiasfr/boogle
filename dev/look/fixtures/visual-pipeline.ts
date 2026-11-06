@@ -14,7 +14,7 @@ export async function setupVisualPipeline() {
   )) as typeof import('../../../src/render/readable-unlit.ts');
   const origin = me.body!.position;
   const fixture = new URLSearchParams(location.search).get('fixture');
-  if (fixture === 'calibration' || fixture === 'colour-textures') {
+  if (fixture === 'calibration' || fixture === 'material-calibration' || fixture === 'colour-textures') {
     const group = new THREE.Group();
     group.name = 'visual-pipeline-calibration';
     group.position.set(origin.x, origin.y - 0.8, origin.z);
@@ -36,7 +36,29 @@ export async function setupVisualPipeline() {
     };
     const owned = (color: THREE.Color, metalness = 0, roughness = 1) =>
       new THREE.MeshStandardNodeMaterial({ color, metalness, roughness });
-    add(new THREE.BoxGeometry(10, 0.1, 6), owned(new THREE.Color(0.18, 0.18, 0.18)), 0, -0.1, -1, 'neutral plinth');
+    add(
+      new THREE.BoxGeometry(10, 0.1, fixture === 'material-calibration' ? 10 : 6),
+      owned(new THREE.Color(0.18, 0.18, 0.18)),
+      0,
+      -0.1,
+      -1,
+      'neutral plinth',
+    );
+    if (fixture === 'material-calibration') {
+      const { MATERIAL_FAMILIES, MATERIAL_PALETTES } = await import('../../../src/render/material-palette-tuning.ts');
+      const { paletteMaterial } = await import('../../../src/render/material-palette.ts');
+      for (const [i, family] of MATERIAL_FAMILIES.entries()) {
+        const source = material(family === 'timber' ? 'timber' : 'stone', { colour: MATERIAL_PALETTES[family][0] });
+        add(
+          new THREE.BoxGeometry(1.25, 1.25, 1.25),
+          paletteMaterial(source, family),
+          (i - 2.5) * 1.65,
+          0.65,
+          2.7,
+          `family ${family}`,
+        );
+      }
+    }
     for (const [i, preset] of (['timber', 'paintedToy', 'foliage', 'stone', 'steel'] as const).entries())
       add(new THREE.BoxGeometry(1.15, 1.15, 1.15), material(preset).clone(), (i - 2) * 1.7, 1, -2.4, preset);
     add(
