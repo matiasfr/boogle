@@ -8,14 +8,19 @@ const compiled = await build({ entryPoints: ['src/proto/place/coop.ts'], write: 
 type Message = Record<string, unknown>;
 
 function fixture() {
-  const job = { awake: false, rung: {}, tech: {}, boiler: 0 };
+  const job = { awake: false, rung: { depot: true, trains: false }, tech: {}, boiler: 0 };
+  const cart = { recallQueued: false };
+  const world = { tick: 10 };
+  let connected = true;
   const shared = () => ({ job: structuredClone(job), lines: [] });
   const messages: Message[] = [];
   let onMessage: (m: Message, from: string) => void = () => {};
   let onPresence: (r: Message, pr: Message) => void = () => {};
   let onConnection: (connected: boolean) => void = () => {};
   const room = {
-    send: (m: Message) => messages.push(m),
+    send: (m: Message) => {
+      if (connected) messages.push(m);
+    },
     onMessage: (fn: typeof onMessage) => {
       onMessage = fn;
     },
@@ -37,7 +42,7 @@ function fixture() {
         onPresence = fn;
       },
     },
-    '../../world/sync.ts': { world: { tick: 10 } },
+    '../../world/sync.ts': { world },
     '../../features/haul-stack.ts': { backSeam: {} },
     './coop-identity.ts': { COOP_IDENTITY: 'place', currentCoopPeer: () => true },
     './job.ts': {
@@ -50,7 +55,7 @@ function fixture() {
     },
     './lines.ts': { lines: [], machine: { flatbed: { platform: {} }, loco: { platform: {} } } },
     './layout.ts': { GOODS: ['logs', 'rails', 'stone', 'beam'] },
-    './depot.ts': { cartPlatform: {} },
+    './depot.ts': { cartPlatform: {}, cart },
     './chop.ts': { chopHooks: {}, back: { big: null }, trunkTaken: () => false, setTrunkTaken: noop },
     './celebrate.ts': { clearMoments: noop, showBanner: noop },
     './pieces.ts': { clearTrips: noop },
@@ -67,6 +72,9 @@ function fixture() {
       coop: {
         setup(value: object): void;
         arrived(): void;
+        askStartOver(button: { textContent: string }): void;
+        recallCart(): void;
+        recallPending(): boolean;
         debug(): { gen: number };
       };
     },
@@ -76,6 +84,7 @@ function fixture() {
     exports: output.exports,
     require: (name: string) => dependencies[name] ?? {},
     performance: { now: () => 1000 },
+    setTimeout: noop,
     document: { hidden: false, addEventListener: noop },
     structuredClone,
     console: { warn: (...args: unknown[]) => assert.fail(`unexpected co-op warning: ${args}`) },
@@ -94,8 +103,14 @@ function fixture() {
   return {
     coop,
     job,
+    cart,
+    world,
     messages,
-    onConnection,
+    connection: (value: boolean) => {
+      connected = value;
+      onConnection(value);
+    },
+    recallAccepted: (gen: number) => onMessage({ t: 'place', k: 'cartRecallAccepted', gen, queued: true }, 'authority'),
     reset: (gen: number) => onMessage({ t: 'place', k: 'reset', gen }, 'authority'),
     snap: (gen: number, awake: boolean) =>
       onMessage({ t: 'place', k: 'snap', snap: { gen, shared: { job: { ...job, awake }, lines: [] } } }, 'authority'),
@@ -117,4 +132,33 @@ test('a current snapshot still initializes a newly arrived follower', () => {
   f.coop.arrived();
   assert.equal(f.coop.debug().gen, 1);
   assert.equal(f.job.awake, true);
+});
+
+test('a partitioned reset reconnect adopts the lower authority generation and accepts its recall reply', () => {
+  const f = fixture();
+  f.snap(0, true);
+  f.coop.arrived();
+  f.world.tick = 100;
+  f.connection(false);
+  const sent = f.messages.length;
+  const button = { textContent: '' };
+  f.coop.askStartOver(button);
+  f.coop.askStartOver(button);
+  assert.equal(f.coop.debug().gen, 1);
+  assert.equal(f.messages.length, sent, 'the reset never reaches the authority during the partition');
+
+  f.connection(true);
+  f.snap(0, true);
+  assert.equal(f.coop.debug().gen, 0, 'the unsynced follower adopts the current authority even after its local reset');
+  assert.equal(f.job.awake, true);
+  f.coop.recallCart();
+  assert.equal(f.messages.at(-1)?.k, 'cartRecall');
+  assert.equal(f.messages.at(-1)?.gen, 0, 'requests use the adopted authority generation');
+  assert.equal(f.coop.recallPending(), true);
+  f.recallAccepted(1);
+  assert.equal(f.coop.recallPending(), true, 'a reply from the abandoned generation cannot settle the request');
+  assert.equal(f.cart.recallQueued, false);
+  f.recallAccepted(0);
+  assert.equal(f.coop.recallPending(), false);
+  assert.equal(f.cart.recallQueued, true, 'the authority reply settles the generation-checked request');
 });
