@@ -69,8 +69,29 @@ try {
   fs.writeFileSync(path.join(dir, `${id}.tmp`), JSON.stringify(request));
   fs.renameSync(path.join(dir, `${id}.tmp`), path.join(dir, `${id}.json`)); // the broker never reads half a request
   const done = path.join(dir, `${id}.done.json`);
-  const deadline = Date.now() + (operation === 'cold-start' || args.includes('--long') ? 36 : 8) * 60_000;
+  const started = path.join(dir, `${id}.started.json`);
+  let deadline = Infinity;
+  let queued = '';
   while (!fs.existsSync(done)) {
+    const queueFile = path.join(dir, `${id}.queued.json`);
+    const activeFile = path.join(dir, 'active.json');
+    let message = '';
+    if (fs.existsSync(queueFile))
+      message = (JSON.parse(fs.readFileSync(queueFile, 'utf8')) as { message: string }).message;
+    else {
+      try {
+        const active = JSON.parse(fs.readFileSync(activeFile, 'utf8')) as { id: string; job: string };
+        if (active.id !== id) message = `bot queue: queued behind ${active.job}`;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      }
+    }
+    if (message && message !== queued) console.log(message);
+    queued = message;
+    if (deadline === Infinity && fs.existsSync(started)) {
+      const { at } = JSON.parse(fs.readFileSync(started, 'utf8')) as { at: number };
+      deadline = at + (operation === 'cold-start' || args.includes('--long') ? 36 : 8) * 60_000;
+    }
     if (Date.now() > deadline)
       throw new Error('No answer from the look broker (is this running under dev/codex/run.ts?)');
     brokerAlive();

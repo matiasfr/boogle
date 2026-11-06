@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { artifacts, type Request, type Evidence, type Operation } from './evidence.ts';
 import { buildAt, sameBuild } from './source.ts';
+import { acquireBotSlot } from '../look/bot-queue.ts';
 
 const worktree = fs.realpathSync(process.argv[2]!);
 const dir = path.join(worktree, '.look/see');
@@ -42,18 +43,22 @@ const VALUES: Record<Operation, string[]> = {
     '--curves-vs',
     '--target',
   ],
-  playthrough: ['--query', '--eval', '--stall', '--players', '--warp-speed'],
+  playthrough: ['--query', '--eval', '--stall', '--players', '--warp-speed', '--from', '--to', '--saves'],
   scenario: [],
   'cold-start': ['--runs', '--mode', '--seconds', '--query'],
 };
 const FLAGS: Record<Operation, string[]> = {
   look: ['--video', '--heatmap', '--hud', '--warp', '--real', '--curves'],
-  playthrough: ['--full', '--long', '--real'],
+  playthrough: ['--full', '--long', '--real', '--regenerate'],
   scenario: ['--no-trace'],
   'cold-start': ['--video-probe'],
 };
 const FILES = ['--eval', '--action', '--curves-vs', '--saves'];
 let active: ChildProcess | undefined;
+const publish = (file: string, value: unknown) => {
+  fs.writeFileSync(file + '.tmp', JSON.stringify(value));
+  fs.renameSync(file + '.tmp', file);
+};
 
 function stopChild() {
   if (active?.pid) {
@@ -140,10 +145,17 @@ async function execute(id: string, request: Request) {
   }
   if (operation === 'playthrough') {
     const twoPlayers = args[args.indexOf('--players') + 1] === '2' && args.includes('--players');
-    if (!twoPlayers && !args.includes('--eval')) args.push('--eval', inside('dev/look/evals/place-job.ts'));
+    if (!twoPlayers && !args.some((arg) => ['--eval', '--from', '--to', '--regenerate'].includes(arg)))
+      args.push('--eval', inside('dev/look/evals/place-job.ts'));
     args.push('--data-dir', request.dataDir, '--name', 'run', '--root', worktree);
   }
   const outputFile = path.join(out, 'output.txt');
+  const job = `${path.basename(worktree)}: ${operation} ${request.args.join(' ')}`;
+  publish(path.join(dir, 'active.json'), { id, job });
+  const lease = await acquireBotSlot(job, (message) => {
+    publish(path.join(dir, `${id}.queued.json`), { message });
+  });
+  publish(path.join(dir, `${id}.started.json`), { at: Date.now(), waitedMs: lease.waitedMs });
   const status = await new Promise<number>((resolve) => {
     const log = fs.openSync(outputFile, 'w');
     const child = (active = spawn(
@@ -151,7 +163,7 @@ async function execute(id: string, request: Request) {
       [path.join(trusted, ENTRIES[operation]), ...args, '--url', url, '--out', out],
       {
         cwd: worktree,
-        env: { ...process.env, BOOGLE_QUERY: query },
+        env: { ...process.env, BOOGLE_QUERY: query, BOOGLE_BOT_LEASE: lease.file },
         detached: true,
         stdio: ['ignore', log, log],
       },
@@ -179,7 +191,8 @@ async function execute(id: string, request: Request) {
       fs.closeSync(log);
       resolve(timedOut ? 124 : (code ?? 1));
     });
-  });
+  }).finally(lease.release);
+  fs.rmSync(path.join(dir, 'active.json'), { force: true });
   const after = buildAt(worktree);
   const harnessAfter = buildAt(trusted);
   const changedDuringRun = !sameBuild(before, after) || !sameBuild(harness, harnessAfter);

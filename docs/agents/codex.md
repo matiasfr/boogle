@@ -11,6 +11,9 @@ Codex can do what Claude Code does here; `.codex/` sets it up (config, `rules/bo
 - **Checkouts.** Start with `git status --short --branch`. Use Node 26 (`.nvmrc`). A fresh checkout needs `npm ci`, which includes the server's dependencies and the pre-push hook; the desktop app and `run.ts` do this for their worktrees. Don't share `node_modules`, Vite caches or `.boogle-data/` between active checkouts. Run `npm run inflight` before substantial work; don't reset, stash or commit someone else's changes.
 - **Formatting.** If the format hook hasn't run on your edit, run `npx prettier --write <your files>` and `npm run lint -- <your files>`, or use `npm run patch`. The lint runner includes Oxlint, type-aware rules and Boogle's parser protections.
 - **Test diet.** It applies if an older skill asks for broader tests: use the `look` harness, with no new UI unit tests or scenarios unless a sync contract needs one.
+- **Pick checks first.** `npm run checks-for` prints the diff's minimum plan; `-- --run` executes it through the broker.
+  Read [bot checks](test-details/bot-segments.md) for segments and fixtures. Worker harness edits need a reviewed launcher
+  restart; a broker rejecting new flags leaves that browser proof unverified. Never bypass it with Chromium.
 - **Shipping.** `npm run ship` hands a rebase conflict back to you rather than starting Claude Code. Resolve it keeping both changes and rerun. A push, green CI, merge and deployment are separate states; report only the ones verified.
 
 Codex discovers AGENTS.md only along the path from the repository root to its working directory; touching a deeper file does not load its nested instructions. Root-started workers must follow the root trigger table and explicitly read the matching nested AGENTS.md. Claude path rules provide matching-file pointers; none are launch imports.

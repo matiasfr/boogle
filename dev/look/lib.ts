@@ -13,6 +13,7 @@ import { installWarp, SKIP_DRAWS } from './warp.ts';
 import type { WarpHandle } from './warp.ts';
 import { startWarpServer } from './server-process.ts';
 import { checkInstall } from './install-check.ts';
+import { acquireBotSlot } from './bot-queue.ts';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -121,7 +122,7 @@ export async function startStack({
 
 // The game is WebGPU only. On Linux (CI) WebGPU runs on SwiftShader over Vulkan, so runners without a GPU still get it;
 // on a Mac it runs on the real GPU (Metal), about 60 fps.
-export const launch = ({ hardware = false }: { hardware?: boolean } = {}): Promise<Browser> => {
+export const launch = async ({ hardware = false }: { hardware?: boolean } = {}): Promise<Browser> => {
   // precise-memory-info: performance.memory in exact bytes, for the allocation counts in hitches.
   const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--enable-precise-memory-info'];
   if (process.platform === 'darwin') args.push('--use-angle=metal');
@@ -132,7 +133,15 @@ export const launch = ({ hardware = false }: { hardware?: boolean } = {}): Promi
       ...['--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-webgpu-adapter=swiftshader'],
     );
   // Hardware timing is explicitly headed and never forces SwiftShader. The normal harness stays unchanged.
-  return chromium.launch({ args, headless: !hardware });
+  const lease = await acquireBotSlot();
+  try {
+    const browser: Browser = await chromium.launch({ args, headless: !hardware });
+    browser.once('disconnected', lease.release);
+    return browser;
+  } catch (error) {
+    lease.release();
+    throw error;
+  }
 };
 
 // Prints the THREE.* console errors a game collected (once each), if any.
@@ -352,18 +361,32 @@ export class Game {
       [speed, Number.isFinite(seconds) ? start + seconds : null] as const,
     );
     let done = false;
+    let wasStalled = false;
     let at = start;
     while (!done && !this.errors.length && Date.now() - t0 < wallLimit * 1000) {
       await sleep(Number.isFinite(seconds) && seconds < 30 ? 20 : 100);
       at = await v();
       done = at - start >= seconds || (until ? !!(await this.page.evaluate(`!!(${until})`)) : false);
-      if (!done && (await stalled?.(at))) break;
+      if (!done && (await stalled?.(at))) {
+        wasStalled = true;
+        break;
+      }
     }
     await this.page.evaluate(() => (window as unknown as { __warp: WarpHandle }).__warp.go(1));
+    const timedOut = !done && !wasStalled && !this.errors.length && Date.now() - t0 >= wallLimit * 1000;
+    // A final read closes the poll/deadline race. A missing beat is never turned into a pass.
+    if (timedOut && until) done = !!(await this.page.evaluate(`!!(${until})`));
+    if (timedOut && done) console.log('PASS note: final expected beat was present at the wall limit');
     // Real time again. Fetches and shader builds ran on the wall clock, so give what the warp outran the time to land.
     await this.page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
     await sleep(500);
-    return { game: at - start, wall: (Date.now() - t0) / 1000, done };
+    return {
+      game: at - start,
+      wall: (Date.now() - t0) / 1000,
+      done,
+      reason: done ? 'complete' : this.errors.length ? 'page-error' : wasStalled ? 'stall' : 'timeout',
+      timeoutAfterBeat: timedOut && done,
+    };
   }
 
   // Freeze the camera at a named view or {cam, look}. Pass fov to change the field of view.

@@ -9,6 +9,7 @@ export type SaveState = {
   t: number;
   pose: { x: number; y: number; z: number; yaw: number; pitch: number } | null;
   storage: Record<string, string>;
+  route?: { step: number; delivered: number; mode: 'solo' | 'coop' };
 };
 export type Observed = { lines: SeenLine[]; painted: PaintedLine[]; saves: SaveState[] };
 
@@ -96,7 +97,7 @@ export function installObserver(ignore: string) {
   const named = new Set<string>();
   const w = window as unknown as {
     __observe: {
-      take(beat: string): void;
+      take(beat: string, immediate?: boolean): void;
       read(): Observed;
       current(): { text: string; where: string }[];
       pose: () => SaveState['pose'];
@@ -111,19 +112,39 @@ export function installObserver(ignore: string) {
     },
     pose: () => null, // WATCH_MARKS fills these in, once the player exists
     lastBeat: 0,
-    take(beat) {
+    take(beat, immediate = false) {
       if (named.has(beat)) return;
       named.add(beat);
       w.__observe.lastBeat = now(); // only what's new: a bot opening one crate forever is stuck, however busy it looks
-      setTimeout(() => {
+      const capture = () => {
         w.__observe.flush?.();
         const storage: Record<string, string> = {};
         for (let k = 0; k < localStorage.length; k++) {
           const name = localStorage.key(k)!;
           storage[name] = localStorage.getItem(name)!;
         }
-        saves.push({ beat, t: now(), pose: w.__observe.pose(), storage });
-      }, 200);
+        const cursor = sessionStorage.getItem('look.route.step');
+        saves.push({
+          beat,
+          t: now(),
+          pose: w.__observe.pose(),
+          storage,
+          ...(immediate && cursor
+            ? {
+                route: {
+                  step: Number(cursor),
+                  delivered: Number(sessionStorage.getItem('look.coop.delivered') ?? 0),
+                  mode:
+                    new URLSearchParams(location.search).get('coopRoute') === '1'
+                      ? ('coop' as const)
+                      : ('solo' as const),
+                },
+              }
+            : {}),
+        });
+      };
+      if (immediate) capture();
+      else setTimeout(capture, 200);
     },
     read: () => ({
       lines: [...lines.values()].map((l) => ({
