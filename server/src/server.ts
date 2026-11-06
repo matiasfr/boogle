@@ -14,14 +14,14 @@ import type { RoomHost } from './host/rooms.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const REPORT_KINDS = new Set<unknown>(['error', 'desync', 'snapshot', 'connect', 'playtest']);
+const REPORT_KINDS = new Set<unknown>(['error', 'desync', 'snapshot', 'connect']);
 const REPORT_BATCH = 10; // reports per POST
 const REPORT_KEEP_DAYS = 30;
 
 // POST /report (wire shape): one report, or an array of up to REPORT_BATCH, as sent by the client's telemetry
-// (navigator.sendBeacon, text/plain JSON) and cached playtest clients. Stored as JSON lines with `at` added.
-export type ReportKind = 'error' | 'desync' | 'snapshot' | 'connect' | 'playtest';
-export type ReportDetail = string | Record<string, string | number | boolean | null> | PlaytestDetail | null;
+// (navigator.sendBeacon, text/plain JSON). Stored as JSON lines with `at` added.
+export type ReportKind = 'error' | 'desync' | 'snapshot' | 'connect';
+export type ReportDetail = string | Record<string, string | number | boolean | null> | null;
 export type Report = {
   room: string;
   kind: ReportKind;
@@ -30,18 +30,6 @@ export type Report = {
   build?: string;
   ua?: string;
 };
-export type PlaytestVerdict = 'yes' | 'no' | 'cant';
-export type PlaytestDetail = {
-  proto: string;
-  verdict: PlaytestVerdict;
-  variant: string;
-  note: string;
-  trace?: string;
-  values?: string;
-  build?: string;
-  counts?: Record<string, number>;
-};
-
 function parseTrustProxy(v: string | undefined): boolean | number | string {
   if (v === undefined || v === '') return 1; // one hop: Fly / Render / Railway
   if (v === 'true') return true;
@@ -154,10 +142,7 @@ function cleanReport(r: any): Report | null {
   if (!r || typeof r !== 'object' || Array.isArray(r) || !REPORT_KINDS.has(r.kind)) return null;
   if (typeof r.room !== 'string' || !ROOM_ID_RE.test(r.room)) return null;
   let detail: ReportDetail | undefined = cut(r.detail, 500);
-  if (r.kind === 'playtest') {
-    detail = cleanPlaytest(r.detail);
-    if (!detail) return null;
-  } else if (r.detail && typeof r.detail === 'object' && !Array.isArray(r.detail)) {
+  if (r.detail && typeof r.detail === 'object' && !Array.isArray(r.detail)) {
     const flat: Record<string, string | number | boolean | null> = {};
     for (const [k, v] of Object.entries(r.detail).slice(0, 12)) {
       if (typeof v === 'string') flat[k.slice(0, 32)] = v.slice(0, 200);
@@ -170,33 +155,6 @@ function cleanReport(r: any): Report | null {
   if (Number.isSafeInteger(r.tick)) out.tick = r.tick;
   if (typeof r.build === 'string') out.build = cut(r.build, 40);
   if (typeof r.ua === 'string') out.ua = cut(r.ua, 60);
-  return out;
-}
-
-// Legacy playtest reports remain accepted for cached clients and readable through GET /reports.
-// The note may run to 1000 chars; `counts` holds behaviour counters (name -> number).
-// `proto` (the card id in protos/protos.ts) and `verdict` are required.
-const PLAYTEST_VERDICTS = new Set<unknown>(['yes', 'no', 'cant']);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- untrusted JSON, checked field by field
-function cleanPlaytest(d: any): PlaytestDetail | null {
-  if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
-  if (typeof d.proto !== 'string' || !/^[a-z0-9-]{1,40}$/.test(d.proto) || !PLAYTEST_VERDICTS.has(d.verdict))
-    return null;
-  const out: PlaytestDetail = {
-    proto: d.proto,
-    verdict: d.verdict,
-    variant: cut(d.variant, 40) ?? '',
-    note: cut(d.note, 1000) ?? '',
-  };
-  if (typeof d.trace === 'string') out.trace = cut(d.trace, 300);
-  if (typeof d.values === 'string') out.values = cut(d.values, 300);
-  if (typeof d.build === 'string') out.build = cut(d.build, 40);
-  if (d.counts && typeof d.counts === 'object' && !Array.isArray(d.counts)) {
-    const counts: Record<string, number> = {};
-    for (const [k, v] of Object.entries(d.counts).slice(0, 12))
-      if (typeof v === 'number' && Number.isFinite(v)) counts[k.slice(0, 32)] = v;
-    out.counts = counts;
-  }
   return out;
 }
 
