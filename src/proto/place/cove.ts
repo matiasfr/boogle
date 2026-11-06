@@ -73,6 +73,11 @@ function vertex(mesh: CoveMesh, x: number, y: number, z: number, rgb: number[], 
   mesh.bounds.maxZ = Math.max(mesh.bounds.maxZ, z);
 }
 
+// Index sockets for the single static fit after the finished heightfield exists.
+// The meshes themselves remain the shared render/collision/bathymetry source.
+const backingSockets: { cap: number[]; rear: number }[] = [];
+const endCopies: [number, number][] = [];
+
 /** A connected sculpted face and rounded turf lip; bedding is a material, not repeated box seams.
  * Only the buried rear/end closures split their normals from the continuous visible skin. */
 function cliff(): CoveMesh {
@@ -113,11 +118,13 @@ function cliff(): CoveMesh {
   for (const section of sections) {
     const { z, front, top, width } = section;
     for (let row = 0; row < levels.length; row++) {
-      const cap = (row === 12 ? 1 : row === 11 ? 0.15 : 0) * section.cap;
+      const cap = (row === 12 ? 1 : 0) * section.cap;
       const ripple = 0.045 * Math.sin(z * 0.47 + row * 0.4) * Math.sin((row * Math.PI) / 12);
+      // Roll the turf edge out over its stone underside using the existing opaque skin.
+      const lip = (row === 11 ? 0.32 : row === 12 ? 0.4 : 0) * section.cap;
       vertex(
         mesh,
-        front + shoulderReach(row, z) + ripple,
+        front + shoulderReach(row, z) + ripple - lip,
         -2.4 + ((levels[row]! + 2.4) / 6.88) * (top + 2.4),
         z,
         cap > 0.5 ? turf : row === 11 ? seam : stone,
@@ -126,16 +133,19 @@ function cliff(): CoveMesh {
       );
     }
     // Broad cap curvature joins the rolled lip to the buried terrain socket.
-    for (const across of [0.34, 0.68, 1])
+    const lipReach = 0.5 - 0.4 * section.cap;
+    const capStart = mesh.vertices.length / 3;
+    for (const across of [0.72, 0.88, 1])
       vertex(
         mesh,
-        front + 0.5 + (width - 0.5) * across,
+        front + lipReach + (width - lipReach) * across,
         top + 0.14 * Math.sin(across * Math.PI) * smoothstep(38, 44, z),
         z,
         turf,
         1,
         section.cap,
       );
+    backingSockets.push({ cap: [capStart, capStart + 1, capStart + 2], rear: 0 });
   }
   for (let col = 0; col < columns - 1; col++)
     for (let row = 0; row < rows - 1; row++) {
@@ -145,7 +155,8 @@ function cliff(): CoveMesh {
     }
   // Duplicate rear/bottom corners: a buried closure cannot pull the visible front's shading normal.
   const back = mesh.vertices.length / 3;
-  for (const { z, front, top, width, cap } of sections) {
+  for (const [col, { z, front, top, width, cap }] of sections.entries()) {
+    backingSockets[col]!.rear = mesh.vertices.length / 3;
     vertex(mesh, front + width, top, z, turf, 1, cap);
     vertex(mesh, front + width, -2.4, z, stone);
     vertex(mesh, front + shoulderReach(0, z), -2.4, z, stone);
@@ -160,6 +171,7 @@ function cliff(): CoveMesh {
     const start = mesh.vertices.length / 3;
     for (let row = 0; row < rows; row++) {
       const i = (col * rows + row) * 3;
+      endCopies.push([mesh.vertices.length / 3, i / 3]);
       vertex(mesh, mesh.vertices[i]!, mesh.vertices[i + 1]!, mesh.vertices[i + 2]!, row === rows - 1 ? turf : stone);
     }
     const i = (back + col * 3 + 1) * 3;
@@ -247,6 +259,45 @@ function smoothNormals(mesh: CoveMesh) {
   return mesh;
 }
 export const coveMeshes = COVE ? [cliff(), blocks()].map(smoothNormals) : [];
+
+/** Terrain calls this once after baking its fine grid, before any view or body is built.
+ * Sample only the finished heightfield, never H/coveSurface: this fit supplies that later surface query. */
+export function fitCoveBacking(heightAt: (x: number, z: number) => number) {
+  const mesh = coveMeshes[0];
+  if (!mesh) return;
+  for (const { cap, rear } of backingSockets) {
+    const middle = cap[1]! * 3,
+      end = cap[2]! * 3;
+    const ground = heightAt(mesh.vertices[end]!, mesh.vertices[end + 2]!);
+    // The edge spans oblique fine-grid cells: 0.4 m also covers the intervening
+    // valley between socket samples, rather than burying only the vertices.
+    const buried = ground - 0.4;
+    // The wider first cap row carries the played route. Both return rows sit under
+    // the backing: lifting one just above ground made isolated triangular islands.
+    mesh.vertices[middle + 1] = heightAt(mesh.vertices[middle]!, mesh.vertices[middle + 2]!) - 0.4;
+    mesh.vertices[end + 1] = buried;
+    mesh.vertices[rear * 3 + 1] = buried;
+  }
+  // End the low nose under the beach, not as a thin cap triangle over the water.
+  // Restore the full authored skin by the established stop at z38.
+  for (let col = 0; col < backingSockets.length; col++) {
+    const z = mesh.vertices[col * 16 * 3 + 2]!;
+    if (z >= 38) break;
+    const reveal = smoothstep(36, 38, z);
+    for (let row = 0; row < 16; row++) {
+      const i = (col * 16 + row) * 3;
+      const y = mesh.vertices[i + 1]!;
+      const buried = Math.min(y, heightAt(mesh.vertices[i]!, z) - 0.4);
+      mesh.vertices[i + 1] = buried + (y - buried) * reveal;
+    }
+    const { cap, rear } = backingSockets[col]!;
+    mesh.vertices[rear * 3 + 1] = mesh.vertices[cap[2]! * 3 + 1]!;
+  }
+  for (const [copy, source] of endCopies)
+    for (let axis = 0; axis < 3; axis++) mesh.vertices[copy * 3 + axis] = mesh.vertices[source * 3 + axis]!;
+  // Only Y moved, so the cached X/Z bounds are unchanged; smooth the new shared skin.
+  smoothNormals(mesh);
+}
 
 /** Exact downward triangle query shared by physical ground consumers and the bathymetry owner.
  * This is a solid coastal kit, never a bridge/deck registered as seabed. */

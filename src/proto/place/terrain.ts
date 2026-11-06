@@ -3,7 +3,7 @@
 // here overhangs; footbridges and platforms are their own boxes. Local: nothing here reaches the sim.
 import { smoothstep } from '../../math.ts';
 import { frameBesideLine, FRAME_D, FRAME_W, SPAN } from './spatial-station.ts';
-import { COVE, coveFront, coveGround, coveSurface, coveWeight } from './cove.ts';
+import { COVE, coveFront, coveGround, coveSurface, coveWeight, fitCoveBacking } from './cove.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';
 import {
   ARMS,
@@ -504,6 +504,10 @@ export function fineHeightAt(x: number, z: number, fallback: number): number {
   const atFine = (dx: number, dz: number) => fine.heights[i + dx + (j + dz) * fine.nx]!;
   return triangleHeight(atFine(0, 0), atFine(1, 0), atFine(0, 1), atFine(1, 1), fx - i, fz - j);
 }
+
+// Static final assembly: fit the opaque kit return to the finished, protected soil.
+// Do not sample H here: it already includes the kit whose shared triangles we are fitting.
+if (COVE_FINE) fitCoveBacking((x, z) => fineHeightAt(x, z, coarseTriangleHeight(x, z)));
 
 export type TerrainCollisionTile = {
   heights: number[][];
