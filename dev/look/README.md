@@ -32,13 +32,17 @@ Every two-player run writes `<name>-warp.json`, including `--real` runs. Samples
 second, concurrently but not atomically. The report includes:
 
 - Actual server/page clock rates and peak deficits against the requested rate.
-- Actual world-tick progress, using TICK_MS, so an apparently fast clock cannot hide a slow world.
+- Actual world-tick progress against achieved server-clock elapsed time (page elapsed time in unwarped runs),
+  using TICK_MS. Requested wall-time acceleration is not simulation elapsed time.
 - The maximum sampled tick gap between pages and wall-time skew between the reads.
 - Machine state and train positions. Train gaps include network latency and read skew. Both the all-sample gaps
   and gaps while both train clocks are running are printed; a scripted skip can produce a large transient jump.
 
 A peak deficit over one game second prints **DRIFT**, even if the process catches up. Remaining clock or world-tick
-deficit over one game second at the end fails the run. These are harness diagnostics, not proof of tight
+deficit over one game second at the end fails the run. Requested-rate failures are labelled harness capacity;
+world deficits compare against the achieved source clock. Final co-op convergence still runs after a capacity
+failure, so a rate failure cannot hide an independent state mismatch. Population joins the convergence check.
+These are harness diagnostics, not proof of tight
 synchronization throughout the run. Use a lower cap on a busy machine. The measured interval covers setup and
 warm-up; shader loading, browser startup and captures add real time. Background work on the shared Mac changes the
 achievable rate. Warp is not a feel, smoothness, GPU-performance or real-network-latency test.

@@ -97,7 +97,7 @@ export function installObserver(ignore: string) {
   const named = new Set<string>();
   const w = window as unknown as {
     __observe: {
-      take(beat: string, immediate?: boolean): void;
+      take(beat: string, immediate?: boolean, replace?: boolean): void;
       read(): Observed;
       current(): { text: string; where: string }[];
       pose: () => SaveState['pose'];
@@ -112,8 +112,12 @@ export function installObserver(ignore: string) {
     },
     pose: () => null, // WATCH_MARKS fills these in, once the player exists
     lastBeat: 0,
-    take(beat, immediate = false) {
-      if (named.has(beat)) return;
+    take(beat, immediate = false, replace = false) {
+      if (named.has(beat) && !replace) return;
+      if (replace) {
+        const index = saves.findIndex((save) => save.beat === beat);
+        if (index >= 0) saves.splice(index, 1);
+      }
       named.add(beat);
       w.__observe.lastBeat = now(); // only what's new: a bot opening one crate forever is stuck, however busy it looks
       const capture = () => {

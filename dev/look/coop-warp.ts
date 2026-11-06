@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import type { Game } from './lib.ts';
 import type { WarpHandle } from './warp.ts';
 import { TICK_MS } from '../../src/world/sync.ts';
+import { worldClockDeficit } from './clock-progress.ts';
 
 export function coopWarpOptions(args: string[]) {
   const value = (flag: string) => (args.includes(flag) ? args[args.lastIndexOf(flag) + 1] : undefined);
@@ -136,19 +137,14 @@ export async function startCoopWarp(games: Game[], url: string | undefined, spee
           b = last.pages[i]!;
         const lag = Math.max(...samples.map((s) => s.pages[i]!.lag));
         const tickSeconds = ((b.tick - a.tick) * TICK_MS) / 1000;
-        const behind = Math.max(
-          ...samples.map((s) => {
-            const p = s.pages[i]!;
-            return (p.wall - a.wall) * speed - ((p.tick - a.tick) * TICK_MS) / 1000;
-          }),
-        );
+        const behind = Math.max(...samples.map((s) => worldClockDeficit(first, s, i, TICK_MS)));
         worldDeficit = Math.max(worldDeficit, behind);
-        finalWorldDeficit = Math.max(finalWorldDeficit, (b.wall - a.wall) * speed - tickSeconds);
+        finalWorldDeficit = Math.max(finalWorldDeficit, worldClockDeficit(first, last, i, TICK_MS));
         console.log(
           `warp player ${i + 1}: ${(b.game - a.game).toFixed(2)} game s / ${(b.wall - a.wall).toFixed(2)} wall s = ${((b.game - a.game) / (b.wall - a.wall)).toFixed(2)}x; max clock deficit ${lag.toFixed(3)} game s${lag > 1 ? ' (DRIFT: lower --warp-speed)' : ''}`,
         );
         console.log(
-          `warp player ${i + 1} world ticks: ${tickSeconds.toFixed(2)} game s = ${(tickSeconds / (b.wall - a.wall)).toFixed(2)}x; max deficit against requested rate ${behind.toFixed(3)} game s`,
+          `warp player ${i + 1} world ticks: ${tickSeconds.toFixed(2)} game s = ${(tickSeconds / (b.wall - a.wall)).toFixed(2)}x; max deficit against achieved ${url ? 'server' : 'page'} clock ${behind.toFixed(3)} game s`,
         );
       }
       const tickGap = Math.max(...samples.map((s) => Math.abs(s.pages[0]!.tick - s.pages[1]!.tick)));
@@ -187,11 +183,11 @@ export async function startCoopWarp(games: Game[], url: string | undefined, spee
         );
       if ((last.server?.lag ?? 0) > 1 || last.pages.some((p) => p.lag > 1))
         throw new Error(
-          'Clocks ended more than 1 game second behind: this run did not hold the requested rate. Lower --warp-speed.',
+          'Harness clock capacity: clocks ended more than 1 game second behind the requested rate. Lower --warp-speed; this alone is not a co-op divergence.',
         );
       if (finalWorldDeficit > 1)
         throw new Error(
-          'World ticks ended more than 1 game second behind the requested rate. Lower --warp-speed or reduce machine load.',
+          'World ticks ended more than 1 game second behind the achieved source clock; inspect world synchronization.',
         );
     },
   };

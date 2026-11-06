@@ -17,6 +17,11 @@ Regenerate when the world or route changes; no old-save migrations or compatibil
 `.look/checkpoints/{solo,coop}` and are only published after a successful regeneration. Held-item and transient animation
 states are not invented: `beam-in-hand` is not a fixture because the existing durable save does not promise that state.
 
+Co-op fixtures are captured when both bots reach the coordinator barrier. Both files hold the same
+authority's shared save (population included), alongside each peer's own personal inventory, pose and route cursor.
+Independently timed arrival saves remain diagnostic observations, not a restorable pair. `checkpoint-pairs.json`
+retains the paired captures; publish fixtures only after the entire regeneration passes. Regenerate existing pairs.
+
 `playthrough --from at-cove` resumes at the machine before waking it, through T1; `--from t1-done` goes through T2;
 `--from t2-funded` checks T2's laying/completion; `--from pier-ending` finishes the pier.
 Add `--to wake|t1-done|t2-funded|T2|T3|jump|forge-lit|Q1|Q2|hook|Q3|Q4|Q5|glider|trains|pier-ending|Q6|pier|audio-loop`
