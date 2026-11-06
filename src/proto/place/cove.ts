@@ -226,7 +226,10 @@ function cliff(): CoveMesh {
     // Broad cap curvature joins the rolled lip to the buried terrain socket.
     const lipReach = 0.5 - 0.4 * section.cap;
     const capStart = mesh.vertices.length / 3;
-    for (const across of [0.72, 0.88, 1])
+    // Keep the played toe broad. Farther round the headland, start the return
+    // sooner so its fall into the backing soil is a shoulder rather than a narrow wall.
+    const capAcross = 0.72 - 0.32 * smoothstep(48, 58, z);
+    for (const across of [capAcross, 0.88, 1])
       vertex(
         mesh,
         front + lipReach + (width - lipReach) * across,

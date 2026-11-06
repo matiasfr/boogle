@@ -909,6 +909,8 @@ three low rounded waterline buttresses use two opaque cullable batches and the e
 1,942 triangles for collision. The toe shares the face's skin and rounded cap, with no intersecting end-wall ramp or
 small stepping fragments. The rear return and nose closure are fitted below the finished soil, retaining one
 rounded mass without exposed end-wall slivers. Refinement adds 4,836 triangles, for 6,778 render additions in total.
+Beyond local z48, the far cap begins its return earlier, easing into the buried backing across a wider shoulder;
+the played toe and front lip retain their positions. This removes the steep exposed rear-return strip.
 No added lights, post passes or per-frame terrain uploads.
 The pocket has a gentler beach profile: the first 0.3 m above water spans about 1.9 m at local z 40.
 Bounded carving and backing-height matching retain the complete route protection mask.
@@ -916,16 +918,18 @@ The owner's smooth Odyssey base and adjustable Sunshine strata follow the [revis
 Island-aligned triplanar rock and planar turf pigment use three original 512² linear RGBA8 maps (4 MiB with mips).
 Slope and elevation select semantic layers; authoritative path coverage stays separate from pigment. A broad soil-slope
 attribute stabilizes coverage independently of lighting normals. Actual surface slope limits turf eligibility,
-so steep barriers remain sandstone. Microheight blends the layers before a soft turf edge; original grouped blade
+so steep barriers remain sandstone. Branch-free microheight blending keeps texture sampling outside divergent
+per-pixel conditionals before a soft turf edge; original grouped blade
 strokes and a restrained under-lip shade replace broad turf noise. The kit has a small
 opaque cap overhang. Sand takes priority on low walkable beach slopes; turf is suppressed at the wet shoreline.
 Golden sand, orange sandstone and richer green turf use unequal sediment beds, three related pigments by default,
-occasional thin accents, slow lateral warp and slight edge erosion. Bedding is restricted to exposed steep rock;
+slow lateral warp and slight edge erosion. Thin dark accent lines are removed at the owner's round-seven request;
+the broad irregular warm beds remain. Bedding is restricted to exposed steep rock;
 gentle shoulders stay plain. Defaults are strength 0.6, bed scale 2.4 m and irregularity 0.6; the rock/turf threshold
-is normal-Y 0.8 with a 0.09 blend, and bedding fades at 0.68 with a 0.1 blend. The cap and soil share a bounded
+is normal-Y 0.8 with a 0.12 blend, and bedding fades at 0.68 with a 0.1 blend. The cap and soil share a bounded
 static tangent field and semantic cap coverage at their join, avoiding a lighting crease or isolated painted strip.
 These presentation fields leave the shared support positions and collision triangles unchanged.
-All 65 look settings are local tunables
+All 63 look settings are local tunables
 (`cove.*`); none changes collision or simulation. The final art candidate still requires coordinator/owner review.
 Under this flag only, idle Buddy cancels gravity tangent to actual walkable static support while retaining normal
 pressure. Moving input, swimming, moving decks, jumps and upward impulses keep their normal behavior. Seven sampled

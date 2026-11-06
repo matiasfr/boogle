@@ -91,3 +91,18 @@ Owner directions, 5 November: previz is reference rather than a target, and game
 Combine visible warm sandstone with irregular bedding; fix the cap lighting crease and isolated stone triangle.
 Capture wide, owner interpretation, first arrival-path glimpse and swash; retain budgets, flag, shared surfaces
 and post-stop assertions. Blind route discovery and device play remain owner validation, not bot conclusions.
+
+## Round 7 — quiet sandstone faces
+
+Retain the round-six vista, route, warm palette, broad irregular beds, slope-true turf and wet beach.
+Remove the thin dark accent layer and its controls rather than leaving a disabled compatibility path.
+Trace rear-cap specks and angular background borders to their actual surface before correcting them.
+Keep the four established cameras (arrival, wide, interpreted owner angle, close cap) and make paired
+before/after boards plus sandstone crops. Rebase first, then retain the rebased baseline separately from
+the final evidence. Validate the final tree, counts and affected cove traversal; stop for coordinator review.
+This serves DESIGN.md 11, **Show, don't tell**: quieter stone should support the readable route and vista.
+
+The far return now starts its descent earlier beyond z48, retaining the near toe and front lip while replacing
+the exposed steep rear strip with a wider shoulder. The height-blend shader uses branch-free exclusion and
+normalization: scalar TSL conditionals otherwise put its texture reads in divergent fragment flow. Temporary
+RGB coverage and surface-ID probes are evidence only and are removed from the product before final capture.
