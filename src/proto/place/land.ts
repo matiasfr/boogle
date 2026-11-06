@@ -13,6 +13,7 @@ import { smoothstep } from '../../math.ts';
 import { FAR, GRID, ORIGIN, PATHS, SPIRE } from './layout.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at, cellX, cellZ, gorgeD, heights, insidePlace, pathMask } from './terrain.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from './shore-layout.ts';
+import { boxFootprint, sampleFootprint } from './support.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { tagStepSupport, segmentStepSupport, type StepSurface } from '../../render/locomotion-surfaces.ts';
 
@@ -357,7 +358,7 @@ export function buildLand(owner?: OwnedView) {
       plank(dx - 19 + i * 2, dz, dx - 17.02 + i * 2, dz, 3.08, 3.08, 7, '#8a6238', 0.35, owner);
     for (const x of [dx - 18, dx - 12])
       for (const z of [dz - 3.2, dz + 3.2]) {
-        const base = H(x, z),
+        const base = sampleFootprint(boxFootprint(x, z, 0.4, 0.4)).low - 0.02,
           height = 4 - base;
         const post = new THREE.Mesh(new THREE.BoxGeometry(0.4, height, 0.4), FLAT('#7f5630'));
         post.position.set(x, base + height / 2, z);

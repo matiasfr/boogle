@@ -7,6 +7,8 @@
 // goes on your shoulder with either axe. Trees stay finite. The axe and back are the first two rungs (`AXE2`, `PACK`, ./ladder.ts);
 // which rung you're on comes from `job.rung`.
 import * as THREE from 'three/webgpu';
+import { createTreeRoots, type TreeRoot } from '../../render/tree-roots.ts';
+import { treeSeat } from './support.ts';
 import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { warmUp } from '../../render/precompile.ts';
@@ -209,6 +211,7 @@ function updatePartnerLoads() {
 // ---------------------------------------------------------------- what you can hit
 export type Tree = {
   index: number;
+  root: TreeRoot;
   x: number;
   y: number;
   z: number;
@@ -235,9 +238,11 @@ export type Tree = {
 
 const rng = mulberry32(77);
 function makeTree(x: number, z: number, size: number, great = false, hardwood = false): Tree {
-  const y = H(x, z);
+  const root = treeSeat({ x, z, size, great, hardwood }),
+    y = root.top;
   return {
     index: 0,
+    root,
     x,
     y,
     z,
@@ -277,8 +282,7 @@ TREES.push(greatTree);
 TREES.push(
   ...LAND_TREES.map((t) => {
     const tree = makeTree(t.x, t.z, t.size, false, t.hardwood);
-    tree.y = t.y;
-    tree.at.y = t.y + 1.7;
+    tree.at.y = tree.y + 1.7;
     return tree;
   }),
 );
@@ -383,16 +387,16 @@ function solidTree(t: Tree) {
         kind: 'cylinder',
         rTop: (t.hardwood ? 0.8 : 0.38) * t.size,
         rBottom: (t.hardwood ? 0.8 : 0.38) * t.size,
-        h,
+        h: h + t.y - t.root.bottom,
         segments: 6,
       },
-      { x: t.x, y: t.y + h / 2, z: t.z },
+      { x: t.x, y: (t.root.bottom + t.y + h) / 2, z: t.z },
     );
     return;
   }
   t.stump = addStatic(
-    { kind: 'cylinder', rTop: 0.46 * t.size, rBottom: 0.46 * t.size, h: 0.6, segments: 6 },
-    { x: t.x, y: t.y + 0.3, z: t.z },
+    { kind: 'cylinder', rTop: 0.46 * t.size, rBottom: 0.46 * t.size, h: 0.6 + t.y - t.root.bottom, segments: 6 },
+    { x: t.x, y: (t.root.bottom + t.y + 0.6) / 2, z: t.z },
   );
   // The great tree's trunk goes on your shoulder; it isn't in the way after that.
   if (t.great && trunk.taken) return;
@@ -531,7 +535,21 @@ const parts = {
   split: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.16, 0.28, 3.5, 8), flat('#c7c2aa'), 2),
   greatCrown: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), flat('#4f7941'), 2),
 };
-for (const m of Object.values(parts)) {
+const roots = [
+  createTreeRoots(
+    TREES.filter((t) => !t.hardwood && !t.great),
+    parts.trunk.material,
+  ),
+  createTreeRoots(
+    TREES.filter((t) => t.hardwood),
+    parts.hardwood.material,
+  ),
+  createTreeRoots(
+    TREES.filter((t) => t.great),
+    parts.roots.material,
+  ),
+];
+for (const m of [...Object.values(parts), ...roots]) {
   m.castShadow = true;
   m.frustumCulled = false;
   scene.add(m);

@@ -202,39 +202,4 @@ export function forgePlan(door = { x: -2.9, w: 2.8, rows: 3 }) {
   });
 }
 
-export function openingStops() {
-  const rock = '#9a9184',
-    wood = '#7f5630';
-  const row = (x: number, z: number, w: number, h: number, d: number, color: string, y = 0, yaw = 0) => ({
-    kind: 'stop',
-    x: toWorld(x),
-    z,
-    y,
-    w,
-    h,
-    d,
-    yaw,
-    color,
-  });
-  const rows = [
-    // an arch on the commons, north path
-    row(-146.5, -70, 3, 6.5, 3.4, rock),
-    row(-137.5, -70, 3, 7.2, 3.4, rock),
-    row(-142, -70, 13, 2.2, 4, rock, 6.5, 0.05),
-    // a lookout on the rim
-    row(-104, -122, 5, 0.3, 2.2, wood, 0.6),
-    row(-106, -122, 0.3, 0.6, 2, wood),
-    row(-102, -122, 0.3, 0.6, 2, wood),
-    row(-110, -128, 0.25, 6, 0.25, wood),
-    row(-109.1, -128, 1.6, 0.9, 0.08, '#f0752c', 5),
-    // an old cart at the bank, south path
-    row(-68, 150, 2.4, 1, 4, wood, 0.5, 0.5),
-    row(-69.5, 148, 0.3, 1.2, 1.2, '#3a302c'),
-    row(-66.5, 152, 0.3, 1.2, 1.2, '#3a302c'),
-    // an arch at the far shoulder, east path
-    row(16, 156, 3, 6, 3.2, rock),
-    row(25, 164, 3, 7, 3.2, rock),
-    row(20.5, 160, 13.5, 2.2, 3.8, rock, 6.2, -0.72),
-  ];
-  return rows;
-}
+export { openingStops } from './opening-stops.ts';

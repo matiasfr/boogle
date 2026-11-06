@@ -171,12 +171,12 @@ async function runChecks() {
   }
   if (checkPlace) {
     const { checkBuildingGrounding } = await import('./grounding.ts');
-    const grounding = checkBuildingGrounding();
+    const grounding = await checkBuildingGrounding();
     failed += grounding.failures;
     report.push(grounding);
     if (!json) {
       console.log(
-        `production foundations: ${grounding.rows.length} placements, ${grounding.failures} problems (${grounding.toleranceCm} cm tolerance)`,
+        `production grounding: ${grounding.rows.length} placements, ${grounding.failures} problems (${grounding.toleranceCm} cm tolerance)`,
       );
       for (const row of grounding.rows.filter((row) => row.failed))
         console.log(

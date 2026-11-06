@@ -8,6 +8,9 @@ import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
 
 /** Far from today's island, past its soft wall, as the crossing does. */
+// The bank cart has one level resting place on the shoulder, clear of the steep bank.
+export const BANK_CART = { x: -62, z: 157, y: 18.6, yaw: 0.5 };
+
 export const ORIGIN = { x: 1000, z: 0 };
 export const toWorld = (x: number) => x + ORIGIN.x;
 

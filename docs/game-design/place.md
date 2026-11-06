@@ -46,8 +46,15 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 matching Place's completed construction state; only the temporary scaffold poles disappear. The level check in
 `npm run check` samples the rendered terrain triangles over every production building/forge footprint at at most
 25 cm spacing, including rotated edges. It rejects exposed foundation gaps or terrain above the seating surface
-over 5 cm. The authored below-ground foundation skirt is intentional. This check does not cover future town growth,
-trees, moving props or the old lookout/cart/arch assemblies.
+over 5 cm. The authored below-ground foundation skirt is intentional.
+
+The audit also checks opening prop supports, attached arch/cart/lookout pieces, crane and rack feet, decoded recovery-rack
+and station-kit feet, cove supports, bridge bank bearings, the settled reward crate and every standing tree root. Connected scenery shares one
+assembly height; piers reach down to terrain, and the cart rests on a small level shoulder. Tree centres use the actual
+terrain triangle instead of the catalog's rounded grid height. Batched root skirts reach the downhill edge while the
+uphill soil may bury the lower trunk. Tree identity and catalog ordering stay unchanged; these are Local geometry and
+collision changes. Moving cargo, vehicles, floating collectibles, distant landforms and future town growth are outside
+this static support audit.
 
 An island about 440 m across, 1 km east of today's, in the crossing's sea. A Y-shaped gorge, with walls about 16-30 m high
 and a river at the bottom, splits it into three lobes: the village (west, 18 m), the timber camp (north ridge, 30 m) and the

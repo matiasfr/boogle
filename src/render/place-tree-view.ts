@@ -1,11 +1,13 @@
 // Shared Local tree geometry, fall poses and colliders. Legacy Place and the railway entity use the same view.
 // No material account, save, co-op or progression owner lives here.
 import * as THREE from 'three/webgpu';
+import { createTreeRoots, type TreeRoot } from './tree-roots.ts';
 import { emit } from './particles.ts';
 import { removeBody, teleport, sweepSphere, type Body, type Shape } from '../physics/engine.ts';
 
 export type TreePose = {
   index: number;
+  root: TreeRoot;
   x: number;
   y: number;
   z: number;
@@ -52,8 +54,8 @@ export function createTreeSolids(
     if (t.cleared) return;
     if (t.growth && t.growth < 4) {
       t.stump = addStatic(
-        { kind: 'cylinder', rTop: 0.46 * t.size, rBottom: 0.46 * t.size, h: 0.6, segments: 6 },
-        { x: t.x, y: t.y + 0.3, z: t.z },
+        { kind: 'cylinder', rTop: 0.46 * t.size, rBottom: 0.46 * t.size, h: 0.6 + t.y - t.root.bottom, segments: 6 },
+        { x: t.x, y: (t.root.bottom + t.y + 0.6) / 2, z: t.z },
       );
       return;
     }
@@ -64,16 +66,16 @@ export function createTreeSolids(
           kind: 'cylinder',
           rTop: (t.hardwood ? 0.8 : 0.38) * t.size,
           rBottom: (t.hardwood ? 0.8 : 0.38) * t.size,
-          h,
+          h: h + t.y - t.root.bottom,
           segments: 6,
         },
-        { x: t.x, y: t.y + h / 2, z: t.z },
+        { x: t.x, y: (t.root.bottom + t.y + h) / 2, z: t.z },
       );
       return;
     }
     t.stump = addStatic(
-      { kind: 'cylinder', rTop: 0.46 * t.size, rBottom: 0.46 * t.size, h: 0.6, segments: 6 },
-      { x: t.x, y: t.y + 0.3, z: t.z },
+      { kind: 'cylinder', rTop: 0.46 * t.size, rBottom: 0.46 * t.size, h: 0.6 + t.y - t.root.bottom, segments: 6 },
+      { x: t.x, y: (t.root.bottom + t.y + 0.6) / 2, z: t.z },
     );
     // The great tree's trunk goes on your shoulder; it isn't in the way after that.
     if (t.great && trunkTaken()) return;
@@ -164,6 +166,17 @@ export function createTreeView(
     branch: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.17, 0.21, 1.5, 8), flat('#686359'), hardwoodCount),
     cutEnd: new THREE.InstancedMesh(new THREE.CircleGeometry(0.17, 8), flat('#ddc89b'), hardwoodCount),
   };
+  const roots = [
+    createTreeRoots(
+      TREES.filter((t) => !t.hardwood),
+      parts.trunk.material,
+    ),
+    createTreeRoots(
+      TREES.filter((t) => t.hardwood),
+      parts.hardwood.material,
+    ),
+  ];
+  root.add(...roots);
   for (const m of Object.values(parts)) {
     m.castShadow = true;
     m.frustumCulled = false;
@@ -283,6 +296,10 @@ export function createTreeView(
   return {
     pose,
     dispose() {
+      for (const mesh of roots) {
+        mesh.removeFromParent();
+        mesh.geometry.dispose();
+      }
       // The pigment factory returns owned clones; flat materials remain in their shared cache.
       for (const name of ['trunk', 'crown', 'crown2', 'stump', 'broad'] as const) parts[name].material.dispose();
       for (const mesh of Object.values(parts)) {
