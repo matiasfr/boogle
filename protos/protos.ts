@@ -125,6 +125,11 @@ export const PROTOS: Proto[] = [
     verb: 'chops',
     variants: [
       {
+        name: 'route',
+        url: '/?proto=place&route=v2&v=route&room=proto-place-route',
+        what: 'Does building the approach make the connection clear? Q2 builds a walk to the hook; Q3 builds the quarry ramp and connects its winch.',
+      },
+      {
         name: 'fixed',
         url: '/?proto=place&telescope=v2&v=fixed',
         what: 'Did you want another look after something changed? The ridge telescope restores one railway-and-ring view.',

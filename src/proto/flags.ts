@@ -23,6 +23,10 @@ export function pageQuery(search = typeof location === 'undefined' ? 'classic=1'
   }
   if (q.get('proto') === 'place') {
     const room = q.get('room');
+    if (q.get('route') === 'v2' || room === 'proto-place-route') {
+      q.set('route', 'v2');
+      if (!room) q.set('room', 'proto-place-route');
+    }
     const villageRoom = room === 'proto-place-village' || room === 'proto-place-village-coop';
     // The old coast stays in its own comparison room, including room-only invite links.
     if (q.get('terrain') === 'cove' || room === 'proto-place-cove') {
@@ -33,7 +37,7 @@ export function pageQuery(search = typeof location === 'undefined' ? 'classic=1'
     } else if (q.get('v') === 'village' || villageRoom) {
       q.set('v', 'village');
       q.set('room', villageRoom ? room : q.get('coop') === '1' ? 'proto-place-village-coop' : 'proto-place-village');
-    } else if (!room) q.set('room', q.get('coop') === '1' ? 'proto-place-coop' : 'proto-place');
+    } else if (!q.has('room')) q.set('room', q.get('coop') === '1' ? 'proto-place-coop' : 'proto-place');
   }
   return q;
 }
@@ -50,7 +54,7 @@ export function roomInviteQuery(room: string, search: string): string {
   const invite = new URLSearchParams();
   if (address.has('proto')) {
     invite.set('proto', address.get('proto')!);
-    for (const key of ['v', 'coop']) if (flags.has(key)) invite.set(key, flags.get(key)!);
+    for (const key of ['v', 'coop', 'route']) if (flags.has(key)) invite.set(key, flags.get(key)!);
     invite.set('room', room);
   } else if (flags.get('classic') === '1') {
     invite.set('classic', '1');

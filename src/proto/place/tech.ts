@@ -25,6 +25,7 @@ import { protoCount } from '../count.ts';
 import { playMark } from '../mark.ts';
 import { knock, pop } from '../minis/common.ts';
 import { flat } from '../flat.ts';
+import { pageQuery } from '../flags.ts';
 import { after, barrage, pullOut, shakeView } from './celebrate.ts';
 import { coop, coopWire } from './coop.ts';
 import { deliver, dropChest, giftState, merged, prizeHooks, type GiftId } from './gifts.ts';
@@ -50,6 +51,9 @@ import {
   POSTS,
   SECRETS,
   SEA_SWITCH,
+  SERVICE_ROUTES,
+  SERVICE_WIDTH,
+  routeReady,
   padById,
   type GateId,
   type Pad,
@@ -73,6 +77,88 @@ const dark = new THREE.MeshStandardNodeMaterial({ color: '#2a2e30', roughness: 0
 const partMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
 const ox = ORIGIN.x;
 const v = new THREE.Vector3();
+const routeV2 = pageQuery().get('route') === 'v2';
+const quarryReady = () => !routeV2 || routeReady(L2.stage).quarry;
+
+// Local meshes and Owner collision derived from the existing accepted/saved line stage.
+const serviceDecks: { kind: 'hook' | 'quarry'; mesh: THREE.Mesh; body: Body | null }[] = [];
+const drive = new THREE.Group();
+function buildServiceRoutes() {
+  if (!routeV2) return;
+  for (const kind of ['hook', 'quarry'] as const) {
+    const points = SERVICE_ROUTES[kind];
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1]!,
+        b = points[i]!;
+      const dx = b.x - a.x,
+        dz = b.z - a.z,
+        dy = b.y - a.y;
+      const length = Math.hypot(dx, dz, dy);
+      // Reuse the stone landing finish, with brass edges marking the clear walking width.
+      const mesh = new THREE.Mesh(
+        merged([
+          ['b', 0, 0, 0, SERVICE_WIDTH, 0.35, length + 0.2, STONE2],
+          ...[-1, 1].map((side): Parameters<typeof merged>[0][number] => [
+            'b',
+            side * (SERVICE_WIDTH / 2 - 0.06),
+            0.18,
+            0,
+            0.12,
+            0.02,
+            length,
+            BRASS,
+          ]),
+        ]),
+        partMat,
+      );
+      mesh.rotation.set(-Math.atan2(dy, Math.hypot(dx, dz)), Math.atan2(dx, dz), 0, 'YXZ');
+      const normal = new THREE.Vector3(0, 0.175, 0).applyQuaternion(mesh.quaternion);
+      mesh.position.set(ox + (a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2).sub(normal);
+      mesh.name = `route-v2-${kind}-${i}`;
+      mesh.castShadow = mesh.receiveShadow = true;
+      mesh.visible = false;
+      scene.add(mesh);
+      serviceDecks.push({ kind, mesh, body: null });
+    }
+  }
+  // Two separated drive sockets stay visible; Q3 supplies the missing coupling between them.
+  const socket = new THREE.Mesh(
+    merged([
+      ['b', -0.5, 0.7, 0.3, 0.35, 0.3, 0.35, BRASS],
+      ['b', 0.8, 0.7, -0.6, 0.35, 0.3, 0.35, BRASS],
+    ]),
+    partMat,
+  );
+  socket.position.set(ox + LEVER.x, LEVER.y, LEVER.z);
+  scene.add(socket);
+  const coupling = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, Math.hypot(1.3, 0.9)), glow);
+  coupling.rotation.y = Math.atan2(1.3, -0.9);
+  drive.add(coupling);
+  drive.position.set(ox + LEVER.x + 0.15, LEVER.y + 0.7, LEVER.z - 0.15);
+  drive.name = 'route-v2-winch-drive';
+  scene.add(drive);
+  updateServiceRoutes();
+}
+function updateServiceRoutes() {
+  if (!routeV2) return;
+  const ready = routeReady(L2.stage);
+  drive.visible = ready.quarry;
+  for (const deck of serviceDecks) {
+    deck.mesh.visible = ready[deck.kind];
+    if (deck.mesh.visible && !deck.body) {
+      deck.mesh.geometry.computeBoundingBox();
+      const size = deck.mesh.geometry.boundingBox!.getSize(new THREE.Vector3());
+      deck.body = addStatic(
+        { kind: 'box', hx: size.x / 2, hy: 0.175, hz: size.z / 2 },
+        deck.mesh.position,
+        deck.mesh.quaternion,
+      );
+    } else if (!deck.mesh.visible && deck.body) {
+      removeBody(deck.body);
+      deck.body = null;
+    }
+  }
+}
 
 // ---------------------------------------------------------------- the pads, the pillars and the rock
 // Pale landing cap, warm stone body and four brass corner keys. One merged mesh, the same solid footprint.
@@ -572,7 +658,7 @@ function buildGates() {
   buildChain();
 }
 function placeSlab(g: Gate) {
-  const down = job.gate[g.id];
+  const down = job.gate[g.id] && (g.id !== 'quarry' || quarryReady());
   const spec = GATES[g.id];
   if (down && g.body) {
     removeBody(g.body);
@@ -589,6 +675,7 @@ function placeSlab(g: Gate) {
 }
 let seaCameraPending = false;
 function openGate(id: GateId, here: boolean) {
+  if (id === 'quarry' && !quarryReady()) return;
   if (job.gate[id]) return;
   job.gate[id] = true;
   const g = gates[id];
@@ -948,7 +1035,7 @@ registerInteractable(() => {
       run: () => gainTech(id, true),
     });
   }
-  if (!job.gate.quarry) {
+  if (!job.gate.quarry && quarryReady()) {
     const x = LEVER.x + ox,
       z = LEVER.z;
     if (Math.hypot(p.x - x, p.z - z) < 3 && p.y > LEVER.y - 0.2)
@@ -987,6 +1074,7 @@ export function hasTechGoal() {
 
 // ---------------------------------------------------------------- the frame, and putting it all right
 export function updateTech(dt: number, now: number) {
+  updateServiceRoutes();
   // Unlock/save/broadcast immediately; only this player's camera waits for every reward card to be dismissed.
   if (seaCameraPending && !gettingItem()) {
     seaCameraPending = false;
@@ -1008,6 +1096,7 @@ export function updateTech(dt: number, now: number) {
   // Fallen off the top with no glider and nothing wrong: `Back up the path` (./verbs.ts) handles it.
 }
 export function snapTech() {
+  updateServiceRoutes();
   resetMoves();
   syncControls();
   for (const g of Object.values(gates)) {
@@ -1042,10 +1131,17 @@ export function buildTech() {
   );
   buildPosts();
   buildGates();
+  buildServiceRoutes();
   buildClues();
 }
 // For the evals, on `window.__place.tech`.
 export const techApi = {
+  route: () => ({
+    enabled: routeV2,
+    ...routeReady(L2.stage),
+    drive: drive.visible,
+    decks: serviceDecks.map((d) => ({ kind: d.kind, visible: d.mesh.visible, solid: !!d.body })),
+  }),
   RINGS,
   DEVICES,
   SECRETS,
