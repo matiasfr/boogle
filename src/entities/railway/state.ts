@@ -5,6 +5,8 @@ export type RailwayViewInspection = RailwayInspection & {
   owned: { meshes: number; bodies: number; geometries: number; animations: number };
   head: number;
   targetHead: number;
+  panelCursor: number;
+  machineSetback: number;
   station: { x: number; y: number; z: number; shown: number };
   machine: { x: number; y: number; z: number };
   trees: {
@@ -18,20 +20,8 @@ export type RailwayViewInspection = RailwayInspection & {
     falling: number;
     growth: number;
   }[];
-  reward: {
-    claims: number;
-    claimed: boolean;
-    owned: boolean;
-    busy: boolean;
-    error: string | null;
-    revealCount: number;
-    multiReveals: number;
-    showing: boolean;
-    visible: boolean;
-    x: number;
-    y: number;
-    z: number;
-  };
+  pathOpen: boolean;
+  reward: ReturnType<Awaited<ReturnType<typeof import('./reward.ts').createRailwayReward>>['inspect']>;
 };
 let current: (() => RailwayViewInspection) | null = null;
 export const inspectRailway = () => current?.() ?? null;

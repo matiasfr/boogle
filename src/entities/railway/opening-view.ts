@@ -9,6 +9,7 @@ type OpeningEnv = {
   busy: () => boolean;
   awake: () => boolean;
   hush: () => boolean;
+  pathOpen: () => boolean;
 };
 
 export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
@@ -120,16 +121,28 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
     gather: { x: gather.x, z: gather.z, ux: p.ux, uz: p.uz, lx: p.uz, lz: -p.ux, len: 28 },
     platform: { x: platform.x, y: layout.railY(line, 19) + 0.72, z: platform.z, ux: p.ux, uz: p.uz, up: () => false },
     forgeLit: () => false,
-    path: null,
+    path: (u, lat) => {
+      if (!env.pathOpen()) return null;
+      const s = 30 + u * (layout.STUB.camp - 30);
+      const at = rail.besideLine(line, s, lat);
+      const tangent = layout.lineAt(line, s, { x: 0, z: 0, ux: 0, uz: 1 });
+      return { x: at.x, y: layout.railY(line, s) + 0.2, z: at.z, yaw: Math.atan2(-tangent.ux, -tangent.uz) };
+    },
     cart: () => null,
     hush: env.hush,
   });
   folk.setPopulation(layout.TUNE.people);
+  let pathOpen = false;
   return {
     numbers(score: { money: number; logs: number; metres: number }, snapshot = false) {
-      signs.setNumbers(score, layout.TUNE.people, snapshot);
+      signs.setNumbers(score, layout.TUNE.people + (env.pathOpen() ? 8 : 0), snapshot);
     },
     update(dt: number) {
+      if (pathOpen !== env.pathOpen()) {
+        pathOpen = env.pathOpen();
+        folk.setPopulation(layout.TUNE.people + (pathOpen ? 8 : 0));
+        folk.setCommuters(pathOpen, 14);
+      }
       folk.setCamp(0, env.awake());
       folk.updateFolk(dt);
     },

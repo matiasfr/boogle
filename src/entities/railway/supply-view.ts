@@ -44,7 +44,18 @@ export async function createRecoveryRack(
   model.position.copy(at);
   owner.add(model); // Clones only geometry into the view lifetime; cached authored materials remain shared.
   addSolid(new Float32Array(vertices), new Uint32Array(indices), at);
-  const setStock = (count: number) => logs.forEach((log, i) => (log.visible = count > i));
+  const { flat } = await import('../../proto/flat.ts');
+  const stoneAt = at.clone().add(new THREE.Vector3(1.3, 0.6, 0));
+  const stone = Array.from({ length: 3 }, (_, i) => {
+    const mesh = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3), flat('#b0ab9d'));
+    mesh.position.copy(stoneAt).add(new THREE.Vector3((i - 1) * 0.42, -0.3, 0));
+    owner.add(mesh);
+    return mesh;
+  });
+  const setStock = (count: number, stones = 0) => {
+    logs.forEach((log, i) => (log.visible = count > i));
+    stone.forEach((mesh, i) => (mesh.visible = stones > i));
+  };
   setStock(0);
-  return { logBase, setStock };
+  return { logBase, stoneAt, setStock };
 }
