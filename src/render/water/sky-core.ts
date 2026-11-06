@@ -202,7 +202,8 @@ export function createWaterSkyFor(
     background,
     skyAt,
     skyLod,
-    ambient: (normal: N) => sample(normal).level(maxMip).rgb,
+    // Readback materials are temporary: do not retain their nodes for prepared-look swaps.
+    ambient: (normal: N) => cubeTexture(sampledCube, normal).level(maxMip).rgb,
     selectPrepared(texture: THREE.CubeTexture, direction: THREE.Vector3, radiance: THREE.Vector3) {
       sampledCube = texture;
       for (const node of samples) node.value = texture;

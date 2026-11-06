@@ -1,7 +1,5 @@
 // Local visual proof only. A future accepted milestone may call setEveningLook after T1.
 // No clock, save, room message or gameplay availability belongs here.
-export const eveningPreview = new URLSearchParams(location.search).get('evening');
-export const prepareEvening = eveningPreview === '1' || eveningPreview === 'preview';
 let request: ((evening: boolean) => boolean) | undefined;
 
 /** Returns false when the opt-in sea is unavailable or a fade is already running. */
