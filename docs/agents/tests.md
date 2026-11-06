@@ -1,6 +1,6 @@
 # Tests
 
-Read this core when choosing checks, then only the references whose triggers are met. No browser for docs/tooling changes with no player-visible effect.
+Run `npm run checks-for`; see [bot checks](test-details/bot-segments.md). Read triggered references. No browser for docs/tooling with no player-visible effect.
 
 - Unit tests (`test/*.test.ts`, `node:test`): pure logic only (determinism, conservation, ordering, validation, serialize/load round-trips); no three.js, DOM or network; well under a second each.
 - `npm run check` (lint, typecheck, unit tests, registry, build; seconds): before every push.

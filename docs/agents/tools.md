@@ -29,7 +29,8 @@ Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lis
 - `npm run concepts`: painted concept images. `npm run clip`, `npm run reel`: clips and trailers. `npm run playtest`: what `?proto=` sessions did, uploaded on their own (`-- latest` prints the summary and a heat map; prototypes add beats with `playMark` from `src/proto/mark.ts`).
 - `npm run patch -- <file>`: many edits across files in one go. Nothing is written if any edit's text is missing or appears twice, then it runs Prettier, the full lint runner and a typecheck. Use it instead of a throwaway script, whose `replace` misses in silence and which skips the format hook. The format is at the top of `dev/patch.ts`.
 - `startStack` (`look`, `playthrough`, `session`, `scenario` and the rest) stops if `node_modules` doesn't match `package-lock.json`, and says to run `npm ci`. It never reinstalls by itself. A symlinked `node_modules` is skipped, since `before-after` plays an old commit on current packages on purpose.
-- One Mac GPU is shared: `look` runs are fine in parallel but slower; `perf` and `hitches` numbers need the machine to themselves.
+- One Mac GPU is shared: browser harnesses use the machine-wide bot queue (default one run). `perf` and `hitches`
+  numbers still need a quiet machine; the queue cannot exclude unrelated apps or older launchers. See [checks and segments](test-details/bot-segments.md).
 
 ### First look-development loop
 
