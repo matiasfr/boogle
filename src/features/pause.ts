@@ -35,7 +35,7 @@ import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
 import { uiSound } from '../ui/ui-sound.ts';
 import { pausePages, pauseNavigation, pauseSections } from '../player/pause-pages.ts';
 import { devCursorFree } from '../player/dev-input.ts';
-import { devEnabled } from '../dev-preferences.ts';
+import { tuningVisit } from '../dev-preferences.ts';
 
 const TABS: [GuideKind, string][] = [
   ['kbm', 'Keyboard'],
@@ -619,8 +619,7 @@ document.addEventListener('pointerlockchange', () => {
     me.entered &&
     !modalOpen() &&
     !conversation.open &&
-    !devEnabled &&
-    new URLSearchParams(location.search).get('tune') !== '1' &&
+    !tuningVisit &&
     !devCursorFree() &&
     inputKind() !== 'touch'
   )

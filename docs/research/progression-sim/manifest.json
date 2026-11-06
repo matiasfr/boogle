@@ -1,20 +1,23 @@
 {
   "schema": 1,
   "scope": "offline tooling only",
-  "baseCommit": "24732277c86b43850348822c2cf88cd9957758c5",
-  "inputSha256": "21c61c849bdaf88022425523e78728e7c9d3e4ea40019f154d73685105824653",
-  "sourceSha256": "7b4d2c0708b178f6b366e5eafb6e7f0f9b9d825b3de57ec52ee4a11b5ec815de",
+  "baseCommit": "d990af89fa8d5ca45bde834a0992085252d2aa8a",
+  "inputSha256": "508d84773eab6d8b69bd5b32107765b017e332a635f545bc3c9f86af140a9f76",
+  "sourceSha256": "5c01a75aed94c8ac2a661241a9eaba7afd9ffd54792ff0ba1eee618fde9b3c91",
   "sourceFiles": [
     "dev/economy/campaign.ts",
     "dev/economy/campaign-types.ts",
+    "dev/economy/campaign-kit.ts",
+    "dev/economy/options.ts",
     "dev/economy/three-area.ts",
     "dev/economy/five-area.ts",
     "dev/economy/report.ts",
     "dev/economy/cli.ts",
-    "dev/economy/model.ts"
+    "dev/economy/model.ts",
+    "dev/development/markdown.ts"
   ],
   "command": "npm run economy -- --report",
-  "node": "v26.13.0",
+  "node": "v24.11.1",
   "status": "complete",
   "baselineRuns": 8,
   "comparisonRuns": 104,
@@ -24,11 +27,11 @@
   "artifacts": [
     {
       "path": "docs/research/progression-sim.md",
-      "sha256": "a86f79939f03ee66ebfbed18ca1a6778fea1b23ccdc62eea197db0e7bf55fb94"
+      "sha256": "4b0e5853f0feae12ec8cc3b6911e9eccc7a85b6d5ca8c452f7f9c74f70c25fb7"
     },
     {
       "path": "docs/research/progression-sim/results.json",
-      "sha256": "7f72bc8f2027f9664129345b7f7a5da74ae5d3534d70f0e73237d7668469f806"
+      "sha256": "7106d21d55c4f72123d9b1329689b7c2fe6ecb13bc129c54ef026ba9da298c4f"
     },
     {
       "path": "docs/research/progression-sim/time-mix.svg",

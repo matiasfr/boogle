@@ -57,9 +57,11 @@ const KINDS = ['splat', 'stomp', 'bonk', 'tumble']; // append only: an old tab i
 const remoteSprings = new WeakMap<Remote, FeelProfile>();
 addPresenceField('feelSpring', () => (me.entered ? feelSpringPresence() : null));
 onRemotePresence((remote, presence) => {
-  const profile = readFeelSpringPresence(presence.feelSpring);
-  if (profile) remoteSprings.set(remote, profile);
-  else remoteSprings.delete(remote);
+  const previous = remoteSprings.get(remote);
+  const profile = readFeelSpringPresence(presence.feelSpring, previous);
+  if (profile) {
+    if (profile !== previous) remoteSprings.set(remote, profile);
+  } else if (previous) remoteSprings.delete(remote);
 });
 
 // ---------------------------------------------------------------- my flops

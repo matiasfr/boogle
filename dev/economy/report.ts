@@ -2,8 +2,10 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { escapeHtml as xml } from '../development/markdown.ts';
 import { simulateCampaign } from './campaign.ts';
-import type { Campaign, CampaignOptions, Kind, Policy } from './campaign-types.ts';
+import type { Campaign, CampaignOptions, Kind } from './campaign-types.ts';
+import { POLICIES } from './campaign-types.ts';
 
 type Result = ReturnType<typeof simulateCampaign>;
 const minute = (n: number) => (n / 60).toFixed(1);
@@ -52,7 +54,6 @@ function comparison(r: Result) {
     ledger: r.ledger,
   };
 }
-const xml = (s: string) => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 function chart(
   title: string,
   labels: string[],
@@ -117,9 +118,10 @@ export function writeCampaignReport(routes: Campaign[]) {
     ['supply 2x', { supply: 2 }],
     ['distance 0.75x', { distance: 0.75 }],
     ['distance 1.5x', { distance: 1.5 }],
-    ...(['tool-first', 'cart-first', 'town-first', 'optional-first'] as Policy[]).map(
-      (policy): [string, CampaignOptions] => [policy, { policy }],
-    ),
+    ...POLICIES.filter((policy) => policy !== 'route-first').map((policy): [string, CampaignOptions] => [
+      policy,
+      { policy },
+    ]),
   ];
   const comparisons = routes.flatMap((c) =>
     variants.map(([name, options]) => ({
@@ -162,12 +164,15 @@ export function writeCampaignReport(routes: Campaign[]) {
   const files = [
     'campaign.ts',
     'campaign-types.ts',
+    'campaign-kit.ts',
+    'options.ts',
     'three-area.ts',
     'five-area.ts',
     'report.ts',
     'cli.ts',
     'model.ts',
   ].map((f) => `dev/economy/${f}`);
+  files.push('dev/development/markdown.ts');
   const inputHash = createHash('sha256').update(JSON.stringify(routes)).digest('hex');
   const sourceHash = createHash('sha256');
   for (const file of files) sourceHash.update(file).update(readFileSync(file));
@@ -247,7 +252,7 @@ export function writeCampaignReport(routes: Campaign[]) {
     '## Scope, authority and inputs',
     'The [brief](../brainstorms/progression.md) remains proposed. [Upgrade economy](upgrade-economy.md#what-deveconomymodelts-needs-to-simulate), [next destinations](next-destinations.md#three-ways-to-fit-an-eight-hour-arc) and [rail economy](rail-economy-model.md) supply the comparison questions. This serves DESIGN’s **Toys before chores**, **Designed for drop-in, drop-out** and **Small and readable**. The exception authorizes this paper experiment ahead of the replay, not building either route. No Boogler copy was edited; no suspect dialogue was encountered in the tooling scope.',
     '- **Three-area**: starter → Glasshouse/fibre → sail tower → Split Shell/cement → bell terraces → Exhibition/steel → optional observatory → original island. Double jump at the sail tower is this unresolved variant only. Crystal/copper are omitted, not smuggled in as extra areas.\n- **Five-area**: starter → chalk/cement → steel harbour → suspended coast/crystal → port/copper → original island. Starter double jump, hook and glide remain. The four-resource catalogue retains C1–C6, S1–S6, X1–X4, U1–U6 and C5 → U6. Both routes explicitly experiment with further jumps, faster glide, longer hook and a plate-target hook **pull**, never swing.',
-    'All economic quantities, durations, geometry thresholds, capacities, reserves and attendance times are named inputs in [three-area.ts](../../dev/economy/three-area.ts) or [five-area.ts](../../dev/economy/five-area.ts). Shared engine constants are structural identities/unit conversions, not hidden balance knobs. CLI overrides are recorded in JSON. Every output below uses the complete input snapshots in [results.json](progression-sim/results.json); this file also includes every unlock, first modeled use, remaining use window, hourly count, material ledger and counterfactual.',
+    'All economic quantities, durations, geometry thresholds, capacities, reserves and attendance times are named inputs in [campaign-kit.ts](../../dev/economy/campaign-kit.ts), [three-area.ts](../../dev/economy/three-area.ts) or [five-area.ts](../../dev/economy/five-area.ts). Shared engine constants are structural identities/unit conversions, not hidden balance knobs. CLI overrides are recorded in JSON. Every output below uses the complete input snapshots in [results.json](progression-sim/results.json); this file also includes every unlock, first modeled use, remaining use window, hourly count, material ledger and counterfactual.',
     `Input SHA-256: \`${metadata.inputSha256}\`. Engine/report source SHA-256: \`${metadata.sourceSha256}\`. Base checkout: \`${metadata.baseCommit}\`; hashes identify the uncommitted simulation sources used at generation, not a claim that the base commit contains them. See [manifest](progression-sim/manifest.json).`,
     '## Model contract and deliberate limits',
     'This is a discrete-event schedule, separate from the historical model fixtures. Each finite raw source processes 1 raw unit into 1 component, with explicit recipe input/output accounts; seed stock is charged once at initialization. There is no renewal, waste or hidden income. Sources stop at demand or per-material rack capacity. Bills reserve shipments once, mixed final loads respect carry capacity, and deposits become installed stock once. Raw, loose, processing, reserved/rail, carried, deposited and installed units remain accounted for at every event. Conservation and exactly-once installation are not tunables.',

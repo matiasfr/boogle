@@ -40,6 +40,7 @@ export function tuneCatalog(
   return h.toString(16).padStart(8, '0');
 }
 export const TUNE_CATALOG = tuneCatalog(TUNABLES);
+const HASH_SEED = foldStr(FNV_SEED, TUNE_CATALOG);
 
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
 const defaults = (): Record<TuneKey, number> =>
@@ -132,7 +133,7 @@ export function loadTune(t: Tune, json: unknown): void {
 }
 // Full values and revision in stable key order; defaults never disappear from the identity.
 export function hashTune(t: Tune): number {
-  let h = foldAll(foldStr(FNV_SEED, TUNE_CATALOG), [t.revision]);
+  let h = foldAll(HASH_SEED, [t.revision]);
   TUNABLES.forEach(({ key }, k) => {
     h = foldAll(h, [k, t.v[key]]);
   });

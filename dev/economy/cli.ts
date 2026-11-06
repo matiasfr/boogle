@@ -1,5 +1,7 @@
 import { simulateCampaign } from './campaign.ts';
 import type { CampaignOptions, Policy } from './campaign-types.ts';
+import { POLICIES } from './campaign-types.ts';
+import { parseOption } from './options.ts';
 import { threeArea } from './three-area.ts';
 import { fiveArea } from './five-area.ts';
 import { writeCampaignReport } from './report.ts';
@@ -23,15 +25,13 @@ else if (args.includes('--report')) {
     else if (arg === '--core-only') options.optional = false;
     else if (routes.some((c) => c.id === arg)) selected = routes.filter((c) => c.id === arg);
     else {
-      const [key, value] = arg.replace(/^--/, '').split('=');
-      if (!arg.startsWith('--') || value === undefined || value.trim() === '')
-        throw new Error(`Unknown argument ${arg}\n${help}`);
+      const [key, value] = parseOption(arg) ?? [];
+      if (value === undefined) throw new Error(`Unknown argument ${arg}\n${help}`);
       if (key === 'players') party = Number(value);
       else if (key === 'scenario') scenario = value;
       else if (key === 'omit') options.omit = value.split(',');
       else if (key === 'policy') {
-        if (!['route-first', 'tool-first', 'cart-first', 'town-first', 'optional-first'].includes(value))
-          throw new Error(`Unknown policy ${value}`);
+        if (!POLICIES.includes(value as Policy)) throw new Error(`Unknown policy ${value}`);
         options.policy = value as Policy;
       } else if (key === 'content' || key === 'cost' || key === 'supply' || key === 'distance')
         options[key] = Number(value);

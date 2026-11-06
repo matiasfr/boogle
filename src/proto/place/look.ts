@@ -33,6 +33,7 @@ import { scene } from '../../render/scene.ts';
 import { atmosphere } from '../../render/sky.ts';
 import { flat } from '../flat.ts';
 import { dressBundleLogs } from '../../render/haul-bundle.ts';
+import { patchNode } from '../../render/material-patch.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 
 const asked = new Set((new URLSearchParams(location.search).get('look') ?? 'all').split(','));
@@ -58,6 +59,11 @@ export function selectiveColour(base: N, family: 'grass' | 'green' | 'timber' | 
   }
   const target = base.mul(family === 'green' || family === 'grass' ? vec3(0.88, 1.18, 0.94) : vec3(1.35, 1.19, 0.84));
   return family === 'grass' ? mix(base, target, 0.35).mul(0.7) : target;
+}
+
+/** A tree part owns its pigment patch; flat() materials are shared and stay untouched. */
+export function treeMaterial(color: string, family: 'green' | 'timber') {
+  return patchNode(flat(color).clone(), 'colorNode', (previous) => selectiveColour(previous ?? materialColor, family));
 }
 
 // ---------------------------------------------------------------- ground: smooth grass, faceted rock
@@ -277,6 +283,25 @@ export function boardMaterial(plain: THREE.Material) {
   const under: N = mix(float(0.74), float(1), ss(float(0), float(0.3), positionGeometry.y));
   m.colorNode = materialColor.mul(mix(float(0.88), float(1.08), each)).mul(under);
   return m;
+}
+const SITE_PIGMENTS: Record<string, string> = {
+  '#e8dcc0': '#fff8e9',
+  '#a9794c': '#cd9b57',
+  '#7f5630': '#a57336',
+  '#c9a86a': '#e5bb70',
+  '#a9824f': '#c99c59',
+  '#c4453a': '#e03c32',
+  '#f2b134': '#ffc425',
+};
+/** Buildings own this display palette; their authored construction and collision colours stay intact. */
+export function paintSite(mesh: THREE.InstancedMesh, boxes: readonly { color: THREE.Color }[]) {
+  mesh.material = boardMaterial(mesh.material as THREE.Material);
+  const color = new THREE.Color();
+  boxes.forEach((box, i) => {
+    const pigment = SITE_PIGMENTS['#' + box.color.getHexString()];
+    if (pigment) mesh.setColorAt(i, color.set(pigment));
+  });
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
 }
 /** A centred box for the greybox, baked when `contact` is on. */
 export function lookBox(w: number, h: number, d: number) {

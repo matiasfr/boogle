@@ -7,7 +7,7 @@ const { me } = (await import('/src/player/player.ts' as string)) as typeof impor
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { rooms } = (await import(
+const { rooms, roomToWorld } = (await import(
   '/src/proto/place/rooms.ts' as string
 )) as typeof import('../../../src/proto/place/rooms.ts');
 const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
@@ -16,8 +16,9 @@ type V = [number, number, number];
 type View = { name: string; cam: V; look: V; fov?: number; player?: V };
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const q = new URLSearchParams(location.search);
+const localPoint = me.wish.clone();
 function local(r: typeof rooms.house, x: number, y: number, z: number): V {
-  return [r.x + x * Math.cos(r.yaw) + z * Math.sin(r.yaw), r.y + y, r.z - x * Math.sin(r.yaw) + z * Math.cos(r.yaw)];
+  return roomToWorld(r, x, y, z, localPoint).toArray() as V;
 }
 function board(name: string, key: keyof typeof rooms, x: number, y: number, z: number, distance = 5, yaw = 0): View {
   const r = rooms[key],

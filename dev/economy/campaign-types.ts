@@ -1,7 +1,8 @@
 // Offline paper inputs only. Seconds, metres, metres/second and integer material units.
 export type Stock = Record<string, number>;
 export type Kind = 'F' | 'C' | 'A' | 'M' | 'R' | 'E';
-export type Policy = 'route-first' | 'tool-first' | 'cart-first' | 'town-first' | 'optional-first';
+export const POLICIES = ['route-first', 'tool-first', 'cart-first', 'town-first', 'optional-first'] as const;
+export type Policy = (typeof POLICIES)[number];
 export type Profile = {
   carry: number;
   rack: number;

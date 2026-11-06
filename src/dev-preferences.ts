@@ -62,3 +62,5 @@ if (explicit === '0') {
   enabled ||= explicit === '1';
 }
 export const devEnabled = enabled;
+// Explicit Dev off wins even if the original address also requested tuning.
+export const tuningVisit = explicit !== '0' && (devEnabled || new URLSearchParams(location.search).get('tune') === '1');

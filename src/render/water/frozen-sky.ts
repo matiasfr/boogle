@@ -11,11 +11,11 @@ import { SUN_DIR } from '../sun-dir.ts';
 import { seaU } from './state.ts';
 import { createWaterSky } from './sky.ts';
 import { bind, tuningEnabled } from './live.ts';
-import { toySkyEnabled } from './flags.ts';
+import { eveningPreview, prepareEvening, skyCubeSize, toySkyEnabled } from './flags.ts';
 import { toySky } from './toy.ts';
 import { bootMark } from '../../boot/timeline.ts';
 import { LIGHTING_SPECS } from '../lighting-tuning.ts';
-import { createEveningTransition, eveningPreview, prepareEvening } from './evening-transition.ts';
+import { createEveningTransition } from './evening-transition.ts';
 
 export const WATER_TOD = 0.24;
 export let frozenSkyActive = false;
@@ -57,9 +57,7 @@ export function createFrozenWaterSky() {
   timeOfDay = WATER_TOD;
   direction.copy(east).multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
   // Local loading-time comparison only. Today's 1024 sky remains the default until visual review passes.
-  const size = new URLSearchParams(location.search).get('skySize');
-  const cubeSize = size === '256' ? 256 : size === '512' ? 512 : 1024;
-  const environment = createWaterSky(toySkyEnabled ? toySky : undefined, cubeSize);
+  const environment = createWaterSky(toySkyEnabled ? toySky : undefined, skyCubeSize);
   environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(direction.y));
   environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z));
   const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
@@ -85,7 +83,7 @@ export function createFrozenWaterSky() {
     underground = uniform(0);
   const upper = new THREE.Color(),
     lower = new THREE.Color();
-  const evening = prepareEvening ? createWaterSky(undefined, cubeSize) : undefined;
+  const evening = prepareEvening ? createWaterSky(undefined, skyCubeSize) : undefined;
   let transition: ReturnType<typeof createEveningTransition> | undefined;
   const filtered: THREE.RenderTarget[] = [];
   let selectedEnvironment: THREE.Texture = environment.cube;
@@ -172,13 +170,15 @@ export function createFrozenWaterSky() {
       face = renderer.getActiveCubeFace(),
       mip = renderer.getActiveMipmapLevel();
     try {
-      renderer.setRenderTarget(target);
-      new THREE.QuadMesh(material).render(renderer);
-      renderer.setRenderTarget(previous, face, mip);
+      try {
+        renderer.setRenderTarget(target);
+        new THREE.QuadMesh(material).render(renderer);
+      } finally {
+        renderer.setRenderTarget(previous, face, mip);
+      }
       const pixels = (await renderer.readRenderTargetPixelsAsync(target, 0, 0, 2, 1)) as Float32Array;
       return { upper: new THREE.Color().fromArray(pixels, 0), lower: new THREE.Color().fromArray(pixels, 4) };
     } finally {
-      renderer.setRenderTarget(previous, face, mip);
       target.dispose();
       material.dispose();
     }
@@ -200,12 +200,16 @@ export function createFrozenWaterSky() {
     console.info('WATER FROZEN SKY ' + JSON.stringify({ tod: timeOfDay, ...environment.inspect() }));
   }
   async function prepare() {
-    await bake();
-    if (!evening || disposed) return;
+    if (!evening) return bake();
+    if (disposed) return;
     // Research water-times-of-day recommendations 1–4: two prepared endpoints, no live sunset.
     // Both endpoints use the loading-time comparison size; ordinary visits retain 1024.
     evening.bake({ elevation: 12, azimuth: 255, turbidity: 3.2, sunIntensity: 9, cloudCoverage: 0.3 });
-    const eveningFill = await readFill(evening);
+    // Both reads own their GPU resources until settled, even if the other read rejects.
+    const [dayBake, eveningRead] = await Promise.allSettled([bake(), readFill(evening)]);
+    if (dayBake.status === 'rejected') throw dayBake.reason;
+    if (eveningRead.status === 'rejected') throw eveningRead.reason;
+    const eveningFill = eveningRead.value;
     if (disposed) return;
     const pmrem = new THREE.PMREMGenerator(renderer);
     try {
@@ -214,23 +218,33 @@ export function createFrozenWaterSky() {
     } finally {
       pmrem.dispose();
     }
-    const day = {
-      direction: direction.clone(),
-      radiance: environment.sunColor.value.clone(),
-      upper: upper.clone(),
-      lower: lower.clone(),
-    };
+    const looks = [
+      {
+        tod: WATER_TOD,
+        direction: direction.clone(),
+        radiance: environment.sunColor.value.clone(),
+        cube: environment.cube,
+        texture: filtered[0]!.texture,
+        upper: upper.clone(),
+        lower: lower.clone(),
+      },
+      {
+        tod: 0.55,
+        direction: evening.sunDirection.value,
+        radiance: evening.sunColor.value,
+        cube: evening.cube,
+        texture: filtered[1]!.texture,
+        ...eveningFill,
+      },
+    ];
     const select = (isEvening: boolean) => {
-      timeOfDay = isEvening ? 0.55 : WATER_TOD;
-      direction.copy(isEvening ? evening.sunDirection.value : day.direction);
-      environment.selectPrepared(
-        isEvening ? evening.cube : environment.cube,
-        direction,
-        isEvening ? evening.sunColor.value : day.radiance,
-      );
-      selectedEnvironment = filtered[isEvening ? 1 : 0]!.texture;
-      upper.copy(isEvening ? eveningFill.upper : day.upper);
-      lower.copy(isEvening ? eveningFill.lower : day.lower);
+      const look = looks[+isEvening]!;
+      timeOfDay = look.tod;
+      direction.copy(look.direction);
+      environment.selectPrepared(look.cube, direction, look.radiance);
+      selectedEnvironment = look.texture;
+      upper.copy(look.upper);
+      lower.copy(look.lower);
       updateFrozenDay();
     };
     const initial = eveningPreview === '1';
@@ -241,9 +255,10 @@ export function createFrozenWaterSky() {
   const ready = rendererReady.then(prepare);
   let pending = ready;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const scheduleBake = () => {
+  const scheduleBake = (change: () => void) => {
     // Authoring rebakes and prepared endpoints must not mutate one another.
     if (evening) return;
+    change();
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = undefined;
@@ -261,13 +276,13 @@ export function createFrozenWaterSky() {
     'sky.time',
     () => timeOfDay,
     (value) => {
-      if (evening) return;
-      timeOfDay = value as number;
-      const next = skyState(timeOfDay, 0.5).sunAngle;
-      const dir = east.clone().multiplyScalar(Math.cos(next)).addScaledVector(noon, Math.sin(next));
-      environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(dir.y));
-      environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(dir.x, dir.z));
-      scheduleBake();
+      scheduleBake(() => {
+        timeOfDay = value as number;
+        const next = skyState(timeOfDay, 0.5).sunAngle;
+        const dir = east.clone().multiplyScalar(Math.cos(next)).addScaledVector(noon, Math.sin(next));
+        environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(dir.y));
+        environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(dir.x, dir.z));
+      });
     },
   );
   for (const key of ['elevation', 'azimuth', 'sunIntensity', 'cloudCoverage', 'turbidity'] as const)
@@ -275,9 +290,9 @@ export function createFrozenWaterSky() {
       `sky.${key}`,
       () => environment.params[key],
       (value) => {
-        if (evening) return;
-        environment.params[key] = value as number;
-        scheduleBake();
+        scheduleBake(() => {
+          environment.params[key] = value as number;
+        });
       },
     );
   return {
