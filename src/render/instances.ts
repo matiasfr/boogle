@@ -39,6 +39,7 @@ export function createPool(geometry: THREE.BufferGeometry, material: THREE.Mater
   const sphere = new THREE.Sphere();
   mesh.boundingSphere = sphere;
   const a = mesh.instanceMatrix.array as Float32Array;
+  const upload = { start: 0, count: 0 };
   let n = 0,
     x0 = 0,
     y0 = 0,
@@ -123,8 +124,13 @@ export function createPool(geometry: THREE.BufferGeometry, material: THREE.Mater
     },
     end() {
       mesh.count = n;
-      mesh.instanceMatrix.needsUpdate = true;
+      // Every fill replaces the live prefix, including ranges left pending by culled/skipped draws.
+      // Keep a zero-length range when empty: a pending version with no ranges uploads the whole buffer.
+      mesh.instanceMatrix.clearUpdateRanges();
+      upload.count = n * 16;
+      mesh.instanceMatrix.updateRanges.push(upload);
       if (!n) return;
+      mesh.instanceMatrix.needsUpdate = true;
       sphere.center.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
       sphere.radius = Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + reach;
     },
