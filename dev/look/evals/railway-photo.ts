@@ -8,6 +8,13 @@ const frames: Record<string, Frame> = {
   'T3 beam carried': { camera: [1007, 35, -133], target: [995, 31, -134] },
   'T3 helped beam carried': { camera: [1003, 37, -122], target: [990, 31, -131] },
   'path walked home': { camera: [918, 27, 15], target: [939, 20, -12] },
+  'forge lit': { camera: [930, 27, 14], target: [912, 20, -4] },
+  'Q1 laid': { camera: [918, 30, 32], target: [945, 19, 25] },
+  'Q2 laid': { camera: [1085, 33, 64], target: [1098, 26, 43] },
+  'hook taken': { camera: [1016, 31, 42], target: [999, 22, 22] },
+  'early lever does nothing': { camera: [1088, 31, 56], target: [1098, 26.5, 42] },
+  'Q3 laid': { camera: [1085, 33, 64], target: [1098, 26, 43] },
+  'quarry gate open': { camera: [1078, 34, 52], target: [1092, 25, 38] },
 };
 const beat = new URLSearchParams(location.search).get('railStop') ?? '';
 const frame = frames[beat];

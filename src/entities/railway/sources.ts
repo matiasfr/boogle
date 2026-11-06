@@ -210,6 +210,16 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     128 * RAILWAY_T1.carry,
   );
   owner.add(stonePiles);
+  // Loose rails lie flat, side by side.
+  const railPiles = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.1, 0.12, 3),
+    flat('#4c5058', 0.6),
+    128 * RAILWAY_T1.carry,
+  );
+  railPiles.castShadow = true;
+  railPiles.frustumCulled = false;
+  railPiles.count = 0;
+  owner.add(railPiles);
   const stoneMatrix = new THREE.Object3D();
   const piles = pieces.logStackMesh(128 * RAILWAY_T1.carry, owner);
   const pileFlights: { id: number; active: () => boolean }[] = [];
@@ -223,12 +233,18 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   function drawPiles() {
     for (let k = pileFlights.length - 1; k >= 0; k--) if (!pileFlights[k]!.active()) pileFlights.splice(k, 1);
     let count = 0,
-      stoneCount = 0;
+      stoneCount = 0,
+      railCount = 0;
     for (const pile of state.piles) {
       const inFlight = pileFlights.filter((flight) => flight.id === pile.id).length;
       at.set(pile.x / 100, pileHeight(pile), pile.z / 100);
       for (let k = 0; k < pile.n - inFlight; k++) {
-        if (pile.kind === 1) {
+        if (pile.kind === 2) {
+          stoneMatrix.position.set(at.x + ((k % 4) - 1.5) * 0.22, at.y + 0.06 + Math.floor(k / 4) * 0.13, at.z);
+          stoneMatrix.rotation.set(0, 0, 0);
+          stoneMatrix.updateMatrix();
+          railPiles.setMatrixAt(railCount++, stoneMatrix.matrix);
+        } else if (pile.kind === 1) {
           stoneMatrix.position.set(at.x + ((k % 3) - 1) * 0.32, at.y + 0.2 + Math.floor(k / 3) * 0.25, at.z);
           stoneMatrix.rotation.set(k, k * 2, 0);
           stoneMatrix.updateMatrix();
@@ -240,6 +256,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     piles.instanceMatrix.needsUpdate = true;
     stonePiles.count = stoneCount;
     stonePiles.instanceMatrix.needsUpdate = true;
+    railPiles.count = railCount;
+    railPiles.instanceMatrix.needsUpdate = true;
     rack.setStock(state.rack, state.stoneRack);
   }
 
@@ -322,7 +340,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       for (let k = 0; k < event.accepted; k++) {
         if (!bundleOrigin(event.pid, carry + event.accepted - k - 1, target)) target.copy(at);
         const flight = pieces.send(
-          event.kind === 1 ? 'stone' : 'log',
+          event.kind === 1 ? 'stone' : event.kind === 2 ? 'rail' : 'log',
           target,
           at,
           { dur: 0.28, apex: 0.5, land: () => sounds.knock(0.35, 0.7) },
@@ -343,7 +361,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       } else at.copy(kind === 1 ? rack.stoneAt : rack.logBase);
       for (let k = 0; k < event.accepted; k++) {
         const flight = pieces.send(
-          kind === 1 ? 'stone' : 'log',
+          kind === 1 ? 'stone' : kind === 2 ? 'rail' : 'log',
           at,
           at,
           {
@@ -469,7 +487,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     harvestFlights = harvestFlights.filter((flight) => flight());
     return {
       logs: current.carry,
-      rails: 0,
+      rails: current.railsCarry,
       stone: current.stoneCarry,
       big: current.beam?.state === 'held' && current.beam.holder === current.pid ? ('beam' as const) : null,
       capacity: RAILWAY_T1.carry,
@@ -485,8 +503,13 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   function dropOne() {
     state = adapter.inspect();
     if (cargo.drop()) return true;
-    if (!state.ready || (state.availableCarry <= 0 && state.stoneCarry <= 0) || !me.body) return false;
-    const kind = state.availableCarry > 0 ? 0 : 1;
+    if (
+      !state.ready ||
+      (state.availableCarry <= 0 && state.availableStone <= 0 && state.availableRails <= 0) ||
+      !me.body
+    )
+      return false;
+    const kind = state.availableCarry > 0 ? 0 : state.availableStone > 0 ? 1 : 2;
     const p = me.body.interpolatedPosition;
     let x = p.x - Math.sin(me.yaw) * 1.4,
       z = p.z - Math.cos(me.yaw) * 1.4;

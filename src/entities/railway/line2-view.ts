@@ -1,0 +1,837 @@
+// Line two's Local views over accepted state: the forge rising and pouring, its rails rack, the machine on the quarry line,
+// Q1-Q3 frames, the depot rack, and the route-v2 service decks, winch drive, lever, gate, pillar p2 and hook device.
+// Geometry and colliders are rebuilt from accepted construction state; nothing here transfers material.
+import * as THREE from 'three/webgpu';
+import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
+import type { OwnedView } from '../../render/owned-view.ts';
+import type { Interactable } from '../../player/hands.ts';
+import type { Body } from '../../physics/engine.ts';
+import { me } from '../../player/player.ts';
+import { clank, thump, whistle } from '../../render/machine-sfx.ts';
+import { placeSound } from '../../render/place-sfx.ts';
+import { LINE2_FORGE, LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
+import { createRailwayPanelView, type PanelState } from './panel-view.ts';
+
+type Rail = typeof import('../../proto/place/rail.ts');
+type Machine = ReturnType<Rail['buildMachine']>;
+type Inspection = ReturnType<RailwayAdapter['inspect']>;
+type Line2 = NonNullable<Inspection['line2']>;
+
+export async function createRailwayLine2(
+  adapter: RailwayAdapter,
+  owner: OwnedView,
+  machine: Machine,
+  bundleOrigin: (pid: string, count: number, out: THREE.Vector3) => boolean,
+) {
+  const [layout, rail, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit] = await Promise.all([
+    import('../../proto/place/layout.ts'),
+    import('../../proto/place/rail.ts'),
+    import('../../proto/place/stations.ts'),
+    import('../../proto/place/pieces.ts'),
+    import('../../proto/place/land.ts'),
+    import('../../proto/place/opening-plans.ts'),
+    import('../../proto/place/tech-layout.ts'),
+    import('../../proto/place/part-geometry.ts'),
+    import('../../proto/flat.ts'),
+    import('../../proto/minis/common.ts'),
+    import('../../proto/place/look.ts'),
+    import('../../proto/place/look-kit.ts'),
+  ]);
+  const { flat } = flatMod;
+  const ox = layout.ORIGIN.x;
+  const quarry = layout.LINKS[1]!;
+  const geometries: THREE.BufferGeometry[] = [];
+  const materials: THREE.Material[] = [];
+  const partMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
+  const glow = new THREE.MeshStandardNodeMaterial({ color: '#39e6c6', emissive: '#39e6c6', emissiveIntensity: 1.2 });
+  const teal = new THREE.MeshBasicNodeMaterial({ color: '#39e6c6' });
+  materials.push(partMat, glow, teal);
+  const mesh = (geometry: THREE.BufferGeometry, material: THREE.Material = partMat) => {
+    geometries.push(geometry);
+    const m = new THREE.Mesh(geometry, material);
+    m.castShadow = m.receiveShadow = true;
+    owner.add(m);
+    return m;
+  };
+  const STONE = '#917b5e',
+    STONE2 = '#b6a080',
+    BRASS = '#c79a3e';
+  let state = adapter.inspect();
+  const l2 = (): Line2 | null => state.line2;
+
+  // ---------------------------------------------------------------- the forge
+  const plan = plans.forgePlan();
+  const { pieces: forgePieces, FRAME, WALLS, ROOFED } = plan;
+  const TOTAL = forgePieces.length;
+  const HAND = FRAME + (WALLS - FRAME) + (TOTAL - ROOFED);
+  const KS = [...forgePieces.keys()];
+  // Frame, then walls and chimney; the roof waits for trains (slice 5).
+  const ORDER = [...KS.filter((k) => k < WALLS), ...KS.filter((k) => k >= ROOFED)];
+  const [F1, F2] = LINE2_FORGE.bills;
+  const piecesFor = (logs: number) =>
+    logs <= F1
+      ? Math.round((logs / F1) * FRAME)
+      : Math.min(HAND, FRAME + Math.round(((logs - F1) / F2) * (HAND - FRAME)));
+  const building = pieces.dropSet(
+    forgePieces,
+    (k) => {
+      const b = forgePieces[k]!;
+      thump(b.x, b.z);
+      pieces.dustRing(b.x, b.y + 0.6, b.z, 6, 2, 0.3);
+    },
+    owner,
+  );
+  building.mesh.material = look.boardMaterial(building.mesh.material as THREE.Material);
+  materials.push(building.mesh.material as THREE.Material);
+  forgePieces.forEach((_, k) => building.snap(k, false));
+  let shownPieces = 0;
+  let wallsBody: Body | null = null;
+  const mouth = mesh(
+    new THREE.BoxGeometry(2.8, 1.8, 0.1),
+    new THREE.MeshStandardNodeMaterial({ color: '#3a1a08', emissive: '#ff5a0a', emissiveIntensity: 1.3 }),
+  );
+  materials.push(mouth.material as THREE.Material);
+  mouth.position.set(plans.X, plan.y + 1.5, plans.Z + plans.D / 2 - 0.5);
+  mouth.visible = false;
+  const forgeFrame = stations.buildStation(
+    layout.FORGE_BILLS[0]!,
+    { x: layout.toWorld(layout.FORGE_FRAME.x), z: layout.FORGE_FRAME.z, yaw: Math.PI / 2, lx: 0, lz: -1 },
+    owner,
+  );
+  // The rails rack the forge pours onto: posts come from the opening view; the steel is drawn here.
+  const RX = LINE2_FORGE.rackX / 100,
+    RZ = LINE2_FORGE.rackZ / 100,
+    RY = land.H(RX, RZ);
+  const RACK_SHOWN = 48;
+  const racked = look.LOOK.kit
+    ? kit.kitBatch('rail', look.STEEL, RACK_SHOWN, owner)
+    : new THREE.InstancedMesh(
+        new THREE.BoxGeometry(pieces.RAIL_SIZE.x, pieces.RAIL_SIZE.y, pieces.RAIL_SIZE.z),
+        flat('#4c5058', 0.6),
+        RACK_SHOWN,
+      );
+  if (!look.LOOK.kit) owner.add(racked);
+  racked.castShadow = true;
+  racked.frustumCulled = false;
+  racked.count = 0;
+  const rackSlot = (k: number, out: THREE.Vector3) =>
+    out.set(RX - 1 + (k % 8) * 0.285, RY + 0.46 + Math.floor(k / 8) * 0.19, RZ);
+  const rackFrom = new THREE.Vector3(RX, RY + 1.6, RZ);
+  const m4 = new THREE.Matrix4();
+  const tmp = new THREE.Vector3();
+  let drawnRack = -1;
+  function drawRack(n: number) {
+    n = Math.max(0, Math.min(RACK_SHOWN, n));
+    if (n === drawnRack) return;
+    drawnRack = n;
+    racked.count = n;
+    for (let k = 0; k < n; k++) racked.setMatrixAt(k, m4.makeTranslation(rackSlot(k, tmp)));
+    racked.instanceMatrix.needsUpdate = true;
+  }
+
+  // ---------------------------------------------------------------- the quarry line, its frames and the depot rack
+  const track = rail.buildTrack(quarry, (_k, kind, x, y, z) => rail.thud(machine, kind, x, y, z), owner, 'panels');
+  const frames = quarry.stations
+    .slice(0, LINE2_STATIONS.length)
+    .map((spec) => stations.buildStation(spec, stations.frameBesideLine(spec, quarry.line, quarry.dir), owner));
+  track.snapTo(track.u(layout.STUB.east));
+  const depotLogs = pieces.logStackMesh(24, owner);
+  depotLogs.count = 0;
+  const depotAt = new THREE.Vector3();
+  const depotPlace = (k: number, out: THREE.Vector3) => {
+    const f = frames[k]!;
+    // Beside the frame, further along the line: you do the last carry.
+    const p = layout.lineAt(quarry.line, LINE2_STATIONS[k]!.fromCm / 100 + 5, { x: 0, z: 0, ux: 0, uz: 1 });
+    const lx = f.x - (p.x + ox),
+      lz = f.z - p.z,
+      d = Math.hypot(lx, lz) || 1;
+    out.set(p.x + ox + (lx / d) * 6.5, 0, p.z + (lz / d) * 6.5);
+    out.y = land.H(out.x, out.z);
+    return out;
+  };
+  let drawnDepot = '';
+  function drawDepot(k: number, n: number) {
+    const key = `${k}:${n}`;
+    if (key === drawnDepot) return;
+    drawnDepot = key;
+    if (k < 0 || !LINE2_STATIONS[k]!.depot) {
+      depotLogs.count = 0;
+      return;
+    }
+    depotPlace(k, depotAt);
+    depotLogs.count = Math.min(24, n);
+    for (let i = 0; i < depotLogs.count; i++)
+      pieces.setStackLog(depotLogs, i, pieces.stackSlot(i, 4, depotAt, 0, tmp), 0);
+    depotLogs.instanceMatrix.needsUpdate = true;
+  }
+
+  // ---------------------------------------------------------------- route v2: the hook walk, the quarry ramp, the drive
+  type Deck = { kind: 'hook' | 'quarry'; mesh: THREE.Mesh; body: Body | null };
+  const decks: Deck[] = [];
+  const width = tech.SERVICE_WIDTH;
+  // The hook walk leaves the finished deck flush with its plank top, so stepping on never dips.
+  const DECK_TOP = 0.1; // the track's walkable top over rail height (rail.ts TOP)
+  for (const kind of ['hook', 'quarry'] as const) {
+    const points = tech.SERVICE_ROUTES[kind].map((p, i) => ({
+      x: p.x,
+      z: p.z,
+      y: p.y + (kind === 'hook' && i < 2 ? DECK_TOP : 0),
+    }));
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1]!,
+        b = points[i]!;
+      const dx = b.x - a.x,
+        dz = b.z - a.z,
+        dy = b.y - a.y;
+      const run = Math.hypot(dx, dz);
+      const length = Math.hypot(run, dy);
+      const deck = mesh(
+        shapes.merged([
+          ['b', 0, 0, 0, width, 0.35, length + 0.4, STONE2],
+          ...[-1, 1].map((side): Parameters<typeof shapes.merged>[0][number] => [
+            'b',
+            side * (width / 2 - 0.06),
+            0.18,
+            0,
+            0.12,
+            0.02,
+            length,
+            BRASS,
+          ]),
+        ]),
+      );
+      deck.rotation.set(-Math.atan2(dy, run), Math.atan2(dx, dz), 0, 'YXZ');
+      const normal = new THREE.Vector3(0, 0.175, 0).applyQuaternion(deck.quaternion);
+      deck.position.set(ox + (a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2).sub(normal);
+      deck.name = `route-${kind}-${i}`;
+      deck.visible = false;
+      decks.push({ kind, mesh: deck, body: null });
+    }
+  }
+  const lever = tech.LEVER;
+  // Two separated drive sockets stay visible; Q3 supplies the missing coupling between them.
+  const sockets = mesh(
+    shapes.merged([
+      ['b', -0.5, 0.7, 0.3, 0.35, 0.3, 0.35, BRASS],
+      ['b', 0.8, 0.7, -0.6, 0.35, 0.3, 0.35, BRASS],
+    ]),
+  );
+  sockets.position.set(ox + lever.x, lever.y, lever.z);
+  const drive = mesh(new THREE.BoxGeometry(0.28, 0.28, Math.hypot(1.3, 0.9)), glow);
+  drive.rotation.y = Math.atan2(1.3, -0.9);
+  drive.position.set(ox + lever.x + 0.15, lever.y + 0.7, lever.z - 0.15);
+  drive.name = 'route-winch-drive';
+  drive.visible = false;
+  const winch = mesh(
+    shapes.merged([
+      ['c', 0, 0.7, 0, 0.42, 1, 0.42, '#6b5a3a', 0, Math.PI / 2],
+      ['b', -0.6, 0.35, 0, 0.12, 0.7, 0.8, '#4e4c46'],
+      ['b', 0.6, 0.35, 0, 0.12, 0.7, 0.8, '#4e4c46'],
+    ]),
+  );
+  winch.position.set(lever.x + ox + 0.8, lever.y, lever.z - 0.6);
+  const leverArm = new THREE.Group();
+  leverArm.position.set(lever.x + ox - 0.5, lever.y + 0.15, lever.z + 0.3);
+  leverArm.rotation.z = 0.75;
+  const arm = mesh(
+    shapes.merged([
+      ['b', 0, 0.6, 0, 0.12, 1.3, 0.12, BRASS],
+      ['s', 0, 1.3, 0, 0.17, 0.17, 0.17, '#d8392b'],
+    ]),
+  );
+  leverArm.add(arm);
+  owner.add(leverArm);
+  const leverTarget = new THREE.Vector3(lever.x + ox - 0.5, lever.y + 1.4, lever.z + 0.3);
+  // Pads: the quarry apron and pillar p2's top, solid from the start; the apron is 2.2 m up.
+  const stonePad = (hx: number, hz: number, thick: number) =>
+    shapes.merged([
+      ['b', 0, -0.08, 0, hx * 2, thick - 0.16, hz * 2, STONE],
+      ['b', 0, thick / 2 - 0.08, 0, hx * 2, 0.16, hz * 2, '#c6b28d'],
+      ['b', 0, -thick / 2 + 0.06, 0, hx * 2 + 0.04, 0.12, hz * 2 + 0.04, '#6f604b'],
+    ]);
+  for (const id of ['apron', 'p2']) {
+    const p = tech.padById(id);
+    const pad = mesh(stonePad(p.hx, p.hz, 1.2));
+    pad.position.set(p.x + ox, p.top - 0.6, p.z);
+    land.addStatic({ kind: 'box', hx: p.hx, hy: 0.6, hz: p.hz }, pad.position, undefined, undefined, owner);
+    if (id === 'apron') {
+      const base = land.H(p.x + ox, p.z) - 0.5;
+      const body = mesh(new THREE.BoxGeometry(p.hx * 2 - 0.2, p.top - 1.2 - base, p.hz * 2 - 0.2), flat(STONE, 0.9));
+      body.position.set(p.x + ox, (p.top - 1.2 + base) / 2, p.z);
+      land.addStatic(
+        { kind: 'box', hx: p.hx - 0.1, hy: (p.top - 1.2 - base) / 2, hz: p.hz - 0.1 },
+        body.position,
+        undefined,
+        undefined,
+        owner,
+      );
+    }
+  }
+  const pillar = tech.PILLARS[1]!;
+  const pillarBase = Math.min(land.H(pillar.x + ox, pillar.z) - 0.5, pillar.top - 2.2);
+  const pillarH = pillar.top - 1.2 - pillarBase;
+  const column = mesh(new THREE.CylinderGeometry(pillar.r - 0.4, pillar.r + 1.4, pillarH, 7), flat(STONE, 0.9));
+  column.position.set(pillar.x + ox, pillarBase + pillarH / 2, pillar.z);
+  land.addStatic(
+    { kind: 'cylinder', rTop: pillar.r - 0.4, rBottom: pillar.r + 1.4, h: pillarH, segments: 7 },
+    column.position,
+    undefined,
+    undefined,
+    owner,
+  );
+  const hook = tech.DEVICES.hook;
+  const hookAt = new THREE.Vector3(hook.x + ox, hook.y, hook.z);
+  const drum = mesh(
+    shapes.merged([
+      ['c', 0, 0.35, 0, 0.72, 0.7, 0.72, '#55524a'],
+      ['c', 0, 0.78, 0, 0.56, 0.16, 0.56, '#6d6a60'],
+      ['c', 0, 0.9, 0, 0.5, 0.06, 0.5, '#c79a3e'],
+    ]),
+  );
+  drum.position.copy(hookAt);
+  land.addStatic(
+    { kind: 'cylinder', rTop: 0.6, rBottom: 0.72, h: 0.9, segments: 8 },
+    { x: hookAt.x, y: hook.y + 0.45, z: hookAt.z },
+    undefined,
+    undefined,
+    owner,
+  );
+  const hookRing = mesh(new THREE.TorusGeometry(0.72, 0.05, 8, 26), teal);
+  const hookCore = mesh(new THREE.OctahedronGeometry(0.26), teal);
+  hookRing.position.copy(hookAt).y += 1.45;
+  hookRing.rotation.x = Math.PI / 2;
+  hookCore.position.copy(hookRing.position);
+  const hookTarget = hookAt.clone().add(new THREE.Vector3(0, 2.2, 0));
+  // The quarry gate: two jambs and the slab across the bed, solid until it drops.
+  const G = tech.GATES.quarry;
+  const SLAB = { w: 6.4, h: 5.4, d: 0.9, pillar: 1.1 };
+  const gateQ = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, G.yaw);
+  for (const side of [-1, 1]) {
+    const jamb = mesh(new THREE.BoxGeometry(SLAB.pillar, SLAB.h + 0.8, SLAB.pillar), flat(STONE, 0.9));
+    const along = (side * (SLAB.w + SLAB.pillar)) / 2;
+    jamb.position.set(G.x + ox + Math.cos(G.yaw) * along, G.y + (SLAB.h + 0.8) / 2, G.z - Math.sin(G.yaw) * along);
+    jamb.quaternion.copy(gateQ);
+    land.addStatic(
+      { kind: 'box', hx: SLAB.pillar / 2, hy: (SLAB.h + 0.8) / 2, hz: SLAB.pillar / 2 },
+      jamb.position,
+      gateQ,
+      undefined,
+      owner,
+    );
+  }
+  const slab = mesh(
+    shapes.merged([
+      ['b', 0, 0, 0, SLAB.w, SLAB.h, SLAB.d, STONE2],
+      ['b', 0, SLAB.h / 2 - 0.3, SLAB.d / 2 + 0.01, SLAB.w - 0.6, 0.2, 0.04, '#39e6c6'],
+    ]),
+  );
+  slab.quaternion.copy(gateQ);
+  const slabUp = G.y + SLAB.h / 2,
+    slabDown = slabUp - SLAB.h - 0.6;
+  slab.position.set(G.x + ox, slabUp, G.z);
+  let slabBody: Body | null = null;
+  let slabT = -1;
+  // The chain from the slab's top to the winch.
+  {
+    const a = new THREE.Vector3(G.x + ox, G.y + SLAB.h + 1.25, G.z),
+      b = new THREE.Vector3(lever.x + ox + 0.8, lever.y + 1, lever.z - 0.6);
+    const n = Math.round(a.distanceTo(b) / 0.2);
+    const link = new THREE.TorusGeometry(0.1, 0.03, 5, 8);
+    geometries.push(link);
+    const links = new THREE.InstancedMesh(link, flat('#3a3530', 0.8), n);
+    const o = new THREE.Object3D();
+    for (let k = 0; k < n; k++) {
+      const t = k / (n - 1);
+      o.position.lerpVectors(a, b, t);
+      o.position.y -= (1 - (2 * t - 1) * (2 * t - 1)) * 0.55;
+      o.lookAt(b);
+      o.rotateZ(k % 2 ? Math.PI / 2 : 0);
+      o.updateMatrix();
+      links.setMatrixAt(k, o.matrix);
+    }
+    links.castShadow = true;
+    links.frustumCulled = false;
+    owner.add(links);
+  }
+
+  // ---------------------------------------------------------------- the machine on line two
+  const TURN_HEAD = layout.STUB.east;
+  let visualHead = TURN_HEAD,
+    targetHead = TURN_HEAD,
+    setback = 2.4,
+    sinceTick = 0,
+    shownTick = -1;
+  const feedLaunched = [0, 0, 0];
+  let deposits: { active: () => boolean; station: number; kind: number }[] = [];
+  const from = new THREE.Vector3();
+  /** The machine has crossed to line two: the forge is lit and the turn has played. */
+  const working = () => {
+    const l = l2();
+    return !!l && l.forge.lit >= 0 && state.tick >= l.forge.lit + LINE2_FORGE.turnTicks;
+  };
+  const activeIndex = () => {
+    const l = l2();
+    return l ? (l.active < 0 ? LINE2_STATIONS.length - 1 : l.active) : 0;
+  };
+  const jobElapsed = (k: number) => {
+    const job = l2()!.stations[k]!;
+    return job.elapsed + (k === l2()!.active && job.start >= 0 && !job.completion && state.ready ? sinceTick * 10 : 0);
+  };
+  const phaseOf = (k: number) => {
+    const job = l2()!.stations[k]!;
+    if (job.completion) return 'done';
+    if (job.start < 0) return 'idle';
+    const feed = lineFeed(LINE2_STATIONS[k]!, job.timing);
+    const feedEnd = Math.ceil(job.timing.depositMs / 100) + Math.ceil(Math.max(0, ...feed.map((f) => f.landMs)) / 100);
+    return job.elapsed < Math.ceil(job.timing.depositMs / 100)
+      ? 'deposit'
+      : job.elapsed < feedEnd
+        ? 'feeding'
+        : 'laying';
+  };
+  const head = () => {
+    const k = activeIndex(),
+      spec = LINE2_STATIONS[k]!,
+      job = l2()!.stations[k]!;
+    if (job.completion) return spec.toCm / 100;
+    if (job.start < 0) return spec.fromCm / 100;
+    const depositTicks = Math.ceil(job.timing.depositMs / 100);
+    const feed = lineFeed(spec, job.timing);
+    const feedTicks = Math.ceil(Math.max(0, ...feed.map((f) => f.landMs)) / 100);
+    return (
+      (spec.fromCm +
+        Math.min(spec.toCm - spec.fromCm, lineLayDistance(jobElapsed(k) - depositTicks - feedTicks, job.timing))) /
+      100
+    );
+  };
+  const panelState = (): PanelState => {
+    const l = l2();
+    if (!l) return { phase: 'idle', activeStation: 0, panelStock: 0, panelCount: 0 };
+    let count = 0;
+    l.stations.forEach((job, k) => {
+      if (job.start >= 0) count += linePanelCount(LINE2_STATIONS[k]!, job.elapsed, job.timing);
+    });
+    const k = activeIndex(),
+      job = l.stations[k]!;
+    const before = LINE2_STATIONS.slice(0, k).reduce((n, s) => n + s.panels, 0);
+    const stock = job.start >= 0 && !job.completion ? LINE2_STATIONS[k]!.panels - (count - before) : 0;
+    return { phase: phaseOf(k), activeStation: k, panelStock: Math.max(0, stock), panelCount: count };
+  };
+  const panels = createRailwayPanelView(
+    machine,
+    track,
+    panelState,
+    () => visualHead,
+    (end) => {
+      const p = rail.besideLine(quarry.line, end, 0);
+      clank(p.x, p.z);
+      pieces.dustRing(p.x, layout.railY(quarry.line, end) + 0.1, p.z, 4, 0.5, 0.12);
+    },
+    owner,
+  );
+  function step(dt: number) {
+    const previous = visualHead - setback;
+    const k = activeIndex(),
+      job = l2()!.stations[k]!;
+    const speed = job.timing.cruiseCmPerTick / 10;
+    const laying = phaseOf(k) === 'laying';
+    if (visualHead < targetHead) {
+      const s = Math.min(targetHead - visualHead, speed * dt);
+      visualHead += s;
+      setback = Math.min(machine.F, setback + s);
+    } else if (!laying && setback > 2.4) setback = Math.max(2.4, setback - speed * dt);
+    machine.at(quarry.line, visualHead, 1, setback);
+    const moved = visualHead - setback - previous;
+    if (moved > 0) machine.moved(moved);
+  }
+  function restore() {
+    deposits = [];
+    const l = l2();
+    if (!l) return;
+    l.stations.forEach((job, k) => {
+      const spec = LINE2_STATIONS[k]!;
+      const depositTicks = Math.ceil(job.timing.depositMs / 100);
+      feedLaunched[k] =
+        job.start < 0
+          ? 0
+          : lineFeed(spec, job.timing).filter((f) => f.launchMs <= (job.elapsed - depositTicks) * 100).length;
+    });
+    visualHead = targetHead = working() ? head() : TURN_HEAD;
+    setback = 2.4;
+    if (working()) {
+      const k = activeIndex();
+      if (phaseOf(k) === 'laying') setback = Math.min(machine.F, 2.4 + visualHead - LINE2_STATIONS[k]!.fromCm / 100);
+      machine.at(quarry.line, visualHead, 1, setback);
+      machine.snap();
+    }
+    panels.restore();
+    shownPieces = piecesFor(l.forge.used);
+    building.clear();
+    forgePieces.forEach((_, k) => building.snap(k, false));
+    for (let n = 0; n < shownPieces; n++) building.snap(ORDER[n]!, true);
+    drawnDepot = '';
+  }
+
+  // ---------------------------------------------------------------- accepted effects
+  function accepted(event: RailwayAccepted) {
+    state = adapter.inspect();
+    const l = l2();
+    if (!l) return;
+    if (event.op === 'rail.forgeTake') {
+      for (let n = 0; n < event.accepted; n++)
+        deposits.push({
+          station: -2,
+          kind: 2,
+          active: pieces.send(
+            'rail',
+            rackFrom,
+            rackFrom,
+            {
+              dur: 0.3,
+              apex: 0.9,
+              aim: (out) => void bundleOrigin(event.pid, state.railsCarry, out),
+              land: () => sounds.pop(3, 0.4),
+            },
+            owner,
+          ),
+        });
+      return;
+    }
+    if (event.op === 'rail.depotTake') {
+      depotPlace(Math.max(0, l.active), from);
+      from.y += 0.8;
+      for (let n = 0; n < event.accepted; n++)
+        pieces.send(
+          'log',
+          from,
+          from,
+          { dur: 0.3, apex: 0.9, aim: (out) => void bundleOrigin(event.pid, state.carry, out) },
+          owner,
+        );
+      return;
+    }
+    if (event.op === 'rail.lever') {
+      slabT = 0;
+      whistle(G.x + ox, G.z);
+      clank(lever.x + ox, lever.z);
+      return;
+    }
+    if (event.op === 'rail.hook') {
+      placeSound('pickupJump', hookAt.x, hookAt.z);
+      sounds.fanfare(false);
+      return;
+    }
+    if (event.op !== 'rail.deposit') return;
+    const forge = event.station === 'F';
+    const k = forge ? -1 : LINE2_STATIONS.findIndex((s) => s.id === event.station);
+    if (!forge && k < 0) return;
+    const frame = forge ? forgeFrame : frames[k]!;
+    const kind = event.kind === 2 ? 2 : 0;
+    const account = state.accounts.find((a) => a.pid === event.pid);
+    const carried = kind === 2 ? (account?.rails ?? 0) : (account?.carry ?? 0);
+    const job = forge ? null : l.stations[k]!;
+    const current = job ? (kind === 2 ? job.railDelivered : job.delivered) : 0;
+    for (let n = 0; n < event.accepted; n++) {
+      if (!bundleOrigin(event.pid, carried + event.accepted - n - 1, from)) continue;
+      const slot = Math.max(0, current - event.accepted + n);
+      const target = forge
+        ? frame.feederEnd
+        : kind === 2
+          ? frame.railSlot(slot, new THREE.Vector3())
+          : frame.logSlot(slot, new THREE.Vector3());
+      const active = pieces.send(
+        kind === 2 ? 'rail' : 'log',
+        from,
+        target,
+        {
+          dur: 0.32,
+          apex: 0.9,
+          size: kind === 2 ? undefined : [1, 2.2],
+          land: () => {
+            sounds.knock(0.7, 1);
+            thump(frame.x, frame.z);
+          },
+        },
+        owner,
+      );
+      deposits.push({ active, station: k, kind });
+    }
+    if (forge && l.forge.lit >= 0 && l.forge.lit === event.tick) {
+      sounds.fanfare(true);
+      whistle(plans.X, plans.Z);
+    }
+  }
+  const offAccepted = adapter.onAccepted(accepted);
+  const offReset = adapter.onReset(() => {
+    state = adapter.inspect();
+    restore();
+  });
+  owner.cleanup(() => {
+    offAccepted();
+    offReset();
+    for (const g of geometries) g.dispose();
+    for (const m of materials) m.dispose();
+  });
+
+  // ---------------------------------------------------------------- per frame
+  let unload = 0,
+    wasWorking = false;
+  const wake = new THREE.Vector3();
+  function syncSolids(l: Line2) {
+    for (const deck of decks) {
+      const on = l.routes[deck.kind];
+      deck.mesh.visible = on;
+      if (on && !deck.body) {
+        deck.mesh.geometry.computeBoundingBox();
+        const size = deck.mesh.geometry.boundingBox!.getSize(wake);
+        deck.body = land.addStatic(
+          { kind: 'box', hx: size.x / 2, hy: 0.175, hz: size.z / 2 },
+          deck.mesh.position,
+          deck.mesh.quaternion,
+          undefined,
+          owner,
+        );
+      } else if (!on && deck.body) {
+        owner.removeBody(deck.body);
+        deck.body = null;
+      }
+    }
+    drive.visible = l.routes.quarry;
+    const down = l.gateOpen;
+    if (down && slabBody) {
+      owner.removeBody(slabBody);
+      slabBody = null;
+    }
+    if (!down && !slabBody) {
+      slabBody = land.addStatic(
+        { kind: 'box', hx: SLAB.w / 2, hy: SLAB.h / 2, hz: SLAB.d / 2 },
+        { x: G.x + ox, y: slabUp, z: G.z },
+        gateQ,
+        undefined,
+        owner,
+      );
+    }
+    if (slabT < 0) slab.position.y = down ? slabDown : slabUp;
+  }
+  const api = {
+    /** Line two owns the machine once the forge is lit and the turn has played. */
+    working,
+    step,
+    panelFrame: (dt: number) => panels.frame(dt),
+    snapshot() {
+      state = adapter.inspect();
+      restore();
+      wasWorking = working();
+    },
+    update(dt: number) {
+      state = adapter.inspect();
+      const l = l2();
+      if (!l) return;
+      if (state.tick !== shownTick) {
+        shownTick = state.tick;
+        sinceTick = 0;
+      } else sinceTick = Math.min(0.1, sinceTick + dt);
+      // The forge: pieces follow accepted logs; the mouth glows when lit; rails stand on the rack.
+      const wantPieces = piecesFor(l.forge.used);
+      while (shownPieces < wantPieces) building.drop(ORDER[shownPieces++]!, 3.2, 0.3);
+      building.update(dt);
+      mouth.visible = l.forge.lit >= 0;
+      const walls = l.forge.used > F1;
+      if (walls && !wallsBody)
+        wallsBody = land.addStatic(
+          { kind: 'box', hx: plans.W / 2, hy: plans.HIGH / 2, hz: plans.D / 2 },
+          { x: plans.X, y: plan.y + plans.HIGH / 2, z: plans.Z },
+          undefined,
+          undefined,
+          owner,
+        );
+      const inFlight = deposits.filter((d) => d.station === -2 && d.active()).length;
+      drawRack(l.forge.rack + inFlight);
+      deposits = deposits.filter((d) => d.active());
+      const forgeStage = l.forge.used < F1 ? 0 : 1;
+      forgeFrame.spec = layout.FORGE_BILLS[forgeStage]!;
+      forgeFrame.have.logs = forgeStage ? l.forge.used - F1 : l.forge.used;
+      forgeFrame.drawStock({ logs: 0, rails: 0, stone: 0, beam: 0 });
+      const pathOpen = state.stations[2]?.completion === 1;
+      forgeFrame.setTag(pathOpen && l.forge.lit < 0 && state.phase === 'done');
+      // The machine crosses once the forge is lit.
+      const now = working();
+      if (now && !wasWorking) {
+        whistle(machine.flatbed.x, machine.flatbed.z);
+        restore();
+      }
+      wasWorking = now;
+      // Q frames: stock, feed flights into the machine, tags.
+      l.stations.forEach((job, k) => {
+        const spec = LINE2_STATIONS[k]!,
+          frame = frames[k]!;
+        const feed = lineFeed(spec, job.timing);
+        const depositTicks = Math.ceil(job.timing.depositMs / 100);
+        const feedMs = (jobElapsed(k) - depositTicks) * 100;
+        const wanted = job.start < 0 ? 0 : feed.filter((f) => f.launchMs <= feedMs).length;
+        while (feedLaunched[k]! < wanted) {
+          const f = feed[feedLaunched[k]!]!;
+          feedLaunched[k]!++;
+          if (f.landMs <= feedMs) continue;
+          pieces.send(
+            f.kind === 'stone' ? 'rail' : 'log',
+            f.kind === 'stone' ? frame.railSlot(f.slot, from) : frame.logSlot(f.slot, from),
+            frame.feederEnd,
+            {
+              dur: (f.landMs - f.launchMs) / 1000,
+              apex: 0.15,
+              size: f.kind === 'stone' ? undefined : [2.2, 2.2],
+              aim: (out) => void machine.worldCradle(out),
+              land: () => clank(frame.x, frame.z),
+            },
+            owner,
+          );
+        }
+        const launched = feed.slice(0, feedLaunched[k]);
+        const flying = (kind: number) => deposits.filter((d) => d.station === k && d.kind === kind).length;
+        frame.have.logs = job.start >= 0 ? spec.bill[0] : job.stock;
+        frame.have.rails = job.start >= 0 ? spec.bill[1] : job.railStock;
+        frame.drawStock({
+          logs:
+            job.start >= 0
+              ? spec.bill[0] - launched.filter((f) => f.kind === 'log').length
+              : Math.max(0, job.stock - flying(0)),
+          rails:
+            job.start >= 0
+              ? spec.bill[1] - launched.filter((f) => f.kind === 'stone').length
+              : Math.max(0, job.railStock - flying(2)),
+          stone: 0,
+          beam: 0,
+        });
+        frame.setTag(now && k === l.active && job.start < 0);
+        if (now && k === activeIndex()) {
+          const entered = feed.filter((f) => f.kind === 'log' && f.landMs <= feedMs).length;
+          const fraction = Math.min(
+            1,
+            Math.max(0, (visualHead - spec.fromCm / 100) / ((spec.toCm - spec.fromCm) / 100)),
+          );
+          machine.setCradle(Math.min(entered, Math.ceil(spec.bill[0] * (1 - fraction))));
+        }
+      });
+      if (now) {
+        targetHead = head();
+        panels.update(dt);
+      }
+      drawDepot(l.active, l.depot);
+      syncSolids(l);
+      if (slabT >= 0) {
+        slabT += dt;
+        const u = Math.min(1, slabT / 1.5);
+        slab.position.y = slabUp - (slabUp - slabDown) * (u * u * (3 - 2 * u));
+        if (u >= 1) {
+          slabT = -1;
+          thump(G.x + ox, G.z);
+          pieces.dustRing(G.x + ox, G.y + 0.4, G.z, 16, 5, 0.5);
+        }
+      }
+      leverArm.rotation.z += ((l.lever ? -0.85 : 0.75) - leverArm.rotation.z) * Math.min(1, dt * 10);
+      for (const o of [hookRing, hookCore]) o.visible = l.completed >= 2 && !l.hook;
+      hookRing.rotation.z += dt * 0.7;
+      hookCore.rotation.y += dt * 1.2;
+      // Auto-unload at the forge frame and the active Q frame, as on line one.
+      unload -= dt;
+      const p = me.body?.position;
+      if (!state.ready || !p || unload > 0) return;
+      const near = (x: number, z: number) => Math.hypot(p.x - x, p.z - z) <= layout.TUNE.reachStation;
+      if (pathOpen && l.forge.used < LINE2_FORGE.logs && state.availableCarry > 0 && near(forgeFrame.x, forgeFrame.z)) {
+        if (adapter.depositLine2('F', 1, 0)) unload = layout.TUNE.unloadS;
+        return;
+      }
+      const k = l.active;
+      if (!now || k < 0) return;
+      const job = l.stations[k]!,
+        spec = LINE2_STATIONS[k]!,
+        frame = frames[k]!;
+      if (job.start >= 0 || !near(frame.x, frame.z)) return;
+      if (state.availableCarry > 0 && job.stock < spec.bill[0] && adapter.depositLine2(spec.id, 1, 0))
+        unload = layout.TUNE.unloadS;
+      else if (state.availableRails > 0 && job.railStock < spec.bill[1] && adapter.depositLine2(spec.id, 1, 2))
+        unload = layout.TUNE.unloadS;
+    },
+    targets(): Interactable[] {
+      const l = l2(),
+        p = me.body?.position;
+      if (!l || !p || !state.ready) return [];
+      const out: Interactable[] = [];
+      const full = state.freeCarry <= 0 ? { blocked: 'Your back is full' } : {};
+      if (l.forge.rack > 0 && Math.hypot(p.x - RX, p.z - RZ) <= 3)
+        out.push({
+          id: 'railway-forge-rails',
+          verb: 'Take rails',
+          at: rackFrom,
+          run: () => void adapter.forgeTake(),
+          ...full,
+        });
+      if (l.depot > 0 && l.active >= 0) {
+        depotPlace(l.active, from);
+        if (Math.hypot(p.x - from.x, p.z - from.z) <= 3.2)
+          out.push({
+            id: 'railway-depot-logs',
+            verb: 'Pick up',
+            at: from.clone().setY(from.y + 1),
+            run: () => void adapter.depotTake(),
+            ...full,
+          });
+      }
+      // The lever is always there to try; before Q3 the uncoupled drive means a pull does nothing.
+      if (!l.lever && Math.hypot(p.x - leverTarget.x, p.z - leverTarget.z) < 3 && p.y > lever.y - 0.2)
+        out.push({
+          id: 'railway-quarry-lever',
+          verb: 'Pull',
+          at: leverTarget,
+          run: () => {
+            if (!l.routes.quarry) {
+              clank(leverTarget.x, leverTarget.z);
+              return;
+            }
+            void adapter.pullLever();
+          },
+        });
+      if (
+        l.completed >= 2 &&
+        !l.hook &&
+        Math.hypot(p.x - hookAt.x, p.z - hookAt.z) <= 3 &&
+        Math.abs(p.y - hookAt.y) <= 2.2
+      )
+        out.push({ id: 'railway-hook-device', verb: 'Take it', at: hookTarget, run: () => void adapter.claimHook() });
+      return out;
+    },
+    inspect: () => {
+      const l = l2();
+      return {
+        working: working(),
+        head: visualHead,
+        targetHead,
+        setback,
+        panelCursor: track.cursor,
+        forgePieces: shownPieces,
+        forgeLit: mouth.visible,
+        rackShown: racked.count,
+        depotShown: depotLogs.count,
+        routes: decks.map((d) => ({ kind: d.kind, visible: d.mesh.visible, solid: !!d.body })),
+        drive: drive.visible,
+        gateSolid: !!slabBody,
+        lever: { x: leverTarget.x, y: lever.y, z: leverTarget.z, pulled: !!l?.lever },
+        hook: { x: hookAt.x, y: hookAt.y, z: hookAt.z, available: !!l && l.completed >= 2 && !l.hook },
+        forgeFrame: { x: forgeFrame.x, y: forgeFrame.y, z: forgeFrame.z },
+        forgeRack: { x: RX, y: RY, z: RZ },
+        frames: frames.map((f) => ({ x: f.x, y: f.y, z: f.z })),
+        depot: l && l.active >= 0 ? depotPlace(l.active, new THREE.Vector3()).toArray() : null,
+        routePoints: {
+          hook: tech.SERVICE_ROUTES.hook.map((q) => [q.x + ox, q.y, q.z]),
+          quarry: tech.SERVICE_ROUTES.quarry.map((q) => [q.x + ox, q.y, q.z]),
+        },
+        machine: { x: machine.flatbed.x, y: machine.flatbed.y, z: machine.flatbed.z },
+      };
+    },
+  };
+  restore();
+  return api;
+}
+export type RailwayLine2View = Awaited<ReturnType<typeof createRailwayLine2>>;

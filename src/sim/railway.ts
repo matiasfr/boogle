@@ -353,7 +353,7 @@ export function railCounts(s: Railway) {
     stock,
     allocation,
     used,
-    line2,
+    ...(l2 ? { line2 } : {}),
     rack: s.supply?.rack ?? 0,
     produced: (s.supply?.produced ?? 0) + (l2?.depotProduced ?? 0),
     total: source + carry + loose + stock + allocation + used + line2 + (s.supply?.rack ?? 0),

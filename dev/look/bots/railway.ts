@@ -553,12 +553,257 @@ export async function play({ stopBeforeReward = false } = {}) {
     );
     require(Math.abs(me.body!.position.y - PLAYER_R - pillar.top) < 1, 'air jump returns to the same pillar');
     const { registry } = await import('../../../src/world/sync.ts');
-    require(!registry().ops.some((op) =>
-      /^rail\.(hook|glide|train)/.test(op),
-    ), 'no later railway ability is installed');
+    require(!registry().ops.some((op) => /^rail\.(glide|train)/.test(op)), 'no later railway ability is installed');
     await checkpoint('optional jump used');
+    if (query.get('line2') === '0') {
+      document.documentElement.dataset.railwayProof = 'done';
+      bot.finish('T1/T2/T3, proper axe, unique beam, both path walks and first optional jump');
+      return;
+    }
+    // ---------------------------------------------------------------- line two, walking only: no further jumps
+    let jumpsAtLine2 = read().reward.tools.jumps;
+    const noJump = (beat: string) =>
+      require(read().reward.tools.jumps === jumpsAtLine2, `${beat} needed no extra air jump`);
+    const l2 = () => read().line2!;
+    const v2 = () => read().line2View;
+    const quarry = layout.LINKS[1]!;
+    const qAt = (s: number) => layout.lineAt(quarry.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
+    const walkQuarry = async (from: number, to: number) => {
+      const direction = Math.sign(to - from);
+      for (let s = from; direction * (to - s) >= 0; s += direction * 3) {
+        const point = qAt(s);
+        require(await bot.straight(
+          point.x + layout.ORIGIN.x,
+          point.z,
+          0.5,
+          12000,
+        ), `walked quarry rail at ${s.toFixed(0)} m`);
+        await until(() => me.coyote > 0 && !me.swimming, 'quarry track supports the walker', 5000);
+      }
+    };
+    if (second) {
+      // The friend stays in the room through line two; the leader plays it. Both peers report hashes per beat.
+      await until(() => read().line2?.gateOpen, 'leader opens the quarry gate', 1800000);
+      await checkpoint('quarry gate open');
+      document.documentElement.dataset.railwayProof = 'done';
+      bot.finish('line one with a friend; line two observed to the quarry gate');
+      return;
+    }
+    // Back down the pillar lip and home along line one.
+    require(await bot.straight(
+      pillar.lipTo!.x + layout.ORIGIN.x,
+      pillar.lipTo!.z,
+      0.4,
+      6000,
+    ), 'left the pillar by its lip');
+    await walkTrack(92, 30);
+    await walkBypass(bypass.slice(1));
+    mark('line two started');
+    const fill = async (max = 8) => {
+      let attempts = 0;
+      while (read().carry < max) {
+        require(++attempts <= 24, 'found enough reachable logs for line two');
+        const p = me.body!.position;
+        const candidates = read()
+          .trees.filter(
+            (tree) => !tree.cleared && tree.remaining > 0 && tree.id !== 28 && tree.id !== 209 && tree.id !== 232,
+          )
+          .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
+        let chosen: RailwayViewInspection['trees'][number] | undefined;
+        for (const candidate of candidates.slice(0, 20)) {
+          const route = await bot.plan(candidate.x, candidate.z, 2.6);
+          if (route.arrives && route.path.every((point) => point.y >= 3)) {
+            chosen = candidate;
+            break;
+          }
+        }
+        require(chosen, 'a reachable ordinary source exists for line two');
+        await walk(chosen!.x, chosen!.z, 2.6);
+        face(chosen!.x, chosen!.z);
+        for (let swing = 0; swing < 60 && read().carry < max; swing++) {
+          const target = interactTarget();
+          if (!target?.click || target.verb !== 'Chop') break;
+          bot.press();
+          await bot.wait(380);
+          if (read().trees.find((source) => source.id === chosen!.id)?.remaining === 0) break;
+        }
+        await until(() => read().pending === 0, 'line-two harvest settles');
+      }
+    };
+    const forge = v2().forgeFrame;
+    for (let load = 0; l2().forge.used < 56; load++) {
+      require(load < 12, 'forge bills fill in bounded loads');
+      await fill(Math.min(8, 56 - l2().forge.used));
+      await walk(forge.x, forge.z, 2.4);
+      await until(() => read().carry === 0 && read().pending === 0, 'forge frame unloads automatically', 20000);
+      mark(`forge load ${load + 1} (${l2().forge.used}/56)`);
+    }
+    await until(() => l2().forge.lit >= 0, 'forge lit by its second bill');
+    await checkpoint('forge lit');
+    await until(() => v2().working, 'machine crosses to line two');
+    const rack = v2().forgeRack;
+    const takeRails = async (n: number) => {
+      await until(() => l2().forge.rack >= Math.min(n, 8), 'forge has poured enough rails', 60000);
+      require(await bot.use(rack.x, rack.z, 'take rails from the forge rack', /^Take rails$/), 'forge rack offered');
+      // As with the axe chest, a first press can precede the host's settled Owner position: repeat ordinary input.
+      require(await bot.work(() => read().railsCarry > 0, 5000, 380), 'rails accepted after bounded retries');
+      await until(() => read().pending === 0, 'rails accepted onto the back');
+    };
+    const deliver = async (k: number, frameAt: { x: number; z: number }) => {
+      await walk(frameAt.x, frameAt.z, 2.4);
+      await until(
+        () => (read().carry === 0 && read().railsCarry === 0) || l2().stations[k]!.start >= 0,
+        `Q${k + 1} frame unloads automatically`,
+        20000,
+      );
+      await until(() => read().pending === 0, 'unload settles');
+    };
+    // Q1, by hand beside the turntable: 16 logs and 6 rails.
+    const q1 = v2().frames[0]!;
+    while (l2().stations[0]!.start < 0 && l2().stations[0]!.stock < 16) {
+      await fill(Math.min(8, 16 - l2().stations[0]!.stock));
+      await deliver(0, q1);
+    }
+    await takeRails(6);
+    await deliver(0, q1);
+    await until(() => l2().stations[0]!.start >= 0, 'Q1 funded from logs and rails');
+    await checkpoint('Q1 funded');
+    await until(() => l2().stations[0]!.completion === 1, 'Q1 laid once');
+    await checkpoint('Q1 laid');
+    // Q2 and Q3: logs from the depot rack by the frame, rails from the forge by hand.
+    const viaTrack = async (frameAt: { x: number; z: number }) => {
+      // Q3's frame is across the gorge: walk the finished Q2 trestle.
+      const start = qAt(10);
+      await walk(start.x + layout.ORIGIN.x, start.z, 1);
+      await walkQuarry(10, 112);
+      // The parked machine fills the track's end: step off on the frame's side, clear of its body.
+      const off = besideQ(112, frameAt);
+      require(await bot.straight(off.x, off.z, 0.6, 8000), 'stepped off the track beside the parked machine');
+      await walk(frameAt.x, frameAt.z, 2.4);
+    };
+    function besideQ(s: number, toward: { x: number; z: number }) {
+      const p = qAt(s);
+      const x = p.x + layout.ORIGIN.x,
+        z = p.z;
+      const side = Math.sign(-p.uz * (toward.x - x) + p.ux * (toward.z - z)) || 1;
+      return { x: x - p.uz * side * 4.5, z: z + p.ux * side * 4.5 };
+    }
+    const homeFromQuarry = async () => {
+      const p = me.body!.position;
+      if (p.x - layout.ORIGIN.x < -10) return;
+      const off = besideQ(112, v2().frames[2]!);
+      await walk(off.x, off.z, 1);
+      const near = qAt(112);
+      require(await bot.straight(near.x + layout.ORIGIN.x, near.z, 0.5, 8000), 'stepped back onto the track');
+      await walkQuarry(112, 10);
+    };
+    for (const k of [1, 2]) {
+      const frameAt = v2().frames[k]!;
+      const bill = [0, 24, 16][k]!,
+        rails = [0, 12, 12][k]!;
+      if (k === 2) await viaTrack(frameAt);
+      while (l2().stations[k]!.start < 0 && l2().stations[k]!.stock < bill) {
+        await until(() => l2().depot > 0, `Q${k + 1} depot brings logs`, 60000);
+        const depot = v2().depot!;
+        require(await bot.use(depot[0]!, depot[2]!, 'take depot logs', /^Pick up$/), 'depot rack offered');
+        require(await bot.work(() => read().carry > 0, 5000, 380), 'depot logs accepted after bounded retries');
+        await until(() => read().pending === 0, 'depot logs settle');
+        await walk(frameAt.x, frameAt.z, 2.4);
+        await until(() => read().carry === 0 && read().pending === 0, `Q${k + 1} logs unload`, 20000);
+      }
+      mark(`Q${k + 1} logs delivered`);
+      while (l2().stations[k]!.start < 0 && l2().stations[k]!.railStock < rails) {
+        if (k === 2) await homeFromQuarry();
+        await takeRails(rails - l2().stations[k]!.railStock);
+        if (k === 2) await viaTrack(frameAt);
+        await deliver(k, frameAt);
+      }
+      await until(() => l2().stations[k]!.start >= 0, `Q${k + 1} funded`);
+      await checkpoint(`Q${k + 1} funded`);
+      await until(() => l2().stations[k]!.completion === 1, `Q${k + 1} laid once`);
+      await checkpoint(`Q${k + 1} laid`);
+      if (k === 1) {
+        // The hook walk: from the finished deck near s=92 up the broad sloped walkway to pillar p2.
+        require(v2()
+          .routes.filter((r) => r.kind === 'hook')
+          .every((r) => r.visible && r.solid), 'hook walk built by Q2');
+        const deck = qAt(84);
+        await walk(deck.x + layout.ORIGIN.x, deck.z, 1);
+        await walkQuarry(84, 92);
+        let lowest = Infinity;
+        for (const [x, y, z] of v2().routePoints.hook) {
+          require(await bot.straight(x!, z!, 0.6, 10000), 'walked the hook walkway');
+          await until(() => me.coyote > 0 && !me.swimming, 'walkway supports the walker', 5000);
+          lowest = Math.min(lowest, me.body!.position.y - PLAYER_R - y!);
+        }
+        require(lowest > -0.25, `hook walkway has no dip (${lowest.toFixed(2)} m)`);
+        noJump('hook walk');
+        const hook = v2().hook;
+        require(hook.available, 'hook device available after Q2');
+        require(await bot.use(hook.x, hook.z, 'take the hook device', /^Take it$/), 'hook device offered');
+        require(await bot.work(() => l2().hook, 5000, 380), 'shared hook accepted after bounded retries');
+        await checkpoint('hook taken');
+        const back = v2().routePoints.hook;
+        for (let i = back.length - 1; i >= 0; i--)
+          require(await bot.straight(back[i]![0]!, back[i]![2]!, 0.6, 10000), 'walked back down the walkway');
+        noJump('hook walk return');
+        if (query.get('earlyLedge') === '1') {
+          // Before Q3: reach the apron with the optional double jump; the uncoupled lever must do nothing.
+          const [, top] = v2().routePoints.quarry;
+          const leverAt = v2().lever;
+          const edge = { x: top![0]!, z: top![2]! + 2.2 };
+          await walkQuarry(92, 112);
+          const off = besideQ(112, edge);
+          require(await bot.straight(off.x, off.z, 0.6, 8000), 'stepped off beside the parked machine');
+          await walk(edge.x, edge.z, 1);
+          face(top![0]!, top![2]! - 2);
+          require(!v2().drive &&
+            v2().routes.every((r) => r.kind !== 'quarry' || !r.solid), 'no ramp or drive before Q3');
+          input.keys.add('KeyW');
+          pressJump();
+          await bot.wait(260);
+          releaseJump();
+          await bot.wait(120);
+          pressJump();
+          await bot.wait(200);
+          releaseJump();
+          await until(() => me.coyote > 0 && me.body!.velocity.y <= 0, 'landed after the early double jump', 6000);
+          input.keys.delete('KeyW');
+          require(Math.abs(me.body!.position.y - PLAYER_R - top![1]!) < 0.6, 'reached the apron early by jumping');
+          require(await bot.use(leverAt.x, leverAt.z, 'try the uncoupled lever', /^Pull$/), 'lever reachable early');
+          await bot.wait(1500);
+          require(!l2().lever && !l2().gateOpen && v2().gateSolid, 'early pull does nothing before Q3');
+          await checkpoint('early lever does nothing');
+          require(await bot.straight(top![0]!, top![2]! + 4, 0.6, 6000), 'stepped off the apron');
+          await until(() => me.coyote > 0, 'landed beside the apron', 6000);
+          jumpsAtLine2 = read().reward.tools.jumps; // the early probe is separate from the walking route
+        }
+      }
+    }
+    // Q3 done: the quarry ramp, the coupled drive and the lever.
+    require(v2().drive, 'Q3 connects the winch drive');
+    require(v2()
+      .routes.filter((r) => r.kind === 'quarry')
+      .every((r) => r.visible && r.solid), 'quarry ramp built by Q3');
+    const [low, high] = v2().routePoints.quarry;
+    await walk(low![0]!, low![2]! + 2, 1.5);
+    require(await bot.straight(low![0]!, low![2]!, 0.6, 10000), 'reached the foot of the quarry ramp');
+    require(await bot.straight(high![0]!, high![2]! - 1, 0.6, 10000), 'walked up the quarry ramp');
+    await until(
+      () => me.coyote > 0 && Math.abs(me.body!.position.y - PLAYER_R - high![1]!) < 0.6,
+      'standing on the apron',
+    );
+    noJump('quarry ramp');
+    const lever = v2().lever;
+    require(await bot.use(lever.x, lever.z, 'pull the quarry lever', /^Pull$/), 'lever offered');
+    require(await bot.work(() => l2().gateOpen, 5000, 380), 'quarry gate opens with Q3 complete and the lever pulled');
+    await until(() => !v2().gateSolid, 'gate slab collider removed');
+    await checkpoint('quarry gate open');
+    const totals = read().counts;
+    require(totals.rails && totals.rails.total === totals.rails.poured, 'rails conserve the forge pour');
+    require(totals.total === LINE1_INITIAL[0] + totals.produced, 'logs conserve through line two');
     document.documentElement.dataset.railwayProof = 'done';
-    bot.finish('T1/T2/T3, proper axe, unique beam, both path walks and first optional jump');
+    bot.finish('line one, forge, Q1-Q3, hook walk, quarry ramp and lever, walking only');
   } catch (error) {
     document.documentElement.dataset.railwayProof = 'failed';
     bot.never(`production line1 stopped: ${error instanceof Error ? error.message : String(error)}`);
