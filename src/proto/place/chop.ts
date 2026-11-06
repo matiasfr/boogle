@@ -921,7 +921,7 @@ export function receiveHarvest(t: Tree, result: HarvestResult, localPlayer: bool
     t.shake = 0.1;
     t.scuff = true;
     t.hitAt = performance.now();
-    chips(bark.x, bark.y, bark.z, 2);
+    chips(bark.x, bark.y, bark.z, 2, t.y, t.cutYaw);
     placeSound('treeRebound', t.x, t.z);
     pose(t, performance.now());
     return;
@@ -929,7 +929,7 @@ export function receiveHarvest(t: Tree, result: HarvestResult, localPlayer: bool
   t.shake = 1;
   t.hitAt = performance.now();
   placeSound(t.hardwood ? 'hardwoodBite' : 'treeBite', t.x, t.z);
-  chips(bark.x, bark.y, bark.z, good ? 18 : 9);
+  chips(bark.x, bark.y, bark.z, good ? 18 : 9, t.y, t.cutYaw);
   const yields = localPlayer ? result.logs : 0;
   back.logs += yields;
   for (let k = 0; k < yields; k++) {
@@ -960,7 +960,7 @@ function contactRock(q: Rock) {
   q.shake = 1;
   knock(1.4, 1.2);
   clank(q.x, q.z);
-  chips(q.x, q.y + q.r, q.z, 8);
+  chips(q.x, q.y + q.r, q.z, 8, q.y, undefined, true);
   for (let k = 0; k < 10; k++) {
     const a = Math.random() * Math.PI * 2;
     emit({
@@ -1005,10 +1005,12 @@ function contactRock(q: Rock) {
 }
 /** From another tab: a rock hit there. */
 export function rockStruck(q: Rock, strokes: number) {
+  const wasWhole = whole(q);
   q.strokes = Math.max(q.strokes, strokes);
-  chips(q.x, q.y + q.r, q.z, 6);
+  chips(q.x, q.y + q.r, q.z, 6, q.y, undefined, true);
   poseRock(q);
   solidRock(q);
+  if (wasWhole && !whole(q)) dustRing(q.x, q.y + 0.2, q.z, 10, 2.4, 0.4);
 }
 /** Trade whatever's on your back for the one big thing. */
 export function shoulder(what: Exclude<BigThing, null>) {

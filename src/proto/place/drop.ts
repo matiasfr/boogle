@@ -19,7 +19,7 @@ import { H } from './land.ts';
 import { LOOK, STEEL } from './look.ts';
 import { kitBatch } from './look-kit.ts';
 import { commitPieces } from '../../render/haul-pieces.ts';
-import { RAIL_SIZE, logStackMesh, send, setStackLog, stackSlot, type PieceKind } from './pieces.ts';
+import { RAIL_SIZE, dustRing, logStackMesh, send, setStackLog, stackSlot, type PieceKind } from './pieces.ts';
 
 type Pile = { x: number; y: number; z: number; yaw: number; logs: number; rails: number; stone: number };
 const piles: Pile[] = [];
@@ -101,6 +101,7 @@ function dropOne() {
       else if (kind === 'stone') to.stone++;
       else to.logs++;
       knock(0.35, 0.7);
+      dustRing(x, y, z, kind === 'log' ? 6 : 4, 1.2, 0.25);
       draw();
       save();
     },

@@ -26,6 +26,7 @@
 // Personal: your back, crates and gifts (each tab gets its own crate at each stretch), crystals, gold finds. Shared: the rungs,
 // the money, the felled trees, the paths. A newcomer inherits every rung without earning it again.
 import * as THREE from 'three/webgpu';
+import { cargoDust } from '../../render/particle-effects.ts';
 import { createTrainNudge } from './train-nudge.ts';
 import {
   addPresenceField,
@@ -489,8 +490,14 @@ function retryBig(now: number) {
   } satisfies BigCargoRequest);
 }
 function acceptBig(what: BigCargo, state: CargoState) {
+  const previous = bigCargo[what];
   const changed = JSON.stringify(bigCargo[what]) !== JSON.stringify(state);
   bigCargo[what] = structuredClone(state);
+  // Only an accepted carried-to-ground transition, never a request, duplicate receipt or initial snapshot.
+  if (previous.holder !== null && state.holder === null && state.ground && state.revision > previous.revision) {
+    const p = state.ground;
+    cargoDust(p.x, p.y, p.z, p.yaw, what === 'beam');
+  }
   if (what === 'beam') {
     const taken = state.holder !== null || beamDelivered();
     if (changed || trunkTaken() !== taken) setTrunkTaken(taken);

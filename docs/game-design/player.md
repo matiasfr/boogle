@@ -161,4 +161,10 @@ Foot contacts use quiet synthesized low-mid thumps with brief surface texture. L
 11 dB below the first shipped footsteps. Jumps and landings stay slightly more present.
 The [contact and mix recipe](place.md#local-mix-and-buddy-contacts-5-november-2026) owns the levels and listening command.
 
+Dry landings also emit a soft dust billow using that same apex-to-contact height and minimum landing
+threshold. The 4–12 particles grow with fall height up to 4 m and fade within 0.9 s, without covering Buddy.
+Water contacts do not emit dust; distant avatars are culled at the landing-sound distance. The Local
+contact clock runs even before audio unlock, so muting sound does not disable dust. Teleports, swimming,
+seating and preview avatars retain the locomotion reset guards. Reduced motion suppresses the effect.
+
 `/character/` is the isolated [asset and animation stage](asset-stage.md), with every Buddy clip, Raw/As played playback through the real body functions, exact seek/frame stepping, hats, views, a crowd of 8 and inspection overlays. Existing clip/time/view/pose/hat links remain supported; `/assets/` redirects to it.
