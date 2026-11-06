@@ -51,3 +51,17 @@ The requested wedge sweeps strata 0.35/0.6/0.9 against band fraction 0.3/0.5/0.7
 wide camera and a tighter toe view from the same camera station; the supplied owner crop has no recoverable camera
 metadata, so label the latter an interpretation. Re-run the bounded surface audit, seven eight-second stops, solo
 Place bot, counts and checks after final edits. No compatibility work, push or ship; coordinator reviews and merges.
+
+## Round 5 — sediment, turf and continuous contact
+
+Replace equal two-tone stripes with unequal sediment beds, three or four related tones, occasional thin accents,
+low-frequency warp and restrained edge erosion. Local tunables own every material control; the existing wedge
+sweeps irregularity 0/0.6/1 against colour count 2/3/4. Restrict bedding to steep exposed rock. Stabilize grass coverage
+with a broad soil-slope attribute, sharpen its lip and use original blade clusters instead of broad turf noise.
+
+Fit the cliff's rear return and first nose closure below the actual finished soil; preserve the shared render,
+collision and seabed triangles. Keep submerged sand wet across the shared swash sampling cutoff while exposed sand
+still dries. The angular underwater brown boundary was a wetness discontinuity, not a mismatched water mesh.
+No water topology change is retained. Preserve protected routes, seven post-stop checks, budgets and the URL flag.
+Capture the same wide and interpreted owner views, the variation wedge, close turf and real-time swash, then inspect
+PNGs and extracted video frames. Final checks, bounded surface audit and solo Place bot precede coordinator review.

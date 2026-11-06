@@ -96,11 +96,15 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
       })()
     : surface.a;
   const persistent = sand ? dampBand.mul(sand.dampStrength) : surface.a;
+  // Swash is intentionally unsampled below -0.3 m; submerged sand is still wet. Using wash.z alone
+  // made its pigment jump at that cutoff, drawing a fixed angular contour through the moving water.
+  // Only the exposed beach follows backwash drying; submerged pigment joins it continuously at sea level.
+  const substrateWet = max(wash.z, smoothstep(-0.05, 0, positionWorld.y).oneMinus());
   // Pigment contrast must not weaken the physical wet sheen. Keep the demo's wetness for roughness.
-  const sandWet = max(dampBand, wash.z).mul(sandUp);
+  const sandWet = max(dampBand, substrateWet).mul(sandUp);
   // Preserve colour recovery inside the persistent damp band; max(static, wet) hid it there.
   const damp = sand
-    ? persistent.add(wash.z.mul(sand.tideMarkStrength).mul(persistent.oneMinus())).mul(sandUp)
+    ? persistent.add(substrateWet.mul(sand.tideMarkStrength).mul(persistent.oneMinus())).mul(sandUp)
     : surface.a;
   const sandFoam = sand
     ? (() => {

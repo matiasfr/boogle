@@ -4,6 +4,7 @@ import {
   abs,
   attribute,
   float,
+  floor,
   fract,
   max,
   mix,
@@ -25,7 +26,7 @@ import { COVE_CLAY, COVE_DRY } from './cove.ts';
 import { ORIGIN } from './layout.ts';
 // oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
-const pigment = (family: 'rock' | 'strata' | 'grass' | 'sand' | 'path') =>
+const pigment = (family: 'rock' | 'strata' | 'sediment' | 'rust' | 'grass' | 'sand' | 'path') =>
   vec3(coveU(`${family}R`), coveU(`${family}G`), coveU(`${family}B`));
 export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region: N, kit = false) {
   const tiles = coveTextures();
@@ -47,7 +48,8 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   const macro = texture(tiles.data, p.xz.mul(coveU('noiseScale')).div(8)).b.sub(0.5);
   const slope = coveU('slopeThreshold'),
     slopeWidth = coveU('slopeBlend');
-  let rock: N = smoothstep(slope.sub(slopeWidth), slope.add(slopeWidth), n.y).oneMinus();
+  const coverageSlope = kit ? n.y : mix(n.y, attribute('coveSlope', 'float'), coveU('macroSlopeMix'));
+  let rock: N = smoothstep(slope.sub(slopeWidth), slope.add(slopeWidth), coverageSlope).oneMinus();
   const sandLine = coveU('sandHeight').add(macro.mul(coveU('heightBlend')));
   let sand: N = smoothstep(sandLine.sub(coveU('sandBlend')), sandLine.add(coveU('sandBlend')), p.y)
     .oneMinus()
@@ -61,6 +63,10 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   // A walkable beach remains sand even where its bank is too sloped to grow turf.
   rock = rock.mul(sand.oneMinus());
   let grass: N = rock.oneMinus().sub(sand).max(0);
+  // Broad slope coverage must not grow turf on the wet shoreline's steep foot.
+  const dryTurf = smoothstep(0, coveU('grassMinHeight'), p.y);
+  rock = rock.add(grass.mul(dryTurf.oneMinus()));
+  grass = grass.mul(dryTurf);
   const tag: N = kit ? attribute('coveTurf', 'float') : float(0);
   if (kit) {
     grass = tag;
@@ -85,28 +91,74 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   rock = total.greaterThan(0.0001).select(rw.div(total.max(0.0001)), rock);
   grass = total.greaterThan(0.0001).select(gw.div(total.max(0.0001)), grass);
   sand = total.greaterThan(0.0001).select(sw.div(total.max(0.0001)), sand);
-  const phase = fract(
-    p.y
-      .add(
-        sin(p.x.mul(coveU('noiseScale')))
-          .add(sin(p.z.mul(coveU('noiseScale'))))
-          .mul(coveU('bandWarp')),
-      )
-      .div(coveU('bandScale')),
+  // Coverage stays distinct from pigment: a narrow turf edge replaces the metre-wide green smear.
+  const grassEdge = grass.add(detail.g.sub(0.5).mul(coveU('grassEdgeBreakup')));
+  const cleanGrass = smoothstep(
+    float(0.5).sub(coveU('grassEdgeWidth')),
+    float(0.5).add(coveU('grassEdgeWidth')),
+    grassEdge,
   );
-  // Two broad sediment pigments, not a narrow dark line around an otherwise uniform bed.
-  const feather = coveU('bandSoftness');
-  const band = smoothstep(0, feather, phase).mul(
-    smoothstep(coveU('bandWidth').sub(feather), coveU('bandWidth').add(feather), phase).oneMinus(),
+  const exposed = rock.add(sand).max(0.0001);
+  rock = rock.div(exposed).mul(cleanGrass.oneMinus());
+  sand = sand.div(exposed).mul(cleanGrass.oneMinus());
+  grass = cleanGrass;
+  // Slowly varying deposition rate gives unequal bed heights. Its derivative remains positive,
+  // so irregularity cannot fold sediment layers back through themselves.
+  const height = p.y.add(
+    sin(p.x.mul(coveU('bandWarpScale')))
+      .add(sin(p.z.mul(coveU('bandWarpScale')).mul(0.71).add(1.3)))
+      .mul(coveU('bandWarp')),
   );
-  const rockCol = mix(pigment('rock'), pigment('strata'), band.mul(coveU('strataStrength'))).mul(
+  const deposition = height.div(coveU('bandScale'));
+  const layers = deposition
+    .add(
+      sin(deposition.mul(0.77))
+        .mul(0.55)
+        .add(sin(deposition.mul(1.7).add(0.9)).mul(0.15))
+        .mul(coveU('bandIrregularity')),
+    )
+    .add(rockHeight.sub(0.5).mul(coveU('bandErosion')));
+  const bed = floor(layers),
+    phase = fract(layers);
+  const randomBed = (index: N) => fract(sin(index.mul(7.13).add(2.39)).mul(43758.5453));
+  const bedPigment = (index: N) => {
+    const tone = floor(randomBed(index).mul(coveU('bandColourCount')));
+    return tone
+      .greaterThan(2.5)
+      .select(
+        pigment('rust'),
+        tone
+          .greaterThan(1.5)
+          .select(pigment('sediment'), tone.greaterThan(0.5).select(pigment('strata'), pigment('rock'))),
+      );
+  };
+  const sediment = mix(bedPigment(bed.sub(1)), bedPigment(bed), smoothstep(0, coveU('bandSoftness'), phase));
+  const accentAt = randomBed(bed.add(11)).mul(0.3).add(0.55);
+  const accent = smoothstep(accentAt, accentAt.add(coveU('bandAccentWidth')), phase)
+    .mul(
+      smoothstep(
+        accentAt.add(coveU('bandAccentWidth')),
+        accentAt.add(coveU('bandAccentWidth').mul(2)),
+        phase,
+      ).oneMinus(),
+    )
+    .mul(randomBed(bed.add(3)).greaterThan(0.55).select(1, 0));
+  const banded = mix(sediment, pigment('rock').mul(0.7), accent.mul(coveU('bandAccentStrength')));
+  // Bedding is visible only on exposed steep faces; rounded caps/shoulders keep quiet pigment.
+  const steep = smoothstep(
+    coveU('bandSlopeThreshold').sub(coveU('bandSlopeBlend')),
+    coveU('bandSlopeThreshold').add(coveU('bandSlopeBlend')),
+    n.y,
+  ).oneMinus();
+  const rockCol = mix(pigment('rock'), banded, steep.mul(coveU('strataStrength'))).mul(
     mix(vec3(1), rockPaint, coveU('pigmentStrength')),
   );
-  const grassCol = pigment('grass').mul(mix(vec3(1), turfPaint, coveU('pigmentStrength')));
+  const grassCol = pigment('grass').mul(turfPaint.sub(0.8).mul(coveU('grassDetailStrength')).add(1));
   const sandCol = pigment('sand').mul(macro.mul(coveU('detailStrength')).add(1));
-  const lip = kit
-    ? smoothstep(0, coveU('lipWidth'), tag).mul(smoothstep(coveU('lipWidth'), 1, tag).oneMinus())
-    : float(0);
+  const lipWidth = max(coveU('lipWidth'), coveU('grassEdgeWidth').add(0.001));
+  const lip = smoothstep(float(0.5).sub(lipWidth), float(0.5).sub(coveU('grassEdgeWidth')), grassEdge).mul(
+    grass.oneMinus(),
+  );
   const dry = rockCol
     .mul(rock)
     .add(grassCol.mul(grass))

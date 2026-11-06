@@ -25,6 +25,7 @@ import {
   insidePlace,
   pathMask,
   COVE_FINE,
+  fineHeightAt,
   terrainCollisionTiles,
 } from './terrain.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from './shore-layout.ts';
@@ -39,6 +40,35 @@ export { H, PATH_SAMPLES, insidePlace };
 
 // ---------------------------------------------------------------- the mesh and the heightfield
 const FLAT = (color: string) => flat(color);
+
+/** Finished soil only: H also includes cliff-kit tops, which must not steer ground coverage. */
+function soilHeight(x: number, z: number) {
+  const gx = Math.max(0, Math.min(NX - 1, (x - GRID.x0) / CELL)),
+    gz = Math.max(0, Math.min(NZ - 1, (z - GRID.z0) / CELL));
+  const i = Math.min(Math.floor(gx), NX - 2),
+    j = Math.min(Math.floor(gz), NZ - 2),
+    u = gx - i,
+    v = gz - j;
+  const a = heights[at(i, j)]!,
+    b = heights[at(i + 1, j)]!,
+    c = heights[at(i, j + 1)]!,
+    d = heights[at(i + 1, j + 1)]!;
+  const coarse = u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
+  return fineHeightAt(x, z, coarse);
+}
+
+/** Static coverage field: a 3 m derivative with perpendicular averaging removes grid-scale zigzags.
+ * These distances are bake resolution, not look controls; lighting keeps the actual mesh normals. */
+function macroSlopeY(x: number, z: number) {
+  let dx = 0,
+    dz = 0;
+  for (const offset of [-1.5, 0, 1.5]) {
+    const weight = offset === 0 ? 2 : 1;
+    dx += weight * (soilHeight(x + 3, z + offset) - soilHeight(x - 3, z + offset));
+    dz += weight * (soilHeight(x + offset, z + 3) - soilHeight(x + offset, z - 3));
+  }
+  return 1 / Math.hypot(1, dx / 24, dz / 24);
+}
 
 function buildMesh(owner?: OwnedView) {
   // Continue the visible bed into the atlas's offshore apron. Ending the opaque mesh at the shallow
@@ -195,6 +225,18 @@ function buildMesh(owner?: OwnedView) {
         ).normalize();
         normals.setXYZ(baseCount + j * f.nx + i, n.x, n.y, n.z);
       }
+  }
+  if (COVE) {
+    const slopes = new Float32Array(pos.length / 3);
+    const normals = geo.getAttribute('normal');
+    for (let k = 0; k < slopes.length; k++) {
+      const wx = pos[k * 3]!,
+        wz = pos[k * 3 + 2]!;
+      // Cover the material's entire feather plus one cell, including coarse vertices at its seam.
+      slopes[k] =
+        wx >= 733 && wx <= 887 && wz >= -22 && wz <= 112 ? macroSlopeY(wx - ORIGIN.x, wz - ORIGIN.z) : normals.getY(k);
+    }
+    geo.setAttribute('coveSlope', new THREE.BufferAttribute(slopes, 1));
   }
   const mesh = new THREE.Mesh(
     geo,

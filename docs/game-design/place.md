@@ -901,17 +901,21 @@ one-metre patch at local x -212…-160, z 16…78; the rest keeps its two-metre 
 the rendered surface, and protected route samples retain their original heights. One connected rounded cliff,
 three low rounded waterline buttresses use two opaque cullable batches and the exact same
 1,942 triangles for collision. The toe shares the face's skin and rounded cap, with no intersecting end-wall ramp or
-small stepping fragments. Refinement adds 4,836 triangles, for 6,778 render additions in total.
+small stepping fragments. The rear return and nose closure are fitted below the finished soil, retaining one
+rounded mass without exposed end-wall slivers. Refinement adds 4,836 triangles, for 6,778 render additions in total.
 No added lights, post passes or per-frame terrain uploads.
 The pocket has a gentler beach profile: the first 0.3 m above water spans about 1.9 m at local z 40.
 Bounded carving and backing-height matching retain the complete route protection mask.
 The owner's smooth Odyssey base and adjustable Sunshine strata follow the [revised pilot plan](../plans/terrain-pilot.md).
 Island-aligned triplanar rock and planar turf pigment use three original 512² linear RGBA8 maps (4 MiB with mips).
-Slope and elevation select semantic layers; authoritative path coverage stays separate from pigment. Microheight
-blends soft transitions, while the kit carries a continuous rounded turf lip. Sand coverage takes priority on low
-walkable beach slopes independently of the steeper turf-to-rock rule. Golden sand, orange sandstone and richer green
-turf use broad ochre sediment bands (default strength 0.6, width 0.5 of a 2.4 m repeat) instead of dark pinstripes.
-All 47 look settings are local tunables
+Slope and elevation select semantic layers; authoritative path coverage stays separate from pigment. A broad soil-slope
+attribute stabilizes coverage independently of lighting normals. Microheight blends the layers before a narrow turf
+edge; original grouped blade strokes and a restrained under-lip shade replace broad turf noise. The kit has a small
+opaque cap overhang. Sand takes priority on low walkable beach slopes; turf is suppressed at the wet shoreline.
+Golden sand, orange sandstone and richer green turf use unequal sediment beds, three related pigments by default,
+occasional thin accents, slow lateral warp and slight edge erosion. Bedding is restricted to exposed steep rock;
+gentle shoulders stay plain. Defaults are strength 0.6, bed scale 2.4 m and irregularity 0.6.
+All 65 look settings are local tunables
 (`cove.*`); none changes collision or simulation. The final art candidate still requires coordinator/owner review.
 Under this flag only, idle Buddy cancels gravity tangent to actual walkable static support while retaining normal
 pressure. Moving input, swimming, moving decks, jumps and upward impulses keep their normal behavior. Seven sampled
@@ -922,7 +926,9 @@ wetness, caustics and swash stay separate from water foam. Cove sand adds the Ul
 footprint-faded ripples and thin-film sheen using the existing swash/drying clock. Persistent dampness and dynamic
 drying contributions remain separate, so the static band cannot mask recovery between waves. The stronger drying
 contrast uses the existing backwash clock; filtered sand-tinted foam covers sand only. Cove rock contact uses the
-ocean's contact foam rather than the former dotted ground-swash lace.
+ocean's contact foam rather than the former dotted ground-swash lace. Submerged cove sand remains continuously wet
+below the swash sampler's −0.3 m cutoff, avoiding an angular dry-colour contour underwater; exposed sand still dries
+with the shared backwash clock.
 `&coveView=shape` retains the clay comparison with procedural normal detail;
 `&coveView=dry` removes land and kit wet receivers for the material comparison. Neither changes collision.
 Local presentation/static Owner collision; no new save or lockstep state. H uses the actual grid triangles plus kit

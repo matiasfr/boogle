@@ -1,11 +1,11 @@
 import type { ShotList } from '../shot-types.ts';
 
-const strata: [number, number, number] = [0.35, 0.6, 0.9];
-const widths: [number, number, number] = [0.3, 0.5, 0.7];
+const irregularities: [number, number, number] = [0, 0.6, 1];
+const colours: [number, number, number] = [2, 3, 4];
 
 // Authored beach camera interprets the previz composition; it is not a recovered camera solution.
 export default {
-  question: 'Do broad orange/ochre beds read as sandstone while the rounded toe and grass cap stay coherent?',
+  question: 'Do unequal beds and related sediment tones read naturally on steep faces beside crisp turf and wet sand?',
   size: [640, 400],
   beats: [
     {
@@ -15,15 +15,15 @@ export default {
       warm: 3,
       cameras: [{ name: 'Previz beach interpretation', cam: [775, 6, 16], look: [806, 3, 43], fov: 62 }],
       wedge: {
-        rows: { id: 'cove.strataStrength', label: 'Strata', values: strata },
-        columns: { id: 'cove.bandWidth', label: 'Ochre band fraction', values: widths },
+        rows: { id: 'cove.bandIrregularity', label: 'Bed irregularity', values: irregularities },
+        columns: { id: 'cove.bandColourCount', label: 'Sediment tones', values: colours },
         legend: 'Current / Neutral · gain 0.12 · bloom off · centre: candidate default, not owner approval',
       },
-      variants: strata.flatMap((strength) =>
-        widths.map((width) => ({
-          name: `Strata ${strength} / band width ${width}`,
+      variants: irregularities.flatMap((irregularity) =>
+        colours.map((count) => ({
+          name: `Irregularity ${irregularity} / tones ${count}`,
           look: 'current',
-          tunables: { 'cove.strataStrength': strength, 'cove.bandWidth': width },
+          tunables: { 'cove.bandIrregularity': irregularity, 'cove.bandColourCount': count },
           graphics: { resolution: 1, bloom: false },
         })),
       ),
