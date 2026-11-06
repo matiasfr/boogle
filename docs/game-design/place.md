@@ -699,6 +699,10 @@ Quiet ambience under everything (`src/proto/place/ambience.ts`, on the ambience 
 
 ## How it's built
 
+Static station log pictograms and frame posts use instance bounds for scene and shadow frustum culling.
+Bounds refresh after placement and, for the posts, after the asynchronous kit geometry replacement.
+Other station pieces, moving stock, track batches and terrain keep their existing culling policy.
+
 Trees remain instanced, with only active hit/fall poses updated. Standing trees have removable
 static trunk bodies; this checkout already had the decorative colliders batched on one body,
 so conversion adds body ownership rather than 362 previously absent trunk collisions.
