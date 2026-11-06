@@ -10,8 +10,9 @@
 // v09 (2026-11-05; encoding corrected 2026-11-06): line-one material/beam authority and panel timings;
 // production uses rail-v09, disjoint from every classic v09-<room> name. No save migration.
 // v10 (2026-11-05): remove state versions/migrations, frozen recovery and tuning catalog fingerprints.
+// v11 (2026-11-06): the ball stopped being saved: the `ball` state and ball.rest gone.
 // Pure: read by room routing and tests.
-export const WORLD_NS = 'v10';
+export const WORLD_NS = 'v11';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

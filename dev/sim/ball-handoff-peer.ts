@@ -16,13 +16,13 @@ export type PeerReport = {
   pose: number[];
   speed: number;
   tick: number;
-  rest: number[] | null;
+  names: string[];
   desyncs: number;
 };
 export type PeerCommand =
   | { do: 'grab' }
   | { do: 'throw'; from: { x: number; y: number; z: number }; vel: { x: number; y: number; z: number } }
-  | { do: 'rest'; x: number; y: number; z: number }
+  | { do: 'rename'; n: string }
   | { do: 'report' };
 
 await headless();
@@ -40,7 +40,7 @@ setInterval(() => {
 process.on('message', (c: PeerCommand) => {
   if (c.do === 'grab') grabBall();
   else if (c.do === 'throw') throwBall(c.from, c.vel);
-  else if (c.do === 'rest') submitEdit({ op: 'ball.rest', i: 0, j: 0, x: c.x, y: c.y, z: c.z });
+  else if (c.do === 'rename') submitEdit({ op: 'who.set', i: 0, j: 0, n: c.n, c: 3 });
   const { p, v } = ball.pose;
   process.send!({
     peer: net.myPeer,
@@ -52,7 +52,7 @@ process.on('message', (c: PeerCommand) => {
     pose: [p.x, p.y, p.z],
     speed: v.length(),
     tick: world.tick,
-    rest: rules.ball.rest(),
+    names: Array.from({ length: rules.roster.size() }, (_, k) => rules.roster.nameOf(k)),
     desyncs,
   } satisfies PeerReport);
 });

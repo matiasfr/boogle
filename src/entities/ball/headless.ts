@@ -22,7 +22,6 @@ spawn({
     remoteOwned: ball.remoteOwned,
     epoch: ball.e,
     myEpoch: ball.myE,
-    snap: ball.snap,
     position: ball.pose.p,
     velocity: ball.pose.v,
   }),

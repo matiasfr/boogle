@@ -30,13 +30,8 @@ export const ballMesh = new THREE.Mesh(
 ballMesh.castShadow = true;
 ballMesh.position.copy(ball.pose.p);
 
-let snap = ball.snap;
-// The owner shows its body (or the carry spot), others smooth in. A ball put somewhere new jumps there.
+// The owner shows its body (or the carry spot), others smooth in.
 export function syncBallMesh(dt: number) {
-  if (snap !== ball.snap) {
-    snap = ball.snap;
-    ballMesh.position.copy(ball.pose.p);
-  }
   if (ball.mine) {
     if (ball.held) handPosition(ballMesh.position);
     else ballMesh.position.copy(ball.pose.p);

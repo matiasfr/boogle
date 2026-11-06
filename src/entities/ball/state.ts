@@ -37,7 +37,6 @@ export const ball = {
   remoteOwned: false, // another tab simulates it (ballOwner works out which)
   // Where the ball is for gameplay and display. One writer a frame: the body when mine, the owner's snapshots when not.
   pose: { p: new THREE.Vector3(), q: new THREE.Quaternion(), v: new THREE.Vector3() },
-  snap: 0, // goes up when the ball is put somewhere new: the view jumps there instead of smoothing
 };
 ball.pose.p.set(BALL_SPAWN.x, groundHeight(BALL_SPAWN.x, BALL_SPAWN.z) + BALL_R + 0.4, BALL_SPAWN.z);
 
@@ -77,8 +76,7 @@ export const ballOwner = createOwnerSync<BallWire>(ball, {
     me.charging = false;
     me.lostBallAt = performance.now();
   },
-  // Its holder is gone, or the holder's claim says so. Even a hidden tab that won't adopt it has to hear this: placeBall
-  // would refuse for good.
+  // Its holder is gone, or the holder's claim says so. Even a hidden tab that won't adopt it has to hear this.
   onOwner: (claim) => void (ball.held = !!claim?.h),
   extrapolateMs: 150,
 });
@@ -121,21 +119,6 @@ export function throwBall(p: { x: number; y: number; z: number }, vel: { x: numb
   sendPresence();
 }
 
-// Puts the ball down at a saved spot (src/features/ball-rest.ts). A live ball elsewhere, or one in someone's hands,
-// wins: then nothing moves and this returns false.
-export function placeBall(x: number, y: number, z: number) {
-  if (ball.remoteOwned || ball.held) return false;
-  waterField.invalidate('ball');
-  ball.pose.p.set(x, y, z);
-  ball.pose.v.set(0, 0, 0);
-  teleport(ball.body, x, y, z);
-  ball.body.velocity.set(0, 0, 0);
-  ball.body.angularVelocity.set(0, 0, 0);
-  ball.snap++;
-  if (ball.mine) sendPresence();
-  return true;
-}
-
 export function respawnBall() {
   waterField.invalidate('ball');
   if (!ball.mine) claimBall(false);
@@ -152,7 +135,7 @@ export function respawnBall() {
 // Before the step, after the player's intent: a carried ball goes to your hand, another tab's to its pose.
 let waterAuthority = '';
 export function prepareBall() {
-  const authority = `${ball.e}/${ball.mine}/${ball.held}/${ball.snap}`;
+  const authority = `${ball.e}/${ball.mine}/${ball.held}`;
   if (authority !== waterAuthority) {
     waterField.invalidate('ball');
     waterAuthority = authority;

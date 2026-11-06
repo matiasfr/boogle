@@ -1710,14 +1710,6 @@
       "eslint": false
     },
     {
-      "group": "entity exempt src/features/ball-rest.ts",
-      "file": "src/features/ball-rest.ts",
-      "code": "onFrame(()=>{});",
-      "rule": "boogle/use-an-entity",
-      "expected": false,
-      "eslint": false
-    },
-    {
       "group": "entity exempt src/features/feel.ts",
       "file": "src/features/feel.ts",
       "code": "onFrame(()=>{});",

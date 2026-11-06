@@ -35,7 +35,6 @@ export type Rules = {
   sites: import('./sites.ts').SitesApi;
   sources: import('./sources.ts').SourcesApi;
   bank: import('./bank.ts').BankApi;
-  ball: import('./ball.ts').BallApi;
   tune: import('./tune.ts').TuneApi;
   opening: import('./opening.ts').OpeningApi;
 };

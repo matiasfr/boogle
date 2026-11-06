@@ -21,7 +21,7 @@ type RuleModule = {
 };
 const MODULES = RULES as unknown as readonly RuleModule[];
 
-const SEED = 0xb2b3;
+const SEED = 0xf091;
 const RECORD_EVERY = 10; // ticks between recorded state hashes
 
 function strHash(s: string) {

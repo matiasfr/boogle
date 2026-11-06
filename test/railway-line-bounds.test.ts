@@ -44,8 +44,6 @@ test('line recovery width bound retains sixty-four worst material stamps and max
   s.line!.beam.revision = M;
   s.line!.beam.epoch = M;
   s.line!.beam.holder = s.accounts[255]!.pid;
-  base.ball.ball.p = [-25500, 19999, 25500];
-  base.ball.ball.at = M;
   for (const j of s.line!.jobs) {
     j.start = M;
     j.lastTick = M;
