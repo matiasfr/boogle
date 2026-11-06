@@ -1121,7 +1121,7 @@ export function updateChop(dt: number, now: number) {
   if (body) {
     const wasVisible = axe.visible;
     applyChopPose(body, axe, swing.t, swing.response, { reducedMotion, target: swing.contact, frame: f ?? body });
-    sparkleAxe(axe, wasVisible, reducedMotion, emit, readableIntensity());
+    sparkleAxe(axe, wasVisible, reducedMotion, emit, readableIntensity(), dt);
   }
   for (const t of TREES) {
     if (t.shake > 0) {

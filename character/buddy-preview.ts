@@ -243,7 +243,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         }
         group.updateMatrixWorld(true);
       }
-      function applyAxe() {
+      function applyAxe(dt = 0) {
         if (!axes) return;
         const response = worn?.chop;
         const chopping = response && response !== 'off';
@@ -256,9 +256,11 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
           response && response !== 'off' ? response : 'bite',
           { reducedMotion: worn?.reducedMotion ?? false, frame: sockets.back },
         );
-        if (!chopping) axes.root.visible = true;
-        else if (worn?.emit)
-          sparkleAxe(axes.root, wasVisible, worn.reducedMotion ?? false, worn.emit, worn.sparkleIntensity?.() ?? 1);
+        if (!chopping) {
+          axes.root.visible = true;
+          axes.root.scale.setScalar(1);
+        } else if (worn?.emit)
+          sparkleAxe(axes.root, wasVisible, worn.reducedMotion ?? false, worn.emit, worn.sparkleIntensity?.() ?? 1, dt);
       }
       function update(dt: number) {
         time += dt;
@@ -299,7 +301,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         if (blink !== undefined) for (const name of ['eye_l', 'eye_r']) figure.getObjectByName(name)?.scale.setY(blink);
         if (gear && worn) wearGear(figure, sockets.back, gear, worn);
         if (canopy && worn) placeCanopy(avatar ?? figure, canopy, worn.canopy ? 1 : 0, 0, time * 1000);
-        applyAxe();
+        applyAxe(dt);
         if (railwayHat) seatConductorHat(avatar ?? figure, railwayHat);
         group.updateMatrixWorld(true);
       }

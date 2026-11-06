@@ -44,7 +44,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     { TUNE, GREAT },
     sounds,
     look,
-    { applyFloatingChopPose },
+    { applyFloatingChopPose, CHOP_CONTACT, CHOP_DURATION },
     { sparkleAxe },
   ] = await Promise.all([
     import('../../proto/place/tree-sources.ts'),
@@ -131,6 +131,41 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   const at = new THREE.Vector3(),
     target = new THREE.Vector3(),
     rotation = new THREE.Quaternion();
+  // A partner's accepted stroke shows their floating axe from the contact beat, in step with the chips. Local only.
+  const partnerAxes = new Map<string, { axes: ReturnType<typeof createAxes>; t: number }>();
+  function partnerSwing(pid: string) {
+    let partner = partnerAxes.get(pid);
+    if (!partner) {
+      partner = { axes: createAxes(flat), t: 99 };
+      partner.axes.root.visible = false;
+      partnerAxes.set(pid, partner);
+    }
+    partner.t = CHOP_CONTACT;
+  }
+  function dropPartnerAxe(pid: string) {
+    const partner = partnerAxes.get(pid)!;
+    partner.axes.root.removeFromParent();
+    partner.axes.root.traverse((part) => {
+      if (part instanceof THREE.Mesh) part.geometry.dispose();
+    });
+    partnerAxes.delete(pid);
+  }
+  function updatePartnerAxes(dt: number) {
+    for (const [pid, partner] of partnerAxes) {
+      const peer = [...remotes.values()].find((remote) => remote.pid === pid);
+      const frame = peer?.entered ? visualFrame(peer.avatar) : null;
+      if (!frame) {
+        dropPartnerAxe(pid);
+        continue;
+      }
+      partner.t += dt;
+      if (partner.t > CHOP_DURATION + 0.5 && !partner.axes.root.visible) continue;
+      partner.axes.setTier(state.axe, state.awake >= 0 && !['asleep', 'waking'].includes(state.phase));
+      const wasVisible = partner.axes.root.visible;
+      applyFloatingChopPose(frame, partner.axes.root, partner.t, 'bite', frame);
+      sparkleAxe(partner.axes.root, wasVisible, reducedMotion, emit, readableIntensity(), dt);
+    }
+  }
   let alive = true;
   let harvestFlights: (() => boolean)[] = [];
   let landed = 0;
@@ -242,6 +277,11 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     if (!alive) return;
     const before = state;
     state = adapter.inspect();
+    if (
+      (event.op === 'rail.chop' || event.op === 'rail.mine' || event.op === 'rail.beamChop') &&
+      event.pid !== state.pid
+    )
+      partnerSwing(event.pid);
     if (event.op === 'rail.drop') {
       const pile = state.piles.find(
         (pile) =>
@@ -494,8 +534,9 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     if (body) {
       const wasVisible = axe.visible;
       applyFloatingChopPose(body, axe, swing.t, swing.response, frame ?? body);
-      sparkleAxe(axe, wasVisible, reducedMotion, emit, readableIntensity());
+      sparkleAxe(axe, wasVisible, reducedMotion, emit, readableIntensity(), dt);
     }
+    updatePartnerAxes(dt);
     drawPiles();
     for (const tree of trees) {
       if (tree.shake > 0) {
@@ -596,6 +637,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     axe.traverse((part) => {
       if (part instanceof THREE.Mesh) part.geometry.dispose();
     });
+    for (const pid of [...partnerAxes.keys()]) dropPartnerAxe(pid);
     models.dispose();
     root.removeFromParent();
     for (const tree of trees) {
