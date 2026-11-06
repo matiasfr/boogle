@@ -28,9 +28,7 @@ const host = createRailwayWorldHost({
   tick: false,
   saveMs: 1000000000, // prove the pre-periodic-checkpoint crash window
   now,
-  monotonicNow: () => elapsed,
   pidOf: (sid) => (sid === 'visitor' ? pid : null),
-  positionOf: () => position,
 });
 await host.whenReady();
 let published = 0;
@@ -51,7 +49,9 @@ assert.equal(host.rules.railway.account(pid)?.epoch, 1);
 let request = 0;
 async function action(e: Record<string, unknown>, apply = true) {
   request++;
-  host.deliver({ t: 'r:edit', e: { ...e, epoch: 1, request } }, 'visitor');
+  // A client action carries where its actor stands (cm) and its action clock (ms).
+  const at = [Math.round(position.x * 100), 0, Math.round(position.z * 100)];
+  host.deliver({ t: 'r:edit', e: { ...e, epoch: 1, request, at, ms: elapsed } }, 'visitor');
   await host.sync.whenDurable();
   if (apply) {
     await ticks(3);

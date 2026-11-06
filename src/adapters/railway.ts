@@ -99,6 +99,8 @@ const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v ===
 const identity = (v: Record<string, unknown>) =>
   railInt(v.epoch, RAILWAY_MAX_INT, 1) && railInt(v.request, RAILWAY_MAX_INT, 1);
 const key = (epoch: number, request: number) => `${epoch}:${request}`;
+// Metres to whole centimetres; `|| 0` turns -0 (which railInt refuses) into 0.
+const cm = (m: number) => Math.round(m * 100) || 0;
 function result(v: unknown): v is RailResult & Record<string, unknown> {
   return (
     object(v) &&
@@ -352,7 +354,7 @@ export function createRailwayAdapter({
     const body = pose();
     const at =
       body && Number.isFinite(body.x) && Number.isFinite(body.y) && Number.isFinite(body.z)
-        ? ([Math.round(body.x * 100), Math.round(body.y * 100), Math.round(body.z * 100)] as [number, number, number])
+        ? ([cm(body.x), cm(body.y), cm(body.z)] as [number, number, number])
         : undefined;
     const p: Pending = {
       intent,

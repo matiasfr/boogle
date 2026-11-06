@@ -48,6 +48,8 @@ const q = new URLSearchParams(location.search);
 const HASH_EVERY = 10; // ticks between recorded state hashes
 const PID = q.get('pid') ?? 'p' + Math.random().toString(36).slice(2, 10);
 
+// The railway actor's position in cm, set by railPose: what each railway action carries.
+let railAt: [number, number, number] | null = null;
 const T = (window.T = {
   room: null as Room | null,
   left: [] as { peer: string; at: number }[],
@@ -144,13 +146,16 @@ const T = (window.T = {
   railIntent: null as unknown as (intent: RailwayIntent) => boolean,
   railSnapshot: null as unknown as () => boolean,
   railOpen: () => T.room!.send({ t: 'r:open' }),
-  railEdit: (e: RailAction) => T.room!.send({ t: 'r:edit', e }),
+  // A client action carries where its actor stands (cm, the last railPose) and its action clock (ms).
+  railEdit: (e: RailAction) =>
+    T.room!.send({ t: 'r:edit', e: { ...(railAt ? { at: railAt } : {}), ms: Math.round(performance.now()), ...e } }),
   railStatus: (epoch: number, request: number) => T.room!.send({ t: 'r:status', epoch, request }),
   railBaseEdit: (e: Record<string, unknown>) => T.room!.send({ t: 'w:edit', e }),
   railPose(target: 'station' | 'source', id = RAILWAY_SOURCES[0]![0]) {
     const source = RAILWAY_SOURCES.find((row) => row[0] === id);
     if (target === 'source' && !source) throw new Error(`unknown railway source ${id}`);
     const point = target === 'station' ? [RAILWAY_T1.x, RAILWAY_T1.z] : source!.slice(1);
+    railAt = [point[0]!, 3000, point[1]!];
     void T.room!.presence({ p: [point[0]! / 100, 30, point[1]! / 100], v: 1 });
   },
 });
@@ -168,7 +173,14 @@ function startWorld(room: Room) {
   const railway = playable ?? (isRailwayRoom(roomId) ? installRailwayRules(w, land) : null);
   const rules = railway ? null : installRules(w, land);
   const adapter =
-    railway && q.get('adapter') === '1' ? createRailwayAdapter({ api: railway.railway, sync: w, pid: PID }) : null;
+    railway && q.get('adapter') === '1'
+      ? createRailwayAdapter({
+          api: railway.railway,
+          sync: w,
+          pid: PID,
+          pose: () => (railAt ? { x: railAt[0] / 100, y: railAt[1] / 100, z: railAt[2] / 100 } : null),
+        })
+      : null;
   if (adapter) {
     const effects: RailwayAccepted[] = [];
     let resets = 0;

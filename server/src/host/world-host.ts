@@ -36,7 +36,7 @@ import { railGrowthMask, railGrows, railGrowthAllowed, type SupplyPulse } from '
 import { railNobodyNear, type RailwayPosition } from './railway-supply.ts';
 export type { RailwayPosition } from './railway-supply.ts';
 import type { RailReach, RailCadence } from '../../../src/world/rules/railway.ts';
-import { createRailwayRequests } from './railway-requests.ts';
+import { createRailwayRequests, type ActorFacts } from './railway-requests.ts';
 import { canSet, cleanName } from '../../../src/sim/roster.ts';
 
 // The room clock (src/world/room-clock.ts): a 60 Hz step timer; rules run every RULE_STEPS steps inside sync.stepWorld.
@@ -169,13 +169,10 @@ export function createWorldHost({
 }
 export type WorldHost = ReturnType<typeof createWorldHost>;
 
-/** Owner-reported world pose: only reach plausibility, never server-simulated motion. */
 export type RailwayHostOptions = WorldHostOptions & {
-  positionOf?: (sid: string) => RailwayPosition | null;
   /** Every connected session, including unknown poses. Unknown blocks maintenance. */
   positions?: () => (RailwayPosition | null)[];
   now?: () => number;
-  monotonicNow?: () => number;
 };
 
 // Same sync, room adapter and atomic store as ordinary rooms; opted-in namespace/registry/recovery only.
@@ -186,11 +183,9 @@ export function createRailwayWorldHost({
   home = loadHomeLand(),
   tick = true,
   pidOf = () => null,
-  positionOf = () => null,
   tuneController = () => false,
   positions = () => [null],
   now = Date.now,
-  monotonicNow = () => performance.now(),
   log = () => {},
 }: RailwayHostOptions) {
   if (!isRailwayRoom(roomId)) throw new Error('railway host requires a T1 namespace');
@@ -214,61 +209,47 @@ export function createRailwayWorldHost({
   let startup = true;
   let savedAt = now();
   let savedTick = 0;
-  // The actor owns their body (docs/plans/replication.md, revision 1): an action that carries its own position
-  // (`at`, centimetres) and action time (`ms`, the client's monotonic clock) is judged from those, so a correct
-  // prediction is never refused for stale presence or bunched arrival. Without them: fresh presence and arrival time.
-  const cadence = new Map<string, number>();
-  const clientClocks = new Map<string, { epoch: unknown; last: Map<string, number> }>();
-  const actorAt = (e: { at?: unknown }) => {
-    const at = e.at;
-    return Array.isArray(at) && at.length === 3 && at.every((v) => Number.isSafeInteger(v)) ? (at as number[]) : null;
+  // The actor owns their body (docs/plans/replication.md, revision 1): a client action carries its own position
+  // (`at`, centimetres) and action time (`ms`, the client's monotonic clock), and reach and cadence are judged from
+  // those, never from presence or arrival time. They are validation facts only: railway-requests.ts hands them over
+  // for the synchronous stamp (withActor) and they never enter the saved or broadcast edit.
+  let acting: ActorFacts | null = null;
+  const withActor = <T>(facts: ActorFacts, fn: () => T): T => {
+    acting = facts;
+    try {
+      return fn();
+    } finally {
+      acting = null;
+    }
   };
-  const freshPose = (sid: string) => {
-    const p = positionOf(sid);
-    return p &&
-      Number.isFinite(p.x) &&
-      Number.isFinite(p.z) &&
-      Number.isFinite(p.at) &&
-      now() - p.at <= 2000 &&
-      p.at <= now()
-      ? p
-      : null;
-  };
+  const actor = (e: { u: string; epoch?: unknown; request?: unknown }) =>
+    acting && acting.pid === e.u && acting.epoch === e.epoch && acting.request === e.request ? acting : null;
+  const clientClocks = new Map<string, { epoch: number; last: Map<string, number> }>();
   const railReach: RailReach = (e, x, z, radius) => {
-    const at = actorAt(e as { at?: unknown });
-    const p = at ? { x: at[0]! / 100, z: at[2]! / 100 } : freshPose(e.p);
-    if (!p) return false;
-    const dx = p.x * 100 - x,
-      dz = p.z * 100 - z;
+    const a = actor(e);
+    if (!a) return false;
+    const dx = a.at[0] - x,
+      dz = a.at[2] - z;
     return dx * dx + dz * dz <= radius * radius;
   };
   const railCadence: RailCadence = (e) => {
+    const a = actor(e);
+    if (!a) return false;
     const swing = ['rail.chop', 'rail.mine', 'rail.beamChop'].includes(e.op);
     const kind = swing ? 'swing' : e.op;
     const ms = swing ? RAILWAY_T1.swingMs : RAILWAY_T1.unloadMs;
-    const time = monotonicNow();
-    const client = (e as { ms?: unknown }).ms;
-    if (typeof client === 'number' && Number.isSafeInteger(client) && client >= 0) {
-      const epoch = (e as { epoch?: unknown }).epoch;
-      let clock = clientClocks.get(e.u);
-      if (!clock || clock.epoch !== epoch) {
-        clock = { epoch, last: new Map() }; // a new session is a new page, with its own clock
-        clientClocks.set(e.u, clock);
-      }
-      if (client - (clock.last.get(kind) ?? -Infinity) < ms - CADENCE_SLACK_MS) return false;
-      clock.last.set(kind, client);
-      return true;
+    let clock = clientClocks.get(a.pid);
+    if (!clock || clock.epoch !== a.epoch) {
+      clock = { epoch: a.epoch, last: new Map() }; // a new session is a new page, with its own clock
+      clientClocks.set(a.pid, clock);
     }
-    const key = `${e.u}:${kind}`;
-    if (time - (cadence.get(key) ?? -Infinity) < ms) return false;
-    cadence.set(key, time);
+    if (a.ms - (clock.last.get(kind) ?? -Infinity) < ms - CADENCE_SLACK_MS) return false;
+    clock.last.set(kind, a.ms);
     return true;
   };
-  const railHeight = (e: { p: string; at?: unknown }, y: number, radius: number) => {
-    const at = actorAt(e);
-    if (at) return Math.abs(at[1]! - y) <= radius;
-    const p = freshPose(e.p);
-    return !!p && Number.isFinite(p.y) && Math.abs(p.y! * 100 - y) <= radius;
+  const railHeight = (e: { u: string }, y: number, radius: number) => {
+    const a = actor(e);
+    return !!a && Math.abs(a.at[1] - y) <= radius;
   };
   const supplySafe = (e: SupplyPulse) => {
     const people = positions();
@@ -379,6 +360,7 @@ export function createRailwayWorldHost({
     Math.floor(now() / 60000) - rules.railway.railway.supply!.marker <= 1;
   const requests = createRailwayRequests({
     sync,
+    withActor,
     api: rules.railway,
     pidOf,
     send,
@@ -468,8 +450,9 @@ export function createRailwayWorldHost({
     ? setInterval(() => {
         const time = performance.now();
         if (running && !closed) {
+          const before = sync.world.tick;
           sync.stepWorld(Math.min(time - last, 1000));
-          maintainSupply();
+          if (sync.world.tick !== before) maintainSupply(); // on rule ticks only, not 60 times a second
         }
         last = time;
       }, STEP_MS)

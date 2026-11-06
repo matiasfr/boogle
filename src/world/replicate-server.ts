@@ -271,7 +271,7 @@ export function createReplicator() {
     /** End of step: send each client what changed in its cells. ready(cid) false skips a backed-up socket. */
     flush(
       step: number,
-      send: (cid: string, packet: ServerPacket) => void,
+      send: (cid: string, packet: ServerPacket, json: string) => void,
       ready: (cid: string) => boolean = () => true,
     ): FlushStats {
       const out: FlushStats = { clients: 0, packets: 0, chars: 0, skipped: 0 };
@@ -285,8 +285,9 @@ export function createReplicator() {
         out.clients++;
         for (const p of packets) {
           out.packets++;
-          out.chars += JSON.stringify(p).length;
-          send(cid, p);
+          const json = JSON.stringify(p); // serialized once: the transport sends this text
+          out.chars += json.length;
+          send(cid, p, json);
         }
       }
       return out;

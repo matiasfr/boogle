@@ -113,14 +113,6 @@ export function createHostedRoom({
               : null;
           });
         },
-        positionOf(sid) {
-          const d = clients.get(sid)?.d;
-          const p = d && typeof d === 'object' ? (d as { p?: unknown }).p : null;
-          const at = poseAt.get(sid);
-          return Array.isArray(p) && typeof p[0] === 'number' && typeof p[2] === 'number' && at !== undefined
-            ? { x: p[0], y: typeof p[1] === 'number' ? p[1] : undefined, z: p[2], at }
-            : null;
-        },
       })
     : createWorldHost(hostOptions);
   const gone = new Map<string, { s: number; pid: string; key: string; timer: NodeJS.Timeout }>(); // closed, waiting out the grace period
@@ -145,9 +137,9 @@ export function createHostedRoom({
     replication.commit(step);
     replication.flush(
       step,
-      (cid, packet) => {
+      (cid, _packet, json) => {
         const c = clients.get(cid);
-        if (c) write(c, encode({ t: 'm', from: SERVER_ID, d: packet }));
+        if (c) write(c, `{"t":"m","from":${JSON.stringify(SERVER_ID)},"d":${json}}`); // encode(), without re-serializing
       },
       (cid) => {
         const c = clients.get(cid);

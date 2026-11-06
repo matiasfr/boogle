@@ -8,6 +8,42 @@ type Obj = Record<string, unknown>;
 type Session = { sid: string; epoch: number; next: number; opening: boolean; pending: Set<number> };
 const object = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 const token = (v: Obj) => railInt(v.epoch, RAILWAY_MAX_INT, 1) && railInt(v.request, RAILWAY_MAX_INT, 1);
+/** Validation facts a client action carries (docs/plans/replication.md, revision 1): where the actor stood
+ * (centimetres) and the client's action clock (ms). Judged while stamping; never saved or broadcast. */
+export type ActorFacts = { pid: string; epoch: number; request: number; at: [number, number, number]; ms: number };
+const position = (v: unknown): v is [number, number, number] =>
+  Array.isArray(v) && v.length === 3 && v.every((n) => railInt(n, 200000, -200000));
+
+/** The edit a client request stamps, saves and broadcasts: only this op's wire shape, so the bounded recovery tail
+ * never holds unrelated client fields. The actor's `at`/`ms` are validation facts and are left out. */
+export function railwayRequestEdit(e: Obj, epoch: number, request: number, room: { falls: boolean; line: boolean }) {
+  const clean: Obj = { op: e.op, epoch, request, i: 0, j: 0 };
+  if (e.op === 'rail.chop' || e.op === 'rail.take' || e.op === 'rail.mine') clean.id = e.id;
+  if (e.op === 'rail.chop' && room.falls) {
+    clean.yaw = e.yaw;
+    clean.collapsed = e.collapsed;
+  }
+  if (e.op === 'rail.deposit') {
+    clean.station = e.station;
+    clean.n = e.n;
+  }
+  if (room.line && ['rail.deposit', 'rail.drop', 'rail.take', 'rail.rackTake'].includes(String(e.op)))
+    clean.kind = e.kind;
+  if (['rail.beamTake', 'rail.beamDrop', 'rail.beamDeposit'].includes(String(e.op))) clean.revision = e.revision;
+  if (e.op === 'rail.beamDeposit') clean.station = e.station;
+  if (e.op === 'rail.beamDrop') {
+    clean.x = e.x;
+    clean.y = e.y;
+    clean.z = e.z;
+  }
+  if (e.op === 'rail.drop') {
+    clean.x = e.x;
+    clean.z = e.z;
+    clean.n = e.n;
+    if (room.falls) clean.y = e.y;
+  }
+  return clean;
+}
 
 export function createRailwayRequests({
   sync,
@@ -15,8 +51,11 @@ export function createRailwayRequests({
   pidOf,
   send,
   available,
+  withActor,
 }: {
   sync: ReturnType<typeof createSync>;
+  /** Runs the stamp with these facts visible to the host's railReach/railCadence/railHeight. */
+  withActor: <T>(facts: ActorFacts, fn: () => T) => T;
   api: RailwayApi;
   pidOf: (sid: string) => string | null;
   send: (message: RailwayResponse) => void;
@@ -149,38 +188,13 @@ export function createRailwayRequests({
         'rail.jump',
       ];
       const allowed = ordinary.includes(String(e.op)) || (!!api.railway.line && lineOps.includes(String(e.op)));
-      // Strip unrelated client fields so the bounded recovery tail contains only this op's wire shape.
-      const clean: Obj = { op: e.op, epoch, request, i: 0, j: 0 };
-      // The actor owns their body: reach and cadence are judged from the action's own position (centimetres) and the
-      // client's action clock (ms), not from presence or arrival time (docs/plans/replication.md, revision 1).
-      if (Array.isArray(e.at) && e.at.length === 3 && e.at.every((v) => railInt(v, 200000, -200000)))
-        clean.at = [e.at[0], e.at[1], e.at[2]];
-      if (railInt(e.ms, RAILWAY_MAX_INT)) clean.ms = e.ms;
-      if (e.op === 'rail.chop' || e.op === 'rail.take' || e.op === 'rail.mine') clean.id = e.id;
-      if (e.op === 'rail.chop' && api.railway.falls) {
-        clean.yaw = e.yaw;
-        clean.collapsed = e.collapsed;
-      }
-      if (e.op === 'rail.deposit') {
-        clean.station = e.station;
-        clean.n = e.n;
-      }
-      if (api.railway.line && ['rail.deposit', 'rail.drop', 'rail.take', 'rail.rackTake'].includes(String(e.op)))
-        clean.kind = e.kind;
-      if (['rail.beamTake', 'rail.beamDrop', 'rail.beamDeposit'].includes(String(e.op))) clean.revision = e.revision;
-      if (e.op === 'rail.beamDeposit') clean.station = e.station;
-      if (e.op === 'rail.beamDrop') {
-        clean.x = e.x;
-        clean.y = e.y;
-        clean.z = e.z;
-      }
-      if (e.op === 'rail.drop') {
-        clean.x = e.x;
-        clean.z = e.z;
-        clean.n = e.n;
-        if (api.railway.falls) clean.y = e.y;
-      }
-      const accepted = allowed && sync.receiveEdit(clean, from);
+      const clean = railwayRequestEdit(e, epoch, request, { falls: !!api.railway.falls, line: !!api.railway.line });
+      // Every client action carries its actor's position and action time; one without them is an invalid request.
+      const facts: ActorFacts | null =
+        position(e.at) && railInt(e.ms, RAILWAY_MAX_INT)
+          ? { pid, epoch, request, at: [e.at[0], e.at[1], e.at[2]], ms: e.ms }
+          : null;
+      const accepted = allowed && !!facts && withActor(facts, () => sync.receiveEdit(clean, from));
       if (!accepted && !sync.submitEdit({ op: 'rail.reject', i: 0, j: 0, pid, epoch, request })) {
         state(from, sync.worldStatus().recoveryError ? 'storage' : 'busy', e);
         return;

@@ -317,10 +317,12 @@ chopping and taking feel instant and corrections go unnoticed.
 - **Server checks:** railway requests carry `at` (the actor's position, cm) and `ms` (the client's action clock);
   `createRailwayWorldHost` judges reach and swing/unload cadence from them, with a 20 ms cadence slack and no bound
   against the server clock (a session-long 1 s bound refused the playthrough bot, whose page clock is warped and
-  outruns the server's). Requests without them keep the presence and arrival checks
-  (server fixtures and host-only ops). `server/test/railway-actor-checks.test.ts`.
+  outruns the server's). Both are required: a request without well-formed ones is a durable rejection (no presence
+  fallback, per "No old builds in development"). They are validation facts only, handed to the synchronous stamp and
+  never saved or broadcast, so the 60 KB recovery bound is unchanged (`railwayRequestEdit`; the bounds tests feed
+  near-maximum `at`/`ms` through it). `server/test/railway-actor-checks.test.ts`.
 - **Clock:** `src/world/room-clock.ts`; `sync.stepWorld(ms)` is the host clock (60 Hz steps, a rule tick every sixth,
-  a held tick runs on the first step after a durable write clears), `roomStep()` the room clock, `onStep` the flush
+  steps a durable write holds back are not counted, as before), `roomStep()` the room clock, `onStep` the flush
   hook. Both world hosts run a 60 Hz timer. Clients estimate the step from tick stamps. `test/room-clock.test.ts`.
 - **Core:** `src/world/replicate.ts`, `replicate-server.ts`, `replicate-client.ts`; the hosted room owns a replicator
   and flushes it at the end of every step (`server/test/replication-transport.test.ts`). `test/replicate.test.ts`
