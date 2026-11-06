@@ -7,7 +7,13 @@ const variants = gains.flatMap((gain) =>
   keys.map((key, i) => ({
     name: `Gain ${gain}; key ${key}; fill ${fills[i]}`,
     look: 'current',
-    tunables: { 'post.centre': gain, 'sky.keyGain': key, 'sky.fillGain': fills[i]! },
+    tunables: {
+      'post.centre': gain,
+      'sky.keyGain': key,
+      'sky.fillGain': fills[i]!,
+      'sky.cloudBrightness': 1,
+      'sky.lightColourProfile': 0,
+    },
     graphics: { resolution: 1, bloom: false },
   })),
 );

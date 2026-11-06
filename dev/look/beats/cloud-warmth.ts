@@ -4,11 +4,11 @@ import pipeline from './visual-pipeline.ts';
 const brightness: [number, number, number] = [1, 0.8, 0.6];
 const profiles: [number, number, number] = [0, 1, 2];
 const wedge = {
-  baseline: 1,
+  baseline: 5,
   rows: { id: 'sky.cloudBrightness', label: 'Cloud radiance', values: brightness },
   columns: { id: 'sky.lightColourProfile', label: 'Light profile', values: profiles },
   legend:
-    '0 current / 1 neutral / 2 slightly cool · Neutral gain .12 · gold 1: morning settings reconstructed on current source',
+    '0 original / 1 neutral / 2 slightly cool · Neutral gain .12 · gold 5: owner choice 6 Nov · cell 1: morning reference',
 };
 const variants = brightness.flatMap((cloud) =>
   profiles.map((profile) => ({
