@@ -99,7 +99,7 @@ for (const roomId of ['t1v01-proto-crash', railwayRoomId('crash')])
       assert.deepEqual(
         restored.sync.registry().states,
         isPlayableRailwayRoom(roomId)
-          ? ['gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'ball', 'tune', 'opening', 'railway']
+          ? ['gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'tune', 'opening', 'railway']
           : ['roster', 'railway'],
       );
       if (isPlayableRailwayRoom(roomId)) {
