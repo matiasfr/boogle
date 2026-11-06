@@ -1,6 +1,7 @@
 # Research
 
 - [roundhouse-trains.md](roundhouse-trains.md) (2026-11-06), [interactive brief](roundhouse-trains.html): six primary game references, an early shed versus later steel expansion, finite engine/car bills, discovery-based research and shared contributions without wallets; fresh campaign and upgrade-omission runs, a 30-minute proof budget, eight recommendations and a one-fitting first build. Research only; new bills, management and fun unverified.
+- [next-destination.md](next-destination.md) / [visual comparison](next-destination.html) (2026-11-06): four destinations after Line 1, primary-source research, mapped quarry/pier anchors and earlier-panel reconciliation; recommends quarry footings → ring-island steel, with gorge versus forest alternatives. Eight recommendations, scope estimates and a two-shipment proof. Research only; pacing, implementation cost and published Artifact/device rendering unverified.
 
 - [skybox.md](skybox.md) (2026-11-06): Wind Waker / Sunshine sky vocabulary from publisher images and developer interviews; seven licence-checked free resources, prepared HDR-sky/water integration and memory costs; recommends original windpaint and summer TSL looks plus a hand-painted GOBI audition. Research only; no assets imported or runtime/device validation.
 

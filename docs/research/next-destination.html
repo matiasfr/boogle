@@ -1,0 +1,1048 @@
+<title>The Next Stop</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f5f1e7;
+    --paper: #fffdf7;
+    --ink: #24382f;
+    --muted: #53645b;
+    --border: #c6cbb9;
+    --accent: #255d47;
+    --tint: #e4eddb;
+    --sea: #d6e7e6;
+    --land: #dde2bd;
+    --rock: #c4b9a0;
+    --cliff: #f0deba;
+    --forest: #739673;
+    --rail: #a64529;
+    --walk: #5b6657;
+    --gold: #edbc58;
+    --shadow: #d7d6c8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: #17251f;
+      --paper: #20332a;
+      --ink: #f1ecd9;
+      --muted: #bdcbbd;
+      --border: #526357;
+      --accent: #b7db9e;
+      --tint: #304535;
+      --sea: #243f43;
+      --land: #465740;
+      --rock: #756f5c;
+      --cliff: #766c4e;
+      --forest: #65805b;
+      --rail: #ffb083;
+      --walk: #d3dbc4;
+      --gold: #e7bb60;
+      --shadow: #101c17;
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #17251f;
+    --paper: #20332a;
+    --ink: #f1ecd9;
+    --muted: #bdcbbd;
+    --border: #526357;
+    --accent: #b7db9e;
+    --tint: #304535;
+    --sea: #243f43;
+    --land: #465740;
+    --rock: #756f5c;
+    --cliff: #766c4e;
+    --forest: #65805b;
+    --rail: #ffb083;
+    --walk: #d3dbc4;
+    --gold: #e7bb60;
+    --shadow: #101c17;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font:
+      16px/1.5 ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      sans-serif;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  main {
+    max-width: 1460px;
+    margin: 0 auto;
+    padding: 30px 0 48px;
+  }
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+  h1 {
+    font-size: clamp(36px, 5vw, 64px);
+    line-height: 1.05;
+    letter-spacing: -0.055em;
+    max-width: 860px;
+  }
+  h2 {
+    font-size: 25px;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+  h3 {
+    font-size: 22px;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+  p + p {
+    margin-top: 10px;
+  }
+  a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+    overflow-wrap: anywhere;
+  }
+  a:focus-visible,
+  summary:focus-visible,
+  input:focus-visible {
+    outline: 3px solid var(--rail);
+    outline-offset: 4px;
+  }
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .topline {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 26px;
+  }
+  .stamp {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .lede {
+    max-width: 760px;
+    font-size: 19px;
+    margin: 18px 0 24px;
+    color: var(--muted);
+  }
+  .recommendation {
+    border-left: 5px solid var(--accent);
+    padding: 16px 20px;
+    background: var(--tint);
+    max-width: 970px;
+  }
+  .recommendation strong {
+    color: var(--accent);
+  }
+  .section-top {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 34px 0 16px;
+  }
+  .small {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin: 14px 0 18px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .swatch {
+    width: 24px;
+    border-top: 3px solid var(--rail);
+  }
+  .swatch.walk {
+    border-top: 2px dashed var(--walk);
+  }
+  .swatch.dot {
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--gold);
+  }
+  #connected {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+    accent-color: var(--accent);
+    margin: 0 7px 0 0;
+  }
+  .toggle {
+    display: inline-block;
+    padding: 8px 0;
+    font-size: 14px;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+    align-items: start;
+  }
+  .card {
+    min-width: 0;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .card.recommended {
+    border: 2px solid var(--accent);
+  }
+  .card-head {
+    padding: 17px 18px 12px;
+  }
+  .card-head .eyebrow {
+    margin-bottom: 9px;
+  }
+  .card-head p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+    min-height: 40px;
+  }
+  .map {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: var(--sea);
+  }
+  .map .land {
+    fill: var(--land);
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+  .map .rock {
+    fill: var(--rock);
+  }
+  .map .cliff {
+    fill: var(--cliff);
+  }
+  .map .trees {
+    fill: var(--forest);
+  }
+  .map .contour {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 1.2;
+  }
+  .map .trail {
+    fill: none;
+    stroke: var(--walk);
+    stroke-width: 2;
+    stroke-dasharray: 4 4;
+  }
+  .map .rail {
+    fill: none;
+    stroke: var(--rail);
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+  .map .station {
+    fill: var(--paper);
+    stroke: var(--rail);
+    stroke-width: 3;
+  }
+  .map .action {
+    fill: var(--gold);
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+  .map .building {
+    fill: var(--paper);
+    stroke: var(--ink);
+    stroke-width: 1.5;
+  }
+  .map text {
+    fill: var(--ink);
+    font:
+      11px ui-sans-serif,
+      system-ui,
+      sans-serif;
+    font-weight: 650;
+  }
+  .map .caption {
+    fill: var(--muted);
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .map .water-label {
+    fill: var(--ink);
+    font-size: 10px;
+    letter-spacing: 2px;
+    opacity: 0.8;
+  }
+  .map .leader {
+    stroke: var(--ink);
+    stroke-width: 1;
+    fill: none;
+  }
+  #connected:not(:checked) ~ .cards .after {
+    display: none;
+  }
+  #connected:not(:checked) ~ .cards .before {
+    display: inline;
+  }
+  #connected:checked ~ .cards .before {
+    display: none;
+  }
+  .card-copy {
+    padding: 16px 18px 18px;
+  }
+  .card-copy p {
+    font-size: 14px;
+  }
+  .card-copy .verb {
+    font-weight: 750;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .export {
+    display: block;
+    margin: 12px 0;
+    padding: 9px 10px;
+    border-radius: 8px;
+    background: var(--tint);
+    font-size: 13px;
+  }
+  details {
+    border-top: 1px solid var(--border);
+    margin-top: 14px;
+    padding-top: 10px;
+  }
+  summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 0;
+  }
+  details p {
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .budget {
+    margin-top: 15px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--paper);
+  }
+  table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  caption {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+  }
+  .pick-row {
+    background: var(--tint);
+  }
+  .route {
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--paper);
+  }
+  .route ol {
+    list-style: none;
+    padding: 0;
+    margin: 18px 0;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .route li {
+    border-top: 4px solid var(--border);
+    padding: 10px 0;
+    min-width: 0;
+    font-size: 14px;
+  }
+  .route li.next {
+    border-color: var(--accent);
+  }
+  .route li span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 5px;
+  }
+  .route .step {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin: 0 0 6px;
+  }
+  .proof {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 22px;
+  }
+  .proof > div {
+    padding: 20px;
+    border-radius: 12px;
+    background: var(--tint);
+    min-width: 0;
+  }
+  .proof h3 {
+    font-size: 20px;
+    margin: 7px 0 10px;
+  }
+  .proof p {
+    font-size: 14px;
+  }
+  .shipments {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+    margin: 14px 0;
+  }
+  .chip {
+    background: var(--paper);
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+  }
+  footer {
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  footer details {
+    margin-top: 18px;
+  }
+  footer ul {
+    padding-left: 20px;
+  }
+  footer li {
+    margin: 7px 0;
+  }
+  .basis {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 14px 0;
+  }
+  .basis p {
+    font-size: 13px;
+  }
+  @media (max-width: 1150px) {
+    .cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .route ol {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 600px) {
+    main {
+      padding-top: 20px;
+    }
+    .cards,
+    .proof,
+    .basis {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .card-head p {
+      min-height: 0;
+    }
+    .route {
+      padding: 17px;
+    }
+    .route ol {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .lede {
+      font-size: 17px;
+    }
+    .recommendation {
+      padding: 14px;
+    }
+    .topline {
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+  }
+</style>
+
+<main>
+  <header>
+    <div class="topline">
+      <span class="eyebrow">Boogle · field notes 06</span>
+      <span class="stamp">6 November 2026 · research proposal · not a build plan</span>
+    </div>
+    <h1>We built the first line.<br />Where does it take us next?</h1>
+    <p class="lede">
+      Four destinations after the roughly 30-minute demo. Each should offer a place worth reaching, a different thing to
+      do, and something useful to bring home.
+    </p>
+    <div class="recommendation">
+      <strong>Next: Split-rock Works.</strong> Give the existing quarry a new purpose. Open a haul cut, connect its
+      works, and bring home the footings for our first sea crossing. <strong>Then: Ring Island.</strong>
+    </div>
+  </header>
+
+  <section class="board" aria-labelledby="candidates-heading">
+    <div class="section-top">
+      <h2 id="candidates-heading">Four ways onward</h2>
+      <p class="small">Top-down sketches · north up · relationships, not measured layouts</p>
+    </div>
+    <div class="legend" aria-label="Map legend">
+      <span><i class="swatch walk" aria-hidden="true"></i>First walk</span>
+      <span><i class="swatch" aria-hidden="true"></i>Connected railway</span>
+      <span><i class="swatch dot" aria-hidden="true"></i>New action</span>
+    </div>
+    <input type="checkbox" id="connected" checked />
+    <label class="toggle" for="connected">Show the connected railway and its payoff</label>
+    <div class="cards">
+      <article class="card recommended">
+        <div class="card-head">
+          <div class="eyebrow">A · recommended next</div>
+          <h3>Split-rock Works</h3>
+          <p>A bright stone bowl making comically large bridge feet.</p>
+        </div>
+        <svg class="map" viewBox="0 0 320 240" role="img" aria-labelledby="map-a-title map-a-desc">
+          <title id="map-a-title">Quarry: walk around, then build through</title>
+          <desc id="map-a-desc">
+            Home lies west of a gorge. The first footpath bends south to reach the quarry. A new breach opens the direct
+            freight route, returning concrete kits to home.
+          </desc>
+          <path
+            class="land"
+            d="M0 0H320V219L278 209 238 224 205 212 188 173 177 129 157 111 145 75 128 40 99 22 59 36 0 29Z"
+          />
+          <path class="land" d="M0 51L67 49 103 64 120 97 130 132 149 155 155 200 133 240H0Z" />
+          <path class="rock" d="M190 32L243 18 294 37 310 89 283 124 244 125 227 98 194 92Z" />
+          <path class="cliff" d="M209 43L247 33 280 48 290 82 268 101 239 102 228 80 210 78Z" />
+          <path class="trail" d="M55 122L72 166 116 196 164 201 197 179 219 138 250 92" />
+          <path class="contour" d="M196 28L178 64 193 110 222 126M292 139L262 153 239 144" />
+          <g class="after">
+            <path class="rail" d="M55 122Q108 127 149 123L211 115 251 92" />
+            <circle class="station" cx="55" cy="122" r="6" />
+            <circle class="station" cx="251" cy="92" r="6" />
+            <path class="leader" d="M137 144H84m0 0 6-4m-6 4 6 4" />
+            <text x="83" y="160">Kits → home ramp</text>
+          </g>
+          <rect class="building" x="33" y="91" width="28" height="18" rx="2" />
+          <rect class="building" x="250" y="65" width="22" height="14" rx="2" />
+          <circle class="action" cx="213" cy="115" r="8" />
+          <path class="leader" d="M211 105L196 88" />
+          <text x="156" y="76">Breach</text>
+          <text x="24" y="82">Home</text>
+          <text x="231" y="55">Works</text>
+          <text class="caption" x="176" y="194">Long first walk</text>
+          <text class="water-label" x="10" y="223">GORGE</text>
+          <text class="caption before" x="143" y="148">Blocked freight throat</text>
+          <text class="caption" x="299" y="20">N ↑</text>
+        </svg>
+        <div class="card-copy">
+          <p class="verb">Crack a wall. Open a permanent haul cut.</p>
+          <p>
+            The rail turns a folded walk into a direct freight route. The first load changes the village you just
+            returned to.
+          </p>
+          <span class="export"><strong>Export:</strong> precast footings → home ramp + sea-deck supports</span>
+          <details>
+            <summary>Co-op, first access &amp; risk</summary>
+            <p>
+              <strong>Together:</strong> scout the upper cut while a friend stocks the lower frame. Every job works
+              sequentially alone.
+            </p>
+            <p>
+              <strong>Reach first:</strong> existing southern footpath; no hook, glide or new material needed. Existing
+              logs, stone and forge rails build the approach.
+            </p>
+            <p>
+              <strong>Risk:</strong> T2 already has stone. Without a good breach action and useful export, this is
+              another rock chore.
+            </p>
+            <p>
+              <strong>Bound:</strong> one bowl, one breach, one works, two installations. No terrain destruction or
+              curing timer.
+            </p>
+          </details>
+          <div class="budget">
+            <strong>Play target:</strong> 35–50 min<br /><strong>Effort:</strong> 3–5 proof / 8–14 total person-days
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <div class="eyebrow">B · the next big payoff</div>
+          <h3>Ring Island</h3>
+          <p>The impossible shape on the horizon becomes a working place.</p>
+        </div>
+        <svg class="map" viewBox="0 0 320 240" role="img" aria-labelledby="map-b-title map-b-desc">
+          <title id="map-b-title">Ring Island: build outward from the supplied shore</title>
+          <desc id="map-b-desc">
+            A new crossing runs from Far Head in the southwest to a small northern island. A service path circles the
+            ring; bracing its aperture permits steel freight to return home.
+          </desc>
+          <path class="land" d="M0 178L41 163 75 172 92 204 78 240H0Z" />
+          <path class="land" d="M152 35L194 9 252 13 296 38 311 86 296 128 251 147 201 143 168 126 147 78Z" />
+          <path class="rock" d="M193 47Q229 23 263 50L278 91 257 112 232 96 245 78 240 59 215 57 202 82 185 83Z" />
+          <path class="contour" d="M172 39Q145 100 196 125M262 28Q307 60 287 113" />
+          <path class="trail" d="M180 129L169 96 178 56 216 34 271 49 282 91 259 124" />
+          <path class="rail after" d="M58 207L113 179 165 147 202 123 244 113" />
+          <g class="after">
+            <circle class="station" cx="58" cy="207" r="6" />
+            <circle class="station" cx="244" cy="113" r="6" />
+            <text x="135" y="175">Steel comes home</text>
+          </g>
+          <circle class="action" cx="202" cy="123" r="8" />
+          <rect class="building" x="249" y="109" width="25" height="17" rx="2" />
+          <path class="cliff" d="M222 66L234 76 228 92 214 80Z" />
+          <text x="200" y="27">Broken ring</text>
+          <text x="237" y="143">Steel works</text>
+          <path class="leader" d="M193 124L154 116" />
+          <text x="100" y="104">Brace aperture</text>
+          <text x="12" y="190">Far Head</text>
+          <text class="caption" x="10" y="227">Supplied from home</text>
+          <text class="water-label" x="19" y="64">OPEN SEA</text>
+          <text class="caption before" x="94" y="188">Crossing not built</text>
+          <text class="caption" x="299" y="20">N ↑</text>
+        </svg>
+        <div class="card-copy">
+          <p class="verb">Brace an aperture. Let the first load through.</p>
+          <p>
+            Build the crossing from the reachable shore. A steel works at the ring's foot pays back the entire railway.
+          </p>
+          <span class="export"><strong>Export:</strong> steel kits → longer spans + a known train's upgrade</span>
+          <details>
+            <summary>Co-op, first access &amp; risk</summary>
+            <p>
+              <strong>Together:</strong> supply the advancing workfront, then regroup for the first ride. One scouts the
+              gallery while another parks the brace.
+            </p>
+            <p>
+              <strong>Reach first:</strong> A's footings plus existing timber and rails. Never require far-island steel
+              to reach the island.
+            </p>
+            <p>
+              <strong>Risk:</strong> loading/recovery at the far shore, repeated sea errands, and a landmark promising
+              more than the area delivers.
+            </p>
+            <p>
+              <strong>Bound:</strong> one landing and ring yard, one aperture, one home fitting. No boat, fuel economy
+              or mandatory new movement power.
+            </p>
+          </details>
+          <div class="budget">
+            <strong>Play target:</strong> 50–75 min<br /><strong>Effort:</strong> 5–8 proof / 16–26 total person-days
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <div class="eyebrow">C · later vertical freight</div>
+          <h3>High Gorge</h3>
+          <p>A mountain station above the railway you remember building.</p>
+        </div>
+        <svg class="map" viewBox="0 0 320 240" role="img" aria-labelledby="map-c-title map-c-desc">
+          <title id="map-c-title">High Gorge: lower yard, lift, upper contour railway</title>
+          <desc id="map-c-desc">
+            A long footpath winds up the western slope. A cargo lift joins low and high yards; a contour railway crosses
+            to the copper works. A summit lookout remains optional.
+          </desc>
+          <path class="land" d="M0 0H320V240H0Z" />
+          <path class="rock" d="M25 0L118 18 141 60 162 96 142 137 169 179 124 217 45 216 13 164 32 108 15 55Z" />
+          <path class="cliff" d="M57 16L106 39 122 73 145 96 119 126 147 171 115 193 59 186 42 153 55 106 39 57Z" />
+          <path
+            class="contour"
+            d="M71 40L97 55 111 91 89 130 116 164 82 168 66 147M183 15L174 64 192 105 184 144 213 205M202 8L194 62 210 101 205 151 233 199"
+          />
+          <path class="trail" d="M50 205L28 156 61 172 92 144 70 107 107 77 126 98 108 129 135 154" />
+          <path class="rail after" d="M135 154L170 147 216 129 266 130" />
+          <g class="after">
+            <circle class="station" cx="135" cy="154" r="6" />
+            <circle class="station" cx="266" cy="130" r="6" />
+            <text x="181" y="177">Cable kits ↓ home</text>
+          </g>
+          <path class="leader" d="M63 198L126 162" />
+          <circle class="action" cx="99" cy="179" r="9" />
+          <rect class="building" x="42" y="198" width="23" height="15" rx="2" />
+          <rect class="building" x="255" y="104" width="24" height="16" rx="2" />
+          <text x="8" y="232">Lower yard</text>
+          <text x="116" y="185">Lift</text>
+          <text x="225" y="92">Copper works</text>
+          <text x="37" y="27">Lookout</text>
+          <text class="caption" x="37" y="40">optional</text>
+          <text class="caption" x="216" y="219">Broad contour route</text>
+          <text class="caption before" x="150" y="154">Freight gap</text>
+          <text class="caption" x="299" y="20">N ↑</text>
+        </svg>
+        <div class="card-copy">
+          <p class="verb">Install a counterweight. Lift the next build.</p>
+          <p>Use a broad walking approach, then raise freight to the upper terrace. The rail spans the gorge beyond.</p>
+          <span class="export"
+            ><strong>Export:</strong> copper hoist fittings → home gantry + high loading terrace</span
+          >
+          <details>
+            <summary>Co-op, first access &amp; risk</summary>
+            <p>
+              <strong>Together:</strong> one loads below while another receives above. Alone, call the lift from either
+              end and ride between jobs.
+            </p>
+            <p>
+              <strong>Reach first:</strong> earlier steel and cement, with an ordinary walking route. High movement
+              challenges stay optional.
+            </p>
+            <p>
+              <strong>Risk:</strong> moving-platform carrying, camera occlusion and steep rail grades. Another gorge
+              needs more than extra height.
+            </p>
+            <p>
+              <strong>Bound:</strong> one lift, two yards, one contour line. No growing crystal supports or
+              electrical-grid simulation.
+            </p>
+          </details>
+          <div class="budget">
+            <strong>Play target:</strong> 50–70 min<br /><strong>Effort:</strong> 5–9 proof / 18–30 total person-days
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <div class="eyebrow">D · strongest alternative</div>
+          <h3>Canopy Town</h3>
+          <p>A working glasshouse under huge trees, with a train in its aisle.</p>
+        </div>
+        <svg class="map" viewBox="0 0 320 240" role="img" aria-labelledby="map-d-title map-d-desc">
+          <title id="map-d-title">Canopy Town: open the glasshouse loading aisle</title>
+          <desc id="map-d-desc">
+            A walking route curves around great trees to a glasshouse. Moving its roof shutters lets an oversized
+            spindle through and opens the railway to the fibre works.
+          </desc>
+          <path class="land" d="M0 0H320V211L273 204 237 223 188 221 156 205 103 229 51 213 0 225Z" />
+          <g class="trees">
+            <circle cx="41" cy="44" r="27" />
+            <circle cx="91" cy="72" r="30" />
+            <circle cx="150" cy="35" r="26" />
+            <circle cx="282" cy="51" r="27" />
+            <circle cx="278" cy="160" r="28" />
+            <circle cx="86" cy="182" r="23" />
+          </g>
+          <path class="trail" d="M38 200L35 122 72 112 113 127 126 78 195 71 244 94 247 151" />
+          <rect class="building" x="156" y="89" width="93" height="70" rx="3" />
+          <path class="contour" d="M166 89V159M184 89V159M203 89V159M222 89V159M241 89V159M156 107H249M156 142H249" />
+          <path class="rail after" d="M38 200L109 163 159 126H234" />
+          <g class="after">
+            <circle class="station" cx="38" cy="200" r="6" />
+            <circle class="station" cx="234" cy="126" r="6" />
+            <text x="129" y="195">Straps → home crane</text>
+          </g>
+          <circle class="action" cx="164" cy="126" r="8" />
+          <path class="leader" d="M165 116L143 96" />
+          <text x="102" y="87">Shutters</text>
+          <text x="180" y="78">Glasshouse</text>
+          <text x="191" y="176">Fibre works</text>
+          <text x="12" y="229">To home</text>
+          <text class="caption before" x="161" y="148">Aisle blocked</text>
+          <text class="caption" x="299" y="20">N ↑</text>
+        </svg>
+        <div class="card-copy">
+          <p class="verb">Shift the shutters. Thread a giant spindle.</p>
+          <p>
+            Keep the great trees alive. The railway passes under the canopy and through a permanently opened loading
+            hall.
+          </p>
+          <span class="export"><strong>Export:</strong> tough fibre → carry sling + crane straps + awnings</span>
+          <details>
+            <summary>Co-op, first access &amp; risk</summary>
+            <p>
+              <strong>Together:</strong> a friend guides the spindle while you change the opening. Park the load, swap
+              jobs or finish alone.
+            </p>
+            <p>
+              <strong>Reach first:</strong> ground path and existing timber/rails. Hook/glide side routes use earned
+              moves; they are not assumed after T3.
+            </p>
+            <p>
+              <strong>Risk:</strong> dense foliage and a costly new town kit. Convenience must be visible: a strap
+              removes an actual manual transfer.
+            </p>
+            <p>
+              <strong>Bound:</strong> one street and loading aisle, two shutters, two fittings. Use rigid bundles; no
+              cloth simulation.
+            </p>
+          </details>
+          <div class="budget">
+            <strong>Play target:</strong> 45–65 min<br /><strong>Effort:</strong> 4–7 proof / 14–22 total person-days
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section aria-labelledby="compare-heading">
+    <div class="section-top">
+      <h2 id="compare-heading">Choose the uncertainty worth taking</h2>
+      <p class="small">Judgments, not measured quality scores</p>
+    </div>
+    <div
+      class="table-wrap"
+      tabindex="0"
+      role="region"
+      aria-label="Candidate comparison; scroll horizontally on small screens"
+    >
+      <table>
+        <caption>
+          Effort includes the proof; excludes unfinished production-core work and owner wait time. Low-confidence
+          estimates.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Destination</th>
+            <th scope="col">What changes</th>
+            <th scope="col">Reuse</th>
+            <th scope="col">Biggest risk</th>
+            <th scope="col">Order</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="pick-row">
+            <th scope="row">A · Quarry</th>
+            <td>Through, instead of around</td>
+            <td>High</td>
+            <td>Stone already exists; needs a new payoff</td>
+            <td><strong>Next</strong></td>
+          </tr>
+          <tr>
+            <th scope="row">B · Ring Island</th>
+            <td>Across the sea; steel comes home</td>
+            <td>Medium</td>
+            <td>Arrival readiness and repeat journeys</td>
+            <td><strong>Second</strong></td>
+          </tr>
+          <tr>
+            <th scope="row">C · High Gorge</th>
+            <td>Freight moves between levels</td>
+            <td>Medium</td>
+            <td>Lift, grade and camera</td>
+            <td>Later</td>
+          </tr>
+          <tr>
+            <th scope="row">D · Canopy Town</th>
+            <td>Handling work becomes convenience</td>
+            <td>Lower</td>
+            <td>New kit and foliage clarity</td>
+            <td>Alternative to C</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="route-heading">
+    <div class="section-top">
+      <h2 id="route-heading">The recommended route</h2>
+      <p class="small">Commit to the next proof, not six finished areas</p>
+    </div>
+    <div class="route">
+      <p>
+        <strong>Each place leaves the railway more capable.</strong> These are material discoveries, not global eras.
+      </p>
+      <ol aria-label="Recommended destination order">
+        <li><span class="step">00 · CURRENT</span><strong>Line 1</strong><span>Walk home on what you built</span></li>
+        <li class="next">
+          <span class="step">01 · NEXT</span><strong>Quarry</strong><span>Footings for the departure</span>
+        </li>
+        <li class="next">
+          <span class="step">02 · AFTER</span><strong>Ring Island</strong><span>Steel for spans and trains</span>
+        </li>
+        <li>
+          <span class="step">03 · PROVISIONAL</span><strong>High Gorge</strong><span>Lift freight to new ground</span>
+        </li>
+        <li><span class="step">04 · LATER</span><strong>Inhabited port</strong><span>Join the useful routes</span></li>
+        <li>
+          <span class="step">05 · ENDING</span><strong>Original island</strong
+          ><span>The Boogler and a lasting hangout</span>
+        </li>
+      </ol>
+      <p class="small">
+        <strong>Forest alternative:</strong> Canopy Town replaces High Gorge; fibre replaces the proposed copper-lift
+        dependency. Re-budget the port rather than requiring both. If today's starting point is already the completed
+        pier, choose Ring Island next and establish its near-bank supplies first.
+      </p>
+    </div>
+    <div class="proof">
+      <div>
+        <span class="eyebrow">Smallest useful proof</span>
+        <h3>One quarry. Two useful shipments.</h3>
+        <div class="shipments" aria-label="Quarry exports first to a home ramp, then a sea deck">
+          <span class="chip">Quarry kits</span><span aria-hidden="true">→</span><span class="chip">Home ramp</span
+          ><span aria-hidden="true">+</span><span class="chip">Sea deck</span>
+        </div>
+        <p>
+          Prove a short breach-and-return loop, then the two installations. Keep the cove and T1–T3 intact. Check solo,
+          a helper leaving, and a late visitor using the result.
+        </p>
+        <p>
+          <strong>Owner question:</strong> “Did bringing that back make you want to set off again?” Then stop for the
+          verdict.
+        </p>
+      </div>
+      <div>
+        <span class="eyebrow">Why this order</span>
+        <h3>The second source must repay the first line.</h3>
+        <p>
+          A tests that with existing geography. B then pays off the horizon. C or D adds a different kind of work after
+          the export loop has earned its place.
+        </p>
+        <p>
+          <strong>Time targets:</strong> demo + A = 65–80 minutes; add B = 115–155. These are hypotheses, not an
+          eight-hour campaign. If the good actions take less time, keep the shorter area.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <details>
+      <summary>Evidence, earlier proposals &amp; limits</summary>
+      <div class="basis">
+        <div>
+          <p>
+            <strong>Current layout, inspected at e7eea656.</strong> Shore arrival (−199, 10), home (−100, 14), quarry
+            (98, 52), Far Head (392, −170), distant marker (330, −1120). Local metres; north is −z. The pier-to-marker
+            straight line is about 751 m, not a measured 1.2 km railway. These cards are schematic.
+          </p>
+          <p>
+            <strong>Earlier work.</strong> The 5 November destination study starts after the full starter/pier and
+            favors an overseas cement coast. This brief starts after Line 1: test cement at the reachable quarry first.
+            The three places panelists agree on useful exports but differ on fibre-first versus steel-first. No route
+            was unanimously approved.
+          </p>
+          <p>
+            <strong>Input gap.</strong> The exact destinations*.md pair was absent. The report uses next-destinations.md
+            and the three located places-panel reports; progression-paths, six-eras and island-layout are under
+            docs/proposals.
+          </p>
+        </div>
+        <div>
+          <p>
+            <strong>Authority.</strong> The owner says the slice feels good. That supports this next-step consultation;
+            it does not verify downstream forge/freight production readiness. Research does not approve new mechanics.
+            Review this page, then use the existing brainstorm and production gates before building.
+          </p>
+          <p>
+            <strong>Scope limits.</strong> Days are focused person-day estimates, including proof, art and verification.
+            No reference games or Boogle build played for this report. Gameplay fun, costs, pacing, published Artifact
+            layout and device behavior are unverified. No game code, Boogler copy or decisions changed.
+          </p>
+          <p>
+            <strong>Artifact.</strong> Inline SVG and CSS only; native tap/keyboard disclosures and one before/after
+            checkbox. No external assets, scripts, tracking or saved selections. The full repository report is
+            docs/research/next-destination.md.
+          </p>
+        </div>
+      </div>
+    </details>
+    <details>
+      <summary>Seven primary sources behind the recommendation</summary>
+      <ul>
+        <li>
+          <a href="https://factorio.com/blog/post/fff-417">Factorio: Space Age development</a> — distinct destinations
+          and exportable improvements; reduce repetitive recipe steps.
+        </li>
+        <li>
+          <a
+            href="https://blog.playstation.com/2021/08/05/crafting-a-tiny-open-world-a-look-behind-the-scenes-at-the-creation-of-a-short-hike/"
+            >A Short Hike: developer account</a
+          >
+          — the changed view is part of the reward.
+        </li>
+        <li>
+          <a href="https://www.gdcvault.com/play/1026613/">A Short Hike: GDC postmortem abstract</a> — deliberately
+          bounded production scope; abstract read, talk not watched.
+        </li>
+        <li>
+          <a
+            href="https://www.nintendo.com/en-gb/Iwata-Asks/Iwata-Asks-The-Legend-of-Zelda-Spirit-Tracks/Iwata-Asks-The-Legend-of-Zelda-Spirit-Tracks/3-Play-That-s-Only-Possible-on-a-Train/3-Play-That-s-Only-Possible-on-a-Train-226909.html"
+            >Nintendo: Spirit Tracks</a
+          >
+          — clear routes can retain the pleasure of expanding a railway.
+        </li>
+        <li>
+          <a href="https://coffeestain.com/news/satisfactory-1-0-launch/">Satisfactory 1.0</a> — discovery can remove
+          repeated storage travel.
+        </li>
+        <li>
+          <a href="https://bigwalk.game/faq/">House House: Big Walk FAQ</a> — its required-group model differs from
+          Boogle's solo/drop-in promise.
+        </li>
+        <li>
+          <a href="https://www.nintendo.com/au/news-and-articles/ask-the-developer-vol-4-kirby-and-the-forgotten-land/"
+            >Nintendo: Kirby and the Forgotten Land</a
+          >
+          — forgiving actions, quiet space and readable geography.
+        </li>
+      </ul>
+    </details>
+    <p style="margin-top: 20px">Boogle research · materials build capabilities; connections bring them home.</p>
+  </footer>
+</main>
