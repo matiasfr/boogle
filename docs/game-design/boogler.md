@@ -5,7 +5,7 @@ dreams of a restaurant. He wears a comically tall black top hat (cosmetic, no co
 crown half the brim's, about 0.9 m tall (one and a half times his height). It lags and wobbles on springs when he hops and
 walks, and is crushed flat like an opera hat while someone rides him, popping back up after. His HUD stays quiet, like Fortnite's NPC markers: a small talk-bubble mark over his head at range, and within
 10 m his name plate and the interact prompt (hidden again past 12 m). While wary, the plate says "avoiding you". His speech bubbles
-show at any range. Off screen, the same mark sits on the screen edge with his distance (full within 35 m, gone by 60 m).
+show only while you are on his island (dry land of its grid; Local presentation), not from across the sea or the railway world. Off screen, the same mark sits on the screen edge with his distance (full within 35 m, gone by 60 m).
 
 ## Wander
 

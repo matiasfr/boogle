@@ -46,6 +46,8 @@ const FACE_HEX = '#1d1640';
 const SPEED = 1.5; // m/s
 const TURN = 3.2; // rad/s
 const MIN_H = 0.45; // stays on dry land
+/** Dry land of his island under x, z: the ground he walks on. Off its grid (the railway world, the sea) is the seabed. */
+export const onBooglerIsland = (x: number, z: number) => groundHeight(x, z) >= MIN_H;
 const MAX_H = 30; // the whole island, massif included
 const MAX_STEP = 0.55; // max height change per metre of path
 const MAP_LIMIT = HALF - 25;

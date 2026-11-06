@@ -1,9 +1,9 @@
 // Screen-space HUD for The Boogler, kept quiet the way Fortnite marks its NPCs: at range only a small talk-bubble mark
 // floats over his head; walk within NAME_NEAR and it gives way to his name plate (whether he's avoiding you, and the
-// interact prompt when he is what you would interact with). His speech bubbles show at any range. While he's off
+// interact prompt when he is what you would interact with). His speech bubbles show only while you are on his island. While he's off
 // screen and nearby, the same mark sits on the nearest screen edge, aimed at him, with his distance. Past FIND_NEAR it
 // fades out, gone by FIND_FAR: far off you are doing your own thing, and he is mostly pottering about at home anyway.
-import { boogler, booglerScreen } from './boogler.ts';
+import { boogler, booglerScreen, onBooglerIsland } from './boogler.ts';
 import { me } from '../player/player.ts';
 import { clamp } from '../math.ts';
 import { replay } from './dialogue.ts';
@@ -113,7 +113,8 @@ export function updateBooglerHud() {
   if (close !== near) d.tag.classList.toggle('near', (near = close));
   d.tag.hidden = !s.onScreen;
   if (s.onScreen) d.tag.style.transform = `translate(${s.labelX.toFixed(1)}px, ${s.labelY.toFixed(1)}px)`;
-  const talking = s.onScreen && performance.now() < bubble.until;
+  const onIsland = !!me.body && onBooglerIsland(me.body.position.x, me.body.position.z);
+  const talking = s.onScreen && onIsland && performance.now() < bubble.until;
   if (d.say.hidden === talking) d.say.hidden = !talking;
   if (talking && bubble.shown !== bubble.text) {
     d.sayText.textContent = bubble.shown = bubble.text;
