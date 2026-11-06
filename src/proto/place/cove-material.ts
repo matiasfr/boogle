@@ -19,6 +19,7 @@ import {
   bumpMap,
 } from 'three/tsl';
 import { patchNode } from '../../render/material-patch.ts';
+import { WALKABLE_NY } from '../../constants.ts';
 import { coveU } from './cove-tuning.ts';
 import { coveTextures } from './cove-textures.ts';
 import { registerCoveSand } from './cove-sand.ts';
@@ -65,14 +66,24 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   let grass: N = rock.oneMinus().sub(sand).max(0);
   // Broad slope coverage must not grow turf on the wet shoreline's steep foot.
   const dryTurf = smoothstep(0, coveU('grassMinHeight'), p.y);
-  rock = rock.add(grass.mul(dryTurf.oneMinus()));
   grass = grass.mul(dryTurf);
   const tag: N = kit ? attribute('coveTurf', 'float') : float(0);
   if (kit) {
     grass = tag;
-    rock = tag.oneMinus();
     sand = float(0);
   }
+  // The buried roof/soil socket shares composition as well as lighting. Away from that small contact strip,
+  // retain each surface's ordinary sand, soil and authored cap rules. Slope eligibility still applies below.
+  const capJoin = attribute('coveCapJoin', 'vec2');
+  const capWeight = capJoin.x.clamp();
+  grass = mix(grass, capJoin.y.clamp(), capWeight);
+  sand = sand.mul(capWeight.oneMinus());
+  rock = grass.add(sand).oneMinus().max(0);
+  // Broad soil normals stabilize the border but cannot make an unwalkable face look grassy. Fade eligibility
+  // across the actual smooth surface slope, rather than cutting tiny stone triangles at the contact limit.
+  const turfSlope = smoothstep(WALKABLE_NY, max(WALKABLE_NY + 0.01, slope.add(slopeWidth)), n.y);
+  rock = rock.add(grass.mul(turfSlope.oneMinus()));
+  grass = grass.mul(turfSlope);
   const path: N = kit ? float(0) : attribute('covePath', 'float').clamp();
   // Microheight only contests existing coverage; zero-coverage layers never win.
   const influence = coveU('heightBlend');
@@ -91,7 +102,7 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   rock = total.greaterThan(0.0001).select(rw.div(total.max(0.0001)), rock);
   grass = total.greaterThan(0.0001).select(gw.div(total.max(0.0001)), grass);
   sand = total.greaterThan(0.0001).select(sw.div(total.max(0.0001)), sand);
-  // Coverage stays distinct from pigment: a narrow turf edge replaces the metre-wide green smear.
+  // Coverage stays distinct from pigment: a soft, short transition keeps the soil border natural.
   const grassEdge = grass.add(detail.g.sub(0.5).mul(coveU('grassEdgeBreakup')));
   const cleanGrass = smoothstep(
     float(0.5).sub(coveU('grassEdgeWidth')),
@@ -155,10 +166,8 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   );
   const grassCol = pigment('grass').mul(turfPaint.sub(0.8).mul(coveU('grassDetailStrength')).add(1));
   const sandCol = pigment('sand').mul(macro.mul(coveU('detailStrength')).add(1));
-  const lipWidth = max(coveU('lipWidth'), coveU('grassEdgeWidth').add(0.001));
-  const lip = smoothstep(float(0.5).sub(lipWidth), float(0.5).sub(coveU('grassEdgeWidth')), grassEdge).mul(
-    grass.oneMinus(),
-  );
+  const edgeStart = float(0.5).sub(coveU('grassEdgeWidth'));
+  const lip = smoothstep(edgeStart.sub(coveU('lipWidth')), edgeStart, grassEdge).mul(grass.oneMinus());
   const dry = rockCol
     .mul(rock)
     .add(grassCol.mul(grass))

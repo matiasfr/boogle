@@ -44,6 +44,7 @@ export type CoveMesh = {
   colors: number[];
   normals: number[];
   turf: number[];
+  roof: boolean[];
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
 };
 const pigment = (hex: number) => [((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255];
@@ -60,13 +61,15 @@ function empty(name: string): CoveMesh {
     colors: [],
     normals: [],
     turf: [],
+    roof: [],
     bounds: { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity },
   };
 }
-function vertex(mesh: CoveMesh, x: number, y: number, z: number, rgb: number[], shade = 1, cap = 0) {
+function vertex(mesh: CoveMesh, x: number, y: number, z: number, rgb: number[], shade = 1, cap = 0, roof = false) {
   mesh.vertices.push(x, y, z);
   mesh.colors.push(...(COVE_CLAY ? clay : rgb).map((c) => c * shade));
   mesh.turf.push(cap);
+  mesh.roof.push(roof);
   mesh.bounds.minX = Math.min(mesh.bounds.minX, x);
   mesh.bounds.maxX = Math.max(mesh.bounds.maxX, x);
   mesh.bounds.minZ = Math.min(mesh.bounds.minZ, z);
@@ -77,6 +80,93 @@ function vertex(mesh: CoveMesh, x: number, y: number, z: number, rgb: number[], 
 // The meshes themselves remain the shared render/collision/bathymetry source.
 const backingSockets: { cap: number[]; rear: number }[] = [];
 const endCopies: [number, number][] = [];
+let joinGround: ((x: number, z: number) => number) | undefined;
+let joinField: { x0: number; z0: number; nx: number; nz: number; normals: Float32Array } | undefined;
+
+/** Shared contact weight and raw authored turf coverage, independent of lighting normals. */
+export function coveJoinCoverage(x: number, z: number, groundY?: number): number[] | null {
+  const mesh = coveMeshes[0];
+  if (!mesh || !joinGround || x < mesh.bounds.minX || x > mesh.bounds.maxX + 2 || z <= 34 || z >= 74) return null;
+  let section = 0;
+  while (section < backingSockets.length - 2 && mesh.vertices[backingSockets[section + 1]!.rear * 3 + 2]! < z)
+    section++;
+  const a = backingSockets[section]!,
+    b = backingSockets[section + 1]!;
+  const za = mesh.vertices[a.rear * 3 + 2]!,
+    zb = mesh.vertices[b.rear * 3 + 2]!;
+  const along = Math.max(0, Math.min(1, (z - za) / (zb - za)));
+  const edge = (ia: number, ib: number) =>
+    mesh.vertices[ia * 3]! + (mesh.vertices[ib * 3]! - mesh.vertices[ia * 3]!) * along;
+  const start = edge(a.cap[0]!, b.cap[0]!),
+    end = edge(a.rear, b.rear);
+  let weight =
+    smoothstep(start - 1.5, start, x) *
+    (1 - smoothstep(end, end + 2, x)) *
+    smoothstep(34, 38, z) *
+    (1 - smoothstep(72, 74, z));
+  // The contact is the cap's backing soil, not a projected grass stripe on the
+  // higher hillside behind it. Lighting's normal-field query omits this pigment gate.
+  if (groundY !== undefined) weight *= 1 - smoothstep(0.35, 0.85, groundY - coveCrest(z));
+  if (weight === 0) return null;
+  const cap = mesh.turf[a.cap[0]!]! + (mesh.turf[b.cap[0]!]! - mesh.turf[a.cap[0]!]!) * along;
+  return [weight, cap];
+}
+
+/** One presentation-only tangent field for both sides of the kit/soil contact.
+ * Baked lazily after terrain assembly, on the same 1 m spacing as the fine ground.
+ * The 3x3 derivative footprint smooths the contact's normal without moving support. */
+export function coveJoinNormal(
+  x: number,
+  z: number,
+  nx: number,
+  ny: number,
+  nz: number,
+  roofY?: number,
+): number[] | null {
+  const mesh = coveMeshes[0];
+  const coverage = coveJoinCoverage(x, z);
+  if (!mesh || !joinGround || !coverage) return null;
+  let weight = coverage[0]!;
+  // A buried return or vertical side is not the visible cap. The view supplies roofY
+  // only for authored roof vertices; soil receives the same tangent on its own top.
+  // Keep the 0.4 m buried socket in the interpolation; deeper covered roof is irrelevant.
+  if (roofY !== undefined) weight *= 1 - smoothstep(0.5, 1, coveSurface(x, z, joinGround(x, z)) - roofY);
+  if (weight === 0) return null;
+  if (!joinField) {
+    const x0 = Math.floor(mesh.bounds.minX) - 2,
+      z0 = 32,
+      width = Math.ceil(mesh.bounds.maxX) + 5 - x0,
+      depth = 45;
+    const heights = new Float32Array(width * depth);
+    const normals = new Float32Array(width * depth * 3);
+    for (let j = 0; j < depth; j++)
+      for (let i = 0; i < width; i++) heights[i + j * width] = coveSurface(x0 + i, z0 + j, joinGround(x0 + i, z0 + j));
+    for (let j = 1; j < depth - 1; j++)
+      for (let i = 1; i < width - 1; i++) {
+        const h = (dx: number, dz: number) => heights[i + dx + (j + dz) * width]!;
+        const dx = (h(1, -1) + 2 * h(1, 0) + h(1, 1) - h(-1, -1) - 2 * h(-1, 0) - h(-1, 1)) / 8;
+        const dz = (h(-1, 1) + 2 * h(0, 1) + h(1, 1) - h(-1, -1) - 2 * h(0, -1) - h(1, -1)) / 8;
+        const length = Math.hypot(dx, 1, dz);
+        normals.set([-dx / length, 1 / length, -dz / length], (i + j * width) * 3);
+      }
+    joinField = { x0, z0, nx: width, nz: depth, normals };
+  }
+  const field = joinField;
+  const fx = x - field.x0,
+    fz = z - field.z0,
+    i = Math.floor(fx),
+    j = Math.floor(fz),
+    u = fx - i,
+    v = fz - j;
+  const result = [nx, ny, nz];
+  for (let axis = 0; axis < 3; axis++) {
+    const at = (di: number, dj: number) => field.normals[(i + di + (j + dj) * field.nx) * 3 + axis]!;
+    const value = (at(0, 0) * (1 - u) + at(1, 0) * u) * (1 - v) + (at(0, 1) * (1 - u) + at(1, 1) * u) * v;
+    result[axis] = result[axis]! + (value - result[axis]!) * weight;
+  }
+  const length = Math.hypot(...result);
+  return result.map((n) => n / length);
+}
 
 /** A connected sculpted face and rounded turf lip; bedding is a material, not repeated box seams.
  * Only the buried rear/end closures split their normals from the continuous visible skin. */
@@ -130,6 +220,7 @@ function cliff(): CoveMesh {
         cap > 0.5 ? turf : row === 11 ? seam : stone,
         1,
         cap,
+        row === 12,
       );
     }
     // Broad cap curvature joins the rolled lip to the buried terrain socket.
@@ -144,6 +235,7 @@ function cliff(): CoveMesh {
         turf,
         1,
         section.cap,
+        true,
       );
     backingSockets.push({ cap: [capStart, capStart + 1, capStart + 2], rear: 0 });
   }
@@ -265,6 +357,8 @@ export const coveMeshes = COVE ? [cliff(), blocks()].map(smoothNormals) : [];
 export function fitCoveBacking(heightAt: (x: number, z: number) => number) {
   const mesh = coveMeshes[0];
   if (!mesh) return;
+  joinGround = heightAt;
+  joinField = undefined;
   for (const { cap, rear } of backingSockets) {
     const middle = cap[1]! * 3,
       end = cap[2]! * 3;

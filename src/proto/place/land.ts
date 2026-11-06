@@ -32,7 +32,7 @@ import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from './shore-layout.ts';
 import { boxFootprint, sampleFootprint } from './support.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { tagStepSupport, segmentStepSupport, type StepSurface } from '../../render/locomotion-surfaces.ts';
-import { COVE, COVE_CLAY, coveWeight } from './cove.ts';
+import { COVE, COVE_CLAY, coveJoinCoverage, coveJoinNormal, coveWeight } from './cove.ts';
 import { buildCove } from './cove-view.ts';
 import { dressCoveGround } from './cove-ground.ts';
 
@@ -228,6 +228,7 @@ function buildMesh(owner?: OwnedView) {
   }
   if (COVE) {
     const slopes = new Float32Array(pos.length / 3);
+    const capJoin = new Float32Array(slopes.length * 2);
     const normals = geo.getAttribute('normal');
     for (let k = 0; k < slopes.length; k++) {
       const wx = pos[k * 3]!,
@@ -235,8 +236,14 @@ function buildMesh(owner?: OwnedView) {
       // Cover the material's entire feather plus one cell, including coarse vertices at its seam.
       slopes[k] =
         wx >= 733 && wx <= 887 && wz >= -22 && wz <= 112 ? macroSlopeY(wx - ORIGIN.x, wz - ORIGIN.z) : normals.getY(k);
+      const coverage = coveJoinCoverage(wx - ORIGIN.x, wz - ORIGIN.z, pos[k * 3 + 1]!);
+      if (coverage) capJoin.set(coverage, k * 2);
+      // Coverage keeps the original soil slope. Only lighting shares the kit's contact tangent.
+      const joined = coveJoinNormal(wx - ORIGIN.x, wz - ORIGIN.z, normals.getX(k), normals.getY(k), normals.getZ(k));
+      if (joined) normals.setXYZ(k, joined[0]!, joined[1]!, joined[2]!);
     }
     geo.setAttribute('coveSlope', new THREE.BufferAttribute(slopes, 1));
+    geo.setAttribute('coveCapJoin', new THREE.BufferAttribute(capJoin, 2));
   }
   const mesh = new THREE.Mesh(
     geo,

@@ -3,7 +3,7 @@ import * as THREE from 'three/webgpu';
 import { defineKind, spawn } from '../../entity/entity.ts';
 import { createBody } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
-import { coveMeshes } from './cove.ts';
+import { coveJoinCoverage, coveJoinNormal, coveMeshes } from './cove.ts';
 import { applyCoveLayers } from './cove-material.ts';
 import { coveTextureBytes } from './cove-textures.ts';
 import { ORIGIN } from './layout.ts';
@@ -18,10 +18,27 @@ export function buildCove() {
   applyCoveLayers(material, 1, true);
   const geometries = coveMeshes.map((m) => {
     const geometry = new THREE.BufferGeometry();
+    const normals = m.normals.slice();
+    const capJoin = new Float32Array((m.vertices.length / 3) * 2);
+    for (let k = 0; k < m.vertices.length; k += 3) {
+      if (!m.roof[k / 3]) continue;
+      const coverage = coveJoinCoverage(m.vertices[k]!, m.vertices[k + 2]!);
+      if (coverage) capJoin.set(coverage, (k / 3) * 2);
+      const joined = coveJoinNormal(
+        m.vertices[k]!,
+        m.vertices[k + 2]!,
+        normals[k]!,
+        normals[k + 1]!,
+        normals[k + 2]!,
+        m.vertices[k + 1]!,
+      );
+      if (joined) for (let axis = 0; axis < 3; axis++) normals[k + axis] = joined[axis]!;
+    }
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(m.vertices, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(m.colors, 3));
-    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(m.normals, 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geometry.setAttribute('coveTurf', new THREE.Float32BufferAttribute(m.turf, 1));
+    geometry.setAttribute('coveCapJoin', new THREE.BufferAttribute(capJoin, 2));
     geometry.setIndex(m.indices);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = m.name;

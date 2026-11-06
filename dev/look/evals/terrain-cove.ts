@@ -16,12 +16,14 @@ const previz = q.get('coveShot') === 'previz';
 const swash = q.get('coveShot') === 'swash';
 const owner = q.get('coveShot') === 'owner';
 const turf = q.get('coveShot') === 'turf';
-const x = wide ? 801 : reverse ? 814 : 806,
-  z = wide ? 10 : reverse ? 46 : q.get('coveWalk') === '1' ? 38 : 40;
+const arrival = q.get('coveShot') === 'arrival';
+const x = arrival ? 813 : wide ? 801 : reverse ? 814 : 806,
+  z = wide || arrival ? 10 : reverse ? 46 : q.get('coveWalk') === '1' ? 38 : 40;
 teleport(me.body, x, H(x, z) + 1.2, z);
 me.body.velocity.set(0, 0, 0);
-cam.yaw = me.yaw = reverse ? 0.6 : -2.7;
-cam.pitch = -0.22;
+// First path turn, facing the next authored knot (823,28). Keep the real follow arm/collision active.
+cam.yaw = me.yaw = arrival ? -2.6344941492 : reverse ? 0.6 : -2.7;
+cam.pitch = arrival ? -0.14 : -0.22;
 cam.dist = 5.2;
 setTimeout(() => {
   if (wide) window.__debugCam!.set([775, 9, 16], [806, 3, 43], 62);
@@ -73,7 +75,7 @@ async function counts() {
   }
 }
 // Shadow toggling compiles alternate pipelines. Keep that diagnostic out of real-time motion captures.
-if (q.get('coveWalk') !== '1' && !swash && !previz && !turf)
+if (q.get('coveWalk') !== '1' && !swash && !previz && !turf && !arrival)
   setTimeout(() => background(counts(), 'cove render counts'), 1200);
 if (q.get('coveWalk') === '1') {
   (window as unknown as { __placeAct: () => void }).__placeAct = () =>

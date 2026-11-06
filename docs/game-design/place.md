@@ -894,7 +894,13 @@ the shore atlas and never treat bridge decks as seabed. Dry bank/deck surfaces r
 
 **West-cove art pilot (5 November, branch review only).** `?proto=place&terrain=cove&room=proto-place-cove&fresh=1`
 keeps the ordinary grey box as default. The flag selects its own comparison room, including room-only invites,
-because static collision changes. One headland at local z 34–74 rises out of the beach and wraps into the positive-z cove shoulder;
+because static collision changes. Its gameplay role is a vista and natural boundary beside the arrival climb,
+not a new reward destination or required route. From the first turn at world (813,10), the broad path leads toward
+(823,28) and town while the cove sits to the right. The low pocket remains physically accessible for an optional
+pause and return; no reward, directed side path or invisible barrier is added. The pilot bot's detour proves access,
+not newcomer motivation. [Round-six rationale](../plans/terrain-pilot.md#round-6--gameplay-rationale-before-the-look)
+records the source-backed choice before the look revision. Previz supplies reference, not a matching target.
+One headland at local z 34–74 rises out of the beach and wraps into the positive-z cove shoulder;
 the bounded inland blend stops before town and protects the complete landing fade, path shoulders and rail formation.
 The heightfield owns the sandy pocket, submerged shelf and backing slope. The smooth terrain revision adds a bounded
 one-metre patch at local x -212…-160, z 16…78; the rest keeps its two-metre grid. Five disjoint heightfields match
@@ -909,12 +915,16 @@ Bounded carving and backing-height matching retain the complete route protection
 The owner's smooth Odyssey base and adjustable Sunshine strata follow the [revised pilot plan](../plans/terrain-pilot.md).
 Island-aligned triplanar rock and planar turf pigment use three original 512² linear RGBA8 maps (4 MiB with mips).
 Slope and elevation select semantic layers; authoritative path coverage stays separate from pigment. A broad soil-slope
-attribute stabilizes coverage independently of lighting normals. Microheight blends the layers before a narrow turf
-edge; original grouped blade strokes and a restrained under-lip shade replace broad turf noise. The kit has a small
+attribute stabilizes coverage independently of lighting normals. Actual surface slope limits turf eligibility,
+so steep barriers remain sandstone. Microheight blends the layers before a soft turf edge; original grouped blade
+strokes and a restrained under-lip shade replace broad turf noise. The kit has a small
 opaque cap overhang. Sand takes priority on low walkable beach slopes; turf is suppressed at the wet shoreline.
 Golden sand, orange sandstone and richer green turf use unequal sediment beds, three related pigments by default,
 occasional thin accents, slow lateral warp and slight edge erosion. Bedding is restricted to exposed steep rock;
-gentle shoulders stay plain. Defaults are strength 0.6, bed scale 2.4 m and irregularity 0.6.
+gentle shoulders stay plain. Defaults are strength 0.6, bed scale 2.4 m and irregularity 0.6; the rock/turf threshold
+is normal-Y 0.8 with a 0.09 blend, and bedding fades at 0.68 with a 0.1 blend. The cap and soil share a bounded
+static tangent field and semantic cap coverage at their join, avoiding a lighting crease or isolated painted strip.
+These presentation fields leave the shared support positions and collision triangles unchanged.
 All 65 look settings are local tunables
 (`cove.*`); none changes collision or simulation. The final art candidate still requires coordinator/owner review.
 Under this flag only, idle Buddy cancels gravity tangent to actual walkable static support while retaining normal
