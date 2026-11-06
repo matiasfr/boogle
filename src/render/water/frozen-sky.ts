@@ -14,7 +14,7 @@ import { bind, tuningEnabled } from './live.ts';
 import { eveningPreview, prepareEvening, skyCubeSize, toySkyEnabled } from './flags.ts';
 import { toySky } from './toy.ts';
 import { bootMark } from '../../boot/timeline.ts';
-import { LIGHTING_SPECS } from '../lighting-tuning.ts';
+import { LIGHTING_SPECS, SKY_AUTHORING_SPECS } from '../lighting-tuning.ts';
 import { createEveningTransition } from './evening-transition.ts';
 
 export const WATER_TOD = 0.24;
@@ -65,6 +65,7 @@ export function createFrozenWaterSky() {
   direction.copy(east).multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
   // Local loading-time comparison only. Today's 1024 sky remains the default until visual review passes.
   const environment = createWaterSky(toySkyEnabled ? toySky : undefined, skyCubeSize);
+  environment.params.cloudBrightness = SKY_AUTHORING_SPECS[0]!.default;
   environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(direction.y));
   environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z));
   const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
@@ -94,13 +95,13 @@ export function createFrozenWaterSky() {
   let transition: ReturnType<typeof createEveningTransition> | undefined;
   const filtered: THREE.RenderTarget[] = [];
   let selectedEnvironment: THREE.Texture = environment.cube;
-  // Owner's round-two light choice, 5 November: local scene lights, not a sky rebake.
+  // Owner: retain round-two gains (5 November), select neutral light colour (6 November).
   const lighting = {
     keyGain: LIGHTING_SPECS[0]!.default,
     fillGain: LIGHTING_SPECS[1]!.default,
     keyTint: new THREE.Color(1, 1, 1),
     fillTint: new THREE.Color(1, 1, 1),
-    lightColourProfile: 0,
+    lightColourProfile: SKY_AUTHORING_SPECS[1]!.default,
   };
   // Linear RGB endpoints normalized to preserve each source light's luminance.
   const luma = (c: THREE.Color) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
