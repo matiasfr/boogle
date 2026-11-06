@@ -73,13 +73,33 @@ export default {
     production.searchParams.delete('classic');
     production.searchParams.delete('proto');
     production.searchParams.set('room', `${production.searchParams.get('room') ?? 'inputs'}-line`);
+    // Optional fault injection for snapshot-retry starvation on software WebGPU; not a performance measurement.
+    const sparseFrames = process.env.WORLD_INPUTS_SPARSE_FRAMES === '1';
+    if (sparseFrames)
+      await g.page.addInitScript(() => {
+        const raf = window.requestAnimationFrame.bind(window);
+        window.requestAnimationFrame = (fn) => raf(() => window.setTimeout(() => fn(performance.now()), 10000));
+      });
     await g.page.goto(production.href, { waitUntil: 'domcontentloaded' });
     await enterGame(g.page, 90000);
     const productionReady = await g.waitFor(
       `(await import('/src/entities/railway/state.ts')).inspectRailway()?.ready === true`,
       { timeout: 90000 },
     );
+    console.log(
+      'production diagnostics',
+      await g.eval(`
+      const { worldStatus, world } = await import('/src/world/sync.ts');
+      const { inspectRailway } = await import('/src/entities/railway/state.ts');
+      const r = inspectRailway();
+      return { world: worldStatus(), tick: world.tick, railway: r && {
+        ready: r.ready, status: r.status, connected: r.connected, epoch: r.epoch,
+        accountEpoch: r.accounts.find(a => a.pid === r.pid)?.epoch,
+      }};
+    `),
+    );
     if (!t.check('production line-one room is verified', productionReady >= 0)) return;
+    if (sparseFrames) await g.still('production-sparse-ready');
     const actual = await g.eval(`
       const sync = await import('/src/world/sync.ts');
       const { railwayApi } = await import('/src/world/game-world.ts');

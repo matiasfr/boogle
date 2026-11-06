@@ -11,7 +11,7 @@ Everything players can change and everyone must agree on (items, piles) lives be
 | `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
 | `game-world.ts` | The island's `land` and the rules installed on the real sync (`rules.gifts`, ...). Adapters import it first. |
 | `grid.ts` | Pure, lockstep: grid constants. |
-| `background.ts`, `clock-worker.ts` | Keep the world ticking while the tab is hidden. |
+| `background.ts`, `clock-worker.ts` | One bounded elapsed-time clock shared by visible frames and hidden-tab heartbeats; independent of the physics frame clamp. |
 
 Pure sim logic lives in `../sim/` (gifts, piles, ...); the game side of lockstep state in `../adapters/`
 and `../features/`. `registerOp`, `registerState` and `onTick` are lint-banned outside `rules/` and `game-world.ts`;
