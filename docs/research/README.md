@@ -1,5 +1,7 @@
 # Research
 
+- [roundhouse-trains.md](roundhouse-trains.md) (2026-11-06), [interactive brief](roundhouse-trains.html): six primary game references, an early shed versus later steel expansion, finite engine/car bills, discovery-based research and shared contributions without wallets; fresh campaign and upgrade-omission runs, a 30-minute proof budget, eight recommendations and a one-fitting first build. Research only; new bills, management and fun unverified.
+
 - [skybox.md](skybox.md) (2026-11-06): Wind Waker / Sunshine sky vocabulary from publisher images and developer interviews; seven licence-checked free resources, prepared HDR-sky/water integration and memory costs; recommends original windpaint and summer TSL looks plus a hand-painted GOBI audition. Research only; no assets imported or runtime/device validation.
 
 - [audio-mix.md](audio-mix.md) (2026-11-05): character footsteps, jumps and landings; complete procedural source/gain inventory, 112 isolated signal renders and 28 live listening takes with three harness failures; LUFS/true-peak normalization, five-bus dB table, co-op priorities, ducking, speaker/headphone profiles, CC0/owned sample candidates and seven ordered recommendations with local tunables. Research only; no runtime changes or device audition.

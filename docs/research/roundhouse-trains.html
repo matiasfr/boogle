@@ -1,0 +1,1301 @@
+<title>Roundhouse Trains</title>
+<meta charset="utf-8" />
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f1e8;
+    --card: #fffdf7;
+    --ink: #253b36;
+    --muted: #5d6e67;
+    --line: #cdd4c6;
+    --accent: #176b59;
+    --soft: #e1eee3;
+    --gold: #936119;
+    --gold-soft: #f6e7c5;
+    --blue: #315e90;
+    --blue-soft: #e2eaf7;
+    --train: #d28145;
+    --white: #fffdf7;
+    --hero: #173f36;
+    --hero-ink: #f3f3dc;
+    --shadow: #142a3510;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: #14211f;
+      --card: #1d2e29;
+      --ink: #e6eddf;
+      --muted: #b1c2b5;
+      --line: #43594c;
+      --accent: #89d9b3;
+      --soft: #284638;
+      --gold: #efc47e;
+      --gold-soft: #493c27;
+      --blue: #a6cafa;
+      --blue-soft: #293e55;
+      --train: #e9a26a;
+      --white: #fffdf7;
+      --hero: #102f27;
+      --hero-ink: #f3f3dc;
+      --shadow: #00000030;
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #14211f;
+    --card: #1d2e29;
+    --ink: #e6eddf;
+    --muted: #b1c2b5;
+    --line: #43594c;
+    --accent: #89d9b3;
+    --soft: #284638;
+    --gold: #efc47e;
+    --gold-soft: #493c27;
+    --blue: #a6cafa;
+    --blue-soft: #293e55;
+    --train: #e9a26a;
+    --white: #fffdf7;
+    --hero: #102f27;
+    --hero-ink: #f3f3dc;
+    --shadow: #00000030;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: var(--bg);
+    color: var(--ink);
+    font:
+      16px/1.5 ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      sans-serif;
+  }
+  main {
+    max-width: 1120px;
+    margin: 24px auto 64px;
+  }
+  h1,
+  h2,
+  h3,
+  p {
+    margin-top: 0;
+  }
+  h1 {
+    font-size: clamp(34px, 6vw, 64px);
+    line-height: 1.04;
+    letter-spacing: -0.045em;
+    margin-bottom: 18px;
+  }
+  h2 {
+    font-size: clamp(24px, 4vw, 32px);
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    margin-bottom: 12px;
+  }
+  h3 {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  p {
+    margin-bottom: 14px;
+  }
+  a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
+  button,
+  select {
+    font: inherit;
+  }
+  button,
+  select {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    background: var(--card);
+    color: var(--ink);
+    min-height: 44px;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:hover {
+    border-color: var(--accent);
+  }
+  button[aria-pressed='true'] {
+    background: var(--soft);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  :focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: 3px;
+  }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    font-weight: 750;
+  }
+  .topbar,
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .topbar {
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .muted,
+  small {
+    color: var(--muted);
+  }
+  small {
+    font-size: 13px;
+  }
+  .hero {
+    background: var(--hero);
+    color: var(--hero-ink);
+    border-radius: 24px;
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 24px;
+    align-items: center;
+  }
+  .hero p {
+    max-width: 570px;
+  }
+  .hero svg {
+    width: 100%;
+    max-height: 240px;
+  }
+  .hero .eyebrow {
+    opacity: 0.8;
+  }
+  .pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .pill {
+    border: 1px solid currentColor;
+    border-radius: 30px;
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+  .triptych,
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .triptych {
+    margin: 16px 0 34px;
+  }
+  .card,
+  .panel {
+    border: 1px solid var(--line);
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 5px 20px var(--shadow);
+    min-width: 0;
+  }
+  .card p:last-child,
+  .panel p:last-child {
+    margin-bottom: 0;
+  }
+  .num {
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+  }
+  section {
+    margin-top: 34px;
+  }
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .section-head p {
+    max-width: 620px;
+    margin-bottom: 0;
+  }
+  .badge {
+    display: inline-block;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 8px;
+    background: var(--gold-soft);
+    color: var(--gold);
+  }
+  .scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--card);
+  }
+  .tree {
+    position: relative;
+    width: 1000px;
+    height: 520px;
+  }
+  .tree svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .tree path {
+    stroke: var(--line);
+    stroke-width: 3;
+    fill: none;
+  }
+  .tree text {
+    fill: var(--muted);
+    font:
+      12px system-ui,
+      sans-serif;
+  }
+  .node {
+    position: absolute;
+    width: 178px;
+    min-height: 92px;
+    text-align: left;
+    padding: 12px;
+    border: 2px solid var(--line);
+    border-radius: 12px;
+  }
+  .node strong,
+  .node span {
+    display: block;
+  }
+  .node span {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 5px;
+  }
+  .node.optional {
+    border-style: dashed;
+  }
+  .node[data-selected='true'] {
+    border-color: var(--accent);
+    background: var(--soft);
+  }
+  .node[data-selected='true'] strong {
+    color: var(--accent);
+  }
+  .detail {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 16px;
+    min-height: 162px;
+  }
+  .detail h3 {
+    font-size: 21px;
+  }
+  .detail p {
+    margin-bottom: 5px;
+  }
+  .legend {
+    font-size: 13px;
+    margin: 10px 0;
+    color: var(--muted);
+  }
+  .flow {
+    min-width: 900px;
+    display: flex;
+    align-items: stretch;
+    gap: 24px;
+    padding: 24px;
+  }
+  .flow-box {
+    position: relative;
+    width: 150px;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--soft);
+  }
+  .flow-box:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    right: -22px;
+    top: 42%;
+    font-size: 20px;
+    color: var(--accent);
+  }
+  .flow-box b,
+  .flow-box small {
+    display: block;
+  }
+  .flow-box b {
+    margin: 7px 0;
+  }
+  .flow-icon {
+    font-size: 27px;
+    color: var(--accent);
+  }
+  .flow-return {
+    margin: 0 24px 20px;
+    border-top: 2px dashed var(--line);
+    padding-top: 10px;
+    color: var(--accent);
+    font-size: 14px;
+  }
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .callout {
+    background: var(--gold-soft);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .lab {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 20px;
+  }
+  .lab label {
+    display: block;
+    margin: 12px 0 6px;
+    font-weight: 650;
+  }
+  select {
+    width: 100%;
+    max-width: 100%;
+  }
+  .rate {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1.2;
+  }
+  .bar {
+    height: 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--line);
+    margin: 10px 0;
+  }
+  .bar > span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+  }
+  .compare {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    align-items: start;
+  }
+  .compare > div {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .compare h3 {
+    font-size: 15px;
+  }
+  .compare small {
+    display: block;
+  }
+  .yard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: center;
+  }
+  .yard svg {
+    width: 100%;
+    max-height: 280px;
+  }
+  .yard svg text {
+    font:
+      12px system-ui,
+      sans-serif;
+    fill: var(--muted);
+  }
+  #bridge {
+    transform-origin: 210px 170px;
+    transition: transform 0.65s ease-in-out;
+  }
+  .loop {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .step {
+    border-top: 3px solid var(--line);
+    padding-top: 10px;
+  }
+  .step b {
+    display: block;
+    font-size: 14px;
+  }
+  .step small {
+    display: block;
+  }
+  .step.active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .clock {
+    display: grid;
+    grid-template-columns: 8fr 8fr 4fr 7fr 3fr;
+    gap: 5px;
+    margin: 20px 0;
+  }
+  .clock div {
+    background: var(--soft);
+    border-radius: 8px;
+    padding: 12px 10px;
+    min-width: 0;
+    font-size: 13px;
+  }
+  .clock div:nth-child(3) {
+    background: var(--gold-soft);
+  }
+  .clock b {
+    display: block;
+    font-size: 15px;
+  }
+  .campaign {
+    display: grid;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .stack {
+    display: flex;
+    height: 24px;
+    background: var(--gold-soft);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .stack span {
+    display: block;
+    background: var(--accent);
+  }
+  .first {
+    border: 2px solid var(--accent);
+    background: var(--soft);
+  }
+  .first-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 24px;
+  }
+  .big-counts {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+  }
+  .big-counts b {
+    display: block;
+    font-size: 40px;
+    line-height: 1;
+    color: var(--accent);
+  }
+  .sources {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .sources a {
+    font-weight: 650;
+  }
+  .sources small {
+    display: block;
+    margin-top: 6px;
+  }
+  footer {
+    margin-top: 24px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  @media (max-width: 760px) {
+    .hero,
+    .lab,
+    .yard,
+    .first-grid {
+      grid-template-columns: 1fr;
+    }
+    .hero {
+      padding: 24px;
+    }
+    .hero svg {
+      max-height: 160px;
+    }
+    .triptych,
+    .cards,
+    .detail,
+    .sources {
+      grid-template-columns: 1fr;
+    }
+    .triptych {
+      gap: 8px;
+    }
+    .triptych .card {
+      padding: 16px;
+    }
+    .triptych .num {
+      margin: 0 0 6px;
+    }
+    .triptych h3 {
+      margin-bottom: 3px;
+    }
+    .split {
+      grid-template-columns: 1fr;
+    }
+    .clock {
+      grid-template-columns: 1fr;
+    }
+    .clock div {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+    .clock b {
+      min-width: 82px;
+    }
+    .loop {
+      grid-template-columns: 1fr;
+    }
+    .step {
+      display: flex;
+      gap: 12px;
+    }
+    .step b {
+      min-width: 80px;
+    }
+    .compare {
+      gap: 5px;
+    }
+    .compare > div {
+      padding: 10px 6px;
+    }
+    .rate {
+      font-size: 25px;
+    }
+    main {
+      margin-top: 16px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #bridge {
+      transition: none;
+    }
+  }
+</style>
+<main>
+  <div class="topbar">
+    <span class="eyebrow">Boogle / design research / 6 Nov 2026</span>
+    <button id="theme" type="button" aria-label="Switch colour theme">Switch theme</button>
+  </div>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">A workshop for your shared railway</p>
+      <h1>Make the next<br />ride worth it.</h1>
+      <p>
+        Turn a train. Fit a useful part. Watch it carry the next load for everyone. A little management, with the
+        railway doing the routine work.
+      </p>
+      <div class="pills">
+        <span class="pill">Proposal, not approved gameplay</span><span class="pill">No shared wallets</span>
+      </div>
+    </div>
+    <svg
+      viewBox="0 0 430 240"
+      role="img"
+      aria-label="A small orange engine on a roundhouse turntable with two storage bays"
+    >
+      <path d="M30 140 L110 45 L320 45 L400 140" fill="none" stroke="var(--hero-ink)" stroke-width="3" opacity=".4" />
+      <path
+        d="M92 140V70H175V140M255 140V70H338V140"
+        fill="none"
+        stroke="var(--hero-ink)"
+        stroke-width="2"
+        opacity=".4"
+      />
+      <ellipse cx="215" cy="181" rx="155" ry="32" fill="none" stroke="var(--hero-ink)" stroke-width="2" opacity=".5" />
+      <path d="M53 188H377M83 174H349" stroke="var(--hero-ink)" stroke-width="3" />
+      <g fill="var(--train)" stroke="var(--hero)" stroke-width="3">
+        <rect x="109" y="112" width="116" height="48" rx="13" />
+        <rect x="171" y="91" width="58" height="67" rx="5" />
+        <rect x="123" y="91" width="17" height="24" />
+        <rect x="243" y="126" width="71" height="35" rx="5" />
+      </g>
+      <rect x="184" y="102" width="29" height="24" rx="3" fill="var(--hero)" />
+      <g fill="var(--hero)" stroke="var(--hero-ink)" stroke-width="3">
+        <circle cx="132" cy="166" r="13" />
+        <circle cx="206" cy="166" r="13" />
+        <circle cx="259" cy="166" r="10" />
+        <circle cx="298" cy="166" r="10" />
+      </g>
+      <g fill="var(--hero-ink)" opacity=".6">
+        <circle cx="130" cy="76" r="6" />
+        <circle cx="121" cy="58" r="8" />
+        <circle cx="104" cy="37" r="11" />
+      </g>
+      <path d="M225 153H244" stroke="var(--hero-ink)" stroke-width="4" />
+    </svg>
+  </header>
+  <div class="triptych">
+    <article class="card">
+      <div class="num">01 / FREIGHT</div>
+      <h3>Bring the work closer</h3>
+      <p>Sources feed stations. Trains deliver near the frontier. Keep the short final carry.</p>
+    </article>
+    <article class="card">
+      <div class="num">02 / FRIENDS</div>
+      <h3>Ride what you built</h3>
+      <p>Passenger space stays usable. Cargo upgrades never sell away a friend's seat.</p>
+    </article>
+    <article class="card">
+      <div class="num">03 / REACH</div>
+      <h3>Make a new line useful</h3>
+      <p>Materials and connections unlock capability. An engine never replaces unbuilt track.</p>
+    </article>
+  </div>
+
+  <section aria-labelledby="tree-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">01 / The upgrade tree</p>
+        <h2 id="tree-title">Discover → connect → fit once.</h2>
+        <p class="muted">
+          Tap a node for its gate, cost and payoff. This is an owner planning view; the game would show only the next
+          useful parts.
+        </p>
+      </div>
+      <span class="badge">All prices are paper inputs or proposals</span>
+    </div>
+    <div class="controls" role="group" aria-label="Tree scope">
+      <button type="button" data-route="first" aria-pressed="true">Smallest first build</button>
+      <button type="button" data-route="three" aria-pressed="false">Three-area campaign</button>
+      <button type="button" data-route="five" aria-pressed="false">Five-area campaign</button>
+    </div>
+    <p id="route-note" class="legend"></p>
+    <div class="scroll" tabindex="0" aria-label="Upgrade tree, scroll horizontally on a phone">
+      <div class="tree" id="tree"></div>
+    </div>
+    <p class="legend">
+      Solid outline = shared foundation. Dashed = optional. Lines show a simplified dependency story; the detail names
+      additional gates. No points, XP or attendance requirements.
+    </p>
+    <div class="panel detail" id="detail" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="flow-title">
+    <p class="eyebrow">02 / Where materials go</p>
+    <h2 id="flow-title">One piece. One destination.</h2>
+    <div class="scroll" tabindex="0" aria-label="Economy flow diagram, scroll horizontally on a phone">
+      <div class="flow">
+        <div class="flow-box">
+          <span class="flow-icon" aria-hidden="true">♧</span><b>Sources</b
+          ><small>Timber, stone → later cement, steel</small>
+        </div>
+        <div class="flow-box">
+          <span class="flow-icon" aria-hidden="true">▤</span><b>Works + station</b
+          ><small>Process known recipes. Reserve one load.</small>
+        </div>
+        <div class="flow-box">
+          <span class="flow-icon" aria-hidden="true">▰</span><b>Automatic train</b
+          ><small>Move visible cargo. Carry people too.</small>
+        </div>
+        <div class="flow-box">
+          <span class="flow-icon" aria-hidden="true">▥</span><b>Frontier rack</b
+          ><small>Player carries the last short distance.</small>
+        </div>
+        <div class="flow-box">
+          <span class="flow-icon" aria-hidden="true">↗</span><b>Installed result</b
+          ><small>Track, town or fitting → new reach</small>
+        </div>
+      </div>
+      <div class="flow-return">
+        ↶ A new connection makes another source useful. Discovery reveals a design; it creates no stock.
+      </div>
+    </div>
+    <div class="split">
+      <div class="panel">
+        <h3>Shared world</h3>
+        <p>
+          Contribute to a named fitting. Protect the next required connection. Each shipment is used once; fixed bills
+          do not grow with the party.
+        </p>
+      </div>
+      <div class="panel">
+        <h3>Personal rewards</h3>
+        <p>
+          Your flags and accessories stay yours. Equipping costs nothing. Joining late gives access to the world's
+          trains, with no catch-up bill.
+        </p>
+      </div>
+    </div>
+    <p class="legend">
+      Current production line one: 96 logs + 8 stone + one unique beam. Mixed back capacity: 8. No new Roundhouse tax on
+      those jobs.
+    </p>
+  </section>
+
+  <section aria-labelledby="lab-title">
+    <p class="eyebrow">03 / Is the upgrade actually useful?</p>
+    <h2 id="lab-title">A larger wagon needs a larger load.</h2>
+    <div class="panel lab">
+      <div>
+        <p>Try the bottleneck. These are illustrative shuttle calculations, not a campaign simulation.</p>
+        <label for="supply">Source output</label
+        ><select id="supply">
+          <option value="18">18 units/min · enough cargo</option>
+          <option value="6">6 units/min · source limited</option>
+        </select>
+        <label for="rack">Loading and receiving racks</label
+        ><select id="rack">
+          <option value="32">32 units · fits a whole kit</option>
+          <option value="24">24 units · wagon gain capped</option>
+        </select>
+        <p class="legend">
+          1,200 m each way · 2 m/s² acceleration · 8 s dwell at each end. Actual rate also needs ongoing demand. No
+          transfers or congestion.
+        </p>
+      </div>
+      <div>
+        <div id="comparison" class="compare" aria-live="polite"></div>
+        <p id="bottleneck" class="callout" style="margin-top: 14px" aria-live="polite"></p>
+      </div>
+    </div>
+    <p class="legend">
+      Swift saves 9.5 s per running leg. Uniform random arrivals imply 78 s mean waiting for Baseline/Hauler, 68.5 s for
+      Swift. Test a missed train too. The experimental profile choice is separate from the model's bundled S1 upgrade.
+    </p>
+  </section>
+
+  <section aria-labelledby="yard-title">
+    <p class="eyebrow">04 / A light management loop</p>
+    <h2 id="yard-title">A place to tinker, then leave.</h2>
+    <div class="panel yard">
+      <svg
+        viewBox="0 0 420 290"
+        role="img"
+        aria-label="Off-mainline roundhouse: two bays, a rotating bridge, and a protected service line"
+      >
+        <rect x="70" y="20" width="110" height="90" rx="12" fill="var(--soft)" stroke="var(--line)" stroke-width="2" />
+        <rect
+          x="240"
+          y="20"
+          width="110"
+          height="90"
+          rx="12"
+          fill="var(--gold-soft)"
+          stroke="var(--line)"
+          stroke-width="2"
+        />
+        <text x="125" y="47" text-anchor="middle">INSPECT</text>
+        <text x="295" y="47" text-anchor="middle">FIT</text>
+        <path d="M125 80L210 170L295 80" fill="none" stroke="var(--line)" stroke-width="7" />
+        <circle cx="210" cy="170" r="65" fill="var(--bg)" stroke="var(--line)" stroke-width="3" />
+        <g id="bridge">
+          <rect
+            x="155"
+            y="151"
+            width="110"
+            height="38"
+            rx="7"
+            fill="var(--soft)"
+            stroke="var(--accent)"
+            stroke-width="2"
+          />
+          <rect x="172" y="158" width="70" height="24" rx="7" fill="var(--train)" />
+          <rect x="218" y="154" width="20" height="32" rx="3" fill="var(--train)" />
+        </g>
+        <path d="M15 264H405M15 273H405" stroke="var(--accent)" stroke-width="3" />
+        <text x="210" y="253" text-anchor="middle">MAINLINE KEEPS RUNNING</text>
+      </svg>
+      <div>
+        <span class="badge">Illustration only · nothing saved</span>
+        <h3 style="margin-top: 14px" id="yard-step">1. Inspect the useful part</h3>
+        <p id="yard-copy">A 32-unit kit is waiting. The larger wagon would remove its second trip.</p>
+        <button id="turn" type="button">Next: turn the bridge</button>
+        <label for="line-profile" style="display: block; margin-top: 18px"
+          >Later two-line trial: supply line profile</label
+        >
+        <select id="line-profile">
+          <option value="hauler">Hauler · bigger delivery</option>
+          <option value="swift">Swift · shorter ride</option>
+        </select>
+        <small id="assignment" aria-live="polite"
+          >Supply line: Hauler. Passenger line: Swift. Both retain service.</small
+        >
+      </div>
+    </div>
+    <div class="loop" id="loop">
+      <div class="step active"><b>1 / Notice</b><small>See a useful job</small></div>
+      <div class="step"><b>2 / Turn</b><small>Enjoy the machine</small></div>
+      <div class="step"><b>3 / Fit</b><small>One visible change</small></div>
+      <div class="step"><b>4 / Assign</b><small>Safe stop, free swap</small></div>
+      <div class="step"><b>5 / Ride</b><small>See the difference</small></div>
+    </div>
+    <div class="split">
+      <p class="callout">
+        <b>Protected services.</b> No friend can reassign the last train and strand a line. No fuel, repair, fares,
+        signals or manual departures.
+      </p>
+      <p class="callout">
+        <b>Keep it only if wanted.</b> If Swift versus Hauler adds no meaningful choice, retain the workshop and
+        automate configuration.
+      </p>
+    </div>
+  </section>
+
+  <section aria-labelledby="pacing-title">
+    <p class="eyebrow">05 / Pacing, without padding</p>
+    <h2 id="pacing-title">Use the train after you improve it.</h2>
+    <p class="muted">
+      Thirty minutes is a proposed slice budget, not the measured current run. The existing owner verdict comes first.
+    </p>
+    <div class="clock">
+      <div><b>0–8 min</b>Build + walk</div>
+      <div><b>8–16 min</b>Supply arrives</div>
+      <div><b>16–20 min</b>Reveal + fit</div>
+      <div><b>20–27 min</b>Two useful services</div>
+      <div><b>27–30 min</b>Enjoy + leave</div>
+    </div>
+    <p class="callout">
+      The shed uses only 60–90 seconds of its window. If the first island lies later, seed a completed connection for an
+      isolated test. Do not silently move the unlock to the first timber segment.
+    </p>
+    <div class="panel">
+      <h3>Eight hours depends on authored places</h3>
+      <div class="campaign">
+        <div>
+          <b>Three-area · 7.46 h solo</b>
+          <div class="stack" role="img" aria-label="413.8 of 447.9 minutes are assumed authored activity">
+            <span style="width: 92.4%"></span>
+          </div>
+          <small>413.8 authored minutes / 447.9 total · core-only 382.6 min</small>
+        </div>
+        <div>
+          <b>Five-area · 7.80 h solo</b>
+          <div class="stack" role="img" aria-label="423.6 of 467.9 minutes are assumed authored activity">
+            <span style="width: 90.5%"></span>
+          </div>
+          <small>423.6 authored minutes / 467.9 total · core-only 390.4 min</small>
+        </div>
+      </div>
+      <p>
+        Fresh model reruns; neither campaign is selected. Removing authored durations leaves 90.6 / 110.0 minutes. Extra
+        bills cannot fill that content gap.
+      </p>
+      <p class="callout">
+        <b>A warning from the model:</b> buying S1 currently makes solo completion about 0.4 / 3.2 minutes longer. Prove
+        a local benefit before adopting the price. Passengers and management are not simulated.
+      </p>
+      <small
+        >Proposal: at most six functional yard visits, 6–9 minutes total, inside existing activity budgets. First useful
+        payoff within 2–5 minutes; no clock gate.</small
+      >
+    </div>
+  </section>
+
+  <section class="panel first" aria-labelledby="first-title">
+    <p class="eyebrow">Recommended smallest first build</p>
+    <div class="first-grid">
+      <div>
+        <h2 id="first-title">One fitting. One reason to ride again.</h2>
+        <div class="big-counts">
+          <div><b>1</b>engine</div>
+          <div><b>1</b>wagon</div>
+          <div><b>2</b>snap angles</div>
+          <div><b>0</b>new currencies</div>
+        </div>
+        <p>
+          Use an off-mainline turntable, a free visible fitting, a connected route and a useful delivery. Compare the
+          same ride before and after.
+        </p>
+      </div>
+      <div>
+        <h3>Then, only if it earns it</h3>
+        <p>
+          Try two profiles on two protected lines. A larger campaign tree comes after the workshop and supply are
+          enjoyable.
+        </p>
+        <h3>One gut question</h3>
+        <p>“Did improving this train make you want to use the railway again?”</p>
+        <small
+          >Production integration waits for the first-path/station verdict and durable supply/schedule proofs. This page
+          authorizes no gameplay work.</small
+        >
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="source-title">
+    <p class="eyebrow">Primary references / checked 6 November</p>
+    <h2 id="source-title">Borrow the useful part.</h2>
+    <div class="sources">
+      <div class="card">
+        <a href="https://ashorthike.com/">A Short Hike</a
+        ><small>Clear destination; room to explore. Compact scope, not a railway economy.</small>
+      </div>
+      <div class="card">
+        <a href="https://www.factorio.com/blog/post/fff-376">Factorio</a
+        ><small>Research triggers from actions; no temporary research apparatus required.</small>
+      </div>
+      <div class="card">
+        <a href="https://dinopoloclub.com/2018/11/20/1254/">Mini Metro</a
+        ><small>Readable network composition can exist without scarce vehicles.</small>
+      </div>
+      <div class="card">
+        <a href="https://store.steampowered.com/app/1696810/RAILROADS_Online/?l=english">Railroads Online</a
+        ><small>Desirable machines and shared construction. Leave operating chores behind.</small>
+      </div>
+      <div class="card">
+        <a href="https://coffeestain.com/news/satisfactory-1-0-launch/">Satisfactory</a
+        ><small>Material access matters when it removes the builder's return trip.</small>
+      </div>
+      <div class="card">
+        <a href="https://blog.astroneer.space/p/rails-update/">Astroneer rails</a
+        ><small>Automatic transport; clear roles for a faster engine and a storage car.</small>
+      </div>
+    </div>
+  </section>
+  <footer>
+    Research proposal · Repository baseline e7eea656 · Model rerun, not a playtest · New prices and fun unverified · No
+    game changes · Not tested on a device. Full evidence and numbered recommendations:
+    docs/research/roundhouse-trains.md.
+  </footer>
+</main>
+<script>
+  (() => {
+    const byId = (id) => document.getElementById(id);
+    const catalog = {
+      service: {
+        name: 'First useful service',
+        cost: 'No extra fee',
+        gate: 'Existing connected-line, forge and unique-boiler sequence.',
+        benefit: 'Bring known goods near the next job; carry the group.',
+        status: 'Preserve opening. Cart-first remains separate.',
+        optional: false,
+      },
+      shed: {
+        name: 'R1 · Early shed',
+        cost: '0 extra materials',
+        gate: 'First island connection complete; exact connection ID still to be selected.',
+        benefit: 'One fitting bay and a turntable. Default service already runs.',
+        status: 'New proposal. Steel S4 becomes a later expansion.',
+        optional: false,
+      },
+      fitting: {
+        name: 'One visible fitting',
+        cost: 'Free in isolated test',
+        gate: 'Seeded completed route for the toy comparison; no new campaign bill.',
+        benefit: 'A larger prepared kit saves a return, or a familiar ride is shorter.',
+        status: 'Smallest proof only. Compare before and after.',
+        optional: false,
+      },
+      profiles: {
+        name: 'Swift / Hauler',
+        cost: 'Free to switch',
+        gate: 'Workshop toy earns its place, then two already functioning lines.',
+        benefit: 'Swift: shorter ride. Hauler: larger delivery if source and rack allow it.',
+        status: 'Second experiment. Baseline service stays on both lines.',
+        optional: true,
+      },
+      cement: {
+        name: 'B1 · Bulk cradle',
+        cost: '4 cement + 4 timber',
+        gate: 'Cement works discovered; ordinary wagon carries the fitting materials.',
+        benefit: 'Precast supports become an automatically carried cargo family.',
+        status: 'New optional price. Can fold into source connection if it feels like a toll.',
+        optional: true,
+      },
+      steel: {
+        name: 'Steel source',
+        cost: 'Existing source / route bill',
+        gate: 'Reach the steel area using already available movement and route materials.',
+        benefit: 'Export steel for a better train and a useful junction.',
+        status: 'Campaign source. Not an additional research purchase.',
+        optional: false,
+      },
+      chassis: {
+        name: 'S1 · Chassis',
+        cost: '8 steel + 4 cement',
+        gate: 'Working steel export; retain the candidate route’s preceding machinery jobs.',
+        benefit: 'Wagon 24 → 32. Three-area also gives 20 → 25 m/s; five-area gives capacity only.',
+        status: 'Existing optional paper input. Net campaign payback is currently negative.',
+        optional: true,
+      },
+      expansion: {
+        name: 'S4 · Shed expansion',
+        cost: '12 steel + 8 cement',
+        gate: 'Steel machinery puzzle complete. R1 is already open in this proposal.',
+        benefit: 'Home–steel-area cross-link; proposed additional service with its connection.',
+        status: 'Model bill/gate retained; early shed and service reward are new proposals.',
+        optional: false,
+      },
+      comfort: {
+        name: 'F · Canopy + fabric',
+        cost: '4 fibre + 2 timber',
+        gate: 'Fibre export in the three-area alternative.',
+        benefit: 'Visible shade and upholstery. Safe seating and boarding stay baseline.',
+        status: 'New optional comfort price. No fibre chain in five-area.',
+        optional: true,
+      },
+      crystal: {
+        name: 'X1 · Seed cradle',
+        cost: '4 steel + 2 crystal',
+        gate: 'First crystal reached on foot; the two fitting units are hand-carryable.',
+        benefit: 'Deliver later seeds to pillar collars without repeating the source trip.',
+        status: 'New five-area-only cargo proposal; not in current simulation.',
+        optional: true,
+      },
+      motor: {
+        name: 'U1 · Motor',
+        cost: '8 copper + 4 steel',
+        gate: 'Port copper works and U2 handling equipment.',
+        benefit: 'Five-area rate 1 → 1.5: 20 → 30 m/s. Not multiplied by three-area S1.',
+        status: 'Existing optional paper input. Needs a useful familiar ride.',
+        optional: true,
+      },
+      bay: {
+        name: 'U5 · Transfer bays',
+        cost: '8 copper + 4 timber',
+        gate: 'Port U2 handling equipment.',
+        benefit: 'Receiving rack becomes 32. Passenger separation is a design intent, not simulated.',
+        status: 'Existing optional paper input. Not another locomotive.',
+        optional: true,
+      },
+      spur: {
+        name: 'U3 · Port spur',
+        cost: '12 copper + 8 steel',
+        gate: 'Port district puzzle and S4; copper from the already reachable port.',
+        benefit: 'Home–port cross-link; automatic service rather than a signal editor.',
+        status: 'Existing five-area route node. No copper requirement in three-area.',
+        optional: false,
+      },
+      looks: {
+        name: 'Flag / side / chimney',
+        cost: '0 materials to equip',
+        gate: 'Personal cosmetic entitlement from a deed or box.',
+        benefit: 'Recognizable train identity without consuming a friend’s reward.',
+        status: 'Owner slot direction. No random functional research key.',
+        optional: true,
+      },
+    };
+    const layouts = {
+      first: {
+        note: 'Start here: one connected line, one engine, one fitting. The two-line choice is a later comparison.',
+        nodes: [
+          ['service', 24, 165],
+          ['shed', 250, 165],
+          ['fitting', 476, 165],
+          ['profiles', 720, 70],
+          ['looks', 720, 290],
+        ],
+        edges: [
+          ['service', 'shed'],
+          ['shed', 'fitting'],
+          ['fitting', 'profiles'],
+          ['fitting', 'looks'],
+        ],
+      },
+      three: {
+        note: 'Three-area alternative: fibre → cement → steel. No crystal or copper detour. Neither campaign is selected.',
+        nodes: [
+          ['service', 20, 165],
+          ['shed', 220, 165],
+          ['comfort', 420, 25],
+          ['cement', 420, 165],
+          ['steel', 420, 335],
+          ['chassis', 620, 245],
+          ['expansion', 620, 390],
+          ['looks', 820, 25],
+          ['profiles', 820, 245],
+        ],
+        edges: [
+          ['service', 'shed'],
+          ['shed', 'comfort'],
+          ['shed', 'cement'],
+          ['shed', 'steel'],
+          ['steel', 'chassis'],
+          ['steel', 'expansion'],
+          ['shed', 'looks'],
+          ['expansion', 'profiles'],
+          ['chassis', 'profiles'],
+        ],
+      },
+      five: {
+        note: 'Five-area alternative: cement → steel → crystal → copper. Source gates are in each detail; branches are not all compulsory.',
+        nodes: [
+          ['service', 20, 165],
+          ['shed', 220, 165],
+          ['cement', 420, 25],
+          ['steel', 420, 190],
+          ['chassis', 620, 25],
+          ['expansion', 620, 190],
+          ['crystal', 620, 355],
+          ['motor', 820, 25],
+          ['bay', 820, 190],
+          ['spur', 820, 355],
+        ],
+        edges: [
+          ['service', 'shed'],
+          ['shed', 'cement'],
+          ['shed', 'steel'],
+          ['steel', 'chassis'],
+          ['steel', 'expansion'],
+          ['expansion', 'crystal'],
+          ['expansion', 'motor'],
+          ['expansion', 'bay'],
+          ['expansion', 'spur'],
+        ],
+      },
+    };
+    function selectNode(id) {
+      const n = catalog[id];
+      document.querySelectorAll('.node').forEach((button) => {
+        button.dataset.selected = String(button.dataset.node === id);
+        button.setAttribute('aria-pressed', String(button.dataset.node === id));
+      });
+      byId('detail').innerHTML =
+        `<div><span class="badge">${n.optional ? 'Optional' : 'Shared foundation'}</span><h3 style="margin-top:10px">${n.name}</h3><p><b>${n.cost}</b></p></div><div><p class="eyebrow">Gate</p><p>${n.gate}</p></div><div><p class="eyebrow">Payoff</p><p>${n.benefit}</p><small>${n.status}</small></div>`;
+    }
+    function drawTree(route) {
+      const layout = layouts[route];
+      byId('route-note').textContent = layout.note;
+      document
+        .querySelectorAll('[data-route]')
+        .forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.route === route)));
+      const nodes = Object.fromEntries(layout.nodes.map(([id, x, y]) => [id, { x, y }]));
+      const edges = layout.edges
+        .map(([a, b]) => {
+          const start = nodes[a],
+            end = nodes[b];
+          return `<path d="M${start.x + 178} ${start.y + 46} C${start.x + 199} ${start.y + 46},${end.x - 20} ${end.y + 46},${end.x} ${end.y + 46}" />`;
+        })
+        .join('');
+      byId('tree').innerHTML =
+        `<svg viewBox="0 0 1000 520" aria-hidden="true">${edges}</svg>` +
+        layout.nodes
+          .map(
+            ([id, x, y]) =>
+              `<button type="button" class="node ${catalog[id].optional ? 'optional' : ''}" data-node="${id}" style="left:${x}px;top:${y}px" aria-pressed="false"><strong>${catalog[id].name}</strong><span>${catalog[id].cost}</span></button>`,
+          )
+          .join('');
+      byId('tree')
+        .querySelectorAll('button')
+        .forEach((button) => button.addEventListener('click', () => selectNode(button.dataset.node)));
+      selectNode('shed');
+    }
+    function compare() {
+      const source = Number(byId('supply').value),
+        rack = Number(byId('rack').value);
+      const profiles = [
+        { name: 'Baseline', v: 20, c: 24 },
+        { name: 'Swift', v: 25, c: 24 },
+        { name: 'Hauler', v: 20, c: 32 },
+      ];
+      byId('comparison').innerHTML = profiles
+        .map((p) => {
+          const run = 1200 / p.v + p.v / 2,
+            cycle = 2 * run + 16,
+            capacity = Math.min(rack, p.c),
+            rate = Math.min(source, (60 * capacity) / cycle);
+          return `<div><h3>${p.name}</h3><div class="rate">${rate.toFixed(2)}</div><small>units / min</small><div class="bar"><span style="width:${(rate / 18) * 100}%"></span></div><small>${run} s ride<br>${capacity} usable units<br>${Math.ceil(32 / capacity)} loads for 32</small></div>`;
+        })
+        .join('');
+      byId('bottleneck').textContent =
+        source === 6
+          ? 'Source limited: all three move 6 units/min over time. More wagon space creates no extra materials.'
+          : rack === 24
+            ? 'Rack limited: Hauler holds only 24 usable units. Upgrade the receiving space before promising a one-load kit.'
+            : 'A real capacity payoff: a prepared 32-unit kit takes one Hauler departure, versus two on the other trains. Do not inflate normal bills just to force this choice.';
+    }
+    const steps = [
+      [
+        '1. Inspect the useful part',
+        'A 32-unit kit is waiting. The larger wagon would remove its second trip.',
+        'Next: turn the bridge',
+      ],
+      [
+        '2. Turn the display bridge',
+        'The table is a toy beside the line. Other trains keep their timetable.',
+        'Next: fit the part',
+      ],
+      [
+        '3. Fit one visible part',
+        'A dedicated bill becomes the wagon you see. In the first isolated test, the fitting is free.',
+        'Next: assign the service',
+      ],
+      [
+        '4. Assign at a safe stop',
+        'One accepted request wins per line. Nobody loses a floor or the last service.',
+        'Next: ride and see',
+      ],
+      [
+        '5. Ride the improved line',
+        'Watch the whole kit arrive. Keep this decision only if you want to make it again.',
+        'Restart the loop',
+      ],
+    ];
+    let step = 0;
+    byId('turn').addEventListener('click', () => {
+      step = (step + 1) % steps.length;
+      byId('yard-step').textContent = steps[step][0];
+      byId('yard-copy').textContent = steps[step][1];
+      byId('turn').textContent = steps[step][2];
+      byId('bridge').style.transform = `rotate(${step === 0 ? -45 : 45}deg)`;
+      document.querySelectorAll('.step').forEach((element, i) => element.classList.toggle('active', step === i));
+    });
+    byId('line-profile').addEventListener('change', () => {
+      byId('assignment').textContent =
+        `Supply line: ${byId('line-profile').value === 'hauler' ? 'Hauler' : 'Swift'}. Passenger line: Swift. Both retain service. Apply at the next safe stop in a future build.`;
+    });
+    byId('theme').addEventListener('click', () => {
+      const root = document.documentElement;
+      const dark = root.dataset.theme
+        ? root.dataset.theme === 'dark'
+        : matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+      byId('theme').textContent = dark ? 'Use dark theme' : 'Use light theme';
+    });
+    document
+      .querySelectorAll('[data-route]')
+      .forEach((button) => button.addEventListener('click', () => drawTree(button.dataset.route)));
+    byId('supply').addEventListener('change', compare);
+    byId('rack').addEventListener('change', compare);
+    byId('bridge').style.transform = 'rotate(-45deg)';
+    drawTree('first');
+    compare();
+  })();
+</script>
