@@ -75,6 +75,9 @@ export function registerPlatform(p: Platform) {
 }
 export const platformById = (id: string) => platforms.find((p) => p.id === id) ?? null;
 
+// Attached riders still carry the previous step's vertical motion until carryStep applies the new deck speed.
+export const carryVerticalSpeed = (p: Platform) => (carry.on === p ? carry.y : p.body.velocity.y);
+
 // A world pose (position, yaw) in p's frame, at the body's current (fixed-step) pose.
 export function toPlatform(p: Platform, at: { x: number; y: number; z: number }, yaw: number, out: Local) {
   const q = p.body.position,
@@ -134,7 +137,7 @@ function deckUnder(b: Body) {
     if (g > CARRY.above || g < -CARRY.below) continue;
     // An attached rider has last step's vertical speed. A crest changes the deck's next speed, not the rider's
     // intent: comparing against that new speed mistakes a descending deck for a jump.
-    if (b.velocity.y - (carry.on === p ? carry.y : p.body.velocity.y) > CARRY.leaveVy) continue;
+    if (b.velocity.y - carryVerticalSpeed(p) > CARRY.leaveVy) continue;
     gap = g;
     return p;
   }

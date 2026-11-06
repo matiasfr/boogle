@@ -4,7 +4,7 @@ import * as THREE from 'three/webgpu';
 import { PLAYER_R } from '../../constants.ts';
 import { onFrame } from '../../loop.ts';
 import { onPreStep, teleport } from '../../physics/engine.ts';
-import { carry, fromPlatform, type Local, type Platform } from '../../physics/platforms.ts';
+import { carry, carryVerticalSpeed, fromPlatform, type Local, type Platform } from '../../physics/platforms.ts';
 import {
   addHostField,
   addPresenceField,
@@ -220,7 +220,7 @@ onPreStep(
     // next vertical speed here makes a slope/correction look like a jump and drops seated contact.
     b.velocity.set(
       s.platform?.body.velocity.x ?? 0,
-      s.platform && carry.on === s.platform ? carry.y : (s.platform?.body.velocity.y ?? 0),
+      s.platform ? carryVerticalSpeed(s.platform) : 0,
       s.platform?.body.velocity.z ?? 0,
     );
   },
