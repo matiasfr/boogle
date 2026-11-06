@@ -28,6 +28,13 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 
 ## The place
 
+**Production foundations (5 November repair).** Completed opening buildings retain their permanent foundation slab,
+matching Place's completed construction state; only the temporary scaffold poles disappear. The level check in
+`npm run check` samples the rendered terrain triangles over every production building/forge footprint at at most
+25 cm spacing, including rotated edges. It rejects exposed foundation gaps or terrain above the seating surface
+over 5 cm. The authored below-ground foundation skirt is intentional. This check does not cover future town growth,
+trees, moving props or the old lookout/cart/arch assemblies.
+
 An island about 440 m across, 1 km east of today's, in the crossing's sea. A Y-shaped gorge, with walls about 16-30 m high
 and a river at the bottom, splits it into three lobes: the village (west, 18 m), the timber camp (north ridge, 30 m) and the
 quarry (east table, 24 m). Needle Bell, a leaning 105 m spire, stands where the gorge forks. Two low footbridges cross the
@@ -368,6 +375,9 @@ are not compensated. No call site applies both the material helper and particle 
 underwater **+0.81 EV**, key gain **1.12** and fill gain **3.2**. Place's grass pigment strength is **0.35** and
 its albedo gain **0.7**. Selective green/timber/accent adjustments, the building instance palette and Buddy's
 albedo-only saturation adjustment reproduce round five's pick at their material owners. Classic home is unchanged.
+Production opening buildings, forge scaffold and source trees use those same material owners. Tapered gable
+instances receive palette updates through the same piece-index routing as their transforms. The 5 November
+repair restores the treatment omitted by the production extraction; it does not retune the sky, lights or exposure.
 Physical painted boards and the shop price atlas use roughness-1, metalness-0 `MeshStandardNodeMaterial`,
 the same sRGB canvas textures, scene lights and received shadows; no emissive floor or inverse-gain compensation.
 Indoor paper is greyer than the former unlit paper. Sprite labels and rewards keep readableUnlit exactly once.

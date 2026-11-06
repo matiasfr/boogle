@@ -34,17 +34,23 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   owner.cleanup(() => {
     for (let k = sites.feet.length - 1; k >= 0; k--) if (footprints.has(sites.feet[k]!)) sites.feet.splice(k, 1);
   });
-  const buildings = [...layout.TOWN.start, ...layout.TOWN.camps.flatMap((camp) => camp.asleep)].map(plans.planOf);
-  const townBoxes = buildings.flatMap((plan) => plan.pieces);
+  const buildings = plans.openingBuildings();
+  const townBoxes = buildings.flatMap(({ boxes }) => boxes);
   const town = pieces.dropSet(townBoxes, () => {}, owner);
-  town.mesh.material = look.boardMaterial(town.mesh.material as THREE.Material);
+  look.paintSite(town.mesh, townBoxes);
   townBoxes.forEach((_, k) => town.snap(k, true));
-  for (const plan of buildings) {
+  for (const { plan } of buildings) {
     sites.hullBodies(plan, plan.hulls, owner);
     foot(plan.x, plan.z, plan.yaw, plan.hw, plan.hd);
   }
   const forge = plans.forgePlan();
   const scaffold = pieces.dropSet(forge.scaffold, () => {}, owner);
+  look.paintSite(scaffold.mesh, forge.scaffold);
+  if (look.LOOK.mats)
+    owner.cleanup(() => {
+      (town.mesh.material as THREE.Material).dispose();
+      (scaffold.mesh.material as THREE.Material).dispose();
+    });
   forge.scaffold.forEach((_, k) => scaffold.snap(k, true));
   foot(forge.x, forge.z, 0, forge.hw, forge.hd);
   land.addStatic(

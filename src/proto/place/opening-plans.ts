@@ -1,6 +1,6 @@
 // Existing authored opening plans, shared by the legacy run and the owned T1 view. No progression or save owner.
-import { H } from './land.ts';
-import { FORGE, ORIGIN, toWorld, type Plot } from './layout.ts';
+import { H } from './terrain.ts';
+import { FORGE, ORIGIN, TOWN, toWorld, type Plot } from './layout.ts';
 import {
   housePlan as planHouse,
   towerPlan as planTower,
@@ -13,6 +13,14 @@ import {
 const housePlan = (s: HouseSpec) => planHouse(s, H(s.x, s.z));
 const towerPlan = (s: TowerSpec) => planTower(s, H(s.x, s.z));
 const blockPlan = (s: BlockSpec, lifts = 1, top?: string) => planBlock(s, H(s.x, s.z), lifts, top);
+
+/** The same completed state as sites.snapSite: keep the foundation, remove only temporary scaffold poles. */
+export function openingBuildings() {
+  return [...TOWN.start, ...TOWN.camps.flatMap((camp) => camp.asleep)].map((plot, i) => {
+    const plan = planOf(plot);
+    return { id: `opening/${i}/${plot.type}`, plan, boxes: [...plan.scaffold.slice(0, 1), ...plan.pieces] };
+  });
+}
 
 const PLASTER = '#e8dcc0',
   THATCH = '#b99a60',
