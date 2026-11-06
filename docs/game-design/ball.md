@@ -16,20 +16,19 @@ changes and teleports invalidate delayed samples without changing presence data 
   push resolves locally. It respawns at (12, 20) on R, or by itself when it leaves the map (3 m from the edge) or
   falls below −15 m.
 - **Controls.** E / pad X grab or steal. The main action (click / pad RT): ball in hand, hold to charge and release to throw (pad B puts the wind-up away); empty hands do nothing. On your back it can't be thrown: bring it to your hand first. Touch: the main button grabs, resting or in the air, then throws. R / View respawn.
-- **Sync kind.** Owner for the ball in play, plus its resting spot: Lockstep `ball.rest` (state `ball`). The tab that simulates it publishes presence `b: { e, p, v, q, h }` (epoch, position,
+- **Sync kind.** Owner, and nothing saved: every visit starts it at its spawn. The tab that simulates it publishes presence `b: { e, p, v, q, h }` (epoch, position,
   velocity, quaternion, held); others smooth the owner's snapshots with `createSnaps` ([src/netplay/snaps.ts](../../src/netplay/snaps.ts))
   120 ms behind with up to 150 ms of extrapolation. Ownership: highest epoch wins, ties to the larger peer id. An
   orphaned ball is claimed after 600 ms by the visible peer with the lowest id.
 - **Tuning.** Linear damping 0.12, angular 0.3; ground friction 0.6, restitution 0.55 (ground), 0 (players), 0.95
   (mushrooms); Rapier multiplies the two materials' values, and the player material has none. Reach 2.4 m. Throw: see 6.7 (the same module throws everything), plus spin 8 rad/s. Rolling friction on the ground: velocity × (1 − 1.2 × dt),
   × (1 − 10 × dt) under 0.5 m/s. Buoyancy 3.2× weight at full submersion.
-- **Files.** [src/entities/ball/](../../src/entities/ball/index.ts) (respawn when off the island, auto-claim when you walk into it: `postPhysics` at
-  orders −300 and −280, listed in [src/loop.ts](../../src/loop.ts)), [src/features/impact.ts](../../src/features/impact.ts)
-  (squash, hit-stop, sand puff, boing, face-plant), [src/render/splash.ts](../../src/render/splash.ts).
+- **Files.** [src/entities/ball/](../../src/entities/ball/index.ts) (respawn when off the island, auto-claim when you walk into it; feature-range orders,
+  after the player's, in `headless.ts`), [src/features/impact.ts](../../src/features/impact.ts)
+  (squash, hit-stop, sand puff, boing), [src/render/splash.ts](../../src/render/splash.ts).
 - **Known issues and limits.** A non-owner sees the ball about one round trip (owner, host or server, them) plus 120 ms late;
-  join reports carry the slowest link's round trip as `rttMs` (6.15). The ball's resting spot is saved per room: once it has lain under 0.3 m/s for 1.5 s, its
-  owner reports it (op `ball.rest`), and the first time a tab loads the world it puts the ball back there, unless
-  someone is already playing with it. Otherwise it starts at its spawn. Keepy-uppy streak was built and cut (PLAN Phase 2). The tab that owns the ball keeps
+  join reports carry the slowest link's round trip as `rttMs` (6.15). Its resting spot isn't saved (cut 2026-11-06,
+  with the ball demoted to a toy). Keepy-uppy streak was built and cut (PLAN Phase 2). The tab that owns the ball keeps
   sending presence even before it enters the island (`keepPresenceWhile` in [src/netplay/net.ts](../../src/netplay/net.ts)).
 
 ---

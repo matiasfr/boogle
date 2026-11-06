@@ -85,11 +85,11 @@ try {
   assert.ok(thrower.mine && !watcher.mine, 'the thrower still owns it');
 
   // 4
-  await ask(owner!, { do: 'rest', x: 1234, y: 200, z: 567 });
+  await ask(owner!, { do: 'rename', n: 'Handoff' });
   const [saw] = await until(
     'an edit from one reaches the other through the lockstep world',
     async () => [await ask(other!)] as const,
-    ([saw]) => saw.rest?.[0] === 1234,
+    ([saw]) => saw.names.includes('Handoff'),
     3000,
   );
   assert.ok(saw.tick > 0, 'the lockstep world is ticking');

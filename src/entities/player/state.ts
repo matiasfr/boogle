@@ -24,6 +24,7 @@ import { peopleChanged, sendPresence, setLocalPresence } from '../../netplay/net
 import { input, inputState } from '../../player/input-state.ts';
 import { cam, me } from '../../player/state.ts';
 import { newWaterEnabled } from '../../proto/flags.ts';
+import { inv } from '../../player/inventory.ts';
 
 export { cam, me };
 setLocalPresence(me);
@@ -115,12 +116,13 @@ export function updateIntent(dt: number) {
     rz = -Math.sin(cam.yaw);
   me.wish.set(fx * f + rx * s, 0, fz * f + rz * s);
   if (me.wish.lengthSq() > 1) me.wish.normalize();
-  // me.down: knocked flat by a fast ball (features/impact.ts); held: talking (src/player/conversation.ts)
+  // me.down: knocked flat (src/features/knockdown.ts); held: talking (src/player/conversation.ts)
   if (!me.entered || me.down || inputState.held) me.wish.set(0, 0, 0);
   me.jumpQueued = me.down || inputState.held ? 0 : Math.max(0, me.jumpQueued - dt);
 
   let targetYaw = null;
-  if (me.holding || me.charging) targetYaw = cam.yaw;
+  // Aiming: anything in your hand, or a wind-up, faces where the camera looks.
+  if (inv.held || me.charging) targetYaw = cam.yaw;
   else if (me.wish.lengthSq() > 0.01) targetYaw = Math.atan2(-me.wish.x, -me.wish.z);
   if (targetYaw !== null) me.yaw = angleLerp(me.yaw, targetYaw, 1 - Math.exp(-dt * 12));
 }

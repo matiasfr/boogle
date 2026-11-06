@@ -1,33 +1,24 @@
-// Ball impact pack and the face-plant. All render-only except the face-plant's movement lock on yourself:
+// The beach ball's impact pack, all render-only:
 //  - squash-and-stretch on the ball mesh, driven by the displayed ball's velocity change (so remote balls work too)
 //  - a ~50 ms hit-stop on catches (freezes the ball mesh and your avatar's animation; physics never pauses)
-//  - a sand puff when the ball lands on sand, and a procedural "boing" whose pitch and volume follow impact speed
-//  - face-plant: a fast ball to your own head knocks you on your back for a moment with stars circling. Your client
-//    decides and publishes it as the presence field `kd` (ms remaining), so everyone sees the flop.
+//  - a sand puff when the ball lands on sand, and a boing (src/render/boing.ts) whose pitch and volume follow impact speed
 // Local cosmetics, so Math.random is fine. Nothing here is read by the shared simulation.
-import type { Avatar } from '../player/avatars.ts';
 import * as THREE from 'three';
-import { material } from '../render/materials.ts';
-import { camera } from '../render/scene.ts';
-import { newWaterEnabled } from '../render/water/flags.ts';
 import { emit } from '../render/particles.ts';
-import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA, reducedMotion } from '../constants.ts';
+import { boing, farGain } from '../render/boing.ts';
+import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA } from '../constants.ts';
 import { waterField } from '../physics/water-field.ts';
 import { groundHeight } from '../island/terrain.ts';
-import { clamp, lerp } from '../math.ts';
+import { clamp } from '../math.ts';
 import { ball } from '../entities/ball/state.ts';
 import { ballMesh } from '../entities/ball/view.ts';
 import { me } from '../player/player.ts';
-import { remotes, addPresenceField, onRemotePresence, type Remote } from '../netplay/net.ts';
+import { remotes } from '../netplay/net.ts';
 import { onFrame } from '../loop.ts';
-import { getAudio } from '../render/audio.ts';
 
 // ---------------------------------------------------------------- tunables
 const TUNE = {
   impactMin: 3.2, // velocity change (m/s) that counts as a hit
-  faceplantSpeed: 11, // ball speed (m/s) that flops a head
-  downMs: 800,
-  immuneMs: 1000, // after getting up
   hitStopMs: 55,
   catchMinSpeed: 5, // slower catches get no hit-stop
 };
@@ -63,59 +54,6 @@ function emitPuff(x: number, y: number, z: number, k: number) {
     });
   }
 }
-
-// ---------------------------------------------------------------- boing
-let lastBoing = 0,
-  boingBurst = 0,
-  boingBurstAt = 0;
-export function boing(speed: number, vol: number, low: boolean) {
-  const a = getAudio();
-  if (!a) return;
-  const now = performance.now();
-  if (now - lastBoing < 60) return;
-  if (now - boingBurstAt > 300) boingBurst = 0;
-  if (boingBurst >= 4) return;
-  boingBurst++;
-  boingBurstAt = lastBoing = now;
-  const { ctx, out } = a;
-  const t = ctx.currentTime + 0.003;
-  const f0 = (low ? 110 : 160) + clamp(speed, 0, 24) * 13 * (0.96 + Math.random() * 0.08);
-  // a bit subtler (2026-11-02 audit): about 4 dB down, an 8 ms onset, shorter tails, a gentler wobble and the
-  // triangle's top rounded off
-  const dur = 0.13 + clamp(speed / 24, 0, 1) * 0.14;
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(vol * 0.62, t + 0.008);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  const lp = ctx.createBiquadFilter();
-  lp.type = 'lowpass';
-  lp.frequency.value = 1800;
-  g.connect(lp).connect(out);
-  const o = ctx.createOscillator();
-  o.type = 'triangle';
-  o.frequency.setValueAtTime(f0 * 0.75, t);
-  o.frequency.exponentialRampToValueAtTime(f0 * 1.45, t + 0.035);
-  o.frequency.exponentialRampToValueAtTime(f0 * 0.6, t + dur);
-  const lfo = ctx.createOscillator(); // the wobble that makes it a boing
-  lfo.frequency.value = 24;
-  const lg = ctx.createGain();
-  lg.gain.setValueAtTime(f0 * 0.045, t);
-  lg.gain.exponentialRampToValueAtTime(0.01, t + dur);
-  lfo.connect(lg).connect(o.frequency);
-  const o2 = ctx.createOscillator();
-  o2.type = 'sine';
-  o2.frequency.setValueAtTime(f0 * 1.5, t);
-  o2.frequency.exponentialRampToValueAtTime(f0 * 0.9, t + dur);
-  const g2 = ctx.createGain();
-  g2.gain.value = 0.35;
-  o2.connect(g2).connect(g);
-  o.connect(g);
-  for (const n of [o, o2, lfo]) {
-    n.start(t);
-    n.stop(t + dur + 0.03);
-  }
-}
-const farGain = (x: number, z: number) => 1 / (1 + ((camera.position.x - x) ** 2 + (camera.position.z - z) ** 2) / 300);
 
 // ---------------------------------------------------------------- ball squash and stretch
 let sx = 0, // spring displacement: positive = squashed along `axis`, negative = stretched
@@ -184,17 +122,13 @@ function nearestPerson(p: THREE.Vector3) {
 }
 
 function detect(now: number) {
-  if (me.down && now >= me.downUntil) {
-    me.down = false;
-    immuneUntil = now + TUNE.immuneMs;
-  }
-  if (ball.mine && me.holding) lastHeldByMe = now;
+  if (ball.mine && ball.held) lastHeldByMe = now;
   const held = ball.held;
   const p = ball.pose.p;
   if (held) {
     if (!wasHeld && prevSpeed > TUNE.catchMinSpeed) {
       freezeUntil = now + TUNE.hitStopMs;
-      freezeMine = !!me.holding;
+      freezeMine = ball.mine && ball.held;
       freezeP.copy(ballMesh.position);
       freezeQ.copy(ballMesh.quaternion);
       kick(prevV.lengthSq() > 0.01 ? prevV : axis, clamp(prevSpeed / 40, 0.08, 0.3));
@@ -226,110 +160,10 @@ function detect(now: number) {
       if (onGround && !inWater && gh > 0.25 && !person) emitPuff(p.x, gh, p.z, k);
     }
   }
-  // Face-plant: judged against the speed the ball had the frame before the collision slowed it down.
-  const speed = v.length();
-  checkFaceplant(now, Math.max(prevSpeed, speed));
   prevV.copy(v);
-  prevSpeed = speed;
+  prevSpeed = v.length();
 }
 
-// ---------------------------------------------------------------- face-plant
-let immuneUntil = 0;
-function checkFaceplant(now: number, speed: number) {
-  if (!me.body || !me.entered || me.down) return;
-  if (now < immuneUntil || speed < TUNE.faceplantSpeed || ball.held) return;
-  if (now - lastHeldByMe < 700 || me.holding || me.charging) return; // your own throws never flop you
-  const b = me.body.position;
-  const head = tmpV.set(b.x, b.y + HEAD_OFFSET, b.z);
-  const d = head.distanceTo(ball.pose.p);
-  if (d > PLAYER_R + BALL_R + 0.12 || ball.pose.p.y < b.y + HEAD_OFFSET * 0.4) return;
-  me.down = true;
-  me.downUntil = now + TUNE.downMs;
-  me.holding = me.charging = false;
-  shake = reducedMotion ? 0 : 1;
-  boing(18, 0.35, true);
-}
-addPresenceField('kd', () => (me.down ? Math.max(1, Math.round(me.downUntil - performance.now())) : null));
-onRemotePresence((r, pr) => {
-  const kd = pr.kd as number;
-  if (Number.isFinite(kd) && kd > 0 && kd <= 2000) {
-    const now = performance.now();
-    if (!((r.kdUntil ?? -Infinity) > now)) onRemoteDown(r);
-    r.kdUntil = now + kd;
-  }
-});
-function onRemoteDown(r: Remote) {
-  boing(16, 0.25 * farGain(r.target.x, r.target.z), true);
-}
-
-// ---------------------------------------------------------------- flop + stars
-// Linear HDR radiance: metered water AgX needs more than the default sea's Neutral output.
-const STAR_BRIGHTNESS = newWaterEnabled ? 6 : 1.5;
-const starTex = (() => {
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const g = c.getContext('2d')!;
-  g.fillStyle = '#ffd84a';
-  g.strokeStyle = '#b37a00';
-  g.lineWidth = 3;
-  g.beginPath();
-  for (let k = 0; k < 10; k++) {
-    const r = k % 2 ? 11 : 28,
-      a = -Math.PI / 2 + (k * Math.PI) / 5;
-    g[k ? 'lineTo' : 'moveTo'](32 + Math.cos(a) * r, 33 + Math.sin(a) * r);
-  }
-  g.closePath();
-  g.fill();
-  g.stroke();
-  const texture = new THREE.CanvasTexture(c);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-})();
-const starMat = material('feedback', {
-  map: starTex,
-  emissive: { linear: [1, 1, 1], gain: STAR_BRIGHTNESS },
-});
-const ents = new WeakMap<THREE.Object3D, { amt: number; stars: THREE.Group }>(); // avatar -> its flop state
-function entOf(avatar: THREE.Object3D) {
-  let e = ents.get(avatar);
-  if (!e) {
-    const stars = new THREE.Group();
-    for (let k = 0; k < 4; k++) {
-      const s = new THREE.Sprite(starMat);
-      s.scale.set(0.3, 0.3, 1);
-      s.renderOrder = 11;
-      stars.add(s);
-    }
-    stars.visible = false;
-    avatar.add(stars);
-    e = { amt: 0, stars };
-    ents.set(avatar, e);
-  }
-  return e;
-}
-function flop(avatar: Avatar, down: boolean, left: number, dt: number, t: number) {
-  const e = entOf(avatar);
-  const u = avatar.userData;
-  e.amt = lerp(e.amt, down ? 1 : 0, 1 - Math.exp(-dt * (down ? 22 : 14)));
-  u.flopAmt = e.amt;
-  if (e.amt > 0.002) {
-    u.inner.rotation.x = lerp(u.inner.rotation.x, Math.PI / 2, e.amt);
-    u.inner.position.y = lerp(u.inner.position.y, u.flopY ?? PLAYER_R, e.amt);
-    u.inner.scale.set(1, 1, 1);
-  }
-  e.stars.visible = down && left > 0;
-  if (e.stars.visible) {
-    // Head ends up behind the feet (+z in avatar space) when lying on the back.
-    const sp = e.stars.children.length;
-    e.stars.children.forEach((s, k) => {
-      const a = t * 5 + (k * Math.PI * 2) / sp;
-      const low = (u.flopY ?? PLAYER_R) - PLAYER_R; // a body lying lower has its stars lower
-      s.position.set(Math.cos(a) * 0.5, 1.0 + low + Math.sin(a * 2) * 0.05, HEAD_OFFSET + 0.2 + Math.sin(a) * 0.5);
-    });
-  }
-}
-
-let shake = 0;
 const saved = { y: 0, rx: 0, sx: 1, sy: 1, sz: 1 };
 
 onFrame(
@@ -341,7 +175,7 @@ onFrame(
 );
 
 onFrame(
-  ({ now, dt, elapsed }) => {
+  ({ now }) => {
     // Hit-stop: hold the ball mesh, and your own avatar's pose, for a few frames. Physics keeps running.
     const frozen = now < freezeUntil;
     if (frozen) {
@@ -363,16 +197,6 @@ onFrame(
       }
     }
     applySquash();
-
-    if (me.avatar) flop(me.avatar, me.down, me.downUntil - now, dt, elapsed);
-    for (const r of remotes.values())
-      if (r.avatar) flop(r.avatar, (r.kdUntil ?? 0) > now, (r.kdUntil ?? 0) - now, dt, elapsed);
-
-    if (shake > 0.01) {
-      camera.position.x += (Math.random() - 0.5) * 0.12 * shake;
-      camera.position.y += (Math.random() - 0.5) * 0.12 * shake;
-      shake *= Math.exp(-dt * 6);
-    }
   },
   { phase: 'late', order: -10 },
 );

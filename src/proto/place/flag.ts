@@ -1,6 +1,7 @@
 // Local playtest bookmark: no world change, typed note or on-screen acknowledgement.
 import { registerAction } from '../../player/controls.ts';
 import { me } from '../../player/player.ts';
+import { inv } from '../../player/inventory.ts';
 import { carry } from '../../physics/platforms.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 import { hookActivity, playMark } from '../mark.ts';
@@ -15,7 +16,7 @@ registerAction('place-flag', {
     if (!me.entered || !me.body) return;
     const p = me.body.position;
     const moving = me.wish.lengthSq() > 0;
-    const loaded = me.holding || back.logs + back.rails + back.stone > 0 || back.big !== null;
+    const loaded = !!inv.held || back.logs + back.rails + back.stone > 0 || back.big !== null;
     playMark('flag', {
       y: Math.round(p.y * 10) / 10,
       activity:

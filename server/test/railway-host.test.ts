@@ -201,7 +201,6 @@ test('playable registry accepts bounded identity but rejects every legacy materi
       'sites',
       'sources',
       'bank',
-      'ball',
       'tune',
       'opening',
       'railway',

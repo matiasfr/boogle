@@ -8,7 +8,7 @@ import { defineKind, spawn } from '../../entity/entity.ts';
 import './headless.ts';
 import { ballMesh, syncBallMesh } from './view.ts';
 
-defineKind('ball-view', { update: -300 });
+defineKind('ball-view', { update: -9 }); // before what draws around the ball (splash, critters, shadows)
 
 spawn({
   kind: 'ball-view',

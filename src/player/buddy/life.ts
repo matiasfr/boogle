@@ -70,7 +70,7 @@ export type LifeState = {
   load: number; // pieces on its back
   hold: 'item' | 'hang' | 'ball' | null;
   seated: boolean;
-  down: number; // 0..1: how far flopped over (src/features/impact.ts)
+  down: number; // 0..1: how far flopped over (src/features/knockdown.ts)
   charging?: boolean; // winding up a throw (your own only: no presence says so)
   aloft?: boolean; // holding something up over its head
 };

@@ -465,8 +465,6 @@ export function createRailwayWorldHost({
         const edit = e as Msg;
         if (edit.op === 'who.set' && canSet(rules.roster.roster, pidOf(from), edit.n, edit.c))
           sync.receiveEdit({ op: 'who.set', i: 0, j: 0, n: recoveryName(edit.n), c: edit.c }, from);
-        else if (edit.op === 'ball.rest')
-          sync.receiveEdit({ op: 'ball.rest', i: 0, j: 0, x: edit.x, y: edit.y, z: edit.z }, from);
         else if (
           (edit.op === 'tune.set' || edit.op === 'tune.commit') &&
           (edit.key === 'railRegrowMinutes' ||
