@@ -16,6 +16,8 @@ export type SkyParams = {
   sunIntensity: number;
 };
 export type SkyCubeSize = 256 | 512 | 1024;
+export type SkyArt = (direction: N, sunColor: N, cloudBrightness: N) => N;
+export type SunStyle = 'physical' | 'painted';
 const gradient = Fn(([i]: [N]) => {
   const p = fract(i.xyx.mul(vec3(0.1031, 0.103, 0.0973))).toVar();
   p.addAssign(dot(p, p.yzx.add(33.33)));
@@ -42,8 +44,9 @@ const fbm = Fn(([p]: [N]) => {
 
 export function createWaterSkyFor(
   renderer: THREE.WebGPURenderer,
-  bakedArt?: (direction: N, sunColor: N) => N,
+  bakedArt?: SkyArt,
   cubeSize: SkyCubeSize = 1024,
+  sunStyle: SunStyle = 'physical',
 ) {
   const params: SkyParams = {
     elevation: 50,
@@ -127,7 +130,7 @@ export function createWaterSkyFor(
     );
     // CubeTextureNode flips x for WebGPU cube conventions. Bake the same mirror so the public API uses world directions.
     const d = normalize(vec3(direction.x.negate(), direction.yz)).toVar();
-    if (bakedArt) return bakedArt(d, sunColor);
+    if (bakedArt) return bakedArt(d, sunColor, cloudBrightness);
     const up = skyView(vec3(0, 1, 0)).toVar();
     // Explicit LOD for every sample; both hemispheres are evaluated in uniform flow.
     const F = pow(d.y.add(1), 5).mul(0.98).add(0.02);
@@ -187,6 +190,16 @@ export function createWaterSkyFor(
       sampled = sample(vec3(d.x, max(d.y, 0), d.z)).level(0);
     const cs = dot(d, sunDirection),
       disc = smoothstep(0.999985, 0.999992, cs).mul(smoothstep(0.999985, 1, cs).mul(0.4).add(0.6));
+    if (sunStyle === 'painted') {
+      // Larger cream graphic, still masked by cube transmittance; never baked into reflections.
+      const cream = vec3(1, 0.88, 0.58).mul(sunColor.r).mul(0.95);
+      const visibility = step(0, d.y).mul(sampled.a);
+      return mix(
+        sampled.rgb.add(cream.mul(pow(max(cs, 0), 300).mul(0.08)).mul(visibility)),
+        cream,
+        smoothstep(0.99935, 0.99955, cs).mul(visibility),
+      );
+    }
     return sampled.rgb.add(
       sunColor
         .mul(disc.mul(900).add(pow(max(cs, 0), 2200).mul(1.5)))
@@ -218,6 +231,7 @@ export function createWaterSkyFor(
       bakes,
       bakeMs,
       cubeSize,
+      sunStyle,
       mipLevels: maxMip + 1,
       // RGBA16F, six faces, full mip chain; excludes PMREM, LUTs and allocation padding.
       cubeTexelBytes: 6 * 8 * ((4 * cubeSize * cubeSize - 1) / 3),

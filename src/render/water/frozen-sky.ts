@@ -11,8 +11,9 @@ import { SUN_DIR } from '../sun-dir.ts';
 import { seaU } from './state.ts';
 import { createWaterSky } from './sky.ts';
 import { bind, tuningEnabled } from './live.ts';
-import { eveningPreview, prepareEvening, skyCubeSize, toySkyEnabled } from './flags.ts';
+import { eveningPreview, prepareEvening, skyArt, skyCubeSize, toySkyEnabled } from './flags.ts';
 import { toySky } from './toy.ts';
+import { paintedSky } from './sky-art.ts';
 import { bootMark } from '../../boot/timeline.ts';
 import { LIGHTING_SPECS, SKY_AUTHORING_SPECS } from '../lighting-tuning.ts';
 import { createEveningTransition } from './evening-transition.ts';
@@ -64,7 +65,11 @@ export function createFrozenWaterSky() {
   timeOfDay = WATER_TOD;
   direction.copy(east).multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
   // Local loading-time comparison only. Today's 1024 sky remains the default until visual review passes.
-  const environment = createWaterSky(toySkyEnabled ? toySky : undefined, skyCubeSize);
+  const environment = createWaterSky(
+    skyArt ? paintedSky(skyArt) : toySkyEnabled ? toySky : undefined,
+    skyCubeSize,
+    skyArt === 'windpaint' ? 'painted' : 'physical',
+  );
   environment.params.cloudBrightness = SKY_AUTHORING_SPECS[0]!.default;
   environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(direction.y));
   environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z));
@@ -138,6 +143,7 @@ export function createFrozenWaterSky() {
   const fogNode = fog(haze, rangeFogFactor(near, far));
   let disposed = false,
     baked = false;
+  let readyMs = 0;
   function update(dt = 0) {
     if (!baked || disposed) return;
     if (dt) transition?.update(dt);
@@ -208,9 +214,11 @@ export function createFrozenWaterSky() {
   async function bake() {
     if (disposed) return;
     bootMark('sky-start');
+    const started = performance.now();
     environment.bake();
     if (tuningEnabled) direction.copy(environment.sunDirection.value);
     const fill = await readFill(environment);
+    readyMs = performance.now() - started;
     if (disposed) return;
     upper.copy(fill.upper);
     lower.copy(fill.lower);
@@ -219,7 +227,7 @@ export function createFrozenWaterSky() {
     updateFrozenDay();
     update();
     bootMark('sky-ready');
-    console.info('WATER FROZEN SKY ' + JSON.stringify({ tod: timeOfDay, ...environment.inspect() }));
+    console.info('WATER FROZEN SKY ' + JSON.stringify({ tod: timeOfDay, readyMs, ...environment.inspect() }));
   }
   async function prepare() {
     if (!evening) return bake();
@@ -291,7 +299,7 @@ export function createFrozenWaterSky() {
   inspectSky = environment.inspect;
   const scheduleBake = (change: () => void) => {
     // Authoring rebakes and prepared endpoints must not mutate one another.
-    if (evening) return;
+    if (evening || skyArt) return;
     change();
     dirtySky = true;
     if (timer) clearTimeout(timer);
@@ -348,6 +356,8 @@ export function createFrozenWaterSky() {
     update,
     inspect: () => ({
       tod: timeOfDay,
+      art: skyArt ?? (toySkyEnabled ? 'toy' : 'current'),
+      readyMs,
       ready: baked,
       disposed,
       ...environment.inspect(),
