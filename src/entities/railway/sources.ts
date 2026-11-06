@@ -16,7 +16,9 @@ import { backSeam, myBundleNext } from '../../player/haul-back.ts';
 import { remotes } from '../../netplay/net.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { thump } from '../../render/machine-sfx.ts';
-import { PLAYER_R } from '../../constants.ts';
+import { PLAYER_R, reducedMotion } from '../../constants.ts';
+import { emit } from '../../render/particles.ts';
+import { readableIntensity } from '../../render/readable-unlit.ts';
 import { bindCargoDrop } from '../../player/cargo-drop.ts';
 import { NO_TARGETS, type Interactable } from '../../player/hands.ts';
 import { frameOf, fitOf, slotAt, shownOf, SHOWN } from '../../render/haul-bundle.ts';
@@ -33,17 +35,29 @@ const inner = () => (me.avatar?.userData as AvatarData | undefined)?.inner;
 const sourceIndex = new Map(RAILWAY_SOURCES.map((source, index) => [source[0], index]));
 
 export async function createRailwaySources(adapter: RailwayAdapter, owner: OwnedView) {
-  const [{ TREE_SOURCES }, { safeTreeFall }, { H, addStatic }, { flat }, pieces, { TUNE, GREAT }, sounds, look] =
-    await Promise.all([
-      import('../../proto/place/tree-sources.ts'),
-      import('../../proto/place/tree-catalog.ts'),
-      import('../../proto/place/land.ts'),
-      import('../../proto/flat.ts'),
-      import('../../proto/place/pieces.ts'),
-      import('../../proto/place/layout.ts'),
-      import('../../proto/minis/common.ts'),
-      import('../../proto/place/look.ts'),
-    ]);
+  const [
+    { TREE_SOURCES },
+    { safeTreeFall },
+    { H, addStatic },
+    { flat },
+    pieces,
+    { TUNE, GREAT },
+    sounds,
+    look,
+    { applyFloatingChopPose },
+    { sparkleAxe },
+  ] = await Promise.all([
+    import('../../proto/place/tree-sources.ts'),
+    import('../../proto/place/tree-catalog.ts'),
+    import('../../proto/place/land.ts'),
+    import('../../proto/flat.ts'),
+    import('../../proto/place/pieces.ts'),
+    import('../../proto/place/layout.ts'),
+    import('../../proto/minis/common.ts'),
+    import('../../proto/place/look.ts'),
+    import('../../proto/place/chop-motion.ts'),
+    import('../../proto/place/axe-sparkle.ts'),
+  ]);
   if (!owner.alive) throw new Error('Railway sources mounted after disposal');
   const rackAt = new THREE.Vector3(
     RECOVERY_RACK.x / 100,
@@ -104,13 +118,16 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     () => state.beam?.state !== 'standing',
     (body) => owner.removeBody(body),
   );
-  const { axes, picks } = createAxes(flat);
-  const axe = new THREE.Group();
-  axe.add(...axes);
-  axes[1]!.visible = false;
-  axe.position.set(0.42, 0.72, -0.2);
+  const axes = createAxes(flat);
+  const axe = axes.root;
   axe.visible = false;
-  const swing = { t: 99, target: null as TreePose | null, rock: null as number | null, hit: true, full: false };
+  const swing = {
+    t: 99,
+    target: null as TreePose | null,
+    rock: null as number | null,
+    hit: true,
+    response: 'bite' as 'bite' | 'full' | 'rebound',
+  };
   const at = new THREE.Vector3(),
     target = new THREE.Vector3(),
     rotation = new THREE.Quaternion();
@@ -123,7 +140,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     swing.target = null;
     swing.rock = id;
     swing.hit = false;
-    swing.full = false;
+    swing.response = 'bite';
     const rock = cargo.rocks.find((row) => row.id === id)!;
     me.yaw = Math.atan2(-(rock.x - me.body.position.x), -(rock.z - me.body.position.z));
   });
@@ -208,10 +225,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     swing.target = tree;
     swing.rock = null;
     swing.hit = false;
-    swing.full = false;
+    swing.response = 'bite';
     me.yaw = Math.atan2(-(tree.x - me.body.position.x), -(tree.z - me.body.position.z));
-    const body = inner();
-    if (body) body.rotation.x = 0.28;
   }
 
   function bundleOrigin(pid: string, count: number, out: THREE.Vector3) {
@@ -343,8 +358,6 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     if (tree.cleared) return;
     placeSound('treeBite', tree.x, tree.z);
     pieces.chips(at.x, at.y, at.z, 9);
-    const body = inner();
-    if (local && body) body.rotation.x = -0.5;
     for (let k = 0; k < event.accepted; k++) {
       const flight = pieces.send(
         'log',
@@ -397,7 +410,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       incoming: 0,
       reserved: current.reservations.incoming,
       flyingLogs: Math.min(current.carry, harvestFlights.length),
-      attention: swing.full && swing.t < 0.55,
+      attention: swing.response === 'full' && swing.t < 0.55,
     };
   };
   const offAccepted = adapter.onAccepted(accepted);
@@ -448,44 +461,26 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       solid(tree);
     }
     cargo.update();
-    axes[0]!.visible = !state.axe;
-    axes[1]!.visible = state.axe;
+    axes.setTier(state.axe, state.awake >= 0 && !['asleep', 'waking'].includes(state.phase));
     const frame = visualFrame(me.avatar);
     if (frame && axe.parent !== frame) frame.add(axe);
-    for (const pick of picks) pick.visible = state.awake >= 0 && !['asleep', 'waking'].includes(state.phase);
     swing.t += dt;
     const c = TUNE.contactS;
-    axe.visible = swing.t < 0.9;
-    axe.rotation.z = 0;
-    if (swing.t < c) axe.rotation.x = 1.5 + (-1.35 - 1.5) * (swing.t / c);
-    else if (swing.full && swing.t < 0.55) {
-      const u = Math.sin(Math.min(1, (swing.t - c) / 0.49) * Math.PI);
-      axe.rotation.x = 0.2 + u * 2.2;
-      axe.rotation.z = -u * 0.9;
-      const body = inner();
-      if (body) body.rotation.x = u * 0.16;
-    } else if (swing.t < c + 0.035) axe.rotation.x = -1.35;
-    else if (swing.t < 0.3) axe.rotation.x = -1.35 + 1.55 * ((swing.t - c - 0.035) / (0.3 - c - 0.035));
-    else axe.rotation.x = 0.2;
     if (!swing.hit && swing.t >= c) {
       swing.hit = true;
       if (swing.rock !== null) {
-        if (!adapter.mine(swing.rock)) swing.full = true;
+        if (!adapter.mine(swing.rock)) swing.response = 'full';
       } else if (swing.target && swing.target.fall < 0) {
         if (swing.target.great) {
           if (!adapter.beamChop()) {
-            swing.full = true;
-            placeSound('bagFull', swing.target.x, swing.target.z);
+            swing.response = 'rebound';
+            placeSound('treeRebound', swing.target.x, swing.target.z);
           }
-          return;
-        }
-        if (swing.target.hardwood && !state.axe) {
-          swing.full = true;
-          placeSound('bagFull', swing.target.x, swing.target.z);
-          return;
-        }
-        if (state.freeCarry === 0) {
-          swing.full = true;
+        } else if (swing.target.hardwood && !state.axe) {
+          swing.response = 'rebound';
+          placeSound('treeRebound', swing.target.x, swing.target.z);
+        } else if (state.freeCarry === 0) {
+          swing.response = 'full';
           if (me.body) placeSound('bagFull', me.body.position.x, me.body.position.z);
         } else if (me.body) {
           const tree = swing.target,
@@ -494,6 +489,12 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           adapter.chop(tree.index, fall.yaw, fall.collapsed);
         }
       }
+    }
+    const body = inner();
+    if (body) {
+      const wasVisible = axe.visible;
+      applyFloatingChopPose(body, axe, swing.t, swing.response, frame ?? body);
+      sparkleAxe(axe, wasVisible, reducedMotion, emit, readableIntensity());
     }
     drawPiles();
     for (const tree of trees) {
