@@ -41,13 +41,14 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
   const payload = new THREE.Object3D();
   payload.name = 'panel-payload-frame';
   sleeves[2]!.add(payload);
-  const stack = railBatch(STACK_PAIRS * 2);
-  stack.name = 'rail-stack';
-  stack.count = 0;
-  const carried = railBatch(2);
-  carried.name = 'carried-rails';
-  carried.count = 0;
-  root.add(stack, carried);
+  // One draw: instances 0-1 are the carried pair (zero-scaled when the jaws are empty), then the stack.
+  const rails = railBatch(2 + STACK_PAIRS * 2);
+  rails.name = 'rail-stack';
+  rails.count = 2;
+  root.add(rails);
+  const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+  let carrying = false,
+    stackDrawn = 0;
   const batches: { mesh: THREE.InstancedMesh; pivots: THREE.Object3D[]; local: THREE.Matrix4[] }[] = [];
   const inverse = new THREE.Matrix4(),
     matrix = new THREE.Matrix4(),
@@ -65,9 +66,9 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
     jaws.forEach((jaw, i) => {
       grip.makeTranslation((i ? 1 : -1) * GRIP_X, -GRIP_Y, 0).scale(scale.set(1, 1, carriedLength / RAIL_KIT_LENGTH));
       matrix.multiplyMatrices(inverse, jaw.matrixWorld).multiply(grip);
-      carried.setMatrixAt(i, matrix);
+      rails.setMatrixAt(i, carrying ? matrix : ZERO);
     });
-    carried.instanceMatrix.needsUpdate = true;
+    rails.instanceMatrix.needsUpdate = true;
   };
   const scale = new THREE.Vector3(),
     slot = new THREE.Vector3(),
@@ -90,11 +91,12 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
       for (let side = 0; side < 2; side++) {
         stackSlot(k, side ? 1 : -1, slot);
         matrix.makeTranslation(slot.x, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
-        stack.setMatrixAt(k * 2 + side, matrix);
+        rails.setMatrixAt(2 + k * 2 + side, matrix);
       }
     }
-    stack.count = n * 2;
-    stack.instanceMatrix.needsUpdate = true;
+    stackDrawn = n;
+    rails.count = 2 + n * 2;
+    rails.instanceMatrix.needsUpdate = true;
   }
   function place(x: number, y: number, z: number, yaw: number, pitch: number, slide: number) {
     trolley.position.set(x, PANEL_BEAM_Y, z);
@@ -116,8 +118,10 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
     sleeves,
     jaws,
     payload,
-    stack,
-    carried,
+    rails,
+    /** For evidence: pairs drawn on the stack and whether a pair is in (or about to be in) the jaws. */
+    stackPairs: () => stackDrawn,
+    carrying: () => carrying,
     install(parts: Map<string, THREE.Object3D>) {
       const attach = (name: string, to: THREE.Object3D) => {
         const part = parts.get(name);
@@ -179,18 +183,18 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
             ? THREE.MathUtils.lerp(last.at.y, PANEL_BEAM_Y, panelEase(r * 2))
             : THREE.MathUtils.lerp(PANEL_BEAM_Y, pickY, p.lower);
         const slide = THREE.MathUtils.lerp(last.slide, slotSlide + 0.04, r) - 0.04 * p.grip;
-        carried.count = n > 0 ? 2 : 0;
+        carrying = n > 0;
         place(at.x, y, at.z, last.yaw * (1 - r), last.pitch * (1 - r), slide);
         // Before the pick the top pair still lies in its slot, held by nothing.
         for (let i = 0; i < 2 && n > 0; i++) {
           stackSlot(n - 1, i ? 1 : -1, slot);
           matrix.makeTranslation(slot.x, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
-          carried.setMatrixAt(i, matrix);
+          rails.setMatrixAt(i, matrix);
         }
-        carried.instanceMatrix.needsUpdate = true;
+        rails.instanceMatrix.needsUpdate = true;
         return payload.matrixWorld;
       }
-      carried.count = 2;
+      carrying = true;
       const slide = THREE.MathUtils.lerp(slotSlide, GAUGE - GRIP_X, p.gauge);
       from.set(0, 0, STACK.z);
       let x: number, y: number, z: number, heading: number, tilt: number;
@@ -236,7 +240,7 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
       const slotSlide = slot.x - GRIP_X;
       at.lerpVectors(last.at, slot.set(0, 0, STACK.z), r);
       const y = THREE.MathUtils.lerp(last.at.y, PANEL_BEAM_Y, panelEase(r * 2));
-      carried.count = 0;
+      carrying = false;
       place(at.x, y, at.z, last.yaw * (1 - r), last.pitch * (1 - r), THREE.MathUtils.lerp(last.slide, slotSlide, r));
       if (!hasContact) beam.rotation.y = 0;
       if (t >= 1) {

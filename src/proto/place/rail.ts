@@ -837,7 +837,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     heldRail.visible = false;
     flatbed.mesh.add(rig.root);
     rig.root.position.y = -(BOTTOM + flatbed.hy);
-    rack = rig.stack;
+    rack = rig.rails;
   } else {
     const box3 = (w: number, h: number, d: number, color: string, x: number, y: number, z: number, rx = 0) => {
       const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color, 0.8));
