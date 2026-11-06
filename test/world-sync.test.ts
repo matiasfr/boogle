@@ -206,6 +206,35 @@ test('late joiner converges via snapshot (incl. in-flight edits)', async () => {
   assert.ok(same(all));
 });
 
+test('reconnect replaces a client ahead of a restarted host before waiting for its old tick', async () => {
+  const { net, host, clients, all } = await setup(1);
+  const client = clients[0]!;
+  host.s.submitEdit({ op: 'add', i: 0, j: 0, v: 9 });
+  await run(net, all, 600);
+  assert.equal(client.grid[0], 9);
+  const oldTick = client.s.world.tick;
+  const snaps = client.s.worldStatus().snapsLoaded;
+  net.setUp(client.p, false);
+  host.p.alive = false;
+  // The server's proactive join snapshot can arrive while production recovery is still booting.
+  // That snapshot is refused; the rejoining client must retry instead of waiting for its old tick.
+  let finishStartup = () => {};
+  const startup = new Promise<void>((resolve) => (finishStartup = resolve));
+  const replacement = makePeer(net, 'replacement-host', true, {
+    recovery: { namespace: 'test', catalog: 'grid', read: () => null, write: () => startup },
+  });
+  net.setUp(client.p, true);
+  client.p.room.send({ t: 'w:need' }); // the server also attempts a snapshot on join
+  net.flush();
+  finishStartup();
+  await replacement.s.whenDurable();
+  await run(net, [replacement, client], 60);
+  assert.ok(replacement.s.world.tick < oldTick);
+  assert.ok(client.s.worldStatus().snapsLoaded > snaps, 'reconnect requests a snapshot immediately');
+  assert.equal(client.grid[0], 0, 'old accepted state is replaced by the restarted authority');
+  assert.ok(Math.abs(client.s.world.tick - replacement.s.world.tick) <= 6);
+});
+
 test('injected desync is detected by hash and repaired', async () => {
   const { net, host, clients, all } = await setup();
   clients[1]!.grid[5] = 999;
