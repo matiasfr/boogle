@@ -691,11 +691,8 @@ export async function play({ stopBeforeReward = false } = {}) {
     const homeFromQuarry = async () => {
       const p = me.body!.position;
       if (p.x - layout.ORIGIN.x < -10) return;
-      const off = besideQ(112, v2().frames[2]!);
-      await walk(off.x, off.z, 1);
-      const near = qAt(112);
-      require(await bot.straight(near.x + layout.ORIGIN.x, near.z, 0.5, 8000), 'stepped back onto the track');
-      await walkQuarry(112, 10);
+      // Home on foot over the table and the quarry path's bridge; the trestle end is a drop, not a step.
+      await walk(rack.x, rack.z, 3);
     };
     for (const k of [1, 2]) {
       const frameAt = v2().frames[k]!;
