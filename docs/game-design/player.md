@@ -52,6 +52,11 @@ Version comparisons and verification limits live in the [upgrade assessment](../
   no breath mechanic. This is the existing Owner body, with no new presence field or lockstep state.
   Manual Dive, C, D-pad Right and its touch/guide entry are removed, and the demo is archived.
   Classic home retains its old sea forces; water URL selectors are ignored.
+- Your own Buddy's pose swims or wades by the depth of water over the bed at your feet, against a surface smoothed
+  over **0.6 s**, switching **0.15 m** either side of the depth that floats you (0.8 m): a wave bob or a seabed touch
+  does not flip it. The stroke quickens with speed (×(1 + 0.45 × m/s)) on its own clock, so speed changes never jump
+  its phase; into and out of the water cross-fades over **0.15 s**. Presentation only: remote players still pose from
+  presence's swim state.
 
 ## Flops (cosmetic)
 
