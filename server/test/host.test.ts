@@ -100,6 +100,32 @@ test('future classic namespaces are refused even with the current catalog', asyn
   }
 });
 
+test('line-one and old playable writers enter distinct rooms; foreign line versions fail before loading', async () => {
+  const { svc, base } = await start({ SERVER_ROOMS: '*' });
+  try {
+    const currentRoom = railwayRoomId('mixed-build');
+    const oldRoom = 't1v02-mixed-build';
+    const current = connect(base, currentRoom, 'newtab', undefined, undefined, TUNE_CATALOG);
+    const old = connect(base, oldRoom, 'oldtab', undefined, undefined, TUNE_CATALOG);
+    await Promise.all([current.next(is('welcome')), old.next(is('welcome'))]);
+    const newHost = svc.roomHost()!.room(currentRoom)!.world;
+    const oldHost = svc.roomHost()!.room(oldRoom)!.world;
+    assert.notEqual(newHost, oldHost);
+    assert.ok((newHost.sync.snapshot().data.railway as Msg).line);
+    assert.equal((oldHost.sync.snapshot().data.railway as Msg).line, undefined);
+    for (const room of ['v07-rail-mixed-build', 'v08-rail-mixed-build', 'v99-rail-mixed-build']) {
+      const other = connect(base, room, 'othertab', undefined, undefined, TUNE_CATALOG);
+      await other.next(is('incompatible'));
+      assert.equal(await other.closed, 4412);
+      assert.equal(svc.roomHost()!.room(room), undefined);
+    }
+    current.ws.close();
+    old.ws.close();
+  } finally {
+    await svc.close({ save: false });
+  }
+});
+
 test('the isolated headless T1 harness remains exempt from playable tuning admission', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
   try {

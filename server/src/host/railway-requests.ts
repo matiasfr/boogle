@@ -55,6 +55,15 @@ export function createRailwayRequests({
   });
 
   return {
+    /** Only the room's actual departure/takeover calls this, never stale presence or a missed packet. */
+    depart(sid: string) {
+      for (const [pid, session] of sessions) {
+        if (session.sid !== sid) continue;
+        sessions.delete(pid);
+        return { pid, epoch: session.epoch };
+      }
+      return null;
+    },
     receive(message: unknown, from: string) {
       if (!object(message)) return;
       const pid = pidOf(from);
@@ -129,12 +138,20 @@ export function createRailwayRequests({
         return;
       }
       // Host-only ops cannot enter through a material request. Invalid material requests become durable rejections.
-      const allowed = ['rail.wake', 'rail.chop', 'rail.take', 'rail.rackTake', 'rail.drop', 'rail.deposit'].includes(
-        String(e.op),
-      );
+      const ordinary = ['rail.wake', 'rail.chop', 'rail.take', 'rail.rackTake', 'rail.drop', 'rail.deposit'];
+      const lineOps = [
+        'rail.mine',
+        'rail.axe',
+        'rail.beamChop',
+        'rail.beamTake',
+        'rail.beamDrop',
+        'rail.beamDeposit',
+        'rail.jump',
+      ];
+      const allowed = ordinary.includes(String(e.op)) || (!!api.railway.line && lineOps.includes(String(e.op)));
       // Strip unrelated client fields so the bounded recovery tail contains only this op's wire shape.
       const clean: Obj = { op: e.op, epoch, request, i: 0, j: 0 };
-      if (e.op === 'rail.chop' || e.op === 'rail.take') clean.id = e.id;
+      if (e.op === 'rail.chop' || e.op === 'rail.take' || e.op === 'rail.mine') clean.id = e.id;
       if (e.op === 'rail.chop' && api.railway.falls) {
         clean.yaw = e.yaw;
         clean.collapsed = e.collapsed;
@@ -142,6 +159,15 @@ export function createRailwayRequests({
       if (e.op === 'rail.deposit') {
         clean.station = e.station;
         clean.n = e.n;
+      }
+      if (api.railway.line && ['rail.deposit', 'rail.drop', 'rail.take', 'rail.rackTake'].includes(String(e.op)))
+        clean.kind = e.kind;
+      if (['rail.beamTake', 'rail.beamDrop', 'rail.beamDeposit'].includes(String(e.op))) clean.revision = e.revision;
+      if (e.op === 'rail.beamDeposit') clean.station = e.station;
+      if (e.op === 'rail.beamDrop') {
+        clean.x = e.x;
+        clean.y = e.y;
+        clean.z = e.z;
       }
       if (e.op === 'rail.drop') {
         clean.x = e.x;

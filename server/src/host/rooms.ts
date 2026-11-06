@@ -17,13 +17,14 @@ import { SERVER_ID, okId, okKey } from '../../../src/net/ids.ts';
 import { okPid } from '../../../src/sim/roster.ts';
 import { TUNE_CATALOG } from '../../../src/sim/tune.ts';
 import { WORLD_NS } from '../../../src/world/namespace.ts';
-import { isPlayableRailwayRoom } from '../../../src/world/railway-namespace.ts';
+import { isPlayableRailwayRoom, isLineRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { createHostedRoom, type HostCfg, type HostedRoom } from './hosted-room.ts';
 import type { Store } from '../store.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
 const classicNamespace = (id: string) => /^v\d+-/.exec(id)?.[0];
 const supportedNamespace = (id: string) => {
+  if (/^v\d+-rail-/.test(id)) return isLineRailwayRoom(id);
   const namespace = classicNamespace(id);
   return namespace === undefined || namespace === `${WORLD_NS}-`;
 };

@@ -1,5 +1,5 @@
 // Owner pose protects nearby drops; it is never inventory. Unknown or stale observations fail closed.
-export type RailwayPosition = { x: number; z: number; at: number };
+export type RailwayPosition = { x: number; y?: number; z: number; at: number };
 export function freshRailPosition(p: RailwayPosition | null, now: number): p is RailwayPosition {
   return (
     !!p && Number.isFinite(p.x) && Number.isFinite(p.z) && Number.isFinite(p.at) && now - p.at <= 2000 && p.at <= now

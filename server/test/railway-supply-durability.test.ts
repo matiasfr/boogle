@@ -12,6 +12,7 @@ import { createRailwayWorldHost, type RailwayWorldHost } from '../src/host/world
 import { createRoomHost } from '../src/host/rooms.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY } from '../../src/sim/railway-layout.ts';
+import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import { railwayInvariant } from '../../src/sim/railway.ts';
 import type { RecoveryEnvelope } from '../../src/world/sync.ts';
 import type { TuneApi } from '../../src/world/rules/tune.ts';
@@ -29,13 +30,14 @@ async function until(predicate: () => boolean, label: string) {
 function assertSupply(host: RailwayWorldHost, stage: number) {
   const state = host.rules.railway.railway;
   const counts = host.rules.railway.counts();
+  const initial = state.line ? LINE1_INITIAL[0] : RAILWAY_SUPPLY;
   assert.equal(state.supply!.ages[SUPPLY_SOURCE], stage);
   assert.equal(counts.rack, 10);
   assert.equal(counts.loose, 0);
   assert.equal(counts.carry, 0);
   assert.equal(counts.produced, stage === 35 ? 10 : 0);
-  assert.equal(counts.source, RAILWAY_SUPPLY - (stage === 35 ? 0 : 10));
-  assert.equal(counts.total, RAILWAY_SUPPLY + counts.produced);
+  assert.equal(counts.source, initial - (stage === 35 ? 0 : 10));
+  assert.equal(counts.total, initial + counts.produced);
   assert.equal(railwayInvariant(state), null);
 }
 

@@ -11,7 +11,7 @@ import { createStore } from '../src/store.ts';
 import { loadHomeLand } from '../src/host/land.ts';
 import { RULES } from '../../src/world/rules/index.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
-import { TUNE_CATALOG } from '../../src/sim/tune.ts';
+import { TUNE_CATALOG, TUNABLES } from '../../src/sim/tune.ts';
 
 type Msg = Record<string, any>;
 const generators: Record<string, (r: unknown, view: unknown) => Msg | null> = Object.assign(
@@ -85,7 +85,7 @@ test('an existing main v07 room preserves its accepted work while upgrading the 
   const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
   assert.equal(saved.data.vers.tune, 2);
   assert.equal(saved.data.data.tune.catalog, TUNE_CATALOG);
-  assert.equal(Object.keys(saved.data.data.tune.values).length, 10);
+  assert.equal(Object.keys(saved.data.data.tune.values).length, TUNABLES.length);
   const second = await makeHost(dir, 1, fixture.roomId);
   assert.equal(second.wh.status().loadErrors, 0);
   assert.equal(second.wh.sync.worldHash(), hash, 'the saved upgraded room survives another process load');
