@@ -89,6 +89,8 @@ export function railSupplyPulse(s: Railway, e: SupplyPulse, intervals = DEFAULT_
     pile.age = Math.min(RECOVERY_MINUTES, (pile.age ?? 0) + recover);
     if (pile.age === RECOVERY_MINUTES && e.recover.includes(pile.id)) {
       if (s.line && pile.kind === 1) s.line.stoneRack += pile.n;
+      // Abandoned rails return to the forge's rack; logs to the recovery rack.
+      else if (s.line2 && pile.kind === 2) s.line2.forge.rack += pile.n;
       else supply.rack += pile.n;
       moved += pile.n;
       pile.n = 0;

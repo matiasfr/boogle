@@ -48,6 +48,19 @@ import {
   type RailSupply,
   type RailSupplyJSON,
 } from './railway-supply.ts';
+import {
+  createRailLine2,
+  railLine2Apply,
+  railLine2Tick,
+  railLine2Resume,
+  saveRailLine2,
+  loadRailLine2,
+  validateRailLine2,
+  line2Logs,
+  line2Rails,
+  type RailLine2,
+  type RailLine2JSON,
+} from './railway-line2.ts';
 
 export const RAILWAY_OUTCOMES = 64;
 export const RAILWAY_WINDOW = 8;
@@ -55,7 +68,7 @@ export const RAILWAY_PILES = 128;
 export const RAILWAY_MAX_INT = 2147483647;
 export const RAILWAY_MAX_MARKER = Number.MAX_SAFE_INTEGER;
 export const RAILWAY_DURATION = T1.depositTicks + T1.feedTicks + T1.layTicks;
-export type RailAccount = { pid: string; carry: number; stone?: number; epoch: number; request: number };
+export type RailAccount = { pid: string; carry: number; stone?: number; rails?: number; epoch: number; request: number };
 export type RailPile = { id: number; x: number; z: number; n: number; kind?: number; y?: number; age?: number };
 export type RailResult = {
   pid: string;
@@ -88,6 +101,8 @@ export type Railway = {
   stoneUsed?: number;
   stoneDelivered?: number;
   line?: RailLine;
+  /** Line two (forge, Q1-Q3); present with line one. */
+  line2?: RailLine2;
   /** Playable namespace only: accepted collision presentation, independent of material balances. */
   falls?: { yaw: number[]; collapsed: boolean[] };
   supply?: RailSupply;
@@ -95,7 +110,7 @@ export type Railway = {
 export type RailRequest = { epoch: number; request: number };
 export type RailwayJSON = Omit<
   Railway,
-  'accounts' | 'piles' | 'outcomes' | 'sources' | 'work' | 'falls' | 'supply' | 'line' | 'timing'
+  'accounts' | 'piles' | 'outcomes' | 'sources' | 'work' | 'falls' | 'supply' | 'line' | 'line2' | 'timing'
 > & {
   sources: string;
   work: string;
@@ -105,6 +120,7 @@ export type RailwayJSON = Omit<
   falls?: { yaw: string; collapsed: string };
   supply?: RailSupplyJSON;
   line?: RailLineJSON;
+  line2?: RailLine2JSON;
   timing?: number[];
 };
 export type RailAction = RailRequest & {
@@ -145,7 +161,7 @@ export function createRailway(playable = false, line1 = false): Railway {
     completion: 0,
     ...(playable ? { falls: { yaw: RAILWAY_SOURCES.map(() => 0), collapsed: RAILWAY_SOURCES.map(() => false) } } : {}),
     ...(playable ? { supply: createRailSupply() } : {}),
-    ...(line1 ? { line: createRailLine(), timing: { ...LINE_TIMING } } : {}),
+    ...(line1 ? { line: createRailLine(), line2: createRailLine2(LINE_TIMING), timing: { ...LINE_TIMING } } : {}),
   };
 }
 export const railAccount = (s: Railway, pid: string) => s.accounts.find((a) => a.pid === pid);
@@ -195,7 +211,14 @@ export function railApply(
   const previous = railOutcome(s, pid, e.epoch, e.request);
   if (previous) return previous;
   const a = railAccount(s, pid)!;
-  if (s.line) return remember(s, a, e, railLineApply(s, a, e, tick, timing), e.op === 'rail.reject');
+  if (s.line)
+    return remember(
+      s,
+      a,
+      e,
+      railLineApply(s, a, e, tick, timing) || railLine2Apply(s, a, e, tick, timing),
+      e.op === 'rail.reject',
+    );
   let n = 0;
   if (e.op === 'rail.wake' && s.awake < 0) {
     s.awake = tick;
@@ -257,7 +280,10 @@ export function railApply(
   return remember(s, a, e, n, e.op === 'rail.reject');
 }
 export function railTick(s: Railway, tick: number): void {
-  if (s.line) return railLineTick(s, tick);
+  if (s.line) {
+    railLineTick(s, tick);
+    return railLine2Tick(s, tick);
+  }
   if (s.start < 0 || s.completion) return;
   s.elapsed = Math.min(RAILWAY_DURATION, s.elapsed + Math.max(0, tick - s.lastTick));
   s.lastTick = tick;
@@ -271,7 +297,7 @@ export function railResume(s: Railway, ticks: number, marker: number, tick: numb
   s.resumeMarker = marker;
   if (s.line) {
     const job = railCurrentJob(s);
-    if (job.start < 0 || job.completion) return 0;
+    if (job.start < 0 || job.completion) return railLine2Resume(s, ticks, tick);
     const n = Math.min(ticks, railMaxDuration(s) - job.elapsed);
     job.elapsed += n;
     railLineTick(s, tick);
@@ -286,7 +312,8 @@ export function railResume(s: Railway, ticks: number, marker: number, tick: numb
 export function railCounts(s: Railway) {
   const source = s.sources.reduce((a, b) => a + b, 0) + (s.line?.hardwood.reduce((a, b) => a + b, 0) ?? 0);
   const carry = s.accounts.reduce((a, b) => a + b.carry, 0);
-  const loose = s.piles.reduce((a, b) => a + (b.kind === 1 ? 0 : b.n), 0);
+  const loose = s.piles.reduce((a, b) => a + (b.kind ? 0 : b.n), 0);
+  const line2 = s.line2 ? line2Logs(s.line2) : 0;
   const jobs = railJobs(s);
   const stock = jobs.reduce((n, j) => n + j.stock, 0),
     allocation = jobs.reduce((n, j) => n + j.allocation, 0);
@@ -306,6 +333,19 @@ export function railCounts(s: Railway) {
     total: 0,
   };
   stone.total = stone.source + stone.carry + stone.loose + stone.stock + stone.allocation + stone.used + stone.rack;
+  const l2 = s.line2;
+  const rails = l2
+    ? {
+        forge: l2.forge.rack,
+        carry: s.accounts.reduce((n, a) => n + (a.rails ?? 0), 0),
+        loose: s.piles.reduce((n, p) => n + (p.kind === 2 ? p.n : 0), 0),
+        stations: l2.jobs.reduce((n, j) => n + j.railStock + j.railAllocation + j.railUsed, 0),
+        poured: l2.forge.poured,
+        total: line2Rails(s),
+        delivered: l2.jobs.reduce((n, j) => n + j.railDelivered, 0),
+      }
+    : null;
+  const line2Delivered = l2 ? l2.forge.used + l2.jobs.reduce((n, j) => n + j.delivered, 0) : 0;
   return {
     source,
     carry,
@@ -313,18 +353,22 @@ export function railCounts(s: Railway) {
     stock,
     allocation,
     used,
+    line2,
     rack: s.supply?.rack ?? 0,
-    produced: s.supply?.produced ?? 0,
-    total: source + carry + loose + stock + allocation + used + (s.supply?.rack ?? 0),
+    produced: (s.supply?.produced ?? 0) + (l2?.depotProduced ?? 0),
+    total: source + carry + loose + stock + allocation + used + line2 + (s.supply?.rack ?? 0),
     delivered,
     score:
-      delivered * T1.deliveryScore +
+      (delivered + line2Delivered) * T1.deliveryScore +
+      (rails?.delivered ?? 0) * 40 +
+      (l2?.jobs.reduce((n, j) => n + j.completion, 0) ?? 0) * T1.completionScore +
       completion * T1.completionScore +
       stone.delivered * 25 +
       (s.line?.beam.state === 'allocated' || s.line?.beam.state === 'used' ? 1500 : 0),
     completion,
     starterRails: T1.starterRails,
     ...(s.line ? { stone } : {}),
+    ...(rails ? { rails } : {}),
   };
 }
 export function railPhase(
@@ -372,9 +416,13 @@ export const serializeRailway = (s: Railway, rosterPids = s.accounts.map((a) => 
   catalog: s.catalog,
   sources: s.line ? packRailNibbles(s.sources) : s.sources.map((v) => v.toString(16)).join(''),
   work: s.line ? packRailNibbles(s.work) : s.work.map((v) => v.toString(16)).join(''),
-  accounts: s.accounts.map(({ pid, carry, stone, epoch, request }) =>
+  accounts: s.accounts.map(({ pid, carry, stone, rails, epoch, request }) =>
     s.line
-      ? [rosterPids.indexOf(pid), carry + 9 * (stone ?? 0), `${epoch.toString(36)}.${request.toString(36)}`]
+      ? [
+          rosterPids.indexOf(pid),
+          carry + 9 * (stone ?? 0) + 81 * (rails ?? 0),
+          `${epoch.toString(36)}.${request.toString(36)}`,
+        ]
       : [s.falls ? rosterPids.indexOf(pid) : pid, carry, epoch.toString(36), request.toString(36)],
   ),
   piles: s.piles.map(({ id, x, z, n, kind, y, age }) =>
@@ -399,7 +447,9 @@ export const serializeRailway = (s: Railway, rosterPids = s.accounts.map((a) => 
   resumeMarker: s.resumeMarker,
   completion: s.completion,
   ...(s.supply ? { supply: saveRailSupply(s.supply) } : {}),
-  ...(s.line ? { line: saveRailLine(s.line, rosterPids), timing: packRailTiming(s.timing!) } : {}),
+  ...(s.line
+    ? { line: saveRailLine(s.line, rosterPids), line2: saveRailLine2(s.line2!), timing: packRailTiming(s.timing!) }
+    : {}),
   ...(s.falls
     ? {
         falls: {
@@ -469,13 +519,14 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
     falls: undefined,
     supply: playable ? loadRailSupply(j.supply, line1) : undefined,
     line: line1 ? loadRailLine(j.line, rosterPids) : undefined,
+    line2: line1 ? loadRailLine2(j.line2) : undefined,
     timing: line1 ? unpackRailTiming(j.timing) : undefined,
     sources: line1 ? unpackRailNibbles(j.sources) : [...j.sources].map((v) => Number.parseInt(v, 16)),
     work: line1 ? unpackRailNibbles(j.work) : [...j.work].map((v) => Number.parseInt(v, 16)),
     accounts: j.accounts.map(([pid, carry, epoch, request]) => ({
       pid: pidOf(pid),
       carry: line1 ? carry % 9 : carry,
-      ...(line1 ? { stone: Math.floor(carry / 9) } : {}),
+      ...(line1 ? { stone: Math.floor(carry / 9) % 9, rails: Math.floor(carry / 81) } : {}),
       epoch: counter(line1 ? epoch.split('.')[0]! : epoch),
       request: counter(line1 ? epoch.split('.')[1]! : request!),
     })),
@@ -511,6 +562,8 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
   if (!line1) {
     if (Object.hasOwn(j, 'line')) throw new Error('railway: unexpected line');
     delete n.line;
+    if (Object.hasOwn(j, 'line2')) throw new Error('railway: unexpected line2');
+    delete n.line2;
     if (Object.hasOwn(j, 'timing')) throw new Error('railway: unexpected timing');
     delete n.timing;
   }
@@ -551,7 +604,10 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
         !a ||
         !okPid(a.pid) ||
         !railInt(a.carry, T1.carry) ||
-        (line1 && (!railInt(a.stone, T1.carry) || a.carry + a.stone! > T1.carry)) ||
+        (line1 &&
+          (!railInt(a.stone, T1.carry) ||
+            !railInt(a.rails, T1.carry) ||
+            a.carry + a.stone! + a.rails! > T1.carry)) ||
         !railInt(a.epoch, RAILWAY_MAX_INT, 1) ||
         !railInt(a.request),
     )
@@ -567,7 +623,7 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
         !p ||
         !railInt(p.id, n.nextPile - 1, 1) ||
         !railInt(p.n, T1.carry, 1) ||
-        (line1 && !railInt(p.kind, 1)) ||
+        (line1 && !railInt(p.kind, 2)) ||
         !railInt(p.x, 200000, -200000) ||
         !railInt(p.z, 200000, -200000) ||
         (playable && (!railInt(p.y, 200000, -200000) || !railInt(p.age, RECOVERY_MINUTES))),
@@ -625,8 +681,11 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
     throw new Error('railway: outcomes');
   if (n.supply?.ages.some((age, k) => (n.sources[k] !== 0 ? age !== 0 && age !== 35 : age === 35)))
     throw new Error('railway: supply age');
-  if (line1) validateRailLine(n);
-  if (railCounts(n).total !== RAILWAY_SUPPLY + (line1 ? 30 : 0) + (n.supply?.produced ?? 0))
+  if (line1) {
+    validateRailLine(n);
+    validateRailLine2(n);
+  }
+  if (railCounts(n).total !== RAILWAY_SUPPLY + (line1 ? 30 : 0) + railCounts(n).produced)
     throw new Error('railway: conservation');
   Object.assign(s, n, { sources: [...n.sources], work: [...n.work] });
 }

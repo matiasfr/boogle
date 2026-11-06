@@ -92,7 +92,14 @@ export const createRailLine = (): RailLine => ({
     age: 0,
   },
 });
-export const railCarry = (a: RailAccount) => a.carry + (a.stone ?? 0);
+export const railCarry = (a: RailAccount) => a.carry + (a.stone ?? 0) + (a.rails ?? 0);
+/** Balance of one material kind: 0 logs, 1 stone, 2 rails. */
+const balanceOf = (a: RailAccount, kind: number) => (kind === 1 ? (a.stone ?? 0) : kind === 2 ? (a.rails ?? 0) : a.carry);
+function credit(a: RailAccount, kind: number, n: number) {
+  if (kind === 1) a.stone = (a.stone ?? 0) + n;
+  else if (kind === 2) a.rails = (a.rails ?? 0) + n;
+  else a.carry += n;
+}
 export const railJobs = (s: Railway): (RailJob | Railway)[] => (s.line ? [s, ...s.line.jobs] : [s]);
 export const railActiveStation = (s: Railway) =>
   s.line ? (!s.completion ? 0 : !s.line.jobs[0].completion ? 1 : 2) : 0;
@@ -217,7 +224,7 @@ export function railLineApply(s: Railway, a: RailAccount, e: RailAction, tick: n
       if (!l.rocks[k]) l.rockAge[k] = 0;
     }
   }
-  if (e.op === 'rail.deposit' && ready && e.station === spec.id && job.start < 0 && !job.completion) {
+  if (e.op === 'rail.deposit' && ready && e.kind !== 2 && e.station === spec.id && job.start < 0 && !job.completion) {
     const carry = stone ? (a.stone ?? 0) : a.carry;
     n = Math.min(e.n!, carry, spec.bill[stone ? 1 : 0] - (stone ? (job.stoneStock ?? 0) : job.stock));
     if (n === 0) return 0;
@@ -232,34 +239,31 @@ export function railLineApply(s: Railway, a: RailAccount, e: RailAction, tick: n
     }
     fund(s, job, index, tick, timing);
   }
+  const kind = e.kind === 1 || e.kind === 2 ? e.kind : 0;
   if (e.op === 'rail.drop') {
-    const carry = stone ? (a.stone ?? 0) : a.carry;
-    let p = s.piles.find(
-      (p) => (p.kind ?? 0) === (stone ? 1 : 0) && p.x === e.x && p.z === e.z && p.y === e.y && p.n < 8,
-    );
+    const carry = balanceOf(a, kind);
+    let p = s.piles.find((p) => (p.kind ?? 0) === kind && p.x === e.x && p.z === e.z && p.y === e.y && p.n < 8);
     if (!p && carry > 0 && s.piles.length < 128 && s.nextPile < 2147483647) {
-      p = { id: s.nextPile++, x: e.x!, y: e.y!, z: e.z!, n: 0, kind: stone ? 1 : 0, age: 0 };
+      p = { id: s.nextPile++, x: e.x!, y: e.y!, z: e.z!, n: 0, kind, age: 0 };
       s.piles.push(p);
     }
     if (p) {
       n = Math.min(e.n!, carry, 8 - p.n);
       p.n += n;
       if (n) p.age = 0;
-      if (stone) a.stone = carry - n;
-      else a.carry -= n;
+      credit(a, kind, -n);
     }
   }
   if (e.op === 'rail.take' && free > 0) {
     const p = s.piles.find((p) => p.id === e.id);
-    if (p && (e.kind ?? 0) === (p.kind ?? 0)) {
+    if (p && kind === (p.kind ?? 0)) {
       n = Math.min(p.n, free);
       p.n -= n;
-      if (p.kind === 1) a.stone = (a.stone ?? 0) + n;
-      else a.carry += n;
+      credit(a, kind, n);
       if (!p.n) s.piles.splice(s.piles.indexOf(p), 1);
     }
   }
-  if (e.op === 'rail.rackTake' && free > 0) {
+  if (e.op === 'rail.rackTake' && free > 0 && e.kind !== 2) {
     n = Math.min(stone ? l.stoneRack : s.supply!.rack, free);
     if (stone) {
       l.stoneRack -= n;

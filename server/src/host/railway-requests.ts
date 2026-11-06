@@ -186,6 +186,10 @@ export function createRailwayRequests({
         'rail.beamDrop',
         'rail.beamDeposit',
         'rail.jump',
+        'rail.forgeTake',
+        'rail.depotTake',
+        'rail.lever',
+        'rail.hook',
       ];
       const allowed = ordinary.includes(String(e.op)) || (!!api.railway.line && lineOps.includes(String(e.op)));
       const clean = railwayRequestEdit(e, epoch, request, { falls: !!api.railway.falls, line: !!api.railway.line });

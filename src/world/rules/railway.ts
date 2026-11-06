@@ -35,6 +35,14 @@ import {
   LINE1_JUMP_DEVICE,
 } from '../../sim/railway-line-layout.ts';
 import { LINE_TIMING } from '../../sim/railway-line.ts';
+import {
+  LINE2_FORGE,
+  LINE2_STATIONS,
+  LINE2_DEPOT,
+  LINE2_LEVER,
+  LINE2_HOOK,
+} from '../../sim/railway-line2-layout.ts';
+import { line2Active, line2GateOpen, line2Completed } from '../../sim/railway-line2.ts';
 import { railSupplyPulse, RECOVERY_RACK, RAIL_GROW_MASK_LENGTH, type SupplyPulse } from '../../sim/railway-supply.ts';
 import { okPid } from '../../sim/roster.ts';
 import type { Ctx, Edit, Land, Stream, SyncView } from './types.ts';
@@ -125,10 +133,16 @@ export function install(
     );
   });
   material('rail.deposit', (e, c) => {
-    const station = line1 ? LINE1_STATIONS.find((s) => s.id === e.station) : e.station === 'T1' ? T1 : undefined;
+    const station = line1
+      ? (LINE1_STATIONS.find((s) => s.id === e.station) ??
+        LINE2_STATIONS.find((s) => s.id === e.station) ??
+        (e.station === 'F' ? LINE2_FORGE : undefined))
+      : e.station === 'T1'
+        ? T1
+        : undefined;
     return (
       !!station &&
-      (!line1 || e.kind === undefined || railInt(e.kind, 1)) &&
+      (!line1 || e.kind === undefined || railInt(e.kind, 2)) &&
       railInt(e.n, T1.carry, 1) &&
       reach(e, c, station.x, station.z, T1.reach)
     );
@@ -137,7 +151,7 @@ export function install(
     'rail.drop',
     (e, c) =>
       railInt(e.n, T1.carry, 1) &&
-      (!line1 || e.kind === undefined || railInt(e.kind, 1)) &&
+      (!line1 || e.kind === undefined || railInt(e.kind, 2)) &&
       railInt(e.x, 200000, -200000) &&
       railInt(e.z, 200000, -200000) &&
       (!playable || railInt(e.y, 200000, -200000)) &&
@@ -147,7 +161,7 @@ export function install(
     if (!railInt(e.id, RAILWAY_MAX_INT, 1)) return false;
     const pile = railway.piles.find((p) => p.id === e.id);
     // A raced-away pile still yields a terminal no-op; no current target means reject via rail.reject.
-    return !!pile && (!line1 || e.kind === undefined || railInt(e.kind, 1)) && reach(e, c, pile.x, pile.z, 320);
+    return !!pile && (!line1 || e.kind === undefined || railInt(e.kind, 2)) && reach(e, c, pile.x, pile.z, 320);
   });
   if (playable)
     material(
@@ -187,6 +201,17 @@ export function install(
         (c.env.railHeight as (e: Edit, y: number, radius: number) => boolean)(e, LINE1_JUMP_DEVICE.y, 220) &&
         reach(e, c, LINE1_JUMP_DEVICE.x, LINE1_JUMP_DEVICE.z, 300),
     );
+    // Line two. Height checks keep the lever and hook device to their ledges; readiness is the sim's, not here.
+    const height = (e: Edit, c: Ctx, y: number) =>
+      typeof c.env.railHeight === 'function' &&
+      (c.env.railHeight as (e: Edit, y: number, radius: number) => boolean)(e, y + 40, 260);
+    material('rail.forgeTake', (e, c) => reach(e, c, LINE2_FORGE.rackX, LINE2_FORGE.rackZ, 340));
+    material('rail.depotTake', (e, c) => {
+      const spec = LINE2_STATIONS[line2Active(railway)];
+      return !!spec && spec.depot && reach(e, c, spec.x, spec.z, LINE2_DEPOT.reach);
+    });
+    material('rail.lever', (e, c) => height(e, c, LINE2_LEVER.y) && reach(e, c, LINE2_LEVER.x, LINE2_LEVER.z, 320));
+    material('rail.hook', (e, c) => height(e, c, LINE2_HOOK.y) && reach(e, c, LINE2_HOOK.x, LINE2_HOOK.z, 320));
     sync.registerOp<{ pid: string; epoch: number; revision: number }>('rail.beamRelease', {
       hostOnly: true,
       validate: (e) => okPid(e.pid) && railInt(e.epoch, RAILWAY_MAX_INT, 1) && railInt(e.revision),
@@ -206,6 +231,11 @@ export function install(
     counts: () => railCounts(railway),
     phase: () => railPhase(railway, sync.world.tick),
     panels: () => ({ committed: railPanelCount(railway), stock: railPanelStock(railway) }),
+    line2: () => ({
+      active: line2Active(railway),
+      completed: line2Completed(railway),
+      gateOpen: line2GateOpen(railway),
+    }),
     beamSpeeds: () => ({
       solo: line1 ? rules.tune!.get('railBeamSoloSpeed') / 100 : 2.2,
       help: line1 ? rules.tune!.get('railBeamHelpSpeed') / 100 : 5,

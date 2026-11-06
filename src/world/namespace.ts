@@ -12,8 +12,9 @@
 // v10 (2026-11-05): remove state versions/migrations, frozen recovery and tuning catalog fingerprints.
 // v11 (2026-11-06): the ball stopped being saved: the `ball` state and ball.rest gone.
 // v12 (2026-11-06): src.take spends a charge only when the whole handful still fits.
+// v13 (2026-11-06): line two's forge, Q1-Q3, depot, lever and hook join the railway state; rails ride the back.
 // Pure: read by room routing and tests.
-export const WORLD_NS = 'v12';
+export const WORLD_NS = 'v13';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
