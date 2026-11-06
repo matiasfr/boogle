@@ -17,6 +17,13 @@ export type AssetDescriptor = {
 };
 // Local Buddy inspection targets; the geometry and attachment transforms remain production-owned.
 export const gearAttachments: Record<string, Extract<Motion, { kind: 'attachment' }>> = {
+  'railway-hat': {
+    kind: 'attachment',
+    bone: 'Head',
+    node: 'wear_place_hat',
+    asset: 'buddy',
+    source: 'src/render/t1-reward-parts.ts and head-clearance.ts: earned railway hat',
+  },
   'ring-left': {
     kind: 'attachment',
     bone: 'calf_l',

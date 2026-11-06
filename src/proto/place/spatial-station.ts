@@ -5,9 +5,9 @@ import { ORIGIN, lineAt, type Line, type LinePoint, type Station } from './layou
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 export const FRAME_W = 2.6, // along the line
   FRAME_D = 2, // across
-  OUT = 5.4; // m from the track to the frame's middle
+  OUT = 7.5; // m from the track to the frame's middle; clear the whole-panel magazine through bends
 export const PER_ROW = 5;
-export const SPAN = OUT - FRAME_D / 2 - 1.2; // the feeder's length
+export const SPAN = OUT - FRAME_D / 2 - 5.8; // terminate outside the loaded machine's swept footprint
 export const RAIL_OUT = FRAME_D / 2 + 0.9; // m from the frame's middle to the rails' bearers
 
 /** Where a frame stands: `yaw` along the thing it feeds, (lx, lz) the way out from it. */

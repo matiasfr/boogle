@@ -365,5 +365,21 @@ export function createAxes(flat: (color: string, roughness?: number) => THREE.Ma
     return pick;
   });
 
-  return { axes: AXES, picks: PICKS };
+  const root = new THREE.Group();
+  root.name = 'wear_axe';
+  const blade = new THREE.Object3D();
+  blade.name = 'axe-blade-contact';
+  const grip = new THREE.Object3D();
+  grip.name = 'axe-grip-left';
+  grip.position.y = 0.18;
+  root.add(...AXES, blade, grip);
+  function setTier(proper: boolean, multi: boolean) {
+    AXES[0]!.visible = !proper;
+    AXES[1]!.visible = proper;
+    for (const pick of PICKS) pick.visible = multi;
+    // Only sparkle anchors; the existing production meshes and their proportions are unchanged.
+    blade.position.set(0, (proper ? 1.08 : 0.8) * 0.86, -(proper ? 0.52 : 0.26) * 0.91);
+  }
+  setTier(false, false);
+  return { root, setTier };
 }

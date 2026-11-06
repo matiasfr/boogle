@@ -1,6 +1,6 @@
 // The existing first Place box and its authored conductor hat. No inventory or profile owner.
 type RewardPart = [
-  shape: 'b' | 'c' | 's' | 'k',
+  shape: 'b' | 'c' | 's' | 'k' | 'tube' | 'brim',
   x: number,
   y: number,
   z: number,
@@ -29,9 +29,9 @@ export const T1_REWARD = {
   name: "A conductor's hat",
   line: 'Yours. It suits you.',
   parts: [
-    ['c', 0, 0.03, 0.06, 0.4, 0.05, 0.42, '#1b2a55'],
-    ['c', 0, 0.2, 0, 0.3, 0.3, 0.3, '#27386b'],
-    ['c', 0, 0.12, 0, 0.31, 0.08, 0.31, '#f2b134'],
+    ['brim', 0, 0.03, 0.06, 0.4, 0.05, 0.42, '#1b2a55'],
+    ['tube', 0, 0.2, 0, 0.3, 0.3, 0.3, '#27386b'],
+    ['tube', 0, 0.12, 0, 0.31, 0.08, 0.31, '#f2b134'],
     ['s', 0, 0.36, 0, 0.34, 0.1, 0.34, '#27386b'],
     ['s', 0, 0.2, 0.3, 0.06, 0.06, 0.03, '#f2b134'],
   ] satisfies RewardPart[],

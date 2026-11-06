@@ -21,9 +21,9 @@ export type LineStation = {
 };
 // IDs/frames are pinned from Place; no trig, prototype authority or runtime layout imports.
 export const LINE1_STATIONS: readonly LineStation[] = [
-  { id: 'T1', bill: [24, 0], beam: 0, fromCm: 19100, toCm: 15000, x: 99549, z: -14399, panels: 3, crate: true },
-  { id: 'T2', bill: [32, 8], beam: 0, fromCm: 15000, toCm: 11600, x: 97795, z: -12495, panels: 3, crate: true },
-  { id: 'T3', bill: [40, 0], beam: 1, fromCm: 11600, toCm: 3000, x: 97543, z: -8932, panels: 6, crate: false },
+  { id: 'T1', bill: [24, 0], beam: 0, fromCm: 19100, toCm: 15000, x: 99562, z: -14189, panels: 3, crate: true },
+  { id: 'T2', bill: [32, 8], beam: 0, fromCm: 15000, toCm: 11600, x: 97997, z: -12553, panels: 3, crate: true },
+  { id: 'T3', bill: [40, 0], beam: 1, fromCm: 11600, toCm: 3000, x: 97744, z: -8873, panels: 6, crate: false },
 ];
 // Rocks have their own typed ID domain: rock 0 must never be treated as ordinary tree 0.
 export const LINE1_ROCKS = [
@@ -43,8 +43,8 @@ export const lineBeamGround = (x: number, y: number, z: number) => {
     return dx * dx + dz * dz <= 90000 && Math.abs(y - ay!) <= 100;
   });
 };
-export const LINE1_AXE_STAND = { x: 97869, z: -8836 } as const;
-export const LINE1_JUMP_DEVICE = { x: 95926, y: 2638, z: -6940 } as const;
+export const LINE1_AXE_STAND = { x: 98070, z: -8777 } as const;
+export const LINE1_JUMP_DEVICE = { x: 95240, y: 2638, z: -7044 } as const;
 export const LINE1_HARDWOOD_IDS = [209, 232] as const;
 export const LINE1_HARDWOODS = [
   [209, 89882, -4677],

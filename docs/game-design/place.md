@@ -34,6 +34,15 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 
 **Earned tool and beam:** T2 completion alone does not grant the proper axe. The chest becomes available only after all 40 T3 logs are accepted; opening it grants the shared tool while T3 still waits for its beam. Proper hits supply up to five logs and five work, bounded by free carry and source stock. The first proper hit counts an ordinary tree's five extra units once; subsequent mature renewal supplies fifteen. The two authored hardwood reserves are available only to the proper axe. The great tree needs twelve accepted proper hits and creates exactly one beam. An empty back is required to claim it. Its holder identity, session epoch and revision fence competing takes, drops, departures and stale releases; accepted T3 delivery wins over later recovery. Unsafe or orphaned cargo returns to the same source anchor, never a second beam. Solo carry defaults to 2.2 m/s; a nearby empty-backed helper can bring it to 5 m/s without claiming another item. These speeds, construction pacing and the optional jump's movement values use the tunables interface.
 
+**Chop restoration (5 November iPhone playtest):** production calls the exact floating curve from morning commit
+`1b19093f` through `applyFloatingChopPose`, also used by legacy Place and the asset stage. It retains the 120 ms
+linear wind-up/contact, 35 ms bite hold, pull-back ending at 300 ms, 240 ms restart and 900 ms visible tail.
+The production-only +0.28/-0.5 rad body pitches and full-back body lean are removed; the socket no longer adds
+those motions to the axe. Proper-axe refusals use the original recoil. Current production axe geometry, tool
+unlock rules, accepted yields and beam behaviour stay unchanged. The same floating summon/vanish sparkle now
+also follows production visibility edges, with reduced-motion suppression and no extra sparkle on repeat strokes.
+All motion and sparkle are Local; accepted contacts still own harvest sounds, chips and material flights.
+
 **Rewards and the walk:** T1 retains the conductor hat with claims scoped to the current world; T2 adds an independent scarf claim through the same atomic personal-profile lock. Shared tools and path completion are separate from personal cosmetics. T3 finishes the solid line to the existing village stub, derives the lamps and additional locals/commuters once, and leaves the machine at its safe village waiting point. Two solid timber approaches at line positions 14 m and 30 m connect the grass bypass beside the parked machine to the raised track bed; each reaches deck height before crossing the bed’s side, so the walking route needs no jump. The first jump device is optional: reaching it permits shared acquisition without requiring path completion, and walking home requires no jump upgrade. No forge, depot, boiler, hook, glider, pack or trains are promoted. The hook remains a zip-line pull in the later-slice contract.
 
 **World identity and integration (updated 5 November):** the current-build cleanup starts fresh at `WORLD_NS = v10`, with production rooms under `rail-v10`, disjoint from classic `v10-<room>` names. Saves and personal claim keys use the current world; no old-build admission, migration or historical claim-key mapping remains. The isolated `t1v01` development spine remains. The Slice 3 evidence below records its earlier `v09` build and is not proof of this cleanup. Production uses the shared flanged-wheel machine, magazine and rigid trolley/hoist/clamp choreography from “Commit track and stock in whole panels”. Accepted integer panel contacts commit visible track and supporting colliders together and decrement the single twelve-panel allowance, partitioned 3/3/6. The continuous head retains its captured departure integral; the cars initially wait behind the committed frontier, then roll forward after closure. Quiet snapshots reconstruct the accepted cursor and body setback without contact effects. The final village waiting point and timber approaches remain. Fresh broker evidence below covers the integrated panels.
@@ -41,6 +50,24 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 **Proof boundary:** fresh solo/co-op runs on the integrated main build pass T2/T3, the earned axe, unique beam and both path walks; both co-op players ride all three panel stretches and exercise helped beam carrying. The [production acceptance ledger](../plans/production-core.md) links the inspected T2, T3, helped-beam and walk-home stills, every failure/repair, and measured segment wall times. The panels and village approach are readable; one beam spans both players, though their hands remain down and grip feel is unverified. Static checks pass with 396 unit tests and ten grounded placements without problems; server tests pass 104/104 and queued network assertions pass 196/196. The trusted `world-inputs` run passes classic only; production parity and the listed T1 acceptance gaps remain open. Timing under load does not establish responsiveness, smoothness or feel. Not tested on a device. Stop for the owner's first-path verdict: “Did finishing this line make the walk home feel worth the work?” The Boogler's copy remains untouched. New prompt lines for owner review: “Empty your back first”, “A proper axe first”, “Help carry” and “Let go”.
 
 ## The place
+
+**Track-layer clearance (5 November iPhone follow-up).** With no first panel target, the empty boom now parks
+along the track instead of pointing through its own origin and cutting sideways into the camp chimney. The
+working trolley, flanged wheels and whole prefabricated panels retain their model, dimensions and choreography.
+Station frames stand 7.5 m from the centreline; their short feeders stop 5.8 m out, clear of the loaded magazine
+and curved carried panels. Reward crates follow the frames. The first jump pillar and its existing course move
+4 m outward together, preserving every jump gap and recovery ramp. The drum seats across the pad, away from
+passing stock. Its flat lip overlaps the completed deck; production reveals its mesh and collider only after
+accepted panels and the whole local machine have passed (before T3 finishes), preserving the optional early
+device visit. This avoids a low magazine passing through the walkway on the steep grade. Authoritative centimetre anchors
+follow the three frames, attached axe stand and drum.
+The production level check decodes the current machine and sweeps all twelve panel cycles, closure returns and
+the village approach against authored buildings, full station stock, standing trees, rocks, racks, the jump pillar,
+its construction-derived lip, path lamps and opening props. Actual curved carried-panel triangles and tapered
+pillar bands avoid phantom contacts; a new panel never sweeps from the previous panel’s settled position.
+It samples choreography at 0.001 phase, bounds interpolated rigid-transform steps to 10 cm and expands obstacles
+by 25 cm. This is an offline clearance envelope, not device or real-time motion proof; players, dropped cargo
+and falling trees remain outside that static-route check. Serves DESIGN.md 11 (Show, don't tell).
 
 **Production foundations (5 November repair).** Completed opening buildings retain their permanent foundation slab,
 matching Place's completed construction state; only the temporary scaffold poles disappear. The level check in
@@ -729,7 +756,7 @@ on a device.
 
 ### Axe presentation and stage review
 
-Earned hats use a common head-centred fit for local and remote wearers and shop try-on.
+Earned hats use a common fit for local and remote wearers and shop try-on; the conductor hat follows Head rigidly with its hollow brim, as described in [player.md](player.md).
 Shallow bases clear the forehead; enclosing shells retain their authored seating depth.
 Reward reveals clear the current hat's actual bounds plus the
 item's half-height and bob, with camera distance fitted to the whole show's height and

@@ -831,13 +831,15 @@ const api = {
     start() {
       if (!preview || !ready) throw new Error('Stage not ready');
       const declaration =
-        state.asset === 'buddy' && state.chop !== 'off'
-          ? { kind: 'chop' as const, source: 'src/proto/place/chop-motion.ts and axe-models.ts' }
-          : state.asset === 'buddy' && state.attachment
-            ? gearAttachments[state.attachment]
-            : state.asset === 'buddy' && state.hat === 'conductor'
-              ? descriptors['conductor-cap']!.motion
-              : assetsById.get(state.asset)!.motion;
+        state.asset === 'buddy' && state.hat === 'railway'
+          ? gearAttachments['railway-hat']
+          : state.asset === 'buddy' && state.chop !== 'off'
+            ? { kind: 'chop' as const, source: 'src/proto/place/chop-motion.ts and axe-models.ts' }
+            : state.asset === 'buddy' && state.attachment
+              ? gearAttachments[state.attachment]
+              : state.asset === 'buddy' && state.hat === 'conductor'
+                ? descriptors['conductor-cap']!.motion
+                : assetsById.get(state.asset)!.motion;
       if (!declaration) throw new Error('Unknown attachment: ' + state.attachment);
       if (declaration.kind === 'none' && diagnosticRate === null) return { motion: 'none', declaration };
       input('spin').checked = false;

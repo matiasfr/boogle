@@ -15,6 +15,7 @@ import { thump } from '../../render/machine-sfx.ts';
 import { T2_REWARD } from './reward-data.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { createRailwayTools } from './tools.ts';
+import { seatConductorHat } from '../../render/head-clearance.ts';
 
 const localCosmetics = new Set<string>();
 const remoteCosmetics = new Map<string, Set<string>>();
@@ -41,7 +42,7 @@ export async function createRailwayReward(
   owner.cleanup(() => reveal.dispose());
   const first = await createStationReward(adapter, owner, reveal, 0, machineFrom);
   const second = await createStationReward(adapter, owner, reveal, 1, machineFrom);
-  const tools = await createRailwayTools(adapter, owner, reveal);
+  const tools = await createRailwayTools(adapter, owner, reveal, machineFrom);
   return {
     inspect() {
       const t1 = first.inspect(),
@@ -82,6 +83,7 @@ export function rewardSeat(
   besideLine: typeof import('../../proto/place/rail.ts').besideLine,
   H: typeof import('../../proto/place/terrain.ts').H,
   railY: typeof import('../../proto/place/layout.ts').railY,
+  frameOffset: number,
   stationIndex: 0 | 1 = 0,
 ) {
   // The same safe-ground choice as Place's handCrate, including its next-frame placement and fallbacks.
@@ -89,10 +91,10 @@ export function rewardSeat(
     next = line.stations[stationIndex + 1]!;
   const at = new THREE.Vector3();
   let placed = false;
-  const nextAt = besideLine(line.line, next.s - line.dir * 1.5, next.side * 5.4);
+  const nextAt = besideLine(line.line, next.s - line.dir * 1.5, next.side * frameOffset);
   const nextY = H(nextAt.x, nextAt.z);
   for (const along of [-line.dir * 3.4, line.dir * 3.4]) {
-    const q = besideLine(line.line, next.s - line.dir * 1.5 + along, next.side * 5.4);
+    const q = besideLine(line.line, next.s - line.dir * 1.5 + along, next.side * frameOffset);
     const ground = (x: number, z: number) => Math.abs(H(x, z) - nextY) <= 1;
     if (
       ![0, 3.5].every(
@@ -139,7 +141,7 @@ async function createStationReward(
   const stationId = stationIndex === 0 ? 'T1' : 'T2';
   const completion = () =>
     adapter.inspect().stations[stationIndex]?.completion ?? (stationIndex === 0 ? adapter.inspect().completion : 0);
-  const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }] =
+  const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }, { OUT }] =
     await Promise.all([
       import('../../proto/place/part-geometry.ts'),
       import('../../proto/place/look.ts'),
@@ -148,6 +150,7 @@ async function createStationReward(
       import('../../proto/place/land.ts'),
       import('../../proto/place/rail.ts'),
       import('../../proto/place/pieces.ts'),
+      import('../../proto/place/spatial-station.ts'),
     ]);
   const root = new THREE.Group();
   owner.root.add(root);
@@ -162,7 +165,7 @@ async function createStationReward(
   root.add(crate, beam);
   crate.visible = beam.visible = false;
 
-  const at = rewardSeat(LINKS[0]!, besideLine, H, railY, stationIndex);
+  const at = rewardSeat(LINKS[0]!, besideLine, H, railY, OUT, stationIndex);
   crate.position.copy(at);
   beam.position.copy(at);
   const targetAt = at.clone().add(new THREE.Vector3(0, 1.3, 0));
@@ -350,16 +353,22 @@ async function createStationReward(
     if (!hat) {
       hat = new THREE.Mesh(hatGeo, material);
       hat.castShadow = true;
-      hat.scale.setScalar(stationIndex === 0 ? 0.86 : 0.62);
-      hat.rotation.y = Math.PI;
+      if (stationIndex === 1) {
+        hat.scale.setScalar(0.62);
+        hat.rotation.y = Math.PI;
+      }
       worn.set(key, hat);
+    }
+    if (stationIndex === 0) {
+      seatConductorHat(avatar, hat);
+      return;
     }
     if (hat.parent !== avatar) avatar.add(hat);
     avatar.updateWorldMatrix(true, false);
-    const bone = avatar.getObjectByName(stationIndex === 0 ? 'Head' : 'neck_01');
+    const bone = avatar.getObjectByName('neck_01');
     if (bone) avatar.worldToLocal(bone.getWorldPosition(hat.position));
     else hat.position.set(0, 0.9, 0);
-    hat.position.y += stationIndex === 0 ? 0.33 : -0.2;
+    hat.position.y -= 0.2;
   }
   const api = {
     inspect: () => ({

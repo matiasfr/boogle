@@ -362,7 +362,7 @@ export async function auditCurrentCrate() {
   const started = performance.now();
   const layout = await import('../../src/proto/place/layout.ts');
   const ground = await import('../../src/proto/place/terrain.ts');
-  const { frameBesideLine } = await import('../../src/proto/place/spatial-station.ts');
+  const { frameBesideLine, OUT } = await import('../../src/proto/place/spatial-station.ts');
   const railSource = fs.readFileSync('src/proto/place/rail.ts', 'utf8');
   const railFragment = railPrefix(railSource);
   const { besideLine } = sourceModule<{
@@ -380,6 +380,7 @@ export async function auditCurrentCrate() {
     'src/proto/place/run.ts',
     'handCrate',
     {
+      OUT,
       ...layout,
       ...ground,
       besideLine,

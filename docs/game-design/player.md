@@ -149,6 +149,14 @@ pelvis, and half the clips' hip roll, twist and sway comes off, so its mass stay
 jump) and spreads its arms while falling, blended from its vertical speed. `&hat=cap` wears a conductor's cap and `&hat=beanie` a
 beanie, parts on the head bone hidden until worn, each one more draw call or two.
 
+The earned railway conductor hat retains its blue-and-gold outer shape at 0.86 scale, with a hollow brim and
+crown so it fits around the head instead of cutting through it or floating above it. Its brim origin sits at
+Head-local y=0.43 m and follows that bone rigidly, so idle, walk, run, jump and chop cannot slide the head through
+it. All eight player colours share this geometry and fit. The capsule fallback seats the same hollow hat at
+y=1.20 m on its animated inner group, preserving clearance during bob, lean and squash. Local players,
+partners and legacy Place use the same fitting function; the character stage's **Earned conductor hat** option
+inspects that production geometry and fit, distinct from the separate cap trial.
+
 The rest of the game fits this body. A haul bundle rides its spine,
 lower, deeper and a little shorter than on the capsule, so its head shows over the top from the follow camera. It leans
 forward under a load (5° to 11° by 16 logs, head level) with both hands gripping at its chest. A held item hangs from its right

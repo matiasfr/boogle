@@ -9,7 +9,7 @@ import { sourceModule, sourceFunction } from './source.ts';
 import { openingStops, WOOD2 } from '../../src/proto/place/opening-plans.ts';
 import { CRANE, RACK, ORIGIN, LINKS, PATHS, lineAt, railY } from '../../src/proto/place/layout.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from '../../src/proto/place/shore-layout.ts';
-import { frameBesideLine, FRAME_D, FRAME_W, SPAN } from '../../src/proto/place/spatial-station.ts';
+import { frameBesideLine, FRAME_D, FRAME_W, SPAN, OUT } from '../../src/proto/place/spatial-station.ts';
 import { H } from '../../src/proto/place/terrain.ts';
 import { TREE_SOURCES } from '../../src/proto/place/tree-sources.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
@@ -320,7 +320,7 @@ export async function checkPropGrounding() {
   crate.computeBoundingBox();
   const bounds = crate.boundingBox!;
   for (const stationIndex of [0, 1] as const) {
-    const at = rewardSeat(LINKS[0]!, besideLine, H, railY, stationIndex);
+    const at = rewardSeat(LINKS[0]!, besideLine, H, railY, OUT, stationIndex);
     rows.push({
       ...measure(
         `reward/T${stationIndex + 1}/settled-crate`,

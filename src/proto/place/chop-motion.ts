@@ -109,6 +109,35 @@ function grip(arm: Arm, at: THREE.Vector3, figure: THREE.Object3D) {
   aim(arm.lower, arm.hand, at);
 }
 export type ChopPoseOptions = { reducedMotion?: boolean; target?: THREE.Vector3; frame?: THREE.Object3D };
+/** Morning 5 November floating swing (1b19093f), shared with the production railway. */
+export function applyFloatingChopPose(
+  figure: THREE.Object3D,
+  axe: THREE.Object3D,
+  time: number,
+  response: ChopResponse,
+  frame = figure,
+) {
+  if (axe.parent !== frame) frame.add(axe);
+  axe.position.set(0.42, 0.72, -0.2);
+  axe.rotation.set(0, 0, 0);
+  axe.visible = time < CHOP_DURATION;
+  const raised = 1.5,
+    struck = -1.35,
+    c = CHOP_CONTACT;
+  if (time < c) axe.rotation.x = raised + (struck - raised) * (time / c);
+  else if (response === 'full' && time < 0.55) {
+    const u = Math.sin(Math.min(1, (time - c) / 0.49) * Math.PI);
+    axe.rotation.x = 0.2 + u * 2.2;
+    axe.rotation.z = -u * 0.9;
+  } else if (response === 'rebound' && time < 0.32) {
+    const u = Math.min(1, (time - c) / 0.09);
+    axe.rotation.x = struck + (raised - struck) * Math.sin(u * Math.PI * 0.5);
+    axe.rotation.z = -0.45 * Math.sin(u * Math.PI);
+  } else if (response === 'bite' && time < c + 0.035) axe.rotation.x = struck;
+  else if (time < 0.3) axe.rotation.x = struck + (0.2 - struck) * ((time - c - 0.035) / (0.3 - c - 0.035));
+  else axe.rotation.x = 0.2;
+}
+
 export function applyChopPose(
   figure: THREE.Object3D,
   axe: THREE.Object3D,
@@ -117,26 +146,7 @@ export function applyChopPose(
   options: ChopPoseOptions = {},
 ) {
   if (!chopPresentation.twoHanded) {
-    const frame = options.frame ?? figure;
-    if (axe.parent !== frame) frame.add(axe);
-    axe.position.set(0.42, 0.72, -0.2);
-    axe.rotation.set(0, 0, 0);
-    axe.visible = time < CHOP_DURATION;
-    const raised = 1.5,
-      struck = -1.35,
-      c = CHOP_CONTACT;
-    if (time < c) axe.rotation.x = raised + (struck - raised) * (time / c);
-    else if (response === 'full' && time < 0.55) {
-      const u = Math.sin(Math.min(1, (time - c) / 0.49) * Math.PI);
-      axe.rotation.x = 0.2 + u * 2.2;
-      axe.rotation.z = -u * 0.9;
-    } else if (response === 'rebound' && time < 0.32) {
-      const u = Math.min(1, (time - c) / 0.09);
-      axe.rotation.x = struck + (raised - struck) * Math.sin(u * Math.PI * 0.5);
-      axe.rotation.z = -0.45 * Math.sin(u * Math.PI);
-    } else if (response === 'bite' && time < c + 0.035) axe.rotation.x = struck;
-    else if (time < 0.3) axe.rotation.x = struck + (0.2 - struck) * ((time - c - 0.035) / (0.3 - c - 0.035));
-    else axe.rotation.x = 0.2;
+    applyFloatingChopPose(figure, axe, time, response, options.frame);
     return;
   }
   const pose = sampleChop(time, response);

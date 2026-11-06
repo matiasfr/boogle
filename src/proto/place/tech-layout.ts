@@ -51,13 +51,18 @@ export type Pad = {
 // first walk; you can't get to it until the line does.
 const N = LINES.north,
   E = LINES.east;
-const P1 = beside(N, 92, -1, 6.2),
+// Translate the existing course rigidly to clear the wide panel magazines.
+const P1 = beside(N, 92, -1, 10.2),
   P2 = beside(E, 92, -1, 7),
   STACK_RETURN = beside(E, 477, 1, 4);
 export const PILLARS = [
-  { id: 'p1', x: P1.x, z: P1.z, top: P1.y, r: 3.6, foot: -3, lipTo: beside(N, 92, -1, 1.7) },
+  { id: 'p1', x: P1.x, z: P1.z, top: P1.y, r: 3.6, foot: -3, lipTo: beside(N, 92, -1, 1.3) },
   { id: 'p2', x: P2.x, z: P2.z, top: P2.y + 2.2, r: 3.6, foot: -3, lipTo: null },
 ];
+
+/** Local construction view: the lip can join once accepted track and the entire machine have passed. */
+export const p1LipClear = (panelCount: number, machineZ: number) =>
+  panelCount >= 10 && machineZ > Math.max(PILLARS[0]!.z, PILLARS[0]!.lipTo!.z) + 1.2 + 25;
 
 export const PADS: Pad[] = [
   { id: 'p1', x: P1.x, z: P1.z, top: P1.y, hx: 3.4, hz: 3.4, look: 'stone' },
@@ -148,7 +153,7 @@ export const ringAt = (p: Pad) => {
 
 /** The devices. `pad`: what you stand on to take it; `from`: which way the show faces you. */
 export const DEVICES: Record<TechId, { pad: string; x: number; z: number; y: number }> = {
-  jump: { pad: 'p1', x: P1.x + 1.5, z: P1.z - 1.6, y: P1.y },
+  jump: { pad: 'p1', x: P1.x - 1.5, z: P1.z - 1.6, y: P1.y },
   // Approach from the railway faces the first floating slab instead of the village behind you.
   hook: { pad: 'p2', x: P2.x + 1, z: P2.z - 1.2, y: P2.y + 2.2 },
   glide: { pad: 'glide-home', x: 369, z: -169, y: 32.3 },

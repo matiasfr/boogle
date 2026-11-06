@@ -340,7 +340,11 @@ export async function play({ stopBeforeReward = false } = {}) {
     await checkpoint('T3 axe available');
     if (!second) {
       const chest = read().reward.axeChest;
+      await walk(chest.x, chest.z);
       require(await bot.use(chest.x, chest.z, 'open proper axe chest', /^Open/), 'proper axe chest offered');
+      // A single press can be rejected before the host receives the settled Owner position.
+      // Repeat ordinary input for a bounded window; acceptance remains the required beat.
+      require(await bot.work(() => read().axe, 5000, 380), 'shared proper axe accepted after bounded retries');
     }
     await until(() => read().axe, 'shared proper axe accepted');
     await dismiss('proper axe reveal');

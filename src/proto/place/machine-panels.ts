@@ -136,6 +136,9 @@ export function panelMechanism(parent: THREE.Object3D) {
       const baseX = returning ? THREE.MathUtils.lerp(lastStockX, stock.x, returnT) : stock.x;
       // The empty beam slides across the header while its trolley comes home.
       beamEnd.copy(target);
+      // Before the first contact there is no panel target. Aim along the track instead of
+      // through the local origin, which turns the 14 m boom sideways into the camp buildings.
+      if (!hasContact && target.lengthSq() < 1e-8) beamEnd.set(baseX, 0, 14);
       if (returning && hasContact) beamEnd.lerpVectors(last, target, returnT);
       const dx = beamEnd.x - baseX,
         dz = beamEnd.z - stock.z;
