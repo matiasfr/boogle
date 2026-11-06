@@ -12,7 +12,7 @@
 //                 (assets/src/scaffold-kit.py). Agents can write these: models as code, run headless.
 // - <name>.blend  a Blender file, exported with the settings below.
 // - <name>.glb    already glTF (another tool, a download with a licence noted in the sidecar): only optimized.
-// - <name>.json   optional sidecar for any of them: { "maxTexture": 1024, "simplify": 0.5, "budgetKB": 1024 }.
+// - <name>.json   optional sidecar for any of them: { "maxTexture": 2048, "simplify": 0.5, "budgetKB": 2048 } (limits: BUDGET in manifest.ts).
 //
 // Steps: Blender export (headless, `-b --factory-startup`), then gltf-transform: dedup, weld, resample animations,
 // prune, simplify (only if the sidecar asks), textures resized to maxTexture and turned into KTX2 (ETC1S for colour,
@@ -34,13 +34,15 @@ import {
   sidecar,
   sourceHash,
   readManifest,
+  budgetReport,
+  budgetSummary,
 } from './manifest.ts';
 
 // ---------------------------------------------------------------- --check: cheap, runs in `npm run check`
 function check() {
   const manifest = readManifest();
   const errors: string[] = [];
-  let total = 0;
+  const sizes: Record<string, number> = {};
   for (const { name, file } of sources()) {
     const e = manifest[name];
     const out = path.join(OUT, name + '.glb');
@@ -59,18 +61,22 @@ function check() {
         errors.push(
           `${name}: texture ${t.name} is ${t.mime} at ${t.size.join('x')}; over ${SMALL_TEXTURE} px needs KTX2`,
         );
-    total += buf.length;
+    sizes[name] = buf.length;
   }
   for (const name of Object.keys(manifest))
     if (!sources().some((s) => s.name === name))
       errors.push(`${name}: in the manifest but has no source in assets/src`);
-  if (total > BUDGET.totalKB * 1024)
-    errors.push(`all assets: ${kb(total)} is over the ${kb(BUDGET.totalKB * 1024)} total`);
+  const report = budgetReport(sizes);
+  errors.push(...report.flags.map((f) => 'all assets: ' + f));
   if (errors.length) {
     console.error('assets: ' + errors.join('\nassets: '));
     process.exit(1);
   }
-  console.log(`assets: ${Object.keys(manifest).length} fresh, ${kb(total)} in all`);
+  console.log(`assets: ${Object.keys(manifest).length} fresh, ${budgetSummary(report)}`);
+  if (report.conditionalFirst.length)
+    console.log(`assets: first-priority but conditional (not in first load): ${report.conditionalFirst.join(', ')}`);
+  if (report.unregistered.length)
+    console.log(`assets: not registered (total only, no priority): ${report.unregistered.join(', ')}`);
 }
 
 // ---------------------------------------------------------------- build
@@ -132,7 +138,11 @@ async function build(names: string[], force: boolean, scratch?: string) {
   for (const { name, file } of all) {
     const hash = sourceHash(file, name, sourceDir);
     if (names.length ? !names.includes(name) : !force && manifest[name]?.sourceHash === hash) continue;
-    const opts = { maxTexture: BUDGET.maxTexture, ...sidecar(name, sourceDir) };
+    const opts = { maxTexture: BUDGET.maxTexture as number, ...sidecar(name, sourceDir) };
+    if (opts.maxTexture > BUDGET.heroMaxTexture)
+      throw new Error(
+        `assets: ${name}: maxTexture ${opts.maxTexture} is over the ${BUDGET.heroMaxTexture} px hero cap`,
+      );
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-asset-'));
     try {
       const raw = exportRaw(file, tmp, sourceDir);
