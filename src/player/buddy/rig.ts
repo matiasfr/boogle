@@ -32,7 +32,7 @@ export type BuddyMotion = {
 // The sprint clip's feet sweep slower than its 5.5 m suggests, so it plays on a shorter one: a 0.5 s cycle at full speed.
 const STRIDE = { walk: 1.3, jog: 5, sprint: 4.8 };
 const BLEND = { idleTo: 0.15, walkTo: 2, jogFrom: 3.2, jogTo: 6.5, sprintFrom: 8.5 }; // m/s
-const FADE = { ground: 0.06, air: 0.05 }; // s
+const FADE = { ground: 0.06, air: 0.05, water: 0.15 }; // s: into and out of the water the body turns over, not steps
 const JUMP_FROM = 0.3; // s into Jump_Start where the feet leave the ground (its wind-up would delay the jump)
 const LAND = { for: 0.35, stop: 2.5 }; // s of Jump_Land, and the speed above which you run straight out of it
 const LOCO = ['Walk_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop'] as const;
@@ -41,7 +41,6 @@ const SWIM = { idle: 'Swim_Idle_Loop', fwd: 'Swim_Fwd_Loop', fwdFrom: 0.4, fwdTo
 const SEAT = 'Driving_Loop';
 export const BUDDY_CLIPS = ['Idle_Loop', ...LOCO, 'Jump_Start', 'Jump_Loop', 'Jump_Land', SWIM.idle, SWIM.fwd, SEAT];
 const NAMES = BUDDY_CLIPS;
-const LOOPS = [SWIM.idle, SWIM.fwd, SEAT]; // on the idle clock
 export const ARM_OUT = (12 * Math.PI) / 180; // its body is wider than the clips' figure
 
 type Rig = {
@@ -57,6 +56,7 @@ type Rig = {
   life: ReturnType<typeof makeLife>;
   lastY: number;
   swimFor: number;
+  strokeT: number; // s into the stroke: advanced by its speed-scaled rate, so a change of speed never jumps its phase
   options: RigOptions;
   feet: (THREE.Object3D | null)[];
 };
@@ -119,7 +119,8 @@ function animateBuddy(a: Avatar, speed: number, airborne: boolean, dt: number, s
     want.Jog_Fwd_Loop = move * toJog * (1 - toSprint);
     want.Sprint_Loop = move * toSprint;
   }
-  const k = 1 - Math.exp(-dt / (airborne ? FADE.air : FADE.ground));
+  const wet = swimming || r.w[SWIM.idle]! + r.w[SWIM.fwd]! > FADED;
+  const k = 1 - Math.exp(-dt / (airborne ? FADE.air : wet ? FADE.water : FADE.ground));
   for (let j = 0; j < NAMES.length; j++) {
     const n = NAMES[j]!;
     const w = r.w[n]! + (want[n]! - r.w[n]!) * k;
@@ -156,10 +157,13 @@ function animateBuddy(a: Avatar, speed: number, airborne: boolean, dt: number, s
   r.acts.Jump_Start!.time = Math.min(JUMP_FROM + r.airT, r.acts.Jump_Start!.getClip().duration);
   r.acts.Jump_Loop!.time = r.airT % r.acts.Jump_Loop!.getClip().duration;
   r.acts.Jump_Land!.time = r.landT;
-  for (let j = 0; j < LOOPS.length; j++) {
-    const n = LOOPS[j]!;
-    r.acts[n]!.time = (r.idleT * (n === SWIM.fwd ? 1 + v * SWIM.rate : 1)) % r.acts[n]!.getClip().duration;
-  }
+  // The stroke quickens with speed by its rate, not by its time: idleT * rate would move the phase by idleT * the speed
+  // change, seconds of stroke for a small wobble late in a session, so the arms snapped to a new pose every frame.
+  const stroke = r.acts[SWIM.fwd]!.getClip().duration;
+  r.strokeT = (r.strokeT + dt * (1 + v * SWIM.rate)) % stroke;
+  r.acts[SWIM.fwd]!.time = r.strokeT;
+  r.acts[SWIM.idle]!.time = r.idleT % r.acts[SWIM.idle]!.getClip().duration;
+  r.acts[SEAT]!.time = r.idleT % r.acts[SEAT]!.getClip().duration;
   r.mixer.update(0);
   const u = a.userData;
   lifeState.vy = vy;
@@ -260,6 +264,7 @@ export function createBuddySkin(
       life,
       lastY: a.position.y,
       swimFor: 0,
+      strokeT: 0,
       options,
       feet: [root.getObjectByName('foot_l') ?? null, root.getObjectByName('foot_r') ?? null],
     });
