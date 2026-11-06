@@ -40,6 +40,88 @@ Do not silently copy the prototype to a parallel production route. Slice 1 extra
 
 ## State and authority
 
+### Slice 3 preparation, 5 November — partial, not playable
+
+The owner's slice-3 task selects merged supply `f0be49a3` as the integrated base; it is an ancestor of this
+worktree. The research start gate is met. Work starts at `3048c924` and rebases locally onto cached
+`origin/main` `d11fd69a` (documentation only). No external fetch, `inflight`, push or ship runs: this job permits
+network only for its local broker/server. The inspected machine branch is `1df84bb2`; it is **not** in that
+cached main. Its `WORLD_NS v08` and panel authority affect classic/legacy Place, not the production `t1v02`
+registry. The required final integration with that branch remains outstanding.
+
+This is preparation for **part of commit 1** in [slice3-plan-2](../research/slice3-plan-2.md), not completion of
+that commit or any of the six promotion steps. Production remains T1-only, catalog 1, railway state 1,
+tuning state 2, and `t1v02`. No material has two runtime authorities.
+
+- Freeze the supply-v1 sim dependencies in `src/sim/railway-frozen-v1.ts` and
+  `src/sim/railway-supply-frozen-v1.ts`. Only their mutual import paths change. The existing verifier checks both
+  relocated bytes and the original hashes after reversing exactly those import substitutions. The old catalog,
+  isolated `t1v01`, accepted tails and refusal guards retain their meanings. This isolates two live files that
+  the old recovery graph previously pinned; it does **not** yet migrate current railway-1/tune-2 saves to slice 3.
+- Stage `railway-line-layout.ts`: stable typed material/source identities, the 24/32/40-log bills, 8 stone,
+  singleton beam requirement, T1/T2-only cosmetic flags, and the machine branch's 3/3/6 panel partition. Interior
+  contacts round to centimetres (at most 0.333 cm difference); all joins close exactly and consume twelve panels.
+  New source height/footprint/approach validation and hardwood placements remain unfinished.
+- Stage `railway-line-schedule.ts`: parameterized feed flights and the integrated quadratic departure curve.
+  With the existing Place inputs, deposit/feed/lay durations in ticks are T1 **4/22/89**, T2 **4/33/75**, T3
+  **4/34/179**. Deposit rounding is +80 ms; feed rounding is +40/+20/+50 ms. Stone precedes logs at T2, beam
+  precedes logs at T3, and the last landing controls feed completion. These helpers are **not installed**; the
+  future funding transaction must capture shared tunables. No new live tuning defaults or T1 timing change.
+
+**Required choices requested, not answered:** the plan explicitly says to resolve stone renewal with the
+coordinator before enabling commit 2 and to decide the live mixed-build fence with the coordinator. Recommended:
+slow counted rock renewal using the existing shared wait interface, respecting the newer slow-only owner call
+(no unseen-growth gate); explicit railway protocol/catalog admission and welcome validation while preserving
+`t1v02` room/save/profile identity. Missing/old/future clients must fail before opening the new authority, and a
+new client must reject an old server that ignores its request token. These are proposals, not implemented or
+approved policy. A `WORLD_NS` bump alone cannot fence production rooms.
+
+**Recovery budget:** the existing bounded-document test measures 59,535/60,000 bytes for the maximal mixed
+supply/chop tail, 59,458 for the maximal chop tail, and 58,370 for the playable fixture before that tail. Only
+465 bytes remain in the mixed-tail witness. Compact new state and a maximal-checkpoint proof are still needed;
+do not enlarge the envelope, truncate history or weaken pre-stamp pressure refusal. Current-profile frozen
+verification, versioned per-material/per-station conversion, atomic replacement and new mixed-build tests are
+unfinished. T2/T3 receivers, axe chest, improved harvesting, beam claim/recovery, path, jump and T2 profile reward
+are not promoted.
+
+**Verification of this preparation:** `npm run check` passes; all 103 server tests pass, including the 23
+existing old-profile migration cases. Three new pure tests cover bills/source identity, panel continuity,
+feed order/rounding and first-contact ticks. Independent read-only review found no defect in the import-only
+isolation or staged arithmetic. These checks do not establish slice-3 conservation or playable acceptance.
+
+- [Broker world-inputs](../../.look/evidence/1793926282206-34369/evidence.json) passes with WebGPU and no graphics
+  errors, but its trusted scenario explicitly opens **classic**. It does not close production world-inputs.
+- [Solo production T1](../../.look/evidence/1793926362131-35258/evidence.json) passes its expected beats, standing
+  on the completed stretch and claiming one hat, with zero reported errors. Its full report was read. Opened
+  `run/end-still.png`: the conductor hat is clear; foreground machinery obscures most of the deck.
+- [Production co-op attempt](../../.look/evidence/1793926435162-36301/evidence.json) fails before play because
+  trusted `playthrough --players 2` requires `proto=place`. An earlier command was rejected for unsupported
+  `playthrough --name`, without a gameplay run or evidence manifest.
+- [Supported two-player look fallback](../../.look/evidence/1793926487556-37203/evidence.json), using the same
+  real-input T1 bot, passes. Both accounts finish with 24 used logs, 3,856 at sources, total 3,880, one personal
+  claim each and railway hash `2308989092` (recorded at client ticks 1579/1583; not a common server-tick witness).
+  Both final sampled client ticks are 1583. Opened `slice3-prep-coop-still.png` and
+  `p2-slice3-prep-coop-still.png`: the curved completed T1 stretch is visible, but the wide camera cannot establish
+  individual hat detail. No bot assertion, page or graphics failure occurred in the fallback. Reports retain
+  all observations; requested warp rate and timing under load are not performance evidence.
+
+These manifests record the dirty preparation tree before the documentation-only rebase, plus the trusted
+broker's independent source identity. No runtime source changed after those captures. The full legacy campaign,
+network Chromium harness and T3 route were not run; the direct Chromium harness is outside this job's broker-only
+instruction. No T2, T3, beam-carry or path-walk image exists from this work. Real-time feel remains unverified;
+not tested on a device.
+
+**T1 acceptance gaps retained, not waived:** partial-funding/flight/feed/lay joins; complete departure/retry
+cut-point matrix; two live reward-UI tabs contending for the same profile; remount/lifecycle counts; production
+world-inputs; common server/client tick witnesses; maximum accepted request cadence; repeat two-rider timing.
+Earlier completed-room reload, pose and profile-lock records remain historical, not rerun here. Persisted roster
+capacity remains 256 identities; no identity reclamation or unlimited-turnover claim.
+
+The Boogler's copy is unchanged and no new dialogue is added. Suspect existing lines remain the great-tree
+comment “not a bigger axe” and the multi-axe card “Chops trees, breaks rocks, and more.” while production still
+has no stone. No ROM data is introduced. The eventual owner question remains: **Did finishing this line make
+the walk home feel worth the work?** This preparation is not ready for that verdict and authorizes no later slice.
+
 ### Supply branch integration, 5 November
 
 **Independent review and owner follow-up, 5 November.** `83e4eae6` merges cached main `8270d364`; `d02699cb` adds newly available main `6a46755d`, including co-op seat pre-step, remote deck attachment and boarding blend repairs. The subsequent documentation-only merge includes `e678a3a4` and the now-landed [tunables research](../research/tunables.md). All three merges have **zero conflicts**. The source slice-2 branch remains untouched; no fetch, push, ship or slice 3 work is authorized. The tunables report was read when it became available. At that review, the unified catalog and controller framework had not landed; the final integration below supersedes that temporary interface.
