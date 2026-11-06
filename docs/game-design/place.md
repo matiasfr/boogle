@@ -801,11 +801,16 @@ Stage `light=production` uses the frozen sky with production Neutral and 0.16 ex
 out toward the approach side. Their rotation, changing projected thickness, gravity and short ground
 rebound distinguish them from glints. Rock contacts use grey quad fragments. Rock breaks and existing
 cargo/construction thuds use low-alpha procedural billows with size, opacity and colour curves.
-Logs dropped onto ground piles puff on flight completion. An accepted great-beam set-down emits five
-small billows along its length; rejected/repeated requests and restored ground state do not emit.
+Logs dropped onto ground piles billow on flight completion, with two small timber chips.
+An accepted great-beam set-down emits outward along seven sites on each side of its full contact length,
+with six small chips. The denser, low lobes expand and roll, lose outward speed, then settle under gravity
+as their opacity fades. Drop height scales count, size, spread and lifetime, capped at 4 m: logs use
+release-to-contact height, beams estimate carried-centre-to-ground-centre height from the existing local
+or remote carrier pose (1.6 m fallback when absent). Rock breaks use their radius as collapse height
+and retain the strike's existing fragments. Rejected/repeated cargo requests and restored ground state do not emit.
 This decorates the existing instantaneous set-down; it adds no beam fall animation or physics.
-All use the shared 720-slot pool and one draw (256 births/frame); the beam requests 30 births, a proper
-chop 18, a landing 4–12, a log 6. Reduced motion suppresses the new decorations. Timber/dust retain
+All use the shared 720-slot pool and one draw (256 births/frame); a beam requests 48–90 births, a proper
+chop 18, a landing 4–12, a log 12–22. Reduced motion suppresses the new decorations. Timber/dust retain
 intensity one under the readable-reward policy. Recipes live in `render/particle-effects.ts` with typed
 Local authoring values; they do not change strokes, rewards, ownership, saves or wire state.
 
