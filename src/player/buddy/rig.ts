@@ -76,7 +76,7 @@ const motionState: BuddyMotion = {
   foot: null,
 };
 
-export function animateBuddy(a: Avatar, speed: number, airborne: boolean, dt: number, swimming: boolean) {
+function animateBuddy(a: Avatar, speed: number, airborne: boolean, dt: number, swimming: boolean) {
   const r = rigs.get(a);
   if (!r || dt <= 0) return;
   const vy = (a.position.y - r.lastY) / dt;

@@ -8,7 +8,7 @@ const decisions = 'docs/proposals/boogle-2.md';
 const work = 'docs/plans/find-the-fun.md';
 const built = 'docs/game-design.md';
 
-export function docAuthority(file: string, text: string): Authority {
+function docAuthority(file: string, text: string): Authority {
   const f = file.replaceAll('\\', '/').replace(/^\.\//, '');
   const header = text.split('\n').slice(0, 12).join('\n');
   if (f === 'docs/ideas.md') return { status: 'parked', next: decisions, why: 'ideas are not tasks' };

@@ -14,7 +14,7 @@
 
 export type Img = { width: number; height: number; data: Uint8Array };
 
-export const TIGHT = 30;
+const TIGHT = 30;
 export const LOOSE = 90;
 
 export function parseHex(hex: string | undefined): number[] {

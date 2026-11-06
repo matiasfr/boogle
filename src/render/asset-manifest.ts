@@ -41,7 +41,7 @@ export function assetUrl(id: string) {
   return e.url;
 }
 
-export const assetEntries = () => [...entries.values()];
+const assetEntries = () => [...entries.values()];
 
 /** Whether an entry applies in this place (pure). */
 export function applies(e: AssetEntry, place: AssetPlace) {

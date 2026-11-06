@@ -8,7 +8,7 @@ type Lock = { packages?: Record<string, { version?: string; optional?: boolean }
 const read = (file: string) => JSON.parse(fs.readFileSync(file, 'utf8')) as Lock;
 
 /** Each package that differs, as `name: installed, lock wants`. Optional packages for other platforms are never installed. */
-export function installDrift(lock: Lock, installed: Lock) {
+function installDrift(lock: Lock, installed: Lock) {
   const want = lock.packages ?? {};
   const have = installed.packages ?? {};
   const name = (key: string) => key.replace(/^.*node_modules\//, '');

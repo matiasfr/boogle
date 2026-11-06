@@ -38,7 +38,7 @@ export function alive(pid: unknown): pid is number {
   }
 }
 
-export function lockJob(logs: string, token = randomUUID()): () => void {
+function lockJob(logs: string, token = randomUUID()): () => void {
   fs.mkdirSync(logs, { recursive: true });
   const lock = path.join(logs, 'active');
   if (fs.existsSync(lock)) {

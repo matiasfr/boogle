@@ -18,7 +18,7 @@ export const customRules = new Set([
 export const matches = (file: string, patterns: string[]) => patterns.some((p) => path.matchesGlob(file, p));
 export const ignorePatterns = ['**/.git/**', '**/node_modules/**', ...policy[0]!.ignores!.map((p) => p + '**')];
 export const ignored = (file: string) => matches(file, ignorePatterns);
-export function rulesFor(file: string): Record<string, Rule> {
+function rulesFor(file: string): Record<string, Rule> {
   const rules: Record<string, Rule> = {};
   for (const block of policy)
     if ((!block.files || matches(file, block.files)) && !matches(file, block.ignores ?? []))

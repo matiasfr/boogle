@@ -99,7 +99,7 @@ These are development tools, not all prototypes. **G tooling** means maintained 
 | `debug/gpu-info.ts` | 79 | **G tooling**, device diagnostics. |
 | `debug/debug-cam.ts` | 45 | **G tooling**, harness camera. |
 | `debug/buddy-crowd.ts` | 44 | **G tooling**, real character load probe. |
-| `debug/sky-bake.ts` | 36 | **G tooling**, real sky measurement. |
+| `debug/sky-bake.ts` | 36 | Removed 6 November: unused sky measurement left by the archived demo. |
 | `character/` TS/CSS/HTML | 1,956 | **G asset stage**; code-preview imports Place building plans, follow extraction. |
 | `atlas/` TS/CSS/HTML | 3,017 | **G tooling**; retain atlas scenario and architecture facts. |
 | `assets/index.html` | 12 | **G viewer redirect**, keep aligned with character route. |

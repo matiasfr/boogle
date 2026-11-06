@@ -3,7 +3,7 @@ import type { Plugin } from 'vite';
 import { assetHealth, BUDGET, SRC, OUT, MANIFEST } from './manifest.ts';
 import { descriptors } from '../../character/descriptors.ts';
 
-export const CATALOGUE_ID = 'virtual:asset-catalogue';
+const CATALOGUE_ID = 'virtual:asset-catalogue';
 const resolved = '\0' + CATALOGUE_ID;
 export function assetCatalogue(): Plugin {
   return {

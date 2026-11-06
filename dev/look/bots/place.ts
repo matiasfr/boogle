@@ -25,7 +25,7 @@ import { seatState } from '../../../src/proto/place/seat.ts';
 const q = new URLSearchParams(location.search);
 
 /** Walk to each downward sightline before pulling: the slab beneath your feet otherwise blocks it. */
-export async function returnFromTower(bot: Bot) {
+async function returnFromTower(bot: Bot) {
   const body = me.body!;
   for (const id of ['t5', 't4', 't3', 't2', 't1', 't0', 'p2']) {
     const r = RINGS.find((r) => r.pad.id === id)!;

@@ -165,17 +165,6 @@ dialog.pause::backdrop {
   align-items: center;
   gap: 12px;
 }
-.pause-mute {
-  flex: none;
-  width: 56px;
-  padding: 6px;
-}
-.pause-mute svg {
-  display: block;
-  width: 28px;
-  height: 28px;
-  margin: auto;
-}
 .pause-volume {
   flex: 1;
   min-width: 0;

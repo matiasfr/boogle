@@ -67,12 +67,12 @@ export function marksByName(s: Session) {
 }
 
 const totalS = (evs: Ev[]) => evs.reduce((a, e) => a + num(e.s), 0);
-export const playedS = (s: Session) => (s.end - s.start) / 1000 - s.hiddenS;
-export const idleS = (s: Session) => totalS(of(s, 'idle'));
+const playedS = (s: Session) => (s.end - s.start) / 1000 - s.hiddenS;
+const idleS = (s: Session) => totalS(of(s, 'idle'));
 export const intoS = (s: Session) => totalS(of(s, 'into'));
 
 /** Only complete, uniquely keyed segments describe an effective configuration. */
-export function tuningSegments(s: Session) {
+function tuningSegments(s: Session) {
   const segments = new Map<string, { begin?: Ev; end?: Ev; setup?: Ev; values: Ev[]; duplicate: boolean }>();
   for (const e of s.events) {
     if (!['tune.begin', 'tune.value', 'tune.end', 'tune.setup'].includes(e.k)) continue;

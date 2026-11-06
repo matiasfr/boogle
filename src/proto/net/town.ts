@@ -146,7 +146,6 @@ function fireworks(top: { x: number; y: number; z: number }) {
     });
 }
 
-export const townBusy = () => !!anim;
 /** Start over: the first stage, drawn at once. */
 export function resetTown() {
   anim = null;

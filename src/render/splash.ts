@@ -10,9 +10,6 @@ import { groundProbe } from '../physics/physics.ts';
 const FOAM = new THREE.Color().setRGB(0.96, 0.99, 1.0, THREE.SRGBColorSpace);
 
 let elapsedNow = 0;
-const splashStats = { sea: 0, pond: 0, invalid: 0, crest: 0 };
-const entries: { id: string; body: string; time: number; level: number }[] = [];
-export const inspectSplash = () => ({ ...splashStats, entries: [...entries] });
 
 // seaRipples: x, z, start time, strength (0 = unused); the sea shader's ripple array sets how many
 let rippleCursor = 0;
@@ -26,7 +23,6 @@ export function splash(x: number, z: number, strength: number, level: number) {
   strength = Math.min(Math.max(strength, 0), 1);
   const body = waterField.nearby({ x, y: level, z }).body;
   if (body === 'sea') addRipple(x, z, 0.35 + strength * 0.65);
-  if (body !== 'dry') splashStats[body]++;
   const n = Math.round((10 + strength * 55) * (reducedMotion ? 0.3 : 1));
   const up = 2.5 + strength * 5.5;
   const spread = 0.8 + strength * 2.2;
@@ -97,16 +93,12 @@ function track(
   t.cool -= dt;
   if (Number.isNaN(prev) || moved > 4 || dt <= 0) return; // teleport or first sample
   const level = water.height;
-  if (crossing && !fresh) splashStats.invalid++;
   const bed = waterField.moving ? water.bedHeight : groundProbe.under(x, y, z);
   if (crossing && fresh && t.cool <= 0 && bed < level - 0.1) {
     const vy = vyHint !== null ? vyHint : (bottom - prev) / dt;
     const speed = water.verticalVelocity - vy;
-    if (vy >= -0.1) splashStats.crest++;
     if (vy < -0.1 && speed >= minSpeed) {
       splash(x, z, ((speed - minSpeed) / 12) * scale + 0.1, level);
-      if (entries.length === 32) entries.shift();
-      entries.push({ id, body: water.bodyId, time: elapsedNow, level });
       t.cool = 0.2;
     }
   }

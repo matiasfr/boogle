@@ -30,6 +30,7 @@ import { updateCall } from './call.ts';
 import { updateAtmosphere } from './atmosphere.ts';
 import { updateAmbience } from './ambience.ts';
 import { snapBefore, snapAfter, forgetPostcard } from './postcard.ts';
+import { place, draw } from '../net/box-plan.ts';
 
 const POP_S = 0.7; // one block's rise
 const RIPPLE_MPS = 28; // how fast the swap spreads out from the court (metres per second)
@@ -47,17 +48,7 @@ const { opening } = rules.opening;
 type Box = { x: number; y: number; z: number; local: THREE.Matrix4; color: THREE.Color; tall: boolean };
 type Smoke = { x: number; y: number; z: number };
 const Y = new THREE.Vector3(0, 1, 0);
-const tq = new THREE.Quaternion(),
-  tp = new THREE.Vector3(),
-  ts = new THREE.Vector3(),
-  tm = new THREE.Matrix4();
-/** The local matrix of a box w x h x d whose base middle is at (dx, dy, dz) in a frame turned by yaw, then tilted. */
-function place(dx: number, dy: number, dz: number, w: number, h: number, d: number, yaw: number, tilt?: THREE.Euler) {
-  const m = new THREE.Matrix4().makeRotationY(yaw);
-  m.multiply(tm.makeTranslation(dx, dy, dz));
-  if (tilt) m.multiply(tm.makeRotationFromEuler(tilt));
-  return m.multiply(tm.makeScale(w, h, d));
-}
+const tp = new THREE.Vector3();
 const box = (x: number, z: number, local: THREE.Matrix4, color: string, tall = false): Box => ({
   x,
   y: groundHeight(x, z),
@@ -182,20 +173,6 @@ function makeSet(boxes: Box[]): BoxSet {
   const delay = Float32Array.from(boxes, (b) => Math.hypot(b.x - COURT.x, b.z - COURT.z) / RIPPLE_MPS);
   scene.add(mesh);
   return { boxes, mesh, delay };
-}
-const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
-// Draws a set with each box grown to f(k) of its height, from the ground up (0 hides it).
-function draw(set: BoxSet, f: (k: number) => number): void {
-  let any = false;
-  set.boxes.forEach((b, k) => {
-    const g = f(k);
-    if (g <= 0) return set.mesh.setMatrixAt(k, ZERO);
-    any = true;
-    tm.compose(tp.set(b.x, b.y, b.z), tq.identity(), ts.set(1, Math.max(1e-3, g), 1)).multiply(b.local);
-    set.mesh.setMatrixAt(k, tm);
-  });
-  set.mesh.instanceMatrix.needsUpdate = true;
-  set.mesh.visible = any;
 }
 
 let era1: BoxSet | null = null,

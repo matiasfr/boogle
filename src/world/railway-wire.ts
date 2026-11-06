@@ -15,4 +15,3 @@ export type RailwayResponse =
     };
 
 export const RAILWAY_CLIENT_MESSAGES = new Set(['r:open', 'r:edit', 'r:status']);
-export const RAILWAY_HOST_MESSAGES = new Set(['r:session', 'r:result', 'r:state']);

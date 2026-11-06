@@ -29,7 +29,7 @@ export const ULTRA = {
   swellBearing: -15, // degrees
 };
 
-// Default demo optics and the previous pop grade, under the same physical lighting.
+// Default demo optics under the same physical lighting.
 export const RAW = {
   absorption: ULTRA.absorption,
   scatter: ULTRA.scatter,
@@ -38,18 +38,6 @@ export const RAW = {
   reflectCap: 1,
   reflectTint: [1, 1, 1],
   sunGain: 1,
-  fogDensity: ULTRA.fogDensity,
-  shoreAmp: ULTRA.shoreAmp,
-  shoreLambda: ULTRA.shoreLambda,
-};
-export const GRADE = {
-  absorption: [0.85, 0.07, 0.04], // the demo's "clear" with more red gone, so sand under a metre of water goes mint, not lavender
-  scatter: [0.0, 0.085, 0.2], // bluer than its "clear", lit the way the demo's auto exposure lifted it
-  saturation: 1.2,
-  reflectGain: 0.8,
-  reflectCap: 0.5, // the horizon stays blue, as in the previz, instead of going to sky
-  reflectTint: [0.66, 0.94, 1], // our sky's pale band mirrored in thin water reads lavender; the demo's sky is greener
-  sunGain: 2.3 / 2.1,
   fogDensity: ULTRA.fogDensity,
   shoreAmp: ULTRA.shoreAmp,
   shoreLambda: ULTRA.shoreLambda,

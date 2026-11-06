@@ -20,7 +20,7 @@ export const WAVE = {
 export type WavePhase = { n: number; at: number; phase: 'calm' | 'warn' | 'sweep' | 'recede'; u: number };
 
 /** 0..1 from a wave's index and the room seed (an integer hash: the same in every tab). */
-export function gapShare(n: number, seed: number): number {
+function gapShare(n: number, seed: number): number {
   let h = Math.imul((n + 1) ^ seed, 0x9e3779b1) >>> 0;
   h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0;
   h = Math.imul(h ^ (h >>> 12), 0x297a2d39) >>> 0;

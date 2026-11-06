@@ -10,7 +10,7 @@ import { groundHeight } from '../../island/terrain.ts';
 
 // The places, in world metres (+z is south, out to sea from the court's beach).
 export const BAR = { x: 3, z: 71, ax: 14, az: 5, top: 0.55 }; // an ellipse of dry sand
-export const SPIT = { x0: 1, z0: 41, x1: 3, z1: 66.5, half: 1.6, top: 0.06 }; // awash: you wade out along it
+const SPIT = { x0: 1, z0: 41, x1: 3, z1: 66.5, half: 1.6, top: 0.06 }; // awash: you wade out along it
 export const LINE = 36; // z of the high-water line: the surge runs up to here, and north of it you're safe
 export const SEAWARD = BAR.z + BAR.az + 2; // z where the crest meets the bar
 export const BAND = { x0: -40, x1: 46 }; // x the wave covers (the whole south beach)

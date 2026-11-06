@@ -177,7 +177,7 @@ export function closeConversation() {
 }
 
 const hint = (glyphs: string, word: string) => `<span class="talk-hint">${glyphs}<span>${word}</span></span>`;
-export function talkHints() {
+function talkHints() {
   const kind = inputKind();
   if (!cur) return '';
   const n = cur.typing() ? 0 : sync().length; // answers shown

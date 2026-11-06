@@ -18,10 +18,9 @@ import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { CELL, HALF, SEA, reducedMotion } from '../../constants.ts';
 import { ROUTE, TRACK, HELPER, RING_R, ringAt } from '../../sim/route.ts';
-import { materialOf } from '../../sim/materials.ts';
 import { PILE_CAP } from '../../sim/piles.ts';
 
-export const LOG_SCALE = 1.5; // drawn and simulated half as big again as a pile's piece: it has to read in flight
+const LOG_SCALE = 1.5; // drawn and simulated half as big again as a pile's piece: it has to read in flight
 const LEN = PIECE.len * LOG_SCALE,
   R = PIECE.r * LOG_SCALE;
 const MAX_LIVE = 40; // physics logs at once; a bigger spill puts several units on each
@@ -41,7 +40,7 @@ scene.add(mesh);
 /** Units of your stack that are out of it right now: flying, rolling, or counted and waiting for the host. */
 let flying = 0;
 const waiting: { n: number; at: number; op: string }[] = [];
-export const outOfStack = () => flying + waiting.reduce((t, w) => t + w.n, 0);
+const outOfStack = () => flying + waiting.reduce((t, w) => t + w.n, 0);
 /** What's left on your stack to throw or tip, after the logs already on their way. */
 export const myLogs = () => (identity.pid ? Math.max(0, rules.stacks.count(identity.pid) - outOfStack()) : 0);
 
@@ -96,17 +95,6 @@ function ringOf(x: number, z: number): number {
   }
   return best;
 }
-/** Where a ring of the open site is and whether it takes logs, for the variants' prompts and juice. */
-export function openRingNear(x: number, z: number, slack = 0): { ring: number; x: number; z: number } | null {
-  const s = rules.sites.sites.open;
-  if (s >= ROUTE.length || !identity.pid || rules.stacks.kind(identity.pid) !== materialOf(ROUTE[s]!.age)) return null;
-  for (const ring of [TRACK, HELPER]) {
-    const c = ringAt(s, ring);
-    if (Math.hypot(x - c.x, z - c.z) < RING_R + slack && rules.sites.room(s, ring) > 0) return { ring, ...c };
-  }
-  return null;
-}
-
 const GOLD = new THREE.Color(0xffd36b),
   DUST = new THREE.Color(0xd9c49a);
 function burst(x: number, y: number, z: number, color: THREE.Color, count: number, speed: number) {
