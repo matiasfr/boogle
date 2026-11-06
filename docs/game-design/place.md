@@ -896,20 +896,27 @@ the shore atlas and never treat bridge decks as seabed. Dry bank/deck surfaces r
 keeps the ordinary grey box as default. The flag selects its own comparison room, including room-only invites,
 because static collision changes. One 32 m headland at local z 42–74 wraps into the positive-z cove shoulder;
 the bounded inland blend stops before town and protects the complete landing fade, path shoulders and rail formation.
-The 2 m finished heightfield owns the sandy pocket, submerged shelf and backing slope. Eight joined bedded modules,
+The heightfield owns the sandy pocket, submerged shelf and backing slope. The smooth terrain revision adds a bounded
+one-metre patch at local x -212…-160, z 16…78; the rest keeps its two-metre grid. Five disjoint heightfields match
+the rendered surface, and protected route samples retain their original heights. One connected rounded cliff,
 three substantial waterline rocks and three partly buried fragments use two opaque cullable batches and the exact same
-1,540 triangles for collision. The broken end is a broad solid ramp onto the pocket. There are no added textures, post passes, lights or runtime terrain uploads.
-World-Y beds, a thin turf/soil cap and restrained facets follow the [pilot references](../plans/terrain-pilot.md).
-The coordinator revision covers the cove's steep heightfield faces with world-height sandstone bands. A continuous
-inset turf boundary replaces the old per-facet green mask; every face beyond the walkable slope limit is rock.
-The curved end joins the shoulder, and tilted fallen blocks cluster at its foot. Heights and collision remain shared.
+1,958 triangles for collision. The broken end is a broad solid ramp onto the pocket. Refinement adds 4,836 triangles,
+for 6,794 render additions in total. No added lights, post passes or per-frame terrain uploads.
+The owner's smooth Odyssey base and adjustable Sunshine strata follow the [revised pilot plan](../plans/terrain-pilot.md).
+Island-aligned triplanar rock and planar turf pigment use three original 512² linear RGBA8 maps (4 MiB with mips).
+Slope and elevation select semantic layers; authoritative path coverage stays separate from pigment. Microheight
+blends soft transitions, while the kit carries a continuous rounded turf lip. All 39 look settings are local tunables
+(`cove.*`); none changes collision or simulation. The final art candidate still requires coordinator/owner review.
 Under this flag only, idle Buddy cancels gravity tangent to actual walkable static support while retaining normal
 pressure. Moving input, swimming, moving decks, jumps and upward impulses keep their normal behavior. Seven sampled
-eight-second stops stay dry/supported with at most 1.12 mm drift; this is not exhaustive contact or device coverage.
-The [follow-up assessment](../research/terrain-pilot-followup.md) preserves matched views, motion, failures and reruns.
+eight-second post-stop assertions remain in the motion fixture; results are sampled, not exhaustive contact coverage.
+The [prior assessment](../research/terrain-pilot-followup.md) preserves round-two evidence, which predates this geometry.
 Water depth comes from the same terrain/solid surface; rounded rock footprints supply wave obstacles. Existing receiver
-wetness, caustics and swash stay separate from water foam. `&coveView=shape` retains the clay comparison;
-`&coveView=dry` removes the kit's wet receiver for the material comparison. Neither changes collision.
+wetness, caustics and swash stay separate from water foam. Cove sand adds the Ultra Water demo's damp pigment,
+footprint-faded ripples and thin-film sheen using the existing swash/drying clock. Persistent dampness and dynamic
+drying contributions remain separate, so the static band cannot mask recovery between waves.
+`&coveView=shape` retains the clay comparison with procedural normal detail;
+`&coveView=dry` removes land and kit wet receivers for the material comparison. Neither changes collision.
 Local presentation/static Owner collision; no new save or lockstep state. H uses the actual grid triangles plus kit
 surfaces under the flag. Catalog inputs, IDs, progression and The Boogler's copy stay unchanged. Not adopted beyond
 this corner; owner playtest and device validation remain pending. Serves DESIGN.md 11, Show, don't tell.

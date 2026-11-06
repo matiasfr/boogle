@@ -18,8 +18,10 @@ Budgets: 2,000–8,000 added render triangles (lower is fine if silhouette holds
 
 Owner's 5 November follow-up supersedes the original faceted/texture-free bullets above. Fetched and rebased onto
 origin/main (`2fb424d2`); its look-development wedge is available. The requested terrain-texturing document was
-not in that main revision, so the committed research on `codex/terrain-texturing` (`29f5de8f`) supplies the technique
-stack and revised texture budget. No other branch was merged. Smooth previz shots 1, 3 and 4 supply design intent;
+not in that main revision, so the committed research on `codex/terrain-texturing` (`29f5de8f`) initially supplied the
+technique stack and revised texture budget. Main advanced during validation; the second rebase onto `3048c924`
+includes [that research](../research/terrain-texturing.md) and current tunable state/owned-view contracts.
+Smooth previz shots 1, 3 and 4 supply design intent;
 they are not texture sources or measured camera solutions.
 
 Use a bounded one-metre sculpted patch, continuous kit normals, island-aligned triplanar rock pigment, height-blended

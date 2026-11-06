@@ -1,5 +1,5 @@
 // Pure metadata for the flag-local cove material. No renderer, prototype or runtime state imports.
-import type { NumberSpec } from './spec.ts';
+import type { NumberSpec } from './catalog.ts';
 
 type Parameter = { default: number; min: number; max: number; units: string; meaning: string };
 const parameter = (value: number, min: number, max: number, units: string, meaning: string): Parameter => ({
