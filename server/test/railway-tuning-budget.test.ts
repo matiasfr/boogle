@@ -115,7 +115,7 @@ test('playable tuning strips padded burst fields before durable admission', asyn
   }
 });
 
-test('full roster tuning refuses oversized ids and byte-pressure before stamping, then recovers', async (t) => {
+test('full roster tuning refuses oversized ids and tail pressure before stamping, then recovers', async (t) => {
   const f = await fixture();
   try {
     const sid = (k: number) => `p${k.toString(36).padStart(31, '0')}`;
@@ -139,8 +139,9 @@ test('full roster tuning refuses oversized ids and byte-pressure before stamping
     const accepted = recovery.tail.filter(({ e }) => e.op === 'tune.commit');
     const refused = f.sent.filter((m) => m.t === 'w:rejected' && ids.has(m.requestId as string));
     assert.ok(accepted.length > 0);
-    assert.ok(refused.length > 0, 'fixture must reach the byte budget before the 64-entry count cap');
-    assert.ok(accepted.length < 64);
+    // Since the 128 KB budget (6 November) the 64-entry tail cap binds before bytes even at a full roster;
+    // the byte refusal itself is covered by sync-recovery's oversized-state test.
+    assert.ok(Buffer.byteLength(JSON.stringify(recovery)) <= MAX_RECOVERY_BYTES);
     assert.equal(accepted.length + refused.length, 64);
     assert.ok(refused.every((m) => m.reason === 'recovery-budget'));
     assert.equal(recovery.seq, initialSeq + accepted.length);

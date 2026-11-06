@@ -1,7 +1,7 @@
 // Maximum capped checkpoint plus durable-tail width; conservation is covered by railway-line-authority.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSync } from '../src/world/sync.ts';
+import { createSync, MAX_RECOVERY_BYTES } from '../src/world/sync.ts';
 import { installPlayableRailwayRules } from '../src/world/rules/railway-index.ts';
 import { homeLand } from './helpers/land.ts';
 import { ensure } from '../src/sim/roster.ts';
@@ -20,7 +20,8 @@ test('line recovery width bound retains sixty-four worst material stamps and max
     base.roster.roster.names[i] = '木'.repeat(16);
     base.roster.roster.colors[i] = 7;
     railSession(s, pid, 1);
-    Object.assign(s.accounts[k]!, { carry: 0, stone: 8, epoch: M, request: M });
+    // Eight rails is the widest account code (8 * 81 = 648).
+    Object.assign(s.accounts[k]!, { carry: 0, stone: 0, rails: 8, epoch: M, request: M });
   }
   s.outcomes = s.accounts.slice(-64).map((a) => ({ pid: a.pid, epoch: M, request: M, status: 'noop', accepted: 0 }));
   s.piles = Array.from({ length: 128 }, (_, i) => ({
@@ -76,6 +77,22 @@ test('line recovery width bound retains sixty-four worst material stamps and max
   s.line!.beam.z = -200000;
   s.line!.beam.age = 0;
   s.line!.beam.work = 12;
+  // Line two at its load bounds: widest clocks, rack and depot, and the widest pinned stretch timing.
+  const l2 = s.line2!;
+  Object.assign(l2.forge, { used: 56, lit: M, rack: 4096, poured: M, lastPour: M });
+  for (const j of l2.jobs) {
+    Object.assign(j, { stock: 0, railStock: 0, start: M, elapsed: 1000000, lastTick: M });
+    j.timing = {
+      depositMs: 60000,
+      feedIntervalMs: 60000,
+      logFlightMs: 60000,
+      stoneFlightMs: 60000,
+      beamFlightMs: 60000,
+      cruiseCmPerTick: 10000,
+      departureTicks: 60000,
+    };
+  }
+  Object.assign(l2, { depot: 64, depotLast: M, depotOut: [16, 24, 16], depotProduced: 56, lever: true, hook: true });
   const snapshot = sync.snapshot();
   snapshot.tick = M;
   snapshot.epochMs = 1793850000000;
@@ -114,7 +131,7 @@ test('line recovery width bound retains sixty-four worst material stamps and max
       checksum: 4294967295,
     };
     const bytes = Buffer.byteLength(JSON.stringify(e));
-    t.diagnostic(`${body.op}: ${bytes}/60000 bytes`);
-    assert.ok(bytes < 60000);
+    t.diagnostic(`${body.op}: ${bytes}/${MAX_RECOVERY_BYTES} bytes`);
+    assert.ok(bytes < MAX_RECOVERY_BYTES);
   }
 });

@@ -227,7 +227,7 @@ test('corrupt, wrong-schema, wrong-catalog and modified-tail saves never become 
   }
 });
 
-test('the recovery envelope has an explicit 60 KB bound and refuses oversized state before publication', async () => {
+test('the recovery envelope has an explicit byte bound and refuses oversized state before publication', async () => {
   const store = disk();
   const net = makeNet();
   const host = peer(net, 'host', store.recovery, true);
