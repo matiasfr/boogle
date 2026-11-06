@@ -151,6 +151,15 @@
   displayed counts change. The continuous track layer's rack keeps its construction-time matrices when
   its visible count changes. Contact-shadow blobs skip writes only when all sixteen Float32 matrix values
   already match; moving blobs still update. Geometry, materials, caster coverage and gameplay state are unchanged.
+- **Instance-write measurements (2026-11-05).** At town/T1/cove, in solo and co-op, 300-frame samples reduced
+  rack/log/rail buffer dirty marks from 300 each to 0, and contact-blob marks from 600 to 0. These are dirty
+  marks, not GPU transfer counts. Native-clock co-op town stayed at 212 draws / 67 shadow draws before and
+  after; solo town was 209 → 207 as moving actors varied. Texture allocation estimates stayed at 217,111,689
+  bytes solo / 217,199,048 co-op. Solo town CPU frame work was 4.756 → 4.682 ms under contention, so no timing
+  improvement is established. Three frozen identical-upload controls had zero changed pixels; these prove
+  same-state buffer equivalence, not all animated cross-build states. Working solo and the T1 segment replay
+  passed; working co-op failed the same recovery guard before and after. Quiet-machine timing and device
+  validation remain unavailable. Full pose counts, cost owners and manifests: [optimization report](../research/perf-pass-2026-11-05.md).
 - **Limits.** Presets are owner-requested starting settings, not an approved final look or device budget. No physical mobile validation. Device
   cost observations and inspected visual evidence are in the [Mac graphics switch report](../research/graphics-switch-costs.md).
   The repeated 1440×900 captures were contended; smaller differences often changed sign. Spray, daylight
