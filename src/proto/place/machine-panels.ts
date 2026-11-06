@@ -153,7 +153,7 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
         sleeves,
         [1, 0.25 / 0.32, 0.18 / 0.32].map((width) => new THREE.Matrix4().makeScale(width, 1, width)),
       );
-      instance('lay_iron_left', jaws, [new THREE.Matrix4(), new THREE.Matrix4().makeRotationY(Math.PI)]);
+      instance('lay_cream_jaw_left', jaws, [new THREE.Matrix4(), new THREE.Matrix4().makeRotationY(Math.PI)]);
       root.updateWorldMatrix(true, true);
       updateBatches();
     },

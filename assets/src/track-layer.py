@@ -274,8 +274,9 @@ def jaw(bm, side):
         box(bm, side * 0.58, -0.12, z, 0.12, 0.32, 0.22)
         box(bm, side * 0.51, -0.25, z, 0.22, 0.08, 0.22)
     box(bm, side * 0.58, 0, 0, 0.13, 0.12, 2.25)
-part('lay_iron_left', STEEL, lambda bm: jaw(bm, -1))
-part('lay_iron_right', STEEL, lambda bm: jaw(bm, 1))
+# Cream jaws: dark steel jaws read as a second layer of rails over the stack.
+part('lay_cream_jaw_left', CREAM, lambda bm: jaw(bm, -1))
+part('lay_cream_jaw_right', CREAM, lambda bm: jaw(bm, 1))
 
 bpy.ops.export_scene.gltf(filepath=sys.argv[sys.argv.index('--') + 1], export_format='GLB',
                           export_yup=True, export_apply=True, export_normals=True,
