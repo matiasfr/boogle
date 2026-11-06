@@ -1,5 +1,11 @@
 # Track-layer machine art and deck places
 
+## 6 November: piece-by-piece laying off a small rail stack (owner playtest)
+
+The owner kept the machine but dropped the two heavy magazines and asked for the original piece-by-piece laying, with a small stack that drains. Presentation only; the whole-panel commit below is unchanged. The side magazines, saddles and 7 m header are gone. A rail stack on the gantry's shoulders holds one rail pair per held stock unit (six columns of up to six layers a side). Each cycle the gantry returns, lowers, grips the top pair, lifts it to gauge, travels out to the pending panel and sweeps along its chord. The panel's own sleepers, planks, rails and bents fall as the jaw frame passes them, in the original continuous order (`u(s) - lead`) and fall heights, with the original thumps. It then seats its pair on the exact committed rail matrices; acceptance hands over at contact. Beats: return 0-0.30, lower 0.30-0.36, grip 0.36-0.39, lift to gauge 0.39-0.45, travel 0.45-0.64, sweep 0.64-0.88 and seat 0.88-0.97, with contact at 1. Long runs use trapezoid motion. The beam is 17.5 m because the deck rides 16.7 m behind the head. `Machine.layPanel` serves both Place and the production railway view.
+
+Open for the coordinator, not changed here: one stack pair stands for one stock unit, so a panel's falling pieces outnumber the rails that leave the stack. Pieces show up to about 1.1 s before their panel's colliders. With one cycle per 2.87 s and a 17 m reach, the trolley still runs at about 20 m/s. Laying every rail off a small stack at the original pace needs a one-rail-pair commit/stock unit and the original 2.4 m setback.
+
 ## Current: coordinator authorizes whole-panel commits (5 November)
 
 This supersedes the blocked proposals below. The head retains continuous travel and the two-second departure, but only the authority accepts a complete panel at its end boundary. One accepted panel index commits its rail/sleeper instances and supporting colliders together, removes one stock unit, and triggers local contact clunk/dust. The upcoming panel is a rigid in-transit compound of those same eventual track instances; it has no collider while carried. No hidden committed track is used.
