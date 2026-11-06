@@ -305,6 +305,8 @@ F4 reachability qualification: ordinary [server join](../../server/src/host/host
 
 ## Issue groups
 
+Tracked as G1 [#1062](https://github.com/matiasfr/boogle/issues/1062), G2 [#1063](https://github.com/matiasfr/boogle/issues/1063), G3 [#1064](https://github.com/matiasfr/boogle/issues/1064), G4 [#1065](https://github.com/matiasfr/boogle/issues/1065); suspected and owner-call items [#1066](https://github.com/matiasfr/boogle/issues/1066).
+
 | Group / title                                                    | Findings         | Impact                                           | Minimal fix outline                                                                                            |
 | ---------------------------------------------------------------- | ---------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | G1 — Bind reconnects to the existing session identity            | F1               | Player replacement / unauthorized shared actions | Check active or grace record's pid/key before takeover, capacity or presence mutation; reuse existing refusal. |
