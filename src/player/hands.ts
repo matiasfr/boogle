@@ -68,11 +68,10 @@ const USE_VERB: Record<string, string> = { seeds: 'Sprout' };
 export const canThrow = () => !!heldId();
 const ballAt = new THREE.Vector3();
 
-// The ball is in your hand while ball ownership says so: thrown, stolen, respawned or dropped on a hidden tab, it leaves.
+// The ball is in your hand while ball ownership says so: thrown, stolen, respawned or dropped on a hidden tab, it leaves
+// (and a wind-up of it stops, through onHandChange).
 function syncBall() {
-  const carried = ball.mine && ball.held;
-  if (!carried) drop('ball');
-  me.holding = carried && heldId() === 'ball';
+  if (!(ball.mine && ball.held)) drop('ball');
 }
 onHandChange(() => {
   if (me.charging && !canThrow()) me.charging = false;

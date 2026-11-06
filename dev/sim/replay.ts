@@ -18,6 +18,7 @@ import {
 import { cam, enterIsland, me, pressJump, releaseJump, turnWithDeck } from '../../src/entities/player/state.ts';
 import { setPhysicsClock, teleport } from '../../src/physics/engine.ts';
 import { input, inputState } from '../../src/player/input-state.ts';
+import { emptyHand, take } from '../../src/player/inventory.ts';
 import { handPosition } from '../../src/player/state.ts';
 import { launchVelocity, profileFor } from '../../src/player/throw-curve.ts';
 import { hrtimeMs } from './timed.ts';
@@ -82,7 +83,8 @@ function place() {
     claimBall(bl.held);
     ball.body.angularVelocity.set(bl.w[0]!, bl.w[1]!, bl.w[2]!);
   }
-  me.holding = pl.holding;
+  if (pl.held) take(pl.held);
+  else emptyHand();
 }
 
 // ---------------------------------------------------------------- presses, as far as a run without hands.ts has them

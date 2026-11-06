@@ -21,6 +21,7 @@ import { actionForSlot, isTyping, PAD, wrapAction, type Action } from '../player
 import { dom } from '../player/dom.ts';
 import { interactTarget } from '../player/hands.ts';
 import { input, inputState } from '../player/input-state.ts';
+import { inv } from '../player/inventory.ts';
 import { cam, me } from '../player/state.ts';
 import { aimPoint, chargeAmount } from '../player/throw.ts';
 import {
@@ -75,7 +76,7 @@ function begin() {
         jumpQueued: me.jumpQueued,
         jumpHeld: me.jumpHeld,
         swimming: me.swimming,
-        holding: me.holding,
+        held: inv.held,
         charging: me.charging,
       },
       cam: { yaw: cam.yaw, pitch: cam.pitch, dist: cam.dist },

@@ -188,13 +188,13 @@ function detect(now: number) {
     me.down = false;
     immuneUntil = now + TUNE.immuneMs;
   }
-  if (ball.mine && me.holding) lastHeldByMe = now;
+  if (ball.mine && ball.held) lastHeldByMe = now;
   const held = ball.held;
   const p = ball.pose.p;
   if (held) {
     if (!wasHeld && prevSpeed > TUNE.catchMinSpeed) {
       freezeUntil = now + TUNE.hitStopMs;
-      freezeMine = !!me.holding;
+      freezeMine = ball.mine && ball.held;
       freezeP.copy(ballMesh.position);
       freezeQ.copy(ballMesh.quaternion);
       kick(prevV.lengthSq() > 0.01 ? prevV : axis, clamp(prevSpeed / 40, 0.08, 0.3));
@@ -238,14 +238,14 @@ let immuneUntil = 0;
 function checkFaceplant(now: number, speed: number) {
   if (!me.body || !me.entered || me.down) return;
   if (now < immuneUntil || speed < TUNE.faceplantSpeed || ball.held) return;
-  if (now - lastHeldByMe < 700 || me.holding || me.charging) return; // your own throws never flop you
+  if (now - lastHeldByMe < 700 || (ball.mine && ball.held) || me.charging) return; // your own throws never flop you
   const b = me.body.position;
   const head = tmpV.set(b.x, b.y + HEAD_OFFSET, b.z);
   const d = head.distanceTo(ball.pose.p);
   if (d > PLAYER_R + BALL_R + 0.12 || ball.pose.p.y < b.y + HEAD_OFFSET * 0.4) return;
   me.down = true;
   me.downUntil = now + TUNE.downMs;
-  me.holding = me.charging = false;
+  me.charging = false;
   shake = reducedMotion ? 0 : 1;
   boing(18, 0.35, true);
 }

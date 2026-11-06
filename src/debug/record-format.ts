@@ -36,7 +36,7 @@ export type RecordingStart = {
     jumpQueued: number;
     jumpHeld: boolean;
     swimming: boolean;
-    holding: boolean;
+    held: string | null; // inv.held: what is in your hand
     charging: boolean;
   };
   cam: { yaw: number; pitch: number; dist: number };

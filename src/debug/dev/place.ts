@@ -126,7 +126,7 @@ function safe(spot: Spot) {
   return null;
 }
 function detachReason() {
-  if (inputState.seated || inv.held || me.holding || !back.empty() || pair.grip() !== null || pair.carrying())
+  if (inputState.seated || inv.held || !back.empty() || pair.grip() !== null || pair.carrying())
     return 'Put carried items down / get out of the vehicle first. Dev will not change object ownership.';
   return null;
 }

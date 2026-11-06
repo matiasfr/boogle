@@ -23,8 +23,8 @@ changes and teleports invalidate delayed samples without changing presence data 
 - **Tuning.** Linear damping 0.12, angular 0.3; ground friction 0.6, restitution 0.55 (ground), 0 (players), 0.95
   (mushrooms); Rapier multiplies the two materials' values, and the player material has none. Reach 2.4 m. Throw: see 6.7 (the same module throws everything), plus spin 8 rad/s. Rolling friction on the ground: velocity × (1 − 1.2 × dt),
   × (1 − 10 × dt) under 0.5 m/s. Buoyancy 3.2× weight at full submersion.
-- **Files.** [src/entities/ball/](../../src/entities/ball/index.ts) (respawn when off the island, auto-claim when you walk into it: `postPhysics` at
-  orders −300 and −280, listed in [src/loop.ts](../../src/loop.ts)), [src/features/impact.ts](../../src/features/impact.ts)
+- **Files.** [src/entities/ball/](../../src/entities/ball/index.ts) (respawn when off the island, auto-claim when you walk into it; feature-range orders,
+  after the player's, in `headless.ts`), [src/features/impact.ts](../../src/features/impact.ts)
   (squash, hit-stop, sand puff, boing, face-plant), [src/render/splash.ts](../../src/render/splash.ts).
 - **Known issues and limits.** A non-owner sees the ball about one round trip (owner, host or server, them) plus 120 ms late;
   join reports carry the slowest link's round trip as `rttMs` (6.15). Its resting spot isn't saved (cut 2026-11-06,

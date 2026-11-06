@@ -121,9 +121,9 @@ export default {
       }
       teleport(ball.body, p.x + 0.6, p.y + 0.5, p.z - 0.6); ball.pose.p.set(p.x + 0.6, p.y + 0.5, p.z - 0.6);
       H.interactDown(); H.interactUp();
-      const inHand = I.heldId() === 'ball' && window.boogle.me.holding && ball.held;
+      const inHand = I.heldId() === 'ball' && ball.mine && ball.held;
       I.take('frisbee');
-      const gone = !ball.held && !window.boogle.me.holding && I.heldId() !== 'ball' && I.heldId() === 'frisbee';
+      const gone = !ball.held && I.heldId() === 'frisbee';
       I.emptyHand();
       return { inHand, gone };`);
     t.check(
