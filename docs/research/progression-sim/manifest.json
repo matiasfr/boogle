@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "scope": "offline tooling only",
-  "baseCommit": "92f1fa732935c0e5187d408c417df8a795ae7b83",
+  "baseCommit": "d990af89fa8d5ca45bde834a0992085252d2aa8a",
   "inputSha256": "508d84773eab6d8b69bd5b32107765b017e332a635f545bc3c9f86af140a9f76",
-  "sourceSha256": "ce8f9769dafe3b95a14102dfad3727dc8d2ba8e116fcf43d8387cd56a87daf64",
+  "sourceSha256": "5c01a75aed94c8ac2a661241a9eaba7afd9ffd54792ff0ba1eee618fde9b3c91",
   "sourceFiles": [
     "dev/economy/campaign.ts",
     "dev/economy/campaign-types.ts",
@@ -13,7 +13,8 @@
     "dev/economy/five-area.ts",
     "dev/economy/report.ts",
     "dev/economy/cli.ts",
-    "dev/economy/model.ts"
+    "dev/economy/model.ts",
+    "dev/development/markdown.ts"
   ],
   "command": "npm run economy -- --report",
   "node": "v24.11.1",
@@ -26,11 +27,11 @@
   "artifacts": [
     {
       "path": "docs/research/progression-sim.md",
-      "sha256": "16199d7e0e4225a5bdc65d38d4036409bd4ce5db75e69f3c427ea9dcb4b1e6d8"
+      "sha256": "4b0e5853f0feae12ec8cc3b6911e9eccc7a85b6d5ca8c452f7f9c74f70c25fb7"
     },
     {
       "path": "docs/research/progression-sim/results.json",
-      "sha256": "3bf7e8580c5c454b35f6af8103fe875faeac8678d657148dc0ea44e091066398"
+      "sha256": "7106d21d55c4f72123d9b1329689b7c2fe6ecb13bc129c54ef026ba9da298c4f"
     },
     {
       "path": "docs/research/progression-sim/time-mix.svg",

@@ -2,6 +2,7 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { escapeHtml as xml } from '../development/markdown.ts';
 import { simulateCampaign } from './campaign.ts';
 import type { Campaign, CampaignOptions, Kind } from './campaign-types.ts';
 import { POLICIES } from './campaign-types.ts';
@@ -53,7 +54,6 @@ function comparison(r: Result) {
     ledger: r.ledger,
   };
 }
-const xml = (s: string) => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 function chart(
   title: string,
   labels: string[],
@@ -172,6 +172,7 @@ export function writeCampaignReport(routes: Campaign[]) {
     'cli.ts',
     'model.ts',
   ].map((f) => `dev/economy/${f}`);
+  files.push('dev/development/markdown.ts');
   const inputHash = createHash('sha256').update(JSON.stringify(routes)).digest('hex');
   const sourceHash = createHash('sha256');
   for (const file of files) sourceHash.update(file).update(readFileSync(file));

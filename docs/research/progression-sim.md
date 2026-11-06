@@ -13,7 +13,7 @@ The [brief](../brainstorms/progression.md) remains proposed. [Upgrade economy](u
 
 All economic quantities, durations, geometry thresholds, capacities, reserves and attendance times are named inputs in [campaign-kit.ts](../../dev/economy/campaign-kit.ts), [three-area.ts](../../dev/economy/three-area.ts) or [five-area.ts](../../dev/economy/five-area.ts). Shared engine constants are structural identities/unit conversions, not hidden balance knobs. CLI overrides are recorded in JSON. Every output below uses the complete input snapshots in [results.json](progression-sim/results.json); this file also includes every unlock, first modeled use, remaining use window, hourly count, material ledger and counterfactual.
 
-Input SHA-256: `508d84773eab6d8b69bd5b32107765b017e332a635f545bc3c9f86af140a9f76`. Engine/report source SHA-256: `ce8f9769dafe3b95a14102dfad3727dc8d2ba8e116fcf43d8387cd56a87daf64`. Base checkout: `92f1fa732935c0e5187d408c417df8a795ae7b83`; hashes identify the uncommitted simulation sources used at generation, not a claim that the base commit contains them. See [manifest](progression-sim/manifest.json).
+Input SHA-256: `508d84773eab6d8b69bd5b32107765b017e332a635f545bc3c9f86af140a9f76`. Engine/report source SHA-256: `5c01a75aed94c8ac2a661241a9eaba7afd9ffd54792ff0ba1eee618fde9b3c91`. Base checkout: `d990af89fa8d5ca45bde834a0992085252d2aa8a`; hashes identify the uncommitted simulation sources used at generation, not a claim that the base commit contains them. See [manifest](progression-sim/manifest.json).
 
 ## Model contract and deliberate limits
 

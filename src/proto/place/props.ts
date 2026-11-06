@@ -156,7 +156,6 @@ boiler.visible = false;
 const pedestal = makeProp('pedestal');
 // The stand stays at the forge when a dropped boiler lies elsewhere.
 pedestal.position.set(BX, BY + 0.3, BZ);
-pedestal.castShadow = pedestal.receiveShadow = true;
 scene.add(boiler, pedestal);
 addStatic({ kind: 'cylinder', rTop: 1.15, rBottom: 1.3, h: 0.6, segments: 8 }, { x: BX, y: BY + 0.3, z: BZ });
 export const boilerAt = () => {
