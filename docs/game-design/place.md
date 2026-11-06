@@ -97,7 +97,16 @@ An island about 440 m across, 1 km east of today's, in the crossing's sea. A Y-s
 and a river at the bottom, splits it into three lobes: the village (west, 18 m), the timber camp (north ridge, 30 m) and the
 quarry (east table, 24 m). Needle Bell, a leaning 105 m spire, stands where the gorge forks. Two low footbridges cross the
 river. Past the quarry, across about 170 m of sea, is **Far Head**, a low headland you can't walk to until the line gets there. Across the sea to the north, about a kilometre out and out of reach, stands a dark island with a broken ring on it
-and a bright shard in the ring's middle. Two physical things point at it: a line of orange buoys straight out from the end of the pier, and an old brass telescope on the ridge's top, aimed at it; **Look through it** (Interact) flies the view out along the barrel, and any input brings you back.
+and a bright shard in the ring's middle. Two physical things point at it: a line of orange buoys straight out from the end of the pier, and an old brass telescope on the ridge's top, aimed at it; **Look through it** (Interact) flies the view out along the barrel, and a deliberate press brings you back.
+
+The branch experiment `?proto=place&telescope=v2` cuts to one persistent authored railway/ring composition,
+resetting the camera and zoom on every visit. `&v=pan` adds optional bounded panning; fixed is the default variant.
+Arrow keys, D-pad or the onscreen arrows pan; +/−, shoulders or the onscreen buttons zoom in either variant.
+Interact, Escape, pad B/Menu or **Step back** exit immediately. The view takes local input while the world continues.
+Reduced motion uses the same immediate composition with panning disabled (`&telescopeMotion=reduced` exercises that
+path for inspection). No shared state or friend-following: existing construction and remote poses remain the scene's
+owners. Tuning lives in `src/proto/place/telescope.ts`. Without `telescope=v2`, existing behavior is unchanged.
+The [brief](../brainstorms/telescope.md) remains proposed; recurrence/fun and devices need the owner's playtest.
 
 ## The run
 
