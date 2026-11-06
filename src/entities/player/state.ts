@@ -252,7 +252,7 @@ export function groundPlayer() {
       return true;
     },
     // Old manifolds described the start of the step. Delay a new landing, but retain contact continuity on uneven ground.
-    { sinceStepStart: me.coyote <= 0 },
+    { sinceStepStart: me.coyote <= 0, support: true },
   );
 }
 

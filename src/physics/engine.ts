@@ -17,9 +17,10 @@
 //                                  registration order. The game's orders are pinned (table: src/loop.ts); no order runs last
 //   stepPhysics(dt)                fixed 60 Hz steps for dt seconds (up to 4), main.ts only
 //   stepFixed()                    exactly one fixed step, hooks included (scenarios that drive physics by hand)
-//   forEachContact(body, fn, { sinceStepStart? })   fn(nx, ny, nz, other) for each touching contact; normal points into
+//   forEachContact(body, fn, { sinceStepStart?, support? })   fn(nx, ny, nz, other) for each touching contact; normal points into
 //                                  `body`. sinceStepStart also requires this pair to overlap before the latest
-//                                  integration, after pre-step edits; landing timing without a speculative air gap.
+//                                  integration, after pre-step edits. support admits the solver
+//                                  envelope (2 mm) at both poses; default bounce/contact queries stay strict.
 //   raycastClosest(from, to, { mask, skipBackfaces }, hit)   true on a hit; hit.distance, hitPointWorld, hitNormalWorld
 //   sweepSphere(from, to, r, { mask, thin })   metres a sphere of radius r moves from `from` towards `to` before it touches
 //                                  something static (what moves and sensors don't count, nor does anything it starts inside);
@@ -102,7 +103,7 @@ export const forEachStatic: (mask: number, fn: (body: Body, shapes: Shape[]) => 
 export const forEachContact: (
   body: Body,
   fn: (nx: number, ny: number, nz: number, other: Body) => boolean | void,
-  options?: { sinceStepStart?: boolean },
+  options?: { sinceStepStart?: boolean; support?: boolean },
 ) => void = backend.forEachContact;
 export const sweepSphere: (from: V3, to: V3, r: number, o: { mask: number; thin: 'skip' | 'only' }) => number =
   backend.sweepSphere;
