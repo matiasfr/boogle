@@ -876,9 +876,21 @@ Quiet ambience under everything (`src/proto/place/ambience.ts`, on the ambience 
 
 ## How it's built
 
-Static station log pictograms and frame posts use instance bounds for scene and shadow frustum culling.
-Bounds refresh after placement and, for the posts, after the asynchronous kit geometry replacement.
-Other station pieces, moving stock, track batches and terrain keep their existing culling policy.
+Static station kit batches and log pictograms use instance bounds for scene and shadow frustum culling.
+Bounds refresh after placement and after asynchronous kit geometry replacement. Track kit batches invalidate
+their sphere when a matrix changes, so the next render includes newly placed and falling pieces; settled
+matrices incur no additional updates. Moving stock and terrain retain their existing culling policy.
+
+The 6 November place-kit draw pass retains the existing shared-material batches, vertices, transforms,
+instance indices and caster flags. Wood grain depends on local coordinates and instance index; regrouping
+it would change pixels. The compatible feeder steel was already merged. This pass therefore enables bounds
+on existing batches rather than introducing further merges or spatial-cell regrouping (art-kit-pipeline H5).
+At matched solo production poses, named kit main + shadow draws fell from **18 + 14 to 14 + 3** at town,
+**18 + 15 to 14 + 10** at T1 and **17 + 14 to 6 + 3** at cove. The existing
+`dev/look/evals/place-draws.ts` measures actual backend calls; `place-kit-draws.ts` supplies the three poses.
+Frozen same-state bounded/unculled comparisons changed **0 of 576,000 pixels** at each pose, with exact
+repeat probes. These are Local presentation changes, with no collision, lockstep, shared-state or save change.
+The full solo Place bot passed all expected beats with no graphics errors. No frame-time or device claim.
 
 Trees remain instanced, with only active hit/fall poses updated. Standing trees have removable
 static trunk bodies; this checkout already had the decorative colliders batched on one body,
