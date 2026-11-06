@@ -98,7 +98,7 @@ const frame = () => {
     }
   }
   if (frames++ % 10 === 0) {
-    const rig = machine.look.panelRig;
+    const rig = machine.panel.panelRig;
     console.log(
       'PANEL SAMPLE ' +
         JSON.stringify({
@@ -108,7 +108,7 @@ const frame = () => {
           trolley: vector(rig.trolley),
           hoist: rig.sleeves.map(vector),
           jaws: rig.jaws.map(vector),
-          wheels: machine.look.wheelState(),
+          wheels: machine.panel.wheelState(),
         }),
     );
   }

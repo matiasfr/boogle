@@ -11,7 +11,7 @@ if (new URLSearchParams(location.search).get('wheelMotion') === '1') {
   )) as typeof import('../../../src/proto/place/run.ts');
   const radius = 0.13;
   const started = performance.now();
-  let previous = machine.look.wheelState();
+  let previous = machine.panel.wheelState();
   let positions = [machine.loco.mesh.position.clone(), machine.flatbed.mesh.position.clone()];
   let moved = false,
     stopped = 0,
@@ -24,7 +24,7 @@ if (new URLSearchParams(location.search).get('wheelMotion') === '1') {
   const beats = new Set<string>();
   const sample = () => {
     const at = (performance.now() - started) / 1000;
-    const states = machine.look.wheelState();
+    const states = machine.panel.wheelState();
     const cars = [machine.loco, machine.flatbed];
     for (let side = 0; side < 2; side++) {
       const rod = machine.loco.mesh.getObjectByName(`power_rod_${side}-slide`)!;

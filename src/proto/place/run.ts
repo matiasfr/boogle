@@ -320,7 +320,7 @@ const panelTarget = new THREE.Vector3(0, 0, 10),
   panelScale = new THREE.Vector3();
 let panelReturn = 1;
 function posePanel(l: LineRun, index: number, phase: number) {
-  const rig = machine.look.panelRig;
+  const rig = machine.panel.panelRig;
   rig.root.updateWorldMatrix(true, false);
   l.track.panelFrame(index, panelRestFrame);
   panelLocalFrame.copy(rig.root.matrixWorld).invert().multiply(panelRestFrame);
@@ -341,7 +341,7 @@ machine.onPanelFrame = (dt) => {
       .map((p) => p.to - p.from),
     active,
   );
-  const rig = machine.look.panelRig;
+  const rig = machine.panel.panelRig;
   if (active) {
     panelReturn = 0;
     // A follower holds above the bed until the authority accepts the contact.

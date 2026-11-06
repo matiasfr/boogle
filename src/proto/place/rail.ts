@@ -38,12 +38,13 @@ import { wagonLook, LOCO, TRAILER, type CarSpec } from '../wagon/look.ts';
 import { box, place } from '../net/boxes.ts';
 import { deck, type Deck } from '../net/crates.ts';
 import { H, addStatic, slab } from './land.ts';
-import { ORIGIN, TUNE, lineAt, railY, type Line, type LinePoint, type LineSpec } from './layout.ts';
-import { dropSet, dustRing, logStackMesh, setStackLog, type DropSet } from './pieces.ts';
-import { LOOK, STEEL, rustTrainU, rustU, softGlow } from './look.ts';
+import { ORIGIN, STUB, TUNE, lineAt, railY, type Line, type LinePoint, type LineSpec } from './layout.ts';
+import { RAIL_SIZE, dropSet, dustRing, logStackMesh, setStackLog, type DropSet } from './pieces.ts';
+import { flat } from '../flat.ts';
+import { LOOK, STEEL, paint, rustTrainU, rustU, softGlow } from './look.ts';
 import { merged } from './part-geometry.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { kitBatch, lookTrack, trainLook } from './look-kit.ts';
+import { kitBatch, lookTrack, machineLook, trainLook } from './look-kit.ts';
 import { machineModel, MACHINE_CHAIRS, MACHINE_DECK, MACHINE_GAP } from './machine-model.ts';
 import { solidTrainLoad } from './train-load.ts';
 import { registerSeat, seatHeight } from './seat.ts';
@@ -78,7 +79,7 @@ export type Track = {
   spec: LineSpec;
   set: DropSet;
   order: number[]; // piece indices that aren't there at the start, by the metre the machine drops them
-  us: Float64Array; // Exact panel frontiers; do not round a closure boundary to Float32.
+  us: Float32Array | Float64Array; // Panel frontiers retain full precision; continuous track keeps its original rounding.
   heights: Float32Array; // by piece: how far it falls
   next: number;
   solids: Solid[];
@@ -100,17 +101,24 @@ export function buildTrack(
   spec: LineSpec,
   thudAt: (k: number, kind: PieceKind, x: number, y: number, z: number) => void,
   owner?: OwnedView,
+  mode: 'panels' | 'continuous' = 'panels',
 ) {
+  const panelled = mode === 'panels';
   const { line, dir } = spec;
   const u = (s: number) => (dir > 0 ? s : line.len - s);
-  const panels = trackPanels(spec);
+  const panels = panelled ? trackPanels(spec) : [];
+  const stubbed = (s: number) =>
+    spec.id === 'timber' ? s >= STUB.camp - 0.5 || s <= STUB.village + 0.5 : s <= STUB.east + 0.5;
   const panelOf = (at: number) => panels.findIndex((p) => at >= p.from - 1e-7 && at < p.to - 1e-7);
   const frontier = (s: number) => {
+    if (!panelled) return stubbed(s) ? -Infinity : u(s);
     if (spec.id === 'quarry' && u(s) > panels.at(-1)!.to) return Infinity;
     const index = panelOf(u(s));
     return index < 0 ? -Infinity : panels[index]!.to;
   };
-  const cuts = [0, ...panels.map((p) => p.from), panels.at(-1)!.to, line.len].sort((a, b) => a - b);
+  const cuts = panelled
+    ? [0, ...panels.map((p) => p.from), panels.at(-1)!.to, line.len].sort((a, b) => a - b)
+    : [0, line.len];
   const boxes: ReturnType<typeof box>[] = [],
     us: number[] = [],
     falls: number[] = [],
@@ -124,13 +132,13 @@ export function buildTrack(
     y: number,
     local: THREE.Matrix4,
     color: string,
-    _lead: number,
+    lead: number,
     fall: number,
   ) => {
     const b = box(x, z, local, color);
     b.y = y;
     boxes.push(b);
-    us.push(frontier(s));
+    us.push(panelled ? frontier(s) : u(s) - lead);
     falls.push(fall);
     kinds.push(kind);
     pre.push(frontier(s) === -Infinity);
@@ -141,43 +149,16 @@ export function buildTrack(
     lateral(0, q);
     return railY(line, s) - H(q.x, q.z);
   };
-  // Sleepers on the land; on the trestle a plank deck wide enough to walk, nearly closed.
-  for (let cut = 1; cut < cuts.length; cut++) {
-    const from = cuts[cut - 1]!,
-      to = cuts[cut]!;
-    for (let at = from; at < to - 1e-7;) {
-      const probe = dir > 0 ? at + 0.5 : line.len - at - 0.5;
-      const spacing = bed(probe) > 1 ? 1 : 1.2;
-      const length = Math.min(spacing, to - at);
-      const s = dir > 0 ? at + length / 2 : line.len - at - length / 2;
+  if (!panelled) {
+    // Sleepers on the land; on the trestle a plank deck wide enough to walk, nearly closed.
+    for (let s = 0.6; s < line.len;) {
       const onDeck = bed(s) > 1;
       const yaw = Math.atan2(P.ux, P.uz),
         y = railY(line, s),
         lean = new THREE.Euler(-Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2), 0, 0);
-      if (onDeck)
-        add(
-          s,
-          'plank',
-          q.x,
-          q.z,
-          y - 0.02,
-          place(0, 0, 0, DECK_W, 0.12, Math.min(0.84, length), yaw, lean),
-          '#a97a45',
-          0,
-          1.1,
-        );
+      if (onDeck) add(s, 'plank', q.x, q.z, y - 0.02, place(0, 0, 0, DECK_W, 0.12, 0.84, yaw, lean), '#a97a45', 0, 1.1);
       else {
-        add(
-          s,
-          'sleeper',
-          q.x,
-          q.z,
-          y - 0.02,
-          place(0, 0, 0, 2.3, 0.12, Math.min(0.42, length), yaw, lean),
-          '#8a6236',
-          0,
-          1.1,
-        );
+        add(s, 'sleeper', q.x, q.z, y - 0.02, place(0, 0, 0, 2.3, 0.12, 0.42, yaw, lean), '#8a6236', 0, 1.1);
         // Low sleepers need support too: the tall trestle bents only start beyond a metre of clearance.
         for (const side of [-0.75, 0.75]) {
           lateral(side, q);
@@ -187,17 +168,10 @@ export function buildTrack(
             add(s, 'leg', q.x, q.z, foot, place(0, 0, 0, 0.35, height, 0.35, yaw), '#a2743f', 0.4, 0.5);
         }
       }
-      at += length;
+      s += onDeck ? 1 : 1.2;
     }
-  }
-  // Split rail pairs at exact panel/closure boundaries, with no former 2.2 m visual lag.
-  for (let cut = 1; cut < cuts.length; cut++) {
-    const from = cuts[cut - 1]!,
-      to = cuts[cut]!;
-    for (let at = from; at < to - 1e-7; at += 3) {
-      const length = Math.min(3, to - at);
-      const centre = at + length / 2;
-      const s = dir > 0 ? centre : line.len - centre;
+    // Rails: fixed lengths, one pair after another, a little behind the head (they lie on sleepers that are down).
+    for (let s = 1.5; s < line.len; s += 3) {
       lineAt(line, s, P);
       const yaw = Math.atan2(P.ux, P.uz),
         y = railY(line, s),
@@ -210,11 +184,89 @@ export function buildTrack(
           q.x,
           q.z,
           y + TOP,
-          place(0, 0, 0, 0.1, 0.12, length, yaw, new THREE.Euler(-pitch, 0, 0)),
+          place(0, 0, 0, 0.1, 0.12, 3.05, yaw, new THREE.Euler(-pitch, 0, 0)),
           '#4c5058',
           -2.2,
           0.8,
         );
+      }
+    }
+  } else {
+    // Sleepers on the land; on the trestle a plank deck wide enough to walk, nearly closed.
+    for (let cut = 1; cut < cuts.length; cut++) {
+      const from = cuts[cut - 1]!,
+        to = cuts[cut]!;
+      for (let at = from; at < to - 1e-7;) {
+        const probe = dir > 0 ? at + 0.5 : line.len - at - 0.5;
+        const spacing = bed(probe) > 1 ? 1 : 1.2;
+        const length = Math.min(spacing, to - at);
+        const s = dir > 0 ? at + length / 2 : line.len - at - length / 2;
+        const onDeck = bed(s) > 1;
+        const yaw = Math.atan2(P.ux, P.uz),
+          y = railY(line, s),
+          lean = new THREE.Euler(-Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2), 0, 0);
+        if (onDeck)
+          add(
+            s,
+            'plank',
+            q.x,
+            q.z,
+            y - 0.02,
+            place(0, 0, 0, DECK_W, 0.12, Math.min(0.84, length), yaw, lean),
+            '#a97a45',
+            0,
+            1.1,
+          );
+        else {
+          add(
+            s,
+            'sleeper',
+            q.x,
+            q.z,
+            y - 0.02,
+            place(0, 0, 0, 2.3, 0.12, Math.min(0.42, length), yaw, lean),
+            '#8a6236',
+            0,
+            1.1,
+          );
+          // Low sleepers need support too: the tall trestle bents only start beyond a metre of clearance.
+          for (const side of [-0.75, 0.75]) {
+            lateral(side, q);
+            const foot = H(q.x, q.z) - 0.08;
+            const height = y - 0.02 - foot;
+            if (height > 0.18)
+              add(s, 'leg', q.x, q.z, foot, place(0, 0, 0, 0.35, height, 0.35, yaw), '#a2743f', 0.4, 0.5);
+          }
+        }
+        at += length;
+      }
+    }
+    // Split rail pairs at exact panel/closure boundaries, with no former 2.2 m visual lag.
+    for (let cut = 1; cut < cuts.length; cut++) {
+      const from = cuts[cut - 1]!,
+        to = cuts[cut]!;
+      for (let at = from; at < to - 1e-7; at += 3) {
+        const length = Math.min(3, to - at);
+        const centre = at + length / 2;
+        const s = dir > 0 ? centre : line.len - centre;
+        lineAt(line, s, P);
+        const yaw = Math.atan2(P.ux, P.uz),
+          y = railY(line, s),
+          pitch = Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2);
+        for (const r of [-0.5, 0.5]) {
+          lateral(r, q);
+          add(
+            s,
+            'rail',
+            q.x,
+            q.z,
+            y + TOP,
+            place(0, 0, 0, 0.1, 0.12, length, yaw, new THREE.Euler(-pitch, 0, 0)),
+            '#4c5058',
+            -2.2,
+            0.8,
+          );
+        }
       }
     }
   }
@@ -297,14 +349,9 @@ export function buildTrack(
   const solids: Solid[] = [];
   const a = { x: 0, z: 0 },
     c = { x: 0, z: 0 };
-  for (let cut = 1; cut < cuts.length; cut++) {
-    const start = cuts[cut - 1]!,
-      end = cuts[cut]!;
-    for (let at = start; at < end - 1e-7; at += 2) {
-      const lo = at,
-        hi = Math.min(end, at + 2);
-      const s = dir > 0 ? lo : line.len - hi;
-      const s1 = dir > 0 ? hi : line.len - lo;
+  if (!panelled) {
+    for (let s = 0; s < line.len; s += 2) {
+      const s1 = Math.min(line.len, s + 2);
       lineAt(line, s, P);
       lateral(0, a);
       const ya = railY(line, s) + TOP,
@@ -318,15 +365,43 @@ export function buildTrack(
         cz = c.z;
       solids.push({
         s: (s + s1) / 2,
-        u: frontier((s + s1) / 2),
-        add: () => slab(ax, az, cx, cz, ya, yc, wide ? DECK_W : BED_W, owner, 0),
+        u: stubbed(s + 1) ? -Infinity : u(s + 1),
+        add: () => slab(ax, az, cx, cz, ya, yc, wide ? DECK_W : BED_W, owner),
         on: null,
       });
+    }
+  } else {
+    for (let cut = 1; cut < cuts.length; cut++) {
+      const start = cuts[cut - 1]!,
+        end = cuts[cut]!;
+      for (let at = start; at < end - 1e-7; at += 2) {
+        const lo = at,
+          hi = Math.min(end, at + 2);
+        const s = dir > 0 ? lo : line.len - hi;
+        const s1 = dir > 0 ? hi : line.len - lo;
+        lineAt(line, s, P);
+        lateral(0, a);
+        const ya = railY(line, s) + TOP,
+          wide = railY(line, s + 1) - H(a.x, a.z) > 1;
+        lineAt(line, s1, P);
+        lateral(0, c);
+        const yc = railY(line, s1) + TOP;
+        const ax = a.x,
+          az = a.z,
+          cx = c.x,
+          cz = c.z;
+        solids.push({
+          s: (s + s1) / 2,
+          u: frontier((s + s1) / 2),
+          add: () => slab(ax, az, cx, cz, ya, yc, wide ? DECK_W : BED_W, owner, 0),
+          on: null,
+        });
+      }
     }
   }
   for (const l of legsAt)
     solids.push({
-      u: frontier(l.s),
+      u: panelled ? frontier(l.s) : u(l.s) - 5,
       water:
         l.g < 0 && l.top > 0
           ? () => registerWaterContact({ x: l.x, z: l.z, radius: Math.SQRT2 * 0.25, top: l.top })
@@ -350,7 +425,7 @@ export function buildTrack(
     spec,
     set,
     order,
-    us: Float64Array.from(us),
+    us: panelled ? Float64Array.from(us) : Float32Array.from(us),
     heights: Float32Array.from(falls),
     next: 0,
     solids,
@@ -385,13 +460,14 @@ export function buildTrack(
       t.head = to;
       while (t.next < order.length && t.us[order[t.next]!]! <= to) {
         const k = order[t.next++]!;
-        set.snap(k, true);
+        if (panelled) set.snap(k, true);
+        else set.drop(k, t.heights[k]!);
       }
       t.cursor = panels.filter((p) => p.to <= to + 1e-7).length;
       growSolids(t, to);
     },
     snapTo(to) {
-      set.clear();
+      if (panelled) set.clear();
       t.head = to;
       t.cursor = panels.filter((p) => p.to <= to + 1e-7).length;
       boxes.forEach((_, k) => set.snap(k, pre[k]! || t.us[k]! <= to));
@@ -606,21 +682,27 @@ const a = { ...P },
 /** What the machine carries, drawn in the flatbed's frame: its rack of rails down each side, its cradle of logs. */
 const RACK_RAILS = 32,
   CRADLE_LOGS = 40;
-const F = MAX_PANEL_LENGTH + 2.4, // Cantilever reach: bogies remain behind the previous committed panel.
-  GAP = MACHINE_GAP; // m between the cars' middles
 export type Machine = ReturnType<typeof buildMachine>;
-export function buildMachine(owner?: OwnedView) {
-  const look = machineModel(
-    kitBatch('rail', STEEL, 1, owner),
-    kitBatch('fork', { color: '#f0752c', rough: 0.55 }, 1, owner),
-    kitBatch('sleeper', { color: '#8a6236', grain: { axis: 'x', honey: '#c98a3e' } }, 1, owner),
-  );
-  background(
-    import('../../render/assets.ts').then(async ({ loadAsset }) =>
-      look.install((await loadAsset(machineUrl)).gltf.scene),
-    ),
-    'track-layer model',
-  );
+export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 'panels') {
+  const panelled = mode === 'panels';
+  const F = panelled ? MAX_PANEL_LENGTH + 2.4 : 2.4;
+  const GAP = panelled ? MACHINE_GAP : 3.7;
+  const model = panelled
+    ? machineModel(
+        kitBatch('rail', STEEL, 1),
+        kitBatch('fork', { color: '#f0752c', rough: 0.55 }, 1),
+        kitBatch('sleeper', { color: '#8a6236', grain: { axis: 'x', honey: '#c98a3e' } }, 1),
+      )
+    : null;
+  const kitLook = !panelled && LOOK.kit ? machineLook(owner) : null;
+  const look = model ?? kitLook ?? wagonLook(1, false, owner);
+  if (model)
+    background(
+      import('../../render/assets.ts').then(async ({ loadAsset }) =>
+        model.install((await loadAsset(machineUrl)).gltf.scene),
+      ),
+      'track-layer model',
+    );
   const flatRock = look.cars[1]!,
     locoRock = look.cars[0]!;
   const pose = { line: null as Line | null, s: 0, sign: 1 };
@@ -653,40 +735,83 @@ export function buildMachine(owner?: OwnedView) {
     loco.platform.id = 'railway:T1:loco';
     flatbed.platform.shared = loco.platform.shared = true;
   }
-  [loco, flatbed].forEach((car, i) => {
-    const gear = look.runningGear[i]!;
-    gear.position.y = -(BOTTOM + car.hy);
-    car.mesh.add(gear);
-    car.onSnap = () => {
-      look.resetWheelTravel(i);
-    };
-  });
-  // Match the original chair frame: body-relative, without the deck's pitch or shudder.
-  look.chairs.position.y = flatbed.hy - MACHINE_DECK;
-  flatbed.mesh.add(look.chairs);
-  MACHINE_CHAIRS.forEach((x, i) => {
-    // The built machine batches its bevelled chair shells; these gameplay anchors stay unchanged.
-    registerSeat({
-      id: `machine-deck-${i}`,
-      group: 'machine-deck',
-      platform: flatbed.platform,
-      anchorView: true,
-      // Avatars face -Z at zero yaw; the gantry and travel direction are local +Z.
-      at: { x, y: flatbed.hy + seatHeight, z: -0.9, yaw: Math.PI },
-      exit: { x, y: flatbed.hy + PLAYER_R, z: -1.85, yaw: Math.PI },
-      available: () => flatbed.y > -30,
-    });
-  });
-  const heldRail = look.heldRail;
-  heldRail.visible = false;
-  const rig = look.panelRig;
-  flatbed.mesh.add(rig.root);
-  rig.root.position.y = -(BOTTOM + flatbed.hy);
-
-  const rack = panelMagazine(RACK_RAILS);
-  rig.root.add(rack);
   const o = new THREE.Object3D(),
     slot = new THREE.Vector3();
+  let heldRail: THREE.Object3D;
+  let rack: THREE.InstancedMesh;
+  const rig = model?.panelRig;
+  if (model && rig) {
+    [loco, flatbed].forEach((car, i) => {
+      const gear = model.runningGear[i]!;
+      gear.position.y = -(BOTTOM + car.hy);
+      car.mesh.add(gear);
+      car.onSnap = () => {
+        model.resetWheelTravel(i);
+      };
+    });
+    // Match the original chair frame: body-relative, without the deck's pitch or shudder.
+    model.chairs.position.y = flatbed.hy - MACHINE_DECK;
+    flatbed.mesh.add(model.chairs);
+    MACHINE_CHAIRS.forEach((x, i) => {
+      // The built machine batches its bevelled chair shells; these gameplay anchors stay unchanged.
+      registerSeat({
+        id: `machine-deck-${i}`,
+        group: 'machine-deck',
+        platform: flatbed.platform,
+        anchorView: true,
+        // Avatars face -Z at zero yaw; the gantry and travel direction are local +Z.
+        at: { x, y: flatbed.hy + seatHeight, z: -0.9, yaw: Math.PI },
+        exit: { x, y: flatbed.hy + PLAYER_R, z: -1.85, yaw: Math.PI },
+        available: () => flatbed.y > -30,
+      });
+    });
+    heldRail = model.heldRail;
+    heldRail.visible = false;
+    flatbed.mesh.add(rig.root);
+    rig.root.position.y = -(BOTTOM + flatbed.hy);
+    rack = panelMagazine(RACK_RAILS);
+    rig.root.add(rack);
+  } else {
+    const box3 = (w: number, h: number, d: number, color: string, x: number, y: number, z: number, rx = 0) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color, 0.8));
+      m.position.set(x, y, z);
+      m.rotation.x = rx;
+      m.castShadow = true;
+      flatRock.add(m);
+      return m;
+    };
+    box3(step.hx * 2, step.h, step.hz * 2, '#f4d58a', 0, onDeck - step.h / 2, step.z);
+    // Cradle sides, in the flatbed's +z half (its front), open at the top.
+
+    if (kitLook) heldRail = kitLook.heldRail;
+    else {
+      box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, 1.45);
+      box3(1.5, 0.42, 0.08, '#e8d3a2', 0, onDeck + 0.21, -0.05);
+      box3(0.08, 0.42, 1.5, '#e8d3a2', -0.75, onDeck + 0.21, 0.7);
+      box3(0.08, 0.42, 1.5, '#e8d3a2', 0.75, onDeck + 0.21, 0.7);
+      // The sleeper chute off the front and the orange arm that holds the next rail out over the head.
+      box3(1.3, 0.05, 0.9, '#e8d3a2', 0, onDeck - 0.3, 1.95, 0.5);
+      box3(0.08, 0.08, 1.2, '#f0752c', 0.62, onDeck + 0.5, 1.9, 0.25);
+      heldRail = box3(RAIL_SIZE.x, RAIL_SIZE.y, 1.9, '#4c5058', 0.62, onDeck + 0.28, 2.1);
+    }
+
+    const railGeo = new THREE.BoxGeometry(RAIL_SIZE.x, RAIL_SIZE.y, RAIL_SIZE.z);
+    rack = LOOK.kit
+      ? kitBatch('rail', STEEL, 12, owner)
+      : new THREE.InstancedMesh(railGeo, LOOK.mats ? paint(STEEL) : flat('#4c5058', 0.6), 12);
+    rack.castShadow = true;
+    rack.frustumCulled = false;
+
+    for (let k = 0; k < 12; k++) {
+      const side = k % 2 ? 1 : -1,
+        layer = Math.floor(k / 4),
+        inner = (k >> 1) % 2;
+      o.position.set(side * (1.26 + inner * 0.18), onDeck - 0.1 + layer * 0.2, 0);
+      o.updateMatrix();
+      rack.setMatrixAt(k, o.matrix);
+    }
+    flatRock.add(rack);
+  }
   let rackCount = 0,
     rackLengths: number[] = [],
     rackKey = '',
@@ -730,13 +855,23 @@ export function buildMachine(owner?: OwnedView) {
     return flatRock.localToWorld(out.set(0, onDeck + 0.3, 0.7));
   };
   const worldRack = (out: THREE.Vector3) => {
-    rig.root.updateWorldMatrix(true, false);
-    return rig.root.localToWorld(panelSlot(rackCount, out));
+    if (rig) {
+      rig.root.updateWorldMatrix(true, false);
+      return rig.root.localToWorld(panelSlot(rackCount, out));
+    }
+    flatRock.updateWorldMatrix(true, false);
+    return flatRock.localToWorld(out.set(1.3, onDeck + 0.1, 0));
   };
 
   function setRack(n: number) {
-    rackCount = Math.max(0, Math.min(RACK_RAILS, n));
-    drawPanelRack();
+    rackCount = Math.max(0, Math.min(panelled ? RACK_RAILS : 12, n));
+    if (panelled) drawPanelRack();
+    else {
+      rack.count = rackCount;
+      rack.visible = rackCount > 0;
+      rack.instanceMatrix.needsUpdate = true;
+      heldRail.visible = n > 0;
+    }
   }
 
   // Headlamps, a beam each, and the fire in the cab: all dark until the boiler catches.
@@ -817,6 +952,10 @@ export function buildMachine(owner?: OwnedView) {
     onStep: (() => {}) as (dt: number) => void,
     onPanelFrame: (() => {}) as (dt: number) => void,
     look,
+    get panel() {
+      if (!model) throw new Error('continuous railway has no panel mechanism');
+      return model;
+    },
     flatbed,
     loco,
     onMachine: (p: Platform | null) => p === flatbed.platform || p === loco.platform,
@@ -896,7 +1035,7 @@ export function buildMachine(owner?: OwnedView) {
     const alpha = stepAlpha();
     drawCar(flatbed, alpha);
     drawCar(loco, alpha);
-    look.update(rustU.value);
+    model?.update(rustU.value);
     fire.emissiveIntensity = fireOn * (1 + Math.sin(now * 0.0025) * 0.05 + Math.sin(now * 0.0047) * 0.03);
     if (st.shudder > 0 || st.was) {
       st.was = st.shudder > 0;
@@ -934,14 +1073,16 @@ export function buildMachine(owner?: OwnedView) {
         });
       }
     }
-    // Cancel shell squash outside the rigid bogie frame.
-    const gear = look.runningGear[1]!;
-    const scale = flatbed.mesh.scale;
-    gear.scale.set(1 / scale.x, 1 / scale.y, 1 / scale.z);
-    gear.position.y = -(BOTTOM + flatbed.hy) / scale.y;
-    rig.root.scale.set(1 / scale.x, 1 / scale.y, 1 / scale.z);
-    rig.root.position.y = -(BOTTOM + flatbed.hy) / scale.y;
-    m.onPanelFrame(dt);
+    if (model && rig) {
+      // Cancel shell squash outside the rigid bogie frame.
+      const gear = model.runningGear[1]!;
+      const scale = flatbed.mesh.scale;
+      gear.scale.set(1 / scale.x, 1 / scale.y, 1 / scale.z);
+      gear.position.y = -(BOTTOM + flatbed.hy) / scale.y;
+      rig.root.scale.set(1 / scale.x, 1 / scale.y, 1 / scale.z);
+      rig.root.position.y = -(BOTTOM + flatbed.hy) / scale.y;
+      m.onPanelFrame(dt);
+    }
   };
   if (owner) {
     // Revisit the completed groups: some attached details were made after makeCar mounted their roots.

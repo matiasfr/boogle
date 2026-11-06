@@ -38,8 +38,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const depositSeconds = T1.depositTicks / 10;
   const feedSeconds = T1.feedTicks / 10;
   const distance = (T1.fromCm - T1.toCm) / 100;
-  const machine = rail.buildMachine(owner);
-  const track = rail.buildTrack(line, (_k, kind, x, y, z) => rail.thud(machine, kind, x, y, z), owner);
+  const machine = rail.buildMachine(owner, 'continuous');
+  const track = rail.buildTrack(line, (_k, kind, x, y, z) => rail.thud(machine, kind, x, y, z), owner, 'continuous');
   const station = stations.buildStation(spec, stations.frameBesideLine(spec, line.line, line.dir), owner);
   machine.at(line.line, T1.fromCm / 100, line.dir);
   machine.snap();
