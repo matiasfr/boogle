@@ -5,13 +5,15 @@
 //   const wh = createWorldHost({ roomId, store, saveMs, pidOf })   pidOf(selfId): that session's player id, or null
 //   wh.onSend((msg) => ...)       the sync's outgoing messages, for the hosted room to fan out (a w:snap only to msg.to)
 //   wh.deliver(msg, from)         a client's message into the sync (from = its selfId)
-//   wh.step(dt)                   advance dt seconds by hand (tests pass tick: false; otherwise a 50 ms timer does it)
+//   wh.step(dt)                   advance dt seconds of the 60 Hz room clock by hand (tests pass tick: false; otherwise a
+//                                 step timer does it)
 //   wh.status()                   worldStatus() plus the tick
 //   await wh.close({ save })      stop ticking; with save, write the last tick and wait for the file
 //
 // The host-side work a browser host does outside the rules is done here too: src/features/helper-bank.ts's bank.wake
 // for the time nobody hosted (a server restart).
 import { createSync } from '../../../src/world/sync.ts';
+import { STEP_MS } from '../../../src/world/room-clock.ts';
 import { installRules } from '../../../src/world/rules/index.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
 import { offlineGap, MIN_GAP_MS } from '../../../src/sim/bank.ts';
@@ -37,7 +39,7 @@ import type { RailReach, RailCadence } from '../../../src/world/rules/railway.ts
 import { createRailwayRequests } from './railway-requests.ts';
 import { canSet, cleanName } from '../../../src/sim/roster.ts';
 
-const STEP_MS = 50;
+// The room clock (src/world/room-clock.ts): a 60 Hz step timer; rules run every RULE_STEPS steps inside sync.stepWorld.
 // Saves skip a world whose states didn't change, but its tick still moves on, and the helper bank reads the time nobody
 // hosted from the saved tick: so the tick is saved at least this often, and always on close.
 const TICK_SAVE_MS = 30000;
@@ -133,7 +135,7 @@ export function createWorldHost({
   const timer = tick
     ? setInterval(() => {
         const now = performance.now();
-        sync.updateWorld(Math.min(now - last, 1000) / 1000);
+        sync.stepWorld(Math.min(now - last, 1000));
         last = now;
         if (now - tickSaved > TICK_SAVE_MS) {
           tickSaved = now;
@@ -153,7 +155,7 @@ export function createWorldHost({
     deliver(msg: unknown, from: string) {
       for (const h of msgFns) h(msg, from);
     },
-    step: (dt: number) => sync.updateWorld(dt),
+    step: (dt: number) => sync.stepWorld(dt * 1000),
     status: () => ({ tick: sync.world.tick, ...sync.worldStatus() }),
     async close({ save = true } = {}) {
       if (timer) clearInterval(timer);
@@ -469,7 +471,7 @@ export function createRailwayWorldHost({
     ? setInterval(() => {
         const time = performance.now();
         if (running && !closed) {
-          sync.updateWorld(Math.min(time - last, 1000) / 1000);
+          sync.stepWorld(Math.min(time - last, 1000));
           maintainSupply();
         }
         last = time;
@@ -554,7 +556,7 @@ export function createRailwayWorldHost({
     },
     step(dt: number) {
       if (running && !closed) {
-        sync.updateWorld(dt);
+        sync.stepWorld(dt * 1000);
         maintainSupply();
       }
     },
