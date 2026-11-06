@@ -1,72 +1,9 @@
 // Places-panel alternative: fibre → cement → steel, small stops, then the original island.
 // This does not select the route or approve moving double jump. All numbers are paper inputs.
-import type { Campaign, Effect, Kind, Stock, Task } from './campaign-types.ts';
+import type { Campaign } from './campaign-types.ts';
+import { campaignKit } from './campaign-kit.ts';
 
-const tune = {
-  targetS: 8 * 3600,
-  horizonS: 12 * 3600,
-  maxPurchases: 3,
-  warningGapS: 15 * 60,
-  fittingAuthoredS: 60,
-  fittingBuildS: 20,
-  carryM: 30,
-  reserve: 512,
-  lineM: 1200,
-  speedMps: 20,
-  accelerationMps2: 2,
-  dwellS: 8,
-  transferS: 6,
-  trains: 1,
-  capacity: 24,
-};
-const tasks: Task[] = [];
-function activity(
-  id: string,
-  label: string,
-  area: string,
-  requires: string[],
-  minutes: number,
-  extra: Partial<Task> = {},
-) {
-  tasks.push({
-    id,
-    label,
-    area,
-    site: 'home',
-    requires,
-    bill: {},
-    authoredS: minutes * 60,
-    buildS: 0,
-    carryM: tune.carryM,
-    ...extra,
-  });
-}
-function fitting(
-  id: string,
-  label: string,
-  kind: Kind,
-  area: string,
-  requires: string[],
-  bill: Stock,
-  effect: Effect = {},
-  optional = false,
-  site = 'home',
-) {
-  tasks.push({
-    id,
-    label,
-    kind,
-    area,
-    site,
-    requires,
-    bill,
-    effect,
-    optional,
-    authoredS: tune.fittingAuthoredS,
-    buildS: tune.fittingBuildS,
-    carryM: tune.carryM,
-  });
-}
+const { tune, tasks, activity, fitting, profile, homeSources, line, scenarios } = campaignKit({});
 activity('start', 'Read the gorge and find the workfront', 'starter', [], 8);
 fitting('path', 'Walkable first path', 'R', 'starter', ['start'], { W: 96, stone: 8 });
 fitting('axe', 'Proper axe', 'F', 'starter', ['path'], {}, { profile: { sourceRate: 1.5 } });
@@ -276,64 +213,16 @@ export const threeArea: Campaign = {
     'Cement/steel bills reuse upgrade-economy; C4 is expansion, not a second M',
   ],
   ...tune,
-  profile: {
-    carry: 8,
-    rack: 16,
-    walkMps: 5.6,
-    glideMps: 0,
-    hookMps: 18,
-    hookM: 0,
-    extraJumps: 0,
-    sourceRate: 1,
-    trainRate: 1,
-    wagon: 24,
-    pickupS: 1.2,
-    unloadS: 0.09,
-    carryDistance: 1,
-    hooks: [],
-    removedChores: [],
-  },
+  profile,
   sources: [
-    {
-      id: 'timber',
-      node: 'home',
-      requires: [],
-      raw: 'standing-W',
-      good: 'W',
-      reserve: tune.reserve,
-      seed: 0,
-      batch: 4,
-      seconds: 1,
-    },
-    {
-      id: 'stone',
-      node: 'home',
-      requires: [],
-      raw: 'raw-stone',
-      good: 'stone',
-      reserve: 16,
-      seed: 0,
-      batch: 4,
-      seconds: 2,
-    },
-    {
-      id: 'rails',
-      node: 'home',
-      requires: ['forge'],
-      raw: 'raw-rail',
-      good: 'rails',
-      reserve: 128,
-      seed: 0,
-      batch: 4,
-      seconds: 2,
-    },
+    ...homeSources,
     {
       id: 'fibre',
       node: 'glasshouse',
       requires: ['F0'],
       raw: 'raw-fibre',
       good: 'fibre',
-      reserve: tune.reserve,
+      reserve: tune.sourceReserve,
       seed: 4,
       batch: 4,
       seconds: 40,
@@ -344,7 +233,7 @@ export const threeArea: Campaign = {
       requires: ['C0'],
       raw: 'raw-C',
       good: 'C',
-      reserve: tune.reserve,
+      reserve: tune.sourceReserve,
       seed: 4,
       batch: 4,
       seconds: 60,
@@ -355,7 +244,7 @@ export const threeArea: Campaign = {
       requires: ['S0'],
       raw: 'raw-S',
       good: 'S',
-      reserve: tune.reserve,
+      reserve: tune.sourceReserve,
       seed: 4,
       batch: 4,
       seconds: 40,
@@ -366,36 +255,8 @@ export const threeArea: Campaign = {
     { id: 'shell-line', from: 'glasshouse', to: 'shell', requires: ['C0'] },
     { id: 'exhibit-line', from: 'shell', to: 'exhibition', requires: ['S0'] },
     { id: 'roundhouse-link', from: 'home', to: 'exhibition', requires: ['S4'] },
-  ].map((line) => ({
-    ...line,
-    metres: tune.lineM,
-    speedMps: tune.speedMps,
-    accelerationMps2: tune.accelerationMps2,
-    dwellS: tune.dwellS,
-    transferS: tune.transferS,
-    trains: tune.trains,
-    capacity: tune.capacity,
-  })),
+  ].map(line),
   tasks,
   terminal: 'ending',
-  scenarios: {
-    'late-3h': [
-      { atS: 0, players: ['p1'] },
-      { atS: 3 * 3600, players: ['p1', 'late'] },
-    ],
-    'late-7h': [
-      { atS: 0, players: ['p1'] },
-      { atS: 7 * 3600, players: ['p1', 'late'] },
-    ],
-    '1-2-1': [
-      { atS: 0, players: ['p1'] },
-      { atS: 3600, players: ['p1', 'p2'] },
-      { atS: 2 * 3600, players: ['p1'] },
-    ],
-    absence: [
-      { atS: 0, players: ['p1'] },
-      { atS: 2 * 3600, players: [] },
-      { atS: 3 * 3600, players: ['p1'] },
-    ],
-  },
+  scenarios,
 };

@@ -1,5 +1,6 @@
 // Offline design arithmetic, not game/sync code. Node 26; no dependencies.
 // Campaign stock/events are separate from these preserved historical arithmetic fixtures.
+import { number, parseOption } from './options.ts';
 export { simulateCampaign, validateCampaign } from './campaign.ts';
 export type { Campaign, CampaignOptions } from './campaign-types.ts';
 // Evidence, units, assumptions and reproduction: docs/research/rail-economy-model.md.
@@ -64,11 +65,6 @@ const times = (): Times => ({
 const total = (t: Times) => Object.values(t).reduce((a, b) => a + b, 0);
 function add(to: Times, from: Times) {
   for (const key of Object.keys(to) as Activity[]) to[key] += from[key];
-}
-function number(value: number, label: string, minimum = 0, integer = false) {
-  if (!Number.isFinite(value) || value < minimum || (integer && !Number.isSafeInteger(value)))
-    throw new Error(`${label}: expected ${integer ? 'integer' : 'number'} >= ${minimum}, got ${value}`);
-  return value;
 }
 const min = (seconds: number) => +(seconds / 60).toFixed(2);
 const beat = (activity: Activity, seconds: number, newThing?: string): Beat => ({ activity, seconds, newThing });
@@ -574,8 +570,8 @@ if (import.meta.main) {
   const options: Options = {};
   const allowed = ['carry', 'distance', 'supply', 'content', 'train', 'coordination'] as const;
   for (const arg of args.filter((a) => a.startsWith('--') && a !== '--json')) {
-    const [key, value] = arg.slice(2).split('=');
-    if (!allowed.includes(key as (typeof allowed)[number]) || value === undefined || value.trim() === '')
+    const [key, value] = parseOption(arg) ?? [];
+    if (!allowed.includes(key as (typeof allowed)[number]) || value === undefined)
       throw new Error(
         `Unknown argument ${arg}. Use --carry=N, --distance=N, --supply=N, --content=N, --train=N, --coordination=N, --json.`,
       );

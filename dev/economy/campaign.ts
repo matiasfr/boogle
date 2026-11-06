@@ -1,5 +1,6 @@
 // Event-driven design arithmetic. No game imports, runtime state, timers or browser physics.
 import type { Campaign, CampaignOptions, Kind, Path, Policy, Profile, Stock, Task } from './campaign-types.ts';
+import { number } from './options.ts';
 
 const sum = (s: Stock) => Object.values(s).reduce((a, b) => a + b, 0);
 function add(s: Stock, good: string, n: number) {
@@ -7,8 +8,11 @@ function add(s: Stock, good: string, n: number) {
   if (!Number.isSafeInteger(s[good]) || s[good] < 0) throw new Error(`Invalid stock ${good}: ${s[good]}`);
 }
 const positive = (n: number, label: string, integer = false, zero = false) => {
-  if (!Number.isFinite(n) || n < 0 || (!zero && n === 0) || (integer && !Number.isSafeInteger(n)))
+  try {
+    number(n, label, zero ? 0 : Number.MIN_VALUE, integer);
+  } catch {
     throw new Error(`Invalid ${label}: ${n}`);
+  }
 };
 
 export function validateCampaign(c: Campaign) {

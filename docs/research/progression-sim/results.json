@@ -2,12 +2,14 @@
   "metadata": {
     "schema": 1,
     "scope": "offline tooling only",
-    "baseCommit": "24732277c86b43850348822c2cf88cd9957758c5",
-    "inputSha256": "21c61c849bdaf88022425523e78728e7c9d3e4ea40019f154d73685105824653",
-    "sourceSha256": "7b4d2c0708b178f6b366e5eafb6e7f0f9b9d825b3de57ec52ee4a11b5ec815de",
+    "baseCommit": "92f1fa732935c0e5187d408c417df8a795ae7b83",
+    "inputSha256": "508d84773eab6d8b69bd5b32107765b017e332a635f545bc3c9f86af140a9f76",
+    "sourceSha256": "ce8f9769dafe3b95a14102dfad3727dc8d2ba8e116fcf43d8387cd56a87daf64",
     "sourceFiles": [
       "dev/economy/campaign.ts",
       "dev/economy/campaign-types.ts",
+      "dev/economy/campaign-kit.ts",
+      "dev/economy/options.ts",
       "dev/economy/three-area.ts",
       "dev/economy/five-area.ts",
       "dev/economy/report.ts",
@@ -15,7 +17,7 @@
       "dev/economy/model.ts"
     ],
     "command": "npm run economy -- --report",
-    "node": "v26.13.0",
+    "node": "v24.11.1",
     "status": "complete"
   },
   "inputs": [
@@ -34,7 +36,7 @@
       "fittingAuthoredS": 60,
       "fittingBuildS": 20,
       "carryM": 30,
-      "reserve": 512,
+      "sourceReserve": 512,
       "lineM": 1200,
       "speedMps": 20,
       "accelerationMps2": 2,
@@ -1210,12 +1212,12 @@
       "rareReserve": 16,
       "batch": 4,
       "lineM": 1200,
-      "trainMps": 20,
+      "speedMps": 20,
       "accelerationMps2": 2,
       "dwellS": 8,
       "transferS": 6,
       "trains": 1,
-      "trainCapacity": 24,
+      "capacity": 24,
       "profile": {
         "carry": 8,
         "rack": 16,
