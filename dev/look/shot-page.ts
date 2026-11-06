@@ -285,6 +285,17 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
           },
           render,
           difference: diff(first, image.rgba),
+          samples: group.sampleObjects?.map((objectName) => {
+            const object = scene.getObjectByName(objectName);
+            if (!object) throw new Error('Missing chart sample: ' + objectName);
+            const p = object.getWorldPosition(camera.position.clone()).project(camera);
+            const x = Math.floor((p.x * 0.5 + 0.5) * canvas.width);
+            const y = Math.floor((-p.y * 0.5 + 0.5) * canvas.height);
+            if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height || Math.abs(p.z) > 1)
+              throw new Error('Chart sample outside camera: ' + objectName);
+            const offset = (y * canvas.width + x) * 4;
+            return { object: objectName, x, y, rgba: Array.from(image.rgba.slice(offset, offset + 4)) };
+          }),
           milliseconds: wall() - began,
         });
         const probeBegan = wall();
@@ -312,7 +323,7 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
               ? {
                   rows: group.wedge.rows.values.map((v) => `${group.wedge!.rows.label} ${v}`),
                   columns: group.wedge.columns.values.map((v) => `${group.wedge!.columns.label} ${v}`),
-                  baseline: '5',
+                  baseline: String(group.wedge.baseline ?? 5),
                   legend: group.wedge.legend,
                 }
               : undefined,
