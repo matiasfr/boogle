@@ -116,9 +116,14 @@ async function prepare(room: HostedRoom, client: ReturnType<typeof connect>, rai
     () => client.world('r:result').some((m) => m.request === 1),
     'wake',
   );
-  for (let k = 0; k < 7; k++) room.world.step(0.5);
   assert.ok('railway' in room.world.rules);
-  assert.equal(room.world.rules.railway.phase(), 'idle');
+  const rules = room.world.rules;
+  // updateWorld() is a silent no-op while a stamp or checkpoint is unpublished, so a fixed number of manual
+  // steps can all be dropped behind a slow durable write. Drive the clock until the wake has really finished.
+  await until(() => {
+    room.world.step(0.5);
+    return rules.railway.phase() === 'idle';
+  }, 'wake finished');
 }
 async function evidence(name: string, value: unknown) {
   const dir = new URL('../../.look/core-t1-spine/', import.meta.url);
