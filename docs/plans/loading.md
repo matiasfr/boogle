@@ -132,13 +132,15 @@ for an update on navigation; this gate controls the page's registration, not the
 - **Optional cache:** individual downloads and CacheStorage failures cannot reject install. Cache lookup failure
   falls through to the network, and failed background writes are ignored. Cached responses retain their headers,
   including `application/wasm` for streaming compilation; JS still references its own content-hashed WASM URL.
-  Current-cache hits return directly. A hit in an older cache is cloned into the current cache without downloading;
-  promotion and network-response writes are owned by the fetch event's `waitUntil()`, without delaying the response.
+  Current-cache hits return directly. Fetch-event cache writes are owned by `waitUntil()`, without delaying the response.
   Storage failures stay optional and writes retain the existing deleted-cache guard.
   Matches ignore `Vary` only for these immutable same-scope assets: Vite preview's `Vary: Origin` otherwise causes
   module requests to miss entries installed by ordinary fetches. Their hashed URLs identify identical bytes.
-- **Current-build purge:** on activate it deletes every other build's cache. Old tabs may lose lazy chunks, as
-  accepted by the owner's 5 November "No old builds in development" call.
+- **Owner note — 5 November 2026:** on activate it deletes every other build's cache. Returning players may
+  redownload unchanged lazy models and textures after a deploy; this is acceptable during development. There is
+  no promise to promote those cached assets before activation purges the old caches, and no activation-time
+  promotion should be added. First-load install reuse remains opportunistic. Old tabs may also lose lazy chunks,
+  as accepted by the "No old builds in development" call.
 - **Deploy flow:** a new deploy changes `sw.js` (the build id and the file list are inlined), the browser notices on
   the next navigation (`updateViaCache: 'none'`), the new worker precaches only what changed, and the reload that
   `updates.ts` triggers already finds most files cached.
