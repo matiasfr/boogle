@@ -133,7 +133,10 @@ function planOf(id: RoomId): Plan {
     high: p.high,
     rise: look.rise,
     wall: look.wall,
+    // The shop keeps its authored coloured plaster; the study's wall family is cream plaster.
+    wallPalette: id === 'house' ? 'walls' : id === 'museum' ? 'stone' : undefined,
     post: look.post,
+    postPalette: id === 'museum' ? 'stone' : 'timber',
     roof: look.roof,
     door: DOOR,
     closed: false,

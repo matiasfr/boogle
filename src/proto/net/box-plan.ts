@@ -8,6 +8,8 @@ export type Box = {
   z: number;
   local: THREE.Matrix4;
   color: THREE.Color;
+  /** Local presentation only: authored surface role, independent of its pigment. */
+  palette?: 'timber' | 'walls' | 'roofs' | 'stone';
   tall: boolean;
   pop: number;
   /** Local geometry only: fraction of the top depth removed, leaving the base unchanged. */

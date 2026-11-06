@@ -56,6 +56,7 @@ export function planOf(p: Plot): Plan {
         high: 3,
         rise: 2.5,
         wall: PLASTER,
+        wallPalette: 'walls',
         post: OAK,
         roof: THATCH,
         door: { w: 1.5, rows: 3 },
@@ -72,6 +73,7 @@ export function planOf(p: Plot): Plan {
         high: p.h ?? 5.2,
         rise: 3.6,
         wall: TIMBER,
+        wallPalette: 'timber',
         post: OAK,
         roof: RED,
         door: { w: 2.6, rows: 4 },
@@ -88,7 +90,9 @@ export function planOf(p: Plot): Plan {
         high: p.h ?? 6,
         rise: 2.6,
         wall: STONE,
+        wallPalette: 'stone',
         post: STONE2,
+        postPalette: 'stone',
         roof: p.tile ? TERRACOTTA : SLATE,
         door: { w: 1.6, rows: 2 },
         windows: GLASS,
@@ -105,6 +109,7 @@ export function planOf(p: Plot): Plan {
         high: p.h ?? 4,
         rise: 2.8,
         wall: p.tile ? STONE2 : TIMBER,
+        wallPalette: p.tile ? 'stone' : 'timber',
         post: OAK,
         roof: p.tile ? SLATE : RED,
         door: { w: 3.2, rows: 3 },
@@ -118,11 +123,12 @@ export function planOf(p: Plot): Plan {
         course: 1.6,
         a: WHITE,
         b: '#e4dfd2',
+        palette: 'walls',
         tops: [
           { w: 6.2, h: 3.6, color: GOLD },
-          { w: 7, h: 0.8, color: RED },
-          { w: 3.6, h: 2.6, color: RED },
-          { w: 1.6, h: 3.4, color: RED },
+          { w: 7, h: 0.8, color: RED, palette: 'roofs' },
+          { w: 3.6, h: 2.6, color: RED, palette: 'roofs' },
+          { w: 1.6, h: 3.4, color: RED, palette: 'roofs' },
         ],
       });
     case 'keep':
@@ -134,9 +140,10 @@ export function planOf(p: Plot): Plan {
         course: 1.8,
         a: STONE,
         b: STONE2,
+        palette: 'stone',
         tops: [
-          { w: 10.6, h: 1.2, color: SLATE },
-          { w: 5, h: 5, color: STONE2 },
+          { w: 10.6, h: 1.2, color: SLATE, palette: 'roofs' },
+          { w: 5, h: 5, color: STONE2, palette: 'stone' },
           { w: 3, h: 4, color: GOLD },
         ],
       });
@@ -149,9 +156,10 @@ export function planOf(p: Plot): Plan {
         course: 2,
         a: TIMBER,
         b: OAK,
+        palette: 'timber',
         tops: [
-          { w: 5.2, h: 3, color: '#8a6236' },
-          { w: 5.8, h: 0.6, color: RED },
+          { w: 5.2, h: 3, color: '#8a6236', palette: 'timber' },
+          { w: 5.8, h: 0.6, color: RED, palette: 'roofs' },
         ],
       });
     case 'stack':
@@ -166,11 +174,11 @@ export function planOf(p: Plot): Plan {
         tops: [{ w: 3, h: 0.5, color: IRON }],
       });
     case 'rock':
-      return blockPlan({ x, z, yaw, w, h: p.h ?? 4, d, color: p.color ?? '#9b978c' }, 2);
+      return blockPlan({ x, z, yaw, w, h: p.h ?? 4, d, color: p.color ?? '#9b978c', palette: 'stone' }, 2);
     case 'block':
       return blockPlan({ x, z, yaw, w, h: p.h ?? 2, d, color: p.color ?? '#8a6236' }, 3, p.top);
     case 'derrick':
-      return blockPlan({ x, z, w: 1, h: 14, d: 1, color: OAK }, 4, IRON);
+      return blockPlan({ x, z, w: 1, h: 14, d: 1, color: OAK, palette: 'timber' }, 4, IRON);
   }
 }
 
@@ -193,6 +201,7 @@ export function forgePlan(door = { x: -2.9, w: 2.8, rows: 3 }) {
     high: HIGH,
     rise: 2.1,
     wall: WOOD,
+    wallPalette: 'timber',
     post: WOOD2,
     roof: ROOF,
     door,

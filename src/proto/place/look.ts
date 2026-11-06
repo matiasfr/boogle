@@ -35,6 +35,8 @@ import { flat } from '../flat.ts';
 import { dressBundleLogs } from '../../render/haul-bundle.ts';
 import { patchNode } from '../../render/material-patch.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
+import { paletteNode, paletteColour, watchPalette } from '../../render/material-palette.ts';
+import type { MaterialFamily } from '../../render/material-palette-tuning.ts';
 
 const asked = new Set((new URLSearchParams(location.search).get('look') ?? 'all').split(','));
 const on = (name: string) => asked.has('all') || asked.has(name);
@@ -58,7 +60,11 @@ export function selectiveColour(base: N, family: 'grass' | 'green' | 'timber' | 
     return base.mul(base.div(peak).mul(0.45).add(0.72));
   }
   const target = base.mul(family === 'green' || family === 'grass' ? vec3(0.88, 1.18, 0.94) : vec3(1.35, 1.19, 0.84));
-  return family === 'grass' ? mix(base, target, 0.35).mul(0.7) : target;
+  return family === 'grass'
+    ? paletteNode(mix(base, target, 0.35).mul(0.7), 'grass')
+    : family === 'timber'
+      ? paletteNode(target, 'timber')
+      : target;
 }
 
 /** A tree part owns its pigment patch; flat() materials are shared and stay untouched. */
@@ -104,7 +110,7 @@ export function groundMaterial() {
     .mul(0.05);
   const tint: N = mix(vec3(0.74, 0.9, 0.78), vec3(1.04, 1.04, 0.82), breathe);
   const lawn: N = mix(v.mul(tint), v.mul(vec3(1.24, 1.1, 0.72)), dry.mul(0.55)).mul(mottle.add(1));
-  const grass: N = mix(selectiveColour(lawn, 'grass'), v.mul(0.85), paths);
+  const grass: N = mix(selectiveColour(lawn, 'grass'), paletteNode(v.mul(0.85), 'sand'), paths);
   // Rock: warm tan, darker low down, in soft strata that lean a little.
   const strata: N = sin(
     p.y
@@ -119,7 +125,7 @@ export function groundMaterial() {
     vec3(ROCK.r, ROCK.g, ROCK.b),
     ss(float(2), float(18), p.y),
   ).mul(mix(float(0.88), float(1.06), strata));
-  m.colorNode = mix(grass, rockCol, rock);
+  m.colorNode = mix(grass, paletteNode(rockCol, 'stone'), rock);
   return m;
 }
 /** The spire's rock, when the land's is warm too. */
@@ -174,6 +180,7 @@ export function paint(p: Paint) {
   });
   if (wood) m.colorNode = materialColor.mul(grainOf(p.grain!.axis, p.grain!.scale ?? [1, 1, 1]));
   if (!steel && !p.own) m.colorNode = selectiveColour(m.colorNode ?? materialColor, wood ? 'timber' : 'accent');
+  if (wood && p.own) m.colorNode = paletteNode(m.colorNode, 'timber');
   if (steel) m.emissiveNode = skyOnSteel();
   if (p.rust) {
     // Broad material changes fit the painted kit; world-space mottling made moving metal look camouflaged.
@@ -207,7 +214,11 @@ export const STEEL: Paint = { color: '#4c5058', steel: true, rough: 0.6 };
 // The logs on your back, in the game's own piece meshes (src/render/haul-pieces.ts share one material): bark, one amber
 // band and pale cut ends, as the kit's log has. The game tints each piece by its kind; this divides that tint back out.
 export function lookBackLogs(mat: THREE.Material, tint: THREE.Color) {
-  if (LOOK.mats) dressBundleLogs(mat as THREE.MeshStandardNodeMaterial, tint);
+  if (LOOK.mats) {
+    const owned = mat as THREE.MeshStandardNodeMaterial;
+    dressBundleLogs(owned, tint);
+    owned.colorNode = paletteNode(owned.colorNode, 'timber');
+  }
 }
 
 // A little wood: bands across the grain's axis that wander slowly along it, and rings on the cut ends. Each piece its own.
@@ -294,14 +305,27 @@ const SITE_PIGMENTS: Record<string, string> = {
   '#f2b134': '#ffc425',
 };
 /** Buildings own this display palette; their authored construction and collision colours stay intact. */
-export function paintSite(mesh: THREE.InstancedMesh, boxes: readonly { color: THREE.Color }[]) {
+export function paintSite(
+  mesh: THREE.InstancedMesh,
+  boxes: readonly { color: THREE.Color; palette?: MaterialFamily }[],
+) {
   mesh.material = boardMaterial(mesh.material as THREE.Material);
   const color = new THREE.Color();
-  boxes.forEach((box, i) => {
-    const pigment = SITE_PIGMENTS['#' + box.color.getHexString()];
-    if (pigment) mesh.setColorAt(i, color.set(pigment));
+  const entries = boxes.map((box) => {
+    const hex = '#' + box.color.getHexString();
+    return { pigment: SITE_PIGMENTS[hex] ?? (box.palette ? hex : undefined), family: box.palette };
   });
-  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  const update = () => {
+    entries.forEach(({ pigment, family }, i) => {
+      if (!pigment) return;
+      color.set(pigment);
+      if (family) paletteColour(color, family);
+      mesh.setColorAt(i, color);
+    });
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  };
+  update();
+  watchPalette(mesh, update);
 }
 /** A centred box for the greybox, baked when `contact` is on. */
 export function lookBox(w: number, h: number, d: number) {

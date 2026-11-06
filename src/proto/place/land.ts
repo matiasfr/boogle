@@ -2,6 +2,7 @@
 // spire, the footbridges and what stands across the sea. chop.ts owns every tree. Local.
 import * as THREE from 'three/webgpu';
 import { flat } from '../flat.ts';
+import { paletteMaterial } from '../../render/material-palette.ts';
 import { LOOK, groundMaterial, spireRock } from './look.ts';
 import { scene } from '../../render/scene.ts';
 import { registerWaterReceiver } from '../../render/water/receivers.ts';
@@ -365,7 +366,7 @@ export function plank(
     addStatic({ kind: 'box', hx: width / 2, hy: thick / 2, hz: full / 2 }, c, q, GROUP.SCENERY, owner),
     segmentStepSupport(ax, az, bx, bz, topA, topB, width, 'wood'),
   );
-  const m = new THREE.Mesh(new THREE.BoxGeometry(width, thick, full), FLAT(color));
+  const m = new THREE.Mesh(new THREE.BoxGeometry(width, thick, full), paletteMaterial(FLAT(color), 'timber', owner));
   m.position.set(c.x, c.y, c.z);
   m.quaternion.copy(q);
   m.castShadow = m.receiveShadow = true;
@@ -390,7 +391,7 @@ function buildSpire(owner?: OwnedView) {
   ];
   let y = 0;
   for (const [r0, r1, h, dx, dz, color] of drums) {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, h, 7, 1), FLAT(color));
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, h, 7, 1), paletteMaterial(FLAT(color), 'stone', owner));
     m.position.set(X + dx, y + h / 2, Z + dz);
     m.rotation.y = y * 0.7;
     m.castShadow = true;
@@ -503,7 +504,10 @@ export function buildLand(owner?: OwnedView) {
       for (const z of [dz - 3.2, dz + 3.2]) {
         const base = sampleFootprint(boxFootprint(x, z, 0.4, 0.4)).low - 0.02,
           height = 4 - base;
-        const post = new THREE.Mesh(new THREE.BoxGeometry(0.4, height, 0.4), FLAT('#7f5630'));
+        const post = new THREE.Mesh(
+          new THREE.BoxGeometry(0.4, height, 0.4),
+          paletteMaterial(FLAT('#7f5630'), 'timber', owner),
+        );
         post.position.set(x, base + height / 2, z);
         post.castShadow = post.receiveShadow = true;
         if (owner) owner.add(post);
@@ -514,7 +518,10 @@ export function buildLand(owner?: OwnedView) {
     const { x, height, top, bottom } = SHORE_HOP;
     const z = SHORE_HOP.z + 7,
       y = H(x + ORIGIN.x, z);
-    const rock = new THREE.Mesh(new THREE.CylinderGeometry(top, bottom, height, 7), FLAT(spireRock('#8c8478')));
+    const rock = new THREE.Mesh(
+      new THREE.CylinderGeometry(top, bottom, height, 7),
+      paletteMaterial(FLAT(spireRock('#8c8478')), 'stone', owner),
+    );
     rock.position.set(x + ORIGIN.x, y + height / 2, z + ORIGIN.z);
     rock.castShadow = rock.receiveShadow = true;
     if (owner) owner.add(rock);

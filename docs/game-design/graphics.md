@@ -68,6 +68,21 @@
   the streak instead of inferring failure from a busy GPU. This counts failed draw submissions, not elapsed time,
   rAF callbacks or repeated console messages. Recovery and the failed-draw count join session marks.
 - **Sync kind.** Local: nothing about rendering crosses the network.
+- **Material palette review (6 November, stage 2).** Dev/`tune=1` exposes six independent Local Tunables:
+  `material.grass`, `material.sand` (sand and paths), `material.timber`, `material.stone` (stone and cliffs),
+  `material.walls` (cream plaster), and `material.roofs`. Each selects 0 Current, 1 Fresh, 2 Cool or 3 Soft.
+  All defaults remain 0; no owner palette has been selected. The
+  [material boards](../../dev/look/beats/material-palettes.ts) pair lit and `view=raw` at calibration, town,
+  shore and the first gameplay spawn view. Lighting stays at the owner's cell 5: cloud radiance 0.8,
+  neutral light profile 1, gain 0.12, key 1.12 and fill 3.2, with Neutral, bloom off and fixed resolution.
+  Each family applies a linear RGB ratio between decoded sRGB anchor swatches, retaining authored colour
+  variation, grain and existing roughness/metalness/normal response. Town pieces use semantic construction
+  tags, so a roof and a scaffold sharing an authored colour remain independently selectable. The six
+  calibration anchors are controlled samples; Buddy, reference presets, grey/chrome balls and charts stay fixed.
+  Coverage is the default Place terrain, town buildings, bridges, arrival timber and carried timber. Tree foliage,
+  signs, painted accents, coloured shop plaster, special props and the separate `terrain=cove` pilot retain their
+  own palettes. Ordinary visits retain the existing graphs and materials; tuning uses owned clones or live uniforms
+  and instance-colour uploads. These boards are owner review, not a palette approval or device test.
 - **Base-colour diagnostic.** `?view=unlit` swaps lit surfaces to their authored albedo/texture and vertex colours,
   retaining masks, transparency, skinning and instance transforms. Lighting, shadows, environment, material AO,
   emissive light, fog and water-receiver caustics/wetness are excluded. `?view=raw` also bypasses the post chain,

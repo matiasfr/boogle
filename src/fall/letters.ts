@@ -3,6 +3,9 @@
 // can kick them about until each one shrinks away. Local: each player's own, never sent and never read by the sim, so a
 // friend sees you land on nothing.
 import * as THREE from 'three/webgpu';
+import { materialColor } from 'three/tsl';
+import { paletteNode } from '../render/material-palette.ts';
+import { tuningEnabled } from '../render/water/live.ts';
 import { fallArrival } from './arrival.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { createBody, setMask, type Body, type Shape } from '../physics/engine.ts';
@@ -66,7 +69,10 @@ const WORD = 'BOOGLE';
 const timber = ['#b98a55', '#a97a48', '#c49660', '#9c6f40'];
 
 const box = new THREE.BoxGeometry(1, 1, 1);
-const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+const mat = tuningEnabled
+  ? new THREE.MeshLambertNodeMaterial({ vertexColors: true })
+  : new THREE.MeshLambertMaterial({ vertexColors: true });
+if (mat instanceof THREE.MeshLambertNodeMaterial) mat.colorNode = paletteNode(materialColor, 'timber');
 const m4 = new THREE.Matrix4();
 const q4 = new THREE.Quaternion();
 const p4 = new THREE.Vector3();
