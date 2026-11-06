@@ -22,7 +22,6 @@ import {
   topSlot,
   type Kind,
 } from '../net/crates.ts';
-import { back } from './chop.ts';
 import { shakeView, trainsShow, wakeShow, type Waker } from './celebrate.ts';
 import { coop } from './coop.ts';
 import { rack, rackAdd } from './depot.ts';
@@ -58,7 +57,6 @@ const KIT = { crates: 8, rails: 4, logs: 4 };
 export type TrainCargo = { kind: Kind; logs: number; rails: number };
 const loads: (TrainCargo | null)[][] = lines.map((l) => l.train.tr.load.held.map(() => null));
 const unloading = lines.map(() => new Set<number>());
-let legacyCargo = false;
 let craneCargo = false;
 sharedSlice('craneCargoV1', {
   get: () => craneCargo,
@@ -69,7 +67,6 @@ sharedSlice('craneCargoV1', {
 export function resetCargo() {
   for (const load of loads) load.fill(null);
   trainsSaved = [];
-  legacyCargo = false;
   craneCargo = false;
 }
 function board(l: LineRun, kind: Kind, from: THREE.Vector3, delay: number) {
@@ -93,7 +90,6 @@ function unload(l: LineRun, k: number, to: THREE.Vector3, delay: number, landed:
 sharedSlice('trainCargoV1', {
   get: () => loads.map((load) => load.map((c) => c && { ...c })),
   set: (v) => {
-    legacyCargo = !Array.isArray(v);
     for (const [n, load] of loads.entries())
       for (let k = 0; k < load.length; k++) {
         const c = (Array.isArray(v) && Array.isArray(v[n]) ? v[n][k] : null) as Partial<TrainCargo> | null;
@@ -308,22 +304,6 @@ export function snapTrains() {
     craneCargo = false;
     drawHeaps(allHeaps);
   }
-  // Pre-cargo saves lost every travelling crate. Only the finite kit is reconstructable: count
-  // surviving supply and Q6 work before reissuing the missing crates. Never refill a completed pier.
-  if (legacyCargo && job.rung.trains) {
-    const pier = L2.stations.find((st) => st.spec.id === 'Q6')!;
-    const sent = count(job.kitSent, KIT.crates) ? job.kitSent : 0;
-    const complete = job.ended || L2.stage > L2.stations.indexOf(pier);
-    let logs = complete ? 0 : Math.max(0, sent * KIT.logs - rack.logs - back.logs - pier.have.logs);
-    let rails = complete ? 0 : Math.max(0, sent * KIT.rails - rack.rails - back.rails - pier.have.rails);
-    for (let k = 0; k < KIT.crates && (logs || rails); k++) {
-      const c = { kind: 'fill' as const, logs: Math.min(KIT.logs, logs), rails: Math.min(KIT.rails, rails) };
-      loads[L2.k]![k] = c;
-      logs -= c.logs;
-      rails -= c.rails;
-    }
-  }
-  legacyCargo = false;
   // clearCrates also cancels global flights: clear EVERY train before rebuilding any load.
   for (const l of lines) clearCrates(l.train.tr.load);
   for (const slots of unloading) slots.clear();
@@ -336,7 +316,7 @@ export function snapTrains() {
     l.train.tr.lastStop = -1;
     const t = trainsSaved[l.k];
     if (job.rung.trains) {
-      if (t) l.train.put(t.s, t.v, t.target, t.sweep, t.dwell, t.express ?? l.train.tr.express);
+      if (t) l.train.put(t.s, t.v, t.target, t.sweep, t.dwell, t.express);
       else {
         l.train.park(0);
         l.train.start();
@@ -350,7 +330,7 @@ export function snapTrains() {
   }
   setCamp(1, job.rung.trains);
 }
-export type TrainSave = { s: number; v: number; target: number; sweep: 1 | -1; dwell: number; express?: boolean };
+export type TrainSave = { s: number; v: number; target: number; sweep: 1 | -1; dwell: number; express: boolean };
 let trainsSaved: (TrainSave | null)[] = [];
 sharedSlice('trains', {
   get: () =>
@@ -378,7 +358,7 @@ sharedSlice('trains', {
         target: q.target,
         sweep: q.sweep === -1 ? -1 : 1,
         dwell: num(q.dwell) ? q.dwell : 0,
-        express: typeof q.express === 'boolean' ? q.express : undefined,
+        express: q.express === true,
       };
     });
   },

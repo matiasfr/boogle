@@ -2,7 +2,6 @@
 import { CATALOG, TUNE_COMMANDS, tunableSpec, sharedTunableSpec, validValue } from '../../tunables/catalog.ts';
 import { emitTuneRecord, tuneDigest } from '../../tunables/events.ts';
 import { createTuneStartup } from '../../tunables/startup.ts';
-import { TUNE_CATALOG } from '../../sim/tune.ts';
 import { BUILD_ID } from '../../build-id.ts';
 import { WORLD_NS } from '../../world/namespace.ts';
 import { RAILWAY_PLAY_NS } from '../../world/railway-namespace.ts';
@@ -99,7 +98,6 @@ export function tuneSnapshot() {
     schema: 1,
     build: BUILD_ID || 'dev',
     namespace: productionRailway ? RAILWAY_PLAY_NS : WORLD_NS,
-    catalog: TUNE_CATALOG,
     revision: rules.tune.tune.revision,
     tick: world.tick,
     setup: startingSetup ?? setup(),
@@ -117,7 +115,6 @@ export function recordTuneSnapshot() {
     snapshot,
     build: data.build,
     namespace: data.namespace,
-    catalog: data.catalog,
     revision: data.revision,
     tick: data.tick,
     count: data.values.length,
@@ -206,7 +203,6 @@ function set(args: Args, source = 'session'): Result {
     j: 0,
     key: spec.sharedKey,
     v: value,
-    catalog: TUNE_CATALOG,
     expectedRevision: args.expectedRevision ?? rules.tune.tune.revision,
     requestId,
   });

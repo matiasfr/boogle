@@ -13,13 +13,6 @@ export function launchQuery(search: string): string {
   return q.toString();
 }
 
-/** Reopen the former default in its new room; explicit prototype/classic/variant bookmarks stay where they were. */
-export function reopenQuery(search: string): string {
-  const q = new URLSearchParams(search);
-  if (q.get('room') === 'proto-place-coop' && !q.has('proto') && !q.has('classic') && !q.has('v')) q.delete('room');
-  return launchQuery(q.toString());
-}
-
 // "room test-xyz · prototype arrive (lobby)": the place a query opens, for the Continue button.
 export function describeLaunch(query: string): string {
   const q = new URLSearchParams(query);

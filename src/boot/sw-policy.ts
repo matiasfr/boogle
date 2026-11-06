@@ -4,9 +4,6 @@
 // their names across deploys; they must not inherit an old build's CacheStorage entry.
 
 export const CACHE_PREFIX = 'boogle-';
-/** How many builds' caches stay: this one, and the one before it for tabs still open on it (lazy chunks). */
-export const KEEP_BUILDS = 2;
-
 export const cacheName = (build: string) => CACHE_PREFIX + build;
 
 /** Whether the worker answers this request from its cache: a same-scope GET of a hashed build file. */
@@ -16,12 +13,7 @@ export function cacheable(method: string, url: string, scope: string, mode?: str
   return path.startsWith('assets/') && !path.endsWith('/') && !/\.html?$/i.test(path);
 }
 
-/**
- * Which caches to delete once `current` is active: other builds' caches beyond the newest KEEP_BUILDS - 1 of them.
- * `names` is caches.keys(), which lists caches in the order they were created (oldest first); other prefixes are left
- * alone.
- */
+/** Once current is active, keep only its cache. Other applications' caches are untouched. */
 export function stale(names: string[], current: string) {
-  const ours = names.filter((n) => n.startsWith(CACHE_PREFIX) && n !== cacheName(current));
-  return ours.slice(0, Math.max(0, ours.length - (KEEP_BUILDS - 1)));
+  return names.filter((n) => n.startsWith(CACHE_PREFIX) && n !== cacheName(current));
 }

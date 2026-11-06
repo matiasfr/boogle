@@ -2,6 +2,8 @@ Before reviewing instruction coverage or proposing enforcement, use this audit o
 
 # Room-safety enforcement audit — 2026-11-03
 
+**5 November update:** the [development compatibility cleanup](../research/dev-compat-cleanup.md) removes the historical mixed-build registry comparison, state version/migration chain and newer-save fence described below. Those dated enforcement rows no longer apply. Current policy is [mixed-builds](mixed-builds.md): assume current clients, bump the namespace for a durable shape break, and keep malformed-input validation, verified-save guards and current replay. The historical gap count below has not been recounted.
+
 Evidence: [native lint configuration](../../.oxlintrc.json), [Boogle lint policy](../../dev/lint/policy.ts), [registry comparison](../../dev/registry/scan.ts), [sync tests](../../test/world-sync.test.ts), [replay](../../test/world-replay.test.ts), [snapshot tests](../../test/world-snapshots.test.ts), [presence tests](../../test/presence-fields.test.ts). “Prose only” means no general enforcement of the obligation: a helper test or import ban does not prove every consumer obeys it. Tests cover exercised cases, not arbitrary future code. No listed room rule is enforced by level-check; it checks level reachability and geometry.
 
 Count: 20 rows are primarily prose-only; 8 more have an explicitly named prose-only remainder alongside enforcement. All 28 gaps have path reminders. These are obligations grouped as shown below, not a count of sentences or test cases.

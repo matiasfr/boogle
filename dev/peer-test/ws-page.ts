@@ -5,7 +5,7 @@ import { createWsRoom, type Room } from '../../src/net/ws-room.ts';
 import { createSync } from '../../src/world/sync.ts';
 import { installRules } from '../../src/world/rules/index.ts';
 import { installRailwayRules, installPlayableRailwayRules } from '../../src/world/rules/railway-index.ts';
-import { isRailwayRoom, isPlayableRailwayRoom, isLineRailwayRoom } from '../../src/world/railway-namespace.ts';
+import { isRailwayRoom, isPlayableRailwayRoom } from '../../src/world/railway-namespace.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { railActiveStation } from '../../src/sim/railway-line.ts';
@@ -164,9 +164,7 @@ function startWorld(room: Room) {
   };
   const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
   const roomId = q.get('room') ?? '';
-  const playable = isPlayableRailwayRoom(roomId)
-    ? installPlayableRailwayRules(w, land, { line1: isLineRailwayRoom(roomId) })
-    : null;
+  const playable = isPlayableRailwayRoom(roomId) ? installPlayableRailwayRules(w, land) : null;
   const railway = playable ?? (isRailwayRoom(roomId) ? installRailwayRules(w, land) : null);
   const rules = railway ? null : installRules(w, land);
   const adapter =

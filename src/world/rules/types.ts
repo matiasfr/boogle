@@ -15,8 +15,6 @@ export type StateHandlers = {
   serialize: () => unknown;
   load: (json: unknown) => void;
   hash: () => number;
-  version?: number;
-  migrate?: Record<number, (json: unknown) => unknown>;
 };
 export type SyncView = {
   world: { tick: number; seed: number; epochMs: number };

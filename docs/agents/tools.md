@@ -101,6 +101,7 @@ collects the main page, game and SIMD Rapier chunks by emitted module membership
 CSS and assets. The build requires the game and SIMD WASM in `first` and excludes plain WASM.
 Check that list when changing chunking (`npm run counts` gzips each file at level 9;
 `npm run counts -- --build-only` skips browser/render counts). Plain Rapier
-remains a lazy fallback. Preserve `BOOGLE_SW=off`, `VITE_BUILD`, `VITE_BOOGLE_SERVER`, `BASE=/`, and
-deploy.yml's `keep-old-assets` step. After dependency updates, run `npm ci --dry-run` and retain the
+remains a lazy fallback. Preserve `BOOGLE_SW=off`, `VITE_BUILD`, `VITE_BOOGLE_SERVER` and `BASE=/`.
+During development, deploy only current assets and retain only the active build's service-worker cache.
+After dependency updates, run `npm ci --dry-run` and retain the
 `@emnapi` pins/overrides and optional WASM lock entries, including packages for platforms other than this Mac.

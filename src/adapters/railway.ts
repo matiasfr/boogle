@@ -168,7 +168,7 @@ export function createRailwayAdapter({ api, sync, pid }: { api: RailwayApi; sync
   };
   const healthy = () => {
     const s = sync.worldStatus();
-    return s.mode === 'client' && s.ready && !s.badSave && !s.newerSave && !s.recoveryError;
+    return s.mode === 'client' && s.ready && !s.badSave && !s.recoveryError;
   };
   const available = () =>
     !disposed &&

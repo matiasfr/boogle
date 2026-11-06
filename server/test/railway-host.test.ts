@@ -7,8 +7,9 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createWorldHost, createRailwayWorldHost, type RailwayPosition } from '../src/host/world-host.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
-import { RAILWAY_ROOM, isPlayableRailwayRoom, railwayRoomId } from '../../src/world/railway-namespace.ts';
+import { RAILWAY_ROOM, railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayInvariant } from '../../src/sim/railway.ts';
+import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 
 type Obj = Record<string, unknown>;
 async function fixture(roomId = RAILWAY_ROOM) {
@@ -59,14 +60,7 @@ async function fixture(roomId = RAILWAY_ROOM) {
   const edit = async (sid: string, fields: Obj, epoch = 1) => {
     const request = (requests.get(sid) ?? 0) + 1;
     requests.set(sid, request);
-    const placement = roomId.startsWith('t1v02-')
-      ? fields.op === 'rail.chop'
-        ? { yaw: 0, collapsed: false }
-        : fields.op === 'rail.drop'
-          ? { y: 3000 }
-          : {}
-      : {};
-    host.deliver({ t: 'r:edit', e: { ...placement, ...fields, epoch, request } }, sid);
+    host.deliver({ t: 'r:edit', e: { ...fields, epoch, request } }, sid);
     await host.sync.whenDurable();
     await step(3);
     const result = sent.findLast(
@@ -148,7 +142,7 @@ test('ordinary rooms keep the classic registry; isolated missing reach is a dura
   }
 });
 
-for (const roomId of [RAILWAY_ROOM, 't1v02-boogle'])
+for (const roomId of [RAILWAY_ROOM])
   test(`host last-piece race transfers one of eight logs and restores once: ${roomId}`, async () => {
     const f = await fixture(roomId);
     try {
@@ -182,11 +176,6 @@ for (const roomId of [RAILWAY_ROOM, 't1v02-boogle'])
       assert.equal(api.railway.allocation, 24);
       assert.equal(api.railway.delivered, 24);
       assert.equal(api.railway.piles[0]!.n, 1);
-      if (isPlayableRailwayRoom(roomId)) {
-        assert.equal(api.railway.piles[0]!.y, 3000, 'settled drop elevation survives the published-tail restart');
-        assert.equal(api.railway.falls?.yaw[0], 0);
-        assert.equal(api.railway.falls?.collapsed[0], false);
-      }
       assert.equal(railwayInvariant(api.railway), null);
       assert.equal(api.outcome('alice', 1, f.requests.get('a')!)!.accepted, 1);
       assert.equal(api.outcome('bob', 1, f.requests.get('b')!)!.accepted, 0);
@@ -202,7 +191,7 @@ for (const roomId of [RAILWAY_ROOM, 't1v02-boogle'])
   });
 
 test('playable registry accepts bounded identity but rejects every legacy material op and snapshot import', async () => {
-  const f = await fixture('t1v02-boogle');
+  const f = await fixture(railwayRoomId('boogle'));
   try {
     assert.deepEqual(f.host.sync.registry().states, [
       'gifts',
@@ -245,7 +234,7 @@ test('playable registry accepts bounded identity but rejects every legacy materi
     assert.deepEqual(f.host.sync.snapshot().data, before);
     await f.restart();
     assert.equal(f.host.rules.roster.nameOf(0), 'Alice');
-    assert.equal(f.host.rules.railway.counts().total, 3880);
+    assert.equal(f.host.rules.railway.counts().total, LINE1_INITIAL[0]);
   } finally {
     await f.close();
   }
@@ -319,7 +308,7 @@ test('same-pid takeover fences the old session and eight outstanding tokens boun
   }
 });
 
-for (const roomId of [RAILWAY_ROOM, 't1v02-recovery'])
+for (const roomId of [RAILWAY_ROOM])
   test(`offline time completes only funded work and consumes its absolute interval once: ${roomId}`, async () => {
     const f = await fixture(roomId);
     try {

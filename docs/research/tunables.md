@@ -1,5 +1,7 @@
 # Tunables: one catalog, existing owners
 
+**Development update, 5 November 2026:** the owner's later "No old builds in development" call supersedes this report's compatibility proposals. Current tuning retains complete effective values, revisions, ordered edits, controller authorization and strict value validation. Catalog fingerprints, admission fences, migrations and old-build proofs have been removed; save reshapes reset `WORLD_NS`. The report below remains the dated research record, not current compatibility guidance. See [the cleanup inventory](dev-compat-catalog.md).
+
 _Research report, 5 November 2026. Plan only. Live primary-source research and read-only code inspection at `e08f2730f8b27c1022a91e2cabb8d70d4a72edc2`. **V** = inspected code or fetched primary source; **R** = another report's evidence, not rerun; **P** = proposed design, range or estimate. No runtime implementation or performance measurements. Not tested on a device._
 
 **Make anything a playtest can reasonably adjust discoverable through one small typed catalog, while its existing system keeps ownership and execution.** This implements the intent of the owner's **5 November brief for this report**: anything a playtest could tune should be tunable and easy for agents, provided it adds no large performance or architectural overhead. That call is supplied by the brief; it is not yet a matching entry in [owner-calls](../agents/owner-calls.md). This report records its provenance without treating the implementation below as approved.

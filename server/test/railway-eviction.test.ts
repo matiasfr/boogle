@@ -17,7 +17,6 @@ import {
   railwayRoomId,
 } from '../../src/world/railway-namespace.ts';
 import { WORLD_NS } from '../../src/world/namespace.ts';
-import { TUNE_CATALOG } from '../../src/sim/tune.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
 import { CLOSE } from '../../src/net/ws-wire.ts';
 
@@ -31,10 +30,7 @@ async function until(predicate: () => boolean, label: string) {
   }
 }
 function connect(base: string, room: string, sid: string) {
-  const ws = new WebSocket(
-    `${base}/room/${room}?self=${sid}&pid=alice&key=alicekey000000000000&b=test&tc=${TUNE_CATALOG}`,
-    ['boogle.1'],
-  );
+  const ws = new WebSocket(`${base}/room/${room}?self=${sid}&pid=alice&key=alicekey000000000000&b=test`, ['boogle.1']);
   const messages: Obj[] = [];
   ws.onmessage = (e) => messages.push(JSON.parse(String(e.data)) as Obj);
   const closed = new Promise<number>((resolve) => {

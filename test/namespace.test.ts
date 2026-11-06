@@ -32,12 +32,12 @@ test('playable T1 room names are disjoint from classic, legacy Place and isolate
   assert.notEqual(railwayRoomId('a'.repeat(31) + 'x'), railwayRoomId('a'.repeat(31) + 'y'));
 });
 
-test('line-one production follows the world break while legacy and isolated identities stay separate', () => {
+test('line-one production follows the world break while isolated identities stay separate', () => {
   const current = railwayRoomId('boogle');
   assert.equal(current, `rail-${WORLD_NS}-boogle`);
   assert.equal(isLineRailwayRoom(current), true);
   assert.equal(isLineRailwayRoom('t1v02-boogle'), false);
-  assert.equal(isPlayableRailwayRoom('t1v02-boogle'), true);
+  assert.equal(isPlayableRailwayRoom('t1v02-boogle'), false);
   assert.equal(isRailwayRoom('t1v01-proto-production-core'), true);
   assert.equal(isLineRailwayRoom(`${RAILWAY_PLAY_NS}-`), false);
 });

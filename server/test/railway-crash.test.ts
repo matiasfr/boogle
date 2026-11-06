@@ -26,7 +26,7 @@ type Boundary = {
   originalTimestamp?: number;
 };
 
-for (const roomId of ['t1v01-proto-crash', 't1v02-crash', railwayRoomId('crash')])
+for (const roomId of ['t1v01-proto-crash', railwayRoomId('crash')])
   for (const boundary of ['published', 'replacement', 'recovery-checkpoint'] as const) {
     const point =
       boundary === 'published'

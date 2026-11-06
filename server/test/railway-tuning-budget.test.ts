@@ -7,7 +7,6 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { TUNE_CATALOG } from '../../src/sim/tune.ts';
 import { MAX_RECOVERY_BYTES, type RecoveryEnvelope } from '../../src/world/sync.ts';
 import { MAX_PLAYERS, NAME_MAX } from '../../src/sim/roster.ts';
 import { railwayInvariant } from '../../src/sim/railway.ts';
@@ -85,7 +84,6 @@ function commit(requestId: string, expectedRevision = 0): Obj {
     j: 0,
     key: 'railRegrowMinutes',
     v: 2,
-    catalog: TUNE_CATALOG,
     expectedRevision,
     requestId,
   };

@@ -1,7 +1,6 @@
 // Focused art fixture, not a progression proof. Broker: --query 'proto=place&machineView=rear|ride|lay'.
 // Two occupied seats and actual Interact/Jump from the staged rear step: --players 2 --real
 // --query 'proto=place&coop=1&machineView=pair|forward|side&machineBeat=seated|exit'.
-// Add &mixedSeats=1 to reject a v07 transport lead before both riders' board/exit/reboard checks.
 // For motion add --action dev/look/evals/track-layer-action.ts --curves --video --warm 0.
 import type * as THREE from 'three/webgpu';
 const q = new URLSearchParams(location.search);
@@ -42,8 +41,6 @@ await until(
   () => !!me.body && !!machine.loco.rock.getObjectByName('power_paint') && (!pair || remotes.size > 0),
   'model/body/partner not ready',
 );
-if (pair && who === '1' && q.get('mixedSeats') === '1')
-  await (await import('/dev/look/evals/track-layer-mixed.ts' as string)).rejectLegacySeatLead();
 const marks = new Set<string>();
 const acknowledged = new Set<string>();
 const entered = new Set<string>();
@@ -230,17 +227,4 @@ console.log(
     }),
 );
 console.log('MACHINE READY ' + JSON.stringify({ view, mode: run.mode, seat: seatState() }));
-if (pair && q.get('mixedSeats') === '1') {
-  const { currentCoopPeer } = (await import(
-    '/src/proto/place/coop-identity.ts' as string
-  )) as typeof import('../../../src/proto/place/coop-identity.ts');
-  const compatible = new Set(
-    net.room
-      .peers()
-      .filter((peer: { presence: Record<string, unknown> }) => currentCoopPeer(peer.presence))
-      .map((peer: { peer: string }) => peer.peer),
-  );
-  if (Object.values(seatState().grants).some((grant) => !compatible.has(grant.peer)))
-    throw new Error('MIXED SEATS: a grant names an incompatible peer');
-}
 export {};

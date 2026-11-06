@@ -11,7 +11,6 @@ export const CLOSE = {
   ELSEWHERE: 4010,
   TAKEN: 4011,
   BAD: 4400,
-  INCOMPATIBLE: 4412,
   RESTART: 1012,
 } as const;
 export const MAX_MSG = 16000;
@@ -31,11 +30,7 @@ export function decode(data: unknown): WireMsg | null {
 }
 /** The room's WebSocket URL on the server at `base` (http -> ws, https -> wss). */
 // who: self (this connection), pid (the player), key (the browser's secret behind the pid), b (the build).
-export function roomUrl(
-  base: string,
-  roomId: string,
-  who: { self: string; pid: string; key: string; b: string; tc?: string },
-) {
+export function roomUrl(base: string, roomId: string, who: { self: string; pid: string; key: string; b: string }) {
   const u = new URL(`/room/${encodeURIComponent(roomId)}`, base);
   u.protocol = u.protocol === 'https:' ? 'wss:' : 'ws:';
   for (const [k, v] of Object.entries(who)) u.searchParams.set(k, v);

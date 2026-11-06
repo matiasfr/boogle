@@ -1,6 +1,5 @@
 // npm run registry [-- --base <ref>]: checks the shared registries (dev/registry/scan.ts) and the import knots
-// (dev/registry/knots.ts) in this tree, then diffs the registries against <ref> (default origin/main, skipped if it
-// isn't there) for changes that break mixed-build rooms.
+// (dev/registry/knots.ts) in this tree, then compares debt budgets against the local <ref> (default origin/main).
 // `--json` prints this tree's registry instead. Intentional debt growth needs a committed, key-specific owner
 // approval in debt.ts, so plain registry and check enforce the same policy locally and in CI.
 import fs from 'node:fs';
@@ -8,11 +7,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { scanSources, checkRegistry, compareRegistries, shapeOf } from './scan.ts';
+import { scanSources, checkRegistry } from './scan.ts';
 import { KNOTS, checkKnots, findKnots, importsOf } from './knots.ts';
 import type { Registry, Source, StateInfo } from './scan.ts';
 import { checkTaskRoutes } from '../scan/task-routes.ts';
-import { DEBT_FILES, LEGACY_SUPPRESSIONS, debtFile, debtOf, debtCounts, compareDebt } from './debt.ts';
+import { DEBT_FILES, debtOf, debtCounts, compareDebt } from './debt.ts';
 import { PROTOS } from '../../protos/protos.ts';
 import { prototypeReport } from './prototypes.ts';
 import { checkAgentDocs } from './agent-docs.ts';
@@ -32,27 +31,20 @@ function sources(root: string): Source[] {
   return out;
 }
 
-// Installs the rules on a recording stand-in for sync: module order, ops, and each state's version and saved shape.
+// Installs current rules on a recording stand-in for sync: module order, ops, and state owners.
 type RulesModule = { name: string; install: (sync: unknown, land: unknown, installed: unknown) => unknown };
 
 async function rulesOf(root: string) {
   const url = (p: string) => pathToFileURL(path.join(root, p)).href;
-  // .ts since the rules moved to TypeScript; main's tree may still have the .js.
-  const rulesIndex = ['ts', 'js']
-    .map((x) => `src/world/rules/index.${x}`)
-    .find((f) => fs.existsSync(path.join(root, f)));
-  const { RULES } = (await import(url(rulesIndex!))) as { RULES: RulesModule[] };
-  // Likewise test/helpers/land: .ts once test/ is converted, .mjs before.
-  const land = ['ts', 'mjs'].map((x) => `test/helpers/land.${x}`).find((f) => fs.existsSync(path.join(root, f)));
-  const { homeLand } = await import(url(land!));
+  const { RULES } = (await import(url('src/world/rules/index.ts'))) as { RULES: RulesModule[] };
+  const { homeLand } = await import(url('test/helpers/land.ts'));
   const ops: Record<string, string> = {};
-  const states: Record<string, StateInfo & { serialize?: () => unknown }> = {};
+  const states: Record<string, StateInfo> = {};
   let current = '?';
   const sync = {
     world: { tick: 0, seed: 1 },
     registerOp: (op: string) => (ops[op] = current),
-    registerState: (key: string, h: { version?: number; serialize: () => unknown }) =>
-      (states[key] = { module: current, version: h.version ?? 0, serialize: h.serialize }),
+    registerState: (key: string) => (states[key] = { module: current }),
     onTick() {},
     onApplied() {},
     onSnapshot() {},
@@ -63,16 +55,7 @@ async function rulesOf(root: string) {
     current = m.name;
     installed[m.name] = m.install(sync, homeLand(), installed);
   }
-  for (const s of Object.values(states)) {
-    s.shape = shapeOf(JSON.parse(JSON.stringify(s.serialize!())));
-    delete s.serialize;
-  }
-  // The world namespace (absent in trees from before 0.1): a different one is a clean break (scan.ts).
-  const nsFile = path.join(root, 'src/world/namespace.ts');
-  const ns: string | undefined = fs.existsSync(nsFile)
-    ? (await import(url('src/world/namespace.ts'))).WORLD_NS
-    : undefined;
-  return { rules: RULES.map((m) => m.name), ops, states, ns };
+  return { rules: RULES.map((m) => m.name), ops, states };
 }
 
 async function registryOf(root: string): Promise<Registry> {
@@ -91,23 +74,27 @@ function baseTree(ref: string): { dir: string | null; note?: string } {
     // CI has shallow history but fetches main's tree. Comparing trees needs no merge base or parent history.
     git('rev-parse', '--verify', '-q', `${ref}^{commit}`);
   } catch {
-    return { dir: null, note: `no local base ${ref}: skipped mixed-build and debt baseline comparisons (no fetch)` };
+    return { dir: null, note: `no local base ${ref}: skipped debt baseline comparison (no fetch)` };
   }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-registry-'));
   let tar: Buffer;
   try {
     // Old bases may predate one of the lists. Archive only paths actually in that local tree.
-    const debtPaths = git('ls-tree', '--name-only', ref, '--', ...DEBT_FILES, LEGACY_SUPPRESSIONS)
+    const debtPaths = git('ls-tree', '--name-only', ref, '--', ...DEBT_FILES)
       .toString()
       .trim()
       .split('\n')
       .filter(Boolean);
-    tar = git('archive', ref, 'src', 'test/helpers', 'test/fixtures', ...debtPaths);
+    if (!debtPaths.length) {
+      fs.rmSync(dir, { recursive: true, force: true });
+      return { dir: null, note: `base ${ref} predates debt budgets: skipped debt baseline comparison` };
+    }
+    tar = git('archive', ref, ...debtPaths);
   } catch {
     fs.rmSync(dir, { recursive: true, force: true });
     return {
       dir: null,
-      note: `base ${ref} unavailable locally: skipped mixed-build and debt baseline comparisons (no fetch)`,
+      note: `base ${ref} unavailable locally: skipped debt baseline comparison (no fetch)`,
     };
   }
   try {
@@ -159,7 +146,7 @@ const currentDebt = await debtOf(ROOT);
 notes.push(`debt now: ${debtCounts(currentDebt)}`);
 if (dir) {
   try {
-    const missing = DEBT_FILES.filter((f) => !fs.existsSync(path.join(dir, debtFile(dir, f))));
+    const missing = DEBT_FILES.filter((f) => !fs.existsSync(path.join(dir, f)));
     if (missing.length) notes.push(`debt baseline skipped: ${baseRef} predates ${missing.join(', ')} (no fetch)`);
     else {
       const baseDebt = await debtOf(dir);
@@ -171,9 +158,6 @@ if (dir) {
         ),
       );
     }
-    const diff = compareRegistries(await registryOf(dir), head);
-    errors.push(...diff.errors);
-    notes.push(...diff.notes);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -196,7 +180,7 @@ for (const [file, rules] of Object.entries(suppressions)) {
 
 for (const n of notes) console.log(`registry: ${n}`);
 if (errors.length) {
-  console.error(`\nregistry: ${errors.length} problem(s) (docs/agents/registries.md and docs/agents/mixed-builds.md):`);
+  console.error(`\nregistry: ${errors.length} problem(s) (docs/agents/registries.md):`);
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }

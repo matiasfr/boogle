@@ -86,37 +86,6 @@ test('memories round-trip through storage and ignore junk', () => {
   }
 });
 
-test('old saves keep stories, bookmarks and grudges while dropping obsolete fields', () => {
-  const old = {
-    pts: 190,
-    learned: ['home0', 'mom0'],
-    flags: { 'at.home': 'home1.b', slogan: 'Rice to meet you.', kicked: 5 },
-    kicks: 3,
-    kickAt: 1e6,
-    sorryAt: 20,
-    nosy: 4,
-    nosyAt: 99,
-    quietUntil: 1e9,
-    pets: [30],
-    chatAt: 40,
-  };
-  const f = loadMemory(JSON.stringify(old));
-  assert.deepEqual(f, {
-    met: true,
-    learned: old.learned,
-    flags: old.flags,
-    kicks: 3,
-    kickAt: 1e6,
-    sorryAt: 20,
-    gifts: [],
-  });
-  assert.equal(rideLimit(f, 1e6), 1.5);
-  assert.equal(loadMemory('{"pts":1}').met, true);
-  assert.equal(loadMemory('{"learned":["home0"]}').met, true);
-  assert.equal(loadMemory('{"pts":0}').met, false);
-  assert.deepEqual(loadMemory(serializeMemory(f)), f);
-});
-
 test('parked copy stays available for the narrative pass outside the player bundle', () => {
   assert.equal(PARKED_COPY.LEVEL_UP.length, 6);
   assert.equal(Object.keys(PARKED_COPY.DEFLECT).length, 3);

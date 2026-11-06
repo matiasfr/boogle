@@ -12,7 +12,6 @@ import { SELF_ID, SERVER_ID } from './ids.ts';
 import { WS_PROTOCOL, CLOSE, MAX_MSG, encode, decode, roomUrl, type WireMsg } from './ws-wire.ts';
 import { createPeerTable } from './peer-table.ts';
 import type { PeersChange } from './peer-table.ts';
-import { TUNE_CATALOG } from '../sim/tune.ts';
 
 /** A room failure: code is 'room_full' (max: the cap), 'peer_hosted', 'unreachable', 'bad' or 'browser-incompatible'. */
 export type RoomError = Error & { code?: string; fatal?: boolean; max?: number };
@@ -49,7 +48,6 @@ export async function createWsRoom(opts: WsRoomOptions) {
     pid: opts.pid,
     key: opts.key,
     b: opts.build ?? 'dev',
-    tc: TUNE_CATALOG,
   });
   const log = (...a: unknown[]) => (opts.debug ?? 0) > 1 && console.log('[ws-room]', ...a);
   const table = createPeerTable(SELF_ID);
@@ -166,8 +164,6 @@ export async function createWsRoom(opts: WsRoomOptions) {
           return refused(err('pid_taken', 'another browser is playing as this player here'));
         case 'bad':
           return refused(err('bad', 'the server refused this room or id'));
-        case 'incompatible':
-          return refused(err('incompatible', 'this build has different shared tuning defaults; reload to join'));
       }
     };
     // The first connect rejects; a reconnect turned away stops and tells onError (fatal).
@@ -183,7 +179,6 @@ export async function createWsRoom(opts: WsRoomOptions) {
       ws = null;
       // The code alone is enough to stop, should the `elsewhere` frame before it have been lost.
       if (ev.code === CLOSE.ELSEWHERE && !stopped) refused(err('elsewhere', 'this player joined from another tab'));
-      if (ev.code === CLOSE.INCOMPATIBLE && !stopped) refused(err('incompatible', 'shared tuning catalog mismatch'));
       if (first) {
         first.reject(err('unreachable', 'could not reach the server'));
         first = undefined;

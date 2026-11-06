@@ -3,8 +3,8 @@
 // GitHub Pages would, and one Chromium tab reloading through them. Checks that
 //   1. the second load of a build gets every hashed file from the service worker (no request reaches the server);
 //   2. the next page executes a changed hashed fixture while unchanged game assets stay cached;
-//   3. a third deploy deletes the first build's cache and keeps the one before it;
-//   4. documents/navigations bypass caching, older lazy hits survive purge/offline, and SW is optional.
+//   3. each activation deletes every other build's cache;
+//   4. documents/navigations bypass caching, current lazy assets work offline, and SW is optional.
 // Evidence: .look/sw-check/report.json and build-b.png; no production server is used.
 //
 //   node dev/look/sw-check.ts            (about a minute: four builds)
@@ -160,7 +160,7 @@ await page.evaluate(async () => {
 });
 const a2 = await load('a', () => true);
 check('second visit: every hashed file from the worker', a2.hits === 0 && a2.sw > 30, a2);
-const b1 = await load('b', (s) => has(s, 'b'));
+const b1 = await load('b', (s) => has(s, 'b') && !has(s, 'a'));
 check(
   'deploy b: B fixture executes, unchanged game assets not fetched',
   b1.shown === 'swcheck-b' && b1.fixture === 'b' && b1.hits === 0,
@@ -172,17 +172,20 @@ check(
   html.includes('swcheck-b') && html.includes(fixtures.b!),
   { buildB: html.includes('swcheck-b') },
 );
-// Ensure the model exists only in A before the B fetch, independently of the game's model selection.
+// Fetch a current uncached lazy asset after activation, independently of the game's model selection.
 await page.evaluate(async (url) => {
   await (await caches.open('boogle-swcheck-b')).delete(url);
 }, '/' + model);
 assetHits = [];
 await fetchModel();
 await page.waitForFunction(async (url) => !!(await (await caches.open('boogle-swcheck-b')).match(url)), '/' + model);
-check('old model promoted into B without network', assetHits.length === 0, { hits: assetHits });
+check('current model fetched into B after A is purged', assetHits.includes('/' + model) && !has(b1, 'a'), {
+  hits: assetHits,
+  caches: b1.caches,
+});
 const nav = await context.newPage();
 assetHits = [];
-const navResponse = await nav.goto(new URL(fixtures.a!, base).href);
+const navResponse = await nav.goto(new URL(fixtures.b!, base).href);
 check('navigation to a cached asset bypasses worker', !navResponse?.fromServiceWorker(), {
   status: navResponse?.status(),
 });
@@ -190,11 +193,13 @@ await nav.close();
 const b2 = await load('b', () => true);
 await page.screenshot({ path: path.join(evidence, 'build-b.png') });
 check('deploy b, reload: nothing from the server', b2.hits === 0 && b2.sw > 30, b2);
-const c1 = await load('c', (s) => has(s, 'c') && !has(s, 'a'));
-check('deploy c: keeps b and c, drops a', has(c1, 'b') && has(c1, 'c') && !has(c1, 'a'), c1);
+const c1 = await load('c', (s) => has(s, 'c') && s.caches.length === 1);
+check('deploy c: keeps only c', c1.caches.length === 1 && has(c1, 'c'), c1);
+await fetchModel();
+await page.waitForFunction(async (url) => !!(await (await caches.open('boogle-swcheck-c')).match(url)), '/' + model);
 await context.setOffline(true);
 const offline = await fetchModel();
-check('promoted hashed model survives A purge and works offline', Buffer.from(offline).equals(modelBytes), {
+check('current cached model works offline', Buffer.from(offline).equals(modelBytes), {
   bytes: offline.length,
 });
 await context.setOffline(false);

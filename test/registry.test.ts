@@ -1,7 +1,7 @@
 // The registry scan (dev/registry/scan.ts): clashes inside one tree, and what a change does to main's registry.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scanSources, checkRegistry, compareRegistries, shapeOf } from '../dev/registry/scan.ts';
+import { scanSources, checkRegistry } from '../dev/registry/scan.ts';
 
 // Name -> the files that claim it, as scanSources builds each map.
 type Names = Record<string, string[]>;
@@ -148,57 +148,4 @@ test('feature onFrame orders stay in the feature range and off core orders', () 
   assert.equal(errors.length, 2);
   assert.match(errors[0]!, /a\.js:2: onFrame late order 3000 equals core/);
   assert.match(errors[1]!, /b\.js:1: features use onFrame order -10 and up/);
-});
-
-const rulesReg = (
-  rules: string[],
-  states: Record<string, { version: number; shape?: string }>,
-  ops: Record<string, string> = {},
-) => ({
-  rules,
-  states,
-  ops,
-  presence: {},
-  messages: {},
-});
-
-test('RULES must keep main as a prefix', () => {
-  const base = rulesReg(['terrain', 'gifts'], {});
-  assert.deepEqual(compareRegistries(base, rulesReg(['terrain', 'gifts', 'tide'], {})).errors, []);
-  assert.match(compareRegistries(base, rulesReg(['terrain', 'tide', 'gifts'], {})).errors[0]!, /RULES order changed/);
-  assert.match(compareRegistries(base, rulesReg(['terrain'], {})).errors[0]!, /RULES order changed/);
-});
-
-test("a new world namespace is a clean break: main's rules, ops and states bind nothing", () => {
-  const s = (version: number, value: unknown) => ({ version, shape: shapeOf(value) });
-  const base = rulesReg(['terrain', 'gifts'], { terrain: s(0, {}), gifts: s(0, { v: 1 }) }, { 'g.take': 'gifts' });
-  const head = { ...rulesReg(['gifts'], { gifts: s(0, { w: 1 }) }, {}), ns: 'v01' };
-  const { errors, notes } = compareRegistries(base, head);
-  assert.deepEqual(errors, []);
-  assert.ok(notes.some((n) => /namespace \(none\) -> v01/.test(n)));
-  // the same namespace on both sides compares as usual
-  assert.match(compareRegistries({ ...base, ns: 'v01' }, head).errors.join('\n'), /RULES order changed/);
-});
-
-test('states: no removal, no version going down, no shape change without a version bump', () => {
-  const s = (version: number, value: unknown) => ({ version, shape: shapeOf(value) });
-  const base = rulesReg([], { g: s(0, { v: 1, it: [] }), m: s(1, { m: 0 }) }, { 'g.take': 'g' });
-  const same = rulesReg([], { g: s(0, { it: [], v: 2 }), m: s(1, { m: 3 }) }, { 'g.take': 'g' });
-  assert.deepEqual(compareRegistries(base, same).errors, []);
-  const reshaped = rulesReg([], { g: s(0, { v: 1, items: [] }), m: s(1, { m: 0 }) }, { 'g.take': 'g' });
-  assert.match(compareRegistries(base, reshaped).errors[0]!, /state 'g' saves a different shape .* bump `version`/s);
-  const bumped = rulesReg([], { g: s(1, { v: 1, items: [] }), m: s(1, { m: 0 }) }, { 'g.take': 'g' });
-  assert.deepEqual(compareRegistries(base, bumped).errors, []);
-  const gone = rulesReg([], { g: s(0, { v: 1, it: [] }), m: s(0, { m: 0 }) }, {});
-  const errors = compareRegistries(base, gone).errors.join('\n');
-  assert.match(errors, /state 'm' version went down/);
-  assert.match(errors, /op 'g\.take' was removed/);
-});
-
-test('new and dropped wire names are notes, not errors', () => {
-  const base = { ...rulesReg([], {}), presence: { hd: ['a'] }, messages: { honk: ['h'] } };
-  const head = { ...rulesReg([], {}), presence: { boogler: ['b'] }, messages: { honk: ['h'] } };
-  const { errors, notes } = compareRegistries(base, head);
-  assert.deepEqual(errors, []);
-  assert.equal(notes.length, 2);
 });

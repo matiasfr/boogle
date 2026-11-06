@@ -1,5 +1,5 @@
 // Count budgets, not file/key identities: moving or re-keying debt is not growth.
-// Read the same archived local base as the mixed-build registry; WORLD_NS never exempts these lists.
+// Read the archived local debt baseline; WORLD_NS never exempts these lists.
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -7,10 +7,6 @@ import { parseSync } from 'oxc-parser';
 import type { Allow } from '../level/allow.ts';
 
 export const DEBT_FILES = ['lint-suppressions.json', 'dev/registry/knots.ts', 'dev/level/allow.ts'];
-// Local archived bases can predate the linter rename. Never skip the no-growth comparison on that account.
-export const LEGACY_SUPPRESSIONS = 'eslint-suppressions.json';
-export const debtFile = (root: string, file: string) =>
-  file === DEBT_FILES[0] && !fs.existsSync(path.join(root, file)) ? LEGACY_SUPPRESSIONS : file;
 type DebtList = 'lint-suppressions.json' | 'KNOTS' | 'dev/level/allow.ts';
 type Budget = { label: DebtList; entries: Record<string, number>; countEntries?: boolean };
 export type Debt = { budgets: Budget[]; groups: number };
@@ -45,10 +41,7 @@ function knotsOf(text: string): string[][] {
 
 export async function debtOf(root: string): Promise<Debt> {
   const read = (f: string) => fs.readFileSync(path.join(root, f), 'utf8');
-  const suppressed = JSON.parse(read(debtFile(root, DEBT_FILES[0]!))) as Record<
-    string,
-    Record<string, { count: number }>
-  >;
+  const suppressed = JSON.parse(read(DEBT_FILES[0]!)) as Record<string, Record<string, { count: number }>>;
   const knots = knotsOf(read(DEBT_FILES[1]!));
   // allow.ts is a standalone data module (including its sketch helper), with no game or tool imports.
   const { ALLOW } = (await import(pathToFileURL(path.join(root, DEBT_FILES[2]!)).href)) as { ALLOW: Allow[] };

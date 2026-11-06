@@ -1,8 +1,5 @@
-// The world namespace: bumped on a clean break (a new world that old tabs must never meet). It prefixes the room id
-// the world syncs under, which moves the PeerJS host id, the localStorage save and the server snapshot together, while
-// the URL (?room=) and everything shown to players keep the plain room name. PeerJS ids allow no dots, hence 'v01', 'v02'.
-// dev/registry skips its mixed-build comparison with main when this differs from main's (no old tab can join). A
-// bump wipes every room's world: it is a deliberate clean break, never a way to quiet that check.
+// The world namespace moves room transport and durable saves together on a clean development break.
+// The URL (?room=) and everything shown to players keep the plain room name. No old-save migration is maintained.
 // History: v01 (0.1 groundwork); v02 (2026-11): refocus cleanup: no fruit, no shore leftovers, catalog renumbered;
 // v03 (2026-11-01): one 14 s laying run: the crawl and push variants, site.push and the `run` tune key removed;
 // v04 (2026-11-01): the wagon's steam gone (stoke cut after the second run-through): the `wagon` state and wagon.stoke.
@@ -12,8 +9,9 @@
 // v08 (2026-11-05): panel track and machine deck seats cannot share a room lead with continuous-track builds.
 // v09 (2026-11-05; encoding corrected 2026-11-06): line-one material/beam authority and panel timings;
 // production uses rail-v09, disjoint from every classic v09-<room> name. No save migration.
-// Pure: read by src/netplay/net.ts, the registry check and tests.
-export const WORLD_NS = 'v09';
+// v10 (2026-11-05): remove state versions/migrations, frozen recovery and tuning catalog fingerprints.
+// Pure: read by room routing and tests.
+export const WORLD_NS = 'v10';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

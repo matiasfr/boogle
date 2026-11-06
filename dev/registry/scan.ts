@@ -1,11 +1,9 @@
-// Registry scan: every name in src/ that two agents could pick at once, found statically, and the rules that keep
-// mixed-build rooms working when one PR adds to them (docs/agents/registries.md and docs/agents/mixed-builds.md).
-// Pure: takes file texts, returns data (read by dev/scan/read.ts, which the atlas uses too). dev/registry/check.ts feeds it the tree and main's tree; test/registry.test.ts
+// Registry scan: every name in src/ that two agents could pick at once, found statically.
+// Pure: takes file texts, returns data (read by dev/scan/read.ts, which the atlas uses too). dev/registry/check.ts feeds it the current tree; test/registry.test.ts
 // feeds it snippets.
 //
 //   scanSources(files)        files: [{ path, text }] -> registry (shape below)
 //   checkRegistry(reg)        -> [error] for clashes inside one tree
-//   compareRegistries(base, head) -> { errors, notes } for what a change does to main's registry
 //
 // registry = {
 //   presence: { key: [path] }        net.js core keys + addPresenceField / addHostField (one namespace)
@@ -18,15 +16,14 @@
 //                                    entry of a defineKind (path is file:line)
 //   kindErrors: [string]             a defineKind whose kind or orders aren't literals
 //   parseErrors: [string]            only when a file could not be parsed
-//   rules, ops, states               filled in by check.ts from a real install (names, versions, saved shapes)
-//   ns                               WORLD_NS from src/world/namespace.ts (absent before 0.1); a change skips the rules diff
+//   rules, ops, states               filled in by check.ts from a real install (names and owners)
 // }
 
 import { MIN_FEATURE_ORDER, isCoreHook, readFile } from '../scan/read.ts';
 
 export type Source = { path: string; text: string };
 export type FrameHook = { path: string; phase: string; order: number; kind?: string };
-export type StateInfo = { module: string; version: number; shape?: string };
+export type StateInfo = { module: string };
 export type Registry = {
   presence: Record<string, string[]>;
   messages: Record<string, string[]>;
@@ -39,7 +36,6 @@ export type Registry = {
   rules?: string[];
   ops?: Record<string, string>;
   states?: Record<string, StateInfo>;
-  ns?: string;
 };
 
 const CORE_PRESENCE_FILE = 'src/netplay/net';
@@ -133,75 +129,4 @@ export function checkRegistry(reg: Registry): string[] {
     if (clash) errors.push(`${f.path}: ${f.phase} order ${f.order} equals ${clash.path}; pick another`);
   });
   return errors;
-}
-
-// Shape of a saved value, for spotting a format change without a version bump: object keys and leaf types.
-export function shapeOf(v: unknown): string {
-  if (v === null) return 'null';
-  if (Array.isArray(v)) {
-    const kinds = [...new Set(v.map(shapeOf))].sort();
-    return `[${kinds.join('|')}]`;
-  }
-  if (typeof v === 'object') {
-    const o = v as Record<string, unknown>;
-    return `{${Object.keys(o)
-      .sort()
-      .map((k) => `${k}:${shapeOf(o[k])}`)
-      .join(',')}}`;
-  }
-  return typeof v;
-}
-
-type Comparable = Pick<Registry, 'ns' | 'rules' | 'ops' | 'presence' | 'messages'> & {
-  states?: Record<string, Pick<StateInfo, 'version' | 'shape'>>;
-};
-
-export function compareRegistries(base: Comparable, head: Comparable): { errors: string[]; notes: string[] } {
-  const errors: string[] = [];
-  const notes: string[] = [];
-  // A new world namespace (src/world/namespace.ts) is a clean break: old tabs never meet this world, so main's rules,
-  // ops and states bind nothing here.
-  const fresh = (base.ns ?? null) !== (head.ns ?? null);
-  if (fresh) notes.push(`world namespace ${base.ns ?? '(none)'} -> ${head.ns}: a clean break, rules not compared`);
-  const baseRules = fresh ? [] : (base.rules ?? []);
-  const headRules = head.rules ?? [];
-  if (baseRules.some((r, i) => headRules[i] !== r)) {
-    errors.push(
-      `RULES order changed: main has [${baseRules}], this tree [${headRules}]. Main's list must stay a prefix ` +
-        "(append only; reordering desyncs mixed-build rooms). After a rebase conflict, keep main's order and append.",
-    );
-  }
-  for (const [key, s] of Object.entries(fresh ? {} : (base.states ?? {}))) {
-    const h = head.states?.[key];
-    if (!h) {
-      errors.push(`state '${key}' was removed: saves and older tabs still carry it. Keep it registered (empty is ok).`);
-    } else if (h.version < s.version) {
-      errors.push(`state '${key}' version went down (${s.version} -> ${h.version})`);
-    } else if (h.version === s.version && s.shape !== undefined && h.shape !== s.shape) {
-      errors.push(
-        `state '${key}' saves a different shape at the same version ${h.version}: bump \`version\` and add a ` +
-          `\`migrate[${h.version + 1}]\` step.\n    main: ${s.shape}\n    now:  ${h.shape}`,
-      );
-    }
-  }
-  for (const op of Object.keys(fresh ? {} : (base.ops ?? {}))) {
-    if (!head.ops?.[op])
-      errors.push(`op '${op}' was removed: older tabs still submit it. Keep it (validate can reject).`);
-  }
-  for (const [what, field] of [
-    ['presence key', 'presence'],
-    ['message type', 'messages'],
-  ] as const) {
-    for (const k of Object.keys(base[field] ?? {})) {
-      if (!head[field]?.[k])
-        notes.push(`${what} '${k}' is gone; older tabs may still send it (fine if nothing reads it)`);
-    }
-    for (const k of Object.keys(head[field] ?? {})) {
-      if (!base[field]?.[k]) notes.push(`new ${what} '${k}' (${head[field][k]!.join(', ')})`);
-    }
-  }
-  for (const k of headRules.slice(baseRules.length)) notes.push(`new rules module '${k}' (appended)`);
-  for (const k of Object.keys(head.states ?? {})) if (fresh || !base.states?.[k]) notes.push(`new state '${k}'`);
-  for (const k of Object.keys(head.ops ?? {})) if (fresh || !base.ops?.[k]) notes.push(`new op '${k}'`);
-  return { errors, notes };
 }

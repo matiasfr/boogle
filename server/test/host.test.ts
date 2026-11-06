@@ -6,7 +6,6 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createService, loadConfig } from '../src/server.ts';
-import { TUNE_CATALOG } from '../../src/sim/tune.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
@@ -21,19 +20,9 @@ async function start(env: Record<string, string> = {}, dataDir?: string) {
 }
 
 // pid: the player (default one per self; '' leaves it out); key: its browser's secret (default one per pid).
-function connect(
-  base: string,
-  room: string,
-  self: string,
-  pid = self + 'pid',
-  key = pid + 'key0000000000',
-  catalog?: string,
-) {
+function connect(base: string, room: string, self: string, pid = self + 'pid', key = pid + 'key0000000000') {
   const q = (pid ? `&pid=${pid}` : '') + (key ? `&key=${key}` : '');
-  const ws = new WebSocket(
-    `${base}/room/${room}?self=${self}${q}&b=test${catalog === undefined ? '' : `&tc=${catalog}`}`,
-    ['boogle.1'],
-  );
+  const ws = new WebSocket(`${base}/room/${room}?self=${self}${q}&b=test`, ['boogle.1']);
   const msgs: Msg[] = [];
   const waiters = new Set<() => void>();
   ws.onmessage = (e) => {
@@ -74,8 +63,8 @@ test('classic rail-demo and production demo select distinct hosts and saves', as
     const productionRoom = railwayRoomId('demo');
     const classicRoom = worldRoomId('rail-demo');
     assert.notEqual(productionRoom, classicRoom);
-    const production = connect(base, productionRoom, 'production', undefined, undefined, TUNE_CATALOG);
-    const classic = connect(base, classicRoom, 'classic', undefined, undefined, TUNE_CATALOG);
+    const production = connect(base, productionRoom, 'production');
+    const classic = connect(base, classicRoom, 'classic');
     await Promise.all([production.next(is('welcome')), classic.next(is('welcome'))]);
     const productionHost = svc.roomHost()!.room(productionRoom)!.world;
     const classicHost = svc.roomHost()!.room(classicRoom)!.world;
@@ -227,8 +216,9 @@ test('relay: messages reach the others with from; oversize and host-only types d
 test('production railway relays bounded social cues without opening material or host-only paths', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
   try {
-    const a = connect(base, 't1v02-social', 'aaa', undefined, undefined, TUNE_CATALOG);
-    const b = connect(base, 't1v02-social', 'bbb', undefined, undefined, TUNE_CATALOG);
+    const roomId = railwayRoomId('social');
+    const a = connect(base, roomId, 'aaa');
+    const b = connect(base, roomId, 'bbb');
     await Promise.all([a.next(is('list')), b.next(is('list'))]);
     // Main expanded the cosmetic world envelope to 4096 m for Place; stay outside that real bound.
     a.send({ t: 'm', d: { t: 'ping', x: 0, y: 0, z: 4097, k: 'look' } });

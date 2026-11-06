@@ -19,7 +19,7 @@ import { shakeView } from './celebrate.ts';
 import { back } from './chop.ts';
 import { coop, pairHook } from './coop.ts';
 import { currentCoopPeer } from './coop-identity.ts';
-import { callCart, cart, cartHere, depotRails, depotRecall, depotRide, loadCart, onCart, railsOwed } from './depot.ts';
+import { cart, cartHere, depotRails, depotRide, loadCart, onCart, railsOwed } from './depot.ts';
 import { forge, rackTop, takeRail } from './forge.ts';
 import { COOP, count, job, num, save } from './job.ts';
 import { CART, ORIGIN } from './layout.ts';
@@ -147,16 +147,10 @@ function loadFromForge(manual = true) {
   coop.took('rails', n);
   coop.send({ k: 'cartLoad', n, manual });
 }
-depotRails.enabled = () => coop.railCart();
 depotRails.stock = () => forge.rails;
-depotRecall.finished = () => {
-  // Current peers finish their own flights; mixed rooms settle inventory and destination together.
-  coop.finishRecall();
-};
 depotRails.load = () => {
   if (!coop.follower()) loadFromForge(false);
 };
-depotRide.enabled = () => coop.rideCart();
 depotRide.update = () => {
   callHandle.visible = job.rung.depot && !job.rung.trains;
   const pending = coop.recallPending();
@@ -169,23 +163,22 @@ depotRide.update = () => {
     acknowledged ? '#8edbff' : '#ffd26e',
   );
   if (coop.follower()) return;
-  const boost = cart.manual && coop.rideCart() && (onCart(carry.on) || coop.cartRider());
+  const boost = cart.manual && (onCart(carry.on) || coop.cartRider());
   if (boost === cart.boost) return;
   cart.boost = boost;
   coop.send({ k: 'cartRide', boost });
 };
 if (COOP) {
   pairHook.msg = (m) => {
-    if (m.k === 'cartCall') callCart();
-    else if (m.k === 'cartLoad' && count(m.n, CART.rails)) loadCart(m.n, m.manual === true);
-    else if (m.k === 'cartRide' && typeof m.boost === 'boolean') cart.boost = m.boost && coop.rideCart();
+    if (m.k === 'cartLoad' && count(m.n, CART.rails)) loadCart(m.n, m.manual === true);
+    else if (m.k === 'cartRide' && typeof m.boost === 'boolean') cart.boost = m.boost;
     else if (m.k === 'beamSet' && num(m.x) && num(m.z) && num(m.yaw)) setBeam(m.yaw);
     else if (m.k === 'beamBounce' && (m.end === 0 || m.end === 1)) bounce(m.end, true);
   };
   pairHook.busy = () => grip !== null || [...grips.keys()].some((peer) => fresh(peer, performance.now()));
   addPresenceField('placeLongBeam', () => grip);
   onRemotePresence((r, pr) => {
-    // Legacy place peers share the transport, but not this version's railway or beam.
+    // Only participating Place peers hold this railway's optional beam.
     const end = currentCoopPeer(pr) ? pr.placeLongBeam : null;
     if (end === 0 || end === 1) grips.set(r.peer, { end, seen: performance.now() });
     else grips.delete(r.peer);
@@ -333,7 +326,6 @@ registerInteractable(() => {
         id: 'place-cart-call',
         verb: 'Call cart to forge',
         at: callAt,
-        blocked: coop.recallAvailable() ? undefined : 'Cart is delivering',
         run: () => {
           whistle(TX, TZ);
           coop.recallCart();

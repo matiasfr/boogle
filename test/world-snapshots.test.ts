@@ -1,15 +1,10 @@
-// Saved worlds on the real rules: a save without state versions loads at version 0, and malformed snapshots or states
-// never throw: a bad state starts fresh and the world keeps ticking. A v02 save captured at the refocus clean break keeps
-// loading. (Older fixtures were retired with the namespace bump, src/world/namespace.ts: nothing loads an older save.)
+// Saved worlds on the current rules round-trip; malformed snapshots or states never throw.
+// A bad state starts fresh and the world keeps ticking.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync } from '../src/world/sync.ts';
 import { installRules } from '../src/world/rules/index.ts';
-import fs from 'node:fs';
 import { homeLand } from './helpers/land.ts';
-import { createTune, hashTune, migrateTune, loadTune } from '../src/sim/tune.ts';
-
-const v02 = JSON.parse(fs.readFileSync(new URL('./fixtures/snap-v02.json', import.meta.url), 'utf8'));
 
 function peer() {
   const s = createSync();
@@ -27,27 +22,14 @@ function played() {
   return { snap: copy(s.snapshot()), hashes: s.stateHashes() };
 }
 
-test('a save without vers loads every state at version 0, and re-saves with versions', () => {
+test('a current save preserves every state hash across load and save', () => {
   const { snap, hashes } = played();
-  delete snap.vers;
   const s = peer();
   assert.equal(s.loadSnapshot(copy(snap)), true);
   assert.deepEqual(s.stateHashes(), hashes);
   assert.equal(s.worldStatus().loadErrors, 0);
   const saved = copy(s.snapshot());
-  assert.deepEqual(Object.keys(saved.vers), Object.keys(hashes));
-});
-
-test('a v02 save (test/fixtures/snap-v02.json) still loads to the same hashes', () => {
-  const s = peer();
-  assert.equal(s.loadSnapshot(copy(v02.snap)), true);
-  const now = s.stateHashes();
-  const migrated = createTune();
-  loadTune(migrated, migrateTune(v02.snap.data.tune ?? {}));
-  for (const [k, h] of Object.entries(v02.hashes))
-    assert.equal(now[k], k === 'tune' ? hashTune(migrated) : h, `${k} loads differently`);
-  assert.equal(s.worldStatus().loadErrors, 0);
-  assert.equal(s.worldStatus().newerSave, false);
+  assert.deepEqual(saved, snap);
 });
 
 const JUNK = [
@@ -84,15 +66,13 @@ test('malformed snapshots and states never throw; bad states start fresh and the
 
   const keys = Object.keys(hashes);
   for (let k = 0; k < JUNK.length; k++) {
-    // every state gets a junk value (each sees every one over the loop), and every third round junk versions too
+    // Every state gets every junk value over the loop.
     const data = Object.fromEntries(keys.map((key, n) => [key, JUNK[(k + n) % JUNK.length]]));
-    const vers = k % 3 === 0 ? { [keys[k % keys.length]!]: 'x', [keys[(k + 1) % keys.length]!]: -2 } : undefined;
-    assert.doesNotThrow(() => s.loadSnapshot({ tick: 9, seed: 1, epochMs: 0, data, ...(vers ? { vers } : {}) }));
+    assert.doesNotThrow(() => s.loadSnapshot({ tick: 9, seed: 1, epochMs: 0, data }));
     assert.doesNotThrow(() => s.updateWorld(0.2), `ticking after junk round ${k}`);
     assert.doesNotThrow(() => s.snapshot());
   }
   assert.ok(s.worldStatus().loadErrors > 0, 'some junk was caught by a throwing load');
-  assert.equal(s.worldStatus().newerSave, false);
   s.loadSnapshot(copy(snap)); // a good save afterwards loads as usual
   assert.deepEqual(s.stateHashes(), hashes);
 });

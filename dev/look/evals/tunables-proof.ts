@@ -3,8 +3,6 @@ import { identity } from '../../../src/player/identity.ts';
 import { net, connectRoom } from '../../../src/netplay/net.ts';
 import { rules } from '../../../src/world/game-world.ts';
 import { snapshot, detachWorld, worldStatus } from '../../../src/world/sync.ts';
-import { WORLD_NS } from '../../../src/world/namespace.ts';
-import { roomUrl, WS_PROTOCOL, CLOSE } from '../../../src/net/ws-wire.ts';
 import { onTuneRecord } from '../../../src/tunables/events.ts';
 import { recordTuneSnapshot } from '../../../src/debug/dev/tunables.ts';
 import { renderer } from '../../../src/render/scene.ts';
@@ -52,27 +50,7 @@ export async function run() {
     assert(!stale.ok, 'stale revision refused');
     const local = await api.run('tunables', 'set', { id: 'post.centre', value: 0.32 });
     assert(local.ok, 'local exposure applied');
-    // Exercise actual incompatible-build admission on this same local service, never the public service.
-    const mismatch = await new Promise<number>((resolve, reject) => {
-      const url = roomUrl(import.meta.env.VITE_BOOGLE_SERVER, `${WORLD_NS}-proto-tunables-mismatch`, {
-        self: 'tunebad001',
-        pid: 'tunebad001',
-        key: 'tunablesmismatchproof0001',
-        b: 'mismatch',
-        tc: 'wrong-defaults',
-      });
-      const socket = new WebSocket(url, WS_PROTOCOL);
-      const timeout = setTimeout(() => {
-        socket.close();
-        reject(new Error('Mismatch admission timeout'));
-      }, 10_000);
-      socket.onclose = (event) => {
-        clearTimeout(timeout);
-        resolve(event.code);
-      };
-    });
-    assert(mismatch === CLOSE.INCOMPATIBLE, 'mismatched defaults refused');
-    console.log('TUNABLES ' + JSON.stringify({ player, initial, applied, stale, mismatch }));
+    console.log('TUNABLES ' + JSON.stringify({ player, initial, applied, stale }));
   } else {
     await until(() => rules.tune.get('yield') === 6, 'peer receives shared value');
     const denied = await api.run('tunables', 'set', { id: 'haul.yield', value: 9 });

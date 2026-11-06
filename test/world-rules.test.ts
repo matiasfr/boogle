@@ -9,7 +9,6 @@ import { homeLand, fixture } from './helpers/land.ts';
 import { giftIndex } from '../src/sim/gift-catalog.ts';
 import { ON_GROUND, SRC } from '../src/sim/gifts.ts';
 import type { Rules } from '../src/world/rules/types.ts';
-import { TUNE_CATALOG } from '../src/sim/tune.ts';
 
 const CANONICAL = ['gifts', 'roster', 'stacks', 'piles', 'sites', 'sources', 'bank', 'ball', 'tune', 'opening']; // production order (test/fixtures/world-inputs.json)
 
@@ -55,7 +54,6 @@ const SCRIPTS: Partial<Record<keyof Rules, (x: Peer) => Step[]>> = {
       key: 'yield',
       v: 7,
       expectedRevision: rules.tune.tune.revision,
-      catalog: TUNE_CATALOG,
       requestId: 'script',
     }),
     { op: 'tune.fill', i: 0, j: 0 },

@@ -37,7 +37,7 @@ jobs:
       # but a red main for whitespace isn't worth it yet.
       - run: npm run build
       - run: npm run test:unit
-      # Shared names (presence keys, message types, pad slots, frame orders) and mixed-build rules against main.
+      # Current shared names (presence keys, message types, pad slots, frame orders) and debt ratchets against main.
       # On main the checkout's origin/main is this commit, so there's nothing to compare, and fetching a main that has
       # moved on since the checkout is a rejected non-fast-forward: a red run in every burst of merges.
       - if: github.ref != 'refs/heads/main'

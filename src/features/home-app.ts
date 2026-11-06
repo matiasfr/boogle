@@ -7,7 +7,7 @@
 // Local only. Serves DESIGN.md "Designed for drop-in, drop-out": prototype playtests work from the Home Screen too.
 import './home-app.css';
 import { standalone } from '../boot/app-fill.ts';
-import { launchQuery, reopenQuery, describeLaunch, fromCookie, COOKIE } from '../last-launch.ts';
+import { launchQuery, describeLaunch, fromCookie, COOKIE } from '../last-launch.ts';
 import { dom } from '../player/hud.ts';
 import { showCard } from '../player/arrival.ts';
 
@@ -30,11 +30,11 @@ function remember(query: string) {
 function recall(): string {
   try {
     const q = localStorage.getItem(KEY);
-    if (q) return reopenQuery(q); // A migrated bare launch must not fall through to an old cookie.
+    if (q) return launchQuery(q);
   } catch {
     // fall through to the cookie
   }
-  return reopenQuery(fromCookie(document.cookie));
+  return fromCookie(document.cookie);
 }
 
 const here = launchQuery(location.search);

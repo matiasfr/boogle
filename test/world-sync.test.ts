@@ -460,14 +460,12 @@ test('the singleton exports setEnv, onAfterTick and registry', () => {
   assert.deepEqual(singleton.registry(), { ops: [], states: [] });
 });
 
-// ------------------------------------------------------------ state versions (B3)
-// A local sync with one versioned toy state, `thing` ({ n }); its load throws on anything without a numeric n.
-function versioned(version: number, migrate: Record<number, (json: unknown) => unknown>) {
+// ------------------------------------------------------------ state loading
+// A local sync with one toy state, `thing` ({ n }); its load throws on anything without a numeric n.
+function stateful() {
   const s = createSync();
   let value: { n: number } = { n: 0 };
   s.registerState('thing', {
-    version,
-    migrate,
     serialize: () => value,
     load: (json) => {
       if (typeof (json as { n?: unknown } | null)?.n !== 'number') throw new Error('bad thing');
@@ -477,72 +475,27 @@ function versioned(version: number, migrate: Record<number, (json: unknown) => u
   });
   return { s, get: () => value };
 }
-const snapOf = (data: Record<string, unknown>, vers?: Record<string, unknown>) => ({
+const snapOf = (data: Record<string, unknown>) => ({
   tick: 3,
   seed: 1,
   epochMs: 0,
   data,
-  ...(vers ? { vers } : {}),
 });
 
-test('snapshots record each state version, and loads run the migrations from the saved version up, in order', () => {
-  const order: number[] = [];
-  type N = { n: number };
-  const steps = {
-    1: (j: unknown) => (order.push(1), { n: (j as N).n + 10 }),
-    2: (j: unknown) => (order.push(2), { n: (j as N).n * 2 }),
-  };
-  const a = versioned(2, steps);
-  assert.deepEqual(a.s.snapshot().vers, { thing: 2 });
-  a.s.loadSnapshot(snapOf({ thing: { n: 1 } })); // no vers: version 0
-  assert.deepEqual(order, [1, 2]);
-  assert.equal(a.get().n, 22);
-  order.length = 0;
-  a.s.loadSnapshot(snapOf({ thing: { n: 1 } }, { thing: 1 }));
-  assert.deepEqual(order, [2]);
-  assert.equal(a.get().n, 2);
-  order.length = 0;
-  a.s.loadSnapshot(JSON.parse(JSON.stringify(a.s.snapshot()))); // this build's own save: nothing to migrate
-  assert.deepEqual(order, []);
-  assert.equal(a.get().n, 2);
-  assert.equal(a.s.worldStatus().loadErrors, 0);
-  assert.equal(a.s.worldStatus().newerSave, false);
-  const bad = { version: -1, serialize: () => 0, load() {}, hash: () => 0 };
-  assert.throws(() => createSync().registerState('x', bad), /bad version/);
-});
-
-test('a state that fails to load (or to migrate) starts fresh and is counted; the others still load', () => {
-  const v = versioned(1, { 1: (j: unknown) => ({ n: (j as { n: { deep: { oops: number } } }).n.deep.oops }) });
+test('a state that fails to load starts fresh and is counted; the others still load', () => {
+  const v = stateful();
   const fails: unknown[] = [];
   v.s.onSnapFail((f) => fails.push(f));
   let other = 0;
   v.s.registerState('other', { serialize: () => other, load: (x) => (other = x as number), hash: () => other });
-  assert.equal(v.s.loadSnapshot(snapOf({ thing: { n: 5 }, other: 9 })), true); // the migration throws
+  assert.equal(v.s.loadSnapshot(snapOf({ thing: null, other: 9 })), true);
   assert.equal(v.get().n, 0, 'thing is fresh');
   assert.equal(other, 9);
-  v.s.loadSnapshot(snapOf({ thing: { n: 'x' }, other: 4 }, { thing: 1 })); // load throws
-  v.s.loadSnapshot(snapOf({ thing: { n: 5 }, other: 4 }, { thing: 'one' })); // a bad version
+  v.s.loadSnapshot(snapOf({ thing: { n: 'x' }, other: 4 }));
   assert.equal(v.get().n, 0);
   assert.equal(other, 4);
-  assert.equal(v.s.worldStatus().loadErrors, 3);
+  assert.equal(v.s.worldStatus().loadErrors, 2);
   assert.deepEqual(fails[0], { from: 'state', reason: 'thing load' });
-});
-
-test('a state saved by a newer build is skipped, and the tab stops saving so it never overwrites that save', async () => {
-  const store = mem();
-  store.setItem('boogle.world.test', JSON.stringify(snapOf({ grid: Array(16).fill(4) }, { grid: 1 })));
-  const writes = store.writes;
-  const net = makeNet();
-  const host = makePeer(net, 'h', true, { storage: store });
-  await run(net, [host], 1);
-  assert.equal(host.s.worldStatus().ready, true);
-  assert.equal(host.grid[0], 0, 'grid v1 is unknown to this build: left fresh');
-  assert.equal(host.s.worldStatus().newerSave, true);
-  host.s.submitEdit({ op: 'add', i: 0, j: 0, v: 1 });
-  await run(net, [host], 620); // past the 30 s save interval
-  assert.equal(host.grid[0], 1);
-  assert.equal(store.writes, writes, 'nothing saved');
-  assert.equal(JSON.parse(store.getItem('boogle.world.test')!).vers.grid, 1);
 });
 
 test('a host whose save fails to load never writes its fresh fallback over that save', async () => {
@@ -569,7 +522,7 @@ test('a host whose save fails to load never writes its fresh fallback over that 
   }
 });
 
-test("a state only the host has does not fail the client's hash check", async () => {
+test('a different state registry fails the complete world hash check', async () => {
   const net = makeNet();
   let n = 0;
   const host = makePeer(net, 'h', true, {
@@ -579,22 +532,8 @@ test("a state only the host has does not fail the client's hash check", async ()
   const c = makePeer(net, 'c', false);
   await run(net, [host, c], 60);
   const st = c.s.worldStatus();
-  assert.ok(st.hashOk > 0, 'hash checks ran');
-  assert.equal(st.hashBad, 0);
-  assert.equal(st.resyncs, 0);
-});
-
-test('a state skipped as newer is left out of the hash check', async () => {
-  const net = makeNet();
-  let t = 0;
-  const thing = (version: number) => (s: Sync) =>
-    s.registerState('thing', { version, serialize: () => t, load: () => {}, hash: () => (t += 7) });
-  const host = makePeer(net, 'h', true, { extra: thing(2) });
-  const c = makePeer(net, 'c', false, { extra: thing(1) });
-  await run(net, [host, c], 60);
-  const st = c.s.worldStatus();
-  assert.equal(st.newerSave, true);
-  assert.ok(st.resyncs <= 1, `resyncs ${st.resyncs}`);
+  assert.ok(st.hashBad > 0, 'a mismatched complete registry is not accepted as verified');
+  assert.ok(st.resyncs > 0);
 });
 
 test('saveMs sets how often a host saves', async () => {

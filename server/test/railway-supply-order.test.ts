@@ -8,6 +8,7 @@ import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { railwayInvariant } from '../../src/sim/railway.ts';
+import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
 test('fresh drop waits for missed maintenance before admission, then starts at age zero', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-supply-order-'));
@@ -17,7 +18,7 @@ test('fresh drop waits for missed maintenance before admission, then starts at a
   let position = { x: RAILWAY_T1.x / 100, z: RAILWAY_T1.z / 100 };
   const messages: Record<string, unknown>[] = [];
   const host = createRailwayWorldHost({
-    roomId: 't1v02-supply-order',
+    roomId: railwayRoomId('supply-order'),
     store,
     tick: false,
     now: () => now,

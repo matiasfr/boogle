@@ -155,75 +155,13 @@ async function run() {
       return;
     }
     if (mode !== 'gate') {
-      // Historical already-felled rooms stay valid despite the new felling gate.
-      if (authority) {
-        tree.applyTreeHarvest(tree.greatTree, {
-          work: 12,
-          issued: 0,
-          ceiling: 0,
-          revision: 1,
-          fell: true,
-          fallYaw: 0,
-          collapsed: false,
-        });
-        net.room!.send({
-          t: COOP_IDENTITY,
-          k: 'snap',
-          snap: { gen: coop.debug().gen, shared: captureShared() },
-          force: true,
-        });
-      }
-      await until(() => tree.trunkDown(), 'legacy felled tree loaded during Station 1');
-      const early = tree.trunkAt();
-      await put(early.x + (authority ? -2.5 : 2.5), early.z);
-      await wait(700);
       check('Station 1 has no trunk prompt', hands.interactTarget()?.verb !== 'Shoulder the trunk');
-      const { save, restore } = (await import(
-        '/src/proto/place/job.ts' as string
-      )) as typeof import('../../../src/proto/place/job.ts');
-      const { bigCargo } = (await import(
-        '/src/proto/place/big-cargo.ts' as string
-      )) as typeof import('../../../src/proto/place/big-cargo.ts');
-      const { triggerAction } = (await import(
-        '/src/player/controls.ts' as string
-      )) as typeof import('../../../src/player/controls.ts');
-      // Two old saves have each adopted their personal shoulder at revision zero.
-      save();
-      const key = Object.keys(localStorage).find((k) => k.startsWith('boogle-place-coop-v2:'))!;
-      const old = JSON.parse(localStorage.getItem(key)!);
-      old.shared.bigCargoV1.beam = { revision: 0, holder: net.myPeer, ground: null };
-      old.shared.felled.trunk = true;
-      old.personal.back = { logs: 0, rails: 0, stone: 0, big: 'beam' };
-      localStorage.setItem(key, JSON.stringify(old));
-      check('legacy adopted shoulder loads', restore() && tree.back.big === 'beam');
-      await barrier('legacy shoulders loaded');
-      if (authority)
-        net.room!.send({
-          t: COOP_IDENTITY,
-          k: 'snap',
-          snap: { gen: coop.debug().gen, shared: captureShared() },
-          force: true,
-        });
-      await until(() => authority || tree.back.big === null, 'legacy duplicate shoulder cleared');
-      check(
-        'one authoritative legacy shoulder at revision zero',
-        bigCargo.beam.revision === 0 && (authority ? tree.back.big === 'beam' : tree.back.big === null),
-      );
-      await barrier('legacy shoulder reconciled');
-      if (authority) {
-        teleport(me.body!, place.ORIGIN.x + 1000, 5, 1000);
-        triggerAction('place-drop', 'down');
-        await put(early.x - 2.5, early.z);
-      }
-      await until(() => tree.back.big === null && tree.trunkDown(), 'early legacy Drop frees both backs');
-      check('legacy room can carry logs again', tree.back.room() > 0);
-      await barrier('legacy room recovered');
       tree.back.logs = 2;
       coop.big('beam');
       await until(() => !coop.bigBusy(), 'early request rejected');
       check(
         'authority rejects early pickup without spending logs',
-        tree.back.big === null && tree.back.logs === 2 && tree.trunkDown(),
+        tree.back.big === null && tree.back.logs === 2 && !tree.trunkTaken(),
       );
       await barrier('early pickup refused');
       tree.back.logs = 0;
@@ -274,7 +212,7 @@ async function run() {
             room.send = original;
           }
           await until(() => !coop.debug().bigPending && !coop.bigBusy(), 'abandoned request settled after retry');
-          check('rejected retry conserves the legacy trunk', tree.trunkDown() && tree.back.big === null);
+          check('rejected retry leaves trunk unclaimed', !tree.trunkTaken() && tree.back.big === null);
         }
         await barrier('cargo reconnect regression');
         check('short reconnect retains original authority', coop.debug().amAuthority === authority);
@@ -302,7 +240,7 @@ async function run() {
   if (!saved) tree.back.logs = tree.back.rails = tree.back.stone = tree.back.incoming = 0;
   const st = place.lines[0].stations[2];
   if (authority && !saved) {
-    // Keep the legacy-save assertions above, then earn a fresh beam through the current safe fall path.
+    // Earn a fresh beam through the current safe fall path.
     tree.resetTrees();
     st.have.logs = 40;
     st.drawStock(st.have);
@@ -421,9 +359,8 @@ async function run() {
   );
   if (!carrier && mode !== 'solo') await press('Help carry');
   check(
-    'shared capability accepts current publication and excludes retired builds',
+    'participation accepts zero and rejects malformed election ticks',
     currentCoopPeer({ [COOP_IDENTITY]: 0 }) &&
-      !currentCoopPeer({ placeCoopTrees1: 0 }) &&
       !currentCoopPeer({ [COOP_IDENTITY]: -1 }) &&
       !currentCoopPeer({ [COOP_IDENTITY]: 0.5 }),
   );

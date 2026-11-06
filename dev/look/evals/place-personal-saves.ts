@@ -56,36 +56,6 @@ check(
   !('goldFinds' in state.captureShared()) && !('secretFinds' in state.captureShared()),
 );
 
-// Old saves could retain either shape under the colliding key. Recover only what remains.
-const fixture = read();
-for (const legacy of [
-  [0, 0, 99, -1, 'bad'],
-  { found: [secret.id, secret.id, 'bad'], hubbed: [secret.id, 'bad'] },
-  null,
-]) {
-  delete fixture.personal.goldFinds;
-  delete fixture.personal.secretFinds;
-  fixture.personal.finds = legacy;
-  localStorage.setItem(key, JSON.stringify(fixture));
-  check('legacy save loads', state.restore());
-  state.save();
-  personal = read().personal;
-  check(
-    'legacy gold shape is bounded and isolated',
-    JSON.stringify(personal.goldFinds) === (Array.isArray(legacy) ? '[0]' : '[]'),
-  );
-  check(
-    'legacy secret shape is bounded and isolated',
-    tech.techApi.found.has(secret.id) === (!!legacy && !Array.isArray(legacy)),
-  );
-}
-fixture.personal.goldFinds = [];
-fixture.personal.secretFinds = { found: [], hubbed: [] };
-fixture.personal.finds = { found: [secret.id], hubbed: [secret.id] };
-localStorage.setItem(key, JSON.stringify(fixture));
-state.restore();
-check('explicit new empty history wins over legacy', tech.techApi.found.size === 0);
-
 gifts.snapGifts([], 0, []);
 gifts.deliver(x + 3, y, z, null);
 gifts.deliver(x + 7, y, z, null);

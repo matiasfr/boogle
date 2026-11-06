@@ -43,8 +43,6 @@ export interface Remote {
   // Fields features keep per remote (their presence, decoded):
   hd?: string | null; // what they hold (src/features/held.ts)
   flop?: { kind: string; until: number } | null; // a flop playing (src/features/feel.ts)
-  flLast?: number; // its last fl time left, so a repeat isn't a new flop
-  kdLast?: number; // their last kd (src/features/impact.ts)
   kdUntil?: number; // knocked down until (ms)
   guest?: number[] | null; // the guest's pose (src/features/dino.ts; src/guest/)
 }

@@ -1,12 +1,9 @@
-// Existing broker look fixture: solo old-save recovery and the Station 1 -> 3 regression.
+// Existing broker look fixture: Station 1 -> 3 harvest and pickup gate regression.
 // --query proto=place --eval dev/look/evals/place-early-beam.ts --until window.__coopDone --warm 180
 const tree = (await import('/src/proto/place/chop.ts' as string)) as typeof import('../../../src/proto/place/chop.ts');
 const { bigCargo } = (await import(
   '/src/proto/place/big-cargo.ts' as string
 )) as typeof import('../../../src/proto/place/big-cargo.ts');
-const { save, restore } = (await import(
-  '/src/proto/place/job.ts' as string
-)) as typeof import('../../../src/proto/place/job.ts');
 const { activeFrame, wakeNow } = (await import(
   '/src/proto/place/run.ts' as string
 )) as typeof import('../../../src/proto/place/run.ts');
@@ -14,9 +11,6 @@ const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof 
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { triggerAction } = (await import(
-  '/src/player/controls.ts' as string
-)) as typeof import('../../../src/player/controls.ts');
 const hands = (await import('/src/player/hands.ts' as string)) as typeof import('../../../src/player/hands.ts');
 const got = (await import('/src/proto/place/got.ts' as string)) as typeof import('../../../src/proto/place/got.ts');
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
@@ -52,12 +46,27 @@ async function run() {
   wakeNow();
   put(tree.greatTree.x, tree.greatTree.z + 3.5);
   await wait(700);
-  check('Station 1 offers no great-tree Chop', hands.interactTarget()?.id !== 'place-great');
+  check('Station 1 offers a rebound attempt', hands.interactTarget()?.id === 'place-great');
+  await press('Chop');
   check(
-    'Station 1 refuses direct swing and accepted work',
-    !tree.chop(tree.greatTree) && tree.harvestTree(tree.greatTree, 0, 0, 0).state.work === 0,
+    'Station 1 refuses accepted work',
+    tree.greatTree.work === 0 && tree.harvestTree(tree.greatTree, 0, 0, 0).state.work === 0,
   );
-  // An already-felled historical save remains valid under the updated owner decision.
+  const ordinary = tree.TREES.find((t) => !t.great && !t.hardwood && !t.cleared && t.fall < 0)!;
+  put(ordinary.x, ordinary.z + 2);
+  await press('Chop');
+  await until(() => tree.back.logs > 0, 'ordinary logs carried');
+  check('ordinary logs fit again', tree.back.logs > 0);
+  tree.back.logs = 0;
+  put(tree.greatTree.x + 2.5, tree.greatTree.z);
+  for (let stage = 0; stage < 2; stage++) {
+    place.skipDelivery();
+    await until(() => place.lines[0].stage > stage && !!activeFrame(), `Station ${stage + 1} completed`);
+    await wait(500);
+    if (stage === 0)
+      check('Station 2 still has no trunk prompt', hands.interactTarget()?.verb !== 'Shoulder the trunk');
+  }
+  check('Station 3 now needs the trunk', activeFrame()?.wants('beam') === 1);
   tree.applyTreeHarvest(tree.greatTree, {
     work: 12,
     issued: 0,
@@ -67,48 +76,7 @@ async function run() {
     fallYaw: 0,
     collapsed: false,
   });
-  await until(() => tree.trunkDown(), 'historical felled tree restored');
-  const source = tree.trunkAt();
-  put(source.x + 2.5, source.z);
-  await wait(700);
-  check(
-    'Station 1 active with felled tree and no shoulder prompt',
-    place.lines[0].stage === 0 &&
-      activeFrame()?.wants('beam') === 0 &&
-      hands.interactTarget()?.verb !== 'Shoulder the trunk',
-  );
-  // Load the historical save shape: personal shoulder and taken trunk, no shared cargo ledger.
-  save();
-  const key = Object.keys(localStorage).find((k) => k.startsWith('boogle-place-v4:'))!;
-  const old = JSON.parse(localStorage.getItem(key)!);
-  delete old.shared.bigCargoV1;
-  old.shared.felled.trunk = true;
-  old.personal.back = { logs: 0, rails: 0, stone: 0, big: 'beam' };
-  localStorage.setItem(key, JSON.stringify(old));
-  check(
-    'old Station 1 shoulder really loads',
-    restore() && tree.back.big === 'beam' && tree.back.room() === 0 && place.lines[0].stage === 0,
-  );
-  triggerAction('place-drop', 'down');
-  check(
-    'Drop frees legacy shoulder and conserves trunk',
-    tree.back.big === null && tree.back.room() > 0 && tree.trunkDown() && bigCargo.beam.holder === null,
-  );
-  const ordinary = tree.TREES.find((t) => !t.great && !t.hardwood && !t.cleared && t.fall < 0)!;
-  put(ordinary.x, ordinary.z + 2);
-  await press('Chop');
-  await until(() => tree.back.logs > 0, 'logs carried after legacy Drop');
-  check('ordinary logs fit again', tree.back.logs > 0);
-  tree.back.logs = 0;
-  put(source.x + 2.5, source.z);
-  for (let stage = 0; stage < 2; stage++) {
-    place.skipDelivery();
-    await until(() => place.lines[0].stage > stage && !!activeFrame(), `Station ${stage + 1} completed`);
-    await wait(500);
-    if (stage === 0)
-      check('Station 2 still has no trunk prompt', hands.interactTarget()?.verb !== 'Shoulder the trunk');
-  }
-  check('Station 3 now needs the trunk', activeFrame()?.wants('beam') === 1);
+  await until(() => tree.trunkDown(), 'Station 3 felled tree ready');
   const at = tree.trunkAt();
   put(at.x + 2.5, at.z);
   await press('Shoulder the trunk');

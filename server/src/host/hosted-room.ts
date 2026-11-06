@@ -366,7 +366,7 @@ export function createHostedRoom({
       players: clients.size,
       max: cfg.maxPlayers,
       lead,
-      noSave: world.status().newerSave, // a state saved by a newer build: deploy the server
+      noSave: world.status().badSave, // a failed-load fallback must not replace the durable save
     }),
     idleMs: () => (clients.size || gone.size ? 0 : performance.now() - emptySince),
     async close({ save = true } = {}) {

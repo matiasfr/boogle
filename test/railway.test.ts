@@ -30,8 +30,6 @@ import { install as roster } from '../src/world/rules/roster.ts';
 import { install as railway, edits } from '../src/world/rules/railway.ts';
 import { homeLand } from './helpers/land.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
-import { installPlayableRailwayRules } from '../src/world/rules/railway-index.ts';
-import { createRailSupply } from '../src/sim/railway-supply.ts';
 
 const action = (s: Railway, pid: string, op: string, fields: Partial<RailAction> = {}, tick = 100) => {
   const a = railAccount(s, pid)!;
@@ -243,7 +241,6 @@ test('supported pid lifetime cannot strand the full finite catalog; bounded docu
     seed: 20261028,
     epochMs: 1793850000000,
     data: { roster: serializeRoster(rosterState), railway: serializeRailway(s) },
-    vers: { roster: 0, railway: 0 },
   };
   const envelope: RecoveryEnvelope = {
     version: 1,
@@ -273,82 +270,7 @@ test('supported pid lifetime cannot strand the full finite catalog; bounded docu
   const bytes = Buffer.byteLength(JSON.stringify(envelope));
   t.diagnostic(`maximum capped recovery fixture: ${bytes}/${MAX_RECOVERY_BYTES} bytes`);
   assert.ok(bytes < MAX_RECOVERY_BYTES, `${bytes} bytes`);
-  // Production admits identity/ball-rest and two bounded supply tune overrides in explicit proto rooms.
-  // All other base states stay initial; their material ops are rejected at the room boundary.
-  const production = createSync();
-  const base = installPlayableRailwayRules(production, homeLand());
-  production.updateWorld(0.1);
-  base.ball.ball.p = [-25500, 19999, 25500];
-  base.ball.ball.at = RAILWAY_MAX_INT;
-  base.tune.tune.v.railRegrowMinutes = 1440;
-  base.tune.tune.v.railRecoveryMinutes = 1440;
-  const initial = production.snapshot();
-  const placed = structuredClone(s);
-  placed.supply = createRailSupply();
-  placed.supply.marker = Number.MAX_SAFE_INTEGER;
-  placed.falls = {
-    yaw: placed.sources.map((n) => (n === 0 ? 6.123456789012345 : 0)),
-    collapsed: placed.sources.map((n) => n === 0),
-  };
-  for (const pile of placed.piles) {
-    pile.y = -200000;
-    pile.age = 21;
-  }
-  const playableData = serializeRailway(placed, rosterState.pids);
-  loadRailway(createRailway(true), playableData, rosterState.pids);
-  const playable = {
-    ...envelope,
-    namespace: 't1v02',
-    tail: envelope.tail.map((entry) => ({ ...entry, e: { ...entry.e, y: -200000 } })),
-    checkpoint: {
-      ...snapshot,
-      data: { ...initial.data, ...snapshot.data, railway: playableData },
-      vers: { ...initial.vers, ...snapshot.vers },
-    },
-  };
-  const playableBytes = Buffer.byteLength(JSON.stringify(playable));
-  t.diagnostic(`maximum playable recovery fixture: ${playableBytes}/${MAX_RECOVERY_BYTES} bytes`);
-  assert.ok(playableBytes < MAX_RECOVERY_BYTES, `${playableBytes} bytes`);
-  const chopTail = envelope.tail.map((entry) => ({
-    ...entry,
-    e: {
-      op: 'rail.chop',
-      i: 0,
-      j: 0,
-      p: entry.e.p,
-      u: entry.e.u,
-      epoch: RAILWAY_MAX_INT,
-      request: RAILWAY_MAX_INT,
-      id: RAILWAY_SOURCES.at(-1)![0],
-      yaw: -0.0000010000000000000002,
-      collapsed: false,
-    },
-  }));
-  const chopBytes = Buffer.byteLength(JSON.stringify({ ...playable, tail: chopTail }));
-  t.diagnostic(`maximum playable chop-tail recovery fixture: ${chopBytes}/${MAX_RECOVERY_BYTES} bytes`);
-  assert.ok(chopBytes < MAX_RECOVERY_BYTES, `${chopBytes} bytes with chop tail`);
-  // Supply keeps the same fixed-length source ages even at every growth stage. Bound its largest ledger counters
-  // and a mixed 64-stamp tail independently of timings on a loaded host.
-  const mixed = structuredClone(playable);
-  mixed.checkpoint.data.railway.supply!.produced = 2147479760;
-  mixed.checkpoint.data.railway.supply!.rack = 2147483640;
-  const supplyEdit = {
-    op: 'rail.supply',
-    i: 0,
-    j: 0,
-    p: 's'.repeat(32),
-    u: 'p'.repeat(32),
-    marker: Number.MAX_SAFE_INTEGER,
-    grow: 'f'.repeat(Math.ceil(RAILWAY_SOURCES.length / 4)),
-    recover: [RAILWAY_MAX_INT],
-  };
-  // maintainSupply holds one pending stamp until onApplied; the real-host gate is tested in
-  // railway-supply-durability.test.ts. A hypothetical tail of 64 supply stamps is not reachable.
-  const mixedBytes = Buffer.byteLength(
-    JSON.stringify({ ...mixed, tail: chopTail.map((entry, k) => ({ ...entry, e: k === 0 ? supplyEdit : entry.e })) }),
-  );
-  t.diagnostic(`maximum mixed supply-tail recovery bound: ${mixedBytes}/${MAX_RECOVERY_BYTES} bytes`);
-  assert.ok(mixedBytes < MAX_RECOVERY_BYTES, `${mixedBytes} bytes with max supply/chop stamps`);
+  // Current production line bounds are exercised in railway-line-bounds.test.ts.
   assert.equal(railwayInvariant(s), null);
 });
 

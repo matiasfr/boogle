@@ -98,7 +98,6 @@ export function tuningSegments(s: Session) {
       segment.setup &&
       !segment.duplicate &&
       str(begin.build) &&
-      str(begin.catalog) &&
       Number.isSafeInteger(begin.revision) &&
       Number.isSafeInteger(begin.tick) &&
       Number.isSafeInteger(begin.count) &&
@@ -192,7 +191,7 @@ export function summarize(s: Session, others: Session[], places: Place[]): strin
       const { begin, end, setup, values } = segment;
       out.push(
         `  ${segment.id}: ${segment.complete ? 'complete' : 'INCOMPLETE'}; build ${str(begin?.build) || '?'}, ` +
-          `catalog ${str(begin?.catalog) || '?'}, revision ${num(begin?.revision)}, ` +
+          `revision ${num(begin?.revision)}, ` +
           `values ${values.length}/${num(begin?.count)}, configured-value checksum ${str(end?.digest) || '?'}`,
       );
       if (setup)

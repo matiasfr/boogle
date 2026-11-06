@@ -26,7 +26,7 @@ const READ = `
   return {
     n: land.n,
     states: Object.keys(sync.snapshot().data),
-    ops: typeof sync.registry === 'function' ? sync.registry().ops : null,
+    ops: sync.registry().ops,
     layout: { trees: pick(land.layout.trees), perches: pick(land.layout.perches) },
   };`;
 
@@ -64,8 +64,7 @@ export default {
       t.check(label, JSON.stringify(a) === JSON.stringify(b), `got ${show(a)}, fixture ${show(b)}`);
     same('grid size', got.n, land.n);
     same('state key order', got.states, old.states);
-    if (got.ops) same('op order', got.ops, old.ops);
-    else console.log('  SKIP  op order (sync has no registry() yet)');
+    same('op order', got.ops, old.ops);
     same('gifts layout', got.layout, land.layout, counts);
 
     // Reuse the one rendering page: PR scenarios deliberately prohibit a second GPU player.
@@ -106,7 +105,7 @@ export default {
       const line = await import('/src/sim/railway-line-layout.ts');
       const { RAILWAY_SOURCES } = await import('/src/sim/railway-layout.ts');
       return {
-        registry: sync.registry(), versions: sync.snapshot().vers,
+        registry: sync.registry(),
         installed: !!railwayApi?.railway.line,
         catalog: {
           version: line.LINE1_CATALOG, stations: line.LINE1_STATIONS, rocks: line.LINE1_ROCKS,
@@ -116,13 +115,12 @@ export default {
         },
       };`);
     const node = createSync();
-    const rules = installPlayableRailwayRules(node, land as Land, { line1: true });
+    const rules = installPlayableRailwayRules(node, land as Land);
     t.check(
       'production installs line-one authority in browser and Node',
       actual.installed && !!rules.railway.railway.line,
     );
     same('production state and op registration order', actual.registry, node.registry());
-    same('production state versions', actual.versions, node.snapshot().vers);
     same('production numeric source and line catalog', actual.catalog, {
       version: line.LINE1_CATALOG,
       stations: line.LINE1_STATIONS,

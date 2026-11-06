@@ -239,7 +239,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
         { when: 'Implementing the example piles system', refs: ['docs/game-design/haul.md#ground-piles'] },
         { when: 'Adding a game-design chapter', refs: ['docs/game-design.md'] },
       ],
-      sync: 'Lockstep; append RULES and typed Rules API; version/migrate or dev-phase WORLD_NS break',
+      sync: 'Lockstep; append RULES and typed Rules API; WORLD_NS break for development shape changes',
       checks: 'npm run check; lockstep tests; new sync contract scenario when needed; look; atlas story/check',
       lookalikes: ['src/adapters/piles.ts'],
       warning:

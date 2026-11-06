@@ -140,7 +140,7 @@ onRemotePresence((r, pr) => {
   const big = pr.placeBig === 'beam' || pr.placeBig === 'boiler' ? pr.placeBig : null;
   const pack = load.pack === true;
   if (rails || stone || big || pack) peerLoads.set(r.peer, { rails, stone, big, pack });
-  else peerLoads.delete(r.peer); // missing/malformed fields are off, including on older builds
+  else peerLoads.delete(r.peer); // missing/malformed fields are off
 });
 const peerWorn = new Map<string, ReturnType<typeof makeLoad>>();
 /** Local presentation only: one existing beam spans the two supporting shoulders. */
@@ -287,7 +287,6 @@ TREES.push(
   }),
 );
 TREES.forEach((t, k) => (t.index = k));
-const strokesFor = (t: Tree) => (t.great ? GREAT.strokes : job.rung.axe ? AXE2.strokes : TUNE.strokes);
 
 /** Accepted finite harvest, separate from local animation and the owner's back. */
 export type TreeHarvest = {
@@ -714,21 +713,6 @@ export function resetTrees() {
   }
 }
 /** Trees already down, by index: what a reload keeps. */
-const fellenList = () => TREES.filter((t) => t.fall >= 0).map((t) => t.index);
-function restoreFellen(list: number[]) {
-  for (const k of list) {
-    const t = TREES[k];
-    if (!t || t.fall >= 0) continue;
-    t.fall = 1;
-    t.strokes = strokesFor(t);
-    t.work = t.great ? GREAT.strokes : 15;
-    t.issued = t.ceiling;
-    t.revision = Math.max(1, t.revision);
-    if (!t.fallYaw) t.fallYaw = (k * 2.4) % 6.28;
-    pose(t, 0);
-    solidTree(t);
-  }
-}
 export const standing = (t: Tree) => !t.cleared && t.fall < 0;
 
 // ---------------------------------------------------------------- rocks
@@ -1059,23 +1043,14 @@ sharedSlice('bigCargoV1', {
 
 sharedSlice('felled', {
   get: () => ({
-    trees: fellenList(),
-    yaw: TREES.filter((t) => t.fall >= 0).map((t) => +t.fallYaw.toFixed(3)),
     rocks: ROCK_LIST.map((q) => q.strokes),
     trunk: trunk.taken,
   }),
   set: (v) => {
-    const j = (v ?? {}) as { trees?: unknown; yaw?: unknown; rocks?: unknown; trunk?: unknown };
+    const j = (v ?? {}) as { rocks?: unknown; trunk?: unknown };
     resetTrees();
     resetRocks();
     trunk.taken = j.trunk === true;
-    if (Array.isArray(j.trees))
-      j.trees.forEach((k, m) => {
-        if (!count(k, TREES.length - 1)) return;
-        const y = Array.isArray(j.yaw) ? (j.yaw[m] as unknown) : 0;
-        TREES[k]!.fallYaw = typeof y === 'number' && Number.isFinite(y) ? y : 0;
-        restoreFellen([k]);
-      });
     if (Array.isArray(j.rocks))
       j.rocks.forEach((s, k) => {
         const q = ROCK_LIST[k];
@@ -1087,7 +1062,7 @@ sharedSlice('felled', {
   },
 });
 
-// Appended after legacy felled data: old IDs retain their meaning, partial work overlays their safe defaults.
+// Accepted tree work restores after the rock/trunk slice resets the scene.
 sharedSlice('treeHarvestV1', {
   get: () => TREES.filter((t) => t.revision > 0).map((t) => [t.index, readTreeHarvest(t)]),
   set: (v) => {

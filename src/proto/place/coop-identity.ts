@@ -1,6 +1,6 @@
-// Whole-place wire version. WORLD_NS also isolates older room leads, including seat Host fields.
-// Keep publishing and every capability consumer on the same identity.
-export const COOP_IDENTITY = 'placeCoopPanels1';
+// Place participation and its authority-election tick, not a build capability.
+// Other prototypes can share transport rooms without participating in this railway.
+export const COOP_IDENTITY = 'placeCoop';
 export function currentCoopPeer(pr: Record<string, unknown>): pr is Record<string, unknown> & {
   [COOP_IDENTITY]: number;
 } {

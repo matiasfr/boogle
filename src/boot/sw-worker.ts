@@ -4,7 +4,7 @@
 //
 //   install    one cache per build, `boogle-<build>`: the first-load files, copied from an older build's cache when
 //              the file is unchanged (same hashed name) or fetched; a file that fails is fetched on use instead
-//   activate   delete builds older than the one before this one (sw-policy.ts, KEEP_BUILDS), then take over open tabs
+//   activate   delete every other build's cache (sw-policy.ts), then take over open tabs
 //   fetch      hashed files under assets/ (sw-policy.ts, cacheable): any of our caches, else the network, kept in this
 //              build's cache. Everything else (the page, version.json, the server, fonts) is not touched, so the page
 //              and the update check in src/features/updates.ts always see the network.

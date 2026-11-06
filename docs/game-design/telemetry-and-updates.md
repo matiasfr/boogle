@@ -37,16 +37,16 @@
   hidden. Each player's build rides in presence `bv`.
   The notice wraps within phone safe areas and keeps a 44 px Reload button. Its borrowed D-pad glyph appears only while a gamepad is active; touch and keyboard show Reload alone, including after switching input modes.
   Files: [src/features/updates.ts](../../src/features/updates.ts), [src/netplay/builds.ts](../../src/netplay/builds.ts).
-- **Loading across a deploy.** A deploy replaces every hashed file at once, so a page mid-load could ask for one that's
-  gone. Each deploy keeps what left the build in the last 30 minutes published, so it still finds them. As a fallback,
-  in its first 60 s a page that can't fetch a part of the game reloads at most twice, after 0.5 then 1.5 seconds.
+- **Loading across a deploy.** During development, deploys publish only the current build and service-worker activation
+  keeps only its cache. Unchanged immutable files can be reused during installation. Old tabs may lose lazy files,
+  as accepted by the owner's "No old builds in development" call. In its first 60 s a page that can't fetch a part
+  of the game reloads at most twice, after 0.5 then 1.5 seconds.
   A sessionStorage budget carries across reloads and expires after 60 seconds without a retry. Evaluation errors
   do not trigger reloads, and failed imports still reject. Once exhausted the lobby explains that loading failed.
   Later in a visit it stays put, and the notice above covers it. The service worker retries HTTP 503s before returning
   uncached assets and during precache; only successful responses enter its cache. WASM retries belong to the page's
   loader so a controlling worker does not multiply the retry budget. Local.
-  Files: [scripts/keep-old-assets.ts](../../scripts/keep-old-assets.ts),
-  [src/boot/chunk-reload.ts](../../src/boot/chunk-reload.ts).
+  Files: [src/boot/sw-policy.ts](../../src/boot/sw-policy.ts), [src/boot/chunk-reload.ts](../../src/boot/chunk-reload.ts).
 - **Desync visibility (dev).** `?netdebug=1` shows an overlay of role, hash checks and per-state status, and on a
   mismatch saves both sides' diverging state as JSON. The stub [src/features/syncsafety.ts](../../src/features/syncsafety.ts)
   loads [src/debug/netdebug.ts](../../src/debug/netdebug.ts) only with the flag; `?debugcam=1` likewise loads

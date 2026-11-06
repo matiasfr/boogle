@@ -11,12 +11,9 @@ import {
   costIn,
   serializeTune,
   loadTune,
-  migrateTune,
-  migrateTuneV1,
   hashTune,
   specOf,
   TUNABLES,
-  TUNE_CATALOG,
   type TuneKey,
 } from '../../sim/tune.ts';
 import { createStacks } from '../../sim/stacks.ts';
@@ -33,7 +30,7 @@ import type { SourcesApi } from './sources.ts';
 
 export const name = 'tune';
 export type TuneApi = ReturnType<typeof install>;
-export type TuneCommit = { key: string; v: number; expectedRevision: number; catalog: string; requestId: string };
+export type TuneCommit = { key: string; v: number; expectedRevision: number; requestId: string };
 const allowed = (ctx: Ctx) => ctx.env.protoRoom === true;
 const controlled = (ctx: Ctx) =>
   allowed(ctx) && typeof ctx.env.tuneController === 'function' && ctx.env.tuneController(ctx.from) === true;
@@ -74,11 +71,10 @@ export function install(
       typeof e.requestId === 'string' &&
       e.requestId.length > 0 &&
       e.requestId.length <= 80 &&
-      e.catalog === TUNE_CATALOG &&
       e.expectedRevision === tune.revision &&
       ok(e.key, e.v),
     apply: (e) => {
-      if (e.expectedRevision !== tune.revision || e.catalog !== TUNE_CATALOG || !ok(e.key, e.v))
+      if (e.expectedRevision !== tune.revision || !ok(e.key, e.v))
         return { requestId: e.requestId, status: 'rejected', revision: tune.revision };
       setTune(tune, e.key, e.v);
       return { requestId: e.requestId, status: 'applied', key: e.key, v: e.v, revision: tune.revision };
@@ -109,8 +105,6 @@ export function install(
     },
   });
   sync.registerState('tune', {
-    version: 2,
-    migrate: { 1: migrateTune, 2: migrateTuneV1 },
     serialize: () => serializeTune(tune),
     load: (json: unknown) => loadTune(tune, json),
     hash: () => hashTune(tune),
@@ -128,7 +122,6 @@ export const edits = {
     key: 'yield',
     v: r.int(1, 60),
     expectedRevision: view.rules.tune.tune.revision,
-    catalog: TUNE_CATALOG,
     requestId: 'replay',
   }),
   'tune.set': (r: Stream) => {

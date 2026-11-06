@@ -36,9 +36,7 @@ registerState(key, {
   serialize() { },           // -> JSON-safe value (use arrays of ints / base64 of typed arrays)
   load(json) { },            // replace state from a snapshot; may throw on bad data (the state then starts fresh)
   hash() { },                // -> uint32 of the state, for desync detection
-  version: 0,                // bump when serialize's format changes, and add the step that converts older saves:
-  migrate: { },              // { [v]: json => json }, json at v-1 -> json at v; loads run them in order from the saved
-})                           // version (snapshot.vers[key], missing = 0) up to this one
+})                           // shape changes use a dated WORLD_NS break during development
 onTick(fn, label?)           // fn(tick) every sim tick, in registration order, after that tick's edits are applied
 onAfterTick(fn, label?)      // fn(tick) after every onTick handler, before the host hashes (render work)
 onApplied(fn, label?)        // fn(edit, tick, result) after an edit is applied (render hooks: rebuild mesh, splash, sounds);
@@ -95,20 +93,20 @@ tick). Tabs run ~2-3 ticks behind the server; edits apply 3 ticks after it stamp
 - `onSnapshot(fn)`: state was replaced from a snapshot; rebuild meshes.
 - `onDesync(fn)`: a hash check failed, `{ tick, keys }`.
 - `onSnapFail(fn)`: a snapshot from the host (`from: 'peer'`) or the host's own save (`'local'`) could not be loaded, or one state in it:
-  `{ from, reason }`; `from: 'state'` with reason `'<key> load'` (that state started fresh) or `'<key> newer'`.
+  `{ from, reason }`; `from: 'state'` with reason `'<key> load'` (that state started fresh).
 - `worldStatus()`: debug. `snapBytes` is the size of the last snapshot saved or served (budget 60 KB with every state
-  at its caps, `test/world-size.test.ts`). `loadErrors` counts states that started fresh; `newerSave` is true once a state saved by a
-  newer build was skipped (here or by the host whose snapshot this tab loaded), after which this tab never persists.
+  at its caps, `test/world-size.test.ts`). `loadErrors` counts states that started fresh; `badSave` prevents a host from
+  saving or serving a failed-load fallback.
 - `profileTicks()`: `npm run perf -- --sim` only. Times every op apply, handler and state hash until `stop()`, which
   returns `{ rows, kinds }` (one `{ label: ms }` row per tick; each label's registry: `'sim'`, `'applied'` or `'view'`).
 
 ## Isolated production recovery
 
-The headless T1 spine opts into `attachWorld(..., { recovery })` only in its separate namespace. Ordinary rooms retain their registry, save format and wire messages. `recovery.read` supplies a versioned envelope containing the checkpoint/hash, catalog/namespace, ordered future stamps, sequence watermark and checksum. `recovery.write` must reject refusal or I/O failure and resolve only after atomic replacement succeeds.
+Railway rooms use `attachWorld(..., { recovery })`; ordinary rooms keep snapshot storage. `recovery.read` supplies the current envelope containing the checkpoint/hash, catalog/namespace, ordered future stamps, sequence watermark and checksum. `recovery.write` must reject refusal or I/O failure and resolve only after atomic replacement succeeds. There are no state versions or migrations: a changed shape starts a new development world through `WORLD_NS`.
 
 Sync freezes production stamps, ticking and snapshot serving while a replacement is pending. A stamp batch is written before publication; reentrant edits submitted by a tick callback also stop advancement at that boundary. Recovery validates the whole envelope, replays its tail using the existing tick order, then checkpoints before readiness. `whenDurable()` drains the barrier and rejects on failure. `receiveEdit(edit, authenticatedSession)` exposes admission to the isolated request coordinator; admission is still not a terminal material receipt.
 
-The complete envelope is capped at **60,000 UTF-8 bytes**, including its at-most-64 future stamps. Admission checks the serialized checkpoint and complete candidate tail before consuming a sequence number, accounting for JSON escaping, UTF-8 and maximum tick/hash/checksum widths. A full tail refuses new work with `recovery-budget`; it does not poison the room. The write boundary retains its independent size guard. Oversize, unsupported, corrupt or refused recovery stops production publication and never overwrites the last good file. The old `badSave` guard also prevents serving a failed-load fallback in ordinary rooms; `noSave` includes both bad and newer load state. Process-crash durability is the guarantee; disk loss and power-loss flush guarantees are outside it.
+The complete envelope is capped at **60,000 UTF-8 bytes**, including its at-most-64 future stamps. Admission checks the serialized checkpoint and complete candidate tail before consuming a sequence number, accounting for JSON escaping, UTF-8 and maximum tick/hash/checksum widths. A full tail refuses new work with `recovery-budget`; it does not poison the room. The write boundary retains its independent size guard. Oversize, unsupported, corrupt or refused recovery stops production publication and never overwrites the last good file. The `badSave` guard also prevents serving a failed-load fallback in ordinary rooms. Process-crash durability is the guarantee; disk loss and power-loss flush guarantees are outside it.
 
 ## The land as data
 
@@ -117,6 +115,6 @@ and Node tests read it (`test/helpers/land.ts`); `dev/scenarios/world-inputs.ts`
 and rewrites it with `UPDATE_FIXTURE=1 npm run scenario -- world-inputs` when a tree, rock or POI
 moves on purpose.
 
-Playable railway uses the same complete tuning catalog, controller authorization and correlated receipts as classic. Its transport permits only the two supply timers in prototype rooms. Tune state v2 explicitly migrates main's known eight-key v1 profile, preserving values/revision and adding timer defaults. Legacy accepted T1 recovery verifies its frozen registry/hash/tail and frozen tuning defaults before live migration and atomic replacement; unknown profiles fail closed. See [the bounded integration contract](../../docs/plans/production-core.md#supply-branch-integration-5-november).
+Playable railway uses the same complete tuning state, controller authorization and correlated receipts as classic. Its transport permits only the two supply timers in prototype rooms. Current recovery verifies the registered state, checksum, checkpoint hash and accepted tail before atomic replacement. Frozen historical verifiers and old tuning migrations were removed under the owner's 5 November no-old-builds call; the old integration record in [production-core](../../docs/plans/production-core.md#supply-branch-integration-5-november) is historical.
 
 T1 forwards only known tuning fields, never arbitrary client padding. Its commit request IDs are preserved exactly and capped at 64 UTF-16 code units; the usual UUID fits. IDs of 65–80 units receive `request-id-too-long`; larger IDs are outside the existing receipt correlation limit and are discarded. This adds no authority and changes no accepted edit, recovery version, namespace or catalog.

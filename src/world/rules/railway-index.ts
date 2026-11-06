@@ -12,7 +12,7 @@ export function installRailwayRules(sync: SyncView, land: Land) {
 }
 
 /** The playable namespace retains the eager base APIs; only railway owns Place material. */
-export function installPlayableRailwayRules(sync: SyncView, land: Land, { line1 = false } = {}) {
+export function installPlayableRailwayRules(sync: SyncView, land: Land) {
   const base = installRules(sync, land);
-  return { ...base, railway: railway.install(sync, land, base, { playable: true, line1 }) };
+  return { ...base, railway: railway.install(sync, land, base, { playable: true, line1: true }) };
 }
