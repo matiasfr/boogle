@@ -98,6 +98,8 @@ src/render/assets.ts: loadAsset(url) → instance(node) / clip(name, node) / pla
   `ktx` for textures) on their machine.
 - **Budgets** (in `dev/assets/build.ts`, raised per asset by its sidecar's `budgetKB`): 1 MB per asset, 12 MB for all
   assets, 1024 px textures. To revisit with the first real era kit and the first character, measured on the iPad.
+  These are defaults, not caps: budgets follow each asset's prominence, and the total becomes a resident limit once
+  loading streams by area ([owner call](../agents/owner-calls.md), 6 November).
 - **Sidecar** (`<name>.json`, optional): `maxTexture`, `simplify` (a ratio, meshoptimizer's simplifier), `budgetKB`,
   and room for a licence line for a bought or downloaded `.glb`.
 - **Dependencies** (dev only): `@gltf-transform/core`, `extensions`, `functions` and `meshoptimizer` (the encoder; the
