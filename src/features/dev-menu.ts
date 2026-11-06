@@ -1,9 +1,9 @@
 // One eager gate. Only this browser's deliberate opt-in loads Dev.
 import { onStart } from '../loop.ts';
 import { background } from '../async.ts';
-import { devEnabled } from '../dev-preferences.ts';
+import { tuningVisit } from '../dev-preferences.ts';
 
-if (devEnabled || new URLSearchParams(location.search).get('tune') === '1') {
+if (tuningVisit) {
   onStart(() =>
     background(
       import('../debug/dev-menu.ts').then((m) => {

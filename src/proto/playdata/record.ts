@@ -28,7 +28,7 @@ import { currentCard } from '../card.ts';
 import { hookActivity, onPlayMark, playWhereNow, type PlayData } from '../mark.ts';
 import type { PlayEvent } from '../../../server/src/playdata.ts';
 import { onTuneRecord } from '../../tunables/events.ts';
-import { devEnabled } from '../../dev-preferences.ts';
+import { tuningVisit } from '../../dev-preferences.ts';
 import { background } from '../../async.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
@@ -75,7 +75,6 @@ function push(k: string, fields: Record<string, string | number | boolean | null
 // Complete configuration segments bypass the mark-rate budget. Queue loss remains explicit;
 // summaries reject missing begin/value/end records instead of guessing a configuration.
 onTuneRecord(push);
-const tuningVisit = devEnabled || pageQuery().get('tune') === '1';
 function recordTuning() {
   if (tuningVisit)
     background(

@@ -14,15 +14,11 @@ import { onEntered } from '../../entities/player/state.ts';
 import { snapshotFeelSpring, setFeelSpring, onFeelSpringChange } from '../../player/feel-tuning.ts';
 import { bindings, onChange } from '../../render/water/live.ts';
 import { exposureSettings } from '../../render/exposure.ts';
-import { devEnabled } from '../../dev-preferences.ts';
+import { tuningVisit } from '../../dev-preferences.ts';
 import { pageQuery, PROTO, productionRailway } from '../../proto/flags.ts';
 import { fixture } from './fixtures.ts';
 import { ok, no, type Tool, type Args, type Result } from './types.ts';
 
-const enabled = () => {
-  const q = pageQuery();
-  return q.get('dev') !== '0' && (devEnabled || q.get('tune') === '1');
-};
 const local = new Map(
   CATALOG.filter((s) => s.scope === 'local').map((s) => [
     s.id,
@@ -89,7 +85,7 @@ export function tuneSnapshot() {
   };
 }
 export function recordTuneSnapshot() {
-  if (!enabled()) return;
+  if (!tuningVisit) return;
   if (startupReady && me.entered && me.body) startingSetup ??= setup();
   const data = tuneSnapshot(),
     snapshot = `${++snapshotSequence}`;
@@ -141,7 +137,7 @@ function rejected(code: string): Result {
 }
 function validate(args: Args): Result {
   const spec = tunableSpec(args.id);
-  if (!enabled()) return rejected('disabled');
+  if (!tuningVisit) return rejected('disabled');
   if (!spec || !validValue(spec, args.value)) return rejected('invalid-value');
   if (
     args.expectedRevision !== undefined &&
@@ -311,7 +307,7 @@ export const tool: Tool = {
   label: 'Tunables',
   scope: 'Local, Owner and host-accepted Lockstep settings',
   commands: [...TUNE_COMMANDS],
-  available: () => (enabled() ? null : 'Tuning is disabled.'),
+  available: () => (tuningVisit ? null : 'Tuning is disabled.'),
   async run(command, args) {
     await startup;
     if (command === 'list') return ok('Resolved catalog.', tuneSnapshot().values);

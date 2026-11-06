@@ -2,10 +2,9 @@
 import { Vector3 } from 'three/webgpu';
 import { newWaterEnabled } from './flags.ts';
 import { TSL, type N } from './tsl.ts';
-import { devEnabled } from '../../dev-preferences.ts';
+import { tuningVisit } from '../../dev-preferences.ts';
 
-export const tuningEnabled =
-  newWaterEnabled && (devEnabled || new URLSearchParams(location.search).get('tune') === '1');
+export const tuningEnabled = newWaterEnabled && tuningVisit;
 export type Value = number | number[];
 export type Binding = { get(): Value; set(value: Value): void };
 export const bindings = new Map<string, Binding>();
