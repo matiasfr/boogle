@@ -679,7 +679,19 @@ try {
         )
       );
     })) >= 0,
-    JSON.stringify(await burstResults(AA, outgoing.state.epoch, outgoing.state.next, 8)),
+    JSON.stringify({
+      results: await burstResults(AA, outgoing.state.epoch, outgoing.state.next, 8),
+      states: (await Promise.all([AA, AB].map(adapter))).map(({ state, resets }) => ({
+        ready: state.ready,
+        status: state.status,
+        pending: state.pending,
+        counts: state.counts,
+        resets,
+      })),
+      messages: (await rail(AA)).messages.filter(
+        (m) => m.epoch === outgoing.state.epoch && Number(m.request) >= outgoing.state.next - 8,
+      ),
+    }),
   );
   const beforeSnapshot = await adapter(AA);
   let snapshotProbes = 0;
