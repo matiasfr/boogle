@@ -4,7 +4,7 @@
 // is physical". Local and cosmetic.
 import * as THREE from 'three/webgpu';
 import { material } from '../../render/materials.ts';
-import { emit } from '../../render/particles.ts';
+export { chips, dustRing } from '../../render/particle-effects.ts';
 import { scene } from '../../render/scene.ts';
 import { PIECE, pieceColor, pieceMesh, commitPieces } from '../../render/haul-pieces.ts';
 import { makeSet, type Box, type BoxSet } from '../net/boxes.ts';
@@ -251,49 +251,4 @@ export function setStackLog(mesh: THREE.InstancedMesh, k: number, at: THREE.Vect
   stackQ.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
   mesh.setMatrixAt(k, stackM.compose(stackP.copy(at), stackQ, stackS));
   mesh.setColorAt(k, color);
-}
-
-// ---------------------------------------------------------------- a thud's dust and a saw's chips
-const dust = new THREE.Color('#cdb48c'),
-  chip = new THREE.Color('#d9b07a');
-export function dustRing(x: number, y: number, z: number, n = 10, speed = 2.2, size = 0.3) {
-  for (let k = 0; k < n; k++) {
-    const a = (k / n) * Math.PI * 2 + Math.random() * 0.3,
-      sp = speed * (0.6 + Math.random() * 0.6);
-    emit({
-      x: x + Math.cos(a) * 0.3,
-      y: y + 0.1,
-      z: z + Math.sin(a) * 0.3,
-      vx: Math.cos(a) * sp,
-      vy: 0.5 + Math.random() * 0.8,
-      vz: Math.sin(a) * sp,
-      life: 0.6 + Math.random() * 0.4,
-      size,
-      color: dust,
-      alpha: 0.85,
-      gravity: 1,
-      drag: 3,
-      grow: [0.8, 2.4],
-      fade: 0.6,
-    });
-  }
-}
-export function chips(x: number, y: number, z: number, n = 10) {
-  for (let k = 0; k < n; k++) {
-    const a = Math.random() * Math.PI * 2,
-      sp = 2 + Math.random() * 3;
-    emit({
-      x,
-      y,
-      z,
-      vx: Math.cos(a) * sp,
-      vy: 2 + Math.random() * 3,
-      vz: Math.sin(a) * sp,
-      life: 0.45 + Math.random() * 0.25,
-      size: 0.07 + Math.random() * 0.05,
-      color: chip,
-      gravity: 12,
-      shrink: 0.4,
-    });
-  }
 }

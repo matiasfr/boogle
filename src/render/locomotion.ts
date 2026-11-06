@@ -8,6 +8,7 @@ import { dbToGain, getAudio } from './audio.ts';
 import { audioSettings as settings } from './audio-tuning.ts';
 import { stepSurfaceAt, type StepSurface } from './locomotion-surfaces.ts';
 import { renderLocomotionSound, type LocomotionKind } from './locomotion-sound.ts';
+import { landingDust } from './particle-effects.ts';
 
 type History = {
   x: number;
@@ -165,7 +166,7 @@ function play(a: Avatar, h: History, motion: BuddyMotion, kind: LocomotionKind, 
   // A replacement begins after the stolen source's 8 ms release, maintaining the native playing-voice cap.
   const admitted: Voice = { avatar: a, local, gain, end: voice.end, stop: voice.stop };
   voices.push(admitted);
-  h.lastAt = now;
+  h.lastAt = performance.now() / 1000;
   totals[kind]++;
   events.push({ kind, surface, local, gainDb, take: selected, style: settings.footstepStyle, time: now });
   if (events.length > 48) events.shift();
@@ -173,9 +174,8 @@ function play(a: Avatar, h: History, motion: BuddyMotion, kind: LocomotionKind, 
 
 export function updateLocomotion(a: Avatar, motion: BuddyMotion) {
   if (!me.entered || a.userData.audioRole === 'preview') return;
-  const audio = getAudio('character');
   const p = a.position,
-    now = audio?.ctx.currentTime ?? -1;
+    now = performance.now() / 1000;
   let h = histories.get(a);
   const blocked =
     motion.swimming ||
@@ -185,7 +185,6 @@ export function updateLocomotion(a: Avatar, motion: BuddyMotion) {
     (a.userData.flopAmt ?? 0) > 0.1;
   const reset =
     !h ||
-    !audio ||
     blocked ||
     motion.dt > 0.25 ||
     Math.hypot(p.x - h.x, p.y - h.y, p.z - h.z) > 4 ||
@@ -230,6 +229,13 @@ export function updateLocomotion(a: Avatar, motion: BuddyMotion) {
             (1 - Math.max(0, (height - settings.landingMinHeight) / (1.5 - settings.landingMinHeight)))
           : settings.landingHeavyDb * Math.min(1, (height - 1.5) / 2.5);
       play(a, h, motion, 'land', settings.landingDb + impact);
+      const listener = me.avatar?.position;
+      if (
+        listener &&
+        Math.hypot(p.x - listener.x, p.y - listener.y, p.z - listener.z) < settings.landingDistance &&
+        stepSurfaceAt(p.x, p.y - PLAYER_R, p.z) !== 'water'
+      )
+        landingDust(p.x, p.y - PLAYER_R, p.z, height);
       landing = true;
     }
     h.groundedY = p.y;

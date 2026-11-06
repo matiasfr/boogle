@@ -759,8 +759,8 @@ remain unchanged. Full-back refusal lifts sideways; hardwood refusal recoils soo
 twinkles at its head and handle mark appearance (115–160 ms); two smaller twinkles mark
 vanishing (95–110 ms). Owner-approved particle research step 1 replaces the soft dots with
 crisp ivory four-point SDF glints: a brief size/opacity pop and at most 0.32 radians of spin.
-The existing pool and material carry this opt-in look; all other emitters retain their round
-dots and envelopes. No smoke, puff cloud, second pool or post pass. Only visibility edges emit: repeated presses while it stays out
+The existing pool and material carry this opt-in look; the summon itself adds no smoke,
+puff cloud, second pool or post pass. Only visibility edges emit: repeated presses while it stays out
 do not summon it again. Reduced motion suppresses these decorative particles. This is Local,
 on the same axe presentation path; no partner axe or new presence is added. The separate
 `codex/chop-animation-timing` two-handed retuning trial is parked and remains unshipped.
@@ -769,6 +769,18 @@ inspection-only 0.2 s lead-in and 0.3 s hidden gap so both edges can be reviewed
 The isolated stage hosts the same particle implementation; the game still owns one pool.
 Stage `light=production` uses the frozen sky with production Neutral and 0.16 exposure;
 `sparkle=round` is the old-dot inspection control. Compare both at speed 0.25 and check Place too.
+
+**Contact particles (5 November):** accepted chops fling small tapered timber chips from the cut,
+out toward the approach side. Their rotation, changing projected thickness, gravity and short ground
+rebound distinguish them from glints. Rock contacts use grey quad fragments. Rock breaks and existing
+cargo/construction thuds use low-alpha procedural billows with size, opacity and colour curves.
+Logs dropped onto ground piles puff on flight completion. An accepted great-beam set-down emits five
+small billows along its length; rejected/repeated requests and restored ground state do not emit.
+This decorates the existing instantaneous set-down; it adds no beam fall animation or physics.
+All use the shared 720-slot pool and one draw (256 births/frame); the beam requests 30 births, a proper
+chop 18, a landing 4–12, a log 6. Reduced motion suppresses the new decorations. Timber/dust retain
+intensity one under the readable-reward policy. Recipes live in `render/particle-effects.ts` with typed
+Local authoring values; they do not change strokes, rewards, ownership, saves or wire state.
 
 Local tree contact raycasts the real faceted trunk from the approach direction; accepted
 chips/log flights use that same point. Arm reach is bounded to preserve Buddy's proportions:

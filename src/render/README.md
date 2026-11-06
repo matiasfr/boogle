@@ -33,11 +33,23 @@ Read [direction](reference/direction.md) when changing render architecture.
 
 ## Cosmetic particles
 
-The shared particle pool defaults to its original soft round dot. `shape: 'glint'` opts into
-a derivative-antialiased four-point TSL SDF, a brief size/opacity attack and optional `rotation`
-(birth radians) / `spin` (radians per second). Shape data is packed into the spawn queue and
-one appearance buffer (eight update storage bindings); both looks use the same precompiled
-material, alpha blend, HDR colour path and draw. Existing grow/shrink/fade and default dots remain unchanged.
+The shared particle pool defaults to its original soft round dot. `shape` also accepts `quad`,
+`chip`, `star` (`glint` at the existing axe caller) and `dust`. Stars retain the brief attack;
+chips use a tapered card whose projected thickness/face shade tumbles. Rotation is birth radians,
+spin is radians/second. Dust samples our own 64-square procedural lobe mask (16 KiB, created once).
+All shapes share one precompiled alpha-blended material and draw; there are no per-chip bodies or shadows.
+`sizeCurve` / `alphaCurve` are three multipliers at normalized ages 0, 0.5 and 1, smoothly interpolated.
+`colorCurve` supplies three linear-RGB colour keys; intensity multiplies all three once at spawn.
+Existing grow/shrink/fade/default dots retain their meaning. A floor normally kills; optional `bounce`
+gives one short rebound and clamps remaining life to 180 ms. It is a local plane, not a terrain collision query.
+
+Budget: 720 fixed slots, 256 births per frame, oldest-slot replacement, excess births dropped.
+One packed state buffer and three draw buffers use four update storage bindings; spawn uses two.
+GPU buffers total 194,816 bytes; a nonempty queue uploads 45,056 bytes. Idle expiry skips compute/draw.
+`particleCounts()` reports estimated occupancy, caps, admitted/dropped/replaced births, draws and upload bytes.
+The update and scalar queue writer create no per-frame arrays; shared chip/dust recipes reuse birth records.
+Reduced motion suppresses these contact decorations. Dust and timber keep intensity one; the axe still uses
+`readableIntensity()` at spawn, with no double compensation. These counts are not device timing evidence.
 
 ## Water ownership
 
