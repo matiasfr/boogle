@@ -30,6 +30,8 @@ export type CoveMesh = {
   vertices: number[];
   indices: number[];
   colors: number[];
+  normals: number[];
+  turf: number[];
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
 };
 const pigment = (hex: number) => [((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255];
@@ -44,59 +46,79 @@ function empty(name: string): CoveMesh {
     vertices: [],
     indices: [],
     colors: [],
+    normals: [],
+    turf: [],
     bounds: { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity },
   };
 }
-function vertex(mesh: CoveMesh, x: number, y: number, z: number, rgb: number[], shade = 1) {
+function vertex(mesh: CoveMesh, x: number, y: number, z: number, rgb: number[], shade = 1, cap = 0) {
   mesh.vertices.push(x, y, z);
   mesh.colors.push(...(COVE_CLAY ? clay : rgb).map((c) => c * shade));
+  mesh.turf.push(cap);
   mesh.bounds.minX = Math.min(mesh.bounds.minX, x);
   mesh.bounds.maxX = Math.max(mesh.bounds.maxX, x);
   mesh.bounds.minZ = Math.min(mesh.bounds.minZ, z);
   mesh.bounds.maxZ = Math.max(mesh.bounds.maxZ, z);
 }
 
-/** Eight joined 4 m pieces wrap back into the shoulder, with three beds and a buried rear.
- * Shared end sockets and world Y preserve bedding across the bend; no arbitrary vertical scaling. */
+/** A connected sculpted face and rounded turf lip; bedding is a material, not repeated box seams.
+ * Only the buried rear/end closures split their normals from the continuous visible skin. */
 function cliff(): CoveMesh {
   const mesh = empty('cove-face');
-  const levels = [-2.4, 0.18, 1.15, 1.42, 2.5, 2.78, 4.05, 4.32, 4.48];
-  const reach = [-1.6, -1.3, -0.6, -0.92, -0.14, -0.48, 0.12, 0.25, 0.38];
-  for (let part = 0; part < 8; part++) {
-    const start = mesh.vertices.length / 3;
-    const z0 = 42 + part * 4;
+  const levels = [-2.4, -0.8, 0, 0.55, 1.15, 1.75, 2.3, 2.9, 3.5, 3.95, 4.2, 4.4, 4.48];
+  const reach = [-1.5, -1.45, -1.25, -0.95, -0.64, -0.57, -0.36, -0.3, -0.02, 0.15, 0.14, 0.22, 0.5];
+  const columns = 49,
+    rows = levels.length + 1;
+  for (let col = 0; col < columns; col++) {
+    const z = 42 + (col * 32) / (columns - 1);
+    const crest = 0.06 * Math.sin((z - 42) * 0.15);
     for (let row = 0; row < levels.length; row++) {
-      const y = levels[row]!;
-      const rgb = row === 8 ? turf : row === 7 || row === 3 || row === 5 ? seam : stone;
-      // Seven front samples, two rear corners. All loops run clockwise viewed from above.
-      for (let col = 0; col < 7; col++) {
-        const z = z0 + (col * 4) / 6;
-        const joint = col === 0 || col === 6 ? 0.08 : 0;
-        const broken = Math.sin(z * 1.71 + row * 0.8) * 0.18 * Math.sin((col * Math.PI) / 6);
-        const fracture = col === 3 && row < 7 ? 0.16 : 0;
-        vertex(
-          mesh,
-          coveFront(z) + reach[row]! + joint + broken + fracture,
-          y + 0.07 * Math.sin(z * 0.8),
-          z,
-          rgb,
-          0.96 + 0.04 * Math.sin(z * 0.7),
-        );
-      }
-      vertex(mesh, coveFront(z0 + 4) + 5.8, y, z0 + 4, rgb);
-      vertex(mesh, coveFront(z0) + 5.8, y, z0, rgb);
+      const cap = row === 12 ? 1 : row === 11 ? 0.15 : 0;
+      const ripple = 0.045 * Math.sin(z * 0.47 + row * 0.4) * Math.sin((row * Math.PI) / 12);
+      vertex(
+        mesh,
+        coveFront(z) + reach[row]! + ripple,
+        levels[row]! + crest,
+        z,
+        cap > 0.5 ? turf : row === 11 ? seam : stone,
+        1,
+        cap,
+      );
     }
-    for (let row = 0; row < levels.length - 1; row++)
-      for (let col = 0; col < 9; col++) {
-        const a = start + row * 9 + col,
-          b = start + row * 9 + ((col + 1) % 9);
-        mesh.indices.push(a, b, a + 9, b, b + 9, a + 9);
-      }
-    // Fan caps; bottom buried. No tiny separate turf draw, and every inviting ledge is physically solid.
-    for (let col = 1; col < 8; col++) {
-      mesh.indices.push(start, start + col + 1, start + col);
-      const top = start + 8 * 9;
-      mesh.indices.push(top, top + col, top + col + 1);
+    vertex(mesh, coveFront(z) + 5.8, 4.48 + crest, z, turf, 1, 1);
+  }
+  for (let col = 0; col < columns - 1; col++)
+    for (let row = 0; row < rows - 1; row++) {
+      const a = col * rows + row,
+        b = a + rows;
+      mesh.indices.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  // Duplicate rear/bottom corners: a buried closure cannot pull the visible front's shading normal.
+  const back = mesh.vertices.length / 3;
+  for (let col = 0; col < columns; col++) {
+    const z = 42 + (col * 32) / (columns - 1);
+    const crest = 0.06 * Math.sin((z - 42) * 0.15);
+    vertex(mesh, coveFront(z) + 5.8, 4.48 + crest, z, turf, 1, 1);
+    vertex(mesh, coveFront(z) + 5.8, -2.4 + crest, z, stone);
+    vertex(mesh, coveFront(z) + reach[0]!, -2.4 + crest, z, stone);
+  }
+  for (let col = 0; col < columns - 1; col++)
+    for (let row = 0; row < 2; row++) {
+      const a = back + col * 3 + row,
+        b = a + 3;
+      mesh.indices.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  for (const col of [0, columns - 1]) {
+    const start = mesh.vertices.length / 3;
+    for (let row = 0; row < rows; row++) {
+      const i = (col * rows + row) * 3;
+      vertex(mesh, mesh.vertices[i]!, mesh.vertices[i + 1]!, mesh.vertices[i + 2]!, row === rows - 1 ? turf : stone);
+    }
+    const i = (back + col * 3 + 1) * 3;
+    vertex(mesh, mesh.vertices[i]!, mesh.vertices[i + 1]!, mesh.vertices[i + 2]!, stone);
+    for (let row = 1; row < rows; row++) {
+      if (col === 0) mesh.indices.push(start, start + row, start + row + 1);
+      else mesh.indices.push(start, start + row + 1, start + row);
     }
   }
   // A broad broken end slopes onto the pocket. It is real stone support, outside protected shoulders.
@@ -132,51 +154,79 @@ function blocks(): CoveMesh {
   ];
   for (const [n, rock] of stones.entries()) {
     const start = mesh.vertices.length / 3;
-    for (let row = 0; row < 3; row++) {
-      const y = row === 0 ? -2.1 : row === 1 ? rock.top - 0.35 : rock.top;
-      const radius = row === 0 ? 0.85 : row === 1 ? 1 : 0.7;
-      for (let col = 0; col < 8; col++) {
-        const a = (col * Math.PI) / 4 + n * 0.37;
+    const sides = n < 3 ? 12 : 8;
+    const profile =
+      n < 3
+        ? [
+            [-2.1, 0.7],
+            [rock.top - 0.85, 1],
+            [rock.top - 0.4, 0.98],
+            [rock.top - 0.1, 0.8],
+            [rock.top, 0.35],
+          ]
+        : [
+            [-2.1, 0.85],
+            [rock.top - 0.35, 1],
+            [rock.top, 0.7],
+          ];
+    for (const [row, [y, radius]] of profile.entries()) {
+      for (let col = 0; col < sides; col++) {
+        const a = (col * Math.PI * 2) / sides + n * 0.37;
         vertex(
           mesh,
-          rock.x + Math.cos(a) * rock.rx * radius,
-          y + (row === 2 ? 0.24 * Math.cos(a + n) : 0),
-          rock.z + Math.sin(a) * rock.rz * radius,
+          rock.x + Math.cos(a) * rock.rx * radius!,
+          y! + (0.24 * Math.cos(a + n) * row) / (profile.length - 1),
+          rock.z + Math.sin(a) * rock.rz * radius!,
           stone,
-          0.94 + 0.06 * Math.sin(n + col),
+          1,
         );
       }
     }
-    for (let row = 0; row < 2; row++)
-      for (let col = 0; col < 8; col++) {
-        const a = start + row * 8 + col,
-          b = start + row * 8 + ((col + 1) % 8);
-        mesh.indices.push(a, a + 8, b, b, a + 8, b + 8);
+    for (let row = 0; row < profile.length - 1; row++)
+      for (let col = 0; col < sides; col++) {
+        const a = start + row * sides + col,
+          b = start + row * sides + ((col + 1) % sides);
+        mesh.indices.push(a, a + sides, b, b, a + sides, b + sides);
       }
-    for (let col = 1; col < 7; col++) {
+    const top = start + (profile.length - 1) * sides;
+    for (let col = 1; col < sides - 1; col++) {
       mesh.indices.push(start, start + col, start + col + 1);
-      mesh.indices.push(start + 16, start + 16 + col + 1, start + 16 + col);
+      mesh.indices.push(top, top + col + 1, top + col);
     }
   }
   return mesh;
 }
-function facetColours(mesh: CoveMesh) {
-  const out = empty(mesh.name);
+function smoothNormals(mesh: CoveMesh) {
+  mesh.normals = Array<number>(mesh.vertices.length).fill(0);
   for (let k = 0; k < mesh.indices.length; k += 3) {
     const ids = mesh.indices.slice(k, k + 3);
-    const y = ids.reduce((n, i) => n + mesh.vertices[i * 3 + 1]!, 0) / 3;
-    const z = ids.reduce((n, i) => n + mesh.vertices[i * 3 + 2]!, 0) / 3;
-    const rgb = mesh.name !== 'cove-face' ? stone : y > 4.39 ? turf : y > 4.16 ? seam : stone;
-    const recessed = (y > 1.16 && y < 1.4) || (y > 2.51 && y < 2.76);
-    const shade = (recessed ? 0.74 : 1) * (0.95 + 0.05 * Math.sin(z * 0.7));
+    const a = ids[0]! * 3,
+      b = ids[1]! * 3,
+      c = ids[2]! * 3;
+    const ux = mesh.vertices[b]! - mesh.vertices[a]!,
+      uy = mesh.vertices[b + 1]! - mesh.vertices[a + 1]!,
+      uz = mesh.vertices[b + 2]! - mesh.vertices[a + 2]!;
+    const vx = mesh.vertices[c]! - mesh.vertices[a]!,
+      vy = mesh.vertices[c + 1]! - mesh.vertices[a + 1]!,
+      vz = mesh.vertices[c + 2]! - mesh.vertices[a + 2]!;
+    const nx = uy * vz - uz * vy,
+      ny = uz * vx - ux * vz,
+      nz = ux * vy - uy * vx;
     for (const i of ids) {
-      out.indices.push(out.vertices.length / 3);
-      vertex(out, mesh.vertices[i * 3]!, mesh.vertices[i * 3 + 1]!, mesh.vertices[i * 3 + 2]!, rgb, shade);
+      mesh.normals[i * 3]! += nx;
+      mesh.normals[i * 3 + 1]! += ny;
+      mesh.normals[i * 3 + 2]! += nz;
     }
   }
-  return out;
+  for (let i = 0; i < mesh.normals.length; i += 3) {
+    const length = Math.hypot(mesh.normals[i]!, mesh.normals[i + 1]!, mesh.normals[i + 2]!) || 1;
+    mesh.normals[i]! /= length;
+    mesh.normals[i + 1]! /= length;
+    mesh.normals[i + 2]! /= length;
+  }
+  return mesh;
 }
-export const coveMeshes = COVE ? [cliff(), blocks()].map(facetColours) : [];
+export const coveMeshes = COVE ? [cliff(), blocks()].map(smoothNormals) : [];
 
 /** Exact downward triangle query shared by physical ground consumers and the bathymetry owner.
  * This is a solid coastal kit, never a bridge/deck registered as seabed. */

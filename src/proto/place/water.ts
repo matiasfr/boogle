@@ -3,7 +3,7 @@ import { SEA } from '../../constants.ts';
 import { registerShoreProvider } from '../../render/water-render.ts';
 import { gridBedAt } from '../../render/water/shore-providers.ts';
 import { GRID, ORIGIN } from './layout.ts';
-import { heights, NX, NZ, at } from './terrain.ts';
+import { heights, NX, NZ, at, fineHeightAt } from './terrain.ts';
 import { SHORE_COAST } from './shore-layout.ts';
 import { COVE, COVE_ROCKS, coveSurface } from './cove.ts';
 
@@ -28,12 +28,15 @@ export function registerPlaceShore() {
     id: 'place',
     bounds,
     seaLevel: SEA,
-    revision: COVE ? 'cove-pilot-1' : SHORE_COAST ? 'shore-place-triangles-3' : 'finished-place-triangles-2',
+    revision: COVE ? 'cove-smooth-2' : SHORE_COAST ? 'shore-place-triangles-3' : 'finished-place-triangles-2',
     extent: 1024,
-    vertexBed: true, // 2 m atlas corners align with land.ts's 2 m vertices and anti-diagonal.
+    // The bed query matches the 1 m cove triangles. The existing 2 m atlas cannot resolve every fine feature.
+    vertexBed: true,
     bedAt: (x, z) => {
       const bed = gridBed(x, z);
-      return COVE && bed.valid ? { valid: true, height: coveSurface(x - ORIGIN.x, z - ORIGIN.z, bed.height) } : bed;
+      const lx = x - ORIGIN.x,
+        lz = z - ORIGIN.z;
+      return COVE && bed.valid ? { valid: true, height: coveSurface(lx, lz, fineHeightAt(lx, lz, bed.height)) } : bed;
     },
     obstacles: COVE
       ? COVE_ROCKS.map((r) => ({

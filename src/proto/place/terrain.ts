@@ -423,6 +423,110 @@ if (COVE) {
     }
 }
 
+/** Exact anti-diagonal triangles shared by the cove renderer and heightfields. */
+function triangleHeight(a: number, b: number, c: number, d: number, u: number, v: number) {
+  return u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
+}
+
+const fineBounds = { x0: -212, x1: -160, z0: 16, z1: 78, cell: 1, nx: 53, nz: 63 };
+
+function coarseTriangleHeight(x: number, z: number) {
+  const fx = (x - GRID.x0) / CELL,
+    fz = (z - GRID.z0) / CELL;
+  const i = Math.floor(fx),
+    j = Math.floor(fz);
+  return triangleHeight(
+    heights[at(i, j)]!,
+    heights[at(i + 1, j)]!,
+    heights[at(i, j + 1)]!,
+    heights[at(i + 1, j + 1)]!,
+    fx - i,
+    fz - j,
+  );
+}
+
+function cubic(a: number, b: number, c: number, d: number, t: number) {
+  return b + 0.5 * t * (c - a + t * (2 * a - 5 * b + 4 * c - d + t * (3 * (b - c) + d - a)));
+}
+
+function buildFineCove() {
+  const fine = { ...fineBounds, heights: new Float32Array(fineBounds.nx * fineBounds.nz) };
+  for (let j = 0; j < fine.nz; j++)
+    for (let i = 0; i < fine.nx; i++) {
+      const x = fine.x0 + i * fine.cell,
+        z = fine.z0 + j * fine.cell;
+      const fx = (x - GRID.x0) / CELL,
+        fz = (z - GRID.z0) / CELL;
+      const ci = Math.floor(fx),
+        cj = Math.floor(fz),
+        u = fx - ci,
+        v = fz - cj;
+      const sample = (dx: number, dz: number) => heights[at(ci + dx, cj + dz)]!;
+      const row = (dz: number) => cubic(sample(-1, dz), sample(0, dz), sample(1, dz), sample(2, dz), u);
+      // Clamp bicubic overshoot to this coarse cell: no new peaks, pits or shoreline terraces.
+      const corners = [sample(0, 0), sample(1, 0), sample(0, 1), sample(1, 1)];
+      const curved = Math.max(
+        Math.min(...corners),
+        Math.min(Math.max(...corners), cubic(row(-1), row(0), row(1), row(2), v)),
+      );
+      const original = coarseTriangleHeight(x, z);
+      // Exact old triangles at the patch seam and on all protected path/rail/landing shoulders.
+      const edge = Math.min(x - fine.x0, fine.x1 - x, z - fine.z0, fine.z1 - z);
+      const weight = smoothstep(0, 4, edge) * coveProtection(x, z);
+      fine.heights[i + j * fine.nx] = original + (curved - original) * weight;
+    }
+  return fine;
+}
+
+/** Bounded 1 m refinement. The rest of Place retains its original 2 m grid and catalog. */
+export const COVE_FINE = COVE ? buildFineCove() : null;
+
+export function fineHeightAt(x: number, z: number, fallback: number): number {
+  const fine = COVE_FINE;
+  if (!fine || x < fine.x0 || x > fine.x1 || z < fine.z0 || z > fine.z1) return fallback;
+  const fx = (x - fine.x0) / fine.cell,
+    fz = (z - fine.z0) / fine.cell;
+  const i = Math.min(Math.floor(fx), fine.nx - 2),
+    j = Math.min(Math.floor(fz), fine.nz - 2);
+  const atFine = (dx: number, dz: number) => fine.heights[i + dx + (j + dz) * fine.nx]!;
+  return triangleHeight(atFine(0, 0), atFine(1, 0), atFine(0, 1), atFine(1, 1), fx - i, fz - j);
+}
+
+export type TerrainCollisionTile = {
+  heights: number[][];
+  cell: number;
+  position: { x: number; y: number; z: number };
+};
+
+/** Disjoint cell rectangles; the fine patch replaces coarse collision rather than covering it. */
+export function terrainCollisionTiles(): TerrainCollisionTile[] {
+  const coarse = (x0: number, x1: number, z0: number, z1: number): TerrainCollisionTile => ({
+    heights: Array.from({ length: (x1 - x0) / CELL + 1 }, (_, i) =>
+      Array.from(
+        { length: (z1 - z0) / CELL + 1 },
+        (_, j) => heights[at((x0 - GRID.x0) / CELL + i, (z1 - GRID.z0) / CELL - j)]!,
+      ),
+    ),
+    cell: CELL,
+    position: { x: ORIGIN.x + x0, y: 0, z: ORIGIN.z + z1 },
+  });
+  const fine = COVE_FINE;
+  if (!fine) return [coarse(GRID.x0, GRID.x1, GRID.z0, GRID.z1)];
+  return [
+    coarse(GRID.x0, fine.x0, GRID.z0, GRID.z1),
+    coarse(fine.x1, GRID.x1, GRID.z0, GRID.z1),
+    coarse(fine.x0, fine.x1, GRID.z0, fine.z0),
+    coarse(fine.x0, fine.x1, fine.z1, GRID.z1),
+    {
+      heights: Array.from({ length: fine.nx }, (_, i) =>
+        Array.from({ length: fine.nz }, (_, j) => fine.heights[i + (fine.nz - 1 - j) * fine.nx]!),
+      ),
+      cell: fine.cell,
+      position: { x: ORIGIN.x + fine.x0, y: 0, z: ORIGIN.z + fine.z1 },
+    },
+  ];
+}
+
 /** The land's height at a world point. */
 export function H(wx: number, wz: number) {
   const fx = (wx - ORIGIN.x - GRID.x0) / CELL,
@@ -436,13 +540,19 @@ export function H(wx: number, wz: number) {
     b = heights[at(i + 1, j)]!,
     c = heights[at(i, j + 1)]!,
     d = heights[at(i + 1, j + 1)]!;
-  const pilot = COVE && coveWeight(wx - ORIGIN.x, wz - ORIGIN.z) > 0;
+  const lx = wx - ORIGIN.x,
+    lz = wz - ORIGIN.z;
+  // The pilot's 4 m apron uses its unchanged coarse triangles too. Bilinear lookup here
+  // otherwise disagrees with the actual rendered/collision surface immediately outside the patch.
+  const nearFine =
+    lx >= fineBounds.x0 - 4 && lx <= fineBounds.x1 + 4 && lz >= fineBounds.z0 - 4 && lz <= fineBounds.z1 + 4;
+  const pilot = COVE && (coveWeight(lx, lz) > 0 || nearFine);
   const h = pilot
     ? u + v <= 1
       ? a + (b - a) * u + (c - a) * v
       : d + (c - d) * (1 - u) + (b - d) * (1 - v)
     : a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
-  return COVE ? coveSurface(wx - ORIGIN.x, wz - ORIGIN.z, h) : h;
+  return COVE ? coveSurface(wx - ORIGIN.x, wz - ORIGIN.z, fineHeightAt(wx - ORIGIN.x, wz - ORIGIN.z, h)) : h;
 }
 export const insidePlace = (wx: number, wz: number) =>
   wx - ORIGIN.x > GRID.x0 + 4 &&

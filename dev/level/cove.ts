@@ -9,18 +9,16 @@ export async function auditCove() {
   Object.defineProperty(globalThis, 'location', { value: { search: '?proto=place&terrain=cove' }, configurable: true });
   const T = await import('../../src/proto/place/terrain.ts');
   const C = await import('../../src/proto/place/cove.ts');
-  const { GRID, ORIGIN } = await import('../../src/proto/place/layout.ts');
-  const hf = Array.from({ length: T.NX }, (_, i) =>
-    Array.from({ length: T.NZ }, (_, j) => T.heights[T.at(i, T.NZ - 1 - j)]!),
-  );
+  const { ORIGIN } = await import('../../src/proto/place/layout.ts');
+  const tiles = T.terrainCollisionTiles();
   const solids: Solid[] = [
-    {
-      id: 'terrain',
+    ...tiles.map((tile, i) => ({
+      id: `terrain-${i}`,
       source: { file: 'src/proto/place/land.ts', symbol: 'buildMesh' },
-      shape: { kind: 'heightfield', heights: hf, cell: T.CELL },
-      position: { x: ORIGIN.x + GRID.x0, y: 0, z: ORIGIN.z + GRID.z1 },
-      support: 'embedded',
-    },
+      shape: { kind: 'heightfield' as const, heights: tile.heights, cell: tile.cell },
+      position: tile.position,
+      support: 'embedded' as const,
+    })),
     ...C.coveMeshes.map((m) => ({
       id: m.name,
       source: { file: 'src/proto/place/cove-view.ts', symbol: 'buildCove' },
@@ -34,9 +32,11 @@ export async function auditCove() {
   let maximumResidual = 0,
     rays = 0,
     protectedVertices = 0,
-    boundaryRetries = 0;
+    boundaryRetries = 0,
+    protectedFineSamples = 0,
+    protectedMaximumResidual = 0;
   try {
-    for (let z = 35; z <= 78; z += 0.5)
+    for (let z = T.COVE_FINE?.z0 ?? 16; z <= (T.COVE_FINE?.z1 ?? 78); z += 0.5)
       for (let x = -214; x <= -156; x += 0.5) {
         let expected = T.H(x + ORIGIN.x, z + ORIGIN.z);
         let hit = scene.below({ x: x + ORIGIN.x, y: 50, z: z + ORIGIN.z }, 60);
@@ -56,6 +56,31 @@ export async function auditCove() {
       for (let k = 0; k < m.vertices.length; k += 3)
         if (T.coveProtection(m.vertices[k]!, m.vertices[k + 2]!) === 0) protectedVertices++;
     if (protectedVertices) errors.push({ protectedVertices });
+    const fine = T.COVE_FINE;
+    if (fine)
+      for (let j = 0; j < fine.nz; j++)
+        for (let i = 0; i < fine.nx; i++) {
+          const x = fine.x0 + i * fine.cell,
+            z = fine.z0 + j * fine.cell;
+          if (T.coveProtection(x, z) !== 0) continue;
+          protectedFineSamples++;
+          const ci = Math.floor((x - T.cellX(0)) / T.CELL),
+            cj = Math.floor((z - T.cellZ(0)) / T.CELL);
+          const u = (x - T.cellX(ci)) / T.CELL,
+            v = (z - T.cellZ(cj)) / T.CELL;
+          const a = T.heights[T.at(ci, cj)]!,
+            b = T.heights[T.at(ci + 1, cj)]!;
+          const c = T.heights[T.at(ci, cj + 1)]!,
+            d = T.heights[T.at(ci + 1, cj + 1)]!;
+          const original = u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
+          protectedMaximumResidual = Math.max(
+            protectedMaximumResidual,
+            Math.abs(fine.heights[i + j * fine.nx]! - original),
+          );
+        }
+    if (protectedMaximumResidual > 0.000001) errors.push({ protectedMaximumResidual });
+    const fineTriangles = fine ? (fine.nx - 1) * (fine.nz - 1) * 2 : 0;
+    const replacedCoarseTriangles = fine ? ((fine.x1 - fine.x0) / T.CELL) * ((fine.z1 - fine.z0) / T.CELL) * 2 : 0;
     const build = sourceBuild();
     const dir = path.resolve('.look/level-check', build.sourceHash, 'cove');
     fs.mkdirSync(dir, { recursive: true });
@@ -67,11 +92,21 @@ export async function auditCove() {
       maximumResidual,
       boundaryRetries,
       protectedVertices,
+      protectedFineSamples,
+      protectedMaximumResidual,
       triangles: C.coveMeshes.reduce((n, m) => n + m.indices.length / 3, 0),
-      addedBodies: C.coveMeshes.length,
+      fineTriangles,
+      replacedCoarseTriangles,
+      addedHeightfieldTriangles: fineTriangles - replacedCoarseTriangles,
+      heightfieldBodies: tiles.length,
+      addedBodies: C.coveMeshes.length + tiles.length - 1,
       errors,
       coverage: {
-        included: ['finished heightfield', 'all cove kit/rock triangles'],
+        included: [
+          'four coarse heightfield partitions and one 1 m cove heightfield',
+          'all cove kit/rock triangles',
+          'protected fine-grid path/rail/landing vertices',
+        ],
         missing: ['other Place creators', 'dynamic cargo/balls', 'controller sweeps', 'camera sweep'],
         verdict: 'Not a complete regional collision certificate. Bot and camera evidence are separate.',
       },
