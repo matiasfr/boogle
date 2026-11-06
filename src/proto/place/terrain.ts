@@ -316,7 +316,7 @@ if (SHORE_COAST)
   gradeSupport(
     SHORE_HOP.x + ORIGIN.x,
     SHORE_HOP.z + 7,
-    H(SHORE_HOP.x + ORIGIN.x, SHORE_HOP.z + 7),
+    coarseHeight(SHORE_HOP.x + ORIGIN.x, SHORE_HOP.z + 7),
     SHORE_HOP.bottom * 2,
     SHORE_HOP.bottom * 2,
   );
@@ -324,7 +324,7 @@ const stationPads = LINKS.flatMap((link) =>
   link.stations.map((spec) => {
     const f = frameBesideLine(spec, link.line, link.dir);
     // Lower a hillside frame/feeder to its rail bed; already lower assemblies keep their existing datum.
-    return { ...f, y: Math.min(H(f.x, f.z), railY(link.line, spec.s - link.dir * 1.5) - 0.08) };
+    return { ...f, y: Math.min(coarseHeight(f.x, f.z), railY(link.line, spec.s - link.dir * 1.5) - 0.08) };
   }),
 );
 for (const path of PATHS) {
@@ -374,7 +374,8 @@ if (shelfDemo) {
     }
 }
 
-export function surfaceHeight(x: number, z: number) {
+// Support grading runs before cove refinement. Its datums retain the original coarse bilinear sample.
+function coarseHeight(x: number, z: number, triangles = false) {
   const fx = (x - ORIGIN.x - GRID.x0) / CELL,
     fz = (z - ORIGIN.z - GRID.z0) / CELL;
   const i = Math.floor(fx),
@@ -386,7 +387,11 @@ export function surfaceHeight(x: number, z: number) {
     b = heights[at(i + 1, j)]!,
     c = heights[at(i, j + 1)]!,
     d = heights[at(i + 1, j + 1)]!;
-  return u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
+  return triangles
+    ? u + v <= 1
+      ? a + (b - a) * u + (c - a) * v
+      : d + (c - d) * (1 - u) + (b - d) * (1 - v)
+    : a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
 }
 
 // The pilot composes after catalog capture and shore grading. Preserve complete route shoulders,
@@ -544,19 +549,14 @@ export function terrainCollisionTiles(): TerrainCollisionTile[] {
   ];
 }
 
+/** Finished rendered/collision surface for grounding audits, including the flagged fine grid and kit. */
+export function surfaceHeight(wx: number, wz: number) {
+  const coarse = coarseHeight(wx, wz, true);
+  return COVE ? coveSurface(wx - ORIGIN.x, wz - ORIGIN.z, fineHeightAt(wx - ORIGIN.x, wz - ORIGIN.z, coarse)) : coarse;
+}
+
 /** The land's height at a world point. */
 export function H(wx: number, wz: number) {
-  const fx = (wx - ORIGIN.x - GRID.x0) / CELL,
-    fz = (wz - ORIGIN.z - GRID.z0) / CELL;
-  if (fx < 0 || fz < 0 || fx >= NX - 1 || fz >= NZ - 1) return -6;
-  const i = Math.floor(fx),
-    j = Math.floor(fz),
-    u = fx - i,
-    v = fz - j;
-  const a = heights[at(i, j)]!,
-    b = heights[at(i + 1, j)]!,
-    c = heights[at(i, j + 1)]!,
-    d = heights[at(i + 1, j + 1)]!;
   const lx = wx - ORIGIN.x,
     lz = wz - ORIGIN.z;
   // The pilot's 4 m apron uses its unchanged coarse triangles too. Bilinear lookup here
@@ -564,11 +564,7 @@ export function H(wx: number, wz: number) {
   const nearFine =
     lx >= fineBounds.x0 - 4 && lx <= fineBounds.x1 + 4 && lz >= fineBounds.z0 - 4 && lz <= fineBounds.z1 + 4;
   const pilot = COVE && (coveWeight(lx, lz) > 0 || nearFine);
-  const h = pilot
-    ? u + v <= 1
-      ? a + (b - a) * u + (c - a) * v
-      : d + (c - d) * (1 - u) + (b - d) * (1 - v)
-    : a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
+  const h = coarseHeight(wx, wz, pilot);
   return COVE ? coveSurface(wx - ORIGIN.x, wz - ORIGIN.z, fineHeightAt(wx - ORIGIN.x, wz - ORIGIN.z, h)) : h;
 }
 export const insidePlace = (wx: number, wz: number) =>
