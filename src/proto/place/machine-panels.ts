@@ -5,11 +5,16 @@ import { carriedPiece, panelEase, panelPose } from './track-panels.ts';
 
 export const PANEL_BEAM_Y = 4;
 /** The small rail stack on the gantry's shoulders: one pair per held stock unit, left rail left, right rail right.
- * Six columns per side fill bottom-up, inner column first; the gantry takes the top pair. Rail bases, rig frame. */
-export const STACK = { y: 2.86, z: 1.5, x: 0.3, dx: 0.12, dy: 0.12, layers: 6, columns: 6 } as const;
+ * Each layer fills inner column to outer before the next goes on, so a few pairs lie low and wide; the gantry takes
+ * the top layer's outermost pair. Rail bases, rig frame. */
+export const STACK = { y: 2.86, z: 1.5, x: 0.3, dx: 0.12, dy: 0.13, layers: 6, columns: 6 } as const;
 export const STACK_PAIRS = STACK.layers * STACK.columns;
 export const stackSlot = (n: number, side: number, out: THREE.Vector3) =>
-  out.set(side * (STACK.x + Math.floor(n / STACK.layers) * STACK.dx), STACK.y + (n % STACK.layers) * STACK.dy, STACK.z);
+  out.set(
+    side * (STACK.x + (n % STACK.columns) * STACK.dx),
+    STACK.y + Math.floor(n / STACK.columns) * STACK.dy,
+    STACK.z,
+  );
 /** Rail base below the jaw slide origin, and the closed jaw's rail centre. */
 const GRIP_Y = 0.23,
   GRIP_X = 0.45,
