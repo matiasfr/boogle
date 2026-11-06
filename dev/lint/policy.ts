@@ -127,7 +127,7 @@ const ENTITY_SERVICES = [
   'src/features/gamepad.ts', // gamepad polling
   'src/features/adaptive-res.ts', // adaptive resolution
   'src/features/feel.ts', // the spring and flop layer over every avatar; owns no object
-  'src/features/impact.ts', // hit-stop, squash and flop over the ball's and avatars' meshes; owns no object
+  'src/features/impact.ts', // hit-stop and squash over the ball's mesh; owns no object
 ];
 
 export const policy: PolicyBlock[] = [

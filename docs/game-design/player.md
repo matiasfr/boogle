@@ -78,8 +78,9 @@ The tumble opens on a held beat (docs/research/comedy-in-games.md, rec 4): 70 ms
 face-plant tipped forward on your nose while the skid carries you, and a pop back up as it ends. With reduced motion
 there is no shiver and no freeze in place (the pose still holds).
 
-A ball to the head faster than 11 m/s knocks you flat for 800 ms with stars, then 1 s of immunity
-([src/features/impact.ts](../../src/features/impact.ts), presence `kd`). While down you cannot move or jump.
+Knocked flat (the first visit's landing, [src/fall/](../../src/fall/index.ts)), you lie on your back with stars until you get up
+([src/features/knockdown.ts](../../src/features/knockdown.ts), presence `kd`). While down you cannot move or jump. A ball
+to the head no longer knocks you down (cut 2026-11-06).
 The four gold head stars use an sRGB canvas and explicit linear HDR brightness: 6 with new water's metered Neutral,
 1.5 with the default sea's Neutral output. One shared material gives your own and other players' stars the same
 Local appearance; the lower default-sea value keeps the gold from washing out.

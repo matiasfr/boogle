@@ -38,7 +38,7 @@ are held (up to 64, 5 s) and released one per 210 ms.
 | Who each pid is (name, colour)                                    | Lockstep                                              | op `who.set`; state `roster`                                                                     |
 | Beach ball                                                        | Owner (epoch rule)                                    | presence `b`                                                                                     |
 | What you hold                                                     | Owner                                                 | presence `hd`                                                                                    |
-| Flops, face-plant                                                 | Owner                                                 | presence `fl`, `kd`                                                                              |
+| Flops, knockdowns                                                 | Owner                                                 | presence `fl`, `kd`                                                                              |
 | Your build id                                                     | Owner                                                 | presence `bv`                                                                                    |
 | How you treat the Boogler                                         | Owner                                                 | presence `bg`                                                                                    |
 | The Boogler's position and mode                                   | Host                                                  | `addHostField('g')`                                                                              |
@@ -135,7 +135,7 @@ the card, and a session the server replaced is turned away if its socket comes b
   that heartbeat share one real elapsed-time clock, catching up at most 5 s in small slices. Physics keeps its
   separate frame clamp; a slow draw must not stretch world snapshot retries or count time twice on a tab switch.
 - Mixed builds: presence guards for `fl` and `kd` stay until every tab runs b0a3a7b or later (comments in `feel.ts`,
-  `impact.ts`).
+  `knockdown.ts`).
 - Trust: the server's validation checks ranges, rates and state, but not the player's reach (PLAN's "Key decision" mentions
   reach). Fine among friends, per PLAN.
 

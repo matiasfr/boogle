@@ -116,7 +116,7 @@ export function updateIntent(dt: number) {
     rz = -Math.sin(cam.yaw);
   me.wish.set(fx * f + rx * s, 0, fz * f + rz * s);
   if (me.wish.lengthSq() > 1) me.wish.normalize();
-  // me.down: knocked flat by a fast ball (features/impact.ts); held: talking (src/player/conversation.ts)
+  // me.down: knocked flat (src/features/knockdown.ts); held: talking (src/player/conversation.ts)
   if (!me.entered || me.down || inputState.held) me.wish.set(0, 0, 0);
   me.jumpQueued = me.down || inputState.held ? 0 : Math.max(0, me.jumpQueued - dt);
 

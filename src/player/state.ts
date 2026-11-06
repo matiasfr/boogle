@@ -22,7 +22,7 @@ export const me = {
   chargeStart: 0,
   suppressUp: false,
   down: false,
-  downUntil: 0, // performance.now() when a knockdown ends (src/features/impact.ts)
+  downUntil: 0, // performance.now() when a knockdown ends (src/features/knockdown.ts)
   wish: new THREE.Vector3(),
 };
 export const cam = { yaw: Math.atan2(SPAWN.x - BALL_SPAWN.x, SPAWN.z - BALL_SPAWN.z), pitch: -0.22, dist: 5.2 };

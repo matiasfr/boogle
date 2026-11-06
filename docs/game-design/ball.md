@@ -25,7 +25,7 @@ changes and teleports invalidate delayed samples without changing presence data 
   × (1 − 10 × dt) under 0.5 m/s. Buoyancy 3.2× weight at full submersion.
 - **Files.** [src/entities/ball/](../../src/entities/ball/index.ts) (respawn when off the island, auto-claim when you walk into it; feature-range orders,
   after the player's, in `headless.ts`), [src/features/impact.ts](../../src/features/impact.ts)
-  (squash, hit-stop, sand puff, boing, face-plant), [src/render/splash.ts](../../src/render/splash.ts).
+  (squash, hit-stop, sand puff, boing), [src/render/splash.ts](../../src/render/splash.ts).
 - **Known issues and limits.** A non-owner sees the ball about one round trip (owner, host or server, them) plus 120 ms late;
   join reports carry the slowest link's round trip as `rttMs` (6.15). Its resting spot isn't saved (cut 2026-11-06,
   with the ball demoted to a toy). Keepy-uppy streak was built and cut (PLAN Phase 2). The tab that owns the ball keeps
