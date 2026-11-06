@@ -8,6 +8,7 @@
     "node": ">=26"
   },
   "scripts": {
+    "audio:measure": "node dev/audio/render.ts --broker",
     "dev": "vite",
     "postinstall": "npm --prefix server ci --no-audit --no-fund",
     "build": "vite build",

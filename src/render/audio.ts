@@ -37,6 +37,9 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let duck: GainNode | null = null;
 let buses: Record<Bus, GainNode> | null = null;
+let output: AudioNode | null = null;
+// Measurement taps the actual final graph without constructing another context.
+export const audioOutput = () => (ctx && output ? { ctx, out: output } : null);
 // Squared, so the slider's middle sounds about half as loud.
 const masterGain = () => (muted ? 0 : MASTER * volume * volume);
 // Older Safari's prefix, and iOS's audio session (not in the DOM types yet).
@@ -58,6 +61,7 @@ function unlock() {
       m.gain.value = masterGain();
       m.connect(comp);
       comp.connect(ctx.destination);
+      output = comp;
       const d = (duck = ctx.createGain());
       d.connect(m);
       const make = (bus: Bus, to: AudioNode) => {
