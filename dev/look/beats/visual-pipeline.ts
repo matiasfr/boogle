@@ -46,7 +46,9 @@ export default {
       query: 'proto=place&dev=1&shot=room&in=house&stage=line2',
       setup: 'dev/look/evals/visual-pipeline.ts',
       warm: 3,
-      cameras: [{ name: 'Doorway at play distance', anchor: 'player', cam: [2, 2.5, 0], look: [0, 1, -10], fov: 55 }],
+      cameras: [
+        { name: 'Doorway at play distance', anchor: 'player', cam: [2, 2.5, 4], look: [-10, 1, -1.5], fov: 55 },
+      ],
       wedge,
       variants,
     },
