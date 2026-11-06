@@ -248,6 +248,10 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
     one = new THREE.Vector3(1, 1, 1);
   let stockBody: Body | null = null;
   let stockRows = 0;
+  // Slots are fixed for this station; only a count change needs new instance data.
+  let drawnLogs = -1,
+    drawnRails = -1,
+    drawnStones = -1;
   const run = {
     spec: spec0, // the forge's frame takes its next bill here
     at,
@@ -288,13 +292,20 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
       run.shown.rails = n.rails;
       run.shown.stone = n.stone;
       run.shown.beam = n.beam;
-      for (let k = 0; k < logs.count; k++) setStackLog(logs, k, logSlot(k), yaw);
       logs.visible = logs.count > 0;
-      logs.instanceMatrix.needsUpdate = true;
-      if (logs.instanceColor) logs.instanceColor.needsUpdate = true;
-      for (let k = 0; k < rails.count; k++) rails.setMatrixAt(k, railM.compose(railSlot(k), railQ, one));
-      rails.instanceMatrix.needsUpdate = true;
-      if (stones) {
+      if (logs.count !== drawnLogs) {
+        drawnLogs = logs.count;
+        for (let k = 0; k < logs.count; k++) setStackLog(logs, k, logSlot(k), yaw);
+        logs.instanceMatrix.needsUpdate = true;
+        if (logs.instanceColor) logs.instanceColor.needsUpdate = true;
+      }
+      if (rails.count !== drawnRails) {
+        drawnRails = rails.count;
+        for (let k = 0; k < rails.count; k++) rails.setMatrixAt(k, railM.compose(railSlot(k), railQ, one));
+        rails.instanceMatrix.needsUpdate = true;
+      }
+      if (stones && stones.count !== drawnStones) {
+        drawnStones = stones.count;
         for (let k = 0; k < stones.count; k++) stones.setMatrixAt(k, railM.compose(stoneAt(k), railQ, one));
         stones.instanceMatrix.needsUpdate = true;
       }

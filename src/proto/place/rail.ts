@@ -869,7 +869,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     else {
       rack.count = rackCount;
       rack.visible = rackCount > 0;
-      rack.instanceMatrix.needsUpdate = true;
+      // Continuous rack transforms were written once at construction; count does not change them.
       heldRail.visible = n > 0;
     }
   }
