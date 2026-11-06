@@ -1,9 +1,8 @@
-// T1's existing conductor hat: the profile commits before the common-box reveal begins.
-// Construction is Lockstep; eligibility is read-only, claims are personal Local, worn hats are Owner presence.
+// T1's conductor hat and T2's scarf: profiles commit before the common-box reveal begins.
+// Construction is Lockstep; eligibility is read-only, claims are personal Local, worn cosmetics are Owner presence.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import { createBrowserRailwayProfile } from '../../railway-profile-browser.ts';
-import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { addPresenceField, getRoomId, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { me } from '../../player/player.ts';
 import type { Interactable } from '../../player/hands.ts';
@@ -13,12 +12,18 @@ import { T1_CRATE_PARTS, T1_REWARD, MULTI_AXE_REWARD } from '../../render/t1-rew
 import { emit } from '../../render/particles.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { thump } from '../../render/machine-sfx.ts';
+import { T2_REWARD, railwayClaimWorld } from './reward-data.ts';
+import { createRailwayTools } from './tools.ts';
 
-let localHat = false;
-const remoteHats = new Map<string, boolean>();
-addPresenceField('railwayCosmetic', () => (localHat ? 'hat' : null));
+const localCosmetics = new Set<string>();
+const remoteCosmetics = new Map<string, Set<string>>();
+addPresenceField('railwayCosmetic', () => (localCosmetics.has('hat') ? 'hat' : null));
+addPresenceField('railwayScarf', () => (localCosmetics.has('scarf') ? true : null));
 onRemotePresence((remote, presence) => {
-  remoteHats.set(remote.peer, remote.entered && presence.railwayCosmetic === 'hat');
+  const items = new Set<string>();
+  if (remote.entered && presence.railwayCosmetic === 'hat') items.add('hat');
+  if (remote.entered && presence.railwayScarf === true) items.add('scarf');
+  remoteCosmetics.set(remote.peer, items);
 });
 
 export async function createRailwayReward(
@@ -26,7 +31,63 @@ export async function createRailwayReward(
   owner: OwnedView,
   machineFrom?: (out: THREE.Vector3) => void,
 ) {
-  const [{ merged }, { softGlow }, { fanfare, pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }] =
+  const [{ softGlow }, { fanfare, pop }] = await Promise.all([
+    import('../../proto/place/look.ts'),
+    import('../../proto/minis/common.ts'),
+  ]);
+  // One reveal queue owns input/camera holding for both personal boxes and shared tools.
+  const reveal = createRewardReveal({ parent: owner.root, fanfare, pop, softGlow });
+  owner.cleanup(() => reveal.dispose());
+  const first = await createStationReward(adapter, owner, reveal, 0, machineFrom);
+  const second = await createStationReward(adapter, owner, reveal, 1, machineFrom);
+  const tools = await createRailwayTools(adapter, owner, reveal);
+  return {
+    inspect() {
+      const t1 = first.inspect(),
+        t2 = second.inspect(),
+        toolState = tools.inspect();
+      return {
+        ...t1,
+        claims: Math.max(t1.claims, t2.claims),
+        t2,
+        boxes: [
+          { station: 'T1', ...t1 },
+          { station: 'T2', ...t2 },
+        ],
+        tools: toolState,
+        axeChest: toolState.axeChest,
+        jumpDevice: toolState.jumpDevice,
+        showing: reveal.gettingItem(),
+      };
+    },
+    targets: () => [...first.targets(), ...second.targets(), ...tools.targets()],
+    update(dt: number, now: number) {
+      first.update(dt, now);
+      second.update(dt, now);
+      tools.update(dt, now);
+      reveal.updateGot(dt);
+    },
+    fixedPre: () => tools.fixedPre(),
+    dispose() {
+      first.dispose();
+      second.dispose();
+      tools.dispose();
+    },
+  };
+}
+
+async function createStationReward(
+  adapter: RailwayAdapter,
+  owner: OwnedView,
+  reveal: ReturnType<typeof createRewardReveal>,
+  stationIndex: 0 | 1,
+  machineFrom?: (out: THREE.Vector3) => void,
+) {
+  const reward = stationIndex === 0 ? T1_REWARD : T2_REWARD;
+  const stationId = stationIndex === 0 ? 'T1' : 'T2';
+  const completion = () =>
+    adapter.inspect().stations[stationIndex]?.completion ?? (stationIndex === 0 ? adapter.inspect().completion : 0);
+  const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }] =
     await Promise.all([
       import('../../proto/place/part-geometry.ts'),
       import('../../proto/place/look.ts'),
@@ -38,9 +99,8 @@ export async function createRailwayReward(
     ]);
   const root = new THREE.Group();
   owner.root.add(root);
-  const reveal = createRewardReveal({ parent: root, fanfare, pop, softGlow });
   const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.08 });
-  const hatGeo = merged(T1_REWARD.parts);
+  const hatGeo = merged(reward.parts);
   const multiGeo = merged(MULTI_AXE_REWARD.parts);
   const crate = new THREE.Mesh(merged(T1_CRATE_PARTS), material);
   crate.castShadow = true;
@@ -52,8 +112,8 @@ export async function createRailwayReward(
 
   // The same safe-ground choice as Place's handCrate, including its next-frame placement and fallbacks.
   const line = LINKS[0]!,
-    t1 = line.stations[0]!,
-    next = line.stations[1]!;
+    t1 = line.stations[stationIndex]!,
+    next = line.stations[stationIndex + 1]!;
   const at = new THREE.Vector3();
   let placed = false;
   const nextAt = besideLine(line.line, next.s - line.dir * 1.5, next.side * 5.4);
@@ -145,23 +205,25 @@ export async function createRailwayReward(
   let liveWake = false;
   let multiReveals = 0;
   const offAccepted = adapter.onAccepted((event) => {
-    if (event.op === 'rail.wake' && event.accepted > 0) liveWake = true;
+    if (stationIndex === 0 && event.op === 'rail.wake' && event.accepted > 0) liveWake = true;
   });
-  const world = railwayRoomId(getRoomId());
+  const world = railwayClaimWorld(getRoomId());
   function load() {
     if (!profile) return;
     try {
       const value = profile.read();
       claims = value.claims.length;
-      owned = value.claims.some((claim) => claim.cosmetic === T1_REWARD.id);
-      claimed = value.claims.some((claim) => claim.world === world && claim.station === 'T1' && claim.completion === 1);
+      owned = value.claims.some((claim) => claim.cosmetic === reward.id);
+      claimed = value.claims.some(
+        (claim) => claim.world === world && claim.station === stationId && claim.completion === 1,
+      );
       error = null;
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Personal reward storage unavailable';
     }
   }
   try {
-    profile = createBrowserRailwayProfile(adapter.inspect().pid, [T1_REWARD.id]);
+    profile = createBrowserRailwayProfile(adapter.inspect().pid, [T1_REWARD.id, T2_REWARD.id]);
     load();
   } catch (cause) {
     error = cause instanceof Error ? cause.message : 'Personal reward storage unavailable';
@@ -237,8 +299,8 @@ export async function createRailwayReward(
     dustRing(at.x, at.y + 0.1, at.z, 12, 3.2, 0.45);
     placeSound('boxCommon', at.x, at.z);
     reveal.youGot({
-      name: T1_REWARD.name,
-      line: T1_REWARD.line,
+      name: reward.name,
+      line: reward.line,
       color: '#fff7e8',
       model: new THREE.Mesh(hatGeo, material),
       from: at.clone().add(new THREE.Vector3(0, 0.9, 0)),
@@ -248,10 +310,10 @@ export async function createRailwayReward(
     });
   }
   async function open() {
-    if (busy || claimed || !profile || !adapter.inspect().ready || adapter.inspect().completion !== 1) return;
+    if (busy || claimed || !profile || !adapter.inspect().ready || completion() !== 1) return;
     busy = true;
     try {
-      const result = await profile.claim({ world, station: 'T1', completion: 1 }, T1_REWARD.id);
+      const result = await profile.claim({ world, station: stationId, completion: 1 }, reward.id);
       if (disposed) return;
       load();
       if (result.status === 'accepted') {
@@ -277,16 +339,16 @@ export async function createRailwayReward(
     if (!hat) {
       hat = new THREE.Mesh(hatGeo, material);
       hat.castShadow = true;
-      hat.scale.setScalar(0.86);
+      hat.scale.setScalar(stationIndex === 0 ? 0.86 : 0.62);
       hat.rotation.y = Math.PI;
       worn.set(key, hat);
     }
     if (hat.parent !== avatar) avatar.add(hat);
     avatar.updateWorldMatrix(true, false);
-    const bone = avatar.getObjectByName('Head');
+    const bone = avatar.getObjectByName(stationIndex === 0 ? 'Head' : 'neck_01');
     if (bone) avatar.worldToLocal(bone.getWorldPosition(hat.position));
     else hat.position.set(0, 0.9, 0);
-    hat.position.y += 0.33;
+    hat.position.y += stationIndex === 0 ? 0.33 : -0.2;
   }
   const api = {
     inspect: () => ({
@@ -307,7 +369,7 @@ export async function createRailwayReward(
       if (!crate.visible || flight < 1 || revealT >= 0 || busy) return [];
       return [
         {
-          id: 'railway-t1-box',
+          id: `railway-${stationId.toLowerCase()}-box`,
           verb: 'Open',
           at: targetAt,
           r: 3.4,
@@ -330,13 +392,13 @@ export async function createRailwayReward(
           multiReveals++;
       }
       if (state.ready) {
-        if (previous === 0 && state.completion === 1 && !claimed && machineFrom) {
+        if (previous === 0 && completion() === 1 && !claimed && machineFrom) {
           machineFrom(from);
           flight = 0;
         }
-        previous = state.completion;
+        previous = completion();
       }
-      crate.visible = state.ready && state.completion === 1 && (!claimed || (revealT >= 0 && revealT < 0.12));
+      crate.visible = state.ready && completion() === 1 && (!claimed || (revealT >= 0 && revealT < 0.12));
       beam.visible = crate.visible && revealT < 0;
       flare = Math.max(0, flare - dt / 1.6);
       glow.strength.value = 0.16 + flare * flare * 0.4;
@@ -401,21 +463,20 @@ export async function createRailwayReward(
       if (flying[0] && flying[0].t > 2.4) flying.length = 0;
       boards.count = flying.length;
       if (boards.count) boards.instanceMatrix.needsUpdate = true;
-      reveal.updateGot(dt);
-      localHat = owned && revealT < 0;
-      wear('self', me.avatar, localHat);
+      if (owned && revealT < 0) localCosmetics.add(reward.id);
+      else localCosmetics.delete(reward.id);
+      wear('self', me.avatar, localCosmetics.has(reward.id));
       const present = new Set(['self']);
       for (const remote of remotes.values()) {
         present.add(remote.peer);
-        wear(remote.peer, remote.avatar, remoteHats.get(remote.peer) === true);
+        wear(remote.peer, remote.avatar, remoteCosmetics.get(remote.peer)?.has(reward.id) === true);
       }
       for (const key of worn.keys())
         if (!present.has(key)) {
           worn.get(key)!.removeFromParent();
           worn.delete(key);
-          remoteHats.delete(key);
         }
-      for (const key of remoteHats.keys()) if (!remotes.has(key)) remoteHats.delete(key);
+      for (const key of remoteCosmetics.keys()) if (!remotes.has(key)) remoteCosmetics.delete(key);
       const p = me.body?.position;
       if (p && crate.visible && flight === 1 && revealT < 0 && !error && Math.hypot(p.x - at.x, p.z - at.z) < 1.25)
         requestOpen();
@@ -426,8 +487,7 @@ export async function createRailwayReward(
       offReset();
       offAccepted();
       listeners.abort();
-      reveal.dispose();
-      localHat = false;
+      localCosmetics.delete(reward.id);
       for (const hat of worn.values()) hat.removeFromParent();
       worn.clear();
       root.removeFromParent();

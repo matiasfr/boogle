@@ -1,6 +1,7 @@
 // Headless persistence-contract proofs: no UI, DOM, network or historical reward effects.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { railwayClaimWorld } from '../src/entities/railway/reward-data.ts';
 import {
   createRailwayProfile,
   MAX_RAILWAY_CLAIMS,
@@ -10,6 +11,11 @@ import {
 } from '../src/railway-profile.ts';
 
 const T1: RailwayEntitlement = { world: 'railway-v1:room-one:g1', station: 'T1', completion: 1 };
+
+test('production namespace changes preserve original short and hashed T1 claim-world identities', () => {
+  assert.equal(railwayClaimWorld('room-one'), 't1v02-room-one');
+  assert.equal(railwayClaimWorld('abcdefghijklmnopqrstuvwxyz-long-room'), 't1v02-abcdefghijklmnopqr-087rp9t');
+});
 
 function setup() {
   const values = new Map<string, string>([['boogle.place.old', 'untouched']]);
@@ -68,6 +74,22 @@ test('refused writes consume neither entitlement nor cosmetic; retry accepts onc
   assert.equal(h.writes(), 1);
 });
 
+test('T2 adds one independent atomic scarf claim without changing the original T1 entitlement', async () => {
+  const h = setup(),
+    profile = h.open();
+  const first = await profile.claim(T1, 'cap');
+  const t2: RailwayEntitlement = { ...T1, station: 'T2' };
+  const results = await Promise.all([h.open().claim(t2, 'scarf'), h.open().claim(t2, 'cap')]);
+  assert.deepEqual(
+    results.map((result) => result.status),
+    ['accepted', 'claimed'],
+  );
+  assert.deepEqual(profile.read().claims, [first.claim, { ...t2, cosmetic: 'scarf' }]);
+  assert.equal((await profile.claim(T1, 'scarf')).claim.cosmetic, 'cap');
+  assert.equal(h.writes(), 2);
+  await assert.rejects(profile.claim({ ...T1, station: 'T3' as 'T1' }, 'scarf'), /Invalid railway/);
+});
+
 test('two tabs serialize claim acceptance, while a later visitor has a separate entitlement', async () => {
   const h = setup();
   const results = await Promise.all([h.open().claim(T1, 'cap'), h.open().claim(T1, 'scarf')]);
@@ -112,8 +134,8 @@ test('claim retention is bounded without forgetting old entitlements or minting 
   await assert.rejects(profile.claim(T1, 'scarf'), /claim limit/);
   assert.equal(h.values.get(profile.key), before);
   assert.equal((await profile.claim({ ...T1, world: 'room-0' }, 'scarf')).status, 'claimed');
-  await assert.rejects(profile.claim({ ...T1, completion: 2 as 1 }, 'cap'), /Invalid T1/);
-  await assert.rejects(profile.claim(T1, 'unknown'), /Invalid T1/);
+  await assert.rejects(profile.claim({ ...T1, completion: 2 as 1 }, 'cap'), /Invalid railway/);
+  await assert.rejects(profile.claim(T1, 'unknown'), /Invalid railway/);
   assert.equal(h.writes(), MAX_RAILWAY_CLAIMS);
 });
 

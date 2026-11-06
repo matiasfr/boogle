@@ -1,8 +1,25 @@
 // Local anticipation over the server's conserved T1 accounts. Neither receipts nor animation callbacks spend cargo.
 import { SERVER_ID } from '../net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../sim/railway-layout.ts';
-import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_WINDOW, type RailResult } from '../sim/railway.ts';
+import {
+  railInt,
+  railYaw,
+  railJobs,
+  railActiveStation,
+  railCarry,
+  RAILWAY_MAX_INT,
+  RAILWAY_WINDOW,
+  type RailResult,
+} from '../sim/railway.ts';
+import {
+  LINE1_STATIONS,
+  LINE1_ROCKS,
+  LINE1_HARDWOODS,
+  type RailMaterial,
+  type LineStationId,
+} from '../sim/railway-line-layout.ts';
 import type { RailwayApi } from '../world/rules/railway.ts';
+import { LINE_TIMING } from '../sim/railway-line.ts';
 import type { createSync, WorldRoom } from '../world/sync.ts';
 
 type Sync = Pick<
@@ -20,10 +37,15 @@ type Sync = Pick<
 export type RailwayIntent =
   | { op: 'rail.wake' }
   | { op: 'rail.chop'; id: number; yaw?: number; collapsed?: boolean }
-  | { op: 'rail.take'; id: number }
-  | { op: 'rail.rackTake' }
-  | { op: 'rail.deposit'; station: 'T1'; n: number }
-  | { op: 'rail.drop'; x: number; y?: number; z: number; n: number };
+  | { op: 'rail.mine'; id: number }
+  | { op: 'rail.axe' | 'rail.beamChop' | 'rail.jump' }
+  | { op: 'rail.beamTake'; revision: number }
+  | { op: 'rail.beamDrop'; revision: number; x: number; y: number; z: number }
+  | { op: 'rail.beamDeposit'; revision: number; station: 'T3' }
+  | { op: 'rail.take'; id: number; kind?: RailMaterial }
+  | { op: 'rail.rackTake'; kind?: RailMaterial }
+  | { op: 'rail.deposit'; station: LineStationId; n: number; kind?: RailMaterial }
+  | { op: 'rail.drop'; x: number; y?: number; z: number; n: number; kind?: RailMaterial };
 export type RailwayAccepted = Readonly<
   RailwayIntent & { pid: string; epoch: number; request: number; accepted: number; tick: number }
 >;
@@ -84,23 +106,41 @@ function result(v: unknown): v is RailResult & Record<string, unknown> {
 }
 function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.wake') return { op: e.op };
-  if (e.op === 'rail.rackTake') return { op: e.op };
-  if (e.op === 'rail.take' && railInt(e.id)) return { op: e.op, id: e.id };
+  const kind = e.kind === 1 ? 1 : 0;
+  if (e.op === 'rail.axe' || e.op === 'rail.beamChop' || e.op === 'rail.jump') return { op: e.op };
+  if (e.op === 'rail.mine' && railInt(e.id, 2)) return { op: e.op, id: e.id };
+  if (e.op === 'rail.beamTake' && railInt(e.revision)) return { op: e.op, revision: e.revision };
+  if (e.op === 'rail.beamDeposit' && railInt(e.revision) && e.station === 'T3')
+    return { op: e.op, revision: e.revision, station: 'T3' };
+  if (
+    e.op === 'rail.beamDrop' &&
+    railInt(e.revision) &&
+    railInt(e.x, 200000, -200000) &&
+    railInt(e.y, 200000, -200000) &&
+    railInt(e.z, 200000, -200000)
+  )
+    return { op: e.op, revision: e.revision, x: e.x, y: e.y, z: e.z };
+  if (e.op === 'rail.rackTake') return { op: e.op, kind };
+  if (e.op === 'rail.take' && railInt(e.id)) return { op: e.op, id: e.id, kind };
   if (e.op === 'rail.chop' && railInt(e.id))
     return {
       op: e.op,
       id: e.id,
       ...(railYaw(e.yaw) && typeof e.collapsed === 'boolean' ? { yaw: e.yaw, collapsed: e.collapsed } : {}),
     };
-  if (e.op === 'rail.deposit' && e.station === 'T1' && railInt(e.n, RAILWAY_T1.carry, 1))
-    return { op: e.op, station: 'T1', n: e.n };
+  if (
+    e.op === 'rail.deposit' &&
+    (e.station === 'T1' || e.station === 'T2' || e.station === 'T3') &&
+    railInt(e.n, RAILWAY_T1.carry, 1)
+  )
+    return { op: e.op, station: e.station, n: e.n, kind };
   if (
     e.op === 'rail.drop' &&
     railInt(e.n, RAILWAY_T1.carry, 1) &&
     railInt(e.x, 200000, -200000) &&
     railInt(e.z, 200000, -200000)
   )
-    return { op: e.op, x: e.x, z: e.z, n: e.n, ...(railInt(e.y, 200000, -200000) ? { y: e.y } : {}) };
+    return { op: e.op, x: e.x, z: e.z, n: e.n, kind, ...(railInt(e.y, 200000, -200000) ? { y: e.y } : {}) };
   return null;
 }
 
@@ -255,19 +295,30 @@ export function createRailwayAdapter({ api, sync, pid }: { api: RailwayApi; sync
 
   function reservations() {
     let incoming = 0,
-      outgoing = 0;
+      outgoing = 0,
+      logs = 0,
+      stone = 0;
     for (const p of pending.values()) {
       incoming += p.incoming;
       outgoing += p.outgoing;
+      if ('kind' in p.intent && p.intent.kind === 1) stone += p.outgoing;
+      else logs += p.outgoing;
     }
-    return { incoming, outgoing };
+    return { incoming, outgoing, logs, stone };
   }
   function submit(intent: RailwayIntent, incoming = 0, outgoing = 0): boolean {
     reconcile();
     if (!available() || !room || pending.size >= RAILWAY_WINDOW || next >= RAILWAY_MAX_INT) return false;
     const held = reservations();
-    const carry = api.account(pid)?.carry ?? 0;
-    if (incoming > RAILWAY_T1.carry - carry - held.incoming || outgoing > carry - held.outgoing) return false;
+    const account = api.account(pid);
+    const carry = account ? railCarry(account) : 0;
+    const stone = 'kind' in intent && intent.kind === 1;
+    const balance = stone ? (account?.stone ?? 0) : (account?.carry ?? 0);
+    if (incoming > RAILWAY_T1.carry - carry - held.incoming || outgoing > balance - (stone ? held.stone : held.logs))
+      return false;
+    const beam = api.railway.line?.beam;
+    if (beam?.state === 'held' && beam.holder === pid && (incoming || outgoing)) return false;
+    if (intent.op === 'rail.beamTake' && (carry || held.incoming || held.outgoing || pending.size)) return false;
     if (
       intent.op === 'rail.wake' &&
       (api.phase() !== 'asleep' || [...pending.values()].some((p) => p.intent.op === 'rail.wake'))
@@ -283,19 +334,63 @@ export function createRailwayAdapter({ api, sync, pid }: { api: RailwayApi; sync
 
   function readState() {
     const s = api.railway;
+    const activeStation = railActiveStation(s);
+    const stations = railJobs(s).map((job, i) =>
+      Object.freeze({
+        id: LINE1_STATIONS[i]!.id,
+        stock: job.stock,
+        allocation: job.allocation,
+        used: job.used,
+        delivered: job.delivered,
+        stoneStock: job.stoneStock ?? 0,
+        stoneAllocation: job.stoneAllocation ?? 0,
+        stoneUsed: job.stoneUsed ?? 0,
+        stoneDelivered: job.stoneDelivered ?? 0,
+        start: job.start,
+        elapsed: job.elapsed,
+        lastTick: job.lastTick,
+        completion: job.completion,
+        timing: Object.freeze({ ...(job.timing ?? LINE_TIMING) }),
+      }),
+    );
+    const current = stations[activeStation]!;
+    const panels = api.panels();
     return Object.freeze({
       tick: sync.world.tick,
+      ...api.movement(),
+      panelCount: panels.committed,
+      panelStock: panels.stock,
       hash: sync.stateHashes().railway,
       phase: api.phase(),
       carry: api.account(pid)?.carry ?? 0,
+      stoneCarry: api.account(pid)?.stone ?? 0,
+      activeStation,
+      stations: Object.freeze(stations),
+      axe: s.line?.axe ?? false,
+      jump: s.line?.jump ?? false,
+      beam: s.line ? Object.freeze({ ...s.line.beam }) : null,
+      rocks: Object.freeze(
+        LINE1_ROCKS.map((rock, i) =>
+          Object.freeze({
+            ...rock,
+            remaining: s.line?.rocks[i] ?? 0,
+            work: s.line?.rockWork[i] ?? 0,
+            age: s.line?.rockAge[i] ?? 0,
+          }),
+        ),
+      ),
+      stoneRack: s.line?.stoneRack ?? 0,
+      hardwood: Object.freeze([...(s.line?.hardwood ?? [])]),
+      upgrades: Object.freeze([...(s.line?.upgrades ?? [])]),
+      hardwoodWork: Object.freeze([...(s.line?.hardwoodWork ?? [])]),
       awake: s.awake,
-      start: s.start,
-      elapsed: s.elapsed,
-      completion: s.completion,
-      stock: s.stock,
-      allocation: s.allocation,
-      used: s.used,
-      delivered: s.delivered,
+      start: current.start,
+      elapsed: current.elapsed,
+      completion: stations.reduce((n, job) => n + job.completion, 0),
+      stock: current.stock,
+      allocation: current.allocation,
+      used: current.used,
+      delivered: current.delivered,
       counts: Object.freeze(api.counts()),
       rack: s.supply?.rack ?? 0,
       growth: Object.freeze(s.sources.map((_n, k) => Math.max(0, (s.supply?.ages[k] ?? 0) - 31))),
@@ -322,8 +417,9 @@ export function createRailwayAdapter({ api, sync, pid }: { api: RailwayApi; sync
       next,
       pending: pending.size,
       reservations: Object.freeze(held),
-      availableCarry: Math.max(0, state.carry - held.outgoing),
-      freeCarry: Math.max(0, RAILWAY_T1.carry - state.carry - held.incoming),
+      availableCarry: Math.max(0, state.carry - held.logs),
+      availableStone: Math.max(0, state.stoneCarry - held.stone),
+      freeCarry: Math.max(0, RAILWAY_T1.carry - state.carry - state.stoneCarry - held.incoming),
     });
   }
   return {
@@ -364,14 +460,40 @@ export function createRailwayAdapter({ api, sync, pid }: { api: RailwayApi; sync
       if (!available() || pending.size) probe();
     },
     wake: () => submit({ op: 'rail.wake' }),
+    openAxe: () => submit({ op: 'rail.axe' }),
+    claimJump: () => submit({ op: 'rail.jump' }),
+    beamChop: () => submit({ op: 'rail.beamChop' }),
+    beamTake: (revision: number) => railInt(revision) && submit({ op: 'rail.beamTake', revision }),
+    beamDrop: (x: number, y: number, z: number, revision: number) =>
+      railInt(revision) &&
+      railInt(x, 200000, -200000) &&
+      railInt(y, 200000, -200000) &&
+      railInt(z, 200000, -200000) &&
+      submit({ op: 'rail.beamDrop', revision, x, y, z }),
+    beamDeposit: (revision: number) => railInt(revision) && submit({ op: 'rail.beamDeposit', revision, station: 'T3' }),
+    mine(id: number) {
+      const a = api.account(pid);
+      const n = Math.min(
+        2,
+        api.railway.line?.rocks[id] ?? 0,
+        RAILWAY_T1.carry - (a ? railCarry(a) : 0) - reservations().incoming,
+      );
+      return railInt(id, 2) && n > 0 && submit({ op: 'rail.mine', id }, n);
+    },
     chop(id: number, yaw?: number, collapsed?: boolean) {
       const k = RAILWAY_SOURCES.findIndex((source) => source[0] === id);
-      if (k < 0 || (api.railway.falls && (!railYaw(yaw) || typeof collapsed !== 'boolean'))) return false;
+      const hardwood = LINE1_HARDWOODS.findIndex((source) => source[0] === id);
+      if (
+        (k < 0 && !(api.railway.line?.axe && hardwood >= 0)) ||
+        (api.railway.falls && (!railYaw(yaw) || typeof collapsed !== 'boolean'))
+      )
+        return false;
       const held = reservations();
       const n = Math.min(
-        RAILWAY_T1.strokeYield,
-        api.railway.sources[k]!,
-        RAILWAY_T1.carry - (api.account(pid)?.carry ?? 0) - held.incoming,
+        api.railway.line?.axe ? 5 : RAILWAY_T1.strokeYield,
+        (k < 0 ? api.railway.line!.hardwood[hardwood]! : api.railway.sources[k]!) +
+          (api.railway.line?.axe && !api.railway.line.upgrades[k] && api.railway.sources[k]! > 0 ? 5 : 0),
+        RAILWAY_T1.carry - (api.account(pid) ? railCarry(api.account(pid)!) : 0) - held.incoming,
       );
       return (
         n > 0 &&
@@ -385,27 +507,31 @@ export function createRailwayAdapter({ api, sync, pid }: { api: RailwayApi; sync
       const pile = api.railway.piles.find((p) => p.id === id);
       if (!pile || [...pending.values()].some((p) => p.intent.op === 'rail.take' && p.intent.id === id)) return false;
       const held = reservations();
-      const n = Math.min(pile.n, RAILWAY_T1.carry - (api.account(pid)?.carry ?? 0) - held.incoming);
-      return n > 0 && submit({ op: 'rail.take', id }, n);
-    },
-    rackTake() {
       const n = Math.min(
-        api.railway.supply?.rack ?? 0,
-        RAILWAY_T1.carry - (api.account(pid)?.carry ?? 0) - reservations().incoming,
+        pile.n,
+        RAILWAY_T1.carry - (api.account(pid) ? railCarry(api.account(pid)!) : 0) - held.incoming,
       );
-      return n > 0 && submit({ op: 'rail.rackTake' }, n);
+      return n > 0 && submit({ op: 'rail.take', id, kind: pile.kind === 1 ? 1 : 0 }, n);
     },
-    drop(x: number, y: number, z: number, n = 1) {
+    rackTake(kind: RailMaterial = 0) {
+      const n = Math.min(
+        kind === 1 ? (api.railway.line?.stoneRack ?? 0) : (api.railway.supply?.rack ?? 0),
+        RAILWAY_T1.carry - (api.account(pid) ? railCarry(api.account(pid)!) : 0) - reservations().incoming,
+      );
+      return n > 0 && submit({ op: 'rail.rackTake', kind }, n);
+    },
+    drop(x: number, y: number, z: number, n = 1, kind: RailMaterial = 0) {
       return (
         railInt(x, 200000, -200000) &&
         railInt(y, 200000, -200000) &&
         railInt(z, 200000, -200000) &&
         railInt(n, RAILWAY_T1.carry, 1) &&
-        submit({ op: 'rail.drop', x, y, z, n }, 0, n)
+        submit({ op: 'rail.drop', x, y, z, n, kind }, 0, n)
       );
     },
-    deposit(n = 1) {
-      return railInt(n, RAILWAY_T1.carry, 1) && submit({ op: 'rail.deposit', station: 'T1', n }, 0, n);
+    deposit(n = 1, kind: RailMaterial = 0) {
+      const station = LINE1_STATIONS[railActiveStation(api.railway)]!.id;
+      return railInt(n, RAILWAY_T1.carry, 1) && submit({ op: 'rail.deposit', station, n, kind }, 0, n);
     },
     onAccepted(fn: (event: RailwayAccepted) => void) {
       effects.add(fn);
