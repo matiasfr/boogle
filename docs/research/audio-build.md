@@ -1,5 +1,57 @@
 # Audio mix and locomotion build — 5 November 2026
 
+## Rebase follow-up — 6 November 2026 UTC
+
+Rebased all six audio commits onto fetched `origin/main` at `766c94d5`, staying
+on `codex/audio-build`. The tested rebased runtime is `abe08c55`; the subsequent
+report commit changes documentation only. The original measurements and route
+reports below remain historical evidence, not verification of this new base.
+
+- Retained the cleanup's shared `tuningVisit` gate, railway namespace and
+  regrowth/recovery tunables alongside all audio bindings, controls and A/B
+  snapshots. Removed the conflicting duplicate local gate.
+- Resolved the additional slab conflict by keeping main's configurable collider
+  overlap and audio's surface tag as separate arguments. Main's zero-overlap
+  panel calls remain unchanged; grass halt ramps pass the surface explicitly.
+- Formatted the three resolved files. `npm run check` passed **377 tests, zero
+  failures**, plus lint/typecheck, registry, level, asset and build checks.
+- [Fresh mixer proof](../../.look/evidence/1793931705258-10550/evidence.json):
+  five audio controls, live SFX/child gains, mute/reset, volume and A recall
+  passed. Both railway tunables were available and validated after room
+  readiness. Opened `audio-rebase-mixer-still.png`: the five bus fields and
+  save/recall controls are readable. Two earlier setup attempts selected the
+  classic route or inspected shared tunables before room readiness; their
+  failures did not require runtime changes.
+- [Fresh movement proof](../../.look/evidence/1793931812757-11594/evidence.json):
+  actual walk/jog/sprint/jump input produced **8 walk, 11 run, 1 takeoff and
+  1 landing** after spawn, with zero active voices at the end. Opened
+  `audio-rebase-movement-motion.png` and `consecutive-jump.png`: Buddy crosses
+  wood, runs onto grass, takes off and lands. WebGPU capture checks passed
+  without page/console/GPU errors. Video and curves are retained; the initial
+  debug-camera reset is setup, not performance evidence.
+- [Fresh raw audio proof](../../.look/evidence/1793931787895-11110/evidence.json):
+  UI thunk, pickup and Boogler phrase all triggered, with zero clipped or
+  nonfinite samples. The manifest's `audio/` directory retains all three WAVs,
+  hashes, settings and metering results.
+
+| Cue | Integrated LUFS | True peak dBTP | Sample peak dBFS |
+| --- | ---: | ---: | ---: |
+| UI thunk | −37.95 | −19.36 | −19.37 |
+| Pickup thock | −29.53 | −12.52 | −12.52 |
+| Boogler phrase | −30.64 | −19.93 | −19.93 |
+
+The optional [Dev-off probe](../../.look/evidence/1793931726609-10662/evidence.json)
+could not reach its assertions: `dev=0` removes the debug camera that the
+trusted look harness waits for. The shared gate is preserved in code; that
+negative browser case remains unverified. No new runtime failure was observed
+in the completed checks. Full-route bots and the complete measurement suite
+were not repeated for this narrow rebase; their earlier failures are not
+declared fixed. Device listening, smoothness and six-player saturation remain
+unverified. No push or ship. Only the requested Git fetch used external network
+access; browser checks used the restarted local broker.
+
+## Original implementation and evidence
+
 Implements ordered steps 1–4 of [audio-mix](audio-mix.md), plus the explicitly
 requested remote-step trim, pan and contact cap. Procedural Web Audio only; no
 recorded samples, ROM data or extracted game audio. The wave recipe and the
