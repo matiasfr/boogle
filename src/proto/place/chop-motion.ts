@@ -111,12 +111,48 @@ function grip(arm: Arm, at: THREE.Vector3, figure: THREE.Object3D) {
 export type ChopPoseOptions = { reducedMotion?: boolean; target?: THREE.Vector3; frame?: THREE.Object3D };
 /** Floating summon in the avatar frame (-Z forward, +X right). Local presentation only: contact stays at CHOP_CONTACT. */
 type FloatPose = { x: number; y: number; z: number; rx: number; ry: number; rz: number };
-// Rest floats beside the right hip with the head at shoulder height; the strike keeps the old contact height.
-const FLOAT_REST: FloatPose = { x: 0.5, y: 0.34, z: -0.1, rx: 0.2, ry: 0, rz: -0.18 };
-const FLOAT_COCK: FloatPose = { x: 0.46, y: 0.64, z: -0.14, rx: 0.5, ry: 0, rz: -0.08 };
-const FLOAT_HIT: FloatPose = { x: 0.4, y: 0.72, z: -0.32, rx: -1.35, ry: 0, rz: 0 };
-const FLOAT_KICK: FloatPose = { x: 0.46, y: 0.68, z: -0.2, rx: 0.55, ry: 0, rz: -0.4 };
-const FLOAT_FULL: FloatPose = { x: 0.5, y: 0.64, z: -0.14, rx: 0.6, ry: 0, rz: -0.9 };
+/** Rotation order YXZ: yaw about the frame's vertical, then pitch, then roll. */
+export type FloatAim = { rest: FloatPose; cock: FloatPose; hit: FloatPose; kick: FloatPose; full: FloatPose };
+/** Where the blade meets the bark when no target is given: the pre-6-November contact point. */
+const DEFAULT_TARGET = new THREE.Vector3(0.18, 0.665, -0.99);
+const DEFAULT_MARKER = new THREE.Vector3(0, 0.64, -0.2);
+const HIT_PITCH = -0.7, // shaft leaning forward, edge biting forward-down into the trunk face
+  COCK_PITCH = 0.6, // a small lift above the grip, never behind the back
+  GRIP_SIDE = 0.4; // the grip stays this far out on the tree's side, so nothing crosses the face
+/**
+ * The strike's poses for a bark contact in frame space. The grip is solved so the blade marker lands exactly on
+ * `target` at the hit pitch; every pose sits on the target's side of the body (right unless the tree is clearly left).
+ */
+export function aimFloatingChop(
+  target: THREE.Vector3 = DEFAULT_TARGET,
+  marker: THREE.Vector3 = DEFAULT_MARKER,
+): FloatAim {
+  const side = target.x < -0.15 ? -1 : 1;
+  const c = Math.cos(HIT_PITCH),
+    s = Math.sin(HIT_PITCH);
+  // Pitch only (marker.x is zero on every axe): marker -> (0, py, pz).
+  const py = marker.y * c - marker.z * s,
+    pz = marker.y * s + marker.z * c;
+  const reach = Math.max(0.05, -pz);
+  const yaw = Math.asin(Math.max(-0.7, Math.min(0.7, (side * GRIP_SIDE - target.x) / reach)));
+  const hit: FloatPose = {
+    x: target.x + reach * Math.sin(yaw),
+    y: target.y - py,
+    z: target.z + reach * Math.cos(yaw),
+    rx: HIT_PITCH,
+    ry: yaw,
+    rz: 0,
+  };
+  return {
+    hit,
+    // Beside the hip, head at shoulder height: below the face from every camera.
+    rest: { x: side * 0.5, y: 0.12, z: -0.12, rx: 0.2, ry: 0, rz: side * -0.18 },
+    cock: { ...hit, x: hit.x + side * 0.05, y: hit.y + 0.06, z: hit.z + 0.16, rx: COCK_PITCH, rz: side * -0.08 },
+    kick: { ...hit, x: hit.x + side * 0.06, y: hit.y + 0.06, z: hit.z + 0.14, rx: 0.5, rz: side * -0.4 },
+    full: { ...hit, x: hit.x + side * 0.12, y: hit.y + 0.08, z: hit.z + 0.2, rx: 0.6, ry: 0, rz: side * -0.9 },
+  };
+}
+const DEFAULT_AIM = aimFloatingChop();
 /** Beats in seconds since the press; storyboard: appear, strike, bite, return, hover, disappear. */
 export const FLOAT_BEATS = { appear: 0.06, cock: 0.05, bite: CHOP_CONTACT + 0.035, home: 0.4, fade: 0.72 };
 const ease = {
@@ -140,24 +176,25 @@ const span = (time: number, from: number, to: number) => clamp01((time - from) /
 export function sampleFloatingChop(
   time: number,
   response: ChopResponse,
-  from: FloatPose = FLOAT_REST,
+  aim: FloatAim = DEFAULT_AIM,
+  from: FloatPose = aim.rest,
   appearAt = 0,
   fromScale = 0.15,
 ) {
-  const out: FloatPose & { scale: number; visible: boolean } = { ...FLOAT_REST, scale: 1, visible: false };
+  const out: FloatPose & { scale: number; visible: boolean } = { ...aim.rest, scale: 1, visible: false };
   const b = FLOAT_BEATS,
     c = CHOP_CONTACT;
-  if (time < b.cock) blend(from, FLOAT_COCK, ease.out(span(time, 0, b.cock)), out);
+  if (time < b.cock) blend(from, aim.cock, ease.out(span(time, 0, b.cock)), out);
   // One arc, accelerating into the bark so it lands on the contact beat.
-  else if (time < c) blend(FLOAT_COCK, FLOAT_HIT, ease.in(span(time, b.cock, c)), out);
+  else if (time < c) blend(aim.cock, aim.hit, ease.in(span(time, b.cock, c)), out);
   else if (response === 'rebound') {
-    if (time < 0.22) blend(FLOAT_HIT, FLOAT_KICK, ease.out(span(time, c, 0.22)), out);
-    else blend(FLOAT_KICK, FLOAT_REST, ease.inOut(span(time, 0.22, b.home)), out);
+    if (time < 0.22) blend(aim.hit, aim.kick, ease.out(span(time, c, 0.22)), out);
+    else blend(aim.kick, aim.rest, ease.inOut(span(time, 0.22, b.home)), out);
   } else if (response === 'full') {
-    if (time < 0.28) blend(FLOAT_HIT, FLOAT_FULL, ease.out(span(time, c, 0.28)), out);
-    else blend(FLOAT_FULL, FLOAT_REST, ease.inOut(span(time, 0.42, 0.62)), out);
-  } else if (time < b.bite) blend(FLOAT_HIT, FLOAT_HIT, 0, out);
-  else blend(FLOAT_HIT, FLOAT_REST, ease.inOut(span(time, b.bite, b.home)), out);
+    if (time < 0.28) blend(aim.hit, aim.full, ease.out(span(time, c, 0.28)), out);
+    else blend(aim.full, aim.rest, ease.inOut(span(time, 0.42, 0.62)), out);
+  } else if (time < b.bite) blend(aim.hit, aim.hit, 0, out);
+  else blend(aim.hit, aim.rest, ease.inOut(span(time, b.bite, b.home)), out);
   // A gentle float once it is home; zero velocity at the join.
   if (time > b.home) out.y += 0.008 * (1 - Math.cos(((time - b.home) / 0.32) * Math.PI * 2));
   const appear = mix(fromScale, 1, ease.back(span(time, appearAt, appearAt + b.appear)));
@@ -178,15 +215,28 @@ type FloatMemory = {
   pose: FloatPose & { scale: number };
 };
 const floating = new WeakMap<THREE.Object3D, FloatMemory>();
-/** Appear beside you, strike once on the contact beat, return, then pop out. Production railway, legacy Place and the stage share it. */
+const aimAt = new THREE.Vector3();
+/**
+ * Appear beside you, strike once so the blade meets `target` (world bark contact) on the contact beat, return,
+ * then pop out. Production railway, legacy Place and the stage share it.
+ */
 export function applyFloatingChopPose(
   figure: THREE.Object3D,
   axe: THREE.Object3D,
   time: number,
   response: ChopResponse,
   frame = figure,
+  target?: THREE.Vector3 | null,
 ) {
   if (axe.parent !== frame) frame.add(axe);
+  let aim = DEFAULT_AIM;
+  if (target) {
+    frame.updateWorldMatrix(true, false);
+    aim = aimFloatingChop(
+      frame.worldToLocal(aimAt.copy(target)),
+      axe.getObjectByName('axe-blade-contact')?.position ?? DEFAULT_MARKER,
+    );
+  }
   let m = floating.get(axe);
   if (!m) {
     m = {
@@ -194,8 +244,8 @@ export function applyFloatingChopPose(
       shown: false,
       appearAt: 0,
       fromScale: 0.15,
-      from: { ...FLOAT_REST },
-      pose: { ...FLOAT_REST, scale: 0 },
+      from: { ...aim.rest },
+      pose: { ...aim.rest, scale: 0 },
     };
     floating.set(axe, m);
   }
@@ -205,18 +255,18 @@ export function applyFloatingChopPose(
       Object.assign(m.from, m.pose);
       m.fromScale = m.pose.scale;
     } else {
-      Object.assign(m.from, FLOAT_REST);
+      Object.assign(m.from, aim.rest);
       m.fromScale = 0.15;
     }
     m.appearAt = time;
   }
-  const pose = sampleFloatingChop(time, response, m.from, m.appearAt, m.fromScale);
+  const pose = sampleFloatingChop(time, response, aim, m.from, m.appearAt, m.fromScale);
   m.last = time;
   m.shown = pose.visible;
   Object.assign(m.pose, pose);
   axe.visible = pose.visible;
   axe.position.set(pose.x, pose.y, pose.z);
-  axe.rotation.set(pose.rx, pose.ry, pose.rz);
+  axe.rotation.set(pose.rx, pose.ry, pose.rz, 'YXZ');
   axe.scale.setScalar(pose.scale);
 }
 
@@ -228,7 +278,7 @@ export function applyChopPose(
   options: ChopPoseOptions = {},
 ) {
   if (!chopPresentation.twoHanded) {
-    applyFloatingChopPose(figure, axe, time, response, options.frame);
+    applyFloatingChopPose(figure, axe, time, response, options.frame, options.target);
     return;
   }
   const pose = sampleChop(time, response);
@@ -256,7 +306,7 @@ export function applyChopPose(
     pose.y + (hit.y - HIT.y) * pose.contact,
     pose.z + (hit.z - HIT.z) * pose.contact,
   );
-  axe.rotation.set(pose.rx, 0, pose.rz);
+  axe.rotation.set(pose.rx, 0, pose.rz, 'XYZ');
   figure.updateWorldMatrix(true, true);
   let rig = arms.get(figure);
   if (!rig) {

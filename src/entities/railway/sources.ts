@@ -127,20 +127,44 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     rock: null as number | null,
     hit: true,
     response: 'bite' as 'bite' | 'full' | 'rebound',
+    contact: new THREE.Vector3(), // world bark/rock point the floating axe aims at
   };
+  // The cut's own radius and height (place-tree-view's notch), facing whoever swings.
+  function barkContact(tree: TreePose, from: { x: number; z: number }, out: THREE.Vector3) {
+    const yaw = Math.atan2(from.x - tree.x, from.z - tree.z),
+      r = (tree.hardwood ? 0.7 : 0.4) * tree.size;
+    return out.set(tree.x + Math.sin(yaw) * r, tree.y + 1.1, tree.z + Math.cos(yaw) * r);
+  }
+  function rockContact(rock: THREE.Vector3, from: { x: number; z: number }, out: THREE.Vector3) {
+    const dx = from.x - rock.x,
+      dz = from.z - rock.z,
+      d = Math.hypot(dx, dz) || 1;
+    return out.set(rock.x + (dx / d) * 0.4, rock.y - 0.2, rock.z + (dz / d) * 0.4);
+  }
   const at = new THREE.Vector3(),
     target = new THREE.Vector3(),
     rotation = new THREE.Quaternion();
   // A partner's accepted stroke shows their floating axe from the contact beat, in step with the chips. Local only.
-  const partnerAxes = new Map<string, { axes: ReturnType<typeof createAxes>; t: number }>();
-  function partnerSwing(pid: string) {
+  const partnerAxes = new Map<
+    string,
+    { axes: ReturnType<typeof createAxes>; t: number; contact: THREE.Vector3; aimed: boolean }
+  >();
+  function partnerSwing(event: RailwayAccepted) {
+    const pid = event.pid;
     let partner = partnerAxes.get(pid);
     if (!partner) {
-      partner = { axes: createAxes(flat), t: 99 };
+      partner = { axes: createAxes(flat), t: 99, contact: new THREE.Vector3(), aimed: false };
       partner.axes.root.visible = false;
       partnerAxes.set(pid, partner);
     }
     partner.t = CHOP_CONTACT;
+    const from = [...remotes.values()].find((remote) => remote.pid === pid)?.avatar?.position;
+    const tree =
+      event.op === 'rail.chop' ? trees[event.id] : event.op === 'rail.beamChop' ? trees.find((t) => t.great) : null;
+    const rock = event.op === 'rail.mine' ? cargo.rocks.find((row) => row.id === event.id) : null;
+    partner.aimed = !!from && !!(tree || rock);
+    if (from && tree) barkContact(tree, from, partner.contact);
+    else if (from && rock) rockContact(rock.at, from, partner.contact);
   }
   function dropPartnerAxe(pid: string) {
     const partner = partnerAxes.get(pid)!;
@@ -162,7 +186,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       if (partner.t > CHOP_DURATION + 0.5 && !partner.axes.root.visible) continue;
       partner.axes.setTier(state.axe, state.awake >= 0 && !['asleep', 'waking'].includes(state.phase));
       const wasVisible = partner.axes.root.visible;
-      applyFloatingChopPose(frame, partner.axes.root, partner.t, 'bite', frame);
+      applyFloatingChopPose(frame, partner.axes.root, partner.t, 'bite', frame, partner.aimed ? partner.contact : null);
       sparkleAxe(partner.axes.root, wasVisible, reducedMotion, emit, readableIntensity(), dt);
     }
   }
@@ -178,6 +202,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     swing.response = 'bite';
     const rock = cargo.rocks.find((row) => row.id === id)!;
     me.yaw = Math.atan2(-(rock.x - me.body.position.x), -(rock.z - me.body.position.z));
+    rockContact(rock.at, me.body.position, swing.contact);
   });
   const stonePiles = new THREE.InstancedMesh(
     new THREE.DodecahedronGeometry(0.2),
@@ -262,6 +287,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     swing.hit = false;
     swing.response = 'bite';
     me.yaw = Math.atan2(-(tree.x - me.body.position.x), -(tree.z - me.body.position.z));
+    barkContact(tree, me.body.position, swing.contact);
   }
 
   function bundleOrigin(pid: string, count: number, out: THREE.Vector3) {
@@ -281,7 +307,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       (event.op === 'rail.chop' || event.op === 'rail.mine' || event.op === 'rail.beamChop') &&
       event.pid !== state.pid
     )
-      partnerSwing(event.pid);
+      partnerSwing(event);
     if (event.op === 'rail.drop') {
       const pile = state.piles.find(
         (pile) =>
@@ -533,7 +559,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     const body = inner();
     if (body) {
       const wasVisible = axe.visible;
-      applyFloatingChopPose(body, axe, swing.t, swing.response, frame ?? body);
+      applyFloatingChopPose(body, axe, swing.t, swing.response, frame ?? body, swing.contact);
       sparkleAxe(axe, wasVisible, reducedMotion, emit, readableIntensity(), dt);
     }
     updatePartnerAxes(dt);

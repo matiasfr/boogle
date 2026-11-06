@@ -809,10 +809,12 @@ Stage `light=production` uses the frozen sky with production Neutral and 0.16 ex
 **Appear, strike, return, vanish (owner playtest, 6 November):** "When it pulls back, it looks weird"; the
 particles should last "as long as it's existing". `applyFloatingChopPose` now pops the axe in beside your right
 side (scale 0.15 → 1.12 → 1 over 60 ms, a small upward cock, never behind the back), strikes in one accelerating
-arc that lands on the unchanged 0.12 s contact, holds the 35 ms bite, eases home by 0.40 s, floats with a 1.6 cm
+arc whose blade marker lands exactly on the bark contact on the unchanged 0.12 s beat (production: the cut's
+radius and 1.1 m height facing you; legacy Place: its raycast hit; the stage: its trunk), holds the 35 ms bite, eases home by 0.40 s, floats with a 1.6 cm
 bob, then swells, half-twirls and shrinks out from 0.72 to 0.90 s. Hardwood refusal kicks up and returns; a full
 back lifts sideways and returns. A press while it is still out restarts the strike from where the axe is, with no
-second pop. `sparkleAxe` emits ten glints on appearance, a continuous ivory-gold-lilac aura and blade trail while
+second pop. The grip stays at least 0.4 m out on the tree's side (right unless the tree is clearly left) and rests
+beside the hip, so neither the path nor its trail crosses the face. `sparkleAxe` emits ten glints on appearance, a continuous ivory-gold-lilac aura and blade trail while
 visible (36 a second plus 16 per metre of blade travel, at most 8 a frame, `readableIntensity()`), and eight on
 vanishing: about 70 births a cycle in the shared pool. In production a partner's accepted chop, rock break or beam
 stroke shows their axe from the contact beat, in step with the chips. All Local; contact timing, restart cadence,
