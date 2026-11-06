@@ -81,10 +81,11 @@ export function chips(x: number, y: number, z: number, n = 10, floor = y - 1.1, 
 }
 
 /** Low-alpha lobes, not a smoke wall. Dust keeps intensity one under the existing exposure policy. */
-export function dustRing(x: number, y: number, z: number, n = 10, speed = 2.2, size = 0.3) {
+export function dustRing(x: number, y: number, z: number, n = 10, speed = 2.2, size = 0.3, intensity = 1) {
   if (reducedMotion) return;
   n = Math.min(40, n);
   puff.alpha = particleEffects.dustAlpha;
+  puff.intensity = intensity; // celebratory rings pass readableIntensity(); every other caller keeps one
   for (let k = 0; k < n; k++) {
     const a = (k / n) * Math.PI * 2 + Math.random() * 0.3;
     const sp = speed * (0.5 + Math.random() * 0.4);
