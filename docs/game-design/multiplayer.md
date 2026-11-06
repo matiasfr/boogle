@@ -88,6 +88,11 @@ lockstep and Place train reconciliation are unchanged. Serves DESIGN.md 4, Coope
 
 ## 8.5 What persists and where
 
+The production T1 request pipeline keeps up to eight material requests outstanding. If a durable write blocks
+admission, later tokens within that same session window receive `busy` and retry their original identities in
+order. This backpressure does not require a snapshot or spend carried logs; only accepted application changes
+balances. Tokens outside the window and invalid sessions still require reconciliation.
+
 | What                                          | Where                                                                          | Key or route                                                  | Scope                       |
 | --------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------- | --------------------------- |
 | World snapshot (every state in `RULES`, tick) | The server's disk, every 2 s if changed, every 30 s and on shutdown regardless | `DATA_DIR/v02-<room>.json` (`GET /rooms/v02-<room>/snapshot`) | per room                    |
