@@ -10,7 +10,7 @@ export default {
   beats: [
     {
       name: 'Cove sandstone — authored beach fixture',
-      query: 'proto=place&terrain=cove&dev=1&coveShot=previz',
+      query: 'proto=place&dev=1&coveShot=previz',
       setup: 'dev/look/evals/terrain-cove.ts',
       warm: 3,
       cameras: [{ name: 'Previz beach interpretation', cam: [775, 6, 16], look: [806, 3, 43], fov: 62 }],

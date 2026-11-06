@@ -80,7 +80,7 @@
   tags, so a roof and a scaffold sharing an authored colour remain independently selectable. The six
   calibration anchors are controlled samples; Buddy, reference presets, grey/chrome balls and charts stay fixed.
   Coverage is the default Place terrain, town buildings, bridges, arrival timber and carried timber. Tree foliage,
-  signs, painted accents, coloured shop plaster, special props and the separate `terrain=cove` pilot retain their
+  signs, painted accents, coloured shop plaster, special props and the cove shore retain their
   own palettes. Ordinary visits retain the existing graphs and materials; tuning uses owned clones or live uniforms
   and instance-colour uploads. These boards are owner review, not a palette approval or device test.
 - **Base-colour diagnostic.** `?view=unlit` swaps lit surfaces to their authored albedo/texture and vertex colours,

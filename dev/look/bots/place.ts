@@ -73,8 +73,8 @@ async function playRoute() {
   // oxlint-disable-next-line typescript/no-explicit-any
   const place = window.__place as any;
   const coopRoute = q.get('coopRoute') === '1';
-  let coveWalking = q.get('terrain') === 'cove';
-  if (coopRoute || coveWalking) watchLanding();
+  let coveWalking = false; // true only while the shore leg runs: its recovery would hide a bad beach
+  if (coopRoute) watchLanding();
   const bot = makeBot({
     recover: () => {
       if (coveWalking) throw new Error('Cove route needed recovery; dry return is not proven');
@@ -129,8 +129,9 @@ async function playRoute() {
     return bot.walk(x, z, r, { limit });
   };
   const travel = go;
-  if (q.get('terrain') === 'cove') {
-    // The art pilot has no new required traversal. Exercise its pocket beach and return to the same climb.
+  // The shore is the arrival: walk the climb, the pocket beach and back up, dry, before the route proper.
+  await phase('cove', async () => {
+    coveWalking = true;
     await go(O - 187, 10, 1.5);
     await go(O - 179, 28, 1.5);
     const approach = [
@@ -162,7 +163,7 @@ async function playRoute() {
     note('cove uphill return');
     playMark('cove uphill return');
     coveWalking = false;
-  }
+  });
   const waitFor = (fn: () => unknown, ms = 60000, what = '') => bot.until(fn, ms, what);
   const lobe = (x: number, z: number) => {
     const a = (Math.atan2(x - O - 8, -(z + 10)) * 180) / Math.PI;

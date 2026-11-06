@@ -1,12 +1,10 @@
-// Bounded addition to level-check's physical coverage: real pilot mesh + real heightfield facade.
+// Bounded addition to level-check's physical coverage: real cove mesh + real heightfield facade.
 import fs from 'node:fs';
 import path from 'node:path';
 import { sourceBuild } from './build.ts';
 import { openScene, type Solid } from './scene.ts';
 
 export async function auditCove() {
-  // Headless level tools normally select classic. Select before importing the source-owned static recipe.
-  Object.defineProperty(globalThis, 'location', { value: { search: '?proto=place&terrain=cove' }, configurable: true });
   const T = await import('../../src/proto/place/terrain.ts');
   const C = await import('../../src/proto/place/cove.ts');
   const { ORIGIN } = await import('../../src/proto/place/layout.ts');
@@ -36,7 +34,7 @@ export async function auditCove() {
     protectedFineSamples = 0,
     protectedMaximumResidual = 0;
   try {
-    for (let z = T.COVE_FINE?.z0 ?? 16; z <= (T.COVE_FINE?.z1 ?? 78); z += 0.5)
+    for (let z = T.COVE_FINE.z0; z <= T.COVE_FINE.z1; z += 0.5)
       for (let x = -214; x <= -156; x += 0.5) {
         let expected = T.H(x + ORIGIN.x, z + ORIGIN.z);
         let hit = scene.below({ x: x + ORIGIN.x, y: 50, z: z + ORIGIN.z }, 60);
@@ -57,30 +55,29 @@ export async function auditCove() {
         if (T.coveProtection(m.vertices[k]!, m.vertices[k + 2]!) === 0) protectedVertices++;
     if (protectedVertices) errors.push({ protectedVertices });
     const fine = T.COVE_FINE;
-    if (fine)
-      for (let j = 0; j < fine.nz; j++)
-        for (let i = 0; i < fine.nx; i++) {
-          const x = fine.x0 + i * fine.cell,
-            z = fine.z0 + j * fine.cell;
-          if (T.coveProtection(x, z) !== 0) continue;
-          protectedFineSamples++;
-          const ci = Math.floor((x - T.cellX(0)) / T.CELL),
-            cj = Math.floor((z - T.cellZ(0)) / T.CELL);
-          const u = (x - T.cellX(ci)) / T.CELL,
-            v = (z - T.cellZ(cj)) / T.CELL;
-          const a = T.heights[T.at(ci, cj)]!,
-            b = T.heights[T.at(ci + 1, cj)]!;
-          const c = T.heights[T.at(ci, cj + 1)]!,
-            d = T.heights[T.at(ci + 1, cj + 1)]!;
-          const original = u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
-          protectedMaximumResidual = Math.max(
-            protectedMaximumResidual,
-            Math.abs(fine.heights[i + j * fine.nx]! - original),
-          );
-        }
+    for (let j = 0; j < fine.nz; j++)
+      for (let i = 0; i < fine.nx; i++) {
+        const x = fine.x0 + i * fine.cell,
+          z = fine.z0 + j * fine.cell;
+        if (T.coveProtection(x, z) !== 0) continue;
+        protectedFineSamples++;
+        const ci = Math.floor((x - T.cellX(0)) / T.CELL),
+          cj = Math.floor((z - T.cellZ(0)) / T.CELL);
+        const u = (x - T.cellX(ci)) / T.CELL,
+          v = (z - T.cellZ(cj)) / T.CELL;
+        const a = T.heights[T.at(ci, cj)]!,
+          b = T.heights[T.at(ci + 1, cj)]!;
+        const c = T.heights[T.at(ci, cj + 1)]!,
+          d = T.heights[T.at(ci + 1, cj + 1)]!;
+        const original = u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
+        protectedMaximumResidual = Math.max(
+          protectedMaximumResidual,
+          Math.abs(fine.heights[i + j * fine.nx]! - original),
+        );
+      }
     if (protectedMaximumResidual > 0.000001) errors.push({ protectedMaximumResidual });
-    const fineTriangles = fine ? (fine.nx - 1) * (fine.nz - 1) * 2 : 0;
-    const replacedCoarseTriangles = fine ? ((fine.x1 - fine.x0) / T.CELL) * ((fine.z1 - fine.z0) / T.CELL) * 2 : 0;
+    const fineTriangles = (fine.nx - 1) * (fine.nz - 1) * 2;
+    const replacedCoarseTriangles = ((fine.x1 - fine.x0) / T.CELL) * ((fine.z1 - fine.z0) / T.CELL) * 2;
     const build = sourceBuild();
     const dir = path.resolve('.look/level-check', build.sourceHash, 'cove');
     fs.mkdirSync(dir, { recursive: true });

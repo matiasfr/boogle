@@ -955,25 +955,27 @@ through material patches, preserving the look's colour/normal nodes. Only built 
 resetting/removing their solids removes the corresponding contacts. Their analytic foam/spray footprints do not rebake
 the shore atlas and never treat bridge decks as seabed. Dry bank/deck surfaces remain dry receivers.
 
-### Shore profile comparison
+### The shore: the west cove
 
-**West-cove art pilot (5 November, branch review only).** `?proto=place&terrain=cove&room=proto-place-cove&fresh=1`
-keeps the ordinary grey box as default. The flag selects its own comparison room, including room-only invites,
-because static collision changes. Its gameplay role is a vista and natural boundary beside the arrival climb,
-not a new reward destination or required route. From the first turn at world (813,10), the broad path leads toward
-(823,28) and town while the cove sits to the right. The low pocket remains physically accessible for an optional
-pause and return; no reward, directed side path or invisible barrier is added. The pilot bot's detour proves access,
-not newcomer motivation. [Round-six rationale](../plans/terrain-pilot.md#round-6--gameplay-rationale-before-the-look)
+**The west cove is the shore (6 November).** The owner chose it over the plain grey-box coast ("I really like the cove. It
+looks a lot nicer."), so every Place entry has it: the default game, the production railway and the other Place variants
+share one terrain, one collision surface and one sea. The earlier `terrain=cove` flag, its `proto-place-cove` room, its
+prototype-card variant and the `coveView=shape|dry` art views are gone; there is no alternative coast. Its gameplay role is
+a vista and natural boundary beside the arrival climb, not a new reward destination or required route. From the first turn
+at world (813,10), the broad path leads toward (823,28) and town while the cove sits to the right. The low pocket remains
+physically accessible for an optional pause and return; no reward, directed side path or invisible barrier is added. The
+default playthrough bot walks the pocket beach dry and back up the climb as its first beat, which proves access, not
+newcomer motivation. [Round-six rationale](../plans/terrain-pilot.md#round-6--gameplay-rationale-before-the-look)
 records the source-backed choice before the look revision. Previz supplies reference, not a matching target.
 One headland at local z 34–74 rises out of the beach and wraps into the positive-z cove shoulder;
 the bounded inland blend stops before town and protects the complete landing fade, path shoulders and rail formation.
-The heightfield owns the sandy pocket, submerged shelf and backing slope. The smooth terrain revision adds a bounded
-one-metre patch at local x -212…-160, z 16…78; the rest keeps its two-metre grid. Five disjoint heightfields match
-the rendered surface, and protected route samples retain their original heights. One connected rounded cliff,
+The heightfield owns the sandy pocket, submerged shelf and backing slope. A bounded one-metre patch at local
+x -212…-160, z 16…78 refines the surface; the rest keeps its two-metre grid. Five disjoint heightfields match
+the rendered surface, and protected route samples retain their original heights. One connected rounded cliff and
 three low rounded waterline buttresses use two opaque cullable batches and the exact same
 1,942 triangles for collision. The toe shares the face's skin and rounded cap, with no intersecting end-wall ramp or
 small stepping fragments. The rear return and nose closure are fitted below the finished soil, retaining one
-rounded mass without exposed end-wall slivers. Refinement adds 4,836 triangles, for 6,778 render additions in total.
+rounded mass without exposed end-wall slivers. The shore adds 6,778 render triangles in total (4,836 of them the fine patch).
 Beyond local z48, the far cap begins its return earlier, easing into the buried backing across a wider shoulder;
 the played toe and front lip retain their positions. This removes the steep exposed rear-return strip.
 No added lights, post passes or per-frame terrain uploads.
@@ -1003,10 +1005,10 @@ geometry, protected routes, two kit draws and 6,778 added render triangles. Tota
 4,205,500 bytes, within the 4.33 MiB proof envelope; no extra light or pass is added.
 These presentation fields leave the shared support positions and collision triangles unchanged.
 All 63 look settings are local tunables
-(`cove.*`); none changes collision or simulation. The final art candidate still requires coordinator/owner review.
-Under this flag only, idle Buddy cancels gravity tangent to actual walkable static support while retaining normal
-pressure. Moving input, swimming, moving decks, jumps and upward impulses keep their normal behavior. Seven sampled
-eight-second post-stop assertions remain in the motion fixture; results are sampled, not exhaustive contact coverage.
+(`cove.*`); none changes collision or simulation. Idle Buddy cancels gravity tangent to actual walkable static support
+while retaining normal pressure, so standing on the beach does not slide. Moving input, swimming, moving decks, jumps and
+upward impulses keep their normal behavior. Seven sampled eight-second post-stop assertions remain in the motion fixture;
+results are sampled, not exhaustive contact coverage.
 The [prior assessment](../research/terrain-pilot-followup.md) preserves round-two evidence, which predates this geometry.
 Water depth comes from the same terrain/solid surface; rounded rock footprints supply wave obstacles. Existing receiver
 wetness, caustics and swash stay separate from water foam. Cove sand adds the Ultra Water demo's damp pigment,
@@ -1016,11 +1018,11 @@ contrast uses the existing backwash clock; filtered sand-tinted foam covers sand
 ocean's contact foam rather than the former dotted ground-swash lace. Submerged cove sand remains continuously wet
 below the swash sampler's −0.3 m cutoff, avoiding an angular dry-colour contour underwater; exposed sand still dries
 with the shared backwash clock.
-`&coveView=shape` retains the clay comparison with procedural normal detail;
-`&coveView=dry` removes land and kit wet receivers for the material comparison. Neither changes collision.
-Local presentation/static Owner collision; no new save or lockstep state. H uses the actual grid triangles plus kit
-surfaces under the flag. Catalog inputs, IDs, progression and The Boogler's copy stay unchanged. Not adopted beyond
-this corner; owner playtest and device validation remain pending. Serves DESIGN.md 11, Show, don't tell.
+Local presentation and static Owner collision; no new save or lockstep state, so `WORLD_NS` did not move. H uses the
+actual grid triangles plus kit surfaces. The tree catalog is captured before the shore is shaped, so tree IDs, harvest
+state, progression and The Boogler's copy are unchanged. Owner playtest and device validation remain pending.
+Serves DESIGN.md 11, Show, don't tell. The look evals (`dev/look/evals/terrain-cove.ts`, `coveShot=arrival|wide|previz`)
+and the collision audit (`npm run level-check -- --place=place --physics --region=cove`) now run against the default game, with no flags.
 
 `?proto=place&water=new&shelf=demo` is a Local geometry-only A/B experiment. It copies the owner's measured Ultra
 Water bearing-95 beach profile onto the east shore at world (1219.513, 8.505), oriented 95° clockwise from north.

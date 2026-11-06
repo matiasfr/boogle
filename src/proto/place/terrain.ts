@@ -3,7 +3,7 @@
 // here overhangs; footbridges and platforms are their own boxes. Local: nothing here reaches the sim.
 import { smoothstep } from '../../math.ts';
 import { frameBesideLine, FRAME_D, FRAME_W, SPAN } from './spatial-station.ts';
-import { COVE, coveFront, coveGround, coveSurface, coveWeight, fitCoveBacking } from './cove.ts';
+import { coveFront, coveGround, coveSurface, coveWeight, fitCoveBacking } from './cove.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';
 import {
   ARMS,
@@ -394,7 +394,7 @@ function coarseHeight(x: number, z: number, triangles = false) {
     : a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
 }
 
-// The pilot composes after catalog capture and shore grading. Preserve complete route shoulders,
+// The cove composes after catalog capture and shore grading. Preserve complete route shoulders,
 // the landing fade and rail formation, including a 2 m cell margin.
 export function coveProtection(x: number, z: number) {
   let clearance = Math.hypot(x - SHORE_LANDING.x, z - SHORE_LANDING.z) - 16;
@@ -411,35 +411,30 @@ export function coveProtection(x: number, z: number) {
     }
   return smoothstep(0, 3, clearance);
 }
-if (COVE) {
-  for (let j = 0; j < NZ; j++)
-    for (let i = 0; i < NX; i++) {
-      const x = cellX(i),
-        z = cellZ(j),
-        k = at(i, j);
-      const weight = coveWeight(x, z);
-      if (!weight) continue;
-      const protectedWeight = weight * coveProtection(x, z);
-      const shaped = coveGround(x, z);
-      const raised = Math.max(heights[k]!, shaped);
-      // Only the bounded beach pocket and its kit backing may carve before the main cove carve.
-      // Route/rail/landing protection still gates the complete change, including this lowering.
-      const across = x - coveFront(z);
-      const beachCarve =
-        smoothstep(-18, -13, across) *
-        (1 - smoothstep(-4, -1, across)) *
-        smoothstep(32, 38, z) *
-        (1 - smoothstep(44, 50, z));
-      const backingCarve =
-        smoothstep(-1, 2, across) *
-        (1 - smoothstep(6, 10, across)) *
-        smoothstep(32, 38, z) *
-        (1 - smoothstep(46, 52, z));
-      const target = raised + (shaped - raised) * Math.max(smoothstep(42, 54, z), beachCarve, backingCarve);
-      heights[k] = heights[k]! + (target - heights[k]!) * protectedWeight;
-      clearMask[k] = Math.max(clearMask[k]!, protectedWeight);
-    }
-}
+for (let j = 0; j < NZ; j++)
+  for (let i = 0; i < NX; i++) {
+    const x = cellX(i),
+      z = cellZ(j),
+      k = at(i, j);
+    const weight = coveWeight(x, z);
+    if (!weight) continue;
+    const protectedWeight = weight * coveProtection(x, z);
+    const shaped = coveGround(x, z);
+    const raised = Math.max(heights[k]!, shaped);
+    // Only the bounded beach pocket and its kit backing may carve before the main cove carve.
+    // Route/rail/landing protection still gates the complete change, including this lowering.
+    const across = x - coveFront(z);
+    const beachCarve =
+      smoothstep(-18, -13, across) *
+      (1 - smoothstep(-4, -1, across)) *
+      smoothstep(32, 38, z) *
+      (1 - smoothstep(44, 50, z));
+    const backingCarve =
+      smoothstep(-1, 2, across) * (1 - smoothstep(6, 10, across)) * smoothstep(32, 38, z) * (1 - smoothstep(46, 52, z));
+    const target = raised + (shaped - raised) * Math.max(smoothstep(42, 54, z), beachCarve, backingCarve);
+    heights[k] = heights[k]! + (target - heights[k]!) * protectedWeight;
+    clearMask[k] = Math.max(clearMask[k]!, protectedWeight);
+  }
 
 /** Exact anti-diagonal triangles shared by the cove renderer and heightfields. */
 function triangleHeight(a: number, b: number, c: number, d: number, u: number, v: number) {
@@ -497,11 +492,11 @@ function buildFineCove() {
 }
 
 /** Bounded 1 m refinement. The rest of Place retains its original 2 m grid and catalog. */
-export const COVE_FINE = COVE ? buildFineCove() : null;
+export const COVE_FINE = buildFineCove();
 
 export function fineHeightAt(x: number, z: number, fallback: number): number {
   const fine = COVE_FINE;
-  if (!fine || x < fine.x0 || x > fine.x1 || z < fine.z0 || z > fine.z1) return fallback;
+  if (x < fine.x0 || x > fine.x1 || z < fine.z0 || z > fine.z1) return fallback;
   const fx = (x - fine.x0) / fine.cell,
     fz = (z - fine.z0) / fine.cell;
   const i = Math.min(Math.floor(fx), fine.nx - 2),
@@ -512,7 +507,7 @@ export function fineHeightAt(x: number, z: number, fallback: number): number {
 
 // Static final assembly: fit the opaque kit return to the finished, protected soil.
 // Do not sample H here: it already includes the kit whose shared triangles we are fitting.
-if (COVE_FINE) fitCoveBacking((x, z) => fineHeightAt(x, z, coarseTriangleHeight(x, z)));
+fitCoveBacking((x, z) => fineHeightAt(x, z, coarseTriangleHeight(x, z)));
 
 export type TerrainCollisionTile = {
   heights: number[][];
@@ -533,7 +528,6 @@ export function terrainCollisionTiles(): TerrainCollisionTile[] {
     position: { x: ORIGIN.x + x0, y: 0, z: ORIGIN.z + z1 },
   });
   const fine = COVE_FINE;
-  if (!fine) return [coarse(GRID.x0, GRID.x1, GRID.z0, GRID.z1)];
   return [
     coarse(GRID.x0, fine.x0, GRID.z0, GRID.z1),
     coarse(fine.x1, GRID.x1, GRID.z0, GRID.z1),
@@ -549,23 +543,22 @@ export function terrainCollisionTiles(): TerrainCollisionTile[] {
   ];
 }
 
-/** Finished rendered/collision surface for grounding audits, including the flagged fine grid and kit. */
+/** Finished rendered/collision surface for grounding audits, including the fine cove grid and kit. */
 export function surfaceHeight(wx: number, wz: number) {
   const coarse = coarseHeight(wx, wz, true);
-  return COVE ? coveSurface(wx - ORIGIN.x, wz - ORIGIN.z, fineHeightAt(wx - ORIGIN.x, wz - ORIGIN.z, coarse)) : coarse;
+  return coveSurface(wx - ORIGIN.x, wz - ORIGIN.z, fineHeightAt(wx - ORIGIN.x, wz - ORIGIN.z, coarse));
 }
 
 /** The land's height at a world point. */
 export function H(wx: number, wz: number) {
   const lx = wx - ORIGIN.x,
     lz = wz - ORIGIN.z;
-  // The pilot's 4 m apron uses its unchanged coarse triangles too. Bilinear lookup here
+  // The cove's 4 m apron uses its unchanged coarse triangles too. Bilinear lookup here
   // otherwise disagrees with the actual rendered/collision surface immediately outside the patch.
   const nearFine =
     lx >= fineBounds.x0 - 4 && lx <= fineBounds.x1 + 4 && lz >= fineBounds.z0 - 4 && lz <= fineBounds.z1 + 4;
-  const pilot = COVE && (coveWeight(lx, lz) > 0 || nearFine);
-  const h = coarseHeight(wx, wz, pilot);
-  return COVE ? coveSurface(wx - ORIGIN.x, wz - ORIGIN.z, fineHeightAt(wx - ORIGIN.x, wz - ORIGIN.z, h)) : h;
+  const h = coarseHeight(wx, wz, coveWeight(lx, lz) > 0 || nearFine);
+  return coveSurface(lx, lz, fineHeightAt(lx, lz, h));
 }
 export const insidePlace = (wx: number, wz: number) =>
   wx - ORIGIN.x > GRID.x0 + 4 &&

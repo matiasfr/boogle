@@ -73,14 +73,9 @@ export const PROTOS: Proto[] = [
         what: 'The same telescope view and zoom, with a little optional bounded panning.',
       },
       {
-        name: 'cove',
-        url: '/?proto=place&v=cove&terrain=cove&room=proto-place-cove&fresh=1',
-        what: 'Does this shore feel like a place you want to walk into? One layered sandstone headland beside the climb.',
-      },
-      {
         name: 'village',
         url: '/?proto=place&v=village&intro=1',
-        what: 'The previous village landing and coast, for comparison with the walk up from shore.',
+        what: 'The previous village landing, for comparison with the walk up from shore.',
       },
     ],
   },

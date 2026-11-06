@@ -37,8 +37,8 @@ export default {
       variants,
     },
     {
-      name: 'Shore cove — terrain=cove (current coast)',
-      query: 'proto=place&dev=1&terrain=cove',
+      name: 'Shore cove — the arrival coast',
+      query: 'proto=place&dev=1',
       warm: 3,
       cameras: [{ name: 'Cove', cam: [780, 18, 53], look: [802, 1, 10], fov: 62 }],
       variants,

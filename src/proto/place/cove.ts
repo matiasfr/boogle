@@ -1,11 +1,7 @@
-// Bounded sandstone pilot: static Local geometry and Owner collision, never lockstep state.
+// The west cove, the arrival shore: static Local geometry and Owner collision, never lockstep state.
 // One metre per unit, Y up. Original code recipe; references: docs/plans/terrain-pilot.md.
 import { smoothstep } from '../../math.ts';
-import { pageQuery } from '../flags.ts';
 
-export const COVE = pageQuery().get('terrain') === 'cove';
-export const COVE_CLAY = pageQuery().get('coveView') === 'shape';
-export const COVE_DRY = COVE_CLAY || pageQuery().get('coveView') === 'dry';
 export const COVE_BOUNDS = { x0: -216, x1: -154, z0: 30, z1: 80 };
 export const coveFront = (z: number) =>
   -192 - 5 * Math.sin(((Math.max(42, Math.min(66, z)) - 42) * Math.PI) / 24) + 0.12 * Math.max(0, z - 66) ** 2;
@@ -47,12 +43,10 @@ export type CoveMesh = {
   roof: boolean[];
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
 };
-const pigment = (hex: number) => [((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255];
 // Linear albedos tuned under the actual frozen sky; the board's swatches are intent, not a colour transform.
 const stone = [0.62, 0.35, 0.12],
   seam = [0.29, 0.16, 0.07],
   turf = [0.19, 0.32, 0.04];
-const clay = pigment(0xa7a39a);
 function empty(name: string): CoveMesh {
   return {
     name,
@@ -67,7 +61,7 @@ function empty(name: string): CoveMesh {
 }
 function vertex(mesh: CoveMesh, x: number, y: number, z: number, rgb: number[], shade = 1, cap = 0, roof = false) {
   mesh.vertices.push(x, y, z);
-  mesh.colors.push(...(COVE_CLAY ? clay : rgb).map((c) => c * shade));
+  mesh.colors.push(...rgb.map((c) => c * shade));
   mesh.turf.push(cap);
   mesh.roof.push(roof);
   mesh.bounds.minX = Math.min(mesh.bounds.minX, x);
@@ -355,7 +349,7 @@ function smoothNormals(mesh: CoveMesh) {
   }
   return mesh;
 }
-export const coveMeshes = COVE ? [cliff(), blocks()].map(smoothNormals) : [];
+export const coveMeshes = [cliff(), blocks()].map(smoothNormals);
 
 /** Terrain calls this once after baking its fine grid, before any view or body is built.
  * Sample only the finished heightfield, never H/coveSurface: this fit supplies that later surface query. */
