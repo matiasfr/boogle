@@ -4,6 +4,7 @@
 // 4, 7 and 9). Cosmetic and local; never read by the sim. A new speaker is a new VoiceSpec.
 import { dbToGain, duckForVoice, getAudio } from './audio.ts';
 import { noiseBuffer } from './noise.ts';
+import { audioSettings, onAudioSettingChange } from './audio-tuning.ts';
 import { hash2 } from '../math-pure.ts';
 import { FNV_SEED, foldStr } from '../sim/hash.ts';
 
@@ -165,7 +166,15 @@ export function createLane(ctx: BaseAudioContext, out: AudioNode, v: VoiceSpec) 
   bright.type = 'lowpass';
   bright.frequency.value = v.brightnessHz;
   const cut = ctx.createGain();
-  env.connect(bright).connect(cut).connect(out);
+  // Move the former voice-bus compensation to the phrase itself; retain vowel/formant and chatter proportions.
+  const calibration = ctx.createGain();
+  calibration.gain.value = dbToGain(audioSettings.voicePhraseDb);
+  const releaseCalibration = onAudioSettingChange((key, value) => {
+    if (key !== 'voicePhraseDb') return;
+    calibration.gain.cancelAndHoldAtTime(ctx.currentTime);
+    calibration.gain.linearRampToValueAtTime(dbToGain(value), ctx.currentTime + 0.03);
+  });
+  env.connect(bright).connect(cut).connect(calibration).connect(out);
   const bands = [0, 1, 2].map(() => {
     const filter = ctx.createBiquadFilter();
     filter.type = 'bandpass';
@@ -173,8 +182,11 @@ export function createLane(ctx: BaseAudioContext, out: AudioNode, v: VoiceSpec) 
     osc.connect(filter).connect(gain).connect(env);
     return { filter, gain };
   });
-  const nodes = [osc, env, bright, cut, ...bands.flatMap((b) => [b.filter, b.gain])];
-  osc.onended = () => nodes.forEach((n) => n.disconnect());
+  const nodes = [osc, env, bright, cut, calibration, ...bands.flatMap((b) => [b.filter, b.gain])];
+  osc.onended = () => {
+    releaseCalibration();
+    nodes.forEach((n) => n.disconnect());
+  };
   osc.start();
 
   function consonant(t: number, kind: Kind) {

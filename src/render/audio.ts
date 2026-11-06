@@ -1,16 +1,11 @@
-// One shared WebAudio context for cosmetic feature sounds (impact, ping, honk), and the game's mix. Created and resumed
-// on the first user gesture, since browsers refuse to start audio before one. Mobile browsers only count the end of a
-// tap (touchend / pointerup / click) as a gesture, not touchstart / pointerdown. Local only; never read by the simulation.
-//
-//   music, ambience -> duck \
-//   sfx, ui, voice ----------> master (the player's volume) -> compressor -> speakers
+// One gesture-unlocked context. All levels are Local presentation, never simulation state.
+// source → authored bus → user category → duck → compressor → profile → user master → speakers.
+// Character/work/social feed SFX; they never bypass its parent trim.
 import { clamp } from '../math-pure.ts';
+import { audioSettings, onAudioSettingChange, type AudioSetting } from './audio-tuning.ts';
 
-export type Bus = 'music' | 'ambience' | 'sfx' | 'ui' | 'voice';
-// The balance between the buses, in dB. Balance a kind of sound here, not in each sound.
-const MIX_DB: Record<Bus, number> = { music: -13, ambience: 0, sfx: 0, ui: 0, voice: -12 };
-const MASTER = 0.8;
-const DUCK_DB = -9; // music and ambience while an NPC speaks
+export type Bus = 'music' | 'ambience' | 'sfx' | 'ui' | 'voice' | 'character' | 'work' | 'social';
+const BUS_NAMES: readonly Bus[] = ['music', 'ambience', 'sfx', 'ui', 'voice', 'character', 'work', 'social'];
 const VOLUME_KEY = 'boogle.volume';
 const MUTED_KEY = 'boogle.muted';
 export const dbToGain = (db: number) => 10 ** (db / 20);
@@ -19,88 +14,114 @@ function stored(key: string) {
   try {
     return localStorage.getItem(key);
   } catch {
-    return null; // private mode: the setting lasts this visit
+    return null;
   }
 }
 function store(key: string, value: string) {
   try {
     localStorage.setItem(key, value);
   } catch {
-    // private mode
+    // Private mode retains settings for this visit.
   }
 }
 const savedVolume = Number(stored(VOLUME_KEY) ?? 1);
 let volume = savedVolume >= 0 && savedVolume <= 1 ? savedVolume : 1;
 let muted = stored(MUTED_KEY) === '1';
-
+let voiceDucking = false;
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
-let duck: GainNode | null = null;
-let buses: Record<Bus, GainNode> | null = null;
-let output: AudioNode | null = null;
-// Measurement taps the actual final graph without constructing another context.
-export const audioOutput = () => (ctx && output ? { ctx, out: output } : null);
-// Squared, so the slider's middle sounds about half as loud.
-const masterGain = () => (muted ? 0 : MASTER * volume * volume);
-// Older Safari's prefix, and iOS's audio session (not in the DOM types yet).
+let profile: GainNode | null = null;
+type BusNodes = { authored: GainNode; user: GainNode; duck: GainNode };
+const buses = new Map<Bus, BusNodes>();
+const userVolumes = new Map<Bus, number>(BUS_NAMES.map((bus) => [bus, 1]));
+const masterGain = () => (muted ? 0 : volume * volume);
+const authoredDb = (bus: Bus) => audioSettings[`${bus}Db`];
+const duckDb = (bus: Bus) =>
+  !voiceDucking
+    ? 0
+    : bus === 'music'
+      ? audioSettings.duckMusicDb
+      : bus === 'ambience'
+        ? audioSettings.duckAmbienceDb
+        : 0;
 const w = window as Window & { webkitAudioContext?: typeof AudioContext };
 const nav = navigator as Navigator & { audioSession?: { type: string } };
+
+function smooth(param: AudioParam, value: number) {
+  if (!ctx) return;
+  param.cancelAndHoldAtTime(ctx.currentTime);
+  param.linearRampToValueAtTime(value, ctx.currentTime + 0.03);
+}
+function applyDuck() {
+  if (!ctx) return;
+  const seconds = (voiceDucking ? audioSettings.duckAttackMs : audioSettings.duckReleaseMs) / 1000;
+  for (const [bus, nodes] of buses) {
+    nodes.duck.gain.cancelAndHoldAtTime(ctx.currentTime);
+    nodes.duck.gain.setTargetAtTime(dbToGain(duckDb(bus)), ctx.currentTime, seconds);
+  }
+}
+onAudioSettingChange((key: AudioSetting) => {
+  if (!ctx) return; // Values survive until the first gesture; edits never unlock audio.
+  for (const [bus, nodes] of buses) if (key === `${bus}Db`) smooth(nodes.authored.gain, dbToGain(authoredDb(bus)));
+  if (key === 'profileDb' && profile) smooth(profile.gain, dbToGain(audioSettings.profileDb));
+  if (key.startsWith('duck')) applyDuck();
+});
 
 function unlock() {
   try {
     if (!ctx) {
       const AC = window.AudioContext || w.webkitAudioContext;
       if (!AC) return;
-      // iOS: play through the ring/silent switch like a game, instead of being muted as an "ambient" sound.
       if (nav.audioSession) nav.audioSession.type = 'playback';
       ctx = new AC();
-      const comp = ctx.createDynamicsCompressor(); // several players honking at once should stay pleasant
+      const comp = ctx.createDynamicsCompressor();
       comp.threshold.value = -20;
       comp.ratio.value = 6;
-      const m = (master = ctx.createGain());
-      m.gain.value = masterGain();
-      m.connect(comp);
-      comp.connect(ctx.destination);
-      output = comp;
-      const d = (duck = ctx.createGain());
-      d.connect(m);
-      const make = (bus: Bus, to: AudioNode) => {
-        const g = ctx!.createGain();
-        g.gain.value = dbToGain(MIX_DB[bus]);
-        g.connect(to);
-        return g;
-      };
-      buses = {
-        music: make('music', d),
-        ambience: make('ambience', d),
-        sfx: make('sfx', m),
-        ui: make('ui', m),
-        voice: make('voice', m),
-      };
+      profile = ctx.createGain();
+      profile.gain.value = dbToGain(audioSettings.profileDb);
+      master = ctx.createGain();
+      master.gain.value = masterGain();
+      comp.connect(profile).connect(master).connect(ctx.destination);
+      for (const bus of BUS_NAMES) {
+        const authored = ctx.createGain(),
+          user = ctx.createGain(),
+          duck = ctx.createGain();
+        authored.gain.value = dbToGain(authoredDb(bus));
+        user.gain.value = userVolumes.get(bus)! ** 2;
+        duck.gain.value = dbToGain(duckDb(bus));
+        authored.connect(user).connect(duck);
+        duck.connect(bus === 'character' || bus === 'work' || bus === 'social' ? buses.get('sfx')!.authored : comp);
+        buses.set(bus, { authored, user, duck });
+      }
     }
-    // 'interrupted' is iOS after a call or app switch; it needs a resume just like 'suspended'.
     if (ctx.state !== 'running') ctx.resume().catch(() => {});
   } catch {
+    // Do not retain a half-built graph if the platform refused context creation.
+    if (ctx) void ctx.close().catch(() => {});
     ctx = null;
+    master = profile = null;
+    buses.clear();
   }
 }
 for (const ev of ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'click', 'keydown']) {
   addEventListener(ev, unlock, { passive: true, capture: true });
 }
 
-// { ctx, out } once audio is running, otherwise null (callers just skip the sound). `out` is the bus's input.
 export function getAudio(bus: Bus = 'sfx'): { ctx: AudioContext; out: AudioNode } | null {
-  if (!ctx || !buses || ctx.state !== 'running') return null;
-  return { ctx, out: buses[bus] };
+  const nodes = buses.get(bus);
+  return ctx?.state === 'running' && nodes ? { ctx, out: nodes.authored } : null;
 }
-
-// The player's volume (0-1) and mute, from the pause view; remembered in this browser.
+/** Measurement taps the exact final output, including user master/mute, without changing the graph. */
+export function audioOutput(): { ctx: AudioContext; out: AudioNode } | null {
+  return ctx?.state === 'running' && master ? { ctx, out: master } : null;
+}
 export const getVolume = () => volume;
 export const isMuted = () => muted;
 function applyVolume() {
-  if (ctx && master) master.gain.setTargetAtTime(masterGain(), ctx.currentTime, 0.015);
+  if (master) smooth(master.gain, masterGain());
 }
 export function setVolume(v: number) {
+  if (!Number.isFinite(v)) return;
   volume = clamp(v, 0, 1);
   store(VOLUME_KEY, String(volume));
   applyVolume();
@@ -110,11 +131,51 @@ export function setMuted(on: boolean) {
   store(MUTED_KEY, on ? '1' : '0');
   applyVolume();
 }
-
-// Music and ambience dip while an NPC speaks, and ease back after.
-export function duckForVoice(on: boolean) {
-  if (ctx && duck) duck.gain.setTargetAtTime(on ? dbToGain(DUCK_DB) : 1, ctx.currentTime, on ? 0.03 : 0.25);
+/** User category volume remains independent of author calibration and temporary ducks. */
+export function setBusVolume(bus: Bus, value: number) {
+  if (!Number.isFinite(value)) return;
+  const v = clamp(value, 0, 1);
+  userVolumes.set(bus, v);
+  const nodes = buses.get(bus);
+  if (nodes) smooth(nodes.user.gain, v * v);
 }
-
-// Musical sound effects currently play at the requested time and pitch, without added latency.
+export function audioSnapshot() {
+  return {
+    context: ctx?.state ?? 'locked',
+    settings: { ...audioSettings },
+    volume,
+    muted,
+    voiceDucking,
+    masterGain: master?.gain.value ?? null,
+    profileGain: profile?.gain.value ?? null,
+    buses: BUS_NAMES.map((bus) => {
+      const nodes = buses.get(bus);
+      return {
+        bus,
+        authoredDb: authoredDb(bus),
+        userVolume: userVolumes.get(bus),
+        duckDb: duckDb(bus),
+        authoredGain: nodes?.authored.gain.value ?? null,
+        userGain: nodes?.user.gain.value ?? null,
+        duckGain: nodes?.duck.gain.value ?? null,
+        effectiveGain: nodes
+          ? nodes.authored.gain.value *
+            nodes.user.gain.value *
+            nodes.duck.gain.value *
+            (bus === 'character' || bus === 'work' || bus === 'social'
+              ? buses.get('sfx')!.authored.gain.value *
+                buses.get('sfx')!.user.gain.value *
+                buses.get('sfx')!.duck.gain.value
+              : 1)
+          : null,
+        parent: bus === 'character' || bus === 'work' || bus === 'social' ? 'sfx' : null,
+      };
+    }),
+  };
+}
+// Keep the existing boolean lifecycle for this pass; owned overlapping claims are ordered step 6.
+export function duckForVoice(on: boolean) {
+  voiceDucking = on;
+  applyDuck();
+}
 export const onBeat = (t: number, freq = 0) => ({ t, freq });

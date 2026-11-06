@@ -12,7 +12,8 @@
 //                           after a pause
 //   uiSound('flap', vol)    a work-site plaque turned a row over (a pour was credited): a quiet split-flap flutter (four
 //                           tiny card clicks, no pitched pip), at vol (0-1, by distance from the plaque)
-import { getAudio } from '../render/audio.ts';
+import { dbToGain, getAudio } from '../render/audio.ts';
+import { audioSettings } from '../render/audio-tuning.ts';
 import { clink } from '../render/clink.ts';
 import { noiseBuffer } from '../render/noise.ts';
 
@@ -26,16 +27,6 @@ const note = (n: number): number => ROOT * 2 ** Math.floor(n / 5) * PENTA[((n % 
 const GAP: Record<UiSound, number> = { tick: 30, pop: 220, thunk: 80, deny: 250, count: 35, flap: 240 }; // ms between plays
 const last: Record<string, number> = {};
 let run = 0;
-
-let bus: GainNode | null = null;
-function busFor(ctx: AudioContext, out: AudioNode): GainNode {
-  if (bus?.context !== ctx) {
-    bus = ctx.createGain();
-    bus.gain.value = 0.4; // about -8 dB: UI sits under the world
-    bus.connect(out);
-  }
-  return bus;
-}
 
 type Blip = {
   type: OscillatorType;
@@ -76,8 +67,8 @@ export function uiSound(kind: UiSound, arg = 0): void {
   if (!a || now - (last[kind] ?? -1e9) < GAP[kind] || (kind === 'flap' && arg <= 0.02) || (kind === 'tick' && !TICK))
     return;
   last[kind] = now;
-  const { ctx } = a;
-  const out = busFor(ctx, a.out);
+  // The old 0.4 helper trim belongs to the authored UI bus now, exactly once.
+  const { ctx, out } = a;
   const at = ctx.currentTime + 0.005;
   const j = 1 + (Math.random() * 2 - 1) * 0.04; // ±4%: never the same twice
   switch (kind) {
@@ -92,9 +83,10 @@ export function uiSound(kind: UiSound, arg = 0): void {
       // A mallet on a wooden bar: the fundamental rings briefly, its 4th partial (a marimba's) and a soft click give
       // the strike, and a low knock under it gives weight. Round, short, in the kit's key.
       const f = note(-2) * j; // G4
-      blip(ctx, out, { type: 'sine', f0: f, at, dur: 0.22, peak: 0.42, attack: 0.002 });
-      blip(ctx, out, { type: 'sine', f0: f * 4, at, dur: 0.035, peak: 0.1, attack: 0.001 });
-      blip(ctx, out, { type: 'sine', f0: 170 * j, f1: 85 * j, at, dur: 0.09, peak: 0.38, attack: 0.002 });
+      const level = dbToGain(audioSettings.uiThunkDb);
+      blip(ctx, out, { type: 'sine', f0: f, at, dur: 0.16, peak: 0.42 * level, attack: 0.002 });
+      blip(ctx, out, { type: 'sine', f0: f * 4, at, dur: 0.035, peak: 0.1 * level, attack: 0.001 });
+      blip(ctx, out, { type: 'sine', f0: 170 * j, f1: 85 * j, at, dur: 0.07, peak: 0.2 * level, attack: 0.002 });
       const n = ctx.createBufferSource();
       n.buffer = noiseBuffer(ctx, 0.05);
       const bp = ctx.createBiquadFilter();
@@ -102,7 +94,7 @@ export function uiSound(kind: UiSound, arg = 0): void {
       bp.frequency.value = 2600 * j;
       bp.Q.value = 1.2;
       const g = ctx.createGain();
-      g.gain.setValueAtTime(0.12, at);
+      g.gain.setValueAtTime(0.12 * level, at);
       g.gain.exponentialRampToValueAtTime(0.0001, at + 0.008);
       n.connect(bp).connect(g).connect(out);
       n.start(at);

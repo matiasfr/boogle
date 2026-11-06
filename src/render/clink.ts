@@ -69,13 +69,15 @@ function hit(
   metal: number,
   ring: number,
 ) {
+  // Both material sets share a coherent fundamental and decay: render their sum once.
+  mode(ctx, dest, at, f, level, ring);
   for (const [set, w] of [
     [METAL, metal],
     [WOOD, 1 - metal],
   ] as const) {
     if (w < 0.03) continue;
-    for (let k = 0; k < set.ratio.length; k++) {
-      const r = k ? set.ratio[k]! * (1 + rnd(0.015)) : 1;
+    for (let k = 1; k < set.ratio.length; k++) {
+      const r = set.ratio[k]! * (1 + rnd(0.015));
       mode(ctx, dest, at, f * r, level * w * set.gain[k]!, ring * set.ring[k]!);
     }
   }

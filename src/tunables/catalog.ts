@@ -3,6 +3,7 @@ import { TUNABLES, type TuneKey } from '../sim/tune.ts';
 import { EXPOSURE_SPEC } from '../render/exposure-tuning.ts';
 import { FEEL_SPRING_SPEC } from '../player/feel-tuning.ts';
 import { LIGHTING_SPECS } from '../render/lighting-tuning.ts';
+import { AUDIO_SPECS } from '../render/audio-tuning.ts';
 
 export type NumberSpec = {
   id: string;
@@ -56,6 +57,7 @@ export const CATALOG: readonly NumberSpec[] = [
   }),
   EXPOSURE_SPEC,
   ...LIGHTING_SPECS,
+  ...AUDIO_SPECS,
   FEEL_SPRING_SPEC,
 ];
 const byId = new Map(CATALOG.map((spec) => [spec.id, spec]));

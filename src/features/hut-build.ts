@@ -188,7 +188,7 @@ function knock(ctx: AudioContext, out: AudioNode, t: number, hz: number, vol: nu
   o.stop(t + len + 0.02);
 }
 function thump(v: View, p: Piece, sec: number, note = -1, chord = false): void {
-  const a = getAudio();
+  const a = getAudio('work');
   if (!a || !me.body) return;
   const far = Math.hypot(me.body.position.x - v.at.x, me.body.position.z - v.at.z);
   if (far > HEAR) return;

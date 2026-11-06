@@ -21,12 +21,11 @@ const entries: DockPanel[] = [
   { id: 'camera', label: 'Camera', load: () => import('./dev/camera.ts') },
   { id: 'inspect', label: 'Inspect', load: () => import('./dev/inspect.ts') },
   { id: 'performance', label: 'Perf', load: () => import('./dev/performance.ts') },
+  { id: 'tunables', label: 'Audio mix', load: () => import('./dev/tunables.ts') },
   { id: 'room', label: 'Room', load: () => import('./dev/room.ts') },
   { id: 'report', label: 'Report', load: () => import('./dev/report.ts') },
   { id: 'scenarios', label: 'Tests', load: () => import('./dev/scenarios.ts') },
 ];
-// Agent commands share the shell's result/permission path without adding a panel.
-const agentTools: DockPanel[] = [{ id: 'tunables', label: 'Tunables', load: () => import('./dev/tunables.ts') }];
 /** Register a lazy panel before or after installation, using the same bounded commands as its agent API. */
 export function registerDockPanel(panel: DockPanel) {
   if (entries.some((entry) => entry.id === panel.id)) throw new Error(`Dev panel already registered: ${panel.id}`);
@@ -76,8 +75,8 @@ function remember() {
     /* storage is optional */
   }
 }
-const allTools = () => [...entries, ...agentTools];
-const known = (entry: ReturnType<typeof allTools>[number]) => entries.includes(entry) || agentTools.includes(entry);
+const allTools = () => entries;
+const known = (entry: DockPanel) => entries.includes(entry);
 async function tool(id: string) {
   if (!alive) return null;
   const existing = loaded.get(id);

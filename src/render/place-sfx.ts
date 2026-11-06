@@ -1,6 +1,7 @@
 // Round 4's local material and movement cues. Finite native sources on the existing SFX bus; no game state.
 // Research: construction-sound recommendations 1-5, 10; audio-architecture 11; collect-sounds section 3.
 import { dbToGain, getAudio } from './audio.ts';
+import { audioSettings } from './audio-tuning.ts';
 import { noiseBuffer } from './noise.ts';
 import { camera } from './scene.ts';
 
@@ -95,6 +96,7 @@ export const placeCues: Record<PlaceCue, string> = {
 
 /** Same recipe live and offline. Gain is distance only; the authored levels above stay comparable. */
 export function renderPlaceSound(ctx: BaseAudioContext, out: AudioNode, cue: PlaceCue, at: number, gain = 1) {
+  if (cue === 'rockBreak' || cue === 'treeLand') gain *= dbToGain(audioSettings.placeImpactDb);
   let seconds = 0;
   for (const layer of recipes[cue]) {
     const t = at + layer.delay;
@@ -144,7 +146,7 @@ let context: AudioContext | null = null;
 let active: number[] = [];
 /** Cosmetic admission only: at most eight new cue events / forty native sources; legacy sounds are separate. */
 export function placeSound(cue: PlaceCue, x: number, z: number) {
-  const a = getAudio('sfx');
+  const a = getAudio('work');
   if (!a) return;
   const gain = Math.max(0, 1 - Math.hypot(camera.position.x - x, camera.position.z - z) / 45) ** 2;
   if (gain < 0.02) return;
