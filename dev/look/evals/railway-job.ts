@@ -1,7 +1,7 @@
-// The production entry's real-input T1 proof. Explicit proto=place belongs to the separate legacy regression.
+// The production entry's real-input first-path proof. Explicit proto=place is the separate legacy regression.
 const flags = (await import('/src/proto/flags.ts' as string)) as typeof import('../../../src/proto/flags.ts');
 if (!flags.productionRailway) throw new Error('Railway proof needs the default entry; omit proto=place');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { play } = (await import('/dev/look/bots/railway.ts' as string)) as typeof import('../bots/railway.ts');
-background(play(), 'production T1 playthrough');
+background(play(), 'production line-one playthrough');
 export {};
