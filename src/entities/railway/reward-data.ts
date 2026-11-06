@@ -13,13 +13,3 @@ export const T2_REWARD = {
 };
 export const AXE_REWARD = { name: 'A proper axe', line: '' };
 export const JUMP_REWARD = { name: 'A second jump', line: 'Jump again in the air.' };
-
-/** The new dev room starts fresh, but it must not mint another T1 personal entitlement.
- * Reproduce the original t1v02 short-name rule from the unprefixed URL room name.
- */
-export function railwayClaimWorld(room: string) {
-  let h = 2166136261;
-  for (const c of room) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
-  const name = room.length <= 26 ? room : `${room.slice(0, 18)}-${(h >>> 0).toString(36).padStart(7, '0')}`;
-  return `t1v02-${name}`;
-}

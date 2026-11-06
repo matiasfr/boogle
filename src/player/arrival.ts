@@ -127,7 +127,7 @@ export function welcomeLines(then: RoomMemory | null): string[] {
       const line = it.since(then.items[it.key]);
       if (line) out.push(line);
     } catch {
-      // a shape from an older build: say nothing
+      // Malformed local memory must not interrupt arrival.
     }
   }
   return out;

@@ -12,7 +12,8 @@ import { T1_CRATE_PARTS, T1_REWARD, MULTI_AXE_REWARD } from '../../render/t1-rew
 import { emit } from '../../render/particles.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { thump } from '../../render/machine-sfx.ts';
-import { T2_REWARD, railwayClaimWorld } from './reward-data.ts';
+import { T2_REWARD } from './reward-data.ts';
+import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { createRailwayTools } from './tools.ts';
 
 const localCosmetics = new Set<string>();
@@ -217,7 +218,7 @@ async function createStationReward(
   const offAccepted = adapter.onAccepted((event) => {
     if (stationIndex === 0 && event.op === 'rail.wake' && event.accepted > 0) liveWake = true;
   });
-  const world = railwayClaimWorld(getRoomId());
+  const world = railwayRoomId(getRoomId());
   function load() {
     if (!profile) return;
     try {

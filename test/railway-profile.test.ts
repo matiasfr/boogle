@@ -1,7 +1,6 @@
 // Headless persistence-contract proofs: no UI, DOM, network or historical reward effects.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { railwayClaimWorld } from '../src/entities/railway/reward-data.ts';
 import {
   createRailwayProfile,
   MAX_RAILWAY_CLAIMS,
@@ -11,11 +10,6 @@ import {
 } from '../src/railway-profile.ts';
 
 const T1: RailwayEntitlement = { world: 'railway-v1:room-one:g1', station: 'T1', completion: 1 };
-
-test('production namespace changes preserve original short and hashed T1 claim-world identities', () => {
-  assert.equal(railwayClaimWorld('room-one'), 't1v02-room-one');
-  assert.equal(railwayClaimWorld('abcdefghijklmnopqrstuvwxyz-long-room'), 't1v02-abcdefghijklmnopqr-087rp9t');
-});
 
 function setup() {
   const values = new Map<string, string>([['boogle.place.old', 'untouched']]);

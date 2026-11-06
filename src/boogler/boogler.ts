@@ -72,7 +72,6 @@ const ATTEND_RANGE = 5;
 export const PUFF_MS = 750;
 
 // What a player is doing with him (published by each player) and what he is doing (published by the host).
-// 3 was PET (petting now happens inside TALK): never reuse it, old tabs may still send it and it must read as NONE.
 export const ACT = { NONE: 0, TALK: 1, RIDE: 2 };
 export const MODE = { CALM: 0, FLEE: 1, RIDDEN: 2 };
 

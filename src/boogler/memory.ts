@@ -92,8 +92,7 @@ export function loadMemory(text: string) {
   const num = (v: unknown) => (Number.isFinite(v) && (v as number) >= 0 ? (v as number) : 0);
   for (const k of ['kicks', 'kickAt', 'sorryAt'] as const) f[k] = num(j[k]);
   if (Array.isArray(j.learned)) f.learned = j.learned.filter((s: unknown) => typeof s === 'string').slice(0, 100);
-  // Existing saves with conversations or positive legacy points have already met him.
-  f.met = j.met === true || num(j.pts) > 0 || f.learned.length > 0;
+  f.met = j.met === true;
   if (Array.isArray(j.gifts))
     f.gifts = j.gifts
       .filter(
