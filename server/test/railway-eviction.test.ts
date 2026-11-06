@@ -42,7 +42,19 @@ function connect(base: string, room: string, sid: string) {
   };
   const world = (type: string) =>
     messages.filter((m) => m.t === 'm' && (m.d as Obj)?.t === type).map((m) => m.d as Obj);
-  return { ws, messages, closed, first, world, send: (m: Obj) => ws.send(JSON.stringify(m)) };
+  const send = (m: Obj) => ws.send(JSON.stringify(m));
+  const request = async (message: Obj, done: () => boolean, label: string) => {
+    let next = 0;
+    await until(() => {
+      if (done()) return true;
+      if (performance.now() >= next) {
+        send({ t: 'm', d: message });
+        next = performance.now() + 50;
+      }
+      return false;
+    }, label);
+  };
+  return { ws, messages, closed, first, world, send, request };
 }
 async function manager(store: Store) {
   const logs: unknown[][] = [];
@@ -95,11 +107,15 @@ async function prepare(room: HostedRoom, client: ReturnType<typeof connect>, rai
   if (!railway) return;
   assert.ok('whenReady' in room.world);
   await room.world.whenReady();
-  client.send({ t: 'm', d: { t: 'r:open' } });
-  await until(() => client.world('r:session').length === 1, 'session');
+  // Readiness is not admission: a timer's checkpoint/supply write can begin before the socket arrives.
+  // Like the real client, retry the same request through starting/busy without allocating a new token.
+  await client.request({ t: 'r:open' }, () => client.world('r:session').length > 0, 'session');
   client.send({ t: 'p', s: 1, d: { v: 1, p: [T1.x / 100, 0, T1.z / 100] } });
-  client.send({ t: 'm', d: { t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 1 } } });
-  await until(() => client.world('r:result').some((m) => m.request === 1), 'wake');
+  await client.request(
+    { t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 1 } },
+    () => client.world('r:result').some((m) => m.request === 1),
+    'wake',
+  );
   for (let k = 0; k < 7; k++) room.world.step(0.5);
   assert.ok('railway' in room.world.rules);
   assert.equal(room.world.rules.railway.phase(), 'idle');
@@ -153,7 +169,25 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM, railw
     clients.push(original);
     assert.equal((await original.first()).t, 'welcome');
     const old = app.rooms.room(id)!;
-    await prepare(old, original, railway);
+    if (railway) {
+      assert.ok('whenReady' in old.world);
+      await old.world.whenReady();
+      // Force the formerly flaky ordering: r:open arrives during a checkpoint after readiness.
+      // Release on the observed busy reply, not elapsed time, so every run covers the retry.
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const blocked = store.withLock(id, () => gate);
+      old.world.sync.saveNow(true);
+      const preparing = prepare(old, original, railway);
+      try {
+        await until(() => original.world('r:state').some((m) => m.state === 'busy'), 'session deferred by checkpoint');
+      } finally {
+        release!();
+        await blocked;
+        await preparing;
+      }
+    } else await prepare(old, original, railway);
     await drain(old, store, id);
     const initial = material(old);
     assert.equal(initial, 0);
