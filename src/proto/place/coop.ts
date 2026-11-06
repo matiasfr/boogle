@@ -27,6 +27,7 @@
 // Personal: your back, crates and gifts (each tab gets its own crate at each stretch), crystals, gold finds. Shared: the rungs,
 // the money, the felled trees, the paths. A newcomer inherits every rung without earning it again.
 import * as THREE from 'three/webgpu';
+import { createTrainNudge } from './train-nudge.ts';
 import {
   addPresenceField,
   keepPresenceWhile,
@@ -177,6 +178,7 @@ function validSnap(j: unknown): j is Snap {
 
 /** Everything shared, from the authority's state. Your back, gifts, crystals and finds stay yours. */
 function applyFull(a: Api, j: Snap, announce = true) {
+  for (const correction of nudge) correction.clear();
   // A same-generation snapshot can precede our request on the authority's channel.
   // Keep that reservation/receipt alive; only a reset invalidates the transaction.
   if (j.gen !== gen) {
@@ -290,7 +292,7 @@ function reconcile(a: Api, j: Snap) {
       return;
     const d = t.s - l.train.tr.s;
     if (Math.abs(d) > 8) {
-      nudge[k] = 0;
+      nudge[k]!.clear();
       l.train.put(
         t.s,
         t.v,
@@ -300,7 +302,7 @@ function reconcile(a: Api, j: Snap) {
         typeof t.express === 'boolean' ? t.express : l.train.tr.express,
       );
     } else {
-      nudge[k] = d;
+      nudge[k]!.set(d);
       l.train.tr.target = t.target;
       l.train.tr.sweep = t.sweep;
       l.train.tr.v = t.v;
@@ -358,7 +360,7 @@ function reconcile(a: Api, j: Snap) {
     },
   });
 }
-const nudge = lines.map(() => 0);
+const nudge = lines.map(() => createTrainNudge());
 
 function onSnap(a: Api, j: Snap, force: boolean) {
   if (!ready) return void (waiting = j);
@@ -1166,11 +1168,7 @@ export const coop = {
     }
     // Trains drift back to the authority's place.
     lines.forEach((l, k) => {
-      const d = nudge[k]!;
-      if (Math.abs(d) < 0.01) return;
-      const step = d * Math.min(1, dt * 1.5);
-      l.train.tr.s += step;
-      nudge[k] = d - step;
+      l.train.tr.s += nudge[k]!.step(dt, lead);
     });
     if (!lead) return;
     if (now >= cargoReadyAt) {
