@@ -1,5 +1,5 @@
 // Original periodic pigment marks, baked once at load. No reference pixels or baked directional light.
-import * as THREE from 'three/webgpu';
+import { bakedTile, tileBytes } from '../../render/baked-tile.ts';
 const SIZE = 512;
 let cached: ReturnType<typeof bake> | undefined;
 /** Original, seamless tuft marks. Strokes share roots and fan apart; pigment and height use the same relief. */
@@ -78,25 +78,13 @@ function bake() {
         i,
       );
     }
-  const make = (bytes: Uint8Array, name: string) => {
-    const t = new THREE.DataTexture(bytes, SIZE, SIZE, THREE.RGBAFormat);
-    t.name = name;
-    // Authored linear pigment multipliers/data, not an sRGB photograph.
-    t.colorSpace = THREE.NoColorSpace;
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.magFilter = THREE.LinearFilter;
-    t.minFilter = THREE.LinearMipmapLinearFilter;
-    t.generateMipmaps = true;
-    t.needsUpdate = true;
-    return t;
-  };
   return {
-    rock: make(rock, 'cove-rock-pigment'),
-    turf: make(turf, 'cove-turf-pigment'),
-    data: make(data, 'cove-microheight-breakup'),
+    rock: bakedTile('cove-rock-pigment', SIZE, rock),
+    turf: bakedTile('cove-turf-pigment', SIZE, turf),
+    data: bakedTile('cove-microheight-breakup', SIZE, data),
   };
 }
-export const coveTextureBytes = (3 * 4 * (SIZE * SIZE * 4 - 1)) / 3;
+export const coveTextureBytes = 3 * tileBytes(SIZE);
 export function coveTextures() {
   return (cached ??= bake());
 }

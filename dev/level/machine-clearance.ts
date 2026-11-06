@@ -24,7 +24,7 @@ export async function checkMachineClearance() {
   const material = () => new THREE.MeshBasicNodeMaterial();
   const panels = sourceModule<typeof import('../../src/proto/place/machine-panels.ts')>(
     fs.readFileSync('src/proto/place/machine-panels.ts', 'utf8'),
-    { THREE, material, merged, panelPose, panelEase },
+    { THREE, material, merged, panelPose, panelEase, grainWarmVertices: () => {} },
   );
   const model = sourceModule<typeof import('../../src/proto/place/machine-model.ts')>(
     fs.readFileSync('src/proto/place/machine-model.ts', 'utf8'),

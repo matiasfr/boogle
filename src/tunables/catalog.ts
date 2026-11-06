@@ -7,6 +7,7 @@ import { VIEW_SPECS } from '../render/view-tuning.ts';
 import { MATERIAL_PALETTE_SPECS } from '../render/material-palette-tuning.ts';
 import { AUDIO_SPECS } from '../render/audio-tuning.ts';
 import { COVE_SPECS } from './terrain.ts';
+import { WOOD_SPECS } from './surfaces.ts';
 
 export type NumberSpec = {
   id: string;
@@ -123,6 +124,7 @@ export const CATALOG: readonly NumberSpec[] = [
   ...SKY_AUTHORING_SPECS,
   ...AUDIO_SPECS,
   ...COVE_SPECS,
+  ...WOOD_SPECS,
   FEEL_SPRING_SPEC,
 ];
 const byId = new Map(CATALOG.map((spec) => [spec.id, spec]));

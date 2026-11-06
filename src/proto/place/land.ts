@@ -3,6 +3,7 @@
 import * as THREE from 'three/webgpu';
 import { flat } from '../flat.ts';
 import { paletteMaterial } from '../../render/material-palette.ts';
+import { woodMaterial, type GrainAxis } from '../../render/wood.ts';
 import { LOOK, groundMaterial, spireRock } from './look.ts';
 import { scene } from '../../render/scene.ts';
 import { shoreApronHeight } from '../../render/water/shore-providers.ts';
@@ -40,6 +41,8 @@ export { H, PATH_SAMPLES, insidePlace };
 
 // ---------------------------------------------------------------- the mesh and the heightfield
 const FLAT = (color: string) => flat(color);
+/** Timber with the look's materials on: the shared wood grain along `axis`, each piece offset from its neighbours. */
+const TIMBER = (color: string, axis: GrainAxis) => (LOOK.mats ? woodMaterial(flat(color), axis) : flat(color));
 
 /** Finished soil only: H also includes cliff-kit tops, which must not steer ground coverage. */
 function soilHeight(x: number, z: number) {
@@ -344,7 +347,10 @@ export function plank(
     addStatic({ kind: 'box', hx: width / 2, hy: thick / 2, hz: full / 2 }, c, q, GROUP.SCENERY, owner),
     segmentStepSupport(ax, az, bx, bz, topA, topB, width, 'wood'),
   );
-  const m = new THREE.Mesh(new THREE.BoxGeometry(width, thick, full), paletteMaterial(FLAT(color), 'timber', owner));
+  const m = new THREE.Mesh(
+    new THREE.BoxGeometry(width, thick, full),
+    paletteMaterial(TIMBER(color, width > full ? 'x' : 'z'), 'timber', owner),
+  );
   m.position.set(c.x, c.y, c.z);
   m.quaternion.copy(q);
   m.castShadow = m.receiveShadow = true;
@@ -411,12 +417,12 @@ function buildBridges(owner?: OwnedView) {
       uz = (bz - az) / len;
     for (const side of [-1, 1]) {
       for (let s = 0; s <= len; s += 3.6) {
-        const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.1, 0.16), FLAT('#7f5630'));
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.1, 0.16), TIMBER('#7f5630', 'y'));
         post.position.set(ax + ux * s - uz * side * 1.45, a[2] + 0.65, az + uz * s + ux * side * 1.45);
         if (owner) owner.add(post);
         else scene.add(post);
       }
-      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, len), FLAT('#7f5630'));
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, len), TIMBER('#7f5630', 'z'));
       rail.position.set((ax + bx) / 2 - uz * side * 1.45, a[2] + 1.15, (az + bz) / 2 + ux * side * 1.45);
       rail.rotation.y = Math.atan2(ux, uz);
       if (owner) owner.add(rail);
@@ -484,7 +490,7 @@ export function buildLand(owner?: OwnedView) {
           height = 4 - base;
         const post = new THREE.Mesh(
           new THREE.BoxGeometry(0.4, height, 0.4),
-          paletteMaterial(FLAT('#7f5630'), 'timber', owner),
+          paletteMaterial(TIMBER('#7f5630', 'y'), 'timber', owner),
         );
         post.position.set(x, base + height / 2, z);
         post.castShadow = post.receiveShadow = true;

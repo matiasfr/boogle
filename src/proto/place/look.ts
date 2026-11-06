@@ -12,7 +12,6 @@ import {
   max,
   mix,
   normalFlat,
-  normalGeometry,
   normalView,
   normalViewGeometry,
   positionGeometry,
@@ -34,6 +33,7 @@ import { atmosphere } from '../../render/sky.ts';
 import { flat } from '../flat.ts';
 import { dressBundleLogs } from '../../render/haul-bundle.ts';
 import { patchNode } from '../../render/material-patch.ts';
+import { woodGrain } from '../../render/wood.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { paletteNode, paletteColour, watchPalette } from '../../render/material-palette.ts';
 import type { MaterialFamily } from '../../render/material-palette-tuning.ts';
@@ -178,7 +178,12 @@ export function paint(p: Paint) {
     flatShading: !LOOK.kit,
     vertexColors: LOOK.contact || p.own === true,
   });
-  if (wood) m.colorNode = materialColor.mul(grainOf(p.grain!.axis, p.grain!.scale ?? [1, 1, 1]));
+  // Today's kit wood averaged 0.955 of its honey; the baked grain keeps that. Logs are bark, not cut timber: their
+  // sides stay plain and only the cut ends ring.
+  if (wood)
+    m.colorNode = materialColor.mul(
+      woodGrain(p.grain!.axis, 'instance', p.grain!.scale ?? [1, 1, 1], p.own ? 'plain' : 'grain', 0.955),
+    );
   if (!steel && !p.own) m.colorNode = selectiveColour(m.colorNode ?? materialColor, wood ? 'timber' : 'accent');
   if (wood && p.own) m.colorNode = paletteNode(m.colorNode, 'timber');
   if (steel) m.emissiveNode = skyOnSteel();
@@ -221,27 +226,6 @@ export function lookBackLogs(mat: THREE.Material, tint: THREE.Color) {
   }
 }
 
-// A little wood: bands across the grain's axis that wander slowly along it, and rings on the cut ends. Each piece its own.
-function grainOf(axis: 'x' | 'y' | 'z', scale: [number, number, number]) {
-  const p: N = positionGeometry
-    .mul(vec3(scale[0], scale[1], scale[2]))
-    .add(float(instanceIndex).mul(vec3(1.37, 0.73, 2.11)));
-  const along: N = p[axis];
-  const [a, b]: N[] = axis === 'x' ? [p.y, p.z] : axis === 'y' ? [p.x, p.z] : [p.x, p.y];
-  const wave: N = sin(along.mul(1.7))
-    .mul(0.9)
-    .add(sin(along.mul(4.3)).mul(0.25));
-  const bands: N = sin(a.add(b).mul(34).add(wave)).mul(0.5).add(0.5);
-  const fine: N = sin(a.sub(b).mul(91).add(wave.mul(2)))
-    .mul(0.5)
-    .add(0.5);
-  const side: N = float(1.03).sub(bands.mul(0.1)).sub(fine.mul(0.05));
-  const rings: N = sin(length(vec2(a.fract().sub(0.5), b.fract().sub(0.5))).mul(120))
-    .mul(0.5)
-    .add(0.5);
-  const end: N = float(1.24).sub(rings.mul(0.12));
-  return mix(side, end, ss(float(0.72), float(0.92), abs(normalGeometry[axis])));
-}
 // Metal needs something to reflect, and the scene has no environment map. This is the cheapest honest stand-in: what a
 // mirror pointing that way would see of a two-colour sky, dimmed by the steel's own response. A few ALU, no texture.
 function skyOnSteel() {

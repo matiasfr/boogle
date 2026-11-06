@@ -18,3 +18,9 @@
   `UniformsLib`, `UniformsUtils`, `WebGLRenderer`, `THREE.Points`, `onBeforeCompile`, `customProgramCacheKey` and
   `readRenderTargetPixels` (use `readRenderTargetPixelsAsync`; `player/item-icons.ts` shows a readback that goes
   through the game's tone mapping; WebGPU reads rows top first).
+- **Surface families** bake a seeded, periodic recipe once at load through `bakedTile()` in
+  [`baked-tile.ts`](../baked-tile.ts) (the cove's three tiles use it too). Tiles are linear pigment multipliers that
+  average 1, so palettes stay the colour authority; they are shared for the session and never disposed. Wood is
+  [`wood.ts`](../wood.ts): one 512² RGBA8 tile (about 1.3 MiB with mips), sampled in object space along a grain axis,
+  each piece offset by its instance index (batches, anything that moves) or its world position (static single meshes),
+  so batching and draw counts are unchanged. Cut ends keep live rings. Tunables: `wood.contrast`, `wood.repeat`.
