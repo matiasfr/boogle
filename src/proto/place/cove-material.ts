@@ -13,6 +13,7 @@ import {
   normalWorldGeometry,
   positionWorld,
   sin,
+  sign,
   smoothstep,
   texture,
   vec3,
@@ -85,23 +86,22 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   rock = rock.add(grass.mul(turfSlope.oneMinus()));
   grass = grass.mul(turfSlope);
   const path: N = kit ? float(0) : attribute('covePath', 'float').clamp();
-  // Microheight only contests existing coverage; zero-coverage layers never win.
+  // Microheight only contests existing coverage; zero-coverage layers never win. Keep this graph branch-free:
+  // scalar TSL select emits an if, which can pull lazy texture samples into nonuniform control flow.
   const influence = coveU('heightBlend');
   const rh = rock.add(rockHeight.mul(influence)),
     gh = grass.add(detail.g.mul(influence)),
     sh = sand.add(detail.a.mul(influence));
-  const highest = max(
-    max(rock.greaterThan(0).select(rh, -10), grass.greaterThan(0).select(gh, -10)),
-    sand.greaterThan(0).select(sh, -10),
-  );
+  const highest = max(max(mix(-10, rh, sign(rock)), mix(-10, gh, sign(grass))), mix(-10, sh, sign(sand)));
   const blend = coveU('layerBlend');
   const rw = rock.mul(rh.sub(highest).add(blend).max(0));
   const gw = grass.mul(gh.sub(highest).add(blend).max(0));
   const sw = sand.mul(sh.sub(highest).add(blend).max(0));
-  const total = rw.add(gw).add(sw);
-  rock = total.greaterThan(0.0001).select(rw.div(total.max(0.0001)), rock);
-  grass = total.greaterThan(0.0001).select(gw.div(total.max(0.0001)), grass);
-  sand = total.greaterThan(0.0001).select(sw.div(total.max(0.0001)), sand);
+  // Coverage sums to one and the winning present layer keeps positive blend weight.
+  const total = rw.add(gw).add(sw).max(0.0001);
+  rock = rw.div(total);
+  grass = gw.div(total);
+  sand = sw.div(total);
   // Coverage stays distinct from pigment: a soft, short transition keeps the soil border natural.
   const grassEdge = grass.add(detail.g.sub(0.5).mul(coveU('grassEdgeBreakup')));
   const cleanGrass = smoothstep(
@@ -144,24 +144,13 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
       );
   };
   const sediment = mix(bedPigment(bed.sub(1)), bedPigment(bed), smoothstep(0, coveU('bandSoftness'), phase));
-  const accentAt = randomBed(bed.add(11)).mul(0.3).add(0.55);
-  const accent = smoothstep(accentAt, accentAt.add(coveU('bandAccentWidth')), phase)
-    .mul(
-      smoothstep(
-        accentAt.add(coveU('bandAccentWidth')),
-        accentAt.add(coveU('bandAccentWidth').mul(2)),
-        phase,
-      ).oneMinus(),
-    )
-    .mul(randomBed(bed.add(3)).greaterThan(0.55).select(1, 0));
-  const banded = mix(sediment, pigment('rock').mul(0.7), accent.mul(coveU('bandAccentStrength')));
   // Bedding is visible only on exposed steep faces; rounded caps/shoulders keep quiet pigment.
   const steep = smoothstep(
     coveU('bandSlopeThreshold').sub(coveU('bandSlopeBlend')),
     coveU('bandSlopeThreshold').add(coveU('bandSlopeBlend')),
     n.y,
   ).oneMinus();
-  const rockCol = mix(pigment('rock'), banded, steep.mul(coveU('strataStrength'))).mul(
+  const rockCol = mix(pigment('rock'), sediment, steep.mul(coveU('strataStrength'))).mul(
     mix(vec3(1), rockPaint, coveU('pigmentStrength')),
   );
   const grassCol = pigment('grass').mul(turfPaint.sub(0.8).mul(coveU('grassDetailStrength')).add(1));
