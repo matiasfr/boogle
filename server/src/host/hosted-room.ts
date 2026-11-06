@@ -6,6 +6,9 @@
 //   room.join(ws, selfId, pid, key)   an upgraded socket (rooms.ts has checked the room, ids, origin and rate). An
 //                                older session of the same player (same pid and key) is closed with ELSEWHERE and
 //                                leaves at once; a pid in the room under another key is refused with TAKEN
+//   room.replication             the room's replicator (src/world/replicate-server.ts): states define projections on it;
+//                                every client is subscribed on join (late join from change tick -1), and at the end of
+//                                each 60 Hz step what changed goes out, skipping sockets over HIGH_WATER (coalescing)
 //   room.status()                { boot, tick, players, max, lead, noSave }
 //   room.idleMs()                how long nobody has been in the room (0 while anyone is, or is reconnecting)
 //   await room.close({ save })   bye to everyone, save the world, close the sockets with 1012
@@ -17,6 +20,7 @@ import { isRailwayRoom, isPlayableRailwayRoom } from '../../../src/world/railway
 import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
 import { HOST_TYPES } from '../../../src/world/sync.ts';
 import { validatePing, honkShape } from '../../../src/sim/social.ts';
+import { createReplicator } from '../../../src/world/replicate-server.ts';
 import type { Store } from '../store.ts';
 
 export type HostCfg = {
@@ -134,6 +138,24 @@ export function createHostedRoom({
   // Today every other ready client; the seam interest management will narrow (docs/research/shared-state-at-scale.md).
   const audience = (from: string) => [...clients.values()].filter((c) => c.id !== from);
 
+  // Replication (docs/plans/replication.md, R0; no state defines a projection yet, so nothing is sent): end-of-step
+  // send-on-change, up to 60 Hz. A backed-up socket is skipped and catches up with the latest values on its next send.
+  const replication = createReplicator();
+  world.sync.onStep((step) => {
+    replication.commit(step);
+    replication.flush(
+      step,
+      (cid, packet) => {
+        const c = clients.get(cid);
+        if (c) write(c, encode({ t: 'm', from: SERVER_ID, d: packet }));
+      },
+      (cid) => {
+        const c = clients.get(cid);
+        return !!c && c.ws.readyState === c.ws.OPEN && c.ws.bufferedAmount <= HIGH_WATER;
+      },
+    );
+  });
+
   // The host's messages: addressed messages to the client they name, the rest to everyone, encoded once.
   world.onSend((msg) => {
     if (typeof msg.to === 'string') {
@@ -237,6 +259,7 @@ export function createHostedRoom({
     if (clients.get(c.id) !== c) return; // replaced by a newer socket
     clients.delete(c.id);
     poseAt.delete(c.id);
+    replication.removeClient(c.id);
     if (c.timer) clearTimeout(c.timer);
     for (const o of clients.values()) o.pending.delete(c.id);
     if (closing) return;
@@ -255,6 +278,7 @@ export function createHostedRoom({
   function drop(c: Client, code: number) {
     clients.delete(c.id);
     poseAt.delete(c.id);
+    replication.removeClient(c.id);
     if (c.timer) clearTimeout(c.timer);
     for (const x of clients.values()) x.pending.delete(c.id);
     c.ws.close(code);
@@ -325,6 +349,7 @@ export function createHostedRoom({
     };
     if (old) drop(old, CLOSE.REPLACED);
     clients.set(id, c);
+    replication.addClient(id); // a fresh mirror: everything whole from change tick -1 (the proof slice subscribes all)
     ws.on('message', (data) => onMessage(c, data));
     ws.on('close', () => leave(c));
     ws.on('error', () => {});
@@ -363,6 +388,7 @@ export function createHostedRoom({
 
   return {
     world,
+    replication,
     join,
     status: () => ({
       boot,

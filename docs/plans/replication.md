@@ -312,6 +312,45 @@ client.
 The owner then plays the proof against lockstep for a few minutes, with a friend at 100–200 ms, and judges whether
 chopping and taking feel instant and corrections go unnoticed.
 
+### R0: what landed and what it measured (6 November, M1 Max, Node 26)
+
+- **Server checks:** railway requests carry `at` (the actor's position, cm) and `ms` (the client's action clock);
+  `createRailwayWorldHost` judges reach and swing/unload cadence from them, with a 20 ms cadence slack and a 1 s bound
+  on the client clock running ahead of the server's. Requests without them keep the presence and arrival checks
+  (server fixtures and host-only ops). `server/test/railway-actor-checks.test.ts`.
+- **Clock:** `src/world/room-clock.ts`; `sync.stepWorld(ms)` is the host clock (60 Hz steps, a rule tick every sixth,
+  a held tick runs on the first step after a durable write clears), `roomStep()` the room clock, `onStep` the flush
+  hook. Both world hosts run a 60 Hz timer. Clients estimate the step from tick stamps. `test/room-clock.test.ts`.
+- **Core:** `src/world/replicate.ts`, `replicate-server.ts`, `replicate-client.ts`; the hosted room owns a replicator
+  and flushes it at the end of every step (`server/test/replication-transport.test.ts`). `test/replicate.test.ts`
+  covers late join, partial fields, coalescing, random churn with cell moves and subscription changes, malformed
+  packets, and the plan's prediction test on a toy rule (2, 4 and 6 clients, up to 200 ms one-way, converge).
+- **Budget, 3,000 entities, 6 clients** (`test/replicate-budget.test.ts`, `REPLICATION_BUDGET=1` prints it): per step
+  with 5 changed entities, commit + flush **0.04 ms** median (p95 0.1 ms); at 5× churn **0.11 ms** (p95 0.3 ms); the
+  full re-projection fallback **2.0 ms**; client mirror clone **0.18 ms**, predicted rebuild with 8 pending **0.15 ms**.
+  JSON costs **~42 bytes per changed entity**, so the 100 kbit/s bar holds up to ~300 entity changes a second per
+  client; late join of the whole 3,000-entity island is **224 KB** (over the 64 KB bar: R1 subscribes by relevancy,
+  and the binary codec is the next lever), **81 KB** for a 64 m relevancy radius in this dense stress layout. The
+  railway's ~520 entities fit the bar whole.
+
+### Fly `shared-cpu-1x` throttling check (plan; not run)
+
+The room now wakes 60 times a second. `shared-cpu-1x` gets 5 ms of every 80 ms at baseline plus a burst balance; once
+the balance is spent, a room is throttled for the rest of each 80 ms period (shared-physics, result 5). Before R1a
+ships to boogle.club:
+
+1. **Instrument:** add to `/rooms/:id/status` the step timer's lateness (p50/p95/max gap between steps), steps dropped
+   by the catch-up cap, and commit + flush ms per step.
+2. **Staging machine** (owner approval: it is an outward-facing deploy): the same image on a second Fly app at
+   `shared-cpu-1x`, 512 MB.
+3. **Load:** `npm run load` against it, 1, 3 and 10 rooms, 6 headless players each chopping, taking and dropping, plus
+   a synthetic 3,000-entity projection at 5× churn, for 30 minutes (long enough to drain the burst balance).
+4. **Read:** Fly's CPU throttle metrics and the status numbers. Pass: step gap p95 under 25 ms and no dropped steps
+   at 3 rooms after the balance drains.
+5. **If it fails:** first skip steps with nothing touched and no client due (a cheap idle path), then
+   `shared-cpu-2x` or `performance-1x` (an owner cost call). Rules at 10 Hz keep game timing right even when steps
+   bunch.
+
 ## 6. Risks, open questions, unverified
 
 **Risks**
