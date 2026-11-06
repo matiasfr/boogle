@@ -1,6 +1,7 @@
 // Local rigid transforms only. Both the live machine and asset stage use this choreography.
 import * as THREE from 'three/webgpu';
 import { material } from '../../render/materials.ts';
+import { grainWarmVertices } from '../../render/wood.ts';
 import { merged } from './part-geometry.ts';
 import { panelEase, panelPose } from './track-panels.ts';
 
@@ -19,6 +20,8 @@ export function panelMagazine(capacity: number) {
   const mat = material('paintedToy', { normals: 'authored' }).clone();
   mat.color.set('#ffffff');
   mat.vertexColors = true;
+  // The slab is the panel's sleepers: wood grain along them, each stored panel its own. The grey rails stay plain.
+  grainWarmVertices(mat, 'x');
   const mesh = new THREE.InstancedMesh(geometry, mat, capacity);
   mesh.name = 'panel-magazine';
   mesh.castShadow = mesh.receiveShadow = true;

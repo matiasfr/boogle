@@ -2,6 +2,8 @@
 
 _6 November 2026. Research only for the owner's question: should Boogle texture its surfaces procedurally, or generate reusable textures with Meshy? Source inspected at `224747fb` with installed three r187; live Meshy, Khronos, three.js and developer sources read today. Confidence tags: **[H]** read in source or measured here; **[M]** inferred from primary sources or partial evidence; **[L]** estimate, untested. No Meshy credits or paid API were used. Not tested on a device._
 
+**Status (6 November):** the owner chose option C after the timber proof ([decision](../proposals/boogle-2.md#current-decision-index)). Wood is now the first shared family: [wood.ts](../../src/render/wood.ts), baked at load through [baked-tile.ts](../../src/render/baked-tile.ts), with seeded jittered knots and per-piece offsets. The proof's flag, KTX2 tiles and recipes were not merged.
+
 ## Recommendation
 
 **Build a small shared library of about six to eight tileable surface families, authored as procedural recipes in code and baked to small tiles. Use runtime TSL only for cheap breakup and blending. Keep props, kit pieces and characters flat-coloured unless they read poorly. Use Meshy, if at all, as one more source of albedo drafts, not as the pipeline.** [M]
