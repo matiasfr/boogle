@@ -1,10 +1,11 @@
-// Isolated production-core rules. Installed only by installRailwayRules, never the default RULES.
+// T1 rules. The playable namespace opts into persisted placement; the isolated spine retains its original shape.
 import {
   createRailway,
   railAccount,
   railApply,
   railCounts,
   railInt,
+  railYaw,
   railOutcome,
   railPhase,
   railResume,
@@ -21,9 +22,18 @@ import {
   type RailAction,
 } from '../../sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
+import {
+  createRailSupply,
+  saveRailSupply,
+  railSupplyPulse,
+  RECOVERY_RACK,
+  RAIL_GROW_MASK_LENGTH,
+  type SupplyPulse,
+} from '../../sim/railway-supply.ts';
 import { okPid } from '../../sim/roster.ts';
 import type { Ctx, Edit, Land, Stream, SyncView } from './types.ts';
 import type { RosterApi } from './roster.ts';
+import type { TuneApi } from './tune.ts';
 import { JUNK, bad } from './edit-gen.ts';
 
 export const name = 'railway';
@@ -34,8 +44,32 @@ type Material = RailAction & { station?: string };
 function token(e: RailAction) {
   return railInt(e.epoch, RAILWAY_MAX_INT, 1) && railInt(e.request, RAILWAY_MAX_INT, 1);
 }
-export function install(sync: SyncView, _land: Land, rules: { roster: RosterApi }) {
-  const railway = createRailway();
+export function install(
+  sync: SyncView,
+  _land: Land,
+  rules: { roster: RosterApi; tune?: TuneApi },
+  { playable = false } = {},
+) {
+  const railway = createRailway(playable);
+  if (playable)
+    sync.registerOp<SupplyPulse>('rail.supply', {
+      hostOnly: true,
+      validate: (e, c) =>
+        railInt(e.marker, RAILWAY_MAX_MARKER, 1) &&
+        typeof e.grow === 'string' &&
+        e.grow.length === RAIL_GROW_MASK_LENGTH &&
+        /^[0-9a-f]+$/.test(e.grow) &&
+        Array.isArray(e.recover) &&
+        e.recover.length <= 1 &&
+        e.recover.every((id, k) => railInt(id, RAILWAY_MAX_INT, 1) && (k === 0 || id > e.recover[k - 1]!)) &&
+        typeof c.env.railSupplySafe === 'function' &&
+        (c.env.railSupplySafe as (pulse: SupplyPulse) => boolean)(e),
+      apply: (e) =>
+        railSupplyPulse(railway, e, {
+          regrow: rules.tune!.get('railRegrowMinutes'),
+          recover: rules.tune!.get('railRecoveryMinutes'),
+        }),
+    });
   const reach = (e: Edit, c: Ctx, x: number, z: number, radius: number) =>
     typeof c.env.railReach === 'function' &&
     (c.env.railReach as RailReach)(e, x, z, radius) &&
@@ -67,7 +101,11 @@ export function install(sync: SyncView, _land: Land, rules: { roster: RosterApi 
   material('rail.chop', (e, c) => {
     const k = railInt(e.id) ? railSource(e.id) : -1;
     const source = RAILWAY_SOURCES[k];
-    return !!source && reach(e, c, source[1], source[2], T1.sourceReach);
+    return (
+      !!source &&
+      (!playable || (railYaw(e.yaw) && typeof e.collapsed === 'boolean')) &&
+      reach(e, c, source[1], source[2], T1.sourceReach)
+    );
   });
   material(
     'rail.deposit',
@@ -79,6 +117,7 @@ export function install(sync: SyncView, _land: Land, rules: { roster: RosterApi 
       railInt(e.n, T1.carry, 1) &&
       railInt(e.x, 200000, -200000) &&
       railInt(e.z, 200000, -200000) &&
+      (!playable || railInt(e.y, 200000, -200000)) &&
       reach(e, c, e.x, e.z, 320),
   );
   material('rail.take', (e, c) => {
@@ -87,11 +126,29 @@ export function install(sync: SyncView, _land: Land, rules: { roster: RosterApi 
     // A raced-away pile still yields a terminal no-op; no current target means reject via rail.reject.
     return !!pile && reach(e, c, pile.x, pile.z, 320);
   });
+  if (playable) material('rail.rackTake', (e, c) => reach(e, c, RECOVERY_RACK.x, RECOVERY_RACK.z, 320));
   sync.registerState('railway', {
-    version: 0,
-    serialize: () => serializeRailway(railway),
-    load: (json) => loadRailway(railway, json),
-    hash: () => hashRailway(railway),
+    version: playable ? 1 : 0,
+    migrate: playable
+      ? {
+          1: (value: unknown) => {
+            const old = value as Record<string, unknown>;
+            if (!old || !Array.isArray(old.piles) || Object.hasOwn(old, 'supply'))
+              throw new Error('railway: supply migration');
+            return {
+              ...old,
+              supply: saveRailSupply(createRailSupply()),
+              piles: old.piles.map((pile: unknown) => {
+                if (!Array.isArray(pile) || pile.length !== 5) throw new Error('railway: legacy pile');
+                return [...pile, 0];
+              }),
+            };
+          },
+        }
+      : {},
+    serialize: () => serializeRailway(railway, rules.roster.roster.pids),
+    load: (json) => loadRailway(railway, json, rules.roster.roster.pids),
+    hash: () => hashRailway(railway, rules.roster.roster.pids),
   });
   sync.onTick((tick) => railTick(railway, tick), 'railway');
   return {
@@ -132,13 +189,29 @@ export const edits = {
         },
   'rail.wake': (r: Stream, v: View) => (r.chance(JUNK) ? bad(r, 'rail.wake') : { op: 'rail.wake', ...request(v) }),
   'rail.chop': (r: Stream, v: View) =>
-    r.chance(JUNK) ? bad(r, 'rail.chop') : { op: 'rail.chop', ...request(v), id: r.pick(RAILWAY_SOURCES)[0] },
+    r.chance(JUNK)
+      ? bad(r, 'rail.chop')
+      : {
+          op: 'rail.chop',
+          ...request(v),
+          id: r.pick(RAILWAY_SOURCES)[0],
+          ...(v.rules.railway.railway.falls ? { yaw: 0, collapsed: false } : {}),
+        },
   'rail.deposit': (r: Stream, v: View) =>
     r.chance(JUNK)
       ? bad(r, 'rail.deposit')
       : { op: 'rail.deposit', ...request(v), station: 'T1', n: r.int(1, T1.carry) },
   'rail.drop': (r: Stream, v: View) =>
-    r.chance(JUNK) ? bad(r, 'rail.drop') : { op: 'rail.drop', ...request(v), x: T1.x, z: T1.z, n: r.int(1, T1.carry) },
+    r.chance(JUNK)
+      ? bad(r, 'rail.drop')
+      : {
+          op: 'rail.drop',
+          ...request(v),
+          x: T1.x,
+          z: T1.z,
+          n: r.int(1, T1.carry),
+          ...(v.rules.railway.railway.falls ? { y: 3000 } : {}),
+        },
   'rail.take': (r: Stream, v: View) =>
     r.chance(JUNK)
       ? bad(r, 'rail.take')

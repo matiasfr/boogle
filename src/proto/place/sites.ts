@@ -4,6 +4,7 @@
 // solid"; docs/research/growing-towns.md (8-10 s for an ordinary addition, the longest for the landmark). Every building's
 // pieces share one instanced set, batched by shape. Local.
 import * as THREE from 'three/webgpu';
+import type { OwnedView } from '../../render/owned-view.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/player.ts';
@@ -32,8 +33,14 @@ export const blockPlan = (s: BlockSpec, lifts = 1, top?: string) => planBlock(s,
 export type Foot = { x: number; z: number; c: number; s: number; hw: number; hd: number };
 /** Every footprint in the place, for the little guys to walk round. */
 export const feet: Foot[] = [];
-export const addFoot = (x: number, z: number, yaw: number, hw: number, hd: number) =>
-  void feet.push({ x, z, c: Math.cos(yaw), s: Math.sin(yaw), hw, hd });
+export function addFoot(x: number, z: number, yaw: number, hw: number, hd: number, owner?: OwnedView) {
+  const foot = { x, z, c: Math.cos(yaw), s: Math.sin(yaw), hw, hd };
+  feet.push(foot);
+  owner?.cleanup(() => {
+    const index = feet.indexOf(foot);
+    if (index >= 0) feet.splice(index, 1);
+  });
+}
 /** Moves a point out of a footprint it's in, by the shortest way. True if it had to. */
 export function outOf(f: Foot, p: { x: number; z: number }, r: number) {
   const dx = p.x - f.x,
@@ -114,7 +121,7 @@ function onLand(k: number) {
   if (landed % 4 === 0) dustRing(b.x, b.y + 0.3, b.z, 4, 1.8, 0.3);
 }
 /** Solid boxes from a plan's hulls. */
-export function hullBodies(plan: Plan, hulls: Hull[]) {
+export function hullBodies(plan: Plan, hulls: Hull[], owner?: OwnedView) {
   const { x, y, z, yaw } = plan;
   const cos = Math.cos(yaw),
     sin = Math.sin(yaw);
@@ -125,6 +132,7 @@ export function hullBodies(plan: Plan, hulls: Hull[]) {
       { x: x + h.dx * cos + h.dz * sin, y: y + h.dy, z: z - h.dx * sin + h.dz * cos },
       q,
       h.room ? ROOM_GROUP : undefined,
+      owner,
     ),
   );
 }

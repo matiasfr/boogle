@@ -6,7 +6,7 @@
   "steps": [
     {
       "hl": ["server"],
-      "text": "The headless T1 proof uses an isolated test namespace; default gameplay and registry are unchanged. The shared room manager retains exclusive authority until closing is durable and fences reconnects after a refused close, protecting existing rooms too.",
+      "text": "Headless T1 uses t1v01; playable default T1 uses isolated t1v02 rooms. The room manager retains exclusive authority until closing is durable and fences reconnects after a refused close, protecting existing rooms too.",
       "cite": [
         { "file": "src/world/railway-namespace.ts" },
         { "file": "src/world/rules/railway-index.ts" },
@@ -41,8 +41,8 @@
     },
     {
       "hl": ["you.features"],
-      "text": "The separate headless personal-profile contract writes a claim and cosmetic together under an exclusive lock. Browser locking, accepted effects and the playable adapter still wait for slice 2.",
-      "cite": [{ "file": "src/railway-profile.ts" }, { "file": "docs/plans/production-core.md" }]
+      "text": "The separate personal-profile contract writes a claim and cosmetic together under a shared browser Web Lock. The adapter rebuilds verified progress; a snapshot cannot replay success effects or grant another claim.",
+      "cite": [{ "file": "src/railway-profile-browser.ts" }, { "file": "src/adapters/railway.ts" }]
     }
   ]
 }

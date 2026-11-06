@@ -114,7 +114,7 @@ const HELD_MAX_MS = 5000; // drop held edits older than this
 const HOST_STALE_MS = 3000;
 const SAVE_MS = 30000;
 const HOST_TYPES = new Set(['w:edits', 'w:c', 'w:hash', 'w:snap', 'w:rejected']); // what a client accepts, only from the host
-export type EditRejection = { op: string; requestId: string };
+export type EditRejection = { op: string; requestId: string; reason?: 'recovery-budget' | 'request-id-too-long' };
 const correlation = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length <= 80;
 const isObj = (v: unknown): v is Obj => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
@@ -243,11 +243,12 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
 
   // ------------------------------------------------------------ edits
   // Host (or local): validate, stamp, queue, broadcast.
+  let stampRefusal: EditRejection['reason'];
   function stamp(edit: Obj, from: string) {
+    stampRefusal = undefined;
     const h = ops.get(String(edit.op));
     if (!ready || !h || !isInt(edit.i) || !isInt(edit.j)) return false;
-    if (cfg.recovery && (recoveryPending || recoveryError || badSave || newerSave || queue.length >= MAX_RECOVERY_TAIL))
-      return false;
+    if (cfg.recovery && (recoveryPending || recoveryError || badSave || newerSave)) return false;
     if (cfg.recovery && (seq >= Number.MAX_SAFE_INTEGER || world.tick > Number.MAX_SAFE_INTEGER - DELAY)) return false;
     const u = pidOf(from);
     if (!u) return false;
@@ -260,7 +261,26 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       return false;
     }
     const delay = mode === 'local' ? 1 : DELAY;
-    const entry = { tick: world.tick + delay, seq: ++seq, e };
+    const entry = { tick: world.tick + delay, seq: seq + 1, e };
+    if (cfg.recovery) {
+      // Budget the complete serialized envelope, including UTF-8, JSON escaping and authenticated ids.
+      // Reserve metadata width so ticking toward this tail cannot turn a fitting batch into an overflow.
+      // The durable barrier freezes state between this check and publication. Refusal consumes no sequence.
+      try {
+        const body = recoveryBody([...queue, entry], entry.seq);
+        body.checkpoint.tick = Number.MAX_SAFE_INTEGER;
+        body.hash = 0xffffffff;
+        const bytes = new TextEncoder().encode(JSON.stringify({ ...body, checksum: 0xffffffff })).length;
+        if (queue.length >= MAX_RECOVERY_TAIL || bytes > MAX_RECOVERY_BYTES) {
+          stampRefusal = 'recovery-budget';
+          return false;
+        }
+      } catch (err) {
+        failRecovery(err instanceof Error ? err.message : 'recovery serialization failed');
+        return false;
+      }
+    }
+    seq = entry.seq;
     queue.push(entry);
     if (mode === 'host') {
       out.push(entry);
@@ -589,7 +609,13 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     if (mode === 'host') {
       if (msg.t === 'w:edit' && isObj(msg.e) && JSON.stringify(msg.e).length <= MAX_EDIT_JSON) {
         if (!stamp(msg.e, from) && correlation(msg.e.op) && correlation(msg.e.requestId))
-          send({ t: 'w:rejected', to: from, op: msg.e.op, requestId: msg.e.requestId });
+          send({
+            t: 'w:rejected',
+            to: from,
+            op: msg.e.op,
+            requestId: msg.e.requestId,
+            ...(stampRefusal ? { reason: stampRefusal } : {}),
+          });
       } else if (msg.t === 'w:need') serveSnapshot(from);
       return;
     }
@@ -599,7 +625,11 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       if (from !== hostId || msg.to !== selfId || !correlation(msg.op) || !correlation(msg.requestId)) return;
       for (const fn of rejectedFns) {
         try {
-          fn({ op: msg.op, requestId: msg.requestId });
+          fn({
+            op: msg.op,
+            requestId: msg.requestId,
+            ...(msg.reason === 'recovery-budget' || msg.reason === 'request-id-too-long' ? { reason: msg.reason } : {}),
+          });
         } catch (err) {
           console.warn('[world] onRejected failed', err);
         }
@@ -684,20 +714,23 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
   // One immutable envelope, one outstanding replacement. Stamps, ticking and serving are paused until it resolves.
   // The tail contains every published-but-not-applied edit, so replacement never drops the future queue.
+  function recoveryBody(tail: Queued[] = queue, sequence = seq): Omit<RecoveryEnvelope, 'checksum'> {
+    return {
+      version: 1,
+      namespace: cfg.recovery!.namespace,
+      catalog: cfg.recovery!.catalog,
+      checkpoint: snapshot(),
+      hash: worldHash(),
+      tail: tail.map(({ tick, seq: entrySeq, e }) => ({ tick, seq: entrySeq, e })),
+      seq: sequence,
+    };
+  }
   function checkpointRecovery(publish: () => void = () => {}) {
     const recovery = cfg.recovery;
     if (!recovery || recoveryPending || recoveryError || badSave || newerSave) return;
     let envelope: RecoveryEnvelope;
     try {
-      const body: Omit<RecoveryEnvelope, 'checksum'> = {
-        version: 1,
-        namespace: recovery.namespace,
-        catalog: recovery.catalog,
-        checkpoint: snapshot(),
-        hash: worldHash(),
-        tail: queue.map(({ tick, seq: sequence, e }) => ({ tick, seq: sequence, e })),
-        seq,
-      };
+      const body = recoveryBody();
       const text = JSON.stringify({ ...body, checksum: recoveryChecksum(body) });
       const bytes = new TextEncoder().encode(text).length;
       if (bytes > MAX_RECOVERY_BYTES || queue.length > MAX_RECOVERY_TAIL) throw new Error('recovery budget exceeded');
@@ -955,6 +988,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     receiveEdit: (edit: unknown, from: string) =>
       mode === 'host' && isObj(edit) && JSON.stringify(edit).length <= MAX_EDIT_JSON && stamp(edit, from),
     updateWorld,
+    requestResync,
     snapshot,
     loadSnapshot,
     saveNow: (force = false) => persist(force), // force: even if no state changed since the last save
@@ -1000,6 +1034,7 @@ export const {
   pidOf,
   submitEdit,
   updateWorld,
+  requestResync,
   snapshot,
   loadSnapshot,
   saveNow,

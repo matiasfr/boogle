@@ -27,6 +27,7 @@ import { dustRing } from './pieces.ts';
 import { softGlow } from './look.ts';
 import { dropGot, youGot } from './got.ts';
 import { addFoot } from './sites.ts';
+import { T1_REWARD } from '../../render/t1-reward-parts.ts';
 import { SHOP } from './town-lines.ts';
 
 // ---------------------------------------------------------------- shapes: a few primitives, merged, in their own colours
@@ -40,7 +41,6 @@ const giftMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughne
 const clothMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.92 });
 const sheetMat = new THREE.MeshStandardNodeMaterial({ color: '#ded5c2', roughness: 1, flatShading: true });
 const GOLD = '#f2b134',
-  NAVY = '#27386b',
   RED = '#d8392b',
   BRASS = '#d9a23a';
 
@@ -89,20 +89,7 @@ const overalls = (body: string, strap: string, trim: string): Part[] => [
 ];
 // New pieces carry no line yet: those wait for the owner's writing pass. Existing lines stay as they were.
 const GIFTS: Gift[] = [
-  {
-    id: 'hat',
-    slot: 'hat',
-    tier: 'common',
-    name: "A conductor's hat",
-    line: 'Yours. It suits you.',
-    parts: [
-      ['c', 0, 0.03, 0.06, 0.4, 0.05, 0.42, '#1b2a55'],
-      ['c', 0, 0.2, 0, 0.3, 0.3, 0.3, NAVY],
-      ['c', 0, 0.12, 0, 0.31, 0.08, 0.31, GOLD],
-      ['s', 0, 0.36, 0, 0.34, 0.1, 0.34, NAVY],
-      ['s', 0, 0.2, 0.3, 0.06, 0.06, 0.03, GOLD],
-    ],
-  },
+  T1_REWARD,
   {
     id: 'beanie',
     slot: 'hat',

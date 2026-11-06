@@ -17,6 +17,7 @@ import { SERVER_ID, okId, okKey } from '../../../src/net/ids.ts';
 import { okPid } from '../../../src/sim/roster.ts';
 import { TUNE_CATALOG } from '../../../src/sim/tune.ts';
 import { WORLD_NS } from '../../../src/world/namespace.ts';
+import { isPlayableRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { createHostedRoom, type HostCfg, type HostedRoom } from './hosted-room.ts';
 import type { Store } from '../store.ts';
 
@@ -148,7 +149,10 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
         // Reject legacy/future classic namespaces as well as mismatched current catalogs. Otherwise an old tab
         // can join its old room after deploy, skip the host's migrated tune state, and simulate different yields.
         // The isolated t1v01 railway and unversioned service rooms keep their own contracts.
-        if (!supportedNamespace(id) || (classicNamespace(id) && params.get('tc') !== TUNE_CATALOG))
+        if (
+          !supportedNamespace(id) ||
+          ((classicNamespace(id) || isPlayableRailwayRoom(id)) && params.get('tc') !== TUNE_CATALOG)
+        )
           return refuseWs(ws, { t: 'incompatible', catalog: TUNE_CATALOG }, CLOSE.INCOMPATIBLE);
         if (!hosts(id)) return refuseWs(ws, { t: 'peer' }, CLOSE.NOT_HOSTED);
         if (closing.has(id)) return refuseWs(ws, { t: 'bye', why: 'restart' }, CLOSE.RESTART);

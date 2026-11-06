@@ -109,10 +109,19 @@ test('admission refusals are bounded, correlated and accepted only from the pinn
   client.s.submitEdit({ op: 'add', i: 0, j: 0, v: 'invalid', requestId: 'x'.repeat(81) });
   await run(net, all, 5);
   assert.equal(received.length, 1, 'oversized requests get no reflected correlation');
+  host.p.room.send({ ...forged, requestId: 'budget', reason: 'recovery-budget' });
+  host.p.room.send({ ...forged, requestId: 'length', reason: 'request-id-too-long' });
+  host.p.room.send({ ...forged, requestId: 'unknown', reason: 'x'.repeat(1000) });
+  await run(net, all, 5);
+  assert.deepEqual(received.slice(1), [
+    { op: 'add', requestId: 'budget', reason: 'recovery-budget' },
+    { op: 'add', requestId: 'length', reason: 'request-id-too-long' },
+    { op: 'add', requestId: 'unknown' },
+  ]);
   unsubscribe();
   client.s.submitEdit({ op: 'add', i: 0, j: 0, v: 'invalid', requestId: 'unsubscribed' });
   await run(net, all, 5);
-  assert.equal(received.length, 1);
+  assert.equal(received.length, 4);
 });
 
 test('a rejection cannot establish a host before a snapshot or clock message', () => {

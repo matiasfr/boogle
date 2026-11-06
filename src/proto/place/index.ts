@@ -29,8 +29,7 @@ import { freshStart } from '../../player/arrival.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { interactTarget } from '../../player/hands.ts';
 import { haulHooks } from '../../player/haul-variant.ts';
-import { physicsTime, setCcd, sweepSphere, teleport } from '../../physics/engine.ts';
-import { GROUP } from '../../physics/physics.ts';
+import { physicsTime, setCcd, teleport } from '../../physics/engine.ts';
 import { softWall } from '../../entities/player/state.ts';
 import { carry } from '../../physics/platforms.ts';
 import { scene } from '../../render/scene.ts';
@@ -51,7 +50,7 @@ import { resetForge, forge, updateForge, craneClear } from './forge.ts';
 import { LOOK, installLight } from './look.ts';
 import { installContact } from './look-kit.ts';
 import { clearDrops, feet, outOf } from './sites.ts';
-import { rooms, worldToRoom } from './rooms.ts';
+import { createPosePolicy, type Pose } from './pose.ts';
 import {
   FORGE_BILLS,
   GOODS,
@@ -71,7 +70,7 @@ import { besideLine } from './rail.ts';
 import { TREES, back, resetRocks, resetTrees, updateChop, felled } from './chop.ts';
 import { coop, coopWire } from './coop.ts';
 import { rungFromPeer } from './ladder.ts';
-import { job, resetJob, restore, save, personalSlice, num, forgetSaves } from './job.ts';
+import { job, resetJob, restore, save, personalSlice, forgetSaves } from './job.ts';
 import { L1, L2, allHeaps, dock, forgeFrame, hub, lines, machine, solidHeaps, stepsOf, yard } from './lines.ts';
 import { buildHalt } from './halts.ts';
 import { cartFolk } from './depot.ts';
@@ -350,37 +349,15 @@ personalSlice('crystals', {
   get: () => crystals.found.slice(),
   set: (v) => snapCrystals(Array.isArray(v) ? (v as number[]) : []),
 });
-type Pose = { x: number; z: number; yaw: number };
-type SavedPose = Pose & { ground: number };
 let savedPose: Pose | null = null;
-function safePose(p: Pose) {
-  if (![p.x, p.z, p.yaw].every(num) || !insidePlace(p.x, p.z) || H(p.x, p.z) <= 1.6) return false;
-  if (feet.some((f) => outOf(f, { x: p.x, z: p.z }, PLAYER_R + 0.2))) return false;
-  if (
-    Object.values(rooms).some((r) => {
-      const q = worldToRoom(r, p.x, p.z);
-      return Math.abs(q.x) < r.w / 2 + PLAYER_R && Math.abs(q.z) < r.d / 2 + PLAYER_R;
-    })
-  )
-    return false;
-  // Saved positions and recovery both need a clear landing above the terrain. This
-  // rejects ground underneath the dock and relocated yard props without changing saves.
-  const h = H(p.x, p.z);
-  const from = { x: p.x, y: h + 128, z: p.z };
-  const to = { x: p.x, y: h + PLAYER_R + 0.4, z: p.z };
-  return !['skip', 'only'].some(
-    (thin) => sweepSphere(from, to, PLAYER_R, { mask: GROUP.SCENERY, thin: thin as 'skip' | 'only' }) >= 0,
-  );
-}
+const posePolicy = createPosePolicy(H, insidePlace, (p) =>
+  feet.some((f) => outOf(f, { x: p.x, z: p.z }, PLAYER_R + 0.2)),
+);
+const safePose = posePolicy.safe;
 personalSlice('position', {
   get: () => savedPose && { ...savedPose, ground: H(savedPose.x, savedPose.z) },
   set: (v) => {
-    savedPose = null;
-    if (!v || typeof v !== 'object') return;
-    const p = v as SavedPose;
-    // Old saves without a ground sample cannot prove the ground has stayed put: use LANDING.
-    if (num(p.ground) && Math.abs(H(p.x, p.z) - p.ground) < 0.2 && safePose(p))
-      savedPose = { x: p.x, z: p.z, yaw: p.yaw };
+    savedPose = posePolicy.read(v);
   },
 });
 function capturePose() {

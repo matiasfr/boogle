@@ -29,6 +29,7 @@ function main() {
   flag('--json'); // Output is always structured JSON.
   const wait = flag('--wait');
   const query = option('--query');
+  const room = option('--room');
   const output = option('--out');
   const revision = option('--expect-revision');
   const [command = 'list', id, value, ...extra] = argv;
@@ -37,6 +38,7 @@ function main() {
       'tune list|get|validate|set|status|snapshot|diff|reset-local [id] [JSON value] [--session|--broker]',
     );
   if (query && !broker) throw new Error('--query requires --broker (a fresh capture, not an existing session)');
+  if (room && !broker) throw new Error('--room requires --broker (a fresh capture, not an existing session)');
   if (['get', 'validate', 'set', 'status'].includes(command) && !id) throw new Error(`${command} needs an id`);
   if (['set', 'validate'].includes(command) && value === undefined) throw new Error(`${command} needs a JSON value`);
   const args: Record<string, unknown> = command === 'status' ? { requestId: id } : id ? { id } : {};
@@ -75,6 +77,13 @@ function main() {
   let raw: string;
   if (broker) {
     console.error('Broker transport opens a fresh page; local values last only for this capture.');
+    const launchQuery = new URLSearchParams(query ?? 'proto=place&tune=1');
+    const queryRooms = launchQuery.getAll('room');
+    if (queryRooms.length > 1 || (room && queryRooms[0] && room !== queryRooms[0]))
+      throw new Error('Use one room: --room or the matching room query parameter.');
+    const launchRoom = room ?? queryRooms[0];
+    // look puts its room parameter before query parameters; forward it through its actual option.
+    launchQuery.delete('room');
     const dir = path.join(root, '.look', 'tune-cli');
     fs.mkdirSync(dir, { recursive: true });
     const script = path.join(dir, `${randomUUID()}.ts`);
@@ -82,7 +91,15 @@ function main() {
     try {
       const log = execFileSync(
         process.execPath,
-        ['.look/see-client.ts', 'look', '--query', query ?? 'proto=place&tune=1', '--eval', script],
+        [
+          '.look/see-client.ts',
+          'look',
+          ...(launchRoom ? ['--room', launchRoom] : []),
+          '--query',
+          launchQuery.toString(),
+          '--eval',
+          script,
+        ],
         { cwd: root, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, stdio: ['ignore', 'pipe', 'inherit'] },
       );
       console.error(log);

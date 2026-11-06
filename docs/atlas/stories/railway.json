@@ -1,0 +1,37 @@
+{
+  "id": "railway",
+  "title": "Your logs become the first track",
+  "kind": "lock",
+  "order": 45,
+  "steps": [
+    {
+      "hl": ["you.world", "fr.world"],
+      "text": "Aged drops move to the courtyard's chosen rack model without losing a unit. Slow shoots, saplings and young trees preserve their pale stump, including in view; mature renewal is counted accepted production away from finished track. Existing room tuning controls the waiting intervals. Frozen version-0 recovery verifies before the bounded supply upgrade; hash guards stay intact.",
+      "cite": [{ "file": "src/sim/railway-supply.ts" }, { "file": "server/test/railway-supply-migration.test.ts" }]
+    },
+    {
+      "hl": ["you.features"],
+      "text": "The T1 view offers accepted carry. The adapter reserves it locally while a correlated request is pending; no flight spends inventory.",
+      "cite": [{ "file": "src/adapters/railway.ts" }, { "file": "src/entities/railway/view.ts" }]
+    },
+    {
+      "go": [["you.features", "you.world"]],
+      "text": "The server validates reach and cadence, orders the request and durably stores its stamped tail before publishing acceptance.",
+      "cite": [{ "file": "server/src/host/world-host.ts" }, { "file": "server/src/host/railway-requests.ts" }]
+    },
+    {
+      "hl": ["you.world", "fr.world"],
+      "text": "Both worlds apply the same bounded transfer. The final log allocates 24 once and starts one tick-based feed/lay job. Retrying cannot spend again.",
+      "cite": [{ "file": "src/world/rules/railway.ts" }, { "file": "src/sim/railway.ts" }]
+    },
+    {
+      "hl": ["you.features"],
+      "text": "Owned views animate accepted material and build solid track. A reconnect reconstructs the verified phase quietly; the cosmetic claim is an independent atomic personal write.",
+      "cite": [
+        { "file": "src/entities/railway/view.ts" },
+        { "file": "src/entities/railway/reward.ts" },
+        { "file": "src/railway-profile-browser.ts" }
+      ]
+    }
+  ]
+}

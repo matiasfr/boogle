@@ -33,6 +33,7 @@ import { scene } from '../../render/scene.ts';
 import { atmosphere } from '../../render/sky.ts';
 import { flat } from '../flat.ts';
 import { dressBundleLogs } from '../../render/haul-bundle.ts';
+import type { OwnedView } from '../../render/owned-view.ts';
 
 const asked = new Set((new URLSearchParams(location.search).get('look') ?? 'all').split(','));
 const on = (name: string) => asked.has('all') || asked.has(name);
@@ -285,8 +286,10 @@ export function lookBox(w: number, h: number, d: number) {
 
 const BLOBS = 4096;
 let blobMesh: THREE.InstancedMesh | null = null;
-function blobMeshOf() {
-  if (blobMesh) return blobMesh;
+const ownedBlobs = new WeakMap<OwnedView, THREE.InstancedMesh>();
+function blobMeshOf(owner?: OwnedView) {
+  const existing = owner ? ownedBlobs.get(owner) : blobMesh;
+  if (existing) return existing;
   const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, polygonOffset: true });
   m.polygonOffsetFactor = -2;
   m.polygonOffsetUnits = -4;
@@ -298,8 +301,16 @@ function blobMeshOf() {
   mesh.count = 0;
   mesh.frustumCulled = false;
   mesh.renderOrder = 1;
-  scene.add(mesh);
-  return (blobMesh = mesh);
+  if (owner) {
+    owner.add(mesh);
+    owner.cleanup(() => m.dispose());
+    owner.cleanup(() => ownedBlobs.delete(owner));
+    ownedBlobs.set(owner, mesh);
+  } else {
+    scene.add(mesh);
+    blobMesh = mesh;
+  }
+  return mesh;
 }
 const bm = new THREE.Matrix4(),
   bp = new THREE.Vector3(),
@@ -307,15 +318,15 @@ const bm = new THREE.Matrix4(),
   bs = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
 /** A soft dark patch on the ground, w x d m, yaw turned. Returns its handle for `setBlob`. */
-export function addBlob(x: number, y: number, z: number, w: number, d: number, yaw = 0) {
-  const mesh = blobMeshOf();
+export function addBlob(x: number, y: number, z: number, w: number, d: number, yaw = 0, owner?: OwnedView) {
+  const mesh = blobMeshOf(owner);
   if (mesh.count >= BLOBS) return -1;
   const k = mesh.count++;
-  setBlob(k, x, y, z, w, d, yaw);
+  setBlob(k, x, y, z, w, d, yaw, owner);
   return k;
 }
-export function setBlob(k: number, x: number, y: number, z: number, w: number, d: number, yaw = 0) {
-  const mesh = blobMesh;
+export function setBlob(k: number, x: number, y: number, z: number, w: number, d: number, yaw = 0, owner?: OwnedView) {
+  const mesh = owner ? ownedBlobs.get(owner) : blobMesh;
   if (!mesh || k < 0) return;
   mesh.setMatrixAt(k, bm.compose(bp.set(x, y + 0.03, z), bq.setFromAxisAngle(UP, yaw), bs.set(w, 1, d)));
   mesh.instanceMatrix.needsUpdate = true;

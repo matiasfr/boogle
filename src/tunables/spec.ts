@@ -1,18 +1,6 @@
-// The shape and bounds check every tunable number shares; no imports, so owners and the catalog can both use it.
-export type NumberSpec = {
-  id: string;
-  type: 'number';
-  scope: 'local' | 'owner' | 'lockstep';
-  default: number;
-  min: number;
-  max: number;
-  integer: boolean;
-  units: string;
-  at: string;
-  owner: string;
-  meaning?: string;
-};
-export function validValue(spec: NumberSpec, value: unknown): value is number {
+// The bounds check every tunable number shares; no imports, so owners and the catalog can both use it.
+export type NumberBounds = { min: number; max: number; integer: boolean };
+export function validValue(spec: NumberBounds, value: unknown): value is number {
   return (
     typeof value === 'number' &&
     Number.isFinite(value) &&

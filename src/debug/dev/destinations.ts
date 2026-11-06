@@ -2,6 +2,7 @@ import { DESTINATIONS, destinationName, fixtureReason, launch } from './fixtures
 import { command, note, el } from './ui.ts';
 import { islandPicker } from './routes.ts';
 import { no, ok, type Tool } from './types.ts';
+import { productionRailway } from '../../proto/flags.ts';
 
 const labels: Record<string, string> = {
   spawn: 'Spawn',
@@ -28,7 +29,8 @@ export const tool: Tool = {
       );
     if (command === 'start') return launch('fresh', args.destination ?? 'spawn');
     const why = fixtureReason();
-    if (why) return no(why);
+    if (productionRailway || why)
+      return no(why ?? 'Only an explicitly launched disposable solo place run can move or skip. Start a test below.');
     if (command === 'return') return (await import('./place.ts')).travel('return');
     if (!destinationName(args.destination)) return no('Choose a named destination.');
     return (await import('./place.ts')).travel(args.destination);

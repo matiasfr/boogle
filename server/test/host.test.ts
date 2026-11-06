@@ -8,6 +8,7 @@ import path from 'node:path';
 import { createService, loadConfig } from '../src/server.ts';
 import { TUNE_CATALOG } from '../../src/sim/tune.ts';
 import { WORLD_NS } from '../../src/world/namespace.ts';
+import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
 type Msg = Record<string, any>;
 const FAST = { reconnectGraceMs: 200, leadHiddenMs: 300, housekeepMs: 50, log: () => {} };
@@ -67,20 +68,45 @@ const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-test('current classic rooms refuse missing or different tuning catalogs before joining', async () => {
-  const { svc, base } = await start({ SERVER_ROOMS: '*' });
-  const room = `${WORLD_NS}-proto-tunables`;
-  try {
-    for (const catalog of [undefined, 'different-defaults']) {
-      const c = connect(base, room, 'mismatch', undefined, undefined, catalog);
-      assert.deepEqual(await c.next(is('incompatible')), { t: 'incompatible', catalog: TUNE_CATALOG });
-      assert.equal(await c.closed, 4412);
-      assert.ok(!c.msgs.some(is('welcome')));
-      assert.equal(svc.roomHost()?.rooms(), 0, 'refusal never creates the room');
+for (const room of [`${WORLD_NS}-proto-tunables`, railwayRoomId('proto-tunables')])
+  test(`tuned rooms refuse missing, old or different catalogs before loading: ${room}`, async () => {
+    const { svc, base } = await start({ SERVER_ROOMS: '*' });
+    try {
+      for (const catalog of [undefined, 'e0d64927', 'different-defaults']) {
+        const c = connect(base, room, 'mismatch', undefined, undefined, catalog);
+        assert.deepEqual(await c.next(is('incompatible')), { t: 'incompatible', catalog: TUNE_CATALOG });
+        assert.equal(await c.closed, 4412);
+        assert.ok(!c.msgs.some(is('welcome')));
+        assert.equal(svc.roomHost()?.rooms(), 0, 'refusal never creates the room');
+      }
+      const a = connect(base, room, 'matching', undefined, undefined, TUNE_CATALOG);
+      await a.next(is('welcome'));
+      a.ws.close();
+    } finally {
+      await svc.close({ save: false });
     }
-    const a = connect(base, room, 'matching', undefined, undefined, TUNE_CATALOG);
-    await a.next(is('welcome'));
-    a.ws.close();
+  });
+
+test('future classic namespaces are refused even with the current catalog', async () => {
+  const { svc, base } = await start({ SERVER_ROOMS: '*' });
+  try {
+    const c = connect(base, 'v99-proto-future', 'future', undefined, undefined, TUNE_CATALOG);
+    assert.deepEqual(await c.next(is('incompatible')), { t: 'incompatible', catalog: TUNE_CATALOG });
+    assert.equal(await c.closed, 4412);
+    assert.equal(svc.roomHost()?.rooms(), 0);
+    assert.ok(!c.msgs.some(is('welcome')));
+  } finally {
+    await svc.close({ save: false });
+  }
+});
+
+test('the isolated headless T1 harness remains exempt from playable tuning admission', async () => {
+  const { svc, base } = await start({ SERVER_ROOMS: '*' });
+  try {
+    const c = connect(base, 't1v01-proof', 'headless');
+    await c.next(is('welcome'));
+    assert.ok(!c.msgs.some(is('incompatible')));
+    c.ws.close();
   } finally {
     await svc.close({ save: false });
   }
@@ -243,6 +269,38 @@ test('relay: messages reach the others with from; oversize and host-only types d
       d: { t: 'w:rejected', to: 'aaa', op: 'tune.commit', requestId: 'refused' },
     });
     assert.ok(!b.msgs.some((m) => m.d?.t === 'w:rejected'), 'receipts are routed only to their requester');
+    a.ws.close();
+    b.ws.close();
+  } finally {
+    await svc.close({ save: false });
+  }
+});
+
+test('production railway relays bounded social cues without opening material or host-only paths', async () => {
+  const { svc, base } = await start({ SERVER_ROOMS: '*' });
+  try {
+    const a = connect(base, 't1v02-social', 'aaa', undefined, undefined, TUNE_CATALOG);
+    const b = connect(base, 't1v02-social', 'bbb', undefined, undefined, TUNE_CATALOG);
+    await Promise.all([a.next(is('list')), b.next(is('list'))]);
+    // Main expanded the cosmetic world envelope to 4096 m for Place; stay outside that real bound.
+    a.send({ t: 'm', d: { t: 'ping', x: 0, y: 0, z: 4097, k: 'look' } });
+    a.send({ t: 'm', d: { t: 'honk', big: 'x'.repeat(16001) } });
+    a.send({ t: 'm', d: { t: 'w:c', ht: 5 } });
+    a.send({ t: 'm', d: { t: 'r:result', status: 'accepted' } });
+    a.send({ t: 'm', d: { t: 'placeCoop', n: 8 } });
+    a.send({ t: 'm', d: { t: 'ping', x: 1.23, y: 2.34, z: -3.45, k: 'look', material: { n: 8 } } });
+    a.send({ t: 'm', d: { t: 'honk', v: 2, material: { n: 8 } } });
+    assert.deepEqual(await b.next(isWorld('ping')), {
+      t: 'm',
+      from: 'aaa',
+      d: { t: 'ping', x: 1.2, y: 2.3, z: -3.4, k: 'look' },
+    });
+    assert.deepEqual(await b.next(isWorld('honk')), { t: 'm', from: 'aaa', d: { t: 'honk', v: 2 } });
+    assert.deepEqual(
+      b.msgs.filter((m) => m.from === 'aaa').map((m) => m.d.t),
+      ['ping', 'honk'],
+    );
+    assert.ok(!a.msgs.some((m) => m.from === 'aaa'));
     a.ws.close();
     b.ws.close();
   } finally {
