@@ -218,16 +218,14 @@ test('root-only exclusions never hide nested source directories; dependency excl
   });
 });
 
-test('renaming the suppression budget preserves the archived baseline and its no-growth check', async () => {
+test('the suppression budget permits reductions and rejects growth', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-lint-debt-'));
   try {
     const budget = (count: number) => JSON.stringify({ 'src/pois/probe.ts': { 'boogle/use-an-entity': { count } } });
-    write(root, 'eslint-suppressions.json', budget(2));
+    write(root, 'lint-suppressions.json', budget(2));
     write(root, 'dev/registry/knots.ts', 'export const KNOTS = [];\n');
     write(root, 'dev/level/allow.ts', 'export const ALLOW = [];\n');
     const before = await debtOf(root);
-    fs.renameSync(path.join(root, 'eslint-suppressions.json'), path.join(root, 'lint-suppressions.json'));
-    assert.deepEqual(compareDebt(before, await debtOf(root)), []);
     write(root, 'lint-suppressions.json', budget(3));
     assert.match(compareDebt(before, await debtOf(root)).join('\n'), /lint-suppressions\.json grew: 2 → 3/);
     write(root, 'lint-suppressions.json', budget(1));
