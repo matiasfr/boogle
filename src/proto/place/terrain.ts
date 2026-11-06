@@ -32,6 +32,8 @@ export const CELL = GRID.cell,
 export const heights = new Float32Array(NX * NZ),
   pathMask = new Float32Array(NX * NZ),
   clearMask = new Float32Array(NX * NZ);
+// The rail bed wins where a later support pad overlaps it, including cells beside a trestle transition.
+const railBedCeilings = new Map<number, number>();
 export const at = (i: number, j: number) => i + j * NX;
 export const cellX = (i: number) => GRID.x0 + i * CELL;
 export const cellZ = (j: number) => GRID.z0 + j * CELL;
@@ -170,6 +172,7 @@ function strip(
     clearMask[k] = Math.max(clearMask[k]!, t);
     if (painted) pathMask[k] = Math.max(pathMask[k]!, smoothstep(inner + 1, inner - 0.5, d));
   }
+  return best;
 }
 
 /** One path's samples every metre, in order, with its total. Bridges are left out of the ground. */
@@ -210,7 +213,7 @@ function bake() {
       samples.push([P.x, P.z, railY(line, s) - 0.08]);
     }
     const y = railY(line, line.len);
-    strip(
+    const bed = strip(
       samples,
       4,
       8,
@@ -219,6 +222,10 @@ function bake() {
         gorgeD(x, z) < GORGE.bank + GORGE.wall + 2 ||
         heights[at(Math.round((x - GRID.x0) / CELL), Math.round((z - GRID.z0) / CELL))]! < y - 9,
     );
+    // Four metres covers sleeper ends plus the vertices of their 2 m terrain triangles.
+    // Include skipped cliff cells: a prop pad must not fill up through the trestle either.
+    for (const [k, [distance, height]] of bed)
+      if (distance <= 4) railBedCeilings.set(k, Math.min(railBedCeilings.get(k) ?? Infinity, heights[k]!, height));
   }
   // Paths last: they cut their ramps into the walls and fill across whatever they meet.
   PATHS.forEach((p) => {
@@ -279,7 +286,7 @@ function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, y
     z = wz - ORIGIN.z,
     c = Math.cos(yaw),
     s = Math.sin(yaw),
-    r = Math.hypot(w, d) / 2 + CELL + 3;
+    r = Math.hypot(w, d) / 2 + CELL + 4;
   for (
     let j = Math.max(0, Math.floor((z - r - GRID.z0) / CELL));
     j <= Math.min(NZ - 1, Math.ceil((z + r - GRID.z0) / CELL));
@@ -295,7 +302,12 @@ function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, y
       const outside = Math.max(Math.abs(dx * c - dz * s) - w / 2, Math.abs(dx * s + dz * c) - d / 2);
       const weight = smoothstep(CELL + 3, CELL, outside),
         k = at(i, j);
-      heights[k] = heights[k]! + (y - heights[k]!) * weight;
+      const ceiling = railBedCeilings.get(k);
+      // At a skipped cliff edge, the adjacent terrain triangle can enter the deck just beyond the pad blend.
+      // Protect that extra metre here, not unrelated path/rail crossings elsewhere on the island.
+      if (ceiling !== undefined && outside <= CELL + 4 && gorgeD(cellX(i), cellZ(j)) < GORGE.bank + GORGE.wall + 2)
+        heights[k] = Math.min(heights[k]!, ceiling);
+      if (weight > 0) heights[k] = Math.min(heights[k]! + (y - heights[k]!) * weight, ceiling ?? Infinity);
     }
 }
 gradeSupport(BANK_CART.x + ORIGIN.x, BANK_CART.z, BANK_CART.y, 3, 4, BANK_CART.yaw);
@@ -310,7 +322,8 @@ if (SHORE_COAST)
 const stationPads = LINKS.flatMap((link) =>
   link.stations.map((spec) => {
     const f = frameBesideLine(spec, link.line, link.dir);
-    return { ...f, y: H(f.x, f.z) };
+    // Lower a hillside frame/feeder to its rail bed; already lower assemblies keep their existing datum.
+    return { ...f, y: Math.min(H(f.x, f.z), railY(link.line, spec.s - link.dir * 1.5) - 0.08) };
   }),
 );
 for (const path of PATHS) {

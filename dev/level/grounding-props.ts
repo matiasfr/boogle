@@ -314,19 +314,21 @@ export async function checkPropGrounding() {
     'rewardSeat',
     { THREE },
   );
-  const at = rewardSeat(LINKS[0]!, besideLine, H, railY);
   const crate = merged(T1_CRATE_PARTS);
   crate.computeBoundingBox();
   const bounds = crate.boundingBox!;
-  rows.push({
-    ...measure(
-      'reward/settled-crate',
-      boxFootprint(at.x, at.z, bounds.max.x - bounds.min.x, bounds.max.z - bounds.min.z),
-      at.y + bounds.min.y,
-      at.y,
-    ),
-    supports: ['terrain'],
-  });
+  for (const stationIndex of [0, 1] as const) {
+    const at = rewardSeat(LINKS[0]!, besideLine, H, railY, stationIndex);
+    rows.push({
+      ...measure(
+        `reward/T${stationIndex + 1}/settled-crate`,
+        boxFootprint(at.x, at.z, bounds.max.x - bounds.min.x, bounds.max.z - bounds.min.z),
+        at.y + bounds.min.y,
+        at.y,
+      ),
+      supports: ['terrain'],
+    });
+  }
   crate.dispose();
   pict.geometry.dispose();
   pict.dispose();

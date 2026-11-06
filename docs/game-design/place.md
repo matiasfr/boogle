@@ -48,8 +48,16 @@ matching Place's completed construction state; only the temporary scaffold poles
 25 cm spacing, including rotated edges. It rejects exposed foundation gaps or terrain above the seating surface
 over 5 cm. The authored below-ground foundation skirt is intentional.
 
+The rail-bed cut takes precedence over station support-pad blends, including the descending T3 trestle approach.
+Connected station frames/feeders are capped at the adjacent rail-bed datum; already lower assemblies retain their
+height. Padding cannot lift terrain through the track. At a skipped cliff edge, bed protection extends one metre
+beyond the pad blend to cover its adjacent terrain triangle; unrelated path/rail crossings keep their authored terrain.
+The audit executes both panel and continuous `buildTrack` geometry and samples the full transformed sleeper/deck top
+and rail underside footprints (including tilted ends). Terrain penetration over 5 cm fails; open space under elevated
+track is intentional. The tree-catalog snapshot remains before these terrain adjustments.
+
 The audit also checks opening prop supports, attached arch/cart/lookout pieces, crane and rack feet, decoded recovery-rack
-and station-kit feet, cove supports, bridge bank bearings, the settled reward crate and every standing tree root. Connected scenery shares one
+and station-kit feet, cove supports, bridge bank bearings, both settled station reward crates and every standing tree root. Connected scenery shares one
 assembly height; piers reach down to terrain, and the cart rests on a small level shoulder. Tree centres use the actual
 terrain triangle instead of the catalog's rounded grid height. Batched root skirts reach the downhill edge while the
 uphill soil may bury the lower trunk. Root shoulders stay capped when the narrower felled stump is exposed. The audit

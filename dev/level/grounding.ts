@@ -4,6 +4,7 @@ import { Vector3 } from 'three/webgpu';
 import { openingBuildings, forgePlan } from '../../src/proto/place/opening-plans.ts';
 import { surfaceHeight as ground } from '../../src/proto/place/terrain.ts';
 import { checkPropGrounding } from './grounding-props.ts';
+import { checkTrackGrounding } from './grounding-track.ts';
 import type { Plan } from '../../src/proto/place/building-plans.ts';
 import type { Box } from '../../src/proto/net/box-plan.ts';
 
@@ -64,12 +65,13 @@ export async function checkBuildingGrounding(buildings: readonly Building[] = op
     };
   });
   rows.push(...(await checkPropGrounding()));
+  rows.push(...checkTrackGrounding());
   return {
     level: 'production-grounding',
     toleranceCm: TOLERANCE_CM,
     sampleMetres: SAMPLE_METRES,
     coverage:
-      'Production buildings, forge, all stop supports and attachments, crane/rack feet, decoded recovery rack and station feet, all standing tree roots, cove supports, bridge bank bearings and settled reward crate. Moving cargo/vehicles, floating collectibles, distant landforms and future town growth are excluded.',
+      'Production buildings, forge, all stop supports and attachments, crane/rack feet, decoded recovery rack and station feet, all standing tree roots, cove supports, bridge bank bearings, settled reward crate, and all settled track sleeper/deck tops and rail undersides. Elevated track permits space below; terrain must not penetrate its bed over 5 cm. Moving cargo/vehicles, floating collectibles, distant landforms and future town growth are excluded.',
     failures: rows.filter((row) => row.failed).length,
     rows,
   };
