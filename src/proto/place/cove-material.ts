@@ -30,7 +30,7 @@ import { ORIGIN } from './layout.ts';
 type N = any;
 const pigment = (family: 'rock' | 'strata' | 'sediment' | 'rust' | 'grass' | 'sand' | 'path') =>
   vec3(coveU(`${family}R`), coveU(`${family}G`), coveU(`${family}B`));
-export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region: N, kit = false) {
+export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region: N, kit = false, soilSlope: N = null) {
   const tiles = coveTextures();
   const p = positionWorld.sub(vec3(ORIGIN.x, 0, ORIGIN.z));
   const n = normalWorldGeometry.normalize();
@@ -50,7 +50,7 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   const macro = texture(tiles.data, p.xz.mul(coveU('noiseScale')).div(8)).b.sub(0.5);
   const slope = coveU('slopeThreshold'),
     slopeWidth = coveU('slopeBlend');
-  const coverageSlope = kit ? n.y : mix(n.y, attribute('coveSlope', 'float'), coveU('macroSlopeMix'));
+  const coverageSlope = kit ? n.y : mix(n.y, soilSlope, coveU('macroSlopeMix'));
   let rock: N = smoothstep(slope.sub(slopeWidth), slope.add(slopeWidth), coverageSlope).oneMinus();
   const sandLine = coveU('sandHeight').add(macro.mul(coveU('heightBlend')));
   let sand: N = smoothstep(sandLine.sub(coveU('sandBlend')), sandLine.add(coveU('sandBlend')), p.y)
@@ -77,12 +77,12 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   // retain each surface's ordinary sand, soil and authored cap rules. Slope eligibility still applies below.
   const capJoin = attribute('coveCapJoin', 'vec2');
   const capWeight = capJoin.x.clamp();
-  grass = mix(grass, capJoin.y.clamp(), capWeight);
+  grass = grass.mul(capWeight.oneMinus()).add(capJoin.y.clamp());
   sand = sand.mul(capWeight.oneMinus());
   rock = grass.add(sand).oneMinus().max(0);
-  // Broad soil normals stabilize the border but cannot make an unwalkable face look grassy. Fade eligibility
-  // across the actual smooth surface slope, rather than cutting tiny stone triangles at the contact limit.
-  const turfSlope = smoothstep(WALKABLE_NY, max(WALKABLE_NY + 0.01, slope.add(slopeWidth)), n.y);
+  // The broad field selects the border; actual normals only enforce walkability. Repeating the full
+  // rock/turf threshold here stamped the lighting mesh's coarse facets back into the smoothed coverage.
+  const turfSlope = smoothstep(WALKABLE_NY, float(WALKABLE_NY).add(max(0.01, slopeWidth)), n.y);
   rock = rock.add(grass.mul(turfSlope.oneMinus()));
   grass = grass.mul(turfSlope);
   const path: N = kit ? float(0) : attribute('covePath', 'float').clamp();
