@@ -7,6 +7,139 @@ runs shared physics, deterministic Rapier is the alternative to evaluate, and on
 with rules every N steps. Tags: [H] high, [M] medium, [L] low confidence; **[measured]** = run for this doc;
 **unverified** = not checked._
 
+## 6 November, follow-up: server authority plus deterministic prediction
+
+_Owner's question: "Does running physics on the server also cohere with using the deterministic Rapier build?" The target
+is Human Fall Flat-style carrying, up to 3,000 entities, and 1–2 rooms per server. Spike: [`dev/spikes/physics/`](../../dev/spikes/physics/)
+(Rapier 0.21.0 on an M1 Max; Node 26, Chromium 156, Chrome 156 forced to x86-64 under Rosetta, Safari 27.2)._
+
+### Answer
+
+**Yes, but only in a narrow form.** Server authority with deterministic clients is a shipped pattern (Photon Quantum:
+the server validates and relays inputs; every client runs the same deterministic sim, predicts ahead and rolls back to
+the last verified frame). For Boogle:
+
+1. **The server stays authoritative and runs the whole room** (the plan below, unchanged). [H]
+2. **Deterministic prediction pays off only for a small, closed "carry island":** the held object, what it can hit,
+   and the carriers' hands as inputs. The island runs as its own small Rapier world on the server and on the carriers'
+   tabs. Rapier can't restore part of a world, and rolling back a 3,000-body room costs 17 ms per frame on the M1, 73 ms
+   throttled 4× [measured]. [H]
+3. **Inside the island, determinism buys exact corrections:** pops a third the size and about half as many visible ones
+   as state-based corrections at 200 ms [measured]. **The error against the server doesn't shrink**: it comes from
+   guessing the other carrier's hands, which no build fixes. [H]
+4. **Your own body stays Owner-predicted.** It enters the shared sim as a kinematic pose stamped per tick, so the player
+   controller isn't ported (this softens the objection in §3 below). [M]
+5. **Build server-only first**; add the island as one arm of the beam proof, and the owner's feel test decides. [M]
+
+| | Server only (clients smooth or state-resimulate) | Server + deterministic island prediction | Full deterministic lockstep (whole room) |
+|---|---|---|---|
+| Authority | Server world | Server world, plus a server island world per carry | Server's signed input stream |
+| Carrier's tab simulates | Nothing, or a SIMD copy reset to server state | The island (≈17 bodies), rolled back each frame | All 3,000 bodies, rolled back each frame |
+| Your hand to your beam end, 200 ms RTT (floor 133 mm) | 571 mm interpolating; 157 mm state-resim | 147 mm | As the island, if the CPU allowed it |
+| Pops at 200 ms: mean, and pops over 1 cm per minute | 5.3 mm, 246 (state-resim, SIMD) | 1.7 mm, 144 | Same as the island |
+| Client CPU per frame, M1 / 4× throttle | ~0.6 ms / ~3 ms | 0.7 ms / 4.5 ms | 17 ms / 73 ms (fails) |
+| Late join | Entity states (bytes) | States, plus a ≈50 KB island snapshot | 12.9 MB Rapier snapshot |
+| Desync | Impossible | Island hash per second; resend the island | Whole room |
+| Verdict | **Build first** (proof arms A, B1) | **Proof arm B2** | No |
+
+### How shipped games combine them
+
+- **Photon Quantum** ([frames](https://doc.photonengine.com/quantum/v3/manual/frames),
+  [server role](https://doc.photonengine.com/quantum/v3/concepts-and-patterns/server-client-role)): a frame is verified
+  once the server confirms every player's input; the server "just 'signs' an official stream of accepted inputs", and
+  server-side simulation "does not make much sense" on cost.
+  [Prediction culling](https://doc.photonengine.com/quantum/v3/video-tutorials/prediction-culling) skips distant
+  entities during prediction. Rapier has no equivalent, hence islands. [H]
+- **Unity Netcode for Entities** ([physics](https://docs.unity3d.com/Packages/com.unity.netcode@1.5/manual/physics.html)):
+  predicted ghosts run physics on client and server; a rollback re-runs it from the last snapshot tick, several times a
+  frame if needed. Interpolated ghosts are kinematic on clients. State-based: the server sends snapshots. [H]
+- **Unreal resimulation** ([networked physics](https://dev.epicgames.com/documentation/en-us/unreal-engine/networked-physics-overview)):
+  caches state per tick for a round trip; when server state "differs enough" it rewinds, corrects, re-simulates and
+  smooths the render. No determinism needed. [H]
+- **Photon Fusion** ([physics addon](https://doc.photonengine.com/fusion/current/addons/physics-addon-2.1)): state
+  authority plus client re-simulation, "very CPU expensive"; Photon points to Quantum instead. [H]
+- **Rocket League** (GDC 2018, from the doc below): Bullet isn't deterministic, so the server sends state and the client
+  re-simulates the whole small world. [H]
+- **GGPO** ([docs](https://github.com/pond3r/ggpo/blob/master/doc/README.md)): built for "a fully deterministic
+  peer-to-peer engine" with save, load and step. [H] **Overwatch**: deterministic simulation with server authority,
+  known only from the talk's abstract. [L]
+
+**Pattern:** a deterministic build is needed only when clients rebuild the authoritative state from inputs alone
+(Quantum, GGPO). State-based re-simulation (Rocket League, Unreal, Unity, Fusion) gets by without it, because the
+server ships the state. [H]
+
+### What we measured [measured]
+
+**Cross-engine hashes.** The beam, 12 lane crates, 200 scattered crates and 300 statics over 600 steps, plus a
+3,000-body room over 300 steps: the deterministic build gave **identical snapshot and pose hashes in Node arm64,
+Chromium arm64, Chrome x86-64 under Rosetta** (vmmap: "X86-64 (translated)") **and Safari**, and a mid-run snapshot
+restore finished on the same bits. The SIMD and plain builds also each matched across all four engines (not each
+other), so in WASM agreement isn't unique to the deterministic build; only it *guarantees* it. Firefox, real x86
+hardware and Android: **unverified** (not installed).
+
+**Snapshots and resimulation** (Chromium, M1; Node and Safari within about 30%; ×4 = Chromium with the CPU throttled
+4×, a rough phone proxy, not a phone):
+
+| World | Bodies (awake) | Step | Snapshot size / time | Restore | Restore + 14 steps | ×4: restore + 14 |
+|---|---|---|---|---|---|---|
+| Carry island (beam, 12 crates, local heightfield) | 17 (5) | 0.04 ms | 51 KB / 0.03 ms | 0.09 ms | 0.8 ms | 4.5 ms |
+| 3,000-body room | 3,001 (6) | 0.77 ms | **12.9 MB** / 4.9 ms | 6.6 ms | 17.4 ms | 73 ms |
+
+The shared bodies' state alone (13 floats each) is 676 bytes. Rapier can't snapshot a subset, so "shared only" means
+a separate world. SIMD and deterministic cost the same here because almost nothing is awake.
+
+**Corrections.** You are hand A; remote carrier B changes path at random every 0.3–1.2 s, predicted by holding its
+last velocity. Your present runs RTT + 2 steps ahead of the newest confirmed tick, so every frame re-simulates **8 steps
+at 100 ms, 14 at 200 ms**. "Exact" restores a confirmed world stepped from confirmed inputs (checked bit-identical to the
+server); "State" is Rocket League's: rewind your own history, overwrite poses and velocities, re-simulate.
+
+| RTT | Mode | Pop mean / p95 | Pops >1 cm per min | Error vs server, mean | Hand gap, mean |
+|---|---|---|---|---|---|
+| 100 ms | Exact (deterministic) | 1.0 / 3.0 mm | 60 | 44 mm | 137 mm |
+| 100 ms | State (deterministic or SIMD) | 2.0–2.2 / 9.4 mm | 156–168 | 45 mm | 137 mm |
+| 100 ms | Interpolate only | none | 0 | (shown 220 ms late) | 376 mm |
+| 200 ms | Exact | 1.7 / 8.3 mm | 144 | 116 mm | 147 mm |
+| 200 ms | State | 5.3–5.7 / 23 mm | 246–270 | 121 mm | 157 mm |
+| 200 ms | Interpolate only | none | 0 | | 571 mm |
+
+With B's input known (an oracle), every mode pops at most 1 µm: **float differences are negligible.** State corrections
+pop more because resetting poses and velocities keeps the joint and contact solver caches of a mispredicted history;
+exact restore replaces them too. Deterministic and SIMD clients behave alike under state corrections. The 133 mm floor
+is the joint stretching in the server's own run when the carriers pull apart.
+
+### Recommended architecture
+
+- **Server:** one Rapier world per room, SIMD build, at 60 Hz, as the plan below says. One or two rooms per machine
+  fits the CPU numbers above, unless thousands of bodies are awake (1,000 awake cost about 3.6 ms per step earlier). [M]
+- **Watchers:** interpolate server state at 20 Hz. Your avatar stays Owner. [H]
+- **Carriers (arm B2 only):** on a grip the server opens a deterministic **island world** (the object, nearby bodies in
+  a server-set creation order, a heightfield patch, each carrier's hand and capsule as kinematic inputs) and sends its
+  ≈50 KB snapshot. Carriers send hand and body pose, quantized to 1 mm, every tick (last 4 ticks per packet); the
+  server stamps and relays confirmed island inputs at 60 Hz. Carriers keep a confirmed and a predicted copy and roll
+  back each frame (≤1 ms on the M1); an island hash each second triggers a resend on mismatch. On release the bodies
+  return to the main world as state. "The object pulls you" stays local: apply the predicted joint stretch to your own
+  controller as a spring. [M]
+- **Prerequisites:** the one fixed clock with a server-stamped 60 Hz tick (6 November Process) and a clock sync. [H]
+
+**Smallest proof.** Extend the earlier great-beam proof with three arms:
+- A: interpolation only
+- B1: state re-simulation with SIMD
+- B2: deterministic island
+
+Two carrier tabs and a watcher, at 0, 100 and 200 ms added latency; log hand gap, pops over 1 cm per minute, ms per
+frame and island desyncs. The owner plays the arms blind and judges which "feels like holding the same beam" and
+whether the far end feels alive. If B1 is close to B2, keep one build and no islands.
+
+### Risks and what stays unverified
+
+- **Islands are a constraint:** island bodies collide with the main world only through proxies, and things that wander
+  into or out of an island need hand-offs. [H]
+- **Pinned versions:** the server and every tab must load the same Rapier version. A cached old client is a mixed build
+  that desyncs every island it joins. [H]
+- **Misprediction dominates.** Smoothing the other carrier's hands matters more than the build. [M]
+- **Not run here:** Firefox, Android and real x86. The phone figures are a throttle estimate, the scene is a stand-in
+  for Station 3, and real-room bandwidth and feel are unmeasured. Not tested on a device.
+
 ## Result
 
 1. **Server Rapier is the right call, and it matches the engines.** Unity's NGO physics is server-authoritative by
