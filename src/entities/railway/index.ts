@@ -15,7 +15,7 @@ import { productionRailway } from '../../proto/flags.ts';
 import { defineKind, spawn } from '../../entity/entity.ts';
 import { identity } from '../../player/identity.ts';
 import { registerInteractable, NO_TARGETS } from '../../player/hands.ts';
-import { net, onRoomReady, onNetState } from '../../netplay/net.ts';
+import { net, onRoomReady, onNetState, localPresence } from '../../netplay/net.ts';
 import { warmUp } from '../../render/precompile.ts';
 import { createRailwayAdapter } from '../../adapters/railway.ts';
 import { createRailwayView, type RailwayView } from './view.ts';
@@ -30,6 +30,10 @@ if (productionRailway && railwayApi) {
     api: railwayApi,
     sync: { world, worldStatus, stateHashes, onApplied, onAfterTick, onSnapshot, onDesync, onSnapFail, requestResync },
     pid: identity.pid,
+    pose: () => {
+      const local = localPresence();
+      return local?.entered && local.body ? local.body.position : null;
+    },
   });
   onRoomReady((room) => adapter.attach(room));
   onNetState(() => {

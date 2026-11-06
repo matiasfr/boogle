@@ -27,7 +27,6 @@ async function fixture() {
       tick: false,
       saveMs: 1000000000,
       now: () => clock,
-      monotonicNow: () => clock,
       pidOf: (sid) => sid,
       tuneController: () => true,
     });

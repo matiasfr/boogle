@@ -26,6 +26,7 @@ import {
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { MAX_PLAYERS, createRoster, ensure, serializeRoster } from '../src/sim/roster.ts';
 import { createSync, MAX_RECOVERY_BYTES, type RecoveryEnvelope } from '../src/world/sync.ts';
+import { railwayRequestEdit } from '../server/src/host/railway-requests.ts';
 import { install as roster } from '../src/world/rules/roster.ts';
 import { install as railway, edits } from '../src/world/rules/railway.ts';
 import { homeLand } from './helpers/land.ts';
@@ -251,17 +252,16 @@ test('supported pid lifetime cannot strand the full finite catalog; bounded docu
     tail: Array.from({ length: 64 }, (_, k) => ({
       tick: RAILWAY_MAX_INT,
       seq: RAILWAY_MAX_INT - 64 + k,
+      // The widest request a client may send, actor facts included; the tail holds what the real cleaner stamps.
       e: {
-        op: 'rail.drop',
-        i: 0,
-        j: 0,
+        ...railwayRequestEdit(
+          { op: 'rail.drop', n: 8, x: -200000, z: -200000, at: [-200000, -200000, -200000], ms: RAILWAY_MAX_INT },
+          RAILWAY_MAX_INT,
+          RAILWAY_MAX_INT,
+          { falls: false, line: false },
+        ),
         p: 's'.repeat(32),
         u: s.accounts[k]!.pid,
-        epoch: RAILWAY_MAX_INT,
-        request: RAILWAY_MAX_INT,
-        n: 8,
-        x: -200000,
-        z: -200000,
       },
     })),
     seq: RAILWAY_MAX_INT,

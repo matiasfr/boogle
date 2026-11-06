@@ -23,7 +23,10 @@ tests install the rules on their own sync instances (`test/helpers/net.ts`).
 // Rules modules get registerOp/registerState/onTick through install(sync, ...); adapters import the rest.
 import { TICK_MS, world, submitEdit, onApplied, onRejected, onAfterTick, onSnapshot, setEnv } from './world/sync.ts';
 
-TICK_MS                      // 100: sim runs at 10 ticks/s
+TICK_MS                      // 100: sim runs at 10 ticks/s, one tick per 6 steps of the 60 Hz room clock (room-clock.ts)
+roomStep()                   // the room clock in 60 Hz steps: tick * 6 + phase on the host; a client's estimate of it
+stepWorld(ms)                // host (and local) only: advance the room clock; world-host.ts drives it from a 60 Hz timer
+onStep(fn)                   // host: fn(step) after every step (replication's end-of-step flush)
 world.tick                   // integer, current sim tick (same on every client once synced)
 world.seed                   // integer room seed (for seeded RNG via mulberry32 in src/sim/rng.ts)
 

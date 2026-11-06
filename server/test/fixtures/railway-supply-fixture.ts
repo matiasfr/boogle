@@ -21,10 +21,8 @@ export async function supplyFixture(dataDir: string, roomId: string, recover = t
       tick: false,
       saveMs: 1000000000,
       now: () => clock,
-      monotonicNow: () => clock,
       pidOf: (sid) => (sid === 'supplysession' ? 'supplier' : null),
       tuneController: (sid) => sid === 'supplysession',
-      positionOf: () => position,
       positions: () => observers,
     });
     host.onSend((message) => {
@@ -47,7 +45,10 @@ export async function supplyFixture(dataDir: string, roomId: string, recover = t
   let request = 0;
   async function action(fields: Record<string, unknown>) {
     position.at = clock;
-    host.deliver({ t: 'r:edit', e: { ...fields, epoch: 1, request: ++request } }, 'supplysession');
+    // A client action carries where its actor stands (cm) and its action clock (ms).
+    const at = [Math.round(position.x * 100), 0, Math.round(position.z * 100)];
+    const ms = clock - 1793906400000;
+    host.deliver({ t: 'r:edit', e: { ...fields, epoch: 1, request: ++request, at, ms } }, 'supplysession');
     await host.sync.whenDurable();
     await ticks(3);
     const result = host.rules.railway.outcome('supplier', 1, request);

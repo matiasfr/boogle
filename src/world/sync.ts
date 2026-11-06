@@ -35,6 +35,7 @@
 // load starts fresh (stats.loadErrors), but that fallback must never be saved or served as authoritative state.
 
 import { okPid } from '../sim/roster.ts';
+import { RULE_MS, RULE_STEPS, STEP_MS, createFixedSteps, createStepEstimate } from './room-clock.ts';
 import type { OpHandlers, StateHandlers, Edit } from './rules/types.ts';
 
 // Wire messages and edits arrive as unchecked JSON objects: every field is read as unknown and checked before use.
@@ -93,7 +94,7 @@ type Desync = { tick: number; keys: string[] };
 type SaveStore = Pick<Storage, 'getItem' | 'setItem'>;
 type SnapFail = { from: string; reason: string };
 
-export const TICK_MS = 100;
+export const TICK_MS = RULE_MS; // 100: a rule tick is RULE_STEPS (6) steps of the 60 Hz room clock (./room-clock.ts)
 const DELAY = 3; // host stamps edits this many ticks ahead
 const CLOCK_EVERY = 2;
 const HASH_EVERY = 20; // 2 s
@@ -164,6 +165,12 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   const pidOf = (sid: string) => (sid === selfId ? myPid() : (room?.pidOf?.(sid) ?? null));
   let acc = 0;
   let wall = 0; // ms of frame time seen by updateWorld (all timers use this, so tests are deterministic)
+  // The room clock (./room-clock.ts): the host's 60 Hz step counter is tick * RULE_STEPS + phase. A client estimates
+  // it from the host's tick stamps.
+  let phase = 0;
+  const fixedSteps = createFixedSteps();
+  const stepEstimate = createStepEstimate();
+  const stepFns: ((step: number) => void)[] = [];
 
   let mode: 'local' | 'host' | 'client' = 'local';
   let room: WorldRoom | null = null;
@@ -426,6 +433,38 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     if (n >= MAX_STEPS) acc = 0;
     saveSoon();
   }
+  // The host's (or a local world's) room clock: advance by ms of real time in whole 60 Hz steps (at most 5 rule ticks'
+  // worth per call). Every RULE_STEPS steps runs one rule tick. While a durable write holds the production clock, the
+  // step is not counted at all (as updateWorld always dropped that time), so a railway room under write back-pressure
+  // runs no closer to real time than before, and the step counter (tick * RULE_STEPS + phase) never repeats a value.
+  // onStep listeners run after every counted step, rules or not: the end-of-step flush of replication
+  // (docs/plans/replication.md).
+  function stepWorld(ms: number) {
+    if (mode === 'client') throw new Error('stepWorld drives the host clock; a client follows it with updateWorld');
+    fixedSteps.advance(ms, hostStep);
+  }
+  function hostStep() {
+    wall += STEP_MS;
+    // A production clock cannot overtake an unpublished stamp or a replacement checkpoint.
+    if (mode === 'host' && cfg.recovery && (recoveryPending || recoveryError || out.length || !ready)) return;
+    releaseHeld();
+    if (!ready) return;
+    if (phase < RULE_STEPS - 1) phase++;
+    else {
+      step();
+      phase = 0;
+      saveSoon();
+    }
+    const now = roomStep();
+    for (const fn of stepFns) fn(now);
+  }
+  /** The room clock in 60 Hz steps: exact on the host; a client's estimate of the host's (whole steps, -1 before the
+   * first stamp). */
+  function roomStep() {
+    if (mode !== 'client') return world.tick * RULE_STEPS + phase;
+    const est = stepEstimate.now(wall);
+    return est < 0 ? -1 : Math.floor(est);
+  }
   function saveSoon() {
     if (mode === 'local' || wall < nextSave) return;
     nextSave = wall + cfg.saveMs;
@@ -449,6 +488,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     for (const [k, s] of states) if (k in snap.data) loadState(k, s, snap.data[k]);
     queue = [];
     acc = 0;
+    phase = 0;
+    fixedSteps.reset();
     pendingHash.clear();
     return true;
   }
@@ -555,6 +596,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
 
   // ------------------------------------------------------------ messages
   function noteHostTick(ht: unknown) {
+    // Every host stamp is taken at or after that tick's first step: a lower bound on the room clock.
+    if (isInt(ht) && ht >= 0) stepEstimate.hear(ht * RULE_STEPS, wall);
     if (isInt(ht) && (ht > hostTick || hostTickAt === 0)) {
       hostTick = ht;
       hostTickAt = wall;
@@ -565,6 +608,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       hostId = from; // first sender, or the old host went quiet: a migration
       hostTick = 0;
       hostTickAt = 0;
+      stepEstimate.reset();
       pendingHash.clear();
     }
     if (from !== hostId) return false;
@@ -871,6 +915,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     hostId = null;
     hostTick = 0;
     hostTickAt = 0;
+    stepEstimate.reset();
     pendingHash.clear();
     asm = null;
     awaiting = true;
@@ -950,6 +995,9 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     receiveEdit: (edit: unknown, from: string) =>
       mode === 'host' && isObj(edit) && JSON.stringify(edit).length <= MAX_EDIT_JSON && stamp(edit, from),
     updateWorld,
+    stepWorld,
+    roomStep,
+    onStep: (fn: (step: number) => void) => void stepFns.push(fn), // host: after every 60 Hz step, with the step
     requestResync,
     snapshot,
     loadSnapshot,
@@ -995,6 +1043,7 @@ export const {
   pidOf,
   submitEdit,
   updateWorld,
+  roomStep,
   requestResync,
   snapshot,
   loadSnapshot,

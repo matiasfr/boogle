@@ -29,9 +29,7 @@ test('line host releases durable-before-apply departure, fences stale epochs and
       store,
       tick: false,
       now: () => now,
-      monotonicNow: () => now,
       pidOf: (sid) => (sid.startsWith('a') ? 'alice' : 'bob'),
-      positionOf: (sid) => poses.get(sid) ?? null,
       positions: () => people,
     });
     value.onSend((message) => sent.push(message));
@@ -57,7 +55,15 @@ test('line host releases durable-before-apply departure, fences stale epochs and
   const submit = (sid: string, e: Obj) => {
     const session = sessions.get(sid)!;
     const request = ++session.request;
-    host.deliver({ t: 'r:edit', e: { ...e, epoch: session.epoch, request } }, sid);
+    // A client action carries where its actor stands (cm) and its action clock (ms).
+    const p = poses.get(sid);
+    const actor = p
+      ? {
+          at: [Math.round(p.x * 100) || 0, Math.round((p.y ?? 0) * 100) || 0, Math.round(p.z * 100) || 0],
+          ms: now - 1800000000000,
+        }
+      : {};
+    host.deliver({ t: 'r:edit', e: { ...e, epoch: session.epoch, request, ...actor } }, sid);
     return request;
   };
   const edit = async (sid: string, e: Obj) => {

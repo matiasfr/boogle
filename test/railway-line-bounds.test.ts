@@ -7,6 +7,7 @@ import { homeLand } from './helpers/land.ts';
 import { ensure } from '../src/sim/roster.ts';
 import { TUNABLES } from '../src/sim/tune.ts';
 import { railSession } from '../src/sim/railway.ts';
+import { railwayRequestEdit } from '../server/src/host/railway-requests.ts';
 test('line recovery width bound retains sixty-four worst material stamps and maximum roster', (t) => {
   // Deliberately combines mutually exclusive balances: a conservative byte bound, not a reachable state.
   const sync = createSync(),
@@ -78,7 +79,9 @@ test('line recovery width bound retains sixty-four worst material stamps and max
   const snapshot = sync.snapshot();
   snapshot.tick = M;
   snapshot.epochMs = 1793850000000;
-  const common = { i: 0, j: 0, p: 's'.repeat(32), u: s.accounts[255]!.pid, epoch: M, request: M };
+  const common = { p: 's'.repeat(32), u: s.accounts[255]!.pid };
+  // The widest request a client may send, actor facts included; the tail holds what the real cleaner stamps.
+  const facts = { at: [-200000, -200000, -200000], ms: 2147483647, junk: 'x'.repeat(900) };
   for (const body of [
     { op: 'rail.chop', id: 399, yaw: -0.0000010000000000000002, collapsed: false },
     { op: 'rail.beamDrop', revision: M, x: -200000, y: -200000, z: -200000 },
@@ -86,8 +89,9 @@ test('line recovery width bound retains sixty-four worst material stamps and max
     const tail: { tick: number; seq: number; e: Record<string, unknown> }[] = Array.from({ length: 64 }, (_, i) => ({
       tick: M,
       seq: M - 64 + i,
-      e: { ...common, ...body },
+      e: { ...railwayRequestEdit({ ...body, ...facts }, M, M, { falls: true, line: true }), ...common },
     }));
+    assert.ok(!('at' in tail[1]!.e) && !('ms' in tail[1]!.e), 'actor facts never enter the tail');
     tail[0]!.e = {
       op: 'rail.supply',
       i: 0,

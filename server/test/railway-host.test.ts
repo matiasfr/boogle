@@ -31,9 +31,7 @@ async function fixture(roomId = RAILWAY_ROOM) {
       store,
       tick: false,
       now: () => now,
-      monotonicNow: () => now,
       pidOf: (sid) => pids.get(sid) ?? null,
-      positionOf: (sid) => poses.get(sid) ?? null,
     });
     h.onSend((m) => sent.push(m));
     return h;
@@ -48,6 +46,11 @@ async function fixture(roomId = RAILWAY_ROOM) {
     await host.sync.whenDurable();
   };
   const pose = (sid: string, x: number, z: number) => poses.set(sid, { x: x / 100, z: z / 100, at: now });
+  // What a client action carries: where its actor stands (cm) and its action clock (ms). No pose, no position.
+  const act = (sid: string) => {
+    const p = poses.get(sid);
+    return p ? { at: [Math.round(p.x * 100) || 0, 0, Math.round(p.z * 100) || 0], ms: now - 1800000000000 } : {};
+  };
   const open = async (sid: string) => {
     host.deliver({ t: 'r:open' }, sid);
     await host.sync.whenDurable();
@@ -60,7 +63,7 @@ async function fixture(roomId = RAILWAY_ROOM) {
   const edit = async (sid: string, fields: Obj, epoch = 1) => {
     const request = (requests.get(sid) ?? 0) + 1;
     requests.set(sid, request);
-    host.deliver({ t: 'r:edit', e: { ...fields, epoch, request } }, sid);
+    host.deliver({ t: 'r:edit', e: { ...fields, epoch, request, ...act(sid) } }, sid);
     await host.sync.whenDurable();
     await step(3);
     const result = sent.findLast(
@@ -93,6 +96,7 @@ async function fixture(roomId = RAILWAY_ROOM) {
     store,
     sent,
     poses,
+    act,
     pids,
     requests,
     step,
@@ -132,7 +136,7 @@ test('ordinary rooms keep the classic registry; isolated missing reach is a dura
     const rejected = await f.edit('a', { op: 'rail.wake' });
     assert.equal(rejected.status, 'rejected');
     f.pose('a', T1.x, T1.z);
-    f.host.deliver({ t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 1 } }, 'a');
+    f.host.deliver({ t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 1, ...f.act('a') } }, 'a');
     assert.equal(f.sent.at(-1)?.status, 'rejected');
     assert.equal(f.host.rules.railway.railway.awake, -1);
     await f.restart();
@@ -164,7 +168,10 @@ for (const roomId of [RAILWAY_ROOM])
         f.pose(sid, T1.x, T1.z);
         const request = (f.requests.get(sid) ?? 0) + 1;
         f.requests.set(sid, request);
-        f.host.deliver({ t: 'r:edit', e: { op: 'rail.deposit', station: 'T1', n: 4, epoch: 1, request } }, sid);
+        f.host.deliver(
+          { t: 'r:edit', e: { op: 'rail.deposit', station: 'T1', n: 4, epoch: 1, request, ...f.act(sid) } },
+          sid,
+        );
       }
       await f.host.sync.whenDurable();
       const stamps = f.sent.filter((m) => m.t === 'w:edits').at(-1)!;
@@ -248,7 +255,10 @@ test('a burst split by a durable write retries in order without snapshot recover
     f.pose('a', T1.x, T1.z);
     const first = f.requests.get('a')! + 1;
     const send = (request: number) =>
-      f.host.deliver({ t: 'r:edit', e: { op: 'rail.deposit', station: 'T1', n: 1, epoch: 1, request } }, 'a');
+      f.host.deliver(
+        { t: 'r:edit', e: { op: 'rail.deposit', station: 'T1', n: 1, epoch: 1, request, ...f.act('a') } },
+        'a',
+      );
     send(first);
     // Run flush's microtask, but not the asynchronous disk write. This deterministically splits the burst.
     await Promise.resolve();
@@ -295,7 +305,7 @@ test('same-pid takeover fences the old session and eight outstanding tokens boun
     assert.equal(f.host.rules.railway.account('alice')!.request, 8);
     assert.equal(f.host.rules.railway.railway.outcomes.length, 8);
     assert.equal(await f.open('a2'), 2);
-    f.host.deliver({ t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 9 } }, 'a');
+    f.host.deliver({ t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 9, ...f.act('a') } }, 'a');
     assert.equal(f.sent.at(-1)?.state, 'snapshot-required');
     f.host.deliver({ t: 'r:status', epoch: 1, request: 1 }, 'a2');
     assert.equal(f.sent.at(-1)?.status, 'rejected');

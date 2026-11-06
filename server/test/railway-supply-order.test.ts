@@ -22,13 +22,15 @@ test('fresh drop waits for missed maintenance before admission, then starts at a
     store,
     tick: false,
     now: () => now,
-    monotonicNow: () => now,
     pidOf: () => 'supplier',
-    positionOf: () => ({ ...position, at: now }),
     positions: () => [{ ...position, at: now }],
   });
   host.onSend((message) => messages.push(message));
-  const send = (e: Record<string, unknown>) => host.deliver({ t: 'r:edit', e: { ...e, epoch: 1 } }, 'session');
+  // A client action carries where its actor stands (cm) and its action clock (ms).
+  const send = (e: Record<string, unknown>) => {
+    const at = [Math.round(position.x * 100), 0, Math.round(position.z * 100)];
+    host.deliver({ t: 'r:edit', e: { ...e, epoch: 1, at, ms: now - 1800000000000 } }, 'session');
+  };
   const ticks = async (n: number) => {
     for (let k = 0; k < n; k++) {
       await host.sync.whenDurable();

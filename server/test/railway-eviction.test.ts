@@ -112,7 +112,7 @@ async function prepare(room: HostedRoom, client: ReturnType<typeof connect>, rai
   await client.request({ t: 'r:open' }, () => client.world('r:session').length > 0, 'session');
   client.send({ t: 'p', s: 1, d: { v: 1, p: [T1.x / 100, 0, T1.z / 100] } });
   await client.request(
-    { t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 1 } },
+    { t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 1, at: [T1.x, 0, T1.z], ms: 0 } },
     () => client.world('r:result').some((m) => m.request === 1),
     'wake',
   );
@@ -217,6 +217,8 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM, railw
             id: source[0],
             epoch: 1,
             request: 2,
+            at: [source[1], 0, source[2]],
+            ms: 1000,
             ...(isPlayableRailwayRoom(id) ? { yaw: 0.5, collapsed: false } : {}),
           },
         },
@@ -333,6 +335,8 @@ for (const [id, failure] of [
             id: source[0],
             epoch: 1,
             request: 2,
+            at: [source[1], 0, source[2]],
+            ms: 1000,
             ...(isPlayableRailwayRoom(id) ? { yaw: 0.5, collapsed: false } : {}),
           },
         },

@@ -5,13 +5,15 @@
 //   const wh = createWorldHost({ roomId, store, saveMs, pidOf })   pidOf(selfId): that session's player id, or null
 //   wh.onSend((msg) => ...)       the sync's outgoing messages, for the hosted room to fan out (a w:snap only to msg.to)
 //   wh.deliver(msg, from)         a client's message into the sync (from = its selfId)
-//   wh.step(dt)                   advance dt seconds by hand (tests pass tick: false; otherwise a 50 ms timer does it)
+//   wh.step(dt)                   advance dt seconds of the 60 Hz room clock by hand (tests pass tick: false; otherwise a
+//                                 step timer does it)
 //   wh.status()                   worldStatus() plus the tick
 //   await wh.close({ save })      stop ticking; with save, write the last tick and wait for the file
 //
 // The host-side work a browser host does outside the rules is done here too: src/features/helper-bank.ts's bank.wake
 // for the time nobody hosted (a server restart).
 import { createSync } from '../../../src/world/sync.ts';
+import { STEP_MS } from '../../../src/world/room-clock.ts';
 import { installRules } from '../../../src/world/rules/index.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
 import { offlineGap, MIN_GAP_MS } from '../../../src/sim/bank.ts';
@@ -34,13 +36,17 @@ import { railGrowthMask, railGrows, railGrowthAllowed, type SupplyPulse } from '
 import { railNobodyNear, type RailwayPosition } from './railway-supply.ts';
 export type { RailwayPosition } from './railway-supply.ts';
 import type { RailReach, RailCadence } from '../../../src/world/rules/railway.ts';
-import { createRailwayRequests } from './railway-requests.ts';
+import { createRailwayRequests, type ActorFacts } from './railway-requests.ts';
 import { canSet, cleanName } from '../../../src/sim/roster.ts';
 
-const STEP_MS = 50;
+// The room clock (src/world/room-clock.ts): a 60 Hz step timer; rules run every RULE_STEPS steps inside sync.stepWorld.
 // Saves skip a world whose states didn't change, but its tick still moves on, and the helper bank reads the time nobody
 // hosted from the saved tick: so the tick is saved at least this often, and always on close.
 const TICK_SAVE_MS = 30000;
+// Client action clocks (railCadence): a frame of rounding and jitter between two swings. There is no bound against
+// the server's clock: exploits don't matter in casual co-op, and any such bound refuses honest clients whose clock
+// runs at another rate (a test harness's warped page clock, a throttled tab).
+const CADENCE_SLACK_MS = 20;
 
 // JSON escapes lone UTF-16 surrogates to six bytes each. Preserve their displayed replacement character while
 // keeping the existing sixteen-character name and three-byte-per-code-unit recovery bound (ES2022 browsers).
@@ -129,7 +135,7 @@ export function createWorldHost({
   const timer = tick
     ? setInterval(() => {
         const now = performance.now();
-        sync.updateWorld(Math.min(now - last, 1000) / 1000);
+        sync.stepWorld(Math.min(now - last, 1000));
         last = now;
         if (now - tickSaved > TICK_SAVE_MS) {
           tickSaved = now;
@@ -149,7 +155,7 @@ export function createWorldHost({
     deliver(msg: unknown, from: string) {
       for (const h of msgFns) h(msg, from);
     },
-    step: (dt: number) => sync.updateWorld(dt),
+    step: (dt: number) => sync.stepWorld(dt * 1000),
     status: () => ({ tick: sync.world.tick, ...sync.worldStatus() }),
     async close({ save = true } = {}) {
       if (timer) clearInterval(timer);
@@ -163,13 +169,10 @@ export function createWorldHost({
 }
 export type WorldHost = ReturnType<typeof createWorldHost>;
 
-/** Owner-reported world pose: only reach plausibility, never server-simulated motion. */
 export type RailwayHostOptions = WorldHostOptions & {
-  positionOf?: (sid: string) => RailwayPosition | null;
   /** Every connected session, including unknown poses. Unknown blocks maintenance. */
   positions?: () => (RailwayPosition | null)[];
   now?: () => number;
-  monotonicNow?: () => number;
 };
 
 // Same sync, room adapter and atomic store as ordinary rooms; opted-in namespace/registry/recovery only.
@@ -180,11 +183,9 @@ export function createRailwayWorldHost({
   home = loadHomeLand(),
   tick = true,
   pidOf = () => null,
-  positionOf = () => null,
   tuneController = () => false,
   positions = () => [null],
   now = Date.now,
-  monotonicNow = () => performance.now(),
   log = () => {},
 }: RailwayHostOptions) {
   if (!isRailwayRoom(roomId)) throw new Error('railway host requires a T1 namespace');
@@ -208,41 +209,47 @@ export function createRailwayWorldHost({
   let startup = true;
   let savedAt = now();
   let savedTick = 0;
-  const cadence = new Map<string, number>();
+  // The actor owns their body (docs/plans/replication.md, revision 1): a client action carries its own position
+  // (`at`, centimetres) and action time (`ms`, the client's monotonic clock), and reach and cadence are judged from
+  // those, never from presence or arrival time. They are validation facts only: railway-requests.ts hands them over
+  // for the synchronous stamp (withActor) and they never enter the saved or broadcast edit.
+  let acting: ActorFacts | null = null;
+  const withActor = <T>(facts: ActorFacts, fn: () => T): T => {
+    acting = facts;
+    try {
+      return fn();
+    } finally {
+      acting = null;
+    }
+  };
+  const actor = (e: { u: string; epoch?: unknown; request?: unknown }) =>
+    acting && acting.pid === e.u && acting.epoch === e.epoch && acting.request === e.request ? acting : null;
+  const clientClocks = new Map<string, { epoch: number; last: Map<string, number> }>();
   const railReach: RailReach = (e, x, z, radius) => {
-    const p = positionOf(e.p);
-    if (
-      !p ||
-      !Number.isFinite(p.x) ||
-      !Number.isFinite(p.z) ||
-      !Number.isFinite(p.at) ||
-      now() - p.at > 2000 ||
-      p.at > now()
-    )
-      return false;
-    const dx = p.x * 100 - x,
-      dz = p.z * 100 - z;
+    const a = actor(e);
+    if (!a) return false;
+    const dx = a.at[0] - x,
+      dz = a.at[2] - z;
     return dx * dx + dz * dz <= radius * radius;
   };
   const railCadence: RailCadence = (e) => {
+    const a = actor(e);
+    if (!a) return false;
     const swing = ['rail.chop', 'rail.mine', 'rail.beamChop'].includes(e.op);
-    const key = `${e.u}:${swing ? 'swing' : e.op}`;
+    const kind = swing ? 'swing' : e.op;
     const ms = swing ? RAILWAY_T1.swingMs : RAILWAY_T1.unloadMs;
-    const time = monotonicNow();
-    if (time - (cadence.get(key) ?? -Infinity) < ms) return false;
-    cadence.set(key, time);
+    let clock = clientClocks.get(a.pid);
+    if (!clock || clock.epoch !== a.epoch) {
+      clock = { epoch: a.epoch, last: new Map() }; // a new session is a new page, with its own clock
+      clientClocks.set(a.pid, clock);
+    }
+    if (a.ms - (clock.last.get(kind) ?? -Infinity) < ms - CADENCE_SLACK_MS) return false;
+    clock.last.set(kind, a.ms);
     return true;
   };
-  const railHeight = (e: { p: string }, y: number, radius: number) => {
-    const p = positionOf(e.p);
-    return (
-      !!p &&
-      Number.isFinite(p.y) &&
-      Number.isFinite(p.at) &&
-      now() - p.at <= 2000 &&
-      p.at <= now() &&
-      Math.abs(p.y! * 100 - y) <= radius
-    );
+  const railHeight = (e: { u: string }, y: number, radius: number) => {
+    const a = actor(e);
+    return !!a && Math.abs(a.at[1] - y) <= radius;
   };
   const supplySafe = (e: SupplyPulse) => {
     const people = positions();
@@ -353,6 +360,7 @@ export function createRailwayWorldHost({
     Math.floor(now() / 60000) - rules.railway.railway.supply!.marker <= 1;
   const requests = createRailwayRequests({
     sync,
+    withActor,
     api: rules.railway,
     pidOf,
     send,
@@ -442,8 +450,9 @@ export function createRailwayWorldHost({
     ? setInterval(() => {
         const time = performance.now();
         if (running && !closed) {
-          sync.updateWorld(Math.min(time - last, 1000) / 1000);
-          maintainSupply();
+          const before = sync.world.tick;
+          sync.stepWorld(Math.min(time - last, 1000));
+          if (sync.world.tick !== before) maintainSupply(); // on rule ticks only, not 60 times a second
         }
         last = time;
       }, STEP_MS)
@@ -527,7 +536,7 @@ export function createRailwayWorldHost({
     },
     step(dt: number) {
       if (running && !closed) {
-        sync.updateWorld(dt);
+        sync.stepWorld(dt * 1000);
         maintainSupply();
       }
     },
