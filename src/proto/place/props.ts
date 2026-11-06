@@ -22,6 +22,7 @@ import { staticPart } from './town.ts';
 import { openingStops } from './opening-plans.ts';
 import { bigCargo } from './big-cargo.ts';
 import { shelfGroup } from './gifts.ts';
+import { openTelescope, telescopeV2 } from './telescope.ts';
 
 // ---------------------------------------------------------------- small finds on the way
 const FIND_SPOTS = [
@@ -235,6 +236,11 @@ const v1 = new THREE.Vector3(),
   v3 = new THREE.Vector3();
 /** A look through it: the view flies out along the barrel to the shard, and any input brings you back. */
 export function lookThrough() {
+  if (telescopeV2) {
+    openTelescope();
+    protoCount('looks');
+    return;
+  }
   const d = Math.hypot(toFarX, toFarZ);
   v1.set(SX + (toFarX / d) * 40, SY + 28, SZ + (toFarZ / d) * 40);
   v2.set(SX + (toFarX / d) * 400, 90, SZ + (toFarZ / d) * 400);

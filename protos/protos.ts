@@ -125,6 +125,16 @@ export const PROTOS: Proto[] = [
     verb: 'chops',
     variants: [
       {
+        name: 'fixed',
+        url: '/?proto=place&telescope=v2&v=fixed',
+        what: 'Did you want another look after something changed? The ridge telescope restores one railway-and-ring view.',
+      },
+      {
+        name: 'pan',
+        url: '/?proto=place&telescope=v2&v=pan',
+        what: 'The same telescope view and zoom, with a little optional bounded panning.',
+      },
+      {
         name: 'cove',
         url: '/?proto=place&v=cove&terrain=cove&room=proto-place-cove&fresh=1',
         what: 'Does this shore feel like a place you want to walk into? One layered sandstone headland beside the climb.',
