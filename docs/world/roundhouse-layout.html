@@ -1,0 +1,1184 @@
+<title>Roundhouse Layout</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="claude:viewport-fit-sides" content="cover" />
+<script type="application/json" id="layout-data">
+  {
+    "sourceCommit": "7132d3268a1e1d89236d2295e4c9ac51a0313c5e",
+    "sourceHashes": {
+      "src/proto/place/layout.ts": "87ee8eee6e13170f022474dec62407cf96d918e145d777090f9dd28db5850743",
+      "src/proto/place/opening-plans.ts": "9ff739e4e4d7320f1a0b9092ddad9d3b8798d424b743729215b37cb21cafd881",
+      "src/proto/place/machine-panels.ts": "11048b6fe4fce39d6a73418ba5aa5f322cdd61d2ce70bedd81191582d3a59fe7",
+      "src/proto/place/track-panels.ts": "a1b63599f406611a1ebcd027cfcbd66cdf1407037b5ab748df82e57d40fccfb3",
+      "src/proto/place/rail.ts": "2f68f165f56b4899a55a90923bdf327ff42f056a76fc474f7c88a17b36021909"
+    },
+    "units": "metres; Place-local x,z; north = -z",
+    "origin": { "x": 1000, "z": 0 },
+    "views": { "town": [-184, -112, 205, 205], "yard": [-177, -95, 72, 63], "network": [-200, -400, 650, 590] },
+    "site": { "x": -144, "z": -66, "r": 17, "tableR": 6 },
+    "bay": { "x": -155, "z": -66, "w": 10, "d": 7 },
+    "snaps": [
+      { "angle": 0, "name": "Fitting bay", "detail": "West end \u2192 fitting bay. Service spur disconnected." },
+      {
+        "angle": -45,
+        "name": "Service spur",
+        "detail": "Northeast end \u2192 spur \u2192 Line 1. Line 2 is reached via the existing town junction; no direct yard link."
+      }
+    ],
+    "spur": [
+      [-144, -66],
+      [-128, -82],
+      [-98, -82],
+      [-62, -64],
+      [-36.783992767333984, -64.25928497314453]
+    ],
+    "bypass": [
+      [-122, -30],
+      [-170, -42],
+      [-170, -92],
+      [-130, -125]
+    ],
+    "pathWidth": 2,
+    "walkMargin": 2,
+    "machine": {
+      "halfWidth": 4.55,
+      "turnRadius": 18,
+      "maxPanel": 14.333333333333334,
+      "forward": 16.733333333333334,
+      "height": 4.4,
+      "note": "Conservative plan sweep: 9.1 m width (\u00b13.4 m magazine centres + 1.15 m half-panel), \u00b116.73 m reach along both travel directions, plus an 18 m junction turn pocket. Not a mesh sweep or collision certificate."
+    },
+    "train": { "engineLength": 3.4, "wagonLength": 4.2, "gap": 0.8, "width": 2.4 },
+    "delivery": {
+      "job": 32,
+      "before": 24,
+      "after": 32,
+      "sourceRack": 32,
+      "receivingRack": 32,
+      "unit": "timber units",
+      "name": "Prepared timber kit for a Home ramp",
+      "note": "Isolated seeded job on Line 1. Proposed 24\u219232 capacity; current Place has 8 deck crates. Units are illustrative, not a crate conversion. Free fitting; no purchase or new resource."
+    },
+    "junction": { "x": -82, "z": 12, "r": 4.8 },
+    "forge": { "x": -87, "z": -3, "w": 10, "d": 8 },
+    "buildings": [
+      { "id": "town-0", "name": "cottage", "x": -108, "z": -4, "w": 5.4, "d": 4.4, "yaw": 0.5 },
+      { "id": "town-1", "name": "cottage", "x": -123, "z": 19, "w": 5.4, "d": 4.4, "yaw": 1.6 },
+      { "id": "town-2", "name": "cottage", "x": -135, "z": 24, "w": 5.4, "d": 4.4, "yaw": 1.1 },
+      { "id": "town-3", "name": "cottage", "x": -139, "z": 5, "w": 5.4, "d": 4.4, "yaw": 1.5 },
+      { "id": "town-4", "name": "hall", "x": -88, "z": 31, "w": 11, "d": 8, "yaw": 2.73 },
+      { "id": "town-5", "name": "hall", "x": -84, "z": -18, "w": 7, "d": 6, "yaw": 0.1 },
+      { "id": "town-6", "name": "clock", "x": -105, "z": 37, "w": 7, "d": 7, "yaw": 0 },
+      { "id": "town-7", "name": "shed", "x": -71, "z": -21, "w": 8, "d": 6, "yaw": -0.5 },
+      { "id": "town-8", "name": "hall", "x": -96, "z": -25, "w": 8, "d": 6, "yaw": 0.2 },
+      { "id": "town-9", "name": "water", "x": -131, "z": 17, "w": 5.8, "d": 5.8, "yaw": 0 },
+      { "id": "town-10", "name": "stone", "x": -83, "z": 44, "w": 6, "d": 6, "yaw": 0.6 },
+      { "id": "town-11", "name": "stone", "x": -71, "z": 47, "w": 6, "d": 5, "yaw": 0.5 },
+      { "id": "town-12", "name": "keep", "x": -89, "z": 57, "w": 10.6, "d": 10.6, "yaw": 0 },
+      { "id": "town-13", "name": "stone", "x": -74, "z": 61, "w": 7, "d": 6, "yaw": 0.3 },
+      { "id": "town-14", "name": "stone", "x": -60, "z": 54, "w": 6, "d": 6, "yaw": 0.8 },
+      { "id": "town-15", "name": "stack", "x": -112, "z": 50, "w": 3, "d": 3, "yaw": 0 },
+      { "id": "town-16", "name": "shed", "x": -112, "z": 60, "w": 9, "d": 7, "yaw": 0 },
+      { "id": "house", "name": "house", "x": -114, "z": 11, "yaw": 1.42, "w": 7.4, "d": 7.4, "high": 3.7 },
+      { "id": "shop", "name": "shop", "x": -116, "z": 31, "yaw": 2.05, "w": 10, "d": 8, "high": 3.9 },
+      { "id": "museum", "name": "museum", "x": -125, "z": -8, "yaw": 0.97, "w": 13, "d": 12, "high": 5 },
+      { "id": "forge", "name": "forge", "x": -87, "z": -3, "w": 10, "d": 8, "yaw": 0 }
+    ],
+    "paths": [
+      [
+        [-98, 9],
+        [-98, -6],
+        [-102, -14],
+        [-122, -30],
+        [-142, -70],
+        [-130, -125],
+        [-100, -118],
+        [-82, -95],
+        [-56, -77],
+        [-41.5, -88],
+        [-61, -121],
+        [-61, -147],
+        [-82, -165],
+        [-50, -178],
+        [-20, -162],
+        [-14, -154]
+      ],
+      [
+        [-98, 9],
+        [-100, 62],
+        [-78, 108],
+        [-70, 146],
+        [-50, 150],
+        [-42, 132],
+        [-36.5, 112.4],
+        [-19.2, 117.4],
+        [-10, 150],
+        [20, 160],
+        [45, 130],
+        [70, 100],
+        [92, 70],
+        [92, 45]
+      ]
+    ],
+    "lines": [
+      {
+        "id": "north",
+        "name": "Line 1",
+        "length": 221,
+        "points": [
+          [-82, 12],
+          [-79.39683532714844, 8.962973594665527],
+          [-76.79367065429688, 5.925947189331055],
+          [-74.19050598144531, 2.888920783996582],
+          [-71.58734130859375, -0.14810563623905182],
+          [-68.9741439819336, -3.1764414310455322],
+          [-66.2840576171875, -6.136646270751953],
+          [-63.58336639404297, -9.087237358093262],
+          [-60.96985626220703, -12.114947319030762],
+          [-58.51947784423828, -15.275768280029297],
+          [-56.22161102294922, -18.549776077270508],
+          [-53.98745346069336, -21.867597579956055],
+          [-51.83457946777344, -25.23866844177246],
+          [-49.785072326660156, -28.673484802246094],
+          [-47.86404037475586, -32.18167495727539],
+          [-46.10419464111328, -35.773277282714844],
+          [-44.533573150634766, -39.451515197753906],
+          [-43.13590621948242, -43.19907760620117],
+          [-41.87114334106445, -46.99370574951172],
+          [-40.694786071777344, -50.81676483154297],
+          [-39.56465530395508, -54.653785705566406],
+          [-38.444007873535156, -58.493595123291016],
+          [-37.323875427246094, -62.333534240722656],
+          [-36.256248474121094, -66.18839263916016],
+          [-35.22584915161133, -70.05339050292969],
+          [-34.21735763549805, -73.9241714477539],
+          [-33.21919250488281, -77.79762268066406],
+          [-32.220611572265625, -81.67097473144531],
+          [-31.209075927734375, -85.54095458984375],
+          [-30.166316986083984, -89.40261840820312],
+          [-29.006454467773438, -93.23021697998047],
+          [-27.66315460205078, -96.99766540527344],
+          [-26.253347396850586, -100.740966796875],
+          [-24.981966018676758, -104.5326156616211],
+          [-24.144041061401367, -108.4398193359375],
+          [-24.083913803100586, -112.42858123779297],
+          [-24.912179946899414, -116.33692169189453],
+          [-26.160295486450195, -120.13670349121094],
+          [-27.378459930419922, -123.94576263427734],
+          [-27.997812271118164, -127.88661193847656],
+          [-27.866008758544922, -131.88336181640625],
+          [-27.336170196533203, -135.84542846679688],
+          [-26.16238784790039, -139.66152954101562],
+          [-23.998394012451172, -143.00161743164062],
+          [-20.75870132446289, -145.3166961669922],
+          [-17.06245994567871, -146.8349151611328],
+          [-13.212587356567383, -147.9160919189453],
+          [-9.301298141479492, -148.7522735595703],
+          [-5.348351001739502, -149.3453826904297],
+          [-1.3510611057281494, -149.4254913330078],
+          [2.643615484237671, -149.22366333007812],
+          [6.63822078704834, -149.0202178955078],
+          [10.638026237487793, -149],
+          [14.638026237487793, -149],
+          [18.638025283813477, -149],
+          [22.638025283813477, -149],
+          [23.638025283813477, -149]
+        ]
+      },
+      {
+        "id": "east",
+        "name": "Line 2",
+        "length": 743,
+        "points": [
+          [-82, 12],
+          [-79.17156982421875, 14.8284273147583],
+          [-76.34314727783203, 17.6568546295166],
+          [-73.51471710205078, 20.485280990600586],
+          [-70.68629455566406, 23.313709259033203],
+          [-67.96321105957031, 26.2413387298584],
+          [-65.43701934814453, 29.342580795288086],
+          [-62.81489562988281, 32.361663818359375],
+          [-59.794647216796875, 34.973236083984375],
+          [-56.22024154663086, 36.74586868286133],
+          [-52.378807067871094, 37.84613037109375],
+          [-48.41688919067383, 38.37409973144531],
+          [-44.41911697387695, 38.41211700439453],
+          [-40.436065673828125, 38.0585823059082],
+          [-36.524635314941406, 37.240745544433594],
+          [-32.72276306152344, 36.00022888183594],
+          [-28.982301712036133, 34.58320236206055],
+          [-25.2561092376709, 33.12874984741211],
+          [-21.50127601623535, 31.750551223754883],
+          [-17.677284240722656, 30.580549240112305],
+          [-13.756393432617188, 29.800079345703125],
+          [-9.79015827178955, 29.285131454467773],
+          [-5.799688816070557, 29.022214889526367],
+          [-1.8006436824798584, 29.052749633789062],
+          [2.189439535140991, 29.327741622924805],
+          [6.1654133796691895, 29.763975143432617],
+          [10.12511920928955, 30.327226638793945],
+          [14.050630569458008, 31.09392738342285],
+          [17.950515747070312, 31.98284339904785],
+          [21.835519790649414, 32.934974670410156],
+          [25.714344024658203, 33.912071228027344],
+          [29.594511032104492, 34.88380813598633],
+          [33.48304748535156, 35.82137680053711],
+          [37.38707733154297, 36.6919059753418],
+          [41.31404495239258, 37.45158004760742],
+          [45.271278381347656, 38.03095626831055],
+          [49.253868103027344, 38.400001525878906],
+          [53.2484130859375, 38.604331970214844],
+          [57.247657775878906, 38.67295837402344],
+          [61.24732208251953, 38.630516052246094],
+          [65.2451400756836, 38.500370025634766],
+          [69.240478515625, 38.307823181152344],
+          [73.23450469970703, 38.08925247192383],
+          [77.2315902709961, 37.96725845336914],
+          [81.22083282470703, 38.24468231201172],
+          [85.09026336669922, 37.37888717651367],
+          [88.6903076171875, 35.63837432861328],
+          [92.16205596923828, 33.65262985229492],
+          [95.55474853515625, 31.53399085998535],
+          [98.89996337890625, 29.341032028198242],
+          [102.21361541748047, 27.100603103637695],
+          [105.50543212890625, 24.828189849853516],
+          [108.78211975097656, 22.534006118774414],
+          [112.04896545410156, 20.225820541381836],
+          [115.3106460571289, 17.91034507751465],
+          [118.57107543945312, 15.593103408813477],
+          [121.8104019165039, 13.246515274047852],
+          [125.0224838256836, 10.862736701965332],
+          [128.2150421142578, 8.452845573425293],
+          [131.3950653076172, 6.02646017074585],
+          [134.5691375732422, 3.5922598838806152],
+          [137.74346923828125, 1.158413052558899],
+          [140.92420959472656, -1.2670464515686035],
+          [144.11756896972656, -3.6758573055267334],
+          [147.33001708984375, -6.0591559410095215],
+          [150.56854248046875, -8.406841278076172],
+          [153.84190368652344, -10.705700874328613],
+          [157.14695739746094, -12.95881175994873],
+          [160.47384643554688, -15.179557800292969],
+          [163.81114196777344, -17.384654998779297],
+          [167.1471405029297, -19.591712951660156],
+          [170.47061157226562, -21.817569732666016],
+          [173.77218627929688, -24.07575798034668],
+          [177.0446014404297, -26.375980377197266],
+          [180.28305053710938, -28.723764419555664],
+          [183.48512268066406, -31.120933532714844],
+          [186.65968322753906, -33.55446243286133],
+          [189.81288146972656, -36.01560974121094],
+          [192.94989013671875, -38.497371673583984],
+          [196.07432556152344, -40.99494171142578],
+          [199.1892852783203, -43.50433349609375],
+          [202.29745483398438, -46.02212142944336],
+          [205.40127563476562, -48.54527282714844],
+          [208.5030059814453, -51.07099533081055],
+          [211.60482788085938, -53.59660339355469],
+          [214.70892333984375, -56.119415283203125],
+          [217.8175506591797, -58.636634826660156],
+          [220.9331512451172, -61.145225524902344],
+          [224.0552520751953, -63.645729064941406],
+          [227.17514038085938, -66.14898681640625],
+          [230.2928009033203, -68.65501403808594],
+          [233.40908813476562, -71.16275787353516],
+          [236.52487182617188, -73.6711196899414],
+          [239.64102172851562, -76.17902374267578],
+          [242.75843811035156, -78.68536376953125],
+          [245.87799072265625, -81.18904113769531],
+          [249.00048828125, -83.68904113769531],
+          [252.12669372558594, -86.18440246582031],
+          [255.25732421875, -88.67420196533203],
+          [258.3930358886719, -91.15760803222656],
+          [261.5343933105469, -93.63386535644531],
+          [264.6790771484375, -96.10592651367188],
+          [267.8232727050781, -98.57855987548828],
+          [270.96783447265625, -101.05076599121094],
+          [274.1136169433594, -103.52140808105469],
+          [277.261474609375, -105.9894027709961],
+          [280.4123229980469, -108.45358276367188],
+          [283.5669250488281, -110.91293334960938],
+          [286.7261962890625, -113.36631774902344],
+          [289.8909912109375, -115.81253051757812],
+          [293.0623779296875, -118.25023651123047],
+          [296.241455078125, -120.67784118652344],
+          [299.42962646484375, -123.09355163574219],
+          [302.62823486328125, -125.49540710449219],
+          [305.8390197753906, -127.88093566894531],
+          [309.06396484375, -130.247314453125],
+          [312.3027648925781, -132.5946807861328],
+          [315.5540466308594, -134.9247283935547],
+          [318.81634521484375, -137.23931884765625],
+          [322.0883483886719, -139.54019165039062],
+          [325.3687438964844, -141.82908630371094],
+          [328.6562194824219, -144.10775756835938],
+          [331.94952392578125, -146.37802124023438],
+          [335.2473449707031, -148.64175415039062],
+          [338.5480041503906, -150.90130615234375],
+          [341.8498840332031, -153.15908813476562],
+          [345.15093994140625, -155.41807556152344],
+          [348.4674987792969, -157.6540985107422],
+          [351.8369140625, -159.8096466064453],
+          [355.24615478515625, -161.9016876220703],
+          [358.6773376464844, -163.95767211914062],
+          [362.108642578125, -166.01339721679688],
+          [365.5136413574219, -168.11231994628906],
+          [368.85687255859375, -170.3079833984375],
+          [372.0929260253906, -172.6581573486328],
+          [375.16192626953125, -175.2218017578125],
+          [378.02313232421875, -178.0159912109375],
+          [380.7086181640625, -180.9795684814453],
+          [383.1956481933594, -184.11146545410156],
+          [385.4712829589844, -187.40017700195312],
+          [387.53546142578125, -190.82569885253906],
+          [389.4049987792969, -194.36141967773438],
+          [391.11322021484375, -197.97801208496094],
+          [392.6817321777344, -201.6572723388672],
+          [394.04998779296875, -205.41543579101562],
+          [395.2324523925781, -209.23629760742188],
+          [396.2628479003906, -213.10107421875],
+          [397.1724548339844, -216.9961395263672],
+          [397.98944091796875, -220.9117431640625],
+          [398.73846435546875, -224.84095764160156],
+          [399.4429626464844, -228.77841186523438],
+          [400.1224365234375, -232.72027587890625],
+          [400.7633361816406, -236.66856384277344],
+          [401.3505859375, -240.62518310546875],
+          [401.8815612792969, -244.58975219726562],
+          [402.35546875, -248.56153869628906],
+          [402.7733154296875, -252.5396270751953],
+          [403.1366271972656, -256.5230712890625],
+          [403.4479675292969, -260.5108947753906],
+          [403.71063232421875, -264.5022277832031],
+          [403.9284362792969, -268.49627685546875],
+          [404.10223388671875, -272.49249267578125],
+          [404.2268981933594, -276.4905090332031],
+          [404.3108825683594, -280.4896240234375],
+          [404.3606872558594, -284.4892883300781],
+          [404.38262939453125, -288.4892272949219],
+          [404.3812255859375, -292.4892272949219],
+          [404.3603210449219, -296.4891662597656],
+          [404.32318115234375, -300.4889831542969],
+          [404.2727966308594, -304.4886779785156],
+          [404.2117919921875, -308.48822021484375],
+          [404.1427917480469, -312.48760986328125],
+          [404.0682067871094, -316.4869079589844],
+          [403.9898986816406, -320.48614501953125],
+          [403.8952331542969, -324.4850158691406],
+          [403.780029296875, -328.4833679199219],
+          [403.6494140625, -332.4812316894531],
+          [403.506591796875, -336.4786682128906],
+          [403.3543395996094, -340.47576904296875],
+          [403.19427490234375, -344.4725646972656],
+          [403.02777099609375, -348.4690856933594],
+          [402.856201171875, -352.4654235839844],
+          [402.68072509765625, -356.4615783691406],
+          [402.50262451171875, -360.4576110839844],
+          [402.3237609863281, -364.45361328125],
+          [402.1473693847656, -368.44970703125],
+          [402.021728515625, -371.44708251953125]
+        ]
+      }
+    ]
+  }
+</script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f3f0e7;
+    --paper: #fffdf7;
+    --ink: #24362f;
+    --muted: #617168;
+    --border: #cdd3c3;
+    --land: #e7ebdc;
+    --rail: #ac542f;
+    --line2: #3b7989;
+    --walk: #8b7352;
+    --yard: #8b59a5;
+    --accent: #26775c;
+    --risk: #b53f36;
+    --sweep: #d5a14b;
+    --engine: #e38b37;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: #18221e;
+      --paper: #223029;
+      --ink: #eff1df;
+      --muted: #b1c1b5;
+      --border: #4e6154;
+      --land: #2a3b30;
+      --rail: #e99870;
+      --line2: #79c2d0;
+      --walk: #cfb286;
+      --yard: #c49bdf;
+      --accent: #8ad3b5;
+      --risk: #ff958b;
+      --sweep: #e4ba69;
+      --engine: #f4a353;
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #18221e;
+    --paper: #223029;
+    --ink: #eff1df;
+    --muted: #b1c1b5;
+    --border: #4e6154;
+    --land: #2a3b30;
+    --rail: #e99870;
+    --line2: #79c2d0;
+    --walk: #cfb286;
+    --yard: #c49bdf;
+    --accent: #8ad3b5;
+    --risk: #ff958b;
+    --sweep: #e4ba69;
+    --engine: #f4a353;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font:
+      15px/1.5 system-ui,
+      sans-serif;
+    padding: 24px max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px));
+  }
+  main {
+    max-width: 1280px;
+    margin: auto;
+  }
+  h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.1;
+    margin: 8px 0;
+  }
+  h2 {
+    font-size: 18px;
+    margin: 0 0 10px;
+  }
+  p {
+    margin: 8px 0;
+  }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 750;
+  }
+  .muted,
+  small {
+    color: var(--muted);
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 20px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    align-items: start;
+    gap: 16px;
+  }
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    min-width: 0;
+  }
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  button,
+  select {
+    font: inherit;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--ink);
+    padding: 9px 12px;
+    cursor: pointer;
+  }
+  button[aria-pressed='true'] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  button:focus-visible,
+  select:focus-visible {
+    outline: 3px solid var(--yard);
+    outline-offset: 2px;
+  }
+  .mapbox {
+    overflow: auto;
+    border-radius: 10px;
+    background: var(--land);
+  }
+  #map {
+    display: block;
+    width: 100%;
+    height: 600px;
+  }
+  svg text {
+    font: 3px system-ui;
+    fill: var(--ink);
+    paint-order: stroke;
+    stroke: var(--land);
+    stroke-width: 1;
+    stroke-linejoin: round;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 12px;
+    margin-top: 10px;
+  }
+  .legend span:before {
+    content: '━';
+    color: var(--c);
+    margin-right: 5px;
+  }
+  .stack {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+  }
+  .risk {
+    color: var(--risk);
+  }
+  .status {
+    border-left: 3px solid var(--yard);
+    padding-left: 12px;
+    margin: 12px 0;
+  }
+  .metric {
+    font-size: 32px;
+    font-weight: 750;
+    line-height: 1.2;
+  }
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .compare > div {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .compare .selected {
+    border: 2px solid var(--accent);
+  }
+  #cargo {
+    width: 100%;
+    height: 82px;
+  }
+  .checks {
+    padding-left: 18px;
+    font-size: 13px;
+  }
+  .checks li {
+    margin: 7px 0;
+  }
+  details {
+    margin-top: 16px;
+  }
+  summary {
+    cursor: pointer;
+    font-weight: 650;
+  }
+  code {
+    overflow-wrap: anywhere;
+  }
+  a {
+    color: var(--accent);
+  }
+  .source {
+    font-size: 12px;
+  }
+  #detail {
+    min-height: 24px;
+    font-size: 13px;
+  }
+  .maphint {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  @media (max-width: 850px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+    #map {
+      height: 440px;
+    }
+    .stack {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .stack > .card:last-child {
+      grid-column: 1/-1;
+    }
+  }
+  @media (max-width: 550px) {
+    body {
+      padding-top: 16px;
+    }
+    header {
+      display: block;
+    }
+    header select {
+      margin-top: 12px;
+    }
+    .stack {
+      grid-template-columns: 1fr;
+    }
+    #map {
+      height: 390px;
+    }
+    .card {
+      padding: 12px;
+    }
+    .toolbar {
+      gap: 6px;
+    }
+    button,
+    select {
+      font-size: 14px;
+    }
+    .maphint {
+      margin: 6px 0;
+    }
+  }
+</style>
+<main>
+  <header>
+    <div>
+      <div class="eyebrow">Boogle · first spatial proof · proposed</div>
+      <h1>A workshop beside town</h1>
+      <p class="muted">Turn, fit, deliver. One train, one free improvement, the same useful journey.</p>
+    </div>
+    <select id="theme" aria-label="Colour theme">
+      <option value="auto">System theme</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+  </header>
+  <div class="grid">
+    <section class="card">
+      <div class="toolbar">
+        <label for="view">View</label
+        ><select id="view">
+          <option value="town">Town + clearances</option>
+          <option value="yard">Workshop close-up</option>
+          <option value="network">Both complete lines</option></select
+        ><label><input type="checkbox" id="sweep" checked /> Machine sweep</label
+        ><label><input type="checkbox" id="bypass" checked /> Proposed walk</label>
+      </div>
+      <div class="mapbox">
+        <svg id="map" role="img" aria-label="True-scale top-down Roundhouse layout, north up"></svg>
+      </div>
+      <div class="legend">
+        <span style="--c: var(--rail)">Line 1</span><span style="--c: var(--line2)">Line 2</span
+        ><span style="--c: var(--yard)">Proposed yard / spur</span><span style="--c: var(--walk)">Existing walk</span
+        ><span style="--c: var(--accent)">Proposed bypass</span><span style="--c: var(--sweep)">Machine envelope</span>
+      </div>
+      <p class="maphint">Equal x/z scale · north is up · one unit = one metre · tap a building for its clearance.</p>
+      <p id="detail" aria-live="polite">Proposed centre (−144, −66), 34 m reserved diameter.</p>
+    </section>
+    <div class="stack">
+      <section class="card">
+        <h2>1 · Turn the bridge</h2>
+        <div class="toolbar">
+          <button id="bay" aria-pressed="true">0° · Bay</button
+          ><button id="service" aria-pressed="false">−45° · Service</button>
+        </div>
+        <p id="connection" class="status" aria-live="polite"></p>
+        <small
+          >Rotation is off the main line. Normal service keeps running. The two positions connect the bay and the
+          service spur, not two competing services.</small
+        >
+      </section>
+      <section class="card">
+        <h2>2 · Fit once, save a return</h2>
+        <div class="toolbar">
+          <button id="before" aria-pressed="true">Before fitting</button
+          ><button id="after" aria-pressed="false">After fitting</button>
+        </div>
+        <p id="fit" aria-live="polite"></p>
+        <svg id="cargo" role="img" aria-label="First delivery out of 32 timber units"></svg>
+        <div class="compare">
+          <div id="before-card">
+            <small>Before</small>
+            <div class="metric">2 trips</div>
+            <small>24 + 8 units</small>
+          </div>
+          <div id="after-card">
+            <small>After</small>
+            <div class="metric">1 trip</div>
+            <small>32 units together</small>
+          </div>
+        </div>
+        <p id="delivery" class="status" aria-live="polite"></p>
+        <small
+          >Prepared timber → Line 1 → Home ramp kit. Both racks are seeded at 32; no extra production or faster train is
+          implied.</small
+        >
+      </section>
+      <section class="card">
+        <h2 class="risk">3 · Resolve the path conflict</h2>
+        <ul id="checks" class="checks"></ul>
+        <small
+          >The original walking path stays visible in red where it crosses the yard. The green bypass is a proposal;
+          terrain, gradients and crossings still need a 3D check.</small
+        >
+      </section>
+    </div>
+  </div>
+  <details>
+    <summary>Assumptions, scale and source snapshot</summary>
+    <p>
+      This is a local design diagram, not gameplay or an accepted site. The one engine and one wagon are schematic
+      proposed envelopes on a 12 m table. The bay is 10 × 7 m. The free fitting adds visible wagon side racks without
+      changing the train length. A new branch connects to Line 1; Line 2 remains reachable through the existing town
+      junction. Spur curvature, turnout and access are not engineered.
+    </p>
+    <p id="machine-note"></p>
+    <p>
+      The sweep is a conservative top-down construction reservation, including the magazine and working reach, not a
+      measured mesh union. It does not imply ground-level collision everywhere: the gantry reaches roughly 4.4 m high.
+      Roofs, trees, station frames, terrain and vertical clearance need a later survey.
+    </p>
+    <p id="delivery-note"></p>
+    <p>
+      Buildings include all town growth stages and the three walk-in rooms. Rectangles use authored widths, depths and
+      yaw; landmark bounds include their wider tops. Ordinary roof overhang is not included. Rails are sampled every 4 m
+      from the actual Float32 layout, without changing scale. Paths use their exact authored vertices with an assumed 2
+      m walking corridor.
+    </p>
+    <p class="source" id="provenance"></p>
+    <p class="source">
+      Brief: <a href="../research/roundhouse-trains.md">Roundhouse trains</a> · Site:
+      <a href="world-map.html">World map</a> · No game state, network, saving or dispatch controls.
+    </p>
+  </details>
+</main>
+<script>
+  (() => {
+    const D = JSON.parse(document.getElementById('layout-data').textContent);
+    const $ = (id) => document.getElementById(id);
+    const NS = 'http://www.w3.org/2000/svg';
+    let snap = 0,
+      fitted = false;
+    const node = (tag, attrs, parent, text) => {
+      const n = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
+      if (text !== undefined) n.textContent = text;
+      parent.append(n);
+      return n;
+    };
+    const points = (p) => p.map((v) => v.join(',')).join(' ');
+    function line(parent, p, color, width, dash = '') {
+      return node(
+        'polyline',
+        {
+          points: points(p),
+          fill: 'none',
+          stroke: color,
+          'stroke-width': width,
+          'stroke-dasharray': dash,
+          'stroke-linejoin': 'round',
+          'stroke-linecap': 'round',
+        },
+        parent,
+      );
+    }
+    function label(parent, x, z, text, size = 3) {
+      return node('text', { x, y: z, 'font-size': size, style: `font-size:${size}px` }, parent, text);
+    }
+    function distance(p, a, b) {
+      const dx = b[0] - a[0],
+        dz = b[1] - a[1],
+        t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / (dx * dx + dz * dz || 1)));
+      return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dz);
+    }
+    function pathDistance(p, path) {
+      return Math.min(...path.slice(1).map((b, i) => distance(p, path[i], b)));
+    }
+    function nearBuilding(b) {
+      const c = Math.cos(b.yaw),
+        s = Math.sin(b.yaw),
+        dx = D.site.x - b.x,
+        dz = D.site.z - b.z,
+        lx = dx * c - dz * s,
+        lz = dx * s + dz * c,
+        qx = Math.max(-b.w / 2, Math.min(b.w / 2, lx)),
+        qz = Math.max(-b.d / 2, Math.min(b.d / 2, lz));
+      return { gap: Math.hypot(lx - qx, lz - qz) - D.site.r, p: [b.x + qx * c + qz * s, b.z - qx * s + qz * c] };
+    }
+    function rectangle(x, z, w, d, yaw) {
+      const c = Math.cos(yaw),
+        s = Math.sin(yaw);
+      return [
+        [-w / 2, -d / 2],
+        [w / 2, -d / 2],
+        [w / 2, d / 2],
+        [-w / 2, d / 2],
+      ].map(([a, b]) => [x + a * c + b * s, z - a * s + b * c]);
+    }
+    // Conservative envelopes in both working directions, padded between 4 m samples.
+    const sweeps = D.lines.flatMap((l) =>
+      l.points.slice(1).map((p, i) => {
+        const a = l.points[i],
+          yaw = Math.atan2(p[0] - a[0], p[1] - a[1]);
+        return rectangle(a[0], a[1], D.machine.halfWidth * 2, D.machine.forward * 2 + 4, yaw);
+      }),
+    );
+    const pocket = Array.from({ length: 48 }, (_, i) => [
+      D.junction.x + D.machine.turnRadius * Math.cos((i * Math.PI) / 24),
+      D.junction.z + D.machine.turnRadius * Math.sin((i * Math.PI) / 24),
+    ]);
+    const envelopes = [...sweeps, pocket];
+    function intersects(a, b) {
+      return [a, b].every((poly) =>
+        poly.every((p, i) => {
+          const q = poly[(i + 1) % poly.length],
+            axis = [p[1] - q[1], q[0] - p[0]];
+          const ap = a.map((v) => v[0] * axis[0] + v[1] * axis[1]),
+            bp = b.map((v) => v[0] * axis[0] + v[1] * axis[1]);
+          return Math.max(...ap) >= Math.min(...bp) && Math.max(...bp) >= Math.min(...ap);
+        }),
+      );
+    }
+    function render() {
+      const svg = $('map');
+      svg.replaceChildren();
+      const view = D.views[$('view').value];
+      svg.setAttribute('viewBox', view.join(' '));
+      const network = $('view').value === 'network',
+        close = $('view').value === 'yard';
+      const grid = node('g', { opacity: 0.23 }, svg);
+      for (let x = Math.ceil(view[0] / 10) * 10; x < view[0] + view[2]; x += 10)
+        line(
+          grid,
+          [
+            [x, view[1]],
+            [x, view[1] + view[3]],
+          ],
+          'var(--border)',
+          0.25,
+        );
+      for (let z = Math.ceil(view[1] / 10) * 10; z < view[1] + view[3]; z += 10)
+        line(
+          grid,
+          [
+            [view[0], z],
+            [view[0] + view[2], z],
+          ],
+          'var(--border)',
+          0.25,
+        );
+      if ($('sweep').checked) {
+        const sweep = node('g', { opacity: 0.23 }, svg);
+        sweeps.forEach((p) => node('polygon', { points: points(p), fill: 'var(--sweep)' }, sweep));
+        node('circle', { cx: D.junction.x, cy: D.junction.z, r: D.machine.turnRadius, fill: 'var(--sweep)' }, sweep);
+      }
+      D.paths.forEach((p) => line(svg, p, 'var(--walk)', D.pathWidth));
+      if ($('bypass').checked) line(svg, D.bypass, 'var(--accent)', D.pathWidth, '2 1');
+      D.lines.forEach((l, i) => {
+        line(svg, l.points, i ? 'var(--line2)' : 'var(--rail)', 1.5);
+        const p = l.points[Math.min(i ? 12 : 15, l.points.length - 1)];
+        label(svg, p[0] + 3, p[1], `${l.name} · ${l.length} m`, network ? 8 : 3.2);
+      });
+      for (const b of D.buildings) {
+        const g = node(
+          'g',
+          {
+            transform: `translate(${b.x} ${b.z}) rotate(${(-b.yaw * 180) / Math.PI})`,
+            tabindex: 0,
+            role: 'button',
+            'aria-label': `${b.name}: ${nearBuilding(b).gap.toFixed(1)} m from reserved yard`,
+          },
+          svg,
+        );
+        node(
+          'rect',
+          {
+            x: -b.w / 2,
+            y: -b.d / 2,
+            width: b.w,
+            height: b.d,
+            fill: 'var(--paper)',
+            stroke: 'var(--muted)',
+            'stroke-width': 0.35,
+          },
+          g,
+        );
+        const detail = () => {
+          $('detail').textContent =
+            `${b.name} (${b.x}, ${b.z}) · ${b.w} × ${b.d} m · ${nearBuilding(b).gap.toFixed(1)} m to reserved yard edge.`;
+        };
+        g.addEventListener('click', detail);
+        g.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            detail();
+          }
+        });
+        if (['house', 'shop', 'museum', 'forge'].includes(b.id)) label(svg, b.x + 3, b.z, b.name);
+      }
+      node(
+        'circle',
+        {
+          cx: D.junction.x,
+          cy: D.junction.z,
+          r: D.junction.r,
+          fill: 'var(--paper)',
+          stroke: 'var(--rail)',
+          'stroke-width': 0.6,
+        },
+        svg,
+      );
+      if (!close) label(svg, D.junction.x + 7, D.junction.z - 3, 'Existing junction', network ? 7 : 3);
+      const { x, z, r, tableR } = D.site;
+      node(
+        'circle',
+        { cx: x, cy: z, r, fill: 'none', stroke: 'var(--yard)', 'stroke-width': 0.45, 'stroke-dasharray': '2 1' },
+        svg,
+      );
+      line(svg, D.spur, 'var(--yard)', 1.2, '2 1');
+      line(
+        svg,
+        [
+          [D.bay.x - D.bay.w / 2, z],
+          [x, z],
+        ],
+        'var(--yard)',
+        1.2,
+      );
+      node(
+        'rect',
+        {
+          x: D.bay.x - D.bay.w / 2,
+          y: D.bay.z - D.bay.d / 2,
+          width: D.bay.w,
+          height: D.bay.d,
+          fill: 'var(--paper)',
+          stroke: 'var(--yard)',
+          'stroke-width': 0.5,
+        },
+        svg,
+      );
+      node(
+        'circle',
+        { cx: x, cy: z, r: tableR, fill: 'var(--paper)', stroke: 'var(--yard)', 'stroke-width': 0.7 },
+        svg,
+      );
+      const bridge = node('g', { transform: `translate(${x} ${z}) rotate(${D.snaps[snap].angle})` }, svg);
+      node('rect', { x: -tableR, y: -1.7, width: tableR * 2, height: 3.4, fill: 'var(--border)' }, bridge);
+      line(
+        bridge,
+        [
+          [-tableR, 0],
+          [tableR, 0],
+        ],
+        'var(--yard)',
+        0.5,
+      );
+      const t = D.train,
+        total = t.engineLength + t.gap + t.wagonLength,
+        start = -total / 2;
+      node(
+        'rect',
+        {
+          x: start,
+          y: -t.width / 2,
+          width: t.engineLength,
+          height: t.width,
+          rx: 0.4,
+          fill: 'var(--engine)',
+          stroke: 'var(--ink)',
+          'stroke-width': 0.2,
+        },
+        bridge,
+      );
+      node('circle', { cx: start + 0.7, cy: 0, r: 0.45, fill: 'var(--ink)' }, bridge);
+      const wagon = start + t.engineLength + t.gap;
+      node(
+        'rect',
+        {
+          x: wagon,
+          y: -t.width / 2,
+          width: t.wagonLength,
+          height: t.width,
+          fill: 'var(--walk)',
+          stroke: 'var(--ink)',
+          'stroke-width': 0.2,
+        },
+        bridge,
+      );
+      if (fitted) {
+        for (const y of [-1.5, 1.15])
+          node('rect', { x: wagon, y, width: t.wagonLength, height: 0.35, fill: 'var(--accent)' }, bridge);
+      }
+      node('circle', { cx: x, cy: z, r: 0.35, fill: 'var(--yard)' }, svg);
+      label(svg, x - r, z + r + 4, 'Proposed yard · Ø34 m', network ? 8 : 3);
+      label(svg, D.bay.x - 5, z - 6, 'Fitting bay', close ? 2 : 3);
+      if (close) {
+        label(svg, x - 4, z + 9, 'Engine + wagon', 2);
+        label(svg, x + 10, z - 17, 'Spur → Line 1', 2);
+      }
+      // Highlight the exact authored path segments whose 2 m corridor enters the reserved yard.
+      D.paths[0].slice(1).forEach((b, i) => {
+        if (distance([x, z], D.paths[0][i], b) < r + D.pathWidth / 2)
+          line(svg, [D.paths[0][i], b], 'var(--risk)', 0.8, '1 1');
+      });
+      if (!network && !close) {
+        const nearest = D.buildings.map((b) => ({ b, ...nearBuilding(b) })).sort((a, b) => a.gap - b.gap)[0];
+        const dx = nearest.p[0] - x,
+          dz = nearest.p[1] - z,
+          h = Math.hypot(dx, dz);
+        line(svg, [[x + (dx / h) * r, z + (dz / h) * r], nearest.p], 'var(--muted)', 0.4, '1 1');
+        label(svg, x + 12, z + 34, `${nearest.gap.toFixed(1)} m to ${nearest.b.name}`, 3);
+        label(svg, -172, -36, 'Path conflict', 3);
+        label(svg, -179, -75, 'Bypass', 3);
+        label(svg, -115, 49, '18 m machine turn pocket', 3);
+        line(
+          svg,
+          [
+            [-96, 46],
+            [-92, 27],
+          ],
+          'var(--muted)',
+          0.3,
+        );
+      }
+      const scale = network ? 100 : close ? 10 : 20,
+        sx = view[0] + 5,
+        sz = view[1] + view[3] - 7;
+      line(
+        svg,
+        [
+          [sx, sz],
+          [sx + scale, sz],
+        ],
+        'var(--ink)',
+        0.7,
+      );
+      label(svg, sx, sz - 2, `${scale} m`, network ? 7 : close ? 2 : 3);
+      label(svg, view[0] + view[2] - (network ? 45 : 12), view[1] + (network ? 25 : 8), '↑ N', network ? 9 : 3);
+      $('connection').textContent = D.snaps[snap].detail;
+      for (const [id, on] of [
+        ['bay', snap === 0],
+        ['service', snap === 1],
+        ['before', !fitted],
+        ['after', fitted],
+      ])
+        $(id).setAttribute('aria-pressed', on);
+      $('before-card').classList.toggle('selected', !fitted);
+      $('after-card').classList.toggle('selected', fitted);
+      const d = D.delivery,
+        load = Math.min(fitted ? d.after : d.before, d.sourceRack, d.receivingRack);
+      $('fit').textContent = fitted
+        ? `Free side racks installed · ${d.after}-unit wagon.`
+        : `Plain wagon · ${d.before} units. Side racks are the one free fitting.`;
+      for (const [id, capacity] of [
+        ['before-card', d.before],
+        ['after-card', d.after],
+      ]) {
+        const batch = Math.min(capacity, d.sourceRack, d.receivingRack),
+          trips = Math.ceil(d.job / batch);
+        $(id).querySelector('.metric').textContent = `${trips} ${trips === 1 ? 'trip' : 'trips'}`;
+        $(id).querySelector('small:last-child').textContent = `${batch} units per delivery`;
+      }
+      const cargo = $('cargo');
+      cargo.replaceChildren();
+      cargo.setAttribute('viewBox', '0 0 320 80');
+      for (let i = 0; i < d.job; i++)
+        node(
+          'rect',
+          {
+            x: 4 + (i % 16) * 19.5,
+            y: 6 + Math.floor(i / 16) * 25,
+            width: 15,
+            height: 19,
+            rx: 2,
+            fill: i < load ? 'var(--accent)' : 'none',
+            stroke: i < load ? 'var(--accent)' : 'var(--border)',
+          },
+          cargo,
+        );
+      node(
+        'text',
+        { x: 4, y: 74, style: 'font:12px system-ui;stroke:none' },
+        cargo,
+        `${load} delivered · ${d.job - load} left for another trip`,
+      );
+      $('delivery').textContent =
+        load >= d.job
+          ? `First arrival: all ${d.job} pieces. The ramp kit is ready; no return for leftovers.`
+          : `First arrival: ${load} pieces. The ramp still needs ${d.job - load}; return for the remaining load.`;
+    }
+    const nearest = D.buildings.map((b) => ({ b, ...nearBuilding(b) })).sort((a, b) => a.gap - b.gap)[0];
+    const pathGap = pathDistance([D.site.x, D.site.z], D.paths[0]) - D.site.r - D.pathWidth / 2;
+    const bypassGap = pathDistance([D.site.x, D.site.z], D.bypass) - D.site.r - D.pathWidth / 2;
+    const railGap = Math.min(...envelopes.map((p) => pathDistance([D.site.x, D.site.z], [...p, p[0]]))) - D.site.r;
+    const sweepConflicts = D.buildings.filter((b) =>
+      envelopes.some((p) => intersects(rectangle(b.x, b.z, b.w, b.d, b.yaw), p)),
+    );
+    const checks = [
+      `CONFLICT · Existing timber path overlaps the reserved yard by ${(-pathGap).toFixed(1)} m (including its 1 m half-width).`,
+      `Buildings · nearest is ${nearest.b.name}, ${nearest.gap.toFixed(1)} m beyond the reserved yard. All ${D.buildings.length} town footprints checked.`,
+      `Main rail · ${railGap.toFixed(1)} m from yard edge to the conservative construction sweep.`,
+      `REVIEW · Construction sweep overlaps ${sweepConflicts.length} town footprints: ${sweepConflicts.map((b) => `${b.name} (${b.x}, ${b.z})`).join('; ')}. Plan overlap is not a proven 3D collision.`,
+      `Bypass · ${bypassGap.toFixed(1)} m from yard edge to walking corridor; proposed only.`,
+      `REVIEW · The spur crosses the existing timber walk near the yard exit. Its turnout and the junction's 18 m machine pocket need controlled access.`,
+      `UNSURVEYED · Terrain, trees, roof overhangs, stations and vertical clearance. The 34 m circle is a reservation, not proof of level ground.`,
+    ];
+    $('checks').replaceChildren(
+      ...checks.map((s, i) => {
+        const li = document.createElement('li');
+        li.textContent = s;
+        if (s.startsWith('CONFLICT') || s.startsWith('REVIEW')) li.className = 'risk';
+        return li;
+      }),
+    );
+    $('machine-note').textContent = D.machine.note;
+    $('delivery-note').textContent = D.delivery.note;
+    $('provenance').textContent =
+      `Snapshot ${D.sourceCommit.slice(0, 8)} · ${D.units}. World x = local x + ${D.origin.x}. Geometry and provenance hashes live in the first JSON block. Sources: ${Object.keys(D.sourceHashes).join(', ')}.`;
+    $('bay').onclick = () => {
+      snap = 0;
+      render();
+    };
+    $('service').onclick = () => {
+      snap = 1;
+      render();
+    };
+    $('before').onclick = () => {
+      fitted = false;
+      render();
+    };
+    $('after').onclick = () => {
+      fitted = true;
+      render();
+    };
+    for (const id of ['view', 'sweep', 'bypass']) $(id).onchange = render;
+    $('theme').onchange = () => {
+      if ($('theme').value === 'auto') delete document.documentElement.dataset.theme;
+      else document.documentElement.dataset.theme = $('theme').value;
+    };
+    render();
+  })();
+</script>

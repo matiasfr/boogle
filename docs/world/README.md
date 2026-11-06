@@ -21,17 +21,17 @@ The roundhouse keeps the map’s proposed site `(-144,-66)` and 34 m footprint; 
 
 The first script, `#world-data`, is strict JSON. Edit it as data; renderer code follows the page markup. Read/copy the block from the repository file when iterating. There is no download button or browser export handler: downloads do not work in the published Artifact. Browser interactions do not persist edits or write back to the repository.
 
-| Field | Contract |
-| --- | --- |
-| `version`, `date`, `sourceCommit`, `sourceHashes` | Snapshot provenance. Refresh when re-extracting source, not merely moving a proposed island. Hashes cover six geometry source files, not every transitive dependency. |
+| Field                                                 | Contract                                                                                                                                                                                                                                                                         |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version`, `date`, `sourceCommit`, `sourceHashes`     | Snapshot provenance. Refresh when re-extracting source, not merely moving a proposed island. Hashes cover six geometry source files, not every transitive dependency.                                                                                                            |
 | `proposalSources`, record `proposal`, record `branch` | Source paths distinguish the singular newer report from the plural older report. `proposal` is `primary` or `earlier`; omitted means shared. `branch` is `gorge` or `canopy`; omitted means either alternative. Filter every shape, route, detail option and total consistently. |
-| `units`, `axes`, `origin` | One unit is one metre. Arrays use `[x,z]`, with north at negative z. Coordinates are Place-local. Current game placement adds `origin.x=1000`, `origin.z=0`. |
-| `views` | `[minX,minZ,width,height]` camera presets. They never rescale geography. |
-| `terrain` | Derived SVG contours for the **default** terrain’s sampled 2 m grid. Each occupied cell uses its lower-left height; shoreline uncertainty is up to a cell diagonal. These are visualization data, not greybox collision. |
-| `places` | Stable `id`, `name`, `at`, `status`, `description`, `source`. `scale` is `world`, `local` (default), or `both`. `labelAt` changes the label only. `radii` are future elliptical footprint assumptions; `radius`, `bounds`, `footprint` describe local reference geometry. |
-| `lines` | Stable ID, name, status, `kind` (`rail`/`foot`), `points`, description and source. Future links also have `from`, `to`, `material`, `optional`, speed and acceleration. Endpoints must match their named places. |
-| `gates` | Position, status and plain `requires` text. These are dependency notes, not executable conditions or shared game state. |
-| `abilities` | Acquisition position and `routes` polylines showing routes/dependencies opened. Current unlock positions are extracted; later upgrade placements are proposals. |
+| `units`, `axes`, `origin`                             | One unit is one metre. Arrays use `[x,z]`, with north at negative z. Coordinates are Place-local. Current game placement adds `origin.x=1000`, `origin.z=0`.                                                                                                                     |
+| `views`                                               | `[minX,minZ,width,height]` camera presets. They never rescale geography.                                                                                                                                                                                                         |
+| `terrain`                                             | Derived SVG contours for the **default** terrain’s sampled 2 m grid. Each occupied cell uses its lower-left height; shoreline uncertainty is up to a cell diagonal. These are visualization data, not greybox collision.                                                         |
+| `places`                                              | Stable `id`, `name`, `at`, `status`, `description`, `source`. `scale` is `world`, `local` (default), or `both`. `labelAt` changes the label only. `radii` are future elliptical footprint assumptions; `radius`, `bounds`, `footprint` describe local reference geometry.        |
+| `lines`                                               | Stable ID, name, status, `kind` (`rail`/`foot`), `points`, description and source. Future links also have `from`, `to`, `material`, `optional`, speed and acceleration. Endpoints must match their named places.                                                                 |
+| `gates`                                               | Position, status and plain `requires` text. These are dependency notes, not executable conditions or shared game state.                                                                                                                                                          |
+| `abilities`                                           | Acquisition position and `routes` polylines showing routes/dependencies opened. Current unlock positions are extracted; later upgrade placements are proposals.                                                                                                                  |
 
 When moving a place, move all attached line endpoints and related gates/ability routes explicitly. Length and timing recompute from future route polylines. Keep stable IDs so later exports and review notes can refer to the same place. A label collision hides only its text; markers and the selector remain available.
 
@@ -90,3 +90,27 @@ Read [DESIGN](../../DESIGN.md), the [current decision index](../proposals/boogle
 Format just these files with `npx prettier --write docs/world/world-map.html docs/world/README.md`, then run `npm run check`. Review the page at desktop and 400 px width, in light and dark mode; exercise layers, selectors, pan/zoom and reset. Browser evidence must use the already-running broker. A same-origin iframe can show this documentation page in a trusted `look --action` capture while the harness retains its game-health checks; this is document UI evidence, not a gameplay bot result. Do not launch a separate Chromium or change the harness.
 
 No game mechanics, game map UI, state ownership, lockstep math, assets or network behavior change in this task. Version 1 used cached refs because its brief permitted only local-server network access. For version 2, the owner explicitly requested fetching and rebasing onto `origin/main`; both completed cleanly before the reconciliation, and the geometry snapshot was refreshed. No push or ship is authorized.
+
+## Roundhouse first layout
+
+[Roundhouse layout](roundhouse-layout.html) is the bounded 2D proof at `(-144, -66)`:
+0° connects the fitting bay; −45° connects a proposed spur to Line 1. Line 2 remains
+accessible through the existing town junction. The workshop never replaces that
+junction. Toggle the one free wagon fitting to compare a seeded 32-unit timber
+ramp kit: 24 + 8 in two trips versus 32 in one. These are research assumptions,
+not today's eight-crate Place capacity or a new campaign bill.
+
+The first `#layout-data` JSON block owns metre geometry, dimensions, views, delivery
+inputs and source hashes. Both complete lines are sampled from `layout.ts` every
+4 m; walking vertices and town plots retain their authored positions. Local x
+adds 1000 in the game. The page shows all town growth stages, rooms and forge.
+The 34 m yard, 12 m table, bay, spur and bypass are proposals. The original timber
+walk crosses the yard: it is flagged, never silently moved. Construction clearance
+uses a conservative two-direction swept envelope (9.1 m width, 16.73 m forward
+reach, 4 m sample padding and an 18 m junction turn pocket), with building overlaps
+listed for review. This is not a mesh or vertical collision audit. Ordinary roof
+overhang, terrain, trees, stations and safe turnout geometry remain unsurveyed.
+
+Controls are Local document UI; there is no game implementation, persisted state,
+service assignment or dispatch action. Inspect via the existing broker's same-origin
+iframe capture route described above. Owner layout review precedes a game build.
