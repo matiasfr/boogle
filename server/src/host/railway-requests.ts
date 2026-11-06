@@ -118,7 +118,10 @@ export function createRailwayRequests({
         return;
       }
       if (request !== current.next) {
-        state(from, 'snapshot-required', e);
+        // A durable write can refuse an earlier token in this same ordered pipeline. Later tokens
+        // need to retry too; a snapshot cannot admit the missing token and only stalls those retries.
+        const waiting = request > current.next && request < current.next + RAILWAY_WINDOW;
+        state(from, waiting ? 'busy' : 'snapshot-required', e);
         return;
       }
       if (current.pending.size >= RAILWAY_WINDOW) {

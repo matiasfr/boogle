@@ -251,6 +251,50 @@ test('playable registry accepts bounded identity but rejects every legacy materi
   }
 });
 
+test('a burst split by a durable write retries in order without snapshot recovery', async () => {
+  const f = await fixture();
+  try {
+    await f.open('a');
+    await f.wake();
+    await f.harvest('a', 8);
+    f.pose('a', T1.x, T1.z);
+    const first = f.requests.get('a')! + 1;
+    const send = (request: number) =>
+      f.host.deliver({ t: 'r:edit', e: { op: 'rail.deposit', station: 'T1', n: 1, epoch: 1, request } }, 'a');
+    send(first);
+    // Run flush's microtask, but not the asynchronous disk write. This deterministically splits the burst.
+    await Promise.resolve();
+    assert.equal(f.host.sync.worldStatus().recoveryPending, true);
+    for (let request = first + 1; request < first + 8; request++) {
+      send(request);
+      assert.deepEqual(f.sent.at(-1), { t: 'r:state', to: 'a', state: 'busy', epoch: 1, request });
+    }
+    assert.equal(f.host.rules.railway.account('alice')!.request, first - 1);
+    await f.step(3);
+    // Retry the original tokens after the barrier, just as the browser adapter does after correlated busy.
+    for (let request = first + 1; request < first + 8; request++) send(request);
+    await f.step(3);
+    const results = f.sent.filter((m) => m.t === 'r:result' && Number(m.request) >= first);
+    assert.deepEqual(
+      results.map((r) => r.request),
+      Array.from({ length: 8 }, (_, k) => first + k),
+    );
+    const deposited = results.reduce((sum, r) => sum + Number(r.accepted), 0);
+    assert.equal(deposited, 2);
+    assert.equal(f.host.rules.railway.railway.stock, deposited);
+    assert.equal(f.host.rules.railway.account('alice')!.carry, 8 - deposited);
+    assert.equal(railwayInvariant(f.host.rules.railway.railway), null);
+    for (let request = first; request < first + 8; request++) {
+      send(request);
+      assert.deepEqual(f.sent.at(-1), results[request - first], 'duplicates return the same terminal receipt');
+    }
+    send(first + 16);
+    assert.equal(f.sent.at(-1)?.state, 'snapshot-required', 'a token beyond the pipeline still needs recovery');
+  } finally {
+    await f.close();
+  }
+});
+
 test('same-pid takeover fences the old session and eight outstanding tokens bound admission', async () => {
   const f = await fixture();
   try {
