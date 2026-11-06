@@ -1,6 +1,6 @@
 // Real ground keeps its own colour, normals, shadows and cave masks. Only wetness and submerged light are layered on.
 // Local; Ultra Water research recommendations 4/7. The terrain registers before the sea owns its shared resources.
-import type { MeshStandardNodeMaterial } from 'three/webgpu';
+import type { Material, MeshStandardNodeMaterial } from 'three/webgpu';
 import { patchNode } from '../material-patch.ts';
 import { newWaterEnabled } from './flags.ts';
 import { CAUSTIC_TEXELS_PER_M, type CausticSample } from './caustics.ts';
@@ -29,7 +29,9 @@ export type WetSandProfile = {
 const materials = new Set<MeshStandardNodeMaterial>();
 const sandProfiles = new WeakMap<MeshStandardNodeMaterial, WetSandProfile>();
 let current: Context | null = null;
-const restore = new Map<MeshStandardNodeMaterial, () => void>();
+const restore = new Map<Material, { color: MeshStandardNodeMaterial['colorNode']; undo(): void }>();
+/** The authored albedo before wetness, absorption and sunlight caustics; diagnostic readers only. */
+export const receiverBaseColor = (mat: Material) => restore.get(mat)?.color;
 const causticStrength = scalar('water.caustics', ULTRA, 'caustics');
 
 function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
@@ -164,11 +166,14 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   const color = mat.colorNode,
     roughness = mat.roughnessNode,
     normal = mat.normalNode;
-  restore.set(mat, () => {
-    if (mat.colorNode === color) mat.colorNode = previousColor;
-    if (mat.roughnessNode === roughness) mat.roughnessNode = previousRoughness;
-    if (mat.normalNode === normal) mat.normalNode = previousNormal;
-    mat.needsUpdate = true;
+  restore.set(mat, {
+    color: previousColor,
+    undo() {
+      if (mat.colorNode === color) mat.colorNode = previousColor;
+      if (mat.roughnessNode === roughness) mat.roughnessNode = previousRoughness;
+      if (mat.normalNode === normal) mat.normalNode = previousNormal;
+      mat.needsUpdate = true;
+    },
   });
 }
 
@@ -190,7 +195,7 @@ export function installWaterReceivers(field: ShoreFields, caustics: CausticSampl
   for (const mat of materials) attach(mat, current);
   return () => {
     current = null;
-    for (const undo of restore.values()) undo();
+    for (const entry of restore.values()) entry.undo();
     restore.clear();
   };
 }
