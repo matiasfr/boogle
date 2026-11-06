@@ -166,6 +166,29 @@ Dev Water/Post shows these new defaults and resets to them through the existing 
 Camera-facing scoped ink and new reward particles compensate the inverse surface gain; physical painted boards,
 the price atlas, smoke and dust do not.
 
+## Bounded sky art comparison (6 November 2026)
+
+`?sky=windpaint` and `?sky=summer` select Local loading-time art through the same
+`createWaterSkyFor()` cube used by water, fog, PBR reflections and hemisphere fill.
+The default remains the current procedural sky. The [skybox research](../research/skybox.md)
+owns the visual brief; these flags await the owner's comparison, not rollout.
+
+Windpaint uses original direction-space cel clouds, three faint spiral accents, broad softened
+blue palette bands and a cream disc/halo. Summer reuses toySky's cumulus lobe recipe with thirteen
+uneven clusters, varied aspect/size, soft bases and a saturated blue ramp with stronger horizon haze.
+The existing `sky=toy` control is unchanged. Both new flags keep current water and production Neutral
+post, surface gain .12, key/fill 1.12/3.2, cloud radiance .8 and neutral scene lights (owner cell 5).
+Only cloud radiance changes with the art; the physical sun direction and water's solar lobe remain.
+
+Both flags force one 1024 cube and disable the separate evening preparation and in-play authoring
+rebakes. Recipe values live in `water/sky-art.ts`; edit/reload to compare. Cube RGB contains no sun
+disc, and alpha remains sun transmittance. `inspect()` reports recipe, cube payload, bake count,
+CPU bake submission time and readiness through GPU fill readback; none establish device residency
+or real-time smoothness. No shared state, network shapes or gameplay change.
+
+GOBI remains pending the actual pack and source-page licence verification: this job's local-only
+network restriction prevents downloading it. The cached preview JPEG is not used as a game asset.
+
 ## Opt-in Sunshine sky comparison
 
 `?proto=place&sky=toy&toyTone=neutral` selects original stylized sky art baked into the existing

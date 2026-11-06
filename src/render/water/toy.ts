@@ -31,7 +31,7 @@ const clouds = [
   [0.15, 0.28, -1, 0.23],
   [-0.65, 0.55, -1, 0.15],
 ] as const;
-const puffs = [
+export const cumulusPuffs = [
   [-0.66, 0, 0.58],
   [-0.28, 0.25, 0.7],
   [0.18, 0.45, 0.75],
@@ -55,7 +55,7 @@ export const toySky = (direction: N, sunColor: N): N =>
       const dx = delta.dot(right).div(width);
       const dy = delta.y.div(width * 0.55);
       const cluster = float(0).toVar();
-      for (const [px, py, radius] of puffs) {
+      for (const [px, py, radius] of cumulusPuffs) {
         const distance = length(vec3(dx.sub(px), dy.sub(py), delta.dot(center).div(width)));
         cluster.assign(max(cluster, smoothstep(radius - 0.025, radius, distance).oneMinus()));
       }
