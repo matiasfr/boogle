@@ -12,6 +12,7 @@ export function craneModel() {
   const crane = new THREE.Group();
   crane.position.set(CX, CY, CZ);
   const pole = new THREE.Mesh(new THREE.BoxGeometry(0.7, MAST, 0.7), flat('#d9a03a'));
+  pole.name = 'crane/support-pole';
   pole.position.y = MAST / 2;
   pole.castShadow = true;
   const jib = new THREE.Group();
@@ -40,6 +41,7 @@ export function rackModel() {
   for (const dz of [-1.2, 1.2])
     for (const dx of [-1.25, 1.25]) {
       const m = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.8, 0.2), flat(WOOD2));
+      m.name = 'rack/support-post';
       m.position.set(dx, 0.9, dz);
       m.castShadow = true;
       rackPosts.add(m);

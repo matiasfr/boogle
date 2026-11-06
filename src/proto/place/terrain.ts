@@ -2,9 +2,11 @@
 // can walk it in Node. ./land.ts draws it and makes it solid. The gorge's walls are near-vertical cells of the grid, so nothing
 // here overhangs; footbridges and platforms are their own boxes. Local: nothing here reaches the sim.
 import { smoothstep } from '../../math.ts';
+import { frameBesideLine, FRAME_D, FRAME_W, SPAN } from './spatial-station.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';
 import {
   ARMS,
+  BANK_CART,
   GORGE,
   GRID,
   HEAD,
@@ -30,6 +32,8 @@ export const CELL = GRID.cell,
 export const heights = new Float32Array(NX * NZ),
   pathMask = new Float32Array(NX * NZ),
   clearMask = new Float32Array(NX * NZ);
+// The rail bed wins where a later support pad overlaps it, including cells beside a trestle transition.
+const railBedCeilings = new Map<number, number>();
 export const at = (i: number, j: number) => i + j * NX;
 export const cellX = (i: number) => GRID.x0 + i * CELL;
 export const cellZ = (j: number) => GRID.z0 + j * CELL;
@@ -168,6 +172,7 @@ function strip(
     clearMask[k] = Math.max(clearMask[k]!, t);
     if (painted) pathMask[k] = Math.max(pathMask[k]!, smoothstep(inner + 1, inner - 0.5, d));
   }
+  return best;
 }
 
 /** One path's samples every metre, in order, with its total. Bridges are left out of the ground. */
@@ -208,7 +213,7 @@ function bake() {
       samples.push([P.x, P.z, railY(line, s) - 0.08]);
     }
     const y = railY(line, line.len);
-    strip(
+    const bed = strip(
       samples,
       4,
       8,
@@ -217,6 +222,10 @@ function bake() {
         gorgeD(x, z) < GORGE.bank + GORGE.wall + 2 ||
         heights[at(Math.round((x - GRID.x0) / CELL), Math.round((z - GRID.z0) / CELL))]! < y - 9,
     );
+    // Four metres covers sleeper ends plus the vertices of their 2 m terrain triangles.
+    // Include skipped cliff cells: a prop pad must not fill up through the trestle either.
+    for (const [k, [distance, height]] of bed)
+      if (distance <= 4) railBedCeilings.set(k, Math.min(railBedCeilings.get(k) ?? Infinity, heights[k]!, height));
   }
   // Paths last: they cut their ramps into the walls and fill across whatever they meet.
   PATHS.forEach((p) => {
@@ -271,6 +280,70 @@ if (SHORE_COAST) {
   pad(SHORE_LANDING.x, SHORE_LANDING.z, 3, 9, 5);
 }
 
+// Grade the bearing areas, with one cell of margin so drawn triangles are flat through the footprint.
+function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, yaw = 0) {
+  const x = wx - ORIGIN.x,
+    z = wz - ORIGIN.z,
+    c = Math.cos(yaw),
+    s = Math.sin(yaw),
+    r = Math.hypot(w, d) / 2 + CELL + 4;
+  for (
+    let j = Math.max(0, Math.floor((z - r - GRID.z0) / CELL));
+    j <= Math.min(NZ - 1, Math.ceil((z + r - GRID.z0) / CELL));
+    j++
+  )
+    for (
+      let i = Math.max(0, Math.floor((x - r - GRID.x0) / CELL));
+      i <= Math.min(NX - 1, Math.ceil((x + r - GRID.x0) / CELL));
+      i++
+    ) {
+      const dx = cellX(i) - x,
+        dz = cellZ(j) - z;
+      const outside = Math.max(Math.abs(dx * c - dz * s) - w / 2, Math.abs(dx * s + dz * c) - d / 2);
+      const weight = smoothstep(CELL + 3, CELL, outside),
+        k = at(i, j);
+      const ceiling = railBedCeilings.get(k);
+      // At a skipped cliff edge, the adjacent terrain triangle can enter the deck just beyond the pad blend.
+      // Protect that extra metre here, not unrelated path/rail crossings elsewhere on the island.
+      if (ceiling !== undefined && outside <= CELL + 4 && gorgeD(cellX(i), cellZ(j)) < GORGE.bank + GORGE.wall + 2)
+        heights[k] = Math.min(heights[k]!, ceiling);
+      if (weight > 0) heights[k] = Math.min(heights[k]! + (y - heights[k]!) * weight, ceiling ?? Infinity);
+    }
+}
+gradeSupport(BANK_CART.x + ORIGIN.x, BANK_CART.z, BANK_CART.y, 3, 4, BANK_CART.yaw);
+if (SHORE_COAST)
+  gradeSupport(
+    SHORE_HOP.x + ORIGIN.x,
+    SHORE_HOP.z + 7,
+    H(SHORE_HOP.x + ORIGIN.x, SHORE_HOP.z + 7),
+    SHORE_HOP.bottom * 2,
+    SHORE_HOP.bottom * 2,
+  );
+const stationPads = LINKS.flatMap((link) =>
+  link.stations.map((spec) => {
+    const f = frameBesideLine(spec, link.line, link.dir);
+    // Lower a hillside frame/feeder to its rail bed; already lower assemblies keep their existing datum.
+    return { ...f, y: Math.min(H(f.x, f.z), railY(link.line, spec.s - link.dir * 1.5) - 0.08) };
+  }),
+);
+for (const path of PATHS) {
+  const a = path.pts[path.bridgeAt]!,
+    b = path.pts[path.bridgeAt + 1]!;
+  const yaw = Math.atan2(b[0] - a[0], b[1] - a[1]);
+  for (const p of [a, b]) gradeSupport(p[0] + ORIGIN.x, p[1] + ORIGIN.z, p[2], 3, 0.25, yaw);
+}
+for (const f of stationPads) {
+  gradeSupport(f.x, f.z, f.y, FRAME_D + 0.4, FRAME_W + 0.4, f.yaw);
+  gradeSupport(
+    f.x - f.lx * (FRAME_D / 2 + SPAN / 2),
+    f.z - f.lz * (FRAME_D / 2 + SPAN / 2),
+    f.y,
+    SPAN,
+    1,
+    f.yaw + Math.PI / 2,
+  );
+}
+
 // Local A/B only: the owner's measured Ultra Water bearing-95 profile, in metres over sea level.
 // Apply once to the finished grid so mesh, Owner collision, H and the shore provider all see the same bed.
 // No shared state or saved terrain changes. The unflagged grid and its facets/colour rules are unchanged.
@@ -298,6 +371,21 @@ if (shelfDemo) {
       const k = at(i, j);
       heights[k] = heights[k]! + (target - heights[k]!) * weight;
     }
+}
+
+export function surfaceHeight(x: number, z: number) {
+  const fx = (x - ORIGIN.x - GRID.x0) / CELL,
+    fz = (z - ORIGIN.z - GRID.z0) / CELL;
+  const i = Math.floor(fx),
+    j = Math.floor(fz),
+    u = fx - i,
+    v = fz - j;
+  if (i < 0 || j < 0 || i >= NX - 1 || j >= NZ - 1) return -6;
+  const a = heights[at(i, j)]!,
+    b = heights[at(i + 1, j)]!,
+    c = heights[at(i, j + 1)]!,
+    d = heights[at(i + 1, j + 1)]!;
+  return u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
 }
 
 /** The land's height at a world point. */

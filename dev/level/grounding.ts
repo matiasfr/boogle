@@ -2,8 +2,9 @@
 // Foundations deliberately extend below ground; test exposed gaps and terrain above the authored seating surface.
 import { Vector3 } from 'three/webgpu';
 import { openingBuildings, forgePlan } from '../../src/proto/place/opening-plans.ts';
-import { CELL, NX, NZ, at, heights } from '../../src/proto/place/terrain.ts';
-import { GRID, ORIGIN } from '../../src/proto/place/layout.ts';
+import { surfaceHeight as ground } from '../../src/proto/place/terrain.ts';
+import { checkPropGrounding } from './grounding-props.ts';
+import { checkTrackGrounding } from './grounding-track.ts';
 import type { Plan } from '../../src/proto/place/building-plans.ts';
 import type { Box } from '../../src/proto/net/box-plan.ts';
 
@@ -11,22 +12,7 @@ const TOLERANCE_CM = 5;
 const SAMPLE_METRES = 0.25;
 type Building = { id: string; plan: Plan; boxes: readonly Box[] };
 
-function ground(x: number, z: number) {
-  const fx = (x - ORIGIN.x - GRID.x0) / CELL,
-    fz = (z - ORIGIN.z - GRID.z0) / CELL;
-  const i = Math.floor(fx),
-    j = Math.floor(fz),
-    u = fx - i,
-    v = fz - j;
-  if (i < 0 || j < 0 || i >= NX - 1 || j >= NZ - 1) return -6;
-  const a = heights[at(i, j)]!,
-    b = heights[at(i + 1, j)]!,
-    c = heights[at(i, j + 1)]!,
-    d = heights[at(i + 1, j + 1)]!;
-  return u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
-}
-
-export function checkBuildingGrounding(buildings: readonly Building[] = openingBuildings()) {
+export async function checkBuildingGrounding(buildings: readonly Building[] = openingBuildings()) {
   const forge = forgePlan();
   const placed = [...buildings, { id: 'forge/scaffold', plan: forge, boxes: forge.scaffold }];
   const rows = placed.map(({ id, plan, boxes }) => {
@@ -78,12 +64,14 @@ export function checkBuildingGrounding(buildings: readonly Building[] = openingB
       failed: gapCm > TOLERANCE_CM || sinkCm > TOLERANCE_CM,
     };
   });
+  rows.push(...(await checkPropGrounding()));
+  rows.push(...checkTrackGrounding());
   return {
-    level: 'production-building-grounding',
+    level: 'production-grounding',
     toleranceCm: TOLERANCE_CM,
     sampleMetres: SAMPLE_METRES,
     coverage:
-      'All production opening town/camp buildings and the forge scaffold; not moving props, trees or future Place growth.',
+      'Production buildings, forge, all stop supports and attachments, crane/rack feet, decoded recovery rack and station feet, all standing tree roots, cove supports, bridge bank bearings, settled reward crate, and all settled track sleeper/deck tops and rail undersides. Elevated track permits space below; terrain must not penetrate its bed over 5 cm. Moving cargo/vehicles, floating collectibles, distant landforms and future town growth are excluded.',
     failures: rows.filter((row) => row.failed).length,
     rows,
   };

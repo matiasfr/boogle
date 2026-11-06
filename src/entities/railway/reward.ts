@@ -76,43 +76,15 @@ export async function createRailwayReward(
   };
 }
 
-async function createStationReward(
-  adapter: RailwayAdapter,
-  owner: OwnedView,
-  reveal: ReturnType<typeof createRewardReveal>,
-  stationIndex: 0 | 1,
-  machineFrom?: (out: THREE.Vector3) => void,
+export function rewardSeat(
+  line: import('../../proto/place/layout.ts').LineSpec,
+  besideLine: typeof import('../../proto/place/rail.ts').besideLine,
+  H: typeof import('../../proto/place/terrain.ts').H,
+  railY: typeof import('../../proto/place/layout.ts').railY,
+  stationIndex: 0 | 1 = 0,
 ) {
-  const reward = stationIndex === 0 ? T1_REWARD : T2_REWARD;
-  const stationId = stationIndex === 0 ? 'T1' : 'T2';
-  const completion = () =>
-    adapter.inspect().stations[stationIndex]?.completion ?? (stationIndex === 0 ? adapter.inspect().completion : 0);
-  const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }] =
-    await Promise.all([
-      import('../../proto/place/part-geometry.ts'),
-      import('../../proto/place/look.ts'),
-      import('../../proto/minis/common.ts'),
-      import('../../proto/place/layout.ts'),
-      import('../../proto/place/land.ts'),
-      import('../../proto/place/rail.ts'),
-      import('../../proto/place/pieces.ts'),
-    ]);
-  const root = new THREE.Group();
-  owner.root.add(root);
-  const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.08 });
-  const hatGeo = merged(reward.parts);
-  const multiGeo = merged(MULTI_AXE_REWARD.parts);
-  const crate = new THREE.Mesh(merged(T1_CRATE_PARTS), material);
-  crate.castShadow = true;
-  const glow = softGlow('#ffe9b0', 0.16, 'up');
-  glow.mat.blending = THREE.NormalBlending;
-  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.85, 1.8, 12, 1, true).translate(0, 2.2, 0), glow.mat);
-  root.add(crate, beam);
-  crate.visible = beam.visible = false;
-
   // The same safe-ground choice as Place's handCrate, including its next-frame placement and fallbacks.
-  const line = LINKS[0]!,
-    t1 = line.stations[stationIndex]!,
+  const t1 = line.stations[stationIndex]!,
     next = line.stations[stationIndex + 1]!;
   const at = new THREE.Vector3();
   let placed = false;
@@ -152,6 +124,44 @@ async function createStationReward(
     const q = besideLine(line.line, t1.to, t1.side * 3.2);
     at.set(q.x, H(q.x, q.z), q.z);
   }
+  return at;
+}
+
+async function createStationReward(
+  adapter: RailwayAdapter,
+  owner: OwnedView,
+  reveal: ReturnType<typeof createRewardReveal>,
+  stationIndex: 0 | 1,
+  machineFrom?: (out: THREE.Vector3) => void,
+) {
+  const reward = stationIndex === 0 ? T1_REWARD : T2_REWARD;
+  const stationId = stationIndex === 0 ? 'T1' : 'T2';
+  const completion = () =>
+    adapter.inspect().stations[stationIndex]?.completion ?? (stationIndex === 0 ? adapter.inspect().completion : 0);
+  const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }] =
+    await Promise.all([
+      import('../../proto/place/part-geometry.ts'),
+      import('../../proto/place/look.ts'),
+      import('../../proto/minis/common.ts'),
+      import('../../proto/place/layout.ts'),
+      import('../../proto/place/land.ts'),
+      import('../../proto/place/rail.ts'),
+      import('../../proto/place/pieces.ts'),
+    ]);
+  const root = new THREE.Group();
+  owner.root.add(root);
+  const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.08 });
+  const hatGeo = merged(reward.parts);
+  const multiGeo = merged(MULTI_AXE_REWARD.parts);
+  const crate = new THREE.Mesh(merged(T1_CRATE_PARTS), material);
+  crate.castShadow = true;
+  const glow = softGlow('#ffe9b0', 0.16, 'up');
+  glow.mat.blending = THREE.NormalBlending;
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.85, 1.8, 12, 1, true).translate(0, 2.2, 0), glow.mat);
+  root.add(crate, beam);
+  crate.visible = beam.visible = false;
+
+  const at = rewardSeat(LINKS[0]!, besideLine, H, railY, stationIndex);
   crate.position.copy(at);
   beam.position.copy(at);
   const targetAt = at.clone().add(new THREE.Vector3(0, 1.3, 0));

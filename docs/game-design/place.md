@@ -46,8 +46,25 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 matching Place's completed construction state; only the temporary scaffold poles disappear. The level check in
 `npm run check` samples the rendered terrain triangles over every production building/forge footprint at at most
 25 cm spacing, including rotated edges. It rejects exposed foundation gaps or terrain above the seating surface
-over 5 cm. The authored below-ground foundation skirt is intentional. This check does not cover future town growth,
-trees, moving props or the old lookout/cart/arch assemblies.
+over 5 cm. The authored below-ground foundation skirt is intentional.
+
+The rail-bed cut takes precedence over station support-pad blends, including the descending T3 trestle approach.
+Connected station frames/feeders are capped at the adjacent rail-bed datum; already lower assemblies retain their
+height. Padding cannot lift terrain through the track. At a skipped cliff edge, bed protection extends one metre
+beyond the pad blend to cover its adjacent terrain triangle; unrelated path/rail crossings keep their authored terrain.
+The audit executes both panel and continuous `buildTrack` geometry and samples the full transformed sleeper/deck top
+and rail underside footprints (including tilted ends). Terrain penetration over 5 cm fails; open space under elevated
+track is intentional. The tree-catalog snapshot remains before these terrain adjustments.
+
+The audit also checks opening prop supports, attached arch/cart/lookout pieces, crane and rack feet, decoded recovery-rack
+and station-kit feet, cove supports, bridge bank bearings, both settled station reward crates and every standing tree root. Connected scenery shares one
+assembly height; piers reach down to terrain, and the cart rests on a small level shoulder. Tree centres use the actual
+terrain triangle instead of the catalog's rounded grid height. Batched root skirts reach the downhill edge while the
+uphill soil may bury the lower trunk. Root shoulders stay capped when the narrower felled stump is exposed. The audit
+selects named crane/rack bearing meshes independently of their height and requires their expected counts, so a raised
+or missing post cannot silently disappear from the check. Tree identity and catalog ordering stay unchanged; these are Local geometry and
+collision changes. Moving cargo, vehicles, floating collectibles, distant landforms and future town growth are outside
+this static support audit.
 
 An island about 440 m across, 1 km east of today's, in the crossing's sea. A Y-shaped gorge, with walls about 16-30 m high
 and a river at the bottom, splits it into three lobes: the village (west, 18 m), the timber camp (north ridge, 30 m) and the

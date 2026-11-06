@@ -8,6 +8,7 @@ import { AssetDownloadError } from '../boot/asset-fetch.ts';
 import type { Body, BodyKind, BodyOptions, Material, MaterialProps, RayHit, Shape, StepOpts, V3 } from './engine.ts';
 
 type R = typeof RAPIER;
+const PREDICTION_DISTANCE = 0.002; // m: solver envelope, also the bounded player-support allowance
 const DEFAULT_STEP_ORDER = 1000; // past every pinned hook (src/loop.ts): prototypes and anything unnumbered run last
 class Vec {
   x = 0;
@@ -98,7 +99,7 @@ export function ready() {
     // Rapier 0.20's 20mm prediction lifts the player at plank seams, interrupting glide takeoffs and braking.
     // Retain the 0.19 envelope; current-pose contact queries below handle grounding independently.
     // Thin-wall stress checks and the tradeoff with upstream's wider margin: docs/research/rapier-021-upgrade.md.
-    world.integrationParameters.normalizedPredictionDistance = 0.002;
+    world.integrationParameters.normalizedPredictionDistance = PREDICTION_DISTANCE;
     for (const b of bodies) build(b);
   });
 }
@@ -413,8 +414,14 @@ function touchingAtStepStart(own: RAPIER.Collider, collider: RAPIER.Collider, ot
   startContactPosition.y += startOtherPosition.y;
   startContactPosition.z += startOtherPosition.z;
   multiplyRotation(startRotationDelta, startContactRotation, startContactRotation);
-  const contact = collider.contactShape(own.shape, startContactPosition, startContactRotation, 0, pairContact);
-  return !!contact && contact.distance <= 0;
+  const contact = collider.contactShape(
+    own.shape,
+    startContactPosition,
+    startContactRotation,
+    contactSupportGap,
+    pairContact,
+  );
+  return !!contact && contact.distance <= contactSupportGap;
 }
 let contactCast: { ray: RAPIER.Ray; hit: RAPIER.RayIntersection } | undefined;
 function rotateContact(v: V3, q: RAPIER.Rotation) {
@@ -440,10 +447,11 @@ function touching(manifold: RAPIER.TempContactManifold, flipped: boolean) {
       (contactPoint2.x + p2.x - contactPoint1.x - p1.x) * contactNormal.x +
       (contactPoint2.y + p2.y - contactPoint1.y - p1.y) * contactNormal.y +
       (contactPoint2.z + p2.z - contactPoint1.z - p1.z) * contactNormal.z;
-    if (!(gap <= 0)) continue;
+    if (!(gap <= contactSupportGap)) continue;
     // Reprojection alone extends a finite face's plane past its edge. Validate this feature, not just the pair.
-    // The ray ends ON the current body's anchor: the 1mm origin offset adds no airborne touching allowance.
-    const length = -gap + 0.001,
+    // Strict contacts end on the anchor. Player support may extend by the solver envelope, never a stale plane.
+    const lift = Math.max(0, -gap) + 0.001,
+      length = lift + contactSupportGap,
       anchor = flipped ? contactPoint2 : contactPoint1,
       position = flipped ? p2 : p1,
       sign = flipped ? -1 : 1;
@@ -454,9 +462,9 @@ function touching(manifold: RAPIER.TempContactManifold, flipped: boolean) {
     dir.x = contactNormal.x * sign;
     dir.y = contactNormal.y * sign;
     dir.z = contactNormal.z * sign;
-    origin.x = anchor.x + position.x - dir.x * length;
-    origin.y = anchor.y + position.y - dir.y * length;
-    origin.z = anchor.z + position.z - dir.z * length;
+    origin.x = anchor.x + position.x - dir.x * lift;
+    origin.y = anchor.y + position.y - dir.y * lift;
+    origin.z = anchor.z + position.z - dir.z * lift;
     const hit = contactOtherCollider!.castRayAndGetNormal(ray, length, false, target);
     if (!hit || hit.normal.x * dir.x + hit.normal.y * dir.y + hit.normal.z * dir.z >= 0) continue;
     contactNormal.set(-hit.normal.x * sign, -hit.normal.y * sign, -hit.normal.z * sign);
@@ -469,6 +477,7 @@ type ContactFn = (nx: number, ny: number, nz: number, other: Body) => boolean | 
 let contactFn: ContactFn,
   contactBody: MBody | undefined,
   contactSinceStepStart = false,
+  contactSupportGap = 0,
   contactCol = 0,
   contactOther: MBody | undefined,
   contactOtherCollider: RAPIER.Collider | undefined,
@@ -488,8 +497,8 @@ function contactPairWith(handle: number) {
   // Solver-contact counts/impulses cannot replace this: both can be zero on resting heightfield contacts.
   const own = world!.getCollider(contactCol);
   if (contactSinceStepStart && !touchingAtStepStart(own, collider, other)) return;
-  const contact = own.contactCollider(collider, 0, pairContact);
-  if (!contact || contact.distance > 0) return;
+  const contact = own.contactCollider(collider, contactSupportGap, pairContact);
+  if (!contact || contact.distance > contactSupportGap) return;
   // The fresh normal is already a valid contact. Only search cached manifolds if a caller needs another surface
   // (e.g. the floor behind a deeper wall contact). Starting with anchors alone can miss support while sliding.
   const fresh = contact.normal1;
@@ -514,12 +523,13 @@ function contactPairWith(handle: number) {
   collider.rotation(contactRotation2);
   world!.narrowPhase.contactPair(contactCol, handle, world!.bodies, contactManifold);
 }
-export function forEachContact(body: Body, fn: ContactFn, { sinceStepStart = false } = {}) {
+export function forEachContact(body: Body, fn: ContactFn, { sinceStepStart = false, support = false } = {}) {
   const b = m(body);
   if (!world) return;
   contactFn = fn;
   contactBody = b;
   contactSinceStepStart = sinceStepStart;
+  contactSupportGap = support ? PREDICTION_DISTANCE : 0;
   contactDone = false;
   for (let k = 0; k < b.colliders.length && !contactDone; k++) {
     contactCol = b.colliders[k]!.handle;
