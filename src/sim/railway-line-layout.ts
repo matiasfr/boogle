@@ -32,7 +32,24 @@ export const LINE1_ROCKS = [
   { id: 2, x: 100700, z: -11000, initial: 8 },
 ] as const;
 export const LINE1_GREAT_TREE = { id: 28, x: 99600, z: -13800 } as const;
+/** Only this authored dry approach is certified for loose beam placement; other drops recover to it. */
+export const lineBeamGround = (x: number, y: number, z: number) => {
+  return [
+    [LINE1_GREAT_TREE.x, 3000, LINE1_GREAT_TREE.z],
+    [LINE1_STATIONS[2]!.x, 3037, LINE1_STATIONS[2]!.z],
+  ].some(([ax, ay, az]) => {
+    const dx = x - ax!,
+      dz = z - az!;
+    return dx * dx + dz * dz <= 90000 && Math.abs(y - ay!) <= 100;
+  });
+};
+export const LINE1_AXE_STAND = { x: 97869, z: -8836 } as const;
+export const LINE1_JUMP_DEVICE = { x: 95926, y: 2638, z: -6940 } as const;
 export const LINE1_HARDWOOD_IDS = [209, 232] as const;
+export const LINE1_HARDWOODS = [
+  [209, 89882, -4677],
+  [232, 92123, -4518],
+] as const;
 export const LINE1_ORDINARY_SOURCES = RAILWAY_SOURCES;
 export const LINE1_INITIAL: readonly [logs: number, stone: number] = [RAILWAY_SUPPLY + 30, 24];
 export const LINE1_PANEL_ALLOWANCE = RAILWAY_T1.starterRails;

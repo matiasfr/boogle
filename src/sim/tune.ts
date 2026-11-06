@@ -20,6 +20,39 @@ export const TUNABLES = [
   { key: 'wagonAccel', def: WAGON_ACCEL, min: 5, max: 100, label: 'Wagon speed-up (ticks to cruise)' },
   { key: 'railRegrowMinutes', def: 31, min: 1, max: 1440, label: 'Railway regrowth wait (minutes)' },
   { key: 'railRecoveryMinutes', def: 21, min: 1, max: 1440, label: 'Railway drop recovery (minutes)' },
+  { key: 'railFeedMs', def: 70, min: 10, max: 1000, label: 'Railway feed interval (milliseconds)' },
+  { key: 'railLaySpeed', def: 50, min: 1, max: 200, label: 'Railway laying speed (centimetres per tick)' },
+  { key: 'railDepartureTicks', def: 20, min: 0, max: 100, label: 'Railway departure easing (ticks)' },
+  { key: 'railBeamSoloSpeed', def: 220, min: 10, max: 1000, label: 'Railway solo beam speed (centimetres per second)' },
+  {
+    key: 'railBeamHelpSpeed',
+    def: 500,
+    min: 10,
+    max: 2000,
+    label: 'Railway helped beam speed (centimetres per second)',
+  },
+  {
+    key: 'railJumpImpulse',
+    def: 680,
+    min: 100,
+    max: 2000,
+    label: 'Railway second jump impulse (centimetres per second)',
+  },
+  { key: 'railJumpTurn', def: 70, min: 0, max: 100, label: 'Railway second jump turn (percent)' },
+  {
+    key: 'railJumpSteer',
+    def: 2500,
+    min: 1400,
+    max: 5000,
+    label: 'Railway second jump steering (centimetres per second squared)',
+  },
+  {
+    key: 'railJumpApexSpeed',
+    def: 160,
+    min: 0,
+    max: 1000,
+    label: 'Railway second jump apex threshold (centimetres per second)',
+  },
 ] as const;
 // Keys a save may still hold from an older build, skipped on load: the soft cap and spill per jump (the haul stack's
 // wobble and jump spill, removed after the first playtest) and the machine run variant (one run since the laying

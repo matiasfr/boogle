@@ -19,9 +19,22 @@ import {
   RAILWAY_DURATION,
   RAILWAY_MAX_INT,
   RAILWAY_MAX_MARKER,
+  railMaxDuration,
+  railBeamRelease,
+  railPanelCount,
+  railPanelStock,
   type RailAction,
 } from '../../sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
+import {
+  LINE1_STATIONS,
+  LINE1_ROCKS,
+  LINE1_GREAT_TREE,
+  LINE1_HARDWOODS,
+  LINE1_AXE_STAND,
+  LINE1_JUMP_DEVICE,
+} from '../../sim/railway-line-layout.ts';
+import { LINE_TIMING } from '../../sim/railway-line.ts';
 import {
   createRailSupply,
   saveRailSupply,
@@ -48,14 +61,25 @@ export function install(
   sync: SyncView,
   _land: Land,
   rules: { roster: RosterApi; tune?: TuneApi },
-  { playable = false } = {},
+  { playable = false, line1 = false } = {},
 ) {
-  const railway = createRailway(playable);
+  const railway = createRailway(playable, line1);
+  const timing = () => ({
+    ...LINE_TIMING,
+    ...(line1 && rules.tune
+      ? {
+          feedIntervalMs: rules.tune.get('railFeedMs'),
+          cruiseCmPerTick: rules.tune.get('railLaySpeed'),
+          departureTicks: rules.tune.get('railDepartureTicks'),
+        }
+      : {}),
+  });
   if (playable)
     sync.registerOp<SupplyPulse>('rail.supply', {
       hostOnly: true,
       validate: (e, c) =>
         railInt(e.marker, RAILWAY_MAX_MARKER, 1) &&
+        (e.beam === undefined || (line1 && railInt(e.beam))) &&
         typeof e.grow === 'string' &&
         e.grow.length === RAIL_GROW_MASK_LENGTH &&
         /^[0-9a-f]+$/.test(e.grow) &&
@@ -88,33 +112,39 @@ export function install(
   });
   sync.registerOp<{ ticks: number; marker: number }>('rail.resume', {
     hostOnly: true,
-    validate: (e) => railInt(e.ticks, RAILWAY_DURATION) && railInt(e.marker, RAILWAY_MAX_MARKER, 1),
+    validate: (e) => railInt(e.ticks, railMaxDuration(railway)) && railInt(e.marker, RAILWAY_MAX_MARKER, 1),
     apply: (e, tick) => railResume(railway, e.ticks, e.marker, tick),
   });
   const material = (op: string, validate: (e: Edit<Material>, c: Ctx) => boolean) => {
     sync.registerOp<Material>(op, {
       validate: (e, c) => token(e) && !!railAccount(railway, e.u) && e.i === 0 && e.j === 0 && validate(e, c),
-      apply: (e, tick) => railApply(railway, e.u, e, tick),
+      apply: (e, tick) => railApply(railway, e.u, e, tick, timing()),
     });
   };
   material('rail.wake', (e, c) => reach(e, c, T1.x, T1.z, 1000));
   material('rail.chop', (e, c) => {
     const k = railInt(e.id) ? railSource(e.id) : -1;
-    const source = RAILWAY_SOURCES[k];
+    const source = RAILWAY_SOURCES[k] ?? (line1 ? LINE1_HARDWOODS.find((row) => row[0] === e.id) : undefined);
     return (
       !!source &&
       (!playable || (railYaw(e.yaw) && typeof e.collapsed === 'boolean')) &&
       reach(e, c, source[1], source[2], T1.sourceReach)
     );
   });
-  material(
-    'rail.deposit',
-    (e, c) => e.station === 'T1' && railInt(e.n, T1.carry, 1) && reach(e, c, T1.x, T1.z, T1.reach),
-  );
+  material('rail.deposit', (e, c) => {
+    const station = line1 ? LINE1_STATIONS.find((s) => s.id === e.station) : e.station === 'T1' ? T1 : undefined;
+    return (
+      !!station &&
+      (!line1 || e.kind === undefined || railInt(e.kind, 1)) &&
+      railInt(e.n, T1.carry, 1) &&
+      reach(e, c, station.x, station.z, T1.reach)
+    );
+  });
   material(
     'rail.drop',
     (e, c) =>
       railInt(e.n, T1.carry, 1) &&
+      (!line1 || e.kind === undefined || railInt(e.kind, 1)) &&
       railInt(e.x, 200000, -200000) &&
       railInt(e.z, 200000, -200000) &&
       (!playable || railInt(e.y, 200000, -200000)) &&
@@ -124,28 +154,72 @@ export function install(
     if (!railInt(e.id, RAILWAY_MAX_INT, 1)) return false;
     const pile = railway.piles.find((p) => p.id === e.id);
     // A raced-away pile still yields a terminal no-op; no current target means reject via rail.reject.
-    return !!pile && reach(e, c, pile.x, pile.z, 320);
+    return !!pile && (!line1 || e.kind === undefined || railInt(e.kind, 1)) && reach(e, c, pile.x, pile.z, 320);
   });
-  if (playable) material('rail.rackTake', (e, c) => reach(e, c, RECOVERY_RACK.x, RECOVERY_RACK.z, 320));
+  if (playable)
+    material(
+      'rail.rackTake',
+      (e, c) =>
+        (!line1 || e.kind === undefined || railInt(e.kind, 1)) && reach(e, c, RECOVERY_RACK.x, RECOVERY_RACK.z, 320),
+    );
+  if (line1) {
+    material('rail.mine', (e, c) => {
+      const rock = railInt(e.id, 2) ? LINE1_ROCKS[e.id] : undefined;
+      return !!rock && reach(e, c, rock.x, rock.z, 320);
+    });
+    material('rail.axe', (e, c) => reach(e, c, LINE1_AXE_STAND.x, LINE1_AXE_STAND.z, 340));
+    material('rail.beamChop', (e, c) => reach(e, c, LINE1_GREAT_TREE.x, LINE1_GREAT_TREE.z, 420));
+    material(
+      'rail.beamTake',
+      (e, c) => railInt(e.revision) && reach(e, c, railway.line!.beam.x, railway.line!.beam.z, 420),
+    );
+    material(
+      'rail.beamDrop',
+      (e, c) =>
+        railInt(e.revision) &&
+        railInt(e.x, 200000, -200000) &&
+        railInt(e.y, 200000, -200000) &&
+        railInt(e.z, 200000, -200000) &&
+        reach(e, c, e.x, e.z, 320),
+    );
+    material(
+      'rail.beamDeposit',
+      (e, c) =>
+        e.station === 'T3' && railInt(e.revision) && reach(e, c, LINE1_STATIONS[2]!.x, LINE1_STATIONS[2]!.z, T1.reach),
+    );
+    material(
+      'rail.jump',
+      (e, c) =>
+        typeof c.env.railHeight === 'function' &&
+        (c.env.railHeight as (e: Edit, y: number, radius: number) => boolean)(e, LINE1_JUMP_DEVICE.y, 220) &&
+        reach(e, c, LINE1_JUMP_DEVICE.x, LINE1_JUMP_DEVICE.z, 300),
+    );
+    sync.registerOp<{ pid: string; epoch: number; revision: number }>('rail.beamRelease', {
+      hostOnly: true,
+      validate: (e) => okPid(e.pid) && railInt(e.epoch, RAILWAY_MAX_INT, 1) && railInt(e.revision),
+      apply: (e) => railBeamRelease(railway, e.pid, e.epoch, e.revision),
+    });
+  }
   sync.registerState('railway', {
-    version: playable ? 1 : 0,
-    migrate: playable
-      ? {
-          1: (value: unknown) => {
-            const old = value as Record<string, unknown>;
-            if (!old || !Array.isArray(old.piles) || Object.hasOwn(old, 'supply'))
-              throw new Error('railway: supply migration');
-            return {
-              ...old,
-              supply: saveRailSupply(createRailSupply()),
-              piles: old.piles.map((pile: unknown) => {
-                if (!Array.isArray(pile) || pile.length !== 5) throw new Error('railway: legacy pile');
-                return [...pile, 0];
-              }),
-            };
-          },
-        }
-      : {},
+    version: line1 ? 2 : playable ? 1 : 0,
+    migrate:
+      playable && !line1
+        ? {
+            1: (value: unknown) => {
+              const old = value as Record<string, unknown>;
+              if (!old || !Array.isArray(old.piles) || Object.hasOwn(old, 'supply'))
+                throw new Error('railway: supply migration');
+              return {
+                ...old,
+                supply: saveRailSupply(createRailSupply()),
+                piles: old.piles.map((pile: unknown) => {
+                  if (!Array.isArray(pile) || pile.length !== 5) throw new Error('railway: legacy pile');
+                  return [...pile, 0];
+                }),
+              };
+            },
+          }
+        : {},
     serialize: () => serializeRailway(railway, rules.roster.roster.pids),
     load: (json) => loadRailway(railway, json, rules.roster.roster.pids),
     hash: () => hashRailway(railway, rules.roster.roster.pids),
@@ -157,6 +231,19 @@ export function install(
     outcome: (pid: string, epoch: number, request: number) => railOutcome(railway, pid, epoch, request),
     counts: () => railCounts(railway),
     phase: () => railPhase(railway, sync.world.tick),
+    panels: () => ({ committed: railPanelCount(railway), stock: railPanelStock(railway) }),
+    beamSpeeds: () => ({
+      solo: line1 ? rules.tune!.get('railBeamSoloSpeed') / 100 : 2.2,
+      help: line1 ? rules.tune!.get('railBeamHelpSpeed') / 100 : 5,
+    }),
+    movement: () => ({
+      beamSoloSpeed: line1 ? rules.tune!.get('railBeamSoloSpeed') / 100 : 2.2,
+      beamHelpSpeed: line1 ? rules.tune!.get('railBeamHelpSpeed') / 100 : 5,
+      jumpImpulse: line1 ? rules.tune!.get('railJumpImpulse') / 100 : 6.8,
+      jumpTurn: line1 ? rules.tune!.get('railJumpTurn') / 100 : 0.7,
+      jumpSteer: line1 ? rules.tune!.get('railJumpSteer') / 100 : 25,
+      jumpApexSpeed: line1 ? rules.tune!.get('railJumpApexSpeed') / 100 : 1.6,
+    }),
   };
 }
 type View = { rules: { railway: RailwayApi }; tick: number };

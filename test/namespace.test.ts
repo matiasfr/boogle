@@ -2,7 +2,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WORLD_NS, worldRoomId } from '../src/world/namespace.ts';
-import { isPlayableRailwayRoom, isRailwayRoom, railwayRoomId } from '../src/world/railway-namespace.ts';
+import {
+  isPlayableRailwayRoom,
+  isLineRailwayRoom,
+  isRailwayRoom,
+  railwayRoomId,
+} from '../src/world/railway-namespace.ts';
 
 test('panel builds cannot share transport lead or world saves with pre-panel v07 builds', () => {
   for (const room of ['default', 'proto-place-coop', 'private-friends', 'a'.repeat(32)]) {
@@ -34,4 +39,15 @@ test('playable T1 room names are disjoint from classic, legacy Place and isolate
   }
   assert.equal(isPlayableRailwayRoom('t1v01-proto-production-core'), false);
   assert.notEqual(railwayRoomId('a'.repeat(31) + 'x'), railwayRoomId('a'.repeat(31) + 'y'));
+});
+
+test('line-one production follows the world break while legacy and isolated identities stay separate', () => {
+  const current = railwayRoomId('boogle');
+  assert.equal(current, `${WORLD_NS}-rail-boogle`);
+  assert.equal(isLineRailwayRoom(current), true);
+  assert.equal(isLineRailwayRoom('t1v02-boogle'), false);
+  assert.equal(isPlayableRailwayRoom('t1v02-boogle'), true);
+  assert.equal(isRailwayRoom('t1v01-proto-production-core'), true);
+  assert.equal(isLineRailwayRoom('v00-rail-boogle'), false);
+  assert.equal(isLineRailwayRoom(`${WORLD_NS}-rail-`), false);
 });

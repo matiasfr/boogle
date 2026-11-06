@@ -3,6 +3,44 @@ import { FNV_SEED, foldStr } from './hash.ts';
 import { MAX_PLAYERS, okPid } from './roster.ts';
 import { RAILWAY_CATALOG, RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-layout.ts';
 import {
+  createRailLine,
+  railLineApply,
+  railLineTick,
+  railJobs,
+  railCurrentJob,
+  railActiveStation,
+  railMaxDuration,
+  LINE_TIMING,
+  type RailLine,
+} from './railway-line.ts';
+import {
+  saveRailLine,
+  loadRailLine,
+  validateRailLine,
+  packRailFlags,
+  unpackRailFlags,
+  packRailNibbles,
+  unpackRailNibbles,
+  packRailTiming,
+  unpackRailTiming,
+  type RailLineJSON,
+} from './railway-line-code.ts';
+import { lineSchedule, type LineTiming } from './railway-line-schedule.ts';
+import { LINE1_CATALOG, LINE1_STATIONS } from './railway-line-layout.ts';
+export {
+  railJobs,
+  railCurrentJob,
+  railActiveJob,
+  railActiveStation,
+  railMaxDuration,
+  railCarry,
+  railAxeAvailable,
+  railBeamRelease,
+  railLineOpen,
+  railPanelCount,
+  railPanelStock,
+} from './railway-line.ts';
+import {
   createRailSupply,
   saveRailSupply,
   loadRailSupply,
@@ -17,8 +55,8 @@ export const RAILWAY_PILES = 128;
 export const RAILWAY_MAX_INT = 2147483647;
 export const RAILWAY_MAX_MARKER = Number.MAX_SAFE_INTEGER;
 export const RAILWAY_DURATION = T1.depositTicks + T1.feedTicks + T1.layTicks;
-export type RailAccount = { pid: string; carry: number; epoch: number; request: number };
-export type RailPile = { id: number; x: number; z: number; n: number; y?: number; age?: number };
+export type RailAccount = { pid: string; carry: number; stone?: number; epoch: number; request: number };
+export type RailPile = { id: number; x: number; z: number; n: number; kind?: number; y?: number; age?: number };
 export type RailResult = {
   pid: string;
   epoch: number;
@@ -44,19 +82,30 @@ export type Railway = {
   lastTick: number;
   resumeMarker: number;
   completion: number;
+  timing?: LineTiming;
+  stoneStock?: number;
+  stoneAllocation?: number;
+  stoneUsed?: number;
+  stoneDelivered?: number;
+  line?: RailLine;
   /** Playable namespace only: accepted collision presentation, independent of material balances. */
   falls?: { yaw: number[]; collapsed: boolean[] };
   supply?: RailSupply;
 };
 export type RailRequest = { epoch: number; request: number };
-export type RailwayJSON = Omit<Railway, 'accounts' | 'piles' | 'outcomes' | 'sources' | 'work' | 'falls' | 'supply'> & {
+export type RailwayJSON = Omit<
+  Railway,
+  'accounts' | 'piles' | 'outcomes' | 'sources' | 'work' | 'falls' | 'supply' | 'line' | 'timing'
+> & {
   sources: string;
   work: string;
-  accounts: [pid: string | number, carry: number, epoch: string, request: string][];
+  accounts: [pid: string | number, carry: number, epoch: string, request?: string][];
   piles: [id: number, x: number, z: number, n: number, y?: number, age?: number][];
   outcomes: [account: number, epoch: string, request: string, status: number, accepted: number][];
   falls?: { yaw: string; collapsed: string };
   supply?: RailSupplyJSON;
+  line?: RailLineJSON;
+  timing?: number[];
 };
 export type RailAction = RailRequest & {
   op: string;
@@ -67,14 +116,17 @@ export type RailAction = RailRequest & {
   y?: number;
   yaw?: number;
   collapsed?: boolean;
+  kind?: number;
+  station?: string;
+  revision?: number;
 };
 export const railInt = (v: unknown, max = RAILWAY_MAX_INT, min = 0): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= min && v <= max && !Object.is(v, -0);
 export const railYaw = (v: unknown): v is number =>
   typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 6.283185307179586 && !Object.is(v, -0);
-export function createRailway(playable = false): Railway {
+export function createRailway(playable = false, line1 = false): Railway {
   return {
-    catalog: RAILWAY_CATALOG,
+    catalog: line1 ? LINE1_CATALOG : RAILWAY_CATALOG,
     sources: RAILWAY_SOURCES.map(() => T1.sourceYield),
     work: RAILWAY_SOURCES.map(() => 0),
     accounts: [],
@@ -93,6 +145,7 @@ export function createRailway(playable = false): Railway {
     completion: 0,
     ...(playable ? { falls: { yaw: RAILWAY_SOURCES.map(() => 0), collapsed: RAILWAY_SOURCES.map(() => false) } } : {}),
     ...(playable ? { supply: createRailSupply() } : {}),
+    ...(line1 ? { line: createRailLine(), timing: { ...LINE_TIMING } } : {}),
   };
 }
 export const railAccount = (s: Railway, pid: string) => s.accounts.find((a) => a.pid === pid);
@@ -132,10 +185,17 @@ function remember(s: Railway, a: RailAccount, e: RailRequest, accepted: number, 
   return { ...r };
 }
 /** All transfers recheck capacity at application, after preceding edits in the same tick. */
-export function railApply(s: Railway, pid: string, e: RailAction, tick: number): RailResult {
+export function railApply(
+  s: Railway,
+  pid: string,
+  e: RailAction,
+  tick: number,
+  timing: LineTiming = LINE_TIMING,
+): RailResult {
   const previous = railOutcome(s, pid, e.epoch, e.request);
   if (previous) return previous;
   const a = railAccount(s, pid)!;
+  if (s.line) return remember(s, a, e, railLineApply(s, a, e, tick, timing), e.op === 'rail.reject');
   let n = 0;
   if (e.op === 'rail.wake' && s.awake < 0) {
     s.awake = tick;
@@ -197,6 +257,7 @@ export function railApply(s: Railway, pid: string, e: RailAction, tick: number):
   return remember(s, a, e, n, e.op === 'rail.reject');
 }
 export function railTick(s: Railway, tick: number): void {
+  if (s.line) return railLineTick(s, tick);
   if (s.start < 0 || s.completion) return;
   s.elapsed = Math.min(RAILWAY_DURATION, s.elapsed + Math.max(0, tick - s.lastTick));
   s.lastTick = tick;
@@ -208,6 +269,14 @@ export function railTick(s: Railway, tick: number): void {
 export function railResume(s: Railway, ticks: number, marker: number, tick: number): number {
   if (marker <= s.resumeMarker) return 0;
   s.resumeMarker = marker;
+  if (s.line) {
+    const job = railCurrentJob(s);
+    if (job.start < 0 || job.completion) return 0;
+    const n = Math.min(ticks, railMaxDuration(s) - job.elapsed);
+    job.elapsed += n;
+    railLineTick(s, tick);
+    return n;
+  }
   if (s.start < 0 || s.completion) return 0;
   const n = Math.min(ticks, RAILWAY_DURATION - s.elapsed);
   s.elapsed += n;
@@ -215,29 +284,65 @@ export function railResume(s: Railway, ticks: number, marker: number, tick: numb
   return n;
 }
 export function railCounts(s: Railway) {
-  const source = s.sources.reduce((a, b) => a + b, 0);
+  const source = s.sources.reduce((a, b) => a + b, 0) + (s.line?.hardwood.reduce((a, b) => a + b, 0) ?? 0);
   const carry = s.accounts.reduce((a, b) => a + b.carry, 0);
-  const loose = s.piles.reduce((a, b) => a + b.n, 0);
+  const loose = s.piles.reduce((a, b) => a + (b.kind === 1 ? 0 : b.n), 0);
+  const jobs = railJobs(s);
+  const stock = jobs.reduce((n, j) => n + j.stock, 0),
+    allocation = jobs.reduce((n, j) => n + j.allocation, 0);
+  const used = jobs.reduce((n, j) => n + j.used, 0),
+    delivered = jobs.reduce((n, j) => n + j.delivered, 0);
+  const completion = jobs.reduce((n, j) => n + j.completion, 0);
+  const stone = {
+    source: s.line?.rocks.reduce((a, b) => a + b, 0) ?? 0,
+    carry: s.accounts.reduce((n, a) => n + (a.stone ?? 0), 0),
+    loose: s.piles.reduce((n, p) => n + (p.kind === 1 ? p.n : 0), 0),
+    stock: jobs.reduce((n, j) => n + (j.stoneStock ?? 0), 0),
+    allocation: jobs.reduce((n, j) => n + (j.stoneAllocation ?? 0), 0),
+    used: jobs.reduce((n, j) => n + (j.stoneUsed ?? 0), 0),
+    rack: s.line?.stoneRack ?? 0,
+    produced: s.line?.stoneProduced ?? 0,
+    delivered: jobs.reduce((n, j) => n + (j.stoneDelivered ?? 0), 0),
+    total: 0,
+  };
+  stone.total = stone.source + stone.carry + stone.loose + stone.stock + stone.allocation + stone.used + stone.rack;
   return {
     source,
     carry,
     loose,
-    stock: s.stock,
-    allocation: s.allocation,
-    used: s.used,
+    stock,
+    allocation,
+    used,
     rack: s.supply?.rack ?? 0,
     produced: s.supply?.produced ?? 0,
-    total: source + carry + loose + s.stock + s.allocation + s.used + (s.supply?.rack ?? 0),
-    delivered: s.delivered,
-    score: s.delivered * T1.deliveryScore + s.completion * T1.completionScore,
-    completion: s.completion,
+    total: source + carry + loose + stock + allocation + used + (s.supply?.rack ?? 0),
+    delivered,
+    score:
+      delivered * T1.deliveryScore +
+      completion * T1.completionScore +
+      stone.delivered * 25 +
+      (s.line?.beam.state === 'allocated' || s.line?.beam.state === 'used' ? 1500 : 0),
+    completion,
     starterRails: T1.starterRails,
+    ...(s.line ? { stone } : {}),
   };
 }
 export function railPhase(
   s: Railway,
   tick = s.lastTick,
 ): 'asleep' | 'waking' | 'idle' | 'deposit' | 'feeding' | 'laying' | 'done' {
+  if (s.line) {
+    const job = railCurrentJob(s);
+    if (job.completion) return 'done';
+    if (job.start < 0) return s.awake < 0 ? 'asleep' : tick < s.awake + T1.wakeTicks ? 'waking' : 'idle';
+    const schedule = lineSchedule(LINE1_STATIONS[railActiveStation(s)]!, job.timing ?? LINE_TIMING);
+    const feedEnd = schedule.depositTicks + schedule.feedTicks;
+    return job.elapsed < Math.ceil((job.timing ?? LINE_TIMING).depositMs / 100)
+      ? 'deposit'
+      : job.elapsed < feedEnd
+        ? 'feeding'
+        : 'laying';
+  }
   if (s.completion) return 'done';
   if (s.start < 0) return s.awake < 0 ? 'asleep' : tick < s.awake + T1.wakeTicks ? 'waking' : 'idle';
   return s.elapsed < T1.depositTicks ? 'deposit' : s.elapsed < T1.depositTicks + T1.feedTicks ? 'feeding' : 'laying';
@@ -265,15 +370,16 @@ function decodeYaws(text: string): number[] {
 }
 export const serializeRailway = (s: Railway, rosterPids = s.accounts.map((a) => a.pid)): RailwayJSON => ({
   catalog: s.catalog,
-  sources: s.sources.map((v) => v.toString(16)).join(''),
-  work: s.work.map((v) => v.toString(16)).join(''),
-  accounts: s.accounts.map(({ pid, carry, epoch, request }) => [
-    s.falls ? rosterPids.indexOf(pid) : pid,
-    carry,
-    epoch.toString(36),
-    request.toString(36),
-  ]),
-  piles: s.piles.map(({ id, x, z, n, y, age }) => (s.falls ? [id, x, z, n, y!, age ?? 0] : [id, x, z, n])),
+  sources: s.line ? packRailNibbles(s.sources) : s.sources.map((v) => v.toString(16)).join(''),
+  work: s.line ? packRailNibbles(s.work) : s.work.map((v) => v.toString(16)).join(''),
+  accounts: s.accounts.map(({ pid, carry, stone, epoch, request }) =>
+    s.line
+      ? [rosterPids.indexOf(pid), carry + 9 * (stone ?? 0), `${epoch.toString(36)}.${request.toString(36)}`]
+      : [s.falls ? rosterPids.indexOf(pid) : pid, carry, epoch.toString(36), request.toString(36)],
+  ),
+  piles: s.piles.map(({ id, x, z, n, kind, y, age }) =>
+    s.falls ? [id, x, z, n + (s.line ? 9 * (kind ?? 0) : 0), y!, age ?? 0] : [id, x, z, n],
+  ),
   outcomes: s.outcomes.map(({ pid, epoch, request, status, accepted }) => [
     s.accounts.findIndex((a) => a.pid === pid),
     epoch.toString(36),
@@ -293,8 +399,14 @@ export const serializeRailway = (s: Railway, rosterPids = s.accounts.map((a) => 
   resumeMarker: s.resumeMarker,
   completion: s.completion,
   ...(s.supply ? { supply: saveRailSupply(s.supply) } : {}),
+  ...(s.line ? { line: saveRailLine(s.line, rosterPids), timing: packRailTiming(s.timing!) } : {}),
   ...(s.falls
-    ? { falls: { yaw: encodeYaws(s.falls.yaw), collapsed: s.falls.collapsed.map((v) => (v ? '1' : '0')).join('') } }
+    ? {
+        falls: {
+          yaw: encodeYaws(s.falls.yaw),
+          collapsed: s.line ? packRailFlags(s.falls.collapsed) : s.falls.collapsed.map((v) => (v ? '1' : '0')).join(''),
+        },
+      }
     : {}),
 });
 export const hashRailway = (s: Railway, rosterPids?: string[]): number =>
@@ -303,20 +415,26 @@ export const hashRailway = (s: Railway, rosterPids?: string[]): number =>
 export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []): void {
   const j = json as RailwayJSON | null;
   const playable = !!s.falls;
+  const line1 = !!s.line;
   if (!j || typeof j !== 'object' || Array.isArray(j)) throw new Error('railway: document');
   if (
     typeof j.sources !== 'string' ||
-    j.sources.length !== RAILWAY_SOURCES.length ||
-    !/^[0-9a]+$/.test(j.sources) ||
+    j.sources.length !== (line1 ? 260 : RAILWAY_SOURCES.length) ||
+    !(line1 ? /^[A-Za-z0-9+/]+={0,2}$/ : /^[0-9a]+$/).test(j.sources) ||
     typeof j.work !== 'string' ||
-    j.work.length !== RAILWAY_SOURCES.length ||
-    !/^[0369cf]+$/.test(j.work)
+    j.work.length !== (line1 ? 260 : RAILWAY_SOURCES.length) ||
+    !(line1 ? /^[A-Za-z0-9+/]+={0,2}$/ : /^[0369cf]+$/).test(j.work)
   )
     throw new Error('railway: source encoding');
   if (
     !Array.isArray(j.accounts) ||
     j.accounts.length > MAX_PLAYERS ||
-    j.accounts.some((a) => !Array.isArray(a) || a.length !== 4) ||
+    j.accounts.some(
+      (a) =>
+        !Array.isArray(a) ||
+        a.length !== (line1 ? 3 : 4) ||
+        (line1 && (typeof a[2] !== 'string' || a[2].split('.').length !== 2)),
+    ) ||
     !Array.isArray(j.piles) ||
     j.piles.length > RAILWAY_PILES ||
     j.piles.some((p) => !Array.isArray(p) || p.length !== (playable ? 6 : 4)) ||
@@ -337,8 +455,8 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
       j.falls.yaw.length !== Math.ceil(FALL_BYTES / 3) * 4 ||
       !/^[A-Za-z0-9+/]+={0,2}$/.test(j.falls.yaw) ||
       typeof j.falls.collapsed !== 'string' ||
-      j.falls.collapsed.length !== RAILWAY_SOURCES.length ||
-      !/^[01]+$/.test(j.falls.collapsed))
+      j.falls.collapsed.length !== (line1 ? 97 : RAILWAY_SOURCES.length) ||
+      !(line1 ? /^[0-9a-f]+$/ : /^[01]+$/).test(j.falls.collapsed))
   )
     throw new Error('railway: fall encoding');
   const pidOf = (value: string | number) => {
@@ -349,16 +467,26 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
     ...j,
     // The temporary state receives decoded values only; no field of the live state is replaced before validation.
     falls: undefined,
-    supply: playable ? loadRailSupply(j.supply) : undefined,
-    sources: [...j.sources].map((v) => Number.parseInt(v, 16)),
-    work: [...j.work].map((v) => Number.parseInt(v, 16)),
+    supply: playable ? loadRailSupply(j.supply, line1) : undefined,
+    line: line1 ? loadRailLine(j.line, rosterPids) : undefined,
+    timing: line1 ? unpackRailTiming(j.timing) : undefined,
+    sources: line1 ? unpackRailNibbles(j.sources) : [...j.sources].map((v) => Number.parseInt(v, 16)),
+    work: line1 ? unpackRailNibbles(j.work) : [...j.work].map((v) => Number.parseInt(v, 16)),
     accounts: j.accounts.map(([pid, carry, epoch, request]) => ({
       pid: pidOf(pid),
-      carry,
-      epoch: counter(epoch),
-      request: counter(request),
+      carry: line1 ? carry % 9 : carry,
+      ...(line1 ? { stone: Math.floor(carry / 9) } : {}),
+      epoch: counter(line1 ? epoch.split('.')[0]! : epoch),
+      request: counter(line1 ? epoch.split('.')[1]! : request!),
     })),
-    piles: j.piles.map(([id, x, z, n, y, age]) => ({ id, x, z, n, ...(playable ? { y: y!, age: age! } : {}) })),
+    piles: j.piles.map(([id, x, z, n, y, age]) => ({
+      id,
+      x,
+      z,
+      n: line1 ? n % 9 : n,
+      ...(line1 ? { kind: Math.floor(n / 9) } : {}),
+      ...(playable ? { y: y!, age: age! } : {}),
+    })),
     outcomes: j.outcomes.map(([account, epoch, request, status, accepted]) => ({
       pid: pidOf(j.accounts[account]![0]),
       epoch: counter(epoch),
@@ -367,33 +495,46 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
       accepted,
     })),
   };
-  if (playable) n.falls = { yaw: decodeYaws(j.falls!.yaw), collapsed: [...j.falls!.collapsed].map((v) => v === '1') };
+  if (playable)
+    n.falls = {
+      yaw: decodeYaws(j.falls!.yaw),
+      collapsed: line1
+        ? unpackRailFlags(j.falls!.collapsed, RAILWAY_SOURCES.length)
+        : [...j.falls!.collapsed].map((v) => v === '1'),
+    };
   else {
     delete n.falls;
     delete n.supply;
     if (Object.hasOwn(j, 'supply')) throw new Error('railway: unexpected supply');
   }
   if (!playable && Object.hasOwn(j, 'falls')) throw new Error('railway: unexpected falls');
-  const fresh = createRailway(playable);
+  if (!line1) {
+    if (Object.hasOwn(j, 'line')) throw new Error('railway: unexpected line');
+    delete n.line;
+    if (Object.hasOwn(j, 'timing')) throw new Error('railway: unexpected timing');
+    delete n.timing;
+  }
+  const fresh = createRailway(playable, line1);
   if (Object.keys(n).sort().join() !== Object.keys(fresh).sort().join()) throw new Error('railway: keys');
   if (
-    n.catalog !== RAILWAY_CATALOG ||
+    n.catalog !== (line1 ? LINE1_CATALOG : RAILWAY_CATALOG) ||
     !Array.isArray(n.sources) ||
     n.sources.length !== RAILWAY_SOURCES.length ||
-    n.sources.some((v) => !railInt(v, T1.sourceYield))
+    n.sources.some((v) => !railInt(v, line1 ? 15 : T1.sourceYield))
   )
     throw new Error('railway: catalog');
   if (
     !Array.isArray(n.work) ||
     n.work.length !== n.sources.length ||
-    n.work.some(
-      (v, k) =>
-        !railInt(v, 15) ||
-        v % 3 !== 0 ||
-        T1.sourceYield - n.sources[k]! > (v / 3) * T1.strokeYield ||
-        T1.sourceYield - n.sources[k]! < v / 3 ||
-        (v === 0) !== (n.sources[k] === T1.sourceYield),
-    )
+    (!line1 &&
+      n.work.some(
+        (v, k) =>
+          !railInt(v, 15) ||
+          v % 3 !== 0 ||
+          T1.sourceYield - n.sources[k]! > (v / 3) * T1.strokeYield ||
+          T1.sourceYield - n.sources[k]! < v / 3 ||
+          (v === 0) !== (n.sources[k] === T1.sourceYield),
+      ))
   )
     throw new Error('railway: source work');
   if (
@@ -410,6 +551,7 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
         !a ||
         !okPid(a.pid) ||
         !railInt(a.carry, T1.carry) ||
+        (line1 && (!railInt(a.stone, T1.carry) || a.carry + a.stone! > T1.carry)) ||
         !railInt(a.epoch, RAILWAY_MAX_INT, 1) ||
         !railInt(a.request),
     )
@@ -425,6 +567,7 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
         !p ||
         !railInt(p.id, n.nextPile - 1, 1) ||
         !railInt(p.n, T1.carry, 1) ||
+        (line1 && !railInt(p.kind, 1)) ||
         !railInt(p.x, 200000, -200000) ||
         !railInt(p.z, 200000, -200000) ||
         (playable && (!railInt(p.y, 200000, -200000) || !railInt(p.age, RECOVERY_MINUTES))),
@@ -437,9 +580,11 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
   if (!railInt(n.lastTick) || !railInt(n.resumeMarker, RAILWAY_MAX_MARKER)) throw new Error('railway: clock');
   for (const key of ['stock', 'allocation', 'used', 'delivered'] as const)
     if (!railInt(n[key], T1.bill)) throw new Error('railway: bill');
-  if (!railInt(n.elapsed, RAILWAY_DURATION) || !railInt(n.completion, 1)) throw new Error('railway: job');
+  if (!railInt(n.elapsed, line1 ? 100000 : RAILWAY_DURATION) || !railInt(n.completion, 1))
+    throw new Error('railway: job');
   if (
-    n.start < 0
+    !line1 &&
+    (n.start < 0
       ? n.allocation !== 0 ||
         n.used !== 0 ||
         n.elapsed !== 0 ||
@@ -457,7 +602,7 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
             T1.bill,
             Math.floor((Math.max(0, n.elapsed - T1.depositTicks - T1.feedTicks) * T1.bill) / T1.layTicks),
           ) ||
-        n.completion !== Number(n.elapsed === RAILWAY_DURATION)
+        n.completion !== Number(n.elapsed === RAILWAY_DURATION))
   )
     throw new Error('railway: phase');
   if (
@@ -480,13 +625,15 @@ export function loadRailway(s: Railway, json: unknown, rosterPids: string[] = []
     throw new Error('railway: outcomes');
   if (n.supply?.ages.some((age, k) => (n.sources[k] !== 0 ? age !== 0 && age !== 35 : age === 35)))
     throw new Error('railway: supply age');
-  if (railCounts(n).total !== RAILWAY_SUPPLY + (n.supply?.produced ?? 0)) throw new Error('railway: conservation');
+  if (line1) validateRailLine(n);
+  if (railCounts(n).total !== RAILWAY_SUPPLY + (line1 ? 30 : 0) + (n.supply?.produced ?? 0))
+    throw new Error('railway: conservation');
   Object.assign(s, n, { sources: [...n.sources], work: [...n.work] });
 }
 export function railwayInvariant(s: Railway): string | null {
   try {
     const pids = s.accounts.map((a) => a.pid);
-    loadRailway(createRailway(!!s.falls), serializeRailway(s, pids), pids);
+    loadRailway(createRailway(!!s.falls, !!s.line), serializeRailway(s, pids), pids);
     return null;
   } catch (e) {
     return e instanceof Error ? e.message : 'railway: invalid';

@@ -1,5 +1,5 @@
 // Accepted schedule primitives for slice 3. Callers pin room tunables when funding a station.
-// These are not installed in live T1: no partial T2 receiver or changed legacy replay semantics.
+// New production only; isolated and legacy T1 retain their original replay semantics.
 import { linePanels, type LineStation } from './railway-line-layout.ts';
 
 export type LineTiming = {
@@ -72,4 +72,10 @@ export function lineSchedule(station: LineStation, timing: LineTiming) {
     feedRoundingMs: feedTicks * 100 - feedMs,
     panels,
   };
+}
+/** Whole contacts are derived from accepted integer elapsed ticks, never a rendered/interpolated head. */
+export function linePanelCount(station: LineStation, elapsed: number, timing: LineTiming): number {
+  const schedule = lineSchedule(station, timing);
+  const laying = elapsed - schedule.depositTicks - schedule.feedTicks;
+  return schedule.panels.filter((panel) => panel.tick <= laying).length;
 }
