@@ -140,7 +140,7 @@ const T = (window.T = {
   rail: (): RailwayProbe | null => null,
   railAdapter: (): RailwayAdapterProbe | null => null,
   railIntent: null as unknown as (intent: RailwayIntent) => boolean,
-  railSnapshot: null as unknown as () => void,
+  railSnapshot: null as unknown as () => boolean,
   railOpen: () => T.room!.send({ t: 'r:open' }),
   railEdit: (e: RailAction) => T.room!.send({ t: 'r:edit', e }),
   railStatus: (epoch: number, request: number) => T.room!.send({ t: 'r:status', epoch, request }),
@@ -155,7 +155,11 @@ const T = (window.T = {
 
 function startWorld(room: Room) {
   const w = createSync();
-  T.railSnapshot = w.requestResync;
+  T.railSnapshot = () => {
+    const before = w.worldStatus().resyncs;
+    w.requestResync();
+    return w.worldStatus().resyncs > before;
+  };
   const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
   const roomId = q.get('room') ?? '';
   const playable = isPlayableRailwayRoom(roomId) ? installPlayableRailwayRules(w, land) : null;

@@ -682,13 +682,23 @@ try {
     JSON.stringify(await burstResults(AA, outgoing.state.epoch, outgoing.state.next, 8)),
   );
   const beforeSnapshot = await adapter(AA);
-  await ev(AA.page, () => window.T.railSnapshot());
+  let snapshotProbes = 0;
+  let snapshotRequests = 0;
   railCheck(
     'snapshot rebuilds the adapter without historical accepted effects',
     (await waitFor(async () => {
       const p = await adapter(AA);
-      return p.state.ready && p.resets > beforeSnapshot.resets && p.effects.length === beforeSnapshot.effects.length;
+      if (p.state.ready && p.resets > beforeSnapshot.resets && p.effects.length === beforeSnapshot.effects.length)
+        return true;
+      // The burst may just have resynced. A throttled requestResync call queues nothing; retry it,
+      // as the adapter's reconciliation path does, until a real snapshot has rebuilt the view.
+      if (!snapshotRequests) {
+        snapshotProbes++;
+        if (await ev(AA.page, () => window.T.railSnapshot())) snapshotRequests++;
+      }
+      return false;
     })) >= 0,
+    `${snapshotRequests} requests issued; ${snapshotProbes - snapshotRequests} probes throttled`,
   );
   await AB.page.reload();
   await ev(AB.page, () => window.T.start());
