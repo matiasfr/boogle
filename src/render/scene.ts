@@ -304,8 +304,8 @@ registerGraphics({
   },
 });
 
-// Placeholder until createSky (src/render/sky.ts) swaps in the real dome. The sky entity puts it in the scene
-// (src/features/day-night.ts): entity.ts imports this file, so this file can't spawn.
+// Placeholder dome, hidden once the frozen summer sky (src/render/water/frozen-sky.ts) is ready. The sky entity puts it
+// in the scene (src/features/sky.ts): entity.ts imports this file, so this file can't spawn.
 export const sky = new THREE.Mesh(
   new THREE.SphereGeometry(700, 32, 16),
   new THREE.MeshBasicMaterial({ color: FOG_HEX, side: THREE.BackSide, depthWrite: false, fog: false }),

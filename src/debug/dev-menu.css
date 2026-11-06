@@ -175,15 +175,6 @@
 .dev-more[open] > summary::before {
   content: '⌄';
 }
-.dev-islands {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px;
-  align-items: end;
-}
-.dev-islands > p {
-  grid-column: 1 / -1;
-}
 .dev-page h3 {
   font-size: 12px;
   margin: 10px 0 4px;

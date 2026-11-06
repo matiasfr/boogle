@@ -23,7 +23,7 @@ async function pause(g: ClipGame) {
 
 export default {
   about: 'Two players split the forge/frontier work, then launch each other on the see-saw',
-  query: 'classic=0',
+  query: '',
   async run(c) {
     const out = [];
     const selected = process.env.ROUND4_SHOTS?.split(',');

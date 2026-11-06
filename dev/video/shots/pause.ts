@@ -5,6 +5,7 @@ const PAUSE = `const { openPause } = await import('/src/features/pause.ts'); ope
 const click = (sel: string) => `document.querySelector('dialog.pause ${sel}')?.click();`;
 
 export default {
+  island: true,
   about: 'the pause view: the main page, the controls on each input, the room',
   async run(c) {
     const g = await c.open({ room: 'sunny-cove', name: 'Sam', hud: 'play' }); // the room names the view

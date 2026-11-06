@@ -24,6 +24,7 @@ const ring = (c: number[], a: number, d: number, h: number) => [
 ];
 
 export default {
+  island: true,
   about: 'walk into the caves, the old mine, the ball on the underground pond, the wine cellar',
   async run(c) {
     const g = await c.open({ room: 'clipcaves', hud: false });

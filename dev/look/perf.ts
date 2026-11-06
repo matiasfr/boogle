@@ -29,10 +29,10 @@ const IDLE_TICKS = 100;
 // The game draws from renderer.setAnimationLoop: three resets renderer.info at the start of each frame, then the game
 // renders, so right after a frame renderer.info.render holds that frame's counts (the scene pass runs once per frame,
 // calling pipeline.render again would count only the output pass). `frame` waits for the next frame to finish and
-// copies them. The second sample turns the shadow pass off through the sky's debug handle.
+// copies them. The second sample turns the sun's shadow pass off.
 const STATS = `
   const { renderer, sun } = await import('/src/render/scene.ts');
-  const { skyDebug } = await import('/src/render/sky.ts');
+  const casting = sun.castShadow;
   const { observeGpu } = await import('/src/debug/prof-overlay.ts');
   const observer = await observeGpu();
   const frame = () => new Promise((res, reject) => {
@@ -51,7 +51,7 @@ const STATS = `
   try {
     await frame();
     const a = await frame(); // with the shadow pass
-    skyDebug.shadowPass(false);
+    sun.castShadow = false;
     sun.shadow.needsUpdate = false;
     await frame();
     const b = await frame(); // no shadow pass
@@ -62,7 +62,7 @@ const STATS = `
       ...a.measurement,
       shadowCountScope: 'draw-call difference between separate animation frames; moving objects can affect it' };
   } finally {
-    skyDebug.shadowPass(true);
+    sun.castShadow = casting;
     observer.stop();
   }`;
 
@@ -150,7 +150,7 @@ try {
     if (jsonOut || viewName) {
       const { cam, look } = VIEWS[viewName ?? 'overview']!;
       const pose = `${JSON.stringify(cam)}, ${JSON.stringify(look)}, null`;
-      await g.eval(`window.boogle.sky.preview(0.3); window.__debugCam.set(${pose});`);
+      await g.eval(`window.__debugCam.set(${pose});`);
       await sleep(6000);
     }
     const measuredView = viewName ?? (jsonOut ? 'overview' : 'player camera');

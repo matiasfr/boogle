@@ -1,11 +1,10 @@
-// The island: a pull-back reveal from home, the windmill farm, the lighthouse lighting up at dusk.
+// The classic island: a pull-back reveal from home, the windmill farm, the lighthouse, in the fixed daytime.
 // Places come from the POI site files, so the shot follows them when they move.
 import type { Shot } from '../clip.ts';
 import lighthouse, { PAD_Y } from '../../../src/pois/lighthouse/site.ts';
 import windmills, { FARM_Y } from '../../../src/pois/windmills/site.ts';
 import { STAND } from './_stand.ts';
 
-const SKY = (frac: number) => `window.boogle.sky.preview(${frac})`;
 const ring = (c: number[], a: number, d: number, h: number) => [
   c[0]! + Math.cos(a) * d,
   c[1]! + h,
@@ -13,10 +12,10 @@ const ring = (c: number[], a: number, d: number, h: number) => [
 ];
 
 export default {
-  about: 'a reveal of the island, the windmill farm, the lighthouse at dusk',
+  island: true,
+  about: 'a reveal of the island, the windmill farm, the lighthouse',
   async run(c) {
     const g = await c.open({ room: 'clipisland' });
-    await g.eval(SKY(0.3));
     await g.wait(3);
     const out = [];
     out.push(
@@ -41,31 +40,13 @@ export default {
     );
     const lamp = [lighthouse.x, PAD_Y + 5, lighthouse.z];
     await g.eval(STAND(lamp[0]! + 4, lamp[2]! + 30));
-    await g.eval(SKY(0.5));
     await g.wait(1);
     out.push(
       await g.record('island-lighthouse', {
         seconds: 9,
         each: async (t) => {
-          await g.eval(SKY(0.5 + Math.min(1, t / 6) * 0.13));
           await g.view({ cam: ring(lamp, 2.6 - t * 0.05, 30, 2 - t * 0.2), look: [lamp[0]!, lamp[1]! + 1, lamp[2]!] });
         },
-      }),
-    );
-    // A moonlit night (e52eb9a): a full moon over the lighthouse, its beams sweeping. Tilt up from the tower to the moon.
-    await g.eval(`window.boogle.sky.preview(0.72, 0.5)`);
-    await g.wait(1);
-    const moon: number[] = await g.eval(`const d = window.boogle.sky.state.moonDir; return [d.x, d.y, d.z];`);
-    const eye = ring(lamp, Math.atan2(-moon[2]!, -moon[0]!), 34, -2); // the tower between us and the moon
-    const sky = [eye[0]! + moon[0]! * 60, eye[1]! + moon[1]! * 60, eye[2]! + moon[2]! * 60];
-    out.push(
-      await g.record('island-night', {
-        seconds: 8,
-        each: c.move(
-          { cam: eye, look: [lamp[0]!, lamp[1]! - 2, lamp[2]!] },
-          { cam: [eye[0]!, eye[1]! - 1, eye[2]!], look: sky },
-          8,
-        ),
       }),
     );
     return out;

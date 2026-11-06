@@ -24,6 +24,7 @@ const drop = (name: string, bytes: number[]) => `
   dispatchEvent(new DragEvent('drop', { dataTransfer: dt, cancelable: true }));`;
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about: 'the dino talks, fetches the hosted engine only when asked, falls back to asking for it, refuses wrong files',
   async run(t: T) {
     const g = await t.open({ name: 'visitor', hud: 'play' });

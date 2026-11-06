@@ -9,6 +9,7 @@ const AIM = (yaw: number) =>
 const POS = `const p = window.boogle.me.body.position; return [p.x, p.y, p.z];`;
 
 export default {
+  island: true,
   about: 'take a bag of seeds, sprout five mushrooms with one press, bounce along them',
   async run(c) {
     const g = await c.open({ room: 'clipmush', hud: 'play' });

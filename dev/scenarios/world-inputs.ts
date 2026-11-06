@@ -12,6 +12,7 @@ import type { T } from './run.ts';
 import { enterGame } from '../look/lib.ts';
 import { createSync } from '../../src/world/sync.ts';
 import { installPlayableRailwayRules } from '../../src/world/rules/railway-index.ts';
+import { installRules } from '../../src/world/rules/index.ts';
 import type { Land } from '../../src/world/rules/types.ts';
 import * as line from '../../src/sim/railway-line-layout.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
@@ -34,13 +35,28 @@ const counts = (l: { trees?: unknown[]; perches?: unknown[] } | null) =>
   l ? `${l.trees?.length} trees / ${l.perches?.length} perches` : '-';
 
 export default {
-  about: 'classic fixture and production line-one browser/Node registry and numeric catalog parity',
+  about: 'classic registry fixture and production line-one browser/Node registry and numeric catalog parity',
   timeout: 300000,
   async run(t: T) {
-    const g = await t.open({ name: 'inputs', size: [192, 120], query: 'classic=1' });
+    // The current game installs the classic registry first and appends the railway (src/world/game-world.ts): the
+    // fixture pins that classic prefix, which Node tests run the rules on.
+    const g = await t.open({ name: 'inputs', size: [192, 120] });
     const ready = await g.waitFor(`window.boogle?.land?.layout?.trees?.length > 0`, { timeout: 90000 });
     if (!t.check('the game is up with the gifts layout', ready >= 0, ready + ' ms')) return;
-    const got = await g.eval(READ);
+    const page = await g.eval(READ);
+    const classic = createSync();
+    installRules(classic, { n: page.n, layout: { trees: [], perches: [] } });
+    const prefix = classic.registry();
+    const got = {
+      ...page,
+      states: page.states.slice(0, prefix.states.length),
+      ops: page.ops?.slice(0, prefix.ops.length),
+    };
+    t.check(
+      'the browser registers the classic registry first, as Node does',
+      JSON.stringify([got.states, got.ops]) === JSON.stringify([prefix.states, prefix.ops]),
+      `got ${JSON.stringify(got.states)}, Node ${JSON.stringify(prefix.states)}`,
+    );
     const old = fs.existsSync(FIXTURE) ? JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) : null;
 
     if (process.env.UPDATE_FIXTURE === '1') {
@@ -67,9 +83,8 @@ export default {
     same('op order', got.ops, old.ops);
     same('gifts layout', got.layout, land.layout, counts);
 
-    // Reuse the one rendering page: PR scenarios deliberately prohibit a second GPU player.
+    // Reuse the one rendering page in a fresh room: PR scenarios deliberately prohibit a second GPU player.
     const production = new URL(g.page.url());
-    production.searchParams.delete('classic');
     production.searchParams.delete('proto');
     production.searchParams.set('room', `${production.searchParams.get('room') ?? 'inputs'}-line`);
     // Optional fault injection for snapshot-retry starvation on software WebGPU; not a performance measurement.

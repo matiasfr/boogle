@@ -239,8 +239,6 @@ function buildMesh(owner?: OwnedView) {
     mesh.material.colorNode = null;
   }
   dressCoveGround(mesh.material, (x, z) => macroSlopeY(x - ORIGIN.x, z - ORIGIN.z));
-  if (new URLSearchParams(location.search).get('terrain') === 'demo')
-    void import('../shore/terrain-demo.ts').then((m) => m.applyTerrainDemo(mesh.material, ORIGIN.x));
   owner?.cleanup(() => mesh.material.dispose());
   mesh.frustumCulled = false;
   if (owner) owner.add(mesh);

@@ -120,7 +120,6 @@ const TOUR = `
   const H = await import('/src/player/hands.ts');
   const { NODES } = await import('/src/pois/caves/network.ts');
   const { emit } = await import('/src/render/particles.ts');
-  const sky = window.boogle.sky;
   const step = async (name, ms, fn) => { window.__step = name; if (fn) await fn(); await sleep(ms); };
   const view = (v) => () => dbg.set(v.cam, v.look, null);
   const burst = (x, y, z) => {
@@ -130,12 +129,11 @@ const TOUR = `
         color: new THREE.Color('#e8d9a8'), gravity: -6 });
     }
   };
-  const night = (v) => () => { sky.preview(0.8, 0.5); dbg.set(v.cam, v.look, null); };
   const hub = NODES.hub;
   const CAVE = { cam: [hub.x + 1, hub.y + 1.6, hub.z + 1], look: [hub.x - 4, hub.y + 1.2, hub.z - 2] };
   const LIGHT = { cam: [160, 26, -10], look: [212, 26, -50] };
 
-  await step('spawn', 2000, () => sky.preview(0.3));
+  await step('spawn', 2000);
   for (const k of ['hill', 'shore', 'court', 'meadow', 'overview']) await step('view ' + k, 1500, view(VIEWS[k]));
   await step('caves', 2500, view(CAVE));
   await step('lighthouse', 2000, view(LIGHT));
@@ -145,21 +143,11 @@ const TOUR = `
   await step('swap', 2500, async () => {
     for (const id of ['frisbee', 'seeds', 'frisbee', 'seeds']) { I.take(id); await sleep(500); }
   });
-  await step('sunset', 3000, () => { sky.preview(0.55); dbg.set(VIEWS.shore.cam, VIEWS.shore.look, null); });
-  await step('sunset overview', 2000, () => dbg.set(VIEWS.overview.cam, VIEWS.overview.look, null));
-  await step('night', 3000, night(VIEWS.overview));
-  await step('night meadow', 2000, night(VIEWS.meadow));
-  await step('night shore', 2000, night(VIEWS.shore));
-  await step('night lighthouse', 2500, night(LIGHT));
-  await step('night caves', 2500, night(CAVE));
-  await step('night particles', 2000, () => { night(VIEWS.court)(); burst(12, 1, 21); });
-  await step('sky sweep', 0, () => dbg.set(VIEWS.overview.cam, VIEWS.overview.look, null));
-  for (let f = 0.25; f <= 1.0; f += 0.01) { sky.preview(f % 1, null); await sleep(130); }
-  sky.preview(null);
+  // One fixed time of day everywhere: no sunset, night or sky sweep to tour.
   window.__step = 'done';
   return window.__frames;`;
 
-// The hooks' steady-state allocation: CDP's sampling heap profiler over a few seconds at day and night views, everything
+// The hooks' steady-state allocation: CDP's sampling heap profiler over a few seconds at a few views, everything
 // under each callee of src/loop.ts runFrame charged to that hook.
 async function measureHooks(g: Game) {
   const cdp = await g.page.context().newCDPSession(g.page);
@@ -176,13 +164,11 @@ async function measureHooks(g: Game) {
     const count = () => { n++; if (on) requestAnimationFrame(count); };
     requestAnimationFrame(count);
     window.__step = 'allocs';
-    for (const [v, sky] of [['court', 0.3], ['meadow', 0.3], ['shore', 0.8], ['meadow', 0.8]]) {
-      window.boogle.sky.preview(sky, sky > 0.5 ? 0.5 : undefined);
+    for (const v of ['court', 'meadow', 'shore', 'meadow']) {
       window.__debugCam.set(VIEWS[v].cam, VIEWS[v].look, null);
       await sleep(1500);
     }
     on = false;
-    window.boogle.sky.preview(null);
     return n;`);
   const { profile } = await cdp.send('HeapProfiler.stopSampling');
   const kindRows = await entityRows(cdp);

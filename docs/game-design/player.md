@@ -40,10 +40,10 @@ Version comparisons and verification limits live in the [upgrade assessment](../
 
 - You swim when the water surface (the sea or the cave pond) is above your body point + 0.35 m. Buoyancy pushes up to 2.4× your weight with
   damping. Jump swims up at 4.5 m/s.
-- On Place and crossing, that surface is a bounded asynchronous sample of the visible waves, and damping
+- Everywhere, that surface is a bounded asynchronous sample of the visible waves, and damping
   is relative to bounded surface velocity. The threshold and Jump swim-up stay the same; stale samples ease to mean
-  water. Classic home keeps its original sea forces. Query limits and cave composition: [island water](island.md).
-- On Place and crossing, swimming stays at the surface unless you enter falling at least **14 m/s**. Slower entries shed
+  water. Query limits and cave composition: [island water](island.md).
+- Everywhere, swimming stays at the surface unless you enter falling at least **14 m/s**. Slower entries shed
   downward momentum to **1 m/s relative to the surface**, so walking in and ordinary low-bank jumps stay afloat.
   Fast entries retain momentum (the existing fall cap is **20 m/s**); downward water drag is **1.2/s**, versus **3/s**
   upward. Existing depth buoyancy (up to **2.4× weight**) arrests the fall: faster hits go deeper, bounded by the bed.
@@ -57,6 +57,7 @@ Version comparisons and verification limits live in the [upgrade assessment](../
   does not flip it. The stroke quickens with speed (×(1 + 0.45 × m/s)) on its own clock, so speed changes never jump
   its phase; into and out of the water cross-fades over **0.15 s**. Presentation only: remote players still pose from
   presence's swim state.
+  Water URL selectors are ignored.
 
 ## Flops (cosmetic)
 

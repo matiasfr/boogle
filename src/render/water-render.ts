@@ -9,7 +9,7 @@ import { fftWaves } from './water/fft.ts';
 import { bakeFoam } from './water/foam.ts';
 import { shoreFields } from './water/shore-nodes.ts';
 import { createWaterQuality } from './water/quality.ts';
-import { newWaterEnabled } from './water/flags.ts';
+
 import { createWaterQueries } from './water/queries.ts';
 import { createCaustics } from './water/caustics.ts';
 import { installWaterReceivers } from './water/receivers.ts';
@@ -27,16 +27,13 @@ import { warmUp, warmDraw } from './precompile.ts';
 export { seaU, seaRipples } from './water/state.ts';
 export { registerShoreProvider } from './water/shore-providers.ts';
 
-import { createClassicSea } from './classic-sea.ts';
-
 // late 3010, last hook before render, after the presence send (net.ts, 3000): the sea's clock.
 defineKind('sea', { prePhysics: -110, lateUpdate: 3010 });
 
-export { newWaterEnabled } from './water/flags.ts';
 let waterMesh: THREE.Mesh | null = null;
 export let waterReady: Promise<void> = Promise.resolve();
 export const waterRuntime: { inspect(): Record<string, unknown>; dispose(): void } = {
-  inspect: () => ({ mode: 'legacy' }),
+  inspect: () => ({ mode: 'new', ready: false }),
   dispose() {},
 };
 
@@ -178,16 +175,5 @@ export function createWaterMesh() {
       height: (i, j) => heights[i]![j]!,
     }),
   });
-  if (newWaterEnabled) return (waterMesh = createRealSea());
-  const classic = createClassicSea();
-  const mesh = classic.mesh;
-  spawn({
-    kind: 'sea',
-    mesh,
-    dispose: classic.dispose,
-    lateUpdate({ elapsed }) {
-      seaU.uTime.value = elapsed;
-    },
-  });
-  return (waterMesh = mesh);
+  return (waterMesh = createRealSea());
 }

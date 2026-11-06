@@ -38,7 +38,13 @@ export type Clip = {
   move: typeof move;
 };
 // What a shot file exports.
-export type Shot = { about?: string; query?: string; run(c: Clip): Promise<object | object[] | undefined> };
+// island: start every player on the classic island by the court (dev/look/lib.ts), as the old island clips assume.
+export type Shot = {
+  about?: string;
+  query?: string;
+  island?: boolean;
+  run(c: Clip): Promise<object | object[] | undefined>;
+};
 
 const here = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'shots');
 const all = fs
@@ -118,6 +124,7 @@ try {
           out,
           size: opt.size,
           clock: true,
+          island: shot.island,
           ...o,
           query: [shot.query, o.query].filter(Boolean).join('&') || undefined,
           name: o.name || 'p' + (games.length + 1),

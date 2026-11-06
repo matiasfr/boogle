@@ -8,6 +8,7 @@ import type { T } from './run.ts';
 const R = `const { rules } = await import('/src/world/game-world.ts'); const { identity } = await import('/src/player/identity.ts');`;
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about: 'take logs, carry, pour, run: one section of the railway gets laid and both players see it',
   timeout: 300000,
   async run(t: T) {

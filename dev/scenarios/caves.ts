@@ -64,6 +64,7 @@ const THROWS = `
   return { ends, pondY: +bb.position.y.toFixed(2), level: POND.level };`;
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about: 'walk through the caves; thrown balls stay inside; the ball floats on the pond',
   async run(t: T) {
     const g = await t.open({ name: 'caver', size: [480, 300] });

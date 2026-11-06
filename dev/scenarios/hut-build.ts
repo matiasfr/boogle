@@ -52,6 +52,7 @@ const pourTo = (upto: number) => `
   return -1;`;
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about:
     'solo: logs fill the Helper ring and the hut goes up piece by piece; a fresh join sees the finished hut at once',
   timeout: 300000,

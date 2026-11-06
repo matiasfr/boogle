@@ -3,7 +3,7 @@
 import { collidersOf, footprintOf, type Sphere } from '../../blueprints/blueprint.ts';
 import { isHomePalm, PROP_BLUEPRINTS, scatterProps, tileKey, type PropPlacement } from '../../blueprints/props.ts';
 import { groundHeight } from '../../island/heights.ts';
-import { island, placementGroundHeight } from '../../island/index.ts';
+import { island } from '../../island/index.ts';
 import { clearedAt } from '../../island/layout.ts';
 import { staticSpheresBody } from '../../physics/physics.ts';
 import type { Body } from '../../physics/engine.ts';
@@ -11,11 +11,7 @@ import type { Body } from '../../physics/engine.ts';
 /** A footprint on the ground plane. */
 export type Obstacle = { x: number; z: number; r: number };
 
-export const placements: PropPlacement[] = scatterProps({
-  groundHeight,
-  keptOut: island.keptOut,
-  placementGroundHeight,
-});
+export const placements: PropPlacement[] = scatterProps({ groundHeight, keptOut: island.keptOut });
 // Home palms in a fixed order (the same on every client). Their cells are the wood age's log spots
 // (src/features/log-sources.ts). Mainland trees are scenery and obstacles only.
 export const trees = placements.filter(isHomePalm);

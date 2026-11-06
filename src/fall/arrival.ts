@@ -1,5 +1,5 @@
 // Local seam for the shared opening: a place supplies its landing before the director loads.
-// The classic island keeps the director's original target and camera direction.
+// Without a place's landing, the director keeps its original target and camera direction.
 import { groundHeight } from '../island/heights.ts';
 
 export const fallArrival = {

@@ -1,13 +1,11 @@
 // A level as the checks read it: the same data the game composes (POI sites, the route, scattered props), for today's
 // island or with a dev/layouts/*.json applied, on the same ground the game builds, with no scene or renderer.
-// No browser location: proto/flags.ts explicitly resolves the classic island for these Node imports.
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { BALL_SPAWN, CELL, COURT, GRID_RES, HALF, SPAWN } from '../../src/constants.ts';
 import { isHomePalm, scatterProps, type PropPlacement } from '../../src/blueprints/props.ts';
-import { heightIn, islandBaseCm, islandSampler } from '../../src/island/ground.ts';
-import { originalNaturalHeight } from '../../src/island/shape.ts';
-import { LOW_ISLAND } from '../../src/proto/flags.ts';
+import { heightIn, islandBaseCm } from '../../src/island/ground.ts';
 import { clearedIn, moveSite, routeIn, type LayoutFile, type Section } from '../../src/island/layout.ts';
 import { createIsland, siteFrame } from '../../src/island/stamps.ts';
 import { clamp } from '../../src/math-pure.ts';
@@ -66,8 +64,7 @@ export function loadLevel(layoutFile: string | null): Level {
   const fileRoute = layout?.route ?? [];
   const labSections = Math.max(0, fileRoute.length - ROUTE.length);
   const routeFile = layoutFile ?? 'src/sim/route.ts';
-  const placementGroundHeight = LOW_ISLAND ? islandSampler(createIsland(sites, originalNaturalHeight)) : undefined;
-  const placements = scatterProps({ groundHeight: groundAt, keptOut: island.keptOut, placementGroundHeight }).filter(
+  const placements = scatterProps({ groundHeight: groundAt, keptOut: island.keptOut }).filter(
     (p) => isHomePalm(p) || !clearedIn(layout, route, p.x, p.z),
   );
 

@@ -23,7 +23,7 @@ import { waterField } from '../../physics/water-field.ts';
 import { peopleChanged, sendPresence, setLocalPresence } from '../../netplay/net.ts';
 import { input, inputState } from '../../player/input-state.ts';
 import { cam, me } from '../../player/state.ts';
-import { newWaterEnabled } from '../../proto/flags.ts';
+
 import { inv } from '../../player/inventory.ts';
 
 export { cam, me };
@@ -38,8 +38,7 @@ const LAUNCH_STEER_TIME = 0.1;
 // 0.19's contacts supplied one extra steering step at a ledge. Preserve that inertia, never jump eligibility.
 const GROUND_STEER_TIME = 0.1 + FIXED;
 const MAX_FALL = 20; // m/s: see catchFallThrough in src/physics/physics.ts
-// Owner physics only; classic home keeps its existing forces.
-const plungeEnabled = newWaterEnabled;
+// Owner physics only.
 const PLUNGE = {
   entrySpeed: 14, // m/s downward: above a normal jump or low-bank hop
   surfaceEntrySpeed: 1, // m/s: slow entries lose their downward momentum at the surface
@@ -190,7 +189,7 @@ export function steerPlayer() {
   const surfY = water.height;
   const depth = surfY - (b.position.y + SWIM_DEPTH);
   // Only fast downward entries keep their momentum. A crest or ordinary jump cannot start a plunge.
-  if (plungeEnabled && depth > 0 && !me.swimming && b.velocity.y > -PLUNGE.entrySpeed) {
+  if (depth > 0 && !me.swimming && b.velocity.y > -PLUNGE.entrySpeed) {
     b.velocity.y = Math.max(b.velocity.y, water.verticalVelocity - PLUNGE.surfaceEntrySpeed);
   }
   me.swimming = depth > 0;
@@ -226,15 +225,14 @@ export function steerPlayer() {
     }
   }
   if (depth > 0) {
-    const drag = plungeEnabled && b.velocity.y < 0 ? PLUNGE.downDrag : 3;
+    const drag = b.velocity.y < 0 ? PLUNGE.downDrag : 3;
     const buoyancy =
       PLAYER_MASS * GRAVITY * (1 + Math.min(depth * 2.2, 1.4)) -
       PLAYER_MASS * drag * (b.velocity.y - water.verticalVelocity);
     // Buoyancy arrests the plunge and floats the player up. Rapier still owns bed/wall collisions.
-    b.force.y +=
-      plungeEnabled && !swimUp
-        ? Math.min(buoyancy, PLAYER_MASS * (GRAVITY + (PLUNGE.riseSpeed - b.velocity.y) * PLUNGE.riseGain))
-        : buoyancy;
+    b.force.y += !swimUp
+      ? Math.min(buoyancy, PLAYER_MASS * (GRAVITY + (PLUNGE.riseSpeed - b.velocity.y) * PLUNGE.riseGain))
+      : buoyancy;
   }
   // Soft wall a little inside the edge of the map: swimming out to sea turns you back.
   if (Math.abs(b.position.x) > softWall.at) b.velocity.x = turnedBack(b.position.x, b.velocity.x);

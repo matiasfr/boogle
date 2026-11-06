@@ -39,8 +39,8 @@ export async function record(
 
 export default {
   about: 'Round 4: walk first, earn better tools, find abilities, enter town, ride late, play together',
-  // classic=0 explicitly preserves the default route through the legacy clip harness.
-  query: 'classic=0',
+  // The default route: the current game, as the bare address opens it.
+  query: '',
   async run(c) {
     const out = [];
     const selected = process.env.ROUND4_SHOTS?.split(',');

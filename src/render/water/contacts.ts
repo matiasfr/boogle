@@ -1,7 +1,7 @@
 // Sub-texel contacts never change the terrain bake. Owners add/remove only geometry that is actually present.
 import { Vector4 } from 'three/webgpu';
 import { uniform, uniformArray } from 'three/tsl';
-import { newWaterEnabled } from './flags.ts';
+
 import { TSL, type N } from './tsl.ts';
 const CAPACITY = 512;
 export type WaterContact = { x: number; z: number; radius: number; top: number };
@@ -18,7 +18,6 @@ const sync = () => {
   revision++;
 };
 export function registerWaterContact(contact: WaterContact) {
-  if (!newWaterEnabled) return () => {};
   if (contacts.size >= CAPACITY) throw new Error(`Water contact capacity ${CAPACITY} exceeded`);
   const id = nextId++;
   contacts.set(id, contact);

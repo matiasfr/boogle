@@ -418,8 +418,8 @@ Camera-facing station and halt names and work-site plaques divide linear RGB by 
 **surfaceExposure** in `render/exposure.ts`. There is no separate 10.9195 multiplier. Crystal and gold pickup glints,
 chest/box sparkles, reward-show sparkles, confetti and celebration fireworks use the same policy in the existing
 particle pool. Dust, smoke, steam, cloth puffs, water spray and already-HDR impact stars retain intensity one.
-Alpha, soft edges, fade/shrink, fog, depth occlusion and underwater attenuation are preserved; classic home and
-other routes retain their original brightness. This is Local presentation, with no shared state or save change.
+Alpha, soft edges, fade/shrink, fog, depth occlusion and underwater attenuation are preserved; other routes retain
+their original brightness. This is Local presentation, with no shared state or save change.
 
 Implements recommendations 1 and 3 of `docs/research/dark-unlit-exposure.md`, joined to the owner's fixed-exposure
 decision on 5 November. Compensation follows the authored surface gain in Dev and production; the explicit
@@ -429,7 +429,7 @@ Serves **DESIGN.md 7, Telegraph everything**.
 
 **Remote names (5 November, approved follow-up).** Player-name sprites use that same full surface-gain
 compensation once, at `avatars.makeLabel`, matching station labels. The existing sRGB name canvas,
-translucent backing, alpha, fog, depth and underwater composite remain; classic home's gain of one is neutral.
+translucent backing, alpha, fog, depth and underwater composite remain.
 Names are Local presentation, with no identity, presence or save change. The three-way main/.12-before/.12-after
 readability comparison is in [colour defaults](../research/color-defaults.md#remote-name-follow-up).
 
@@ -441,7 +441,7 @@ are not compensated. No call site applies both the material helper and particle 
 **Owner colour defaults (5 November, for now).** Real-sea Place and crossing use surface gain **0.12**, retained
 underwater **+0.81 EV**, key gain **1.12** and fill gain **3.2**. Place's grass pigment strength is **0.35** and
 its albedo gain **0.7**. Selective green/timber/accent adjustments, the building instance palette and Buddy's
-albedo-only saturation adjustment reproduce round five's pick at their material owners. Classic home is unchanged.
+albedo-only saturation adjustment reproduce round five's pick at their material owners.
 Production opening buildings, forge scaffold and source trees use those same material owners. Tapered gable
 instances receive palette updates through the same piece-index routing as their transforms. The 5 November
 repair restores the treatment omitted by the production extraction; it does not retune the sky, lights or exposure.
@@ -936,7 +936,7 @@ This registration supplies the production sea without reshaping Round 4 terrain.
 
 The default page and `?proto=place` use the [production water](water.md), sampling the actual gorge/shore
 provider. The old sea, crossing rectangles and separate demo are archived. `water=old` and `water=new` no
-longer select a sea. Classic home retains its own cheaper sea pending CI qualification.
+longer select a sea. The classic island, at the world's origin, shares this sea (6 November).
 One late-morning atmosphere bake (`tod=0.24`) completes behind loading, with fixed-gain **Neutral** output.
 It replaces the moving day/night sky, sun/moon billboards and faceted clouds; there is no sunset or night
 on this path. Night-gated fireflies and lighthouse beams remain off wherever those systems are present;

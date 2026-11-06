@@ -8,7 +8,7 @@ import { onStart } from '../loop.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { groundHeight } from '../island/terrain.ts';
-import { skyDebug } from '../render/sky.ts';
+import { skyNow } from '../render/sky.ts';
 
 const FLIES = { count: 60, nearMeadow: 0.6, night: 0.35, size: 0.45 };
 const pos = new Float32Array(FLIES.count * 3),
@@ -67,7 +67,7 @@ spawn({
   kind: 'fireflies',
   mesh: flies,
   update: ({ dt, elapsed }) => {
-    const want = skyDebug.state.day < FLIES.night ? 1 : 0;
+    const want = skyNow.day < FLIES.night ? 1 : 0;
     shown += (want - shown) * Math.min(1, dt * 0.5);
     flies.visible = shown > 0.01 && F.length > 0;
     if (!flies.visible) return;

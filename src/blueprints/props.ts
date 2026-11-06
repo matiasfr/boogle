@@ -45,8 +45,6 @@ export const isHomePalm = (p: PropPlacement) => p.blueprint === 'palm' && !!p.ho
 export type ScatterGround = {
   groundHeight: (x: number, z: number) => number;
   keptOut: (x: number, z: number, pad?: number) => boolean;
-  /** Keep the original scenery layout during the low-island comparison; reproject its heights. */
-  placementGroundHeight?: (x: number, z: number) => number;
 };
 
 type Rng = () => number;
@@ -78,13 +76,7 @@ const broadleaf = (x: number, z: number, h: number, rng: Rng): PropPlacement => 
 };
 
 /** Every prop, in a fixed order: home palms, home rocks, then the mainland's palms, round trees and rocks. */
-export function scatterProps({
-  groundHeight,
-  keptOut,
-  placementGroundHeight = groundHeight,
-}: ScatterGround): PropPlacement[] {
-  const surfaceHeight = groundHeight;
-  groundHeight = placementGroundHeight;
+export function scatterProps({ groundHeight, keptOut }: ScatterGround): PropPlacement[] {
   const out: PropPlacement[] = [];
   const flatEnough = (x: number, z: number, h: number, max: number) =>
     Math.abs(groundHeight(x + 1, z) - h) <= max && Math.abs(groundHeight(x, z + 1) - h) <= max;
@@ -163,5 +155,5 @@ export function scatterProps({
     (x, z, h) => h > 0.4 && (onMassif(x, z) ? wild() < 0.9 : wild() < 0.3) && spaced(x, z, 3.5),
     (x, z, h) => rock(x, z, h, 0.6 + wild() * (onMassif(x, z) ? 2.2 : 1.3), wild),
   );
-  return surfaceHeight === groundHeight ? out : out.map((p) => ({ ...p, h: surfaceHeight(p.x, p.z) }));
+  return out;
 }

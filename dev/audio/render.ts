@@ -29,7 +29,7 @@ type Take = {
 };
 type Page = {
   key: string;
-  query: string;
+  query: string; // '' for the current game, as the bare address opens it
   room?: string; // a proto- room, for the prototypes whose shortcut buttons need one
   setup?: string; // page code run once before its takes
   takes: Take[];
@@ -224,7 +224,7 @@ const seq = (imports: string, calls: string[], gap: number) => `${imports}
 const PAGES: Page[] = [
   {
     key: 'voice',
-    query: 'classic=1',
+    query: '',
     takes: [
       {
         id: 'voice-boogler',
@@ -246,7 +246,7 @@ const PAGES: Page[] = [
   },
   {
     key: 'machine',
-    query: 'classic=1',
+    query: '',
     takes: [
       {
         id: 'machine-reference',
@@ -263,7 +263,7 @@ const PAGES: Page[] = [
   },
   {
     key: 'ui',
-    query: 'classic=1&jump2=1',
+    query: 'jump2=1',
     takes: [
       {
         id: 'ui-tick',
@@ -390,7 +390,9 @@ const PAGES: Page[] = [
   },
   {
     key: 'build',
-    query: 'classic=1',
+    // The classic island's helper hut, at the origin of every world. Its pours are classic lockstep ops, which only a
+    // classic-registry room accepts (the current game's server refuses them), so this take uses the explicit Place room.
+    query: 'proto=place',
     setup: `await until(() => window.boogle.me.entered, 90000);
       ${TP(8, 16)}
       window.__debugCam.set([12, 4.3, 11], [17, 2.4, 5.8]);
@@ -531,8 +533,7 @@ if (args.includes('--broker') && !args.includes('--offline-place') && !args.incl
       [
         '.look/see-client.ts',
         'look',
-        '--query',
-        query,
+        ...(query ? ['--query', query] : []),
         '--room',
         `proto-audio-${page.key}-${Date.now()}`,
         '--eval',

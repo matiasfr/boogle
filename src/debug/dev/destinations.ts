@@ -1,6 +1,5 @@
 import { DESTINATIONS, destinationName, fixtureReason, launch } from './fixtures.ts';
 import { command, note, el } from './ui.ts';
-import { islandPicker } from './routes.ts';
 import { no, ok, type Tool } from './types.ts';
 import { productionRailway } from '../../proto/flags.ts';
 
@@ -36,7 +35,6 @@ export const tool: Tool = {
     return (await import('./place.ts')).travel(args.destination);
   },
   mount(parent, ctx) {
-    islandPicker(parent);
     parent.append(el('h3', 'Disposable player travel'));
     const label = el('label', 'Destination', 'dev-field');
     const picker = el('select');

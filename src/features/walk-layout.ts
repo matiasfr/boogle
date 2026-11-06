@@ -6,18 +6,17 @@
 import { land } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import { onStart } from '../loop.ts';
 import { layout } from '../island/layout.ts';
-import { LOW_ISLAND } from '../proto/flags.ts';
 import './walk-layout.css';
 
-// The server's land, in its own chunk: layout and low-island comparisons retain these shared inputs.
-const home = layout || LOW_ISLAND ? (await import('../world/home-land.json')).default : null;
+// The server's land, in its own chunk: a layout comparison retains these shared inputs.
+const home = layout ? (await import('../world/home-land.json')).default : null;
 
 if (home) {
   onStart(() => {
     const { trees, perches } = land.layout;
     const moved = trees.filter((c, k) => c.i !== home.layout.trees[k]?.i || c.j !== home.layout.trees[k]?.j).length;
     if (moved || trees.length !== home.layout.trees.length)
-      console.info(`Island comparison: ${moved} palm cells differ from home-land.json; the rules use home-land.json's`);
+      console.info(`Layout: ${moved} palm cells differ from home-land.json; the rules use home-land.json's`);
     trees.splice(0, trees.length, ...home.layout.trees);
     perches.splice(0, perches.length, ...home.layout.perches);
   });

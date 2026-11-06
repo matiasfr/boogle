@@ -20,6 +20,7 @@ const SIGN = `(() => {
 })()`;
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about: "The Boogler's tag: a small mark at range, his name only up close",
   async run(t: T) {
     const g = await t.open({ name: 'looker', hud: 'play' });

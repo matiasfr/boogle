@@ -30,7 +30,7 @@ let removeInput = () => {};
 type Bookmark = { position: number[]; rotation: number[]; fov: number; route: string };
 const bookmarks = new Map<number, Bookmark>();
 const STORAGE = 'boogle.dev.camera.v1';
-const route = () => PROTO || new URLSearchParams(location.search).get('island') || 'home';
+const route = () => PROTO;
 const vector = (v: unknown, n: number, bound: number): v is number[] =>
   Array.isArray(v) &&
   v.length === n &&

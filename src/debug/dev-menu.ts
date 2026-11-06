@@ -10,7 +10,6 @@ import { devInput } from '../player/dev-input.ts';
 import { isTyping } from '../player/controls.ts';
 import { modalOpen } from '../player/modal.ts';
 import { canvas } from '../render/scene.ts';
-import { PROTO } from '../proto/flags.ts';
 import { fixture, fixtureReason, scenarioName, destinationName, VERSION } from './dev/fixtures.ts';
 import { el, button, note, more } from './dev/ui.ts';
 import { no, type Args, type Context, type Tool, type Result, type DockPanel } from './dev/types.ts';
@@ -157,19 +156,16 @@ export function installDevMenu() {
   const waterReady = (async () => {
     const water = await import('../render/water-render.ts');
     await water.waterReady;
-    const flags = await import('../render/water/flags.ts');
-    if (flags.newWaterEnabled) {
-      const looks = await import('../render/water/looks.ts');
-      if (!looks.looksReady())
-        await new Promise<void>((resolve) => {
-          const off = looks.onLookChange(() => {
-            if (looks.looksReady()) {
-              off();
-              resolve();
-            }
-          });
+    const looks = await import('../render/water/looks.ts');
+    if (!looks.looksReady())
+      await new Promise<void>((resolve) => {
+        const off = looks.onLookChange(() => {
+          if (looks.looksReady()) {
+            off();
+            resolve();
+          }
         });
-    }
+      });
     let saved = false;
     try {
       saved = !!localStorage.getItem('boogle.water-tuning.v1');
@@ -458,28 +454,6 @@ export function installDevMenu() {
   };
   layout();
   if (!collapsed) void show(selected);
-  if (new URLSearchParams(location.search).get('devshore') === '1') {
-    let starting = false;
-    pending = spawn({
-      kind: 'dev-launch',
-      update() {
-        if (starting || !me.entered || !me.body || (PROTO === 'place' && !window.__place)) return;
-        starting = true;
-        if (pending) despawn(pending);
-        pending = null;
-        void (async () => {
-          await ensureCamera();
-          const result = await run('camera', 'bookmark', { destination: 'shore' });
-          if (!alive) return;
-          const url = new URL(location.href);
-          url.searchParams.delete('devshore');
-          window.history.replaceState(window.history.state, '', url);
-          await show('water');
-          if (!result.ok) note(body, result.message);
-        })();
-      },
-    });
-  }
   const current = fixture();
   if (current.launched && current.version === VERSION) {
     badge = el('div', `TEST · ${current.scenario} · disposable solo`, 'dev-test');

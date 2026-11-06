@@ -11,30 +11,10 @@
   Every client builds identical integers.
 - After the 2026-10-29 playtest the land was cut to about a third, roughly **23,300 m²**
   ([playtests.md](../playtests.md)). Everything is meant to be a 10 to 15 s sprint from spawn (comment in `shape.ts`).
-
-## Opt-in low island
-
-`?classic=1&island=low&room=island-low` compares a lower home island with the original. Without
-`island=low` (or its reserved `island-low` room), all original heights remain unchanged. A lone `island=low` selects
-home automatically; explicit `proto` or `play` selectors take precedence and cannot enter the reserved room.
-
-The natural layer keeps its coastline and lowers the inland rolling ground, softens the beaches and extends a
-shallow shelf. At the four non-cliff comparison bearings the shelf reaches 1 m depth about 46–66 m offshore; the
-north-west headland remains a deliberate steep coast. Broad low sand bars vary the shelf as it gradually deepens,
-instead of leaving a uniform shallow ring. The lighthouse pad stays at 11 m and the cave massif
-retains its authored cover, floors and portals, making two high regions above the lower ground. Court levelling,
-POI positions, painted paths, saturated colours and faceted geometry remain. Scenery keeps its original scatter
-layout and is reprojected onto the new heightfield, including the palms beside the fixed log-source cells.
-
-The same final centimetre grid supplies terrain mesh, physics, placements and the water's shore field. Heights
-are Local static geometry, but tree/perch cells feed shared rules, so the existing layout-comparison startup path
-pins those inputs to the server's canonical `home-land.json`. The flag forces its own room; no shared rule or save
-shape changes. Graduation needs the owner's playtest, removal of the comparison pin, regenerated canonical land
-if cells move, and a `WORLD_NS` bump with history if static lockstep layout or saved cell meaning changes.
-
-`npm run level-check -- --island=low --all` checks the selected surface. No target is newly unreachable; the known
-court/stall overlap, touching massif boulders and over-grade old track sections 2 and 3 remain. POI walls, cave
-holes and collision masks are outside that headless check and need browser traversal.
+- **In the one world** (owner, 6 November): this is the classic island, and it has no entry of its own. It stands at
+  the origin of the current game's world, about 800 m west of the cove landing (Place's origin is x = 1000), under the
+  world's summer sky, fixed time and real sea, until level design decides where it belongs. `SPAWN` (14, 26) by the
+  court is now only the island's respawn and the tools' island fixture (`look --island`, a scenario's `island: true`).
 
 ## Regions
 
@@ -74,23 +54,20 @@ Cave mouths ([network.ts](../../src/pois/caves/network.ts)):
 
 ---
 
-[Water graduation](water.md) keeps classic home's own sea for now: world-inputs/smoke/caves passed with
-new water but took 5.2/13.8/9.1 s instead of 2.9/5.4/5.8 s on Metal; Linux CI cost is unverified.
-The private `src/render/classic-sea.ts` allocates its original texture/material only on this route.
-`water=old`/`water=new` are ignored. The following replacement contract applies to Place and crossing;
-classic's earlier opt-in measurements remain historical evidence in the plan.
+Every route uses the real sea since the classic island joined the one world (6 November); its cheaper sea
+(`classic-sea.ts`) was removed. Before that, world-inputs/smoke/caves passed with the real sea but took
+5.2/13.8/9.1 s instead of 2.9/5.4/5.8 s on Metal; Linux CI cost is unverified. `water=old`/`water=new` are ignored.
 Its facade now registers the finalized stamped home heightfield with the Local shore registry. The provider uses
 the actual 409×409 grid, with negative-z source rows and explicit invalid exterior; bridges and roofs are not beds.
 The replacement's lazy shore atlas has a 512² core at 1 m/texel plus an 80-texel halo. Only verified underwater
 edges receive a separate deep-water apron. Connected regions share one travel/shelter solve, and all sampled
-fields select one coherent region. No shore bake or new texture allocation runs for the default old sea.
+fields select one coherent region.
 
-Place and crossing use the replacement surface: four 256² FFT bands at `.25` energy, real shore
+Every route uses this surface: four 256² FFT bands at `.25` energy, real shore
 attenuation, refraction from one opaque HDR colour/depth snapshot pair, crest/contact foam and impact rings. One sea
 entity owns its FFT, foam, shore atlas and snapshots. The demo atmosphere is baked once behind loading, frozen at
 late morning (`tod=0.24`), with the matching fixed real sun. Its cube supplies sky and reflections, replacing the toon
-dome, sun/moon billboards, faceted clouds and cycle on this path. Metered Neutral maps the final underwater HDR once;
-the old path retains Neutral and its cycle. Camera near/far/FOV stay unchanged. The polar detail
+dome, sun/moon billboards, faceted clouds and cycle. Metered Neutral maps the final underwater HDR once. Camera near/far/FOV stay unchanged. The polar detail
 ends by half the route's far range, with a monotonic altitude scale and a flat skirt inside the clip range.
 Desktop defaults to high; coarse-pointer devices default to 0.6 world resolution, normalized once against adaptive DPR
 (`q=high|mobile` overrides). This leaves canvas/output resolution and MSAA unchanged. `waterRuntime.dispose()` releases

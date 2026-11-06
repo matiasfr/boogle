@@ -46,6 +46,7 @@ const DROPS = `
   return { spots: pick.length, through, fastest: +fastest.toFixed(1), pushedClear: +clear(b).toFixed(2) };`;
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about: 'long falls land on the ground, never through it, anywhere on the island',
   async run(t: T) {
     const g = await t.open({ name: 'faller', size: [480, 300] });

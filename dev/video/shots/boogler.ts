@@ -28,6 +28,7 @@ const pick = (g: ClipGame, re: RegExp) =>
   );
 
 export default {
+  island: true,
   about: 'talk to The Boogler and give a present, walk off mid-talk, ride him and get launched',
   async run(c) {
     const g = await c.open({ room: ROOM, hud: 'play', init: `(${seed})('${ROOM}')` });

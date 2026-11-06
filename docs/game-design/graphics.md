@@ -120,13 +120,9 @@
   Explicit Graphics bloom overrides survive look selection, including Neutral. A saved bloom-on choice uses
   the same prepared comparison graph as bloom-off. Graphics meter-off holds exposure and skips meter work;
   Looks exposure lock independently freezes adaptation. Neither control selects the other tool's settings.
-- **Opt-in classic tone comparison.** Add `tone=neutral`, `tone=agx`, `tone=agx-sat` or `tone=aces` to classic.
-  A lazy module uses the archived demo's metered exposure with fixed middle-grey-matched trims (1 / 0.771116 /
-  0.771116 / 0.729587). AgX retains that contrast/saturation look; AgX-sat adds up to 30% chroma,
-  fading the extra lift out in highlights. ACES uses Three.js's filmic curve. All four share the existing output
-  pass; the meter adds two tiny draws. Absent or invalid flags leave classic's original Neutral appearance
-  unchanged. Production water ignores `tone=` and uses its own post owner; use Looks for comparisons there.
-  See the historical [comparison rationale and reproduction](../research/tone-comparison.md).
+- **Tone comparison.** The classic-only `tone=` comparison was removed with classic home (6 November); every route
+  uses the production water's post owner, so use Looks for comparisons. History:
+  [comparison rationale and reproduction](../research/tone-comparison.md).
 - **Files.** [src/render/scene.ts](../../src/render/scene.ts), [src/features/adaptive-res.ts](../../src/features/adaptive-res.ts),
   [src/features/wake-lock.ts](../../src/features/wake-lock.ts);
   rules for drawing things in [src/render/README.md](../../src/render/README.md).
