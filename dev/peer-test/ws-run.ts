@@ -7,8 +7,9 @@ import path from 'node:path';
 import { startWeb, waitFor, ev, snap, seesAll, sleep } from './harness.ts';
 import { freePort } from '../look/lib.ts';
 import { createService, loadConfig } from '../../server/src/server.ts';
-import { RAILWAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
+import { RAILWAY_NS, railwayRoomId, isLineRailwayRoom } from '../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
+import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
 import type { RailwayProbe, RailwayAdapterProbe } from './ws-page.ts';
 
@@ -273,6 +274,7 @@ try {
   // 10. The opted-in namespace uses the same room transport with a different registry and durable receipts.
   // Headless peers have no flights or views: all observed material comes from accepted rules/snapshots.
   for (const railRoom of [`${RAILWAY_NS}-proto-${room}`, railwayRoomId(room)]) {
+    const initialLogs = isLineRailwayRoom(railRoom) ? LINE1_INITIAL[0] : RAILWAY_SUPPLY;
     console.log(`\nRailway namespace: ${railRoom}`);
     const openRail = (name: string, pid: string): Promise<Page> =>
       web.open(name, `room=${railRoom}&server=http://127.0.0.1:${port}&pid=${pid}`);
@@ -319,7 +321,9 @@ try {
       'two railway peers agree on conserved balances',
       (await waitFor(async () => {
         const states = await Promise.all([RA, RB].map(rail));
-        return states.every((s) => s.counts.stock === 2 && s.counts.carry === 2 && s.counts.total === RAILWAY_SUPPLY);
+        return states.every(
+          (s) => s.counts.stock === 2 && s.counts.carry === 2 && s.counts.total === initialLogs + s.counts.produced,
+        );
       })) >= 0,
     );
     railCheck('railway hashes match at common ticks', (await waitFor(() => hashesAgree([RA, RB]))) >= 0);
@@ -329,7 +333,7 @@ try {
       'late railway snapshot contains exact stock and carry',
       (await waitFor(async () => {
         const s = await rail(RC);
-        return s.counts.stock === 2 && s.counts.carry === 2 && s.counts.total === RAILWAY_SUPPLY;
+        return s.counts.stock === 2 && s.counts.carry === 2 && s.counts.total === initialLogs + s.counts.produced;
       })) >= 0,
     );
     const RA2 = await openRail('RA2', 'raila');
@@ -351,7 +355,7 @@ try {
     railCheck(
       'restored progress and persistent carry are exact',
       (await Promise.all([RA2, RB, RC].map(rail))).every(
-        (s) => s.counts.stock === 2 && s.counts.carry === 2 && s.counts.total === RAILWAY_SUPPLY,
+        (s) => s.counts.stock === 2 && s.counts.carry === 2 && s.counts.total === initialLogs + s.counts.produced,
       ),
     );
     const epochRestored = await openRailSession(RA2);
@@ -494,16 +498,23 @@ try {
         'final-piece race leaves seven carried logs and one funded bill',
         (await waitFor(async () =>
           (await Promise.all([RA2, RB, RC].map(rail))).every(
-            (s) => s.counts.carry === 7 && s.counts.delivered === 24 && s.counts.total === RAILWAY_SUPPLY,
+            (s) =>
+              s.counts.carry === 7 &&
+              s.counts.delivered === RAILWAY_T1.bill &&
+              s.counts.total === initialLogs + s.counts.produced,
           ),
         )) >= 0,
       );
       railCheck(
-        'production peers finish T1 exactly once',
+        'production peers finish T1 exactly once and open T2',
         (await waitFor(
           async () =>
             (await Promise.all([RA2, RB, RC].map(rail))).every(
-              (s) => s.counts.completion === 1 && s.counts.used === 24 && s.phase === 'done',
+              (s) =>
+                s.counts.completion === 1 &&
+                s.counts.used === RAILWAY_T1.bill &&
+                s.phase === 'idle' &&
+                s.activeStation === 1,
             ),
           15000,
         )) >= 0,
@@ -600,7 +611,7 @@ try {
         s.ready &&
         s.carry === harvested &&
         s.counts.source === beforeBurst.state.counts.source - harvested &&
-        s.counts.total === RAILWAY_SUPPLY
+        s.counts.total === LINE1_INITIAL[0] + s.counts.produced
       );
     })) >= 0,
     JSON.stringify(await burstResults(AA, incoming.state.epoch, incoming.state.next, 4)),
@@ -675,7 +686,7 @@ try {
             p.state.pending === 0 &&
             p.state.counts.stock === deposited &&
             p.state.counts.carry === 8 - deposited &&
-            p.state.counts.total === RAILWAY_SUPPLY,
+            p.state.counts.total === LINE1_INITIAL[0] + p.state.counts.produced,
         )
       );
     })) >= 0,
