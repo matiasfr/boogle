@@ -12,10 +12,10 @@ import { frameBesideLine, stationColliders, stationStockCollider, OUT } from '..
 import { RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_AXE_STAND, LINE1_JUMP_DEVICE } from '../../src/sim/railway-line-layout.ts';
 import { H } from '../../src/proto/place/terrain.ts';
-import { panelPose, panelEase, trackPanels, MAX_PANEL_LENGTH } from '../../src/proto/place/track-panels.ts';
+import { panelPose, panelEase, trackPanels, carriedPiece, MAX_PANEL_LENGTH } from '../../src/proto/place/track-panels.ts';
 import { TREE_SOURCES } from '../../src/proto/place/tree-sources.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
-import { boxAt, place, type Box } from '../../src/proto/net/box-plan.ts';
+import { boxAt, place } from '../../src/proto/net/box-plan.ts';
 import { merged } from '../../src/proto/place/part-geometry.ts';
 import { T1_CRATE_PARTS } from '../../src/render/t1-reward-parts.ts';
 import { PILLARS, PADS, DEVICES, p1LipClear } from '../../src/proto/place/tech-layout.ts';
@@ -24,7 +24,7 @@ export async function checkMachineClearance() {
   const material = () => new THREE.MeshBasicNodeMaterial();
   const panels = sourceModule<typeof import('../../src/proto/place/machine-panels.ts')>(
     fs.readFileSync('src/proto/place/machine-panels.ts', 'utf8'),
-    { THREE, material, merged, panelPose, panelEase, grainWarmVertices: () => {} },
+    { THREE, carriedPiece, panelPose, panelEase },
   );
   const model = sourceModule<typeof import('../../src/proto/place/machine-model.ts')>(
     fs.readFileSync('src/proto/place/machine-model.ts', 'utf8'),
@@ -52,7 +52,13 @@ export async function checkMachineClearance() {
       mesh.applyMatrix4(new THREE.Matrix4().fromArray(node.getWorldMatrix()));
       source.add(mesh);
     }
-  const assembly = model.machineModel(new THREE.Object3D(), new THREE.Object3D(), new THREE.Object3D());
+  const stageRail = new THREE.BoxGeometry(0.1, 0.12, 3.05).translate(0, 0.06, 0);
+  const assembly = model.machineModel(
+    new THREE.Object3D(),
+    new THREE.Object3D(),
+    new THREE.Object3D(),
+    (n) => new THREE.InstancedMesh(stageRail, material(), n),
+  );
   assembly.install(source);
   const [power, deck] = assembly.cars.map((body, i) => {
     const frame = new THREE.Group();
@@ -64,14 +70,6 @@ export async function checkMachineClearance() {
   root.add(power!, deck!);
   const rig = assembly.panelRig;
   deck!.add(rig.root);
-  const magazine = panels.panelMagazine(12);
-  const rack = Array.from({ length: 12 }, () => {
-    const m = new THREE.Mesh(magazine.geometry, material());
-    rig.root.add(m);
-    return m;
-  });
-  const payload = new THREE.Mesh<THREE.BufferGeometry>(new THREE.BoxGeometry(2.3, 0.12, 1), material());
-  rig.payload.add(payload);
   const mat = new THREE.Matrix4();
   const unit = new THREE.Box3(new THREE.Vector3(-0.5, 0, -0.5), new THREE.Vector3(0.5, 1, 0.5));
   const obstacles: { id: string; box: THREE.Box3; local: THREE.Box3; inverse: THREE.Matrix4 }[] = [];
@@ -392,7 +390,6 @@ export async function checkMachineClearance() {
     for (const id of prior.keys()) if (!seen.has(id)) prior.delete(id);
   }
   const trackPoint = { x: 0, z: 0, ux: 0, uz: 1 };
-  let trackBoxes: Box[] = [];
   const trackFile = 'src/proto/place/rail.ts';
   const buildTrack = sourceFunction<typeof import('../../src/proto/place/rail.ts').buildTrack>(
     trackFile,
@@ -408,79 +405,58 @@ export async function checkMachineClearance() {
       H,
       place,
       trackPanels,
+      carriedPiece,
       TOP: sourceFunction(trackFile, 'TOP', {}),
       DECK_W: sourceFunction(trackFile, 'DECK_W', {}),
       box: sourceFunction('src/proto/net/boxes.ts', 'box', { boxAt, groundHeight: H }),
-      dropSet: (boxes: Box[]) => {
-        trackBoxes = boxes;
-        return {};
-      },
+      dropSet: () => ({}),
       lookTrack: () => ({}),
     },
   );
   const track = buildTrack(line, () => {});
-  const payloadGeometry = track.panels.map((_, index) => {
-    // Bound the real curved sleeper/plank/rail assembly, not an idealized straight slab.
-    const inverse = track.panelFrame(index, new THREE.Matrix4()).invert();
-    const vertices: number[] = [];
-    for (const k of track.panelPieces[index]!) {
-      if (!['rail', 'sleeper', 'plank'].includes(track.kinds[k]!)) continue;
-      const b = trackBoxes[k]!;
-      const transform = inverse
-        .clone()
-        .multiply(new THREE.Matrix4().makeTranslation(b.x, b.y, b.z))
-        .multiply(b.local);
-      const geometry = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0).toNonIndexed().applyMatrix4(transform);
-      vertices.push(...geometry.getAttribute('position').array);
-      geometry.dispose();
-    }
-    return new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-  });
   const schedule = trackPanels(line),
-    target = new THREE.Vector3(),
-    rotation = new THREE.Quaternion(),
-    scale = new THREE.Vector3();
+    seat = new THREE.Vector3(),
+    dir = new THREE.Vector3(),
+    start = new THREE.Vector3(),
+    toRig = new THREE.Matrix4();
+  const lengths = schedule.map((p) => p.to - p.from);
   function at(s: number) {
     poseCar(deck!, s);
     poseCar(power!, s + model.MACHINE_GAP);
     assembly.update(0);
     root.updateWorldMatrix(true, true);
   }
-  rack.forEach((m, i) => {
-    panels.panelSlot(i, m.position);
-    m.scale.z = MAX_PANEL_LENGTH;
-    m.name = 'stored-panel-' + i;
-  });
-  payload.visible = false;
   at(line.stations[0]!.s + 2.4);
-  rig.pose(1, 12, new THREE.Vector3(), 0, true);
+  rig.drawStack(12, lengths, false);
+  rig.home(1, 12);
   inspect('parked start');
   for (const [index, panel] of schedule.entries()) {
     acceptedPanels = index;
-    prior.delete(payload.uuid);
-    payload.geometry = payloadGeometry[index]!;
     const stage = line.stations[panel.stage]!;
-    const centre = line.line.len - (panel.from + panel.to) / 2;
-    lineAt(line.line, centre, P);
-    const panelFrame = new THREE.Matrix4()
-      .makeRotationY(Math.atan2(-P.ux, -P.uz))
-      .setPosition(P.x + ORIGIN.x, railY(line.line, centre), P.z + ORIGIN.z);
+    // The real stack and carried rail pair; falling track pieces are the track's own and are excluded.
+    rig.drawStack(12 - index, lengths.slice(index), true);
     for (let step = 0; step <= 1000; step++) {
       const phase = step / 1000,
         head = line.line.len - (panel.from + (panel.to - panel.from) * phase),
         setback = Math.min(MAX_PANEL_LENGTH + 2.4, 2.4 + stage.s - head);
       at(head + setback);
-      mat.copy(rig.root.matrixWorld).invert().multiply(panelFrame).decompose(target, rotation, scale);
-      rig.pose(phase, 12 - index, target, Math.atan2(mat.elements[8]!, mat.elements[10]!));
-      rack.forEach((m, i) => {
-        // Longest stock in every occupied slot bounds the shorter closure panels too.
-        m.visible = i < 11 - index;
-      });
-      payload.visible = true;
-      payload.name = 'carried-panel';
-      payload.scale.z = 1;
+      toRig.copy(rig.root.matrixWorld).invert();
+      track.seat(index, seat, dir);
+      seat.applyMatrix4(toRig);
+      dir.transformDirection(toRig);
+      track.panelStart(index, start).applyMatrix4(toRig);
+      rig.pose(
+        phase,
+        12 - index,
+        seat,
+        Math.atan2(dir.x, dir.z),
+        Math.asin(Math.max(-1, Math.min(1, dir.y))),
+        start,
+        track.carriedLength(index),
+      );
       inspect('panel ' + index + ' phase ' + phase);
     }
+    rig.drawStack(11 - index, lengths.slice(index + 1), false);
     if (index === schedule.length - 1 || schedule[index + 1]!.stage !== panel.stage) {
       if (index === schedule.length - 1) {
         // Production path.ts enables these only after T3, behind the already passed machine.
@@ -500,16 +476,14 @@ export async function checkMachineClearance() {
       for (let k = 0; k <= 1500; k++) {
         const t = k / 500;
         at(Math.max(head + 2.4, start - t * 5));
-        rig.pose(Math.min(1, t / 0.65), 11 - index, target, 0, true);
-        payload.visible = false;
-        prior.delete(payload.uuid);
+        rig.home(Math.min(1, t / 0.65), 11 - index);
         inspect('return ' + index + ' ' + k);
       }
     }
   }
   for (let s = 32.4; s >= 21.4; s -= 0.01) {
     at(s);
-    rig.pose(1, 0, target, 0, true);
+    rig.home(1, 0);
     inspect('village park ' + s);
   }
   if (!lipPlaced) throw new Error('The completed line did not open its jump-pillar walkway');
@@ -525,6 +499,6 @@ export async function checkMachineClearance() {
     failures: failures.size,
     contacts: [...failures.values()],
     coverage:
-      'Current production T1-T3 route, parked/working/return/village approach; decoded rigid machine with source-driven wheels/rods, whole stored panels and actual curved carried panels against authored buildings, stations/full stock, reward crates, standing trees, rocks, recovery rack, yard props, opening stops, the jump pillar/device and construction-derived lip and path lamps. Local 0.001-phase sampling plus bounded rigid interpolation and a 25 cm envelope. Dynamic players, dropped cargo and falling trees are excluded.',
+      'Current production T1-T3 route, parked/working/return/village approach; decoded rigid machine with source-driven wheels/rods, the rail stack, the carried rail pair and the 17.5 m slewing beam against authored buildings, stations/full stock, reward crates, standing trees, rocks, recovery rack, yard props, opening stops, the jump pillar/device and construction-derived lip and path lamps. Local 0.001-phase sampling plus bounded rigid interpolation and a 25 cm envelope. Dynamic players, dropped cargo and falling trees are excluded.',
   };
 }

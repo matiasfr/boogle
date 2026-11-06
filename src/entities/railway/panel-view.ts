@@ -1,5 +1,4 @@
-// Local panel choreography. Only the verified integer cursor commits track, collision and stock.
-import * as THREE from 'three/webgpu';
+// Local panel choreography (rail.ts layPanel). Only the verified integer cursor commits track, collision and stock.
 import type { RailwayInspection } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 
@@ -14,21 +13,9 @@ export function createRailwayPanelView(
   contact: (end: number) => void,
   owner: OwnedView,
 ) {
-  const rest = new THREE.Matrix4(),
-    local = new THREE.Matrix4();
-  const target = new THREE.Vector3(),
-    rotation = new THREE.Quaternion(),
-    scale = new THREE.Vector3();
   let returning = 1;
-  function pose(index: number, phase: number, stock = state().panelStock) {
-    const rig = machine.panel.panelRig;
-    rig.root.updateWorldMatrix(true, false);
-    track.panelFrame(index, rest);
-    local.copy(rig.root.matrixWorld).invert().multiply(rest);
-    local.decompose(target, rotation, scale);
-    const yaw = Math.atan2(local.elements[8]!, local.elements[10]!);
-    return rig.pose(phase, stock, target, yaw);
-  }
+  const pose = (index: number, phase: number, stock = state().panelStock) =>
+    machine.layPanel(track, index, phase, stock);
   machine.onPanelFrame = (dt) => {
     const current = state(),
       index = track.cursor,
@@ -42,10 +29,10 @@ export function createRailwayPanelView(
       returning = 0;
       // Hold the payload just above contact until accepted time reaches this panel's boundary.
       const phase = Math.max(0, Math.min(0.98, (track.u(head()) - panel.from) / (panel.to - panel.from)));
-      track.presentPanel(index, pose(index, phase));
+      pose(index, phase);
     } else {
       returning = Math.min(1, returning + dt / 0.65);
-      machine.panel.panelRig.pose(returning, current.panelStock, target, 0, true);
+      machine.layHome(returning, current.panelStock);
     }
   };
   owner.cleanup(() => {
