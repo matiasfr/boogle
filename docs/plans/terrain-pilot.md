@@ -65,3 +65,29 @@ still dries. The angular underwater brown boundary was a wetness discontinuity, 
 No water topology change is retained. Preserve protected routes, seven post-stop checks, budgets and the URL flag.
 Capture the same wide and interpreted owner views, the variation wedge, close turf and real-time swash, then inspect
 PNGs and extracted video frames. Final checks, bounded surface audit and solo Place bot precede coordinator review.
+
+## Round 6 — gameplay rationale before the look
+
+**Disposition: proceed within the approved corner; use it as an arrival-side vista and natural boundary.**
+The cove is not a new destination players should seek before town. There is no authored reward here, and the
+pilot's solo-bot detour is traversal evidence, not evidence that the detour belongs in the opening progression.
+The reachable low pocket can remain an optional place to pause by the water; do not add a reward, directed side
+path or climb invitation to justify the art. This serves DESIGN.md 7 and 11: telegraph the real route through form.
+
+Evidence: [island](../game-design/island.md) describes classic home's different coordinates, so its west-cove name
+does not establish Place content. [Shore arrival](../research/shore-arrival.md) calls for a clear inland climb and
+peripheral sea, with optional detours that recover to the route. [Terrain art](../research/terrain-art.md)'s pilot
+puts this headland on the positive-z shoulder beside the climb and explicitly adds no route or required traversal.
+Place's actual landing is world (801,10), y3. Its main path climbs through (813,10), (823,28), (835,32), then bends
+through the cottages to town at (902,9), y18. The nearest authored cosmetic is beyond the pilot, near town at
+(872.5,25.5). The pilot bot deliberately loops around the back to (806,38), then returns to the same climb.
+
+From the arrival path, the player should see a broad, quiet uphill surface leading toward the cottages, with warm
+steep sandstone enclosing the water off to the right. Sand and gentle grass tops say where feet can go; steep
+rock says that climbing the coastal face is not the onward route. Use soft natural coverage borders, not the
+round-five binary green patches. Keep the existing dry physical access and return; no invisible walls.
+
+Owner directions, 5 November: previz is reference rather than a target, and gameplay shapes the environment.
+Combine visible warm sandstone with irregular bedding; fix the cap lighting crease and isolated stone triangle.
+Capture wide, owner interpretation, first arrival-path glimpse and swash; retain budgets, flag, shared surfaces
+and post-stop assertions. Blind route discovery and device play remain owner validation, not bot conclusions.
