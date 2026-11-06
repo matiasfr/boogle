@@ -53,7 +53,7 @@ const FLOP = {
   shiver: 0.05, // m the held body shivers sideways, shrinking over the hold (none with reduced motion)
 };
 const HOLD_CAP_MS = 120;
-const KINDS = ['splat', 'stomp', 'bonk', 'tumble']; // append only: an old tab ignores an index it doesn't know
+const KINDS = ['splat', 'stomp', 'bonk', 'tumble'];
 const remoteSprings = new WeakMap<Remote, FeelProfile>();
 addPresenceField('feelSpring', () => (me.entered ? feelSpringPresence() : null));
 onRemotePresence((remote, presence) => {
@@ -79,11 +79,6 @@ addPresenceField('fl', () =>
 );
 onRemotePresence((r, pr) => {
   const f = pr.fl;
-  // Temporary: same stale-repeat guard as kd in impact.ts (old-build tabs never clear fl). Remove once every tab
-  // runs b0a3a7b or later.
-  const left: number | undefined = Array.isArray(f) ? f[1] : undefined;
-  if (left !== undefined && left === r.flLast) return;
-  r.flLast = left;
   if (Array.isArray(f) && KINDS[f[0]] && Number.isFinite(f[1]) && f[1] > 0 && f[1] <= 2000)
     r.flop = { kind: KINDS[f[0]]!, until: performance.now() + f[1] };
 });
