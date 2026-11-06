@@ -67,10 +67,9 @@ export function launch(scenario: unknown = 'fresh', destination: unknown = 'spaw
   }
   const url = new URL(location.pathname, location.origin);
   const current = q();
-  for (const key of ['water', 'tune', 'dpr', 'prof', 'startup', 'record']) {
+  for (const key of ['tune', 'dpr', 'prof', 'startup', 'record']) {
     const value = current.get(key);
-    if (value && ((key === 'water' && value === 'new') || (key === 'dpr' && value === 'fixed') || value === '1'))
-      url.searchParams.set(key, value);
+    if (value && ((key === 'dpr' && value === 'fixed') || value === '1')) url.searchParams.set(key, value);
   }
   for (const [key, value] of Object.entries({
     dev: '1',
@@ -95,7 +94,6 @@ export function setupLink(destination: string = 'spawn') {
   url.searchParams.set('build', BUILD);
   url.searchParams.set('scenario', scenarioName(fixture().scenario) ? fixture().scenario : 'fresh');
   url.searchParams.set('destination', destinationName(destination) ? destination : 'spawn');
-  if (q().get('water') === 'new') url.searchParams.set('water', 'new');
   if (q().get('tune') === '1') url.searchParams.set('tune', '1');
   return url.href;
 }

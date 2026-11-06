@@ -30,7 +30,7 @@ const value = (key: string, fallback: string) => {
 };
 if (args.includes('--help')) {
   console.log(
-    'npm run cold-start -- [--url URL] [--runs 3] [--mode cold|warm|paired] [--seconds 90] [--query proto=place&water=new] [--video-probe] [--audit] [--direct] [--prepare-only]\nDefault: broker. --direct: outside sandbox only. --prepare-only: copy, identify and sign browser without launching. One priming sample precedes measured pairs. Only exclusive Metal namespaces are cleared. Exit 2 means true-cold proof failed.',
+    'npm run cold-start -- [--url URL] [--runs 3] [--mode cold|warm|paired] [--seconds 90] [--query proto=place] [--video-probe] [--audit] [--direct] [--prepare-only]\nDefault: broker. --direct: outside sandbox only. --prepare-only: copy, identify and sign browser without launching. One priming sample precedes measured pairs. Only exclusive Metal namespaces are cleared. Exit 2 means true-cold proof failed.',
   );
   process.exit(0);
 }
@@ -82,8 +82,7 @@ try {
   }
   const url = new URL(base);
   const local = ['127.0.0.1', 'localhost'].includes(url.hostname);
-  for (const [k, v] of new URLSearchParams(value('--query', url.search || 'proto=place&water=new')))
-    url.searchParams.set(k, v);
+  for (const [k, v] of new URLSearchParams(value('--query', url.search || 'proto=place'))) url.searchParams.set(k, v);
   url.searchParams.set('startup', '1');
   if (url.searchParams.get('proto') !== 'place') throw new Error('Fixed shore view requires proto=place');
   url.searchParams.set('debugcam', '1');

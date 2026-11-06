@@ -73,14 +73,5 @@ teleport(me.body!, ...pos);
 me.body!.velocity.set(0, 0, 0);
 me.yaw = 0;
 setTimeout(() => window.__debugCam!.set(cam, target, shot === 'wide' ? 55 : 50), 300);
-if (q.get('skyBake') === '1') {
-  const { result } = (await import(
-    '/src/debug/sky-bake.ts' as string
-  )) as typeof import('../../../src/debug/sky-bake.ts');
-  console.info('SKY BAKE RESULT ' + JSON.stringify(result));
-  document.querySelectorAll('[style]').forEach((el) => {
-    if (el.textContent?.includes('Measure 5 seconds')) (el as HTMLElement).style.display = 'none';
-  });
-}
 console.info('SKY POSE ' + JSON.stringify({ shot, tod, pos, cam, target }));
 export {};

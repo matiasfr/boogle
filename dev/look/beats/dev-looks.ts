@@ -12,7 +12,7 @@ export default {
   beats: [
     {
       name: 'Dev Looks',
-      query: 'proto=place&water=new&dev=1&shot=pack',
+      query: 'proto=place&dev=1&shot=pack',
       setup: 'dev/look/evals/place-job.ts',
       warm: 3,
       cameras,

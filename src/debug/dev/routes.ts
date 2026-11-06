@@ -4,7 +4,7 @@ import { el, button, note } from './ui.ts';
 function islandLink(island: 'starting' | 'low' | 'home', shore = false) {
   const url = new URL(location.pathname, location.origin);
   const current = new URLSearchParams(location.search);
-  for (const key of ['water', 'tune', 'dpr', 'sky', 'tone', 'tod', 'v']) {
+  for (const key of ['tune', 'dpr', 'sky', 'tone', 'tod', 'v']) {
     const value = current.get(key);
     if (value !== null) url.searchParams.set(key, value);
   }
