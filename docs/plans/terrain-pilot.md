@@ -34,3 +34,20 @@ Compare Ultra Water's locally inventoried `src/scene/terrain.js` with the existi
 film/foam/drying clock and add damp pigment, tide recovery, footprint-faded ripples and film sheen as local settings.
 The three-by-three strata/slope wedge uses `dev/look/beats/terrain-cove.ts`. Keep frozen material comparisons distinct
 from real-time swash capture and solo played-route proof. Owner playtest remains the expansion gate.
+
+## Round 4 — join the toe and clarify the material masses
+
+Owner/coordinator feedback on 5 November requires the separate jutting wedge to become a rounded continuous
+sandstone toe, broader visible colour strata, golden sand, richer turf and readable wet/drying bands. The owner's
+`owner-cove-facet.png` and its written notes identify the toe and dotted edges; smooth previz shots 1 and 3 remain
+design intent. Retain the flag, shared collision/seabed, protected routes and post-stop fixture.
+
+Replace the intersecting wedge/end closure with one connected skin and rounded cap; remove tiny stepping fragments
+and lower the larger rocks into irregular buttresses. Use broad orange/ochre pigment beds with tunable width and
+softness, clean slope coverage and an independent low-elevation sand rule. Retain the demo-derived shared swash
+clock, strengthening drying pigment and filtering sand foam while leaving rock contact to the ocean.
+
+The requested wedge sweeps strata 0.35/0.6/0.9 against band fraction 0.3/0.5/0.7. Capture before/after at the original
+wide camera and a tighter toe view from the same camera station; the supplied owner crop has no recoverable camera
+metadata, so label the latter an interpretation. Re-run the bounded surface audit, seven eight-second stops, solo
+Place bot, counts and checks after final edits. No compatibility work, push or ship; coordinator reviews and merges.

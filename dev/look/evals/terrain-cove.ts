@@ -14,6 +14,7 @@ const reverse = q.get('coveShot') === 'reverse';
 const wide = q.get('coveShot') === 'wide';
 const previz = q.get('coveShot') === 'previz';
 const swash = q.get('coveShot') === 'swash';
+const owner = q.get('coveShot') === 'owner';
 const x = wide ? 801 : reverse ? 814 : 806,
   z = wide ? 10 : reverse ? 46 : q.get('coveWalk') === '1' ? 38 : 40;
 teleport(me.body, x, H(x, z) + 1.2, z);
@@ -25,6 +26,8 @@ setTimeout(() => {
   if (wide) window.__debugCam!.set([775, 9, 16], [806, 3, 43], 62);
   else if (previz) window.__debugCam!.set([775, 6, 16], [806, 3, 43], 62);
   else if (swash) window.__debugCam!.set([795.5, 2.2, 38.5], [802.1, 0.12, 43.3], 55);
+  // Reframe the owner's toe crop from the same wide camera station; original crop has no camera metadata.
+  else if (owner) window.__debugCam!.set([775, 9, 16], [806, 2.4, 43], 28);
   else window.__debugCam!.clear();
 }, 600);
 
