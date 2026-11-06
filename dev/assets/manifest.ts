@@ -7,8 +7,23 @@ export const ROOT = path.resolve(import.meta.dirname, '../..');
 export const SRC = path.join(ROOT, 'assets/src');
 export const OUT = path.join(ROOT, 'assets/built');
 export const MANIFEST = path.join(OUT, 'manifest.json');
-/** Download budgets, not resident GPU budgets. A sidecar may override the per-asset limit. */
-export const BUDGET = { assetKB: 1024, totalKB: 12 * 1024, maxTexture: 1024 };
+/**
+ * Every asset budget, the single source of truth: reference this object, never copy a number.
+ * These are tunable policy numbers (download sizes the owner set on 6 November), not engine limits: a different engine
+ * or a measured device may move them. They are download budgets, not resident GPU budgets.
+ */
+export const BUDGET = {
+  /** What the first frame waits for: assets registered with priority `first` and no `when` (src/render/asset-manifest.ts). */
+  firstLoadKB: 25 * 1024,
+  /** All authored assets together, streamed by priority. */
+  totalKB: 100 * 1024,
+  /** Per asset; a sidecar's `budgetKB` may override it. */
+  assetKB: 4 * 1024,
+  /** Largest texture edge (px) by default. */
+  maxTexture: 1024,
+  /** Largest texture edge a sidecar may raise `maxTexture` to: hero surfaces only. */
+  heroMaxTexture: 2048,
+} as const satisfies Record<string, number>;
 export const SMALL_TEXTURE = 256;
 export type Sidecar = {
   maxTexture?: number;
@@ -50,6 +65,70 @@ export function sourceHash(file: string, name: string, dir = SRC) {
       fs.existsSync(side) ? fs.readFileSync(side) : Buffer.alloc(0),
     ]),
   );
+}
+/** Load priority of each built asset, read from the registrations (`registerAsset` in src/), which are its only owner. */
+export type AssetStage = { priority: 'first' | 'soon' | 'later'; conditional: boolean };
+export function assetStages(srcDir = path.join(ROOT, 'src')): Record<string, AssetStage> {
+  const stages: Record<string, AssetStage> = {};
+  const walk = (dir: string) => {
+    for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, f.name);
+      if (f.isDirectory()) walk(full);
+      else if (f.name.endsWith('.ts') && full !== path.join(srcDir, 'render/asset-manifest.ts'))
+        scan(fs.readFileSync(full, 'utf8'));
+    }
+  };
+  const scan = (text: string) => {
+    if (!text.includes('registerAsset(')) return;
+    const files = new Map<string, string>(); // import identifier -> built asset id
+    for (const m of text.matchAll(/import\s+(\w+)\s+from\s+'[^']*assets\/built\/([\w-]+)\.glb\?url'/g))
+      files.set(m[1]!, m[2]!);
+    for (const m of text.matchAll(/registerAsset\(\{([\s\S]*?)\}\s*\)/g)) {
+      const body = m[1]!;
+      const url = /\burl:\s*(\w+)/.exec(body)?.[1];
+      const priority = /\bpriority:\s*'(first|soon|later)'/.exec(body)?.[1] as AssetStage['priority'] | undefined;
+      const id = url && files.get(url);
+      if (id && priority) stages[id] = { priority, conditional: /\bwhen:/.test(body) };
+    }
+  };
+  walk(srcDir);
+  return stages;
+}
+
+export type BudgetReport = {
+  firstBytes: number;
+  totalBytes: number;
+  /** Built assets no `registerAsset` names: counted in the total only. */
+  unregistered: string[];
+  /** First-priority assets that apply only somewhere (`when`), left out of the first load. */
+  conditionalFirst: string[];
+  flags: string[];
+};
+/** First-load and total use against BUDGET, from output sizes, joined with the registrations' priorities. */
+export function budgetReport(sizes: Record<string, number>, stages = assetStages()): BudgetReport {
+  let firstBytes = 0;
+  let totalBytes = 0;
+  const unregistered: string[] = [];
+  const conditionalFirst: string[] = [];
+  for (const [id, bytes] of Object.entries(sizes)) {
+    totalBytes += bytes;
+    const stage = stages[id];
+    if (!stage) unregistered.push(id);
+    else if (stage.priority === 'first') {
+      if (stage.conditional) conditionalFirst.push(id);
+      else firstBytes += bytes;
+    }
+  }
+  const flags: string[] = [];
+  if (firstBytes > BUDGET.firstLoadKB * 1024)
+    flags.push(`First-load budget exceeded: ${kb(firstBytes)} / ${BUDGET.firstLoadKB} KB`);
+  if (totalBytes > BUDGET.totalKB * 1024)
+    flags.push(`Total download budget exceeded: ${kb(totalBytes)} / ${BUDGET.totalKB} KB`);
+  return { firstBytes, totalBytes, unregistered, conditionalFirst, flags };
+}
+export function budgetSummary(r: BudgetReport) {
+  const mb = (n: number) => (n / 1048576).toFixed(2) + ' MB';
+  return `first load ${mb(r.firstBytes)} / ${mb(BUDGET.firstLoadKB * 1024)}, total ${mb(r.totalBytes)} / ${mb(BUDGET.totalKB * 1024)}`;
 }
 export function readManifest(file = MANIFEST): Manifest {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
@@ -126,6 +205,8 @@ export function assetHealth(expected: Record<string, readonly string[]> = {}): A
       }
     }
     if (bytes > budgetKB * 1024) flags.push(`Download budget exceeded: ${kb(bytes)} / ${budgetKB} KB`);
+    if ((options.maxTexture ?? 0) > BUDGET.heroMaxTexture)
+      flags.push(`Sidecar maxTexture ${options.maxTexture} is over the ${BUDGET.heroMaxTexture} px hero cap`);
     for (const texture of entry.textures) {
       if (Math.max(...texture.size) > (options.maxTexture ?? BUDGET.maxTexture))
         flags.push(`Texture size budget exceeded: ${texture.name}`);

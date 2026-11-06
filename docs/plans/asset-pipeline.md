@@ -19,7 +19,7 @@
 4. **Textures: KTX2 / Basis Universal (`KHR_texture_basisu`) over ~256 px.** ETC1S for colour (base colour,
    emissive) at the smallest size; UASTC + Zstandard for normal, roughness/metal/occlusion and other data maps
    (ETC1S smears their channels). Mipmaps generated at build time. Power-of-two sizes, multiples of 4, max 1024 px
-   unless an asset asks (2048 for a hero only). They stay compressed in GPU memory (ASTC on iPad and Apple GPUs, BC on
+   unless a sidecar raises it (2048, the hero cap, for hero surfaces only). They stay compressed in GPU memory (ASTC on iPad and Apple GPUs, BC on
    desktops): a 1024² map is ~1.4 MB in VRAM instead of ~5.6 MB as RGBA8. Small icons and UI stay PNG/WebP.
 5. **Flat colours as material factors, not textures.** Boogle's look is flat-shaded vertex and material colour; a
    texture is the exception and needs a reason.
@@ -96,11 +96,17 @@ src/render/assets.ts: loadAsset(url) → instance(node) / clip(name, node) / pla
   costs minutes for files that change rarely. Outputs are small (meshopt), the manifest records the source hash, and
   `--check` fails a PR whose source changed without its output. The cost: whoever changes a source needs Blender (and
   `ktx` for textures) on their machine.
-- **Budgets** (in `dev/assets/build.ts`, raised per asset by its sidecar's `budgetKB`): 1 MB per asset, 12 MB for all
-  assets, 1024 px textures. To revisit with the first real era kit and the first character, measured on the iPad.
-  These are defaults, not caps: budgets follow each asset's prominence, and the total becomes a resident limit once
-  loading streams by area ([owner call](../agents/owner-calls.md), 6 November).
-- **Sidecar** (`<name>.json`, optional): `maxTexture`, `simplify` (a ratio, meshoptimizer's simplifier), `budgetKB`,
+- **Budgets** (the one `BUDGET` object in `dev/assets/manifest.ts`; tunable policy numbers, not engine limits, so move
+  them there and nowhere else). Owner decision, 6 November, split by load stage: **25 MB first load** (assets
+  registered with priority `first` and no `when`: what the first frame waits for), **100 MB in all** (streamed by
+  priority), **4 MB per asset** (a sidecar's `budgetKB` may override), **1024 px textures** by default with **2048 px as
+  the hero cap** (`heroMaxTexture`: a sidecar's `maxTexture` may raise one asset's textures up to it; above it the build
+  throws and `--check` flags). The first-load figure joins the built sizes with the priorities that `registerAsset`
+  calls declare in `src/`, which the build reads from source (`assetStages` in `dev/assets/manifest.ts`); a built file
+  nothing registers counts in the total only and `--check` lists it. To revisit measured on the iPad. These are
+  defaults, not caps: budgets follow each asset's prominence, and the total becomes a resident limit once loading
+  streams by area ([owner call](../agents/owner-calls.md), 6 November).
+- **Sidecar** (`<name>.json`, optional): `maxTexture` (up to the hero cap), `simplify` (a ratio, meshoptimizer's simplifier), `budgetKB`,
   and room for a licence line for a bought or downloaded `.glb`.
 - **Dependencies** (dev only): `@gltf-transform/core`, `extensions`, `functions` and `meshoptimizer` (the encoder; the
   same package three's `meshopt_decoder` types already pull in). KTX-Software is a system tool
@@ -174,8 +180,8 @@ average.
    its text)?
 2. **KTX-Software on the Mac** (`brew install ktx-software`): the KTX2 build step is written but unexercised, because
    the first asset needs no textures and `ktx` isn't installed. Install it when the first textured asset comes.
-3. **Budgets**: 1 MB per asset, 12 MB in all, 1024 px textures: right for an M4 iPad? Revisit with the first
-   character.
+3. **Budgets**: 25 MB first load, 100 MB in all, 4 MB per asset, 1024 px textures (2048 for heroes): right for an M4
+   iPad? Revisit with the first character.
 4. **Who models**: Blender scripts by agents for hard-surface kits now; organic shapes (characters, The Boogler) by a
    person or through Blender MCP later?
 5. **First real asset**: the steam wagon (boogle-2-architecture-fit.md suggests it, after its greybox proves the feel)

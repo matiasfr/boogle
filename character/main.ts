@@ -346,7 +346,7 @@ function stats() {
       ? `${formatBytes(e.health.bytes)} GLB / ${e.health.budgetKB} KB budget\nsource hash ${e.health.sourceHash}\noutput hash ${e.health.outHash}`
       : 'Live code · no build/download budget';
   $('stats').textContent =
-    `${s.triangles.toLocaleString()} triangles · ${s.vertices.toLocaleString()} vertices\n${s.materialSlots} material slots · ${s.geometries} geometries\n${build}\n${formatBytes(s.estimatedBytes)} estimated GPU memory\n${formatBytes(s.geometryBytes)} geometry + ${formatBytes(s.textureBytes)} textures\n${s.textures.map((t) => `${t.name}: ${t.width}×${t.height}, ${t.format}, ${formatBytes(t.bytes)} estimated`).join('\n') || 'No textures'}\nsource ${e.source}\nTotal built catalogue ${formatBytes(catalogueTotals.bytes)} / ${catalogueTotals.budgetKB} KB`;
+    `${s.triangles.toLocaleString()} triangles · ${s.vertices.toLocaleString()} vertices\n${s.materialSlots} material slots · ${s.geometries} geometries\n${build}\n${formatBytes(s.estimatedBytes)} estimated GPU memory\n${formatBytes(s.geometryBytes)} geometry + ${formatBytes(s.textureBytes)} textures\n${s.textures.map((t) => `${t.name}: ${t.width}×${t.height}, ${t.format}, ${formatBytes(t.bytes)} estimated`).join('\n') || 'No textures'}\nsource ${e.source}\nFirst load ${formatBytes(catalogueTotals.firstBytes)} / ${catalogueTotals.firstBudgetKB} KB, total built catalogue ${formatBytes(catalogueTotals.bytes)} / ${catalogueTotals.budgetKB} KB`;
   const card = assetsById.get(selectedId());
   if (card) {
     card.triangles = s.triangles;

@@ -1,6 +1,6 @@
 // The standalone asset stage gets build facts without importing build.ts (which executes the build CLI).
 import type { Plugin } from 'vite';
-import { assetHealth, BUDGET, SRC, OUT, MANIFEST } from './manifest.ts';
+import { assetHealth, budgetReport, BUDGET, SRC, OUT, MANIFEST } from './manifest.ts';
 import { descriptors } from '../../character/descriptors.ts';
 
 const CATALOGUE_ID = 'virtual:asset-catalogue';
@@ -17,11 +17,15 @@ export function assetCatalogue(): Plugin {
         Object.entries(descriptors).map(([name, d]) => [name, d.expectedClips ?? []]),
       );
       const entries = assetHealth(expected);
-      const bytes = entries.reduce((total, entry) => total + (entry.available ? entry.bytes : 0), 0);
+      const report = budgetReport(
+        Object.fromEntries(entries.filter((entry) => entry.available).map((entry) => [entry.id, entry.bytes])),
+      );
       const totals = {
-        bytes,
+        bytes: report.totalBytes,
         budgetKB: BUDGET.totalKB,
-        flags: bytes > BUDGET.totalKB * 1024 ? ['Total download budget exceeded'] : [],
+        firstBytes: report.firstBytes,
+        firstBudgetKB: BUDGET.firstLoadKB,
+        flags: report.flags,
       };
       this.addWatchFile(MANIFEST);
       return `export const entries = ${JSON.stringify(entries)}; export const totals = ${JSON.stringify(totals)};`;

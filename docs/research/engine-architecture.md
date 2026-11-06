@@ -293,7 +293,7 @@ None is a finding until its trigger.
 | Owner gate on net, world, sim, server, scripts, `.github`, ESLint config, `package*.json` | `automerge.yml` | CI |
 | Prettier and ESLint per edit | `.claude/hooks/format-lint.ts` | Claude Code only |
 | Types | `npm run typecheck` | `npm run check` only, **not CI** |
-| Asset sizes (1 MB each, 12 MB total, 1024 px) | `dev/assets/build.ts:31` | `npm run check` only, **not CI** |
+| Asset sizes (4 MB each, 25 MB first load, 100 MB total, 1024 px; 2048 hero) | `dev/assets/build.ts:31` | `npm run check` only, **not CI** |
 | Hook objects, 3.2 KB/frame ([game-loop.md](../plans/game-loop.md) still says 3.6) | `dev/look/hitches.ts:54` | By hand |
 | Boot budgets | `dev/look/boot-time.ts`, table in `docs/plans/loading.md`; no exit code yet | By hand |
 
