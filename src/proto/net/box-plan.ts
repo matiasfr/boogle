@@ -106,7 +106,28 @@ export function partMesh(boxes: Box[], material: THREE.Material) {
   return guardInstances(mesh, 'box plan');
 }
 
-const tm = new THREE.Matrix4();
+const tq = new THREE.Quaternion(),
+  tp = new THREE.Vector3(),
+  ts = new THREE.Vector3(),
+  tm = new THREE.Matrix4();
+const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+/** Draws a set with each box grown to f(k) of its height, from the ground up (0 hides it). */
+export function draw(
+  set: { boxes: Pick<Box, 'x' | 'y' | 'z' | 'local'>[]; mesh: THREE.InstancedMesh },
+  f: (k: number) => number,
+): void {
+  let any = false;
+  set.boxes.forEach((b, k) => {
+    const g = f(k);
+    if (g <= 0) return set.mesh.setMatrixAt(k, ZERO);
+    any = true;
+    tm.compose(tp.set(b.x, b.y, b.z), tq.identity(), ts.set(1, Math.max(1e-3, g), 1)).multiply(b.local);
+    set.mesh.setMatrixAt(k, tm);
+  });
+  set.mesh.instanceMatrix.needsUpdate = true;
+  set.mesh.visible = any;
+}
+
 /** The local matrix of a box w x h x d whose base middle is at (dx, dy, dz) in a frame turned by yaw, then tilted. */
 export function place(
   dx: number,

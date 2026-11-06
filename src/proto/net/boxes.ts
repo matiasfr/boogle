@@ -1,20 +1,16 @@
 // Greybox boxes for ?proto=net: the shape of src/proto/era/blocks.ts drawn in one instanced mesh per set, each box grown
-// from the ground by a fraction. (The builder is the era swap's; src/proto/era/index.ts runs that whole prototype on
-// import, so it isn't shared.)
+// from the ground by a fraction. Pure transforms/drawing are shared with the era swap through box-plan.ts.
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
 import { groundHeight } from '../../island/terrain.ts';
 import type { Block } from '../era/blocks.ts';
 
 export type Smoke = { x: number; y: number; z: number };
-import { place, boxAt, partMesh, type Box } from './box-plan.ts';
-export { place, type Box } from './box-plan.ts';
+import { place, boxAt, partMesh, draw, type Box } from './box-plan.ts';
+export { place, draw, type Box } from './box-plan.ts';
 
 const Y = new THREE.Vector3(0, 1, 0);
-const tq = new THREE.Quaternion(),
-  tp = new THREE.Vector3(),
-  ts = new THREE.Vector3(),
-  tm = new THREE.Matrix4();
+const tp = new THREE.Vector3();
 
 export const box = (x: number, z: number, local: THREE.Matrix4, color: string, tall = false, pop = 0.7): Box =>
   boxAt(x, groundHeight(x, z), z, local, color, tall, pop);
@@ -68,18 +64,4 @@ export function makeSet(boxes: Box[]): BoxSet {
   const set = { boxes, mesh };
   draw(set, () => 0);
   return set;
-}
-const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
-/** Draws a set with each box grown to f(k) of its height, from the ground up (0 hides it). */
-export function draw(set: BoxSet, f: (k: number) => number): void {
-  let any = false;
-  set.boxes.forEach((b, k) => {
-    const g = f(k);
-    if (g <= 0) return set.mesh.setMatrixAt(k, ZERO);
-    any = true;
-    tm.compose(tp.set(b.x, b.y, b.z), tq.identity(), ts.set(1, Math.max(1e-3, g), 1)).multiply(b.local);
-    set.mesh.setMatrixAt(k, tm);
-  });
-  set.mesh.instanceMatrix.needsUpdate = true;
-  set.mesh.visible = any;
 }

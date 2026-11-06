@@ -85,3 +85,6 @@ timetable (`src/proto/net/timetable.ts`), because its timetable moves the wagon 
 colliders: you walk through them. `&v=depot` (`src/proto/net/depot.ts`) adds no lockstep either: bundles away from the
 village move to the depots through `haulHooks.moved`, as in the haul prototype's wave, so a load is six `src.take`s at
 once. The crates are Local, and a reload finds a standing depot stocked.
+
+Era and Net share the pure box placement and growth-drawing functions in `src/proto/net/box-plan.ts`.
+Their building recipes, geometry, timing and state owners remain separate.
