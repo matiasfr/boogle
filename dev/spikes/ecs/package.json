@@ -1,0 +1,14 @@
+{
+  "name": "boogle-ecs-spike",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway entity-system spike (docs/research/ecs-evaluation.md). Not wired into the game; it has its own deps.",
+  "scripts": {
+    "node": "node bench-node.ts",
+    "browser": "node bench-browser.ts"
+  },
+  "dependencies": {
+    "bitecs": "0.4.0",
+    "koota": "0.6.6"
+  }
+}

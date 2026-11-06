@@ -1,0 +1,6 @@
+{
+  // Type-checks the spike alone, after `npm install` here: npx tsc -p dev/spikes/ecs
+  "extends": "../../../tsconfig.json",
+  "include": ["*.ts"],
+  "exclude": []
+}
