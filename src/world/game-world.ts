@@ -12,5 +12,8 @@ import { install as installRailway } from './rules/railway.ts';
 export const land: Land = { n: GRID_RES, layout: { trees: [], perches: [] } };
 export const rules = installRules({ world, registerOp, registerState, onTick, onApplied, onSnapshot }, land);
 export const railwayApi = productionRailway
-  ? installRailway({ world, registerOp, registerState, onTick, onApplied, onSnapshot }, land, rules, { playable: true })
+  ? installRailway({ world, registerOp, registerState, onTick, onApplied, onSnapshot }, land, rules, {
+      playable: true,
+      line1: true,
+    })
   : null;

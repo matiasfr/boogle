@@ -5,9 +5,10 @@ import { createWsRoom, type Room } from '../../src/net/ws-room.ts';
 import { createSync } from '../../src/world/sync.ts';
 import { installRules } from '../../src/world/rules/index.ts';
 import { installRailwayRules, installPlayableRailwayRules } from '../../src/world/rules/railway-index.ts';
-import { isRailwayRoom, isPlayableRailwayRoom } from '../../src/world/railway-namespace.ts';
+import { isRailwayRoom, isPlayableRailwayRoom, isLineRailwayRoom } from '../../src/world/railway-namespace.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
+import { railActiveStation } from '../../src/sim/railway-line.ts';
 import type { RailAction, RailAccount, railCounts, railPhase } from '../../src/sim/railway.ts';
 import {
   createRailwayAdapter,
@@ -22,6 +23,7 @@ export type RailwayProbe = {
   tick: number;
   ready: boolean;
   phase: ReturnType<typeof railPhase>;
+  activeStation: number;
   counts: ReturnType<typeof railCounts>;
   accounts: RailAccount[];
   messages: Record<string, unknown>[];
@@ -162,7 +164,9 @@ function startWorld(room: Room) {
   };
   const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
   const roomId = q.get('room') ?? '';
-  const playable = isPlayableRailwayRoom(roomId) ? installPlayableRailwayRules(w, land) : null;
+  const playable = isPlayableRailwayRoom(roomId)
+    ? installPlayableRailwayRules(w, land, { line1: isLineRailwayRoom(roomId) })
+    : null;
   const railway = playable ?? (isRailwayRoom(roomId) ? installRailwayRules(w, land) : null);
   const rules = railway ? null : installRules(w, land);
   const adapter =
@@ -180,13 +184,27 @@ function startWorld(room: Room) {
         case 'rail.chop':
           return adapter.chop(intent.id, intent.yaw, intent.collapsed);
         case 'rail.deposit':
-          return adapter.deposit(intent.n);
+          return adapter.deposit(intent.n, intent.kind);
         case 'rail.drop':
-          return intent.y !== undefined && adapter.drop(intent.x, intent.y, intent.z, intent.n);
+          return intent.y !== undefined && adapter.drop(intent.x, intent.y, intent.z, intent.n, intent.kind);
         case 'rail.take':
           return adapter.take(intent.id);
         case 'rail.rackTake':
-          return adapter.rackTake();
+          return adapter.rackTake(intent.kind);
+        case 'rail.mine':
+          return adapter.mine(intent.id);
+        case 'rail.axe':
+          return adapter.openAxe();
+        case 'rail.jump':
+          return adapter.claimJump();
+        case 'rail.beamChop':
+          return adapter.beamChop();
+        case 'rail.beamTake':
+          return adapter.beamTake(intent.revision);
+        case 'rail.beamDrop':
+          return adapter.beamDrop(intent.x, intent.y, intent.z, intent.revision);
+        case 'rail.beamDeposit':
+          return adapter.beamDeposit(intent.revision);
       }
     };
   }
@@ -215,6 +233,7 @@ function startWorld(room: Room) {
       tick: w.world.tick,
       ready: w.worldStatus().ready,
       phase: railway.railway.phase(),
+      activeStation: railActiveStation(railway.railway.railway),
       counts: railway.railway.counts(),
       accounts: railway.railway.railway.accounts.map((a) => ({ ...a })),
       messages: T.railMessages.map((m) => ({ ...m })),

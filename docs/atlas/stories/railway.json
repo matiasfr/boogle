@@ -1,36 +1,85 @@
 {
   "id": "railway",
-  "title": "Your logs become the first track",
+  "title": "Your materials become the first path",
   "kind": "lock",
   "order": 45,
   "steps": [
     {
-      "hl": ["you.world", "fr.world"],
-      "text": "Aged drops move to the courtyard's chosen rack model without losing a unit. Slow shoots, saplings and young trees preserve their pale stump, including in view; mature renewal is counted accepted production away from finished track. Existing room tuning controls the waiting intervals. Frozen version-0 recovery verifies before the bounded supply upgrade; hash guards stay intact.",
-      "cite": [{ "file": "src/sim/railway-supply.ts" }, { "file": "server/test/railway-supply-migration.test.ts" }]
-    },
-    {
       "hl": ["you.features"],
-      "text": "The T1 view offers accepted carry. The adapter reserves it locally while a correlated request is pending; no flight spends inventory.",
-      "cite": [{ "file": "src/adapters/railway.ts" }, { "file": "src/entities/railway/view.ts" }]
+      "text": "The same eight back slots hold logs and stone. Accepted tree and rock harvests fill them; Local swings and flights never spend or create supply.",
+      "cite": [
+        {
+          "file": "src/adapters/railway.ts"
+        },
+        {
+          "file": "src/entities/railway/sources.ts"
+        }
+      ]
     },
     {
       "go": [["you.features", "you.world"]],
-      "text": "The server validates reach and cadence, orders the request and durably stores its stamped tail before publishing acceptance.",
-      "cite": [{ "file": "server/src/host/world-host.ts" }, { "file": "server/src/host/railway-requests.ts" }]
+      "text": "The host validates identity, reach and cadence, then durably stores an ordered request before publishing its acceptance.",
+      "cite": [
+        {
+          "file": "server/src/host/world-host.ts"
+        },
+        {
+          "file": "server/src/host/railway-requests.ts"
+        }
+      ]
     },
     {
       "hl": ["you.world", "fr.world"],
-      "text": "Both worlds apply the same bounded transfer. The final log allocates 24 once and starts one tick-based feed/lay job. Retrying cannot spend again.",
-      "cite": [{ "file": "src/world/rules/railway.ts" }, { "file": "src/sim/railway.ts" }]
+      "text": "Both worlds fund stations in order: T1 needs 24 logs; T2 needs 32 logs and 8 stone; T3 needs 40 logs and one beam. Each funded job captures its timing. Retrying cannot spend twice.",
+      "cite": [
+        {
+          "file": "src/sim/railway-line-layout.ts"
+        },
+        {
+          "file": "src/sim/railway-line.ts"
+        }
+      ]
+    },
+    {
+      "hl": ["you.world", "you.features"],
+      "text": "Only T3’s accepted 40 logs expose the shared proper axe. Twelve proper hits on the great tree produce one revision-fenced beam. An empty back claims it; optional help never creates another item.",
+      "cite": [
+        {
+          "file": "src/sim/railway-line.ts"
+        },
+        {
+          "file": "src/entities/railway/line-cargo.ts"
+        }
+      ]
     },
     {
       "hl": ["you.features"],
-      "text": "Owned views animate accepted material and build solid track. A reconnect reconstructs the verified phase quietly; the cosmetic claim is an independent atomic personal write.",
+      "text": "T1 and T2 award separate personal cosmetics under the same atomic profile lock. Existing T1 claims remain valid. Shared axe and optional jump acquisition are world facts, not cosmetic claims.",
       "cite": [
-        { "file": "src/entities/railway/view.ts" },
-        { "file": "src/entities/railway/reward.ts" },
-        { "file": "src/railway-profile-browser.ts" }
+        {
+          "file": "src/entities/railway/reward.ts"
+        },
+        {
+          "file": "src/railway-profile.ts"
+        },
+        {
+          "file": "src/entities/railway/tools.ts"
+        }
+      ]
+    },
+    {
+      "hl": ["you.features"],
+      "text": "Owned views rebuild accepted stock, solid track, the completed path’s lamps and commuters quietly. The machine waits by the village; walking home needs no optional jump, forge or train.",
+      "cite": [
+        {
+          "file": "src/entities/railway/view.ts"
+        },
+        {
+          "file": "src/entities/railway/path.ts"
+        },
+        {
+          "file": "src/entities/railway/opening-view.ts"
+        }
       ]
     }
   ]

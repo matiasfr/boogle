@@ -74,7 +74,7 @@ test('a save with retired keys (soft cap, spill) still loads, without them', () 
   assert.equal(Object.keys(serializeTune(u).values).length, TUNABLES.length);
 });
 
-test('only the exact published main v1 profile gains the two supply defaults', () => {
+test('only the exact published main v1 profile gains the current shared defaults', () => {
   const previous = {
     catalog: 'e0d64927',
     revision: 17,
@@ -91,7 +91,20 @@ test('only the exact published main v1 profile gains the two supply defaults', (
   );
   assert.equal(upgraded.catalog, TUNE_CATALOG);
   assert.equal(upgraded.revision, previous.revision);
-  assert.deepEqual(upgraded.values, { ...previous.values, railRegrowMinutes: 31, railRecoveryMinutes: 21 });
+  assert.deepEqual(upgraded.values, {
+    ...previous.values,
+    railRegrowMinutes: 31,
+    railRecoveryMinutes: 21,
+    railFeedMs: 70,
+    railLaySpeed: 50,
+    railDepartureTicks: 20,
+    railBeamSoloSpeed: 220,
+    railBeamHelpSpeed: 500,
+    railJumpImpulse: 680,
+    railJumpTurn: 70,
+    railJumpSteer: 2500,
+    railJumpApexSpeed: 160,
+  });
   const current = createTune();
   loadTune(current, upgraded);
   assert.equal(current.revision, 17);

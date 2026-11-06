@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import * as esbuild from 'esbuild';
 import type { BrowserContext, Page } from 'playwright';
 import { freePort, sleep } from '../look/lib.ts';
+import { acquireBotSlot } from '../look/bot-queue.ts';
 
 export { sleep };
 const require = createRequire(import.meta.url);
@@ -85,7 +86,16 @@ export async function startWeb(entry: string) {
       }
     })
     .listen(webPort, '127.0.0.1');
-  const browser = await chromium.launch();
+  const lease = await acquireBotSlot().catch((error: unknown) => {
+    web.close();
+    throw error;
+  });
+  const browser = await chromium.launch().catch((error: unknown) => {
+    lease.release();
+    web.close();
+    throw error;
+  });
+  browser.once('disconnected', lease.release);
   async function open(name: string, query: string): Promise<RoomPage> {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();

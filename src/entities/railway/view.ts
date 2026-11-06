@@ -1,7 +1,9 @@
-// Accepted T1 state drives an owned view of the existing frame, feeder, machine and solid track.
+// One accepted line, one machine. Flights and rigid poses display the ledger and never transfer material.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
 import { RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
+import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
+import { lineFeed, lineSchedule, lineLayDistance } from '../../sim/railway-line-schedule.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
 import { createWakePresentation } from '../../render/wake-presentation.ts';
 import { me } from '../../player/player.ts';
@@ -12,6 +14,8 @@ import { createRailwaySources } from './sources.ts';
 import { createRailwayReward } from './reward.ts';
 import { createRailwayArrival } from './arrival.ts';
 import { createRailwayOpening } from './opening-view.ts';
+import { createRailwayPath } from './path.ts';
+import { createRailwayPanelView } from './panel-view.ts';
 
 export async function createRailwayView(adapter: RailwayAdapter) {
   const owner = createOwnedView();
@@ -33,15 +37,13 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     import('../../proto/place/look.ts'),
   ]);
   land.buildLand(owner);
-  const line = layout.LINKS[0]!,
-    spec = line.stations[0]!;
-  const depositSeconds = T1.depositTicks / 10;
-  const feedSeconds = T1.feedTicks / 10;
-  const distance = (T1.fromCm - T1.toCm) / 100;
-  const machine = rail.buildMachine(owner, 'continuous');
-  const track = rail.buildTrack(line, (_k, kind, x, y, z) => rail.thud(machine, kind, x, y, z), owner, 'continuous');
-  const station = stations.buildStation(spec, stations.frameBesideLine(spec, line.line, line.dir), owner);
-  machine.at(line.line, T1.fromCm / 100, line.dir);
+  const line = layout.LINKS[0]!;
+  const machine = rail.buildMachine(owner, 'panels');
+  const track = rail.buildTrack(line, (_k, kind, x, y, z) => rail.thud(machine, kind, x, y, z), owner, 'panels');
+  const frames = line.stations.map((spec) =>
+    stations.buildStation(spec, stations.frameBesideLine(spec, line.line, line.dir), owner),
+  );
+  machine.at(line.line, T1.fromCm / 100, line.dir, 2.4);
   machine.snap();
   machine.setRack(T1.starterRails);
   track.snapTo(track.u(T1.fromCm / 100));
@@ -54,34 +56,92 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   );
   const sources = await createRailwaySources(adapter, owner);
   if (look.LOOK.contact) kit.installContact([machine.flatbed, machine.loco], sources.inspect(), owner);
-  const reward = await createRailwayReward(adapter, owner, (out) => {
-    out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z);
-  });
+  const reward = await createRailwayReward(adapter, owner, (out) =>
+    out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z),
+  );
   const wake = createWakePresentation(machine, owner, { fanfare: sounds.fanfare, dustRing: pieces.dustRing });
+  const path = await createRailwayPath(owner);
   let state = adapter.inspect();
+  const opened = () => state.stations[2]?.completion === 1;
   const opening = await createRailwayOpening(owner, {
     machine: () => ({ mesh: machine.flatbed.mesh, top: machine.flatbed.spec.top }),
     traffic: [machine.loco, machine.flatbed],
-    station: () => station,
+    station: () => frames[state.activeStation]!,
     busy: () => state.phase === 'feeding' || state.phase === 'laying',
     awake: () => state.phase !== 'asleep' && state.phase !== 'waking',
     hush: () => reward.inspect().busy,
+    pathOpen: opened,
   });
-  let rebuild = true;
-  let shownTick = -1,
-    sinceTick = 0;
-  let feedLaunched = 0;
-  let visualHead = T1.fromCm / 100;
-  let targetHead = visualHead;
-  let unload = 0;
-  let wasReady = false;
-  let deposits: { active: () => boolean; n: number }[] = [];
+  let rebuild = true,
+    shownTick = -1,
+    sinceTick = 0,
+    visualHead = T1.fromCm / 100,
+    targetHead = visualHead,
+    setback = 2.4;
+  let unload = 0,
+    wasReady = false,
+    liveWake = false,
+    previousPhase = state.phase,
+    previousOpen = false;
+  const feedLaunched = [0, 0, 0];
+  let deposits: { active: () => boolean; station: number; kind: number }[] = [];
   const from = new THREE.Vector3(),
     to = new THREE.Vector3(),
     wakeAt = new THREE.Vector3();
-  let liveWake = false;
-  let previousPhase = state.phase;
-
+  const jobElapsed = (index: number) => {
+    const job = state.stations[index]!;
+    return (
+      job.elapsed +
+      (index === state.activeStation && job.start >= 0 && !job.completion && state.ready ? sinceTick * 10 : 0)
+    );
+  };
+  const head = () => {
+    if (opened()) return 19; // Waiting point on the pre-existing village stub; no forge turn or train activation.
+    const spec = LINE1_STATIONS[state.activeStation]!,
+      job = state.stations[state.activeStation]!;
+    if (job.completion) return spec.toCm / 100;
+    if (job.start < 0) return spec.fromCm / 100;
+    const schedule = lineSchedule(spec, job.timing);
+    return (
+      (spec.fromCm -
+        Math.min(
+          spec.fromCm - spec.toCm,
+          lineLayDistance(jobElapsed(state.activeStation) - schedule.depositTicks - schedule.feedTicks, job.timing),
+        )) /
+      100
+    );
+  };
+  const panels = createRailwayPanelView(
+    machine,
+    track,
+    () => state,
+    () => visualHead,
+    (end) => {
+      const p = rail.besideLine(line.line, end, 0);
+      clank(p.x, p.z);
+      pieces.dustRing(p.x, layout.railY(line.line, end) + 0.1, p.z, 4, 0.5, 0.12);
+    },
+    owner,
+  );
+  function restoreMotion() {
+    const spec = LINE1_STATIONS[state.activeStation]!,
+      job = state.stations[state.activeStation]!;
+    visualHead = targetHead = head();
+    setback = 2.4;
+    if (state.phase === 'laying') setback = Math.min(machine.F, 2.4 + spec.fromCm / 100 - visualHead);
+    else {
+      const finished = opened() ? job : state.stations[state.activeStation - 1];
+      if (finished?.completion) {
+        const seconds = Math.max(0, state.tick - finished.lastTick) / 10;
+        const speed = finished.timing.cruiseCmPerTick / 10;
+        const parkSeconds = (machine.F - 2.4) / speed;
+        setback = Math.max(2.4, machine.F - speed * seconds);
+        if (opened()) visualHead = Math.max(19, 30 - Math.max(0, seconds - parkSeconds) * layout.TUNE.runSpeed);
+      }
+    }
+    machine.at(line.line, visualHead, line.dir, setback);
+    machine.snap();
+  }
   function accepted(event: RailwayAccepted) {
     state = adapter.inspect();
     if (event.op === 'rail.wake') {
@@ -89,29 +149,35 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       wake.start();
       return;
     }
-    if (event.op !== 'rail.deposit') return;
+    if (event.op !== 'rail.deposit' && event.op !== 'rail.beamDeposit') return;
+    const index = event.op === 'rail.beamDeposit' ? 2 : LINE1_STATIONS.findIndex((spec) => spec.id === event.station);
+    const station = frames[index],
+      job = state.stations[index];
+    if (!station || !job) return;
+    const kind = event.op === 'rail.beamDeposit' ? 2 : (event.kind ?? 0);
     const account = state.accounts.find((row) => row.pid === event.pid);
-    const carried = account?.carry ?? 0;
+    const carried = kind === 1 ? (account?.stone ?? 0) : (account?.carry ?? 0);
+    const current =
+      kind === 1 ? job.stoneStock + job.stoneAllocation + job.stoneUsed : job.stock + job.allocation + job.used;
     for (let n = 0; n < event.accepted; n++) {
       if (!sources.bundleOrigin(event.pid, carried + event.accepted - n - 1, from)) continue;
-      const slot = Math.max(0, state.stock + state.allocation + state.used - event.accepted + n);
+      const slot = Math.max(0, current - event.accepted + n);
       const active = pieces.send(
-        'log',
+        kind === 1 ? 'stone' : 'log',
         from,
-        station.logSlot(slot, to),
+        kind === 1 ? station.stoneAt(slot, to) : kind === 2 ? station.at : station.logSlot(slot, to),
         {
-          dur: 0.32,
+          dur: kind === 2 ? 0.5 : 0.32,
           apex: 0.9,
-          size: [1, 2.2],
+          size: kind === 2 ? [4, 4] : [1, 2.2],
           land: () => {
             sounds.knock(0.7, 1);
             thump(station.x, station.z);
-            pieces.dustRing(station.x, station.y + 0.4, station.z, 2, 0.8, 0.14);
           },
         },
         owner,
       );
-      deposits.push({ active, n: 1 });
+      deposits.push({ active, station: index, kind });
     }
   }
   owner.cleanup(adapter.onAccepted(accepted));
@@ -123,33 +189,52 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   owner.cleanup(() => sources.dispose());
   owner.cleanup(() => reward.dispose());
   owner.cleanup(() => wake.dispose());
-  const snapshot = () => {
+  function snapshot() {
     deposits = [];
     pieces.clearTrips(owner);
     liveWake = false;
     machine.wake(state.phase !== 'asleep' && state.phase !== 'waking', true);
     wake.reset(state.awake < 0 ? -1 : (state.tick - state.awake) / 10);
-    const elapsed = state.elapsed / 10;
-    feedLaunched =
-      elapsed < depositSeconds ? 0 : Math.min(T1.bill, Math.floor((elapsed - depositSeconds) / layout.TUNE.feedS) + 1);
-    visualHead = targetHead =
-      T1.fromCm / 100 - Math.min(distance, Math.max(0, elapsed - depositSeconds - feedSeconds) * layout.TUNE.laySpeed);
-    machine.at(line.line, visualHead, line.dir);
-    machine.snap();
-    track.snapTo(track.u(visualHead));
+    state.stations.forEach((job, index) => {
+      const schedule = lineSchedule(LINE1_STATIONS[index]!, job.timing);
+      feedLaunched[index] =
+        job.start < 0
+          ? 0
+          : lineFeed(LINE1_STATIONS[index]!, job.timing).filter(
+              (flight) => flight.launchMs <= (job.elapsed - schedule.depositTicks) * 100,
+            ).length;
+    });
+    restoreMotion();
+    panels.restore();
     arrival.sceneryRebuilt();
     previousPhase = state.phase;
-  };
-  // Platform order 10 calls this before moving either deck and before the controller's order 40.
+    previousOpen = opened();
+    path.update(opened(), true);
+  }
   machine.onStep = (dt) => {
-    const previous = visualHead;
-    visualHead = Math.max(targetHead, visualHead - layout.TUNE.laySpeed * dt);
-    machine.at(line.line, visualHead, line.dir);
-    if (previous !== visualHead) machine.moved(previous - visualHead);
+    const previousBody = visualHead + setback;
+    const speed = state.stations[state.activeStation]!.timing.cruiseCmPerTick / 10;
+    const spec = LINE1_STATIONS[state.activeStation]!;
+    const stop = opened() ? 30 : (state.phase === 'laying' ? spec.toCm : spec.fromCm) / 100;
+    const layTarget = Math.max(stop, targetHead);
+    if (visualHead > layTarget) {
+      const step = Math.min(visualHead - layTarget, speed * dt);
+      visualHead -= step;
+      setback = Math.min(machine.F, setback + step);
+    } else if (state.phase !== 'laying') {
+      // After closure roll onto accepted track before approaching the next frame or waiting point.
+      if (setback > 2.4) setback = Math.max(2.4, setback - speed * dt);
+      else if (opened()) visualHead = Math.max(targetHead, visualHead - layout.TUNE.runSpeed * dt);
+    }
+    machine.at(line.line, visualHead, line.dir, setback);
+    const distance = previousBody - (visualHead + setback);
+    if (distance > 0) machine.moved(distance);
   };
   return {
     root: owner.root,
     owner,
+    prePhysics: () => sources.prePhysics(),
+    fixedPre: () => reward.fixedPre(),
     update(ctx: FrameCtx) {
       const { dt, now } = ctx;
       state = adapter.inspect();
@@ -168,67 +253,106 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         rebuild = false;
       }
       wasReady = state.ready;
-      const elapsed = state.elapsed / 10 + (state.start >= 0 && state.phase !== 'done' && state.ready ? sinceTick : 0);
       if (previousPhase === 'waking' && state.phase !== 'waking' && state.phase !== 'asleep') {
         machine.wake(true, !liveWake);
         liveWake = false;
       }
-      if (state.phase === 'feeding' || state.phase === 'laying' || state.phase === 'done') {
-        const wanted = Math.min(T1.bill, Math.max(0, Math.floor((elapsed - depositSeconds) / layout.TUNE.feedS) + 1));
-        while (feedLaunched < wanted) {
-          const slot = T1.bill - 1 - feedLaunched++;
+      deposits = deposits.filter((flight) => flight.active());
+      state.stations.forEach((job, index) => {
+        const station = frames[index]!,
+          spec = LINE1_STATIONS[index]!;
+        const schedule = lineSchedule(spec, job.timing),
+          feed = lineFeed(spec, job.timing);
+        const feedMs = (jobElapsed(index) - schedule.depositTicks) * 100;
+        const wanted = job.start < 0 ? 0 : feed.filter((flight) => flight.launchMs <= feedMs).length;
+        while (feedLaunched[index]! < wanted) {
+          const flight = feed[feedLaunched[index]!]!;
+          feedLaunched[index]!++;
+          // A caught-up accepted clock can already have consumed this flight; never replay it into stock.
+          if (flight.landMs <= feedMs) continue;
+          const origin =
+            flight.kind === 'stone'
+              ? station.stoneAt(flight.slot, from)
+              : flight.kind === 'beam'
+                ? station.at
+                : station.logSlot(flight.slot, from);
           pieces.send(
-            'log',
-            station.logSlot(slot, from),
+            flight.kind === 'stone' ? 'stone' : 'log',
+            origin,
             station.feederEnd,
             {
-              dur: 0.55,
-              apex: 0.15,
-              size: [2.2, 2.2],
+              dur: (flight.landMs - flight.launchMs) / 1000,
+              apex: flight.kind === 'beam' ? 0.6 : 0.15,
+              size: flight.kind === 'beam' ? [4, 4] : [2.2, 2.2],
               aim: (out) => void machine.worldCradle(out),
               land: () => clank(station.x, station.z),
             },
             owner,
           );
         }
+        const launched = feed.slice(0, feedLaunched[index]);
+        const stockOf = (kind: number) =>
+          deposits.filter((flight) => flight.station === index && flight.kind === kind).length;
+        station.have.logs = job.start >= 0 ? spec.bill[0] : job.stock;
+        station.have.stone = job.start >= 0 ? spec.bill[1] : job.stoneStock;
+        station.have.beam = index === 2 && (state.beam?.state === 'allocated' || state.beam?.state === 'used') ? 1 : 0;
+        station.drawStock({
+          logs:
+            job.start >= 0
+              ? spec.bill[0] - launched.filter((f) => f.kind === 'log').length
+              : Math.max(0, job.stock - stockOf(0)),
+          stone:
+            job.start >= 0
+              ? spec.bill[1] - launched.filter((f) => f.kind === 'stone').length
+              : Math.max(0, job.stoneStock - stockOf(1)),
+          rails: 0,
+          beam: Math.max(0, station.have.beam - launched.filter((f) => f.kind === 'beam').length - stockOf(2)),
+        });
+        station.setTag(
+          index === state.activeStation && !job.completion && state.phase !== 'asleep' && state.phase !== 'waking',
+        );
+        if (index === state.activeStation) {
+          const entered = feed.filter((f) => f.kind === 'log' && f.landMs <= feedMs).length;
+          const fraction = Math.min(
+            1,
+            Math.max(0, (spec.fromCm / 100 - visualHead) / ((spec.fromCm - spec.toCm) / 100)),
+          );
+          machine.setCradle(Math.min(entered, Math.ceil(spec.bill[0] * (1 - fraction))));
+        }
+      });
+      targetHead = head();
+      panels.update(dt);
+      if (!previousOpen && opened() && !reconstructed) {
+        sounds.fanfare(true);
+        whistle(machine.flatbed.x, machine.flatbed.z);
       }
-      targetHead =
-        T1.fromCm / 100 -
-        Math.min(distance, Math.max(0, elapsed - depositSeconds - feedSeconds) * layout.TUNE.laySpeed);
-      if (state.phase === 'done') targetHead = T1.toCm / 100;
-      track.layTo(track.u(visualHead));
-      track.update(dt);
-      deposits = deposits.filter((flight) => flight.active());
-      const inFlight = deposits.reduce((n, flight) => n + flight.n, 0);
-      const stocked = state.start >= 0 ? T1.bill - feedLaunched : Math.max(0, state.stock - inFlight);
-      station.have.logs = state.start >= 0 ? T1.bill : state.stock;
-      station.drawStock({ logs: stocked, rails: 0, stone: 0, beam: 0 });
-      station.setTag(state.phase === 'idle' || state.phase === 'deposit' || state.phase === 'feeding');
-      const enteredCradle = Math.min(
-        T1.bill,
-        Math.max(0, Math.floor((elapsed - depositSeconds - 0.55) / layout.TUNE.feedS) + 1),
-      );
-      const fraction = Math.min(1, Math.max(0, (T1.fromCm / 100 - visualHead) / distance));
-      machine.setCradle(Math.min(enteredCradle, Math.ceil(T1.bill * (1 - fraction))));
-      // Place's initial rack serves all of line 1, not only T1. Preserve its visible allowance after this stretch.
-      machine.setRack(
-        Math.ceil(
-          T1.starterRails * Math.max(0, (visualHead - layout.STUB.village) / (layout.STUB.camp - layout.STUB.village)),
-        ),
-      );
-      if (previousPhase !== 'done' && state.phase === 'done') whistle(station.x, station.z);
+      path.update(opened(), reconstructed);
+      previousOpen = opened();
       previousPhase = state.phase;
       unload -= dt;
-      const p = me.body?.position;
+      const p = me.body?.position,
+        station = frames[state.activeStation]!;
       if (
         state.ready &&
         state.phase === 'idle' &&
         p &&
         unload <= 0 &&
-        state.availableCarry > 0 &&
         Math.hypot(p.x - station.x, p.z - station.z) <= layout.TUNE.reachStation
       ) {
-        if (adapter.deposit()) unload = layout.TUNE.unloadS;
+        if (state.beam?.state === 'held' && state.beam.holder === state.pid && state.activeStation === 2) {
+          if (adapter.beamDeposit(state.beam.revision)) unload = layout.TUNE.unloadS;
+        } else if (
+          state.availableCarry > 0 &&
+          state.stations[state.activeStation]!.stock < LINE1_STATIONS[state.activeStation]!.bill[0] &&
+          adapter.deposit(1, 0)
+        )
+          unload = layout.TUNE.unloadS;
+        else if (
+          state.stoneCarry > 0 &&
+          state.stations[state.activeStation]!.stoneStock < LINE1_STATIONS[state.activeStation]!.bill[1] &&
+          adapter.deposit(1, 1)
+        )
+          unload = layout.TUNE.unloadS;
       }
       wake.update(dt);
       arrival.update(dt, state.ready, state.tick);
@@ -238,7 +362,11 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       opening.update(dt);
       if (state.ready)
         opening.numbers(
-          { money: state.counts.score, logs: state.delivered, metres: T1.fromCm / 100 - visualHead },
+          {
+            money: state.counts.score,
+            logs: state.stations.reduce((sum, job) => sum + job.delivered, 0),
+            metres: T1.fromCm / 100 - Math.max(30, visualHead),
+          },
           reconstructed,
         );
       owner.update(ctx);
@@ -260,10 +388,18 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       owned: owner.counts(),
       head: visualHead,
       targetHead,
-      station: { x: station.x, y: station.y, z: station.z, shown: station.shown.logs },
+      panelCursor: track.cursor,
+      machineSetback: setback,
+      station: {
+        x: frames[state.activeStation]!.x,
+        y: frames[state.activeStation]!.y,
+        z: frames[state.activeStation]!.z,
+        shown: frames[state.activeStation]!.shown.logs,
+      },
       machine: { x: machine.flatbed.x, y: machine.flatbed.y, z: machine.flatbed.z },
       trees: sources.inspect(),
       reward: reward.inspect(),
+      pathOpen: opened(),
     }),
     dispose: () => owner.dispose(),
   };

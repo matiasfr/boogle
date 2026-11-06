@@ -102,6 +102,7 @@ export function createHostedRoom({
             return Array.isArray(p) && typeof p[0] === 'number' && typeof p[2] === 'number' && at !== undefined
               ? {
                   x: p[0],
+                  y: typeof p[1] === 'number' ? p[1] : undefined,
                   z: p[2],
                   at,
                 }
@@ -113,7 +114,7 @@ export function createHostedRoom({
           const p = d && typeof d === 'object' ? (d as { p?: unknown }).p : null;
           const at = poseAt.get(sid);
           return Array.isArray(p) && typeof p[0] === 'number' && typeof p[2] === 'number' && at !== undefined
-            ? { x: p[0], z: p[2], at }
+            ? { x: p[0], y: typeof p[1] === 'number' ? p[1] : undefined, z: p[2], at }
             : null;
         },
       })
@@ -241,6 +242,7 @@ export function createHostedRoom({
     if (closing) return;
     const timer = setTimeout(() => {
       gone.delete(c.id);
+      if ('depart' in world) world.depart(c.id);
       if (!clients.size && !gone.size) emptySince = performance.now();
       toAll(encode({ t: 'left', id: c.id, s: c.s }));
       checkLead();
@@ -267,6 +269,7 @@ export function createHostedRoom({
     for (const o of [...clients.values()]) {
       if (o.pid !== pid || o.id === id) continue;
       write(o, encode({ t: 'elsewhere' }));
+      if ('depart' in world) world.depart(o.id);
       drop(o, CLOSE.ELSEWHERE);
       retire(o.id, o.s);
     }
@@ -274,6 +277,7 @@ export function createHostedRoom({
       if (g.pid !== pid || gid === id) continue;
       clearTimeout(g.timer);
       gone.delete(gid);
+      if ('depart' in world) world.depart(gid);
       retire(gid, g.s);
     }
     if (lead && !clients.has(lead)) checkLead();

@@ -10,8 +10,10 @@
 // v06 (2026-11-02): the watering can left the catalog, renumbered: frisbee 1, ball 2.
 // v07 (2026-11-05): classic tunables pin full defaults, revision and catalog; incompatible catalogs cannot join.
 // v08 (2026-11-05): panel track and machine deck seats cannot share a room lead with continuous-track builds.
+// v09 (2026-11-05; encoding corrected 2026-11-06): line-one material/beam authority and panel timings;
+// production uses rail-v09, disjoint from every classic v09-<room> name. No save migration.
 // Pure: read by src/netplay/net.ts, the registry check and tests.
-export const WORLD_NS = 'v08';
+export const WORLD_NS = 'v09';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

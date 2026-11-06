@@ -20,7 +20,7 @@ import {
   RAILWAY_MAX_INT,
   RAILWAY_MAX_MARKER,
   type RailAction,
-} from '../../sim/railway.ts';
+} from '../../sim/railway-frozen-v1.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
 import {
   createRailSupply,
@@ -29,7 +29,7 @@ import {
   RECOVERY_RACK,
   RAIL_GROW_MASK_LENGTH,
   type SupplyPulse,
-} from '../../sim/railway-supply.ts';
+} from '../../sim/railway-supply-frozen-v1.ts';
 import { okPid } from '../../sim/roster.ts';
 import type { Ctx, Edit, Land, Stream, SyncView } from './types.ts';
 import type { RosterApi } from './roster.ts';

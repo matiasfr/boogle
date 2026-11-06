@@ -9,6 +9,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { T } from './run.ts';
+import { enterGame } from '../look/lib.ts';
+import { createSync } from '../../src/world/sync.ts';
+import { installPlayableRailwayRules } from '../../src/world/rules/railway-index.ts';
+import type { Land } from '../../src/world/rules/types.ts';
+import * as line from '../../src/sim/railway-line-layout.ts';
+import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 
 const FIXTURE = fileURLToPath(new URL('../../test/fixtures/world-inputs.json', import.meta.url));
 const LAND = fileURLToPath(new URL('../../src/world/home-land.json', import.meta.url));
@@ -28,8 +34,8 @@ const counts = (l: { trees?: unknown[]; perches?: unknown[] } | null) =>
   l ? `${l.trees?.length} trees / ${l.perches?.length} perches` : '-';
 
 export default {
-  about: 'the world inputs (grid size, state and op order, gifts layout) match the fixture',
-  timeout: 180000,
+  about: 'classic fixture and production line-one browser/Node registry and numeric catalog parity',
+  timeout: 300000,
   async run(t: T) {
     const g = await t.open({ name: 'inputs', size: [192, 120], query: 'classic=1' });
     const ready = await g.waitFor(`window.boogle?.land?.layout?.trees?.length > 0`, { timeout: 90000 });
@@ -61,5 +67,53 @@ export default {
     if (got.ops) same('op order', got.ops, old.ops);
     else console.log('  SKIP  op order (sync has no registry() yet)');
     same('gifts layout', got.layout, land.layout, counts);
+
+    // Reuse the one rendering page: PR scenarios deliberately prohibit a second GPU player.
+    const production = new URL(g.page.url());
+    production.searchParams.delete('classic');
+    production.searchParams.delete('proto');
+    production.searchParams.set('room', `${production.searchParams.get('room') ?? 'inputs'}-line`);
+    await g.page.goto(production.href, { waitUntil: 'domcontentloaded' });
+    await enterGame(g.page, 90000);
+    const productionReady = await g.waitFor(
+      `(await import('/src/entities/railway/state.ts')).inspectRailway()?.ready === true`,
+      { timeout: 90000 },
+    );
+    if (!t.check('production line-one room is verified', productionReady >= 0)) return;
+    const actual = await g.eval(`
+      const sync = await import('/src/world/sync.ts');
+      const { railwayApi } = await import('/src/world/game-world.ts');
+      const line = await import('/src/sim/railway-line-layout.ts');
+      const { RAILWAY_SOURCES } = await import('/src/sim/railway-layout.ts');
+      return {
+        registry: sync.registry(), versions: sync.snapshot().vers,
+        installed: !!railwayApi?.railway.line,
+        catalog: {
+          version: line.LINE1_CATALOG, stations: line.LINE1_STATIONS, rocks: line.LINE1_ROCKS,
+          greatTree: line.LINE1_GREAT_TREE, axe: line.LINE1_AXE_STAND, jump: line.LINE1_JUMP_DEVICE,
+          hardwoods: line.LINE1_HARDWOODS, initial: line.LINE1_INITIAL, sources: RAILWAY_SOURCES,
+          panels: line.linePanels(),
+        },
+      };`);
+    const node = createSync();
+    const rules = installPlayableRailwayRules(node, land as Land, { line1: true });
+    t.check(
+      'production installs line-one authority in browser and Node',
+      actual.installed && !!rules.railway.railway.line,
+    );
+    same('production state and op registration order', actual.registry, node.registry());
+    same('production state versions', actual.versions, node.snapshot().vers);
+    same('production numeric source and line catalog', actual.catalog, {
+      version: line.LINE1_CATALOG,
+      stations: line.LINE1_STATIONS,
+      rocks: line.LINE1_ROCKS,
+      greatTree: line.LINE1_GREAT_TREE,
+      axe: line.LINE1_AXE_STAND,
+      jump: line.LINE1_JUMP_DEVICE,
+      hardwoods: line.LINE1_HARDWOODS,
+      initial: line.LINE1_INITIAL,
+      sources: RAILWAY_SOURCES,
+      panels: line.linePanels(),
+    });
   },
 };

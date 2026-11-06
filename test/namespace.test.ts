@@ -2,17 +2,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WORLD_NS, worldRoomId } from '../src/world/namespace.ts';
-import { isPlayableRailwayRoom, isRailwayRoom, railwayRoomId } from '../src/world/railway-namespace.ts';
-
-test('panel builds cannot share transport lead or world saves with pre-panel v07 builds', () => {
-  for (const room of ['default', 'proto-place-coop', 'private-friends', 'a'.repeat(32)]) {
-    const current = worldRoomId(room);
-    // v07 used the same room-name shortening rule. Its prefix is a frozen mixed-build fixture.
-    const legacy = current.replace(/^[^-]+-/, 'v07-');
-    assert.notEqual(current, legacy, `old room lead must not arbitrate machine seats in ${room}`);
-    assert.ok(!current.startsWith('v07-'), 'custom/long names cannot bypass the isolation');
-  }
-});
+import {
+  isPlayableRailwayRoom,
+  isLineRailwayRoom,
+  isRailwayRoom,
+  RAILWAY_PLAY_NS,
+  railwayRoomId,
+} from '../src/world/railway-namespace.ts';
 
 test('world room ids are namespaced and stay inside [a-z0-9-]{1,32}', () => {
   assert.equal(worldRoomId('beach'), `${WORLD_NS}-beach`);
@@ -34,4 +30,26 @@ test('playable T1 room names are disjoint from classic, legacy Place and isolate
   }
   assert.equal(isPlayableRailwayRoom('t1v01-proto-production-core'), false);
   assert.notEqual(railwayRoomId('a'.repeat(31) + 'x'), railwayRoomId('a'.repeat(31) + 'y'));
+});
+
+test('line-one production follows the world break while legacy and isolated identities stay separate', () => {
+  const current = railwayRoomId('boogle');
+  assert.equal(current, `rail-${WORLD_NS}-boogle`);
+  assert.equal(isLineRailwayRoom(current), true);
+  assert.equal(isLineRailwayRoom('t1v02-boogle'), false);
+  assert.equal(isPlayableRailwayRoom('t1v02-boogle'), true);
+  assert.equal(isRailwayRoom('t1v01-proto-production-core'), true);
+  assert.equal(isLineRailwayRoom(`${RAILWAY_PLAY_NS}-`), false);
+});
+
+test('classic and railway encodings cannot overlap, including reserved-looking and shortened names', () => {
+  const names = ['demo', 'rail-demo', `rail-${WORLD_NS}-demo`, 'rail-' + 'x'.repeat(60), 'x'.repeat(60)];
+  for (const name of names) {
+    const classic = worldRoomId(name);
+    assert.equal(isRailwayRoom(classic), false, `classic ${name} must select the classic host`);
+    for (const railwayName of names) assert.notEqual(classic, railwayRoomId(railwayName));
+    assert.match(railwayRoomId(name), /^[a-z0-9-]{1,32}$/);
+    assert.ok(isLineRailwayRoom(railwayRoomId(name)));
+  }
+  assert.notEqual(worldRoomId('rail-demo'), railwayRoomId('demo'));
 });

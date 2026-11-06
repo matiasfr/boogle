@@ -319,7 +319,7 @@ test('same-pid takeover fences the old session and eight outstanding tokens boun
   }
 });
 
-for (const roomId of [RAILWAY_ROOM, railwayRoomId('recovery')])
+for (const roomId of [RAILWAY_ROOM, 't1v02-recovery'])
   test(`offline time completes only funded work and consumes its absolute interval once: ${roomId}`, async () => {
     const f = await fixture(roomId);
     try {

@@ -1,12 +1,12 @@
-// Personal T1 claims, separate from the shared railway and all existing profile keys.
-// The slice-2 adapter must derive eligibility from verified completed railway state, then reveal only an `accepted`
+// Personal station claims, separate from the shared railway and all existing profile keys.
+// The adapter must derive eligibility from verified completed railway state, then reveal only an `accepted`
 // result. This headless contract does not reveal or grant anything on snapshot/load. A cross-tab exclusive lock is
 // required: one localStorage write is atomic, but read/choose/write across two tabs is not.
 import { okPid } from './sim/roster.ts';
 
 export const MAX_RAILWAY_CLAIMS = 128;
 export const MAX_RAILWAY_PROFILE_BYTES = 32768;
-export type RailwayEntitlement = { world: string; station: 'T1'; completion: 1 };
+export type RailwayEntitlement = { world: string; station: 'T1' | 'T2'; completion: 1 };
 export type RailwayClaim = RailwayEntitlement & { cosmetic: string };
 export type RailwayProfile = { version: 0; claims: RailwayClaim[] };
 export type RailwayClaimResult = { status: 'accepted' | 'claimed'; claim: RailwayClaim; profile: RailwayProfile };
@@ -27,7 +27,7 @@ const validCosmetic = (v: unknown): v is string => typeof v === 'string' && /^[a
 const entitlementKey = (v: RailwayEntitlement) => `${v.world}:${v.station}:${v.completion}`;
 
 function validEntitlement(v: unknown): v is RailwayEntitlement {
-  return isObject(v) && validWorld(v.world) && v.station === 'T1' && v.completion === 1;
+  return isObject(v) && validWorld(v.world) && (v.station === 'T1' || v.station === 'T2') && v.completion === 1;
 }
 
 export function createRailwayProfile({
@@ -80,15 +80,15 @@ export function createRailwayProfile({
       const id = entitlementKey(row);
       if (seen.has(id)) throw new Error('Duplicate railway claim');
       seen.add(id);
-      claims.push({ world: row.world, station: 'T1', completion: 1, cosmetic: row.cosmetic });
+      claims.push({ world: row.world, station: row.station, completion: 1, cosmetic: row.cosmetic });
     }
     return { version: 0, claims };
   }
 
   async function claim(entitlement: RailwayEntitlement, cosmetic: string): Promise<RailwayClaimResult> {
-    if (!validEntitlement(entitlement) || !catalog.has(cosmetic)) throw new Error('Invalid T1 claim request');
+    if (!validEntitlement(entitlement) || !catalog.has(cosmetic)) throw new Error('Invalid railway claim request');
     // Capture validated scalar values before awaiting the lock; the caller cannot mutate the request while waiting.
-    const chosen: RailwayClaim = { world: entitlement.world, station: 'T1', completion: 1, cosmetic };
+    const chosen: RailwayClaim = { world: entitlement.world, station: entitlement.station, completion: 1, cosmetic };
     return exclusive(key, () => {
       // Re-read inside the lock. A second tab or an earlier request may already have accepted this entitlement.
       const profile = read();

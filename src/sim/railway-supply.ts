@@ -1,6 +1,7 @@
 // Durable T1 supply maintenance. Host-stamped whole minutes; never reads presence or a wall clock.
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-layout.ts';
 import type { Railway } from './railway.ts';
+import { railBeamRecover } from './railway-line.ts';
 
 export const RECOVERY_MINUTES = 21; // minute quantization still leaves at least twenty minutes
 export const REGROW_MINUTES = 31;
@@ -11,11 +12,11 @@ export const RAILWAY_TRACK_CLEARINGS = [
   [91000, 94574, -1859, 2000],
   [96400, 103164, -15744, -11403],
 ] as const;
-export const railGrowthAllowed = (k: number) => {
+export const railGrowthAllowed = (k: number, line1 = false) => {
   const source = RAILWAY_SOURCES[k];
   return (
     !!source &&
-    !RAILWAY_TRACK_CLEARINGS.some(
+    !(line1 ? [...RAILWAY_TRACK_CLEARINGS, [93000, 99500, -13400, 0]] : RAILWAY_TRACK_CLEARINGS).some(
       ([x0, x1, z0, z1]) => source[1] >= x0 && source[1] <= x1 && source[2] >= z0 && source[2] <= z1,
     )
   );
@@ -33,7 +34,7 @@ export const railGrows = (mask: string, k: number) =>
 export const railGrowthStage = (age: number) => Math.max(0, age - REGROW_MINUTES);
 export type RailSupply = { marker: number; ages: number[]; rack: number; produced: number };
 export type RailSupplyJSON = Omit<RailSupply, 'ages'> & { ages: string };
-export type SupplyPulse = { marker: number; grow: string; recover: number[] };
+export type SupplyPulse = { marker: number; grow: string; recover: number[]; beam?: number };
 export type SupplyIntervals = { regrow: number; recover: number };
 const DEFAULT_INTERVALS: SupplyIntervals = { regrow: REGROW_MINUTES, recover: RECOVERY_MINUTES };
 /** Keep the saved 31/21 progress units and stage codes unchanged. The global minute phase supplies a
@@ -57,7 +58,7 @@ export const saveRailSupply = (s: RailSupply): RailSupplyJSON => ({
   ...s,
   ages: s.ages.map((age) => age.toString(36)).join(''),
 });
-export function loadRailSupply(value: unknown): RailSupply {
+export function loadRailSupply(value: unknown, line1 = false): RailSupply {
   const s = value as RailSupplyJSON | null;
   const integer = (n: unknown, max: number) =>
     Number.isSafeInteger(n) && Number(n) >= 0 && Number(n) <= max && !Object.is(n, -0);
@@ -66,8 +67,8 @@ export function loadRailSupply(value: unknown): RailSupply {
     Object.keys(s).sort().join() !== 'ages,marker,produced,rack' ||
     !integer(s.marker, Number.MAX_SAFE_INTEGER) ||
     !integer(s.rack, 2147483647) ||
-    !integer(s.produced, 2147483647 - RAILWAY_SUPPLY) ||
-    s.produced % T1.sourceYield !== 0 ||
+    !integer(s.produced, 2147483647 - RAILWAY_SUPPLY - (line1 ? 30 : 0)) ||
+    s.produced % (line1 ? 5 : T1.sourceYield) !== 0 ||
     typeof s.ages !== 'string' ||
     s.ages.length !== RAILWAY_SOURCES.length ||
     !/^[0-9a-z]+$/.test(s.ages)
@@ -87,7 +88,8 @@ export function railSupplyPulse(s: Railway, e: SupplyPulse, intervals = DEFAULT_
   for (const pile of s.piles) {
     pile.age = Math.min(RECOVERY_MINUTES, (pile.age ?? 0) + recover);
     if (pile.age === RECOVERY_MINUTES && e.recover.includes(pile.id)) {
-      supply.rack += pile.n;
+      if (s.line && pile.kind === 1) s.line.stoneRack += pile.n;
+      else supply.rack += pile.n;
       moved += pile.n;
       pile.n = 0;
     }
@@ -102,17 +104,36 @@ export function railSupplyPulse(s: Railway, e: SupplyPulse, intervals = DEFAULT_
       age < REGROW_MINUTES ||
       !minutes ||
       !railGrows(e.grow, k) ||
-      !railGrowthAllowed(k) ||
-      supply.produced > 2147483647 - RAILWAY_SUPPLY - T1.sourceYield
+      !railGrowthAllowed(k, !!s.line) ||
+      supply.produced > 2147483647 - RAILWAY_SUPPLY - (s.line ? 30 : 0) - 15
     )
       continue;
     supply.ages[k] = age + 1;
     if (supply.ages[k] !== 35) continue;
-    s.sources[k] = T1.sourceYield;
+    const yieldCount = s.line?.axe ? 15 : T1.sourceYield;
+    s.sources[k] = yieldCount;
+    if (s.line) s.line.upgrades[k] = s.line.axe;
     s.work[k] = 0;
     s.falls!.yaw[k] = 0;
     s.falls!.collapsed[k] = false;
-    supply.produced += T1.sourceYield;
+    supply.produced += yieldCount;
+  }
+  if (s.line) {
+    const line = s.line;
+    if (line.beam.state === 'ground') {
+      line.beam.age = Math.min(RECOVERY_MINUTES, line.beam.age + recover);
+      if (e.beam !== undefined) moved += railBeamRecover(s, e.beam);
+    }
+    for (let k = 0; k < line.rocks.length; k++) {
+      if (line.rocks[k] !== 0) continue;
+      line.rockAge[k] = Math.min(REGROW_MINUTES, line.rockAge[k]! + regrow);
+      if (line.rockAge[k] === REGROW_MINUTES && line.stoneProduced <= 2147483647 - 32) {
+        line.rocks[k] = 8;
+        line.rockWork[k] = 0;
+        line.rockAge[k] = 0;
+        line.stoneProduced += 8;
+      }
+    }
   }
   return moved;
 }
