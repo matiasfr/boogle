@@ -83,15 +83,20 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   const sandMask = sand ? float(sand.mask).clamp(0, 1) : float(0);
   const sandUp = smoothstep(0.65, 0.9, normalWorldGeometry.y);
   const film = smoothstep(0, 0.004, wash.x).mul(smoothstep(-0.05, 0.05, positionWorld.y));
-  const damp = sand
+  const dampBand = sand
     ? (() => {
         const broad = vnoise(positionWorld.xz.mul(0.08));
         const high = float(sand.dampHeight).add(float(sand.dampWidth).mul(broad));
         const low = high.sub(max(sand.dampWidth, 0.05).mul(2));
-        const persistent = smoothstep(low, high, positionWorld.y).oneMinus().mul(sand.dampStrength);
-        // Preserve the drying clock even inside the persistent damp band; max(static, wet) hid it there.
-        return persistent.add(wash.z.mul(sand.tideMarkStrength).mul(persistent.oneMinus())).mul(sandUp);
+        return smoothstep(low, high, positionWorld.y).oneMinus();
       })()
+    : surface.a;
+  const persistent = sand ? dampBand.mul(sand.dampStrength) : surface.a;
+  // Pigment contrast must not weaken the physical wet sheen. Keep the demo's wetness for roughness.
+  const sandWet = max(dampBand, wash.z).mul(sandUp);
+  // Preserve colour recovery inside the persistent damp band; max(static, wet) hid it there.
+  const damp = sand
+    ? persistent.add(wash.z.mul(sand.tideMarkStrength).mul(persistent.oneMinus())).mul(sandUp)
     : surface.a;
   patchNode(mat, 'colorNode', (previous: N) => {
     const base = previous ?? materialColor;
@@ -122,7 +127,7 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
     const ordinary = mix(base, 0.32, gloss);
     if (!sand) return ordinary;
     const sandRoughness = mix(
-      mix(base, 0.32, damp.mul(smoothstep(-0.05, 0.05, positionWorld.y)).mul(sand.sheenStrength)),
+      mix(base, 0.32, sandWet.mul(smoothstep(-0.05, 0.05, positionWorld.y)).mul(sand.sheenStrength)),
       0.2,
       film.mul(sand.sheenStrength),
     );
