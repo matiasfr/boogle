@@ -222,6 +222,8 @@ export async function checkPropGrounding() {
   pict.count = 0;
   const stationKit = sourceFunction<(...args: unknown[]) => void>('src/proto/place/look-kit.ts', 'stationKit', {
     THREE,
+    // Match the default game's merged steel feeder; ground-contact supports are unchanged.
+    LOOK: { mats: true },
     stationViews: () => ({ batches: new Map(), pict }),
     stationM: new THREE.Matrix4(),
     stationPiece: (name: string, _paint: unknown, matrix: THREE.Matrix4) =>
