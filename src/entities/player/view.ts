@@ -16,6 +16,7 @@ export function syncAvatar(dt: number) {
   const ip = body.interpolatedPosition;
   avatar.position.set(ip.x, ip.y, ip.z);
   avatar.rotation.y = me.yaw;
+  avatar.userData.riding = carry.on !== null;
   const v = body.velocity;
   animateAvatar(
     avatar,

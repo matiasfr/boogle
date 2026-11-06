@@ -8,6 +8,7 @@ import { paintAvatar, setAvatarSkin } from '../avatars.ts';
 import { retargetClip } from './retarget.ts';
 import { ARM_OUT, BUDDY_CLIPS, createBuddySkin } from './rig.ts';
 import { bootMark } from '../../boot/timeline.ts';
+import { updateLocomotion } from '../../render/locomotion.ts';
 import clipsUrl from '../../../assets/built/hero-clips.glb?url';
 import buddyUrl from '../../../assets/built/buddy.glb?url';
 
@@ -39,6 +40,7 @@ export async function startBuddy() {
     random: Math.random,
     charging: (a) => a === me.avatar && me.charging,
     paint: paintAvatar,
+    motion: updateLocomotion,
   });
   await precompile(model.instance());
   bootMark(setAvatarSkin(skin) ? 'buddy-ready' : 'buddy-late');

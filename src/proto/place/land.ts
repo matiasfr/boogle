@@ -14,6 +14,7 @@ import { FAR, GRID, ORIGIN, PATHS, SPIRE } from './layout.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at, cellX, cellZ, gorgeD, heights, insidePlace, pathMask } from './terrain.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from './shore-layout.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
+import { tagStepSupport, segmentStepSupport, type StepSurface } from '../../render/locomotion-surfaces.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -122,13 +123,19 @@ function buildMesh(owner?: OwnedView) {
     for (let j = 0; j < NZ; j++) col2.push(heights[at(i, NZ - 1 - j)]!);
     hf.push(col2);
   }
-  addStatic(
+  const groundBody = addStatic(
     { kind: 'heightfield', heights: hf, cell: CELL },
     { x: ORIGIN.x + GRID.x0, y: 0, z: ORIGIN.z + GRID.z1 },
     undefined,
     GROUP.SCENERY,
     owner,
   );
+  tagStepSupport(groundBody, (x, z) => {
+    if (!insidePlace(x, z)) return null;
+    const top = H(x, z);
+    // Authored coastal ground band, independent of rendered grass colour/pigment.
+    return { top, surface: top < 2.4 && gorgeD(x - ORIGIN.x, z - ORIGIN.z) >= 18 ? 'sand' : 'grass' };
+  });
 }
 
 /** Walls and roofs of buildings you can walk into: solid to you (your mask has every bit), and the indoor camera leaves this
@@ -172,6 +179,7 @@ export function slab(
   width: number,
   owner?: OwnedView,
   overlap = 0.05,
+  surface: StepSurface = 'rail',
 ) {
   const dx = bx - ax,
     dz = bz - az,
@@ -181,7 +189,10 @@ export function slab(
     thick = 0.4;
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.atan2(dy, len), Math.atan2(dx, dz), 0, 'YXZ'));
   const c = { x: (ax + bx) / 2, y: (topA + topB) / 2 - thick / 2, z: (az + bz) / 2 };
-  return addStatic({ kind: 'box', hx: width / 2, hy: thick / 2, hz: full / 2 + overlap }, c, q, GROUP.SCENERY, owner);
+  return tagStepSupport(
+    addStatic({ kind: 'box', hx: width / 2, hy: thick / 2, hz: full / 2 + overlap }, c, q, GROUP.SCENERY, owner),
+    segmentStepSupport(ax, az, bx, bz, topA, topB, width, surface),
+  );
 }
 
 /** A solid box between two world points, top at y. */
@@ -206,7 +217,10 @@ export function plank(
     full = Math.hypot(len, dy);
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.atan2(dy, len), Math.atan2(dx, dz), 0, 'YXZ'));
   const c = { x: mx, y: (topA + topB) / 2 - thick / 2, z: mz };
-  addStatic({ kind: 'box', hx: width / 2, hy: thick / 2, hz: full / 2 }, c, q, GROUP.SCENERY, owner);
+  tagStepSupport(
+    addStatic({ kind: 'box', hx: width / 2, hy: thick / 2, hz: full / 2 }, c, q, GROUP.SCENERY, owner),
+    segmentStepSupport(ax, az, bx, bz, topA, topB, width, 'wood'),
+  );
   const m = new THREE.Mesh(new THREE.BoxGeometry(width, thick, full), FLAT(color));
   m.position.set(c.x, c.y, c.z);
   m.quaternion.copy(q);

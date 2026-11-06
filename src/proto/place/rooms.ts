@@ -12,6 +12,7 @@
 // Interiors draw only near their building (`near`), so a village you're not in pays for its walls and nothing behind them. Local;
 // which rooms exist comes from `roomEnv.up`, read from what's shared.
 import * as THREE from 'three/webgpu';
+import { registerStepFloor } from '../../render/locomotion-surfaces.ts';
 import { vertexColor } from 'three/tsl';
 import { reducedMotion } from '../../constants.ts';
 import { getMask, removeBody, type Body } from '../../physics/engine.ts';
@@ -248,6 +249,13 @@ export const rooms: Record<RoomId, Room> = {
   museum: makeRoom('museum'),
 };
 const LIST = Object.values(rooms);
+for (const r of LIST) {
+  registerStepFloor((x, z) => {
+    if (!r.up || !r.ready) return null;
+    const p = worldToRoom(r, x, z);
+    return Math.abs(p.x) <= r.w / 2 && Math.abs(p.z) <= r.d / 2 ? { top: r.y, surface: 'wood' } : null;
+  });
+}
 /** Which rooms stand. Set by ./town-life.ts from what's shared; the house is there from the start. */
 export const roomEnv: { up: (id: RoomId) => boolean } = { up: (id) => id === 'house' };
 /** `room`: the show is on for this one. `inside`: you're over its threshold. */

@@ -629,6 +629,42 @@ Cost: not measured on an iPad this round. M1 Max held 60 fps in every capture (n
 
 ## Sound
 
+### Local mix and Buddy contacts (5 November 2026)
+
+The five authored buses are Music −8 dB, Ambience −12 dB, SFX 0 dB, UI −8 dB and
+Voice 0 dB. Character and Work feed SFX at 0 dB; Social feeds it at −3 dB. The
+Boogler retains his formant voice and a −12 dB phrase calibration. UI's former
+0.4 helper gain is folded into its bus once. User category gains, voice ducking
+and authoring trims are separate; master volume/mute follows processing. The
+initial output calibration is −1.94 dB, not a whole-game loudness certification.
+The existing Dev Tunables panel exposes bounded Local audio controls, actual
+node readings, reset and named A/B mix snapshots. Nothing is sent to room state.
+
+Buddy's common distance-driven walk/jog/sprint phase supplies alternating foot
+contacts. Six procedural takes per material avoid the previous two takes;
+pitch varies ±35 cents and level ±1.5 dB. Source contacts are calibrated to
+−12 dBFS peak; walking uses −8 dB, running −5 dB, deliberate first takeoff
+−11 dB and normal landing −4 dB. Landing strength follows the observed airborne
+apex, interpolating soft −6 dB through normal to heavy +4 dB, with capped gain.
+A landing consumes its contact moment. Swimming, airborne steps, seated/riding,
+down, stationary, teleport and resume transitions suppress or reset contacts.
+
+Ground/support metadata selects grass, sand, wood, rail panel or shallow water;
+decks above water keep their solid material. Unclassified supports fall back
+to grass. Remote contacts use the existing smoothed Buddy motion, an additional
+−6 dB trim, body-relative distance and camera-yaw pan. Steps fade from 1.5 to
+18 m (landings reach 30 m), with two events per emitter and eight overall,
+reserving two slots for local contacts. No per-foot network messages are added.
+
+Hot UI thunk, pickup, minigame and machine recipes are reduced before the bus;
+the thunk's overlapping low body and tail are reduced, and clinks share their
+coherent fundamental. Quiet work cues keep their intentional differences; the
+pending wave recipe and The Boogler's copy are unchanged. All mix/variation
+levels are Local tunables. Measurement commands, before/after tables, listening
+files and limits are in [the build report](../research/audio-build.md).
+Balance, fatigue and real-time feel remain owner listening questions. Not tested
+on a device.
+
 ### Axe presentation and stage review
 
 Earned hats use a common head-centred fit for local and remote wearers and shop try-on.

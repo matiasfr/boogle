@@ -23,6 +23,7 @@ import {
   type Remote,
 } from '../../netplay/net.ts';
 import { createSnaps } from '../../netplay/snaps.ts';
+import { stopLocomotion } from '../../render/locomotion.ts';
 
 type RideSample = { l: number[]; r: number };
 /** A remote standing on a shared platform. Visual attachment follows fresh Owner intent, not train agreement. */
@@ -271,10 +272,12 @@ function spawnRemotePlayer(r: Remote, time: number): GameEntity {
       } else if (was) was.yaw = NaN;
       r.speed = lerp(r.speed, speed, 1 - Math.exp(-dt * 10));
       prevPos.copy(r.target);
+      avatar.userData.riding = riding;
       animateAvatar(avatar, r.speed, r.state === 1, dt, r.state === 2);
     },
     describe: () => ({ components: { nameLabel: nameLabel.describe() } }),
     dispose() {
+      stopLocomotion(avatar);
       try {
         avatar.userData.mat.dispose();
       } finally {

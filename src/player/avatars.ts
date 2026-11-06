@@ -34,6 +34,8 @@ export type AvatarData = {
   holdKind?: 'item' | 'hang' | 'ball' | null;
   flopAmt?: number;
   seatedAt?: number;
+  audioRole?: 'local' | 'remote' | 'preview';
+  riding?: boolean;
   aloft?: boolean;
 };
 export type Avatar = THREE.Group & { userData: AvatarData };
@@ -124,7 +126,7 @@ export function makeAvatar(colorIdx: number, role?: 'local' | 'preview'): Avatar
     inner.add(eye, pupil);
   }
   group.add(inner);
-  group.userData = { inner, mat, phase: 0, colorIdx } satisfies AvatarData;
+  group.userData = { inner, mat, phase: 0, colorIdx, audioRole: role ?? 'remote' } satisfies AvatarData;
   const avatar = group as Avatar;
   if (role) roles.set(avatar, role);
   inner.visible = !!skin || forcedCapsule || fallbackReason !== null;
