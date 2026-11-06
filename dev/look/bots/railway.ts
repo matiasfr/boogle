@@ -19,13 +19,13 @@ export async function play({ stopBeforeReward = false } = {}) {
   const second = player === '2';
   const peers = new Map<
     string,
-    { pid: string | undefined; x: number; y: number; z: number; seenAt: number; beamHelp: string | null }
+    { pid: string | null; x: number; y: number; z: number; seenAt: number; beamHelp: string | null }
   >();
   const offPresence = coop
     ? onRemotePresence((remote, presence) => {
         if (remote.entered && Array.isArray(presence.p))
           peers.set(remote.peer, {
-            pid: remote.pid,
+            pid: remote.pid ?? null,
             x: presence.p[0] as number,
             y: presence.p[1] as number,
             z: presence.p[2] as number,
@@ -376,7 +376,7 @@ export async function play({ stopBeforeReward = false } = {}) {
           );
         await until(helperNear, 'friend activates Help carry beside the sole beam holder', 30000);
         mark('T3 beam helper joined');
-        const start = me.body!.position.clone();
+        const start = { ...me.body!.position };
         const route = await bot.plan(read().station.x, read().station.z, 3);
         require(route.arrives, 'a real helped-beam route reaches T3');
         let last = { x: start.x, z: start.z };
@@ -413,15 +413,27 @@ export async function play({ stopBeforeReward = false } = {}) {
       await until(() => interactTarget()?.id === 'railway-beam-help-release', 'helper grip activated', 5000);
       mark('T3 beam helper joined');
       let shown = false;
+      let stoppedAt = performance.now();
+      let lastCarrier = { x: initial.x, z: initial.z };
       const deadline = performance.now() + 120000;
       while (job(2).start < 0 && performance.now() < deadline) {
         const p = carrier();
         require(p && !me.swimming, 'helper follows a fresh dry carrier');
+        if (Math.hypot(p!.x - lastCarrier.x, p!.z - lastCarrier.z) > 0.1) {
+          stoppedAt = performance.now();
+          lastCarrier = { x: p!.x, z: p!.z };
+        }
         face(p!.x, p!.z);
         if (Math.hypot(p!.x - me.body!.position.x, p!.z - me.body!.position.z) > 2.1) input.keys.add('KeyW');
         else input.keys.delete('KeyW');
         if (interactTarget()?.id === 'railway-beam-help') bot.press();
-        if (!shown && Math.hypot(p!.x - LINE1_GREAT_TREE.x / 100, p!.z - LINE1_GREAT_TREE.z / 100) >= 9) {
+        // In a targeted photo the carrier freezes after finishing its short leg. Keep following until that
+        // stop is observed, rather than freezing as soon as its moving presence first crosses the threshold.
+        const photoReady =
+          query.get('railStop') !== 'T3 helped beam carried' ||
+          (performance.now() - stoppedAt >= 250 &&
+            Math.hypot(p!.x - me.body!.position.x, p!.z - me.body!.position.z) <= 2.5);
+        if (!shown && photoReady && Math.hypot(p!.x - LINE1_GREAT_TREE.x / 100, p!.z - LINE1_GREAT_TREE.z / 100) >= 9) {
           require(interactTarget()?.id === 'railway-beam-help-release', 'helper grip remains active after moving');
           require(read().beam?.holder === holder &&
             read().carry === 0 &&
