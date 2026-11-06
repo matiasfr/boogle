@@ -5,7 +5,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 
 // ---------------------------------------------------------------- boards you can read
 /** Physical painted paper takes scene light and shadows, without inverse gain or an emissive floor. */
-export function boardMaterial(map: THREE.CanvasTexture) {
+export function paperMaterial(map: THREE.CanvasTexture) {
   return new THREE.MeshStandardNodeMaterial({ map, roughness: 1, metalness: 0 });
 }
 
@@ -34,7 +34,7 @@ export function paintBoard(lines: { t: string; px: number; color?: string }[], w
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
-  return boardMaterial(tex);
+  return paperMaterial(tex);
 }
 
 // ---------------------------------------------------------------- the HUD

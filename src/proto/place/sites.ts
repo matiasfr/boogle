@@ -11,7 +11,7 @@ import { me } from '../../player/player.ts';
 import { removeBody, teleport, type Body } from '../../physics/engine.ts';
 import type { Box } from '../net/boxes.ts';
 import { H, ROOM_GROUP, addStatic } from './land.ts';
-import { boardMaterial } from './look.ts';
+import { paintSite } from './look.ts';
 import { dropSet, dustRing, type DropSet } from './pieces.ts';
 
 import {
@@ -166,23 +166,7 @@ function solid(site: Site, on: boolean) {
 /** Call once, after every addSite. */
 export function buildSites() {
   set = dropSet(boxes, onLand);
-  set.mesh.material = boardMaterial(set.mesh.material as THREE.Material);
-  // Keep authored construction/collision data intact; this palette belongs to the displayed instances.
-  const palette: Record<string, string> = {
-    '#e8dcc0': '#fff8e9',
-    '#a9794c': '#cd9b57',
-    '#7f5630': '#a57336',
-    '#c9a86a': '#e5bb70',
-    '#a9824f': '#c99c59',
-    '#c4453a': '#e03c32',
-    '#f2b134': '#ffc425',
-  };
-  const color = new THREE.Color();
-  boxes.forEach((box, i) => {
-    const pigment = palette['#' + box.color.getHexString()];
-    if (pigment) set!.mesh.setColorAt(i, color.set(pigment));
-  });
-  if (set.mesh.instanceColor) set.mesh.instanceColor.needsUpdate = true;
+  paintSite(set.mesh, boxes);
 }
 /** The pieces fall in order, starting after `delay` s. */
 export function startSite(site: Site, delay = 0, onDone?: () => void) {
