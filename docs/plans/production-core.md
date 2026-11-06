@@ -40,6 +40,140 @@ Do not silently copy the prototype to a parallel production route. Slice 1 extra
 
 ## State and authority
 
+### Slice 3 continuation, 5 November — coordinator-approved implementation
+
+The coordinator explicitly authorizes all six implementation steps on merged supply `f0be49a3`,
+superseding the unresolved choices in the preparation record below. This branch uses a clean development
+`WORLD_NS v09` break: new production rooms have the leading `v09-rail` fence, old `t1v02` writers retain
+their separate rooms, and isolated `t1v01` stays unchanged. There is no new production-save migration.
+Personal T1 claim identities still derive from the original `t1v02` room key. The existing frozen legacy
+recovery verifier remains intact.
+
+One material authority now handles ordered T1/T2/T3 jobs, mixed eight-piece backs, 32 logs plus eight stone
+at T2, forty logs plus one unique beam at T3, and the shared proper axe only after the forty accepted logs.
+The two hardwoods add thirty explicit initial logs; ordinary proper-axe yield upgrades add counted
+production. Slow counted stone renewal uses the existing `railway.regrowMinutes` interface without an
+unseen-source gate. The departed-carrier witness preserves all three absent players' eight-stone backs
+and replenishes spent sources, so a fourth player can eventually finish T2. It proves possibility, not
+a pleasant wait.
+
+Accepted funding captures the shared feed/flight/departure schedule. Cosmetic flights do not spend or
+advance construction. Shared axe, beam, jump and completed path facts reconstruct quietly; personal T1
+hat and T2 scarf claims retain the browser lock. T3 has no cosmetic box. The first jump device retains
+physical reach, and walking both directions must precede its optional acquisition. No later railway
+slice, train reveal or additional ability is enabled.
+
+The panel machine landed during verification as `766c94d5`, including **Commit track and stock in whole
+panels** (`58c0c129`). This branch rebases onto that integrated main. Main owns namespace v08; the new
+line-one clean break therefore advances to v09. Production derives twelve accepted panel contacts from
+the funded schedule, partitioned 3/3/6. Each contact commits the native panel's complete geometry and
+colliders and consumes one magazine unit; carried pieces have no collider. Native head travel, body
+setback, rigid hoist and quiet reconstruction share the merged constructors. The earlier continuous-track
+browser runs are historical; panel runs must provide the final evidence. No push or ship is authorized.
+
+**Final verification ledger, 5 November.** Six ordered implementation commits follow the two retained
+preparation commits. The required panel merge is integrated at `766c94d5`. During the final proofs,
+cached `origin/main` advanced to `66c52eef` (audio plus the “Gameplay shapes the environment” owner call).
+That later audio integration is not included in this tested branch; the coordinator must account for
+it when reviewing/rebasing. The new owner call was read: the visible timber approaches explicitly
+invite the walk around the parked layer. Nothing was pushed, shipped or uploaded.
+
+The final solo proof uses `6e664661`, tree `37d24f869eb4162b4bfa3635ed5b0587b0b6c471`.
+The final co-op proof uses `7b4af088`; the subsequent bot-only change exempts solo from the co-op landing
+guard, leaving the executed co-op branch unchanged. Runtime and test sources are identical to
+`de1a9609` for all panel evidence below. The final amendment changes this ledger and the owning
+game-design notes only. No source edits occurred during broker runs.
+
+| Proof | Result and evidence |
+| --- | --- |
+| Formatted final tree | `npm run check` passes: 396 unit tests, lint, typecheck, registry, level/asset checks and build. [Log](../../.look/slice3-check-final.log). |
+| Server/recovery | 109/109 server tests pass on the integrated panel runtime. [Log](../../.look/slice3-server-final.log). The conservative maximum recovery width is **59,794 / 60,000 bytes**; the limit is unchanged. |
+| Solo, full first-path route | [Final manifest](../../.look/evidence/1793935360900-33093/evidence.json), [report](../../.look/evidence/1793935360900-33093/run/report.txt): every expected beat, T1/T2/T3, earned axe, unique beam, both dry path walks and optional first jump; no errors or recovery relocation. |
+| Co-op, full first-path route | [Final manifest](../../.look/evidence/1793934652410-24003/evidence.json): both riders remain aboard all three stretches; both walk home/back and use the optional jump. Both record T3 at tick 4036, hash 3152613038, twelve committed panels and zero magazine stock; both record the optional jump at tick 5279, hash 1808672934. No bot or capture-health errors. This is peer agreement, not a latency or performance claim. |
+| Legacy Place regression | [Manifest](../../.look/evidence/1793932322372-16702/evidence.json), [report](../../.look/evidence/1793932322372-16702/run/report.txt): full existing route finishes all expected beats with no errors. No later legacy mechanic is promoted into production. |
+| `world-inputs` | [Final panel-runtime manifest](../../.look/evidence/1793932122145-15778/evidence.json): passes **classic only**. The trusted broker is still `57ea7c4d`, reading its classic fixture. The worktree's production scenario extension was not executed; the coordinator must review it and relaunch the broker to close production registry/catalog parity. |
+| Development build break | Registry reports v08 → v09 and deliberately skips mixed-build comparison. Namespace/host proofs keep new `v09-rail` rooms separate from old writers, retain isolated `t1v01`, preserve T1 claim identity and refuse malformed/unsupported admission. No new production-save migration or live old/new-client compatibility test was added. |
+
+`check:full` was not invoked as a combined command: its `test:net` leg starts Chromium directly, contrary
+to this job's broker-only instruction. Standard checks and server tests ran separately; the headless
+network leg remains unexecuted. The broker gameplay runs do not stand in for that protocol suite.
+
+**Opened images and visual questions.** These are real-input replays, not seeded station state. Saved
+pose/profile checkpoints do not contain accepted construction progress, so they were not used to
+manufacture completed stations. Each linked manifest records the source identity and unchanged tree
+during its run.
+
+- **T2:** [manifest](../../.look/evidence/1793931317673-7775/evidence.json),
+  [opened still](../../.look/evidence/1793931317673-7775/slice3-t2-still.png).
+  Question: does the emptied frame lead into a solid new stretch and waiting layer? The frame, curved
+  track and machine are visible and connected. The bot overlay obscures the left side.
+- **T3:** [manifest](../../.look/evidence/1793931624769-10223/evidence.json),
+  [opened still](../../.look/evidence/1793931624769-10223/slice3-t3-still.png).
+  Opened the motion sheet, curves, four consecutive `t3-lower-01..04.png` frames at encoded 6.8 s and
+  four `t3-contact-01..04.png` frames at 7.4 s, extracted with ffmpeg from the saved video. A complete
+  panel descends from the native hoist and the clamp lifts away above the newly solid section. The
+  mechanism is visually crowded at this distance. Player curves are stationary; they do not measure
+  hoist cadence or establish display smoothness.
+- **Beam:** [manifest](../../.look/evidence/1793932835174-17461/evidence.json),
+  [opened still](../../.look/evidence/1793932835174-17461/slice3-beam-still.png).
+  Opened its motion sheet, curves and four consecutive `beam-walk-01..04.png` frames at encoded 1 s.
+  The real-input action retained the unique beam through a five-metre dry carry. One long beam stays
+  across Buddy's shoulders with a readable silhouette; no visible detachment or second carried beam.
+- **Home:** [targeted replay manifest](../../.look/evidence/1793933983428-19367/evidence.json),
+  [opened still](../../.look/evidence/1793933983428-19367/run/end-still.png).
+  The same solo bot earns the line and reaches `path walked home`; `railway-home.ts` then frames that
+  reached position and ends only this targeted capture. Buddy stands at the village end beside the
+  timber approach, with the parked layer and solid gorge crossing behind. The foreground crane and
+  bot overlay reduce composition clarity. This capture is not labeled a full-route proof.
+- Opened the final solo end still, both final co-op end stills, the legacy end still, and the earlier
+  successful panel solo/co-op end stills. The production views show the players on the first pillar
+  beside the emptied jump device; the legacy view shows its final cliff pickup. Their large bot
+  overlays limit visual assessment. The final reports, not the pictures alone, establish route beats.
+
+**Failed attempts retained.** The final passing runs do not erase these reports:
+
+- Continuous-track attempts [one](../../.look/evidence/1793928205044-69016/evidence.json),
+  [two](../../.look/evidence/1793928707286-81180/evidence.json), and
+  [three](../../.look/evidence/1793929091796-88436/evidence.json) stopped at the parked machine or raised
+  bed edge. Opened their end PNGs. Explicit bypass waypoints and solid timber approaches repaired the
+  route before the final panel proofs; this older evidence is historical.
+- [Earlier co-op](../../.look/evidence/1793929831294-99216/evidence.json) completed T3 and both walks but
+  failed at two players competing for the first pillar, and failed its clock cleanup guard. Distinct
+  landing slots and staged entry repaired the bot interaction. No loaded timing result is a verdict.
+- [Queued beam capture](../../.look/evidence/1793931657577-10362/evidence.json) timed out because the
+  client's eight-minute deadline included queue wait; its server closed and wake failed. The standalone
+  replacement above passes. No PNG was produced by the failed attempt.
+- [Path capture startup](../../.look/evidence/1793933231199-18027/evidence.json) failed when a shared-spawn
+  bump launched the follower and its planner treated the airborne start as unreachable. The follower
+  now waits for fresh leader separation and a dry landing, through ordinary inputs only.
+- [Paused co-op photo](../../.look/evidence/1793933501810-18477/evidence.json) completed T3 and the leader's
+  walk home, then the follower could not finish the bypass while the leader remained at the photo
+  waypoint. The home picture now uses a solo replay; the uninterrupted final co-op proof passes both walks.
+- [Reward handoff attempt](../../.look/evidence/1793934251984-19884/evidence.json) failed to plan a source
+  after the two nearly coincident T2 claims. A bounded dry-landing check before co-op route planning
+  passes the replacement run; failure diagnostics now include position, velocity and support state.
+- [Solo guard failure](../../.look/evidence/1793934957212-25960/evidence.json) exposed that the new guard
+  was too broad: a resting body at terrain height had near-zero velocity but an expired coyote timer.
+  Opened its end PNG. The guard now applies only to co-op peer bumps; the final solo replay passes.
+
+**Explicit scope limits:** ground beam drops are conservatively accepted only in the certified source
+and T3 approach areas; other drops return the same beam to its source. Assisted-carry feel and the full
+physical drop/reload matrix were not demonstrated. The 256 persisted-identity limit and personal claim
+bounds remain; renewable material does not prove unlimited new-player admission. No new ROM data or
+imported asset was added. The Boogler's copy is unchanged. New prompts for owner review: “Empty your back
+first”, “A proper axe first”, “Help carry” and “Let go”.
+
+**T1 acceptance gaps carried forward explicitly:** partial-funding/feed/lay browser joins; the complete
+departure/retry matrix at every acceptance cut; two live reward-UI tabs under Web Locks; mount/unmount
+resource counts; opened/unopened reward and safe-pose reload coverage; common server/client tick evidence; input→intent→acceptance→visible-stock latency under
+delay and maximum request cadence; repeat two-rider timing on an unloaded machine. Pure host races and
+profile atomicity tests do not close those browser/lifetime/timing gaps. Production `world-inputs` must
+actually report production registry/catalog parity; a classic-only run leaves that gap open.
+
+**Owner stop:** “Did finishing this line make the walk home feel worth the work?” No bot, successful
+capture or passing check supplies that verdict. Real-time feel, device performance and owner acceptance
+remain unverified; not tested on a device.
+
 ### Slice 3 preparation, 5 November — partial, not playable
 
 The owner's slice-3 task selects merged supply `f0be49a3` as the integrated base; it is an ancestor of this

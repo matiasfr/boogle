@@ -1,48 +1,89 @@
 {
   "id": "railway-recovery",
-  "title": "An isolated T1 deposit survives a crash",
+  "title": "The first path survives departures and restarts",
   "kind": "lock",
   "order": 61,
   "steps": [
     {
       "hl": ["server"],
-      "text": "Headless T1 uses t1v01; playable default T1 uses isolated t1v02 rooms. The room manager retains exclusive authority until closing is durable and fences reconnects after a refused close, protecting existing rooms too.",
+      "text": "Playable line 1 uses the v09-rail clean break. Old t1v02 writers stay in different rooms; their saves are not migrated. The isolated t1v01 spine and T1 personal claim keys remain.",
       "cite": [
-        { "file": "src/world/railway-namespace.ts" },
-        { "file": "src/world/rules/railway-index.ts" },
-        { "file": "server/src/host/rooms.ts" }
+        {
+          "file": "src/world/namespace.ts"
+        },
+        {
+          "file": "src/world/railway-namespace.ts"
+        },
+        {
+          "file": "src/railway-profile.ts"
+        }
       ]
     },
     {
       "go": [["you.world", "server"]],
-      "text": "The server binds a request to the authenticated player and issued epoch. Reach and cadence are host facts. A bounded receipt window prevents retries from spending twice.",
-      "cite": [{ "file": "server/src/host/railway-requests.ts" }, { "file": "src/world/rules/railway.ts" }]
-    },
-    {
-      "hl": ["server"],
-      "text": "Before publishing a stamp, the existing sync durably replaces a verified checkpoint plus its ordered future queue. Refused writes pause production; a bad load is never served as fresh progress.",
-      "cite": [{ "file": "src/world/sync.ts", "symbol": "checkpointRecovery" }, { "file": "server/src/store.ts" }]
-    },
-    {
-      "go": [
-        ["server", "you.world"],
-        ["server", "fr.world"]
-      ],
-      "text": "Apply transfers only available cargo into the fixed 24-log bill. At 23/24, competing four-log offers move one then zero. That one transfer starts one funded job, independently of any animation.",
-      "cite": [{ "file": "src/sim/railway.ts", "symbol": "railApply" }]
-    },
-    {
-      "hl": ["server"],
-      "text": "Restart verifies the envelope and replays the stored tail once. Bounded offline completion advances only funded work. Persistent personal carry and shared drops remain in the conservation equation.",
+      "text": "The server binds each request to player identity and session epoch. Reach and cadence are host facts; bounded receipts prevent duplicate spending.",
       "cite": [
-        { "file": "src/world/sync.ts", "symbol": "restoreRecovery" },
-        { "file": "src/sim/railway.ts", "symbol": "railCounts" }
+        {
+          "file": "server/src/host/railway-requests.ts"
+        },
+        {
+          "file": "src/world/rules/railway.ts"
+        }
+      ]
+    },
+    {
+      "hl": ["server"],
+      "text": "A verified checkpoint and ordered future queue become durable before publication. Failed writes pause production; failed loads never become fresh progress. Only funded jobs advance during bounded offline completion.",
+      "cite": [
+        {
+          "file": "src/world/sync.ts"
+        },
+        {
+          "file": "server/src/store.ts"
+        },
+        {
+          "file": "src/sim/railway-line.ts"
+        }
+      ]
+    },
+    {
+      "hl": ["server", "you.world", "fr.world"],
+      "text": "One beam has a location, holder epoch and revision. Departure or restart releases an orphan to its source anchor. A stale release cannot steal a new claim, and accepted T3 delivery defeats later recovery.",
+      "cite": [
+        {
+          "file": "src/sim/railway-line.ts"
+        },
+        {
+          "file": "server/src/host/world-host.ts"
+        }
+      ]
+    },
+    {
+      "hl": ["you.world", "fr.world"],
+      "text": "Slow accepted renewal counts every new stone unit. The three-departed-carrier witness keeps all 24 original stone on their backs, renews spent rocks and lets a visitor complete T2 without confiscation.",
+      "cite": [
+        {
+          "file": "src/sim/railway-supply.ts"
+        },
+        {
+          "file": "src/sim/railway-line.ts"
+        }
       ]
     },
     {
       "hl": ["you.features"],
-      "text": "The separate personal-profile contract writes a claim and cosmetic together under a shared browser Web Lock. The adapter rebuilds verified progress; a snapshot cannot replay success effects or grant another claim.",
-      "cite": [{ "file": "src/railway-profile-browser.ts" }, { "file": "src/adapters/railway.ts" }]
+      "text": "Drops age into the courtyard rack by material. Reload rebuilds cargo, station phases and earned world facts quietly; the existing personal lock keeps each T1/T2 claim and cosmetic in one atomic write.",
+      "cite": [
+        {
+          "file": "src/entities/railway/supply-view.ts"
+        },
+        {
+          "file": "src/adapters/railway.ts"
+        },
+        {
+          "file": "src/railway-profile-browser.ts"
+        }
+      ]
     }
   ]
 }

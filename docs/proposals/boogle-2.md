@@ -119,6 +119,17 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### The shape of the game
 
+- **2026-11-05, slice 3 coordinator continuation** (owner's follow-up task). Finish all six steps of
+  `slice3-plan-2`: T2, T3's forty-log axe chest, the unique great beam and the walkable first path, then stop
+  for the first-path verdict. Use a clean development-world break with the next `WORLD_NS` and production
+  rooms tied to it; no production-save migration. Preserve the isolated `t1v01` spine and existing T1 personal
+  claim keys. Rocks renew slowly under a shared tunable timer, with accepted counted stone production and the
+  three-departed-carrier proof; no unseen-regrowth condition. Build against main's current track while the panel
+  branch is pending. Before final proof fetch main and look for “Commit track and stock in whole panels”; if it
+  has landed, rebase and integrate whole panels, otherwise record the outstanding integration for follow-up.
+  Work stays on `codex/slice3-path`, with no push or ship. This supersedes the unresolved stone/fence choices
+  and save-migration requirement in the research brief, not its conservation, recovery or walking proofs.
+
 - **2026-11-05, supply review follow-up** (owner's task brief). Fix return-pose readiness after collider reconstruction and pin the durability fixture clock. Regrowth only needs to be slow: remove camera visibility tracking and out-of-sight gating, while retaining finished-track exclusion and durable conserved production. Expose regrowth and drop recovery intervals through existing `rules.tune` ids with current defaults; no new registry while the tunables design is in progress. Use the selected `recovery-rack.glb` in the courtyard with matching collision and pickup. Merge current main's seat fixes, rerun server proofs and full solo/co-op bots, retry each failure once, commit without shipping. This supersedes the unseen-growth requirement in the earlier supply entries below.
 
 - **2026-11-05, supply coordinator continuation** (follow-up task). Keep every recovery hash/namespace guard. Verify production reachability, then implement exactly one frozen-v0 verification and atomic supply upgrade, including corruption rejection that leaves the file unchanged. Regrowth remains slow, unseen and away from finished track, without empty-room or unfunded-T1 requirements. Select the recovery rack in the forge courtyard on the town path, available before forge construction, ordinary pickup, crooked roof, no worker; pale stumps remain at every young-growth stage. Prove recovered and regrown state across eviction, process kill and restart, rerun full solo/co-op bots with one retry per timeout, and stop on authority/conservation failure. This worktree must not push or ship.
