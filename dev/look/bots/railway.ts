@@ -51,6 +51,17 @@ export async function play({ stopBeforeReward = false } = {}) {
   };
   const until = async (fn: () => unknown, beat: string, ms = 300000) => require(await bot.until(fn, ms, beat), beat);
   const job = (station: number) => read().stations[station]!;
+  // Co-op witness: accepted railway hashes by tick, compared offline between the two peers' logs.
+  const tickHashes = new Map<number, number>();
+  const sampler = coop
+    ? setInterval(() => {
+        const state = inspectRailway();
+        if (state?.ready && state.line2 && state.line2.forge.used > 0 && state.hash !== undefined)
+          tickHashes.set(state.tick, state.hash);
+      }, 50)
+    : 0;
+  const logHashes = () =>
+    console.log(`RAILWAY TICKHASH ${JSON.stringify({ player: player ?? 'solo', hashes: [...tickHashes] })}`);
   const mark = (name: string) => {
     const state = read();
     document.documentElement.dataset.railwayBeat = name;
@@ -586,6 +597,8 @@ export async function play({ stopBeforeReward = false } = {}) {
       await until(() => read().line2?.gateOpen, 'leader opens the quarry gate', 1800000);
       await checkpoint('quarry gate open');
       document.documentElement.dataset.railwayProof = 'done';
+      await bot.wait(3000);
+      logHashes();
       bot.finish('line one with a friend; line two observed to the quarry gate');
       return;
     }
@@ -800,6 +813,10 @@ export async function play({ stopBeforeReward = false } = {}) {
     require(totals.rails && totals.rails.total === totals.rails.poured, 'rails conserve the forge pour');
     require(totals.total === LINE1_INITIAL[0] + totals.produced, 'logs conserve through line two');
     document.documentElement.dataset.railwayProof = 'done';
+    if (coop) {
+      await bot.wait(3000);
+      logHashes();
+    }
     bot.finish('line one, forge, Q1-Q3, hook walk, quarry ramp and lever, walking only');
   } catch (error) {
     document.documentElement.dataset.railwayProof = 'failed';
@@ -822,5 +839,6 @@ export async function play({ stopBeforeReward = false } = {}) {
     input.keys.delete('ShiftLeft');
     releaseJump();
     if (typeof offPresence === 'function') offPresence();
+    clearInterval(sampler);
   }
 }
