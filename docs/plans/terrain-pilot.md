@@ -13,3 +13,22 @@ Baseline capture: `.look/evidence/1793919155149-82638/evidence.json`, camera `(7
 - Preserve macro-shape, material and wet-contact captures; matched default/pilot counts, game-camera approach/reverse, real-time recording and curves, existing solo place bot and bounded spatial audit. Report incomplete coverage and load/device limits explicitly.
 
 Budgets: 2,000–8,000 added render triangles (lower is fine if silhouette holds), 2–4 spatial/material draws, fewer than about 2,000 collision triangles; no timing claim under load. Owner question: **Does this shore feel like a place you want to walk into?**
+
+## Round 3 — smooth, textured terrain
+
+Owner's 5 November follow-up supersedes the original faceted/texture-free bullets above. Fetched and rebased onto
+origin/main (`2fb424d2`); its look-development wedge is available. The requested terrain-texturing document was
+not in that main revision, so the committed research on `codex/terrain-texturing` (`29f5de8f`) supplies the technique
+stack and revised texture budget. No other branch was merged. Smooth previz shots 1, 3 and 4 supply design intent;
+they are not texture sources or measured camera solutions.
+
+Use a bounded one-metre sculpted patch, continuous kit normals, island-aligned triplanar rock pigment, height-blended
+semantic layers and local tunables for the complete look. Retain the shared surface for collision and seabed, protected
+route formation and the idle-stop correction. Three original 512² linear RGBA8 repeating pigment/data maps use
+4 MiB including mipmaps, under the research's 4.33 MiB proof budget. The 1,958-triangle kit stays under its roughly
+2,000-triangle collision budget; the finer retained heightfield separately adds 4,836 collision/render triangles.
+
+Compare Ultra Water's locally inventoried `src/scene/terrain.js` with the existing swash receiver. Retain its shared
+film/foam/drying clock and add damp pigment, tide recovery, footprint-faded ripples and film sheen as local settings.
+The three-by-three strata/slope wedge uses `dev/look/beats/terrain-cove.ts`. Keep frozen material comparisons distinct
+from real-time swash capture and solo played-route proof. Owner playtest remains the expansion gate.

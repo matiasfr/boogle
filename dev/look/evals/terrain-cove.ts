@@ -12,6 +12,8 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 while (!me.body) await wait(80);
 const reverse = q.get('coveShot') === 'reverse';
 const wide = q.get('coveShot') === 'wide';
+const previz = q.get('coveShot') === 'previz';
+const swash = q.get('coveShot') === 'swash';
 const x = wide ? 801 : reverse ? 814 : 806,
   z = wide ? 10 : reverse ? 46 : q.get('coveWalk') === '1' ? 38 : 40;
 teleport(me.body, x, H(x, z) + 1.2, z);
@@ -19,7 +21,12 @@ me.body.velocity.set(0, 0, 0);
 cam.yaw = me.yaw = reverse ? 0.6 : -2.7;
 cam.pitch = -0.22;
 cam.dist = 5.2;
-setTimeout(() => (wide ? window.__debugCam!.set([775, 9, 16], [806, 3, 43], 62) : window.__debugCam!.clear()), 600);
+setTimeout(() => {
+  if (wide) window.__debugCam!.set([775, 9, 16], [806, 3, 43], 62);
+  else if (previz) window.__debugCam!.set([775, 6, 16], [806, 3, 43], 62);
+  else if (swash) window.__debugCam!.set([795.5, 2.2, 38.5], [802.1, 0.12, 43.3], 55);
+  else window.__debugCam!.clear();
+}, 600);
 
 // Same count method as dev/look/perf.ts: completed animation frames, shadows on/off, restored in finally.
 async function counts() {
@@ -61,7 +68,7 @@ async function counts() {
   }
 }
 // Shadow toggling compiles alternate pipelines. Keep that diagnostic out of real-time motion captures.
-if (q.get('coveWalk') !== '1') setTimeout(() => background(counts(), 'cove render counts'), 1200);
+if (q.get('coveWalk') !== '1' && !swash && !previz) setTimeout(() => background(counts(), 'cove render counts'), 1200);
 if (q.get('coveWalk') === '1') {
   (window as unknown as { __placeAct: () => void }).__placeAct = () =>
     background(
