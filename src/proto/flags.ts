@@ -24,13 +24,7 @@ export function pageQuery(search = typeof location === 'undefined' ? 'classic=1'
   if (q.get('proto') === 'place') {
     const room = q.get('room');
     const villageRoom = room === 'proto-place-village' || room === 'proto-place-village-coop';
-    // The old coast stays in its own comparison room, including room-only invite links.
-    if (q.get('terrain') === 'cove' || room === 'proto-place-cove') {
-      // Static collision differs. Room-only invites must select the same bounded comparison.
-      q.set('terrain', 'cove');
-      q.set('room', 'proto-place-cove');
-      q.delete('v');
-    } else if (q.get('v') === 'village' || villageRoom) {
+    if (q.get('v') === 'village' || villageRoom) {
       q.set('v', 'village');
       q.set('room', villageRoom ? room : q.get('coop') === '1' ? 'proto-place-village-coop' : 'proto-place-village');
     } else if (!room) q.set('room', q.get('coop') === '1' ? 'proto-place-coop' : 'proto-place');

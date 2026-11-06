@@ -24,7 +24,6 @@ import { WALKABLE_NY } from '../../constants.ts';
 import { coveU } from './cove-tuning.ts';
 import { coveTextures } from './cove-textures.ts';
 import { registerCoveSand } from './cove-sand.ts';
-import { COVE_CLAY, COVE_DRY } from './cove.ts';
 import { ORIGIN } from './layout.ts';
 // oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
@@ -163,9 +162,7 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
     .add(sandCol.mul(sand))
     .mul(lip.mul(coveU('lipShade')).oneMinus());
   const result = mix(dry, pigment('path'), path);
-  patchNode(material, 'colorNode', (previous) =>
-    mix(previous ?? result, COVE_CLAY ? vec3(0.65, 0.63, 0.59) : result, region),
-  );
+  patchNode(material, 'colorNode', (previous) => mix(previous ?? result, result, region));
   patchNode(material, 'roughnessNode', (previous) =>
     mix(previous ?? float(material.roughness), coveU('roughness'), region),
   );
@@ -174,5 +171,5 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   patchNode(material, 'normalNode', (previous) =>
     mix(previous ?? normalViewGeometry, mix(smooth, relief, coveU('detailStrength')).normalize(), region).normalize(),
   );
-  if (!COVE_DRY) registerCoveSand(material, sand.mul(path.oneMinus()).mul(region), region);
+  registerCoveSand(material, sand.mul(path.oneMinus()).mul(region), region);
 }
