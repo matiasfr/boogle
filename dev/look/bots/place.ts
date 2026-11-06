@@ -6,7 +6,8 @@ import { interactTarget } from '../../../src/player/hands.ts';
 import { cam, me } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
-import { teleport } from '../../../src/physics/engine.ts';
+import { teleport, forEachContact } from '../../../src/physics/engine.ts';
+import { WALKABLE_NY } from '../../../src/constants.ts';
 import { carry, fromPlatform, toPlatform, type Platform } from '../../../src/physics/platforms.ts';
 import type { Rock, Tree } from '../../../src/proto/place/chop.ts';
 import { nearest } from '../../../src/proto/place/nearest.ts';
@@ -72,9 +73,11 @@ async function playRoute() {
   // oxlint-disable-next-line typescript/no-explicit-any
   const place = window.__place as any;
   const coopRoute = q.get('coopRoute') === '1';
-  if (coopRoute) watchLanding();
+  let coveWalking = q.get('terrain') === 'cove';
+  if (coopRoute || coveWalking) watchLanding();
   const bot = makeBot({
     recover: () => {
+      if (coveWalking) throw new Error('Cove route needed recovery; dry return is not proven');
       if (coopRoute) throw new Error('Co-op route needed a recovery; no fixture relocation allowed');
       place.backUp();
     },
@@ -126,6 +129,40 @@ async function playRoute() {
     return bot.walk(x, z, r, { limit });
   };
   const travel = go;
+  if (q.get('terrain') === 'cove') {
+    // The art pilot has no new required traversal. Exercise its pocket beach and return to the same climb.
+    await go(O - 187, 10, 1.5);
+    await go(O - 179, 28, 1.5);
+    const approach = [
+      [830, 32],
+      [842, 38],
+      [846, 48],
+      [842, 60],
+      [832, 60],
+      [822, 58],
+      [814, 54],
+      [810, 44],
+      [810, 42],
+      [808, 40],
+      [806, 38],
+    ];
+    const walkCove = async (points: number[][]) => {
+      for (const [x, z] of points) {
+        const reached = await bot.straight(x!, z!, 0.65, 10000);
+        bot.check(`cove dry leg ${x},${z}`, reached && !me.swimming);
+        if (!reached || me.swimming) throw new Error(`Cove leg failed at ${x},${z}`);
+      }
+    };
+    await walkCove(approach);
+    bot.check('cove pocket beach dry', !me.swimming && body.position.y > 1);
+    note('cove pocket beach reached');
+    playMark('cove pocket beach reached');
+    await walkCove([...approach].reverse().slice(1));
+    await walkCove([[821, 28]]);
+    note('cove uphill return');
+    playMark('cove uphill return');
+    coveWalking = false;
+  }
   const waitFor = (fn: () => unknown, ms = 60000, what = '') => bot.until(fn, ms, what);
   const lobe = (x: number, z: number) => {
     const a = (Math.atan2(x - O - 8, -(z + 10)) * 180) / Math.PI;
@@ -312,10 +349,19 @@ async function playRoute() {
   const padOf = (id: string) => tech.PADS.find((p: { id: string }) => p.id === id);
   const face = (x: number, z: number) =>
     void (cam.yaw = me.yaw = Math.atan2(-(x - body.position.x), -(z - body.position.z)));
+  const landed = () => {
+    // Solver residuals can have either sign at rest. Require actual walkable contact, not an exact vy sign.
+    if (me.coyote <= 0 || Math.abs(body.velocity.y) > 0.05) return false;
+    let supported = false;
+    forEachContact(body, (_x, y) => {
+      if (y > WALKABLE_NY) supported = true;
+    });
+    return supported;
+  };
   /** Off the ground and up onto a ledge: jump, near the top jump again, steering at it all the way. */
   const twoJumps = async (x: number, z: number) => {
     // The walking planner can arrive mid-hop. Land before spending the two presses on the ledge.
-    await waitFor(() => me.coyote > 0 && body.velocity.y <= 0, 2000, 'landed before the double jump');
+    await waitFor(landed, 2000, 'landed before the double jump');
     face(x, z);
     input.keys.add('KeyW');
     await wait(120);
@@ -359,10 +405,11 @@ async function playRoute() {
     note(`ability: ${id}`);
     await wait(id === 'hook' ? 3800 : 3000); // its show
     if (id === 'jump') {
-      // The reward's anticipation can outlast the old fixed wait. Its dismissal schedules the demo 0.3 s later.
+      // Let the reward finish, then require a real grounded stance before starting the course.
       await waitFor(() => !gettingItem(), 8000, 'put away the jump reward');
       await wait(400);
-      await waitFor(() => me.coyote > 0 && body.velocity.y <= 0, 4000, 'landed after the jump demonstration');
+      await waitFor(landed, 4000, 'grounded after the jump reward');
+      note(`jump reward stance: grounded=${landed()}, vy=${body.velocity.y}, coyote=${me.coyote}`);
     }
   };
   const glideTo = async (x: number, z: number, limit = 90000) => {

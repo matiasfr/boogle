@@ -108,6 +108,8 @@ the authored shore, collider and bed-validity/query bounds are unchanged. Near-s
 and the frozen sky retain their existing parameters.
 Submerged receivers skip swash samples below its existing −0.3 m cutoff and shore/caustic samples past
 the existing 24 m caustic fade; wetness and absorption still apply, with no new draw or texture pass.
+The optional cove sand profile keeps submerged pigment fully wet across that cutoff; only its exposed
+beach follows backwash drying. This prevents a fixed angular dry-colour contour beneath moving water.
 
 The bounded GPU query contract and cave composition are described in [island water](island.md); the force
 values remain in [player swimming](player.md#swim). Research under `docs/research/` is historical evidence,

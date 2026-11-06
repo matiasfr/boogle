@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640">
+  <rect width="1200" height="640" fill="#ece4d5" />
+  <g font-family="sans-serif" fill="#40382d">
+    <text x="35" y="42" font-size="26">West cove — back and contact construction reference</text>
+    <text x="35" y="74" font-size="16">
+      Original schematic, metres / Y up. Supplements board shots 3–4; design intent, not measured image geometry.
+    </text>
+    <text x="35" y="118" font-size="20">BACK: buried mating plane, 4 m module</text>
+    <path d="M45 340V155H425V340Z" fill="#b59662" stroke="#70513a" stroke-width="3" />
+    <path d="M45 155H425V169H45Z" fill="#73962d" />
+    <path d="M45 169H425V180H45Z" fill="#70513a" />
+    <path d="M45 233H425M45 291H425" stroke="#927448" stroke-width="5" />
+    <text x="45" y="371" font-size="16">Flat rear; embed into the shared heightfield.</text>
+    <text x="45" y="397" font-size="16">Beds share world Y; yaw/width may vary, no vertical stretching.</text>
+    <text x="605" y="118" font-size="20">SECTION: grass / seam / face / foot / shelf</text>
+    <path
+      d="M670 180H1100V425H605L620 380L645 355L652 310L670 302L672 247L684 240Z"
+      fill="#b59662"
+      stroke="#70513a"
+      stroke-width="3"
+    />
+    <path d="M670 180H1100V192H676Z" fill="#73962d" />
+    <path d="M676 192H1100V201H678Z" fill="#70513a" />
+    <path d="M680 240H835M670 302H835M645 355H835" stroke="#cfb47d" stroke-width="6" />
+    <path d="M550 373H1100V425H550Z" fill="#237d7b" opacity=".35" />
+    <path d="M550 425H1100L1100 205L845 205L760 350L650 405Z" fill="#70513a" opacity=".3" />
+    <text x="845" y="287" font-size="16">heightfield beneath kit</text>
+    <text x="550" y="455" font-size="16">Same triangles render and collide; buried rear cannot block a cave.</text>
+    <text x="550" y="481" font-size="16">No cave. Bench continues below sea (blue); rock top is an obstacle.</text>
+    <text x="35" y="535" font-size="18">
+      Contact detail: broad chamfer, shallow recess, irregular bed edge; no grit or repeated masonry joints.
+    </text>
+    <text x="35" y="567" font-size="18">
+      Waterline blocks: rounded 6–8 sided sections; dry scree: fewer angular facets, partly buried.
+    </text>
+    <text x="35" y="599" font-size="18">
+      Resolve shot 4's regular wall by bending the headland and burying ends; retain shot 2's open beach.
+    </text>
+  </g>
+</svg>

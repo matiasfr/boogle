@@ -892,6 +892,63 @@ the shore atlas and never treat bridge decks as seabed. Dry bank/deck surfaces r
 
 ### Shore profile comparison
 
+**West-cove art pilot (5 November, branch review only).** `?proto=place&terrain=cove&room=proto-place-cove&fresh=1`
+keeps the ordinary grey box as default. The flag selects its own comparison room, including room-only invites,
+because static collision changes. Its gameplay role is a vista and natural boundary beside the arrival climb,
+not a new reward destination or required route. From the first turn at world (813,10), the broad path leads toward
+(823,28) and town while the cove sits to the right. The low pocket remains physically accessible for an optional
+pause and return; no reward, directed side path or invisible barrier is added. The pilot bot's detour proves access,
+not newcomer motivation. [Round-six rationale](../plans/terrain-pilot.md#round-6--gameplay-rationale-before-the-look)
+records the source-backed choice before the look revision. Previz supplies reference, not a matching target.
+One headland at local z 34–74 rises out of the beach and wraps into the positive-z cove shoulder;
+the bounded inland blend stops before town and protects the complete landing fade, path shoulders and rail formation.
+The heightfield owns the sandy pocket, submerged shelf and backing slope. The smooth terrain revision adds a bounded
+one-metre patch at local x -212…-160, z 16…78; the rest keeps its two-metre grid. Five disjoint heightfields match
+the rendered surface, and protected route samples retain their original heights. One connected rounded cliff,
+three low rounded waterline buttresses use two opaque cullable batches and the exact same
+1,942 triangles for collision. The toe shares the face's skin and rounded cap, with no intersecting end-wall ramp or
+small stepping fragments. The rear return and nose closure are fitted below the finished soil, retaining one
+rounded mass without exposed end-wall slivers. Refinement adds 4,836 triangles, for 6,778 render additions in total.
+Beyond local z48, the far cap begins its return earlier, easing into the buried backing across a wider shoulder;
+the played toe and front lip retain their positions. This removes the steep exposed rear-return strip.
+No added lights, post passes or per-frame terrain uploads.
+The pocket has a gentler beach profile: the first 0.3 m above water spans about 1.9 m at local z 40.
+Bounded carving and backing-height matching retain the complete route protection mask.
+The owner's smooth Odyssey base and adjustable Sunshine strata follow the [revised pilot plan](../plans/terrain-pilot.md).
+Island-aligned triplanar rock and planar turf pigment use three original 512² linear RGBA8 maps (4 MiB with mips).
+Slope and elevation select semantic layers; authoritative path coverage stays separate from pigment. A broad soil-slope
+attribute stabilizes coverage independently of lighting normals. Actual surface slope limits turf eligibility,
+so steep barriers remain sandstone. Branch-free microheight blending keeps texture sampling outside divergent
+per-pixel conditionals before a soft turf edge; original grouped blade
+strokes and a restrained under-lip shade replace broad turf noise. The kit has a small
+opaque cap overhang. Sand takes priority on low walkable beach slopes; turf is suppressed at the wet shoreline.
+Golden sand, orange sandstone and richer green turf use unequal sediment beds, three related pigments by default,
+slow lateral warp and slight edge erosion. Thin dark accent lines are removed at the owner's round-seven request;
+the broad irregular warm beds remain. Bedding is restricted to exposed steep rock;
+gentle shoulders stay plain. Defaults are strength 0.6, bed scale 2.4 m and irregularity 0.6; the rock/turf threshold
+is normal-Y 0.8 with a 0.12 blend, and bedding fades at 0.68 with a 0.1 blend. The cap and soil share a bounded
+static tangent field and semantic cap coverage at their join, avoiding a lighting crease or isolated painted strip.
+These presentation fields leave the shared support positions and collision triangles unchanged.
+All 63 look settings are local tunables
+(`cove.*`); none changes collision or simulation. The final art candidate still requires coordinator/owner review.
+Under this flag only, idle Buddy cancels gravity tangent to actual walkable static support while retaining normal
+pressure. Moving input, swimming, moving decks, jumps and upward impulses keep their normal behavior. Seven sampled
+eight-second post-stop assertions remain in the motion fixture; results are sampled, not exhaustive contact coverage.
+The [prior assessment](../research/terrain-pilot-followup.md) preserves round-two evidence, which predates this geometry.
+Water depth comes from the same terrain/solid surface; rounded rock footprints supply wave obstacles. Existing receiver
+wetness, caustics and swash stay separate from water foam. Cove sand adds the Ultra Water demo's damp pigment,
+footprint-faded ripples and thin-film sheen using the existing swash/drying clock. Persistent dampness and dynamic
+drying contributions remain separate, so the static band cannot mask recovery between waves. The stronger drying
+contrast uses the existing backwash clock; filtered sand-tinted foam covers sand only. Cove rock contact uses the
+ocean's contact foam rather than the former dotted ground-swash lace. Submerged cove sand remains continuously wet
+below the swash sampler's −0.3 m cutoff, avoiding an angular dry-colour contour underwater; exposed sand still dries
+with the shared backwash clock.
+`&coveView=shape` retains the clay comparison with procedural normal detail;
+`&coveView=dry` removes land and kit wet receivers for the material comparison. Neither changes collision.
+Local presentation/static Owner collision; no new save or lockstep state. H uses the actual grid triangles plus kit
+surfaces under the flag. Catalog inputs, IDs, progression and The Boogler's copy stay unchanged. Not adopted beyond
+this corner; owner playtest and device validation remain pending. Serves DESIGN.md 11, Show, don't tell.
+
 `?proto=place&water=new&shelf=demo` is a Local geometry-only A/B experiment. It copies the owner's measured Ultra
 Water bearing-95 beach profile onto the east shore at world (1219.513, 8.505), oriented 95° clockwise from north.
 The exact-profile strip is 70 m wide, blending to unchanged terrain by 110 m; cross-shore blending runs from

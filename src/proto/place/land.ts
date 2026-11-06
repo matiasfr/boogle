@@ -1,4 +1,4 @@
-// The land of ?proto=place, drawn: the heights of ./terrain.ts as one faceted mesh, collided as one heightfield, with the
+// The land of ?proto=place, drawn from terrain.ts; the cove locally refines the shared render/collision surface, with the
 // spire, the footbridges and what stands across the sea. chop.ts owns every tree. Local.
 import * as THREE from 'three/webgpu';
 import { flat } from '../flat.ts';
@@ -11,16 +11,64 @@ import { addBody, createBody, type Shape } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
 import { smoothstep } from '../../math.ts';
 import { FAR, GRID, ORIGIN, PATHS, SPIRE } from './layout.ts';
-import { CELL, H, NX, NZ, PATH_SAMPLES, at, cellX, cellZ, gorgeD, heights, insidePlace, pathMask } from './terrain.ts';
+import {
+  CELL,
+  H,
+  NX,
+  NZ,
+  PATH_SAMPLES,
+  at,
+  cellX,
+  cellZ,
+  gorgeD,
+  heights,
+  insidePlace,
+  pathMask,
+  COVE_FINE,
+  fineHeightAt,
+  terrainCollisionTiles,
+} from './terrain.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from './shore-layout.ts';
 import { boxFootprint, sampleFootprint } from './support.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { tagStepSupport, segmentStepSupport, type StepSurface } from '../../render/locomotion-surfaces.ts';
+import { COVE, COVE_CLAY, coveJoinCoverage, coveJoinNormal, coveWeight } from './cove.ts';
+import { buildCove } from './cove-view.ts';
+import { dressCoveGround } from './cove-ground.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
 // ---------------------------------------------------------------- the mesh and the heightfield
 const FLAT = (color: string) => flat(color);
+
+/** Finished soil only: H also includes cliff-kit tops, which must not steer ground coverage. */
+function soilHeight(x: number, z: number) {
+  const gx = Math.max(0, Math.min(NX - 1, (x - GRID.x0) / CELL)),
+    gz = Math.max(0, Math.min(NZ - 1, (z - GRID.z0) / CELL));
+  const i = Math.min(Math.floor(gx), NX - 2),
+    j = Math.min(Math.floor(gz), NZ - 2),
+    u = gx - i,
+    v = gz - j;
+  const a = heights[at(i, j)]!,
+    b = heights[at(i + 1, j)]!,
+    c = heights[at(i, j + 1)]!,
+    d = heights[at(i + 1, j + 1)]!;
+  const coarse = u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
+  return fineHeightAt(x, z, coarse);
+}
+
+/** Static coverage field: a 3 m derivative with perpendicular averaging removes grid-scale zigzags.
+ * These distances are bake resolution, not look controls; lighting keeps the actual mesh normals. */
+function macroSlopeY(x: number, z: number) {
+  let dx = 0,
+    dz = 0;
+  for (const offset of [-1.5, 0, 1.5]) {
+    const weight = offset === 0 ? 2 : 1;
+    dx += weight * (soilHeight(x + 3, z + offset) - soilHeight(x - 3, z + offset));
+    dz += weight * (soilHeight(x + offset, z + 3) - soilHeight(x + offset, z - 3));
+  }
+  return 1 / Math.hypot(1, dx / 24, dz / 24);
+}
 
 function buildMesh(owner?: OwnedView) {
   // Continue the visible bed into the atlas's offshore apron. Ending the opaque mesh at the shallow
@@ -29,8 +77,10 @@ function buildMesh(owner?: OwnedView) {
   // All share the terrain's draw/material; the authored grid and its collider stay untouched.
   const rings = 10,
     perimeter = 2 * (NX + NZ - 2);
-  const pos = new Float32Array((NX * NZ + rings * perimeter) * 3),
-    col = new Float32Array(pos.length);
+  const baseCount = NX * NZ + rings * perimeter;
+  const pos = new Float32Array((baseCount + (COVE_FINE ? COVE_FINE.nx * COVE_FINE.nz : 0)) * 3),
+    col = new Float32Array(pos.length),
+    paths = new Float32Array(pos.length / 3);
   const c = new THREE.Color();
   const SAND = new THREE.Color('#e8d39a'),
     GRASS = new THREE.Color(LOOK.ground ? '#6c9a42' : '#79b84a'),
@@ -56,11 +106,29 @@ function buildMesh(owner?: OwnedView) {
       if (h < 3.2) c.lerp(gorgeD(x, z) < 18 ? BANK : SAND, smoothstep(3.2, 1.6, h));
       if (!LOOK.ground) c.lerp(h < 9 ? ROCK_LOW : ROCK, smoothstep(0.55, 1.1, slope)); // with it, rock is per pixel
       c.lerp(DIRT, pathMask[k]!);
+      if (COVE && coveWeight(x, z) > 0 && pathMask[k]! < 0.01) {
+        // Wetness stays in the production receiver; this is dry surface coverage only.
+        const tint = COVE_CLAY
+          ? new THREE.Color(0.65, 0.63, 0.59)
+          : h < 2
+            ? new THREE.Color(0.72, 0.57, 0.32)
+            : new THREE.Color(0.19, 0.32, 0.04);
+        c.lerp(tint, coveWeight(x, z));
+      }
       col.set([c.r, c.g, c.b], k * 3);
+      paths[k] = pathMask[k]!;
     }
   const idx: number[] = [];
   for (let j = 0; j < NZ - 1; j++)
     for (let i = 0; i < NX - 1; i++) {
+      if (
+        COVE_FINE &&
+        cellX(i) >= COVE_FINE.x0 &&
+        cellX(i) < COVE_FINE.x1 &&
+        cellZ(j) >= COVE_FINE.z0 &&
+        cellZ(j) < COVE_FINE.z1
+      )
+        continue;
       const a = at(i, j),
         b = at(i + 1, j),
         c0 = at(i, j + 1),
@@ -97,11 +165,86 @@ function buildMesh(owner?: OwnedView) {
       idx.push(a, b, k, b, d, k);
     }
   }
+  if (COVE_FINE) {
+    const f = COVE_FINE;
+    const ids = new Uint32Array(f.nx * f.nz);
+    for (let j = 0; j < f.nz; j++)
+      for (let i = 0; i < f.nx; i++) {
+        const k = j * f.nx + i,
+          index = baseCount + k;
+        const x = f.x0 + i * f.cell,
+          z = f.z0 + j * f.cell;
+        const gx = (x - GRID.x0) / CELL,
+          gz = (z - GRID.z0) / CELL;
+        const ci = Math.floor(gx),
+          cj = Math.floor(gz),
+          u = gx - ci,
+          v = gz - cj;
+        const samples = [at(ci, cj), at(ci + 1, cj), at(ci, cj + 1), at(ci + 1, cj + 1)];
+        const weights = [(1 - u) * (1 - v), u * (1 - v), (1 - u) * v, u * v];
+        pos.set([x + ORIGIN.x, f.heights[k]!, z + ORIGIN.z], index * 3);
+        for (let channel = 0; channel < 3; channel++)
+          col[index * 3 + channel] = samples.reduce((sum, id, n) => sum + col[id * 3 + channel]! * weights[n]!, 0);
+        paths[index] = samples.reduce((sum, id, n) => sum + pathMask[id]! * weights[n]!, 0);
+        const boundary = i === 0 || j === 0 || i === f.nx - 1 || j === f.nz - 1;
+        ids[k] = boundary && u === 0 && v === 0 ? at(ci, cj) : index;
+      }
+    for (let j = 0; j < f.nz - 1; j++)
+      for (let i = 0; i < f.nx - 1; i++) {
+        const k = j * f.nx + i,
+          a = ids[k]!,
+          b = ids[k + 1]!,
+          c0 = ids[k + f.nx]!,
+          d = ids[k + f.nx + 1]!;
+        idx.push(a, c0, b, b, c0, d);
+      }
+  }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  if (COVE) geo.setAttribute('covePath', new THREE.BufferAttribute(paths, 1));
   geo.setIndex(idx);
   geo.computeVertexNormals();
+  if (COVE_FINE) {
+    // Odd boundary vertices lie on the coarse edges. Match their interpolated normals, too.
+    const f = COVE_FINE;
+    const normals = geo.getAttribute('normal');
+    const n = new THREE.Vector3();
+    for (let j = 0; j < f.nz; j++)
+      for (let i = 0; i < f.nx; i++) {
+        if (i !== 0 && j !== 0 && i !== f.nx - 1 && j !== f.nz - 1) continue;
+        const gx = (f.x0 + i - GRID.x0) / CELL,
+          gz = (f.z0 + j - GRID.z0) / CELL;
+        if (Number.isInteger(gx) && Number.isInteger(gz)) continue;
+        const a = at(Math.floor(gx), Math.floor(gz)),
+          b = at(Math.ceil(gx), Math.ceil(gz));
+        n.set(
+          normals.getX(a) + normals.getX(b),
+          normals.getY(a) + normals.getY(b),
+          normals.getZ(a) + normals.getZ(b),
+        ).normalize();
+        normals.setXYZ(baseCount + j * f.nx + i, n.x, n.y, n.z);
+      }
+  }
+  if (COVE) {
+    const slopes = new Float32Array(pos.length / 3);
+    const capJoin = new Float32Array(slopes.length * 2);
+    const normals = geo.getAttribute('normal');
+    for (let k = 0; k < slopes.length; k++) {
+      const wx = pos[k * 3]!,
+        wz = pos[k * 3 + 2]!;
+      // Cover the material's entire feather plus one cell, including coarse vertices at its seam.
+      slopes[k] =
+        wx >= 733 && wx <= 887 && wz >= -22 && wz <= 112 ? macroSlopeY(wx - ORIGIN.x, wz - ORIGIN.z) : normals.getY(k);
+      const coverage = coveJoinCoverage(wx - ORIGIN.x, wz - ORIGIN.z, pos[k * 3 + 1]!);
+      if (coverage) capJoin.set(coverage, k * 2);
+      // Coverage keeps the original soil slope. Only lighting shares the kit's contact tangent.
+      const joined = coveJoinNormal(wx - ORIGIN.x, wz - ORIGIN.z, normals.getX(k), normals.getY(k), normals.getZ(k));
+      if (joined) normals.setXYZ(k, joined[0]!, joined[1]!, joined[2]!);
+    }
+    geo.setAttribute('coveSlope', new THREE.BufferAttribute(slopes, 1));
+    geo.setAttribute('coveCapJoin', new THREE.BufferAttribute(capJoin, 2));
+  }
   const mesh = new THREE.Mesh(
     geo,
     LOOK.ground
@@ -109,34 +252,39 @@ function buildMesh(owner?: OwnedView) {
       : new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
   );
   mesh.receiveShadow = true;
+  if (COVE) {
+    mesh.material.flatShading = false;
+    // The cove shader owns pigment; the old look-off fallback needs its colours only outside the mask.
+    if (mesh.material.vertexColors) {
+      mesh.material.vertexColors = false;
+      mesh.material.colorNode = null;
+    }
+    dressCoveGround(geo, mesh.material);
+  }
   if (new URLSearchParams(location.search).get('terrain') === 'demo')
     void import('../shore/terrain-demo.ts').then((m) => m.applyTerrainDemo(mesh.material, ORIGIN.x));
-  registerWaterReceiver(mesh.material);
+  if (!COVE) registerWaterReceiver(mesh.material);
   owner?.cleanup(() => mesh.material.dispose());
   mesh.frustumCulled = false;
   if (owner) owner.add(mesh);
   else scene.add(mesh);
 
-  // heights[i][j]: i steps +x, j steps -z, from the body's position.
-  const hf: number[][] = [];
-  for (let i = 0; i < NX; i++) {
-    const col2: number[] = [];
-    for (let j = 0; j < NZ; j++) col2.push(heights[at(i, NZ - 1 - j)]!);
-    hf.push(col2);
+  for (const tile of terrainCollisionTiles()) {
+    const groundBody = addStatic(
+      { kind: 'heightfield', heights: tile.heights, cell: tile.cell },
+      tile.position,
+      undefined,
+      GROUP.SCENERY,
+      owner,
+    );
+    tagStepSupport(groundBody, (x, z) => {
+      if (!insidePlace(x, z)) return null;
+      const top = H(x, z);
+      // Authored coastal ground band, independent of rendered grass colour/pigment.
+      return { top, surface: top < 2.4 && gorgeD(x - ORIGIN.x, z - ORIGIN.z) >= 18 ? 'sand' : 'grass' };
+    });
   }
-  const groundBody = addStatic(
-    { kind: 'heightfield', heights: hf, cell: CELL },
-    { x: ORIGIN.x + GRID.x0, y: 0, z: ORIGIN.z + GRID.z1 },
-    undefined,
-    GROUP.SCENERY,
-    owner,
-  );
-  tagStepSupport(groundBody, (x, z) => {
-    if (!insidePlace(x, z)) return null;
-    const top = H(x, z);
-    // Authored coastal ground band, independent of rendered grass colour/pigment.
-    return { top, surface: top < 2.4 && gorgeD(x - ORIGIN.x, z - ORIGIN.z) >= 18 ? 'sand' : 'grass' };
-  });
+  if (COVE) buildCove();
 }
 
 /** Walls and roofs of buildings you can walk into: solid to you (your mask has every bit), and the indoor camera leaves this

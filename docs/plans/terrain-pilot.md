@@ -1,0 +1,108 @@
+# West-cove sandstone pilot
+
+Owner approved 5 November 2026; implement on this branch only, no push/ship. Serves DESIGN.md **11. Show, don't tell**: the shore's visible form must describe its solid surface and the open route. Research/spec: [terrain-art](../research/terrain-art.md), phased plan and first pilot. Stop at owner playtest before expansion.
+
+The supplied board is `/Users/matiasfranco/Developer/boogle-daily/.look/previz/terrain-corner/board.md`. Opened all four shots. Shot 2 owns composition, 3 owns ledge/contact detail, 4 owns front/side profiles; shot 1 supplies family consistency only. [Back/contact schematic](../research/terrain-pilot-reference.svg) fills the missing rear reference locally under the no-network constraint. It is an original construction drawing, not another generated concept or dimensional measurement. No image is a shipped texture.
+
+Baseline capture: `.look/evidence/1793919155149-82638/evidence.json`, camera `(775,9,16)` toward `(806,3,43)`. The current shoulder is a tall unbroken diagonal face. The low shelf is -2 m at local x -214…-190, z 30…58; inland x -178 rises to 17 m. Fit one low projecting headland in front of that slope, rather than cutting the route to fit a wall.
+
+- Protect the landing's complete 14 m fade plus a grid-cell margin; the shore climb's 14 m shoulders plus margin; other path, rail, pad and catalog envelopes. Keep IDs and original catalog snapshots.
+- Shape a bounded shelf, pocket beach and backed headland on the positive-z shoulder. Use the existing 2 m finished grid for render, collision and triangle-aware sea bed. No shader displacement.
+- Code-author a small bedded face/crest/foot kit and three waterline blocks; exact shared render/collision triangles, no cave or traversable undercut. Metres, Y up, world-aligned strata. Two cullable material batches; zero new textures, passes or lights.
+- Local materials/water animation and static Owner collision; no lockstep/wire/save changes. Isolate altered collision behind `terrain=cove` and its own comparison room, with a shape-only variant.
+- Preserve macro-shape, material and wet-contact captures; matched default/pilot counts, game-camera approach/reverse, real-time recording and curves, existing solo place bot and bounded spatial audit. Report incomplete coverage and load/device limits explicitly.
+
+Budgets: 2,000–8,000 added render triangles (lower is fine if silhouette holds), 2–4 spatial/material draws, fewer than about 2,000 collision triangles; no timing claim under load. Owner question: **Does this shore feel like a place you want to walk into?**
+
+## Round 3 — smooth, textured terrain
+
+Owner's 5 November follow-up supersedes the original faceted/texture-free bullets above. Fetched and rebased onto
+origin/main (`2fb424d2`); its look-development wedge is available. The requested terrain-texturing document was
+not in that main revision, so the committed research on `codex/terrain-texturing` (`29f5de8f`) initially supplied the
+technique stack and revised texture budget. Main advanced during validation; the second rebase onto `3048c924`
+includes [that research](../research/terrain-texturing.md) and current tunable state/owned-view contracts.
+Smooth previz shots 1, 3 and 4 supply design intent;
+they are not texture sources or measured camera solutions.
+
+Use a bounded one-metre sculpted patch, continuous kit normals, island-aligned triplanar rock pigment, height-blended
+semantic layers and local tunables for the complete look. Retain the shared surface for collision and seabed, protected
+route formation and the idle-stop correction. Three original 512² linear RGBA8 repeating pigment/data maps use
+4 MiB including mipmaps, under the research's 4.33 MiB proof budget. The 1,958-triangle kit stays under its roughly
+2,000-triangle collision budget; the finer retained heightfield separately adds 4,836 collision/render triangles.
+
+Compare Ultra Water's locally inventoried `src/scene/terrain.js` with the existing swash receiver. Retain its shared
+film/foam/drying clock and add damp pigment, tide recovery, footprint-faded ripples and film sheen as local settings.
+The three-by-three strata/slope wedge uses `dev/look/beats/terrain-cove.ts`. Keep frozen material comparisons distinct
+from real-time swash capture and solo played-route proof. Owner playtest remains the expansion gate.
+
+## Round 4 — join the toe and clarify the material masses
+
+Owner/coordinator feedback on 5 November requires the separate jutting wedge to become a rounded continuous
+sandstone toe, broader visible colour strata, golden sand, richer turf and readable wet/drying bands. The owner's
+`owner-cove-facet.png` and its written notes identify the toe and dotted edges; smooth previz shots 1 and 3 remain
+design intent. Retain the flag, shared collision/seabed, protected routes and post-stop fixture.
+
+Replace the intersecting wedge/end closure with one connected skin and rounded cap; remove tiny stepping fragments
+and lower the larger rocks into irregular buttresses. Use broad orange/ochre pigment beds with tunable width and
+softness, clean slope coverage and an independent low-elevation sand rule. Retain the demo-derived shared swash
+clock, strengthening drying pigment and filtering sand foam while leaving rock contact to the ocean.
+
+The requested wedge sweeps strata 0.35/0.6/0.9 against band fraction 0.3/0.5/0.7. Capture before/after at the original
+wide camera and a tighter toe view from the same camera station; the supplied owner crop has no recoverable camera
+metadata, so label the latter an interpretation. Re-run the bounded surface audit, seven eight-second stops, solo
+Place bot, counts and checks after final edits. No compatibility work, push or ship; coordinator reviews and merges.
+
+## Round 5 — sediment, turf and continuous contact
+
+Replace equal two-tone stripes with unequal sediment beds, three or four related tones, occasional thin accents,
+low-frequency warp and restrained edge erosion. Local tunables own every material control; the existing wedge
+sweeps irregularity 0/0.6/1 against colour count 2/3/4. Restrict bedding to steep exposed rock. Stabilize grass coverage
+with a broad soil-slope attribute, sharpen its lip and use original blade clusters instead of broad turf noise.
+
+Fit the cliff's rear return and first nose closure below the actual finished soil; preserve the shared render,
+collision and seabed triangles. Keep submerged sand wet across the shared swash sampling cutoff while exposed sand
+still dries. The angular underwater brown boundary was a wetness discontinuity, not a mismatched water mesh.
+No water topology change is retained. Preserve protected routes, seven post-stop checks, budgets and the URL flag.
+Capture the same wide and interpreted owner views, the variation wedge, close turf and real-time swash, then inspect
+PNGs and extracted video frames. Final checks, bounded surface audit and solo Place bot precede coordinator review.
+
+## Round 6 — gameplay rationale before the look
+
+**Disposition: proceed within the approved corner; use it as an arrival-side vista and natural boundary.**
+The cove is not a new destination players should seek before town. There is no authored reward here, and the
+pilot's solo-bot detour is traversal evidence, not evidence that the detour belongs in the opening progression.
+The reachable low pocket can remain an optional place to pause by the water; do not add a reward, directed side
+path or climb invitation to justify the art. This serves DESIGN.md 7 and 11: telegraph the real route through form.
+
+Evidence: [island](../game-design/island.md) describes classic home's different coordinates, so its west-cove name
+does not establish Place content. [Shore arrival](../research/shore-arrival.md) calls for a clear inland climb and
+peripheral sea, with optional detours that recover to the route. [Terrain art](../research/terrain-art.md)'s pilot
+puts this headland on the positive-z shoulder beside the climb and explicitly adds no route or required traversal.
+Place's actual landing is world (801,10), y3. Its main path climbs through (813,10), (823,28), (835,32), then bends
+through the cottages to town at (902,9), y18. The nearest authored cosmetic is beyond the pilot, near town at
+(872.5,25.5). The pilot bot deliberately loops around the back to (806,38), then returns to the same climb.
+
+From the arrival path, the player should see a broad, quiet uphill surface leading toward the cottages, with warm
+steep sandstone enclosing the water off to the right. Sand and gentle grass tops say where feet can go; steep
+rock says that climbing the coastal face is not the onward route. Use soft natural coverage borders, not the
+round-five binary green patches. Keep the existing dry physical access and return; no invisible walls.
+
+Owner directions, 5 November: previz is reference rather than a target, and gameplay shapes the environment.
+Combine visible warm sandstone with irregular bedding; fix the cap lighting crease and isolated stone triangle.
+Capture wide, owner interpretation, first arrival-path glimpse and swash; retain budgets, flag, shared surfaces
+and post-stop assertions. Blind route discovery and device play remain owner validation, not bot conclusions.
+
+## Round 7 — quiet sandstone faces
+
+Retain the round-six vista, route, warm palette, broad irregular beds, slope-true turf and wet beach.
+Remove the thin dark accent layer and its controls rather than leaving a disabled compatibility path.
+Trace rear-cap specks and angular background borders to their actual surface before correcting them.
+Keep the four established cameras (arrival, wide, interpreted owner angle, close cap) and make paired
+before/after boards plus sandstone crops. Rebase first, then retain the rebased baseline separately from
+the final evidence. Validate the final tree, counts and affected cove traversal; stop for coordinator review.
+This serves DESIGN.md 11, **Show, don't tell**: quieter stone should support the readable route and vista.
+
+The far return now starts its descent earlier beyond z48, retaining the near toe and front lip while replacing
+the exposed steep rear strip with a wider shoulder. The height-blend shader uses branch-free exclusion and
+normalization: scalar TSL conditionals otherwise put its texture reads in divergent fragment flow. Temporary
+RGB coverage and surface-ID probes are evidence only and are removed from the product before final capture.
