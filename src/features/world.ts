@@ -1,7 +1,8 @@
 // Shared deterministic world: ticks from the frame loop, and from a worker clock while the tab is hidden.
 import { onFrame, onStart } from '../loop.ts';
 import { updateWorld } from '../world/sync.ts';
-import { startBackgroundClock } from '../world/background.ts';
+import { createBackgroundAdvance, startBackgroundClock } from '../world/background.ts';
 
-onFrame(({ dt }) => updateWorld(dt), { phase: 'update', order: -10 });
-onStart(() => startBackgroundClock(updateWorld));
+const advance = createBackgroundAdvance(updateWorld, performance.now());
+onFrame(({ now }) => advance(now, !document.hidden), { phase: 'update', order: -10 });
+onStart(() => startBackgroundClock(advance));
