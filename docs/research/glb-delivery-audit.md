@@ -1,10 +1,50 @@
 # GLB delivery: compression works; tighten service worker caching
 
-_2026-11-05. Research only, following owner-approved recommendation 3 of `codex/threejs-tips-audit`, commit `40ed8921` (read with `git show`). Live GET inspection of boogle.club and one cold/repeat browser pair; source and deployed build both `736e6066a78c633b6e2a6f20110e6e07533794db`. **[V]** = observed response, inspected source or local reproduction; **[D]** = recommendation/inference; **[U]** = not verified. No production writes, gameplay changes, push or deployment._
+_2026-11-05. Initial production audit, following owner-approved recommendation 3 of `codex/threejs-tips-audit`, commit `40ed8921` (read with `git show`). Live GET inspection of boogle.club and one cold/repeat browser pair; source and deployed build both `736e6066a78c633b6e2a6f20110e6e07533794db`. **[V]** = observed response, inspected source or local reproduction; **[D]** = recommendation/inference; **[U]** = not verified. No production writes, gameplay changes, push or deployment._
 
 **The deployed GLBs already receive gzip, valid MIME types, validators and effective repeat-load caching.** Seven emitted GLBs total **168,952 bytes over HTTP after compression versus 674,520 decoded bytes**, a **75.0% body-byte reduction**. A CDN or codec change is not supported by this evidence. The smallest useful fixes are in the existing service worker: exclude the unversioned asset-stage HTML, retain used lazy assets across build-cache purges, and attach background writes to the fetch event's lifetime.
 
-## Numbered recommendations [D]
+## Approved fix follow-up
+
+The owner approved recommendations 2 and 3 after the audit. This branch was rebased onto fetched `origin/main`
+`4ca4e870`, then implemented both in `sw-policy.ts`/`sw-worker.ts`. The original production measurements below remain
+historical; they are not evidence of this unpushed implementation being deployed.
+
+- HTML paths and every navigation bypass the worker; cached HTML/XHTML fallbacks under asset URLs are ignored,
+  and new HTML responses are not stored. Registration timing, Meshopt, gzip, hashed URLs and hosting are unchanged.
+- Current-cache hits return without rewriting. Older hits are copied forward, with both promotion and network
+  writes protected by `event.waitUntil()`. Storage errors remain nonfatal and the deleted-cache guard remains.
+- The owner-requested regression tests execute the bundled worker and policy. They cover stale HTML/navigation,
+  a delayed write that outlives response delivery, old-cache removal, no rewriting of current hits, storage failure
+  and deletion, and a previously cached HTML fallback. The focused run passed 9 tests; `npm run check` passed all
+  357 tests plus lint, typecheck, registry, level/asset checks and production build.
+
+Final verification (5 November, local; no production writes):
+
+| Check                       | Result                                                                                                      |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `npm run check`             | Passed; 357 tests, lint/typecheck, registry, level/asset checks and build                                   |
+| `node dev/look/sw-check.ts` | 12/12 passed across A → B → C → off; then unsupported-SW context                                            |
+| A repeat / B repeat         | 0 unchanged game-asset requests reached the server; 167 asset responses via SW                              |
+| B page / stale HTML         | B-specific hashed fixture executed; seeded old `/assets/index.html` bypassed                                |
+| Promotion / offline         | 33,508-byte model copied into B with 0 network requests; exact bytes read offline after A purge             |
+| Full bot                    | Finished 29 game minutes in 4 min 49 s; 84 checkpoints; no expected-action failures or page/graphics errors |
+
+Evidence: [browser assertions](../../.look/sw-check/report.json), [B screenshot](../../.look/sw-check/build-b.png),
+[bot report](../../.look/playthrough/glb-delivery-sw/report.txt),
+[bot still](../../.look/playthrough/glb-delivery-sw/end-still.png). These local artifacts are gitignored.
+Inspected B's rendered island and enabled Jump in lobby with the splash removed, and the bot's rendered final
+Buddy/platform view. The full bot command was `npm run playthrough -- --full --name glb-delivery-sw`; it uses the
+local development server (SW disabled), so the separate production browser check establishes SW behavior.
+The bot's generic report lists crystal/co-op marks as absent; neither was an expected-action failure in this solo run.
+No remaining check failures. Safari/iPad and production rollout remain unverified; no real-time feel claim.
+
+The final worker/checker edits were followed by a fresh `npm run check` and production browser run. The first
+browser captures still showed the splash, so the checker now waits for both `interactive` and splash removal.
+These fixes do not remove GitHub Pages' HTTP freshness window or make navigation work offline; offline reuse
+applies to hashed asset fetches. Hosting/compression and registration timing remain unchanged.
+
+## Original numbered recommendations [D]
 
 1. **Keep the existing Meshopt + HTTP gzip path and hashed URLs.** Owner: asset build and [vite.config.ts](../../vite.config.ts), with the current Pages host providing HTTP compression. All seven deployed GLBs and all three WASM files were compressed; `model/gltf-binary` and `application/wasm` were correct. Preserve [asset-loader.ts](../../src/render/asset-loader.ts), the SIMD-only precache assertions and the [deployment retention step](../../.github/workflows/deploy.yml). Do not add a compression plugin merely because Vite prints gzip estimates: [`build.reportCompressedSize`](https://vite.dev/config/build-options#build-reportcompressedsize) reports sizes; it does not configure production HTTP responses. No owner call needed to retain the working setup.
 2. **Exclude HTML and navigations from the immutable asset cache.** Owner: [sw-policy.ts](../../src/boot/sw-policy.ts) and the fetch listener in [sw-worker.ts](../../src/boot/sw-worker.ts). The current predicate accepts `/assets/index.html`; that exact deployed URL returns unversioned HTML with status 200. The normal `/assets/` route is excluded, but the explicit index path can be cached indefinitely and read from an older build. Reject HTML paths and navigation requests before CacheStorage lookup. This is the smallest correctness fix; no hosting or owner policy change is needed. Verify the explicit index path bypasses caching, the directory route still bypasses it, and hashed GLB/JS/WASM requests still reuse the cache. A stale page across real deployments was not reproduced.

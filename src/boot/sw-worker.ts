@@ -40,9 +40,10 @@ async function precache() {
   await Promise.allSettled(
     first.map(async (path) => {
       const url = new URL(path, scope()).href;
+      if (!cacheable('GET', url, scope())) return;
       if (await cache.match(url, MATCH)) return;
       const res = (await caches.match(url, MATCH)) ?? (await fetchAsset(url));
-      if (res.ok) await cache.put(url, res);
+      if (res.ok && !documentResponse(res)) await cache.put(url, res);
     }),
   );
 }
@@ -53,20 +54,27 @@ async function purge(all: boolean) {
   await Promise.all(doomed.map((n) => caches.delete(n)));
 }
 
-async function respond(req: Request) {
+// CacheStorage is optional. Do not recreate a cache removed by the page's kill switch.
+async function keep(req: Request, res: Response) {
+  if (await caches.has(CACHE)) await (await caches.open(CACHE)).put(req, res);
+}
+const documentResponse = (res: Response) =>
+  /^(text\/html|application\/xhtml\+xml)\b/i.test(res.headers.get('content-type') ?? '');
+
+async function respond(e: FetchEvent) {
+  const req = e.request;
+  const current = await caches.match(req, { ...MATCH, cacheName: CACHE }).catch(() => undefined);
+  if (current && !documentResponse(current)) return current;
   const hit = await caches.match(req, MATCH).catch(() => undefined);
-  if (hit) return hit;
   // WASM retries belong to its loader, including first visits without a controlling worker.
-  const res = await (new URL(req.url).pathname.endsWith('.wasm') ? fetch(req) : fetchAsset(req));
-  if (res.ok && res.status === 200 && res.type === 'basic') {
-    const copy = res.clone();
-    // Only into a cache that exists: one the page deleted (its kill switch, ./sw.ts) stays deleted.
-    caches
-      .has(CACHE)
-      .then(async (ok) => {
-        if (ok) await (await caches.open(CACHE)).put(req, copy);
-      })
-      .catch(() => {});
+  const res =
+    hit && !documentResponse(hit)
+      ? hit
+      : await (new URL(req.url).pathname.endsWith('.wasm') ? fetch(req) : fetchAsset(req));
+  if (res.ok && res.status === 200 && res.type === 'basic' && !documentResponse(res)) {
+    // respondWith keeps this event alive until here; waitUntil owns the cloned write beyond response delivery.
+    // This also promotes an older build's hit, without downloading or rewriting a current-cache hit.
+    e.waitUntil(keep(req, res.clone()).catch(() => {}));
   }
   return res;
 }
@@ -88,6 +96,6 @@ sw.addEventListener('activate', (e) => {
 });
 
 sw.addEventListener('fetch', (e) => {
-  if (off || !cacheable(e.request.method, e.request.url, scope())) return;
-  e.respondWith(respond(e.request));
+  if (off || !cacheable(e.request.method, e.request.url, scope(), e.request.mode)) return;
+  e.respondWith(respond(e));
 });
