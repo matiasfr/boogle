@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision index](../proposals/boogle-2.md#current-decision-index).
 
-**Updated:** 5 November 2026, late evening, by the Claude orchestrator session. Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
+**Updated:** 5 November 2026, night, by the Claude orchestrator session (it also took over the closed axe session's work). Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
 
 ## Links
 
@@ -16,25 +16,23 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 ## Running
 
-Each job's branch is `codex/<topic>`, its worktree is `../boogle-codex/<topic>`, and its reports are in `boogle-daily/.look/codex/<topic>/`.
+Each job's branch is `codex/<topic>`, its worktree is `../boogle-codex/<topic>`, and its reports are in `boogle-daily/.look/codex/<topic>/` (the inherited `glb-delivery-audit` reports in `boogle/.look/codex/`).
 
 | Job | Status | Blocker or next step |
 | --- | --- | --- |
-| `slice2-supply` | Fixing two review findings (arrival restored under new track, a flaky fixture clock), plus owner changes: regrowth only slow, tunable regrowth and rack timers, the owner-chosen `recovery-rack.glb` | Full solo and co-op bots, then merge |
-| `track-layer-machine` | Rail wheels, pale spokes and coupling rods done. Now building the panel-laying mechanism (owner, 5 November: lay prefabricated track panels, one per stock unit) | Solo, two-player boarding and real-time capture; then merge after `deck-sitting` |
-| `upgrade-economy` | Upgrade tree and progression economy research, now sorting upgrades into kinds and reconciling with the destinations research and the places panel | Then one progression brief |
-| `chop-animation-timing` | Another session ("Asset placement and editor evaluation") retuning the axe. It has the generated chop references | Merge through the coordinator |
-| `color-defaults` | Another session ("Port Ultra Water…"): lit signs, round 2 lights at gain 0.12, readable names. Reviewed and ready | Owner's timing call: before or after the replay |
+| `slice2-supply` | Reviewed (recovery-budget P2 fixed), net proof fixed (tests now retry on `busy` like the real client), rebased over the look-dev tool. Squashed; history on `codex/slice2-supply-history` | Shipping; confirm it lands |
+| `track-layer-machine` | Whole-panel commits (track, colliders and stock in one event), closure panels at stations, rigid hoist, instanced magazine: 13,550 triangles at 12 panels, 37 draws | Independent review `track-panels-review` running; merge if clean |
+| `terrain-pilot` | Cove behind `?terrain=cove`: slide fixed, banded cliff. Round 3 queued (brief in the coordinator's scratchpad, recorded below): Odyssey base, tunable procedural Sunshine strata, Ultra Water demo sand bands | Wedge board and real-time sand clip, then owner verdict |
+| `glb-delivery-audit` | Inherited from the axe session: two owner-approved service-worker fixes (don't cache HTML/navigation; copy older cache hits forward with waitUntil) | Owner said ship when it lands, after coordinator review |
 
 ## Merge queue
 
-Ship each with `npm run ship-branch`, in this order:
+1. `slice2-supply` (shipping).
+2. `glb-delivery-audit`, when it lands.
+3. `track-layer-machine`, after a clean review.
+4. `terrain-pilot`, after the owner's verdict on round 3.
 
-1. `slice2-supply`, once it passes.
-2. `track-layer-machine`, after its panel-laying mechanism.
-3. `color-defaults`, whenever the owner chooses.
-
-Hold everything while the owner plays.
+Hold everything while the owner plays. `ship-branch` now reruns cancelled CI runs itself (twice at most); a branch containing a merge commit must be squashed onto main first, or the rebase replays old conflicts.
 
 ## Merged today
 
@@ -59,6 +57,10 @@ Docs and pages:
 
 ## Queued
 
+- **Deeper simplify batch:** 11 items from the first `/simplify` pass (targeted host messages, one compatibility fingerprint, seat deck velocity, one remote rider blend, feel spring capture, pigment applied once, frozen-sky looks table, one tuning gate, hash reuse, `dev/economy` campaign kit, small reuse). Brief in the coordinator's scratchpad (`simplify-deep.txt`). Start after slice 2 lands; it touches `chop.ts` after the axe glint.
+- **Particles:** distinct wood chips and dust, then shapes, rotation and curves in `src/render/particle-pool.ts`. Libraries stay references only.
+- **Q6 co-op grounding:** P2 landing beside Q6 failed once on slice 2 and once on the track layer, with no branch cause. Investigate on main on a quiet machine.
+- **Full visual-pipeline pass:** after the look-dev loop (merged: 3×3 key/fill wedge in about a second warm), in the research's order: calibration, materials, lighting and sky, shadows, water, post and grade.
 - **Slice 3:** starts after slice 2 merges, and stops at the owner's first-path verdict.
 - **Room-owned time:** after T1; the evening look is on main behind `?evening=1`.
 - **Ground-contact root cause:** near T3; needs a quiet machine.
