@@ -27,5 +27,7 @@
     "character/**/*.ts",
     "scripts/**/*.ts",
     "server/**/*.ts"
-  ]
+  ],
+  // Spikes carry their own dependencies (dev/spikes/<name>/package.json) and their own tsconfig.
+  "exclude": ["dev/spikes/**"]
 }
