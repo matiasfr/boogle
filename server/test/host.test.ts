@@ -57,6 +57,47 @@ const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+for (const disconnected of [false, true]) {
+  for (const changed of ['pid', 'key'] as const) {
+    test(`a ${disconnected ? 'grace' : 'live'} session id cannot replace its bound ${changed}`, async () => {
+      const { svc, base } = await start();
+      const self = 'victimsession';
+      const original = connect(base, 'beach', self, 'victimpid');
+      try {
+        await original.next(is('welcome'));
+        if (disconnected) {
+          original.ws.close();
+          await original.closed;
+        }
+        const intruder = connect(
+          base,
+          'beach',
+          self,
+          changed === 'pid' ? 'anotherpid' : 'victimpid',
+          changed === 'key' ? 'differentkey0000000000' : 'victimpidkey0000000000',
+        );
+        try {
+          const reply = await intruder.next((m) => m.t === 'welcome' || m.t === 'taken');
+          assert.equal(reply.t, 'taken', 'reusing the public session id must preserve its bound player and secret');
+          assert.equal(await intruder.closed, 4011);
+          if (!disconnected) assert.equal(original.ws.readyState, WebSocket.OPEN);
+          const rejoined = connect(base, 'beach', self, 'victimpid');
+          try {
+            await rejoined.next(is('welcome'));
+          } finally {
+            rejoined.ws.close();
+          }
+        } finally {
+          intruder.ws.close();
+        }
+      } finally {
+        original.ws.close();
+        await svc.close({ save: false });
+      }
+    });
+  }
+}
+
 test('classic rail-demo and production demo select distinct hosts and saves', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
   try {
