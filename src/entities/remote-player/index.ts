@@ -126,6 +126,18 @@ onRemotePresence((r, pr, time) => {
 });
 const rideAt: Local = { x: 0, y: 0, z: 0, yaw: 0 },
   rideV = new THREE.Vector3();
+function setDrawOffset(
+  out: Local,
+  at: Pick<Local, 'x' | 'y' | 'z'>,
+  yaw: number,
+  from: Pick<Local, 'x' | 'y' | 'z'>,
+  fromYaw: number,
+) {
+  out.x = from.x - at.x;
+  out.y = from.y - at.y;
+  out.z = from.z - at.z;
+  out.yaw = angleLerp(yaw, fromYaw, 1) - yaw;
+}
 // Moves r.target and r.yaw (world presence, from samplePose) onto our copy of the platform r rides, by the blend.
 // Before the step it keeps the existing collision-proxy behavior. In update it independently blends the avatar
 // onto the drawn deck. Returns whether the avatar is fully attached (for deck-relative walking animation).
@@ -169,20 +181,14 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
   if (!ride.drawn || on !== ride.on) {
     if (ride.drawn) ride.boarding = false;
     const shown = r.avatar;
-    ride.drawOffset.x = (shown?.position.x ?? ride.world.x) - at.x;
-    ride.drawOffset.y = (shown?.position.y ?? ride.world.y) - at.y;
-    ride.drawOffset.z = (shown?.position.z ?? ride.world.z) - at.z;
-    ride.drawOffset.yaw = angleLerp(yaw, shown?.rotation.y ?? ride.worldYaw, 1) - yaw;
+    setDrawOffset(ride.drawOffset, at, yaw, shown?.position ?? ride.world, shown?.rotation.y ?? ride.worldYaw);
     ride.blendLeft = RIDE_BLEND_S;
     ride.drawn = true;
   }
   if (on && ride.boarding) {
     // As on main, let incoming world presence finish the approach instead of replaying a frozen old offset.
     // Later attachment changes retain the last-displayed-pose easing above for continuity across train gaps.
-    ride.drawOffset.x = ride.world.x - at.x;
-    ride.drawOffset.y = ride.world.y - at.y;
-    ride.drawOffset.z = ride.world.z - at.z;
-    ride.drawOffset.yaw = angleLerp(yaw, ride.worldYaw, 1) - yaw;
+    setDrawOffset(ride.drawOffset, at, yaw, ride.world, ride.worldYaw);
   }
   ride.on = on;
   ride.blendLeft = Math.max(0, ride.blendLeft - dt);
