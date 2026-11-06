@@ -20,24 +20,28 @@ Each job's branch is `codex/<topic>`, its worktree is `../boogle-codex/<topic>`,
 
 | Job | Status | Blocker or next step |
 | --- | --- | --- |
-| `slice2-supply` | Reviewed (recovery-budget P2 fixed), net proof fixed (tests now retry on `busy` like the real client), rebased over the look-dev tool. Squashed; history on `codex/slice2-supply-history` | Shipping; confirm it lands |
-| `track-layer-machine` | Whole-panel commits (track, colliders and stock in one event), closure panels at stations, rigid hoist, instanced magazine: 13,550 triangles at 12 panels, 37 draws | Independent review `track-panels-review` running; merge if clean |
-| `terrain-pilot` | Cove behind `?terrain=cove`: slide fixed, banded cliff. Round 3 queued (brief in the coordinator's scratchpad, recorded below): Odyssey base, tunable procedural Sunshine strata, Ultra Water demo sand bands | Wedge board and real-time sand clip, then owner verdict |
-| `glb-delivery-audit` | Inherited from the axe session: two owner-approved service-worker fixes (don't cache HTML/navigation; copy older cache hits forward with waitUntil) | Owner said ship when it lands, after coordinator review |
+| `track-layer-machine` | Whole panels, rigid hoist, magazine, two deck seats; review P2 (old room leads discarding deck-seat requests) fixed with `WORLD_NS` v08; stacks lowered. 14,270 triangles, 37 draws | Rebasing over slice 2 (conflicts in `look-kit.ts`, `rail.ts`); ship when clean |
+| `slice3-path` | Two groundwork commits (recovery, line-one catalogs). Coordinator calls: clean break with a `WORLD_NS` bump; counted stone renewal on a slow tunable timer; build on main's track, then rebase to whole panels | Building T2, T3, beam and walk home; stops at the owner's first-path verdict |
+| `terrain-pilot` | Round 3: Odyssey base, tunable Sunshine strata, Ultra Water demo sand bands. Owner flagged the facet jutting over the beach at the cliff toe (`boogle-daily/.look/codex/round1/owner-cove-facet.png`) | Check that spot (before/after from the same angle), wedge board and sand clip, then owner verdict |
+| `simplify-deep` | 11 deeper cleanups, one commit each | Review, then ship |
+| `audio-mix` | Research: character footsteps, jump and land; audit and loudness-normalize every sound; bus and level table as tunables | Review, then brief a build task |
 
 ## Merge queue
 
-1. `slice2-supply` (shipping).
-2. `glb-delivery-audit`, when it lands.
-3. `track-layer-machine`, after a clean review.
+1. `track-layer-machine`, after its rebase.
+2. `simplify-deep`, `audio-mix` as they land.
+3. `slice3-path`, after its proofs (owner first-path verdict after merge).
 4. `terrain-pilot`, after the owner's verdict on round 3.
 
-Hold everything while the owner plays. `ship-branch` now reruns cancelled CI runs itself (twice at most); a branch containing a merge commit must be squashed onto main first, or the rebase replays old conflicts.
+Hold everything while the owner plays. `ship-branch` reruns cancelled CI runs itself (twice at most); a branch containing a merge commit must be squashed onto main first, or the rebase replays old conflicts. A 30-minute heartbeat loop runs in the coordinator session.
 
 ## Merged today
 
 Fixes and features:
 
+- slice 2: counted supply, slow regrowth and the recovery rack;
+- service-worker fixes (pages always fresh, cached assets carried across builds);
+- ship-branch reruns cancelled CI runs;
 - the co-op seat and rider fixes;
 - GPU recovery;
 - water and sky speed;
@@ -53,15 +57,14 @@ Docs and pages:
 - the public status page;
 - the slice 3 and room-time plans;
 - the tuning and destinations research;
+- the look-dev loop and terrain texturing research;
 - the money, cart first, recovery rack, first evening and tunables briefs.
 
 ## Queued
 
-- **Deeper simplify batch:** 11 items from the first `/simplify` pass (targeted host messages, one compatibility fingerprint, seat deck velocity, one remote rider blend, feel spring capture, pigment applied once, frozen-sky looks table, one tuning gate, hash reuse, `dev/economy` campaign kit, small reuse). Brief in the coordinator's scratchpad (`simplify-deep.txt`). Start after slice 2 lands; it touches `chop.ts` after the axe glint.
 - **Particles:** distinct wood chips and dust, then shapes, rotation and curves in `src/render/particle-pool.ts`. Libraries stay references only.
 - **Q6 co-op grounding:** P2 landing beside Q6 failed once on slice 2 and once on the track layer, with no branch cause. Investigate on main on a quiet machine.
 - **Full visual-pipeline pass:** after the look-dev loop (merged: 3×3 key/fill wedge in about a second warm), in the research's order: calibration, materials, lighting and sky, shadows, water, post and grade.
-- **Slice 3:** starts after slice 2 merges, and stops at the owner's first-path verdict.
 - **Room-owned time:** after T1; the evening look is on main behind `?evening=1`.
 - **Ground-contact root cause:** near T3; needs a quiet machine.
 - **Quiet-machine timing reruns:** the 5.4% render cost and the 568-draw peak.
