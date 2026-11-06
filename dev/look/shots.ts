@@ -89,6 +89,9 @@ if (spread !== 1 && !list.beats.every((beat) => beat.wedge))
 for (const beat of list.beats) {
   if (!beat.wedge) continue;
   if (beat.variants.length !== 9) throw new Error('A wedge needs nine row-major variants');
+  const baselineCell = beat.wedge.baseline ?? 5;
+  if (!Number.isInteger(baselineCell) || baselineCell < 1 || baselineCell > 9)
+    throw new Error('Wedge baseline must name a cell from 1 to 9');
   for (const axis of [beat.wedge.rows, beat.wedge.columns]) {
     if (axis.values.length !== 3 || axis.values.some((value) => !Number.isFinite(value)))
       throw new Error('Wedge axes need three finite values');
@@ -105,7 +108,7 @@ for (const beat of list.beats) {
       column = columns.values[i % 3]!;
     return {
       ...variant,
-      name: `${rows.label} ${row} / ${columns.label} ${column}${i === 4 ? ' — accepted baseline' : ''}`,
+      name: `${rows.label} ${row} / ${columns.label} ${column}${i + 1 === baselineCell ? ' — accepted baseline' : ''}`,
       tunables: { ...variant.tunables, [rows.id]: row, [columns.id]: column },
     };
   });

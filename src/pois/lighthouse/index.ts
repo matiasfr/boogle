@@ -317,9 +317,11 @@ function build() {
   grad.addColorStop(1, 'rgba(255,190,90,0)');
   g.fillStyle = grad;
   g.fillRect(0, 0, 128, 128);
+  const texture = new THREE.CanvasTexture(c);
+  texture.colorSpace = THREE.SRGBColorSpace;
   const h = (halo = new THREE.Sprite(
     new THREE.SpriteMaterial({
-      map: new THREE.CanvasTexture(c),
+      map: texture,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       transparent: true,

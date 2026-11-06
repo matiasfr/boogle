@@ -28,12 +28,14 @@ export type ShotBeat = {
   cameras: ShotCamera[];
   variants: ShotVariant[];
   wedge?: {
+    baseline?: number;
     rows: { id: string; label: string; values: [number, number, number] };
     columns: { id: string; label: string; values: [number, number, number] };
     legend?: string;
   };
   reference?: { image: string; path: string; sha256: string; provenance: string; colorSpace: string; crop: string };
   keepPaused?: boolean;
+  sampleObjects?: string[];
 };
 export type ShotList = { question: string; size?: [number, number]; beats: ShotBeat[] };
 export type ShotGroup = ShotBeat & { size: [number, number]; query: string };
