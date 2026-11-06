@@ -37,19 +37,28 @@ export function carriedPiece(length: number) {
   if (rest >= 2 - 1e-7 || whole === 0) return { centre: whole * 3 + rest / 2, length: rest };
   return { centre: whole * 3 - 1.5, length: 3 };
 }
-/** Distance-phase choreography of one panel cycle (storyboard: dev evidence in the PR). Contact is phase 1.
- * There is no animation callback into game state. A stopped final cycle returns on local time. */
+/** Trapezoidal travel (quarter accelerating, half cruising, quarter braking): peak speed 1.33x the average,
+ * where smoothstep peaks at 1.5x. Long trolley runs use it. */
+export const panelGlide = (t: number) => {
+  const x = Math.max(0, Math.min(1, t));
+  const v = 1 / 0.75;
+  if (x < 0.25) return (v * x * x) / 0.5;
+  if (x > 0.75) return 1 - (v * (1 - x) * (1 - x)) / 0.5;
+  return v * 0.125 + v * (x - 0.25);
+};
+/** Distance-phase choreography of one panel cycle (storyboard beats). Contact is phase 1; the seat completes
+ * at 0.97 so a follower holding at 0.98 rests on it. No animation callback into game state. */
 export function panelPose(phase: number) {
   const t = Math.max(0, Math.min(1, phase));
   const at = (from: number, to: number) => panelEase((t - from) / (to - from));
   return {
-    returnT: at(0, 0.26),
-    lower: at(0.26, 0.34) * (1 - at(0.38, 0.46)),
-    grip: at(0.34, 0.38),
-    picked: t >= 0.38,
-    gauge: at(0.38, 0.46),
-    travel: at(0.46, 0.62),
-    sweep: Math.max(0, Math.min(1, (t - 0.62) / 0.28)),
-    seat: at(0.9, 1),
+    returnT: panelGlide(t / 0.3),
+    lower: at(0.3, 0.36),
+    grip: at(0.36, 0.39),
+    picked: t >= 0.39,
+    gauge: at(0.39, 0.45),
+    travel: panelGlide((t - 0.45) / 0.19),
+    sweep: Math.max(0, Math.min(1, (t - 0.64) / 0.24)),
+    seat: at(0.88, 0.97),
   };
 }
