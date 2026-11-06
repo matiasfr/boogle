@@ -99,6 +99,9 @@ jobs:
   scenarios:
     name: scenario ${{ matrix.scenario }}
     runs-on: ubuntu-latest
+    # Browsers and system libraries are baked in: no apt install/upgrade or service restarts per run.
+    # Keep this tag and the version assertion below aligned with the installed Playwright package.
+    container: mcr.microsoft.com/playwright:v1.64.1-noble
     timeout-minutes: 8
     strategy:
       fail-fast: false
@@ -114,14 +117,10 @@ jobs:
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      - id: pw
-        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-      - name: Install Chromium and system deps
-        run: npx playwright install --with-deps chromium
+      - name: Check Playwright matches the container
+        run: >-
+          node -e "require('node:assert/strict').equal(require('playwright/package.json').version,
+          '1.64.1', 'Update the scenario container tag and version assertion when upgrading Playwright')"
       - run: npm run scenario -- ${{ matrix.scenario }}
         env:
           SCENARIO_GATE: pr # one player only; run.ts refuses a second tab
