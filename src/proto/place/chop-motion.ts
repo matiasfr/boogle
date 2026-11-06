@@ -111,11 +111,12 @@ function grip(arm: Arm, at: THREE.Vector3, figure: THREE.Object3D) {
 export type ChopPoseOptions = { reducedMotion?: boolean; target?: THREE.Vector3; frame?: THREE.Object3D };
 /** Floating summon in the avatar frame (-Z forward, +X right). Local presentation only: contact stays at CHOP_CONTACT. */
 type FloatPose = { x: number; y: number; z: number; rx: number; ry: number; rz: number };
-const FLOAT_REST: FloatPose = { x: 0.42, y: 0.78, z: -0.14, rx: 0.25, ry: 0, rz: -0.12 };
-const FLOAT_COCK: FloatPose = { x: 0.42, y: 0.8, z: -0.15, rx: 0.45, ry: 0, rz: -0.06 };
-const FLOAT_HIT: FloatPose = { x: 0.4, y: 0.72, z: -0.26, rx: -1.35, ry: 0, rz: 0 };
-const FLOAT_KICK: FloatPose = { x: 0.44, y: 0.8, z: -0.2, rx: 0.55, ry: 0, rz: -0.4 };
-const FLOAT_FULL: FloatPose = { x: 0.46, y: 0.82, z: -0.16, rx: 0.6, ry: 0, rz: -0.9 };
+// Rest floats beside the right hip with the head at shoulder height; the strike keeps the old contact height.
+const FLOAT_REST: FloatPose = { x: 0.5, y: 0.34, z: -0.1, rx: 0.2, ry: 0, rz: -0.18 };
+const FLOAT_COCK: FloatPose = { x: 0.46, y: 0.64, z: -0.14, rx: 0.5, ry: 0, rz: -0.08 };
+const FLOAT_HIT: FloatPose = { x: 0.4, y: 0.72, z: -0.32, rx: -1.35, ry: 0, rz: 0 };
+const FLOAT_KICK: FloatPose = { x: 0.46, y: 0.68, z: -0.2, rx: 0.55, ry: 0, rz: -0.4 };
+const FLOAT_FULL: FloatPose = { x: 0.5, y: 0.64, z: -0.14, rx: 0.6, ry: 0, rz: -0.9 };
 /** Beats in seconds since the press; storyboard: appear, strike, bite, return, hover, disappear. */
 export const FLOAT_BEATS = { appear: 0.06, cock: 0.05, bite: CHOP_CONTACT + 0.035, home: 0.4, fade: 0.72 };
 const ease = {
