@@ -1,5 +1,7 @@
 # Research
 
+- [ecs-evaluation.md](ecs-evaluation.md) (2026-11-06): bitECS, miniplex, koota, Becsy and ECSY (archived) against a stricter `GameEntity`, judged on Place's graduation; source-checked ids, iteration order and serializers, Unity/Unreal/Godot/Overwatch comparison, measured Node micro-benchmark and bundle sizes, koota's 16-world limit against 20 hosted rooms. Recommends the in-house option with declared lockstep tables, one fixed clock and typed queries; a felled-trees proof and a 15–20 slice Place migration. Research only; browser/device timings and estimates unverified.
+
 - [route-contract.md](route-contract.md) / [interactive Place map](route-contract.html) (2026-11-06): required construction versus movement shortcuts for T1–T3, Q1–Q6, quarry, first hook, Needle Bell and glide returns; seven primary sources, 87 passing baseline assertions and no-extra-jump probes. Recommends a southern expedition find, Q3-built quarry ramp/winch and Q2-built hook access. Paper prerequisite only; new geometry, interaction and device behavior unverified.
 
 - [roundhouse-trains.md](roundhouse-trains.md) (2026-11-06), [interactive brief](roundhouse-trains.html): six primary game references, an early shed versus later steel expansion, finite engine/car bills, discovery-based research and shared contributions without wallets; fresh campaign and upgrade-omission runs, a 30-minute proof budget, eight recommendations and a one-fitting first build. Research only; new bills, management and fun unverified.
