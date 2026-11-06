@@ -46,6 +46,11 @@ export const panelGlide = (t: number) => {
   if (x > 0.75) return 1 - (v * (1 - x) * (1 - x)) / 0.5;
   return v * 0.125 + v * (x - 0.25);
 };
+/** The sweep starts from rest (travel brakes into it) and reaches its laying speed over the first fifth. */
+const sweepIn = (t: number) => {
+  const x = Math.max(0, Math.min(1, t));
+  return x < 0.2 ? (x * x * 2.5) / 0.9 : (x - 0.1) / 0.9;
+};
 /** Distance-phase choreography of one panel cycle (storyboard beats). Contact is phase 1; the seat completes
  * at 0.97 so a follower holding at 0.98 rests on it. No animation callback into game state. */
 export function panelPose(phase: number) {
@@ -58,7 +63,7 @@ export function panelPose(phase: number) {
     picked: t >= 0.39,
     gauge: at(0.39, 0.45),
     travel: panelGlide((t - 0.45) / 0.19),
-    sweep: Math.max(0, Math.min(1, (t - 0.64) / 0.24)),
+    sweep: sweepIn((t - 0.64) / 0.24),
     seat: at(0.88, 0.97),
   };
 }
