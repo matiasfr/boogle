@@ -26,6 +26,9 @@ const debugFlags = [
   'destination',
   'graphicsMsaa',
   'lookPreset',
+  'view',
+  'viewSky',
+  'viewWater',
 ];
 export function clearDevPreferences() {
   for (const key of keys) {
@@ -63,4 +66,6 @@ if (explicit === '0') {
 }
 export const devEnabled = enabled;
 // Explicit Dev off wins even if the original address also requested tuning.
-export const tuningVisit = explicit !== '0' && (devEnabled || new URLSearchParams(location.search).get('tune') === '1');
+const query = new URLSearchParams(location.search);
+export const tuningVisit =
+  explicit !== '0' && (devEnabled || query.get('tune') === '1' || ['unlit', 'raw'].includes(query.get('view') ?? ''));

@@ -68,6 +68,16 @@
   the streak instead of inferring failure from a busy GPU. This counts failed draw submissions, not elapsed time,
   rAF callbacks or repeated console messages. Recovery and the failed-draw count join session marks.
 - **Sync kind.** Local: nothing about rendering crosses the network.
+- **Base-colour diagnostic.** `?view=unlit` swaps lit surfaces to their authored albedo/texture and vertex colours,
+  retaining masks, transparency, skinning and instance transforms. Lighting, shadows, environment, material AO,
+  emissive light, fog and water-receiver caustics/wetness are excluded. `?view=raw` also bypasses the post chain,
+  exposure and tone mapping, retaining the required linear-to-sRGB display encoding. Existing unlit effects keep
+  their authored output. The current procedural sky and water remain by default; `viewSky=off` and
+  `viewWater=off` hide them independently. In Dev, Local Tunables `view.mode` (0 lit / 1 unlit / 2 raw),
+  `view.sky` and `view.water` (0 hidden / 1 current) switch live. First use compiles diagnostic materials.
+  Returning all three to defaults removes the render/draw hooks. Ordinary visits load no diagnostic chunk and
+  add no frame work. No assets, palettes or shipped defaults change. Frozen comparisons do not establish feel
+  or device performance; not tested on a device.
 - **Player Graphics.** Pause → Graphics lazily loads a small page using the existing modal's keyboard,
   gamepad and touch navigation. Desktop puts it beside the scene; phone uses a scrollable card with the
   scene visible above. No new bindings. Choices are Local, bounded, and stored in `boogle.graphics.v1`;
