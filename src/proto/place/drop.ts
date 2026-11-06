@@ -19,6 +19,7 @@ import { H } from './land.ts';
 import { LOOK, STEEL } from './look.ts';
 import { kitBatch } from './look-kit.ts';
 import { commitPieces } from '../../render/haul-pieces.ts';
+import { impactDust } from '../../render/particle-effects.ts';
 import { RAIL_SIZE, dustRing, logStackMesh, send, setStackLog, stackSlot, type PieceKind } from './pieces.ts';
 
 type Pile = { x: number; y: number; z: number; yaw: number; logs: number; rails: number; stone: number };
@@ -92,6 +93,7 @@ function dropOne() {
   const to = pile;
   const trip = { pile: to, key: kind === 'log' ? 'logs' : kind === 'rail' ? 'rails' : 'stone' } as const;
   flying.add(trip);
+  const dropHeight = Math.max(0, p.y + 0.9 - (y + 0.2));
   send(kind, p4.set(p.x, p.y + 0.9, p.z), at.set(x, y + 0.2, z), {
     dur: 0.28,
     apex: 0.5,
@@ -101,7 +103,8 @@ function dropOne() {
       else if (kind === 'stone') to.stone++;
       else to.logs++;
       knock(0.35, 0.7);
-      dustRing(x, y, z, kind === 'log' ? 6 : 4, 1.2, 0.25);
+      if (kind === 'log') impactDust(x, y, z, dropHeight);
+      else dustRing(x, y, z, 4, 1.2, 0.25);
       draw();
       save();
     },

@@ -27,6 +27,7 @@
 // the money, the felled trees, the paths. A newcomer inherits every rung without earning it again.
 import * as THREE from 'three/webgpu';
 import { cargoDust } from '../../render/particle-effects.ts';
+import { BEAM_CARRY_POSITION } from './carry-models.ts';
 import { createTrainNudge } from './train-nudge.ts';
 import {
   addPresenceField,
@@ -496,7 +497,10 @@ function acceptBig(what: BigCargo, state: CargoState) {
   // Only an accepted carried-to-ground transition, never a request, duplicate receipt or initial snapshot.
   if (previous.holder !== null && state.holder === null && state.ground && state.revision > previous.revision) {
     const p = state.ground;
-    cargoDust(p.x, p.y, p.z, p.yaw, what === 'beam');
+    // Local presentation estimate from the existing carrier pose; no new wire/save field.
+    const carrierY = previous.holder === cargoPeer() ? me.body?.position.y : remotes.get(previous.holder)?.target.y;
+    const height = carrierY === undefined ? 1.6 : Math.max(0, carrierY + BEAM_CARRY_POSITION[1] - (p.y + 0.63));
+    cargoDust(p.x, p.y, p.z, p.yaw, what === 'beam', height);
   }
   if (what === 'beam') {
     const taken = state.holder !== null || beamDelivered();

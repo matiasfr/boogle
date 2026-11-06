@@ -29,6 +29,7 @@ import { LOOK, addBlob, treeMaterial } from './look.ts';
 import { AXE2, GREAT, GREAT_TREE, GROVES, OAK, ORIGIN, PACK, ROCKS, ROCK_WORK, TUNE } from './layout.ts';
 import { chips, dustRing, send } from './pieces.ts';
 import { BEAM_CARRY_POSITION, makeCarryModels } from './carry-models.ts';
+import { impactDust } from '../../render/particle-effects.ts';
 import { shakeView } from './celebrate.ts';
 import { addFoot } from './sites.ts';
 import { packFrameMesh } from './gear-models.ts';
@@ -997,7 +998,7 @@ function contactRock(q: Rock) {
   }
   poseRock(q);
   if (!whole(q)) {
-    dustRing(q.x, q.y + 0.2, q.z, 10, 2.4, 0.4);
+    impactDust(q.x, q.y, q.z, q.r, true);
     placeSound('rockBreak', q.x, q.z);
     solidRock(q);
   }
@@ -1010,7 +1011,7 @@ export function rockStruck(q: Rock, strokes: number) {
   chips(q.x, q.y + q.r, q.z, 6, q.y, undefined, true);
   poseRock(q);
   solidRock(q);
-  if (wasWhole && !whole(q)) dustRing(q.x, q.y + 0.2, q.z, 10, 2.4, 0.4);
+  if (wasWhole && !whole(q)) impactDust(q.x, q.y, q.z, q.r, true);
 }
 /** Trade whatever's on your back for the one big thing. */
 export function shoulder(what: Exclude<BigThing, null>) {
