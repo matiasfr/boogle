@@ -24,7 +24,7 @@ for (const view of views) {
   await import(`/dev/look/evals/place-draws.ts?pose=${view.name}`);
   const group = {
     name: `${view.name}-bounded`,
-    query: 'classic=0',
+    query: '',
     size: [innerWidth, innerHeight] as [number, number],
     cameras: [{ ...view, fov: 62 }],
     variants: [{ name: 'kit', look: 'current' }],

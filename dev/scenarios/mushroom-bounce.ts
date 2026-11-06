@@ -20,6 +20,7 @@ const MIN_RISE = 4; // m above the cap the first bounce has to reach (a bounce i
 const CAPS = `(window.__caps ??= 0, import('/src/physics/engine.ts').then(({ forEachStatic }) => { let n = 0; forEachStatic(-1, (b, shapes) => { if (shapes.length === 2 && shapes[1].rTop === 1.9) n++; }); window.__caps = n; }), window.__caps)`;
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about: 'a player dropped onto a sprouted mushroom bounces high off it',
   timeout: 180000,
   async run(t: Run) {

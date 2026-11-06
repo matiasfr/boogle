@@ -6,6 +6,7 @@ import lighthouse from '../../../src/pois/lighthouse/site.ts';
 const POS = `const p = window.boogle.me.body.interpolatedPosition ?? window.boogle.me.body.position; return [p.x, p.y, p.z];`;
 
 export default {
+  island: true,
   about: 'the Buddy runs at the camera and jumps, then a close arc round its face',
   async run(c) {
     const g = await c.open({ room: 'clipbuddy', hud: false });

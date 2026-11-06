@@ -1,5 +1,5 @@
 // A targeted played checkpoint, not a full-route proof: the same bot earns the path before the still.
-// playthrough --query 'classic=0&railStop=path%20walked%20home' --eval dev/look/evals/railway-home.ts
+// playthrough --query 'railStop=path%20walked%20home' --eval dev/look/evals/railway-home.ts
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { play } = (await import('/dev/look/bots/railway.ts' as string)) as typeof import('../bots/railway.ts');
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

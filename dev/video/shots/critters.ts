@@ -1,9 +1,8 @@
 // Critters (924924d): run at the gulls and they burst off the sand, drop the ball on the fish school and it scatters,
-// fireflies over the meadow at night.
+// (fireflies come out at night only, and the world keeps one fixed daytime).
 import type { Shot } from '../clip.ts';
 import { STAND } from './_stand.ts';
 
-const SKY = (frac: number, phase: number | null = null) => `window.boogle.sky.preview(${frac}, ${phase})`;
 // Hold W and Shift with the movement direction pointed at (x, z), or let go.
 const RUN = (x: number, z: number, on: boolean) => `
   const { input } = await import('/src/player/input.ts');
@@ -57,10 +56,10 @@ const SCHOOL = `const { P } = window.__fish; const n = P.length;
   return [P.reduce((s, f) => s + f.x, 0) / n, P.reduce((s, f) => s + f.y, 0) / n, P.reduce((s, f) => s + f.z, 0) / n];`;
 
 export default {
-  about: 'gulls scatter from a running player, fish scatter from the ball, fireflies at night',
+  island: true,
+  about: 'gulls scatter from a running player, fish scatter from the ball',
   async run(c) {
     const g = await c.open({ room: 'clipcritters', hud: false, init: SEEDED });
-    await g.eval(SKY(0.32));
     await g.wait(3);
     const out = [];
 
@@ -110,35 +109,6 @@ export default {
               ball.body.velocity.set(0, -6, 0);`);
           // Close and low: deeper or farther, the water swallows the fish.
           await g.view({ cam: [cx - 2.2, cy + 3, cz + 2.2], look: [cx, cy, cz] });
-        },
-      }),
-    );
-
-    // Fireflies: a full-moon night over the meadow, a crane down from above.
-    const [gx, gz] = [30, 2.5];
-    await g.eval(STAND(gx + 16, gz - 16));
-    await g.eval(SKY(0.8, 0.5));
-    await g.wait(6);
-    // They're spread thin: read their positions off the point cloud and film the firefly with the most company.
-    const [hx, hy, hz] = await g.eval(`
-      const { scene } = window.boogle;
-      let pts = null;
-      scene.traverse((o) => { if (o.isPoints && o.material.blending === 2 && o.geometry.attributes.color) pts = o; });
-      const a = pts.geometry.attributes.position.array, n = a.length / 3;
-      let best = 0, bn = -1;
-      for (let i = 0; i < n; i++) {
-        let m = 0;
-        for (let j = 0; j < n; j++) if (Math.hypot(a[i * 3] - a[j * 3], a[i * 3 + 2] - a[j * 3 + 2]) < 4) m++;
-        if (m > bn) (bn = m), (best = i);
-      }
-      return [a[best * 3], a[best * 3 + 1], a[best * 3 + 2]];`);
-    out.push(
-      await g.record('critters-fireflies', {
-        seconds: 7,
-        each: async (t) => {
-          // Low and looking slightly up, so they glow against the night sky and the dark trees, not the soil.
-          const a = 0.8 + t * 0.06;
-          await g.view({ cam: [hx + Math.cos(a) * 4, hy - 0.4, hz + Math.sin(a) * 4], look: [hx, hy + 0.4, hz] });
         },
       }),
     );

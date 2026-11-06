@@ -35,6 +35,7 @@ async function give(g: Game, file: string) {
 }
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about: 'with your own engine and ROM: become the guest, move, switch back, files kept after a reload',
   timeout: 180000,
   async run(t: T) {

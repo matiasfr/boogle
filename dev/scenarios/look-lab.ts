@@ -53,10 +53,8 @@ const LAYERS = [
   'plastic',
   'tilt',
 ];
+// Every page shares the world's one fixed time of day, so the shadows already match; there is no sunset or night.
 const VIEWS = ['court', 'shore', 'overview'];
-const NOON = 0.3, // time of day (src/sim/sky-clock.ts: 0 sunrise, 0.6 sunset), pinned so shadows match
-  SUNSET = 0.55,
-  NIGHT = 0.8;
 const ERA = ['today', 'diorama']; // also shot on the steam palette row (&era=steam)
 const mode = process.env.LOOKLAB || 'all';
 const lab = 'window.boogle.lookLab';
@@ -72,7 +70,6 @@ export default {
     let k = 0;
     const page = async (query: string, size?: number[]) => {
       const g = await t.open({ name: 'Look' + k++, room: room + k, query: `proto=look&lookpanel=0&${query}`, size });
-      await g.eval(`window.boogle.sky.preview(${NOON})`); // the same sun for every page
       await t.sleep(3000); // pipelines build, TRAA settles
       return g;
     };
@@ -88,14 +85,6 @@ export default {
           await t.sleep(2000);
           await A.still(`${p}-${v}`);
         }
-        await A.eval(`window.boogle.sky.preview(${SUNSET})`); // low sun: bloom and the haze's sun-side glow
-        await A.view('shore');
-        await t.sleep(2500);
-        await A.still(`${p}-sunset`);
-        await A.eval(`window.boogle.sky.preview(${NIGHT})`);
-        await A.view('court');
-        await t.sleep(2500);
-        await A.still(`${p}-night`);
         clean(A, p);
         await A.close();
       }

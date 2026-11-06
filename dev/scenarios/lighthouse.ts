@@ -1,5 +1,5 @@
 // The lighthouse: walk up the outside spiral stair to the gallery deck (physics stepped in the page), then see the
-// lamp and its beams at night.
+// tower in the world's fixed daytime (there is no night to light the lamp).
 import type { T } from './run.ts';
 const CLIMB = `
   const { stepFixed } = await import('/src/physics/engine.ts');
@@ -30,16 +30,16 @@ const CLIMB = `
   return { deck: +DECK_Y.toFixed(1), top: +top.toFixed(1), seconds: +(k / 60).toFixed(1) };`;
 
 export default {
-  about: 'climb the lighthouse stair to the deck; the lamp and beams light up at night',
+  island: true, // the classic island by the court (run.ts)
+  about: 'climb the lighthouse stair to the deck',
   async run(t: T) {
     const g = await t.open({ name: 'keeper', size: [480, 300] });
     const climb = await g.eval(CLIMB);
     t.check('climbed the spiral stair to the gallery deck', climb.top > climb.deck, JSON.stringify(climb));
     await t.sleep(1000);
     t.check('on the deck', true, await g.still('deck'));
-    await g.eval(`window.boogle.sky?.preview?.(0.8, 0.5); return 1;`);
     await g.view({ cam: [160, 26, -10], look: [212, 26, -50] }, 62);
     await t.sleep(2500);
-    t.check('night still: lamp and beam', true, await g.still('night'));
+    t.check('the tower by day', true, await g.still('tower'));
   },
 };

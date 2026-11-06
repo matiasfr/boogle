@@ -4,6 +4,8 @@
 //
 // A scenario is dev/scenarios/<name>.ts (typed by `Scenario` below):
 //   export default { about: 'one line', async run(t) { ... } };
+// Players open the current game, as the bare address does. `island: true` starts every player of the scenario on the
+// classic island by the court (the original island at the world's origin), for The Boogler, the ball and its content.
 // `t` gives you:
 //   t.open({ name, room, size, hud, touch })   a player (Game from dev/look/lib.ts); same `room` = same island;
 //                                              touch: true starts a phone client
@@ -33,7 +35,13 @@ export type T = {
   open: (opts?: GameOpts) => Promise<Game>;
   check: (label: string, ok: unknown, detail?: string) => boolean;
 };
-export type Scenario = { about?: string; timeout?: number; sourceImports?: boolean; run: (t: T) => Promise<void> };
+export type Scenario = {
+  about?: string;
+  timeout?: number;
+  sourceImports?: boolean;
+  island?: boolean;
+  run: (t: T) => Promise<void>;
+};
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // <name>.ts
@@ -109,6 +117,7 @@ try {
           );
         const g = await Game.open(br, st, {
           sourceImports: mod.sourceImports,
+          island: mod.island,
           out,
           trace,
           ...opts,

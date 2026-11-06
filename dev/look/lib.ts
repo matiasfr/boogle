@@ -152,6 +152,27 @@ export function reportGfxErrors(games: Game[]) {
   for (const e of seen) console.log('  ' + e.split('\n')[0]!.slice(0, 240));
 }
 
+// The classic island fixture: once the current game's arrival has placed the player (it moves a new body to the
+// landing), stand them at the island's spawn by the court, facing it as the island always did.
+const ON_ISLAND = `
+  const { productionRailway } = await import('/src/proto/flags.ts');
+  if (productionRailway) {
+    const { inspectRailway } = await import('/src/entities/railway/state.ts');
+    const t0 = performance.now();
+    while (!inspectRailway()?.ready) {
+      if (performance.now() - t0 > 90000) throw new Error('island fixture: the current game never became ready');
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+  const { me, cam } = await import('/src/player/player.ts');
+  const { teleport } = await import('/src/physics/engine.ts');
+  const { SPAWN, BALL_SPAWN, PLAYER_R } = await import('/src/constants.ts');
+  const { groundHeight } = await import('/src/island/heights.ts');
+  teleport(me.body, SPAWN.x, groundHeight(SPAWN.x, SPAWN.z) + PLAYER_R + 0.6, SPAWN.z);
+  me.body.velocity.set(0, 0, 0);
+  cam.yaw = me.yaw = Math.atan2(SPAWN.x - BALL_SPAWN.x, SPAWN.z - BALL_SPAWN.z); // towards the ball and the court
+  return true;`;
+
 // BOOGLE_QUERY=physics=rapier (any URL params) is added to every page the harness opens: scenarios on another backend.
 const EXTRA_QUERY = process.env.BOOGLE_QUERY ? '&' + process.env.BOOGLE_QUERY : '';
 
@@ -188,6 +209,9 @@ export type GameOpts = {
   touch?: boolean;
   trace?: boolean;
   warp?: boolean;
+  /** Start on the classic island (the original island at the world's origin) instead of the current game's landing:
+   * the fixture for The Boogler, the ball, the caves, the lighthouse and the rest of its content. */
+  island?: boolean;
 };
 /** A function `page.evaluate` runs in the page (serialised, so it sees only its argument). */
 type PageFn<A, R> = (arg: A) => R | Promise<R>;
@@ -277,10 +301,7 @@ export class Game {
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';
     const query = new URLSearchParams([opts.query, EXTRA_QUERY].filter(Boolean).join('&'));
-    const selected = new URLSearchParams(`${doc.search}&${query}`);
-    // Existing scenarios, clips and measurements target the classic island. An explicit empty query tests the
-    // default game; proto/play/classic selectors (including BOOGLE_QUERY or --url) always win.
-    if (opts.query !== '' && !['proto', 'play', 'classic'].some((key) => selected.has(key))) query.set('classic', '1');
+    // No selector opens the current game, as the bare address does; ?proto= (including BOOGLE_QUERY) selects a prototype.
     await g.page.goto(`${stack.base}${sep}dpr=fixed&debugcam=1&room=${room}&${query}`, {
       timeout: 90000,
     });
@@ -288,6 +309,7 @@ export class Game {
     // every shader before the lobby opens.
     console.log(`[${g.name}] entry: ${await enterGame(g.page, 180000, g.name, opts.touch)}`);
     await g.page.waitForFunction(() => window.__debugCam && window.boogle?.sync, null, { timeout: 20000 });
+    if (opts.island) await g.eval(ON_ISLAND);
     // hud: false hides it all; 'play' keeps what a player reacts to (hints, dialogue, pocket) but not the
     // roster, net pill or reticle (cleaner footage); true keeps everything.
     const hide = !opts.hud ? '.hud' : opts.hud === 'play' ? '.hud-tl, .hud-tr, .reticle' : null;

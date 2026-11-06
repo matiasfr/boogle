@@ -37,6 +37,7 @@ const ACT = `const a = (await import('/src/player/controls.ts')).actionById('int
 const POS = `const p = window.boogle.me.body.position; return [p.x, p.y, p.z];`;
 
 export default {
+  island: true,
   about:
     'shake logs off a palm, carry and spill a wobbly stack, pour it into a work site, build a hut, run the machine',
   async run(c) {

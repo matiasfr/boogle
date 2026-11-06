@@ -41,6 +41,7 @@ const onBack = (check: string) => `(async () => {
 const TAG_TALK = `${shown('.boogler-tag-prompt')} && ${text('.boogler-tag-prompt')}.includes('Talk')`;
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about: 'one Talk prompt by The Boogler, gifts in the talk, Pick up over items, a reason when planting fails',
   timeout: 600000, // two software-rendered players in a row: the nightly runner was still going at 300 s
   async run(t: T) {

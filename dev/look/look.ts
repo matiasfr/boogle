@@ -48,6 +48,7 @@ const opt: {
   players: number;
   clockUrl?: string;
   restoreReport: boolean;
+  island: boolean;
 } = {
   view: 'hill',
   cam: null,
@@ -78,6 +79,7 @@ const opt: {
   target: null,
   players: 1,
   restoreReport: false,
+  island: false,
 };
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
@@ -117,6 +119,8 @@ for (let k = 0; k < argv.length; k++) {
   else if (a === '--hud')
     opt.hud = true; // keep the HUD in the picture
   else if (a === '--restore-report') opt.restoreReport = true;
+  else if (a === '--island')
+    opt.island = true; // start on the classic island by the court, in the current game's world (lib.ts)
   else if (a === '--warp')
     opt.warp = true; // the default: --warm and an eval's waits pass in game time, far faster than real (./warp.ts). Captures run at real speed
   else if (a === '--real')
@@ -149,6 +153,7 @@ for (let k = 0; k < argv.length; k++) {
   [--filmstrip N] [--every K]              capture N drawn frames, K game frames apart (warp only)
   [--warm 10] [--frames 8] [--seconds 2] [--heatmap --region x,y,w,h (fractions)] [--size 960x600]
   [--query 'proto=place&shot=play'] [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
+  [--island]                                start on the classic island (the original island at the origin)
   [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
   [--saves <directory>]                     use checkpoints from this playthrough instead of latest
@@ -230,7 +235,8 @@ try {
   stack = await startStack({ url: opt.url, root: opt.root, warp: opt.warp && opt.players === 2 });
   browser = await launch();
   const g = await Game.open(browser, stack, {
-    sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until),
+    sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until || opt.island),
+    island: opt.island,
     out: opt.out,
     size: opt.size,
     hud: opt.hud,
@@ -254,7 +260,8 @@ try {
   const g2 =
     opt.players > 1
       ? await Game.open(browser, stack, {
-          sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until),
+          sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until || opt.island),
+          island: opt.island,
           out: opt.out,
           size: opt.size,
           hud: opt.hud,

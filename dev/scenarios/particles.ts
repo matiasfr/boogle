@@ -27,6 +27,7 @@ const FX = `${HEAD}
   peek();`;
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about: 'ball puff, splat dust and a splash show up',
   async run(t: T) {
     const g = await t.open({ name: 'dusty' });

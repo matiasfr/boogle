@@ -1,10 +1,10 @@
-// The nightly live smoke test (.github/workflows/smoke.yml), also fine locally: two players join one room, see
-// each other, the client tosses an item, the client throws the ball, and both tabs end the same tick with the same per-state
-// hashes. Uses only window handles (window.boogle, window.boogle.sync from src/features/debug-handle.ts), so it runs
+// The nightly live smoke test (.github/workflows/smoke.yml), also fine locally: two players join one room of the current
+// game, see each other, the client renames itself (a shared roster edit the server accepts), the client throws the ball,
+// and both tabs end the same tick with the same per-state hashes. Uses only window handles (window.boogle, window.boogle.sync from src/features/debug-handle.ts), so it runs
 // on the built site too: `npm run scenario -- smoke --url https://boogle.club/`.
 // Its room is SMOKE_ROOM (the nightly run rotates smoke-1..smoke-7, so it reuses rooms and loads their snapshots) or
 // else a fresh smoke-<random> one; never a friend's room.
-import { toss, MET, EDIT_WAIT_MS, roles, hashesAtOneTick } from './lib/world.ts';
+import { MET, EDIT_WAIT_MS, roles, hashesAtOneTick } from './lib/world.ts';
 import type { T } from './run.ts';
 import type { Game } from '../look/lib.ts';
 
@@ -12,13 +12,13 @@ const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6
 
 export default {
   sourceImports: false,
-  about: 'two tabs join, see each other, toss an item, throw the ball, and agree on every world hash',
+  about: 'two tabs join, see each other, rename one, throw the ball, and agree on every world hash',
   timeout: 420000, // generous: two software-rendered tabs on a busy runner (smoke.yml) drop to a few frames per second
   async run(t: T) {
     const room = process.env.SMOKE_ROOM || ('smoke-' + id).slice(0, 32);
     const size = [480, 300]; // small frames keep software GL fast enough for the world clock to run near real time
-    const A = await t.open({ name: 'Alice', room, size, query: 'classic=1' });
-    const B = await t.open({ name: 'Bob', room, size, query: 'classic=1' });
+    const A = await t.open({ name: 'Alice', room, size });
+    const B = await t.open({ name: 'Bob', room, size });
     const worldErrors = new Map<Game, string[]>();
     for (const g of [A, B]) {
       const errs: string[] = [];
@@ -36,24 +36,31 @@ export default {
     const { modes, ok, host, client } = await roles(A, B);
     if (!t.check("both tabs hold the server's world", ok, modes.join())) return;
 
-    // One tab tosses a frisbee at a beach cell west of the court; the other sees the item.
-    const nextId = await host.eval(`return window.boogle.gifts.nextId;`); // a reused room may hold an older toss
-    const item = `window.boogle.gifts.items.some((it) => it.src === 0 && it.i === 230 && it.j === 205 && it.id >= ${nextId})`;
+    // One tab renames itself (who.set, the roster edit the current game's server accepts from anyone); the other's
+    // roster changes with it. A reused room may hold an older name, so each run picks a new one.
+    const rename = `Smoke ${id.slice(-6)}`;
+    const roster = `window.boogle.sync.stateHashes().roster`;
+    const before = await host.eval(`return ${roster};`);
+    const item = `${roster} !== ${JSON.stringify(before)}`;
     // A starved runner's tab drops and reopens its socket (runs 41421157347, 41418371480: reconnects for a minute or two),
     // and an edit caught in that gap is dropped by design (src/world/sync.ts, HELD_MAX_MS). So toss as a player would: when
-    // live, and again if nothing came. Broken gifts still fail all three.
+    // live, and again if nothing came. A broken edit path still fails all three.
     const LIVE = `window.boogle.net.state === 'live' && window.boogle.sync.worldStatus().ready`;
     const tossedAt = Date.now();
     const sent: unknown[] = [];
     let landed = -1;
     for (let k = 0; k < 3 && landed < 0; k++) {
       if ((await client.waitFor(LIVE, { timeout: 30000 })) < 0) continue;
-      sent.push(await client.eval(`return ${toss(1, 'Date.now() % 1000')};`));
+      sent.push(
+        await client.eval(
+          `return window.boogle.sync.submitEdit({ op: 'who.set', i: 0, j: 0, n: ${JSON.stringify(rename)}, c: 3 });`,
+        ),
+      );
       landed = await host.waitFor(item, { timeout: EDIT_WAIT_MS / 3 });
     }
     const dropped = await client.eval(`return window.boogle.sync.worldStatus().heldDropped;`);
     t.check(
-      "one tab's toss reaches the other",
+      "one tab's roster edit reaches the other",
       landed >= 0,
       `${landed < 0 ? -1 : Date.now() - tossedAt} ms; sent ${sent.join()}; ${dropped} held edits dropped`,
     );

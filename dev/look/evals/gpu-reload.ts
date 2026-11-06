@@ -1,9 +1,10 @@
 // Broker look action: exercise the actual Reload button in a disposable same-origin room.
-// Reuses the GPU loss action and the smoke scenario's accepted gift edit; no second browser harness.
+// Reuses the GPU loss action and an accepted gift edit; no second browser harness. Gift edits are classic lockstep
+// ops, which only a classic-registry room accepts (the current game's server refuses them): hence the Place entry.
 const frame = document.createElement('iframe');
 frame.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483647';
 const room = `gpu-reload-${Date.now().toString(36)}`;
-frame.src = `/?classic=1&sw=0&room=${room}&gpuCase=hidden-loss`;
+frame.src = `/?proto=place&sw=0&room=${room}&gpuCase=hidden-loss`;
 document.body.append(frame);
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 async function until(check: () => boolean, label: string) {

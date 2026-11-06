@@ -25,6 +25,7 @@ const LAYOUT = `${DOM}
   return { bar: [bar.left, bar.top, bar.right, bar.bottom].map(Math.round), checked: others.length, hit };`;
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about: 'hold, throw and give what you pick up; plant anywhere; frisbee off the lighthouse; the phone HUD',
   timeout: 800000, // two software-rendered players in a row; the nightly runner took over 450 s, with checks timing out
   async run(t: T) {

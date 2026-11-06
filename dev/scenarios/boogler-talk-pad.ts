@@ -81,6 +81,7 @@ const HINTS = `(() => { const h = document.querySelector('.bd-hints'); return h.
 const SEL_DRAWN = `(() => { const b = document.querySelector('.bd-opt.talk-sel'); return !!b && getComputedStyle(b).outlineStyle !== 'none'; })()`;
 
 export default {
+  island: true, // the classic island by the court (run.ts)
   about:
     'a Boogler talk on an iPad with a pad (standard, D-pad axes, hat): hints, X idle, D-pad picks and repeats, B leaves',
   timeout: 300000,

@@ -8,7 +8,7 @@ sessionStorage.removeItem('boogle-chunk-retries');
 localStorage.removeItem('boogle-name');
 const frame = document.createElement('iframe');
 frame.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;z-index:99999';
-frame.src = '/?classic=1&sw=0&notrack=1&room=retry-proof&dpr=fixed&debugcam=1';
+frame.src = '/?sw=0&notrack=1&room=retry-proof&dpr=fixed&debugcam=1';
 document.body.append(frame);
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const permanent = mode.endsWith('always');
