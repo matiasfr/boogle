@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Rapier spike</title>
+<pre id="log">running...</pre>
+<script type="module">
+  // ?tag=name&only=hashes|cost|correct&flavours=det,simd,plain   Posts the results to serve.mjs's /result.
+  const q = new URLSearchParams(location.search);
+  const log = (s) => (document.getElementById('log').textContent += `\n${s}`);
+  try {
+    const { runAll } = await import('./experiments.js');
+    const mods = {};
+    for (const f of (q.get('flavours') ?? 'det,simd,plain').split(',')) mods[f] = await import(`/pkg/${f}/rapier.js`);
+    log(`loaded ${Object.keys(mods)}; isolated ${self.crossOriginIsolated}`);
+    const res = runAll(mods, { only: q.get('only') ?? undefined });
+    const body = JSON.stringify({ engine: navigator.userAgent, isolated: self.crossOriginIsolated, ...res });
+    await fetch(`/result?tag=${encodeURIComponent(q.get('tag') ?? 'browser')}`, { method: 'POST', body });
+    log('done');
+  } catch (e) {
+    await fetch(`/result?tag=${encodeURIComponent(q.get('tag') ?? 'browser')}`, {
+      method: 'POST',
+      body: JSON.stringify({ error: String(e?.stack ?? e) }),
+    });
+    log(String(e?.stack ?? e));
+  }
+</script>
