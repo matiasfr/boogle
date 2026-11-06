@@ -10,6 +10,7 @@
 // "How we work".
 import { onFrame } from '../../loop.ts';
 import { me } from '../../player/player.ts';
+import { inv } from '../../player/inventory.ts';
 import { carry } from '../../physics/platforms.ts';
 import { ACTIVITIES, IDLE_S, saveSitting, sittingLine, type Activity, type Sitting } from '../../../protos/store.ts';
 import { PROTOS } from '../../../protos/protos.ts';
@@ -49,7 +50,7 @@ const activity = (): Activity => {
   const hook = hookActivity();
   if (hook) return hook;
   if (carry.on) return 'riding';
-  if (me.holding) return 'carrying';
+  if (inv.held) return 'carrying'; // anything in your hand; loads on your back come from hookActivity
   if (me.swimming) return 'swimming';
   return still >= IDLE_S ? 'idle' : 'walking';
 };

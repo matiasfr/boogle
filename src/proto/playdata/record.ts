@@ -15,6 +15,7 @@
 // Serves DESIGN.md "How we work".
 import { onFrame, onStart, prof } from '../../loop.ts';
 import { me } from '../../player/player.ts';
+import { inv } from '../../player/inventory.ts';
 import { carry } from '../../physics/platforms.ts';
 import { interactTarget, onInteractPress } from '../../player/hands.ts';
 import { actionIds, wrapAction } from '../../player/controls.ts';
@@ -315,7 +316,7 @@ const activity = () => {
   const hook = hookActivity();
   if (hook) return hook;
   if (carry.on) return 'riding';
-  if (me.holding) return 'carrying';
+  if (inv.held) return 'carrying'; // anything in your hand; loads on your back come from hookActivity
   if (me.swimming) return 'swimming';
   return stillS >= IDLE_S ? 'idle' : 'walking';
 };

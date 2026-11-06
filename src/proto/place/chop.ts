@@ -16,6 +16,7 @@ import { removeBody, teleport, sweepSphere, type Body } from '../../physics/engi
 import { input } from '../../player/input-state.ts';
 import { interactTarget } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
+import { protoActivity } from '../mark.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { backSeam, myBundleNext } from '../../features/haul-stack.ts';
 import { clank, thump } from '../../render/machine-sfx.ts';
@@ -65,6 +66,8 @@ export const back = {
   room: () => (back.big ? 0 : carryNow() - back.logs - back.rails - back.stone - back.incoming - harvestReserved),
   empty: () => back.logs + back.rails + back.stone + back.incoming === 0 && !back.big,
 };
+// What you carry on your back counts as carrying in the playtest trace and data (src/proto/mark.ts).
+protoActivity(() => (back.empty() ? null : 'carrying'));
 backSeam.flyIns = false;
 backSeam.count = () => back.logs;
 // Read-only Local presentation: reserved/incoming slots aren't advertised as landed material.
