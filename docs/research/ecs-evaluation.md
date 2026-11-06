@@ -2,69 +2,75 @@
 
 ## Follow-up spike, 6 November (later): the best entity system for 3,000 entities
 
-_The owner questioned the first criteria: "I really want to make sure that we set up our entity system as best possible." So the per-process world limit no longer disqualifies anything (1–2 rooms per server, or dedicated hosting), the target is up to 3,000 live entities, and the judgement is on the long-term fit, not micro-benchmarks. Spike code: [`dev/spikes/ecs/`](../../dev/spikes/ecs/) (its own `package.json`; not wired into the game). Measured on the M1 Max in headless Chromium 156 (three runs) and Node 26 (two runs), with the machine under load (load average ~14). Chromium coarsens timers to 0.1 ms, so per-tick numbers are averages over 600 ticks. Not tested on a device. Tags as below._
+_The owner questioned the first criteria: "I really want to make sure that we set up our entity system as best possible." So the per-process world limit no longer disqualifies anything (1–2 rooms per server, or dedicated hosting), the target is up to 3,000 live entities, and the judgement is on the long-term fit, not micro-benchmarks. The owner then asked whether bitECS itself had been tried, since "the main thing that's useful seems to be conformance to a sort of ECS system in case we ever need to migrate later". Spike code: [`dev/spikes/ecs/`](../../dev/spikes/ecs/) (its own `package.json`; not wired into the game). Measured on the M1 Max in headless Chromium 156 and Node 26, three Chromium runs per option, with the machine heavily loaded (load average 14–39). Chromium coarsens timers to 0.1 ms, so per-tick numbers are averages over 600 ticks. Not tested on a device. Tags as below._
 
 ### Result
 
-**Keep the in-house design (Option A: declared tables, plain rows in id order). Take one thing from the hybrid: a binary snapshot generated from the same schema. Don't adopt koota or bitECS for lockstep state.** [M]
+**Build E: in-house tables shaped and named as an ECS. Entities are stamped ids, components are declared data-only tables, and systems are functions over queries that run in id order, on the fixed clock. Keep the schema-driven hash and snapshot (binary, as in C). bitECS (D) is the right library if the owner wants an off-the-shelf one; koota isn't.** [M]
 
-- **All three builds are deterministic, and they agree with each other.** A late joiner loaded from a peer's snapshot, and a peer with extra local churn in the same container, both ended with the same hash and the same iteration order as an undisturbed peer. All three options produced the *same hash sequence*, in Node and in Chromium. [H, measured]
-- **A library needs the wrapper; the wrapper works.** koota's own query order differed between those peers, and so did bitECS's: a long-running bitECS world iterates `1 2 133 4 5 132…` where a late joiner iterates `1 2 4 5…`, and its snapshot bytes differ. This confirms the earlier report's untested inference. A 98-line wrapper (stamped ids, entities kept in id order, never swap-removed, schema-driven hash, snapshot and load) made koota deterministic. The catch is a rule every agent must keep: lockstep code never calls `world.query`. [H]
-- **At 3,000 entities, every option fits a frame.** Option A runs a 10 Hz sim tick in about 0.03 ms. koota with the wrapper takes about 0.2 ms, and 1.0–1.2 ms under five times the churn. Most of koota's cost is its own Added/Changed/Removed bookkeeping (profiled), which is the feature you'd adopt it for. [H for the numbers, M for mobile headroom]
-- **The deciding factors are readability and the size of what agents must learn.** In A, a rule reads `t.work += 3; trees.touched(t)`. In koota it reads `T.work[e.id()] = …; e.changed(Tree)`, under three extra rules: split traits by reason to change, destroy worlds in tests, and the no-`world.query` rule. SoA columns (C) make agents hold row indices that shift on removal. The spike hit this once: a rock's position had to be read before `remove`. [M]
+- **bitECS works behind a wrapper, and it's fast.** D runs the slice on bitECS 0.4.0 (npm `latest`; no newer stable release). A 115-line wrapper stamps ids, keeps each kind's entities in id order and does hash, snapshot and load. bitECS's own query order still differed between peers with different histories, as did its snapshot bytes. Through the wrapper, all four options produced the *same hash sequence* in Node and Chromium, for an undisturbed peer, a peer with extra local churn, and a late joiner. D's tick was the fastest at normal churn. [H, measured]
+- **But lockstep code can't use bitECS's queries, so little of the ECS shape survives in the part that matters.** D's rules walk the wrapper's id-ordered lists and index typed arrays by eid, exactly as C indexes columns. D also adds rules: components must be made per world (two peers in one process otherwise share arrays), an eid is reused at the next spawn after `removeEntity` (read before remove), and there's no change detection (the wrapper keeps change lists). [H]
+- **Migration conformance comes from the shape, not the library.** Every engine below is C#, C++ or Rust, so no TypeScript ECS code ports as code. What ports is the decomposition: which components exist, which systems read and write them, their order, and how structural changes are deferred. E gives that decomposition with deterministic iteration built into its queries. D gives it only for code that doesn't need determinism. [M]
+- **Readability still decides between in-house shapes.** In A, a rule reads `t.work += 3`. In D, C and B it reads `T.work[e] = …`, with eid or row-index hazards. E keeps typed row access per component (`each([Tree, Age], (id, tree, age) => …)`). [M; E not built]
 
-| At 3,000 live entities (Chromium) | **A: in-house rows** | B: koota 0.6.6 + wrapper | C: in-house SoA columns |
-|---|---|---|---|
-| Sim tick, ~39 spawns+despawns/tick | **31–33 µs** | 202–243 µs | 54–56 µs |
-| Sim tick, ~170/tick (heavy churn) | 249–261 µs | 1,039–1,222 µs | **140–145 µs** |
-| View sync per tick (changed instances) | **11 µs** | 77–92 µs | 17–18 µs |
-| Full view rebuild (3,000 `setMatrixAt`) | 0.37 ms | 0.49 ms | 0.50 ms |
-| State hash | 0.29 ms | 0.24 ms | **0.17 ms** |
-| Snapshot: time / size | 0.59 ms / 195 KB JSON | 0.58 ms / 195 KB JSON | **0.03 ms / 95 KB binary** |
-| Late join: load + rebuild view | 1.4 ms | 6.8 ms | **0.8 ms** |
-| Same hash and order across histories | Yes | Yes (native order: **no**) | Yes |
-| Slice code / core code (non-blank, non-comment) | **126 / 114** | ~185 / 98 + 36 KB library | 150 / 128 |
+| At 3,000 live entities (Chromium, latest runs) | A: in-house rows | B: koota 0.6.6 + wrapper | C: in-house SoA | **D: bitECS 0.4.0 + wrapper** |
+|---|---|---|---|---|
+| Sim tick, ~39 spawns+despawns/tick | 67–68 µs (31–33 in the first runs) | 247–258 µs | 56–57 µs | **42–45 µs** |
+| Sim tick, ~170/tick (5× churn) | 249–259 µs | 1,230–1,313 µs | **140–145 µs** | 153–158 µs |
+| View update per tick | **11–12 µs** | 98–101 µs | 17–18 µs | 13–16 µs |
+| State hash | 0.32–0.34 ms | 0.25–0.33 ms | **0.18 ms** | 0.19 ms |
+| Snapshot: time / size | 0.58 ms / 195 KB JSON | 0.61 ms / 195 KB JSON | **0.03 ms / 95 KB binary** | 0.49–0.52 ms / 195 KB JSON |
+| Late join: load + rebuild view | 1.5–1.6 ms | 6.9–7.1 ms | **0.8 ms** | 2.5–2.6 ms |
+| Same hash and order across histories | Yes | Yes (native: **no**) | Yes | Yes (native: **no**) |
+| Slice / core lines (non-blank, non-comment) | **126 / 114** | ~185 / 98 + library | 150 / 128 | ~170 / 115 + library |
 
-Node agreed within about ±30% on every row, and the ranking was the same. [H, measured]
+All are under 1.5 ms per 10 Hz tick, so all fit a frame. Node gave the same ranking within about ±30%. A's tick doubled between the first runs and these, on a busier machine. Treat 30–70 µs as one band. [H, measured]
+
+### Migration conformance: what a port would rewrite
+
+| Concept | Unity DOTS | Unreal Mass | Bevy | Flecs | A | B koota | C | D bitECS | **E** |
+|---|---|---|---|---|---|---|---|---|---|
+| Entity | `Entity` (index+version) | `FMassEntityHandle` | `Entity` | `ecs_entity_t` | Row id per kind | Packed number | Row id per kind | Recycled eid; stamped id beside it | Stamped id |
+| Component | `IComponentData` struct | Fragment struct | `#[derive(Component)]` | Component | **A whole kind's row** | Trait | A kind's columns | SoA arrays | **Data-only table per component** |
+| System | `ISystem.OnUpdate` | Processor | Fn with `Query` | System + query | Function over one table | Fn; lockstep via wrapper | Function over columns | Fn; lockstep via wrapper | **Fn over `each([A, B])`** |
+| Iteration order | Chunk order | Chunk order | Archetype order | Table order | Id order | Wrapper only | Id order | Wrapper only | **Id order, built in** |
+| Structural changes | `EntityCommandBuffer` | Deferred commands | `Commands` | Deferred | Immediate | Immediate | Immediate | Immediate | **Deferred to end of system** |
+| Change detection | Change-version filters | (Observers) | `Changed<T>` | Observers | `touched()` | `Changed()` | `touched()` | Wrapper lists | **`touched()`, per component** |
+| Fixed clock | `FixedStepSimulationSystemGroup` | Processing phases | `FixedUpdate` | Pipeline phases | `simTick` | — | `simTick` | — | **`simTick` phase table** |
+
+**What a port rewrites.** From A: the kind tables must be split into components, and every rule changes shape. From B or D: the lockstep systems, since none uses the library's queries, plus all storage access. From E: syntax and storage only; components, systems, order and deferral map one-to-one. None of the engines guarantees lockstep iteration order either (the first report showed Unity swap-removes chunks), so any port keeps E's id-ordered walk as its own layer. [M, from each engine's docs; port effort is an estimate, L]
+
+**Does E get D's migration benefit?** For lockstep state, yes, and more, because D's lockstep code isn't ECS-shaped. For a *JavaScript* move to another JS ECS, D would be nearer in syntax, but the wrapper still has to be rewritten. What D adds that E doesn't is a maintained third party and SoA speed. E can store columns internally (C's storage) whenever a table needs it. [L]
 
 ### Re-scored, with the world limit dropped
 
-| Criterion | bitECS 0.4 | koota 0.6.6 | miniplex 2.0 | Becsy 0.16 | **A: in-house** | C: hybrid SoA |
-|---|---|---|---|---|---|---|
-| Lockstep determinism | Wrapper needed; native order and bytes depend on history [H] | Wrapper needed and works [H] | Wrapper needed (shuffle-pop) [H, source] | `orderBy` helps; handle rules [M] | Built in [H] | Built in [H] |
-| Snapshot / hash / load | Binary serializers, not canonical [H] | None; wrapper adds them [H] | None | None | Schema-driven [H] | Schema-driven, binary [H] |
-| Server in Node | Yes | Yes; same hashes as Chromium [H] | Yes | Yes | Yes [H] | Yes [H] |
-| Query ergonomics | Bare functions over arrays | Best of the libraries: typed traits, `updateEach` | Plain typed objects | Verbose | `for (const t of trees.rows)` | Index loops over columns |
-| Change detection | Observers | **Native** (Added/Changed/Removed), the main cost [H] | Manual `reindex` | Native | Explicit `touched()`; a missed call goes stale until rebuild | Same as A |
-| Relations / hierarchy | Yes | **Yes** (relations, ordered) | No | Refs | Ids as fields; the scene graph stays three.js | Same as A |
-| three.js binding | Store refs | Trait holds `Object3D`; React-first | Field holds it | `Type.object` | View drains changes into `InstancedMesh` | Same |
-| Agents, many editors | New vocabulary | New vocabulary + 3 rules | Familiar | Heaviest | **Existing GameEntity shape** | Index hazards |
-| Tooling / inspector | None | None in 0.6.6 exports (React only) [H] | None | None | `inspect()` exists | Same |
-| Maintenance | Slow, MPL-2.0 | Active, pre-1.0 API churn | Stale (2023) | Small team | Ours | Ours |
-| 3,000 entities, per frame | Fastest (earlier report) | Fits; heaviest | Fits | Slow (earlier report) | Fits | Fits |
+| Criterion | D bitECS 0.4 | B koota 0.6.6 | miniplex 2.0 / Becsy 0.16 | A / C in-house | **E** |
+|---|---|---|---|---|---|
+| Lockstep determinism | Wrapper; native order history-dependent [H] | Same [H] | Wrapper needed (not rebuilt) | Built in [H] | Built in |
+| Snapshot / hash / load | Wrapper (its serializers aren't canonical) [H] | Wrapper [H] | None | Schema-driven [H] | Schema-driven, binary |
+| Change detection | None; wrapper lists [H] | Native, costly [H] | Manual / native | `touched()` | `touched()` per component |
+| Relations | Yes | Yes | No / refs | Ids as fields | Ids as fields |
+| Agents, many editors | Eid and per-world hazards [H] | 3 extra rules [H] | Familiar / heaviest | Familiar / index hazards | ECS vocabulary, typed rows |
+| Tooling | None | None in 0.6.6 [H] | None | `inspect()` | `inspect()` per component |
+| Maintenance, licence | Slow; MPL-2.0 | Active, pre-1.0 | Stale / small team | Ours | Ours |
+
+### E in brief (not built)
+
+`defineComponent('tree', { work: 'u8', … })` declares a data-only table keyed by entity id. `spawn([Tree, {…}], [Age, {…}])` stamps an id from lockstep state. `each([Tree, Age], fn)` walks matching ids in ascending order, by intersecting sorted id lists. `defineSystem('fell', { reads, writes, phase: 'simTick', order }, fn)` names its access, as Bevy, Becsy and Unity do. `despawn` and `add`/`remove` are queued to the end of the system. Hash, binary snapshot and load are generated from the component schemas. The view stays a GameEntity kind that drains each component's changes, so GameEntity remains the object layer (Unity's GameObject, Unreal's Actor) and E is the Mass/DOTS-shaped data layer under it. Estimated core: about 250–350 lines plus tests, built by reshaping A [L]. The risk is joins: a query over two components costs more than A's single-table walk. Measure that in the first slice.
 
 ### Detail
 
-**What was built.** Place's felled trees, rocks and log piles became three kinds of lockstep state, with the real fields (`work`, `issued`, `ceiling`, `fell`, rock `strokes`, pile `n`). A chop pays logs into the cell's pile, a fifth strike breaks a rock into a stone pile, a take drains a pile. One system walks every entity on a fixed 10 Hz tick (trunks age and despawn, rocks and piles settle). The view keeps one `InstancedMesh` per kind. Planting holds the population at 3,000. The op stream for tick *t* is seeded by *t*, so any peer, however it reached *t*, plays the same ops. Determinism test: peer A runs 600 ticks. Peer B adds 50 local-only spawns and despawns per tick in the same container (koota: real entities in the same world). Peer C loads B's snapshot at tick 300. All three compare hash and order at tick 600. Run with `npm install` then `node bench-node.ts` or `node bench-browser.ts`, from `dev/spikes/ecs`. [H]
+**What was built.** Place's felled trees, rocks and log piles became three kinds of lockstep state, with the real fields (`work`, `issued`, `ceiling`, `fell`, rock `strokes`, pile `n`). A chop pays logs into the cell's pile, a fifth strike breaks a rock into a stone pile, a take drains a pile. One system walks every entity on a fixed 10 Hz tick. The view keeps one `InstancedMesh` per kind. The op stream for tick *t* is seeded by *t*. Peer A runs 600 ticks. Peer B adds 50 local-only spawns and despawns per tick in the same container. Peer C loads B's snapshot at tick 300. All three compare hash and order at tick 600. Run with `npm install` then `node bench-node.ts` or `node bench-browser.ts`, from `dev/spikes/ecs`. [H]
 
-**Adding a component or system.**
-- *A:* add a field to the table's schema (`TREE = { …, sap: 'u8' }`), and hash, snapshot, load and validation follow. A system is a function that loops over `table.rows` and calls `touched()` when a field the view reads changes.
-- *B:* add a trait and its columns to the wrapper's `kind([...])` list. Forget the list and the field silently drops out of the hash. A system must loop over the wrapper's `ents`, not a query.
-- *C:* as A, but the code indexes columns.
-
-**How a feature plugs in.** In every option the view is one GameEntity kind (`defineKind('place-harvest', { update: … })`), and the system runs on the fixed clock's `simTick` from the earlier report. Only the state container changes, so GameEntity, the walker, `features/` and the order table stay as they are. [M]
-
-**Why not koota, now that the limit is gone.** It is the best library here, but lockstep uses none of its strengths: order comes from the wrapper, its change detection makes the tick 4–8× slower than A's, and canonical ids as fields replace relations. It would also be a second entity model beside GameEntity. Unity and Unreal keep GameObjects and Actors as the default and opt into DOTS or Mass only for scale. [M]
-
-**Why not C.** It wins on snapshots (25× faster, half the size) and heavy churn, and loses on readability. Adopt its binary encoding inside `defineTable`. Switch a table to columns only when it grows past roughly 10k rows. [M]
+**Why not koota.** Its strengths are queries, change detection and relations, and lockstep uses none of them. Its change tracking makes the tick 4–8× slower than the others'. [H]
 
 **What would change the answer.**
-- Local (non-lockstep) entity counts in the tens of thousands with cross-cutting queries (crowds, ecosystems): koota for that layer, beside the lockstep tables. [L]
-- One table above ~10k rows, or a 60 Hz per-entity sim: C's columns. [M]
-- koota shipping canonical order and serialization, or Boogle adopting React for UI. [L]
-- Device profiling showing A's tick over 0.5 ms on the iPad floor (not measured). [L]
+- The owner prefers a maintained library over our own core, even at the cost of the wrapper rules: take D, and enforce "no `query()` under `src/sim`" with lint. [M]
+- Tens of thousands of local, non-lockstep entities (crowds, ecosystems): bitECS for that layer, beside E. [L]
+- E's joins proving slow at 3,000, in the first slice's profile: keep A's kind tables, with ECS naming. [L]
+- A real plan to port to Bevy or Flecs: write systems in their declare-access style from day one (E already does). [L]
 
-**Unverified:** device and iPad timings; koota's fastest possible use (I used direct store access, but its tracking queries are the main cost); Becsy and miniplex were not rebuilt (their scores carry over from the earlier report); whether `touched()` misses can be caught by lint or a snapshot-rebuild test.
+**Unverified:** E itself (designed, not built or timed); device timings; whether a missed `touched()` can be caught by lint or a rebuild test; the engine mappings are from documentation, not from ports; Becsy and miniplex weren't rebuilt.
 
 ## First evaluation, 6 November
 

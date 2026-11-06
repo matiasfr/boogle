@@ -2,10 +2,11 @@
 import { createInHouse } from './inhouse.ts';
 import { createKoota } from './koota.ts';
 import { createSoa } from './soa.ts';
+import { createBitecs } from './bitecs.ts';
 import { bitecsOrder } from './bitecs-order.ts';
 import { mulberry32, populate, step, type Slice } from './schema.ts';
 
-export const OPTIONS: (() => Slice)[] = [createInHouse, createKoota, createSoa];
+export const OPTIONS: (() => Slice)[] = [createInHouse, createKoota, createSoa, createBitecs];
 const now = () => performance.now();
 // The ops of tick t depend only on t: any peer, however it got to t, plays the same stream.
 let heat = 1;
