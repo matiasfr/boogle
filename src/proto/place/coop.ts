@@ -352,6 +352,7 @@ const nudge = lines.map(() => createTrainNudge());
 function onSnap(a: Api, j: Snap, force: boolean) {
   if (!ready) return void (waiting = j);
   if (!synced) {
+    // Generations are not persisted: a rejoining tab adopts the current authority even after a local reset.
     synced = true;
     // A fresh room, and you've come with a save: the room takes yours rather than wiping it.
     const mine = snapshot();
@@ -724,6 +725,7 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
     }
     case 'reset': {
       if (!count(m.gen) || m.gen <= gen) return;
+      waiting = null; // a pre-arrival snapshot must not undo this reset when loading finishes
       bigPending = null;
       clearHarvest();
       recallPending = null;
@@ -1098,7 +1100,7 @@ export const coop = {
     if (waiting) {
       const j = waiting;
       waiting = null;
-      onSnap(api, j, false);
+      if (j.gen >= gen) onSnap(api, j, false);
     }
   },
   /** Each frame, once loaded. */

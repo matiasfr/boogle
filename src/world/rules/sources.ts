@@ -52,12 +52,15 @@ export function install(
       return over === 0 || piles.room(p.i + 1, p.j, k, over) === over;
     },
     apply: (e) => {
-      const n = take(sources, sites.age(), list().length, e.id, full(), yieldN());
-      if (!n) return null;
+      if (charges(e.id) <= 0) return null;
       const k = materialOf(sites.age());
       const p = list()[e.id]!;
-      // what fits beside the source; validate checked it all fits, so the stack takes the rest
-      const over = Math.min(n - Math.min(n, stacks.room(e.u, k)), piles.room(p.i + 1, p.j, k, n));
+      const y = yieldN();
+      const over = y - Math.min(y, stacks.room(e.u, k));
+      // Earlier accepted edits may have filled either destination since validation.
+      // Spend a source charge only when its entire handful still has somewhere to go.
+      if (piles.room(p.i + 1, p.j, k, over) !== over) return null;
+      const n = take(sources, sites.age(), list().length, e.id, full(), y);
       if (over) piles.drop(p.i + 1, p.j, k, over);
       const got = stacks.add(e.u, k, n - over);
       return { id: e.id, k, n: got, over };

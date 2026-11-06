@@ -292,10 +292,14 @@ export function createHostedRoom({
   function join(ws: WebSocket, id: string, pid: string, key: string) {
     if (closing) return void ws.close(CLOSE.RESTART);
     if (retired.has(id)) return void (ws.send(encode({ t: 'elsewhere' })), ws.close(CLOSE.ELSEWHERE));
-    if (taken(id, pid, key)) return void (ws.send(encode({ t: 'taken' })), ws.close(CLOSE.TAKEN));
-    dropOlder(id, pid);
     const old = clients.get(id);
     const back = gone.get(id);
+    const bound = old ?? back;
+    // Session ids are public presence ids. Only the bound player and secret may resume or replace that socket.
+    if (bound && (bound.pid !== pid || bound.key !== key))
+      return void (ws.send(encode({ t: 'taken' })), ws.close(CLOSE.TAKEN));
+    if (taken(id, pid, key)) return void (ws.send(encode({ t: 'taken' })), ws.close(CLOSE.TAKEN));
+    dropOlder(id, pid);
     if (!old && !back && clients.size + gone.size >= cfg.maxPlayers) {
       ws.send(encode({ t: 'full', max: cfg.maxPlayers }));
       return void ws.close(CLOSE.FULL);

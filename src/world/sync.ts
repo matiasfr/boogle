@@ -321,15 +321,11 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   const canRelease = () => connected && (mode === 'client' || ready);
   // updateWorld delivers what was held once the room is back.
   function onConnected(c: boolean) {
-    // A client whose room just came back re-pins at once, instead of waiting HOST_STALE_MS (the server restarted: its
-    // clock and hashes start over).
-    if (c && !connected && mode === 'client') {
-      hostId = null;
-      hostTick = 0;
-      hostTickAt = 0;
-      pendingHash.clear();
-    }
+    const rejoined = c && !connected && mode === 'client';
     connected = c;
+    // The server may have restarted behind our old tick. Its earlier hashes cannot repair a client
+    // already ahead, so reconnect must rejoin from a snapshot instead of merely re-pinning the host.
+    if (rejoined) becomeClient();
   }
   // One held edit per HELD_EVERY_MS, in submission order: a burst would land on one host tick.
   function releaseHeld() {
@@ -875,6 +871,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     hostId = null;
     hostTick = 0;
     hostTickAt = 0;
+    pendingHash.clear();
+    asm = null;
     awaiting = true;
     needAt = wall;
     send({ t: 'w:need' });
