@@ -17,6 +17,7 @@ export async function createRailwayTools(
   adapter: RailwayAdapter,
   owner: OwnedView,
   reveal: ReturnType<typeof createRewardReveal>,
+  machineFrom?: (out: THREE.Vector3) => void,
 ) {
   const [layout, tech, land, spatial, shapes, axes, flat] = await Promise.all([
     import('../../proto/place/layout.ts'),
@@ -76,14 +77,19 @@ export async function createRailwayTools(
   const platform = mesh(new THREE.BoxGeometry(pad.hx * 2, 1.2, pad.hz * 2), flat.flat('#b6a080', 0.9));
   platform.position.set(pad.x + ox, pad.top - 0.6, pad.z);
   land.addStatic({ kind: 'box', hx: pad.hx, hy: 0.6, hz: pad.hz }, platform.position, undefined, undefined, owner);
+  let lip: THREE.Mesh | null = null;
+  let lipBody: ReturnType<typeof land.addStatic> | null = null;
+  let lipLength = 0;
+  const machineAt = new THREE.Vector3();
   if (pillar.lipTo) {
     const dx = pillar.lipTo.x - pillar.x,
       dz = pillar.lipTo.z - pillar.z;
     const length = Math.hypot(dx, dz);
-    const lip = mesh(new THREE.BoxGeometry(2.4, 0.5, length), flat.flat('#b6a080', 0.9));
+    lipLength = length;
+    lip = mesh(new THREE.BoxGeometry(2.4, 0.5, length), flat.flat('#b6a080', 0.9));
     lip.position.set(pillar.x + dx / 2 + ox, pillar.top - 0.29, pillar.z + dz / 2);
     lip.rotation.y = Math.atan2(dx, dz);
-    land.addStatic({ kind: 'box', hx: 1.2, hy: 0.25, hz: length / 2 }, lip.position, lip.quaternion, undefined, owner);
+    lip.visible = false;
   }
   const d = tech.DEVICES.jump;
   const deviceAt = new THREE.Vector3(d.x + ox, d.y, d.z);
@@ -187,6 +193,25 @@ export async function createRailwayTools(
     },
     update(_dt: number, now: number) {
       const state = adapter.inspect();
+      // The sloping route sends low whole panels through this crossing. Join it only
+      // after accepted construction and the local machine envelope have both passed.
+      if (lip) {
+        machineAt.set(0, 0, -Infinity);
+        machineFrom?.(machineAt);
+        lip.visible = tech.p1LipClear(state.panelCount, machineAt.z);
+        if (lip.visible && !lipBody)
+          lipBody = land.addStatic(
+            { kind: 'box', hx: 1.2, hy: 0.25, hz: lipLength / 2 },
+            lip.position,
+            lip.quaternion,
+            undefined,
+            owner,
+          );
+        else if (!lip.visible && lipBody) {
+          owner.removeBody(lipBody);
+          lipBody = null;
+        }
+      }
       chest.visible = axeAvailable();
       if (chest.visible) chest.position.copy(chestAt).y += Math.max(0, Math.sin(now * 0.004)) * 0.06;
       for (const object of [ring, ring2, core, shaft]) object.visible = !state.jump;

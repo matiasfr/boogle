@@ -41,6 +41,7 @@ import { dustRing, send } from './pieces.ts';
 import { besideLine } from './rail.ts';
 import { delivered, earn } from './score.ts';
 import { flyToStock, type StationRun } from './stations.ts';
+import { OUT } from './spatial-station.ts';
 import { snapCamp, wakeCamp } from './town.ts';
 
 export type Mode =
@@ -360,7 +361,7 @@ function handCrate(l: LineRun, to: number, side: number) {
   if (next)
     for (const along of [-dir * 3.4, dir * 3.4]) {
       const at = next.spec.s - dir * 1.5 + along;
-      const q = besideLine(line, at, next.spec.side * 5.4);
+      const q = besideLine(line, at, next.spec.side * OUT);
       // Solid ground all round: nobody should go over a rim for it.
       const ground = (x: number, z: number) => Math.abs(H(x, z) - next.y) <= 1;
       if (

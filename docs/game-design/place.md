@@ -51,6 +51,24 @@ All motion and sparkle are Local; accepted contacts still own harvest sounds, ch
 
 ## The place
 
+**Track-layer clearance (5 November iPhone follow-up).** With no first panel target, the empty boom now parks
+along the track instead of pointing through its own origin and cutting sideways into the camp chimney. The
+working trolley, flanged wheels and whole prefabricated panels retain their model, dimensions and choreography.
+Station frames stand 7.5 m from the centreline; their short feeders stop 5.8 m out, clear of the loaded magazine
+and curved carried panels. Reward crates follow the frames. The first jump pillar and its existing course move
+4 m outward together, preserving every jump gap and recovery ramp. The drum seats across the pad, away from
+passing stock. Its flat lip overlaps the completed deck; production reveals its mesh and collider only after
+accepted panels and the whole local machine have passed (before T3 finishes), preserving the optional early
+device visit. This avoids a low magazine passing through the walkway on the steep grade. Authoritative centimetre anchors
+follow the three frames, attached axe stand and drum.
+The production level check decodes the current machine and sweeps all twelve panel cycles, closure returns and
+the village approach against authored buildings, full station stock, standing trees, rocks, racks, the jump pillar,
+its construction-derived lip, path lamps and opening props. Actual curved carried-panel triangles and tapered
+pillar bands avoid phantom contacts; a new panel never sweeps from the previous panel’s settled position.
+It samples choreography at 0.001 phase, bounds interpolated rigid-transform steps to 10 cm and expands obstacles
+by 25 cm. This is an offline clearance envelope, not device or real-time motion proof; players, dropped cargo
+and falling trees remain outside that static-route check. Serves DESIGN.md 11 (Show, don't tell).
+
 **Production foundations (5 November repair).** Completed opening buildings retain their permanent foundation slab,
 matching Place's completed construction state; only the temporary scaffold poles disappear. The level check in
 `npm run check` samples the rendered terrain triangles over every production building/forge footprint at at most

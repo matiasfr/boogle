@@ -20,7 +20,6 @@ import { addFoot } from './sites.ts';
 import {
   FRAME_D,
   FRAME_W,
-  OUT,
   PER_ROW,
   RAIL_OUT,
   SPAN,
@@ -260,7 +259,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
     y,
     yaw,
     /** Where a log leaves the rollers for the machine. */
-    feederEnd: new THREE.Vector3(x - lx * (OUT - 1.2), y + 0.7, z - lz * (OUT - 1.2)),
+    feederEnd: new THREE.Vector3(x - lx * (FRAME_D / 2 + SPAN), y + 0.7, z - lz * (FRAME_D / 2 + SPAN)),
     feederStart: new THREE.Vector3(x - lx * (FRAME_D / 2), y + 0.7, z - lz * (FRAME_D / 2)),
     have: noStock(), // landed
     coming: noStock(), // in the air

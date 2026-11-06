@@ -42,7 +42,7 @@ export async function createRailwayReward(
   owner.cleanup(() => reveal.dispose());
   const first = await createStationReward(adapter, owner, reveal, 0, machineFrom);
   const second = await createStationReward(adapter, owner, reveal, 1, machineFrom);
-  const tools = await createRailwayTools(adapter, owner, reveal);
+  const tools = await createRailwayTools(adapter, owner, reveal, machineFrom);
   return {
     inspect() {
       const t1 = first.inspect(),
@@ -83,6 +83,7 @@ export function rewardSeat(
   besideLine: typeof import('../../proto/place/rail.ts').besideLine,
   H: typeof import('../../proto/place/terrain.ts').H,
   railY: typeof import('../../proto/place/layout.ts').railY,
+  frameOffset: number,
   stationIndex: 0 | 1 = 0,
 ) {
   // The same safe-ground choice as Place's handCrate, including its next-frame placement and fallbacks.
@@ -90,10 +91,10 @@ export function rewardSeat(
     next = line.stations[stationIndex + 1]!;
   const at = new THREE.Vector3();
   let placed = false;
-  const nextAt = besideLine(line.line, next.s - line.dir * 1.5, next.side * 5.4);
+  const nextAt = besideLine(line.line, next.s - line.dir * 1.5, next.side * frameOffset);
   const nextY = H(nextAt.x, nextAt.z);
   for (const along of [-line.dir * 3.4, line.dir * 3.4]) {
-    const q = besideLine(line.line, next.s - line.dir * 1.5 + along, next.side * 5.4);
+    const q = besideLine(line.line, next.s - line.dir * 1.5 + along, next.side * frameOffset);
     const ground = (x: number, z: number) => Math.abs(H(x, z) - nextY) <= 1;
     if (
       ![0, 3.5].every(
@@ -140,7 +141,7 @@ async function createStationReward(
   const stationId = stationIndex === 0 ? 'T1' : 'T2';
   const completion = () =>
     adapter.inspect().stations[stationIndex]?.completion ?? (stationIndex === 0 ? adapter.inspect().completion : 0);
-  const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }] =
+  const [{ merged }, { softGlow }, { pop, knock }, { LINKS, railY }, { H }, { besideLine }, { dustRing }, { OUT }] =
     await Promise.all([
       import('../../proto/place/part-geometry.ts'),
       import('../../proto/place/look.ts'),
@@ -149,6 +150,7 @@ async function createStationReward(
       import('../../proto/place/land.ts'),
       import('../../proto/place/rail.ts'),
       import('../../proto/place/pieces.ts'),
+      import('../../proto/place/spatial-station.ts'),
     ]);
   const root = new THREE.Group();
   owner.root.add(root);
@@ -163,7 +165,7 @@ async function createStationReward(
   root.add(crate, beam);
   crate.visible = beam.visible = false;
 
-  const at = rewardSeat(LINKS[0]!, besideLine, H, railY, stationIndex);
+  const at = rewardSeat(LINKS[0]!, besideLine, H, railY, OUT, stationIndex);
   crate.position.copy(at);
   beam.position.copy(at);
   const targetAt = at.clone().add(new THREE.Vector3(0, 1.3, 0));

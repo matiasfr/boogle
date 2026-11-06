@@ -170,6 +170,17 @@ async function runChecks() {
       );
   }
   if (checkPlace) {
+    const { checkMachineClearance } = await import('./machine-clearance.ts');
+    const clearance = await checkMachineClearance();
+    failed += clearance.failures;
+    report.push(clearance);
+    if (!json) {
+      console.log(
+        `machine clearance: ${clearance.samples} poses, ${clearance.sweptSamples} swept mesh samples, ${clearance.failures} problems (${clearance.clearanceMetres} m envelope)`,
+      );
+      for (const contact of clearance.contacts)
+        console.log(`  ${contact.label}: ${contact.mesh} intersects ${contact.obstacle}`);
+    }
     const { checkBuildingGrounding } = await import('./grounding.ts');
     const grounding = await checkBuildingGrounding();
     failed += grounding.failures;
