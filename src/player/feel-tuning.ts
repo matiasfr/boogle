@@ -67,10 +67,11 @@ export function endFeelChop() {
 }
 /** Latest active profile is included in Owner presence, including for a late joiner. */
 export const feelSpringPresence = () => presence;
-export function readFeelSpringPresence(input: unknown): FeelProfile | null {
+export function readFeelSpringPresence(input: unknown, previous?: FeelProfile): FeelProfile | null {
   if (!Array.isArray(input) || input.length !== 3) return null;
   const [value, revision, action] = input;
   if (!validFeelSpring(value) || !Number.isSafeInteger(revision) || revision < 0) return null;
   if (action !== 'idle' && action !== 'landing' && action !== 'takeoff' && action !== 'chop') return null;
+  if (previous?.value === value && previous.revision === revision && previous.action === action) return previous;
   return { value, revision, action };
 }
