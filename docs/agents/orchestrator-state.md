@@ -20,9 +20,7 @@ Each job's branch is `codex/<topic>`, its worktree is `../boogle-codex/<topic>`,
 
 | Job | Status | Blocker or next step |
 | --- | --- | --- |
-| `playtest-fixes` | Owner iPhone playtest (5 November): restore the original chop swing with the new axe model; seat the conductor hat without head clipping; track layer clearance with the station building and wood pile box, plus a swept-volume check | Review stills, then ship |
-| `unlit-view` | Dev `?view=unlit` (lit / unlit with tone mapping / raw base colour) and a four-place comparison board | Show the owner |
-| `visual-pass-1` | Stages 0 and 1 done: fixtures, 27-cell gain × key/fill wedge, three canvas colour-space fixes (shipping). Now a spawn-view cloud brightness × warmth wedge | Owner picks gain/key cell and cloud/warmth cell; then stage 2 (materials) |
+| (none running) | Overnight 6 November: every job finished and shipped | Owner decisions in the morning brief |
 
 ## Merge queue
 
@@ -30,23 +28,23 @@ Ship each branch as it passes. Run `ship-branch.sh` under Node 26 (`export PATH=
 
 ## Merged 5-6 November
 
-- Slice 2 (counted supply, slow regrowth, recovery rack) and slice 3 (T2, T3, proper axe, great beam: solo 2.2 m/s, faster with a helper; stone renewal; walk home). Awaiting the owner's first-path verdict.
-- Track layer (flanged wheels, whole panels, deck seats); terrain cove behind `?terrain=cove` (vista beside the town climb).
-- Audio: footsteps (soft thump default), jump and landing sounds, normalized families, dB mix buses as tunables. Sound board: https://claude.ai/artifact/ResT9fCQZUTr9FvmvMKbn4
-- Fixes: floating houses and lost building/tree colours; grounding (solver margin, prop and track audit); co-op train sync and harness; world clock decoupled from physics frames; network backpressure.
-- Tooling: bot queue, checkpoint segments, `npm run checks-for`; CI scenarios in the Playwright container (about 1 minute); ship-branch reruns cancelled runs.
-- Cleanup and performance: deep simplify batch; old-build compatibility cut (about 4,860 lines, `WORLD_NS` v10); rack and feeder draws merged (town 214 to 164 draws); unchanged instance writes skipped.
-- Particles: wood chips and contact dust from the shared pool. Owner calls: no old builds in development; our own assets first; gameplay shapes the environment.
+- Slice 2 and slice 3 (T2, T3, proper axe, great beam, stone renewal, walk home); track layer; terrain cove (`?terrain=cove`); playtest fixes (original chop swing, hat seat, track layer clearance).
+- Audio: footsteps (soft thump), jump and landing sounds, dB mix buses. Sound board: https://claude.ai/artifact/ResT9fCQZUTr9FvmvMKbn4
+- Look: cell 5 lighting (cloud 0.8, neutral), canvas colour-space fixes, `?view=unlit` and `?view=raw`, material palette tunables (defaults unchanged), sky prototypes `?sky=summer` and `?sky=windpaint`.
+- Fixes: floating houses and colours, grounding and track audit, co-op train sync, world clock, network backpressure.
+- Tooling: bot queue, checkpoint segments, `npm run checks-for`, CI in the Playwright container.
+- Cleanup and performance: two simplify batches, dead-code sweep, old-build compatibility cut (`WORLD_NS` v10), rack draws merged, particles (chips, dust, beam drop).
+- Research and briefs: next destination, Roundhouse trains, route contract, world map (`docs/world/world-map.html`), Roundhouse layout, jump upgrades and gate puzzles briefs. Visual pages are linked from the morning brief.
+- Owner calls: no old builds; our own assets first; gameplay shapes the environment; visualize in 2D HTML first.
 
 ## Queued
 
-- **Beam-drop dust:** too faint after the particles pass.
-- **Visual pass stages 2-5:** materials, lighting and sky, shadows, water, post and grade, after the owner's wedge choices.
-- **Terrain polish:** tiny rear specks and angular background edges in the cove.
+- **Waiting on the owner (morning brief, https://claude.ai/artifact/9SG7GBxEgoChpamS3vCuvj):** first-path verdict on slice 3; next destination (recommended Split-rock Works, then Ring Island); sky (summer or windpaint, and GOBI download); Roundhouse smallest first build; jump upgrades and gate puzzles briefs; material palettes (Fresh recommended); 25 unmerged experiment worktrees.
+- **Visual pass stages 3 to 5** (lighting and sky, shadows, water, post and grade) after the palette and sky picks.
 - **Room-owned time:** after T1; the evening look is on main behind `?evening=1`.
+- **Brainstorm:** the telescope build-out.
+- **Replay guide refresh** before the owner plays.
 - **Framework and tool upgrades:** last.
-- **Replay guide refresh**, before the replay.
-- **Brainstorm panels:** gate puzzles, telescope build-out, jump upgrades.
 
 ## Open owner questions
 
