@@ -4,8 +4,9 @@ export const PALETTE_NAMES = ['Current', 'Fresh', 'Cool', 'Soft'] as const;
 export const MATERIAL_PALETTES = {
   grass: ['#6c9a42', '#589351', '#43895b', '#71965f'],
   sand: ['#e0b271', '#ddc08c', '#d4c5a2', '#e5ce9f'],
-  timber: ['#a57336', '#9b784d', '#8d7958', '#9f8663'],
-  stone: ['#d0a872', '#c3b08c', '#b5b2a4', '#cfc2a6'],
+  timber: ['#a57336', '#9b784d', '#8d7958', '#9c8361'],
+  // Leave albedo headroom on pale masonry, including the town board shader's 1.08 grain peak.
+  stone: ['#d0a872', '#c3b08c', '#aba89b', '#c3b79d'],
   walls: ['#fff8e9', '#f5f3eb', '#e7eef1', '#f1eee4'],
   roofs: ['#e5bb70', '#ccb789', '#adb4ac', '#c8bb9b'],
 } as const;
