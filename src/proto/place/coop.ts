@@ -350,6 +350,7 @@ function reconcile(a: Api, j: Snap) {
 const nudge = lines.map(() => createTrainNudge());
 
 function onSnap(a: Api, j: Snap, force: boolean) {
+  if (j.gen < gen) return; // queued before a Start over, including before arrival or after reconnecting
   if (!ready) return void (waiting = j);
   if (!synced) {
     synced = true;
@@ -358,7 +359,6 @@ function onSnap(a: Api, j: Snap, force: boolean) {
     if (!force && score(j.shared) === 0 && score(mine.shared) > 0) return void msg({ k: 'mine', snap: mine });
     return applyFull(a, j, false);
   }
-  if (j.gen < gen) return; // from before a Start over
   if (force || j.gen > gen) return applyFull(a, j);
   reconcile(a, j);
   reconcileBig();
