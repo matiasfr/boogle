@@ -15,6 +15,7 @@ import { thump } from '../../render/machine-sfx.ts';
 import { T2_REWARD } from './reward-data.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { createRailwayTools } from './tools.ts';
+import { seatConductorHat } from '../../render/head-clearance.ts';
 
 const localCosmetics = new Set<string>();
 const remoteCosmetics = new Map<string, Set<string>>();
@@ -350,16 +351,22 @@ async function createStationReward(
     if (!hat) {
       hat = new THREE.Mesh(hatGeo, material);
       hat.castShadow = true;
-      hat.scale.setScalar(stationIndex === 0 ? 0.86 : 0.62);
-      hat.rotation.y = Math.PI;
+      if (stationIndex === 1) {
+        hat.scale.setScalar(0.62);
+        hat.rotation.y = Math.PI;
+      }
       worn.set(key, hat);
+    }
+    if (stationIndex === 0) {
+      seatConductorHat(avatar, hat);
+      return;
     }
     if (hat.parent !== avatar) avatar.add(hat);
     avatar.updateWorldMatrix(true, false);
-    const bone = avatar.getObjectByName(stationIndex === 0 ? 'Head' : 'neck_01');
+    const bone = avatar.getObjectByName('neck_01');
     if (bone) avatar.worldToLocal(bone.getWorldPosition(hat.position));
     else hat.position.set(0, 0.9, 0);
-    hat.position.y += stationIndex === 0 ? 0.33 : -0.2;
+    hat.position.y -= 0.2;
   }
   const api = {
     inspect: () => ({

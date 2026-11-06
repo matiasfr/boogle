@@ -20,6 +20,9 @@ import { makeAxes, type AxeTier } from '../src/proto/place/axe-models.ts';
 import { applyChopPose, CHOP_DURATION, CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
 import { sparkleAxe } from '../src/proto/place/axe-sparkle.ts';
 import type { Particle } from '../src/render/particle-pool.ts';
+import { T1_REWARD } from '../src/render/t1-reward-parts.ts';
+import { seatConductorHat } from '../src/render/head-clearance.ts';
+import { merged } from '../src/proto/place/part-geometry.ts';
 // Inspection-only lead-in and gap expose both production visibility edges.
 export const CHOP_PREVIEW_LEAD = 0.2;
 export const CHOP_PREVIEW_DURATION = CHOP_PREVIEW_LEAD + CHOP_DURATION + 0.3;
@@ -82,6 +85,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
       let canopy: ReturnType<typeof makeCanopy> | undefined;
       let axes: ReturnType<typeof makeAxes> | undefined;
       let trunk: THREE.Mesh | undefined;
+      let railwayHat: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardNodeMaterial> | undefined;
       const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
       const clock = { now: () => time * 1000, random };
       const ownMaterials = (root: THREE.Object3D) =>
@@ -114,6 +118,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         canopy = undefined;
         axes = undefined;
         trunk = undefined;
+        railwayHat = undefined;
         group.clear();
       }
       function reset() {
@@ -170,6 +175,17 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
           if (clipName === 'Jump_Land') skin.animate(avatar, 0, true, 1e-6, false);
           update(1e-6);
           time = 0;
+        }
+        if (hat === 'railway') {
+          railwayHat = new THREE.Mesh(
+            merged(T1_REWARD.parts),
+            new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.08 }),
+          );
+          railwayHat.name = 'wear_place_hat';
+          railwayHat.castShadow = true;
+          geometries.add(railwayHat.geometry);
+          owned.add(railwayHat.material);
+          seatConductorHat(avatar ?? figure, railwayHat);
         }
         if (worn) {
           gear = makeGear();
@@ -284,13 +300,14 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         if (gear && worn) wearGear(figure, sockets.back, gear, worn);
         if (canopy && worn) placeCanopy(avatar ?? figure, canopy, worn.canopy ? 1 : 0, 0, time * 1000);
         applyAxe();
+        if (railwayHat) seatConductorHat(avatar ?? figure, railwayHat);
         group.updateMatrixWorld(true);
       }
       reset();
       return {
         group,
         get figure() {
-          return figure;
+          return railwayHat && avatar ? avatar : figure;
         },
         get sockets() {
           return sockets;

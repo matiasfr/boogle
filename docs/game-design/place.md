@@ -738,7 +738,7 @@ on a device.
 
 ### Axe presentation and stage review
 
-Earned hats use a common head-centred fit for local and remote wearers and shop try-on.
+Earned hats use a common fit for local and remote wearers and shop try-on; the conductor hat follows Head rigidly with its hollow brim, as described in [player.md](player.md).
 Shallow bases clear the forehead; enclosing shells retain their authored seating depth.
 Reward reveals clear the current hat's actual bounds plus the
 item's half-height and bob, with camera distance fitted to the whole show's height and

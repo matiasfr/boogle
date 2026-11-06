@@ -7,6 +7,7 @@
 // No duplicates. The ladder's tool chests use the same show (./ladder.ts). Personal, and Local.
 import * as THREE from 'three/webgpu';
 import { HAT_SEAT, headCenter } from './head-clearance.ts';
+import { CONDUCTOR_HAT_FIT, seatConductorHat } from '../../render/head-clearance.ts';
 import { merged, type Part } from './part-geometry.ts';
 import { packParts } from './gear-models.ts';
 import { makeAxeModel } from './axe-models.ts';
@@ -640,10 +641,10 @@ export const crystalPeg = (k: number, n: number, out: THREE.Vector3) =>
   out.set(((k + 0.5) / n - 0.5) * (WIDE - 0.4), CRYSTAL_Y, 0.08);
 
 // ---------------------------------------------------------------- what you wear, and who follows you
-// One thing a slot, put on by a crate, swapped at the shelf. Each follows a bone but stays upright, in the avatar's space.
+// One thing a slot, put on by a crate, swapped at the shelf. The conductor follows Head rigidly; other items stay upright.
 type Named = THREE.Object3D & { getObjectByName: (n: string) => THREE.Object3D | undefined };
 const WEAR: Partial<Record<GiftId, { bone: string; y: number; z: number; scale: number }>> = {
-  hat: { bone: 'Head', y: 0.33, z: 0, scale: 0.86 }, // brim down round the head, not perched on its crown
+  hat: { bone: 'Head', y: CONDUCTOR_HAT_FIT.buddySeat, z: 0, scale: CONDUCTOR_HAT_FIT.scale },
   beanie: { bone: 'Head', y: 0.3, z: 0, scale: 0.92 },
   teacup: { bone: 'Head', y: 0.42, z: 0, scale: 0.85 },
   scarf: { bone: 'neck_01', y: -0.2, z: 0, scale: 0.62 },
@@ -730,13 +731,17 @@ function putOn(id: GiftId | null, slot: Slot) {
   const m = makeWorn(id, a);
   worn.set(slot, { id, m });
 }
-/** Each frame: on the avatar, upright, where the bone has got to in its clip. Works in the avatar's space, so a fast train
+/** Each frame: on the avatar where the bone has got to in its clip. Works in the avatar's space, so a fast train
  * can't leave it a frame behind. */
 function updateWorn(a: Named | null | undefined, items: Map<Slot, { id: GiftId; m: THREE.Mesh }>) {
   if (!a) return;
   a.updateWorldMatrix(true, false);
   for (const { id, m } of items.values()) {
     const w = WEAR[id]!;
+    if (id === 'hat') {
+      seatConductorHat(a, m);
+      continue;
+    }
     if (byId(id).slot === 'hat') {
       a.worldToLocal(headCenter(a, m.position));
       // Enclosing shells (beanies, helmets) keep their authored seating depth.

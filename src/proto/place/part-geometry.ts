@@ -1,7 +1,7 @@
 // Side-effect-free coloured primitives shared by rewards and worn gear.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-type Prim = 's' | 'c' | 'k' | 'b' | 't' | 'vest' | 'bib' | 'strap' | 'packstrap';
+type Prim = 's' | 'c' | 'k' | 'b' | 't' | 'tube' | 'brim' | 'vest' | 'bib' | 'strap' | 'packstrap';
 export type Part = [
   shape: Prim,
   x: number,
@@ -17,6 +17,25 @@ export type Part = [
 const unit: Record<Prim, () => THREE.BufferGeometry> = {
   s: () => new THREE.SphereGeometry(1, 10, 8),
   c: () => new THREE.CylinderGeometry(1, 1, 1, 12),
+  tube: () => new THREE.CylinderGeometry(1, 1, 1, 12, 1, true),
+  brim: () => {
+    const geometry = new THREE.LatheGeometry(
+      [
+        new THREE.Vector2(0.66, -0.5),
+        new THREE.Vector2(1, -0.5),
+        new THREE.Vector2(1, 0.5),
+        new THREE.Vector2(0.66, 0.5),
+        new THREE.Vector2(0.66, -0.5),
+      ],
+      12,
+    );
+    const positions = geometry.getAttribute('position');
+    // The earned brim projects 0.06 m forward; centre its opening under the crown, not the projection.
+    for (let i = 0; i < positions.count; i++)
+      if (Math.hypot(positions.getX(i), positions.getZ(i)) < 0.8) positions.setZ(i, positions.getZ(i) - 0.06 / 0.42);
+    geometry.computeVertexNormals();
+    return geometry;
+  },
   k: () => new THREE.ConeGeometry(1, 1, 10),
   b: () => new THREE.BoxGeometry(1, 1, 1),
   t: () => new THREE.TorusGeometry(1, 0.3, 6, 14).rotateX(Math.PI / 2),
