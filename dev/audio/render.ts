@@ -681,7 +681,7 @@ const opt = (k: string) => (args.includes(k) ? args[args.indexOf(k) + 1] : null)
 const only = opt('--only')?.split(',') ?? null;
 const out = path.resolve(opt('--out') ?? path.join(root, '.look/audio', String(Date.now())));
 fs.mkdirSync(out, { recursive: true });
-if (fs.readdirSync(out).some((file) => file.endsWith('.wav')))
+if (fs.readdirSync(out, { recursive: true }).some((file) => String(file).endsWith('.wav')))
   throw new Error(
     'Capture output already contains WAVs; choose a fresh --out directory to avoid mixing builds. Use audio:analyze to re-meter existing evidence.',
   );
@@ -866,6 +866,7 @@ if (args.includes('--offline-place') || args.includes('--offline-locomotion')) {
       }
     });
   const manifest = takes.map(({ b64, ...take }) => {
+    fs.mkdirSync(path.dirname(path.join(out, `${take.id}.wav`)), { recursive: true });
     fs.writeFileSync(path.join(out, `${take.id}.wav`), Buffer.from(b64, 'base64'));
     console.log(
       `${take.id}: ${take.seconds.toFixed(3)} s, peak ${take.peakDb.toFixed(1)} dBFS, ${take.clipped} clipped samples`,
@@ -890,25 +891,32 @@ if (args.includes('--offline-place') || args.includes('--offline-locomotion')) {
   console.log(`Evidence: ${evidence}`);
   console.log(`Raw WAVs and offline manifest: ${out}`);
   if (run.status !== 0 || broker.status !== 0) console.error(`Offline audio failed; read ${evidence}.`);
-  analyze(out);
+  if (locomotion) {
+    const metrics = ['A', 'B', 'C', 'v1'].flatMap((style) =>
+      analyze(path.join(out, style)).map((row) => ({ ...row, style, wav: `${style}/${row.wav}` })),
+    );
+    fs.writeFileSync(path.join(out, 'metrics.json'), JSON.stringify(metrics, null, 2) + '\n');
+  } else analyze(out);
   if (locomotion)
     fs.writeFileSync(
       path.join(out, 'listening.md'),
       [
         '# Locomotion listening sheet',
         '',
-        'Mono 48 kHz float WAVs from the production procedural recipes. Source references have six takes at unit gain; walking, running, jumping and landing use the current local audio tunables. No peak normalization. Playback device, subjective balance and live cadence remain unverified here.',
+        'Mono 48 kHz float WAVs. A (0) soft thump, B (1) textured, C (2) toy tick; character.footstepStyle switches the next live contact. v1 is the frozen #1019 recipe, rendered offline in the current build. No old build launched. No listening-file normalization; the recipes share a -12 dBFS source-peak reference. Playback device, subjective balance and live cadence remain unverified here.',
         '',
-        'Each walk/run file plays all six takes with pitch and gain variation at illustrative fixed spacing. Jump files pair each takeoff with normal landing 650 ms later. Landing files progress from soft through normal to capped heavy. This is an audition, not a physics or stride timing simulation.',
+        'Each file uses the same six take seeds, pitch/gain variation and fixed spacing across all styles and v1. Jump+land pairs each takeoff with normal landing 650 ms later. This is an audition, not a physics or stride timing simulation. Walk/run defaults are exactly 11 dB below v1; jump is -15 dB and land -13 dB before unchanged surface trims and jitter.',
         '',
-        '| Surface | Walk | Run | Jump + land | Impact range | Source reference |',
-        '| --- | --- | --- | --- | --- | --- |',
-        ...['grass', 'sand', 'wood', 'rail', 'water'].map(
-          (s) =>
-            `| ${s} | [WAV](${s}-walk.wav) | [WAV](${s}-run.wav) | [WAV](${s}-jump.wav) | [WAV](${s}-land.wav) | [WAV](${s}-source.wav) |`,
+        '| Style | Surface | Walk | Run | Jump + land |',
+        '| --- | --- | --- | --- | --- |',
+        ...['A', 'B', 'C', 'v1'].flatMap((style) =>
+          ['grass', 'sand', 'wood', 'rail', 'water'].map(
+            (s) =>
+              `| ${style} | ${s} | [WAV](${style}/${s}-walk.wav) | [WAV](${style}/${s}-run.wav) | [WAV](${style}/${s}-jump+land.wav) |`,
+          ),
         ),
         '',
-        'Settings, exact source completion and cue parameters: locomotion-offline.json. Signal levels: measurements.md; tool version: meter-tool.json.',
+        'Settings, source completion and seeds: locomotion-offline.json. Each style has metrics.json, measurements.md and meter-tool.json; combined metrics.json is here. Peak/RMS cover complete raw windows; LUFS is FFmpeg loudnorm input (BS.1770), diagnostic for short cues. The actual mix compressor/master and other game sounds are absent.',
       ].join('\n'),
     );
   fs.cpSync(out, path.join(path.dirname(evidence), 'audio'), { recursive: true });

@@ -28,10 +28,11 @@ const fields = {
   minisDb: db(-3, -24),
   minisWompDb: db(-3, -24),
   placeImpactDb: db(-3, -24),
-  footstepsDb: db(-8, -24, 0),
-  runningDb: db(-5, -24, 0),
-  jumpDb: db(-11, -24, 0),
-  landingDb: db(-4, -18),
+  footstepStyle: number(0, 0, 2, '0=A soft, 1=B textured, 2=C toy', true),
+  footstepsDb: db(-19, -40, 0),
+  runningDb: db(-16, -40, 0),
+  jumpDb: db(-15, -40, 0),
+  landingDb: db(-13, -40),
   remoteStepsDb: db(-6, -18, 0),
   surfaceGrassDb: db(0, -12),
   surfaceSandDb: db(-1, -12),
@@ -57,7 +58,7 @@ const fields = {
 } as const;
 export type AudioSetting = keyof typeof fields;
 export const AUDIO_SPECS = Object.entries(fields).map(([key, spec]) => ({
-  id: `audio.${key}`,
+  id: key === 'footstepStyle' ? 'character.footstepStyle' : `audio.${key}`,
   type: 'number' as const,
   scope: 'local' as const,
   ...spec,
@@ -69,7 +70,7 @@ export const audioSettings = Object.fromEntries(
 ) as Record<AudioSetting, number>;
 const listeners = new Set<(key: AudioSetting, value: number) => void>();
 export function audioSettingKey(id: string): AudioSetting | null {
-  const key = id.startsWith('audio.') ? id.slice(6) : '';
+  const key = id === 'character.footstepStyle' ? 'footstepStyle' : id.startsWith('audio.') ? id.slice(6) : '';
   return Object.hasOwn(fields, key) ? (key as AudioSetting) : null;
 }
 export function setAudioSetting(id: string, value: unknown): boolean {
