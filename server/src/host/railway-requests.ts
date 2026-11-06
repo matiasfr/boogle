@@ -151,6 +151,11 @@ export function createRailwayRequests({
       const allowed = ordinary.includes(String(e.op)) || (!!api.railway.line && lineOps.includes(String(e.op)));
       // Strip unrelated client fields so the bounded recovery tail contains only this op's wire shape.
       const clean: Obj = { op: e.op, epoch, request, i: 0, j: 0 };
+      // The actor owns their body: reach and cadence are judged from the action's own position (centimetres) and the
+      // client's action clock (ms), not from presence or arrival time (docs/plans/replication.md, revision 1).
+      if (Array.isArray(e.at) && e.at.length === 3 && e.at.every((v) => railInt(v, 200000, -200000)))
+        clean.at = [e.at[0], e.at[1], e.at[2]];
+      if (railInt(e.ms, RAILWAY_MAX_INT)) clean.ms = e.ms;
       if (e.op === 'rail.chop' || e.op === 'rail.take' || e.op === 'rail.mine') clean.id = e.id;
       if (e.op === 'rail.chop' && api.railway.falls) {
         clean.yaw = e.yaw;

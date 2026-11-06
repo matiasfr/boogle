@@ -41,6 +41,10 @@ const STEP_MS = 50;
 // Saves skip a world whose states didn't change, but its tick still moves on, and the helper bank reads the time nobody
 // hosted from the saved tick: so the tick is saved at least this often, and always on close.
 const TICK_SAVE_MS = 30000;
+// Client action clocks (railCadence): a frame of rounding and jitter between two swings, and how far the client's
+// clock may run ahead of the server's over a session.
+const CADENCE_SLACK_MS = 20;
+const CLIENT_AHEAD_MS = 1000;
 
 // JSON escapes lone UTF-16 surrogates to six bytes each. Preserve their displayed replacement character while
 // keeping the existing sixteen-character name and three-byte-per-code-unit recovery bound (ES2022 browsers).
@@ -208,41 +212,64 @@ export function createRailwayWorldHost({
   let startup = true;
   let savedAt = now();
   let savedTick = 0;
+  // The actor owns their body (docs/plans/replication.md, revision 1): an action that carries its own position
+  // (`at`, centimetres) and action time (`ms`, the client's monotonic clock) is judged from those, so a correct
+  // prediction is never refused for stale presence or bunched arrival. Without them: fresh presence and arrival time.
   const cadence = new Map<string, number>();
+  type ClientClock = { epoch: unknown; first: number; firstAt: number; last: Map<string, number> };
+  const clientClocks = new Map<string, ClientClock>();
+  const actorAt = (e: { at?: unknown }) => {
+    const at = e.at;
+    return Array.isArray(at) && at.length === 3 && at.every((v) => Number.isSafeInteger(v)) ? (at as number[]) : null;
+  };
+  const freshPose = (sid: string) => {
+    const p = positionOf(sid);
+    return p &&
+      Number.isFinite(p.x) &&
+      Number.isFinite(p.z) &&
+      Number.isFinite(p.at) &&
+      now() - p.at <= 2000 &&
+      p.at <= now()
+      ? p
+      : null;
+  };
   const railReach: RailReach = (e, x, z, radius) => {
-    const p = positionOf(e.p);
-    if (
-      !p ||
-      !Number.isFinite(p.x) ||
-      !Number.isFinite(p.z) ||
-      !Number.isFinite(p.at) ||
-      now() - p.at > 2000 ||
-      p.at > now()
-    )
-      return false;
+    const at = actorAt(e as { at?: unknown });
+    const p = at ? { x: at[0]! / 100, z: at[2]! / 100 } : freshPose(e.p);
+    if (!p) return false;
     const dx = p.x * 100 - x,
       dz = p.z * 100 - z;
     return dx * dx + dz * dz <= radius * radius;
   };
   const railCadence: RailCadence = (e) => {
     const swing = ['rail.chop', 'rail.mine', 'rail.beamChop'].includes(e.op);
-    const key = `${e.u}:${swing ? 'swing' : e.op}`;
+    const kind = swing ? 'swing' : e.op;
     const ms = swing ? RAILWAY_T1.swingMs : RAILWAY_T1.unloadMs;
     const time = monotonicNow();
+    const client = (e as { ms?: unknown }).ms;
+    if (typeof client === 'number' && Number.isSafeInteger(client) && client >= 0) {
+      const epoch = (e as { epoch?: unknown }).epoch;
+      let clock = clientClocks.get(e.u);
+      if (!clock || clock.epoch !== epoch || client < clock.first) {
+        clock = { epoch, first: client, firstAt: time, last: new Map() };
+        clientClocks.set(e.u, clock);
+      }
+      // A loose sanity bound only: the client's action clock may not run ahead of ours by more than CLIENT_AHEAD_MS.
+      if (client - clock.first > time - clock.firstAt + CLIENT_AHEAD_MS) return false;
+      if (client - (clock.last.get(kind) ?? -Infinity) < ms - CADENCE_SLACK_MS) return false;
+      clock.last.set(kind, client);
+      return true;
+    }
+    const key = `${e.u}:${kind}`;
     if (time - (cadence.get(key) ?? -Infinity) < ms) return false;
     cadence.set(key, time);
     return true;
   };
-  const railHeight = (e: { p: string }, y: number, radius: number) => {
-    const p = positionOf(e.p);
-    return (
-      !!p &&
-      Number.isFinite(p.y) &&
-      Number.isFinite(p.at) &&
-      now() - p.at <= 2000 &&
-      p.at <= now() &&
-      Math.abs(p.y! * 100 - y) <= radius
-    );
+  const railHeight = (e: { p: string; at?: unknown }, y: number, radius: number) => {
+    const at = actorAt(e);
+    if (at) return Math.abs(at[1]! - y) <= radius;
+    const p = freshPose(e.p);
+    return !!p && Number.isFinite(p.y) && Math.abs(p.y! * 100 - y) <= radius;
   };
   const supplySafe = (e: SupplyPulse) => {
     const people = positions();

@@ -57,6 +57,10 @@ type Pending = {
   outgoing: number;
   sentAt: number;
   retry: boolean;
+  /** Where the actor stood (centimetres) and the client's action time (ms): the server judges reach and cadence from
+   * these, not presence or arrival (docs/plans/replication.md, revision 1). A retry resends the originals. */
+  at?: [number, number, number];
+  ms: number;
 };
 type Listener = {
   applied(e: Record<string, unknown>, tick: number, result: unknown): void;
@@ -144,7 +148,22 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   return null;
 }
 
-export function createRailwayAdapter({ api, sync, pid }: { api: RailwayApi; sync: Sync; pid: string }) {
+export type ActorPose = () => { x: number; y: number; z: number } | null;
+export function createRailwayAdapter({
+  api,
+  sync,
+  pid,
+  pose = () => null,
+  now = () => performance.now(),
+}: {
+  api: RailwayApi;
+  sync: Sync;
+  pid: string;
+  /** The local body's position in metres, sent with each action. */
+  pose?: ActorPose;
+  /** The client's monotonic action clock in ms. */
+  now?: () => number;
+}) {
   const pending = new Map<string, Pending>();
   const effects = new Set<(event: RailwayAccepted) => void>();
   const resets = new Set<() => void>();
@@ -217,7 +236,7 @@ export function createRailwayAdapter({ api, sync, pid }: { api: RailwayApi; sync
     for (const p of pending.values()) {
       if (p.epoch !== epoch || clock - p.sentAt < 1000) continue;
       // A status reply never allocates a new identity. Re-admission, if needed, retries the original operation.
-      if (p.retry) room.send({ t: 'r:edit', e: { ...p.intent, epoch: p.epoch, request: p.request } });
+      if (p.retry) room.send({ t: 'r:edit', e: wire(p) });
       else room.send({ t: 'r:status', epoch: p.epoch, request: p.request });
     }
   }
@@ -306,6 +325,9 @@ export function createRailwayAdapter({ api, sync, pid }: { api: RailwayApi; sync
     }
     return { incoming, outgoing, logs, stone };
   }
+  function wire(p: Pending) {
+    return { ...p.intent, epoch: p.epoch, request: p.request, ms: p.ms, ...(p.at ? { at: p.at } : {}) };
+  }
   function submit(intent: RailwayIntent, incoming = 0, outgoing = 0): boolean {
     reconcile();
     if (!available() || !room || pending.size >= RAILWAY_WINDOW || next >= RAILWAY_MAX_INT) return false;
@@ -327,8 +349,24 @@ export function createRailwayAdapter({ api, sync, pid }: { api: RailwayApi; sync
     if (intent.op === 'rail.chop' && ['asleep', 'waking'].includes(api.phase())) return false;
     if (intent.op === 'rail.deposit' && api.phase() !== 'idle') return false;
     const request = next++;
-    pending.set(key(epoch, request), { intent, epoch, request, incoming, outgoing, sentAt: clock, retry: false });
-    room.send({ t: 'r:edit', e: { ...intent, epoch, request } });
+    const body = pose();
+    const at =
+      body && Number.isFinite(body.x) && Number.isFinite(body.y) && Number.isFinite(body.z)
+        ? ([Math.round(body.x * 100), Math.round(body.y * 100), Math.round(body.z * 100)] as [number, number, number])
+        : undefined;
+    const p: Pending = {
+      intent,
+      epoch,
+      request,
+      incoming,
+      outgoing,
+      sentAt: clock,
+      retry: false,
+      ms: Math.max(0, Math.round(now())),
+      ...(at ? { at } : {}),
+    };
+    pending.set(key(epoch, request), p);
+    room.send({ t: 'r:edit', e: wire(p) });
     return true;
   }
 
