@@ -13,13 +13,25 @@ import { scalar, vector, tuningEnabled } from './live.ts';
 const { Fn, If, exp, float, fwidth, log2, materialColor, materialRoughness, max, min, mix } = TSL;
 const { normalWorldGeometry, positionWorld, refract, smoothstep, vec3, vec4 } = TSL;
 type Context = { field: ShoreFields; caustics: CausticSample };
+/** Optional Local sand response. Nodes are owned by the material's terrain owner, never by the sea. */
+export type WetSandProfile = {
+  mask: N;
+  dampHeight: N;
+  dampWidth: N;
+  dampStrength: N;
+  tideMarkStrength: N;
+  filmTint: N;
+  sheenStrength: N;
+};
 const materials = new Set<MeshStandardNodeMaterial>();
+const sandProfiles = new WeakMap<MeshStandardNodeMaterial, WetSandProfile>();
 let current: Context | null = null;
 const restore = new Map<MeshStandardNodeMaterial, () => void>();
 const causticStrength = scalar('water.caustics', ULTRA, 'caustics');
 
 function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   if (restore.has(mat)) return;
+  const sand = sandProfiles.get(mat);
   const previousColor = mat.colorNode,
     previousRoughness = mat.roughnessNode,
     previousNormal = mat.normalNode;
@@ -66,15 +78,56 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
     .mul(lace)
     .mul(smoothstep(-0.02, 0.04, positionWorld.y))
     .mul(0.7);
-  patchNode(mat, 'colorNode', (previous: N) =>
-    mix((previous ?? materialColor).mul(surface.rgb), vec3(0.65, 0.7, 0.68), foam),
-  );
+  // The optional sand treatment uses this same wash result: one shore lookup/clock for film, foam and drying.
+  // Keep the default path unchanged for all ordinary receivers.
+  const sandMask = sand ? float(sand.mask).clamp(0, 1) : float(0);
+  const sandUp = smoothstep(0.65, 0.9, normalWorldGeometry.y);
+  const film = smoothstep(0, 0.004, wash.x).mul(smoothstep(-0.05, 0.05, positionWorld.y));
+  const damp = sand
+    ? (() => {
+        const broad = vnoise(positionWorld.xz.mul(0.08));
+        const high = float(sand.dampHeight).add(float(sand.dampWidth).mul(broad));
+        const low = high.sub(max(sand.dampWidth, 0.05).mul(2));
+        const persistent = smoothstep(low, high, positionWorld.y).oneMinus().mul(sand.dampStrength);
+        // Preserve the drying clock even inside the persistent damp band; max(static, wet) hid it there.
+        return persistent.add(wash.z.mul(sand.tideMarkStrength).mul(persistent.oneMinus())).mul(sandUp);
+      })()
+    : surface.a;
+  patchNode(mat, 'colorNode', (previous: N) => {
+    const base = previous ?? materialColor;
+    const ordinary = base.mul(surface.rgb);
+    if (!sand) return mix(ordinary, vec3(0.65, 0.7, 0.68), foam);
+    // Ultra Water terrain.js: water fills pores, compounding pigment instead of a flat grey multiply.
+    // Remove only this receiver's ordinary wet multiplier; keep its absorption and focused light.
+    const light = surface.rgb.div(mix(1, 0.72, surface.a));
+    const poreTint = mix(base.mul(0.8).add(0.06), vec3(0.6), smoothstep(-0.8, 0, positionWorld.y).oneMinus());
+    const sandColour = base
+      .mul(light)
+      .mul(mix(vec3(1), poreTint, damp))
+      .mul(mix(vec3(1), vec3(0.9, 0.97, 0.97), smoothstep(0, 0.06, wash.x).mul(film).mul(sand.filmTint)));
+    return mix(mix(ordinary, sandColour, sandMask), vec3(0.65, 0.7, 0.68), foam);
+  });
   // A wet film needs a continuous normal, as in the reference's smooth/rippled sand. Giving the dry terrain's
   // flat face normals a low roughness lit entire triangles as white shards, even with the ocean hidden.
   const gloss = surface.a.mul(smoothstep(-0.05, 0.05, positionWorld.y));
   const filmNormal = TSL.transformNormalToView(TSL.normalLocal).toVarying().normalize();
-  patchNode(mat, 'normalNode', (previous: N) => mix(previous ?? TSL.normalViewGeometry, filmNormal, gloss).normalize());
-  patchNode(mat, 'roughnessNode', (previous: N) => mix(previous ?? materialRoughness, 0.32, gloss));
+  patchNode(mat, 'normalNode', (previous: N) => {
+    const base = previous ?? TSL.normalViewGeometry;
+    const ordinary = mix(base, filmNormal, gloss).normalize();
+    // Cove sand already supplies continuous, rippled normals. Do not erase those as its film becomes shiny.
+    return sand ? mix(ordinary, base, sandMask).normalize() : ordinary;
+  });
+  patchNode(mat, 'roughnessNode', (previous: N) => {
+    const base = previous ?? materialRoughness;
+    const ordinary = mix(base, 0.32, gloss);
+    if (!sand) return ordinary;
+    const sandRoughness = mix(
+      mix(base, 0.32, damp.mul(smoothstep(-0.05, 0.05, positionWorld.y)).mul(sand.sheenStrength)),
+      0.2,
+      film.mul(sand.sheenStrength),
+    );
+    return mix(ordinary, sandRoughness, sandMask);
+  });
   const color = mat.colorNode,
     roughness = mat.roughnessNode,
     normal = mat.normalNode;
@@ -86,12 +139,14 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   });
 }
 
-export function registerWaterReceiver<T extends MeshStandardNodeMaterial>(mat: T): T {
+export function registerWaterReceiver<T extends MeshStandardNodeMaterial>(mat: T, sand?: WetSandProfile): T {
   if (!newWaterEnabled) return mat;
+  if (sand) sandProfiles.set(mat, sand);
   materials.add(mat);
   if (current) attach(mat, current);
   mat.addEventListener('dispose', () => {
     materials.delete(mat);
+    sandProfiles.delete(mat);
     restore.delete(mat);
   });
   return mat;

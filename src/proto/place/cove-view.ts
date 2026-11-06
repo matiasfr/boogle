@@ -3,8 +3,9 @@ import * as THREE from 'three/webgpu';
 import { defineKind, spawn } from '../../entity/entity.ts';
 import { createBody } from '../../physics/engine.ts';
 import { GROUP, groundMat } from '../../physics/physics.ts';
-import { registerWaterReceiver } from '../../render/water/receivers.ts';
-import { COVE_DRY, coveMeshes } from './cove.ts';
+import { coveMeshes } from './cove.ts';
+import { applyCoveLayers } from './cove-material.ts';
+import { coveTextureBytes } from './cove-textures.ts';
 import { ORIGIN } from './layout.ts';
 import { holdCoveStop } from './cove-stop.ts';
 
@@ -13,14 +14,15 @@ export function buildCove() {
   const group = new THREE.Group();
   group.name = 'west-cove-sandstone';
   group.position.set(ORIGIN.x, 0, ORIGIN.z);
-  const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.93, flatShading: true });
-  if (!COVE_DRY) registerWaterReceiver(material);
+  const material = new THREE.MeshStandardNodeMaterial({ roughness: 0.93 });
+  applyCoveLayers(material, 1, true);
   const geometries = coveMeshes.map((m) => {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(m.vertices, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(m.colors, 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(m.normals, 3));
+    geometry.setAttribute('coveTurf', new THREE.Float32BufferAttribute(m.turf, 1));
     geometry.setIndex(m.indices);
-    geometry.computeVertexNormals();
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = m.name;
     mesh.castShadow = mesh.receiveShadow = true;
@@ -44,7 +46,7 @@ export function buildCove() {
       triangles: coveMeshes.reduce((n, m) => n + m.indices.length / 3, 0),
       batches: 2,
       collision: 'same triangles',
-      textures: 0,
+      sharedTextureBytes: coveTextureBytes,
     }),
     dispose() {
       for (const g of geometries) g.dispose();
