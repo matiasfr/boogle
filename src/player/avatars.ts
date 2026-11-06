@@ -36,6 +36,7 @@ export type AvatarData = {
   seatedAt?: number;
   audioRole?: 'local' | 'remote' | 'preview';
   riding?: boolean;
+  jumpSequence?: number; // Local accepted launches, never a presence field
   aloft?: boolean;
 };
 export type Avatar = THREE.Group & { userData: AvatarData };

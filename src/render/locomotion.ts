@@ -16,9 +16,8 @@ type History = {
   air: boolean;
   apex: number;
   airFor: number;
-  groundedFor: number;
   groundedY: number;
-  takeoffPending: boolean;
+  jumpSequence: number;
   lastAt: number;
   contextAt: number;
   bags: Map<StepSurface, number[]>;
@@ -199,9 +198,8 @@ export function updateLocomotion(a: Avatar, motion: BuddyMotion) {
       air: motion.airborne,
       apex: p.y,
       airFor: 0,
-      groundedFor: 0,
       groundedY: p.y,
-      takeoffPending: false,
+      jumpSequence: a.userData.jumpSequence ?? 0,
       lastAt: now,
       contextAt: now,
       bags: h?.bags ?? new Map(),
@@ -211,21 +209,17 @@ export function updateLocomotion(a: Avatar, motion: BuddyMotion) {
     return;
   }
   h = h!;
+  const jumpSequence = a.userData.jumpSequence ?? 0;
+  // The controller counts accepted ground/coyote launches. Terrain crests and failed button
+  // presses cannot produce takeoff effort. Remote presence has no intent, so it supplies only
+  // contacts and landings rather than guessing a jump from upward interpolation.
+  if (a === me.avatar && jumpSequence !== h.jumpSequence) play(a, h, motion, 'jump', settings.jumpDb);
+  h.jumpSequence = jumpSequence;
   let landing = false;
   if (motion.airborne) {
-    if (!h.air) h.takeoffPending = h.groundedFor > 0.06;
     h.airFor += motion.dt;
     h.apex = Math.max(h.apex, p.y);
-    // The grounded flag can lead the interpolated pose by a frame. Keep the eligibility briefly,
-    // then consume it on upward movement; a descending walk off an edge never qualifies.
-    if (h.takeoffPending && h.airFor <= 0.12 && motion.vy > settings.takeoffMinSpeed) {
-      play(a, h, motion, 'jump', settings.jumpDb);
-      h.takeoffPending = false;
-    }
-    if (h.airFor > 0.12) h.takeoffPending = false;
-    h.groundedFor = 0;
   } else {
-    h.takeoffPending = false;
     const height = h.apex - p.y;
     if (h.air && h.airFor >= 0.06 && height >= settings.landingMinHeight) {
       const impact =
@@ -236,7 +230,6 @@ export function updateLocomotion(a: Avatar, motion: BuddyMotion) {
       play(a, h, motion, 'land', settings.landingDb + impact);
       landing = true;
     }
-    h.groundedFor += motion.dt;
     h.groundedY = p.y;
     h.airFor = 0;
     h.apex = p.y;

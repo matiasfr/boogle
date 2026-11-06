@@ -137,6 +137,9 @@ function floorGap() {
     : Infinity;
 }
 let jumpActive = false; // a player-made jump is rising (only those get the short-hop cut)
+let acceptedJumps = 0;
+/** Local presentation reads actual launches; upward terrain motion is not a deliberate jump. */
+export const localJumpCount = () => acceptedJumps;
 
 // Each physics step, before steering: a heavier fall, a short hop when you let go early, a little float at the apex while
 // held; and the ground snap, so running over a crest doesn't launch you (recently grounded, ground just below, no jump).
@@ -209,6 +212,7 @@ export function steerPlayer() {
   if (me.jumpQueued > 0) {
     if (me.coyote > 0) {
       b.velocity.y = Math.min(Math.max(b.velocity.y, 0), 6) + JUMP_SPEED; // adds to an upward bounce: bounces chain
+      acceptedJumps++;
       me.coyote = 0;
       me.jumpQueued = 0;
       // Coyote jumps over empty air never had the old contact-driven launch steering. Uneven ground did.

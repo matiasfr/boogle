@@ -2,7 +2,7 @@
 // animateAvatar. `me.avatar` is this file's to set; everything else here only reads the player's state.
 import { carry } from '../../physics/platforms.ts';
 import { animateAvatar, makeAvatar } from '../../player/avatars.ts';
-import { me } from './state.ts';
+import { localJumpCount, me } from './state.ts';
 
 export function makePlayerAvatar() {
   me.avatar = makeAvatar(me.colorIdx, 'local');
@@ -17,6 +17,7 @@ export function syncAvatar(dt: number) {
   avatar.position.set(ip.x, ip.y, ip.z);
   avatar.rotation.y = me.yaw;
   avatar.userData.riding = carry.on !== null;
+  avatar.userData.jumpSequence = localJumpCount();
   const v = body.velocity;
   animateAvatar(
     avatar,

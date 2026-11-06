@@ -648,6 +648,9 @@ pitch varies ±35 cents and level ±1.5 dB. Source contacts are calibrated to
 apex, interpolating soft −6 dB through normal to heavy +4 dB, with capped gain.
 A landing consumes its contact moment. Swimming, airborne steps, seated/riding,
 down, stationary, teleport and resume transitions suppress or reset contacts.
+First-jump effort follows the local controller's accepted launch, so uneven
+ground crests and rejected presses remain silent. Remote presence has no jump
+intent; friends retain steps and landings without inferred takeoff effort.
 
 Ground/support metadata selects grass, sand, wood, rail panel or shallow water;
 decks above water keep their solid material. Unclassified supports fall back

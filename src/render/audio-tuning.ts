@@ -44,7 +44,6 @@ const fields = {
   stepNearDistance: number(1.5, 0, 5, 'm'),
   landingDistance: number(30, 6, 45, 'm'),
   stepMinSpeed: number(0.15, 0.01, 1, 'm/s'),
-  takeoffMinSpeed: number(1, 0.1, 3, 'm/s'),
   landingMinHeight: number(0.2, 0.05, 0.5, 'm'),
   jitterCents: number(35, 0, 80, 'cents'),
   jitterDb: db(1.5, 0, 3),
