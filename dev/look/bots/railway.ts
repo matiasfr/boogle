@@ -17,15 +17,20 @@ export async function play({ stopBeforeReward = false } = {}) {
   const player = query.get('player');
   const coop = player === '1' || player === '2';
   const second = player === '2';
-  const peers = new Map<string, { x: number; y: number; z: number; seenAt: number }>();
+  const peers = new Map<
+    string,
+    { pid: string | undefined; x: number; y: number; z: number; seenAt: number; beamHelp: string | null }
+  >();
   const offPresence = coop
     ? onRemotePresence((remote, presence) => {
         if (remote.entered && Array.isArray(presence.p))
           peers.set(remote.peer, {
+            pid: remote.pid,
             x: presence.p[0] as number,
             y: presence.p[1] as number,
             z: presence.p[2] as number,
             seenAt: performance.now(),
+            beamHelp: typeof presence.railwayBeamHelp === 'string' ? presence.railwayBeamHelp : null,
           });
         else peers.delete(remote.peer);
       })
@@ -88,6 +93,7 @@ export async function play({ stopBeforeReward = false } = {}) {
         aboard: carry.on?.id ?? null,
         reward: state.reward,
         pathOpen: state.pathOpen,
+        beamHelpPeers: [...peers.values()].filter((p) => p.beamHelp && performance.now() - p.seenAt < 1500),
         workedSources: state.trees
           .filter((tree) => tree.work > 0)
           .map(({ id, remaining, work, growth }) => ({ id, remaining, work, growth })),
@@ -358,10 +364,75 @@ export async function play({ stopBeforeReward = false } = {}) {
         'unique beam held by carrier',
       );
       await checkpoint('T3 beam carried');
-      await walk(read().station.x, read().station.z, 3);
+      if (coop) {
+        const holder = read().pid;
+        const revision = read().beam!.revision;
+        const helperNear = () =>
+          [...peers.values()].some(
+            (p) =>
+              p.beamHelp === holder &&
+              performance.now() - p.seenAt < 1500 &&
+              Math.hypot(p.x - me.body!.position.x, p.z - me.body!.position.z) <= 3.5,
+          );
+        await until(helperNear, 'friend activates Help carry beside the sole beam holder', 30000);
+        mark('T3 beam helper joined');
+        const start = me.body!.position.clone();
+        const route = await bot.plan(read().station.x, read().station.z, 3);
+        require(route.arrives, 'a real helped-beam route reaches T3');
+        let last = { x: start.x, z: start.z };
+        let shown = false;
+        for (const point of route.path) {
+          if (job(2).start >= 0) break;
+          if (Math.hypot(point.x - last.x, point.z - last.z) < 2) continue;
+          await until(helperNear, 'helper stays near before the next short beam leg', 10000);
+          require(read().beam?.holder === holder &&
+            read().beam?.revision === revision, 'help never claims a second beam');
+          await walk(point.x, point.z, 0.7);
+          last = point;
+          if (!shown && Math.hypot(me.body!.position.x - tree.x / 100, me.body!.position.z - tree.z / 100) >= 9) {
+            await until(helperNear, 'helper remains beside the carried beam after moving', 10000);
+            require(Math.hypot(me.body!.position.x - start.x, me.body!.position.z - start.z) >=
+              5, 'helped beam moves at least five metres');
+            shown = true;
+            await checkpoint('T3 helped beam carried');
+          }
+        }
+        require(shown, 'helped beam carry was observed before delivery');
+        await walk(read().station.x, read().station.z, 3);
+      } else await walk(read().station.x, read().station.z, 3);
       await until(() => job(2).start >= 0, 'beam deposited and T3 funded');
     } else {
-      await walk(read().station.x, read().station.z, 3);
+      await until(() => read().beam?.state === 'held', 'friend picks up the sole beam');
+      const holder = read().beam!.holder;
+      const carrier = () => [...peers.values()].find((p) => p.pid === holder && performance.now() - p.seenAt < 1500);
+      await until(carrier, 'carrier has a fresh real position');
+      const initial = carrier()!;
+      await walk(initial.x, initial.z, 2.5);
+      face(initial.x, initial.z);
+      require(await bot.use(initial.x, initial.z, 'help carry the beam', /^Help carry$/), 'Help carry offered');
+      await until(() => interactTarget()?.id === 'railway-beam-help-release', 'helper grip activated', 5000);
+      mark('T3 beam helper joined');
+      let shown = false;
+      const deadline = performance.now() + 120000;
+      while (job(2).start < 0 && performance.now() < deadline) {
+        const p = carrier();
+        require(p && !me.swimming, 'helper follows a fresh dry carrier');
+        face(p!.x, p!.z);
+        if (Math.hypot(p!.x - me.body!.position.x, p!.z - me.body!.position.z) > 2.1) input.keys.add('KeyW');
+        else input.keys.delete('KeyW');
+        if (interactTarget()?.id === 'railway-beam-help') bot.press();
+        if (!shown && Math.hypot(p!.x - LINE1_GREAT_TREE.x / 100, p!.z - LINE1_GREAT_TREE.z / 100) >= 9) {
+          require(interactTarget()?.id === 'railway-beam-help-release', 'helper grip remains active after moving');
+          require(read().beam?.holder === holder &&
+            read().carry === 0 &&
+            read().stoneCarry === 0, 'helper has an empty back and no second beam claim');
+          shown = true;
+          await checkpoint('T3 helped beam carried');
+        }
+        await bot.wait(40);
+      }
+      input.keys.delete('KeyW');
+      require(shown, 'helper moved with the held beam');
       await until(() => job(2).start >= 0, 'friend delivered unique beam');
     }
     await checkpoint('T3 funded');
