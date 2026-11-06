@@ -42,7 +42,7 @@ Use `npm run map -- --section docs/proposals/boogle-2.md current-decision-index`
 
 ### Architecture, tools and prototype lifecycle
 
-[Process](#process): entity methods, pipeline, solo-first evidence, no automatic rollback, and **2 November, be cautious removing prototypes for now** (ask before further archiving). Read that qualification before the older archive policy. `?play`, the prototype bar and verdicts went on 4 November; the one-playtest-path entry is history. AGENTS' **Codex first**, verification and test-diet calls supersede older tool/model assignments in [How the owner works](#how-the-owner-works) and Process.
+[Process](#process): **6 November, conform to tested engine architecture** first; it supersedes the prototype-removal caution and archive policy and reopens "no ECS". Then entity methods, pipeline, solo-first evidence and no automatic rollback; the one-playtest-path entry is history. Owner-calls (Claude subagents for work, Codex for images; verification; test diet) supersede older tool/model assignments.
 
 ### Unresolved scope
 
@@ -389,6 +389,15 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ### Process
 
+- **2026-11-06, conform to tested engine architecture** (owner, after an audit of the workflow and the engine-level choices: "I want to understand the risk better and conform to more tested architectures than doing our own thing"; "this is now a serious project"). Each item below is a direction; the ones marked *evaluate* get research comparing Unity, Unreal, Godot and published netcode before a build decision.
+  - **One fixed simulation clock.** Physics stays at 60 Hz. Replace the separate 10 Hz lockstep clock with one fixed clock that drives both, with the rules ticking every N physics steps (the conventional fix; "moderate work" accepted).
+  - **Entity model, evaluate.** Evaluate off-the-shelf ECS libraries (bitECS, miniplex, koota and others) against a stricter version of today's `GameEntity`, judged on how cleanly Place graduates. Reopens 1 November's "still no ECS". The owner rates the current state high risk.
+  - **No prototypes on `main`.** "There shouldn't be any proto anymore." Decide now what Place and the other prototypes contribute to the mainline, finish moving that into core (production-core's slices), and remove everything else from `main` (archive tags keep history). Supersedes 2 November's "be cautious removing prototypes" and its archive policy.
+  - **Remove PeerJS** leftovers (ids, host-id guards, tests, comments).
+  - **The server runs shared physics.** Shared physical objects, such as an item two players carry together, are simulated by the server, with clients smoothing what they receive. Evaluate Rapier's deterministic build (`@dimforge/rapier3d-deterministic`) as the alternative; the owner wants its trade-offs explained.
+  - **Scene, asset and save pipeline, evaluate.** The hand-coded layouts in TypeScript don't scale to the content planned; choose a level/scene data format, streaming and save approach before the next destination.
+  - **Input through actions only**, enforced by lint ([owner-calls](../agents/owner-calls.md)).
+  - **Direction docs:** `direction.md` becomes the one roadmap (current milestone, exit criteria, next 5–10 tasks, parking-lot link) and the orchestrator refreshes it at every playtest and merge batch; briefs follow one template (principle served, dependent decisions, sync kind and folders touched, done means, binding rules); the architecture review runs now and before each milestone, asking what breaks at 10x content; DESIGN.md gets an explicit "not doing" list and 3–5 lead principles; a fresh session per milestone.
 - **2026-11-03, future Unreal alignment** (owner): may consider migrating to Unreal in the future and prefers choices that align with its patterns where cheap; no migration is decided. See [unreal-alignment.md](../research/unreal-alignment.md).
 - **2026-10-30, `main` keeps deploying straight to boogle.club** (owner: no public playtesting yet, saved worlds aren't precious, and bad changes get reverted after the fact). Don't push for gating or staging. Revisit when Boogle is shown outside the friend group. The plan discussed then: a `release` branch to boogle.club, `main` to dev.boogle.club (a subdomain, so localStorage isn't shared), both on Cloudflare Pages, with a separate `boogle-server-dev` Fly app and its own volume.
 - **2026-11-02, entities have methods** (owner). `update()` and friends on the entity, Unity's shape, over the research's timing rows per kind ([entity-architecture.md](../research/entity-architecture.md)). A second slot in a phase means a second kind. The entity loop gets a few unit tests, an exception to the test diet.
@@ -419,6 +428,7 @@ The owner's answers to the standing design audit ([design-audit.md](design-audit
 
 ## Changed
 
+- **2026-11-06:** "Codex first" became "Claude subagents for work, Codex for images" (owner-calls), "be cautious removing prototypes" became "no prototypes on `main`", and "still no ECS" was reopened for evaluation (Process, 6 November).
 - **2026-11-02:** "no hazards at all, nothing decays" was withdrawn along with DESIGN.md's "Nothing is the antagonist": the owner called the guidance outdated. Danger is open; nothing replaces it yet.
 - **2026-11-02:** "the island grows through technology eras" became "you find better materials and upgrade": the world doesn't change era, your things do. The era lists above are history; asset limits and the round structure still apply.
 - **2026-11-02:** "curios to collect" became "abilities to find": what you discover opens new paths.
