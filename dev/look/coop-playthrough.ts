@@ -1,5 +1,5 @@
 // The two-peer branch of playthrough.ts. Same Game, observer, bot and clock diagnostics as look.
-// Checkpoints coordinate test actors only; they never assign game state or restore fixtures.
+// Checkpoints coordinate actors; --from restores a saved entry once, then the route uses real inputs.
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Browser } from 'playwright';
@@ -8,6 +8,16 @@ import { coopWarpOptions, startCoopWarp } from './coop-warp.ts';
 import { IGNORE_TEXT, installObserver, WATCH_MARKS, type Observed } from './observe.ts';
 import { SKIP_DRAWS } from './warp.ts';
 import { parseSession, type Session } from '../playtest/read.ts';
+import { segmentOptions } from './segments.ts';
+import {
+  checkpointDirectory,
+  readCheckpoint,
+  ROUTE_SEED,
+  POSE_AT,
+  writeCheckpoints,
+  requireCheckpoints,
+} from './saves.ts';
+import { expectedRestore, pairRestores, READ_RESTORED } from './restore-pair.ts';
 
 type Progress = { step: number; phase: string; done: boolean; now: number; lastBeat: number };
 type State = {
@@ -53,6 +63,12 @@ export async function coopPlaythrough(options: {
   report: (s: Session, text: Observed, wall: { game: number; wall: number; done: boolean }, log: string[]) => string[];
 }) {
   const { args, checkout, dir, query, stallS } = options;
+  const selection = segmentOptions(args);
+  const fixtureDir = selection.saves ? path.resolve(selection.saves) : checkpointDirectory(checkout, 2);
+  const seeds = selection.from ? [0, 1].map((i) => readCheckpoint(fixtureDir, selection.from!, 2, i)) : [];
+  if (seeds.length && seeds[0]!.route!.step !== seeds[1]!.route!.step)
+    throw new Error('Peer checkpoint cursors disagree; regenerate together');
+  const collected: Observed['saves'][] = [[], []];
   const value = (flag: string) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined);
   const warp = coopWarpOptions(args);
   const params = new URLSearchParams(query);
@@ -70,18 +86,19 @@ export async function coopPlaythrough(options: {
   let stack: Stack | undefined, browser: Browser | undefined;
   let clock: Awaited<ReturnType<typeof startCoopWarp>> | undefined;
   let segment = 0,
-    released = 0,
+    released = seeds[0]?.route?.step ?? 0,
     reloaded = false,
     rejoined = false,
     done = false;
-  const start = Date.now();
-  const deadline = start + (args.includes('--long') ? 30 : 5) * 60_000;
+  let start = Date.now();
+  let deadline: number;
   const say = (message: string) => {
     messages.push(message);
     console.log(message);
   };
   const archive = async (g: Game, peer: number) => {
     const observed = await g.eval<Observed>('return window.__observe.read()');
+    collected[peer]!.push(...observed.saves);
     const saves = path.join(dir, peer === 0 ? 'saves' : 'p2-saves');
     fs.mkdirSync(saves, { recursive: true });
     for (const [k, save] of observed.saves.entries()) {
@@ -124,6 +141,8 @@ export async function coopPlaythrough(options: {
         throw new Error('Two-player warp needs the broker clock bridge; use --real or update the launcher');
     }
     browser = await launch();
+    start = Date.now(); // queue wait is not play time or a clock-guard sample
+    deadline = start + (args.includes('--long') ? 30 : 5) * 60_000;
     for (let i = 0; i < 2; i++) {
       const g = await Game.open(browser, stack, {
         out: dir,
@@ -134,7 +153,7 @@ export async function coopPlaythrough(options: {
         prefix: i ? 'p2-' : '',
         query: `${params}&player=${i + 1}`,
         warp: warp.enabled,
-        init: `(${installObserver.toString()})(${JSON.stringify(IGNORE_TEXT)})`,
+        init: `${seeds[i] ? ROUTE_SEED(seeds[i]!) : ''}\n(${installObserver.toString()})(${JSON.stringify(IGNORE_TEXT)})`,
       });
       g.page.on('console', (m) => {
         if (/^[A-Z]{3,} /.test(m.text())) {
@@ -143,6 +162,13 @@ export async function coopPlaythrough(options: {
         }
       });
       games.push(g);
+      if (seeds[i]) {
+        await g.eval(POSE_AT(seeds[i]!));
+        const actual = await g.eval(READ_RESTORED);
+        const restored = pairRestores(actual, actual, expectedRestore(seeds[i]!));
+        if (!restored.pair) throw new Error(`Player ${i + 1} checkpoint did not restore: ${restored.reason}`);
+        say(restored.reason);
+      }
     }
     for (const g of games)
       if ((await g.waitFor('window.boogle.remotes.size === 1 && window.__place?.coop.debug().peers.length === 1')) < 0)
@@ -153,8 +179,6 @@ export async function coopPlaythrough(options: {
     const lastProgress = [0, 0];
     const logCounts = [0, 0];
     while (!done) {
-      if (Date.now() > deadline)
-        throw new Error('Playthrough wall limit reached; use --long for an explicit 30-minute run');
       const progress = await Promise.all(
         games.map((g) =>
           g.eval<Progress>(`
@@ -172,8 +196,13 @@ export async function coopPlaythrough(options: {
           lastProgress[i] = p.now;
           logCounts[i] = distinct;
         }
-        if (p.now - lastProgress[i]! > stallS) throw new Error(`Player ${i + 1} stalled for ${stallS} game seconds`);
+        if (!p.done && p.now - lastProgress[i]! > stallS)
+          throw new Error(`Player ${i + 1} stalled for ${stallS} game seconds`);
       }
+      done = progress.every((p) => p.done);
+      if (!done && Date.now() > deadline)
+        throw new Error('TIMEOUT: playthrough wall limit before the expected beat; use --long for a 30-minute run');
+      if (done && Date.now() > deadline) say('PASS note: expected beat completed at the wall limit');
       if (progress.every((p) => p.step > released)) {
         const first = progress[0]!;
         if (!progress.every((p) => p.step === first.step && p.phase === first.phase))
@@ -186,7 +215,7 @@ export async function coopPlaythrough(options: {
           states: await Promise.all(games.map(state)),
         });
         // The pages and server are at 1x throughout real navigation. The next clock segment gets a new baseline.
-        const interrupt = first.phase === 'Q2' ? 'reload' : first.phase === 'Q4' ? 'leave/rejoin' : null;
+        const interrupt = done ? null : first.phase === 'Q2' ? 'reload' : first.phase === 'Q4' ? 'leave/rejoin' : null;
         if (interrupt) {
           await stopClock();
           const i = interrupt === 'reload' ? 1 : 0;
@@ -223,11 +252,12 @@ export async function coopPlaythrough(options: {
         }
         await Promise.all(games.map((g) => g.eval(`window.__coopRelease = ${released}`)));
       }
-      done = progress.every((p) => p.done);
       if (!done) await sleep(200);
     }
     await stopClock();
-    if (!reloaded || !rejoined) throw new Error('The route skipped a required interruption');
+    if (!selection.from && !selection.to && (!reloaded || !rejoined))
+      throw new Error('The route skipped a required interruption');
+    const atEnding = !selection.to || selection.to === 'pier';
     // Read-only convergence check. Trains keep moving, so retain their sampled positions and allow 2m of wire/read skew.
     let matched = 0;
     const until = Date.now() + 15000;
@@ -236,21 +266,17 @@ export async function coopPlaythrough(options: {
       fs.writeFileSync(path.join(dir, 'final-state.json'), JSON.stringify(states, null, 2));
       const [a, b] = states as [State, State];
       const same =
-        a.ended &&
-        b.ended &&
-        a.atPier &&
-        b.atPier &&
+        (!atEnding || (a.ended && b.ended && a.atPier && b.atPier)) &&
         a.peers === 1 &&
         b.peers === 1 &&
         a.pid !== b.pid &&
-        a.delivered > 0 &&
-        b.delivered > 0 &&
+        (!!selection.from || !!selection.to || (a.delivered > 0 && b.delivered > 0)) &&
         ['stations', 'rack', 'rewards'].every(
           (k) => JSON.stringify(a[k as keyof State]) === JSON.stringify(b[k as keyof State]),
         ) &&
         a.trains.every((t, i) => {
           const u = b.trains[i];
-          return u && t.running && u.running && t.target === u.target && Math.abs(t.s - u.s) <= 2;
+          return u && (!atEnding || (t.running && u.running)) && t.target === u.target && Math.abs(t.s - u.s) <= 2;
         });
       matched = same ? matched + 1 : 0;
       await sleep(400);
@@ -260,7 +286,7 @@ export async function coopPlaythrough(options: {
         'Final stations/racks/trains/rewards, contributions or dry pier arrival did not agree; see final-state.json',
       );
     say(
-      'COOP both peers agree on stations, rack, trains (2m tolerance), and shared rewards; both contributed and walked to Far Head',
+      `COOP both peers agree on stations, rack, trains (2m tolerance), and shared rewards; end=${selection.to ?? 'pier'}`,
     );
   } catch (e) {
     errors.push(String(e));
@@ -285,7 +311,7 @@ export async function coopPlaythrough(options: {
     const reports = [
       `Continuous co-op: ${done && !errors.length ? 'PASS' : 'FAIL'}; last released checkpoint ${released}`,
       `Wall ${(Date.now() - start) / 1000}s; reload ${reloaded}; leave/rejoin ${rejoined}`,
-      'Split plan: alternating station bills, forge bills and ability tasks. No skips, fixture poses or recovery teleports.',
+      `Split plan: alternating station bills, forge bills and ability tasks. Start=${selection.from ?? 'fresh'}; restored pose only at segment entry.`,
       'Final rewards compare shared rungs, abilities and score; personal cosmetics are recorded, not required to match.',
       ...messages,
       ...errors.map((e) => `FAIL: ${e}`),
@@ -318,6 +344,24 @@ export async function coopPlaythrough(options: {
     for (const e of errors) console.error(e);
     await browser?.close();
     await stack?.close();
+  }
+  fs.writeFileSync(
+    path.join(dir, 'verdict.json'),
+    JSON.stringify(
+      {
+        verdict: errors.some((e) => e.includes('TIMEOUT:')) ? 'timeout' : errors.length || !done ? 'failure' : 'pass',
+        from: selection.from,
+        to: selection.to,
+        wall: (Date.now() - start) / 1000,
+        errors,
+      },
+      null,
+      2,
+    ),
+  );
+  if (selection.regenerate && done && !errors.length) {
+    collected.forEach(requireCheckpoints); // validate both peers before replacing either fixture set
+    for (const [i, saves] of collected.entries()) writeCheckpoints(saves, fixtureDir, params.toString(), i);
   }
   if (!done || errors.length) process.exitCode = 1;
 }

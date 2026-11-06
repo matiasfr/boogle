@@ -57,7 +57,18 @@ export async function returnFromTower(bot: Bot) {
   cam.pitch = -0.1;
 }
 
+class SegmentEnd extends Error {}
 export async function play() {
+  try {
+    await playRoute();
+    if (q.has('botTo')) throw new Error(`Requested beat ${q.get('botTo')} was not reached after the checkpoint`);
+  } catch (error) {
+    if (!(error instanceof SegmentEnd)) throw error;
+    console.log(`PLAY segment complete: ${q.get('botTo')}`);
+    (window as unknown as { __placeDone: boolean }).__placeDone = true;
+  }
+}
+async function playRoute() {
   // oxlint-disable-next-line typescript/no-explicit-any
   const place = window.__place as any;
   const coopRoute = q.get('coopRoute') === '1';
@@ -69,6 +80,23 @@ export async function play() {
     },
   });
   const { note, wait, now, press } = bot;
+  const savedStep = Number(sessionStorage.getItem('look.route.step') ?? 0);
+  let routeStep = 0;
+  const checkpoint = (name: string, step: number) => {
+    sessionStorage.setItem('look.route.step', String(step));
+    (window as unknown as { __observe?: { take(name: string, immediate: boolean): void } }).__observe?.take(name, true);
+    note(`route checkpoint: ${name}`);
+    if (q.get('botTo') === name) {
+      input.keys.clear();
+      throw new SegmentEnd();
+    }
+  };
+  const phase = async (name: string, work: () => Promise<unknown>) => {
+    const step = ++routeStep;
+    if (step <= savedStep) return;
+    await work();
+    checkpoint(name, step);
+  };
   // "You got ___": read it for a second, then put it away, as a person would.
   let gotFor = 0;
   setInterval(() => {
@@ -477,6 +505,21 @@ export async function play() {
     }
   };
   const from = q.get('from');
+  if (q.get('botTo') === 'audio-loop') {
+    routeStep = savedStep;
+    await phase('audio-loop', async () => {
+      for (let i = 0; i < 3; i++) {
+        await go(body.position.x + 3, body.position.z, 0.5);
+        pressJump();
+        await wait(330);
+        releaseJump();
+        if (!(await waitFor(() => me.coyote > 0 && !me.swimming, 5000, 'audio loop landing')))
+          throw new Error('Audio loop did not land dry');
+        await wait(500);
+      }
+    });
+    return;
+  }
   if (coopRoute && from) throw new Error('The continuous co-op route must start fresh');
   if (coopRoute) {
     // Only harness progress is stored here. Reloads restore the game through its normal save/network path.
@@ -490,6 +533,10 @@ export async function play() {
     const saved = Number(sessionStorage.getItem('look.coop.step') ?? 0);
     progress.__coopStep = saved;
     progress.__coopRelease = Math.max(0, saved - 1);
+    if (sessionStorage.getItem('look.route.restored')) {
+      progress.__coopRelease = saved;
+      sessionStorage.removeItem('look.route.restored');
+    }
     let step = 0;
     const phase = async (name: string, work: () => Promise<unknown>) => {
       const n = ++step;
@@ -502,6 +549,7 @@ export async function play() {
       progress.__coopPhase = name;
       progress.__coopStep = n;
       note(`checkpoint ${n}: ${name}`);
+      checkpoint(name, n);
     };
     const assigned = async (owner: number, work: () => Promise<unknown>, done: () => boolean, label: string) => {
       if (peer === owner) await work();
@@ -509,7 +557,7 @@ export async function play() {
     };
     const station = async (line: typeof L1, index: number, owner: number) => {
       const st = line.stations[index];
-      await phase(st.spec.id, async () => {
+      await phase(st.spec.id === 'T2' ? 't2-funded' : `${st.spec.id}-funded`, async () => {
         await assigned(
           owner,
           async () => {
@@ -521,9 +569,13 @@ export async function play() {
             sessionStorage.setItem('look.coop.delivered', String(total));
             note(`contributed ${delivered} materials at ${st.spec.id}; total ${total}`);
           },
-          () => line.stage > index,
-          `${st.spec.id} completed`,
+          () => st.full() || line.stage > index,
+          `${st.spec.id} funded`,
         );
+      });
+      await phase(st.spec.id === 'T1' ? 't1-done' : st.spec.id, async () => {
+        if (!(await waitFor(() => line.stage > index, 600000, `${st.spec.id} completed`)))
+          throw new Error(`${st.spec.id} did not complete`);
         // Follow only once the route exists; do not route the idle partner into the gorge.
         if (st.spec.id === 'Q6') {
           const { landingEvidence } = await import('./place-landing.ts');
@@ -548,10 +600,12 @@ export async function play() {
         ),
       );
     };
-    await phase('wake', async () => {
+    await phase('at-cove', async () => {
       const path = place.PATH_SAMPLES[0] as number[][];
       for (let n = 0; n < path.length; n += 3) await go(path[n]![0]! + O, path[n]![1]!, 1.8);
       await go(place.machine.flatbed.x, place.machine.flatbed.z, 5);
+    });
+    await phase('wake', async () => {
       await assigned(
         1,
         async () => {
@@ -655,7 +709,7 @@ export async function play() {
       ),
     );
     await chest('pack', 1);
-    await phase('forge lit', () =>
+    await phase('forge-lit', () =>
       assigned(
         1,
         () => bill(place.forgeFrame),
@@ -702,7 +756,7 @@ export async function play() {
         'shared trains',
       ),
     );
-    await phase('ride to Far Head', async () => {
+    await phase('pier-ending', async () => {
       // Start where this peer really is: the boiler carrier is at Camp, the other peer at Q5/Far Head.
       const nearestHalt = nearest(
         place.halts as { x: number; z: number; k: number; stop: number }[],
@@ -739,78 +793,100 @@ export async function play() {
   else if (from === 'head') place.skipHead();
   else if (from === 'trains') place.skipTrains();
   if (!from) {
-    const path = place.PATH_SAMPLES[0] as number[][];
-    for (let n = 0; n < path.length; n += 3) await go(path[n]![0]! + O, path[n]![1]!, 1.8);
-    await go(place.machine.flatbed.x, place.machine.flatbed.z, 5);
-    note('at the machine');
-    await wait(500);
-    press();
-    await waitFor(() => place.run.mode === 'idle', 8000);
-    note('woke');
+    await phase('at-cove', async () => {
+      const path = place.PATH_SAMPLES[0] as number[][];
+      for (let n = 0; n < path.length; n += 3) await go(path[n]![0]! + O, path[n]![1]!, 1.8);
+      await go(place.machine.flatbed.x, place.machine.flatbed.z, 5);
+      note('at the machine');
+    });
+    await phase('wake', async () => {
+      await wait(500);
+      press();
+      await waitFor(() => place.run.mode === 'idle', 8000, 'machine awake');
+      note('woke');
+    });
     for (const st of L1.stations) {
-      await bill(st);
-      await lay(st);
+      await phase(st.spec.id === 'T2' ? 't2-funded' : `${st.spec.id}-funded`, () => bill(st));
+      await phase(st.spec.id === 'T1' ? 't1-done' : st.spec.id, async () => {
+        // A funded checkpoint can restore after laying has already started or finished.
+        const index = L1.stations.indexOf(st);
+        if (!(await waitFor(() => L1.stage > index, 90000, `${st.spec.id} laid`)))
+          throw new Error(`${st.spec.id} did not finish laying`);
+      });
     }
-    note(`FIRST PATH OPEN at ${now().toFixed(1)}`);
-    await wait(6000);
-    await firstDevice();
+    await phase('jump', async () => {
+      note(`FIRST PATH OPEN at ${now().toFixed(1)}`);
+      await wait(6000);
+      await firstDevice();
+    });
   }
   if (from === 'path' || !from) {
-    await openCrates();
-    if (place.job.chest) {
-      const c = place.giftState.crates().find((x: { content: string }) => x.content === place.job.chest);
-      note('walking home');
-      await travel(c.x, c.z, 1);
-      await wait(2500);
-      note(`rung: axe ${place.job.rung.axe}`);
-    }
-    // The forge, two bills.
-    await waitFor(() => place.run.mode === 'waiting', 30000);
-    note('forge frame is next');
-    const fr = place.forgeFrame;
-    await bill(fr);
-    await waitFor(() => place.job.forgeBill === 1, 8000, 'the forge moved on to its second bill');
-    if (place.job.chest) {
-      const c = place.giftState.crates().find((x: { content: string }) => x.content === place.job.chest);
-      await travel(c.x, c.z, 1);
-      await wait(2500);
-      note(`rung: pack ${place.job.rung.pack}`);
-    }
-    await bill(fr);
-    await waitFor(() => place.forge.lit, 30000, 'forge lit');
-    note('forge lit');
-    await waitFor(() => place.run.mode === 'idle', 30000, 'machine on line 2');
-    note('machine on line 2');
+    await phase('forge-lit', async () => {
+      await openCrates();
+      if (place.job.chest) {
+        const c = place.giftState.crates().find((x: { content: string }) => x.content === place.job.chest);
+        note('walking home');
+        await travel(c.x, c.z, 1);
+        await wait(2500);
+        note(`rung: axe ${place.job.rung.axe}`);
+      }
+      // The forge, two bills.
+      await waitFor(() => place.run.mode === 'waiting', 30000);
+      note('forge frame is next');
+      const fr = place.forgeFrame;
+      await bill(fr);
+      await waitFor(() => place.job.forgeBill === 1, 8000, 'the forge moved on to its second bill');
+      if (place.job.chest) {
+        const c = place.giftState.crates().find((x: { content: string }) => x.content === place.job.chest);
+        await travel(c.x, c.z, 1);
+        await wait(2500);
+        note(`rung: pack ${place.job.rung.pack}`);
+      }
+      await bill(fr);
+      await waitFor(() => place.forge.lit, 30000, 'forge lit');
+      note('forge lit');
+      await waitFor(() => place.run.mode === 'idle', 30000, 'machine on line 2');
+      note('machine on line 2');
+    });
   }
   if (from !== 'head' && from !== 'trains') {
     for (const st of L2.stations.slice(0, 5)) {
-      if (st.spec.gate === 'quarry' && !place.job.gate.quarry) await firstGate();
-      if (st.spec.gate === 'sea' && !place.job.gate.sea) {
-        await climb();
-        await wait(4500);
-        await travel(st.x, st.z, 3);
-      }
-      await bill(st);
-      await lay(st);
-      if (st.spec.id === 'Q2' && !place.job.tech.hook) await secondDevice();
+      await phase(st.spec.id, async () => {
+        if (st.spec.gate === 'quarry' && !place.job.gate.quarry) await firstGate();
+        if (st.spec.gate === 'sea' && !place.job.gate.sea) {
+          await climb();
+          await wait(4500);
+          await travel(st.x, st.z, 3);
+        }
+        await bill(st);
+        await lay(st);
+      });
+      if (st.spec.id === 'Q2')
+        await phase('hook', async () => {
+          if (!place.job.tech.hook) await secondDevice();
+        });
     }
-    note(`FAR HEAD OPEN at ${now().toFixed(1)}`);
-    if (!place.job.tech.glide) await farGlider();
-    await wait(5000);
-    await openCrates();
+    await phase('glider', async () => {
+      note(`FAR HEAD OPEN at ${now().toFixed(1)}`);
+      if (!place.job.tech.glide) await farGlider();
+      await wait(5000);
+      await openCrates();
+    });
   }
   if (from !== 'trains') {
-    const bo = place.boilerAt();
-    const t = now();
-    await bot.use(bo.x, bo.z, 'the boiler');
-    note(`walked home (${(now() - t).toFixed(1)} s)`);
-    await wait(300);
-    const c = L1.train.tr.cars[0]!.body.position;
-    await bot.use(c.x + 3, c.z + 3, 'the old train');
-    note('at the old train');
-    await waitFor(() => place.job.rung.trains, 8000, 'trains');
-    note('TRAINS');
-    await wait(5000);
+    await phase('trains', async () => {
+      const bo = place.boilerAt();
+      const t = now();
+      await bot.use(bo.x, bo.z, 'the boiler');
+      note(`walked home (${(now() - t).toFixed(1)} s)`);
+      await wait(300);
+      const c = L1.train.tr.cars[0]!.body.position;
+      await bot.use(c.x + 3, c.z + 3, 'the old train');
+      note('at the old train');
+      await waitFor(() => place.job.rung.trains, 8000, 'trains');
+      note('TRAINS');
+      await wait(5000);
+    });
   }
   // Ride home on line 1, then out on line 2, to the pier.
   async function ride(
@@ -901,18 +977,26 @@ export async function play() {
       throw new Error('Passenger did not land dry at the station');
   }
   const halts = place.halts;
-  if (lobe(body.position.x, body.position.z) === 'n') {
-    const camp = halts.find((h: { name: string }) => h.name === 'Camp');
-    await ride(L1, camp, 0);
-  }
-  const v2 = halts.find((h: { name: string }) => h.name === 'Village, line 2');
-  await ride(L2, v2, 2);
-  const pier = L2.stations[5];
-  await bill(pier);
-  await lay(pier);
-  note(`THE JOB IS DONE at ${now().toFixed(1)}`);
+  await phase('pier-ending', async () => {
+    if (lobe(body.position.x, body.position.z) === 'n') {
+      const camp = halts.find((h: { name: string }) => h.name === 'Camp');
+      await ride(L1, camp, 0);
+    }
+    const v2 = halts.find((h: { name: string }) => h.name === 'Village, line 2');
+    await ride(L2, v2, 2);
+  });
+  await phase('Q6', async () => {
+    const pier = L2.stations[5];
+    await bill(pier);
+    await lay(pier);
+    note(`THE JOB IS DONE at ${now().toFixed(1)}`);
+  });
   // Home the way a person would by now: the train.
   const head = halts.find((h: { name: string }) => h.name === 'Far Head');
+  await phase('pier', async () => {
+    await travel(head.x, head.z, 1);
+    if (!place.job.ended || me.swimming) throw new Error('Pier unfinished or player stranded in water');
+  });
   await ride(L2, head, 0);
   await townTour(bot, place);
   await tour();

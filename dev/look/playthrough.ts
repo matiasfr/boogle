@@ -22,6 +22,9 @@ import { beatsOf } from '../playtest/beats.ts';
 import { clock, parseSession, span, str, num, type Ev, type Session } from '../playtest/read.ts';
 import { marksByName, objectiveSteps, summarize, compare } from '../playtest/summary.ts';
 import { coopPlaythrough } from './coop-playthrough.ts';
+import { segmentOptions } from './segments.ts';
+import { checkpointDirectory, readCheckpoint, ROUTE_SEED, POSE_AT, writeCheckpoints } from './saves.ts';
+import { expectedRestore, pairRestores, READ_RESTORED } from './restore-pair.ts';
 
 const SIZE = [1180, 820];
 const ROOM = 'proto-place'; // a save belongs to its room
@@ -226,11 +229,21 @@ async function main() {
     const i = args.indexOf('--compare');
     return compareRuns(args[i + 1]!, args[i + 2]!);
   }
-  const query = opt('--query', 'proto=place&shot=play');
+  const segment = segmentOptions(args);
+  const params = new URLSearchParams(opt('--query', 'proto=place&shot=play'));
+  if (
+    (segment.from || segment.to || segment.regenerate) &&
+    (params.has('from') || params.get('proto') !== 'place' || has('--eval'))
+  )
+    throw new Error('Segments use the Place route without a custom eval or query from=');
+  if (segment.to) params.set('botTo', segment.to);
+  const query = params.toString();
   const checkout = path.resolve(opt('--root', root));
   const stallS = Number(opt('--stall', '600'));
   const players = Number(opt('--players', '1'));
   if (players !== 1 && players !== 2) throw new Error('--players must be 1 or 2');
+  const fixtureDir = segment.saves ? path.resolve(segment.saves) : checkpointDirectory(checkout, players);
+  const save = segment.from ? readCheckpoint(fixtureDir, segment.from, players) : undefined;
   if (!Number.isFinite(stallS) || stallS <= 0) throw new Error('--stall must be positive game seconds');
   const job = path.join(checkout, 'dev/look/evals/place-job.ts');
   const evalFile = path.resolve(checkout, opt('--eval', fs.existsSync(job) ? job : 'dev/look/evals/place.ts'));
@@ -267,7 +280,7 @@ async function main() {
       room: ROOM,
       query,
       warp: true,
-      init: `(${installObserver.toString()})(${JSON.stringify(IGNORE_TEXT)})`,
+      init: `${save ? ROUTE_SEED(save) : ''}\n(${installObserver.toString()})(${JSON.stringify(IGNORE_TEXT)})`,
     });
     const botLog: string[] = [];
     let heardAt = 0;
@@ -286,6 +299,13 @@ async function main() {
       }
     });
     const watching = await g.eval(WATCH_MARKS);
+    if (save) {
+      await g.eval(POSE_AT(save));
+      const actual = await g.eval(READ_RESTORED);
+      const restored = pairRestores(actual, actual, expectedRestore(save));
+      if (!restored.pair) throw new Error(`Checkpoint did not restore: ${restored.reason}; regenerate fixtures`);
+      console.log(restored.reason);
+    }
     if (!watching) console.log('(This build has no watchPlayMarks: no save states from this run.)');
     await g.page.evaluate(() => (window as unknown as { __warp: { go(n: number): void } }).__warp.go(Infinity));
     const body = stripTypeScriptTypes(fs.readFileSync(evalFile, 'utf8')).replace(/^export \{\};.*$/m, '');
@@ -361,7 +381,30 @@ async function main() {
     const latest = path.join(OUT, 'latest');
     if (fs.existsSync(latest)) fs.unlinkSync(latest);
     fs.symlinkSync(name, latest);
-    if (!w.done || health.length || botLog.some((l) => /NEVER:/.test(l))) process.exitCode = 1;
+    const missed = botLog.some((l) => /NEVER:/.test(l));
+    const verdict = health.length ? 'health-failure' : missed ? 'beat-failure' : w.done ? 'pass' : w.reason;
+    fs.writeFileSync(
+      path.join(dir, 'verdict.json'),
+      JSON.stringify(
+        {
+          verdict,
+          from: segment.from,
+          to: segment.to,
+          wall: w.wall,
+          game: w.game,
+          timeoutAfterBeat: w.timeoutAfterBeat,
+        },
+        null,
+        2,
+      ),
+    );
+    if (verdict !== 'pass') process.exitCode = 1;
+    if (segment.regenerate && verdict === 'pass') writeCheckpoints(observed.saves, fixtureDir, query);
+  } catch (error) {
+    const failure = { verdict: 'failure', from: segment.from, to: segment.to, error: String(error) };
+    fs.writeFileSync(path.join(dir, 'verdict.json'), JSON.stringify(failure, null, 2));
+    fs.appendFileSync(path.join(dir, 'report.txt'), `\nFAIL: ${String(error)}\n`);
+    throw error;
   } finally {
     await browser?.close().catch(() => {});
     await stack?.close();
