@@ -17,7 +17,7 @@ export function coopWarpOptions(args: string[]) {
   };
 }
 
-export async function serverClock(url: string, speed?: number) {
+async function serverClock(url: string, speed?: number) {
   if (!/^http:\/\/127\.0\.0\.1:\d+\/clock$/.test(url)) throw new Error('look clock must be local');
   const res = await fetch(url, {
     signal: AbortSignal.timeout(5000),

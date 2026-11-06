@@ -92,7 +92,7 @@ export function railSeconds(metres: number, speed: number, acceleration: number)
     : metres / speed + speed / acceleration;
 }
 
-export function pathAvailable(p: Path, profile: Profile, done: Set<string>) {
+function pathAvailable(p: Path, profile: Profile, done: Set<string>) {
   const n = p.needs;
   return (
     (!n?.extraJumps || profile.extraJumps >= n.extraJumps) &&

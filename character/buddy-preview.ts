@@ -24,7 +24,7 @@ import { T1_REWARD } from '../src/render/t1-reward-parts.ts';
 import { seatConductorHat } from '../src/render/head-clearance.ts';
 import { merged } from '../src/proto/place/part-geometry.ts';
 // Inspection-only lead-in and gap expose both production visibility edges.
-export const CHOP_PREVIEW_LEAD = 0.2;
+const CHOP_PREVIEW_LEAD = 0.2;
 export const CHOP_PREVIEW_DURATION = CHOP_PREVIEW_LEAD + CHOP_DURATION + 0.3;
 type WornPreview = GearState & {
   cargo: CargoKind;

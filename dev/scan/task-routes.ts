@@ -57,8 +57,8 @@ const processReads = [
 // Core guidance for narrow tasks fits 14k; new persistent systems need the rules recipe (21k).
 // Prototypes necessarily include design principles and prototype rules (32k). These are relevance budgets,
 // not investigation limits. Conditional sections and path reminders are printed separately.
-export const ROUTE_BUDGETS: Record<string, number> = { 'lockstep-system': 21000, prototype: 32000 };
-export const DEFAULT_ROUTE_BUDGET = 14000;
+const ROUTE_BUDGETS: Record<string, number> = { 'lockstep-system': 21000, prototype: 32000 };
+const DEFAULT_ROUTE_BUDGET = 14000;
 
 export const TASK_ROUTES: Record<string, Route[]> = {
   review: [
@@ -406,7 +406,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
   ],
 };
 
-export function routeCost(root: string, route: Route): number {
+function routeCost(root: string, route: Route): number {
   return [...new Set(route.mustRead)].reduce((sum, ref) => sum + [...readSection(root, ref).text].length, 0);
 }
 

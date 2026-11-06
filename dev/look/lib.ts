@@ -161,7 +161,7 @@ const HARNESS_REQUIRED =
   'For a manually served build use BOOGLE_HARNESS=1 npm run build. Ordinary captures and window-handle scenarios remain supported.';
 
 /** A page advertises module access without adding any code or module entries to ordinary builds. */
-export async function harnessModules(url: string): Promise<boolean> {
+async function harnessModules(url: string): Promise<boolean> {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Harness page returned HTTP ${response.status}: ${url}`);
   const html = await response.text();
