@@ -3,7 +3,7 @@
 // here overhangs; footbridges and platforms are their own boxes. Local: nothing here reaches the sim.
 import { smoothstep } from '../../math.ts';
 import { frameBesideLine, FRAME_D, FRAME_W, SPAN } from './spatial-station.ts';
-import { COVE, coveGround, coveSurface, coveWeight } from './cove.ts';
+import { COVE, coveFront, coveGround, coveSurface, coveWeight } from './cove.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';
 import {
   ARMS,
@@ -417,7 +417,20 @@ if (COVE) {
       const protectedWeight = weight * coveProtection(x, z);
       const shaped = coveGround(x, z);
       const raised = Math.max(heights[k]!, shaped);
-      const target = raised + (shaped - raised) * smoothstep(42, 54, z);
+      // Only the bounded beach pocket and its kit backing may carve before the main cove carve.
+      // Route/rail/landing protection still gates the complete change, including this lowering.
+      const across = x - coveFront(z);
+      const beachCarve =
+        smoothstep(-18, -13, across) *
+        (1 - smoothstep(-4, -1, across)) *
+        smoothstep(32, 38, z) *
+        (1 - smoothstep(44, 50, z));
+      const backingCarve =
+        smoothstep(-1, 2, across) *
+        (1 - smoothstep(6, 10, across)) *
+        smoothstep(32, 38, z) *
+        (1 - smoothstep(46, 52, z));
+      const target = raised + (shaped - raised) * Math.max(smoothstep(42, 54, z), beachCarve, backingCarve);
       heights[k] = heights[k]! + (target - heights[k]!) * protectedWeight;
       clearMask[k] = Math.max(clearMask[k]!, protectedWeight);
     }

@@ -21,8 +21,20 @@ export function coveGround(x: number, z: number) {
   const across = x - coveFront(z);
   // Continuous submerged bench, then land beneath the kit; no hidden heightfield in front of the face.
   const shelf = -1.8 + 1.2 * smoothstep(-16, -5, across);
-  const pocket = 2.3 * (1 - smoothstep(40, 46, z)) * smoothstep(-10, -3, across);
-  return shelf + pocket + 4.9 * smoothstep(1.8, 5.5, across) + 14 * smoothstep(8, 35, across);
+  // Spread the first 0.3 m of run-up over about 1.8 m, rather than squeezing it onto
+  // the old 2.3 m-high pocket wall. The dry back beach meets the existing kit toe.
+  const beach = -0.45 + 1.1 * smoothstep(-13, -3, across);
+  const pocket = smoothstep(-18, -13, across) * (1 - smoothstep(42, 48, z));
+  const bed = shelf + (beach - shelf) * pocket;
+  // Keep the backing soil below this section's cap, including the low beachward toe.
+  return bed + (coveCrest(z) - 0.2 - bed) * smoothstep(1.8, 5.5, across) + 14 * smoothstep(8, 35, across);
+}
+
+/** Shared cap height: the backing ground must meet the sculpted toe, not the old full-height slab. */
+export function coveCrest(z: number) {
+  return z < 38
+    ? -1.08 + 2.78 * smoothstep(34, 38, z)
+    : 1.7 + 2.78 * smoothstep(38, 48, z) + 0.06 * Math.sin((z - 42) * 0.15) * smoothstep(38, 48, z);
 }
 
 export type CoveMesh = {
@@ -66,26 +78,64 @@ function vertex(mesh: CoveMesh, x: number, y: number, z: number, rgb: number[], 
 function cliff(): CoveMesh {
   const mesh = empty('cove-face');
   const levels = [-2.4, -0.8, 0, 0.55, 1.15, 1.75, 2.3, 2.9, 3.5, 3.95, 4.2, 4.4, 4.48];
-  const reach = [-1.5, -1.45, -1.25, -0.95, -0.64, -0.57, -0.36, -0.3, -0.02, 0.15, 0.14, 0.22, 0.5];
-  const columns = 49,
-    rows = levels.length + 1;
-  for (let col = 0; col < columns; col++) {
-    const z = 42 + (col * 32) / (columns - 1);
-    const crest = 0.06 * Math.sin((z - 42) * 0.15);
+  const reach = [-1.8, -1.85, -1.7, -1.45, -1.1, -0.7, -0.55, -0.45, -0.3, -0.12, 0.1, 0.27, 0.5];
+  // The beachward end is the same skin, not an intersecting ramp plus a capped cliff.
+  // At z38 its broad walking surface remains y1.7; its nose disappears below the sand.
+  const sections = Array.from({ length: 47 }, (_, col) => {
+    const z = col < 8 ? 34 + col : 42 + ((col - 8) * 32) / 38;
+    const toe = smoothstep(34, 42, z);
+    // Keep the front tangent continuous through the old end: moving sharply inland at
+    // z42, then back out around the cove, made the joined skin still read as a cut slab.
+    const front =
+      z < 38
+        ? -199 + 3.5 * smoothstep(34, 38, z)
+        : z < 50
+          ? -195.5 + (coveFront(50) + 195.5) * smoothstep(38, 50, z)
+          : coveFront(z);
+    const rear = z < 42 ? -199 + 7 * toe + 2.4 + 3.4 * toe : coveFront(z) + 5.8;
+    return {
+      z,
+      front,
+      top: coveCrest(z),
+      width: rear - front,
+      cap: smoothstep(40, 46, z),
+    };
+  });
+  const columns = sections.length,
+    rows = levels.length + 3;
+  const shoulderReach = (row: number, z: number) => {
+    const height = (levels[row]! + 2.4) / 6.88;
+    const rounded = 0.5 - 5.5 * Math.sqrt(Math.max(0, 1 - height));
+    // A broad quarter-ellipse buries the toe in the sand and rolls flat into its cap.
+    // The tall cliff profile resumes gradually; no separate buttress or cut end face.
+    return reach[row]! + (rounded - reach[row]!) * (1 - smoothstep(42, 51, z));
+  };
+  for (const section of sections) {
+    const { z, front, top, width } = section;
     for (let row = 0; row < levels.length; row++) {
-      const cap = row === 12 ? 1 : row === 11 ? 0.15 : 0;
+      const cap = (row === 12 ? 1 : row === 11 ? 0.15 : 0) * section.cap;
       const ripple = 0.045 * Math.sin(z * 0.47 + row * 0.4) * Math.sin((row * Math.PI) / 12);
       vertex(
         mesh,
-        coveFront(z) + reach[row]! + ripple,
-        levels[row]! + crest,
+        front + shoulderReach(row, z) + ripple,
+        -2.4 + ((levels[row]! + 2.4) / 6.88) * (top + 2.4),
         z,
         cap > 0.5 ? turf : row === 11 ? seam : stone,
         1,
         cap,
       );
     }
-    vertex(mesh, coveFront(z) + 5.8, 4.48 + crest, z, turf, 1, 1);
+    // Broad cap curvature joins the rolled lip to the buried terrain socket.
+    for (const across of [0.34, 0.68, 1])
+      vertex(
+        mesh,
+        front + 0.5 + (width - 0.5) * across,
+        top + 0.14 * Math.sin(across * Math.PI) * smoothstep(38, 44, z),
+        z,
+        turf,
+        1,
+        section.cap,
+      );
   }
   for (let col = 0; col < columns - 1; col++)
     for (let row = 0; row < rows - 1; row++) {
@@ -95,12 +145,10 @@ function cliff(): CoveMesh {
     }
   // Duplicate rear/bottom corners: a buried closure cannot pull the visible front's shading normal.
   const back = mesh.vertices.length / 3;
-  for (let col = 0; col < columns; col++) {
-    const z = 42 + (col * 32) / (columns - 1);
-    const crest = 0.06 * Math.sin((z - 42) * 0.15);
-    vertex(mesh, coveFront(z) + 5.8, 4.48 + crest, z, turf, 1, 1);
-    vertex(mesh, coveFront(z) + 5.8, -2.4 + crest, z, stone);
-    vertex(mesh, coveFront(z) + reach[0]!, -2.4 + crest, z, stone);
+  for (const { z, front, top, width, cap } of sections) {
+    vertex(mesh, front + width, top, z, turf, 1, cap);
+    vertex(mesh, front + width, -2.4, z, stone);
+    vertex(mesh, front + shoulderReach(0, z), -2.4, z, stone);
   }
   for (let col = 0; col < columns - 1; col++)
     for (let row = 0; row < 2; row++) {
@@ -121,54 +169,26 @@ function cliff(): CoveMesh {
       else mesh.indices.push(start, start + row + 1, start + row);
     }
   }
-  // A broad broken end slopes onto the pocket. It is real stone support, outside protected shoulders.
-  const end = mesh.vertices.length / 3;
-  const foot = [
-    [-195, 1.7, 38],
-    [-192, 1.7, 38],
-    [-188.8, 4.48, 42],
-    [-191.5, 4.48, 42],
-  ];
-  for (const bottom of [true, false]) for (const [x, y, z] of foot) vertex(mesh, x!, bottom ? -2.4 : y!, z!, stone);
-  for (let i = 0; i < 4; i++) {
-    const a = end + i,
-      b = end + ((i + 1) % 4);
-    mesh.indices.push(a, a + 4, b, b, a + 4, b + 4);
-  }
-  mesh.indices.push(end, end + 1, end + 2, end, end + 2, end + 3, end + 4, end + 6, end + 5, end + 4, end + 7, end + 6);
   return mesh;
 }
 
 export const COVE_ROCKS = [
-  { x: -198.8, z: 46, rx: 2.4, rz: 1.7, top: 1.45 },
-  { x: -199.5, z: 55.5, rx: 2.8, rz: 2.1, top: 1.9 },
-  { x: -193.8, z: 67.5, rx: 2.2, rz: 1.5, top: 1.15 },
+  { x: -197.6, z: 45.3, rx: 2.6, rz: 2.1, top: 1.05 },
+  { x: -198.5, z: 51.7, rx: 3.2, rz: 2.7, top: 1.4 },
+  { x: -196.3, z: 63, rx: 2.6, rz: 1.8, top: 0.8 },
 ] as const;
 function blocks(): CoveMesh {
   const mesh = empty('cove-blocks');
-  const stones = [
-    ...COVE_ROCKS,
-    { x: -191.9, z: 38.7, rx: 0.55, rz: 0.4, top: 0.1 },
-    { x: -192.7, z: 39.4, rx: 0.8, rz: 0.55, top: 0.35 },
-    { x: -193.1, z: 40.6, rx: 0.45, rz: 0.4, top: 0.05 },
-  ];
-  for (const [n, rock] of stones.entries()) {
+  for (const [n, rock] of COVE_ROCKS.entries()) {
     const start = mesh.vertices.length / 3;
-    const sides = n < 3 ? 12 : 8;
-    const profile =
-      n < 3
-        ? [
-            [-2.1, 0.7],
-            [rock.top - 0.85, 1],
-            [rock.top - 0.4, 0.98],
-            [rock.top - 0.1, 0.8],
-            [rock.top, 0.35],
-          ]
-        : [
-            [-2.1, 0.85],
-            [rock.top - 0.35, 1],
-            [rock.top, 0.7],
-          ];
+    const sides = 12;
+    const profile = [
+      [-2.1, 0.7],
+      [rock.top - 0.85, 1],
+      [rock.top - 0.4, 0.98],
+      [rock.top - 0.1, 0.8],
+      [rock.top, 0.35],
+    ];
     for (const [row, [y, radius]] of profile.entries()) {
       for (let col = 0; col < sides; col++) {
         const a = (col * Math.PI * 2) / sides + n * 0.37;

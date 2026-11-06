@@ -16,12 +16,15 @@ type Context = { field: ShoreFields; caustics: CausticSample };
 /** Optional Local sand response. Nodes are owned by the material's terrain owner, never by the sea. */
 export type WetSandProfile = {
   mask: N;
+  region: N;
   dampHeight: N;
   dampWidth: N;
   dampStrength: N;
   tideMarkStrength: N;
   filmTint: N;
   sheenStrength: N;
+  foamScale: N;
+  foamStrength: N;
 };
 const materials = new Set<MeshStandardNodeMaterial>();
 const sandProfiles = new WeakMap<MeshStandardNodeMaterial, WetSandProfile>();
@@ -81,7 +84,8 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   // The optional sand treatment uses this same wash result: one shore lookup/clock for film, foam and drying.
   // Keep the default path unchanged for all ordinary receivers.
   const sandMask = sand ? float(sand.mask).clamp(0, 1) : float(0);
-  const sandUp = smoothstep(0.65, 0.9, normalWorldGeometry.y);
+  // The terrain owns slope eligibility in its sand mask; do not reject that authored beach a second time.
+  const sandUp = float(1);
   const film = smoothstep(0, 0.004, wash.x).mul(smoothstep(-0.05, 0.05, positionWorld.y));
   const dampBand = sand
     ? (() => {
@@ -98,6 +102,23 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
   const damp = sand
     ? persistent.add(wash.z.mul(sand.tideMarkStrength).mul(persistent.oneMinus())).mul(sandUp)
     : surface.a;
+  const sandFoam = sand
+    ? (() => {
+        // The demo's bubbles open into shrinking islands as the backwash drains. Fade cells below a pixel
+        // to their average; the ordinary receiver's fixed 24/m lace makes a dotted seam at this camera.
+        const p = positionWorld.xz.div(sand.foamScale);
+        const fw = fwidth(p);
+        const grain = vnoise(p.mul(3.1).add(seaU.uTime.mul(0.15)))
+          .mul(0.6)
+          .add(vnoise(p.mul(7.3)).mul(0.4));
+        const bubbles = smoothstep(float(0.75).sub(wash.y.mul(0.4)), float(0.92).sub(wash.y.mul(0.3)), grain);
+        const coverage = mix(bubbles, 0.3, smoothstep(0.05, 0.3, max(fw.x, fw.y)));
+        return min(wash.y.mul(1.4), 1)
+          .mul(coverage)
+          .mul(sand.foamStrength)
+          .mul(smoothstep(-0.02, 0.04, positionWorld.y));
+      })()
+    : foam;
   patchNode(mat, 'colorNode', (previous: N) => {
     const base = previous ?? materialColor;
     const ordinary = base.mul(surface.rgb);
@@ -110,7 +131,10 @@ function attach(mat: MeshStandardNodeMaterial, { field, caustics }: Context) {
       .mul(light)
       .mul(mix(vec3(1), poreTint, damp))
       .mul(mix(vec3(1), vec3(0.9, 0.97, 0.97), smoothstep(0, 0.06, wash.x).mul(film).mul(sand.filmTint)));
-    return mix(mix(ordinary, sandColour, sandMask), vec3(0.65, 0.7, 0.68), foam);
+    // Cove rocks use the ocean's contact foam. The old receiver lace belongs only outside the cove region.
+    const ordinaryFoam = mix(ordinary, vec3(0.65, 0.7, 0.68), foam.mul(float(sand.region).clamp(0, 1).oneMinus()));
+    const sandFoamColour = sandColour.mul(0.4).add(vec3(0.42, 0.41, 0.38));
+    return mix(ordinaryFoam, mix(sandColour, sandFoamColour, sandFoam), sandMask);
   });
   // A wet film needs a continuous normal, as in the reference's smooth/rippled sand. Giving the dry terrain's
   // flat face normals a low roughness lit entire triangles as white shards, even with the ocean hidden.

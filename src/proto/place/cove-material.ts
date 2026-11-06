@@ -25,7 +25,7 @@ import { COVE_CLAY, COVE_DRY } from './cove.ts';
 import { ORIGIN } from './layout.ts';
 // oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
-const pigment = (family: 'rock' | 'grass' | 'sand' | 'path') =>
+const pigment = (family: 'rock' | 'strata' | 'grass' | 'sand' | 'path') =>
   vec3(coveU(`${family}R`), coveU(`${family}G`), coveU(`${family}B`));
 export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region: N, kit = false) {
   const tiles = coveTextures();
@@ -51,7 +51,15 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   const sandLine = coveU('sandHeight').add(macro.mul(coveU('heightBlend')));
   let sand: N = smoothstep(sandLine.sub(coveU('sandBlend')), sandLine.add(coveU('sandBlend')), p.y)
     .oneMinus()
-    .mul(rock.oneMinus());
+    .mul(
+      smoothstep(
+        coveU('sandSlopeThreshold').sub(coveU('sandSlopeBlend')),
+        coveU('sandSlopeThreshold').add(coveU('sandSlopeBlend')),
+        n.y,
+      ),
+    );
+  // A walkable beach remains sand even where its bank is too sloped to grow turf.
+  rock = rock.mul(sand.oneMinus());
   let grass: N = rock.oneMinus().sub(sand).max(0);
   const tag: N = kit ? attribute('coveTurf', 'float') : float(0);
   if (kit) {
@@ -86,13 +94,14 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
       )
       .div(coveU('bandScale')),
   );
-  const band = smoothstep(0, coveU('bandWidth'), phase).mul(
-    smoothstep(coveU('bandWidth').oneMinus(), 1, phase).oneMinus(),
+  // Two broad sediment pigments, not a narrow dark line around an otherwise uniform bed.
+  const feather = coveU('bandSoftness');
+  const band = smoothstep(0, feather, phase).mul(
+    smoothstep(coveU('bandWidth').sub(feather), coveU('bandWidth').add(feather), phase).oneMinus(),
   );
-  const bedTone = mix(float(0.65), float(1.08), band);
-  const rockCol = pigment('rock')
-    .mul(mix(vec3(1), rockPaint, coveU('pigmentStrength')))
-    .mul(mix(float(1), bedTone, coveU('strataStrength')));
+  const rockCol = mix(pigment('rock'), pigment('strata'), band.mul(coveU('strataStrength'))).mul(
+    mix(vec3(1), rockPaint, coveU('pigmentStrength')),
+  );
   const grassCol = pigment('grass').mul(mix(vec3(1), turfPaint, coveU('pigmentStrength')));
   const sandCol = pigment('sand').mul(macro.mul(coveU('detailStrength')).add(1));
   const lip = kit
@@ -115,5 +124,5 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   patchNode(material, 'normalNode', (previous) =>
     mix(previous ?? normalViewGeometry, mix(smooth, relief, coveU('detailStrength')).normalize(), region).normalize(),
   );
-  if (!COVE_DRY) registerCoveSand(material, sand.mul(path.oneMinus()).mul(region));
+  if (!COVE_DRY) registerCoveSand(material, sand.mul(path.oneMinus()).mul(region), region);
 }

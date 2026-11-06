@@ -29,7 +29,7 @@ const rippleSlope = Fn(([p, d, frequency, noiseScale, warp, amplitude]: [N, N, N
 });
 
 /** Call after the cove's base colour/normal graph, instead of also registering a plain receiver. */
-export function registerCoveSand(material: MeshStandardNodeMaterial, sandMask: N) {
+export function registerCoveSand(material: MeshStandardNodeMaterial, sandMask: N, region: N) {
   const scale = float(coveU('rippleScale'));
   const p = positionWorld.xz.div(scale);
   // All derivatives stay outside variable control flow. Fade each band before its cells alias.
@@ -63,11 +63,14 @@ export function registerCoveSand(material: MeshStandardNodeMaterial, sandMask: N
   );
   registerWaterReceiver(material, {
     mask: sandMask,
+    region,
     dampHeight: coveU('dampHeight'),
     dampWidth: coveU('dampWidth'),
     dampStrength: coveU('dampStrength'),
     tideMarkStrength: coveU('tideMarkStrength'),
     filmTint: coveU('filmTint'),
     sheenStrength: coveU('sheenStrength'),
+    foamScale: coveU('foamScale'),
+    foamStrength: coveU('foamStrength'),
   });
 }

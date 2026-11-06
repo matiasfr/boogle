@@ -894,18 +894,24 @@ the shore atlas and never treat bridge decks as seabed. Dry bank/deck surfaces r
 
 **West-cove art pilot (5 November, branch review only).** `?proto=place&terrain=cove&room=proto-place-cove&fresh=1`
 keeps the ordinary grey box as default. The flag selects its own comparison room, including room-only invites,
-because static collision changes. One 32 m headland at local z 42–74 wraps into the positive-z cove shoulder;
+because static collision changes. One headland at local z 34–74 rises out of the beach and wraps into the positive-z cove shoulder;
 the bounded inland blend stops before town and protects the complete landing fade, path shoulders and rail formation.
 The heightfield owns the sandy pocket, submerged shelf and backing slope. The smooth terrain revision adds a bounded
 one-metre patch at local x -212…-160, z 16…78; the rest keeps its two-metre grid. Five disjoint heightfields match
 the rendered surface, and protected route samples retain their original heights. One connected rounded cliff,
-three substantial waterline rocks and three partly buried fragments use two opaque cullable batches and the exact same
-1,958 triangles for collision. The broken end is a broad solid ramp onto the pocket. Refinement adds 4,836 triangles,
-for 6,794 render additions in total. No added lights, post passes or per-frame terrain uploads.
+three low rounded waterline buttresses use two opaque cullable batches and the exact same
+1,942 triangles for collision. The toe shares the face's skin and rounded cap, with no intersecting end-wall ramp or
+small stepping fragments. Refinement adds 4,836 triangles, for 6,778 render additions in total.
+No added lights, post passes or per-frame terrain uploads.
+The pocket has a gentler beach profile: the first 0.3 m above water spans about 1.9 m at local z 40.
+Bounded carving and backing-height matching retain the complete route protection mask.
 The owner's smooth Odyssey base and adjustable Sunshine strata follow the [revised pilot plan](../plans/terrain-pilot.md).
 Island-aligned triplanar rock and planar turf pigment use three original 512² linear RGBA8 maps (4 MiB with mips).
 Slope and elevation select semantic layers; authoritative path coverage stays separate from pigment. Microheight
-blends soft transitions, while the kit carries a continuous rounded turf lip. All 39 look settings are local tunables
+blends soft transitions, while the kit carries a continuous rounded turf lip. Sand coverage takes priority on low
+walkable beach slopes independently of the steeper turf-to-rock rule. Golden sand, orange sandstone and richer green
+turf use broad ochre sediment bands (default strength 0.6, width 0.5 of a 2.4 m repeat) instead of dark pinstripes.
+All 47 look settings are local tunables
 (`cove.*`); none changes collision or simulation. The final art candidate still requires coordinator/owner review.
 Under this flag only, idle Buddy cancels gravity tangent to actual walkable static support while retaining normal
 pressure. Moving input, swimming, moving decks, jumps and upward impulses keep their normal behavior. Seven sampled
@@ -914,7 +920,9 @@ The [prior assessment](../research/terrain-pilot-followup.md) preserves round-tw
 Water depth comes from the same terrain/solid surface; rounded rock footprints supply wave obstacles. Existing receiver
 wetness, caustics and swash stay separate from water foam. Cove sand adds the Ultra Water demo's damp pigment,
 footprint-faded ripples and thin-film sheen using the existing swash/drying clock. Persistent dampness and dynamic
-drying contributions remain separate, so the static band cannot mask recovery between waves.
+drying contributions remain separate, so the static band cannot mask recovery between waves. The stronger drying
+contrast uses the existing backwash clock; filtered sand-tinted foam covers sand only. Cove rock contact uses the
+ocean's contact foam rather than the former dotted ground-swash lace.
 `&coveView=shape` retains the clay comparison with procedural normal detail;
 `&coveView=dry` removes land and kit wet receivers for the material comparison. Neither changes collision.
 Local presentation/static Owner collision; no new save or lockstep state. H uses the actual grid triangles plus kit
