@@ -2,9 +2,10 @@
 // checkout (a, b, c, and a kill-switch build with BOOGLE_SW=off) served one after another from the same origin, as
 // GitHub Pages would, and one Chromium tab reloading through them. Checks that
 //   1. the second load of a build gets every hashed file from the service worker (no request reaches the server);
-//   2. a new deploy that changes only the build id installs the new worker and fetches nothing (no hashed name moved);
+//   2. the next page executes a changed hashed fixture while unchanged game assets stay cached;
 //   3. a third deploy deletes the first build's cache and keeps the one before it;
-//   4. the kill-switch build unregisters the worker and deletes every boogle- cache.
+//   4. documents/navigations bypass caching, older lazy hits survive purge/offline, and SW is optional.
+// Evidence: .look/sw-check/report.json and build-b.png; no production server is used.
 //
 //   node dev/look/sw-check.ts            (about a minute: four builds)
 import fs from 'node:fs';
@@ -12,6 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { createService, loadConfig } from '../../server/src/server.ts';
 import { launch, root, sleep } from './lib.ts';
 
@@ -20,6 +22,9 @@ const server = createService(loadConfig({ DATA_DIR: data, SERVER_ROOMS: '*' }, {
 const sigPort = await server.listen(0);
 const builds = ['a', 'b', 'c', 'off'];
 const dirs: Record<string, string> = {};
+const fixtures: Record<string, string> = {};
+const evidence = path.join(root, '.look/sw-check');
+fs.mkdirSync(evidence, { recursive: true });
 for (const b of builds) {
   dirs[b] = path.join(data, `dist-${b}`);
   const r = spawnSync(
@@ -37,6 +42,17 @@ for (const b of builds) {
     },
   );
   if (r.status) throw new Error(`build ${b} failed`);
+  // A changed hashed script proves the next HTML executes its own build's assets, not just a new meta tag.
+  const code = `window.__swBuild = ${JSON.stringify(b)};`;
+  fixtures[b] = `assets/swcheck-${createHash('sha256').update(code).digest('hex').slice(0, 8)}.js`;
+  fs.writeFileSync(path.join(dirs[b]!, fixtures[b]!), code);
+  for (const html of ['index.html', 'assets/index.html']) {
+    const file = path.join(dirs[b]!, html);
+    fs.writeFileSync(
+      file,
+      fs.readFileSync(file, 'utf8').replace('</head>', `<script src="/${fixtures[b]}"></script></head>`),
+    );
+  }
   console.log(`built ${b}`);
 }
 
@@ -60,7 +76,7 @@ const site = http.createServer((req, res) => {
   if (!file.startsWith(dirs[serving]!) || !fs.existsSync(file) || fs.statSync(file).isDirectory())
     file = path.join(dirs[serving]!, 'index.html');
   if (url.pathname.startsWith('/assets/')) assetHits.push(url.pathname);
-  const hashed = url.pathname.startsWith('/assets/');
+  const hashed = url.pathname.startsWith('/assets/') && !url.pathname.endsWith('.html');
   res.writeHead(200, {
     'content-type': types[path.extname(file)] ?? 'application/octet-stream',
     'cache-control': hashed ? 'max-age=600' : 'no-cache',
@@ -73,7 +89,10 @@ const port: number = await new Promise((r) =>
 const base = `http://127.0.0.1:${port}/?room=swcheck`;
 
 const browser = await launch();
-const page = await (await browser.newContext()).newPage();
+const context = await browser.newContext();
+const page = await context.newPage();
+const errors: string[] = [];
+page.on('pageerror', (e) => errors.push(String(e)));
 let fromSw = 0,
   fromNet = 0;
 page.on('response', (r) => {
@@ -85,7 +104,12 @@ const state = () =>
   page.evaluate(async () => {
     const regs = await navigator.serviceWorker.getRegistrations();
     const names = (await caches.keys()).filter((n) => n.startsWith('boogle-'));
-    return { regs: regs.length, controlled: !!navigator.serviceWorker.controller, caches: names };
+    return {
+      regs: regs.length,
+      controlled: !!navigator.serviceWorker.controller,
+      caches: names,
+      updating: regs.some((r) => r.installing || r.waiting),
+    };
   });
 async function load(build: string, settle: (s: Awaited<ReturnType<typeof state>>) => boolean) {
   serving = build;
@@ -94,16 +118,23 @@ async function load(build: string, settle: (s: Awaited<ReturnType<typeof state>>
   await page.goto(base);
   await page.waitForFunction(() => window.boogle?.boot, null, { timeout: 30000 });
   await page.evaluate(() => (window.boogle.boot as { done: Promise<unknown> }).done);
-  const hits = assetHits.length,
+  await page.waitForFunction(
+    () => (window.boogle.boot.timeline() as { marks: { name: string }[] }).marks.some((m) => m.name === 'interactive'),
+    null,
+    { timeout: 60000 },
+  );
+  await page.locator('.splash').waitFor({ state: 'detached', timeout: 10000 });
+  const hits = assetHits.filter((p) => !p.includes('/swcheck-')).length,
     sw = fromSw,
     net = fromNet;
   let s = await state();
-  for (let i = 0; i < 100 && !settle(s); i++) {
+  for (let i = 0; i < 200 && (!settle(s) || s.updating); i++) {
     await sleep(200);
     s = await state();
   }
   const shown = await page.evaluate(() => (window.boogle.boot.timeline() as { build: string }).build);
-  return { hits, sw, net, shown, ...s };
+  const fixture = await page.evaluate(() => (window as unknown as { __swBuild: string }).__swBuild);
+  return { hits, sw, net, shown, fixture, ...s };
 }
 
 const checks: [string, boolean, string][] = [];
@@ -112,17 +143,89 @@ const has = (s: { caches: string[] }, b: string) => s.caches.includes(`boogle-sw
 
 const a1 = await load('a', (s) => s.regs > 0 && has(s, 'a'));
 check('first visit: registers and precaches', a1.regs === 1 && has(a1, 'a'), a1);
+const model = 'assets/' + fs.readdirSync(path.join(dirs.a!, 'assets')).find((f) => f.endsWith('.glb'))!;
+const modelBytes = fs.readFileSync(path.join(dirs.a!, model));
+const fetchModel = () =>
+  page.evaluate(
+    async (url) => [...new Uint8Array(await (await fetch(url, { cache: 'no-store' })).arrayBuffer())],
+    '/' + model,
+  );
+await fetchModel();
+await page.waitForFunction(async (url) => !!(await (await caches.open('boogle-swcheck-a')).match(url)), '/' + model);
+// Seed an already-buggy old HTML entry: the new worker must bypass it, even before its old cache is purged.
+await page.evaluate(async () => {
+  await (
+    await caches.open('boogle-swcheck-a')
+  ).put('/assets/index.html', new Response('STALE PAGE', { headers: { 'content-type': 'text/html' } }));
+});
 const a2 = await load('a', () => true);
 check('second visit: every hashed file from the worker', a2.hits === 0 && a2.sw > 30, a2);
 const b1 = await load('b', (s) => has(s, 'b'));
-check('deploy b: page is b, no file fetched', b1.shown === 'swcheck-b' && b1.hits === 0, b1);
+check(
+  'deploy b: B fixture executes, unchanged game assets not fetched',
+  b1.shown === 'swcheck-b' && b1.fixture === 'b' && b1.hits === 0,
+  b1,
+);
+const html = await page.evaluate(async () => (await fetch('/assets/index.html', { cache: 'no-store' })).text());
+check(
+  'explicit HTML bypasses stale cache and names B assets',
+  html.includes('swcheck-b') && html.includes(fixtures.b!),
+  { buildB: html.includes('swcheck-b') },
+);
+// Ensure the model exists only in A before the B fetch, independently of the game's model selection.
+await page.evaluate(async (url) => {
+  await (await caches.open('boogle-swcheck-b')).delete(url);
+}, '/' + model);
+assetHits = [];
+await fetchModel();
+await page.waitForFunction(async (url) => !!(await (await caches.open('boogle-swcheck-b')).match(url)), '/' + model);
+check('old model promoted into B without network', assetHits.length === 0, { hits: assetHits });
+const nav = await context.newPage();
+assetHits = [];
+const navResponse = await nav.goto(new URL(fixtures.a!, base).href);
+check('navigation to a cached asset bypasses worker', !navResponse?.fromServiceWorker(), {
+  status: navResponse?.status(),
+});
+await nav.close();
 const b2 = await load('b', () => true);
+await page.screenshot({ path: path.join(evidence, 'build-b.png') });
 check('deploy b, reload: nothing from the server', b2.hits === 0 && b2.sw > 30, b2);
 const c1 = await load('c', (s) => has(s, 'c') && !has(s, 'a'));
 check('deploy c: keeps b and c, drops a', has(c1, 'b') && has(c1, 'c') && !has(c1, 'a'), c1);
+await context.setOffline(true);
+const offline = await fetchModel();
+check('promoted hashed model survives A purge and works offline', Buffer.from(offline).equals(modelBytes), {
+  bytes: offline.length,
+});
+await context.setOffline(false);
 const k = await load('off', (s) => s.regs === 0 && s.caches.length === 0);
 check('kill switch: unregistered, caches gone', k.regs === 0 && k.caches.length === 0, k);
 
+const unsupported = await browser.newContext();
+await unsupported.addInitScript(() => {
+  Reflect.deleteProperty(Navigator.prototype, 'serviceWorker');
+});
+const plain = await unsupported.newPage();
+const plainErrors: string[] = [];
+plain.on('pageerror', (e) => plainErrors.push(String(e)));
+serving = 'b';
+await plain.goto(base);
+await plain.waitForFunction(() => window.boogle?.boot, null, { timeout: 30000 });
+await plain.evaluate(() => (window.boogle.boot as { done: Promise<unknown> }).done);
+await plain.waitForFunction(() => !(document.querySelector('#enter') as HTMLButtonElement).disabled, null, {
+  timeout: 60000,
+});
+const without = await plain.evaluate(() => ({
+  supported: 'serviceWorker' in navigator,
+  build: document.querySelector('meta[name="boogle-build"]')?.getAttribute('content'),
+}));
+check(
+  'SW unsupported: B loads and enables entry',
+  !without.supported && without.build === 'swcheck-b' && plainErrors.length === 0,
+  { ...without, errors: plainErrors },
+);
+check('no page errors', errors.length === 0, errors);
+fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify({ source: root, builds: dirs, checks }, null, 2));
 await browser.close();
 site.close();
 await server.close();

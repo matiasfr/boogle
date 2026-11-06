@@ -53,11 +53,11 @@ the work done before the first frame. The architecture, in six lines:
 
 ### Chrome, localhost
 
-| Load | html | entry | modules | terrain | props | room | rapier | gpu | shaders | first | interactive |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Cold | 12 | 194 | 360 | 393 | 425 | 457 | 486 | 505 | 897 | 931 | **932** |
-| Warm, service worker | 19 | 20 | 124 | 154 | 184 | 209 | 242 | 225 | 570 | 598 | **599** |
-| Warm, HTTP cache only (`--sw 0`) | 20 | 21 | 124 | 154 | 185 | 200 | 236 | 218 | 564 | 593 | **594** |
+| Load                             | html | entry | modules | terrain | props | room | rapier | gpu | shaders | first | interactive |
+| -------------------------------- | ---- | ----- | ------- | ------- | ----- | ---- | ------ | --- | ------- | ----- | ----------- |
+| Cold                             | 12   | 194   | 360     | 393     | 425   | 457  | 486    | 505 | 897     | 931   | **932**     |
+| Warm, service worker             | 19   | 20    | 124     | 154     | 184   | 209  | 242    | 225 | 570     | 598   | **599**     |
+| Warm, HTTP cache only (`--sw 0`) | 20   | 21    | 124     | 154     | 185   | 200  | 236    | 218 | 564     | 593   | **594**     |
 
 Shader warm-up: **71 programs, 41 pipelines, 383-423 ms cold, 320-348 ms warm; WGSL generation 98-127 ms of it;
 shader-module creation 1-2 ms.** First load: 45 requests, 2.3 MB on the wire, 3.5 MB decoded; 481 KB gzip of JS,
@@ -67,11 +67,11 @@ On localhost a revalidation costs nothing, so the service worker changes nothing
 
 ### Chrome, 60 ms latency, 50 Mbit/s (`--latency 60`)
 
-| Load | html | entry | modules | gpu | rapier | room | shaders | first | interactive |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Cold | 72 | 269 | 780 | 893 | 1222 | 915 | 1503 | 1535 | **1536** |
-| Warm, service worker | 88 | 89 | 200 | 295 | 311 | 368 | 653 | 679 | **680** |
-| Warm, HTTP cache only | 86 | 145 | 645 | 721 | 814 | 776 | 1152 | 1177 | **1178** |
+| Load                  | html | entry | modules | gpu | rapier | room | shaders | first | interactive |
+| --------------------- | ---- | ----- | ------- | --- | ------ | ---- | ------- | ----- | ----------- |
+| Cold                  | 72   | 269   | 780     | 893 | 1222   | 915  | 1503    | 1535  | **1536**    |
+| Warm, service worker  | 88   | 89    | 200     | 295 | 311    | 368  | 653     | 679   | **680**     |
+| Warm, HTTP cache only | 86   | 145   | 645     | 721 | 814    | 776  | 1152    | 1177  | **1178**    |
 
 The cold load is a download waterfall: `entry` -> `modules` is 510 ms (the main chunk's imports, three.js) and Rapier's
 591 KB of WASM lands 330 ms after the GPU is ready, so **Rapier gates the warm-up on a real connection**. Warm without
@@ -84,9 +84,9 @@ stopped (a hidden page draws no frames and compiles nothing; the 8 s warm-up tim
 phases before that are real:
 
 | Load (cold) | html | entry | modules | terrain | props | gpu | room | rapier | shaders, first, interactive |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Run 1 | - | 48 | 271 | 317 | 360 | 376 | 380 | 460 | not measured (hidden) |
-| Run 2 | 127 | 141 | 361 | 402 | 444 | 461 | 468 | 532 | not measured (hidden) |
+| ----------- | ---- | ----- | ------- | ------- | ----- | --- | ---- | ------ | --------------------------- |
+| Run 1       | -    | 48    | 271     | 317     | 360   | 376 | 380  | 460    | not measured (hidden)       |
+| Run 2       | 127  | 141   | 361     | 402     | 444   | 461 | 468  | 532    | not measured (hidden)       |
 
 Safari evaluates the modules about as fast as Chrome (271-361 vs 360 ms) and gets its WebGPU device sooner relative to
 them; its WASM arrives later (Rapier 460-532 ms vs 486 ms). **To finish the table:** unlock the Mac and run
@@ -114,9 +114,10 @@ must be finished even if the diagnostic `bootDone` promise hits its 20-second no
 precache cannot compete with the first load. A returning browser may independently check an existing registration
 for an update on navigation; this gate controls the page's registration, not the browser's update scheduler.
 
-- **What it caches:** only files under `assets/`, which all carry a content hash (`src/boot/sw-policy.ts`,
-  `cacheable`). A hashed URL never changes meaning, so cache-first is always correct for it. JS, CSS, WASM (Rapier, the
-  KTX2 transcoder), models, textures and audio all live there.
+- **What it caches:** emitted assets under `assets/` (`src/boot/sw-policy.ts`, `cacheable`). Navigation requests and
+  `.html`/`.htm` paths are excluded, including the unversioned `/assets/index.html` entry. JS, CSS, WASM (Rapier, the
+  KTX2 transcoder), models, textures and audio use their existing hashed URLs. HTML/XHTML response bodies are never
+  reused or written as assets, including a server fallback returned under an asset URL.
 - **What it never touches:** the page, `version.json`, `sw.js`, icons, the web manifest, the game server, fonts. So
   `src/features/updates.ts` keeps seeing the network: its check of `version.json` (`cache: 'no-store'`) and its reload
   behave as before.
@@ -132,6 +133,9 @@ for an update on navigation; this gate controls the page's registration, not the
 - **Optional cache:** individual downloads and CacheStorage failures cannot reject install. Cache lookup failure
   falls through to the network, and failed background writes are ignored. Cached responses retain their headers,
   including `application/wasm` for streaming compilation; JS still references its own content-hashed WASM URL.
+  Current-cache hits return directly. A hit in an older cache is cloned into the current cache without downloading;
+  promotion and network-response writes are owned by the fetch event's `waitUntil()`, without delaying the response.
+  Storage failures stay optional and writes retain the existing deleted-cache guard.
   Matches ignore `Vary` only for these immutable same-scope assets: Vite preview's `Vary: Origin` otherwise causes
   module requests to miss entries installed by ordinary fetches. Their hashed URLs identify identical bytes.
 - **Versioned purge:** on activate it deletes every build's cache except this one and the one before it
@@ -148,10 +152,19 @@ for an update on navigation; this gate controls the page's registration, not the
 - **Kill switch:** build with `BOOGLE_SW=off`: that `sw.js` deletes every `boogle-` cache and unregisters itself, and
   the page unregisters instead of registering. `?sw=0` does the same in one browser, for one load. Deleting caches waits
   for the page to finish loading, and the worker never writes into a cache that was deleted (it would come back).
-- **Checked:** `node dev/look/sw-check.ts` builds four times (a, b, c, and the kill switch) and serves them one after
-  another on one origin. All pass: second visit, 0 requests reach the server (every hashed file from the worker);
-  deploy b (only the build id differs), 0 files fetched, page shows b; reload on b, 0 requests; deploy c keeps b and c
-  and drops a; the kill-switch build leaves no registration and no cache.
+- **Checked:** `node dev/look/sw-check.ts` serves local production builds A, B, C and a kill-switch build on one
+  origin. A changed hashed fixture script in each HTML proves B executes B's assets while unchanged game assets
+  remain cached. Checks cover stale cached HTML bypass, navigation bypass, lazy-model promotion, offline asset
+  reads after A is purged, repeated loads, kill switch and startup with `navigator.serviceWorker` unavailable.
+  The harness waits for `interactive`, not just the diagnostic boot timeout, before recording a completed load.
+  Evidence is `.look/sw-check/report.json` and `build-b.png`. Offline navigation is intentionally not supported.
+  `test/loading.test.ts` and `test/sw-worker.test.ts` cover the policy and bundled worker's write lifetime, early
+  response delivery, current-cache no-rewrite path, failed writes and the deleted-cache guard. These regression
+  tests were explicitly requested by the owner for the two approved fixes; they do not broaden the general test diet.
+  On 5 November the final run passed all 12 assertions, including B's changed fixture, zero unchanged-asset network
+  requests on repeats, a 33,508-byte model read offline after A's purge, and unsupported-SW startup. The full solo
+  bot also finished with 84 checkpoints and no page/graphics errors; `npm run check` passed 357 tests. See the
+  [audit follow-up](../research/glb-delivery-audit.md#approved-fix-follow-up) for evidence and limits.
 
 **4 November 2026 precache verification (Vite 8.3.5 / Rapier 0.21):** the inherited build at `5b356980` already
 included the game and SIMD WASM, despite the older omission described in the Rapier research. The selector now
@@ -163,16 +176,16 @@ second navigation. One pair each, no throttling; these are observations, not a s
 response-body bytes include HTML/version and compression actually used by Vite preview (WASM was uncompressed),
 exclude HTTP headers/WebSocket traffic, and stop at `interactive`. Resource timing alone hid worker-forwarded 304s.
 
-| Measurement | Before | After |
-| --- | ---: | ---: |
-| First navigation to interactive | 1,944 ms | 1,865 ms |
-| First navigation network body bytes | 4,602,607 | 4,602,624 |
-| Post-interactive install window body bytes | 2,142 | 2,178 |
-| Second navigation to interactive | 1,871 ms | 905 ms |
-| Second navigation network body bytes | 1,126 | 1,126 |
-| Second navigation precached-file network requests | 107 | 0 |
-| Second navigation all asset requests (all 304, zero bodies) | 118 | 11 |
-| Second navigation game JS / SIMD WASM network requests | 2 / 0 | 0 / 0 |
+| Measurement                                                 |    Before |     After |
+| ----------------------------------------------------------- | --------: | --------: |
+| First navigation to interactive                             |  1,944 ms |  1,865 ms |
+| First navigation network body bytes                         | 4,602,607 | 4,602,624 |
+| Post-interactive install window body bytes                  |     2,142 |     2,178 |
+| Second navigation to interactive                            |  1,871 ms |    905 ms |
+| Second navigation network body bytes                        |     1,126 |     1,126 |
+| Second navigation precached-file network requests           |       107 |         0 |
+| Second navigation all asset requests (all 304, zero bodies) |       118 |        11 |
+| Second navigation game JS / SIMD WASM network requests      |     2 / 0 |     0 / 0 |
 
 Both installed caches held 110 precached files, including only the SIMD physics WASM, with `application/wasm`;
 browser `WebAssembly.compileStreaming` succeeded on the cached response. Remaining second-load requests are lazy
@@ -198,14 +211,15 @@ offline browser navigation, Safari/iPad and real-time feel were not run; `check:
 **Follow-ups:**
 
 - [x] (1) The build id renamed hashed files: inlined into a module, it rippled up the import chain, so 39 of 130 files
-  got new names on a deploy that changed nothing else. It now lives in each page as `<meta name="boogle-build">`
-  (`vite.config.ts`, read by `src/build-id.ts`): the same source under two ids builds 0 different file names. The page
-  and its chunks come from one build, so the id always names the code running.
-- [ ] (2) Navigation requests could be revalidated by the worker (`cache: 'no-cache'`) so a reload after a deploy never
-  gets Pages' 10-minute stale HTML; `updates.ts`'s loop guard covers that today.
-- [ ] (3) A lazy file (a chunk or model outside the precache list) found in an older build's cache isn't copied into
-  the current one, so it is deleted two visits later and downloaded again though its name never changed. Fix in
-  `respond()` in `sw-worker.ts`: copy a hit into this build's cache.
+      got new names on a deploy that changed nothing else. It now lives in each page as `<meta name="boogle-build">`
+      (`vite.config.ts`, read by `src/build-id.ts`): the same source under two ids builds 0 different file names. The page
+      and its chunks come from one build, so the id always names the code running.
+- [ ] (2) Hosting may revalidate HTML to avoid Pages' ten-minute HTTP freshness window; this requires a separate
+      owner-approved hosting decision. The worker now explicitly bypasses all navigations, rather than caching pages.
+      `updates.ts`'s loop guard and old-file retention remain in place.
+- [x] (3) Used lazy assets found in older caches are copied into the current build cache. Fetch-event `waitUntil()`
+      owns both promotion and network writes; current-cache hits are not rewritten. HTML paths, HTML responses and
+      navigation requests are excluded. See the [delivery audit follow-up](../research/glb-delivery-audit.md#approved-fix-follow-up).
 
 ### b. Content manifest (built)
 
@@ -259,13 +273,13 @@ Safari's behaviour is the open question above.
 
 Per milestone, Chrome on the M1 Max, production build, `node dev/look/boot-time.ts` medians:
 
-| Milestone | Today | Budget (localhost) | Budget (`--latency 60`) |
-| --- | --- | --- | --- |
-| First frame, cold | 931 ms | ≤ 1100 ms | ≤ 1800 ms |
-| Interactive, warm (worker) | 599 ms | ≤ 700 ms | ≤ 800 ms |
-| Shader programs before first frame | 71 | ≤ 90 | |
-| WGSL generation | 98-127 ms | ≤ 250 ms | |
-| First-load JS / WASM (gzip) | 481 / 591 KB | ≤ 550 / 600 KB | |
+| Milestone                          | Today        | Budget (localhost) | Budget (`--latency 60`) |
+| ---------------------------------- | ------------ | ------------------ | ----------------------- |
+| First frame, cold                  | 931 ms       | ≤ 1100 ms          | ≤ 1800 ms               |
+| Interactive, warm (worker)         | 599 ms       | ≤ 700 ms           | ≤ 800 ms                |
+| Shader programs before first frame | 71           | ≤ 90               |                         |
+| WGSL generation                    | 98-127 ms    | ≤ 250 ms           |                         |
+| First-load JS / WASM (gzip)        | 481 / 591 KB | ≤ 550 / 600 KB     |                         |
 
 Run it before and after anything that adds eager modules, materials or first-load files, as with `npm run perf`, and
 update this table when a milestone lands. CI can't run it (no GPU on the runner, and two builds take a minute), so the

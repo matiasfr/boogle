@@ -11,7 +11,19 @@ test('sw: only hashed build files under the scope are cached', () => {
   assert.equal(cacheable('GET', scope + 'assets/three-Cno8Qovv.js', scope), true);
   assert.equal(cacheable('GET', scope + 'assets/rapier_wasm3d_bg-B4SxS5fb.wasm?x=1', scope), true);
   assert.equal(cacheable('POST', scope + 'assets/three-Cno8Qovv.js', scope), false);
-  for (const path of ['', 'index.html', 'version.json', 'sw.js', 'icon-192.png', 'manifest.webmanifest', 'assets/'])
+  assert.equal(cacheable('GET', scope + 'assets/three-Cno8Qovv.js', scope, 'navigate'), false);
+  for (const path of [
+    '',
+    'index.html',
+    'version.json',
+    'sw.js',
+    'icon-192.png',
+    'manifest.webmanifest',
+    'assets/',
+    'assets/index.html',
+    'assets/nested/page.HTML?x=1',
+    'assets/page.htm',
+  ])
     assert.equal(cacheable('GET', scope + path, scope), false, path);
   assert.equal(cacheable('GET', 'https://fonts.gstatic.com/assets/x.woff2', scope), false);
   // A subpath deploy (BASE=/boogle/): the page's own scope only.
