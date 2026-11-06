@@ -103,7 +103,7 @@ test('line recovery width bound retains sixty-four worst material stamps and max
     };
     const e = {
       version: 1,
-      namespace: 'v09-rail-' + 'x'.repeat(22),
+      namespace: 'rail-v09-' + 'x'.repeat(22),
       catalog: '2',
       checkpoint: snapshot,
       hash: 4294967295,

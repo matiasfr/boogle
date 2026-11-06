@@ -10,7 +10,8 @@
 // v06 (2026-11-02): the watering can left the catalog, renumbered: frisbee 1, ball 2.
 // v07 (2026-11-05): classic tunables pin full defaults, revision and catalog; incompatible catalogs cannot join.
 // v08 (2026-11-05): panel track and machine deck seats cannot share a room lead with continuous-track builds.
-// v09 (2026-11-05): line-one material/beam authority and accepted panel timings; production follows this clean break.
+// v09 (2026-11-05; encoding corrected 2026-11-06): line-one material/beam authority and panel timings;
+// production uses rail-v09, disjoint from every classic v09-<room> name. No save migration.
 // Pure: read by src/netplay/net.ts, the registry check and tests.
 export const WORLD_NS = 'v09';
 

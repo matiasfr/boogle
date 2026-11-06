@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createService, loadConfig } from '../src/server.ts';
 import { TUNE_CATALOG } from '../../src/sim/tune.ts';
-import { WORLD_NS } from '../../src/world/namespace.ts';
+import { worldRoomId } from '../../src/world/namespace.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
 type Msg = Record<string, any>;
@@ -68,104 +68,26 @@ const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-for (const room of [`${WORLD_NS}-proto-tunables`, railwayRoomId('proto-tunables')])
-  test(`tuned rooms refuse missing, old or different catalogs before loading: ${room}`, async () => {
-    const { svc, base } = await start({ SERVER_ROOMS: '*' });
-    try {
-      for (const catalog of [undefined, 'e0d64927', 'different-defaults']) {
-        const c = connect(base, room, 'mismatch', undefined, undefined, catalog);
-        assert.deepEqual(await c.next(is('incompatible')), { t: 'incompatible', catalog: TUNE_CATALOG });
-        assert.equal(await c.closed, 4412);
-        assert.ok(!c.msgs.some(is('welcome')));
-        assert.equal(svc.roomHost()?.rooms(), 0, 'refusal never creates the room');
-      }
-      const a = connect(base, room, 'matching', undefined, undefined, TUNE_CATALOG);
-      await a.next(is('welcome'));
-      a.ws.close();
-    } finally {
-      await svc.close({ save: false });
-    }
-  });
-
-test('future classic namespaces are refused even with the current catalog', async () => {
+test('classic rail-demo and production demo select distinct hosts and saves', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
   try {
-    const c = connect(base, 'v99-proto-future', 'future', undefined, undefined, TUNE_CATALOG);
-    assert.deepEqual(await c.next(is('incompatible')), { t: 'incompatible', catalog: TUNE_CATALOG });
-    assert.equal(await c.closed, 4412);
-    assert.equal(svc.roomHost()?.rooms(), 0);
-    assert.ok(!c.msgs.some(is('welcome')));
+    const productionRoom = railwayRoomId('demo');
+    const classicRoom = worldRoomId('rail-demo');
+    assert.notEqual(productionRoom, classicRoom);
+    const production = connect(base, productionRoom, 'production', undefined, undefined, TUNE_CATALOG);
+    const classic = connect(base, classicRoom, 'classic', undefined, undefined, TUNE_CATALOG);
+    await Promise.all([production.next(is('welcome')), classic.next(is('welcome'))]);
+    const productionHost = svc.roomHost()!.room(productionRoom)!.world;
+    const classicHost = svc.roomHost()!.room(classicRoom)!.world;
+    assert.notEqual(productionHost, classicHost);
+    assert.ok((productionHost.sync.snapshot().data.railway as Msg).line);
+    assert.equal(classicHost.sync.snapshot().data.railway, undefined);
+    assert.ok(classicHost.sync.snapshot().data.gifts);
+    assert.equal(svc.roomHost()!.rooms(), 2);
+    production.ws.close();
+    classic.ws.close();
   } finally {
     await svc.close({ save: false });
-  }
-});
-
-test('line-one and old playable writers enter distinct rooms; foreign line versions fail before loading', async () => {
-  const { svc, base } = await start({ SERVER_ROOMS: '*' });
-  try {
-    const currentRoom = railwayRoomId('mixed-build');
-    const oldRoom = 't1v02-mixed-build';
-    const current = connect(base, currentRoom, 'newtab', undefined, undefined, TUNE_CATALOG);
-    const old = connect(base, oldRoom, 'oldtab', undefined, undefined, TUNE_CATALOG);
-    await Promise.all([current.next(is('welcome')), old.next(is('welcome'))]);
-    const newHost = svc.roomHost()!.room(currentRoom)!.world;
-    const oldHost = svc.roomHost()!.room(oldRoom)!.world;
-    assert.notEqual(newHost, oldHost);
-    assert.ok((newHost.sync.snapshot().data.railway as Msg).line);
-    assert.equal((oldHost.sync.snapshot().data.railway as Msg).line, undefined);
-    for (const room of ['v07-rail-mixed-build', 'v08-rail-mixed-build', 'v99-rail-mixed-build']) {
-      const other = connect(base, room, 'othertab', undefined, undefined, TUNE_CATALOG);
-      await other.next(is('incompatible'));
-      assert.equal(await other.closed, 4412);
-      assert.equal(svc.roomHost()!.room(room), undefined);
-    }
-    current.ws.close();
-    old.ws.close();
-  } finally {
-    await svc.close({ save: false });
-  }
-});
-
-test('the isolated headless T1 harness remains exempt from playable tuning admission', async () => {
-  const { svc, base } = await start({ SERVER_ROOMS: '*' });
-  try {
-    const c = connect(base, 't1v01-proof', 'headless');
-    await c.next(is('welcome'));
-    assert.ok(!c.msgs.some(is('incompatible')));
-    c.ws.close();
-  } finally {
-    await svc.close({ save: false });
-  }
-});
-
-test('legacy namespaces are refused before loading or rewriting their saved tuning', async () => {
-  const seed = await start();
-  const snapshot = seed.svc.roomHost()!.room('beach')!.world.sync.snapshot();
-  await seed.svc.close({ save: false });
-  // A v06 save held only overrides at tune version 0. Loading it in the new host would migrate yield to 9,
-  // while a v06 tab skips tune v1 and keeps its compiled default 4. Refuse the room before that can happen.
-  snapshot.data.tune = { yield: 9 };
-  snapshot.vers.tune = 0;
-  const room = 'v06-proto-legacy';
-  const file = path.join(seed.dataDir, `${room}.json`);
-  const saved = JSON.stringify({ tick: snapshot.tick, writerId: 'server', data: snapshot, updatedAt: 'legacy' });
-  await fs.writeFile(file, saved);
-  for (const serverRooms of ['*', room]) {
-    const { svc, base } = await start({ SERVER_ROOMS: serverRooms }, seed.dataDir);
-    try {
-      assert.equal(svc.roomHost()!.room(room), undefined, 'configured legacy rooms must not load at boot');
-      for (const catalog of [undefined, 'old-defaults', TUNE_CATALOG]) {
-        const c = connect(base, room, 'legacy', undefined, undefined, catalog);
-        assert.deepEqual(await c.next(is('incompatible')), { t: 'incompatible', catalog: TUNE_CATALOG });
-        assert.equal(await c.closed, 4412);
-        assert.ok(!c.msgs.some(is('welcome')));
-        assert.ok(!c.msgs.some(isWorld('w:snap')));
-        assert.equal(svc.roomHost()!.room(room), undefined, 'refusal must not load or migrate the saved room');
-      }
-    } finally {
-      await svc.close({ save: true });
-    }
-    assert.equal(await fs.readFile(file, 'utf8'), saved, 'shutdown must leave the legacy save byte-for-byte intact');
   }
 });
 

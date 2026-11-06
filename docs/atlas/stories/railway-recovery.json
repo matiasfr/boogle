@@ -6,7 +6,7 @@
   "steps": [
     {
       "hl": ["server"],
-      "text": "Playable line 1 uses the v09-rail clean break. Old t1v02 writers stay in different rooms; their saves are not migrated. The isolated t1v01 spine and T1 personal claim keys remain.",
+      "text": "Playable line 1 uses rail-v09 rooms, disjoint from every classic v09 room. No old-build admission fences or save migrations are maintained. The isolated t1v01 spine and T1 personal claim keys remain.",
       "cite": [
         {
           "file": "src/world/namespace.ts"
