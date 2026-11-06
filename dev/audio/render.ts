@@ -679,10 +679,14 @@ const PAGES: Page[] = [
 const args = process.argv.slice(2);
 const opt = (k: string) => (args.includes(k) ? args[args.indexOf(k) + 1] : null);
 const only = opt('--only')?.split(',') ?? null;
-const out = path.resolve(opt('--out') ?? path.join(root, '.look/audio'));
+const out = path.resolve(opt('--out') ?? path.join(root, '.look/audio', String(Date.now())));
 fs.mkdirSync(out, { recursive: true });
+if (fs.readdirSync(out).some((file) => file.endsWith('.wav')))
+  throw new Error(
+    'Capture output already contains WAVs; choose a fresh --out directory to avoid mixing builds. Use audio:analyze to re-meter existing evidence.',
+  );
 // Broker mode opens the same live fixtures through the supplied browser owner. No second browser or server path.
-if (args.includes('--broker') && !args.includes('--offline-place')) {
+if (args.includes('--broker') && !args.includes('--offline-place') && !args.includes('--offline-locomotion')) {
   const failed: string[] = [];
   const manifest: object[] = [];
   const evidence: string[] = [];
@@ -705,6 +709,7 @@ if (args.includes('--broker') && !args.includes('--offline-place')) {
           (take) => `try {
         const result = await (async () => { ${take.body} })();
         const {b64,...metadata} = result;
+        metadata.audio = A.audioSnapshot();
         console.log('AUDIOMETA ' + JSON.stringify({id:${JSON.stringify(take.id)}, ...metadata}));
         for(let p=0;p<b64.length;p+=24000) console.log('AUDIODATA ${take.id} ' + b64.slice(p,p+24000));
       } catch(error) { console.log('AUDIOFAIL ' + JSON.stringify({id:${JSON.stringify(take.id)},error:String(error)})); }`,
@@ -793,13 +798,16 @@ if (args.includes('--broker') && !args.includes('--offline-place')) {
     fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify({ manifest, evidence, failed }, null, 2) + '\n');
   }
   analyze(out);
+  if (evidence.length) fs.cpSync(out, path.join(path.dirname(evidence.at(-1)!), 'audio'), { recursive: true });
   console.log(`Raw WAVs, measurements.md, manifest.json: ${out}`);
   for (const problem of failed) console.error(problem);
   process.exit(failed.length ? 1 : 0);
 }
 // A Codex worker cannot launch Chromium. Ask its broker to render the same recipes in OfflineAudioContext;
 // preserve unnormalized SFX levels so the owner can judge their relationship. No live mixer/compressor in this mode.
-if (args.includes('--offline-place')) {
+if (args.includes('--offline-place') || args.includes('--offline-locomotion')) {
+  const locomotion = args.includes('--offline-locomotion');
+  const evalFile = locomotion ? 'dev/audio/locomotion-offline.ts' : 'dev/audio/place-offline.ts';
   const evidenceRoot = path.join(root, '.look/evidence');
   const before = new Set(fs.existsSync(evidenceRoot) ? fs.readdirSync(evidenceRoot) : []);
   const run = spawnSync(
@@ -810,7 +818,7 @@ if (args.includes('--offline-place')) {
       '--query',
       'proto=place&ambience=off',
       '--eval',
-      'dev/audio/place-offline.ts',
+      evalFile,
       '--warm',
       '0',
       '--seconds',
@@ -820,7 +828,7 @@ if (args.includes('--offline-place')) {
       '--name',
       'audio-offline',
       '--question',
-      'Does the place still render after all round-4 sound recipes render offline?',
+      'Does the place still render after the production sound recipes render offline?',
     ],
     { encoding: 'utf8', stdio: ['ignore', 'ignore', 'pipe'] },
   );
@@ -832,7 +840,7 @@ if (args.includes('--offline-place')) {
     .filter((file) => fs.existsSync(file))
     .filter((file) => {
       const e = JSON.parse(fs.readFileSync(file, 'utf8')) as { operation: string; args: string[] };
-      return e.operation === 'look' && e.args.includes(path.join(root, 'dev/audio/place-offline.ts'));
+      return e.operation === 'look' && e.args.includes(path.join(root, evalFile));
     });
   if (matches.length !== 1) {
     console.error(`Offline audio: expected one new broker manifest, found ${matches.length}; exit ${run.status}.`);
@@ -865,10 +873,12 @@ if (args.includes('--offline-place')) {
     return { ...take, wav: `${take.id}.wav` };
   });
   fs.writeFileSync(
-    path.join(out, 'place-offline.json'),
+    path.join(out, locomotion ? 'locomotion-offline.json' : 'place-offline.json'),
     JSON.stringify(
       {
-        mode: 'Raw mono SFX at unit distance gain; no master, compressor, normalization or live ambience.',
+        mode: locomotion
+          ? 'Raw mono source references and authored character/SFX sum; no compressor/master.'
+          : 'Raw mono SFX at unit distance gain; no master, compressor, normalization or live ambience.',
         evidence,
         catalogue,
         takes: manifest,
@@ -878,10 +888,34 @@ if (args.includes('--offline-place')) {
     ) + '\n',
   );
   console.log(`Evidence: ${evidence}`);
-  console.log(`Raw WAVs and place-offline.json: ${out}`);
+  console.log(`Raw WAVs and offline manifest: ${out}`);
   if (run.status !== 0 || broker.status !== 0) console.error(`Offline audio failed; read ${evidence}.`);
   analyze(out);
-  const bad = takes.some((t) => t.clipped > 0 || t.peakDb < -60 || t.seconds < 0.05 || t.seconds > 2.1);
+  if (locomotion)
+    fs.writeFileSync(
+      path.join(out, 'listening.md'),
+      [
+        '# Locomotion listening sheet',
+        '',
+        'Mono 48 kHz float WAVs from the production procedural recipes. Source references have six takes at unit gain; walking, running, jumping and landing use the current local audio tunables. No peak normalization. Playback device, subjective balance and live cadence remain unverified here.',
+        '',
+        'Each walk/run file plays all six takes with pitch and gain variation at illustrative fixed spacing. Jump files pair each takeoff with normal landing 650 ms later. Landing files progress from soft through normal to capped heavy. This is an audition, not a physics or stride timing simulation.',
+        '',
+        '| Surface | Walk | Run | Jump + land | Impact range | Source reference |',
+        '| --- | --- | --- | --- | --- | --- |',
+        ...['grass', 'sand', 'wood', 'rail', 'water'].map(
+          (s) =>
+            `| ${s} | [WAV](${s}-walk.wav) | [WAV](${s}-run.wav) | [WAV](${s}-jump.wav) | [WAV](${s}-land.wav) | [WAV](${s}-source.wav) |`,
+        ),
+        '',
+        'Settings, exact source completion and cue parameters: locomotion-offline.json. Signal levels: measurements.md; tool version: meter-tool.json.',
+      ].join('\n'),
+    );
+  fs.cpSync(out, path.join(path.dirname(evidence), 'audio'), { recursive: true });
+  const bad = takes.some(
+    (t) =>
+      t.clipped > 0 || t.nonfinite > 0 || t.peakDb < -60 || t.seconds < 0.05 || t.seconds > (locomotion ? 12 : 2.1),
+  );
   process.exit(
     run.status === 0 &&
       broker.status === 0 &&
