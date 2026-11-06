@@ -7,7 +7,7 @@ import { FNV_SEED, fold, foldAll } from './hash.ts';
 export const MAX_PILES = 128; // per room
 export const PILE_CAP = 64; // per pile, unless the room is full (then the nearest same-kind pile takes the rest)
 export const MAX_N = 65535; // Uint16: the hard ceiling of one pile
-export const MERGE_CELLS = 2; // a drop joins a same-kind pile within this many cells (Chebyshev)
+const MERGE_CELLS = 2; // a drop joins a same-kind pile within this many cells (Chebyshev)
 const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
 // Where a new pile goes when the spot is taken: the cell itself, then its ring of neighbours.
 const SPOTS: readonly [number, number][] = [

@@ -47,7 +47,7 @@ export type PlayConfig = {
   log: (...a: unknown[]) => void;
 };
 
-export const SESSION_RE = /^[a-z0-9-]{8,40}$/;
+const SESSION_RE = /^[a-z0-9-]{8,40}$/;
 const CARD_RE = /^[a-z0-9-]{1,40}$/;
 const KIND_RE = /^[a-z0-9_.:-]{1,40}$/i;
 const FIELD_RE = /^[a-z0-9_]{1,24}$/i;
@@ -77,7 +77,7 @@ function cleanEvent(e: any): PlayEvent | null {
 
 /** A batch, cleaned; null when it can't be salvaged (any event that isn't one sinks the batch). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- untrusted JSON, checked field by field
-export function cleanBatch(b: any): PlayBatch | null {
+function cleanBatch(b: any): PlayBatch | null {
   if (!b || typeof b !== 'object' || Array.isArray(b)) return null;
   if (typeof b.s !== 'string' || !SESSION_RE.test(b.s) || typeof b.card !== 'string' || !CARD_RE.test(b.card))
     return null;

@@ -13,7 +13,7 @@ import { FNV_SEED, fold } from './hash.ts';
 export const CALL_S = 45;
 /** Seconds of bell before the swap. The owner hasn't decided whether to keep the countdown: this is its one knob. */
 export const BELL_S = 10;
-export const CALL_TICKS = (CALL_S * 1000) / MS_PER_TICK;
+const CALL_TICKS = (CALL_S * 1000) / MS_PER_TICK;
 export const BELL_TICKS = (BELL_S * 1000) / MS_PER_TICK;
 /** The full script, when nobody ends the call early. */
 export const OPENING_DAY: readonly Phase[] = [
@@ -67,7 +67,7 @@ export function noteLaid(o: Opening, from: number, tick: number): void {
   o.rev++;
 }
 /** This run's script: the call cut short at `here` (at least a tick), then the bell. */
-export const scriptOf = (o: Opening): readonly Phase[] =>
+const scriptOf = (o: Opening): readonly Phase[] =>
   o.here < 0
     ? OPENING_DAY
     : [

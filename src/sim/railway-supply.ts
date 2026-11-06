@@ -4,7 +4,7 @@ import type { Railway } from './railway.ts';
 import { railBeamRecover } from './railway-line.ts';
 
 export const RECOVERY_MINUTES = 21; // minute quantization still leaves at least twenty minutes
-export const REGROW_MINUTES = 31;
+const REGROW_MINUTES = 31;
 export const RECOVERY_RACK = { x: 90500, z: 100 };
 // Pinned centimetre bounds of the two initially laid stubs and T1's whole corridor, plus 8 m clearance.
 // Clear the eventual corridor throughout construction too; never recreate an obstruction around finished track.
@@ -31,7 +31,7 @@ export function railGrowthMask(indices: number[]) {
 }
 export const railGrows = (mask: string, k: number) =>
   (Number.parseInt(mask[Math.floor(k / 4)]!, 16) & (1 << (k % 4))) !== 0;
-export const railGrowthStage = (age: number) => Math.max(0, age - REGROW_MINUTES);
+
 export type RailSupply = { marker: number; ages: number[]; rack: number; produced: number };
 export type RailSupplyJSON = Omit<RailSupply, 'ages'> & { ages: string };
 export type SupplyPulse = { marker: number; grow: string; recover: number[]; beam?: number };

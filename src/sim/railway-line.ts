@@ -1,6 +1,6 @@
 // Line one's deterministic material and singleton authority. Legacy T1 keeps its original path.
 import type { RailAccount, RailAction, Railway } from './railway.ts';
-import { LINE1_STATIONS, LINE1_GREAT_TREE, lineBeamGround, type LineStationId } from './railway-line-layout.ts';
+import { LINE1_STATIONS, LINE1_GREAT_TREE, lineBeamGround } from './railway-line-layout.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { lineSchedule, linePanelCount, type LineTiming } from './railway-line-schedule.ts';
 
@@ -356,4 +356,3 @@ export function railLineTick(s: Railway, tick: number) {
     if (index === 2) s.line!.beam.state = 'used';
   }
 }
-export const railStationId = (s: Railway): LineStationId => LINE1_STATIONS[railActiveStation(s)]!.id;
