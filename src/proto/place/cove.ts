@@ -83,7 +83,7 @@ const endCopies: [number, number][] = [];
 let joinGround: ((x: number, z: number) => number) | undefined;
 let joinField: { x0: number; z0: number; nx: number; nz: number; normals: Float32Array } | undefined;
 
-/** Shared contact weight and raw authored turf coverage, independent of lighting normals. */
+/** Shared contact weight and premultiplied turf coverage, independent of lighting normals. */
 export function coveJoinCoverage(x: number, z: number, groundY?: number): number[] | null {
   const mesh = coveMeshes[0];
   if (!mesh || !joinGround || x < mesh.bounds.minX || x > mesh.bounds.maxX + 2 || z <= 34 || z >= 74) return null;
@@ -109,7 +109,9 @@ export function coveJoinCoverage(x: number, z: number, groundY?: number): number
   if (groundY !== undefined) weight *= 1 - smoothstep(0.35, 0.85, groundY - coveCrest(z));
   if (weight === 0) return null;
   const cap = mesh.turf[a.cap[0]!]! + (mesh.turf[b.cap[0]!]! - mesh.turf[a.cap[0]!]!) * along;
-  return [weight, cap];
+  // Interpolate the contribution, not a target that becomes zero outside the socket.
+  // Separate interpolation of weight and target invents rock inside otherwise grassy triangles.
+  return [weight, weight * cap];
 }
 
 /** One presentation-only tangent field for both sides of the kit/soil contact.

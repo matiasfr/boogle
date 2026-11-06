@@ -956,7 +956,11 @@ Bounded carving and backing-height matching retain the complete route protection
 The owner's smooth Odyssey base and adjustable Sunshine strata follow the [revised pilot plan](../plans/terrain-pilot.md).
 Island-aligned triplanar rock and planar turf pigment use three original 512² linear RGBA8 maps (4 MiB with mips).
 Slope and elevation select semantic layers; authoritative path coverage stays separate from pigment. A broad soil-slope
-attribute stabilizes coverage independently of lighting normals. Actual surface slope limits turf eligibility,
+field stabilizes coverage independently of lighting normals. An 80 × 70 R16F texture (11,200 bytes, no mips)
+reconstructs a regular two-metre sampling of the soil slope with bicubic filtering, so protected coarse triangles do not
+stamp square or diagonal corners into the pigment border. It uploads once and is disposed with its ground
+material; it replaces the per-vertex slope buffer. Actual surface slope limits turf eligibility near the walkable
+cutoff, without applying the full rock/turf selection a second time,
 so steep barriers remain sandstone. Branch-free microheight blending keeps texture sampling outside divergent
 per-pixel conditionals before a soft turf edge; original grouped blade
 strokes and a restrained under-lip shade replace broad turf noise. The kit has a small
@@ -967,6 +971,10 @@ the broad irregular warm beds remain. Bedding is restricted to exposed steep roc
 gentle shoulders stay plain. Defaults are strength 0.6, bed scale 2.4 m and irregularity 0.6; the rock/turf threshold
 is normal-Y 0.8 with a 0.12 blend, and bedding fades at 0.68 with a 0.1 blend. The cap and soil share a bounded
 static tangent field and semantic cap coverage at their join, avoiding a lighting crease or isolated painted strip.
+Cap coverage stores the weight and its premultiplied turf contribution: zero-weight corners no longer pull an
+interpolated target toward rock and create orange pinholes. These material repairs preserve the approved #1034
+geometry, protected routes, two kit draws and 6,778 added render triangles. Total cove texture storage is
+4,205,500 bytes, within the 4.33 MiB proof envelope; no extra light or pass is added.
 These presentation fields leave the shared support positions and collision triangles unchanged.
 All 63 look settings are local tunables
 (`cove.*`); none changes collision or simulation. The final art candidate still requires coordinator/owner review.
