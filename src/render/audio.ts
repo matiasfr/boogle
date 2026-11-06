@@ -33,7 +33,6 @@ let master: GainNode | null = null;
 let profile: GainNode | null = null;
 type BusNodes = { authored: GainNode; user: GainNode; duck: GainNode };
 const buses = new Map<Bus, BusNodes>();
-const userVolumes = new Map<Bus, number>(BUS_NAMES.map((bus) => [bus, 1]));
 const masterGain = () => (muted ? 0 : volume * volume);
 const authoredDb = (bus: Bus) => audioSettings[`${bus}Db`];
 const duckDb = (bus: Bus) =>
@@ -87,7 +86,7 @@ function unlock() {
           user = ctx.createGain(),
           duck = ctx.createGain();
         authored.gain.value = dbToGain(authoredDb(bus));
-        user.gain.value = userVolumes.get(bus)! ** 2;
+        user.gain.value = 1;
         duck.gain.value = dbToGain(duckDb(bus));
         authored.connect(user).connect(duck);
         duck.connect(bus === 'character' || bus === 'work' || bus === 'social' ? buses.get('sfx')!.authored : comp);
@@ -131,14 +130,6 @@ export function setMuted(on: boolean) {
   store(MUTED_KEY, on ? '1' : '0');
   applyVolume();
 }
-/** User category volume remains independent of author calibration and temporary ducks. */
-export function setBusVolume(bus: Bus, value: number) {
-  if (!Number.isFinite(value)) return;
-  const v = clamp(value, 0, 1);
-  userVolumes.set(bus, v);
-  const nodes = buses.get(bus);
-  if (nodes) smooth(nodes.user.gain, v * v);
-}
 export function audioSnapshot() {
   return {
     context: ctx?.state ?? 'locked',
@@ -153,7 +144,7 @@ export function audioSnapshot() {
       return {
         bus,
         authoredDb: authoredDb(bus),
-        userVolume: userVolumes.get(bus),
+        userVolume: 1,
         duckDb: duckDb(bus),
         authoredGain: nodes?.authored.gain.value ?? null,
         userGain: nodes?.user.gain.value ?? null,
