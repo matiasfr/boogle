@@ -4,6 +4,7 @@
 // and takes its piece when the kit arrives. With `mats` or `contact` and no kit, the same routing draws today's unit boxes
 // with those looks. The machine keeps its cars' sizes, so its colliders still fit. Local and cosmetic.
 import * as THREE from 'three/webgpu';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { guardInstances } from '../../render/draw-count.ts';
 import kitUrl from '../../../assets/built/place-kit.glb?url';
 import { onFrame } from '../../loop.ts';
@@ -28,6 +29,23 @@ let loadedKit: THREE.Object3D | null = null;
 function kitGeometry(name: string) {
   const cached = baked.get(name);
   if (cached) return cached;
+  if (name.startsWith('feeder_steel:')) {
+    const span = Number(name.split(':')[1]);
+    const parts = [kitGeometry('feeder_bed').clone()];
+    for (let k = 0; k < Math.round(span / 0.3); k++)
+      parts.push(
+        kitGeometry('roller')
+          .clone()
+          .translate((k + 0.5) * 0.3 - span / 2, 0.58, 0),
+      );
+    // Contact colour was baked on each original piece, before placement. The steel
+    // material has no local-position grain or instance-index variation to preserve.
+    const geometry = mergeGeometries(parts);
+    for (const part of parts) part.dispose();
+    if (!geometry) throw new Error('Place feeder has incompatible attributes');
+    baked.set(name, geometry);
+    return geometry;
+  }
   const src = loadedKit?.getObjectByName(name);
   let found: THREE.Mesh | undefined;
   src?.traverse((o) => {
@@ -269,7 +287,9 @@ export function stationKit(
     );
   stationPict.instanceMatrix.needsUpdate = true;
   stationPict.computeBoundingSphere();
-  at('feeder_bed', BED, 0, 0, 0, feederAt);
+  // With mats enabled BED and ROLLER have identical effective steel colour,
+  // roughness and metalness. With mats off their authored paints differ.
+  at(LOOK.mats ? `feeder_steel:${SPAN}` : 'feeder_bed', BED, 0, 0, 0, feederAt);
   if (corner) {
     // Rough Station 3 composition: two existing bottom-pivoted timbers lead the eye from receiver to machine.
     // Local only. Inside the unchanged feeder collider: length SPAN, width 0.9, top 0.56. Rollers stay exposed.
@@ -282,7 +302,7 @@ export function stationKit(
     }
   }
   const rollers = Math.round(SPAN / 0.3);
-  for (let k = 0; k < rollers; k++) at('roller', ROLLER, (k + 0.5) * 0.3 - SPAN / 2, 0.58, 0, feederAt);
+  if (!LOOK.mats) for (let k = 0; k < rollers; k++) at('roller', ROLLER, (k + 0.5) * 0.3 - SPAN / 2, 0.58, 0, feederAt);
   for (const dx of [-SPAN / 2 + 0.2, SPAN / 2 - 0.2]) at('feeder_leg', DARK, dx, 0, 0, feederAt);
 }
 const STATION_PIECES = 64, // the most of a piece, all stations together; only what's placed is drawn
