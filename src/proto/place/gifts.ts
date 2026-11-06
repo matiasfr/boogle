@@ -1268,7 +1268,7 @@ function updateShow(dt: number) {
     }
     confettiBurst(s.x, s.y + 0.8, s.z);
     sparkles(s.x, s.y + 0.8, s.z, 34, 6);
-    dustRing(s.x, s.y + 0.1, s.z, 12, 3.2, 0.45);
+    dustRing(s.x, s.y + 0.1, s.z, 12, 3.2, 0.45, readableIntensity() * 0.5); // bright with the confetti, not the grey-brown it shows at exposure one
     placeSound(s.tier === 'wonder' ? 'boxWonder' : s.tier === 'rare' ? 'boxRare' : 'boxCommon', s.x, s.z);
     flash.visible = shaft.visible = true;
     flash.position.set(s.x, s.y + 0.9, s.z);
