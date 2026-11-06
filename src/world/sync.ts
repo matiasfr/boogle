@@ -434,21 +434,23 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     saveSoon();
   }
   // The host's (or a local world's) room clock: advance by ms of real time in whole 60 Hz steps (at most 5 rule ticks'
-  // worth per call). Every RULE_STEPS steps runs one rule tick; a tick a durable write holds back runs on the first
-  // step after it clears, so the step counter (tick * RULE_STEPS + phase) only ever moves forward. onStep listeners
-  // run after every step, rules or not: the end-of-step flush of replication (docs/plans/replication.md).
+  // worth per call). Every RULE_STEPS steps runs one rule tick. While a durable write holds the production clock, the
+  // step is not counted at all (as updateWorld always dropped that time), so a railway room under write back-pressure
+  // runs no closer to real time than before, and the step counter (tick * RULE_STEPS + phase) never repeats a value.
+  // onStep listeners run after every counted step, rules or not: the end-of-step flush of replication
+  // (docs/plans/replication.md).
   function stepWorld(ms: number) {
     if (mode === 'client') throw new Error('stepWorld drives the host clock; a client follows it with updateWorld');
     fixedSteps.advance(ms, hostStep);
   }
   function hostStep() {
     wall += STEP_MS;
-    // A production clock cannot overtake an unpublished stamp or a replacement checkpoint (as in updateWorld).
-    const blocked =
-      mode === 'host' && !!cfg.recovery && (recoveryPending || !!recoveryError || out.length > 0 || !ready);
-    if (!blocked) releaseHeld();
+    // A production clock cannot overtake an unpublished stamp or a replacement checkpoint.
+    if (mode === 'host' && cfg.recovery && (recoveryPending || recoveryError || out.length || !ready)) return;
+    releaseHeld();
+    if (!ready) return;
     if (phase < RULE_STEPS - 1) phase++;
-    else if (ready && !blocked) {
+    else {
       step();
       phase = 0;
       saveSoon();
