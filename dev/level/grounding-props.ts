@@ -174,6 +174,7 @@ export async function checkPropGrounding() {
     sampleFootprint,
     GROUP: { SCENERY: 2 },
     FLAT: () => mat,
+    paletteMaterial: (source: THREE.Material) => source,
     spireRock: (s: string) => s,
     scene: { add: (m: THREE.Mesh) => shore.push(m) },
     addStatic: () => {},

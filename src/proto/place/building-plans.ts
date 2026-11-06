@@ -32,12 +32,13 @@ type Parter = (
   color: string,
   tilt?: THREE.Euler,
 ) => Box;
-function parter(x: number, y: number, z: number, yaw: number): Parter {
+function parter(x: number, y: number, z: number, yaw: number, palette?: Box['palette']): Parter {
   const cos = Math.cos(yaw),
     sin = Math.sin(yaw);
   return (dx, dy, dz, w, h, d, color, tilt) => {
     const b = boxAt(x + dx * cos + dz * sin, y, z - dx * sin + dz * cos, place(0, dy, 0, w, h, d, yaw, tilt), color);
     b.y = y;
+    b.palette = palette;
     return b;
   };
 }
@@ -54,6 +55,7 @@ function poles(part: Parter, w: number, d: number, top: number, every: number) {
     }
   // A walkway along the front, where the little guys hammer.
   out.push(part(0, every + 0.14, (d + 1.4) / 2, w + 1.4, 0.08, 0.7, PLANK));
+  for (const box of out) box.palette = 'timber';
   return out;
 }
 /** The solid part of `poles`. */
@@ -76,6 +78,9 @@ export type HouseSpec = {
   wall: string;
   post: string;
   roof: string;
+  /** Authored Local surface roles; tinted walls can deliberately remain outside the palette study. */
+  wallPalette?: Box['palette'];
+  postPalette?: Box['palette'];
   /** A gap in the +z wall. */
   door?: { w: number; rows: number; x?: number };
   /** The forge's stands open. */
@@ -94,7 +99,12 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
   const floor = s.floor ?? FLOOR;
   const yaw = s.yaw ?? 0,
     y = ground,
-    part = parter(x, y, z, yaw);
+    part = parter(x, y, z, yaw, s.postPalette ?? 'timber'),
+    wallPart = parter(x, y, z, yaw, s.wallPalette),
+    roofPart = parter(x, y, z, yaw, 'roofs'),
+    stonePart = parter(x, y, z, yaw, 'stone'),
+    detailPart = parter(x, y, z, yaw),
+    timberPart = parter(x, y, z, yaw, 'timber');
   const pieces: Box[] = [];
   const postsZ = Math.max(1, Math.round(w / 5)),
     postsX = Math.max(1, Math.round(d / 4));
@@ -125,39 +135,39 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
     for (let k = 0; k < boardsW; k++) {
       const bw = w / boardsW;
       pieces.push(
-        part(-w / 2 + (k + 0.5) * bw + (k === 0 || k === boardsW - 1 ? 0 : off), yy, -d / 2, bw, h, 0.18, wall),
+        wallPart(-w / 2 + (k + 0.5) * bw + (k === 0 || k === boardsW - 1 ? 0 : off), yy, -d / 2, bw, h, 0.18, wall),
       );
     }
     for (let k = 0; k < boardsD; k++) {
       const bd = d / boardsD;
-      for (const sx of [-1, 1]) pieces.push(part((sx * w) / 2, yy, -d / 2 + (k + 0.5) * bd, 0.18, h, bd, wall));
+      for (const sx of [-1, 1]) pieces.push(wallPart((sx * w) / 2, yy, -d / 2 + (k + 0.5) * bd, 0.18, h, bd, wall));
     }
     const gap = s.door && row < s.door.rows ? s.door.w : 0;
     if (gap) {
       for (const sx of [-1, 1]) {
         const edge = (s.door?.x ?? 0) + (sx * gap) / 2;
         const side = w / 2 - sx * edge;
-        pieces.push(part(edge + (sx * side) / 2, yy, d / 2, side, h, 0.18, wall));
+        pieces.push(wallPart(edge + (sx * side) / 2, yy, d / 2, side, h, 0.18, wall));
       }
     } else
       for (let k = 0; k < boardsW; k++) {
         const bw = w / boardsW;
-        pieces.push(part(-w / 2 + (k + 0.5) * bw, yy, d / 2, bw, h, 0.18, wall));
+        pieces.push(wallPart(-w / 2 + (k + 0.5) * bw, yy, d / 2, bw, h, 0.18, wall));
       }
   }
   if (s.windows) {
     const wy = floor + (high - floor) * 0.42;
     for (const sx of [-1, 1]) {
-      pieces.push(part(sx * (w / 2 + 0.04), wy, 0, 0.14, 1, Math.min(1.3, d * 0.3), s.windows));
+      pieces.push(detailPart(sx * (w / 2 + 0.04), wy, 0, 0.14, 1, Math.min(1.3, d * 0.3), s.windows));
       pieces.push(part(sx * (w / 2 + 0.08), wy - 0.08, 0, 0.14, 0.08, Math.min(1.6, d * 0.34), post));
       if (w > 5) {
-        pieces.push(part(sx * w * 0.27, wy, d / 2 + 0.04, 1.1, 1, 0.14, s.windows));
+        pieces.push(detailPart(sx * w * 0.27, wy, d / 2 + 0.04, 1.1, 1, 0.14, s.windows));
         pieces.push(part(sx * w * 0.27, wy - 0.08, d / 2 + 0.08, 1.4, 0.08, 0.14, post));
       }
     }
   }
   if (s.door && s.closed !== false)
-    pieces.push(part(s.door.x ?? 0, floor, d / 2 - 0.02, s.door.w, s.door.rows * h, 0.1, '#5c3a20'));
+    pieces.push(timberPart(s.door.x ?? 0, floor, d / 2 - 0.02, s.door.w, s.door.rows * h, 0.1, '#5c3a20'));
   const WALLS = pieces.length;
   // Gable ends, then boards up each slope, then the ridge.
   const eave = d / 2 + 0.5,
@@ -172,9 +182,9 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
     gableRise = (rise * gableDepth) / (2 * eave),
     shoulder = high + 0.36 + rise - gableRise + 0.01;
   for (const sx of [-1, 1]) {
-    pieces.push(part((sx * w) / 2, high + 0.3, 0, 0.16, shoulder - high - 0.3, gableDepth, wall));
+    pieces.push(wallPart((sx * w) / 2, high + 0.3, 0, 0.16, shoulder - high - 0.3, gableDepth, wall));
     for (let k = 0; k < 2; k++) {
-      const b = part(
+      const b = wallPart(
         (sx * w) / 2,
         shoulder + (k * gableRise) / 2,
         0,
@@ -192,7 +202,7 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
     const dx = -w / 2 - 0.4 + ((k + 0.5) * (w + 0.8)) / boards;
     for (const sz of [-1, 1])
       pieces.push(
-        part(
+        roofPart(
           dx,
           high + 0.36 + rise / 2,
           (sz * eave) / 2,
@@ -210,7 +220,7 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
   if (s.chimney) {
     const c = s.chimney;
     const start = Math.max(floor, high - 1.4);
-    for (let k = 0; k < c.n; k++) pieces.push(part(c.dx, start + k, c.dz, 1.15, 1, 1.15, k % 2 ? c.a : c.b));
+    for (let k = 0; k < c.n; k++) pieces.push(detailPart(c.dx, start + k, c.dz, 1.15, 1, 1.15, k % 2 ? c.a : c.b));
     const cos = Math.cos(yaw),
       sin = Math.sin(yaw);
     smoke = { x: x + c.dx * cos + c.dz * sin, y: y + start + c.n, z: z - c.dx * sin + c.dz * cos };
@@ -221,7 +231,7 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
     z,
     yaw,
     scaffold: [
-      part(0, -1, 0, w + 1.6, floor + 1, d + 1.6, '#b2ad9f'),
+      stonePart(0, -1, 0, w + 1.6, floor + 1, d + 1.6, '#b2ad9f'),
       ...poles(part, w, d, s.poleTop ?? high + rise + 0.8, 1.8),
     ],
     pieces,
@@ -248,14 +258,15 @@ export type TowerSpec = {
   course: number;
   a: string;
   b: string;
+  palette?: Box['palette'];
   /** Stacked on top: each a block `w` wide and `h` high. */
-  tops: { w: number; h: number; color: string }[];
+  tops: { w: number; h: number; color: string; palette?: Box['palette'] }[];
 };
 /** A landmark: posts in lengths, courses going round, then what crowns it. */
 export function towerPlan(s: TowerSpec, ground: number): Plan {
   const { x, z, w, high, course, a, b } = s;
   const y = ground,
-    part = parter(x, y, z, 0);
+    part = parter(x, y, z, 0, s.palette);
   const pieces: Box[] = [];
   const lengths = Math.ceil(high / 6);
   for (let k = 0; k < lengths; k++)
@@ -275,7 +286,9 @@ export function towerPlan(s: TowerSpec, ground: number): Plan {
   const WALLS = pieces.length;
   let yy = high;
   for (const t of s.tops) {
-    pieces.push(part(0, yy, 0, t.w, t.h, t.w, t.color));
+    const box = part(0, yy, 0, t.w, t.h, t.w, t.color);
+    box.palette = t.palette;
+    pieces.push(box);
     yy += t.h;
   }
   return {
@@ -283,7 +296,10 @@ export function towerPlan(s: TowerSpec, ground: number): Plan {
     y,
     z,
     yaw: 0,
-    scaffold: [part(0, -1, 0, w + 2.4, FLOOR + 1, w + 2.4, '#b2ad9f'), ...poles(part, w, w, high + 2, 2.6)],
+    scaffold: [
+      parter(x, y, z, 0, 'stone')(0, -1, 0, w + 2.4, FLOOR + 1, w + 2.4, '#b2ad9f'),
+      ...poles(part, w, w, high + 2, 2.6),
+    ],
     pieces,
     FRAME,
     WALLS,
@@ -305,17 +321,18 @@ export type BlockSpec = {
   h: number;
   d: number;
   color: string;
+  palette?: Box['palette'];
 };
 /** Something plain and solid that drops in whole, in a few pieces: a log stack, a quarry face, a kiln's stack. */
 export function blockPlan(s: BlockSpec, ground: number, lifts = 1, top?: string): Plan {
   const yaw = s.yaw ?? 0,
     y = ground,
-    part = parter(s.x, y, s.z, yaw);
+    part = parter(s.x, y, s.z, yaw, s.palette);
   const pieces: Box[] = [];
   const rowH = s.h / lifts,
     y0 = s.y ?? 0;
   for (let k = 0; k < lifts; k++) pieces.push(part(0, y0 + k * rowH, 0, s.w, rowH, s.d, s.color));
-  if (top) pieces.push(part(0, y0 + s.h, 0, s.w + 0.6, 0.5, s.d + 0.6, top));
+  if (top) pieces.push(parter(s.x, y, s.z, yaw)(0, y0 + s.h, 0, s.w + 0.6, 0.5, s.d + 0.6, top));
   return {
     x: s.x,
     y,
