@@ -2,7 +2,7 @@
 import { TUNABLES, type TuneKey } from '../sim/tune.ts';
 import { EXPOSURE_SPEC } from '../render/exposure-tuning.ts';
 import { FEEL_SPRING_SPEC } from '../player/feel-tuning.ts';
-import { LIGHTING_SPECS } from '../render/lighting-tuning.ts';
+import { LIGHTING_SPECS, SKY_AUTHORING_SPECS } from '../render/lighting-tuning.ts';
 import { VIEW_SPECS } from '../render/view-tuning.ts';
 import { AUDIO_SPECS } from '../render/audio-tuning.ts';
 import { COVE_SPECS } from './terrain.ts';
@@ -118,6 +118,7 @@ export const CATALOG: readonly NumberSpec[] = [
   EXPOSURE_SPEC,
   ...LIGHTING_SPECS,
   ...VIEW_SPECS,
+  ...SKY_AUTHORING_SPECS,
   ...AUDIO_SPECS,
   ...COVE_SPECS,
   FEEL_SPRING_SPEC,

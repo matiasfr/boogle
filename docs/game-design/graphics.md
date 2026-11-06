@@ -147,7 +147,17 @@
   `sky.fillGain` (0–8, defaults 1.12 and 3.2). It reports per-control revisions and sources; no in-game UI is added.
   The frozen-shot queue validates patches, flushes the light owner's presentation without advancing simulation
   or shader time, and records actual directional/hemisphere light state. Exposure stays `post.centre=0.12` in
-  the first town wedge. Ordinary lighting defaults and the baked sky remain unchanged.
+  the first town wedge.
+- **Owner-selected cloud and light defaults (6 November).** The production late-morning sky uses cloud/warmth
+  cell 5: `sky.cloudBrightness=0.8` and `sky.lightColourProfile=1` (neutral). Runtime startup and the tunables
+  catalog share those defaults. The owner kept the earlier town board's cell 1: surface gain `.12`, key `1.12`,
+  fill `3.2`; Neutral tone mapping and underwater `+0.81 EV` remain. Cloud radiance is reduced before atmospheric
+  compositing and the sky-derived fill is re-read at loading; shape and coverage stay fixed. Neutral replaces
+  key, upper-fill and ground-fill chromaticity with equal linear RGB while preserving each source light's
+  luminance. It is not a Kelvin setting or a warm post grade. Material colours and the separate airborne arrival
+  cloud deck are unchanged. `dev/look/beats/cloud-defaults.ts` compares the old `1/0` settings against unpatched
+  production defaults at spawn, town and shore on the same frozen current-source scene. Device appearance and
+  real-time feel require owner replay; a successful capture is not device validation.
 - **Measurement and hitches.** Graphics **Measure on/off** uses Performance's real-frame profiler for warmed
   on/off/off/on samples, freezes resolution and Display cadence during collection, then restores prior Dev
   overrides. It reports frame-interval proxy, CPU submission and GPU timestamp span separately, never summed

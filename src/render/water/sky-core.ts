@@ -12,6 +12,7 @@ export type SkyParams = {
   turbidity: number;
   rayleigh: number;
   cloudCoverage: number;
+  cloudBrightness: number;
   sunIntensity: number;
 };
 export type SkyCubeSize = 256 | 512 | 1024;
@@ -50,6 +51,7 @@ export function createWaterSkyFor(
     turbidity: 2,
     rayleigh: 1,
     cloudCoverage: 0.38,
+    cloudBrightness: 1,
     sunIntensity: 9,
   };
   const atmosphere = new Atmosphere();
@@ -57,6 +59,7 @@ export function createWaterSkyFor(
   const sunColor = uniform(new THREE.Vector3(1, 1, 1));
   const illum = uniform(Math.PI * params.sunIntensity),
     coverage = uniform(params.cloudCoverage),
+    cloudBrightness = uniform(params.cloudBrightness),
     face = uniform(0, 'int');
   const maxMip = Math.log2(cubeSize);
   const cubeTarget = new THREE.CubeRenderTarget(cubeSize, {
@@ -157,7 +160,7 @@ export function createWaterSkyFor(
       ms = clamp(sunDirection.y.mul(r0).add(t.mul(cs)).div(rc), -1, 1);
     const visible = step(-Math.sqrt(2.5 * (2 * RB + 2.5)) / rc, ms);
     const light = trans(float(2.5), ms).mul(illum).mul(visible).mul(0.22);
-    const cloud = up.add(light.mul(shade.add(silver.mul(edge).mul(0.6))));
+    const cloud = up.add(light.mul(shade.add(silver.mul(edge).mul(0.6)))).mul(cloudBrightness);
     const tv = clamp(trans(float(OBS_H), max(d.y, 0)).div(max(trans(float(2.5), mv), vec3(1e-4))), 0, 1);
     col.assign(mix(col, mix(col, cloud, tv), alpha));
     return select(d.y.lessThan(0), vec4(down, 1), vec4(col, alpha.oneMinus()));
@@ -211,6 +214,7 @@ export function createWaterSkyFor(
       sunColor.value.copy(radiance);
     },
     inspect: () => ({
+      params: { ...params },
       bakes,
       bakeMs,
       cubeSize,
@@ -243,6 +247,7 @@ export function createWaterSkyFor(
           .multiplyScalar(params.sunIntensity * THREE.MathUtils.smoothstep(params.elevation, -2, 2));
         illum.value = Math.PI * params.sunIntensity;
         coverage.value = params.cloudCoverage;
+        cloudBrightness.value = params.cloudBrightness;
         const started = performance.now();
         atmosphere.update(params, sunDirection.value.y, illum.value);
         const target = renderer.getRenderTarget(),

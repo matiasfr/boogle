@@ -3,6 +3,7 @@ import type { Value } from '../../src/render/water/live.ts';
 
 export type ShotCamera = {
   name: string;
+  snapshot?: string;
   anchor?: 'player';
   cam: [number, number, number];
   look: [number, number, number];

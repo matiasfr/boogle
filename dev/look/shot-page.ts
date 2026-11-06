@@ -41,7 +41,7 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
   const { tool: tunables } = (await import(
     '/src/debug/dev/tunables.ts' as string
   )) as typeof import('../../src/debug/dev/tunables.ts');
-  const { flushFrozenLighting } = (await import(
+  const { flushFrozenLighting, prepareFrozenLighting } = (await import(
     '/src/render/water/frozen-sky.ts' as string
   )) as typeof import('../../src/render/water/frozen-sky.ts');
   warp.pause();
@@ -80,6 +80,12 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
   const player = (await import('/src/player/player.ts' as string)) as typeof import('../../src/player/player.ts');
   const origin = player.me.body?.position;
   const cameras = group.cameras.map((pose) => {
+    if (pose.snapshot) {
+      const saved = scene.userData[pose.snapshot] as typeof pose | undefined;
+      if (!saved || ![...saved.cam, ...saved.look, saved.fov ?? 62].every(Number.isFinite))
+        throw new Error('Missing gameplay camera snapshot: ' + pose.snapshot);
+      return { ...saved, name: pose.name };
+    }
     if (!pose.anchor) return pose;
     if (!origin) throw new Error('Player anchor unavailable');
     return {
@@ -170,6 +176,7 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
       if (!read.ok || (read.data as { value: number }).value !== value)
         throw new Error('Tunable readback differs: ' + id);
     }
+    await prepareFrozenLighting();
     const lighting = flushFrozenLighting();
     // Validate after ALL mutations: a live binding may also control a registered graphics owner.
     for (const [id, value] of Object.entries(variant.graphics ?? {})) {
@@ -354,6 +361,7 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
         warmMs,
         stages,
         baseline,
+        fixture: scene.userData.lookFixture ?? null,
         wedge: group.wedge,
         reference: group.reference && { ...group.reference, image: undefined },
         totalMs: wall() - started,
@@ -372,6 +380,7 @@ export async function captureShots(group: ShotGroup, paint: typeof paintNative) 
     await looks.run('select', { id: originalLook.selected });
     for (const [id, value] of originalValues)
       if (JSON.stringify(bindings.get(id)?.get()) !== JSON.stringify(value)) bindings.get(id)?.set(value);
+    await prepareFrozenLighting();
     flushFrozenLighting();
     await looks.run('lock', { locked: originalLook.exposure.locked });
     await graphics.restoreGraphics(originalGraphics);

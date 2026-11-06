@@ -14,12 +14,18 @@ import { bind, tuningEnabled } from './live.ts';
 import { eveningPreview, prepareEvening, skyCubeSize, toySkyEnabled } from './flags.ts';
 import { toySky } from './toy.ts';
 import { bootMark } from '../../boot/timeline.ts';
-import { LIGHTING_SPECS } from '../lighting-tuning.ts';
+import { LIGHTING_SPECS, SKY_AUTHORING_SPECS } from '../lighting-tuning.ts';
 import { createEveningTransition } from './evening-transition.ts';
 
 export const WATER_TOD = 0.24;
 export let frozenSkyActive = false;
 let flushLighting: (() => void) | undefined;
+let prepareLighting: (() => Promise<void>) | undefined;
+let inspectSky: (() => unknown) | undefined;
+/** Finish queued Local sky preparation without advancing game or shader time. */
+export async function prepareFrozenLighting() {
+  await prepareLighting?.();
+}
 /** Local presentation only: no world tick, shader time, sky bake or transition advancement. */
 export function flushFrozenLighting() {
   if (!flushLighting) throw new Error('Frozen lighting is not ready');
@@ -28,6 +34,7 @@ export function flushFrozenLighting() {
   return {
     key: { intensity: sun.intensity, color: sun.color.toArray(), position: sun.position.toArray() },
     fill: { intensity: hemi.intensity, color: hemi.color.toArray(), ground: hemi.groundColor.toArray() },
+    sky: inspectSky?.(),
   };
 }
 const noon = new THREE.Vector3(0.45, 0.78, 0.32).normalize();
@@ -58,6 +65,7 @@ export function createFrozenWaterSky() {
   direction.copy(east).multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
   // Local loading-time comparison only. Today's 1024 sky remains the default until visual review passes.
   const environment = createWaterSky(toySkyEnabled ? toySky : undefined, skyCubeSize);
+  environment.params.cloudBrightness = SKY_AUTHORING_SPECS[0]!.default;
   environment.params.elevation = THREE.MathUtils.radToDeg(Math.asin(direction.y));
   environment.params.azimuth = THREE.MathUtils.radToDeg(Math.atan2(direction.x, direction.z));
   const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as
@@ -87,15 +95,25 @@ export function createFrozenWaterSky() {
   let transition: ReturnType<typeof createEveningTransition> | undefined;
   const filtered: THREE.RenderTarget[] = [];
   let selectedEnvironment: THREE.Texture = environment.cube;
-  // Owner's round-two light choice, 5 November: local scene lights, not a sky rebake.
+  // Owner: retain round-two gains (5 November), select neutral light colour (6 November).
   const lighting = {
     keyGain: LIGHTING_SPECS[0]!.default,
     fillGain: LIGHTING_SPECS[1]!.default,
     keyTint: new THREE.Color(1, 1, 1),
     fillTint: new THREE.Color(1, 1, 1),
+    lightColourProfile: SKY_AUTHORING_SPECS[1]!.default,
+  };
+  // Linear RGB endpoints normalized to preserve each source light's luminance.
+  const luma = (c: THREE.Color) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+  const colourProfile = (c: THREE.Color) => {
+    if (!lighting.lightColourProfile) return;
+    const y = luma(c);
+    if (lighting.lightColourProfile === 1) c.setRGB(1, 1, 1);
+    else c.setRGB(0.9, 0.97, 1.1);
+    c.multiplyScalar(y / luma(c));
   };
   if (tuningEnabled) {
-    for (const key of ['keyGain', 'fillGain'] as const)
+    for (const key of ['keyGain', 'fillGain', 'lightColourProfile'] as const)
       bind(
         `sky.${key}`,
         () => lighting[key],
@@ -140,6 +158,7 @@ export function createFrozenWaterSky() {
     sun.color.setRGB(c.x / r, c.y / r, c.z / r);
     sun.intensity = Math.PI * r;
     sun.color.multiply(lighting.keyTint);
+    colourProfile(sun.color);
     sun.intensity *= lighting.keyGain;
     sun.shadow.intensity = 1;
     sun.shadow.autoUpdate = true;
@@ -147,8 +166,11 @@ export function createFrozenWaterSky() {
     if (hemi) {
       hemi.color.copy(upper);
       hemi.color.multiply(lighting.fillTint);
+      colourProfile(hemi.color);
       hemi.color.lerp(CAVE.sky, ug);
-      hemi.groundColor.copy(lower).lerp(CAVE.ground, ug);
+      hemi.groundColor.copy(lower);
+      colourProfile(hemi.groundColor);
+      hemi.groundColor.lerp(CAVE.ground, ug);
       hemi.intensity = Math.PI * THREE.MathUtils.lerp(1, 0.8, ug);
       hemi.intensity *= THREE.MathUtils.lerp(lighting.fillGain, 1, ug);
     }
@@ -255,15 +277,27 @@ export function createFrozenWaterSky() {
   const ready = rendererReady.then(prepare);
   let pending = ready;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let dirtySky = false;
+  const flushSky = () => {
+    if (timer) clearTimeout(timer);
+    timer = undefined;
+    if (dirtySky) {
+      dirtySky = false;
+      pending = pending.then(bake);
+    }
+    return pending;
+  };
+  prepareLighting = flushSky;
+  inspectSky = environment.inspect;
   const scheduleBake = (change: () => void) => {
     // Authoring rebakes and prepared endpoints must not mutate one another.
     if (evening) return;
     change();
+    dirtySky = true;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = undefined;
-      pending = pending
-        .then(bake)
+      void flushSky()
         .then(() => {
           window.dispatchEvent(new CustomEvent('water-tuning-status', { detail: 'Sun & sky rebaked.' }));
         })
@@ -295,6 +329,19 @@ export function createFrozenWaterSky() {
         });
       },
     );
+  // Prepared evening endpoints are immutable; an unavailable edit must not claim success.
+  if (!evening)
+    bind(
+      'sky.cloudBrightness',
+      () => environment.params.cloudBrightness,
+      (value) => {
+        if (typeof value !== 'number' || !Number.isFinite(value) || value < 0.6 || value > 1)
+          throw new Error('Cloud brightness must be within 0.6–1');
+        scheduleBake(() => {
+          environment.params.cloudBrightness = value;
+        });
+      },
+    );
   return {
     sky: environment,
     ready,
@@ -308,6 +355,10 @@ export function createFrozenWaterSky() {
       transition: transition?.inspect(),
     }),
     dispose() {
+      if (prepareLighting === flushSky) {
+        prepareLighting = undefined;
+        inspectSky = undefined;
+      }
       if (flushLighting === update) flushLighting = undefined;
       if (disposed) return;
       disposed = true;
