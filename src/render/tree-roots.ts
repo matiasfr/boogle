@@ -21,6 +21,14 @@ export function createTreeRoots(
         d = b + n;
       indices.push(a, b, c, b, d, c);
     }
+    // A fallen hardwood has a narrower stump. Keep its exposed root shoulder solid from above.
+    // Separate cap vertices preserve upright side normals; all authored rings are star-shaped about their centre.
+    const cap = positions.length / 3;
+    const cx = footprint.reduce((sum, p) => sum + p[0], 0) / n;
+    const cz = footprint.reduce((sum, p) => sum + p[1], 0) / n;
+    positions.push(cx, t.y + 0.02, cz);
+    for (const [x, z] of footprint) positions.push(x, t.y + 0.02, z);
+    for (let k = 0; k < n; k++) indices.push(cap, cap + 1 + k, cap + 1 + ((k + 1) % n));
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));

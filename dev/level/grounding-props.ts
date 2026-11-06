@@ -104,16 +104,15 @@ export async function checkPropGrounding() {
   );
   const crane = models.craneModel(),
     rack = models.rackModel();
-  for (const [id, group] of [
-    ['crane', crane.crane],
-    ['rack', rack.rackPosts],
+  for (const [id, group, expected] of [
+    ['crane', crane.crane, 1],
+    ['rack', rack.rackPosts, 4],
   ] as const) {
     group.updateMatrixWorld(true);
     let n = 0;
     group.traverse((obj) => {
-      if (!(obj instanceof THREE.Mesh)) return;
+      if (!(obj instanceof THREE.Mesh) || !obj.name.startsWith(id + '/support-')) return;
       const bounds = new THREE.Box3().setFromObject(obj);
-      if (bounds.min.y > group.position.y + 0.05) return;
       rows.push({
         ...measure(
           `${id}/foot-${n++}`,
@@ -129,6 +128,7 @@ export async function checkPropGrounding() {
         supports: ['terrain'],
       });
     });
+    if (n !== expected) throw new Error(`${id}: expected ${expected} bearing meshes, found ${n}`);
   }
   // Inspect the shipped rack's decoded post vertices, including node transforms and bevels.
   await MeshoptDecoder.ready;
@@ -140,8 +140,10 @@ export async function checkPropGrounding() {
   const rx = RECOVERY_RACK.x / 100,
     rz = RECOVERY_RACK.z / 100,
     ry = H(rx, rz);
+  let recoveryPosts = 0;
   for (const node of doc.getRoot().listNodes()) {
     if (!node.getName().startsWith('post_')) continue;
+    recoveryPosts++;
     const matrix = new THREE.Matrix4().fromArray(node.getWorldMatrix()),
       points: THREE.Vector3[] = [];
     for (const primitive of node.getMesh()?.listPrimitives() ?? []) {
@@ -157,6 +159,7 @@ export async function checkPropGrounding() {
       supports: ['terrain (25 mm bevel)'],
     });
   }
+  if (recoveryPosts !== 4) throw new Error(`Recovery rack: expected four bearing posts, found ${recoveryPosts}`);
   // Cove supports are constructed by the production function; omit only terrain and mounted deck boards.
   const shore: THREE.Mesh[] = [];
   let coveUnderside = Infinity;

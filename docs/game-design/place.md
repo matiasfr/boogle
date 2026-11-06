@@ -52,7 +52,9 @@ The audit also checks opening prop supports, attached arch/cart/lookout pieces, 
 and station-kit feet, cove supports, bridge bank bearings, the settled reward crate and every standing tree root. Connected scenery shares one
 assembly height; piers reach down to terrain, and the cart rests on a small level shoulder. Tree centres use the actual
 terrain triangle instead of the catalog's rounded grid height. Batched root skirts reach the downhill edge while the
-uphill soil may bury the lower trunk. Tree identity and catalog ordering stay unchanged; these are Local geometry and
+uphill soil may bury the lower trunk. Root shoulders stay capped when the narrower felled stump is exposed. The audit
+selects named crane/rack bearing meshes independently of their height and requires their expected counts, so a raised
+or missing post cannot silently disappear from the check. Tree identity and catalog ordering stay unchanged; these are Local geometry and
 collision changes. Moving cargo, vehicles, floating collectibles, distant landforms and future town growth are outside
 this static support audit.
 
