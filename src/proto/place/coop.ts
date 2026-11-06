@@ -3,7 +3,7 @@
 // recommendations 2, 3, 9, 11 and 12. Without the flag every hook here is a no-op and nothing is sent.
 //
 // How it stays together, cheapest thing that works:
-// - One authority: the oldest visible coop tab (presence key `placeCoopCargo2`, the world tick it got here). Not the room's lead,
+// - One authority: the oldest visible compatible coop tab (COOP_IDENTITY, the world tick it got here). Not the room's lead,
 //   which could be a tab without the flag, and not the lowest id, which a newcomer could take. It is the only tab that
 //   accepts a deposit, starts a station's run and ends a stretch, so the last log can't start two runs and a frame can't
 //   overfill: a deposit it can't take goes back on the sender's back.
@@ -11,8 +11,8 @@
 //   an explicit rejection or actual peer removal returns a pending piece, never a wall-clock timeout.
 // - Tree harvest is accepted once by that authority before material is awarded. A follower reserves capacity until its
 //   matching receipt arrives; duplicate receipts cannot issue another log. The rest of the prototype still runs locally.
-// - Cargo uses a versioned whole-place message/presence identity. Legacy clients remain visible in the underlying room,
-//   but neither elect nor apply this prototype's state. This is still local-save prototype persistence, not server lockstep.
+// - Cargo uses a versioned whole-place message/presence identity. WORLD_NS also separates incompatible transport rooms,
+//   including their seat Host authority. This is still local-save prototype persistence, not server lockstep.
 // - Once a second the authority sends the whole shared state (`captureShared`, ./job.ts: every slice registered there, so a new
 //   system's state comes along for free). A newcomer takes it and is caught up, a follower that stays different for a few
 //   seconds is put right, and a follower that takes over already has everything it needs.

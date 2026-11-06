@@ -4,6 +4,16 @@ import assert from 'node:assert/strict';
 import { WORLD_NS, worldRoomId } from '../src/world/namespace.ts';
 import { isPlayableRailwayRoom, isRailwayRoom, railwayRoomId } from '../src/world/railway-namespace.ts';
 
+test('panel builds cannot share transport lead or world saves with pre-panel v07 builds', () => {
+  for (const room of ['default', 'proto-place-coop', 'private-friends', 'a'.repeat(32)]) {
+    const current = worldRoomId(room);
+    // v07 used the same room-name shortening rule. Its prefix is a frozen mixed-build fixture.
+    const legacy = current.replace(/^[^-]+-/, 'v07-');
+    assert.notEqual(current, legacy, `old room lead must not arbitrate machine seats in ${room}`);
+    assert.ok(!current.startsWith('v07-'), 'custom/long names cannot bypass the isolation');
+  }
+});
+
 test('world room ids are namespaced and stay inside [a-z0-9-]{1,32}', () => {
   assert.equal(worldRoomId('beach'), `${WORLD_NS}-beach`);
   assert.match(WORLD_NS, /^[a-z0-9]+$/, 'PeerJS ids allow no dots');

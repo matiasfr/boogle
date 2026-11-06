@@ -7,14 +7,14 @@ import { panelEase, panelPose } from './track-panels.ts';
 export const PANEL_BEAM_Y = 4;
 export const PANEL_STACK_X = 3.4;
 export const panelSlot = (n: number, out: THREE.Vector3) =>
-  out.set(n % 2 ? PANEL_STACK_X : -PANEL_STACK_X, 0.6 + Math.floor(n / 2) * 0.18, 0);
+  out.set(n % 2 ? PANEL_STACK_X : -PANEL_STACK_X, 0.6 + Math.floor(n / 2) * 0.09, 0);
 
 /** Stored panels share one 36-triangle slab/rail silhouette. The carried track stays detailed. */
 export function panelMagazine(capacity: number) {
   const geometry = merged([
-    ['b', 0, 0, 0, 2.3, 0.12, 1, '#c98a3e'],
-    ['b', -0.5, 0.1, 0, 0.1, 0.12, 1, '#4c5058'],
-    ['b', 0.5, 0.1, 0, 0.1, 0.12, 1, '#4c5058'],
+    ['b', 0, 0, 0, 2.3, 0.04, 1, '#c98a3e'],
+    ['b', -0.5, 0.04, 0, 0.1, 0.04, 1, '#4c5058'],
+    ['b', 0.5, 0.04, 0, 0.1, 0.04, 1, '#4c5058'],
   ]);
   const mat = material('paintedToy', { normals: 'authored' }).clone();
   mat.color.set('#ffffff');

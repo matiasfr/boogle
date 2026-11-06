@@ -1,4 +1,4 @@
-// Whole-place wire version: older peers can be visible without sharing this railway.
+// Whole-place wire version. WORLD_NS also isolates older room leads, including seat Host fields.
 // Keep publishing and every capability consumer on the same identity.
 export const COOP_IDENTITY = 'placeCoopPanels1';
 export function currentCoopPeer(pr: Record<string, unknown>): pr is Record<string, unknown> & {
