@@ -27,6 +27,7 @@ import {
 } from '../src/proto/place/machine-model.ts';
 import { MACHINE_REVIEW_SECONDS, machineReviewDistance } from './machine-motion.ts';
 import { panelMechanism } from '../src/proto/place/machine-panels.ts';
+import { carriedPiece, MAX_PANEL_LENGTH } from '../src/proto/place/track-panels.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = (id: string) => $<HTMLInputElement>(id);
@@ -200,7 +201,12 @@ function generic(asset: Asset): Preview {
   const machineFinish = state.asset === 'track-layer' ? dressMachine(group) : undefined;
   const machineWheels = state.asset === 'track-layer' ? machineWheelPivots(group).flat() : [];
   const machineRods = state.asset === 'track-layer' ? machineRodPivots(group) : [];
-  const panelRig = state.asset === 'track-layer' ? panelMechanism(group) : undefined;
+  const stageRail = new THREE.BoxGeometry(0.1, 0.12, 3.05).translate(0, 0.06, 0);
+  const stageSteel = new THREE.MeshStandardNodeMaterial({ color: '#4c5058', roughness: 0.45, metalness: 0.6 });
+  const panelRig =
+    state.asset === 'track-layer'
+      ? panelMechanism(group, (n) => new THREE.InstancedMesh(stageRail, stageSteel, n))
+      : undefined;
   if (panelRig) {
     const parts = new Map<string, THREE.Object3D>();
     group.traverse((part) => {
@@ -208,7 +214,12 @@ function generic(asset: Asset): Preview {
     });
     panelRig.install(parts);
   }
-  const panelTarget = new THREE.Vector3(0, 0, 9.5667);
+  // Inspection stand-in for the moving deck: an L1 panel seat and sweep start recede as the deck advances.
+  const stageSeat = new THREE.Vector3(),
+    stageStart = new THREE.Vector3();
+  const stagePanel = MAX_PANEL_LENGTH,
+    stageCarried = carriedPiece(stagePanel);
+  panelRig?.drawStack(12, Array(12).fill(stagePanel), true);
   // An axle-centred prop otherwise disappears halfway into the inspection floor. Its authored pivot stays intact.
   if (state.asset === 'feeder-roller') group.position.y = 0.075;
   const mixer = new THREE.AnimationMixer(group);
@@ -221,7 +232,13 @@ function generic(asset: Asset): Preview {
     if (diagnosticRate !== null) group.rotation.z = t * diagnosticRate;
     for (const wheel of machineWheels) wheel.rotation.x = wheelAngle(machineReviewDistance(t));
     poseMachineRods(machineRods, wheelAngle(machineReviewDistance(t)));
-    panelRig?.pose((t % 2.866667) / 2.866667, 12, panelTarget, 0);
+    if (panelRig) {
+      const phase = (t % 2.866667) / 2.866667,
+        back = 16.733333 - phase * stagePanel;
+      stageSeat.set(0, 0.1, stageCarried.centre + back);
+      stageStart.set(0, 0.1, 1.5 + back);
+      panelRig.pose(phase, 12, stageSeat, 0, 0, stageStart, stageCarried.length);
+    }
     if (action) {
       action.enabled = true;
       action.paused = false;

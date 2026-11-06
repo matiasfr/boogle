@@ -1,36 +1,25 @@
 // Local rigid transforms only. Both the live machine and asset stage use this choreography.
+// Storyboard beats: return, lower, pick, lift to gauge, travel, sweep (pieces fall as it passes), seat, contact.
 import * as THREE from 'three/webgpu';
-import { material } from '../../render/materials.ts';
-import { grainWarmVertices } from '../../render/wood.ts';
-import { merged } from './part-geometry.ts';
-import { panelEase, panelPose } from './track-panels.ts';
+import { carriedPiece, panelEase, panelPose } from './track-panels.ts';
 
 export const PANEL_BEAM_Y = 4;
-export const PANEL_STACK_X = 3.4;
-export const panelSlot = (n: number, out: THREE.Vector3) =>
-  out.set(n % 2 ? PANEL_STACK_X : -PANEL_STACK_X, 0.6 + Math.floor(n / 2) * 0.09, 0);
+/** The small rail stack on the gantry's shoulders: one pair per held stock unit, left rail left, right rail right.
+ * Six columns per side fill bottom-up, inner column first; the gantry takes the top pair. Rail bases, rig frame. */
+export const STACK = { y: 2.86, z: 1.5, x: 0.3, dx: 0.12, dy: 0.12, layers: 6, columns: 6 } as const;
+export const STACK_PAIRS = STACK.layers * STACK.columns;
+export const stackSlot = (n: number, side: number, out: THREE.Vector3) =>
+  out.set(side * (STACK.x + Math.floor(n / STACK.layers) * STACK.dx), STACK.y + (n % STACK.layers) * STACK.dy, STACK.z);
+/** Rail base below the jaw slide origin, and the closed jaw's rail centre. */
+const GRIP_Y = 0.23,
+  GRIP_X = 0.45,
+  GAUGE = 0.5,
+  SWEEP_Y = 1.5,
+  RAIL_KIT_LENGTH = 3.05;
+/** Kit rail batch: native 0.1 x 0.12 x 3.05 m, base origin. */
+export type RailBatch = (n: number) => THREE.InstancedMesh;
 
-/** Stored panels share one 36-triangle slab/rail silhouette. The carried track stays detailed. */
-export function panelMagazine(capacity: number) {
-  const geometry = merged([
-    ['b', 0, 0, 0, 2.3, 0.04, 1, '#c98a3e'],
-    ['b', -0.5, 0.04, 0, 0.1, 0.04, 1, '#4c5058'],
-    ['b', 0.5, 0.04, 0, 0.1, 0.04, 1, '#4c5058'],
-  ]);
-  const mat = material('paintedToy', { normals: 'authored' }).clone();
-  mat.color.set('#ffffff');
-  mat.vertexColors = true;
-  // The slab is the panel's sleepers: wood grain along them, each stored panel its own. The grey rails stay plain.
-  grainWarmVertices(mat, 'x');
-  const mesh = new THREE.InstancedMesh(geometry, mat, capacity);
-  mesh.name = 'panel-magazine';
-  mesh.castShadow = mesh.receiveShadow = true;
-  mesh.frustumCulled = false;
-  mesh.count = 0;
-  return mesh;
-}
-
-export function panelMechanism(parent: THREE.Object3D) {
+export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
   const root = new THREE.Group();
   root.name = 'panel-mechanism';
   parent.add(root);
@@ -40,19 +29,30 @@ export function panelMechanism(parent: THREE.Object3D) {
   const jaws = [new THREE.Group(), new THREE.Group()];
   beam.name = 'panel-beam-pivot';
   trolley.name = 'panel-trolley-slide';
+  beam.position.set(0, PANEL_BEAM_Y, 0);
   root.add(beam, trolley);
   trolley.add(sleeves[0]!);
   sleeves[0]!.add(sleeves[1]!);
   sleeves[1]!.add(sleeves[2]!);
   sleeves[2]!.add(...jaws);
   sleeves.forEach((s, i) => (s.name = `panel-hoist-${i}-slide`));
+  sleeves[2]!.name = 'panel-hoist-2-slide-pitch';
   jaws.forEach((s, i) => (s.name = `panel-jaw-${i}-slide`));
   const payload = new THREE.Object3D();
   payload.name = 'panel-payload-frame';
-  root.add(payload);
+  sleeves[2]!.add(payload);
+  const stack = railBatch(STACK_PAIRS * 2);
+  stack.name = 'rail-stack';
+  stack.count = 0;
+  const carried = railBatch(2);
+  carried.name = 'carried-rails';
+  carried.count = 0;
+  root.add(stack, carried);
   const batches: { mesh: THREE.InstancedMesh; pivots: THREE.Object3D[]; local: THREE.Matrix4[] }[] = [];
   const inverse = new THREE.Matrix4(),
-    matrix = new THREE.Matrix4();
+    matrix = new THREE.Matrix4(),
+    grip = new THREE.Matrix4();
+  let carriedLength = 3;
   const updateBatches = () => {
     inverse.copy(root.matrixWorld).invert();
     for (const { mesh, pivots, local } of batches) {
@@ -62,15 +62,53 @@ export function panelMechanism(parent: THREE.Object3D) {
       });
       mesh.instanceMatrix.needsUpdate = true;
     }
+    jaws.forEach((jaw, i) => {
+      grip.makeTranslation((i ? 1 : -1) * GRIP_X, -GRIP_Y, 0).scale(scale.set(1, 1, carriedLength / RAIL_KIT_LENGTH));
+      matrix.multiplyMatrices(inverse, jaw.matrixWorld).multiply(grip);
+      carried.setMatrixAt(i, matrix);
+    });
+    carried.instanceMatrix.needsUpdate = true;
   };
-  const stock = new THREE.Vector3(),
-    aim = new THREE.Vector3(),
-    last = new THREE.Vector3(),
-    beamEnd = new THREE.Vector3();
-  let lastYaw = 0,
-    lastStockX = PANEL_STACK_X,
-    initialized = false,
-    hasContact = false;
+  const scale = new THREE.Vector3(),
+    slot = new THREE.Vector3(),
+    at = new THREE.Vector3(),
+    from = new THREE.Vector3(),
+    seatJaw = new THREE.Vector3(),
+    up = new THREE.Vector3(),
+    q = new THREE.Quaternion(),
+    e = new THREE.Euler(0, 0, 0, 'YXZ');
+  const last = { at: new THREE.Vector3(0, PANEL_BEAM_Y, STACK.z), yaw: 0, pitch: 0, slide: GAUGE - GRIP_X };
+  let hasContact = false,
+    stackCount = 0,
+    stackLengths: number[] = [],
+    selecting = false;
+  function drawStack() {
+    const n = Math.max(0, Math.min(STACK_PAIRS, stackCount) - (selecting ? 1 : 0));
+    for (let k = 0; k < n; k++) {
+      // Slot k from the bottom holds the unit used (count - 1 - k)th from now.
+      const length = carriedPiece(stackLengths[stackCount - 1 - k] ?? 3).length;
+      for (let side = 0; side < 2; side++) {
+        stackSlot(k, side ? 1 : -1, slot);
+        matrix.makeTranslation(slot.x, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
+        stack.setMatrixAt(k * 2 + side, matrix);
+      }
+    }
+    stack.count = n * 2;
+    stack.instanceMatrix.needsUpdate = true;
+  }
+  function place(x: number, y: number, z: number, yaw: number, pitch: number, slide: number) {
+    trolley.position.set(x, PANEL_BEAM_Y, z);
+    trolley.rotation.y = yaw;
+    // Beam yaws about the header to keep the trolley on it; idle near the pivot it points straight ahead.
+    if (Math.hypot(x, z) > 0.5) beam.rotation.y = Math.atan2(x, z);
+    const extension = (PANEL_BEAM_Y - Math.min(PANEL_BEAM_Y, y)) / 3;
+    for (const sleeve of sleeves) sleeve.position.y = -extension;
+    sleeves[2]!.rotation.x = -pitch;
+    jaws[0]!.position.x = -slide;
+    jaws[1]!.position.x = slide;
+    root.updateWorldMatrix(true, true);
+    updateBatches();
+  }
   return {
     root,
     beam,
@@ -78,6 +116,8 @@ export function panelMechanism(parent: THREE.Object3D) {
     sleeves,
     jaws,
     payload,
+    stack,
+    carried,
     install(parts: Map<string, THREE.Object3D>) {
       const attach = (name: string, to: THREE.Object3D) => {
         const part = parts.get(name);
@@ -108,69 +148,102 @@ export function panelMechanism(parent: THREE.Object3D) {
       root.updateWorldMatrix(true, true);
       updateBatches();
     },
-    /** Target is the exact bed panel frame expressed in this rigid body frame. */
-    pose(phase: number, n: number, target: THREE.Vector3, yaw: number, finalReturn = false) {
+    /** Held units in use order (index 0 is laid next) and whether the gantry has the top pair. */
+    drawStack(count: number, lengths: number[], selected: boolean) {
+      stackCount = count;
+      stackLengths = lengths;
+      selecting = selected && count > 0;
+      drawStack();
+    },
+    /** Next free slot's left rail base, where a delivered rail lands. */
+    nextSlot: (out: THREE.Vector3) => stackSlot(Math.min(STACK_PAIRS - 1, stackCount), -1, out),
+    /**
+     * One panel cycle in this rig frame. `seat` is the midpoint of the carried pair's committed rail bases,
+     * `yaw`/`pitch` its travel heading, `start` the rail-level point the sweep starts from and `length` the
+     * carried rails' length. Returns the jaw frame: the track drops each piece as this passes its place.
+     */
+    pose(phase: number, n: number, seat: THREE.Vector3, yaw: number, pitch: number, start: THREE.Vector3, length = 3) {
       const p = panelPose(phase);
-      panelSlot(Math.max(0, n - 1), stock);
-      if (!initialized) {
-        last.copy(stock).setY(3.5);
-        lastStockX = stock.x;
-        initialized = true;
+      carriedLength = length;
+      stackSlot(Math.max(0, n - 1), 1, slot);
+      const slotSlide = slot.x - GRIP_X,
+        pickY = slot.y + GRIP_Y;
+      up.set(0, 1, 0).applyQuaternion(q.setFromEuler(e.set(-pitch, yaw, 0, 'YXZ')));
+      seatJaw.copy(seat).addScaledVector(up, GRIP_Y);
+      if (!p.picked) {
+        // Return from the last seat (or home) to the top pair, then reach down for it.
+        const r = p.returnT;
+        at.lerpVectors(last.at, slot.set(0, 0, STACK.z), r);
+        const y =
+          r < 1
+            ? THREE.MathUtils.lerp(last.at.y, PANEL_BEAM_Y, panelEase(r * 2))
+            : THREE.MathUtils.lerp(PANEL_BEAM_Y, pickY, p.lower);
+        const slide = THREE.MathUtils.lerp(last.slide, slotSlide + 0.04, r) - 0.04 * p.grip;
+        carried.count = n > 0 ? 2 : 0;
+        place(at.x, y, at.z, last.yaw * (1 - r), last.pitch * (1 - r), slide);
+        // Before the pick the top pair still lies in its slot, held by nothing.
+        for (let i = 0; i < 2 && n > 0; i++) {
+          stackSlot(n - 1, i ? 1 : -1, slot);
+          matrix.makeTranslation(slot.x, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));
+          carried.setMatrixAt(i, matrix);
+        }
+        carried.instanceMatrix.needsUpdate = true;
+        return payload.matrixWorld;
       }
-      let y: number, open: number;
-      if (finalReturn || p.returning) {
-        const t = finalReturn ? panelEase(phase) : p.returnT;
-        aim.lerpVectors(last, stock, t);
-        y = THREE.MathUtils.lerp(last.y + 0.25, 3.75, panelEase(t * 2));
-        open = 0.24;
-      } else {
-        aim.lerpVectors(stock, target, p.carry);
-        const startY = stock.y + 0.25;
+      carried.count = 2;
+      const slide = THREE.MathUtils.lerp(slotSlide, GAUGE - GRIP_X, p.gauge);
+      from.set(0, 0, STACK.z);
+      let x: number, y: number, z: number, heading: number, tilt: number;
+      if (p.travel < 1) {
+        // Lift out of the stack, then run out along the beam to the start of the pending panel.
+        x = THREE.MathUtils.lerp(from.x, start.x, p.travel);
+        z = THREE.MathUtils.lerp(from.z, start.z, p.travel);
+        const sweepY = start.y + GRIP_Y + SWEEP_Y;
         y =
-          phase < 0.36
-            ? THREE.MathUtils.lerp(3.75, startY, p.drop)
-            : phase < 0.8
-              ? THREE.MathUtils.lerp(startY, 3.75, p.lift)
-              : THREE.MathUtils.lerp(3.75, target.y + 0.25, panelEase((phase - 0.8) / 0.2));
-        open = 0.24 * (1 - p.grip);
+          p.travel > 0
+            ? THREE.MathUtils.lerp(PANEL_BEAM_Y, sweepY, panelEase((p.travel - 0.5) * 2))
+            : THREE.MathUtils.lerp(pickY, PANEL_BEAM_Y, p.gauge);
+        heading = yaw * p.travel;
+        tilt = 0;
+      } else if (p.seat <= 0) {
+        // Sweep along the panel; the track lays each piece from under the jaws as they pass.
+        x = THREE.MathUtils.lerp(start.x, seatJaw.x, p.sweep);
+        z = THREE.MathUtils.lerp(start.z, seatJaw.z, p.sweep);
+        y = THREE.MathUtils.lerp(start.y + GRIP_Y, seatJaw.y, p.sweep) + SWEEP_Y;
+        heading = yaw;
+        tilt = 0;
+      } else {
+        x = seatJaw.x;
+        z = seatJaw.z;
+        y = THREE.MathUtils.lerp(seatJaw.y + SWEEP_Y, seatJaw.y, p.seat);
+        heading = yaw;
+        tilt = pitch * p.seat;
       }
-      const returning = finalReturn || p.returning;
-      const returnT = finalReturn ? panelEase(phase) : p.returnT;
-      const baseX = returning ? THREE.MathUtils.lerp(lastStockX, stock.x, returnT) : stock.x;
-      // The empty beam slides across the header while its trolley comes home.
-      beamEnd.copy(target);
-      // Before the first contact there is no panel target. Aim along the track instead of
-      // through the local origin, which turns the 14 m boom sideways into the camp buildings.
-      if (!hasContact && target.lengthSq() < 1e-8) beamEnd.set(baseX, 0, 14);
-      if (returning && hasContact) beamEnd.lerpVectors(last, target, returnT);
-      const dx = beamEnd.x - baseX,
-        dz = beamEnd.z - stock.z;
-      beam.position.set(baseX, PANEL_BEAM_Y, stock.z);
-      beam.rotation.y = Math.atan2(dx, dz);
-      if (returning) {
-        // Keep the trolley on the beam throughout its return, including the cross-slide.
-        const home = hasContact ? 1 - returnT : 0;
-        aim.set(baseX + dx * home, aim.y, stock.z + dz * home);
-      }
-      trolley.position.set(aim.x, PANEL_BEAM_Y, aim.z);
-      trolley.rotation.y =
-        p.returning || finalReturn ? lastYaw * (1 - (finalReturn ? phase : p.returnT)) : yaw * p.carry;
-      const extension = (PANEL_BEAM_Y - y) / 3;
-      for (const sleeve of sleeves) sleeve.position.y = -extension;
-      jaws[0]!.position.x = -open;
-      jaws[1]!.position.x = open;
-      payload.position.copy(p.picked && !finalReturn ? aim : stock);
-      payload.position.y = p.picked && !finalReturn ? y - 0.25 : stock.y;
-      payload.rotation.y = p.picked && !finalReturn ? yaw * p.carry : 0;
-      if (phase >= 0.98 && !finalReturn) {
-        last.copy(target);
-        lastYaw = yaw;
-        lastStockX = stock.x;
+      place(x, y, z, heading, tilt, slide);
+      if (phase >= 0.98) {
+        last.at.set(x, y, z);
+        last.yaw = heading;
+        last.pitch = tilt;
+        last.slide = slide;
         hasContact = true;
       }
-      root.updateWorldMatrix(true, true);
-      updateBatches();
       return payload.matrixWorld;
+    },
+    /** Not laying: go home over the stack on local time and wait there, jaws open over the next pair. */
+    home(t: number, n: number) {
+      const r = panelEase(t);
+      stackSlot(Math.max(0, n - 1), 1, slot);
+      const slotSlide = slot.x - GRIP_X;
+      at.lerpVectors(last.at, slot.set(0, 0, STACK.z), r);
+      const y = THREE.MathUtils.lerp(last.at.y, PANEL_BEAM_Y, panelEase(r * 2));
+      carried.count = 0;
+      place(at.x, y, at.z, last.yaw * (1 - r), last.pitch * (1 - r), THREE.MathUtils.lerp(last.slide, slotSlide, r));
+      if (!hasContact) beam.rotation.y = 0;
+      if (t >= 1) {
+        last.at.set(0, PANEL_BEAM_Y, STACK.z);
+        last.yaw = last.pitch = 0;
+        last.slide = slotSlide;
+      }
     },
   };
 }

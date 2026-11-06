@@ -48,8 +48,8 @@ import { kitBatch, lookTrack, machineLook, trainLook } from './look-kit.ts';
 import { machineModel, MACHINE_CHAIRS, MACHINE_DECK, MACHINE_GAP } from './machine-model.ts';
 import { solidTrainLoad } from './train-load.ts';
 import { registerSeat, seatHeight } from './seat.ts';
-import { MAX_PANEL_LENGTH, trackPanels, type TrackPanel } from './track-panels.ts';
-import { panelMagazine, panelSlot } from './machine-panels.ts';
+import { MAX_PANEL_LENGTH, carriedPiece, trackPanels, type TrackPanel } from './track-panels.ts';
+import { STACK_PAIRS } from './machine-panels.ts';
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
 const lateral = (l: number, out: { x: number; z: number }) => {
@@ -91,6 +91,12 @@ export type Track = {
   panelPieces: number[][];
   kinds: PieceKind[];
   panelFrame: (index: number, out: THREE.Matrix4) => THREE.Matrix4;
+  /** Rest midpoint (rail bases) and travel direction of the pair the gantry carries for this panel. */
+  seat: (index: number, mid: THREE.Vector3, dir: THREE.Vector3) => void;
+  /** Rail-level world point the gantry's sweep starts from. */
+  panelStart: (index: number, out: THREE.Vector3) => THREE.Vector3;
+  carriedLength: (index: number) => number;
+  /** Lays the pending panel piece by piece: each piece falls as the gantry's jaw frame passes its place. */
   presentPanel: (index: number, frame: THREE.Matrix4) => void;
   layTo: (u: number) => void;
   snapTo: (u: number) => void;
@@ -121,6 +127,7 @@ export function buildTrack(
     : [0, line.len];
   const boxes: ReturnType<typeof box>[] = [],
     us: number[] = [],
+    triggers: number[] = [],
     falls: number[] = [],
     kinds: PieceKind[] = [],
     pre: boolean[] = [];
@@ -139,6 +146,8 @@ export function buildTrack(
     b.y = y;
     boxes.push(b);
     us.push(panelled ? frontier(s) : u(s) - lead);
+    // The original continuous order: each piece goes down when laying reaches u(s) - lead.
+    triggers.push(u(s) - lead);
     falls.push(fall);
     kinds.push(kind);
     pre.push(frontier(s) === -Infinity);
@@ -417,9 +426,34 @@ export function buildTrack(
       on: null,
     });
   solids.sort((p, r) => p.u - r.u);
-  const panelRest = new THREE.Matrix4(),
-    delta = new THREE.Matrix4(),
-    matrix = new THREE.Matrix4();
+  const panelPieces = panels.map((p) => boxes.map((_, i) => i).filter((i) => !pre[i] && us[i] === p.to));
+  // The gantry carries one rail pair per panel: the pair nearest the schedule's carried piece.
+  const carriedPair = panels.map((p, index) => {
+    const centre = p.from + carriedPiece(p.to - p.from).centre;
+    const rails = panelPieces[index]!.filter((k) => kinds[k] === 'rail');
+    const near = (k: number) => Math.abs(triggers[k]! - 2.2 - centre);
+    return rails.sort((a, b) => near(a) - near(b)).slice(0, 2);
+  });
+  const sweepEnd = panels.map((p) => p.from + carriedPiece(p.to - p.from).centre);
+  const dropped = new Uint8Array(boxes.length);
+  const along = new THREE.Vector3(),
+    probe = { x: 0, z: 0 };
+  /** Line metres (in u) nearest a world point, searched over one panel. */
+  const nearestU = (index: number, x: number, z: number) => {
+    const panel = panels[index]!;
+    let best = panel.from - 6,
+      bestD = Infinity;
+    for (let at = panel.from - 6; at <= panel.to + 3; at += 0.25) {
+      lineAt(line, dir > 0 ? at : line.len - at, P);
+      lateral(0, probe);
+      const d = (probe.x - x) ** 2 + (probe.z - z) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = at;
+      }
+    }
+    return bestD < 36 ? best : panel.from - 6;
+  };
 
   const t: Track = {
     spec,
@@ -435,7 +469,7 @@ export function buildTrack(
     panels,
     cursor: 0,
     kinds,
-    panelPieces: panels.map((p) => boxes.map((_, i) => i).filter((i) => !pre[i] && us[i] === p.to)),
+    panelPieces,
     panelFrame(index, out) {
       const panel = panels[index]!;
       const centre = (panel.from + panel.to) / 2;
@@ -445,16 +479,39 @@ export function buildTrack(
         .makeRotationY(Math.atan2(P.ux * dir, P.uz * dir))
         .setPosition(P.x + ORIGIN.x, railY(line, s), P.z + ORIGIN.z);
     },
+    seat(index, mid, dirOut) {
+      const [a, b] = carriedPair[index]!;
+      mid.set(0, 0, 0);
+      for (const k of [a, b]) {
+        const box = boxes[k!]!;
+        mid.x += box.x / 2;
+        mid.y += box.y / 2;
+        mid.z += box.z / 2;
+      }
+      const local = boxes[a!]!.local.elements;
+      dirOut.set(local[8]!, local[9]!, local[10]!).normalize();
+      const panel = panels[index]!;
+      lineAt(line, dir > 0 ? panel.from : line.len - panel.from, P);
+      if (dirOut.x * P.ux * dir + dirOut.z * P.uz * dir < 0) dirOut.negate();
+    },
+    panelStart(index, out) {
+      const at = panels[index]!.from + 1.5;
+      const s = dir > 0 ? at : line.len - at;
+      lineAt(line, s, P);
+      lateral(0, probe);
+      return out.set(probe.x, railY(line, s) + TOP, probe.z);
+    },
+    carriedLength: (index) => carriedPiece(panels[index]!.to - panels[index]!.from).length,
     presentPanel(index, frame) {
       if (index < t.cursor) return;
-      delta.multiplyMatrices(frame, t.panelFrame(index, panelRest).invert());
+      along.setFromMatrixPosition(frame);
+      const reach = Math.min(sweepEnd[index]!, nearestU(index, along.x, along.z));
+      const [a, b] = carriedPair[index]!;
       for (const k of t.panelPieces[index] ?? []) {
-        if (!['rail', 'sleeper', 'plank'].includes(kinds[k]!)) continue;
-        const b = boxes[k]!;
-        matrix.makeTranslation(b.x, b.y, b.z).multiply(b.local).premultiply(delta);
-        set.mesh.setMatrixAt(k, matrix);
+        if (dropped[k] || k === a || k === b || Math.min(triggers[k]!, sweepEnd[index]!) > reach) continue;
+        dropped[k] = 1;
+        set.drop(k, t.heights[k]!);
       }
-      set.mesh.instanceMatrix.needsUpdate = true;
     },
     layTo(to) {
       t.head = to;
@@ -468,6 +525,7 @@ export function buildTrack(
     },
     snapTo(to) {
       if (panelled) set.clear();
+      dropped.fill(0);
       t.head = to;
       t.cursor = panels.filter((p) => p.to <= to + 1e-7).length;
       boxes.forEach((_, k) => set.snap(k, pre[k]! || t.us[k]! <= to));
@@ -680,8 +738,7 @@ const a = { ...P },
 
 // ---------------------------------------------------------------- the machine
 /** What the machine carries, drawn in the flatbed's frame: its rack of rails down each side, its cradle of logs. */
-const RACK_RAILS = 32,
-  CRADLE_LOGS = 40;
+const CRADLE_LOGS = 40;
 export type Machine = ReturnType<typeof buildMachine>;
 export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 'panels') {
   const panelled = mode === 'panels';
@@ -692,6 +749,14 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
         kitBatch('rail', STEEL, 1),
         kitBatch('fork', { color: '#f0752c', rough: 0.55 }, 1),
         kitBatch('sleeper', { color: '#8a6236', grain: { axis: 'x', honey: '#c98a3e' } }, 1),
+        (n) => {
+          // The stack and the carried pair are the committed track's own kit rail; nothing lies flat
+          // enough to need a second shadow draw.
+          const rails = kitBatch('rail', STEEL, n);
+          rails.castShadow = false;
+          rails.receiveShadow = true;
+          return rails;
+        },
       )
     : null;
   const kitLook = !panelled && LOOK.kit ? machineLook(owner) : null;
@@ -735,8 +800,11 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     loco.platform.id = 'railway:T1:loco';
     flatbed.platform.shared = loco.platform.shared = true;
   }
-  const o = new THREE.Object3D(),
-    slot = new THREE.Vector3();
+  const o = new THREE.Object3D();
+  const toRig = new THREE.Matrix4(),
+    seatAt = new THREE.Vector3(),
+    seatDir = new THREE.Vector3(),
+    startAt = new THREE.Vector3();
   let heldRail: THREE.Object3D;
   let rack: THREE.InstancedMesh;
   const rig = model?.panelRig;
@@ -769,8 +837,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     heldRail.visible = false;
     flatbed.mesh.add(rig.root);
     rig.root.position.y = -(BOTTOM + flatbed.hy);
-    rack = panelMagazine(RACK_RAILS);
-    rig.root.add(rack);
+    rack = rig.stack;
   } else {
     const box3 = (w: number, h: number, d: number, color: string, x: number, y: number, z: number, rx = 0) => {
       const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), flat(color, 0.8));
@@ -816,19 +883,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     rackLengths: number[] = [],
     rackKey = '',
     selecting = false;
-  function drawPanelRack() {
-    const n = Math.max(0, rackCount - (selecting ? 1 : 0));
-    for (let k = 0; k < n; k++) {
-      const rackLength = rackLengths[rackCount - 1 - k] ?? MAX_PANEL_LENGTH;
-      panelSlot(k, slot);
-      o.position.copy(slot);
-      o.scale.set(1, 1, rackLength);
-      o.updateMatrix();
-      rack.setMatrixAt(k, o.matrix);
-    }
-    rack.count = n;
-    rack.instanceMatrix.needsUpdate = true;
-  }
+  const drawPanelRack = () => rig?.drawStack(rackCount, rackLengths, selecting);
   const cradle = logStackMesh(CRADLE_LOGS, owner);
   cradle.removeFromParent();
   flatRock.add(cradle);
@@ -857,14 +912,14 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
   const worldRack = (out: THREE.Vector3) => {
     if (rig) {
       rig.root.updateWorldMatrix(true, false);
-      return rig.root.localToWorld(panelSlot(rackCount, out));
+      return rig.root.localToWorld(rig.nextSlot(out));
     }
     flatRock.updateWorldMatrix(true, false);
     return flatRock.localToWorld(out.set(1.3, onDeck + 0.1, 0));
   };
 
   function setRack(n: number) {
-    rackCount = Math.max(0, Math.min(panelled ? RACK_RAILS : 12, n));
+    rackCount = Math.max(0, Math.min(panelled ? STACK_PAIRS : 12, n));
     if (panelled) drawPanelRack();
     else {
       rack.count = rackCount;
@@ -1022,6 +1077,30 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
       rackLengths = lengths;
       selecting = selected;
       drawPanelRack();
+    },
+    /** One panel cycle: pose the gantry for `phase` and lay what it has passed. Both railway views use this. */
+    layPanel(track: Track, index: number, phase: number, stock: number) {
+      if (!rig) return;
+      rig.root.updateWorldMatrix(true, false);
+      toRig.copy(rig.root.matrixWorld).invert();
+      track.seat(index, seatAt, seatDir);
+      seatAt.applyMatrix4(toRig);
+      seatDir.transformDirection(toRig);
+      track.panelStart(index, startAt).applyMatrix4(toRig);
+      const frame = rig.pose(
+        phase,
+        stock,
+        seatAt,
+        Math.atan2(seatDir.x, seatDir.z),
+        Math.asin(Math.max(-1, Math.min(1, seatDir.y))),
+        startAt,
+        track.carriedLength(index),
+      );
+      track.presentPanel(index, frame);
+    },
+    /** Not laying: the gantry goes home over the stack on local time (0..1). */
+    layHome(t: number, stock: number) {
+      rig?.home(t, stock);
     },
     setCradle,
     worldCradle,

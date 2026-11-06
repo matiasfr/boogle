@@ -29,17 +29,27 @@ export const panelEase = (t: number) => {
   const x = Math.max(0, Math.min(1, t));
   return x * x * (3 - 2 * x);
 };
-/** Distance-phase choreography: early empty return, drop/grip, lift, carry, lower. Contact is phase 1.
+/** Rails are cut every 3 m from each panel's start. The gantry carries the last whole-looking pair (at least 2 m);
+ * a shorter closure stub falls with the other pieces. Metres from the panel start. */
+export function carriedPiece(length: number) {
+  const whole = Math.floor(length / 3 + 1e-7);
+  const rest = length - whole * 3;
+  if (rest >= 2 - 1e-7 || whole === 0) return { centre: whole * 3 + rest / 2, length: rest };
+  return { centre: whole * 3 - 1.5, length: 3 };
+}
+/** Distance-phase choreography of one panel cycle (storyboard: dev evidence in the PR). Contact is phase 1.
  * There is no animation callback into game state. A stopped final cycle returns on local time. */
 export function panelPose(phase: number) {
   const t = Math.max(0, Math.min(1, phase));
+  const at = (from: number, to: number) => panelEase((t - from) / (to - from));
   return {
-    carry: panelEase((t - 0.57) / 0.23),
-    lift: panelEase((t - 0.36) / 0.2) * (1 - panelEase((t - 0.8) / 0.2)),
-    grip: panelEase((t - 0.29) / 0.07),
-    picked: t >= 0.36,
-    returning: t < 0.18,
-    returnT: panelEase(t / 0.18),
-    drop: panelEase((t - 0.18) / 0.11),
+    returnT: at(0, 0.26),
+    lower: at(0.26, 0.34) * (1 - at(0.38, 0.46)),
+    grip: at(0.34, 0.38),
+    picked: t >= 0.38,
+    gauge: at(0.38, 0.46),
+    travel: at(0.46, 0.62),
+    sweep: Math.max(0, Math.min(1, (t - 0.62) / 0.28)),
+    seat: at(0.9, 1),
   };
 }

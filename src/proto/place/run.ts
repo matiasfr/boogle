@@ -313,22 +313,9 @@ coopWire.panelSnapshot = (value) => {
     }
   }
 };
-// Exact upcoming rail/sleeper matrices move together as one rigid compound. No view creates collision.
-const panelRestFrame = new THREE.Matrix4(),
-  panelLocalFrame = new THREE.Matrix4();
-const panelTarget = new THREE.Vector3(0, 0, 10),
-  panelRotation = new THREE.Quaternion(),
-  panelScale = new THREE.Vector3();
+// The gantry carries one pair off the stack per panel and the panel's pieces fall as it sweeps past. No view creates collision.
 let panelReturn = 1;
-function posePanel(l: LineRun, index: number, phase: number) {
-  const rig = machine.panel.panelRig;
-  rig.root.updateWorldMatrix(true, false);
-  l.track.panelFrame(index, panelRestFrame);
-  panelLocalFrame.copy(rig.root.matrixWorld).invert().multiply(panelRestFrame);
-  panelLocalFrame.decompose(panelTarget, panelRotation, panelScale);
-  const yaw = Math.atan2(panelLocalFrame.elements[8]!, panelLocalFrame.elements[10]!);
-  return rig.pose(phase, run.rack, panelTarget, yaw);
-}
+const posePanel = (l: LineRun, index: number, phase: number) => machine.layPanel(l.track, index, phase, run.rack);
 machine.onPanelFrame = (dt) => {
   const l = run.line,
     track = l.track,
@@ -342,15 +329,14 @@ machine.onPanelFrame = (dt) => {
       .map((p) => p.to - p.from),
     active,
   );
-  const rig = machine.panel.panelRig;
   if (active) {
     panelReturn = 0;
     // A follower holds above the bed until the authority accepts the contact.
     const phase = Math.max(0, Math.min(0.98, (track.u(run.head) - panel.from) / (panel.to - panel.from)));
-    track.presentPanel(index, posePanel(l, index, phase));
+    posePanel(l, index, phase);
   } else {
     panelReturn = Math.min(1, panelReturn + dt / 0.65);
-    rig.pose(panelReturn, run.rack, panelTarget, 0, true);
+    machine.layHome(panelReturn, run.rack);
   }
 };
 // The machine hands a crate down beside where it stopped, on ground you can stand on, by the next frame on the side you'll

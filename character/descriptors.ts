@@ -80,7 +80,7 @@ export const descriptors: Record<string, AssetDescriptor> = {
     motion: {
       kind: 'rail-wheels',
       source:
-        'machine-model.ts: signed distance/radius; machine-panels.ts: rigid panel cycle; stage uses labelled inspection travel and 2.866667 s cycle',
+        'machine-model.ts: signed distance/radius; machine-panels.ts: rigid gantry cycle off the rail stack; stage uses labelled inspection travel, a receding L1 seat and 2.866667 s cycle',
     },
     rootNote:
       'Working deck origin; rear power unit at Z -3.7 m. Existing game seats, cargo and moving fork added by Place.',

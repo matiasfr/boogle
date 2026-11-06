@@ -1,7 +1,7 @@
 // Pure mesh assembly: no scene, physics, loop or game state. Both the stage and Place use these materials.
 import * as THREE from 'three/webgpu';
 import { material } from '../../render/materials.ts';
-import { panelMechanism } from './machine-panels.ts';
+import { panelMechanism, type RailBatch } from './machine-panels.ts';
 
 export const MACHINE_GAP = 3.7;
 export const MACHINE_DECK = 0.7;
@@ -146,7 +146,12 @@ export function mountMachine(
   return { ...finish, wheels, rods, layParts };
 }
 
-export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D, sleeper: THREE.Object3D) {
+export function machineModel(
+  heldRail: THREE.Object3D,
+  forkIron: THREE.Object3D,
+  sleeper: THREE.Object3D,
+  railBatch: RailBatch,
+) {
   const power = new THREE.Group(),
     deck = new THREE.Group(),
     chairs = new THREE.Group(),
@@ -176,7 +181,7 @@ export function machineModel(heldRail: THREE.Object3D, forkIron: THREE.Object3D,
     outer.add(inner);
     return inner;
   });
-  const panelRig = panelMechanism(deck);
+  const panelRig = panelMechanism(deck, railBatch);
   const odometers = runningGear.map(() => ({ last: new THREE.Vector3(NaN, 0, 0), yaw: 0, distance: 0 }));
   let finish: ReturnType<typeof mountMachine> | undefined;
   let travel = 0;
