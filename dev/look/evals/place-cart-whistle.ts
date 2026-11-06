@@ -1,5 +1,5 @@
 // Broker look fixture, not a new harness. Stages Q5, then uses real cart ticks and Interact.
-// &whistle=gap|waiting|loading|forge|recall|unloading|pair|leave|legacy; --until window.__whistleDone --warm 240.
+// &whistle=gap|waiting|loading|forge|recall|unloading|pair|leave; --until window.__whistleDone --warm 240.
 const q = new URLSearchParams(location.search);
 const mode = q.get('whistle') ?? 'gap';
 const who = q.get('player') ?? '1';
@@ -48,13 +48,11 @@ const put = (x: number, z: number, targetX: number, targetZ: number) => {
 };
 const atForge = () => put(TX - (who === '2' ? 2 : 4.1), TZ + (who === '2' ? 4.4 : 4.1), TX - 2.8, TZ + 2.8);
 const atRack = () => put(rack.x - 4.2, rack.z + 4, rack.x, rack.z);
-const paired = mode === 'pair' || mode === 'leave' || mode === 'legacy';
-let recallSnapshot = false;
+const paired = mode === 'pair' || mode === 'leave';
 const marks = new Set<string>();
 net.room?.onMessage((raw) => {
   const m = raw as { t?: unknown; phase?: unknown; k?: unknown; force?: unknown };
   if (m.t === 'whistleProbe' && typeof m.phase === 'string') marks.add(m.phase);
-  if (m.k === 'snap' && m.force === true) recallSnapshot = true;
 });
 const barrier = async (phase: string) => {
   const send = () => net.room!.send({ t: 'whistleProbe', phase });
@@ -151,17 +149,6 @@ background(
           check('survivor keeps queued delivery', !coop.follower() && cart.recallQueued && cart.rails === 16);
         }
       }
-      if (mode === 'legacy') {
-        await barrier('accepted');
-        recallSnapshot = false;
-        if (coop.follower()) {
-          // Model an older participant appearing after acceptance: withdraw its additive capability.
-          const presence = net.room!.presence.bind(net.room);
-          net.room!.presence = (patch) => presence({ ...(patch as Record<string, unknown>), placeCartRecall: null });
-        } else {
-          await until(() => !coop.recallSupported(), 'late legacy capability');
-        }
-      }
       atRack();
       await until(() => depot.deliveryStatus() === 'unloading', 'unloading');
       check('recall remains queued while unloading', cart.recallQueued);
@@ -173,7 +160,6 @@ background(
       if (!coop.follower()) applyShared(captureShared()); // settle a saved in-flight unload once
       await until(() => cart.called && !cart.recallQueued, 'return after unload');
       check('one full mixed delivery before recall', rack.rails === 16 && rack.logs === 24);
-      if (mode === 'legacy' && coop.follower()) check('late legacy return uses atomic snapshot', recallSnapshot);
       await until(() => cart.leg === 'forge', 'recall reaches forge');
       check('no duplicated delivery', rack.rails === 16 && rack.logs === 24);
       atForge();

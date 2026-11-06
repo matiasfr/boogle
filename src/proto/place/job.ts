@@ -4,7 +4,7 @@
 //   sharedSlice('town', { get, set })     what everyone in a `&coop=1` room has in common; goes in the save and the snapshot
 //   personalSlice('gifts', { get, set })  this tab's own; goes in the save only
 // A later system adds a field to `job`, or a slice of its own. `get` returns plain JSON; `set` gets back what `get` made, or
-// garbage from another build's save or another tab, so it checks what it reads (`num`, `count`) and keeps its defaults when
+// malformed save data or another tab, so it checks what it reads (`num`, `count`) and keeps its defaults when
 // something's missing. Local, or shared by ./coop.ts behind the flag. Never read by the sim.
 import { getRoomId } from '../../netplay/net.ts';
 import { TUNE } from './layout.ts';
@@ -89,7 +89,7 @@ export const resetJob = () => {
 };
 
 // ---------------------------------------------------------------- the save
-// A new key each round: an older save's shape can't break this one.
+// Separate personal runs for solo and co-op.
 const KEY = COOP ? `boogle-place-coop-v2:${getRoomId()}` : `boogle-place-v4:${getRoomId()}`;
 let saving = true;
 /** Forget this person's round-four saves, including every personal slice in either mode. */
@@ -117,17 +117,10 @@ export function restore() {
     const j = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (!j) return false;
     applyShared(j.shared ?? {});
-    // Two old readers shared `finds`: only the last writer's array or object survived.
-    // Recover that history by shape; explicit new slices (including empty ones) win.
     const p = j.personal ?? {};
-    const histories = {
-      goldFinds: Array.isArray(p.finds) ? p.finds : undefined,
-      secretFinds: p.finds && typeof p.finds === 'object' && !Array.isArray(p.finds) ? p.finds : undefined,
-      ...p,
-    };
-    for (const s of personal) s.set(histories[s.key]);
+    for (const s of personal) s.set(p[s.key]);
     return true;
   } catch {
-    return false; // an old shape: start fresh
+    return false; // malformed data: start fresh
   }
 }

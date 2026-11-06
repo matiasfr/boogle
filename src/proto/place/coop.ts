@@ -3,7 +3,7 @@
 // recommendations 2, 3, 9, 11 and 12. Without the flag every hook here is a no-op and nothing is sent.
 //
 // How it stays together, cheapest thing that works:
-// - One authority: the oldest visible compatible coop tab (COOP_IDENTITY, the world tick it got here). Not the room's lead,
+// - One authority: the oldest visible coop tab (COOP_IDENTITY, the world tick it got here). Not the room's lead,
 //   which could be a tab without the flag, and not the lowest id, which a newcomer could take. It is the only tab that
 //   accepts a deposit, starts a station's run and ends a stretch, so the last log can't start two runs and a frame can't
 //   overfill: a deposit it can't take goes back on the sender's back.
@@ -11,8 +11,7 @@
 //   an explicit rejection or actual peer removal returns a pending piece, never a wall-clock timeout.
 // - Tree harvest is accepted once by that authority before material is awarded. A follower reserves capacity until its
 //   matching receipt arrives; duplicate receipts cannot issue another log. The rest of the prototype still runs locally.
-// - Cargo uses a versioned whole-place message/presence identity. WORLD_NS also separates incompatible transport rooms,
-//   including their seat Host authority. This is still local-save prototype persistence, not server lockstep.
+// - Cargo uses Place's participation/message identity. This is local-save prototype persistence, not server lockstep.
 // - Once a second the authority sends the whole shared state (`captureShared`, ./job.ts: every slice registered there, so a new
 //   system's state comes along for free). A newcomer takes it and is caught up, a follower that stays different for a few
 //   seconds is put right, and a follower that takes over already has everything it needs.
@@ -66,7 +65,7 @@ import {
   type Tree,
   type HarvestResult,
 } from './chop.ts';
-import { callCart, cart, cartHasDelivery, cartPlatform, rackTake, recallCart, reconcileCart } from './depot.ts';
+import { callCart, cart, cartPlatform, rackTake, recallCart, reconcileCart } from './depot.ts';
 import { forge, takeRail } from './forge.ts';
 import { COOP, applyShared, captureShared, count, job, num, save, type Rungs } from './job.ts';
 import { GOODS, TUNE, type Goods } from './layout.ts';
@@ -198,7 +197,7 @@ function applyFull(a: Api, j: Snap, announce = true) {
   reconcileBig();
   a.run.mode = 'asleep';
   a.snapAll();
-  a.putMachine((j.shared.trackPanelsV1 as { motion?: unknown } | undefined)?.motion ?? j.shared.run);
+  a.putMachine((j.shared.trackPanelsV1 as { motion?: unknown } | undefined)?.motion);
   save();
 }
 
@@ -213,7 +212,7 @@ const discrete = (j: Record<string, unknown>) => {
     forgeBill: number;
     longBeam?: { set: boolean };
   };
-  const r = j.run as { k: number };
+  const r = (j.trackPanelsV1 as { motion?: { k?: number } } | undefined)?.motion;
   return JSON.stringify([
     q.awake,
     q.turned,
@@ -223,7 +222,7 @@ const discrete = (j: Record<string, unknown>) => {
     q.boiler,
     q.forgeBill,
     q.longBeam?.set ?? false,
-    r.k,
+    r?.k,
     linesOf(j).map((l) => [l.stage, l.open]),
   ]);
 };
@@ -256,25 +255,17 @@ function reconcile(a: Api, j: Snap) {
   if (bigPending && bigPending.to !== authorityPeer()) bigPending = null;
   const mine = captureShared();
   miss = discrete(j.shared) === discrete(mine) ? 0 : miss + 1;
-  const theirRun = ((j.shared.trackPanelsV1 as { motion?: unknown } | undefined)?.motion ?? j.shared.run) as {
+  const theirRun = (j.shared.trackPanelsV1 as { motion?: unknown } | undefined)?.motion as {
     mode: string;
     k: number;
     head: number;
   };
   const myRun = a.run;
-  modeMiss = theirRun.mode === myRun.mode ? 0 : modeMiss + 1;
+  modeMiss = theirRun?.mode === myRun.mode ? 0 : modeMiss + 1;
   if (miss >= 3 || modeMiss >= 5) {
     miss = modeMiss = numMiss = 0;
     return applyFull(a, j);
   }
-  // Riding the machine together: the same head, near enough.
-  if (
-    !j.shared.trackPanelsV1 &&
-    theirRun.mode === myRun.mode &&
-    theirRun.k === myRun.line.k &&
-    (myRun.mode === 'laying' || myRun.mode === 'running')
-  )
-    if (Math.abs(theirRun.head - myRun.head) > 1.5) myRun.head = theirRun.head;
   // The trains: nudged to the authority's place, so a rider stays on your copy of the deck.
   const trains = Array.isArray(j.shared.trains) ? (j.shared.trains as (TrainSave | null)[]) : [];
   lines.forEach((l, k) => {
@@ -287,20 +278,14 @@ function reconcile(a: Api, j: Snap) {
       Math.abs(t.v) > TUNE.cruise ||
       !count(t.target, l.train.tr.stops.length - 1) ||
       !num(t.dwell) ||
+      typeof t.express !== 'boolean' ||
       (t.sweep !== 1 && t.sweep !== -1)
     )
       return;
     const d = t.s - l.train.tr.s;
     if (Math.abs(d) > 8) {
       nudge[k]!.clear();
-      l.train.put(
-        t.s,
-        t.v,
-        t.target,
-        t.sweep,
-        t.dwell,
-        typeof t.express === 'boolean' ? t.express : l.train.tr.express,
-      );
+      l.train.put(t.s, t.v, t.target, t.sweep, t.dwell, t.express);
     } else {
       nudge[k]!.set(d);
       l.train.tr.target = t.target;
@@ -308,7 +293,7 @@ function reconcile(a: Api, j: Snap) {
       l.train.tr.v = t.v;
       l.train.tr.dwell = t.dwell;
       l.train.tr.stop = t.dwell > 0 ? t.target : -1;
-      if (typeof t.express === 'boolean') l.train.tr.express = t.express;
+      l.train.tr.express = t.express;
     }
   });
   // The current frame's stack, when nothing's in the air here.
@@ -377,41 +362,22 @@ function onSnap(a: Api, j: Snap, force: boolean) {
   reconcileBig();
 }
 
-let returningBig: BigThing = null;
 const beamDelivered = () => lines.some((l) => l.stations.some((st) => st.have.beam > 0 || st.coming.beam > 0));
 function reconcileBig() {
-  if (returningBig !== back.big) returningBig = null;
-  // Availability alone is insufficient after reconnect: a survivor may already have picked up the returned cargo.
-  // Only our pre-disconnect shoulder yields here. A lone/transient reconnect keeps it if nobody reclaimed it.
-  const reclaimed =
-    returningBig &&
-    bigCargo[returningBig].revision === 0 &&
-    [...peerBig].some(([peer, big]) => remotes.has(peer) && big === returningBig);
   const consumed = back.big === 'beam' && beamDelivered();
   const state = back.big ? bigCargo[back.big] : null;
-  // An adopted legacy holder is binding even before its first revisioned move.
-  const lost = state && (state.revision > 0 || state.holder !== null) && state.holder !== cargoPeer();
-  if (
-    lost ||
-    (back.big === 'beam' && !trunkTaken()) ||
-    (back.big === 'boiler' && job.boiler !== 2) ||
-    reclaimed ||
-    consumed
-  ) {
+  const lost = state && state.holder !== cargoPeer();
+  if (lost || (back.big === 'beam' && !trunkTaken()) || (back.big === 'boiler' && job.boiler !== 2) || consumed) {
     putDownBig();
-    returningBig = null;
   }
 }
 
 // ---------------------------------------------------------------- who's here, and who decides
-type Peer = { since: number; visible: boolean; seen: number; railCart: boolean; rideCart: number; recallCart: boolean };
+type Peer = { since: number; visible: boolean; seen: number; riding: boolean };
 const peers = new Map<string, Peer>();
 const peerBack = new Map<string, number>();
-const peerBig = new Map<string, BigThing>();
 const SEEN_MS = 5000; // no presence for this long (a tab stuck or gone): it doesn't decide
 const present = (p: Peer, now = performance.now()) => p.visible && now - p.seen <= SEEN_MS;
-const allPeersSupport = (supports: (p: Peer) => boolean) =>
-  !COOP || [...peers.values()].every((p) => !present(p) || supports(p));
 /** The tab that decides, null for this one. */
 function authorityPeer(): string | null {
   const now = performance.now();
@@ -584,8 +550,6 @@ function requestBig(what: BigCargo, action: 'pick' | 'drop') {
   if (!me.body || bigPending || (action === 'pick' && back.big)) return false;
   if (COOP && (!ready || (!amAuthority() && !synced))) return false;
   const p = { x: me.body.position.x, y: me.body.position.y - PLAYER_R, z: me.body.position.z, yaw: me.yaw };
-  // Adopt a legacy personal shoulder once; subsequent requests always require its accepted owner.
-  if (action === 'drop' && bigCargo[what].revision === 0 && back.big === what) bigCargo[what].holder = cargoPeer();
   const revision = bigCargo[what].revision,
     to = COOP ? authorityPeer() : null;
   if (to) {
@@ -698,7 +662,7 @@ function markContribution(st: StationRun, by: string | null) {
 const pending: { q: number; kind: Goods; to: string }[] = [];
 let depQ = 0;
 function settle(q: number, kind: Goods, from: string) {
-  const k = pending.findIndex((p) => p.to === from && p.kind === kind && (q === 0 || p.q === q));
+  const k = pending.findIndex((p) => p.to === from && p.kind === kind && p.q === q);
   if (k < 0) return false;
   pending.splice(k, 1);
   return true;
@@ -780,7 +744,6 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       if (m.queued) cart.recallQueued = true;
       else if (!cart.called || cart.auto) callCart();
       return;
-    case 'cartCall':
     case 'cartLoad':
     case 'beamSet':
     case 'beamBounce':
@@ -898,10 +861,10 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       return;
     }
     case 'dep': {
-      if (!ready || (typeof m.to === 'string' ? m.to !== net.myPeer : !amAuthority())) return;
+      if (!ready || m.to !== net.myPeer || !count(m.q)) return;
       const st = frameById(m.id);
       if (!st || !isKind(m.kind) || !num(m.x) || !num(m.y) || !num(m.z)) return;
-      const q = count(m.q) ? m.q : 0;
+      const q = m.q;
       if (!amAuthority() || coopWire.activeFrame?.() !== st || st.wants(m.kind) <= 0)
         return msg({ k: 'no', to: from, kind: m.kind, q });
       markContribution(st, from);
@@ -912,17 +875,17 @@ function onMsg(a: Api, m: Record<string, unknown>, from: string) {
       return;
     }
     case 'no':
-      if (m.to === net.myPeer && isKind(m.kind) && settle(count(m.q) ? m.q : 0, m.kind, from)) refund(m.kind);
+      if (m.to === net.myPeer && isKind(m.kind) && count(m.q) && settle(m.q, m.kind, from)) refund(m.kind);
       return;
     case 'stock': {
-      if (!ready) return;
+      if (!ready || !count(m.q)) return;
       const st = frameById(m.id);
       if (!st || !isKind(m.kind) || !Array.isArray(m.have) || !num(m.x) || !num(m.y) || !num(m.z)) return;
       if (m.kind === 'beam') finishBig('beam');
       if (m.by === net.myPeer) {
         // Acceptance stays acceptance even if a presence gap briefly made us the authority,
         // or the frame already advanced. Never refund an accepted piece.
-        settle(count(m.q) ? m.q : 0, m.kind, from);
+        settle(m.q, m.kind, from);
       }
       if (amAuthority() || coopWire.activeFrame?.() !== st) return;
       GOODS.forEach((g, n) => {
@@ -1018,26 +981,10 @@ export const coop = {
   send: (m: Record<string, unknown>) => COOP && msg(m),
   /** Under the flag, and another tab decides. */
   follower: () => COOP && !amAuthority(),
-  /** Legacy participants keep the existing manual cart: they cannot predict a dry-forge wait. */
-  railCart: () => allPeersSupport((p) => p.railCart),
-  /** 1 = supports the bonus, 2 = riding. Missing/invalid capability keeps every cart at the legacy speed. */
-  rideCart: () => allPeersSupport((p) => p.rideCart > 0),
-  cartRider: () => COOP && [...peers.values()].some((p) => present(p) && p.rideCart === 2),
+  cartRider: () => COOP && [...peers.values()].some((p) => present(p) && p.riding),
   recallPending: () => recallPending !== null,
-  recallSupported: () => allPeersSupport((p) => p.recallCart),
-  recallAvailable: () => coop.recallSupported() || !cartHasDelivery(),
-  /** An older arrival cannot predict the queue. Settle its rack and return destination atomically. */
-  finishRecall() {
-    if (COOP && amAuthority() && !coop.recallSupported()) msg({ k: 'snap', snap: snapshot(), force: true });
-  },
-  /** New request/acceptance names; cartCall retains the legacy immediate recall. */
   recallCart() {
-    if (!job.rung.depot || job.rung.trains || recallPending !== null || !coop.recallAvailable()) return;
-    if (!coop.recallSupported()) {
-      callCart();
-      if (COOP) msg({ k: 'cartCall' });
-      return;
-    }
+    if (!job.rung.depot || job.rung.trains || recallPending !== null) return;
     const to = COOP ? authorityPeer() : null;
     if (to === null) acceptRecall();
     else {
@@ -1137,7 +1084,6 @@ export const coop = {
     since = world.tick;
     ready = true;
     cargoReadyAt = performance.now() + SEEN_MS;
-    if (back.big && bigCargo[back.big].revision === 0) bigCargo[back.big].holder = cargoPeer();
     if (waiting) {
       const j = waiting;
       waiting = null;
@@ -1214,11 +1160,9 @@ export const coop = {
     chopHooks.harvest = requestHarvest;
     chopHooks.rock = (q: Rock) => msg({ k: 'rock', i: q.index, n: q.strokes });
     addPresenceField(COOP_IDENTITY, () => (since >= 0 ? since : null));
-    addPresenceField('placeRailCart', () => (since >= 0 ? 1 : null));
-    addPresenceField('placeCartRide', () => (since >= 0 ? (carry.on === cartPlatform ? 2 : 1) : null));
-    addPresenceField('placeCartRecall', () => (since >= 0 ? 1 : null));
+    addPresenceField('placeCartRide', () => (since >= 0 && carry.on === cartPlatform ? true : null));
     keepPresenceWhile(() => since >= 0);
-    // Keep the legacy log count and cargo recovery fields; chop.ts draws the other worn loads.
+    // Log count and cargo recovery fields; chop.ts draws the other worn loads.
     addPresenceField('placeBack', () => (back.logs > 0 ? back.logs : null));
     addPresenceField('placeBig', () => back.big);
     backSeam.remote = (peer) => peerBack.get(peer) ?? 0;
@@ -1226,21 +1170,16 @@ export const coop = {
       if (!currentCoopPeer(pr)) {
         peers.delete(r.peer);
         peerBack.delete(r.peer);
-        peerBig.delete(r.peer);
         return;
       }
       const b = (pr as { placeBack?: unknown }).placeBack;
       peerBack.set(r.peer, count(b, 64) ? b : 0);
-      const big = (pr as { placeBig?: unknown }).placeBig;
-      peerBig.set(r.peer, big === 'beam' || big === 'boiler' ? big : null);
       if (!peers.has(r.peer)) showBanner('Your partner is here', 'Same railway, same job.', 2.6);
       peers.set(r.peer, {
         since: pr[COOP_IDENTITY],
         visible: r.visible,
         seen: performance.now(),
-        railCart: pr.placeRailCart === 1,
-        rideCart: pr.placeCartRide === 1 || pr.placeCartRide === 2 ? pr.placeCartRide : 0,
-        recallCart: pr.placeCartRecall === 1,
+        riding: pr.placeCartRide === true,
       });
       if (synced) reconcileBig();
     });
@@ -1256,16 +1195,15 @@ export const coop = {
           refund(pending[k]!.kind);
           pending.splice(k, 1);
         }
-      const big = (['beam', 'boiler'] as const).find((what) => bigCargo[what].holder === r.peer) ?? peerBig.get(r.peer);
+      const big = (['beam', 'boiler'] as const).find((what) => bigCargo[what].holder === r.peer);
       // A last presence packet may precede a deposit/fit; never return a consumed piece.
       if (big === 'beam' && trunkTaken() && !beamDelivered()) {
-        if (bigCargo.beam.holder === r.peer || bigCargo.beam.revision === 0) returnBig('beam');
+        returnBig('beam');
       } else if (big === 'boiler' && job.boiler === 2) {
-        if (bigCargo.boiler.holder === r.peer || bigCargo.boiler.revision === 0) returnBig('boiler');
+        returnBig('boiler');
       }
       budget.delete(r.peer);
       peerBack.delete(r.peer);
-      peerBig.delete(r.peer);
       if (peers.delete(r.peer)) showBanner('Your partner left', 'The railway is still here. It just takes longer.', 3);
     });
     onRoomReady((room) => {
@@ -1273,7 +1211,6 @@ export const coop = {
         // The survivors may have returned our cargo while we were gone. Rejoin
         // behind them, just as a newly visible tab does, and take their snapshot.
         if (!connected && since >= 0) {
-          returningBig = back.big;
           clearHarvest(false);
           since = world.tick;
           synced = false;
@@ -1286,15 +1223,15 @@ export const coop = {
         const answer = m.k === 'stock' || m.k === 'no' || m.k === 'harvested' || m.k === 'harvestNo';
         const expected =
           answer &&
-          (pending.some((p) => p.to === from && p.kind === m.kind && (!m.q || p.q === m.q)) ||
+          (pending.some((p) => p.to === from && p.kind === m.kind && p.q === m.q) ||
             (harvestPending?.to === from && harvestPending.q === m.q && harvestPending.i === m.i));
         const recallAnswer =
           m.gen === gen &&
           ((m.k === 'cartRecallAccepted' && from === authorityPeer() && typeof m.queued === 'boolean') ||
             (m.k === 'cartRecallRejected' && from === recallPending && m.to === net.myPeer));
         if (!recallAnswer && !(answer && (from === authorityPeer() || expected)) && !allow(from)) {
-          if (m.k === 'dep' && (m.to === net.myPeer || (!m.to && amAuthority())) && isKind(m.kind))
-            msg({ k: 'no', to: from, kind: m.kind, q: count(m.q) ? m.q : 0 });
+          if (m.k === 'dep' && m.to === net.myPeer && isKind(m.kind) && count(m.q))
+            msg({ k: 'no', to: from, kind: m.kind, q: m.q });
           if (m.k === 'harvest' && m.to === net.myPeer) msg({ k: 'harvestNo', to: from, q: m.q, i: m.i, gen: m.gen });
           if (m.k === 'cartRecall' && m.to === net.myPeer && count(m.gen))
             msg({ k: 'cartRecallRejected', gen: m.gen, to: from } satisfies CartRecallMessage);

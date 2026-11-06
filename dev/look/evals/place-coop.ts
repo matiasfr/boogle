@@ -4,7 +4,7 @@
 // Does the new job stay together: a wake, a deposit from the follower, a chest opened by the follower (the rung is everyone's),
 // a skip to trains, and a train called from a platform. Each says what it sees; read the COOP lines side by side.
 const q = new URLSearchParams(location.search);
-const { COOP_IDENTITY, currentCoopPeer } = (await import(
+const { COOP_IDENTITY } = (await import(
   '/src/proto/place/coop-identity.ts' as string
 )) as typeof import('../../../src/proto/place/coop-identity.ts');
 const who = q.get('player');
@@ -224,7 +224,7 @@ if (q.has('greatCarry')) {
   })();
 } else if (q.has('auto')) {
   // Existing co-op fixture, now exercising the automatic path and its stock contract.
-  const { net, onRemotePresence } = await import('/src/netplay/net.ts' as string);
+  const { net } = await import('/src/netplay/net.ts' as string);
   const { cart, cartHere, cartPlatform, snapCart, automaticRails } = await import(
     '/src/proto/place/depot.ts' as string
   );
@@ -234,22 +234,10 @@ if (q.has('greatCarry')) {
   const { cam } = await import('/src/player/player.ts' as string);
   const hands = await import('/src/player/hands.ts' as string);
   const mode = q.get('auto');
-  let picked = 0,
-    sawLegacy = false;
+  let picked = 0;
   net.room.onMessage((m: { t: string; rails?: number }) => {
     if (m.t === 'cartProbe' && m.rails === 16) picked = m.rails;
   });
-  if (mode === 'legacy') {
-    // Model a missing capability on the wire, without altering production code or its registration.
-    const presence = net.room.presence.bind(net.room);
-    net.room.presence = (p: Record<string, unknown>) => {
-      // Room.presence takes a patch: omission retains an earlier advertised value; null actually deletes it.
-      return presence({ ...p, placeRailCart: null });
-    };
-    onRemotePresence((_r: unknown, pr: Record<string, unknown>) => {
-      if (currentCoopPeer(pr)) sawLegacy = !('placeRailCart' in pr);
-    });
-  }
   const setup = () => {
     place.skipQ5();
     place.lines[1].stage = place.lines[1].stations.findIndex((s: { spec: { id: string } }) => s.spec.id === 'Q4');
@@ -288,14 +276,8 @@ if (q.has('greatCarry')) {
     await wait(1200); // finish the forced skip snapshot before positioning the observers
     const r = place.rack;
     standByRack();
-    if (mode === 'legacy') {
-      await until(() => sawLegacy, 'remote presence lacks rail capability');
-      await until(() => !automaticRails(), 'legacy capability disables auto');
-      await until(() => r.logs === 16, 'legacy logs delivered', 90000);
-      if (r.rails || cart.rails) throw new Error('Legacy room received automatic rails');
-      console.log(`COOP ${who} legacy capability absent ${sawLegacy}, fallback logs ${r.logs} rails ${r.rails}`);
-    } else {
-      await until(() => automaticRails(), 'all peers support auto');
+    {
+      await until(() => automaticRails(), 'automatic delivery available');
       const dry =
         mode === 'dry'
           ? setInterval(() => {
@@ -305,7 +287,7 @@ if (q.has('greatCarry')) {
           : undefined;
       await until(() => cart.leg === 'forge' && cart.auto, 'automatic forge stop', 60000);
       if (dry !== undefined) {
-        await wait(10000); // longer than the legacy empty-cart timeout
+        await wait(10000);
         if (cart.leg !== 'forge' || cart.rails !== 0) throw new Error('Dry forge did not hold shipment');
         clearInterval(dry);
         place.forge.pour = 0;
@@ -352,15 +334,7 @@ if (q.has('greatCarry')) {
   })();
 } else if (q.has('pair')) {
   const rider = who === (q.get('rider') ?? '2');
-  const { remotes, net, onRemotePresence } = await import('/src/netplay/net.ts' as string);
-  let sawLegacyRide = false;
-  if (q.has('legacyRide')) {
-    const presence = net.room.presence.bind(net.room);
-    net.room.presence = (p: Record<string, unknown>) => presence({ ...p, placeCartRide: null });
-    onRemotePresence((_r: unknown, pr: Record<string, unknown>) => {
-      if (currentCoopPeer(pr)) sawLegacyRide = !('placeCartRide' in pr);
-    });
-  }
+  const { remotes, net } = await import('/src/netplay/net.ts' as string);
   const { cart, cartHere, cartPlatform, snapCart } = await import('/src/proto/place/depot.ts' as string);
   const { snapRun } = await import('/src/proto/place/run.ts' as string);
   const { TX, TY, TZ } = await import('/src/proto/place/lines.ts' as string);
@@ -465,10 +439,7 @@ if (q.has('greatCarry')) {
     );
     if (lostRide || maxSpin > 2.01 || maxGap > 3 || maxSpeedGap > 2.5 || !comparisons)
       throw new Error('COOP whole-trip rider, turn or shared position failed');
-    if (q.has('legacyRide') && (!sawLegacyRide || maxSpeed > 9.01))
-      throw new Error('COOP legacy capability failed to keep 9 m/s');
-    if (!q.has('legacyRide') && maxSpeed < 12.99)
-      throw new Error('COOP current peers did not receive the ridden-cart bonus');
+    if (maxSpeed < 12.99) throw new Error('COOP current peers did not receive the ridden-cart bonus');
     console.log(`COOP ${who} rack rails ${place.rack.rails}`);
     const r = place.rack;
     setInterval(() => window.__debugCam?.set([r.x + 10, r.y + 8, r.z + 10], [r.x, r.y + 1, r.z]), 30);

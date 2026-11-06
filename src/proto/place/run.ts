@@ -817,20 +817,6 @@ sharedSlice('trackPanelsV1', {
     restoredPanels = { cursors: [...q.cursors], motion: q.motion };
   },
 });
-sharedSlice('run', {
-  get: () => ({
-    mode: run.mode,
-    k: run.line.k,
-    head: +run.head.toFixed(2),
-    s0: run.stretch0,
-    c0: run.cradle0,
-    r0: run.rack0,
-    c: run.cradle,
-    r: run.rack,
-    depart: run.departT,
-  }),
-  set: () => {}, // ./coop.ts puts a moving machine right; a saved one stands at its station (`placeMachine`)
-});
 /** From a snapshot: the machine mid-job. */
 export function putMachine(j: unknown) {
   const q = (j ?? {}) as {

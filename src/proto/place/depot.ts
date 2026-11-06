@@ -261,30 +261,22 @@ export function callCart() {
   cart.t = 0;
   cart.speed = 0;
 }
-/** New calls protect cargo already promised to the frontier. Legacy callCart keeps its wire meaning. */
+/** Calls protect cargo already promised to the frontier. */
 export function recallCart() {
   if (cart.recallQueued || (cart.called && !cart.auto)) return;
   if (cart.load + cart.rails + pendingLogs + pendingRails > 0) cart.recallQueued = true;
   else callCart();
 }
 export const cartHasDelivery = () => cart.load + cart.rails + pendingLogs + pendingRails > 0;
-/** Only the authority corrects a mixed room at completion; cargo and destination travel together. */
-export const depotRecall = { finished: () => {} };
 let activeStation: () => StationRun | null = () => null;
 export const setDepotFrame = (fn: () => StationRun | null) => void (activeStation = fn);
 /** Installed by pair.ts, which already owns forge/co-op dependencies; no reverse import cycle. */
-export const depotRails = { enabled: () => false, load: () => {}, stock: () => 0 };
+export const depotRails = { load: () => {}, stock: () => 0 };
 /** The prototype authority decides the shared ride bonus; solo reads its own rider. */
-export const depotRide = { enabled: () => false, update: () => {} };
+export const depotRide = { update: () => {} };
 export const automaticRails = () => {
   const st = activeStation();
-  return (
-    job.rung.depot &&
-    !job.rung.trains &&
-    st?.spec.rack === 'cart' &&
-    (st.spec.id === 'Q4' || st.spec.id === 'Q5') &&
-    depotRails.enabled()
-  );
+  return job.rung.depot && !job.rung.trains && st?.spec.rack === 'cart' && (st.spec.id === 'Q4' || st.spec.id === 'Q5');
 };
 export const railsOwed = () => {
   const st = activeStation();
@@ -361,9 +353,8 @@ function stepCart(dt: number) {
   // Only return once the last physical piece has landed, including a full mixed load.
   if (cart.recallQueued && !cartHasDelivery()) {
     callCart();
-    depotRecall.finished();
   }
-  const cruise = cart.boost && cart.manual && depotRide.enabled() ? CART_RIDE_SPEED : CART.speed;
+  const cruise = cart.boost && cart.manual ? CART_RIDE_SPEED : CART.speed;
   car.speedLimit = Math.max(CART.speed, cart.speed, cruise) * 1.5;
   const correction = Math.max(-1.5 * dt, Math.min(1.5 * dt, nudge));
   cart.d += correction;
@@ -566,7 +557,7 @@ export function snapCart() {
   poseOnRoad(car, cart.d);
   drawLoad(cart.load);
 }
-// Additive save/snapshot field: old tabs omit speed; a running follower keeps its predicted speed in that case.
+// Current save/snapshot fields. Readers still bound untrusted values.
 export type DepotSave = {
   logs: number;
   rails: number;
@@ -576,11 +567,11 @@ export type DepotSave = {
   load: number;
   cartRails: number;
   called: boolean;
-  recallQueued?: boolean;
-  speed?: number;
-  auto?: boolean;
-  manual?: boolean;
-  boost?: boolean;
+  recallQueued: boolean;
+  speed: number;
+  auto: boolean;
+  manual: boolean;
+  boost: boolean;
 };
 function readCart(v: unknown) {
   const j = (v ?? {}) as Partial<DepotSave>;
@@ -594,11 +585,8 @@ function readCart(v: unknown) {
     recallQueued: j.recallQueued === true,
     auto: j.auto === true && j.called === true,
     manual: j.manual === true && count(j.cartRails, CART.rails) && j.cartRails > 0,
-    boost:
-      j.boost === true && j.manual === true && count(j.cartRails, CART.rails) && j.cartRails > 0 && depotRide.enabled(),
-    speed: num(j.speed)
-      ? Math.max(0, Math.min(depotRide.enabled() ? CART_RIDE_SPEED : CART.speed, j.speed))
-      : cart.speed,
+    boost: j.boost === true && j.manual === true && count(j.cartRails, CART.rails) && j.cartRails > 0,
+    speed: num(j.speed) ? Math.max(0, Math.min(CART_RIDE_SPEED, j.speed)) : 0,
   };
 }
 /** A follower's cart must follow the authority even when no inventory count changes. */
