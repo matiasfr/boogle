@@ -8,7 +8,8 @@ import { coopWarpOptions, startCoopWarp } from './coop-warp.ts';
 import { IGNORE_TEXT, installObserver, WATCH_MARKS, type Observed } from './observe.ts';
 import { SKIP_DRAWS } from './warp.ts';
 import { parseSession, type Session } from '../playtest/read.ts';
-import { segmentOptions } from './segments.ts';
+import { CHECKPOINTS, segmentOptions } from './segments.ts';
+import { checkpointPair } from './checkpoint-pair.ts';
 import {
   checkpointDirectory,
   readCheckpoint,
@@ -29,6 +30,7 @@ type State = {
   stations: unknown;
   rack: unknown;
   rewards: unknown;
+  town: unknown;
   personal: unknown;
   trains: { s: number; target: number; running: boolean }[];
 };
@@ -48,6 +50,7 @@ const state = (g: Game): Promise<State> =>
       have: l.stations.map(st => Object.fromEntries(Object.keys(st.have).map(k => [k, st.have[k]+st.coming[k]]))) })),
     rack: { on: p.rack.on, x: p.rack.x, z: p.rack.z, logs: shared.depot.logs, rails: shared.depot.rails },
     rewards: { rung: p.job.rung, tech: p.job.tech, gate: p.job.gate, score: p.job.score },
+    town: { people: p.job.people, wood: p.job.wood, stone: p.job.stone },
     personal: { gifts: p.giftState.got, bought: p.giftState.bought, position: me.body.position,
       back: { logs: p.back.logs, rails: p.back.rails, stone: p.back.stone, big: p.back.big } },
     trains: p.lines.map(l => ({ s: l.train.tr.s, target: l.train.tr.target, running: l.train.clockRunning() }))
@@ -68,7 +71,7 @@ export async function coopPlaythrough(options: {
   const seeds = selection.from ? [0, 1].map((i) => readCheckpoint(fixtureDir, selection.from!, 2, i)) : [];
   if (seeds.length && seeds[0]!.route!.step !== seeds[1]!.route!.step)
     throw new Error('Peer checkpoint cursors disagree; regenerate together');
-  const collected: Observed['saves'][] = [[], []];
+  const paired: Observed['saves'][] = [[], []];
   const value = (flag: string) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined);
   const warp = coopWarpOptions(args);
   const params = new URLSearchParams(query);
@@ -98,7 +101,6 @@ export async function coopPlaythrough(options: {
   };
   const archive = async (g: Game, peer: number) => {
     const observed = await g.eval<Observed>('return window.__observe.read()');
-    collected[peer]!.push(...observed.saves);
     const saves = path.join(dir, peer === 0 ? 'saves' : 'p2-saves');
     fs.mkdirSync(saves, { recursive: true });
     for (const [k, save] of observed.saves.entries()) {
@@ -214,6 +216,19 @@ export async function coopPlaythrough(options: {
           wall: (Date.now() - start) / 1000,
           states: await Promise.all(games.map(state)),
         });
+        if (CHECKPOINTS.some((name) => name === first.phase)) {
+          const peers = await Promise.all(
+            games.map((g) =>
+              g.eval<{ authority: boolean; save: Observed['saves'][number] }>(`
+                const name = ${JSON.stringify(first.phase)};
+                window.__observe.take(name, true, true);
+                return { authority: window.__place.coop.debug().amAuthority,
+                  save: window.__observe.read().saves.find(s => s.beat === name) };
+              `),
+            ),
+          );
+          checkpointPair(peers, room).forEach((save, i) => paired[i]!.push(save));
+        }
         // The pages and server are at 1x throughout real navigation. The next clock segment gets a new baseline.
         const interrupt = done ? null : first.phase === 'Q2' ? 'reload' : first.phase === 'Q4' ? 'leave/rejoin' : null;
         if (interrupt) {
@@ -254,7 +269,6 @@ export async function coopPlaythrough(options: {
       }
       if (!done) await sleep(200);
     }
-    await stopClock();
     if (!selection.from && !selection.to && (!reloaded || !rejoined))
       throw new Error('The route skipped a required interruption');
     const atEnding = !selection.to || selection.to === 'pier';
@@ -271,7 +285,7 @@ export async function coopPlaythrough(options: {
         b.peers === 1 &&
         a.pid !== b.pid &&
         (!!selection.from || !!selection.to || (a.delivered > 0 && b.delivered > 0)) &&
-        ['stations', 'rack', 'rewards'].every(
+        ['stations', 'rack', 'rewards', 'town'].every(
           (k) => JSON.stringify(a[k as keyof State]) === JSON.stringify(b[k as keyof State]),
         ) &&
         a.trains.every((t, i) => {
@@ -283,11 +297,12 @@ export async function coopPlaythrough(options: {
     }
     if (matched < 3)
       throw new Error(
-        'Final stations/racks/trains/rewards, contributions or dry pier arrival did not agree; see final-state.json',
+        'Final stations/racks/trains/rewards/population, contributions or dry pier arrival did not agree; see final-state.json',
       );
     say(
-      `COOP both peers agree on stations, rack, trains (2m tolerance), and shared rewards; end=${selection.to ?? 'pier'}`,
+      `COOP both peers agree on stations, rack, trains (2m tolerance), shared rewards and population; end=${selection.to ?? 'pier'}`,
     );
+    await stopClock().catch((e) => errors.push(String(e)));
   } catch (e) {
     errors.push(String(e));
   } finally {
@@ -306,6 +321,7 @@ export async function coopPlaythrough(options: {
     reportGfxErrors(games);
     await sleep(800);
     fs.writeFileSync(path.join(dir, 'checkpoints.json'), JSON.stringify(checkpoints, null, 2));
+    fs.writeFileSync(path.join(dir, 'checkpoint-pairs.json'), JSON.stringify(paired, null, 2));
     for (const [i, log] of logs.entries())
       fs.writeFileSync(path.join(dir, i ? 'p2-bot.txt' : 'bot.txt'), log.join('\n') + '\n');
     const reports = [
@@ -360,8 +376,8 @@ export async function coopPlaythrough(options: {
     ),
   );
   if (selection.regenerate && done && !errors.length) {
-    collected.forEach(requireCheckpoints); // validate both peers before replacing either fixture set
-    for (const [i, saves] of collected.entries()) writeCheckpoints(saves, fixtureDir, params.toString(), i);
+    paired.forEach(requireCheckpoints); // validate both peers before replacing either fixture set
+    for (const [i, saves] of paired.entries()) writeCheckpoints(saves, fixtureDir, params.toString(), i);
   }
   if (!done || errors.length) process.exitCode = 1;
 }
