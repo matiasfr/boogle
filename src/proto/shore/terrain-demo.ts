@@ -11,7 +11,7 @@ const modes: TerrainMode[] = ['today', 'demo', 'biomes', 'no-noise', 'no-ripples
 const patches: { material: MeshStandardNodeMaterial; original: MeshStandardNodeMaterial; origin: number }[] = [];
 
 /** Capture-only A/B switches reuse the actual material, including masks and shadow slots. */
-export function setTerrainDemoMode(mode: TerrainMode) {
+function setTerrainDemoMode(mode: TerrainMode) {
   fineTerrain.value = mode !== 'coarse';
   for (const { material: m, original, origin } of patches) {
     m.vertexColors = original.vertexColors;

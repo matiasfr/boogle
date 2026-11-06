@@ -18,7 +18,7 @@ import { bootMark } from '../../boot/timeline.ts';
 import { LIGHTING_SPECS, SKY_AUTHORING_SPECS } from '../lighting-tuning.ts';
 import { createEveningTransition } from './evening-transition.ts';
 
-export const WATER_TOD = 0.24;
+const WATER_TOD = 0.24;
 export let frozenSkyActive = false;
 let flushLighting: (() => void) | undefined;
 let prepareLighting: (() => Promise<void>) | undefined;

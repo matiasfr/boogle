@@ -66,7 +66,7 @@ export const MAX_VERTS = 2048 * 3; // render.c's vertex buffer
 // and a scale, 3 floats each. As plain numbers it is also the presence wire format (src/features/dino.ts).
 const POSE_INTS = 18,
   SCALE_AT = POSE_INTS + 3;
-export const POSE_LEN = POSE_INTS + 6;
+const POSE_LEN = POSE_INTS + 6;
 const STATE_LEN = 12; // struct ShimState's fields before its pose
 export const isPose = (p: unknown): p is number[] =>
   Array.isArray(p) && p.length === POSE_LEN && p.every(Number.isFinite);

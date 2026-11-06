@@ -169,7 +169,7 @@ const valueNoise = Fn(([p]: [any]) => {
   return mix(mix(x00, x10, u.y), mix(x01, x11, u.y), u.z);
 });
 
-export const sunU = { uCol: uniform(L.discDay.clone()), uFade: uniform(1) };
+const sunU = { uCol: uniform(L.discDay.clone()), uFade: uniform(1) };
 
 // A bright disc, a touch darker at the limb, inside a soft glow of its colour that fades into the sky's own halo
 // (skyColor). Clouds and the sea draw over it.

@@ -19,7 +19,7 @@ export const PROFILES: Record<'ball' | 'item' | 'frisbee', Profile> = {
   frisbee: { power0: 9, powerK: 15, aimUp: 0.03, lift: 0.5, inherit: 0.5, flight: 'glide' },
 };
 
-export const CHARGE_MS = 900; // a full charge
+const CHARGE_MS = 900; // a full charge
 export const AIM_DIST = 30; // metres ahead of the camera that a throw is aimed at
 
 type V3 = { x: number; y: number; z: number };

@@ -101,7 +101,6 @@ const SLOTS: [number, number, number][] = [
   [-X, -Z, 1],
   [X, Z, 1],
 ];
-export const DECK_SLOTS = SLOTS.length;
 export type Deck = {
   frame: THREE.Object3D; // the rear flatbed's look: what the load is parented to
   dipV: (v: number) => void; // kicks the flatbed's springs as a crate lands on it or lets go
@@ -288,4 +287,3 @@ export function updateCrates(dt: number) {
     }
   }
 }
-export const cratesInAir = () => hops.length;

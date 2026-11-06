@@ -44,7 +44,7 @@ const TABS: [GuideKind, string][] = [
 ];
 const LEAVE_MS = 3000;
 // Sections a prototype adds to the Room page, above You.
-export const roomExtras: (() => HTMLElement)[] = [];
+const roomExtras: (() => HTMLElement)[] = [];
 
 // Built on first open (build) and at start (the menu button); used only after.
 let dlg!: HTMLDialogElement;

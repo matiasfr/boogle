@@ -24,7 +24,7 @@ export const TARGET = fallArrival.target
 TARGET.y = fallArrival.ground(TARGET.x, TARGET.z);
 
 const LANDS_PAST = 2; // m past the rail's end you come down, once the air has braked the roll
-export const RAIL_END = TARGET.clone()
+const RAIL_END = TARGET.clone()
   .addScaledVector(FWD, -LANDS_PAST)
   .setY(TARGET.y + HEIGHT);
 export const ROLL_DIST = 8.5; // m the cart rolls before the rail runs out

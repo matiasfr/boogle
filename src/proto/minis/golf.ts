@@ -16,9 +16,9 @@ import { BALL_R } from '../../constants.ts';
 import { onFrame } from '../../loop.ts';
 import { label, best, saveBest, fanfare, confetti, pop, near, onShot, flat, womp } from './common.ts';
 
-export const TEE = { x: 4, z: 19 };
+const TEE = { x: 4, z: 19 };
 export const CUP = { x: -30, z: 16.5 };
-export const PAR = 3;
+const PAR = 3;
 const IN_R = 0.85; // m: inside radius of the bucket
 const WALL = 0.12;
 const DEPTH = 0.85;

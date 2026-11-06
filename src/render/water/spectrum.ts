@@ -179,7 +179,7 @@ function ifft1(re: Float64Array, im: Float64Array) {
 }
 
 // The same transform over rows, then columns.
-export function ifft2(re: Float64Array, im: Float64Array, N: number) {
+function ifft2(re: Float64Array, im: Float64Array, N: number) {
   const rowR = new Float64Array(N),
     rowI = new Float64Array(N);
   for (let j = 0; j < N; j++) {

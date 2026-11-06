@@ -14,7 +14,7 @@ function clearContacts() {
   for (const remove of removeContacts) remove();
   removeContacts = [];
 }
-export function setShoreRocks(enabled: boolean) {
+function setShoreRocks(enabled: boolean) {
   if (!pair) return;
   for (const { geometry, cut } of pair.cuts) geometry.setIndex(enabled ? cut : null);
   pair.high.visible = enabled;

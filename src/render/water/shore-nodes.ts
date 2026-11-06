@@ -18,13 +18,13 @@ export const SHORE_WAVE = {
   speed: ULTRA.shoreSpeed,
   steep: ULTRA.shoreSteep,
 };
-export const SHORE_NODES = {
+const SHORE_NODES = {
   amp: scalar('shore.amplitude', SHORE_WAVE, 'amp'),
   lambda: scalar('shore.wavelength', SHORE_WAVE, 'lambda'),
   speed: scalar('shore.speed', SHORE_WAVE, 'speed'),
   steep: scalar('shore.steepness', SHORE_WAVE, 'steep'),
 };
-export const uSwellDir = tuningEnabled
+const uSwellDir = tuningEnabled
   ? vec2(
       derived(() => -Math.cos((ULTRA.swellBearing * Math.PI) / 180)),
       derived(() => -Math.sin((ULTRA.swellBearing * Math.PI) / 180)),

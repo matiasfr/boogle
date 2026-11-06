@@ -29,7 +29,7 @@ function feather(x: number, z: number) {
   return smoothstep(0, 7.5, Math.min(x - SHORE.x0, SHORE.x1 - x, z - SHORE.z0, SHORE.z1 - z));
 }
 /** Exact original triangle plane, rather than bilinear interpolation across its diagonal. */
-export function originalHeight(x: number, z: number) {
+function originalHeight(x: number, z: number) {
   const u = (x + HALF) / CELL,
     v = (HALF - z) / CELL;
   const i = Math.floor(u),
@@ -42,7 +42,7 @@ export function originalHeight(x: number, z: number) {
     h11 = heights[i + 1]![j + 1]!;
   return a + b <= 1 ? h00 + (h10 - h00) * a + (h01 - h00) * b : h11 + (h01 - h11) * (1 - a) + (h10 - h11) * (1 - b);
 }
-export function shoreHeight(x: number, z: number) {
+function shoreHeight(x: number, z: number) {
   const base = originalHeight(x, z),
     edge = feather(x, z);
   if (!edge) return base;
@@ -73,7 +73,7 @@ export function shoreHeight(x: number, z: number) {
   return base + offset * edge * contact * court * protect * smoothstep(-0.3, 0.25, base);
 }
 
-export function setShoreMode(mode: 'today' | 'smooth' | 'smooth-detail') {
+function setShoreMode(mode: 'today' | 'smooth' | 'smooth-detail') {
   if (!patch) return;
   for (const { geometry, full, cut } of originals) geometry.setIndex(mode === 'today' ? full : cut);
   patch.visible = mode !== 'today';

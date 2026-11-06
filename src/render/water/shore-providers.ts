@@ -22,10 +22,10 @@ export type ShoreProvider = {
 };
 
 export const SHORE_CAPACITY = 8;
-export const SHORE_CORE_SIZE = 512;
-export const SHORE_HALO = 80; // texels retained around the core, including the known-water apron
+const SHORE_CORE_SIZE = 512;
+const SHORE_HALO = 80; // texels retained around the core, including the known-water apron
 export const SHORE_SIZE = SHORE_CORE_SIZE + 2 * SHORE_HALO;
-export const OPEN_BED = -60;
+const OPEN_BED = -60;
 const providers = new Map<string, ShoreProvider>();
 let version = 0;
 const within = (b: ShoreBounds, x: number, z: number) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
@@ -84,7 +84,7 @@ export function registerShoreProvider(provider: ShoreProvider) {
 }
 
 /** Only real source samples are valid. Never clamp an out-of-domain lookup onto an edge. */
-export function shoreBedAt(x: number, z: number) {
+function shoreBedAt(x: number, z: number) {
   return sampleProviders(ordered(), x, z);
 }
 function sampleProviders(ps: readonly ShoreProvider[], x: number, z: number) {

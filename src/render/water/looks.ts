@@ -8,7 +8,7 @@ import { toySkyEnabled } from './flags.ts';
 import { graphicsOverrides } from '../../graphics-settings.ts';
 import { exposureSettings } from '../exposure.ts';
 
-export const LOOK_STORAGE = 'boogle.dev.looks.v1';
+const LOOK_STORAGE = 'boogle.dev.looks.v1';
 export const LOOKS = {
   current: { label: 'Current', curve: 'neutral', trim: 1, lift: 0, power: 1.12, saturation: 1.3 },
   clean: { label: 'Clean toys', curve: 'neutral', trim: 1 / 0.771116, lift: 0, power: 1.12, saturation: 1.3 },

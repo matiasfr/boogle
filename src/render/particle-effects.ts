@@ -4,7 +4,7 @@ import { reducedMotion } from '../constants.ts';
 import { emit, type Particle } from './particles.ts';
 
 /** Small typed authoring surface; visual-only, never saved or sent to another player. */
-export const particleEffects = { dustAlpha: 0.36, chipSize: 0.22, chipGravity: 12, landingMaxHeight: 4 };
+const particleEffects = { dustAlpha: 0.36, chipSize: 0.22, chipGravity: 12, landingMaxHeight: 4 };
 const timber = [new THREE.Color('#e5b77c'), new THREE.Color('#bb793e'), new THREE.Color('#f2d2a0')];
 const stone = new THREE.Color('#9caaa9');
 const dust = new THREE.Color('#cdbb9a'),

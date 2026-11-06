@@ -39,7 +39,7 @@ import {
   type Kind,
 } from './crates.ts';
 
-export const DEPOT_TUNE = {
+const DEPOT_TUNE = {
   sites: [
     { back: 56, side: 5.5, cap: 9, drop: 3, starter: 0 }, // beside section 0, 56 m short of the ring at Camp 1
     { back: 28, side: -5.5, cap: 14, drop: 4, starter: 3 }, // beside section 1, 28 m short of Camp 2's ring, and it goes up stocked: the easier trip
@@ -64,7 +64,16 @@ const PIECES: Piece[] = [
   P(3, 1.5, 6.1, -2.6, 2, 1.2, 0.12, FLAG),
 ];
 
-type Depot = { camp: Camp; heap: Heap; cap: number; drop: number; starter: number; at: THREE.Vector2; up: number; near: boolean };
+type Depot = {
+  camp: Camp;
+  heap: Heap;
+  cap: number;
+  drop: number;
+  starter: number;
+  at: THREE.Vector2;
+  up: number;
+  near: boolean;
+};
 const depots: Depot[] = DEPOT_TUNE.sites.map((d, k) => {
   const a = ROUTE[k]!,
     b = stopAt(k + 1);

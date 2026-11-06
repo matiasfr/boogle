@@ -27,7 +27,7 @@ const playerChoices: Record<string, readonly GraphicsValue[]> = {
   msaa: [true, false],
   caustics: [true, false],
 };
-export const graphicsPresets = {
+const graphicsPresets = {
   quality: { resolution: 1, frameLimit: 60, caustics: true },
   performance: { resolution: 0.8, frameLimit: 60, caustics: true },
   battery: { resolution: 0.6, frameLimit: 30, caustics: true },

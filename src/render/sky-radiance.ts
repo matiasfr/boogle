@@ -38,10 +38,3 @@ export function skyRadiance(d: N, roughness: N = float(0)) {
   );
   return col;
 }
-
-export const gameWaterSky = {
-  sunColor: uniform(new Color(1, 1, 1)), // coordinator copies the actual active key light, including the moon
-  skyAt: (direction: N, roughness: N) => TSL.min(skyRadiance(direction, roughness), 1),
-  skyLod: (direction: N, lod: N) => TSL.min(skyRadiance(direction, lod.div(10)), 1),
-  ambient: (normal: N) => TSL.min(skyRadiance(normal, float(1)), 1),
-};
