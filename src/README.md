@@ -48,5 +48,4 @@ so hashed file names don't depend on it).
   `features/dino.ts`. Working on it: [guest/README.md](guest/README.md).
 - `proto/`: find-the-fun prototypes too big for one feature file, loaded behind their `?proto=` flag by a stub in
   `features/` that asks `proto/flags.ts` (`protoOn`, `protoV`); Place is also the default entry. `proto/session.ts`
-  starts spawn placement, counters and traces without an in-game panel (`proto/soapbox/`: the soapbox cart;
-  docs/plans/find-the-fun.md).
+  starts spawn placement, counters and traces without an in-game panel (docs/plans/find-the-fun.md).

@@ -1726,14 +1726,6 @@
       "eslint": false
     },
     {
-      "group": "entity exempt src/features/proto-soapbox.ts",
-      "file": "src/features/proto-soapbox.ts",
-      "code": "onFrame(()=>{});",
-      "rule": "boogle/use-an-entity",
-      "expected": false,
-      "eslint": false
-    },
-    {
       "group": "recommended debugger",
       "file": "dev/lint-probe.ts",
       "code": "debugger;",

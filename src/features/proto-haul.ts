@@ -1,16 +1,7 @@
-// The haul playtest kit (docs/playtest-kits/haul.md): with `?proto=haul` this loads src/debug/haul-kit.ts in its own
-// chunk, a live tuning panel for the haul loop (Local feel numbers, and in a `proto-` room the room-wide lockstep
-// ones). Without the flag nothing loads. It also hands the host check for tuning (env.protoRoom: is this a `proto-`
-// room) to validate, for the rare tab that hosts; the server sets its own (src/world/rules/tune.ts).
-// Serves DESIGN.md 1 (toys before chores: tune the haul until carrying a load of wood is fun with no goal).
+// Hands the host check for tuning (env.protoRoom: is this a `proto-` room) to validate, for the rare tab that hosts; the
+// server sets its own (src/world/rules/tune.ts).
 import { setEnv } from '../world/sync.ts';
 import { getRoomId } from '../netplay/net.ts';
 import { isProtoRoom } from '../sim/tune.ts';
-import { protoOn } from '../proto/flags.ts';
-import { background } from '../async.ts';
 
 setEnv({ protoRoom: isProtoRoom(getRoomId()) });
-if (protoOn('haul')) {
-  background(import('../debug/haul-kit.ts'), 'haul kit');
-  background(import('../proto/haul/index.ts'), 'haul prototype'); // pickup feel, and with &v=wave or &v=magnet another take on hauling
-}

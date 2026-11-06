@@ -24,12 +24,12 @@ const clusters = [
 ] as const;
 
 /** Typed recipe controls; changing them needs a reload, never an in-play bake. */
-export const SKY_ART = {
+const SKY_ART = {
   summer: { edge: 0.16, hazeTop: 0.18, base: [0.58, 0.67, 0.78], crown: [1.02, 1.03, 1] },
   windpaint: { edge: 0.035, hazeTop: 0.11, base: [0.65, 0.69, 0.83], crown: [1.04, 1.02, 0.93] },
 } as const;
 
-export function summerGradient(direction: N): N {
+function summerGradient(direction: N): N {
   const h = max(direction.y, 0);
   const blue = mix(vec3(0.17, 0.48, 0.88), vec3(0.055, 0.24, 0.64), pow(smoothstep(0.06, 0.85, h), 0.65));
   return mix(vec3(0.62, 0.76, 0.88), blue, smoothstep(0, SKY_ART.summer.hazeTop, h));

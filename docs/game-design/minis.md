@@ -41,9 +41,8 @@ the sand, each as a motion sheet in `.look/scenarios/minis/`.
 
 ## Files
 
-[src/proto/minis/](../../src/proto/minis/) (`golf.ts`, `hop.ts`, `common.ts`: labels, bests, sounds,
-confetti and your ball shots), [src/features/proto-minis.ts](../../src/features/proto-minis.ts),
-[dev/scenarios/minis.ts](../../dev/scenarios/minis.ts).
+`src/proto/minis/` (`golf.ts`, `hop.ts` removed from `main`; [common.ts](../../src/proto/minis/common.ts) stays: labels, bests,
+sounds, confetti), `src/features/proto-minis.ts` and `dev/scenarios/minis.ts` (removed).
 
 ## Not built
 

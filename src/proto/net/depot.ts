@@ -16,7 +16,7 @@ import { net } from '../../netplay/net.ts';
 import { identity } from '../../player/identity.ts';
 import { me } from '../../player/player.ts';
 import { registerInteractable, NO_TARGETS, type Interactable } from '../../player/hands.ts';
-import { haulHooks } from '../../player/haul-variant.ts';
+import { haulHooks } from '../../player/haul-hooks.ts';
 import { cellX, cellZ, groundHeight } from '../../island/terrain.ts';
 import { fly } from '../../render/haul-pieces.ts';
 import { ROUTE, TRACK } from '../../sim/route.ts';

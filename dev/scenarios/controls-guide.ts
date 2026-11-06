@@ -108,25 +108,6 @@ export default {
 
     await g.ctx.close();
 
-    // With the soapbox (?proto=soapbox) there is a Driving set: steer on the left stick, drift on A.
-    const car = await t.open({ name: 'driver', hud: true, size: [1194, 834], query: 'proto=soapbox' });
-    await car.waitFor(`!!(await import('/src/player/controls.ts')).controlById('soapbox-steer')`, { timeout: 20000 });
-    await car.eval(`${SHOWN} document.body.dataset.pad = 'ps'; document.body.classList.add('gamepad'); openPause('controls');
-      document.querySelector('[data-ctx=driving]')?.click();`);
-    await car.wait(0.5);
-    const drive = await car.eval(DIAGRAM);
-    const driveHot = await car.eval(`return [...document.querySelectorAll('.pd-hot')].map((e) => e.dataset.id);`);
-    const driveShot = await car.still('diagram-driving');
-    t.check(
-      'with the soapbox, the Driving set marks steer and drift',
-      drive.context === 'driving' &&
-        driveHot.includes('soapbox-steer') &&
-        driveHot.includes('soapbox-drift') &&
-        !drive.hscroll,
-      `${JSON.stringify({ drive, driveHot })}; ${driveShot}`,
-    );
-    await car.ctx.close();
-
     const phone = await t.open({ name: 'phone', hud: true, touch: true, size: [390, 844] });
     await phone.wait(0.6);
     const touch = await phone.eval(`${LIST}

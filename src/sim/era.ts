@@ -14,7 +14,7 @@ export const CALL_S = 45;
 /** Seconds of bell before the swap. The owner hasn't decided whether to keep the countdown: this is its one knob. */
 export const BELL_S = 10;
 const CALL_TICKS = (CALL_S * 1000) / MS_PER_TICK;
-export const BELL_TICKS = (BELL_S * 1000) / MS_PER_TICK;
+const BELL_TICKS = (BELL_S * 1000) / MS_PER_TICK;
 /** The full script, when nobody ends the call early. */
 export const OPENING_DAY: readonly Phase[] = [
   { name: 'call', len: CALL_TICKS },
