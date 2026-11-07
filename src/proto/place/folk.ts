@@ -106,7 +106,6 @@ type Guy = {
   site: Site | null;
   seat: number;
   side: number;
-  far: number;
   px: number; // where it stood last frame: the stride follows how fast it really goes
   pz: number;
   chat: 0 | 1 | 2; // in an exchange: 1 saying something, 2 listening
@@ -163,7 +162,6 @@ function make(job: Job, x: number, z: number, extra?: Partial<Guy>): Guy {
     site: null,
     seat: 0,
     side: rng() < 0.5 ? 1 : -1,
-    far: 0,
     px: x,
     pz: z,
     chat: 0,
@@ -238,7 +236,7 @@ const riders = Array.from({ length: RIDERS * 2 }, (_, k) =>
 
 // Once a path's open they use it: a few of them walk the new track, there and back, all day. The first time they run.
 const commuters = Array.from({ length: COMMUTERS }, (_, k) =>
-  make('commuter', 0, 0, { on: false, seat: k, side: k % 2 ? 1 : -1, far: 0, tx: 0 }),
+  make('commuter', 0, 0, { on: false, seat: k, side: k % 2 ? 1 : -1, tx: 0 }),
 );
 // The depot's cart: two of them shoving it along, a real but small job (./depot.ts).
 const pushers = Array.from({ length: PUSHERS }, (_, k) => make('pusher', 0, 0, { on: false, seat: k }));
@@ -892,6 +890,7 @@ function pose(g: Guy) {
 }
 const tr = new THREE.Matrix4();
 const NEAR_CAM = 2.5; // m
+const SLEEP = 150; // m from the camera past which they stop updating and aren't drawn
 const BEHIND = 6; // m behind the camera's plane before someone isn't drawn: past their shadow's reach into the view
 const look = new THREE.Vector3();
 const wp = new THREE.Vector3();
@@ -1121,9 +1120,7 @@ function updateTalk(dt: number) {
   ex.t = said.ms / 1000 + TALK.gap;
 }
 
-let frame = 0;
 export function updateFolk(dt: number) {
-  frame++;
   commuteRun = Math.max(0, commuteRun - dt);
   const b = me.body;
   you.ok = !!b;
@@ -1152,19 +1149,18 @@ export function updateFolk(dt: number) {
   const cx = camera.position.x,
     cz = camera.position.z;
   const e_ = env;
-  camera.getWorldDirection(look);
+  let looked = false;
   slot = 0;
   for (const g of guys) {
     if (!g.on) continue;
     const d2 = (g.x - cx) ** 2 + (g.z - cz) ** 2;
-    const far = d2 > 150 * 150;
-    // Out of sight of the camera, they're looked at less often.
+    const far = d2 > SLEEP * SLEEP;
+    // Past what the camera can pick out they sleep: no brain, no matrices, frozen where they stood (nothing shared reads
+    // them: folk are local to each client, drawn only here). They are drawn from the same distance, so waking is unseen.
+    // Riders and pushers follow a vehicle, so they keep their place there but aren't posed.
     if (far && g.mood !== 'ride' && g.job !== 'rider' && g.job !== 'pusher') {
-      g.far += dt;
-      if ((frame + g.k) % 8 === 0) {
-        brain(g, Math.min(0.5, g.far));
-        g.far = 0;
-      }
+      g.px = g.x;
+      g.pz = g.z;
       continue;
     }
     if (g.mood === 'walk' || g.mood === 'carry' || g.mood === 'run') {
@@ -1198,11 +1194,16 @@ export function updateFolk(dt: number) {
       if (Math.abs(wrapped) < 1.4) glance = Math.max(-0.55, Math.min(0.55, wrapped));
     }
     g.gaze += (glance - g.gaze) * (1 - Math.exp(-dt * 5));
+    if (far) continue;
     // Never in the lens: anyone within a couple of metres of the camera isn't drawn.
     const nx = g.x - cx,
       ny = (g.fy ?? g.y) + 0.5 - camera.position.y,
       nz = g.z - cz;
     if (nx * nx + ny * ny + nz * nz < NEAR_CAM * NEAR_CAM) continue;
+    if (!looked) {
+      camera.getWorldDirection(look);
+      looked = true;
+    }
     if (nx * look.x + ny * look.y + nz * look.z < -BEHIND) continue;
     pose(g);
   }
