@@ -21,6 +21,12 @@ const cameras = [
   { name: 'Gorge bridge: down the split to Ring', cam: [-103, 93, -1988], look: [1190, 100, -1130] },
   { name: 'Canopy Town: the cleft', cam: [-1100, 20, -300], look: [-50, 14, -850] },
 ] satisfies ShotList['beats'][number]['cameras'];
+// Line 2 part 2 (the `works` marks and the survey line, docs/plans/line2-part2-greybox.md): where each payoff reads.
+const works = [
+  { name: 'Q4 frame: the rim and the sea', cam: [1083.7, 30, 36.7], look: [1330, 22, -150] },
+  { name: 'Far Head: the trestle back to the quarry', cam: [1362, 31, -166], look: [1083, 24, 37] },
+  { name: 'Pier: Ring Island to the north', cam: [1402, 12, -372], look: [1330, 70, -1120] },
+] satisfies ShotList['beats'][number]['cameras'];
 export default {
   question: 'Do the Sickle Isles read at play distance with the game camera, sea, sky and fog?',
   size: [960, 600],
@@ -34,6 +40,13 @@ export default {
         { name: 'Greybox fog (3.6 km)', query: 'dev=1&greybox=sickle&labels=0' },
         { name: 'Live game fog (1.5 km)', query: 'dev=1&greybox=sickle&labels=0&gbfog=game' },
       ],
+    },
+    {
+      name: 'Line 2 works and survey line',
+      query: 'dev=1&greybox=sickle&labels=0',
+      warm: 4,
+      cameras: works,
+      variants: [{ name: 'Greybox fog (3.6 km)', query: 'dev=1&greybox=sickle&labels=0' }],
     },
   ],
 } satisfies ShotList;
