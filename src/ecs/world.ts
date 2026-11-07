@@ -35,6 +35,11 @@ type Table = {
 const DEAD: AnyRow = Object.freeze({});
 // A row's last marked epoch, under a symbol: never a field, never in JSON, hash or snapshot (they walk the schema).
 const MARK = Symbol('marked');
+// Non-enumerable, so a spread or Object.assign of a row never carries it to another row.
+function stamp(r: object, epoch: number) {
+  if (Object.hasOwn(r, MARK)) (r as { [MARK]: number })[MARK] = epoch;
+  else Object.defineProperty(r, MARK, { value: epoch, writable: true });
+}
 type State = { tables: Table[]; next: number };
 type Op =
   | { t: 'spawn'; id: number; pairs: readonly (readonly [AnyComponent, object])[] }
@@ -85,7 +90,8 @@ export interface World {
   despawn(id: number): void;
   add<C extends AnyComponent>(id: number, c: C, row: Partial<RowOf<C>>): void;
   remove(id: number, c: AnyComponent): void;
-  /** The next spawn takes this id (a predicted entity's temporary id); later spawns count on from it. */
+  /** The next spawn takes this id (a replica's id from its server, or a predicted entity's temporary one); the
+   * counter moves past it if it was behind, so later stamps never collide with it. */
   reserve(id: number): void;
   nextId(): number;
   /** Run one system now: access is checked, structure is applied at its end, the audit runs in tests. */
@@ -207,6 +213,7 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
   const ops: Op[] = [];
   let marked: Set<string> | null = null; // the audit: what this system run marked
   let iterating = 0;
+  let reserved: number | null = null;
 
   function table(c: AnyComponent, need: number) {
     const t = st.tables[c.cid];
@@ -221,7 +228,7 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
     if (row) {
       const r = row as AnyRow & { [MARK]?: number };
       if (r[MARK] === t.epoch) return;
-      r[MARK] = t.epoch;
+      stamp(r, t.epoch);
     }
     t.marked.push(id);
   }
@@ -246,7 +253,7 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
       t.list.splice(k, 0, row);
     }
     t.rows.set(id, row);
-    (row as AnyRow & { [MARK]?: number })[MARK] = t.epoch;
+    if (t.c.track) stamp(row, t.epoch);
     mark(t, id);
   }
   function drop(t: Table, id: number) {
@@ -377,7 +384,9 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
     },
     spawn(...pairs) {
       for (const [c] of pairs) table(c, 2);
-      const id = st.next++;
+      const id = reserved ?? st.next++;
+      if (reserved !== null && reserved >= st.next) st.next = reserved + 1;
+      reserved = null;
       structural({ t: 'spawn', id, pairs });
       return id;
     },
@@ -396,7 +405,7 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
     reserve(id) {
       if (!Number.isSafeInteger(id)) throw new Error('world: reserve');
       for (const c of components) if (st.tables[c.cid]!.rows.has(id)) throw new Error(`world: id ${id} in use`);
-      st.next = id;
+      reserved = id;
     },
     nextId: () => st.next,
     run<I, R>(s: System<I, R>, input: I): R {

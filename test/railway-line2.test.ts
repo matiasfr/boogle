@@ -1,23 +1,24 @@
-// Line two's accounts: forge bills and pour, Q1-Q3 funding and laying, the depot, lever and hook readiness.
+// Line two's accounts: forge bills and pour, Q1-Q3 funding and laying, the depot, lever and hook readiness
+// (line two's systems on E, through ./railway-live.ts).
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { railAccount, railCounts, type Railway, type RailAction } from '../src/sim/railway.ts';
+import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
+import { railGrowthMask } from '../src/sim/railway-supply.ts';
+import { Forge, QJob, QJobRun, Rail, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
 import {
   createRailway,
-  railSession,
-  railAccount,
+  hash as hashOf,
+  invariant as railwayInvariant,
+  live as liveOf,
   railApply,
-  railTick,
   railResume,
-  railCounts,
-  serializeRailway,
-  loadRailway,
-  railwayInvariant,
-  hashRailway,
-  type Railway,
-  type RailAction,
-} from '../src/sim/railway.ts';
-import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
-import { railSupplyPulse, railGrowthMask } from '../src/sim/railway-supply.ts';
+  railSession,
+  railSupplyPulse,
+  railTick,
+  restore as restored,
+  worldOf,
+} from './railway-live.ts';
 import { line2Active, line2Completed, line2GateOpen, line2Schedule } from '../src/sim/railway-line2.ts';
 import { LINE2_FORGE, LINE2_STATIONS, LINE2_DEPOT, line2Routes } from '../src/sim/railway-line2-layout.ts';
 
@@ -82,7 +83,7 @@ function finishLine1(s: Railway, w: World) {
   assert.equal(s.line!.jobs[1].completion, 1, stations.join());
 }
 function pathOpen(): World {
-  const s = createRailway(true, true);
+  const s = createRailway();
   for (const pid of ['a', 'b']) railSession(s, pid, 1);
   railApply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   const w = { s, t: 40 };
@@ -90,11 +91,7 @@ function pathOpen(): World {
   return w;
 }
 function restore(w: World) {
-  const n = createRailway(true, true),
-    pids = w.s.accounts.map((a) => a.pid);
-  loadRailway(n, JSON.parse(JSON.stringify(serializeRailway(w.s, pids))), pids);
-  assert.equal(hashRailway(w.s, pids), hashRailway(n, pids));
-  w.s = n;
+  w.s = restored(w.s);
 }
 function finishQ(w: World, k: number) {
   const job = w.s.line2!.jobs[k]!;
@@ -104,7 +101,7 @@ function finishQ(w: World, k: number) {
 }
 
 test('forge refuses logs before the path, lights at exactly 56 and pours conserved rails to its rack', () => {
-  const s = createRailway(true, true);
+  const s = createRailway();
   railSession(s, 'a', 1);
   railApply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   const early = { s, t: 40 };
@@ -226,30 +223,33 @@ test('malformed line-two documents fail atomically', () => {
   const w = pathOpen();
   logs(w, 'a', 'F', 56);
   advance(w, 40);
-  const pids = w.s.accounts.map((a) => a.pid);
-  const good = serializeRailway(w.s, pids);
-  const hash = hashRailway(w.s, pids);
-  const set = (text: string, i: number, n: number) =>
-    text
-      .split('.')
-      .map((v, k) => (k === i ? n.toString(36) : v))
-      .join('.');
-  const cases: [string, (j: ReturnType<typeof serializeRailway>) => void][] = [
-    ['lever before Q3', (j) => (j.line2!.v = 1)],
-    ['hook before Q2', (j) => (j.line2!.v = 2)],
-    ['minted rail', (j) => (j.line2!.f = set(j.line2!.f, 2, w.s.line2!.forge.rack + 1))],
-    ['unlit pour', (j) => (j.line2!.f = set(j.line2!.f, 1, -1))],
-    ['funded without rails', (j) => (j.line2!.j[0] = set(set(j.line2!.j[0]!, 2, w.t), 4, w.t))],
-    ['noncanonical number', (j) => (j.line2!.f = `0${j.line2!.f}`)],
-    ['extra key', (j) => ((j.line2 as unknown as Record<string, unknown>).x = 1)],
-    ['early depot', (j) => (j.line2!.d = '8.5.0.8.0')],
-    ['depot output over bill', (j) => (j.line2!.d = '0.5.0.25.0')],
+  const good = worldOf(w.s).snapshot();
+  const hash = hashOf(w.s);
+  type Snap = typeof good;
+  const col = (j: Snap, c: { kind: string; names: readonly string[] }, field: string) =>
+    j.c[c.kind]![1 + c.names.indexOf(field)]!;
+  const cases: [string, (j: Snap) => void][] = [
+    ['lever before Q3', (j) => (col(j, Rail, 'lever')[0] = 1)],
+    ['hook before Q2', (j) => (col(j, Rail, 'hook')[0] = 1)],
+    ['minted rail', (j) => (col(j, Forge, 'rack')[0] = w.s.line2!.forge.rack + 1)],
+    ['unlit pour', (j) => (col(j, Forge, 'lit')[0] = -1)],
+    [
+      'funded without rails',
+      (j) => {
+        col(j, QJob, 'start')[0] = w.t;
+        col(j, QJobRun, 'lastTick')[0] = w.t;
+      },
+    ],
+    ['a fraction', (j) => (col(j, Forge, 'rack')[0] = 0.5)],
+    ['an unknown component', (j) => (j.c.extra = [[]])],
+    ['early depot', (j) => (col(j, Rail, 'depot')[0] = 8)],
+    ['depot output over bill', (j) => (col(j, Rail, 'out1')[0] = 25)],
   ];
   for (const [name, change] of cases) {
-    const j = JSON.parse(JSON.stringify(good)) as ReturnType<typeof serializeRailway>;
+    const j = JSON.parse(JSON.stringify(good)) as Snap;
     change(j);
-    assert.throws(() => loadRailway(w.s, j, pids), Error, name);
-    assert.equal(hashRailway(w.s, pids), hash, name);
+    assert.throws(() => worldOf(w.s).load(j, railwayCheck), Error, name);
+    assert.equal(hashOf(w.s), hash, name);
   }
   assert.equal(LINE2_STATIONS.length, 3);
 });
@@ -295,11 +295,10 @@ test('a peer resuming mid-Q2 after a restart matches one that never went offline
   assert.ok(job.start >= 0);
   advance(live, 20);
   // The host restarts from the saved document; the stretch catches up once for the time it was down.
-  const pids = live.s.accounts.map((a) => a.pid);
-  const saved = JSON.parse(JSON.stringify(serializeRailway(live.s, pids)));
-  const restarted = createRailway(true, true);
-  loadRailway(restarted, saved, pids);
-  assert.equal(hashRailway(restarted, pids), hashRailway(live.s, pids));
+  const world = createRailwayWorld({ audit: true });
+  world.load(JSON.parse(JSON.stringify(worldOf(live.s).snapshot())), railwayCheck);
+  const restarted = liveOf(world);
+  assert.equal(hashOf(restarted), hashOf(live.s));
   const gap = 40;
   // A restarted room's clock resumes from its saved tick: downtime arrives only as the bounded resume.
   assert.equal(railResume(restarted, gap, 11, live.t), gap);
@@ -339,10 +338,9 @@ test('the away credit fills the forge rack and the depot cart once, never past t
   assert.equal(railCounts(w.s).produced, produced + (l.depot - before.depot), 'depot logs are counted production');
   assert.equal(railwayInvariant(w.s), null);
   // The same marker never credits twice; a long absence fills the yards to their limits, no further.
-  const pids = w.s.accounts.map((a) => a.pid);
-  const hash = hashRailway(w.s, pids);
+  const hash = hashOf(w.s);
   assert.equal(railResume(w.s, 0, 20, w.t, 1000000), 0);
-  assert.equal(hashRailway(w.s, pids), hash, 'a repeated marker credits nothing');
+  assert.equal(hashOf(w.s), hash, 'a repeated marker credits nothing');
   railResume(w.s, 0, 21, w.t, 1000000);
   assert.equal(l.forge.rack, LINE2_FORGE.rackMax, 'the rack caps the forge');
   assert.equal(Math.min(bill - stock - l.depot, bill - l.depotOut[k]!), 0, 'the depot fills what the stretch needs');

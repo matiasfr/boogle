@@ -18,8 +18,10 @@
 // v15 (2026-11-06): the `railBeamGraceS` tunable (an absent carrier keeps the beam, then it goes down where they stood).
 // v16 (2026-11-07): the great beam pass: the first axe fells the great tree in either order with the 40 logs, and the
 // proper axe comes from the lit forge (a save holding the axe before the forge no longer loads).
+// v17 (2026-11-07): the railway's state is an E world (docs/plans/ecs-e.md): saved as its schema snapshot, catalog
+// kinds and accounts replicated by entity id with their slot or pid.
 // Pure: read by room routing and tests.
-export const WORLD_NS = 'v16';
+export const WORLD_NS = 'v17';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

@@ -10,16 +10,9 @@ import { createStore } from '../src/store.ts';
 import { createService, loadConfig } from '../src/server.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import {
-  createRailway,
-  railSession,
-  railApply,
-  serializeRailway,
-  loadRailway,
-  railwayInvariant,
-  railCounts,
-  type Railway,
-} from '../../src/sim/railway.ts';
+import { railCounts, type Railway } from '../../src/sim/railway.ts';
+import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
+import { createRailway, live, railApply, railSession, worldOf } from '../../test/railway-live.ts';
 import { line2Active } from '../../src/sim/railway-line2.ts';
 import { LINE2_FORGE, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
 import { railAwayCredit, RAIL_AWAY } from '../../src/sim/railway-away.ts';
@@ -68,8 +61,7 @@ async function fixture(name: string) {
         clock.now += 100;
         host.step(0.1);
       }
-      const pids = w.s.accounts.map((a) => a.pid);
-      loadRailway(host.rules.railway.railway, JSON.parse(JSON.stringify(serializeRailway(w.s, pids))), pids);
+      host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
       host.rules.railway.touchAll();
       host.sync.saveNow(true);
       await host.sync.whenDurable();
@@ -113,7 +105,7 @@ test('a paused room stands still, and the next join applies one capped credit to
       act(w, pid, 'rail.forgeTake');
     }
     await f.adopt(w);
-    const s = f.railway;
+    const s = live(() => f.host.rules.railway.world()); // the room's state as it is at every read
     assert.equal(line2Active(s), 1, 'Q2 takes materials: the depot cart runs');
     await f.ticks(1); // the supply pulse stamps its minute
     const total = railCounts(s).total - railCounts(s).produced;
@@ -158,7 +150,7 @@ test('a join after N hours finishes the funded job once; a rejoin before the roo
   const f = await fixture('away-job');
   try {
     f.host.wake();
-    const s0 = createRailway(true, true);
+    const s0 = createRailway();
     for (const pid of ['a', 'b']) railSession(s0, pid, 1);
     railApply(s0, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
     const w = { s: s0, t: 40 };

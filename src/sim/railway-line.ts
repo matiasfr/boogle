@@ -1,7 +1,7 @@
-// Line one's deterministic material and singleton authority. Legacy T1 keeps its original path.
-import type { RailAccount, RailAction, Railway } from './railway.ts';
-import { LINE1_STATIONS, LINE1_GREAT_TREE, LINE1_RAIL_PAIRS, lineBeamGround } from './railway-line-layout.ts';
-import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from './railway-layout.ts';
+// Line one's shapes and read helpers on the read model; its rules are systems in ./railway-systems.ts.
+import type { RailAccount, Railway } from './railway.ts';
+import { LINE1_STATIONS, LINE1_RAIL_PAIRS, lineBeamGround } from './railway-line-layout.ts';
+import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { lineSchedule, linePanelCount, type LineTiming } from './railway-line-schedule.ts';
 
 export const LINE_TIMING: Readonly<LineTiming> = {
@@ -53,54 +53,7 @@ export type RailLine = {
   hardwoodWork: number[];
   beam: RailBeam;
 };
-const newJob = (): RailJob => ({
-  stock: 0,
-  allocation: 0,
-  used: 0,
-  delivered: 0,
-  start: -1,
-  elapsed: 0,
-  lastTick: 0,
-  completion: 0,
-  stoneStock: 0,
-  stoneAllocation: 0,
-  stoneUsed: 0,
-  stoneDelivered: 0,
-  timing: { ...LINE_TIMING },
-});
-export const createRailLine = (): RailLine => ({
-  jobs: [newJob(), newJob()],
-  axe: false,
-  jump: false,
-  rocks: [8, 8, 8],
-  rockWork: [0, 0, 0],
-  rockAge: [0, 0, 0],
-  stoneRack: 0,
-  stoneProduced: 0,
-  upgrades: RAILWAY_SOURCES.map(() => false),
-  hardwood: [15, 15],
-  hardwoodWork: [0, 0],
-  beam: {
-    state: 'standing',
-    work: 0,
-    holder: '',
-    epoch: 0,
-    revision: 0,
-    x: LINE1_GREAT_TREE.x,
-    y: 3000,
-    z: LINE1_GREAT_TREE.z,
-    age: 0,
-  },
-});
 export const railCarry = (a: RailAccount) => a.carry + (a.stone ?? 0) + (a.rails ?? 0);
-/** Balance of one material kind: 0 logs, 1 stone, 2 rails. */
-const balanceOf = (a: RailAccount, kind: number) =>
-  kind === 1 ? (a.stone ?? 0) : kind === 2 ? (a.rails ?? 0) : a.carry;
-function credit(a: RailAccount, kind: number, n: number) {
-  if (kind === 1) a.stone = (a.stone ?? 0) + n;
-  else if (kind === 2) a.rails = (a.rails ?? 0) + n;
-  else a.carry += n;
-}
 export const railJobs = (s: Railway): (RailJob | Railway)[] => (s.line ? [s, ...s.line.jobs] : [s]);
 export const railActiveStation = (s: Railway) =>
   s.line ? (!s.completion ? 0 : !s.line.jobs[0].completion ? 1 : 2) : 0;
@@ -130,261 +83,109 @@ export const railBeamChoppable = (s: Railway) =>
   !!s.line && railActiveStation(s) === 2 && s.line.jobs[1].start < 0 && s.line.beam.state === 'standing';
 /** The proper axe is the lit forge's first made thing (owner, 7 November: the great beam pass). */
 export const railAxeAvailable = (s: Railway) => !!s.line && !!s.line2 && s.line2.forge.lit >= 0 && !s.line.axe;
-export function railBeamRelease(s: Railway, pid: string, epoch: number, revision: number): number {
-  const b = s.line?.beam;
-  if (
-    !b ||
-    b.state !== 'held' ||
-    b.holder !== pid ||
-    b.epoch !== epoch ||
-    b.revision !== revision ||
-    b.revision >= 2147483647
-  )
-    return 0;
-  b.state = 'available';
-  b.holder = '';
-  b.epoch = 0;
-  b.revision++;
-  b.age = 0;
-  b.x = LINE1_GREAT_TREE.x;
-  b.y = 3000;
-  b.z = LINE1_GREAT_TREE.z;
-  return 1;
-}
-/** Where the beam's carrier stands (cm, at their feet), kept on the held beam so an absence that outlasts its grace
- * (and a server restart) puts it down there. Returns whether it moved. */
-export function railBeamStood(s: Railway, pid: string, x: number, y: number, z: number) {
-  const b = s.line?.beam;
-  if (!b || b.state !== 'held' || b.holder !== pid || (b.x === x && b.y === y && b.z === z)) return false;
-  b.x = x;
-  b.y = y;
-  b.z = z;
-  return true;
-}
-/** The carrier stayed away past the grace: the beam goes down where they last stood, or, off the work area, back to
- * the tree. Never while they hold it in a live session. */
-export function railBeamPutDown(s: Railway, pid: string) {
-  const b = s.line?.beam;
-  if (!b || b.state !== 'held' || b.holder !== pid || b.revision >= 2147483647) return 0;
-  const { x, y, z } = b;
-  const n = railBeamRelease(s, pid, b.epoch, b.revision);
-  if (n && lineBeamGround(x, y, z)) Object.assign(b, { state: 'ground', x, y, z });
-  return n;
-}
-export function railBeamRecover(s: Railway, revision: number) {
-  const b = s.line?.beam;
-  if (!b || b.state !== 'ground' || b.revision !== revision || b.age !== 21 || b.revision >= 2147483647) return 0;
-  b.state = 'available';
-  b.x = LINE1_GREAT_TREE.x;
-  b.y = 3000;
-  b.z = LINE1_GREAT_TREE.z;
-  b.age = 0;
-  b.revision++;
-  return 1;
-}
-function fund(s: Railway, job: RailJob | Railway, index: number, tick: number, timing: LineTiming) {
-  const spec = LINE1_STATIONS[index]!;
-  if (
-    job.start >= 0 ||
-    job.stock !== spec.bill[0] ||
-    (job.stoneStock ?? 0) !== spec.bill[1] ||
-    (spec.beam && s.line!.beam.state !== 'allocated')
-  )
-    return;
-  job.stock = 0;
-  job.allocation = spec.bill[0];
-  job.start = job.lastTick = tick;
-  if (index > 0) {
-    job.stoneStock = 0;
-    job.stoneAllocation = spec.bill[1];
-  }
-  job.timing = { ...timing };
-}
-/** Returns the accepted amount; receipt identity is owned by railApply, never by a visual callback. */
-export function railLineApply(s: Railway, a: RailAccount, e: RailAction, tick: number, timing: LineTiming): number {
+const int = (v: unknown, max = 2147483647, min = 0): v is number =>
+  typeof v === 'number' && Number.isSafeInteger(v) && v >= min && v <= max && !Object.is(v, -0);
+const FIELDS = [
+  'stock',
+  'allocation',
+  'used',
+  'delivered',
+  'start',
+  'elapsed',
+  'lastTick',
+  'completion',
+  'stoneStock',
+  'stoneAllocation',
+  'stoneUsed',
+  'stoneDelivered',
+] as const;
+/** Whole-document invariants of line one on the read model; throws on the first broken one. */
+export function validateRailLine(s: Railway) {
   const l = s.line!;
-  const ready = s.awake >= 0 && tick >= s.awake + T1.wakeTicks;
-  const index = railActiveStation(s),
-    job = railCurrentJob(s),
-    spec = LINE1_STATIONS[index]!;
-  const held = l.beam.state === 'held' && l.beam.holder === a.pid;
-  const free = held ? 0 : Math.max(0, 8 - railCarry(a));
-  const stone = e.kind === 1;
-  let n = 0;
-  if (e.op === 'rail.wake' && s.awake < 0) {
-    s.awake = tick;
-    return 1;
-  }
-  if (e.op === 'rail.chop' && ready && free > 0) {
-    const k = RAILWAY_SOURCES.findIndex((row) => row[0] === e.id);
-    if (k >= 0 && s.sources[k]! > 0) {
-      if (l.axe && !l.upgrades[k]) {
-        if (s.supply!.produced > 2147483647 - 3910 - 5) return 0;
-        s.sources[k]! += 5;
-        s.supply!.produced += 5;
-        l.upgrades[k] = true;
-      }
-      n = Math.min(l.axe ? 5 : 2, s.sources[k]!, free);
-      s.sources[k]! -= n;
-      s.work[k] = Math.min(15, s.work[k]! + (l.axe ? 5 : 3));
-      a.carry += n;
-      if (s.sources[k] === 0) {
-        s.supply!.ages[k] = 0;
-        s.falls!.yaw[k] = e.yaw!;
-        s.falls!.collapsed[k] = e.collapsed!;
-      }
+  if (!s.falls || !s.supply) throw new Error('railway: line requires playable state');
+  const jobs = railJobs(s);
+  jobs.forEach((job, index) => {
+    const spec = LINE1_STATIONS[index]!;
+    if (!job.timing) throw new Error('railway: missing funded timing');
+    const schedule = lineSchedule(spec, job.timing);
+    for (const key of FIELDS) {
+      const n = job[key] ?? 0;
+      if (!int(n, key === 'completion' ? 1 : 2147483647, key === 'start' ? -1 : 0))
+        throw new Error('railway: job bounds');
     }
-    const h = [209, 232].indexOf(e.id!);
-    if (h >= 0 && l.axe) {
-      n = Math.min(5, l.hardwood[h]!, free);
-      l.hardwood[h]! -= n;
-      if (n) l.hardwoodWork[h] = Math.min(15, l.hardwoodWork[h]! + 5);
-      a.carry += n;
-    }
-  }
-  if (e.op === 'rail.mine' && ready && free > 0 && Number.isInteger(e.id) && e.id! >= 0 && e.id! < 3) {
-    const k = e.id!;
-    n = Math.min(2, l.rocks[k]!, free);
-    l.rocks[k]! -= n;
-    if (n) {
-      l.rockWork[k] = Math.min(4, l.rockWork[k]! + 1);
-      a.stone = (a.stone ?? 0) + n;
-      if (!l.rocks[k]) l.rockAge[k] = 0;
-    }
-  }
-  if (e.op === 'rail.deposit' && ready && e.kind !== 2 && e.station === spec.id && job.start < 0 && !job.completion) {
-    const carry = stone ? (a.stone ?? 0) : a.carry;
-    n = Math.min(e.n!, carry, spec.bill[stone ? 1 : 0] - (stone ? (job.stoneStock ?? 0) : job.stock));
-    if (n === 0) return 0;
-    if (stone) {
-      a.stone = carry - n;
-      job.stoneStock = (job.stoneStock ?? 0) + n;
-      job.stoneDelivered = (job.stoneDelivered ?? 0) + n;
-    } else {
-      a.carry -= n;
-      job.stock += n;
-      job.delivered += n;
-    }
-    fund(s, job, index, tick, timing);
-  }
-  const kind = e.kind === 1 || e.kind === 2 ? e.kind : 0;
-  if (e.op === 'rail.drop') {
-    const carry = balanceOf(a, kind);
-    let p = s.piles.find((p) => (p.kind ?? 0) === kind && p.x === e.x && p.z === e.z && p.y === e.y && p.n < 8);
-    if (!p && carry > 0 && s.piles.length < 128 && s.nextPile < 2147483647) {
-      p = { id: s.nextPile++, x: e.x!, y: e.y!, z: e.z!, n: 0, kind, age: 0 };
-      s.piles.push(p);
-    }
-    if (p) {
-      n = Math.min(e.n!, carry, 8 - p.n);
-      p.n += n;
-      if (n) p.age = 0;
-      credit(a, kind, -n);
-    }
-  }
-  if (e.op === 'rail.take' && free > 0) {
-    const p = s.piles.find((p) => p.id === e.id);
-    if (p && kind === (p.kind ?? 0)) {
-      n = Math.min(p.n, free);
-      p.n -= n;
-      credit(a, kind, n);
-      if (!p.n) s.piles.splice(s.piles.indexOf(p), 1);
-    }
-  }
-  if (e.op === 'rail.rackTake' && free > 0 && e.kind !== 2) {
-    n = Math.min(stone ? l.stoneRack : s.supply!.rack, free);
-    if (stone) {
-      l.stoneRack -= n;
-      a.stone = (a.stone ?? 0) + n;
-    } else {
-      s.supply!.rack -= n;
-      a.carry += n;
-    }
-  }
-  if (e.op === 'rail.axe' && railAxeAvailable(s)) {
-    l.axe = true;
-    n = 1;
-  }
-  const b = l.beam;
-  // Your first axe fells the great tree once Station 3 opens; beam and logs fund it in either order (7 November).
-  const beamNeeded = ready && index === 2 && job.start < 0;
-  if (e.op === 'rail.beamChop' && beamNeeded && b.state === 'standing') {
-    b.work++;
-    n = 1;
-    if (b.work === 12) {
-      b.state = 'available';
-      b.revision++;
-    }
-  }
-  if (
-    e.op === 'rail.beamTake' &&
-    beamNeeded &&
-    (b.state === 'available' || b.state === 'ground') &&
-    e.revision === b.revision &&
-    b.revision < 2147483647 &&
-    railCarry(a) === 0
-  ) {
-    b.state = 'held';
-    b.holder = a.pid;
-    b.epoch = a.epoch;
-    b.revision++;
-    b.age = 0;
-    n = 1;
-  }
-  if (e.op === 'rail.beamDrop' && held && e.revision === b.revision) {
-    n = railBeamRelease(s, a.pid, a.epoch, e.revision);
+    if (job.elapsed > schedule.totalTicks || job.stock > spec.bill[0] || (job.stoneStock ?? 0) > spec.bill[1])
+      throw new Error('railway: job bounds');
     if (
-      n &&
-      Number.isSafeInteger(e.x) &&
-      Number.isSafeInteger(e.y) &&
-      Number.isSafeInteger(e.z) &&
-      lineBeamGround(e.x!, e.y!, e.z!)
-    ) {
-      b.state = 'ground';
-      b.x = e.x!;
-      b.y = e.y!;
-      b.z = e.z!;
+      index > 0 &&
+      !jobs[index - 1]!.completion &&
+      (job.start >= 0 || job.delivered > 0 || (job.stoneDelivered ?? 0) > 0)
+    )
+      throw new Error('railway: ordered stations');
+    if (job.start < 0) {
+      if (
+        job.allocation ||
+        job.used ||
+        job.elapsed ||
+        job.completion ||
+        (job.stoneAllocation ?? 0) ||
+        (job.stoneUsed ?? 0) ||
+        job.stock !== job.delivered ||
+        (job.stoneStock ?? 0) !== (job.stoneDelivered ?? 0)
+      )
+        throw new Error('railway: unfunded job');
+      if (job.stock === spec.bill[0] && (job.stoneStock ?? 0) === spec.bill[1] && !spec.beam)
+        throw new Error('railway: unstarted full job');
+    } else {
+      const fraction = Math.max(0, job.elapsed - schedule.depositTicks - schedule.feedTicks) / schedule.layTicks;
+      if (
+        s.awake < 0 ||
+        job.start < s.awake + 31 ||
+        job.lastTick < job.start ||
+        job.stock ||
+        (job.stoneStock ?? 0) ||
+        job.delivered !== spec.bill[0] ||
+        (job.stoneDelivered ?? 0) !== spec.bill[1] ||
+        job.used !== Math.min(spec.bill[0], Math.floor(fraction * spec.bill[0])) ||
+        (job.stoneUsed ?? 0) !== Math.min(spec.bill[1], Math.floor(fraction * spec.bill[1])) ||
+        job.allocation + job.used !== spec.bill[0] ||
+        (job.stoneAllocation ?? 0) + (job.stoneUsed ?? 0) !== spec.bill[1] ||
+        job.completion !== Number(job.elapsed === schedule.totalTicks)
+      )
+        throw new Error('railway: funded job');
     }
-  }
+  });
+  if (l.axe && !(s.line2 && s.line2.forge.lit >= 0)) throw new Error('railway: axe before the forge');
   if (
-    e.op === 'rail.beamDeposit' &&
-    e.station === 'T3' &&
-    beamNeeded &&
-    held &&
-    b.epoch === a.epoch &&
-    e.revision === b.revision &&
-    b.revision < 2147483647
-  ) {
-    b.state = 'allocated';
-    b.holder = '';
-    b.epoch = 0;
-    b.revision++;
-    n = 1;
-    fund(s, job, index, tick, timing);
-  }
-  if (e.op === 'rail.jump' && !l.jump) {
-    l.jump = true;
-    n = 1;
-  }
-  return n;
-}
-export function railLineTick(s: Railway, tick: number) {
-  const index = railActiveStation(s),
-    job = railCurrentJob(s);
-  if (job.start < 0 || job.completion) return;
-  const spec = LINE1_STATIONS[index]!,
-    schedule = lineSchedule(spec, job.timing ?? LINE_TIMING);
-  job.elapsed = Math.min(schedule.totalTicks, job.elapsed + Math.max(0, tick - job.lastTick));
-  job.lastTick = tick;
-  const laying = Math.max(0, job.elapsed - schedule.depositTicks - schedule.feedTicks);
-  job.used = Math.min(spec.bill[0], Math.floor((laying * spec.bill[0]) / schedule.layTicks));
-  job.allocation = spec.bill[0] - job.used;
-  if (index > 0) {
-    job.stoneUsed = Math.min(spec.bill[1], Math.floor((laying * spec.bill[1]) / schedule.layTicks));
-    job.stoneAllocation = spec.bill[1] - job.stoneUsed;
-  }
-  if (job.elapsed === schedule.totalTicks) {
-    job.completion = 1;
-    if (index === 2) s.line!.beam.state = 'used';
-  }
+    s.sources.some((n, k) => n > (l.upgrades[k] ? 15 : 10)) ||
+    s.work.some((n) => !int(n, 15)) ||
+    l.upgrades.some((v) => v && !l.axe)
+  )
+    throw new Error('railway: upgraded source');
+  if (l.rocks.some((n, k) => (n > 0 && l.rockAge[k] !== 0) || 8 - n > 2 * l.rockWork[k]! || 8 - n < l.rockWork[k]!))
+    throw new Error('railway: rock work');
+  if (l.hardwood.some((n, k) => 15 - n > l.hardwoodWork[k]! || l.hardwoodWork[k]! % 5 !== 0))
+    throw new Error('railway: hardwood work');
+  const stone =
+    l.rocks.reduce((a, b) => a + b, 0) +
+    s.accounts.reduce((n, a) => n + (a.stone ?? 0), 0) +
+    s.piles.reduce((n, p) => n + (p.kind === 1 ? p.n : 0), 0) +
+    l.stoneRack +
+    jobs.reduce((n, j) => n + (j.stoneStock ?? 0) + (j.stoneAllocation ?? 0) + (j.stoneUsed ?? 0), 0);
+  if (stone !== 24 + l.stoneProduced) throw new Error('railway: stone conservation');
+  const b = l.beam;
+  if (b.state === 'ground' ? !lineBeamGround(b.x, b.y, b.z) : b.age !== 0) throw new Error('railway: beam ground');
+  if (b.state === 'standing' ? b.work >= 12 : b.work !== 12) throw new Error('railway: beam work');
+  if (b.work && !l.jobs[0].completion) throw new Error('railway: beam work before T3');
+  if (b.state === 'held') {
+    const a = s.accounts.find((a) => a.pid === b.holder);
+    if (!a || b.epoch < 1 || b.epoch > a.epoch || railCarry(a) !== 0) throw new Error('railway: beam holder');
+  } else if (b.holder || b.epoch) throw new Error('railway: beam orphan identity');
+  // The beam may be laid before the 40 logs: allocated with the job unfunded, never with its bill already full.
+  const laid = b.state === 'allocated' || b.state === 'used';
+  if (
+    (l.jobs[1].start >= 0 && !laid) ||
+    (l.jobs[1].start < 0 && (b.state === 'used' || (laid && l.jobs[1].stock === 40))) ||
+    (b.state === 'used') !== !!l.jobs[1].completion
+  )
+    throw new Error('railway: beam allocation');
 }

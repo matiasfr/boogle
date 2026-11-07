@@ -7,7 +7,7 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
-import { railwayInvariant } from '../../src/sim/railway.ts';
+import { railwayInvariant } from '../../src/sim/railway-world.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
 test('a fresh drop applies after the missed maintenance and starts at age zero', async () => {

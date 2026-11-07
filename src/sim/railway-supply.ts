@@ -1,10 +1,8 @@
-// Durable T1 supply maintenance. Host-stamped whole minutes; never reads presence or a wall clock.
-import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-layout.ts';
-import type { Railway } from './railway.ts';
-import { railBeamRecover } from './railway-line.ts';
+// Supply maintenance's constants and growth masks; the pulse itself is the rail.supply system
+// (./railway-systems.ts). Host-stamped whole minutes; never reads presence or a wall clock.
+import { RAILWAY_SOURCES } from './railway-layout.ts';
 
 export const RECOVERY_MINUTES = 21; // minute quantization still leaves at least twenty minutes
-const REGROW_MINUTES = 31;
 export const RECOVERY_RACK = { x: 90500, z: 100 };
 // Pinned centimetre bounds of the two initially laid stubs and T1's whole corridor, plus 8 m clearance.
 // Clear the eventual corridor throughout construction too; never recreate an obstruction around finished track.
@@ -33,109 +31,5 @@ export const railGrows = (mask: string, k: number) =>
   (Number.parseInt(mask[Math.floor(k / 4)]!, 16) & (1 << (k % 4))) !== 0;
 
 export type RailSupply = { marker: number; ages: number[]; rack: number; produced: number };
-export type RailSupplyJSON = Omit<RailSupply, 'ages'> & { ages: string };
 export type SupplyPulse = { marker: number; grow: string; recover: number[]; beam?: number };
 export type SupplyIntervals = { regrow: number; recover: number };
-const DEFAULT_INTERVALS: SupplyIntervals = { regrow: REGROW_MINUTES, recover: RECOVERY_MINUTES };
-/** Keep the saved 31/21 progress units and stage codes unchanged. The global minute phase supplies a
- * deterministic fractional remainder without more per-source state. Tuning preserves earned progress;
- * its current interval applies to the next accepted pulse. Bounds are enforced by the existing tune API.
- * Clamp elapsed time before multiplying, so even a maximum safe-integer marker cannot overflow.
- */
-const progressUnits = (marker: number, minutes: number, interval: number, units: number) => {
-  const phase = marker % interval;
-  return (
-    Math.floor(((phase + Math.min(minutes, interval)) * units) / interval) - Math.floor((phase * units) / interval)
-  );
-};
-export const createRailSupply = (): RailSupply => ({
-  marker: 0,
-  ages: RAILWAY_SOURCES.map(() => 0),
-  rack: 0,
-  produced: 0,
-});
-export const saveRailSupply = (s: RailSupply): RailSupplyJSON => ({
-  ...s,
-  ages: s.ages.map((age) => age.toString(36)).join(''),
-});
-export function loadRailSupply(value: unknown, line1 = false): RailSupply {
-  const s = value as RailSupplyJSON | null;
-  const integer = (n: unknown, max: number) =>
-    Number.isSafeInteger(n) && Number(n) >= 0 && Number(n) <= max && !Object.is(n, -0);
-  if (
-    !s ||
-    Object.keys(s).sort().join() !== 'ages,marker,produced,rack' ||
-    !integer(s.marker, Number.MAX_SAFE_INTEGER) ||
-    !integer(s.rack, 2147483647) ||
-    !integer(s.produced, 2147483647 - RAILWAY_SUPPLY - (line1 ? 30 : 0)) ||
-    s.produced % (line1 ? 5 : T1.sourceYield) !== 0 ||
-    typeof s.ages !== 'string' ||
-    s.ages.length !== RAILWAY_SOURCES.length ||
-    !/^[0-9a-z]+$/.test(s.ages)
-  )
-    throw new Error('railway: supply');
-  return { ...s, ages: [...s.ages].map((age) => Number.parseInt(age, 36)) };
-}
-/** Idempotent accepted event. Nearby/unknown players are excluded by the host before it stamps recover ids. */
-export function railSupplyPulse(s: Railway, e: SupplyPulse, intervals = DEFAULT_INTERVALS) {
-  const supply = s.supply;
-  if (!supply || e.marker < supply.marker) return 0;
-  const minutes = supply.marker ? Math.min(1440, e.marker - supply.marker) : 0;
-  const regrow = progressUnits(supply.marker, minutes, intervals.regrow, REGROW_MINUTES);
-  const recover = progressUnits(supply.marker, minutes, intervals.recover, RECOVERY_MINUTES);
-  supply.marker = e.marker;
-  let moved = 0;
-  for (const pile of s.piles) {
-    pile.age = Math.min(RECOVERY_MINUTES, (pile.age ?? 0) + recover);
-    if (pile.age === RECOVERY_MINUTES && e.recover.includes(pile.id)) {
-      if (s.line && pile.kind === 1) s.line.stoneRack += pile.n;
-      // Abandoned rails return to the forge's rack; logs to the recovery rack.
-      else if (s.line2 && pile.kind === 2) s.line2.forge.rack += pile.n;
-      else supply.rack += pile.n;
-      moved += pile.n;
-      pile.n = 0;
-    }
-  }
-  s.piles = s.piles.filter((pile) => pile.n > 0);
-  for (let k = 0; k < s.sources.length; k++) {
-    if (s.sources[k] !== 0) continue;
-    const age = supply.ages[k]!;
-    if (age < REGROW_MINUTES) supply.ages[k] = Math.min(REGROW_MINUTES, age + regrow);
-    // Each visible stage takes a separate accepted minute, even after a long offline gap.
-    if (
-      age < REGROW_MINUTES ||
-      !minutes ||
-      !railGrows(e.grow, k) ||
-      !railGrowthAllowed(k, !!s.line) ||
-      supply.produced > 2147483647 - RAILWAY_SUPPLY - (s.line ? 30 : 0) - 15
-    )
-      continue;
-    supply.ages[k] = age + 1;
-    if (supply.ages[k] !== 35) continue;
-    const yieldCount = s.line?.axe ? 15 : T1.sourceYield;
-    s.sources[k] = yieldCount;
-    if (s.line) s.line.upgrades[k] = s.line.axe;
-    s.work[k] = 0;
-    s.falls!.yaw[k] = 0;
-    s.falls!.collapsed[k] = false;
-    supply.produced += yieldCount;
-  }
-  if (s.line) {
-    const line = s.line;
-    if (line.beam.state === 'ground') {
-      line.beam.age = Math.min(RECOVERY_MINUTES, line.beam.age + recover);
-      if (e.beam !== undefined) moved += railBeamRecover(s, e.beam);
-    }
-    for (let k = 0; k < line.rocks.length; k++) {
-      if (line.rocks[k] !== 0) continue;
-      line.rockAge[k] = Math.min(REGROW_MINUTES, line.rockAge[k]! + regrow);
-      if (line.rockAge[k] === REGROW_MINUTES && line.stoneProduced <= 2147483647 - 32) {
-        line.rocks[k] = 8;
-        line.rockWork[k] = 0;
-        line.rockAge[k] = 0;
-        line.stoneProduced += 8;
-      }
-    }
-  }
-  return moved;
-}

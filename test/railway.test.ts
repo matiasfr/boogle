@@ -1,215 +1,113 @@
-// Slice 1's exact conserved balances, bounded terminal receipts and recovery documents.
+// The railway on E (docs/plans/ecs-e.md, step 3): bounded request receipts, the world's save and its load check, and
+// the catalog the line is built from. Line one's and line two's rules: railway-line-authority and railway-line2.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  createRailway,
-  hashRailway,
-  loadRailway,
-  railAccount,
-  railApply,
-  railCounts,
-  railOutcome,
-  railPhase,
-  railResume,
-  railSession,
-  railTick,
-  serializeRailway,
-  railwayInvariant,
-  RAILWAY_DURATION,
-  RAILWAY_OUTCOMES,
-  RAILWAY_PILES,
-  RAILWAY_MAX_INT,
-  type Railway,
-  type RailAction,
-} from '../src/sim/railway.ts';
-import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
-import { MAX_PLAYERS } from '../src/sim/roster.ts';
+import { railPhase, RAILWAY_OUTCOMES, type RailAction } from '../src/sim/railway.ts';
+import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
+import {
+  Account,
+  Outcome,
+  Tree,
+  createRailwayWorld,
+  railwayCheck,
+  railwayView,
+  RAIL_COMPONENTS,
+} from '../src/sim/railway-world.ts';
+import { createRailway, invariant, railApply, railOutcome, railSession, restore, worldOf } from './railway-live.ts';
 
-const action = (s: Railway, pid: string, op: string, fields: Partial<RailAction> = {}, tick = 100) => {
-  const a = railAccount(s, pid)!;
-  const e = { epoch: a.epoch, request: a.request + 1, op, ...fields };
-  const result = railApply(s, pid, e, tick);
-  assert.equal(railwayInvariant(s), null);
-  return { result, e };
-};
-function seed(carries: number[], stock = 0) {
+function awake(pids = ['p0']) {
   const s = createRailway();
-  carries.forEach((carry, i) => {
-    railSession(s, `p${i}`, 1);
-    s.accounts[i]!.carry = carry;
-  });
-  s.awake = 0;
-  s.stock = s.delivered = stock;
-  let debit = carries.reduce((a, b) => a + b, stock);
-  for (let i = 0; debit && i < s.sources.length; i++) {
-    const n = Math.min(debit, s.sources[i]!);
-    s.sources[i]! -= n;
-    s.work[i] = Math.ceil(n / 2) * 3;
-    debit -= n;
-  }
-  assert.equal(railwayInvariant(s), null);
+  for (const pid of pids) railSession(s, pid, 1);
+  railApply(s, pids[0]!, { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   return s;
 }
-function restore(s: Railway) {
-  const next = createRailway();
-  loadRailway(next, JSON.parse(JSON.stringify(serializeRailway(s))));
-  assert.equal(hashRailway(next), hashRailway(s));
-  assert.deepEqual(railCounts(next), railCounts(s));
-  return next;
-}
+const action = (s: ReturnType<typeof createRailway>, pid: string, op: string, fields: Partial<RailAction> = {}) => {
+  const a = s.accounts.find((row) => row.pid === pid)!;
+  const e = { epoch: a.epoch, request: a.request + 1, op, ...fields } as RailAction;
+  const result = railApply(s, pid, e, 100);
+  assert.equal(invariant(s), null);
+  return { result, e };
+};
 
-test('T1 last piece: reverse order, retry, retained carry and one funded completion', () => {
-  for (const order of [
-    ['p0', 'p1'],
-    ['p1', 'p0'],
-  ]) {
-    const s = seed([4, 4], 23);
-    const first = action(s, order[0]!, 'rail.deposit', { n: 4 });
-    const second = action(s, order[1]!, 'rail.deposit', { n: 4 });
-    assert.equal(first.result.accepted, 1);
-    assert.equal(second.result.accepted, 0);
-    assert.equal(railCounts(s).carry, 7);
-    assert.equal(s.start, 100);
-    assert.equal(s.allocation, 24);
-    assert.deepEqual(railApply(s, order[0]!, first.e, 101), first.result);
-    const joined = restore(s);
-    railTick(s, 100 + RAILWAY_DURATION);
-    railTick(joined, 100 + RAILWAY_DURATION);
-    assert.equal(s.completion, 1);
-    assert.equal(s.used, 24);
-    assert.equal(s.allocation, 0);
-    assert.equal(hashRailway(joined), hashRailway(s));
-    const completed = restore(s);
-    railTick(completed, 1000);
-    assert.equal(hashRailway(completed), hashRailway(s));
-    assert.equal(railCounts(s).score, 24 * 15 + 500);
-  }
-});
-
-test('finite source: last stroke race and clipped/full capacity never destroy remaining logs', () => {
-  const s = seed([7, 2]); // source0 has one left
-  const a = action(s, 'p0', 'rail.chop', { id: 0 });
-  const b = action(s, 'p1', 'rail.chop', { id: 0 });
-  assert.equal(a.result.accepted, 1);
-  assert.equal(b.result.accepted, 0);
-  const before = s.sources[1];
-  assert.equal(action(s, 'p0', 'rail.chop', { id: 1 }).result.accepted, 0);
-  assert.equal(s.sources[1], before);
-  assert.equal(railCounts(s).total, RAILWAY_SUPPLY);
-  assert.equal(restore(s).sources[0], 0);
-});
-
-test('shared drops move only accepted capacity; whole-pile pickup race and saturation conserve', () => {
-  const s = seed([8, 0, 0]);
-  action(s, 'p0', 'rail.drop', { n: 8, x: T1.x, z: T1.z });
-  const id = s.piles[0]!.id;
-  assert.equal(action(s, 'p1', 'rail.take', { id }).result.accepted, 8);
-  assert.equal(action(s, 'p2', 'rail.take', { id }).result.accepted, 0);
-  assert.equal(restore(s).accounts[1]!.carry, 8);
-  // Capacity case analogous to the audited classic bug: admitted writes contend for the final slot.
-  const full = seed([8, 8]);
-  full.piles = Array.from({ length: RAILWAY_PILES - 1 }, (_, id) => ({ id: id + 1, x: id, z: 0, n: 1 }));
-  full.nextPile = RAILWAY_PILES;
-  let n = RAILWAY_PILES - 1;
-  for (let k = 2; n; k++) {
-    const take = Math.min(n, full.sources[k]!);
-    full.sources[k]! -= take;
-    full.work[k] = Math.ceil((10 - full.sources[k]!) / 2) * 3;
-    n -= take;
-  }
-  assert.equal(railwayInvariant(full), null);
-  assert.equal(action(full, 'p0', 'rail.drop', { n: 8, x: 90000, z: 1 }).result.accepted, 8);
-  assert.equal(action(full, 'p1', 'rail.drop', { n: 8, x: 90001, z: 1 }).result.accepted, 0);
-  assert.equal(railAccount(full, 'p1')!.carry, 8);
-});
-
-test('late joins preserve 16/24, deposited, feeding, half laid; offline resumes only funded job once', () => {
-  const partial = seed([8], 16);
-  restore(partial);
-  railResume(partial, RAILWAY_DURATION, 1, 100);
-  assert.equal(partial.stock, 16);
-  assert.equal(partial.completion, 0);
-  action(partial, 'p0', 'rail.deposit', { n: 8 });
-  for (const elapsed of [0, T1.depositTicks + 1, T1.depositTicks + T1.feedTicks + Math.floor(T1.layTicks / 2)]) {
-    const s = restore(partial);
-    railTick(s, 100 + elapsed);
-    const peer = restore(s);
-    assert.equal(railPhase(peer), railPhase(s));
-    assert.equal(peer.elapsed, elapsed);
-    const tick = 100 + elapsed;
-    railResume(s, RAILWAY_DURATION, 2, tick);
-    railResume(peer, RAILWAY_DURATION, 2, tick);
-    assert.equal(s.completion, 1);
-    assert.equal(hashRailway(s), hashRailway(peer));
-    const final = hashRailway(s);
-    railResume(s, RAILWAY_DURATION, 2, tick);
-    assert.equal(hashRailway(s), final);
-    assert.equal(railCounts(s).total, RAILWAY_SUPPLY);
-  }
-});
-
-test('terminal outcomes survive retries, rejection, eviction, takeover and restart without respending', () => {
-  const s = seed([8]);
-  const first = action(s, 'p0', 'rail.drop', { n: 1, x: T1.x, z: T1.z });
+test('terminal receipts survive retries, rejection, eviction, takeover and restart without respending', () => {
+  const s = awake();
+  action(s, 'p0', 'rail.chop', { id: RAILWAY_SOURCES[0]![0], yaw: 0, collapsed: false });
+  const first = action(s, 'p0', 'rail.drop', { n: 1, x: T1.x, y: 0, z: T1.z });
+  assert.deepEqual(railApply(s, 'p0', first.e, 100), first.result, 'a retry answers from the receipt');
   for (let i = 0; i < RAILWAY_OUTCOMES + 1; i++) action(s, 'p0', 'rail.reject');
-  assert.equal(s.outcomes.length, RAILWAY_OUTCOMES);
+  assert.equal(s.outcomes.length, RAILWAY_OUTCOMES, 'the history keeps its bound, the oldest despawned');
   const r = restore(s);
-  const total = railCounts(r);
   assert.equal(railApply(r, 'p0', first.e, 200).status, 'snapshot-required');
-  assert.deepEqual(railCounts(r), total);
+  const carry = r.accounts[0]!.carry;
   const rejected = action(r, 'p0', 'rail.reject');
-  assert.equal(railApply(r, 'p0', { ...rejected.e, op: 'rail.drop', n: 8, x: T1.x, z: T1.z }, 200).status, 'rejected');
+  assert.equal(
+    railApply(r, 'p0', { ...rejected.e, op: 'rail.drop', n: 1, x: T1.x, y: 0, z: T1.z }, 200).status,
+    'rejected',
+  );
   assert.equal(railSession(r, 'p0', 2), true);
   assert.equal(railSession(r, 'p0', 2), false);
   assert.equal(railOutcome(r, 'p0', 1, rejected.e.request + 1)!.status, 'snapshot-required');
-  assert.equal(railAccount(r, 'p0')!.carry, 7);
+  assert.equal(r.accounts[0]!.carry, carry, 'nothing was spent twice');
 });
 
-test('strict atomic loading refuses cross-account loss, future catalog and malformed phase', () => {
-  const s = seed([4, 4], 16),
-    original = hashRailway(s);
-  for (const change of [
-    (j: Railway) => j.accounts[0]!.carry++,
-    (j: Railway) => j.catalog++,
-    (j: Railway) => j.sources.push(10),
-    (j: Railway) => (j.completion = 1),
-    (j: Railway) => j.accounts.push({ ...j.accounts[0]! }),
-    (j: Railway) => (j.accounts[0]!.request = NaN),
-  ]) {
-    const j = structuredClone(s);
-    change(j);
-    assert.throws(() => loadRailway(s, serializeRailway(j)));
-    assert.equal(hashRailway(s), original);
-  }
-});
-
-test('supported pid lifetime cannot strand the full finite catalog', () => {
+test('wake eligibility is scheduled', () => {
   const s = createRailway();
-  s.awake = 0;
-  for (let k = 0; k < MAX_PLAYERS; k++) railSession(s, `p${k}`.padEnd(32, 'x'), 1);
-  let index = 0;
-  for (const a of s.accounts)
-    for (let hit = 0; hit < 4; hit++) {
-      while (s.sources[index] === 0) index++;
-      action(s, a.pid, 'rail.chop', { id: RAILWAY_SOURCES[index]![0] });
-    }
-  assert.equal(railCounts(s).carry, MAX_PLAYERS * T1.carry);
-  assert.ok(railCounts(s).source >= T1.bill);
-  for (const a of s.accounts) {
-    a.epoch = RAILWAY_MAX_INT;
-    a.request = RAILWAY_MAX_INT;
+  railSession(s, 'p0', 1);
+  assert.equal(
+    railApply(s, 'p0', { op: 'rail.chop', id: 0, yaw: 0, collapsed: false, epoch: 1, request: 1 }, 1).accepted,
+    0,
+  );
+  railApply(s, 'p0', { op: 'rail.wake', epoch: 1, request: 2 }, 2);
+  assert.equal(railPhase(s, 2), 'waking');
+  assert.equal(railPhase(s, 2 + T1.wakeTicks), 'idle');
+});
+
+test('a saved world loads all or nothing: archetypes, catalog, keys and every domain invariant', () => {
+  const s = awake(['a', 'b']);
+  const r = mulberry32(5);
+  for (let k = 0; k < 40; k++)
+    action(s, r() < 0.5 ? 'a' : 'b', 'rail.chop', { id: RAILWAY_SOURCES[k % 9]![0], yaw: r(), collapsed: true });
+  const w = worldOf(s);
+  const good = w.snapshot();
+  const before = w.hash();
+  type Snap = typeof good;
+  const col = (j: Snap, kind: string, field: string) => {
+    const c = RAIL_COMPONENTS.find((row) => row.kind === kind)!;
+    return j.c[kind]![1 + c.names.indexOf(field)]!;
+  };
+  const cases: [string, (j: Snap) => void][] = [
+    ['an account over its carry', (j) => (col(j, 'account', 'carry')[0] = 9)],
+    ['a log made from nothing', (j) => (col(j, 'tree', 'left')[0] = 10)],
+    ['a tree missing', (j) => j.c.tree!.forEach((c) => c.pop())],
+    ['a second account for one pid', (j) => (col(j, 'account', 'pid')[1] = col(j, 'account', 'pid')[0]!)],
+    ['a tree with a job', (j) => j.c.jobRun!.forEach((c, i) => c.push(i ? 0 : (j.c.tree![0]![0]! as number)))],
+    ['a pid that is not one', (j) => (col(j, 'account', 'pid')[0] = 'A!')],
+    ['a request that is not a number', (j) => (col(j, 'account', 'request')[0] = 'NaN')],
+  ];
+  for (const [name, change] of cases) {
+    const j = JSON.parse(JSON.stringify(good)) as Snap;
+    change(j);
+    assert.throws(() => w.load(j, railwayCheck), Error, name);
+    assert.equal(w.hash(), before, name);
   }
-  for (const r of s.outcomes) {
-    r.epoch = RAILWAY_MAX_INT;
-    r.request = RAILWAY_MAX_INT;
-  }
-  // Distinct last64 outcomes are compacted here to one per actual account before checking the worst ID widths.
-  s.outcomes = s.accounts
-    .slice(-64)
-    .map((a) => ({ pid: a.pid, epoch: a.epoch, request: a.request, status: 'noop', accepted: 0 }));
-  // Current production line bounds are exercised in railway-line-bounds.test.ts.
-  assert.equal(railwayInvariant(s), null);
+  const copy = createRailwayWorld();
+  copy.load(JSON.parse(JSON.stringify(good)), railwayCheck);
+  assert.equal(copy.hash(), before);
+  assert.deepEqual(railwayView(copy), railwayView(w));
+});
+
+test('the read model is plain data: rebuilt from the world, never carrying its bookkeeping', () => {
+  const s = awake(['a']);
+  const w = worldOf(s);
+  const view = railwayView(w);
+  assert.deepEqual(structuredClone(view), view);
+  assert.equal(Object.getOwnPropertySymbols(view.line!.beam).length, 0);
+  assert.equal(Object.getOwnPropertySymbols(view.accounts[0]!).length, 0);
+  assert.equal(w.count(Tree), RAILWAY_SOURCES.length);
+  assert.equal(w.count(Account), 1);
+  assert.ok(w.count(Outcome) > 0, 'the request history is part of the world (not replicated)');
+  assert.equal(Outcome.replicate, false);
 });
 
 test('catalog exactly pins current T1 recipe and every starter source to centimetres', async () => {
@@ -258,18 +156,4 @@ test('catalog exactly pins current T1 recipe and every starter source to centime
   assert.equal(T1.starterRails, layout.TUNE.rackStart);
   assert.equal(T1.swingMs, layout.TUNE.swingS * 1000);
   assert.equal(T1.unloadMs, layout.TUNE.unloadS * 1000);
-});
-
-test('wake eligibility is scheduled; source work retains a clipped productive hit after restore', () => {
-  const s = createRailway();
-  railSession(s, 'p0', 1);
-  assert.equal(action(s, 'p0', 'rail.chop', { id: 0 }, 1).result.accepted, 0);
-  action(s, 'p0', 'rail.wake', {}, 2);
-  assert.equal(railPhase(s, 2), 'waking');
-  assert.equal(railPhase(s, 2 + T1.wakeTicks), 'idle');
-  const clipped = seed([7]);
-  assert.equal(action(clipped, 'p0', 'rail.chop', { id: 1 }).result.accepted, 1);
-  assert.equal(clipped.work[1], 3);
-  assert.equal(clipped.sources[1], 9);
-  assert.equal(restore(clipped).work[1], 3);
 });

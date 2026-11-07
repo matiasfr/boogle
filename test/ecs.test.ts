@@ -206,7 +206,12 @@ test('spawns are checked: unknown fields, missing required components and taken 
   w.spawn([Tree, { slot: 1 }]);
   assert.throws(() => w.spawn([Tree, { slot: 1 }]), /key 1 taken/);
   assert.throws(() => w.spawn([Tree, { slot: 2, left: 1.5 }]), /off schema/); // the audit checks values at spawn
+  const next = w.nextId();
   w.reserve(-5);
   assert.equal(w.spawn([Tree, { slot: 3 }]), -5, 'a reserved (temporary) id');
+  assert.equal(w.nextId(), next, 'the counter is untouched by an id behind it');
   assert.throws(() => w.reserve(-5), /in use/);
+  w.reserve(40);
+  assert.equal(w.spawn([Tree, { slot: 4 }]), 40, "a replica's id");
+  assert.equal(w.spawn([Tree, { slot: 5 }]), 41, 'and stamps continue past it');
 });
