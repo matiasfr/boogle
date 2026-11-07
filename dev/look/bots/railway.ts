@@ -18,11 +18,12 @@ import { PLAYER_R } from '../../../src/constants.ts';
 import { fallArrival } from '../../../src/fall/arrival.ts';
 import { onRemotePresence, remotes } from '../../../src/netplay/net.ts';
 
-export async function play({ stopBeforeReward = false } = {}) {
+/** `solo`: play the solo route even on a two-player page, beside a friend another eval drives (coop-unlock.ts). */
+export async function play({ stopBeforeReward = false, solo = false } = {}) {
   const query = new URLSearchParams(location.search);
   const player = query.get('player');
-  const coop = player === '1' || player === '2';
-  const second = player === '2';
+  const coop = !solo && (player === '1' || player === '2');
+  const second = coop && player === '2';
   const peers = new Map<
     string,
     { pid: string | null; x: number; y: number; z: number; seenAt: number; beamHelp: string | null }
@@ -129,7 +130,8 @@ export async function play({ stopBeforeReward = false } = {}) {
   };
   const dismiss = async (name: string) => {
     await until(() => read().reward.showing, `${name} appears`);
-    await bot.wait(1600);
+    // &cardMs= holds a card up longer, for a capture of it.
+    await bot.wait(Number(query.get('cardMs')) || 1600);
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
     await until(() => !read().reward.showing, `${name} dismissed with Interact`);
