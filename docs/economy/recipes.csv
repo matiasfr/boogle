@@ -1,0 +1,53 @@
+id,name,kind,upgrade_kind,required,place,W,St,R,C,S,Fi,U,X,at_if_first,at_if_second,ladder,effect,source
+T1,T1 stretch,rail,R,main,home,24,0,0,0,0,0,0,0,home.line1,home.line1,,First walkable path,As built: LINE1_STATIONS
+T2,T2 stretch,rail,R,main,home,32,8,0,0,0,0,0,0,home.line1,home.line1,,,As built
+T3,T3 stretch with the great beam,rail,R,main,home,40,0,0,0,0,0,0,0,home.line1,home.line1,,Line 1 opens,As built
+AXE,Proper axe,assist,F,main,home,0,0,0,0,0,0,0,0,home.line1,home.line1,tool,Manual assist: 15 logs per tree,As built: after T3's 40 logs
+Q1,Q1 stretch,rail,R,main,home,16,0,6,0,0,0,0,0,home.forge,home.forge,,,As built: LINE2_STATIONS
+Q2,Q2 stretch and hook walkway,rail,R,main,home,24,0,12,0,0,0,0,0,home.line2,home.line2,,,As built
+Q3,Q3 stretch and quarry ramp,rail,R,main,home,16,0,12,0,0,0,0,0,home.line2,home.line2,,Line 2 opens,As built
+RAMP,"Home loading ramp (first footings, by hand)",site,C,main,splitrock,0,0,0,4,0,0,0,0,splitrock.reach,splitrock.reach,,The first kit is carried home,next-destination: first shipment
+Q4,Q4 stretch,rail,R,main,splitrock,24,0,12,0,0,0,0,0,splitrock.connect,splitrock.connect,,,New bill on the existing corridor
+Q5,Q5 stretch,rail,R,main,splitrock,24,0,12,0,0,0,0,0,splitrock.connect,splitrock.connect,,,New
+Q6,Q6 through the freight throat,rail,R,main,splitrock,16,8,12,0,0,0,0,0,splitrock.connect,splitrock.connect,,Works connected,New
+PACK,Carry frame,assist,F,main,home,24,0,0,0,0,0,0,0,splitrock.connect,splitrock.connect,carry,Manual assist: carry 8 → 16,"three-area ""pack"" bill"
+C1,Precast feet and near-shore deck,site,R,main,splitrock,8,0,0,12,0,0,0,0,splitrock.connect,splitrock.connect,,The pier can carry a crossing,five-area C1 bill
+PIER,Pier crossing spans,rail,R,main,ring,24,0,24,16,0,0,0,0,ring.reach,ring.reach,,The entry spoke,New
+BRACE,"Aperture brace (first steel, by hand)",site,R,main,ring,0,0,0,0,4,0,0,0,ring.reach,ring.reach,,Freight can pass the ring,gate-puzzles: single raise-and-brace
+SID-R,Steel works siding,rail,R,main,ring,8,0,12,8,0,0,0,0,ring.connect,ring.connect,,,New
+R1,Open shed and turntable,train,M,main,home,0,0,0,0,0,0,0,0,hub.roundhouse,hub.roundhouse,,"The Roundhouse: one engine, one wagon",roundhouse-trains R1: 0 additional units
+B1,Bulk cradle,train,C,main,home,4,0,0,4,0,0,0,0,hub.roundhouse,hub.roundhouse,,Precast supports ride as cargo,roundhouse-trains B1 bill
+SEG1,Ring segment: Ring Island → first branch,rail,R,main,ring,24,0,24,16,12,0,0,0,b1.reach,b1.reach,,The branch choice,Truss spans: five-area S2 grown
+K-Fi,"Spindle sling (first fibre, by hand)",site,C,main,canopy,0,0,0,0,0,4,0,0,b1.reach,b2.reach,,,New
+K-U,"First hoist cable (first copper, by hand)",site,C,main,gorge,0,0,0,0,0,0,4,0,b1.reach,b2.reach,,,New
+SID-1,First branch siding,rail,R,main,ring,0,0,12,8,8,0,0,0,b1.connect,b1.connect,,,New
+F2,Fibre carrying sling,assist,F,main,canopy,4,0,0,0,0,12,0,0,b1.connect,b2.connect,carry,Manual assist: carry 16 → 24,three-area F2 bill
+F3,Glider cloth,ability,A,main,canopy,4,0,0,0,0,8,0,0,b1.connect,b2.connect,,Faster glide,three-area F3 bill
+PICK,Powered pick,assist,F,main,gorge,0,0,0,0,4,0,8,0,b1.connect,b2.connect,tool,Manual assist: harvest twice as fast,New (like five-area S5 tool heads)
+REEL,Hook reel,ability,A,main,gorge,0,0,0,0,2,0,6,0,b1.connect,b2.connect,,Longer hook,progression owner addition: hook length
+SPK1,Return spoke: first branch → Home,rail,R,main,ring,0,0,24,16,16,0,0,0,spoke1,spoke1,,Shortcut through the middle,New
+S4,Roundhouse junction,train,M,main,home,0,0,0,8,12,0,0,0,spoke1,spoke1,,Spokes can join the hub,five-area S4 bill
+S1,Cylinder and freight chassis,train,F,main,home,0,0,0,4,8,0,0,0,spoke1,spoke1,wagon,Wagon 24 → 32,roundhouse-trains S1 bill
+ENG2,Steel boiler,train,F,main,home,0,0,0,4,8,0,0,0,spoke1,spoke1,speed,20 → 25 m/s,New
+R2,Second engine,train,M,main,home,8,0,4,0,8,0,0,0,spoke1,spoke1,trains,Two trains in service,New
+SEG2,Ring segment: first branch → High Port,rail,R,main,port,24,0,24,16,16,0,0,0,port.reach,port.reach,,,New
+LASH,Fibre lashings for the port segment,rail,R,main,canopy,0,0,0,0,0,8,0,0,port.reach,optional,,,New
+SIGC,Copper signal cable for the port segment,rail,R,main,gorge,0,0,0,0,0,0,8,0,port.reach,optional,,,New
+BAY,Port service bay,site,M,main,port,0,0,12,8,8,0,0,0,port.connect,port.connect,,Town services,"five-area U3 role, without copper"
+CR-Fi,"Harbour crane, sling version",site,C,main,canopy,0,0,0,0,8,8,0,0,port.connect,optional,,Removes hand unloading,three-area F1 role
+CR-U,"Harbour crane, hoist version",site,C,main,gorge,0,0,0,0,8,0,8,0,port.connect,optional,,Removes hand unloading,five-area U2 role
+WAG2,Second wagon,train,F,main,home,8,0,0,0,8,0,0,0,port.connect,port.connect,wagon,Freight 32 → 64 per train,New
+ENG3,Port workshop refit,train,F,main,port,0,0,0,6,12,0,0,0,port.connect,port.connect,speed,25 → 30 m/s,Like five-area U1 (20 → 30)
+SEG3,Ring segment: High Port → second branch,rail,R,main,port,24,0,24,16,16,0,0,0,b2.reach,b2.reach,,,New
+SID-2,Second branch siding,rail,R,main,port,0,0,12,8,8,0,0,0,b2.connect,b2.connect,,,New
+SEG4,Closing segment with crystal collars,rail,R,main,ring,24,0,24,16,20,0,0,2,ring.close,ring.close,,The ring closes,X collars: five-area X1 role
+WAG3,Third wagon,train,F,main,home,0,0,0,0,8,4,0,0,ring.close,ring.close,wagon,Freight 64 → 96 per train,New
+LOOP,Passing loops and signals,train,M,main,ring,0,0,0,0,8,4,4,0,ring.close,ring.close,trains,A train circulates the loop,New
+ENG4,Express fitting,train,F,main,home,0,0,0,6,12,8,8,0,ring.close,ring.close,speed,30 → 40 m/s,New
+return,Final return connection,rail,R,main,original,0,0,0,4,4,0,4,1,final,final,,Reach The Boogler,"five-area ""return"" bill"
+BPIER,The Boogler's pier,town,E,main,original,8,0,0,4,0,0,0,0,final,final,,,New
+SPK-P,Deep-sea spoke: High Port → Home,rail,R,optional,port,0,0,24,16,16,0,0,4,optional,optional,,Owner: crystal as a deep-sea crossing,New
+SPK-2,Return spoke: second branch → Home,rail,R,optional,ring,0,0,24,16,16,0,0,0,optional,optional,,,New
+TOWN,Town district (each),town,E,optional,home,16,0,0,12,8,0,0,0,optional,optional,,Visible growth,New
+F-seat,Canopy and upholstery,train,E,optional,canopy,2,0,0,0,0,4,0,0,optional,optional,,,roundhouse-trains F-seat bill
+F5,Town awnings,town,E,optional,canopy,4,0,0,0,0,6,0,0,optional,optional,,,three-area F5 bill

@@ -1,0 +1,23 @@
+key,label,value,unit,note
+branchFirst,First branch after Ring Island,canopy,canopy | gorge,The player's choice; both orders are valid. Changes every branch-tagged row.
+targetHours,Main-game target,8,hours,"Design Table call, 2 November"
+walkMps,Walking speed,5.6,m/s,campaign-kit profile.walkMps
+pickupS,Pick-up overhead per load,1.2,s,campaign-kit profile.pickupS
+walkLimitKm,Walk instead of ride below,0.8,km,Same-island hauls are walked
+accel,Train acceleration,2,m/s²,campaign-kit accelerationMps2
+dwellS,Train dwell per stop,8,s,campaign-kit dwellS
+boardWaitS,Rider wait for a train,20,s per ride,Manual hauling by train waits for it
+transferS,Freight transfer per trip end,6,s,campaign-kit transferS
+lastCarryS,"Last carry, rack to frame",1.5,s per stock unit,Hands still place every shared unit
+handParallel,"Each extra player adds, hauling",0.7,of a hauler,Shared sources and frames contend
+activityParallel,"Each extra player adds, authored play",0.12,of a player,Exploration and puzzles parallelize poorly
+travelParallel,"Each extra player adds, commuting",0.3,of a trip,Friends split errands; they mostly ride together
+sessionHours,Sitting length,1.5,hours,A break between sittings lets producers fill their yards
+offlineGapHours,Time away between sittings,22,hours,
+offlineFill,Producers fill yards while away,1,"1 = on, 0 = off",Open question for the owner; off matches the 4 November contract
+offlineCapHours,Away production limit,2,hours of output,Never past the yard capacity
+ladder.speed,Train cruise speed,20 / 25 / 30 / 40,m/s,20 m/s is today's tuning; 50 m/s is the owner's late-game novelty ceiling
+ladder.wagon,Freight per train,24 / 32 / 64 / 96,units,"S1 freight chassis 24 → 32 (roundhouse-trains), then a second and third wagon"
+ladder.trains,Trains in service,1 / 2 / 3 / 4,trains,One slow train first; the closed loop adds a circulating one
+ladder.carry,Hand carry per trip,8 / 16 / 24 / 32,units,RAILWAY_T1.carry = 8 today; carry frame 16; fibre sling 24
+ladder.tool,Harvest time multiplier,1 / 0.67 / 0.5 / 0.4,× seconds per unit,Proper axe 15 logs per tree instead of 10

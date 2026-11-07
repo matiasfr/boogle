@@ -1,0 +1,21 @@
+id,makes,place,level,rate_per_h,yard_cap,W,St,R,C,S,Fi,U,X,at_if_first,at_if_second,look,source
+P-W1,W,home,1,2400,24,0,0,0,0,0,0,0,0,home.line2,home.line2,Depot cart rattles logs to a rack by the frame,"As built: LINE2_DEPOT 8 logs / 120 ticks, never past the bill"
+P-R1,R,home,1,7200,24,56,0,0,0,0,0,0,0,home.forge,home.forge,Forge pours rails onto its rack,"As built: LINE2_FORGE bills 24 + 32 logs, 1 rail / 5 ticks, rackMax 24"
+C0,C,splitrock,1,40,12,16,0,0,0,0,0,0,0,splitrock.connect,splitrock.connect,"One crusher, one mould, a crew of two",five-area C0 bill
+P-C2,C,splitrock,2,120,24,4,0,0,8,0,0,0,0,ring.connect,ring.connect,A second mould and a drying rack,Bill of five-area C2 (larger stock bays)
+P-C3,C,splitrock,3,480,48,0,0,0,8,8,0,0,0,b1.connect,b1.connect,Steel kiln and a conveyor to the siding,New
+P-C4,C,splitrock,4,1440,96,0,0,0,8,12,0,0,0,port.connect,port.connect,Gantry loader over the siding,New
+S0,S,ring,1,45,12,8,0,0,8,0,0,0,0,ring.connect,ring.connect,One furnace under the ring,five-area S0 bill
+P-S2,S,ring,2,120,24,0,0,0,8,8,0,0,0,spoke1,spoke1,Second furnace and a rolling bench,New
+P-S3,S,ring,3,480,48,0,0,0,8,12,0,0,0,port.connect,port.connect,Trip hammer and stacked billets,New
+P-S4,S,ring,4,1440,96,0,0,0,8,12,4,4,0,ring.close,ring.close,Overhead crane fed by the loop line,New
+F0,Fi,canopy,1,40,12,16,0,0,0,0,0,0,0,b1.connect,b2.connect,One loom in the loading bay,three-area F0 bill
+P-Fi2,Fi,canopy,2,160,32,0,0,0,4,8,4,0,0,spoke1,ring.close,Three looms and a bundle chute,New; a second visit buys two levels at once
+P-Fi3,Fi,canopy,3,480,64,0,0,0,8,12,0,0,0,port.connect,ring.close,Powered looms,New
+P-Fi4,Fi,canopy,4,1440,96,0,0,0,8,12,0,4,0,ring.close,optional,Loom hall with an overhead crane,New
+U0,U,gorge,1,40,12,8,0,0,0,8,0,0,0,b1.connect,b2.connect,One winding drum on the ledge,five-area U0 bill
+P-U2,U,gorge,2,160,32,0,0,0,4,8,0,4,0,spoke1,ring.close,Two drums and a cable lift,New; a second visit buys two levels at once
+P-U3,U,gorge,3,480,64,0,0,0,8,12,0,0,0,port.connect,ring.close,Powered drawing mill,New
+P-U4,U,gorge,4,1440,96,0,0,0,8,12,4,0,0,ring.close,optional,Drawing mill with a cable crane,New
+X0,X,stops,1,6,4,8,0,0,0,8,0,0,0,optional,optional,Seed cradle on the observatory islet,five-area X0 bill; after the ending here
+P-X2,X,stops,2,24,12,0,0,0,0,8,4,4,0,optional,optional,Seed nursery under glass,New

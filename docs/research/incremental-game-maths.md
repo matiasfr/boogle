@@ -339,3 +339,47 @@ For future source drift checks, SHA-256 of the fetched primary code (2 November 
 | A Dark Room `room.js`    | `1ab0ba74c5463f451bad9e6d8e5c6e871b3e0301878f0283f779b4d1bc6c5e81` |
 
 Only this report and its research-index entry change. Existing game/model code and the shared `node_modules` link remain untouched. Future builders should cite the relevant numbered recommendation, implement the smallest comparison, and record whether relief was both measurable and wanted. Gameplay changes still require the existing visual/feel verification; shared conservation and offline settlement require the repository's sync tests. This document makes no claim that those implementations or checks have happened.
+
+## Addendum, 6 November: hands first, machines later, then a new tier by hand
+
+_Added for the owner's 6 November call to make this the economy's core model: "manual is initially much faster ... initially the sort of automatic methods are really slow, but then the automatic methods get faster until they far surpass the manual. But then maybe there's another resource tier where manual is better than the automatic, or there is no automatic way". The model is [economy-model.xlsx](../economy/economy-model.xlsx) (Crossover and Flows tabs) and the brief is [ring-and-economy.md](../brainstorms/ring-and-economy.md). Sources were found by live web search on 6 November; community guides are marked as such. Nothing above is changed._
+
+### How incrementals hand work from the player to the machine
+
+- **Cookie Clicker and Universal Paperclips** (above) both open on a button you press, then sell generators that out-produce the press. Paperclips' later phases restart the counting with new machines rather than inflating the old ones.
+- **A Dark Room** opens with gathering wood by hand; villagers and buildings then take it over, and the game unfolds into exploration ([press kit](https://press.doublespeakgames.com/adr/index.html); [room.js](https://github.com/doublespeakgames/adarkroom/blob/main/script/room.js)). It is the closest precedent for an incremental that becomes an adventure.
+- **Kittens Game** opens with clicking catnip; a catnip field then gathers without clicks, and refining catnip into wood opens the next layer ([community walkthrough](https://gamecreationblueprint.blogspot.com/2017/03/kittens-game-walkthrough.html), unfinished fan page). Each new resource repeats manual-then-automatic one layer up.
+- **Antimatter Dimensions** makes automation itself the reward: autobuyers are earned from challenges, and community guides advise semi-manual play while they are weak ([guide](https://raw.githack.com/aarextiaokhiao/ivark.github.io/master/howto.html); [Patashu's guide](https://redlib.hbubli.cc/r/AntimatterDimensions)). That autobuyers start slow and have their intervals upgraded is common knowledge of the game but was not verified from a primary source here.
+- **Increlution** unlocks automating a task only after you have done it by hand enough times ([community review](https://www.incrementaldb.com/community/review/4288); [GameBrain summary](https://gamebrain.co/game/increlution)). This is the cleanest "earn the machine by doing the job" rule in the set.
+- **Idle Miner Tycoon** splits production into shaft, elevator and warehouse, each automated by its own manager, and the bottleneck moves between them as you upgrade ([AppGamer](https://www.appgamer.com/idle-miner-tycoon/strategy-guide/managers-in-idle-miner-tycoon); [BlueStacks guide](https://www.bluestacks.com/blog/game-guides/idle-miner-tycoon/idt-tips-tricks-en.html)). Boogle's version: producer, trains and yard, with freight the usual choke.
+- **Factory Idle** runs a fully automated conveyor factory ([TV Tropes](https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/FactoryIdle)); little more was verified.
+- **Melvor Idle** (above) never automates the act itself: the activity is the production, and offline time simply continues it.
+- **Shapez is the bridge to automation games.** You build the extractors and belts yourself; delivering shapes to the central hub unlocks upgrades that speed up every machine at once, and later levels ask for more complex shapes ([Giant Bomb](https://giantbomb.com/wiki/Games/shapez_io); [Steam discussion](https://steamcommunity.com/app/1318690/discussions/0/2519149567496656154)). The hub that consumes what the world makes is the same shape as Boogle's Home Yard and Roundhouse.
+- **Pecorella's series** extends Part I (above) with alternative growth models in [Part II](https://www.gamedeveloper.com/game-platforms/the-math-of-idle-games-part-ii) and prestige loops in [Part III](https://gamedeveloper.com/design/the-math-of-idle-games-part-iii): prestige trades accumulated progress for a multiplier on the next run.
+
+**Co-op incrementals are rare and mostly additive.** Clicker Heroes clans pool each member's damage against one shared daily boss ([official blog](https://blog.clickerheroes.com/clicker-heroes-clan-raid-what-you-need-to-know/)); Idle Together mixes individual upgrades with team bonuses ([Steam](https://store.steampowered.com/app/3468430)). None found combines a shared incremental with exploration, platforming or physical hauling.
+
+### What Boogle takes, and where it is new ground
+
+1. **Every tier starts by hand.** A new material has no producer until its place is connected; whoever finds it carries it (A Dark Room, Kittens Game).
+2. **The first machine is slower than one person.** Level 1 producers run at 40–45 units an hour against roughly 140–330 by hand, then levels 2–4 pass one player and finally a crew of four (Cookie Clicker, Antimatter Dimensions).
+3. **Manual assists keep hands relevant.** The carry frame (8 → 16), fibre sling (16 → 24), proper axe and powered pick raise the hand line; spokes shorten it. Machines win on volume, never by making hands pointless: the last carry from rack to frame stays manual.
+4. **The bottleneck moves.** Producer rate, freight (trains × wagons ÷ round trip, shared by every remote producer) and yard capacity each limit in turn (Idle Miner Tycoon). Train upgrades exist because more producers share one train.
+5. **No prestige.** A new tier is a soft reset of the manual-versus-machine race without losing anything; the world keeps every line (the earlier recommendation against prestige stands).
+6. **One tier has no machine in the main game.** Crystal seeds are found by exploring the small stops and carried by hand; their seed cradle comes after the ending. This is the owner's "there is no automatic way" case.
+
+**New ground:** a shared world where the incremental climb is physical and co-op (friends haul, machines take over, everyone's world grows), and where each new tier is reached by Metroidvania exploration (abilities and route shortcuts) rather than by a purchase. The co-op incrementals found share a number; Boogle shares a place.
+
+### The crossover, as modelled
+
+For material *m* at a route step, with hand carry *c*, harvest seconds *h* per unit, tool multiplier *k*, pick-up *p* and one-way trip *t* (walked on the hub island, ridden beyond):
+
+```text
+by hand, one player   = c × 3600 / (h·k·c + p + 2t)          units per hour to the Home Yard
+by hand, crew of N    = one player × (1 + (N − 1) × 0.7)
+automatic             = min(producer level rate,
+                            freight per train × trains × 3600 / (2 × train trip + 2 × transfer) / remote producers)
+crossover             = first step whose automatic ≥ by hand
+```
+
+Default results (solo hours; four-player timeline in brackets): logs 0.5 h (0.3), footings 3.5 h (3.8), steel 5.3–5.4 h (4.9–5.0), the first branch's material 5.3–5.4 h (4.9–5.0), the second branch's 6.9 h (never against a crew in the main game), crystal never. Both branch orders give the same shape. These come from the model's guessed rates, not play; the [page](../world/ring-economy.html) charts each tier.
