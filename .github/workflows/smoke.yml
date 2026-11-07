@@ -1,7 +1,7 @@
 name: Smoke
 
 # Two-player check of the live site, after every deploy and nightly (dev/scenarios/smoke.ts): two headless tabs join room smoke-<UTC weekday
-# 1-7>, see each other, toss an item, throw the ball and compare per-state world hashes. Seven rooms in rotation keep
+# 1-7>, see each other, rename one and check the server's per-state hashes (light depth: the ball and same-tick hashes run on the Mac nightly). Seven rooms in rotation keep
 # nightly runs from filling the server's MAX_ROOMS, and a reused room also loads its stored snapshot. On failure (or timeout)
 # it opens, or comments on, the one open issue labelled 'smoke', with the failing checks and a link to the run
 # (screenshots are its artifact).
@@ -54,6 +54,10 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Two players on the live site
         shell: bash # -o pipefail, so tee keeps the scenario's exit code
+        # light: a software-rendered runner draws a frame every few seconds, too slow for the ball's owner handover and the
+        # same-tick hash comparison; the owner's Mac runs those against the live site nightly (dev/daily, scenario 'smoke').
+        env:
+          SMOKE_DEPTH: light
         run: SMOKE_ROOM="smoke-$(date -u +%u)" npm run scenario -- smoke --url "$URL" 2>&1 | tee smoke.log
       - if: failure() || cancelled()
         uses: actions/upload-artifact@v7
