@@ -301,26 +301,52 @@ export function buildGreybox(map: Layout, ground: Ground): Greybox {
     const base = map.land.find((g) => g.id === t.land)?.top ?? 10;
     const crownTop = t.h ?? base + 60;
     const rnd = mulberry((t.seed ?? 1) * 31);
-    const n = Math.round((t.r![0] * t.r![1]) / 9000);
+    const n = Math.round(((t.r![0] * t.r![1]) / 9000) * (t.density ?? 1));
     const trunks: THREE.BufferGeometry[] = [],
       crowns: THREE.BufferGeometry[] = [];
+    // One trunk and one crown (both merged below, so the whole forest is two draw calls).
+    const plant = (x: number, z: number, trunkH: number, trunkR: number, crown: THREE.BufferGeometry) => {
+      trunks.push(new THREE.CylinderGeometry(trunkR * 0.8, trunkR, trunkH, 7).translate(x, base + trunkH / 2, z));
+      crowns.push(crown);
+      solid([{ kind: 'cylinder', rTop: trunkR * 0.8, rBottom: trunkR, h: trunkH, segments: 7 }], {
+        x,
+        y: base + trunkH / 2,
+        z,
+      });
+    };
     for (let i = 0; i < n; i++) {
       const a = rnd() * Math.PI * 2,
         rr = Math.sqrt(rnd()),
         r = 28 + rnd() * 30;
       const x = wx(t.c![0] + Math.cos(a) * t.r![0] * rr),
         z = wz(t.c![1] + Math.sin(a) * t.r![1] * rr);
+      if (t.crownFrom !== undefined) {
+        // Walkable forest: crowns start `crownFrom` above the ground, trunks 3-5 m thick.
+        const top = crownTop + (rnd() - 0.5) * 20,
+          crownR = 14 + rnd() * 8,
+          crownH = top - base - t.crownFrom;
+        const crown = new THREE.IcosahedronGeometry(crownR, 0).scale(1, crownH / 2 / crownR, 1);
+        plant(x, z, t.crownFrom + crownH * 0.3, 1.5 + rnd(), crown.translate(x, top - crownH / 2, z));
+        continue;
+      }
       const top = crownTop - (58 - r) * 0.6; // smaller crowns stand a little lower
       const crownH = r * 0.9,
-        trunkH = top - crownH * 0.6 - base,
-        trunkR = 2.5 + r * 0.08;
-      trunks.push(new THREE.CylinderGeometry(trunkR * 0.8, trunkR, trunkH, 7).translate(x, base + trunkH / 2, z));
-      crowns.push(new THREE.IcosahedronGeometry(r * 0.75, 0).scale(1, 0.75, 1).translate(x, top - crownH / 2, z));
-      solid([{ kind: 'cylinder', rTop: trunkR * 0.8, rBottom: trunkR, h: trunkH, segments: 7 }], {
+        trunkH = top - crownH * 0.6 - base;
+      plant(
         x,
-        y: base + trunkH / 2,
         z,
-      });
+        trunkH,
+        2.5 + r * 0.08,
+        new THREE.IcosahedronGeometry(r * 0.75, 0).scale(1, 0.75, 1).translate(x, top - crownH / 2, z),
+      );
+    }
+    // Mother trees: a few giants that keep the skyline lure (crowns top out at `motherH`).
+    const motherTop = t.motherH ?? 150;
+    for (const [mx, mz] of t.mothers ?? []) {
+      const x = wx(mx),
+        z = wz(mz);
+      const crown = new THREE.IcosahedronGeometry(45, 0).scale(1, 0.8, 1);
+      plant(x, z, motherTop - 36 - base + 8, 7, crown.translate(x, motherTop - 36, z));
     }
     root.add(new THREE.Mesh(mergeGeometries(trunks), LANDMARK));
     root.add(new THREE.Mesh(mergeGeometries(crowns), BACKDROP));
