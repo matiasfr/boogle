@@ -6,12 +6,17 @@
 
 **The machinery remembers your help.** Each new stretch of railway is guarded by one big, readable machine that
 construction finishes and players operate. A pawl catches, a load sits safely parked, a brace stays under compression: any
-partial solve survives a friend leaving, so solo play is the same problem done in sequence, and friends simply overlap.
+partial solve survives a friend leaving. The approved rigs support solo completion in sequence and overlapping work by friends.
 Each destination gets one physical idea and a lasting result. Split-rock Works **opens solid ground** (a broad breach in a
 visible seam). Ring Island **supports something that would otherwise block freight** (raise the aperture and brace it).
-The payoff is the first loaded train passing through. Serves **Cooperation is automatic, not negotiated** and **Designed
-for drop-in, drop-out** in [DESIGN](../../DESIGN.md), and the [route contract](../research/route-contract.md): movement
+The payoff is the first loaded train passing through. Serves **Enjoyable alone and together** and **Show, don't tell**
+in [DESIGN](../../DESIGN.md), and the [route contract](../research/route-contract.md): movement
 may shortcut travel, but construction and machinery stay required.
+
+**Owner review, 7 November:** evaluate solo viability and cooperative quality alongside each other. Review whether
+complementary tasks make operating the machinery together more satisfying; friends merely overlapping a solo sequence
+is no longer a universal design constraint. The approved rigs and durable partial progress remain until a specific
+revision is approved. This review does not authorize new mechanisms.
 
 ## Gut question
 
@@ -56,8 +61,8 @@ Variants that differ in one thing:
   durable; settings are reversible.
 - **Reuses:** the quarry lever and Needle Bell switch patterns in `src/proto/place/tech-layout.ts`, accepted railway
   state, the recovery rack for parked loads, the shared particle pool for the crack and the clunk.
-- **Smallest first build:** one rig in greybox, Ring's single aperture or Split-rock's strike, with solo recovery proven
-  before any shared helper code. A shared helper comes only after a second mechanism shows matching behaviour.
+- **Smallest first build:** one rig in greybox, Ring's single aperture or Split-rock's strike, with solo recovery and
+  cooperative operation evaluated alongside each other. A shared helper comes only after a second mechanism shows matching behaviour.
 - **Risks:** readability at phone size; two friends racing the same handle; a puzzle that is really an invoice (identical
   fetches).
 

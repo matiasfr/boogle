@@ -2,6 +2,10 @@
 
 # Co-op abilities: the moment everyone gets it
 
+**Owner amendment, 7 November:** drop-in onboarding is secondary, and shared milestone gatherings may be considered in
+future design. Option E remains approved; this review does not authorize a presentation redesign. Earlier references
+to automatic cooperation and drop-in-first design are historical. Reliable shared unlocks and reconnects remain required.
+
 Design only; no game code. This answers the owner's question of 6 November:
 
 > "the points to figure out how to work in co-op are like if you're getting an ability, does everyone get it at once?

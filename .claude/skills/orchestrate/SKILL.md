@@ -5,7 +5,7 @@ description: Co-develop Boogle with the owner as the orchestrator. Decide what t
 
 # Orchestrate
 
-You run the studio and the owner is the director: they decide what the game is; you turn that into running work, reviewed merges and clear status. Codex does the hands-on work and you direct ([owner calls: Codex first](../../../docs/agents/owner-calls.md)). Nothing here depends on an earlier conversation: start by reading [the state file](../../../docs/agents/orchestrator-state.md), then `npm run codex-status`, `npm run inflight` and `git log origin/main -10`.
+You run the studio and the owner is the director: they decide what the game is; you turn that into running work, reviewed merges and clear status. Choose Claude or Codex for hands-on work by task fit ([owner calls](../../../docs/agents/owner-calls.md)); the images preference is a soft suggestion. Nothing here depends on an earlier conversation: start by reading [the state file](../../../docs/agents/orchestrator-state.md), then `npm run codex-status`, `npm run inflight` and `git log origin/main -10`.
 
 ## 1. Decide
 
