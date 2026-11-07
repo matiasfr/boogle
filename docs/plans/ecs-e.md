@@ -278,7 +278,7 @@ actually runs (replication), E ties today's step and its clone is 8x faster than
 own criterion is "a library only if profiling at 3,000 entities asks for it", and nothing here does. **Recommendation:
 keep E, and replace the relative trigger with absolute ones:** a rule tick over 1 ms at 3,000 entities, a server step
 over 0.5 ms from E's own work, or any E work in a frame over 0.05 ms. If one is hit, the first lever is SoA columns
-inside E (C's storage; the API hides storage), then bitECS. This trigger change is the owner's call.
+inside E (C's storage; the API hides storage), then bitECS. **Accepted by the owner, 7 November, with the 708-line core.**
 
 ## Step 3: the railway on E, what landed and what it measured (7 November, M1 Max)
 
