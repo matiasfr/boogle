@@ -47,8 +47,16 @@ export type Terrain = {
   seed?: number;
   label?: string;
   labelAt?: XZ;
-  /** forest: crown tops, metres above the sea. */
+  /** forest: crown tops, metres above the sea (the walkable forest). */
   h?: number;
+  /** forest: height above the ground where the crowns start (default 40% of the height). */
+  crownFrom?: number;
+  /** forest: tree count multiplier (default 1). */
+  density?: number;
+  /** forest: mother trees [x, z], taller than the rest. */
+  mothers?: XZ[];
+  /** forest: mother-tree crown tops, metres above the sea (default 150). */
+  motherH?: number;
 };
 export type Place = {
   id: string;
