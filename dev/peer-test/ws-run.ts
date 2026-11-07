@@ -233,7 +233,7 @@ try {
   // 11. WS_LOAD=1: R1a's measurements (2, 4, 6 players at 0, 100, 200 ms added latency, normal and 5x churn).
   if (process.env.WS_LOAD) {
     await svc.close({ save: false });
-    svc = await serve({ MAX_PLAYERS: '8', SERVER_SAVE_MS: '2000' });
+    svc = await serve({ MAX_PLAYERS: '8', SERVER_SAVE_MS: '2000', UPGRADES_PER_MIN: '1000' }); // every page is one IP
     await railwayLoad(ctx, { seconds: Number(process.env.WS_LOAD_SECONDS || 15) });
   }
 

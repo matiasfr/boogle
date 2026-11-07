@@ -76,6 +76,8 @@ const T = (window.T = {
   railEvents: [] as { at: number; pid: string; epoch: number; request: number; op: string }[],
   railSent: [] as { at: number; epoch: number; request: number; op: string }[],
   railSyncedAt: 0,
+  railSyncedChars: 0, // packet characters received up to the whole late join
+  railSyncedPackets: 0,
   railStartAt: 0,
   async start() {
     let room: Room;
@@ -234,7 +236,11 @@ function startWorld(room: Room) {
         ...(p.ack ? { ack: [...p.ack] } : {}),
         ...(p.rej ? { rej: p.rej } : {}),
       });
-      if (!T.railSyncedAt && rail.synced()) T.railSyncedAt = at;
+      if (!T.railSyncedAt && rail.synced()) {
+        T.railSyncedAt = at;
+        T.railSyncedPackets = T.railPackets.length;
+        T.railSyncedChars = T.railPackets.reduce((n, x) => n + x.chars, 0);
+      }
       for (const e of p.ev ?? [])
         T.railEvents.push({
           at,

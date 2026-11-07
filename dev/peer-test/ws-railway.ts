@@ -467,12 +467,7 @@ export async function railwayLoad(c: Ctx, { players = [2, 4, 6], lat = [0, 100, 
         await waitFor(async () => (await rail(late)).ready, 10000);
         const join = await ev(late.page, () => {
           const T = window.T;
-          const upTo = T.railPackets.findIndex((p: { at: number }) => p.at >= T.railSyncedAt);
-          return {
-            ms: T.railSyncedAt - T.railStartAt,
-            chars: T.railPackets.slice(0, upTo + 1).reduce((n: number, p: { chars: number }) => n + p.chars, 0),
-            packets: upTo + 1,
-          };
+          return { ms: T.railSyncedAt - T.railStartAt, chars: T.railSyncedChars, packets: T.railSyncedPackets };
         });
         // Conservation on the server and agreement of every mirror at quiescence.
         await sleep(300);
