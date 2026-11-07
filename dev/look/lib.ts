@@ -199,6 +199,8 @@ export type GameOpts = {
   room?: string;
   name?: string;
   size?: number[];
+  /** The page's devicePixelRatio (Playwright's deviceScaleFactor); default 1. */
+  scale?: number;
   hud?: boolean | string;
   out?: string;
   prefix?: string;
@@ -251,7 +253,11 @@ export class Game {
     g.out = path.resolve(opts.out || '.look');
     g.prefix = opts.prefix || '';
     g.size = opts.size || [960, 600];
-    g.ctx = await browser.newContext({ viewport: { width: g.size[0]!, height: g.size[1]! }, hasTouch: !!opts.touch });
+    g.ctx = await browser.newContext({
+      viewport: { width: g.size[0]!, height: g.size[1]! },
+      hasTouch: !!opts.touch,
+      ...(opts.scale ? { deviceScaleFactor: opts.scale } : {}),
+    });
     if (opts.clock) await g.ctx.clock.install();
     g.tracing = !!opts.trace;
     if (g.tracing) await g.ctx.tracing.start({ title: g.name });

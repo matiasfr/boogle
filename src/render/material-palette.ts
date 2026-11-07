@@ -47,11 +47,27 @@ export function paletteNode(base: any, family: MaterialFamily) {
   const { factor, node } = families[family];
   return base.mul(node ?? vec3(factor.r, factor.g, factor.b));
 }
-/** New preview clone; never attach a node to a cached shared material. */
+// One palette clone per source material and family, shared by every caller: a clone per mesh added 20 materials and 7
+// programs to the current game for the same look (docs/research/performance.md). Disposed when its last owner goes.
+const clones = new Map<THREE.NodeMaterial, Map<MaterialFamily, { copy: THREE.NodeMaterial; users: number }>>();
+/** The source's palette clone (shared, read-only for callers); never attach a node to a cached shared material. */
 export function paletteMaterial<T extends THREE.NodeMaterial>(source: T, family: MaterialFamily, owner?: OwnedView) {
-  const copy = patchNode(source.clone(), 'colorNode', (previous) => paletteNode(previous ?? materialColor, family));
-  owner?.cleanup(() => copy.dispose());
-  return copy;
+  let byFamily = clones.get(source);
+  if (!byFamily) clones.set(source, (byFamily = new Map()));
+  let entry = byFamily.get(family);
+  if (!entry) {
+    const copy = patchNode(source.clone(), 'colorNode', (previous) => paletteNode(previous ?? materialColor, family));
+    byFamily.set(family, (entry = { copy, users: 0 }));
+  }
+  const shared = entry;
+  shared.users++;
+  owner?.cleanup(() => {
+    if (--shared.users > 0 || byFamily.get(family) !== shared) return;
+    byFamily.delete(family);
+    if (!byFamily.size) clones.delete(source);
+    shared.copy.dispose();
+  });
+  return shared.copy as T;
 }
 /** Callers' owned instance buffers and plain materials use the CPU equivalent of the same linear ratio. */
 export function paletteColour(color: THREE.Color, family: MaterialFamily) {
