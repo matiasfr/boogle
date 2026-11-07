@@ -1,0 +1,4147 @@
+<title>Map Prototypes</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta
+  name="description"
+  content="Five top-down layouts for Boogle's world after Ring Island, at the real 1 km scale, with a stepper that plays the progression."
+/>
+<script type="application/json" id="map-data">
+  {
+    "version": 1,
+    "date": "2026-11-06",
+    "units": "metres; [x, z] with x east and z south (north is -z), Place-local like world-map.html",
+    "ride": {
+      "speed": 20,
+      "accelS": 10,
+      "dwellS": 8,
+      "boardS": 20,
+      "note": "Per link: length / 20 m/s + 10 s to speed up and slow down at 2 m/s² + 8 s dwell. Plus 20 s waiting to board. Same settings as ring-data.ts."
+    },
+    "view": [-3900, -3950, 6900, 6100],
+    "common": {
+      "land": [
+        {
+          "id": "home-land",
+          "on": ["home"],
+          "poly": [
+            [-250, 60],
+            [-235, 140],
+            [-80, 165],
+            [110, 135],
+            [250, 60],
+            [330, -60],
+            [440, -200],
+            [470, -330],
+            [430, -430],
+            [360, -410],
+            [320, -300],
+            [200, -280],
+            [60, -290],
+            [-80, -240],
+            [-200, -150],
+            [-260, -40]
+          ]
+        },
+        {
+          "id": "ring-land",
+          "on": ["ring"],
+          "seen": 0,
+          "c": [330, -1120],
+          "r": [240, 200],
+          "seed": 7,
+          "rough": 0.18
+        }
+      ],
+      "places": [
+        {
+          "id": "home",
+          "name": "Home",
+          "kind": "hub",
+          "at": [-100, 14],
+          "reach": 0,
+          "seen": 0,
+          "la": "w",
+          "gives": "Logs, stone and rails. Town, forge, and the Roundhouse and Home Yard once Ring Island connects.",
+          "note": "Threefold Reach, as built: Line 1 to the timber camp and Line 2 past the quarry to the pier."
+        },
+        {
+          "id": "camp",
+          "name": "Timber camp",
+          "kind": "stop",
+          "minor": true,
+          "at": [-13, -142],
+          "reach": 0,
+          "seen": 0,
+          "gives": "Logs, on Line 1."
+        },
+        {
+          "id": "splitrock",
+          "name": "Split-rock Works",
+          "kind": "main",
+          "at": [98, 52],
+          "reach": 1,
+          "seen": 0,
+          "la": "s",
+          "gives": "Precast footings. The ankle rings on the way (double jump) and the breaker strike.",
+          "note": "The existing east quarry, on the Home island (approved gate brief)."
+        },
+        {
+          "id": "pier",
+          "name": "Pier",
+          "kind": "stop",
+          "minor": true,
+          "at": [402, -372],
+          "reach": 0,
+          "seen": 0,
+          "gives": "End of Line 2; the first sea crossing starts here."
+        },
+        {
+          "id": "ring",
+          "name": "Ring Island",
+          "kind": "main",
+          "at": [330, -1120],
+          "reach": 2,
+          "seen": 0,
+          "la": "e",
+          "gives": "Steel. Brace the freight aperture. The Roundhouse opens at Home.",
+          "note": "The shard and the broken ring stand on the northern horizon from the first minute. Real anchor (330, -1120), 751 m from the pier."
+        }
+      ],
+      "lines": [
+        {
+          "id": "l1",
+          "name": "Line 1",
+          "from": "home",
+          "to": "camp",
+          "kind": "built",
+          "stage": 0,
+          "pts": [
+            [-82, 12],
+            [-40, -60],
+            [-13, -142]
+          ]
+        },
+        {
+          "id": "l2a",
+          "name": "Line 2",
+          "from": "home",
+          "to": "splitrock",
+          "kind": "built",
+          "stage": 0,
+          "pts": [
+            [-82, 12],
+            [-50, 30],
+            [28, 27],
+            [98, 52]
+          ]
+        },
+        {
+          "id": "l2b",
+          "name": "Line 2 to the pier",
+          "from": "splitrock",
+          "to": "pier",
+          "kind": "built",
+          "stage": 0,
+          "pts": [
+            [98, 52],
+            [167, -28],
+            [373, -184],
+            [402, -372]
+          ]
+        },
+        {
+          "id": "ringx",
+          "name": "First sea crossing",
+          "from": "pier",
+          "to": "ring",
+          "kind": "main",
+          "style": "sea",
+          "stage": 2,
+          "pts": [
+            [402, -372],
+            [380, -650],
+            [330, -1120]
+          ],
+          "note": "751 m on the real map (the model rounds it to 1.2 km)."
+        }
+      ],
+      "stages": [
+        {
+          "t": 0.7,
+          "title": "Today",
+          "note": "Home as built: Line 1 to the timber camp, Line 2 past the quarry to the pier. The shard is on the horizon."
+        },
+        {
+          "t": 1.5,
+          "title": "Split-rock Works",
+          "note": "Walk east, find the ankle rings (double jump), strike the seam, carry footings home, connect the Works."
+        },
+        {
+          "t": 2.8,
+          "title": "Ring Island",
+          "note": "The first sea crossing from the pier. Steel by hand, brace the aperture; the Roundhouse and Home Yard open at Home."
+        }
+      ]
+    },
+    "options": [
+      {
+        "id": "sickle",
+        "name": "Sickle Coast",
+        "shape": "A lopsided ring with a long cliff arc",
+        "feel": "The long, scenic way round under a wall of cliffs, then a shortcut that drops you home in a minute.",
+        "refs": [
+          ["Dark Souls", "reach a place the long way, then open the lift back to Firelink: the bay shortcut"],
+          [
+            "Breath of the Wild",
+            "a landmark on the skyline from day one (the Port's crane) and a cliff wall that asks over or around"
+          ]
+        ],
+        "pitch": "West of Home a crescent of high land, the Sickle, curls round a shallow bay. Its inner face is the White Wall, a 120 m cliff. Home sits off-centre on the east side of the ring, so one side is short sea hops and the other is a long cliff arc. High Port's crane is on the south-west skyline from day one, but you reach it last, by doubling back through a sea cave under Home.",
+        "choice": {
+          "stage": 3,
+          "from": "ring",
+          "A": "gorge",
+          "B": "canopy",
+          "text": "From Ring Island: west along the cliff ledge to High Gorge, or south-west across the bay by Bell Rock to Canopy Town."
+        },
+        "land": [
+          {
+            "id": "sickle",
+            "on": ["gorge", "canopy", "quay", "port", "notch"],
+            "seen": 0,
+            "poly": [
+              [-650, -1950],
+              [-1100, -2250],
+              [-1700, -2250],
+              [-2300, -1800],
+              [-2750, -1000],
+              [-2850, -100],
+              [-2600, 700],
+              [-2100, 1300],
+              [-1450, 1550],
+              [-850, 1450],
+              [-550, 1200],
+              [-750, 1000],
+              [-1150, 850],
+              [-1550, 600],
+              [-1800, 150],
+              [-1850, -500],
+              [-1650, -1100],
+              [-1350, -1500],
+              [-950, -1700],
+              [-700, -1800]
+            ]
+          },
+          {
+            "id": "bell-land",
+            "on": ["bell"],
+            "seen": 2,
+            "c": [-1050, -450],
+            "r": [120, 95],
+            "seed": 3,
+            "rough": 0.2
+          },
+          {
+            "id": "salt-land",
+            "on": ["saltpan"],
+            "seen": 1,
+            "c": [-450, 700],
+            "r": [170, 110],
+            "seed": 5,
+            "rough": 0.2
+          },
+          {
+            "id": "orig-land",
+            "on": ["original"],
+            "c": [-3150, -1700],
+            "r": [230, 190],
+            "seed": 9,
+            "rough": 0.15
+          }
+        ],
+        "terrain": [
+          {
+            "kind": "shoal",
+            "land": "bell-land",
+            "c": [-1000, -480],
+            "r": [520, 420],
+            "label": "Sickle Bay shallows",
+            "labelAt": [-650, -820]
+          },
+          {
+            "kind": "forest",
+            "land": "sickle",
+            "c": [-2250, -350],
+            "r": [380, 560],
+            "seed": 4
+          },
+          {
+            "kind": "cliff",
+            "land": "sickle",
+            "label": "The White Wall, 120 m",
+            "pts": [
+              [-900, -1720],
+              [-1350, -1520],
+              [-1650, -1120],
+              [-1830, -500],
+              [-1780, 150],
+              [-1530, 620],
+              [-1150, 870]
+            ],
+            "labelAt": [-2350, -1500]
+          },
+          {
+            "kind": "gorge",
+            "land": "sickle",
+            "label": "High Gorge, 90 m deep",
+            "pts": [
+              [-980, -1740],
+              [-1200, -2000],
+              [-1330, -2240]
+            ],
+            "labelAt": [-1350, -2420]
+          },
+          {
+            "kind": "cliff",
+            "land": "home-land",
+            "pts": [
+              [-240, 120],
+              [-130, 160],
+              [0, 155]
+            ]
+          }
+        ],
+        "places": [
+          {
+            "id": "gorge",
+            "name": "High Gorge",
+            "kind": "branch",
+            "at": [-1150, -1900],
+            "reach": {
+              "c": "A",
+              "s": [3, 5]
+            },
+            "seen": 2,
+            "la": "n",
+            "gives": "Copper. The powered pick and a longer hook reel.",
+            "note": "A cliff-top town split by a 90 m gorge. Its waterfall is the first thing you see from Ring Island's aperture."
+          },
+          {
+            "id": "canopy",
+            "name": "Canopy Town",
+            "kind": "branch",
+            "at": [-2100, -300],
+            "reach": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "seen": 2,
+            "la": "w",
+            "gives": "Fibre. The carrying sling and glider cloth.",
+            "note": "Treehouse streets in giant trees at the foot of the White Wall."
+          },
+          {
+            "id": "bell",
+            "name": "Bell Rock",
+            "kind": "stop",
+            "at": [-1050, -450],
+            "reach": {
+              "c": "B",
+              "s": [3, 4]
+            },
+            "seen": 2,
+            "la": "s",
+            "gives": "Crystal seeds; hook practice. The midpoint of the bay shortcut.",
+            "note": "On the way to Canopy Town either way."
+          },
+          {
+            "id": "saltpan",
+            "name": "Saltpan Halt",
+            "kind": "stop",
+            "at": [-450, 700],
+            "reach": 6,
+            "seen": 1,
+            "la": "e",
+            "gives": "Crystal seeds; salt flats you can slide on.",
+            "note": "On the double-back route to the Port."
+          },
+          {
+            "id": "quay",
+            "name": "Port Quay",
+            "kind": "stop",
+            "at": [-990, 940],
+            "reach": 6,
+            "seen": 1,
+            "la": "e",
+            "gives": "The harbour's lower quay, at sea level under the cliff."
+          },
+          {
+            "id": "port",
+            "name": "High Port",
+            "kind": "main",
+            "at": [-1300, 1180],
+            "reach": 6,
+            "seen": 0,
+            "la": "s",
+            "gives": "Town services, the harbour crane, the service bay and a faster engine. Recombines steel, footings, copper and fibre.",
+            "note": "Its cliff-top crane is on the south-west skyline from Home on day one. Here the Port comes after both branches, so it takes both materials."
+          },
+          {
+            "id": "notch",
+            "name": "Lantern Notch",
+            "kind": "stop",
+            "at": [-2620, -1000],
+            "reach": 8,
+            "seen": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "la": "w",
+            "gives": "A telescope, and the tunnel through the White Wall to the outer sea."
+          },
+          {
+            "id": "original",
+            "name": "Original Island",
+            "kind": "ending",
+            "at": [-3150, -1700],
+            "reach": 8,
+            "seen": {
+              "c": "A",
+              "s": [3, 5]
+            },
+            "la": "n",
+            "gives": "The Boogler.",
+            "note": "A lighthouse blinking beyond the Wall, seen from the Gorge's rim."
+          }
+        ],
+        "lines": [
+          {
+            "id": "ledge",
+            "name": "Cliff-ledge line",
+            "from": "ring",
+            "to": "gorge",
+            "kind": "main",
+            "style": "sea",
+            "stage": {
+              "c": "A",
+              "s": [3, 5]
+            },
+            "pts": [
+              [330, -1120],
+              [-150, -1450],
+              [-650, -1780],
+              [-1150, -1900]
+            ],
+            "note": "A trestle out of Ring Island, then a ledge cut into the Wall's north face."
+          },
+          {
+            "id": "ring-bell",
+            "name": "Bay trestle",
+            "from": "ring",
+            "to": "bell",
+            "kind": "main",
+            "style": "sea",
+            "stage": {
+              "c": "B",
+              "s": [3, null]
+            },
+            "pts": [
+              [330, -1120],
+              [-300, -820],
+              [-1050, -450]
+            ],
+            "note": "Only built if Canopy Town is first; if it's second you go by the shortcut."
+          },
+          {
+            "id": "bell-canopy",
+            "name": "Bell Rock to Canopy",
+            "from": "bell",
+            "to": "canopy",
+            "kind": "main",
+            "style": "sea",
+            "stage": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "pts": [
+              [-1050, -450],
+              [-1600, -380],
+              [-2100, -300]
+            ]
+          },
+          {
+            "id": "bay-cut",
+            "name": "The bay shortcut",
+            "from": "home",
+            "to": "bell",
+            "kind": "spoke",
+            "style": "sea",
+            "stage": 4,
+            "pts": [
+              [-199, 10],
+              [-600, -200],
+              [-1050, -450]
+            ],
+            "note": "Straight across the bay from the West landing: the Dark Souls lift. When Canopy Town is first, its ride drops from 4.1 km to 2.0 km."
+          },
+          {
+            "id": "incline",
+            "name": "Gorge incline",
+            "from": "bell",
+            "to": "gorge",
+            "kind": "spoke",
+            "style": "incline",
+            "stage": {
+              "c": "A",
+              "s": [4, 5]
+            },
+            "pts": [
+              [-1050, -450],
+              [-1080, -1100],
+              [-1150, -1900]
+            ],
+            "note": "Up the White Wall from Bell Rock, so the Gorge also comes home through the hub."
+          },
+          {
+            "id": "seacave",
+            "name": "Sea-cave line",
+            "from": "home",
+            "to": "saltpan",
+            "kind": "main",
+            "style": "tunnel",
+            "stage": 6,
+            "pts": [
+              [-150, 120],
+              [-300, 400],
+              [-450, 700]
+            ],
+            "note": "Through the cave under Home's south cliffs."
+          },
+          {
+            "id": "salt-quay",
+            "name": "Saltpan to the quay",
+            "from": "saltpan",
+            "to": "quay",
+            "kind": "main",
+            "style": "sea",
+            "stage": 6,
+            "pts": [
+              [-450, 700],
+              [-700, 880],
+              [-990, 940]
+            ]
+          },
+          {
+            "id": "lift",
+            "name": "Crane lift up the cliff",
+            "from": "quay",
+            "to": "port",
+            "kind": "main",
+            "style": "incline",
+            "stage": 6,
+            "pts": [
+              [-990, 940],
+              [-1150, 1050],
+              [-1300, 1180]
+            ]
+          },
+          {
+            "id": "wall-s",
+            "name": "White Wall line, south",
+            "from": "port",
+            "to": "canopy",
+            "kind": "loop",
+            "stage": 7,
+            "pts": [
+              [-1300, 1180],
+              [-1700, 850],
+              [-2050, 350],
+              [-2100, -300]
+            ],
+            "note": "Along the cliff top through three headland tunnels."
+          },
+          {
+            "id": "wall-n",
+            "name": "White Wall line, north",
+            "from": "canopy",
+            "to": "gorge",
+            "kind": "loop",
+            "stage": 7,
+            "pts": [
+              [-2100, -300],
+              [-2150, -1000],
+              [-1700, -1700],
+              [-1150, -1900]
+            ],
+            "note": "Over the gorge mouth on crystal collars. With the south half, the ring closes: the first lap."
+          },
+          {
+            "id": "notch-tunnel",
+            "name": "Notch tunnel",
+            "from": "canopy",
+            "to": "notch",
+            "kind": "final",
+            "style": "tunnel",
+            "stage": 8,
+            "pts": [
+              [-2100, -300],
+              [-2450, -700],
+              [-2620, -1000]
+            ]
+          },
+          {
+            "id": "final",
+            "name": "Final crossing",
+            "from": "notch",
+            "to": "original",
+            "kind": "final",
+            "style": "sea",
+            "stage": 8,
+            "pts": [
+              [-2620, -1000],
+              [-2950, -1350],
+              [-3150, -1700]
+            ]
+          }
+        ],
+        "gates": [
+          {
+            "id": "cave",
+            "name": "Sea cave under the south cliffs",
+            "kind": "ability",
+            "at": [-170, 150],
+            "needs": "Powered pick (High Gorge)",
+            "seen": 0,
+            "open": 6,
+            "leads": "saltpan",
+            "doubleBack": true,
+            "note": "Seen from the West landing on day one: a cracked wall with daylight behind it. Breaking it is the double-back. The line runs through it to the Saltpan and the Port Quay, and the bay shortcut makes the trip home quick."
+          },
+          {
+            "id": "crane",
+            "name": "Harbour crane",
+            "kind": "build",
+            "at": [-1150, 1050],
+            "needs": "Copper and fibre fittings",
+            "seen": 1,
+            "open": 6,
+            "leads": "port",
+            "note": "Lifts the line from the quay up to the cliff-top town."
+          },
+          {
+            "id": "collar",
+            "name": "Gorge-mouth gap",
+            "kind": "build",
+            "at": [-1450, -1830],
+            "needs": "Crystal collars (seeds from Bell Rock and the Saltpan)",
+            "seen": 2,
+            "open": 7,
+            "leads": "canopy",
+            "note": "Closes the ring."
+          },
+          {
+            "id": "notch-ledge",
+            "name": "Notch ledge",
+            "kind": "ability",
+            "at": [-2430, -640],
+            "needs": "Hook reel up, glider cloth across the drop",
+            "seen": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "open": 8,
+            "leads": "notch",
+            "note": "A ledge above Canopy Town that you see on your first visit."
+          }
+        ],
+        "secrets": [
+          {
+            "id": "falls",
+            "name": "Cave behind the falls",
+            "at": [-1020, -1690],
+            "seen": 2,
+            "found": {
+              "c": "A",
+              "s": [3, 5]
+            },
+            "note": "On the Gorge approach: a double-jump ledge behind the waterfall, with the first crystal seed."
+          },
+          {
+            "id": "trestle",
+            "name": "Sunken trestle",
+            "at": [-760, -260],
+            "seen": 4,
+            "found": 4,
+            "note": "Seen from the shortcut train: an older railway's ruin in the shallows, pointing at the Notch."
+          }
+        ],
+        "sights": [
+          {
+            "from": "home",
+            "to": "port",
+            "at": 0,
+            "note": "The cliff-top crane on the south-west skyline"
+          },
+          {
+            "from": "ring",
+            "to": "gorge",
+            "at": 2,
+            "note": "The Gorge waterfall, seen from the aperture"
+          },
+          {
+            "from": "ring",
+            "to": "canopy",
+            "at": 2,
+            "note": "Giant crowns at the foot of the Wall"
+          },
+          {
+            "from": "gorge",
+            "to": "original",
+            "at": {
+              "c": "A",
+              "s": [3, 5]
+            },
+            "note": "A lighthouse beyond the Wall"
+          }
+        ],
+        "stages": [
+          {
+            "t": 3.5,
+            "title": "The fork at Ring Island",
+            "note": "Pick High Gorge (the cliff ledge) or Canopy Town (the bay trestle by Bell Rock). Both work with steel and footings."
+          },
+          {
+            "t": 4.4,
+            "title": "First branch, and the bay shortcut",
+            "note": "Home to Bell Rock straight across the bay: the long way round becomes a short ride."
+          },
+          {
+            "t": 5.4,
+            "title": "The second branch",
+            "note": "Shorter, because you already have the toolkit."
+          },
+          {
+            "t": 6.6,
+            "title": "Double back: the sea cave and High Port",
+            "note": "The powered pick opens the cave under Home's south cliffs that you saw on day one. The line runs past the Saltpan to the Port Quay, and the crane lifts it to the town you have been looking at all game."
+          },
+          {
+            "t": 7.3,
+            "title": "The White Wall line closes the ring",
+            "note": "Cliff-top line from High Port to Canopy Town and on to the Gorge, over the gorge mouth on crystal collars. The first lap."
+          },
+          {
+            "t": 8.2,
+            "title": "The Notch and the Original Island",
+            "note": "Hook up and glide across the Notch ledge, tunnel through the Wall, cross to The Boogler."
+          }
+        ]
+      },
+      {
+        "id": "eight",
+        "name": "Figure Eight",
+        "shape": "Two loops that cross at Home",
+        "feel": "Home is the crossroads: every trip passes back through town, and town gets busier as both loops fill.",
+        "refs": [
+          ["Hollow Knight", "a central place every route runs back through (Dirtmouth above the Crossroads)"],
+          ["Dark Souls", "Firelink at the junction of routes; you keep passing the place you started"]
+        ],
+        "pitch": "Home sits in the waist between two seas. The small north loop (Ring Island, the Gorge isle, Copperstair) closes early. Then you double back home, break through the cove cliffs and go round the bigger, lazier south loop in either direction. A tunnel under the Needle Bell joins the loops so trains run the eight. The final crossing leaves from the north loop, from a ledge you saw hours earlier.",
+        "choice": {
+          "stage": 5,
+          "from": "cut",
+          "A": "canopy",
+          "B": "port",
+          "text": "Round the south loop: west to Canopy Town first, or east to High Port first."
+        },
+        "land": [
+          {
+            "id": "gorge-isle",
+            "on": ["gorge"],
+            "seen": 2,
+            "c": [1450, -1450],
+            "r": [400, 330],
+            "seed": 11,
+            "rough": 0.2
+          },
+          {
+            "id": "copper-isle",
+            "on": ["copper"],
+            "seen": 2,
+            "c": [1150, -650],
+            "r": [150, 110],
+            "seed": 12,
+            "rough": 0.2
+          },
+          {
+            "id": "reed-isle",
+            "on": ["reed"],
+            "seen": 0,
+            "c": [-760, 460],
+            "r": [150, 105],
+            "seed": 14,
+            "rough": 0.2
+          },
+          {
+            "id": "green",
+            "on": ["canopy"],
+            "seen": 1,
+            "c": [-1400, 1050],
+            "r": [520, 420],
+            "seed": 13,
+            "rough": 0.16
+          },
+          {
+            "id": "salt-isle",
+            "on": ["saltworks"],
+            "seen": 0,
+            "c": [560, 760],
+            "r": [170, 115],
+            "seed": 15,
+            "rough": 0.2
+          },
+          {
+            "id": "port-isle",
+            "on": ["port"],
+            "seen": 1,
+            "c": [500, 1700],
+            "r": [520, 330],
+            "seed": 17,
+            "rough": 0.16
+          },
+          {
+            "id": "orig-land",
+            "on": ["original"],
+            "c": [2500, -150],
+            "r": [250, 210],
+            "seed": 9,
+            "rough": 0.15
+          }
+        ],
+        "terrain": [
+          {
+            "kind": "shoal",
+            "land": "reed-isle",
+            "c": [-550, 330],
+            "r": [520, 300],
+            "label": "Reed shallows"
+          },
+          {
+            "kind": "deep",
+            "land": "salt-isle",
+            "c": [1350, 350],
+            "r": [480, 380],
+            "label": "Deep water: no line east"
+          },
+          {
+            "kind": "mountain",
+            "land": "gorge-isle",
+            "c": [1520, -1520],
+            "r": [300, 240],
+            "seed": 11,
+            "label": "Copper Crag, 260 m"
+          },
+          {
+            "kind": "gorge",
+            "land": "gorge-isle",
+            "pts": [
+              [1230, -1290],
+              [1420, -1480],
+              [1720, -1660]
+            ]
+          },
+          {
+            "kind": "forest",
+            "land": "green",
+            "c": [-1420, 1060],
+            "r": [400, 320],
+            "seed": 6
+          },
+          {
+            "kind": "cliff",
+            "land": "home-land",
+            "pts": [
+              [-240, 120],
+              [-130, 160],
+              [0, 155]
+            ]
+          },
+          {
+            "kind": "cliff",
+            "land": "copper-isle",
+            "pts": [
+              [1040, -700],
+              [1180, -760],
+              [1290, -650]
+            ]
+          }
+        ],
+        "places": [
+          {
+            "id": "gorge",
+            "name": "High Gorge",
+            "kind": "branch",
+            "at": [1450, -1500],
+            "reach": 3,
+            "seen": 2,
+            "la": "n",
+            "gives": "Copper. The powered pick and a longer hook reel."
+          },
+          {
+            "id": "copper",
+            "name": "Copperstair",
+            "kind": "stop",
+            "at": [1150, -650],
+            "reach": 4,
+            "seen": 2,
+            "la": "e",
+            "gives": "Crystal seeds. The cliff the final crossing will leave from.",
+            "note": "On the north loop's way home."
+          },
+          {
+            "id": "cut",
+            "name": "Cove Cut",
+            "kind": "stop",
+            "minor": true,
+            "at": [-110, 175],
+            "reach": 5,
+            "seen": 0,
+            "la": "s",
+            "gives": "The south junction, through the cove cliffs."
+          },
+          {
+            "id": "reed",
+            "name": "Reed Halt",
+            "kind": "stop",
+            "at": [-760, 460],
+            "reach": {
+              "c": "A",
+              "s": [5, 6]
+            },
+            "seen": 0,
+            "la": "w",
+            "gives": "Crystal seeds; a wreck on the shallows."
+          },
+          {
+            "id": "canopy",
+            "name": "Canopy Town",
+            "kind": "branch",
+            "at": [-1400, 1050],
+            "reach": {
+              "c": "A",
+              "s": [5, 6]
+            },
+            "seen": 1,
+            "la": "w",
+            "gives": "Fibre. The carrying sling and glider cloth."
+          },
+          {
+            "id": "saltworks",
+            "name": "Saltworks",
+            "kind": "stop",
+            "at": [560, 760],
+            "reach": {
+              "c": "B",
+              "s": [5, 6]
+            },
+            "seen": 0,
+            "la": "e",
+            "gives": "Crystal seeds; evaporation pans."
+          },
+          {
+            "id": "port",
+            "name": "High Port",
+            "kind": "main",
+            "at": [500, 1700],
+            "reach": {
+              "c": "B",
+              "s": [5, 6]
+            },
+            "seen": 1,
+            "la": "s",
+            "gives": "Town services, the harbour crane, the service bay and a faster engine.",
+            "note": "Takes copper (already in hand), so it can come before or after Canopy Town."
+          },
+          {
+            "id": "original",
+            "name": "Original Island",
+            "kind": "ending",
+            "at": [2500, -150],
+            "reach": 8,
+            "seen": 3,
+            "la": "s",
+            "gives": "The Boogler."
+          }
+        ],
+        "lines": [
+          {
+            "id": "ring-gorge",
+            "name": "Strait to the Gorge isle",
+            "from": "ring",
+            "to": "gorge",
+            "kind": "main",
+            "style": "sea",
+            "stage": 3,
+            "pts": [
+              [330, -1120],
+              [850, -1380],
+              [1450, -1500]
+            ]
+          },
+          {
+            "id": "gorge-copper",
+            "name": "Gorge to Copperstair",
+            "from": "gorge",
+            "to": "copper",
+            "kind": "main",
+            "style": "sea",
+            "stage": 4,
+            "pts": [
+              [1450, -1500],
+              [1400, -1000],
+              [1150, -650]
+            ]
+          },
+          {
+            "id": "copper-pier",
+            "name": "North loop closes",
+            "from": "copper",
+            "to": "pier",
+            "kind": "loop",
+            "style": "sea",
+            "stage": 4,
+            "pts": [
+              [1150, -650],
+              [750, -480],
+              [402, -372]
+            ],
+            "note": "The first loop, small and early: trains circulate it from here on."
+          },
+          {
+            "id": "home-cut",
+            "name": "Through the cove cliffs",
+            "from": "home",
+            "to": "cut",
+            "kind": "main",
+            "style": "tunnel",
+            "stage": 5,
+            "pts": [
+              [-82, 12],
+              [-100, 90],
+              [-110, 175]
+            ]
+          },
+          {
+            "id": "cut-reed",
+            "name": "Over the Reed shallows",
+            "from": "cut",
+            "to": "reed",
+            "kind": "main",
+            "style": "sea",
+            "stage": {
+              "c": "A",
+              "s": [5, 6]
+            },
+            "pts": [
+              [-110, 175],
+              [-450, 330],
+              [-760, 460]
+            ]
+          },
+          {
+            "id": "reed-canopy",
+            "name": "Reed Halt to Canopy",
+            "from": "reed",
+            "to": "canopy",
+            "kind": "main",
+            "style": "sea",
+            "stage": {
+              "c": "A",
+              "s": [5, 6]
+            },
+            "pts": [
+              [-760, 460],
+              [-1100, 760],
+              [-1400, 1050]
+            ]
+          },
+          {
+            "id": "cut-salt",
+            "name": "Cove Cut to the Saltworks",
+            "from": "cut",
+            "to": "saltworks",
+            "kind": "main",
+            "style": "sea",
+            "stage": {
+              "c": "B",
+              "s": [5, 6]
+            },
+            "pts": [
+              [-110, 175],
+              [250, 450],
+              [560, 760]
+            ]
+          },
+          {
+            "id": "salt-port",
+            "name": "Saltworks to High Port",
+            "from": "saltworks",
+            "to": "port",
+            "kind": "main",
+            "style": "sea",
+            "stage": {
+              "c": "B",
+              "s": [5, 6]
+            },
+            "pts": [
+              [560, 760],
+              [620, 1200],
+              [500, 1700]
+            ]
+          },
+          {
+            "id": "waist",
+            "name": "Waist tunnel",
+            "from": "pier",
+            "to": "cut",
+            "kind": "spoke",
+            "style": "tunnel",
+            "stage": 6,
+            "pts": [
+              [402, -372],
+              [180, -100],
+              [-110, 175]
+            ],
+            "note": "Under the Needle Bell: trains run straight from loop to loop without reversing at the turntable. The eight's crossing."
+          },
+          {
+            "id": "south-coast",
+            "name": "South loop closes",
+            "from": "canopy",
+            "to": "port",
+            "kind": "loop",
+            "style": "sea",
+            "stage": 7,
+            "pts": [
+              [-1400, 1050],
+              [-900, 1560],
+              [-200, 1820],
+              [500, 1700]
+            ]
+          },
+          {
+            "id": "final",
+            "name": "Final crossing from Copperstair",
+            "from": "copper",
+            "to": "original",
+            "kind": "final",
+            "style": "sea",
+            "stage": 8,
+            "pts": [
+              [1150, -650],
+              [1800, -450],
+              [2500, -150]
+            ]
+          }
+        ],
+        "gates": [
+          {
+            "id": "cove",
+            "name": "Cracked cove cliff",
+            "kind": "ability",
+            "at": [-160, 135],
+            "needs": "Powered pick (High Gorge)",
+            "seen": 0,
+            "open": 5,
+            "leads": "cut",
+            "doubleBack": true,
+            "note": "The cracked sandstone above the cove, in sight from town on day one. After the north loop you come home and break through to the south."
+          },
+          {
+            "id": "beacon",
+            "name": "Copperstair beacon ledge",
+            "kind": "ability",
+            "at": [1230, -760],
+            "needs": "Glider cloth (Canopy Town)",
+            "seen": 4,
+            "open": 8,
+            "leads": "original",
+            "doubleBack": true,
+            "note": "The second double-back: the final crossing leaves the north loop from a ledge you passed at stage 4, reached by gliding from the cliff top."
+          },
+          {
+            "id": "deep",
+            "name": "Deep crossing",
+            "kind": "build",
+            "at": [1820, -450],
+            "needs": "Crystal collars (seeds from Copperstair, Reed Halt and the Saltworks)",
+            "seen": 4,
+            "open": 8,
+            "leads": "original"
+          }
+        ],
+        "secrets": [
+          {
+            "id": "crag",
+            "name": "Copper Crag summit",
+            "at": [1540, -1540],
+            "seen": 2,
+            "found": 3,
+            "note": "On the Gorge approach: hook to the top and see both loops and the Original Island at once."
+          },
+          {
+            "id": "wreck",
+            "name": "Reed wreck",
+            "at": [-600, 400],
+            "seen": 0,
+            "found": {
+              "c": "A",
+              "s": [5, 6]
+            },
+            "note": "A half-sunk wagon on the shallows beside the line, with a hat in it."
+          }
+        ],
+        "sights": [
+          {
+            "from": "splitrock",
+            "to": "port",
+            "at": 1,
+            "note": "High Port's roofs to the south, across the deep water"
+          },
+          {
+            "from": "splitrock",
+            "to": "canopy",
+            "at": 1,
+            "note": "A green island to the south-west"
+          },
+          {
+            "from": "gorge",
+            "to": "original",
+            "at": 3,
+            "note": "From the Crag: the lighthouse far to the east"
+          }
+        ],
+        "stages": [
+          {
+            "t": 3.5,
+            "title": "North loop: High Gorge",
+            "note": "Over the strait from Ring Island to the Gorge isle. No choice yet: the north loop is the short one."
+          },
+          {
+            "t": 4.4,
+            "title": "The north loop closes",
+            "note": "Copperstair and back to the pier: the first loop, early and small. Trains circulate it."
+          },
+          {
+            "t": 5.3,
+            "title": "Double back home: the south loop opens",
+            "note": "The pick breaks the cove cliff you've seen since day one. Choose the way round: west to Canopy Town or east to High Port."
+          },
+          {
+            "t": 6.3,
+            "title": "The other half, and the waist tunnel",
+            "note": "The tunnel under the Needle Bell joins the two loops, so a train can run the whole eight."
+          },
+          {
+            "t": 7.2,
+            "title": "The south loop closes",
+            "note": "Canopy Town to High Port along the south coast."
+          },
+          {
+            "t": 8.1,
+            "title": "Back north to the Original Island",
+            "note": "Glide to the Copperstair beacon ledge, set the crystal collars, cross to The Boogler."
+          }
+        ]
+      },
+      {
+        "id": "spine",
+        "name": "Spine and Ribs",
+        "shape": "A long valley line with ribs that tunnel back",
+        "feel": "A straight shot into the unknown, then the delight of a tunnel that spits you out somewhere you've been.",
+        "refs": [
+          ["Hollow Knight: Silksong", "a main path as simple as a one-line metro map, with the world dense around it"],
+          ["Metroid Dread", "a lock you see long before you hold its key, then a quick way back to it"],
+          ["Dark Souls", "the door that opens from the far side and joins two places you thought were apart"]
+        ],
+        "pitch": "Beyond Ring Island is the Uplands, a mainland coast on the northern horizon. A causeway reaches Landfall and the line runs straight up the Long Valley to Fork Halt. There you see both passes and High Port's lights behind a rockfall. Each rib goes round its ridge the long way, and once connected, a tunnel under the ridge brings it out at Landfall. That closes a loop and saves a kilometre. The rockfall needs both ribs' abilities, so you double back to the Fork last.",
+        "choice": {
+          "stage": 4,
+          "from": "fork",
+          "A": "gorge",
+          "B": "canopy",
+          "text": "At Fork Halt: the east pass to High Gorge, or the west pass to Canopy Town."
+        },
+        "land": [
+          {
+            "id": "uplands",
+            "on": ["landfall", "fork", "gorge", "canopy", "port"],
+            "seen": 0,
+            "poly": [
+              [-2200, -1750],
+              [-1400, -1650],
+              [-700, -1750],
+              [0, -1700],
+              [350, -1640],
+              [800, -1720],
+              [1500, -1650],
+              [2200, -1850],
+              [2450, -2600],
+              [2100, -3300],
+              [1300, -3650],
+              [600, -3720],
+              [0, -3680],
+              [-900, -3620],
+              [-1700, -3400],
+              [-2300, -2800],
+              [-2450, -2200]
+            ]
+          },
+          {
+            "id": "orig-land",
+            "on": ["original"],
+            "c": [-2900, -3500],
+            "r": [230, 180],
+            "seed": 9,
+            "rough": 0.15
+          }
+        ],
+        "terrain": [
+          {
+            "kind": "mountain",
+            "land": "uplands",
+            "c": [-600, -2650],
+            "r": [480, 560],
+            "seed": 21,
+            "label": "West ridge, 400 m"
+          },
+          {
+            "kind": "mountain",
+            "land": "uplands",
+            "c": [950, -2450],
+            "r": [420, 520],
+            "seed": 22,
+            "label": "East ridge, 450 m"
+          },
+          {
+            "kind": "forest",
+            "land": "uplands",
+            "c": [-1550, -2500],
+            "r": [480, 420],
+            "seed": 8
+          },
+          {
+            "kind": "river",
+            "land": "uplands",
+            "pts": [
+              [250, -3400],
+              [300, -2600],
+              [330, -1680]
+            ]
+          },
+          {
+            "kind": "gorge",
+            "land": "uplands",
+            "label": "High Gorge",
+            "pts": [
+              [1480, -2380],
+              [1680, -2700],
+              [1820, -3020]
+            ]
+          },
+          {
+            "kind": "cliff",
+            "land": "uplands",
+            "pts": [
+              [120, -3200],
+              [255, -3260],
+              [390, -3200]
+            ]
+          }
+        ],
+        "places": [
+          {
+            "id": "landfall",
+            "name": "Landfall",
+            "kind": "stop",
+            "at": [330, -1780],
+            "reach": 3,
+            "seen": 2,
+            "la": "e",
+            "gives": "The causeway's far end. Later, the junction where both tunnels come out.",
+            "note": "Old rusted rails here point up the valley."
+          },
+          {
+            "id": "fork",
+            "name": "Fork Halt",
+            "kind": "stop",
+            "at": [250, -2900],
+            "reach": 3,
+            "seen": 3,
+            "la": "e",
+            "gives": "The valley head: two passes and a rockfall. Crystal seeds."
+          },
+          {
+            "id": "gorge",
+            "name": "High Gorge",
+            "kind": "branch",
+            "at": [1600, -2700],
+            "reach": {
+              "c": "A",
+              "s": [4, 6]
+            },
+            "seen": 3,
+            "la": "e",
+            "gives": "Copper. The powered pick and a longer hook reel."
+          },
+          {
+            "id": "canopy",
+            "name": "Canopy Town",
+            "kind": "branch",
+            "at": [-1400, -2550],
+            "reach": {
+              "c": "B",
+              "s": [4, 6]
+            },
+            "seen": 3,
+            "la": "w",
+            "gives": "Fibre. The carrying sling and glider cloth."
+          },
+          {
+            "id": "port",
+            "name": "High Port",
+            "kind": "main",
+            "at": [250, -3550],
+            "reach": 7,
+            "seen": 3,
+            "la": "n",
+            "gives": "Town services, the harbour crane, the service bay and a faster engine.",
+            "note": "Its lights are behind the rockfall the first time you stand at Fork Halt."
+          },
+          {
+            "id": "original",
+            "name": "Original Island",
+            "kind": "ending",
+            "at": [-2900, -3500],
+            "reach": 8,
+            "seen": {
+              "c": "B",
+              "s": [4, 6]
+            },
+            "la": "s",
+            "gives": "The Boogler."
+          }
+        ],
+        "lines": [
+          {
+            "id": "causeway",
+            "name": "Causeway",
+            "from": "ring",
+            "to": "landfall",
+            "kind": "main",
+            "style": "sea",
+            "stage": 3,
+            "pts": [
+              [330, -1120],
+              [345, -1450],
+              [330, -1780]
+            ]
+          },
+          {
+            "id": "valley",
+            "name": "The Long Valley",
+            "from": "landfall",
+            "to": "fork",
+            "kind": "main",
+            "stage": 3,
+            "pts": [
+              [330, -1780],
+              [300, -2300],
+              [250, -2900]
+            ]
+          },
+          {
+            "id": "east-pass",
+            "name": "East pass",
+            "from": "fork",
+            "to": "gorge",
+            "kind": "main",
+            "stage": {
+              "c": "A",
+              "s": [4, 6]
+            },
+            "pts": [
+              [250, -2900],
+              [900, -3200],
+              [1600, -2700]
+            ],
+            "note": "Round the north end of the east ridge."
+          },
+          {
+            "id": "west-pass",
+            "name": "West pass",
+            "from": "fork",
+            "to": "canopy",
+            "kind": "main",
+            "stage": {
+              "c": "B",
+              "s": [4, 6]
+            },
+            "pts": [
+              [250, -2900],
+              [-500, -3280],
+              [-1400, -2550]
+            ],
+            "note": "Round the north end of the west ridge."
+          },
+          {
+            "id": "drift",
+            "name": "Copper drift",
+            "from": "gorge",
+            "to": "landfall",
+            "kind": "spoke",
+            "style": "tunnel",
+            "stage": {
+              "c": "A",
+              "s": [5, 6]
+            },
+            "pts": [
+              [1600, -2700],
+              [1000, -2150],
+              [330, -1780]
+            ],
+            "note": "Under the east ridge to Landfall: the rib's loop closes."
+          },
+          {
+            "id": "root",
+            "name": "Root tunnel",
+            "from": "canopy",
+            "to": "landfall",
+            "kind": "spoke",
+            "style": "tunnel",
+            "stage": {
+              "c": "B",
+              "s": [5, 6]
+            },
+            "pts": [
+              [-1400, -2550],
+              [-600, -2060],
+              [330, -1780]
+            ],
+            "note": "Under the west ridge to Landfall, through a glow-worm cavern."
+          },
+          {
+            "id": "rockfall-line",
+            "name": "Through the rockfall",
+            "from": "fork",
+            "to": "port",
+            "kind": "main",
+            "stage": 7,
+            "pts": [
+              [250, -2900],
+              [260, -3250],
+              [250, -3550]
+            ]
+          },
+          {
+            "id": "final",
+            "name": "Final crossing",
+            "from": "port",
+            "to": "original",
+            "kind": "final",
+            "style": "sea",
+            "stage": 8,
+            "pts": [
+              [250, -3550],
+              [-1300, -3820],
+              [-2900, -3500]
+            ]
+          }
+        ],
+        "gates": [
+          {
+            "id": "rockfall",
+            "name": "The rockfall",
+            "kind": "ability",
+            "at": [255, -3200],
+            "needs": "Hook reel (High Gorge) to scale it, glider cloth (Canopy Town) to come down the far side with the survey line",
+            "seen": 3,
+            "open": 7,
+            "leads": "port",
+            "doubleBack": true,
+            "note": "In view from Fork Halt the first time you arrive, with High Port's lights behind it. It needs both ribs' abilities, so the order choice can never strand it. The tunnels make the ride back to the Fork short."
+          },
+          {
+            "id": "crane",
+            "name": "Harbour crane",
+            "kind": "build",
+            "at": [380, -3560],
+            "needs": "Copper and fibre fittings",
+            "seen": 3,
+            "open": 7,
+            "leads": "port"
+          },
+          {
+            "id": "strait",
+            "name": "North strait",
+            "kind": "build",
+            "at": [-1300, -3800],
+            "needs": "Crystal collars (seeds from Fork Halt and the cavern)",
+            "seen": 7,
+            "open": 8,
+            "leads": "original"
+          }
+        ],
+        "secrets": [
+          {
+            "id": "rails",
+            "name": "Old rails at Landfall",
+            "at": [230, -1700],
+            "seen": 2,
+            "found": 3,
+            "note": "Someone tried this before: rusted rails pointing up the valley."
+          },
+          {
+            "id": "cavern",
+            "name": "Glow-worm cavern",
+            "at": [-600, -2060],
+            "seen": {
+              "c": "B",
+              "s": [5, 6]
+            },
+            "found": {
+              "c": "B",
+              "s": [5, 6]
+            },
+            "note": "Midway along the Root tunnel the train slows through a cave of lights; you can get off."
+          }
+        ],
+        "sights": [
+          {
+            "from": "ring",
+            "to": "landfall",
+            "at": 2,
+            "note": "A long coast on the northern horizon"
+          },
+          {
+            "from": "fork",
+            "to": "port",
+            "at": 3,
+            "note": "Port lights behind the rockfall"
+          },
+          {
+            "from": "fork",
+            "to": "gorge",
+            "at": 3,
+            "note": "Smoke from the east pass"
+          },
+          {
+            "from": "fork",
+            "to": "canopy",
+            "at": 3,
+            "note": "Giant crowns past the west pass"
+          },
+          {
+            "from": "canopy",
+            "to": "original",
+            "at": {
+              "c": "B",
+              "s": [4, 6]
+            },
+            "note": "From the treetops: an island far to the north-west"
+          }
+        ],
+        "stages": [
+          {
+            "t": 3.3,
+            "title": "The spine: Landfall and the Long Valley",
+            "note": "A causeway from Ring Island to the Uplands, then straight up the valley to Fork Halt. From the Fork you see both passes and High Port's lights beyond a rockfall."
+          },
+          {
+            "t": 3.9,
+            "title": "The fork: east pass or west pass",
+            "note": "Each rib goes round its ridge the long way."
+          },
+          {
+            "t": 4.7,
+            "title": "First rib connected: its tunnel",
+            "note": "The tunnel under the ridge you went round comes out at Landfall. A loop closes, and the rib is about 1 km nearer home."
+          },
+          {
+            "t": 5.8,
+            "title": "The second rib, with its tunnel",
+            "note": "A second loop, the other side of the valley."
+          },
+          {
+            "t": 6.9,
+            "title": "Double back to the Fork: the rockfall and High Port",
+            "note": "With the hook reel and glider cloth together, the rockfall you saw at stage 3 opens. The line runs through to High Port."
+          },
+          {
+            "t": 8,
+            "title": "The Original Island",
+            "note": "From the Port across the north strait on crystal collars."
+          }
+        ]
+      },
+      {
+        "id": "climb",
+        "name": "The Climb",
+        "shape": "A ring that climbs a mountain",
+        "feel": "Always going up: the summit you saw from the pier gets closer each lap, and gliding down is the reward.",
+        "refs": [
+          ["A Short Hike", "a peak in view from the first minute that the whole world wraps around"],
+          [
+            "Breath of the Wild",
+            "the triangle rule: a mountain that makes you choose over or around, and gliding down from a height"
+          ]
+        ],
+        "pitch": "North-west of Ring Island stands Mount Brae, 610 m, with a lantern on its summit that you see from Home every day. The ring is a lap of terraces round its slopes: east round to High Gorge (300 m) or west round to Canopy Town (160 m), meeting at Windgap on the north shoulder. Switchbacks go up slowly; straight drop lines come down fast. Then you double back to Brae Foot, reach the anchor on the cliff above the station, and take the Spiral up inside the mountain to High Port on the crater lake. The ending is the Long Descent to the sea.",
+        "choice": {
+          "stage": 3,
+          "from": "brae",
+          "A": "gorge",
+          "B": "canopy",
+          "text": "At Brae Foot: east round the mountain up to High Gorge, or west round to Canopy Town."
+        },
+        "land": [
+          {
+            "id": "brae-land",
+            "on": ["brae", "gorge", "canopy", "windgap", "port", "summit"],
+            "seen": 0,
+            "c": [-650, -2450],
+            "r": [1450, 1200],
+            "seed": 23,
+            "rough": 0.1
+          },
+          {
+            "id": "orig-land",
+            "on": ["original"],
+            "c": [-3050, -1600],
+            "r": [230, 190],
+            "seed": 9,
+            "rough": 0.15
+          }
+        ],
+        "terrain": [
+          {
+            "kind": "mountain",
+            "land": "brae-land",
+            "c": [-650, -2450],
+            "r": [1250, 1020],
+            "seed": 23,
+            "rings": 6,
+            "label": "Mount Brae, 610 m"
+          },
+          {
+            "kind": "lake",
+            "land": "brae-land",
+            "c": [-680, -2470],
+            "r": [230, 190],
+            "seed": 4,
+            "label": "Crater lake, 420 m",
+            "labelAt": [-640, -2330]
+          },
+          {
+            "kind": "forest",
+            "land": "brae-land",
+            "c": [-1550, -1950],
+            "r": [380, 430],
+            "seed": 9
+          },
+          {
+            "kind": "gorge",
+            "land": "brae-land",
+            "label": "East gorge",
+            "pts": [
+              [280, -2150],
+              [520, -2540],
+              [600, -2920]
+            ]
+          },
+          {
+            "kind": "cliff",
+            "land": "brae-land",
+            "pts": [
+              [-330, -1560],
+              [-150, -1620],
+              [30, -1560]
+            ]
+          }
+        ],
+        "places": [
+          {
+            "id": "brae",
+            "name": "Brae Foot",
+            "kind": "stop",
+            "at": [-150, -1480],
+            "elev": 10,
+            "reach": 3,
+            "seen": 2,
+            "la": "e",
+            "gives": "The mountain station. A cliff behind it with an anchor high up."
+          },
+          {
+            "id": "gorge",
+            "name": "High Gorge",
+            "kind": "branch",
+            "at": [450, -2550],
+            "elev": 300,
+            "reach": {
+              "c": "A",
+              "s": [3, 5]
+            },
+            "seen": 2,
+            "la": "e",
+            "gives": "Copper. The powered pick and a longer hook reel."
+          },
+          {
+            "id": "canopy",
+            "name": "Canopy Town",
+            "kind": "branch",
+            "at": [-1650, -2050],
+            "elev": 160,
+            "reach": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "seen": 2,
+            "la": "w",
+            "gives": "Fibre. The carrying sling and glider cloth."
+          },
+          {
+            "id": "windgap",
+            "name": "Windgap",
+            "kind": "stop",
+            "at": [-750, -3400],
+            "elev": 380,
+            "reach": 6,
+            "seen": 4,
+            "la": "n",
+            "gives": "Crystal seeds in an ice cave. Where the two halves of the lap meet."
+          },
+          {
+            "id": "port",
+            "name": "High Port",
+            "kind": "main",
+            "at": [-829, -2540],
+            "elev": 420,
+            "reach": 7,
+            "seen": 4,
+            "la": "w",
+            "gives": "A harbour on the crater lake: town services, the crane, the service bay and a faster engine.",
+            "note": "Its crane jib shows over the rim from the top of the first drop line."
+          },
+          {
+            "id": "summit",
+            "name": "Summit Lantern",
+            "kind": "stop",
+            "at": [-450, -2700],
+            "elev": 610,
+            "reach": 8,
+            "seen": 0,
+            "la": "n",
+            "gives": "The view of everything; the Long Descent starts here.",
+            "note": "On the horizon from Home every day."
+          },
+          {
+            "id": "original",
+            "name": "Original Island",
+            "kind": "ending",
+            "at": [-3050, -1600],
+            "elev": 0,
+            "reach": 8,
+            "seen": 7,
+            "la": "s",
+            "gives": "The Boogler."
+          }
+        ],
+        "lines": [
+          {
+            "id": "bridge",
+            "name": "Brae bridge",
+            "from": "ring",
+            "to": "brae",
+            "kind": "main",
+            "style": "sea",
+            "stage": 3,
+            "pts": [
+              [330, -1120],
+              [100, -1300],
+              [-150, -1480]
+            ]
+          },
+          {
+            "id": "east-terraces",
+            "name": "East terraces (switchbacks)",
+            "from": "brae",
+            "to": "gorge",
+            "kind": "main",
+            "stage": {
+              "c": "A",
+              "s": [3, 5]
+            },
+            "pts": [
+              [-150, -1480],
+              [150, -1650],
+              [0, -1800],
+              [300, -1950],
+              [150, -2100],
+              [450, -2250],
+              [300, -2400],
+              [450, -2550]
+            ]
+          },
+          {
+            "id": "west-terraces",
+            "name": "West terraces (switchbacks)",
+            "from": "brae",
+            "to": "canopy",
+            "kind": "main",
+            "stage": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "pts": [
+              [-150, -1480],
+              [-500, -1350],
+              [-900, -1450],
+              [-1000, -1650],
+              [-1300, -1550],
+              [-1500, -1800],
+              [-1400, -1950],
+              [-1650, -2050]
+            ]
+          },
+          {
+            "id": "drop-e",
+            "name": "Gorge drop line",
+            "from": "gorge",
+            "to": "brae",
+            "kind": "spoke",
+            "style": "incline",
+            "stage": {
+              "c": "A",
+              "s": [4, 5]
+            },
+            "pts": [
+              [450, -2550],
+              [-150, -1480]
+            ],
+            "note": "Straight down: 1.2 km against 1.9 km of switchbacks."
+          },
+          {
+            "id": "drop-w",
+            "name": "Canopy drop line",
+            "from": "canopy",
+            "to": "brae",
+            "kind": "spoke",
+            "style": "incline",
+            "stage": {
+              "c": "B",
+              "s": [4, 5]
+            },
+            "pts": [
+              [-1650, -2050],
+              [-150, -1480]
+            ],
+            "note": "Straight down: 1.6 km against 2.1 km of terraces."
+          },
+          {
+            "id": "wind-e",
+            "name": "North-east shoulder",
+            "from": "gorge",
+            "to": "windgap",
+            "kind": "main",
+            "stage": 6,
+            "pts": [
+              [450, -2550],
+              [350, -3000],
+              [0, -3300],
+              [-750, -3400]
+            ]
+          },
+          {
+            "id": "wind-w",
+            "name": "North-west shoulder",
+            "from": "canopy",
+            "to": "windgap",
+            "kind": "loop",
+            "stage": 6,
+            "pts": [
+              [-1650, -2050],
+              [-1750, -2700],
+              [-1350, -3200],
+              [-750, -3400]
+            ],
+            "note": "The two halves meet at Windgap: the first lap closes."
+          },
+          {
+            "id": "spiral",
+            "name": "The Spiral (tunnel)",
+            "from": "brae",
+            "to": "port",
+            "kind": "main",
+            "style": "tunnel",
+            "stage": 7,
+            "spiral": {
+              "c": [-650, -2450],
+              "turns": 0.6,
+              "r1": 200
+            },
+            "note": "A corkscrew inside the mountain, from the sea up to the crater lake."
+          },
+          {
+            "id": "rim",
+            "name": "Crater rim line",
+            "from": "port",
+            "to": "summit",
+            "kind": "loop",
+            "stage": 8,
+            "pts": [
+              [-829, -2540],
+              [-760, -2760],
+              [-450, -2700]
+            ]
+          },
+          {
+            "id": "descent",
+            "name": "The Long Descent",
+            "from": "summit",
+            "to": "original",
+            "kind": "final",
+            "style": "sea",
+            "stage": 8,
+            "pts": [
+              [-450, -2700],
+              [-1300, -2980],
+              [-2100, -2600],
+              [-2600, -2050],
+              [-3050, -1600]
+            ],
+            "note": "Down the west flank on a viaduct and out across the sea."
+          }
+        ],
+        "gates": [
+          {
+            "id": "anchor",
+            "name": "Anchor above Brae Foot",
+            "kind": "ability",
+            "at": [-150, -1610],
+            "needs": "Hook reel (High Gorge), and Windgap's crystal collars to line the Spiral",
+            "seen": 3,
+            "open": 7,
+            "leads": "port",
+            "doubleBack": true,
+            "note": "An iron anchor high on the cliff behind the station you arrive at in stage 3. Once you hold the reel and Windgap's seeds, you ride the drop lines back down and open the Spiral."
+          },
+          {
+            "id": "rim-gap",
+            "name": "Rim gap",
+            "kind": "build",
+            "at": [-760, -2760],
+            "needs": "Crystal collars",
+            "seen": 7,
+            "open": 8,
+            "leads": "summit"
+          }
+        ],
+        "secrets": [
+          {
+            "id": "hermit",
+            "name": "Hermit's switchback",
+            "at": [-1000, -1650],
+            "seen": 2,
+            "found": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "note": "A hut on the west terraces with the best view back at Home, and a hat."
+          },
+          {
+            "id": "ice",
+            "name": "Ice cave",
+            "at": [-760, -3330],
+            "seen": 6,
+            "found": 6,
+            "note": "Under Windgap: the crystal seeds the Spiral needs."
+          },
+          {
+            "id": "glide",
+            "name": "The summit glide",
+            "at": [-500, -2620],
+            "seen": 8,
+            "found": 8,
+            "note": "From the lantern, a glide that lands on Brae Foot's roof. Gliding down is the reward."
+          }
+        ],
+        "sights": [
+          {
+            "from": "home",
+            "to": "summit",
+            "at": 0,
+            "note": "The summit lantern, every day, from everywhere"
+          },
+          {
+            "from": "ring",
+            "to": "gorge",
+            "at": 2,
+            "note": "Terraces on the east flank"
+          },
+          {
+            "from": "ring",
+            "to": "canopy",
+            "at": 2,
+            "note": "A forest on the west slopes"
+          },
+          {
+            "from": "brae",
+            "to": "port",
+            "at": 4,
+            "note": "A crane jib over the crater rim"
+          },
+          {
+            "from": "port",
+            "to": "original",
+            "at": 7,
+            "note": "From the rim: an island far to the west"
+          }
+        ],
+        "stages": [
+          {
+            "t": 3.5,
+            "title": "Brae Foot: east round or west round",
+            "note": "A bridge from Ring Island to the mountain's foot. Go east up the switchbacks to High Gorge, or west round to Canopy Town."
+          },
+          {
+            "t": 4.4,
+            "title": "First branch, and its drop line",
+            "note": "A straight line down the mountain to Brae Foot, shorter than the switchbacks you came up."
+          },
+          {
+            "t": 5.4,
+            "title": "The other way round",
+            "note": "Up the other flank, with its own drop line."
+          },
+          {
+            "t": 6.1,
+            "title": "Windgap: the first lap closes",
+            "note": "Over the north shoulder at 380 m the two halves meet. Crystal seeds in the ice cave."
+          },
+          {
+            "t": 7,
+            "title": "Double back to Brae Foot: the Spiral to High Port",
+            "note": "With the hook reel, reach the anchor you have seen since stage 3; Windgap's crystal lines the Spiral. It corkscrews up inside the mountain to the crater lake."
+          },
+          {
+            "t": 8.2,
+            "title": "The rim, the summit and the Long Descent",
+            "note": "Round the crater rim to the lantern, then all the way down to the sea and The Boogler."
+          }
+        ]
+      },
+      {
+        "id": "stones",
+        "name": "Stepping Stones",
+        "shape": "A compact archipelago web (departs from the brief)",
+        "feel": "A sea of islands you can see from each other; a loop closes every hour or so, so most evenings end on a finished circuit.",
+        "departs": "No single big ring. Three small loops close at about 4.2, 5.3 and 7.0 hours instead of one at about 6.9, and every place is within 2.3 km of Home as the crow flies. Sittings are 1.5 hours, so this gives most sittings a closed loop, and its rides are almost as short as Sickle Coast's.",
+        "refs": [
+          [
+            "Outer Wilds",
+            "places you can see from each other, and a gate opened by knowing the way (the beacon's safe line)"
+          ],
+          ["A Short Hike", "a small, dense world where you're never far from the next thing"],
+          ["Breath of the Wild", "something on every horizon: from any island, two or three others pull at you"]
+        ],
+        "pitch": "Islands scattered round Home, all visible from its shores. Trestles hop the shallows and avoid the deep trenches, which shape the routes. Whichever branch you take first closes its own small triangle back to Home at once. The other side follows, then you double back to your own quarry: from Split-rock's rim you glide out to light the Long Bar beacon, which shows the safe line through the shoal to High Port. The Trench span closes a third loop, and the Reef Steps lead to the Original Island.",
+        "choice": {
+          "stage": 3,
+          "from": "home",
+          "A": "gorge",
+          "B": "canopy",
+          "text": "Both visible from Home since day one: east via Ring Island to the Stacks, or west over the shallows by Kelp Halt to Canopy Town."
+        },
+        "land": [
+          {
+            "id": "stack-a",
+            "on": ["gorge"],
+            "seen": 0,
+            "c": [1300, -1300],
+            "r": [210, 180],
+            "seed": 31,
+            "rough": 0.22
+          },
+          {
+            "id": "stack-b",
+            "on": ["gorge"],
+            "seen": 0,
+            "c": [1560, -1150],
+            "r": [170, 150],
+            "seed": 32,
+            "rough": 0.22
+          },
+          {
+            "id": "tern-isle",
+            "on": ["tern"],
+            "seen": 0,
+            "c": [1150, -520],
+            "r": [110, 90],
+            "seed": 33,
+            "rough": 0.2
+          },
+          {
+            "id": "canopy-isle",
+            "on": ["canopy"],
+            "seen": 0,
+            "c": [-1250, -650],
+            "r": [400, 320],
+            "seed": 34,
+            "rough": 0.18
+          },
+          {
+            "id": "kelp-isle",
+            "on": ["kelp"],
+            "seen": 0,
+            "c": [-700, -150],
+            "r": [130, 100],
+            "seed": 35,
+            "rough": 0.2
+          },
+          {
+            "id": "bell-isle",
+            "on": ["bell"],
+            "seen": 2,
+            "c": [-520, -1180],
+            "r": [140, 110],
+            "seed": 36,
+            "rough": 0.2
+          },
+          {
+            "id": "port-isle",
+            "on": ["port"],
+            "seen": 1,
+            "c": [1150, 950],
+            "r": [450, 320],
+            "seed": 37,
+            "rough": 0.16
+          },
+          {
+            "id": "bar",
+            "on": ["bar"],
+            "seen": 1,
+            "c": [500, 520],
+            "r": [300, 60],
+            "rot": 42,
+            "seed": 38,
+            "rough": 0.12,
+            "sand": true
+          },
+          {
+            "id": "reef-isle",
+            "on": ["reef"],
+            "seen": 6,
+            "c": [-450, 1250],
+            "r": [120, 90],
+            "seed": 39,
+            "rough": 0.2
+          },
+          {
+            "id": "orig-land",
+            "on": ["original"],
+            "c": [-1700, 1650],
+            "r": [240, 200],
+            "seed": 9,
+            "rough": 0.15
+          }
+        ],
+        "terrain": [
+          {
+            "kind": "shoal",
+            "land": "kelp-isle",
+            "c": [-500, -380],
+            "r": [650, 450],
+            "label": "Home shallows",
+            "labelAt": [-420, -560]
+          },
+          {
+            "kind": "deep",
+            "land": "port-isle",
+            "c": [1350, 150],
+            "r": [300, 380],
+            "label": "The Trench"
+          },
+          {
+            "kind": "deep",
+            "land": "reef-isle",
+            "c": [-1000, 1450],
+            "r": [600, 300],
+            "label": "Outer deep"
+          },
+          {
+            "kind": "deep",
+            "land": "tern-isle",
+            "c": [800, -850],
+            "r": [260, 180]
+          },
+          {
+            "kind": "forest",
+            "land": "canopy-isle",
+            "c": [-1250, -650],
+            "r": [320, 250],
+            "seed": 5
+          },
+          {
+            "kind": "gorge",
+            "land": "stack-a",
+            "label": "The Stacks",
+            "pts": [
+              [1440, -1380],
+              [1440, -1150]
+            ]
+          },
+          {
+            "kind": "cliff",
+            "land": "home-land",
+            "pts": [
+              [60, 95],
+              [150, 105],
+              [215, 55]
+            ]
+          }
+        ],
+        "places": [
+          {
+            "id": "gorge",
+            "name": "High Gorge",
+            "kind": "branch",
+            "at": [1400, -1230],
+            "reach": {
+              "c": "A",
+              "s": [3, 5]
+            },
+            "seen": 0,
+            "la": "n",
+            "gives": "Copper. The powered pick and a longer hook reel.",
+            "note": "A town bridging the gap between two sea stacks."
+          },
+          {
+            "id": "tern",
+            "name": "Tern Rock",
+            "kind": "stop",
+            "at": [1150, -520],
+            "reach": {
+              "c": "A",
+              "s": [4, 5]
+            },
+            "seen": 0,
+            "la": "e",
+            "gives": "Crystal seeds; a bird colony."
+          },
+          {
+            "id": "kelp",
+            "name": "Kelp Halt",
+            "kind": "stop",
+            "at": [-700, -150],
+            "reach": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "seen": 0,
+            "la": "w",
+            "gives": "Crystal seeds; tide pools."
+          },
+          {
+            "id": "canopy",
+            "name": "Canopy Town",
+            "kind": "branch",
+            "at": [-1250, -650],
+            "reach": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "seen": 0,
+            "la": "w",
+            "gives": "Fibre. The carrying sling and glider cloth."
+          },
+          {
+            "id": "bell",
+            "name": "Bell Terraces",
+            "kind": "stop",
+            "at": [-520, -1180],
+            "reach": {
+              "c": "B",
+              "s": [4, 5]
+            },
+            "seen": 2,
+            "la": "n",
+            "gives": "Crystal seeds; hook practice."
+          },
+          {
+            "id": "bar",
+            "name": "Long Bar beacon",
+            "kind": "stop",
+            "at": [500, 520],
+            "reach": 6,
+            "seen": 1,
+            "la": "w",
+            "gives": "The beacon that shows the safe line through the shoal."
+          },
+          {
+            "id": "port",
+            "name": "High Port",
+            "kind": "main",
+            "at": [1150, 950],
+            "reach": 6,
+            "seen": 1,
+            "la": "s",
+            "gives": "Town services, the harbour crane, the service bay and a faster engine."
+          },
+          {
+            "id": "reef",
+            "name": "Reef Steps",
+            "kind": "stop",
+            "at": [-450, 1250],
+            "reach": 8,
+            "seen": 6,
+            "la": "s",
+            "gives": "The last stepping stone."
+          },
+          {
+            "id": "original",
+            "name": "Original Island",
+            "kind": "ending",
+            "at": [-1700, 1650],
+            "reach": 8,
+            "seen": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "la": "s",
+            "gives": "The Boogler."
+          }
+        ],
+        "lines": [
+          {
+            "id": "ring-stacks",
+            "name": "Ring Island to the Stacks",
+            "from": "ring",
+            "to": "gorge",
+            "kind": "main",
+            "style": "sea",
+            "stage": {
+              "c": "A",
+              "s": [3, 5]
+            },
+            "pts": [
+              [330, -1120],
+              [850, -1260],
+              [1400, -1230]
+            ]
+          },
+          {
+            "id": "stacks-tern",
+            "name": "Stacks to Tern Rock",
+            "from": "gorge",
+            "to": "tern",
+            "kind": "loop",
+            "style": "sea",
+            "stage": {
+              "c": "A",
+              "s": [4, 5]
+            },
+            "pts": [
+              [1400, -1230],
+              [1320, -850],
+              [1150, -520]
+            ]
+          },
+          {
+            "id": "tern-pier",
+            "name": "Tern Rock to the pier",
+            "from": "tern",
+            "to": "pier",
+            "kind": "loop",
+            "style": "sea",
+            "stage": {
+              "c": "A",
+              "s": [4, 5]
+            },
+            "pts": [
+              [1150, -520],
+              [750, -430],
+              [402, -372]
+            ]
+          },
+          {
+            "id": "home-kelp",
+            "name": "Over the shallows to Kelp Halt",
+            "from": "home",
+            "to": "kelp",
+            "kind": "main",
+            "style": "sea",
+            "stage": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "pts": [
+              [-199, 10],
+              [-450, -60],
+              [-700, -150]
+            ]
+          },
+          {
+            "id": "kelp-canopy",
+            "name": "Kelp Halt to Canopy",
+            "from": "kelp",
+            "to": "canopy",
+            "kind": "main",
+            "style": "sea",
+            "stage": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "pts": [
+              [-700, -150],
+              [-1000, -400],
+              [-1250, -650]
+            ]
+          },
+          {
+            "id": "canopy-bell",
+            "name": "Canopy to Bell Terraces",
+            "from": "canopy",
+            "to": "bell",
+            "kind": "loop",
+            "style": "sea",
+            "stage": {
+              "c": "B",
+              "s": [4, 5]
+            },
+            "pts": [
+              [-1250, -650],
+              [-900, -1000],
+              [-520, -1180]
+            ]
+          },
+          {
+            "id": "bell-ring",
+            "name": "Bell Terraces to Ring Island",
+            "from": "bell",
+            "to": "ring",
+            "kind": "loop",
+            "style": "sea",
+            "stage": {
+              "c": "B",
+              "s": [4, 5]
+            },
+            "pts": [
+              [-520, -1180],
+              [-100, -1220],
+              [330, -1120]
+            ]
+          },
+          {
+            "id": "split-bar",
+            "name": "Split-rock to the Long Bar",
+            "from": "splitrock",
+            "to": "bar",
+            "kind": "main",
+            "style": "sea",
+            "stage": 6,
+            "pts": [
+              [98, 52],
+              [300, 300],
+              [500, 520]
+            ],
+            "note": "Along the safe line the beacon shows."
+          },
+          {
+            "id": "bar-port",
+            "name": "Long Bar to High Port",
+            "from": "bar",
+            "to": "port",
+            "kind": "main",
+            "style": "sea",
+            "stage": 6,
+            "pts": [
+              [500, 520],
+              [800, 760],
+              [1150, 950]
+            ]
+          },
+          {
+            "id": "trench",
+            "name": "Trench span",
+            "from": "port",
+            "to": "tern",
+            "kind": "loop",
+            "style": "sea",
+            "stage": 7,
+            "pts": [
+              [1150, 950],
+              [1310, 220],
+              [1150, -520]
+            ],
+            "note": "Steel and copper girders over the deep, set by the Port's crane: the third loop."
+          },
+          {
+            "id": "port-reef",
+            "name": "High Port to the Reef Steps",
+            "from": "port",
+            "to": "reef",
+            "kind": "final",
+            "style": "sea",
+            "stage": 8,
+            "pts": [
+              [1150, 950],
+              [400, 1200],
+              [-450, 1250]
+            ]
+          },
+          {
+            "id": "reef-orig",
+            "name": "Over the outer deep",
+            "from": "reef",
+            "to": "original",
+            "kind": "final",
+            "style": "sea",
+            "stage": 8,
+            "pts": [
+              [-450, 1250],
+              [-1100, 1460],
+              [-1700, 1650]
+            ]
+          }
+        ],
+        "gates": [
+          {
+            "id": "beacon",
+            "name": "Unlit beacon on the Long Bar",
+            "kind": "ability",
+            "at": [520, 495],
+            "needs": "Glider cloth (Canopy Town): glide from the Split-rock rim to light it",
+            "seen": 1,
+            "open": 6,
+            "leads": "bar",
+            "doubleBack": true,
+            "note": "In view from Split-rock's rim since stage 1. Lit, it shows the safe line through the shoal, and the line follows the path you learned: a knowledge gate on the main path. The double-back is to your own quarry."
+          },
+          {
+            "id": "trench-gate",
+            "name": "Trench",
+            "kind": "build",
+            "at": [1310, 220],
+            "needs": "Steel and copper girders, set by the Port's crane",
+            "seen": 6,
+            "open": 7,
+            "leads": "tern"
+          },
+          {
+            "id": "outer",
+            "name": "Outer deep",
+            "kind": "build",
+            "at": [-1100, 1460],
+            "needs": "Crystal collars (seeds from Kelp Halt, Bell Terraces and Tern Rock)",
+            "seen": 6,
+            "open": 8,
+            "leads": "original"
+          }
+        ],
+        "secrets": [
+          {
+            "id": "nest",
+            "name": "Stack-top nest",
+            "at": [1560, -1150],
+            "seen": 0,
+            "found": {
+              "c": "A",
+              "s": [3, 5]
+            },
+            "note": "Hook to the top of the second stack: the whole archipelago at once."
+          },
+          {
+            "id": "pools",
+            "name": "Tide-pool garden",
+            "at": [-760, -110],
+            "seen": 0,
+            "found": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "note": "Beside Kelp Halt's platform at low tide."
+          }
+        ],
+        "sights": [
+          {
+            "from": "home",
+            "to": "gorge",
+            "at": 0,
+            "note": "The Stacks, from Far Head"
+          },
+          {
+            "from": "home",
+            "to": "canopy",
+            "at": 0,
+            "note": "A tree island to the west"
+          },
+          {
+            "from": "splitrock",
+            "to": "bar",
+            "at": 1,
+            "note": "The unlit beacon"
+          },
+          {
+            "from": "canopy",
+            "to": "original",
+            "at": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "note": "From the tallest tree: an island far to the south-west"
+          }
+        ],
+        "stages": [
+          {
+            "t": 3.4,
+            "title": "First pick: the Stacks or Canopy Town",
+            "note": "Both in view from Home since day one: east via Ring Island to the Stacks, or west over the shallows by Kelp Halt."
+          },
+          {
+            "t": 4.2,
+            "title": "The first triangle closes",
+            "note": "Gorge: Tern Rock back to the pier. Canopy: Bell Terraces to Ring Island. A loop in the first evening after Ring Island."
+          },
+          {
+            "t": 5.3,
+            "title": "The other side, and its triangle",
+            "note": "A second small loop, the other side of Home."
+          },
+          {
+            "t": 6.3,
+            "title": "Double back to Split-rock: the Long Bar and High Port",
+            "note": "Glide from the Split-rock rim to light the beacon you saw at stage 1. Its light shows the safe line through the shoal to High Port."
+          },
+          {
+            "t": 7,
+            "title": "The Trench span: the third loop",
+            "note": "The Port's crane sets girders over the Trench to Tern Rock."
+          },
+          {
+            "t": 7.9,
+            "title": "Reef Steps to the Original Island",
+            "note": "Two hops on crystal collars over the outer deep."
+          }
+        ]
+      }
+    ]
+  }
+</script>
+<style>
+  /* Layout: one column; the map is the hero, the stepper sits right under it, details and comparison follow. */
+  :root {
+    color-scheme: light;
+    --bg: #f3f4f1;
+    --surface: #fbfbf9;
+    --ink: #101411;
+    --ink-2: #4b524c;
+    --ink-3: #848b84;
+    --line: #d9ddd6;
+    --sea: #dce9f0;
+    --sea-deep: #c3d7e4;
+    --shoal: #e9f2f4;
+    --land: #e8e0c9;
+    --sand: #efe4c2;
+    --contour: #b4a888;
+    --cliff: #7c6a48;
+    --forest: #93b07f;
+    --built: #6b6259;
+    --rail: #a14a26;
+    --spoke: #5b49cf;
+    --loop: #23845a;
+    --final: #b0731a;
+    --lock: #c23a2b;
+    --secret: #b0731a;
+    --sight: #2c74c9;
+    --accent-bg: #e9f0f8;
+    --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: #111412;
+      --surface: #181c19;
+      --ink: #eef0ec;
+      --ink-2: #c0c6bf;
+      --ink-3: #8c948c;
+      --line: #313732;
+      --sea: #142029;
+      --sea-deep: #0d171e;
+      --shoal: #1b2a33;
+      --land: #2f2b21;
+      --sand: #3a3423;
+      --contour: #5d5640;
+      --cliff: #bba67a;
+      --forest: #4c6b43;
+      --built: #b3aa9f;
+      --rail: #e08156;
+      --spoke: #9a8df0;
+      --loop: #4fbf8b;
+      --final: #e3a84f;
+      --lock: #f06b5b;
+      --secret: #e3a84f;
+      --sight: #64a6f0;
+      --accent-bg: #18242f;
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #111412;
+    --surface: #181c19;
+    --ink: #eef0ec;
+    --ink-2: #c0c6bf;
+    --ink-3: #8c948c;
+    --line: #313732;
+    --sea: #142029;
+    --sea-deep: #0d171e;
+    --shoal: #1b2a33;
+    --land: #2f2b21;
+    --sand: #3a3423;
+    --contour: #5d5640;
+    --cliff: #bba67a;
+    --forest: #4c6b43;
+    --built: #b3aa9f;
+    --rail: #e08156;
+    --spoke: #9a8df0;
+    --loop: #4fbf8b;
+    --final: #e3a84f;
+    --lock: #f06b5b;
+    --secret: #e3a84f;
+    --sight: #64a6f0;
+    --accent-bg: #18242f;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 var(--font);
+  }
+  main {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding-block: 24px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: grid;
+    gap: 16px;
+  }
+  h1 {
+    font-size: 30px;
+    line-height: 1.15;
+    margin: 0;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  h2 {
+    font-size: 21px;
+    line-height: 1.25;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-3);
+    margin: 0 0 6px;
+    font-weight: 600;
+  }
+  p {
+    margin: 0;
+    color: var(--ink-2);
+  }
+  .lede {
+    max-width: 68ch;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    min-width: 0;
+  }
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tabs button,
+  .seg button,
+  .btn {
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 6px 11px;
+    cursor: pointer;
+  }
+  .tabs button[aria-selected='true'] {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+  .tabs button small {
+    display: block;
+    font-size: 11px;
+    opacity: 0.7;
+  }
+  button:focus-visible,
+  input:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--sight);
+    outline-offset: 2px;
+  }
+  .opt-head {
+    display: grid;
+    gap: 8px;
+  }
+  .feel {
+    font-size: 18px;
+    line-height: 1.4;
+    color: var(--ink);
+    max-width: 62ch;
+    text-wrap: balance;
+  }
+  .refs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    font-size: 12.5px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px 10px;
+    color: var(--ink-2);
+    background: var(--bg);
+  }
+  .chip b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .departs {
+    border-left: 3px solid var(--final);
+    padding: 4px 0 4px 10px;
+    font-size: 14px;
+  }
+  .mapwrap {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--sea);
+  }
+  #map {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 6900 / 6100;
+    max-width: 100%;
+    max-height: 78vh;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: grab;
+  }
+  #map.zoomed {
+    touch-action: none;
+  }
+  .mapctl {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .mapctl button {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    font-size: 17px;
+    line-height: 1;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .scalebar {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    font: 11px/1 var(--mono);
+    color: var(--ink-2);
+    pointer-events: none;
+  }
+  .scalebar div {
+    height: 5px;
+    border: 1.5px solid var(--ink-2);
+    border-top: 0;
+    margin-top: 3px;
+  }
+  .compass {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    font: 600 12px/1 var(--mono);
+    color: var(--ink-2);
+    pointer-events: none;
+  }
+  .tip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 6px 9px;
+    font-size: 12.5px;
+    max-width: 240px;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+    color: var(--ink);
+  }
+  .stepper {
+    display: grid;
+    gap: 10px;
+  }
+  .steprow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  #stage {
+    flex: 1 1 200px;
+    min-width: 0;
+    accent-color: var(--rail);
+  }
+  .stagehead {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    align-items: baseline;
+  }
+  .stagehead .num {
+    font: 600 13px/1 var(--mono);
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .stagehead h2 {
+    font-size: 19px;
+  }
+  .seg {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--accent-bg);
+    border-color: var(--sight);
+  }
+  .seg .lbl {
+    font-size: 13px;
+    color: var(--ink-3);
+    margin-right: 4px;
+  }
+  .toggle {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .grid3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+  }
+  .grid3 > * {
+    min-width: 0;
+  }
+  ul.items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 5px;
+    font-size: 13.5px;
+  }
+  ul.items li {
+    display: flex;
+    gap: 7px;
+    align-items: baseline;
+    color: var(--ink-2);
+  }
+  ul.items li .sw {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    transform: translateY(1px);
+  }
+  ul.items li.none {
+    color: var(--ink-3);
+    font-style: italic;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 5px 8px 5px 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    font-weight: 600;
+    color: var(--ink-3);
+    font-size: 12px;
+  }
+  td.n,
+  th.n {
+    text-align: right;
+  }
+  .scroll {
+    overflow-x: auto;
+  }
+  .delta {
+    color: var(--loop);
+    font-size: 12px;
+  }
+  #detail {
+    font-size: 14px;
+  }
+  #detail .kind {
+    font-size: 12px;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  #detail dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 3px 12px;
+    margin: 8px 0 0;
+  }
+  #detail dt {
+    color: var(--ink-3);
+    font-size: 13px;
+  }
+  #detail dd {
+    margin: 0;
+    color: var(--ink-2);
+    min-width: 0;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  .legend span {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .legend svg {
+    flex: none;
+  }
+  footer {
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  footer p {
+    color: var(--ink-3);
+    max-width: 80ch;
+  }
+  code {
+    font: 12.5px var(--mono);
+  }
+  /* SVG map */
+  .lbl-t {
+    font-family: var(--font);
+    fill: var(--ink);
+    paint-order: stroke;
+    stroke: var(--sea);
+    stroke-linejoin: round;
+  }
+  .lbl-t.seen {
+    fill: var(--ink-2);
+    font-style: italic;
+  }
+  .lbl-t.terr {
+    fill: var(--ink-3);
+    font-style: italic;
+  }
+  .hit {
+    cursor: pointer;
+  }
+  .new-line {
+    animation: pulse 1.4s ease-in-out 2;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.35;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .new-line {
+      animation: none;
+    }
+  }
+  @media (max-width: 560px) {
+    h1 {
+      font-size: 25px;
+    }
+    .feel {
+      font-size: 16.5px;
+    }
+    .card {
+      padding: 13px;
+    }
+  }
+</style>
+
+<main>
+  <header style="display: grid; gap: 8px">
+    <h1>Map Prototypes</h1>
+    <p class="lede">
+      Five top-down layouts for the world after Ring Island, at the real scale: Home, Split-rock Works and Ring Island
+      sit where they are on the map today, and the grid squares are 1 km. Each one has a mostly linear unlock order, one
+      order choice where you visit both sides, and at least one double-back to a gate you saw early. Every place is on
+      the main path. Step through the stages to feel the order; tap anything for details.
+    </p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Layout options" id="tabs"></nav>
+
+  <section class="card opt-head" id="opt-head" aria-live="polite"></section>
+
+  <section class="mapwrap" aria-label="Map">
+    <svg id="map" role="img" aria-label="Top-down map of the selected layout" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="compass">N ↑</div>
+    <div class="scalebar" id="scalebar">
+      <span>1 km</span>
+      <div></div>
+    </div>
+    <div class="mapctl">
+      <button type="button" id="zin" aria-label="Zoom in">+</button>
+      <button type="button" id="zout" aria-label="Zoom out">−</button>
+      <button type="button" id="zhome" aria-label="Zoom to Home">⌂</button>
+      <button type="button" id="zreset" aria-label="Show the whole map">⤢</button>
+    </div>
+    <div class="tip" id="tip" hidden></div>
+  </section>
+
+  <section class="card stepper" aria-label="Progression">
+    <div class="steprow">
+      <button type="button" class="btn" id="prev" aria-label="Previous stage">◀</button>
+      <button type="button" class="btn" id="play">Play</button>
+      <button type="button" class="btn" id="next" aria-label="Next stage">▶</button>
+      <input type="range" id="stage" min="0" max="8" value="0" step="1" aria-label="Stage" />
+    </div>
+    <div class="stagehead">
+      <span class="num" id="stage-num"></span>
+      <h2 id="stage-title"></h2>
+      <span class="num" id="stage-t"></span>
+    </div>
+    <p id="stage-note"></p>
+    <div class="steprow">
+      <div class="seg" id="pick" role="group" aria-label="Order choice"></div>
+      <label class="toggle"><input type="checkbox" id="fog" checked /> Fog: hide what nobody has seen yet</label>
+    </div>
+  </section>
+
+  <section class="grid3" aria-label="This stage">
+    <div class="card">
+      <h3>New at this stage</h3>
+      <ul class="items" id="new-list"></ul>
+    </div>
+    <div class="card">
+      <h3>Visible, not yet reachable</h3>
+      <ul class="items" id="seen-list"></ul>
+    </div>
+    <div class="card">
+      <h3>Ride from Home</h3>
+      <div class="scroll"><table id="ride-table"></table></div>
+    </div>
+  </section>
+
+  <section class="card opt-head" id="opt-pitch" aria-label="The pitch"></section>
+
+  <section class="card" id="detail" aria-live="polite">
+    <p>Tap or hover a place, line, gate or secret on the map.</p>
+  </section>
+
+  <section class="card legend" aria-label="Legend" id="legend"></section>
+
+  <section class="card" aria-label="Comparison">
+    <h3>All five at the end of the main game (first pick on the left)</h3>
+    <div class="scroll"><table id="compare"></table></div>
+    <p style="margin-top: 8px; font-size: 13px">
+      Rides are computed from the drawn lines: length at 20 m/s, plus 10 s to speed up and slow down and 8 s dwell per
+      link, plus 20 s to board, the same settings as the economy model. Hours are the model's solo pacing, moved to each
+      layout's order; they are allowances, not measurements.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      Design notes, strengths and risks for co-op pacing and the economy, and the open questions:
+      <code>docs/world/map-prototypes.md</code>. Positions are proposals except Home, Split-rock Works, the pier and the
+      Ring Island anchor, which come from <code>world-map.html</code>. The data is the JSON block at the top of this
+      file. Nothing here changes the game or the economy model.
+    </p>
+  </footer>
+</main>
+
+<script>
+  (() => {
+    const DATA = JSON.parse(document.getElementById('map-data').textContent);
+    const NS = 'http://www.w3.org/2000/svg';
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) =>
+      String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+    // ---- data preparation -------------------------------------------------
+    const mulberry = (a) => () => {
+      a |= 0;
+      a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const blobPts = (c, r, seed = 1, rough = 0.15, rot = 0, n = 18) => {
+      const rnd = mulberry(seed * 9973);
+      const k = (rot * Math.PI) / 180;
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
+        const f = 1 + rough * (rnd() * 2 - 1);
+        const x = Math.cos(a) * r[0] * f;
+        const z = Math.sin(a) * r[1] * f;
+        out.push([c[0] + x * Math.cos(k) - z * Math.sin(k), c[1] + x * Math.sin(k) + z * Math.cos(k)]);
+      }
+      return out;
+    };
+    const spiralPts = (from, to, sp) => {
+      const [cx, cz] = sp.c;
+      const ang = (p) => Math.atan2(p[1] - cz, p[0] - cx);
+      const r0 = Math.hypot(from[0] - cx, from[1] - cz);
+      const r1 = Math.hypot(to[0] - cx, to[1] - cz);
+      const a0 = ang(from);
+      const want = a0 - sp.turns * Math.PI * 2;
+      let a1 = ang(to);
+      while (a1 > want + Math.PI) a1 -= Math.PI * 2;
+      while (a1 < want - Math.PI) a1 += Math.PI * 2;
+      const pts = [];
+      for (let i = 0; i <= 48; i++) {
+        const t = i / 48;
+        const a = a0 + (a1 - a0) * t;
+        const r = r0 + (r1 - r0) * t;
+        pts.push([cx + Math.cos(a) * r, cz + Math.sin(a) * r]);
+      }
+      return pts;
+    };
+    const polyLen = (pts) => pts.slice(1).reduce((s, p, i) => s + Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]), 0);
+
+    const OPTS = DATA.options.map((o) => {
+      const c = DATA.common;
+      const places = [...c.places, ...o.places];
+      const byId = Object.fromEntries(places.map((p) => [p.id, p]));
+      const lines = [...c.lines, ...o.lines].map((l) => {
+        const pts = l.spiral ? spiralPts(byId[l.from].at, byId[l.to].at, l.spiral) : l.pts;
+        return { ...l, pts, len: polyLen(pts) };
+      });
+      const land = [...c.land, ...o.land].map((g) => ({
+        ...g,
+        pts: g.poly || blobPts(g.c, g.r, g.seed, g.rough, g.rot || 0),
+      }));
+      return {
+        ...o,
+        places,
+        byId,
+        lines,
+        land,
+        landById: Object.fromEntries(land.map((g) => [g.id, g])),
+        terrain: o.terrain || [],
+        gates: o.gates || [],
+        secrets: o.secrets || [],
+        sights: o.sights || [],
+        stages: [...c.stages, ...o.stages],
+      };
+    });
+
+    // ---- state -------------------------------------------------------------
+    const S = { o: 0, s: 0, pick: 'A', fog: true, view: DATA.view.slice(), hover: null, sel: null, timer: null };
+    const opt = () => OPTS[S.o];
+    // A value is a stage number, or {c: side, s: [if that side is picked first, if second]}; null means never.
+    const at = (v, pick = S.pick) => (v == null ? null : typeof v === 'number' ? v : v.c === pick ? v.s[0] : v.s[1]);
+    const min = (xs) => {
+      const ys = xs.filter((x) => x != null);
+      return ys.length ? Math.min(...ys) : null;
+    };
+    const landReach = (o, g, pick) => min((g.on || []).map((id) => at(o.byId[id].reach, pick)));
+    const landSeen = (o, g, pick) => min([at(g.seen, pick), ...(g.on || []).map((id) => at(o.byId[id].seen, pick))]);
+    const stateOf = (reach, seen, s) =>
+      reach != null && s >= reach ? 'reached' : seen != null && s >= seen ? 'seen' : 'hidden';
+
+    // ---- travel ------------------------------------------------------------
+    const R = DATA.ride;
+    const linkS = (len) => len / R.speed + R.accelS + R.dwellS;
+    function rides(o, s, pick = S.pick) {
+      const adj = {};
+      for (const l of o.lines) {
+        const b = at(l.stage, pick);
+        if (b == null || b > s) continue;
+        (adj[l.from] ||= []).push([l.to, l.len]);
+        (adj[l.to] ||= []).push([l.from, l.len]);
+      }
+      const dist = { home: { t: 0, km: 0 } };
+      const todo = new Set(['home']);
+      while (todo.size) {
+        let u = null;
+        for (const n of todo) if (u == null || dist[n].t < dist[u].t) u = n;
+        todo.delete(u);
+        for (const [v, len] of adj[u] || []) {
+          const t = dist[u].t + linkS(len);
+          if (!dist[v] || t < dist[v].t) {
+            dist[v] = { t, km: dist[u].km + len / 1000 };
+            todo.add(v);
+          }
+        }
+      }
+      for (const k in dist) if (k !== 'home') dist[k].t += R.boardS;
+      return dist;
+    }
+    function loops(o, s, pick = S.pick) {
+      const parent = {};
+      const find = (x) => (parent[x] === x ? x : (parent[x] = find(parent[x])));
+      let cycles = 0;
+      for (const l of o.lines) {
+        const b = at(l.stage, pick);
+        if (b == null || b > s) continue;
+        parent[l.from] ??= l.from;
+        parent[l.to] ??= l.to;
+        const a = find(l.from);
+        const c = find(l.to);
+        if (a === c) cycles++;
+        else parent[a] = c;
+      }
+      return cycles;
+    }
+    const fmtMin = (t) => (t / 60).toFixed(1);
+
+    // ---- drawing helpers ---------------------------------------------------
+    const smooth = (pts, closed) => {
+      const n = pts.length;
+      const P = (i) => pts[closed ? (i + n) % n : Math.max(0, Math.min(n - 1, i))];
+      let d = `M${P(0)[0].toFixed(0)},${P(0)[1].toFixed(0)}`;
+      const segs = closed ? n : n - 1;
+      for (let i = 0; i < segs; i++) {
+        const p0 = P(i - 1);
+        const p1 = P(i);
+        const p2 = P(i + 1);
+        const p3 = P(i + 2);
+        const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+        const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+        d += `C${c1[0].toFixed(0)},${c1[1].toFixed(0)} ${c2[0].toFixed(0)},${c2[1].toFixed(0)} ${p2[0].toFixed(0)},${p2[1].toFixed(0)}`;
+      }
+      return d + (closed ? 'Z' : '');
+    };
+    const straight = (pts) => 'M' + pts.map((p) => `${p[0].toFixed(0)},${p[1].toFixed(0)}`).join('L');
+    const COLORS = {
+      built: 'var(--built)',
+      main: 'var(--rail)',
+      spoke: 'var(--spoke)',
+      loop: 'var(--loop)',
+      final: 'var(--final)',
+    };
+    const KIND_NAME = {
+      built: 'As built',
+      main: 'Main line',
+      spoke: 'Shortcut through the hub',
+      loop: 'Closes a loop',
+      final: 'Final approach',
+    };
+    const PLACE_KIND = {
+      hub: 'Hub',
+      main: 'Main place',
+      branch: 'Branch place',
+      stop: 'Small stop on the way',
+      ending: 'The ending',
+    };
+
+    // ---- render map ----------------------------------------------------------
+    const svg = $('map');
+    function render() {
+      const o = opt();
+      const s = S.s;
+      const [vx, vz, vw, vh] = S.view;
+      svg.setAttribute('viewBox', `${vx} ${vz} ${vw} ${vh}`);
+      const px = svg.getBoundingClientRect().width || 600;
+      const u = vw / px; // metres per screen pixel
+      const zoomed = vw < DATA.view[2] * 0.95;
+      svg.classList.toggle('zoomed', zoomed);
+      const fogOp = S.fog ? 0.1 : 0.45;
+      const opFor = (st) => (st === 'reached' ? 1 : st === 'seen' ? 0.62 : fogOp);
+      const out = [];
+      const push = (s) => out.push(s);
+      push(`<rect x="${vx - vw}" y="${vz - vh}" width="${vw * 3}" height="${vh * 3}" fill="var(--sea)"/>`);
+
+      // sea features first
+      for (const t of o.terrain) {
+        if (t.kind !== 'shoal' && t.kind !== 'deep') continue;
+        const g = o.landById[t.land];
+        const st = stateOf(landReach(o, g, S.pick), landSeen(o, g, S.pick), s);
+        const fill = t.kind === 'shoal' ? 'var(--shoal)' : 'var(--sea-deep)';
+        push(
+          `<path d="${smooth(blobPts(t.c, t.r, 5, 0.12), true)}" fill="${fill}" opacity="${st === 'hidden' ? (S.fog ? 0.25 : 0.7) : 1}"/>`,
+        );
+      }
+      // grid
+      const g0 = Math.floor(vx / 1000) * 1000;
+      const z0 = Math.floor(vz / 1000) * 1000;
+      for (let x = g0; x <= vx + vw; x += 1000)
+        push(
+          `<line x1="${x}" y1="${vz}" x2="${x}" y2="${vz + vh}" stroke="var(--ink-3)" stroke-opacity="0.16" vector-effect="non-scaling-stroke" stroke-width="1"/>`,
+        );
+      for (let z = z0; z <= vz + vh; z += 1000)
+        push(
+          `<line x1="${vx}" y1="${z}" x2="${vx + vw}" y2="${z}" stroke="var(--ink-3)" stroke-opacity="0.16" vector-effect="non-scaling-stroke" stroke-width="1"/>`,
+        );
+
+      // land
+      for (const g of o.land) {
+        const st = stateOf(landReach(o, g, S.pick), landSeen(o, g, S.pick), s);
+        push(
+          `<path d="${smooth(g.pts, true)}" fill="${g.sand ? 'var(--sand)' : 'var(--land)'}" stroke="var(--contour)" stroke-width="1" vector-effect="non-scaling-stroke" opacity="${opFor(st)}" ${st === 'seen' ? 'stroke-dasharray="4 3"' : ''}/>`,
+        );
+      }
+      // land terrain
+      const terrLabels = [];
+      for (const t of o.terrain) {
+        if (t.kind === 'shoal' || t.kind === 'deep') {
+          if (t.label) terrLabels.push([t.labelAt || t.c, t.label, o.landById[t.land], !!t.labelAt]);
+          continue;
+        }
+        const g = o.landById[t.land];
+        const st = stateOf(landReach(o, g, S.pick), landSeen(o, g, S.pick), s);
+        const op = opFor(st);
+        if (t.kind === 'forest') {
+          const rnd = mulberry((t.seed || 1) * 31);
+          const n = Math.round((t.r[0] * t.r[1]) / 9000);
+          let trees = '';
+          for (let i = 0; i < n; i++) {
+            const a = rnd() * Math.PI * 2;
+            const rr = Math.sqrt(rnd());
+            const x = t.c[0] + Math.cos(a) * t.r[0] * rr;
+            const z = t.c[1] + Math.sin(a) * t.r[1] * rr;
+            trees += `<circle cx="${x.toFixed(0)}" cy="${z.toFixed(0)}" r="${(28 + rnd() * 30).toFixed(0)}"/>`;
+          }
+          push(`<g fill="var(--forest)" opacity="${op * 0.85}">${trees}</g>`);
+        } else if (t.kind === 'mountain') {
+          const rings = t.rings || 4;
+          let d = '';
+          for (let i = 0; i < rings; i++) {
+            const f = 1 - i / rings;
+            d += `<path d="${smooth(blobPts(t.c, [t.r[0] * f, t.r[1] * f], t.seed || 2, 0.1), true)}"/>`;
+          }
+          push(
+            `<g fill="none" stroke="var(--contour)" stroke-width="1.2" vector-effect="non-scaling-stroke" opacity="${op}">${d}</g>`,
+          );
+          const k = 9 * u;
+          push(`<path d="M${t.c[0]},${t.c[1] - k} l${k},${k * 1.6} h${-2 * k}z" fill="var(--cliff)" opacity="${op}"/>`);
+        } else if (t.kind === 'lake') {
+          push(
+            `<path d="${smooth(blobPts(t.c, t.r, t.seed || 3, 0.12), true)}" fill="var(--sea)" stroke="var(--contour)" stroke-width="1" vector-effect="non-scaling-stroke" opacity="${op}"/>`,
+          );
+        } else if (t.kind === 'cliff') {
+          let ticks = '';
+          const pts = t.pts;
+          for (let i = 0; i < pts.length - 1; i++) {
+            const [a, b] = [pts[i], pts[i + 1]];
+            const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+            const step = 9 * u;
+            const nx = -(b[1] - a[1]) / L;
+            const nz = (b[0] - a[0]) / L;
+            for (let d = step / 2; d < L; d += step) {
+              const x = a[0] + ((b[0] - a[0]) * d) / L;
+              const z = a[1] + ((b[1] - a[1]) * d) / L;
+              ticks += `M${x.toFixed(0)},${z.toFixed(0)}l${(nx * 6 * u).toFixed(0)},${(nz * 6 * u).toFixed(0)}`;
+            }
+          }
+          push(
+            `<g opacity="${op}" stroke="var(--cliff)" fill="none" vector-effect="non-scaling-stroke"><path d="${smooth(pts, false)}" stroke-width="2" vector-effect="non-scaling-stroke"/><path d="${ticks}" stroke-width="1.2" vector-effect="non-scaling-stroke"/></g>`,
+          );
+        } else if (t.kind === 'gorge') {
+          push(
+            `<g opacity="${op}" fill="none" stroke-linecap="round"><path d="${smooth(t.pts, false)}" stroke="var(--cliff)" stroke-width="7" vector-effect="non-scaling-stroke"/><path d="${smooth(t.pts, false)}" stroke="var(--sea)" stroke-width="2.5" vector-effect="non-scaling-stroke"/></g>`,
+          );
+        } else if (t.kind === 'river') {
+          push(
+            `<path d="${smooth(t.pts, false)}" fill="none" stroke="var(--sea-deep)" stroke-width="2.5" vector-effect="non-scaling-stroke" opacity="${op}"/>`,
+          );
+        }
+        if (t.label)
+          terrLabels.push([t.labelAt || (t.pts ? t.pts[Math.floor(t.pts.length / 2)] : t.c), t.label, g, !!t.labelAt]);
+      }
+
+      // sightlines
+      for (const v of o.sights) {
+        const a = at(v.at);
+        const from = o.byId[v.from];
+        const to = o.byId[v.to];
+        const toReached = at(to.reach) != null && s >= at(to.reach);
+        const fromReached = at(from.reach) != null && s >= at(from.reach);
+        if (a == null || s < a || toReached || !fromReached) continue;
+        push(
+          `<line class="hit" data-k="sight:${v.from}:${v.to}" x1="${from.at[0]}" y1="${from.at[1]}" x2="${to.at[0]}" y2="${to.at[1]}" stroke="var(--sight)" stroke-width="1.6" stroke-dasharray="2 5" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.85"/>`,
+        );
+      }
+
+      // lines
+      const lineOut = [];
+      for (const l of o.lines) {
+        const b = at(l.stage);
+        const col = COLORS[l.kind];
+        const d =
+          l.style === 'incline' || l.spiral
+            ? l.spiral
+              ? smooth(l.pts, false)
+              : straight(l.pts)
+            : smooth(l.pts, false);
+        const built = b != null && s >= b;
+        const next = b != null && b === s + 1;
+        if (!built && !next && (S.fog || b == null)) continue;
+        const dash = l.style === 'tunnel' ? '3 4' : l.style === 'incline' ? '10 3' : '';
+        const w = l.kind === 'built' ? 2.5 : 3.2;
+        if (built) {
+          if (l.style === 'sea')
+            lineOut.push(
+              `<path d="${d}" fill="none" stroke="var(--surface)" stroke-width="${w + 4}" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="0.8"/>`,
+            );
+          lineOut.push(
+            `<path class="${b === s && s > 0 ? 'new-line' : ''}" d="${d}" fill="none" stroke="${col}" stroke-width="${b === s && s > 0 ? w + 1.6 : w}" stroke-linecap="round" stroke-linejoin="round" ${dash ? `stroke-dasharray="${dash}"` : ''} vector-effect="non-scaling-stroke"/>`,
+          );
+        } else {
+          lineOut.push(
+            `<path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="1 6" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="${next ? 0.9 : 0.35}"/>`,
+          );
+        }
+        lineOut.push(
+          `<path class="hit" data-k="line:${l.id}" d="${d}" fill="none" stroke="transparent" stroke-width="14" vector-effect="non-scaling-stroke"/>`,
+        );
+      }
+      push(lineOut.join(''));
+
+      // gates
+      for (const gt of o.gates) {
+        const seen = at(gt.seen);
+        const open = at(gt.open);
+        const visible = (seen != null && s >= seen) || !S.fog;
+        if (!visible) continue;
+        const isOpen = open != null && s >= open;
+        const k = 7 * u;
+        const [x, z] = gt.at;
+        const col = isOpen ? 'var(--ink-3)' : 'var(--lock)';
+        const shackle = isOpen
+          ? `M${x - k * 0.6},${z - k * 0.2} v${-k * 0.7} a${k * 0.6},${k * 0.6} 0 0 1 ${k * 1.2},0`
+          : `M${x - k * 0.6},${z - k * 0.2} v${-k * 0.5} a${k * 0.6},${k * 0.6} 0 0 1 ${k * 1.2},0 v${k * 0.5}`;
+        push(
+          `<g class="hit" data-k="gate:${gt.id}" opacity="${seen != null && s >= seen ? 1 : 0.4}"><circle cx="${x}" cy="${z}" r="${k * 2}" fill="transparent"/><path d="${shackle}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke"/><rect x="${x - k}" y="${z - k * 0.25}" width="${k * 2}" height="${k * 1.5}" rx="${k * 0.25}" fill="${col}"/></g>`,
+        );
+      }
+      // secrets
+      for (const sc of o.secrets) {
+        const seen = at(sc.seen);
+        const found = at(sc.found);
+        const visible = (seen != null && s >= seen) || !S.fog;
+        if (!visible) continue;
+        const isFound = found != null && s >= found;
+        const k = 7 * u;
+        const [x, z] = sc.at;
+        let d = '';
+        for (let i = 0; i < 10; i++) {
+          const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+          const r = i % 2 ? k * 0.45 : k;
+          d += (i ? 'L' : 'M') + (x + Math.cos(a) * r).toFixed(0) + ',' + (z + Math.sin(a) * r).toFixed(0);
+        }
+        push(
+          `<path class="hit" data-k="secret:${sc.id}" d="${d}Z" fill="${isFound ? 'var(--secret)' : 'var(--surface)'}" stroke="var(--secret)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`,
+        );
+      }
+
+      // places
+      const labels = [];
+      for (const p of o.places) {
+        const st = stateOf(at(p.reach), at(p.seen), s);
+        if (st === 'hidden' && S.fog) continue;
+        const r = (p.kind === 'hub' ? 8 : p.kind === 'stop' ? 4.5 : p.kind === 'ending' ? 7.5 : 6.5) * u;
+        const col = p.kind === 'ending' ? 'var(--final)' : p.kind === 'stop' ? 'var(--ink-2)' : 'var(--ink)';
+        const [x, z] = p.at;
+        const fill = st === 'reached' ? col : 'var(--surface)';
+        const op = st === 'hidden' ? 0.5 : 1;
+        if (p.kind === 'ending') {
+          push(
+            `<g class="hit" data-k="place:${p.id}" opacity="${op}"><circle cx="${x}" cy="${z}" r="${r * 1.5}" fill="transparent"/><path d="M${x},${z - r * 1.2} L${x + r},${z} L${x},${z + r * 1.2} L${x - r},${z}Z" fill="${fill}" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" ${st === 'seen' ? 'stroke-dasharray="3 2"' : ''}/></g>`,
+          );
+        } else {
+          push(
+            `<g class="hit" data-k="place:${p.id}" opacity="${op}"><circle cx="${x}" cy="${z}" r="${Math.max(r * 1.8, 12 * u)}" fill="transparent"/><circle cx="${x}" cy="${z}" r="${r}" fill="${fill}" stroke="${col}" stroke-width="${p.kind === 'hub' ? 3 : 2}" vector-effect="non-scaling-stroke" ${st === 'seen' ? 'stroke-dasharray="3 2"' : ''}/>${p.kind === 'hub' ? `<circle cx="${x}" cy="${z}" r="${r * 0.4}" fill="var(--surface)"/>` : ''}</g>`,
+          );
+        }
+        const showLabel = !p.minor || vw < 2600;
+        if (showLabel && st !== 'hidden') labels.push([p, st, r]);
+      }
+      const fs = 12.5 * u;
+      for (const [p, st, r] of labels) {
+        const la = p.la || 'e';
+        const off = r + 5 * u;
+        let [x, z] = p.at;
+        let anchor = 'start';
+        if (la === 'e') x += off;
+        if (la === 'w') {
+          x -= off;
+          anchor = 'end';
+        }
+        if (la === 'n') {
+          z -= off + fs * 0.3;
+          anchor = 'middle';
+        }
+        if (la === 's') {
+          z += off + fs * 0.9;
+          anchor = 'middle';
+        }
+        if (la === 'e' || la === 'w') z += fs * 0.35;
+        const elev = p.elev != null && o.id === 'climb' ? ` · ${p.elev} m` : '';
+        const weight = p.kind === 'stop' ? 500 : 650;
+        // keep the label inside the frame (rough width: 0.58 em per character)
+        const wide = (p.name + elev).length * 0.58 * fs;
+        const left = anchor === 'start' ? x : anchor === 'end' ? x - wide : x - wide / 2;
+        const pad = 6 * u;
+        if (left < vx + pad) x += vx + pad - left;
+        if (left + wide > vx + vw - pad) x -= left + wide - (vx + vw - pad);
+        push(
+          `<text class="lbl-t ${st === 'seen' ? 'seen' : ''}" x="${x}" y="${z}" font-size="${(p.kind === 'stop' ? 0.9 : 1) * fs}" font-weight="${weight}" text-anchor="${anchor}" stroke-width="${3.2 * u}">${esc(p.name)}${elev}</text>`,
+        );
+      }
+      for (const [c, label, g, exact] of terrLabels) {
+        const st = stateOf(landReach(o, g, S.pick), landSeen(o, g, S.pick), s);
+        if (st === 'hidden' && S.fog) continue;
+        push(
+          `<text class="lbl-t terr" x="${c[0]}" y="${exact ? c[1] : c[1] + fs * 1.6}" font-size="${fs * 0.85}" text-anchor="middle" stroke-width="${3 * u}">${esc(label)}</text>`,
+        );
+      }
+      svg.innerHTML = out.join('');
+      // scale bar: 1 km in px, or 500 m when zoomed in far
+      const bar = vw / px > 6 ? 1000 : 500;
+      $('scalebar').firstElementChild.textContent = bar === 1000 ? '1 km' : '500 m';
+      $('scalebar').lastElementChild.style.width = (bar / u).toFixed(0) + 'px';
+    }
+
+    // ---- panels --------------------------------------------------------------
+    function stageLists() {
+      const o = opt();
+      const s = S.s;
+      const neu = [];
+      const seen = [];
+      for (const p of o.places) {
+        if (at(p.reach) === s)
+          neu.push(['var(--ink)', `Reach <b>${esc(p.name)}</b>${p.gives ? ': ' + esc(p.gives) : ''}`]);
+        const st = stateOf(at(p.reach), at(p.seen), s);
+        if (st === 'seen') seen.push(['var(--sight)', `<b>${esc(p.name)}</b>, reached at stage ${at(p.reach)}`]);
+      }
+      for (const l of o.lines)
+        if (at(l.stage) === s && s > 0)
+          neu.push([
+            COLORS[l.kind],
+            `${esc(l.name)} (${(l.len / 1000).toFixed(2)} km, ${KIND_NAME[l.kind].toLowerCase()})`,
+          ]);
+      for (const g of o.gates) {
+        if (at(g.open) === s)
+          neu.push(['var(--ink-3)', `Opens: <b>${esc(g.name)}</b> with ${esc(g.needs.toLowerCase())}`]);
+        const sn = at(g.seen);
+        if (sn != null && s >= sn && s < at(g.open))
+          seen.push([
+            'var(--lock)',
+            `<b>${esc(g.name)}</b>: needs ${esc(g.needs.toLowerCase())} (stage ${at(g.open)})`,
+          ]);
+      }
+      for (const c of o.secrets) if (at(c.found) === s) neu.push(['var(--secret)', `Secret: <b>${esc(c.name)}</b>`]);
+      const li = (xs) =>
+        xs.length
+          ? xs.map(([c, h]) => `<li><span class="sw" style="background:${c}"></span><span>${h}</span></li>`).join('')
+          : '<li class="none">Nothing</li>';
+      $('new-list').innerHTML = li(neu);
+      $('seen-list').innerHTML = li(seen);
+
+      const now = rides(o, s);
+      const before = s > 0 ? rides(o, s - 1) : {};
+      const rows = Object.entries(now)
+        .filter(([id]) => id !== 'home' && !o.byId[id].minor)
+        .sort((a, b) => a[1].t - b[1].t)
+        .map(([id, r]) => {
+          const b = before[id];
+          const dt = b ? r.t - b.t : 0;
+          const delta = b && dt < -15 ? ` <span class="delta">${fmtMin(dt)}</span>` : '';
+          return `<tr><td>${esc(o.byId[id].name)}</td><td class="n">${r.km.toFixed(1)}</td><td class="n">${fmtMin(r.t)}${delta}</td></tr>`;
+        });
+      $('ride-table').innerHTML =
+        `<tr><th>Place</th><th class="n">km</th><th class="n">min</th></tr>${rows.join('') || '<tr><td colspan="3">Home only</td></tr>'}`;
+    }
+
+    function headPanel() {
+      const o = opt();
+      $('opt-head').innerHTML = `
+        <h2>${esc(o.name)} <span style="font-weight:400;color:var(--ink-3);font-size:15px">· ${esc(o.shape)}</span></h2>
+        <p class="feel">“${esc(o.feel)}”</p>`;
+      $('opt-pitch').innerHTML = `
+        <h3>The pitch</h3>
+        <p>${esc(o.pitch)}</p>
+        ${o.departs ? `<p class="departs"><b>Departs from the brief.</b> ${esc(o.departs)}</p>` : ''}
+        <p style="font-size:13.5px"><b>Order choice, stage ${o.choice.stage}:</b> ${esc(o.choice.text)}</p>
+        <div class="refs">${o.refs.map(([g, w]) => `<span class="chip"><b>${esc(g)}</b>: ${esc(w)}</span>`).join('')}</div>`;
+      const A = o.byId[o.choice.A].name;
+      const B = o.byId[o.choice.B].name;
+      $('pick').innerHTML = `<span class="lbl">First pick</span>
+        <button type="button" data-pick="A" aria-pressed="${S.pick === 'A'}">${esc(A)}</button>
+        <button type="button" data-pick="B" aria-pressed="${S.pick === 'B'}">${esc(B)}</button>`;
+      $('stage').max = o.stages.length - 1;
+    }
+
+    function stagePanel() {
+      const o = opt();
+      const st = o.stages[S.s];
+      $('stage').value = S.s;
+      $('stage-num').textContent = `Stage ${S.s} of ${o.stages.length - 1}`;
+      $('stage-title').textContent = st.title;
+      $('stage-t').textContent =
+        `≈ ${st.t.toFixed(1)} h solo · ${loops(o, S.s)} loop${loops(o, S.s) === 1 ? '' : 's'} closed`;
+      $('stage-note').textContent = st.note;
+      for (const b of $('pick').querySelectorAll('button')) b.setAttribute('aria-pressed', b.dataset.pick === S.pick);
+    }
+
+    function describe(key) {
+      const o = opt();
+      const [type, id, id2] = key.split(':');
+      const s = S.s;
+      const stageTxt = (v) => (at(v) == null ? 'never in this order' : `stage ${at(v)}`);
+      if (type === 'place') {
+        const p = o.byId[id];
+        const st = stateOf(at(p.reach), at(p.seen), s);
+        const r = rides(o, s)[id];
+        const rEnd = rides(o, o.stages.length - 1)[id];
+        const rows = [
+          ['State', st === 'reached' ? 'Reached' : st === 'seen' ? 'Visible, not yet reachable' : 'Not seen yet'],
+          ['Seen', stageTxt(p.seen)],
+          ['Reached', stageTxt(p.reach)],
+          p.elev != null ? ['Height', `${p.elev} m`] : null,
+          ['Gives', p.gives],
+          ['Ride now', r ? `${r.km.toFixed(2)} km, ${fmtMin(r.t)} min` : 'No line yet'],
+          ['Ride at the end', rEnd ? `${rEnd.km.toFixed(2)} km, ${fmtMin(rEnd.t)} min` : '—'],
+          p.note ? ['Note', p.note] : null,
+        ];
+        return {
+          kind: PLACE_KIND[p.kind],
+          name: p.name,
+          rows,
+          short: `${p.name} · ${st === 'reached' ? 'reached' : st === 'seen' ? 'seen' : 'unseen'}`,
+        };
+      }
+      if (type === 'line') {
+        const l = o.lines.find((x) => x.id === id);
+        const rows = [
+          ['From', `${o.byId[l.from].name} to ${o.byId[l.to].name}`],
+          ['Length', `${(l.len / 1000).toFixed(2)} km`],
+          ['Ride', `${fmtMin(linkS(l.len))} min for this link`],
+          ['Built', stageTxt(l.stage)],
+          ['Kind', KIND_NAME[l.kind] + (l.style ? ` · ${l.style === 'sea' ? 'sea crossing' : l.style}` : '')],
+          l.note ? ['Note', l.note] : null,
+        ];
+        return { kind: 'Rail line', name: l.name, rows, short: `${l.name} · ${(l.len / 1000).toFixed(2)} km` };
+      }
+      if (type === 'gate') {
+        const g = o.gates.find((x) => x.id === id);
+        const rows = [
+          ['Needs', g.needs],
+          ['Seen', stageTxt(g.seen)],
+          ['Opens', stageTxt(g.open)],
+          ['Leads to', o.byId[g.leads].name],
+          [
+            'Kind',
+            g.kind === 'ability' ? 'Ability lock' + (g.doubleBack ? ', a double-back' : '') : 'Construction gate',
+          ],
+          g.note ? ['Note', g.note] : null,
+        ];
+        return { kind: 'Gate', name: g.name, rows, short: `${g.name} · needs ${g.needs}` };
+      }
+      if (type === 'secret') {
+        const c = o.secrets.find((x) => x.id === id);
+        return {
+          kind: 'Secret on the way',
+          name: c.name,
+          rows: [
+            ['Found', stageTxt(c.found)],
+            ['Note', c.note],
+          ],
+          short: c.name,
+        };
+      }
+      if (type === 'sight') {
+        const v = o.sights.find((x) => x.from === id && x.to === id2);
+        return {
+          kind: 'Sightline',
+          name: `${o.byId[id].name} sees ${o.byId[id2].name}`,
+          rows: [
+            ['What you see', v.note],
+            ['Reached at', stageTxt(o.byId[id2].reach)],
+          ],
+          short: v.note,
+        };
+      }
+      return null;
+    }
+    function showDetail(key) {
+      const d = key && describe(key);
+      if (!d) return;
+      $('detail').innerHTML = `<div class="kind">${esc(d.kind)}</div><h2>${esc(d.name)}</h2><dl>${d.rows
+        .filter(Boolean)
+        .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`)
+        .join('')}</dl>`;
+    }
+
+    function legend() {
+      const sw = (stroke, dash = '', w = 3) =>
+        `<svg width="28" height="10" aria-hidden="true"><line x1="2" y1="5" x2="26" y2="5" stroke="${stroke}" stroke-width="${w}" ${dash ? `stroke-dasharray="${dash}"` : ''} stroke-linecap="round"/></svg>`;
+      const dot = (fill, stroke, dash) =>
+        `<svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="${fill}" stroke="${stroke}" stroke-width="2" ${dash ? 'stroke-dasharray="3 2"' : ''}/></svg>`;
+      $('legend').innerHTML = [
+        [sw('var(--built)', '', 2.5), 'As built'],
+        [sw('var(--rail)'), 'Main line'],
+        [sw('var(--spoke)'), 'Shortcut through the hub'],
+        [sw('var(--loop)'), 'Closes a loop'],
+        [sw('var(--final)'), 'Final approach'],
+        [sw('var(--ink-2)', '3 4'), 'Tunnel'],
+        [sw('var(--ink-2)', '10 3'), 'Incline or drop line'],
+        [sw('var(--rail)', '1 6', 2), 'Next stage, not built'],
+        [sw('var(--sight)', '2 5', 1.6), 'Sightline to a place you can see but not reach'],
+        [dot('var(--ink)', 'var(--ink)'), 'Reached'],
+        [dot('var(--surface)', 'var(--ink)', true), 'Seen, not reached'],
+        [
+          `<svg width="14" height="14" aria-hidden="true"><rect x="2" y="6" width="10" height="7" rx="1.5" fill="var(--lock)"/><path d="M4 6V4a3 3 0 0 1 6 0v2" fill="none" stroke="var(--lock)" stroke-width="1.6"/></svg>`,
+          'Gate (ability or build)',
+        ],
+        [
+          `<svg width="14" height="14" aria-hidden="true"><path d="M7 1l1.8 4 4.2.3-3.2 2.8 1 4.2L7 10 3.2 12.3l1-4.2L1 5.3 5.2 5z" fill="var(--secret)"/></svg>`,
+          'Secret on the way',
+        ],
+      ]
+        .map(([s, t]) => `<span>${s}${t}</span>`)
+        .join('');
+    }
+
+    function compare() {
+      const rowsFor = (o) => {
+        const last = o.stages.length - 1;
+        const vals = ['A', 'B'].map((pick) => {
+          const r = rides(o, last, pick);
+          const ts = Object.entries(r).filter(([id]) => id !== 'home' && !o.byId[id].minor);
+          const longest = ts.reduce((m, [, x]) => Math.max(m, x.t), 0);
+          const mean = ts.reduce((m, [, x]) => m + x.t, 0) / ts.length;
+          return { longest, mean, end: r.original.t, loops: loops(o, last, pick) };
+        });
+        const km =
+          o.lines.filter((l) => l.kind !== 'built' && at(l.stage, 'A') != null).reduce((m, l) => m + l.len, 0) / 1000;
+        const nodes = o.places.filter((p) => !p.minor).length;
+        const stops = o.places.filter((p) => p.kind === 'stop' && !p.minor).length;
+        const dbl = o.gates.filter((g) => g.doubleBack).length;
+        const pair = (f) => vals.map(f).join(' / ');
+        return `<tr><td><b>${esc(o.name)}</b></td><td class="n">${nodes} (${stops} stops)</td><td class="n">${km.toFixed(1)}</td><td class="n">${pair((v) => v.loops)}</td><td class="n">${o.choice.stage}</td><td class="n">${dbl}</td><td class="n">${pair((v) => fmtMin(v.mean))}</td><td class="n">${pair((v) => fmtMin(v.longest))}</td><td class="n">${pair((v) => fmtMin(v.end))}</td></tr>`;
+      };
+      $('compare').innerHTML =
+        `<tr><th>Layout</th><th class="n">Places</th><th class="n">New rail km</th><th class="n">Loops</th><th class="n">Choice at stage</th><th class="n">Double-backs</th><th class="n">Mean ride, min</th><th class="n">Longest ride</th><th class="n">To the ending</th></tr>` +
+        OPTS.map(rowsFor).join('');
+    }
+
+    // ---- interaction ---------------------------------------------------------
+    function full() {
+      headPanel();
+      stagePanel();
+      render();
+      stageLists();
+      for (const b of $('tabs').querySelectorAll('button'))
+        b.setAttribute('aria-selected', String(+b.dataset.i === S.o));
+    }
+    function setStage(s) {
+      S.s = Math.max(0, Math.min(opt().stages.length - 1, s));
+      stagePanel();
+      render();
+      stageLists();
+      if (S.sel) showDetail(S.sel);
+    }
+    function setOpt(i, keepHash) {
+      S.o = i;
+      S.s = Math.min(S.s, opt().stages.length - 1);
+      S.sel = null;
+      $('detail').innerHTML = '<p>Tap or hover a place, line, gate or secret on the map.</p>';
+      full();
+      if (!keepHash) {
+        try {
+          history.replaceState(null, '', '#' + opt().id);
+        } catch (e) {}
+      }
+    }
+    $('tabs').innerHTML = OPTS.map(
+      (o, i) =>
+        `<button type="button" role="tab" data-i="${i}" aria-selected="false">${esc(o.name)}<small>${esc(o.shape)}</small></button>`,
+    ).join('');
+    $('tabs').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (b) setOpt(+b.dataset.i);
+    });
+    $('stage').addEventListener('input', (e) => setStage(+e.target.value));
+    $('prev').addEventListener('click', () => setStage(S.s - 1));
+    $('next').addEventListener('click', () => setStage(S.s + 1));
+    const stopPlay = () => {
+      clearInterval(S.timer);
+      S.timer = null;
+      $('play').textContent = 'Play';
+    };
+    $('play').addEventListener('click', () => {
+      if (S.timer) return stopPlay();
+      if (S.s >= opt().stages.length - 1) setStage(0);
+      $('play').textContent = 'Pause';
+      S.timer = setInterval(() => {
+        if (S.s >= opt().stages.length - 1) return stopPlay();
+        setStage(S.s + 1);
+      }, 1700);
+    });
+    $('pick').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-pick]');
+      if (!b) return;
+      S.pick = b.dataset.pick;
+      setStage(S.s);
+    });
+    $('fog').addEventListener('change', (e) => {
+      S.fog = e.target.checked;
+      render();
+    });
+
+    // hover and tap
+    const tip = $('tip');
+    svg.addEventListener('pointermove', (e) => {
+      if (drag) return;
+      const el = e.target.closest('[data-k]');
+      if (!el || e.pointerType === 'touch') {
+        tip.hidden = true;
+        return;
+      }
+      const d = describe(el.dataset.k);
+      if (!d) return;
+      tip.textContent = d.short;
+      tip.hidden = false;
+      const box = svg.parentElement.getBoundingClientRect();
+      let x = e.clientX - box.left + 14;
+      let y = e.clientY - box.top + 14;
+      if (x + 250 > box.width) x = Math.max(4, e.clientX - box.left - 250);
+      tip.style.left = x + 'px';
+      tip.style.top = y + 'px';
+      if (!S.sel) showDetail(el.dataset.k);
+    });
+    svg.addEventListener('pointerleave', () => (tip.hidden = true));
+
+    // pan and zoom
+    let drag = null;
+    const zoom = (f, cx, cz) => {
+      const [vx, vz, vw, vh] = S.view;
+      const nw = Math.min(DATA.view[2], Math.max(500, vw * f));
+      const nh = (nw * DATA.view[3]) / DATA.view[2];
+      cx ??= vx + vw / 2;
+      cz ??= vz + vh / 2;
+      S.view = [cx - ((cx - vx) * nw) / vw, cz - ((cz - vz) * nh) / vh, nw, nh];
+      if (nw >= DATA.view[2]) S.view = DATA.view.slice();
+      render();
+    };
+    $('zin').addEventListener('click', () => zoom(1 / 1.7));
+    $('zout').addEventListener('click', () => zoom(1.7));
+    $('zreset').addEventListener('click', () => {
+      S.view = DATA.view.slice();
+      render();
+    });
+    $('zhome').addEventListener('click', () => {
+      const w = 1500;
+      const h = (w * DATA.view[3]) / DATA.view[2];
+      S.view = [50 - w / 2, -500 - h / 2, w, h];
+      render();
+    });
+    svg.addEventListener('pointerdown', (e) => {
+      drag = { x: e.clientX, y: e.clientY, v: S.view.slice(), moved: false, id: e.pointerId };
+    });
+    svg.addEventListener('pointermove', (e) => {
+      if (!drag || drag.id !== e.pointerId) return;
+      const dx = e.clientX - drag.x;
+      const dy = e.clientY - drag.y;
+      if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+      if (S.view[2] >= DATA.view[2] * 0.95) return; // nothing to pan at full view
+      if (!drag.moved) svg.setPointerCapture(e.pointerId);
+      drag.moved = true;
+      const u = S.view[2] / svg.getBoundingClientRect().width;
+      S.view = [drag.v[0] - dx * u, drag.v[1] - dy * u, drag.v[2], drag.v[3]];
+      render();
+    });
+    svg.addEventListener('pointerup', (e) => {
+      const d = drag;
+      drag = null;
+      if (d && !d.moved) {
+        const el = e.target.closest('[data-k]');
+        S.sel = el ? el.dataset.k : null;
+        if (el) showDetail(el.dataset.k);
+      }
+    });
+    svg.addEventListener('pointercancel', () => (drag = null));
+    svg.addEventListener('dblclick', (e) => {
+      const pt = svg.createSVGPoint();
+      pt.x = e.clientX;
+      pt.y = e.clientY;
+      const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+      zoom(1 / 1.7, p.x, p.y);
+    });
+    new ResizeObserver(() => render()).observe(svg);
+    document.addEventListener('keydown', (e) => {
+      if (e.target.matches('input, textarea')) return;
+      if (e.key === 'ArrowRight') setStage(S.s + 1);
+      if (e.key === 'ArrowLeft') setStage(S.s - 1);
+    });
+
+    legend();
+    compare();
+    const fromHash = OPTS.findIndex((o) => '#' + o.id === location.hash);
+    setOpt(fromHash < 0 ? 0 : fromHash, true);
+    window.addEventListener('hashchange', () => {
+      const i = OPTS.findIndex((o) => '#' + o.id === location.hash);
+      if (i >= 0 && i !== S.o) setOpt(i, true);
+    });
+  })();
+</script>

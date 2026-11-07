@@ -129,3 +129,13 @@ Its `#economy-data` block is generated, so don't edit it by hand. Edit [ring-dat
 and run `node dev/economy/build-model.ts`, which also rewrites [economy-model.xlsx](../economy/economy-model.xlsx) and
 the CSVs beside it. `--check` fails when any of them are stale. The map is schematic: its distances come from the
 model's Links table, not from `layout.ts`, and its places are proposals.
+model's 1.2 km ring, not from `layout.ts`, and its places are proposals.
+
+## Map prototypes
+
+[Map prototypes](map-prototypes.html) compares five layouts for the world after Ring Island at the real 1 km scale
+(the owner's 6 November note: irregular, surprising, not a literal circle). Each has a stepper that plays the
+progression, an order-choice toggle, fog for what isn't seen yet, sightlines, ability gates and secrets, and a ride
+table computed from the drawn lines with the economy model's ride settings. The `#map-data` block is hand-edited JSON;
+Home, Split-rock Works, the pier and Ring Island match `world-map.html`, and everything after is proposed. The pitches,
+risks, model changes and open questions are in [map-prototypes.md](map-prototypes.md).
