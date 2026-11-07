@@ -11,7 +11,8 @@ export function createRailwayPanelView(
   track: Track,
   state: () => PanelState,
   head: () => number,
-  contact: (end: number) => void,
+  /** One rail pair seated; `unit` when it closes a stock unit (the magazine decrement). */
+  contact: (end: number, unit: boolean) => void,
   owner: OwnedView,
 ) {
   let returning = 1;
@@ -55,7 +56,7 @@ export function createRailwayPanelView(
           panel = track.panels[index]!;
         pose(index, 1, state().panelStock + state().panelCount - index);
         track.layTo(panel.to);
-        contact(panel.end);
+        contact(panel.end, panel.stock > 0);
       }
       machine.setRack(state().panelStock);
       track.update(dt);

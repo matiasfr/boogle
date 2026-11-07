@@ -26,7 +26,7 @@ import {
 } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { railSupplyPulse, railGrowthMask, railGrowthAllowed } from '../src/sim/railway-supply.ts';
-import { LINE1_STATIONS } from '../src/sim/railway-line-layout.ts';
+import { LINE1_STATIONS, LINE1_RAIL_PAIRS, linePanels } from '../src/sim/railway-line-layout.ts';
 import { lineSchedule } from '../src/sim/railway-line-schedule.ts';
 
 const tick = (s: Railway) => Math.max(100, ...railJobs(s).map((j) => j.lastTick)) + 1;
@@ -357,10 +357,10 @@ test('wrong material deposits and spent-rock strokes remain material no-ops', ()
   restore(s);
 });
 
-test('all twelve panel contacts derive stock and survive restore without a continuous frontier', () => {
+test('every rail-pair contact derives stock and survives restore without a continuous frontier', () => {
   let s = fresh(),
     committed = 0;
-  assert.equal(railPanelStock(s), 12);
+  assert.equal(railPanelStock(s), LINE1_RAIL_PAIRS);
   for (const [index, station] of LINE1_STATIONS.entries()) {
     logs(s, 'a', station.bill[0]);
     if (station.bill[1]) stones(s, 'a', station.bill[1]);
@@ -377,18 +377,24 @@ test('all twelve panel contacts derive stock and survive restore without a conti
       const at = start + schedule.depositTicks + schedule.feedTicks + panel.tick;
       railTick(s, at - 1);
       assert.equal(railPanelCount(s), committed, 'head travel before contact cannot create panel collision');
-      assert.equal(railPanelStock(s), 12 - committed);
+      assert.equal(railPanelStock(s), LINE1_RAIL_PAIRS - committed);
       s = restore(s);
       assert.equal(railPanelCount(s), committed, 'quiet restore keeps the same frontier');
       railTick(s, at);
       assert.equal(railPanelCount(s), ++committed);
-      assert.equal(railPanelStock(s), 12 - committed);
+      assert.equal(railPanelStock(s), LINE1_RAIL_PAIRS - committed);
       s = restore(s);
       assert.equal(railPanelCount(s), committed);
     }
-    assert.equal(railPanelStock(s), [9, 6, 0][index]);
+    // Pairs left after each stop: the same stock-unit boundaries as before the split (9, 6 and 0 units).
+    assert.equal(
+      railPanelStock(s),
+      LINE1_RAIL_PAIRS -
+        linePanels().filter((p) => LINE1_STATIONS.findIndex((st) => st.id === p.station) <= index).length,
+    );
+    assert.equal(railPanelStock(s), [42, 30, 0][index]);
   }
-  assert.equal(committed, 12);
+  assert.equal(committed, LINE1_RAIL_PAIRS);
   railTick(s, tick(s) + 10000);
   assert.equal(railPanelStock(s), 0, 'completion never replenishes the magazine');
 });
@@ -399,16 +405,16 @@ test('offline panel catch-up consumes one funded interval and cannot advance the
   finish(s);
   logs(s, 'a', 32);
   stones(s, 'a', 8);
-  assert.equal(railPanelCount(s), 3);
+  assert.equal(railPanelCount(s), 14, 'T1 laid as its 14 rail pairs');
   const now = railCurrentJob(s).lastTick;
   railResume(s, railMaxDuration(s), 123, now);
-  assert.equal(railPanelCount(s), 6);
-  assert.equal(railPanelStock(s), 6);
+  assert.equal(railPanelCount(s), 26);
+  assert.equal(railPanelStock(s), 30);
   s = restore(s);
   railResume(s, railMaxDuration(s), 123, now);
   railResume(s, railMaxDuration(s), 124, now + 10000);
-  assert.equal(railPanelCount(s), 6);
-  assert.equal(railPanelStock(s), 6);
+  assert.equal(railPanelCount(s), 26);
+  assert.equal(railPanelStock(s), 30);
   assert.equal(railCurrentJob(s).start, -1);
   assert.equal(railwayInvariant(s), null);
 });

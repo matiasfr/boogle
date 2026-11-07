@@ -170,7 +170,7 @@ async function runChecks() {
     report.push(clearance);
     if (!json) {
       console.log(
-        `machine clearance: ${clearance.samples} poses, ${clearance.sweptSamples} swept mesh samples, ${clearance.failures} problems (${clearance.clearanceMetres} m envelope)`,
+        `machine clearance: ${clearance.samples} poses, ${clearance.sweptSamples} swept mesh samples, ${clearance.failures} problems (${clearance.clearanceMetres} m envelope); ${clearance.railPairs} rail pairs, trolley reach ${clearance.trolleyReachMetres} m on the ${clearance.beamMetres} m beam`,
       );
       for (const contact of clearance.contacts)
         console.log(`  ${contact.label}: ${contact.mesh} intersects ${contact.obstacle}`);

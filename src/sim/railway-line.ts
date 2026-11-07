@@ -1,6 +1,6 @@
 // Line one's deterministic material and singleton authority. Legacy T1 keeps its original path.
 import type { RailAccount, RailAction, Railway } from './railway.ts';
-import { LINE1_STATIONS, LINE1_GREAT_TREE, lineBeamGround } from './railway-line-layout.ts';
+import { LINE1_STATIONS, LINE1_GREAT_TREE, LINE1_RAIL_PAIRS, lineBeamGround } from './railway-line-layout.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { lineSchedule, linePanelCount, type LineTiming } from './railway-line-schedule.ts';
 
@@ -111,7 +111,8 @@ export const railMaxDuration = (s: Railway) =>
     ? lineSchedule(LINE1_STATIONS[railActiveStation(s)]!, railCurrentJob(s).timing ?? LINE_TIMING).totalTicks
     : T1.depositTicks + T1.feedTicks + T1.layTicks;
 export const railLineOpen = (s: Railway) => !!s.line?.jobs[1].completion;
-/** The original twelve units belong to the entire line. No receiver issues a replacement magazine. */
+/** Rail pairs laid on line one. The original twelve stock units belong to the entire line and lay a pair at a time;
+ * no receiver issues a replacement magazine. */
 export const railPanelCount = (s: Railway) =>
   s.line
     ? railJobs(s).reduce(
@@ -120,7 +121,8 @@ export const railPanelCount = (s: Railway) =>
         0,
       )
     : 0;
-export const railPanelStock = (s: Railway) => T1.starterRails - railPanelCount(s);
+/** Rail pairs still on the machine's stack. */
+export const railPanelStock = (s: Railway) => LINE1_RAIL_PAIRS - railPanelCount(s);
 export const railAxeAvailable = (s: Railway) =>
   !!s.line && railActiveStation(s) === 2 && s.line.jobs[1].stock === 40 && !s.line.axe;
 export function railBeamRelease(s: Railway, pid: string, epoch: number, revision: number): number {

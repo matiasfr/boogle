@@ -251,12 +251,14 @@ export function buildTrack(
         at += length;
       }
     }
-    // Split rail pairs at exact panel/closure boundaries, with no former 2.2 m visual lag.
+    // Split rail pairs at exact panel/closure boundaries, with no former 2.2 m visual lag. A panel's rails are equal
+    // pieces of about 3 m (carriedPiece), so a one-pair panel is one rail a side; the pre-laid stubs keep 3 m cuts.
     for (let cut = 1; cut < cuts.length; cut++) {
       const from = cuts[cut - 1]!,
         to = cuts[cut]!;
-      for (let at = from; at < to - 1e-7; at += 3) {
-        const length = Math.min(3, to - at);
+      const piece = panelOf(from) >= 0 ? carriedPiece(to - from).length : 3;
+      for (let at = from; at < to - 1e-7; at += piece) {
+        const length = Math.min(piece, to - at);
         const centre = at + length / 2;
         const s = dir > 0 ? centre : line.len - centre;
         lineAt(line, s, P);
@@ -496,7 +498,8 @@ export function buildTrack(
       if (dirOut.x * P.ux * dir + dirOut.z * P.uz * dir < 0) dirOut.negate();
     },
     panelStart(index, out) {
-      const at = panels[index]!.from + 1.5;
+      // The sweep runs in from the pair's near quarter to its seat, so its sleepers go down under the jaws.
+      const at = panels[index]!.from + Math.min(1.5, (panels[index]!.to - panels[index]!.from) / 4);
       const s = dir > 0 ? at : line.len - at;
       lineAt(line, s, P);
       lateral(0, probe);

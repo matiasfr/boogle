@@ -1,12 +1,15 @@
 // Pure, deterministic prototype schedule. Shared authority commits these indices; meshes never decide them.
-import { STUB, type LineSpec } from './layout.ts';
+import { LINKS, STUB, type LineSpec } from './layout.ts';
 
-// Twelve stock units, partitioned at the three stops. The longest ordinary panel is
-// 86/6 m: 2.867 s at 5 m/s, close to the 2.8 s storyboard. T1/T2 end in shorter closures.
+// Twelve stock units, partitioned at the three stops; T1/T2 end in shorter closures. Each unit lays as its rail
+// pairs, about 3 m each (owner, 6 November: "drop smaller chunks of rail so it doesn't have to extend so far"),
+// matching src/sim's integer-centimetre pairsOf.
 const TIMBER_COUNTS = [3, 3, 6] as const;
-export const MAX_PANEL_LENGTH = (116 - STUB.village) / TIMBER_COUNTS[2];
+const STOCK_UNIT = (116 - STUB.village) / TIMBER_COUNTS[2];
+export const railPairs = (length: number) => Math.max(1, Math.floor(length / 3 + 0.5 + 1e-9));
 export type TrackPanel = { from: number; to: number; end: number; stage: number; stock: number };
-/** Metres in travel order. Every entry, including a short closure, consumes exactly one stock unit. */
+/** Metres in travel order, one rail pair each. `stock` is 1 on the pair that closes a stock unit (its one magazine
+ * decrement; a short closure unit too). */
 export function trackPanels(spec: LineSpec): TrackPanel[] {
   const out: TrackPanel[] = [];
   const u = (s: number) => (spec.dir > 0 ? s : spec.line.len - s);
@@ -14,28 +17,35 @@ export function trackPanels(spec: LineSpec): TrackPanel[] {
   spec.stations.forEach((st, stage) => {
     const end = u(st.to);
     const count = spec.id === 'timber' ? TIMBER_COUNTS[stage]! : st.rails;
-    const span = spec.id === 'timber' ? MAX_PANEL_LENGTH : (end - from) / count;
+    const span = spec.id === 'timber' ? STOCK_UNIT : (end - from) / count;
     const origin = from;
     for (let index = 1; index <= count; index++) {
-      const to = index === count ? end : Math.min(end, origin + index * span);
-      out.push({ from, to, end: spec.dir > 0 ? to : spec.line.len - to, stage, stock: 1 });
-      from = to;
+      const unitEnd = index === count ? end : Math.min(end, origin + index * span);
+      const unitFrom = from,
+        pairs = railPairs(unitEnd - unitFrom);
+      for (let k = 1; k <= pairs; k++) {
+        const to = k === pairs ? unitEnd : unitFrom + ((unitEnd - unitFrom) * k) / pairs;
+        out.push({ from, to, end: spec.dir > 0 ? to : spec.line.len - to, stage, stock: k === pairs ? 1 : 0 });
+        from = to;
+      }
     }
   });
   return out;
 }
 
+/** The longest rail pair any line lays (Place's Q4 rail, 6.75 m in two 3.375 m pairs; production's longest is Q2's
+ * 3.33 m). The machine's deck setback, and so its gantry beam, follow from it. */
+export const MAX_PANEL_LENGTH = Math.max(...LINKS.flatMap((spec) => trackPanels(spec).map((p) => p.to - p.from)));
+
 export const panelEase = (t: number) => {
   const x = Math.max(0, Math.min(1, t));
   return x * x * (3 - 2 * x);
 };
-/** Rails are cut every 3 m from each panel's start. The gantry carries the last whole-looking pair (at least 2 m);
- * a shorter closure stub falls with the other pieces. Metres from the panel start. */
+/** A panel's rails are cut into equal pieces of about 3 m (one for a single-pair panel); the gantry carries the last.
+ * Metres from the panel start. */
 export function carriedPiece(length: number) {
-  const whole = Math.floor(length / 3 + 1e-7);
-  const rest = length - whole * 3;
-  if (rest >= 2 - 1e-7 || whole === 0) return { centre: whole * 3 + rest / 2, length: rest };
-  return { centre: whole * 3 - 1.5, length: 3 };
+  const piece = length / railPairs(length);
+  return { centre: length - piece / 2, length: piece };
 }
 /** Trapezoidal travel (quarter accelerating, half cruising, quarter braking): peak speed 1.33x the average,
  * where smoothstep peaks at 1.5x. Long trolley runs use it. */
@@ -52,18 +62,20 @@ const sweepIn = (t: number) => {
   return x < 0.2 ? (x * x * 2.5) / 0.9 : (x - 0.1) / 0.9;
 };
 /** Distance-phase choreography of one panel cycle (storyboard beats). Contact is phase 1; the seat completes
- * at 0.97 so a follower holding at 0.98 rests on it. No animation callback into game state. */
+ * at 0.97 so a follower holding at 0.98 rests on it. No animation callback into game state. A rail-pair cycle lasts
+ * about half a second and its runs along the short beam are a few metres, so the pick (lower, grip, lift to gauge)
+ * and the seat get a larger share than the old 14 m panels gave them. */
 export function panelPose(phase: number) {
   const t = Math.max(0, Math.min(1, phase));
   const at = (from: number, to: number) => panelEase((t - from) / (to - from));
   return {
-    returnT: panelGlide(t / 0.3),
-    lower: at(0.3, 0.36),
-    grip: at(0.36, 0.39),
+    returnT: panelGlide(t / 0.24),
+    lower: at(0.24, 0.33),
+    grip: at(0.33, 0.39),
     picked: t >= 0.39,
-    gauge: at(0.39, 0.45),
-    travel: panelGlide((t - 0.45) / 0.19),
-    sweep: sweepIn((t - 0.64) / 0.24),
-    seat: at(0.88, 0.97),
+    gauge: at(0.39, 0.48),
+    travel: panelGlide((t - 0.48) / 0.16),
+    sweep: sweepIn((t - 0.64) / 0.2),
+    seat: at(0.84, 0.97),
   };
 }

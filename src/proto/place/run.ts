@@ -54,7 +54,7 @@ export const run = {
   feedLeft: 0, // pieces yet to leave the frame
   feedAir: 0,
   cradle: 0, // logs in it
-  rack: TUNE.rackStart,
+  rack: L1.track.panels.length, // rail pairs on the machine's own stack, for line 1
   cradle0: 0,
   rack0: 0,
   stretch0: 0,
@@ -222,18 +222,18 @@ function stepLay(dt: number) {
   }
   if (left - step <= 0.001 && !coop.follower()) finishStretch(l);
 }
-/** Line 1's rails come off the machine's own rack: it's empty when the line is done. */
+/** Line 1's rail pairs come off the machine's own stack: it's empty when the line is done. */
 const rackForLine1 = (head: number) =>
-  TUNE.rackStart - L1.track.panels.filter((p) => p.to <= L1.track.u(head) + 1e-7).length;
+  L1.track.panels.length - L1.track.panels.filter((p) => p.to <= L1.track.u(head) + 1e-7).length;
 const panelRackCount = (l: LineRun) =>
   l === L1
-    ? TUNE.rackStart - l.track.cursor
+    ? l.track.panels.length - l.track.cursor
     : l.track.panels.filter((p, i) => p.stage === l.stage && i >= l.track.cursor).length;
 const validPanelCursor = (l: LineRun, cursor: unknown): cursor is number =>
   count(cursor, l.track.panels.length) &&
   cursor >= l.track.panels.filter((p) => p.stage < l.stage).length &&
   cursor <= l.track.panels.filter((p) => p.stage <= l.stage).length;
-/** One accepted event: full visual panel, collider frontier and one magazine unit. */
+/** One accepted event: one rail pair's visuals, collider frontier and its stack pair. */
 function commitPanel(l: LineRun, silent = false, publish = true) {
   const index = l.track.cursor;
   const panel = l.track.panels[index];
@@ -259,7 +259,8 @@ function commitPanel(l: LineRun, silent = false, publish = true) {
   if (!silent) {
     const at = besideLine(l.spec.line, panel.end, 0);
     clank(at.x, at.z);
-    dustRing(at.x, railY(l.spec.line, panel.end) + 0.1, at.z, 4, 0.5, 0.12);
+    // Contact dust once per stock unit: a pair-sized commit adds no smoke.
+    if (panel.stock) dustRing(at.x, railY(l.spec.line, panel.end) + 0.1, at.z, 4, 0.5, 0.12);
   }
   if (publish) coop.panelCommitted(l.k, l.stage, index);
 }
@@ -855,7 +856,7 @@ export function putMachine(j: unknown) {
     run.cradle0 = count(q.c0, 64) ? q.c0 : 0;
     run.rack0 = count(q.r0, 64) ? q.r0 : 0;
     run.cradle = count(q.c, 64) ? q.c : 0;
-    run.rack = q.mode === 'laying' ? panelRackCount(l) : count(q.r, 64) ? q.r : 0;
+    run.rack = q.mode === 'laying' ? panelRackCount(l) : count(q.r, 256) ? q.r : 0;
     run.departT = num(q.depart) ? Math.max(0, Math.min(2, q.depart)) : 2;
     machine.at(l.spec.line, run.head, q.mode === 'running' ? -1 : l.spec.dir, run.setback);
     machine.snap();

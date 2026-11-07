@@ -4,7 +4,7 @@ import { boxAt, place, type Box } from '../../src/proto/net/box-plan.ts';
 import { LINKS, ORIGIN, STUB, lineAt, railY } from '../../src/proto/place/layout.ts';
 import { H, surfaceHeight } from '../../src/proto/place/terrain.ts';
 import { sampleFootprint } from '../../src/proto/place/support.ts';
-import { trackPanels } from '../../src/proto/place/track-panels.ts';
+import { carriedPiece, trackPanels } from '../../src/proto/place/track-panels.ts';
 import { sourceFunction } from './source.ts';
 
 /** Every settled track box of both lines, panelled and continuous, as the game's own buildTrack makes them. */
@@ -24,6 +24,7 @@ export function trackBoxes() {
     H,
     place,
     trackPanels,
+    carriedPiece,
     TOP: sourceFunction<number>(file, 'TOP', {}),
     DECK_W: sourceFunction<number>(file, 'DECK_W', {}),
     box: sourceFunction('src/proto/net/boxes.ts', 'box', { boxAt, groundHeight: H }),

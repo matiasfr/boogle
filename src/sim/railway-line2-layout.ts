@@ -1,7 +1,7 @@
 // Line two's pinned numeric catalog: the forge, Q1-Q3 and the quarry's lever and hook device.
 // Coordinates are world centimetres pinned from Place's layout/tech-layout (6 November 2026);
 // no runtime prototype imports or native trig in lockstep. Q4 onward is not promoted yet.
-import type { LineStation } from './railway-line-layout.ts';
+import { pairsOf, type LineStation } from './railway-line-layout.ts';
 
 export const RAILS = 2;
 /** The forge takes 24 logs for its frame, then 32 for walls and chimney; then it is lit and pours rails. */
@@ -67,13 +67,15 @@ export const LINE2_LEVER = { x: 109740, z: 4220, y: 2620 } as const;
 export const LINE2_HOOK = { x: 99954, z: 2086, y: 2350 } as const;
 /** Readiness from accepted completions only: Q2 builds the hook walkway, Q3 the quarry ramp and winch drive. */
 export const line2Routes = (completed: number) => ({ hook: completed >= 2, quarry: completed >= 3 });
-/** Integer-centimetre panel boundaries for a line-two stretch: one stock rail each. */
+/** Integer-centimetre rail-pair boundaries for a line-two stretch: each stock rail lays as its rail pairs. */
 export function line2Panels(station: Line2Station) {
   const span = station.toCm - station.fromCm;
-  return Array.from({ length: station.panels }, (_, i) => ({
-    station: station.id,
-    index: i,
-    fromCm: station.fromCm + Math.round((i * span) / station.panels),
-    toCm: i === station.panels - 1 ? station.toCm : station.fromCm + Math.round(((i + 1) * span) / station.panels),
-  }));
+  return Array.from({ length: station.panels }, (_, i) =>
+    pairsOf(
+      station.fromCm + Math.round((i * span) / station.panels),
+      i === station.panels - 1 ? station.toCm : station.fromCm + Math.round(((i + 1) * span) / station.panels),
+    ),
+  )
+    .flat()
+    .map((pair, index) => ({ station: station.id, index, ...pair }));
 }

@@ -10,7 +10,9 @@ import {
   LINE1_INITIAL,
   LINE1_PANEL_ALLOWANCE,
   linePanels,
+  LINE1_RAIL_PAIRS,
 } from '../src/sim/railway-line-layout.ts';
+import { LINE2_STATIONS, line2Panels } from '../src/sim/railway-line2-layout.ts';
 import { lineFeed, lineLayDistance, lineSchedule, type LineTiming } from '../src/sim/railway-line-schedule.ts';
 
 // Accepted Place inputs in milliseconds/10 Hz ticks, supplied as room settings at the future funding boundary.
@@ -57,21 +59,54 @@ test('line 1 preserves source identity, exact bills and the one twelve-panel all
     LINE1_ROCKS.map((rock) => rock.id),
     [0, 1, 2],
   );
+  // The twelve stock units lay as rail pairs of about 3 m: 5/5/4, 5/5/2 and 6 x 5.
   const panels = linePanels();
-  assert.equal(panels.length, LINE1_PANEL_ALLOWANCE);
+  assert.equal(panels.length, LINE1_RAIL_PAIRS);
+  assert.equal(panels.length, 56);
+  assert.equal(
+    panels.reduce((units, panel) => units + panel.stock, 0),
+    LINE1_PANEL_ALLOWANCE,
+  );
   assert.equal(panels[0]!.fromCm, 19100);
   assert.equal(panels.at(-1)!.toCm, 3000);
   panels.forEach((panel, i) => {
     assert.equal(panel.index, i);
     assert.ok(panel.fromCm > panel.toCm);
     assert.ok(Number.isInteger(panel.toCm));
+    assert.ok(panel.fromCm - panel.toCm >= 240 && panel.fromCm - panel.toCm <= 310, 'about one rail pair');
     if (i) assert.equal(panels[i - 1]!.toCm, panel.fromCm);
   });
   for (const station of LINE1_STATIONS) {
     const stretch = panels.filter((panel) => panel.station === station.id);
-    assert.equal(stretch.length, station.panels);
+    assert.equal(
+      stretch.reduce((units, panel) => units + panel.stock, 0),
+      station.panels,
+    );
     assert.equal(stretch.at(-1)!.toCm, station.toCm);
+    assert.equal(stretch.at(-1)!.stock, 1);
   }
+  // The unit boundaries (where stock decrements) are unchanged by the split.
+  assert.deepEqual(
+    panels.filter((panel) => panel.stock).map((panel) => panel.toCm),
+    [17667, 16233, 15000, 13567, 12133, 11600, 10167, 8733, 7300, 5867, 4433, 3000],
+  );
+  for (const station of LINE2_STATIONS) {
+    const pairs = line2Panels(station);
+    assert.equal(
+      pairs.reduce((units, panel) => units + panel.stock, 0),
+      station.bill[1],
+      `${station.id} rails`,
+    );
+    assert.equal(pairs.at(-1)!.toCm, station.toCm);
+    pairs.forEach((pair, i) => {
+      assert.ok(pair.toCm - pair.fromCm >= 230 && pair.toCm - pair.fromCm <= 334, `${station.id} pair length`);
+      if (i) assert.equal(pairs[i - 1]!.toCm, pair.fromCm);
+    });
+  }
+  assert.deepEqual(
+    LINE2_STATIONS.map((station) => line2Panels(station).length),
+    [12, 24, 24],
+  );
 });
 
 test('mixed feeds finish after every flight, with explicit tick rounding rather than T1 scaling', () => {
@@ -105,14 +140,15 @@ test('mixed feeds finish after every flight, with explicit tick rounding rather 
   assert.equal(lineSchedule(LINE1_STATIONS[2]!, { ...timing, beamFlightMs: 6000 }).feedTicks, 60);
 });
 
-test('whole panels commit on the first tick reaching their contact; fixed schedule survives serialization', () => {
+test('rail pairs commit on the first tick reaching their contact; fixed schedule survives serialization', () => {
   for (const station of LINE1_STATIONS) {
     const schedule = lineSchedule(station, timing);
     assert.deepEqual(lineSchedule(station, JSON.parse(JSON.stringify(timing))), schedule);
-    for (const panel of schedule.panels) {
+    for (const [i, panel] of schedule.panels.entries()) {
       const distance = station.fromCm - panel.toCm;
       assert.ok(lineLayDistance(panel.tick, timing) >= distance);
       assert.ok(lineLayDistance(panel.tick - 1, timing) < distance);
+      if (i) assert.ok(panel.tick > schedule.panels[i - 1]!.tick, 'one pair per contact tick');
     }
     assert.equal(schedule.panels.at(-1)!.tick, schedule.layTicks);
     const flat = lineSchedule(station, { ...timing, departureTicks: 0 });
@@ -121,4 +157,22 @@ test('whole panels commit on the first tick reaching their contact; fixed schedu
   for (const bad of [NaN, Infinity, -1, -0, 0.5, 60001])
     assert.throws(() => lineSchedule(LINE1_STATIONS[0]!, { ...timing, feedIntervalMs: bad }), /line timing/);
   assert.throws(() => lineSchedule(LINE1_STATIONS[0]!, { ...timing, cruiseCmPerTick: 0 }), /line timing/);
+});
+
+test('the machine view lays the same rail pairs the shared schedule commits', async () => {
+  const { LINKS } = await import('../src/proto/place/layout.ts');
+  const { trackPanels } = await import('../src/proto/place/track-panels.ts');
+  const view = (id: string) => trackPanels(LINKS.find((spec) => spec.id === id)!);
+  // Pair for pair, the same stock flags; ends agree to the shared catalog's centimetre rounding.
+  const same = (local: { end: number; stock: number }[], shared: { toCm: number; stock: number }[]) => {
+    assert.deepEqual(
+      local.map((p) => p.stock),
+      shared.map((p) => p.stock),
+    );
+    local.forEach((p, i) => assert.ok(Math.abs(p.end * 100 - shared[i]!.toCm) <= 1, `pair ${i} end`));
+  };
+  same(view('timber'), linePanels());
+  // Production line two is Q1-Q3: the view's first three stages.
+  const shared = LINE2_STATIONS.flatMap((station) => line2Panels(station));
+  same(view('quarry').slice(0, shared.length), shared);
 });

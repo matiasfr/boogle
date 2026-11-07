@@ -13,6 +13,11 @@ import { T1_CRATE_PARTS } from '../../render/t1-reward-parts.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { AXE_REWARD, JUMP_REWARD } from './reward-data.ts';
+import { linePanels } from '../../sim/railway-line-layout.ts';
+
+/** Stock units line one has closed after each count of laid rail pairs. */
+const UNITS_LAID = [0];
+for (const pair of linePanels()) UNITS_LAID.push(UNITS_LAID.at(-1)! + pair.stock);
 
 /** A chest or box is in reach from its own spot: the ground distance the pick already measures to its edge, and about
  * a storey of height, so a prompt never floats up from one far away or on another level. */
@@ -204,12 +209,12 @@ export async function createRailwayTools(
     },
     update(_dt: number, now: number) {
       const state = adapter.inspect();
-      // The sloping route sends low whole panels through this crossing. Join it only
+      // The sloping route sends the low laying gantry through this crossing. Join it only
       // after accepted construction and the local machine envelope have both passed.
       if (lip) {
         machineAt.set(0, 0, -Infinity);
         machineFrom?.(machineAt);
-        lip.visible = tech.p1LipClear(state.panelCount, machineAt.z);
+        lip.visible = tech.p1LipClear(UNITS_LAID[state.panelCount] ?? 0, machineAt.z);
         if (lip.visible && !lipBody)
           lipBody = land.addStatic(
             { kind: 'box', hx: 1.2, hy: 0.25, hz: lipLength / 2 },

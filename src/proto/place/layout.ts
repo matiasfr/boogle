@@ -38,7 +38,7 @@ export const TUNE = {
   railEvery: 0.5, // s per rail the lit forge pours
   railEveryRoofed: 0.25, // and with its roof on
   rackMax: 24,
-  rackStart: 12, // rails on the machine's own rack, for line 1
+  rackStart: 12, // stock units on the machine's own stack, for line 1; each lays as its rail pairs
   crateLogs: 6, // logs a crate on the village heap gives
   people: 12, // the village's population at the start
   stepAt: [6, 16], // crates of a kind at the village for its first and second step-up
