@@ -123,8 +123,13 @@ export const railPanelCount = (s: Railway) =>
     : 0;
 /** Rail pairs still on the machine's stack. */
 export const railPanelStock = (s: Railway) => LINE1_RAIL_PAIRS - railPanelCount(s);
-export const railAxeAvailable = (s: Railway) =>
-  !!s.line && railActiveStation(s) === 2 && s.line.jobs[1].stock === 40 && !s.line.axe;
+/** Whether a stroke at the great tree bites (wake aside): Station 3 is open, unfunded, and the tree still stands. A
+ * client checks it before sending, so a stroke the rule would refuse rebounds on the next frame ("a swing always
+ * answers", 3 November). */
+export const railBeamChoppable = (s: Railway) =>
+  !!s.line && railActiveStation(s) === 2 && s.line.jobs[1].start < 0 && s.line.beam.state === 'standing';
+/** The proper axe is the lit forge's first made thing (owner, 7 November: the great beam pass). */
+export const railAxeAvailable = (s: Railway) => !!s.line && !!s.line2 && s.line2.forge.lit >= 0 && !s.line.axe;
 export function railBeamRelease(s: Railway, pid: string, epoch: number, revision: number): number {
   const b = s.line?.beam;
   if (
@@ -301,7 +306,8 @@ export function railLineApply(s: Railway, a: RailAccount, e: RailAction, tick: n
     n = 1;
   }
   const b = l.beam;
-  const beamNeeded = ready && index === 2 && job.start < 0 && l.axe;
+  // Your first axe fells the great tree once Station 3 opens; beam and logs fund it in either order (7 November).
+  const beamNeeded = ready && index === 2 && job.start < 0;
   if (e.op === 'rail.beamChop' && beamNeeded && b.state === 'standing') {
     b.work++;
     n = 1;
@@ -347,7 +353,6 @@ export function railLineApply(s: Railway, a: RailAccount, e: RailAction, tick: n
     held &&
     b.epoch === a.epoch &&
     e.revision === b.revision &&
-    job.stock === 40 &&
     b.revision < 2147483647
   ) {
     b.state = 'allocated';

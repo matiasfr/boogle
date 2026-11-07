@@ -385,6 +385,8 @@ export const HALTS: { name: string; line: 0 | 1; s0: number; s1: number; lat: nu
 
 /** The forge's own frame, by its north wall: logs land in it and its pieces drop. By hand first; trains finish the roof. */
 export const FORGE_FRAME = { x: -88, z: -12, yaw: 0 };
+/** The proper axe's stand, beside the forge frame on the hardwoods' side: the lit forge's first made thing (7 November). */
+export const AXE_STAND = { x: -92.5, z: -15 };
 export const FORGE_BILLS: Station[] = [
   { id: 'F1', s: 0, to: 0, side: 1, logs: 24, rails: 0, label: 'The forge' },
   { id: 'F2', s: 0, to: 0, side: 1, logs: 32, rails: 0, label: 'The forge' },

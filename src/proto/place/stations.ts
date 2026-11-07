@@ -10,6 +10,7 @@ import { removeBody, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { flat } from '../flat.ts';
+import { GOLD_ROPE, createRope } from '../../render/gold-rope.ts';
 import { label } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
 import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint } from './look.ts';
@@ -52,6 +53,46 @@ const stoneGeo = new THREE.DodecahedronGeometry(0.22, 0),
   stoneMat = material('stone');
 stoneGeo.computeBoundingBox();
 const stoneFoot = -stoneGeo.boundingBox!.min.y;
+/** Two saddles across the frame's top at its post pairs, in the frame's own space (+z along the line). */
+function saddles(g: THREE.Group) {
+  const wood = flat('#8a6236'),
+    rope = flat(GOLD_ROPE, 0.7);
+  const tied: THREE.Mesh[] = [];
+  const loose: ReturnType<typeof createRope>[] = [];
+  const ring = new THREE.TorusGeometry(0.34, 0.065, 6, 18);
+  const a = new THREE.Vector3(),
+    b = new THREE.Vector3();
+  for (const sz of [-1, 1]) {
+    const z = (sz * FRAME_W) / 2;
+    const part = (w: number, h: number, d: number, px: number, py: number) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wood);
+      m.position.set(px, py, z);
+      m.castShadow = true;
+      g.add(m);
+    };
+    // A crossbar on the posts with two cheeks: a U the beam's underside (1.41 m) sits in.
+    part(FRAME_D + 0.3, 0.2, 0.3, 0, 1.31);
+    for (const sx of [-1, 1]) part(0.14, 0.34, 0.3, sx * 0.42, 1.55);
+    for (const sx of [-1, 1]) {
+      // A loose lashing hangs off each cheek, waiting.
+      const r = createRope(g, rope, 6, 0.055);
+      r.set(a.set(sx * 0.42, 1.72, z), b.set(sx * 0.7, 0.85, z + sz * 0.16), 0.08);
+      loose.push(r);
+    }
+    const t = new THREE.Mesh(ring, rope);
+    t.position.set(0, 1.7, z);
+    t.castShadow = true;
+    t.visible = false;
+    g.add(t);
+    tied.push(t);
+  }
+  return {
+    tie(on: boolean) {
+      for (const t of tied) t.visible = on;
+      for (const r of loose) r.visible = !on;
+    },
+  };
+}
 export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) {
   const { x, z, yaw, lx, lz } = place;
   const y = H(x, z);
@@ -204,6 +245,9 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
     if (owner) owner.add(beam);
     else scene.add(beam);
   }
+  // The great beam pass (C1): two empty timber saddles on the frame's top with loose gold lashings, a beam-shaped gap
+  // from the moment the station opens; the lashings tie round the beam when it lands. Local, from accepted state.
+  const lashings = beam ? saddles(g) : null;
 
   const tag = label(3.4, 1.7);
   // T3's full log pile hid the missing beam row. Keep the existing bill beside the pile,
@@ -315,6 +359,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
         stones.instanceMatrix.needsUpdate = true;
       }
       if (beam) beam.visible = n.beam > 0;
+      lashings?.tie(n.beam > 0);
     },
     /** The sign over it; off when it's not its turn or it's done. */
     setTag(on: boolean) {

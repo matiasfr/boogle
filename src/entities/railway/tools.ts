@@ -35,11 +35,10 @@ export async function createRailwayTools(
   reveal: ReturnType<typeof createRewardReveal>,
   machineFrom?: (out: THREE.Vector3) => void,
 ) {
-  const [layout, tech, land, spatial, shapes, axes, flat] = await Promise.all([
+  const [layout, tech, land, shapes, axes, flat] = await Promise.all([
     import('../../proto/place/layout.ts'),
     import('../../proto/place/tech-layout.ts'),
     import('../../proto/place/land.ts'),
-    import('../../proto/place/spatial-station.ts'),
     import('../../proto/place/part-geometry.ts'),
     import('../../proto/place/axe-models.ts'),
     import('../../proto/flat.ts'),
@@ -65,9 +64,8 @@ export async function createRailwayTools(
     root.add(m);
     return m;
   }
-  const line = layout.LINKS[0]!;
-  const frame = spatial.frameBesideLine(line.stations[2]!, line.line, line.dir);
-  const chestAt = new THREE.Vector3(frame.x + frame.lx * 3.4, 0, frame.z + frame.lz * 3.4);
+  // The proper axe waits by the forge, the lit forge's first made thing (owner, 7 November).
+  const chestAt = new THREE.Vector3(layout.toWorld(layout.AXE_STAND.x), 0, layout.AXE_STAND.z);
   chestAt.y = land.H(chestAt.x, chestAt.z) + 0.7;
   const stand = mesh(new THREE.BoxGeometry(2.2, 0.7, 2.2), flat.flat('#c3ae83'));
   stand.position.copy(chestAt).y -= 0.35;
@@ -177,7 +175,7 @@ export async function createRailwayTools(
   });
   const axeAvailable = () => {
     const s = adapter.inspect();
-    return s.ready && !s.axe && s.activeStation === 2 && s.stations[2]?.stock === 40;
+    return s.ready && !s.axe && (s.line2?.forge.lit ?? -1) >= 0;
   };
   const api = {
     inspect: () => ({

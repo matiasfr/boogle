@@ -16,8 +16,10 @@
 // v14 (2026-11-06): replication R1a: the railway is Server-kind state (replicated, saved by pid with the server's
 // checkpoint), its lockstep ops and hash gone; the isolated t1v01 railway rooms removed.
 // v15 (2026-11-06): the `railBeamGraceS` tunable (an absent carrier keeps the beam, then it goes down where they stood).
+// v16 (2026-11-07): the great beam pass: the first axe fells the great tree in either order with the 40 logs, and the
+// proper axe comes from the lit forge (a save holding the axe before the forge no longer loads).
 // Pure: read by room routing and tests.
-export const WORLD_NS = 'v15';
+export const WORLD_NS = 'v16';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

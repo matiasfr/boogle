@@ -6,7 +6,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dequantize } from '@gltf-transform/functions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { sourceModule, sourceFunction } from './source.ts';
-import { LINKS, ORIGIN, lineAt, railY, CRANE, RACK, ROCKS, STUB } from '../../src/proto/place/layout.ts';
+import { LINKS, ORIGIN, lineAt, railY, CRANE, RACK, ROCKS, STUB, AXE_STAND } from '../../src/proto/place/layout.ts';
 import { openingBuildings, openingStops, forgePlan, WOOD2 } from '../../src/proto/place/opening-plans.ts';
 import { frameBesideLine, stationColliders, stationStockCollider, OUT } from '../../src/proto/place/spatial-station.ts';
 import { RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
@@ -259,9 +259,8 @@ export async function checkMachineClearance() {
   }
   if (RAILWAY_T1.x !== LINE1_STATIONS[0]!.x || RAILWAY_T1.z !== LINE1_STATIONS[0]!.z)
     throw new Error('T1 authority anchors disagree');
-  const third = frameBesideLine(line.stations[2]!, line.line, line.dir),
-    axeX = third.x + third.lx * 3.4,
-    axeZ = third.z + third.lz * 3.4;
+  const axeX = AXE_STAND.x + ORIGIN.x,
+    axeZ = AXE_STAND.z;
   if (LINE1_AXE_STAND.x !== Math.round(axeX * 100) || LINE1_AXE_STAND.z !== Math.round(axeZ * 100))
     throw new Error('Axe authority anchor disagrees with the stand');
   obstacle(

@@ -50,7 +50,8 @@ export const lineBeamGround = (x: number, y: number, z: number) => {
     return dx * dx + dz * dz <= 90000 && Math.abs(y - ay!) <= 100;
   });
 };
-export const LINE1_AXE_STAND = { x: 98070, z: -8777 } as const;
+/** The proper axe's stand by the forge (Place's AXE_STAND), offered once the forge is lit. */
+export const LINE1_AXE_STAND = { x: 90750, z: -1500 } as const;
 export const LINE1_JUMP_DEVICE = { x: 95240, y: 2638, z: -7044 } as const;
 export const LINE1_HARDWOOD_IDS = [209, 232] as const;
 export const LINE1_HARDWOODS = [
