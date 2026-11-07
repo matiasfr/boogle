@@ -1,6 +1,6 @@
 # Boogle design principles
 
-Boogle is a drop-in world for a handful of friends: you connect an archipelago by rail, and it grows because of what you connect. Toys to throw and bounce are there to mess with along the way.
+Boogle is a shared world for a handful of friends: you connect an archipelago by rail, and it grows because of what you connect. Toys to throw and bounce are there to mess with along the way.
 
 These principles decide arguments. If a feature idea conflicts with one of them, either the idea changes or we change the principle here on purpose, with a reason. [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) records where the game is heading, and its decisions win over anything older; this file says *how we decide*. The research behind the rail loop is in [docs/research/compounding-infrastructure.md](docs/research/compounding-infrastructure.md), [rail-as-play.md](docs/research/rail-as-play.md) and [vast-world-scale.md](docs/research/vast-world-scale.md).
 
@@ -12,10 +12,7 @@ The ball, the frisbee and the other physics toys are optional fun, not the heart
 
 ## Play principles
 
-### 1. Toys before chores
-Every system must be fun to mess with before it has goals. Laying track, riding and throwing should feel good with nothing to achieve. If a mechanic is only fun because of its reward, it isn't ready.
-- *Test:* would someone fiddle with this for a minute with no score and no quota?
-- *Avoid:* timers or quotas as the reason to do something. Numbers may show costs and progress, each counting something in the world.
+Principles 1 (Toys before chores) and 4 (Cooperation is automatic, not negotiated) were retired by the owner on 7 November as the vision changed. Their numbers stay unused; references in older plans and research are historical, not design constraints. Goals, rewards or deliberate coordination are not grounds to reject a mechanic under those retired principles.
 
 ### 2. Physics toys are optional fun
 Things you can throw, bounce and knock over make the world fun to be in: the beach ball, the frisbee, whatever you pick up, the mushrooms you bounce on. They're optional, and nothing depends on them. New systems can leave them alone.
@@ -25,18 +22,14 @@ Things you can throw, bounce and knock over make the world fun to be in: the bea
 Toys, mini-games and any farming are invitations, never gates.
 - *Avoid:* locking progress, movement or areas behind a side activity.
 
-### 4. Cooperation is automatic, not negotiated
-Helping should happen just by playing near each other: anyone's work on the line helps everyone. Nobody should need to coordinate in chat to contribute.
-- *Prefer:* bonuses for *different* people helping over bonuses for one person grinding.
-
 ### 6. Communal world, personal things
 The world, its network, its progression and its wallet belong to everyone: what connected places sell goes into one wallet anyone may spend, and every upgrade and ability applies to everyone. Personal finds (secret crates, some cosmetics) stay yours.
 
 ### 7. Telegraph everything
-Make the next connection and its payoff visible in the world. Announce consequential changes before they happen, and choose the warning length for the event rather than imposing a universal countdown. A player who just dropped in should immediately understand the shared goal.
+Make the next connection and its payoff visible in the world. Announce consequential changes before they happen, and choose the warning length for the event rather than imposing a universal countdown. Players should understand the shared goal through playing and reading the world.
 
-### 8. Designed for drop-in, drop-out
-Tune for 1–3 people, tolerate 4, design for no more; they arrive and leave at random. Nothing should need a full lobby, a start button or a minimum player count. Being alone should still be pleasant; being joined should make it better.
+### 8. Enjoyable alone and together
+Build for satisfying solo play and shared progression with friends. Tune for 1–3 people and tolerate 4. Drop-in, drop-out play remains supported, but is a secondary consideration: do not shape every mechanic around random arrivals or require a newcomer to understand everything immediately. Joining, leaving, reconnecting and saving must remain reliable. The owner revised this priority on 7 November because the game's vision has evolved; late-arrival onboarding is no longer a milestone requirement.
 
 ### 9. Leave something for the next visitor
 Progress persists between sessions. An empty world is paused; returning players find producers' yards topped up for the time away, with a soft cap.
@@ -102,7 +95,7 @@ Build shapes, materials and effects in code first: an agent can make and change 
 
 ## How we work
 
-- **Playtest constantly, solo first.** Every prototype must work and be fun for one person on their own; multiplayer builds on top of that. We iterate in small steps and play each change on the live site. Every change reaches `main` through a PR that merges itself when CI is green (`npm run ship`), so iteration stays fast and nothing red goes live. Each prototype in [docs/plans/find-the-fun.md](docs/plans/find-the-fun.md) has a question the playtests should answer; note what happened in `docs/playtests.md`.
+- **Playtest constantly, solo and co-op alongside each other.** Evaluate satisfying solo play and meaningful cooperation together, rather than requiring a solo verdict before considering co-op quality. Judge the project from its goal through the work, coordination, payoff and changed capabilities; each action need not sustain interest without that context. Solo support remains required, but its approach need not be identical to the group's. Specific mechanic changes still need their own design scope. This replaces "solo first" by owner agreement on 7 November. Iterate in small steps and play each change on the live site; changes reach `main` through checked PRs (`npm run ship`). Record playtest questions in the owning plan and findings in `docs/playtests.md`.
 - **Light tests, real playtests.** Automated tests guard determinism, sync and conservation, and stay fast enough to run before every push; fun and feel are judged by playing.
 - **Every feature says which principle it serves**, and calls out any principle it bends.
 - **Changing a principle is a commit to this file**, with the reason.

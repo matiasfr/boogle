@@ -7,7 +7,7 @@
 
 ## Rules for every prototype
 
-- **Solo first.** One person can run every prototype and answer its question alone; multiplayer comes after.
+- **Solo and co-op alongside each other** (owner, 7 November). Evaluate solo viability and cooperative quality together. A cooperative question needs players cooperating; a solo run alone cannot answer it. Judge actions in the context of the project and its payoff. Solo support remains required, with a separately scoped approach where needed.
 - **Mechanics only.** No mayor, era props, hats, gags, story, authored art, multi-island or chunk work until the
   playtests say the loop is fun.
 - **Behind a flag.** `?proto=<name>` turns it on; without the flag the game is unchanged. A prototype that changes
@@ -34,7 +34,7 @@
   differ in one thing; "can't tell" means that setting doesn't matter. The prototype drops you straight into its verb
   (no walk to reach it). A card goes `live` only after its builder has played it at iPad size. No feel or art pass until
   its question gets a "yes".
-- **No twice → change it or cut it.** Never add rewards to prop up a mechanic that isn't fun.
+- **No twice → change it or cut it.** The former blanket ban on reward-dependent mechanics is retired with DESIGN principle 1 (owner, 7 November); evaluate the proposed experience in its progression context.
 
 ## One path: the playtest playlist (`/?play`)
 

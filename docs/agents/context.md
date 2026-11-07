@@ -12,13 +12,11 @@ For those tasks read [DESIGN.md](../../DESIGN.md) (principles; every feature nam
 
 Commit bodies name the principle served. Names are listed here so a tuning fix, review or tooling change need not read the design corpus. Read a principle's section when deciding how it applies; design decisions, new mechanics and prototypes require DESIGN.md.
 
-- 1. Toys before chores
 - 2. Physics toys are optional fun
 - 3. Side activities are never required
-- 4. Cooperation is automatic, not negotiated
 - 6. Communal world, personal things
 - 7. Telegraph everything
-- 8. Designed for drop-in, drop-out
+- 8. Enjoyable alone and together
 - 9. Leave something for the next visitor
 - 10. Slapstick over precision
 - 11. Show, don't tell

@@ -45,6 +45,10 @@ it) disappear and a third (all 40 logs first) stops being a rule; the rest each 
 
 **Standing at Station 3 for the first time, could you tell what was missing and where to get it, without asking?**
 
+**Owner amendment, 7 November:** also judge whether moving the beam together is a satisfying shared job. Evaluate solo
+viability and cooperative quality alongside each other; deliberate coordination is allowed. The approved chain and
+rope-drag design remain unchanged. Principles 1 and 4 are retired, so older citations below do not constrain this review.
+
 ## What happens today
 
 Walked as a first-time player from the production code (`src/sim/railway-line.ts`, `src/entities/railway/`), with look

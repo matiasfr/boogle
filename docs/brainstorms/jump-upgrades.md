@@ -7,13 +7,14 @@
 Earn the extra jump together and let it change a place you remember. A shared expedition find (ankle rings) grants the
 room an extra air jump. The first thing it does is put a player on a balcony they used to walk under. Up there, they pull a
 visible lever that lowers a broad ramp for everyone. The expert keeps a playful upper loop; the learner gets a walkable way
-up; both meet at the same worksite. Serves **Cooperation is automatic, not negotiated** and **Designed for drop-in,
-drop-out** in [DESIGN](../../DESIGN.md): the capability is room-wide, so nobody is left behind by attendance, and the ramp
-means nobody is left behind by skill.
+up; both meet at the same worksite. Serves **Enjoyable alone and together** and **Show, don't tell** in
+[DESIGN](../../DESIGN.md). The owner-approved 7 November review judges the upgrade by access to remembered places and
+better subsequent journeys. The room-wide grant and ramp remain; drop-in onboarding and reward-free extra laps are
+not acceptance gates.
 
 ## Gut question
 
-**"Did you want another lap after the shortcut was already open?"**
+**"Did earning the jump open somewhere you wanted to go and make later journeys better?"**
 
 Variants that differ in one thing:
 
@@ -69,11 +70,11 @@ Capture with `look` (`?proto=place` with a save at the expedition find, then at 
 - The find moment: the room-wide grant visible to a second player who arrives later.
 - One air jump from below the balcony, with consecutive frames showing the charge mark spend and refill on landing.
 - Before and after of the lowered ramp from the ground, with both routes reaching the same worksite.
-- Co-op: a confident player and a late learner reunite at the ramp without instructions.
+- Co-op: players use the new access and shortcut in their subsequent shared project; also check the solo route. Deliberate coordination is allowed.
 - A paper route contract listing what stays required (construction, machinery) and which footpaths may shortcut, checked
   against the quarry lever and first-hook access.
 
-Whether another lap is fun stays the playtest's question.
+The access and journey payoff stays the playtest's question. Voluntary extra laps are useful supporting evidence, not a requirement.
 
 ## Open questions
 

@@ -2,6 +2,8 @@
 
 # The ring and the economy
 
+**Owner amendment, 7 November:** evaluate the whole project and solo/co-op alongside each other. Effective coordination should pay off; broadly similar six-hour runs are targets, not reasons to erase that benefit. Judge producer bottlenecks by the worthwhile choices they create. The 5.8-hour endgame below remains future direction until the first complete automation cycle earns more. Model figures below have not been rerun under this review; [Process](../proposals/boogle-2.md#process) owns the accepted direction.
+
 Design only; no game code. This builds on the owner's 6 November direction and the answers to this brief's first five
 questions, recorded in [boogle-2.md](../proposals/boogle-2.md#trains-and-the-world). The earlier recorded answers still
 stand: Split-rock Works next, then Ring Island; the smallest Roundhouse first. The length is now roughly six hours to
@@ -292,7 +294,7 @@ Every level is a physical addition beside the works, and its bill reaches for th
 
 ## Smallest first build
 
-Unchanged: **Split-rock Works levels 1 and 2 with a visible yard,** after the line 2 playtest and the Split-rock
+**Split-rock Works levels 1 and 2 with a visible yard and explicit proof tuning,** after the line 2 playtest and the Split-rock
 greybox:
 
 1. Carry the first footings home by hand.
@@ -300,8 +302,10 @@ greybox:
 3. Build level 2 beside it.
 4. Leave and rejoin to see the away credit fill the yard.
 
-Compress the levels so the crossover happens within one sitting; all rates are tunables. Then stop for the owner's
-verdict. The wallet and the end-game tier come after the gut question is answered.
+Explicitly tune the second test level to pass the measured hand throughput for the tested party within one sitting;
+the unmodified 40/120-per-hour levels do not pass the model's 180-per-hour solo hands. Record the test rates separately
+from campaign defaults. Compare solo and cooperative choices, division of work and what the upgrade lets players stop
+doing. Then stop for the owner's verdict. The wallet and end-game tier come after the gut question is answered.
 
 ## NPC lines for the owner
 
