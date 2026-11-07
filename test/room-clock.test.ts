@@ -55,6 +55,20 @@ test('the step estimate follows the freshest stamp and never runs backwards', ()
   assert.equal(est.now(2000), 10);
 });
 
+test('the step estimate tracks a server slower than the local clock instead of running ahead', () => {
+  const est = createStepEstimate();
+  // The server makes half as many steps as the local clock expects (a stalled or throttled server, a warped page).
+  const server = (at: number) => 600 + Math.floor((at * 30) / 1000);
+  let worst = 0;
+  for (let at = 0; at <= 5000; at += 50) {
+    if (at % 200 === 0) est.hear(server(at), at); // the room's clock stamp every 200 ms
+    const ahead = est.now(at) - server(at);
+    if (at > 1000) worst = Math.max(worst, ahead);
+    assert.ok(ahead >= -1, `never behind what was heard (${at} ms)`);
+  }
+  assert.ok(worst <= 10, `about one window of drift at most, then it follows the server: ${worst} steps`);
+});
+
 test('a local world ticks every sixth step and its room clock is tick * 6 + phase', () => {
   const s = createSync();
   const ticks: number[] = [];

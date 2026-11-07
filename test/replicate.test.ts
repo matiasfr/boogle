@@ -10,11 +10,13 @@ import {
   cellsNear,
   GLOBAL_CELL,
   MAX_PACKET_CHARS,
+  HASH_STEPS,
+  hashComponents,
   type EntityId,
   type Fields,
   type ServerPacket,
 } from '../src/world/replicate.ts';
-import { createReplicator } from '../src/world/replicate-server.ts';
+import { createReplicator, MAX_REJECTS } from '../src/world/replicate-server.ts';
 import { createMirror, createPredictor, PREDICTION_WINDOW } from '../src/world/replicate-client.ts';
 
 const treeSchema = defineReplicated('tree', { x: 'i32', z: 'i32', left: 'u8', work: 'u8', fell: 'bool' });
@@ -372,4 +374,64 @@ test('the prediction window caps unconfirmed actions; a new session retires the 
   p.session(4, 1);
   assert.deepEqual(p.state(), []);
   assert.deepEqual(p.act(1), [4, 1]);
+});
+
+test('a hash every HASH_STEPS catches a diverged mirror; a resync refills it whole, keeping the ack', () => {
+  const w = toyWorld(40);
+  w.rep.touchAll('tree');
+  w.rep.touchAll('room');
+  w.rep.commit(1);
+  w.rep.addClient('a');
+  const m = createMirror([treeSchema, roomSchema]);
+  const diverged: string[] = [];
+  m.onDiverged((why) => diverged.push(why));
+  const pump = (step: number) => w.rep.flush(step, (_c, p) => m.apply(JSON.parse(JSON.stringify(p))));
+  pump(1);
+  assert.ok(m.whole());
+  w.rep.ack('a', 1, 5);
+  w.rep.emit({ op: 'x' });
+  pump(2);
+  // Nothing changed for a while: the client still hears a hash, and agrees.
+  pump(1 + HASH_STEPS + 1);
+  assert.deepEqual(diverged, []);
+  // A bug-shaped divergence: the mirror's copy drifts without a packet.
+  (m.get('tree', 3) as Fields).left = 99;
+  pump(1 + 2 * HASH_STEPS + 2);
+  assert.deepEqual(diverged, ['hash']);
+  // A refused packet is a divergence too (the server already counts it as seen).
+  assert.equal(m.apply({ t: 's', tk: 999999, c: [['tree', 3, { nope: 1 }]] }), false);
+  assert.deepEqual(diverged, ['hash', 'refused']);
+  // The owner resets and asks again: whole state, the ack kept, no replayed events.
+  m.reset();
+  w.rep.resync('a');
+  const sent: ServerPacket[] = [];
+  w.rep.flush(1 + 2 * HASH_STEPS + 3, (_c, p) => (sent.push(p), m.apply(p)));
+  assert.ok(m.whole());
+  assert.deepEqual(seen(m), expected(w, 'all'));
+  assert.deepEqual(sent.at(-1)!.ack, [1, 5]);
+  assert.ok(sent.every((p) => !p.ev));
+  const rows = [...w.trees].map(([id, t]) => ['tree', id, { ...t }] as [string, EntityId, Fields]);
+  rows.push(['room', 0, { ...w.room }]);
+  const schemas = new Map([
+    ['tree', treeSchema],
+    ['room', roomSchema],
+  ]);
+  assert.equal(m.hash(), hashComponents(rows, schemas));
+});
+
+test('refusals queued for a backed-up client are capped; the ack still settles the dropped ones', () => {
+  const w = toyWorld(1);
+  w.rep.addClient('slow');
+  for (let r = 1; r <= 5000; r++) {
+    w.rep.ack('slow', 1, r);
+    w.rep.reject('slow', 1, r, 'refused');
+  }
+  const sent: ServerPacket[] = [];
+  w.rep.flush(1, (_c, p) => sent.push(p));
+  const rej = sent.flatMap((p) => p.rej ?? []);
+  assert.equal(rej.length, MAX_REJECTS);
+  assert.deepEqual(rej[0], [1, 5000 - MAX_REJECTS + 1, 'refused']);
+  assert.deepEqual(sent.at(-1)!.ack, [1, 5000]);
+  const m = createMirror([treeSchema, roomSchema]);
+  for (const p of sent) assert.ok(m.apply(JSON.parse(JSON.stringify(p))), 'well under the mirror list limit');
 });

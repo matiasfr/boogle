@@ -7,6 +7,7 @@
 //   mirror.get(kind, id) / entries(kind) / size()
 //   mirror.onChange(kind, fn)         fn(id, fields | null, changed | null) after each applied change (null: despawned)
 //   mirror.onPacket(fn)               fn(packet) after a packet applied (acks, refusals, id remaps and events ride on it)
+//   mirror.onDiverged(fn)             a refused packet or a hash (h) mismatch: reset and ask for the whole state
 //   mirror.whole()                    the late join's last chunk (w) has arrived since the last reset
 //   mirror.stamp(step, atMs)          a server clock stamp from outside the packets (the room's w:c clock)
 //   mirror.step(atMs)                 estimated server step (src/world/room-clock.ts) from the packets' tk stamps
@@ -23,6 +24,7 @@
 //   p.onRejected(fn)                  fn(id, reason, action): the view eases the correction (Local presentation)
 import { createStepEstimate } from './room-clock.ts';
 import {
+  hashComponents,
   validEvent,
   validFields,
   validId,
@@ -49,15 +51,21 @@ export function createMirror(schemas: readonly Schema[]) {
   const store = new Map<string, Map<EntityId, Fields>>(schemas.map((s) => [s.kind, new Map()]));
   const changeFns = new Map<string, ((id: EntityId, fields: Fields | null, changed: Fields | null) => void)[]>();
   const packetFns: ((p: ServerPacket) => void)[] = [];
+  const divergedFns: ((why: 'refused' | 'hash') => void)[] = [];
   const estimate = createStepEstimate();
   let tk = -1;
   let whole = false;
   let heard = -1; // the newest server step heard (packets and clock stamps)
-  const stats = { applied: 0, refused: 0, chars: 0 };
+  const stats = { applied: 0, refused: 0, chars: 0, diverged: 0 };
+  function* rows(): Generator<[string, EntityId, Fields]> {
+    for (const [kind, list] of store) for (const [id, f] of list) yield [kind, id, f];
+  }
 
   // Whole-packet validation: nothing is mutated unless every entry is well-formed for the current mirror.
   function valid(p: unknown): p is ServerPacket {
     if (!isObj(p) || p.t !== 's' || !isStep(p.tk) || p.tk < tk || (p.w !== undefined && p.w !== 1)) return false;
+    if (p.h !== undefined && !(Number.isInteger(p.h) && (p.h as number) >= 0 && (p.h as number) <= 0xffffffff))
+      return false;
     if (
       p.ack !== undefined &&
       !(Array.isArray(p.ack) && p.ack.length === 2 && isRequest(p.ack[0]) && isRequest(p.ack[1]))
@@ -119,6 +127,8 @@ export function createMirror(schemas: readonly Schema[]) {
     apply(packet: unknown, at = 0) {
       if (!valid(packet)) {
         stats.refused++;
+        // The server already counts what it sent as seen: a refused packet leaves this mirror behind for good.
+        if (whole) for (const fn of divergedFns) fn('refused');
         return false;
       }
       tk = packet.tk;
@@ -135,6 +145,10 @@ export function createMirror(schemas: readonly Schema[]) {
       if (packet.w) whole = true;
       stats.applied++;
       for (const fn of packetFns) fn(packet);
+      if (whole && packet.h !== undefined && hashComponents(rows(), kinds) !== packet.h) {
+        stats.diverged++;
+        for (const fn of divergedFns) fn('hash');
+      }
       return true;
     },
     get: (kind: string, id: EntityId) => store.get(kind)?.get(id) ?? null,
@@ -153,6 +167,13 @@ export function createMirror(schemas: readonly Schema[]) {
     onPacket(fn: (p: ServerPacket) => void) {
       packetFns.push(fn);
     },
+    /** fn(why) when this mirror is known to differ from the server: a packet it had to refuse, or a hash mismatch.
+     * The owner resets it and asks for the whole state (r:resync). Not called before the mirror is whole. */
+    onDiverged(fn: (why: 'refused' | 'hash') => void) {
+      divergedFns.push(fn);
+    },
+    /** A hash of every component held, as the server's packets' h is computed. */
+    hash: () => hashComponents(rows(), kinds),
     /** Estimated server step: local time since the freshest stamp, but never more than LEAD_STEPS past the newest
      * step heard (a throttled or warped page clock cannot run the room's timed things ahead of the server). */
     step: (at: number) => (heard < 0 ? -1 : Math.min(estimate.now(at), heard + LEAD_STEPS)),

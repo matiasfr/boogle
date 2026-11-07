@@ -48,7 +48,8 @@ test('a hosted room sends replicated changes at the end of a step, whole to a la
     });
     const sentAt = Date.now();
     room.replication.touch('lamp', 1);
-    const first = await a.next(isS);
+    // A joiner's first send is its (here empty) whole state, marked w; the lamp follows on its own.
+    const first = await a.next((m) => isS(m) && !!(m.d as { c?: unknown }).c);
     assert.deepEqual(first.d.c, [['lamp', 1, { on: false, hue: 3 }]]);
     assert.ok(Number.isSafeInteger(first.d.tk) && first.d.tk > 0, 'stamped with the room step');
     assert.ok(Date.now() - sentAt < 200, 'out within a few steps, not a 20 Hz tick later');
@@ -57,6 +58,7 @@ test('a hosted room sends replicated changes at the end of a step, whole to a la
     try {
       const whole = await b.next(isS);
       assert.deepEqual(whole.d.c, [['lamp', 1, { on: false, hue: 3 }]], 'late join: everything whole');
+      assert.equal(whole.d.w, 1, 'and marked as the end of the whole state');
       lamps.get(1)!.on = true;
       const fromA = a.msgs.length,
         fromB = b.msgs.length;
