@@ -215,3 +215,31 @@ test('spawns are checked: unknown fields, missing required components and taken 
   assert.equal(w.spawn([Tree, { slot: 4 }]), 40, "a replica's id");
   assert.equal(w.spawn([Tree, { slot: 5 }]), 41, 'and stamps continue past it');
 });
+
+test('a clone shares tables and rows copy-on-write: neither side ever sees the other write', () => {
+  const a = world();
+  grove(a, 4);
+  for (const c of ALL) a.changes(c);
+  const b = a.clone();
+  b.mut(Tree, 1)!.left = 1; // b's tree table splits; the rows stay shared until written
+  a.mut(Tree, 2)!.left = 2; // a writes another shared row: its own copy
+  a.mut(Tree, 1)!.left = 7;
+  assert.deepEqual(
+    [a.get(Tree, 1)!.left, a.get(Tree, 2)!.left, b.get(Tree, 1)!.left, b.get(Tree, 2)!.left],
+    [7, 2, 1, 5],
+  );
+  const c = b.clone(); // a clone of a clone
+  c.each([Tree], (_id, t) => void (t.left = 0), [Tree]);
+  assert.deepEqual(
+    b.ids(Tree).map((id) => b.get(Tree, id)!.left),
+    [1, 5, 5, 5],
+  );
+  assert.deepEqual(
+    a.ids(Tree).map((id) => a.get(Tree, id)!.left),
+    [7, 2, 5, 5],
+  );
+  b.run(fell, 2);
+  assert.equal(a.count(Pile), 0, 'structure is per world too');
+  assert.deepEqual(b.changes(Tree), [1, 3], 'each world drains only its own marks');
+  assert.deepEqual(a.changes(Tree), [1, 2]);
+});

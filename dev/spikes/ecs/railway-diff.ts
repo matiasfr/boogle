@@ -50,6 +50,8 @@ function firstDiff(a: string, b: string) {
 }
 
 let checks = 0;
+// Time spent in each side's rules (the audit is on for every fourth seed, so E's figure includes some audit cost).
+const cost = { legacyAct: 0, eAct: 0, acts: 0, legacyTick: 0, eTick: 0, ticks: 0 };
 /** What moves the line on for pid: wake, cut, fill the active frame, the axe and beam, the forge, the Q frames. */
 function useful(s: Railway, pid: string): Partial<RailAction> {
   const a = s.accounts.find((row) => row.pid === pid)!;
@@ -121,7 +123,7 @@ function run(seed: number, steps: number) {
   const r = mulberry32(seed);
   const pick = <T>(xs: readonly T[]) => xs[Math.floor(r() * xs.length)]!;
   const o = old.createRailway!(true, true) as Railway;
-  const w = createRailwayWorld({ audit: seed % 4 === 0 });
+  const w = createRailwayWorld({ audit: !process.env.NO_AUDIT && seed % 4 === 0 });
   let tick = 0;
   const req = new Map<string, number>();
   const ep = new Map<string, number>();
@@ -143,8 +145,13 @@ function run(seed: number, steps: number) {
     const roll = r();
     if (roll < 0.12) {
       tick += pick([1, 1, 2, 5, 30, 200]);
+      let t0 = performance.now();
       old.railTick!(o, tick);
+      cost.legacyTick += performance.now() - t0;
+      t0 = performance.now();
       sys.railTick(w, tick);
+      cost.eTick += performance.now() - t0;
+      cost.ticks++;
       same(`tick ${tick}`);
       continue;
     }
@@ -255,9 +262,14 @@ function run(seed: number, steps: number) {
     const e = { ...base, epoch: ep.get(pid)!, request } as RailAction;
     const eo = e.op === 'rail.take' && pk >= 0 ? { ...e, id: oi[pk] } : e;
     const en = e.op === 'rail.take' && pk >= 0 ? { ...e, id: ni[pk] } : e;
+    let t0 = performance.now();
     const ro = old.railApply!(o, pid, eo, tick);
+    cost.legacyAct += performance.now() - t0;
+    t0 = performance.now();
     const rn = sys.railApply(w, pid, en, tick);
     sys.railSettle(w);
+    cost.eAct += performance.now() - t0;
+    cost.acts++;
     same(`${e.op} by ${pid} at ${tick}`, [ro, rn]);
   }
   railwayCheck(w);
@@ -283,3 +295,8 @@ for (let seed = 1; seed <= seeds; seed++) {
   reached.set(at, (reached.get(at) ?? 0) + 1);
 }
 console.log(`${seeds} seeds, ${checks} comparisons, all equal. Reached:`, Object.fromEntries(reached));
+const us = (ms: number, n: number) => `${((ms / n) * 1000).toFixed(1)} µs`;
+console.log(
+  `per action: legacy ${us(cost.legacyAct, cost.acts)}, E ${us(cost.eAct, cost.acts)};`,
+  `per rule tick: legacy ${us(cost.legacyTick, cost.ticks)}, E ${us(cost.eTick, cost.ticks)}`,
+);

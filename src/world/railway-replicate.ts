@@ -21,7 +21,7 @@ import { LINE2_STATIONS } from '../sim/railway-line2-layout.ts';
 import { lineSchedule } from '../sim/railway-line-schedule.ts';
 import type { RailJob } from '../sim/railway-line.ts';
 import type { RailQJob } from '../sim/railway-line2.ts';
-import { createRailwayWorld, Rail, RAIL_COMPONENTS, RAIL_REPLICATED } from '../sim/railway-world.ts';
+import { createRailwayWorld, Rail, RAIL_COMPONENTS, RAIL_REPLICATED, refreshRailway } from '../sim/railway-world.ts';
 import { railwayOf } from './railway-predict.ts';
 
 export const RAIL_SCHEMAS = RAIL_REPLICATED;
@@ -78,10 +78,16 @@ export function createRailwayMirror() {
         if (clock) Object.assign(clock, { ahead: f.ahead as number, end: f.end as number });
       }
     });
+  // The read model follows the world: filled whole the first time it is whole, then patched from what each packet
+  // changed. Until then the marks are dropped (nothing reads them).
+  let filled = false;
   mirror.onPacket(() => {
-    for (const c of RAIL_SCHEMAS) world.changes(c); // nothing here reads them: keep the marks from piling up
     synced = mirror.whole();
-    if (synced && world.count(Rail) === 1) railwayOf(world, s);
+    if (synced && world.count(Rail) === 1) {
+      if (filled) refreshRailway(s, world);
+      else railwayOf(world, s);
+      filled = true;
+    } else if (!filled) for (const c of RAIL_SCHEMAS) world.changes(c);
   });
 
   // elapsed, used and allocation of one job at tick, as the rule tick would leave them.
@@ -170,6 +176,7 @@ export function createRailwayMirror() {
     reset() {
       mirror.reset();
       world = createWorld(RAIL_COMPONENTS);
+      filled = false;
       s.piles = [];
       s.accounts = [];
       synced = false;

@@ -299,7 +299,94 @@ export function railwayView(w: World): Railway {
 }
 /** Rebuild into an existing object (whose identity a reader holds). */
 export function fillRailway(target: Railway, w: World) {
+  for (const c of RAIL_REPLICATED) w.changes(c); // what it shows from here on is what refreshRailway patches
   return Object.assign(target, railwayView(w));
+}
+/** Patch a read model last filled from this world (or the world it was cloned from) with what changed since, from
+ * the replicated components' change marks: a press or a packet rebuilds a few rows, not the railway. The request
+ * history and this side's bookkeeping (outcomes, resume and supply markers) are not refreshed: no client reads them. */
+export function refreshRailway(s: Railway, w: World) {
+  const l = s.line!,
+    l2 = s.line2!;
+  for (const id of w.changes(Tree)) {
+    const t = w.get(Tree, id);
+    if (!t) continue;
+    s.sources[t.slot] = t.left;
+    s.work[t.slot] = t.work;
+    s.falls!.yaw[t.slot] = t.yaw;
+    s.falls!.collapsed[t.slot] = t.fell;
+    s.supply!.ages[t.slot] = t.age;
+    l.upgrades[t.slot] = t.big;
+  }
+  for (const id of w.changes(Hardwood)) {
+    const h = w.get(Hardwood, id);
+    if (h) [l.hardwood[h.slot], l.hardwoodWork[h.slot]] = [h.left, h.work];
+  }
+  for (const id of w.changes(Rock)) {
+    const r = w.get(Rock, id);
+    if (r) [l.rocks[r.slot], l.rockWork[r.slot], l.rockAge[r.slot]] = [r.left, r.work, r.age];
+  }
+  if (w.changes(Pile).length) {
+    s.piles = [];
+    w.each([Pile], (id, p) => s.piles.push({ id, x: p.x, z: p.z, n: p.n, kind: p.kind, y: p.y, age: p.age }));
+  }
+  s.nextPile = w.nextId();
+  if (w.changes(Account).length) {
+    s.accounts = [];
+    w.each([Account], (_id, a) => s.accounts.push(copyOf(Account, a) as Railway['accounts'][number]));
+  }
+  for (const id of w.changes(Job)) {
+    const slot = w.get(Job, id)?.slot;
+    if (slot === 0) Object.assign(s, jobOf(w, id));
+    else if (slot !== undefined) l.jobs[slot - 1] = jobOf(w, id);
+  }
+  for (const id of w.changes(QJob)) {
+    const slot = w.get(QJob, id)?.slot;
+    if (slot !== undefined) l2.jobs[slot] = qjobOf(w, id);
+  }
+  if (w.changes(Beam).length) l.beam = copyOf(Beam, w.get(Beam, w.single(Beam))!) as RailBeam;
+  if (w.changes(Forge).length) {
+    const id = w.single(Forge),
+      f = w.get(Forge, id)!;
+    l2.forge = { used: f.used, lit: f.lit, rack: f.rack, poured: f.poured, lastPour: w.get(ForgeClock, id)!.lastPour };
+  }
+  if (w.changes(Rail).length) {
+    const r = w.get(Rail, w.single(Rail))!;
+    s.awake = r.awake;
+    Object.assign(l, { axe: r.axe, jump: r.jump, stoneRack: r.stoneRack, stoneProduced: r.stoneProduced });
+    Object.assign(s.supply!, { rack: r.rack, produced: r.produced });
+    Object.assign(l2, { depot: r.depot, depotProduced: r.depotProduced, lever: r.lever, hook: r.hook });
+    l2.depotOut = DEPOT_OUT.map((k) => r[k]);
+  }
+  return s;
+}
+/** A copy of a read model (arrays and rows copied, nothing shared): the predictor's scratch read model. */
+export function copyRailway(s: Railway): Railway {
+  const l = s.line!,
+    l2 = s.line2!;
+  const job = <J extends { timing?: unknown }>(j: J): J => ({ ...j, timing: { ...(j.timing as object) } });
+  return {
+    ...job(s),
+    sources: s.sources.slice(),
+    work: s.work.slice(),
+    accounts: s.accounts.map((a) => ({ ...a })),
+    piles: s.piles.map((p) => ({ ...p })),
+    outcomes: s.outcomes.map((o) => ({ ...o })),
+    line: {
+      ...l,
+      jobs: [job(l.jobs[0]), job(l.jobs[1])],
+      rocks: l.rocks.slice(),
+      rockWork: l.rockWork.slice(),
+      rockAge: l.rockAge.slice(),
+      upgrades: l.upgrades.slice(),
+      hardwood: l.hardwood.slice(),
+      hardwoodWork: l.hardwoodWork.slice(),
+      beam: { ...l.beam },
+    },
+    line2: { ...l2, forge: { ...l2.forge }, jobs: l2.jobs.map(job), depotOut: l2.depotOut.slice() },
+    falls: { yaw: s.falls!.yaw.slice(), collapsed: s.falls!.collapsed.slice() },
+    supply: { ...s.supply!, ages: s.supply!.ages.slice() },
+  };
 }
 
 // ---------------------------------------------------------------- the load check

@@ -31,8 +31,10 @@ import {
   QJob,
   QJobRun,
   Rail,
+  copyRailway,
   fillRailway,
   railwayView,
+  refreshRailway,
 } from '../sim/railway-world.ts';
 
 export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
@@ -123,9 +125,10 @@ export function railwayOf(w: World, into?: Railway): Railway {
 const whole = (w: World) => w.count(Rail) === 1;
 /** A copy of a read model, linked to a copy of its world (the predictor's scratch state). */
 export function cloneRailway(s: Railway): Railway {
-  const copy = structuredClone(s);
   const w = worlds.get(s);
-  if (w) worlds.set(copy, w.clone());
+  if (!w || !whole(w)) return structuredClone(s);
+  const copy = copyRailway(s);
+  worlds.set(copy, w.clone()); // copy-on-write: only the tables a prediction writes are copied
   return copy;
 }
 
@@ -169,7 +172,7 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
     w.mut(Forge, fid)!.lit = lit[0];
     w.mut(ForgeClock, fid)!.lastPour = lit[1];
   }
-  fillRailway(s, w);
+  refreshRailway(s, w);
   const n = result.status === 'accepted' ? result.accepted : 0;
   return { n, effect: n > 0 ? railEffect(w, pid, e, before) : null };
 }

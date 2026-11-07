@@ -31,6 +31,12 @@ type Table = {
   epoch: number;
   /** Rows removed but still in ids/list (as DEAD): compacted in one pass before the next walk. */
   dead: number;
+  /** Worlds sharing this table: a clone shares every unmarked table until either side writes it (copy-on-write). */
+  refs: number;
+  /** After a copy-on-write split, the two tables still share their rows: each copies a row before its first write
+   * to it (`mine` lists the rows this table has made its own). */
+  borrowed: boolean;
+  mine: Set<number>;
 };
 const DEAD: AnyRow = Object.freeze({});
 // A row's last marked epoch, under a symbol: never a field, never in JSON, hash or snapshot (they walk the schema).
@@ -152,6 +158,9 @@ const empty = (c: AnyComponent): Table => ({
   marked: [],
   epoch: 0,
   dead: 0,
+  refs: 1,
+  borrowed: false,
+  mine: new Set(),
 });
 // Removal leaves a hole; the next walk closes every hole in one pass (one O(n) pass per walk after removals, not a
 // splice of two arrays per removal).
@@ -182,20 +191,42 @@ function fresh(components: readonly AnyComponent[]): State {
   for (const c of components) tables[c.cid] = empty(c);
   return { tables, next: 1 };
 }
+function copyTable(t: Table): Table {
+  pack(t);
+  const n = empty(t.c);
+  n.ids = [...t.ids];
+  for (let i = 0; i < t.ids.length; i++) {
+    const r = { ...t.list[i]! };
+    n.list.push(r);
+    n.rows.set(t.ids[i]!, r);
+  }
+  if (t.byKey) n.byKey = new Map(t.byKey);
+  n.epoch = t.epoch + 1; // copied stamps are all older: the copy marks afresh
+  return n;
+}
+/** A table's own arrays and maps over the same rows; both sides then copy a row before writing it. */
+function split(t: Table): Table {
+  pack(t);
+  const n = empty(t.c);
+  n.ids = t.ids.slice();
+  n.list = t.list.slice();
+  n.rows = new Map(t.rows);
+  if (t.byKey) n.byKey = new Map(t.byKey);
+  n.epoch = t.epoch + 1;
+  n.borrowed = t.borrowed = true;
+  t.mine = new Set(); // rows it had made its own are shared again
+  return n;
+}
+// A clone shares each table that has nothing marked (its marks would belong to both) and copies the rest.
 function copy(st: State, components: readonly AnyComponent[]): State {
-  const out = fresh(components);
-  out.next = st.next;
+  const out: State = { tables: [], next: st.next };
   for (const c of components) {
-    const t = pack(st.tables[c.cid]!),
-      n = out.tables[c.cid]!;
-    n.ids = [...t.ids];
-    for (let i = 0; i < t.ids.length; i++) {
-      const r = { ...t.list[i]! };
-      n.list.push(r);
-      n.rows.set(t.ids[i]!, r);
+    const t = st.tables[c.cid]!;
+    if (t.marked.length || t.dead) out.tables[c.cid] = copyTable(t);
+    else {
+      t.refs++;
+      out.tables[c.cid] = t;
     }
-    if (t.byKey) n.byKey = new Map(t.byKey);
-    n.epoch = t.epoch + 1; // copied stamps are all older: the copy marks afresh
   }
   return out;
 }
@@ -220,7 +251,27 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
     if (!t || t.c !== c) throw new Error(`world: ${c.kind} is not a component of this world`);
     if (sys && (sys.access[c.cid] ?? 0) < need)
       throw new Error(`system ${sys.name} ${need > 1 ? 'writes' : 'reads'} ${c.kind} without declaring it`);
+    return need > 1 ? own(c) : t;
+  }
+  /** This world's own copy of c's table, made on its first write while shared with a clone or a source. */
+  function own(c: AnyComponent) {
+    let t = st.tables[c.cid]!;
+    if (t.refs > 1) {
+      t.refs--;
+      t = st.tables[c.cid] = split(t);
+    }
     return t;
+  }
+  /** The row this table may write (its own copy, if the row is still shared after a split), marked changed. */
+  function write(t: Table, id: number, row: AnyRow) {
+    if (t.borrowed && !t.mine.has(id)) {
+      row = { ...row };
+      t.rows.set(id, row);
+      t.list[at(t.ids, id)] = row;
+      t.mine.add(id);
+    }
+    mark(t, id, row);
+    return row;
   }
   function mark(t: Table, id: number, row?: AnyRow) {
     marked?.add(`${t.c.kind}:${id}`);
@@ -253,6 +304,7 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
       t.list.splice(k, 0, row);
     }
     t.rows.set(id, row);
+    if (t.borrowed) t.mine.add(id);
     if (t.c.track) stamp(row, t.epoch);
     mark(t, id);
   }
@@ -273,14 +325,15 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
   }
   function apply(op: Op) {
     if (op.t === 'spawn') {
-      for (const [c, row] of op.pairs) insert(st.tables[c.cid]!, op.id, row);
+      for (const [c, row] of op.pairs) insert(own(c), op.id, row);
       complete(op.id);
-    } else if (op.t === 'despawn') for (const c of components) drop(st.tables[c.cid]!, op.id);
-    else if (op.t === 'add') {
-      insert(st.tables[op.c.cid]!, op.id, op.row);
+    } else if (op.t === 'despawn') {
+      for (const c of components) if (st.tables[c.cid]!.rows.has(op.id)) drop(own(c), op.id);
+    } else if (op.t === 'add') {
+      insert(own(op.c), op.id, op.row);
       complete(op.id);
     } else {
-      drop(st.tables[op.c.cid]!, op.id);
+      if (st.tables[op.c.cid]!.rows.has(op.id)) drop(own(op.c), op.id);
       complete(op.id);
     }
   }
@@ -318,8 +371,7 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
     mut<C extends AnyComponent>(c: C, id: number) {
       const t = table(c, 2);
       const row = t.rows.get(id);
-      if (row) mark(t, id, row);
-      return row as RowOf<C> | undefined;
+      return (row && write(t, id, row)) as RowOf<C> | undefined;
     },
     has: (c, id) => table(c, 1).rows.has(id),
     each(cs, fn, writes) {
@@ -334,35 +386,32 @@ export function createWorld(components: readonly AnyComponent[], opts: { audit?:
       iterating++;
       try {
         if (!b) {
-          for (let i = 0; i < ids.length; i++) {
-            if (w?.[0]) mark(a!, ids[i]!, list[i]);
-            call(ids[i]!, list[i]!);
-          }
+          for (let i = 0; i < ids.length; i++) call(ids[i]!, w?.[0] ? write(a!, ids[i]!, list[i]!) : list[i]!);
         } else if (!c) {
           const other = a === small ? b : a!;
           for (let i = 0; i < ids.length; i++) {
             const id = ids[i]!;
             const ro = other.rows.get(id);
             if (!ro) continue;
-            const ra = a === small ? list[i]! : ro,
+            let ra = a === small ? list[i]! : ro,
               rb = a === small ? ro : list[i]!;
-            if (w?.[0]) mark(a!, id, ra);
-            if (w?.[1]) mark(b, id, rb);
+            if (w?.[0]) ra = write(a!, id, ra);
+            if (w?.[1]) rb = write(b, id, rb);
             call(id, ra, rb);
           }
         } else
           for (let i = 0; i < ids.length; i++) {
             const id = ids[i]!;
-            const ra = a === small ? list[i] : a!.rows.get(id);
-            const rb = b === small ? list[i] : b.rows.get(id);
-            const rc = c === small ? list[i] : c.rows.get(id);
-            const rd = d && (d === small ? list[i] : d.rows.get(id));
+            let ra = a === small ? list[i] : a!.rows.get(id);
+            let rb = b === small ? list[i] : b.rows.get(id);
+            let rc = c === small ? list[i] : c.rows.get(id);
+            let rd = d && (d === small ? list[i] : d.rows.get(id));
             if (!ra || !rb || !rc || (d && !rd)) continue;
             if (w) {
-              if (w[0]) mark(a!, id, ra);
-              if (w[1]) mark(b, id, rb);
-              if (w[2]) mark(c, id, rc);
-              if (w[3]) mark(d!, id, rd);
+              if (w[0]) ra = write(a!, id, ra);
+              if (w[1]) rb = write(b, id, rb);
+              if (w[2]) rc = write(c, id, rc);
+              if (w[3]) rd = write(d!, id, rd!);
             }
             call(id, ra, rb, rc, rd!);
           }
