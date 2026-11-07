@@ -43,26 +43,39 @@ export function createFixedSteps(maxSteps = MAX_CATCH_UP) {
 // the server's step as of one one-way delay ago. aheadMs adds a known lead (half an RTT) for prediction. Stamps far
 // behind the estimate (a hidden tab whose clock ran on, a server restart) re-anchor it.
 const REANCHOR_STEPS = 30; // 0.5 s
+// Only stamps this recent count. The estimate is the best (highest) projection among them, so it follows the
+// lowest-latency path; once the stamp that set it ages out, a server running slower than the local clock (a stall, a
+// dropped backlog, a throttled or warped page) pulls it back to what the server really reports. The output holds still
+// until the estimate catches up rather than going backwards.
+export const ESTIMATE_WINDOW_MS = 300; // above the room clock's 200 ms stamp interval
 
 export function createStepEstimate() {
-  let base = -1;
-  let baseAt = 0;
+  let anchors: { step: number; at: number }[] = [];
   let last = -1;
-  const project = (at: number) => base + ((at - baseAt) * STEP_HZ) / 1000;
+  const projectFrom = (a: { step: number; at: number }, at: number) => a.step + ((at - a.at) * STEP_HZ) / 1000;
+  const project = (at: number) => {
+    let best = -Infinity;
+    for (const a of anchors) best = Math.max(best, projectFrom(a, at));
+    return best;
+  };
   return {
     hear(step: number, at: number) {
       if (!Number.isSafeInteger(step) || step < 0 || !Number.isFinite(at)) return;
-      if (base < 0 || step >= project(at) || project(at) - step > REANCHOR_STEPS) {
-        if (base >= 0 && project(at) - step > REANCHOR_STEPS) last = -1;
-        base = step;
-        baseAt = at;
+      // Far behind what we project (a server restart, a long-hidden tab): start over from this stamp.
+      if (anchors.length && project(at) - step > REANCHOR_STEPS) {
+        anchors = [];
+        last = -1;
       }
+      anchors.push({ step, at });
+      anchors = anchors.filter((x, k) => k === anchors.length - 1 || at - x.at <= ESTIMATE_WINDOW_MS);
     },
     /** Estimated server step at local time `at` (fractional), never going backwards between re-anchors; -1 before
      * any stamp. */
     now(at: number, aheadMs = 0) {
-      if (base < 0) return -1;
-      const est = project(at);
+      if (!anchors.length) return -1;
+      const recent = anchors.filter((x, k) => k === anchors.length - 1 || at - x.at <= ESTIMATE_WINDOW_MS);
+      let est = -Infinity;
+      for (const a of recent) est = Math.max(est, projectFrom(a, at));
       if (est > last) last = est;
       return last + (aheadMs * STEP_HZ) / 1000;
     },
@@ -72,7 +85,7 @@ export function createStepEstimate() {
       return s < 0 ? -1 : Math.floor(s / RULE_STEPS);
     },
     reset() {
-      base = -1;
+      anchors = [];
       last = -1;
     },
   };

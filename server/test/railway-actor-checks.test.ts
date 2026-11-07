@@ -1,6 +1,6 @@
 // Replication R0, revision 1: the server judges reach from the action's own position and cadence from the client's
 // action clock, so a correct prediction is never refused for stale presence or bunched arrival. Both are validation
-// facts only: they never enter the saved or broadcast edit.
+// facts only: they never enter the saved state or what is replicated.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -9,7 +9,7 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
-import { RAILWAY_ROOM } from '../../src/world/railway-namespace.ts';
+import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
 type Obj = Record<string, unknown>;
 
@@ -21,7 +21,7 @@ async function fixture() {
   const sent: Obj[] = [];
   // There is no presence at all: everything accepted below is judged from what the action carries.
   const host = createRailwayWorldHost({
-    roomId: RAILWAY_ROOM,
+    roomId: railwayRoomId('actor-checks'),
     store,
     tick: false,
     now: () => now,
@@ -44,8 +44,7 @@ async function fixture() {
     host.deliver({ t: 'r:edit', e: { ...fields, epoch, request } }, sid);
     return request;
   };
-  const result = (r: number, epoch = 1) =>
-    sent.findLast((m) => m.t === 'r:result' && m.request === r && m.epoch === epoch)?.status;
+  const result = (r: number, epoch = 1) => host.rules.railway.outcome('alice', epoch, r)?.status;
   const open = async (sid: string) => {
     host.deliver({ t: 'r:open' }, sid);
     await step(3);
@@ -78,14 +77,8 @@ test('reach comes from the action position; cadence from the client action clock
     await f.step(3);
     assert.equal(f.result(first), 'accepted');
     assert.equal(f.result(second), 'accepted');
-    // The facts were judged, then left out of what is saved and broadcast.
-    const stamped = f.sent
-      .filter((m) => m.t === 'w:edits')
-      .flatMap((m) => (m.list as { e: Obj }[]).map((q) => q.e))
-      .filter((e) => e.op === 'rail.chop');
-    assert.equal(stamped.length, 2);
-    for (const e of stamped) assert.ok(!('at' in e) && !('ms' in e), JSON.stringify(e));
-    const saved = JSON.stringify(f.host.sync.snapshot());
+    // The facts were judged, then left out of what is saved and replicated.
+    const saved = JSON.stringify(f.host.sync.snapshot().data.railway);
     assert.ok(!saved.includes('"at"') && !saved.includes('"ms"'));
     // A swing faster than the cadence on the client's own clock: refused.
     const fast = f.send({ ...chop, ms: 1000 + T1.swingMs + 60 });
@@ -109,7 +102,7 @@ test('reach comes from the action position; cadence from the client action clock
   }
 });
 
-test('an action without well-formed position and time is a durable rejection', async () => {
+test('an action without well-formed position and time is a recorded rejection', async () => {
   const f = await fixture();
   try {
     const at = [T1.x, 0, T1.z];

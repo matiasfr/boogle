@@ -42,7 +42,9 @@ import type { OpHandlers, StateHandlers, Edit } from './rules/types.ts';
 type Obj = Record<string, unknown>;
 /** A stamped edit waiting for its tick. */
 export type Queued = { tick: number; seq: number; e: Obj };
-type State = StateHandlers & { fresh: string };
+// server: a Server-kind state (docs/plans/replication.md) registered only on the host. The host persists it with the
+// world, but it never enters a hash or a served snapshot: clients mirror it through replication instead.
+type State = StateHandlers & { fresh: string; server: boolean };
 /** The world as saved and served: tick, seed, epoch and each state's serialized form. */
 export type Snapshot = { tick: number; seed: number; epochMs: number; data: Obj };
 /** Production recovery; ordinary world snapshots do not use this document. */
@@ -196,6 +198,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   let lastSavedHash: number | null = null;
   let nextSave = SAVE_MS;
   let recoveryPending = false;
+  // Stamped edits whose durable write is still out: the clock may not apply them before they are published.
+  let publishing = false;
   let recoveryError: string | null = null;
   let recoveryWork: Promise<void> = Promise.resolve();
   let attachment = 0; // a completed old write cannot publish into a different attachment
@@ -227,11 +231,12 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     ops.set(op, handlers as unknown as OpHandlers<object>);
   }
   // What serialize returns now is the state's fresh form, loaded when a snapshot's copy fails.
-  function registerState(key: string, handlers: StateHandlers) {
+  function registerState(key: string, handlers: StateHandlers, { server = false } = {}) {
     if (states.has(key)) throw new Error('duplicate state ' + key);
     states.set(key, {
       ...handlers,
       fresh: JSON.stringify(handlers.serialize()),
+      server,
     });
   }
   const registry = () => ({ ops: [...ops.keys()], states: [...states.keys()] });
@@ -292,9 +297,14 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     if (cfg.recovery && (recoveryPending || recoveryError || badSave)) return;
     const list = out;
     out = [];
-    const publish = () => send({ t: 'w:edits', ht: world.tick, list });
-    if (cfg.recovery) checkpointRecovery(publish);
-    else publish();
+    const publish = () => {
+      publishing = false;
+      send({ t: 'w:edits', ht: world.tick, list });
+    };
+    if (cfg.recovery) {
+      publishing = true;
+      checkpointRecovery(publish);
+    } else publish();
   }
 
   function submitEdit(edit: unknown) {
@@ -446,8 +456,10 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
   function hostStep() {
     wall += STEP_MS;
-    // A production clock cannot overtake an unpublished stamp or a replacement checkpoint.
-    if (mode === 'host' && cfg.recovery && (recoveryPending || recoveryError || out.length || !ready)) return;
+    // A production clock cannot overtake an unpublished stamp. A periodic checkpoint write alone does not hold it: the
+    // envelope is already an immutable copy, stamps are refused until it lands, and a Server-kind state (the railway)
+    // keeps applying and flushing (docs/plans/replication.md: nothing waits on a durable write).
+    if (mode === 'host' && cfg.recovery && (recoveryError || out.length || publishing || !ready)) return;
     releaseHeld();
     if (!ready) return;
     if (phase < RULE_STEPS - 1) phase++;
@@ -473,9 +485,10 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
 
   // ------------------------------------------------------------ snapshots + hashes
-  function snapshot(): Snapshot {
+  // withServer: the host's own save includes Server-kind states; what it serves to clients does not.
+  function snapshot(withServer = true): Snapshot {
     const data: Obj = {};
-    for (const [k, s] of states) data[k] = s.serialize();
+    for (const [k, s] of states) if (withServer || !s.server) data[k] = s.serialize();
     return { tick: world.tick, seed: world.seed, epochMs: world.epochMs, data };
   }
   function validSnap(s: unknown): s is Snapshot {
@@ -509,9 +522,10 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       }
     }
   }
-  function combine(h0: number) {
+  // withServer: only the save's change detection covers Server-kind states; world hashes are lockstep only.
+  function combine(h0: number, withServer = false) {
     let h = h0;
-    for (const [, s] of states) h = (Math.imul(h ^ s.hash(), 16777619) >>> 0) | 0;
+    for (const [, s] of states) if (withServer || !s.server) h = (Math.imul(h ^ s.hash(), 16777619) >>> 0) | 0;
     return h >>> 0;
   }
   function worldHash() {
@@ -519,7 +533,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
   function stateHashes() {
     const out: Record<string, number> = {};
-    for (const [k, s] of states) out[k] = s.hash() >>> 0;
+    for (const [k, s] of states) if (!s.server) out[k] = s.hash() >>> 0;
     return out;
   }
 
@@ -555,7 +569,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     if (cfg.recovery && (recoveryPending || recoveryError || out.length)) return;
     served.set(to, wall);
     const pend = queue.map(({ tick, seq: s, e }) => ({ tick, seq: s, e }));
-    const json = JSON.stringify({ snap: snapshot(), pend, seq, ht: world.tick });
+    const json = JSON.stringify({ snap: snapshot(false), pend, seq, ht: world.tick });
     stats.snapBytes = json.length;
     const id = ++snapId;
     const n = Math.ceil(json.length / CHUNK);
@@ -742,6 +756,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     const recovery = cfg.recovery;
     if (!recovery || recoveryPending || recoveryError || badSave) return;
     let envelope: RecoveryEnvelope;
+    const savedHash = combine(0, true); // Server-kind states keep changing while the write is out
     try {
       const body = recoveryBody();
       const text = JSON.stringify({ ...body, checksum: recoveryChecksum(body) });
@@ -761,7 +776,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
         if (attachment !== generation) return;
         recoveryPending = false;
         stats.saves++;
-        lastSavedHash = combine(0);
+        lastSavedHash = savedHash;
         publish();
       })
       .catch((e: unknown) => {
@@ -864,7 +879,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   function persist(force = false) {
     if (mode !== 'host' || !ready || badSave) return false;
     if (cfg.recovery && (processingTick || recoveryPending || recoveryError || out.length)) return false;
-    const hsh = combine(0);
+    const hsh = combine(0, true);
     if (hsh === lastSavedHash && !force) return false;
     if (cfg.recovery) {
       checkpointRecovery();
@@ -942,6 +957,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     held = [];
     connected = true;
     recoveryPending = false;
+    publishing = false;
     recoveryError = null;
     recoveryWork = Promise.resolve();
     cleanup = [r.onMessage(onMessage), r.onConnection(onConnected)];
@@ -953,6 +969,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     attachment++;
     if (cfg.recovery) {
       recoveryPending = false;
+      publishing = false;
       out = [];
     }
     for (const fn of cleanup) fn();

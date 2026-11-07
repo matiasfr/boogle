@@ -10,12 +10,8 @@ import { createService, loadConfig } from '../src/server.ts';
 import { createStore, type Store } from '../src/store.ts';
 import { createRoomHost } from '../src/host/rooms.ts';
 import type { HostedRoom } from '../src/host/hosted-room.ts';
-import {
-  RAILWAY_ROOM,
-  isRailwayRoom,
-  isPlayableRailwayRoom,
-  railwayRoomId,
-} from '../../src/world/railway-namespace.ts';
+import type { RailwayWorldHost } from '../src/host/world-host.ts';
+import { isRailwayRoom, railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { WORLD_NS } from '../../src/world/namespace.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
 import { CLOSE } from '../../src/net/ws-wire.ts';
@@ -42,6 +38,8 @@ function connect(base: string, room: string, sid: string) {
   };
   const world = (type: string) =>
     messages.filter((m) => m.t === 'm' && (m.d as Obj)?.t === type).map((m) => m.d as Obj);
+  // Railway acks ride on replication packets (src/world/replicate.ts): [epoch, request] applied.
+  const acked = (request: number) => world('s').some((p) => Array.isArray(p.ack) && p.ack[1] >= request);
   const send = (m: Obj) => ws.send(JSON.stringify(m));
   const request = async (message: Obj, done: () => boolean, label: string) => {
     let next = 0;
@@ -54,7 +52,7 @@ function connect(base: string, room: string, sid: string) {
       return false;
     }, label);
   };
-  return { ws, messages, closed, first, world, send, request };
+  return { ws, messages, closed, first, world, send, request, acked };
 }
 async function manager(store: Store) {
   const logs: unknown[][] = [];
@@ -93,9 +91,10 @@ async function manager(store: Store) {
     },
   };
 }
+const railwayHost = (room: HostedRoom) => room.world as RailwayWorldHost;
 function material(room: HostedRoom) {
   return 'railway' in room.world.rules
-    ? (room.world.rules.railway.account('alice')?.carry ?? 0)
+    ? (railwayHost(room).rules.railway.account('alice')?.carry ?? 0)
     : room.world.rules.gifts.gifts.items.filter((it) => it.i === 230 && it.j === 205).length;
 }
 async function drain(room: HostedRoom, store: Store, id: string) {
@@ -105,19 +104,16 @@ async function drain(room: HostedRoom, store: Store, id: string) {
 }
 async function prepare(room: HostedRoom, client: ReturnType<typeof connect>, railway: boolean) {
   if (!railway) return;
-  assert.ok('whenReady' in room.world);
-  await room.world.whenReady();
-  // Readiness is not admission: a timer's checkpoint/supply write can begin before the socket arrives.
-  // Like the real client, retry the same request through starting/busy without allocating a new token.
+  await railwayHost(room).whenReady();
+  // Like the real client, ask for a session until one is issued.
   await client.request({ t: 'r:open' }, () => client.world('r:session').length > 0, 'session');
   client.send({ t: 'p', s: 1, d: { v: 1, p: [T1.x / 100, 0, T1.z / 100] } });
-  await client.request(
-    { t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 1, at: [T1.x, 0, T1.z], ms: 0 } },
-    () => client.world('r:result').some((m) => m.request === 1),
-    'wake',
-  );
-  assert.ok('railway' in room.world.rules);
-  const rules = room.world.rules;
+  client.send({ t: 'm', d: { t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 1, at: [T1.x, 0, T1.z], ms: 0 } } });
+  await until(() => {
+    room.world.step(1 / 60);
+    return client.acked(1);
+  }, 'wake acknowledged');
+  const rules = railwayHost(room).rules;
   // updateWorld() is a silent no-op while a stamp or checkpoint is unpublished, so a fixed number of manual
   // steps can all be dropped behind a slow durable write. Drive the clock until the wake has really finished.
   await until(() => {
@@ -155,7 +151,7 @@ function upgradeStatus(base: string) {
   });
 }
 
-for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM, railwayRoomId('eviction')]) {
+for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, railwayRoomId('eviction')]) {
   test(`real room manager preserves the closing authority before rejoin: ${id}`, async (t) => {
     const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-manager-eviction-'));
     const store = createStore({ dataDir, maxRooms: 8 });
@@ -174,25 +170,7 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM, railw
     clients.push(original);
     assert.equal((await original.first()).t, 'welcome');
     const old = app.rooms.room(id)!;
-    if (railway) {
-      assert.ok('whenReady' in old.world);
-      await old.world.whenReady();
-      // Force the formerly flaky ordering: r:open arrives during a checkpoint after readiness.
-      // Release on the observed busy reply, not elapsed time, so every run covers the retry.
-      const gate = new Promise<void>((resolve) => {
-        release = resolve;
-      });
-      const blocked = store.withLock(id, () => gate);
-      old.world.sync.saveNow(true);
-      const preparing = prepare(old, original, railway);
-      try {
-        await until(() => original.world('r:state').some((m) => m.state === 'busy'), 'session deferred by checkpoint');
-      } finally {
-        release!();
-        await blocked;
-        await preparing;
-      }
-    } else await prepare(old, original, railway);
+    await prepare(old, original, railway);
     await drain(old, store, id);
     const initial = material(old);
     assert.equal(initial, 0);
@@ -202,8 +180,7 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM, railw
     const blocked = store.withLock(id, () => gate);
     let published = false;
     old.world.onSend((m) => {
-      if (m.t === 'w:edits' && (m.list as { e: Obj }[]).some((q) => q.e.op === (railway ? 'rail.chop' : 'gift.toss')))
-        published = true;
+      if (m.t === 'w:edits' && (m.list as { e: Obj }[]).some((q) => q.e.op === 'gift.toss')) published = true;
     });
     if (railway) {
       const source = RAILWAY_SOURCES[0]!;
@@ -219,11 +196,14 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM, railw
             request: 2,
             at: [source[1], 0, source[2]],
             ms: 1000,
-            ...(isPlayableRailwayRoom(id) ? { yaw: 0.5, collapsed: false } : {}),
+            yaw: 0.5,
+            collapsed: false,
           },
         },
       });
-      await until(() => old.world.status().recoveryPending, 'durable chop write');
+      // Applied on arrival and replicated; its durability is the close's save (the store lock holds it back).
+      await until(() => material(old) === 2, 'chop applied');
+      published = true;
     } else {
       original.send({
         t: 'm',
@@ -260,23 +240,19 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM, railw
       replacement = app.rooms.room(id);
     }
     assert.ok(replacement);
-    if ('whenReady' in replacement.world) await replacement.world.whenReady();
+    if (railway) await railwayHost(replacement).whenReady();
     const restored = material(replacement);
     await drain(replacement, store, id);
     const result = {
       room: id,
-      kind: isPlayableRailwayRoom(id)
-        ? 'playable railway'
-        : railway
-          ? 'isolated railway'
-          : 'live server W state (not Place localStorage railway)',
+      kind: railway ? 'railway (Server kind)' : 'live server W state (not Place localStorage railway)',
       initial,
       published,
       overlapping,
       changedAuthority,
       expected: railway ? 2 : 1,
       restored,
-      receipt: 'railway' in replacement.world.rules ? replacement.world.rules.railway.outcome('alice', 1, 2) : null,
+      receipt: railway ? railwayHost(replacement).rules.railway.outcome('alice', 1, 2) : null,
       saved: store.readSync(id),
     };
     await evidence(`manager-eviction-${id}-${overlapping ? 'before' : 'after'}.json`, result);
@@ -292,7 +268,6 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, RAILWAY_ROOM, railw
 
 for (const [id, failure] of [
   [`${WORLD_NS}-boogle`, 'refused'],
-  [RAILWAY_ROOM, 'io'],
   [railwayRoomId('eviction'), 'io'],
 ] as const) {
   test(`failed close keeps one blocked authority and its last good file: ${id}`, async (t) => {
@@ -337,7 +312,8 @@ for (const [id, failure] of [
             request: 2,
             at: [source[1], 0, source[2]],
             ms: 1000,
-            ...(isPlayableRailwayRoom(id) ? { yaw: 0.5, collapsed: false } : {}),
+            yaw: 0.5,
+            collapsed: false,
           },
         },
       });

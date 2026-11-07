@@ -29,6 +29,7 @@ export async function supplyFixture(dataDir: string, roomId: string, recover = t
       if (message.t === 'w:edits' && Array.isArray(message.list))
         for (const item of message.list as { e: Record<string, unknown> }[]) published.push(item.e);
     });
+    host.replication.addClient('supplysession');
     return host;
   };
   let host = create();
@@ -49,8 +50,7 @@ export async function supplyFixture(dataDir: string, roomId: string, recover = t
     const at = [Math.round(position.x * 100), 0, Math.round(position.z * 100)];
     const ms = clock - 1793906400000;
     host.deliver({ t: 'r:edit', e: { ...fields, epoch: 1, request: ++request, at, ms } }, 'supplysession');
-    await host.sync.whenDurable();
-    await ticks(3);
+    await ticks(3); // the cadence is judged on the action clock: swings 300 ms apart
     const result = host.rules.railway.outcome('supplier', 1, request);
     assert.equal(result?.status, 'accepted', `${fields.op}: ${JSON.stringify(result)}`);
   }
@@ -98,7 +98,14 @@ export async function supplyFixture(dataDir: string, roomId: string, recover = t
     observe(people: (RailwayPosition | null)[]) {
       observers = people;
     },
+    /** An orderly restart (a deploy): the room saves on close. A crash is crash(). */
     async restart() {
+      await host.close({ save: true });
+      host = create();
+      await host.whenReady();
+    },
+    /** A crash: no save on the way down; the room comes back at its last checkpoint. */
+    async crash() {
       await host.close({ save: false });
       host = create();
       await host.whenReady();

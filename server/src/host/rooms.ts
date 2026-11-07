@@ -98,8 +98,8 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
     status(id: string) {
       const room = rooms.get(id);
       if (!room) return { mode: 'server', tick: store.readSync(id)?.tick ?? 0, players: 0, max: cfg.maxPlayers };
-      const { boot: b, tick, players, max, noSave } = room.status();
-      return { mode: 'server', boot: b, tick, players, max, noSave: noSave || blocked.has(id) };
+      const { boot: b, tick, players, max, noSave, replication, railway } = room.status();
+      return { mode: 'server', boot: b, tick, players, max, noSave: noSave || blocked.has(id), replication, railway };
     },
     upgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
       if (stopping) return refuse(socket, '503 Service Unavailable');

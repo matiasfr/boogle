@@ -6,7 +6,10 @@
 //                                     a malformed or out-of-order packet is refused (false) and changes nothing
 //   mirror.get(kind, id) / entries(kind) / size()
 //   mirror.onChange(kind, fn)         fn(id, fields | null, changed | null) after each applied change (null: despawned)
-//   mirror.onPacket(fn)               fn(packet) after a packet applied (acks, refusals and id remaps ride on it)
+//   mirror.onPacket(fn)               fn(packet) after a packet applied (acks, refusals, id remaps and events ride on it)
+//   mirror.onDiverged(fn)             a refused packet or a hash (h) mismatch: reset and ask for the whole state
+//   mirror.whole()                    the late join's last chunk (w) has arrived since the last reset
+//   mirror.stamp(step, atMs)          a server clock stamp from outside the packets (the room's w:c clock)
 //   mirror.step(atMs)                 estimated server step (src/world/room-clock.ts) from the packets' tk stamps
 //   mirror.clone()                    a deep copy of every component (the predictor's confirmed base, budget test)
 //   mirror.reset()                    drop everything (reconnect; the server re-sends whole from change tick -1)
@@ -21,6 +24,8 @@
 //   p.onRejected(fn)                  fn(id, reason, action): the view eases the correction (Local presentation)
 import { createStepEstimate } from './room-clock.ts';
 import {
+  hashComponents,
+  validEvent,
   validFields,
   validId,
   entityKey,
@@ -38,19 +43,29 @@ const isRequest = (v: unknown): v is number => Number.isSafeInteger(v) && (v as 
 const MAX_LIST = 4096;
 export const PREDICTION_WINDOW = 8;
 export const STALL_MS = 1000;
+/** The step estimate runs at most this far past the newest step heard: two rule ticks, lockstep's old LEAD. */
+export const LEAD_STEPS = 12;
 
 export function createMirror(schemas: readonly Schema[]) {
   const kinds = new Map(schemas.map((s) => [s.kind, s]));
   const store = new Map<string, Map<EntityId, Fields>>(schemas.map((s) => [s.kind, new Map()]));
   const changeFns = new Map<string, ((id: EntityId, fields: Fields | null, changed: Fields | null) => void)[]>();
   const packetFns: ((p: ServerPacket) => void)[] = [];
+  const divergedFns: ((why: 'refused' | 'hash') => void)[] = [];
   const estimate = createStepEstimate();
   let tk = -1;
-  const stats = { applied: 0, refused: 0, chars: 0 };
+  let whole = false;
+  let heard = -1; // the newest server step heard (packets and clock stamps)
+  const stats = { applied: 0, refused: 0, chars: 0, diverged: 0 };
+  function* rows(): Generator<[string, EntityId, Fields]> {
+    for (const [kind, list] of store) for (const [id, f] of list) yield [kind, id, f];
+  }
 
   // Whole-packet validation: nothing is mutated unless every entry is well-formed for the current mirror.
   function valid(p: unknown): p is ServerPacket {
-    if (!isObj(p) || p.t !== 's' || !isStep(p.tk) || p.tk < tk) return false;
+    if (!isObj(p) || p.t !== 's' || !isStep(p.tk) || p.tk < tk || (p.w !== undefined && p.w !== 1)) return false;
+    if (p.h !== undefined && !(Number.isInteger(p.h) && (p.h as number) >= 0 && (p.h as number) <= 0xffffffff))
+      return false;
     if (
       p.ack !== undefined &&
       !(Array.isArray(p.ack) && p.ack.length === 2 && isRequest(p.ack[0]) && isRequest(p.ack[1]))
@@ -74,6 +89,11 @@ export function createMirror(schemas: readonly Schema[]) {
         p.ids.length <= MAX_LIST &&
         p.ids.every((r) => Array.isArray(r) && r.length === 2 && typeof r[0] === 'string' && validId(r[1]))
       )
+    )
+      return false;
+    if (
+      p.ev !== undefined &&
+      !(Array.isArray(p.ev) && p.ev.length <= MAX_LIST && p.ev.every((e: unknown) => validEvent(e)))
     )
       return false;
     const gone = new Set<string>();
@@ -107,10 +127,13 @@ export function createMirror(schemas: readonly Schema[]) {
     apply(packet: unknown, at = 0) {
       if (!valid(packet)) {
         stats.refused++;
+        // The server already counts what it sent as seen: a refused packet leaves this mirror behind for good.
+        if (whole) for (const fn of divergedFns) fn('refused');
         return false;
       }
       tk = packet.tk;
       estimate.hear(packet.tk, at);
+      if (packet.tk > heard) heard = packet.tk;
       for (const [kind, id] of packet.x ?? []) if (store.get(kind)!.delete(id)) notify(kind, id, null, null);
       for (const [kind, id, fields] of packet.c ?? []) {
         const rows = store.get(kind)!;
@@ -119,8 +142,13 @@ export function createMirror(schemas: readonly Schema[]) {
         if (!old) rows.set(id, next);
         notify(kind, id, next, fields);
       }
+      if (packet.w) whole = true;
       stats.applied++;
       for (const fn of packetFns) fn(packet);
+      if (whole && packet.h !== undefined && hashComponents(rows(), kinds) !== packet.h) {
+        stats.diverged++;
+        for (const fn of divergedFns) fn('hash');
+      }
       return true;
     },
     get: (kind: string, id: EntityId) => store.get(kind)?.get(id) ?? null,
@@ -139,8 +167,25 @@ export function createMirror(schemas: readonly Schema[]) {
     onPacket(fn: (p: ServerPacket) => void) {
       packetFns.push(fn);
     },
-    step: (at: number) => estimate.now(at),
+    /** fn(why) when this mirror is known to differ from the server: a packet it had to refuse, or a hash mismatch.
+     * The owner resets it and asks for the whole state (r:resync). Not called before the mirror is whole. */
+    onDiverged(fn: (why: 'refused' | 'hash') => void) {
+      divergedFns.push(fn);
+    },
+    /** A hash of every component held, as the server's packets' h is computed. */
+    hash: () => hashComponents(rows(), kinds),
+    /** Estimated server step: local time since the freshest stamp, but never more than LEAD_STEPS past the newest
+     * step heard (a throttled or warped page clock cannot run the room's timed things ahead of the server). */
+    step: (at: number) => (heard < 0 ? -1 : Math.min(estimate.now(at), heard + LEAD_STEPS)),
+    /** A server clock stamp heard outside a packet (the room's clock messages). */
+    stamp(step: number, at: number) {
+      if (!isStep(step)) return;
+      estimate.hear(step, at);
+      if (step > heard) heard = step;
+    },
     lastStep: () => tk,
+    /** The server's whole state has arrived since the last reset (a late join's last chunk carries w). */
+    whole: () => whole,
     clone() {
       const out = new Map<string, Map<EntityId, Fields>>();
       for (const [kind, rows] of store) {
@@ -157,6 +202,8 @@ export function createMirror(schemas: readonly Schema[]) {
           notify(kind, id, null, null);
         }
       tk = -1;
+      heard = -1;
+      whole = false;
       estimate.reset();
     },
   };

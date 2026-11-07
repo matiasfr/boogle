@@ -110,7 +110,7 @@ test('classic rail-demo and production demo select distinct hosts and saves', as
     const productionHost = svc.roomHost()!.room(productionRoom)!.world;
     const classicHost = svc.roomHost()!.room(classicRoom)!.world;
     assert.notEqual(productionHost, classicHost);
-    assert.ok((productionHost.sync.snapshot().data.railway as Msg).line);
+    assert.ok(((productionHost.sync.snapshot().data.railway as Msg).s as Msg).line);
     assert.equal(classicHost.sync.snapshot().data.railway, undefined);
     assert.ok(classicHost.sync.snapshot().data.gifts);
     assert.equal(svc.roomHost()!.rooms(), 2);

@@ -1,15 +1,19 @@
 // Test page for the server room (ws-run.ts): createWsRoom plus the real world sync and rules on the home land, and
 // records of everything the checks need. Query: ?room=&server=&pid=&key= (the player and its browser's key; default
-// one of each per page).
+// one of each per page). Railway rooms also mirror the Server-kind railway (src/world/railway-replicate.ts); &lat=ms adds
+// that much round trip to the railway's messages (half each way), &adapter=1 drives the real browser adapter.
 import { createWsRoom, type Room } from '../../src/net/ws-room.ts';
 import { createSync } from '../../src/world/sync.ts';
 import { installRules } from '../../src/world/rules/index.ts';
-import { installRailwayRules, installPlayableRailwayRules } from '../../src/world/rules/railway-index.ts';
-import { isRailwayRoom, isPlayableRailwayRoom } from '../../src/world/railway-namespace.ts';
+import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
+import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
+import type { ServerPacket } from '../../src/world/replicate.ts';
+import type { WorldRoom } from '../../src/world/sync.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { railActiveStation } from '../../src/sim/railway-line.ts';
-import type { RailAction, RailAccount, railCounts, railPhase } from '../../src/sim/railway.ts';
+import { railCounts, railPhase, type RailAction, type RailAccount } from '../../src/sim/railway.ts';
+import { RULE_STEPS } from '../../src/world/room-clock.ts';
 import {
   createRailwayAdapter,
   type RailwayAccepted,
@@ -21,7 +25,11 @@ import home from '../../src/world/home-land.json';
 export type RailwayProbe = {
   pid: string;
   tick: number;
+  /** The mirror has the whole state (late join complete). */
   ready: boolean;
+  /** The server step the mirror is current to, and its hash: peers at the same step agree. */
+  step: number;
+  hash: number;
   phase: ReturnType<typeof railPhase>;
   activeStation: number;
   counts: ReturnType<typeof railCounts>;
@@ -46,6 +54,7 @@ declare global {
 
 const q = new URLSearchParams(location.search);
 const HASH_EVERY = 10; // ticks between recorded state hashes
+const LAT = Number(q.get('lat') || 0); // added railway round trip, ms (half each way)
 const PID = q.get('pid') ?? 'p' + Math.random().toString(36).slice(2, 10);
 
 // The railway actor's position in cm, set by railPose: what each railway action carries.
@@ -62,6 +71,14 @@ const T = (window.T = {
   hashes: {} as Record<number, string>,
   got: 0,
   railMessages: [] as Record<string, unknown>[],
+  // Railway packets as they arrive (after the added delay): Date.now(), characters, and the events they carried.
+  railPackets: [] as { at: number; chars: number; ack?: number[]; rej?: unknown[] }[],
+  railEvents: [] as { at: number; pid: string; epoch: number; request: number; op: string }[],
+  railSent: [] as { at: number; epoch: number; request: number; op: string }[],
+  railSyncedAt: 0,
+  railSyncedChars: 0, // packet characters received up to the whole late join
+  railSyncedPackets: 0,
+  railStartAt: 0,
   async start() {
     let room: Room;
     try {
@@ -84,7 +101,7 @@ const T = (window.T = {
     room.onLeadChange((lead) => T.leads.push({ at: Date.now(), lead }));
     room.onMessage((m, from) => {
       const msg = m as { t?: unknown; from?: string; n: number };
-      if (typeof msg.t === 'string' && msg.t.startsWith('r:') && from === SERVER_ID) {
+      if (msg.t === 'r:session' && from === SERVER_ID) {
         const response = m as Record<string, unknown>;
         if (response.to === room.selfId) T.railMessages.push(response);
       }
@@ -145,11 +162,19 @@ const T = (window.T = {
   railAdapter: (): RailwayAdapterProbe | null => null,
   railIntent: null as unknown as (intent: RailwayIntent) => boolean,
   railSnapshot: null as unknown as () => boolean,
-  railOpen: () => T.room!.send({ t: 'r:open' }),
+  railOpen: () => railRoom!.send({ t: 'r:open' }),
   // A client action carries where its actor stands (cm, the last railPose) and its action clock (ms).
-  railEdit: (e: RailAction) =>
-    T.room!.send({ t: 'r:edit', e: { ...(railAt ? { at: railAt } : {}), ms: Math.round(performance.now()), ...e } }),
-  railStatus: (epoch: number, request: number) => T.room!.send({ t: 'r:status', epoch, request }),
+  railEdit: (e: RailAction) => {
+    T.railSent.push({ at: Date.now(), epoch: e.epoch, request: e.request, op: e.op });
+    railRoom!.send({ t: 'r:edit', e: { ...(railAt ? { at: railAt } : {}), ms: Math.round(performance.now()), ...e } });
+  },
+  railLoad: null as unknown as (o: {
+    ms: number;
+    every: number;
+    first: number;
+    epoch: number;
+    next: number;
+  }) => Promise<number>,
   railBaseEdit: (e: Record<string, unknown>) => T.room!.send({ t: 'w:edit', e }),
   railPose(target: 'station' | 'source', id = RAILWAY_SOURCES[0]![0]) {
     const source = RAILWAY_SOURCES.find((row) => row[0] === id);
@@ -160,6 +185,19 @@ const T = (window.T = {
   },
 });
 
+// The railway's own messages, with LAT/2 added each way (the lockstep world and presence are left undelayed).
+let railRoom: WorldRoom | null = null;
+function delayed(room: Room): WorldRoom {
+  if (!LAT) return room;
+  const half = LAT / 2;
+  return {
+    selfId: room.selfId,
+    send: (m) => void setTimeout(() => room.send(m), half),
+    onMessage: (h) => room.onMessage((m, from) => void setTimeout(() => h(m, from), half)),
+    onConnection: (h) => room.onConnection(h),
+  };
+}
+
 function startWorld(room: Room) {
   const w = createSync();
   T.railSnapshot = () => {
@@ -169,18 +207,86 @@ function startWorld(room: Room) {
   };
   const land = { n: home.n, layout: home.layout } as Parameters<typeof installRules>[1];
   const roomId = q.get('room') ?? '';
-  const playable = isPlayableRailwayRoom(roomId) ? installPlayableRailwayRules(w, land) : null;
-  const railway = playable ?? (isRailwayRoom(roomId) ? installRailwayRules(w, land) : null);
-  const rules = railway ? null : installRules(w, land);
+  const rules = installRules(w, land);
+  const rail = isRailwayRoom(roomId) ? createRailwayMirror() : null;
+  railRoom = rail ? delayed(room) : null;
+  T.railStartAt = Date.now();
   const adapter =
-    railway && q.get('adapter') === '1'
+    rail && q.get('adapter') === '1'
       ? createRailwayAdapter({
-          api: railway.railway,
-          sync: w,
+          mirror: rail,
+          movement: () => ({
+            beamSoloSpeed: 2,
+            beamHelpSpeed: 5,
+            jumpImpulse: 6,
+            jumpTurn: 1,
+            jumpSteer: 25,
+            jumpApexSpeed: 1,
+          }),
           pid: PID,
           pose: () => (railAt ? { x: railAt[0] / 100, y: railAt[1] / 100, z: railAt[2] / 100 } : null),
         })
       : null;
+  if (rail) {
+    rail.mirror.onPacket((p: ServerPacket) => {
+      const at = Date.now();
+      T.railPackets.push({
+        at,
+        chars: JSON.stringify(p).length,
+        ...(p.ack ? { ack: [...p.ack] } : {}),
+        ...(p.rej ? { rej: p.rej } : {}),
+      });
+      if (!T.railSyncedAt && rail.synced()) {
+        T.railSyncedAt = at;
+        T.railSyncedPackets = T.railPackets.length;
+        T.railSyncedChars = T.railPackets.reduce((n, x) => n + x.chars, 0);
+      }
+      for (const e of p.ev ?? [])
+        T.railEvents.push({
+          at,
+          pid: String(e.pid),
+          epoch: Number(e.epoch),
+          request: Number(e.request),
+          op: String(e.op),
+        });
+    });
+    // Without the adapter the page applies the packets itself.
+    if (!adapter)
+      railRoom!.onMessage((m, from) => {
+        if (from !== SERVER_ID) return;
+        const msg = m as { t?: string; ht?: number };
+        if (msg.t === 's') rail.mirror.apply(m, performance.now());
+        else if (msg.t?.startsWith('w:') && Number.isSafeInteger(msg.ht))
+          rail.mirror.stamp(msg.ht! * RULE_STEPS, performance.now());
+      });
+    // The load run (ws-run WS_LOAD): chop, drop and take in a cycle every `every` ms, near trees from `first` on.
+    T.railLoad = ({ ms, every, first, epoch, next }) =>
+      new Promise((resolve) => {
+        let request = next;
+        let k = 0;
+        let tree = first;
+        const t = setInterval(() => {
+          const s = rail.railway;
+          const me = s.accounts.find((a) => a.pid === PID);
+          const phase = k++ % 3;
+          while (s.sources[tree] === 0) tree = (tree + 1) % RAILWAY_SOURCES.length;
+          const [id, x, z] = RAILWAY_SOURCES[tree]!;
+          railAt = [x, 3000, z];
+          const mine = s.piles.find((p) => p.x === x && p.z === z && p.y === 3000);
+          const e: RailAction =
+            phase === 0 || !me
+              ? { op: 'rail.chop', id, yaw: 0, collapsed: false, epoch, request }
+              : phase === 1 && me.carry > 0
+                ? { op: 'rail.drop', x, y: 3000, z, n: Math.min(2, me.carry), kind: 0, epoch, request }
+                : mine
+                  ? { op: 'rail.take', id: mine.id, kind: 0, epoch, request }
+                  : { op: 'rail.chop', id, yaw: 0, collapsed: false, epoch, request };
+          request++;
+          T.railEdit(e);
+        }, every);
+        setTimeout(() => (clearInterval(t), resolve(request)), ms);
+      });
+  }
   if (adapter) {
     const effects: RailwayAccepted[] = [];
     let resets = 0;
@@ -233,7 +339,7 @@ function startWorld(room: Room) {
   });
   w.setPid(PID);
   w.attachWorld(room, { roomId: q.get('room') ?? 'test' });
-  adapter?.attach(room);
+  if (adapter && railRoom) adapter.attach(railRoom);
   let last = performance.now();
   setInterval(() => {
     const now = performance.now();
@@ -244,22 +350,37 @@ function startWorld(room: Room) {
   T.toss = (i, j) => w.submitEdit({ op: 'gift.toss', i, j, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] });
   T.world = () => ({
     tick: w.world.tick,
-    items: rules?.gifts.gifts.items.map((p) => [p.i, p.j]) ?? [],
+    items: rules.gifts.gifts.items.map((p) => [p.i, p.j]),
     status: w.worldStatus(),
   });
-  if (railway)
-    T.rail = () => ({
-      pid: PID,
-      tick: w.world.tick,
-      ready: w.worldStatus().ready,
-      phase: railway.railway.phase(),
-      activeStation: railActiveStation(railway.railway.railway),
-      counts: railway.railway.counts(),
-      accounts: railway.railway.railway.accounts.map((a) => ({ ...a })),
-      messages: T.railMessages.map((m) => ({ ...m })),
-      registry: w.registry(),
-      sources: RAILWAY_SOURCES.map(([id], k) => ({ id, remaining: railway.railway.railway.sources[k]! })),
-      people: railway.roster.roster.pids.map((pid, k) => ({ pid, name: railway.roster.nameOf(k) })),
-      classicItems: playable?.gifts.gifts.items.length ?? 0,
-    });
+  if (rail)
+    T.rail = () => {
+      const tick = Math.max(0, Math.floor(rail.mirror.step(performance.now()) / RULE_STEPS));
+      const s = rail.at(tick);
+      const acks = T.railPackets.filter((p) => p.ack).map((p) => ({ t: 'ack', epoch: p.ack![0], request: p.ack![1] }));
+      const rej = T.railPackets.flatMap((p) =>
+        ((p.rej ?? []) as [number, number, string][]).map(([epoch, request, reason]) => ({
+          t: 'rej',
+          epoch,
+          request,
+          reason,
+        })),
+      );
+      return {
+        pid: PID,
+        tick,
+        ready: rail.synced(),
+        step: rail.step(),
+        hash: rail.hash(),
+        phase: railPhase(s, tick),
+        activeStation: railActiveStation(s),
+        counts: railCounts(s),
+        accounts: s.accounts.map((a) => ({ ...a })),
+        messages: [...T.railMessages.map((m) => ({ ...m })), ...acks, ...rej],
+        registry: w.registry(),
+        sources: RAILWAY_SOURCES.map(([id], k) => ({ id, remaining: s.sources[k]! })),
+        people: rules.roster.roster.pids.map((pid, k) => ({ pid, name: rules.roster.nameOf(k) })),
+        classicItems: rules.gifts.gifts.items.length,
+      };
+    };
 }

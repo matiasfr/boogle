@@ -13,8 +13,10 @@
 // v11 (2026-11-06): the ball stopped being saved: the `ball` state and ball.rest gone.
 // v12 (2026-11-06): src.take spends a charge only when the whole handful still fits.
 // v13 (2026-11-06): line two's forge, Q1-Q3, depot, lever and hook join the railway state; rails ride the back.
+// v14 (2026-11-06): replication R1a: the railway is Server-kind state (replicated, saved by pid with the server's
+// checkpoint), its lockstep ops and hash gone; the isolated t1v01 railway rooms removed.
 // Pure: read by room routing and tests.
-export const WORLD_NS = 'v13';
+export const WORLD_NS = 'v14';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

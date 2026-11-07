@@ -1,23 +1,12 @@
 // Default T1 entry. Explicit Place keeps its isolated legacy regression entry until its last promotion slice.
-import { railwayApi } from '../../world/game-world.ts';
-import {
-  world,
-  worldStatus,
-  stateHashes,
-  onApplied,
-  onAfterTick,
-  onSnapshot,
-  onDesync,
-  onSnapFail,
-  requestResync,
-} from '../../world/sync.ts';
+import { railwayMirror, rules } from '../../world/game-world.ts';
 import { productionRailway } from '../../proto/flags.ts';
 import { defineKind, spawn } from '../../entity/entity.ts';
 import { identity } from '../../player/identity.ts';
 import { registerInteractable, NO_TARGETS } from '../../player/hands.ts';
 import { net, onRoomReady, onNetState, localPresence } from '../../netplay/net.ts';
 import { warmUp } from '../../render/precompile.ts';
-import { createRailwayAdapter } from '../../adapters/railway.ts';
+import { createRailwayAdapter, railMovement } from '../../adapters/railway.ts';
 import { createRailwayView, type RailwayView } from './view.ts';
 import { setRailwayView } from './state.ts';
 
@@ -25,10 +14,10 @@ defineKind('railway', { prePhysics: -59, fixedPre: 43, update: 10 });
 let active: RailwayView | null = null;
 registerInteractable(() => active?.targets() ?? NO_TARGETS);
 
-if (productionRailway && railwayApi) {
+if (productionRailway && railwayMirror) {
   const adapter = createRailwayAdapter({
-    api: railwayApi,
-    sync: { world, worldStatus, stateHashes, onApplied, onAfterTick, onSnapshot, onDesync, onSnapFail, requestResync },
+    mirror: railwayMirror,
+    movement: () => railMovement(rules.tune),
     pid: identity.pid,
     pose: () => {
       const local = localPresence();

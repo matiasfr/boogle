@@ -1,25 +1,39 @@
-// Bounded request coordination on the existing room transport, installed only in the isolated/playable T1 namespaces.
-import { railInt, RAILWAY_MAX_INT, RAILWAY_WINDOW, type RailResult } from '../../../src/sim/railway.ts';
-import type { RailwayApi } from '../../../src/world/rules/railway.ts';
-import type { createSync } from '../../../src/world/sync.ts';
+// A railway room's client actions (docs/plans/replication.md, R1a): sessions, ordering and acknowledgement on the
+// room's ordered socket. An action applies the moment it arrives; the client hears `ack` (the highest request of its
+// session applied) and `rej` (refused ones) on its next replication packet, and sees the result in the components.
+//
+//   client -> server  { t:'r:open' }                       open (or take over) this player's session: a new epoch
+//                     { t:'r:edit', e:{ op, epoch, request, at, ms, ...fields } }
+//                     { t:'r:resync' }                     the mirror diverged: send me the whole state again
+//   server -> client  { t:'r:session', to, epoch, next }   the session's identity; requests count up from next
+//                     { t:'r:state', to, state, epoch?, request? }   sent at once, outside the room clock (which a
+//                       storage failure or startup holds): 'starting' (not ready yet: ask again), 'storage' (the
+//                       room lost its storage: stop), 'full' (no session for this player: the account cap)
+//                     replication `ack` [epoch, request]: every request up to it is settled (applied or refused)
+//                     replication `rej` [epoch, request, reason]:
+//                       refused   validated and recorded as rejected (out of reach, too fast, malformed fields)
+//                       session   not this socket's current session: reopen
+//                       order     not the next request of the session: reopen
+import { railInt, RAILWAY_MAX_INT, type RailAction } from '../../../src/sim/railway.ts';
+import { RAIL_ACTIONS, type Actor, type RailwayApi } from '../../../src/world/railway-server.ts';
+import type { Replicator } from '../../../src/world/replicate-server.ts';
 import type { RailwayResponse } from '../../../src/world/railway-wire.ts';
 
 type Obj = Record<string, unknown>;
-type Session = { sid: string; epoch: number; next: number; opening: boolean; pending: Set<number> };
+type Session = { sid: string; epoch: number };
 const object = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 const token = (v: Obj) => railInt(v.epoch, RAILWAY_MAX_INT, 1) && railInt(v.request, RAILWAY_MAX_INT, 1);
 /** Validation facts a client action carries (docs/plans/replication.md, revision 1): where the actor stood
- * (centimetres) and the client's action clock (ms). Judged while stamping; never saved or broadcast. */
+ * (centimetres) and the client's action clock (ms). Judged while applying; never saved or replicated. */
 export type ActorFacts = { pid: string; epoch: number; request: number; at: [number, number, number]; ms: number };
 const position = (v: unknown): v is [number, number, number] =>
   Array.isArray(v) && v.length === 3 && v.every((n) => railInt(n, 200000, -200000));
 
-/** The edit a client request stamps, saves and broadcasts: only this op's wire shape, so the bounded recovery tail
- * never holds unrelated client fields. The actor's `at`/`ms` are validation facts and are left out. */
-export function railwayRequestEdit(e: Obj, epoch: number, request: number, room: { falls: boolean; line: boolean }) {
-  const clean: Obj = { op: e.op, epoch, request, i: 0, j: 0 };
+/** The action as the rules see it: only this op's wire shape. The actor's `at`/`ms` are validation facts. */
+export function railwayRequestEdit(e: Obj, epoch: number, request: number): RailAction {
+  const clean: Obj = { op: e.op, epoch, request };
   if (e.op === 'rail.chop' || e.op === 'rail.take' || e.op === 'rail.mine') clean.id = e.id;
-  if (e.op === 'rail.chop' && room.falls) {
+  if (e.op === 'rail.chop') {
     clean.yaw = e.yaw;
     clean.collapsed = e.collapsed;
   }
@@ -27,72 +41,58 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number, room:
     clean.station = e.station;
     clean.n = e.n;
   }
-  if (room.line && ['rail.deposit', 'rail.drop', 'rail.take', 'rail.rackTake'].includes(String(e.op)))
-    clean.kind = e.kind;
+  if (['rail.deposit', 'rail.drop', 'rail.take', 'rail.rackTake'].includes(String(e.op))) clean.kind = e.kind;
   if (['rail.beamTake', 'rail.beamDrop', 'rail.beamDeposit'].includes(String(e.op))) clean.revision = e.revision;
   if (e.op === 'rail.beamDeposit') clean.station = e.station;
-  if (e.op === 'rail.beamDrop') {
+  if (e.op === 'rail.beamDrop' || e.op === 'rail.drop') {
     clean.x = e.x;
     clean.y = e.y;
     clean.z = e.z;
   }
-  if (e.op === 'rail.drop') {
-    clean.x = e.x;
-    clean.z = e.z;
-    clean.n = e.n;
-    if (room.falls) clean.y = e.y;
-  }
-  return clean;
+  if (e.op === 'rail.drop') clean.n = e.n;
+  return clean as RailAction;
 }
 
+/** The fields an accepted action's effect event carries (the intent, the actor and the result). */
+const EVENT_FIELDS = ['id', 'yaw', 'collapsed', 'station', 'n', 'kind', 'revision', 'x', 'y', 'z'] as const;
+/** What the result adds for effects (src/world/railway-server.ts RailEffect); a take's pile position comes from here. */
+const EFFECT_FIELDS = ['carried', 'level', 'pile', 'px', 'py', 'pz'] as const;
+
 export function createRailwayRequests({
-  sync,
   api,
   pidOf,
   send,
+  replication,
   available,
-  withActor,
+  unavailable,
+  actor,
 }: {
-  sync: ReturnType<typeof createSync>;
-  /** Runs the stamp with these facts visible to the host's railReach/railCadence/railHeight. */
-  withActor: <T>(facts: ActorFacts, fn: () => T) => T;
   api: RailwayApi;
   pidOf: (sid: string) => string | null;
   send: (message: RailwayResponse) => void;
+  replication: Replicator;
   available: () => boolean;
+  /** Why actions are not taken now: 'starting' or 'storage'. */
+  unavailable: () => 'starting' | 'storage';
+  /** The checks an action's facts allow, or null when they are malformed. */
+  actor: (facts: ActorFacts) => Actor;
 }) {
   const sessions = new Map<string, Session>();
-  const state = (to: string, status: Extract<RailwayResponse, { t: 'r:state' }>['state'], identity?: Obj) =>
-    send({
-      t: 'r:state',
-      to,
-      state: status,
-      ...(identity && token(identity) ? { epoch: identity.epoch as number, request: identity.request as number } : {}),
-    });
-  const answer = (to: string, result: RailResult) => send({ t: 'r:result', to, ...result });
-  const sessionAnswer = (s: Session) => send({ t: 'r:session', to: s.sid, epoch: s.epoch, next: s.next });
-
-  sync.onApplied((e: Obj, _tick: number, result: unknown) => {
-    if (e.op === 'rail.session') {
-      const s = sessions.get(String(e.pid));
-      if (!s || s.epoch !== e.epoch) return;
-      if (result !== true) {
-        sessions.delete(String(e.pid));
-        state(s.sid, 'invalid');
-        return;
-      }
-      s.opening = false;
-      sessionAnswer(s);
-      return;
-    }
-    if (!object(result) || !token(result) || typeof result.pid !== 'string') return;
-    const s = sessions.get(result.pid);
-    if (!s || s.epoch !== result.epoch) return;
-    s.pending.delete(result.request as number);
-    // The stamp was durable before application; this terminal result is reproducible from its saved tail.
-    answer(s.sid, result as RailResult);
-  });
-
+  const rej = (sid: string, epoch: number, request: number, reason: string) => {
+    if (replication.has(sid)) replication.reject(sid, epoch, request, reason);
+  };
+  const ack = (sid: string, epoch: number, request: number) => {
+    if (replication.has(sid)) replication.ack(sid, epoch, request);
+  };
+  // Room status goes out at once: the clock (and so the flush) is held while the room starts or after its storage
+  // failed, and a client must hear that rather than wait.
+  const state = (to: string, s: 'starting' | 'storage' | 'full', id?: { epoch: number; request: number }) =>
+    send({ t: 'r:state', to, state: s, ...(id ?? {}) });
+  // Every settled request is acknowledged; a refused one is also named, with its reason.
+  const settle = (sid: string, epoch: number, request: number, refused: boolean) => {
+    ack(sid, epoch, request);
+    if (refused) rej(sid, epoch, request, 'refused');
+  };
   return {
     /** Only the room's actual departure/takeover calls this, never stale presence or a missed packet. */
     depart(sid: string) {
@@ -107,104 +107,60 @@ export function createRailwayRequests({
       if (!object(message)) return;
       const pid = pidOf(from);
       if (!pid) return;
-      if (!available()) {
-        state(from, sync.worldStatus().recoveryError ? 'storage' : 'starting', object(message.e) ? message.e : message);
-        return;
-      }
       const current = sessions.get(pid);
+      if (message.t === 'r:resync') {
+        // Whole state again, from change tick -1; the mirror reset itself before asking.
+        if (replication.has(from)) replication.resync(from);
+        return;
+      }
       if (message.t === 'r:open') {
-        if (current?.sid === from) {
-          if (current.opening) state(from, 'starting');
-          else sessionAnswer(current);
-          return;
-        }
-        // Takeover retires the prior outstanding window. Already stamped edits retain their stored order.
-        if (current?.opening) {
-          state(from, 'busy');
-          return;
-        }
+        if (!available()) return state(from, unavailable());
+        if (current?.sid === from)
+          return send({ t: 'r:session', to: from, epoch: current.epoch, next: 1 + (api.account(pid)?.request ?? 0) });
+        // A new page (or a takeover): a new epoch retires whatever the old one had in flight.
         const epoch = (api.account(pid)?.epoch ?? 0) + 1;
-        if (!sync.submitEdit({ op: 'rail.session', i: 0, j: 0, pid, epoch })) {
-          state(from, 'busy');
-          return;
-        }
-        sessions.set(pid, { sid: from, epoch, next: 1, opening: true, pending: new Set() });
+        if (epoch > RAILWAY_MAX_INT || !api.session(pid, epoch)) return state(from, 'full');
+        sessions.set(pid, { sid: from, epoch });
+        send({ t: 'r:session', to: from, epoch, next: 1 });
         return;
       }
-      if (!current || current.sid !== from || current.opening) {
-        state(from, 'snapshot-required');
-        return;
-      }
-      if (message.t === 'r:status') {
-        if (!token(message)) {
-          state(from, 'invalid');
-          return;
-        }
-        const result = api.outcome(pid, message.epoch as number, message.request as number);
-        if (result) answer(from, result);
-        else state(from, 'busy', message);
-        return;
-      }
-      if (message.t !== 'r:edit' || !object(message.e) || !token(message.e)) {
-        state(from, 'invalid');
-        return;
-      }
+      if (message.t !== 'r:edit' || !object(message.e) || !token(message.e)) return;
       const e = message.e;
       const epoch = e.epoch as number,
         request = e.request as number;
-      const old = api.outcome(pid, epoch, request);
-      if (old) {
-        answer(from, old);
-        return;
+      if (!available()) return state(from, unavailable(), { epoch, request });
+      if (!current || current.sid !== from || current.epoch !== epoch) return rej(from, epoch, request, 'session');
+      const account = api.account(pid)!;
+      if (request <= account.request) {
+        // Already settled (a resend): answer again from its recorded outcome.
+        const old = api.outcome(pid, epoch, request);
+        return settle(from, epoch, request, old?.status === 'rejected');
       }
-      if (epoch !== current.epoch) {
-        state(from, 'snapshot-required', e);
-        return;
-      }
-      if (current.pending.has(request)) {
-        state(from, 'busy', e);
-        return;
-      }
-      if (request !== current.next) {
-        // A durable write can refuse an earlier token in this same ordered pipeline. Later tokens
-        // need to retry too; a snapshot cannot admit the missing token and only stalls those retries.
-        const waiting = request > current.next && request < current.next + RAILWAY_WINDOW;
-        state(from, waiting ? 'busy' : 'snapshot-required', e);
-        return;
-      }
-      if (current.pending.size >= RAILWAY_WINDOW) {
-        state(from, 'busy', e);
-        return;
-      }
-      // Host-only ops cannot enter through a material request. Invalid material requests become durable rejections.
-      const ordinary = ['rail.wake', 'rail.chop', 'rail.take', 'rail.rackTake', 'rail.drop', 'rail.deposit'];
-      const lineOps = [
-        'rail.mine',
-        'rail.axe',
-        'rail.beamChop',
-        'rail.beamTake',
-        'rail.beamDrop',
-        'rail.beamDeposit',
-        'rail.jump',
-        'rail.forgeTake',
-        'rail.depotTake',
-        'rail.lever',
-        'rail.hook',
-      ];
-      const allowed = ordinary.includes(String(e.op)) || (!!api.railway.line && lineOps.includes(String(e.op)));
-      const clean = railwayRequestEdit(e, epoch, request, { falls: !!api.railway.falls, line: !!api.railway.line });
-      // Every client action carries its actor's position and action time; one without them is an invalid request.
+      if (request !== account.request + 1) return rej(from, epoch, request, 'order');
+      const clean = railwayRequestEdit(e, epoch, request);
+      // Every action carries its actor's position and action time; one without them is a recorded rejection.
       const facts: ActorFacts | null =
         position(e.at) && railInt(e.ms, RAILWAY_MAX_INT)
           ? { pid, epoch, request, at: [e.at[0], e.at[1], e.at[2]], ms: e.ms }
           : null;
-      const accepted = allowed && !!facts && withActor(facts, () => sync.receiveEdit(clean, from));
-      if (!accepted && !sync.submitEdit({ op: 'rail.reject', i: 0, j: 0, pid, epoch, request })) {
-        state(from, sync.worldStatus().recoveryError ? 'storage' : 'busy', e);
-        return;
+      const result = api.act(pid, clean, RAIL_ACTIONS.has(String(e.op)) && facts ? actor(facts) : null);
+      settle(from, epoch, request, result.status === 'rejected');
+      if (result.effect) {
+        const event: Record<string, string | number | boolean> = {
+          op: clean.op,
+          pid,
+          epoch,
+          request,
+          accepted: result.accepted,
+          tick: api.tick(),
+        };
+        for (const k of EVENT_FIELDS) {
+          const v = (clean as Obj)[k];
+          if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string') event[k] = v;
+        }
+        for (const k of EFFECT_FIELDS) if (typeof result.effect[k] === 'number') event[k] = result.effect[k]!;
+        replication.emit(event);
       }
-      current.pending.add(request);
-      current.next++;
     },
   };
 }

@@ -17,6 +17,11 @@
 //       ids   [[tempId, serverId], ...] predicted spawns re-keyed
 //       x     [[kind, id], ...] despawns, applied before c
 //       c     [[kind, id, { field: value }], ...] changed fields of changed components; a spawn carries every field
+//       h     a hash of every component the server holds as of tk (hashComponents), about every HASH_STEPS steps, to a
+//             client subscribed to everything: its mirror compares and asks for the whole state on a mismatch
+//       w     1 on the last chunk of a client's first send after it joined: its mirror is whole from here on
+//       ev    [{ field: value }, ...] one-off events since the last send (accepted actions, for effects), read after
+//             x and c are applied; never part of the mirror, never re-sent to a late joiner
 //   client -> server  { t:'a', ep, rq, op, ...fields }   an action, identified by (epoch, request)
 export type FieldType = 'bool' | 'u8' | 'u16' | 'u32' | 'i32' | 'int' | 'q16' | 'f32' | 'str';
 export type FieldValue = number | boolean | string;
@@ -35,7 +40,12 @@ export type ServerPacket = {
   ids?: [temp: string, id: EntityId][];
   x?: Despawn[];
   c?: Change[];
+  ev?: Fields[];
+  w?: 1;
+  h?: number;
 };
+/** How often a client subscribed to everything gets a hash of the server's components (2 s). */
+export const HASH_STEPS = 120;
 
 export const GLOBAL_CELL = 'g';
 /** Relevancy cell edge in centimetres (64 m to start). */
@@ -107,4 +117,38 @@ export function cellsNear(xCm: number, zCm: number, radiusCm: number, size = CEL
   return out;
 }
 
+/** A one-off event: a flat object of up to MAX_EVENT_KEYS well-formed scalar fields. */
+export const MAX_EVENT_KEYS = 24;
+export function validEvent(v: unknown): v is Fields {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
+  let n = 0;
+  for (const k in v as Record<string, unknown>) {
+    const x = (v as Record<string, unknown>)[k];
+    if (!KIND.test(k) || ++n > MAX_EVENT_KEYS) return false;
+    if (!(typeof x === 'boolean' || (typeof x === 'number' && Number.isFinite(x)) || validValue('str', x)))
+      return false;
+  }
+  return n > 0;
+}
+
 export const entityKey = (kind: string, id: EntityId) => `${kind}:${typeof id === 'number' ? id : `s${id}`}`;
+
+/** FNV-1a over every component in a canonical order (entity key, then the schema's field order): the server's view
+ * of what it sent and a client's mirror hash the same when they agree. */
+export function hashComponents(
+  rows: Iterable<[kind: string, id: EntityId, fields: Fields]>,
+  schemas: Map<string, Schema>,
+) {
+  const keyed: [string, string][] = [];
+  for (const [kind, id, fields] of rows) {
+    const schema = schemas.get(kind);
+    if (schema) keyed.push([entityKey(kind, id), JSON.stringify(schema.names.map((n) => fields[n]))]);
+  }
+  keyed.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  let h = 2166136261;
+  for (const [key, text] of keyed) {
+    for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+    for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  }
+  return h >>> 0;
+}

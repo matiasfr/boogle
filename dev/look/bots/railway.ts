@@ -51,13 +51,12 @@ export async function play({ stopBeforeReward = false } = {}) {
   };
   const until = async (fn: () => unknown, beat: string, ms = 300000) => require(await bot.until(fn, ms, beat), beat);
   const job = (station: number) => read().stations[station]!;
-  // Co-op witness: accepted railway hashes by tick, compared offline between the two peers' logs.
+  // Co-op witness: mirrored railway hashes by server step, compared offline between the two peers' logs.
   const tickHashes = new Map<number, number>();
   const sampler = coop
     ? setInterval(() => {
         const state = inspectRailway();
-        if (state?.ready && state.line2 && state.line2.forge.used > 0 && state.hash !== undefined)
-          tickHashes.set(state.tick, state.hash);
+        if (state?.ready && state.line2.forge.used > 0 && state.step >= 0) tickHashes.set(state.step, state.hash);
       }, 50)
     : 0;
   const logHashes = () =>
@@ -713,10 +712,16 @@ export async function play({ stopBeforeReward = false } = {}) {
         rails = [0, 12, 12][k]!;
       if (k === 2) await viaTrack(frameAt);
       while (l2().stations[k]!.start < 0 && l2().stations[k]!.stock < bill) {
-        await until(() => l2().depot > 0, `Q${k + 1} depot brings logs`, 60000);
+        // The depot runs on the server's clock (12 s a load); the warped page clock can run ~9x faster than it.
+        await until(() => l2().depot > 0, `Q${k + 1} depot brings logs`);
         const depot = v2().depot!;
+        const stockBefore = l2().stations[k]!.stock;
         require(await bot.use(depot[0]!, depot[2]!, 'take depot logs', /^Pick up$/), 'depot rack offered');
-        require(await bot.work(() => read().carry > 0, 5000, 380), 'depot logs accepted after bounded retries');
+        // Confirmed within a round trip now, the logs can already have unloaded into the frame beside the rack.
+        require(
+          await bot.work(() => read().carry > 0 || l2().stations[k]!.stock > stockBefore, 5000, 380),
+          'depot logs accepted after bounded retries',
+        );
         await until(() => read().pending === 0, 'depot logs settle');
         await walk(frameAt.x, frameAt.z, 2.4);
         await until(() => read().carry === 0 && read().pending === 0, `Q${k + 1} logs unload`, 20000);

@@ -1,18 +1,21 @@
-// Maximum capped checkpoint plus durable-tail width; conservation is covered by railway-line-authority.
+// Maximum capped checkpoint plus durable-tail width; conservation is covered by railway-line-authority. The railway is
+// Server kind (replication R1a): it rides in the checkpoint, saved by pid, and its actions never enter the tail; the
+// tail holds only the lockstep edits a railway room admits (who.set, tune).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSync, MAX_RECOVERY_BYTES } from '../src/world/sync.ts';
-import { installPlayableRailwayRules } from '../src/world/rules/railway-index.ts';
+import { installRules } from '../src/world/rules/index.ts';
+import { install as installRailway } from '../src/world/railway-server.ts';
+import { createReplicator } from '../src/world/replicate-server.ts';
 import { homeLand } from './helpers/land.ts';
 import { ensure } from '../src/sim/roster.ts';
 import { TUNABLES } from '../src/sim/tune.ts';
 import { railSession } from '../src/sim/railway.ts';
-import { railwayRequestEdit } from '../server/src/host/railway-requests.ts';
-test('line recovery width bound retains sixty-four worst material stamps and maximum roster', (t) => {
+test('line recovery width bound retains sixty-four worst lockstep stamps and maximum roster', (t) => {
   // Deliberately combines mutually exclusive balances: a conservative byte bound, not a reachable state.
   const sync = createSync(),
-    base = installPlayableRailwayRules(sync, homeLand()),
-    s = base.railway.railway,
+    base = installRules(sync, homeLand()),
+    s = installRailway(sync, base, createReplicator()).railway,
     M = 2147483647;
   for (let k = 0; k < 256; k++) {
     const pid = `p${k}`.padEnd(32, 'x');
@@ -97,32 +100,23 @@ test('line recovery width bound retains sixty-four worst material stamps and max
   snapshot.tick = M;
   snapshot.epochMs = 1793850000000;
   const common = { p: 's'.repeat(32), u: s.accounts[255]!.pid };
-  // The widest request a client may send, actor facts included; the tail holds what the real cleaner stamps.
-  const facts = { at: [-200000, -200000, -200000], ms: 2147483647, junk: 'x'.repeat(900) };
+  // The widest lockstep edits a railway room admits (world-host.ts deliver): a long-name who.set and a tune commit.
   for (const body of [
-    { op: 'rail.chop', id: 399, yaw: -0.0000010000000000000002, collapsed: false },
-    { op: 'rail.beamDrop', revision: M, x: -200000, y: -200000, z: -200000 },
-  ]) {
-    const tail: { tick: number; seq: number; e: Record<string, unknown> }[] = Array.from({ length: 64 }, (_, i) => ({
-      tick: M,
-      seq: M - 64 + i,
-      e: { ...railwayRequestEdit({ ...body, ...facts }, M, M, { falls: true, line: true }), ...common },
-    }));
-    assert.ok(!('at' in tail[1]!.e) && !('ms' in tail[1]!.e), 'actor facts never enter the tail');
-    tail[0]!.e = {
-      op: 'rail.supply',
+    { op: 'who.set', i: 0, j: 0, n: '\ufffd'.repeat(16), c: 7 },
+    {
+      op: 'tune.commit',
       i: 0,
       j: 0,
-      p: common.p,
-      u: common.u,
-      marker: Number.MAX_SAFE_INTEGER,
-      grow: 'f'.repeat(97),
-      recover: [M],
-      beam: M,
-    };
+      key: 'railRecoveryMinutes',
+      v: M,
+      expectedRevision: M,
+      requestId: '\\'.repeat(64),
+    },
+  ]) {
+    const tail = Array.from({ length: 64 }, (_, i) => ({ tick: M, seq: M - 64 + i, e: { ...body, ...common } }));
     const e = {
       version: 1,
-      namespace: 'rail-v09-' + 'x'.repeat(22),
+      namespace: 'rail-v14-' + 'x'.repeat(22),
       catalog: '2',
       checkpoint: snapshot,
       hash: 4294967295,

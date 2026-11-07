@@ -7,11 +7,17 @@
 //                                                project(id) returns null when the entity no longer exists
 //   rep.touch(kind, id)                          an action or rule touched this entity this step
 //   rep.touchAll(kind)                           fallback for a rule that cannot name what it touched
-//   rep.commit(step)                             re-project only what was touched; stamp each changed field with step
+//   rep.commit(step)                             re-project only what was touched; stamp each changed field with step.
+//                                                Once per step, before that step's flush: a flush marks everything up
+//                                                to its step as sent, so a later commit at the same step would be lost
 //   rep.addClient(cid, cells | 'all')            late join: every subscribed cell starts at change tick -1 (whole)
 //   rep.subscribe(cid, cells | 'all')            cells entered start at -1; cells left send despawns for what it saw
 //   rep.removeClient(cid)
 //   rep.ack(cid, epoch, request) / reject(cid, epoch, request, reason) / remap(cid, temp, id)
+//   rep.resync(cid)                              the client's mirror diverged: whole state again (its ack is kept,
+//                                                its queued events dropped: the whole state already shows them)
+//   rep.emit(event)                              a one-off event to every client on its next send (effects of an
+//                                                accepted action); a client backed up past MAX_EVENTS drops the oldest
 //   rep.flush(step, send, ready?)                end of step: one packet set per client whose cells changed since its
 //                                                change tick (or with an ack due). A client whose socket is backed up
 //                                                (ready false) is skipped; its next send carries the latest values, so
@@ -21,7 +27,9 @@
 // append-only change log of (step, entity), shared by every client in the cell and compacted when it grows.
 import {
   GLOBAL_CELL,
+  HASH_STEPS,
   MAX_PACKET_CHARS,
+  hashComponents,
   entityKey,
   validFields,
   type ActionId,
@@ -58,7 +66,14 @@ type Client = {
   rej: [number, number, string][];
   ids: [string, EntityId][];
   drops: Despawn[];
+  ev: Fields[];
+  fresh: boolean; // joined, whole state not yet sent: the next send ends with w: 1
+  hashAt: number; // the step from which this client is due a hash (subscribed to everything only)
 };
+/** Refusals held for one backed-up client; older ones are dropped (the ack still settles them). */
+export const MAX_REJECTS = 256;
+/** Events held for one backed-up client; older ones are dropped (effects only, the state still arrives whole). */
+export const MAX_EVENTS = 256;
 export type FlushStats = { clients: number; packets: number; chars: number; skipped: number };
 
 export function createReplicator() {
@@ -181,6 +196,19 @@ export function createReplicator() {
     return cl.cells;
   }
   // The packets client cl needs now (chunked under MAX_PACKET_CHARS), or [] for none. Marks them sent.
+  let hashStep = -1,
+    hashValue = 0;
+  // The hash of everything committed, once per step at most, shared by every client due one.
+  function hashNow(step: number) {
+    if (hashStep !== step) {
+      hashStep = step;
+      hashValue = hashComponents(
+        [...live.values()].map((e) => [e.kind, e.id, e.values!] as [string, EntityId, Fields]),
+        new Map([...projections.values()].map((p) => [p.schema.kind, p.schema])),
+      );
+    }
+    return hashValue;
+  }
   function packetsFor(cl: Client, step: number): ServerPacket[] {
     const x: Despawn[] = cl.drops.splice(0);
     const c: Change[] = [];
@@ -189,7 +217,18 @@ export function createReplicator() {
       const cell = cells.get(key);
       if (cell) since(cell, t, x, c);
     }
-    if (!x.length && !c.length && !cl.ackDue && !cl.rej.length && !cl.ids.length) return [];
+    const hashDue = cl.all && !cl.fresh && step >= cl.hashAt;
+    if (
+      !x.length &&
+      !c.length &&
+      !cl.ackDue &&
+      !cl.rej.length &&
+      !cl.ids.length &&
+      !cl.ev.length &&
+      !cl.fresh &&
+      !hashDue
+    )
+      return [];
     for (const key of sub.keys()) sub.set(key, step);
     const packets: ServerPacket[] = [];
     let cur: ServerPacket = { t: 's', tk: step };
@@ -209,6 +248,16 @@ export function createReplicator() {
     if (cl.ackDue && cl.ack) cur.ack = cl.ack;
     if (cl.rej.length) cur.rej = cl.rej.splice(0);
     if (cl.ids.length) cur.ids = cl.ids.splice(0);
+    if (cl.ev.length) cur.ev = cl.ev.splice(0);
+    if (cl.fresh) {
+      cur.w = 1;
+      cl.hashAt = step + HASH_STEPS; // a whole send needs no check yet
+    }
+    if (hashDue) {
+      cur.h = hashNow(step);
+      cl.hashAt = step + HASH_STEPS;
+    }
+    cl.fresh = false;
     cl.ackDue = false;
     packets.push(cur);
     return packets;
@@ -250,7 +299,18 @@ export function createReplicator() {
     },
     commit,
     addClient(cid: string, cellsWanted: readonly string[] | 'all' = 'all') {
-      clients.set(cid, { all: false, cells: new Map(), ack: null, ackDue: false, rej: [], ids: [], drops: [] });
+      clients.set(cid, {
+        all: false,
+        cells: new Map(),
+        ack: null,
+        ackDue: false,
+        rej: [],
+        ids: [],
+        drops: [],
+        ev: [],
+        fresh: true,
+        hashAt: 0,
+      });
       subscribe(cid, cellsWanted);
     },
     subscribe,
@@ -263,11 +323,30 @@ export function createReplicator() {
       cl.ackDue = true;
     },
     reject(cid: string, epoch: number, request: number, reason: string) {
-      client(cid).rej.push([epoch, request, reason]);
+      const rej = client(cid).rej;
+      rej.push([epoch, request, reason]);
+      if (rej.length > MAX_REJECTS) rej.shift();
+    },
+    resync(cid: string) {
+      const old = client(cid);
+      clients.delete(cid);
+      this.addClient(cid, old.all ? 'all' : [...old.cells.keys()]);
+      const cl = client(cid);
+      cl.ack = old.ack;
+      cl.ackDue = !!old.ack;
+      cl.rej = old.rej;
     },
     remap(cid: string, temp: string, id: EntityId) {
       client(cid).ids.push([temp, id]);
     },
+    emit(event: Fields) {
+      for (const cl of clients.values()) {
+        cl.ev.push(event);
+        if (cl.ev.length > MAX_EVENTS) cl.ev.shift();
+      }
+    },
+    /** Whether cid is a replication client (tests drive hosts without a hosted room). */
+    has: (cid: string) => clients.has(cid),
     /** End of step: send each client what changed in its cells. ready(cid) false skips a backed-up socket. */
     flush(
       step: number,

@@ -4,17 +4,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fork } from 'node:child_process';
-import { once } from 'node:events';
 import { createServer } from 'node:http';
-import { createStore } from '../src/store.ts';
-import { createRailwayWorldHost, type RailwayWorldHost } from '../src/host/world-host.ts';
+import type { RailwayWorldHost } from '../src/host/world-host.ts';
 import { createRoomHost } from '../src/host/rooms.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
 import { railwayInvariant } from '../../src/sim/railway.ts';
-import type { RecoveryEnvelope } from '../../src/world/sync.ts';
 import type { TuneApi } from '../../src/world/rules/tune.ts';
 import { SUPPLY_SOURCE, supplyFixture } from './fixtures/railway-supply-fixture.ts';
 
@@ -129,36 +125,6 @@ test('only controlled T1 proto commits accept the two supply tunes, which surviv
   }
 });
 
-test('host keeps at most one durable supply stamp outstanding until its application', async (t) => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-supply-pending-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
-  const roomId = railwayRoomId('supply-pending');
-  const f = await supplyFixture(dir, roomId);
-  try {
-    f.host.sync.saveNow(true);
-    await f.host.sync.whenDurable();
-    const tick = f.host.sync.world.tick;
-    const marker = f.host.rules.railway.railway.supply!.marker;
-    const published = f.published.filter((edit) => edit.op === 'rail.supply').length;
-    for (let attempt = 0; attempt < 64; attempt++) {
-      f.advance(1);
-      f.host.step(0); // Host maintenance runs, but no simulation tick applies the pending stamp.
-      await f.host.sync.whenDurable();
-      const envelope = f.store.readSync(roomId)!.data as RecoveryEnvelope;
-      assert.equal(envelope.tail.filter((entry) => entry.e.op === 'rail.supply').length, 1);
-      assert.equal(f.host.sync.world.tick, tick);
-      assert.equal(f.host.rules.railway.railway.supply!.marker, marker);
-      assert.equal(f.published.filter((edit) => edit.op === 'rail.supply').length, published + 1);
-    }
-    assert.equal(f.host.rules.railway.counts().produced, 0);
-    await f.ticks(4);
-    assert.ok(f.host.rules.railway.railway.supply!.marker > marker, 'the gate releases after actual application');
-    assert.equal(railwayInvariant(f.host.rules.railway.railway), null);
-  } finally {
-    await f.host.close({ save: false });
-  }
-});
-
 test('occupied room protects nearby drops while slow renewal ignores visibility and nearby peers', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-supply-observers-'));
   t.after(() => fs.rm(dir, { recursive: true, force: true }));
@@ -229,60 +195,6 @@ test('accepted rack and each young-growth stage survive durable restart without 
   }
 });
 
-for (const boundary of ['published', 'replacement'] as const)
-  test(`SIGKILL at ${boundary} retains recovered stock and the accepted final regrowth event`, async (t) => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-supply-kill-'));
-    t.after(() => fs.rm(dir, { recursive: true, force: true }));
-    const roomId = railwayRoomId(`supply-${boundary}`);
-    const child = fork(new URL('./fixtures/railway-supply-crash-child.ts', import.meta.url), [dir, roomId, boundary], {
-      execArgv: [],
-      stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
-    });
-    t.after(() => {
-      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
-    });
-    let stderr = '';
-    child.stderr?.on('data', (chunk: Buffer) => (stderr += chunk.toString()));
-    const event = await new Promise<{ boundary: string; now: number; temporary?: string }>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(`supply crash child timeout: ${stderr}`)), 20000);
-      child.once('message', (message) => {
-        clearTimeout(timer);
-        resolve(message as { boundary: string; now: number; temporary?: string });
-      });
-      child.once('error', (error) => {
-        clearTimeout(timer);
-        reject(error);
-      });
-      child.once('exit', (code, signal) => {
-        clearTimeout(timer);
-        reject(new Error(`supply crash child exited before boundary (${code}/${signal}): ${stderr}`));
-      });
-    });
-    assert.equal(event.boundary, boundary);
-    if (boundary === 'replacement') assert.ok((await fs.stat(event.temporary!)).size > 0);
-    const exited = once(child, 'exit');
-    assert.equal(child.kill('SIGKILL'), true);
-    const [code, signal] = await exited;
-    assert.equal(code, null);
-    assert.equal(signal, 'SIGKILL');
-    const store = createStore({ dataDir: dir, maxRooms: 4 });
-    await store.init();
-    const restored = createRailwayWorldHost({ roomId, store, tick: false, now: () => event.now });
-    try {
-      await restored.whenReady();
-      assertSupply(restored, 35);
-    } finally {
-      await restored.close();
-    }
-    const again = createRailwayWorldHost({ roomId, store, tick: false, now: () => event.now });
-    try {
-      await again.whenReady();
-      assertSupply(again, 35);
-    } finally {
-      await again.close({ save: false });
-    }
-  });
-
 test('real idle eviction and rejoin retain the accepted recovery rack and regrown source', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-supply-eviction-'));
   const roomId = railwayRoomId('supply-eviction');
@@ -332,9 +244,9 @@ test('real idle eviction and rejoin retain the accepted recovery rack and regrow
     };
     await until(() => welcome, 'supply manager welcome');
     const room = rooms.room(roomId)!;
-    assert.ok('whenReady' in room.world);
-    await room.world.whenReady();
-    assertSupply(room.world, 35);
+    const world = room.world as RailwayWorldHost;
+    await world.whenReady();
+    assertSupply(world, 35);
     return { ws, room };
   }
   const first = await connect('supplyfirst');

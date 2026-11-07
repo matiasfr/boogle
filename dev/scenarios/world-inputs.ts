@@ -11,7 +11,6 @@ import { fileURLToPath } from 'node:url';
 import type { T } from './run.ts';
 import { enterGame } from '../look/lib.ts';
 import { createSync } from '../../src/world/sync.ts';
-import { installPlayableRailwayRules } from '../../src/world/rules/railway-index.ts';
 import { installRules } from '../../src/world/rules/index.ts';
 import type { Land } from '../../src/world/rules/types.ts';
 import * as line from '../../src/sim/railway-line-layout.ts';
@@ -38,8 +37,8 @@ export default {
   about: 'classic registry fixture and production line-one browser/Node registry and numeric catalog parity',
   timeout: 300000,
   async run(t: T) {
-    // The current game installs the classic registry first and appends the railway (src/world/game-world.ts): the
-    // fixture pins that classic prefix, which Node tests run the rules on.
+    // The current game installs the classic registry (src/world/game-world.ts); the railway is mirrored, not
+    // registered. The fixture pins the classic registry, which Node tests run the rules on.
     const g = await t.open({ name: 'inputs', size: [192, 120] });
     const ready = await g.waitFor(`window.boogle?.land?.layout?.trees?.length > 0`, { timeout: 90000 });
     if (!t.check('the game is up with the gifts layout', ready >= 0, ready + ' ms')) return;
@@ -116,12 +115,12 @@ export default {
     if (sparseFrames) await g.still('production-sparse-ready');
     const actual = await g.eval(`
       const sync = await import('/src/world/sync.ts');
-      const { railwayApi } = await import('/src/world/game-world.ts');
+      const { railwayMirror } = await import('/src/world/game-world.ts');
       const line = await import('/src/sim/railway-line-layout.ts');
       const { RAILWAY_SOURCES } = await import('/src/sim/railway-layout.ts');
       return {
         registry: sync.registry(),
-        installed: !!railwayApi?.railway.line,
+        installed: !!railwayMirror?.railway.line,
         catalog: {
           version: line.LINE1_CATALOG, stations: line.LINE1_STATIONS, rocks: line.LINE1_ROCKS,
           greatTree: line.LINE1_GREAT_TREE, axe: line.LINE1_AXE_STAND, jump: line.LINE1_JUMP_DEVICE,
@@ -130,12 +129,10 @@ export default {
         },
       };`);
     const node = createSync();
-    const rules = installPlayableRailwayRules(node, land as Land);
-    t.check(
-      'production installs line-one authority in browser and Node',
-      actual.installed && !!rules.railway.railway.line,
-    );
-    same('production state and op registration order', actual.registry, node.registry());
+    installRules(node, land as Land);
+    // The railway is Server kind (replication R1a): a tab mirrors it and registers no railway op or state.
+    t.check('production mirrors line one in the browser', actual.installed);
+    same('production state and op registration order (classic only)', actual.registry, node.registry());
     same('production numeric source and line catalog', actual.catalog, {
       version: line.LINE1_CATALOG,
       stations: line.LINE1_STATIONS,
