@@ -23,7 +23,8 @@ permissions:
   issues: write
 
 concurrency:
-  group: smoke
+  # Per ref: a manual run on a branch must not be replaced by (or replace) the run that a deploy of main queues.
+  group: smoke-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
