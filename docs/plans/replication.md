@@ -554,7 +554,7 @@ E components (`src/sim/railway-world.ts`), each a replication schema as it stand
 projection (`src/world/replicate-world.ts`): the systems mark what they change, so `railProjections` and the
 hand-written touch lists are gone. Catalog kinds and accounts are keyed by entity id and carry their `slot` or `pid`;
 `rail.nextPile` is no longer sent. The client's mirror writes packets into a world of the same components, and
-prediction runs the server's systems on a clone of it. `WORLD_NS` v16.
+prediction runs the server's systems on a clone of it. `WORLD_NS` v17.
 
 ### Fly `shared-cpu-1x` throttling check (plan; not run)
 

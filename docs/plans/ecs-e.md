@@ -149,7 +149,7 @@ no port tried]
   client mirror writes replication packets into a world and refills the read model in place; prediction clones that
   world, runs the same systems and refills a scratch read model. The adapter's code does not change.
 - **Save:** `world.snapshot()` replaces `serializeRailway`, `railway-line-code.ts`'s packing and line two's base-36
-  rows; `world.hash()` replaces `JSON.stringify` + FNV. **`WORLD_NS` v16** (world reset; no migration).
+  rows; `world.hash()` replaces `JSON.stringify` + FNV. **`WORLD_NS` v17** (world reset; no migration; v16 was the great beam pass).
 - **Deleted:** the legacy T1-only and playable-without-line states (no production room uses them; "No old builds in
   development"), `railProjections`/`railTouch*`, the hand encodings and their bounds tests (replaced by schema-load
   tests).
@@ -297,7 +297,7 @@ inside E (C's storage; the API hides storage), then bitECS. This trigger change 
   back exactly as before. The adapter and the views are unchanged.
 - **Deleted:** `serializeRailway`/`loadRailway`/`hashRailway`, `src/sim/railway-line-code.ts`, line two's and the
   supply's hand encodings, `railProjections` and the touch lists, and the T1-only and playable-without-line states
-  (tests only). **`WORLD_NS` v16.**
+  (tests only). **`WORLD_NS` v17.**
 - **Same rules, checked:** `dev/spikes/ecs/railway-diff.ts` runs the pre-move rules (a copy of `src/sim` from before
   the move) and the systems on the same random action streams (three players, every op, ticks, supply pulses with
   random intervals, resumes, sessions, the beam's absent paths) and compares the read model with the old state after
@@ -305,8 +305,28 @@ inside E (C's storage; the API hides storage), then bitECS. This trigger change 
   copy-on-write change, 90,180 comparisons, equal.
 - **Tests:** the rule tests written against `Railway` run through `test/railway-live.ts`, a read-only live view of
   an audited world whose writes go through the systems (a write to the view throws); encoding tests became snapshot
-  load tests on the world (malformed columns, archetypes, keys, conservation). `npm run check` 462 pass; server 84
+  load tests on the world (malformed columns, archetypes, keys, conservation). `npm run check` 465 pass; server 86
   pass; `test:net` 111/111.
+- **Rebased onto the great beam pass** (`origin/main`, 7 November): `railBeamChoppable` and the new
+  `railAxeAvailable` are read helpers on the read model; the `rail.axe` system waits on the lit forge, the beam systems
+  no longer need the proper axe or the 40th log, and `validateRailLine` carries the new save invariants (the axe
+  before the forge, beam work before T3, a beam laid before the logs) that `railway-line-code.ts` held. The co-op
+  shared-unlock test passes on E. The differential check above predates the pass (its pre-move copy has the old
+  beam rules); the pass's own tests run on E.
+- **Rebased onto the away credit** (`origin/main` added it while this ran): its yard credit is now part of the
+  `rail.resume` system (`awayCredit`), the host's paused-room path reads markers through the API, and its tests run
+  on the world (`test/helpers/railway-q2.ts`, `server/test/railway-away.test.ts`).
+- **The solo playthrough finishes** (after the rebase onto the great beam pass, the per-checkout Vite cache and the
+  bot's `LAYING_MS`): 47 game minutes in 3 min 24 s, "everything it expected came", no errors. T1 laid at 5:58, T2
+  10:28, T3 19:05, the forge lit 23:02, Q1 26:49, Q2 39:51, the hook 40:09, Q3 46:22 and the quarry gate 46:39.
+  Earlier attempts stopped at T3 on the bot's old 300 s laying wait, or at the harness lobby (which `origin/main` hit
+  too).
+- **Rebased onto the great beam pass** (`origin/main`, 7 November): `railBeamChoppable` and the new
+  `railAxeAvailable` are read helpers on the read model; the `rail.axe` system waits on the lit forge, the beam systems
+  no longer need the proper axe or the 40th log, and `validateRailLine` carries the new save invariants (the axe
+  before the forge, beam work before T3, a beam laid before the logs) that `railway-line-code.ts` held. The co-op
+  shared-unlock test passes on E. The differential check above predates the pass (its pre-move copy has the old
+  beam rules); the pass's own tests run on E.
 - **Rebased onto the away credit** (`origin/main` added it while this ran): its yard credit is now part of the
   `rail.resume` system (`awayCredit`), the host's paused-room path reads markers through the API, and its tests run
   on the world (`test/helpers/railway-q2.ts`, `server/test/railway-away.test.ts`).
@@ -350,7 +370,9 @@ process, both trees' own railway installs on one action stream (`dev/spikes/ecs/
 the other way: an action 5.7-7.2 µs on E against 10.1-17.9 µs before (the old path rebuilt pile maps and touch
 lists), a step with its commit and flush to two mirrors 78-83 µs against 78-94 µs. Crowding one pile at 6 players
 corrected 33-35 per player-minute on E against 28-30 on `origin/main` in this session and 32-39 in R1b's own table:
-these are simultaneous presses on a shared beat, which vary from run to run. So E is not shown worse, but the
+these are simultaneous presses on a shared beat, which vary from run to run. A rerun of the in-process comparison after the
+last rebase, against that day's `origin/main` (machine still busy, load 6-7): an action 9.3-11.5 µs on E against
+13.9-22.3 µs, a step 90-99 µs against 94-112 µs. So E is not shown worse, but the
 bar "no worse than R1b" is met only within this noise: **a quiet-machine rerun of `npm run load` against
 `origin/main` is the check to make before trusting the server columns.**
 
