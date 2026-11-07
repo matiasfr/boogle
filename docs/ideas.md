@@ -38,3 +38,4 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 ## World and story
 - The story frame: by connecting everywhere and building an economy for the simple little guys, the players are secretly doing The Boogler's work, for good (owner, 2026-11-06)
 - Narrative pass per area, after the mechanics and numbers are settled: characters you meet with fun dialogue, lore for each place and how the world ties together, plus what each environment looks like; it "will really just flesh out the world" (owner, 2026-11-06)
+- Visitors from the mainland: boats bring little-guy visitors to the port now and then, maybe new residents or helpers (owner, 2026-11-07)

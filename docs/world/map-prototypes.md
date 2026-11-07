@@ -1,5 +1,5 @@
-> **Status: proposed (2026-11-06), revised the same day for art surface.** Design only; no game code and no change to
-> the economy model.
+> **Status: Sickle Isles chosen and greyboxed (2026-11-06); owner decisions after the greybox recorded below
+> (2026-11-07).** The other four layouts stay proposals. No change to the economy model.
 
 # Map prototypes
 
@@ -13,6 +13,40 @@ a larger area where we may not be able to take as much care in how it looks." Ev
 Sickle Coast is reworked as **Sickle Isles** (its crescent broken into small islands), Figure Eight's big islands
 shrink, and Spine and Ribs and The Climb turn their big landmasses into backdrops with walkable pockets. This lens
 weakens those two most.
+
+## Owner decisions after the greybox (7 November)
+
+The Sickle Isles greybox (`?greybox=sickle` on the dev server; [src/proto/greybox/](../../src/proto/greybox/README.md))
+answered the layout's open questions in 3D at the real scale. The owner's calls, all now in the page's JSON, which the
+greybox reads as its one source:
+
+1. **Scale stays; the fog extends.** "I like the sense of scale. We should just extend the fog if we need to." The
+   game's fog ran out at 1.5 km, so from Home only Bell Rock and the classic island showed. In the greybox the fog now runs
+   to the crossing's 3.6 km (the live game keeps its own until these areas are built). Performance before and after is in the
+   greybox report; other options come back if it costs too much.
+2. **The tweaks.** A chalk islet on each side of Canopy Town (six islets, one kit), so the wall reads as one, with
+   Canopy's giant crowns rising over it and the line entering the town through a 70 m cleft; the Gorge split turned so
+   its gap points at Ring Island's aperture; the sea cave moved to the sandstone face 65 m from the West landing, which
+   you see from spawn; a 75 m crane, lit at the top; salt stacks, sheds and a wind pump for the Saltpan.
+3. **The Original Island is the classic island**, The Boogler's, at the world origin in Sickle Bay ("it could be
+   anywhere; I'll take your best suggestion"). Seen across the water from the first minute and reached last, like
+   Breath of the Wild's castle. The far "Original Island" is gone; the final crossing is a lantern causeway from Bell
+   Rock, lit from the Notch. Bell Rock and the bay shortcut moved 400 m north to clear it: the shortcut is 1.21 km
+   (1.6 min) against 2.90 km (4.0 min) the long way, and Canopy Town drops from 5.2 to 2.9 minutes when it's first.
+4. **Geology and shores.** Every island has a geology note, an elevation and a shallow shelf under the water (sand or
+   rock), so the sea lightens toward the shore as it does at Home's cove: chalk islets 120 m on a wave-cut platform,
+   basalt stacks 85 m with a boulder apron, a 12 m forest isle on sand, a 55 m sandstone cliff over a 3 m harbour apron,
+   a granite skerry in the bay shallows, salt flats on a sand bar, a limestone arch on a reef.
+5. **A proper port.** High Port has a real harbour: a breakwater that carries the line in from the Saltpan, quays and
+   warehouses on the apron, a dock crane, moorings in the basin and a lit harbour mouth facing the mainland.
+6. **A greater civilization on the horizon.** A backdrop mainland to the west and south-west: coastal hills to a 220 m
+   ridge and a city with towers, a lighthouse and a smoke plume, never reached in the main game. It is seen from the far
+   side of the Wall (High Port, Canopy Town, the Notch's telescope, the Gorge rim, the wall-top line), 1.6 to 2.6 km
+   away, and not from Home, Ring Island or the bay: 3.3 km and more from Home, under 3% contrast in the fog, and mostly
+   behind the Wall and High Port. Cargo boats and a passenger steamer come and go between High Port's harbour mouth and
+   the city (ambient routes, cosmetic). Later it could carry the story frame parked in [ideas](../ideas.md) (the
+   players secretly doing The Boogler's work) and the visitors idea: boats bringing little-guy visitors, maybe new
+   residents or helpers.
 
 ## What the page shows
 
@@ -62,7 +96,7 @@ weakens those two most.
 
 | Layout          | Walkable land      | Backdrop | Walkable pieces | Track on land / over sea / tunnel | Biomes | Set pieces | Sea in view | Most land near one station |
 | --------------- | ------------------ | -------- | --------------- | --------------------------------- | ------ | ---------- | ----------- | -------------------------- |
-| Sickle Isles    | 1.4 km² (5.7× Home) | —        | 13              | 5.8 / 6.5 / 0.7 km                | 9      | 6          | 90%         | 0.49 km²                   |
+| Sickle Isles    | 1.4 km² (5.6× Home) | —        | 14              | 6.0 / 6.3 / 0.7 km                | 8      | 6          | 89%         | 0.53 km²                   |
 | Figure Eight    | 1.5 km² (6.3×)     | —        | 8               | 3.8 / 6.9 / 0.9 km                | 8      | 5          | 89%         | 0.44 km²                   |
 | Spine and Ribs  | 1.5 km² (6.1×)     | 8.4 km²  | 8               | 6.8 / 3.2 / 3.5 km                | 8      | 5          | 52%         | 2.98 km²                   |
 | The Climb       | 1.3 km² (5.2×)     | 5.3 km²  | 7               | 13.3 / 2.1 / 2.6 km               | 7      | 5          | 52%         | 3.14 km²                   |
@@ -152,7 +186,7 @@ cloth.
 
 | Layout          | Places (stops) | New rail | Loops at the end | Order choice   | Double-backs | Mean ride at the end | To the ending |
 | --------------- | -------------- | -------- | ---------------- | -------------- | ------------ | -------------------- | ------------- |
-| Sickle Isles    | 11 (4)         | 12.9 km  | 3 / 4            | Stage 3, 3.5 h | 1            | 2.4 min              | 4.7 min       |
+| Sickle Isles    | 11 (4)         | 13.0 km  | 3 / 4            | Stage 3, 3.5 h | 1            | 2.3 min              | 2.6 min       |
 | Figure Eight    | 10 (3)         | 11.6 km  | 3                | Stage 5, 5.3 h | 2            | 2.5 min              | 4.0 min       |
 | Spine and Ribs  | 9 (2)          | 13.5 km  | 2                | Stage 4, 3.9 h | 1            | 4.4 min              | 8.4 min       |
 | The Climb       | 10 (3)         | 18.1 km  | 3                | Stage 3, 3.5 h | 1            | 4.9 min              | 9.5 min       |
@@ -167,32 +201,33 @@ Home before any shortcut.
 home in a minute." **References:** Dark Souls (the lift back to Firelink), Breath of the Wild (a landmark on the
 skyline from day one), The Wind Waker (every island its own silhouette), Super Mario Odyssey (a small, dense kingdom).
 
-**Pitch.** West of Home a lopsided chain of small islands curls round a shallow bay. Its spine is the White Wall: four
-narrow chalk sea-cliff islets, 120 m tall, that read as one broken wall on the skyline. Each place is its own island,
-small enough to dress densely: High Gorge is a sea stack split in two and bridged by its town; Canopy Town is a forest
-island; High Port sits on a cliff-top island with its quay at the foot; Lantern Notch is a sea arch. From Ring Island
-you pick High Gorge (a long trestle out to the stack) or Canopy Town (the bay trestle by Bell Rock). The bay shortcut
-from Home to Bell Rock comes next and halves Canopy Town's ride (5.2 to 2.6 minutes when it's first). High Port's crane
-is on the skyline from day one, but you reach it after both branches by doubling back: the powered pick opens a sea cave
-under Home's own south cliffs, and the line runs past the Saltpan to the Port Quay, where the crane lifts it up the
-cliff. The White Wall line then hops along the chalk islets on short bridges to close the ring, and the sea arch at
-Lantern Notch leads to the Original Island.
+**Pitch** (revised 7 November). West of Home a lopsided chain of small islands curls round a shallow bay. Its spine is
+the White Wall: six narrow chalk sea-cliff islets, 120 m tall, that read as one broken wall on the skyline, with Canopy
+Town's giant crowns rising over it. Each place is its own island, small enough to dress densely: High Gorge is a sea
+stack split in two, its gap pointing at Ring Island; Canopy Town is a forest island behind a cleft in the Wall; High
+Port is a harbour under a cliff-top town; Lantern Notch is a sea arch facing the mainland on the far horizon. The
+Boogler's island, the classic island, sits in the bay itself. From Ring Island you pick High Gorge (a long trestle out
+to the stack) or Canopy Town (the bay trestle by Bell Rock). The bay shortcut from Home to Bell Rock comes next and
+cuts Canopy Town's ride from 5.2 to 2.9 minutes when it's first. High Port's lit crane is on the skyline from day one,
+but you reach it after both branches by doubling back: the powered pick opens the sea cave in the sandstone face by the
+West landing, and the line runs past the Saltpan and along the breakwater into the harbour, where the crane lifts it up
+the cliff. The White Wall line then hops along the chalk islets on short bridges to close the ring. Last, you light the
+Notch's lantern and ride the lantern causeway from Bell Rock to The Boogler's island, which you have seen all game.
 
 **Kept from Sickle Coast:** the lopsided bay, the cliff wall as a skyline landmark, the bay shortcut, the crane visible
-from day one, the sea-cave double-back, the order and the ride times (mean 2.4 minutes, unchanged).
+from day one, the sea-cave double-back and the order. Mean ride 2.3 minutes; the ending is now 2.6 minutes from Home.
 **Changed:** the 4.3 km² crescent is gone; the wall is a string of islets; the Gorge is a split stack; the Notch is a
 sea arch instead of a tunnel through the wall; the ring-closing line hops between islands instead of running along a
 cliff top.
 
-- **Art surface.** 1.4 km² walkable, down from 4.7, in thirteen small pieces; 90% sea in view, up from 74%. The four
-  chalk islets are one modular kit placed four times, so the White Wall is one set piece, not four. Half the new track
-  is over water.
+- **Art surface.** 1.4 km² walkable, down from 4.7, in fourteen small pieces; 89% sea in view, up from 74%. The six
+  chalk islets are one modular kit placed six times, so the White Wall is one set piece, not six. Half the new track is
+  over water. The Original Island already exists, and the mainland is a far silhouette layer, so neither counts.
 - **Co-op pacing, strengths.** The shortest rides of the five. Home stays the hub: the bay shortcut and the sea cave
   both start there, so friends regroup in town. A loop closes at 4.4 hours, the big lap at 7.3. The double-back passes
   through Home itself.
-- **Risks.** A broken wall has to still read as one wall from Home; that depends on the islets' height and spacing, so
-  it's the first thing to check in a greybox. It still completes as a ring. The Port after both branches has the most
-  complex bill.
+- **Risks.** Checked in the greybox (7 November): with four islets the wall read as two masses either side of Canopy,
+  so it now has six. It still completes as a ring. The Port after both branches has the most complex bill.
 - **Economy model fit.** Order becomes Ring, first branch, shortcut, second branch, Port (double-back), ring closure,
   ending. The Port's refit takes four kinds of material. Stops: Bell Rock, Saltpan Halt, Port Quay, Lantern Notch.
 
@@ -308,7 +343,7 @@ crossing and the 1.7 km stack line at 20 m/s and ask whether a 2.5-minute ride f
 ## Open questions
 
 1. **Which layout goes to a greybox?** Recommended: **Sickle Isles**, with Stepping Stones as the fallback.
-   Answer: \_\_\_
+   Answer: **Sickle Isles** (owner, 6 November); greyboxed, with the decisions above (7 November).
 2. **Does High Port come after both branches?** Four of the five layouts do this, so the Port recombines everything and
    is the payoff of a double-back. The brief puts it between the branches. Recommended: **yes, after both**.
    Answer: \_\_\_
