@@ -555,6 +555,8 @@ export async function createRailwayLine2(
       return;
     }
     if (event.op === 'rail.hook') {
+      // Only the finder gets the card; everyone else's flourish is ability-arrival.ts (co-op abilities, option E).
+      if (event.pid !== state.pid) return;
       placeSound('pickupJump', hookAt.x, hookAt.z);
       // The reveal brings its own fanfare and card, as the jump device's does (tools.ts).
       youGot({

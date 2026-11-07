@@ -18,11 +18,12 @@ import { PLAYER_R } from '../../../src/constants.ts';
 import { fallArrival } from '../../../src/fall/arrival.ts';
 import { onRemotePresence, remotes } from '../../../src/netplay/net.ts';
 
-export async function play({ stopBeforeReward = false } = {}) {
+/** `solo`: play the solo route even on a two-player page, beside a friend another eval drives (coop-unlock.ts). */
+export async function play({ stopBeforeReward = false, solo = false } = {}) {
   const query = new URLSearchParams(location.search);
   const player = query.get('player');
-  const coop = player === '1' || player === '2';
-  const second = player === '2';
+  const coop = !solo && (player === '1' || player === '2');
+  const second = coop && player === '2';
   const peers = new Map<
     string,
     { pid: string | null; x: number; y: number; z: number; seenAt: number; beamHelp: string | null }
@@ -129,7 +130,8 @@ export async function play({ stopBeforeReward = false } = {}) {
   };
   const dismiss = async (name: string) => {
     await until(() => read().reward.showing, `${name} appears`);
-    await bot.wait(1600);
+    // &cardMs= holds a card up longer, for a capture of it.
+    await bot.wait(Number(query.get('cardMs')) || 1600);
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
     await until(() => !read().reward.showing, `${name} dismissed with Interact`);
@@ -556,7 +558,11 @@ export async function play({ stopBeforeReward = false } = {}) {
       require(await bot.use(device.x, device.z, 'take the first jump device', /^Take it$/), 'jump device offered');
     }
     await until(() => read().jump, 'shared optional jump accepted');
-    await dismiss('optional jump reveal');
+    // Co-op abilities, option E: the card is the finder's alone; a friend gets a flourish that never stops them.
+    if (second) {
+      await until(() => read().reward.arrival.seen.includes('jump'), "friend's jump flourish played");
+      require(!read().reward.showing, 'no card for a friend’s find');
+    } else await dismiss('optional jump reveal');
     mark('optional jump discovered');
     require(await bot.straight(ownSlot.x, ownSlot.z, 0.4, 6000), 'stood clear of the device for the jump');
     await until(() => me.coyote > 0 && me.body!.velocity.y <= 0, 'grounded before jump demonstration');
@@ -770,7 +776,10 @@ export async function play({ stopBeforeReward = false } = {}) {
         require(hook.available, 'hook device available after Q2');
         require(await bot.use(hook.x, hook.z, 'take the hook device', /^Take it$/), 'hook device offered');
         require(await bot.work(() => l2().hook, 5000, 380), 'shared hook accepted after bounded retries');
-        await dismiss('hook reveal');
+        // Whoever took it gets the card; a friend who got there second gets the flourish.
+        await bot.wait(1200);
+        if (read().reward.showing || !coop) await dismiss('hook reveal');
+        else require(read().reward.arrival.seen.includes('hook'), "friend's hook flourish played");
         await checkpoint('hook taken');
         const back = v2().routePoints.hook;
         for (let i = back.length - 1; i >= 0; i--)
