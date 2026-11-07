@@ -74,6 +74,15 @@ test('a durable write holds the railway room clock: blocked steps are not counte
     host.step(0.1);
     assert.equal(host.sync.world.tick, tick + 1, 'counting resumes after the write');
     assert.equal(host.sync.roomStep(), step + RULE_STEPS);
+    // A periodic checkpoint alone holds nothing: the room keeps stepping and flushing while it is written.
+    const before = host.sync.roomStep();
+    const flushed = steps.length;
+    assert.equal(host.sync.saveNow(true), true);
+    assert.equal(host.sync.worldStatus().recoveryPending, true);
+    host.step(0.1);
+    assert.equal(host.sync.roomStep(), before + RULE_STEPS, 'steps count during the write');
+    assert.equal(steps.length, flushed + RULE_STEPS, 'and each one flushes');
+    await host.sync.whenDurable();
   } finally {
     await host.close({ save: false });
     await fs.rm(dir, { recursive: true, force: true });

@@ -198,6 +198,8 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   let lastSavedHash: number | null = null;
   let nextSave = SAVE_MS;
   let recoveryPending = false;
+  // Stamped edits whose durable write is still out: the clock may not apply them before they are published.
+  let publishing = false;
   let recoveryError: string | null = null;
   let recoveryWork: Promise<void> = Promise.resolve();
   let attachment = 0; // a completed old write cannot publish into a different attachment
@@ -295,9 +297,14 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     if (cfg.recovery && (recoveryPending || recoveryError || badSave)) return;
     const list = out;
     out = [];
-    const publish = () => send({ t: 'w:edits', ht: world.tick, list });
-    if (cfg.recovery) checkpointRecovery(publish);
-    else publish();
+    const publish = () => {
+      publishing = false;
+      send({ t: 'w:edits', ht: world.tick, list });
+    };
+    if (cfg.recovery) {
+      publishing = true;
+      checkpointRecovery(publish);
+    } else publish();
   }
 
   function submitEdit(edit: unknown) {
@@ -449,8 +456,10 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
   }
   function hostStep() {
     wall += STEP_MS;
-    // A production clock cannot overtake an unpublished stamp or a replacement checkpoint.
-    if (mode === 'host' && cfg.recovery && (recoveryPending || recoveryError || out.length || !ready)) return;
+    // A production clock cannot overtake an unpublished stamp. A periodic checkpoint write alone does not hold it: the
+    // envelope is already an immutable copy, stamps are refused until it lands, and a Server-kind state (the railway)
+    // keeps applying and flushing (docs/plans/replication.md: nothing waits on a durable write).
+    if (mode === 'host' && cfg.recovery && (recoveryError || out.length || publishing || !ready)) return;
     releaseHeld();
     if (!ready) return;
     if (phase < RULE_STEPS - 1) phase++;
@@ -948,6 +957,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     held = [];
     connected = true;
     recoveryPending = false;
+    publishing = false;
     recoveryError = null;
     recoveryWork = Promise.resolve();
     cleanup = [r.onMessage(onMessage), r.onConnection(onConnected)];
@@ -959,6 +969,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     attachment++;
     if (cfg.recovery) {
       recoveryPending = false;
+      publishing = false;
       out = [];
     }
     for (const fn of cleanup) fn();
