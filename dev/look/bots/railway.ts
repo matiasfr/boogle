@@ -16,7 +16,7 @@ import {
 } from '../../../src/sim/railway-line-layout.ts';
 import { PLAYER_R } from '../../../src/constants.ts';
 import { fallArrival } from '../../../src/fall/arrival.ts';
-import { onRemotePresence, remotes } from '../../../src/netplay/net.ts';
+import { net, onRemotePresence, remotes } from '../../../src/netplay/net.ts';
 
 /** `solo`: play the solo route even on a two-player page, beside a friend another eval drives (coop-unlock.ts). */
 export async function play({ stopBeforeReward = false, solo = false } = {}) {
@@ -173,6 +173,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     input.keys.delete('KeyW');
     require(aboard(), `boarded ${name} layer by real jump`);
     mark(`${name} layer boarded`);
+    if (query.get('seat') === '1') return sit(station);
     let stayedAboard = true;
     await until(() => {
       stayedAboard &&= aboard() && !me.swimming;
@@ -181,6 +182,51 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     require(stayedAboard, `${name} rider stayed aboard throughout laying`);
     require(aboard() && !me.swimming, `${name} rider remains aboard and dry`);
     mark(`${name} layer ride completed`);
+  };
+  const interact = () => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+  };
+  // &seat=1 (with &ride=1): take a track-layer chair by Interact, ride the whole laying seated, stand up aboard.
+  const sit = async (station: number) => {
+    const name = LINE1_STATIONS[station]!.id;
+    const { seatState } = await import('../../../src/proto/place/seat.ts');
+    const remoteSeated = () =>
+      [...remotes.values()].some((r) => r.avatar && performance.now() - (r.avatar.userData.seatedAt ?? -1e9) < 300);
+    // Boarding lands on the deck within reach (2.5 m) of a chair: Sit is the prompt when nothing else acts.
+    await until(() => interactTarget()?.verb === 'Sit', `${name} Sit offered aboard`, 15000);
+    interact();
+    require(!!seatState().sitting, `${name} seated on the press`);
+    await until(
+      () => Object.values(seatState().grants).some((g) => g.peer === net.myPeer) || !net.room,
+      `${name} chair granted`,
+      10000,
+    );
+    if (coop) await until(remoteSeated, `${name} friend seen seated`, 60000);
+    await checkpoint(`${name} seated`);
+    const startCount = read().panelCount;
+    let stayed = true;
+    let midway = false;
+    await until(() => {
+      stayed &&= !!seatState().sitting && !me.swimming;
+      if (!midway && read().panelCount >= startCount + 6) midway = true;
+      return midway;
+    }, `${name} lays while seated`);
+    await checkpoint(`${name} seated laying`);
+    await until(() => {
+      stayed &&= !!seatState().sitting && !me.swimming;
+      return job(station).completion;
+    }, `${name} completes while seated`);
+    require(stayed, `${name} rider stayed seated throughout laying`);
+    if (coop) require(remoteSeated(), `${name} friend still seen seated at completion`);
+    await checkpoint(`${name} seated ride completed`);
+    await until(() => interactTarget()?.verb === 'Stand up', `${name} Stand up offered`, 5000);
+    interact();
+    require(!seatState().sitting && !seatState().request, `${name} stood up on the press`);
+    await bot.wait(600);
+    const aboard = carry.on?.id === 'railway:T1:flatbed' || carry.on?.id === 'railway:T1:loco';
+    require(aboard && !me.swimming, `${name} stood up onto the deck`);
+    await checkpoint(`${name} stood up`);
   };
   /** After `stations` stops: their rail pairs are laid and the rest stay on the stack. */
   const panels = (stations: number) => {

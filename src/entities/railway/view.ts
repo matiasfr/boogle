@@ -27,7 +27,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   connection.hidden = true;
   document.body.append(connection);
   owner.cleanup(() => connection.remove());
-  const [land, rail, stations, pieces, layout, sounds, kit, look] = await Promise.all([
+  const [land, rail, stations, pieces, layout, sounds, kit, look, seats] = await Promise.all([
     import('../../proto/place/land.ts'),
     import('../../proto/place/rail.ts'),
     import('../../proto/place/stations.ts'),
@@ -36,6 +36,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     import('../../proto/minis/common.ts'),
     import('../../proto/place/look-kit.ts'),
     import('../../proto/place/look.ts'),
+    import('../../proto/place/seat.ts'),
   ]);
   land.buildLand(owner);
   const line = layout.LINKS[0]!;
@@ -71,6 +72,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     traffic: [machine.loco, machine.flatbed],
     station: () => frames[state.activeStation]!,
     busy: () => state.phase === 'feeding' || state.phase === 'laying',
+    // The station hands ride the chairs while it lays: one gives way to a player in their chair (folk seat k = chair k).
+    chairTaken: (seat) => seats.seatHeld(`machine-deck-${seat}`),
     awake: () => state.phase !== 'asleep' && state.phase !== 'waking',
     hush: () => reward.inspect().busy,
     pathOpen: opened,
@@ -453,7 +456,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
           at: wakeAt.set(machine.flatbed.x, machine.flatbed.y + 2.4, machine.flatbed.z),
           run: () => void adapter.wake(),
         });
-      return targets;
+      // The track layer's two chairs: Sit aboard with nothing else to press for; seated, Interact stands you up.
+      return seats.withSeatTargets(targets);
     },
     inspect: () => ({
       ...adapter.inspect(),

@@ -826,7 +826,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     flatbed.mesh.add(model.chairs);
     MACHINE_CHAIRS.forEach((x, i) => {
       // The built machine batches its bevelled chair shells; these gameplay anchors stay unchanged.
-      registerSeat({
+      const unregister = registerSeat({
         id: `machine-deck-${i}`,
         group: 'machine-deck',
         platform: flatbed.platform,
@@ -836,6 +836,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
         exit: { x, y: flatbed.hy + PLAYER_R, z: -1.85, yaw: Math.PI },
         available: () => flatbed.y > -30,
       });
+      owner?.cleanup(unregister);
     });
     heldRail = model.heldRail;
     heldRail.visible = false;

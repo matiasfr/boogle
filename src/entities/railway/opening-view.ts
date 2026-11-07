@@ -7,6 +7,7 @@ type OpeningEnv = {
   traffic: readonly { mesh: THREE.Object3D; spec: { hx: number; hz: number }; hy: number }[];
   station: () => { x: number; y: number; z: number } | null;
   busy: () => boolean;
+  chairTaken: (seat: number) => boolean;
   awake: () => boolean;
   hush: () => boolean;
   pathOpen: () => boolean;
@@ -115,6 +116,7 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   folk.mountFolk(owner, {
     station: () => (env.awake() ? env.station() : null),
     machineBusy: env.busy,
+    chairTaken: env.chairTaken,
     machine: env.machine,
     traffic: env.traffic,
     trainCar: () => null,
