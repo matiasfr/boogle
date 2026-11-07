@@ -17,6 +17,7 @@ import {
   mulberry,
   smoothRing,
   stageOf,
+  type Harbour,
   type Land,
   type Layout,
   type Work,
@@ -195,6 +196,60 @@ function shelf(outline: XZ[], w: number, kind: 'sand' | 'rock') {
   geo.computeVertexNormals();
   // Winding varies with the outline's direction: draw both sides rather than chase it.
   const mat = flat(kind === 'sand' ? TINT.sand : TINT.rock).clone();
+  mat.side = THREE.DoubleSide;
+  return new THREE.Mesh(geo, mat);
+}
+
+/** The harbour basin's sea floor: shallow at the quay, a few metres across the basin, falling to the open sea past the
+ * mouth. The water shades by the depth of what lies under it, so this is what turns the basin turquoise. */
+function basinFloor(hb: Harbour) {
+  const sb = hb.seabed!;
+  const poly: XZ[] = [...hb.breakwater, ...[...hb.quay].reverse()];
+  const edge: XZ[] = [...poly, poly[0]!];
+  const MARGIN = 150,
+    CELL = 12,
+    deep = SEA_BED - 16;
+  const sm = (t: number) => t * t * (3 - 2 * t);
+  const xs = poly.map((p) => p[0]),
+    zs = poly.map((p) => p[1]);
+  const x0 = Math.min(...xs) - MARGIN,
+    z0 = Math.min(...zs) - MARGIN;
+  const nx = Math.ceil((Math.max(...xs) + MARGIN - x0) / CELL) + 1,
+    nz = Math.ceil((Math.max(...zs) + MARGIN - z0) / CELL) + 1;
+  const reach = Math.hypot(hb.mouth[0] - hb.quay[0]![0], hb.mouth[1] - hb.quay[0]![1]);
+  const yAt = new Float32Array(nx * nz),
+    live = new Uint8Array(nx * nz);
+  for (let j = 0; j < nz; j++)
+    for (let i = 0; i < nx; i++) {
+      const p: XZ = [x0 + i * CELL, z0 + j * CELL];
+      const de = distToLine(p, edge) * (inside(p, poly) ? 0 : 1);
+      // across the basin: quay foot to basin depth, then on down to the mouth depth toward the mouth
+      const across = sb.quay + (sb.basin - sb.quay) * sm(Math.min(1, distToLine(p, hb.quay) / 120));
+      const toMouth = sm(Math.max(0, 1 - Math.hypot(p[0] - hb.mouth[0], p[1] - hb.mouth[1]) / (reach * 0.7)));
+      const d = across + (sb.mouth - across) * toMouth;
+      const k = i + j * nx;
+      yAt[k] = -(d + (-deep - d) * sm(Math.min(1, de / MARGIN)));
+      live[k] = de < MARGIN ? 1 : 0;
+    }
+  const TRI: [number, number][] = [
+    [0, 0],
+    [0, 1],
+    [1, 0],
+    [1, 0],
+    [0, 1],
+    [1, 1],
+  ];
+  const pos: number[] = [];
+  const v = (i: number, j: number) => pos.push(wx(x0 + i * CELL), yAt[i + j * nx]!, wz(z0 + j * CELL));
+  for (let j = 0; j < nz - 1; j++)
+    for (let i = 0; i < nx - 1; i++) {
+      if (!(live[i + j * nx] || live[i + 1 + j * nx] || live[i + (j + 1) * nx] || live[i + 1 + (j + 1) * nx])) continue;
+      for (const [a, b] of TRI) v(i + a, j + b);
+    }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  geo.computeVertexNormals();
+  const mat = flat(TINT.sand).clone();
   mat.side = THREE.DoubleSide;
   return new THREE.Mesh(geo, mat);
 }
@@ -610,6 +665,7 @@ export function buildGreybox(map: Layout, ground: Ground): Greybox {
   // ---- the harbour: breakwater (walkable, the line rides it), quay edge, warehouses, moorings, the head's light
   const hb = map.option.harbour;
   if (hb) {
+    if (hb.seabed) root.add(basinFloor(hb));
     const apronTop = ground.deckOf(hb.place, map.places.find((p) => p.id === hb.place)?.at ?? hb.head);
     const wall: Box[] = [];
     for (let i = 0; i < hb.breakwater.length - 1; i++) {

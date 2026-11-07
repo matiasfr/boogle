@@ -53,7 +53,8 @@ Everything the page draws, plus optional greybox fields the page ignores:
   `existing` (already built: nothing drawn), `walk: false` with `horizon` (a far backdrop).
 - **Terrain:** `forest` with `h` (crown tops), `gorge` (the split), `pier` (breakwaters on the page).
 - **`landmarks`:** `crane`, `arch` (with `lantern`), `pinnacle`, `waterfall`, `saltworks`, `lamps` (along a line).
-- **`harbour`:** breakwater, quay, warehouses, moorings, head light, mouth.
+- **`harbour`:** breakwater, quay, warehouses, moorings, head light, mouth, and `seabed` `{ quay, basin, mouth }` (metres below
+  the sea: the basin's floor, built as a mesh because the water colours by the depth of what lies under it).
 - **`common.works`** (line 2's production railway; Place-local metres like the rest): `{ id, name, at, kind, line?, s?, off?, note? }`
   for the forge, Q1 to Q6 frames, the pack chest, the quarry lever and sea switch, the boiler, the old train and the
   halts. `s` is metres along Place's real rails (`l1` = `LINES.north`, `l2` = `LINES.east`) and `off` the mark's side
