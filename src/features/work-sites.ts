@@ -48,15 +48,21 @@ const ringGeos = [
   mergeGeometries([arc(RING_R - 0.12, RING_R), arc(RING_R - 0.36, RING_R - 0.26)]),
 ].map((g) => g.rotateX(-Math.PI / 2));
 const ringMat = [
-  new THREE.MeshBasicNodeMaterial({ color: '#f0c070', transparent: true, opacity: 0.85, depthWrite: false }),
-  new THREE.MeshBasicNodeMaterial({ color: '#8fe0a0', transparent: true, opacity: 0.85, depthWrite: false }),
+  readableUnlit(
+    new THREE.MeshBasicNodeMaterial({ color: '#f0c070', transparent: true, opacity: 0.85, depthWrite: false }),
+  ),
+  readableUnlit(
+    new THREE.MeshBasicNodeMaterial({ color: '#8fe0a0', transparent: true, opacity: 0.85, depthWrite: false }),
+  ),
 ];
-const doneMat = new THREE.MeshBasicNodeMaterial({
-  color: '#9aa3ad',
-  transparent: true,
-  opacity: 0.35,
-  depthWrite: false,
-});
+const doneMat = readableUnlit(
+  new THREE.MeshBasicNodeMaterial({
+    color: '#9aa3ad',
+    transparent: true,
+    opacity: 0.35,
+    depthWrite: false,
+  }),
+);
 const sleepers = pieceMesh(ROUTE.length * SLEEPERS);
 const postMat = new THREE.MeshStandardNodeMaterial({ color: '#6b4a2b', roughness: 0.9 });
 

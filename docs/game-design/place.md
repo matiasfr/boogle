@@ -438,6 +438,21 @@ The existing Dev Water/Post **fixed gain** control owns both exposure and invers
 living particles retain their spawn intensity until they expire. Smoke, dust and the pool's default intensity
 are not compensated. No call site applies both the material helper and particle intensity.
 
+**Glows, devices and markers (6 November).** The owner saw the jump device's teal gimbal render near-black
+teal in daylight: unlit and emissive colours authored at display range were still multiplied by the 0.12 surface
+gain, and the classic island's glows joined that gain when it became part of the one world. The same policy now
+covers them. `readableUnlit` applies to the jump device glyph and beacon, path lanterns, `softGlow` (reward beams,
+gift glows, train lamp beams, museum haze), work-site rings, the throw preview, ping rings, honk notes and
+sparkles, gift and Boogler sprites, the off lighthouse lamp and cave glow stones. `readableGlow` divides only the
+emission of lit glows (tech devices and apron band, crystals, the far shard, museum specimen, hook cable, forge,
+workshop and loco fires, gold finds, Boogler orb/pops, cave pond); their albedo still takes scene light and live
+`emissiveIntensity` changes still apply. Shaded-face fills (Buddy's colour fill, slab faces, room fill), airborne
+and classic clouds, fish, contact blobs, already-HDR impact stars, dust and smoke are unchanged. Local
+presentation only. Matched default-game stills: the gimbal went from sRGB 0,85,71 (the owner's screenshot reads
+34,84,72) to 26,226,193 against authored #39e6c6, with the lit pillar top unchanged; work-site rings, cave glow
+stones and the path lantern read in their authored colours. The far shard barely changes, since its sunlit albedo
+dominates. Frozen stills only; not tested on a device.
+
 **Owner colour defaults (5 November, for now).** Real-sea Place and crossing use surface gain **0.12**, retained
 underwater **+0.81 EV**, key gain **1.12** and fill gain **3.2**. Place's grass pigment strength is **0.35** and
 its albedo gain **0.7**. Selective green/timber/accent adjustments, the building instance palette and Buddy's

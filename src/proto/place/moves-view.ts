@@ -14,6 +14,7 @@ import { noiseBuffer } from '../../render/noise.ts';
 import { emit } from '../../render/particles.ts';
 import { warmDraw } from '../../render/precompile.ts';
 import { camera, scene } from '../../render/scene.ts';
+import { readableGlow } from '../../render/readable-unlit.ts';
 import { glyph } from '../../player/glyphs.ts';
 import { pop } from '../minis/common.ts';
 import { makeCanopy, makeGear, wearGear, placeCanopy, armToRing, type Canopy } from './gear-models.ts';
@@ -23,7 +24,9 @@ import { RINGS, move } from './moves.ts';
 const TEAL = '#39e6c6';
 type Named = THREE.Object3D;
 // ---------------------------------------------------------------- the cable
-const cableMat = new THREE.MeshStandardNodeMaterial({ color: '#2b2a33', emissive: TEAL, emissiveIntensity: 0.5 });
+const cableMat = readableGlow(
+  new THREE.MeshStandardNodeMaterial({ color: '#2b2a33', emissive: TEAL, emissiveIntensity: 0.5 }),
+);
 const cableGeo = new THREE.CylinderGeometry(0.018, 0.018, 1, 5).translate(0, 0.5, 0);
 type Cable = { m: THREE.Mesh; t: number; on: boolean };
 function makeCable(): Cable {

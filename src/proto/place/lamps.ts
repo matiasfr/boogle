@@ -2,6 +2,7 @@
 // see it's walkable from anywhere, and at night they're how you find it. Solid posts; the deck still has no railing. Local.
 import * as THREE from 'three/webgpu';
 import { scene } from '../../render/scene.ts';
+import { readableUnlit } from '../../render/readable-unlit.ts';
 import { pop } from '../minis/common.ts';
 import { flat } from '../flat.ts';
 import { addStatic } from './land.ts';
@@ -13,7 +14,7 @@ const MAX = 120;
 const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 1.5, 0.12), flat('#5c4530'), MAX);
 const glows = new THREE.InstancedMesh(
   new THREE.BoxGeometry(0.26, 0.26, 0.26),
-  new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(3, 2.1, 0.9) }),
+  readableUnlit(new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(3, 2.1, 0.9) })),
   MAX,
 );
 posts.castShadow = true;

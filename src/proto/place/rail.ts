@@ -6,6 +6,7 @@
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
 import { scene } from '../../render/scene.ts';
+import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
 import { registerWaterContact } from '../../render/water/contacts.ts';
 import { chuff, clank, thump } from '../../render/machine-sfx.ts';
@@ -936,7 +937,7 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     [locoRock, [0, 1.75, 1.62]],
   ] as const;
   const glass = new THREE.MeshStandardNodeMaterial({ color: '#59584e', roughness: 0.35 });
-  const shine = new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(3.2, 2.7, 1.5) });
+  const shine = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(3.2, 2.7, 1.5) }));
   const beamMat = softGlow('#ffe4a0', 0.3, true).mat;
   const beamGeo = new THREE.ConeGeometry(0.85, 6.5, 14, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 3.25);
   const lamps = lampSpots.map(([parent, at]) => {
@@ -955,7 +956,9 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
     parent.add(beam);
     return { lamp, beam };
   });
-  const fire = new THREE.MeshStandardNodeMaterial({ color: '#96360c', emissive: '#ff8a23', emissiveIntensity: 0 });
+  const fire = readableGlow(
+    new THREE.MeshStandardNodeMaterial({ color: '#96360c', emissive: '#ff8a23', emissiveIntensity: 0 }),
+  );
   const firebox = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.3, 0.04), fire);
   firebox.position.set(0, 1.05, -1.57);
   locoRock.add(firebox);

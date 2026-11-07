@@ -7,6 +7,7 @@
 import * as THREE from 'three/webgpu';
 import { guardInstances } from '../../render/draw-count.ts';
 import { scene } from '../../render/scene.ts';
+import { readableGlow } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { PLAYER_R } from '../../constants.ts';
@@ -82,7 +83,7 @@ const piecesFor = (logs: number, crates: number) => {
 // A glowing mouth for when it's lit.
 const mouth = new THREE.Mesh(
   new THREE.BoxGeometry(2.8, 1.8, 0.1),
-  new THREE.MeshStandardNodeMaterial({ color: '#3a1a08', emissive: '#ff5a0a', emissiveIntensity: 1.3 }),
+  readableGlow(new THREE.MeshStandardNodeMaterial({ color: '#3a1a08', emissive: '#ff5a0a', emissiveIntensity: 1.3 })),
 );
 mouth.position.set(X, Y + 1.5, Z + D / 2 - 0.5);
 mouth.visible = false;

@@ -10,6 +10,7 @@ import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { abs, float, mix, normalView, positionWorld, sin, time, uv, vertexColor } from 'three/tsl';
 import { smoothstep } from '../../math.ts';
+import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { me } from '../../player/player.ts';
 import { TREES, standing } from './chop.ts';
 import { job } from './job.ts';
@@ -204,6 +205,7 @@ const crystalMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roug
     .mul(0.5)
     .add(0.5);
   crystalMat.emissiveNode = vertexColor().mul(mix(float(0.22), float(1.5), band.mul(band).mul(band)));
+  readableGlow(crystalMat);
 }
 const specimen = new THREE.Group();
 specimen.position.set(SPEC.x, 1.95, SPEC.z);
@@ -222,12 +224,14 @@ for (const side of [-1, 1]) {
 }
 const core = new THREE.Mesh(
   new THREE.OctahedronGeometry(0.34, 0).toNonIndexed(),
-  new THREE.MeshStandardNodeMaterial({
-    color: '#bff1ff',
-    emissive: '#6fc8ff',
-    emissiveIntensity: 3,
-    flatShading: true,
-  }),
+  readableGlow(
+    new THREE.MeshStandardNodeMaterial({
+      color: '#bff1ff',
+      emissive: '#6fc8ff',
+      emissiveIntensity: 3,
+      flatShading: true,
+    }),
+  ),
 );
 core.scale.set(0.8, 1.7, 0.8);
 core.position.set(0, 0.25, 0.1);
@@ -235,12 +239,14 @@ const haze = new THREE.Mesh(new THREE.SphereGeometry(1.2, 18, 12), softGlow('#4f
 haze.position.set(0, 0.25, 0.1);
 specimen.add(core, haze);
 // A pool of its light on the floor, and up the screen behind.
-const poolMat = new THREE.MeshBasicNodeMaterial({
-  color: '#3f8ee0',
-  transparent: true,
-  depthWrite: false,
-  blending: THREE.AdditiveBlending,
-});
+const poolMat = readableUnlit(
+  new THREE.MeshBasicNodeMaterial({
+    color: '#3f8ee0',
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  }),
+);
 {
   const f = float(1).sub(uv().sub(0.5).length().mul(2)).clamp(0, 1);
   poolMat.opacityNode = f.mul(f).mul(0.75).mul(abs(normalView.z));

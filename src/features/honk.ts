@@ -7,7 +7,9 @@
 // none, heard as 0), rate limited on receipt.
 import './honk.css';
 import * as THREE from 'three';
+import { SpriteNodeMaterial } from 'three/webgpu';
 import { camera } from '../render/scene.ts';
+import { readableUnlit } from '../render/readable-unlit.ts';
 import { COLORS } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
@@ -187,7 +189,9 @@ const notes: { sprite: THREE.Sprite; avatar: THREE.Object3D; age: number }[] = [
 function popNote(avatar: THREE.Object3D | null | undefined, colorIdx: number) {
   if (!avatar) return;
   const sprite = new THREE.Sprite(
-    new THREE.SpriteMaterial({ map: noteTex[colorIdx] ?? noteTex[0], transparent: true, depthWrite: false }),
+    readableUnlit(
+      new SpriteNodeMaterial({ map: noteTex[colorIdx] ?? noteTex[0], transparent: true, depthWrite: false }),
+    ),
   );
   sprite.renderOrder = 12;
   sprite.position.set(0.1, 2.6, 0);
@@ -204,7 +208,7 @@ function sparkleOver(avatar: THREE.Object3D | null | undefined) {
     const a = (k / TUNE.sparkles) * Math.PI * 2 + Math.random();
     const sp = 1.4 + Math.random() * 2;
     const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: sparkleTex, transparent: true, depthWrite: false }),
+      readableUnlit(new SpriteNodeMaterial({ map: sparkleTex, transparent: true, depthWrite: false })),
     );
     sprite.renderOrder = 12;
     sprite.position.set(base.x, base.y + 2.5, base.z);

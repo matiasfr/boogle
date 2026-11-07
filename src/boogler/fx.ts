@@ -1,6 +1,8 @@
 // Cosmetic Boogler effects: hearts floating off his head and the orb he puffs up to launch riders. Local only, so
 // Math.random is fine here.
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial, SpriteNodeMaterial } from 'three/webgpu';
+import { readableGlow, readableUnlit } from '../render/readable-unlit.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { reducedMotion } from '../constants.ts';
 import { boogler, booglerReact, PUFF_MS } from './boogler.ts';
@@ -53,7 +55,9 @@ type Heart = {
 };
 const hearts: Heart[] = [];
 for (let k = 0; k < MAX_HEARTS; k++) {
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: heartTex, transparent: true, depthWrite: false }));
+  const s = new THREE.Sprite(
+    readableUnlit(new SpriteNodeMaterial({ map: heartTex, transparent: true, depthWrite: false })),
+  );
   s.visible = false;
   s.renderOrder = 11;
   fx.add(s);
@@ -87,16 +91,18 @@ export function booglerHearts(kind: 'pet' | 'legacyCelebration') {
 // ---------------------------------------------------------------- the launch orb
 const orb = new THREE.Mesh(
   new THREE.SphereGeometry(1, 28, 16),
-  new THREE.MeshStandardMaterial({
-    color: '#d9c8ff',
-    emissive: '#8f6bff',
-    emissiveIntensity: 0.35,
-    roughness: 0.15,
-    metalness: 0.1,
-    transparent: true,
-    opacity: 0.5,
-    depthWrite: false,
-  }),
+  readableGlow(
+    new MeshStandardNodeMaterial({
+      color: '#d9c8ff',
+      emissive: '#8f6bff',
+      emissiveIntensity: 0.35,
+      roughness: 0.15,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.5,
+      depthWrite: false,
+    }),
+  ),
 );
 orb.visible = false;
 orb.renderOrder = 9;
@@ -104,7 +110,9 @@ fx.add(orb);
 
 const POP_N = 18;
 const popGeo = new THREE.SphereGeometry(0.09, 8, 6);
-const popMat = new THREE.MeshStandardMaterial({ color: '#efe6ff', emissive: '#b99cff', emissiveIntensity: 0.4 });
+const popMat = readableGlow(
+  new MeshStandardNodeMaterial({ color: '#efe6ff', emissive: '#b99cff', emissiveIntensity: 0.4 }),
+);
 const pops = Array.from({ length: POP_N }, () => {
   const m = new THREE.Mesh(popGeo, popMat);
   m.visible = false;

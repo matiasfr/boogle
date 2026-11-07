@@ -4,7 +4,7 @@
 // place in a glowing row on the curio shelf. They do nothing yet. Local.
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';
-import { readableIntensity } from '../../render/readable-unlit.ts';
+import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts';
 import { scene } from '../../render/scene.ts';
 import { me } from '../../player/player.ts';
 import { pop } from '../minis/common.ts';
@@ -26,13 +26,15 @@ export const CRYSTALS = SPOTS.length;
 const BLUE = '#7fd0ff',
   GLOW = '#58c8ff';
 const shape = () => new THREE.OctahedronGeometry(1, 0).scale(0.28, 0.62, 0.28);
-const worldMat = new THREE.MeshStandardNodeMaterial({
-  color: BLUE,
-  emissive: GLOW,
-  emissiveIntensity: 1.5,
-  roughness: 0.25,
-  flatShading: true,
-});
+const worldMat = readableGlow(
+  new THREE.MeshStandardNodeMaterial({
+    color: BLUE,
+    emissive: GLOW,
+    emissiveIntensity: 1.5,
+    roughness: 0.25,
+    flatShading: true,
+  }),
+);
 const dull = new THREE.MeshStandardNodeMaterial({ color: '#2d3a48', roughness: 0.5, flatShading: true });
 const world = new THREE.InstancedMesh(shape(), worldMat, CRYSTALS);
 world.frustumCulled = false;

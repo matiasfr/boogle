@@ -67,7 +67,10 @@ received shadows, with no emissive floor or gain compensation. Camera-facing lab
 `readable-unlit.ts` divides scoped unlit ink's **linear RGB** by `surfaceExposure` from `exposure.ts`, preserving
 alpha and underwater attenuation. Scoped reward emitters fold the inverse of the same CPU setting into RGB
 once at spawn; living particles retain their spawn intensity until expiry. Smoke/dust keep intensity one.
-The material helper ignores repeat calls on the same owned material. The explicit underwater lift remains
+The material helper ignores repeat calls on the same owned material. `readableGlow` is its lit counterpart: it divides
+only a display-range emission (`emissiveNode`, default `materialEmissive`) by the same gain, for glows rather than
+shaded-face fills. A new unlit or glowing material authored at display range opts into one of the two; the scoped
+list is in [place.md](../../docs/game-design/place.md#readable-ink-and-rewards). The explicit underwater lift remains
 intentional. No independent reference multiplier remains. Do not sample the framebuffer, boost all unlit materials,
 or apply both compensation paths to one surface. `fixedExposureGain(depth)` exposes the exact medium-dependent
 gain if a future material policy explicitly needs it.
