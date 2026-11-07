@@ -268,8 +268,6 @@ export type MenuPress = {
   /** The Enter key (either one), as against Space, which also confirms. */
   enter: boolean;
   repeat: boolean;
-  /** The key is an arrow key (up/down/left/right also come from W and S). */
-  arrow: boolean;
   /** Shift is down. */
   shift: boolean;
   /** Ctrl, Cmd or Alt is down. */
@@ -305,7 +303,6 @@ const menuPress = (e: KeyboardEvent): MenuPress => ({
   digit: Number(/^(?:Digit|Numpad)([1-9])$/.exec(e.code)?.[1]) || null,
   enter: e.code === 'Enter' || e.code === 'NumpadEnter',
   repeat: e.repeat,
-  arrow: e.code.startsWith('Arrow'),
   shift: e.shiftKey,
   modified: e.ctrlKey || e.metaKey || e.altKey,
   typing: isTyping(e),
