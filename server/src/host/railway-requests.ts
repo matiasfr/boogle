@@ -19,7 +19,7 @@
 //                     a wake's `tk` (the tick its actor pressed at) sets its start, bounded by railWakeTick
 import { railInt, RAILWAY_MAX_INT, type RailAction } from '../../../src/sim/railway.ts';
 import { RAIL_ACTIONS, type Actor, type RailwayApi } from '../../../src/world/railway-server.ts';
-import { railTempPile } from '../../../src/world/railway-predict.ts';
+import { railTempPile, RAIL_PREDICTED } from '../../../src/world/railway-predict.ts';
 import type { Replicator } from '../../../src/world/replicate-server.ts';
 import type { RailwayResponse } from '../../../src/world/railway-wire.ts';
 
@@ -59,10 +59,14 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
   return clean as RailAction;
 }
 
-/** The fields an accepted action's effect event carries (the intent, the actor and the result). */
-const EVENT_FIELDS = ['id', 'yaw', 'collapsed', 'station', 'n', 'kind', 'revision', 'x', 'y', 'z'] as const;
-/** What the result adds for effects (src/world/railway-server.ts RailEffect); a take's pile position comes from here. */
+/** The fields an accepted action's effect event carries (the intent and the actor; the count moved is `accepted`, a
+ * felled tree's fall is in the state, and a kind of 0 is left out). */
+const EVENT_FIELDS = ['id', 'station', 'kind', 'revision', 'x', 'y', 'z'] as const;
+/** What the result adds for effects (src/world/railway-predict.ts RailEffect), without what the intent already says:
+ * a drop's pile stands at its x/y/z, and a take's pile is its id (its position still comes from here: it may be gone). */
 const EFFECT_FIELDS = ['carried', 'level', 'pile', 'px', 'py', 'pz'] as const;
+const implied = (op: string, k: (typeof EFFECT_FIELDS)[number]) =>
+  (op === 'rail.drop' && (k === 'px' || k === 'py' || k === 'pz')) || (op === 'rail.take' && k === 'pile');
 
 export function createRailwayRequests({
   api,
@@ -94,10 +98,12 @@ export function createRailwayRequests({
   // failed, and a client must hear that rather than wait.
   const state = (to: string, s: 'starting' | 'storage' | 'full', id?: { epoch: number; request: number }) =>
     send({ t: 'r:state', to, state: s, ...(id ?? {}) });
-  // Every settled request is acknowledged; a refused one is also named, with its reason.
-  const settle = (sid: string, epoch: number, request: number, refused: boolean) => {
+  // Every settled request is acknowledged; a refused one is also named, with its reason, and an accepted one with what
+  // it moved (the actor's prediction is answered by this, not by its event).
+  const settle = (sid: string, epoch: number, request: number, refused: boolean, moved: number) => {
     ack(sid, epoch, request);
     if (refused) rej(sid, epoch, request, 'refused');
+    else if (moved > 0 && replication.has(sid)) replication.accepted(sid, epoch, request, moved);
   };
   return {
     /** Only the room's actual departure/takeover calls this, never stale presence or a missed packet. */
@@ -140,7 +146,7 @@ export function createRailwayRequests({
       if (request <= account.request) {
         // Already settled (a resend): answer again from its recorded outcome.
         const old = api.outcome(pid, epoch, request);
-        return settle(from, epoch, request, old?.status === 'rejected');
+        return settle(from, epoch, request, old?.status === 'rejected', old?.status === 'accepted' ? old.accepted : 0);
       }
       if (request !== account.request + 1) return rej(from, epoch, request, 'order');
       const clean = railwayRequestEdit(e, epoch, request);
@@ -150,22 +156,22 @@ export function createRailwayRequests({
           ? { pid, epoch, request, at: [e.at[0], e.at[1], e.at[2]], ms: e.ms }
           : null;
       const result = api.act(pid, clean, RAIL_ACTIONS.has(String(e.op)) && facts ? actor(facts) : null);
-      settle(from, epoch, request, result.status === 'rejected');
+      settle(from, epoch, request, result.status === 'rejected', result.accepted);
       if (result.effect) {
         const event: Record<string, string | number | boolean> = {
           op: clean.op,
           pid,
-          epoch,
           request,
           accepted: result.accepted,
-          tick: api.tick(),
         };
         for (const k of EVENT_FIELDS) {
           const v = (clean as Obj)[k];
-          if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string') event[k] = v;
+          if ((typeof v === 'number' && !(k === 'kind' && v === 0)) || typeof v === 'string') event[k] = v;
         }
-        for (const k of EFFECT_FIELDS) if (typeof result.effect[k] === 'number') event[k] = result.effect[k]!;
-        replication.emit(event);
+        for (const k of EFFECT_FIELDS)
+          if (typeof result.effect[k] === 'number' && !implied(clean.op, k)) event[k] = result.effect[k]!;
+        // The actor showed a predicted action on its press: its `ok` answers it, and it needs no echo.
+        replication.emit(event, RAIL_PREDICTED.has(clean.op) ? from : undefined);
         // The actor predicted this drop's pile under a temporary id (R1b): name the server's.
         if (clean.op === 'rail.drop' && result.effect.pile !== undefined && replication.has(from))
           replication.remap(from, railTempPile(epoch, request), result.effect.pile);

@@ -37,10 +37,6 @@ import { canSet, cleanName } from '../../../src/sim/roster.ts';
 // Saves skip a world whose states didn't change, but its tick still moves on, and the helper bank reads the time nobody
 // hosted from the saved tick: so the tick is saved at least this often, and always on close.
 const TICK_SAVE_MS = 30000;
-// Client action clocks (railCadence; the slack is a frame of rounding and jitter between two swings, and the client
-// predicts the same check). There is no bound against the server's clock: exploits don't matter in casual co-op, and
-// any such bound refuses honest clients whose clock runs at another rate (a test harness's warped page clock, a
-// throttled tab).
 
 // JSON escapes lone UTF-16 surrogates to six bytes each. Preserve their displayed replacement character while
 // keeping the existing sixteen-character name and three-byte-per-code-unit recovery bound (ES2022 browsers).
@@ -223,6 +219,9 @@ export function createRailwayWorldHost({
       return dx * dx + dz * dz <= radius * radius;
     },
     height: (y, radius) => Math.abs(a.at[1] - y) <= radius,
+    // railCadence on the client's own action clock, the check its prediction also runs. No bound against the
+    // server's clock: exploits don't matter in casual co-op, and such a bound refuses honest clients whose clock runs
+    // at another rate (a test harness's warped page clock, a throttled tab).
     cadence(op) {
       const { kind, ms } = railCadence(op);
       let clock = clientClocks.get(a.pid);

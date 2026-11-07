@@ -452,8 +452,8 @@ export async function railwayLoad(
         // Latency: send (on the actor's page, before the added delay) to the event's arrival, actor and observers.
         type Log = {
           sent: { at: number; epoch: number; request: number }[];
-          events: { at: number; pid: string; epoch: number; request: number }[];
-          packets: { at: number; chars: number }[];
+          events: { at: number; pid: string; request: number }[];
+          packets: { at: number; chars: number; ok?: number[][] }[];
           response: number[];
           corrections: { at: number; op: string; lost: number; reason: string }[];
           stats: { predicted: number; notYet: number; unpredicted: number };
@@ -480,13 +480,14 @@ export async function railwayLoad(
           for (const s of log.sent) {
             if (s.at < t0) continue;
             const pid = `load${k}`;
-            const mine = log.events.find((e) => e.pid === pid && e.epoch === s.epoch && e.request === s.request);
+            // The server answers the actor's prediction with `ok` (no echoed event); everyone else hears the event.
+            const mine = log.packets.find((p) => p.ok?.some(([e, r]) => e === s.epoch && r === s.request));
             if (!mine) continue;
             accepted++;
             confirm.push(mine.at - s.at);
             logs.forEach((other, j) => {
               if (j === k) return;
-              const seen = other.events.find((e) => e.pid === pid && e.epoch === s.epoch && e.request === s.request);
+              const seen = other.events.find((e) => e.pid === pid && e.request === s.request);
               if (seen) others.push(seen.at - s.at);
             });
           }

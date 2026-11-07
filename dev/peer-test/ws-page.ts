@@ -77,8 +77,8 @@ const T = (window.T = {
   got: 0,
   railMessages: [] as Record<string, unknown>[],
   // Railway packets as they arrive (after the added delay): Date.now(), characters, and the events they carried.
-  railPackets: [] as { at: number; chars: number; ack?: number[]; rej?: unknown[] }[],
-  railEvents: [] as { at: number; pid: string; epoch: number; request: number; op: string }[],
+  railPackets: [] as { at: number; chars: number; ack?: number[]; rej?: unknown[]; ok?: number[][] }[],
+  railEvents: [] as { at: number; pid: string; request: number; op: string }[],
   railSent: [] as { at: number; epoch: number; request: number; op: string }[],
   // Adapter pages (R1b): ms from each press to its predicted effect, and every correction.
   railResponse: [] as number[],
@@ -233,6 +233,7 @@ function startWorld(room: Room) {
         chars: JSON.stringify(p).length,
         ...(p.ack ? { ack: [...p.ack] } : {}),
         ...(p.rej ? { rej: p.rej } : {}),
+        ...(p.ok ? { ok: p.ok.map((r) => [...r]) } : {}),
       });
       if (!T.railSyncedAt && rail.synced()) {
         T.railSyncedAt = at;
@@ -243,7 +244,6 @@ function startWorld(room: Room) {
         T.railEvents.push({
           at,
           pid: String(e.pid),
-          epoch: Number(e.epoch),
           request: Number(e.request),
           op: String(e.op),
         });
@@ -293,7 +293,7 @@ function startWorld(room: Room) {
       effects.push(event);
       // A predicted effect is the actor's visible response: from the press (railPressedAt) to here.
       if (event.predicted && pressedAt >= 0) {
-        T.railSent.push({ at: Date.now(), epoch: event.epoch, request: event.request, op: event.op });
+        T.railSent.push({ at: Date.now(), epoch: event.epoch ?? 0, request: event.request, op: event.op });
         T.railResponse.push(performance.now() - pressedAt);
       }
     });

@@ -3,15 +3,18 @@
 // action time. Your own material actions are predicted (R1b): the same rule the server runs (railApply, through
 // railPredict) applies to a copy of the mirror at once, the views read that predicted state, and the action's effect
 // plays the moment you press. Each packet drops the actions it settled and replays the rest on the new mirror. When the
-// server's answer, or a replay on a newer mirror, gives you less than you were shown (a refusal, the last log taken by
-// someone else), onCorrected names what went back and to whom, so the views can return it physically.
+// server's answer (`ok`: what each of your accepted actions moved), or a replay on a newer mirror, gives you less than
+// you were shown (a refusal, the last log taken by someone else), onCorrected names what went back and to whom, so the
+// views can return it physically; when it gives more, the extra plays as another predicted effect. Only a whole, final
+// chunk is read for that: a mirror being refilled, or the first chunks of a split send, is not a consistent state.
 //
 //   adapter.chop/mine/take/rackTake/drop/deposit/...   false when the rule would not accept it now ("not yet"): no
 //                                                      request is sent and nothing is shown
 //   onAccepted(fn)       effects: your predicted actions at once (predicted: true), everyone else's as the server
 //                        confirms them (returned: how many of their pieces a correction already flies to them)
 //   onCorrected(fn)      a predicted action gave back `lost` pieces (reason: refused, noop, contested, session)
-//   onRemap(fn)          fn(tempId, id): a pile you dropped got its server id (the replicator's `ids`)
+//   onRemap(fn)          fn(request, id): your drop of that request landed in pile `id`, not the pile it was shown
+//                        landing in (a temporary id, or a merge the server made a new pile)
 import { SERVER_ID } from '../net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../sim/railway-layout.ts';
 import {
@@ -50,6 +53,7 @@ import {
   railCadence,
   railParseTempPile,
   railPredict,
+  type RailEffect,
   type RailPrediction,
 } from '../world/railway-predict.ts';
 import type { ServerPacket } from '../world/replicate.ts';
@@ -72,10 +76,12 @@ export type RailwayIntent =
 export type RailwayAccepted = Readonly<
   RailwayIntent & {
     pid: string;
-    epoch: number;
+    /** Set on your own predicted actions; the server's events leave it out. */
+    epoch?: number;
     request: number;
     accepted: number;
     status: 'accepted';
+    /** The rule tick it was shown at (yours) or the packet's (everyone else's). */
     tick: number;
     /** Right after this action: the actor's balance of the moved kind, the target's count, and the pile involved
      * (with its position, for a take whose pile may be gone by the packet's end). */
@@ -188,11 +194,23 @@ const effectOf = (v: Record<string, unknown>) => {
   return out;
 };
 const accepted = (v: Record<string, unknown>) =>
-  typeof v.pid === 'string' &&
-  railInt(v.epoch, RAILWAY_MAX_INT, 1) &&
-  railInt(v.request, RAILWAY_MAX_INT, 1) &&
-  railInt(v.accepted, RAILWAY_T1.carry, 1) &&
-  railInt(v.tick);
+  typeof v.pid === 'string' && railInt(v.request, RAILWAY_MAX_INT, 1) && railInt(v.accepted, RAILWAY_T1.carry, 1);
+/** What the server leaves out of an event because the intent already says it (railway-requests.ts EVENT_FIELDS). */
+function implied(v: Record<string, unknown>) {
+  const out: Record<string, unknown> = { ...v };
+  if ((v.op === 'rail.drop' || v.op === 'rail.deposit') && out.n === undefined) out.n = v.accepted;
+  if (v.op === 'rail.drop') {
+    out.px ??= v.x;
+    out.py ??= v.y;
+    out.pz ??= v.z;
+  }
+  if (v.op === 'rail.take') out.pile ??= v.id;
+  return out;
+}
+/** Ops whose whole result is one shared flag: when it holds anyway (someone else woke the machine), losing the race
+ * gives nothing back. */
+const holds = (s: Railway, op: string) =>
+  op === 'rail.wake' ? s.awake >= 0 : op === 'rail.lever' ? !!s.line2?.lever : false;
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op !== b.op) return false;
@@ -247,7 +265,7 @@ export function createRailwayAdapter({
   const confirmed = rail.railway;
   const effects = new Set<(event: RailwayAccepted) => void>();
   const corrections = new Set<(c: RailwayCorrection) => void>();
-  const remaps = new Set<(temp: number, id: number) => void>();
+  const remaps = new Set<(request: number, id: number) => void>();
   const resets = new Set<() => void>();
   let room: WorldRoom | null = null;
   let offRoom: (() => void)[] = [];
@@ -357,36 +375,46 @@ export function createRailwayAdapter({
     if (rebuilt) synced = true;
     // This packet is read against the session it was sent for, even if a refusal below ends that session.
     const ep = epoch;
-    // Server ids for the piles your drops created, before anything draws them.
+    // Only a whole mirror at the last chunk of a send is a consistent state to replay on: the first chunks of a split
+    // send (a big catch-up after a hidden tab) or of a refill after a resync would show every pending action losing.
+    const consistent = rail.synced() && !p.m;
+    // A drop of yours that landed in another pile than it was shown in (a temporary id, or a merge the server made a
+    // new pile): its pieces still in flight follow it, before anything draws them.
     if (!rebuilt)
       for (const [temp, id] of p.ids ?? []) {
         const t = railParseTempPile(temp);
-        if (t && t[0] === ep && typeof id === 'number') for (const fn of remaps) fn(-t[1], id);
+        const shownIn = t && t[0] === ep ? shown.get(t[1])?.event.pile : undefined;
+        if (t && typeof id === 'number' && shownIn !== undefined && shownIn !== id)
+          for (const fn of remaps) fn(t[1], id);
       }
+    const tick = Math.floor(p.tk / RULE_STEPS);
     const events: RailwayAccepted[] = [];
     for (const raw of p.ev ?? []) {
-      const intent = intentOf(raw);
-      if (!intent || !accepted(raw)) continue;
+      const full = implied(raw);
+      const intent = intentOf(full);
+      if (!intent || !accepted(full)) continue;
       events.push({
         ...intent,
-        pid: raw.pid as string,
-        epoch: raw.epoch as number,
-        request: raw.request as number,
-        accepted: raw.accepted as number,
+        pid: full.pid as string,
+        request: full.request as number,
+        accepted: full.accepted as number,
         status: 'accepted' as const,
-        tick: raw.tick as number,
-        ...effectOf(raw),
+        tick,
+        ...effectOf(full),
       });
     }
-    const mine = (e: RailwayAccepted) => e.pid === pid && e.epoch === ep;
-    const own = new Map(events.filter(mine).map((e) => [e.request, e]));
+    // The server sends you no event for an action you predicted; any event of yours is one you did not predict.
+    const mine = (e: RailwayAccepted) => e.pid === pid;
+    // What each of your accepted actions moved, as the server recorded it.
+    const moved = new Map<number, number>();
+    for (const [e, r, n] of p.ok ?? []) if (e === ep) moved.set(r, n);
     // What this packet settled: refusals by reason, then everything up to the ack.
     const settled = new Map<number, RailwayCorrection['reason']>();
     let sessionLost: number | null = null; // the first request a session or order refusal named
     for (const [e, r, reason] of p.rej ?? []) {
       if (e !== ep) continue;
       settled.set(r, 'refused');
-      predictor.reject([e, r], reason);
+      predictor.reject([e, r]);
       if (reason !== 'refused') sessionLost = Math.min(sessionLost ?? r, r);
     }
     if (p.ack && p.ack[0] === ep)
@@ -395,25 +423,33 @@ export function createRailwayAdapter({
     if (p.ack) predictor.confirm(p.ack);
     predictor.invalidate();
     const back: RailwayCorrection[] = [];
-    const shownSettled = new Set<number>();
+    const more: RailwayAccepted[] = [];
+    // A shared flag someone else set (the machine woken, the lever pulled) stands: no return, and their event replays
+    // nothing over the animation you already started.
+    const standing = new Set<string>();
+    const differ = (was: Shown, kept: number, reason: RailwayCorrection['reason'], effect?: RailEffect | null) => {
+      if (kept > was.n) more.push(Object.freeze({ ...was.event, ...(effect ?? {}), accepted: kept - was.n }));
+      else if (kept < was.n && holds(confirmed, was.event.op)) standing.add(was.event.op);
+      else if (kept < was.n) back.push({ event: was.event, kept, lost: was.n - kept, reason });
+    };
     for (const [r, reason] of settled) {
       const was = shown.get(r);
       if (!was) continue;
       shown.delete(r);
-      shownSettled.add(r);
-      const kept = reason === 'refused' ? 0 : (own.get(r)?.accepted ?? 0);
-      if (kept >= was.n) stats.confirmed++;
-      else back.push({ event: was.event, kept, lost: was.n - kept, reason: kept > 0 ? 'contested' : reason });
+      const kept = reason === 'refused' ? 0 : (moved.get(r) ?? 0);
+      if (kept === was.n) stats.confirmed++;
+      differ(was, kept, kept > 0 ? 'contested' : reason);
     }
     if (sessionLost !== null) lose(sessionLost);
     // Replay what is still pending on the new mirror: an action that now moves less (someone took part of the pile
-    // first) gives the difference back now rather than at its ack.
-    if (shown.size && predictor.pending().length) {
+    // first) gives the difference back now rather than at its ack; one that now moves more plays the extra.
+    if (consistent && shown.size && predictor.pending().length) {
       predictor.state();
       for (const [r, was] of shown) {
-        const n = results.get(r)?.n ?? 0;
-        if (n >= was.n) continue;
-        back.push({ event: was.event, kept: n, lost: was.n - n, reason: 'contested' });
+        const now = results.get(r);
+        const n = now?.n ?? 0;
+        if (n === was.n) continue;
+        differ(was, n, 'contested', now?.effect);
         was.n = n;
       }
     }
@@ -435,9 +471,9 @@ export function createRailwayAdapter({
       return { ...c, winner: winner.pid };
     });
     correct(matched);
+    for (const e of more) for (const fn of effects) fn(e);
     for (const e of events) {
-      // Your own predicted action already played; one that was not predicted (or showed nothing) plays now.
-      if (mine(e) && (shownSettled.has(e.request) || shown.has(e.request))) continue;
+      if (!mine(e) && standing.has(e.op)) continue;
       if (mine(e)) stats.unpredicted++;
       const event: RailwayAccepted = Object.freeze(returned.has(e) ? { ...e, returned: returned.get(e)! } : e);
       for (const fn of effects) fn(event);
@@ -751,7 +787,7 @@ export function createRailwayAdapter({
       corrections.add(fn);
       return () => corrections.delete(fn);
     },
-    onRemap(fn: (temp: number, id: number) => void) {
+    onRemap(fn: (request: number, id: number) => void) {
       remaps.add(fn);
       return () => remaps.delete(fn);
     },

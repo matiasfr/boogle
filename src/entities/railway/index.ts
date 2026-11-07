@@ -26,7 +26,9 @@ if (productionRailway && railwayMirror) {
     },
   });
   // Dev only: &railLag=<ms> adds that round trip to the railway's own messages (replication R1b captures).
-  const lag = Math.min(1000, Math.max(0, Number(new URLSearchParams(location.search).get('railLag')) || 0));
+  const lag = import.meta.env.DEV
+    ? Math.min(1000, Math.max(0, Number(new URLSearchParams(location.search).get('railLag')) || 0))
+    : 0;
   onRoomReady((room) => adapter.attach(delayedRoom(room, lag)));
   onNetState(() => {
     if (net.room) adapter.attach(delayedRoom(net.room, lag));

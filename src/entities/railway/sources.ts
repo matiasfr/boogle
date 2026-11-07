@@ -223,7 +223,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   owner.add(railPiles);
   const stoneMatrix = new THREE.Object3D();
   const piles = pieces.logStackMesh(128 * RAILWAY_T1.carry, owner);
-  const pileFlights: { id: number; active: () => boolean }[] = [];
+  const pileFlights: { id: number; active: () => boolean; request: number }[] = []; // request: your own predicted drop
   const pilePoint = new THREE.Vector3();
 
   function pileHeight(pile: { y?: number }) {
@@ -343,7 +343,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           { dur: 0.28, apex: 0.5, land: () => sounds.knock(0.35, 0.7) },
           owner,
         );
-        pileFlights.push({ id: pile.id, active: flight });
+        pileFlights.push({ id: pile.id, active: flight, request: event.predicted ? event.request : -1 });
       }
       drawPiles();
       return;
@@ -548,17 +548,16 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       stone: current.stoneCarry,
       big: current.beam?.state === 'held' && current.beam.holder === current.pid ? ('beam' as const) : null,
       capacity: RAILWAY_T1.carry,
-      incoming: 0,
-      reserved: 0, // your pending actions are already in the predicted counts
       flyingLogs: Math.min(current.carry, harvestFlights.length),
       attention: swing.response === 'full' && swing.t < 0.55,
     };
   };
   const offAccepted = adapter.onAccepted(accepted);
   const offCorrected = adapter.onCorrected(corrected);
-  // A pile you dropped got its server id: its pieces still in flight keep counting against it.
-  const offRemap = adapter.onRemap((temp, id) => {
-    for (const flight of pileFlights) if (flight.id === temp) flight.id = id;
+  // Your drop landed in another pile than it was shown in (its server id, or a new pile for a merge): its pieces still
+  // in flight count against that one.
+  const offRemap = adapter.onRemap((request, id) => {
+    for (const flight of pileFlights) if (flight.request === request) flight.id = id;
   });
   const offReset = adapter.onReset(reconstruct);
   reconstruct();

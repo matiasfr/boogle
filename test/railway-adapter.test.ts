@@ -127,6 +127,9 @@ function world({ reach = () => true }: { reach?: (pid: string) => boolean } = {}
     const c = clients.get(cid);
     if (c?.live) for (const h of handlers.get(cid)!) h(m, SERVER_ID);
   };
+  // A hidden (frozen) tab: its socket backs up, so the server skips it and the next send carries everything at once;
+  // it handles nothing until it comes back.
+  const hidden = new Set<string>();
   // One server step: the arrivals due, the host's commit and flush, the addressed messages and the clock stamp (w:c),
   // each reaching its client after that client's delay.
   function run(n = 1) {
@@ -139,16 +142,19 @@ function world({ reach = () => true }: { reach?: (pid: string) => boolean } = {}
       sync.stepWorld(1000 / 60 + 1);
       now += 17;
       replication.commit(sync.roomStep());
-      replication.flush(sync.roomStep(), (cid, _p, json) =>
-        down.push({ at: step + (delays.get(cid) ?? 0), cid, m: JSON.parse(json) }),
+      replication.flush(
+        sync.roomStep(),
+        (cid, _p, json) => down.push({ at: step + (delays.get(cid) ?? 0), cid, m: JSON.parse(json) }),
+        (cid) => !hidden.has(cid),
       );
       for (const cid of clients.keys())
-        down.push({ at: step + (delays.get(cid) ?? 0), cid, m: { t: 'w:c', ht: sync.world.tick } });
-      for (const x of down.filter((x) => x.at <= step)) {
+        if (!hidden.has(cid))
+          down.push({ at: step + (delays.get(cid) ?? 0), cid, m: { t: 'w:c', ht: sync.world.tick } });
+      for (const x of down.filter((x) => x.at <= step && !hidden.has(x.cid))) {
         down.splice(down.indexOf(x), 1);
         deliver(x.cid, x.m);
       }
-      for (const c of clients.values()) c.adapter.update(now);
+      for (const c of clients.values()) if (!hidden.has(c.cid)) c.adapter.update(now);
     }
   }
   const ready = () => {
@@ -160,7 +166,8 @@ function world({ reach = () => true }: { reach?: (pid: string) => boolean } = {}
     for (let k = 0; k < 400 && ![...clients.values()].every((x) => x.adapter.inspect().phase === 'idle'); k++) run();
   }
   const quiet = (n = 60) => run(n);
-  return { sync, api, replication, join, run, ready, awake, quiet, clients, deliver };
+  const hide = (cid: string, on: boolean) => void (on ? hidden.add(cid) : hidden.delete(cid));
+  return { sync, api, replication, join, run, ready, awake, quiet, clients, deliver, hide };
 }
 type World = ReturnType<typeof world>;
 
@@ -381,7 +388,7 @@ test('a drop shows its pile at once under a temporary id, re-keyed when the serv
   assert.equal(a.adapter.take(temp), false, 'not taken before the server names it');
   w.quiet(20);
   const id = w.api.railway.piles[0]!.id;
-  assert.deepEqual(a.remaps, [[temp, id]]);
+  assert.deepEqual(a.remaps, [[-temp, id]], "the drop of that request landed in the server's pile");
   assert.equal(a.adapter.inspect().piles[0]!.id, id);
   assert.equal(a.adapter.take(id), true);
   assert.equal(a.adapter.inspect().carry, 2);
@@ -597,4 +604,121 @@ test('a session refusal returns what that action and later ones showed, never ea
     [[request, 'session']],
   );
   assert.equal(a.adapter.inspect().status, 'storage');
+});
+
+test('a resync while predictions are out returns nothing: the refill is read only once whole', () => {
+  const w = world();
+  const a = w.join('a', 'alice', 6);
+  w.ready();
+  w.awake(a);
+  assert.equal(a.adapter.chop(TREE, 0, false), true);
+  w.run(2);
+  // A packet the mirror must refuse: it resets and asks for the whole state, which arrives in several chunks.
+  w.deliver('a', { t: 's', tk: w.sync.roomStep(), c: [['nope', 1, {}]] });
+  assert.equal(a.adapter.inspect().synced, false);
+  w.quiet(40);
+  const s = a.adapter.inspect();
+  assert.equal(s.synced, true);
+  assert.equal(a.corrections.length, 0, 'no chunk of the refill reads as the chop losing');
+  assert.equal(s.carry, 2);
+  agrees(w, s);
+});
+
+test('two players waking the machine together: the later one gives nothing back and replays nothing', () => {
+  const w = world();
+  const a = w.join('a', 'alice', 2);
+  const b = w.join('b', 'bob', 8);
+  w.ready();
+  assert.equal(a.adapter.wake(), true);
+  assert.equal(b.adapter.wake(), true);
+  w.quiet(40);
+  for (const c of [a, b]) {
+    assert.equal(c.corrections.length, 0, `${c.pid}: no return`);
+    assert.equal(c.effects.filter((e) => e.op === 'rail.wake').length, 1, `${c.pid}: one wake played, its own`);
+  }
+  assert.equal(b.adapter.inspect().awake, w.api.railway.awake);
+});
+
+test('a take that the newer mirror makes bigger plays the extra pieces', () => {
+  const w = world();
+  const a = w.join('a', 'alice', 8);
+  const b = w.join('b', 'bob', 0);
+  w.ready();
+  w.awake(a);
+  for (const c of [a, b]) assert.equal(c.adapter.chop(TREE, 0, false), true);
+  w.quiet(30);
+  assert.equal(a.adapter.drop(T1.x, 3000, T1.z, 1), true);
+  w.quiet(30);
+  const pile = w.api.railway.piles[0]!;
+  // Alice takes the one log she sees; Bob's drop of two more onto that pile reaches the server first.
+  assert.equal(a.adapter.take(pile.id), true);
+  assert.equal(b.adapter.drop(T1.x, 3000, T1.z, 2), true);
+  w.quiet(40);
+  const takes = a.effects.filter((e) => e.op === 'rail.take' && e.predicted);
+  assert.deepEqual(
+    takes.map((e) => e.accepted),
+    [1, 2],
+    'the extra two play as they become hers',
+  );
+  assert.equal(a.corrections.length, 0);
+  assert.equal(w.api.account('alice')!.carry, 4);
+  agrees(w, a.adapter.inspect());
+});
+
+test('a drop shown merging into a pile the server no longer has is re-keyed to the new pile', () => {
+  const w = world();
+  const a = w.join('a', 'alice', 8);
+  const b = w.join('b', 'bob', 0);
+  w.ready();
+  w.awake(a);
+  assert.equal(a.adapter.chop(TREE, 0, false), true);
+  w.quiet(30);
+  assert.equal(a.adapter.drop(T1.x, 3000, T1.z, 1), true);
+  w.quiet(30);
+  const old = w.api.railway.piles[0]!.id;
+  // Alice drops onto the pile she sees while Bob, closer to the server, takes it away.
+  assert.equal(a.adapter.drop(T1.x, 3000, T1.z, 1), true);
+  const request = a.adapter.inspect().next - 1;
+  assert.equal(a.effects.at(-1)!.pile, old, 'shown merging');
+  assert.equal(b.adapter.take(old), true);
+  w.quiet(40);
+  const fresh = w.api.railway.piles[0]!.id;
+  assert.notEqual(fresh, old);
+  assert.deepEqual(a.remaps.at(-1), [request, fresh]);
+  agrees(w, a.adapter.inspect());
+});
+
+test('a tab hidden for 30 s while carrying, a stroke still out, comes back with nothing rolled back', () => {
+  const w = world();
+  const a = w.join('a', 'alice', 6);
+  const others = [w.join('b', 'bob', 2), w.join('c', 'carol', 4), w.join('d', 'dan', 3)];
+  w.ready();
+  w.awake(a);
+  for (let k = 0; k < 2; k++) {
+    assert.equal(a.adapter.chop(TREE, 0, false), true);
+    w.run(15);
+  }
+  assert.equal(a.adapter.chop(TREE, 0, false), true);
+  const shown = a.adapter.inspect().carry;
+  assert.equal(shown, 6);
+  w.hide('a', true);
+  // Thirty seconds of everyone else working: hundreds of events (past MAX_EVENTS) and a catch-up big enough to split.
+  for (let step = 0; step < 1800; step++) {
+    if (step % 12 === 0)
+      for (const [k, c] of others.entries()) {
+        const s = c.adapter.inspect();
+        const tree = (step / 12 + k * 7) % RAILWAY_SOURCES.length;
+        if (s.carry >= 6) c.adapter.drop(T1.x + k * 100 + (step % 600), 3000, T1.z, 1);
+        else c.adapter.chop(RAILWAY_SOURCES[tree]![0], 0, false);
+      }
+    w.run();
+  }
+  const before = a.mirror.mirror.stats.applied;
+  w.hide('a', false);
+  w.quiet(40);
+  const packets = a.mirror.mirror.stats.applied - before;
+  assert.ok(packets > 1, `the catch-up came in ${packets} chunks`);
+  assert.equal(a.corrections.length, 0, 'nothing flew off the back');
+  assert.equal(a.adapter.inspect().carry, shown, 'the carry never dropped');
+  agrees(w, a.adapter.inspect());
 });

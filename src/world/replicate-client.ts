@@ -19,11 +19,11 @@
 //   p.session(epoch, next)            the session's action identity: the existing railway (epoch, request) pair
 //   p.act(action, atMs)               returns its ActionId, or null when the window (8) is full (not predicted)
 //   p.withdraw(id)                    take back the newest action before it was sent (its prediction moved nothing)
-//   p.attach(mirror)                  acks drop confirmed actions, refusals drop theirs, any packet rebuilds
 //   p.state()                         predicted state: clone(confirmed()) with pending actions replayed by the same
 //                                     pure apply the server uses; rebuilt only after a packet or a new action
 //   p.pending() / p.stalled(atMs)     actions still unconfirmed / those pending longer than STALL_MS (the stall cue)
-//   p.onRejected(fn)                  fn(id, reason, action): the view eases the correction (Local presentation)
+//   p.confirm(ack) / p.reject(id)     settle actions (the owner reads them off packets: src/adapters/railway.ts)
+//   p.invalidate()                    the confirmed base changed (a packet applied): rebuild on the next read
 import { createStepEstimate } from './room-clock.ts';
 import {
   hashComponents,
@@ -66,6 +66,18 @@ export function createMirror(schemas: readonly Schema[]) {
   // Whole-packet validation: nothing is mutated unless every entry is well-formed for the current mirror.
   function valid(p: unknown): p is ServerPacket {
     if (!isObj(p) || p.t !== 's' || !isStep(p.tk) || p.tk < tk || (p.w !== undefined && p.w !== 1)) return false;
+    if (p.m !== undefined && p.m !== 1) return false;
+    if (
+      p.ok !== undefined &&
+      !(
+        Array.isArray(p.ok) &&
+        p.ok.length <= MAX_LIST &&
+        p.ok.every(
+          (r) => Array.isArray(r) && r.length === 3 && isRequest(r[0]) && isRequest(r[1]) && Number.isSafeInteger(r[2]),
+        )
+      )
+    )
+      return false;
     if (p.h !== undefined && !(Number.isInteger(p.h) && (p.h as number) >= 0 && (p.h as number) <= 0xffffffff))
       return false;
     if (
@@ -230,7 +242,6 @@ export function createPredictor<S, A>({
   let next = 1;
   let pending: Pending<A>[] = [];
   let cache: S | null = null;
-  const rejectedFns: ((id: ActionId, reason: string, action: A) => void)[] = [];
   const stats = { acted: 0, confirmed: 0, rejected: 0, rebuilds: 0, full: 0 };
 
   function confirm([e, r]: ActionId) {
@@ -239,13 +250,14 @@ export function createPredictor<S, A>({
     stats.confirmed += before - pending.length;
     cache = null;
   }
-  function reject([e, r]: ActionId, reason: string) {
+  /** Drop a refused action; whether it was still pending. */
+  function reject([e, r]: ActionId) {
     const k = pending.findIndex((p) => p.id[0] === e && p.id[1] === r);
-    if (k < 0) return;
-    const [p] = pending.splice(k, 1);
+    if (k < 0) return false;
+    pending.splice(k, 1);
     stats.rejected++;
     cache = null;
-    for (const fn of rejectedFns) fn(p!.id, reason, p!.action);
+    return true;
   }
 
   return {
@@ -286,13 +298,6 @@ export function createPredictor<S, A>({
     invalidate() {
       cache = null;
     },
-    attach(mirror: Mirror) {
-      mirror.onPacket((p) => {
-        for (const [e, r, reason] of p.rej ?? []) reject([e, r], reason);
-        if (p.ack) confirm(p.ack);
-        cache = null;
-      });
-    },
     state(): S {
       if (cache) return cache;
       const s = clone(confirmed());
@@ -302,9 +307,6 @@ export function createPredictor<S, A>({
     },
     pending: () => pending as readonly Pending<A>[],
     stalled: (at: number) => pending.filter((p) => at - p.at >= STALL_MS),
-    onRejected(fn: (id: ActionId, reason: string, action: A) => void) {
-      rejectedFns.push(fn);
-    },
   };
 }
 export type Predictor<S, A> = ReturnType<typeof createPredictor<S, A>>;

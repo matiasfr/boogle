@@ -14,10 +14,12 @@
 //   rep.subscribe(cid, cells | 'all')            cells entered start at -1; cells left send despawns for what it saw
 //   rep.removeClient(cid)
 //   rep.ack(cid, epoch, request) / reject(cid, epoch, request, reason) / remap(cid, temp, id)
+//   rep.accepted(cid, epoch, request, n)         an accepted action and what it moved, for its actor's prediction (ok)
 //   rep.resync(cid)                              the client's mirror diverged: whole state again (its ack is kept,
 //                                                its queued events dropped: the whole state already shows them)
-//   rep.emit(event)                              a one-off event to every client on its next send (effects of an
-//                                                accepted action); a client backed up past MAX_EVENTS drops the oldest
+//   rep.emit(event, except?)                     a one-off event to every client (but `except`, the actor of a
+//                                                predicted action) on its next send (effects of an accepted action); a
+//                                                client backed up past MAX_EVENTS drops the oldest
 //   rep.flush(step, send, ready?)                end of step: one packet set per client whose cells changed since its
 //                                                change tick (or with an ack due). A client whose socket is backed up
 //                                                (ready false) is skipped; its next send carries the latest values, so
@@ -64,13 +66,15 @@ type Client = {
   ack: ActionId | null;
   ackDue: boolean;
   rej: [number, number, string][];
+  ok: [number, number, number][];
   ids: [string, EntityId][];
   drops: Despawn[];
   ev: Fields[];
   fresh: boolean; // joined, whole state not yet sent: the next send ends with w: 1
   hashAt: number; // the step from which this client is due a hash (subscribed to everything only)
 };
-/** Refusals held for one backed-up client; older ones are dropped (the ack still settles them). */
+/** Refusals and acceptances held for one backed-up client; older ones are dropped (the ack still settles them; a
+ * client has at most PREDICTION_WINDOW actions out, so only a long backlog of its own could lose any). */
 export const MAX_REJECTS = 256;
 /** Events held for one backed-up client; older ones are dropped (effects only, the state still arrives whole). */
 export const MAX_EVENTS = 256;
@@ -223,6 +227,7 @@ export function createReplicator() {
       !c.length &&
       !cl.ackDue &&
       !cl.rej.length &&
+      !cl.ok.length &&
       !cl.ids.length &&
       !cl.ev.length &&
       !cl.fresh &&
@@ -236,6 +241,7 @@ export function createReplicator() {
     const push = (list: 'x' | 'c', item: Despawn | Change) => {
       const size = JSON.stringify(item).length + 1;
       if (chars + size > MAX_PACKET_CHARS && (cur.x || cur.c)) {
+        cur.m = 1; // more follows: the state is consistent only at the last chunk
         packets.push(cur);
         cur = { t: 's', tk: step };
         chars = 32;
@@ -247,6 +253,7 @@ export function createReplicator() {
     for (const item of c) push('c', item);
     if (cl.ackDue && cl.ack) cur.ack = cl.ack;
     if (cl.rej.length) cur.rej = cl.rej.splice(0);
+    if (cl.ok.length) cur.ok = cl.ok.splice(0);
     if (cl.ids.length) cur.ids = cl.ids.splice(0);
     if (cl.ev.length) cur.ev = cl.ev.splice(0);
     if (cl.fresh) {
@@ -305,6 +312,7 @@ export function createReplicator() {
         ack: null,
         ackDue: false,
         rej: [],
+        ok: [],
         ids: [],
         drops: [],
         ev: [],
@@ -335,12 +343,19 @@ export function createReplicator() {
       cl.ack = old.ack;
       cl.ackDue = !!old.ack;
       cl.rej = old.rej;
+      cl.ok = old.ok;
+    },
+    accepted(cid: string, epoch: number, request: number, n: number) {
+      const ok = client(cid).ok;
+      ok.push([epoch, request, n]);
+      if (ok.length > MAX_REJECTS) ok.shift();
     },
     remap(cid: string, temp: string, id: EntityId) {
       client(cid).ids.push([temp, id]);
     },
-    emit(event: Fields) {
-      for (const cl of clients.values()) {
+    emit(event: Fields, except?: string) {
+      for (const [cid, cl] of clients) {
+        if (cid === except) continue;
         cl.ev.push(event);
         if (cl.ev.length > MAX_EVENTS) cl.ev.shift();
       }

@@ -268,9 +268,9 @@ function tickCarry(load: CarryReadout, now: number) {
     pauseSections.push(pauseCarry);
   }
   const held = load.logs + load.rails + load.stone;
-  const pending = load.incoming + load.reserved;
+  const pending = (load.incoming ?? 0) + (load.reserved ?? 0);
   const full = !load.big && held + pending >= load.capacity;
-  const key = `${load.logs}/${load.rails}/${load.stone}/${load.big}/${load.capacity}/${load.incoming}/${load.reserved}`;
+  const key = `${load.logs}/${load.rails}/${load.stone}/${load.big}/${load.capacity}/${load.incoming ?? 0}/${load.reserved ?? 0}`;
   if (key !== carryKey) {
     if (carryKey || held || pending || load.big) carryUntil = now + 2000;
     carryKey = key;
