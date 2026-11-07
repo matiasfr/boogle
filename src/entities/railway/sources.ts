@@ -91,6 +91,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     body: null,
     stump: null,
   }));
+  // The trees a stroke can be asked of (the line's sources, its hardwoods and the great tree), in tree order.
+  const choppable = trees.filter((tree) => sourceIndex.has(tree.index) || hardwoodIndex.has(tree.index) || tree.great);
   const models = createTreeView(
     trees,
     root,
@@ -231,13 +233,36 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     return pile.y / 100;
   }
 
-  function drawPiles() {
-    for (let k = pileFlights.length - 1; k >= 0; k--) if (!pileFlights[k]!.active()) pileFlights.splice(k, 1);
+  // The pile batches are rewritten (and uploaded) only when what they show changed: the piles read (the adapter keeps
+  // the same array while every pile is equal), a flight into a pile landing or being re-keyed, or the racks.
+  let drawnPiles: typeof state.piles | null = null,
+    drawnRack = -1,
+    drawnStoneRack = -1,
+    pilesDirty = true;
+  function drawPiles(force = true) {
+    for (let k = pileFlights.length - 1; k >= 0; k--)
+      if (!pileFlights[k]!.active()) {
+        pileFlights.splice(k, 1);
+        pilesDirty = true;
+      }
+    if (!force && !pilesDirty && drawnPiles === state.piles) {
+      if (drawnRack !== state.rack || drawnStoneRack !== state.stoneRack) {
+        rack.setStock(state.rack, state.stoneRack);
+        drawnRack = state.rack;
+        drawnStoneRack = state.stoneRack;
+      }
+      return;
+    }
+    pilesDirty = false;
+    drawnPiles = state.piles;
+    drawnRack = state.rack;
+    drawnStoneRack = state.stoneRack;
     let count = 0,
       stoneCount = 0,
       railCount = 0;
     for (const pile of state.piles) {
-      const inFlight = pileFlights.filter((flight) => flight.id === pile.id).length;
+      let inFlight = 0;
+      for (const flight of pileFlights) if (flight.id === pile.id) inFlight++;
       at.set(pile.x / 100, pileHeight(pile), pile.z / 100);
       for (let k = 0; k < pile.n - inFlight; k++) {
         if (pile.kind === 2) {
@@ -557,7 +582,11 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   // Your drop landed in another pile than it was shown in (its server id, or a new pile for a merge): its pieces still
   // in flight count against that one.
   const offRemap = adapter.onRemap((request, id) => {
-    for (const flight of pileFlights) if (flight.request === request) flight.id = id;
+    for (const flight of pileFlights)
+      if (flight.request === request) {
+        flight.id = id;
+        pilesDirty = true;
+      }
   });
   // After a lost connection or a resync only what changed meanwhile is re-posed; swings and flights carry on.
   const offReset = adapter.onReset((soft) => {
@@ -666,7 +695,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       sparkleAxe(axe, wasVisible, reducedMotion, emit, readableIntensity(), dt);
     }
     updatePartnerAxes(dt);
-    drawPiles();
+    drawPiles(false);
     for (const tree of trees) {
       if (tree.shake > 0) {
         tree.shake = Math.max(0, tree.shake - dt * 3.2);
@@ -696,23 +725,23 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   function targets(): Interactable[] {
     if (!alive || !state.ready || !me.body) return NO_TARGETS;
     const p = me.body.interpolatedPosition;
-    const result: Interactable[] = trees
-      .filter(
-        (tree) =>
-          (sourceIndex.has(tree.index) || hardwoodIndex.has(tree.index) || tree.great) &&
-          !(state.beam?.state === 'held' && state.beam.holder === state.pid) &&
-          !['asleep', 'waking'].includes(state.phase) &&
-          !tree.cleared &&
-          tree.fall < 0 &&
-          Math.hypot(p.x - tree.x, p.z - tree.z) <= 3.2,
-      )
-      .map((tree) => ({
-        id: `place-tree${tree.index}`,
-        verb: 'Chop',
-        at: tree.at,
-        click: true,
-        run: () => start(tree),
-      }));
+    const result: Interactable[] = [];
+    const held = state.beam?.state === 'held' && state.beam.holder === state.pid;
+    if (!held && state.phase !== 'asleep' && state.phase !== 'waking')
+      for (const tree of choppable) {
+        if (tree.cleared || tree.fall >= 0) continue;
+        const dx = p.x - tree.x,
+          dz = p.z - tree.z;
+        // A box test first: few of the hundreds of trees are ever within reach.
+        if (dx > 3.2 || dx < -3.2 || dz > 3.2 || dz < -3.2 || Math.hypot(dx, dz) > 3.2) continue;
+        result.push({
+          id: `place-tree${tree.index}`,
+          verb: 'Chop',
+          at: tree.at,
+          click: true,
+          run: () => start(tree),
+        });
+      }
     for (const pile of state.piles) {
       if (Math.hypot(p.x - pile.x / 100, p.z - pile.z / 100) > 2.8 || Math.abs(p.y - PLAYER_R - pileHeight(pile)) > 2)
         continue;

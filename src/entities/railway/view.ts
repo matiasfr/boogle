@@ -3,7 +3,7 @@ import * as THREE from 'three/webgpu';
 import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
 import { RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
 import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
-import { lineFeed, lineSchedule, lineLayDistance } from '../../sim/railway-line-schedule.ts';
+import { lineFeed, lineSchedule, lineLayDistance, type LineTiming } from '../../sim/railway-line-schedule.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
 import { createWakePresentation } from '../../render/wake-presentation.ts';
 import { me } from '../../player/player.ts';
@@ -100,13 +100,35 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       (index === state.activeStation && job.start >= 0 && !job.completion && state.ready ? sinceTick * 10 : 0)
     );
   };
+  // A station's schedule and feed are pure in its timing, which is pinned when the job is funded: they are worked out
+  // again only when it changes, not every frame.
+  const plans = LINE1_STATIONS.map((spec) => ({
+    spec,
+    timing: null as LineTiming | null,
+    schedule: null as ReturnType<typeof lineSchedule> | null,
+    feed: [] as ReturnType<typeof lineFeed>,
+  }));
+  const sameTiming = (a: LineTiming, b: LineTiming) => {
+    for (const k in a) if (a[k as keyof LineTiming] !== b[k as keyof LineTiming]) return false;
+    for (const k in b) if (!(k in a)) return false;
+    return true;
+  };
+  const planOf = (index: number, timing: LineTiming) => {
+    const plan = plans[index]!;
+    if (!plan.schedule || !plan.timing || !sameTiming(plan.timing, timing)) {
+      plan.schedule = lineSchedule(plan.spec, timing);
+      plan.feed = lineFeed(plan.spec, timing);
+      plan.timing = timing;
+    }
+    return plan as { schedule: ReturnType<typeof lineSchedule>; feed: ReturnType<typeof lineFeed> };
+  };
   const head = () => {
     if (opened()) return 19; // Waiting point on the pre-existing village stub; no forge turn or train activation.
     const spec = LINE1_STATIONS[state.activeStation]!,
       job = state.stations[state.activeStation]!;
     if (job.completion) return spec.toCm / 100;
     if (job.start < 0) return spec.fromCm / 100;
-    const schedule = lineSchedule(spec, job.timing);
+    const { schedule } = planOf(state.activeStation, job.timing);
     return (
       (spec.fromCm -
         Math.min(
@@ -308,8 +330,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       state.stations.forEach((job, index) => {
         const station = frames[index]!,
           spec = LINE1_STATIONS[index]!;
-        const schedule = lineSchedule(spec, job.timing),
-          feed = lineFeed(spec, job.timing);
+        const { schedule, feed } = planOf(index, job.timing);
         const feedMs = (jobElapsed(index) - schedule.depositTicks) * 100;
         const wanted = job.start < 0 ? 0 : feed.filter((flight) => flight.launchMs <= feedMs).length;
         while (feedLaunched[index]! < wanted) {

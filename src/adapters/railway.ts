@@ -275,7 +275,8 @@ export function createRailwayAdapter({
   let epoch = 0;
   let next = 1;
   // storage: the room lost its storage; full: the server has no session for this player (the account cap). Both stop.
-  let status: 'connecting' | 'starting' | 'ready' | 'storage' | 'full' = 'connecting';
+  type Status = 'connecting' | 'starting' | 'ready' | 'storage' | 'full';
+  let status = 'connecting' as Status;
   let clock = 0;
   let probeAt = -Infinity;
   let resyncAt = -Infinity;
@@ -589,9 +590,49 @@ export function createRailwayAdapter({
     return true;
   }
 
+  // ---------------------------------------------------------------- reads
+  // About twenty readers a frame (every view, the back bundle, the prompts) ask for the state. What they read changes
+  // only with a packet (the mirror's applied count), the predicted state (a new object on every rebuild), the
+  // estimated tick or the movement tunables, so the frozen read is rebuilt only then and shared until it changes. The
+  // views can then tell that nothing changed by identity: piles keep the same array while their rows are equal.
+  let readFor: Railway | null = null,
+    readApplied = -1,
+    readTick = -1,
+    readMovement: RailwayMovement | null = null,
+    read: ReturnType<typeof buildState> | null = null;
+  const sameMovement = (a: RailwayMovement, b: RailwayMovement | null) =>
+    !!b &&
+    a.beamSoloSpeed === b.beamSoloSpeed &&
+    a.beamHelpSpeed === b.beamHelpSpeed &&
+    a.jumpImpulse === b.jumpImpulse &&
+    a.jumpTurn === b.jumpTurn &&
+    a.jumpSteer === b.jumpSteer &&
+    a.jumpApexSpeed === b.jumpApexSpeed;
   function readState() {
     const t = tick();
-    const s = rail.at(t, view());
+    const v = view();
+    const m = movement();
+    const applied = rail.mirror.stats.applied;
+    if (read && v === readFor && t === readTick && applied === readApplied && sameMovement(m, readMovement))
+      return read;
+    readFor = v;
+    readTick = t;
+    readApplied = applied;
+    readMovement = m;
+    return (read = buildState(t, rail.at(t, v), m, read));
+  }
+  // The per-tree lists (a few hundred entries each) are copied but not frozen: in JavaScriptCore (Safari) freezing an
+  // array that size costs ~35 us and leaves it slower to read, ~0.2 ms per read in all. They are readonly to TypeScript.
+  const copy = <T>(list: readonly T[]): readonly T[] => list.slice();
+  type Pile = Railway['piles'][number];
+  const samePile = (a: Pile, b: Pile) =>
+    a.id === b.id && a.x === b.x && a.y === b.y && a.z === b.z && a.n === b.n && a.kind === b.kind && a.age === b.age;
+  function buildState(
+    t: number,
+    s: Railway,
+    moves: RailwayMovement,
+    last: { piles: readonly Readonly<Pile>[] } | null,
+  ) {
     const activeStation = railActiveStation(s);
     const stations = railJobs(s).map((job, i) =>
       Object.freeze({
@@ -632,7 +673,7 @@ export function createRailwayAdapter({
     const account = railAccount(s, pid);
     return Object.freeze({
       tick: t,
-      ...movement(),
+      ...moves,
       panelCount: railPanelCount(s),
       panelStock: railPanelStock(s),
       phase: railPhase(s, t),
@@ -657,7 +698,7 @@ export function createRailwayAdapter({
       ),
       stoneRack: s.line!.stoneRack,
       hardwood: Object.freeze([...s.line!.hardwood]),
-      upgrades: Object.freeze([...s.line!.upgrades]),
+      upgrades: copy(s.line!.upgrades),
       hardwoodWork: Object.freeze([...s.line!.hardwoodWork]),
       awake: s.awake,
       start: current.start,
@@ -669,21 +710,79 @@ export function createRailwayAdapter({
       delivered: current.delivered,
       counts: Object.freeze(railCounts(s)),
       rack: s.supply!.rack,
-      growth: Object.freeze(s.sources.map((_n, k) => Math.max(0, (s.supply!.ages[k] ?? 0) - 31))),
-      sources: Object.freeze([...s.sources]),
-      work: Object.freeze([...s.work]),
+      growth: s.sources.map((_n, k) => Math.max(0, (s.supply!.ages[k] ?? 0) - 31)) as readonly number[],
+      sources: copy(s.sources),
+      work: copy(s.work),
       falls: Object.freeze({
-        yaw: Object.freeze([...s.falls!.yaw]),
-        collapsed: Object.freeze([...s.falls!.collapsed]),
+        yaw: copy(s.falls!.yaw),
+        collapsed: copy(s.falls!.collapsed),
       }),
-      piles: Object.freeze(s.piles.map((p) => Object.freeze({ ...p }))),
+      piles:
+        last && last.piles.length === s.piles.length && s.piles.every((p, i) => samePile(p, last.piles[i]!))
+          ? last.piles
+          : Object.freeze(s.piles.map((p) => Object.freeze({ ...p }))),
       accounts: Object.freeze(s.accounts.map((a) => Object.freeze({ ...a }))),
     });
   }
+  // inspect() adds the session fields to the read; it too is the same object until one of them changes.
+  let inspected: {
+    state: ReturnType<typeof readState>;
+    status: Status;
+    connected: boolean;
+    synced: boolean;
+    step: number;
+    ready: boolean;
+    epoch: number;
+    next: number;
+    pending: number;
+    stalled: RailwayIntent['op'] | null;
+    view: ReturnType<typeof inspection>;
+  } | null = null;
   function inspect() {
     const state = readState();
-    const at = now();
-    const stalled = predictor.stalled(at);
+    const pending = predictor.pending().length;
+    // Only a pending action can be stalled.
+    const stalled = pending ? (predictor.stalled(now())[0]?.action.intent.op ?? null) : null;
+    const step = rail.step();
+    const ready = available();
+    const i = inspected;
+    if (
+      i &&
+      i.state === state &&
+      i.status === status &&
+      i.connected === connected &&
+      i.synced === synced &&
+      i.step === step &&
+      i.ready === ready &&
+      i.epoch === epoch &&
+      i.next === next &&
+      i.pending === pending &&
+      i.stalled === stalled
+    )
+      return i.view;
+    const out = inspection(state, step, ready, pending, stalled);
+    inspected = {
+      state,
+      status,
+      connected,
+      synced,
+      step,
+      ready,
+      epoch,
+      next,
+      pending,
+      stalled,
+      view: out,
+    };
+    return out;
+  }
+  function inspection(
+    state: ReturnType<typeof readState>,
+    step: number,
+    ready: boolean,
+    pending: number,
+    stalled: RailwayIntent['op'] | null,
+  ) {
     return Object.freeze({
       ...state,
       pid,
@@ -692,16 +791,16 @@ export function createRailwayAdapter({
       synced,
       /** The server step the mirror is current to, and a hash of the mirror there (co-op witnesses compare them;
        * computed only when read). It is the confirmed mirror's, never the prediction's. */
-      step: rail.step(),
+      step,
       get hash() {
         return rail.hash();
       },
-      ready: available(),
+      ready,
       epoch,
       next,
-      pending: predictor.pending().length,
+      pending,
       /** The oldest action still unanswered after STALL_MS (the wordless stall cue), or null. */
-      stalled: stalled[0]?.action.intent.op ?? null,
+      stalled,
       prediction: stats,
       // Your own pending actions are already in the predicted counts, so these are the counts themselves.
       availableCarry: state.carry,
