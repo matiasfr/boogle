@@ -14,8 +14,21 @@ const bot = makeBot({
     throw new Error('Instant-feedback action needed recovery');
   },
 });
+const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const read = () => inspectRailway()!;
-window.__debugCam?.clear(); // the game's own follow camera, behind the player, facing the tree
+// Strokes from the side: six metres off the line from the player to the tree, so neither hides the other.
+{
+  const p = me.body!.position;
+  const tree = read().trees.reduce((a, b) =>
+    Math.hypot(a.x - p.x, a.z - p.z) < Math.hypot(b.x - p.x, b.z - p.z) ? a : b,
+  );
+  const dx = tree.x - p.x,
+    dz = tree.z - p.z,
+    d = Math.hypot(dx, dz) || 1;
+  const mx = (p.x + tree.x) / 2,
+    mz = (p.z + tree.z) / 2;
+  window.__debugCam?.set([mx - (dz / d) * 6, p.y + 2.5, mz + (dx / d) * 6], [mx, p.y + 0.6, mz]);
+}
 const frame = () => new Promise<number>((r) => requestAnimationFrame(() => r(performance.now())));
 background(
   (async () => {
@@ -38,6 +51,7 @@ background(
       });
       await bot.wait(450);
     }
+    window.__debugCam?.clear(); // the game's follow camera for the walk to the frame and its unload
     const station = read().station;
     const carried = read().carry;
     await bot.walk(station.x, station.z, 3);

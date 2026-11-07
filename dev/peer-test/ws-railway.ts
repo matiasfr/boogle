@@ -405,6 +405,8 @@ export async function railwayLoad(
   for (const churn of [
     { name: 'normal', every: 500 },
     { name: '5x', every: 100 },
+    // Everyone at one tree, dropping on and taking from the same pile: the contest case (opt in with WS_LOAD_CHURN).
+    { name: 'crowd', every: 500, crowd: true },
   ].filter((x) => churns.includes(x.name)))
     for (const n of players)
       for (const l of lat) {
@@ -441,7 +443,7 @@ export async function railwayLoad(
             ev(p.page, (o: { ms: number; every: number; first: number }) => window.T.railLoad(o), {
               ms: seconds * 1000,
               every: churn.every,
-              first: k * 40,
+              first: 'crowd' in churn ? 0 : k * 40,
             }),
           ),
         );

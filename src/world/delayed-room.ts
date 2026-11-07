@@ -13,7 +13,10 @@ export function delayedRoom(room: WorldRoom, rttMs: number): WorldRoom {
   if (known) return known;
   const half = rttMs / 2;
   let generation = 0;
-  room.onConnection(() => void generation++);
+  // Only a lost connection drops what is in flight (a room may also report "connected" again while it stays up).
+  room.onConnection((live) => {
+    if (!live) generation++;
+  });
   const later = (fn: () => void) => {
     const g = generation;
     setTimeout(() => {
