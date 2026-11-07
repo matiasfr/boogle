@@ -1,5 +1,7 @@
 # The next destination after Line 1
 
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+
 _Research report, 6 November 2026. Four candidates after the owner's roughly 30-minute demo: Line 1, T1–T3, the walk home, track layer and cove. Live primary-source research and repository inspection at `e7eea656`; recommendation and visual planning only. No gameplay changes, new playtest or implementation approval. Companion: [visual comparison](next-destination.html)._
 
 **Recommend the east quarry, reworked as a split-rock works: open a haul route through a cracked wall, connect the works, and bring home concrete footings that make the first sea crossing possible. Then cross to the ring island; use a high gorge later, with the forest town as an alternative rather than another compulsory chapter.** This continues the existing map while testing something the first line cannot establish: whether reaching a second source makes the whole railway more useful.

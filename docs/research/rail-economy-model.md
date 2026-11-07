@@ -1,5 +1,7 @@
 # Rail economics: what does the next load buy?
 
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+
 _Research report, 2 November 2026. Live primary-source research and an executable, dependency-free TypeScript model of Boogle's rail work, supply, travel and novelty. Repository inspected at `5f8b9009`. Fits the existing scripted prototype measurements; does not report a new human playtest, multiplayer measurement or reference-game play session. Everything about future costs, durations, rewards, supply and enjoyment is a hypothesis._
 
 **Evidence labels:** **[M]** is a recorded measurement in [place.md](../game-design/place.md#measured); **[V]** is inspected code, a recorded owner decision or a fetched primary source; **[H]** is interpretation, fitted arithmetic or a proposed experiment. A developer's explanation establishes their design intent, not a universal player-response law. GDC slides were read; no talk or gameplay video was watched. Decimal output makes runs comparable, not forecasts precise.

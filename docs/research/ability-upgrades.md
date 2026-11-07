@@ -1,5 +1,7 @@
 # Ability upgrades: make familiar places worth another visit
 
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+
 _Research report, 5 November 2026. Repository baseline `68ee082d`. Live primary-source research, focused inspection of Place's current moves and a proposed eight-hour ladder for double jump, glider and target-pull hook. Research and proposals only: no gameplay changes, reference-game replay, Boogle playtest or campaign simulation._
 
 **Evidence:** **[V]** = fetched primary text or inspected repository; **[R]** = recorded playtest, not reproduced; **[G]** = shipped-game rule used for comparison, not independently replayed here; **[P]** = inference, proposed placement or tuning hypothesis. Official guides establish documented rules; developer interviews establish their stated intent. Neither establishes Boogle's fun or a universal upgrade count. Sources are inline; GDC listings are abstracts, not watched talks.

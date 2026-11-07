@@ -1,5 +1,7 @@
 # A roundhouse and light train management
 
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+
 _Research report, 2 November 2026. A walkable roundhouse, rideable turntable, shared engines and wagons, and the smallest useful management layer for Boogle. Live web research across Sid Meier's Railroads!, A-Train, Mini Metro, Transport Fever 2, OpenTTD, Railway Empire, Factorio, Satisfactory, Dorfromantik, Death Stranding, Animal Crossing, Pikmin and Ratchet & Clank; checked against this checkout's rail prototypes and plans. Recommendations and prototype hypotheses, not an approved feature or a description of shipped gameplay._
 
 **Verification.** **[V]** means fetched primary-source text or inspected repository code. Manuals establish documented mechanics; developer accounts establish their stated reasoning, not measured player satisfaction. **[S]** means community documentation or secondary/search-only evidence. **[I]** means inference or a Boogle proposal. Every proposed dimension, duration, tuning value and scope limit below is a **hypothesis**, not a measured result. No reference game was played, no video was watched and no Boogle prototype was run for this report. The GDC abstract and the thesis abstract were read; neither is treated as a watched talk or a replicated experiment.

@@ -1,17 +1,17 @@
 first_branch,id,name,value_bucks,hours,hours_after_ending,wallet_after
-canopy,G1,Auto-placing cranes at every frame,12200,0.625,0.625,23214.333
-canopy,G2,Crystal garden (seed producer level 3),9600,1.25,1.875,31014.333
-canopy,G3,Level 5 at every works,37200,1.667,3.542,23414.333
-canopy,G4,Deep-sea spokes to High Port and the second branch,27200,0.667,4.208,20534.333
-canopy,G5,Grand Station at Home,36000,0.868,5.076,16201
-canopy,G6,Ring lighthouse,39400,1,6.076,13281
-canopy,G7,Express engine collection,30000,0.458,6.535,0
-canopy,G8,A hat for each friend,2000,0.055,6.59,0
-gorge,G1,Auto-placing cranes at every frame,12200,0.625,0.625,22337.074
-gorge,G2,Crystal garden (seed producer level 3),9600,1.25,1.875,30137.074
-gorge,G3,Level 5 at every works,37200,1.667,3.542,22537.074
-gorge,G4,Deep-sea spokes to High Port and the second branch,27200,0.667,4.208,19657.074
-gorge,G5,Grand Station at Home,36000,0.868,5.076,15323.74
-gorge,G6,Ring lighthouse,39400,1,6.076,12403.74
-gorge,G7,Express engine collection,30000,0.482,6.559,0
-gorge,G8,A hat for each friend,2000,0.055,6.614,0
+canopy,G1,Auto-placing cranes at every frame,9120,0.458,0.458,15575.337
+canopy,G2,Crystal garden (seed producer level 3),7100,0.833,1.292,20075.337
+canopy,G3,Level 5 at every works,27900,1.25,2.542,12875.337
+canopy,G4,Deep-sea spokes to High Port and the second branch,20400,0.667,3.208,10715.337
+canopy,G5,Grand Station at Home,27010,0.87,4.079,7518.671
+canopy,G6,Ring lighthouse,29550,1,5.079,5328.671
+canopy,G7,Express engine collection,22500,0.628,5.706,0
+canopy,G8,A hat for each friend,1500,0.055,5.761,0
+gorge,G1,Auto-placing cranes at every frame,9120,0.458,0.458,15235.709
+gorge,G2,Crystal garden (seed producer level 3),7100,0.833,1.292,19735.709
+gorge,G3,Level 5 at every works,27900,1.25,2.542,12535.709
+gorge,G4,Deep-sea spokes to High Port and the second branch,20400,0.667,3.208,10375.709
+gorge,G5,Grand Station at Home,27010,0.87,4.079,7179.042
+gorge,G6,Ring lighthouse,29550,1,5.079,4989.042
+gorge,G7,Express engine collection,22500,0.64,5.719,0
+gorge,G8,A hat for each friend,1500,0.055,5.774,0

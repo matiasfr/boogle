@@ -1,5 +1,7 @@
 # Incremental maths: earn the better way
 
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+
 _Note added 6 November 2026: the owner approved a shared wallet, fully shared progression and a world paused while empty, with a capped away credit on the next join ([economy principles amended](../proposals/boogle-2.md#progress-and-rewards)). Its offline rule (one committed project, no time allowance) is replaced by a soft-capped away credit into producers' yards. The rest stands as written._
 
 _Research report, 2 November 2026. Live primary-source research into cost curves, useful upgrades, unfolding play, offline limits and 1–2-hour sittings within Boogle's roughly eight-hour adventure. Repository inspected at `3280c6ff`; existing economy tables and sensitivities rerun with Node 24. This is research and proposed model work, not gameplay implementation, a new playtest or approval of campaign tuning._
@@ -384,4 +386,4 @@ automatic             = min(producer level rate,
 crossover             = first step whose automatic ≥ by hand
 ```
 
-Revised results (solo hours; four-player timeline in brackets), after the owner's 6 November answers: logs 0.5 h (0.3), footings 3.3 h (3.6), steel 5.2 h (4.7), the first branch's material 5.2 h with Canopy first or 3.9 h with Gorge first (4.7), the second branch's material and crystal 6.9 h (against a crew, only in the end-game tier). These come from the model's guessed rates, not play; the [page](../world/ring-economy.html) charts each tier.
+Revised results for the roughly six-hour game (solo hours; two and three players in [the brief](../brainstorms/ring-and-economy.md#pacing-rerun)): logs 0.4 h, footings 3.9 h, steel and both branch materials 5.3 h, crystal only in the end-game tier. The hand line includes little-guy helpers for short-handed parties. These come from the model's guessed rates, not play; the [page](../world/ring-economy.html) charts each tier.

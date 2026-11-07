@@ -1,7 +1,7 @@
 key,label,value,unit,note
 branchFirst,First branch after Ring Island,canopy,canopy | gorge,The player's choice; both orders are valid. Changes every branch-tagged row.
 trainFirst,First Roundhouse upgrade at the spoke,boiler,boiler | chassis,An upgrade-order choice: the other comes at High Port
-targetHours,Main-game target,8,hours,"Design Table call, 2 November"
+targetHours,Main-game target (rough),6,hours,"Owner, 6 November: roughly six hours, a rough target, not a cap (was eight)"
 walkMps,Walking speed,5.6,m/s,campaign-kit profile.walkMps
 pickupS,Pick-up overhead per load,1.2,s,campaign-kit profile.pickupS
 walkLimitKm,Walk instead of ride below,0.8,km,Same-island hauls are walked
@@ -11,8 +11,10 @@ boardWaitS,Rider wait for a train,20,s per ride,Manual hauling by train waits fo
 transferS,Freight transfer per trip end,6,s,campaign-kit transferS
 lastCarryS,"Last carry, rack to frame",1.5,s per stock unit,Hands still place every shared unit
 handParallel,"Each extra player adds, hauling",0.7,of a hauler,Shared sources and frames contend
-activityParallel,"Each extra player adds, authored play",0.12,of a player,Exploration and puzzles parallelize poorly
-travelParallel,"Each extra player adds, commuting",0.3,of a trip,Friends split errands; they mostly ride together
+helperHands,"Little-guy helpers, solo",0.6,of a hauler,"Little guys haul alongside a short-handed party (owner, 3 November: little guys bring rails too)"
+helperStepAside,Helpers step aside per friend,0.3,of a hauler,"Two players get 0.3, three get none: helpers narrow the gap between solo and a group"
+activityParallel,"Each extra player adds, authored play",0.05,of a player,"Exploration, puzzles and big machines are done together: one lever, one gantry"
+travelParallel,"Each extra player adds, commuting",0.1,of a trip,Friends ride together
 sessionHours,Sitting length,1.5,hours,The world is paused between sittings
 awayHours,Time away between sittings,22,hours,Nothing runs while the room is empty
 awayFill,Away credit on the next join,1,"1 = on, 0 = off","Owner, 6 November: producers fill their yards, with a very soft limit"

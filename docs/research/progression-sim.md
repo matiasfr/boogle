@@ -1,5 +1,7 @@
 # Progression on paper: two candidate campaigns
 
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+
 _5 November 2026. Owner-authorized early tooling exception; no route selected, gameplay changed, push or ship. Generated numbers are deterministic design arithmetic, not measurements or playtest approval._
 
 The full-shopping, curious solo forecasts are **7.46 h (three-area) and 7.80 h (five-area)**. They depend on **413.8 / 423.6 minutes of named but unbuilt authored activity**. Removing optional play or the authored durations shortens them; no bill was raised to hit eight hours. The model can expose missing content and bottlenecks; it cannot establish that these minutes are fun.
