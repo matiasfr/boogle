@@ -181,9 +181,12 @@ export function createRailwayAdapter({
   const resetView = () => {
     for (const fn of resets) fn();
   };
+  // The estimated server tick, never going backwards (a late stamp can re-anchor the estimate a little lower).
+  let shownTick = 0;
   const tick = () => {
     const step = rail.mirror.step(now());
-    return step < 0 ? 0 : Math.floor(step / RULE_STEPS);
+    if (step >= 0) shownTick = Math.max(shownTick, Math.floor(step / RULE_STEPS));
+    return shownTick;
   };
   const available = () =>
     !disposed &&
@@ -247,6 +250,9 @@ export function createRailwayAdapter({
       if (!rail.mirror.apply(message, now())) console.warn('[railway] refused a replication packet');
       return;
     }
+    // The room's lockstep clock stamps (w:c and friends, every 200 ms) keep the step estimate fresh between packets.
+    if (typeof message.t === 'string' && message.t.startsWith('w:') && Number.isSafeInteger(message.ht))
+      rail.mirror.stamp((message.ht as number) * RULE_STEPS, now());
     if (
       message.t === 'r:session' &&
       message.to === room?.selfId &&
@@ -449,6 +455,7 @@ export function createRailwayAdapter({
             // The server re-sends everything whole when the socket comes back; nothing here outlives the old one.
             rail.reset();
             synced = false;
+            shownTick = 0;
             lose();
             resetView();
           } else lose();

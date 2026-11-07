@@ -253,7 +253,11 @@ function startWorld(room: Room) {
     // Without the adapter the page applies the packets itself.
     if (!adapter)
       railRoom!.onMessage((m, from) => {
-        if (from === SERVER_ID && (m as { t?: string }).t === 's') rail.mirror.apply(m, performance.now());
+        if (from !== SERVER_ID) return;
+        const msg = m as { t?: string; ht?: number };
+        if (msg.t === 's') rail.mirror.apply(m, performance.now());
+        else if (msg.t?.startsWith('w:') && Number.isSafeInteger(msg.ht))
+          rail.mirror.stamp(msg.ht! * RULE_STEPS, performance.now());
       });
     // The load run (ws-run WS_LOAD): chop, drop and take in a cycle every `every` ms, near trees from `first` on.
     T.railLoad = ({ ms, every, first, epoch, next }) =>

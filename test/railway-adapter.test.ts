@@ -67,6 +67,8 @@ function fixture({ actor = true } = {}) {
         if (live) for (const h of handlers) h(JSON.parse(json), SERVER_ID);
       });
       for (const { msg } of toClient.splice(0)) if (live) for (const h of handlers) h(msg, SERVER_ID);
+      // The room's lockstep clock stamp (w:c), which keeps the client's step estimate fresh between packets.
+      if (live) for (const h of handlers) h({ t: 'w:c', ht: sync.world.tick }, SERVER_ID);
       adapter.update(now);
     }
   };

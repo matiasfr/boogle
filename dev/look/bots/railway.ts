@@ -712,7 +712,8 @@ export async function play({ stopBeforeReward = false } = {}) {
         rails = [0, 12, 12][k]!;
       if (k === 2) await viaTrack(frameAt);
       while (l2().stations[k]!.start < 0 && l2().stations[k]!.stock < bill) {
-        await until(() => l2().depot > 0, `Q${k + 1} depot brings logs`, 60000);
+        // The depot runs on the server's clock (12 s a load); the warped page clock can run ~9x faster than it.
+        await until(() => l2().depot > 0, `Q${k + 1} depot brings logs`);
         const depot = v2().depot!;
         require(await bot.use(depot[0]!, depot[2]!, 'take depot logs', /^Pick up$/), 'depot rack offered');
         require(await bot.work(() => read().carry > 0, 5000, 380), 'depot logs accepted after bounded retries');

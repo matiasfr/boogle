@@ -8,6 +8,7 @@
 //   mirror.onChange(kind, fn)         fn(id, fields | null, changed | null) after each applied change (null: despawned)
 //   mirror.onPacket(fn)               fn(packet) after a packet applied (acks, refusals, id remaps and events ride on it)
 //   mirror.whole()                    the late join's last chunk (w) has arrived since the last reset
+//   mirror.stamp(step, atMs)          a server clock stamp from outside the packets (the room's w:c clock)
 //   mirror.step(atMs)                 estimated server step (src/world/room-clock.ts) from the packets' tk stamps
 //   mirror.clone()                    a deep copy of every component (the predictor's confirmed base, budget test)
 //   mirror.reset()                    drop everything (reconnect; the server re-sends whole from change tick -1)
@@ -40,6 +41,8 @@ const isRequest = (v: unknown): v is number => Number.isSafeInteger(v) && (v as 
 const MAX_LIST = 4096;
 export const PREDICTION_WINDOW = 8;
 export const STALL_MS = 1000;
+/** The step estimate runs at most this far past the newest step heard: two rule ticks, lockstep's old LEAD. */
+export const LEAD_STEPS = 12;
 
 export function createMirror(schemas: readonly Schema[]) {
   const kinds = new Map(schemas.map((s) => [s.kind, s]));
@@ -49,6 +52,7 @@ export function createMirror(schemas: readonly Schema[]) {
   const estimate = createStepEstimate();
   let tk = -1;
   let whole = false;
+  let heard = -1; // the newest server step heard (packets and clock stamps)
   const stats = { applied: 0, refused: 0, chars: 0 };
 
   // Whole-packet validation: nothing is mutated unless every entry is well-formed for the current mirror.
@@ -119,6 +123,7 @@ export function createMirror(schemas: readonly Schema[]) {
       }
       tk = packet.tk;
       estimate.hear(packet.tk, at);
+      if (packet.tk > heard) heard = packet.tk;
       for (const [kind, id] of packet.x ?? []) if (store.get(kind)!.delete(id)) notify(kind, id, null, null);
       for (const [kind, id, fields] of packet.c ?? []) {
         const rows = store.get(kind)!;
@@ -148,7 +153,15 @@ export function createMirror(schemas: readonly Schema[]) {
     onPacket(fn: (p: ServerPacket) => void) {
       packetFns.push(fn);
     },
-    step: (at: number) => estimate.now(at),
+    /** Estimated server step: local time since the freshest stamp, but never more than LEAD_STEPS past the newest
+     * step heard (a throttled or warped page clock cannot run the room's timed things ahead of the server). */
+    step: (at: number) => (heard < 0 ? -1 : Math.min(estimate.now(at), heard + LEAD_STEPS)),
+    /** A server clock stamp heard outside a packet (the room's clock messages). */
+    stamp(step: number, at: number) {
+      if (!isStep(step)) return;
+      estimate.hear(step, at);
+      if (step > heard) heard = step;
+    },
     lastStep: () => tk,
     /** The server's whole state has arrived since the last reset (a late join's last chunk carries w). */
     whole: () => whole,
@@ -168,6 +181,7 @@ export function createMirror(schemas: readonly Schema[]) {
           notify(kind, id, null, null);
         }
       tk = -1;
+      heard = -1;
       whole = false;
       estimate.reset();
     },
