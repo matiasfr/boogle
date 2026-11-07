@@ -50,6 +50,19 @@ const {
 } = TSL;
 
 const PI = Math.PI;
+// The cheaper far sea (Dev Graphics → farSea, off by default; owner call, 7 November 2026: stills before it becomes the
+// default). Beyond FAR_SEA the fragment skips the refraction retreat and the glitter, both lost in the haze and the
+// shrinking footprint there; and vertices outside the camera's azimuth cone (past CULL_INNER grid units, plus a margin)
+// skip their displacement, so the half of the grid behind the camera costs only its fetch.
+const FAR_SEA = 300; // m
+const CULL_INNER = 40; // grid units: always displaced, whatever the camera does (looking down, displacement)
+const CULL_MARGIN = 0.3; // rad, beyond the frustum's widest corner; more than a cell's width and its push at CULL_INNER
+const CORNERS = [
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+  [1, 1],
+] as const;
 const swellFull = scalar('shore.swellFull', ULTRA, 'swellFull');
 const chopShallow = scalar('shore.chopShallow', ULTRA, 'chopShallow');
 
@@ -386,6 +399,10 @@ export type Ocean = {
   mesh: THREE.Mesh;
   /** Bind the existing lens kernel's signed camera depth (positive under water). */
   setCameraDepth(depth: N): void;
+  /** Sea detail: the polar grid's spokes (384 full, 192 for the phone ladder's sea rung). */
+  setDetail(angular: number): void;
+  /** The cheaper far sea; off draws exactly the full sea. */
+  setFarSea(on: boolean): void;
   /** World-height query for the near-plane grid, including shore waves and horizontal displacement inversion. */
   heightAt: (xz: N) => N;
   update: (camera: THREE.Camera, time: number, sun: THREE.DirectionalLight, hemi?: THREE.HemisphereLight) => void;
@@ -427,9 +444,17 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
   if (!options.fog) scalar('water.fogDensity', LOOK, 'fogDensity');
   const fogDensity = options.fog ? -LOOK.fogDensity : derived(() => -LOOK.fogDensity);
   let cameraDepth: N = cameraPosition.y.negate();
+  let angular = GRID.angular;
   const uGridScale = uniform(1),
-    uCellStep = uniform((2 * PI) / GRID.angular),
-    uOuter = uniform(GRID.outer);
+    uCellStep = uniform((2 * PI) / angular),
+    uOuter = uniform(GRID.outer),
+    uFarSea = uniform(0),
+    uCull = uniform(new THREE.Vector4(1, 0, -1, 0)); // view azimuth (x, z), cos of the kept half-angle, on
+  // Per render, from the camera that draws the sea, so a capture that moves the camera without a game frame is right.
+  uCull.onRenderUpdate(({ camera }: { camera?: THREE.Camera | null }) => {
+    if (uFarSea.value > 0.5 && camera) cullCone(camera);
+    else uCull.value.w = 0;
+  });
   // The colour copy matches scenePass's HDR format. Both nodes read immediately before the ocean draws.
   // Each sample()/level() clone of viewportSharedTexture copies the framebuffer again in r187.
   // viewportTexture keys updates by the ocean's context texture: one opaque snapshot for every offset.
@@ -503,21 +528,30 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
 
   material.positionNode = Fn(() => {
     const { xz, cell } = vertex;
-    const sh = f.shore(xz).toVar(),
-      surf = f.surf(xz).toVar();
-    const damp = cascadeDamp(sh.x.negate()).toVar();
-    const d = source.displace(xz, cell, damp).toVar();
-    d.addAssign(shoreAt(xz, sh, surf, cell).disp);
-    d.y.addAssign(impactWaves(xz.add(d.xz), float(2).div(max(cell, 1e-3))).x);
-    if (options.fitCameraRange)
-      d.mulAssign(smoothstep(uOuter.mul(0.65), uOuter, length(xz.sub(cameraPosition.xz))).oneMinus());
-    const p = vec3(xz.x.add(d.x), d.y, xz.y.add(d.z)).toVar();
-    // Water can't drain below the bed: a trough over a bar only thins the water. The clearance grows with distance, as
-    // the depth buffer's precision falls off.
-    const bedAt = f.shore(p.xz).x;
-    const dc = length(p.xz.sub(cameraPosition.xz));
-    If(p.y.lessThan(0), () => {
-      p.y.assign(max(p.y, min(bedAt.add(0.04).add(dc.mul(dc).mul(2e-7)), 0)));
+    const p = vec3(xz.x, 0, xz.y).toVar();
+    // Out of the view cone (far sea only) a vertex stays flat; every triangle touching it is outside the frustum.
+    const local = positionGeometry.xz;
+    const keep = uCull.w
+      .lessThan(0.5)
+      .or(length(local).lessThan(CULL_INNER))
+      .or(dot(local, uCull.xy).greaterThanEqual(uCull.z.mul(length(local))));
+    If(keep, () => {
+      const sh = f.shore(xz).toVar(),
+        surf = f.surf(xz).toVar();
+      const damp = cascadeDamp(sh.x.negate()).toVar();
+      const d = source.displace(xz, cell, damp).toVar();
+      d.addAssign(shoreAt(xz, sh, surf, cell).disp);
+      d.y.addAssign(impactWaves(xz.add(d.xz), float(2).div(max(cell, 1e-3))).x);
+      if (options.fitCameraRange)
+        d.mulAssign(smoothstep(uOuter.mul(0.65), uOuter, length(xz.sub(cameraPosition.xz))).oneMinus());
+      p.assign(vec3(xz.x.add(d.x), d.y, xz.y.add(d.z)));
+      // Water can't drain below the bed: a trough over a bar only thins the water. The clearance grows with distance, as
+      // the depth buffer's precision falls off.
+      const bedAt = f.shore(p.xz).x;
+      const dc = length(p.xz.sub(cameraPosition.xz));
+      If(p.y.lessThan(0), () => {
+        p.y.assign(max(p.y, min(bedAt.add(0.04).add(dc.mul(dc).mul(2e-7)), 0)));
+      });
     });
     return p;
   })();
@@ -614,12 +648,17 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
       ).toVar();
       // Retreat an offset that crosses foreground geometry. Colour and optical thickness must use the SAME final
       // pixel: blending UVs but keeping the old offset depth made jagged dark cuts along the actual banks.
-      for (let i = 0; i < 3; i++) {
-        const candidate = linearDepth(opaqueDepth.sample(ruv).level(0).r);
-        ruv.assign(mix(screenUV, ruv, smoothstep(waterDepth, waterDepth.add(0.3), candidate)));
-      }
-      const finalCandidate = linearDepth(opaqueDepth.sample(ruv).level(0).r);
-      ruv.assign(select(finalCandidate.greaterThan(waterDepth.add(0.01)), ruv, screenUV));
+      // The cheaper far sea draws the far water unrefracted instead: four depth taps fewer.
+      If(dist.lessThan(FAR_SEA).or(uFarSea.lessThan(0.5)), () => {
+        for (let i = 0; i < 3; i++) {
+          const candidate = linearDepth(opaqueDepth.sample(ruv).level(0).r);
+          ruv.assign(mix(screenUV, ruv, smoothstep(waterDepth, waterDepth.add(0.3), candidate)));
+        }
+        const finalCandidate = linearDepth(opaqueDepth.sample(ruv).level(0).r);
+        ruv.assign(select(finalCandidate.greaterThan(waterDepth.add(0.01)), ruv, screenUV));
+      }).Else(() => {
+        ruv.assign(screenUV);
+      });
       const rDepth = linearDepth(opaqueDepth.sample(ruv).level(0).r).toVar();
       thick.assign(max(rDepth.sub(waterDepth), 0).div(viewCos));
       const refracted = opaqueColor.sample(ruv).level(0).rgb.toVar();
@@ -779,40 +818,47 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
       // Glitter: the lobe as a finite number of sub-pixel facets. Per cell of about the pixel footprint the expected count
       // mirroring the sun is lam; a Poisson draw / lam scales the smooth lobe (mean 1, energy kept). Dense cells stay smooth,
       // sparse ones break into points; each cell crossfades between draws so they twinkle.
-      If(dot(spec, vec3(1)).greaterThan(0.02).and(dist.greaterThan(4)).and(vth.greaterThan(0.05)), () => {
-        const FACETS = 2e4; // per m² (calibration knob)
-        const lf = log2(max(footprint, 1e-3)).add(1).toVar();
-        const l0 = floor(lf).toVar();
-        const per = D.mul(NoH)
-          .mul(FACETS * 6.8e-5)
-          .div(max(dot(V, H), 0.05).mul(4))
-          .toVar();
-        const m = float(0).toVar();
-        for (let j = 0; j < 2; j++) {
-          const l = l0.add(j);
-          const sz = exp2(l).toVar();
-          const cell = floor(xz.div(sz)).toVar();
-          const lam = per.mul(sz).mul(sz).toVar();
-          const tt = uTime
-            .mul(3)
-            .add(hash12(cell.add(l.mul(17.17))).mul(64))
+      If(
+        dot(spec, vec3(1))
+          .greaterThan(0.02)
+          .and(dist.greaterThan(4))
+          .and(vth.greaterThan(0.05))
+          .and(dist.lessThan(FAR_SEA).or(uFarSea.lessThan(0.5))),
+        () => {
+          const FACETS = 2e4; // per m² (calibration knob)
+          const lf = log2(max(footprint, 1e-3)).add(1).toVar();
+          const l0 = floor(lf).toVar();
+          const per = D.mul(NoH)
+            .mul(FACETS * 6.8e-5)
+            .div(max(dot(V, H), 0.05).mul(4))
             .toVar();
-          const it = floor(tt).toVar();
-          const n0 = poisson(lam, clamp(hash12(cell.mul(1.31).add(it.mul(3.7))), 1e-4, 0.9999));
-          const n1 = poisson(lam, clamp(hash12(cell.mul(1.31).add(it.add(1).mul(3.7))), 1e-4, 0.9999));
-          const weight = j === 0 ? float(1).sub(lf.sub(l0)) : lf.sub(l0);
-          m.addAssign(weight.mul(min(mix(n0, n1, smoothstep(0, 1, tt.sub(it))).div(max(lam, 1e-4)), 30)));
-        }
-        spec.mulAssign(
-          mix(
-            1,
-            m,
-            smoothstep(4, 30, dist)
-              .mul(smoothstep(0.05, 0.3, vth))
-              .mul(glint),
-          ),
-        );
-      });
+          const m = float(0).toVar();
+          for (let j = 0; j < 2; j++) {
+            const l = l0.add(j);
+            const sz = exp2(l).toVar();
+            const cell = floor(xz.div(sz)).toVar();
+            const lam = per.mul(sz).mul(sz).toVar();
+            const tt = uTime
+              .mul(3)
+              .add(hash12(cell.add(l.mul(17.17))).mul(64))
+              .toVar();
+            const it = floor(tt).toVar();
+            const n0 = poisson(lam, clamp(hash12(cell.mul(1.31).add(it.mul(3.7))), 1e-4, 0.9999));
+            const n1 = poisson(lam, clamp(hash12(cell.mul(1.31).add(it.add(1).mul(3.7))), 1e-4, 0.9999));
+            const weight = j === 0 ? float(1).sub(lf.sub(l0)) : lf.sub(l0);
+            m.addAssign(weight.mul(min(mix(n0, n1, smoothstep(0, 1, tt.sub(it))).div(max(lam, 1e-4)), 30)));
+          }
+          spec.mulAssign(
+            mix(
+              1,
+              m,
+              smoothstep(4, 30, dist)
+                .mul(smoothstep(0.05, 0.3, vth))
+                .mul(glint),
+            ),
+          );
+        },
+      );
 
       // The thin wash is churned and aerated, so it mirrors only a dim, broken sky.
       const mirror = F.mul(mix(0.45, 1, smoothstep(0.08, 0.8, vth))).toVar();
@@ -959,14 +1005,49 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
     return result;
   })();
 
-  let geo = buildGrid(GRID.angular, GRID),
+  let geo = buildGrid(angular, GRID),
     lastFar = GRID.far;
+  const rebuild = () => {
+    geo.dispose();
+    mesh.geometry = geo = buildGrid(angular, GRID);
+  };
+  const corner = new THREE.Vector3();
+  // The azimuth cone around the camera that its frustum's four corner rays span, widened by the margin. Off (draw every
+  // vertex displaced) when looking nearly straight down or when the corners spread past a right angle: then the cone
+  // would not contain their hull.
+  const cullCone = (cam: THREE.Camera) => {
+    cam.getWorldDirection(corner);
+    const fl = Math.hypot(corner.x, corner.z);
+    if (fl < 0.05) {
+      uCull.value.w = 0;
+      return;
+    }
+    const cx = corner.x / fl,
+      cz = corner.z / fl;
+    let half = 0;
+    for (const [x, y] of CORNERS) {
+      corner.set(x, y, 1).unproject(cam).sub(cam.position);
+      const l = Math.hypot(corner.x, corner.z);
+      half = Math.max(half, l < 1e-6 ? PI : Math.acos(Math.min(1, Math.max(-1, (corner.x * cx + corner.z * cz) / l))));
+    }
+    if (half > PI / 2) uCull.value.w = 0;
+    else uCull.value.set(cx, cz, Math.cos(half + CULL_MARGIN), 1);
+  };
   const mesh = new THREE.Mesh(geo, material);
   mesh.frustumCulled = false;
   mesh.renderOrder = -1; // before the other see-through things: it writes depth
   return {
     mesh,
     heightAt,
+    setDetail(next) {
+      if (next === angular) return;
+      angular = next;
+      uCellStep.value = (2 * PI) / angular;
+      rebuild();
+    },
+    setFarSea(on) {
+      uFarSea.value = on ? 1 : 0;
+    },
     setCameraDepth(depth) {
       cameraDepth = depth;
       material.needsUpdate = true;
@@ -977,8 +1058,7 @@ export function createOcean(source: WaveSource, f: ShoreFields, foamTex: THREE.T
         GRID.far = lastFar;
         GRID.outer = Math.min(3000, lastFar * 0.5);
         uOuter.value = GRID.outer;
-        geo.dispose();
-        mesh.geometry = geo = buildGrid(GRID.angular, GRID);
+        rebuild();
       }
       uTime.value = time;
       source.update(time);

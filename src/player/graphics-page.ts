@@ -1,6 +1,7 @@
 // Lazy Local Pause page. The registry and existing resource owners apply every choice.
 import './graphics-page.css';
 import {
+  autoDetail,
   graphicsSnapshot,
   onGraphicsChange,
   playerGraphics,
@@ -29,10 +30,22 @@ const controls = [
   { id: 'frameLimit', label: 'Frame limit', note: 'Lower draws fewer frames. Display follows your screen.' },
   { id: 'msaa', label: 'Smooth edges', note: 'Softens jagged edges. Changing this needs a reload.' },
   { id: 'caustics', label: 'Seabed light', note: 'Moving light patterns under the water.' },
+  {
+    id: 'detail',
+    label: 'Detail',
+    note: 'Auto simplifies the sea, then shadows, then smooth edges when frames run slow.',
+  },
 ];
+const detailLabels: Record<string, string> = {
+  full: 'Full',
+  sea: 'Simpler sea',
+  shadows: 'No shadows',
+  lowest: 'Lowest',
+};
 function valueLabel(id: string, value: GraphicsValue) {
   if (typeof value === 'boolean') return value ? 'On' : 'Off';
   if (value === 'auto') return 'Auto';
+  if (id === 'detail') return detailLabels[String(value)] ?? String(value);
   if (value === 'display') return 'Display';
   return id === 'resolution' ? `${Number(value) * 100}%` : `${value} fps`;
 }
@@ -145,6 +158,11 @@ export function mountGraphics(parent: HTMLElement, resume: () => void) {
         player.storageFailed
           ? 'Smooth edges cannot apply until this browser can save settings. Try the choice again.'
           : 'Smooth edges is pending. Reload when you’re ready.',
+      );
+    const governor = autoDetail();
+    if (governor.governing && (governor.rung || governor.msaaOff))
+      notes.push(
+        `Auto is using ${detailLabels[['full', 'sea', 'shadows'][governor.rung]!]!.toLowerCase()}${governor.msaaOff ? ' without smooth edges' : ''} on this device.`,
       );
     if (typeof quality.resolution === 'number' && quality.scale < quality.resolution)
       notes.push(`Water limits scene resolution to ${Math.round(quality.scale * 100)}% on this device.`);

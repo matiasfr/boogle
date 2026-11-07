@@ -110,8 +110,8 @@
   optimal device tiers. They change no tone, colour, bloom, exposure, shadows, geometry, waves, queries,
   colliders, gameplay or state seen by peers. Smooth edges stays independent across explicit presets;
   Auto resets it to the device default. Individual changes display Custom.
-- **Four player controls.** Resolution (Auto / 100 / 80 / 60%), Frame limit (Display / 60 / 30), Smooth edges
-  (On / Off) and Seabed light (On / Off). The last uses the real caustics producer skip, hidden with an
+- **Five player controls.** Resolution (Auto / 100 / 80 / 60%), Frame limit (Display / 60 / 30), Smooth edges
+  (On / Off), Seabed light (On / Off) and Detail (above). The last uses the real caustics producer skip, hidden with an
   explanation when its route owner is absent. Smooth edges shows requested versus current state and a
   Reload now button, including after reset; it never mutates live sample-count attachments. Reduced shadow
   maps, 30 Hz caustics and camera-comfort adapters from the research are not implemented, so the page does
@@ -119,6 +119,23 @@
   in the Mac review; there is no aggregate ambient switch that promises those savings. Presets keep the
   other water effects. This narrows recommendations 1, 2 and 6 of [graphics settings](../research/graphics-settings.md)
   to the current adapters and [measured limitations](../research/graphics-switch-costs.md).
+- **Detail ladder (phone tier, 7 November owner call).** When a device must shed load it drops resolution first,
+  then sea detail, then sun shadows, then MSAA. Adaptive resolution is the first rung; below its 0.6x floor the
+  governor in [adaptive-res.ts](../../src/features/adaptive-res.ts) steps `detail` down after 4 s of slow frames
+  (Simpler sea: `seaDetail` low, half the sea grid's spokes and rings; No shadows; then MSAA off for the next
+  load) and restores the last rung after 10 s at the display's cadence, doubling that wait when a restore does
+  not hold; resolution climbs only once every rung is back. The rung is remembered per device
+  (`boogle.detail.v1`); the MSAA flag is never lifted by the governor, only by a player Detail or preset choice.
+  It is measured rather than detected: the M4 iPad Pro should never reach the floor, so it keeps full detail.
+  Pause → Graphics → Detail (Auto / Full / Simpler sea / No shadows / Lowest) fixes a rung; `?dpr=fixed`
+  harness pages ignore the remembered rung. Shadows off or on compiles pipelines on first use: a hitch.
+  Not tested on a device.
+- **Cheaper far sea and coarser far ground (Dev only, off).** `farSea`: sea vertices outside the camera's
+  azimuth cone (past 40 grid units, 0.3 rad margin) skip displacement, and water past 300 m skips the
+  refraction retreat and the glitter. `farGround`: the Place ground draws as 192 m tiles with bounds (out of
+  view culled) and far tiles use 4 m cells from 180 m and 8 m from 420 m, full resolution on every tile
+  border so there are no cracks ([far-ground.ts](../../src/proto/place/far-ground.ts)). Both wait for the
+  owner's stills before becoming defaults; `?dev=1&graphics=farSea:true,farGround:true` turns them on.
 - **Production-water Looks.** Place or crossing with Dev or `tune=1` adds the [Looks dock comparison](dev-menu.md#looks) at the active water-post owner: Current, metered Neutral, restrained Sunny AgX, AgX Punchy and Sunshine water. All use the procedural frozen sky and one shared meter/output pass. A/B only changes uniforms; saved choices prepare behind loading. This is a Local preview, not a default change. Ordinary visits keep the shipped graph and do not load comparison code.
   Explicit Graphics bloom overrides survive look selection, including Neutral. A saved bloom-on choice uses
   the same prepared comparison graph as bloom-off. Graphics meter-off holds exposure and skips meter work;
@@ -134,7 +151,7 @@
   two pooled point lights. Lab grass and lab post effects are available only when their existing owner and
   effects are present; they do not load onto the place page. Each row states the work skipped and whether the
   change is live, rebuild or reload. These are cost experiments, not player presets or an approved low look.
-  The separate player page above offers only its four bounded controls. No geometry, waves, queries,
+  The separate player page above offers only its five bounded controls. No geometry, waves, queries,
   world population or gameplay controls are included.
 - **One Local resolution/cap owner.** `render/quality.ts` combines adaptive resolution with the water ceiling
   using their minimum, preserving the existing default scale. Dev offers Auto / 100 / 80 / 60% and Display /
