@@ -1,6 +1,6 @@
 # Plan: line 2 part 2 inside the Sickle Isles greybox
 
-Prepared 7 November 2026 against `origin/main` `f2bf0c5f`. Planning only; no code changed.
+Prepared 7 November 2026 against `origin/main` `f2bf0c5f`. Planning only; no code changed. **Approved by the owner, 7 November: all five open questions as recommended.**
 
 ## Goal
 
@@ -164,16 +164,21 @@ reset, no migration) and keeps the paused world and away credit whole.
 - **Performance.** The trestle, lamps, halts and two trains add meshes and tick work: `npm run perf` at B4 and B7,
   and the server ms per step in `npm run load`.
 
-## Open questions for the owner
+## Open questions for the owner (answered 7 November)
 
 1. **The glider at Far Head:** leave it out of part 2? *Recommended: yes.* Q5 opens with the Needle Bell switch
    alone, and the device's spot is kept for the movement slice.
+   Answer: as recommended (owner, 2026-11-07: "approved all 5").
 2. **Q4 before the real cart:** ship the first playable with the depot minting the loads (B2), then add the cart's
    trip (B3)? *Recommended: yes.* That gets play on main sooner. The alternative waits for the cart.
+   Answer: as recommended (owner, 2026-11-07: "approved all 5").
 3. **The ridden cart bonus (13 m/s with a rider):** leave it out of the first cart build and test it in the 2D
    economy model first? *Recommended: yes.* Add it if the model or the playtest asks for it.
+   Answer: as recommended (owner, 2026-11-07: "approved all 5").
 4. **Train cargo and town growth:** keep them for slice 5, so part 2's trains carry only Q6's kit and passengers?
    *Recommended: yes.*
+   Answer: as recommended (owner, 2026-11-07: "approved all 5").
 5. **Playtest stop:** play once at the end of part 2 (the pier), with no stop after the first playable?
    *Recommended: yes*, as "keep going while the owner is away" asks. A Q4 still and bot report go in the brief
    meanwhile.
+   Answer: as recommended (owner, 2026-11-07: "approved all 5").
