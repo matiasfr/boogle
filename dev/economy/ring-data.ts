@@ -19,6 +19,13 @@ export const SETTINGS: Setting[] = [
     unit: 'canopy | gorge',
     note: "The player's choice; both orders are valid. Changes every branch-tagged row.",
   },
+  {
+    key: 'trainFirst',
+    label: 'First Roundhouse upgrade at the spoke',
+    value: 'boiler',
+    unit: 'boiler | chassis',
+    note: 'An upgrade-order choice: the other comes at High Port',
+  },
   { key: 'targetHours', label: 'Main-game target', value: 8, unit: 'hours', note: 'Design Table call, 2 November' },
   { key: 'walkMps', label: 'Walking speed', value: 5.6, unit: 'm/s', note: 'campaign-kit profile.walkMps' },
   { key: 'pickupS', label: 'Pick-up overhead per load', value: 1.2, unit: 's', note: 'campaign-kit profile.pickupS' },
@@ -72,22 +79,28 @@ export const SETTINGS: Setting[] = [
     label: 'Sitting length',
     value: 1.5,
     unit: 'hours',
-    note: 'A break between sittings lets producers fill their yards',
+    note: 'The world is paused between sittings',
   },
-  { key: 'offlineGapHours', label: 'Time away between sittings', value: 22, unit: 'hours', note: '' },
   {
-    key: 'offlineFill',
-    label: 'Producers fill yards while away',
+    key: 'awayHours',
+    label: 'Time away between sittings',
+    value: 22,
+    unit: 'hours',
+    note: 'Nothing runs while the room is empty',
+  },
+  {
+    key: 'awayFill',
+    label: 'Away credit on the next join',
     value: 1,
     unit: '1 = on, 0 = off',
-    note: 'Open question for the owner; off matches the 4 November contract',
+    note: 'Owner, 6 November: producers fill their yards, with a very soft limit',
   },
   {
-    key: 'offlineCapHours',
-    label: 'Away production limit',
+    key: 'awayHorizonHours',
+    label: 'Away credit horizon',
     value: 2,
     unit: 'hours of output',
-    note: 'Never past the yard capacity',
+    note: 'Credit = rate × H × (1 − e^(−away/H)): an hour away gives 0.79 h, a day gives 2 h; never past the yard',
   },
 ];
 
@@ -228,8 +241,8 @@ export const RESOURCES: Resource[] = [
     harvestS: 150,
     localM: 200,
     manual: 1,
-    shared: 'Only after the optional seed cradle',
-    note: 'Found by exploring: the tier with no automatic way in the main game',
+    shared: 'Once the seed cradle runs (High Port)',
+    note: 'Found by exploring the small stops; the last tier the machines take over',
   },
 ];
 
@@ -237,20 +250,33 @@ export type Place = {
   slot: string;
   name: string; // for b1/b2 the name comes from the branch setting
   kind: 'hub' | 'hub island' | 'ring' | 'branch' | 'ending' | 'stop';
-  angle: number | null; // degrees clockwise from north on the ring, for the map
+  angle: number | null; // for the schematic map only
   resources: string;
   abilities: string;
-  kmBefore: number; // from the Home Yard, before the first return spoke
-  kmSpoke1: number; // once spoke1 is built
-  kmClosed: number; // once the ring is closed
-  kmOwnSpoke: number; // over this place's own spoke
-  ownSpoke: string; // milestone key that builds it ('optional' = never on the main route)
+  kmFixed?: number; // places on the hub island and the small stops: km to the Home Yard, whatever is built
+  ownSpoke: string; // milestone key that builds this place's own spoke ('endgame' = after the ending)
   note: string;
 };
-const R = 1.2; // ring radius, km: the owner's one-minute crossing at 20 m/s
-const ARC = Math.round(((Math.PI * R) / 2) * 1000) / 1000; // a quarter of the ring
-const k = (n: number) => Math.round(n * 1000) / 1000;
-export const RING = { radiusKm: R, arcKm: ARC };
+// Every travel distance comes from these links, so a new map layout only changes these numbers. Deliberately uneven:
+// the owner wants the ring irregular, and another agent is prototyping layouts. Placeholders, not surveyed.
+export type Link = { id: string; from: string; to: string; km: number; note: string };
+export const LINKS: Link[] = [
+  {
+    id: 'entry',
+    from: 'home',
+    to: 'ring',
+    km: 1.2,
+    note: 'The first sea crossing from the pier (about 0.5 km to the pier, 0.75 km over the sea)',
+  },
+  { id: 'ring-canopy', from: 'ring', to: 'canopy', km: 1.7, note: 'Ring segment' },
+  { id: 'canopy-port', from: 'canopy', to: 'port', km: 2.3, note: 'Ring segment' },
+  { id: 'port-gorge', from: 'port', to: 'gorge', km: 1.6, note: 'Ring segment' },
+  { id: 'gorge-ring', from: 'gorge', to: 'ring', km: 2.2, note: 'Ring segment' },
+  { id: 'spoke-canopy', from: 'home', to: 'canopy', km: 1.5, note: 'Return spoke' },
+  { id: 'spoke-gorge', from: 'home', to: 'gorge', km: 1.1, note: 'Return spoke' },
+  { id: 'spoke-port', from: 'home', to: 'port', km: 1.8, note: 'Deep-sea spoke (optional, crystal)' },
+  { id: 'port-original', from: 'port', to: 'original', km: 1.0, note: 'The final crossing' },
+];
 export const PLACES: Place[] = [
   {
     slot: 'home',
@@ -259,10 +285,7 @@ export const PLACES: Place[] = [
     angle: null,
     resources: 'W, St, R',
     abilities: 'Hook, glider (starter)',
-    kmBefore: 0.15,
-    kmSpoke1: 0.15,
-    kmClosed: 0.15,
-    kmOwnSpoke: 0.15,
+    kmFixed: 0.15,
     ownSpoke: 'home.line1',
     note: 'The hub: town, forge, Home Yard and the Roundhouse',
   },
@@ -273,10 +296,7 @@ export const PLACES: Place[] = [
     angle: null,
     resources: 'C',
     abilities: 'Breaker strike; ankle rings on the way (double jump)',
-    kmBefore: 0.4,
-    kmSpoke1: 0.4,
-    kmClosed: 0.4,
-    kmOwnSpoke: 0.4,
+    kmFixed: 0.4,
     ownSpoke: 'splitrock.connect',
     note: 'The existing east quarry, on the hub island',
   },
@@ -287,10 +307,6 @@ export const PLACES: Place[] = [
     angle: 0,
     resources: 'S',
     abilities: 'Brace the aperture',
-    kmBefore: R,
-    kmSpoke1: R,
-    kmClosed: R,
-    kmOwnSpoke: R,
     ownSpoke: 'ring.reach',
     note: 'The entry spoke: the first sea crossing, from the pier',
   },
@@ -301,10 +317,6 @@ export const PLACES: Place[] = [
     angle: 270,
     resources: 'Fi or U',
     abilities: 'Canopy: sling + glider cloth · Gorge: powered pick + hook reel',
-    kmBefore: k(R + ARC),
-    kmSpoke1: R,
-    kmClosed: R,
-    kmOwnSpoke: R,
     ownSpoke: 'spoke1',
     note: 'Reached around the ring from Ring Island; its spoke is the first shortcut',
   },
@@ -315,12 +327,8 @@ export const PLACES: Place[] = [
     angle: 180,
     resources: 'Recombines S, C and the branch material',
     abilities: 'Town services, harbour crane',
-    kmBefore: k(R + 2 * ARC),
-    kmSpoke1: k(R + ARC),
-    kmClosed: k(R + ARC),
-    kmOwnSpoke: R,
-    ownSpoke: 'optional',
-    note: 'Opposite Ring Island; its own deep-sea spoke is optional and needs crystal',
+    ownSpoke: 'endgame',
+    note: 'Its own deep-sea spoke is an end-game goal and needs crystal',
   },
   {
     slot: 'b2',
@@ -329,11 +337,7 @@ export const PLACES: Place[] = [
     angle: 90,
     resources: 'U or Fi',
     abilities: "The other branch's pair",
-    kmBefore: k(R + 3 * ARC),
-    kmSpoke1: k(R + 2 * ARC),
-    kmClosed: k(R + ARC),
-    kmOwnSpoke: R,
-    ownSpoke: 'optional',
+    ownSpoke: 'endgame',
     note: 'Reached from the Port side; finishing it closes the ring',
   },
   {
@@ -343,11 +347,7 @@ export const PLACES: Place[] = [
     angle: 180,
     resources: 'None new',
     abilities: 'The Boogler',
-    kmBefore: k(R + 2 * ARC + 1),
-    kmSpoke1: k(R + ARC + 1),
-    kmClosed: k(R + ARC + 1),
-    kmOwnSpoke: k(R + 1),
-    ownSpoke: 'optional',
+    ownSpoke: 'endgame',
     note: 'Beyond the Port, outside the ring',
   },
   {
@@ -357,10 +357,7 @@ export const PLACES: Place[] = [
     angle: null,
     resources: '—',
     abilities: 'Double jump (approved jump brief)',
-    kmBefore: 0.3,
-    kmSpoke1: 0.3,
-    kmClosed: 0.3,
-    kmOwnSpoke: 0.3,
+    kmFixed: 0.3,
     ownSpoke: 'home.line1',
     note: 'On the way to Split-rock',
   },
@@ -371,12 +368,9 @@ export const PLACES: Place[] = [
     angle: null,
     resources: 'X (found)',
     abilities: 'Hook practice',
-    kmBefore: 0.6,
-    kmSpoke1: 0.6,
-    kmClosed: 0.6,
-    kmOwnSpoke: 0.6,
+    kmFixed: 0.6,
     ownSpoke: 'spoke1',
-    note: 'Islet halfway along the first branch spoke',
+    note: 'Islet on the first return spoke; crystal seeds',
   },
   {
     slot: 'stop-sail',
@@ -385,12 +379,9 @@ export const PLACES: Place[] = [
     angle: null,
     resources: 'X (found)',
     abilities: 'Glider practice',
-    kmBefore: 0.6,
-    kmSpoke1: 0.6,
-    kmClosed: 0.6,
-    kmOwnSpoke: 0.6,
-    ownSpoke: 'optional',
-    note: 'Islet on the second branch spoke',
+    kmFixed: 0.6,
+    ownSpoke: 'b2.reach',
+    note: 'Islet on the way to the second branch, part of that step',
   },
   {
     slot: 'stop-lens',
@@ -399,12 +390,9 @@ export const PLACES: Place[] = [
     angle: null,
     resources: 'X (found)',
     abilities: 'Telescope glimpse of the ending',
-    kmBefore: 0.6,
-    kmSpoke1: 0.6,
-    kmClosed: 0.6,
-    kmOwnSpoke: 0.6,
-    ownSpoke: 'optional',
-    note: 'Islet on the Port spoke',
+    kmFixed: 0.6,
+    ownSpoke: 'final',
+    note: 'Islet on the final approach, part of that step',
   },
 ];
 
@@ -425,7 +413,7 @@ export const ROUTE: Step[] = [
     key: 'splitrock.reach',
     name: 'Walk to Split-rock, ankle rings, breaker strike',
     slot: 'splitrock',
-    activityMin: 22,
+    activityMin: 20,
     rides: 1,
     note: 'New tier: footings by hand',
   },
@@ -441,7 +429,7 @@ export const ROUTE: Step[] = [
     key: 'ring.reach',
     name: 'First crossing to Ring Island',
     slot: 'ring',
-    activityMin: 34,
+    activityMin: 30,
     rides: 2,
     note: 'The entry spoke; steel by hand',
   },
@@ -449,7 +437,7 @@ export const ROUTE: Step[] = [
     key: 'ring.connect',
     name: 'Brace the aperture, connect the steel works',
     slot: 'ring',
-    activityMin: 14,
+    activityMin: 12,
     rides: 1,
     note: 'Producer L1',
   },
@@ -457,7 +445,7 @@ export const ROUTE: Step[] = [
     key: 'hub.roundhouse',
     name: 'The Roundhouse opens',
     slot: 'home',
-    activityMin: 14,
+    activityMin: 12,
     rides: 1,
     note: 'Smallest first build; Home Yard',
   },
@@ -465,7 +453,7 @@ export const ROUTE: Step[] = [
     key: 'b1.reach',
     name: 'Branch choice: ring segment to the first branch',
     slot: 'b1',
-    activityMin: 32,
+    activityMin: 28,
     rides: 2,
     note: 'New tier by hand',
   },
@@ -473,7 +461,7 @@ export const ROUTE: Step[] = [
     key: 'b1.connect',
     name: 'Connect the first branch',
     slot: 'b1',
-    activityMin: 18,
+    activityMin: 16,
     rides: 1,
     note: 'Its pair of abilities',
   },
@@ -481,7 +469,7 @@ export const ROUTE: Step[] = [
     key: 'spoke1',
     name: 'First return spoke and second engine',
     slot: 'b1',
-    activityMin: 16,
+    activityMin: 14,
     rides: 2,
     note: 'The shortcut through the middle',
   },
@@ -489,7 +477,7 @@ export const ROUTE: Step[] = [
     key: 'port.reach',
     name: 'Ring segment to High Port',
     slot: 'port',
-    activityMin: 34,
+    activityMin: 28,
     rides: 2,
     note: 'Inhabited town',
   },
@@ -497,7 +485,7 @@ export const ROUTE: Step[] = [
     key: 'port.connect',
     name: 'Harbour crane and service bay',
     slot: 'port',
-    activityMin: 18,
+    activityMin: 16,
     rides: 1,
     note: 'Either branch material works',
   },
@@ -505,7 +493,7 @@ export const ROUTE: Step[] = [
     key: 'b2.reach',
     name: 'Ring segment to the second branch',
     slot: 'b2',
-    activityMin: 26,
+    activityMin: 20,
     rides: 2,
     note: 'Second new tier by hand',
   },
@@ -513,7 +501,7 @@ export const ROUTE: Step[] = [
     key: 'b2.connect',
     name: 'Connect the second branch',
     slot: 'b2',
-    activityMin: 16,
+    activityMin: 14,
     rides: 1,
     note: 'The other pair of abilities',
   },
@@ -521,7 +509,7 @@ export const ROUTE: Step[] = [
     key: 'ring.close',
     name: 'Close the ring: the loop line',
     slot: 'b2',
-    activityMin: 18,
+    activityMin: 16,
     rides: 2,
     note: 'First full lap; crystal collars',
   },
@@ -529,13 +517,13 @@ export const ROUTE: Step[] = [
     key: 'final',
     name: 'Final crossing to the Original Island',
     slot: 'original',
-    activityMin: 26,
+    activityMin: 22,
     rides: 2,
     note: 'The Boogler',
   },
 ];
 
-type Row = { place: string; first: string; second: string };
+type Row = { place: string; first: string; second: string; pick?: string }; // pick: an upgrade-order choice
 export type Producer = Row & {
   id: string;
   res: Material;
@@ -715,7 +703,7 @@ export const PRODUCERS: Producer[] = [
     rate: 1440,
     cap: 96,
     bill: { S: 12, C: 8, U: 4 },
-    ...at('ring.close', 'optional'),
+    ...at('ring.close', 'endgame'),
     look: 'Loom hall with an overhead crane',
     source: 'New',
   },
@@ -763,7 +751,7 @@ export const PRODUCERS: Producer[] = [
     rate: 1440,
     cap: 96,
     bill: { S: 12, C: 8, Fi: 4 },
-    ...at('ring.close', 'optional'),
+    ...at('ring.close', 'endgame'),
     look: 'Drawing mill with a cable crane',
     source: 'New',
   },
@@ -772,24 +760,36 @@ export const PRODUCERS: Producer[] = [
     res: 'X',
     place: 'stops',
     level: 1,
-    rate: 6,
+    rate: 12,
     cap: 4,
     bill: { S: 8, W: 8 },
-    ...at('optional'),
+    ...at('port.connect'),
     look: 'Seed cradle on the observatory islet',
-    source: 'five-area X0 bill; after the ending here',
+    source: 'five-area X0 bill',
   },
   {
     id: 'P-X2',
     res: 'X',
     place: 'stops',
     level: 2,
-    rate: 24,
+    rate: 48,
     cap: 12,
     bill: { S: 8, U: 4, Fi: 4 },
-    ...at('optional'),
+    ...at('ring.close'),
     look: 'Seed nursery under glass',
     source: 'New',
+  },
+  {
+    id: 'P-X3',
+    res: 'X',
+    place: 'stops',
+    level: 3,
+    rate: 240,
+    cap: 48,
+    bill: { S: 24, U: 12, Fi: 12, X: 12 },
+    ...at('endgame'),
+    look: 'Crystal garden on every islet',
+    source: 'New; end-game tier',
   },
 ];
 
@@ -844,7 +844,7 @@ export const STORAGE: Storage[] = [
     bay: 96,
     bays: 8,
     bill: { S: 12, C: 8, U: 4 },
-    ...at('optional'),
+    ...at('anytime'),
     look: 'Covered yard (after the ending)',
     source: 'New',
   },
@@ -1193,6 +1193,18 @@ export const RECIPES: Recipe[] = [
     source: 'New',
   },
   {
+    id: 'XCOL',
+    name: 'Crystal collar at Bell Terraces (seeds found by hand)',
+    kind: 'rail',
+    upgrade: 'R',
+    required: main,
+    place: 'ring',
+    bill: { X: 2 },
+    ...at('spoke1'),
+    effect: 'The spoke crosses the deep channel',
+    source: 'Owner: crystal as an exceptional crossing',
+  },
+  {
     id: 'S4',
     name: 'Roundhouse junction',
     kind: 'train',
@@ -1212,7 +1224,8 @@ export const RECIPES: Recipe[] = [
     required: main,
     place: 'home',
     bill: { S: 8, C: 4 },
-    ...at('spoke1'),
+    ...at('spoke1', 'port.connect'),
+    pick: 'chassis',
     ladder: 'wagon',
     effect: 'Wagon 24 → 32',
     source: 'roundhouse-trains S1 bill',
@@ -1225,7 +1238,8 @@ export const RECIPES: Recipe[] = [
     required: main,
     place: 'home',
     bill: { S: 8, C: 4 },
-    ...at('spoke1'),
+    ...at('spoke1', 'port.connect'),
+    pick: 'boiler',
     ladder: 'speed',
     effect: '20 → 25 m/s',
     source: 'New',
@@ -1263,7 +1277,7 @@ export const RECIPES: Recipe[] = [
     required: main,
     place: 'canopy',
     bill: { Fi: 8 },
-    ...at('port.reach', 'optional'),
+    ...at('port.reach', 'n/a'),
     effect: '',
     source: 'New',
   },
@@ -1275,7 +1289,7 @@ export const RECIPES: Recipe[] = [
     required: main,
     place: 'gorge',
     bill: { U: 8 },
-    ...at('port.reach', 'optional'),
+    ...at('port.reach', 'n/a'),
     effect: '',
     source: 'New',
   },
@@ -1299,7 +1313,7 @@ export const RECIPES: Recipe[] = [
     required: main,
     place: 'canopy',
     bill: { Fi: 8, S: 8 },
-    ...at('port.connect', 'optional'),
+    ...at('port.connect', 'n/a'),
     effect: 'Removes hand unloading',
     source: 'three-area F1 role',
   },
@@ -1311,7 +1325,7 @@ export const RECIPES: Recipe[] = [
     required: main,
     place: 'gorge',
     bill: { U: 8, S: 8 },
-    ...at('port.connect', 'optional'),
+    ...at('port.connect', 'n/a'),
     effect: 'Removes hand unloading',
     source: 'five-area U2 role',
   },
@@ -1440,30 +1454,7 @@ export const RECIPES: Recipe[] = [
     effect: '',
     source: 'New',
   },
-  {
-    id: 'SPK-P',
-    name: 'Deep-sea spoke: High Port → Home',
-    kind: 'rail',
-    upgrade: 'R',
-    required: opt,
-    place: 'port',
-    bill: { X: 4, S: 16, C: 16, R: 24 },
-    ...at('optional'),
-    effect: 'Owner: crystal as a deep-sea crossing',
-    source: 'New',
-  },
-  {
-    id: 'SPK-2',
-    name: 'Return spoke: second branch → Home',
-    kind: 'rail',
-    upgrade: 'R',
-    required: opt,
-    place: 'ring',
-    bill: { R: 24, C: 16, S: 16 },
-    ...at('optional'),
-    effect: '',
-    source: 'New',
-  },
+
   {
     id: 'TOWN',
     name: 'Town district (each)',
@@ -1472,7 +1463,7 @@ export const RECIPES: Recipe[] = [
     required: opt,
     place: 'home',
     bill: { C: 12, S: 8, W: 16 },
-    ...at('optional'),
+    ...at('anytime'),
     effect: 'Visible growth',
     source: 'New',
   },
@@ -1484,7 +1475,7 @@ export const RECIPES: Recipe[] = [
     required: opt,
     place: 'canopy',
     bill: { Fi: 4, W: 2 },
-    ...at('optional'),
+    ...at('anytime'),
     effect: '',
     source: 'roundhouse-trains F-seat bill',
   },
@@ -1496,8 +1487,120 @@ export const RECIPES: Recipe[] = [
     required: opt,
     place: 'canopy',
     bill: { Fi: 6, W: 4 },
-    ...at('optional'),
+    ...at('anytime'),
     effect: '',
     source: 'three-area F5 bill',
   },
 ];
+
+// The shared wallet: a full yard's surplus is sold to the town for Bucks, which anyone in the world may spend on
+// anything, shared or personal (owner, 6 November: "I actually am not against the shared wallet"). Logs and rails are
+// not sold: the depot cart and the forge stop at their racks, as built.
+export const PRICES: Record<Material, number> = { W: 0, St: 2, R: 0, C: 2, S: 3, Fi: 3, U: 3, X: 20 };
+
+// After the ending: everything gets automated, and a new tier of goals with big numeric costs (owner, 6 November:
+// "eventually everything does get easy ... some kind of new tier of goals"). Bought in this order; `rates` sets a
+// producer's rate (units/h) for every later goal.
+export type Goal = {
+  id: string;
+  name: string;
+  kind: 'automation' | 'shared' | 'personal';
+  bill: Bill;
+  bucks: number;
+  rates?: Partial<Record<Material, number>>;
+  note: string;
+};
+export const GOALS: Goal[] = [
+  {
+    id: 'G1',
+    name: 'Auto-placing cranes at every frame',
+    kind: 'automation',
+    bill: { S: 800, U: 300, Fi: 300 },
+    bucks: 8000,
+    note: 'The last manual job, the carry from rack to frame, goes',
+  },
+  {
+    id: 'G2',
+    name: 'Crystal garden (seed producer level 3)',
+    kind: 'automation',
+    bill: { S: 400, U: 200, Fi: 200, X: 60 },
+    bucks: 6000,
+    rates: { X: 240 },
+    note: 'Crystal stops being scarce',
+  },
+  {
+    id: 'G3',
+    name: 'Level 5 at every works',
+    kind: 'automation',
+    bill: { C: 2000, S: 2000, U: 800, Fi: 800, X: 120 },
+    bucks: 20000,
+    rates: { C: 2880, S: 2880, U: 2880, Fi: 2880 },
+    note: 'Every producer doubles, the second branch catches up',
+  },
+  {
+    id: 'G4',
+    name: 'Deep-sea spokes to High Port and the second branch',
+    kind: 'shared',
+    bill: { S: 1600, C: 1600, X: 160 },
+    bucks: 16000,
+    note: 'Every place one ride from Home',
+  },
+  {
+    id: 'G5',
+    name: 'Grand Station at Home',
+    kind: 'shared',
+    bill: { C: 2500, S: 2000 },
+    bucks: 25000,
+    note: "The town's biggest district",
+  },
+  {
+    id: 'G6',
+    name: 'Ring lighthouse',
+    kind: 'shared',
+    bill: { S: 2000, U: 1200, X: 240 },
+    bucks: 25000,
+    note: 'Visible from every island',
+  },
+  {
+    id: 'G7',
+    name: 'Express engine collection',
+    kind: 'personal',
+    bill: {},
+    bucks: 30000,
+    note: 'Cosmetic engines, from the shared wallet',
+  },
+  {
+    id: 'G8',
+    name: 'A hat for each friend',
+    kind: 'personal',
+    bill: {},
+    bucks: 2000,
+    note: 'Personal items can come from the shared wallet too',
+  },
+];
+
+// Doubling back: with a new ability, a step returns to an earlier place to open a section there. The ride uses that
+// place's distance at the time, so spokes make returns quicker (owner, 6 November: linear progression, not geography).
+export type Return = { slot: string; trips: number; activityMin: number; note: string };
+export const RETURNS: Record<string, Return> = {
+  'b1.connect': { slot: 'ring', trips: 1, activityMin: 6, note: "The new ability opens Ring Island's upper gallery" },
+  spoke1: { slot: 'splitrock', trips: 1, activityMin: 5, note: 'The new tool opens the upper seam at Split-rock' },
+  'port.connect': {
+    slot: 'home',
+    trips: 1,
+    activityMin: 6,
+    note: 'Double jump and the longer reach open the old headland at Home',
+  },
+  'b2.connect': {
+    slot: 'b1',
+    trips: 1,
+    activityMin: 6,
+    note: "The second ability pair opens the first branch's hidden section",
+  },
+  'ring.close': {
+    slot: 'ring',
+    trips: 1,
+    activityMin: 4,
+    note: 'Back to Ring Island to build the closing segment from its side',
+  },
+};

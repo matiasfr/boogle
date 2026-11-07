@@ -2,4 +2,4 @@ id,place,level,bay_cap,bays,W,St,R,C,S,Fi,U,X,at_if_first,at_if_second,look,sour
 Y1,home,1,16,4,16,0,8,0,0,0,0,0,hub.roundhouse,hub.roundhouse,Four timber bays beside the Roundhouse; stacks show their count,New
 Y2,home,2,32,6,4,0,0,8,0,0,0,0,spoke1,spoke1,"Concrete stack racks, two more bays",Bill of five-area C2
 Y3,home,3,64,8,0,0,0,8,8,0,0,0,port.connect,port.connect,A gantry crane loads trains straight from the bays,New
-Y4,home,4,96,8,0,0,0,8,12,0,4,0,optional,optional,Covered yard (after the ending),New
+Y4,home,4,96,8,0,0,0,8,12,0,4,0,anytime,anytime,Covered yard (after the ending),New

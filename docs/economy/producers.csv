@@ -12,10 +12,11 @@ P-S4,S,ring,4,1440,96,0,0,0,8,12,4,4,0,ring.close,ring.close,Overhead crane fed 
 F0,Fi,canopy,1,40,12,16,0,0,0,0,0,0,0,b1.connect,b2.connect,One loom in the loading bay,three-area F0 bill
 P-Fi2,Fi,canopy,2,160,32,0,0,0,4,8,4,0,0,spoke1,ring.close,Three looms and a bundle chute,New; a second visit buys two levels at once
 P-Fi3,Fi,canopy,3,480,64,0,0,0,8,12,0,0,0,port.connect,ring.close,Powered looms,New
-P-Fi4,Fi,canopy,4,1440,96,0,0,0,8,12,0,4,0,ring.close,optional,Loom hall with an overhead crane,New
+P-Fi4,Fi,canopy,4,1440,96,0,0,0,8,12,0,4,0,ring.close,endgame,Loom hall with an overhead crane,New
 U0,U,gorge,1,40,12,8,0,0,0,8,0,0,0,b1.connect,b2.connect,One winding drum on the ledge,five-area U0 bill
 P-U2,U,gorge,2,160,32,0,0,0,4,8,0,4,0,spoke1,ring.close,Two drums and a cable lift,New; a second visit buys two levels at once
 P-U3,U,gorge,3,480,64,0,0,0,8,12,0,0,0,port.connect,ring.close,Powered drawing mill,New
-P-U4,U,gorge,4,1440,96,0,0,0,8,12,4,0,0,ring.close,optional,Drawing mill with a cable crane,New
-X0,X,stops,1,6,4,8,0,0,0,8,0,0,0,optional,optional,Seed cradle on the observatory islet,five-area X0 bill; after the ending here
-P-X2,X,stops,2,24,12,0,0,0,0,8,4,4,0,optional,optional,Seed nursery under glass,New
+P-U4,U,gorge,4,1440,96,0,0,0,8,12,4,0,0,ring.close,endgame,Drawing mill with a cable crane,New
+X0,X,stops,1,12,4,8,0,0,0,8,0,0,0,port.connect,port.connect,Seed cradle on the observatory islet,five-area X0 bill
+P-X2,X,stops,2,48,12,0,0,0,0,8,4,4,0,ring.close,ring.close,Seed nursery under glass,New
+P-X3,X,stops,3,240,48,0,0,0,0,24,12,12,12,endgame,endgame,Crystal garden on every islet,New; end-game tier
