@@ -15,7 +15,7 @@ import { inspectRailway } from '../../../src/entities/railway/state.ts';
 import { me } from '../../../src/player/player.ts';
 import { inputState } from '../../../src/player/input-state.ts';
 import { input } from '../../../src/player/input.ts';
-import { releaseJump } from '../../../src/entities/player/state.ts';
+import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
 import { fallArrival } from '../../../src/fall/arrival.ts';
 import { net, remotes } from '../../../src/netplay/net.ts';
 import { teleport } from '../../../src/physics/engine.ts';
@@ -29,7 +29,7 @@ const shot = query.get('coopShot') ?? 'unlock';
 const finder = query.get('player') === '2';
 const KEY = 'look.coop-unlock';
 const DEVICE = { x: LINE1_JUMP_DEVICE.x / 100, y: LINE1_JUMP_DEVICE.y / 100, z: LINE1_JUMP_DEVICE.z / 100 };
-const w = window as Window & { __coopShot?: boolean; __placeDone?: boolean };
+const w = window as Window & { __coopShot?: boolean };
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 let started = false;
 
@@ -75,6 +75,10 @@ function trace(label: string, ms: number) {
       held: inputState.held,
       card: read().reward.showing,
       mark: a.mark,
+      air: me.coyote <= 0,
+      vy: me.body && +me.body.velocity.y.toFixed(2),
+      jumps: read().reward.tools.jumps,
+      teach: a.teaching,
       flourishes: a.flourishes,
       late: a.late,
     });
@@ -84,20 +88,59 @@ function trace(label: string, ms: number) {
   tick();
 }
 
+/** The finder's earlier tool unlocks (the multi-axe at the wake, the proper axe) still show every player their card:
+ * the friend puts each away, as a person would, until the jump. */
+async function putAwayCards() {
+  while (!read().jump) {
+    if (read().reward.showing) {
+      await wait(1600);
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+      console.log('COOP NOTE friend put away an earlier shared card');
+    }
+    await wait(250);
+  }
+}
+
 async function friend() {
   const bot = makeBot({ doneFlag: '__coopFriendDone' });
   await until(landed, 'friend arrived and landed');
+  background(putAwayCards(), 'friend puts away earlier cards');
+  // Out of the finder's way: both arrive at the same spot, and the route starts from it.
+  if (!sessionStorage.getItem(KEY)) {
+    const p = me.body!.position;
+    const away = Math.hypot(DEVICE.x - p.x, DEVICE.z - p.z);
+    await bot.walk(p.x - ((DEVICE.x - p.x) / away) * 9, p.z - ((DEVICE.z - p.z) / away) * 9, 2, { limit: 15000 });
+    console.log('COOP NOTE friend stepped aside');
+  }
   const saved = JSON.parse(sessionStorage.getItem(KEY) ?? 'null') as { flourishes: number } | null;
   if (!saved) check(!read().jump, 'the jump is not found yet');
   if (shot === 'unlock') {
     await until(() => finderAtDevice(10), 'finder reached the device');
-    trace('unlock', 9000);
+    trace('unlock', 5500);
     w.__coopShot = true;
-    // Walking on through it, towards the device: the follow camera looks at its shaft.
+    // Walking on through it, towards the device (the follow camera looks at its shaft), hopping as they go: an
+    // unlock that lands mid-hop shows the mark hollow and never adds a jump to that flight.
     void bot.straight(DEVICE.x, DEVICE.z, 3, 12000);
+    const hops = (async () => {
+      for (let k = 0; k < 7; k++) {
+        pressJump();
+        await wait(140);
+        releaseJump();
+        await wait(160);
+        pressJump(); // a second press in the same flight: only spends an air jump if one is really there
+        await wait(100);
+        releaseJump();
+        await wait(500);
+      }
+    })();
     await until(() => read().jump, 'friend sees the unlock');
+    const airborne = me.coyote <= 0;
+    const jumps = read().reward.tools.jumps;
     await until(() => read().reward.arrival.flourishes === 1, 'friend flourish played');
     check(!read().reward.showing && !inputState.held, 'no card and no hold for a friend');
+    console.log(`COOP NOTE unlock arrived ${airborne ? 'mid-air' : 'on the ground'}; air jumps before ${jumps}`);
+    await hops;
     return;
   }
   if (shot === 'late') {
@@ -105,12 +148,43 @@ async function friend() {
     net.room!.pause(10 * 60_000); // gone for the find
     await until(() => !read().ready, 'friend offline');
     await wait(40000); // the finder takes it and plays on meanwhile (game time)
-    trace('late', 9000);
-    w.__coopShot = true;
     net.room!.pause(0); // back
+    // Held up in the air while reconnecting (a harness pose), so the capture sees their first landing after it:
+    // the flourish waits for that.
+    const ground = me.body!.position.y;
+    while (!read().ready) {
+      if (me.body!.position.y < ground + 6) {
+        const p = me.body!.position;
+        teleport(me.body!, p.x, ground + 12, p.z);
+        me.body!.velocity.set(0, 0, 0);
+      }
+      await wait(30);
+    }
+    trace('late', 7500);
+    w.__coopShot = true;
     await until(() => read().ready && read().jump, 'reconnected to a world that has the jump');
+    check(read().reward.arrival.late === 0 || me.coyote > 0, 'nothing plays in the air');
     await until(() => read().reward.arrival.late === 1, 'late flourish on landing');
     check(!read().reward.showing && !inputState.held, 'no card and no hold for a late friend');
+    // The first jump since: the mark pulses at its top with the Jump glyph; a second press spends the air jump.
+    await wait(900);
+    const hop = async () => {
+      await until(() => me.coyote > 0, 'grounded before a hop', 5000);
+      pressJump();
+      await until(() => me.body!.velocity.y > 1, 'hop leaves the ground', 3000);
+      releaseJump();
+      await until(() => me.body!.velocity.y < 0.5, 'top of the hop', 3000);
+      await wait(120);
+    };
+    await hop();
+    check(read().reward.arrival.teaching && read().reward.arrival.teaches === 1, 'first jump pulses the mark, once');
+    pressJump();
+    await wait(120);
+    releaseJump();
+    await until(() => read().reward.tools.second, 'the air jump spent');
+    await until(() => me.coyote > 0, 'landed', 5000);
+    await hop();
+    check(read().reward.arrival.teaches === 1 && !read().reward.arrival.teaching, 'the next jump has no pulse');
     return;
   }
   // alone / together: the find happens while the friend is idle; then the plinth.
@@ -151,6 +225,12 @@ async function friend() {
 }
 
 async function find() {
+  // The route starts where both arrive: wait for the friend to step aside.
+  await until(landed, 'finder arrived and landed');
+  await until(() => {
+    const p = other();
+    return !!p && Math.hypot(p.x - me.body!.position.x, p.z - me.body!.position.z) > 6;
+  }, 'friend out of the way');
   background(play({ solo: true }), 'finder solo route');
   if (shot !== 'alone' && shot !== 'together') return;
   // The bot stops after its jump demonstration (&railStop=optional jump used); for `together`, the finder is then

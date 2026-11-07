@@ -244,8 +244,8 @@ export async function createRailwayTools(
       flare = Math.max(0, flare - dt);
       const k = flare > 0 ? Math.min(1, (FLARE_S - flare) / 0.25, flare / 1.2) : 0;
       shaft.visible = !state.jump || k > 0;
-      shaft.scale.set(1 + 7 * k, 1, 1 + 7 * k);
-      shaftMaterial.opacity = 0.1 + 0.8 * k;
+      shaft.scale.set(1 + 14 * k, 1, 1 + 14 * k);
+      shaftMaterial.opacity = 0.1 + 0.6 * k;
       ring.rotation.z = now * 0.0007;
       ring2.rotation.y = now * 0.001;
       core.rotation.y = now * 0.0012;

@@ -13,6 +13,7 @@ import { me } from '../../player/player.ts';
 import { inputState } from '../../player/input-state.ts';
 import { glyph } from '../../player/glyphs.ts';
 import { fallArrival } from '../../fall/arrival.ts';
+import { localJumpCount } from '../player/state.ts';
 import { getRoomId } from '../../netplay/net.ts';
 import { identity } from '../../player/identity.ts';
 import { PLAYER_R, reducedMotion } from '../../constants.ts';
@@ -83,6 +84,7 @@ export function createAbilityArrival(
   const geometries = [
     new THREE.RingGeometry(0.24, 0.32, 32).rotateX(-Math.PI / 2),
     new THREE.CircleGeometry(0.2, 28).rotateX(-Math.PI / 2),
+    new THREE.RingGeometry(0.9, 1, 48).rotateX(-Math.PI / 2),
   ];
   const material = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: TEAL, side: THREE.DoubleSide }));
   const mark = new THREE.Group();
@@ -92,6 +94,19 @@ export function createAbilityArrival(
   mark.visible = false;
   for (const m of [ring, fill]) m.renderOrder = 2;
   owner.root.add(mark);
+  // A flourish's ripple: a teal ring running out over the ground from Buddy's feet, readable from behind.
+  const rippleMaterial = readableUnlit(
+    new THREE.MeshBasicNodeMaterial({
+      color: TEAL,
+      side: THREE.DoubleSide,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
+  );
+  const ripple = new THREE.Mesh(geometries[2], rippleMaterial);
+  ripple.visible = false;
+  owner.root.add(ripple);
   // The jump button's own glyph beside the mark at the top of the first jump (moves-view.ts's chip, place.css).
   const chip = document.createElement('div');
   chip.className = 'place-key';
@@ -105,7 +120,10 @@ export function createAbilityArrival(
     deferred = false,
     wasCharge = true,
     lastVy = 0,
-    lateWait = 0;
+    lateWait = 0,
+    rippleT = 0,
+    jumpsGrounded = localJumpCount();
+  const RIPPLE_S = 0.7;
 
   /** Where Buddy's feet are, a little under them. */
   const feet = (out: THREE.Vector3) => {
@@ -123,15 +141,16 @@ export function createAbilityArrival(
     feet(at);
     placeSound(ability.cue, at.x, at.z);
     if (!reducedMotion)
-      rewardSparkles(at.x, at.y + 0.25, at.z, 22, 1.9, {
+      rewardSparkles(at.x, at.y + 0.25, at.z, 34, 2.4, {
         color: TEAL,
-        life: 0.5,
-        lifeJitter: 0.4,
-        size: 0.1,
-        sizeJitter: 0.06,
-        gravity: 2,
-        drag: 1.6,
+        life: 0.6,
+        lifeJitter: 0.5,
+        size: 0.12,
+        sizeJitter: 0.08,
+        gravity: 1,
+        drag: 1.4,
       });
+    rippleT = RIPPLE_S;
     if (key === 'jump') {
       flash = FLASH_S;
       // In the air the mark shows hollow and fills on landing (tools.ts never adds a jump mid-flight).
@@ -190,14 +209,18 @@ export function createAbilityArrival(
         if (!reducedMotion) {
           feet(at);
           rewardSparkles(at.x, at.y + 0.1, at.z, 10, 1.2, { color: TEAL, life: 0.35, size: 0.08, gravity: 1 });
+          rippleT = RIPPLE_S * 0.7;
         }
       }
       wasCharge = charge;
       flash = Math.max(0, flash - dt);
       // The first jump after an unlock that wasn't yours: at its top, the mark pulses with the Jump glyph, once.
+      // Only a jump of yours counts, not a step up or a bounce.
       const vy = b.velocity.y;
+      if (grounded) jumpsGrounded = localJumpCount();
       if (
         state.jump &&
+        localJumpCount() > jumpsGrounded &&
         airborne &&
         charge &&
         !second &&
@@ -221,6 +244,14 @@ export function createAbilityArrival(
         const beat = pulse > 0 && !reducedMotion ? 1 + 0.35 * Math.abs(Math.sin((TEACH_S - pulse) * 9)) : 1;
         mark.scale.setScalar(pop * beat);
       }
+      rippleT = Math.max(0, rippleT - dt);
+      ripple.visible = rippleT > 0 && !reducedMotion;
+      if (ripple.visible) {
+        const u = 1 - rippleT / RIPPLE_S;
+        feet(ripple.position).y += 0.04;
+        ripple.scale.setScalar(0.35 + 1.6 * (1 - (1 - u) ** 2));
+        rippleMaterial.opacity = 1 - u;
+      }
       const label = pulse > 0 ? glyph('jump') : '';
       chip.classList.toggle('on', !!label);
       if (label) {
@@ -233,8 +264,10 @@ export function createAbilityArrival(
       offAccepted();
       chip.remove();
       mark.removeFromParent();
+      ripple.removeFromParent();
       for (const g of geometries) g.dispose();
       material.dispose();
+      rippleMaterial.dispose();
     },
   };
   owner.cleanup(api.dispose);
