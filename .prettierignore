@@ -3,3 +3,5 @@ dist
 package-lock.json
 *.md
 docs/research/
+# Generated script blocks (node dev/economy/build-prototype.ts); prettier would reflow them
+docs/world/economy-prototype.html
