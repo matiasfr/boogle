@@ -256,6 +256,8 @@ export type FolkEnv = {
   /** The next station's feet, where its helpers stand; null when nothing's waiting. */
   station: () => { x: number; y: number; z: number } | null;
   machineBusy: () => boolean;
+  /** A player holds the machine chair this station hand rides in (0 left, 1 right): they wait at the station. */
+  chairTaken?: (seat: number) => boolean;
   machine: () => { mesh: THREE.Object3D; top: number };
   trainCar: (line: number) => { mesh: THREE.Object3D; top: number } | null;
   /** Local drawn car envelopes; walkers give way without changing the train or its physics. */
@@ -629,11 +631,25 @@ function brain(g: Guy, dt: number) {
     case 'station': {
       const st = e?.station();
       if (!e) return;
-      if (e.machineBusy() || !st) {
+      const given = !!e.chairTaken?.(g.seat);
+      if ((e.machineBusy() || !st) && !given) {
         // Aboard for the stretch.
         g.mood = 'ride';
         return;
       }
+      if (!st) {
+        // A player sat in their chair with no station to wait at: stand on the ground beside that side of the deck.
+        const car = e.machine();
+        car.mesh.updateWorldMatrix(true, false);
+        wp.set(g.seat ? 1.7 : -1.7, 0, -1.1).applyMatrix4(car.mesh.matrixWorld);
+        g.x = wp.x;
+        g.z = wp.z;
+        g.y = H(g.x, g.z);
+        g.fy = null;
+        g.mood = 'idle';
+        return;
+      }
+      // Otherwise (or when a player sat in their chair) they see it off from the station.
       const side = g.seat ? 1.5 : -1.5;
       g.x = st.x + side;
       g.z = st.z + 1.8;

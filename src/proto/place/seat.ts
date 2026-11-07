@@ -17,6 +17,9 @@ import {
   remotes,
 } from '../../netplay/net.ts';
 import { me } from '../../player/player.ts';
+import type { Interactable } from '../../player/hands.ts';
+import { pop } from '../minis/common.ts';
+import { assignSeats, readGrants, seatVerdict, type Grants, type SeatRequest } from './seat-claims.ts';
 import { flat } from '../flat.ts';
 import { merged } from './part-geometry.ts';
 
@@ -31,14 +34,15 @@ export type Seat = {
   available: () => boolean;
 };
 const seats: Seat[] = [];
-export type SeatRequest = { id: string; ticket: number };
-export type SeatGrant = { peer: string; ticket: number };
+export type { SeatRequest } from './seat-claims.ts';
 let serial = 0;
 let request: SeatRequest | null = null;
 let sitting: Seat | null = null;
 const requests = new Map<string, SeatRequest>();
 const remoteSeats = new Map<string, Seat>();
-let grants: Record<string, SeatGrant> = {};
+let grants: Grants = {};
+// Since the press, or since the lead last showed this sitter's grant: an unanswered sit steps off after a grace.
+let heardAt = 0;
 const pose: Local = { x: 0, y: 0, z: 0, yaw: 0 };
 const surfacePose: Local = { x: 0, y: 0, z: 0, yaw: 0 };
 // Local diagnostics only: retain the cause before a transient release destroys its evidence.
@@ -61,9 +65,20 @@ function recordRelease(reason: string, distance: number | null = null) {
     at: performance.now(),
   };
 }
-export const registerSeat = (seat: Seat) => seats.push(seat);
+/** Returns the unregistration: a view that is rebuilt must not leave its old chairs (and their platform) behind. */
+export function registerSeat(seat: Seat) {
+  seats.push(seat);
+  return () => {
+    const i = seats.indexOf(seat);
+    if (i < 0) return;
+    if (sitting === seat) standUp('seat removed');
+    seats.splice(i, 1);
+  };
+}
 const find = (id: unknown) => (typeof id === 'string' ? seats.find((s) => s.id === id) : undefined);
 export const seated = () => sitting !== null || request !== null;
+/** Someone sits in this chair: this tab, or a rider the lead has granted it to. */
+export const seatHeld = (id: string) => sitting?.id === id || !!grants[id];
 /** Read-only capture diagnostics for pending claims versus actual sitting. */
 export const seatState = () => ({ request, sitting: sitting?.id ?? null, grants: { ...grants }, lastRelease });
 const world = (s: Seat, exit = false, interpolated = false) => {
@@ -98,11 +113,16 @@ export function freeSeat() {
 export function sitDown(s = freeSeat()) {
   if (!s || !reachable(s) || seated()) return;
   request = { id: s.id, ticket: ++serial };
-  // An offline/explicit solo visit has nobody to contend with. Live rooms always wait for the lead.
-  if (!net.room || net.state !== 'live') occupy(s);
+  heardAt = performance.now();
+  // Sit on the press, everywhere (instant feedback). In a live room the lead's grants then confirm the chair, move the
+  // sitter to the free neighbour of a chair someone else won, or step them off onto its exit (seatVerdict).
+  occupy(s);
+  if (sitting) pop(2, 0.35);
 }
 function occupy(s: Seat) {
-  if (!me.body || !reachable(s)) return standUp('unreachable grant');
+  // Sliding over to a neighbour on the same deck is always allowed: a seated capsule rides above the deck support.
+  const sliding = sitting !== null && sitting !== s && sitting.platform === s.platform && s.available();
+  if (!me.body || (!sliding && !reachable(s))) return standUp('unreachable grant');
   sitting = s;
   const p = world(s);
   teleport(me.body, p.x, p.y, p.z);
@@ -115,54 +135,38 @@ export function standUp(reason = 'stand input') {
   sitting = null;
   request = null;
   if (!s || !me.body) return;
+  if (reason === 'stand input' || reason === 'jump input') pop(1, 0.3);
   const p = world(s, true);
   teleport(me.body, p.x, p.y, p.z);
   me.body.velocity.set(s.platform ? carry.x : 0, s.platform ? carry.y : 0, s.platform ? carry.z : 0);
+}
+const promptAt = new THREE.Vector3();
+/** The Interact button around chairs, for a view without Place's verbs (the production railway): seated, the press
+ * only stands you up; otherwise Sit joins the other targets when none of them acts (far down the pick's order). */
+export function withSeatTargets(others: Interactable[]): Interactable[] {
+  if (!me.body) return others;
+  const p = me.body.interpolatedPosition;
+  promptAt.set(p.x, p.y + 1.1, p.z);
+  if (seated())
+    return [{ id: 'place-stand', verb: 'Stand up', at: promptAt, r: 100, fadeAfter: 3, run: () => standUp() }];
+  if (others.some((t) => t.run)) return others;
+  const seat = freeSeat();
+  if (!seat) return others;
+  return [...others, { id: 'place-sit', verb: 'Sit', at: promptAt, r: -100, run: () => sitDown(seat) }];
 }
 function assign() {
   if (net.myPeer) {
     if (request) requests.set(net.myPeer, request);
     else requests.delete(net.myPeer);
   }
-  // Keep incumbents until their owner explicitly releases or leaves. Never time out a held seat and double-book it.
-  const next: Record<string, SeatGrant> = {};
-  for (const [id, grant] of Object.entries(grants)) {
-    const req = requests.get(grant.peer);
-    const wanted = find(req?.id);
-    if (req?.ticket === grant.ticket && wanted && wanted.group === find(id)?.group && find(id)?.available())
-      next[id] = grant;
-  }
-  for (const [peer, req] of [...requests].sort(([a], [b]) => a.localeCompare(b))) {
-    if (Object.values(next).some((g) => g.peer === peer)) continue;
-    const wanted = find(req.id);
-    if (!wanted) continue;
-    const s = [wanted, ...seats.filter((s) => s !== wanted && s.group === wanted.group)].find(
-      (s) => s.available() && !next[s.id],
-    );
-    if (s) next[s.id] = { peer, ticket: req.ticket };
-  }
-  grants = next;
+  grants = assignSeats(grants, requests, seats);
   return grants;
 }
 addPresenceField('placeSeatRequest', () => request);
 addPresenceField('placeSeatPose', () => sitting?.id ?? null);
 addHostField('placeSeatGrants', assign, (value) => {
-  if (isLead() || !value || typeof value !== 'object' || Array.isArray(value)) return;
-  const next: Record<string, SeatGrant> = {};
-  for (const [id, raw] of Object.entries(value)) {
-    if (!raw || typeof raw !== 'object') continue;
-    const g = raw as Partial<SeatGrant>;
-    if (
-      find(id) &&
-      typeof g.peer === 'string' &&
-      g.peer.length <= 128 &&
-      Number.isSafeInteger(g.ticket) &&
-      g.ticket! > 0 &&
-      !Object.values(next).some((v) => v.peer === g.peer)
-    )
-      next[id] = { peer: g.peer, ticket: g.ticket! };
-  }
-  grants = next;
+  if (isLead()) return;
+  grants = readGrants(value, (id) => !!find(id));
 });
 onRemotePresence((r, pr) => {
   const raw = pr.placeSeatRequest;
@@ -203,27 +207,42 @@ onPreStep(
       standUp('jump input');
       return;
     }
-    if (request && !sitting && net.myPeer) {
-      const id = Object.keys(grants).find(
-        (id) => grants[id]?.peer === net.myPeer && grants[id]?.ticket === request?.ticket,
-      );
-      const s = find(id);
-      if (s) occupy(s);
+    if (request && net.myPeer && net.state === 'live') {
+      const now = performance.now();
+      if (Object.values(grants).some((g) => g.peer === net.myPeer && g.ticket === request!.ticket)) heardAt = now;
+      if (!sitting) {
+        // A sitter whose chair was released underneath them (seat unavailable) waits for nothing: drop the claim.
+        recordRelease('no chair');
+        request = null;
+      } else {
+        const verdict = seatVerdict({
+          grants,
+          peer: net.myPeer,
+          ticket: request.ticket,
+          sitting: sitting.id,
+          seats,
+          waitedMs: now - heardAt,
+        });
+        if (verdict.kind === 'release') return standUp('claim lost');
+        const next = verdict.kind === 'move' ? find(verdict.id) : undefined;
+        if (next) occupy(next);
+      }
     }
     const s = sitting,
       b = me.body;
     if (!s || !b) return;
     const p = world(s);
-    const available = s.available();
-    const distance = Math.hypot(p.x - b.position.x, p.y - b.position.y, p.z - b.position.z);
-    if (!available || distance > 3) {
-      recordRelease(available ? 'anchor distance' : 'seat unavailable', distance);
+    if (!s.available()) {
+      recordRelease('seat unavailable', Math.hypot(p.x - b.position.x, p.y - b.position.y, p.z - b.position.z));
       sitting = null;
       request = null;
       return;
     }
+    // A deck that jumps (a restored or caught-up machine snaps to its accepted place) carries its sitter along:
+    // releasing here would leave them in mid-air where the chair was.
     me.wish.set(0, 0, 0);
-    b.position.set(p.x, p.y, p.z);
+    if (Math.hypot(p.x - b.position.x, p.y - b.position.y, p.z - b.position.z) > 3) teleport(b, p.x, p.y, p.z);
+    else b.position.set(p.x, p.y, p.z);
     // carryStep compares against last step's carry before applying the new deck motion. Pre-applying the deck's
     // next vertical speed here makes a slope/correction look like a jump and drops seated contact.
     b.velocity.set(
