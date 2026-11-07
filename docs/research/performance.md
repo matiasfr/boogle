@@ -151,7 +151,8 @@ Numbered; each with its expected gain on the Mac (phones gain proportionally mor
    fall yaws without the spread (`String.fromCharCode(...bytes)`) or cache the string by a falls revision. *Gain:* up to
    2 ms of CPU per frame (25 % of the main thread) and about 300 MB/s of garbage, which on a phone is GC pauses every
    few frames. *Risk:* low; a stale read must not survive a tick, snapshot or recovery (key the cache on those). This is
-   the biggest single win and also what makes two SwiftShader tabs in the smoke too slow.
+   the biggest single win and also what makes two SwiftShader tabs in the smoke too slow. *Done* after R1a replaced the
+   hashed lockstep read with the mirror: [section 6](#6-the-railway-update-in-safari-7-november-after-r1b).
 2. **Give the smoke a page CI can run, and keep it testing the current game.** After (1), rerun the smoke; if it still
    starves, open Bob first and Alice second (Bob's click comes before Alice's world is busy), or pass a low tier (11)
    to both. *Gain:* a green smoke that guards deploys again. *Risk:* none to the game.
@@ -203,3 +204,94 @@ Numbered; each with its expected gain on the Mac (phones gain proportionally mor
 - Frame budget used by the daily job: 8.33 ms CPU and GPU per frame on the Mac (120 Hz), so a phone at a third of the
   speed still holds about 40 fps. Raise or lower it in `PERF_POLICY.budget.frameMs`.
 - Not tested on a device.
+
+## 6. The railway update in Safari (7 November, after R1b)
+
+The owner's session of 6 November (desktop Safari on the M-series Mac, e439b72a, before R1b; `npm run playtest --
+mw5y0cl1-wuu1cel4`) ranked `railway update` first at 5.3 ms a frame, before render CPU (4.5 ms) and `gifts update`
+(1.8 ms); frames ran at 17 ms p50 and 25 ms p95, and adaptive resolution fell from 2x to 1.2x at 6 min and stayed.
+Measured on main at 3889115d (R1b) and on this branch, on the M1 Max while other agents' browsers and builds shared it
+(load average 11–51): read differences under ~0.05 ms per section or ~0.3 ms per frame as noise. Not tested on a device.
+
+**Call trees** (Chrome DevTools sampling profiles, 200 µs, 5 s of real frames at the spawn, the forge, line two and the
+timber camp, and mid-play with the production bot warped to carrying logs, a laying job and piles; Chromium only: the
+harness has no WebKit, so Safari's engine was measured on its own, below). `railway update` is the railway entity's
+update: every railway view, the back bundle and the prompts. On main, with the railway ready and asleep at the spawn,
+it was 43 ms a second (71 carrying logs), of which **the adapter's `inspect()` was 16 ms** (32 carrying; `readState`
+14, 10 of them its own copies), the two reward boxes 12 (each reads `inspect()` three or four times a frame, through
+`completion()`), `setNumbers` 5, the townsfolk 5 and the line-one view 3. `inspect()` rebuilt the whole frozen read on every call: about twenty readers a frame (each
+view, `backSeam.count`/`carry`/`remote`, the tools, the reward boxes, the interaction providers) each copied the six
+per-tree lists (388 entries each) and spread about fifty fields twice. `rail.at(tick)` (every job's clock), the pile
+and station views and the prediction were small beside it: the predicted state is already rebuilt only per packet or
+action, and job clocks cost microseconds.
+
+**Why Safari paid twenty times more.** JavaScriptCore freezes an array by moving it to slow storage: `Object.freeze` of
+a 388-entry array costs 33–38 µs there (0.2 µs in V8), and reading a frozen array is about eight times slower. One
+`inspect()` on a mid-play state (carrying, four piles) cost **200–375 µs in JavaScriptCore against 16 µs in V8**
+(`jsc` from the system's JavaScriptCore on a bundle of the adapter tests' room; V8 is Node 26). Twenty reads a frame
+are 4–7 ms: the owner's 5.3 ms. `gifts update` is the first hook to ask for the interaction prompt (`interactTarget()`,
+shared for the frame), so it pays for every provider, the railway's tools and reward boxes among them, two to three
+`inspect()` calls: the 1.8 ms.
+
+**The nightly benchmark could not see the railway.** `isolated` harness pages (bench, perf) got their COOP/COEP headers
+from a Playwright route that fulfilled the document. A document fulfilled that way cannot open WebSockets (a ten-line
+page, a server sending the same headers, and the route: only the route fails), so since R1a the bench page's railway
+room never connected ("the server did not answer"), and every nightly number measured the railway connecting. The page
+now asks for isolation with `coi=1` and the dev server sends the headers. The not-connected read costs about the same
+(0.36 ms on main either way), so the history stays comparable; the railway is now really there in the play pose.
+
+**Fixed** (src/adapters/railway.ts, src/entities/railway/sources.ts and view.ts, src/proto/place/signs.ts; behaviour
+unchanged: a temporary check that every cached read deep-equals a fresh one held through all 24 adapter tests):
+
+- **One read per change.** The read is rebuilt only when the mirror applies a packet, the predicted state is rebuilt,
+  the estimated tick moves (10 Hz) or a movement tunable changes; `inspect()` is the same object until a session field
+  changes. Piles keep the same array while every pile is equal, so views can tell by identity.
+- **No frozen per-tree lists.** They are copied, readonly to TypeScript, not frozen.
+- **Pile batches upload only on change** (the piles, a flight into one landing or re-keyed, the racks), not every frame.
+- **Chop prompts** walk the choppable trees with a box test instead of filtering all trees with an array per tree; line
+  one's schedule and feed are recomputed only when a station's timing changes.
+- **The money figure** is formatted and written to the DOM only when the whole-dollar value changes (it was
+  `toLocaleString` and a `textContent` write every frame: the largest single cost left in the ready update).
+
+| JavaScriptCore / V8, one `inspect()` (mid-play state) | main | this branch |
+| --- | --- | --- |
+| unchanged since the last read (19 of 20 reads a frame) | 200–375 µs / 16 µs | 0.5–0.9 µs / 0.4–0.6 µs |
+| first read after a new tick (10 a second) | 210–420 µs / 14 µs | 20–34 µs / 12–22 µs |
+
+`npm run bench` (the nightly's benchmark), main then this branch, both with the railway connected, ms per frame:
+
+| pose | CPU | railway update | gifts update | room clock + replication | allocation KB/frame |
+| --- | --- | --- | --- | --- | --- |
+| spawn | 3.48 → 3.11 | 0.36 → 0.16 | 0.10 → 0.02 | 0.42 → 0.19 | 658 → 357 |
+| town | 3.88 → 3.44 | 0.36 → 0.15 | 0.10 → 0.02 | 0.42 → 0.18 | 660 → 359 |
+| forge | 3.72 → 3.35 | 0.34 → 0.16 | 0.10 → 0.02 | 0.40 → 0.20 | 662 → 350 |
+| far | 4.25 → 3.99 | 0.29 → 0.17 | 0.08 → 0.02 | 0.34 → 0.20 | 688 → 385 |
+| island | 3.87 → 3.60 | 0.31 → 0.17 | 0.08 → 0.02 | 0.36 → 0.20 | 660 → 357 |
+| play | 3.48 → 3.20 | 0.28 → 0.16 | 0.08 → 0.02 | 0.36 → 0.22 | 663 → 352 |
+
+`railway update` from the CPU profiles, main then this branch, in ms of main thread per second of real frames (about
+120 frames a second; the bot warped to each state, the railway connected; one 5 s sample each):
+
+| where | main | this branch | what was there |
+| --- | --- | --- | --- |
+| spawn, machine asleep | 42.8 | 16.3 | |
+| the forge | 46.3 | 17.9 | |
+| line two | 43.6 | 15.1 | |
+| the timber camp | 44.8 | 15.0 | |
+| carrying eight logs | 71.2 | 24.6 | main: `inspect()` 32, the reward boxes 24, `railCounts` 8 |
+| T1 laying | 62.1, 49.5 | 21.9, 19.8 | this branch: the machine and panel rig (rail.ts, panel-view.ts) ~10 |
+| piles (two or three, four logs) | 52.9 | 20.9 | |
+
+In the nightly history this shows as `*.cpu.room-clock-replicationMs` falling by about 0.2 ms at every pose, `cpuMs` by
+0.3–0.4 ms and `allocKBPerFrame` by about 300 KB (the job flags rises only). On Safari the same change removes the
+4–7 ms the frozen copies cost; how much of the owner's 5.3 ms and 1.8 ms goes needs a Safari session on a device.
+
+**Left** (none of them large in Chromium; their Safari cost is unmeasured):
+
+- The townsfolk (`updateFolk`, src/proto/place/folk.ts, under the opening view): ~5 ms a second wherever the player is,
+  4 of them `getWorldDirection`; a distance gate like #1114's would sleep them away from the village.
+- The panel rack (src/entities/railway/panel-view.ts `frame`: `track.panels.slice(index).map(...)` every frame) and line
+  two's per-frame `lineFeed` (line2-view.ts): left to the work on the track layer and the gantry under way.
+- `sources.update` walks all 400 trees twice a frame (~2 ms a second): fine in V8; worth a dirty list if Safari shows it.
+- Render CPU (C2 above), 4.5 ms in the owner's Safari session, is now the largest section.
+- The nightly benchmark is Chromium only: a Safari number needs the owner's playtest page or a WebKit harness.
