@@ -92,6 +92,10 @@ export function kmFrom(slot: string, i: number, first: Branch) {
   );
 }
 
+/** Haulers in a party of n: each friend adds handParallel of a hauler, and little-guy helpers fill in for missing friends. */
+export const handFactor = (s: Settings, n: number) =>
+  1 + (n - 1) * num(s, 'handParallel') + Math.max(0, num(s, 'helperHands') - (n - 1) * num(s, 'helperStepAside'));
+
 /** Hours of output credited to a producer's yard on the next join, after `away` hours with the world paused. */
 export const awayCredit = (s: Settings, away: number) => {
   const h = num(s, 'awayHorizonHours');
@@ -233,7 +237,7 @@ export function simulate(overrides: Settings = {}, players: number[] = [1, 2, 3]
       const stock = demand - hand;
       if (hand && !res.manual) throw new Error(`${r.key}: ${m} needed before anything makes it`);
       const labourS = hand * (res.manual ? per(res.localM / walk) / carry : 0) + stock * num(s, 'lastCarryS');
-      const group = players.map((n) => manual * (1 + (n - 1) * num(s, 'handParallel')));
+      const group = players.map((n) => manual * handFactor(s, n));
       return {
         material: m,
         demand,
@@ -257,7 +261,7 @@ export function simulate(overrides: Settings = {}, players: number[] = [1, 2, 3]
     });
     const pace = (n: number): StepPace => {
       const act = (r.activityMin + back.min) / (1 + (n - 1) * num(s, 'activityParallel'));
-      const labour = flows.reduce((t, f) => t + f.labourS, 0) / 60 / (1 + (n - 1) * num(s, 'handParallel'));
+      const labour = flows.reduce((t, f) => t + f.labourS, 0) / 60 / handFactor(s, n);
       const travel =
         (r.rides * 2 * rideS + back.trips * 2 * back.rideS) / 60 / (1 + (n - 1) * num(s, 'travelParallel'));
       const work = (act + labour + travel) / 60;

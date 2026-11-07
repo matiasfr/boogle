@@ -627,7 +627,11 @@ res.steps.forEach((st, k) => {
         F(i === 1 ? '0' : `${e}${r - M}`, r1(f.start[b]!)),
         F(`IF(K${r}>0,MAX(0,(N${r}-${s}${r}-K${r}*${pac(pcol(b, 3), r)})/K${r}),0)`, r1(f.wait[b]!), STYLE.num),
         F(`MIN(G${r},MAX(0,${raw})+IF(${pac(pcol(b, 8), r)}>0,K${r}*${AWAY},0))`, r1(f.end[b]!)),
-        F(`L${r}*(1+(${playersCell(b)}-1)*${S('handParallel')})`, r1(f.group[b]!), STYLE.int),
+        F(
+          `L${r}*(1+(${playersCell(b)}-1)*${S('handParallel')}+MAX(0,${S('helperHands')}-(${playersCell(b)}-1)*${S('helperStepAside')}))`,
+          r1(f.group[b]!),
+          STYLE.int,
+        ),
         F(
           `IF(AND(K${r}>0,K${r}>=${g}${r}),${pac(pcol(b, 6), r)},${NEVER})`,
           r1(ahead ? st.pace[b]!.start : NEVER),
@@ -734,7 +738,10 @@ res.steps.forEach((st, k) => {
     const C = (q: number) => pcol(b, q);
     return [
       F(`(INDEX(Route!$F:$F,$A${r}+1)+INDEX(Route!$S:$S,$A${r}+1))/(1+(${pl}-1)*${S('activityParallel')})`, r1(pc.act)),
-      F(`SUMIFS(Flows!$O:$O,Flows!$A:$A,$A${r})/60/(1+(${pl}-1)*${S('handParallel')})`, r1(pc.labour)),
+      F(
+        `SUMIFS(Flows!$O:$O,Flows!$A:$A,$A${r})/60/(1+(${pl}-1)*${S('handParallel')}+MAX(0,${S('helperHands')}-(${pl}-1)*${S('helperStepAside')}))`,
+        r1(pc.labour),
+      ),
       F(
         `(INDEX(Route!$G:$G,$A${r}+1)*2*INDEX(Route!$N:$N,$A${r}+1)+INDEX(Route!$R:$R,$A${r}+1)*2*INDEX(Route!$U:$U,$A${r}+1))/60/(1+(${pl}-1)*${S('travelParallel')})`,
         r1(pc.travel),
@@ -984,7 +991,7 @@ const sumRows: Cell[][] = [
   [
     T('Hours to the ending'),
     ...PARTIES.map((_, b) => F(`Pacing!$${pcol(b, 7)}$${lastPac}`, r1(lastStep.pace[b]!.end), STYLE.bold)),
-    F(`"Target "&${S('targetHours')}&" h"`, `Target ${set.targetHours} h`, STYLE.note),
+    F(`"Rough target "&${S('targetHours')}&" h"`, `Rough target ${set.targetHours} h`, STYLE.note),
   ],
   [
     T('Authored play incl. returns, h'),

@@ -1,5 +1,7 @@
 # Roundhouse trains: improve the railway together
 
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+
 _Note added 6 November 2026: the owner approved a shared wallet, fully shared progression and a world paused while empty, with a capped away credit on the next join ([economy principles amended](../proposals/boogle-2.md#progress-and-rewards)). "No shared wallets" below is superseded; contributions now come from one shared wallet and shared stock. The rest stands as written._
 
 _Research report, 6 November 2026. Live primary-source research and fresh runs of the existing progression simulation at `e7eea656`. Connects the Roundhouse idea to materials, research, shared rewards and the requested 30-minute vertical slice. Design hypotheses only: no gameplay, economy inputs, owner decisions or production plans changed. Companion: [interactive visual brief](roundhouse-trains.html)._

@@ -1,5 +1,7 @@
 # Next destinations: a railway that brings the journey home
 
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+
 _Research report, 5 November 2026. Live primary-source research on destination-led progression, seven candidate destinations after the starter island, three roughly eight-hour arrangements, physical upgrades, uneven co-op attendance and the smallest next proof. Repository baseline `1732514f`. Research and proposals only; no gameplay, accepted decisions or implementation plan changed._
 
 **Recommendation [H]:** follow the starter island with a reachable chalk coast, a working steel harbour, the suspended geology already promised on the horizon, an inhabited high port, and finally the original island and The Boogler. Keep a canopy coast as an alternative expedition and a small observatory as an optional night visit. Every main connection should export a useful capability, visibly improve somewhere familiar, and open a different kind of exploration. The world keeps its history; the machines acquire parts.

@@ -4,7 +4,8 @@
 
 Design only; no game code. This builds on the owner's 6 November direction and the answers to this brief's first five
 questions, recorded in [boogle-2.md](../proposals/boogle-2.md#trains-and-the-world). The earlier recorded answers still
-stand: Split-rock Works next, then Ring Island; the smallest Roundhouse first; about eight hours for the main game.
+stand: Split-rock Works next, then Ring Island; the smallest Roundhouse first. The length is now roughly six hours to
+the ending, a rough target rather than a rule, with solo and groups close together (owner, 6 November).
 
 - **Model:** [economy-model.xlsx](../economy/economy-model.xlsx), with the same data as CSVs in
   [docs/economy/](../economy/). Built by `node dev/economy/build-model.ts` from
@@ -64,6 +65,12 @@ calls, recorded as "economy principles amended" in [boogle-2.md](../proposals/bo
 9. **Money in dialogue:** The Boogler and NPCs keep treating money as a joke, while resources and the wallet do real
    work. Their copy is unchanged; conflicting lines are listed below.
 10. **Cosmetics:** "the cosmetics can still be shared. Or maybe certain cosmetics and secret crates can be personal."
+11. **Length:** "bring the completion time for the game closer to 6 hours, and there doesn't need to be that much of a
+    delta between multiple players or not"; "it's roughly 6 hours. It doesn't have to be a really strict rule."
+12. **Currency and the shop:** firm: "the currency should be shared so that the main progression is shared."
+    Provisional: the shop stays free until the shared wallet ships, then wearables may cost Bucks; "we can figure out
+    what makes sense ultimately about the cosmetics." How abilities are granted in co-op is being designed
+    separately, so this brief leaves it alone.
 
 ## What changed in the model
 
@@ -105,44 +112,61 @@ calls, recorded as "economy principles amended" in [boogle-2.md](../proposals/bo
 - **One, two and three players.** The Pacing tab has one block per party, set to 1, 2 and 3; four is a footnote in the
   Summary.
 
-## Pacing (rerun for 1, 2 and 3 players)
+## Six hours for one, two or three
+
+The owner asked for roughly six hours, with less of a gap between solo and groups. The model was at 8.2 / 6.9 / 6.1
+hours.
+
+| Option | What it does | Verdict |
+| --- | --- | --- |
+| Bills that scale with party size | Groups need more stock | **No.** It punishes whoever joins, works against drop-in and the fixed-bill research ([group-size](../research/group-size.md)), and makes friends feel like a cost |
+| Solo assists: little-guy helpers | Little guys haul alongside a short-handed party: 0.6 of a hauler solo, 0.3 for two, none for three | **Yes.** It builds on the 3 November call "little guys bring rails too", makes solo hauling less grindy, and steps aside as friends arrive |
+| Work that doesn't parallelize | Exploration, puzzles and big machines are done together: one lever, one gantry, one train ride | **Yes, as the model's assumption.** Each extra friend saves 5% of authored play (was 12%) and 10% of commuting (was 30%), because friends ride and solve together |
+| Producers set the pace | Groups wait for shared stock while solo rarely does | **Already true:** three players wait about 10 min, which gives groups a reason to split off and upgrade producers |
+| Shorter authored content | Less play per step, one round trip home per step instead of two | **Yes.** Authored play goes from 5.3 to 4.3 solo hours, and commuting from 2.0 to 1.3 |
+
+**The mix:** shorter content and one round trip per step bring everyone near six hours. Helpers and shared moments
+narrow the gap. Producers stay the group's pace-setter. Groups still do more: hauling with three is 2.4 haulers against
+solo's 1.6, the crossover comes sooner for them, and they're 10–12% faster. Solo isn't grindy, because the little guys
+carry part of every load.
+
+## Pacing (rerun)
 
 | | Solo | Two | Three |
 | --- | --- | --- | --- |
-| Hours to the ending | **8.2** (8.1–8.3 across the choices) | **6.9** | **6.1** |
-| Authored play, with about 27 min of returns | 5.3 h | 4.8 h | 4.3 h |
-| Commuting, with returns | 2.0 h | 1.5 h | 1.3 h |
-| Hand labour | 0.8 h | 0.5 h | 0.3 h |
-| Waiting for shared stock | under 1 min | 3–5 min | 9–10 min |
-| Shared wallet at the ending | about 26,700 Bucks | about 21,500 | about 17,900 |
-| End-game goals after the ending | **6.6 h** | about the same | about the same |
+| Hours to the ending | **6.1** (6.1–6.2 across the choices) | **5.8** | **5.5** |
+| Authored play, with about 27 min of returns | 4.3 h | 4.0 h | 3.9 h |
+| Commuting, with returns | 1.3 h | 1.2 h | 1.1 h |
+| Hand labour (helpers included) | 0.5 h | 0.4 h | 0.3 h |
+| Waiting for shared stock | 2–4 min | 5–7 min | 9–10 min |
+| Shared wallet at the ending | about 18,300 Bucks | about 16,800 | about 15,800 |
+| End-game goals after the ending | **5.8 h** | about the same | about the same |
 
-Four players still works: 5.5 h to the ending, with 14–15 min waiting. It isn't designed for.
+The gap between solo and three is 12%. Four players still works (5.2 h, 13–15 min waiting) but isn't designed for.
 
 | Milestone | Hours (solo / two / three) |
 | --- | --- |
-| The Works connected | 1.5 / 1.2 / 1.1 |
-| Ring Island connected | 2.4 / 2.0 / 1.8 |
-| First branch connected | 3.9 / 3.3 / 3.0 |
-| First return spoke | 4.5 / 3.8 / 3.4 |
-| High Port | 5.8 / 4.9 / 4.4 |
-| The ring closed | 7.6 / 6.4 / 5.6 |
-| The ending | 8.2 / 6.9 / 6.1 |
+| The Works connected | 1.2 / 1.1 / 1.1 |
+| Ring Island connected | 1.8 / 1.7 / 1.7 |
+| First branch connected | 3.0 / 2.8 / 2.7 |
+| First return spoke | 3.5 / 3.3 / 3.1 |
+| High Port | 4.4 / 4.1 / 3.9 |
+| The ring closed | 5.8 / 5.4 / 5.1 |
+| The ending | 6.1 / 5.8 / 5.5 |
 
-Machines pass the hands of the whole group, on each party's own timeline:
+Machines pass the party's hands, little guys included, on each party's own timeline:
 
 | Material | Solo | Two | Three |
 | --- | --- | --- | --- |
-| Logs | 0.5 h | 0.4 h | 0.4 h |
-| Footings | 3.3 h | 4.4 h | 4.0 h |
-| Steel | 5.2 h | 5.8 h | 5.2 h |
-| First branch's material | 5.2 h (Canopy first) or 3.9 h (Gorge first) | 5.8 h | 5.2 h |
-| Second branch's material | 6.9 h | 5.8 h | End game |
-| Crystal | 6.9 h | End game | End game |
+| Logs | 0.4 h | 0.4 h | 0.4 h |
+| Footings | 3.9 h | 3.7 h | 3.5 h |
+| Steel | 5.3 h | 5.0 h | 4.7 h |
+| First branch's material | 5.3 h | 5.0 h | 4.7 h |
+| Second branch's material | 5.3 h | 5.0 h | End game |
+| Crystal | End game | End game | End game |
 
-More players mean more hands, so machines take longer to catch up. The second branch and crystal are only overtaken by
-three players' hands in the end-game tier, when level 5 and the crystal garden arrive. That's the "eventually
-everything gets easy".
+The second branch (for three players) and crystal (for everyone) are only overtaken in the end-game tier, when level 5
+and the crystal garden arrive. That's the "eventually everything gets easy".
 
 ## The world
 
@@ -202,10 +226,12 @@ steel, footings, copper and fibre).
 | --- | --- | --- |
 | Train looks (flag, side, chimney), Roundhouse fittings | Shared: the world's trains | The wallet, at the Roundhouse |
 | Town and station decorations, awnings, districts | Shared: the world's places | The wallet, at the town |
-| Wearables from the shop (hat, accessory, outfit) | Personal once taken | The wallet, at the shop |
+| Wearables from the shop (hat, accessory, outfit) | Personal once taken | Free until the wallet ships, then Bucks (provisional) |
 | Secret-crate finds and box cosmetics | Personal | Found, never bought |
 
-The split follows the owner's "certain cosmetics and secret crates can be personal". Shared looks are things the whole
+The split follows the owner's "certain cosmetics and secret crates can be personal", and stays provisional: "we can
+figure out what makes sense ultimately about the cosmetics." The firm part is that the currency is shared, so the main
+progression is shared. Shared looks are things the whole
 world sees on shared objects. Personal ones are on your own character, or found by you.
 
 ### Producers that start slow
@@ -254,10 +280,15 @@ Every level is a physical addition beside the works, and its bill reaches for th
   level 3 a little more for groups.
 - **The away credit doesn't change pacing.** Solo play almost never waits for stock, so the credit is a homecoming
   feeling, not a speed-up. If playtests want it to matter, make yards smaller early, not the credit bigger.
+- **Shared moments are an assumption.** The six-hour mix assumes friends explore, solve and ride together. If
+  playtests show groups splitting up to explore faster, groups get quicker and the gap widens. Then lean on producers
+  (smaller early yards) rather than on bigger bills.
+- **Helpers must not make friends feel redundant.** The little guys step aside as friends join; their 0.6 and 0.3 are
+  tunables, judged by whether a solo player feels helped and a pair still feels needed.
 - **The second order choice is an upgrade order, not a place.** The owner said "a couple of times". A second
   area-order choice is better placed by the map prototype (open question 3).
-- **Authored content is still the real cost:** 5.3 solo hours of authored play, of which the returns reuse places for
-  about half an hour.
+- **Authored content is still the real cost:** 4.3 solo hours of authored play, of which the returns reuse places for
+  about half an hour. Six hours is a rough target, so content can run a little long if it's good.
 
 ## Smallest first build
 
@@ -303,9 +334,7 @@ Bucks.
    the map prototype proposes where**. Answer: ___
 2. **Away horizon:** is H = 2 hours of output right to start (0.8 h after an hour away, 2 h after a day)?
    Recommended: **yes, as a tunable judged in play**. Answer: ___
-3. **Shop wearables:** do they cost Bucks from the wallet, or stay free until the shared wallet ships? Recommended:
-   **free until the wallet ships, so the shop's lines stay true; then priced**. Answer: ___
-4. **Group crossover:** should level 3 producers be a little stronger so that two or three players also feel machines
+3. **Group crossover:** should level 3 producers be a little stronger so that two or three players also feel machines
    overtake them mid-game? Recommended: **judge in play; it's one tunable per level**. Answer: ___
 
 ## Parked
@@ -316,5 +345,5 @@ Bucks.
 
 ## Disposition
 
-**Proposed, partly answered; owner decision needed** on the four questions. The principles are amended; no game code
+**Proposed, partly answered; owner decision needed** on the three questions. The principles are amended; no game code
 changes. Everything builds after the line 2 playtest and the production-core slices it depends on.

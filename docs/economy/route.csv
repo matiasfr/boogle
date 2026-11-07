@@ -1,18 +1,18 @@
 order,key,name,slot,activity_min_solo,round_trips,returns_to,return_trips,return_min,note
-1,home.line1,"Line 1: timber camp, T1–T3",home,14,0,,0,0,As built
-2,home.forge,Forge and Q1,home,8,0,,0,0,As built
-3,home.line2,Line 2: Q2–Q3 with the depot cart,home,10,0,,0,0,As built: the first automatic supply
-4,splitrock.reach,"Walk to Split-rock, ankle rings, breaker strike",splitrock,20,1,,0,0,New tier: footings by hand
-5,splitrock.connect,Connect the Works (Q4–Q6),splitrock,14,1,,0,0,Producer L1; carry frame
-6,ring.reach,First crossing to Ring Island,ring,30,2,,0,0,The entry spoke; steel by hand
-7,ring.connect,"Brace the aperture, connect the steel works",ring,12,1,,0,0,Producer L1
-8,hub.roundhouse,The Roundhouse opens,home,12,1,,0,0,Smallest first build; Home Yard
-9,b1.reach,Branch choice: ring segment to the first branch,b1,28,2,,0,0,New tier by hand
-10,b1.connect,Connect the first branch,b1,16,1,ring,1,6,Its pair of abilities. Return: The new ability opens Ring Island's upper gallery
-11,spoke1,First return spoke and second engine,b1,14,2,splitrock,1,5,The shortcut through the middle. Return: The new tool opens the upper seam at Split-rock
-12,port.reach,Ring segment to High Port,port,28,2,,0,0,Inhabited town
-13,port.connect,Harbour crane and service bay,port,16,1,home,1,6,Either branch material works. Return: Double jump and the longer reach open the old headland at Home
-14,b2.reach,Ring segment to the second branch,b2,20,2,,0,0,Second new tier by hand
-15,b2.connect,Connect the second branch,b2,14,1,b1,1,6,The other pair of abilities. Return: The second ability pair opens the first branch's hidden section
-16,ring.close,Close the ring: the loop line,b2,16,2,ring,1,4,First full lap; crystal collars. Return: Back to Ring Island to build the closing segment from its side
-17,final,Final crossing to the Original Island,original,22,2,,0,0,The Boogler
+1,home.line1,"Line 1: timber camp, T1–T3",home,12,0,,0,0,As built
+2,home.forge,Forge and Q1,home,7,0,,0,0,As built
+3,home.line2,Line 2: Q2–Q3 with the depot cart,home,8,0,,0,0,As built: the first automatic supply
+4,splitrock.reach,"Walk to Split-rock, ankle rings, breaker strike",splitrock,15,1,,0,0,New tier: footings by hand
+5,splitrock.connect,Connect the Works (Q4–Q6),splitrock,11,1,,0,0,Producer L1; carry frame
+6,ring.reach,First crossing to Ring Island,ring,22,1,,0,0,The entry spoke; steel by hand
+7,ring.connect,"Brace the aperture, connect the steel works",ring,10,1,,0,0,Producer L1
+8,hub.roundhouse,The Roundhouse opens,home,10,1,,0,0,Smallest first build; Home Yard
+9,b1.reach,Branch choice: ring segment to the first branch,b1,20,1,,0,0,New tier by hand
+10,b1.connect,Connect the first branch,b1,13,1,ring,1,6,Its pair of abilities. Return: The new ability opens Ring Island's upper gallery
+11,spoke1,First return spoke and second engine,b1,11,1,splitrock,1,5,The shortcut through the middle. Return: The new tool opens the upper seam at Split-rock
+12,port.reach,Ring segment to High Port,port,20,1,,0,0,Inhabited town
+13,port.connect,Harbour crane and service bay,port,13,1,home,1,6,Either branch material works. Return: Double jump and the longer reach open the old headland at Home
+14,b2.reach,Ring segment to the second branch,b2,16,1,,0,0,Second new tier by hand
+15,b2.connect,Connect the second branch,b2,11,1,b1,1,6,The other pair of abilities. Return: The second ability pair opens the first branch's hidden section
+16,ring.close,Close the ring: the loop line,b2,13,1,ring,1,4,First full lap; crystal collars. Return: Back to Ring Island to build the closing segment from its side
+17,final,Final crossing to the Original Island,original,16,1,,0,0,The Boogler

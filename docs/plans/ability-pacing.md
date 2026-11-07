@@ -1,5 +1,7 @@
 # Proposal: give each ability room
 
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+
 **Owner decision needed; proposed pacing experiment, not approval.** Reviewed 4 November 2026 against `326dda13`. Serves [DESIGN.md](../../DESIGN.md) **1. Toys before chores**, **7. Telegraph everything** and **10. Slapstick over precision**. Goal: learn a move, use it somewhere meaningful, then want the next one.
 
 ## Recommendation and evidence

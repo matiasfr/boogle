@@ -1,5 +1,7 @@
 # One railway for one to four friends
 
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+
 _Note added 6 November 2026: the owner now designs and tunes for 1–3 players, tolerates 4 and doesn't design for more ([economy principles amended](../proposals/boogle-2.md#progress-and-rewards)). Read "one to four" below with that target. All progression is shared, so every upgrade and ability applies to everyone present._
 
 _Research report, 5 November 2026. Costs, hauling, puzzles, pacing, rewards, abilities and changing attendance across 1–4 players. Live primary-source research on It Takes Two, Valheim, Deep Rock Galactic, Overcooked, Satisfactory, Minecraft, PEAK, Lethal Company and Animal Crossing; repository inspection and offline arithmetic at `68ee082d`. Research only: no gameplay changes, commercial-game play sessions, browser runs or device tests. Recommendations are proposals, not owner decisions._
