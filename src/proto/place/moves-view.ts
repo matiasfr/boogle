@@ -14,7 +14,8 @@ import { noiseBuffer } from '../../render/noise.ts';
 import { emit } from '../../render/particles.ts';
 import { warmDraw } from '../../render/precompile.ts';
 import { camera, scene } from '../../render/scene.ts';
-import { readableGlow } from '../../render/readable-unlit.ts';
+import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts';
+import { sparkleBurst } from './axe-sparkle.ts';
 import { glyph } from '../../player/glyphs.ts';
 import { pop } from '../minis/common.ts';
 import { makeCanopy, makeGear, wearGear, placeCanopy, armToRing, type Canopy } from './gear-models.ts';
@@ -70,28 +71,11 @@ warmDraw(() => {
   return () => g.removeFromParent();
 });
 // ---------------------------------------------------------------- the puff and the sounds
-const PUFF = new THREE.Color('#f4efe4'),
-  PUFF2 = new THREE.Color(TEAL);
-/** Under your feet: nothing to stand on, so the air gave. */
+const PUFF = new THREE.Color('#f4efe4');
+/** Under your feet: nothing to stand on, so the air gave. The floating axe's magic glints, readable at the 0.12 gain. */
 function puff(x: number, y: number, z: number) {
-  for (let k = 0; k < 14; k++) {
-    const t = (k / 14) * Math.PI * 2;
-    emit({
-      x,
-      y,
-      z,
-      vx: Math.cos(t) * 2.8,
-      vy: -0.7,
-      vz: Math.sin(t) * 2.8,
-      life: 0.42,
-      size: 0.24,
-      color: k % 3 ? PUFF : PUFF2,
-      alpha: 0.85,
-      drag: 4,
-      grow: [1, 2],
-      fade: 0.6,
-    });
-  }
+  if (reducedMotion) return;
+  sparkleBurst(x, y, z, emit, readableIntensity());
 }
 // The air going past while you glide: a low band of noise that follows your speed, so a glide isn't silent.
 let wind: { g: GainNode; f: BiquadFilterNode } | null = null;

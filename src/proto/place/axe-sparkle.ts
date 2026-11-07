@@ -44,6 +44,25 @@ function glint(x: number, y: number, z: number, speed: number, life: number, siz
   p.sizeCurve = [1, 0.9, 0.4];
 }
 
+/** The same glints as the axe's appear burst, thrown outward from a point (the second jump's puff under the feet). */
+export function sparkleBurst(
+  x: number,
+  y: number,
+  z: number,
+  emit: (particle: Particle) => void,
+  intensity: number,
+  count = 14,
+) {
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * Math.PI * 2 + Math.random() * 0.4;
+    glint(x + Math.cos(a) * 0.2, y + 0.05, z + Math.sin(a) * 0.2, 1.3, 0.5, 0.17, intensity);
+    p.vx = Math.cos(a) * 1.6;
+    p.vz = Math.sin(a) * 1.6;
+    p.vy = 0.3 + Math.random() * 0.5;
+    emit(p);
+  }
+}
+
 export function sparkleAxe(
   axe: THREE.Object3D,
   wasVisible: boolean,

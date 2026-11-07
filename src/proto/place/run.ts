@@ -385,7 +385,7 @@ export function finishStretch(l: LineRun) {
   while (l.track.panels[l.track.cursor]?.stage === l.stage) commitPanel(l, false, !coop.follower());
   coop.stretched(st);
   whistle(st.x, st.z);
-  dustRing(st.x, st.y, st.z, 8, 2, 0.3);
+  dustRing(st.x, st.y, st.z, 4, 1.2, 0.2, 1, 0.7);
   earn(PAY.stretch, 'stretch');
   if (st.spec.crate) handCrate(l, st.spec.to, st.spec.side);
   cheerAround(st.x, st.z, 26, 3);
