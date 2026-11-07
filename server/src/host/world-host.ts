@@ -18,6 +18,7 @@ import { installRules } from '../../../src/world/rules/index.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
 import { offlineGap, MIN_GAP_MS } from '../../../src/sim/bank.ts';
 import { isProtoRoom } from '../../../src/sim/tune.ts';
+import type { StepMeter } from './step-meter.ts';
 import { loadHomeLand, type HomeLand } from './land.ts';
 import type { Store } from '../store.ts';
 import { isRailwayRoom, RAILWAY_PLAY_NS } from '../../../src/world/railway-namespace.ts';
@@ -56,6 +57,7 @@ export type WorldHostOptions = {
   saveMs?: number;
   home?: HomeLand;
   tick?: boolean; // run the 50 ms timer (default true)
+  meter?: StepMeter; // the step timer's lateness, for the status route (step-meter.ts)
   pidOf?: (sid: string) => string | null; // the hosted room's binding of each session to its player
   tuneController?: (sid: string) => boolean; // explicit operator assignment, never elected from room leadership
   log?: (...a: unknown[]) => void;
@@ -69,6 +71,7 @@ export function createWorldHost({
   tick = true,
   pidOf = () => null,
   tuneController = () => false,
+  meter,
   log = () => {},
 }: WorldHostOptions) {
   // protoRoom: playtest tuning (tune.set, tune.reset) is allowed in `proto-` rooms only (src/world/rules/tune.ts).
@@ -127,6 +130,7 @@ export function createWorldHost({
   const timer = tick
     ? setInterval(() => {
         const now = performance.now();
+        meter?.timer(now);
         sync.stepWorld(Math.min(now - last, 1000));
         last = now;
         if (now - tickSaved > TICK_SAVE_MS) {
@@ -183,6 +187,7 @@ export function createRailwayWorldHost({
   tuneController = () => false,
   positions = () => [null],
   now = Date.now,
+  meter,
   log = () => {},
   replication = createReplicator(),
 }: RailwayHostOptions) {
@@ -363,6 +368,7 @@ export function createRailwayWorldHost({
   const timer = tick
     ? setInterval(() => {
         const time = performance.now();
+        meter?.timer(time);
         if (running && !closed) {
           const before = sync.world.tick;
           const step0 = sync.roomStep();

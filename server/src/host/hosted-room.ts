@@ -9,12 +9,13 @@
 //   room.replication             the room's replicator (src/world/replicate-server.ts): states define projections on it;
 //                                every client is subscribed on join (late join from change tick -1), and at the end of
 //                                each 60 Hz step what changed goes out, skipping sockets over HIGH_WATER (coalescing)
-//   room.status()                { boot, tick, players, max, lead, noSave }
+//   room.status()                { boot, tick, players, max, lead, noSave, steps }  (steps: step-meter.ts)
 //   room.idleMs()                how long nobody has been in the room (0 while anyone is, or is reconnecting)
 //   await room.close({ save })   bye to everyone, save the world, close the sockets with 1012
 import type { WebSocket } from 'ws';
 import { CLOSE, MAX_MSG, encode, decode, type WireMsg } from '../../../src/net/ws-wire.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
+import { createStepMeter } from './step-meter.ts';
 import { createWorldHost, createRailwayWorldHost, type RailwayWorldHost } from './world-host.ts';
 import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
@@ -92,7 +93,9 @@ export function createHostedRoom({
   // every client is subscribed on join (late join from change tick -1), and at the end of each 60 Hz step what changed
   // goes out, skipping sockets over HIGH_WATER (coalescing).
   const replication = createReplicator();
+  const meter = createStepMeter();
   const hostOptions = {
+    meter,
     roomId,
     store,
     saveMs: cfg.serverSaveMs,
@@ -163,6 +166,7 @@ export function createHostedRoom({
     repStats.packets += out.packets;
     repStats.chars += out.chars;
     repStats.skipped += out.skipped;
+    meter.cost(ms);
   });
 
   // The host's messages: addressed messages to the client they name, the rest to everyone, encoded once.
@@ -401,6 +405,7 @@ export function createHostedRoom({
       max: cfg.maxPlayers,
       lead,
       noSave: world.status().badSave, // a failed-load fallback must not replace the durable save
+      steps: meter.report(world.sync.stepsDropped()),
       replication: { ...repStats, entities: replication.size() },
       ...(railway ? { railway: (world as RailwayWorldHost).stats } : {}),
     }),

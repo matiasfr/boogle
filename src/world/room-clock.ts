@@ -19,6 +19,7 @@ export const MAX_CATCH_UP = 5 * RULE_STEPS;
 export function createFixedSteps(maxSteps = MAX_CATCH_UP) {
   // In ms × STEP_HZ, so integer ms advance by whole units and 1000 units are exactly one step (no float drift).
   let acc = 0;
+  let dropped = 0;
   return {
     advance(ms: number, fn: () => void) {
       if (!(ms > 0)) return 0;
@@ -29,9 +30,14 @@ export function createFixedSteps(maxSteps = MAX_CATCH_UP) {
         n++;
         fn();
       }
-      if (acc >= 1000) acc = 0; // too far behind: drop the backlog, like the physics step and the old lockstep clock
+      if (acc >= 1000) {
+        dropped += Math.floor(acc / 1000); // too far behind: drop the backlog, like the physics step and the old lockstep clock
+        acc = 0;
+      }
       return n;
     },
+    /** Whole steps lost to the cap so far (the server's throttle check reports it). */
+    dropped: () => dropped,
     reset() {
       acc = 0;
     },

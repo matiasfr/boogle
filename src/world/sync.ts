@@ -1014,6 +1014,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
       mode === 'host' && isObj(edit) && JSON.stringify(edit).length <= MAX_EDIT_JSON && stamp(edit, from),
     updateWorld,
     stepWorld,
+    stepsDropped: () => fixedSteps.dropped(), // host: steps the catch-up cap has dropped
     roomStep,
     onStep: (fn: (step: number) => void) => void stepFns.push(fn), // host: after every 60 Hz step, with the step
     requestResync,
