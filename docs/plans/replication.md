@@ -1,7 +1,7 @@
 # Plan: replication with prediction replaces lockstep
 
 > **Status: plan, 6 November 2026, revised after red-team the same day (adopted; see "Revisions after red-team"
-> below). R0 in progress.** Owner decision of 6 November: replication with prediction replaces lockstep, aiming for
+> below). R0 landed; R1a (railway replicated, no prediction) on its branch, measured below.** Owner decision of 6 November: replication with prediction replaces lockstep, aiming for
 > "the most responsive game feel" in casual co-op, where exploits don't matter. The owner's bar after playtesting:
 > mining and depositing must feel instantaneous, "no network delay at all". Code read at `2e6cdd63`. Numbers marked
 > *estimate* are worked out from today's state sizes; the proof slices (section 5) measure them. Related calls: server
@@ -335,6 +335,65 @@ chopping and taking feel instant and corrections go unnoticed.
   client; late join of the whole 3,000-entity island is **224 KB** (over the 64 KB bar: R1 subscribes by relevancy,
   and the binary codec is the next lever), **81 KB** for a 64 m relevancy radius in this dense stress layout. The
   railway's ~520 entities fit the bar whole.
+
+### R1a: what landed and what it measured (6 November, M1 Max, Node 26)
+
+- **The railway is Server kind, whole** (line one and line two as merged). `src/world/railway-server.ts` registers it
+  on the host's sync as a *server state* (saved with the world's checkpoint by pid, never hashed or served as a
+  lockstep snapshot) plus the rule tick, and applies each action the moment it arrives (validation from the action's
+  own `at`/`ms`, then `railApply`); the session, supply pulse, offline resume and beam release are direct server calls,
+  not stamped edits. No railway op is registered with the sync any more; the other states stay lockstep.
+- **Projections of touched entities** (`src/world/railway-replicate.ts`): `tree`, `hardwood`, `rock`, `pile`, `account`,
+  `job` (T1-T3), `qjob` (Q1-Q3), `beam`, `forge` and the global `rail` row. An action touches its actor, its target and
+  ten core rows; a rule tick touches the core rows; a supply pulse (once a minute) touches everything. A funded job
+  sends `start`, `ahead` (offline catch-up) and `end`, never `elapsed`: the client derives elapsed, used and allocation
+  at its estimated server tick with the rule tick's own arithmetic, so a running job costs no packets (tested: thirty
+  steps of laying, zero bytes). The forge's `lastPour` and the depot's `depotLast` are not replicated (they move every
+  tick while idle; no client reads them).
+- **Wire:** acks and refusals ride on packets (`rej` reasons `refused`, `session`, `order`, `starting`, `storage`);
+  `r:result`, `r:state` and `r:status` are gone, `r:open`/`r:session` remain. Accepted actions reach every client as
+  packet events (`ev`) for effects, applied after the state they describe. A late join's last chunk carries `w`, so a
+  mirror is whole only after it.
+- **Client:** `createRailwayMirror()` rebuilds the mirror into today's `Railway` shape; the adapter reads it with the
+  sim's own pure helpers (phase, counts, panels), keeps its reservations, and fires effects from events. Views are
+  unchanged apart from the co-op witness, which compares mirror hashes by server step instead of lockstep hashes.
+- **Persistence:** the sync's 2 s checkpoint when changed plus the save on close; no journal before each packet. The
+  crash tests now prove a SIGKILL restores the last whole checkpoint (an action after it is lost whole, never half),
+  including during file replacement and before the offline resume.
+- **Removed:** the railway's lockstep ops, hash, recovery-tail stamps and the client re-simulation; the isolated
+  `t1v01` rooms (no client reached them). `WORLD_NS` v14.
+
+Measured with `npm run load` (headless pages over the real server in one process; added latency is half each way on
+the railway's messages only; 15 s per row; "normal" is one action per player every 500 ms, "5x" every 100 ms, cycling
+chop, drop and take; 1.6 and 6.7-6.9 accepted actions per player-second). Visible = the accepted event arriving with its
+state, measured from the actor's send (before the added delay). All 18 rows conserved logs, stone and rails, and every
+mirror, including a late joiner, hashed equal to the others.
+
+| Players | Added RTT | Actor p50 / p95 | Others p50 / p95 | Downlink per client, normal / 5x | Server ms per step (mean) |
+|---|---|---|---|---|---|
+| 2 | 0 | 11 / 19 ms | 11 / 19 ms | 6.5 / 30 kbit/s | 0.13 / 0.16 |
+| 2 | 100 ms | 118 / 124 | 118 / 124 | 6.5 / 27 | 0.14 / 0.13 |
+| 2 | 200 ms | 215 / 224 | 215 / 224 | 6.4 / 27 | 0.11 / 0.11 |
+| 4 | 0 | 11 / 20 | 11 / 21 | 11.4 / 54 | 0.15 / 0.24 |
+| 4 | 100 ms | 114 / 122 | 114 / 122 | 11.5 / 49 | 0.14 / 0.09 |
+| 4 | 200 ms | 211 / 222 | 211 / 221 | 11.5 / 48 | 0.14 / 0.18 |
+| 6 | 0 | 8 / 18 | 8 / 18 | 16.4 / 77 | 0.21 / 0.24 |
+| 6 | 100 ms | 115 / 127 | 115 / 127 | 16.5 / 69 | 0.24 / 0.17 |
+| 6 | 200 ms | 213 / 223 | 213 / 223 | 16.7 / 69 | 0.19 / 0.20 |
+
+(Actor and others columns are the normal-churn rows; the 5x rows are within 2 ms of them.) Lockstep's ~one-way +
+400 ms became **RTT + at most one step** for everyone; the actor waits a full round trip until R1b predicts.
+
+- **Late join:** 31-32 KB in three chunks of one send, whole in 11-17 ms locally and 53-119 ms at 100-200 ms (bar: < 64 KB, < 1 RTT
+  + 100 ms).
+- **Downlink:** under the 100 kbit/s bar everywhere; 77 kbit/s at 6 players, 5x, 0 ms is past half the bar, the plan's
+  trigger for the binary codec. JSON costs ~40-60 bytes per changed component plus the event.
+- **Saves:** ~8 KB per checkpoint (8.4 KB after the 5x runs' piles), about 30 a minute (one per 2 s) while changing.
+- **Server:** commit + flush 0.06-0.16 ms per step; actions 0.04-0.14 ms each; timer wakes rarely spike to 5-28 ms
+  (machine noise across the headless browsers). Fly `shared-cpu-1x` is still unmeasured.
+
+Unverified: the owner's feel; real networks (added latency is a timer, not loss or jitter); Fly CPU; Safari and
+mobile; not tested on a device.
 
 ### Fly `shared-cpu-1x` throttling check (plan; not run)
 
