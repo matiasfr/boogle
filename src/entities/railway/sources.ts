@@ -640,6 +640,24 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   }
   const offDrop = bindCargoDrop(dropOne);
 
+  /** A stroke the rule would not take yet answers "not yet" you can see with the sound off: the axe kicks back (the
+   * rebound pose), pale grit sparks off the bark toward you with a small puff, and the trunk gives a slight shudder.
+   * Nothing is sent and no notch is cut. */
+  function bounceOff(tree: TreePose) {
+    swing.response = 'rebound';
+    placeSound('treeRebound', tree.x, tree.z);
+    const p = me.body?.position;
+    const yaw = p ? Math.atan2(p.x - tree.x, p.z - tree.z) : 0;
+    const r = (tree.hardwood ? 0.8 : 0.42) * tree.size;
+    const x = tree.x + Math.sin(yaw) * r,
+      z = tree.z + Math.cos(yaw) * r,
+      y = tree.y + 1.1;
+    pieces.chips(x, y, z, 7, tree.y, yaw, true, 0.55);
+    pieces.dustRing(x, y - 0.5, z, 5, 0.7, 0.16);
+    tree.shake = 0.35;
+    tree.hitAt = performance.now();
+    models.pose(tree, tree.hitAt);
+  }
   function update(dt: number, now: number) {
     state = adapter.inspect();
     // Stages change only after a verified host event. No local clock can grow or harvest a source.
@@ -670,14 +688,9 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         if (!adapter.mine(swing.rock)) swing.response = 'full';
       } else if (swing.target && swing.target.fall < 0) {
         if (swing.target.great) {
-          if (!adapter.beamChop()) {
-            swing.response = 'rebound';
-            placeSound('treeRebound', swing.target.x, swing.target.z);
-          }
-        } else if (swing.target.hardwood && !state.axe) {
-          swing.response = 'rebound';
-          placeSound('treeRebound', swing.target.x, swing.target.z);
-        } else if (state.freeCarry === 0) {
+          if (!adapter.beamChop()) bounceOff(swing.target);
+        } else if (swing.target.hardwood && !state.axe) bounceOff(swing.target);
+        else if (state.freeCarry === 0) {
           swing.response = 'full';
           if (me.body) placeSound('bagFull', me.body.position.x, me.body.position.z);
         } else if (me.body) {
@@ -685,10 +698,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
             p = me.body.position;
           const fall = safeTreeFall(tree.x, tree.z, tree.size, Math.atan2(tree.x - p.x, tree.z - p.z), false);
           // The stroke's result plays now from the prediction; one the rule would not take yet bounces off.
-          if (!adapter.chop(tree.index, fall.yaw, fall.collapsed)) {
-            swing.response = 'rebound';
-            placeSound('treeRebound', tree.x, tree.z);
-          }
+          if (!adapter.chop(tree.index, fall.yaw, fall.collapsed)) bounceOff(tree);
         }
       }
     }
