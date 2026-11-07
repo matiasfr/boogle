@@ -244,9 +244,9 @@ test('real idle eviction and rejoin retain the accepted recovery rack and regrow
     };
     await until(() => welcome, 'supply manager welcome');
     const room = rooms.room(roomId)!;
-    assert.ok('whenReady' in room.world);
-    await room.world.whenReady();
-    assertSupply(room.world, 35);
+    const world = room.world as RailwayWorldHost;
+    await world.whenReady();
+    assertSupply(world, 35);
     return { ws, room };
   }
   const first = await connect('supplyfirst');

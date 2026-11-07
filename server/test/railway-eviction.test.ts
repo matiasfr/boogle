@@ -10,6 +10,7 @@ import { createService, loadConfig } from '../src/server.ts';
 import { createStore, type Store } from '../src/store.ts';
 import { createRoomHost } from '../src/host/rooms.ts';
 import type { HostedRoom } from '../src/host/hosted-room.ts';
+import type { RailwayWorldHost } from '../src/host/world-host.ts';
 import { isRailwayRoom, railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { WORLD_NS } from '../../src/world/namespace.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
@@ -90,9 +91,10 @@ async function manager(store: Store) {
     },
   };
 }
+const railwayHost = (room: HostedRoom) => room.world as RailwayWorldHost;
 function material(room: HostedRoom) {
   return 'railway' in room.world.rules
-    ? (room.world.rules.railway.account('alice')?.carry ?? 0)
+    ? (railwayHost(room).rules.railway.account('alice')?.carry ?? 0)
     : room.world.rules.gifts.gifts.items.filter((it) => it.i === 230 && it.j === 205).length;
 }
 async function drain(room: HostedRoom, store: Store, id: string) {
@@ -102,8 +104,7 @@ async function drain(room: HostedRoom, store: Store, id: string) {
 }
 async function prepare(room: HostedRoom, client: ReturnType<typeof connect>, railway: boolean) {
   if (!railway) return;
-  assert.ok('whenReady' in room.world);
-  await room.world.whenReady();
+  await railwayHost(room).whenReady();
   // Like the real client, ask for a session until one is issued.
   await client.request({ t: 'r:open' }, () => client.world('r:session').length > 0, 'session');
   client.send({ t: 'p', s: 1, d: { v: 1, p: [T1.x / 100, 0, T1.z / 100] } });
@@ -112,8 +113,7 @@ async function prepare(room: HostedRoom, client: ReturnType<typeof connect>, rai
     room.world.step(1 / 60);
     return client.acked(1);
   }, 'wake acknowledged');
-  assert.ok('railway' in room.world.rules);
-  const rules = room.world.rules;
+  const rules = railwayHost(room).rules;
   // updateWorld() is a silent no-op while a stamp or checkpoint is unpublished, so a fixed number of manual
   // steps can all be dropped behind a slow durable write. Drive the clock until the wake has really finished.
   await until(() => {
@@ -240,7 +240,7 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, railwayRoomId('evic
       replacement = app.rooms.room(id);
     }
     assert.ok(replacement);
-    if ('whenReady' in replacement.world) await replacement.world.whenReady();
+    if (railway) await railwayHost(replacement).whenReady();
     const restored = material(replacement);
     await drain(replacement, store, id);
     const result = {
@@ -252,7 +252,7 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, railwayRoomId('evic
       changedAuthority,
       expected: railway ? 2 : 1,
       restored,
-      receipt: 'railway' in replacement.world.rules ? replacement.world.rules.railway.outcome('alice', 1, 2) : null,
+      receipt: railway ? railwayHost(replacement).rules.railway.outcome('alice', 1, 2) : null,
       saved: store.readSync(id),
     };
     await evidence(`manager-eviction-${id}-${overlapping ? 'before' : 'after'}.json`, result);
