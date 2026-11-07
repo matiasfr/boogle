@@ -121,8 +121,10 @@ def power_paint(bm):
 
 def power_iron(bm):
     # Broad radiator slits and a short work-machine exhaust at the old smoke socket.
+    # Slats are seated into the body's +z face (z = -GAP + 1.5) and stand only 5 mm proud,
+    # so no air gap or visible side wall shows from the rear step.
     for x in (-0.48, -0.24, 0, 0.24, 0.48):
-        box(bm, x, 1.25, -GAP + 1.51, 0.1, 0.48, 0.035)
+        box(bm, x, 1.25, -GAP + 1.5 + 0.005 - 0.0275, 0.1, 0.48, 0.055)
     cylinder(bm, 0, 2.06, -GAP + 1.05, 0.14, 0.72, 'y')
     cylinder(bm, 0, 2.44, -GAP + 1.05, 0.21, 0.12, 'y', tilt=8)
 
