@@ -18,7 +18,7 @@ import { itemModel } from '../player/item-models.ts';
 import { warmUp } from '../render/precompile.ts';
 import { warmIcons } from '../player/item-icons.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
-import { describeControl } from '../player/controls.ts';
+import { describeControl, touchHold } from '../player/controls.ts';
 import { GIFTS, giftIndex, carryable } from '../sim/gift-catalog.ts';
 import { uiSound, replay } from '../ui/ui-sound.ts';
 import { notify } from '../ui/notify.ts';
@@ -116,15 +116,7 @@ function buildHud() {
     toss.className = 'tbtn toss';
     toss.type = 'button';
     toss.textContent = 'Toss';
-    toss.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-      throwDown();
-    });
-    toss.addEventListener('pointerup', (e) => {
-      e.stopPropagation();
-      releaseThrow();
-    });
-    toss.addEventListener('pointercancel', () => (me.charging = false));
+    touchHold(toss, { down: throwDown, up: releaseThrow, cancel: () => (me.charging = false) });
     touch.append(toss);
   }
 }

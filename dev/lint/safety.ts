@@ -5,7 +5,7 @@ import { parse } from 'acorn';
 import query from 'esquery';
 import type { Node } from 'esquery';
 import ignore from 'ignore';
-import { policy, ENTITY_MESSAGE } from './policy.ts';
+import { policy, ENTITY_MESSAGE, INPUT_MESSAGE, INPUT_SELECTORS } from './policy.ts';
 import type { ImportBan, ImportOptions, Restriction, Rule } from './policy.ts';
 
 export type Diagnostic = { file: string; line: number; rule: string; message: string };
@@ -14,6 +14,7 @@ export const customRules = new Set([
   'no-restricted-imports',
   '@typescript-eslint/no-restricted-imports',
   'boogle/use-an-entity',
+  'boogle/input-through-actions',
 ]);
 export const matches = (file: string, patterns: string[]) => patterns.some((p) => path.matchesGlob(file, p));
 export const ignorePatterns = ['**/.git/**', '**/node_modules/**', ...policy[0]!.ignores!.map((p) => p + '**')];
@@ -134,6 +135,8 @@ export function lintSafety(code: string, file: string): Diagnostic[] {
       }
     }
   }
+  if (rules['boogle/input-through-actions'])
+    for (const node of select(INPUT_SELECTORS.join(', '))) report(node, 'boogle/input-through-actions', INPUT_MESSAGE);
   if (rules['boogle/use-an-entity'])
     for (const node of select('CallExpression')) {
       const c = node.callee!;

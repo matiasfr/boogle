@@ -106,18 +106,28 @@ export function openTelescope() {
     !openModal({
       onKey: (e) => {
         e.preventDefault();
-        if (e.code === 'Tab') {
+        if (e.key === 'tab') {
           const buttons = [...bar.querySelectorAll('button')];
           const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
-          buttons[(at + (e.shiftKey ? -1 : 1) + buttons.length) % buttons.length]?.focus();
+          buttons[(at + (e.shift ? -1 : 1) + buttons.length) % buttons.length]?.focus();
           return;
         }
-        if (e.code === 'Enter' || e.code === 'Space') {
+        if (e.key === 'confirm') {
           if (!e.repeat && document.activeElement instanceof HTMLButtonElement) document.activeElement.click();
           return;
         }
-        if (e.repeat && ['Escape', 'KeyE'].includes(e.code)) return;
-        command(e.code);
+        if (e.repeat && (e.key === 'back' || e.key === 'interact')) return;
+        const slot = {
+          back: 'b',
+          interact: 'b',
+          up: 'up',
+          down: 'down',
+          left: 'left',
+          right: 'right',
+          zoomIn: 'rb',
+          zoomOut: 'lb',
+        };
+        if (e.key && e.key in slot) command(slot[e.key as keyof typeof slot]);
       },
       onPad: command,
     })

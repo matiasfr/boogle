@@ -31,7 +31,7 @@
 import './conversation.css';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { angleLerp } from '../math.ts';
-import { setPadGrab, menuSlot, describeControl, isTyping } from './controls.ts';
+import { setPadGrab, menuSlot, describeControl, onMenuKey } from './controls.ts';
 import { devInputBlocked } from './dev-input.ts';
 import { modalOpen } from './modal.ts';
 import { inputState } from './input.ts';
@@ -195,42 +195,34 @@ function talkHints() {
 
 // Capture phase on window, before the game's own key handlers: it stops only the keys it answers with (Space would
 // jump) and lets the rest through (H still opens the pause view).
-const KEYS = new Set([
-  'Escape',
-  'KeyE',
-  'Space',
-  'Enter',
-  'NumpadEnter',
-  'ArrowUp',
-  'ArrowDown',
-  'ArrowLeft',
-  'ArrowRight',
-  'KeyW',
-  'KeyS',
-]);
-addEventListener(
-  'keydown',
-  (e) => {
-    if (!cur || devInputBlocked() || e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
-    const digit = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
-    if (!digit && !KEYS.has(e.code)) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    if (e.repeat && !e.code.startsWith('Arrow') && e.code !== 'KeyW' && e.code !== 'KeyS') return;
-    if (e.code === 'Escape') cur.close();
-    else if (digit) say(Number(digit[1]) - 1);
-    else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft' || e.code === 'KeyW') move(-1);
-    else if (e.code === 'ArrowDown' || e.code === 'ArrowRight' || e.code === 'KeyS') move(1);
-    else if (
-      e.code.endsWith('Enter') &&
-      document.activeElement?.closest?.('button') &&
-      cur.box.contains(document.activeElement)
+onMenuKey((e) => {
+  if (!cur || devInputBlocked() || e.modified || e.typing) return;
+  const { key, digit } = e;
+  if (
+    !digit &&
+    !(
+      key === 'back' ||
+      key === 'interact' ||
+      key === 'confirm' ||
+      key === 'up' ||
+      key === 'down' ||
+      key === 'left' ||
+      key === 'right'
     )
-      (document.activeElement as HTMLButtonElement).click(); // a button focused with Tab
-    else confirm();
-  },
-  { capture: true },
-);
+  )
+    return;
+  e.preventDefault();
+  e.stop();
+  const nav = key === 'up' || key === 'down' || key === 'left' || key === 'right';
+  if (e.repeat && !nav) return;
+  if (key === 'back') cur.close();
+  else if (digit) say(digit - 1);
+  else if (key === 'up' || key === 'left') move(-1);
+  else if (key === 'down' || key === 'right') move(1);
+  else if (e.enter && document.activeElement?.closest?.('button') && cur.box.contains(document.activeElement))
+    (document.activeElement as HTMLButtonElement).click(); // a button focused with Tab
+  else confirm();
+});
 
 // Between the core camera (-200) and the features: the camera eases round to frame the NPC, and you turn to face them.
 defineKind('conversation', { update: -60 });

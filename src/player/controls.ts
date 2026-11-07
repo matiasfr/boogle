@@ -11,6 +11,9 @@
 //             give keys too when the row shows more (ping: ['KeyG', 'Mouse1']). A code bound twice warns.
 //     touch   the touch label (a string), or { label, className } to also build a .tbtn button in #touch that
 //             presses the action
+//     mouse   a mouse button (1 middle, 2 right) that presses the action when clicked on the canvas (preventDefault
+//             on the press; setMouseGate decides when the game is taking input). Button 0 is the 'use' action's, read by
+//             src/player/input.ts, which also does the look drag.
 //     the rest describes the control for the guide, see below; guide: false keeps it off the guide (it is covered by
 //     another row, or has nothing to show)
 //   describeControl(id, { label, detail, keys, pad, touch, group, order, context })
@@ -35,6 +38,12 @@
 //
 // New features that add a key or touch button register an action too. Free slots: freeSlots().
 // A key with no pad action of its own binds through onKey(codes, { down, up }), same guard.
+//
+// Menus and talk boxes read keys through onMenuKey(handler, { edge }): the handler gets a MenuPress (a MenuKey such as
+// 'up', 'back' or 'confirm', a digit, repeat, modified, typing, target, preventDefault, stop), never a key code. A button
+// that is not a registered action (a bespoke touch hold) wires through touchHold. Everything that listens for raw
+// keys, buttons, wheel, touch or pad input lives in this file, input.ts, gamepad.ts and the other files named in
+// dev/lint/policy.ts (INPUT_LAYER); the lint rule boogle/input-through-actions enforces it (owner call, 6 November).
 //
 // To layer behaviour onto another module's action, wrap it from onStart; never overwrite its handlers by hand. An action
 // not registered yet takes the wrap when it is, so file order doesn't matter; one that never comes warns.
@@ -75,6 +84,7 @@ export type ActionSpec = {
   order?: number;
   context?: string;
   guide?: boolean;
+  mouse?: number;
   down?: Edge | null;
   up?: Edge | null;
   held?: ((dt: number) => void) | null;
@@ -246,6 +256,107 @@ const unbindKeys = (owner: string) => {
   for (const [code, b] of keyBinds) if (b.owner === owner) keyBinds.delete(code);
 };
 
+// ---------------------------------------------------------------- menu keys
+/** What a menu or talk box means by a key; the codes behind each are decided here, once. */
+export type MenuKey =
+  'up' | 'down' | 'left' | 'right' | 'confirm' | 'interact' | 'back' | 'help' | 'tab' | 'zoomIn' | 'zoomOut';
+/** A key press as a menu sees it: its meaning (null for a key no menu uses), never its code. */
+export type MenuPress = {
+  key: MenuKey | null;
+  /** 1 to 9 for Digit1-9 and Numpad1-9. */
+  digit: number | null;
+  /** The Enter key (either one), as against Space, which also confirms. */
+  enter: boolean;
+  repeat: boolean;
+  /** Shift is down. */
+  shift: boolean;
+  /** Ctrl, Cmd or Alt is down. */
+  modified: boolean;
+  /** Aimed at a text field (or a dev panel): it keeps its letters. */
+  typing: boolean;
+  target: EventTarget | null;
+  preventDefault(): void;
+  /** stopImmediatePropagation: nothing after this listener sees the key. */
+  stop(): void;
+};
+const MENU_KEYS: Record<string, MenuKey> = {
+  ArrowUp: 'up',
+  KeyW: 'up',
+  ArrowDown: 'down',
+  KeyS: 'down',
+  ArrowLeft: 'left',
+  ArrowRight: 'right',
+  Enter: 'confirm',
+  NumpadEnter: 'confirm',
+  Space: 'confirm',
+  KeyE: 'interact',
+  Escape: 'back',
+  KeyH: 'help',
+  Tab: 'tab',
+  Equal: 'zoomIn',
+  NumpadAdd: 'zoomIn',
+  Minus: 'zoomOut',
+  NumpadSubtract: 'zoomOut',
+};
+const menuPress = (e: KeyboardEvent): MenuPress => ({
+  key: MENU_KEYS[e.code] ?? null,
+  digit: Number(/^(?:Digit|Numpad)([1-9])$/.exec(e.code)?.[1]) || null,
+  enter: e.code === 'Enter' || e.code === 'NumpadEnter',
+  repeat: e.repeat,
+  shift: e.shiftKey,
+  modified: e.ctrlKey || e.metaKey || e.altKey,
+  typing: isTyping(e),
+  target: e.target,
+  preventDefault: () => e.preventDefault(),
+  stop: () => e.stopImmediatePropagation(),
+});
+
+/** A capture-phase window listener for menus: each call is its own listener, so registration order is run order. */
+export function onMenuKey(
+  handler: (press: MenuPress) => void,
+  { edge = 'down', signal }: { edge?: 'down' | 'up'; signal?: AbortSignal } = {},
+) {
+  addEventListener(edge === 'down' ? 'keydown' : 'keyup', (e) => handler(menuPress(e)), { capture: true, signal });
+}
+
+// ---------------------------------------------------------------- mouse buttons
+const mouseBinds = new Map<number, string>(); // button -> action id
+let mouseGate: (() => boolean) | null = null;
+let mouseListening = false;
+/** Whether the game is taking mouse input (the player is in the world); src/player/input.ts sets it. */
+export const setMouseGate = (fn: (() => boolean) | null) => (mouseGate = fn);
+
+function bindMouse(id: string, button: number | undefined) {
+  for (const [b, owner] of mouseBinds) if (owner === id) mouseBinds.delete(b);
+  if (button === undefined) return;
+  mouseBinds.set(button, id);
+  if (mouseListening || typeof addEventListener !== 'function') return;
+  mouseListening = true;
+  addEventListener('mousedown', (e) => {
+    const bound = mouseBinds.get(e.button);
+    if (!bound || (e.target as Element | null)?.tagName !== 'CANVAS' || (mouseGate && !mouseGate())) return;
+    e.preventDefault();
+    triggerAction(bound, 'down');
+  });
+}
+
+// ---------------------------------------------------------------- touch hold
+/** A touch button that is not an action's own (its press and release are the caller's): pointer down, up and cancel. */
+export function touchHold(
+  el: HTMLElement,
+  { down, up, cancel }: { down: () => void; up: () => void; cancel?: () => void },
+) {
+  el.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    down();
+  });
+  el.addEventListener('pointerup', (e) => {
+    e.stopPropagation();
+    up();
+  });
+  if (cancel) el.addEventListener('pointercancel', cancel);
+}
+
 // ---------------------------------------------------------------- touch
 const touchLabel = (touch: ActionSpec['touch']) => (typeof touch === 'object' && touch ? touch.label : touch);
 
@@ -275,6 +386,7 @@ export function registerAction(
     detail,
     keys,
     touch,
+    mouse,
     group,
     order,
     context,
@@ -319,6 +431,7 @@ export function registerAction(
   waitingWraps.delete(id);
   // Keys and the touch button go through the action, so wrapAction reaches them too.
   onKey(key, { owner: id, down: () => action.down?.(), up: () => action.up?.() });
+  bindMouse(id, mouse);
   if (typeof touch === 'object' && touch?.className) action.button = touchButton(action, touch);
   warnProblems(action);
   return true;

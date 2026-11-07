@@ -20,7 +20,8 @@ import { requestLock } from '../player/input.ts';
 import { canvas } from '../render/scene.ts';
 import { openModal, closeModal, modalOpen } from '../player/modal.ts';
 import { conversation } from '../player/conversation.ts';
-import { registerAction, isTyping, menuSlot } from '../player/controls.ts';
+import { registerAction, onMenuKey, menuSlot } from '../player/controls.ts';
+import type { MenuPress } from '../player/controls.ts';
 import { renderGuide, type GuideKind } from '../player/guide.ts';
 import { renderPadDiagram, padContexts } from '../player/pad-diagram.ts';
 import { glyph, inputKind, padGlyph } from '../player/glyphs.ts';
@@ -487,25 +488,25 @@ function moveTab(dir: number) {
   setTab(TABS[(k + dir + TABS.length) % TABS.length]![0]);
 }
 
-function onKey(e: KeyboardEvent) {
+function onKey(e: MenuPress) {
   const onSlider = (e.target as Element | null)?.matches?.('input[type="range"]');
-  if (e.code !== 'Escape' && isTyping(e) && !onSlider) return; // the Room page's name box
-  if (e.code === 'Escape') {
+  if (e.key !== 'back' && e.typing && !onSlider) return; // the Room page's name box
+  if (e.key === 'back') {
     e.preventDefault();
     if (page !== 'main') show(page === 'place-debug' ? 'more' : 'main');
-  } else if (e.code === 'KeyH') {
+  } else if (e.key === 'help') {
     e.preventDefault();
     if (!e.repeat) closePause();
-  } else if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+  } else if (e.key === 'up') {
     e.preventDefault();
     move(-1);
-  } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+  } else if (e.key === 'down') {
     e.preventDefault();
     move(1);
-  } else if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+  } else if (e.key === 'left' || e.key === 'right') {
     if (page === 'controls') {
       e.preventDefault();
-      moveTab(e.code === 'ArrowLeft' ? -1 : 1);
+      moveTab(e.key === 'left' ? -1 : 1);
     }
   }
 }
@@ -594,19 +595,15 @@ registerAction('pause', {
 
 // Capture phase on window, registered after src/player/modal.ts: H opens the controls, Esc (when the browser sends it, the
 // pointer is not locked) the menu. The game's own key handlers never see these keys.
-addEventListener(
-  'keydown',
-  (e) => {
-    if ((e.code !== 'KeyH' && e.code !== 'Escape') || e.repeat || modalOpen() || !me.entered) return;
-    if (e.code === 'Escape' && conversation.open) return; // Esc walks away from the talk; H opens this over it (and ends it)
-    if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
-    if (openPause(e.code === 'KeyH' ? 'controls' : 'main')) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-    }
-  },
-  { capture: true },
-);
+onMenuKey((e) => {
+  if ((e.key !== 'help' && e.key !== 'back') || e.repeat || modalOpen() || !me.entered) return;
+  if (e.key === 'back' && conversation.open) return; // Esc walks away from the talk; H opens this over it (and ends it)
+  if (e.modified || e.typing) return;
+  if (openPause(e.key === 'help' ? 'controls' : 'main')) {
+    e.preventDefault();
+    e.stop();
+  }
+});
 
 // Esc ends the pointer lock: that is the way in on a desktop. This view releases the lock after it marks itself open
 // (openModal), so it does not trigger it; during a talk, losing the lock ends the talk instead (src/player/conversation.ts).

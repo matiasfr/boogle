@@ -10,6 +10,7 @@
 import './files-dialog.css';
 import { openModal, closeModal } from '../player/modal.ts';
 import { menuSlot } from '../player/controls.ts';
+import type { MenuPress } from '../player/controls.ts';
 import { directLink, fetchLinkedFile } from './link.ts';
 
 export type Need = { label: string; done?: boolean };
@@ -140,13 +141,13 @@ async function fromLink(input: HTMLInputElement) {
   handle?.(file);
 }
 
-function onKey(e: KeyboardEvent) {
+function onKey(e: MenuPress) {
   if (e.target instanceof HTMLInputElement) {
-    if (e.code === 'Escape') e.target.blur(); // typing in the link box: only Esc leaves it (Enter submits the form)
+    if (e.key === 'back') e.target.blur(); // typing in the link box: only Esc leaves it (Enter submits the form)
     return;
   }
-  if (e.code === 'Escape') closeFilesDialog();
-  else if (e.code === 'Enter' || e.code === 'Space') pick();
+  if (e.key === 'back') closeFilesDialog();
+  else if (e.key === 'confirm') pick();
 }
 
 function onPad(slot: string) {
