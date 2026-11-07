@@ -460,6 +460,16 @@ presentation only. Matched default-game stills: the gimbal went from sRGB 0,85,7
 stones and the path lantern read in their authored colours. The far shard barely changes, since its sunlit albedo
 dominates. Frozen stills only; not tested on a device.
 
+**Railway rewards and line two (6 November playtest follow-up).** The production railway's T1/T2 boxes had copied
+Place's box sparkles, confetti and opening dust without the reward intensity, so the conductor's hat burst drew at
+the 0.12 gain: confetti measured sRGB 93,13,3 (red), 3,81,33 (green), 2,61,94 (blue). Every reward celebration
+now comes from `render/reward-particles.ts`, which applies the inverse gain itself (Place gifts, the railway
+boxes and the reveal's sparkle); the same burst reads 239,63,60, 56,213,109 and 35,131,240 against authored
+#ff4f4f, #4fdc7a and #2f8cff. Line two's hook device and winch drive now use `readableUnlit` / `readableGlow`
+like their Place originals: the hook gimbal went from 0,85,71 to 26,226,193, the jump device's value. Taking the hook device shows "You got the hook shot" through the
+railway's one reveal queue, as the jump device does; before, it played only a sound. Box landing dust stays
+ordinary contact dust. Frozen stills only; not tested on a device.
+
 **Owner colour defaults (5 November, for now).** Real-sea Place and crossing use surface gain **0.12**, retained
 underwater **+0.81 EV**, key gain **1.12** and fill gain **3.2**. Place's grass pigment strength is **0.35** and
 its albedo gain **0.7**. Selective green/timber/accent adjustments, the building instance palette and Buddy's

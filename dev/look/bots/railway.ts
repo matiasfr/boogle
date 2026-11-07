@@ -768,6 +768,7 @@ export async function play({ stopBeforeReward = false } = {}) {
         require(hook.available, 'hook device available after Q2');
         require(await bot.use(hook.x, hook.z, 'take the hook device', /^Take it$/), 'hook device offered');
         require(await bot.work(() => l2().hook, 5000, 380), 'shared hook accepted after bounded retries');
+        await dismiss('hook reveal');
         await checkpoint('hook taken');
         const back = v2().routePoints.hook;
         for (let i = back.length - 1; i >= 0; i--)

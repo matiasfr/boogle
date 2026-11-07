@@ -56,11 +56,12 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     }),
   );
   const sources = await createRailwaySources(adapter, owner);
-  const line2 = await createRailwayLine2(adapter, owner, machine, sources.bundleOrigin);
-  if (look.LOOK.contact) kit.installContact([machine.flatbed, machine.loco], sources.inspect(), owner);
+  // The reward owns the one reveal queue; line two's devices show through it too.
   const reward = await createRailwayReward(adapter, owner, (out) =>
     out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z),
   );
+  const line2 = await createRailwayLine2(adapter, owner, machine, sources.bundleOrigin, reward.youGot);
+  if (look.LOOK.contact) kit.installContact([machine.flatbed, machine.loco], sources.inspect(), owner);
   const wake = createWakePresentation(machine, owner, { fanfare: sounds.fanfare, dustRing: pieces.dustRing });
   const path = await createRailwayPath(owner);
   let state = adapter.inspect();

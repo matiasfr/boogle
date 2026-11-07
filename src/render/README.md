@@ -49,7 +49,9 @@ GPU buffers total 194,816 bytes; a nonempty queue uploads 45,056 bytes. Idle exp
 `particleCounts()` reports estimated occupancy, caps, admitted/dropped/replaced births, draws and upload bytes.
 The update and scalar queue writer create no per-frame arrays; shared chip/dust recipes reuse birth records.
 Reduced motion suppresses these contact decorations. Dust and timber keep intensity one; the axe still uses
-`readableIntensity()` at spawn, with no double compensation. These counts are not device timing evidence.
+`readableIntensity()` at spawn, with no double compensation.
+Reward celebrations (box sparkles, confetti, the opening dust ring, the reveal's sparkle) come from
+`reward-particles.ts`, which folds `readableIntensity()` in itself: a reward emitter takes no intensity argument. These counts are not device timing evidence.
 
 ## Water ownership
 

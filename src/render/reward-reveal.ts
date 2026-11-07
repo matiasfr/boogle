@@ -8,8 +8,7 @@ import { inputState } from '../player/input-state.ts';
 import { setPadGrab } from '../player/controls.ts';
 import { glyph } from '../player/glyphs.ts';
 import type { Avatar } from '../player/avatars.ts';
-import { emit } from './particles.ts';
-import { readableIntensity } from './readable-unlit.ts';
+import { rewardSparkles } from './reward-particles.ts';
 import { headwearTop } from './head-clearance.ts';
 import { camera } from './scene.ts';
 import { dismissPointer } from '../player/dismiss-pointer.ts';
@@ -180,28 +179,16 @@ export function createRewardReveal({
     return out;
   }
 
-  const gold = new THREE.Color('#ffd76a');
-  function sparkles(at: THREE.Vector3, n: number, sp: number) {
-    for (let k = 0; k < n; k++) {
-      const a = Math.random() * Math.PI * 2,
-        u = Math.random() * 1.4 - 0.2;
-      emit({
-        x: at.x,
-        y: at.y,
-        z: at.z,
-        vx: Math.cos(a) * sp,
-        vy: u * sp,
-        vz: Math.sin(a) * sp,
-        life: 0.6 + Math.random() * 0.5,
-        size: 0.12 + Math.random() * 0.08,
-        color: gold,
-        intensity: readableIntensity(),
-        gravity: 3,
-        drag: 1.2,
-        shrink: 0.5,
-      });
-    }
-  }
+  // The reveal's own lighter sparkle: smaller and shorter-lived than a box's, readable like every reward particle.
+  const sparkles = (at: THREE.Vector3, n: number, sp: number) =>
+    rewardSparkles(at.x, at.y, at.z, n, sp, {
+      life: 0.6,
+      lifeJitter: 0.5,
+      size: 0.12,
+      sizeJitter: 0.08,
+      gravity: 3,
+      drag: 1.2,
+    });
 
   const top = new THREE.Vector3();
   const focus = new THREE.Vector3(),

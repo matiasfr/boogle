@@ -212,6 +212,9 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     flat('#b0ab9d'),
     128 * RAILWAY_T1.carry,
   );
+  // Like the log and rail piles: never culled. Its bounds were computed once, at the first frame with no stones, and a
+  // pile then showed only while the world origin was in view (6 November playtest).
+  stonePiles.frustumCulled = false;
   owner.add(stonePiles);
   // Loose rails lie flat, side by side.
   const railPiles = new THREE.InstancedMesh(
