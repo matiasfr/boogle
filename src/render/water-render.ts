@@ -24,6 +24,7 @@ import { GRID } from './water/tuning.ts';
 import { TSL } from './water/tsl.ts';
 import { camera, rendererReady, scene, sun } from './scene.ts';
 import { warmUp, warmDraw } from './precompile.ts';
+import { registerGraphics } from '../graphics-settings.ts';
 export { seaU, seaRipples } from './water/state.ts';
 export { registerShoreProvider } from './water/shore-providers.ts';
 
@@ -54,6 +55,37 @@ function createRealSea() {
     grid: { ...GRID, far: camera.far, outer: Math.min(3000, camera.far * 0.5) },
     fitCameraRange: true,
     fog: (distance) => TSL.smoothstep(fogRange.x, fogRange.y, distance),
+  });
+  // The phone ladder's sea rung (graphics-settings.ts) and the cheaper far sea; both Local, both live.
+  let seaDetail = 'full',
+    farSea = false;
+  const removeSeaDetail = registerGraphics({
+    id: 'seaDetail',
+    label: 'Sea detail',
+    choices: ['full', 'low'],
+    default: 'full',
+    applyMode: 'live',
+    cost: 'sea vertices',
+    skips: 'Low draws the sea grid with half the spokes and rings: a quarter of its triangles.',
+    read: () => seaDetail,
+    apply: (value) => {
+      seaDetail = value === 'low' ? 'low' : 'full';
+      ocean.setDetail(seaDetail === 'low' ? GRID.angular / 2 : GRID.angular);
+    },
+  });
+  const removeFarSea = registerGraphics({
+    id: 'farSea',
+    label: 'Cheaper far sea',
+    choices: [false, true],
+    default: false,
+    applyMode: 'live',
+    cost: 'sea vertices behind the camera, far sea fill',
+    skips: 'Skips displacement outside the view cone, and refraction and glitter past 300 m.',
+    read: () => farSea,
+    apply: (value) => {
+      farSea = value === true;
+      ocean.setFarSea(farSea);
+    },
   });
   const queries = createWaterQueries(ocean.heightAt, atlas);
   const underwater = createUnderwater(ocean, frozen.sky);
@@ -105,6 +137,8 @@ function createRealSea() {
       waterRuntime.dispose = () => {};
       removeProvider();
       removeReceivers();
+      removeSeaDetail();
+      removeFarSea();
       post.dispose();
       frozen.dispose();
       underwater.dispose();

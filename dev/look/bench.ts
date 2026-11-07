@@ -1,5 +1,5 @@
 // The performance benchmark: `npm run bench [-- --root <checkout>] [--out file.json] [--seconds N] [--poses a,b]
-// [--no-load] [--query a=b] [--dpr 2] [--commit label]`. The daily perf job (dev/daily) runs it on origin/main; bisecting runs it on old commits with --root
+// [--no-load] [--query a=b] [--dpr 2] [--size 1280x800] [--commit label]`. The daily perf job (dev/daily) runs it on origin/main; bisecting runs it on old commits with --root
 // (a `git archive` of the commit, its node_modules a symlink to this checkout's), serving that checkout's game and
 // server with this harness. Results: docs/agents/test-details/performance.md; first report docs/research/performance.md.
 //
@@ -33,7 +33,10 @@ const seconds = Number(opt('--seconds') ?? 5);
 const noLoad = argv.includes('--no-load');
 // Extra page parameters, e.g. --query classic=1 on an old commit's classic home.
 const extraQuery = opt('--query');
-const size = [1280, 800];
+// --size 375x812 with --query 'q=mobile&dev=1&graphics=msaa:false' is the phone profile: a phone's viewport, its
+// water quality and its MSAA default, on the Mac's GPU (no touch emulation, so the ladder's numbers, not a device's).
+const size = opt('--size')?.split('x').map(Number) ?? [1280, 800];
+if (size.length !== 2 || size.some((n) => !Number.isInteger(n) || n <= 0)) throw new Error('--size is WxH, e.g. 375x812');
 // The Mac's Retina DPR (the game caps it at 2): what the owner sees. --dpr 1 for a cheaper, CPU-bound sample.
 const dpr = Number(opt('--dpr') ?? 2);
 

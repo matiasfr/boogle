@@ -24,6 +24,7 @@ const debugFlags = [
   'scenario',
   'destination',
   'graphicsMsaa',
+  'graphics',
   'lookPreset',
   'view',
   'viewSky',

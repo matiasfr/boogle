@@ -37,6 +37,7 @@ import { tagStepSupport, segmentStepSupport, type StepSurface } from '../../rend
 import { coveJoinCoverage, coveJoinNormal, coveWeight } from './cove.ts';
 import { buildCove } from './cove-view.ts';
 import { dressCoveGround } from './cove-ground.ts';
+import { addFarGround } from './far-ground.ts';
 
 export { H, PATH_SAMPLES, insidePlace };
 
@@ -129,6 +130,7 @@ function buildMesh(owner?: OwnedView) {
         d = at(i + 1, j + 1);
       idx.push(a, c0, b, b, c0, d);
     }
+  const mainEnd = idx.length; // the main grid's quads; far-ground.ts tiles them
   const edge: number[] = [];
   for (let i = 0; i < NX - 1; i++) edge.push(at(i, 0));
   for (let j = 0; j < NZ - 1; j++) edge.push(at(NX - 1, j));
@@ -244,6 +246,9 @@ function buildMesh(owner?: OwnedView) {
   mesh.frustumCulled = false;
   if (owner) owner.add(mesh);
   else scene.add(mesh);
+  const inCove = (i: number, j: number) =>
+    cellX(i) >= COVE_FINE.x0 && cellX(i) < COVE_FINE.x1 && cellZ(j) >= COVE_FINE.z0 && cellZ(j) < COVE_FINE.z1;
+  addFarGround(mesh, NX, NZ, mainEnd, inCove, owner);
 
   for (const tile of terrainCollisionTiles()) {
     const groundBody = addStatic(

@@ -113,3 +113,49 @@ test('an explicit baseline override still applies to a late owner with another c
     await resetGraphics();
   }
 });
+
+test('the detail ladder: the governor and a fixed Detail choice move the owners it names, explicit values win', async () => {
+  const { setAutoDetail, autoDetail } = await import('../src/graphics-settings.ts');
+  const state: Record<string, boolean | string> = { seaDetail: 'full', shadows: true, detail: 'auto' };
+  const own = (id: string, choices: (boolean | string)[], baseline: boolean | string) =>
+    registerGraphics({
+      id,
+      label: id,
+      choices,
+      default: baseline,
+      applyMode: 'live',
+      cost: 'draw',
+      skips: 'draw',
+      read: () => state[id]!,
+      apply: (value) => {
+        state[id] = value as boolean | string;
+      },
+    });
+  const stops = [
+    own('seaDetail', ['full', 'low'], 'full'),
+    own('shadows', [true, false], true),
+    own('detail', ['auto', 'full', 'sea', 'shadows', 'lowest'], 'auto'),
+  ];
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+  try {
+    setAutoDetail(1, false);
+    await settle();
+    assert.deepEqual([state.seaDetail, state.shadows], ['low', true]);
+    setAutoDetail(2, false);
+    await settle();
+    assert.deepEqual([state.seaDetail, state.shadows], ['low', false]);
+    assert.equal(JSON.parse(saved.get('boogle.detail.v1')!).rung, 2);
+    await setPlayerGraphics('detail', 'full'); // a fixed rung holds the owners and forgets the governor's
+    assert.deepEqual([state.seaDetail, state.shadows], ['full', true]);
+    assert.equal(autoDetail().governing, false);
+    assert.equal(saved.has('boogle.detail.v1'), false);
+    await setPlayerGraphics('detail', 'shadows');
+    assert.deepEqual([state.seaDetail, state.shadows], ['low', false]);
+    await setGraphics('shadows', true); // Dev's explicit value beats the rung
+    assert.deepEqual([state.seaDetail, state.shadows], ['low', true]);
+  } finally {
+    for (const stop of stops) stop();
+    await setGraphicsPreset('auto');
+    await resetGraphics();
+  }
+});
