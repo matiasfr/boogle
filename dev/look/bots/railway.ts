@@ -356,32 +356,31 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await box(1);
     await until(() => read().activeStation === 2, 'T3 opens after T2');
     require(!read().axe, 'proper axe not granted by T2 completion');
-    if (second) await until(() => job(2).delivered === 24, 'friend supplies the first 24 T3 logs');
-    await logs(2, coop ? (second ? 2 : 3) : 5);
-    await until(() => job(2).stock === 40, 'T3 has 40 accepted logs');
-    require(job(2).start < 0, 'logs alone do not feed T3');
-    if (!second) require(!read().axe, 'forty logs reveal the chest without granting the axe');
-    await checkpoint('T3 axe available');
-    if (!second) {
-      const chest = read().reward.axeChest;
-      await walk(chest.x, chest.z);
-      require(await bot.use(chest.x, chest.z, 'open proper axe chest', /^Open/), 'proper axe chest offered');
-      // A single press can be rejected before the host receives the settled Owner position.
-      // Repeat ordinary input for a bounded window; acceptance remains the required beat.
-      require(await bot.work(() => read().axe, 5000, 380), 'shared proper axe accepted after bounded retries');
+    require(!read().reward.axeChest.available, 'Station 3 offers no proper axe (it is the forge’s)');
+    // The great beam pass: logs and beam fund T3 in either order. Solo lays the beam first (the 40th log starts the
+    // feed); a pair brings the logs first (the beam starts it).
+    const beamFirst = !coop;
+    const laid = () => read().beam?.state === 'allocated' || read().beam?.state === 'used';
+    const t3Logs = async () => {
+      if (second) await until(() => job(2).delivered === 24, 'friend supplies the first 24 T3 logs');
+      await logs(2, coop ? (second ? 2 : 3) : 5);
+      await until(() => job(2).stock === 40 || job(2).start >= 0, 'T3 has 40 accepted logs');
+    };
+    if (!beamFirst) {
+      await t3Logs();
+      require(job(2).start < 0, 'logs alone do not feed T3');
+      await checkpoint('T3 logs delivered');
     }
-    await until(() => read().axe, 'shared proper axe accepted');
-    await dismiss('proper axe reveal');
-    mark('T3 proper axe earned');
     if (!second) {
       const tree = LINE1_GREAT_TREE;
       await walk(tree.x / 100, tree.z / 100, 2.6);
       face(tree.x / 100, tree.z / 100);
       await until(() => interactTarget()?.id === 'place-tree28', 'the great tree is targeted', 5000);
+      require(!read().axe, 'the first axe is the one that fells the great tree');
       require(await bot.work(
         () => read().beam?.state === 'available',
         30000,
-      ), 'great tree yields unique beam after twelve proper strokes');
+      ), 'great tree yields unique beam after twelve first-axe strokes');
       await until(() => read().pending === 0, 'great tree requests settle');
       mark('T3 beam available');
       const beam = read().beam!;
@@ -410,7 +409,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         let last = { x: start.x, z: start.z };
         let shown = false;
         for (const point of route.path) {
-          if (job(2).start >= 0) break;
+          if (laid()) break;
           if (Math.hypot(point.x - last.x, point.z - last.z) < 2) continue;
           await until(helperNear, 'helper stays near before the next short beam leg', 10000);
           require(read().beam?.holder === holder &&
@@ -428,7 +427,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         require(shown, 'helped beam carry was observed before delivery');
         await walk(read().station.x, read().station.z, 3);
       } else await walk(read().station.x, read().station.z, 3);
-      await until(() => job(2).start >= 0, 'beam deposited and T3 funded');
+      await until(laid, 'beam laid in the frame’s saddles');
     } else {
       await until(() => read().beam?.state === 'held', 'friend picks up the sole beam');
       const holder = read().beam!.holder;
@@ -444,7 +443,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       let stoppedAt = performance.now();
       let lastCarrier = { x: initial.x, z: initial.z };
       const deadline = performance.now() + 120000;
-      while (job(2).start < 0 && performance.now() < deadline) {
+      while (!laid() && performance.now() < deadline) {
         const p = carrier();
         require(p && !me.swimming, 'helper follows a fresh dry carrier');
         if (Math.hypot(p!.x - lastCarrier.x, p!.z - lastCarrier.z) > 0.1) {
@@ -473,8 +472,14 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       }
       input.keys.delete('KeyW');
       require(shown, 'helper moved with the held beam');
-      await until(() => job(2).start >= 0, 'friend delivered unique beam');
+      await until(laid, 'friend delivered unique beam');
     }
+    if (beamFirst) {
+      require(job(2).start < 0, 'the beam alone does not feed T3');
+      await checkpoint('T3 beam seated');
+      await t3Logs();
+    }
+    await until(() => job(2).start >= 0, beamFirst ? 'the 40th log starts the feed' : 'the beam starts the feed');
     await checkpoint('T3 funded');
     await ride(2);
     await until(() => job(2).completion === 1, 'T3 laid once', LAYING_MS);
@@ -585,7 +590,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await checkpoint('optional jump used');
     if (query.get('line2') === '0') {
       document.documentElement.dataset.railwayProof = 'done';
-      bot.finish('T1/T2/T3, proper axe, unique beam, both path walks and first optional jump');
+      bot.finish('T1/T2/T3, unique beam, both path walks and first optional jump');
       return;
     }
     // ---------------------------------------------------------------- line two, walking only: no further jumps
@@ -670,6 +675,35 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     }
     await until(() => l2().forge.lit >= 0, 'forge lit by its second bill');
     await checkpoint('forge lit');
+    // The proper axe is the lit forge's first made thing; the hardwoods by it rebound the first axe and fell to it.
+    const hardwood = read().trees.find((tree) => tree.id === 209)!;
+    await walk(hardwood.x, hardwood.z, 2.6);
+    face(hardwood.x, hardwood.z);
+    await until(() => interactTarget()?.id === 'place-tree209', 'a hardwood is targeted', 5000);
+    bot.press();
+    await bot.wait(900);
+    require(read().trees.find((tree) => tree.id === 209)?.remaining === 15, 'a hardwood rebounds the first axe');
+    mark('hardwood rebounds the first axe');
+    const chest = read().reward.axeChest;
+    require(chest.available, 'the lit forge offers the proper axe');
+    await walk(chest.x, chest.z);
+    require(await bot.use(chest.x, chest.z, 'open proper axe chest', /^Open/), 'proper axe chest offered');
+    // A single press can be rejected before the host receives the settled Owner position.
+    // Repeat ordinary input for a bounded window; acceptance remains the required beat.
+    require(await bot.work(() => read().axe, 5000, 380), 'proper axe accepted after bounded retries');
+    await dismiss('proper axe reveal');
+    await checkpoint('proper axe earned at the forge');
+    await walk(hardwood.x, hardwood.z, 2.6);
+    face(hardwood.x, hardwood.z);
+    await until(() => interactTarget()?.id === 'place-tree209', 'the hardwood is targeted again', 5000);
+    bot.press();
+    await until(
+      () => (read().trees.find((tree) => tree.id === 209)?.remaining ?? 15) < 15,
+      'the proper axe bites a hardwood',
+      5000,
+    );
+    await until(() => read().pending === 0, 'hardwood stroke settles');
+    mark('hardwood bites the proper axe'); // its logs ride on to Q1
     await until(() => v2().working, 'machine crosses to line two');
     const rack = v2().forgeRack;
     const takeRails = async (n: number) => {
