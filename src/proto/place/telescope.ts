@@ -117,6 +117,7 @@ export function openTelescope() {
           return;
         }
         if (e.repeat && (e.key === 'back' || e.key === 'interact')) return;
+        if ((e.key === 'up' || e.key === 'down') && !e.arrow) return; // W and S never panned the telescope
         const slot = {
           back: 'b',
           interact: 'b',
