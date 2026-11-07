@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-06).**
+> **Status: approved (owner, 2026-11-07): the recommendations.** First build queued after the track-chunk and pile fixes land.
 
 # The great beam: what it needs, when, and how it moves
 
@@ -369,13 +369,13 @@ and change or retire under the recommendation:
 1. Should your first axe fell the great tree, with logs and beam in either order (P1)? This reverses your 5 November
    "felling only with the proper axe" suggestion. **Recommended: yes. It removes the hidden order instead of
    signposting it, and the frame and rope still make the tree special.**
-   Answer: ___
+   Answer: as recommended (owner, 2026-11-07).
 2. Where should the proper axe go? **Recommended: the forge's first made thing, near the two hardwoods it opens.**
    Alternatives: Line 2's depot, much later; or merge the two axes (P4).
-   Answer: ___
+   Answer: as recommended (owner, 2026-11-07).
 3. How should the trunk move? **Recommended: rope drag (K2), with the friend lifting the end for Help carry, and a
    float link (K1) beside it for one comparison.**
-   Answer: ___
+   Answer: as recommended (owner, 2026-11-07).
 
 ## Parked
 
