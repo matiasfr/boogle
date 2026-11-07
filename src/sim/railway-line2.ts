@@ -36,6 +36,8 @@ export type RailLine2 = {
   pack: boolean;
   /** Rails on the shelf by a `shelf` stretch's rack, moved there from the forge rack (never minted). */
   depotRails: number;
+  /** Rails the cart has moved to the shelf for the active stretch; never past its rail bill, reset when it funds. */
+  shelfOut: number;
 };
 /** The first path (T3) is open: the forge frame takes logs. */
 export const line2Open = (s: Railway) => !!s.line?.jobs[1].completion;
@@ -145,12 +147,13 @@ export function validateRailLine2(s: Railway) {
   if (l.pack && f.used < FORGE.bills[0]) throw new Error('railway: pack before the forge bill');
   // The shelf holds rails only for the active, unfunded `shelf` stretch (funding sends what is left back to the forge
   // rack), and never more than its rail bill.
-  if (!int(l.depotRails, 64)) throw new Error('railway: shelf bounds');
-  if (l.depotRails) {
+  if (!int(l.depotRails, 64) || !int(l.shelfOut, 64) || l.depotRails > l.shelfOut)
+    throw new Error('railway: shelf bounds');
+  if (l.shelfOut) {
     const k = line2Active(s);
     const spec = LINE2_STATIONS[k],
       job = l.jobs[k];
-    if (!spec?.shelf || !job || job.start >= 0 || l.depotRails > spec.bill[1])
+    if (!spec?.shelf || !job || job.start >= 0 || l.shelfOut > spec.bill[1])
       throw new Error('railway: shelf outside its stretch');
   }
   if (line2Rails(s) !== f.poured) throw new Error('railway: rail conservation');

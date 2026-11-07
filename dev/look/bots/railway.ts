@@ -1005,7 +1005,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       }
       await walk(q4.x, q4.z, 2.4);
       await until(
-        () => (read().carry === 0 && read().railsCarry === 0 && read().pending === 0) || q4Job().start >= 0,
+        () =>
+          (read().carry === 0 && (read().railsCarry === 0 || q4Job().railStock === 16) && read().pending === 0) ||
+          q4Job().start >= 0,
         'Q4 frame unloads automatically',
         30000,
       );

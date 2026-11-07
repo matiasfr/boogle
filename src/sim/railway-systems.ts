@@ -418,9 +418,9 @@ function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
   jm.start = run.lastTick = tick;
   // Rails still on the shelf go back to the forge rack: the shelf only ever holds an unfunded stretch's rails.
   const rail = w.get(Rail, railId(w))!;
-  if (spec.shelf && rail.depotRails) {
+  if (spec.shelf && (rail.depotRails || rail.shelfOut)) {
     w.mut(Forge, forgeId(w))!.rack += rail.depotRails;
-    w.mut(Rail, railId(w))!.depotRails = 0;
+    Object.assign(w.mut(Rail, railId(w))!, { depotRails: 0, shelfOut: 0 });
   }
   // Each stretch pins the room's timing when funded; Q2/Q3 lay faster, as in Place.
   Object.assign(jm, timingOf(timing), {
@@ -601,7 +601,10 @@ function depotNeed(w: World, k: number, j: Readonly<{ stock: number; railStock: 
   const spec = LINE2_STATIONS[k]!,
     rail = w.get(Rail, railId(w))!;
   const logs = Math.max(0, Math.min(spec.bill[0] - j.stock - rail.depot, spec.bill[0] - rail[DEPOT_OUT[k]!]));
-  const owed = spec.shelf ? Math.max(0, spec.bill[1] - j.railStock - rail.depotRails) : 0;
+  // Rails on someone's back are not owed again: the cart moves at most the stretch's rail bill (shelfOut).
+  const owed = spec.shelf
+    ? Math.max(0, Math.min(spec.bill[1] - j.railStock - rail.depotRails, spec.bill[1] - rail.shelfOut))
+    : 0;
   const rails = Math.min(owed, w.get(Forge, forgeId(w))!.rack);
   return { logs, rails, owed };
 }
@@ -617,6 +620,7 @@ function depotLoad(w: World, k: number, logs: number, rails: number) {
   if (rails > 0) {
     w.mut(Forge, forgeId(w))!.rack -= rails;
     rm.depotRails += rails;
+    rm.shelfOut += rails;
   }
   return true;
 }

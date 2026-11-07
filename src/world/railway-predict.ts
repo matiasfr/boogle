@@ -157,7 +157,8 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
   const fid = w.single(Forge);
   const lit = [w.get(Forge, fid)!.lit, w.get(ForgeClock, fid)!.lastPour] as const;
   // Funding a shelf stretch sends the shelf's leftovers back to the forge rack: held back with the funding.
-  const shelf = [w.get(Rail, w.single(Rail))!.depotRails, w.get(Forge, fid)!.rack] as const;
+  const rail0 = w.get(Rail, w.single(Rail))!;
+  const shelf = [rail0.depotRails, w.get(Forge, fid)!.rack, rail0.shelfOut] as const;
   let heldBack = false;
   if (e.op === 'rail.drop') w.reserve(-e.request); // a stable temporary id until the server's arrives
   const result = railApply(w, pid, e, tick, LINE_TIMING);
@@ -181,8 +182,8 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
     );
     Object.assign(w.mut(r, id)!, old.run);
   });
-  if (heldBack && w.get(Rail, w.single(Rail))!.depotRails !== shelf[0]) {
-    w.mut(Rail, w.single(Rail))!.depotRails = shelf[0];
+  if (heldBack && w.get(Rail, w.single(Rail))!.shelfOut !== shelf[2]) {
+    Object.assign(w.mut(Rail, w.single(Rail))!, { depotRails: shelf[0], shelfOut: shelf[2] });
     w.mut(Forge, fid)!.rack = shelf[1];
   }
   if (lit[0] < 0 && w.get(Forge, fid)!.lit >= 0) {

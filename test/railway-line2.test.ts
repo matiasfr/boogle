@@ -247,6 +247,7 @@ test('malformed line-two documents fail atomically', () => {
     ['early depot', (j) => (col(j, Rail, 'depot')[0] = 8)],
     ['depot output over bill', (j) => (col(j, Rail, 'out1')[0] = 25)],
     ['shelf before its stretch', (j) => (col(j, Rail, 'depotRails')[0] = 2)],
+    ['shelf output before its stretch', (j) => (col(j, Rail, 'shelfOut')[0] = 2)],
   ];
   for (const [name, change] of cases) {
     const j = JSON.parse(JSON.stringify(good)) as Snap;
@@ -424,6 +425,8 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 4 }), 4, 'logs go in with the gate down');
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: room, kind: 2 }), room);
   assert.equal(act(w, 'b', 'rail.depotRailTake'), RAILWAY_T1.carry, 'a full back of rails, no more');
+  advance(w, LINE2_DEPOT.everyTicks + 1);
+  assert.equal(l().depotRails, LINE2_DEPOT.rails - room - 8, 'rails on backs are not brought again');
   assert.equal(act(w, 'b', 'rail.deposit', { station: 'Q4', n: 8, kind: 2 }), 8);
   railsHeld(w);
   // Rails carried from the forge by hand fill the bill first, so the shelf's rest is left over when Q4 funds: it goes

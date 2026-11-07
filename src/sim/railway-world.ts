@@ -59,6 +59,7 @@ export const Rail = defineComponent(
     out3: 'int',
     pack: 'bool',
     depotRails: 'int',
+    shelfOut: 'int',
   },
   { requires: [RailClock], defaults: { awake: -1 } },
 );
@@ -297,6 +298,7 @@ export function railwayView(w: World): Railway {
       hook: rail.hook,
       pack: rail.pack,
       depotRails: rail.depotRails,
+      shelfOut: rail.shelfOut,
     },
     falls: { yaw: trees.map((t) => t.yaw), collapsed: trees.map((t) => t.fell) },
     supply: { marker: clock.supplyMarker, ages: trees.map((t) => t.age), rack: rail.rack, produced: rail.produced },
@@ -367,6 +369,7 @@ export function refreshRailway(s: Railway, w: World) {
       hook: r.hook,
       pack: r.pack,
       depotRails: r.depotRails,
+      shelfOut: r.shelfOut,
     });
     l2.depotOut = DEPOT_OUT.map((k) => r[k]);
   }
