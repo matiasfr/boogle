@@ -1,4 +1,5 @@
-// Full accepted line-one preparation, then real host durability/session cuts around the unique beam.
+// Full accepted line-one preparation, then real host restart and session cuts around the unique beam (replication
+// R1a: actions apply on arrival; orderly restarts save).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -13,7 +14,7 @@ import { railMaxDuration } from '../../src/sim/railway-line.ts';
 import { railwayInvariant } from '../../src/sim/railway.ts';
 
 type Obj = Record<string, unknown>;
-test('line host releases durable-before-apply departure, fences stale epochs and recovers restart-held beam', async () => {
+test('line host releases a departed holder, fences stale epochs and recovers a restart-held beam', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-'));
   const store = createStore({ dataDir: dir, maxRooms: 2 });
   await store.init();
@@ -23,13 +24,14 @@ test('line host releases durable-before-apply departure, fences stale epochs and
   let people: (RailwayPosition | null)[] = [];
   const sent: Obj[] = [];
   const sessions = new Map<string, { epoch: number; request: number }>();
+  const pidOf = (sid: string) => (sid.startsWith('a') ? 'alice' : 'bob');
   const create = () => {
     const value = createRailwayWorldHost({
       roomId,
       store,
       tick: false,
       now: () => now,
-      pidOf: (sid) => (sid.startsWith('a') ? 'alice' : 'bob'),
+      pidOf,
       positions: () => people,
     });
     value.onSend((message) => sent.push(message));
@@ -69,9 +71,7 @@ test('line host releases durable-before-apply departure, fences stale epochs and
   const edit = async (sid: string, e: Obj) => {
     const request = submit(sid, e);
     await ticks(3);
-    const response = sent.findLast(
-      (m) => m.t === 'r:result' && m.to === sid && m.request === request && m.epoch === sessions.get(sid)!.epoch,
-    );
+    const response = host.rules.railway.outcome(pidOf(sid), sessions.get(sid)!.epoch, request);
     assert.equal(response?.status, 'accepted', JSON.stringify({ e, response }));
     assert.equal(railwayInvariant(host.rules.railway.railway), null);
   };
@@ -162,7 +162,7 @@ test('line host releases durable-before-apply departure, fences stale epochs and
     pose('a', beam.x, beam.z);
     submit('a', { op: 'rail.beamTake', revision: beam.revision });
     await host.sync.whenDurable();
-    host.depart('a'); // Claim is durable but has not applied yet.
+    host.depart('a'); // The claim applied on arrival; the departure puts the beam back.
     await ticks(9);
     assert.equal(beam.state, 'available');
     assert.equal(beam.holder, '');
@@ -171,9 +171,7 @@ test('line host releases durable-before-apply departure, fences stale epochs and
     pose('a2', beam.x, beam.z);
     await edit('a2', { op: 'rail.beamTake', revision: beam.revision });
     assert.equal(beam.state, 'held');
-    assert.ok(
-      host.sync.submitEdit({ op: 'rail.beamRelease', i: 0, j: 0, pid: 'alice', epoch: 1, revision: departedRevision }),
-    );
+    assert.equal(host.rules.railway.beamRelease('alice', 1, departedRevision), 0);
     await ticks(4);
     assert.equal(beam.state, 'held', 'old departure cannot release the new epoch');
     await host.close({ save: true });

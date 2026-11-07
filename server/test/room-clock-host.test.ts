@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createWorldHost, createRailwayWorldHost } from '../src/host/world-host.ts';
-import { RAILWAY_ROOM } from '../../src/world/railway-namespace.ts';
+import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
 
 type Obj = Record<string, unknown>;
@@ -51,7 +51,7 @@ test('a durable write holds the railway room clock: blocked steps are not counte
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-clock-held-'));
   const store = createStore({ dataDir: dir, maxRooms: 4 });
   await store.init();
-  const host = createRailwayWorldHost({ roomId: RAILWAY_ROOM, store, tick: false, pidOf: () => 'alice' });
+  const host = createRailwayWorldHost({ roomId: railwayRoomId('clock'), store, tick: false, pidOf: () => 'alice' });
   const steps: number[] = [];
   host.sync.onStep((s) => steps.push(s));
   try {
@@ -61,8 +61,8 @@ test('a durable write holds the railway room clock: blocked steps are not counte
     const tick = host.sync.world.tick;
     const step = host.sync.roomStep();
     const seen = steps.length;
-    // r:open stamps a durable rail.session: unpublished until its write lands.
-    host.deliver({ t: 'r:open' }, 'a');
+    // A lockstep edit (the roster's who.set) is durable before it is published: unpublished until its write lands.
+    host.deliver({ t: 'w:edit', e: { op: 'who.set', i: 0, j: 0, n: 'Al', c: 1 } }, 'a');
     host.step(0.5);
     await Promise.resolve();
     assert.equal(host.sync.worldStatus().recoveryPending, true);

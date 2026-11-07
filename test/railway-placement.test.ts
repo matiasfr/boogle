@@ -11,10 +11,7 @@ import {
   serializeRailway,
   type RailAction,
 } from '../src/sim/railway.ts';
-import { createSync } from '../src/world/sync.ts';
-import { install as roster } from '../src/world/rules/roster.ts';
-import { install as railway } from '../src/world/rules/railway.ts';
-import { homeLand } from './helpers/land.ts';
+import { railValid } from '../src/world/railway-server.ts';
 
 function sourceFixture(playable = true) {
   const state = createRailway(playable);
@@ -121,15 +118,10 @@ test('playable placement schema rejects corruption atomically and old namespace 
   assert.throws(() => loadRailway(createRailway(), json));
 });
 
-test('playable registered rules refuse missing and invalid placement before accepting a request', () => {
-  const sync = createSync({ env: { railReach: () => true, railCadence: () => true } });
-  sync.setSelfId('alice');
-  sync.setPid('alice');
-  const people = roster(sync);
-  railway(sync, homeLand(), { roster: people }, { playable: true });
-  sync.submitEdit({ op: 'rail.session', i: 0, j: 0, pid: 'alice', epoch: 1 });
-  sync.updateWorld(0.1);
-  const token = { i: 0, j: 0, epoch: 1, request: 1 };
+test('the server refuses missing and invalid placement before it reaches the rule', () => {
+  const s = createRailway(true, true);
+  const actor = { reach: () => true, height: () => true, cadence: () => true };
+  const token = { epoch: 1, request: 1 };
   for (const edit of [
     { op: 'rail.chop', id: 0 },
     { op: 'rail.chop', id: 0, yaw: NaN, collapsed: false },
@@ -137,6 +129,10 @@ test('playable registered rules refuse missing and invalid placement before acce
     { op: 'rail.drop', x: 100000, z: -14000, n: 1 },
     { op: 'rail.drop', x: 100000, y: 0.5, z: -14000, n: 1 },
   ])
-    assert.equal(sync.submitEdit({ ...token, ...edit }), false);
-  assert.equal(sync.submitEdit({ ...token, op: 'rail.chop', id: 0, yaw: 0, collapsed: false }), true);
+    assert.equal(railValid(s, { ...token, ...edit }, actor), false, JSON.stringify(edit));
+  assert.equal(railValid(s, { ...token, op: 'rail.chop', id: 0, yaw: 0, collapsed: false }, actor), true);
+  assert.equal(
+    railValid(s, { ...token, op: 'rail.chop', id: 0, yaw: 0, collapsed: false }, { ...actor, reach: () => false }),
+    false,
+  );
 });

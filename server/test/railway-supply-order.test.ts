@@ -10,7 +10,7 @@ import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { railwayInvariant } from '../../src/sim/railway.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 
-test('fresh drop waits for missed maintenance before admission, then starts at age zero', async () => {
+test('a fresh drop applies after the missed maintenance and starts at age zero', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-supply-order-'));
   const store = createStore({ dataDir: dir, maxRooms: 2 });
   await store.init();
@@ -26,6 +26,12 @@ test('fresh drop waits for missed maintenance before admission, then starts at a
     positions: () => [{ ...position, at: now }],
   });
   host.onSend((message) => messages.push(message));
+  host.replication.addClient('session');
+  const refusals = () => {
+    const rej: unknown[] = [];
+    host.replication.flush(host.sync.roomStep(), (_cid, packet) => rej.push(...(packet.rej ?? [])));
+    return rej;
+  };
   // A client action carries where its actor stands (cm) and its action clock (ms).
   const send = (e: Record<string, unknown>) => {
     const at = [Math.round(position.x * 100), 0, Math.round(position.z * 100)];
@@ -53,14 +59,11 @@ test('fresh drop waits for missed maintenance before admission, then starts at a
     const marker = host.rules.railway.railway.supply!.marker;
     now += 21 * 60000;
     const drop = { op: 'rail.drop', request: 3, x: source[1], z: source[2], y: 3000, n: 2 };
-    send(drop); // Arrival before the next host step, with a genuinely fresh pose.
-    assert.equal(messages.at(-1)?.state, 'starting');
-    assert.equal(host.rules.railway.account('supplier')!.request, 2, 'refusal does not advance the request watermark');
-    assert.equal(host.rules.railway.railway.piles.length, 0);
-    await ticks(3);
+    // Arrival before the next host step, with a genuinely fresh pose: the missed maintenance applies first (it is
+    // a direct server rule now, not a stamp waiting for a tick), then the drop.
+    send(drop);
+    assert.deepEqual(refusals(), []);
     assert.ok(host.rules.railway.railway.supply!.marker >= marker + 21);
-    send(drop); // The same request is still admissible after the accepted maintenance event.
-    await ticks(3);
     assert.equal(host.rules.railway.outcome('supplier', 1, 3)?.status, 'accepted');
     assert.equal(host.rules.railway.railway.piles[0]!.age, 0);
     assert.equal(host.rules.railway.counts().rack, 0);

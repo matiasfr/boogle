@@ -15,8 +15,8 @@
 import type { WebSocket } from 'ws';
 import { CLOSE, MAX_MSG, encode, decode, type WireMsg } from '../../../src/net/ws-wire.ts';
 import { SERVER_ID } from '../../../src/net/ids.ts';
-import { createWorldHost, createRailwayWorldHost } from './world-host.ts';
-import { isRailwayRoom, isPlayableRailwayRoom } from '../../../src/world/railway-namespace.ts';
+import { createWorldHost, createRailwayWorldHost, type RailwayWorldHost } from './world-host.ts';
+import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
 import { HOST_TYPES } from '../../../src/world/sync.ts';
 import { validatePing, honkShape } from '../../../src/sim/social.ts';
@@ -88,6 +88,10 @@ export function createHostedRoom({
   const clients = new Map<string, Client>(); // ready clients by selfId
   const railway = isRailwayRoom(roomId);
   const poseAt = new Map<string, number>();
+  // The room's replicator (docs/plans/replication.md): a railway room's `railway` state defines its projections on it;
+  // every client is subscribed on join (late join from change tick -1), and at the end of each 60 Hz step what changed
+  // goes out, skipping sockets over HIGH_WATER (coalescing).
+  const replication = createReplicator();
   const hostOptions = {
     roomId,
     store,
@@ -99,6 +103,7 @@ export function createHostedRoom({
   const world = railway
     ? createRailwayWorldHost({
         ...hostOptions,
+        replication,
         positions() {
           return [...clients].map(([sid, client]) => {
             const p = client.d && typeof client.d === 'object' ? (client.d as { p?: unknown }).p : null;
@@ -115,6 +120,9 @@ export function createHostedRoom({
         },
       })
     : createWorldHost(hostOptions);
+  const depart = (sid: string) => {
+    if (railway) (world as RailwayWorldHost).depart(sid);
+  };
   const gone = new Map<string, { s: number; pid: string; key: string; timer: NodeJS.Timeout }>(); // closed, waiting out the grace period
   let lead: string | null = null;
   const retired = new Set<string>(); // sessions a newer tab of their player replaced: turned away if they come back
@@ -130,12 +138,14 @@ export function createHostedRoom({
   // Today every other ready client; the seam interest management will narrow (docs/research/shared-state-at-scale.md).
   const audience = (from: string) => [...clients.values()].filter((c) => c.id !== from);
 
-  // Replication (docs/plans/replication.md, R0; no state defines a projection yet, so nothing is sent): end-of-step
-  // send-on-change, up to 60 Hz. A backed-up socket is skipped and catches up with the latest values on its next send.
-  const replication = createReplicator();
+  // End-of-step send-on-change, up to 60 Hz. A backed-up socket is skipped and catches up with the latest values on its
+  // next send.
+  // Measured for /rooms/:id/status and npm run load: commit + flush ms per step, and what went out.
+  const repStats = { steps: 0, ms: 0, maxMs: 0, packets: 0, chars: 0, skipped: 0 };
   world.sync.onStep((step) => {
+    const t0 = performance.now();
     replication.commit(step);
-    replication.flush(
+    const out = replication.flush(
       step,
       (cid, _packet, json) => {
         const c = clients.get(cid);
@@ -146,6 +156,13 @@ export function createHostedRoom({
         return !!c && c.ws.readyState === c.ws.OPEN && c.ws.bufferedAmount <= HIGH_WATER;
       },
     );
+    const ms = performance.now() - t0;
+    repStats.steps++;
+    repStats.ms += ms;
+    repStats.maxMs = Math.max(repStats.maxMs, ms);
+    repStats.packets += out.packets;
+    repStats.chars += out.chars;
+    repStats.skipped += out.skipped;
   });
 
   // The host's messages: addressed messages to the client they name, the rest to everyone, encoded once.
@@ -227,19 +244,14 @@ export function createHostedRoom({
     if (HOST_TYPES.has(t as string)) return void c.dropped++;
     if (railway) {
       // Existing cosmetic one-offs remain peer messages. Strip unrelated fields; none enters the material host.
-      if (isPlayableRailwayRoom(roomId) && (t === 'ping' || t === 'honk')) {
+      if (t === 'ping' || t === 'honk') {
         const cosmetic = t === 'ping' ? validatePing(m.d) : { v: honkShape(m.d) };
         if (!cosmetic) return void c.dropped++;
         toAll(encode({ t: 'm', from: c.id, d: { t, ...cosmetic } }), c.id);
         return;
       }
-      // Isolated production requests go only to the host. Never relay a forged receipt or old edit protocol.
-      if (
-        t !== 'w:need' &&
-        !(t === 'w:edit' && isPlayableRailwayRoom(roomId)) &&
-        !RAILWAY_CLIENT_MESSAGES.has(String(t))
-      )
-        return void c.dropped++;
+      // Railway actions and world requests go only to the host. Never relay a forged packet or old edit protocol.
+      if (t !== 'w:need' && t !== 'w:edit' && !RAILWAY_CLIENT_MESSAGES.has(String(t))) return void c.dropped++;
       world.deliver(m.d, c.id);
       return;
     }
@@ -257,7 +269,7 @@ export function createHostedRoom({
     if (closing) return;
     const timer = setTimeout(() => {
       gone.delete(c.id);
-      if ('depart' in world) world.depart(c.id);
+      depart(c.id);
       if (!clients.size && !gone.size) emptySince = performance.now();
       toAll(encode({ t: 'left', id: c.id, s: c.s }));
       checkLead();
@@ -285,7 +297,7 @@ export function createHostedRoom({
     for (const o of [...clients.values()]) {
       if (o.pid !== pid || o.id === id) continue;
       write(o, encode({ t: 'elsewhere' }));
-      if ('depart' in world) world.depart(o.id);
+      depart(o.id);
       drop(o, CLOSE.ELSEWHERE);
       retire(o.id, o.s);
     }
@@ -293,7 +305,7 @@ export function createHostedRoom({
       if (g.pid !== pid || gid === id) continue;
       clearTimeout(g.timer);
       gone.delete(gid);
-      if ('depart' in world) world.depart(gid);
+      depart(gid);
       retire(gid, g.s);
     }
     if (lead && !clients.has(lead)) checkLead();
@@ -389,6 +401,8 @@ export function createHostedRoom({
       max: cfg.maxPlayers,
       lead,
       noSave: world.status().badSave, // a failed-load fallback must not replace the durable save
+      replication: { ...repStats, entities: replication.size() },
+      ...(railway ? { railway: (world as RailwayWorldHost).stats } : {}),
     }),
     idleMs: () => (clients.size || gone.size ? 0 : performance.now() - emptySince),
     async close({ save = true } = {}) {

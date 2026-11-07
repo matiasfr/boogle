@@ -51,13 +51,12 @@ export async function play({ stopBeforeReward = false } = {}) {
   };
   const until = async (fn: () => unknown, beat: string, ms = 300000) => require(await bot.until(fn, ms, beat), beat);
   const job = (station: number) => read().stations[station]!;
-  // Co-op witness: accepted railway hashes by tick, compared offline between the two peers' logs.
+  // Co-op witness: mirrored railway hashes by server step, compared offline between the two peers' logs.
   const tickHashes = new Map<number, number>();
   const sampler = coop
     ? setInterval(() => {
         const state = inspectRailway();
-        if (state?.ready && state.line2 && state.line2.forge.used > 0 && state.hash !== undefined)
-          tickHashes.set(state.tick, state.hash);
+        if (state?.ready && state.line2.forge.used > 0 && state.step >= 0) tickHashes.set(state.step, state.hash);
       }, 50)
     : 0;
   const logHashes = () =>

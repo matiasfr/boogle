@@ -19,17 +19,11 @@ import {
   RAILWAY_OUTCOMES,
   RAILWAY_PILES,
   RAILWAY_MAX_INT,
-  RAILWAY_MAX_MARKER,
   type Railway,
   type RailAction,
 } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
-import { MAX_PLAYERS, createRoster, ensure, serializeRoster } from '../src/sim/roster.ts';
-import { createSync, MAX_RECOVERY_BYTES, type RecoveryEnvelope } from '../src/world/sync.ts';
-import { railwayRequestEdit } from '../server/src/host/railway-requests.ts';
-import { install as roster } from '../src/world/rules/roster.ts';
-import { install as railway, edits } from '../src/world/rules/railway.ts';
-import { homeLand } from './helpers/land.ts';
+import { MAX_PLAYERS } from '../src/sim/roster.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 
 const action = (s: Railway, pid: string, op: string, fields: Partial<RailAction> = {}, tick = 100) => {
@@ -190,7 +184,7 @@ test('strict atomic loading refuses cross-account loss, future catalog and malfo
   }
 });
 
-test('supported pid lifetime cannot strand the full finite catalog; bounded document stays within the recovery budget', (t) => {
+test('supported pid lifetime cannot strand the full finite catalog', () => {
   const s = createRailway();
   s.awake = 0;
   for (let k = 0; k < MAX_PLAYERS; k++) railSession(s, `p${k}`.padEnd(32, 'x'), 1);
@@ -214,62 +208,6 @@ test('supported pid lifetime cannot strand the full finite catalog; bounded docu
   s.outcomes = s.accounts
     .slice(-64)
     .map((a) => ({ pid: a.pid, epoch: a.epoch, request: a.request, status: 'noop', accepted: 0 }));
-  const rosterState = createRoster();
-  for (const a of s.accounts) {
-    const k = ensure(rosterState, a.pid);
-    rosterState.names[k] = '木'.repeat(16);
-    rosterState.colors[k] = 7;
-  }
-  s.piles = Array.from({ length: RAILWAY_PILES }, (_, k) => ({
-    id: RAILWAY_MAX_INT - RAILWAY_PILES + k,
-    x: 200000,
-    z: -200000,
-    n: T1.carry,
-  }));
-  s.nextPile = RAILWAY_MAX_INT;
-  s.awake = RAILWAY_MAX_INT;
-  s.lastTick = RAILWAY_MAX_INT;
-  s.resumeMarker = RAILWAY_MAX_MARKER;
-  let debit = RAILWAY_PILES * T1.carry;
-  for (let k = 0; debit; k++) {
-    const n = Math.min(debit, s.sources[k]!);
-    s.sources[k]! -= n;
-    debit -= n;
-    if (n) s.work[k] = Math.ceil((10 - s.sources[k]!) / 2) * 3;
-  }
-  const snapshot = {
-    tick: RAILWAY_MAX_INT,
-    seed: 20261028,
-    epochMs: 1793850000000,
-    data: { roster: serializeRoster(rosterState), railway: serializeRailway(s) },
-  };
-  const envelope: RecoveryEnvelope = {
-    version: 1,
-    namespace: 't1v01',
-    catalog: '1',
-    checkpoint: snapshot,
-    hash: 4294967295,
-    tail: Array.from({ length: 64 }, (_, k) => ({
-      tick: RAILWAY_MAX_INT,
-      seq: RAILWAY_MAX_INT - 64 + k,
-      // The widest request a client may send, actor facts included; the tail holds what the real cleaner stamps.
-      e: {
-        ...railwayRequestEdit(
-          { op: 'rail.drop', n: 8, x: -200000, z: -200000, at: [-200000, -200000, -200000], ms: RAILWAY_MAX_INT },
-          RAILWAY_MAX_INT,
-          RAILWAY_MAX_INT,
-          { falls: false, line: false },
-        ),
-        p: 's'.repeat(32),
-        u: s.accounts[k]!.pid,
-      },
-    })),
-    seq: RAILWAY_MAX_INT,
-    checksum: 4294967295,
-  };
-  const bytes = Buffer.byteLength(JSON.stringify(envelope));
-  t.diagnostic(`maximum capped recovery fixture: ${bytes}/${MAX_RECOVERY_BYTES} bytes`);
-  assert.ok(bytes < MAX_RECOVERY_BYTES, `${bytes} bytes`);
   // Current production line bounds are exercised in railway-line-bounds.test.ts.
   assert.equal(railwayInvariant(s), null);
 });
@@ -334,58 +272,4 @@ test('wake eligibility is scheduled; source work retains a clipped productive hi
   assert.equal(clipped.work[1], 3);
   assert.equal(clipped.sources[1], 9);
   assert.equal(restore(clipped).work[1], 3);
-});
-
-test('isolated registered rules fail closed without host facts; seeded edit replay matches each tick', () => {
-  const make = (facts = true) => {
-    const sync = createSync({ env: facts ? { railReach: () => true, railCadence: () => true } : {} });
-    sync.setSelfId('railtester');
-    sync.setPid('railtester');
-    const land = homeLand(),
-      r = roster(sync),
-      api = railway(sync, land, { roster: r });
-    return { sync, api };
-  };
-  const missing = make(false);
-  assert.equal(missing.sync.submitEdit({ op: 'rail.session', i: 0, j: 0, pid: 'railtester', epoch: 1 }), true);
-  missing.sync.updateWorld(0.1);
-  assert.equal(missing.sync.submitEdit({ op: 'rail.chop', i: 0, j: 0, epoch: 1, request: 1, id: 0 }), false);
-  const a = make(),
-    b = make();
-  let joiner: ReturnType<typeof make> | null = null;
-  const accepted = new Set<string>();
-  const random = mulberry32(17);
-  const stream = {
-    next: random,
-    int: (lo: number, hi: number) => lo + Math.floor(random() * (hi - lo + 1)),
-    pick: <T>(xs: readonly T[]) => xs[Math.floor(random() * xs.length)]!,
-    chance: (p: number) => random() < p,
-  };
-  for (const peer of [a, b]) {
-    peer.sync.submitEdit({ op: 'rail.session', i: 0, j: 0, pid: 'railtester', epoch: 1 });
-    peer.sync.updateWorld(0.1);
-  }
-  for (let k = 0; k < 400; k++) {
-    const keys = Object.keys(edits) as (keyof typeof edits)[],
-      op = keys[k % keys.length]!;
-    const e = edits[op](stream, { rules: { railway: a.api }, tick: a.sync.world.tick });
-    const queued = a.sync.submitEdit(e);
-    assert.equal(queued, b.sync.submitEdit(e));
-    if (queued) accepted.add(op);
-    if (joiner) assert.equal(queued, joiner.sync.submitEdit(e));
-    a.sync.updateWorld(0.1);
-    b.sync.updateWorld(0.1);
-    joiner?.sync.updateWorld(0.1);
-    assert.deepEqual(a.sync.stateHashes(), b.sync.stateHashes());
-    assert.equal(railwayInvariant(a.api.railway), null);
-    if (joiner) assert.deepEqual(a.sync.stateHashes(), joiner.sync.stateHashes());
-    if (k === 199) {
-      const saved = JSON.parse(JSON.stringify(a.sync.snapshot()));
-      b.sync.loadSnapshot(saved);
-      joiner = make();
-      joiner.sync.loadSnapshot(saved);
-    }
-  }
-  assert.deepEqual([...accepted].sort(), Object.keys(edits).sort(), 'every isolated op has a seeded accepted edit');
-  assert.deepEqual(a.sync.registry().ops.sort(), Object.keys(edits).concat('who.set').sort());
 });

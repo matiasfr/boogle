@@ -1,16 +1,10 @@
-// Isolated headless T1 proof and current production railway rooms.
+// The current production railway rooms. The isolated t1v01 spine (2026-11-04) went with the railway's lockstep path
+// at v14 (replication R1a): the railway is Server-kind state in these rooms only.
 import { WORLD_NS } from './namespace.ts';
-// History: t1v01 (2026-11-04): authority, receipts and recovery envelope, no imported prototype progress.
-export const RAILWAY_NS = 't1v01';
-export const RAILWAY_ROOM = `${RAILWAY_NS}-proto-production-core`;
-// 2026-11-05: clean development-world break. Never import t1v02 saves into the new line-one authority.
 // Put the realm first: classic's `${WORLD_NS}-<arbitrary name>` can never encode this prefix.
 export const RAILWAY_PLAY_NS = `rail-${WORLD_NS}`;
-export const isLineRailwayRoom = (room: string) =>
-  room.startsWith(`${RAILWAY_PLAY_NS}-`) && /^[a-z0-9-]{1,32}$/.test(room) && room.length > RAILWAY_PLAY_NS.length + 1;
-export const isPlayableRailwayRoom = isLineRailwayRoom;
 export const isRailwayRoom = (room: string) =>
-  /^t1v01-proto-[a-z0-9-]{1,20}$/.test(room) || isPlayableRailwayRoom(room);
+  room.startsWith(`${RAILWAY_PLAY_NS}-`) && /^[a-z0-9-]{1,32}$/.test(room) && room.length > RAILWAY_PLAY_NS.length + 1;
 export function railwayRoomId(room: string) {
   let h = 2166136261;
   for (const c of room) h = Math.imul(h ^ c.charCodeAt(0), 16777619);

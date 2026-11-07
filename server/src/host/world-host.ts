@@ -20,22 +20,14 @@ import { offlineGap, MIN_GAP_MS } from '../../../src/sim/bank.ts';
 import { isProtoRoom } from '../../../src/sim/tune.ts';
 import { loadHomeLand, type HomeLand } from './land.ts';
 import type { Store } from '../store.ts';
-import { installRailwayRules, installPlayableRailwayRules } from '../../../src/world/rules/railway-index.ts';
-import {
-  isRailwayRoom,
-  isPlayableRailwayRoom,
-  RAILWAY_NS,
-  RAILWAY_PLAY_NS,
-  isLineRailwayRoom,
-} from '../../../src/world/railway-namespace.ts';
-import { RAILWAY_CATALOG, RAILWAY_T1, RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
-import { RAILWAY_DURATION } from '../../../src/sim/railway.ts';
-import { railActiveJob, railMaxDuration } from '../../../src/sim/railway-line.ts';
+import { isRailwayRoom, RAILWAY_PLAY_NS } from '../../../src/world/railway-namespace.ts';
+import { RAILWAY_T1, RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
 import { LINE1_CATALOG } from '../../../src/sim/railway-line-layout.ts';
 import { railGrowthMask, railGrows, railGrowthAllowed, type SupplyPulse } from '../../../src/sim/railway-supply.ts';
 import { railNobodyNear, type RailwayPosition } from './railway-supply.ts';
 export type { RailwayPosition } from './railway-supply.ts';
-import type { RailReach, RailCadence } from '../../../src/world/rules/railway.ts';
+import { install as installRailway, type Actor } from '../../../src/world/railway-server.ts';
+import { createReplicator, type Replicator } from '../../../src/world/replicate-server.ts';
 import { createRailwayRequests, type ActorFacts } from './railway-requests.ts';
 import { canSet, cleanName } from '../../../src/sim/roster.ts';
 
@@ -173,9 +165,14 @@ export type RailwayHostOptions = WorldHostOptions & {
   /** Every connected session, including unknown poses. Unknown blocks maintenance. */
   positions?: () => (RailwayPosition | null)[];
   now?: () => number;
+  /** The room's replicator (hosted-room.ts flushes it each step); a host of its own makes one. */
+  replication?: Replicator;
 };
 
-// Same sync, room adapter and atomic store as ordinary rooms; opted-in namespace/registry/recovery only.
+// The railway room (docs/plans/replication.md, R1a): the classic lockstep states (roster, tune, ...) on the sync as
+// before, and the `railway` as Server-kind state on the same sync, applied the moment an action arrives and replicated
+// to clients by the room's replicator. Persistence is the sync's 2 s checkpoint plus the save on close: a crash may
+// roll the room back up to 2 s (owner, 6 November). Actions are not journalled before they apply.
 export function createRailwayWorldHost({
   roomId,
   store,
@@ -187,18 +184,18 @@ export function createRailwayWorldHost({
   positions = () => [null],
   now = Date.now,
   log = () => {},
+  replication = createReplicator(),
 }: RailwayHostOptions) {
-  if (!isRailwayRoom(roomId)) throw new Error('railway host requires a T1 namespace');
-  const playable = isPlayableRailwayRoom(roomId);
-  const line1 = isLineRailwayRoom(roomId);
-  const namespace = playable ? RAILWAY_PLAY_NS : RAILWAY_NS;
-  // Preserve the existing playtest-only tune policy; ordinary T1 rooms cannot change shared rates.
+  if (!isRailwayRoom(roomId)) throw new Error('railway host requires a railway namespace');
+  const namespace = RAILWAY_PLAY_NS;
+  // Preserve the existing playtest-only tune policy; ordinary railway rooms cannot change shared rates.
   const sync = createSync({
-    env: { protoRoom: playable && isProtoRoom(roomId.slice(namespace.length + 1)), tuneController },
+    env: { protoRoom: isProtoRoom(roomId.slice(namespace.length + 1)), tuneController },
   });
-  const rules = playable
-    ? installPlayableRailwayRules(sync, home.land as Parameters<typeof installRailwayRules>[1])
-    : installRailwayRules(sync, home.land as Parameters<typeof installRailwayRules>[1]);
+  const base = installRules(sync, home.land as Parameters<typeof installRules>[1]);
+  const api = installRailway(sync, base, replication);
+  const rules = { ...base, railway: api };
+  const railway = api.railway;
   const sent = new Set<(message: Msg) => void>();
   const incoming = new Set<(message: unknown, from: string) => void>();
   const send = (message: Msg) => {
@@ -211,100 +208,69 @@ export function createRailwayWorldHost({
   let savedTick = 0;
   // The actor owns their body (docs/plans/replication.md, revision 1): a client action carries its own position
   // (`at`, centimetres) and action time (`ms`, the client's monotonic clock), and reach and cadence are judged from
-  // those, never from presence or arrival time. They are validation facts only: railway-requests.ts hands them over
-  // for the synchronous stamp (withActor) and they never enter the saved or broadcast edit.
-  let acting: ActorFacts | null = null;
-  const withActor = <T>(facts: ActorFacts, fn: () => T): T => {
-    acting = facts;
-    try {
-      return fn();
-    } finally {
-      acting = null;
-    }
-  };
-  const actor = (e: { u: string; epoch?: unknown; request?: unknown }) =>
-    acting && acting.pid === e.u && acting.epoch === e.epoch && acting.request === e.request ? acting : null;
+  // those, never from presence or arrival time. They are validation facts only, never saved or replicated.
   const clientClocks = new Map<string, { epoch: number; last: Map<string, number> }>();
-  const railReach: RailReach = (e, x, z, radius) => {
-    const a = actor(e);
-    if (!a) return false;
-    const dx = a.at[0] - x,
-      dz = a.at[2] - z;
-    return dx * dx + dz * dz <= radius * radius;
-  };
-  const railCadence: RailCadence = (e) => {
-    const a = actor(e);
-    if (!a) return false;
-    const swing = ['rail.chop', 'rail.mine', 'rail.beamChop'].includes(e.op);
-    const kind = swing ? 'swing' : e.op;
-    const ms = swing ? RAILWAY_T1.swingMs : RAILWAY_T1.unloadMs;
-    let clock = clientClocks.get(a.pid);
-    if (!clock || clock.epoch !== a.epoch) {
-      clock = { epoch: a.epoch, last: new Map() }; // a new session is a new page, with its own clock
-      clientClocks.set(a.pid, clock);
-    }
-    if (a.ms - (clock.last.get(kind) ?? -Infinity) < ms - CADENCE_SLACK_MS) return false;
-    clock.last.set(kind, a.ms);
-    return true;
-  };
-  const railHeight = (e: { u: string }, y: number, radius: number) => {
-    const a = actor(e);
-    return !!a && Math.abs(a.at[1] - y) <= radius;
-  };
+  const actor = (a: ActorFacts): Actor => ({
+    reach(x, z, radius) {
+      const dx = a.at[0] - x,
+        dz = a.at[2] - z;
+      return dx * dx + dz * dz <= radius * radius;
+    },
+    height: (y, radius) => Math.abs(a.at[1] - y) <= radius,
+    cadence(op) {
+      const swing = ['rail.chop', 'rail.mine', 'rail.beamChop'].includes(op);
+      const kind = swing ? 'swing' : op;
+      const ms = swing ? RAILWAY_T1.swingMs : RAILWAY_T1.unloadMs;
+      let clock = clientClocks.get(a.pid);
+      if (!clock || clock.epoch !== a.epoch) {
+        clock = { epoch: a.epoch, last: new Map() }; // a new session is a new page, with its own clock
+        clientClocks.set(a.pid, clock);
+      }
+      if (a.ms - (clock.last.get(kind) ?? -Infinity) < ms - CADENCE_SLACK_MS) return false;
+      clock.last.set(kind, a.ms);
+      return true;
+    },
+  });
   const supplySafe = (e: SupplyPulse) => {
     const people = positions();
-    const beam = rules.railway.railway.line?.beam;
+    const beam = railway.line!.beam;
     return (
-      RAILWAY_SOURCES.every((_source, k) => !railGrows(e.grow, k) || railGrowthAllowed(k, line1)) &&
+      RAILWAY_SOURCES.every((_source, k) => !railGrows(e.grow, k) || railGrowthAllowed(k, true)) &&
       (e.beam === undefined ||
-        (!!beam &&
-          beam.state === 'ground' &&
+        (beam.state === 'ground' &&
           beam.revision === e.beam &&
           beam.age === 21 &&
           railNobodyNear(people, now(), beam.x, beam.z))) &&
       e.recover.every((id) => {
-        const pile = rules.railway.railway.piles.find((p) => p.id === id);
+        const pile = railway.piles.find((p) => p.id === id);
         return !!pile && railNobodyNear(people, now(), pile.x, pile.z);
       })
     );
   };
-  sync.setEnv({ railReach, railHeight, railCadence, railSupplySafe: supplySafe });
-  let supplyPending = false;
-  sync.onApplied((e: Record<string, unknown>) => {
-    if (e.op === 'rail.supply') supplyPending = false;
-  }, 'railway-supply');
+  // At most one supply pulse per rule tick: the wall-clock minute marker, regrowth and one recovered pile.
   const maintainSupply = () => {
-    if (!playable || !running || closed || sync.worldStatus().recoveryError) return;
+    if (!running || closed || sync.worldStatus().recoveryError) return;
     const marker = Math.floor(now() / 60000);
-    if (supplyPending || marker < rules.railway.railway.supply!.marker) return;
+    if (marker < railway.supply!.marker) return;
     const people = positions();
-    const recover = rules.railway.railway.piles
+    const recover = railway.piles
       .filter(
-        (pile) =>
-          (marker > rules.railway.railway.supply!.marker || pile.age === 21) &&
-          railNobodyNear(people, now(), pile.x, pile.z),
+        (pile) => (marker > railway.supply!.marker || pile.age === 21) && railNobodyNear(people, now(), pile.x, pile.z),
       )
       .map((pile) => pile.id)
       .sort((a, b) => a - b)
       .slice(0, 1);
-    const groundBeam = rules.railway.railway.line?.beam;
+    const ground = railway.line!.beam;
     const beam =
-      groundBeam?.state === 'ground' &&
-      groundBeam.age === 21 &&
-      railNobodyNear(people, now(), groundBeam.x, groundBeam.z)
-        ? groundBeam.revision
+      ground.state === 'ground' && ground.age === 21 && railNobodyNear(people, now(), ground.x, ground.z)
+        ? ground.revision
         : undefined;
-    if (marker === rules.railway.railway.supply!.marker && !recover.length && beam === undefined) return;
+    if (marker === railway.supply!.marker && !recover.length && beam === undefined) return;
     const grow = railGrowthMask(
-      RAILWAY_SOURCES.flatMap((_source, k) =>
-        rules.railway.railway.sources[k] === 0 && railGrowthAllowed(k, line1) ? [k] : [],
-      ),
+      RAILWAY_SOURCES.flatMap((_source, k) => (railway.sources[k] === 0 && railGrowthAllowed(k, true) ? [k] : [])),
     );
-    // One pile per bounded stamp: drain eligible piles after each accepted result, without a large recovery tail.
-    if (
-      sync.submitEdit({ op: 'rail.supply', i: 0, j: 0, marker, grow, recover, ...(beam === undefined ? {} : { beam }) })
-    )
-      supplyPending = true;
+    const pulse: SupplyPulse = { marker, grow, recover, ...(beam === undefined ? {} : { beam }) };
+    if (supplySafe(pulse)) api.supply(pulse);
   };
   let startupError: string | null = null;
   const attach = () =>
@@ -325,7 +291,7 @@ export function createRailwayWorldHost({
         saveMs,
         recovery: {
           namespace,
-          catalog: String(line1 ? LINE1_CATALOG : RAILWAY_CATALOG),
+          catalog: String(LINE1_CATALOG),
           read() {
             const doc = store.readSync(roomId);
             if (!doc) return null;
@@ -336,11 +302,8 @@ export function createRailwayWorldHost({
             return doc.data;
           },
           async write(data) {
-            const resume = data.tail.findLast((entry) => entry.e.op === 'rail.resume');
-            // Startup compaction must not consume absent time before its resume descriptor is durable.
-            // A saved descriptor carries an absolute consumed wall tick, including a crash before apply.
-            const marker = typeof resume?.e.marker === 'number' ? resume.e.marker : rules.railway.railway.resumeMarker;
-            const updatedAt = startup ? Math.max(savedAt, marker * 100) : now();
+            // Until startup has applied the offline catch-up, a save must not claim the absent time as passed.
+            const updatedAt = startup ? Math.max(savedAt, railway.resumeMarker * 100) : now();
             const result = await store.write(roomId, {
               tick: data.checkpoint.tick,
               writerId: SERVER_ID,
@@ -354,90 +317,39 @@ export function createRailwayWorldHost({
     );
   // New material may not inherit an unprocessed absence from the global supply marker.
   // One minute is the deliberately conservative 21/31-minute quantization; marker zero has no elapsed age.
-  const supplyCurrent = () =>
-    !playable ||
-    !rules.railway.railway.supply!.marker ||
-    Math.floor(now() / 60000) - rules.railway.railway.supply!.marker <= 1;
+  const supplyCurrent = () => !railway.supply!.marker || Math.floor(now() / 60000) - railway.supply!.marker <= 1;
   const requests = createRailwayRequests({
-    sync,
-    withActor,
-    api: rules.railway,
+    api,
     pidOf,
     send,
+    replication,
     available: () => running && !closed && !sync.worldStatus().recoveryError && supplyCurrent(),
+    unavailable: () => (startupError || sync.worldStatus().recoveryError ? 'storage' : 'starting'),
+    actor,
   });
-  // Session departures are facts from the room manager, not a presence timeout. Keep the epoch until every
-  // earlier durable take has applied; a leave between stamp and apply must still release that claim.
-  const departed = new Map<string, number>();
-  let releasePending = '';
-  const releaseDepartedBeam = () => {
-    const beam = rules.railway.railway.line?.beam;
-    if (!beam || beam.state !== 'held' || closed || sync.worldStatus().recoveryError) return false;
-    if ((departed.get(beam.holder) ?? 0) < beam.epoch) return false;
-    const key = `${beam.holder}:${beam.epoch}:${beam.revision}`;
-    if (releasePending === key) return true;
-    if (
-      !sync.submitEdit({
-        op: 'rail.beamRelease',
-        i: 0,
-        j: 0,
-        pid: beam.holder,
-        epoch: beam.epoch,
-        revision: beam.revision,
-      })
-    )
-      return false;
-    releasePending = key;
-    return true;
+  // A departed session drops the unique beam it was carrying: it goes back to where it was taken from.
+  const releaseBeamOf = (pid: string, epoch: number) => {
+    const beam = railway.line!.beam;
+    if (beam.state === 'held' && beam.holder === pid && beam.epoch <= epoch)
+      api.beamRelease(beam.holder, beam.epoch, beam.revision);
   };
-  sync.onApplied((e: Record<string, unknown>) => {
-    if (e.op === 'rail.beamRelease') releasePending = '';
-  }, 'railway-departure');
-  sync.onAfterTick(() => {
-    if (line1) releaseDepartedBeam();
-  }, 'railway-departure');
   const ready = (async () => {
     attach();
     await sync.whenDurable();
-    // No session survived a server restart. Recover an orphaned unique beam through the same durable op,
-    // and apply it before readiness rather than advertising an unavailable old holder to a new visitor.
-    const orphan = rules.railway.railway.line?.beam;
-    if (orphan?.state === 'held') {
-      departed.set(orphan.holder, orphan.epoch);
-      if (!releaseDepartedBeam()) throw new Error('railway orphan release refused');
-      await sync.whenDurable();
-      sync.updateWorld(0.3);
-      if (rules.railway.railway.line?.beam.state === 'held') throw new Error('railway orphan release did not apply');
-      sync.saveNow(true);
-      await sync.whenDurable();
-    }
-    // Tail replay already advanced ordinary ticks. Catch up only the remaining absent interval, once.
+    // No session survives a server restart: an orphaned held beam goes back.
+    const orphan = railway.line!.beam;
+    if (orphan.state === 'held') api.beamRelease(orphan.holder, orphan.epoch, orphan.revision);
+    // Catch up the time nobody hosted, once, for the funded job.
     const marker = Math.floor(now() / 100);
     const absent = Math.max(
       0,
-      marker - Math.max(Math.floor(savedAt / 100), rules.railway.railway.resumeMarker) - (sync.world.tick - savedTick),
+      marker - Math.max(Math.floor(savedAt / 100), railway.resumeMarker) - (sync.world.tick - savedTick),
     );
-    const job = railActiveJob(rules.railway.railway);
-    if (job.start >= 0 && !job.completion && absent > 0) {
-      if (
-        !sync.submitEdit({
-          op: 'rail.resume',
-          i: 0,
-          j: 0,
-          ticks: Math.min(line1 ? railMaxDuration(rules.railway.railway) : RAILWAY_DURATION, absent),
-          marker,
-        })
-      )
-        throw new Error('railway offline resume refused');
-      await sync.whenDurable();
-      // These are live startup ticks, not a second slice of the absent interval. No ready snapshot is served yet.
-      await new Promise<void>((resolve) => setTimeout(resolve, 300));
-      sync.updateWorld(0.3);
-      startup = false;
-      sync.saveNow(true);
-      await sync.whenDurable();
-    }
+    if (absent > 0) api.resume(absent, marker);
     startup = false;
+    api.touchAll(); // every component, from change tick 0, for whoever joins
+    sync.saveNow(true);
+    await sync.whenDurable();
     running = !closed;
   })();
   // The caller can await readiness; the timer path also owns and reports startup failure.
@@ -445,14 +357,22 @@ export function createRailwayWorldHost({
     startupError = e instanceof Error ? e.message : String(e);
     log(`world ${roomId}: recovery blocked`, startupError);
   });
+  // Server cost (npm run load, /rooms/:id/status): ms per timer wake (steps, rules, commit, flush) and per action.
+  const stats = { wakes: 0, steps: 0, stepMs: 0, maxStepMs: 0, actions: 0, actionMs: 0, maxActionMs: 0 };
   let last = performance.now();
   const timer = tick
     ? setInterval(() => {
         const time = performance.now();
         if (running && !closed) {
           const before = sync.world.tick;
+          const step0 = sync.roomStep();
           sync.stepWorld(Math.min(time - last, 1000));
           if (sync.world.tick !== before) maintainSupply(); // on rule ticks only, not 60 times a second
+          const ms = performance.now() - time;
+          stats.wakes++;
+          stats.steps += sync.roomStep() - step0;
+          stats.stepMs += ms;
+          stats.maxStepMs = Math.max(stats.maxStepMs, ms);
         }
         last = time;
       }, STEP_MS)
@@ -461,6 +381,8 @@ export function createRailwayWorldHost({
   return {
     sync,
     rules,
+    replication,
+    stats,
     onSend(fn: (message: Msg) => void) {
       sent.add(fn);
       return () => sent.delete(fn);
@@ -468,29 +390,13 @@ export function createRailwayWorldHost({
     deliver(message: unknown, from: string) {
       // The retained base APIs support eager consumers, but no classic material owner may accept edits here.
       // Keep this allow-list bounded: admitting another state also needs a maximum-envelope proof.
-      if (playable && message && typeof message === 'object' && (message as Msg).t === 'w:edit') {
+      if (message && typeof message === 'object' && (message as Msg).t === 'w:edit') {
         const e = (message as Msg).e;
         if (!running || closed || !e || typeof e !== 'object') return;
         const edit = e as Msg;
         if (edit.op === 'who.set' && canSet(rules.roster.roster, pidOf(from), edit.n, edit.c))
           sync.receiveEdit({ op: 'who.set', i: 0, j: 0, n: recoveryName(edit.n), c: edit.c }, from);
-        else if (
-          (edit.op === 'tune.set' || edit.op === 'tune.commit') &&
-          (edit.key === 'railRegrowMinutes' ||
-            edit.key === 'railRecoveryMinutes' ||
-            (line1 &&
-              [
-                'railFeedMs',
-                'railLaySpeed',
-                'railDepartureTicks',
-                'railBeamSoloSpeed',
-                'railBeamHelpSpeed',
-                'railJumpImpulse',
-                'railJumpTurn',
-                'railJumpSteer',
-                'railJumpApexSpeed',
-              ].includes(String(edit.key))))
-        ) {
+        else if ((edit.op === 'tune.set' || edit.op === 'tune.commit') && RAIL_TUNE_KEYS.has(String(edit.key))) {
           // Preserve correlation exactly, but bound its escaped representation in the durable tail.
           if (edit.op === 'tune.commit' && typeof edit.requestId === 'string' && edit.requestId.length > 64) {
             if (edit.requestId.length <= 80)
@@ -523,15 +429,14 @@ export function createRailwayWorldHost({
       }
       if (message && typeof message === 'object' && (message as Msg).t === 'w:need') {
         if (running && !closed) for (const fn of incoming) fn(message, from);
-        else
-          send({
-            t: 'r:state',
-            to: from,
-            state: startupError || sync.worldStatus().recoveryError ? 'storage' : 'starting',
-          });
       } else {
         if (!supplyCurrent()) maintainSupply();
+        const t0 = performance.now();
         requests.receive(message, from);
+        const ms = performance.now() - t0;
+        stats.actions++;
+        stats.actionMs += ms;
+        stats.maxActionMs = Math.max(stats.maxActionMs, ms);
       }
     },
     step(dt: number) {
@@ -549,9 +454,7 @@ export function createRailwayWorldHost({
     whenReady: () => ready,
     depart(sid: string) {
       const session = requests.depart(sid);
-      if (!line1 || !session) return;
-      departed.set(session.pid, Math.max(departed.get(session.pid) ?? 0, session.epoch));
-      releaseDepartedBeam();
+      if (session) releaseBeamOf(session.pid, session.epoch);
     },
     async close({ save = true } = {}) {
       closed = true;
@@ -570,3 +473,17 @@ export function createRailwayWorldHost({
   };
 }
 export type RailwayWorldHost = ReturnType<typeof createRailwayWorldHost>;
+// Railway tunables a room's controller may change; the rest stay classic-only.
+const RAIL_TUNE_KEYS = new Set([
+  'railRegrowMinutes',
+  'railRecoveryMinutes',
+  'railFeedMs',
+  'railLaySpeed',
+  'railDepartureTicks',
+  'railBeamSoloSpeed',
+  'railBeamHelpSpeed',
+  'railJumpImpulse',
+  'railJumpTurn',
+  'railJumpSteer',
+  'railJumpApexSpeed',
+]);
