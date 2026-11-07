@@ -10,8 +10,9 @@
 //   wh.status()                   worldStatus() plus the tick
 //   await wh.close({ save })      stop ticking; with save, write the last tick and wait for the file
 //
-// The host-side work a browser host does outside the rules is done here too: src/features/helper-bank.ts's bank.wake
-// for the time nobody hosted (a server restart).
+// Classic only: the host-side work a browser host does outside the rules is done here too, src/features/helper-bank.ts's
+// bank.wake for the time nobody hosted (a server restart). The helper bank goes with classic; railway rooms never wake it
+// and use the away credit instead (createRailwayWorldHost below).
 import { createSync } from '../../../src/world/sync.ts';
 import { STEP_MS } from '../../../src/world/room-clock.ts';
 import { installRules } from '../../../src/world/rules/index.ts';
@@ -26,6 +27,7 @@ import { RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
 import { LINE1_CATALOG } from '../../../src/sim/railway-line-layout.ts';
 import { railGrowthMask, railGrows, railGrowthAllowed, type SupplyPulse } from '../../../src/sim/railway-supply.ts';
 import { railNobodyNear, type RailwayPosition } from './railway-supply.ts';
+import { railAwayCredit, RAIL_AWAY } from '../../../src/sim/railway-away.ts';
 export type { RailwayPosition } from './railway-supply.ts';
 import { install as installRailway, type Actor } from '../../../src/world/railway-server.ts';
 import { railCadence, RAIL_CADENCE_SLACK_MS } from '../../../src/world/railway-predict.ts';
@@ -168,12 +170,21 @@ export type RailwayHostOptions = WorldHostOptions & {
   now?: () => number;
   /** The room's replicator (hosted-room.ts flushes it each step); a host of its own makes one. */
   replication?: Replicator;
+  /** Start simulating once loaded (default). A hosted room passes false and wakes the world on its first join. */
+  awake?: boolean;
 };
 
 // The railway room (docs/plans/replication.md, R1a): the classic lockstep states (roster, tune, ...) on the sync as
 // before, and the `railway` as Server-kind state on the same sync, applied the moment an action arrives and replicated
 // to clients by the room's replicator. Persistence is the sync's 2 s checkpoint plus the save on close: a crash may
 // roll the room back up to 2 s (owner, 6 November). Actions are not journalled before they apply.
+//
+// The paused world (docs/proposals/boogle-2.md, "2026-11-06, economy principles amended"): a room simulates only while
+// someone is in it. The hosted room pauses it after its last player has been gone a short grace (pause()), and the next
+// join wakes it (wake()) with one away credit for the time it stood still, the same credit a load from disk applies for
+// the time the server was down: the yards fill railAwayCredit(away) of production (src/sim/railway-away.ts), an absence
+// of at least RAIL_AWAY.finishTicks finishes the funded job (a shorter one advances it), and the supply pulse catches up
+// regrowth and drop recovery (up to 24 h, src/sim/railway-supply.ts). A rejoin within the grace never paused: no credit.
 export function createRailwayWorldHost({
   roomId,
   store,
@@ -187,6 +198,7 @@ export function createRailwayWorldHost({
   meter,
   log = () => {},
   replication = createReplicator(),
+  awake = true,
 }: RailwayHostOptions) {
   if (!isRailwayRoom(roomId)) throw new Error('railway host requires a railway namespace');
   const namespace = RAILWAY_PLAY_NS;
@@ -206,6 +218,11 @@ export function createRailwayWorldHost({
   let running = false;
   let closed = false;
   let startup = true;
+  let loaded = false; // startup finished without error
+  let present = awake; // someone is here (or the caller simulates without a room): wake once loaded
+  // The 100 ms marker at which the room stopped simulating, or null while it runs. A save while paused is stamped
+  // with it, so neither a reload nor a crash counts the paused time as hosted.
+  let awayMarker: number | null = null;
   let savedAt = now();
   let savedTick = 0;
   // The actor owns their body (docs/plans/replication.md, revision 1): a client action carries its own position
@@ -306,7 +323,11 @@ export function createRailwayWorldHost({
           },
           async write(data) {
             // Until startup has applied the offline catch-up, a save must not claim the absent time as passed.
-            const updatedAt = startup ? Math.max(savedAt, railway.resumeMarker * 100) : now();
+            const updatedAt = startup
+              ? Math.max(savedAt, railway.resumeMarker * 100)
+              : awayMarker !== null
+                ? awayMarker * 100
+                : now();
             const result = await store.write(roomId, {
               tick: data.checkpoint.tick,
               writerId: SERVER_ID,
@@ -360,19 +381,37 @@ export function createRailwayWorldHost({
     await sync.whenDurable();
     // No session survives a server restart: a held beam's carrier is away from now (maintainBeam), and keeps it if they
     // come back within the grace.
-    // Catch up the time nobody hosted, once, for the funded job.
-    const marker = Math.floor(now() / 100);
-    const absent = Math.max(
-      0,
-      marker - Math.max(Math.floor(savedAt / 100), railway.resumeMarker) - (sync.world.tick - savedTick),
+    // The room stood still from its last save (less any tail the recovery replayed): the away credit waits for a join.
+    awayMarker = Math.min(
+      Math.floor(now() / 100),
+      Math.max(Math.floor(savedAt / 100), railway.resumeMarker) + (sync.world.tick - savedTick),
     );
-    if (absent > 0) api.resume(absent, marker);
     startup = false;
+    if (present) credit(); // whoever's joining sees the credited world in the startup checkpoint
     api.touchAll(); // every component, from change tick 0, for whoever joins
     sync.saveNow(true);
     await sync.whenDurable();
-    running = !closed;
+    loaded = !closed;
+    if (present) wakeNow();
   })();
+  // The one away credit for the time since awayMarker; consumed once (railResume's marker), never read from a client.
+  function credit() {
+    if (awayMarker === null) return false;
+    const marker = Math.floor(now() / 100);
+    const away = Math.max(0, marker - awayMarker);
+    awayMarker = null;
+    if (away <= 0) return false;
+    // api.resume caps the job's ticks at what the funded job has left: a whole absence finishes it.
+    api.resume(away >= RAIL_AWAY.finishTicks ? Number.MAX_SAFE_INTEGER : away, marker, railAwayCredit(away));
+    return true;
+  }
+  function wakeNow() {
+    if (!loaded || closed || running || sync.worldStatus().recoveryError) return;
+    const credited = credit();
+    running = true;
+    maintainSupply(); // regrowth and drop recovery catch up on the join, not a rule tick later
+    if (credited) sync.saveNow(true);
+  }
   // The caller can await readiness; the timer path also owns and reports startup failure.
   void ready.catch((e: unknown) => {
     startupError = e instanceof Error ? e.message : String(e);
@@ -475,9 +514,24 @@ export function createRailwayWorldHost({
       tick: sync.world.tick,
       ...sync.worldStatus(),
       recoveryError: startupError ?? sync.worldStatus().recoveryError,
-      ready: running && !sync.worldStatus().recoveryError,
+      ready: loaded && !startupError && !sync.worldStatus().recoveryError,
+      paused: !running,
     }),
     whenReady: () => ready,
+    /** Someone joined: a paused room applies its one away credit and simulates again. */
+    wake() {
+      present = true;
+      wakeNow();
+    },
+    /** Nobody is here (after the hosted room's grace): stop simulating and save the stamp the away credit counts from. */
+    pause() {
+      present = false;
+      if (!running || closed) return;
+      running = false;
+      awayMarker = Math.floor(now() / 100);
+      sync.saveNow(true);
+    },
+    paused: () => !running,
     /** The room's actual departure of a session (after its reconnect grace). A carried beam waits for its carrier. */
     depart(sid: string) {
       const session = requests.depart(sid);

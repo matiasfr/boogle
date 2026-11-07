@@ -319,3 +319,35 @@ test('a peer resuming mid-Q2 after a restart matches one that never went offline
   assert.equal(restarted.line2!.jobs[2]!.start, -1);
   assert.equal(railwayInvariant(restarted), null);
 });
+
+test('the away credit fills the forge rack and the depot cart once, never past the rack or the stretch bill', () => {
+  const w = toQ2();
+  const l = w.s.line2!;
+  const k = line2Active(w.s);
+  assert.equal(k, 1, 'Q2 takes materials: the depot runs');
+  const before = { rack: l.forge.rack, poured: l.forge.poured, depot: l.depot, out: l.depotOut[k]! };
+  const produced = railCounts(w.s).produced;
+  const stock = l.jobs[k]!.stock;
+  // One depot interval of production: one load, and the rack as far as that many pours reach.
+  const yard = LINE2_DEPOT.everyTicks;
+  assert.equal(railResume(w.s, 0, 20, w.t, yard), 0, 'no funded job to advance');
+  const pours = Math.min(LINE2_FORGE.rackMax - before.rack, Math.floor(yard / LINE2_FORGE.pourTicks));
+  assert.equal(l.forge.rack, before.rack + pours);
+  assert.equal(l.forge.poured, before.poured + pours, 'every poured rail is counted');
+  const bill = LINE2_STATIONS[k]!.bill[0];
+  const need = Math.min(bill - stock - before.depot, bill - before.out);
+  assert.equal(l.depot, before.depot + Math.min(need, LINE2_DEPOT.load));
+  assert.equal(railCounts(w.s).produced, produced + (l.depot - before.depot), 'depot logs are counted production');
+  assert.equal(railwayInvariant(w.s), null);
+  // The same marker never credits twice; a long absence fills the yards to their limits, no further.
+  const pids = w.s.accounts.map((a) => a.pid);
+  const hash = hashRailway(w.s, pids);
+  assert.equal(railResume(w.s, 0, 20, w.t, 1000000), 0);
+  assert.equal(hashRailway(w.s, pids), hash, 'a repeated marker credits nothing');
+  railResume(w.s, 0, 21, w.t, 1000000);
+  assert.equal(l.forge.rack, LINE2_FORGE.rackMax, 'the rack caps the forge');
+  assert.equal(Math.min(bill - stock - l.depot, bill - l.depotOut[k]!), 0, 'the depot fills what the stretch needs');
+  assert.ok(l.depotOut[k]! <= bill, 'and no more');
+  assert.equal(railwayInvariant(w.s), null);
+  restore(w);
+});

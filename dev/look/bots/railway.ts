@@ -56,6 +56,8 @@ export async function play({ stopBeforeReward = false } = {}) {
     if (!ok) throw new Error(beat);
   };
   const until = async (fn: () => unknown, beat: string, ms = 300000) => require(await bot.until(fn, ms, beat), beat);
+  // Laying runs on the server's real-time ticks while the page's clock races ahead, so a loaded machine needs longer here.
+  const LAYING_MS = 600000;
   const job = (station: number) => read().stations[station]!;
   // Co-op witness: mirrored railway hashes by server step, compared offline between the two peers' logs.
   const tickHashes = new Map<number, number>();
@@ -310,7 +312,7 @@ export async function play({ stopBeforeReward = false } = {}) {
     await until(() => job(0).start >= 0, 'funded T1 begins');
     mark('T1 funded');
     await ride(0);
-    await until(() => job(0).completion === 1, 'T1 laid once');
+    await until(() => job(0).completion === 1, 'T1 laid once', LAYING_MS);
     panels(1);
     require(job(0).used === 24 && job(0).allocation === 0, 'T1 contains exactly 24 logs');
     mark('T1 laid');
@@ -345,7 +347,7 @@ export async function play({ stopBeforeReward = false } = {}) {
     await until(() => job(1).start >= 0, 'T2 exact mixed bill funded');
     mark('T2 funded');
     await ride(1);
-    await until(() => job(1).completion === 1, 'T2 laid once');
+    await until(() => job(1).completion === 1, 'T2 laid once', LAYING_MS);
     panels(2);
     require(job(1).used === 32 && job(1).stoneUsed === 8, 'T2 embodies 32 logs and 8 stone');
     await checkpoint('T2 laid');
@@ -473,7 +475,7 @@ export async function play({ stopBeforeReward = false } = {}) {
     }
     await checkpoint('T3 funded');
     await ride(2);
-    await until(() => job(2).completion === 1, 'T3 laid once');
+    await until(() => job(2).completion === 1, 'T3 laid once', LAYING_MS);
     panels(3);
     require(read().beam?.state === 'used' && job(2).used === 40, 'single beam and 40 logs embodied');
     require(read().reward.claims === 2, 'only T1 and T2 personal boxes earned');
@@ -690,7 +692,7 @@ export async function play({ stopBeforeReward = false } = {}) {
     await deliver(0, q1);
     await until(() => l2().stations[0]!.start >= 0, 'Q1 funded from logs and rails');
     await checkpoint('Q1 funded');
-    await until(() => l2().stations[0]!.completion === 1, 'Q1 laid once');
+    await until(() => l2().stations[0]!.completion === 1, 'Q1 laid once', LAYING_MS);
     await checkpoint('Q1 laid');
     // Q2 and Q3: logs from the depot rack by the frame, rails from the forge by hand.
     const viaTrack = async (frameAt: { x: number; z: number }) => {
@@ -746,7 +748,7 @@ export async function play({ stopBeforeReward = false } = {}) {
       }
       await until(() => l2().stations[k]!.start >= 0, `Q${k + 1} funded`);
       await checkpoint(`Q${k + 1} funded`);
-      await until(() => l2().stations[k]!.completion === 1, `Q${k + 1} laid once`);
+      await until(() => l2().stations[k]!.completion === 1, `Q${k + 1} laid once`, LAYING_MS);
       await checkpoint(`Q${k + 1} laid`);
       if (k === 1) {
         // The hook walk: from the finished deck near s=92 up the broad sloped walkway to pillar p2.

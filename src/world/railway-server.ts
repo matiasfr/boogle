@@ -236,8 +236,9 @@ export function install(sync: SyncView, rules: { tune: TuneApi }, replication: R
       if (n) touch('beam', 0);
       return n;
     },
-    resume(ticks: number, marker: number) {
-      const n = railResume(railway, Math.min(ticks, railMaxDuration(railway)), marker, sync.world.tick);
+    /** The away credit: `yard` production ticks for the yards, then up to `ticks` for the funded job, once per marker. */
+    resume(ticks: number, marker: number, yard = 0) {
+      const n = railResume(railway, Math.min(ticks, railMaxDuration(railway)), marker, sync.world.tick, yard);
       railTouchCore(touch);
       return n;
     },
