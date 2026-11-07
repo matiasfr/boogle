@@ -33,6 +33,8 @@ const recipes = {
   treeFall: [tone(230, 85, 0.65, -26), noise(1100, 260, 0.42, -25), tone(410, 170, 0.24, -32, 0.14)],
   treeLand: [tone(105, 48, 0.32, -22), noise(650, 180, 0.35, -25), noise(2100, 700, 0.24, -30, 0.08)],
   shoulder: [tone(180, 115, 0.16, -26), noise(500, 1200, 0.18, -29), tone(270, 320, 0.16, -32, 0.06)],
+  beamScrape: [noise(380, 240, 0.26, -36), noise(900, 520, 0.14, -41, 0.08)],
+  beamDrop: [tone(120, 60, 0.22, -27), noise(600, 200, 0.26, -29), noise(1700, 600, 0.12, -35, 0.06)],
   boxCommon: [tone(523, 523, 0.22, -28), noise(1800, 700, 0.06, -29), tone(1046, 1046, 0.16, -35, 0.035)],
   boxRare: [
     tone(523, 523, 0.26, -29),
@@ -76,6 +78,8 @@ export const placeCues: Record<PlaceCue, string> = {
   treeFall: 'A descending wooden groan and splinter as the great tree tips.',
   treeLand: 'A broad, dull trunk impact with a soft crown rustle.',
   shoulder: 'A wooden knock and brief rising effort as the trunk reaches the shoulder.',
+  beamScrape: 'A low dry scrape as the trunk\'s far end drags over the ground.',
+  beamDrop: 'A dull wooden thump as a friend lets the trunk\'s end back down.',
   boxCommon: 'One warm bell with a tiny bright bounce.',
   boxRare: 'A root and fifth, with a short metal sparkle.',
   boxWonder: 'A three-note rising reveal with a longer, quiet shimmer.',

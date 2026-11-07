@@ -25,6 +25,7 @@ import { frameOf, fitOf, slotAt, shownOf, SHOWN } from '../../render/haul-bundle
 import { commitPieces } from '../../render/haul-pieces.ts';
 import { createRecoveryRack } from './supply-view.ts';
 import { createLineCargo } from './line-cargo.ts';
+import { createGreatTreeDress } from './great-tree-view.ts';
 import { LINE1_HARDWOODS } from '../../sim/railway-line-layout.ts';
 
 type AvatarData = { inner?: THREE.Object3D; loadFit?: { frame: THREE.Object3D } };
@@ -101,6 +102,9 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     () => state.beam?.state !== 'standing',
     GREAT.strokes,
   );
+  const greatTree = trees.find((tree) => tree.great);
+  const dress = greatTree ? createGreatTreeDress(root, greatTree, flat) : null;
+  if (dress) owner.cleanup(dress.dispose);
   if (look.LOOK.contact)
     for (const tree of trees)
       if (!tree.cleared)
@@ -654,6 +658,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       solid(tree);
     }
     cargo.update();
+    dress?.update(state.activeStation === 2 && state.beam?.state === 'standing');
     axes.setTier(state.axe, state.awake >= 0 && !['asleep', 'waking'].includes(state.phase));
     const frame = visualFrame(me.avatar);
     if (frame && axe.parent !== frame) frame.add(axe);
