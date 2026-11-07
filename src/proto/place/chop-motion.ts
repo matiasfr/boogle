@@ -109,33 +109,165 @@ function grip(arm: Arm, at: THREE.Vector3, figure: THREE.Object3D) {
   aim(arm.lower, arm.hand, at);
 }
 export type ChopPoseOptions = { reducedMotion?: boolean; target?: THREE.Vector3; frame?: THREE.Object3D };
-/** Morning 5 November floating swing (1b19093f), shared with the production railway. */
+/** Floating summon in the avatar frame (-Z forward, +X right). Local presentation only: contact stays at CHOP_CONTACT. */
+type FloatPose = { x: number; y: number; z: number; rx: number; ry: number; rz: number };
+/** Rotation order YXZ: yaw about the frame's vertical, then pitch, then roll. */
+export type FloatAim = { rest: FloatPose; cock: FloatPose; hit: FloatPose; kick: FloatPose; full: FloatPose };
+/** Where the blade meets the bark when no target is given: the pre-6-November contact point. */
+const DEFAULT_TARGET = new THREE.Vector3(0.18, 0.665, -0.99);
+const DEFAULT_MARKER = new THREE.Vector3(0, 0.64, -0.2);
+const HIT_PITCH = -0.7, // shaft leaning forward, edge biting forward-down into the trunk face
+  COCK_PITCH = 0.6, // a small lift above the grip, never behind the back
+  GRIP_SIDE = 0.4; // the grip stays this far out on the tree's side, so nothing crosses the face
+/**
+ * The strike's poses for a bark contact in frame space. The grip is solved so the blade marker lands exactly on
+ * `target` at the hit pitch; every pose sits on the target's side of the body (right unless the tree is clearly left).
+ */
+export function aimFloatingChop(
+  target: THREE.Vector3 = DEFAULT_TARGET,
+  marker: THREE.Vector3 = DEFAULT_MARKER,
+): FloatAim {
+  const side = target.x < -0.15 ? -1 : 1;
+  const c = Math.cos(HIT_PITCH),
+    s = Math.sin(HIT_PITCH);
+  // Pitch only (marker.x is zero on every axe): marker -> (0, py, pz).
+  const py = marker.y * c - marker.z * s,
+    pz = marker.y * s + marker.z * c;
+  const reach = Math.max(0.05, -pz);
+  const yaw = Math.asin(Math.max(-0.7, Math.min(0.7, (side * GRIP_SIDE - target.x) / reach)));
+  const hit: FloatPose = {
+    x: target.x + reach * Math.sin(yaw),
+    y: target.y - py,
+    z: target.z + reach * Math.cos(yaw),
+    rx: HIT_PITCH,
+    ry: yaw,
+    rz: 0,
+  };
+  return {
+    hit,
+    // Beside the hip, head at shoulder height: below the face from every camera.
+    rest: { x: side * 0.5, y: 0.12, z: -0.12, rx: 0.2, ry: 0, rz: side * -0.18 },
+    cock: { ...hit, x: hit.x + side * 0.05, y: hit.y + 0.06, z: hit.z + 0.16, rx: COCK_PITCH, rz: side * -0.08 },
+    kick: { ...hit, x: hit.x + side * 0.06, y: hit.y + 0.06, z: hit.z + 0.14, rx: 0.5, rz: side * -0.4 },
+    full: { ...hit, x: hit.x + side * 0.12, y: hit.y + 0.08, z: hit.z + 0.2, rx: 0.6, ry: 0, rz: side * -0.9 },
+  };
+}
+const DEFAULT_AIM = aimFloatingChop();
+/** Beats in seconds since the press; storyboard: appear, strike, bite, return, hover, disappear. */
+export const FLOAT_BEATS = { appear: 0.06, cock: 0.05, bite: CHOP_CONTACT + 0.035, home: 0.4, fade: 0.72 };
+const ease = {
+  out: (u: number) => 1 - (1 - u) ** 2,
+  in: (u: number) => u * u,
+  inOut: (u: number) => u * u * (3 - 2 * u),
+  back: (u: number) => 1 + 2.70158 * (u - 1) ** 3 + 1.70158 * (u - 1) ** 2,
+};
+const clamp01 = (u: number) => Math.max(0, Math.min(1, u));
+function blend(a: FloatPose, b: FloatPose, u: number, out: FloatPose) {
+  out.x = mix(a.x, b.x, u);
+  out.y = mix(a.y, b.y, u);
+  out.z = mix(a.z, b.z, u);
+  out.rx = mix(a.rx, b.rx, u);
+  out.ry = mix(a.ry, b.ry, u);
+  out.rz = mix(a.rz, b.rz, u);
+  return out;
+}
+const span = (time: number, from: number, to: number) => clamp01((time - from) / (to - from));
+/** Pure sampler for stage curves. `from` is where a repeat press finds the axe; `appearAt`/`fromScale` start the pop. */
+export function sampleFloatingChop(
+  time: number,
+  response: ChopResponse,
+  aim: FloatAim = DEFAULT_AIM,
+  from: FloatPose = aim.rest,
+  appearAt = 0,
+  fromScale = 0.15,
+) {
+  const out: FloatPose & { scale: number; visible: boolean } = { ...aim.rest, scale: 1, visible: false };
+  const b = FLOAT_BEATS,
+    c = CHOP_CONTACT;
+  if (time < b.cock) blend(from, aim.cock, ease.out(span(time, 0, b.cock)), out);
+  // One arc, accelerating into the bark so it lands on the contact beat.
+  else if (time < c) blend(aim.cock, aim.hit, ease.in(span(time, b.cock, c)), out);
+  else if (response === 'rebound') {
+    if (time < 0.22) blend(aim.hit, aim.kick, ease.out(span(time, c, 0.22)), out);
+    else blend(aim.kick, aim.rest, ease.inOut(span(time, 0.22, b.home)), out);
+  } else if (response === 'full') {
+    if (time < 0.28) blend(aim.hit, aim.full, ease.out(span(time, c, 0.28)), out);
+    else blend(aim.full, aim.rest, ease.inOut(span(time, 0.42, 0.62)), out);
+  } else if (time < b.bite) blend(aim.hit, aim.hit, 0, out);
+  else blend(aim.hit, aim.rest, ease.inOut(span(time, b.bite, b.home)), out);
+  // A gentle float once it is home; zero velocity at the join.
+  if (time > b.home) out.y += 0.008 * (1 - Math.cos(((time - b.home) / 0.32) * Math.PI * 2));
+  const appear = mix(fromScale, 1, ease.back(span(time, appearAt, appearAt + b.appear)));
+  const v = span(time, b.fade, CHOP_DURATION);
+  const vanish = v < 0.3 ? 1 + 0.12 * ease.out(v / 0.3) : 1.12 * (1 - ease.in((v - 0.3) / 0.7) ** 1.5);
+  out.ry += Math.PI * v * v;
+  out.y += 0.06 * v;
+  out.scale = Math.max(0.001, appear * vanish);
+  out.visible = time < CHOP_DURATION;
+  return out;
+}
+type FloatMemory = {
+  last: number;
+  shown: boolean;
+  appearAt: number;
+  fromScale: number;
+  from: FloatPose;
+  pose: FloatPose & { scale: number };
+};
+const floating = new WeakMap<THREE.Object3D, FloatMemory>();
+const aimAt = new THREE.Vector3();
+/**
+ * Appear beside you, strike once so the blade meets `target` (world bark contact) on the contact beat, return,
+ * then pop out. Production railway, legacy Place and the stage share it.
+ */
 export function applyFloatingChopPose(
   figure: THREE.Object3D,
   axe: THREE.Object3D,
   time: number,
   response: ChopResponse,
   frame = figure,
+  target?: THREE.Vector3 | null,
 ) {
   if (axe.parent !== frame) frame.add(axe);
-  axe.position.set(0.42, 0.72, -0.2);
-  axe.rotation.set(0, 0, 0);
-  axe.visible = time < CHOP_DURATION;
-  const raised = 1.5,
-    struck = -1.35,
-    c = CHOP_CONTACT;
-  if (time < c) axe.rotation.x = raised + (struck - raised) * (time / c);
-  else if (response === 'full' && time < 0.55) {
-    const u = Math.sin(Math.min(1, (time - c) / 0.49) * Math.PI);
-    axe.rotation.x = 0.2 + u * 2.2;
-    axe.rotation.z = -u * 0.9;
-  } else if (response === 'rebound' && time < 0.32) {
-    const u = Math.min(1, (time - c) / 0.09);
-    axe.rotation.x = struck + (raised - struck) * Math.sin(u * Math.PI * 0.5);
-    axe.rotation.z = -0.45 * Math.sin(u * Math.PI);
-  } else if (response === 'bite' && time < c + 0.035) axe.rotation.x = struck;
-  else if (time < 0.3) axe.rotation.x = struck + (0.2 - struck) * ((time - c - 0.035) / (0.3 - c - 0.035));
-  else axe.rotation.x = 0.2;
+  let aim = DEFAULT_AIM;
+  if (target) {
+    frame.updateWorldMatrix(true, false);
+    aim = aimFloatingChop(
+      frame.worldToLocal(aimAt.copy(target)),
+      axe.getObjectByName('axe-blade-contact')?.position ?? DEFAULT_MARKER,
+    );
+  }
+  let m = floating.get(axe);
+  if (!m) {
+    m = {
+      last: Infinity,
+      shown: false,
+      appearAt: 0,
+      fromScale: 0.15,
+      from: { ...aim.rest },
+      pose: { ...aim.rest, scale: 0 },
+    };
+    floating.set(axe, m);
+  }
+  if (time < CHOP_DURATION && (time < m.last || !m.shown)) {
+    if (m.shown && time < m.last) {
+      // A repeat press while it is out: no second summon, the strike starts from where the axe is.
+      Object.assign(m.from, m.pose);
+      m.fromScale = m.pose.scale;
+    } else {
+      Object.assign(m.from, aim.rest);
+      m.fromScale = 0.15;
+    }
+    m.appearAt = time;
+  }
+  const pose = sampleFloatingChop(time, response, aim, m.from, m.appearAt, m.fromScale);
+  m.last = time;
+  m.shown = pose.visible;
+  Object.assign(m.pose, pose);
+  axe.visible = pose.visible;
+  axe.position.set(pose.x, pose.y, pose.z);
+  axe.rotation.set(pose.rx, pose.ry, pose.rz, 'YXZ');
+  axe.scale.setScalar(pose.scale);
 }
 
 export function applyChopPose(
@@ -146,11 +278,12 @@ export function applyChopPose(
   options: ChopPoseOptions = {},
 ) {
   if (!chopPresentation.twoHanded) {
-    applyFloatingChopPose(figure, axe, time, response, options.frame);
+    applyFloatingChopPose(figure, axe, time, response, options.frame, options.target);
     return;
   }
   const pose = sampleChop(time, response);
   axe.visible = pose.visible;
+  axe.scale.setScalar(1);
   if (!pose.visible) return;
   // The old tool inherited the spine/cargo socket's height and twist. Its own frame lets both arms follow it.
   if (axe.parent !== figure) figure.add(axe);
@@ -173,7 +306,7 @@ export function applyChopPose(
     pose.y + (hit.y - HIT.y) * pose.contact,
     pose.z + (hit.z - HIT.z) * pose.contact,
   );
-  axe.rotation.set(pose.rx, 0, pose.rz);
+  axe.rotation.set(pose.rx, 0, pose.rz, 'XYZ');
   figure.updateWorldMatrix(true, true);
   let rig = arms.get(figure);
   if (!rig) {

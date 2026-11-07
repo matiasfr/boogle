@@ -798,13 +798,27 @@ crisp ivory four-point SDF glints: a brief size/opacity pop and at most 0.32 rad
 The existing pool and material carry this opt-in look; the summon itself adds no smoke,
 puff cloud, second pool or post pass. Only visibility edges emit: repeated presses while it stays out
 do not summon it again. Reduced motion suppresses these decorative particles. This is Local,
-on the same axe presentation path; no partner axe or new presence is added. The separate
+on the same axe presentation path; no new presence is added. The separate
 `codex/chop-animation-timing` two-handed retuning trial is parked and remains unshipped.
 The `/character/` chop loop uses the production pose and sparkle emitter, with an explicitly
 inspection-only 0.2 s lead-in and 0.3 s hidden gap so both edges can be reviewed at speed 0.25.
 The isolated stage hosts the same particle implementation; the game still owns one pool.
 Stage `light=production` uses the frozen sky with production Neutral and 0.16 exposure;
 `sparkle=round` is the old-dot inspection control. Compare both at speed 0.25 and check Place too.
+
+**Appear, strike, return, vanish (owner playtest, 6 November):** "When it pulls back, it looks weird"; the
+particles should last "as long as it's existing". `applyFloatingChopPose` now pops the axe in beside your right
+side (scale 0.15 → 1.12 → 1 over 60 ms, a small upward cock, never behind the back), strikes in one accelerating
+arc whose blade marker lands exactly on the bark contact on the unchanged 0.12 s beat (production: the cut's
+radius and 1.1 m height facing you; legacy Place: its raycast hit; the stage: its trunk), holds the 35 ms bite, eases home by 0.40 s, floats with a 1.6 cm
+bob, then swells, half-twirls and shrinks out from 0.72 to 0.90 s. Hardwood refusal kicks up and returns; a full
+back lifts sideways and returns. A press while it is still out restarts the strike from where the axe is, with no
+second pop. The grip stays at least 0.4 m out on the tree's side (right unless the tree is clearly left) and rests
+beside the hip, so neither the path nor its trail crosses the face. `sparkleAxe` emits ten glints on appearance, a continuous ivory-gold-lilac aura and blade trail while
+visible (36 a second plus 16 per metre of blade travel, at most 8 a frame, `readableIntensity()`), and eight on
+vanishing: about 70 births a cycle in the shared pool. In production a partner's accepted chop, rock break or beam
+stroke shows their axe from the contact beat, in step with the chips. All Local; contact timing, restart cadence,
+rules and wire state are unchanged. Storyboard and review evidence are in the handoff.
 
 **Contact particles (5 November):** accepted chops fling small tapered timber chips from the cut,
 out toward the approach side. Their rotation, changing projected thickness, gravity and short ground

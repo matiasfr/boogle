@@ -17,7 +17,7 @@ import { BUDDY_LOAD_FIT } from '../src/player/buddy/load-fit.ts';
 import { makeCarryModels, cargoCapacity, type CargoKind } from '../src/proto/place/carry-models.ts';
 import { makeBundlePreview } from '../src/render/haul-bundle.ts';
 import { makeAxes, type AxeTier } from '../src/proto/place/axe-models.ts';
-import { applyChopPose, CHOP_DURATION, CHOP_TRUNK } from '../src/proto/place/chop-motion.ts';
+import { applyChopPose, CHOP_DURATION, CHOP_TRUNK, chopPresentation } from '../src/proto/place/chop-motion.ts';
 import { sparkleAxe } from '../src/proto/place/axe-sparkle.ts';
 import type { Particle } from '../src/render/particle-pool.ts';
 import { T1_REWARD } from '../src/render/t1-reward-parts.ts';
@@ -85,6 +85,8 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
       let canopy: ReturnType<typeof makeCanopy> | undefined;
       let axes: ReturnType<typeof makeAxes> | undefined;
       let trunk: THREE.Mesh | undefined;
+      const stageContact = new THREE.Vector3(),
+        stageFrom = new THREE.Vector3();
       let railwayHat: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardNodeMaterial> | undefined;
       const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
       const clock = { now: () => time * 1000, random };
@@ -243,22 +245,35 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         }
         group.updateMatrixWorld(true);
       }
-      function applyAxe() {
+      function applyAxe(dt = 0) {
         if (!axes) return;
         const response = worn?.chop;
         const chopping = response && response !== 'off';
         const elapsed = (time % CHOP_PREVIEW_DURATION) - CHOP_PREVIEW_LEAD;
         const wasVisible = axes.root.visible;
+        // The game's bark contact: the trunk's surface facing Buddy, 1.1 m above its base (the cut's height).
+        let target: THREE.Vector3 | undefined;
+        if (trunk && !chopPresentation.twoHanded) {
+          group.updateMatrixWorld(true);
+          trunk.getWorldPosition(stageContact);
+          figure.getWorldPosition(stageFrom);
+          stageFrom.sub(stageContact).setY(0).normalize();
+          target = stageContact
+            .addScaledVector(stageFrom, CHOP_TRUNK.radius)
+            .setY(stageContact.y - CHOP_TRUNK.height / 2 + 1.1);
+        }
         applyChopPose(
           figure,
           axes.root,
           chopping ? (elapsed < 0 ? CHOP_DURATION + 1 : elapsed) : 0,
           response && response !== 'off' ? response : 'bite',
-          { reducedMotion: worn?.reducedMotion ?? false, frame: sockets.back },
+          { reducedMotion: worn?.reducedMotion ?? false, frame: sockets.back, target },
         );
-        if (!chopping) axes.root.visible = true;
-        else if (worn?.emit)
-          sparkleAxe(axes.root, wasVisible, worn.reducedMotion ?? false, worn.emit, worn.sparkleIntensity?.() ?? 1);
+        if (!chopping) {
+          axes.root.visible = true;
+          axes.root.scale.setScalar(1);
+        } else if (worn?.emit)
+          sparkleAxe(axes.root, wasVisible, worn.reducedMotion ?? false, worn.emit, worn.sparkleIntensity?.() ?? 1, dt);
       }
       function update(dt: number) {
         time += dt;
@@ -299,7 +314,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         if (blink !== undefined) for (const name of ['eye_l', 'eye_r']) figure.getObjectByName(name)?.scale.setY(blink);
         if (gear && worn) wearGear(figure, sockets.back, gear, worn);
         if (canopy && worn) placeCanopy(avatar ?? figure, canopy, worn.canopy ? 1 : 0, 0, time * 1000);
-        applyAxe();
+        applyAxe(dt);
         if (railwayHat) seatConductorHat(avatar ?? figure, railwayHat);
         group.updateMatrixWorld(true);
       }
