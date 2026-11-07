@@ -9,6 +9,7 @@ import { waterField } from '../physics/water-field.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { camera } from '../render/scene.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
+import { readableUnlit } from '../render/readable-unlit.ts';
 import { stepFlight, stepBall } from '../physics/flight.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { me, camForward, handPosition, throwFrom } from './state.ts';
@@ -55,14 +56,16 @@ const dotTex = (() => {
 })();
 const PREVIEW_N = 48;
 const previewAttr = dynAttr(new Float32Array(PREVIEW_N * 3), 3);
-const previewMat = new THREE.PointsNodeMaterial({
-  map: dotTex,
-  size: 0.2,
-  transparent: true,
-  opacity: 0.9,
-  alphaTest: 0.3,
-  depthWrite: false,
-});
+const previewMat = readableUnlit(
+  new THREE.PointsNodeMaterial({
+    map: dotTex,
+    size: 0.2,
+    transparent: true,
+    opacity: 0.9,
+    alphaTest: 0.3,
+    depthWrite: false,
+  }),
+);
 const preview = instancedSprite(previewMat, previewAttr);
 
 const DT = 1 / 60;

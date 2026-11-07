@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { uniform, vec4, pow, uv } from 'three/tsl';
 import { scene, camera } from '../../render/scene.ts';
+import { readableUnlit } from '../../render/readable-unlit.ts';
 import { groundMat, GROUP } from '../../physics/physics.ts';
 import { createBody, addBody } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.ts';
@@ -76,7 +77,7 @@ function addColliderBox(shapes: Shape[], b: ReturnType<typeof boxBetween>) {
 }
 
 let beams: THREE.Group | null = null,
-  lamp: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> | null = null,
+  lamp: THREE.Mesh<THREE.SphereGeometry, MeshBasicNodeMaterial> | null = null,
   glass: THREE.Mesh<THREE.CylinderGeometry, THREE.MeshStandardMaterial> | null = null,
   halo: THREE.Sprite | null = null;
 const night = () => THREE.MathUtils.smoothstep(1 - (skyNow.day ?? 1), 0.25, 0.6);
@@ -280,7 +281,7 @@ function build() {
   scene.add(gl);
   const l = (lamp = new THREE.Mesh(
     new THREE.SphereGeometry(0.45, 14, 10),
-    new THREE.MeshBasicMaterial({ color: '#7a6a4a' }),
+    readableUnlit(new MeshBasicNodeMaterial({ color: '#7a6a4a' })),
   ));
   l.position.set(CX, DECK_Y + 1.3, CZ);
   scene.add(l);

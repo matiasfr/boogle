@@ -11,6 +11,7 @@ import { groundMat, GROUP } from '../../physics/physics.ts';
 import { createBody, addBody } from '../../physics/engine.ts';
 import { addPart, mergeParts } from '../../render/props.ts';
 import { addLightSource } from '../../render/lights.ts';
+import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { mulberry32 } from '../../math.ts';
 import { caveSd } from './mesh.ts';
 import { ambAt, withCaveAmbient } from './ambient.ts';
@@ -367,15 +368,17 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
     const pond = NODES.pond;
     const water = new THREE.Mesh(
       new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2),
-      new THREE.MeshStandardMaterial({
-        color: '#0b3a44',
-        emissive: '#0e5866',
-        emissiveIntensity: 0.4,
-        roughness: 0.08,
-        metalness: 0.3,
-        transparent: true,
-        opacity: 0.84,
-      }),
+      readableGlow(
+        new THREE.MeshStandardNodeMaterial({
+          color: '#0b3a44',
+          emissive: '#0e5866',
+          emissiveIntensity: 0.4,
+          roughness: 0.08,
+          metalness: 0.3,
+          transparent: true,
+          opacity: 0.84,
+        }),
+      ),
     );
     water.scale.set(POND.rx * 0.86, 1, POND.rz * 0.86);
     water.position.set(POND.x, POND.level, POND.z);
@@ -544,7 +547,10 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
   );
   const solidMesh = new THREE.Mesh(solidGeo, mat);
   solidMesh.receiveShadow = true;
-  const glowMesh = new THREE.Mesh(mergeParts(glow), new THREE.MeshBasicMaterial({ vertexColors: true }));
+  const glowMesh = new THREE.Mesh(
+    mergeParts(glow),
+    readableUnlit(new THREE.MeshBasicNodeMaterial({ vertexColors: true })),
+  );
   root.add(solidMesh, glowMesh);
   scene.add(root);
   addBody(createBody({ material: groundMat, group: GROUP.CAVE, position: O, shapes }));

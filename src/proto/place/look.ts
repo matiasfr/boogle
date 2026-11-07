@@ -33,6 +33,7 @@ import { atmosphere } from '../../render/sky.ts';
 import { flat } from '../flat.ts';
 import { dressBundleLogs } from '../../render/haul-bundle.ts';
 import { patchNode } from '../../render/material-patch.ts';
+import { readableUnlit } from '../../render/readable-unlit.ts';
 import { woodGrain } from '../../render/wood.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { paletteNode, paletteColour, watchPalette } from '../../render/material-palette.ts';
@@ -255,13 +256,15 @@ export function bakeContact(geo: THREE.BufferGeometry, k = 0.42, fade?: number) 
 }
 /** A glow with no hard edge: fades where a surface turns away from you, and, with `fade`, along the geometry's v. */
 export function softGlow(color: string, strength: number, fade: boolean | 'up' = false) {
-  const m = new THREE.MeshBasicNodeMaterial({
-    color,
-    transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
-  });
+  const m = readableUnlit(
+    new THREE.MeshBasicNodeMaterial({
+      color,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+    }),
+  );
   const u = uniform(strength);
   const face: N = abs(normalView.z);
   const a: N = face.mul(face).mul(u);

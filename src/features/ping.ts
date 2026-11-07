@@ -4,7 +4,9 @@
 // { t:'ping', x, y, z, k }, validated and rate limited on receipt (src/sim/social.ts). No scores, no sim state.
 import './ping.css';
 import * as THREE from 'three';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { camera, toScreen, view } from '../render/scene.ts';
+import { readableUnlit } from '../render/readable-unlit.ts';
 import { COLORS, SEA, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
@@ -140,7 +142,9 @@ function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boo
   layer.append(el);
   const ring = new THREE.Mesh(
     ringGeo,
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false }),
+    readableUnlit(
+      new MeshBasicNodeMaterial({ color, transparent: true, opacity: 0.9, depthWrite: false, depthTest: false }),
+    ),
   );
   ring.renderOrder = 12;
   ring.position.set(p.x, p.y + 0.08, p.z);

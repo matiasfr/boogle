@@ -4,7 +4,7 @@
 import * as THREE from 'three/webgpu';
 import { me } from '../../player/player.ts';
 import { emit } from '../../render/particles.ts';
-import { readableIntensity } from '../../render/readable-unlit.ts';
+import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts';
 import { scene } from '../../render/scene.ts';
 import { protoCount } from '../count.ts';
 import { flat } from '../flat.ts';
@@ -44,12 +44,14 @@ const FIND_SPOTS = [
 ];
 const found: number[] = [];
 const findGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.09, 8).rotateX(Math.PI / 2);
-const findMat = new THREE.MeshStandardNodeMaterial({
-  color: '#ffcf33',
-  roughness: 0.35,
-  metalness: 0.4,
-  emissive: '#7a5a08',
-});
+const findMat = readableGlow(
+  new THREE.MeshStandardNodeMaterial({
+    color: '#ffcf33',
+    roughness: 0.35,
+    metalness: 0.4,
+    emissive: '#7a5a08',
+  }),
+);
 function trinket() {
   const m = new THREE.Mesh(findGeo, findMat);
   // A raised crossed stamp reads as worked brass, rather than another crystal.

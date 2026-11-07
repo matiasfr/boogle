@@ -6,6 +6,7 @@ import { paletteMaterial } from '../../render/material-palette.ts';
 import { woodMaterial, type GrainAxis } from '../../render/wood.ts';
 import { LOOK, groundMaterial, spireRock } from './look.ts';
 import { scene } from '../../render/scene.ts';
+import { readableGlow } from '../../render/readable-unlit.ts';
 import { shoreApronHeight } from '../../render/water/shore-providers.ts';
 import { SEA } from '../../constants.ts';
 import { addBody, createBody, type Shape } from '../../physics/engine.ts';
@@ -464,7 +465,7 @@ function buildFar(owner?: OwnedView) {
   else scene.add(ring);
   const shard = new THREE.Mesh(
     new THREE.OctahedronGeometry(38, 0),
-    new THREE.MeshStandardNodeMaterial({ color: '#7fd0ff', emissive: '#58c8ff', emissiveIntensity: 1.6 }),
+    readableGlow(new THREE.MeshStandardNodeMaterial({ color: '#7fd0ff', emissive: '#58c8ff', emissiveIntensity: 1.6 })),
   );
   shard.scale.set(0.55, 1.5, 0.55);
   shard.position.set(X + 10, 140, Z);

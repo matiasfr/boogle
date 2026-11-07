@@ -5,6 +5,7 @@ import { getMask, removeBody, type Body } from '../../physics/engine.ts';
 import { makeCameraArm } from '../../player/camera-arm.ts';
 import { camConstraints, me } from '../../player/player.ts';
 import { camera, scene } from '../../render/scene.ts';
+import { readableGlow } from '../../render/readable-unlit.ts';
 import { flat } from '../flat.ts';
 import { draw, makeSet } from '../net/boxes.ts';
 import { ROOM_GROUP, addStatic } from './land.ts';
@@ -45,7 +46,9 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   box(1.65, 0.6, hd - 0.85, 0.16, 1.2, 1.6, '#536567');
   box(0, 1, hd - 0.85, 2.8, 1.8, 0.65, '#854a39');
   const fire = box(0, 1.15, hd - 1.2, 2.1, 0.8, 0.04, '#ff9a38', false);
-  fire.material = new THREE.MeshStandardNodeMaterial({ color: '#7a310c', emissive: '#ff5a0a', emissiveIntensity: 0.8 });
+  fire.material = readableGlow(
+    new THREE.MeshStandardNodeMaterial({ color: '#7a310c', emissive: '#ff5a0a', emissiveIntensity: 0.8 }),
+  );
   const chair = seatMesh();
   chair.position.set(2.7, 0, 0.3);
   g.add(chair);

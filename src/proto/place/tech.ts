@@ -21,6 +21,7 @@ import { emit } from '../../render/particles.ts';
 import { camera, scene } from '../../render/scene.ts';
 import { getAudio } from '../../render/audio.ts';
 import { placeSound } from '../../render/place-sfx.ts';
+import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { protoCount } from '../count.ts';
 import { playMark } from '../mark.ts';
 import { knock, pop } from '../minis/common.ts';
@@ -63,12 +64,14 @@ const TEAL = '#39e6c6',
   STONE = '#917b5e',
   STONE2 = '#b6a080',
   BRASS = '#c79a3e';
-const glow = new THREE.MeshStandardNodeMaterial({
-  color: TEAL,
-  emissive: TEAL,
-  emissiveIntensity: 1.8,
-  roughness: 0.3,
-});
+const glow = readableGlow(
+  new THREE.MeshStandardNodeMaterial({
+    color: TEAL,
+    emissive: TEAL,
+    emissiveIntensity: 1.8,
+    roughness: 0.3,
+  }),
+);
 const dark = new THREE.MeshStandardNodeMaterial({ color: '#2a2e30', roughness: 0.7 });
 const partMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
 const ox = ORIGIN.x;
@@ -208,7 +211,7 @@ const ringDim = new THREE.Color(BRASS),
 const ringPose = new THREE.Object3D();
 const ringHalo = new THREE.Mesh(
   new THREE.TorusGeometry(0.95, 0.045, 6, 28),
-  new THREE.MeshBasicNodeMaterial({ color: '#e8fffa', transparent: true, opacity: 0.95 }),
+  readableUnlit(new THREE.MeshBasicNodeMaterial({ color: '#e8fffa', transparent: true, opacity: 0.95 })),
 );
 ringHalo.visible = false;
 function buildRings() {
@@ -274,13 +277,15 @@ type Device = {
   z: number;
   t: number; // the show: seconds in, -1 not begun
 };
-const shaftMat = new THREE.MeshBasicNodeMaterial({
-  color: TEAL,
-  transparent: true,
-  opacity: 0.1,
-  depthWrite: false,
-  blending: THREE.AdditiveBlending,
-});
+const shaftMat = readableUnlit(
+  new THREE.MeshBasicNodeMaterial({
+    color: TEAL,
+    transparent: true,
+    opacity: 0.1,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  }),
+);
 const DRUM = merged([
   ['c', 0, 0.35, 0, 0.72, 0.7, 0.72, '#55524a'],
   ['c', 0, 0.78, 0, 0.56, 0.16, 0.56, '#6d6a60'],
@@ -681,7 +686,7 @@ function buildChain() {
   const ap = padById('apron');
   const band = new THREE.Mesh(
     new THREE.BoxGeometry(ap.hx * 2 + 0.06, 0.12, ap.hz * 2 + 0.06),
-    new THREE.MeshStandardNodeMaterial({ color: TEAL, emissive: TEAL, emissiveIntensity: 0.9 }),
+    readableGlow(new THREE.MeshStandardNodeMaterial({ color: TEAL, emissive: TEAL, emissiveIntensity: 0.9 })),
   );
   band.position.set(ap.x + ox, ap.top - 0.1, ap.z);
   scene.add(band);

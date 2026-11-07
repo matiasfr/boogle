@@ -1,6 +1,7 @@
 // The first path's lamps and solid walking approaches, owned and derived from T3 completion.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
+import { readableUnlit } from '../../render/readable-unlit.ts';
 
 export async function createRailwayPath(owner: OwnedView) {
   const [{ LINKS, railY }, { besideLine }, { addStatic, plank, H }, { flat }, { pop }] = await Promise.all([
@@ -12,7 +13,7 @@ export async function createRailwayPath(owner: OwnedView) {
   ]);
   const row = new THREE.Group();
   row.visible = false;
-  const glow = new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(3, 2.1, 0.9) });
+  const glow = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(3, 2.1, 0.9) }));
   const line = LINKS[0]!.line;
   const slots: { x: number; y: number; z: number }[] = [];
   for (let s = 116; s >= 60; s -= 7)

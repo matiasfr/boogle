@@ -2,6 +2,7 @@
 // you carry is in your hand (src/player/inventory.ts).
 import { land, rules } from '../world/game-world.ts'; // first: the lockstep rules register before anything else
 import * as THREE from 'three';
+import { SpriteNodeMaterial } from 'three/webgpu';
 import { CELL, HALF, REACH, PLAYER_R, reducedMotion } from '../constants.ts';
 import { groundHeight, cellX, cellZ, cellOf } from '../island/terrain.ts';
 import { me, throwFrom } from '../player/state.ts';
@@ -16,6 +17,7 @@ import { STEP, flyPath, dropPoint } from '../physics/flight.ts';
 import { take } from '../player/inventory.ts';
 import { FRISBEE_SPOT } from '../pois/lighthouse/index.ts';
 import { splash } from '../render/splash.ts';
+import { readableUnlit } from '../render/readable-unlit.ts';
 import type { Item } from '../sim/gifts.ts';
 import type { Edit } from '../world/rules/types.ts';
 import type { TakeFields, TossFields } from '../world/rules/gifts.ts';
@@ -105,7 +107,9 @@ const sparkleMat = (() => {
   g.fillRect(4, 30, 56, 4);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
-  return new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  return readableUnlit(
+    new SpriteNodeMaterial({ map: t, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }),
+  );
 })();
 
 // ---------------------------------------------------------------- flights

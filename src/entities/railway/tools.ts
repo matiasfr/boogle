@@ -11,6 +11,7 @@ import { fallArrival } from '../../fall/arrival.ts';
 import { GRAVITY, PLAYER_MASS, FIXED } from '../../constants.ts';
 import { T1_CRATE_PARTS } from '../../render/t1-reward-parts.ts';
 import { placeSound } from '../../render/place-sfx.ts';
+import { readableUnlit } from '../../render/readable-unlit.ts';
 import { AXE_REWARD, JUMP_REWARD } from './reward-data.ts';
 
 /** A chest or box is in reach from its own spot: the ground distance the pick already measures to its edge, and about
@@ -39,14 +40,16 @@ export async function createRailwayTools(
   const root = new THREE.Group();
   owner.root.add(root);
   const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.08 });
-  const teal = new THREE.MeshBasicNodeMaterial({ color: '#39e6c6' });
-  const shaftMaterial = new THREE.MeshBasicNodeMaterial({
-    color: '#39e6c6',
-    transparent: true,
-    opacity: 0.1,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
+  const teal = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: '#39e6c6' }));
+  const shaftMaterial = readableUnlit(
+    new THREE.MeshBasicNodeMaterial({
+      color: '#39e6c6',
+      transparent: true,
+      opacity: 0.1,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
+  );
   const geometries: THREE.BufferGeometry[] = [];
   function mesh(geometry: THREE.BufferGeometry, mat: THREE.Material) {
     geometries.push(geometry);
