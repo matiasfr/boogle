@@ -192,7 +192,40 @@ export function railLine2Tick(s: Railway, tick: number) {
   job.railAllocation = spec.bill[1] - job.railUsed;
   if (job.elapsed === schedule.totalTicks) job.completion = 1;
 }
-/** Bounded catch-up for the funded stretch only; the forge and depot never produce offline. */
+/** The away credit's yards (./railway-away.ts): `ticks` of production for the forge's rack and the depot cart, as
+ * railLine2Tick would make them, never past the rack or the stretch's need. Counted like a tick: poured and depotOut
+ * grow with what is made. Applied before the funded job finishes, so nothing is made for a stretch not yet reached. */
+export function railLine2AwayCredit(s: Railway, ticks: number, tick: number) {
+  const l = s.line2;
+  if (!l || ticks <= 0) return 0;
+  let made = 0;
+  const f = l.forge;
+  if (f.lit >= 0) {
+    const n = Math.min(FORGE.rackMax - f.rack, Math.floor(ticks / FORGE.pourTicks));
+    if (n > 0) {
+      f.rack += n;
+      f.poured += n;
+      made += n;
+    }
+    if (f.rack >= FORGE.rackMax) f.lastPour = Math.max(f.lastPour, tick);
+  }
+  const k = line2Active(s);
+  const spec = k >= 0 ? LINE2_STATIONS[k]! : null;
+  if (spec?.depot && l.jobs[k]!.start < 0) {
+    const job = l.jobs[k]!;
+    const need = Math.min(spec.bill[0] - job.stock - l.depot, spec.bill[0] - l.depotOut[k]!);
+    const n = Math.max(0, Math.min(need, Math.floor(ticks / DEPOT.everyTicks) * DEPOT.load));
+    if (n > 0) {
+      l.depot += n;
+      l.depotProduced += n;
+      l.depotOut[k]! += n;
+      made += n;
+    }
+    l.depotLast = tick;
+  }
+  return made;
+}
+/** Bounded catch-up for the funded stretch only (the yards' credit is railLine2AwayCredit). */
 export function railLine2Resume(s: Railway, ticks: number, tick: number) {
   const k = line2Active(s);
   if (k < 0) return 0;

@@ -55,6 +55,7 @@ import {
   railLine2Apply,
   railLine2Tick,
   railLine2Resume,
+  railLine2AwayCredit,
   saveRailLine2,
   loadRailLine2,
   validateRailLine2,
@@ -306,9 +307,12 @@ export function railTick(s: Railway, tick: number): void {
   s.allocation = T1.bill - s.used;
   if (s.elapsed === RAILWAY_DURATION) s.completion = 1;
 }
-export function railResume(s: Railway, ticks: number, marker: number, tick: number): number {
+/** One away credit, consumed once per absolute marker: `yard` production ticks for the yards first (forge and depot,
+ * ./railway-line2.ts), then up to `ticks` for the funded job. Returns the job ticks advanced. */
+export function railResume(s: Railway, ticks: number, marker: number, tick: number, yard = 0): number {
   if (marker <= s.resumeMarker) return 0;
   s.resumeMarker = marker;
+  railLine2AwayCredit(s, yard, tick);
   if (s.line) {
     const job = railCurrentJob(s);
     if (job.start < 0 || job.completion) return railLine2Resume(s, ticks, tick);
