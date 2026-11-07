@@ -448,7 +448,10 @@ emission of lit glows (tech devices and apron band, crystals, the far shard, mus
 workshop and loco fires, gold finds, Boogler orb/pops, cave pond); their albedo still takes scene light and live
 `emissiveIntensity` changes still apply. Shaded-face fills (Buddy's colour fill, slab faces, room fill), airborne
 and classic clouds, fish, contact blobs, already-HDR impact stars, dust and smoke are unchanged. Local
-presentation only.
+presentation only. Matched default-game stills: the gimbal went from sRGB 0,85,71 (the owner's screenshot reads
+34,84,72) to 26,226,193 against authored #39e6c6, with the lit pillar top unchanged; work-site rings, cave glow
+stones and the path lantern read in their authored colours. The far shard barely changes, since its sunlit albedo
+dominates. Frozen stills only; not tested on a device.
 
 **Owner colour defaults (5 November, for now).** Real-sea Place and crossing use surface gain **0.12**, retained
 underwater **+0.81 EV**, key gain **1.12** and fill gain **3.2**. Place's grass pigment strength is **0.35** and
