@@ -22,7 +22,7 @@ import './ambience.ts';
 import * as THREE from 'three/webgpu';
 import { onFrame } from '../../loop.ts';
 import { worldStatus, world } from '../../world/sync.ts';
-import { FOG_FAR, PLAYER_R } from '../../constants.ts';
+import { PLAYER_R } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
 import { describeControl, hideControls } from '../../player/controls.ts';
 import { freshStart } from '../../player/arrival.ts';
@@ -32,7 +32,6 @@ import { haulHooks } from '../../player/haul-hooks.ts';
 import { physicsTime, setCcd, teleport } from '../../physics/engine.ts';
 import { softWall } from '../../entities/player/state.ts';
 import { carry } from '../../physics/platforms.ts';
-import { scene } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
 import { extendSky } from '../crossing/sky.ts';
 import { fanfare } from '../minis/common.ts';
@@ -47,7 +46,7 @@ import { clearMoments, updateMoments } from './celebrate.ts';
 import { snapCrystals, updateCrystals, onCrystal, crystals } from './crystals.ts';
 import { resetFolk, setFolkEnv, setPopulation, setRiders, updateFolk } from './folk.ts';
 import { resetForge, forge, updateForge, craneClear } from './forge.ts';
-import { LOOK, installLight } from './look.ts';
+import { LOOK } from './look.ts';
 import { installContact } from './look-kit.ts';
 import { clearDrops, feet, outOf } from './sites.ts';
 import { createPosePolicy, type Pose } from './pose.ts';
@@ -144,22 +143,10 @@ buildTech();
 const sceneryBuiltAt = physicsTime();
 extendSky();
 haulHooks.moved = () => true; // today's island's bundles aren't in this world
-if (LOOK.light) installLight();
 if (LOOK.contact) installContact([machine.flatbed, machine.loco], TREES);
 if (LOOK.gtao) void import('./look-gtao.ts');
 
-// ---------------------------------------------------------------- the far distance, and past the edge of the map
-// Hazier than the crossing: the place is the view, and today's island behind you should be a far shape.
-onFrame(
-  () => {
-    const fog = scene.fog as THREE.Fog;
-    if (fog.near === 180 || fog.far === FOG_FAR) {
-      fog.near = 320;
-      fog.far = 1700;
-    }
-  },
-  { phase: 'update', order: -3 },
-);
+// ---------------------------------------------------------------- past the edge of the map (the fog is the shared view)
 softWall.at = Infinity; // this world runs well past the 510 m square the player's soft wall guards
 camConstraints.push((_, pos) => {
   if (insidePlace(pos.x, pos.z)) pos.y = Math.max(pos.y, H(pos.x, pos.z) + 0.5);

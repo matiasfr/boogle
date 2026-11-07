@@ -55,13 +55,16 @@ const angle = skyState(WATER_TOD, 0.5).sunAngle;
 const direction = east.clone().multiplyScalar(Math.cos(angle)).addScaledVector(noon, Math.sin(angle));
 let timeOfDay = WATER_TOD;
 const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#8f806e'), ground: new THREE.Color('#3d342a') };
+// Caves keep their own fog: the ramp they had before the outdoor view grew (110/520 m closing to 6/80 m).
+const CAVE_FOG = { near: [110, 6], far: [520, 80] } as const;
 
-/** Same early sky slot: reset route fog ranges before crossing/place apply theirs, with the cave transition intact. */
+/** The one owner of the outdoor fog range: the shared view outside, the cave ramp underground. Runs in the early sky
+ *  slot, so a prototype that wants its own range (?proto=crossing tuning, ?greybox=) writes after it. */
 export function updateFrozenDay() {
   const ug = atmosphere.underground;
   const f = scene.fog as THREE.Fog;
-  f.near = THREE.MathUtils.lerp(FOG_NEAR, 6, ug);
-  f.far = THREE.MathUtils.lerp(FOG_FAR, 80, ug);
+  f.near = ug > 0 ? THREE.MathUtils.lerp(CAVE_FOG.near[0], CAVE_FOG.near[1], ug) : FOG_NEAR;
+  f.far = ug > 0 ? THREE.MathUtils.lerp(CAVE_FOG.far[0], CAVE_FOG.far[1], ug) : FOG_FAR;
   skyNow.frac = timeOfDay;
   skyNow.phase = 0.5;
   skyNow.illum = 1;

@@ -1,6 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { pass } from 'three/tsl';
-import { FOG_HEX, FOG_NEAR, FOG_FAR, isTouch } from '../constants.ts';
+import { CAMERA_FAR, FOG_HEX, FOG_NEAR, FOG_FAR, isTouch } from '../constants.ts';
 import { scene } from './scene-graph.ts';
 import { MAX_DPR, installQuality } from './quality.ts';
 import { graphicsInitial, registerGraphics } from '../graphics-settings.ts';
@@ -221,7 +221,7 @@ renderer.onDeviceLost = (info) => {
 
 export { scene };
 scene.fog = new THREE.Fog(FOG_HEX, FOG_NEAR, FOG_FAR);
-export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 1500);
+export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, CAMERA_FAR);
 
 // Scene -> linear HDR target (MSAA from the renderer) -> one output pass (tone map + sRGB). Post effects (bloom,
 // TRAA, GTAO...) extend this chain: set pipeline.outputNode from scenePass and pipeline.needsUpdate = true.
