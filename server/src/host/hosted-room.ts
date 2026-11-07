@@ -11,6 +11,8 @@
 //                                each 60 Hz step what changed goes out, skipping sockets over HIGH_WATER (coalescing)
 //   room.status()                { boot, tick, players, max, lead, noSave, steps }  (steps: step-meter.ts)
 //   room.idleMs()                how long nobody has been in the room (0 while anyone is, or is reconnecting)
+//   A railway room is paused (world.pause(), the paused world) once idleMs() passes cfg.roomPauseMs, and woken with its
+//   away credit by the next join. A hidden tab is still a client (until hiddenDeadMs), so it keeps the room running.
 //   await room.close({ save })   bye to everyone, save the world, close the sockets with 1012
 import type { WebSocket } from 'ws';
 import { CLOSE, MAX_MSG, encode, decode, type WireMsg } from '../../../src/net/ws-wire.ts';
@@ -22,6 +24,7 @@ import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
 import { HOST_TYPES } from '../../../src/world/sync.ts';
 import { validatePing, honkShape } from '../../../src/sim/social.ts';
 import { createReplicator } from '../../../src/world/replicate-server.ts';
+import { RAIL_AWAY } from '../../../src/sim/railway-away.ts';
 import type { Store } from '../store.ts';
 
 export type HostCfg = {
@@ -33,6 +36,7 @@ export type HostCfg = {
   hiddenDeadMs?: number;
   leadHiddenMs?: number;
   housekeepMs?: number;
+  roomPauseMs?: number; // a railway room stops simulating this long after it empties (RAIL_AWAY.pauseMs)
 };
 
 const LIST_CHARS = 12000; // a peer list is chunked at this many chars
@@ -109,10 +113,12 @@ export function createHostedRoom({
     pidOf: (sid: string) => clients.get(sid)?.pid ?? null,
     tuneController: (sid: string) => !!cfg.tuneControllerKey && clients.get(sid)?.key === cfg.tuneControllerKey,
   };
+  const pauseMs = cfg.roomPauseMs ?? RAIL_AWAY.pauseMs;
   const world = railway
     ? createRailwayWorldHost({
         ...hostOptions,
         replication,
+        awake: false, // the first join wakes it, with the away credit since its last save
         positions() {
           return [...clients].map(([sid, client]) => {
             const p = client.d && typeof client.d === 'object' ? (client.d as { p?: unknown }).p : null;
@@ -387,6 +393,7 @@ export function createHostedRoom({
     }
     sendList(true);
     if (lead !== id) checkLead();
+    if (railway) (world as RailwayWorldHost).wake(); // a paused room applies its away credit before anyone sees it
     world.deliver({ t: 'w:need' }, id); // a tab back after a server restart gets the world at once
   }
 
@@ -398,6 +405,7 @@ export function createHostedRoom({
       else write(c, hb);
     }
     checkLead();
+    if (railway && !clients.size && !gone.size && now - emptySince > pauseMs) (world as RailwayWorldHost).pause();
   }, cfg.housekeepMs ?? 1000);
   housekeep.unref();
 

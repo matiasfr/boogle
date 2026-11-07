@@ -11,6 +11,7 @@ import { addReviews } from './reviews.ts';
 import { routeUpgrades } from './host/upgrade.ts';
 import { createRoomHost } from './host/rooms.ts';
 import type { RoomHost } from './host/rooms.ts';
+import { RAIL_AWAY } from '../../src/sim/railway-away.ts';
 
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -65,6 +66,7 @@ export function loadConfig(
     maxPlayers: Number(env.MAX_PLAYERS ?? 8),
     serverSaveMs: Number(env.SERVER_SAVE_MS ?? 2000),
     roomIdleMs: Number(env.ROOM_IDLE_MS ?? 600000), // with SERVER_ROOMS=*: unload a room this long after it emptied
+    roomPauseMs: Number(env.ROOM_PAUSE_MS) || RAIL_AWAY.pauseMs, // a railway room stops simulating this long after it empties
     maxHostedRooms: Number(env.MAX_HOSTED_ROOMS ?? 20), // with SERVER_ROOMS=*: rooms loaded at once
     upgradesPerMin: Number(env.UPGRADES_PER_MIN) || 20, // room sockets per IP
     // || so a malformed value falls back rather than a NaN turning a cap off.
@@ -98,6 +100,7 @@ export type ServerConfig = {
   playMaxSessions: number;
   serverSaveMs: number;
   roomIdleMs: number;
+  roomPauseMs?: number;
   maxHostedRooms: number;
   log: (...a: unknown[]) => void;
   // Test-only timing overrides, passed through to the room host (./host/hosted-room.ts, HostCfg).

@@ -1,4 +1,6 @@
 // The offline helper bank (brief 10 M8): helper huts keep working while nobody hosts, capped at one section's worth.
+// Classic rooms only (createWorldHost): it retires with classic. Railway rooms are a paused world with one away credit
+// (./railway-away.ts) and never wake the bank.
 // Ticks only run while someone hosts and world.epochMs is the wall time of tick 0, so the time nobody hosted is
 // now - (epochMs + tick * MS_PER_TICK); `credited` is what earlier wakes already banked. Pure: the host computes the
 // gap from its clock, the lockstep op only ever sees the number it validated.

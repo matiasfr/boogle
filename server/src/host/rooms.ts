@@ -1,7 +1,9 @@
 // The server-hosted rooms (cfg.serverRooms; docs/plans/server-host.md, "The server host" and "Revision: full
-// switchover"). `*` hosts every valid room id: a room loads (from its save) on its first join, ticks with or without
-// players, and is saved and unloaded after cfg.roomIdleMs with nobody in it; at most cfg.maxHostedRooms are loaded at
-// once. A listed room loads with the process and stays.
+// switchover"). `*` hosts every valid room id: a room loads (from its save) on its first join, and is saved and
+// unloaded after cfg.roomIdleMs with nobody in it; at most cfg.maxHostedRooms are loaded at once. A listed room loads
+// with the process and stays. A railway room simulates only while someone is in it: hosted-room.ts pauses it
+// cfg.roomPauseMs after it empties and the next join applies its away credit (world-host.ts, the paused world). A
+// classic room still ticks until it unloads.
 //
 //   const roomHost = createRoomHost(cfg, store)
 //   roomHost.upgrade(req, socket, head)   a /room/:id upgrade: checks, then the room's join (or a refusal)
@@ -99,7 +101,17 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store) {
       const room = rooms.get(id);
       if (!room) return { mode: 'server', tick: store.readSync(id)?.tick ?? 0, players: 0, max: cfg.maxPlayers };
       const { boot: b, tick, players, max, noSave, replication, railway, steps } = room.status();
-      return { mode: 'server', boot: b, tick, players, max, noSave: noSave || blocked.has(id), replication, railway, steps };
+      return {
+        mode: 'server',
+        boot: b,
+        tick,
+        players,
+        max,
+        noSave: noSave || blocked.has(id),
+        replication,
+        railway,
+        steps,
+      };
     },
     upgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
       if (stopping) return refuse(socket, '503 Service Unavailable');
