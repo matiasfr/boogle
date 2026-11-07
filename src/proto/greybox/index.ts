@@ -11,6 +11,8 @@ import { releaseJump } from '../../entities/player/state.ts';
 import { teleport } from '../../physics/engine.ts';
 import { waterField } from '../../physics/water-field.ts';
 import { PLAYER_R } from '../../constants.ts';
+import { background } from '../../async.ts';
+import { precompile } from '../../render/precompile.ts';
 import { FAR } from '../place/layout.ts';
 import { MAP } from './page.ts';
 import { layout, polyLen, rideSeconds, type Pick, type XZ } from './map-data.ts';
@@ -23,6 +25,15 @@ const pick: Pick = q.get('pick') === 'B' ? 'B' : 'A';
 const map = layout(MAP, optionId, pick);
 const ground = createGround(map);
 const box = buildGreybox(map, ground);
+// Build every pipeline up front, as the game does for its lazy parts, and show the blockout once they're ready: drawn
+// first-time inside the look harness's warped frames, some of its far meshes never appeared (seen 7 November).
+box.root.visible = false;
+background(
+  precompile(box.root).then(() => {
+    box.root.visible = true;
+  }),
+  'greybox pipelines',
+);
 const W = (x: number, y: number, z: number) => new THREE.Vector3(wx(x), y, wz(z));
 const placeAt = (id: string) => map.places.find((p) => p.id === id)?.at;
 
