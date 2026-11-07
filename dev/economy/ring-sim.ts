@@ -102,6 +102,24 @@ export const awayCredit = (s: Settings, away: number) => {
   return num(s, 'awayFill') * h * (1 - Math.exp(-away / h));
 };
 
+/** Seconds from door to door over `km`: walked below the walk limit, else one train ride (speed-up, dwell, boarding wait). */
+export const rideS = (s: Settings, km: number, speed: number) =>
+  km < num(s, 'walkLimitKm')
+    ? (km * 1000) / num(s, 'walkMps')
+    : (km * 1000) / speed + speed / num(s, 'accel') + num(s, 'dwellS') + num(s, 'boardWaitS');
+
+/** Units/hour the trains can bring from a source `km` from the Home Yard, shared between `remote` remote producers. */
+export const freightRate = (s: Settings, km: number, speed: number, wagon: number, trains: number, remote: number) =>
+  km < num(s, 'walkLimitKm')
+    ? 1e9
+    : (wagon * trains * 3600) /
+      (2 * ((km * 1000) / speed + speed / num(s, 'accel') + num(s, 'dwellS')) + 2 * num(s, 'transferS')) /
+      Math.max(1, remote);
+
+/** Seconds for one hand load of `carry` units: harvest, pick up, and the walk or ride both ways. */
+export const handTripS = (s: Settings, harvestS: number, tool: number, carry: number, oneWayS: number) =>
+  harvestS * tool * carry + num(s, 'pickupS') + 2 * oneWayS;
+
 export type StepFlow = {
   material: Material;
   demand: number;
@@ -188,12 +206,8 @@ export function simulate(overrides: Settings = {}, players: number[] = [1, 2, 3]
     const lvl = STORAGE.filter((y) => at(y) <= i).length;
     return lvl ? STORAGE.find((y) => y.level === lvl)!.bay : 0;
   };
-  const walk = num(s, 'walkMps'),
-    limit = num(s, 'walkLimitKm'),
-    accel = num(s, 'accel'),
-    dwell = num(s, 'dwellS');
-  const ride = (km: number, v: number, wait: number) =>
-    km < limit ? (km * 1000) / walk : (km * 1000) / v + v / accel + dwell + wait;
+  const walk = num(s, 'walkMps');
+  const ride = (km: number, v: number) => rideS(s, km, v);
   const steps: StepResult[] = [];
   ROUTE.forEach((r, k) => {
     const i = k + 1;
@@ -203,7 +217,7 @@ export function simulate(overrides: Settings = {}, players: number[] = [1, 2, 3]
       carry = ladder('carry', i),
       tool = ladder('tool', i);
     const km = kmFrom(r.slot, i, first);
-    const rideS = ride(km, speed, num(s, 'boardWaitS'));
+    const rideS = ride(km, speed);
     const ret = RETURNS[r.key];
     const backKm = ret ? kmFrom(ret.slot, i, first) : 0;
     const back = {
@@ -211,7 +225,7 @@ export function simulate(overrides: Settings = {}, players: number[] = [1, 2, 3]
       trips: ret?.trips ?? 0,
       min: ret?.activityMin ?? 0,
       km: backKm,
-      rideS: ret ? ride(backKm, speed, num(s, 'boardWaitS')) : 0,
+      rideS: ret ? ride(backKm, speed) : 0,
     };
     const remote = (['S', 'Fi', 'U', 'X'] as Material[]).filter((m) => level(m, i) > 0).length;
     const flows = MATERIALS.map((m): StepFlow => {
@@ -224,15 +238,10 @@ export function simulate(overrides: Settings = {}, players: number[] = [1, 2, 3]
       const producerRate = prod?.rate ?? 0;
       const cap = prod ? prod.cap + yard(i) : 0;
       const srcKm = kmFrom(slotOfSource(res.source, first), i, first);
-      const freight =
-        srcKm < limit
-          ? 1e9
-          : (wagon * trains * 3600) /
-            (2 * ((srcKm * 1000) / speed + speed / accel + dwell) + 2 * num(s, 'transferS')) /
-            Math.max(1, remote);
+      const freight = freightRate(s, srcKm, speed, wagon, trains, remote);
       const auto = Math.min(producerRate, freight);
-      const per = (oneWay: number) => res.harvestS * tool * carry + num(s, 'pickupS') + 2 * oneWay;
-      const manual = res.manual ? (carry * 3600) / per(ride(srcKm, speed, num(s, 'boardWaitS'))) : 0;
+      const per = (oneWay: number) => handTripS(s, res.harvestS, tool, carry, oneWay);
+      const manual = res.manual ? (carry * 3600) / per(ride(srcKm, speed)) : 0;
       const hand = auto === 0 ? demand : 0;
       const stock = demand - hand;
       if (hand && !res.manual) throw new Error(`${r.key}: ${m} needed before anything makes it`);

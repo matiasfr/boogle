@@ -148,3 +148,28 @@ are, a summon to the find, a puzzle redeemed at Home, the relic riding the train
 Each option shows the finder, a hauler far away and an away friend across three or four frames, then how it handles
 far, mid-haul, mid-air, offline and late friends. The `#story-data` block is hand-edited JSON (named spots, then
 per-frame players, states and effects); the map is schematic, not `layout.ts` geometry. Local document UI only.
+
+## Economy prototype
+
+[Economy prototype](economy-prototype.html) is the playable 2D economy (owner, 6 November: "simulate the entire economy
+to understand the flow of the upgrades, and what the game would feel like before building it in 3D"). One to three
+players haul by hand, explore, place the machines' stock and wait on the Sickle Isles, in real time up to 1200×, against
+the ring model's bills, producers, ladders, prices, sittings and away credit. Player 1 takes keyboard or touch commands
+(or the bot); friends are bots. It logs hauling, exploring and waiting per player and where machines overtake hands,
+and exports the timeline as CSV or JSON.
+
+- **One source.** [play-sim.ts](../../dev/economy/play-sim.ts) is the sim; it reads
+  [ring-data.ts](../../dev/economy/ring-data.ts) and reuses [ring-sim.ts](../../dev/economy/ring-sim.ts)'s formulas (ride
+  time, freight limit, hand load, helpers, away credit). [play-map.ts](../../dev/economy/play-map.ts) loads the Sickle
+  Isles from `map-prototypes.html`'s `#map-data` through the greybox's loader and maps the model's slots and route steps
+  onto it; that step-to-stage table is the only hand-written bridge.
+- **Generated.** `node dev/economy/build-prototype.ts` bundles `play-page.ts` with the sim into the page's `#play-code`
+  block and writes `#play-data` (the map, whole bot runs and the closed-form model's pace). Don't edit either block;
+  the page is in `.prettierignore` so formatting can't reflow them. `test/economy-prototype.test.ts` plays whole runs for
+  one, two and three players and fails when the page is older than its sources.
+- **Where it departs from the closed-form model, on purpose:** steps follow the map's stages (second branch before High
+  Port); hand hauls walk or ride the real distance from the material's island to the work; an upgrade works from the
+  moment its row is built; and players explore the next step or a return while machines fill the yard.
+- **Viewing.** Open the file directly, or with the dev server at
+  `http://localhost:5173/@fs/<absolute path to the checkout>/docs/world/economy-prototype.html` (the plain `/docs/...`
+  path falls through to the game).
