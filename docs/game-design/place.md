@@ -100,11 +100,10 @@ river. Past the quarry, across about 170 m of sea, is **Far Head**, a low headla
 and a bright shard in the ring's middle. Two physical things point at it: a line of orange buoys straight out from the end of the pier, and an old brass telescope on the ridge's top, aimed at it; **Look through it** (Interact) flies the view out along the barrel, and a deliberate press brings you back.
 
 The branch experiment `?proto=place&telescope=v2` cuts to one persistent authored railway/ring composition,
-resetting the camera and zoom on every visit. `&v=pan` adds optional bounded panning; fixed is the default variant.
-Arrow keys, D-pad or the onscreen arrows pan; +/−, shoulders or the onscreen buttons zoom in either variant.
+resetting the camera and zoom on every visit. The view is fixed: it never pans (owner, 6 November); +/−, shoulders or
+the onscreen buttons zoom.
 Interact, Escape, pad B/Menu or **Step back** exit immediately. The view takes local input while the world continues.
-Reduced motion uses the same immediate composition with panning disabled (`&telescopeMotion=reduced` exercises that
-path for inspection). No shared state or friend-following: existing construction and remote poses remain the scene's
+The cut is immediate and nothing drifts, so reduced motion needs no variant. No shared state or friend-following: existing construction and remote poses remain the scene's
 owners. Tuning lives in `src/proto/place/telescope.ts`. Without `telescope=v2`, existing behavior is unchanged.
 The [brief](../brainstorms/telescope.md) remains proposed; recurrence/fun and devices need the owner's playtest.
 

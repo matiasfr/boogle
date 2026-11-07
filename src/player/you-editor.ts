@@ -41,6 +41,7 @@ export function youEditor(): HTMLElement {
     me.name = n;
     save();
   });
+  // boogle-disable-next-line boogle/input-through-actions -- the name field is a text field: Enter finishes typing
   name.addEventListener('keydown', (e) => e.key === 'Enter' && name.blur());
   const swatches = document.createElement('div');
   swatches.className = 'pause-swatches';

@@ -243,15 +243,10 @@ onRoomReady((room) =>
 onStart(() => {
   (document.querySelector('.hud') ?? document.body).append(layer);
 
-  document.getElementById('view')?.addEventListener('mousedown', (e) => {
-    if (e.button !== 1) return;
-    e.preventDefault();
-    pingNow();
-  });
-
   registerAction('ping', {
     pad: 'left',
     key: 'KeyG',
+    mouse: 1,
     touch: { label: 'Ping', className: 'ping-btn' },
     label: 'Ping where you look',
     keys: ['KeyG', 'Mouse1'],

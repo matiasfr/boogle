@@ -129,6 +129,39 @@ const ENTITY_SERVICES = [
   'src/features/impact.ts', // hit-stop and squash over the ball's mesh; owns no object
 ];
 
+// Input goes through the action interface (docs/agents/owner-calls.md, owner, 6 November). Outside the input layer
+// nothing listens for keys, mouse buttons, wheel, touch or pointer events, reads a pad, or names their event types;
+// gameplay uses registerAction / onKey / touchHold / onMenuKey in src/player/controls.ts. Checked by
+// boogle/input-through-actions (safety.ts), a rule of its own so no other block's no-restricted-syntax replaces it.
+export const INPUT_MESSAGE =
+  'Input goes through the action interface (owner call, 6 November): outside the input layer nothing reads key codes, pad buttons or touch events. Use registerAction, onKey, onMenuKey or touchHold in src/player/controls.ts (docs/agents/owner-calls.md). A file that is not gameplay input joins INPUT_ALLOW in dev/lint/policy.ts with its reason.';
+const INPUT_EVENTS =
+  'keydown|keyup|keypress|wheel|touchstart|touchmove|touchend|touchcancel|pointerdown|pointerup|pointermove|pointercancel|mousedown|mouseup|mousemove|gamepadconnected|gamepaddisconnected';
+export const INPUT_SELECTORS = [
+  // Any event-name string: a listener, a list of names to loop over, a dispatched event.
+  `Literal[value=/^(${INPUT_EVENTS})$/]`,
+  'MemberExpression[property.name="getGamepads"]',
+  'Identifier[name=/^(KeyboardEvent|TouchEvent|WheelEvent|MouseEvent|PointerEvent|GamepadEvent|Gamepad)$/]',
+];
+// The input layer: the only code that reads raw input.
+export const INPUT_LAYER = [
+  'src/player/controls.ts', // the action registry, key / mouse / touch binding and the menu-key listener
+  'src/player/input.ts', // keyboard, mouse look, touch stick and buttons, wheel
+  'src/player/dev-input.ts', // lets the dev tools take the input
+  'src/player/input-state.ts', // the state input.ts fills
+  'src/player/dismiss-pointer.ts', // the shared tap-to-dismiss for the reward card and celebration camera
+  'src/features/gamepad.ts', // the pad driver: polls the pad and dispatches to actions
+];
+// Not gameplay input, or not ours to change yet. Each entry says why.
+export const INPUT_ALLOW = [
+  'src/debug/**', // dev and debug tools: free camera, record, dev menu, panels
+  'src/proto/**', // prototypes load by import() and carry their own bindings
+  'src/render/audio.ts', // any gesture unlocks the audio context; reads no control
+  'src/features/wake-lock.ts', // any input takes the screen wake lock; reads no control
+  'src/boogler/dialogue.ts', // keeps clicks inside the DOM dialogue from reaching the canvas; reads no control
+  'src/render/reward-reveal.ts', // TODO: render file, owned by the performance agent for now; move to onMenuKey and dismissPointer
+];
+
 export const policy: PolicyBlock[] = [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/', '.look/'] },
   // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the sync, proto and debug bans.
@@ -364,6 +397,11 @@ export const policy: PolicyBlock[] = [
     files: ['src/**/*.ts'],
     ignores: ['src/proto/**', 'src/debug/**', 'src/entity/**', ...ENTITY_SERVICES],
     rules: { 'boogle/use-an-entity': 'error' },
+  },
+  {
+    files: ['src/**/*.{js,ts}'],
+    ignores: [...INPUT_LAYER, ...INPUT_ALLOW],
+    rules: { 'boogle/input-through-actions': 'error' },
   },
   // The physics backend is the only module that imports a physics library (docs/plans/done/rapier.md).
   {

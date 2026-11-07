@@ -10,7 +10,7 @@ import { dom } from './dom.ts';
 import { input, inputState } from './input-state.ts';
 import { useDown, useUp, interactDown, interactUp, touchDown } from './hands.ts';
 import { cancelCharge } from './throw.ts';
-import { registerAction, describeControl, isTyping, triggerAction } from './controls.ts';
+import { registerAction, describeControl, isTyping, triggerAction, setMouseGate } from './controls.ts';
 import { devInputBlocked, devCursorFree } from './dev-input.ts';
 
 export { input, inputState } from './input-state.ts';
@@ -73,6 +73,7 @@ let releaseInputFn: (() => void) | null = null;
 export const releaseInput = () => releaseInputFn?.();
 // Wired from main.ts after every module has loaded.
 export function initInput() {
+  setMouseGate(() => me.entered); // the mouse-button actions (registerAction's mouse) only fire in the world
   if (isTouch) document.body.classList.add('touch');
   // Capture phase, so the switch happens before the press is handled. A key aimed at a text field may come from the
   // on-screen keyboard, so it does not count. Only deliberate input switches (a key, a press, a scroll): never a
