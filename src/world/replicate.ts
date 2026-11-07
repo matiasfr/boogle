@@ -27,10 +27,11 @@
 //       ev    [{ field: value }, ...] one-off events since the last send (accepted actions, for effects), read after
 //             x and c are applied; never part of the mirror, never re-sent to a late joiner
 //   client -> server  { t:'a', ep, rq, op, ...fields }   an action, identified by (epoch, request)
-export type FieldType = 'bool' | 'u8' | 'u16' | 'u32' | 'i32' | 'int' | 'q16' | 'f32' | 'str';
-export type FieldValue = number | boolean | string;
+import { defineComponent, MAX_STR, validValue, type FieldType, type FieldValue } from '../ecs/index.ts';
+export { MAX_STR, validValue, type FieldType, type FieldValue };
 export type Fields = Record<string, FieldValue>;
 export type EntityId = number | string;
+/** A replicated component's schema: any E component (src/ecs/) is one. */
 export type Schema = Readonly<{ kind: string; fields: Readonly<Record<string, FieldType>>; names: readonly string[] }>;
 
 export type ActionId = readonly [epoch: number, request: number];
@@ -58,40 +59,12 @@ export const GLOBAL_CELL = 'g';
 export const CELL_CM = 6400;
 /** The room caps messages at 16 KB; escaping can grow a packet, so chunks stay well under it. */
 export const MAX_PACKET_CHARS = 12000;
-export const MAX_STR = 64;
 
 const KIND = /^[a-z][a-zA-Z0-9]{0,23}$/;
-const TYPES: ReadonlySet<string> = new Set(['bool', 'u8', 'u16', 'u32', 'i32', 'int', 'q16', 'f32', 'str']);
 
-export function defineReplicated(kind: string, fields: Record<string, FieldType>): Schema {
-  if (!KIND.test(kind)) throw new Error(`replicated kind name ${kind}`);
-  const names = Object.keys(fields);
-  if (!names.length) throw new Error(`replicated kind ${kind} has no fields`);
-  for (const f of names) if (!KIND.test(f) || !TYPES.has(fields[f]!)) throw new Error(`replicated field ${kind}.${f}`);
-  return Object.freeze({ kind, fields: Object.freeze({ ...fields }), names: Object.freeze(names) });
-}
-
-export function validValue(type: FieldType, v: unknown): v is FieldValue {
-  switch (type) {
-    case 'bool':
-      return typeof v === 'boolean';
-    case 'u8':
-      return Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 0xff;
-    case 'u16':
-    case 'q16':
-      return Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 0xffff;
-    case 'u32':
-      return Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 0xffffffff;
-    case 'i32':
-      return Number.isInteger(v) && (v as number) >= -0x80000000 && (v as number) <= 0x7fffffff;
-    case 'int':
-      return Number.isSafeInteger(v);
-    case 'f32':
-      return typeof v === 'number' && Number.isFinite(v);
-    case 'str':
-      return typeof v === 'string' && v.length <= MAX_STR;
-  }
-}
+/** A replicated component (an E component; the schema is the one source for the codec, mirror and save). */
+export const defineReplicated = (kind: string, fields: Record<string, FieldType>): Schema =>
+  defineComponent(kind, fields);
 
 export const validId = (v: unknown): v is EntityId =>
   (Number.isSafeInteger(v) && (v as number) >= 0) || (typeof v === 'string' && v.length > 0 && v.length <= MAX_STR);

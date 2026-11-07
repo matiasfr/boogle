@@ -20,7 +20,7 @@
   beam, the forge, the global row, the request history). Its rules become systems that declare what they read and
   write. Its hand-written save encodings, JSON hash and the server's projections go. The client keeps reading
   today's `Railway` shape, now a *derived read model* rebuilt from the world, so the adapter and views do not change.
-- **The core is capped at 450 non-blank lines** with a closed feature list (below). Anything past it is a reason to
+- **The core is capped at its built size, 650 non-blank lines** (450 planned; step 2), with a closed feature list (below). Anything past it is a reason to
   adopt a library, not to grow E.
 
 ## 1. Where it lives, and why
@@ -203,7 +203,7 @@ Views and every three.js object (meshes, instanced batches, materials) stay in `
 **Other risks:**
 - **Readability.** A rule that read `s.sources[k] -= n` now reads `w.mut(Tree, id)!.left -= n` after a lookup. More
   words per line; fewer parallel arrays to keep in step. The test is whether a reviewer can follow `rail.chop`.
-- **The facade growing into a framework.** Mitigated by the cap: 450 non-blank lines in `src/ecs/` and the closed
+- **The facade growing into a framework.** Mitigated by the cap: 650 non-blank lines in `src/ecs/` (its built size) and the closed
   list above, checked in review. The first request for a filter, relation or observer goes to the owner as "adopt a
   library?", not into E.
 - **Two representations of the railway** (the world and the read model). The read model is derived by one function
@@ -218,6 +218,65 @@ Views and every three.js object (meshes, instanced batches, materials) stay in `
 - The owner prefers a maintained library to our core, accepting the wrapper rules (no library query in lockstep or
   server rules; a lint rule enforces it).
 - A real port to Bevy or Flecs is planned: then E's job is done once every domain is on it, and the port starts.
+
+## Step 2: what landed and what it measured (7 November, M1 Max, Node 24.11)
+
+- **Core:** `src/ecs/schema.ts` (components, field types, the hash fold), `src/ecs/world.ts` (the world, systems,
+  schedule), `src/ecs/index.ts` (the facade). Replication's field types and `Schema` now come from it
+  (`defineReplicated` is `defineComponent`); `src/world/replicate-world.ts` turns a world's replicated components into
+  projections and drains its changes into the replicator. Lint: section 7, in `dev/lint/policy.ts`.
+- **Tests** (`test/ecs.test.ts`): stamped ascending ids never reused; joins in id order; spawns, despawns and adds
+  invisible until the system ends, field writes immediate, no structural change while iterating outside a system;
+  undeclared reads and writes and nested runs refused; the audit catching a write through a read-only row and a
+  changed key; per-component change drains; schedule order and taken orders; hash, snapshot, load and clone
+  round-trips with a late joiner continuing the same history to the same hash; nine malformed snapshots refused
+  with the live state untouched; spawn checks (unknown fields, missing required components, taken keys, values off
+  schema in audit mode, reserved ids).
+- **Three things changed from section 2 on contact with the benchmark:** change tracking is per component and
+  opt-in (`track`, default: replicated components), because a system that advances every row each tick would
+  otherwise record every row; per-tick bookkeeping therefore goes in its own untracked component (Bevy's
+  `Changed<T>` has the same consequence). `each(cs, fn, writes)` hands writable rows of the listed components and
+  marks them as visited, for systems that change most rows (Bevy's `Query<&mut T>`). Removal leaves a hole that the
+  next walk closes in one pass, instead of two array splices per removal.
+- **Size: 650 non-blank lines (601 of code), not the 450 planned** (the evaluation estimated 250-350). About 60 are
+  the `World` interface, which TypeScript needs to type the store. The cap is now the measured size, and the feature
+  list is unchanged: growth past it is the switch question, not a patch.
+
+**The spike, option E added** (`dev/spikes/ecs/e.ts`; `node bench-node.ts`, `node --expose-gc
+--max-semi-space-size=512 alloc-node.ts` in `dev/spikes/ecs`). Medians of 5 x 600 ticks, machine load 5-8:
+
+| At 3,000 live entities | A in-house rows | C in-house SoA | D bitECS + wrapper | **E** |
+|---|---|---|---|---|
+| Sim tick, ~39 spawns+despawns/tick | 58-61 µs | 56-57 µs | 45-48 µs | **130 µs** |
+| Sim tick, ~170/tick (5x churn) | 215-223 µs | 150 µs | 161-166 µs | **300 µs** |
+| View update per tick | 13-14 µs | 19 µs | 17-18 µs | **21 µs** |
+| State hash | 0.41 ms | 0.21 ms | 0.23 ms | **0.43 ms** |
+| Snapshot: time / size | 1.2 ms / 195 KB | 0.02 ms / 95 KB | 1.2 ms / 195 KB | **1.3 ms / 195 KB** |
+| Late join: load + rebuild view | 1.8-3.1 ms | 1.0 ms | 3.1-4.2 ms | **3.5 ms** |
+| Allocated per tick, normal / 5x churn | 23 / 128 KB | 35 / 145 KB | 59 / 246 KB | **53 / 231 KB** |
+| Same hash and order across histories | yes | yes | yes (native: no) | **yes** |
+
+At 300 entities E's tick is 10-14 µs (A 3 µs). E's remaining cost is the join (a `Map` probe per entity per extra
+component) and the per-op system run. [H, measured; one machine, other agents' work running]
+
+**Today's replicated path against E at 3,000 entities** (`test/ecs-budget.test.ts`, `ECS_BUDGET=1` prints it): the
+same action stream through today's shape (plain rows, a hand projection, actions naming what they touched,
+`structuredClone` for the predictor) and through E (a component, an action system, `world.changes()` feeding the
+replicator, `world.clone()`); both leave six mirrors with identical rows.
+
+| Per server step, 6 clients | Actions + commit + flush, 5 / 25 changes | Allocated per step, 5 / 25 | Predictor clone | Rebuild, 8 pending |
+|---|---|---|---|---|
+| Today | 0.092 / 0.221 ms | 175 / 348 KB | 1.5 ms | 1.5 ms |
+| **E** | **0.090 / 0.237 ms** | **220 / 407 KB** | **0.18 ms** | **0.16 ms** |
+
+**Adversarial reading.** E is the slowest in-house option at the slice's tick: 2.2x A at normal churn (1.4x at 5x)
+and 2.8x bitECS. That crosses the first switch trigger in section 8 as written ("more than 2x A"), while staying
+under "3x bitECS". In absolute terms it is 0.13 ms of a 100 ms rule tick at 3,000 entities, and on the path the server
+actually runs (replication), E ties today's step and its clone is 8x faster than `structuredClone`. The decision log's
+own criterion is "a library only if profiling at 3,000 entities asks for it", and nothing here does. **Recommendation:
+keep E, and replace the relative trigger with absolute ones:** a rule tick over 1 ms at 3,000 entities, a server step
+over 0.5 ms from E's own work, or any E work in a frame over 0.05 ms. If one is hit, the first lever is SoA columns
+inside E (C's storage; the API hides storage), then bitECS. This trigger change is the owner's call.
 
 ## 9. Steps
 

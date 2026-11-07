@@ -4,15 +4,17 @@ import { createKoota } from './koota.ts';
 import { createSoa } from './soa.ts';
 import { createBitecs } from './bitecs.ts';
 import { bitecsOrder } from './bitecs-order.ts';
+import { createE } from './e.ts';
 import { mulberry32, populate, step, type Slice } from './schema.ts';
 
-export const OPTIONS: (() => Slice)[] = [createInHouse, createKoota, createSoa, createBitecs];
+export const OPTIONS: (() => Slice)[] = [createInHouse, createKoota, createSoa, createBitecs, createE];
 const now = () => performance.now();
 // The ops of tick t depend only on t: any peer, however it got to t, plays the same stream.
-let heat = 1;
-const tickOps = (s: Slice, n: number) => step(s, mulberry32(1000 + s.tick), n, heat);
+export let heat = 1;
+export const setHeat = (h: number) => void (heat = h);
+export const tickOps = (s: Slice, n: number) => step(s, mulberry32(1000 + s.tick), n, heat);
 
-function fresh(make: () => Slice, n: number): Slice {
+export function fresh(make: () => Slice, n: number): Slice {
   const s = make();
   populate(s, mulberry32(1), n);
   s.view.rebuild();
@@ -152,7 +154,8 @@ export function runAll(sizes = [300, 3000]) {
   return {
     timings,
     determinism: det,
-    crossOption: new Set(det.map((d) => d.hashes)).size === 1,
+    // E hashes its own canonical form (world.hash), so it is compared with itself, not with A-D.
+    crossOption: new Set(det.filter((d) => !d.option.startsWith('E')).map((d) => d.hashes)).size === 1,
     bitecs: bitecsOrder(),
   };
 }

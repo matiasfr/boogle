@@ -59,7 +59,23 @@ const debugBan = {
 
 // Lockstep code must give the same bits on every machine (DESIGN.md, "Determinism from day one"). Rules modules
 // (src/world/rules/) are covered; add any other pure module that feeds lockstep state.
-export const LOCKSTEP_FILES = ['src/sim/**/*.{js,ts}', 'src/world/rules/**/*.{js,ts}', 'src/world/grid.{js,ts}'];
+export const LOCKSTEP_FILES = [
+  'src/sim/**/*.{js,ts}',
+  'src/world/rules/**/*.{js,ts}',
+  'src/world/grid.{js,ts}',
+  'src/ecs/**/*.{js,ts}',
+];
+// E, the ECS-shaped store (docs/plans/ecs-e.md, section 7): pure, reached only through its facade, and its components
+// and systems declared only in headless code (src/sim/, src/world/), so none of them can hold a three.js object.
+const ecsMessage = 'src/ecs/ is pure: it imports nothing from src/ (docs/plans/ecs-e.md).';
+const ecsBan = {
+  regex: '(^|/)ecs/(?!index\\.ts$)',
+  message: 'Reach E through src/ecs/index.ts only: its tables are not an API (docs/plans/ecs-e.md, section 7).',
+};
+const ecsDeclare = {
+  selector: 'CallExpression[callee.name=/^define(Component|System)$/]',
+  message: 'E components and systems are declared in headless code only: src/sim/ or src/world/ (docs/plans/ecs-e.md).',
+};
 const det = (what: string) => `${what} is not deterministic across browsers; see docs/agents/lockstep.md.`;
 const UNSAFE_MATH = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh']
   .concat(['atanh', 'pow', 'exp', 'expm1', 'log', 'log2', 'log10', 'log1p', 'hypot', 'cbrt'])
@@ -162,7 +178,7 @@ export const INPUT_ALLOW = [
   'src/render/reward-reveal.ts', // TODO: render file, owned by the performance agent for now; move to onMenuKey and dismissPointer
 ];
 
-export const policy: PolicyBlock[] = [
+const policyBlocks: PolicyBlock[] = [
   { ignores: ['dist/', 'node_modules/', 'server/', '.claude/', '.look/'] },
   // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the sync, proto and debug bans.
   {
@@ -244,7 +260,7 @@ export const policy: PolicyBlock[] = [
               message: simMessage,
             })),
           ],
-          patterns: [{ group: ['../*', 'three/*'], message: simMessage }, syncBan],
+          patterns: [{ regex: '^(three/|\\.\\./(?!ecs/index\\.ts$))', message: simMessage }, syncBan],
         },
       ],
       'no-restricted-globals': ['error', 'window', 'document', 'navigator', 'localStorage'],
@@ -388,6 +404,25 @@ export const policy: PolicyBlock[] = [
       'no-restricted-syntax': ['error', glOnly, ...DOORS.map(doorRule)],
     },
   },
+  {
+    files: ['src/**/*.{js,ts}'],
+    ignores: [...LOCKSTEP_FILES, 'src/world/**'],
+    rules: {
+      'no-restricted-syntax': ['error', glOnly, ...DOORS.map(doorRule), ecsDeclare],
+    },
+  },
+  {
+    files: ['src/ecs/**/*.{js,ts}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: ['three', ...rapierBans.map((b) => b.name)].map((name) => ({ name, message: ecsMessage })),
+          patterns: [{ regex: '^(three/|\\.\\./)', message: ecsMessage }],
+        },
+      ],
+    },
+  },
   // A door's allow-list keeps every other door, and the WebGL ban, in force on that file.
   ...DOORS.map((door): PolicyBlock => ({
     files: door.allow,
@@ -441,3 +476,16 @@ export const policy: PolicyBlock[] = [
     },
   },
 ];
+// Every import block but E's own carries the facade ban (a later block replaces the rule for its files).
+export const policy: PolicyBlock[] = policyBlocks.map((block) => {
+  const rule = block.rules?.['no-restricted-imports'];
+  if (!Array.isArray(rule) || block.files?.includes('src/ecs/**/*.{js,ts}')) return block;
+  const [level, options] = rule as [string, ImportOptions];
+  return {
+    ...block,
+    rules: {
+      ...block.rules,
+      'no-restricted-imports': [level, { ...options, patterns: [...(options.patterns ?? []), ecsBan] }],
+    },
+  };
+});
