@@ -493,7 +493,7 @@ export class Game {
 
   async still(label = 'still') {
     const p = this.path(label, 'still');
-    await this.page.screenshot({ path: p });
+    await this.page.screenshot({ path: p, timeout: 120000 }); // a software-rendered tab can take a minute for one frame
     return p;
   }
 
