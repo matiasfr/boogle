@@ -114,3 +114,17 @@ overhang, terrain, trees, stations and safe turnout geometry remain unsurveyed.
 Controls are Local document UI; there is no game implementation, persisted state,
 service assignment or dispatch action. Inspect via the existing broker's same-origin
 iframe capture route described above. Owner layout review precedes a game build.
+
+## Ring economy
+
+[Ring economy](ring-economy.html) is the 2D page for the [ring-and-economy brief](../brainstorms/ring-and-economy.md):
+
+- the ring-and-hub map;
+- the resource flow;
+- the pacing curve for one and four players, with the first-branch toggle;
+- one hands-versus-machines chart per tier.
+
+Its `#economy-data` block is generated, so don't edit it by hand. Edit [ring-data.ts](../../dev/economy/ring-data.ts)
+and run `node dev/economy/build-model.ts`, which also rewrites [economy-model.xlsx](../economy/economy-model.xlsx) and
+the CSVs beside it. `--check` fails when any of them are stale. The map is schematic: its distances come from the
+model's 1.2 km ring, not from `layout.ts`, and its places are proposals.

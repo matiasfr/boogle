@@ -1,0 +1,1584 @@
+<title>Ring Economy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta
+  name="description"
+  content="Boogle's proposed ring-and-hub world, its resource flow and its pacing, from the economy spreadsheet."
+/>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f3ef;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-3: #8a8984;
+    --line: #dddcd6;
+    --grid: #ebeae5;
+    --auto: #2a78d6;
+    --hand: #eb6834;
+    --rail: #9b4a2c;
+    --spoke: #6250d6;
+    --sea: #e3eef6;
+    --land: #e9e2cf;
+    --accent-bg: #eef4fc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: #121211;
+      --surface: #1a1a19;
+      --ink: #f0efec;
+      --ink-2: #c3c2b7;
+      --ink-3: #8f8e86;
+      --line: #34332f;
+      --grid: #262623;
+      --auto: #3987e5;
+      --hand: #d95926;
+      --rail: #d27a52;
+      --spoke: #9085e9;
+      --sea: #16222c;
+      --land: #2e2a20;
+      --accent-bg: #18232f;
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #121211;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --ink-3: #8f8e86;
+    --line: #34332f;
+    --grid: #262623;
+    --auto: #3987e5;
+    --hand: #d95926;
+    --rail: #d27a52;
+    --spoke: #9085e9;
+    --sea: #16222c;
+    --land: #2e2a20;
+    --accent-bg: #18232f;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font:
+      15px/1.5 system-ui,
+      -apple-system,
+      'Segoe UI',
+      sans-serif;
+  }
+  main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px 16px 64px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font-size: 19px;
+    margin: 0 0 4px;
+  }
+  p {
+    margin: 0 0 8px;
+    color: var(--ink-2);
+  }
+  .lede {
+    font-size: 16px;
+    max-width: 62ch;
+  }
+  section {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin: 16px 0 0;
+  }
+  .seg {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .seg button {
+    font: inherit;
+    border: 0;
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--accent-bg);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .kpi b {
+    display: block;
+    font-size: 26px;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi span {
+    color: var(--ink-2);
+    font-size: 13px;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  svg text {
+    fill: var(--ink);
+    font-family: inherit;
+  }
+  .muted {
+    fill: var(--ink-2);
+  }
+  .faint {
+    fill: var(--ink-3);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 13px;
+    color: var(--ink-2);
+    margin: 8px 0 0;
+  }
+  .legend i {
+    display: inline-block;
+    width: 22px;
+    height: 0;
+    border-top: 3px solid;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  .two {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 760px) {
+    .two {
+      grid-template-columns: 1fr;
+    }
+  }
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .flow .card {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--bg);
+  }
+  .flow .card h3 {
+    font-size: 14px;
+    margin: 0 0 4px;
+  }
+  .flow .card p {
+    font-size: 13px;
+    margin: 0;
+  }
+  .flow .card:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -9px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid var(--ink-3);
+    border-right: 2px solid var(--ink-3);
+    transform: translateY(-50%) rotate(45deg);
+  }
+  .loops {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .loops div {
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .loops b {
+    color: var(--ink);
+  }
+  @media (max-width: 760px) {
+    .flow,
+    .loops {
+      grid-template-columns: 1fr;
+    }
+    .flow .card:not(:last-child)::after {
+      right: 50%;
+      top: auto;
+      bottom: -9px;
+      transform: translateX(50%) rotate(135deg);
+    }
+  }
+  .multiples {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 12px;
+  }
+  @media (max-width: 860px) {
+    .multiples {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (max-width: 520px) {
+    .multiples {
+      grid-template-columns: 1fr;
+    }
+  }
+  .mult h3 {
+    font-size: 14px;
+    margin: 0;
+  }
+  .mult p {
+    font-size: 12px;
+    margin: 0 0 4px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    color: var(--ink-2);
+    font-weight: 600;
+  }
+  .scroll {
+    overflow-x: auto;
+  }
+  details {
+    margin-top: 10px;
+  }
+  summary {
+    cursor: pointer;
+    color: var(--ink-2);
+    font-size: 13px;
+  }
+  .tip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    color: var(--ink);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+    display: none;
+    max-width: 260px;
+    z-index: 5;
+  }
+  .hit {
+    fill: transparent;
+    cursor: default;
+  }
+  footer {
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  code {
+    font-size: 12px;
+  }
+</style>
+
+<main>
+  <h1>Ring economy</h1>
+  <p class="lede">
+    A co-op incremental you explore like a Metroidvania. Every new material starts in your hands; its producer starts
+    slower than you, then its upgrades overtake you. The world is a ring of places around Home, with shortcuts through
+    the middle and a free choice of direction after Ring Island.
+  </p>
+  <div class="bar">
+    <span style="color: var(--ink-2); font-size: 13px">After Ring Island, go to</span>
+    <div class="seg" role="group" aria-label="First branch">
+      <button type="button" data-branch="canopy" aria-pressed="true">Canopy Town first</button>
+      <button type="button" data-branch="gorge" aria-pressed="false">High Gorge first</button>
+    </div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+
+  <section>
+    <h2>The ring and the hub</h2>
+    <p>
+      Home is the hub. You leave by the first sea crossing, go around the ring, and later build spokes back to Home as
+      shortcuts. Closing the ring turns the railway into a loop line.
+    </p>
+    <div class="two">
+      <svg id="map" viewBox="-40 0 680 640" role="img" aria-label="Ring map"></svg>
+      <div>
+        <div class="legend">
+          <span><i style="border-color: var(--rail)"></i>Ring line, numbered in build order</span>
+          <span><i style="border-color: var(--spoke)"></i>Entry spoke (first crossing)</span>
+          <span><i style="border-color: var(--spoke); border-top-style: dashed"></i>Return spoke, unlocked later</span>
+          <span><i style="border-color: var(--ink-3); border-top-style: dotted"></i>Optional spoke</span>
+        </div>
+        <div class="scroll" style="margin-top: 12px">
+          <table id="places"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>How resources flow</h2>
+    <p>Hands start every tier. Machines take over the bulk, and hands always place the last piece.</p>
+    <div class="flow">
+      <div class="card">
+        <h3>By hand</h3>
+        <p>
+          A new material is gathered and carried by whoever finds it. Each person's pack is their own until delivered.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Producer and its yard</h3>
+        <p>Connecting a place starts its producer, slowly. Its yard shows stacks; a full yard pauses it.</p>
+      </div>
+      <div class="card">
+        <h3>Trains</h3>
+        <p>Freight is limited by trains, wagons and speed, shared between every remote producer.</p>
+      </div>
+      <div class="card">
+        <h3>Home Yard</h3>
+        <p>
+          Shared stock for everyone in the world, in bays you can see. Nobody's wallet: it only builds shared things.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Upgrades</h3>
+        <p>
+          Rail segments, spokes, producer levels, yard bays, engines and wagons. Hands carry each piece from the rack.
+        </p>
+      </div>
+    </div>
+    <div class="loops">
+      <div><b>Manual assists</b> raise the hand line: carry frame, fibre sling, proper axe, powered pick.</div>
+      <div><b>Producer, wagon and engine upgrades</b> raise the machine line until it passes a crew.</div>
+      <div><b>Sinks are finite builds.</b> No fuel, repairs or decay. Away, producers only fill their own yards.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Hours to each milestone</h2>
+    <p id="pace-note"></p>
+    <svg id="pace" viewBox="0 0 900 430" role="img" aria-label="Pacing curve"></svg>
+    <div class="legend">
+      <span><i style="border-color: var(--auto)"></i>Solo</span>
+      <span><i style="border-color: var(--hand)"></i>Four friends</span>
+      <span><i style="border-color: var(--ink-3); border-top-style: dashed"></i>8-hour target</span>
+    </div>
+    <details>
+      <summary>Table</summary>
+      <div class="scroll"><table id="pace-table"></table></div>
+    </details>
+  </section>
+
+  <section>
+    <h2>Hands versus machines, per tier</h2>
+    <p>
+      Units per hour reaching the Home Yard over a solo game. Each tier starts by hand; the machine line starts lower,
+      then steps past it. Crystal has no machine in the main game.
+    </p>
+    <div class="legend">
+      <span><i style="border-color: var(--hand)"></i>One player by hand</span>
+      <span><i style="border-color: var(--auto)"></i>Automatic (producer and trains)</span>
+    </div>
+    <div class="multiples" id="mult"></div>
+  </section>
+
+  <footer>
+    Generated by <code>dev/economy/build-model.ts</code> from <code>dev/economy/ring-data.ts</code>, the same model as
+    <code>docs/economy/economy-model.xlsx</code>. Proposed design numbers, not measured play. Brief:
+    <code>docs/brainstorms/ring-and-economy.md</code>.
+  </footer>
+</main>
+<div class="tip" id="tip"></div>
+
+<script type="application/json" id="economy-data">
+  {
+    "generatedBy": "dev/economy/build-model.ts",
+    "ring": { "radiusKm": 1.2, "arcKm": 1.885 },
+    "target": 8,
+    "places": [
+      {
+        "slot": "home",
+        "name": "Home · Threefold Reach",
+        "kind": "hub",
+        "angle": null,
+        "resources": "W, St, R",
+        "abilities": "Hook, glider (starter)",
+        "ownSpoke": "home.line1"
+      },
+      {
+        "slot": "splitrock",
+        "name": "Split-rock Works",
+        "kind": "hub island",
+        "angle": null,
+        "resources": "C",
+        "abilities": "Breaker strike; ankle rings on the way (double jump)",
+        "ownSpoke": "splitrock.connect"
+      },
+      {
+        "slot": "ring",
+        "name": "Ring Island",
+        "kind": "ring",
+        "angle": 0,
+        "resources": "S",
+        "abilities": "Brace the aperture",
+        "ownSpoke": "ring.reach"
+      },
+      {
+        "slot": "b1",
+        "name": "(first branch)",
+        "kind": "branch",
+        "angle": 270,
+        "resources": "Fi or U",
+        "abilities": "Canopy: sling + glider cloth · Gorge: powered pick + hook reel",
+        "ownSpoke": "spoke1"
+      },
+      {
+        "slot": "port",
+        "name": "High Port",
+        "kind": "ring",
+        "angle": 180,
+        "resources": "Recombines S, C and the branch material",
+        "abilities": "Town services, harbour crane",
+        "ownSpoke": "optional"
+      },
+      {
+        "slot": "b2",
+        "name": "(second branch)",
+        "kind": "branch",
+        "angle": 90,
+        "resources": "U or Fi",
+        "abilities": "The other branch's pair",
+        "ownSpoke": "optional"
+      },
+      {
+        "slot": "original",
+        "name": "Original Island",
+        "kind": "ending",
+        "angle": 180,
+        "resources": "None new",
+        "abilities": "The Boogler",
+        "ownSpoke": "optional"
+      },
+      {
+        "slot": "stop-ankle",
+        "name": "Ankle-ring ledge",
+        "kind": "stop",
+        "angle": null,
+        "resources": "—",
+        "abilities": "Double jump (approved jump brief)",
+        "ownSpoke": "home.line1"
+      },
+      {
+        "slot": "stop-bell",
+        "name": "Bell Terraces",
+        "kind": "stop",
+        "angle": null,
+        "resources": "X (found)",
+        "abilities": "Hook practice",
+        "ownSpoke": "spoke1"
+      },
+      {
+        "slot": "stop-sail",
+        "name": "Sail Tower",
+        "kind": "stop",
+        "angle": null,
+        "resources": "X (found)",
+        "abilities": "Glider practice",
+        "ownSpoke": "optional"
+      },
+      {
+        "slot": "stop-lens",
+        "name": "Lantern Observatory",
+        "kind": "stop",
+        "angle": null,
+        "resources": "X (found)",
+        "abilities": "Telescope glimpse of the ending",
+        "ownSpoke": "optional"
+      }
+    ],
+    "routes": [
+      {
+        "first": "canopy",
+        "steps": [
+          {
+            "key": "home.line1",
+            "name": "Line 1: timber camp, T1–T3",
+            "place": "Home · Threefold Reach",
+            "solo": [0, 0.329],
+            "four": [0, 0.203],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "home.forge",
+            "name": "Forge and Q1",
+            "place": "Home · Threefold Reach",
+            "solo": [0.329, 0.531],
+            "four": [0.203, 0.323],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "home.line2",
+            "name": "Line 2: Q2–Q3 with the depot cart",
+            "place": "Home · Threefold Reach",
+            "solo": [0.531, 0.724],
+            "four": [0.323, 0.454],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "splitrock.reach",
+            "name": "Walk to Split-rock, ankle rings, breaker strike",
+            "place": "Split-rock Works",
+            "solo": [0.724, 1.139],
+            "four": [0.454, 0.747],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "splitrock.connect",
+            "name": "Connect the Works (Q4–Q6)",
+            "place": "Split-rock Works",
+            "solo": [1.139, 1.485],
+            "four": [0.747, 1.047],
+            "wait4": 5.034,
+            "on4": "C"
+          },
+          {
+            "key": "ring.reach",
+            "name": "First crossing to Ring Island",
+            "place": "Ring Island",
+            "solo": [1.485, 2.193],
+            "four": [1.047, 1.531],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "ring.connect",
+            "name": "Brace the aperture, connect the steel works",
+            "place": "Ring Island",
+            "solo": [2.193, 2.504],
+            "four": [1.531, 1.739],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "hub.roundhouse",
+            "name": "The Roundhouse opens",
+            "place": "Home · Threefold Reach",
+            "solo": [2.504, 2.765],
+            "four": [1.739, 1.923],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "b1.reach",
+            "name": "Branch choice: ring segment to the first branch",
+            "place": "Canopy Town",
+            "solo": [2.765, 3.549],
+            "four": [1.923, 2.439],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "b1.connect",
+            "name": "Connect the first branch",
+            "place": "Canopy Town",
+            "solo": [3.549, 4.049],
+            "four": [2.439, 2.939],
+            "wait4": 12.682,
+            "on4": "Fi"
+          },
+          {
+            "key": "spoke1",
+            "name": "First return spoke and second engine",
+            "place": "Canopy Town",
+            "solo": [4.049, 4.566],
+            "four": [2.939, 3.272],
+            "wait4": 1.162,
+            "on4": "S"
+          },
+          {
+            "key": "port.reach",
+            "name": "Ring segment to High Port",
+            "place": "High Port",
+            "solo": [4.566, 5.351],
+            "four": [3.272, 3.797],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "port.connect",
+            "name": "Harbour crane and service bay",
+            "place": "High Port",
+            "solo": [5.351, 5.797],
+            "four": [3.797, 4.081],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "b2.reach",
+            "name": "Ring segment to the second branch",
+            "place": "High Gorge",
+            "solo": [5.797, 6.499],
+            "four": [4.081, 4.533],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "b2.connect",
+            "name": "Connect the second branch",
+            "place": "High Gorge",
+            "solo": [6.499, 6.909],
+            "four": [4.533, 4.883],
+            "wait4": 5.058,
+            "on4": "U"
+          },
+          {
+            "key": "ring.close",
+            "name": "Close the ring: the loop line",
+            "place": "High Gorge",
+            "solo": [6.909, 7.541],
+            "four": [4.883, 5.25],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "final",
+            "name": "Final crossing to the Original Island",
+            "place": "Original Island",
+            "solo": [7.541, 8.173],
+            "four": [5.25, 5.667],
+            "wait4": 0,
+            "on4": "—"
+          }
+        ],
+        "cross": {
+          "W": {
+            "solo": 0.531,
+            "crew": 0.323,
+            "series": [
+              [0, 440, 0],
+              [0.329, 440, 0],
+              [0.531, 440, 2400],
+              [0.724, 440, 2400],
+              [1.139, 756, 2400],
+              [1.485, 756, 2400],
+              [2.193, 756, 2400],
+              [2.504, 756, 2400],
+              [2.765, 756, 2400],
+              [3.549, 994, 2400],
+              [4.049, 994, 2400],
+              [4.566, 994, 2400],
+              [5.351, 994, 2400],
+              [5.797, 994, 2400],
+              [6.499, 1097, 2400],
+              [6.909, 1097, 2400],
+              [7.541, 1097, 2400]
+            ]
+          },
+          "C": {
+            "solo": 3.549,
+            "crew": 3.797,
+            "series": [
+              [0, 180, 0],
+              [0.329, 180, 0],
+              [0.531, 180, 0],
+              [0.724, 180, 0],
+              [1.139, 327, 40],
+              [1.485, 327, 40],
+              [2.193, 327, 120],
+              [2.504, 327, 120],
+              [2.765, 327, 120],
+              [3.549, 449, 480],
+              [4.049, 449, 480],
+              [4.566, 449, 480],
+              [5.351, 449, 1440],
+              [5.797, 449, 1440],
+              [6.499, 480, 1440],
+              [6.909, 480, 1440],
+              [7.541, 480, 1440]
+            ]
+          },
+          "S": {
+            "solo": 5.351,
+            "crew": 4.883,
+            "series": [
+              [0, 135, 0],
+              [0.329, 135, 0],
+              [0.531, 135, 0],
+              [0.724, 135, 0],
+              [1.139, 251, 0],
+              [1.485, 251, 0],
+              [2.193, 251, 45],
+              [2.504, 251, 45],
+              [2.765, 251, 45],
+              [3.549, 352, 45],
+              [4.049, 382, 120],
+              [4.566, 382, 120],
+              [5.351, 401, 480],
+              [5.797, 401, 480],
+              [6.499, 425, 480],
+              [6.909, 447, 1440],
+              [7.541, 447, 1440]
+            ]
+          },
+          "Fi": {
+            "solo": 5.351,
+            "crew": 4.883,
+            "series": [
+              [0, 72, 0],
+              [0.329, 72, 0],
+              [0.531, 72, 0],
+              [0.724, 72, 0],
+              [1.139, 140, 0],
+              [1.485, 140, 0],
+              [2.193, 140, 0],
+              [2.504, 140, 0],
+              [2.765, 140, 0],
+              [3.549, 203, 40],
+              [4.049, 234, 160],
+              [4.566, 396, 160],
+              [5.351, 417, 480],
+              [5.797, 417, 480],
+              [6.499, 438, 480],
+              [6.909, 462, 1440],
+              [7.541, 462, 1440]
+            ]
+          },
+          "U": {
+            "solo": 6.909,
+            "crew": 999,
+            "series": [
+              [0, 37, 0],
+              [0.329, 37, 0],
+              [0.531, 37, 0],
+              [0.724, 37, 0],
+              [1.139, 72, 0],
+              [1.485, 72, 0],
+              [2.193, 72, 0],
+              [2.504, 72, 0],
+              [2.765, 72, 0],
+              [3.549, 107, 0],
+              [4.049, 127, 0],
+              [4.566, 164, 0],
+              [5.351, 185, 0],
+              [5.797, 185, 0],
+              [6.499, 190, 40],
+              [6.909, 226, 480],
+              [7.541, 301, 480]
+            ]
+          },
+          "X": {
+            "solo": 999,
+            "crew": 999,
+            "series": [
+              [0, 28, 0],
+              [0.329, 28, 0],
+              [0.531, 28, 0],
+              [0.724, 28, 0],
+              [1.139, 32, 0],
+              [1.485, 32, 0],
+              [2.193, 32, 0],
+              [2.504, 32, 0],
+              [2.765, 32, 0],
+              [3.549, 33, 0],
+              [4.049, 33, 0],
+              [4.566, 33, 0],
+              [5.351, 33, 0],
+              [5.797, 33, 0],
+              [6.499, 43, 0],
+              [6.909, 43, 0],
+              [7.541, 43, 0]
+            ]
+          }
+        },
+        "totals": {
+          "solo": 8.173,
+          "four": 5.667,
+          "act": 5.567,
+          "labour": 0.82,
+          "travel": 1.729,
+          "wait": 0.057,
+          "wait4": 0.399
+        }
+      },
+      {
+        "first": "gorge",
+        "steps": [
+          {
+            "key": "home.line1",
+            "name": "Line 1: timber camp, T1–T3",
+            "place": "Home · Threefold Reach",
+            "solo": [0, 0.329],
+            "four": [0, 0.203],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "home.forge",
+            "name": "Forge and Q1",
+            "place": "Home · Threefold Reach",
+            "solo": [0.329, 0.531],
+            "four": [0.203, 0.323],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "home.line2",
+            "name": "Line 2: Q2–Q3 with the depot cart",
+            "place": "Home · Threefold Reach",
+            "solo": [0.531, 0.724],
+            "four": [0.323, 0.454],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "splitrock.reach",
+            "name": "Walk to Split-rock, ankle rings, breaker strike",
+            "place": "Split-rock Works",
+            "solo": [0.724, 1.139],
+            "four": [0.454, 0.747],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "splitrock.connect",
+            "name": "Connect the Works (Q4–Q6)",
+            "place": "Split-rock Works",
+            "solo": [1.139, 1.485],
+            "four": [0.747, 1.047],
+            "wait4": 5.034,
+            "on4": "C"
+          },
+          {
+            "key": "ring.reach",
+            "name": "First crossing to Ring Island",
+            "place": "Ring Island",
+            "solo": [1.485, 2.193],
+            "four": [1.047, 1.531],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "ring.connect",
+            "name": "Brace the aperture, connect the steel works",
+            "place": "Ring Island",
+            "solo": [2.193, 2.504],
+            "four": [1.531, 1.739],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "hub.roundhouse",
+            "name": "The Roundhouse opens",
+            "place": "Home · Threefold Reach",
+            "solo": [2.504, 2.765],
+            "four": [1.739, 1.923],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "b1.reach",
+            "name": "Branch choice: ring segment to the first branch",
+            "place": "High Gorge",
+            "solo": [2.765, 3.549],
+            "four": [1.923, 2.439],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "b1.connect",
+            "name": "Connect the first branch",
+            "place": "High Gorge",
+            "solo": [3.549, 3.989],
+            "four": [2.439, 2.789],
+            "wait4": 3.747,
+            "on4": "U"
+          },
+          {
+            "key": "spoke1",
+            "name": "First return spoke and second engine",
+            "place": "High Gorge",
+            "solo": [3.989, 4.506],
+            "four": [2.789, 3.241],
+            "wait4": 8.287,
+            "on4": "S"
+          },
+          {
+            "key": "port.reach",
+            "name": "Ring segment to High Port",
+            "place": "High Port",
+            "solo": [4.506, 5.292],
+            "four": [3.241, 3.766],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "port.connect",
+            "name": "Harbour crane and service bay",
+            "place": "High Port",
+            "solo": [5.292, 5.737],
+            "four": [3.766, 4.049],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "b2.reach",
+            "name": "Ring segment to the second branch",
+            "place": "Canopy Town",
+            "solo": [5.737, 6.44],
+            "four": [4.049, 4.502],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "b2.connect",
+            "name": "Connect the second branch",
+            "place": "Canopy Town",
+            "solo": [6.44, 6.94],
+            "four": [4.502, 5.002],
+            "wait4": 13.994,
+            "on4": "Fi"
+          },
+          {
+            "key": "ring.close",
+            "name": "Close the ring: the loop line",
+            "place": "Canopy Town",
+            "solo": [6.94, 7.572],
+            "four": [5.002, 5.369],
+            "wait4": 0,
+            "on4": "—"
+          },
+          {
+            "key": "final",
+            "name": "Final crossing to the Original Island",
+            "place": "Original Island",
+            "solo": [7.572, 8.204],
+            "four": [5.369, 5.786],
+            "wait4": 0,
+            "on4": "—"
+          }
+        ],
+        "cross": {
+          "W": {
+            "solo": 0.531,
+            "crew": 0.323,
+            "series": [
+              [0, 440, 0],
+              [0.329, 440, 0],
+              [0.531, 440, 2400],
+              [0.724, 440, 2400],
+              [1.139, 756, 2400],
+              [1.485, 756, 2400],
+              [2.193, 756, 2400],
+              [2.504, 756, 2400],
+              [2.765, 756, 2400],
+              [3.549, 814, 2400],
+              [3.989, 814, 2400],
+              [4.506, 814, 2400],
+              [5.292, 814, 2400],
+              [5.737, 814, 2400],
+              [6.44, 1097, 2400],
+              [6.94, 1097, 2400],
+              [7.572, 1097, 2400]
+            ]
+          },
+          "C": {
+            "solo": 3.549,
+            "crew": 3.766,
+            "series": [
+              [0, 180, 0],
+              [0.329, 180, 0],
+              [0.531, 180, 0],
+              [0.724, 180, 0],
+              [1.139, 327, 40],
+              [1.485, 327, 40],
+              [2.193, 327, 120],
+              [2.504, 327, 120],
+              [2.765, 327, 120],
+              [3.549, 343, 480],
+              [3.989, 343, 480],
+              [4.506, 343, 480],
+              [5.292, 343, 1440],
+              [5.737, 343, 1440],
+              [6.44, 480, 1440],
+              [6.94, 480, 1440],
+              [7.572, 480, 1440]
+            ]
+          },
+          "S": {
+            "solo": 5.292,
+            "crew": 5.002,
+            "series": [
+              [0, 135, 0],
+              [0.329, 135, 0],
+              [0.531, 135, 0],
+              [0.724, 135, 0],
+              [1.139, 251, 0],
+              [1.485, 251, 0],
+              [2.193, 251, 45],
+              [2.504, 251, 45],
+              [2.765, 251, 45],
+              [3.549, 260, 45],
+              [3.989, 285, 120],
+              [4.506, 285, 120],
+              [5.292, 301, 480],
+              [5.737, 301, 480],
+              [6.44, 425, 480],
+              [6.94, 447, 1440],
+              [7.572, 447, 1440]
+            ]
+          },
+          "Fi": {
+            "solo": 6.94,
+            "crew": 999,
+            "series": [
+              [0, 37, 0],
+              [0.329, 37, 0],
+              [0.531, 37, 0],
+              [0.724, 37, 0],
+              [1.139, 73, 0],
+              [1.485, 73, 0],
+              [2.193, 73, 0],
+              [2.504, 73, 0],
+              [2.765, 73, 0],
+              [3.549, 74, 0],
+              [3.989, 89, 0],
+              [4.506, 115, 0],
+              [5.292, 131, 0],
+              [5.737, 131, 0],
+              [6.44, 193, 40],
+              [6.94, 230, 480],
+              [7.572, 307, 480]
+            ]
+          },
+          "U": {
+            "solo": 5.292,
+            "crew": 5.002,
+            "series": [
+              [0, 72, 0],
+              [0.329, 72, 0],
+              [0.531, 72, 0],
+              [0.724, 72, 0],
+              [1.139, 138, 0],
+              [1.485, 138, 0],
+              [2.193, 138, 0],
+              [2.504, 138, 0],
+              [2.765, 138, 0],
+              [3.549, 141, 40],
+              [3.989, 163, 160],
+              [4.506, 285, 160],
+              [5.292, 301, 480],
+              [5.737, 301, 480],
+              [6.44, 425, 480],
+              [6.94, 447, 1440],
+              [7.572, 447, 1440]
+            ]
+          },
+          "X": {
+            "solo": 999,
+            "crew": 999,
+            "series": [
+              [0, 28, 0],
+              [0.329, 28, 0],
+              [0.531, 28, 0],
+              [0.724, 28, 0],
+              [1.139, 32, 0],
+              [1.485, 32, 0],
+              [2.193, 32, 0],
+              [2.504, 32, 0],
+              [2.765, 32, 0],
+              [3.549, 41, 0],
+              [3.989, 41, 0],
+              [4.506, 41, 0],
+              [5.292, 41, 0],
+              [5.737, 41, 0],
+              [6.44, 43, 0],
+              [6.94, 43, 0],
+              [7.572, 43, 0]
+            ]
+          }
+        },
+        "totals": {
+          "solo": 8.204,
+          "four": 5.786,
+          "act": 5.567,
+          "labour": 0.821,
+          "travel": 1.729,
+          "wait": 0.087,
+          "wait4": 0.518
+        }
+      }
+    ],
+    "resources": [
+      { "id": "W", "name": "Logs", "tier": 0 },
+      { "id": "St", "name": "Stone", "tier": 0 },
+      { "id": "R", "name": "Rails", "tier": 0 },
+      { "id": "C", "name": "Precast footings", "tier": 1 },
+      { "id": "S", "name": "Steel fittings", "tier": 2 },
+      { "id": "Fi", "name": "Fibre bundles", "tier": 3 },
+      { "id": "U", "name": "Copper cable", "tier": 3 },
+      { "id": "X", "name": "Crystal seeds", "tier": 4 }
+    ],
+    "spokeSaves": [
+      { "slot": "b1", "longMin": 3.204, "spokeMin": 1.633 },
+      { "slot": "port", "longMin": 4.775, "spokeMin": 1.633 },
+      { "slot": "b2", "longMin": 6.346, "spokeMin": 1.633 }
+    ]
+  }
+</script>
+<script>
+  const D = JSON.parse(document.getElementById('economy-data').textContent);
+  const NS = 'http://www.w3.org/2000/svg';
+  const tip = document.getElementById('tip');
+  let branch = 'canopy';
+  try {
+    const saved = localStorage.getItem('ring-economy-branch');
+    if (saved === 'canopy' || saved === 'gorge') branch = saved;
+  } catch {}
+  const el = (tag, attrs = {}, parent) => {
+    const n = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (parent) parent.appendChild(n);
+    return n;
+  };
+  const text = (parent, x, y, s, attrs = {}) => {
+    const t = el('text', { x, y, ...attrs }, parent);
+    t.textContent = s;
+    return t;
+  };
+  const hover = (node, html) => {
+    node.addEventListener('pointerenter', () => {
+      tip.innerHTML = html;
+      tip.style.display = 'block';
+    });
+    node.addEventListener('pointermove', (e) => {
+      const w = tip.offsetWidth;
+      tip.style.left = Math.min(window.innerWidth - w - 8, e.clientX + 14) + 'px';
+      tip.style.top = e.clientY + 14 + 'px';
+    });
+    node.addEventListener('pointerleave', () => (tip.style.display = 'none'));
+  };
+  const fmt = (h) => (h >= 999 ? 'not in the main game' : h.toFixed(1) + ' h');
+  const route = () => D.routes.find((r) => r.first === branch);
+  const other = (b) => (b === 'canopy' ? 'gorge' : 'canopy');
+  const NAMES = { canopy: 'Canopy Town', gorge: 'High Gorge' };
+
+  function kpis() {
+    const r = route();
+    const t = r.totals;
+    document.getElementById('kpis').innerHTML = [
+      [t.solo.toFixed(1) + ' h', 'solo to the ending'],
+      [t.four.toFixed(1) + ' h', 'four friends'],
+      [D.target + ' h', 'target'],
+      [((t.act / t.solo) * 100).toFixed(0) + '%', 'of solo time is authored play'],
+      [Math.round(t.wait4 * 60) + ' min', 'four friends wait for stock'],
+    ]
+      .map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${s}</span></div>`)
+      .join('');
+  }
+
+  function map() {
+    const svg = document.getElementById('map');
+    svg.replaceChildren();
+    const cx = 300,
+      cy = 300,
+      R = 180;
+    const pt = (deg, r = R) => [cx + r * Math.sin((deg * Math.PI) / 180), cy - r * Math.cos((deg * Math.PI) / 180)];
+    el('rect', { x: -40, y: 0, width: 680, height: 640, rx: 14, fill: 'var(--sea)' }, svg);
+    // Places by geography: Canopy west, Gorge east, whichever is visited first.
+    const ang = { ring: 0, gorge: 90, port: 180, canopy: 270 };
+    const first = branch,
+      second = other(branch);
+    // Ring arcs in build order.
+    const arcs =
+      first === 'canopy'
+        ? [
+            ['ring', 'canopy'],
+            ['canopy', 'port'],
+            ['port', 'gorge'],
+            ['gorge', 'ring'],
+          ]
+        : [
+            ['ring', 'gorge'],
+            ['gorge', 'port'],
+            ['port', 'canopy'],
+            ['canopy', 'ring'],
+          ];
+    arcs.forEach(([a, b], k) => {
+      const [x1, y1] = pt(ang[a]),
+        [x2, y2] = pt(ang[b]);
+      const sweep = (ang[b] - ang[a] + 360) % 360 === 90 ? 1 : 0;
+      const last = k === 3;
+      const p = el(
+        'path',
+        {
+          d: `M${x1},${y1} A${R},${R} 0 0 ${sweep} ${x2},${y2}`,
+          fill: 'none',
+          stroke: 'var(--rail)',
+          'stroke-width': last ? 6 : 4,
+          'stroke-linecap': 'round',
+        },
+        svg,
+      );
+      const mid = (ang[a] + (sweep ? 45 : -45) + 360) % 360;
+      const [mx, my] = pt(mid, R + 26);
+      el('circle', { cx: mx, cy: my, r: 12, fill: 'var(--surface)', stroke: 'var(--rail)', 'stroke-width': 2 }, svg);
+      text(svg, mx, my + 4.5, String(k + 1), { 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 700 });
+      hover(p, last ? '<b>Closes the ring</b><br>Trains circulate the loop line' : `<b>Ring segment ${k + 1}</b>`);
+    });
+    // Spokes: entry to Ring Island, the first return spoke, optional others.
+    const spoke = (deg, kind) => {
+      const [x, y] = pt(deg, R - 18);
+      const [x0, y0] = pt(deg, 42);
+      const style =
+        kind === 'entry'
+          ? { stroke: 'var(--spoke)', 'stroke-width': 4 }
+          : kind === 'return'
+            ? { stroke: 'var(--spoke)', 'stroke-width': 4, 'stroke-dasharray': '10 7' }
+            : { stroke: 'var(--ink-3)', 'stroke-width': 3, 'stroke-dasharray': '2 6', 'stroke-linecap': 'round' };
+      el('line', { x1: x0, y1: y0, x2: x, y2: y, ...style }, svg);
+    };
+    spoke(ang.ring, 'entry');
+    spoke(ang[first], 'return');
+    spoke(ang[second], 'optional');
+    spoke(ang.port, 'optional');
+    // Small stops on the spokes.
+    const stop = (deg, name, note) => {
+      const [x, y] = pt(deg, 108);
+      const g = el('g', {}, svg);
+      el('circle', { cx: x, cy: y, r: 8, fill: 'var(--land)', stroke: 'var(--ink-3)', 'stroke-width': 1.5 }, g);
+      const right = deg === 0 || deg === 180;
+      text(g, right ? x + 13 : x, right ? y + 4 : y - 13, name, {
+        'text-anchor': right ? 'start' : 'middle',
+        'font-size': 11.5,
+        class: 'muted',
+      });
+      el('circle', { cx: x, cy: y, r: 16, class: 'hit' }, g);
+      hover(g, `<b>${name}</b><br>${note}`);
+    };
+    stop(ang[first], 'Bell Terraces', 'Small stop on the first return spoke: crystal seeds, hook practice');
+    stop(ang[second], 'Sail Tower', 'Small stop on the optional spoke: glider practice');
+    stop(ang.port, 'Lantern Observatory', 'Small stop on the deep-sea spoke: a telescope glimpse of the ending');
+    // Hub.
+    el('circle', { cx, cy, r: 46, fill: 'var(--land)', stroke: 'var(--ink-2)', 'stroke-width': 2 }, svg);
+    text(svg, cx, cy - 10, 'Home', { 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 700 });
+    text(svg, cx, cy + 6, 'Roundhouse', { 'text-anchor': 'middle', 'font-size': 10.5, class: 'muted' });
+    text(svg, cx, cy + 19, 'Home Yard', { 'text-anchor': 'middle', 'font-size': 10.5, class: 'muted' });
+    el(
+      'circle',
+      { cx: cx + 40, cy: cy + 40, r: 9, fill: 'var(--land)', stroke: 'var(--ink-2)', 'stroke-width': 1.5 },
+      svg,
+    );
+    text(svg, cx + 54, cy + 44, 'Split-rock Works', { 'font-size': 11.5, class: 'muted' });
+    // Ring places.
+    const node = (deg, name, sub, order) => {
+      const [x, y] = pt(deg);
+      const g = el('g', {}, svg);
+      el('circle', { cx: x, cy: y, r: 26, fill: 'var(--land)', stroke: 'var(--ink)', 'stroke-width': 2 }, g);
+      // Every label sits outside the ring; abilities are in the table and the hover.
+      const side = deg === 90 || deg === 180 ? 'start' : deg === 270 ? 'end' : 'middle';
+      const tx = side === 'start' ? x + 32 : side === 'end' ? x - 32 : x;
+      const ty = deg === 0 ? y - 44 : deg === 180 ? y + 18 : y - 2;
+      text(g, tx, ty, name, { 'text-anchor': side, 'font-size': 14, 'font-weight': 700 });
+      text(g, tx, ty + 15, sub, { 'text-anchor': side, 'font-size': 11.5, class: 'muted' });
+      text(g, x, y + 5, order, { 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 700 });
+      hover(g, `<b>${name}</b><br>${sub}`);
+    };
+    node(ang.ring, 'Ring Island', 'Steel · the branch choice', 'S');
+    node(ang.canopy, 'Canopy Town', 'Fibre', 'Fi');
+    node(ang.gorge, 'High Gorge', 'Copper', 'U');
+    node(ang.port, 'High Port', 'Town services, harbour crane', 'P');
+    // Branch choice marker.
+    const [rx, ry] = pt(0);
+    text(svg, rx - 40, ry + 6, '◀', {
+      'text-anchor': 'end',
+      'font-size': 14,
+      class: first === 'canopy' ? '' : 'faint',
+    });
+    text(svg, rx + 40, ry + 6, '▶', {
+      'text-anchor': 'start',
+      'font-size': 14,
+      class: first === 'gorge' ? '' : 'faint',
+    });
+    text(svg, rx, ry - 74, 'Choose a direction', { 'text-anchor': 'middle', 'font-size': 11.5, class: 'muted' });
+    // Ending outside the ring.
+    const [ox, oy] = [cx, cy + R + 100];
+    el('line', { x1: cx, y1: cy + R + 26, x2: ox, y2: oy - 22, stroke: 'var(--rail)', 'stroke-width': 4 }, svg);
+    el(
+      'circle',
+      {
+        cx: ox,
+        cy: oy,
+        r: 22,
+        fill: 'var(--land)',
+        stroke: 'var(--ink)',
+        'stroke-width': 2,
+        'stroke-dasharray': '4 3',
+      },
+      svg,
+    );
+    text(svg, ox + 32, oy - 2, 'Original Island', { 'font-size': 14, 'font-weight': 700 });
+    text(svg, ox + 32, oy + 14, 'The Boogler · the ending', { 'font-size': 11.5, class: 'muted' });
+  }
+
+  function placesTable() {
+    const rows = [
+      ['Home (hub)', 'Logs, stone, rails', 'Start', 'Town, forge, Home Yard, Roundhouse'],
+      ['Split-rock Works', 'Footings (C)', 'Walk east', 'Breaker strike; ankle rings on the way'],
+      ['Ring Island', 'Steel (S)', 'First sea crossing', 'Brace the aperture; the branch choice'],
+      [
+        'Canopy Town',
+        'Fibre (Fi)',
+        branch === 'canopy' ? 'First branch' : 'Second branch',
+        'Carry sling, glider cloth',
+      ],
+      ['High Gorge', 'Copper (U)', branch === 'gorge' ? 'First branch' : 'Second branch', 'Powered pick, hook reel'],
+      ['High Port', 'Uses either', 'Opposite Ring Island', 'Harbour crane, service bay, faster engine'],
+      ['Small stops', 'Crystal (X), by hand', 'On the spokes', 'Practice, views, the telescope'],
+      ['Original Island', 'None new', 'After the loop', 'The Boogler'],
+    ];
+    document.getElementById('places').innerHTML =
+      '<tr><th>Place</th><th>Makes</th><th>When</th><th>Gives</th></tr>' +
+      rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('');
+  }
+
+  function pacing() {
+    const r = route();
+    const svg = document.getElementById('pace');
+    svg.replaceChildren();
+    const W = 900,
+      Hh = 430,
+      L = 250,
+      Rr = 24,
+      T = 14,
+      B = 36;
+    const steps = r.steps;
+    const maxH = Math.max(10, Math.ceil(r.totals.solo + 0.5));
+    const x = (h) => L + ((W - L - Rr) * h) / maxH;
+    const rowH = (Hh - T - B) / steps.length;
+    const y = (i) => T + rowH * (i + 0.5);
+    for (let h = 0; h <= maxH; h++) {
+      el('line', { x1: x(h), x2: x(h), y1: T, y2: Hh - B, stroke: 'var(--grid)' }, svg);
+      text(svg, x(h), Hh - B + 18, h + ' h', { 'text-anchor': 'middle', 'font-size': 12, class: 'muted' });
+    }
+    el(
+      'line',
+      {
+        x1: x(D.target),
+        x2: x(D.target),
+        y1: T,
+        y2: Hh - B,
+        stroke: 'var(--ink-3)',
+        'stroke-dasharray': '5 4',
+        'stroke-width': 1.5,
+      },
+      svg,
+    );
+    steps.forEach((s, i) => {
+      text(svg, L - 10, y(i) + 4, s.name.length > 34 ? s.name.slice(0, 33) + '…' : s.name, {
+        'text-anchor': 'end',
+        'font-size': 11.5,
+        class: 'muted',
+      });
+    });
+    const line = (key, color) => {
+      let d = '';
+      steps.forEach((s, i) => {
+        const [a, b] = s[key];
+        d += `${i ? 'L' : 'M'}${x(a)},${y(i)} L${x(b)},${y(i)} `;
+      });
+      el('path', { d, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round' }, svg);
+      steps.forEach((s, i) => {
+        const [a, b] = s[key];
+        el('circle', { cx: x(b), cy: y(i), r: 4, fill: color, stroke: 'var(--surface)', 'stroke-width': 2 }, svg);
+        const hit = el(
+          'rect',
+          { x: x(a), y: y(i) - rowH / 2, width: Math.max(8, x(b) - x(a)), height: rowH, class: 'hit' },
+          svg,
+        );
+        const extra = key === 'four' && s.wait4 > 0.5 ? `<br>Waits ${s.wait4.toFixed(0)} min for ${s.on4}` : '';
+        hover(
+          hit,
+          `<b>${s.name}</b><br>${key === 'solo' ? 'Solo' : 'Four friends'}: ${a.toFixed(2)}–${b.toFixed(2)} h${extra}`,
+        );
+      });
+    };
+    line('four', 'var(--hand)');
+    line('solo', 'var(--auto)');
+    const last = steps[steps.length - 1];
+    text(svg, x(last.solo[1]) + 8, y(steps.length - 1) + 4, 'Solo ' + last.solo[1].toFixed(1) + ' h', {
+      'font-size': 12,
+      'font-weight': 600,
+    });
+    text(svg, x(last.four[1]) - 8, y(steps.length - 1) - 10, 'Four ' + last.four[1].toFixed(1) + ' h', {
+      'font-size': 12,
+      'font-weight': 600,
+      'text-anchor': 'end',
+    });
+    const t = r.totals;
+    document.getElementById('pace-note').textContent =
+      `Solo: ${t.act.toFixed(1)} h authored play, ${t.labour.toFixed(1)} h hand labour, ${t.travel.toFixed(1)} h commuting, ${(t.wait * 60).toFixed(0)} min waiting for stock. Four friends finish in ${t.four.toFixed(1)} h and wait ${(t.wait4 * 60).toFixed(0)} min, because producers don't speed up with players.`;
+    document.getElementById('pace-table').innerHTML =
+      '<tr><th>Step</th><th>Place</th><th>Solo ends</th><th>Four end</th><th>Four wait</th></tr>' +
+      steps
+        .map(
+          (s) =>
+            `<tr><td>${s.name}</td><td>${s.place}</td><td>${s.solo[1].toFixed(2)} h</td><td>${s.four[1].toFixed(2)} h</td><td>${s.wait4 > 0.5 ? s.wait4.toFixed(0) + ' min (' + s.on4 + ')' : '—'}</td></tr>`,
+        )
+        .join('');
+  }
+
+  function multiples() {
+    const r = route();
+    const box = document.getElementById('mult');
+    box.replaceChildren();
+    const order = ['W', 'C', 'S', 'Fi', 'U', 'X'];
+    const maxH = Math.max(9, Math.ceil(r.totals.solo));
+    for (const m of order) {
+      const c = r.cross[m];
+      const res = D.resources.find((x) => x.id === m);
+      const div = document.createElement('div');
+      div.className = 'mult';
+      const passes =
+        c.solo < 999 ? `Machines pass one player at ${c.solo.toFixed(1)} h` : 'Hands only in the main game';
+      div.innerHTML = `<h3>${res.name} · tier ${res.tier}</h3><p>${passes}</p>`;
+      const svg = el('svg', {
+        viewBox: '0 0 300 170',
+        role: 'img',
+        'aria-label': `${res.name}: hand versus automatic`,
+      });
+      div.appendChild(svg);
+      box.appendChild(div);
+      const L = 40,
+        Rr = 10,
+        T = 10,
+        B = 24,
+        W = 300,
+        Hh = 170;
+      const s = c.series;
+      const top = Math.max(1, ...s.map((p) => Math.max(p[1], m === 'W' ? 0 : p[2])), m === 'W' ? 2400 : 0);
+      const nice = (v) => {
+        const p = Math.pow(10, Math.floor(Math.log10(v)));
+        return Math.ceil(v / p) * p;
+      };
+      const ymax = nice(top);
+      const x = (h) => L + ((W - L - Rr) * h) / maxH;
+      const y = (v) => Hh - B - ((Hh - B - T) * Math.min(v, ymax)) / ymax;
+      [0, 0.5, 1].forEach((f) => {
+        el('line', { x1: L, x2: W - Rr, y1: y(ymax * f), y2: y(ymax * f), stroke: 'var(--grid)' }, svg);
+        text(svg, L - 6, y(ymax * f) + 4, String(Math.round(ymax * f)), {
+          'text-anchor': 'end',
+          'font-size': 10,
+          class: 'muted',
+        });
+      });
+      for (let h = 0; h <= maxH; h += 3)
+        text(svg, x(h), Hh - 8, h + ' h', { 'text-anchor': 'middle', 'font-size': 10, class: 'muted' });
+      const stepPath = (k) => {
+        let d = '';
+        s.forEach((p, i) => {
+          const next = i + 1 < s.length ? s[i + 1][0] : r.totals.solo;
+          d += `${i ? 'L' : 'M'}${x(p[0])},${y(p[k])} L${x(next)},${y(p[k])} `;
+        });
+        return d;
+      };
+      el('path', { d: stepPath(1), fill: 'none', stroke: 'var(--hand)', 'stroke-width': 2 }, svg);
+      el('path', { d: stepPath(2), fill: 'none', stroke: 'var(--auto)', 'stroke-width': 2 }, svg);
+      if (c.solo < 999) {
+        el(
+          'line',
+          { x1: x(c.solo), x2: x(c.solo), y1: T, y2: Hh - B, stroke: 'var(--ink-3)', 'stroke-dasharray': '3 3' },
+          svg,
+        );
+      }
+      const hit = el('rect', { x: L, y: T, width: W - L - Rr, height: Hh - B - T, class: 'hit' }, svg);
+      hit.addEventListener('pointermove', (e) => {
+        const box2 = svg.getBoundingClientRect();
+        const h = (((e.clientX - box2.left) / box2.width) * W - L) / ((W - L - Rr) / maxH);
+        let p = s[0];
+        for (const q of s) if (q[0] <= h) p = q;
+        tip.innerHTML = `<b>${res.name}</b> at ${Math.max(0, h).toFixed(1)} h<br>By hand: ${p[1]} /h<br>Automatic: ${p[2]} /h`;
+        tip.style.display = 'block';
+        tip.style.left = Math.min(window.innerWidth - tip.offsetWidth - 8, e.clientX + 14) + 'px';
+        tip.style.top = e.clientY + 14 + 'px';
+      });
+      hit.addEventListener('pointerleave', () => (tip.style.display = 'none'));
+    }
+  }
+
+  function render() {
+    document
+      .querySelectorAll('[data-branch]')
+      .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.branch === branch)));
+    kpis();
+    map();
+    placesTable();
+    pacing();
+    multiples();
+  }
+  document.querySelectorAll('[data-branch]').forEach((b) =>
+    b.addEventListener('click', () => {
+      branch = b.dataset.branch;
+      try {
+        localStorage.setItem('ring-economy-branch', branch);
+      } catch {}
+      render();
+    }),
+  );
+  render();
+</script>
