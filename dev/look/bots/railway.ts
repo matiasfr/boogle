@@ -715,8 +715,13 @@ export async function play({ stopBeforeReward = false } = {}) {
         // The depot runs on the server's clock (12 s a load); the warped page clock can run ~9x faster than it.
         await until(() => l2().depot > 0, `Q${k + 1} depot brings logs`);
         const depot = v2().depot!;
+        const stockBefore = l2().stations[k]!.stock;
         require(await bot.use(depot[0]!, depot[2]!, 'take depot logs', /^Pick up$/), 'depot rack offered');
-        require(await bot.work(() => read().carry > 0, 5000, 380), 'depot logs accepted after bounded retries');
+        // Confirmed within a round trip now, the logs can already have unloaded into the frame beside the rack.
+        require(
+          await bot.work(() => read().carry > 0 || l2().stations[k]!.stock > stockBefore, 5000, 380),
+          'depot logs accepted after bounded retries',
+        );
         await until(() => read().pending === 0, 'depot logs settle');
         await walk(frameAt.x, frameAt.z, 2.4);
         await until(() => read().carry === 0 && read().pending === 0, `Q${k + 1} logs unload`, 20000);
