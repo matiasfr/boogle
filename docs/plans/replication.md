@@ -1,7 +1,8 @@
 # Plan: replication with prediction replaces lockstep
 
 > **Status: plan, 6 November 2026, revised after red-team the same day (adopted; see "Revisions after red-team"
-> below). R0 landed; R1a (railway replicated, no prediction) on its branch, measured below.** Owner decision of 6 November: replication with prediction replaces lockstep, aiming for
+> below). R0 and R1a (railway replicated, no prediction; #1117) landed; R1b (your own actions predicted) on its
+> branch, measured below.** Owner decision of 6 November: replication with prediction replaces lockstep, aiming for
 > "the most responsive game feel" in casual co-op, where exploits don't matter. The owner's bar after playtesting:
 > mining and depositing must feel instantaneous, "no network delay at all". Code read at `2e6cdd63`. Numbers marked
 > *estimate* are worked out from today's state sizes; the proof slices (section 5) measure them. Related calls: server
@@ -394,6 +395,113 @@ mirror, including a late joiner, hashed equal to the others.
 
 Unverified: the owner's feel; real networks (added latency is a timer, not loss or jitter); Fly CPU; Safari and
 mobile; not tested on a device.
+
+### R1b: what landed and what it measured (6 November, M1 Max, Node 26)
+
+- **Predicted:** chop, mine, take, recovery-rack take, drop, deposit (line one and line two, forge frame included),
+  forge rails and depot logs, the wake and the lever (`RAIL_PREDICTED`, `src/world/railway-predict.ts`): R1b's list
+  plus R2's rack, forge and depot takes, line-two deposits and lever, and the wake (owner, 6 November: instant
+  feedback for the wake and levers). The adapter's
+  reservations became `createPredictor`'s pending list: each press runs `railPredict` (the server's own `railApply`) on
+  a clone of the mirror at the estimated tick; views read the predicted state, and the action's effect fires at once
+  as an ordinary `onAccepted` event marked `predicted`. The server's event for it plays nothing. Each packet drops what
+  it settled and replays the rest on the new mirror.
+- **Not predicted** (as before, effects on confirmation): the axe, the jump device, the hook, the beam (chop, take,
+  drop, deposit). **Thresholds stay the server's:** a deposit that completes a bill shows the frame full but leaves the
+  job unfunded until the server's packet starts it; a delivery that fills the forge waits for the server to light it
+  (its fanfare now plays when the mirror shows it lit, for everyone).
+- **"Not yet":** a press the rule would not take on the predicted state, or sooner than the server's swing/unload
+  cadence on the client's own action clock (`railCadence`, the same check the server runs), returns false, sends
+  nothing and shows nothing; a stroke bounces off with the rebound sound. The tick-gated wake readiness is
+  conservative by construction: the estimate is the server's step as of one one-way delay ago, so an action predicted
+  at it lands at that tick or later.
+- **The wake starts at the press on both ends.** `rail.wake` carries `tk`, the tick the actor pressed at; the server
+  starts the wake there, bounded to at most 1 s before arrival (`railWakeTick`), so the actor's 3.1 s animation and the
+  authoritative readiness end together. Partners still see the wake about one round trip after the press.
+- **Reconciliation:** on ack, the confirmed result replaces the prediction with no visible change when they agree
+  (every row below). When the server's answer, or a replay on a newer mirror, gives less than was shown,
+  `onCorrected({ event, kept, lost, reason, winner })` names it: `refused`, `noop`, `contested` (a later or earlier
+  action now moves less) or `session` (a session/order refusal or a room status: that action and later ones). Views
+  return the pieces physically: off your back to whoever got them (their event in the same packet carries
+  `returned`, so the pile does not also send them) or back to the tree, rock, rack, forge rack or depot; out of a
+  frame or off a pile back onto your back; a reversed tree stands back up with a shake and the rebound sound; a wake
+  settles back asleep with a thump; a lever clanks back. Arcs over 6 m are skipped. A socket loss plays no returns:
+  the views rebuild from the whole state.
+- **Predicted piles:** a drop that creates a pile gives it the temporary id `-request`; the server sends
+  `ids: [['p:<epoch>:<request>', id]]` through the replicator's remap hook and the view re-keys its in-flight pieces.
+  A pile cannot be taken until it has its server id (well under one round trip after the drop).
+- **Stall cue:** a stroke unanswered after `STALL_MS` (1 s) holds the axe at the bite, wobbling, until it settles.
+- **Tooling:** `&railLag=<ms>` adds a round trip to the game's railway messages (dev captures), the headless page's
+  `&lat` uses the same `delayedRoom`; `npm run load` now drives every player through the real predicting adapter
+  (`WS_LOAD_PLAYERS`, `WS_LOAD_LAT`, `WS_LOAD_CHURN` pick rows). `WORLD_NS` is unchanged: no saved shape changed.
+
+Measured with `npm run load` as in R1a (headless pages over the real server in one process, added latency half each
+way on the railway's messages, 15 s a row, the same chop/drop/take cycle every 500 ms or, 5x, every 100 ms), now
+through the predicting adapter. Actor = press to its predicted effect having fired, in the page (the frame that draws
+it adds at most one frame: under the 16 ms bar at every latency). Server answer = press to the server's event for it
+arriving (R1a's actor latency, which the actor no longer sees). Others = press to the event arriving on the other pages.
+
+| Players | Added RTT | Actor press → effect p50 / p95 / max | Server answer p50 | Others p50 / p95 | Corrections, normal / 5x | Downlink per client, normal / 5x | Server ms per step (mean) |
+|---|---|---|---|---|---|---|---|
+| 2 | 0 ms | 0.3 / 0.4 / 1.2 ms | 7 ms | 7 / 17 ms | 0 / 0 | 7.8 / 34.6 kbit/s | 0.069 / 0.057 |
+| 2 | 100 ms | 0.2 / 0.5 / 0.9 ms | 111 ms | 111 / 121 ms | 0 / 0 | 7.7 / 30.8 kbit/s | 0.076 / 0.08 |
+| 2 | 200 ms | 0.2 / 0.4 / 1.3 ms | 214 ms | 213 / 221 ms | 0 / 0 | 7.6 / 30.9 kbit/s | 0.089 / 0.093 |
+| 4 | 0 ms | 0.3 / 0.6 / 1.3 ms | 11 ms | 11 / 18 ms | 0 / 0 | 13.8 / 63.8 kbit/s | 0.072 / 0.118 |
+| 4 | 100 ms | 0.2 / 0.3 / 1.1 ms | 110 ms | 110 / 120 ms | 0 / 0 | 13.9 / 57.4 kbit/s | 0.054 / 0.093 |
+| 4 | 200 ms | 0.2 / 0.4 / 1.3 ms | 216 ms | 216 / 221 ms | 0 / 0 | 13.9 / 57.3 kbit/s | 0.078 / 0.094 |
+| 6 | 0 ms | 0.2 / 0.4 / 1.2 ms | 10 ms | 10 / 16 ms | 0 / 0 | 19.9 / 92 kbit/s | 0.087 / 0.103 |
+| 6 | 100 ms | 0.2 / 0.7 / 1.3 ms | 111 ms | 111 / 120 ms | 0 / 0 | 20 / 82.6 kbit/s | 0.107 / 0.102 |
+| 6 | 200 ms | 0.1 / 0.3 / 1 ms | 209 ms | 209 / 221 ms | 0 / 0 | 20 / 83.2 kbit/s | 0.09 / 0.14 |
+
+- **Instant for the actor at every latency:** press to effect 0.1-0.3 ms p50, at most 1.3 ms, independent of the added
+  round trip. Others are unchanged from R1a: RTT plus at most a step (R1a 11/118/215 ms p50; now 7-11/110-111/209-216).
+- **Corrections:** none in any of these rows (players apart, as R1a's script). R1a's script at 5x presses faster than
+  the swing allows; those presses are now "not yet" (`notYet` 90-288 a row; at normal churn 6 per player, a full back)
+  rather than shown and refused. Before the cadence check was predicted, the 5x rows at 100-200 ms corrected 2-3 swings
+  per player (8-12 per player-minute, all `rail.chop refused`), which is why the client now runs the server's check.
+- **Crowding one pile** (`WS_LOAD_CHURN=crowd`: every player at the same tree, dropping on and taking from the same
+  pile, all pressing on the same 500 ms beat): corrections at 0 / 100 / 200 ms are 10 / 10 / 12 per player-minute
+  at 2 players (10-12% of predictions), 13 / 16 / 15 at 4 (13-16%), and 32 / 35 / 29 at 6 (27-32%): mostly takes of
+  a pile someone emptied first (`rail.take refused` or `contested`) and strokes on a tree others finished (`rail.chop
+  noop`). The rate does not grow with latency: these are real races between simultaneous presses, which no client
+  can predict, and the server settles them the same way at 0 ms. That misses the plan's bar (< 1 per player-minute at
+  6 players crowding one pile, 200 ms), but this script is a synchronized worst case: real players do not press on
+  a shared beat. Each correction is a physical return (the piece flies to whoever got it). All rows conserved and
+  agreed.
+- **Downlink:** under the bar; 5x at 6 players is 83-92 kbit/s (R1a 69-77), normal 20 kbit/s (R1a 16.5). The
+  predicting script lands more drops and takes on piles than R1a's raw one; the cause is not measured further. The
+  binary codec trigger (half the bar) was already passed in R1a.
+- **Late join, saves, server:** unchanged (31-32 KB, 2-130 ms; ~8 KB per checkpoint, about one per 2 s; 0.05-0.14 ms
+  per step). All 18 rows conserved logs, stone and rails, and every mirror hashed equal, a late joiner included.
+- **Unit coverage** (`test/railway-adapter.test.ts`): a chop at 200 ms shows at once and the ack changes nothing on any
+  frame; a refused wake and a refused felling stroke roll back with a correction; two actors racing for the last log
+  (one returned to the winner, whose own pile flight is suppressed); the drop's temporary pile and its remap; "not yet"
+  at the wake boundary and inside the swing cadence; a deposit completing a bill (full at once, funded on confirm); a
+  disconnect with pending predictions (no returns, no replays); late join; a session refusal (that action and later
+  ones only); four clients at 0-200 ms playing randomly around three piles converge on the server, every correction a
+  contest (about one in seven predictions in that crowded worst case).
+- **Playthroughs** (local, warped): the solo production route (`npm run playthrough -- --eval
+  dev/look/evals/railway-job.ts --query 'shot=play'`) finished every expected beat through line one, the forge, Q1-Q3,
+  the hook walk and the quarry lever, 32 game minutes, no errors. The two-player run of the same bot (`npm run look --
+  --players 2 --eval dev/look/evals/railway-job.ts --query 'shot=play' --until window.__placeDone`) finished on both
+  peers; their mirror hashes agree at all 195 server steps both sampled. The 5x warp reported clock DRIFT (page clock
+  deficits of 9-18 game s), as before.
+- **Real-time capture at 200 ms added round trip** (`npm run look -- --real --eval dev/look/evals/railway-instant.ts
+  --action dev/look/evals/railway-instant-act.ts --query 'shot=play&railLag=200&room=<fresh>' --video --seconds 16`):
+  the machine reads `waking` 23-30 ms (two frames) after the wake press, with its request still out. Each of three
+  strokes put its logs on the back 125-140 ms after the press: the 120 ms contact beat plus under one frame (6-20 ms),
+  each with its request still unanswered. The first log left for the frame with two deposits still out, and all six
+  landed (logs 6/24); no corrections; the adapter's own press-to-effect cost 0.3-3.3 ms. In the video (frames opened
+  at 15 fps) the axe appears on the frame after the press, chips and logs fly on the contact frame and the carry tag
+  fills at once; at the frame the logs arc in one by one and its counter climbs 2, 3 ... 6/24 as they land. The
+  follow camera is partly blocked by a trunk at the frame. Before a fix in this branch, `delayedRoom` dropped
+  in-flight messages whenever the room reported "connected" again, which lost a late join's last chunk under
+  `&railLag`; it now drops them only on a lost connection.
+
+Unverified: the owner's feel, especially of corrections (only the headless tests and the counts here exercise them);
+real networks; Safari and mobile; not tested on a device. A reversed tree snaps upright with a shake rather than
+easing back up. An ack whose event a backed-up client lost (past `MAX_EVENTS`) reads as a refusal and plays a return
+the mirror then contradicts.
 
 ### Fly `shared-cpu-1x` throttling check (plan; not run)
 
