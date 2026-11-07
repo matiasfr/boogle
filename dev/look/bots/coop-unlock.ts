@@ -3,8 +3,8 @@
 // is a friend this file drives. &coopShot= picks the moment the capture stops warping at (window.__coopShot):
 //   unlock    the friend walks towards the device as the finder takes it: flourish, no card, shaft flare
 //   late      the friend is offline for the find and reconnects in the capture: their own flourish on landing
-//   alone     the friend gets the live flourish, reloads (sessionStorage carries the observation; none plays again),
-//             then passes the Home plinth alone: the small show
+//   alone     the friend gets the live flourish, drops and rejoins (none plays again), then passes the Home plinth
+//             alone: the small show
 //   together  both walk up to the plinth side by side: the bigger show, from both tabs
 // The finder is placed beside the village for `together` (a harness pose, as look --at does); nothing seeds the world.
 // npm run look -- --players 2 --eval dev/look/evals/coop-unlock.ts --query 'shot=play&coopShot=unlock&cardMs=20000'
@@ -27,7 +27,6 @@ import { play } from './railway.ts';
 const query = new URLSearchParams(location.search);
 const shot = query.get('coopShot') ?? 'unlock';
 const finder = query.get('player') === '2';
-const KEY = 'look.coop-unlock';
 const DEVICE = { x: LINE1_JUMP_DEVICE.x / 100, y: LINE1_JUMP_DEVICE.y / 100, z: LINE1_JUMP_DEVICE.z / 100 };
 const w = window as Window & { __coopShot?: boolean };
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -79,7 +78,7 @@ function trace(label: string, ms: number) {
       vy: me.body && +me.body.velocity.y.toFixed(2),
       jumps: read().reward.tools.jumps,
       teach: a.teaching,
-      flourishes: a.flourishes,
+      flourishes: a.keys.join(),
       late: a.late,
     });
     if (performance.now() < end) setTimeout(tick, 100);
@@ -107,14 +106,11 @@ async function friend() {
   await until(landed, 'friend arrived and landed');
   background(putAwayCards(), 'friend puts away earlier cards');
   // Out of the finder's way: both arrive at the same spot, and the route starts from it.
-  if (!sessionStorage.getItem(KEY)) {
-    const p = me.body!.position;
-    const away = Math.hypot(DEVICE.x - p.x, DEVICE.z - p.z);
-    await bot.walk(p.x - ((DEVICE.x - p.x) / away) * 9, p.z - ((DEVICE.z - p.z) / away) * 9, 2, { limit: 15000 });
-    console.log('COOP NOTE friend stepped aside');
-  }
-  const saved = JSON.parse(sessionStorage.getItem(KEY) ?? 'null') as { flourishes: number } | null;
-  if (!saved) check(!read().jump, 'the jump is not found yet');
+  const p = me.body!.position;
+  const away = Math.hypot(DEVICE.x - p.x, DEVICE.z - p.z);
+  await bot.walk(p.x - ((DEVICE.x - p.x) / away) * 9, p.z - ((DEVICE.z - p.z) / away) * 9, 2, { limit: 15000 });
+  console.log('COOP NOTE friend stepped aside');
+  check(!read().jump, 'the jump is not found yet');
   if (shot === 'unlock') {
     await until(() => finderAtDevice(10), 'finder reached the device');
     trace('unlock', 5500);
@@ -185,22 +181,23 @@ async function friend() {
     await until(() => me.coyote > 0, 'landed', 5000);
     await hop();
     check(read().reward.arrival.teaches === 1 && !read().reward.arrival.teaching, 'the next jump has no pulse');
+    await wait(1500);
+    check(read().reward.arrival.flourishes === 1, `one flourish in all (${read().reward.arrival.keys.join()})`);
     return;
   }
   // alone / together: the find happens while the friend is idle; then the plinth.
-  if (!saved) {
-    await until(() => read().jump && read().reward.arrival.flourishes === 1, 'friend got the flourish');
-    if (shot === 'alone') {
-      // A reload: what this player has been shown is this browser's, so the flourish does not play again.
-      await wait(3000);
-      sessionStorage.setItem(KEY, JSON.stringify({ flourishes: read().reward.arrival.flourishes }));
-      location.reload();
-      return;
-    }
-  } else {
+  await until(() => read().jump && read().reward.arrival.flourishes === 1, 'friend got the flourish');
+  if (shot === 'alone') {
+    // What this player has been shown is this browser's: a rejoin rebuilds the world with no event, and the record a
+    // reload would read already holds the jump, so nothing plays again. (A real reload would stop the two-player warp.)
+    const record = Object.keys(localStorage).find((k) => k.startsWith('boogle.railway-seen.v0:'));
+    check(record && (JSON.parse(localStorage.getItem(record)!) as string[]).includes('jump'), 'the record keeps it');
+    net.room!.pause(2000);
+    await until(() => !read().ready, 'friend dropped');
+    await until(() => read().ready && read().jump, 'friend rejoined');
+    await until(landed, 'landed after the rejoin');
     await wait(4000);
-    const a = read().reward.arrival;
-    check(read().jump && a.flourishes === 0 && a.seen.includes('jump'), 'no second flourish after a reload');
+    check(read().reward.arrival.flourishes === 1, 'no second flourish after a rejoin');
   }
   const plinth = read().reward.plinth;
   if (shot === 'alone') {

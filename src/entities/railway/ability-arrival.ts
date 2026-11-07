@@ -78,7 +78,10 @@ export function createAbilityArrival(
   },
 ) {
   const seen = createSeen();
-  const stats = { flourishes: 0, late: 0, teaches: 0, fills: 0, last: '' };
+  const stats = { flourishes: 0, late: 0, teaches: 0, fills: 0, keys: [] as string[] };
+  /** Seconds each ability has been missing from a ready world: a fresh start, once it lasts (a resync's frozen view
+   * can briefly show an older state). */
+  const missing = new Map<string, number>();
 
   // The charge mark: a teal ring under Buddy's feet in the air, filled while the second jump is there to spend.
   const geometries = [
@@ -135,7 +138,7 @@ export function createAbilityArrival(
     seen.add(key);
     stats.flourishes++;
     if (late) stats.late++;
-    stats.last = key;
+    stats.keys.push(key);
     const b = me.body;
     if (!b) return;
     feet(at);
@@ -175,6 +178,7 @@ export function createAbilityArrival(
     seen,
     inspect: () => ({
       ...stats,
+      keys: [...stats.keys],
       mark: mark.visible ? (fill.visible ? 'filled' : 'hollow') : 'off',
       teaching: pulse > 0,
       seen: ABILITIES.filter((a) => seen.has(a.key)).map((a) => a.key),
@@ -187,7 +191,11 @@ export function createAbilityArrival(
         chip.classList.remove('on');
         return;
       }
-      for (const a of ABILITIES) if (!a.has(state)) seen.forget(a.key);
+      for (const a of ABILITIES) {
+        const gone = a.has(state) ? 0 : (missing.get(a.key) ?? 0) + dt;
+        missing.set(a.key, gone);
+        if (gone > 3) seen.forget(a.key);
+      }
       const grounded = me.coyote > 0 && !me.swimming;
       const free = !fallArrival.active && !inputState.seated && !env.busy();
       // Late: one flourish per ability gained while away, on the first landing, one after another.
