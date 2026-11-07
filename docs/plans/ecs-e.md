@@ -305,8 +305,11 @@ inside E (C's storage; the API hides storage), then bitECS. This trigger change 
   copy-on-write change, 90,180 comparisons, equal.
 - **Tests:** the rule tests written against `Railway` run through `test/railway-live.ts`, a read-only live view of
   an audited world whose writes go through the systems (a write to the view throws); encoding tests became snapshot
-  load tests on the world (malformed columns, archetypes, keys, conservation). `npm run check` 448 pass; server 79
+  load tests on the world (malformed columns, archetypes, keys, conservation). `npm run check` 462 pass; server 84
   pass; `test:net` 111/111.
+- **Rebased onto the away credit** (`origin/main` added it while this ran): its yard credit is now part of the
+  `rail.resume` system (`awayCredit`), the host's paused-room path reads markers through the API, and its tests run
+  on the world (`test/helpers/railway-q2.ts`, `server/test/railway-away.test.ts`).
 - **The solo playthrough is not verified to the end.** Two runs that got past the harness lobby woke the machine, laid
   T1 and T2, carried and deposited the great beam and funded T3, then stopped at the bot's "T3 laid once" wait: the
   harness's server ran about 0.65 rule ticks per game second, so T3's 217 ticks need ~330 game seconds against the
