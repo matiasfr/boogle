@@ -1,5 +1,5 @@
 // Full accepted line-one preparation, then real host restart and session cuts around the unique beam (replication
-// R1a: actions apply on arrival; orderly restarts save).
+// R1a: actions apply on arrival; orderly restarts save); and the pack and Q4, judged where their actor stands.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -11,7 +11,11 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_ROCKS, LINE1_GREAT_TREE } from '../../src/sim/railway-line-layout.ts';
 import { railMaxDuration } from '../../src/sim/railway-line.ts';
-import { railwayInvariant } from '../../src/sim/railway-world.ts';
+import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
+import { railCounts } from '../../src/sim/railway.ts';
+import { LINE2_DEPOT, LINE2_FORGE, LINE2_PACK, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
+import { worldOf } from '../../test/railway-live.ts';
+import { railwayAtQ4 } from '../../test/helpers/railway-q2.ts';
 
 type Obj = Record<string, unknown>;
 test('line host keeps a departed carrier the beam through its grace, then grounds it; a restart keeps it too', async () => {
@@ -194,6 +198,84 @@ test('line host keeps a departed carrier the beam through its grace, then ground
     assert.equal(beam().state, 'used');
     assert.equal(host.rules.railway.railway.line!.jobs[1].completion, 1);
     assert.equal(railwayInvariant(host.rules.railway.railway), null);
+  } finally {
+    await host.close({ save: false }).catch(() => {});
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('line host: the pack and Q4 judged where their actor stands; gate, shelf and pack survive a restart', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-q4-'));
+  const store = createStore({ dataDir: dir, maxRooms: 2 });
+  await store.init();
+  const roomId = railwayRoomId('line-host-q4');
+  let now = 1800000000000;
+  const sent: Obj[] = [];
+  const sessions = new Map<string, { epoch: number; request: number }>();
+  const create = () => {
+    const value = createRailwayWorldHost({ roomId, store, tick: false, now: () => now, pidOf: () => 'a' });
+    value.onSend((message) => sent.push(message));
+    return value;
+  };
+  let host = create();
+  const ticks = async (n: number) => {
+    for (let i = 0; i < n; i++) {
+      now += 100;
+      host.step(0.1);
+    }
+    await host.sync.whenDurable();
+  };
+  const open = async (sid: string) => {
+    host.deliver({ t: 'r:open' }, sid);
+    await ticks(3);
+    const response = sent.findLast((m) => m.t === 'r:session' && m.to === sid);
+    assert.ok(response);
+    sessions.set(sid, { epoch: Number(response.epoch), request: 0 });
+  };
+  /** An action from where its actor stands (cm); resolves to the recorded outcome. */
+  const edit = async (sid: string, e: Obj, at: [number, number, number]) => {
+    const session = sessions.get(sid)!;
+    const request = ++session.request;
+    now += 1000; // past every cadence
+    host.deliver({ t: 'r:edit', e: { ...e, epoch: session.epoch, request, at, ms: now - 1800000000000 } }, sid);
+    await ticks(3);
+    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    return host.rules.railway.outcome('a', session.epoch, request)!;
+  };
+  const line2 = () => host.rules.railway.railway.line2!;
+  try {
+    await host.whenReady();
+    const w = railwayAtQ4();
+    while (host.sync.world.tick < w.t) await ticks(1);
+    host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+    host.rules.railway.touchAll();
+    await open('s1');
+    const q4 = LINE2_STATIONS[3]!;
+    // The pack chest: refused from the Q4 frame, opened beside the forge.
+    assert.equal((await edit('s1', { op: 'rail.pack' }, [q4.x, 0, q4.z])).status, 'rejected');
+    assert.equal(line2().pack, false);
+    assert.equal((await edit('s1', { op: 'rail.pack' }, [LINE2_PACK.x, 0, LINE2_PACK.z])).status, 'accepted');
+    assert.equal(line2().pack, true);
+    // The cart's first trip to the Q4 rack; the shelf is taken from beside the frame, not from the forge.
+    await ticks(LINE2_DEPOT.everyTicks + 2);
+    assert.equal(line2().depotRails, LINE2_DEPOT.load);
+    const far = await edit('s1', { op: 'rail.depotRailTake' }, [LINE2_FORGE.x, 0, LINE2_FORGE.z]);
+    assert.equal(far.status, 'rejected');
+    const take = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
+    assert.equal(take.accepted, LINE2_DEPOT.load);
+    // The quarry gate is up: the frame takes nothing.
+    const shut = await edit('s1', { op: 'rail.deposit', station: 'Q4', n: 8, kind: 2 }, [q4.x, 0, q4.z]);
+    assert.equal(shut.status, 'noop');
+    assert.equal(line2().jobs[3]!.railStock, 0);
+    const rails = railCounts(host.rules.railway.railway).rails!;
+    assert.equal(rails.total, rails.poured);
+    // A restart keeps the pack, the shelf and the rails on the back.
+    await host.close({ save: true });
+    host = create();
+    await host.whenReady();
+    assert.equal(line2().pack, true);
+    assert.equal(host.rules.railway.account('a')!.rails, LINE2_DEPOT.load);
+    assert.equal(railCounts(host.rules.railway.railway).rails!.total, rails.total);
   } finally {
     await host.close({ save: false }).catch(() => {});
     await fs.rm(dir, { recursive: true, force: true });

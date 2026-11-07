@@ -20,8 +20,10 @@
 // proper axe comes from the lit forge (a save holding the axe before the forge no longer loads).
 // v17 (2026-11-07): the railway's state is an E world (docs/plans/ecs-e.md): saved as its schema snapshot, catalog
 // kinds and accounts replicated by entity id with their slot or pid.
+// v18 (2026-11-07): line 2 part 2's first playable: the pack (`rail.pack`, a back of 16 for everyone) and Q4 behind
+// the quarry gate, its depot shelf of rails moved from the forge rack (`rail.depotRailTake`); new `rail` fields.
 // Pure: read by room routing and tests.
-export const WORLD_NS = 'v17';
+export const WORLD_NS = 'v18';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

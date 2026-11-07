@@ -67,7 +67,7 @@ export type Railway = {
   stoneUsed?: number;
   stoneDelivered?: number;
   line?: RailLine;
-  /** Line two (forge, Q1-Q3); present with line one. */
+  /** Line two (forge, Q1-Q4, the pack); present with line one. */
   line2?: RailLine2;
   /** Playable namespace only: accepted collision presentation, independent of material balances. */
   falls?: { yaw: number[]; collapsed: boolean[] };
@@ -123,6 +123,7 @@ export function railCounts(s: Railway) {
   const rails = l2
     ? {
         forge: l2.forge.rack,
+        shelf: l2.depotRails,
         carry: s.accounts.reduce((n, a) => n + (a.rails ?? 0), 0),
         loose: s.piles.reduce((n, p) => n + (p.kind === 2 ? p.n : 0), 0),
         stations: l2.jobs.reduce((n, j) => n + j.railStock + j.railAllocation + j.railUsed, 0),

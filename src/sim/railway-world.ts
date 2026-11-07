@@ -15,7 +15,7 @@ import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-lay
 import { LINE1_CATALOG, LINE1_GREAT_TREE, LINE1_ROCKS, LINE1_STATIONS } from './railway-line-layout.ts';
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { LINE_TIMING, validateRailLine, type RailBeam, type RailJob } from './railway-line.ts';
-import { validateRailLine2, type RailQJob } from './railway-line2.ts';
+import { railCarryMax, validateRailLine2, type RailQJob } from './railway-line2.ts';
 import { RECOVERY_MINUTES } from './railway-supply.ts';
 import { railCounts, railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES, RAILWAY_PILES } from './railway.ts';
 import type { Railway, RailResult } from './railway.ts';
@@ -56,6 +56,9 @@ export const Rail = defineComponent(
     out0: 'int',
     out1: 'int',
     out2: 'int',
+    out3: 'int',
+    pack: 'bool',
+    depotRails: 'int',
   },
   { requires: [RailClock], defaults: { awake: -1 } },
 );
@@ -140,7 +143,7 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
 /** What a client is sent: the replicated components (the wire schema, one source with the save). */
 export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
 export const RAIL_STATUS = ['accepted', 'noop', 'rejected'] as const satisfies readonly RailResult['status'][];
-const DEPOT_OUT = ['out0', 'out1', 'out2'] as const;
+export const DEPOT_OUT = ['out0', 'out1', 'out2', 'out3'] as const;
 if (LINE2_STATIONS.length !== DEPOT_OUT.length) throw new Error('railway: depot outputs');
 
 /** The fresh railway, catalog entities spawned in a fixed order (so a fresh world's ids match on every machine). */
@@ -292,6 +295,8 @@ export function railwayView(w: World): Railway {
       depotOut: DEPOT_OUT.map((k) => rail[k]),
       lever: rail.lever,
       hook: rail.hook,
+      pack: rail.pack,
+      depotRails: rail.depotRails,
     },
     falls: { yaw: trees.map((t) => t.yaw), collapsed: trees.map((t) => t.fell) },
     supply: { marker: clock.supplyMarker, ages: trees.map((t) => t.age), rack: rail.rack, produced: rail.produced },
@@ -355,7 +360,14 @@ export function refreshRailway(s: Railway, w: World) {
     s.awake = r.awake;
     Object.assign(l, { axe: r.axe, jump: r.jump, stoneRack: r.stoneRack, stoneProduced: r.stoneProduced });
     Object.assign(s.supply!, { rack: r.rack, produced: r.produced });
-    Object.assign(l2, { depot: r.depot, depotProduced: r.depotProduced, lever: r.lever, hook: r.hook });
+    Object.assign(l2, {
+      depot: r.depot,
+      depotProduced: r.depotProduced,
+      lever: r.lever,
+      hook: r.hook,
+      pack: r.pack,
+      depotRails: r.depotRails,
+    });
     l2.depotOut = DEPOT_OUT.map((k) => r[k]);
   }
   return s;
@@ -436,15 +448,16 @@ export function validateRailway(n: Railway) {
   if (n.sources.some((v) => !railInt(v, 15)) || n.work.length !== n.sources.length) throw new Error('railway: catalog');
   if (n.falls!.yaw.some((yaw, k) => !railYaw(yaw) || (n.sources[k] !== 0 && (yaw !== 0 || n.falls!.collapsed[k]))))
     throw new Error('railway: fall state');
+  const carryMax = railCarryMax(n);
   if (
     new Set(n.accounts.map((a) => a.pid)).size !== n.accounts.length ||
     n.accounts.some(
       (a) =>
         !okPid(a.pid) ||
-        !railInt(a.carry, T1.carry) ||
-        !railInt(a.stone, T1.carry) ||
-        !railInt(a.rails, T1.carry) ||
-        a.carry + a.stone! + a.rails! > T1.carry ||
+        !railInt(a.carry, carryMax) ||
+        !railInt(a.stone, carryMax) ||
+        !railInt(a.rails, carryMax) ||
+        a.carry + a.stone! + a.rails! > carryMax ||
         !railInt(a.epoch, RAILWAY_MAX_INT, 1) ||
         !railInt(a.request),
     )
@@ -474,7 +487,7 @@ export function validateRailway(n: Railway) {
         !railInt(r.epoch, a.epoch, 1) ||
         !railInt(r.request, RAILWAY_MAX_INT, 1) ||
         (r.epoch === a.epoch && r.request > a.request) ||
-        !railInt(r.accepted, T1.carry) ||
+        !railInt(r.accepted, carryMax) ||
         !RAIL_STATUS.includes(r.status as never) ||
         (r.status === 'accepted') !== r.accepted > 0
       );

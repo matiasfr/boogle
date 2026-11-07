@@ -1,6 +1,6 @@
-// Line two's pinned numeric catalog: the forge, Q1-Q3 and the quarry's lever and hook device.
-// Coordinates are world centimetres pinned from Place's layout/tech-layout (6 November 2026);
-// no runtime prototype imports or native trig in lockstep. Q4 onward is not promoted yet.
+// Line two's pinned numeric catalog: the forge, Q1-Q4, the pack chest and the quarry's lever and hook device.
+// Coordinates are world centimetres pinned from Place's layout/tech-layout/ladder (6-7 November 2026);
+// no runtime prototype imports or native trig in lockstep. Q5 onward is not promoted yet.
 import { pairsOf, type LineStation } from './railway-line-layout.ts';
 
 export const RAILS = 2;
@@ -16,9 +16,17 @@ export const LINE2_FORGE = {
   pourTicks: 5,
   turnTicks: 26,
 } as const;
-export type Line2StationId = 'Q1' | 'Q2' | 'Q3';
-/** `bill[1]` is rails. Panels are the station's rails, evenly spaced; `speed` scales the room's laying speed. */
-export type Line2Station = Omit<LineStation, 'id'> & { id: Line2StationId; speed: number; depot: boolean };
+export type Line2StationId = 'Q1' | 'Q2' | 'Q3' | 'Q4';
+/** `bill[1]` is rails. Panels are the station's rails, evenly spaced; `speed` scales the room's laying speed.
+ * `depot`: the cart brings its logs to a rack by the frame; `shelf`: it also moves its rails there from the forge rack.
+ * `gate`: the frame takes nothing until that gate is down. */
+export type Line2Station = Omit<LineStation, 'id'> & {
+  id: Line2StationId;
+  speed: number;
+  depot: boolean;
+  shelf: boolean;
+  gate?: 'quarry';
+};
 export const LINE2_STATIONS: readonly Line2Station[] = [
   {
     id: 'Q1',
@@ -32,6 +40,7 @@ export const LINE2_STATIONS: readonly Line2Station[] = [
     crate: false,
     speed: 100,
     depot: false,
+    shelf: false,
   },
   {
     id: 'Q2',
@@ -45,6 +54,7 @@ export const LINE2_STATIONS: readonly Line2Station[] = [
     crate: true,
     speed: 120,
     depot: true,
+    shelf: false,
   },
   {
     id: 'Q3',
@@ -58,10 +68,29 @@ export const LINE2_STATIONS: readonly Line2Station[] = [
     crate: true,
     speed: 120,
     depot: true,
+    shelf: false,
+  },
+  {
+    id: 'Q4',
+    bill: [16, 16],
+    beam: 0,
+    fromCm: 17800,
+    toCm: 28600,
+    x: 108147,
+    z: 3073,
+    panels: 16,
+    crate: true,
+    speed: 160,
+    depot: true,
+    shelf: true,
+    gate: 'quarry',
   },
 ];
 /** The depot's cart brings logs from the camp to a rack by the frame: one load every `everyTicks`, never past the bill. */
 export const LINE2_DEPOT = { load: 8, everyTicks: 120, reach: 700 } as const;
+/** The pack chest beside the forge (Place ladder.ts CHEST_AT.pack): the forge's first bill (24 logs) puts it there, and
+ * opening it gives everyone in the world a back that carries `carry` instead of RAILWAY_T1.carry. */
+export const LINE2_PACK = { x: 91400, z: -900, carry: 16 } as const;
 /** The lever on the quarry apron (2.2 m up), and the hook device on pillar p2's top. */
 export const LINE2_LEVER = { x: 109740, z: 4220, y: 2620 } as const;
 export const LINE2_HOOK = { x: 99954, z: 2086, y: 2350 } as const;

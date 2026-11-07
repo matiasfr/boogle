@@ -16,7 +16,7 @@
 //   onRemap(fn)          fn(request, id): your drop of that request landed in pile `id`, not the pile it was shown
 //                        landing in (a temporary id, or a merge the server made a new pile)
 import { SERVER_ID } from '../net/ids.ts';
-import { RAILWAY_SOURCES, RAILWAY_T1 } from '../sim/railway-layout.ts';
+import { RAILWAY_SOURCES } from '../sim/railway-layout.ts';
 import {
   railInt,
   railYaw,
@@ -41,8 +41,8 @@ import {
   type LineStationId,
 } from '../sim/railway-line-layout.ts';
 import { LINE_TIMING, railBeamChoppable } from '../sim/railway-line.ts';
-import { LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
-import { line2Active, line2Completed, line2GateOpen } from '../sim/railway-line2.ts';
+import { LINE2_PACK, LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
+import { line2Active, line2Completed, line2GateOpen, line2PackReady, railCarryMax } from '../sim/railway-line2.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
 import type { RailwayMirror } from '../world/railway-replicate.ts';
 import { createPredictor } from '../world/replicate-client.ts';
@@ -65,7 +65,7 @@ export type RailwayIntent =
   | { op: 'rail.chop'; id: number; yaw?: number; collapsed?: boolean }
   | { op: 'rail.mine'; id: number }
   | { op: 'rail.axe' | 'rail.beamChop' | 'rail.jump' }
-  | { op: 'rail.forgeTake' | 'rail.depotTake' | 'rail.lever' | 'rail.hook' }
+  | { op: 'rail.forgeTake' | 'rail.depotTake' | 'rail.depotRailTake' | 'rail.lever' | 'rail.hook' | 'rail.pack' }
   | { op: 'rail.beamTake'; revision: number }
   | { op: 'rail.beamDrop'; revision: number; x: number; y: number; z: number }
   | { op: 'rail.beamDeposit'; revision: number; station: 'T3' }
@@ -125,6 +125,8 @@ export type RailwayMovement = {
   jumpSteer: number;
   jumpApexSpeed: number;
 };
+/** The most a back ever carries (with the pack): the wire's bound on a moved count; the rule clips to today's back. */
+const CARRY_MAX = LINE2_PACK.carry;
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 // Metres to whole centimetres; `|| 0` turns -0 (which railInt refuses) into 0.
 const cm = (m: number) => Math.round(m * 100) || 0;
@@ -138,7 +140,9 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     e.op === 'rail.forgeTake' ||
     e.op === 'rail.depotTake' ||
     e.op === 'rail.lever' ||
-    e.op === 'rail.hook'
+    e.op === 'rail.hook' ||
+    e.op === 'rail.depotRailTake' ||
+    e.op === 'rail.pack'
   )
     return { op: e.op };
   if (e.op === 'rail.mine' && railInt(e.id, 2)) return { op: e.op, id: e.id };
@@ -169,13 +173,14 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
       e.station === 'F' ||
       e.station === 'Q1' ||
       e.station === 'Q2' ||
-      e.station === 'Q3') &&
-    railInt(e.n, RAILWAY_T1.carry, 1)
+      e.station === 'Q3' ||
+      e.station === 'Q4') &&
+    railInt(e.n, CARRY_MAX, 1)
   )
     return { op: e.op, station: e.station, n: e.n, kind };
   if (
     e.op === 'rail.drop' &&
-    railInt(e.n, RAILWAY_T1.carry, 1) &&
+    railInt(e.n, CARRY_MAX, 1) &&
     railInt(e.x, 200000, -200000) &&
     railInt(e.z, 200000, -200000)
   )
@@ -187,14 +192,14 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
  * packet, so effects read these rather than the packet's final state. */
 const effectOf = (v: Record<string, unknown>) => {
   const out: { carried?: number; level?: number; pile?: number; px?: number; py?: number; pz?: number } = {};
-  if (railInt(v.carried, RAILWAY_T1.carry)) out.carried = v.carried;
+  if (railInt(v.carried, CARRY_MAX)) out.carried = v.carried;
   if (railInt(v.level, RAILWAY_MAX_INT)) out.level = v.level;
   if (railInt(v.pile, RAILWAY_MAX_INT, 1)) out.pile = v.pile;
   for (const k of ['px', 'py', 'pz'] as const) if (railInt(v[k], 200000, -200000)) out[k] = v[k];
   return out;
 };
 const accepted = (v: Record<string, unknown>) =>
-  typeof v.pid === 'string' && railInt(v.request, RAILWAY_MAX_INT, 1) && railInt(v.accepted, RAILWAY_T1.carry, 1);
+  typeof v.pid === 'string' && railInt(v.request, RAILWAY_MAX_INT, 1) && railInt(v.accepted, CARRY_MAX, 1);
 /** What the server leaves out of an event because the intent already says it (railway-requests.ts EVENT_FIELDS). */
 function implied(v: Record<string, unknown>) {
   const out: Record<string, unknown> = { ...v };
@@ -210,14 +215,20 @@ function implied(v: Record<string, unknown>) {
 /** Ops whose whole result is one shared flag: when it holds anyway (someone else woke the machine), losing the race
  * gives nothing back. */
 const holds = (s: Railway, op: string) =>
-  op === 'rail.wake' ? s.awake >= 0 : op === 'rail.lever' ? !!s.line2?.lever : false;
+  op === 'rail.wake'
+    ? s.awake >= 0
+    : op === 'rail.lever'
+      ? !!s.line2?.lever
+      : op === 'rail.pack'
+        ? !!s.line2?.pack
+        : false;
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op !== b.op) return false;
   if (a.op === 'rail.chop' || a.op === 'rail.mine') return a.id === (b as typeof a).id;
   if (a.op === 'rail.take') return a.pile === b.pile || a.id === (b as typeof a).id;
   if (a.op === 'rail.rackTake') return (a.kind ?? 0) === ((b as typeof a).kind ?? 0);
-  return a.op === 'rail.forgeTake' || a.op === 'rail.depotTake';
+  return a.op === 'rail.forgeTake' || a.op === 'rail.depotTake' || a.op === 'rail.depotRailTake';
 }
 /** Pieces flowing to the actor (a correction can return them to whoever got them instead). */
 const TAKES: ReadonlySet<string> = new Set([
@@ -227,6 +238,7 @@ const TAKES: ReadonlySet<string> = new Set([
   'rail.rackTake',
   'rail.forgeTake',
   'rail.depotTake',
+  'rail.depotRailTake',
 ]);
 /** The ops that never move material, so a held beam does not block them. */
 const NOT_MATERIAL: ReadonlySet<string> = new Set([
@@ -235,6 +247,7 @@ const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.jump',
   'rail.lever',
   'rail.hook',
+  'rail.pack',
   'rail.beamChop',
   'rail.beamTake',
   'rail.beamDrop',
@@ -663,7 +676,10 @@ export function createRailwayAdapter({
       gateOpen: line2GateOpen(s),
       lever: l2.lever,
       hook: l2.hook,
+      pack: l2.pack,
+      packReady: line2PackReady(s),
       depot: l2.depot,
+      depotRails: l2.depotRails,
       stations: Object.freeze(
         l2.jobs.map((job, i) =>
           Object.freeze({ ...job, id: LINE2_STATIONS[i]!.id, timing: Object.freeze({ ...job.timing }) }),
@@ -680,6 +696,8 @@ export function createRailwayAdapter({
       carry: account?.carry ?? 0,
       stoneCarry: account?.stone ?? 0,
       railsCarry: account?.rails ?? 0,
+      /** What a back carries now: 8, or 16 with the pack (shared). */
+      carryMax: railCarryMax(s),
       line2,
       activeStation,
       stations: Object.freeze(stations),
@@ -806,7 +824,7 @@ export function createRailwayAdapter({
       availableCarry: state.carry,
       availableStone: state.stoneCarry,
       availableRails: state.railsCarry,
-      freeCarry: Math.max(0, RAILWAY_T1.carry - state.carry - state.stoneCarry - state.railsCarry),
+      freeCarry: Math.max(0, state.carryMax - state.carry - state.stoneCarry - state.railsCarry),
     });
   }
   const pileIn = (id: number) => view().piles.find((p) => p.id === id);
@@ -868,21 +886,23 @@ export function createRailwayAdapter({
         railInt(x, 200000, -200000) &&
         railInt(y, 200000, -200000) &&
         railInt(z, 200000, -200000) &&
-        railInt(n, RAILWAY_T1.carry, 1) &&
+        railInt(n, CARRY_MAX, 1) &&
         submit({ op: 'rail.drop', x, y, z, n, kind })
       );
     },
     /** Line two: the forge frame ('F') or the active Q frame. */
     depositLine2(station: 'F' | Line2StationId, n = 1, kind: 0 | 2 = 0) {
-      return railInt(n, RAILWAY_T1.carry, 1) && submit({ op: 'rail.deposit', station, n, kind });
+      return railInt(n, CARRY_MAX, 1) && submit({ op: 'rail.deposit', station, n, kind });
     },
     forgeTake: () => submit({ op: 'rail.forgeTake' }),
     depotTake: () => submit({ op: 'rail.depotTake' }),
+    depotRailTake: () => submit({ op: 'rail.depotRailTake' }),
+    openPack: () => submit({ op: 'rail.pack' }),
     pullLever: () => submit({ op: 'rail.lever' }),
     claimHook: () => submit({ op: 'rail.hook' }),
     deposit(n = 1, kind: RailMaterial = 0) {
       const station = LINE1_STATIONS[railActiveStation(view())]!.id;
-      return railInt(n, RAILWAY_T1.carry, 1) && submit({ op: 'rail.deposit', station, n, kind });
+      return railInt(n, CARRY_MAX, 1) && submit({ op: 'rail.deposit', station, n, kind });
     },
     onAccepted(fn: (event: RailwayAccepted) => void) {
       effects.add(fn);

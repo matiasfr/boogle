@@ -29,7 +29,14 @@ import {
   LINE1_JUMP_DEVICE,
 } from '../sim/railway-line-layout.ts';
 import { LINE_TIMING } from '../sim/railway-line.ts';
-import { LINE2_FORGE, LINE2_STATIONS, LINE2_DEPOT, LINE2_LEVER, LINE2_HOOK } from '../sim/railway-line2-layout.ts';
+import {
+  LINE2_FORGE,
+  LINE2_STATIONS,
+  LINE2_DEPOT,
+  LINE2_LEVER,
+  LINE2_HOOK,
+  LINE2_PACK,
+} from '../sim/railway-line2-layout.ts';
 import { line2Active, line2GateOpen, line2Completed } from '../sim/railway-line2.ts';
 import { RECOVERY_RACK, type SupplyPulse } from '../sim/railway-supply.ts';
 import {
@@ -95,6 +102,8 @@ export const RAIL_ACTIONS = new Set([
   'rail.depotTake',
   'rail.lever',
   'rail.hook',
+  'rail.depotRailTake',
+  'rail.pack',
 ]);
 
 /** Whether a well-formed action is in range of its target. Readiness and balances are the rule's, not this. */
@@ -117,11 +126,11 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
         LINE1_STATIONS.find((row) => row.id === e.station) ??
         LINE2_STATIONS.find((row) => row.id === e.station) ??
         (e.station === 'F' ? LINE2_FORGE : undefined);
-      return !!station && kind && railInt(e.n, T1.carry, 1) && near(station.x, station.z, T1.reach);
+      return !!station && kind && railInt(e.n, LINE2_PACK.carry, 1) && near(station.x, station.z, T1.reach);
     }
     case 'rail.drop':
       return (
-        railInt(e.n, T1.carry, 1) &&
+        railInt(e.n, LINE2_PACK.carry, 1) &&
         kind &&
         railInt(e.x, 200000, -200000) &&
         railInt(e.z, 200000, -200000) &&
@@ -165,6 +174,12 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
       const spec = LINE2_STATIONS[railLine2Active(w)];
       return !!spec && spec.depot && near(spec.x, spec.z, LINE2_DEPOT.reach);
     }
+    case 'rail.depotRailTake': {
+      const spec = LINE2_STATIONS[railLine2Active(w)];
+      return !!spec && spec.shelf && near(spec.x, spec.z, LINE2_DEPOT.reach);
+    }
+    case 'rail.pack':
+      return near(LINE2_PACK.x, LINE2_PACK.z, 340);
     case 'rail.lever':
       return height(LINE2_LEVER.y) && near(LINE2_LEVER.x, LINE2_LEVER.z, 320);
     case 'rail.hook':

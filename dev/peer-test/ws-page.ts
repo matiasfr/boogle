@@ -344,6 +344,10 @@ function startWorld(room: Room) {
           return adapter.forgeTake();
         case 'rail.depotTake':
           return adapter.depotTake();
+        case 'rail.depotRailTake':
+          return adapter.depotRailTake();
+        case 'rail.pack':
+          return adapter.openPack();
         case 'rail.lever':
           return adapter.pullLever();
         case 'rail.hook':
