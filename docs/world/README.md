@@ -139,3 +139,12 @@ progression, an order-choice toggle, fog for what isn't seen yet, sightlines, ab
 table computed from the drawn lines with the economy model's ride settings. An art-surface table measures walkable and backdrop land, track over land, sea and tunnel, biomes and set pieces, and how much of each station's view is sea. The `#map-data` block is hand-edited JSON;
 Home, Split-rock Works, the pier and Ring Island match `world-map.html`, and everything after is proposed. The pitches,
 risks, model changes and open questions are in [map-prototypes.md](map-prototypes.md).
+
+## Co-op abilities
+
+[Co-op abilities](coop-abilities.html) storyboards five ways a new ability could reach every player (the
+[co-op abilities brief](../brainstorms/coop-abilities.md)): today's behaviour as a baseline, a flourish wherever you
+are, a summon to the find, a puzzle redeemed at Home, the relic riding the train home, and the recommended hybrid.
+Each option shows the finder, a hauler far away and an away friend across three or four frames, then how it handles
+far, mid-haul, mid-air, offline and late friends. The `#story-data` block is hand-edited JSON (named spots, then
+per-frame players, states and effects); the map is schematic, not `layout.ts` geometry. Local document UI only.
