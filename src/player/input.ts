@@ -164,8 +164,9 @@ export function initInput() {
     },
     { passive: false },
   );
-  // Pinching on a phone zoomed the whole page (Safari ignores touch-action for it): block it.
-  for (const ev of ['gesturestart', 'gesturechange']) document.addEventListener(ev, (e) => e.preventDefault());
+  // Pinching on a phone zoomed the whole page (Safari ignores touch-action for it): block it. Double-tap zoom is
+  // off through touch-action in style.css and user-scalable=no in index.html.
+  for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault());
   document.addEventListener('touchmove', (e) => e.touches.length > 1 && e.preventDefault(), { passive: false });
 
   const { touchEl, stickEl, knobEl, jumpBtn, grabBtn } = dom;
