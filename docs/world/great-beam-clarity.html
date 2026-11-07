@@ -1,0 +1,555 @@
+<title>Great Beam Pass</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta
+  name="description"
+  content="A small storyboard for the great beam design pass: today's hidden chain, the recommended any-axe, any-order chain, and the beam dragged on a rope."
+/>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f3ef;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-3: #8a8984;
+    --line: #dddcd6;
+    --sky: #e3eef6;
+    --grass: #d8e8c6;
+    --grass-line: #a9c98c;
+    --wood: #8a5a32;
+    --wood-2: #c3a173;
+    --leaf: #3f8a4a;
+    --rope: #d79a12;
+    --p1: #eb6834;
+    --p2: #2a78d6;
+    --spark: #b48cf0;
+    --warn: #c43d3d;
+    --ok: #1f9e6e;
+    --rec-bg: #edf7f2;
+    --rec-line: #9fd2b7;
+    --tag-bg: #eef4fc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: #121211;
+      --surface: #1a1a19;
+      --ink: #f0efec;
+      --ink-2: #c3c2b7;
+      --ink-3: #8f8e86;
+      --line: #34332f;
+      --sky: #16222c;
+      --grass: #1f2a19;
+      --grass-line: #3d5530;
+      --wood: #b47a48;
+      --wood-2: #7d6644;
+      --leaf: #4fa65c;
+      --rope: #e8b23a;
+      --p1: #f07a48;
+      --p2: #4b93ea;
+      --spark: #c9b0ff;
+      --warn: #e06464;
+      --ok: #35b886;
+      --rec-bg: #14241c;
+      --rec-line: #2f5e46;
+      --tag-bg: #18232f;
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #121211;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --ink-3: #8f8e86;
+    --line: #34332f;
+    --sky: #16222c;
+    --grass: #1f2a19;
+    --grass-line: #3d5530;
+    --wood: #b47a48;
+    --wood-2: #7d6644;
+    --leaf: #4fa65c;
+    --rope: #e8b23a;
+    --p1: #f07a48;
+    --p2: #4b93ea;
+    --spark: #c9b0ff;
+    --warn: #e06464;
+    --ok: #35b886;
+    --rec-bg: #14241c;
+    --rec-line: #2f5e46;
+    --tag-bg: #18232f;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font:
+      15px/1.5 system-ui,
+      -apple-system,
+      'Segoe UI',
+      sans-serif;
+  }
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px 16px 64px;
+  }
+  h1 {
+    font-size: 26px;
+    margin: 0 0 4px;
+  }
+  h2 {
+    font-size: 19px;
+    margin: 32px 0 4px;
+  }
+  p {
+    margin: 0 0 8px;
+    color: var(--ink-2);
+    max-width: 70ch;
+  }
+  .top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .seg {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .seg button {
+    font: inherit;
+    font-size: 13px;
+    border: 0;
+    padding: 6px 10px;
+    background: transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--tag-bg);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .frames {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+  figure {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  figure.rec {
+    border-color: var(--rec-line);
+    box-shadow: 0 0 0 3px var(--rec-bg);
+  }
+  figure svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: var(--sky);
+  }
+  figcaption {
+    padding: 8px 12px 10px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  figcaption b {
+    color: var(--ink);
+  }
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 1px 8px;
+    margin-right: 4px;
+    background: var(--tag-bg);
+    color: var(--ink-2);
+  }
+  .tag.rec {
+    background: var(--rec-bg);
+    border: 1px solid var(--rec-line);
+    color: var(--ink);
+  }
+  .tag.bad {
+    color: var(--warn);
+  }
+  /* SVG paints, all from tokens so both themes work. */
+  .g {
+    fill: var(--grass);
+    stroke: var(--grass-line);
+  }
+  .w {
+    fill: var(--wood);
+  }
+  .w2 {
+    fill: var(--wood-2);
+  }
+  .lf {
+    fill: var(--leaf);
+  }
+  .p1 {
+    fill: var(--p1);
+  }
+  .p2 {
+    fill: var(--p2);
+  }
+  .rope {
+    stroke: var(--rope);
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+  .ropef {
+    fill: var(--rope);
+  }
+  .sp {
+    fill: var(--spark);
+  }
+  .ink {
+    fill: var(--ink-2);
+    font:
+      600 11px system-ui,
+      sans-serif;
+  }
+  .warn {
+    fill: none;
+    stroke: var(--warn);
+    stroke-width: 2;
+    stroke-dasharray: 4 3;
+  }
+  .ok {
+    fill: none;
+    stroke: var(--ok);
+    stroke-width: 2;
+  }
+  .dust {
+    fill: var(--ink-3);
+    opacity: 0.45;
+  }
+</style>
+<main>
+  <div class="top">
+    <div>
+      <h1>Great beam pass</h1>
+      <p>
+        Station 3 asks for 40 logs and one great beam. The owner couldn't tell that the logs had to come first, or where
+        the beam was. Design only: these frames go with
+        <a href="../brainstorms/great-beam-clarity.md">great-beam-clarity.md</a>.
+      </p>
+    </div>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" data-theme-set="auto" aria-pressed="true">Auto</button>
+      <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+
+  <h2>Today: four links the world never shows</h2>
+  <p>Red dashes mark a step that happens with nothing in the world pointing at it.</p>
+  <div class="frames">
+    <figure>
+      <svg
+        viewBox="0 0 240 140"
+        role="img"
+        aria-label="Station 3's frame with a growing log pile and an empty pale stand"
+      >
+        <rect class="g" x="0" y="104" width="240" height="36" />
+        <rect class="w" x="40" y="66" width="6" height="40" />
+        <rect class="w" x="96" y="66" width="6" height="40" />
+        <rect class="w" x="36" y="62" width="70" height="6" />
+        <g class="w2">
+          <circle cx="56" cy="98" r="6" />
+          <circle cx="70" cy="98" r="6" />
+          <circle cx="84" cy="98" r="6" />
+          <circle cx="63" cy="87" r="6" />
+          <circle cx="77" cy="87" r="6" />
+        </g>
+        <rect class="w2" x="150" y="92" width="46" height="14" />
+        <rect class="warn" x="146" y="54" width="54" height="36" rx="4" />
+        <text class="ink" x="150" y="48">nothing here</text>
+        <text class="ink" x="40" y="30">logs 0/40 great beam 0/1</text>
+      </svg>
+      <figcaption>
+        <b>1. Station 3 opens.</b> The bill says "great beam 0/1". The frame has no place for a beam, and the stand
+        beside it is a bare block.
+      </figcaption>
+    </figure>
+    <figure>
+      <svg viewBox="0 0 240 140" role="img" aria-label="The great tree near Station 1, a buddy swinging, no chips">
+        <rect class="g" x="0" y="104" width="240" height="36" />
+        <rect class="w" x="150" y="40" width="14" height="66" />
+        <polygon class="lf" points="157,4 112,62 202,62" />
+        <rect class="p1" x="112" y="80" width="14" height="24" rx="5" />
+        <circle class="p1" cx="119" cy="74" r="7" />
+        <rect class="w2" x="128" y="70" width="18" height="4" transform="rotate(-20 128 70)" />
+        <rect class="warn" x="138" y="56" width="40" height="40" rx="4" />
+        <text class="ink" x="8" y="22">silent bite: no chips,</text>
+        <text class="ink" x="8" y="36">no sound, no "not yet"</text>
+      </svg>
+      <figcaption>
+        <b>2. The great tree, beside Station 1.</b> A scaled-up ordinary conifer, 53 m uphill. Swing at it without the
+        proper axe and the axe bites with nothing back.
+      </figcaption>
+    </figure>
+    <figure>
+      <svg viewBox="0 0 240 140" role="img" aria-label="The chest appears on the stand only when the 40th log lands">
+        <rect class="g" x="0" y="104" width="240" height="36" />
+        <g class="w2">
+          <circle cx="56" cy="98" r="6" />
+          <circle cx="70" cy="98" r="6" />
+          <circle cx="84" cy="98" r="6" />
+          <circle cx="63" cy="87" r="6" />
+          <circle cx="77" cy="87" r="6" />
+          <circle cx="70" cy="76" r="6" />
+        </g>
+        <rect class="w2" x="150" y="92" width="46" height="14" />
+        <rect class="w" x="156" y="72" width="34" height="20" rx="3" />
+        <path class="warn" d="M96 80 Q120 60 150 78" />
+        <text class="ink" x="70" y="40">40th log ... chest pops in</text>
+      </svg>
+      <figcaption>
+        <b>3. The axe chest.</b> It doesn't exist until all 40 logs are in, so there's no lock to see first. It looks
+        like any reward crate.
+      </figcaption>
+    </figure>
+    <figure>
+      <svg viewBox="0 0 240 140" role="img" aria-label="The beam carried rigidly beside the head">
+        <rect class="g" x="0" y="104" width="240" height="36" />
+        <rect class="p1" x="110" y="78" width="16" height="26" rx="5" />
+        <circle class="p1" cx="118" cy="70" r="8" />
+        <rect class="w" x="70" y="60" width="110" height="7" rx="3" />
+        <rect class="warn" x="66" y="52" width="118" height="22" rx="4" />
+        <text class="ink" x="10" y="30">hands down, beam pinned by the ear</text>
+      </svg>
+      <figcaption>
+        <b>4. The carry.</b> "Empty your back first", then the trunk rides beside your head with your arms down. Solo
+        speed is slow, with nothing showing why, and from the follow camera the trunk reads as a short stub.
+      </figcaption>
+    </figure>
+  </div>
+
+  <h2>Recommended: any axe, any order, dragged on a rope</h2>
+  <p>
+    The frame shows the gap, the tree carries the same rope, your first axe fells it once Station 3 opens, and logs and
+    beam go in either order. The proper axe moves to the forge.
+  </p>
+  <div class="frames">
+    <figure class="rec">
+      <svg viewBox="0 0 240 140" role="img" aria-label="Station 3's frame with two empty saddles and loose gold rope">
+        <rect class="g" x="0" y="104" width="240" height="36" />
+        <rect class="w" x="60" y="56" width="7" height="50" />
+        <rect class="w" x="170" y="56" width="7" height="50" />
+        <path class="w" d="M52 50 h24 v10 h-6 a6 6 0 0 1 -12 0 h-6 z" />
+        <path class="w" d="M162 50 h24 v10 h-6 a6 6 0 0 1 -12 0 h-6 z" />
+        <path class="rope" d="M64 60 q-2 14 4 24 M174 60 q2 14 -4 24" />
+        <rect x="58" y="44" width="122" height="10" rx="5" fill="none" stroke="var(--ink-3)" stroke-dasharray="3 4" />
+        <text class="ink" x="12" y="24">two empty saddles, rope hanging</text>
+      </svg>
+      <figcaption>
+        <b>1. Station 3 opens.</b> Its frame has two empty timber saddles with loose gold lashings, like the boiler's
+        empty saddle on the old train.
+      </figcaption>
+    </figure>
+    <figure class="rec">
+      <svg
+        viewBox="0 0 240 140"
+        role="img"
+        aria-label="The great tree with a gold rope sling, chips flying from a bite"
+      >
+        <rect class="g" x="0" y="104" width="240" height="36" />
+        <path class="w" d="M146 104 l-10 0 l8 -12 z M168 104 l10 0 l-8 -12 z" />
+        <rect class="w" x="144" y="36" width="22" height="70" />
+        <circle class="lf" cx="140" cy="28" r="22" />
+        <circle class="lf" cx="172" cy="24" r="20" />
+        <path class="rope" d="M144 62 l22 -6 M144 68 l22 -6" />
+        <rect class="p1" x="112" y="80" width="14" height="24" rx="5" />
+        <circle class="p1" cx="119" cy="74" r="7" />
+        <rect class="w2" x="128" y="70" width="18" height="4" transform="rotate(-20 128 70)" />
+        <g class="w2">
+          <rect x="132" y="56" width="4" height="3" />
+          <rect x="128" y="62" width="3" height="3" />
+          <rect x="136" y="50" width="3" height="2" />
+        </g>
+        <text class="ink" x="8" y="126">same gold rope; any axe bites</text>
+      </svg>
+      <figcaption>
+        <b>2. The rope appears on the tree.</b> When Station 3 opens, the great tree gets the same gold sling. Before
+        that a swing rebounds with its boing; after, every stroke bites with chips. Twelve fell it.
+      </figcaption>
+    </figure>
+    <figure class="rec">
+      <svg viewBox="0 0 240 140" role="img" aria-label="Buddy dragging the trunk on a rope, the tail scraping dust">
+        <rect class="g" x="0" y="104" width="240" height="36" />
+        <rect class="p1" x="170" y="78" width="16" height="26" rx="5" />
+        <circle class="p1" cx="178" cy="70" r="8" />
+        <path class="rope" d="M174 82 Q160 92 146 92" />
+        <rect class="w" x="40" y="92" width="110" height="8" rx="4" transform="rotate(-6 146 96)" />
+        <circle class="dust" cx="40" cy="104" r="5" />
+        <circle class="dust" cx="30" cy="100" r="4" />
+        <circle class="dust" cx="22" cy="104" r="3" />
+        <text class="ink" x="10" y="30">solo: one end up, one scraping</text>
+        <text class="ink" x="10" y="44">2.2 m/s, and you can see why</text>
+      </svg>
+      <figcaption>
+        <b>3. Drag it.</b> A short rope over your shoulder lifts the near end; the far end scrapes the ground with dust
+        and a low scrape. No arm pose needed.
+      </figcaption>
+    </figure>
+    <figure class="rec">
+      <svg
+        viewBox="0 0 240 140"
+        role="img"
+        aria-label="A friend lifts the dragging end; the beam is level between them"
+      >
+        <rect class="g" x="0" y="104" width="240" height="36" />
+        <rect class="p1" x="170" y="78" width="16" height="26" rx="5" />
+        <circle class="p1" cx="178" cy="70" r="8" />
+        <rect class="p2" x="50" y="78" width="16" height="26" rx="5" />
+        <circle class="p2" cx="58" cy="70" r="8" />
+        <path class="rope" d="M174 82 Q166 84 160 82" />
+        <rect class="w" x="58" y="78" width="104" height="8" rx="4" />
+        <text class="ink" x="10" y="30">friend lifts the end: level,</text>
+        <text class="ink" x="10" y="44">5 m/s together</text>
+      </svg>
+      <figcaption>
+        <b>4. Help carry.</b> An empty-handed friend picks up the dragging end. The beam comes level and you both walk
+        fast. The speed change is something you can see.
+      </figcaption>
+    </figure>
+    <figure class="rec">
+      <svg viewBox="0 0 240 140" role="img" aria-label="The beam seated in the saddles, logs stacked below">
+        <rect class="g" x="0" y="104" width="240" height="36" />
+        <rect class="w" x="60" y="56" width="7" height="50" />
+        <rect class="w" x="170" y="56" width="7" height="50" />
+        <path class="w" d="M52 50 h24 v10 h-6 a6 6 0 0 1 -12 0 h-6 z" />
+        <path class="w" d="M162 50 h24 v10 h-6 a6 6 0 0 1 -12 0 h-6 z" />
+        <rect class="w" x="50" y="46" width="138" height="10" rx="5" />
+        <path class="rope" d="M58 46 l8 10 M66 46 l-8 10 M170 46 l8 10 M178 46 l-8 10" />
+        <g class="w2">
+          <circle cx="100" cy="98" r="6" />
+          <circle cx="114" cy="98" r="6" />
+          <circle cx="128" cy="98" r="6" />
+          <circle cx="107" cy="87" r="6" />
+          <circle cx="121" cy="87" r="6" />
+        </g>
+        <path class="ok" d="M20 90 l8 8 l14 -16" />
+        <text class="ink" x="12" y="24">beam or logs first: either works</text>
+      </svg>
+      <figcaption>
+        <b>5. Lay it in.</b> It drops into the saddles and the lashings tie off. If logs are still missing it waits
+        there; the 40th log starts the feed. Either order.
+      </figcaption>
+    </figure>
+    <figure class="rec">
+      <svg viewBox="0 0 240 140" role="img" aria-label="The forge with the proper axe and two hardwoods nearby">
+        <rect class="g" x="0" y="104" width="240" height="36" />
+        <rect class="w2" x="20" y="60" width="70" height="46" />
+        <rect class="w" x="70" y="30" width="12" height="32" />
+        <rect class="w" x="44" y="72" width="20" height="4" />
+        <rect class="sp" x="58" y="66" width="8" height="12" rx="2" />
+        <rect class="w" x="160" y="58" width="12" height="48" />
+        <circle class="lf" cx="166" cy="48" r="20" />
+        <rect class="w" x="200" y="66" width="10" height="40" />
+        <circle class="lf" cx="205" cy="56" r="16" />
+        <text class="ink" x="8" y="122">later: the forge makes it,</text>
+        <text class="ink" x="8" y="135">hardwoods wait beside it</text>
+      </svg>
+      <figcaption>
+        <b>6. The proper axe, later.</b> The forge's first made thing, a real step up after a stretch with the first
+        axe. The two hardwoods north of the forge are its first use.
+      </figcaption>
+    </figure>
+  </div>
+
+  <h2>The carry, three ways</h2>
+  <p>Same beam, same rules. They differ only in how the trunk moves with you.</p>
+  <div class="frames">
+    <figure>
+      <svg viewBox="0 0 240 120" role="img" aria-label="Floating beam with sparkles beside the buddy">
+        <rect class="g" x="0" y="96" width="240" height="24" />
+        <rect class="p1" x="150" y="70" width="16" height="26" rx="5" />
+        <circle class="p1" cx="158" cy="62" r="8" />
+        <rect class="w" x="40" y="48" width="104" height="8" rx="4" />
+        <g class="sp">
+          <circle cx="50" cy="42" r="2" />
+          <circle cx="80" cy="62" r="2" />
+          <circle cx="112" cy="40" r="2.5" />
+          <circle cx="134" cy="62" r="2" />
+          <circle cx="64" cy="58" r="1.5" />
+        </g>
+      </svg>
+      <figcaption>
+        <span class="tag">A. Float</span> Hovers beside you with the floating axe's sparkle and a slow bob. Smallest to
+        build and on-brand, but a floating log doesn't explain 2.2 m/s.
+      </figcaption>
+    </figure>
+    <figure class="rec">
+      <svg viewBox="0 0 240 120" role="img" aria-label="Rope drag">
+        <rect class="g" x="0" y="96" width="240" height="24" />
+        <rect class="p1" x="170" y="70" width="16" height="26" rx="5" />
+        <circle class="p1" cx="178" cy="62" r="8" />
+        <path class="rope" d="M174 74 Q160 84 146 84" />
+        <rect class="w" x="40" y="84" width="110" height="8" rx="4" transform="rotate(-6 146 88)" />
+        <circle class="dust" cx="40" cy="96" r="5" />
+        <circle class="dust" cx="28" cy="92" r="4" />
+      </svg>
+      <figcaption>
+        <span class="tag rec">B. Drag (recommended)</span> One end on a rope, one on the ground. The tail follows like a
+        towed log, its height from the ground under it. Slow alone, lifted and fast with a friend.
+      </figcaption>
+    </figure>
+    <figure>
+      <svg viewBox="0 0 240 120" role="img" aria-label="Beam rolling on two log rollers">
+        <rect class="g" x="0" y="96" width="240" height="24" />
+        <rect class="p1" x="170" y="70" width="16" height="26" rx="5" />
+        <circle class="p1" cx="178" cy="62" r="8" />
+        <rect class="w" x="40" y="78" width="124" height="8" rx="4" />
+        <circle class="w2" cx="70" cy="90" r="6" />
+        <circle class="w2" cx="130" cy="90" r="6" />
+      </svg>
+      <figcaption>
+        <span class="tag">C. Rollers</span> The trunk rides on two short rollers you push from behind. Charming, but
+        rollers that leapfrog are new animation. Parked.
+      </figcaption>
+    </figure>
+  </div>
+</main>
+<script>
+  (() => {
+    // Theme switch: Auto follows the system; Light/Dark set data-theme on the root.
+    const root = document.documentElement;
+    const buttons = document.querySelectorAll('[data-theme-set]');
+    const apply = (t) => {
+      if (t === 'auto') root.removeAttribute('data-theme');
+      else root.setAttribute('data-theme', t);
+      buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === t)));
+    };
+    let saved = 'auto';
+    try {
+      saved = localStorage.getItem('great-beam-theme') || 'auto';
+    } catch {}
+    apply(saved);
+    buttons.forEach((b) =>
+      b.addEventListener('click', () => {
+        apply(b.dataset.themeSet);
+        try {
+          localStorage.setItem('great-beam-theme', b.dataset.themeSet);
+        } catch {}
+      }),
+    );
+  })();
+</script>
