@@ -9,6 +9,8 @@ import type { Body } from '../../physics/engine.ts';
 import { me } from '../../player/player.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
+import { emit } from '../../render/particles.ts';
+import { readableGlow } from '../../render/readable-unlit.ts';
 import { LINE2_FORGE, LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
@@ -61,7 +63,8 @@ export async function createRailwayLine2(
   const l2 = (): Line2 | null => state.line2;
 
   // ---------------------------------------------------------------- the forge
-  const plan = plans.forgePlan();
+  // The furnace/output opening stays clear in the front wall, as in the prototype: the lit mouth shows through it.
+  const plan = plans.openForgeMouth(plans.forgePlan());
   const { pieces: forgePieces, FRAME, WALLS, ROOFED } = plan;
   const TOTAL = forgePieces.length;
   const HAND = FRAME + (WALLS - FRAME) + (TOTAL - ROOFED);
@@ -87,9 +90,14 @@ export async function createRailwayLine2(
   forgePieces.forEach((_, k) => building.snap(k, false));
   let shownPieces = 0;
   let wallsBody: Body | null = null;
+  const chimneyTop = new THREE.Vector3(plan.smoke!.x, plan.smoke!.y + 0.2, plan.smoke!.z);
+  const smokeCol = new THREE.Color(look.LOOK.light ? '#d9d5cc' : '#5d5a55');
+  let smokeAcc = 0;
   const mouth = mesh(
     new THREE.BoxGeometry(2.8, 1.8, 0.1),
-    new THREE.MeshStandardNodeMaterial({ color: '#3a1a08', emissive: '#ff5a0a', emissiveIntensity: 1.3 }),
+    readableGlow(
+      new THREE.MeshStandardNodeMaterial({ color: '#3a1a08', emissive: '#ff5a0a', emissiveIntensity: 1.3 }),
+    ),
   );
   materials.push(mouth.material as THREE.Material);
   mouth.position.set(plans.X, plan.y + 1.5, plans.Z + plans.D / 2 - 0.5);
@@ -111,7 +119,8 @@ export async function createRailwayLine2(
         flat('#4c5058', 0.6),
         RACK_SHOWN,
       );
-  if (!look.LOOK.kit) owner.add(racked);
+  // kitBatch only swaps in the kit's geometry: like every other kit batch, the caller puts it in the scene.
+  owner.add(racked);
   racked.castShadow = true;
   racked.frustumCulled = false;
   racked.count = 0;
@@ -448,10 +457,17 @@ export async function createRailwayLine2(
   // The forge's lighting is the server's to decide (a predicted deposit that fills it waits): its fanfare plays when the
   // mirror shows it lit, never on a rebuild.
   let litShown = state.line2?.forge.lit ?? -1;
+  // Rails the mirror has poured that are still flying from the mouth to the rack (Local): the rack shows each as it lands.
+  let pouredShown = state.line2?.forge.poured ?? 0,
+    pouring = 0,
+    pourGeneration = 0;
   function restore() {
     deposits = [];
     const l = l2();
     litShown = l?.forge.lit ?? -1;
+    pouredShown = l?.forge.poured ?? 0;
+    pouring = 0;
+    pourGeneration++;
     if (!l) return;
     l.stations.forEach((job, k) => {
       const spec = LINE2_STATIONS[k]!;
@@ -717,8 +733,54 @@ export async function createRailwayLine2(
       if (litShown < 0 && l.forge.lit >= 0) {
         sounds.fanfare(true);
         whistle(plans.X, plans.Z);
+        pieces.dustRing(plans.X, plan.y + 0.4, plans.Z, 16, 3.2, 0.5);
       }
       litShown = l.forge.lit;
+      if (l.forge.lit >= 0) {
+        // Lit: the chimney smokes and each poured rail flies out of the mouth onto the rack, as in the prototype.
+        smokeAcc += dt * 3;
+        for (; smokeAcc >= 1; smokeAcc--)
+          emit({
+            x: chimneyTop.x + (Math.random() - 0.5) * 0.4,
+            y: chimneyTop.y,
+            z: chimneyTop.z + (Math.random() - 0.5) * 0.4,
+            vx: 0.5,
+            vy: 3.2 + Math.random(),
+            vz: 0,
+            life: 5,
+            size: 1.1,
+            grow: [1, 3.4],
+            alpha: 0.75,
+            fade: 0.5,
+            color: smokeCol,
+            drag: 0.2,
+          });
+      }
+      if (l.forge.poured < pouredShown) pouredShown = l.forge.poured;
+      const fresh = l.forge.poured - pouredShown;
+      pouredShown = l.forge.poured;
+      // A burst (a rebuild or a long hitch) just stands on the rack; ordinary pours arrive one at a time.
+      for (let n = 0; fresh <= 4 && n < fresh; n++) {
+        const to = rackSlot(Math.max(0, l.forge.rack - fresh + n), new THREE.Vector3());
+        const generation = pourGeneration;
+        pouring++;
+        pieces.send(
+          'rail',
+          mouth.position,
+          to,
+          {
+            dur: 0.55,
+            apex: 1.1,
+            land: () => {
+              if (generation !== pourGeneration) return;
+              pouring = Math.max(0, pouring - 1);
+              clank(to.x, to.z);
+              pieces.dustRing(to.x, to.y, to.z, 2, 0.6, 0.1);
+            },
+          },
+          owner,
+        );
+      }
       const walls = l.forge.used > F1;
       if (walls && !wallsBody)
         wallsBody = land.addStatic(
@@ -729,7 +791,7 @@ export async function createRailwayLine2(
           owner,
         );
       const inFlight = deposits.filter((d) => d.station === -2 && d.active()).length;
-      drawRack(l.forge.rack + inFlight);
+      drawRack(Math.max(0, l.forge.rack - pouring) + inFlight);
       deposits = deposits.filter((d) => d.active());
       const forgeStage = l.forge.used < F1 ? 0 : 1;
       forgeFrame.spec = layout.FORGE_BILLS[forgeStage]!;

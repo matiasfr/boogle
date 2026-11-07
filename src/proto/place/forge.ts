@@ -25,24 +25,13 @@ import { RAIL_SIZE, dropSet, dustRing, send } from './pieces.ts';
 import { addFoot, hullBodies, outOf } from './sites.ts';
 import { makeWorkshop } from './workshop.ts';
 
-import { forgePlan, X, Z, W, D, HIGH } from './opening-plans.ts';
+import { forgePlan, openForgeMouth, X, Z, W, D, HIGH } from './opening-plans.ts';
 import { craneModel, rackModel } from './opening-models.ts';
 
 // ---------------------------------------------------------------- the plan: the standard every building copies
-const plan = forgePlan();
+// The furnace/output opening beside the new walk-in door; the rail flight remains at its original position.
+const plan = openForgeMouth(forgePlan());
 const Y = plan.y;
-// Keep the original furnace/output opening beside the new walk-in door. Trim only the low front boards;
-// piece counts and construction bills stay identical, and the furnace/rail flight remains at its original position.
-for (let k = 0; k < plan.WALLS; k++) {
-  const b = plan.pieces[k]!;
-  if (Math.abs(b.z - (Z + D / 2)) > 0.01) continue;
-  if (k < plan.FRAME && Math.abs(b.x - X) < 0.01) b.x = X + 1.65;
-  else if (k >= plan.FRAME && b.x > X && b.local.elements[13]! < 2.9) {
-    const right = b.x + b.local.elements[0]! / 2;
-    b.local.elements[0] = right - (X + 1.5);
-    b.x = (right + X + 1.5) / 2;
-  }
-}
 addFoot(X, Z, 0, plan.hw, plan.hd);
 /** Bare foundations and poles, from the start. */
 const scaffold = makeSet(plan.scaffold);
