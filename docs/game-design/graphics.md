@@ -80,9 +80,11 @@
   variation, grain and existing roughness/metalness/normal response. Town pieces use semantic construction
   tags, so a roof and a scaffold sharing an authored colour remain independently selectable. The six
   calibration anchors are controlled samples; Buddy, reference presets, grey/chrome balls and charts stay fixed.
-  Coverage is the default Place terrain, town buildings, bridges, arrival timber and carried timber. Tree foliage,
+  Coverage is the default Place terrain, town buildings, bridges and arrival timber. Tree foliage,
   signs, painted accents, coloured shop plaster, special props and the cove shore retain their
-  own palettes. Ordinary visits multiply by the Fresh ratio as a constant; tuning swaps it for live uniforms
+  own palettes, and so do logs (piles, stacks, carried bundles): their bark, amber band and cut ends are their own
+  colours, and the timber ratio turned them grey and darker (6 November playtest: a pile's lit bark 57,36,32 and
+  cut ends 180,174,163 return to 70,42,17 and 192,166,114). Ordinary visits multiply by the Fresh ratio as a constant; tuning swaps it for live uniforms
   and instance-colour uploads. These boards are owner review, not a device test.
 - **Base-colour diagnostic.** `?view=unlit` swaps lit surfaces to their authored albedo/texture and vertex colours,
   retaining masks, transparency, skinning and instance transforms. Lighting, shadows, environment, material AO,

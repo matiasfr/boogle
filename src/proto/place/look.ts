@@ -186,7 +186,8 @@ export function paint(p: Paint) {
       woodGrain(p.grain!.axis, 'instance', p.grain!.scale ?? [1, 1, 1], p.own ? 'plain' : 'grain', 0.955),
     );
   if (!steel && !p.own) m.colorNode = selectiveColour(m.colorNode ?? materialColor, wood ? 'timber' : 'accent');
-  if (wood && p.own) m.colorNode = paletteNode(m.colorNode, 'timber');
+  // Own-coloured pieces (the log's bark, amber band and cut ends) keep their pigments: the timber palette is a ratio
+  // from the timber anchor's orange and turns bark and pale ends grey and dark (6 November playtest).
   if (steel) m.emissiveNode = skyOnSteel();
   if (p.rust) {
     // Broad material changes fit the painted kit; world-space mottling made moving metal look camouflaged.
@@ -222,8 +223,7 @@ export const STEEL: Paint = { color: '#4c5058', steel: true, rough: 0.6 };
 export function lookBackLogs(mat: THREE.Material, tint: THREE.Color) {
   if (LOOK.mats) {
     const owned = mat as THREE.MeshStandardNodeMaterial;
-    dressBundleLogs(owned, tint);
-    owned.colorNode = paletteNode(owned.colorNode, 'timber');
+    dressBundleLogs(owned, tint); // its own bark, band and ends: no timber palette, as paint() for the kit's log
   }
 }
 

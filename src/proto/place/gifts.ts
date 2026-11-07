@@ -13,6 +13,7 @@ import { packParts } from './gear-models.ts';
 import { makeAxeModel } from './axe-models.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
+import { confettiBurst, rewardDust, rewardSparkles } from '../../render/reward-particles.ts';
 import { scene } from '../../render/scene.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
@@ -1054,50 +1055,6 @@ const shaftGlow = softGlow('#ffe08a', 0.8, true);
 const shaft = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 2.1, 40, 14, 1, true).translate(0, 20, 0), shaftGlow.mat);
 shaft.visible = false;
 scene.add(flash, shaft);
-const CONFETTI = ['#ff4f4f', '#ffcf33', '#2f8cff', '#4fdc7a', '#ff7ad9', '#ffffff'].map((c) => new THREE.Color(c));
-const gold = new THREE.Color('#ffd76a');
-function sparkles(x: number, y: number, z: number, n: number, sp: number, color = gold) {
-  for (let k = 0; k < n; k++) {
-    const a = Math.random() * Math.PI * 2,
-      u = Math.random() * 1.4 - 0.2;
-    emit({
-      x,
-      y,
-      z,
-      vx: Math.cos(a) * sp,
-      vy: u * sp,
-      vz: Math.sin(a) * sp,
-      life: 0.7 + Math.random() * 0.6,
-      size: 0.16 + Math.random() * 0.1,
-      color,
-      intensity: readableIntensity(),
-      gravity: 5,
-      drag: 1,
-      shrink: 0.5,
-    });
-  }
-}
-function confettiBurst(x: number, y: number, z: number) {
-  for (let k = 0; k < 110; k++) {
-    const a = Math.random() * Math.PI * 2,
-      s = 1.5 + Math.random() * 5;
-    emit({
-      x,
-      y,
-      z,
-      vx: Math.cos(a) * s,
-      vy: 6 + Math.random() * 8,
-      vz: Math.sin(a) * s,
-      life: 1.6 + Math.random() * 1,
-      size: 0.17 + Math.random() * 0.13,
-      color: CONFETTI[k % CONFETTI.length]!,
-      intensity: readableIntensity(),
-      gravity: 8,
-      drag: 1.5,
-      shrink: 0.3,
-    });
-  }
-}
 type Show = {
   gift: { id: GiftId | Extra; name: string; line: string };
   content: Content;
@@ -1267,8 +1224,8 @@ function updateShow(dt: number) {
       });
     }
     confettiBurst(s.x, s.y + 0.8, s.z);
-    sparkles(s.x, s.y + 0.8, s.z, 34, 6);
-    dustRing(s.x, s.y + 0.1, s.z, 12, 3.2, 0.45, readableIntensity() * 0.5); // bright with the confetti, not the grey-brown it shows at exposure one
+    rewardSparkles(s.x, s.y + 0.8, s.z, 34, 6);
+    rewardDust(s.x, s.y + 0.1, s.z);
     placeSound(s.tier === 'wonder' ? 'boxWonder' : s.tier === 'rare' ? 'boxRare' : 'boxCommon', s.x, s.z);
     flash.visible = shaft.visible = true;
     flash.position.set(s.x, s.y + 0.9, s.z);
@@ -1389,7 +1346,7 @@ export function updateGifts(dt: number, now: number) {
         thump(c.x, c.z);
         knock(0.5, 0.9);
         dustRing(c.x, c.y + 0.1, c.z, 10, 2.4, 0.4);
-        sparkles(c.x, c.y + 0.6, c.z, 18, 3.4);
+        rewardSparkles(c.x, c.y + 0.6, c.z, 18, 3.4);
         pop(4, 0.6);
         c.mesh.rotation.x = 0;
       }
@@ -1397,7 +1354,7 @@ export function updateGifts(dt: number, now: number) {
     }
     c.mesh.position.y = c.y + Math.max(0, Math.sin(now * 0.004)) * 0.06;
     c.mesh.rotation.z = Math.sin(now * 0.0035) * 0.02;
-    if (Math.random() < dt * 3) sparkles(c.x, c.y + 1.2, c.z, 1, 1.2);
+    if (Math.random() < dt * 3) rewardSparkles(c.x, c.y + 1.2, c.z, 1, 1.2);
   }
   updateShow(dt);
   if (flying.length) {

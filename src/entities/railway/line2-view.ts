@@ -6,14 +6,16 @@ import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../a
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body } from '../../physics/engine.ts';
+import type { Got } from '../../render/reward-reveal.ts';
 import { me } from '../../player/player.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
-import { readableGlow } from '../../render/readable-unlit.ts';
+import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { LINE2_FORGE, LINE2_STATIONS, line2Panels } from '../../sim/railway-line2-layout.ts';
 import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
+import { HOOK_REWARD } from './reward-data.ts';
 
 /** Rail pairs each stretch lays, one per commit. */
 const STRETCH_PAIRS = LINE2_STATIONS.map((station) => line2Panels(station).length);
@@ -27,6 +29,8 @@ export async function createRailwayLine2(
   owner: OwnedView,
   machine: Machine,
   bundleOrigin: (pid: string, count: number, out: THREE.Vector3) => boolean,
+  /** The railway's one reveal queue (reward.ts): devices show "You got" like the jump device does. */
+  youGot: (got: Got) => boolean,
 ) {
   const [layout, rail, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit] = await Promise.all([
     import('../../proto/place/layout.ts'),
@@ -48,8 +52,11 @@ export async function createRailwayLine2(
   const geometries: THREE.BufferGeometry[] = [];
   const materials: THREE.Material[] = [];
   const partMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
-  const glow = new THREE.MeshStandardNodeMaterial({ color: '#39e6c6', emissive: '#39e6c6', emissiveIntensity: 1.2 });
-  const teal = new THREE.MeshBasicNodeMaterial({ color: '#39e6c6' });
+  // Display-range glows and ink, as in Place (readable-unlit.ts): at the scene's surface gain they would read near black.
+  const glow = readableGlow(
+    new THREE.MeshStandardNodeMaterial({ color: '#39e6c6', emissive: '#39e6c6', emissiveIntensity: 1.2 }),
+  );
+  const teal = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: '#39e6c6' }));
   materials.push(partMat, glow, teal);
   const mesh = (geometry: THREE.BufferGeometry, material: THREE.Material = partMat) => {
     geometries.push(geometry);
@@ -314,6 +321,8 @@ export async function createRailwayLine2(
   hookRing.rotation.x = Math.PI / 2;
   hookCore.position.copy(hookRing.position);
   const hookTarget = hookAt.clone().add(new THREE.Vector3(0, 2.2, 0));
+  const hookPrize = shapes.merged(HOOK_REWARD.parts);
+  geometries.push(hookPrize);
   // The quarry gate: two jambs and the slab across the bed, solid until it drops.
   const G = tech.GATES.quarry;
   const SLAB = { w: 6.4, h: 5.4, d: 0.9, pillar: 1.1 };
@@ -547,7 +556,14 @@ export async function createRailwayLine2(
     }
     if (event.op === 'rail.hook') {
       placeSound('pickupJump', hookAt.x, hookAt.z);
-      sounds.fanfare(false);
+      // The reveal brings its own fanfare and card, as the jump device's does (tools.ts).
+      youGot({
+        key: 'hook',
+        name: HOOK_REWARD.name,
+        line: HOOK_REWARD.line,
+        model: new THREE.Mesh(hookPrize, partMat),
+        from: hookRing.position.clone(),
+      });
       return;
     }
     if (event.op !== 'rail.deposit') return;

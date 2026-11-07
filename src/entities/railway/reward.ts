@@ -9,7 +9,7 @@ import type { Interactable } from '../../player/hands.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { createRewardReveal } from '../../render/reward-reveal.ts';
 import { T1_CRATE_PARTS, T1_REWARD, MULTI_AXE_REWARD } from '../../render/t1-reward-parts.ts';
-import { emit } from '../../render/particles.ts';
+import { confettiBurst, rewardDust, rewardSparkles } from '../../render/reward-particles.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { T2_REWARD } from './reward-data.ts';
@@ -63,6 +63,7 @@ export async function createRailwayReward(
       };
     },
     targets: () => [...first.targets(), ...second.targets(), ...tools.targets()],
+    youGot: reveal.youGot,
     update(dt: number, now: number) {
       first.update(dt, now);
       second.update(dt, now);
@@ -199,10 +200,6 @@ async function createStationReward(
     va: number;
     t: number;
   }[] = [];
-  const gold = new THREE.Color('#ffd76a');
-  const confetti = ['#ff4f4f', '#ffcf33', '#2f8cff', '#4fdc7a', '#ff7ad9', '#ffffff'].map(
-    (color) => new THREE.Color(color),
-  );
   const worn = new Map<string, THREE.Mesh>();
   let profile: ReturnType<typeof createBrowserRailwayProfile> | null = null;
   let error: string | null = null;
@@ -256,25 +253,7 @@ async function createStationReward(
     flight = 1;
     load();
   });
-  function sparks(n: number, speed: number) {
-    for (let k = 0; k < n; k++) {
-      const a = Math.random() * Math.PI * 2;
-      emit({
-        x: at.x,
-        y: at.y + 0.8,
-        z: at.z,
-        vx: Math.cos(a) * speed,
-        vy: (Math.random() * 1.4 - 0.2) * speed,
-        vz: Math.sin(a) * speed,
-        life: 0.7 + Math.random() * 0.6,
-        size: 0.16 + Math.random() * 0.1,
-        color: gold,
-        gravity: 5,
-        drag: 1,
-        shrink: 0.5,
-      });
-    }
-  }
+  const sparks = (n: number, speed: number) => rewardSparkles(at.x, at.y + 0.8, at.z, n, speed);
   function burst() {
     for (let k = 0; k < 14; k++) {
       const a = (k / 14) * Math.PI * 2,
@@ -291,26 +270,9 @@ async function createStationReward(
         t: 0,
       });
     }
-    for (let k = 0; k < 110; k++) {
-      const a = Math.random() * Math.PI * 2,
-        speed = 1.5 + Math.random() * 5;
-      emit({
-        x: at.x,
-        y: at.y + 0.8,
-        z: at.z,
-        vx: Math.cos(a) * speed,
-        vy: 6 + Math.random() * 8,
-        vz: Math.sin(a) * speed,
-        life: 1.6 + Math.random(),
-        size: 0.17 + Math.random() * 0.13,
-        color: confetti[k % confetti.length]!,
-        gravity: 8,
-        drag: 1.5,
-        shrink: 0.3,
-      });
-    }
+    confettiBurst(at.x, at.y + 0.8, at.z);
     sparks(34, 6);
-    dustRing(at.x, at.y + 0.1, at.z, 12, 3.2, 0.45);
+    rewardDust(at.x, at.y + 0.1, at.z);
     placeSound('boxCommon', at.x, at.z);
     reveal.youGot({
       name: reward.name,
