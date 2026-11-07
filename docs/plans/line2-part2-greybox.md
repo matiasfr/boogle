@@ -101,13 +101,13 @@ rewrites `src/sim/railway-line2.ts`, `railway.ts`, `railway-world.ts`/`railway-s
 kinds (`cart`, `boiler`, `train`) and must be E components and systems.** Each step bumps `WORLD_NS` (a development
 reset, no migration) and keeps the paused world and away credit whole.
 
-- [ ] **B1. Pack chest.** Add the `pack` field on `rail` and a `rail.pack` system, which requires
+- [x] **B1. Pack chest.** Add the `pack` field on `rail` and a `rail.pack` system, which requires
   `forge.used ≥ LINE2_FORGE.bills[0]` and is idempotent. `railCarry(s)` returns 16 with the pack, and every
   `T1.carry` use goes through it. Pin `LINE2_PACK {x,z}` in `railway-line2-layout.ts`. The chest view reuses the axe
   chest (`src/entities/railway/tools.ts`, `reward.ts`, the `HOOK_REWARD` pattern in `reward-data.ts`). Proof:
   `test/railway-line2.test.ts` (no chest before 24 logs, one pack for two openers, carry 16 after, survives
   snapshot/load and late join); a prediction case in `test/railway-replicate.test.ts`; a look still of the chest.
-- [ ] **B2. Q4 (first playable).** Add `Q4` to `LINE2_STATIONS` (16/16, `fromCm` 17800 → `toCm` 28600, speed 160,
+- [x] **B2. Q4 (first playable).** Add `Q4` to `LINE2_STATIONS` (16/16, `fromCm` 17800 → `toCm` 28600, speed 160,
   depot true, `gate: 'quarry'`) and widen `Line2StationId`. Deposits need `line2GateOpen`. `railLine2Tick`'s depot
   also fills `depotRails` from `forge.rack` for Q4 (one transfer, never past the bill). Add `rail.depotRailTake`. The
   away credit counts it (`railLine2Yards`). Views: the Q4 frame, a rails shelf beside the rack, a frame survey stake.
@@ -115,6 +115,15 @@ reset, no migration) and keeps the paused world and away credit whole.
   `server/test/railway-line-host.test.ts`; `npm run load`. Extend `dev/look/bots/railway.ts` past "quarry gate open"
   to checkpoints `pack`, `Q4 funded` and `Q4 laid`, through `dev/look/evals/railway-job.ts`. Look still at the rim
   under `?greybox=sickle`.
+
+  *Built 7 November (B1 and B2).* Departures: the capacity helper is `railCarryMax(s)`, since `railCarry(a)` already
+  names a back's load; Q4's stretch is flagged `shelf: true`. Place's "the cart holds 16 rails" is kept: a load is up
+  to 8 logs and up to `LINE2_DEPOT.rails` (16) rails, and `rail.shelfOut` caps what the cart moves per stretch at the
+  rail bill, so rails on a back are not brought again (found by the playthrough). Rails left on the shelf when the
+  stretch funds go back to the forge rack in the same apply. The away credit is part of `awayCredit` in
+  `rail.resume` (there is no `railLine2Yards`). The survey stake stands at the rim, where Q4 ends. The solo
+  playthrough passed to `Q4 laid` (43 game minutes, no errors); stills: the pack chest, the shelf beside Q4's frame
+  and the laid stretch to the rim under `?greybox=sickle`. `WORLD_NS` v18. Not tested on a device.
 - [ ] **B3. The cart's real trip (new kind `cart`).** Add the component and a `rail.cartTick` system: load at the
   camp from the depot's minted logs, stop at the forge for rails (from Q4 on), run to the active rack, unload, return.
   Each step is one atomic transfer, and `depot`/`depotRails` only change at unload. The pose comes from
