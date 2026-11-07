@@ -117,6 +117,22 @@ export default defineConfig({
       },
     },
     {
+      // The look harness's cross-origin isolated pages (dev/look/lib.ts `isolated`, for performance.now() in 5 us steps)
+      // ask for it with `coi=1` on the page address. The headers must come from the server: a page Playwright fulfils
+      // itself cannot open WebSockets, so the railway room never connected.
+      name: 'boogle-harness-isolation',
+      apply: 'serve',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (/[?&]coi=1(?:&|$)/.test(req.url ?? '')) {
+            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+            res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+          }
+          next();
+        });
+      },
+    },
+    {
       name: 'boogle-version',
       transformIndexHtml() {
         return [{ tag: 'meta', attrs: { name: 'boogle-build', content: build }, injectTo: 'head-prepend' }];
