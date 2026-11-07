@@ -253,7 +253,8 @@ export class Game {
   // opts: room, name, size [w,h], hud (true keeps the HUD in pictures, 'play' a clean subset), out (directory for images), label prefix,
   // query (extra URL params, e.g. 'tidefast=1'), clock (fake the page clock so `record` can step time),
   // init (a function or script run before the page's own code, e.g. to seed localStorage),
-  // isolated (serve the page cross-origin isolated, so performance.now() ticks in 5 us instead of 100 us steps),
+  // isolated (serve the page cross-origin isolated, so performance.now() ticks in 5 us instead of 100 us steps; a
+  // checkout whose dev server predates `coi=1` serves it unisolated),
   // Every page gets `?dpr=fixed`, which keeps adaptive resolution off so images stay comparable,
   // touch (a phone: touch events and `(pointer: coarse)`, so the page starts in touch mode with body.touch and the
   // touch buttons; pair it with size [390, 844] for portrait or [844, 390] for landscape. No isMobile: it changes the
@@ -288,16 +289,6 @@ export class Game {
       });
     if (opts.warp) await g.ctx.addInitScript(installWarp);
     if (opts.init) await g.ctx.addInitScript(opts.init);
-    const doc = new URL(stack.base);
-    if (opts.isolated)
-      await g.ctx.route(
-        (u) => u.origin === doc.origin && u.pathname === doc.pathname,
-        async (route) => {
-          const res = await route.fetch();
-          const coi = { 'cross-origin-opener-policy': 'same-origin', 'cross-origin-embedder-policy': 'credentialless' };
-          await route.fulfill({ response: res, headers: { ...res.headers(), ...coi } });
-        },
-      );
     g.page = await g.ctx.newPage();
     g.errors = [];
     g.gfxErrors = []; // console errors from three (THREE.*): unported materials show up here
@@ -324,7 +315,11 @@ export class Game {
     });
     const room = opts.room || 'look' + Math.random().toString(36).slice(2, 7);
     const sep = stack.base.includes('?') ? '&' : '?';
-    const query = new URLSearchParams([opts.query, EXTRA_QUERY].filter(Boolean).join('&'));
+    // The dev server sends the isolation headers for `coi=1` (vite.config.ts): a document Playwright fulfils itself
+    // (a route adding them) cannot open WebSockets, so the railway never connected on isolated pages.
+    const query = new URLSearchParams(
+      [opts.query, EXTRA_QUERY, opts.isolated ? 'coi=1' : ''].filter(Boolean).join('&'),
+    );
     // No selector opens the current game, as the bare address does; ?proto= (including BOOGLE_QUERY) selects a prototype.
     await g.page.goto(`${stack.base}${sep}dpr=fixed&debugcam=1&room=${room}&${query}`, {
       timeout: 90000,

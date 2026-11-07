@@ -114,6 +114,17 @@ export default defineConfig({
         server.httpServer?.on('close', () => {
           if (localServer) background(localServer.close(), 'local server close');
         });
+        // The look harness's cross-origin isolated pages (dev/look/lib.ts `isolated`: performance.now() in 5 us steps)
+        // ask for it with `coi=1`. The headers must come from the server: a page Playwright fulfils itself cannot open
+        // WebSockets, so the railway room never connected. (Here rather than in a plugin of its own: plugin names are
+        // part of Vite's dependency hash, and every worktree shares node_modules/.vite.)
+        server.middlewares.use((req, res, next) => {
+          if (/[?&]coi=1(?:&|$)/.test(req.url ?? '')) {
+            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+            res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+          }
+          next();
+        });
       },
     },
     {
