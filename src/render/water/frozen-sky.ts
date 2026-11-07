@@ -1,8 +1,20 @@
 // Summer late morning by default; the opt-in evening proof prepares both skies behind loading.
 // Owner calls, 3–5 November: fixed authored sunlight, no runtime cycle.
 import * as THREE from 'three/webgpu';
-import { cameraPosition, fog, mix, normalize, positionWorld, rangeFogFactor, uniform, uv, vec3, vec4 } from 'three/tsl';
-import { FOG_NEAR, FOG_FAR } from '../../constants.ts';
+import {
+  cameraPosition,
+  color,
+  fog,
+  mix,
+  normalize,
+  positionWorld,
+  rangeFogFactor,
+  uniform,
+  uv,
+  vec3,
+  vec4,
+} from 'three/tsl';
+import { FOG_HEX, OUTDOOR_FOG_FAR, OUTDOOR_FOG_NEAR } from '../../constants.ts';
 import { skyState } from '../../sim/sky-clock.ts';
 import { clouds } from '../props.ts';
 import { renderer, rendererReady, scene, sky, sun } from '../scene.ts';
@@ -44,12 +56,22 @@ const direction = east.clone().multiplyScalar(Math.cos(angle)).addScaledVector(n
 let timeOfDay = WATER_TOD;
 const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#8f806e'), ground: new THREE.Color('#3d342a') };
 
+/** The one outdoor fog range, closing in underground. The sky writes it early (route code may still read it) and
+ * again late (`holdOutdoorFog`), so it is what renders; the fog node reads scene.fog at render time. */
+function setOutdoorFog() {
+  const ug = atmosphere.underground;
+  const f = scene.fog as THREE.Fog | null;
+  if (!f) return;
+  f.near = THREE.MathUtils.lerp(OUTDOOR_FOG_NEAR, 6, ug);
+  f.far = THREE.MathUtils.lerp(OUTDOOR_FOG_FAR, 80, ug);
+}
+/** Late, before the sea reads the range and the frame renders: the owner's one fog (7 November, "extend the fog"),
+ * whatever a route wrote in its update. Dev tools that compare ranges write after this. */
+export const holdOutdoorFog = setOutdoorFog;
+
 /** Same early sky slot: reset route fog ranges before crossing/place apply theirs, with the cave transition intact. */
 export function updateFrozenDay() {
-  const ug = atmosphere.underground;
-  const f = scene.fog as THREE.Fog;
-  f.near = THREE.MathUtils.lerp(FOG_NEAR, 6, ug);
-  f.far = THREE.MathUtils.lerp(FOG_FAR, 80, ug);
+  setOutdoorFog();
   skyNow.frac = timeOfDay;
   skyNow.phase = 0.5;
   skyNow.illum = 1;
@@ -86,9 +108,14 @@ export function createFrozenWaterSky() {
     exposure: renderer.toneMappingExposure,
     hemi: hemi && { color: hemi.color.clone(), ground: hemi.groundColor.clone(), intensity: hemi.intensity },
   };
-  const near = uniform(FOG_NEAR),
-    far = uniform(FOG_FAR),
-    underground = uniform(0);
+  // Read at render time, so a range written this frame is the one drawn (it used to be copied only when the lighting
+  // flushed, and later fog writes never reached the picture).
+  const near = uniform(OUTDOOR_FOG_NEAR).onRenderUpdate(
+      () => (scene.fog as THREE.Fog | null)?.near ?? OUTDOOR_FOG_NEAR,
+    ),
+    far = uniform(OUTDOOR_FOG_FAR).onRenderUpdate(() => (scene.fog as THREE.Fog | null)?.far ?? OUTDOOR_FOG_FAR),
+    underground = uniform(0).onRenderUpdate(() => atmosphere.underground),
+    skyReady = uniform(0);
   const upper = new THREE.Color(),
     lower = new THREE.Color();
   const evening = prepareEvening ? createWaterSky(undefined, SKY_CUBE_SIZE) : undefined;
@@ -131,11 +158,18 @@ export function createFrozenWaterSky() {
       );
   }
   const haze = mix(
-    environment.skyLod(normalize(positionWorld.sub(cameraPosition)), 3),
-    vec3(CAVE.fog.r, CAVE.fog.g, CAVE.fog.b),
-    underground,
+    color(new THREE.Color(FOG_HEX)),
+    mix(
+      environment.skyLod(normalize(positionWorld.sub(cameraPosition)), 3),
+      vec3(CAVE.fog.r, CAVE.fog.g, CAVE.fog.b),
+      underground,
+    ),
+    skyReady,
   );
   const fogNode = fog(haze, rangeFogFactor(near, far));
+  // Installed now, before anything compiles: a material built against three's fallback fog for scene.fog kept that
+  // fog after the bake (seen 6 November: far greybox islets drew as pure haze). The placeholder colour holds until then.
+  scene.fogNode = fogNode;
   let disposed = false,
     baked = false;
   let readyMs = 0;
@@ -175,10 +209,6 @@ export function createFrozenWaterSky() {
       hemi.intensity = Math.PI * THREE.MathUtils.lerp(1, 0.8, ug);
       hemi.intensity *= THREE.MathUtils.lerp(lighting.fillGain, 1, ug);
     }
-    const f = scene.fog as THREE.Fog;
-    near.value = f.near;
-    far.value = f.far;
-    underground.value = ug;
     seaU.uSun.value.copy(direction);
     seaU.uSpecCol.value.setRGB(c.x, c.y, c.z);
     seaU.uLight.value.setRGB(1, 1, 1);
@@ -218,6 +248,7 @@ export function createFrozenWaterSky() {
     upper.copy(fill.upper);
     lower.copy(fill.lower);
     baked = true;
+    skyReady.value = 1;
     flushLighting = update;
     updateFrozenDay();
     update();

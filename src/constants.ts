@@ -23,6 +23,10 @@ export const BALL_SPAWN = { x: 12, z: 20 };
 export const FOG_HEX = '#bfe6f5';
 export const FOG_NEAR = 110;
 export const FOG_FAR = 520;
+/** The open world's fog (owner, 7 November: "extend the fog"; the crossing's range): the frozen sky holds it every
+ * frame (src/render/water/frozen-sky.ts), so the White Wall and High Port's crane read from Home. */
+export const OUTDOOR_FOG_NEAR = 180;
+export const OUTDOOR_FOG_FAR = 3600;
 export const COLORS = ['#ff6b5a', '#ffc23d', '#7fd14a', '#19c3b3', '#3d9bff', '#9b6bff', '#ff6fb5', '#ff9a3d'];
 export const DEFAULT_NAME = 'Dat Frinco';
 export const DEFAULT_ROOM = 'boogle';
