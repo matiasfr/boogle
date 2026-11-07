@@ -17,7 +17,7 @@
       "boardS": 20,
       "note": "Per link: length / 20 m/s + 10 s to speed up and slow down at 2 m/s² + 8 s dwell. Plus 20 s waiting to board. Same settings as ring-data.ts."
     },
-    "view": [-3900, -3950, 6900, 6100],
+    "view": [-4900, -3950, 7900, 7700],
     "common": {
       "land": [
         {
@@ -200,7 +200,7 @@
           ["The Wind Waker", "every island its own silhouette and its own idea, with sea between"],
           ["Super Mario Odyssey", "a small kingdom with a high density of things to find"]
         ],
-        "pitch": "West of Home a lopsided chain of small islands curls round a shallow bay. Its spine is the White Wall: a string of narrow chalk sea-cliff islets, 120 m tall, that reads as one broken wall on the skyline. Each place is its own island, small enough to dress densely: High Gorge is a sea stack split in two and bridged by its town, Canopy Town is a forest island, High Port sits on a cliff-top island with its quay at the foot, and Lantern Notch is a sea arch. Home is off-centre on the east side, so one side is short sea hops and the other is the long string of chalk. The bay shortcut, the crane on the skyline from day one, and the double-back through a sea cave under Home are kept from Sickle Coast.",
+        "pitch": "West of Home a lopsided chain of small islands curls round a shallow bay. Its spine is the White Wall: six narrow chalk sea-cliff islets, 120 m tall, that read as one broken wall on the skyline, with Canopy Town's giant crowns rising over it. Each place is its own island, small enough to dress densely: High Gorge is a sea stack split in two, its gap pointing at Ring Island; Canopy Town is a forest island behind a cleft in the Wall; High Port is a harbour under a cliff-top town; Lantern Notch is a sea arch facing the mainland on the far horizon. The Boogler's island, the classic island, sits in the bay itself: seen from the first minute, reached last by a lantern causeway. The bay shortcut, the crane on the skyline from day one, and the double-back through a sea cave under Home are kept from Sickle Coast.",
         "choice": {
           "stage": 3,
           "from": "ring",
@@ -210,24 +210,50 @@
         },
         "land": [
           {
-            "id": "stack-w",
+            "id": "stack-n",
             "on": ["gorge"],
             "seen": 2,
-            "c": [-1265, -1930],
+            "c": [-1033, -2104],
             "r": [185, 150],
-            "seed": 41,
-            "rough": 0.2,
-            "biome": "Split sea stack: copper works"
-          },
-          {
-            "id": "stack-e",
-            "on": ["gorge"],
-            "seen": 2,
-            "c": [-1010, -1865],
-            "r": [165, 140],
+            "rot": 31,
             "seed": 42,
             "rough": 0.2,
-            "biome": "Split sea stack: copper works"
+            "biome": "Split sea stack: copper works",
+            "clip": {
+              "by": "gorge",
+              "side": "ne",
+              "gap": 90
+            },
+            "geology": "Basalt sea stack: columnar walls with a boulder apron and deep water close in",
+            "top": 85,
+            "shelf": {
+              "w": 30,
+              "kind": "rock"
+            },
+            "tint": "#5f6168"
+          },
+          {
+            "id": "stack-s",
+            "on": ["gorge"],
+            "seen": 2,
+            "c": [-1173, -1872],
+            "r": [185, 150],
+            "rot": 31,
+            "seed": 41,
+            "rough": 0.2,
+            "biome": "Split sea stack: copper works",
+            "clip": {
+              "by": "gorge",
+              "side": "sw",
+              "gap": 90
+            },
+            "geology": "Basalt sea stack: columnar walls with a boulder apron and deep water close in",
+            "top": 85,
+            "shelf": {
+              "w": 30,
+              "kind": "rock"
+            },
+            "tint": "#5f6168"
           },
           {
             "id": "wall-n1",
@@ -238,7 +264,14 @@
             "rot": 122,
             "seed": 43,
             "rough": 0.1,
-            "biome": "Chalk sea-cliff islets"
+            "biome": "Chalk sea-cliff islets",
+            "module": "chalk",
+            "top": 120,
+            "geology": "Chalk: a sheer white sea cliff on a wave-cut rock platform; no beach",
+            "shelf": {
+              "w": 45,
+              "kind": "rock"
+            }
           },
           {
             "id": "wall-n2",
@@ -247,9 +280,34 @@
             "c": [-1760, -1030],
             "r": [250, 65],
             "rot": 112,
-            "seed": 44,
+            "seed": 43,
             "rough": 0.1,
-            "biome": "Chalk sea-cliff islets"
+            "biome": "Chalk sea-cliff islets",
+            "module": "chalk",
+            "top": 120,
+            "geology": "Chalk: a sheer white sea cliff on a wave-cut rock platform; no beach",
+            "shelf": {
+              "w": 45,
+              "kind": "rock"
+            }
+          },
+          {
+            "id": "wall-cn",
+            "on": ["canopy"],
+            "seen": 0,
+            "c": [-1995, -565],
+            "r": [250, 65],
+            "rot": 112,
+            "seed": 43,
+            "rough": 0.1,
+            "biome": "Chalk sea-cliff islets",
+            "module": "chalk",
+            "top": 120,
+            "geology": "Chalk: a sheer white sea cliff on a wave-cut rock platform; no beach",
+            "shelf": {
+              "w": 45,
+              "kind": "rock"
+            }
           },
           {
             "id": "canopy-isle",
@@ -259,7 +317,31 @@
             "r": [360, 300],
             "seed": 45,
             "rough": 0.16,
-            "biome": "Forest island: giant trees"
+            "biome": "Forest island: giant trees",
+            "top": 12,
+            "geology": "Low forest isle on sand: beaches all round, giant trees",
+            "shelf": {
+              "w": 90,
+              "kind": "sand"
+            }
+          },
+          {
+            "id": "wall-cs",
+            "on": ["canopy"],
+            "seen": 0,
+            "c": [-2080, -20],
+            "r": [250, 65],
+            "rot": 95,
+            "seed": 43,
+            "rough": 0.1,
+            "biome": "Chalk sea-cliff islets",
+            "module": "chalk",
+            "top": 120,
+            "geology": "Chalk: a sheer white sea cliff on a wave-cut rock platform; no beach",
+            "shelf": {
+              "w": 45,
+              "kind": "rock"
+            }
           },
           {
             "id": "wall-s1",
@@ -268,20 +350,34 @@
             "c": [-1960, 360],
             "r": [250, 65],
             "rot": 78,
-            "seed": 46,
+            "seed": 43,
             "rough": 0.1,
-            "biome": "Chalk sea-cliff islets"
+            "biome": "Chalk sea-cliff islets",
+            "module": "chalk",
+            "top": 120,
+            "geology": "Chalk: a sheer white sea cliff on a wave-cut rock platform; no beach",
+            "shelf": {
+              "w": 45,
+              "kind": "rock"
+            }
           },
           {
             "id": "wall-s2",
             "on": ["port"],
             "seen": 0,
             "c": [-1720, 760],
-            "r": [240, 65],
+            "r": [250, 65],
             "rot": 48,
-            "seed": 47,
+            "seed": 43,
             "rough": 0.1,
-            "biome": "Chalk sea-cliff islets"
+            "biome": "Chalk sea-cliff islets",
+            "module": "chalk",
+            "top": 120,
+            "geology": "Chalk: a sheer white sea cliff on a wave-cut rock platform; no beach",
+            "shelf": {
+              "w": 45,
+              "kind": "rock"
+            }
           },
           {
             "id": "port-isle",
@@ -291,7 +387,27 @@
             "r": [360, 240],
             "seed": 48,
             "rough": 0.15,
-            "biome": "Harbour on a cliff-top island"
+            "biome": "Harbour on a cliff-top island",
+            "top": 3,
+            "geology": "Harbour apron: made ground and quays at the cliff foot, sand beaches on the open sides",
+            "shelf": {
+              "w": 50,
+              "kind": "sand"
+            }
+          },
+          {
+            "id": "port-top",
+            "on": ["port"],
+            "seen": 0,
+            "c": [-1255, 1115],
+            "r": [285, 190],
+            "seed": 48,
+            "rough": 0.15,
+            "biome": "Harbour on a cliff-top island",
+            "tier": true,
+            "top": 55,
+            "geology": "Sandstone cliff top: warm layered rock, the town above the harbour",
+            "tint": "#b08a62"
           },
           {
             "id": "notch-isle",
@@ -304,17 +420,31 @@
             "r": [140, 100],
             "seed": 49,
             "rough": 0.2,
-            "biome": "Sea arch and lantern"
+            "biome": "Sea arch and lantern",
+            "top": 6,
+            "geology": "Limestone reef with an eroded sea arch",
+            "shelf": {
+              "w": 60,
+              "kind": "rock"
+            },
+            "tint": "#bdb5a2"
           },
           {
             "id": "bell-land",
             "on": ["bell"],
             "seen": 2,
-            "c": [-1050, -450],
+            "c": [-1050, -850],
             "r": [120, 95],
             "seed": 3,
             "rough": 0.2,
-            "biome": "Bell Rock"
+            "biome": "Bell Rock",
+            "top": 14,
+            "geology": "Granite skerry with a pinnacle, in the bay shallows",
+            "shelf": {
+              "w": 120,
+              "kind": "sand"
+            },
+            "tint": "#8a8580"
           },
           {
             "id": "salt-land",
@@ -324,84 +454,160 @@
             "r": [170, 110],
             "seed": 5,
             "rough": 0.2,
-            "biome": "Salt flats"
+            "biome": "Salt flats",
+            "top": 3,
+            "geology": "Salt flats on a sand bar: tidal flats all round",
+            "shelf": {
+              "w": 140,
+              "kind": "sand"
+            }
           },
           {
             "id": "orig-land",
             "on": ["original"],
-            "c": [-3150, -1700],
-            "r": [230, 190],
-            "seed": 9,
-            "rough": 0.15,
-            "biome": "The Original Island"
+            "seen": 0,
+            "existing": true,
+            "poly": [
+              [-954, 0],
+              [-957, 11],
+              [-964, 21],
+              [-972, 28],
+              [-981, 33],
+              [-990, 37],
+              [-1000, 40],
+              [-1010, 39],
+              [-1021, 36],
+              [-1031, 31],
+              [-1036, 21],
+              [-1041, 11],
+              [-1040, 0],
+              [-1100, -27],
+              [-1078, -45],
+              [-1082, -82],
+              [-1062, -107],
+              [-1030, -112],
+              [-1000, -116],
+              [-969, -116],
+              [-937, -109],
+              [-912, -88],
+              [-887, -65],
+              [-884, -31]
+            ],
+            "biome": "The Original Island (the classic island, as built)",
+            "geology": "As built: the classic island at the world origin, about 20 m high"
+          },
+          {
+            "id": "mainland",
+            "walk": false,
+            "horizon": true,
+            "seen": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "poly": [
+              [-4450, -3950],
+              [-4200, -2600],
+              [-4450, -1300],
+              [-4200, 0],
+              [-3700, 1150],
+              [-3050, 1850],
+              [-2350, 2450],
+              [-1800, 3250],
+              [-1300, 3800],
+              [-1300, 5400],
+              [-7000, 5400],
+              [-7000, -3950]
+            ],
+            "biome": "Mainland backdrop: a coast and a city, never reached",
+            "top": 220,
+            "geology": "Mainland: coastal hills rising to a 220 m ridge; a city on the bay facing High Port"
           }
         ],
         "terrain": [
           {
             "kind": "shoal",
             "land": "bell-land",
-            "c": [-1000, -480],
-            "r": [520, 420],
+            "c": [-1020, -560],
+            "r": [430, 380],
             "label": "Sickle Bay shallows",
-            "labelAt": [-650, -820]
+            "labelAt": [-640, -700]
           },
           {
             "kind": "forest",
             "land": "canopy-isle",
             "c": [-2070, -300],
             "r": [300, 240],
-            "seed": 4
+            "seed": 4,
+            "h": 150
           },
           {
             "kind": "cliff",
             "land": "wall-n1",
             "pts": [
-              [-1317, -1651],
-              [-1430, -1471],
-              [-1542, -1291]
+              [-1322, -1654],
+              [-1435, -1474],
+              [-1547, -1294]
             ],
             "label": "White Wall islets, 120 m",
-            "labelAt": [-2150, -1450]
+            "labelAt": [-2250, -1500]
           },
           {
             "kind": "cliff",
             "land": "wall-n2",
             "pts": [
-              [-1647, -1214],
-              [-1727, -1017],
-              [-1806, -820]
+              [-1653, -1215],
+              [-1732, -1019],
+              [-1812, -822]
+            ]
+          },
+          {
+            "kind": "cliff",
+            "land": "wall-cn",
+            "pts": [
+              [-1888, -750],
+              [-1967, -554],
+              [-2047, -357]
+            ]
+          },
+          {
+            "kind": "cliff",
+            "land": "wall-cs",
+            "pts": [
+              [-2032, -229],
+              [-2050, -17],
+              [-2069, 194]
             ]
           },
           {
             "kind": "cliff",
             "land": "wall-s1",
             "pts": [
-              [-1969, 145],
-              [-1925, 353],
-              [-1881, 560]
+              [-1975, 146],
+              [-1931, 354],
+              [-1887, 561]
             ]
           },
           {
             "kind": "cliff",
             "land": "wall-s2",
             "pts": [
-              [-1830, 584],
-              [-1693, 736],
-              [-1557, 888]
+              [-1840, 582],
+              [-1698, 740],
+              [-1556, 897]
             ]
           },
           {
             "kind": "gorge",
-            "land": "stack-w",
+            "land": "stack-s",
             "pts": [
-              [-1138, -2060],
-              [-1140, -1900],
-              [-1136, -1740]
+              [-1249, -2076],
+              [-1103, -1988],
+              [-957, -1900]
             ]
           },
           {
             "kind": "cliff",
-            "land": "port-isle",
+            "land": "port-top",
             "pts": [
               [-1500, 1000],
               [-1400, 880],
@@ -412,10 +618,29 @@
             "kind": "cliff",
             "land": "home-land",
             "pts": [
-              [-240, 120],
-              [-130, 160],
-              [0, 155]
+              [-200, 40],
+              [-180, 72],
+              [-150, 110]
             ]
+          },
+          {
+            "kind": "pier",
+            "land": "port-isle",
+            "label": "High Port harbour",
+            "labelAt": [-560, 1300],
+            "pts": [
+              [-860, 905],
+              [-700, 880],
+              [-610, 990],
+              [-640, 1130],
+              [-690, 1215]
+            ]
+          },
+          {
+            "kind": "label",
+            "land": "mainland",
+            "label": "The mainland: a city across the water, never reached",
+            "labelAt": [-3600, 2700]
           }
         ],
         "places": [
@@ -423,7 +648,7 @@
             "id": "gorge",
             "name": "High Gorge",
             "kind": "branch",
-            "at": [-1150, -1900],
+            "at": [-1103, -1988],
             "reach": {
               "c": "A",
               "s": [3, 5]
@@ -431,7 +656,7 @@
             "seen": 2,
             "la": "n",
             "gives": "Copper. The powered pick and a longer hook reel.",
-            "note": "A town on a sea stack split in two, bridged across the 90 m gap. The split is the first thing you see from Ring Island’s aperture."
+            "note": "A town on a sea stack split in two, bridged across the 90 m gap. The gap points at Ring Island, so its aperture looks straight down the split."
           },
           {
             "id": "canopy",
@@ -451,7 +676,7 @@
             "id": "bell",
             "name": "Bell Rock",
             "kind": "stop",
-            "at": [-1050, -450],
+            "at": [-1050, -850],
             "reach": {
               "c": "B",
               "s": [3, 4]
@@ -476,11 +701,11 @@
             "id": "quay",
             "name": "Port Quay",
             "kind": "stop",
-            "at": [-990, 940],
+            "at": [-880, 960],
             "reach": 6,
             "seen": 1,
             "la": "e",
-            "gives": "The harbour's lower quay, at sea level under the cliff."
+            "gives": "High Port's harbour: quays, warehouses, a dock crane and moorings behind a breakwater."
           },
           {
             "id": "port",
@@ -491,7 +716,7 @@
             "seen": 0,
             "la": "s",
             "gives": "Town services, the harbour crane, the service bay and a faster engine. Recombines steel, footings, copper and fibre.",
-            "note": "On a cliff-top island; its crane is on the south-west skyline from Home on day one. Here the Port comes after both branches, so it takes both materials."
+            "note": "On a cliff-top island above a proper harbour; its 75 m crane, lit at the top, is on the south-west skyline from Home on day one. Boats come and go from the mainland. Here the Port comes after both branches, so it takes both materials."
           },
           {
             "id": "notch",
@@ -504,21 +729,18 @@
               "s": [3, 5]
             },
             "la": "w",
-            "gives": "A sea arch with a lantern and a telescope; the final crossing leaves from here."
+            "gives": "A sea arch with a lantern and a telescope on the far side of the Wall. Its telescope finds the mainland city; its lantern lights the causeway across the bay."
           },
           {
             "id": "original",
             "name": "Original Island",
             "kind": "ending",
-            "at": [-3150, -1700],
+            "at": [-990, -40],
             "reach": 8,
-            "seen": {
-              "c": "A",
-              "s": [3, 5]
-            },
+            "seen": 0,
             "la": "s",
             "gives": "The Boogler.",
-            "note": "A lighthouse blinking beyond the Wall, seen from the Gorge's rim."
+            "note": "The classic island at the world origin, in Sickle Bay: seen across the water from the first minute, reached last, by the lantern causeway from Bell Rock (Breath of the Wild's castle)."
           }
         ],
         "lines": [
@@ -537,7 +759,7 @@
               [330, -1120],
               [-150, -1450],
               [-650, -1780],
-              [-1150, -1900]
+              [-1103, -1988]
             ],
             "note": "A long trestle from Ring Island out to the split stack."
           },
@@ -554,8 +776,8 @@
             },
             "pts": [
               [330, -1120],
-              [-300, -820],
-              [-1050, -450]
+              [-300, -1000],
+              [-1050, -850]
             ],
             "note": "Only built if Canopy Town is first; if it's second you go by the shortcut."
           },
@@ -571,10 +793,11 @@
               "s": [3, 5]
             },
             "pts": [
-              [-1050, -450],
-              [-1600, -380],
+              [-1050, -850],
+              [-1600, -600],
               [-2100, -300]
-            ]
+            ],
+            "note": "Into Canopy Town through the 70 m cleft between the two chalk headlands."
           },
           {
             "id": "bay-cut",
@@ -586,8 +809,8 @@
             "stage": 4,
             "pts": [
               [-199, 10],
-              [-600, -200],
-              [-1050, -450]
+              [-600, -420],
+              [-1050, -850]
             ],
             "note": "Straight across the bay from the West landing: the Dark Souls lift. When Canopy Town is first, its ride drops from 4.1 km to 2.0 km."
           },
@@ -603,9 +826,9 @@
               "s": [4, 5]
             },
             "pts": [
-              [-1050, -450],
-              [-1080, -1100],
-              [-1150, -1900]
+              [-1050, -850],
+              [-1080, -1350],
+              [-1103, -1988]
             ],
             "note": "A trestle from Bell Rock that climbs onto the stacks, so the Gorge also comes home through the hub."
           },
@@ -618,11 +841,11 @@
             "style": "tunnel",
             "stage": 6,
             "pts": [
-              [-150, 120],
-              [-300, 400],
+              [-185, 72],
+              [-330, 300],
               [-450, 700]
             ],
-            "note": "Through the cave under Home's south cliffs."
+            "note": "Through the cave in the sandstone face you see from the West landing."
           },
           {
             "id": "salt-quay",
@@ -635,8 +858,9 @@
             "pts": [
               [-450, 700],
               [-700, 880],
-              [-990, 940]
-            ]
+              [-880, 960]
+            ],
+            "note": "Along the breakwater into the harbour."
           },
           {
             "id": "lift",
@@ -647,7 +871,7 @@
             "style": "incline",
             "stage": 6,
             "pts": [
-              [-990, 940],
+              [-880, 960],
               [-1150, 1050],
               [-1300, 1180]
             ]
@@ -663,9 +887,10 @@
               [-1300, 1180],
               [-1720, 760],
               [-1960, 360],
+              [-2080, -20],
               [-2100, -300]
             ],
-            "note": "Hops along the tops of the chalk islets on short bridges.",
+            "note": "Hops along the tops of the chalk islets on short bridges, down into Canopy Town.",
             "style": "sea"
           },
           {
@@ -677,10 +902,10 @@
             "stage": 7,
             "pts": [
               [-2100, -300],
-              [-1950, -700],
+              [-1995, -565],
               [-1760, -1030],
               [-1460, -1490],
-              [-1150, -1900]
+              [-1103, -1988]
             ],
             "note": "Along the northern chalk islets and over the deep gap to the stacks on crystal collars. With the south half, the ring closes: the first lap.",
             "style": "sea"
@@ -702,31 +927,32 @@
           },
           {
             "id": "final",
-            "name": "Final crossing",
-            "from": "notch",
+            "name": "The lantern causeway",
+            "from": "bell",
             "to": "original",
             "kind": "final",
             "style": "sea",
             "stage": 8,
             "pts": [
-              [-2620, -1000],
-              [-2950, -1350],
-              [-3150, -1700]
-            ]
+              [-1050, -850],
+              [-1030, -480],
+              [-1000, -116]
+            ],
+            "note": "Over the shallows from Bell Rock to The Boogler's island, lit when the Notch lantern is set."
           }
         ],
         "gates": [
           {
             "id": "cave",
-            "name": "Sea cave under the south cliffs",
+            "name": "Sea cave in the sandstone face",
             "kind": "ability",
-            "at": [-170, 150],
+            "at": [-180, 72],
             "needs": "Powered pick (High Gorge)",
             "seen": 0,
             "open": 6,
             "leads": "saltpan",
             "doubleBack": true,
-            "note": "Seen from the West landing on day one: a cracked wall with daylight behind it. Breaking it is the double-back. The line runs through it to the Saltpan and the Port Quay, and the bay shortcut makes the trip home quick."
+            "note": "Seen from the West landing on day one, 65 m away: a cracked wall in the cove's sandstone face with daylight behind it. Breaking it is the double-back. The line runs through it to the Saltpan and High Port's harbour, and the bay shortcut makes the trip home quick."
           },
           {
             "id": "crane",
@@ -737,13 +963,13 @@
             "seen": 1,
             "open": 6,
             "leads": "port",
-            "note": "Lifts the line from the quay up to the cliff-top town."
+            "note": "The 75 m crane on the cliff edge lifts the line from the harbour quay up to the town."
           },
           {
             "id": "collar",
             "name": "Deep gap at the stacks",
             "kind": "build",
-            "at": [-1300, -1700],
+            "at": [-1290, -1760],
             "needs": "Crystal collars (seeds from Bell Rock and the Saltpan)",
             "seen": 2,
             "open": 7,
@@ -762,14 +988,14 @@
             },
             "open": 8,
             "leads": "notch",
-            "note": "A ledge above Canopy Town’s west shore that you see on your first visit; from it you glide to the arch."
+            "note": "A ledge above Canopy Town's west shore that you see on your first visit; from it you glide to the arch."
           }
         ],
         "secrets": [
           {
             "id": "falls",
             "name": "Cave in the stack",
-            "at": [-1010, -1760],
+            "at": [-1070, -1965],
             "seen": 2,
             "found": {
               "c": "A",
@@ -779,11 +1005,11 @@
           },
           {
             "id": "trestle",
-            "name": "Sunken trestle",
-            "at": [-760, -260],
+            "name": "Sunken causeway",
+            "at": [-860, -560],
             "seen": 4,
             "found": 4,
-            "note": "Seen from the shortcut train: an older railway's ruin in the shallows, pointing at the Notch."
+            "note": "Seen from the shortcut train: an older line's ruin in the shallows, pointing at The Boogler's island."
           }
         ],
         "sights": [
@@ -791,28 +1017,25 @@
             "from": "home",
             "to": "port",
             "at": 0,
-            "note": "The cliff-top crane on the south-west skyline"
+            "note": "The lit cliff-top crane on the south-west skyline"
+          },
+          {
+            "from": "home",
+            "to": "original",
+            "at": 0,
+            "note": "The Boogler's island across the bay, with its lighthouse"
           },
           {
             "from": "ring",
             "to": "gorge",
             "at": 2,
-            "note": "The Gorge waterfall, seen from the aperture"
+            "note": "The Gorge split, end-on from the aperture"
           },
           {
             "from": "ring",
             "to": "canopy",
             "at": 2,
-            "note": "Giant crowns at the foot of the Wall"
-          },
-          {
-            "from": "gorge",
-            "to": "original",
-            "at": {
-              "c": "A",
-              "s": [3, 5]
-            },
-            "note": "A lighthouse beyond the Wall"
+            "note": "Giant crowns rising over the Wall"
           }
         ],
         "stages": [
@@ -824,7 +1047,7 @@
           {
             "t": 4.4,
             "title": "First branch, and the bay shortcut",
-            "note": "Home to Bell Rock straight across the bay: the long way round becomes a short ride."
+            "note": "Home to Bell Rock straight across the bay, past The Boogler's island: the long way round becomes a short ride."
           },
           {
             "t": 5.4,
@@ -834,20 +1057,150 @@
           {
             "t": 6.6,
             "title": "Double back: the sea cave and High Port",
-            "note": "The powered pick opens the cave under Home's south cliffs that you saw on day one. The line runs past the Saltpan to the Port Quay, and the crane lifts it to the town you have been looking at all game."
+            "note": "The powered pick opens the cave in the sandstone face you have seen from the West landing since day one. The line runs past the Saltpan and along the breakwater into High Port's harbour, and the crane lifts it to the town you have been looking at all game. Boats come and go from the mainland."
           },
           {
             "t": 7.3,
             "title": "The White Wall line closes the ring",
-            "note": "The line hops along the chalk islets from High Port to Canopy Town and on to the stacks, over the last deep gap on crystal collars. The first lap."
+            "note": "The line hops along the chalk islets from High Port, down through the cleft into Canopy Town and on to the stacks, over the last deep gap on crystal collars. The first lap; from the wall tops, the mainland city on the horizon."
           },
           {
             "t": 8.2,
-            "title": "The Notch and the Original Island",
-            "note": "Glide from the Canopy ledge to the sea arch, set the lantern, cross to The Boogler."
+            "title": "The Notch lantern and the causeway",
+            "note": "Glide from the Canopy ledge to the sea arch and light its lantern. Across the bay the causeway lamps answer, and the last line runs from Bell Rock over the shallows to The Boogler's island, the one you have seen since the first minute."
           }
         ],
-        "art": "The 4.3 km² crescent becomes a chain of small islands, each small enough to dress densely, with sea between them. The four chalk islets are one modular kit placed four times, so the White Wall costs one set piece, not four. Half the track is over water, and from most stations the ground in view is mostly sea. One island is resident at a time, with its neighbours as silhouettes."
+        "art": "The 4.3 km² crescent becomes a chain of small islands, each small enough to dress densely, with sea between them. The six chalk islets are one modular kit placed six times, so the White Wall costs one set piece, not six. Half the track is over water, and from most stations the ground in view is mostly sea. The mainland is a far layer of low silhouettes beyond the fog's reach from Home; the Original Island already exists.",
+        "landmarks": [
+          {
+            "id": "crane",
+            "kind": "crane",
+            "at": [-1150, 1050],
+            "base": 55,
+            "h": 75,
+            "jib": 70,
+            "light": true,
+            "note": "High Port's harbour crane on the cliff edge, lit at the top: the day-one skyline landmark"
+          },
+          {
+            "id": "dock-crane",
+            "kind": "crane",
+            "at": [-890, 1040],
+            "base": 3,
+            "h": 28,
+            "jib": 30
+          },
+          {
+            "id": "lantern",
+            "kind": "arch",
+            "at": [-2620, -1000],
+            "base": 6,
+            "h": 58,
+            "span": 34,
+            "bearing": 270,
+            "lantern": true,
+            "note": "Lantern Notch: a sea arch facing the mainland, with a lantern and a telescope"
+          },
+          {
+            "id": "bell",
+            "kind": "pinnacle",
+            "at": [-1030, -870],
+            "base": 14,
+            "h": 40
+          },
+          {
+            "id": "falls",
+            "kind": "waterfall",
+            "land": "stack-s",
+            "h": 85
+          },
+          {
+            "id": "saltworks",
+            "kind": "saltworks",
+            "at": [-450, 700],
+            "base": 3,
+            "note": "Salt stacks, drying sheds and a wind pump: the Saltpan reads from the line and the harbour"
+          },
+          {
+            "id": "causeway",
+            "kind": "lamps",
+            "line": "final",
+            "every": 60,
+            "h": 6
+          }
+        ],
+        "harbour": {
+          "place": "quay",
+          "breakwater": [
+            [-860, 905],
+            [-700, 880],
+            [-610, 990],
+            [-640, 1130],
+            [-690, 1215]
+          ],
+          "head": [-690, 1215],
+          "mouth": [-790, 1250],
+          "quay": [
+            [-858, 940],
+            [-852, 1020],
+            [-856, 1100],
+            [-866, 1180]
+          ],
+          "warehouses": [
+            [-925, 1000, 34, 18, 12],
+            [-925, 1080, 34, 18, 12],
+            [-932, 1160, 30, 16, 10]
+          ],
+          "moorings": [
+            [-770, 960],
+            [-700, 1050],
+            [-760, 1130]
+          ],
+          "note": "A proper port: the breakwater carries the line in from the Saltpan, quays and warehouses on the apron, a dock crane, moorings in the basin, and a lit harbour mouth facing the mainland."
+        },
+        "backdrop": {
+          "land": "mainland",
+          "city": [-2950, 2400],
+          "towers": [
+            [-2900, 2330, 70],
+            [-2980, 2420, 110],
+            [-3060, 2380, 85],
+            [-2870, 2480, 55],
+            [-3120, 2500, 95],
+            [-3000, 2560, 60]
+          ],
+          "lighthouse": [-2700, 2150, 40],
+          "smoke": [-3200, 2520],
+          "note": "Seen from the far side of the Wall (High Port, Canopy Town, the Notch, the Gorge rim and the wall-top line) and not from Home, Ring Island or the bay: 3.3 km and more from Home, where the 3.6 km fog leaves it under 3% contrast, and behind the Wall and High Port from most of Home."
+        },
+        "ambient": [
+          {
+            "id": "cargo",
+            "name": "Cargo boat",
+            "kind": "cargo",
+            "speed": 5,
+            "phase": 0,
+            "pts": [
+              [-790, 1250],
+              [-1000, 1700],
+              [-2000, 2280],
+              [-2700, 2240]
+            ]
+          },
+          {
+            "id": "steamer",
+            "name": "Passenger steamer",
+            "kind": "steamer",
+            "speed": 7,
+            "phase": 0.45,
+            "pts": [
+              [-780, 1260],
+              [-1300, 1950],
+              [-2250, 2450],
+              [-2760, 2300]
+            ]
+          }
+        ]
       },
       {
         "id": "eight",
@@ -3673,6 +4026,7 @@
         gates: o.gates || [],
         secrets: o.secrets || [],
         sights: o.sights || [],
+        ambient: o.ambient || [],
         stages: [...c.stages, ...o.stages],
       };
     });
@@ -3754,7 +4108,9 @@
     const ART = new Map();
     function art(o) {
       if (ART.has(o.id)) return ART.get(o.id);
-      const fresh = o.land.filter((g) => g.id !== 'home-land');
+      // New land only: not Home, not land that already exists (the classic island), not a terrace drawn over another
+      // piece (counted once), not the far horizon (a silhouette layer beyond the fog from Home).
+      const fresh = o.land.filter((g) => g.id !== 'home-land' && !g.existing && !g.tier && !g.horizon);
       const walk = fresh.filter((g) => g.walk !== false);
       const back = fresh.filter((g) => g.walk === false);
       const onLand = (pt) => o.land.some((g) => inPoly(pt, g.pts));
@@ -3898,7 +4254,7 @@
       // land terrain
       const terrLabels = [];
       for (const t of o.terrain) {
-        if (t.kind === 'shoal' || t.kind === 'deep') {
+        if (t.kind === 'shoal' || t.kind === 'deep' || t.kind === 'label') {
           if (t.label) terrLabels.push([t.labelAt || t.c, t.label, o.landById[t.land], !!t.labelAt]);
           continue;
         }
@@ -3955,6 +4311,11 @@
           push(
             `<g opacity="${op}" fill="none" stroke-linecap="round"><path d="${smooth(t.pts, false)}" stroke="var(--cliff)" stroke-width="7" vector-effect="non-scaling-stroke"/><path d="${smooth(t.pts, false)}" stroke="var(--sea)" stroke-width="2.5" vector-effect="non-scaling-stroke"/></g>`,
           );
+        } else if (t.kind === 'pier') {
+          // a breakwater or quay: a thin strip of made land
+          push(
+            `<g opacity="${op}" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${straight(t.pts)}" stroke="var(--contour)" stroke-width="5" vector-effect="non-scaling-stroke"/><path d="${straight(t.pts)}" stroke="var(--land)" stroke-width="3" vector-effect="non-scaling-stroke"/></g>`,
+          );
         } else if (t.kind === 'river') {
           push(
             `<path d="${smooth(t.pts, false)}" fill="none" stroke="var(--sea-deep)" stroke-width="2.5" vector-effect="non-scaling-stroke" opacity="${op}"/>`,
@@ -3964,6 +4325,11 @@
           terrLabels.push([t.labelAt || (t.pts ? t.pts[Math.floor(t.pts.length / 2)] : t.c), t.label, g, !!t.labelAt]);
       }
 
+      // ambient boat routes: scenery, not lines (boats to the mainland)
+      for (const b of o.ambient)
+        push(
+          `<path d="${smooth(b.pts, false)}" fill="none" stroke="var(--ink-3)" stroke-opacity="0.55" stroke-width="1.2" stroke-dasharray="2 5" vector-effect="non-scaling-stroke"><title>${esc(b.name)}: ambient, to and from the mainland</title></path>`,
+        );
       // sightlines
       for (const v of o.sights) {
         const a = at(v.at);
