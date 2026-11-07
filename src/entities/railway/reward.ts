@@ -15,6 +15,8 @@ import { thump } from '../../render/machine-sfx.ts';
 import { T2_REWARD } from './reward-data.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { createRailwayTools, inReach } from './tools.ts';
+import { createAbilityArrival } from './ability-arrival.ts';
+import { createTrophyPlinth } from './trophy-plinth.ts';
 import { seatConductorHat } from '../../render/head-clearance.ts';
 
 const localCosmetics = new Set<string>();
@@ -43,6 +45,12 @@ export async function createRailwayReward(
   const first = await createStationReward(adapter, owner, reveal, 0, machineFrom);
   const second = await createStationReward(adapter, owner, reveal, 1, machineFrom);
   const tools = await createRailwayTools(adapter, owner, reveal, machineFrom);
+  // Shared abilities: the finder's card above; everyone's own arrival and Home's trophy (co-op abilities, option E).
+  const arrival = createAbilityArrival(adapter, owner, {
+    busy: reveal.gettingItem,
+    jump: () => tools.inspect(),
+  });
+  const plinth = await createTrophyPlinth(adapter, owner, arrival.seen, reveal.gettingItem);
   return {
     inspect() {
       const t1 = first.inspect(),
@@ -59,6 +67,8 @@ export async function createRailwayReward(
         tools: toolState,
         axeChest: toolState.axeChest,
         jumpDevice: toolState.jumpDevice,
+        arrival: arrival.inspect(),
+        plinth: plinth.inspect(),
         showing: reveal.gettingItem(),
       };
     },
@@ -69,6 +79,8 @@ export async function createRailwayReward(
       second.update(dt, now);
       tools.update(dt, now);
       reveal.updateGot(dt);
+      arrival.update(dt);
+      plinth.update(dt, now);
     },
     fixedPre: () => tools.fixedPre(),
     dispose() {
