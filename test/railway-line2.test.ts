@@ -412,32 +412,28 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
     rack = l().forge.rack;
   for (let t = 0; t <= LINE2_DEPOT.everyTicks && !l().depot; t++) advance(w, 1); // the cart's first trip
   assert.equal(l().depot, LINE2_DEPOT.load);
-  assert.equal(l().depotRails, LINE2_DEPOT.load);
+  assert.equal(l().depotRails, LINE2_DEPOT.rails, 'the cart holds all of the rails Q4 needs');
   const pours = railsHeld(w).poured - poured;
-  assert.equal(l().forge.rack, rack + pours - LINE2_DEPOT.load, 'the shelf rails left the forge rack');
+  assert.equal(l().forge.rack, rack + pours - LINE2_DEPOT.rails, 'the shelf rails left the forge rack');
   restore(w);
   assert.equal(act(w, 'a', 'rail.lever'), 1);
   assert.equal(line2GateOpen(w.s), true);
-  // Taking from the shelf: the back's room clips it; an empty shelf refuses.
+  // Taking from the shelf: the back's room clips it.
   const room = RAILWAY_T1.carry - railAccount(w.s, 'a')!.carry;
-  assert.equal(act(w, 'a', 'rail.depotRailTake'), Math.min(room, LINE2_DEPOT.load));
+  assert.equal(act(w, 'a', 'rail.depotRailTake'), room);
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 4 }), 4, 'logs go in with the gate down');
-  const shelfRails = railAccount(w.s, 'a')!.rails!;
-  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: shelfRails, kind: 2 }), shelfRails);
-  const rest = l().depotRails;
-  if (rest) assert.equal(act(w, 'b', 'rail.depotRailTake'), rest);
-  assert.equal(act(w, 'b', 'rail.depotRailTake'), 0, 'an empty shelf gives nothing');
-  if (railAccount(w.s, 'b')!.rails)
-    act(w, 'b', 'rail.deposit', { station: 'Q4', n: railAccount(w.s, 'b')!.rails!, kind: 2 });
+  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: room, kind: 2 }), room);
+  assert.equal(act(w, 'b', 'rail.depotRailTake'), RAILWAY_T1.carry, 'a full back of rails, no more');
+  assert.equal(act(w, 'b', 'rail.deposit', { station: 'Q4', n: 8, kind: 2 }), 8);
   railsHeld(w);
-  // The next load tops the shelf up toward the bill. Rails carried from the forge by hand fill the bill first, so the
-  // shelf's load is left over when Q4 funds: it goes back to the forge rack, in that one deposit.
-  advance(w, LINE2_DEPOT.everyTicks + 1);
-  const owed = 16 - l().jobs[3]!.railStock;
-  assert.equal(l().depotRails, Math.min(LINE2_DEPOT.load, owed));
-  rails(w, 'b', 'Q4', owed);
+  // Rails carried from the forge by hand fill the bill first, so the shelf's rest is left over when Q4 funds: it goes
+  // back to the forge rack, in that one deposit. Meanwhile the cart owes the shelf nothing more.
+  rails(w, 'b', 'Q4', 16 - l().jobs[3]!.railStock);
   assert.equal(l().jobs[3]!.railStock, 16);
-  assert.ok(l().depotRails > 0, 'a shelf load is left over');
+  const shelfLeft = l().depotRails;
+  assert.ok(shelfLeft > 0, 'shelf rails are left over');
+  advance(w, LINE2_DEPOT.everyTicks + 1);
+  assert.equal(l().depotRails, shelfLeft, 'no more rails come to a stretch whose rails are in');
   const leftover = l().depotRails,
     before = l().forge.rack;
   logs(w, 'a', 'Q4', 16 - l().jobs[3]!.stock);
@@ -449,7 +445,7 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   finishQ(w, 3);
   assert.equal(line2Completed(w.s), 4);
   assert.equal(line2Active(w.s), -1);
-  assert.equal(act(w, 'a', 'rail.depotRailTake'), 0);
+  assert.equal(act(w, 'a', 'rail.depotRailTake'), 0, 'an empty shelf gives nothing');
   const c = railsHeld(w);
   assert.equal(c.stations, 6 + 12 + 12 + 16);
   assert.equal(railCounts(w.s).total, 3910 + railCounts(w.s).produced);

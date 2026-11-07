@@ -647,10 +647,10 @@ function layLine2(w: World, tick: number) {
     if (clock.depotLast < 0) clock.depotLast = tick;
     const { logs, rails, owed } = depotNeed(w, k, j);
     if ((logs || owed) && tick - clock.depotLast >= DEPOT.everyTicks) {
-      // One load: up to DEPOT.load logs minted at the camp, and up to DEPOT.load rails moved off the forge rack. With
+      // One load: up to DEPOT.load logs minted at the camp, and up to DEPOT.rails rails moved off the forge rack. With
       // the logs in and the rack short of a load, the cart waits for the forge (its clock is not reset).
-      const load = Math.min(DEPOT.load, rails);
-      if ((logs || load >= Math.min(DEPOT.load, owed)) && depotLoad(w, k, Math.min(DEPOT.load, logs), load))
+      const load = Math.min(DEPOT.rails, rails);
+      if ((logs || load >= Math.min(DEPOT.rails, owed)) && depotLoad(w, k, Math.min(DEPOT.load, logs), load))
         clock.depotLast = tick;
     } else if (!logs && !owed) clock.depotLast = tick;
   }
@@ -722,10 +722,10 @@ function awayCredit(w: World, ticks: number, tick: number) {
   const j = k >= 0 ? w.get(QJob, qjob(w, k))! : null;
   if (spec?.depot && j && j.start < 0) {
     // The cart's trips while away: logs minted and shelf rails moved off the (credited) forge rack, as the tick would.
-    const loads = Math.floor(ticks / DEPOT.everyTicks) * DEPOT.load;
+    const trips = Math.floor(ticks / DEPOT.everyTicks);
     const { logs, rails } = depotNeed(w, k, j);
-    const n = Math.min(logs, loads);
-    depotLoad(w, k, n, Math.min(rails, loads));
+    const n = Math.min(logs, trips * DEPOT.load);
+    depotLoad(w, k, n, Math.min(rails, trips * DEPOT.rails));
     made += n;
     w.mut(RailClock, railId(w))!.depotLast = tick;
   }

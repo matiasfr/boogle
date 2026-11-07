@@ -258,11 +258,11 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     assert.equal(line2().pack, true);
     // The cart's first trip to the Q4 rack; the shelf is taken from beside the frame, not from the forge.
     await ticks(LINE2_DEPOT.everyTicks + 2);
-    assert.equal(line2().depotRails, LINE2_DEPOT.load);
+    assert.equal(line2().depotRails, LINE2_DEPOT.rails);
     const far = await edit('s1', { op: 'rail.depotRailTake' }, [LINE2_FORGE.x, 0, LINE2_FORGE.z]);
     assert.equal(far.status, 'rejected');
     const take = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
-    assert.equal(take.accepted, LINE2_DEPOT.load);
+    assert.equal(take.accepted, LINE2_DEPOT.rails, 'a back of 16 takes them all');
     // The quarry gate is up: the frame takes nothing.
     const shut = await edit('s1', { op: 'rail.deposit', station: 'Q4', n: 8, kind: 2 }, [q4.x, 0, q4.z]);
     assert.equal(shut.status, 'noop');
@@ -274,7 +274,7 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     host = create();
     await host.whenReady();
     assert.equal(line2().pack, true);
-    assert.equal(host.rules.railway.account('a')!.rails, LINE2_DEPOT.load);
+    assert.equal(host.rules.railway.account('a')!.rails, LINE2_DEPOT.rails);
     assert.equal(railCounts(host.rules.railway.railway).rails!.total, rails.total);
   } finally {
     await host.close({ save: false }).catch(() => {});
