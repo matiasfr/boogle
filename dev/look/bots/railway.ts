@@ -310,7 +310,11 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     if (!second) require(await bot.use(machine.x, machine.z, 'wake the machine', /^Wake it up$/), 'wake offered');
     await until(() => read().phase === 'idle', 'accepted wake ready');
     mark('awake');
-    await dismiss('multi-axe reveal');
+    // Option E: the card is the waker's alone; a friend gets the flourish as the wake ends, and is never held.
+    if (second) {
+      await until(() => read().reward.arrival.seen.includes('multi-axe'), "friend's multi-axe flourish played");
+      require(!read().reward.showing, 'no multi-axe card for a friend’s wake');
+    } else await dismiss('multi-axe reveal');
     mark('T1 multi-axe dismissed');
     if (second) await until(() => job(0).delivered === 16, 'friend supplied sixteen logs');
     await logs(0, coop ? (second ? 1 : 2) : 3);
@@ -709,7 +713,10 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     // A single press can be rejected before the host receives the settled Owner position.
     // Repeat ordinary input for a bounded window; acceptance remains the required beat.
     require(await bot.work(() => read().axe, 5000, 380), 'proper axe accepted after bounded retries');
-    await dismiss('proper axe reveal');
+    // Whoever opened it gets the card; a friend gets the flourish.
+    await bot.wait(1200);
+    if (read().reward.showing || !coop) await dismiss('proper axe reveal');
+    else require(read().reward.arrival.seen.includes('axe'), "friend's proper axe flourish played");
     await checkpoint('proper axe earned at the forge');
     await walk(hardwood.x, hardwood.z, 2.6);
     face(hardwood.x, hardwood.z);

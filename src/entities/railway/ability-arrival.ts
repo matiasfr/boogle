@@ -4,7 +4,13 @@
 // at the ankles, the pickup's two notes and the charge mark lit by Buddy's feet. A friend who wasn't there gets that
 // flourish once on their first landing. All Local: what this player has been shown lives in this browser only.
 //
-//   seen(key) / remember(key)   this player's record per railway room: 'jump', 'hook', 'jump-taught', 'plinth:jump'
+//   seen(key) / remember(key)   this player's record per railway room: 'jump', 'hook', 'multi-axe', 'axe',
+//                               'jump-taught', 'plinth:jump'
+//
+// The axes follow the same rule. The multi-axe is the machine's wake: the player who pressed wake gets the card (once
+// the server has accepted it, reward.ts); everyone else gets the flourish as the wake finishes. The proper axe is
+// the chest's: the opener gets the card, everyone else the flourish. An axe has no charge ring: a small model of it
+// pops up over Buddy and settles away.
 //   update(dt)                  late flourishes, the charge mark and the first-jump teach
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
@@ -24,10 +30,23 @@ import { toScreen } from '../../render/scene.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 
 type Inspection = ReturnType<RailwayAdapter['inspect']>;
-const ABILITIES: { key: string; op: RailwayAccepted['op']; cue: PlaceCue; has: (s: Inspection) => boolean }[] = [
+const AWAKE = (s: Inspection) => s.awake >= 0 && s.phase !== 'asleep' && s.phase !== 'waking';
+const ABILITIES: {
+  key: string;
+  op: RailwayAccepted['op'];
+  cue: PlaceCue;
+  has: (s: Inspection) => boolean;
+  /** An axe's flourish is a floating model of it rather than a charge mark; the model comes from the caller. */
+  badge?: boolean;
+  /** Shown when the state turns (the wake's end), not when the event arrives. */
+  atState?: boolean;
+}[] = [
   { key: 'jump', op: 'rail.jump', cue: 'pickupJump', has: (s) => s.jump },
   { key: 'hook', op: 'rail.hook', cue: 'pickupHook', has: (s) => s.line2.hook },
+  { key: 'multi-axe', op: 'rail.wake', cue: 'pickupHook', has: AWAKE, badge: true, atState: true },
+  { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: (s) => !!s.axe, badge: true },
 ];
+const BADGE_S = 1.5;
 const TEAL = new THREE.Color('#39e6c6');
 const FLASH_S = 1.6; // the mark stays lit this long after a flourish
 const FILL_S = 0.9; // and this long after it fills on landing
@@ -75,6 +94,8 @@ export function createAbilityArrival(
     busy: () => boolean;
     /** The second jump's charge (tools.ts fixedPre): whether one is left, and whether it is being spent now. */
     jump: () => { charge: boolean; second: boolean };
+    /** A fresh model of each axe for its flourish (shared materials; this file never disposes them). */
+    axeModel: (key: string) => THREE.Object3D | null;
   },
 ) {
   const seen = createSeen();
@@ -82,6 +103,7 @@ export function createAbilityArrival(
   /** Seconds each ability has been missing from a ready world: a fresh start, once it lasts (a resync's frozen view
    * can briefly show an older state). */
   const missing = new Map<string, number>();
+  const watched = new Set<string>();
 
   // The charge mark: a teal ring under Buddy's feet in the air, filled while the second jump is there to spend.
   const geometries = [
@@ -118,6 +140,15 @@ export function createAbilityArrival(
   const at = new THREE.Vector3();
   const CHIP_OFFSET = new THREE.Vector3(0.55, 0.15, 0);
 
+  // An axe's flourish: its model rising over Buddy's head, popping in and shrinking away, a little spin.
+  const badge = new THREE.Group();
+  badge.visible = false;
+  owner.root.add(badge);
+  const BADGE_SIZE = 1.1; // m across, whatever it is
+  const box = new THREE.Box3();
+  const extent = new THREE.Vector3();
+  let badgeT = 0;
+
   let flash = 0,
     pulse = 0,
     deferred = false,
@@ -153,6 +184,29 @@ export function createAbilityArrival(
         drag: 1.4,
       });
     rippleT = RIPPLE_S;
+    if (ability.badge) {
+      const model = env.axeModel(key);
+      if (model) {
+        badge.clear();
+        // Its bounds sit where the shared geometry was built, not under Buddy: never cull it by them.
+        model.traverse((o) => {
+          o.frustumCulled = false;
+          o.castShadow = false;
+        });
+        model.position.set(0, 0, 0);
+        model.rotation.set(0, 0, 0);
+        model.scale.setScalar(1);
+        box.setFromObject(model);
+        box.getSize(extent);
+        model.scale.setScalar(BADGE_SIZE / Math.max(extent.x, extent.y, extent.z, 0.01));
+        box.setFromObject(model);
+        model.position.sub(box.getCenter(extent));
+        badge.add(model);
+        badgeT = BADGE_S;
+        if (!reducedMotion)
+          rewardSparkles(at.x, at.y + 2.4, at.z, 14, 1.4, { color: TEAL, life: 0.5, size: 0.1, gravity: 0.3 });
+      }
+    }
     if (key === 'jump') {
       flash = FLASH_S;
       // In the air the mark shows hollow and fills on landing (tools.ts never adds a jump mid-flight).
@@ -170,7 +224,12 @@ export function createAbilityArrival(
       if (ability.key === 'jump') seen.add('jump-taught');
       return;
     }
+    if (ability.atState) return; // the wake's flourish comes as it ends (update)
     if (!seen.has(ability.key)) flourish(ability.key, false);
+  });
+  // A wake you pressed was predicted: if the server refuses it, there is no card, and nothing is marked as shown.
+  const offCorrected = adapter.onCorrected((c) => {
+    if (c.event.op === 'rail.wake') seen.forget('multi-axe');
   });
 
   const api = {
@@ -180,6 +239,7 @@ export function createAbilityArrival(
       keys: [...stats.keys],
       mark: mark.visible ? (fill.visible ? 'filled' : 'hollow') : 'off',
       teaching: pulse > 0,
+      badge: badge.visible ? [badge.position.x, badge.position.y, badge.position.z, badge.scale.x] : null,
       seen: ABILITIES.filter((a) => seen.has(a.key)).map((a) => a.key),
     }),
     update(dt: number) {
@@ -192,6 +252,8 @@ export function createAbilityArrival(
       }
       for (const a of ABILITIES) {
         const gone = a.has(state) ? 0 : (missing.get(a.key) ?? 0) + dt;
+        // Seen going from missing to there in this session: its flourish is the live one, not a late one.
+        if (!gone && (missing.get(a.key) ?? 0) > 0) watched.add(a.key);
         missing.set(a.key, gone);
         if (gone > 3) seen.forget(a.key);
       }
@@ -202,7 +264,7 @@ export function createAbilityArrival(
       if (grounded && free && !lateWait) {
         const missed = ABILITIES.find((a) => a.has(state) && !seen.has(a.key));
         if (missed) {
-          flourish(missed.key, true);
+          flourish(missed.key, !(missed.atState && watched.has(missed.key)));
           lateWait = 1.2;
         }
       }
@@ -252,6 +314,24 @@ export function createAbilityArrival(
         const beat = pulse > 0 && !reducedMotion ? 1 + 0.35 * Math.abs(Math.sin((TEACH_S - pulse) * 9)) : 1;
         mark.scale.setScalar(pop * beat);
       }
+      badgeT = Math.max(0, badgeT - dt);
+      badge.visible = badgeT > 0;
+      if (badge.visible) {
+        const u = 1 - badgeT / BADGE_S;
+        // Pops in with a small overshoot, hangs, then shrinks away upward.
+        const k =
+          u < 0.15
+            ? 1.25 * (u / 0.15)
+            : u < 0.25
+              ? 1.25 - 0.25 * ((u - 0.15) / 0.1)
+              : u < 0.75
+                ? 1
+                : 1 - (u - 0.75) / 0.25;
+        feet(badge.position);
+        badge.position.y += 2.1 + (reducedMotion ? 0 : 0.35 * u);
+        badge.scale.setScalar(Math.max(0.001, k));
+        badge.rotation.y = reducedMotion ? 0 : u * 5;
+      }
       rippleT = Math.max(0, rippleT - dt);
       ripple.visible = rippleT > 0 && !reducedMotion;
       if (ripple.visible) {
@@ -270,6 +350,8 @@ export function createAbilityArrival(
     },
     dispose() {
       offAccepted();
+      offCorrected();
+      badge.removeFromParent();
       chip.remove();
       mark.removeFromParent();
       ripple.removeFromParent();

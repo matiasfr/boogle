@@ -9,7 +9,7 @@ import { me } from '../../player/player.ts';
 import { inputState } from '../../player/input-state.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { GRAVITY, PLAYER_MASS, FIXED } from '../../constants.ts';
-import { T1_CRATE_PARTS } from '../../render/t1-reward-parts.ts';
+import { T1_CRATE_PARTS, MULTI_AXE_REWARD } from '../../render/t1-reward-parts.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { AXE_REWARD, JUMP_REWARD } from './reward-data.ts';
@@ -141,6 +141,9 @@ export async function createRailwayTools(
   ]);
   geometries.push(jumpPrize);
   const properModel = axes.makeAxeModel('proper-multi');
+  // The multi-axe is carried by the wake's card (reward.ts); its model is here so a friend's flourish can show it too.
+  const multiPrize = shapes.merged(MULTI_AXE_REWARD.parts);
+  geometries.push(multiPrize);
   let axeReveals = 0,
     jumpReveals = 0,
     jumps = 0;
@@ -155,6 +158,8 @@ export async function createRailwayTools(
   const offAccepted = adapter.onAccepted((event) => {
     if (event.accepted <= 0) return;
     if (event.op === 'rail.axe') {
+      // The opener gets the card; everyone else's flourish is ability-arrival.ts.
+      if (!mine(event)) return;
       if (reveal.youGot({ key: 'axe', ...AXE_REWARD, model: properModel.clone(true), from: chestAt.clone() }))
         axeReveals++;
     }
@@ -178,6 +183,12 @@ export async function createRailwayTools(
     return s.ready && !s.axe && (s.line2?.forge.lit ?? -1) >= 0;
   };
   const api = {
+    /** A fresh model of an axe for a friend's flourish (materials are shared with the cards). */
+    axeModel(key: string): THREE.Object3D | null {
+      if (key === 'axe') return properModel.clone(true);
+      if (key === 'multi-axe') return new THREE.Mesh(multiPrize, material);
+      return null;
+    },
     inspect: () => ({
       axeChest: { x: chestAt.x, y: chestAt.y, z: chestAt.z, available: axeAvailable() },
       jumpDevice: {
