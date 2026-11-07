@@ -59,6 +59,15 @@ const finderAtDevice = (r: number) => {
   const p = other();
   return !!p && Math.hypot(p.x - DEVICE.x, p.z - DEVICE.z) < r && Math.abs(p.y - PLAYER_R - DEVICE.y) < 3;
 };
+/** &plinthCam=1: both tabs frame the Home plinth from the same fixed camera (each still draws its own show). */
+function plinthCam(plinth: { x: number; y: number; z: number }) {
+  if (query.get('plinthCam') !== '1') return;
+  window.__debugCam?.set(
+    [plinth.x + 6.5, plinth.y + 3.4, plinth.z + 8],
+    [plinth.x - 0.4, plinth.y + 1, plinth.z + 1.6],
+    55,
+  );
+}
 const landed = () => !!me.body && !fallArrival.active && me.coyote > 0 && !me.swimming && read().ready;
 /** Every 100 ms while it runs: where the friend is, and whether anything holds them. */
 function trace(label: string, ms: number) {
@@ -214,6 +223,7 @@ async function friend() {
     const p = other();
     return !!p && Math.hypot(p.x - (plinth.x + 1), p.z - (plinth.z + 11)) < 2;
   }, 'finder beside the friend');
+  plinthCam(plinth);
   w.__coopShot = true;
   await wait(200);
   await bot.straight(plinth.x - 0.8, plinth.z + 2.6, 0.8, 8000);
@@ -242,6 +252,7 @@ async function find() {
   input.keys.clear();
   releaseJump();
   check(await bot.straight(plinth.x + 1, plinth.z + 11, 0.8, 6000), 'finder beside the friend');
+  plinthCam(plinth);
   await until(() => (other()?.z ?? Infinity) < plinth.z + 10.4, 'friend set off', 60000);
   await bot.straight(plinth.x + 0.8, plinth.z + 2.6, 0.8, 8000);
   await until(() => read().reward.plinth.shows === 1, 'finder plinth show');
