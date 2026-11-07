@@ -366,7 +366,7 @@ _Added for the owner's 6 November call to make this the economy's core model: "m
 3. **Manual assists keep hands relevant.** The carry frame (8 → 16), fibre sling (16 → 24), proper axe and powered pick raise the hand line; spokes shorten it. Machines win on volume, never by making hands pointless: the last carry from rack to frame stays manual.
 4. **The bottleneck moves.** Producer rate, freight (trains × wagons ÷ round trip, shared by every remote producer) and yard capacity each limit in turn (Idle Miner Tycoon). Train upgrades exist because more producers share one train.
 5. **No prestige.** A new tier is a soft reset of the manual-versus-machine race without losing anything; the world keeps every line (the earlier recommendation against prestige stands).
-6. **One tier has no machine in the main game.** Crystal seeds are found by exploring the small stops and carried by hand; their seed cradle comes after the ending. This is the owner's "there is no automatic way" case.
+6. **Everything is automated in the end.** Crystal seeds are found by hand at the small stops until High Port's seed cradle; the second branch and crystal pass a crew only in the end-game tier, whose first goals retire the last manual jobs (owner, 6 November: "eventually everything does get easy"). This replaces this addendum's first draft, which kept crystal hand-only.
 
 **New ground:** a shared world where the incremental climb is physical and co-op (friends haul, machines take over, everyone's world grows), and where each new tier is reached by Metroidvania exploration (abilities and route shortcuts) rather than by a purchase. The co-op incrementals found share a number; Boogle shares a place.
 
@@ -382,4 +382,4 @@ automatic             = min(producer level rate,
 crossover             = first step whose automatic ≥ by hand
 ```
 
-Default results (solo hours; four-player timeline in brackets): logs 0.5 h (0.3), footings 3.5 h (3.8), steel 5.3–5.4 h (4.9–5.0), the first branch's material 5.3–5.4 h (4.9–5.0), the second branch's 6.9 h (never against a crew in the main game), crystal never. Both branch orders give the same shape. These come from the model's guessed rates, not play; the [page](../world/ring-economy.html) charts each tier.
+Revised results (solo hours; four-player timeline in brackets), after the owner's 6 November answers: logs 0.5 h (0.3), footings 3.3 h (3.6), steel 5.2 h (4.7), the first branch's material 5.2 h with Canopy first or 3.9 h with Gorge first (4.7), the second branch's material and crystal 6.9 h (against a crew, only in the end-game tier). These come from the model's guessed rates, not play; the [page](../world/ring-economy.html) charts each tier.

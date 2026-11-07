@@ -1,0 +1,10 @@
+id,from,to,km,note
+entry,home,ring,1.2,"The first sea crossing from the pier (about 0.5 km to the pier, 0.75 km over the sea)"
+ring-canopy,ring,canopy,1.7,Ring segment
+canopy-port,canopy,port,2.3,Ring segment
+port-gorge,port,gorge,1.6,Ring segment
+gorge-ring,gorge,ring,2.2,Ring segment
+spoke-canopy,home,canopy,1.5,Return spoke
+spoke-gorge,home,gorge,1.1,Return spoke
+spoke-port,home,port,1.8,"Deep-sea spoke (optional, crystal)"
+port-original,port,original,1,The final crossing

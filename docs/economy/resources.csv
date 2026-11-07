@@ -1,9 +1,9 @@
-id,name,tier,source,harvest_s_per_unit,local_haul_m,by_hand,becomes_shared,note
-W,Logs,0,home,2,40,1,Line 2 depot cart (as built),Chopped by hand; trees regrow in 31 min (railway-supply.ts)
-St,Stone,0,home,3,40,1,Never: always by hand,"3 rocks × 8, regrow in 31 min (LINE1_ROCKS)"
-R,Rails,0,home,0,40,0,The forge rack (as built),Forge pours 1 rail per 0.5 s into a 24-rail rack (LINE2_FORGE)
-C,Precast footings,1,splitrock,3,120,1,Once Split-rock Works is connected,One manufactured good; limestone and curing are scenery
-S,Steel fittings,2,ring,3,120,1,Once the Ring Island works is connected,"Spans, boilers, chassis"
-Fi,Fibre bundles,3,branch:canopy,2.5,120,1,Once the Canopy loom is connected,"Branch material: slings, straps, glider cloth"
-U,Copper cable,3,branch:gorge,3,120,1,Once the Gorge works is connected,"Branch material: hoists, signals, motors"
-X,Crystal seeds,4,stop-bell,150,200,1,Only after the optional seed cradle,Found by exploring: the tier with no automatic way in the main game
+id,name,tier,source,harvest_s_per_unit,local_haul_m,by_hand,becomes_shared,price_bucks,note
+W,Logs,0,home,2,40,1,Line 2 depot cart (as built),0,Chopped by hand; trees regrow in 31 min (railway-supply.ts)
+St,Stone,0,home,3,40,1,Never: always by hand,2,"3 rocks × 8, regrow in 31 min (LINE1_ROCKS)"
+R,Rails,0,home,0,40,0,The forge rack (as built),0,Forge pours 1 rail per 0.5 s into a 24-rail rack (LINE2_FORGE)
+C,Precast footings,1,splitrock,3,120,1,Once Split-rock Works is connected,2,One manufactured good; limestone and curing are scenery
+S,Steel fittings,2,ring,3,120,1,Once the Ring Island works is connected,3,"Spans, boilers, chassis"
+Fi,Fibre bundles,3,branch:canopy,2.5,120,1,Once the Canopy loom is connected,3,"Branch material: slings, straps, glider cloth"
+U,Copper cable,3,branch:gorge,3,120,1,Once the Gorge works is connected,3,"Branch material: hoists, signals, motors"
+X,Crystal seeds,4,stop-bell,150,200,1,Once the seed cradle runs (High Port),20,Found by exploring the small stops; the last tier the machines take over

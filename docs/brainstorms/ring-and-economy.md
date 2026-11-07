@@ -1,36 +1,32 @@
-> **Status: proposed (2026-11-06).**
+> **Status: proposed, partly answered (owner, 2026-11-06).**
 
 # The ring and the economy
 
-Design only; no game code. Built on the owner's 6 November direction (a ring with something in the middle, shortcuts
-through it, a choice of where to go next, shared persistent resources, producers that start slow and upgrade, harder
-train upgrades) and the same day's follow-up (hands first, machines later, then a new tier by hand). Recorded owner
-answers it keeps: Split-rock Works next, then Ring Island; the smallest Roundhouse first; about eight hours for the main
-game.
+Design only; no game code. This builds on the owner's 6 November direction and the answers to this brief's first five
+questions, recorded in [boogle-2.md](../proposals/boogle-2.md#trains-and-the-world). The earlier recorded answers still
+stand: Split-rock Works next, then Ring Island; the smallest Roundhouse first; about eight hours for the main game.
 
 - **Model:** [economy-model.xlsx](../economy/economy-model.xlsx), with the same data as CSVs in
   [docs/economy/](../economy/). Built by `node dev/economy/build-model.ts` from
   [ring-data.ts](../../dev/economy/ring-data.ts).
-- **Page:** [ring-economy.html](../world/ring-economy.html), with the map, the flow, the pacing curve and the
-  hands-versus-machines charts.
+- **Page:** [ring-economy.html](../world/ring-economy.html).
+- **Principles audit:** [economy-principles-audit.md](../research/economy-principles-audit.md).
 - **Research:** addenda to [upgrade-economy.md](../research/upgrade-economy.md#addendum-6-november-ring-and-hub-worlds-and-shared-stock)
-  (ring-and-hub worlds, shared stock) and
-  [incremental-game-maths.md](../research/incremental-game-maths.md#addendum-6-november-hands-first-machines-later-then-a-new-tier-by-hand)
-  (the manual-to-automatic crossover).
+  and [incremental-game-maths.md](../research/incremental-game-maths.md#addendum-6-november-hands-first-machines-later-then-a-new-tier-by-hand).
 
 ## Pitch
 
-**A co-op incremental you explore like a Metroidvania.** Every new material starts in your hands: you find it, carry it
-home and build with it. Connecting its place starts a producer that is slower than you at first. Its upgrades, built
-from the newest material you've found, pass one player and then a whole crew, so the railway takes over the bulk while
-you set off for the next material, which starts in your hands again. The world is a ring of places around Home. You reach
-each place the long way round, then build a spoke home as a shortcut, and after Ring Island you choose which way to go
-around the ring. Closing it turns the railway into a loop line.
+**A co-op incremental you explore like a Metroidvania.**
 
-Serves DESIGN.md's **Toys before chores** (hauling stays the verb), **Cooperation is automatic** (anyone's hauling and
-any connected producer fill the same yard), **Telegraph everything** (the shard and the ring are visible from Home),
-**Leave something for the next visitor** (yards fill, stacks wait) and **Show, don't tell** (stock is stacks, upgrades
-are additions you can see). It bends **Communal world, personal rewards**; see Tensions.
+- Every new material starts in your hands: you find it, carry it home and build with it.
+- Connecting its place starts a producer that is slower than you at first. Its upgrades, built from the newest
+  material you've found, pass one player and then a whole crew.
+- At the end everything is automated, even the last carry into the frame, and a new tier of goals opens.
+- What the works make beyond their yards sells to the town, into **one shared wallet** that anyone may spend.
+- The world is **paused while nobody is in it**. When you come back, the producers have filled their yards a little,
+  with a soft limit.
+- Progress is mostly linear, but you double back to earlier places with new abilities. Twice, you choose an order:
+  which branch first after Ring Island, and which Roundhouse upgrade first.
 
 **Where it's new ground.** The co-op incrementals found (Clicker Heroes clans, Idle Together) share a number. Boogle
 shares a place: the incremental climb is physical hauling that machines gradually take over, and each new tier is
@@ -40,257 +36,215 @@ reached by exploration with abilities and route shortcuts, not bought.
 
 **"When the machine passed your hands, did it make you want to go and find the next material?"**
 
-## Research, in short
+## The owner's answers (6 November)
 
-- **Ring and hub:** Dark Souls reaches places the long way and rewards you with a shortcut back to Firelink; Hollow
-  Knight's stag stations are found, then opened once; A Link Between Worlds makes order free by building each dungeon
-  around its own tool; A Short Hike keeps one goal visible while a resource widens where you can go; Outer Wilds pays in
-  knowledge. Sources in the [upgrade-economy addendum](../research/upgrade-economy.md#addendum-6-november-ring-and-hub-worlds-and-shared-stock).
-- **Shared stock:** Satisfactory's Dimensional Depot is one pool every builder draws from, with upgradable rate and
-  capacity; Factorio's chests double capacity in visible steps; Valheim levels a workbench by building additions beside
-  it from newer materials; Stardew's shared wallet needs house rules, which is why Boogle's stock only builds shared
-  things.
-- **Incrementals:** A Dark Room and Kittens Game repeat "by hand, then automated" for each new resource; Increlution only
-  lets you automate what you've done by hand; Idle Miner Tycoon's bottleneck moves between stages; Shapez delivers to a
-  hub that speeds up every machine; prestige is not needed when a new tier restarts the race. Sources in the
-  [incremental addendum](../research/incremental-game-maths.md#addendum-6-november-hands-first-machines-later-then-a-new-tier-by-hand).
+1. **The hub:** agreed. Home, with the Roundhouse and Home Yard, sits at the centre, and Ring Island is on the ring.
+2. **Both branches:** both are integral; there are no optional areas. The order is a choice, made "maybe just a
+   couple of times" in the game. Upgrade-tree choices count too. Progression is mostly linear, and "linear" means the
+   progression model, not the geography: players double back to earlier places with new abilities.
+3. **The wallet:** "I actually am not against the shared wallet." Connected output can be shared currency that anyone
+   spends, on shared or personal things.
+4. **Away production:** nothing simulates while the room is empty. On the next join, producers are credited a capped
+   away-fill with a soft limit (confirmed as the reconciliation).
+5. **Crystal and the end:** crystal shouldn't stay hand-only. "Eventually everything does get easy"; at the end
+   there's "some kind of new tier of goals", and numeric requirements are fine.
+6. **Map:** wanted "a little more asymmetry or variety or irregularity". Another agent is prototyping layouts in 2D,
+   so this model keeps its node list and distances in one swappable table.
+
+## What changed in the model
+
+- **The paused world and the away credit.** Nothing runs while the room is empty. On the next join, each producer's
+  yard is credited `H × (1 − e^(−away/H))` hours of output, never past the yard, with H = 2 hours.
+  - An hour away gives 0.8 h of output, four hours give 1.7 h, and a day gives 2 h.
+  - The soft limit comes from the curve, and the hard limit is the yard, so bigger yards make the credit worth more.
+  - This is Cookie Clicker's soft slowdown in a simpler form.
+  - In the model, the credit changes no milestone time. Its value is coming back to full stacks.
+- **The shared wallet.** A full yard's surplus sells to the town (footings 2 Bucks a unit, steel, fibre and copper 3,
+  crystal 20; logs and rails are never sold, because the depot cart and the forge stop at their racks, as built). The
+  Bucks go into one wallet anyone may spend. It should look like coin crates in a strongroom beside the Home Yard
+  (audit item 6).
+- **Crystal is automatable late.** Seeds are carried by hand from the small stops (Bell Terraces, on the first return
+  spoke) until High Port's seed cradle. The seed nursery comes when the ring closes, and the crystal garden is an
+  end-game goal.
+- **The end-game tier.** After the ending, eight goals, bought in order from production and the wallet. Three are
+  automations, three are big shared builds and two are personal.
+  - Auto-placing cranes retire the last manual carry.
+  - The crystal garden makes crystal plentiful.
+  - Level 5 at every works doubles every producer.
+  - Then the deep-sea spokes, a Grand Station, a ring lighthouse, an engine collection and hats.
+- **No optional areas.**
+  - The two far spokes moved into the end-game tier.
+  - Sail Tower and Lantern Observatory became part of the second-branch and final steps.
+  - Only cosmetic sinks (town districts, awnings, a seat canopy) stay optional; they cost little.
+- **Two order choices:**
+  - which branch after Ring Island (Canopy Town or High Gorge);
+  - which Roundhouse upgrade at the first return spoke (steel boiler or freight chassis; the other comes at High
+    Port).
+- **Doubling back.** Five steps return to an earlier place to open a section with the new ability (Ring Island's upper
+  gallery, Split-rock's upper seam, Home's old headland, the first branch's hidden section, and Ring Island again to
+  close the loop). Their rides use whatever spokes exist by then, so shortcuts make returns quicker.
+- **Distances are an edge list** (the Links tab): nine link lengths that are deliberately uneven placeholders. A new
+  layout from the map prototype only changes that table.
+
+## Pacing (rerun)
+
+| | Solo | Four friends |
+| --- | --- | --- |
+| Hours to the ending | **8.2** (8.1–8.3 across the choices) | **5.5** |
+| Authored play, including about 27 minutes of returns | 5.3 h | 3.9 h |
+| Commuting, including returns | 2.0 h | 1.1 h |
+| Hand labour | 0.8 h | 0.3 h |
+| Waiting for shared stock | under 1 min | 14–15 min |
+| Shared wallet at the ending | about 26,700 Bucks | about 15,800 Bucks |
+| End-game goals after the ending | **6.6 h** | about the same (production sets the pace) |
+
+**Machines pass one player:**
+
+- logs at 0.5 h;
+- footings at 3.3 h;
+- steel at 5.2 h;
+- the first branch's material at 5.2 h (Canopy first) or 3.9 h (Gorge first);
+- the second branch's material and crystal at 6.9 h.
+
+**Machines pass a crew of four:** before the ending for footings, steel and the first branch; for the second branch and
+crystal only in the end-game tier, when level 5 and the crystal garden arrive. That's the "eventually everything gets
+easy".
 
 ## The world
 
-**Home is the hub** at the centre: town, forge, the Home Yard and the Roundhouse, with Split-rock Works on the same
-island. **Ring Island sits on the ring**, about 1.2 km north (the owner's one-minute crossing at 20 m/s), reached by the
-first sea crossing from the pier: that crossing is the **entry spoke**. Around the ring, a quarter-turn (about 1.9 km)
-apart: **Canopy Town** to the west, **High Port** to the south, **High Gorge** to the east. The **Original Island** lies
-outside the ring beyond High Port.
+Home is the hub, at the centre, with Split-rock Works on the same island. Ring Island is on the ring, reached by the
+first sea crossing (the entry spoke). Around the ring are Canopy Town, High Port and High Gorge, with the Original
+Island beyond the Port. The map on the page is a schematic circle; the real layout will be irregular and comes from the
+map prototype.
 
 1. **Home:** Line 1 and Line 2, as built.
-2. **Split-rock Works** (the owner's pick for next): walk east, find the ankle rings on the way (approved jump brief),
-   strike the seam (approved gate brief), carry the first footings home by hand, then connect the Works.
-3. **Ring Island** (the owner's pick after it): the first crossing, the aperture brace, the steel works. The Roundhouse
-   opens when it's connected (the 2 November idea), in its smallest form.
-4. **The branch choice.** From Ring Island, go west to **Canopy Town** (fibre: a carrying sling and glider cloth) or east
-   to **High Gorge** (copper: a powered pick and a longer hook reel). Both are reachable with what you have, both give a
-   different ability pair, and High Port accepts either material for its harbour crane, so neither order is wrong.
-5. **The first return spoke.** Once the first branch is connected, build its spoke straight home through the middle,
-   past a small stop (Bell Terraces: crystal seeds, hook practice). The Roundhouse junction (S4) and a second engine come
-   with it. In the model the spoke cuts the ride from that place from about 3.2 to 1.6 minutes, and from High Port
-   from about 4.8 to 3.2 minutes (at 20 m/s, with boarding).
-6. **High Port:** an inhabited town, the harbour crane, the service bay and a faster engine.
-7. **The second branch,** reached from the Port side. It's shorter, because you already have the toolkit and its
-   producer buys two levels at once.
-8. **Closing the ring:** the last segment, back to Ring Island, needs crystal collars for a deep gap (the owner's
-   crystal-as-crossing answer).
-9. **The Original Island and The Boogler.** The final crossing's bill is five-area's "return" kit unchanged.
-
-**What closing the ring gives:**
-
-- A train that circulates the loop instead of shuttling, so every station sees a train more often (the model counts it
-  as a third train).
-- Either-way routing, which shortens the trip to the second branch from about 5 km to 3.
-- The express fitting (40 m/s).
-- A first full lap as a celebration: the "ride's moment" the owner asked for on 2 November.
-- The ring's interior is never empty sea: Home, the spokes and their small stops fill it.
-
-Optional after the ending: the Port's deep-sea spoke (crystal) and the second branch's spoke, each passing a small stop
-(Lantern Observatory, Sail Tower).
+2. **Split-rock Works:** walk east, find the ankle rings, strike the seam, carry the first footings home by hand, and
+   connect the Works.
+3. **Ring Island:** the first crossing, the brace, the steel works. The Roundhouse opens.
+4. **Branch choice:** west to Canopy Town (fibre: sling and glider cloth) or east to High Gorge (copper: powered pick
+   and hook reel). Then double back to Ring Island's upper gallery.
+5. **The first return spoke,** past Bell Terraces (crystal seeds by hand, a crystal collar for the deep channel). The
+   Roundhouse junction, a second engine and the first Roundhouse upgrade pick come with it. Then double back to
+   Split-rock's upper seam.
+6. **High Port:** the harbour crane, the service bay, a faster engine and the seed cradle. Then double back to Home's
+   old headland.
+7. **The second branch,** past Sail Tower. Then double back to the first branch's hidden section.
+8. **Closing the ring:** this gives a loop line with a circulating train, either-way routing, the express fitting and
+   a celebration lap.
+9. **The Original Island and The Boogler,** past Lantern Observatory.
+10. **The end-game tier** (above).
 
 ## The economy
 
 ### Resources by tier
 
-| Tier | Material | From | By hand until | Shared after |
-| --- | --- | --- | --- | --- |
-| 0 | Logs (W), stone (St), rails (R) | Home | Line 2 (logs); stone always | Depot cart and forge rack, as built |
-| 1 | Precast footings (C) | Split-rock Works | The Works connects | Its producer |
-| 2 | Steel fittings (S) | Ring Island | The steel works connects | Its producer |
-| 3 | Fibre (Fi) or copper (U) | Canopy Town / High Gorge | Each branch connects | Its producer |
-| 4 | Crystal seeds (X) | The small stops | All of the main game | Only after the optional seed cradle |
+| Tier | Material | By hand until | Automated by |
+| --- | --- | --- | --- |
+| 0 | Logs, stone, rails | Line 2's depot cart; stone stays by hand | Depot cart, forge (as built) |
+| 1 | Footings | The Works connects | Split-rock levels 1–4, then level 5 (end-game) |
+| 2 | Steel | The steel works connects | Ring Island levels 1–4, then level 5 |
+| 3 | Fibre and copper | Each branch connects | Levels 1–4 (the second visit buys several at once), then level 5 |
+| 4 | Crystal | High Port's seed cradle | Seed cradle, nursery, then the crystal garden (end-game) |
 
-High Port makes nothing new: it recombines. Recipes get harder by needing more kinds of material, not more of one. Train
-upgrades go from 0 kinds (the open shed) to 2 (steel boiler, freight chassis), 3 (Port refit, with the first branch's
-material) and 4 (express fitting: steel, footings, copper and fibre).
+Recipes get harder by needing more kinds of material. Train upgrades go from 0 kinds to 4 (the express fitting needs
+steel, footings, copper and fibre).
 
-### Hand-carried versus shared stock
+### Stock, yards and the wallet
 
-- **What you carry is yours** until you deliver it to a named build (the production-core contract). A new material is
-  only ever carried by hand until its place is connected.
-- **Once a place is connected,** its producer's output is **world stock**: everyone in that world (the owner's
-  "server-wide") can use it, and it only ever pays for shared builds (rail, spokes, producer and yard levels, trains,
-  town). Nothing personal is bought with it, and the next essential build's share is reserved before an optional one
-  (upgrade-economy's rule).
-- **Hands still place every piece.** Trains bring stock to the Home Yard and the frontier racks; players carry it the
-  last 15–30 m into the frame.
-
-### Physical storage
-
-- **Each producer has its own yard** next to the works: stacks that grow as it makes things. A full yard pauses the
-  producer, visibly.
-- **The Home Yard** (built with the Roundhouse) is the shared stock you can see: one bay per material, with stacks that
-  show their count.
-  - Y1: 4 bays of 16.
-  - Y2: 6 bays of 32, concrete racks.
-  - Y3: 8 bays of 64, with a gantry crane that loads trains.
-  - Y4, after the ending: covered.
-
-  A bay adds to each producer's own yard.
+- **What you carry is yours** until you deliver it to a build, as in the production-core contract.
+- **Connected output is shared stock.** It sits in each producer's own yard, plus the Home Yard bays (16 → 32 → 64 →
+  96 per material), and anyone may use it.
+- **A full yard sells its surplus to the town,** and the Bucks go into the shared wallet. That gives surplus a use and
+  gives the end-game tier its currency.
+- **The wallet buys anything:** shared upgrades and goals, and personal looks and train fittings. It needs two rules
+  (audit items 1 and 5):
+  - spending happens at a place in the world, so others see it;
+  - the next main-route build keeps its share.
 
 ### Producers that start slow
 
-The quarry example, Split-rock Works:
+Split-rock Works:
 
-| Level | What you see | Rate to the Home Yard | Yard | Bill |
-| --- | --- | --- | --- | --- |
-| 1 | One crusher, one mould, a crew of two | 40/h | 12 | 16 logs (five-area C0) |
-| 2 | A second mould, a drying rack | 120/h | 24 | 8 footings, 4 logs (C2's bill) |
-| 3 | A steel kiln and a conveyor | 480/h | 48 | 8 steel, 8 footings |
-| 4 | A gantry loader | 1,440/h | 96 | 12 steel, 8 footings |
-
-One player hauling footings home by hand manages about 180 an hour, or about 330 with the carry frame. Level 1 is a
-fraction of that, level 3 passes one player, and level 4 passes a crew of four. Steel, fibre and copper follow the same
-shape. Each level is a rigid addition beside the works, built by hand from stock (owner call: machines show their work).
-
-### The crossover
-
-Each tier's machines pass one player about two hours after the tier arrives:
-
-| Material | Machines pass one player (solo) | Machines pass a crew of four |
+| Level | Rate | Compared with hands |
 | --- | --- | --- |
-| Logs | 0.5 h | 0.3 h |
-| Footings | 3.5 h | 3.8 h |
-| Steel | 5.3–5.4 h | 4.9–5.0 h |
-| First branch's material | 5.3–5.4 h | 4.9–5.0 h |
-| Second branch's material | 6.9 h | Not in the main game |
-| Crystal | Never: hands only in the main game | Never |
+| 1 | 40 an hour | One player carries about 180 an hour, or 330 with the carry frame |
+| 2 | 120 an hour | |
+| 3 | 480 an hour | Passes one player |
+| 4 | 1,440 an hour | Passes a crew of four |
+| 5 (end-game) | 2,880 an hour | |
 
-Manual assists keep the hand line rising:
-
-- the proper axe;
-- the carry frame (8 → 16);
-- the fibre sling (16 → 24);
-- the powered pick;
-- spokes, which shorten every trip.
-
-### What consumes stock, and the sinks
-
-Stock is spent on rail and ring segments, spokes, producer levels, yard levels, train upgrades, sites (ramp, brace,
-crane, service bay), abilities (glider cloth, hook reel) and optional town builds. Every sink is a finite, permanent
-build: no fuel, repairs, decay or tax. After the ending, the optional sinks are compositional (town districts, awnings,
-the deep-sea spoke), in Townscaper's spirit.
-
-On the main route, footings total 288 units, of which 4 are carried by hand before the Works connects; steel totals 330,
-of which 4 are carried by hand; logs total 540, of which 168 are chopped and carried before the depot cart.
-
-### Offline and idle
-
-- **While someone plays,** producers run until their yards are full.
-- **While everyone is away,** this proposes that each producer fills its own yard, up to two hours of output and never
-  past the yard. Trains don't move it, nothing gets built, and no choices are made.
-- **On return,** you see full stacks waiting.
-
-In the model, this changes no milestone time; its value is the returning player's view, not speed.
+Every level is a physical addition beside the works, and its bill reaches for the newest material.
 
 ### Keeping hauling central
 
 - Every tier starts with hand carrying, and the frontier is always beyond the producers.
-- Hands place every unit into a frame.
-- Producers start below one player, so early on your hands are the fast way.
-- Upgrades are physical builds that you carry stock to.
-- Four friends finish sooner (5.7 h against 8.2 h solo) but wait 24–31 minutes in total for stock, depending on the
-  branch order, because producers don't speed up with players. That gives a crew a reason to split off and upgrade
-  producers, which is the owner's "complementary tasks".
+- Hands place every unit until the end-game cranes.
+- Upgrades are builds you carry stock to.
+- Doubling back with a new ability is hands-on exploration.
+- Four friends wait about a quarter of an hour in total for stock, which is a reason to split off and upgrade
+  producers.
 
 ## Best suggestions, ranked
 
-1. **Hands first, machines later, for every tier,** with level 1 slower than one player, level 3 passing one player and
-   level 4 passing a crew, and crystal left manual-only in the main game. This is the owner's core model, made visible
-   per tier.
-2. **Reach each place the long way, then build its spoke home,** starting with the first branch's spoke and the
-   Roundhouse junction. This is Dark Souls' shortcut payoff on a railway.
-3. **One branch point after Ring Island, both directions valid:** fibre (sling and glider cloth) or copper (powered pick
-   and hook reel). The Port takes either, and the second branch catches up faster.
-4. **A visible Home Yard as world stock** that only builds shared things, with each producer's own yard pausing when
-   full.
-5. **Producer levels as physical additions whose bills reach for the newest material,** so old places keep needing new
-   ones and recipes gain kinds of material rather than quantity.
-6. **Closing the ring as the late-game event:** a loop line with a circulating train, the express fitting and a
-   celebration lap, then the final crossing.
-7. **Producers fill their own yards while everyone is away,** bounded by the yard.
+1. **Hands first, machines later, for every tier;** everything is automated by the end game.
+2. **A paused world with a soft away credit** into each yard, `H × (1 − e^(−away/H))`, never past the yard.
+3. **One shared wallet fed by surplus,** shown as a strongroom you can see, with the next main-route build protected.
+4. **Two order choices** (the branch, and the first Roundhouse upgrade) on a mostly linear route, with **returns** to
+   earlier places that shortcuts speed up.
+5. **An end-game tier** that first retires the last manual jobs, then offers big shared builds and personal treats.
+6. **Distances in one editable table,** so the map prototype's irregular layout drops straight in.
 
 ## Tensions
 
-- **DESIGN principle 6, "No shared wallets."** World stock is spendable by anyone.
-  - **Recommendation:** read it as the roundhouse research does. Stock is the world's output, not anyone's earnings. It
-    only builds shared things, the next essential bill is protected, and personal packs and cosmetics stay personal.
-  - The money brief's comic score is unaffected.
-  - Needs the owner's confirmation (question 3).
-- **The 4 November production-core contract:** offline completion only for already-funded work, and the forge and depot
-  never produce offline. The incremental research also prefers a single project cap over banked time.
-  - **Recommendation:** allow filling each producer's own yard. It is a physical cap, it starts nothing, and it moves
-    nothing.
-  - Owner decision (question 4).
-- **The world map's version 2** treats High Gorge and Canopy Town as alternatives ("do not silently require both").
-  - This proposal requires both, with the order as the choice, which adds roughly 45–75 minutes of authored content.
-  - **Recommendation:** keep both, and make the second one shorter.
-  - Owner decision (question 2).
-- **The existing paper models** (`model.ts`, `three-area.ts`, `five-area.ts`) connect sources at full rate. Here
-  producers start slow and level up, and the top levels exceed their rates (C 240, S 360, U 480 an hour there; 1,440
-  here).
-  - Units, the 1.2 km line, 20 m/s, 2 m/s², the dwell, transfer and pick-up times, carry 8 and the wagon (24, then 32
-    with S1) are reused.
-  - These bills are reused unchanged: C0, C1, C2, S0, S1, S4, U0, F0, F2, F3, F5, B1, R1, X0, F-seat, "pack" and
-    "return".
-  - New IDs are marked "New" in the sheet.
-  - The route follows the owner's Split-rock → Ring order, not three-area's or five-area's, and crystal becomes the
-    manual-only tier instead of a source.
-  - This is a step model, not their event scheduler: keep `model.ts` and `campaign.ts` for per-player schedules and use
-    the sheet for tuning by hand.
-- **Trains are timetabled from the tick.** A loop line and spokes make the timetable a graph, not one line. That's a
-  technical prerequisite before ring closure, not a design conflict.
-- **Authored content is the real cost.** The model needs 5.6 hours of authored play solo; travel adds 1.7 h, hand labour
-  0.8 h and waiting a few minutes. Short content forecasts a shorter game, not bigger bills (upgrade-economy).
-- **Hauling share.** Solo players almost never wait for stock, so producers mostly show up as relief, not as a gate. If
-  playtests find the machines don't matter solo, raise the first-tier bills, not the waits.
+- **Principles.** Three DESIGN.md principles need new wording and two need a clarifying sentence. Four decision-log
+  entries and the production-core offline contract are superseded. One owner call needs a rule for the wallet's look,
+  and four code paths run or catch up time while nobody plays. The exact source lines and proposed wording are in the
+  [audit](../research/economy-principles-audit.md).
+- **The end-game is production-bound.** Four friends don't finish it faster, so they may stand around. A crew could
+  instead be given hands-on end-game jobs, such as building the Grand Station piece by piece, which should be tested.
+- **The away credit doesn't change pacing.** Solo play almost never waits for stock, so the credit is a homecoming
+  feeling, not a speed-up. If playtests want it to matter, make yards smaller early, not the credit bigger.
+- **The second order choice is an upgrade order, not a place.** The owner said "a couple of times". A second
+  area-order choice is better placed by the map prototype (open question 3).
+- **Authored content is still the real cost:** 5.3 solo hours of authored play, of which the returns reuse places for
+  about half an hour.
 
 ## Smallest first build
 
-The 2D page is the first step (owner call). The first in-game build is **Split-rock Works levels 1 and 2, with a
-visible yard**, after the line 2 playtest and the Split-rock greybox from the approved gate brief:
+Unchanged: **Split-rock Works levels 1 and 2 with a visible yard,** after the line 2 playtest and the Split-rock
+greybox:
 
-1. Carry the first footings home by hand for the loading ramp.
-2. Connect the Works and watch level 1 stack footings in its yard, slower than you could carry them.
-3. Build level 2 beside it from footings and logs, and watch the stacks grow faster.
+1. Carry the first footings home by hand.
+2. Watch level 1 fill its yard more slowly than you could carry.
+3. Build level 2 beside it.
+4. Leave and rejoin to see the away credit fill the yard.
 
-Compress the levels for the proof, so the hand-versus-machine crossover happens within one sitting. All rates and caps
-are tunables (owner call). Capture the yard filling in real time. Ask the gut question, then stop for the owner's
-verdict before Ring Island's producer or the Home Yard.
+Compress the levels so the crossover happens within one sitting; all rates are tunables. Then stop for the owner's
+verdict. The wallet and the end-game tier come after the gut question is answered.
 
 ## Open questions
 
-1. **The hub:** Home, with the Roundhouse and Home Yard, at the centre, and Ring Island on the ring, reached by the entry
-   spoke? Recommended: **yes**. The alternatives are Ring Island as the hub, or the Original Island in the middle as the
-   ending you circle. Answer: ___
-2. **Both branches:** are Canopy Town and High Gorge both part of the main game, with the order as the choice and the
-   second visit shorter? Recommended: **yes, both; the second is shorter**. The alternative is to make the second branch
-   and the ring's closure optional, for about seven hours. Answer: ___
-3. **World stock:** once a place is connected, does its output become world stock that anyone can use, only for shared
-   builds, with the next essential bill protected and packs staying personal? Recommended: **yes, recorded as how
-   principle 6 applies**. Answer: ___
-4. **Away production:** do producers fill their own yards while everyone is away, up to two hours of output and never
-   past the yard, with nothing moved or built? Recommended: **yes, for producers only; funded construction keeps its
-   current rule**. Answer: ___
-5. **How long a tier stays hand-led:** do machines pass one player about two hours after each tier arrives (footings at
-   3.5 h), and a crew of four only at level 4? Recommended: **yes, with the first proof compressed into one sitting**.
-   Answer: ___
+1. **Principle wording:** approve the amendments in the
+   [audit](../research/economy-principles-audit.md), starting with DESIGN.md 6, 9 and Server hosts every room?
+   Recommended: **yes, as worded**. Answer: ___
+2. **The funded job while away:** should the one funded laying job also complete in the away credit, keeping the
+   Design Table's "whatever you kicked off finishes"? Recommended: **yes, it finishes on the next join, and nothing
+   new starts**. Answer: ___
+3. **The second choice point:** keep the upgrade-order pick as the second choice, or ask the map prototype for a
+   second area-order choice (for example two small places between Split-rock and Ring Island)? Recommended: **both;
+   the map prototype proposes where**. Answer: ___
+4. **Away horizon:** is H = 2 hours of output right to start (0.8 h after an hour away, 2 h after a day)?
+   Recommended: **yes, as a tunable judged in play**. Answer: ___
+5. **Wallet guard:** does the wallet show as coin crates in a strongroom beside the Home Yard, with the next main-route
+   build's share kept back? Recommended: **yes**. Answer: ___
 
 ## Parked
 
-- The Port's deep-sea spoke, the second branch's spoke and the crystal seed cradle, after the ending.
-- Exact ring distances, the travel-time feel, and whether 1.9 km ring segments are too long a ride: test in the
-  crossing prototype.
-- Per-player hauling schedules in the event model (`campaign.ts`) for this route.
-- Town districts as a visible use for surplus stock.
+- Exact link lengths and the map's shape (map prototype).
+- Per-player schedules for this route in the event model (`campaign.ts`).
+- Box cosmetics versus wallet purchases (audit item 12).
 
 ## Disposition
 
-**Proposed design; owner decision needed** on the five questions. No game code changes. Everything builds after the
-line 2 playtest and the production-core slices it depends on.
+**Proposed, partly answered; owner decision needed** on the five questions and the audit's amendments. No game code
+changes. Everything builds after the line 2 playtest and the production-core slices it depends on.

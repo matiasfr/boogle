@@ -334,8 +334,8 @@
   <h1>Ring economy</h1>
   <p class="lede">
     A co-op incremental you explore like a Metroidvania. Every new material starts in your hands; its producer starts
-    slower than you, then its upgrades overtake you. The world is a ring of places around Home, with shortcuts through
-    the middle and a free choice of direction after Ring Island.
+    slower than you, then its upgrades overtake you, until at the end everything is automated and a new tier of goals
+    opens. The world is paused while nobody plays. Revised after the owner's answers of 6 November.
   </p>
   <div class="bar">
     <span style="color: var(--ink-2); font-size: 13px">After Ring Island, go to</span>
@@ -349,8 +349,10 @@
   <section>
     <h2>The ring and the hub</h2>
     <p>
-      Home is the hub. You leave by the first sea crossing, go around the ring, and later build spokes back to Home as
-      shortcuts. Closing the ring turns the railway into a loop line.
+      Home is the hub. You leave by the first sea crossing, go around the ring, double back with new abilities, and
+      build spokes home as shortcuts. Closing the ring turns the railway into a loop line. This circle is a schematic:
+      the real layout is being prototyped separately and will be irregular, and the model's distances live in one
+      editable table (Links), so a new layout only changes those numbers.
     </p>
     <div class="two">
       <svg id="map" viewBox="-40 0 680 640" role="img" aria-label="Ring map"></svg>
@@ -359,7 +361,9 @@
           <span><i style="border-color: var(--rail)"></i>Ring line, numbered in build order</span>
           <span><i style="border-color: var(--spoke)"></i>Entry spoke (first crossing)</span>
           <span><i style="border-color: var(--spoke); border-top-style: dashed"></i>Return spoke, unlocked later</span>
-          <span><i style="border-color: var(--ink-3); border-top-style: dotted"></i>Optional spoke</span>
+          <span
+            ><i style="border-color: var(--ink-3); border-top-style: dotted"></i>Deep-sea spoke (end-game goal)</span
+          >
         </div>
         <div class="scroll" style="margin-top: 12px">
           <table id="places"></table>
@@ -389,20 +393,25 @@
       <div class="card">
         <h3>Home Yard</h3>
         <p>
-          Shared stock for everyone in the world, in bays you can see. Nobody's wallet: it only builds shared things.
+          Shared stock for everyone in the world, in bays you can see. A full yard's surplus sells to the town: one
+          shared wallet anyone may spend.
         </p>
       </div>
       <div class="card">
         <h3>Upgrades</h3>
         <p>
-          Rail segments, spokes, producer levels, yard bays, engines and wagons. Hands carry each piece from the rack.
+          Rail segments, spokes, producer levels, yard bays, engines and wagons, with numeric costs. Hands carry each
+          piece from the rack until the end-game cranes.
         </p>
       </div>
     </div>
     <div class="loops">
       <div><b>Manual assists</b> raise the hand line: carry frame, fibre sling, proper axe, powered pick.</div>
       <div><b>Producer, wagon and engine upgrades</b> raise the machine line until it passes a crew.</div>
-      <div><b>Sinks are finite builds.</b> No fuel, repairs or decay. Away, producers only fill their own yards.</div>
+      <div>
+        <b>Paused while empty.</b> Nothing runs with nobody in the world; on the next join, yards get a soft-capped away
+        credit.
+      </div>
     </div>
   </section>
 
@@ -425,13 +434,27 @@
     <h2>Hands versus machines, per tier</h2>
     <p>
       Units per hour reaching the Home Yard over a solo game. Each tier starts by hand; the machine line starts lower,
-      then steps past it. Crystal has no machine in the main game.
+      then steps past it. Crystal is found by hand until High Port; the last tiers pass a crew only in the end game.
     </p>
     <div class="legend">
       <span><i style="border-color: var(--hand)"></i>One player by hand</span>
       <span><i style="border-color: var(--auto)"></i>Automatic (producer and trains)</span>
     </div>
     <div class="multiples" id="mult"></div>
+  </section>
+
+  <section>
+    <h2>Away credit and the end-game tier</h2>
+    <div class="two">
+      <div>
+        <p id="away-note"></p>
+        <svg id="away" viewBox="0 0 420 220" role="img" aria-label="Away credit curve"></svg>
+      </div>
+      <div>
+        <p id="end-note"></p>
+        <div class="scroll"><table id="goals"></table></div>
+      </div>
+    </div>
   </section>
 
   <footer>
@@ -445,108 +468,18 @@
 <script type="application/json" id="economy-data">
   {
     "generatedBy": "dev/economy/build-model.ts",
-    "ring": { "radiusKm": 1.2, "arcKm": 1.885 },
     "target": 8,
-    "places": [
-      {
-        "slot": "home",
-        "name": "Home · Threefold Reach",
-        "kind": "hub",
-        "angle": null,
-        "resources": "W, St, R",
-        "abilities": "Hook, glider (starter)",
-        "ownSpoke": "home.line1"
-      },
-      {
-        "slot": "splitrock",
-        "name": "Split-rock Works",
-        "kind": "hub island",
-        "angle": null,
-        "resources": "C",
-        "abilities": "Breaker strike; ankle rings on the way (double jump)",
-        "ownSpoke": "splitrock.connect"
-      },
-      {
-        "slot": "ring",
-        "name": "Ring Island",
-        "kind": "ring",
-        "angle": 0,
-        "resources": "S",
-        "abilities": "Brace the aperture",
-        "ownSpoke": "ring.reach"
-      },
-      {
-        "slot": "b1",
-        "name": "(first branch)",
-        "kind": "branch",
-        "angle": 270,
-        "resources": "Fi or U",
-        "abilities": "Canopy: sling + glider cloth · Gorge: powered pick + hook reel",
-        "ownSpoke": "spoke1"
-      },
-      {
-        "slot": "port",
-        "name": "High Port",
-        "kind": "ring",
-        "angle": 180,
-        "resources": "Recombines S, C and the branch material",
-        "abilities": "Town services, harbour crane",
-        "ownSpoke": "optional"
-      },
-      {
-        "slot": "b2",
-        "name": "(second branch)",
-        "kind": "branch",
-        "angle": 90,
-        "resources": "U or Fi",
-        "abilities": "The other branch's pair",
-        "ownSpoke": "optional"
-      },
-      {
-        "slot": "original",
-        "name": "Original Island",
-        "kind": "ending",
-        "angle": 180,
-        "resources": "None new",
-        "abilities": "The Boogler",
-        "ownSpoke": "optional"
-      },
-      {
-        "slot": "stop-ankle",
-        "name": "Ankle-ring ledge",
-        "kind": "stop",
-        "angle": null,
-        "resources": "—",
-        "abilities": "Double jump (approved jump brief)",
-        "ownSpoke": "home.line1"
-      },
-      {
-        "slot": "stop-bell",
-        "name": "Bell Terraces",
-        "kind": "stop",
-        "angle": null,
-        "resources": "X (found)",
-        "abilities": "Hook practice",
-        "ownSpoke": "spoke1"
-      },
-      {
-        "slot": "stop-sail",
-        "name": "Sail Tower",
-        "kind": "stop",
-        "angle": null,
-        "resources": "X (found)",
-        "abilities": "Glider practice",
-        "ownSpoke": "optional"
-      },
-      {
-        "slot": "stop-lens",
-        "name": "Lantern Observatory",
-        "kind": "stop",
-        "angle": null,
-        "resources": "X (found)",
-        "abilities": "Telescope glimpse of the ending",
-        "ownSpoke": "optional"
-      }
+    "horizon": 2,
+    "away": [
+      [0, 0],
+      [1, 0.787],
+      [2, 1.264],
+      [4, 1.729],
+      [8, 1.963],
+      [12, 1.995],
+      [22, 2],
+      [48, 2],
+      [72, 2]
     ],
     "routes": [
       {
@@ -559,7 +492,8 @@
             "solo": [0, 0.329],
             "four": [0, 0.203],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "home.forge",
@@ -568,7 +502,8 @@
             "solo": [0.329, 0.531],
             "four": [0.203, 0.323],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "home.line2",
@@ -577,133 +512,148 @@
             "solo": [0.531, 0.724],
             "four": [0.323, 0.454],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "splitrock.reach",
             "name": "Walk to Split-rock, ankle rings, breaker strike",
             "place": "Split-rock Works",
-            "solo": [0.724, 1.139],
-            "four": [0.454, 0.747],
+            "solo": [0.724, 1.106],
+            "four": [0.454, 0.722],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "splitrock.connect",
             "name": "Connect the Works (Q4–Q6)",
             "place": "Split-rock Works",
-            "solo": [1.139, 1.485],
-            "four": [0.747, 1.047],
+            "solo": [1.106, 1.452],
+            "four": [0.722, 1.022],
             "wait4": 5.034,
-            "on4": "C"
+            "on4": "C",
+            "back": ""
           },
           {
             "key": "ring.reach",
             "name": "First crossing to Ring Island",
             "place": "Ring Island",
-            "solo": [1.485, 2.193],
-            "four": [1.047, 1.531],
+            "solo": [1.452, 2.093],
+            "four": [1.022, 1.458],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "ring.connect",
             "name": "Brace the aperture, connect the steel works",
             "place": "Ring Island",
-            "solo": [2.193, 2.504],
-            "four": [1.531, 1.739],
-            "wait4": 0,
-            "on4": "—"
+            "solo": [2.093, 2.37],
+            "four": [1.458, 1.646],
+            "wait4": 0.3,
+            "on4": "C",
+            "back": ""
           },
           {
             "key": "hub.roundhouse",
             "name": "The Roundhouse opens",
             "place": "Home · Threefold Reach",
-            "solo": [2.504, 2.765],
-            "four": [1.739, 1.923],
+            "solo": [2.37, 2.599],
+            "four": [1.646, 1.805],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "b1.reach",
             "name": "Branch choice: ring segment to the first branch",
             "place": "Canopy Town",
-            "solo": [2.765, 3.549],
-            "four": [1.923, 2.439],
+            "solo": [2.599, 3.305],
+            "four": [1.805, 2.267],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "b1.connect",
             "name": "Connect the first branch",
             "place": "Canopy Town",
-            "solo": [3.549, 4.049],
-            "four": [2.439, 2.939],
-            "wait4": 12.682,
-            "on4": "Fi"
+            "solo": [3.305, 3.865],
+            "four": [2.267, 2.767],
+            "wait4": 8.184,
+            "on4": "Fi",
+            "back": "Ring Island"
           },
           {
             "key": "spoke1",
             "name": "First return spoke and second engine",
             "place": "Canopy Town",
-            "solo": [4.049, 4.566],
-            "four": [2.939, 3.272],
-            "wait4": 1.162,
-            "on4": "S"
+            "solo": [3.865, 4.516],
+            "four": [2.767, 3.151],
+            "wait4": 0,
+            "on4": "—",
+            "back": "Split-rock Works"
           },
           {
             "key": "port.reach",
             "name": "Ring segment to High Port",
             "place": "High Port",
-            "solo": [4.566, 5.351],
-            "four": [3.272, 3.797],
+            "solo": [4.516, 5.233],
+            "four": [3.151, 3.619],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "port.connect",
             "name": "Harbour crane and service bay",
             "place": "High Port",
-            "solo": [5.351, 5.797],
-            "four": [3.797, 4.081],
+            "solo": [5.233, 5.785],
+            "four": [3.619, 3.97],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": "Home · Threefold Reach"
           },
           {
             "key": "b2.reach",
             "name": "Ring segment to the second branch",
             "place": "High Gorge",
-            "solo": [5.797, 6.499],
-            "four": [4.081, 4.533],
+            "solo": [5.785, 6.403],
+            "four": [3.97, 4.358],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "b2.connect",
             "name": "Connect the second branch",
             "place": "High Gorge",
-            "solo": [6.499, 6.909],
-            "four": [4.533, 4.883],
-            "wait4": 5.058,
-            "on4": "U"
+            "solo": [6.403, 6.939],
+            "four": [4.358, 4.708],
+            "wait4": 0.234,
+            "on4": "U",
+            "back": "Canopy Town"
           },
           {
             "key": "ring.close",
             "name": "Close the ring: the loop line",
             "place": "High Gorge",
-            "solo": [6.909, 7.541],
-            "four": [4.883, 5.25],
+            "solo": [6.939, 7.624],
+            "four": [4.708, 5.117],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": "Ring Island"
           },
           {
             "key": "final",
             "name": "Final crossing to the Original Island",
             "place": "Original Island",
-            "solo": [7.541, 8.173],
-            "four": [5.25, 5.667],
+            "solo": [7.624, 8.188],
+            "four": [5.117, 5.488],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           }
         ],
         "cross": {
@@ -715,145 +665,158 @@
               [0.329, 440, 0],
               [0.531, 440, 2400],
               [0.724, 440, 2400],
-              [1.139, 756, 2400],
-              [1.485, 756, 2400],
-              [2.193, 756, 2400],
-              [2.504, 756, 2400],
-              [2.765, 756, 2400],
-              [3.549, 994, 2400],
-              [4.049, 994, 2400],
-              [4.566, 994, 2400],
-              [5.351, 994, 2400],
-              [5.797, 994, 2400],
-              [6.499, 1097, 2400],
-              [6.909, 1097, 2400],
-              [7.541, 1097, 2400]
+              [1.106, 756, 2400],
+              [1.452, 756, 2400],
+              [2.093, 756, 2400],
+              [2.37, 756, 2400],
+              [2.599, 756, 2400],
+              [3.305, 994, 2400],
+              [3.865, 994, 2400],
+              [4.516, 994, 2400],
+              [5.233, 994, 2400],
+              [5.785, 994, 2400],
+              [6.403, 1097, 2400],
+              [6.939, 1097, 2400],
+              [7.624, 1097, 2400]
             ]
           },
           "C": {
-            "solo": 3.549,
-            "crew": 3.797,
+            "solo": 3.305,
+            "crew": 3.619,
             "series": [
               [0, 180, 0],
               [0.329, 180, 0],
               [0.531, 180, 0],
               [0.724, 180, 0],
-              [1.139, 327, 40],
-              [1.485, 327, 40],
-              [2.193, 327, 120],
-              [2.504, 327, 120],
-              [2.765, 327, 120],
-              [3.549, 449, 480],
-              [4.049, 449, 480],
-              [4.566, 449, 480],
-              [5.351, 449, 1440],
-              [5.797, 449, 1440],
-              [6.499, 480, 1440],
-              [6.909, 480, 1440],
-              [7.541, 480, 1440]
+              [1.106, 327, 40],
+              [1.452, 327, 40],
+              [2.093, 327, 120],
+              [2.37, 327, 120],
+              [2.599, 327, 120],
+              [3.305, 449, 480],
+              [3.865, 449, 480],
+              [4.516, 449, 480],
+              [5.233, 449, 1440],
+              [5.785, 449, 1440],
+              [6.403, 480, 1440],
+              [6.939, 480, 1440],
+              [7.624, 480, 1440]
             ]
           },
           "S": {
-            "solo": 5.351,
-            "crew": 4.883,
+            "solo": 5.233,
+            "crew": 4.708,
             "series": [
               [0, 135, 0],
               [0.329, 135, 0],
               [0.531, 135, 0],
               [0.724, 135, 0],
-              [1.139, 251, 0],
-              [1.485, 251, 0],
-              [2.193, 251, 45],
-              [2.504, 251, 45],
-              [2.765, 251, 45],
-              [3.549, 352, 45],
-              [4.049, 382, 120],
-              [4.566, 382, 120],
-              [5.351, 401, 480],
-              [5.797, 401, 480],
-              [6.499, 425, 480],
-              [6.909, 447, 1440],
-              [7.541, 447, 1440]
+              [1.106, 251, 0],
+              [1.452, 251, 0],
+              [2.093, 251, 45],
+              [2.37, 251, 45],
+              [2.599, 251, 45],
+              [3.305, 352, 45],
+              [3.865, 382, 120],
+              [4.516, 382, 120],
+              [5.233, 401, 480],
+              [5.785, 401, 480],
+              [6.403, 425, 480],
+              [6.939, 447, 1440],
+              [7.624, 447, 1440]
             ]
           },
           "Fi": {
-            "solo": 5.351,
-            "crew": 4.883,
+            "solo": 5.233,
+            "crew": 4.708,
             "series": [
-              [0, 72, 0],
-              [0.329, 72, 0],
-              [0.531, 72, 0],
-              [0.724, 72, 0],
-              [1.139, 140, 0],
-              [1.485, 140, 0],
-              [2.193, 140, 0],
-              [2.504, 140, 0],
-              [2.765, 140, 0],
-              [3.549, 203, 40],
-              [4.049, 234, 160],
-              [4.566, 396, 160],
-              [5.351, 417, 480],
-              [5.797, 417, 480],
-              [6.499, 438, 480],
-              [6.909, 462, 1440],
-              [7.541, 462, 1440]
+              [0, 76, 0],
+              [0.329, 76, 0],
+              [0.531, 76, 0],
+              [0.724, 76, 0],
+              [1.106, 146, 0],
+              [1.452, 146, 0],
+              [2.093, 146, 0],
+              [2.37, 146, 0],
+              [2.599, 146, 0],
+              [3.305, 212, 40],
+              [3.865, 244, 160],
+              [4.516, 356, 160],
+              [5.233, 380, 480],
+              [5.785, 380, 480],
+              [6.403, 398, 480],
+              [6.939, 427, 1440],
+              [7.624, 427, 1440]
             ]
           },
           "U": {
-            "solo": 6.909,
+            "solo": 6.939,
             "crew": 999,
             "series": [
               [0, 37, 0],
               [0.329, 37, 0],
               [0.531, 37, 0],
               [0.724, 37, 0],
-              [1.139, 72, 0],
-              [1.485, 72, 0],
-              [2.193, 72, 0],
-              [2.504, 72, 0],
-              [2.765, 72, 0],
-              [3.549, 107, 0],
-              [4.049, 127, 0],
-              [4.566, 164, 0],
-              [5.351, 185, 0],
-              [5.797, 185, 0],
-              [6.499, 190, 40],
-              [6.909, 226, 480],
-              [7.541, 301, 480]
+              [1.106, 73, 0],
+              [1.452, 73, 0],
+              [2.093, 73, 0],
+              [2.37, 73, 0],
+              [2.599, 73, 0],
+              [3.305, 107, 0],
+              [3.865, 128, 0],
+              [4.516, 154, 0],
+              [5.233, 174, 0],
+              [5.785, 174, 0],
+              [6.403, 179, 40],
+              [6.939, 214, 480],
+              [7.624, 285, 480]
             ]
           },
           "X": {
-            "solo": 999,
+            "solo": 6.939,
             "crew": 999,
             "series": [
               [0, 28, 0],
               [0.329, 28, 0],
               [0.531, 28, 0],
               [0.724, 28, 0],
-              [1.139, 32, 0],
-              [1.485, 32, 0],
-              [2.193, 32, 0],
-              [2.504, 32, 0],
-              [2.765, 32, 0],
-              [3.549, 33, 0],
-              [4.049, 33, 0],
-              [4.566, 33, 0],
-              [5.351, 33, 0],
-              [5.797, 33, 0],
-              [6.499, 43, 0],
-              [6.909, 43, 0],
-              [7.541, 43, 0]
+              [1.106, 32, 0],
+              [1.452, 32, 0],
+              [2.093, 32, 0],
+              [2.37, 32, 0],
+              [2.599, 32, 0],
+              [3.305, 33, 0],
+              [3.865, 33, 0],
+              [4.516, 33, 0],
+              [5.233, 33, 12],
+              [5.785, 33, 12],
+              [6.403, 43, 12],
+              [6.939, 43, 48],
+              [7.624, 43, 48]
             ]
           }
         },
+        "goals": [
+          { "id": "G1", "name": "Auto-placing cranes at every frame", "hours": 0.625, "total": 0.625 },
+          { "id": "G2", "name": "Crystal garden (seed producer level 3)", "hours": 1.25, "total": 1.875 },
+          { "id": "G3", "name": "Level 5 at every works", "hours": 1.667, "total": 3.542 },
+          { "id": "G4", "name": "Deep-sea spokes to High Port and the second branch", "hours": 0.667, "total": 4.208 },
+          { "id": "G5", "name": "Grand Station at Home", "hours": 0.868, "total": 5.076 },
+          { "id": "G6", "name": "Ring lighthouse", "hours": 1, "total": 6.076 },
+          { "id": "G7", "name": "Express engine collection", "hours": 0.458, "total": 6.535 },
+          { "id": "G8", "name": "A hat for each friend", "hours": 0.055, "total": 6.59 }
+        ],
         "totals": {
-          "solo": 8.173,
-          "four": 5.667,
-          "act": 5.567,
-          "labour": 0.82,
-          "travel": 1.729,
-          "wait": 0.057,
-          "wait4": 0.399
+          "solo": 8.188,
+          "four": 5.488,
+          "act": 5.35,
+          "labour": 0.827,
+          "travel": 2.01,
+          "wait": 0,
+          "wait4": 0.229,
+          "wallet": 26714,
+          "wallet4": 15771,
+          "endgame": 6.59
         }
       },
       {
@@ -866,7 +829,8 @@
             "solo": [0, 0.329],
             "four": [0, 0.203],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "home.forge",
@@ -875,7 +839,8 @@
             "solo": [0.329, 0.531],
             "four": [0.203, 0.323],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "home.line2",
@@ -884,133 +849,148 @@
             "solo": [0.531, 0.724],
             "four": [0.323, 0.454],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "splitrock.reach",
             "name": "Walk to Split-rock, ankle rings, breaker strike",
             "place": "Split-rock Works",
-            "solo": [0.724, 1.139],
-            "four": [0.454, 0.747],
+            "solo": [0.724, 1.106],
+            "four": [0.454, 0.722],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "splitrock.connect",
             "name": "Connect the Works (Q4–Q6)",
             "place": "Split-rock Works",
-            "solo": [1.139, 1.485],
-            "four": [0.747, 1.047],
+            "solo": [1.106, 1.452],
+            "four": [0.722, 1.022],
             "wait4": 5.034,
-            "on4": "C"
+            "on4": "C",
+            "back": ""
           },
           {
             "key": "ring.reach",
             "name": "First crossing to Ring Island",
             "place": "Ring Island",
-            "solo": [1.485, 2.193],
-            "four": [1.047, 1.531],
+            "solo": [1.452, 2.093],
+            "four": [1.022, 1.458],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "ring.connect",
             "name": "Brace the aperture, connect the steel works",
             "place": "Ring Island",
-            "solo": [2.193, 2.504],
-            "four": [1.531, 1.739],
-            "wait4": 0,
-            "on4": "—"
+            "solo": [2.093, 2.37],
+            "four": [1.458, 1.646],
+            "wait4": 0.3,
+            "on4": "C",
+            "back": ""
           },
           {
             "key": "hub.roundhouse",
             "name": "The Roundhouse opens",
             "place": "Home · Threefold Reach",
-            "solo": [2.504, 2.765],
-            "four": [1.739, 1.923],
+            "solo": [2.37, 2.599],
+            "four": [1.646, 1.805],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "b1.reach",
             "name": "Branch choice: ring segment to the first branch",
             "place": "High Gorge",
-            "solo": [2.765, 3.549],
-            "four": [1.923, 2.439],
+            "solo": [2.599, 3.333],
+            "four": [1.805, 2.282],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "b1.connect",
             "name": "Connect the first branch",
             "place": "High Gorge",
-            "solo": [3.549, 3.989],
-            "four": [2.439, 2.789],
-            "wait4": 3.747,
-            "on4": "U"
+            "solo": [3.333, 3.903],
+            "four": [2.282, 2.652],
+            "wait4": 0,
+            "on4": "—",
+            "back": "Ring Island"
           },
           {
             "key": "spoke1",
             "name": "First return spoke and second engine",
             "place": "High Gorge",
-            "solo": [3.989, 4.506],
-            "four": [2.789, 3.241],
-            "wait4": 8.287,
-            "on4": "S"
+            "solo": [3.903, 4.563],
+            "four": [2.652, 3.043],
+            "wait4": 0,
+            "on4": "—",
+            "back": "Split-rock Works"
           },
           {
             "key": "port.reach",
             "name": "Ring segment to High Port",
             "place": "High Port",
-            "solo": [4.506, 5.292],
-            "four": [3.241, 3.766],
+            "solo": [4.563, 5.232],
+            "four": [3.043, 3.485],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "port.connect",
             "name": "Harbour crane and service bay",
             "place": "High Port",
-            "solo": [5.292, 5.737],
-            "four": [3.766, 4.049],
+            "solo": [5.232, 5.763],
+            "four": [3.485, 3.826],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": "Home · Threefold Reach"
           },
           {
             "key": "b2.reach",
             "name": "Ring segment to the second branch",
             "place": "Canopy Town",
-            "solo": [5.737, 6.44],
-            "four": [4.049, 4.502],
+            "solo": [5.763, 6.367],
+            "four": [3.826, 4.206],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           },
           {
             "key": "b2.connect",
             "name": "Connect the second branch",
             "place": "Canopy Town",
-            "solo": [6.44, 6.94],
-            "four": [4.502, 5.002],
-            "wait4": 13.994,
-            "on4": "Fi"
+            "solo": [6.367, 6.891],
+            "four": [4.206, 4.706],
+            "wait4": 9.637,
+            "on4": "Fi",
+            "back": "High Gorge"
           },
           {
             "key": "ring.close",
             "name": "Close the ring: the loop line",
             "place": "Canopy Town",
-            "solo": [6.94, 7.572],
-            "four": [5.002, 5.369],
+            "solo": [6.891, 7.565],
+            "four": [4.706, 5.109],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": "Ring Island"
           },
           {
             "key": "final",
             "name": "Final crossing to the Original Island",
             "place": "Original Island",
-            "solo": [7.572, 8.204],
-            "four": [5.369, 5.786],
+            "solo": [7.565, 8.098],
+            "four": [5.109, 5.464],
             "wait4": 0,
-            "on4": "—"
+            "on4": "—",
+            "back": ""
           }
         ],
         "cross": {
@@ -1022,145 +1002,158 @@
               [0.329, 440, 0],
               [0.531, 440, 2400],
               [0.724, 440, 2400],
-              [1.139, 756, 2400],
-              [1.485, 756, 2400],
-              [2.193, 756, 2400],
-              [2.504, 756, 2400],
-              [2.765, 756, 2400],
-              [3.549, 814, 2400],
-              [3.989, 814, 2400],
-              [4.506, 814, 2400],
-              [5.292, 814, 2400],
-              [5.737, 814, 2400],
-              [6.44, 1097, 2400],
-              [6.94, 1097, 2400],
-              [7.572, 1097, 2400]
+              [1.106, 756, 2400],
+              [1.452, 756, 2400],
+              [2.093, 756, 2400],
+              [2.37, 756, 2400],
+              [2.599, 756, 2400],
+              [3.333, 814, 2400],
+              [3.903, 814, 2400],
+              [4.563, 814, 2400],
+              [5.232, 814, 2400],
+              [5.763, 814, 2400],
+              [6.367, 1097, 2400],
+              [6.891, 1097, 2400],
+              [7.565, 1097, 2400]
             ]
           },
           "C": {
-            "solo": 3.549,
-            "crew": 3.766,
+            "solo": 3.333,
+            "crew": 3.485,
             "series": [
               [0, 180, 0],
               [0.329, 180, 0],
               [0.531, 180, 0],
               [0.724, 180, 0],
-              [1.139, 327, 40],
-              [1.485, 327, 40],
-              [2.193, 327, 120],
-              [2.504, 327, 120],
-              [2.765, 327, 120],
-              [3.549, 343, 480],
-              [3.989, 343, 480],
-              [4.506, 343, 480],
-              [5.292, 343, 1440],
-              [5.737, 343, 1440],
-              [6.44, 480, 1440],
-              [6.94, 480, 1440],
-              [7.572, 480, 1440]
+              [1.106, 327, 40],
+              [1.452, 327, 40],
+              [2.093, 327, 120],
+              [2.37, 327, 120],
+              [2.599, 327, 120],
+              [3.333, 343, 480],
+              [3.903, 343, 480],
+              [4.563, 343, 480],
+              [5.232, 343, 1440],
+              [5.763, 343, 1440],
+              [6.367, 480, 1440],
+              [6.891, 480, 1440],
+              [7.565, 480, 1440]
             ]
           },
           "S": {
-            "solo": 5.292,
-            "crew": 5.002,
+            "solo": 5.232,
+            "crew": 4.706,
             "series": [
               [0, 135, 0],
               [0.329, 135, 0],
               [0.531, 135, 0],
               [0.724, 135, 0],
-              [1.139, 251, 0],
-              [1.485, 251, 0],
-              [2.193, 251, 45],
-              [2.504, 251, 45],
-              [2.765, 251, 45],
-              [3.549, 260, 45],
-              [3.989, 285, 120],
-              [4.506, 285, 120],
-              [5.292, 301, 480],
-              [5.737, 301, 480],
-              [6.44, 425, 480],
-              [6.94, 447, 1440],
-              [7.572, 447, 1440]
+              [1.106, 251, 0],
+              [1.452, 251, 0],
+              [2.093, 251, 45],
+              [2.37, 251, 45],
+              [2.599, 251, 45],
+              [3.333, 260, 45],
+              [3.903, 285, 120],
+              [4.563, 285, 120],
+              [5.232, 301, 480],
+              [5.763, 301, 480],
+              [6.367, 425, 480],
+              [6.891, 447, 1440],
+              [7.565, 447, 1440]
             ]
           },
           "Fi": {
-            "solo": 6.94,
+            "solo": 6.891,
             "crew": 999,
             "series": [
-              [0, 37, 0],
-              [0.329, 37, 0],
-              [0.531, 37, 0],
-              [0.724, 37, 0],
-              [1.139, 73, 0],
-              [1.485, 73, 0],
-              [2.193, 73, 0],
-              [2.504, 73, 0],
-              [2.765, 73, 0],
-              [3.549, 74, 0],
-              [3.989, 89, 0],
-              [4.506, 115, 0],
-              [5.292, 131, 0],
-              [5.737, 131, 0],
-              [6.44, 193, 40],
-              [6.94, 230, 480],
-              [7.572, 307, 480]
+              [0, 35, 0],
+              [0.329, 35, 0],
+              [0.531, 35, 0],
+              [0.724, 35, 0],
+              [1.106, 69, 0],
+              [1.452, 69, 0],
+              [2.093, 69, 0],
+              [2.37, 69, 0],
+              [2.599, 69, 0],
+              [3.333, 70, 0],
+              [3.903, 84, 0],
+              [4.563, 115, 0],
+              [5.232, 131, 0],
+              [5.763, 131, 0],
+              [6.367, 192, 40],
+              [6.891, 229, 480],
+              [7.565, 317, 480]
             ]
           },
           "U": {
-            "solo": 5.292,
-            "crew": 5.002,
+            "solo": 3.903,
+            "crew": 4.706,
             "series": [
-              [0, 72, 0],
-              [0.329, 72, 0],
-              [0.531, 72, 0],
-              [0.724, 72, 0],
-              [1.139, 138, 0],
-              [1.485, 138, 0],
-              [2.193, 138, 0],
-              [2.504, 138, 0],
-              [2.765, 138, 0],
-              [3.549, 141, 40],
-              [3.989, 163, 160],
-              [4.506, 285, 160],
-              [5.292, 301, 480],
-              [5.737, 301, 480],
-              [6.44, 425, 480],
-              [6.94, 447, 1440],
-              [7.572, 447, 1440]
+              [0, 66, 0],
+              [0.329, 66, 0],
+              [0.531, 66, 0],
+              [0.724, 66, 0],
+              [1.106, 128, 0],
+              [1.452, 128, 0],
+              [2.093, 128, 0],
+              [2.37, 128, 0],
+              [2.599, 128, 0],
+              [3.333, 131, 40],
+              [3.903, 152, 160],
+              [4.563, 297, 160],
+              [5.232, 312, 480],
+              [5.763, 312, 480],
+              [6.367, 440, 480],
+              [6.891, 459, 1440],
+              [7.565, 459, 1440]
             ]
           },
           "X": {
-            "solo": 999,
+            "solo": 6.891,
             "crew": 999,
             "series": [
               [0, 28, 0],
               [0.329, 28, 0],
               [0.531, 28, 0],
               [0.724, 28, 0],
-              [1.139, 32, 0],
-              [1.485, 32, 0],
-              [2.193, 32, 0],
-              [2.504, 32, 0],
-              [2.765, 32, 0],
-              [3.549, 41, 0],
-              [3.989, 41, 0],
-              [4.506, 41, 0],
-              [5.292, 41, 0],
-              [5.737, 41, 0],
-              [6.44, 43, 0],
-              [6.94, 43, 0],
-              [7.572, 43, 0]
+              [1.106, 32, 0],
+              [1.452, 32, 0],
+              [2.093, 32, 0],
+              [2.37, 32, 0],
+              [2.599, 32, 0],
+              [3.333, 41, 0],
+              [3.903, 41, 0],
+              [4.563, 41, 0],
+              [5.232, 41, 12],
+              [5.763, 41, 12],
+              [6.367, 43, 12],
+              [6.891, 43, 48],
+              [7.565, 43, 48]
             ]
           }
         },
+        "goals": [
+          { "id": "G1", "name": "Auto-placing cranes at every frame", "hours": 0.625, "total": 0.625 },
+          { "id": "G2", "name": "Crystal garden (seed producer level 3)", "hours": 1.25, "total": 1.875 },
+          { "id": "G3", "name": "Level 5 at every works", "hours": 1.667, "total": 3.542 },
+          { "id": "G4", "name": "Deep-sea spokes to High Port and the second branch", "hours": 0.667, "total": 4.208 },
+          { "id": "G5", "name": "Grand Station at Home", "hours": 0.868, "total": 5.076 },
+          { "id": "G6", "name": "Ring lighthouse", "hours": 1, "total": 6.076 },
+          { "id": "G7", "name": "Express engine collection", "hours": 0.482, "total": 6.559 },
+          { "id": "G8", "name": "A hat for each friend", "hours": 0.055, "total": 6.614 }
+        ],
         "totals": {
-          "solo": 8.204,
-          "four": 5.786,
-          "act": 5.567,
-          "labour": 0.821,
-          "travel": 1.729,
-          "wait": 0.087,
-          "wait4": 0.518
+          "solo": 8.098,
+          "four": 5.464,
+          "act": 5.35,
+          "labour": 0.815,
+          "travel": 1.934,
+          "wait": 0,
+          "wait4": 0.25,
+          "wallet": 25837,
+          "wallet4": 16109,
+          "endgame": 6.614
         }
       }
     ],
@@ -1173,11 +1166,6 @@
       { "id": "Fi", "name": "Fibre bundles", "tier": 3 },
       { "id": "U", "name": "Copper cable", "tier": 3 },
       { "id": "X", "name": "Crystal seeds", "tier": 4 }
-    ],
-    "spokeSaves": [
-      { "slot": "b1", "longMin": 3.204, "spokeMin": 1.633 },
-      { "slot": "port", "longMin": 4.775, "spokeMin": 1.633 },
-      { "slot": "b2", "longMin": 6.346, "spokeMin": 1.633 }
     ]
   }
 </script>
@@ -1225,8 +1213,9 @@
       [t.solo.toFixed(1) + ' h', 'solo to the ending'],
       [t.four.toFixed(1) + ' h', 'four friends'],
       [D.target + ' h', 'target'],
-      [((t.act / t.solo) * 100).toFixed(0) + '%', 'of solo time is authored play'],
       [Math.round(t.wait4 * 60) + ' min', 'four friends wait for stock'],
+      [t.wallet.toLocaleString('en-GB'), 'Bucks in the shared wallet at the ending (solo)'],
+      [t.endgame.toFixed(1) + ' h', 'of end-game goals after that'],
     ]
       .map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${s}</span></div>`)
       .join('');
@@ -1312,8 +1301,8 @@
       hover(g, `<b>${name}</b><br>${note}`);
     };
     stop(ang[first], 'Bell Terraces', 'Small stop on the first return spoke: crystal seeds, hook practice');
-    stop(ang[second], 'Sail Tower', 'Small stop on the optional spoke: glider practice');
-    stop(ang.port, 'Lantern Observatory', 'Small stop on the deep-sea spoke: a telescope glimpse of the ending');
+    stop(ang[second], 'Sail Tower', 'On the way to the second branch: glider practice');
+    stop(ang.port, 'Lantern Observatory', 'On the final approach: a telescope glimpse of the ending');
     // Hub.
     el('circle', { cx, cy, r: 46, fill: 'var(--land)', stroke: 'var(--ink-2)', 'stroke-width': 2 }, svg);
     text(svg, cx, cy - 10, 'Home', { 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 700 });
@@ -1389,7 +1378,7 @@
       ],
       ['High Gorge', 'Copper (U)', branch === 'gorge' ? 'First branch' : 'Second branch', 'Powered pick, hook reel'],
       ['High Port', 'Uses either', 'Opposite Ring Island', 'Harbour crane, service bay, faster engine'],
-      ['Small stops', 'Crystal (X), by hand', 'On the spokes', 'Practice, views, the telescope'],
+      ['Small stops', 'Crystal (X): by hand, then the seed cradle', 'On the way', 'Practice, views, the telescope'],
       ['Original Island', 'None new', 'After the loop', 'The Boogler'],
     ];
     document.getElementById('places').innerHTML =
@@ -1451,7 +1440,9 @@
           { x: x(a), y: y(i) - rowH / 2, width: Math.max(8, x(b) - x(a)), height: rowH, class: 'hit' },
           svg,
         );
-        const extra = key === 'four' && s.wait4 > 0.5 ? `<br>Waits ${s.wait4.toFixed(0)} min for ${s.on4}` : '';
+        const extra =
+          (key === 'four' && s.wait4 > 0.5 ? `<br>Waits ${s.wait4.toFixed(0)} min for ${s.on4}` : '') +
+          (s.back ? `<br>Doubles back to ${s.back}` : '');
         hover(
           hit,
           `<b>${s.name}</b><br>${key === 'solo' ? 'Solo' : 'Four friends'}: ${a.toFixed(2)}–${b.toFixed(2)} h${extra}`,
@@ -1495,7 +1486,7 @@
       const div = document.createElement('div');
       div.className = 'mult';
       const passes =
-        c.solo < 999 ? `Machines pass one player at ${c.solo.toFixed(1)} h` : 'Hands only in the main game';
+        c.solo < 999 ? `Machines pass one player at ${c.solo.toFixed(1)} h` : 'Machines pass hands in the end game';
       div.innerHTML = `<h3>${res.name} · tier ${res.tier}</h3><p>${passes}</p>`;
       const svg = el('svg', {
         viewBox: '0 0 300 170',
@@ -1561,6 +1552,54 @@
     }
   }
 
+  function endgame() {
+    const svg = document.getElementById('away');
+    svg.replaceChildren();
+    const W = 420,
+      Hh = 220,
+      L = 40,
+      R = 14,
+      T = 12,
+      B = 30;
+    const maxT = 72,
+      maxY = Math.ceil(D.horizon + 0.5);
+    const x = (h) => L + ((W - L - R) * h) / maxT;
+    const y = (v) => Hh - B - ((Hh - B - T) * v) / maxY;
+    for (let v = 0; v <= maxY; v++) {
+      el('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: 'var(--grid)' }, svg);
+      text(svg, L - 6, y(v) + 4, v + ' h', { 'text-anchor': 'end', 'font-size': 11, class: 'muted' });
+    }
+    for (const h of [0, 12, 24, 48, 72])
+      text(svg, x(h), Hh - 10, h + ' h', { 'text-anchor': 'middle', 'font-size': 11, class: 'muted' });
+    el(
+      'line',
+      { x1: L, x2: W - R, y1: y(D.horizon), y2: y(D.horizon), stroke: 'var(--ink-3)', 'stroke-dasharray': '4 4' },
+      svg,
+    );
+    const pts = [];
+    for (let h = 0; h <= maxT; h += 1) pts.push(`${x(h)},${y(D.horizon * (1 - Math.exp(-h / D.horizon)))}`);
+    el('polyline', { points: pts.join(' '), fill: 'none', stroke: 'var(--auto)', 'stroke-width': 2 }, svg);
+    for (const [h, v] of D.away) {
+      const c = el(
+        'circle',
+        { cx: x(h), cy: y(v), r: 4, fill: 'var(--auto)', stroke: 'var(--surface)', 'stroke-width': 2 },
+        svg,
+      );
+      hover(c, `${h} h away → ${v.toFixed(2)} h of output credited`);
+    }
+    text(svg, W - R, y(D.horizon) - 6, 'soft limit', { 'text-anchor': 'end', 'font-size': 11, class: 'muted' });
+    document.getElementById('away-note').textContent =
+      `Nothing runs while the world is empty. On the next join each producer's yard is credited H × (1 − e^(−away/H)) hours of output, with H = ${D.horizon} h, never past the yard: an hour away gives ${D.away[1][1].toFixed(1)} h, a day gives ${D.away[6][1].toFixed(1)} h. Bigger yards make the credit worth more.`;
+    const r = route();
+    document.getElementById('end-note').textContent =
+      `After the ending, everything is automated and a new tier of goals opens, bought from production and the shared wallet: about ${r.totals.endgame.toFixed(1)} h of play, the same for one or four players, because producers set the pace.`;
+    document.getElementById('goals').innerHTML =
+      '<tr><th>Goal</th><th>Hours</th><th>After the ending</th></tr>' +
+      r.goals
+        .map((g) => `<tr><td>${g.name}</td><td>${g.hours.toFixed(1)}</td><td>${g.total.toFixed(1)} h</td></tr>`)
+        .join('');
+  }
+
   function render() {
     document
       .querySelectorAll('[data-branch]')
@@ -1570,6 +1609,7 @@
     placesTable();
     pacing();
     multiples();
+    endgame();
   }
   document.querySelectorAll('[data-branch]').forEach((b) =>
     b.addEventListener('click', () => {

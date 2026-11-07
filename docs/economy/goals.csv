@@ -1,0 +1,9 @@
+id,name,kind,W,St,R,C,S,Fi,U,X,bucks,sets_rates,note
+G1,Auto-placing cranes at every frame,automation,0,0,0,0,800,300,300,0,8000,,"The last manual job, the carry from rack to frame, goes"
+G2,Crystal garden (seed producer level 3),automation,0,0,0,0,400,200,200,60,6000,X=240,Crystal stops being scarce
+G3,Level 5 at every works,automation,0,0,0,2000,2000,800,800,120,20000,C=2880 S=2880 U=2880 Fi=2880,"Every producer doubles, the second branch catches up"
+G4,Deep-sea spokes to High Port and the second branch,shared,0,0,0,1600,1600,0,0,160,16000,,Every place one ride from Home
+G5,Grand Station at Home,shared,0,0,0,2500,2000,0,0,0,25000,,The town's biggest district
+G6,Ring lighthouse,shared,0,0,0,0,2000,0,1200,240,25000,,Visible from every island
+G7,Express engine collection,personal,0,0,0,0,0,0,0,0,30000,,"Cosmetic engines, from the shared wallet"
+G8,A hat for each friend,personal,0,0,0,0,0,0,0,0,2000,,Personal items can come from the shared wallet too

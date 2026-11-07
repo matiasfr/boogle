@@ -1,12 +1,12 @@
-slot,name,kind,ring_angle,resources,abilities,km_before,km_after_spoke1,km_after_close,km_own_spoke,own_spoke_at,note
-home,Home · Threefold Reach,hub,,"W, St, R","Hook, glider (starter)",0.15,0.15,0.15,0.15,home.line1,"The hub: town, forge, Home Yard and the Roundhouse"
-splitrock,Split-rock Works,hub island,,C,Breaker strike; ankle rings on the way (double jump),0.4,0.4,0.4,0.4,splitrock.connect,"The existing east quarry, on the hub island"
-ring,Ring Island,ring,0,S,Brace the aperture,1.2,1.2,1.2,1.2,ring.reach,"The entry spoke: the first sea crossing, from the pier"
-b1,(first branch),branch,270,Fi or U,Canopy: sling + glider cloth · Gorge: powered pick + hook reel,3.085,1.2,1.2,1.2,spoke1,Reached around the ring from Ring Island; its spoke is the first shortcut
-port,High Port,ring,180,"Recombines S, C and the branch material","Town services, harbour crane",4.97,3.085,3.085,1.2,optional,Opposite Ring Island; its own deep-sea spoke is optional and needs crystal
-b2,(second branch),branch,90,U or Fi,The other branch's pair,6.855,4.97,3.085,1.2,optional,Reached from the Port side; finishing it closes the ring
-original,Original Island,ending,180,None new,The Boogler,5.97,4.085,4.085,2.2,optional,"Beyond the Port, outside the ring"
-stop-ankle,Ankle-ring ledge,stop,,—,Double jump (approved jump brief),0.3,0.3,0.3,0.3,home.line1,On the way to Split-rock
-stop-bell,Bell Terraces,stop,,X (found),Hook practice,0.6,0.6,0.6,0.6,spoke1,Islet halfway along the first branch spoke
-stop-sail,Sail Tower,stop,,X (found),Glider practice,0.6,0.6,0.6,0.6,optional,Islet on the second branch spoke
-stop-lens,Lantern Observatory,stop,,X (found),Telescope glimpse of the ending,0.6,0.6,0.6,0.6,optional,Islet on the Port spoke
+slot,name,kind,map_angle,resources,abilities,own_spoke_at,km_before_if_canopy_first,km_after_spoke1,km_after_close,km_own_spoke,note
+home,Home · Threefold Reach,hub,,"W, St, R","Hook, glider (starter)",home.line1,0.15,0.15,0.15,0.15,"The hub: town, forge, Home Yard and the Roundhouse"
+splitrock,Split-rock Works,hub island,,C,Breaker strike; ankle rings on the way (double jump),splitrock.connect,0.4,0.4,0.4,0.4,"The existing east quarry, on the hub island"
+ring,Ring Island,ring,0,S,Brace the aperture,ring.reach,1.2,1.2,1.2,1.2,"The entry spoke: the first sea crossing, from the pier"
+b1,(first branch),branch,270,Fi or U,Canopy: sling + glider cloth · Gorge: powered pick + hook reel,spoke1,2.9,1.5,1.5,1.5,Reached around the ring from Ring Island; its spoke is the first shortcut
+port,High Port,ring,180,"Recombines S, C and the branch material","Town services, harbour crane",endgame,5.2,3.8,3.8,1.8,Its own deep-sea spoke is an end-game goal and needs crystal
+b2,(second branch),branch,90,U or Fi,The other branch's pair,endgame,6.8,5.4,3.4,1.1,Reached from the Port side; finishing it closes the ring
+original,Original Island,ending,180,None new,The Boogler,endgame,6.2,4.8,4.8,2.8,"Beyond the Port, outside the ring"
+stop-ankle,Ankle-ring ledge,stop,,—,Double jump (approved jump brief),home.line1,0.3,0.3,0.3,0.3,On the way to Split-rock
+stop-bell,Bell Terraces,stop,,X (found),Hook practice,spoke1,0.6,0.6,0.6,0.6,Islet on the first return spoke; crystal seeds
+stop-sail,Sail Tower,stop,,X (found),Glider practice,b2.reach,0.6,0.6,0.6,0.6,"Islet on the way to the second branch, part of that step"
+stop-lens,Lantern Observatory,stop,,X (found),Telescope glimpse of the ending,final,0.6,0.6,0.6,0.6,"Islet on the final approach, part of that step"
