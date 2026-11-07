@@ -88,7 +88,10 @@ const scenarios = [
   'lighthouse',
   'atlas',
   'second-tab',
+  'smoke', // the full depth, against the live site (see LIVE below)
 ];
+// Scenarios that play a deployed site, not this checkout's stack.
+const LIVE: Record<string, string> = { smoke: 'https://boogle.club/' };
 if (onlyIndex >= 0 && (job !== 'scenarios' || !scenarios.includes(only!))) throw new Error('Unknown nightly scenario');
 const selected = only ? [only] : scenarios;
 const perfHistory = path.join(stateDir, 'perf', 'history.jsonl');
@@ -312,7 +315,13 @@ if (dry && job === 'perf') {
       for (const name of selected) {
         const execution = spawnSync(
           process.execPath,
-          ['dev/scenarios/run.ts', name, '--out', path.join(dir, 'artifacts', 'scenarios')],
+          [
+            'dev/scenarios/run.ts',
+            name,
+            ...(LIVE[name] ? ['--url', LIVE[name]] : []),
+            '--out',
+            path.join(dir, 'artifacts', 'scenarios'),
+          ],
           {
             cwd: work,
             env,
