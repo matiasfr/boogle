@@ -58,7 +58,6 @@ async function addRoom(r: number) {
   await sleep(1500);
 }
 const t0 = Date.now();
-const loads: Promise<unknown>[] = [];
 for (const [rooms, seconds] of phases) {
   for (let r = roomPages.size; r < rooms; r++) await addRoom(r);
   console.log(JSON.stringify({ phase: { rooms, seconds }, at: Math.round((Date.now() - t0) / 1000) }));

@@ -58,7 +58,6 @@ export type WorldHostOptions = {
   home?: HomeLand;
   tick?: boolean; // run the 50 ms timer (default true)
   meter?: StepMeter; // the step timer's lateness, for the status route (step-meter.ts)
-  meter?: StepMeter; // the step timer's lateness, for the status route (step-meter.ts)
   pidOf?: (sid: string) => string | null; // the hosted room's binding of each session to its player
   tuneController?: (sid: string) => boolean; // explicit operator assignment, never elected from room leadership
   log?: (...a: unknown[]) => void;
