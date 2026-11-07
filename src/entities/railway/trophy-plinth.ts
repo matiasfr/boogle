@@ -57,11 +57,28 @@ export async function createTrophyPlinth(
   const prize = new THREE.Mesh(prizeGeometry, prizeMaterial);
   const prizeY = ground + 1.62;
   prize.position.set(x, prizeY, z);
-  root.add(block, cap, prize);
+  // The plinth lights for its show: a teal band glowing round the cap.
+  const glowGeometry = new THREE.RingGeometry(0.55, 0.95, 40).rotateX(-Math.PI / 2);
+  geometries.push(glowGeometry);
+  const glowMaterial = readableUnlit(
+    new THREE.MeshBasicNodeMaterial({
+      color: TEAL,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    }),
+  );
+  const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+  glow.position.set(x, ground + 1.17, z);
+  glow.visible = false;
+  root.add(block, cap, prize, glow);
   let body: ReturnType<typeof land.addStatic> | null = null;
 
   const stats = { shows: 0, together: 0, partners: 0 };
-  let show = 0;
+  let show = 0,
+    big = false;
+  const TOGETHER_S = 2; // a friend this close behind still counts as arriving together
   const partnersNear = (now: number) => {
     let n = 0;
     for (const r of remotes.values()) {
@@ -74,22 +91,29 @@ export async function createTrophyPlinth(
     }
     return n;
   };
-  function play(partners: number) {
+  /** The small show, for whoever passes it first. */
+  function play() {
     seen.add('plinth:jump');
     stats.shows++;
-    stats.partners = partners;
     show = SHOW_S;
-    const together = partners > 0;
-    if (together) stats.together++;
+    big = false;
     placeSound('pickupJump', x, z);
-    folk.cheerAround(x, z, together ? 22 : 12, together ? 6 : 3.5);
+    folk.cheerAround(x, z, 12, 3.5);
     if (reducedMotion) return;
-    rewardSparkles(x, prizeY, z, together ? 40 : 22, together ? 3.2 : 2.2, { color: TEAL });
-    rewardDust(x, ground + 1.1, z, together ? 16 : 10, together ? 3.6 : 2.4, 0.4);
-    if (together) {
-      placeSound('boxCommon', x, z); // the village bell
-      confettiBurst(x, prizeY + 0.4, z);
-    }
+    rewardSparkles(x, prizeY, z, 22, 2.2, { color: TEAL });
+    rewardDust(x, ground + 1.1, z, 10, 2.4, 0.4);
+  }
+  /** A friend arriving with you (in the radius now, or within the show's first moments) makes it bigger. */
+  function bigger(partners: number) {
+    big = true;
+    stats.together++;
+    stats.partners = partners;
+    placeSound('boxCommon', x, z); // the village bell
+    folk.cheerAround(x, z, 22, 6);
+    if (reducedMotion) return;
+    rewardSparkles(x, prizeY, z, 40, 3.2, { color: TEAL });
+    rewardDust(x, ground + 1.1, z, 16, 3.6, 0.4);
+    confettiBurst(x, prizeY + 0.4, z);
   }
 
   const api = {
@@ -120,12 +144,18 @@ export async function createTrophyPlinth(
         Math.hypot(p.x - x, p.z - z) <= NEAR &&
         Math.abs(p.y - PLAYER_R - ground) < 3
       )
-        play(partnersNear(now));
+        play();
+      if (show > SHOW_S - TOGETHER_S && !big) {
+        const partners = partnersNear(now);
+        if (partners > 0) bigger(partners);
+      }
       show = Math.max(0, show - dt);
       const u = show > 0 ? show / SHOW_S : 0;
       // At rest it turns slowly; its show spins it up, lifts it and sparkles as it goes.
       prize.rotation.y += dt * (0.5 + (reducedMotion ? 0 : 6 * u));
       prize.position.y = prizeY + (reducedMotion ? 0 : Math.sin(now * 0.002) * 0.05 + 0.35 * Math.sin(Math.PI * u));
+      glow.visible = u > 0;
+      glowMaterial.opacity = Math.min(1, u * 2) * (reducedMotion ? 0.6 : 0.75 + 0.25 * Math.sin(now * 0.02));
       if (!reducedMotion && show > 0 && Math.floor(show * 8) !== Math.floor((show + dt) * 8))
         rewardSparkles(x, prize.position.y, z, 3, 1.4, { color: TEAL, life: 0.5, size: 0.1 });
     },
@@ -133,6 +163,7 @@ export async function createTrophyPlinth(
       root.removeFromParent();
       for (const g of geometries) g.dispose();
       prizeMaterial.dispose();
+      glowMaterial.dispose();
     },
   };
   owner.cleanup(api.dispose);

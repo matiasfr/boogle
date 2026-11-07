@@ -140,7 +140,7 @@ async function friend() {
     return;
   }
   if (shot === 'late') {
-    await until(() => finderAtDevice(30), 'finder nearing the device');
+    await until(() => finderAtDevice(10), 'finder reached the device');
     // Gone for the find: the finder takes it and plays on meanwhile (game time); the room reconnects by itself after.
     net.room!.pause(40000);
     await until(() => !read().ready, 'friend offline');
