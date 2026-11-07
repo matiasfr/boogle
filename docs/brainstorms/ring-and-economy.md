@@ -23,6 +23,8 @@ stand: Split-rock Works next, then Ring Island; the smallest Roundhouse first; a
   material you've found, pass one player and then a whole crew.
 - At the end everything is automated, even the last carry into the frame, and a new tier of goals opens.
 - What the works make beyond their yards sells to the town, into **one shared wallet** that anyone may spend.
+- **Progression is shared:** every upgrade and ability anyone buys or earns applies to everyone. It's tuned for one to
+  three friends.
 - The world is **paused while nobody is in it**. When you come back, the producers have filled their yards a little,
   with a soft limit.
 - Progress is mostly linear, but you double back to earlier places with new abilities. Twice, you choose an order:
@@ -50,6 +52,18 @@ reached by exploration with abilities and route shortcuts, not bought.
    there's "some kind of new tier of goals", and numeric requirements are fine.
 6. **Map:** wanted "a little more asymmetry or variety or irregularity". Another agent is prototyping layouts in 2D,
    so this model keeps its node list and distances in one swappable table.
+
+Later the same day, the owner approved the [principles audit](../research/economy-principles-audit.md)'s wording,
+including the funded job finishing as part of the away credit and the wallet's visible strongroom. The owner added four
+calls, recorded as "economy principles amended" in [boogle-2.md](../proposals/boogle-2.md#progress-and-rewards):
+
+7. **Shared progression:** "let's make progression completely shared." Every upgrade and ability bought or earned
+   (carry sling, powered pick, double jump) applies to everyone in the world.
+8. **Group size:** "really tuned to 1 to 2 to 3, maybe 4 people." Design and tune for 1–3, tolerate 4, and don't
+   design for more.
+9. **Money in dialogue:** The Boogler and NPCs keep treating money as a joke, while resources and the wallet do real
+   work. Their copy is unchanged; conflicting lines are listed below.
+10. **Cosmetics:** "the cosmetics can still be shared. Or maybe certain cosmetics and secret crates can be personal."
 
 ## What changed in the model
 
@@ -85,30 +99,50 @@ reached by exploration with abilities and route shortcuts, not bought.
   close the loop). Their rides use whatever spokes exist by then, so shortcuts make returns quicker.
 - **Distances are an edge list** (the Links tab): nine link lengths that are deliberately uneven placeholders. A new
   layout from the map prototype only changes that table.
+- **Shared progression.** Every ladder step (carry, harvest tools, train speed, freight, trains) applies to every
+  player. Each party's hand rate is one player's rate × (1 + 0.7 per extra player), so friends haul more, but nobody
+  has better tools than anyone else.
+- **One, two and three players.** The Pacing tab has one block per party, set to 1, 2 and 3; four is a footnote in the
+  Summary.
 
-## Pacing (rerun)
+## Pacing (rerun for 1, 2 and 3 players)
 
-| | Solo | Four friends |
-| --- | --- | --- |
-| Hours to the ending | **8.2** (8.1–8.3 across the choices) | **5.5** |
-| Authored play, including about 27 minutes of returns | 5.3 h | 3.9 h |
-| Commuting, including returns | 2.0 h | 1.1 h |
-| Hand labour | 0.8 h | 0.3 h |
-| Waiting for shared stock | under 1 min | 14–15 min |
-| Shared wallet at the ending | about 26,700 Bucks | about 15,800 Bucks |
-| End-game goals after the ending | **6.6 h** | about the same (production sets the pace) |
+| | Solo | Two | Three |
+| --- | --- | --- | --- |
+| Hours to the ending | **8.2** (8.1–8.3 across the choices) | **6.9** | **6.1** |
+| Authored play, with about 27 min of returns | 5.3 h | 4.8 h | 4.3 h |
+| Commuting, with returns | 2.0 h | 1.5 h | 1.3 h |
+| Hand labour | 0.8 h | 0.5 h | 0.3 h |
+| Waiting for shared stock | under 1 min | 3–5 min | 9–10 min |
+| Shared wallet at the ending | about 26,700 Bucks | about 21,500 | about 17,900 |
+| End-game goals after the ending | **6.6 h** | about the same | about the same |
 
-**Machines pass one player:**
+Four players still works: 5.5 h to the ending, with 14–15 min waiting. It isn't designed for.
 
-- logs at 0.5 h;
-- footings at 3.3 h;
-- steel at 5.2 h;
-- the first branch's material at 5.2 h (Canopy first) or 3.9 h (Gorge first);
-- the second branch's material and crystal at 6.9 h.
+| Milestone | Hours (solo / two / three) |
+| --- | --- |
+| The Works connected | 1.5 / 1.2 / 1.1 |
+| Ring Island connected | 2.4 / 2.0 / 1.8 |
+| First branch connected | 3.9 / 3.3 / 3.0 |
+| First return spoke | 4.5 / 3.8 / 3.4 |
+| High Port | 5.8 / 4.9 / 4.4 |
+| The ring closed | 7.6 / 6.4 / 5.6 |
+| The ending | 8.2 / 6.9 / 6.1 |
 
-**Machines pass a crew of four:** before the ending for footings, steel and the first branch; for the second branch and
-crystal only in the end-game tier, when level 5 and the crystal garden arrive. That's the "eventually everything gets
-easy".
+Machines pass the hands of the whole group, on each party's own timeline:
+
+| Material | Solo | Two | Three |
+| --- | --- | --- | --- |
+| Logs | 0.5 h | 0.4 h | 0.4 h |
+| Footings | 3.3 h | 4.4 h | 4.0 h |
+| Steel | 5.2 h | 5.8 h | 5.2 h |
+| First branch's material | 5.2 h (Canopy first) or 3.9 h (Gorge first) | 5.8 h | 5.2 h |
+| Second branch's material | 6.9 h | 5.8 h | End game |
+| Crystal | 6.9 h | End game | End game |
+
+More players mean more hands, so machines take longer to catch up. The second branch and crystal are only overtaken by
+three players' hands in the end-game tier, when level 5 and the crystal garden arrive. That's the "eventually
+everything gets easy".
 
 ## The world
 
@@ -151,15 +185,28 @@ steel, footings, copper and fibre).
 
 ### Stock, yards and the wallet
 
-- **What you carry is yours** until you deliver it to a build, as in the production-core contract.
+- **What you carry is yours** until you deliver it to a build, as in the production-core contract. Everything it
+  unlocks is everyone's: progression is shared.
 - **Connected output is shared stock.** It sits in each producer's own yard, plus the Home Yard bays (16 → 32 → 64 →
   96 per material), and anyone may use it.
 - **A full yard sells its surplus to the town,** and the Bucks go into the shared wallet. That gives surplus a use and
   gives the end-game tier its currency.
-- **The wallet buys anything:** shared upgrades and goals, and personal looks and train fittings. It needs two rules
-  (audit items 1 and 5):
+- **The wallet buys anything:** shared upgrades and goals, and personal looks and train fittings. It follows two rules
+  from the approved audit:
   - spending happens at a place in the world, so others see it;
   - the next main-route build keeps its share.
+
+### Cosmetics: shared or personal
+
+| Kind | Who has it | How it's paid for |
+| --- | --- | --- |
+| Train looks (flag, side, chimney), Roundhouse fittings | Shared: the world's trains | The wallet, at the Roundhouse |
+| Town and station decorations, awnings, districts | Shared: the world's places | The wallet, at the town |
+| Wearables from the shop (hat, accessory, outfit) | Personal once taken | The wallet, at the shop |
+| Secret-crate finds and box cosmetics | Personal | Found, never bought |
+
+The split follows the owner's "certain cosmetics and secret crates can be personal". Shared looks are things the whole
+world sees on shared objects. Personal ones are on your own character, or found by you.
 
 ### Producers that start slow
 
@@ -170,7 +217,7 @@ Split-rock Works:
 | 1 | 40 an hour | One player carries about 180 an hour, or 330 with the carry frame |
 | 2 | 120 an hour | |
 | 3 | 480 an hour | Passes one player |
-| 4 | 1,440 an hour | Passes a crew of four |
+| 4 | 1,440 an hour | Passes a group of three |
 | 5 (end-game) | 2,880 an hour | |
 
 Every level is a physical addition beside the works, and its bill reaches for the newest material.
@@ -181,8 +228,7 @@ Every level is a physical addition beside the works, and its bill reaches for th
 - Hands place every unit until the end-game cranes.
 - Upgrades are builds you carry stock to.
 - Doubling back with a new ability is hands-on exploration.
-- Four friends wait about a quarter of an hour in total for stock, which is a reason to split off and upgrade
-  producers.
+- Three friends wait about ten minutes in total for stock, which is a reason to split off and upgrade producers.
 
 ## Best suggestions, ranked
 
@@ -196,12 +242,16 @@ Every level is a physical addition beside the works, and its bill reaches for th
 
 ## Tensions
 
-- **Principles.** Three DESIGN.md principles need new wording and two need a clarifying sentence. Four decision-log
-  entries and the production-core offline contract are superseded. One owner call needs a rule for the wallet's look,
-  and four code paths run or catch up time while nobody plays. The exact source lines and proposed wording are in the
-  [audit](../research/economy-principles-audit.md).
-- **The end-game is production-bound.** Four friends don't finish it faster, so they may stand around. A crew could
-  instead be given hands-on end-game jobs, such as building the Grand Station piece by piece, which should be tested.
+- **Principles: approved and applied.** DESIGN.md 1, 6, 8, 9 and Server hosts every room carry compact versions of the
+  audit's wording, sized to the prototype route's reading budget. The full wallet and away-credit rules live in
+  [owner-calls](../agents/owner-calls.md). The code changes are queued after R1b in
+  [orchestrator-state](../agents/orchestrator-state.md).
+- **The end-game is production-bound.** Two or three friends don't finish it faster, so they may stand around. A crew
+  could instead be given hands-on end-game jobs, such as building the Grand Station piece by piece, which should be
+  tested.
+- **More hands delay the crossover.** With shared tools, a trio's hands outpace level 3 producers, so the
+  hand-to-machine moment comes later for groups. That's fine if a group feels the relief at level 4; if not, give
+  level 3 a little more for groups.
 - **The away credit doesn't change pacing.** Solo play almost never waits for stock, so the credit is a homecoming
   feeling, not a speed-up. If playtests want it to matter, make yards smaller early, not the credit bigger.
 - **The second order choice is an upgrade order, not a place.** The owner said "a couple of times". A second
@@ -222,29 +272,49 @@ greybox:
 Compress the levels so the crossover happens within one sitting; all rates are tunables. Then stop for the owner's
 verdict. The wallet and the end-game tier come after the gut question is answered.
 
+## NPC lines for the owner
+
+Money stays a joke in dialogue, and no copy was edited. These lines assume that taking things is free or that nobody
+has money, which the shop and the wallet will contradict once wearables cost Bucks:
+
+- **The shop clerk** (`src/proto/place/town-lines.ts:68–94`):
+  - "The things are free. Don't tell the prices."
+  - "Everything on the floor is free. The prices are for looking at."
+  - "Try anything on. It's the prices you can't touch."
+  - "It isn't free. It's forty million with a forty million discount."
+- **The shop's tag and pickup lines** (`town-lines.ts:211–224`):
+  - "TODAY: $0"
+  - "Take it: $0"
+  - "That's a fortune you've saved. Spend it wisely."
+  - "It's free! You didn't have to run!"
+- **The saver** (`town-lines.ts:105, 114`): "I've been saving for this hat for eleven years. Nearly there. Four hundred
+  to go." and the reply "That's what they want you to think." to "It says you pay nothing." This still works as a joke
+  if hats cost Bucks; flagged only because the premise changes.
+- **The Boogler** (`src/boogler/lines.ts:938`): "Rides cost money. You do not have money." With a shared wallet the
+  players do have money. Probably still funny as a mistaken jab; flagged for the owner.
+
+Recommended: keep all of them while the shop stays free, and revisit them only when shop wearables start costing
+Bucks.
+
 ## Open questions
 
-1. **Principle wording:** approve the amendments in the
-   [audit](../research/economy-principles-audit.md), starting with DESIGN.md 6, 9 and Server hosts every room?
-   Recommended: **yes, as worded**. Answer: ___
-2. **The funded job while away:** should the one funded laying job also complete in the away credit, keeping the
-   Design Table's "whatever you kicked off finishes"? Recommended: **yes, it finishes on the next join, and nothing
-   new starts**. Answer: ___
-3. **The second choice point:** keep the upgrade-order pick as the second choice, or ask the map prototype for a
+1. **The second choice point:** keep the upgrade-order pick as the second choice, or ask the map prototype for a
    second area-order choice (for example two small places between Split-rock and Ring Island)? Recommended: **both;
    the map prototype proposes where**. Answer: ___
-4. **Away horizon:** is H = 2 hours of output right to start (0.8 h after an hour away, 2 h after a day)?
+2. **Away horizon:** is H = 2 hours of output right to start (0.8 h after an hour away, 2 h after a day)?
    Recommended: **yes, as a tunable judged in play**. Answer: ___
-5. **Wallet guard:** does the wallet show as coin crates in a strongroom beside the Home Yard, with the next main-route
-   build's share kept back? Recommended: **yes**. Answer: ___
+3. **Shop wearables:** do they cost Bucks from the wallet, or stay free until the shared wallet ships? Recommended:
+   **free until the wallet ships, so the shop's lines stay true; then priced**. Answer: ___
+4. **Group crossover:** should level 3 producers be a little stronger so that two or three players also feel machines
+   overtake them mid-game? Recommended: **judge in play; it's one tunable per level**. Answer: ___
 
 ## Parked
 
 - Exact link lengths and the map's shape (map prototype).
 - Per-player schedules for this route in the event model (`campaign.ts`).
-- Box cosmetics versus wallet purchases (audit item 12).
+- A playable 2D economy prototype on the chosen map, queued in the orchestrator state.
 
 ## Disposition
 
-**Proposed, partly answered; owner decision needed** on the five questions and the audit's amendments. No game code
+**Proposed, partly answered; owner decision needed** on the four questions. The principles are amended; no game code
 changes. Everything builds after the line 2 playtest and the production-core slices it depends on.

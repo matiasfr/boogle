@@ -16,6 +16,7 @@
     --grid: #ebeae5;
     --auto: #2a78d6;
     --hand: #eb6834;
+    --p3: #1baf7a;
     --rail: #9b4a2c;
     --spoke: #6250d6;
     --sea: #e3eef6;
@@ -34,6 +35,8 @@
       --grid: #262623;
       --auto: #3987e5;
       --hand: #d95926;
+      --p3: #199e70;
+      --p3: #199e70;
       --rail: #d27a52;
       --spoke: #9085e9;
       --sea: #16222c;
@@ -52,6 +55,7 @@
     --grid: #262623;
     --auto: #3987e5;
     --hand: #d95926;
+    --p3: #199e70;
     --rail: #d27a52;
     --spoke: #9085e9;
     --sea: #16222c;
@@ -406,7 +410,10 @@
       </div>
     </div>
     <div class="loops">
-      <div><b>Manual assists</b> raise the hand line: carry frame, fibre sling, proper axe, powered pick.</div>
+      <div>
+        <b>Manual assists</b> raise the hand line for everyone (progression is shared): carry frame, fibre sling, proper
+        axe, powered pick.
+      </div>
       <div><b>Producer, wagon and engine upgrades</b> raise the machine line until it passes a crew.</div>
       <div>
         <b>Paused while empty.</b> Nothing runs with nobody in the world; on the next join, yards get a soft-capped away
@@ -421,7 +428,8 @@
     <svg id="pace" viewBox="0 0 900 430" role="img" aria-label="Pacing curve"></svg>
     <div class="legend">
       <span><i style="border-color: var(--auto)"></i>Solo</span>
-      <span><i style="border-color: var(--hand)"></i>Four friends</span>
+      <span><i style="border-color: var(--hand)"></i>Two players</span>
+      <span><i style="border-color: var(--p3)"></i>Three players</span>
       <span><i style="border-color: var(--ink-3); border-top-style: dashed"></i>8-hour target</span>
     </div>
     <details>
@@ -484,182 +492,233 @@
     "routes": [
       {
         "first": "canopy",
+        "players": [1, 2, 3],
         "steps": [
           {
             "key": "home.line1",
             "name": "Line 1: timber camp, T1–T3",
             "place": "Home · Threefold Reach",
-            "solo": [0, 0.329],
-            "four": [0, 0.203],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [0, 0.329],
+              [0, 0.265],
+              [0, 0.228]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "home.forge",
             "name": "Forge and Q1",
             "place": "Home · Threefold Reach",
-            "solo": [0.329, 0.531],
-            "four": [0.203, 0.323],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [0.329, 0.531],
+              [0.265, 0.424],
+              [0.228, 0.364]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "home.line2",
             "name": "Line 2: Q2–Q3 with the depot cart",
             "place": "Home · Threefold Reach",
-            "solo": [0.531, 0.724],
-            "four": [0.323, 0.454],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [0.531, 0.724],
+              [0.424, 0.588],
+              [0.364, 0.51]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "splitrock.reach",
             "name": "Walk to Split-rock, ankle rings, breaker strike",
             "place": "Split-rock Works",
-            "solo": [0.724, 1.106],
-            "four": [0.454, 0.722],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [0.724, 1.106],
+              [0.588, 0.921],
+              [0.51, 0.807]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "splitrock.connect",
             "name": "Connect the Works (Q4–Q6)",
             "place": "Split-rock Works",
-            "solo": [1.106, 1.452],
-            "four": [0.722, 1.022],
-            "wait4": 5.034,
-            "on4": "C",
+            "t": [
+              [1.106, 1.452],
+              [0.921, 1.221],
+              [0.807, 1.107]
+            ],
+            "wait": [0, 1.082, 3.389],
+            "on": ["—", "C", "C"],
             "back": ""
           },
           {
             "key": "ring.reach",
             "name": "First crossing to Ring Island",
             "place": "Ring Island",
-            "solo": [1.452, 2.093],
-            "four": [1.022, 1.458],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [1.452, 2.093],
+              [1.221, 1.77],
+              [1.107, 1.591]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "ring.connect",
             "name": "Brace the aperture, connect the steel works",
             "place": "Ring Island",
-            "solo": [2.093, 2.37],
-            "four": [1.458, 1.646],
-            "wait4": 0.3,
-            "on4": "C",
+            "t": [
+              [2.093, 2.37],
+              [1.77, 2.005],
+              [1.591, 1.796]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "hub.roundhouse",
             "name": "The Roundhouse opens",
             "place": "Home · Threefold Reach",
-            "solo": [2.37, 2.599],
-            "four": [1.646, 1.805],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [2.37, 2.599],
+              [2.005, 2.203],
+              [1.796, 1.972]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "b1.reach",
             "name": "Branch choice: ring segment to the first branch",
             "place": "Canopy Town",
-            "solo": [2.599, 3.305],
-            "four": [1.805, 2.267],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [2.599, 3.305],
+              [2.203, 2.797],
+              [1.972, 2.491]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "b1.connect",
             "name": "Connect the first branch",
             "place": "Canopy Town",
-            "solo": [3.305, 3.865],
-            "four": [2.267, 2.767],
-            "wait4": 8.184,
-            "on4": "Fi",
+            "t": [
+              [3.305, 3.865],
+              [2.797, 3.297],
+              [2.491, 2.991]
+            ],
+            "wait": [0, 1.858, 5.487],
+            "on": ["—", "Fi", "Fi"],
             "back": "Ring Island"
           },
           {
             "key": "spoke1",
             "name": "First return spoke and second engine",
             "place": "Canopy Town",
-            "solo": [3.865, 4.516],
-            "four": [2.767, 3.151],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [3.865, 4.516],
+              [3.297, 3.815],
+              [2.991, 3.43]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": "Split-rock Works"
           },
           {
             "key": "port.reach",
             "name": "Ring segment to High Port",
             "place": "High Port",
-            "solo": [4.516, 5.233],
-            "four": [3.151, 3.619],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [4.516, 5.233],
+              [3.815, 4.418],
+              [3.43, 3.956]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "port.connect",
             "name": "Harbour crane and service bay",
             "place": "High Port",
-            "solo": [5.233, 5.785],
-            "four": [3.619, 3.97],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [5.233, 5.785],
+              [4.418, 4.874],
+              [3.956, 4.351]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": "Home · Threefold Reach"
           },
           {
             "key": "b2.reach",
             "name": "Ring segment to the second branch",
             "place": "High Gorge",
-            "solo": [5.785, 6.403],
-            "four": [3.97, 4.358],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [5.785, 6.403],
+              [4.874, 5.384],
+              [4.351, 4.791]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "b2.connect",
             "name": "Connect the second branch",
             "place": "High Gorge",
-            "solo": [6.403, 6.939],
-            "four": [4.358, 4.708],
-            "wait4": 0.234,
-            "on4": "U",
+            "t": [
+              [6.403, 6.939],
+              [5.384, 5.833],
+              [4.791, 5.18]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": "Canopy Town"
           },
           {
             "key": "ring.close",
             "name": "Close the ring: the loop line",
             "place": "High Gorge",
-            "solo": [6.939, 7.624],
-            "four": [4.708, 5.117],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [6.939, 7.624],
+              [5.833, 6.382],
+              [5.18, 5.647]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": "Ring Island"
           },
           {
             "key": "final",
             "name": "Final crossing to the Original Island",
             "place": "Original Island",
-            "solo": [7.624, 8.188],
-            "four": [5.117, 5.488],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [7.624, 8.188],
+              [6.382, 6.859],
+              [5.647, 6.064]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           }
         ],
         "cross": {
           "W": {
-            "solo": 0.531,
-            "crew": 0.323,
+            "pass": [0.531, 0.424, 0.364],
             "series": [
               [0, 440, 0],
               [0.329, 440, 0],
@@ -681,8 +740,7 @@
             ]
           },
           "C": {
-            "solo": 3.305,
-            "crew": 3.619,
+            "pass": [3.305, 4.418, 3.956],
             "series": [
               [0, 180, 0],
               [0.329, 180, 0],
@@ -704,8 +762,7 @@
             ]
           },
           "S": {
-            "solo": 5.233,
-            "crew": 4.708,
+            "pass": [5.233, 5.833, 5.18],
             "series": [
               [0, 135, 0],
               [0.329, 135, 0],
@@ -727,8 +784,7 @@
             ]
           },
           "Fi": {
-            "solo": 5.233,
-            "crew": 4.708,
+            "pass": [5.233, 5.833, 5.18],
             "series": [
               [0, 76, 0],
               [0.329, 76, 0],
@@ -750,8 +806,7 @@
             ]
           },
           "U": {
-            "solo": 6.939,
-            "crew": 999,
+            "pass": [6.939, 5.833, 999],
             "series": [
               [0, 37, 0],
               [0.329, 37, 0],
@@ -773,8 +828,7 @@
             ]
           },
           "X": {
-            "solo": 6.939,
-            "crew": 999,
+            "pass": [6.939, 999, 999],
             "series": [
               [0, 28, 0],
               [0.329, 28, 0],
@@ -807,196 +861,246 @@
           { "id": "G8", "name": "A hat for each friend", "hours": 0.055, "total": 6.59 }
         ],
         "totals": {
-          "solo": 8.188,
-          "four": 5.488,
+          "end": [8.188, 6.859, 6.064],
+          "wait": [0, 2.94, 8.877],
+          "wallet": [26714, 21526, 17870],
           "act": 5.35,
           "labour": 0.827,
           "travel": 2.01,
-          "wait": 0,
-          "wait4": 0.229,
-          "wallet": 26714,
-          "wallet4": 15771,
-          "endgame": 6.59
+          "endgame": 6.59,
+          "four": 5.488,
+          "fourWait": 13.753
         }
       },
       {
         "first": "gorge",
+        "players": [1, 2, 3],
         "steps": [
           {
             "key": "home.line1",
             "name": "Line 1: timber camp, T1–T3",
             "place": "Home · Threefold Reach",
-            "solo": [0, 0.329],
-            "four": [0, 0.203],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [0, 0.329],
+              [0, 0.265],
+              [0, 0.228]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "home.forge",
             "name": "Forge and Q1",
             "place": "Home · Threefold Reach",
-            "solo": [0.329, 0.531],
-            "four": [0.203, 0.323],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [0.329, 0.531],
+              [0.265, 0.424],
+              [0.228, 0.364]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "home.line2",
             "name": "Line 2: Q2–Q3 with the depot cart",
             "place": "Home · Threefold Reach",
-            "solo": [0.531, 0.724],
-            "four": [0.323, 0.454],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [0.531, 0.724],
+              [0.424, 0.588],
+              [0.364, 0.51]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "splitrock.reach",
             "name": "Walk to Split-rock, ankle rings, breaker strike",
             "place": "Split-rock Works",
-            "solo": [0.724, 1.106],
-            "four": [0.454, 0.722],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [0.724, 1.106],
+              [0.588, 0.921],
+              [0.51, 0.807]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "splitrock.connect",
             "name": "Connect the Works (Q4–Q6)",
             "place": "Split-rock Works",
-            "solo": [1.106, 1.452],
-            "four": [0.722, 1.022],
-            "wait4": 5.034,
-            "on4": "C",
+            "t": [
+              [1.106, 1.452],
+              [0.921, 1.221],
+              [0.807, 1.107]
+            ],
+            "wait": [0, 1.082, 3.389],
+            "on": ["—", "C", "C"],
             "back": ""
           },
           {
             "key": "ring.reach",
             "name": "First crossing to Ring Island",
             "place": "Ring Island",
-            "solo": [1.452, 2.093],
-            "four": [1.022, 1.458],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [1.452, 2.093],
+              [1.221, 1.77],
+              [1.107, 1.591]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "ring.connect",
             "name": "Brace the aperture, connect the steel works",
             "place": "Ring Island",
-            "solo": [2.093, 2.37],
-            "four": [1.458, 1.646],
-            "wait4": 0.3,
-            "on4": "C",
+            "t": [
+              [2.093, 2.37],
+              [1.77, 2.005],
+              [1.591, 1.796]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "hub.roundhouse",
             "name": "The Roundhouse opens",
             "place": "Home · Threefold Reach",
-            "solo": [2.37, 2.599],
-            "four": [1.646, 1.805],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [2.37, 2.599],
+              [2.005, 2.203],
+              [1.796, 1.972]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "b1.reach",
             "name": "Branch choice: ring segment to the first branch",
             "place": "High Gorge",
-            "solo": [2.599, 3.333],
-            "four": [1.805, 2.282],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [2.599, 3.333],
+              [2.203, 2.819],
+              [1.972, 2.509]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "b1.connect",
             "name": "Connect the first branch",
             "place": "High Gorge",
-            "solo": [3.333, 3.903],
-            "four": [2.282, 2.652],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [3.333, 3.903],
+              [2.819, 3.296],
+              [2.509, 2.925]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": "Ring Island"
           },
           {
             "key": "spoke1",
             "name": "First return spoke and second engine",
             "place": "High Gorge",
-            "solo": [3.903, 4.563],
-            "four": [2.652, 3.043],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [3.903, 4.563],
+              [3.296, 3.824],
+              [2.925, 3.372]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": "Split-rock Works"
           },
           {
             "key": "port.reach",
             "name": "Ring segment to High Port",
             "place": "High Port",
-            "solo": [4.563, 5.232],
-            "four": [3.043, 3.485],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [4.563, 5.232],
+              [3.824, 4.389],
+              [3.372, 3.867]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "port.connect",
             "name": "Harbour crane and service bay",
             "place": "High Port",
-            "solo": [5.232, 5.763],
-            "four": [3.485, 3.826],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [5.232, 5.763],
+              [4.389, 4.829],
+              [3.867, 4.25]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": "Home · Threefold Reach"
           },
           {
             "key": "b2.reach",
             "name": "Ring segment to the second branch",
             "place": "Canopy Town",
-            "solo": [5.763, 6.367],
-            "four": [3.826, 4.206],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [5.763, 6.367],
+              [4.829, 5.328],
+              [4.25, 4.68]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           },
           {
             "key": "b2.connect",
             "name": "Connect the second branch",
             "place": "Canopy Town",
-            "solo": [6.367, 6.891],
-            "four": [4.206, 4.706],
-            "wait4": 9.637,
-            "on4": "Fi",
+            "t": [
+              [6.367, 6.891],
+              [5.328, 5.828],
+              [4.68, 5.18]
+            ],
+            "wait": [0, 3.665, 7.093],
+            "on": ["—", "Fi", "Fi"],
             "back": "High Gorge"
           },
           {
             "key": "ring.close",
             "name": "Close the ring: the loop line",
             "place": "Canopy Town",
-            "solo": [6.891, 7.565],
-            "four": [4.706, 5.109],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [6.891, 7.565],
+              [5.828, 6.369],
+              [5.18, 5.64]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": "Ring Island"
           },
           {
             "key": "final",
             "name": "Final crossing to the Original Island",
             "place": "Original Island",
-            "solo": [7.565, 8.098],
-            "four": [5.109, 5.464],
-            "wait4": 0,
-            "on4": "—",
+            "t": [
+              [7.565, 8.098],
+              [6.369, 6.822],
+              [5.64, 6.037]
+            ],
+            "wait": [0, 0, 0],
+            "on": ["—", "—", "—"],
             "back": ""
           }
         ],
         "cross": {
           "W": {
-            "solo": 0.531,
-            "crew": 0.323,
+            "pass": [0.531, 0.424, 0.364],
             "series": [
               [0, 440, 0],
               [0.329, 440, 0],
@@ -1018,8 +1122,7 @@
             ]
           },
           "C": {
-            "solo": 3.333,
-            "crew": 3.485,
+            "pass": [3.333, 4.389, 3.867],
             "series": [
               [0, 180, 0],
               [0.329, 180, 0],
@@ -1041,8 +1144,7 @@
             ]
           },
           "S": {
-            "solo": 5.232,
-            "crew": 4.706,
+            "pass": [5.232, 5.828, 5.18],
             "series": [
               [0, 135, 0],
               [0.329, 135, 0],
@@ -1064,8 +1166,7 @@
             ]
           },
           "Fi": {
-            "solo": 6.891,
-            "crew": 999,
+            "pass": [6.891, 5.828, 999],
             "series": [
               [0, 35, 0],
               [0.329, 35, 0],
@@ -1087,8 +1188,7 @@
             ]
           },
           "U": {
-            "solo": 3.903,
-            "crew": 4.706,
+            "pass": [3.903, 5.828, 5.18],
             "series": [
               [0, 66, 0],
               [0.329, 66, 0],
@@ -1110,8 +1210,7 @@
             ]
           },
           "X": {
-            "solo": 6.891,
-            "crew": 999,
+            "pass": [6.891, 999, 999],
             "series": [
               [0, 28, 0],
               [0.329, 28, 0],
@@ -1144,16 +1243,15 @@
           { "id": "G8", "name": "A hat for each friend", "hours": 0.055, "total": 6.614 }
         ],
         "totals": {
-          "solo": 8.098,
-          "four": 5.464,
+          "end": [8.098, 6.822, 6.037],
+          "wait": [0, 4.747, 10.483],
+          "wallet": [25837, 21177, 17947],
           "act": 5.35,
           "labour": 0.815,
           "travel": 1.934,
-          "wait": 0,
-          "wait4": 0.25,
-          "wallet": 25837,
-          "wallet4": 16109,
-          "endgame": 6.614
+          "endgame": 6.614,
+          "four": 5.464,
+          "fourWait": 14.972
         }
       }
     ],
@@ -1210,11 +1308,11 @@
     const r = route();
     const t = r.totals;
     document.getElementById('kpis').innerHTML = [
-      [t.solo.toFixed(1) + ' h', 'solo to the ending'],
-      [t.four.toFixed(1) + ' h', 'four friends'],
+      [t.end[0].toFixed(1) + ' h', 'solo to the ending'],
+      [t.end[1].toFixed(1) + ' h', 'two players'],
+      [t.end[2].toFixed(1) + ' h', 'three players'],
       [D.target + ' h', 'target'],
-      [Math.round(t.wait4 * 60) + ' min', 'four friends wait for stock'],
-      [t.wallet.toLocaleString('en-GB'), 'Bucks in the shared wallet at the ending (solo)'],
+      [t.wallet[0].toLocaleString('en-GB'), 'Bucks in the shared wallet at the ending (solo)'],
       [t.endgame.toFixed(1) + ' h', 'of end-game goals after that'],
     ]
       .map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${s}</span></div>`)
@@ -1397,7 +1495,7 @@
       T = 14,
       B = 36;
     const steps = r.steps;
-    const maxH = Math.max(10, Math.ceil(r.totals.solo + 0.5));
+    const maxH = Math.max(10, Math.ceil(r.totals.end[0] + 0.5));
     const x = (h) => L + ((W - L - Rr) * h) / maxH;
     const rowH = (Hh - T - B) / steps.length;
     const y = (i) => T + rowH * (i + 0.5);
@@ -1425,15 +1523,16 @@
         class: 'muted',
       });
     });
-    const line = (key, color) => {
+    const NAMES3 = ['Solo', 'Two players', 'Three players'];
+    const line = (p, color) => {
       let d = '';
       steps.forEach((s, i) => {
-        const [a, b] = s[key];
+        const [a, b] = s.t[p];
         d += `${i ? 'L' : 'M'}${x(a)},${y(i)} L${x(b)},${y(i)} `;
       });
       el('path', { d, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round' }, svg);
       steps.forEach((s, i) => {
-        const [a, b] = s[key];
+        const [a, b] = s.t[p];
         el('circle', { cx: x(b), cy: y(i), r: 4, fill: color, stroke: 'var(--surface)', 'stroke-width': 2 }, svg);
         const hit = el(
           'rect',
@@ -1441,35 +1540,28 @@
           svg,
         );
         const extra =
-          (key === 'four' && s.wait4 > 0.5 ? `<br>Waits ${s.wait4.toFixed(0)} min for ${s.on4}` : '') +
+          (s.wait[p] > 0.5 ? `<br>Waits ${s.wait[p].toFixed(0)} min for ${s.on[p]}` : '') +
           (s.back ? `<br>Doubles back to ${s.back}` : '');
-        hover(
-          hit,
-          `<b>${s.name}</b><br>${key === 'solo' ? 'Solo' : 'Four friends'}: ${a.toFixed(2)}–${b.toFixed(2)} h${extra}`,
-        );
+        hover(hit, `<b>${s.name}</b><br>${NAMES3[p]}: ${a.toFixed(2)}–${b.toFixed(2)} h${extra}`);
       });
     };
-    line('four', 'var(--hand)');
-    line('solo', 'var(--auto)');
+    line(2, 'var(--p3)');
+    line(1, 'var(--hand)');
+    line(0, 'var(--auto)');
     const last = steps[steps.length - 1];
-    text(svg, x(last.solo[1]) + 8, y(steps.length - 1) + 4, 'Solo ' + last.solo[1].toFixed(1) + ' h', {
+    text(svg, x(last.t[0][1]) + 8, y(steps.length - 1) + 4, 'Solo ' + last.t[0][1].toFixed(1) + ' h', {
       'font-size': 12,
       'font-weight': 600,
-    });
-    text(svg, x(last.four[1]) - 8, y(steps.length - 1) - 10, 'Four ' + last.four[1].toFixed(1) + ' h', {
-      'font-size': 12,
-      'font-weight': 600,
-      'text-anchor': 'end',
     });
     const t = r.totals;
     document.getElementById('pace-note').textContent =
-      `Solo: ${t.act.toFixed(1)} h authored play, ${t.labour.toFixed(1)} h hand labour, ${t.travel.toFixed(1)} h commuting, ${(t.wait * 60).toFixed(0)} min waiting for stock. Four friends finish in ${t.four.toFixed(1)} h and wait ${(t.wait4 * 60).toFixed(0)} min, because producers don't speed up with players.`;
+      `Tuned for one to three players. Solo: ${t.act.toFixed(1)} h authored play, ${t.labour.toFixed(1)} h hand labour, ${t.travel.toFixed(1)} h commuting, ${t.wait[0].toFixed(0)} min waiting for stock. Two finish in ${t.end[1].toFixed(1)} h, three in ${t.end[2].toFixed(1)} h, waiting ${t.wait[1].toFixed(0)} and ${t.wait[2].toFixed(0)} min, because producers don't speed up with players. Four still works (${t.four.toFixed(1)} h, ${t.fourWait.toFixed(0)} min waiting) but isn't designed for.`;
     document.getElementById('pace-table').innerHTML =
-      '<tr><th>Step</th><th>Place</th><th>Solo ends</th><th>Four end</th><th>Four wait</th></tr>' +
+      '<tr><th>Step</th><th>Place</th><th>Solo ends</th><th>Two end</th><th>Three end</th><th>Three wait</th></tr>' +
       steps
         .map(
           (s) =>
-            `<tr><td>${s.name}</td><td>${s.place}</td><td>${s.solo[1].toFixed(2)} h</td><td>${s.four[1].toFixed(2)} h</td><td>${s.wait4 > 0.5 ? s.wait4.toFixed(0) + ' min (' + s.on4 + ')' : '—'}</td></tr>`,
+            `<tr><td>${s.name}</td><td>${s.place}</td><td>${s.t[0][1].toFixed(2)} h</td><td>${s.t[1][1].toFixed(2)} h</td><td>${s.t[2][1].toFixed(2)} h</td><td>${s.wait[2] > 0.5 ? s.wait[2].toFixed(0) + ' min (' + s.on[2] + ')' : '—'}</td></tr>`,
         )
         .join('');
   }
@@ -1479,14 +1571,16 @@
     const box = document.getElementById('mult');
     box.replaceChildren();
     const order = ['W', 'C', 'S', 'Fi', 'U', 'X'];
-    const maxH = Math.max(9, Math.ceil(r.totals.solo));
+    const maxH = Math.max(9, Math.ceil(r.totals.end[0]));
     for (const m of order) {
       const c = r.cross[m];
       const res = D.resources.find((x) => x.id === m);
       const div = document.createElement('div');
       div.className = 'mult';
       const passes =
-        c.solo < 999 ? `Machines pass one player at ${c.solo.toFixed(1)} h` : 'Machines pass hands in the end game';
+        c.pass[0] < 999
+          ? `Machines pass one player at ${c.pass[0].toFixed(1)} h`
+          : 'Machines pass hands in the end game';
       div.innerHTML = `<h3>${res.name} · tier ${res.tier}</h3><p>${passes}</p>`;
       const svg = el('svg', {
         viewBox: '0 0 300 170',
@@ -1523,17 +1617,17 @@
       const stepPath = (k) => {
         let d = '';
         s.forEach((p, i) => {
-          const next = i + 1 < s.length ? s[i + 1][0] : r.totals.solo;
+          const next = i + 1 < s.length ? s[i + 1][0] : r.totals.end[0];
           d += `${i ? 'L' : 'M'}${x(p[0])},${y(p[k])} L${x(next)},${y(p[k])} `;
         });
         return d;
       };
       el('path', { d: stepPath(1), fill: 'none', stroke: 'var(--hand)', 'stroke-width': 2 }, svg);
       el('path', { d: stepPath(2), fill: 'none', stroke: 'var(--auto)', 'stroke-width': 2 }, svg);
-      if (c.solo < 999) {
+      if (c.pass[0] < 999) {
         el(
           'line',
-          { x1: x(c.solo), x2: x(c.solo), y1: T, y2: Hh - B, stroke: 'var(--ink-3)', 'stroke-dasharray': '3 3' },
+          { x1: x(c.pass[0]), x2: x(c.pass[0]), y1: T, y2: Hh - B, stroke: 'var(--ink-3)', 'stroke-dasharray': '3 3' },
           svg,
         );
       }
@@ -1592,7 +1686,7 @@
       `Nothing runs while the world is empty. On the next join each producer's yard is credited H × (1 − e^(−away/H)) hours of output, with H = ${D.horizon} h, never past the yard: an hour away gives ${D.away[1][1].toFixed(1)} h, a day gives ${D.away[6][1].toFixed(1)} h. Bigger yards make the credit worth more.`;
     const r = route();
     document.getElementById('end-note').textContent =
-      `After the ending, everything is automated and a new tier of goals opens, bought from production and the shared wallet: about ${r.totals.endgame.toFixed(1)} h of play, the same for one or four players, because producers set the pace.`;
+      `After the ending, everything is automated and a new tier of goals opens, bought from production and the shared wallet: about ${r.totals.endgame.toFixed(1)} h of play, the same for one, two or three players, because producers set the pace.`;
     document.getElementById('goals').innerHTML =
       '<tr><th>Goal</th><th>Hours</th><th>After the ending</th></tr>' +
       r.goals

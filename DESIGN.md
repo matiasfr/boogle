@@ -15,7 +15,7 @@ The ball, the frisbee and the other physics toys are optional fun, not the heart
 ### 1. Toys before chores
 Every system must be fun to mess with before it has goals. Laying track, riding and throwing should feel good with nothing to achieve. If a mechanic is only fun because of its reward, it isn't ready.
 - *Test:* would someone fiddle with this for a minute with no score and no quota?
-- *Avoid:* scores, timers or quotas as the reason to do something.
+- *Avoid:* timers or quotas as the reason to do something. Numbers may show costs and progress, each counting something in the world.
 
 ### 2. Physics toys are optional fun
 Things you can throw, bounce and knock over make the world fun to be in: the beach ball, the frisbee, whatever you pick up, the mushrooms you bounce on. They're optional, and nothing depends on them. New systems can leave them alone.
@@ -29,17 +29,17 @@ Toys, mini-games and any farming are invitations, never gates.
 Helping should happen just by playing near each other: anyone's work on the line helps everyone. Nobody should need to coordinate in chat to contribute.
 - *Prefer:* bonuses for *different* people helping over bonuses for one person grinding.
 
-### 6. Communal world, personal rewards
-The world and its network belong to everyone. Anything you *earn* (cosmetics, hats) is yours alone. No shared wallets, so nobody spends what someone else earned.
+### 6. Communal world, personal things
+The world, its network, its progression and its wallet belong to everyone: what connected places sell goes into one wallet anyone may spend, and every upgrade and ability applies to everyone. Personal finds (secret crates, some cosmetics) stay yours.
 
 ### 7. Telegraph everything
 Make the next connection and its payoff visible in the world. Announce consequential changes before they happen, and choose the warning length for the event rather than imposing a universal countdown. A player who just dropped in should immediately understand the shared goal.
 
 ### 8. Designed for drop-in, drop-out
-Assume 1–6 people who arrive and leave at random. Nothing should need a full lobby, a start button or a minimum player count. Being alone should still be pleasant; being joined should make it better.
+Tune for 1–3 people, tolerate 4, design for no more; they arrive and leave at random. Nothing should need a full lobby, a start button or a minimum player count. Being alone should still be pleasant; being joined should make it better.
 
 ### 9. Leave something for the next visitor
-Progress persists between sessions, and the world can keep changing while everyone is away. Returning players should notice what happened since they left.
+Progress persists between sessions. An empty world is paused; returning players find producers' yards topped up for the time away, with a soft cap.
 
 ### 10. Slapstick over precision
 Loose physics, splashes and tumbling toys are features. Prefer mechanics that produce funny moments between players over ones that reward precise execution.
@@ -89,7 +89,7 @@ For lockstep systems, clients send small **edit events** (plant or water a mushr
 | Persistence (snapshots) | The server writes each room to its disk (every 2 s when it changed, every 30 s and on shutdown regardless) and starts a room from that save; tabs keep no copy |
 
 ### Server hosts every room
-Every room is hosted by our server over WebSocket: it runs the lockstep world headless, relays presence and messages, and saves to its own disk, so the island never waits for a host and ticks while nobody is online. There is no peer-hosted fallback: when the server is unreachable, tabs reconnect and play alone meanwhile. Local dev runs the same server. The game talks only to the room interface in [`src/net/README.md`](src/net/README.md), never to the WebSocket directly. Plan: [docs/plans/server-host.md](docs/plans/server-host.md). (Changed on purpose 2026-10-31, from "PeerJS only": a host that never leaves, and the start of sending each player only the world near them; [docs/research/shared-state-at-scale.md](docs/research/shared-state-at-scale.md). Made a full switchover the same day: one networking model, not two. Where it goes next: [docs/plans/net-roadmap.md](docs/plans/net-roadmap.md).)
+Every room is hosted by our server over WebSocket: it runs the lockstep world headless, relays presence and messages, and saves to its own disk, so the island never waits for a host; an empty room pauses until the next join. There is no peer-hosted fallback: when the server is unreachable, tabs reconnect and play alone meanwhile. Local dev runs the same server. The game talks only to the room interface in [`src/net/README.md`](src/net/README.md), never to the WebSocket directly. Plan: [docs/plans/server-host.md](docs/plans/server-host.md). (Changed 2026-10-31 from "PeerJS only" and 2026-11-06 to pause empty rooms: [why](docs/research/shared-state-at-scale.md), [next](docs/plans/net-roadmap.md).)
 
 ### Understandable at a glance
 Boogle is built by a handful of friends and their agents shipping at once, so how it fits together has to be something you can see, not only read. The atlas ([boogle.club/atlas](https://boogle.club/atlas)) is our internal map: one picture of the pieces, stories that follow a single action through them, and code views underneath. It's a tool for the people and agents building Boogle, never part of the game. Facts in it come from the code on every build; the explanations live in `docs/atlas/` and a daily agent keeps them current, so a stale explanation is that agent's chore, never a red build. A new way of sharing state, or a big feature, comes with a story. Internal tools like this may use a library the game doesn't (the atlas draws with d3), as long as it never reaches the game bundle.

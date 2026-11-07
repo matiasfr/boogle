@@ -1,5 +1,7 @@
 # Incremental maths: earn the better way
 
+_Note added 6 November 2026: the owner approved a shared wallet, fully shared progression and a world paused while empty, with a capped away credit on the next join ([economy principles amended](../proposals/boogle-2.md#progress-and-rewards)). Its offline rule (one committed project, no time allowance) is replaced by a soft-capped away credit into producers' yards. The rest stands as written._
+
 _Research report, 2 November 2026. Live primary-source research into cost curves, useful upgrades, unfolding play, offline limits and 1–2-hour sittings within Boogle's roughly eight-hour adventure. Repository inspected at `3280c6ff`; existing economy tables and sensitivities rerun with Node 24. This is research and proposed model work, not gameplay implementation, a new playtest or approval of campaign tuning._
 
 _Note added 2 November: this was researched before the Design Table call, where materials replaced eras ([boogle-2.md](../proposals/boogle-2.md#the-shape-of-the-game)). Read "era" below as a stage of better materials; the world itself doesn't change era._
