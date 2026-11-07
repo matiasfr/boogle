@@ -13,6 +13,7 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 
 ## Trains
 - A side-on camera while seated on the train, the island sliding by; sitting itself is now decided (boogle-2.md), but the bench variant's camera was cut (owner, 2026-11-02)
+- Train-riding UX pass once there are trains beyond the default cargo ones: a way to board that looks natural (a passenger car or seats, not sitting on a flat deck), and a ride that feels really satisfying over the long stretches; builds on [train-riding](research/train-riding.md) (owner, 2026-11-06)
 
 ## Multiplayer
 - Races with the RC carts, since the soapbox turned out fun to drive (owner, 2026-11-01)
@@ -35,4 +36,5 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 - **A critters-and-life pass for the new environments** (owner, 6 November): fish and gulls now live on the classic island only; give the new world its own critters and life, reusing the fish (`src/features/critter-fish.ts`) and gull (`src/features/critter-gulls.ts`) code. (2026-11-06)
 
 ## World and story
+- The story frame: by connecting everywhere and building an economy for the simple little guys, the players are secretly doing The Boogler's work, for good (owner, 2026-11-06)
 - Narrative pass per area, after the mechanics and numbers are settled: characters you meet with fun dialogue, lore for each place and how the world ties together, plus what each environment looks like; it "will really just flesh out the world" (owner, 2026-11-06)
