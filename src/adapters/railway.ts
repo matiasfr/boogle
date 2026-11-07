@@ -40,7 +40,7 @@ import {
   type RailMaterial,
   type LineStationId,
 } from '../sim/railway-line-layout.ts';
-import { LINE_TIMING } from '../sim/railway-line.ts';
+import { LINE_TIMING, railBeamChoppable } from '../sim/railway-line.ts';
 import { LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
 import { line2Active, line2Completed, line2GateOpen } from '../sim/railway-line2.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
@@ -841,7 +841,8 @@ export function createRailwayAdapter({
     wake: () => submit({ op: 'rail.wake' }),
     openAxe: () => submit({ op: 'rail.axe' }),
     claimJump: () => submit({ op: 'rail.jump' }),
-    beamChop: () => submit({ op: 'rail.beamChop' }),
+    /** False (rebound now) when the rule would refuse the stroke: before Station 3 opens or once the tree is down. */
+    beamChop: () => railBeamChoppable(view()) && submit({ op: 'rail.beamChop' }),
     beamTake: (revision: number) => railInt(revision) && submit({ op: 'rail.beamTake', revision }),
     beamDrop: (x: number, y: number, z: number, revision: number) =>
       railInt(revision) &&

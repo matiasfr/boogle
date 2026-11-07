@@ -227,7 +227,7 @@ export function validateRailLine(s: Railway) {
         throw new Error('railway: funded job');
     }
   });
-  if (l.axe && (!l.jobs[0].completion || l.jobs[1].delivered !== 40)) throw new Error('railway: axe before threshold');
+  if (l.axe && !(s.line2 && s.line2.forge.lit >= 0)) throw new Error('railway: axe before the forge');
   if (
     s.sources.some((n, k) => n > (l.upgrades[k] ? 15 : 10)) ||
     s.work.some((n) => !int(n, 15)) ||
@@ -248,13 +248,16 @@ export function validateRailLine(s: Railway) {
   const b = l.beam;
   if (b.state === 'ground' ? !lineBeamGround(b.x, b.y, b.z) : b.age !== 0) throw new Error('railway: beam ground');
   if (b.state === 'standing' ? b.work >= 12 : b.work !== 12) throw new Error('railway: beam work');
-  if (b.work && !l.axe) throw new Error('railway: beam axe');
+  if (b.work && !l.jobs[0].completion) throw new Error('railway: beam work before T3');
   if (b.state === 'held') {
     const a = s.accounts.find((a) => a.pid === b.holder);
     if (!a || b.epoch < 1 || b.epoch > a.epoch || railCarry(a) !== 0) throw new Error('railway: beam holder');
   } else if (b.holder || b.epoch) throw new Error('railway: beam orphan identity');
+  // The beam may be laid before the 40 logs: allocated with the job unfunded, never with its bill already full.
+  const laid = b.state === 'allocated' || b.state === 'used';
   if (
-    (b.state === 'allocated' || b.state === 'used') !== l.jobs[1].start >= 0 ||
+    (l.jobs[1].start >= 0 && !laid) ||
+    (l.jobs[1].start < 0 && (b.state === 'used' || (laid && l.jobs[1].stock === 40))) ||
     (b.state === 'used') !== !!l.jobs[1].completion
   )
     throw new Error('railway: beam allocation');

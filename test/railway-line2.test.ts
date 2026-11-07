@@ -75,7 +75,6 @@ function finishLine1(s: Railway, w: World) {
   logs(w, 'a', 'T2', 32);
   advance(w, 300);
   logs(w, 'a', 'T3', 40);
-  act(w, 'a', 'rail.axe');
   for (let i = 0; i < 12; i++) act(w, 'a', 'rail.beamChop');
   act(w, 'a', 'rail.beamTake', { revision: s.line!.beam.revision });
   assert.equal(act(w, 'a', 'rail.beamDeposit', { revision: s.line!.beam.revision, station: 'T3' }), 1);

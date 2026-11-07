@@ -15,6 +15,7 @@ import {
   railActiveStation,
   railAxeAvailable,
   railBeamRelease,
+  railBeamChoppable,
   railPanelCount,
   railPanelStock,
   serializeRailway,
@@ -43,7 +44,7 @@ function fresh(pids = ['a', 'b']) {
   railApply(s, pids[0]!, { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   return s;
 }
-function logs(s: Railway, pid: string, n: number, station = LINE1_STATIONS[railActiveStation(s)]!.id) {
+function logs(s: Railway, pid: string, n: number, station: string = LINE1_STATIONS[railActiveStation(s)]!.id) {
   while (n > 0) {
     const a = railAccount(s, pid)!;
     while (a.carry === 0) {
@@ -88,17 +89,85 @@ function toT3() {
   finish(s);
   return s;
 }
+/** Fell the great tree with the first axe and lay the beam (no axe asked for). */
+function beam(s: Railway, pid = 'a') {
+  for (let i = 0; i < 12; i++) assert.equal(act(s, pid, 'rail.beamChop').r.accepted, 1);
+  assert.equal(act(s, pid, 'rail.beamTake', { revision: s.line!.beam.revision }).r.accepted, 1);
+  assert.equal(act(s, pid, 'rail.beamDeposit', { revision: s.line!.beam.revision, station: 'T3' }).r.accepted, 1);
+}
+/** Station 3 done and the forge lit (56 logs): the proper axe waits on its stand. */
+function toForge() {
+  const s = toT3();
+  logs(s, 'a', 40);
+  beam(s);
+  finish(s);
+  logs(s, 'a', 56, 'F');
+  assert.ok(s.line2!.forge.lit >= 0);
+  return s;
+}
 
-test('line-one bills, threshold axe, unique beam and funded completion survive every stage restore', () => {
+test('the great tree rebounds before Station 3, then the first axe fells it and the beam funds in either order', () => {
+  // Before Station 3 opens the stroke is refused (the client rebounds it on the same check).
+  const early = fresh();
+  logs(early, 'a', 24);
+  finish(early);
+  assert.equal(railBeamChoppable(early), false);
+  assert.equal(act(early, 'a', 'rail.beamChop').r.accepted, 0);
+  assert.equal(early.line!.beam.work, 0);
+  // Beam first: laid on the empty frame, the job waits for the 40th log and starts on it.
+  let s = toT3();
+  assert.equal(railBeamChoppable(s), true);
+  assert.equal(s.line!.axe, false);
+  beam(s);
+  assert.equal(railBeamChoppable(s), false);
+  assert.equal(s.line!.beam.state, 'allocated');
+  assert.equal(railCurrentJob(s).start, -1);
+  s = restore(s);
+  logs(s, 'a', 39);
+  assert.equal(railCurrentJob(s).start, -1);
+  s = restore(s);
+  logs(s, 'a', 1);
+  assert.ok(railCurrentJob(s).start >= 0, 'the 40th log starts the feed');
+  finish(s);
+  assert.equal(s.line!.beam.state, 'used');
+  // Logs part way, then the beam, then the rest: also fine.
+  s = toT3();
+  logs(s, 'a', 20);
+  beam(s, 'b');
+  logs(s, 'a', 20);
+  assert.ok(railCurrentJob(s).start >= 0);
+  restore(s);
+});
+
+test('the proper axe is the lit forge first made thing, not Station 3', () => {
+  let s = toT3();
+  logs(s, 'a', 40);
+  assert.equal(railAxeAvailable(s), false, 'the 40th log no longer offers the axe');
+  assert.equal(act(s, 'a', 'rail.axe').r.accepted, 0);
+  beam(s);
+  finish(s);
+  assert.equal(railAxeAvailable(s), false, 'path open, forge cold');
+  logs(s, 'a', 55, 'F');
+  assert.equal(act(s, 'a', 'rail.axe').r.accepted, 0);
+  logs(s, 'a', 1, 'F');
+  assert.equal(railAxeAvailable(s), true);
+  s = restore(s);
+  // Hardwoods rebound the first axe and bite the proper one.
+  assert.equal(act(s, 'b', 'rail.chop', { id: 209, yaw: 0, collapsed: false }).r.accepted, 0);
+  assert.equal(act(s, 'a', 'rail.axe').r.accepted, 1);
+  assert.equal(act(s, 'b', 'rail.axe').r.accepted, 0);
+  assert.equal(railAxeAvailable(s), false);
+  assert.equal(act(s, 'b', 'rail.chop', { id: 209, yaw: 0, collapsed: false }).r.accepted, 5);
+  restore(s);
+});
+
+test('line-one bills, unique beam and funded completion survive every stage restore', () => {
   let s = toT3();
   assert.equal(act(s, 'a', 'rail.axe').r.accepted, 0);
   logs(s, 'a', 40);
   assert.equal(railCurrentJob(s).start, -1);
-  assert.equal(railAxeAvailable(s), true);
+  assert.equal(railAxeAvailable(s), false);
   s = restore(s);
-  assert.equal(act(s, 'a', 'rail.beamChop').r.accepted, 0);
-  assert.equal(act(s, 'a', 'rail.axe').r.accepted, 1);
-  assert.equal(act(s, 'b', 'rail.axe').r.accepted, 0);
   for (let i = 0; i < 12; i++) {
     assert.equal(act(s, i % 2 ? 'a' : 'b', 'rail.beamChop').r.accepted, 1);
     s = restore(s);
@@ -163,7 +232,7 @@ test('mixed back, final deposit races and exact station identity cannot overflow
   const first = act(s, 'a', 'rail.deposit', { station: 'T3', n: 4 }),
     second = act(s, 'b', 'rail.deposit', { station: 'T3', n: 4 });
   assert.equal(first.r.accepted + second.r.accepted, 1);
-  assert.equal(railAxeAvailable(s), true);
+  assert.equal(railAxeAvailable(s), false);
   assert.equal(railCurrentJob(s).start, -1);
   restore(s);
 });
@@ -211,9 +280,9 @@ test('partial jobs stay partial offline; funded jobs finish once without funding
 });
 
 test('proper axe improvement is counted once, clipped source output remains, renewal cannot double-bonus', () => {
-  const s = toT3();
-  logs(s, 'a', 40);
-  act(s, 'a', 'rail.axe');
+  const s = toForge();
+  if (railAccount(s, 'a')!.carry) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
+  assert.equal(act(s, 'a', 'rail.axe').r.accepted, 1);
   const k = s.sources.findIndex((n) => n === 10),
     id = RAILWAY_SOURCES[k]![0];
   const before = s.supply!.produced;
@@ -245,7 +314,6 @@ test('proper axe improvement is counted once, clipped source output remains, ren
 test('beam departure is epoch/revision fenced and reconnect cannot duplicate its location', () => {
   const s = toT3();
   logs(s, 'a', 40);
-  act(s, 'a', 'rail.axe');
   for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
   act(s, 'a', 'rail.beamTake', { revision: s.line!.beam.revision });
   const old = s.line!.beam.revision;
@@ -261,7 +329,6 @@ test('beam departure is epoch/revision fenced and reconnect cannot duplicate its
 test('safe loose beam keeps its identity; recovery is slow, explicit, revision-fenced and never steals a held beam', () => {
   const s = toT3();
   logs(s, 'a', 40);
-  act(s, 'a', 'rail.axe');
   for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
   const b = s.line!.beam;
   act(s, 'a', 'rail.beamTake', { revision: b.revision });
@@ -292,9 +359,9 @@ test('safe loose beam keeps its identity; recovery is slow, explicit, revision-f
 });
 
 test('production ceiling refuses an unrepresentable proper-axe bonus atomically', () => {
-  const s = toT3();
-  logs(s, 'a', 40);
-  act(s, 'a', 'rail.axe');
+  const s = toForge();
+  if (railAccount(s, 'a')!.carry) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
+  assert.equal(act(s, 'a', 'rail.axe').r.accepted, 1);
   s.supply!.produced = 2147479735;
   s.supply!.rack = s.supply!.produced;
   const k = s.sources.findIndex((n) => n === 10);
@@ -365,7 +432,6 @@ test('every rail-pair contact derives stock and survives restore without a conti
     logs(s, 'a', station.bill[0]);
     if (station.bill[1]) stones(s, 'a', station.bill[1]);
     if (station.beam) {
-      act(s, 'a', 'rail.axe');
       for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
       act(s, 'a', 'rail.beamTake', { revision: s.line!.beam.revision });
       act(s, 'a', 'rail.beamDeposit', { revision: s.line!.beam.revision, station: 'T3' });

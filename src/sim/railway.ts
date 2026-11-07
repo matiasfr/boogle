@@ -35,6 +35,7 @@ export {
   railMaxDuration,
   railCarry,
   railAxeAvailable,
+  railBeamChoppable,
   railBeamRelease,
   railBeamStood,
   railBeamPutDown,

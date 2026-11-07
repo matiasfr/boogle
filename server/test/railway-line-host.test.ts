@@ -130,7 +130,6 @@ test('line host keeps a departed carrier the beam through its grace, then ground
     await open('a');
     await logs(2, 40);
     pose('a', LINE1_STATIONS[2]!.x, LINE1_STATIONS[2]!.z);
-    await edit('a', { op: 'rail.axe' });
     for (let i = 0; i < 12; i++) {
       pose('a', LINE1_GREAT_TREE.x, LINE1_GREAT_TREE.z);
       await edit('a', { op: 'rail.beamChop' });
