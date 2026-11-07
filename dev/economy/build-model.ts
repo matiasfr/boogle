@@ -98,7 +98,10 @@ for (const l of LADDERS) {
     T(l.label),
     ...l.steps.map((n) => I(n)),
     T(l.unit),
-    T(`${l.note}. Each recipe that names this ladder moves it one step.`, STYLE.note),
+    T(
+      `${l.note}. Each recipe that names this ladder moves it one step, for every player: progression is shared.`,
+      STYLE.note,
+    ),
   ]);
 }
 const ladderRange = (key: string) => `Settings!$C$${ladRow[key]}:$F$${ladRow[key]}`;
@@ -551,10 +554,18 @@ const recipesSheet: Sheet = {
   ],
 };
 
-// ---------- Flows (one row per step and material) ----------
-const P1 = 'Pacing!$B$3',
-  P4 = 'Pacing!$D$3';
+// ---------- Flows (one row per step and material, then one block per party) ----------
+const PARTIES = res.players;
+const NP = PARTIES.length;
+const partyLabel = (n: number) => (n === 1 ? 'solo' : `${n} players`);
+const playersCell = (b: number) => `Pacing!$${colName(1 + b)}$3`;
 const flowRow = (i: number, mi: number) => 2 + (i - 1) * M + mi;
+const FB = 16; // first party column on Flows
+const FW = 8; // columns per party on Flows
+const fcol = (b: number, k: number) => colName(FB + FW * b + k); // 0 start, 1 wait, 2 end, 3 group hand, 4 crossing, 5 first so far, 6 sold, 7 Bucks
+const PB = 4; // first party column on Pacing
+const PW = 12; // columns per party on Pacing
+const pcol = (b: number, k: number) => colName(PB + PW * b + k); // 0 play, 1 labour, 2 commute, 3 work, 4 wait, 5 step, 6 start, 7 end, 8 sittings, 9 waiting on, 10 Bucks, 11 wallet
 const route = (col: string, r: number) => `INDEX(Route!$${col}:$${col},$A${r}+1)`;
 const pac = (col: string, r: number) => `INDEX(Pacing!$${col}:$${col},$A${r}+4)`;
 const resA = (col: string, r: number) => `INDEX(Resources!$${col}:$${col},MATCH($C${r},Resources!$A:$A,0))`;
@@ -572,27 +583,30 @@ const flowsRows: Cell[][] = [
     H('Freight limit/h'),
     H('Automatic to hub/h'),
     H('By hand, one player/h'),
-    H('By hand, crew/h'),
     H('Units by hand'),
     H('Units from stock'),
     H('Hand labour s (solo)'),
     H('Automatic ≥ one player?'),
-    H('Stock at start (left)'),
-    H('Supply wait h (left)'),
-    H('Stock at end (left)'),
-    H('Crossing hour (left)'),
-    H('First crossing so far (left)'),
-    H('Stock at start (right)'),
-    H('Supply wait h (right)'),
-    H('Stock at end (right)'),
-    H('Crossing vs crew hour (right)'),
-    H('First crossing vs crew (right)'),
-    H('Surplus sold (left)'),
-    H('Bucks (left)'),
-    H('Surplus sold (right)'),
-    H('Bucks (right)'),
+    ...PARTIES.flatMap((n) => [
+      H(`Stock at start (${partyLabel(n)})`),
+      H(`Supply wait h (${partyLabel(n)})`),
+      H(`Stock at end (${partyLabel(n)})`),
+      H(`By hand, whole group/h (${partyLabel(n)})`),
+      H(`Machines pass the group at h (${partyLabel(n)})`),
+      H(`First pass so far (${partyLabel(n)})`),
+      H(`Surplus sold (${partyLabel(n)})`),
+      H(`Bucks (${partyLabel(n)})`),
+    ]),
   ],
 ];
+const passHour = (mi: number, upTo: number, b: number) => {
+  let best = NEVER;
+  for (const st of res.steps.slice(0, upTo)) {
+    const f = st.flows[mi]!;
+    if (f.auto > 0 && f.auto >= f.group[b]!) best = Math.min(best, st.pace[b]!.start);
+  }
+  return best;
+};
 res.steps.forEach((st, k) => {
   const i = k + 1;
   st.flows.forEach((f, mi) => {
@@ -605,20 +619,25 @@ res.steps.forEach((st, k) => {
     const v = route('I', r),
       carry = route('L', r),
       tool = route('M', r);
-    const prev = (col: string) => `${col}${r - M}`;
-    const cross1 = f.ahead ? st.pace[0].start : NEVER;
-    const cross4 = f.auto > 0 && f.auto >= f.crew ? st.pace[1].start : NEVER;
-    const firstSoFar = (p: 0 | 1) => {
-      let best = NEVER;
-      for (const s2 of res.steps.slice(0, i)) {
-        const g = s2.flows[mi]!;
-        if (g.auto > 0 && g.auto >= (p ? g.crew : g.manual)) best = Math.min(best, s2.pace[p].start);
-      }
-      return best;
-    };
-    const raw = (startCol: string, durCol: string) => `${startCol}${r}+K${r}*${pac(durCol, r)}-O${r}`;
-    const end = (startCol: string, durCol: string, brkCol: string) =>
-      `MIN(G${r},MAX(0,${raw(startCol, durCol)})+IF(${pac(brkCol, r)}>0,K${r}*${AWAY},0))`;
+    const party = PARTIES.flatMap((_, b) => {
+      const [s, , e, g, x, fs, sold] = [0, 1, 2, 3, 4, 5, 6].map((q) => fcol(b, q)) as string[];
+      const raw = `${s}${r}+K${r}*${pac(pcol(b, 5), r)}-N${r}`;
+      const ahead = f.auto > 0 && f.auto >= f.group[b]!;
+      return [
+        F(i === 1 ? '0' : `${e}${r - M}`, r1(f.start[b]!)),
+        F(`IF(K${r}>0,MAX(0,(N${r}-${s}${r}-K${r}*${pac(pcol(b, 3), r)})/K${r}),0)`, r1(f.wait[b]!), STYLE.num),
+        F(`MIN(G${r},MAX(0,${raw})+IF(${pac(pcol(b, 8), r)}>0,K${r}*${AWAY},0))`, r1(f.end[b]!)),
+        F(`L${r}*(1+(${playersCell(b)}-1)*${S('handParallel')})`, r1(f.group[b]!), STYLE.int),
+        F(
+          `IF(AND(K${r}>0,K${r}>=${g}${r}),${pac(pcol(b, 6), r)},${NEVER})`,
+          r1(ahead ? st.pace[b]!.start : NEVER),
+          STYLE.num,
+        ),
+        F(i === 1 ? `${x}${r}` : `MIN(${x}${r},${fs}${r - M})`, r1(passHour(mi, i, b)), STYLE.num),
+        F(`MAX(0,${raw}-G${r})`, r1(f.sold[b]!), STYLE.int),
+        F(`${sold}${r}*${resA('L', r)}`, r1(f.sold[b]! * PRICES[m]), STYLE.int),
+      ];
+    });
     flowsRows[r - 1] = [
       { v: i, s: STYLE.int },
       F(`INDEX(Route!$A:$A,$A${r}+1)`, st.key, STYLE.none),
@@ -652,35 +671,21 @@ res.steps.forEach((st, k) => {
         r1(f.manual),
         STYLE.int,
       ),
-      F(`L${r}*(1+(${P4}-1)*${S('handParallel')})`, r1(f.crew), STYLE.int),
       F(`IF(K${r}=0,D${r},0)`, f.hand, STYLE.int),
-      F(`D${r}-N${r}`, f.stock, STYLE.int),
+      F(`D${r}-M${r}`, f.stock, STYLE.int),
       F(
-        `N${r}*IF(${manual}=0,0,(${harvest}*${tool}*${carry}+${S('pickupS')}+2*${local}/${S('walkMps')})/${carry})+O${r}*${S('lastCarryS')}`,
+        `M${r}*IF(${manual}=0,0,(${harvest}*${tool}*${carry}+${S('pickupS')}+2*${local}/${S('walkMps')})/${carry})+N${r}*${S('lastCarryS')}`,
         r1(f.labourS),
       ),
       F(`IF(AND(K${r}>0,K${r}>=L${r}),1,0)`, f.ahead ? 1 : 0, STYLE.int),
-      F(i === 1 ? '0' : prev('T'), r1(f.start[0])),
-      F(`IF(K${r}>0,MAX(0,(O${r}-R${r}-K${r}*${pac('H', r)})/K${r}),0)`, r1(f.wait[0]), STYLE.num),
-      F(end('R', 'J', 'M'), r1(f.end[0])),
-      F(`IF(Q${r}=1,${pac('K', r)},${NEVER})`, r1(cross1), STYLE.num),
-      F(i === 1 ? `U${r}` : `MIN(U${r},${prev('V')})`, r1(firstSoFar(0)), STYLE.num),
-      F(i === 1 ? '0' : prev('Y'), r1(f.start[1])),
-      F(`IF(K${r}>0,MAX(0,(O${r}-W${r}-K${r}*${pac('Q', r)})/K${r}),0)`, r1(f.wait[1]), STYLE.num),
-      F(end('W', 'S', 'V'), r1(f.end[1])),
-      F(`IF(AND(K${r}>0,K${r}>=M${r}),${pac('T', r)},${NEVER})`, r1(cross4), STYLE.num),
-      F(i === 1 ? `Z${r}` : `MIN(Z${r},${prev('AA')})`, r1(firstSoFar(1)), STYLE.num),
-      F(`MAX(0,${raw('R', 'J')}-G${r})`, r1(f.sold[0]), STYLE.int),
-      F(`AB${r}*${resA('L', r)}`, r1(f.sold[0] * PRICES[m]), STYLE.int),
-      F(`MAX(0,${raw('W', 'S')}-G${r})`, r1(f.sold[1]), STYLE.int),
-      F(`AD${r}*${resA('L', r)}`, r1(f.sold[1] * PRICES[m]), STYLE.int),
+      ...party,
     ];
   });
 });
 const flowsSheet: Sheet = {
   name: 'Flows',
   rows: flowsRows,
-  widths: [6, 18, 8, ...Array.from({ length: 28 }, () => 11)],
+  widths: [6, 18, 8, ...Array.from({ length: 13 + FW * NP }, () => 11)],
   freeze: { row: 1, col: 3 },
 };
 
@@ -691,63 +696,62 @@ const pacingRows: Cell[][] = [
   [T('Pacing: hours to each milestone', STYLE.title)],
   [
     T(
-      'Left block = solo by default, right block = four friends. Hours are play time: the world is paused while nobody is in it.',
+      'One block per party: designed and tuned for 1–3 players (owner, 6 November). Hours are play time: the world is paused while nobody is in it. Progression is shared, so every party has the same tools.',
       STYLE.note,
     ),
   ],
-  [T('Players (left)'), I(res.players[0]), T('Players (right)'), I(res.players[1])],
+  [T('Players'), ...PARTIES.map((n) => I(n))],
   [
     H('Order'),
     H('Key'),
     H('Step'),
     H('Place'),
-    ...['', ''].flatMap(() => [
-      H('Play min (with returns)'),
-      H('Hand labour min'),
-      H('Commute min'),
-      H('Work h'),
-      H('Supply wait h'),
-      H('Step h'),
-      H('Starts at h'),
-      H('Ends at h'),
-      H('Sittings crossed'),
-    ]),
-    H('Waiting on (left)'),
-    H('Waiting on (right)'),
-    H('Bucks earned (left)'),
-    H('Wallet (left)'),
-    H('Bucks earned (right)'),
-    H('Wallet (right)'),
+    ...PARTIES.flatMap((n) => {
+      const l = partyLabel(n);
+      return [
+        H(`Play min, with returns (${l})`),
+        H(`Hand labour min (${l})`),
+        H(`Commute min (${l})`),
+        H(`Work h (${l})`),
+        H(`Supply wait h (${l})`),
+        H(`Step h (${l})`),
+        H(`Starts at h (${l})`),
+        H(`Ends at h (${l})`),
+        H(`Sittings crossed (${l})`),
+        H(`Waiting on (${l})`),
+        H(`Bucks earned (${l})`),
+        H(`Wallet (${l})`),
+      ];
+    }),
   ],
 ];
 res.steps.forEach((st, k) => {
   const i = k + 1,
     r = pacRow(i);
-  const [a, b] = st.pace;
-  const half = (pl: string, cols: string[], pc: typeof a, waitCol: string) => {
-    const [act, lab, trv, work, wait, dur, start, end] = cols as [
-      string,
-      string,
-      string,
-      string,
-      string,
-      string,
-      string,
-      string,
-    ];
+  const half = (b: number) => {
+    const pc = st.pace[b]!;
+    const pl = playersCell(b);
+    const C = (q: number) => pcol(b, q);
     return [
       F(`(INDEX(Route!$F:$F,$A${r}+1)+INDEX(Route!$S:$S,$A${r}+1))/(1+(${pl}-1)*${S('activityParallel')})`, r1(pc.act)),
-      F(`SUMIFS(Flows!$P:$P,Flows!$A:$A,$A${r})/60/(1+(${pl}-1)*${S('handParallel')})`, r1(pc.labour)),
+      F(`SUMIFS(Flows!$O:$O,Flows!$A:$A,$A${r})/60/(1+(${pl}-1)*${S('handParallel')})`, r1(pc.labour)),
       F(
         `(INDEX(Route!$G:$G,$A${r}+1)*2*INDEX(Route!$N:$N,$A${r}+1)+INDEX(Route!$R:$R,$A${r}+1)*2*INDEX(Route!$U:$U,$A${r}+1))/60/(1+(${pl}-1)*${S('travelParallel')})`,
         r1(pc.travel),
       ),
-      F(`(${act}${r}+${lab}${r}+${trv}${r})/60`, r1(pc.work), STYLE.num),
-      F(`MAX(${block(i, waitCol)})`, r1(pc.wait), STYLE.num),
-      F(`${work}${r}+${wait}${r}`, r1(pc.dur), STYLE.num),
-      F(i === 1 ? '0' : `${end}${r - 1}`, r1(pc.start), STYLE.num),
-      F(`${start}${r}+${dur}${r}`, r1(pc.end), STYLE.bold),
-      F(`INT(${end}${r}/${S('sessionHours')})-INT(${start}${r}/${S('sessionHours')})`, pc.breaks, STYLE.int),
+      F(`(${C(0)}${r}+${C(1)}${r}+${C(2)}${r})/60`, r1(pc.work), STYLE.num),
+      F(`MAX(${block(i, fcol(b, 1))})`, r1(pc.wait), STYLE.num),
+      F(`${C(3)}${r}+${C(4)}${r}`, r1(pc.dur), STYLE.num),
+      F(i === 1 ? '0' : `${C(7)}${r - 1}`, r1(pc.start), STYLE.num),
+      F(`${C(6)}${r}+${C(5)}${r}`, r1(pc.end), STYLE.bold),
+      F(`INT(${C(7)}${r}/${S('sessionHours')})-INT(${C(6)}${r}/${S('sessionHours')})`, pc.breaks, STYLE.int),
+      F(
+        `IF(${C(4)}${r}=0,"—",INDEX(${block(i, 'C')},MATCH(${C(4)}${r},${block(i, fcol(b, 1))},0)))`,
+        pc.limiting,
+        STYLE.none,
+      ),
+      F(`SUM(${block(i, fcol(b, 7))})`, r1(pc.bucks), STYLE.int),
+      F(i === 1 ? `${C(10)}${r}` : `${C(11)}${r - 1}+${C(10)}${r}`, r1(pc.wallet), STYLE.int),
     ];
   };
   pacingRows.push([
@@ -755,20 +759,13 @@ res.steps.forEach((st, k) => {
     F(`INDEX(Route!$A:$A,$A${r}+1)`, st.key, STYLE.none),
     F(`INDEX(Route!$B:$B,$A${r}+1)`, st.name, STYLE.none),
     F(`INDEX(Route!$D:$D,$A${r}+1)`, st.place, STYLE.none),
-    ...half(P1, ['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'], a, 'S'),
-    ...half(P4, ['N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'], b, 'X'),
-    F(`IF(I${r}=0,"—",INDEX(${block(i, 'C')},MATCH(I${r},${block(i, 'S')},0)))`, a.limiting, STYLE.none),
-    F(`IF(R${r}=0,"—",INDEX(${block(i, 'C')},MATCH(R${r},${block(i, 'X')},0)))`, b.limiting, STYLE.none),
-    F(`SUM(${block(i, 'AC')})`, r1(a.bucks), STYLE.int),
-    F(i === 1 ? `Y${r}` : `Z${r - 1}+Y${r}`, r1(a.wallet), STYLE.int),
-    F(`SUM(${block(i, 'AE')})`, r1(b.bucks), STYLE.int),
-    F(i === 1 ? `AA${r}` : `AB${r - 1}+AA${r}`, r1(b.wallet), STYLE.int),
+    ...PARTIES.flatMap((_, b) => half(b)),
   ]);
 });
 const lastPac = pacRow(N);
 const TOTAL_ROW = lastPac + 2;
-const sum = (p: 0 | 1, key: 'act' | 'labour' | 'travel' | 'wait') =>
-  res.steps.reduce((n, st) => n + st.pace[p][key], 0);
+const sum = (b: number, key: 'act' | 'labour' | 'travel' | 'wait') =>
+  res.steps.reduce((n, st) => n + st.pace[b]![key], 0);
 const lastStep = res.steps[N - 1]!;
 pacingRows.push(
   [],
@@ -777,38 +774,32 @@ pacingRows.push(
     T(''),
     T(''),
     T(''),
-    F(`SUM(E5:E${lastPac})`, r1(sum(0, 'act'))),
-    F(`SUM(F5:F${lastPac})`, r1(sum(0, 'labour'))),
-    F(`SUM(G5:G${lastPac})`, r1(sum(0, 'travel'))),
-    T(''),
-    F(`SUM(I5:I${lastPac})`, r1(sum(0, 'wait'))),
-    T(''),
-    T(''),
-    F(`L${lastPac}`, r1(lastStep.pace[0].end), STYLE.bold),
-    T(''),
-    F(`SUM(N5:N${lastPac})`, r1(sum(1, 'act'))),
-    F(`SUM(O5:O${lastPac})`, r1(sum(1, 'labour'))),
-    F(`SUM(P5:P${lastPac})`, r1(sum(1, 'travel'))),
-    T(''),
-    F(`SUM(R5:R${lastPac})`, r1(sum(1, 'wait'))),
-    T(''),
-    T(''),
-    F(`U${lastPac}`, r1(lastStep.pace[1].end), STYLE.bold),
-    T(''),
-    T(''),
-    T(''),
-    T(''),
-    F(`Z${lastPac}`, r1(lastStep.pace[0].wallet), STYLE.int),
-    T(''),
-    F(`AB${lastPac}`, r1(lastStep.pace[1].wallet), STYLE.int),
+    ...PARTIES.flatMap((_, b) => {
+      const C = (q: number) => pcol(b, q);
+      return [
+        F(`SUM(${C(0)}5:${C(0)}${lastPac})`, r1(sum(b, 'act'))),
+        F(`SUM(${C(1)}5:${C(1)}${lastPac})`, r1(sum(b, 'labour'))),
+        F(`SUM(${C(2)}5:${C(2)}${lastPac})`, r1(sum(b, 'travel'))),
+        T(''),
+        F(`SUM(${C(4)}5:${C(4)}${lastPac})`, r1(sum(b, 'wait'))),
+        T(''),
+        T(''),
+        F(`${C(7)}${lastPac}`, r1(lastStep.pace[b]!.end), STYLE.bold),
+        T(''),
+        T(''),
+        T(''),
+        F(`${C(11)}${lastPac}`, r1(lastStep.pace[b]!.wallet), STYLE.int),
+      ];
+    }),
   ],
 );
 const pacingSheet: Sheet = {
   name: 'Pacing',
   rows: pacingRows,
-  widths: [6, 18, 44, 20, ...Array.from({ length: 18 }, () => 9), 10, 10, 10, 10, 10, 10],
+  widths: [6, 18, 44, 20, ...Array.from({ length: PW * NP }, () => 9)],
   freeze: { row: 4, col: 3 },
 };
+const soloWallet = `Pacing!$${pcol(0, 11)}$${lastPac}`;
 
 // ---------- Endgame ----------
 const MATS = MATERIALS.map((m) => m);
@@ -817,7 +808,7 @@ const endRows: Cell[][] = [
   [T('The end-game tier: everything automated, then new goals', STYLE.title)],
   [
     T(
-      'Bought in order after the ending. A goal waits for its scarcest material and for the wallet; its materials cannot also be sold. Players do not speed producers, so these hours are about the same for one or four.',
+      'Bought in order after the ending. A goal waits for its scarcest material and for the wallet; its materials cannot also be sold. More players do not speed producers, so these hours are about the same for one, two or three.',
       STYLE.note,
     ),
   ],
@@ -829,7 +820,7 @@ const endRows: Cell[][] = [
     ...MATS.map((m, k) => F(`Flows!$K$${flowRow(N, k)}`, r1(res.endRates[m]), STYLE.int)),
   ],
   [T('Town price, Bucks/unit', STYLE.bold), T(''), T(''), ...MATS.map((m) => F(price(m), PRICES[m], STYLE.int))],
-  [T('Wallet at the ending (solo)', STYLE.bold), F(`Pacing!$Z$${lastPac}`, r1(lastStep.pace[0].wallet), STYLE.int)],
+  [T('Wallet at the ending (solo)', STYLE.bold), F(soloWallet, r1(lastStep.pace[0]!.wallet), STYLE.int)],
   [],
   [
     H('ID'),
@@ -850,7 +841,7 @@ const endRows: Cell[][] = [
 ];
 const G0 = endRows.length + 1; // first goal row
 let rates = { ...res.endRates };
-let walletStart = lastStep.pace[0].wallet;
+let walletStart = lastStep.pace[0]!.wallet;
 GOALS.forEach((g, k) => {
   const r = G0 + k;
   const gr = res.goals[k]!;
@@ -899,7 +890,7 @@ const crossRows: Cell[][] = [
   [T('Hands versus machines, per tier', STYLE.title)],
   [
     T(
-      'Each tier starts by hand. A producer starts slower than one player hauling, then its upgrades pass one player, then a crew. 999 = not before the ending.',
+      "Each tier starts by hand. A producer starts slower than one player hauling, then its upgrades pass the player, then the group. Each party's hours are on its own timeline. 999 = not before the ending.",
       STYLE.note,
     ),
   ],
@@ -908,14 +899,13 @@ const crossRows: Cell[][] = [
     H('Name'),
     H('Tier'),
     H('Producer level 1 at step'),
-    H('Automatic starts at h (left)'),
+    H('Automatic starts at h (solo)'),
     H('One player by hand then, /h'),
     H('Automatic level 1, /h'),
-    H('Automatic passes one player at h (left)'),
-    H('Automatic passes the crew at h (right)'),
+    ...PARTIES.map((n) => H(`Machines pass the hands at h (${partyLabel(n)})`)),
     H('Automatic at the end, /h'),
     H('One player by hand at the end, /h'),
-    H('Crew by hand at the end, /h'),
+    H(`Group of ${PARTIES[NP - 1]} by hand at the end, /h`),
   ],
 ];
 MATERIALS.forEach((m, mi) => {
@@ -931,21 +921,23 @@ MATERIALS.forEach((m, mi) => {
     T(resource.name),
     T(String(resource.tier)),
     F(`SUMIFS(Producers!$R:$R,Producers!$B:$B,"${m}",Producers!$D:$D,1)`, l1, STYLE.int),
-    F(`IF(OR(D${r}=0,D${r}>=${NEVER}),${NEVER},INDEX(Pacing!$K:$K,D${r}+4))`, stL1 ? r1(stL1.pace[0].start) : NEVER),
+    F(
+      `IF(OR(D${r}=0,D${r}>=${NEVER}),${NEVER},INDEX(Pacing!$${pcol(0, 6)}:$${pcol(0, 6)},D${r}+4))`,
+      stL1 ? r1(stL1.pace[0]!.start) : NEVER,
+    ),
     F(`IF(OR(D${r}=0,D${r}>=${NEVER}),0,${at('L', `D${r}`)})`, stL1 ? r1(stL1.flows[mi]!.manual) : 0, STYLE.int),
     F(`IF(OR(D${r}=0,D${r}>=${NEVER}),0,${at('K', `D${r}`)})`, stL1 ? r1(stL1.flows[mi]!.auto) : 0, STYLE.int),
-    F(`Flows!$V$${flowRow(N, mi)}`, r1(crossover(res, m, 0)), STYLE.bold),
-    F(`Flows!$AA$${flowRow(N, mi)}`, r1(crossover(res, m, 1)), STYLE.bold),
+    ...PARTIES.map((_, b) => F(`Flows!$${fcol(b, 5)}$${flowRow(N, mi)}`, r1(crossover(res, m, b)), STYLE.bold)),
     F(`Flows!$K$${flowRow(N, mi)}`, r1(end.auto), STYLE.int),
     F(`Flows!$L$${flowRow(N, mi)}`, r1(end.manual), STYLE.int),
-    F(`Flows!$M$${flowRow(N, mi)}`, r1(end.crew), STYLE.int),
+    F(`Flows!$${fcol(NP - 1, 3)}$${flowRow(N, mi)}`, r1(end.group[NP - 1]!), STYLE.int),
   ]);
 });
 crossRows.push(
   [],
   [
     T(
-      'Manual assists (carry frame, fibre sling, proper axe, powered pick) raise the hand lines; spokes shorten them; producer, wagon and engine upgrades raise the automatic line. The end-game cranes retire the last manual carry.',
+      "Manual assists (carry frame, fibre sling, proper axe, powered pick) are shared progression: they raise every player's hand line. Spokes shorten it; producer, wagon and engine upgrades raise the automatic line. The end-game cranes retire the last manual carry.",
       STYLE.note,
     ),
   ],
@@ -953,7 +945,7 @@ crossRows.push(
 const crossSheet: Sheet = {
   name: 'Crossover',
   rows: crossRows,
-  widths: [9, 18, 6, 12, 14, 14, 14, 16, 16, 14, 14, 14],
+  widths: [9, 18, 6, 12, 14, 14, 14, ...PARTIES.map(() => 16), 14, 14, 14],
   freeze: { row: 3, col: 1 },
 };
 
@@ -972,76 +964,97 @@ const MILESTONES = [
 ];
 const TRAIN_IDS = ['R1', 'B1', 'S1', 'ENG2', 'R2', 'WAG2', 'ENG3', 'WAG3', 'LOOP', 'ENG4'];
 const AWAY_SAMPLES = [1, 4, 8, 22, 72];
+const four = simulate(
+  firstArg || pickArg
+    ? { ...(firstArg ? { branchFirst: firstArg } : {}), ...(pickArg ? { trainFirst: pickArg } : {}) }
+    : {},
+  [4],
+);
+const fourEnd = four.steps[N - 1]!.pace[0]!;
+const totalCol = (b: number, q: number) => `Pacing!$${pcol(b, q)}$${TOTAL_ROW}`;
 const sumRows: Cell[][] = [
   [T('Summary', STYLE.title)],
   [
     T(
-      'Everything here is a formula over the other tabs. Inputs are yellow on Settings, Links, Resources, World, Route, Producers, Storage, Recipes and Endgame.',
+      'Everything here is a formula over the other tabs, except the four-player footnote. Inputs are yellow on Settings, Links, Resources, World, Route, Producers, Storage, Recipes and Endgame.',
       STYLE.note,
     ),
   ],
-  [H('Measure'), H('Left (solo)'), H('Right (four)'), H('Note')],
+  [H('Measure'), ...PARTIES.map((n) => H(partyLabel(n))), H('Note')],
   [
     T('Hours to the ending'),
-    F(`Pacing!$L$${lastPac}`, r1(lastStep.pace[0].end), STYLE.bold),
-    F(`Pacing!$U$${lastPac}`, r1(lastStep.pace[1].end), STYLE.bold),
+    ...PARTIES.map((_, b) => F(`Pacing!$${pcol(b, 7)}$${lastPac}`, r1(lastStep.pace[b]!.end), STYLE.bold)),
     F(`"Target "&${S('targetHours')}&" h"`, `Target ${set.targetHours} h`, STYLE.note),
   ],
   [
     T('Authored play incl. returns, h'),
-    F(`Pacing!$E$${TOTAL_ROW}/60`, r1(sum(0, 'act') / 60)),
-    F(`Pacing!$N$${TOTAL_ROW}/60`, r1(sum(1, 'act') / 60)),
+    ...PARTIES.map((_, b) => F(`${totalCol(b, 0)}/60`, r1(sum(b, 'act') / 60))),
     T('Content that has to exist', STYLE.note),
   ],
   [
     T('Hand labour, h'),
-    F(`Pacing!$F$${TOTAL_ROW}/60`, r1(sum(0, 'labour') / 60)),
-    F(`Pacing!$O$${TOTAL_ROW}/60`, r1(sum(1, 'labour') / 60)),
+    ...PARTIES.map((_, b) => F(`${totalCol(b, 1)}/60`, r1(sum(b, 'labour') / 60))),
     T('Chopping, carrying, placing', STYLE.note),
   ],
   [
     T('Commuting incl. returns, h'),
-    F(`Pacing!$G$${TOTAL_ROW}/60`, r1(sum(0, 'travel') / 60)),
-    F(`Pacing!$P$${TOTAL_ROW}/60`, r1(sum(1, 'travel') / 60)),
+    ...PARTIES.map((_, b) => F(`${totalCol(b, 2)}/60`, r1(sum(b, 'travel') / 60))),
     T('Spokes and faster engines shrink this', STYLE.note),
   ],
   [
     T('Waiting for shared stock, h'),
-    F(`Pacing!$I$${TOTAL_ROW}`, r1(sum(0, 'wait'))),
-    F(`Pacing!$R$${TOTAL_ROW}`, r1(sum(1, 'wait'))),
+    ...PARTIES.map((_, b) => F(totalCol(b, 4), r1(sum(b, 'wait')))),
     T('Producer and storage upgrades shrink this', STYLE.note),
   ],
   [
     T('Shared wallet at the ending, Bucks'),
-    F(`Pacing!$Z$${lastPac}`, r1(lastStep.pace[0].wallet), STYLE.int),
-    F(`Pacing!$AB$${lastPac}`, r1(lastStep.pace[1].wallet), STYLE.int),
+    ...PARTIES.map((_, b) => F(`Pacing!$${pcol(b, 11)}$${lastPac}`, r1(lastStep.pace[b]!.wallet), STYLE.int)),
     T('Surplus sold from full yards', STYLE.note),
   ],
   [
     T('End-game goals, h after the ending'),
     F(`Endgame!$Z$${lastGoal}`, r1(res.goals.at(-1)!.total), STYLE.bold),
     T(''),
-    T('Production-bound: about the same for four', STYLE.note),
+    T(''),
+    T('Production-bound: about the same for every party', STYLE.note),
+  ],
+  [
+    T('Footnote: four players, hours to the ending'),
+    { v: r1(fourEnd.end), s: STYLE.num },
+    T(''),
+    T(''),
+    T(
+      `Not designed for; computed by the script, not a formula. Waits ${Math.round(four.steps.reduce((n, st) => n + st.pace[0]!.wait, 0) * 60)} min for stock.`,
+      STYLE.note,
+    ),
   ],
   [],
-  [H('Milestone'), H('Ends at h (left)'), H('Ends at h (right)'), H('Step')],
+  [H('Milestone'), ...PARTIES.map((n) => H(`Ends at h (${partyLabel(n)})`)), H('Step')],
   ...MILESTONES.map((key) => {
     const st = res.steps[orderOf(key) - 1]!;
     return [
       T(key, STYLE.bold),
-      F(`INDEX(Pacing!$L:$L,MATCH("${key}",Pacing!$B:$B,0))`, r1(st.pace[0].end)),
-      F(`INDEX(Pacing!$U:$U,MATCH("${key}",Pacing!$B:$B,0))`, r1(st.pace[1].end)),
+      ...PARTIES.map((_, b) =>
+        F(`INDEX(Pacing!$${pcol(b, 7)}:$${pcol(b, 7)},MATCH("${key}",Pacing!$B:$B,0))`, r1(st.pace[b]!.end)),
+      ),
       F(`INDEX(Pacing!$C:$C,MATCH("${key}",Pacing!$B:$B,0))`, st.name, STYLE.none),
     ];
   }),
   [],
-  [H('Time away, h'), H('Credited, hours of output'), T(''), H('Paused world: nothing runs while the room is empty')],
+  [
+    H('Time away, h'),
+    H('Credited, hours of output'),
+    T(''),
+    T(''),
+    H('Paused world: nothing runs while the room is empty'),
+  ],
 ];
 for (const t of AWAY_SAMPLES) {
   const r = sumRows.length + 1;
   sumRows.push([
     I(t),
     F(`${S('awayFill')}*${S('awayHorizonHours')}*(1-EXP(-A${r}/${S('awayHorizonHours')}))`, r1(awayCredit(set, t))),
+    T(''),
     T(''),
     T('Credited to every producer yard on the next join, never past the yard', STYLE.note),
   ]);
@@ -1053,8 +1066,8 @@ MATERIALS.forEach((m, mi) => {
   sumRows.push([
     T(m, STYLE.bold),
     F(`SUMIFS(Flows!$D:$D,Flows!$C:$C,"${m}")`, tot('demand'), STYLE.int),
-    F(`SUMIFS(Flows!$N:$N,Flows!$C:$C,"${m}")`, tot('hand'), STYLE.int),
-    F(`SUMIFS(Flows!$O:$O,Flows!$C:$C,"${m}")`, tot('stock'), STYLE.int),
+    F(`SUMIFS(Flows!$M:$M,Flows!$C:$C,"${m}")`, tot('hand'), STYLE.int),
+    F(`SUMIFS(Flows!$N:$N,Flows!$C:$C,"${m}")`, tot('stock'), STYLE.int),
     F(`IF(B${r}=0,0,C${r}/B${r})`, tot('demand') ? r1(tot('hand') / tot('demand')) : 0, STYLE.pct),
   ]);
 });
@@ -1070,7 +1083,7 @@ for (const id of TRAIN_IDS) {
     F(at('B'), rec.name, STYLE.none),
   ]);
 }
-const summarySheet: Sheet = { name: 'Summary', rows: sumRows, widths: [34, 18, 16, 18, 40] };
+const summarySheet: Sheet = { name: 'Summary', rows: sumRows, widths: [34, 16, 16, 16, 44] };
 
 // ---------- Readme ----------
 const readme: Sheet = {
@@ -1121,11 +1134,11 @@ const readme: Sheet = {
     ],
     [
       T(
-        'Pacing: hours to each milestone and the wallet, solo (left) and four players (right). Change the player counts on row 3.',
+        'Pacing: hours to each milestone and the wallet, one block per party: 1, 2 and 3 players (owner, 6 November: tune for 1–3, tolerate 4). Change the counts on row 3.',
       ),
     ],
     [T('Endgame: the tier of goals after the ending, when everything is automated.')],
-    [T('Crossover: when machines overtake hands for each tier, against one player and against the crew.')],
+    [T("Crossover: when machines overtake hands for each tier, against each party's hands.")],
     [T('Summary: totals, milestones, the away credit, material use and the rising complexity of train upgrades.')],
     [],
     [T('Rules of the model', STYLE.bold)],
@@ -1391,37 +1404,14 @@ const csvs: Record<string, string> = {
     ]),
   ]),
   'pacing.csv': csv([
-    [
-      'first_branch',
-      'order',
-      'key',
-      'place',
-      'solo_start_h',
-      'solo_end_h',
-      'solo_wait_h',
-      'solo_wallet',
-      'four_start_h',
-      'four_end_h',
-      'four_wait_h',
-      'four_waiting_on',
-      'four_wallet',
-    ],
+    ['first_branch', 'players', 'order', 'key', 'place', 'start_h', 'end_h', 'wait_h', 'waiting_on', 'wallet'],
     ...both.flatMap((r) =>
-      r.steps.map((st) => [
-        r.first,
-        st.order,
-        st.key,
-        st.place,
-        st.pace[0].start,
-        st.pace[0].end,
-        st.pace[0].wait,
-        st.pace[0].wallet,
-        st.pace[1].start,
-        st.pace[1].end,
-        st.pace[1].wait,
-        st.pace[1].limiting,
-        st.pace[1].wallet,
-      ]),
+      r.players.flatMap((n, b) =>
+        r.steps.map((st) => {
+          const pc = st.pace[b]!;
+          return [r.first, n, st.order, st.key, st.place, pc.start, pc.end, pc.wait, pc.limiting, pc.wallet];
+        }),
+      ),
     ),
   ]),
   'endgame.csv': csv([
@@ -1431,73 +1421,76 @@ const csvs: Record<string, string> = {
   'crossover.csv': csv([
     [
       'first_branch',
+      'players',
       'order',
       'key',
       'material',
-      'solo_start_h',
+      'start_h',
       'automatic_per_h',
       'one_player_by_hand_per_h',
-      'four_start_h',
-      'crew_by_hand_per_h',
+      'group_by_hand_per_h',
     ],
     ...both.flatMap((r) =>
-      r.steps.flatMap((st) =>
-        st.flows.map((f) => [
-          r.first,
-          st.order,
-          st.key,
-          f.material,
-          st.pace[0].start,
-          f.auto,
-          f.manual,
-          st.pace[1].start,
-          f.crew,
-        ]),
+      r.players.flatMap((n, b) =>
+        r.steps.flatMap((st) =>
+          st.flows.map((f) => [
+            r.first,
+            n,
+            st.order,
+            st.key,
+            f.material,
+            st.pace[b]!.start,
+            f.auto,
+            f.manual,
+            f.group[b]!,
+          ]),
+        ),
       ),
     ),
   ]),
 };
 
 // ---------- page data ----------
-const pageRoute = (r: Result) => ({
-  first: r.first,
-  steps: r.steps.map((st) => ({
-    key: st.key,
-    name: st.name,
-    place: st.place,
-    solo: [r1(st.pace[0].start), r1(st.pace[0].end)],
-    four: [r1(st.pace[1].start), r1(st.pace[1].end)],
-    wait4: r1(st.pace[1].wait * 60),
-    on4: st.pace[1].limiting,
-    back: st.back.trips ? placeName(st.back.slot, r.first) : '',
-  })),
-  cross: Object.fromEntries(
-    MATERIALS.filter((m) => m !== 'St' && m !== 'R').map((m) => [
-      m,
-      {
-        solo: r1(crossover(r, m, 0)),
-        crew: r1(crossover(r, m, 1)),
-        series: r.steps.map((st) => {
-          const f = st.flows.find((x) => x.material === m)!;
-          return [r1(st.pace[0].start), Math.round(f.manual), Math.round(f.auto)];
-        }),
-      },
-    ]),
-  ),
-  goals: r.goals.map((g) => ({ id: g.id, name: g.name, hours: r1(g.hours), total: r1(g.total) })),
-  totals: {
-    solo: r1(r.steps[N - 1]!.pace[0].end),
-    four: r1(r.steps[N - 1]!.pace[1].end),
-    act: r1(r.steps.reduce((n, st) => n + st.pace[0].act, 0) / 60),
-    labour: r1(r.steps.reduce((n, st) => n + st.pace[0].labour, 0) / 60),
-    travel: r1(r.steps.reduce((n, st) => n + st.pace[0].travel, 0) / 60),
-    wait: r1(r.steps.reduce((n, st) => n + st.pace[0].wait, 0)),
-    wait4: r1(r.steps.reduce((n, st) => n + st.pace[1].wait, 0)),
-    wallet: Math.round(r.steps[N - 1]!.pace[0].wallet),
-    wallet4: Math.round(r.steps[N - 1]!.pace[1].wallet),
-    endgame: r1(r.goals.at(-1)!.total),
-  },
-});
+const pageRoute = (r: Result) => {
+  const four = simulate({ branchFirst: r.first }, [4]);
+  return {
+    first: r.first,
+    players: r.players,
+    steps: r.steps.map((st) => ({
+      key: st.key,
+      name: st.name,
+      place: st.place,
+      t: st.pace.map((pc) => [r1(pc.start), r1(pc.end)]),
+      wait: st.pace.map((pc) => r1(pc.wait * 60)),
+      on: st.pace.map((pc) => pc.limiting),
+      back: st.back.trips ? placeName(st.back.slot, r.first) : '',
+    })),
+    cross: Object.fromEntries(
+      MATERIALS.filter((m) => m !== 'St' && m !== 'R').map((m) => [
+        m,
+        {
+          pass: r.players.map((_, b) => r1(crossover(r, m, b))),
+          series: r.steps.map((st) => {
+            const f = st.flows.find((x) => x.material === m)!;
+            return [r1(st.pace[0]!.start), Math.round(f.manual), Math.round(f.auto)];
+          }),
+        },
+      ]),
+    ),
+    goals: r.goals.map((g) => ({ id: g.id, name: g.name, hours: r1(g.hours), total: r1(g.total) })),
+    totals: {
+      end: r.players.map((_, b) => r1(r.steps[N - 1]!.pace[b]!.end)),
+      wait: r.players.map((_, b) => r1(r.steps.reduce((n, st) => n + st.pace[b]!.wait, 0) * 60)),
+      wallet: r.players.map((_, b) => Math.round(r.steps[N - 1]!.pace[b]!.wallet)),
+      act: r1(r.steps.reduce((n, st) => n + st.pace[0]!.act, 0) / 60),
+      labour: r1(r.steps.reduce((n, st) => n + st.pace[0]!.labour, 0) / 60),
+      travel: r1(r.steps.reduce((n, st) => n + st.pace[0]!.travel, 0) / 60),
+      endgame: r1(r.goals.at(-1)!.total),
+      four: r1(four.steps[N - 1]!.pace[0]!.end),
+      fourWait: r1(four.steps.reduce((n, st) => n + st.pace[0]!.wait, 0) * 60),
+    },
+  };
+};
 const placeName = (slot: string, b: Branch) =>
   slot === 'b1'
     ? b === 'canopy'
@@ -1552,8 +1545,6 @@ if (bare) {
   writeFileSync(join(OUT, 'economy-model.xlsx'), xlsx);
   for (const [name, text] of Object.entries(csvs)) writeFileSync(join(OUT, name), text);
   writeFileSync(PAGE, nextPage);
-  const p = lastStep.pace;
-  console.log(
-    `economy model: solo ${p[0].end.toFixed(2)} h, four ${p[1].end.toFixed(2)} h, end-game ${res.goals.at(-1)!.total.toFixed(1)} h (first branch ${first})`,
-  );
+  const ends = res.players.map((n, b) => `${n}p ${lastStep.pace[b]!.end.toFixed(2)} h`).join(', ');
+  console.log(`economy model: ${ends}, end-game ${res.goals.at(-1)!.total.toFixed(1)} h (first branch ${first})`);
 }

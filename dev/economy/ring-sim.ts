@@ -112,11 +112,12 @@ export type StepFlow = {
   stock: number;
   labourS: number;
   ahead: boolean;
-  crew: number;
-  start: [number, number];
-  wait: [number, number];
-  end: [number, number];
-  sold: [number, number]; // surplus past a full yard, sold to the town for Bucks
+  /** Hand rate of each party's whole group, units/hour (shared progression: everyone has the same tools). */
+  group: number[];
+  start: number[];
+  wait: number[];
+  end: number[];
+  sold: number[]; // surplus past a full yard, sold to the town for Bucks
 };
 export type StepPace = {
   act: number;
@@ -148,7 +149,7 @@ export type StepResult = {
   remote: number;
   back: { slot: string; trips: number; min: number; km: number; rideS: number };
   flows: StepFlow[];
-  pace: [StepPace, StepPace];
+  pace: StepPace[];
 };
 export type GoalResult = {
   id: string;
@@ -161,14 +162,15 @@ export type GoalResult = {
 };
 export type Result = {
   first: Branch;
-  players: [number, number];
+  players: number[];
   steps: StepResult[];
   settings: Settings;
   goals: GoalResult[];
   endRates: Record<Material, number>;
 };
 
-export function simulate(overrides: Settings = {}, players: [number, number] = [1, 4]): Result {
+/** Designed and tuned for one to three players (owner, 6 November); pass [4] for the four-player footnote. */
+export function simulate(overrides: Settings = {}, players: number[] = [1, 2, 3]): Result {
   const s = { ...defaultSettings(), ...overrides };
   const first = s.branchFirst as Branch;
   const at = (row: Row) => orderOf(milestoneOf(row, s));
@@ -231,7 +233,7 @@ export function simulate(overrides: Settings = {}, players: [number, number] = [
       const stock = demand - hand;
       if (hand && !res.manual) throw new Error(`${r.key}: ${m} needed before anything makes it`);
       const labourS = hand * (res.manual ? per(res.localM / walk) / carry : 0) + stock * num(s, 'lastCarryS');
-      const crew = manual * (1 + (players[1] - 1) * num(s, 'handParallel'));
+      const group = players.map((n) => manual * (1 + (n - 1) * num(s, 'handParallel')));
       return {
         material: m,
         demand,
@@ -246,11 +248,11 @@ export function simulate(overrides: Settings = {}, players: [number, number] = [
         stock,
         labourS,
         ahead: auto > 0 && auto >= manual,
-        crew,
-        start: [0, 0],
-        wait: [0, 0],
-        end: [0, 0],
-        sold: [0, 0],
+        group,
+        start: players.map(() => 0),
+        wait: players.map(() => 0),
+        end: players.map(() => 0),
+        sold: players.map(() => 0),
       };
     });
     const pace = (n: number): StepPace => {
@@ -290,22 +292,23 @@ export function simulate(overrides: Settings = {}, players: [number, number] = [
       remote,
       back,
       flows,
-      pace: [pace(players[0]), pace(players[1])],
+      pace: players.map(pace),
     });
   });
   // Stock and the wallet carry over between steps, so pace each party in order.
   const away = awayCredit(s, num(s, 'awayHours'));
-  for (const p of [0, 1] as const) {
+  for (let p = 0; p < players.length; p++) {
     let start = 0,
       wallet = 0;
     steps.forEach((st, k) => {
       const prev = steps[k - 1];
-      const pc = st.pace[p];
+      const pc = st.pace[p]!;
       st.flows.forEach((f, mi) => {
-        f.start[p] = prev ? prev.flows[mi]!.end[p] : 0;
-        f.wait[p] = f.auto > 0 ? Math.max(0, (f.stock - f.start[p] - f.auto * pc.work) / f.auto) : 0;
+        const s0 = prev ? prev.flows[mi]!.end[p]! : 0;
+        f.start[p] = s0;
+        f.wait[p] = f.auto > 0 ? Math.max(0, (f.stock - s0 - f.auto * pc.work) / f.auto) : 0;
       });
-      pc.wait = Math.max(...st.flows.map((f) => f.wait[p]));
+      pc.wait = Math.max(...st.flows.map((f) => f.wait[p]!));
       pc.limiting = pc.wait === 0 ? '—' : st.flows.find((f) => f.wait[p] === pc.wait)!.material;
       pc.dur = pc.work + pc.wait;
       pc.start = start;
@@ -313,11 +316,11 @@ export function simulate(overrides: Settings = {}, players: [number, number] = [
       const sh = num(s, 'sessionHours');
       pc.breaks = Math.floor(pc.end / sh) - Math.floor(pc.start / sh);
       st.flows.forEach((f) => {
-        const raw = f.start[p] + f.auto * pc.dur - f.stock;
+        const raw = f.start[p]! + f.auto * pc.dur - f.stock;
         f.sold[p] = Math.max(0, raw - f.cap);
         f.end[p] = Math.min(f.cap, Math.max(0, raw) + (pc.breaks > 0 ? f.auto * away : 0));
       });
-      pc.bucks = st.flows.reduce((t, f) => t + f.sold[p] * PRICES[f.material], 0);
+      pc.bucks = st.flows.reduce((t, f) => t + f.sold[p]! * PRICES[f.material], 0);
       wallet += pc.bucks;
       pc.wallet = wallet;
       start = pc.end;
@@ -329,7 +332,7 @@ export function simulate(overrides: Settings = {}, players: [number, number] = [
   // A goal waits for its scarcest material and for the wallet: materials it uses can't also be sold, so the
   // wallet need is its Bucks plus its materials at their prices, earned at the town's buying rate.
   const rates = { ...endRates };
-  let wallet = last.pace[0].wallet,
+  let wallet = last.pace[0]!.wallet,
     total = 0;
   const goals = GOALS.map((g): GoalResult => {
     const value = g.bucks + MATERIALS.reduce((t, m) => t + billAt(g.bill, m) * PRICES[m], 0);
@@ -346,11 +349,11 @@ export function simulate(overrides: Settings = {}, players: [number, number] = [
   return { first, players, steps, settings: s, goals, endRates };
 }
 
-/** First hour at which automatic supply delivers at least as fast as hand hauling, per player (p=0) or crew (p=1). */
-export function crossover(res: Result, m: Material, p: 0 | 1) {
+/** First hour, on party p's timeline, at which automatic supply delivers at least as fast as that party's hands. */
+export function crossover(res: Result, m: Material, p: number) {
   for (const st of res.steps) {
     const f = st.flows.find((x) => x.material === m)!;
-    if (f.auto > 0 && f.auto >= (p ? f.crew : f.manual)) return st.pace[p].start;
+    if (f.auto > 0 && f.auto >= f.group[p]!) return st.pace[p]!.start;
   }
   return NEVER;
 }

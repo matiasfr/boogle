@@ -1,6 +1,6 @@
 # Principles audit: the shared wallet and the paused world
 
-_6 November 2026. This audit is for the owner's answers to the [ring-and-economy brief](../brainstorms/ring-and-economy.md):_
+_6 November 2026; **approved by the owner as worded the same day** ([economy principles amended](../proposals/boogle-2.md#progress-and-rewards)). This audit is for the owner's answers to the [ring-and-economy brief](../brainstorms/ring-and-economy.md):_
 
 - _a shared wallet anyone may spend;_
 - _a world that is paused while nobody is in it, with a capped "while you were away" credit to producers on the next
@@ -13,6 +13,10 @@ _6 November 2026. This audit is for the owner's answers to the [ring-and-economy
 _It lists every recorded principle, decision, contract and code path that conflicts with that direction. Each item
 gives the exact source line, the conflict and an amendment worded for the owner to approve. Nothing here edits those
 documents. Line numbers are from the checkout at `66738570`._
+
+**As applied (6 November):** DESIGN.md carries compact versions of items 1–5, sized to the prototype route's reading
+budget. The full wallet, cosmetics and away-credit rules are in [owner-calls](../agents/owner-calls.md), and the code
+changes are queued after R1b in [orchestrator-state](../agents/orchestrator-state.md).
 
 **Summary:**
 

@@ -1,5 +1,7 @@
 # Upgrade economy: one material, many things worth improving
 
+_Note added 6 November 2026: the owner approved a shared wallet, fully shared progression and a world paused while empty, with a capped away credit on the next join ([economy principles amended](../proposals/boogle-2.md#progress-and-rewards)). Its recommendations against a spendable shared wallet are superseded. The rest stands as written._
+
 _Research report, 5 November 2026; revised after the owner's upgrade-kind additions. Initial repository baseline `e941b9b0`; revision starts from `a5c98abe` and reconciles newer main research with the supplied places panel. Primary-source research and offline-model arithmetic only: a finite material-based upgrade tree, kinds, eight-hour rhythm, sinks, co-op access and simulation requirements. No gameplay, economy-model or owner-decision changes; no reference games played and no new Boogle playtest._
 
 **Evidence:** **[V]** = inspected repository or fetched primary text; **[R]** = historical report or recorded playtest, not independently reproduced; **[P]** = proposed design, arithmetic or tunable target. Developer interviews establish intent and reported experience, not universal psychological laws. GDC evidence below is a slide deck or session abstract, not a watched talk. Numbers in the proposed tree are starting hypotheses, never measured reference-game pacing.

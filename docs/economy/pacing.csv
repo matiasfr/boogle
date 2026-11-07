@@ -1,35 +1,103 @@
-first_branch,order,key,place,solo_start_h,solo_end_h,solo_wait_h,solo_wallet,four_start_h,four_end_h,four_wait_h,four_waiting_on,four_wallet
-canopy,1,home.line1,Home · Threefold Reach,0,0.329,0,0,0,0.203,0,—,0
-canopy,2,home.forge,Home · Threefold Reach,0.329,0.531,0,0,0.203,0.323,0,—,0
-canopy,3,home.line2,Home · Threefold Reach,0.531,0.724,0,0,0.323,0.454,0,—,0
-canopy,4,splitrock.reach,Split-rock Works,0.724,1.106,0,0,0.454,0.722,0,—,0
-canopy,5,splitrock.connect,Split-rock Works,1.106,1.452,0,0,0.722,1.022,0.084,C,0
-canopy,6,ring.reach,Ring Island,1.452,2.093,0,0,1.022,1.458,0,—,0
-canopy,7,ring.connect,Ring Island,2.093,2.37,0,1.5,1.458,1.646,0.005,C,0
-canopy,8,hub.roundhouse,Home · Threefold Reach,2.37,2.599,0,10.938,1.646,1.805,0,—,0
-canopy,9,b1.reach,Canopy Town,2.599,3.305,0,190.717,1.805,2.267,0,—,77.076
-canopy,10,b1.connect,Canopy Town,3.305,3.865,0,675.309,2.267,2.767,0.136,Fi,496.431
-canopy,11,spoke1,Canopy Town,3.865,4.516,0,1288.006,2.767,3.151,0,—,737.294
-canopy,12,port.reach,High Port,4.516,5.233,0,2475.006,3.151,3.619,0,—,1474.863
-canopy,13,port.connect,High Port,5.233,5.785,0,4720.454,3.619,3.97,0,—,2567.575
-canopy,14,b2.reach,High Gorge,5.785,6.403,0,8204.266,3.97,4.358,0,—,4720.372
-canopy,15,b2.connect,High Gorge,6.403,6.939,0,11207.066,4.358,4.708,0.004,U,6654.372
-canopy,16,ring.close,High Gorge,6.939,7.624,0,18926.933,4.708,5.117,0,—,11000.337
-canopy,17,final,Original Island,7.624,8.188,0,26714.333,5.117,5.488,0,—,15771.266
-gorge,1,home.line1,Home · Threefold Reach,0,0.329,0,0,0,0.203,0,—,0
-gorge,2,home.forge,Home · Threefold Reach,0.329,0.531,0,0,0.203,0.323,0,—,0
-gorge,3,home.line2,Home · Threefold Reach,0.531,0.724,0,0,0.323,0.454,0,—,0
-gorge,4,splitrock.reach,Split-rock Works,0.724,1.106,0,0,0.454,0.722,0,—,0
-gorge,5,splitrock.connect,Split-rock Works,1.106,1.452,0,0,0.722,1.022,0.084,C,0
-gorge,6,ring.reach,Ring Island,1.452,2.093,0,0,1.022,1.458,0,—,0
-gorge,7,ring.connect,Ring Island,2.093,2.37,0,1.5,1.458,1.646,0.005,C,0
-gorge,8,hub.roundhouse,Home · Threefold Reach,2.37,2.599,0,10.938,1.646,1.805,0,—,0
-gorge,9,b1.reach,High Gorge,2.599,3.333,0,201.274,1.805,2.282,0,—,82.458
-gorge,10,b1.connect,High Gorge,3.333,3.903,0,668.474,2.282,2.652,0,—,357.499
-gorge,11,spoke1,High Gorge,3.903,4.563,0,1313.248,2.652,3.043,0,—,605.464
-gorge,12,port.reach,High Port,4.563,5.232,0,2412.248,3.043,3.485,0,—,1296.717
-gorge,13,port.connect,High Port,5.232,5.763,0,4540.362,3.485,3.826,0,—,2327.674
-gorge,14,b2.reach,Canopy Town,5.763,6.367,0,7939.852,3.826,4.206,0,—,4435.885
-gorge,15,b2.connect,Canopy Town,6.367,6.891,0,10918.518,4.206,4.706,0.161,Fi,7275.885
-gorge,16,ring.close,Canopy Town,6.891,7.565,0,18475.007,4.706,5.109,0,—,11546.06
-gorge,17,final,Original Island,7.565,8.098,0,25837.074,5.109,5.464,0,—,16108.569
+first_branch,players,order,key,place,start_h,end_h,wait_h,waiting_on,wallet
+canopy,1,1,home.line1,Home · Threefold Reach,0,0.329,0,—,0
+canopy,1,2,home.forge,Home · Threefold Reach,0.329,0.531,0,—,0
+canopy,1,3,home.line2,Home · Threefold Reach,0.531,0.724,0,—,0
+canopy,1,4,splitrock.reach,Split-rock Works,0.724,1.106,0,—,0
+canopy,1,5,splitrock.connect,Split-rock Works,1.106,1.452,0,—,0
+canopy,1,6,ring.reach,Ring Island,1.452,2.093,0,—,0
+canopy,1,7,ring.connect,Ring Island,2.093,2.37,0,—,1.5
+canopy,1,8,hub.roundhouse,Home · Threefold Reach,2.37,2.599,0,—,10.938
+canopy,1,9,b1.reach,Canopy Town,2.599,3.305,0,—,190.717
+canopy,1,10,b1.connect,Canopy Town,3.305,3.865,0,—,675.309
+canopy,1,11,spoke1,Canopy Town,3.865,4.516,0,—,1288.006
+canopy,1,12,port.reach,High Port,4.516,5.233,0,—,2475.006
+canopy,1,13,port.connect,High Port,5.233,5.785,0,—,4720.454
+canopy,1,14,b2.reach,High Gorge,5.785,6.403,0,—,8204.266
+canopy,1,15,b2.connect,High Gorge,6.403,6.939,0,—,11207.066
+canopy,1,16,ring.close,High Gorge,6.939,7.624,0,—,18926.933
+canopy,1,17,final,Original Island,7.624,8.188,0,—,26714.333
+canopy,2,1,home.line1,Home · Threefold Reach,0,0.265,0,—,0
+canopy,2,2,home.forge,Home · Threefold Reach,0.265,0.424,0,—,0
+canopy,2,3,home.line2,Home · Threefold Reach,0.424,0.588,0,—,0
+canopy,2,4,splitrock.reach,Split-rock Works,0.588,0.921,0,—,0
+canopy,2,5,splitrock.connect,Split-rock Works,0.921,1.221,0.018,C,0
+canopy,2,6,ring.reach,Ring Island,1.221,1.77,0,—,0
+canopy,2,7,ring.connect,Ring Island,1.77,2.005,0,—,0
+canopy,2,8,hub.roundhouse,Home · Threefold Reach,2.005,2.203,0,—,0
+canopy,2,9,b1.reach,Canopy Town,2.203,2.797,0,—,120.989
+canopy,2,10,b1.connect,Canopy Town,2.797,3.297,0.031,Fi,540.489
+canopy,2,11,spoke1,Canopy Town,3.297,3.815,0,—,1038.569
+canopy,2,12,port.reach,High Port,3.815,4.418,0,—,1942.066
+canopy,2,13,port.connect,High Port,4.418,4.874,0,—,3636.296
+canopy,2,14,b2.reach,High Gorge,4.874,5.384,0,—,6495.847
+canopy,2,15,b2.connect,High Gorge,5.384,5.833,0,—,8996.332
+canopy,2,16,ring.close,High Gorge,5.833,6.382,0,—,14944.824
+canopy,2,17,final,Original Island,6.382,6.859,0,—,21526.031
+canopy,3,1,home.line1,Home · Threefold Reach,0,0.228,0,—,0
+canopy,3,2,home.forge,Home · Threefold Reach,0.228,0.364,0,—,0
+canopy,3,3,home.line2,Home · Threefold Reach,0.364,0.51,0,—,0
+canopy,3,4,splitrock.reach,Split-rock Works,0.51,0.807,0,—,0
+canopy,3,5,splitrock.connect,Split-rock Works,0.807,1.107,0.056,C,0
+canopy,3,6,ring.reach,Ring Island,1.107,1.591,0,—,0
+canopy,3,7,ring.connect,Ring Island,1.591,1.796,0,—,0
+canopy,3,8,hub.roundhouse,Home · Threefold Reach,1.796,1.972,0,—,0
+canopy,3,9,b1.reach,Canopy Town,1.972,2.491,0,—,73.447
+canopy,3,10,b1.connect,Canopy Town,2.491,2.991,0.091,Fi,492.947
+canopy,3,11,spoke1,Canopy Town,2.991,3.43,0,—,793.412
+canopy,3,12,port.reach,High Port,3.43,3.956,0,—,1634.956
+canopy,3,13,port.connect,High Port,3.956,4.351,0,—,2981.087
+canopy,3,14,b2.reach,High Gorge,4.351,4.791,0,—,5431.729
+canopy,3,15,b2.connect,High Gorge,4.791,5.18,0,—,7594.116
+canopy,3,16,ring.close,High Gorge,5.18,5.647,0,—,12467.745
+canopy,3,17,final,Original Island,5.647,6.064,0,—,17870.229
+gorge,1,1,home.line1,Home · Threefold Reach,0,0.329,0,—,0
+gorge,1,2,home.forge,Home · Threefold Reach,0.329,0.531,0,—,0
+gorge,1,3,home.line2,Home · Threefold Reach,0.531,0.724,0,—,0
+gorge,1,4,splitrock.reach,Split-rock Works,0.724,1.106,0,—,0
+gorge,1,5,splitrock.connect,Split-rock Works,1.106,1.452,0,—,0
+gorge,1,6,ring.reach,Ring Island,1.452,2.093,0,—,0
+gorge,1,7,ring.connect,Ring Island,2.093,2.37,0,—,1.5
+gorge,1,8,hub.roundhouse,Home · Threefold Reach,2.37,2.599,0,—,10.938
+gorge,1,9,b1.reach,High Gorge,2.599,3.333,0,—,201.274
+gorge,1,10,b1.connect,High Gorge,3.333,3.903,0,—,668.474
+gorge,1,11,spoke1,High Gorge,3.903,4.563,0,—,1313.248
+gorge,1,12,port.reach,High Port,4.563,5.232,0,—,2412.248
+gorge,1,13,port.connect,High Port,5.232,5.763,0,—,4540.362
+gorge,1,14,b2.reach,Canopy Town,5.763,6.367,0,—,7939.852
+gorge,1,15,b2.connect,Canopy Town,6.367,6.891,0,—,10918.518
+gorge,1,16,ring.close,Canopy Town,6.891,7.565,0,—,18475.007
+gorge,1,17,final,Original Island,7.565,8.098,0,—,25837.074
+gorge,2,1,home.line1,Home · Threefold Reach,0,0.265,0,—,0
+gorge,2,2,home.forge,Home · Threefold Reach,0.265,0.424,0,—,0
+gorge,2,3,home.line2,Home · Threefold Reach,0.424,0.588,0,—,0
+gorge,2,4,splitrock.reach,Split-rock Works,0.588,0.921,0,—,0
+gorge,2,5,splitrock.connect,Split-rock Works,0.921,1.221,0.018,C,0
+gorge,2,6,ring.reach,Ring Island,1.221,1.77,0,—,0
+gorge,2,7,ring.connect,Ring Island,1.77,2.005,0,—,0
+gorge,2,8,hub.roundhouse,Home · Threefold Reach,2.005,2.203,0,—,0
+gorge,2,9,b1.reach,High Gorge,2.203,2.819,0,—,129.084
+gorge,2,10,b1.connect,High Gorge,2.819,3.296,0,—,507.732
+gorge,2,11,spoke1,High Gorge,3.296,3.824,0,—,1019.139
+gorge,2,12,port.reach,High Port,3.824,4.389,0,—,1858.276
+gorge,2,13,port.connect,High Port,4.389,4.829,0,—,3462.25
+gorge,2,14,b2.reach,Canopy Town,4.829,5.328,0,—,6256.754
+gorge,2,15,b2.connect,Canopy Town,5.328,5.828,0.061,Fi,9096.754
+gorge,2,16,ring.close,Canopy Town,5.828,6.369,0,—,14922.675
+gorge,2,17,final,Original Island,6.369,6.822,0,—,21176.702
+gorge,3,1,home.line1,Home · Threefold Reach,0,0.228,0,—,0
+gorge,3,2,home.forge,Home · Threefold Reach,0.228,0.364,0,—,0
+gorge,3,3,home.line2,Home · Threefold Reach,0.364,0.51,0,—,0
+gorge,3,4,splitrock.reach,Split-rock Works,0.51,0.807,0,—,0
+gorge,3,5,splitrock.connect,Split-rock Works,0.807,1.107,0.056,C,0
+gorge,3,6,ring.reach,Ring Island,1.107,1.591,0,—,0
+gorge,3,7,ring.connect,Ring Island,1.591,1.796,0,—,0
+gorge,3,8,hub.roundhouse,Home · Threefold Reach,1.796,1.972,0,—,0
+gorge,3,9,b1.reach,High Gorge,1.972,2.509,0,—,80.016
+gorge,3,10,b1.connect,High Gorge,2.509,2.925,0,—,399.22
+gorge,3,11,spoke1,High Gorge,2.925,3.372,0,—,719.59
+gorge,3,12,port.reach,High Port,3.372,3.867,0,—,1506.134
+gorge,3,13,port.connect,High Port,3.867,4.25,0,—,2778.931
+gorge,3,14,b2.reach,Canopy Town,4.25,4.68,0,—,5176.661
+gorge,3,15,b2.connect,Canopy Town,4.68,5.18,0.118,Fi,8016.661
+gorge,3,16,ring.close,Canopy Town,5.18,5.64,0,—,12795.532
+gorge,3,17,final,Original Island,5.64,6.037,0,—,17946.74

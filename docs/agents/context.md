@@ -16,7 +16,7 @@ Commit bodies name the principle served. Names are listed here so a tuning fix, 
 - 2. Physics toys are optional fun
 - 3. Side activities are never required
 - 4. Cooperation is automatic, not negotiated
-- 6. Communal world, personal rewards
+- 6. Communal world, personal things
 - 7. Telegraph everything
 - 8. Designed for drop-in, drop-out
 - 9. Leave something for the next visitor
