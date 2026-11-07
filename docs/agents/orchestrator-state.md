@@ -39,6 +39,7 @@ Ship each branch as it passes. Run `ship-branch.sh` under Node 26 (`export PATH=
 
 ## Queued
 
+- **Owner's 6 November order (Claude subagents do the work; Codex for images only):** (1) replication R1a, railway replicated with no prediction, after slice 4 part 1 merges; (2) R1b, predicted mine, chop, take and drop; (3) smaller track chunks (towards one rail pair per commit), shorter gantry beam; (4) track-layer seats working in the production railway (chairs are decorative today); (5) slice 4 part 2 (Q4–Q6, cart trip, pack chest, trains) on replication. Pending owner answer: re-enable island throwing, mushrooms and frisbee now or with replication R3 (recommended R3). Fly shared-cpu 60 Hz check needs the owner's yes for a staging deploy.
 - **Waiting on the owner (morning brief, https://claude.ai/artifact/9SG7GBxEgoChpamS3vCuvj):** first-path verdict on slice 3; next destination (recommended Split-rock Works, then Ring Island); sky (summer or windpaint, and GOBI download); Roundhouse smallest first build; jump upgrades and gate puzzles briefs; material palettes (Fresh recommended); 25 unmerged experiment worktrees.
 - **Visual pass stages 3 to 5** (lighting and sky, shadows, water, post and grade) after the palette and sky picks.
 - **Room-owned time:** after T1; the evening look is on main behind `?evening=1`.
