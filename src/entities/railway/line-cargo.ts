@@ -107,7 +107,8 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     }),
   );
   ground.root.visible = false;
-  const beamAt = new THREE.Vector3();
+  const beamAt = new THREE.Vector3(),
+    lay = new THREE.Vector3(Infinity, 0, Infinity); // where the loose trunk last lay
   const accountEmpty = (pid: string) => {
     const a = state.accounts.find((account) => account.pid === pid);
     return !!a && a.carry === 0 && (a.stone ?? 0) === 0;
@@ -195,6 +196,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     }
     // Your own Pick up takes the rope the frame you press it, before the server's answer (a refusal drops it again).
     const loose = !!beam && (beam.state === 'available' || beam.state === 'ground');
+    if (loose) lay.copy(beamAt);
     const grabbed = loose && now - grabbing < 1500 && state.pending > 0;
     if (grabbed) ground.root.visible = false;
     const live = new Set<string>();
@@ -242,10 +244,10 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
         avatar.position.y + 0.3,
         avatar.position.z + back.z * 0.45 - Math.sin(yaw) * side * 0.35,
       );
-      // Where the far end starts: the end of the trunk as it lay that is further from you, else straight behind.
-      if (loose) {
-        const sx = beamAt.x - hip.x > 0 ? 1 : -1;
-        from.set(beamAt.x + sx * (BEAM_LENGTH / 2), beamAt.y, beamAt.z);
+      // Where the far end starts: the end of the trunk as it last lay that is further from you, else straight behind.
+      if (Math.hypot(lay.x - hip.x, lay.z - hip.z) < 8) {
+        const sx = lay.x - hip.x > 0 ? 1 : -1;
+        from.set(lay.x + sx * (BEAM_LENGTH / 2), lay.y, lay.z);
       } else from.set(hip.x + back.x * BEAM_LENGTH, hip.y, hip.z + back.z * BEAM_LENGTH);
       const helper = frameOf(helperFor(account.pid));
       let helped: [THREE.Vector3, THREE.Vector3] | null = null;
