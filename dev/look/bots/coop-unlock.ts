@@ -141,10 +141,10 @@ async function friend() {
   }
   if (shot === 'late') {
     await until(() => finderAtDevice(30), 'finder nearing the device');
-    net.room!.pause(10 * 60_000); // gone for the find
+    // Gone for the find: the finder takes it and plays on meanwhile (game time); the room reconnects by itself after.
+    net.room!.pause(40000);
     await until(() => !read().ready, 'friend offline');
-    await wait(40000); // the finder takes it and plays on meanwhile (game time)
-    net.room!.pause(0); // back
+    await wait(30000);
     // Held up in the air while reconnecting (a harness pose), so the capture sees their first landing after it:
     // the flourish waits for that.
     const ground = me.body!.position.y;
