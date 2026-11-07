@@ -26,7 +26,31 @@ const playerChoices: Record<string, readonly GraphicsValue[]> = {
   frameLimit: ['display', 60, 30],
   msaa: [true, false],
   caustics: [true, false],
+  detail: ['auto', 'full', 'sea', 'shadows', 'lowest'],
 };
+// Owner call, 7 November 2026: a device that must shed load drops render resolution first (features/adaptive-res.ts),
+// then sea detail, then sun shadows, then scene MSAA. Each rung keeps the ones before it. `detail` Auto lets the
+// frame-time governor in adaptive-res.ts pick the rung; any other choice fixes it. Explicit Dev/player values win.
+export const DETAIL_RUNGS = ['full', 'sea', 'shadows', 'lowest'] as const;
+const DETAIL_CHOICES: readonly GraphicsValue[] = ['auto', ...DETAIL_RUNGS];
+const RUNG_VALUES: readonly Record<string, GraphicsValue>[] = [
+  {},
+  { seaDetail: 'low' },
+  { seaDetail: 'low', shadows: false },
+  { seaDetail: 'low', shadows: false, msaa: false },
+];
+const AUTO_KEY = 'boogle.detail.v1'; // the governor's rung on this device, so the next visit starts there
+// MSAA is reload-only, so the governor's last rung is a sticky flag for the next load rather than a live rung.
+let auto = { rung: 0, msaaOff: false };
+// The look/scenario harness (?dpr=fixed) keeps comparable images: no remembered rung.
+if (new URLSearchParams(location.search).get('dpr') !== 'fixed')
+  try {
+    const saved = JSON.parse(localStorage.getItem(AUTO_KEY) ?? 'null');
+    if (Number.isInteger(saved?.rung) && saved.rung >= 0 && saved.rung <= 2)
+      auto = { rung: saved.rung, msaaOff: saved.msaaOff === true };
+  } catch {
+    /* Storage is optional. */
+  }
 const graphicsPresets = {
   quality: { resolution: 1, frameLimit: 60, caustics: true },
   performance: { resolution: 0.8, frameLimit: 60, caustics: true },
@@ -89,6 +113,12 @@ if (devEnabled) {
   }
   const msaa = new URLSearchParams(location.search).get('graphicsMsaa');
   if (msaa === '0' || msaa === '1') overrides.msaa = msaa === '1';
+  // ?graphics=id:value,id:value: Dev overrides for matched captures and the bench (saved only if Dev then changes one).
+  for (const pair of (new URLSearchParams(location.search).get('graphics') ?? '').split(',')) {
+    const [id, raw] = pair.split(':');
+    if (!id || raw === undefined) continue;
+    overrides[id] = raw === 'true' ? true : raw === 'false' ? false : Number.isFinite(Number(raw)) ? Number(raw) : raw;
+  }
 }
 // Reload-only comparison stays reproducible when storage is unavailable. Never consume this flag without Dev.
 function syncMsaaUrl(value: GraphicsValue | undefined, explicit = false) {
@@ -106,11 +136,52 @@ function save() {
     /* private storage */
   }
 }
-export function graphicsInitial(id: string, choices: readonly GraphicsValue[], baseline: GraphicsValue) {
+function explicitValue(id: string, choices: readonly GraphicsValue[]) {
   const dev = devEnabled ? overrides[id] : undefined;
   if (dev !== undefined && choices.includes(dev)) return dev;
   const value = playerValues[id];
-  return value !== undefined && choices.includes(value) ? value : baseline;
+  return value !== undefined && choices.includes(value) ? value : undefined;
+}
+/** What the detail ladder asks of other owners now: the fixed rung, or the governor's under Auto. */
+function rungValues(): Record<string, GraphicsValue> {
+  const pick = explicitValue('detail', DETAIL_CHOICES) ?? 'auto';
+  const fixed = DETAIL_RUNGS.indexOf(pick as (typeof DETAIL_RUNGS)[number]);
+  if (fixed >= 0) return RUNG_VALUES[fixed]!;
+  return { ...RUNG_VALUES[auto.rung], ...(auto.msaaOff ? { msaa: false } : {}) };
+}
+export function graphicsInitial(id: string, choices: readonly GraphicsValue[], baseline: GraphicsValue) {
+  const value = explicitValue(id, choices);
+  if (value !== undefined) return value;
+  const rung = rungValues()[id];
+  return rung !== undefined && choices.includes(rung) ? rung : baseline;
+}
+/** The governor's state, and whether Auto is in charge (no fixed Detail choice). */
+export const autoDetail = () => ({
+  ...auto,
+  governing: (explicitValue('detail', DETAIL_CHOICES) ?? 'auto') === 'auto',
+});
+/** Allocation-free, for the governor's frame check. */
+export const autoRung = () => auto.rung;
+/** The governor moves its rung; owners the ladder names follow unless something explicit holds them. */
+export function setAutoDetail(rung: number, msaaOff: boolean) {
+  const next = { rung: Math.max(0, Math.min(2, Math.round(rung))), msaaOff };
+  if (next.rung === auto.rung && next.msaaOff === auto.msaaOff) return;
+  auto = next;
+  try {
+    if (auto.rung || auto.msaaOff) localStorage.setItem(AUTO_KEY, JSON.stringify(auto));
+    else localStorage.removeItem(AUTO_KEY);
+  } catch {
+    /* Storage is optional. */
+  }
+  void reapplyAll();
+}
+async function reapplyAll() {
+  try {
+    for (const owner of owners.values())
+      await apply(owner, graphicsInitial(owner.id, owner.choices, owner.default)).catch(() => {});
+  } finally {
+    changed();
+  }
 }
 async function apply(owner: GraphicsAdapter, value: GraphicsValue) {
   errors.delete(owner.id);
@@ -133,7 +204,10 @@ export function registerGraphics(owner: GraphicsAdapter) {
     save();
   }
   const value = graphicsInitial(owner.id, owner.choices, owner.default);
-  const explicit = (devEnabled && overrides[owner.id] !== undefined) || playerValues[owner.id] !== undefined;
+  const explicit =
+    (devEnabled && overrides[owner.id] !== undefined) ||
+    playerValues[owner.id] !== undefined ||
+    rungValues()[owner.id] !== undefined;
   if (explicit && !owner.available?.())
     void apply(owner, value)
       .catch(() => {})
@@ -183,6 +257,7 @@ export async function setGraphics(id: string, value: GraphicsValue) {
   if (id === 'msaa') syncMsaaUrl(value, true);
   save();
   await apply(owner, value);
+  if (id === 'detail') await reapplyAll();
   changed();
   return graphicsSnapshot().find((row) => row.id === id)!;
 }
@@ -212,8 +287,8 @@ export const resetGraphics = () => restoreGraphics({});
 async function applyPlayer() {
   savePlayer();
   try {
-    for (const owner of owners.values())
-      if (playerChoices[owner.id]) await apply(owner, graphicsInitial(owner.id, owner.choices, owner.default));
+    // Every owner: a Detail choice moves owners that are not player choices themselves (sea detail, shadows).
+    for (const owner of owners.values()) await apply(owner, graphicsInitial(owner.id, owner.choices, owner.default));
   } finally {
     changed();
   }
@@ -226,6 +301,7 @@ export async function setPlayerGraphics(id: string, value: GraphicsValue) {
   if (reason) throw new Error(reason);
   playerValues[id] = value;
   preset = 'custom';
+  if (id === 'detail') forgetAuto();
   await applyPlayer();
 }
 export async function setGraphicsPreset(name: string) {
@@ -236,5 +312,15 @@ export async function setGraphicsPreset(name: string) {
     playerValues = { ...values, ...(playerValues.msaa === undefined ? {} : { msaa: playerValues.msaa }) };
   }
   preset = name;
+  forgetAuto();
   await applyPlayer();
+}
+/** A player's Detail or preset choice starts the governor over from full detail. */
+function forgetAuto() {
+  auto = { rung: 0, msaaOff: false };
+  try {
+    localStorage.removeItem(AUTO_KEY);
+  } catch {
+    /* Storage is optional. */
+  }
 }
