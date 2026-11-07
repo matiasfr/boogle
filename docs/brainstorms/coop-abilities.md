@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-06).**
+> **Status: approved (owner, 2026-11-06): option E.** First build (the double jump) queued after replication R1b.
 
 # Co-op abilities: the moment everyone gets it
 
@@ -279,13 +279,13 @@ Whether it feels like yours stays the playtest's question. Not tested on a devic
 ## Open questions
 
 1. **Does anyone but the finder get a card that stops them?** Recommended: **no; everyone else gets a flourish that
-   never stops them, and the full card is the finder's alone.** Answer: ___
+   never stops them, and the full card is the finder's alone.** Answer: as recommended (owner, 2026-11-06).
 2. **Where's the gathering spot?** Recommended: **a trophy plinth at the finders' bay in the village, playing
-   automatically the first time each player passes; never required.** Answer: ___
+   automatically the first time each player passes; never required.** Answer: as recommended (owner, 2026-11-06).
 3. **Do the rings appear on everyone at once, or get fitted at Home?** Recommended: **at once, wherever you are, so
-   what's on screen is true; Home keeps the trophy, not your rings.** Answer: ___
+   what's on screen is true; Home keeps the trophy, not your rings.** Answer: as recommended (owner, 2026-11-06).
 4. **Any summon at all?** Recommended: **no moving players; at most an optional beckon later (parked).**
-   Answer: ___
+   Answer: as recommended (owner, 2026-11-06).
 
 ## Parked
 
