@@ -762,6 +762,8 @@ for (const how of ['a lost connection', 'a resync'] as const)
     if (how === 'a lost connection') {
       a.disconnect();
       frame(120); // two seconds away
+      const away = frames.at(-1)!.elapsed - frames[29]!.elapsed;
+      assert.ok(away >= 15, `the laying goes on while away (${away} ticks in 2 s), so coming back is no jump`);
       a.reconnect();
     } else w.deliver('a', { t: 's', tk: w.sync.roomStep(), c: [['nope', 1, {}]] });
     frame(90);

@@ -285,7 +285,7 @@ export function createRailwayAdapter({
   // same tick or later: a tick-gated rule (the wake's readiness) the prediction accepts, the server accepts too.
   let shownTick = 0;
   const tick = () => {
-    const step = rail.mirror.step(now());
+    const step = rail.mirror.step(now(), frozen !== null && !connected);
     if (step >= 0) shownTick = Math.max(shownTick, Math.floor(step / RULE_STEPS));
     return shownTick;
   };

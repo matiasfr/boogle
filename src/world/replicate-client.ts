@@ -238,8 +238,11 @@ export function createMirror(schemas: readonly Schema[]) {
     /** A hash of every component held, as the server's packets' h is computed. */
     hash: () => hashComponents(rows(), kinds),
     /** Estimated server step: local time since the freshest stamp, but never more than LEAD_STEPS past the newest
-     * step heard (a throttled or warped page clock cannot run the room's timed things ahead of the server). */
-    step: (at: number) => (heard < 0 ? -1 : Math.min(estimate.now(at), heard + LEAD_STEPS)),
+     * step heard (a throttled or warped page clock cannot run the room's timed things ahead of the server). `away`:
+     * the server cannot be heard (a lost connection), so the estimate runs on with the local clock: the room's timed
+     * things go on meanwhile, and the state that comes back is not a jump forward. */
+    step: (at: number, away = false) =>
+      heard < 0 ? -1 : away ? estimate.now(at) : Math.min(estimate.now(at), heard + LEAD_STEPS),
     /** A server clock stamp heard outside a packet (the room's clock messages). */
     stamp(step: number, at: number) {
       if (!isStep(step)) return;

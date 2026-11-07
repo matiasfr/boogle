@@ -75,7 +75,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     pathOpen: opened,
   });
   // hard: rebuild from the state (first join); soft: the state came again after a lost connection or a resync, and
-  // the machine eases to it (it moves at its own speed toward the accepted head) unless it is far off.
+  // the machine eases to it (it catches up at twice its speed) unless it is more than 12 m off.
   let rebuild: 'hard' | 'soft' | null = 'hard',
     everReady = false,
     shownTick = -1,
@@ -261,7 +261,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     const stop = opened() ? 30 : (state.phase === 'laying' ? spec.toCm : spec.fromCm) / 100;
     const layTarget = Math.max(stop, targetHead);
     if (visualHead > layTarget) {
-      const step = Math.min(visualHead - layTarget, speed * dt);
+      // Behind the accepted head (a state that came back after a lost connection), it catches up at twice its speed.
+      const step = Math.min(visualHead - layTarget, speed * dt * (visualHead - layTarget > 1 ? 2 : 1));
       visualHead -= step;
       setback = Math.min(machine.F, setback + step);
     } else if (state.phase !== 'laying') {
@@ -294,7 +295,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       const hard = rebuild === 'hard' || (state.ready && !wasReady && !everReady);
       const reconstructed = hard || rebuild === 'soft'; // either way, nothing that happened meanwhile plays its fanfare
       if (hard) snapshot();
-      else if (rebuild === 'soft' && Math.abs(head() - visualHead) > 4) restoreMotion();
+      else if (rebuild === 'soft' && Math.abs(head() - visualHead) > 12) restoreMotion();
       rebuild = null;
       wasReady = state.ready;
       everReady ||= state.ready;
