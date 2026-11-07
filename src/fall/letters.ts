@@ -4,7 +4,7 @@
 // friend sees you land on nothing.
 import * as THREE from 'three/webgpu';
 import { materialColor } from 'three/tsl';
-import { paletteNode } from '../render/material-palette.ts';
+import { paletteColour, paletteNode } from '../render/material-palette.ts';
 import { tuningEnabled } from '../render/water/live.ts';
 import { fallArrival } from './arrival.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
@@ -73,6 +73,7 @@ const mat = tuningEnabled
   ? new THREE.MeshLambertNodeMaterial({ vertexColors: true })
   : new THREE.MeshLambertMaterial({ vertexColors: true });
 if (mat instanceof THREE.MeshLambertNodeMaterial) mat.colorNode = paletteNode(materialColor, 'timber');
+else paletteColour(mat.color, 'timber');
 const m4 = new THREE.Matrix4();
 const q4 = new THREE.Quaternion();
 const p4 = new THREE.Vector3();

@@ -1,6 +1,8 @@
 // sRGB anchor swatches, not replacements for texture/grain/vertex variation.
-// Candidate 0 retains the authored pigment exactly. No owner palette selection yet.
+// Candidate 0 retains the authored pigment exactly. The owner picked Fresh (1) for every family on 6 November; the
+// other candidates stay selectable through the `material.<family>` tunables.
 export const PALETTE_NAMES = ['Current', 'Fresh', 'Cool', 'Soft'] as const;
+export const DEFAULT_PALETTE = 1;
 export const MATERIAL_PALETTES = {
   grass: ['#6c9a42', '#589351', '#43895b', '#71965f'],
   sand: ['#e0b271', '#ddc08c', '#d4c5a2', '#e5ce9f'],
@@ -16,7 +18,7 @@ export const MATERIAL_PALETTE_SPECS = MATERIAL_FAMILIES.map((family) => ({
   id: `material.${family}`,
   type: 'number' as const,
   scope: 'local' as const,
-  default: 0,
+  default: DEFAULT_PALETTE,
   min: 0,
   max: 3,
   integer: true,
