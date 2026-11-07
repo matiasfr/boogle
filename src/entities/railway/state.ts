@@ -21,7 +21,8 @@ export type RailwayViewInspection = RailwayInspection & {
     growth: number;
   }[];
   pathOpen: boolean;
-  line2View: ReturnType<Awaited<ReturnType<typeof import('./line2-view.ts').createRailwayLine2>>['inspect']>;
+  line2View: ReturnType<Awaited<ReturnType<typeof import('./line2-view.ts').createRailwayLine2>>['inspect']> &
+    ReturnType<Awaited<ReturnType<typeof import('./shelf-view.ts').createRailwayShelf>>['inspect']>;
   reward: ReturnType<Awaited<ReturnType<typeof import('./reward.ts').createRailwayReward>>['inspect']>;
 };
 let current: (() => RailwayViewInspection) | null = null;

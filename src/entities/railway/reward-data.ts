@@ -12,6 +12,7 @@ export const T2_REWARD = {
   ] satisfies ['t' | 'b', number, number, number, number, number, number, string][],
 };
 export const AXE_REWARD = { name: 'A proper axe', line: '' };
+export const PACK_REWARD = { name: 'A pack frame', line: '' };
 export const JUMP_REWARD = { name: 'A second jump', line: 'Jump again in the air.' };
 export const HOOK_REWARD = {
   name: 'The hook shot',

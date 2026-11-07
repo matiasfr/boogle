@@ -686,10 +686,22 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       // The friend stays in the room through line two; the leader plays it. Both peers report hashes per beat.
       await until(() => read().line2?.gateOpen, 'leader opens the quarry gate', 1800000);
       await checkpoint('quarry gate open');
+      // The leader opens the pack: the friend's back carries 16 too, and they get the flourish, not the card.
+      await until(() => read().line2?.pack, 'leader opens the pack', 600000);
+      await bot.wait(1500);
+      require(read().carryMax === 16, "the friend's back carries 16");
+      require(read().reward.arrival.seen.includes('pack'), "friend's pack flourish played");
+      await checkpoint('pack');
+      await until(
+        () => read().stations.length && read().line2?.stations[3]?.completion === 1,
+        'leader lays Q4',
+        LAYING_MS * 3,
+      );
+      await checkpoint('Q4 laid');
       document.documentElement.dataset.railwayProof = 'done';
       await bot.wait(3000);
       logHashes();
-      bot.finish('line one with a friend; line two observed to the quarry gate');
+      bot.finish('line one with a friend; line two observed to Q4');
       return;
     }
     // Back down the pillar lip and home along line one.
@@ -942,6 +954,69 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     require(await bot.work(() => l2().gateOpen, 5000, 380), 'quarry gate opens with Q3 complete and the lever pulled');
     await until(() => !v2().gateSolid, 'gate slab collider removed');
     await checkpoint('quarry gate open');
+    // The pack frame: its chest has waited by the forge since the forge's first bill. Home on foot, open it.
+    const packChest = read().reward.tools.packChest;
+    require(packChest.available, 'the pack chest waits by the forge');
+    await walk(rack.x, rack.z, 3);
+    await walk(packChest.x, packChest.z);
+    require(await bot.use(packChest.x, packChest.z, 'open the pack chest', /^Open/), 'pack chest offered');
+    require(await bot.work(() => l2().pack, 5000, 380), 'pack accepted after bounded retries');
+    await bot.wait(1200);
+    if (read().reward.showing || !coop) await dismiss('pack reveal');
+    require(read().carryMax === 16, 'every back carries 16 with the pack');
+    await checkpoint('pack');
+    // Q4, behind the gate now down: the depot cart brings its logs to the rack and its rails from the forge rack to
+    // the shelf beside it; one back of 16 takes a load of each to the frame.
+    const q4 = v2().frames[3]!;
+    const toQ4 = async () => {
+      const route = await bot.plan(q4.x, q4.z, 2.4);
+      if (route.arrives) return walk(q4.x, q4.z, 2.4);
+      // Otherwise along the laid line: the Q2 trestle and Q3's stretch to the quarry, then off beside the frame.
+      const start = qAt(10);
+      await walk(start.x + layout.ORIGIN.x, start.z, 1);
+      await walkQuarry(10, 172);
+      const off = besideQ(172, q4);
+      require(await bot.straight(off.x, off.z, 0.6, 8000), 'stepped off the track beside Q4');
+      await walk(q4.x, q4.z, 2.4);
+    };
+    await toQ4();
+    const q4Job = () => l2().stations[3]!;
+    for (let trip = 0; q4Job().start < 0; trip++) {
+      require(trip < 8, 'Q4 funds in bounded trips');
+      await until(() => l2().depot > 0 || l2().depotRails > 0 || q4Job().start >= 0, 'Q4 depot brings a load');
+      if (q4Job().start >= 0) break;
+      if (l2().depot > 0) {
+        const depot = v2().depot!;
+        const before = read().carry;
+        require(await bot.use(depot[0]!, depot[2]!, 'take Q4 depot logs', /^Pick up$/), 'Q4 depot rack offered');
+        require(await bot.work(() => read().carry > before || q4Job().stock > 0, 5000, 380), 'Q4 depot logs accepted');
+        await until(() => read().pending === 0, 'Q4 depot logs settle');
+      }
+      const shelf = v2().shelf;
+      if (l2().depotRails > 0 && shelf) {
+        const before = read().railsCarry;
+        require(await bot.use(shelf.x, shelf.z, 'take Q4 shelf rails', /^Take rails$/), 'Q4 rails shelf offered');
+        require(await bot.work(
+          () => read().railsCarry > before || q4Job().railStock > 0,
+          5000,
+          380,
+        ), 'Q4 shelf rails accepted');
+        await until(() => read().pending === 0, 'Q4 shelf rails settle');
+      }
+      await walk(q4.x, q4.z, 2.4);
+      await until(
+        () =>
+          (read().carry === 0 && (read().railsCarry === 0 || q4Job().railStock === 16) && read().pending === 0) ||
+          q4Job().start >= 0,
+        'Q4 frame unloads automatically',
+        30000,
+      );
+      mark(`Q4 trip ${trip + 1} (${q4Job().stock}/16 logs, ${q4Job().railStock}/16 rails)`);
+    }
+    await until(() => q4Job().start >= 0, 'Q4 funded');
+    await checkpoint('Q4 funded');
+    await until(() => q4Job().completion === 1, 'Q4 laid once', LAYING_MS);
+    await checkpoint('Q4 laid');
     const totals = read().counts;
     require(totals.rails && totals.rails.total === totals.rails.poured, 'rails conserve the forge pour');
     require(totals.total === LINE1_INITIAL[0] + totals.produced, 'logs conserve through line two');
@@ -950,7 +1025,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await bot.wait(3000);
       logHashes();
     }
-    bot.finish('line one, forge, Q1-Q3, hook walk, quarry ramp and lever, walking only');
+    bot.finish('line one, forge, Q1-Q3, hook walk, quarry ramp and lever, the pack and Q4, walking only');
   } catch (error) {
     document.documentElement.dataset.railwayProof = 'failed';
     bot.never(`production line1 stopped: ${error instanceof Error ? error.message : String(error)}`);

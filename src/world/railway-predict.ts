@@ -2,8 +2,8 @@
 // effect facts both ends compute for an accepted action. Headless and pure: the server runs railEffect after each
 // action it applies; a client runs railPredict on a scratch copy of its mirror with the very same railApply.
 //
-//   RAIL_PREDICTED                    the ops a client predicts (chop, mine, take, rack take, drop, deposit, forge and
-//                                     depot takes, wake, lever); the rest wait for the server as in R1a
+//   RAIL_PREDICTED                    the ops a client predicts (chop, mine, take, rack take, drop, deposit, forge,
+//                                     depot and shelf takes, wake, lever, pack); the rest wait for the server as in R1a
 //   railwayOf(world, into?)           the read model of a world, linked to it (a mirror's confirmed state, a clone's)
 //   railPredict(s, pid, e, tick)      apply e to s's world (a clone) as the server would at tick, keeping thresholds for the
 //                                     server: a bill it completes shows full but is funded only when confirmed, a forge it
@@ -47,7 +47,9 @@ export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.deposit',
   'rail.forgeTake',
   'rail.depotTake',
+  'rail.depotRailTake',
   'rail.lever',
+  'rail.pack',
 ]);
 /** Swing and unload cadence on the actor's own action clock (replication revision 1): the server refuses an action
  * closer than `ms - RAIL_CADENCE_SLACK_MS` to the last of its kind, and a client predicts the same check. */
@@ -83,7 +85,14 @@ export function piles(w: World) {
 export type RailEffect = { carried: number; level?: number; pile?: number; px?: number; py?: number; pz?: number };
 export function railEffect(w: World, pid: string, e: RailAction, before: Map<number, PileBefore>): RailEffect {
   const a = w.get(Account, w.lookup(Account, pid)!)!;
-  const kind = e.op === 'rail.mine' ? 1 : e.op === 'rail.forgeTake' ? 2 : e.kind === 1 || e.kind === 2 ? e.kind : 0;
+  const kind =
+    e.op === 'rail.mine'
+      ? 1
+      : e.op === 'rail.forgeTake' || e.op === 'rail.depotRailTake'
+        ? 2
+        : e.kind === 1 || e.kind === 2
+          ? e.kind
+          : 0;
   const effect: RailEffect = { carried: kind === 1 ? a.stone : kind === 2 ? a.rails : a.carry };
   if (e.op === 'rail.drop') {
     let hit = 0;
@@ -147,6 +156,10 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
   const saved: Saved[] = jobs.map(([c, r, id]) => ({ job: { ...w.get(c, id)! }, run: { ...w.get(r, id)! } }));
   const fid = w.single(Forge);
   const lit = [w.get(Forge, fid)!.lit, w.get(ForgeClock, fid)!.lastPour] as const;
+  // Funding a shelf stretch sends the shelf's leftovers back to the forge rack: held back with the funding.
+  const rail0 = w.get(Rail, w.single(Rail))!;
+  const shelf = [rail0.depotRails, w.get(Forge, fid)!.rack, rail0.shelfOut] as const;
+  let heldBack = false;
   if (e.op === 'rail.drop') w.reserve(-e.request); // a stable temporary id until the server's arrives
   const result = railApply(w, pid, e, tick, LINE_TIMING);
   // Thresholds are the server's: a completed bill shows full and waits; a filled forge waits to be lit. The bill's
@@ -155,6 +168,7 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
     const old = saved[k]!;
     const j = w.get(c, id)! as unknown as Record<string, number>;
     if ((old.job.start as number) >= 0 || j.start! < 0) return;
+    heldBack = true;
     const stock = (old.job.stock as number) + j[delivered]! - (old.job[delivered] as number);
     const stock2key = second === 'stoneDelivered' ? 'stoneStock' : 'railStock';
     const stock2 = (old.job[stock2key] as number) + j[second]! - (old.job[second] as number);
@@ -168,6 +182,10 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
     );
     Object.assign(w.mut(r, id)!, old.run);
   });
+  if (heldBack && w.get(Rail, w.single(Rail))!.shelfOut !== shelf[2]) {
+    Object.assign(w.mut(Rail, w.single(Rail))!, { depotRails: shelf[0], shelfOut: shelf[2] });
+    w.mut(Forge, fid)!.rack = shelf[1];
+  }
   if (lit[0] < 0 && w.get(Forge, fid)!.lit >= 0) {
     w.mut(Forge, fid)!.lit = lit[0];
     w.mut(ForgeClock, fid)!.lastPour = lit[1];

@@ -1,0 +1,213 @@
+// Line two, part two's small Local views over accepted state (docs/plans/line2-part2-greybox.md, B2): the rails shelf
+// beside a `shelf` stretch's depot rack, which the depot cart fills from the forge rack (Q4 on), and the survey stake
+// where that stretch will end (Q4's at the rim). Nothing here transfers material: a take is the adapter's, shown on
+// the press from the prediction and sent back on a correction.
+import * as THREE from 'three/webgpu';
+import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import type { OwnedView } from '../../render/owned-view.ts';
+import type { Interactable } from '../../player/hands.ts';
+import { me } from '../../player/player.ts';
+import { readableUnlit } from '../../render/readable-unlit.ts';
+import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+
+const SHOWN = 16; // a stretch's rail bill at most
+const REACH = 3.2;
+
+export async function createRailwayShelf(
+  adapter: RailwayAdapter,
+  owner: OwnedView,
+  /** Where line2-view stands the depot rack for stretch k (world metres, on the ground). */
+  depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
+  /** Where pid's carried bundle is, holding `count` (sources.ts). */
+  bundleOrigin: (pid: string, count: number, out: THREE.Vector3) => boolean,
+) {
+  const [layout, land, pieces, flatMod, look, kit, sounds] = await Promise.all([
+    import('../../proto/place/layout.ts'),
+    import('../../proto/place/land.ts'),
+    import('../../proto/place/pieces.ts'),
+    import('../../proto/flat.ts'),
+    import('../../proto/place/look.ts'),
+    import('../../proto/place/look-kit.ts'),
+    import('../../proto/minis/common.ts'),
+  ]);
+  const { flat } = flatMod;
+  const quarry = layout.LINKS[1]!;
+  const geometries: THREE.BufferGeometry[] = [];
+  const materials: THREE.Material[] = [];
+
+  // ---------------------------------------------------------------- the shelf: a low trestle, rails laid across it
+  const shelf = new THREE.Group();
+  owner.add(shelf);
+  shelf.visible = false;
+  const plankGeo = new THREE.BoxGeometry(2.6, 0.12, 3.4),
+    legGeo = new THREE.BoxGeometry(0.16, 0.5, 0.16);
+  geometries.push(plankGeo, legGeo);
+  const wood = flat('#a98249', 0.9);
+  const plank = new THREE.Mesh(plankGeo, wood);
+  plank.position.y = 0.56;
+  plank.castShadow = plank.receiveShadow = true;
+  shelf.add(plank);
+  for (const [x, z] of [
+    [-1.15, -1.5],
+    [1.15, -1.5],
+    [-1.15, 1.5],
+    [1.15, 1.5],
+  ] as const) {
+    const leg = new THREE.Mesh(legGeo, wood);
+    leg.position.set(x, 0.25, z);
+    leg.castShadow = true;
+    shelf.add(leg);
+  }
+  const rails = look.LOOK.kit
+    ? kit.kitBatch('rail', look.STEEL, SHOWN, owner)
+    : new THREE.InstancedMesh(
+        new THREE.BoxGeometry(pieces.RAIL_SIZE.x, pieces.RAIL_SIZE.y, pieces.RAIL_SIZE.z),
+        flat('#4c5058', 0.6),
+        SHOWN,
+      );
+  // kitBatch only swaps in the kit's geometry; the shelf carries it, so its rails turn with it.
+  rails.removeFromParent();
+  shelf.add(rails);
+  rails.castShadow = true;
+  rails.frustumCulled = false;
+  rails.count = 0;
+  // Eight across, a second layer above: the forge rack's spacing.
+  const slot = (k: number, out: THREE.Vector3) => out.set(-1 + (k % 8) * 0.285, 0.7 + Math.floor(k / 8) * 0.19, 0);
+  const m4 = new THREE.Matrix4();
+  const tmp = new THREE.Vector3();
+  const at = new THREE.Vector3(); // the shelf's centre, on the ground
+  const from = new THREE.Vector3();
+  const to = new THREE.Vector3();
+  let drawn = '';
+  /** Stand the shelf beside stretch k's depot rack, a little further out from its frame. */
+  function place(k: number) {
+    depotPlace(k, at);
+    const spec = LINE2_STATIONS[k]!;
+    const p = layout.lineAt(quarry.line, spec.fromCm / 100 + 5, { x: 0, z: 0, ux: 0, uz: 1 });
+    // Along the line from the rack, so the logs and the rails sit side by side facing the frame.
+    at.x += p.ux * 3.4;
+    at.z += p.uz * 3.4;
+    at.y = land.H(at.x, at.z);
+    shelf.position.copy(at);
+    shelf.rotation.y = Math.atan2(p.ux, p.uz) + Math.PI / 2;
+  }
+  function draw(k: number, n: number) {
+    const key = `${k}:${n}`;
+    if (key === drawn) return;
+    drawn = key;
+    const spec = LINE2_STATIONS[k];
+    shelf.visible = !!spec?.shelf;
+    if (!spec?.shelf) return;
+    place(k);
+    rails.count = Math.min(SHOWN, n);
+    for (let i = 0; i < rails.count; i++) rails.setMatrixAt(i, m4.makeTranslation(slot(i, tmp)));
+    rails.instanceMatrix.needsUpdate = true;
+  }
+  /** World position of the top rail on the shelf (where a take flies from). */
+  const top = (n: number, out: THREE.Vector3) => shelf.localToWorld(slot(Math.max(0, n - 1), out));
+
+  // ---------------------------------------------------------------- the survey stake at the stretch's far end
+  const stakeGeo = new THREE.CylinderGeometry(0.07, 0.09, 3.2, 6),
+    flagGeo = new THREE.BoxGeometry(0.04, 0.5, 0.8);
+  geometries.push(stakeGeo, flagGeo);
+  const teal = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: '#39e6c6' }));
+  materials.push(teal);
+  const stake = new THREE.Mesh(stakeGeo, flat('#e6dcc4', 0.9));
+  stake.castShadow = true;
+  const flag = new THREE.Mesh(flagGeo, teal);
+  flag.position.set(0, 1.3, 0.42);
+  stake.add(flag);
+  owner.add(stake);
+  stake.visible = false;
+  let staked = -1;
+  function drawStake(k: number) {
+    const spec = LINE2_STATIONS[k];
+    stake.visible = !!spec?.shelf;
+    if (!spec?.shelf || staked === k) return;
+    staked = k;
+    // A metre off the end of the stretch, on the frame's side, so the laying machine never runs into it.
+    const p = layout.lineAt(quarry.line, spec.toCm / 100, { x: 0, z: 0, ux: 0, uz: 1 });
+    const side = quarry.stations[k]?.side ?? -1;
+    const x = p.x + layout.ORIGIN.x - p.uz * side * 3.2,
+      z = p.z + p.ux * side * 3.2;
+    stake.position.set(x, land.H(x, z) + 1.5, z);
+  }
+
+  // ---------------------------------------------------------------- effects: on the press (predicted), returns
+  function accepted(event: RailwayAccepted) {
+    if (event.op !== 'rail.depotRailTake') return;
+    const s = adapter.inspect();
+    const n = event.accepted - (event.returned ?? 0);
+    for (let i = 0; i < n; i++) {
+      top(s.line2.depotRails + n - i, from);
+      pieces.send(
+        'rail',
+        from,
+        from,
+        {
+          dur: 0.3,
+          apex: 0.9,
+          aim: (out) => void bundleOrigin(event.pid, s.railsCarry, out),
+          land: () => sounds.pop(3, 0.4),
+        },
+        owner,
+      );
+    }
+  }
+  function corrected(c: RailwayCorrection) {
+    if (c.event.op !== 'rail.depotRailTake') return;
+    const s = adapter.inspect();
+    const k = s.line2.active;
+    if (k < 0) return;
+    place(k);
+    for (let i = 0; i < c.lost; i++) {
+      if (!bundleOrigin(s.pid, s.railsCarry + c.lost - i - 1, from)) continue;
+      top(s.line2.depotRails + i + 1, to);
+      pieces.send('rail', from, to.clone(), { dur: 0.3, apex: 0.8, land: () => sounds.knock(0.3, 0.6) }, owner);
+    }
+  }
+  const offAccepted = adapter.onAccepted(accepted);
+  const offCorrected = adapter.onCorrected(corrected);
+  owner.cleanup(() => {
+    offAccepted();
+    offCorrected();
+    for (const g of geometries) g.dispose();
+    for (const m of materials) m.dispose();
+  });
+
+  return {
+    update() {
+      const s = adapter.inspect();
+      const k = s.line2.active;
+      draw(k, k >= 0 ? s.line2.depotRails : 0);
+      drawStake(k);
+    },
+    targets(): Interactable[] {
+      const s = adapter.inspect(),
+        p = me.body?.position;
+      const k = s.line2.active;
+      if (!s.ready || !p || k < 0 || !LINE2_STATIONS[k]!.shelf || s.line2.depotRails <= 0) return [];
+      place(k);
+      if (Math.hypot(p.x - at.x, p.z - at.z) > REACH) return [];
+      return [
+        {
+          id: 'railway-depot-rails',
+          verb: 'Take rails',
+          at: at.clone().setY(at.y + 1.4),
+          run: () => void adapter.depotRailTake(),
+          ...(s.freeCarry <= 0 ? { blocked: 'Your back is full' } : {}),
+        },
+      ];
+    },
+    inspect: () => {
+      const s = adapter.inspect();
+      const k = s.line2.active;
+      if (k >= 0 && LINE2_STATIONS[k]!.shelf) place(k);
+      return {
+        shelf: shelf.visible ? { x: at.x, y: at.y, z: at.z, shown: rails.count } : null,
+        stake: stake.visible ? { x: stake.position.x, y: stake.position.y, z: stake.position.z } : null,
+      };
+    },
+  };
+}
+export type RailwayShelf = Awaited<ReturnType<typeof createRailwayShelf>>;

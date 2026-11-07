@@ -21,6 +21,8 @@ import {
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_INITIAL } from '../src/sim/railway-line-layout.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
+import { railCarryMax } from '../src/sim/railway-line2.ts';
+import { cloneRailway, railPredict } from '../src/world/railway-predict.ts';
 import { RAILWAY_SUPPLY } from '../src/sim/railway-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
@@ -219,7 +221,7 @@ test('the railway state is a server state: saved by the host, never hashed or se
   assert.equal(RAIL_SCHEMAS.length, 10);
 });
 
-test('a scripted run through line one and line two to the open quarry gate replicates exactly', () => {
+test('a scripted run through line one, the pack and line two to Q4 replicates exactly, live and to a late joiner', () => {
   const r = room();
   r.join('a');
   const s = () => r.api.railway; // rebuilt after each change
@@ -288,14 +290,42 @@ test('a scripted run through line one and line two to the open quarry gate repli
   assert.equal(act('a', 'rail.beamDeposit', { revision: s().line!.beam.revision, station: 'T3' }), 1);
   advance(600);
   assert.equal(s().line!.jobs[1].completion, 1);
+  assert.equal(act('a', 'rail.pack'), 0, 'no pack chest before the forge bill');
   logs('a', 'F', 24);
+  // The pack, predicted on a's own copy of its mirror with the server's very system: one open, every back 16.
+  const mirror = r.mirrors.get('a')!;
+  const predicted = cloneRailway(mirror.at(r.sync.world.tick));
+  const press = railPredict(predicted, 'a', { op: 'rail.pack', epoch: 1, request: (req.get('a') ?? 0) + 1 }, 0);
+  assert.equal(press.n, 1, 'the press is shown at once');
+  assert.equal(predicted.line2!.pack, true);
+  assert.equal(railCarryMax(predicted), 16);
+  assert.equal(mirror.railway.line2!.pack, false, 'the confirmed mirror waits for the server');
+  assert.equal(act('a', 'rail.pack'), 1);
+  assert.equal(act('b', 'rail.pack'), 0, 'one pack for two openers');
+  assert.equal(railCarryMax(mirror.at(r.sync.world.tick)), 16, 'the mirror carries 16 once confirmed');
   logs('b', 'F', 32);
   assert.ok(s().line2!.forge.lit >= 0, 'the forge is lit');
   for (let k = 0; k < LINE2_STATIONS.length; k++) {
     const spec = LINE2_STATIONS[k]!;
+    if (spec.gate === 'quarry') {
+      assert.equal(act('b', 'rail.deposit', { station: spec.id, n: 1, kind: 0 }), 0, 'the quarry gate is up');
+      assert.equal(act('a', 'rail.lever'), 1);
+    }
     advance(40);
+    if (spec.shelf) {
+      // Q4's rails ride the depot from the forge rack to the shelf; taking them is predicted like any take.
+      advance(120);
+      assert.ok(s().line2!.depotRails > 0, 'the cart brought rails to the shelf');
+      const shown = cloneRailway(mirror.at(r.sync.world.tick));
+      const before = account('a').rails ?? 0;
+      const take = railPredict(shown, 'a', { op: 'rail.depotRailTake', epoch: 1, request: (req.get('a') ?? 0) + 1 }, 0);
+      assert.ok(take.n > 0);
+      assert.equal(act('a', 'rail.depotRailTake'), take.n, 'the server moves what the press showed');
+      assert.equal(account('a').rails, before + take.n);
+      assert.equal(act('a', 'rail.deposit', { station: spec.id, n: account('a').rails!, kind: 2 }), before + take.n);
+    }
     if (spec.depot) {
-      while (s().line2!.jobs[k]!.stock < spec.bill[0]) {
+      while (s().line2!.jobs[k]!.start < 0 && s().line2!.jobs[k]!.stock < spec.bill[0]) {
         advance(20);
         if (s().line2!.depot) {
           act('b', 'rail.depotTake');
@@ -303,15 +333,20 @@ test('a scripted run through line one and line two to the open quarry gate repli
         } else logs('a', spec.id, Math.min(8, spec.bill[0] - s().line2!.jobs[k]!.stock));
       }
     } else logs('a', spec.id, spec.bill[0]);
-    rails('a', spec.id, spec.bill[1]);
+    if (s().line2!.jobs[k]!.start < 0) rails('a', spec.id, spec.bill[1] - s().line2!.jobs[k]!.railStock);
     advance(2000);
     assert.equal(s().line2!.jobs[k]!.completion, 1, `Q${k + 1} complete`);
     if (k === 1) assert.equal(act('a', 'rail.hook'), 1);
   }
-  assert.equal(act('a', 'rail.lever'), 1);
   r.pump();
   agree(r, 'a');
-  const mirrored = r.mirrors.get('a')!.at(r.sync.world.tick);
+  r.join('c');
+  r.pump();
+  agree(r, 'c');
+  const mirrored = r.mirrors.get('c')!.at(r.sync.world.tick);
   assert.equal(mirrored.line2!.lever, true);
+  assert.equal(mirrored.line2!.pack, true, 'a late joiner gets the pack');
+  assert.equal(railCarryMax(mirrored), 16);
+  assert.equal(railCounts(mirrored).rails!.total, railCounts(mirrored).rails!.poured, 'no rail minted');
   assert.equal(railCounts(mirrored).total, RAILWAY_SUPPLY + 30 + railCounts(mirrored).produced);
 });

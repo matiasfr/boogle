@@ -1,6 +1,7 @@
-// A railway played through line one, the forge lit and Q1 laid: Q2 takes materials and the depot cart runs. Built
-// from accepted sim ops only (the same path as test/railway-line2.test.ts), for tests that need line two's yards. The
-// state is an E world behind ./railway-live.ts's read-only view.
+// A railway played through line one, the forge lit and Q1 laid: Q2 takes materials and the depot cart runs; or on to
+// Q3 laid, where Q4 waits behind the quarry gate. Built from accepted sim ops only (the same path as
+// test/railway-line2.test.ts), for tests that need line two's yards. The state is an E world behind
+// ./railway-live.ts's read-only view.
 import assert from 'node:assert/strict';
 import { railAccount, type Railway, type RailAction } from '../../src/sim/railway.ts';
 import { createRailway, invariant as railwayInvariant, railApply, railSession, railTick } from '../railway-live.ts';
@@ -34,7 +35,7 @@ export function logs(w: World, pid: string, station: string, n: number) {
     n -= moved;
   }
 }
-function rails(w: World, pid: string, station: string, n: number) {
+export function rails(w: World, pid: string, station: string, n: number) {
   while (n > 0) {
     if (!railAccount(w.s, pid)!.rails) {
       if (!w.s.line2!.forge.rack) advance(w, LINE2_FORGE.pourTicks * 8);
@@ -74,5 +75,37 @@ export function railwayAtQ2(): World {
   advance(w, line2Schedule(0, q1).totalTicks);
   assert.equal(q1.completion, 1);
   assert.equal(railwayInvariant(s), null);
+  return w;
+}
+/** Players `a` and `b`, Q3 laid and the gate still up: Q4 takes materials once the lever is pulled, its depot cart
+ * runs (logs and the rails shelf). Backs empty and Q3's unused depot logs carried off. */
+export function railwayAtQ4(): World {
+  const w = railwayAtQ2();
+  const finish = (k: number) => {
+    const job = w.s.line2!.jobs[k]!;
+    advance(w, line2Schedule(k, job).totalTicks);
+    assert.equal(job.completion, 1);
+  };
+  logs(w, 'a', 'Q2', 24);
+  rails(w, 'b', 'Q2', 12);
+  finish(1);
+  logs(w, 'a', 'Q3', 16);
+  rails(w, 'b', 'Q3', 12);
+  finish(2);
+  const clear = () => {
+    for (const pid of ['a', 'b']) {
+      const a = railAccount(w.s, pid)!;
+      for (const kind of [0, 2] as const) {
+        const n = kind ? (a.rails ?? 0) : a.carry;
+        if (n) assert.equal(act(w, pid, 'rail.drop', { x: 100000 + kind * 100, y: 2000, z: 3000, n, kind }), n);
+      }
+    }
+  };
+  clear();
+  while (w.s.line2!.depot) {
+    act(w, 'a', 'rail.depotTake');
+    clear();
+  }
+  assert.equal(railwayInvariant(w.s), null);
   return w;
 }

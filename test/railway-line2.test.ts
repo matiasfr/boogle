@@ -1,5 +1,5 @@
-// Line two's accounts: forge bills and pour, Q1-Q3 funding and laying, the depot, lever and hook readiness
-// (line two's systems on E, through ./railway-live.ts).
+// Line two's accounts: forge bills and pour, Q1-Q4 funding and laying, the depot and its rails shelf, the pack, lever
+// and hook readiness (line two's systems on E, through ./railway-live.ts).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { railAccount, railCounts, type Railway, type RailAction } from '../src/sim/railway.ts';
@@ -19,8 +19,10 @@ import {
   restore as restored,
   worldOf,
 } from './railway-live.ts';
-import { line2Active, line2Completed, line2GateOpen, line2Schedule } from '../src/sim/railway-line2.ts';
-import { LINE2_FORGE, LINE2_STATIONS, LINE2_DEPOT, line2Routes } from '../src/sim/railway-line2-layout.ts';
+import { line2Active, line2Completed, line2GateOpen, line2Schedule, railCarryMax } from '../src/sim/railway-line2.ts';
+import { LINE2_FORGE, LINE2_STATIONS, LINE2_DEPOT, LINE2_PACK, line2Routes } from '../src/sim/railway-line2-layout.ts';
+import { RAILWAY_T1 } from '../src/sim/railway-layout.ts';
+import { railwayAtQ4 } from './helpers/railway-q2.ts';
 
 type World = { s: Railway; t: number };
 function act(w: World, pid: string, op: string, fields: Partial<RailAction> = {}) {
@@ -172,7 +174,7 @@ test('Q1-Q3 fund atomically from logs and rails; depot, hook and lever follow ac
   assert.equal(act(w, 'a', 'rail.lever'), 1);
   assert.equal(act(w, 'b', 'rail.lever'), 0);
   assert.equal(line2GateOpen(w.s), true);
-  assert.equal(line2Active(w.s), -1);
+  assert.equal(line2Active(w.s), 3, 'Q4 behind the gate is next');
   const c = railCounts(w.s);
   assert.equal(c.rails!.stations, 30);
   assert.equal(c.total, 3910 + c.produced);
@@ -244,6 +246,8 @@ test('malformed line-two documents fail atomically', () => {
     ['an unknown component', (j) => (j.c.extra = [[]])],
     ['early depot', (j) => (col(j, Rail, 'depot')[0] = 8)],
     ['depot output over bill', (j) => (col(j, Rail, 'out1')[0] = 25)],
+    ['shelf before its stretch', (j) => (col(j, Rail, 'depotRails')[0] = 2)],
+    ['shelf output before its stretch', (j) => (col(j, Rail, 'shelfOut')[0] = 2)],
   ];
   for (const [name, change] of cases) {
     const j = JSON.parse(JSON.stringify(good)) as Snap;
@@ -251,7 +255,7 @@ test('malformed line-two documents fail atomically', () => {
     assert.throws(() => worldOf(w.s).load(j, railwayCheck), Error, name);
     assert.equal(hashOf(w.s), hash, name);
   }
-  assert.equal(LINE2_STATIONS.length, 3);
+  assert.equal(LINE2_STATIONS.length, 4);
 });
 
 function toQ2(): World {
@@ -347,4 +351,122 @@ test('the away credit fills the forge rack and the depot cart once, never past t
   assert.ok(l.depotOut[k]! <= bill, 'and no more');
   assert.equal(railwayInvariant(w.s), null);
   restore(w);
+});
+
+/** Chop until pid's back holds n (or its back is full). */
+function chopTo(w: World, pid: string, n: number) {
+  const load = () => {
+    const a = railAccount(w.s, pid)!;
+    return a.carry + (a.stone ?? 0) + (a.rails ?? 0);
+  };
+  for (let guard = 0; load() < n && guard < 40; guard++) {
+    const k = w.s.sources.findIndex((v) => v > 0);
+    if (!act(w, pid, 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false })) break;
+  }
+  return load();
+}
+const railsHeld = (w: World) => {
+  const c = railCounts(w.s).rails!;
+  assert.equal(c.total, c.poured, 'every rail is one the forge poured');
+  return c;
+};
+
+test('the pack: no chest before the forge bill, one pack for two openers, every back 16 through load and late join', () => {
+  const w = pathOpen();
+  assert.equal(act(w, 'a', 'rail.pack'), 0, 'no chest before the forge has a log');
+  logs(w, 'a', 'F', 16);
+  assert.equal(act(w, 'a', 'rail.pack'), 0, 'no chest before the 24-log bill');
+  // A save claiming the pack before the bill does not load.
+  const early = JSON.parse(JSON.stringify(worldOf(w.s).snapshot())) as ReturnType<
+    ReturnType<typeof worldOf>['snapshot']
+  >;
+  early.c[Rail.kind]![1 + Rail.names.indexOf('pack')]![0] = 1;
+  assert.throws(() => worldOf(w.s).load(early, railwayCheck), /pack before the forge bill/);
+  logs(w, 'a', 'F', 8);
+  assert.equal(w.s.line2!.forge.used, LINE2_FORGE.bills[0]);
+  assert.equal(railCarryMax(w.s), RAILWAY_T1.carry);
+  assert.equal(chopTo(w, 'b', 99), RAILWAY_T1.carry, 'eight on a back before the pack');
+  assert.equal(act(w, 'a', 'rail.pack'), 1);
+  assert.equal(act(w, 'b', 'rail.pack'), 0, 'one pack for two openers');
+  assert.equal(railCarryMax(w.s), LINE2_PACK.carry);
+  assert.equal(chopTo(w, 'b', 99), LINE2_PACK.carry, 'and sixteen with it, for the one who did not open it');
+  assert.equal(chopTo(w, 'b', 99), LINE2_PACK.carry, 'never more');
+  // Sixteen on a back survives a save and load, and a player who joins later carries sixteen too.
+  restore(w);
+  assert.equal(w.s.line2!.pack, true);
+  assert.equal(railAccount(w.s, 'b')!.carry, 16);
+  railSession(w.s, 'c', 1);
+  assert.equal(chopTo(w, 'c', 99), LINE2_PACK.carry, 'a late joiner carries sixteen');
+  assert.equal(act(w, 'b', 'rail.deposit', { station: 'F', n: 16 }), 16, 'a whole back unloads at once');
+  assert.equal(railCounts(w.s).total, 3910 + railCounts(w.s).produced);
+});
+
+test('Q4: behind the quarry gate; its cart brings logs and moves rails off the forge rack, never minting one', () => {
+  const w = railwayAtQ4();
+  const l = () => w.s.line2!; // read anew: a restore replaces the world
+  assert.equal(line2Active(w.s), 3);
+  assert.equal(line2GateOpen(w.s), false);
+  chopTo(w, 'a', 4);
+  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 4 }), 0, 'the gate is up: the frame takes nothing');
+  // The cart runs behind the gate: one load of logs (minted, counted) and one of rails (moved, not made).
+  const poured = railsHeld(w).poured,
+    rack = l().forge.rack;
+  for (let t = 0; t <= LINE2_DEPOT.everyTicks && !l().depot; t++) advance(w, 1); // the cart's first trip
+  assert.equal(l().depot, LINE2_DEPOT.load);
+  assert.equal(l().depotRails, LINE2_DEPOT.rails, 'the cart holds all of the rails Q4 needs');
+  const pours = railsHeld(w).poured - poured;
+  assert.equal(l().forge.rack, rack + pours - LINE2_DEPOT.rails, 'the shelf rails left the forge rack');
+  restore(w);
+  assert.equal(act(w, 'a', 'rail.lever'), 1);
+  assert.equal(line2GateOpen(w.s), true);
+  // Taking from the shelf: the back's room clips it.
+  const room = RAILWAY_T1.carry - railAccount(w.s, 'a')!.carry;
+  assert.equal(act(w, 'a', 'rail.depotRailTake'), room);
+  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 4 }), 4, 'logs go in with the gate down');
+  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: room, kind: 2 }), room);
+  assert.equal(act(w, 'b', 'rail.depotRailTake'), RAILWAY_T1.carry, 'a full back of rails, no more');
+  advance(w, LINE2_DEPOT.everyTicks + 1);
+  assert.equal(l().depotRails, LINE2_DEPOT.rails - room - 8, 'rails on backs are not brought again');
+  assert.equal(act(w, 'b', 'rail.deposit', { station: 'Q4', n: 8, kind: 2 }), 8);
+  railsHeld(w);
+  // Rails carried from the forge by hand fill the bill first, so the shelf's rest is left over when Q4 funds: it goes
+  // back to the forge rack, in that one deposit. Meanwhile the cart owes the shelf nothing more.
+  rails(w, 'b', 'Q4', 16 - l().jobs[3]!.railStock);
+  assert.equal(l().jobs[3]!.railStock, 16);
+  const shelfLeft = l().depotRails;
+  assert.ok(shelfLeft > 0, 'shelf rails are left over');
+  advance(w, LINE2_DEPOT.everyTicks + 1);
+  assert.equal(l().depotRails, shelfLeft, 'no more rails come to a stretch whose rails are in');
+  const leftover = l().depotRails,
+    before = l().forge.rack;
+  logs(w, 'a', 'Q4', 16 - l().jobs[3]!.stock);
+  assert.ok(l().jobs[3]!.start >= 0, 'Q4 funded');
+  assert.equal(l().depotRails, 0, 'the shelf is empty once its stretch funds');
+  assert.equal(l().forge.rack, before + leftover, 'and its rails are back on the forge rack');
+  railsHeld(w);
+  restore(w);
+  finishQ(w, 3);
+  assert.equal(line2Completed(w.s), 4);
+  assert.equal(line2Active(w.s), -1);
+  assert.equal(act(w, 'a', 'rail.depotRailTake'), 0, 'an empty shelf gives nothing');
+  const c = railsHeld(w);
+  assert.equal(c.stations, 6 + 12 + 12 + 16);
+  assert.equal(railCounts(w.s).total, 3910 + railCounts(w.s).produced);
+  restore(w);
+});
+
+test("the away credit runs Q4's cart too: shelf rails come off the poured rack, logs up to the bill", () => {
+  const w = railwayAtQ4();
+  const l = () => w.s.line2!; // read anew: a restore replaces the world
+  const produced = railCounts(w.s).produced;
+  railResume(w.s, 0, 30, w.t, 1000000);
+  assert.equal(l().depot, 16, 'the logs the stretch needs');
+  assert.equal(l().depotRails, 16, 'and its rails, moved from the forge');
+  assert.equal(railCounts(w.s).produced, produced + 16, 'only the logs are production');
+  railsHeld(w);
+  const hash = hashOf(w.s);
+  railResume(w.s, 0, 30, w.t, 1000000);
+  assert.equal(hashOf(w.s), hash, 'once per marker');
+  restore(w);
+  assert.equal(railwayInvariant(w.s), null);
 });

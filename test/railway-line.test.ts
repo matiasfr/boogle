@@ -99,13 +99,14 @@ test('line 1 preserves source identity, exact bills and the one twelve-panel all
     );
     assert.equal(pairs.at(-1)!.toCm, station.toCm);
     pairs.forEach((pair, i) => {
-      assert.ok(pair.toCm - pair.fromCm >= 230 && pair.toCm - pair.fromCm <= 334, `${station.id} pair length`);
+      // Q4's 6.75 m stock rail lays as two 3.375 m pairs, as Place lays it (track-panels.ts MAX_PANEL_LENGTH).
+      assert.ok(pair.toCm - pair.fromCm >= 230 && pair.toCm - pair.fromCm <= 338, `${station.id} pair length`);
       if (i) assert.equal(pairs[i - 1]!.toCm, pair.fromCm);
     });
   }
   assert.deepEqual(
     LINE2_STATIONS.map((station) => line2Panels(station).length),
-    [12, 24, 24],
+    [12, 24, 24, 32],
   );
 });
 
@@ -172,7 +173,7 @@ test('the machine view lays the same rail pairs the shared schedule commits', as
     local.forEach((p, i) => assert.ok(Math.abs(p.end * 100 - shared[i]!.toCm) <= 1, `pair ${i} end`));
   };
   same(view('timber'), linePanels());
-  // Production line two is Q1-Q3: the view's first three stages.
+  // Production line two is Q1-Q4: the view's first four stages.
   const shared = LINE2_STATIONS.flatMap((station) => line2Panels(station));
   same(view('quarry').slice(0, shared.length), shared);
 });

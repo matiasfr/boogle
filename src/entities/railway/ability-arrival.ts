@@ -4,13 +4,13 @@
 // at the ankles, the pickup's two notes and the charge mark lit by Buddy's feet. A friend who wasn't there gets that
 // flourish once on their first landing. All Local: what this player has been shown lives in this browser only.
 //
-//   seen(key) / remember(key)   this player's record per railway room: 'jump', 'hook', 'multi-axe', 'axe',
+//   seen(key) / remember(key)   this player's record per railway room: 'jump', 'hook', 'multi-axe', 'axe', 'pack',
 //                               'jump-taught', 'plinth:jump'
 //
 // The axes follow the same rule. The multi-axe is the machine's wake: the player who pressed wake gets the card (once
 // the server has accepted it, reward.ts); everyone else gets the flourish as the wake finishes. The proper axe is
 // the chest's: the opener gets the card, everyone else the flourish. An axe has no charge ring: a small model of it
-// pops up over Buddy and settles away.
+// pops up over Buddy and settles away. The pack frame (the forge's chest, a back of 16 for everyone) works the same.
 //   update(dt)                  late flourishes, the charge mark and the first-jump teach
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
@@ -45,6 +45,7 @@ const ABILITIES: {
   { key: 'hook', op: 'rail.hook', cue: 'pickupHook', has: (s) => s.line2.hook },
   { key: 'multi-axe', op: 'rail.wake', cue: 'pickupHook', has: AWAKE, badge: true, atState: true },
   { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: (s) => !!s.axe, badge: true },
+  { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: (s) => s.line2.pack, badge: true },
 ];
 const BADGE_S = 1.5;
 const TEAL = new THREE.Color('#39e6c6');
