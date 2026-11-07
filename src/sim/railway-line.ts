@@ -144,6 +144,26 @@ export function railBeamRelease(s: Railway, pid: string, epoch: number, revision
   b.z = LINE1_GREAT_TREE.z;
   return 1;
 }
+/** Where the beam's carrier stands (cm, at their feet), kept on the held beam so an absence that outlasts its grace
+ * (and a server restart) puts it down there. Returns whether it moved. */
+export function railBeamStood(s: Railway, pid: string, x: number, y: number, z: number) {
+  const b = s.line?.beam;
+  if (!b || b.state !== 'held' || b.holder !== pid || (b.x === x && b.y === y && b.z === z)) return false;
+  b.x = x;
+  b.y = y;
+  b.z = z;
+  return true;
+}
+/** The carrier stayed away past the grace: the beam goes down where they last stood, or, off the work area, back to
+ * the tree. Never while they hold it in a live session. */
+export function railBeamPutDown(s: Railway, pid: string) {
+  const b = s.line?.beam;
+  if (!b || b.state !== 'held' || b.holder !== pid || b.revision >= 2147483647) return 0;
+  const { x, y, z } = b;
+  const n = railBeamRelease(s, pid, b.epoch, b.revision);
+  if (n && lineBeamGround(x, y, z)) Object.assign(b, { state: 'ground', x, y, z });
+  return n;
+}
 export function railBeamRecover(s: Railway, revision: number) {
   const b = s.line?.beam;
   if (!b || b.state !== 'ground' || b.revision !== revision || b.age !== 21 || b.revision >= 2147483647) return 0;

@@ -213,6 +213,12 @@ export function sendPresence() {
   net.lastSend = performance.now();
   net.room.presence(buildPresence()).catch(() => {});
 }
+// A tab going hidden stops its frame loop, so it would never say so: one presence now (v 0) tells the server, which
+// then allows it a longer silence before it drops the socket.
+if (typeof document !== 'undefined')
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) sendPresence();
+  });
 
 function getRemote(peer: string): Remote {
   let r = remotes.get(peer);

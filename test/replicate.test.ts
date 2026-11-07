@@ -95,6 +95,11 @@ test('late join sends everything whole, chunked under the message cap', () => {
     packets.map((p) => p.w ?? 0),
     packets.map((_p, k) => (k === packets.length - 1 ? 1 : 0)),
   );
+  // Every chunk but the last says more follows: the state is consistent only at the end of a send.
+  assert.deepEqual(
+    packets.map((p) => p.m ?? 0),
+    packets.map((_p, k) => (k === packets.length - 1 ? 0 : 1)),
+  );
   for (const p of packets.slice(0, -1)) assert.ok(m.apply(p) && !m.whole());
   assert.ok(m.apply(packets.at(-1)) && m.whole());
   assert.deepEqual(seen(m), expected(w, 'all'));
@@ -299,11 +304,16 @@ for (const players of [2, 4, 6])
         clone: (s) => ({ piles: new Map(s.piles), carry: new Map(s.carry) }),
         apply: (s, a) => void rule(s, pid, a),
       });
-      predictor.attach(mirror);
       predictor.session(1, 1);
-      return { pid, mirror, predictor, corrections: 0 };
+      const c = { pid, mirror, predictor, corrections: 0 };
+      // Refusals drop their actions, acks drop confirmed ones, and any packet rebuilds the prediction.
+      mirror.onPacket((p) => {
+        for (const [e, r] of p.rej ?? []) if (predictor.reject([e, r])) c.corrections++;
+        if (p.ack) predictor.confirm(p.ack);
+        predictor.invalidate();
+      });
+      return c;
     });
-    clients.forEach((c) => c.predictor.onRejected(() => c.corrections++));
     pids.forEach((pid) => rep.addClient(pid));
     const applied = new Map<string, number>();
     for (let step = 1; step <= 1200; step++) {
@@ -364,10 +374,8 @@ test('the prediction window caps unconfirmed actions; a new session retires the 
   assert.deepEqual(p.state(), [0, 1, 2, 3, 4, 5, 6, 7]);
   p.confirm([3, 12]);
   assert.deepEqual(p.state(), [3, 4, 5, 6, 7]);
-  let refused: unknown = null;
-  p.onRejected((id, reason, a) => (refused = { id, reason, a }));
-  p.reject([3, 14], 'taken');
-  assert.deepEqual(refused, { id: [3, 14], reason: 'taken', a: 4 });
+  assert.equal(p.reject([3, 14]), true);
+  assert.equal(p.reject([3, 14]), false, 'already settled');
   assert.deepEqual(p.state(), [3, 5, 6, 7]);
   assert.equal(p.stalled(999).length, 0);
   assert.equal(p.stalled(1000).length, 4, 'pending over a second: the stall cue');

@@ -23,14 +23,13 @@ import {
   hashRailway,
   railMaxDuration,
   railBeamRelease,
+  railBeamStood,
+  railBeamPutDown,
   railPanelCount,
   railPanelStock,
   RAILWAY_MAX_INT,
-  railJobs,
   type RailAction,
-  type RailPile,
   type RailResult,
-  type Railway,
 } from '../sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import {
@@ -47,6 +46,8 @@ import { line2Active, line2GateOpen, line2Completed } from '../sim/railway-line2
 import { railSupplyPulse, RECOVERY_RACK, type SupplyPulse } from '../sim/railway-supply.ts';
 import { okPid } from '../sim/roster.ts';
 import { RAIL_SCHEMAS, railProjections, railTouchAction, railTouchCore, railPileIds } from './railway-replicate.ts';
+import { railEffect, railWakeTick, type RailEffect } from './railway-predict.ts';
+export type { RailEffect } from './railway-predict.ts';
 import type { Replicator } from './replicate-server.ts';
 import type { SyncView } from './rules/types.ts';
 import type { TuneApi } from './rules/tune.ts';
@@ -157,46 +158,6 @@ export function railValid(s: ReturnType<typeof createRailway>, e: RailAction, ac
   return false;
 }
 
-/** What an accepted action's effect needs, as it stood right after that action (several can share one packet, and
- * views must not read their counts from the packet's final state): the actor's balance of the moved kind, the
- * target's count, and the pile involved with its position. */
-export type RailEffect = { carried: number; level?: number; pile?: number; px?: number; py?: number; pz?: number };
-function railEffect(s: Railway, pid: string, e: RailAction, before: Map<number, RailPile>): RailEffect {
-  const a = railAccount(s, pid)!;
-  const kind = e.op === 'rail.mine' ? 1 : e.op === 'rail.forgeTake' ? 2 : e.kind === 1 || e.kind === 2 ? e.kind : 0;
-  const effect: RailEffect = { carried: kind === 1 ? (a.stone ?? 0) : kind === 2 ? (a.rails ?? 0) : a.carry };
-  if (e.op === 'rail.drop') {
-    const pile = s.piles.find((p) => p.n > (before.get(p.id)?.n ?? 0));
-    if (pile) Object.assign(effect, { pile: pile.id, level: pile.n, px: pile.x, py: pile.y ?? 0, pz: pile.z });
-  }
-  if (e.op === 'rail.take') {
-    const pile = before.get(e.id!);
-    if (pile)
-      Object.assign(effect, {
-        pile: pile.id,
-        level: s.piles.find((p) => p.id === pile.id)?.n ?? 0,
-        px: pile.x,
-        py: pile.y ?? 0,
-        pz: pile.z,
-      });
-  }
-  if (e.op === 'rail.deposit' || e.op === 'rail.beamDeposit') {
-    const i = e.op === 'rail.beamDeposit' ? 2 : LINE1_STATIONS.findIndex((row) => row.id === e.station);
-    const q = LINE2_STATIONS.findIndex((row) => row.id === e.station);
-    if (i >= 0) {
-      const job = railJobs(s)[i]!;
-      effect.level =
-        kind === 1
-          ? (job.stoneStock ?? 0) + (job.stoneAllocation ?? 0) + (job.stoneUsed ?? 0)
-          : job.stock + job.allocation + job.used;
-    } else if (q >= 0) {
-      const job = s.line2!.jobs[q]!;
-      effect.level = kind === 2 ? job.railDelivered : job.delivered;
-    } else if (e.station === 'F') effect.level = s.line2!.forge.used;
-  }
-  return effect;
-}
-
 export function install(sync: SyncView, rules: { tune: TuneApi }, replication: Replicator) {
   const railway = createRailway(true, true);
   const touch = (kind: string, id: number | string) => replication.touch(kind, id);
@@ -245,11 +206,12 @@ export function install(sync: SyncView, rules: { tune: TuneApi }, replication: R
       const before = railPileIds(railway);
       const piles = new Map(railway.piles.map((p) => [p.id, { ...p }]));
       const valid = !!actor && RAIL_ACTIONS.has(e.op) && railValid(railway, e, actor);
+      // A wake starts at the tick its actor pressed (bounded; R1b), so the actor's predicted wake and this one agree.
       const result = railApply(
         railway,
         pid,
         valid ? e : { op: 'rail.reject', epoch: e.epoch, request: e.request },
-        tick,
+        valid && e.op === 'rail.wake' ? railWakeTick(tick, e.tk) : tick,
         timing(),
       );
       railTouchAction(touch, railway, pid, e, before);
@@ -261,7 +223,18 @@ export function install(sync: SyncView, rules: { tune: TuneApi }, replication: R
     session(pid: string, epoch: number) {
       const ok = railSession(railway, pid, epoch);
       if (ok) touch('account', pid);
+      if (ok) touch('beam', 0); // a returning carrier's beam moves to the new session
       return ok;
+    },
+    /** Where the beam's carrier stands (cm, feet): an absence past its grace puts it down there. */
+    beamStood(pid: string, x: number, y: number, z: number) {
+      if (railBeamStood(railway, pid, x, y, z)) touch('beam', 0);
+    },
+    /** The carrier stayed away past the grace: down where they last stood. */
+    beamPutDown(pid: string) {
+      const n = railBeamPutDown(railway, pid);
+      if (n) touch('beam', 0);
+      return n;
     },
     resume(ticks: number, marker: number) {
       const n = railResume(railway, Math.min(ticks, railMaxDuration(railway)), marker, sync.world.tick);

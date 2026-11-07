@@ -10,8 +10,10 @@ export type CarryReadout = {
   stone: number;
   big: 'beam' | 'boiler' | null;
   capacity: number;
-  incoming: number;
-  reserved: number;
+  /** Pieces in the air on their way here, and slots held for unconfirmed actions. An owner that predicts its own
+   * actions (the railway) already shows them in its counts and leaves these out. */
+  incoming?: number;
+  reserved?: number;
   flyingLogs: number;
   attention: boolean;
 };

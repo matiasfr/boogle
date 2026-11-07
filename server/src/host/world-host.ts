@@ -22,12 +22,13 @@ import type { StepMeter } from './step-meter.ts';
 import { loadHomeLand, type HomeLand } from './land.ts';
 import type { Store } from '../store.ts';
 import { isRailwayRoom, RAILWAY_PLAY_NS } from '../../../src/world/railway-namespace.ts';
-import { RAILWAY_T1, RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
+import { RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
 import { LINE1_CATALOG } from '../../../src/sim/railway-line-layout.ts';
 import { railGrowthMask, railGrows, railGrowthAllowed, type SupplyPulse } from '../../../src/sim/railway-supply.ts';
 import { railNobodyNear, type RailwayPosition } from './railway-supply.ts';
 export type { RailwayPosition } from './railway-supply.ts';
 import { install as installRailway, type Actor } from '../../../src/world/railway-server.ts';
+import { railCadence, RAIL_CADENCE_SLACK_MS } from '../../../src/world/railway-predict.ts';
 import { createReplicator, type Replicator } from '../../../src/world/replicate-server.ts';
 import { createRailwayRequests, type ActorFacts } from './railway-requests.ts';
 import { canSet, cleanName } from '../../../src/sim/roster.ts';
@@ -36,10 +37,6 @@ import { canSet, cleanName } from '../../../src/sim/roster.ts';
 // Saves skip a world whose states didn't change, but its tick still moves on, and the helper bank reads the time nobody
 // hosted from the saved tick: so the tick is saved at least this often, and always on close.
 const TICK_SAVE_MS = 30000;
-// Client action clocks (railCadence): a frame of rounding and jitter between two swings. There is no bound against
-// the server's clock: exploits don't matter in casual co-op, and any such bound refuses honest clients whose clock
-// runs at another rate (a test harness's warped page clock, a throttled tab).
-const CADENCE_SLACK_MS = 20;
 
 // JSON escapes lone UTF-16 surrogates to six bytes each. Preserve their displayed replacement character while
 // keeping the existing sixteen-character name and three-byte-per-code-unit recovery bound (ES2022 browsers).
@@ -222,16 +219,17 @@ export function createRailwayWorldHost({
       return dx * dx + dz * dz <= radius * radius;
     },
     height: (y, radius) => Math.abs(a.at[1] - y) <= radius,
+    // railCadence on the client's own action clock, the check its prediction also runs. No bound against the
+    // server's clock: exploits don't matter in casual co-op, and such a bound refuses honest clients whose clock runs
+    // at another rate (a test harness's warped page clock, a throttled tab).
     cadence(op) {
-      const swing = ['rail.chop', 'rail.mine', 'rail.beamChop'].includes(op);
-      const kind = swing ? 'swing' : op;
-      const ms = swing ? RAILWAY_T1.swingMs : RAILWAY_T1.unloadMs;
+      const { kind, ms } = railCadence(op);
       let clock = clientClocks.get(a.pid);
       if (!clock || clock.epoch !== a.epoch) {
         clock = { epoch: a.epoch, last: new Map() }; // a new session is a new page, with its own clock
         clientClocks.set(a.pid, clock);
       }
-      if (a.ms - (clock.last.get(kind) ?? -Infinity) < ms - CADENCE_SLACK_MS) return false;
+      if (a.ms - (clock.last.get(kind) ?? -Infinity) < ms - RAIL_CADENCE_SLACK_MS) return false;
       clock.last.set(kind, a.ms);
       return true;
     },
@@ -332,18 +330,36 @@ export function createRailwayWorldHost({
     unavailable: () => (startupError || sync.worldStatus().recoveryError ? 'storage' : 'starting'),
     actor,
   });
-  // A departed session drops the unique beam it was carrying: it goes back to where it was taken from.
-  const releaseBeamOf = (pid: string, epoch: number) => {
+  // The unique beam stays with its carrier through an absence (a hidden tab, a reload, a lost link, a restart): while
+  // they are here it follows where they stand (once a second, from presence); a carrier who comes back within
+  // `railBeamGraceS` still carries it (railSession moves it to their new session); one who stays away longer has it
+  // put down where they last stood (owner, 6 November: you keep your load, or it goes down where you stood).
+  let beamAway: number | null = null;
+  let stoodAt = -Infinity;
+  const maintainBeam = () => {
     const beam = railway.line!.beam;
-    if (beam.state === 'held' && beam.holder === pid && beam.epoch <= epoch)
-      api.beamRelease(beam.holder, beam.epoch, beam.revision);
+    if (beam.state !== 'held') return void (beamAway = null);
+    const t = now();
+    if (requests.active(beam.holder)) {
+      beamAway = null;
+      if (t - stoodAt < 1000) return;
+      stoodAt = t;
+      const p = positions().find((row) => row?.pid === beam.holder && row.y !== undefined && t - row.at <= 2000);
+      // Presence is the body's centre in metres; the beam lies at the feet.
+      if (p) api.beamStood(beam.holder, Math.round(p.x * 100), Math.round(p.y! * 100) - 45, Math.round(p.z * 100));
+      return;
+    }
+    beamAway ??= t;
+    if (t - beamAway >= rules.tune.get('railBeamGraceS') * 1000) {
+      api.beamPutDown(beam.holder);
+      beamAway = null;
+    }
   };
   const ready = (async () => {
     attach();
     await sync.whenDurable();
-    // No session survives a server restart: an orphaned held beam goes back.
-    const orphan = railway.line!.beam;
-    if (orphan.state === 'held') api.beamRelease(orphan.holder, orphan.epoch, orphan.revision);
+    // No session survives a server restart: a held beam's carrier is away from now (maintainBeam), and keeps it if they
+    // come back within the grace.
     // Catch up the time nobody hosted, once, for the funded job.
     const marker = Math.floor(now() / 100);
     const absent = Math.max(
@@ -373,7 +389,10 @@ export function createRailwayWorldHost({
           const before = sync.world.tick;
           const step0 = sync.roomStep();
           sync.stepWorld(Math.min(time - last, 1000));
-          if (sync.world.tick !== before) maintainSupply(); // on rule ticks only, not 60 times a second
+          if (sync.world.tick !== before) {
+            maintainSupply(); // on rule ticks only, not 60 times a second
+            maintainBeam();
+          }
           const ms = performance.now() - time;
           stats.wakes++;
           stats.steps += sync.roomStep() - step0;
@@ -449,6 +468,7 @@ export function createRailwayWorldHost({
       if (running && !closed) {
         sync.stepWorld(dt * 1000);
         maintainSupply();
+        maintainBeam();
       }
     },
     status: () => ({
@@ -458,9 +478,13 @@ export function createRailwayWorldHost({
       ready: running && !sync.worldStatus().recoveryError,
     }),
     whenReady: () => ready,
+    /** The room's actual departure of a session (after its reconnect grace). A carried beam waits for its carrier. */
     depart(sid: string) {
       const session = requests.depart(sid);
-      if (session) releaseBeamOf(session.pid, session.epoch);
+      const beam = railway.line!.beam;
+      // The grace runs from the carrier's departure, not from when maintenance next notices it.
+      if (session && beam.state === 'held' && beam.holder === session.pid && !requests.active(session.pid))
+        beamAway ??= now();
     },
     async close({ save = true } = {}) {
       closed = true;
@@ -492,4 +516,5 @@ const RAIL_TUNE_KEYS = new Set([
   'railJumpTurn',
   'railJumpSteer',
   'railJumpApexSpeed',
+  'railBeamGraceS',
 ]);

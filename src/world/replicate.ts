@@ -14,7 +14,11 @@
 //       tk    the room clock step this packet is current to (src/world/room-clock.ts)
 //       ack   [epoch, request]: the highest action of this client's session applied (the existing railway pair)
 //       rej   [[epoch, request, reason], ...] refused actions
+//       ok    [[epoch, request, n], ...] this client's accepted actions and what each moved (its prediction's answer;
+//             the actor gets no event for a predicted action)
 //       ids   [[tempId, serverId], ...] predicted spawns re-keyed
+//       m     1 on every chunk but the last of one send: the state is only consistent at the last, which alone
+//             carries ack, rej, ok, ids, ev, w and h
 //       x     [[kind, id], ...] despawns, applied before c
 //       c     [[kind, id, { field: value }], ...] changed fields of changed components; a spawn carries every field
 //       h     a hash of every component the server holds as of tk (hashComponents), about every HASH_STEPS steps, to a
@@ -37,7 +41,9 @@ export type ServerPacket = {
   tk: number;
   ack?: ActionId;
   rej?: [epoch: number, request: number, reason: string][];
+  ok?: [epoch: number, request: number, n: number][];
   ids?: [temp: string, id: EntityId][];
+  m?: 1;
   x?: Despawn[];
   c?: Change[];
   ev?: Fields[];

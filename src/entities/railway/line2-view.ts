@@ -2,7 +2,7 @@
 // Q1-Q3 frames, the depot rack, and the route-v2 service decks, winch drive, lever, gate, pillar p2 and hook device.
 // Geometry and colliders are rebuilt from accepted construction state; nothing here transfers material.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
+import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body } from '../../physics/engine.ts';
@@ -445,9 +445,13 @@ export async function createRailwayLine2(
     const moved = visualHead - setback - previous;
     if (moved > 0) machine.moved(moved);
   }
+  // The forge's lighting is the server's to decide (a predicted deposit that fills it waits): its fanfare plays when the
+  // mirror shows it lit, never on a rebuild.
+  let litShown = state.line2?.forge.lit ?? -1;
   function restore() {
     deposits = [];
     const l = l2();
+    litShown = l?.forge.lit ?? -1;
     if (!l) return;
     l.stations.forEach((job, k) => {
       const spec = LINE2_STATIONS[k]!;
@@ -484,7 +488,7 @@ export async function createRailwayLine2(
     const l = l2();
     if (!l) return;
     if (event.op === 'rail.forgeTake') {
-      for (let n = 0; n < event.accepted; n++)
+      for (let n = 0; n < event.accepted - (event.returned ?? 0); n++)
         deposits.push({
           station: -2,
           kind: 2,
@@ -506,7 +510,7 @@ export async function createRailwayLine2(
     if (event.op === 'rail.depotTake') {
       depotPlace(Math.max(0, l.active), from);
       from.y += 0.8;
-      for (let n = 0; n < event.accepted; n++)
+      for (let n = 0; n < event.accepted - (event.returned ?? 0); n++)
         pieces.send(
           'log',
           from,
@@ -563,18 +567,85 @@ export async function createRailwayLine2(
       );
       deposits.push({ active, station: k, kind });
     }
-    if (forge && l.forge.lit >= 0 && l.forge.lit === event.tick) {
-      sounds.fanfare(true);
-      whistle(plans.X, plans.Z);
+  }
+  // A predicted line-two action the server did not take (replication R1b; Local presentation): rails or logs you were
+  // shown taking go back to the rack or the depot (or to whoever got them), deposits lift out of the frame back to you,
+  // and a lever you were shown pulling swings back with a clank.
+  const UP_08 = new THREE.Vector3(0, 0.8, 0);
+  function corrected(c: RailwayCorrection) {
+    state = adapter.inspect();
+    const l = l2();
+    const e = c.event;
+    if (!l) return;
+    if (e.op === 'rail.lever') {
+      clank(lever.x + ox, lever.z);
+      return;
     }
+    const rails = e.op === 'rail.forgeTake' || ('kind' in e && e.kind === 2);
+    const held = rails ? state.railsCarry : state.carry;
+    const home =
+      e.op === 'rail.forgeTake'
+        ? rackFrom
+        : e.op === 'rail.depotTake'
+          ? depotPlace(Math.max(0, l.active), new THREE.Vector3()).add(UP_08)
+          : null;
+    if (home) {
+      for (let n = 0; n < c.lost; n++) {
+        if (!bundleOrigin(state.pid, held + c.lost - n - 1, from)) continue;
+        const winner = c.winner;
+        pieces.send(
+          rails ? 'rail' : 'log',
+          from,
+          home,
+          {
+            dur: 0.3,
+            apex: 0.8,
+            aim: winner
+              ? (out) => {
+                  const a = state.accounts.find((row) => row.pid === winner);
+                  bundleOrigin(winner, (rails ? a?.rails : a?.carry) ?? 0, out);
+                }
+              : undefined,
+            land: () => sounds.knock(0.3, 0.6),
+          },
+          owner,
+        );
+      }
+      return;
+    }
+    if (e.op !== 'rail.deposit') return;
+    const forge = e.station === 'F';
+    const k = forge ? -1 : LINE2_STATIONS.findIndex((s) => s.id === e.station);
+    if (!forge && k < 0) return;
+    const frame = forge ? forgeFrame : frames[k]!;
+    for (let n = 0; n < c.lost; n++) {
+      const slot = Math.max(0, (e.level ?? 0) - 1 - n);
+      const at = forge
+        ? frame.feederEnd
+        : rails
+          ? frame.railSlot(slot, new THREE.Vector3())
+          : frame.logSlot(slot, new THREE.Vector3());
+      if (!bundleOrigin(state.pid, held - c.lost + n, from)) continue;
+      pieces.send(
+        rails ? 'rail' : 'log',
+        at,
+        from.clone(),
+        { dur: 0.3, apex: 0.8, land: () => sounds.pop(3, 0.4) },
+        owner,
+      );
+    }
+    clank(frame.x, frame.z);
   }
   const offAccepted = adapter.onAccepted(accepted);
-  const offReset = adapter.onReset(() => {
+  const offCorrected = adapter.onCorrected(corrected);
+  // After a lost connection or a resync the views carry on from the new state rather than rebuild (and snap).
+  const offReset = adapter.onReset((soft) => {
     state = adapter.inspect();
-    restore();
+    if (!soft) restore();
   });
   owner.cleanup(() => {
     offAccepted();
+    offCorrected();
     offReset();
     for (const g of geometries) g.dispose();
     for (const m of materials) m.dispose();
@@ -643,6 +714,11 @@ export async function createRailwayLine2(
       while (shownPieces < wantPieces) building.drop(ORDER[shownPieces++]!, 3.2, 0.3);
       building.update(dt);
       mouth.visible = l.forge.lit >= 0;
+      if (litShown < 0 && l.forge.lit >= 0) {
+        sounds.fanfare(true);
+        whistle(plans.X, plans.Z);
+      }
+      litShown = l.forge.lit;
       const walls = l.forge.used > F1;
       if (walls && !wallsBody)
         wallsBody = land.addStatic(

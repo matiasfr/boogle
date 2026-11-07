@@ -515,14 +515,21 @@ export function createRailwayMirror() {
     },
     /** The server step the mirror is current to (-1 before a packet). */
     step: () => mirror.lastStep(),
-    /** Bring every job's timed fields to the estimated server tick (views call it once per frame). */
-    at(tick: number) {
-      const jobs = railJobs(s);
+    /** Bring every job's timed fields to the estimated server tick (views call it once per frame). `target` is this
+     * mirror's railway or a copy of it (R1b's predicted state): the job clocks are the mirror's. */
+    at(tick: number, target: Railway = s) {
+      const jobs = railJobs(target);
       for (let k = 0; k < LINE1_STATIONS.length; k++)
         advance(jobs[k]!, clocks[k]!, LINE1_STATIONS[k]!, k > 0 ? 'stone' : null, tick);
       for (let k = 0; k < LINE2_STATIONS.length; k++)
-        advance(l2.jobs[k]!, clocks[LINE1_STATIONS.length + k]!, LINE2_STATIONS[k]!, 'rails', tick);
-      return s;
+        advance(target.line2!.jobs[k]!, clocks[LINE1_STATIONS.length + k]!, LINE2_STATIONS[k]!, 'rails', tick);
+      return target;
+    },
+    /** A whole state is coming again (reconnect, resync): this one stays as it is, actions wait, until it has all
+     * arrived and replaces it. */
+    refill() {
+      mirror.refill();
+      synced = false;
     },
     reset() {
       mirror.reset();
