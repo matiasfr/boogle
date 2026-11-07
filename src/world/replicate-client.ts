@@ -6,7 +6,7 @@
 //                                     a malformed or out-of-order packet is refused (false) and changes nothing
 //   mirror.get(kind, id) / entries(kind) / size()
 //   mirror.onChange(kind, fn)         fn(id, fields | null, changed | null) after each applied change (null: despawned)
-//   mirror.onPacket(fn)               fn(packet) after a packet applied (acks, refusals and id remaps ride on it)
+//   mirror.onPacket(fn)               fn(packet) after a packet applied (acks, refusals, id remaps and events ride on it)
 //   mirror.step(atMs)                 estimated server step (src/world/room-clock.ts) from the packets' tk stamps
 //   mirror.clone()                    a deep copy of every component (the predictor's confirmed base, budget test)
 //   mirror.reset()                    drop everything (reconnect; the server re-sends whole from change tick -1)
@@ -21,6 +21,7 @@
 //   p.onRejected(fn)                  fn(id, reason, action): the view eases the correction (Local presentation)
 import { createStepEstimate } from './room-clock.ts';
 import {
+  validEvent,
   validFields,
   validId,
   entityKey,
@@ -74,6 +75,11 @@ export function createMirror(schemas: readonly Schema[]) {
         p.ids.length <= MAX_LIST &&
         p.ids.every((r) => Array.isArray(r) && r.length === 2 && typeof r[0] === 'string' && validId(r[1]))
       )
+    )
+      return false;
+    if (
+      p.ev !== undefined &&
+      !(Array.isArray(p.ev) && p.ev.length <= MAX_LIST && p.ev.every((e: unknown) => validEvent(e)))
     )
       return false;
     const gone = new Set<string>();

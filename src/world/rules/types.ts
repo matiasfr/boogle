@@ -19,7 +19,8 @@ export type StateHandlers = {
 export type SyncView = {
   world: { tick: number; seed: number; epochMs: number };
   registerOp: <F>(op: string, handlers: OpHandlers<F>) => void;
-  registerState: (key: string, handlers: StateHandlers) => void;
+  /** server: a Server-kind state, registered on the host only (persisted, never hashed or served). */
+  registerState: (key: string, handlers: StateHandlers, opts?: { server?: boolean }) => void;
   onTick: (fn: (tick: number) => void, label?: string) => void;
   onApplied: (fn: (e: Edit, tick: number, result: unknown) => void, label?: string) => void;
   onSnapshot: (fn: (tick: number) => void) => void;

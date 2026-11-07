@@ -17,6 +17,8 @@
 //       ids   [[tempId, serverId], ...] predicted spawns re-keyed
 //       x     [[kind, id], ...] despawns, applied before c
 //       c     [[kind, id, { field: value }], ...] changed fields of changed components; a spawn carries every field
+//       ev    [{ field: value }, ...] one-off events since the last send (accepted actions, for effects), read after
+//             x and c are applied; never part of the mirror, never re-sent to a late joiner
 //   client -> server  { t:'a', ep, rq, op, ...fields }   an action, identified by (epoch, request)
 export type FieldType = 'bool' | 'u8' | 'u16' | 'u32' | 'i32' | 'int' | 'q16' | 'f32' | 'str';
 export type FieldValue = number | boolean | string;
@@ -35,6 +37,7 @@ export type ServerPacket = {
   ids?: [temp: string, id: EntityId][];
   x?: Despawn[];
   c?: Change[];
+  ev?: Fields[];
 };
 
 export const GLOBAL_CELL = 'g';
@@ -105,6 +108,20 @@ export function cellsNear(xCm: number, zCm: number, radiusCm: number, size = CEL
     z1 = Math.floor((zCm + radiusCm) / size);
   for (let i = x0; i <= x1; i++) for (let j = z0; j <= z1; j++) out.push(`${i},${j}`);
   return out;
+}
+
+/** A one-off event: a flat object of up to MAX_EVENT_KEYS well-formed scalar fields. */
+export const MAX_EVENT_KEYS = 24;
+export function validEvent(v: unknown): v is Fields {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
+  let n = 0;
+  for (const k in v as Record<string, unknown>) {
+    const x = (v as Record<string, unknown>)[k];
+    if (!KIND.test(k) || ++n > MAX_EVENT_KEYS) return false;
+    if (!(typeof x === 'boolean' || (typeof x === 'number' && Number.isFinite(x)) || validValue('str', x)))
+      return false;
+  }
+  return n > 0;
 }
 
 export const entityKey = (kind: string, id: EntityId) => `${kind}:${typeof id === 'number' ? id : `s${id}`}`;
