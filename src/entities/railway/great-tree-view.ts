@@ -43,8 +43,9 @@ export function createGreatTreeDress(
   const sling = new THREE.Group();
   sling.position.set(tree.x, tree.y, tree.z);
   const rope = flat(GOLD_ROPE, 0.7);
-  for (const h of [1.5, 1.85]) {
-    const band = new THREE.Mesh(keep(new THREE.TorusGeometry(trunkR(tree, h) + 0.04, 0.08, 6, 22)), rope);
+  // Three thick bands, so the gold reads from Station 3's receiver 53 m downhill.
+  for (const h of [1.45, 1.9, 2.35]) {
+    const band = new THREE.Mesh(keep(new THREE.TorusGeometry(trunkR(tree, h) + 0.05, 0.11, 6, 22)), rope);
     band.rotation.x = Math.PI / 2;
     band.position.y = h;
     band.castShadow = true;

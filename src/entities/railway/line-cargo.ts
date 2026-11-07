@@ -240,10 +240,11 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
       frame.localToWorld(anchor);
       const yaw = avatar.rotation.y,
         back = { x: Math.sin(yaw), z: Math.cos(yaw) };
+      // A short rope's length behind, so the rope shows as a line from the shoulder and the trunk clears Buddy.
       hip.set(
-        avatar.position.x + back.x * 0.45 + Math.cos(yaw) * side * 0.35,
-        avatar.position.y + 0.3,
-        avatar.position.z + back.z * 0.45 - Math.sin(yaw) * side * 0.35,
+        avatar.position.x + back.x * 1.05 + Math.cos(yaw) * side * 0.4,
+        avatar.position.y + 0.15,
+        avatar.position.z + back.z * 1.05 - Math.sin(yaw) * side * 0.4,
       );
       // Where the far end starts: the end of the trunk as it last lay that is further from you, else straight behind.
       if (Math.hypot(lay.x - hip.x, lay.z - hip.z) < 8) {
