@@ -36,32 +36,56 @@ const lowCostInit = `try {
   localStorage.setItem('boogle.dev.graphics.v1', JSON.stringify({ version: 1, values: ${JSON.stringify(LOW_COST.dev)} }));
 } catch {}`;
 
+const PRESENCE_WAIT_MS = 240000;
+// ?netdebug=2 logs every reconnect (src/netplay/net.ts); kept for the failure message.
+const netLog: string[] = [];
+
 const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
 
 export default {
   sourceImports: false,
   about: 'two tabs join, see each other, rename one, throw the ball, and agree on every world hash',
-  timeout: 420000, // generous: two software-rendered tabs on a busy runner (smoke.yml) drop to a few frames per second
+  timeout: 960000, // generous: two software-rendered tabs on a busy runner (smoke.yml) drop to a few frames per second
   async run(t: T) {
     const room = process.env.SMOKE_ROOM || ('smoke-' + id).slice(0, 32);
     const size = [480, 300]; // small frames keep software GL fast enough for the world clock to run near real time
     // Each player gets a browser process of their own (two tabs of one browser share its GPU process, which is one
     // software rasteriser for both), at the lowest rendering cost (above). t.open returns only once that player is in the
     // world (the lobby click, then the debug handles), so Bob starts loading after Alice has joined, not alongside her.
-    const A = await t.open({ name: 'Alice', room, size, init: lowCostInit, ownBrowser: true });
-    const B = await t.open({ name: 'Bob', room, size, init: lowCostInit, ownBrowser: true });
+    const A = await t.open({ name: 'Alice', room, size, query: 'netdebug=2', init: lowCostInit, ownBrowser: true });
+    const B = await t.open({ name: 'Bob', room, size, query: 'netdebug=2', init: lowCostInit, ownBrowser: true });
     const worldErrors = new Map<Game, string[]>();
     for (const g of [A, B]) {
       const errs: string[] = [];
       worldErrors.set(g, errs);
+      g.page.on(
+        'console',
+        (m) =>
+          /\[ws-room\]|\[boogle\] net|reconnect/i.test(m.text()) &&
+          netLog.push(`${g.name} ${Math.round(Date.now() / 1000) % 1000}s ${m.text().slice(0, 80)}`),
+      );
       g.page.on('console', (m) => m.type() === 'error' && m.text().includes('[world]') && errs.push(m.text()));
     }
-    const seen = [await A.waitFor(MET, { timeout: 60000 }), await B.waitFor(MET, { timeout: 60000 })];
-    t.check(
+    // Both wait at once: a starved tab's socket can drop and rejoin (ws-room's DEAD_MS), and each side only has to see
+    // the other once. On failure, say what each tab's net looked like and which sockets reconnected.
+    const seen = await Promise.all([
+      A.waitFor(MET, { timeout: PRESENCE_WAIT_MS }),
+      B.waitFor(MET, { timeout: PRESENCE_WAIT_MS }),
+    ]);
+    const net = (g: Game) =>
+      g
+        .eval(
+          `const n = window.boogle.net; return JSON.stringify({ state: n.state, room: !!n.room, remotes: window.boogle.remotes.size, ready: window.boogle.sync.worldStatus().ready });`,
+        )
+        .catch((e: Error) => 'eval failed: ' + e.message);
+    const met = t.check(
       'the players see each other',
       seen.every((ms) => ms >= 0),
-      `room ${room}, ${seen.join(' / ')} ms`,
+      seen.every((ms) => ms >= 0)
+        ? `room ${room}, ${seen.join(' / ')} ms`
+        : `room ${room}, ${seen.join(' / ')} ms (-1: never within ${PRESENCE_WAIT_MS / 1000} s); Alice ${await net(A)} Bob ${await net(B)}; net log: ${netLog.slice(-12).join(' | ')}`,
     );
+    if (!met) return; // the checks below need both players
     const hasHandle = await A.eval(`return !!window.boogle.sync;`);
     if (!t.check('the build has the debug handle (window.boogle.sync)', hasHandle)) return;
     const { modes, ok, host, client } = await roles(A, B);
@@ -93,7 +117,7 @@ export default {
     t.check(
       "one tab's roster edit reaches the other",
       landed >= 0,
-      `${landed < 0 ? -1 : Date.now() - tossedAt} ms; sent ${sent.join()}; ${dropped} held edits dropped`,
+      `${landed < 0 ? -1 : Date.now() - tossedAt} ms; sent ${sent.join()}; ${dropped} held edits dropped${landed < 0 ? `; Alice ${await net(A)} Bob ${await net(B)}; net log: ${netLog.slice(-12).join(' | ')}` : ''}`,
     );
 
     // The client throws the ball: it takes ownership and the host watches it fly.
@@ -131,7 +155,10 @@ export default {
       JSON.stringify({ hashOk: st.hashOk, hashBad: st.hashBad, resyncs: st.resyncs, subsystems: st.subsystems }),
     );
     const errs = [...worldErrors.get(host)!, ...worldErrors.get(client)!];
-    const shots = [await A.still('Alice'), await B.still('Bob')];
+    const shots = [
+      await A.still('Alice').catch(() => 'no Alice still'),
+      await B.still('Bob').catch(() => 'no Bob still'),
+    ];
     t.check('no [world] errors in either console', !errs.length, [...errs.slice(0, 2), ...shots].join(' | '));
     // Last, since the runner reads these after this returns. The CDN just after a deploy can 503 a file for a moment (runs
     // 41425998584, 41883882018). A file the game needs fails the checks above; lib.ts prints which file it was.
