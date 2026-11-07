@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { jobs, stateDir } from './jobs.ts';
+import { jobs, localTimes, stateDir, type Job } from './jobs.ts';
 
 const args = process.argv.slice(2);
 const uninstall = args.includes('--uninstall');
@@ -44,7 +44,8 @@ for (const [job, spec] of Object.entries(jobs)) {
     continue;
   }
   const date = new Date();
-  if (job === 'scenarios') date.setHours(3, 30, 0, 0);
+  const local = localTimes[job as Job];
+  if (local) date.setHours(local[0], local[1], 0, 0);
   else date.setUTCHours(spec.utcHour, spec.minute, 0, 0);
   const hour = date.getHours(),
     minute = date.getMinutes();
@@ -62,7 +63,7 @@ for (const [job, spec] of Object.entries(jobs)) {
 </dict></plist>
 `;
   console.log(
-    `${file}: daily ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} local (${Intl.DateTimeFormat().resolvedOptions().timeZone})${job === 'scenarios' ? '' : `; converted from ${spec.utcHour}:${spec.minute} UTC today`}.`,
+    `${file}: daily ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} local (${Intl.DateTimeFormat().resolvedOptions().timeZone})${local ? '' : `; converted from ${spec.utcHour}:${spec.minute} UTC today`}.`,
   );
   if (dry) {
     console.log(plist);

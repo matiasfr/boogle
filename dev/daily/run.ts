@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { jobs, jobName, prompt, reviewPrompt, stateDir } from './jobs.ts';
+import { compare, invalid, report, type Bench, type Entry } from './perf.ts';
 
 const args = process.argv.slice(2);
 const job = jobName(args.shift());
@@ -18,10 +19,17 @@ const known = args.filter(
     (noteIndex < 0 || (i !== noteIndex && i !== noteIndex + 1)) &&
     (onlyIndex < 0 || (i !== onlyIndex && i !== onlyIndex + 1)),
 );
-if (known.some((a) => !['--dry-run', '--force'].includes(a)) || notes === undefined || (onlyIndex >= 0 && !only))
+if (
+  known.some((a) => !['--dry-run', '--force', '--local'].includes(a)) ||
+  notes === undefined ||
+  (onlyIndex >= 0 && !only)
+)
   throw new Error(
-    'Usage: npm run daily -- atlas|patch-video|scenarios [--dry-run] [--force] [--notes "..."] [--only scenario]',
+    'Usage: npm run daily -- atlas|patch-video|scenarios|perf [--dry-run] [--force] [--notes "..."] [--only scenario] [--local]',
   );
+if (args.includes('--local') && job !== 'perf') throw new Error('--local is for the perf job');
+// A local check: this worktree and its installed dependencies, no GitHub (scenarios --only, perf --local).
+const local = only !== undefined || args.includes('--local');
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const spec = jobs[job];
 const env = { ...process.env, SHIP_NO_AI: '1', PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1', GIT_TERMINAL_PROMPT: '0' };
@@ -83,7 +91,32 @@ const scenarios = [
 ];
 if (onlyIndex >= 0 && (job !== 'scenarios' || !scenarios.includes(only!))) throw new Error('Unknown nightly scenario');
 const selected = only ? [only] : scenarios;
-if (dry && job === 'scenarios') {
+const perfHistory = path.join(stateDir, 'perf', 'history.jsonl');
+if (dry && job === 'perf') {
+  console.log(
+    JSON.stringify(
+      {
+        job,
+        stateDir,
+        lock: path.join(stateDir, 'active'),
+        time: '02:50 local',
+        history: perfHistory,
+        steps: [
+          'acquire shared lock',
+          ...(local
+            ? ['use current worktree and installed dependencies; do not contact GitHub or write history']
+            : ['fetch origin/main and create fresh worktree', 'npm ci', 'install Playwright Chromium']),
+          'caffeinate -dimu node dev/look/bench.ts --out <run>/bench.json (visible Chromium on the Mac GPU)',
+          'compare with the median of the last valid runs; flag regressions, budgets and the commit range',
+          ...(local ? [] : ['append a valid run to history', 'comment on the Performance issue (created once)']),
+          'keep bench.json, bench.log, comparison.json and notification.md; remove the worktree; release lock',
+        ],
+      },
+      null,
+      2,
+    ),
+  );
+} else if (dry && job === 'scenarios') {
   console.log(
     JSON.stringify(
       {
@@ -94,11 +127,11 @@ if (dry && job === 'scenarios') {
         scenarios: selected,
         steps: [
           'acquire shared lock',
-          ...(only
+          ...(local
             ? ['use current worktree and installed dependencies; do not contact GitHub']
             : ['fetch origin/main and create fresh worktree', 'npm ci', 'install Playwright Chromium']),
           'run scenarios sequentially on Mac GPU',
-          ...(only ? ['skip issue reporting'] : ['update scenarios issue once']),
+          ...(local ? ['skip issue reporting'] : ['update scenarios issue once']),
           'preserve artifacts and release lock',
         ],
       },
@@ -160,7 +193,7 @@ if (dry && job === 'scenarios') {
   }
   const id = `${job}-${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}`;
   const dir = path.join(stateDir, 'runs', id);
-  const work = only ? root : path.join(dir, 'worktree');
+  const work = local ? root : path.join(dir, 'worktree');
   const branch = `daily/${id}`;
   fs.writeFileSync(path.join(lock, 'owner.json'), JSON.stringify({ pid: process.pid, job, dir, started: new Date() }));
   fs.mkdirSync(dir, { recursive: true });
@@ -169,7 +202,7 @@ if (dry && job === 'scenarios') {
   let succeeded = false;
   const result: Record<string, unknown> = { job, dir, branch, started: new Date().toISOString() };
   try {
-    if (job !== 'scenarios') {
+    if (job === 'atlas' || job === 'patch-video') {
       const login = spawnSync('codex', ['login', 'status'], {
         env,
         encoding: 'utf8',
@@ -178,7 +211,7 @@ if (dry && job === 'scenarios') {
       if (login.status !== 0 || !/ChatGPT/i.test(login.stdout + login.stderr))
         throw new Error('Use codex login with the owner ChatGPT account; subscription login was not confirmed');
     }
-    if (!only) {
+    if (!local) {
       run('gh', ['auth', 'status']);
       run('git', ['fetch', '--prune', '--tags', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
       run('git', ['worktree', 'add', '-b', branch, work, 'origin/main']);
@@ -186,8 +219,92 @@ if (dry && job === 'scenarios') {
     }
     const base = run('git', ['rev-parse', 'HEAD'], work);
     result.base = base;
-    if (job === 'scenarios') {
-      if (!only) {
+    if (job === 'perf') {
+      if (!local) {
+        run('npm', ['ci'], work);
+        run('npx', ['playwright', 'install', 'chromium'], work);
+      }
+      const benchFile = path.join(dir, 'bench.json');
+      // A visible browser: keep the display awake for the run (a sleeping display stops animation frames).
+      const execution = spawnSync(
+        'caffeinate',
+        ['-dimu', process.execPath, 'dev/look/bench.ts', '--out', benchFile, '--commit', base],
+        { cwd: work, env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 30 * 60 * 1000 },
+      );
+      fs.writeFileSync(path.join(dir, 'bench.log'), (execution.stdout ?? '') + (execution.stderr ?? ''));
+      if (execution.status !== 0 || !fs.existsSync(benchFile))
+        throw new Error(
+          `Benchmark failed (exit ${execution.status}${execution.error ? ': ' + execution.error.message : ''}); see bench.log`,
+        );
+      const bench = JSON.parse(fs.readFileSync(benchFile, 'utf8')) as Bench;
+      const history: Entry[] = fs.existsSync(perfHistory)
+        ? fs
+            .readFileSync(perfHistory, 'utf8')
+            .split('\n')
+            .filter(Boolean)
+            .map((l) => JSON.parse(l) as Entry)
+        : [];
+      const problems = invalid(bench);
+      const comparison = compare(bench, history);
+      let range = '';
+      if (comparison.baselineFrom && comparison.baselineFrom !== base)
+        try {
+          const lines = run('git', ['log', '--oneline', '--first-parent', `${comparison.baselineFrom}..${base}`], work)
+            .split('\n')
+            .filter(Boolean);
+          range = lines.slice(0, 40).join('\n') + (lines.length > 40 ? `\n... and ${lines.length - 40} more` : '');
+        } catch {
+          range = `${comparison.baselineFrom}..${base} (log unavailable)`;
+        }
+      const body = report(bench, comparison, { base, range, dir, problems });
+      fs.writeFileSync(path.join(dir, 'comparison.json'), JSON.stringify({ problems, ...comparison }, null, 2) + '\n');
+      const file = path.join(dir, 'notification.md');
+      fs.writeFileSync(file, body + '\n');
+      console.log(body);
+      result.regressions = comparison.regressions.map((c) => c.name);
+      result.overBudget = comparison.over;
+      result.problems = problems;
+      if (!local) {
+        // An invalid run (a hidden page, missing GPU times) is reported but never becomes a baseline.
+        if (!problems.length) {
+          fs.mkdirSync(path.dirname(perfHistory), { recursive: true });
+          const entry: Entry = { date: new Date().toISOString(), base, dir, metrics: comparison.metrics };
+          fs.appendFileSync(perfHistory, JSON.stringify(entry) + '\n');
+        }
+        const issues = JSON.parse(
+          run(
+            'gh',
+            ['issue', 'list', '--label', 'performance', '--state', 'open', '--limit', '100', '--json', 'number'],
+            work,
+          ),
+        ) as { number: number }[];
+        if (issues.length > 1) throw new Error('Multiple open performance issues; resolve duplicates before reporting');
+        let issue = String(issues[0]?.number ?? '');
+        if (!issue) {
+          run(
+            'gh',
+            ['label', 'create', 'performance', '--color', '1d76db', '--description', 'Daily benchmark', '--force'],
+            work,
+          );
+          const intro = path.join(dir, 'issue.md');
+          fs.writeFileSync(
+            intro,
+            'The daily benchmark comments here every night (dev/daily/README.md, the perf job; dev/look/bench.ts). Each ' +
+              'comment compares origin/main with the median of the last valid runs and lists regressions, budgets and ' +
+              'the commit range. Keep it open: it is the history agents read.\n',
+          );
+          issue = run(
+            'gh',
+            ['issue', 'create', '--title', 'Performance', '--label', 'performance', '--body-file', intro],
+            work,
+          );
+        }
+        run('gh', ['issue', 'comment', issue, '--body-file', file], work);
+      }
+      result.status = problems.length ? 'invalid' : comparison.regressions.length ? 'regressed' : 'passed';
+      succeeded = true;
+    } else if (job === 'scenarios') {
+      if (!local) {
         run('npm', ['ci'], work);
         run('npx', ['playwright', 'install', 'chromium'], work);
       }
@@ -214,7 +331,7 @@ if (dry && job === 'scenarios') {
         }
       }
       result.failures = failures;
-      if (!only) {
+      if (!local) {
         const issues = JSON.parse(
           run(
             'gh',

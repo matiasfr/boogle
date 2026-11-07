@@ -1,10 +1,12 @@
 # Daily jobs on the owner's Mac
 
-`npm run daily -- atlas|patch-video|scenarios [--dry-run] [--force] [--notes "..."]` replaces the two Opus CI agents with
+`npm run daily -- atlas|patch-video|scenarios|perf [--dry-run] [--force] [--notes "..."]` replaces the two Opus CI agents with
 subscription-authenticated Codex. Atlas uses GPT-6.1-Terra at low effort; patch video and its independent visual review
 use GPT-6-Astra at high effort. DESIGN.md: **Understandable at a glance**, **Show, don't tell**, **Small and readable**.
 The scenarios job uses no model: at 03:30 local it runs the eight nightly scenarios sequentially on the Mac GPU in a fresh worktree, reports failures to the scenarios issue, and closes it after a passing run. Logs and images remain under the run folder.
 For a local check, `npm run daily -- scenarios --only caves` uses the current worktree and installed dependencies, skips GitHub and leaves its logs and images in the run folder. Each scenario has a 15-minute timeout.
+
+The perf job (`npm run daily -- perf`) serves the owner's [Measure performance daily](../../docs/agents/owner-calls.md) call and uses no model either: at 02:50 local, before the scenarios, it benchmarks origin/main in a fresh worktree with `dev/look/bench.ts` (a visible Chromium on the Mac GPU under `caffeinate -dimu`, about five minutes with `npm ci`; [what it measures](../../docs/agents/test-details/performance.md)). It compares each metric with the median of the last three valid runs in `~/.boogle/daily/perf/history.jsonl`, flags rises past both thresholds of `PERF_POLICY` (dev/daily/perf.ts), budgets (25 MB first load, 100 MB in all, 4 MB per asset, 8.33 ms CPU or GPU per frame) and the commit range since the baseline, and comments on the one open issue labelled `performance` (titled Performance, created on the first run). The run folder keeps `bench.json`, `bench.log`, `comparison.json` and `notification.md`. A run whose page was hidden, drew too few frames or had no GPU timestamps is reported as not comparable and never becomes a baseline; check the first live run for this, since the Mac's display may be asleep at night. `npm run daily -- perf --local` benchmarks the current worktree and prints the comparison without GitHub or history.
 
 ## What moved, and what CI still does
 
@@ -30,7 +32,7 @@ Claude usage from these two daily jobs, not from unrelated CI. Nothing changes i
    allowed to push branches, create releases/issues and dispatch Actions. Git must also authenticate to origin without
    an interactive prompt (`gh auth setup-git` for HTTPS, or the existing SSH setup). Confirm `codex login status` and
    `gh auth status`. No credentials are copied into the repo or plists.
-2. Preview `npm run daily -- atlas --dry-run`, `npm run daily -- patch-video --dry-run`, and `npm run daily -- scenarios --dry-run`. These only print plans and
+2. Preview `npm run daily -- atlas --dry-run`, `npm run daily -- patch-video --dry-run`, `npm run daily -- scenarios --dry-run` and `npm run daily -- perf --dry-run`. These only print plans and
    prompts: no fetch, auth request, worktree, Codex session, install, publish, or post. `--force` skips the cheap gate,
    not the video feature judgment, independent review, scope checks or open-PR protection. Install the matching Playwright Chromium with `npx playwright install chromium` before the first scenarios run.
 3. Preview `npm run daily:install -- --dry-run`, then reinstall with **`npm run daily:uninstall && npm run daily:install`**. The implementation task
@@ -42,7 +44,7 @@ Claude usage from these two daily jobs, not from unrelated CI. Nothing changes i
    tools can run on the Mac; this is not an isolation boundary. The dedicated worktree and scope checks protect delivery,
    but the agent is trusted with the owner's machine access. Usage-limit or auth failures stop; no Claude fallback.
 
-`npm run daily:uninstall [-- --dry-run]` boots out these three services and removes only their plists, leaving reports,
+`npm run daily:uninstall [-- --dry-run]` boots out these four services and removes only their plists, leaving reports,
 artifacts and failed worktrees. Uninstall while a job runs terminates it; inspect any retained lock/children afterward.
 
 ## Schedule, sleep and offline behavior
@@ -59,7 +61,7 @@ interrupt tools; don't judge a partial output as a completed video. Offline fail
 manual rerun or the next daily event; there is no automatic reconnect retry.
 If 03:30 is missed during sleep, scenarios start on wake and hold the shared lock and GPU for the length of the run.
 
-One atomic `active/` lock covers **all three** jobs, even across checkouts. Another run skips cleanly before any auth/network
+One atomic `active/` lock covers **all four** jobs, even across checkouts. Another run skips cleanly before any auth/network
 or model use. If both missed jobs start at wake, one may skip; rerun that job when the other finishes (or wait until
 its next day). This deliberately avoids two expensive jobs competing for the GPU. A crash can leave a lock: inspect
 `active/owner.json`, its PID and any surviving Codex/Chromium children before removing that directory. Never blindly
