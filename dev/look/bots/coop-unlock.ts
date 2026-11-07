@@ -1,6 +1,8 @@
 // Co-op abilities, option E captures (docs/brainstorms/coop-abilities.md, "Done means"), on the production railway.
 // Two pages: player 2 is the finder, playing the ordinary solo route with real inputs up to the double jump; player 1
 // is a friend this file drives. &coopShot= picks the moment the capture stops warping at (window.__coopShot):
+//   multi     the friend is walking about as the finder wakes the track layer: the multi-axe flourish, no card
+//   axe       the same at the forge as the finder opens the proper axe chest (the whole route to there first)
 //   unlock    the friend walks towards the device as the finder takes it: flourish, no card, shaft flare
 //   late      the friend is offline for the find and reconnects in the capture: their own flourish on landing
 //   alone     the friend gets the live flourish, drops and rejoins (none plays again), then passes the Home plinth
@@ -87,6 +89,7 @@ function trace(label: string, ms: number) {
       vy: me.body && +me.body.velocity.y.toFixed(2),
       jumps: read().reward.tools.jumps,
       teach: a.teaching,
+      badge: a.badge?.map((n) => +n.toFixed(2)),
       flourishes: a.keys.join(),
       late: a.late,
     });
@@ -96,30 +99,66 @@ function trace(label: string, ms: number) {
   tick();
 }
 
-/** The finder's earlier tool unlocks (the multi-axe at the wake, the proper axe) still show every player their card:
- * the friend puts each away, as a person would, until the jump. */
-async function putAwayCards() {
-  while (!read().jump) {
-    if (read().reward.showing) {
-      await wait(1600);
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
-      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
-      console.log('COOP NOTE friend put away an earlier shared card');
-    }
-    await wait(250);
+/** The finder's earlier tool unlocks (the multi-axe at the wake, the proper axe) are the finder's card alone: a friend
+ * is never shown one, nor held, so this fails the run if a card ever comes up for them. */
+async function noCards(until: () => unknown) {
+  while (!until()) {
+    if (read().reward.showing) throw new Error('COOP FAIL a card stopped the friend for someone else’s find');
+    await wait(50);
   }
 }
 
 async function friend() {
   const bot = makeBot({ doneFlag: '__coopFriendDone' });
   await until(landed, 'friend arrived and landed');
-  background(putAwayCards(), 'friend puts away earlier cards');
+  background(
+    noCards(() => (shot === 'axe' ? read().axe : read().jump)),
+    'friend is never shown a card',
+  );
   // Out of the finder's way: both arrive at the same spot, and the route starts from it.
   const p = me.body!.position;
   const away = Math.hypot(DEVICE.x - p.x, DEVICE.z - p.z);
   await bot.walk(p.x - ((DEVICE.x - p.x) / away) * 9, p.z - ((DEVICE.z - p.z) / away) * 9, 2, { limit: 15000 });
   console.log('COOP NOTE friend stepped aside');
   check(!read().jump, 'the jump is not found yet');
+  if (shot === 'multi' || shot === 'axe') {
+    // The friend walks about near where the finder works, hopping now and then: held input would show.
+    const awake = () => read().awake >= 0 && read().phase !== 'asleep' && read().phase !== 'waking';
+    const key = shot === 'multi' ? 'multi-axe' : 'axe';
+    const has = () => (shot === 'multi' ? awake() : read().axe);
+    const near = () => {
+      const p = other();
+      const target = shot === 'multi' ? read().machine : read().reward.axeChest;
+      return !!p && Math.hypot(p.x - target.x, p.z - target.z) < (shot === 'axe' ? 2.6 : 6);
+    };
+    // Stand within sight of it before the finder gets there, so the capture frames the friend as the flourish plays.
+    const spot = shot === 'multi' ? read().machine : read().reward.axeChest;
+    await bot.walk(spot.x, spot.z, 8, { limit: 600000 });
+    // The chest is only there once the forge is lit: the finder walking past the forge earlier is no moment.
+    await until(() => near() && (shot === 'multi' || read().reward.axeChest.available), 'finder reached it', 3000000);
+    check(!has(), 'not unlocked yet');
+    // The wake takes a few seconds after the press and the flourish comes as it ends: the capture starts at the press.
+    if (shot === 'multi') await until(() => read().phase === 'waking' || awake(), 'finder pressed wake', 60000);
+    trace(shot, 9000);
+    w.__coopShot = true;
+    const target = shot === 'multi' ? read().machine : read().reward.axeChest;
+    void bot.straight(target.x, target.z, 7, 12000);
+    const hops = (async () => {
+      for (let k = 0; k < 6; k++) {
+        pressJump();
+        await wait(140);
+        releaseJump();
+        await wait(1200);
+      }
+    })();
+    await until(has, `friend sees the ${key} unlock`);
+    check(!read().reward.showing && !inputState.held, `no card and no hold at the ${key} unlock`);
+    await until(() => read().reward.arrival.keys.includes(key), `friend ${key} flourish played`);
+    check(!read().reward.showing && !inputState.held, `no card and no hold after the ${key} flourish`);
+    await hops;
+    check(read().reward.arrival.keys.filter((k) => k === key).length === 1, `one ${key} flourish`);
+    return;
+  }
   if (shot === 'unlock') {
     await until(() => finderAtDevice(10), 'finder reached the device');
     trace('unlock', 5500);

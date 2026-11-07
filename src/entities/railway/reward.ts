@@ -49,6 +49,7 @@ export async function createRailwayReward(
   const arrival = createAbilityArrival(adapter, owner, {
     busy: reveal.gettingItem,
     jump: () => tools.inspect(),
+    axeModel: tools.axeModel,
   });
   const plinth = await createTrophyPlinth(adapter, owner, arrival.seen, reveal.gettingItem);
   return {
@@ -227,8 +228,15 @@ async function createStationReward(
   let previous = -1;
   let liveWake = false;
   let multiReveals = 0;
+  // The multi-axe card is the waker's alone (docs/brainstorms/coop-abilities.md, option E); a friend's flourish is
+  // ability-arrival.ts. The wake itself plays at once from the prediction, but the card waits for the server to
+  // accept it: a refused wake settles the machine back asleep and shows no card.
   const offAccepted = adapter.onAccepted((event) => {
-    if (stationIndex === 0 && event.op === 'rail.wake' && event.accepted > 0) liveWake = true;
+    if (stationIndex === 0 && event.op === 'rail.wake' && event.accepted > 0 && event.pid === adapter.inspect().pid)
+      liveWake = true;
+  });
+  const offCorrected = adapter.onCorrected((c) => {
+    if (stationIndex === 0 && c.event.op === 'rail.wake') liveWake = false;
   });
   const world = railwayRoomId(getRoomId());
   function load() {
@@ -373,7 +381,8 @@ async function createStationReward(
     },
     update(dt: number, now: number) {
       const state = adapter.inspect();
-      if (liveWake && state.ready && state.phase !== 'asleep' && state.phase !== 'waking') {
+      // No pending action: the server has answered every one of mine, the wake among them.
+      if (liveWake && state.ready && state.pending === 0 && state.phase !== 'asleep' && state.phase !== 'waking') {
         liveWake = false;
         if (
           reveal.youGot({
@@ -480,6 +489,7 @@ async function createStationReward(
       disposed = true;
       offReset();
       offAccepted();
+      offCorrected();
       listeners.abort();
       localCosmetics.delete(reward.id);
       for (const hat of worn.values()) hat.removeFromParent();
