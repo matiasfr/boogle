@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-06).**
+> **Status: approved (owner, 2026-11-06).** Builds after the line 2 playtest.
 
 # Jump upgrades
 
@@ -78,12 +78,12 @@ Whether another lap is fun stays the playtest's question.
 ## Open questions
 
 1. **Where does the extra jump come from?** Recommended: an expedition find (ankle rings) on the way to the next destination,
-   instead of today's pillar after Line 1. Answer: \_\_\_
+   instead of today's pillar after Line 1. Answer: as recommended (owner, 2026-11-06).
 2. **Does double jump keep gating the quarry ledge?** Recommended: no; redesign the quarry lever approach so construction,
-   not jumping, is the required dependency. Answer: \_\_\_
+   not jumping, is the required dependency. Answer: as recommended (owner, 2026-11-06).
 3. **Triple jump at all?** Recommended: only as a separate courtyard experiment until it earns a distinct use. Answer:
-   \_\_\_
-4. **Charge display:** recommended: a minimal mark near Buddy for the proof; rings stay as identity. Answer: \_\_\_
+   as recommended (owner, 2026-11-06).
+4. **Charge display:** recommended: a minimal mark near Buddy for the proof; rings stay as identity. Answer: as recommended (owner, 2026-11-06).
 
 ## Parked
 

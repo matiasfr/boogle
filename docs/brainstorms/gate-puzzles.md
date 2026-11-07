@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-06).**
+> **Status: approved (owner, 2026-11-06).** Builds after the line 2 playtest.
 
 # Gate puzzles
 
@@ -75,11 +75,11 @@ Whether opening the way together is fun stays the playtest's question.
 
 ## Open questions
 
-1. **Ring's rig:** recommended: the single raise-and-brace first; opposed shutters only as a comparison. Answer: \_\_\_
+1. **Ring's rig:** recommended: the single raise-and-brace first; opposed shutters only as a comparison. Answer: as recommended (owner, 2026-11-06).
 2. **Split-rock's action:** recommended: a broad strike on a visible seam; test the captive splitter against it. Answer:
-   \_\_\_
+   as recommended (owner, 2026-11-06).
 3. **Comedy pass:** recommended: after a yes, the aperture settles onto the brace with a heavy clunk and one tiny squeak,
-   and a nearby critter ducks. No new Boogler dialogue. Answer: \_\_\_
+   and a nearby critter ducks. No new Boogler dialogue. Answer: as recommended (owner, 2026-11-06).
 
 ## Parked
 
