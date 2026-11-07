@@ -14,8 +14,12 @@
 //                       refused   validated and recorded as rejected (out of reach, too fast, malformed fields)
 //                       session   not this socket's current session: reopen
 //                       order     not the next request of the session: reopen
+//                     replication `ids` [['p:<epoch>:<request>', pileId]]: the pile an accepted drop landed in, for
+//                       the actor's predicted pile (R1b, src/world/railway-predict.ts)
+//                     a wake's `tk` (the tick its actor pressed at) sets its start, bounded by railWakeTick
 import { railInt, RAILWAY_MAX_INT, type RailAction } from '../../../src/sim/railway.ts';
 import { RAIL_ACTIONS, type Actor, type RailwayApi } from '../../../src/world/railway-server.ts';
+import { railTempPile } from '../../../src/world/railway-predict.ts';
 import type { Replicator } from '../../../src/world/replicate-server.ts';
 import type { RailwayResponse } from '../../../src/world/railway-wire.ts';
 
@@ -50,6 +54,8 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
     clean.z = e.z;
   }
   if (e.op === 'rail.drop') clean.n = e.n;
+  // The tick the actor pressed wake at (R1b): only a well-formed one is kept; railWakeTick bounds it.
+  if (e.op === 'rail.wake' && railInt(e.tk)) clean.tk = e.tk;
   return clean as RailAction;
 }
 
@@ -160,6 +166,9 @@ export function createRailwayRequests({
         }
         for (const k of EFFECT_FIELDS) if (typeof result.effect[k] === 'number') event[k] = result.effect[k]!;
         replication.emit(event);
+        // The actor predicted this drop's pile under a temporary id (R1b): name the server's.
+        if (clean.op === 'rail.drop' && result.effect.pile !== undefined && replication.has(from))
+          replication.remap(from, railTempPile(epoch, request), result.effect.pile);
       }
     },
   };

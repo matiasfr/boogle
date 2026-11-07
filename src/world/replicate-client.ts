@@ -1,5 +1,6 @@
 // Replication core, client side (docs/plans/replication.md, sections 1-2): the mirror of what the server sent, and
-// the prediction hooks. Headless and pure. Not yet used by any state (R0); R1a mirrors railway, R1b predicts on it.
+// the prediction hooks. Headless and pure. The railway mirrors through it (R1a), and its adapter predicts with
+// createPredictor (R1b, src/adapters/railway.ts), settling acks and refusals itself rather than through attach.
 //
 //   const mirror = createMirror([treeSchema, pileSchema])
 //   mirror.apply(packet, atMs)        a server 's' packet (./replicate.ts). Validated whole before anything changes;
@@ -17,6 +18,7 @@
 //   const p = createPredictor({ confirmed, clone, apply, window })
 //   p.session(epoch, next)            the session's action identity: the existing railway (epoch, request) pair
 //   p.act(action, atMs)               returns its ActionId, or null when the window (8) is full (not predicted)
+//   p.withdraw(id)                    take back the newest action before it was sent (its prediction moved nothing)
 //   p.attach(mirror)                  acks drop confirmed actions, refusals drop theirs, any packet rebuilds
 //   p.state()                         predicted state: clone(confirmed()) with pending actions replayed by the same
 //                                     pure apply the server uses; rebuilt only after a packet or a new action
@@ -270,6 +272,16 @@ export function createPredictor<S, A>({
     },
     confirm,
     reject,
+    /** Take back the action just added, before anything was sent for it (the rule would not take it: "not yet"). */
+    withdraw([e, r]: ActionId) {
+      const last = pending.at(-1);
+      if (!last || last.id[0] !== e || last.id[1] !== r) return false;
+      pending.pop();
+      next = r;
+      stats.acted--;
+      cache = null;
+      return true;
+    },
     /** The confirmed base changed (a packet applied): rebuild on the next read. */
     invalidate() {
       cache = null;

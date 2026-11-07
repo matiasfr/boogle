@@ -1,6 +1,6 @@
 // The owned Local source/carry view. Only the adapter can request a transfer; poses and flights never spend material.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
+import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../sim/railway-layout.ts';
 import { RECOVERY_RACK } from '../../sim/railway-supply.ts';
 import {
@@ -267,35 +267,37 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     harvestFlights = [];
     pileFlights.length = 0;
     swing.t = 99;
-    for (const tree of trees) {
-      const k = sourceIndex.get(tree.index);
-      tree.work = k === undefined ? 0 : state.work[k]!;
-      tree.growth = k === undefined ? 0 : state.growth[k]!;
-      tree.ceiling = tree.great
-        ? 0
-        : tree.hardwood || (k !== undefined && state.upgrades[k])
-          ? 15
-          : RAILWAY_T1.sourceYield;
-      tree.issued = k === undefined ? 0 : tree.ceiling - state.sources[k]!;
-      tree.fall = k !== undefined && state.sources[k] === 0 ? 1 : -1;
-      // A stable Local pose is reconstructed, never another harvest. The same safety query serves legacy trees.
-      tree.fallYaw = k === undefined ? 0 : (state.falls?.yaw[k!] ?? 0);
-      tree.collapsed = k === undefined ? false : (state.falls?.collapsed[k!] ?? false);
-      const h = hardwoodIndex.get(tree.index);
-      if (h !== undefined) {
-        tree.work = state.hardwoodWork[h] ?? 0;
-        tree.issued = 15 - (state.hardwood[h] ?? 15);
-        tree.fall = tree.issued >= 15 ? 1 : -1;
-      }
-      if (tree.great && state.beam) {
-        tree.work = state.beam.work;
-        tree.fall = state.beam.state === 'standing' ? -1 : 1;
-      }
-      tree.shake = 0;
-      models.pose(tree, 0);
-      solid(tree);
-    }
+    for (const tree of trees) fromState(tree);
     drawPiles();
+  }
+  // A tree's stable pose from the state it reads (no harvest, no effect).
+  function fromState(tree: TreePose) {
+    const k = sourceIndex.get(tree.index);
+    tree.work = k === undefined ? 0 : state.work[k]!;
+    tree.growth = k === undefined ? 0 : state.growth[k]!;
+    tree.ceiling = tree.great
+      ? 0
+      : tree.hardwood || (k !== undefined && state.upgrades[k])
+        ? 15
+        : RAILWAY_T1.sourceYield;
+    tree.issued = k === undefined ? 0 : tree.ceiling - state.sources[k]!;
+    tree.fall = k !== undefined && state.sources[k] === 0 ? 1 : -1;
+    // A stable Local pose is reconstructed, never another harvest. The same safety query serves legacy trees.
+    tree.fallYaw = k === undefined ? 0 : (state.falls?.yaw[k!] ?? 0);
+    tree.collapsed = k === undefined ? false : (state.falls?.collapsed[k!] ?? false);
+    const h = hardwoodIndex.get(tree.index);
+    if (h !== undefined) {
+      tree.work = state.hardwoodWork[h] ?? 0;
+      tree.issued = 15 - (state.hardwood[h] ?? 15);
+      tree.fall = tree.issued >= 15 ? 1 : -1;
+    }
+    if (tree.great && state.beam) {
+      tree.work = state.beam.work;
+      tree.fall = state.beam.state === 'standing' ? -1 : 1;
+    }
+    tree.shake = 0;
+    models.pose(tree, 0);
+    solid(tree);
   }
 
   function start(tree: TreePose) {
@@ -353,7 +355,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         if (event.px === undefined || event.pz === undefined) return;
         at.set(event.px / 100, pileHeight({ y: event.py }) + 0.3, event.pz / 100);
       } else at.copy(kind === 1 ? rack.stoneAt : rack.logBase);
-      for (let k = 0; k < event.accepted; k++) {
+      // Pieces a correction already flies to this player from someone's back do not also leave the pile.
+      for (let k = 0; k < event.accepted - (event.returned ?? 0); k++) {
         const flight = pieces.send(
           kind === 1 ? 'stone' : kind === 2 ? 'rail' : 'log',
           at,
@@ -380,7 +383,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       at.copy(rock.at);
       pieces.chips(at.x, at.y, at.z, 9);
       placeSound('treeBite', rock.x, rock.z);
-      for (let i = 0; i < event.accepted; i++)
+      for (let i = 0; i < event.accepted - (event.returned ?? 0); i++)
         pieces.send(
           'stone',
           at,
@@ -436,7 +439,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     if (tree.cleared) return;
     placeSound('treeBite', tree.x, tree.z);
     pieces.chips(at.x, at.y, at.z, 9);
-    for (let k = 0; k < event.accepted; k++) {
+    for (let k = 0; k < event.accepted - (event.returned ?? 0); k++) {
       const flight = pieces.send(
         'log',
         at,
@@ -468,6 +471,66 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     models.pose(tree, tree.hitAt);
   }
 
+  // A predicted action that gave pieces back (replication R1b; Local presentation): they lift off your back and arc to
+  // whoever got them, or to where they really are; a pile you dropped onto shrinks while they come back to you; a
+  // reversed tree eases back up with a shake. Arcs are capped: a piece farther than CORRECTION_ARC just goes.
+  const CORRECTION_ARC = 6;
+  const backAt = new THREE.Vector3(),
+    homeAt = new THREE.Vector3();
+  function corrected(c: RailwayCorrection) {
+    if (!alive) return;
+    state = adapter.inspect();
+    const e = c.event;
+    const k = 'kind' in e ? e.kind : undefined;
+    const kind = e.op === 'rail.mine' || k === 1 ? 'stone' : k === 2 ? 'rail' : 'log';
+    const held = kind === 'stone' ? state.stoneCarry : kind === 'rail' ? state.railsCarry : state.carry;
+    let home: THREE.Vector3 | null = null;
+    if (e.op === 'rail.chop') {
+      const tree = trees[e.id];
+      if (!tree) return;
+      fromState(tree);
+      tree.shake = 1;
+      tree.hitAt = performance.now();
+      models.pose(tree, tree.hitAt);
+      home = homeAt.set(tree.x, tree.y + 1.1, tree.z);
+    } else if (e.op === 'rail.mine') home = cargo.rocks.find((row) => row.id === e.id)?.at ?? null;
+    else if (e.op === 'rail.rackTake') home = kind === 'stone' ? rack.stoneAt : rack.logBase;
+    else if ((e.op === 'rail.take' || e.op === 'rail.drop') && e.px !== undefined && e.pz !== undefined)
+      home = homeAt.set(e.px / 100, pileHeight({ y: e.py ?? 0 }) + 0.3, e.pz / 100);
+    if (!home) return;
+    placeSound('treeRebound', home.x, home.z);
+    drawPiles();
+    for (let k = 0; k < c.lost; k++) {
+      if (e.op === 'rail.drop') {
+        // Off the pile, back onto your back.
+        if (!bundleOrigin(state.pid, held - c.lost + k, backAt) || backAt.distanceTo(home) > CORRECTION_ARC) continue;
+        pieces.send(kind, home, backAt, { dur: 0.3, apex: 0.8, land: () => sounds.pop(3, 0.4) }, owner);
+        continue;
+      }
+      // Off your back, to whoever got it or back where it came from.
+      if (!bundleOrigin(state.pid, held + c.lost - k - 1, backAt) || backAt.distanceTo(home) > CORRECTION_ARC) continue;
+      const winner = c.winner;
+      pieces.send(
+        kind,
+        backAt,
+        home,
+        {
+          dur: 0.3,
+          apex: 0.8,
+          aim: winner
+            ? (to) => {
+                const a = state.accounts.find((row) => row.pid === winner);
+                const count = (kind === 'stone' ? a?.stone : kind === 'rail' ? a?.rails : a?.carry) ?? 0;
+                if (bundleOrigin(winner, count, target)) to.copy(target);
+              }
+            : undefined,
+          land: () => sounds.knock(0.3, 0.6),
+        },
+        owner,
+      );
+    }
+  }
+
   const previous = { ...backSeam };
   const count = () => adapter.inspect().carry;
   backSeam.flyIns = false;
@@ -486,12 +549,17 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       big: current.beam?.state === 'held' && current.beam.holder === current.pid ? ('beam' as const) : null,
       capacity: RAILWAY_T1.carry,
       incoming: 0,
-      reserved: current.reservations.incoming,
+      reserved: 0, // your pending actions are already in the predicted counts
       flyingLogs: Math.min(current.carry, harvestFlights.length),
       attention: swing.response === 'full' && swing.t < 0.55,
     };
   };
   const offAccepted = adapter.onAccepted(accepted);
+  const offCorrected = adapter.onCorrected(corrected);
+  // A pile you dropped got its server id: its pieces still in flight keep counting against it.
+  const offRemap = adapter.onRemap((temp, id) => {
+    for (const flight of pileFlights) if (flight.id === temp) flight.id = id;
+  });
   const offReset = adapter.onReset(reconstruct);
   reconstruct();
   function dropOne() {
@@ -569,14 +637,22 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           const tree = swing.target,
             p = me.body.position;
           const fall = safeTreeFall(tree.x, tree.z, tree.size, Math.atan2(tree.x - p.x, tree.z - p.z), false);
-          adapter.chop(tree.index, fall.yaw, fall.collapsed);
+          // The stroke's result plays now from the prediction; one the rule would not take yet bounces off.
+          if (!adapter.chop(tree.index, fall.yaw, fall.collapsed)) {
+            swing.response = 'rebound';
+            placeSound('treeRebound', tree.x, tree.z);
+          }
         }
       }
     }
     const body = inner();
     if (body) {
       const wasVisible = axe.visible;
-      applyFloatingChopPose(body, axe, swing.t, swing.response, frame ?? body, swing.contact);
+      // The stall cue (R1b): a stroke the server has not answered after a second hangs at the bite, wobbling, until
+      // it does. Nothing is undone meanwhile.
+      const stalled = state.stalled === 'rail.chop' || state.stalled === 'rail.mine';
+      applyFloatingChopPose(body, axe, stalled ? c + 0.05 : swing.t, swing.response, frame ?? body, swing.contact);
+      if (stalled && !reducedMotion) axe.rotation.z += 0.12 * Math.sin(now / 70);
       sparkleAxe(axe, wasVisible, reducedMotion, emit, readableIntensity(), dt);
     }
     updatePartnerAxes(dt);
@@ -674,6 +750,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     alive = false;
     offDrop();
     offAccepted();
+    offCorrected();
+    offRemap();
     offReset();
     if (backSeam.count === count) Object.assign(backSeam, previous);
     axe.removeFromParent();

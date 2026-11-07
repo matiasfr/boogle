@@ -1,6 +1,6 @@
 // One accepted line, one machine. Flights and rigid poses display the ledger and never transfer material.
 import * as THREE from 'three/webgpu';
-import type { RailwayAdapter, RailwayAccepted } from '../../adapters/railway.ts';
+import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
 import { RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
 import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
 import { lineFeed, lineSchedule, lineLayDistance } from '../../sim/railway-line-schedule.ts';
@@ -185,6 +185,40 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     }
   }
   owner.cleanup(adapter.onAccepted(accepted));
+  // A predicted wake or deposit the server did not take (replication R1b; Local presentation): the machine settles back
+  // asleep with a thump; logs you were shown going into a frame lift out and return to your back.
+  owner.cleanup(
+    adapter.onCorrected((c: RailwayCorrection) => {
+      state = adapter.inspect();
+      const e = c.event;
+      if (e.op === 'rail.wake') {
+        liveWake = false;
+        wake.reset(-1);
+        machine.wake(false, true);
+        thump(machine.flatbed.x, machine.flatbed.z);
+        return;
+      }
+      if (e.op !== 'rail.deposit') return;
+      const index = LINE1_STATIONS.findIndex((spec) => spec.id === e.station);
+      const station = frames[index];
+      if (!station) return;
+      const kind = e.kind ?? 0;
+      const held = kind === 1 ? state.stoneCarry : state.carry;
+      for (let n = 0; n < c.lost; n++) {
+        const slot = Math.max(0, (e.level ?? 0) - 1 - n);
+        const at = kind === 1 ? station.stoneAt(slot, from) : station.logSlot(slot, from);
+        if (!sources.bundleOrigin(state.pid, held - c.lost + n, to)) continue;
+        pieces.send(
+          kind === 1 ? 'stone' : 'log',
+          at,
+          to,
+          { dur: 0.3, apex: 0.8, land: () => sounds.pop(3, 0.4) },
+          owner,
+        );
+      }
+      clank(station.x, station.z);
+    }),
+  );
   owner.cleanup(
     adapter.onReset(() => {
       rebuild = true;

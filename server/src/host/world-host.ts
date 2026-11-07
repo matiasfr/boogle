@@ -22,12 +22,13 @@ import type { StepMeter } from './step-meter.ts';
 import { loadHomeLand, type HomeLand } from './land.ts';
 import type { Store } from '../store.ts';
 import { isRailwayRoom, RAILWAY_PLAY_NS } from '../../../src/world/railway-namespace.ts';
-import { RAILWAY_T1, RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
+import { RAILWAY_SOURCES } from '../../../src/sim/railway-layout.ts';
 import { LINE1_CATALOG } from '../../../src/sim/railway-line-layout.ts';
 import { railGrowthMask, railGrows, railGrowthAllowed, type SupplyPulse } from '../../../src/sim/railway-supply.ts';
 import { railNobodyNear, type RailwayPosition } from './railway-supply.ts';
 export type { RailwayPosition } from './railway-supply.ts';
 import { install as installRailway, type Actor } from '../../../src/world/railway-server.ts';
+import { railCadence, RAIL_CADENCE_SLACK_MS } from '../../../src/world/railway-predict.ts';
 import { createReplicator, type Replicator } from '../../../src/world/replicate-server.ts';
 import { createRailwayRequests, type ActorFacts } from './railway-requests.ts';
 import { canSet, cleanName } from '../../../src/sim/roster.ts';
@@ -36,10 +37,10 @@ import { canSet, cleanName } from '../../../src/sim/roster.ts';
 // Saves skip a world whose states didn't change, but its tick still moves on, and the helper bank reads the time nobody
 // hosted from the saved tick: so the tick is saved at least this often, and always on close.
 const TICK_SAVE_MS = 30000;
-// Client action clocks (railCadence): a frame of rounding and jitter between two swings. There is no bound against
-// the server's clock: exploits don't matter in casual co-op, and any such bound refuses honest clients whose clock
-// runs at another rate (a test harness's warped page clock, a throttled tab).
-const CADENCE_SLACK_MS = 20;
+// Client action clocks (railCadence; the slack is a frame of rounding and jitter between two swings, and the client
+// predicts the same check). There is no bound against the server's clock: exploits don't matter in casual co-op, and
+// any such bound refuses honest clients whose clock runs at another rate (a test harness's warped page clock, a
+// throttled tab).
 
 // JSON escapes lone UTF-16 surrogates to six bytes each. Preserve their displayed replacement character while
 // keeping the existing sixteen-character name and three-byte-per-code-unit recovery bound (ES2022 browsers).
@@ -223,15 +224,13 @@ export function createRailwayWorldHost({
     },
     height: (y, radius) => Math.abs(a.at[1] - y) <= radius,
     cadence(op) {
-      const swing = ['rail.chop', 'rail.mine', 'rail.beamChop'].includes(op);
-      const kind = swing ? 'swing' : op;
-      const ms = swing ? RAILWAY_T1.swingMs : RAILWAY_T1.unloadMs;
+      const { kind, ms } = railCadence(op);
       let clock = clientClocks.get(a.pid);
       if (!clock || clock.epoch !== a.epoch) {
         clock = { epoch: a.epoch, last: new Map() }; // a new session is a new page, with its own clock
         clientClocks.set(a.pid, clock);
       }
-      if (a.ms - (clock.last.get(kind) ?? -Infinity) < ms - CADENCE_SLACK_MS) return false;
+      if (a.ms - (clock.last.get(kind) ?? -Infinity) < ms - RAIL_CADENCE_SLACK_MS) return false;
       clock.last.set(kind, a.ms);
       return true;
     },
