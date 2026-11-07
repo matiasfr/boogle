@@ -357,12 +357,30 @@ function drawReadout(dt: number) {
 }
 
 // ---------------------------------------------------------------- one late hook: fog, camera, motion, labels
+// Under the look harness (?debugcam=1&dpr=fixed), some meshes' first render objects never drew (the far islets, the
+// mainland, the crowns: seen 6 and 7 November), while the same material cloned later drew at once. So once the
+// blockout has been on screen for a moment, give every mesh fresh clones of its materials. Cheap: same programs.
+function refreshMaterials() {
+  const made = new Map<THREE.Material, THREE.Material>();
+  const swap = (m: THREE.Material) => {
+    let c = made.get(m);
+    if (!c) made.set(m, (c = m.clone()));
+    return c;
+  };
+  box.root.traverse((o) => {
+    if (o instanceof THREE.Mesh)
+      o.material = Array.isArray(o.material) ? o.material.map(swap) : swap(o.material as THREE.Material);
+  });
+}
+
 defineKind('greybox', { lateUpdate: 1002 });
-let clock = 0;
+let clock = 0,
+  shownFrames = 0;
 spawn({
   kind: 'greybox',
   lateUpdate({ dt }) {
     clock += dt;
+    if (box.root.visible && ++shownFrames === 30) refreshMaterials();
     applyFog();
     if (ride) {
       ride.s = Math.min(ride.total, ride.s + RIDE_SPEED * ride.speed * dt);
@@ -394,6 +412,8 @@ const api = {
   },
   ride: startRide,
   go: goTo,
+  /** Fresh material clones for every mesh (a look action calls this after warm-up; see refreshMaterials). */
+  refresh: refreshMaterials,
   free,
   labels: setLabels,
   fog(mode: string) {
