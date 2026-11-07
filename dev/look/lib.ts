@@ -20,11 +20,18 @@ const { chromium } = require('playwright');
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 export async function enterGame(page: Page, timeout: number, name?: string, touch = false) {
-  await page.locator('body.playing').or(page.locator('#enter:not([disabled])')).first().waitFor({ timeout });
+  const lobby = page.locator('body.playing').or(page.locator('#enter:not([disabled])')).first();
+  await lobby.waitFor({ timeout }).catch((e: Error) => {
+    throw new Error(`the lobby never offered "Jump in" within ${timeout / 1000} s (${e.message.split('\n')[0]})`);
+  });
   if (await page.evaluate(() => document.body.classList.contains('playing'))) return 'already playing';
   if (name) await page.fill('#name-input', name).catch(() => {});
-  // A phone taps in: a mouse click would switch the page to keyboard-and-mouse mode.
-  await (touch ? page.tap('#enter') : page.click('#enter'));
+  // A phone taps in: a mouse click would switch the page to keyboard-and-mouse mode. Playwright's own 30 s click
+  // timeout is too short for a software-rendered tab (each actionability check waits on a frame), so the click gets
+  // the same budget as the wait for the lobby.
+  await (touch ? page.tap('#enter', { timeout }) : page.click('#enter', { timeout })).catch((e: Error) => {
+    throw new Error(`clicking "Jump in" failed within ${timeout / 1000} s (${e.message.split('\n')[0]})`);
+  });
   return 'clicked Jump in';
 }
 export const run = (cmd: string, args: string[]) =>
@@ -122,10 +129,17 @@ export async function startStack({
 
 // The game is WebGPU only. On Linux (CI) WebGPU runs on SwiftShader over Vulkan, so runners without a GPU still get it;
 // on a Mac it runs on the real GPU (Metal), about 60 fps.
-export const launch = async ({ hardware = false }: { hardware?: boolean } = {}): Promise<Browser> => {
+// LOOK_SOFTWARE_GL=1 forces the CI path (SwiftShader) on a Mac too, to reproduce a GPU-less runner's speed locally.
+// `sharedLease`: another browser of this same process already holds the bot slot (a scenario that gives each player a
+// browser process of their own), so this one must not queue behind it.
+export const launch = async ({
+  hardware = false,
+  sharedLease = false,
+}: { hardware?: boolean; sharedLease?: boolean } = {}): Promise<Browser> => {
   // precise-memory-info: performance.memory in exact bytes, for the allocation counts in hitches.
   const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--enable-precise-memory-info'];
-  if (process.platform === 'darwin') args.push('--use-angle=metal');
+  const software = !!process.env.LOOK_SOFTWARE_GL && !hardware;
+  if (process.platform === 'darwin' && !software) args.push('--use-angle=metal');
   // The ANGLE SwiftShader flags stay: without them CI's WebGPU throws "Instance dropped in popErrorScope" page errors.
   else if (!hardware)
     args.push(
@@ -133,7 +147,7 @@ export const launch = async ({ hardware = false }: { hardware?: boolean } = {}):
       ...['--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-webgpu-adapter=swiftshader'],
     );
   // Hardware timing is explicitly headed and never forces SwiftShader. The normal harness stays unchanged.
-  const lease = await acquireBotSlot();
+  const lease = sharedLease ? { release() {} } : await acquireBotSlot();
   try {
     const browser: Browser = await chromium.launch({ args, headless: !hardware });
     browser.once('disconnected', lease.release);
@@ -214,6 +228,8 @@ export type GameOpts = {
   /** Start on the classic island (the original island at the world's origin) instead of the current game's landing:
    * the fixture for The Boogler, the ball, the caves, the lighthouse and the rest of its content. */
   island?: boolean;
+  /** A browser process this player owns: closed with the player. (The scenario runner makes one for `ownBrowser`.) */
+  ownedBrowser?: Browser;
 };
 /** A function `page.evaluate` runs in the page (serialised, so it sees only its argument). */
 type PageFn<A, R> = (arg: A) => R | Promise<R>;
@@ -225,6 +241,7 @@ export class Game {
   prefix = '';
   size = [960, 600];
   ctx!: BrowserContext;
+  ownedBrowser?: Browser;
   page!: Page;
   tracing = false;
   paused = false;
@@ -250,6 +267,7 @@ export class Game {
     g.sourceImports = await harnessModules(stack.base);
     if ((opts.sourceImports !== false || opts.warp) && !g.sourceImports) throw new Error(HARNESS_REQUIRED);
     g.name = opts.name || 'player';
+    g.ownedBrowser = opts.ownedBrowser;
     g.out = path.resolve(opts.out || '.look');
     g.prefix = opts.prefix || '';
     g.size = opts.size || [960, 600];
@@ -314,7 +332,14 @@ export class Game {
     // A deployed site (`--url`) over a slow link can take a while to load, and software GL (two tabs at once) builds
     // every shader before the lobby opens.
     console.log(`[${g.name}] entry: ${await enterGame(g.page, 180000, g.name, opts.touch)}`);
-    await g.page.waitForFunction(() => window.__debugCam && window.boogle?.sync, null, { timeout: 20000 });
+    // After the click the world still has to load: a software-rendered tab takes tens of seconds for it.
+    await g.page
+      .waitForFunction(() => window.__debugCam && window.boogle?.sync, null, { timeout: 120000 })
+      .catch((e: Error) => {
+        throw new Error(
+          `${g.name} clicked "Jump in" but the game never came up within 120 s (${e.message.split('\n')[0]})`,
+        );
+      });
     if (opts.island) await g.eval(ON_ISLAND);
     // hud: false hides it all; 'play' keeps what a player reacts to (hints, dialogue, pocket) but not the
     // roster, net pill or reticle (cleaner footage); true keeps everything.
@@ -601,6 +626,7 @@ export class Game {
   async close({ trace }: { trace?: string } = {}) {
     if (this.tracing) await this.ctx.tracing.stop(trace ? { path: trace } : {}).catch(() => {});
     await this.ctx.close();
+    await this.ownedBrowser?.close().catch(() => {});
   }
 }
 

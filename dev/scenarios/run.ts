@@ -7,8 +7,9 @@
 // Players open the current game, as the bare address does. `island: true` starts every player of the scenario on the
 // classic island by the court (the original island at the world's origin), for The Boogler, the ball and its content.
 // `t` gives you:
-//   t.open({ name, room, size, hud, touch })   a player (Game from dev/look/lib.ts); same `room` = same island;
-//                                              touch: true starts a phone client
+//   t.open({ name, room, size, hud, touch, ownBrowser })   a player (Game from dev/look/lib.ts); same `room` = same island;
+//                                              touch: true starts a phone client; ownBrowser: true gives the player
+//                                              a browser process of their own (not one renderer for all tabs)
 //   t.check(label, ok, detail)                 records PASS/FAIL (never throws); put images in the detail
 //   t.page(pathname, { size, colorScheme })    a plain page of the stack (not the game), e.g. the atlas at 'atlas/';
 //                                              its uncaught errors fail the scenario like a player's
@@ -32,7 +33,7 @@ export type T = {
   page: (pathname: string, o?: { size?: number[]; colorScheme?: 'light' | 'dark' }) => Promise<Page>;
   VIEWS: typeof VIEWS;
   sleep: typeof sleep;
-  open: (opts?: GameOpts) => Promise<Game>;
+  open: (opts?: GameOpts & { ownBrowser?: boolean }) => Promise<Game>;
   check: (label: string, ok: unknown, detail?: string) => boolean;
 };
 export type Scenario = {
@@ -115,12 +116,16 @@ try {
             'a second player on PR CI: two software-rendered tabs are too slow to pass reliably there. ' +
               'Run this scenario on a device (npm run check:gpu) or nightly (scenarios-nightly.yml).',
           );
-        const g = await Game.open(br, st, {
+        const { ownBrowser, ...rest } = opts;
+        // ownBrowser: a browser process of this player's own, so two tabs don't share one renderer/GPU process.
+        const ownedBrowser = ownBrowser ? await launch({ sharedLease: true }) : undefined;
+        const g = await Game.open(ownedBrowser ?? br, st, {
           sourceImports: mod.sourceImports,
+          ownedBrowser,
           island: mod.island,
           out,
           trace,
-          ...opts,
+          ...rest,
           name: opts.name || 'p' + (games.length + 1),
         });
         games.push(g);

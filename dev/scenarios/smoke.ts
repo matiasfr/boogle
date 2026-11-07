@@ -8,6 +8,34 @@ import { MET, EDIT_WAIT_MS, roles, hashesAtOneTick } from './lib/world.ts';
 import type { T } from './run.ts';
 import type { Game } from '../look/lib.ts';
 
+// The cheapest rendering the game offers, seeded into each tab's localStorage before the page's own code runs. These are
+// the game's own graphics settings (src/graphics-settings.ts): the player allow-list (resolution, frame limit, MSAA,
+// caustics) plus the Dev overrides (shadows, point lights, spray, snow, shafts, lens), which only read `boogle.dev.enabled`.
+// They already exist on the deployed site, so the smoke needs no flag from the build it tests, and a player's default game is
+// untouched. Nothing the checks read is skipped: they use the world, the net and the ball, not pixels (the stills only
+// show the scene). Frame limit 30 halves the scene/output renders; the sim, net and hashes keep their callback cadence.
+const LOW_COST = {
+  player: { resolution: 0.6, frameLimit: 30, msaa: false, caustics: false },
+  dev: {
+    resolution: 0.6,
+    frameLimit: 30,
+    msaa: false,
+    shadows: false,
+    lights: false,
+    caustics: false,
+    spray: false,
+    snow: false,
+    shafts: false,
+    lens: false,
+    bloom: false,
+  },
+};
+const lowCostInit = `try {
+  localStorage.setItem('boogle.graphics.v1', JSON.stringify({ version: 1, preset: 'custom', values: ${JSON.stringify(LOW_COST.player)} }));
+  localStorage.setItem('boogle.dev.enabled', '1');
+  localStorage.setItem('boogle.dev.graphics.v1', JSON.stringify({ version: 1, values: ${JSON.stringify(LOW_COST.dev)} }));
+} catch {}`;
+
 const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
 
 export default {
@@ -17,8 +45,11 @@ export default {
   async run(t: T) {
     const room = process.env.SMOKE_ROOM || ('smoke-' + id).slice(0, 32);
     const size = [480, 300]; // small frames keep software GL fast enough for the world clock to run near real time
-    const A = await t.open({ name: 'Alice', room, size });
-    const B = await t.open({ name: 'Bob', room, size });
+    // Each player gets a browser process of their own (two tabs of one browser share its GPU process, which is one
+    // software rasteriser for both), at the lowest rendering cost (above). t.open returns only once that player is in the
+    // world (the lobby click, then the debug handles), so Bob starts loading after Alice has joined, not alongside her.
+    const A = await t.open({ name: 'Alice', room, size, init: lowCostInit, ownBrowser: true });
+    const B = await t.open({ name: 'Bob', room, size, init: lowCostInit, ownBrowser: true });
     const worldErrors = new Map<Game, string[]>();
     for (const g of [A, B]) {
       const errs: string[] = [];
