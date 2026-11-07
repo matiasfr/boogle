@@ -320,7 +320,6 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
 
   function accepted(event: RailwayAccepted) {
     if (!alive) return;
-    const before = state;
     state = adapter.inspect();
     if (
       (event.op === 'rail.chop' || event.op === 'rail.mine' || event.op === 'rail.beamChop') &&
@@ -328,15 +327,10 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     )
       partnerSwing(event);
     if (event.op === 'rail.drop') {
-      const pile = state.piles.find(
-        (pile) =>
-          pile.x === event.x &&
-          pile.z === event.z &&
-          pile.y === event.y &&
-          pile.n > (before.piles.find((old) => old.id === pile.id)?.n ?? 0),
-      );
+      // The event names its pile and the count right after it: a second drop in the same packet still flies.
+      const pile = state.piles.find((pile) => pile.id === event.pile);
       if (!pile) return;
-      const carry = state.accounts.find((account) => account.pid === event.pid)?.carry ?? 0;
+      const carry = event.carried ?? 0;
       at.set(pile.x / 100, pileHeight(pile) + 0.2, pile.z / 100);
       for (let k = 0; k < event.accepted; k++) {
         if (!bundleOrigin(event.pid, carry + event.accepted - k - 1, target)) target.copy(at);
@@ -353,12 +347,11 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       return;
     }
     if (event.op === 'rail.take' || event.op === 'rail.rackTake') {
-      const kind =
-        event.op === 'rail.take' ? (before.piles.find((pile) => pile.id === event.id)?.kind ?? 0) : (event.kind ?? 0);
+      const kind = event.kind ?? 0;
       if (event.op === 'rail.take') {
-        const pile = before.piles.find((old) => old.id === event.id);
-        if (!pile) return;
-        at.set(pile.x / 100, pileHeight(pile) + 0.3, pile.z / 100);
+        // The pile may be gone by the end of the packet: the event carries where it stood and what it kept.
+        if (event.px === undefined || event.pz === undefined) return;
+        at.set(event.px / 100, pileHeight({ y: event.py }) + 0.3, event.pz / 100);
       } else at.copy(kind === 1 ? rack.stoneAt : rack.logBase);
       for (let k = 0; k < event.accepted; k++) {
         const flight = pieces.send(
@@ -369,7 +362,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
             dur: 0.3,
             apex: 0.9,
             aim: (to) => {
-              const carry = state.accounts.find((account) => account.pid === event.pid)?.carry ?? 0;
+              const carry = event.carried ?? state.accounts.find((account) => account.pid === event.pid)?.carry ?? 0;
               if (bundleOrigin(event.pid, carry, target)) to.copy(target);
             },
             land: () => sounds.pop(3, 0.4),
@@ -396,8 +389,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
             dur: TUNE.flyS,
             apex: 1.1,
             aim: (to) => {
-              if (bundleOrigin(event.pid, state.accounts.find((a) => a.pid === event.pid)?.stone ?? 0, target))
-                to.copy(target);
+              const stone = event.carried ?? state.accounts.find((a) => a.pid === event.pid)?.stone ?? 0;
+              if (bundleOrigin(event.pid, stone, target)) to.copy(target);
             },
             land: () => sounds.pop(3, 0.4),
           },
@@ -452,7 +445,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           dur: TUNE.flyS + k * 0.03,
           apex: 1.1 + k * 0.15,
           aim: (to) => {
-            const count = state.accounts.find((account) => account.pid === event.pid)?.carry ?? 0;
+            const count = event.carried ?? state.accounts.find((account) => account.pid === event.pid)?.carry ?? 0;
             if (bundleOrigin(event.pid, count, target)) to.copy(target);
           },
           land: () => {

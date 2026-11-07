@@ -55,6 +55,14 @@ export type RailwayAccepted = Readonly<
     accepted: number;
     status: 'accepted';
     tick: number;
+    /** Right after this action: the actor's balance of the moved kind, the target's count, and the pile involved
+     * (with its position, for a take whose pile may be gone by the packet's end). */
+    carried?: number;
+    level?: number;
+    pile?: number;
+    px?: number;
+    py?: number;
+    pz?: number;
   }
 >;
 type Pending = {
@@ -141,6 +149,16 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   return null;
 }
 
+/** What an event's own action left behind (src/world/railway-server.ts RailEffect): several events can share one
+ * packet, so effects read these rather than the packet's final state. */
+const effectOf = (v: Record<string, unknown>) => {
+  const out: { carried?: number; level?: number; pile?: number; px?: number; py?: number; pz?: number } = {};
+  if (railInt(v.carried, RAILWAY_T1.carry)) out.carried = v.carried;
+  if (railInt(v.level, RAILWAY_MAX_INT)) out.level = v.level;
+  if (railInt(v.pile, RAILWAY_MAX_INT, 1)) out.pile = v.pile;
+  for (const k of ['px', 'py', 'pz'] as const) if (railInt(v[k], 200000, -200000)) out[k] = v[k];
+  return out;
+};
 const accepted = (v: Record<string, unknown>) =>
   typeof v.pid === 'string' &&
   railInt(v.epoch, RAILWAY_MAX_INT, 1) &&
@@ -175,9 +193,12 @@ export function createRailwayAdapter({
   let synced = false;
   let epoch = 0;
   let next = 1;
-  let status: 'connecting' | 'starting' | 'ready' | 'storage' = 'connecting';
+  // storage: the room lost its storage; full: the server has no session for this player (the account cap). Both stop.
+  let status: 'connecting' | 'starting' | 'ready' | 'storage' | 'full' = 'connecting';
   let clock = 0;
   let probeAt = -Infinity;
+  let resyncAt = -Infinity;
+  const stopped = () => status === 'storage' || status === 'full';
   const resetView = () => {
     for (const fn of resets) fn();
   };
@@ -194,7 +215,7 @@ export function createRailwayAdapter({
     synced &&
     epoch > 0 &&
     railAccount(s, pid)?.epoch === epoch &&
-    status !== 'storage' &&
+    !stopped() &&
     pending.size < RAILWAY_WINDOW;
 
   // The session is gone (a refusal that is not about the action itself, a takeover, a reconnect): its unconfirmed
@@ -203,10 +224,10 @@ export function createRailwayAdapter({
     epoch = 0;
     pending.clear();
     probeAt = -Infinity;
-    if (status !== 'storage') status = connected ? 'starting' : 'connecting';
+    if (!stopped()) status = connected ? 'starting' : 'connecting';
   }
   function probe() {
-    if (!connected || !room || epoch || clock - probeAt < 500) return;
+    if (!connected || !room || epoch || stopped() || clock - probeAt < 500) return;
     probeAt = clock;
     room.send({ t: 'r:open' });
   }
@@ -217,15 +238,16 @@ export function createRailwayAdapter({
     }
     for (const [e, r, reason] of p.rej ?? []) {
       pending.delete(key(e, r));
-      if (e !== epoch) continue;
-      if (reason === 'storage') status = 'storage';
-      if (reason !== 'refused') lose();
+      if (e === epoch && reason !== 'refused') lose();
     }
-    if (!synced && rail.synced()) {
+    const rebuilt = !synced && rail.synced();
+    if (rebuilt) {
       synced = true;
-      resetView(); // the whole state arrived: views rebuild from it, without replaying effects
+      resetView(); // the whole state arrived: views rebuild from it
     }
     if (available()) status = 'ready';
+    // The packet that completes a whole state already shows what its events did: playing them would replay effects.
+    if (rebuilt) return;
     for (const raw of p.ev ?? []) {
       const intent = intentOf(raw);
       if (!intent || !accepted(raw)) continue;
@@ -237,6 +259,7 @@ export function createRailwayAdapter({
         accepted: raw.accepted as number,
         status: 'accepted' as const,
         tick: raw.tick as number,
+        ...effectOf(raw),
       });
       for (const fn of effects) fn(event);
     }
@@ -244,10 +267,28 @@ export function createRailwayAdapter({
   rail.mirror.onPacket((p) => {
     if (!disposed) settle(p);
   });
+  // A mirror that differs from the server (a refused packet, a hash mismatch) is dropped and refilled whole; the
+  // server keeps this client's ack, so its pending actions still settle. At most one request a second.
+  rail.mirror.onDiverged((why) => {
+    if (disposed || !room || clock - resyncAt < 1000) return;
+    resyncAt = clock;
+    console.warn(`[railway] mirror diverged (${why}): asking for the whole state`);
+    rail.reset();
+    synced = false;
+    room.send({ t: 'r:resync' });
+  });
   function hear(message: unknown, from: string) {
     if (disposed || from !== SERVER_ID || !object(message)) return;
     if (message.t === 's') {
-      if (!rail.mirror.apply(message, now())) console.warn('[railway] refused a replication packet');
+      rail.mirror.apply(message, now());
+      return;
+    }
+    // Room status, sent at once (the room clock is held while it starts or after its storage failed).
+    if (message.t === 'r:state' && message.to === room?.selfId) {
+      if (railInt(message.epoch, RAILWAY_MAX_INT, 1) && railInt(message.request, RAILWAY_MAX_INT, 1))
+        pending.delete(key(message.epoch, message.request));
+      if (message.state === 'storage' || message.state === 'full') status = message.state;
+      lose();
       return;
     }
     // The room's lockstep clock stamps (w:c and friends, every 200 ms) keep the step estimate fresh between packets.
@@ -263,7 +304,7 @@ export function createRailwayAdapter({
       next = message.epoch === epoch ? Math.max(next, message.next) : message.next;
       if (message.epoch !== epoch) pending.clear();
       epoch = message.epoch;
-      if (status !== 'storage') status = 'starting';
+      if (!stopped()) status = 'starting';
       if (available()) status = 'ready';
     }
   }

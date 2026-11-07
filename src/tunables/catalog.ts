@@ -113,7 +113,7 @@ export const CATALOG: readonly NumberSpec[] = [
           ? 'src/sim/railway-supply.ts'
           : 'src/sim/railway-line.ts'
         : 'src/sim/tune.ts',
-      ...(railway ? { ruleOwner: 'src/world/rules/railway.ts' } : {}),
+      ...(railway ? { ruleOwner: 'src/world/railway-server.ts' } : {}),
       meaning: railway?.meaning ?? t.label,
     };
   }),

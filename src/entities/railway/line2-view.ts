@@ -534,9 +534,10 @@ export async function createRailwayLine2(
     const frame = forge ? forgeFrame : frames[k]!;
     const kind = event.kind === 2 ? 2 : 0;
     const account = state.accounts.find((a) => a.pid === event.pid);
-    const carried = kind === 2 ? (account?.rails ?? 0) : (account?.carry ?? 0);
+    // As this deposit left them (several can share one packet): the actor's balance and the frame's count.
+    const carried = event.carried ?? (kind === 2 ? (account?.rails ?? 0) : (account?.carry ?? 0));
     const job = forge ? null : l.stations[k]!;
-    const current = job ? (kind === 2 ? job.railDelivered : job.delivered) : 0;
+    const current = job ? (event.level ?? (kind === 2 ? job.railDelivered : job.delivered)) : 0;
     for (let n = 0; n < event.accepted; n++) {
       if (!bundleOrigin(event.pid, carried + event.accepted - n - 1, from)) continue;
       const slot = Math.max(0, current - event.accepted + n);

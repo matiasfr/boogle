@@ -26,8 +26,11 @@ import {
   railPanelCount,
   railPanelStock,
   RAILWAY_MAX_INT,
+  railJobs,
   type RailAction,
+  type RailPile,
   type RailResult,
+  type Railway,
 } from '../sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import {
@@ -154,6 +157,46 @@ export function railValid(s: ReturnType<typeof createRailway>, e: RailAction, ac
   return false;
 }
 
+/** What an accepted action's effect needs, as it stood right after that action (several can share one packet, and
+ * views must not read their counts from the packet's final state): the actor's balance of the moved kind, the
+ * target's count, and the pile involved with its position. */
+export type RailEffect = { carried: number; level?: number; pile?: number; px?: number; py?: number; pz?: number };
+function railEffect(s: Railway, pid: string, e: RailAction, before: Map<number, RailPile>): RailEffect {
+  const a = railAccount(s, pid)!;
+  const kind = e.op === 'rail.mine' ? 1 : e.op === 'rail.forgeTake' ? 2 : e.kind === 1 || e.kind === 2 ? e.kind : 0;
+  const effect: RailEffect = { carried: kind === 1 ? (a.stone ?? 0) : kind === 2 ? (a.rails ?? 0) : a.carry };
+  if (e.op === 'rail.drop') {
+    const pile = s.piles.find((p) => p.n > (before.get(p.id)?.n ?? 0));
+    if (pile) Object.assign(effect, { pile: pile.id, level: pile.n, px: pile.x, py: pile.y ?? 0, pz: pile.z });
+  }
+  if (e.op === 'rail.take') {
+    const pile = before.get(e.id!);
+    if (pile)
+      Object.assign(effect, {
+        pile: pile.id,
+        level: s.piles.find((p) => p.id === pile.id)?.n ?? 0,
+        px: pile.x,
+        py: pile.y ?? 0,
+        pz: pile.z,
+      });
+  }
+  if (e.op === 'rail.deposit' || e.op === 'rail.beamDeposit') {
+    const i = e.op === 'rail.beamDeposit' ? 2 : LINE1_STATIONS.findIndex((row) => row.id === e.station);
+    const q = LINE2_STATIONS.findIndex((row) => row.id === e.station);
+    if (i >= 0) {
+      const job = railJobs(s)[i]!;
+      effect.level =
+        kind === 1
+          ? (job.stoneStock ?? 0) + (job.stoneAllocation ?? 0) + (job.stoneUsed ?? 0)
+          : job.stock + job.allocation + job.used;
+    } else if (q >= 0) {
+      const job = s.line2!.jobs[q]!;
+      effect.level = kind === 2 ? job.railDelivered : job.delivered;
+    } else if (e.station === 'F') effect.level = s.line2!.forge.used;
+  }
+  return effect;
+}
+
 export function install(sync: SyncView, rules: { tune: TuneApi }, replication: Replicator) {
   const railway = createRailway(true, true);
   const touch = (kind: string, id: number | string) => replication.touch(kind, id);
@@ -197,9 +240,10 @@ export function install(sync: SyncView, rules: { tune: TuneApi }, replication: R
     /** Every entity, after a load (the replicator starts empty). */
     touchAll,
     /** A client action, applied now. A well-formed action that fails validation is a recorded rejection. */
-    act(pid: string, e: RailAction, actor: Actor | null): RailResult {
+    act(pid: string, e: RailAction, actor: Actor | null): RailResult & { effect?: RailEffect } {
       const tick = sync.world.tick;
       const before = railPileIds(railway);
+      const piles = new Map(railway.piles.map((p) => [p.id, { ...p }]));
       const valid = !!actor && RAIL_ACTIONS.has(e.op) && railValid(railway, e, actor);
       const result = railApply(
         railway,
@@ -209,7 +253,9 @@ export function install(sync: SyncView, rules: { tune: TuneApi }, replication: R
         timing(),
       );
       railTouchAction(touch, railway, pid, e, before);
-      return result;
+      return result.status === 'accepted' && result.accepted > 0
+        ? { ...result, effect: railEffect(railway, pid, e, piles) }
+        : result;
     },
     /** A new session epoch for pid (a page opened or took over). */
     session(pid: string, epoch: number) {

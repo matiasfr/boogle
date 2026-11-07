@@ -158,9 +158,11 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     if (!station || !job) return;
     const kind = event.op === 'rail.beamDeposit' ? 2 : (event.kind ?? 0);
     const account = state.accounts.find((row) => row.pid === event.pid);
-    const carried = kind === 1 ? (account?.stone ?? 0) : (account?.carry ?? 0);
+    // As this deposit left them (several can share one packet): the actor's balance and the station's count.
+    const carried = event.carried ?? (kind === 1 ? (account?.stone ?? 0) : (account?.carry ?? 0));
     const current =
-      kind === 1 ? job.stoneStock + job.stoneAllocation + job.stoneUsed : job.stock + job.allocation + job.used;
+      event.level ??
+      (kind === 1 ? job.stoneStock + job.stoneAllocation + job.stoneUsed : job.stock + job.allocation + job.used);
     for (let n = 0; n < event.accepted; n++) {
       if (!sources.bundleOrigin(event.pid, carried + event.accepted - n - 1, from)) continue;
       const slot = Math.max(0, current - event.accepted + n);

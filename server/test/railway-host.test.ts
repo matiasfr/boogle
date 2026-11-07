@@ -12,6 +12,7 @@ import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayInvariant, railMaxDuration } from '../../src/sim/railway.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
+import { MAX_PLAYERS } from '../../src/sim/roster.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
 
 type Obj = Record<string, unknown>;
@@ -168,6 +169,7 @@ test('ordinary rooms keep the classic registry; a railway room holds railway as 
     const rejected = await f.edit('a', { op: 'rail.wake' });
     assert.equal(rejected.status, 'rejected');
     assert.deepEqual(f.heard('a').rej, [[1, 1, 'refused']]);
+    assert.deepEqual(f.heard('a').acks.at(-1), [1, 1], 'a refused request is settled too');
     assert.equal(f.host.rules.railway.railway.awake, -1);
     await f.restart();
     assert.equal(f.host.rules.railway.outcome('alice', 1, 1)?.status, 'rejected');
@@ -373,11 +375,42 @@ test('refused recovery writes report storage and never serve a fresh fallback', 
   host.deliver({ t: 'w:need' }, 'a');
   host.deliver({ t: 'r:open' }, 'a');
   host.deliver({ t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 1, at: [0, 0, 0], ms: 0 } }, 'a');
-  assert.deepEqual(sent, [], 'no session and no snapshot');
+  // Said at once, outside the held room clock: no session, no snapshot, and the action refused for storage.
+  assert.deepEqual(sent, [
+    { t: 'r:state', to: 'a', state: 'storage' },
+    { t: 'r:state', to: 'a', state: 'storage', epoch: 1, request: 1 },
+  ]);
   const rej: unknown[] = [];
   host.replication.flush(0, (_cid, p) => rej.push(...(p.rej ?? [])));
-  assert.deepEqual(rej, [[1, 1, 'storage']]);
+  assert.deepEqual(rej, []);
   assert.equal(host.status().ready, false);
   await assert.rejects(host.close({ save: false }), /refused/);
   await fs.rm(dir, { recursive: true, force: true });
+});
+
+test('before ready a session request hears starting at once; a full roster of accounts hears full', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-railway-starting-'));
+  const store = createStore({ dataDir: dir, maxRooms: 4 });
+  await store.init();
+  const host = createRailwayWorldHost({
+    roomId: railwayRoomId('starting'),
+    store,
+    tick: false,
+    pidOf: (sid) => (sid === 'late' ? 'latecomer' : 'alice'),
+  });
+  const sent: Obj[] = [];
+  host.onSend((m) => sent.push(m));
+  try {
+    host.deliver({ t: 'r:open' }, 'a'); // the room has not finished starting
+    assert.deepEqual(sent, [{ t: 'r:state', to: 'a', state: 'starting' }]);
+    await host.whenReady();
+    // Every account slot taken: a new player gets a refusal instead of silence (and stops asking).
+    for (let k = 0; host.rules.railway.railway.accounts.length < MAX_PLAYERS; k++)
+      assert.ok(host.rules.railway.session(`filler${k}`, 1));
+    host.deliver({ t: 'r:open' }, 'late');
+    assert.deepEqual(sent.at(-1), { t: 'r:state', to: 'late', state: 'full' });
+  } finally {
+    await host.close({ save: false });
+    await fs.rm(dir, { recursive: true, force: true });
+  }
 });

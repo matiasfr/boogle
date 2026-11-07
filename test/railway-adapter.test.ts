@@ -2,7 +2,7 @@
 // and reconnect, against the real server rules and requests behind a hand-driven room.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRailwayAdapter } from '../src/adapters/railway.ts';
+import { createRailwayAdapter, type RailwayAccepted } from '../src/adapters/railway.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../src/world/sync.ts';
 import { installRules } from '../src/world/rules/index.ts';
@@ -10,7 +10,7 @@ import { install as installRailway } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
 import { createRailwayRequests } from '../server/src/host/railway-requests.ts';
-import { RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
+import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { homeLand } from './helpers/land.ts';
 
 const MOVEMENT = { beamSoloSpeed: 2, beamHelpSpeed: 5, jumpImpulse: 6, jumpTurn: 1, jumpSteer: 25, jumpApexSpeed: 1 };
@@ -83,7 +83,7 @@ function fixture({ actor = true } = {}) {
     for (const h of connection) h(true);
   };
   adapter.attach(room);
-  return { sync, api, adapter, step, edits, disconnect, reconnect, mirror };
+  return { sync, api, adapter, step, edits, disconnect, reconnect, mirror, replication };
 }
 
 test('the adapter is ready once the whole state and its session have arrived', () => {
@@ -148,4 +148,51 @@ test('a refused action retires without material or effects; a reconnect rebuilds
   assert.equal(back.next, f.api.account('alice')!.request + 1);
   assert.equal(effects, 0, 'the late join replays no effects');
   assert.equal(back.counts.total, f.api.counts().total);
+});
+
+test('each effect carries what its own action left, so two drops in one packet both fly to the right pile', () => {
+  const f = fixture();
+  f.step(40);
+  assert.equal(f.adapter.wake(), true);
+  f.step(T1.wakeTicks * 6 + 6);
+  for (let k = 0; k < 2; k++) {
+    assert.equal(f.adapter.chop(RAILWAY_SOURCES[0]![0], 0, false), true);
+    f.step(2);
+  }
+  assert.equal(f.adapter.inspect().carry, 4);
+  const effects: RailwayAccepted[] = [];
+  f.adapter.onAccepted((e) => effects.push(e));
+  // Two drops, two piles, applied in one step and so carried by one packet.
+  assert.equal(f.adapter.drop(T1.x, 3000, T1.z, 2), true);
+  assert.equal(f.adapter.drop(T1.x + 100, 3000, T1.z, 1), true);
+  f.step();
+  const drops = effects.filter((e) => e.op === 'rail.drop');
+  assert.equal(drops.length, 2);
+  const piles = f.api.railway.piles;
+  assert.deepEqual(
+    drops.map((e) => [e.pile, e.level, e.carried]),
+    [
+      [piles[0]!.id, 2, 2],
+      [piles[1]!.id, 1, 1],
+    ],
+  );
+  // A take carries where its pile stood, even though the pile is gone by the end of the packet.
+  assert.equal(f.adapter.take(piles[1]!.id), true);
+  f.step();
+  const take = effects.find((e) => e.op === 'rail.take')!;
+  assert.deepEqual([take.px, take.pz, take.level, take.carried], [T1.x + 100, T1.z, 0, 2]);
+});
+
+test('the packet that completes a whole state plays none of its events', () => {
+  const f = fixture();
+  f.step(40);
+  let effects = 0;
+  f.adapter.onAccepted(() => effects++);
+  f.disconnect();
+  f.reconnect();
+  // An accepted action lands between the reconnect and the whole send: the state shows it, so no effect replays.
+  f.replication.emit({ op: 'rail.wake', pid: 'bob', epoch: 1, request: 1, accepted: 1, tick: 1 });
+  f.step(40);
+  assert.equal(f.adapter.inspect().ready, true);
+  assert.equal(effects, 0);
 });
