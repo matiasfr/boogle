@@ -29,6 +29,10 @@ let localServer: Service | null = null; // the dev server's own game server (boo
 
 export default defineConfig({
   base: process.env.BASE || '/',
+  // Each checkout keeps its own dependency cache (.vite/, gitignored). Agent worktrees symlink one shared node_modules,
+  // so the default node_modules/.vite let one worktree's re-optimise pull the deps out from under another's open pages
+  // (the look harness's "lobby never offered Jump in" timeouts).
+  cacheDir: '.vite',
   define: {
     'import.meta.env.VITE_SW': JSON.stringify(swOff ? 'off' : 'on'),
   },
@@ -117,7 +121,7 @@ export default defineConfig({
         // The look harness's cross-origin isolated pages (dev/look/lib.ts `isolated`: performance.now() in 5 us steps)
         // ask for it with `coi=1`. The headers must come from the server: a page Playwright fulfils itself cannot open
         // WebSockets, so the railway room never connected. (Here rather than in a plugin of its own: plugin names are
-        // part of Vite's dependency hash, and every worktree shares node_modules/.vite.)
+        // part of Vite's dependency hash, so a new one re-optimises every checkout's cache.)
         server.middlewares.use((req, res, next) => {
           if (/[?&]coi=1(?:&|$)/.test(req.url ?? '')) {
             res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
