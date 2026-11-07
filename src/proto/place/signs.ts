@@ -46,11 +46,13 @@ let hudAttached = false;
 // The numbers: logs, kilometres, town and a running money count, a comic score. They tick up one by one, so you can feel them.
 const shownNum = { money: 0 };
 let lastNums = '';
+let lastShown = NaN; // the whole dollars last written: formatting and the DOM writes run only when it changes
 let previousMoney: number | undefined;
 let hideMoney: ReturnType<typeof setTimeout> | undefined;
 export function mountNumbers(owner: OwnedView) {
   shownNum.money = 0;
   lastNums = '';
+  lastShown = NaN;
   previousMoney = undefined;
   owner.cleanup(() => {
     clearTimeout(hideMoney);
@@ -80,7 +82,11 @@ export function setNumbers(score: { money: number; logs: number; metres: number 
   previousMoney = score.money;
   const ease = (a: number, b: number, k: number) => (Math.abs(b - a) < 1 ? b : a + (b - a) * k);
   shownNum.money = ease(shownNum.money, score.money, 0.12);
-  const money = `$${Math.round(shownNum.money).toLocaleString('en-US')}`;
+  // Called every frame: toLocaleString and a textContent write (a style recalculation) each frame cost ~0.06 ms in V8.
+  const whole = Math.round(shownNum.money);
+  if (whole === lastShown) return;
+  lastShown = whole;
+  const money = `$${whole.toLocaleString('en-US')}`;
   moneyPill.textContent = money;
   const s = `<span class="place-money"><b>${money}</b></span>`;
   if (s === lastNums) return;
