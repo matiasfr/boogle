@@ -17,6 +17,17 @@ html,
 body {
   height: 100%;
 }
+/* No page zoom on a phone: pan-x pan-y drops pinch and double-tap zoom but lets panels scroll (the canvas and touch
+   layer say none; see also the gesture events in src/player/input.ts). Inputs stay at 16px or more so iOS does not
+   zoom on focus. */
+html {
+  touch-action: pan-x pan-y;
+}
+input,
+textarea,
+select {
+  font-size: max(16px, 1em);
+}
 [hidden] {
   display: none !important;
 }
