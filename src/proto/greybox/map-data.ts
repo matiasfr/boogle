@@ -100,6 +100,9 @@ export type Harbour = {
   /** x, z, width, depth, height */
   warehouses: [number, number, number, number, number][];
   moorings: XZ[];
+  /** Greybox only: the basin's sea floor, metres below the sea. At the quay foot, across the basin, and at the mouth
+   * (past it the floor runs on down to the open sea). The water reads its colour from this depth. */
+  seabed?: { quay: number; basin: number; mouth: number };
   note?: string;
 };
 export type Backdrop = {
