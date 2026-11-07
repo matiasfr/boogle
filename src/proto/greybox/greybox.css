@@ -1,0 +1,85 @@
+/* ?greybox=sickle: labels over the world (outside .hud, so captures keep them) and a dev panel inside .hud. */
+.gbx-labels {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  overflow: hidden;
+}
+.gbx-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border-left: 4px solid #f4f1e8;
+  background: rgb(20 22 28 / 72%);
+  color: #fff;
+  font:
+    600 12px/1.3 system-ui,
+    sans-serif;
+  white-space: nowrap;
+}
+.gbx-label small {
+  font-weight: 400;
+  opacity: 0.75;
+}
+.gbx-gate {
+  border-left-color: #ff6a2e;
+}
+.gbx-mark {
+  border-left-color: #8fd0ff;
+  font-weight: 500;
+}
+.gbx-panel {
+  position: absolute;
+  left: calc(14px + env(safe-area-inset-left, 0px));
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: min(420px, calc(100vw - 28px));
+  max-height: 55vh;
+  overflow: auto;
+  pointer-events: auto;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgb(20 22 28 / 82%);
+  color: #fff;
+  font:
+    12px/1.35 system-ui,
+    sans-serif;
+}
+.gbx-head {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.gbx-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 3px 0;
+}
+.gbx-panel summary {
+  cursor: pointer;
+  margin-top: 4px;
+  font-weight: 600;
+}
+.gbx-panel button {
+  margin: 2px 3px 2px 0;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 5px;
+  background: #3a3f4c;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.gbx-panel button:hover {
+  background: #555c6e;
+}
+.gbx-readout {
+  margin-top: 6px;
+  opacity: 0.85;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  word-break: break-all;
+}
