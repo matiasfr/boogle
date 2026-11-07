@@ -55,6 +55,7 @@ import {
   FORGE_BILLS,
   GOODS,
   HEAD,
+  HALTS,
   LINKS,
   ORIGIN,
   LANDING,
@@ -166,14 +167,9 @@ camConstraints.push((_, pos) => {
 });
 
 // ---------------------------------------------------------------- the stations trains stop at (they appear with the trains)
-{
-  const N = L1.spec.line.len,
-    [, q, h] = LINKS[1]!.stops as [number, number, number];
-  buildHalt('Village', L1.k, L1.spec.line, 8, 30, -2.9, 0);
-  buildHalt('Camp', L1.k, L1.spec.line, N - 26, N - 2, 2.9, 1);
-  buildHalt('Village, line 2', L2.k, L2.spec.line, 6, 28, 2.9, 0);
-  buildHalt('Quarry', L2.k, L2.spec.line, q - 11, q + 11, 2.9, 1);
-  buildHalt('Far Head', L2.k, L2.spec.line, h - 11, h + 11, 2.9, 2);
+for (const h of HALTS) {
+  const l = h.line ? L2 : L1;
+  buildHalt(h.name, l.k, l.spec.line, h.s0, h.s1, h.lat, h.stop);
 }
 
 // ---------------------------------------------------------------- the little guys' idea of the place

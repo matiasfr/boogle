@@ -1,0 +1,398 @@
+// Timber decks against the laid track: no wood platform, ramp, bridge or deck may pass through a rail, sleeper or trestle
+// plank of either line (the whole planned track of line 1 and line 2, as the game's own buildTrack settles it), at the
+// state where both exist. Pure geometry from the same source functions the game builds from; no browser or physics.
+// The track layer's own swept clearance against these decks is dev/level/machine-clearance.ts (it reads `timberDecks`).
+import * as THREE from 'three/webgpu';
+import { sourceFunction } from './source.ts';
+import { trackBoxes } from './grounding-track.ts';
+import { HALTS, LINKS, ORIGIN, PATHS, lineAt, railY, type Line } from '../../src/proto/place/layout.ts';
+import { SHORE_COAST, SHORE_LANDING } from '../../src/proto/place/shore-layout.ts';
+import { openingStops } from '../../src/proto/place/opening-stops.ts';
+import {
+  GLIDE_RAMP,
+  JUMP_COURSE,
+  JUMP_RECOVERY,
+  PADS,
+  PILLARS,
+  SERVICE_ROUTES,
+  SERVICE_WIDTH,
+  HOOK_FLUSH,
+  padById,
+} from '../../src/proto/place/tech-layout.ts';
+import { forgePlan, openingBuildings } from '../../src/proto/place/opening-plans.ts';
+import { frameBesideLine, stationColliders, stationStockCollider } from '../../src/proto/place/spatial-station.ts';
+import type { Box } from '../../src/proto/net/box-plan.ts';
+import { H } from '../../src/proto/place/terrain.ts';
+
+export type Deck = { id: string; owner: string; center: THREE.Vector3; axes: THREE.Vector3[]; half: number[] };
+
+const rotated = (
+  center: THREE.Vector3,
+  q: THREE.Quaternion,
+  w: number,
+  h: number,
+  d: number,
+): Omit<Deck, 'id' | 'owner'> => ({
+  center,
+  axes: [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)].map((v) =>
+    v.applyQuaternion(q),
+  ),
+  half: [w / 2, h / 2, d / 2],
+});
+
+/** A solid box between two world points, as land.ts `plank` and `slab` lay it: the top meets topA..topB at the ends. */
+export function between(
+  id: string,
+  owner: string,
+  ax: number,
+  az: number,
+  bx: number,
+  bz: number,
+  topA: number,
+  topB: number,
+  width: number,
+  thick: number,
+): Deck {
+  const dx = bx - ax,
+    dz = bz - az,
+    dy = topB - topA,
+    len = Math.hypot(dx, dz),
+    full = Math.hypot(len, dy);
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.atan2(dy, len), Math.atan2(dx, dz), 0, 'YXZ'));
+  return {
+    id,
+    owner,
+    ...rotated(new THREE.Vector3((ax + bx) / 2, (topA + topB) / 2 - thick / 2, (az + bz) / 2), q, width, thick, full),
+  };
+}
+
+/** A base-standing unit box under `local` (box-plan.ts `place`), as an oriented box. */
+function fromBox(id: string, owner: string, box: Box): Deck {
+  const pos = new THREE.Vector3(),
+    quat = new THREE.Quaternion(),
+    scale = new THREE.Vector3();
+  box.local.decompose(pos, quat, scale);
+  const up = new THREE.Vector3(0, scale.y / 2, 0).applyQuaternion(quat);
+  return {
+    id,
+    owner,
+    ...rotated(new THREE.Vector3(box.x, box.y, box.z).add(pos).add(up), quat, scale.x, scale.y, scale.z),
+  };
+}
+
+/** A base-standing box with a yaw, as the opening stops and halts place theirs. */
+export function standing(
+  id: string,
+  owner: string,
+  x: number,
+  base: number,
+  z: number,
+  w: number,
+  h: number,
+  d: number,
+  yaw: number,
+): Deck {
+  const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+  return { id, owner, ...rotated(new THREE.Vector3(x, base + h / 2, z), q, w, h, d) };
+}
+
+export function timberDecks(): Deck[] {
+  const decks: Deck[] = [];
+  const path = 'src/entities/railway/path.ts';
+  const railFile = 'src/proto/place/rail.ts';
+  const P = { x: 0, z: 0, ux: 0, uz: 1 };
+  const besideLine = sourceFunction<(line: Line, s: number, l: number) => { x: number; z: number }>(
+    railFile,
+    'besideLine',
+    {
+      P,
+      lineAt: (line: Line, s: number) => lineAt(line, s, P),
+      lateral: sourceFunction(railFile, 'lateral', { P, ORIGIN }),
+    },
+  );
+
+  // The walking approaches the track layer's completion opens beside the parked machine (src/entities/railway/path.ts).
+  const APPROACH = sourceFunction<{ stops: number[]; width: number; thick: number }>(path, 'APPROACH', {});
+  const approachPlanks = sourceFunction<typeof import('../../src/entities/railway/path.ts').approachPlanks>(
+    path,
+    'approachPlanks',
+    {
+      APPROACH,
+    },
+  );
+  approachPlanks(LINKS[0]!.line, besideLine as never, railY as never, H).forEach((p, i) =>
+    decks.push(between(`approach/${i}`, path, p.ax, p.az, p.bx, p.bz, p.topA, p.topB, APPROACH.width, APPROACH.thick)),
+  );
+
+  // The footbridges over the gorge (land.ts buildBridges).
+  PATHS.forEach((p, k) => {
+    const a = p.pts[p.bridgeAt]!,
+      b = p.pts[p.bridgeAt + 1]!;
+    decks.push(
+      between(
+        `footbridge/${k}`,
+        'src/proto/place/land.ts',
+        a[0] + ORIGIN.x,
+        a[1] + ORIGIN.z,
+        b[0] + ORIGIN.x,
+        b[1] + ORIGIN.z,
+        a[2] + 0.12,
+        b[2] + 0.12,
+        3,
+        0.35,
+      ),
+    );
+  });
+
+  // The cove's timber landing.
+  if (SHORE_COAST)
+    for (let i = 0; i < 12; i++) {
+      const x = SHORE_LANDING.x + ORIGIN.x;
+      decks.push(
+        between(
+          `landing/${i}`,
+          'src/proto/place/land.ts',
+          x - 19 + i * 2,
+          SHORE_LANDING.z,
+          x - 17.02 + i * 2,
+          SHORE_LANDING.z,
+          3.08,
+          3.08,
+          7,
+          0.35,
+        ),
+      );
+    }
+
+  // The opening's props (lookout deck, flag, bank cart, arches).
+  for (const p of openingStops())
+    decks.push(standing(p.id, 'src/proto/place/opening-stops.ts', p.x, p.base, p.z, p.w, p.h, p.d, p.yaw));
+
+  // Route v2's walkways from Q2 and Q3 (src/entities/railway/line2-view.ts draws them 0.35 thick).
+  for (const kind of ['hook', 'quarry'] as const) {
+    // The same flush lift line2-view.ts gives the hook walk's first points.
+    const pts = SERVICE_ROUTES[kind].map((p, i) => ({
+      ...p,
+      y: p.y + (kind === 'hook' && i < HOOK_FLUSH.points ? HOOK_FLUSH.top : 0),
+    }));
+    for (let i = 1; i < pts.length; i++)
+      decks.push(
+        between(
+          `service-${kind}/${i}`,
+          'src/entities/railway/line2-view.ts',
+          pts[i - 1]!.x + ORIGIN.x,
+          pts[i - 1]!.z,
+          pts[i]!.x + ORIGIN.x,
+          pts[i]!.z,
+          pts[i - 1]!.y,
+          pts[i]!.y,
+          SERVICE_WIDTH,
+          0.35,
+        ),
+      );
+  }
+
+  // The stations' platforms, shelters and the ramps off them (halts.ts makeHalt); calls from place/index.ts.
+  const at = { x: 0, z: 0, ux: 0, uz: 1 };
+  const lateral = (line: Line, s: number, l: number) => {
+    lineAt(line, s, at);
+    return { x: at.x - at.uz * l + ORIGIN.x, z: at.z + at.ux * l + ORIGIN.z };
+  };
+  for (const { name, line: which, s0, s1, lat } of HALTS) {
+    const line = LINKS[which]!.line;
+    const low = Math.min(railY(line, s0), railY(line, s1)) + 0.72;
+    const mid = (s0 + s1) / 2,
+      half = (s1 - s0) / 2;
+    lineAt(line, mid, at);
+    const yaw = Math.atan2(at.ux, at.uz);
+    const c = lateral(line, mid, lat);
+    const ground = H(c.x, c.z);
+    const file = 'src/proto/place/halts.ts';
+    decks.push(
+      standing(
+        `${name}/platform`,
+        file,
+        c.x,
+        Math.min(ground, low - 0.5),
+        c.z,
+        2.5,
+        low - Math.min(ground, low - 0.5),
+        half * 2,
+        yaw,
+      ),
+    );
+    const sign = Math.sign(lat);
+    // The roof slab, 3.2 m up on posts, and the bench, at the platform's back edge (halts.ts `shelter`).
+    const shelter = -4.8,
+      cs = Math.cos(yaw),
+      sn = Math.sin(yaw);
+    const rx = c.x + -sign * 0.4 * cs + shelter * sn,
+      rz = c.z - -sign * 0.4 * sn + shelter * cs;
+    decks.push(standing(`${name}/roof`, file, rx, low + 3.2, rz, 2.7, 0.3, 8.4, yaw));
+    const ramp = (id: string, from: { x: number; z: number }, to: { x: number; z: number }) =>
+      decks.push(between(`${name}/${id}`, file, from.x, from.z, to.x, to.z, H(from.x, from.z) + 0.05, low, 2.5, 0.4));
+    ramp('ramp-start', lateral(line, s0 - 6, lat), lateral(line, s0, lat));
+    ramp('ramp-end', lateral(line, s1 + 6, lat), lateral(line, s1, lat));
+    ramp('ramp-back', lateral(line, mid, lat + sign * 7), lateral(line, mid, lat + sign * 1.25));
+  }
+  // The forge, its scaffold and the opening's buildings (opening-plans.ts).
+  for (const b of [...openingBuildings(), { id: 'forge', boxes: forgePlan().scaffold }])
+    b.boxes.forEach((box, i) => decks.push(fromBox(`${b.id}/${i}`, 'src/proto/place/opening-plans.ts', box)));
+
+  // The station frames, feeders and stock of every stretch of both lines (spatial-station.ts).
+  for (const link of LINKS)
+    for (const spec of link.stations) {
+      const f = frameBesideLine(spec, link.line, link.dir);
+      const y = H(f.x, f.z);
+      const c = stationColliders(f, y, false);
+      for (const p of [...c.frame, c.feeder, stationStockCollider(f, y, y + 3)])
+        decks.push(
+          standing(
+            `${spec.id}/${p.id}`,
+            'src/proto/place/spatial-station.ts',
+            p.position.x,
+            p.position.y - p.shape.hy,
+            p.position.z,
+            p.shape.hx * 2,
+            p.shape.hy * 2,
+            p.shape.hz * 2,
+            p.yaw,
+          ),
+        );
+    }
+
+  // The jump, hook and glide pads, their columns, the catch ribbon and ramps, and the pillar lip (tech.ts buildPads).
+  const tech = 'src/proto/place/tech.ts';
+  const pads: {
+    id: string;
+    x: number;
+    z: number;
+    top: number;
+    hx: number;
+    hz: number;
+    look: string;
+    pitch?: number;
+  }[] = [
+    ...PADS,
+    ...JUMP_RECOVERY.slabs.map((p, i) => ({ ...p, id: `jump-catch-${i}`, top: JUMP_RECOVERY.top, look: 'stone' })),
+    ...[JUMP_RECOVERY.ramp, GLIDE_RAMP].map((ramp, i) => ({
+      ...ramp,
+      id: i ? 'glide-ramp' : 'jump-return',
+      top: (ramp.high + ramp.low) / 2,
+      hz: Math.hypot(ramp.hz, (ramp.high - ramp.low) / 2),
+      pitch: Math.atan2(ramp.high - ramp.low, ramp.hz * 2),
+      look: 'stone',
+    })),
+  ];
+  for (const p of pads) {
+    const thick = p.look === 'float' ? 0.9 : p.look === 'wood' ? 0.4 : 1.2;
+    const x = p.x + ORIGIN.x;
+    if (p.pitch) {
+      const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(p.pitch, 0, 0));
+      const c = new THREE.Vector3(x, p.top - (Math.cos(p.pitch) * thick) / 2, p.z - (Math.sin(p.pitch) * thick) / 2);
+      decks.push({ id: `pad/${p.id}`, owner: tech, ...rotated(c, q, p.hx * 2, thick, p.hz * 2) });
+    } else decks.push(standing(`pad/${p.id}`, tech, x, p.top - thick, p.z, p.hx * 2, thick, p.hz * 2, 0));
+  }
+  for (const b of [...JUMP_COURSE.slice(1), padById('apron'), padById('lookout'), padById('loft')]) {
+    const base = JUMP_COURSE.includes(b) ? JUMP_RECOVERY.top : H(b.x + ORIGIN.x, b.z) - 0.5;
+    const h = b.top - 1.2 - base;
+    if (h > 0)
+      decks.push(standing(`pad-column/${b.id}`, tech, b.x + ORIGIN.x, base, b.z, b.hx * 2 - 0.1, h, b.hz * 2 - 0.1, 0));
+  }
+  for (const q of PILLARS)
+    if (q.lipTo) {
+      const dx = q.lipTo.x - q.x,
+        dz = q.lipTo.z - q.z,
+        len = Math.hypot(dx, dz);
+      decks.push(
+        standing(
+          `pillar-lip/${q.id}`,
+          tech,
+          q.x + dx / 2 + ORIGIN.x,
+          q.top - 0.54,
+          q.z + dz / 2,
+          2.4,
+          0.5,
+          len,
+          Math.atan2(dx, dz),
+        ),
+      );
+    }
+  return decks;
+}
+
+/** The rail, sleeper and trestle-plank boxes of both lines as oriented boxes: base-standing unit boxes under `local`. */
+export function trackObbs() {
+  const out: Deck[] = [];
+  for (const { spec, mode, boxes, kinds } of trackBoxes()) {
+    if (mode !== 'continuous') continue;
+    boxes.forEach((box, k) => {
+      const kind = kinds[k]!;
+      if (kind !== 'rail' && kind !== 'sleeper' && kind !== 'plank') return;
+      const m = new THREE.Matrix4().copy(box.local);
+      const pos = new THREE.Vector3(),
+        quat = new THREE.Quaternion(),
+        scale = new THREE.Vector3();
+      m.decompose(pos, quat, scale);
+      const up = new THREE.Vector3(0, scale.y / 2, 0).applyQuaternion(quat);
+      out.push({
+        id: `${spec.id}/${kind}/${k}`,
+        owner: 'src/proto/place/rail.ts',
+        ...rotated(new THREE.Vector3(box.x, box.y, box.z).add(pos).add(up), quat, scale.x, scale.y, scale.z),
+      });
+    });
+  }
+  return out;
+}
+
+/** Penetration depth along the shallowest separating axis, or 0 when the boxes are apart. */
+export function penetration(a: Deck, b: Deck) {
+  const axes = [...a.axes, ...b.axes];
+  for (const u of a.axes) for (const v of b.axes) axes.push(new THREE.Vector3().crossVectors(u, v));
+  const d = new THREE.Vector3().subVectors(b.center, a.center);
+  let least = Infinity;
+  for (const axis of axes) {
+    if (axis.lengthSq() < 1e-8) continue;
+    axis.normalize();
+    const reach = (box: Deck) => box.half.reduce((sum, h, i) => sum + h * Math.abs(box.axes[i]!.dot(axis)), 0);
+    least = Math.min(least, reach(a) + reach(b) - Math.abs(d.dot(axis)));
+    if (least <= 0) return 0;
+  }
+  return least;
+}
+
+const DEPTH_M = 0.02; // less than this is two faces meeting, not a deck through a rail
+
+export function checkTimberTrack() {
+  const decks = timberDecks(),
+    track = trackObbs();
+  const contacts: { deck: string; owner: string; track: string; depthCm: number; x: number; z: number }[] = [];
+  for (const deck of decks) {
+    const reach = Math.hypot(...deck.half) + 2;
+    for (const piece of track) {
+      if (piece.center.distanceTo(deck.center) > reach + Math.hypot(...piece.half)) continue;
+      const depth = penetration(deck, piece);
+      if (depth > DEPTH_M)
+        contacts.push({
+          deck: deck.id,
+          owner: deck.owner,
+          track: piece.id,
+          depthCm: depth * 100,
+          x: piece.center.x,
+          z: piece.center.z,
+        });
+    }
+  }
+  const byDeck = new Map<string, (typeof contacts)[number]>();
+  for (const c of contacts) if (!byDeck.has(c.deck) || byDeck.get(c.deck)!.depthCm < c.depthCm) byDeck.set(c.deck, c);
+  return {
+    level: 'timber-track',
+    decks: decks.length,
+    trackPieces: track.length,
+    depthToleranceCm: DEPTH_M * 100,
+    failures: byDeck.size,
+    contacts: [...byDeck.values()],
+    coverage:
+      "Footbridges, the cove landing, opening props, the track layer's walking approaches, route v2 service walkways and every station platform, shelter roof and ramp, against every rail, sleeper and trestle plank of line 1 and line 2 as settled. Static geometry; platforms drawn by other code (depot, forge, station frames) are covered by machine-clearance and the spatial audit, not here.",
+  };
+}

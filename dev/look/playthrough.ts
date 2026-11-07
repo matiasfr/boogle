@@ -328,6 +328,19 @@ async function main() {
         return at - beatAt > stallS;
       },
     });
+    // An eval may leave `window.__shotList` ([{ name, camera, target, fov? }]): one still per entry, from the same state.
+    const shotList = await g.page.evaluate(
+      () =>
+        (window as unknown as { __shotList?: { name: string; camera: number[]; target: number[]; fov?: number }[] })
+          .__shotList ?? [],
+    );
+    for (const shot of shotList) {
+      await g.eval(
+        `window.__debugCam.set(${JSON.stringify(shot.camera)}, ${JSON.stringify(shot.target)}, ${shot.fov ?? 65})`,
+      );
+      await g.warp({ seconds: 1 });
+      console.log(`Still ${shot.name}: ${await g.still(shot.name)}`);
+    }
     const still = await g.still('end');
     const fps = await g.fps();
     const health = g.healthErrors();

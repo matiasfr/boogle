@@ -54,9 +54,9 @@ const N = LINES.north,
 // Translate the existing course rigidly to clear the wide panel magazines.
 const P1 = beside(N, 92, -1, 10.2),
   P2 = beside(E, 92, -1, 7),
-  STACK_RETURN = beside(E, 477, 1, 4);
+  STACK_RETURN = beside(E, 477, 1, 5);
 export const PILLARS = [
-  { id: 'p1', x: P1.x, z: P1.z, top: P1.y, r: 3.6, foot: -3, lipTo: beside(N, 92, -1, 1.3) },
+  { id: 'p1', x: P1.x, z: P1.z, top: P1.y, r: 3.6, foot: -3, lipTo: beside(N, 92, -1, 1.8) }, // ends at the trestle deck's edge (3.6 m wide), not through its planks
   { id: 'p2', x: P2.x, z: P2.z, top: P2.y + 2.2, r: 3.6, foot: -3, lipTo: null },
 ];
 
@@ -184,7 +184,10 @@ export const SERVICE_ROUTES = {
     { x: apron.x, z: apron.z + apron.hz, y: apron.top },
   ],
   hook: [
-    beside(E, 92, -1, 1),
+    // Runs alongside the trestle deck (3.6 m wide, 1.8 m each side) with its 3 m of stone butting the deck's edge, not through
+    // its planks, so you step on from anywhere along it: it's flush with the deck's top while it follows the grade.
+    beside(E, 86, -1, 3.4),
+    beside(E, 92, -1, 3.4),
     { x: P2.x + 7.5, z: P2.z + 4.2, y: P2.y },
     { x: P2.x + 7.5, z: P2.z - 1.5, y: P2.y + 2.2 },
     { x: P2.x + 7.5, z: P2.z - 3, y: P2.y + 2.2 },
@@ -192,6 +195,8 @@ export const SERVICE_ROUTES = {
   ],
 } satisfies Record<string, RoutePoint[]>;
 export const SERVICE_WIDTH = 3;
+/** The hook walk's first points (alongside the deck, then the turn) sit flush with the track's walkable top, 0.1 m over rail height. */
+export const HOOK_FLUSH = { points: 3, top: 0.1 };
 /** Dark stone posts from the sea gate back towards the tower: light runs along them when its summit wakes. */
 export const POSTS: { x: number; z: number }[] = [];
 {

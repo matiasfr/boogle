@@ -180,12 +180,12 @@ export async function createRailwayLine2(
   const decks: Deck[] = [];
   const width = tech.SERVICE_WIDTH;
   // The hook walk leaves the finished deck flush with its plank top, so stepping on never dips.
-  const DECK_TOP = 0.1; // the track's walkable top over rail height (rail.ts TOP)
+  const DECK_TOP = tech.HOOK_FLUSH.top; // the track's walkable top over rail height (rail.ts TOP)
   for (const kind of ['hook', 'quarry'] as const) {
     const points = tech.SERVICE_ROUTES[kind].map((p, i) => ({
       x: p.x,
       z: p.z,
-      y: p.y + (kind === 'hook' && i < 2 ? DECK_TOP : 0),
+      y: p.y + (kind === 'hook' && i < tech.HOOK_FLUSH.points ? DECK_TOP : 0),
     }));
     for (let i = 1; i < points.length; i++) {
       const a = points[i - 1]!,

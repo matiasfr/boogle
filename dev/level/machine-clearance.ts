@@ -12,13 +12,20 @@ import { frameBesideLine, stationColliders, stationStockCollider, OUT } from '..
 import { RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_AXE_STAND, LINE1_JUMP_DEVICE } from '../../src/sim/railway-line-layout.ts';
 import { H } from '../../src/proto/place/terrain.ts';
-import { panelPose, panelEase, trackPanels, carriedPiece, MAX_PANEL_LENGTH } from '../../src/proto/place/track-panels.ts';
+import {
+  panelPose,
+  panelEase,
+  trackPanels,
+  carriedPiece,
+  MAX_PANEL_LENGTH,
+} from '../../src/proto/place/track-panels.ts';
 import { TREE_SOURCES } from '../../src/proto/place/tree-sources.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
 import { boxAt, place } from '../../src/proto/net/box-plan.ts';
 import { merged } from '../../src/proto/place/part-geometry.ts';
 import { T1_CRATE_PARTS } from '../../src/render/t1-reward-parts.ts';
 import { PILLARS, PADS, DEVICES, p1LipClear } from '../../src/proto/place/tech-layout.ts';
+import { timberDecks } from './timber-track.ts';
 
 export async function checkMachineClearance() {
   const material = () => new THREE.MeshBasicNodeMaterial();
@@ -94,6 +101,20 @@ export async function checkMachineClearance() {
         new THREE.Vector3(p.w, p.h, p.d),
       ),
     );
+  // Timber and stone decks built from the start (footbridges, the landing, every pad and its column): the machine's own
+  // neighbours on the way. Walkways opened later, halts and the approaches are placed after it has passed.
+  for (const deck of timberDecks().filter((d) => /^(footbridge|landing|pad)/.test(d.id))) {
+    const [hx, hy, hz] = deck.half as [number, number, number];
+    const basis = new THREE.Matrix4().makeBasis(deck.axes[0]!, deck.axes[1]!, deck.axes[2]!);
+    const base = deck.center.clone().addScaledVector(deck.axes[1]!, -hy);
+    obstacle(
+      'deck/' + deck.id,
+      new THREE.Matrix4()
+        .makeTranslation(base.x, base.y, base.z)
+        .multiply(basis)
+        .multiply(new THREE.Matrix4().makeScale(hx * 2, hy * 2, hz * 2)),
+    );
+  }
   const roots = sourceModule<typeof import('../../src/render/tree-roots.ts')>(
     fs.readFileSync('src/render/tree-roots.ts', 'utf8'),
     { THREE },

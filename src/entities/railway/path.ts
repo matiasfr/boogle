@@ -3,6 +3,30 @@ import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 
+/** The two planks of each walking approach: grass up to the track's solid top, outside the 2.8 m bed, then a short landing
+ * that stops at the sleepers' ends (they reach 1.15 m from the centre; the rails sit at 0.5 m), never across the track.
+ * Pure, so the level check (dev/level/timber-track.ts) reads the same planks the game builds. */
+export const APPROACH = { stops: [14, 30], foot: 4, shoulder: 1.6, landing: 1.2, width: 2.3, thick: 0.14, top: 0.1 };
+export function approachPlanks(
+  line: unknown,
+  besideLine: (line: never, s: number, l: number) => { x: number; z: number },
+  railY: (line: never, s: number) => number,
+  ground: (x: number, z: number) => number,
+) {
+  const out: { ax: number; az: number; bx: number; bz: number; topA: number; topB: number }[] = [];
+  for (const s of APPROACH.stops) {
+    const foot = besideLine(line as never, s, APPROACH.foot),
+      shoulder = besideLine(line as never, s, APPROACH.shoulder),
+      landing = besideLine(line as never, s, APPROACH.landing);
+    const top = railY(line as never, s) + APPROACH.top;
+    out.push(
+      { ax: foot.x, az: foot.z, bx: shoulder.x, bz: shoulder.z, topA: ground(foot.x, foot.z) - 0.02, topB: top },
+      { ax: shoulder.x, az: shoulder.z, bx: landing.x, bz: landing.z, topA: top, topB: top },
+    );
+  }
+  return out;
+}
+
 export async function createRailwayPath(owner: OwnedView) {
   const [{ LINKS, railY }, { besideLine }, { addStatic, plank, H }, { flat }, { pop }] = await Promise.all([
     import('../../proto/place/layout.ts'),
@@ -38,14 +62,8 @@ export async function createRailwayPath(owner: OwnedView) {
       placed = true;
       // Join the grass beside the parked machine to the actual solid top (rail.ts TOP = 0.1).
       // Reach that height outside the 2.8 m bed before crossing its vertical side collider.
-      for (const s of [14, 30]) {
-        const foot = besideLine(line, s, 4),
-          shoulder = besideLine(line, s, 1.6),
-          center = besideLine(line, s, 0);
-        const top = railY(line, s) + 0.1;
-        plank(foot.x, foot.z, shoulder.x, shoulder.z, H(foot.x, foot.z) - 0.02, top, 2.3, '#8a6236', 0.14, owner);
-        plank(shoulder.x, shoulder.z, center.x, center.z, top, top, 2.3, '#8a6236', 0.14, owner);
-      }
+      for (const p of approachPlanks(line, besideLine, railY, H))
+        plank(p.ax, p.az, p.bx, p.bz, p.topA, p.topB, APPROACH.width, '#8a6236', APPROACH.thick, owner);
       for (const at of slots) addStatic({ kind: 'box', hx: 0.06, hy: 0.75, hz: 0.06 }, at, undefined, undefined, owner);
       if (!quiet) pop(4, 0.25);
     },

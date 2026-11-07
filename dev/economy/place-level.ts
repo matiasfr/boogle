@@ -245,7 +245,8 @@ export function runPlaceLevelCheck() {
         const lip = pillar?.lipTo;
         const lipTrack = tracks.find(([l, a, b]) => l === N && a <= 92 && b >= 92);
         lineAt(N, 92, P);
-        // The flat 2.4 m-wide lip overlaps the 2.8 m deck, and both ends are walkable
+        // The flat 2.4 m-wide lip butts the 3.6 m trestle deck's edge (1.8 m from the line: it stops there rather than
+        // run through the leaning planks, dev/level/timber-track.ts), and both ends are walkable
         // steps (14 cm at track, 4 cm at pad). Check the authored connector, not a
         // loose proximity budget that stops matching after the pillar moves outward.
         let ok = !!(
@@ -253,7 +254,7 @@ export function runPlaceLevelCheck() {
           pillar &&
           lip &&
           lipTrack &&
-          Math.hypot(lip.x - P.x, lip.z - P.z) <= 1.4 &&
+          Math.hypot(lip.x - P.x, lip.z - P.z) <= 1.85 &&
           Math.abs(pillar.top - 0.04 - (railY(N, 92) + 0.1)) <= 0.3 &&
           Math.abs(pillar.x - p.x) < p.hx &&
           Math.abs(pillar.z - p.z) < p.hz &&

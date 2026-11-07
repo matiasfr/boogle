@@ -188,6 +188,19 @@ async function runChecks() {
           `  ${row.id} (${row.x}, ${row.z}): gap ${row.gapCm.toFixed(1)} cm, sink ${row.sinkCm.toFixed(1)} cm`,
         );
     }
+    const { checkTimberTrack } = await import('./timber-track.ts');
+    const timber = checkTimberTrack();
+    failed += timber.failures;
+    report.push(timber);
+    if (!json) {
+      console.log(
+        `timber against track: ${timber.decks} decks and platforms, ${timber.trackPieces} rails/sleepers/planks of both lines, ${timber.failures} problems (${timber.depthToleranceCm} cm tolerance)`,
+      );
+      for (const c of timber.contacts)
+        console.log(
+          `  ${c.deck} (${c.owner}) passes ${c.depthCm.toFixed(1)} cm into ${c.track} near (${c.x.toFixed(1)}, ${c.z.toFixed(1)})`,
+        );
+    }
     const start = performance.now();
     const { runPlaceLevelCheck, printPlaceLevelCheck } = await import('../economy/place-level.ts');
     const result = runPlaceLevelCheck();
