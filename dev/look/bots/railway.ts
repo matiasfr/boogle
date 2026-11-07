@@ -126,6 +126,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     input.keys.clear();
     releaseJump();
     (window as Window & { __railStop?: string }).__railStop = name;
+    // railResume=<s>: hold the beat that long, then play on (a real-time clip that starts at the beat).
+    const resume = Number(query.get('railResume'));
+    if (resume > 0) return void (await bot.wait(resume * 1000));
     await new Promise<void>(() => {});
   };
   const dismiss = async (name: string) => {
@@ -332,6 +335,20 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     }
     await until(() => read().activeStation === 1, 'T2 opens after T1');
     require(!read().axe, 'proper axe remains locked at T2');
+    if (!coop) {
+      // A swing always answers: before Station 3 opens the great tree rebounds, and nothing is sent.
+      const tree = LINE1_GREAT_TREE;
+      await walk(tree.x / 100, tree.z / 100, 2.6);
+      face(tree.x / 100, tree.z / 100);
+      await until(() => interactTarget()?.id === 'place-tree28', 'the great tree is targeted before Station 3', 5000);
+      await checkpoint('great tree before Station 3');
+      bot.press();
+      await bot.wait(900);
+      require(read().beam?.state === 'standing' &&
+        read().beam?.work === 0 &&
+        read().pending === 0, 'the great tree rebounds before Station 3, sending nothing');
+      mark('great tree rebounds before Station 3');
+    }
     if (!second) await logs(1, 4);
     if (!coop || second) {
       const rock = read().rocks.find((r) => r.remaining >= 8)!;
@@ -436,6 +453,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       const initial = carrier()!;
       await walk(initial.x, initial.z, 2.5);
       face(initial.x, initial.z);
+      await checkpoint('T3 beam carried');
       require(await bot.use(initial.x, initial.z, 'help carry the beam', /^Help carry$/), 'Help carry offered');
       await until(() => interactTarget()?.id === 'railway-beam-help-release', 'helper grip activated', 5000);
       mark('T3 beam helper joined');
