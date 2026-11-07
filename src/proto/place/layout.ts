@@ -372,6 +372,17 @@ export const LINKS: LineSpec[] = [
   },
 ];
 
+/** The stations' platforms (halts.ts): which line, metres along it, the platform's centre offset from the rails and the stop's
+ * place in that line's `stops`. Straight boxes, so each stays on a straight stretch: dev/level/timber-track.ts checks them
+ * against both lines' rails and sleepers. */
+export const HALTS: { name: string; line: 0 | 1; s0: number; s1: number; lat: number; stop: number }[] = [
+  { name: 'Village', line: 0, s0: 8, s1: 30, lat: -2.9, stop: 0 },
+  { name: 'Camp', line: 0, s0: N - 26, s1: N - 2, lat: 2.9, stop: 1 },
+  { name: 'Village, line 2', line: 1, s0: 6, s1: 28, lat: 3.1, stop: 0 }, // 3.1: the line bends toward it
+  { name: 'Quarry', line: 1, s0: EAST.quarry - 12, s1: EAST.quarry + 8, lat: 2.9, stop: 1 }, // the straight before the quarry's bend
+  { name: 'Far Head', line: 1, s0: EAST.headStop - 11, s1: EAST.headStop + 11, lat: 2.9, stop: 2 },
+];
+
 /** The forge's own frame, by its north wall: logs land in it and its pieces drop. By hand first; trains finish the roof. */
 export const FORGE_FRAME = { x: -88, z: -12, yaw: 0 };
 export const FORGE_BILLS: Station[] = [

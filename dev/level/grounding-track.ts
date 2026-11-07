@@ -7,7 +7,8 @@ import { sampleFootprint } from '../../src/proto/place/support.ts';
 import { trackPanels } from '../../src/proto/place/track-panels.ts';
 import { sourceFunction } from './source.ts';
 
-export function checkTrackGrounding() {
+/** Every settled track box of both lines, panelled and continuous, as the game's own buildTrack makes them. */
+export function trackBoxes() {
   const file = 'src/proto/place/rail.ts';
   const P = { x: 0, z: 0, ux: 0, uz: 1 };
   const lateral = sourceFunction(file, 'lateral', { P, ORIGIN });
@@ -33,7 +34,7 @@ export function checkTrackGrounding() {
     },
   });
   return LINKS.flatMap((spec) =>
-    (['panels', 'continuous'] as const).flatMap((mode) => {
+    (['panels', 'continuous'] as const).map((mode) => {
       try {
         buildTrack(spec, () => {}, undefined, mode);
       } catch (error) {
@@ -43,56 +44,62 @@ export function checkTrackGrounding() {
       if (!track || track.boxes.length !== track.kinds.length) throw new Error(`${spec.id}: missing track geometry`);
       for (const kind of ['sleeper', 'rail'])
         if (!track.kinds.includes(kind)) throw new Error(`${spec.id}: missing ${kind} geometry`);
-      return track.boxes.flatMap((box, k) => {
-        const kind = track.kinds[k]!;
-        if (kind !== 'sleeper' && kind !== 'plank' && kind !== 'rail') return [];
-        // Sleepers/deck tops and rail undersides define the bed. Respect both yaw and grade;
-        // comparing only the highest corner would miss terrain at the low end of a tilted piece.
-        const face = kind === 'rail' ? 0 : 1;
-        const corners = [
-          [-0.5, -0.5],
-          [0.5, -0.5],
-          [0.5, 0.5],
-          [-0.5, 0.5],
-        ].map(([x, z]) =>
-          new THREE.Vector3(x!, face, z!).applyMatrix4(box.local).add(new THREE.Vector3(box.x, box.y, box.z)),
-        );
-        const a = corners[0]!;
-        const normal = new THREE.Vector3(0, 1, 0).transformDirection(box.local);
-        if (normal.y <= 0) throw new Error(`${spec.id}/${k}: invalid track bed normal`);
-        let groundMin = Infinity,
-          groundMax = -Infinity;
-        let worst = { x: a.x, z: a.z, terrain: -Infinity, bed: a.y, excess: -Infinity };
-        const samples = sampleFootprint(
-          corners.map((p) => [p.x, p.z]),
-          (x, z) => {
-            const terrain = surfaceHeight(x, z);
-            const bed = a.y - (normal.x * (x - a.x) + normal.z * (z - a.z)) / normal.y;
-            const excess = terrain - bed;
-            groundMin = Math.min(groundMin, terrain);
-            groundMax = Math.max(groundMax, terrain);
-            if (excess > worst.excess) worst = { x, z, terrain, bed, excess };
-            return excess;
-          },
-        );
-        const sinkCm = Math.max(0, samples.high * 100);
-        return [
-          {
-            id: `track/${spec.id}/${mode}/${kind}/${k}`,
-            x: box.x,
-            z: box.z,
-            base: Math.min(...corners.map((p) => p.y)),
-            top: Math.max(...corners.map((p) => p.y)),
-            groundMin,
-            groundMax,
-            samples: samples.samples,
-            gapCm: 0,
-            sinkCm,
-            failed: sinkCm > 5,
-            worst,
-          },
-        ];
-      });
+      return { spec, mode, boxes: track.boxes, kinds: track.kinds };
+    }),
+  );
+}
+
+export function checkTrackGrounding() {
+  return trackBoxes().flatMap(({ spec, mode, boxes, kinds }) =>
+    boxes.flatMap((box, k) => {
+      const kind = kinds[k]!;
+      if (kind !== 'sleeper' && kind !== 'plank' && kind !== 'rail') return [];
+      // Sleepers/deck tops and rail undersides define the bed. Respect both yaw and grade;
+      // comparing only the highest corner would miss terrain at the low end of a tilted piece.
+      const face = kind === 'rail' ? 0 : 1;
+      const corners = [
+        [-0.5, -0.5],
+        [0.5, -0.5],
+        [0.5, 0.5],
+        [-0.5, 0.5],
+      ].map(([x, z]) =>
+        new THREE.Vector3(x!, face, z!).applyMatrix4(box.local).add(new THREE.Vector3(box.x, box.y, box.z)),
+      );
+      const a = corners[0]!;
+      const normal = new THREE.Vector3(0, 1, 0).transformDirection(box.local);
+      if (normal.y <= 0) throw new Error(`${spec.id}/${k}: invalid track bed normal`);
+      let groundMin = Infinity,
+        groundMax = -Infinity;
+      let worst = { x: a.x, z: a.z, terrain: -Infinity, bed: a.y, excess: -Infinity };
+      const samples = sampleFootprint(
+        corners.map((p) => [p.x, p.z]),
+        (x, z) => {
+          const terrain = surfaceHeight(x, z);
+          const bed = a.y - (normal.x * (x - a.x) + normal.z * (z - a.z)) / normal.y;
+          const excess = terrain - bed;
+          groundMin = Math.min(groundMin, terrain);
+          groundMax = Math.max(groundMax, terrain);
+          if (excess > worst.excess) worst = { x, z, terrain, bed, excess };
+          return excess;
+        },
+      );
+      const sinkCm = Math.max(0, samples.high * 100);
+      return [
+        {
+          id: `track/${spec.id}/${mode}/${kind}/${k}`,
+          x: box.x,
+          z: box.z,
+          base: Math.min(...corners.map((p) => p.y)),
+          top: Math.max(...corners.map((p) => p.y)),
+          groundMin,
+          groundMax,
+          samples: samples.samples,
+          gapCm: 0,
+          sinkCm,
+          failed: sinkCm > 5,
+          worst,
+        },
+      ];
     }),
   );
 }
