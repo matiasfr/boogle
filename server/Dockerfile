@@ -10,6 +10,7 @@ RUN cd server && npm ci --omit=dev && npm cache clean --force
 COPY server/src ./server/src
 COPY src/world ./src/world
 COPY src/sim ./src/sim
+COPY src/ecs ./src/ecs
 COPY src/net/ids.ts src/net/ws-wire.ts ./src/net/
 # su-exec (a tiny Alpine package) lets the start command drop root; see CMD.
 RUN apk add --no-cache su-exec && mkdir -p /data && chown -R node:node /data /app
