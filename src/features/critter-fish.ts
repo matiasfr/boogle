@@ -24,6 +24,7 @@ import { me } from '../player/player.ts';
 import { remotes } from '../netplay/net.ts';
 import { patchNode } from '../render/material-patch.ts';
 import { createPool } from '../render/instances.ts';
+import { whileNearClassicIsland } from '../island/classic-zone.ts';
 
 const FISH = {
   count: 36,
@@ -97,100 +98,103 @@ let lastBallY = 0;
 const scares: { x: number; z: number }[] = []; // reused every frame: the hot path allocates nothing (index loops, no destructuring)
 
 defineKind('fish', { update: 1 });
-spawn({
-  kind: 'fish',
-  mesh: fish,
-  update: ({ dt }) => {
-    fish.visible = !!home;
-    if (!fish.visible || dt <= 0) return;
-    const hm = home!;
-    // scares: a ball that just hit the water near the surface, players swimming
-    scares.length = 0;
-    const bp = ballMesh.position;
-    const bs = waterField.surfaceAt(bp.x, bp.z);
-    if (bp.y < bs + 0.6 && lastBallY - bp.y > 0.02) scares.push(bp);
-    lastBallY = bp.y;
-    if (me.swimming && me.body) scares.push(me.body.position);
-    for (const r of remotes.values()) if (r.state === 2) scares.push(r.target);
-    let cx = 0,
-      cz = 0;
-    for (let k = 0; k < P.length; k++) {
-      cx += P[k]!.x / FISH.count;
-      cz += P[k]!.z / FISH.count;
-    }
-    for (let k = 0; k < P.length; k++) {
-      const f = P[k]!;
-      let ax = (cx - f.x) * 0.15 + (Math.random() - 0.5) * 2,
-        az = (cz - f.z) * 0.15 + (Math.random() - 0.5) * 2;
-      for (let m = 0; m < P.length; m++) {
-        const o = P[m]!;
-        if (o === f) continue;
-        const dx = f.x - o.x,
-          dz = f.z - o.z,
-          d2 = dx * dx + dz * dz;
-        if (d2 < FISH.sep * FISH.sep && d2 > 1e-6) {
-          ax += (dx / d2) * 0.6;
-          az += (dz / d2) * 0.6;
-        } else if (d2 < 9) {
-          ax += (o.vx - f.vx) * 0.05; // align
-          az += (o.vz - f.vz) * 0.05;
-        }
+// Only the classic island has fish: out of the scene and not updated away from it (src/island/classic-zone.ts).
+whileNearClassicIsland(() =>
+  spawn({
+    kind: 'fish',
+    mesh: fish,
+    update: ({ dt }) => {
+      fish.visible = !!home;
+      if (!fish.visible || dt <= 0) return;
+      const hm = home!;
+      // scares: a ball that just hit the water near the surface, players swimming
+      scares.length = 0;
+      const bp = ballMesh.position;
+      const bs = waterField.surfaceAt(bp.x, bp.z);
+      if (bp.y < bs + 0.6 && lastBallY - bp.y > 0.02) scares.push(bp);
+      lastBallY = bp.y;
+      if (me.swimming && me.body) scares.push(me.body.position);
+      for (const r of remotes.values()) if (r.state === 2) scares.push(r.target);
+      let cx = 0,
+        cz = 0;
+      for (let k = 0; k < P.length; k++) {
+        cx += P[k]!.x / FISH.count;
+        cz += P[k]!.z / FISH.count;
       }
-      for (let m = 0; m < scares.length; m++) {
-        const s = scares[m]!;
-        const dx = f.x - s.x,
-          dz = f.z - s.z,
-          d = Math.sqrt(dx * dx + dz * dz);
-        if (d < FISH.scare) {
-          f.scare = 1.2;
-          ax += (dx / (d + 0.1)) * 40;
-          az += (dz / (d + 0.1)) * 40;
-        }
-      }
-      // stay in deep enough water: steer toward the deepest of four probes when the way ahead gets shallow
-      const sp = Math.sqrt(f.vx * f.vx + f.vz * f.vz) || 1;
-      if (depthAt(f.x + (f.vx / sp) * 1.2, f.z + (f.vz / sp) * 1.2) < FISH.minDepth) {
-        let best = -1e9,
-          bx = 0,
-          bz = 0;
-        for (let m = 0; m < PROBES.length; m++) {
-          const px = PROBES[m]![0]!,
-            pz = PROBES[m]![1]!;
-          const d = depthAt(f.x + px, f.z + pz);
-          if (d > best) {
-            best = d;
-            bx = px;
-            bz = pz;
+      for (let k = 0; k < P.length; k++) {
+        const f = P[k]!;
+        let ax = (cx - f.x) * 0.15 + (Math.random() - 0.5) * 2,
+          az = (cz - f.z) * 0.15 + (Math.random() - 0.5) * 2;
+        for (let m = 0; m < P.length; m++) {
+          const o = P[m]!;
+          if (o === f) continue;
+          const dx = f.x - o.x,
+            dz = f.z - o.z,
+            d2 = dx * dx + dz * dz;
+          if (d2 < FISH.sep * FISH.sep && d2 > 1e-6) {
+            ax += (dx / d2) * 0.6;
+            az += (dz / d2) * 0.6;
+          } else if (d2 < 9) {
+            ax += (o.vx - f.vx) * 0.05; // align
+            az += (o.vz - f.vz) * 0.05;
           }
         }
-        ax += bx * 8 - f.vx * 2;
-        az += bz * 8 - f.vz * 2;
+        for (let m = 0; m < scares.length; m++) {
+          const s = scares[m]!;
+          const dx = f.x - s.x,
+            dz = f.z - s.z,
+            d = Math.sqrt(dx * dx + dz * dz);
+          if (d < FISH.scare) {
+            f.scare = 1.2;
+            ax += (dx / (d + 0.1)) * 40;
+            az += (dz / (d + 0.1)) * 40;
+          }
+        }
+        // stay in deep enough water: steer toward the deepest of four probes when the way ahead gets shallow
+        const sp = Math.sqrt(f.vx * f.vx + f.vz * f.vz) || 1;
+        if (depthAt(f.x + (f.vx / sp) * 1.2, f.z + (f.vz / sp) * 1.2) < FISH.minDepth) {
+          let best = -1e9,
+            bx = 0,
+            bz = 0;
+          for (let m = 0; m < PROBES.length; m++) {
+            const px = PROBES[m]![0]!,
+              pz = PROBES[m]![1]!;
+            const d = depthAt(f.x + px, f.z + pz);
+            if (d > best) {
+              best = d;
+              bx = px;
+              bz = pz;
+            }
+          }
+          ax += bx * 8 - f.vx * 2;
+          az += bz * 8 - f.vz * 2;
+        }
+        f.scare = Math.max(0, f.scare - dt);
+        f.vx += ax * dt;
+        f.vz += az * dt;
+        const max = f.scare > 0 ? FISH.fleeSpeed : FISH.speed;
+        const v = Math.sqrt(f.vx * f.vx + f.vz * f.vz);
+        if (v > max) {
+          f.vx *= max / v;
+          f.vz *= max / v;
+        }
+        f.x += f.vx * dt;
+        f.z += f.vz * dt;
+        const g = groundHeight(f.x, f.z),
+          surf = waterField.surfaceAt(f.x, f.z);
+        if (surf - g < 0.12 || (f.x - hm.x) * (f.x - hm.x) + (f.z - hm.z) * (f.z - hm.z) > 80 * 80) respawn(f); // stranded or lost
+        f.y = Math.max(g + 0.12, surf - 0.3 - 0.15 * Math.sin(f.x * 0.7 + f.z));
       }
-      f.scare = Math.max(0, f.scare - dt);
-      f.vx += ax * dt;
-      f.vz += az * dt;
-      const max = f.scare > 0 ? FISH.fleeSpeed : FISH.speed;
-      const v = Math.sqrt(f.vx * f.vx + f.vz * f.vz);
-      if (v > max) {
-        f.vx *= max / v;
-        f.vz *= max / v;
+      pool.begin();
+      for (let k = 0; k < FISH.count; k++) {
+        const f = P[k]!,
+          h = Math.atan2(f.vx, f.vz) / 2;
+        pool.push(f.x, f.y, f.z, 0, Math.sin(h), 0, Math.cos(h), 1, 1, 1);
       }
-      f.x += f.vx * dt;
-      f.z += f.vz * dt;
-      const g = groundHeight(f.x, f.z),
-        surf = waterField.surfaceAt(f.x, f.z);
-      if (surf - g < 0.12 || (f.x - hm.x) * (f.x - hm.x) + (f.z - hm.z) * (f.z - hm.z) > 80 * 80) respawn(f); // stranded or lost
-      f.y = Math.max(g + 0.12, surf - 0.3 - 0.15 * Math.sin(f.x * 0.7 + f.z));
-    }
-    pool.begin();
-    for (let k = 0; k < FISH.count; k++) {
-      const f = P[k]!,
-        h = Math.atan2(f.vx, f.vz) / 2;
-      pool.push(f.x, f.y, f.z, 0, Math.sin(h), 0, Math.cos(h), 1, 1, 1);
-    }
-    pool.end();
-  },
-});
+      pool.end();
+    },
+  }),
+);
 
 window.__fish = {
   P,

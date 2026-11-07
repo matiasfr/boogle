@@ -1,6 +1,6 @@
 # 6.10 Critters
 
-All are Local cosmetics (Math.random allowed).
+All are Local cosmetics (Math.random allowed). The fish and gulls belong to the classic island: they are in the scene and updated only while the player is within 160 m of its centre (out past 190 m), see [classic-zone.ts](../../src/island/classic-zone.ts). The new world has none yet.
 
 | Critter | What | Numbers |
 |---|---|---|
