@@ -638,9 +638,10 @@ export async function createRailwayLine2(
   }
   const offAccepted = adapter.onAccepted(accepted);
   const offCorrected = adapter.onCorrected(corrected);
-  const offReset = adapter.onReset(() => {
+  // After a lost connection or a resync the views carry on from the new state rather than rebuild (and snap).
+  const offReset = adapter.onReset((soft) => {
     state = adapter.inspect();
-    restore();
+    if (!soft) restore();
   });
   owner.cleanup(() => {
     offAccepted();

@@ -53,6 +53,7 @@ export const TUNABLES = [
     max: 1000,
     label: 'Railway second jump apex threshold (centimetres per second)',
   },
+  { key: 'railBeamGraceS', def: 180, min: 5, max: 3600, label: 'Railway beam kept for an absent carrier (seconds)' },
 ] as const;
 export type TuneKey = (typeof TUNABLES)[number]['key'];
 export type TuneSpec = (typeof TUNABLES)[number];

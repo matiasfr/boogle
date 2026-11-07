@@ -74,7 +74,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     hush: () => reward.inspect().busy,
     pathOpen: opened,
   });
-  let rebuild = true,
+  // hard: rebuild from the state (first join); soft: the state came again after a lost connection or a resync, and
+  // the machine eases to it (it moves at its own speed toward the accepted head) unless it is far off.
+  let rebuild: 'hard' | 'soft' | null = 'hard',
+    everReady = false,
     shownTick = -1,
     sinceTick = 0,
     visualHead = T1.fromCm / 100,
@@ -220,8 +223,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     }),
   );
   owner.cleanup(
-    adapter.onReset(() => {
-      rebuild = true;
+    adapter.onReset((soft) => {
+      rebuild = soft && rebuild !== 'hard' ? 'soft' : 'hard';
     }),
   );
   owner.cleanup(() => sources.dispose());
@@ -287,12 +290,14 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         shownTick = state.tick;
         sinceTick = 0;
       } else sinceTick = Math.min(0.1, sinceTick + dt);
-      const reconstructed = rebuild || (state.ready && !wasReady);
-      if (reconstructed) {
-        snapshot();
-        rebuild = false;
-      }
+      // Readiness returning after a lost connection is no rebuild: only the first readiness, or a hard reset, is.
+      const hard = rebuild === 'hard' || (state.ready && !wasReady && !everReady);
+      const reconstructed = hard || rebuild === 'soft'; // either way, nothing that happened meanwhile plays its fanfare
+      if (hard) snapshot();
+      else if (rebuild === 'soft' && Math.abs(head() - visualHead) > 4) restoreMotion();
+      rebuild = null;
       wasReady = state.ready;
+      everReady ||= state.ready;
       if (previousPhase === 'waking' && state.phase !== 'waking' && state.phase !== 'asleep') {
         machine.wake(true, !liveWake);
         liveWake = false;

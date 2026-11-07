@@ -30,6 +30,7 @@ export type HostCfg = {
   tuneControllerKey?: string;
   reconnectGraceMs?: number;
   deadMs?: number;
+  hiddenDeadMs?: number;
   leadHiddenMs?: number;
   housekeepMs?: number;
 };
@@ -88,6 +89,8 @@ export function createHostedRoom({
   // seconds), so a short limit drops healthy sockets and every peer re-lists them. A closed tab or a lost link still ends the
   // socket at once (close/reset); this only bounds a connection that went silent without either.
   const deadMs = cfg.deadMs ?? 20000;
+  // A hidden tab (its presence says v 0) may be throttled or frozen by its browser far longer: give it more.
+  const hiddenDeadMs = cfg.hiddenDeadMs ?? 120000;
   const leadHiddenMs = cfg.leadHiddenMs ?? 5000;
   const clients = new Map<string, Client>(); // ready clients by selfId
   const railway = isRailwayRoom(roomId);
@@ -120,6 +123,7 @@ export function createHostedRoom({
                   y: typeof p[1] === 'number' ? p[1] : undefined,
                   z: p[2],
                   at,
+                  pid: client.pid,
                 }
               : null;
           });
@@ -390,7 +394,7 @@ export function createHostedRoom({
     const now = performance.now();
     const hb = encode({ t: 'hb', at: Date.now() });
     for (const c of clients.values()) {
-      if (now - c.seen > deadMs) c.ws.terminate();
+      if (now - c.seen > (c.hiddenSince ? hiddenDeadMs : deadMs)) c.ws.terminate();
       else write(c, hb);
     }
     checkLead();

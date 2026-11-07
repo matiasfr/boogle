@@ -722,3 +722,62 @@ test('a tab hidden for 30 s while carrying, a stroke still out, comes back with 
   assert.equal(a.adapter.inspect().carry, shown, 'the carry never dropped');
   agrees(w, a.adapter.inspect());
 });
+
+/** Chop and deliver T1's whole bill through the adapter, then chop two more to carry while it lays. */
+function fundT1(w: World, a: Client) {
+  w.awake(a);
+  let tree = 0;
+  const chop = () => {
+    while (!a.adapter.inspect().sources[tree]) tree++;
+    assert.equal(a.adapter.chop(RAILWAY_SOURCES[tree]![0], 0, false), true);
+    w.run(15);
+  };
+  for (let load = 0; load < 3; load++) {
+    while (a.adapter.inspect().carry < 8) chop();
+    w.quiet(20);
+    assert.equal(a.adapter.deposit(8, 0), true);
+    w.quiet(20);
+  }
+  chop();
+  w.quiet(20);
+  assert.ok(a.adapter.inspect().stations[0]!.start >= 0, 'T1 is laying');
+  assert.equal(a.adapter.inspect().carry, 2);
+}
+
+for (const how of ['a lost connection', 'a resync'] as const)
+  test(`through ${how} mid-laying, every frame shows the job going forward and the logs on the back`, () => {
+    const w = world();
+    const a = w.join('a', 'alice', 6);
+    w.ready();
+    fundT1(w, a);
+    const frames: { elapsed: number; carry: number; accounts: number; tick: number }[] = [];
+    const frame = (n: number) => {
+      for (let k = 0; k < n; k++) {
+        w.run();
+        const s = a.adapter.inspect();
+        frames.push({ elapsed: s.stations[0]!.elapsed, carry: s.carry, accounts: s.accounts.length, tick: s.tick });
+      }
+    };
+    frame(30);
+    if (how === 'a lost connection') {
+      a.disconnect();
+      frame(120); // two seconds away
+      a.reconnect();
+    } else w.deliver('a', { t: 's', tk: w.sync.roomStep(), c: [['nope', 1, {}]] });
+    frame(90);
+    assert.equal(a.adapter.inspect().ready, true, 'actions are back');
+    for (let k = 1; k < frames.length; k++) {
+      const [was, now] = [frames[k - 1]!, frames[k]!];
+      assert.ok(now.elapsed >= was.elapsed, `frame ${k}: laying never steps back (${was.elapsed} -> ${now.elapsed})`);
+      assert.ok(now.tick >= was.tick, `frame ${k}: the tick never goes back`);
+      assert.equal(now.carry, 2, `frame ${k}: the carried logs never blink`);
+      assert.ok(now.accounts > 0, `frame ${k}: the accounts never empty`);
+    }
+    assert.ok(frames.at(-1)!.elapsed > frames[0]!.elapsed);
+    assert.equal(a.corrections.length, 0);
+    // (The laying's own progress is shown at the client's estimate of the server tick, a one-way delay behind.)
+    const s = a.adapter.inspect();
+    assert.equal(s.counts.total, w.api.counts().total);
+    assert.equal(s.carry, w.api.account('alice')!.carry);
+    assert.equal(s.stations[0]!.start, w.api.railway.start);
+  });

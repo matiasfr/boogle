@@ -36,6 +36,8 @@ export {
   railCarry,
   railAxeAvailable,
   railBeamRelease,
+  railBeamStood,
+  railBeamPutDown,
   railLineOpen,
   railPanelCount,
   railPanelStock,
@@ -182,6 +184,9 @@ export function railSession(s: Railway, pid: string, epoch: number): boolean {
     if (epoch !== old.epoch + 1) return false;
     old.epoch = epoch;
     old.request = 0;
+    // A player who comes back (a reconnect, a reload) still carries the beam they held: it moves to the new session.
+    const beam = s.line?.beam;
+    if (beam?.state === 'held' && beam.holder === pid) beam.epoch = epoch;
   } else {
     if (epoch !== 1 || s.accounts.length >= MAX_PLAYERS) return false;
     s.accounts.push({ pid, carry: 0, epoch, request: 0 });

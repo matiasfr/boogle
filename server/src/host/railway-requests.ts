@@ -14,8 +14,11 @@
 //                       refused   validated and recorded as rejected (out of reach, too fast, malformed fields)
 //                       session   not this socket's current session: reopen
 //                       order     not the next request of the session: reopen
+//                     replication `ok` [epoch, request, n]: an accepted request and what it moved, the answer to
+//                       its actor's prediction (R1b, src/world/railway-predict.ts); the actor of a predicted op gets
+//                       no event for it, everyone else does
 //                     replication `ids` [['p:<epoch>:<request>', pileId]]: the pile an accepted drop landed in, for
-//                       the actor's predicted pile (R1b, src/world/railway-predict.ts)
+//                       the actor's predicted pile
 //                     a wake's `tk` (the tick its actor pressed at) sets its start, bounded by railWakeTick
 import { railInt, RAILWAY_MAX_INT, type RailAction } from '../../../src/sim/railway.ts';
 import { RAIL_ACTIONS, type Actor, type RailwayApi } from '../../../src/world/railway-server.ts';
@@ -106,6 +109,8 @@ export function createRailwayRequests({
     else if (moved > 0 && replication.has(sid)) replication.accepted(sid, epoch, request, moved);
   };
   return {
+    /** Whether pid has a live session (its socket is here and has opened one). */
+    active: (pid: string) => sessions.has(pid),
     /** Only the room's actual departure/takeover calls this, never stale presence or a missed packet. */
     depart(sid: string) {
       for (const [pid, session] of sessions) {

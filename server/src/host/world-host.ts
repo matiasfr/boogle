@@ -330,18 +330,36 @@ export function createRailwayWorldHost({
     unavailable: () => (startupError || sync.worldStatus().recoveryError ? 'storage' : 'starting'),
     actor,
   });
-  // A departed session drops the unique beam it was carrying: it goes back to where it was taken from.
-  const releaseBeamOf = (pid: string, epoch: number) => {
+  // The unique beam stays with its carrier through an absence (a hidden tab, a reload, a lost link, a restart): while
+  // they are here it follows where they stand (once a second, from presence); a carrier who comes back within
+  // `railBeamGraceS` still carries it (railSession moves it to their new session); one who stays away longer has it
+  // put down where they last stood (owner, 6 November: you keep your load, or it goes down where you stood).
+  let beamAway: number | null = null;
+  let stoodAt = -Infinity;
+  const maintainBeam = () => {
     const beam = railway.line!.beam;
-    if (beam.state === 'held' && beam.holder === pid && beam.epoch <= epoch)
-      api.beamRelease(beam.holder, beam.epoch, beam.revision);
+    if (beam.state !== 'held') return void (beamAway = null);
+    const t = now();
+    if (requests.active(beam.holder)) {
+      beamAway = null;
+      if (t - stoodAt < 1000) return;
+      stoodAt = t;
+      const p = positions().find((row) => row?.pid === beam.holder && row.y !== undefined && t - row.at <= 2000);
+      // Presence is the body's centre in metres; the beam lies at the feet.
+      if (p) api.beamStood(beam.holder, Math.round(p.x * 100), Math.round(p.y! * 100) - 45, Math.round(p.z * 100));
+      return;
+    }
+    beamAway ??= t;
+    if (t - beamAway >= rules.tune.get('railBeamGraceS') * 1000) {
+      api.beamPutDown(beam.holder);
+      beamAway = null;
+    }
   };
   const ready = (async () => {
     attach();
     await sync.whenDurable();
-    // No session survives a server restart: an orphaned held beam goes back.
-    const orphan = railway.line!.beam;
-    if (orphan.state === 'held') api.beamRelease(orphan.holder, orphan.epoch, orphan.revision);
+    // No session survives a server restart: a held beam's carrier is away from now (maintainBeam), and keeps it if they
+    // come back within the grace.
     // Catch up the time nobody hosted, once, for the funded job.
     const marker = Math.floor(now() / 100);
     const absent = Math.max(
@@ -371,7 +389,10 @@ export function createRailwayWorldHost({
           const before = sync.world.tick;
           const step0 = sync.roomStep();
           sync.stepWorld(Math.min(time - last, 1000));
-          if (sync.world.tick !== before) maintainSupply(); // on rule ticks only, not 60 times a second
+          if (sync.world.tick !== before) {
+            maintainSupply(); // on rule ticks only, not 60 times a second
+            maintainBeam();
+          }
           const ms = performance.now() - time;
           stats.wakes++;
           stats.steps += sync.roomStep() - step0;
@@ -447,6 +468,7 @@ export function createRailwayWorldHost({
       if (running && !closed) {
         sync.stepWorld(dt * 1000);
         maintainSupply();
+        maintainBeam();
       }
     },
     status: () => ({
@@ -456,9 +478,13 @@ export function createRailwayWorldHost({
       ready: running && !sync.worldStatus().recoveryError,
     }),
     whenReady: () => ready,
+    /** The room's actual departure of a session (after its reconnect grace). A carried beam waits for its carrier. */
     depart(sid: string) {
       const session = requests.depart(sid);
-      if (session) releaseBeamOf(session.pid, session.epoch);
+      const beam = railway.line!.beam;
+      // The grace runs from the carrier's departure, not from when maintenance next notices it.
+      if (session && beam.state === 'held' && beam.holder === session.pid && !requests.active(session.pid))
+        beamAway ??= now();
     },
     async close({ save = true } = {}) {
       closed = true;
@@ -490,4 +516,5 @@ const RAIL_TUNE_KEYS = new Set([
   'railJumpTurn',
   'railJumpSteer',
   'railJumpApexSpeed',
+  'railBeamGraceS',
 ]);

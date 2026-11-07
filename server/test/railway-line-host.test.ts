@@ -14,7 +14,7 @@ import { railMaxDuration } from '../../src/sim/railway-line.ts';
 import { railwayInvariant } from '../../src/sim/railway.ts';
 
 type Obj = Record<string, unknown>;
-test('line host releases a departed holder, fences stale epochs and recovers a restart-held beam', async () => {
+test('line host keeps a departed carrier the beam through its grace, then grounds it; a restart keeps it too', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-'));
   const store = createStore({ dataDir: dir, maxRooms: 2 });
   await store.init();
@@ -162,10 +162,14 @@ test('line host releases a departed holder, fences stale epochs and recovers a r
     pose('a', beam.x, beam.z);
     submit('a', { op: 'rail.beamTake', revision: beam.revision });
     await host.sync.whenDurable();
-    host.depart('a'); // The claim applied on arrival; the departure puts the beam back.
+    host.depart('a'); // The claim applied on arrival; the carrier is away, and keeps it through the grace.
     await ticks(9);
-    assert.equal(beam.state, 'available');
+    assert.equal(beam.state, 'held', 'an absent carrier keeps the beam');
+    now += host.rules.tune.get('railBeamGraceS') * 1000;
+    await ticks(3);
+    assert.equal(beam.state, 'ground', 'past the grace it goes down where they stood, not back to the tree');
     assert.equal(beam.holder, '');
+    assert.deepEqual([beam.x, beam.z], [LINE1_GREAT_TREE.x, LINE1_GREAT_TREE.z], 'they stood where they took it');
     const departedRevision = beam.revision;
     await open('a2');
     pose('a2', beam.x, beam.z);
@@ -178,11 +182,10 @@ test('line host releases a departed holder, fences stale epochs and recovers a r
     host = create();
     await host.whenReady();
     beam = host.rules.railway.railway.line!.beam;
-    assert.equal(beam.state, 'available', 'orphan recovered before readiness');
-    assert.equal(beam.holder, '');
+    assert.equal(beam.state, 'held', 'a restart keeps the carried beam for its carrier');
+    assert.equal(beam.holder, 'alice');
     await open('a3');
-    pose('a3', beam.x, beam.z);
-    await edit('a3', { op: 'rail.beamTake', revision: beam.revision });
+    assert.equal(beam.epoch, sessions.get('a3')!.epoch, 'the returning carrier still carries it');
     pose('a3', LINE1_STATIONS[2]!.x, LINE1_STATIONS[2]!.z);
     submit('a3', { op: 'rail.beamDeposit', station: 'T3', revision: beam.revision });
     await host.sync.whenDurable();

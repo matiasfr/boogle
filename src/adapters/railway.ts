@@ -266,7 +266,7 @@ export function createRailwayAdapter({
   const effects = new Set<(event: RailwayAccepted) => void>();
   const corrections = new Set<(c: RailwayCorrection) => void>();
   const remaps = new Set<(request: number, id: number) => void>();
-  const resets = new Set<() => void>();
+  const resets = new Set<(soft: boolean) => void>();
   let room: WorldRoom | null = null;
   let offRoom: (() => void)[] = [];
   let connected = false;
@@ -280,9 +280,6 @@ export function createRailwayAdapter({
   let probeAt = -Infinity;
   let resyncAt = -Infinity;
   const stopped = () => status === 'storage' || status === 'full';
-  const resetView = () => {
-    for (const fn of resets) fn();
-  };
   // The estimated server tick, never going backwards (a late stamp can re-anchor the estimate a little lower). It
   // follows the server's step as of one one-way delay ago, so an action predicted at it reaches the server at the
   // same tick or later: a tick-gated rule (the wake's readiness) the prediction accepts, the server accepts too.
@@ -321,7 +318,15 @@ export function createRailwayAdapter({
     window: RAILWAY_WINDOW,
   });
   /** What the views read: the mirror, with your pending actions applied. */
-  const view = () => (predictor.pending().length ? predictor.state() : confirmed);
+  // While a whole state comes again (a lost connection, a resync), what was last shown stays shown, its timed jobs still
+  // advancing: no blink, no snap. The new state replaces it at its last chunk, and the views ease to it.
+  let frozen: Railway | null = null;
+  const view = () => frozen ?? (predictor.pending().length ? predictor.state() : confirmed);
+  function refill() {
+    if (synced) frozen ??= view();
+    rail.refill();
+    synced = false;
+  }
 
   const available = () =>
     !disposed &&
@@ -454,9 +459,12 @@ export function createRailwayAdapter({
       }
     }
     if (rebuilt) {
-      // The packet that completes a whole state already shows what its events did: views rebuild from it, and
-      // playing its events or corrections would replay effects.
-      resetView();
+      // The packet that completes a whole state already shows what its events did: views rebuild from it (softly,
+      // after a refill: no snap), and playing its events or corrections would replay effects.
+      const soft = frozen !== null;
+      frozen = null;
+      predictor.invalidate();
+      for (const fn of resets) fn(soft);
       if (available()) status = 'ready';
       return;
     }
@@ -482,15 +490,13 @@ export function createRailwayAdapter({
   rail.mirror.onPacket((p) => {
     if (!disposed) settle(p);
   });
-  // A mirror that differs from the server (a refused packet, a hash mismatch) is dropped and refilled whole; the
-  // server keeps this client's ack, so its pending actions still settle. At most one request a second.
+  // A mirror that differs from the server (a refused packet, a hash mismatch) is refilled whole, shown as it was until
+  // then; the server keeps this client's ack, so its pending actions still settle. At most one request a second.
   rail.mirror.onDiverged((why) => {
     if (disposed || !room || clock - resyncAt < 1000) return;
     resyncAt = clock;
     console.warn(`[railway] mirror diverged (${why}): asking for the whole state`);
-    rail.reset();
-    synced = false;
-    predictor.invalidate();
+    refill();
     room.send({ t: 'r:resync' });
   });
   function hear(message: unknown, from: string) {
@@ -710,6 +716,8 @@ export function createRailwayAdapter({
     attach(nextRoom: WorldRoom) {
       if (disposed || room === nextRoom) return;
       for (const off of offRoom) off();
+      // A new room (a new socket) sends the whole state again.
+      if (room) refill();
       room = nextRoom;
       connected = true;
       lose(null);
@@ -718,12 +726,9 @@ export function createRailwayAdapter({
         room.onConnection((live) => {
           connected = live;
           if (!live) {
-            // The server re-sends everything whole when the socket comes back; nothing here outlives the old one.
-            rail.reset();
-            synced = false;
-            shownTick = 0;
+            // The server re-sends everything whole when the socket comes back: keep showing this until it has.
+            refill();
             lose(null);
-            resetView();
           } else lose(null);
         }),
       ];
@@ -791,7 +796,8 @@ export function createRailwayAdapter({
       remaps.add(fn);
       return () => remaps.delete(fn);
     },
-    onReset(fn: () => void) {
+    /** fn(soft): the whole state arrived; soft after a refill (views ease to it rather than rebuild and snap). */
+    onReset(fn: (soft: boolean) => void) {
       resets.add(fn);
       return () => resets.delete(fn);
     },

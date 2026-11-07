@@ -23,6 +23,8 @@ import {
   hashRailway,
   railMaxDuration,
   railBeamRelease,
+  railBeamStood,
+  railBeamPutDown,
   railPanelCount,
   railPanelStock,
   RAILWAY_MAX_INT,
@@ -221,7 +223,18 @@ export function install(sync: SyncView, rules: { tune: TuneApi }, replication: R
     session(pid: string, epoch: number) {
       const ok = railSession(railway, pid, epoch);
       if (ok) touch('account', pid);
+      if (ok) touch('beam', 0); // a returning carrier's beam moves to the new session
       return ok;
+    },
+    /** Where the beam's carrier stands (cm, feet): an absence past its grace puts it down there. */
+    beamStood(pid: string, x: number, y: number, z: number) {
+      if (railBeamStood(railway, pid, x, y, z)) touch('beam', 0);
+    },
+    /** The carrier stayed away past the grace: down where they last stood. */
+    beamPutDown(pid: string) {
+      const n = railBeamPutDown(railway, pid);
+      if (n) touch('beam', 0);
+      return n;
     },
     resume(ticks: number, marker: number) {
       const n = railResume(railway, Math.min(ticks, railMaxDuration(railway)), marker, sync.world.tick);

@@ -525,6 +525,12 @@ export function createRailwayMirror() {
         advance(target.line2!.jobs[k]!, clocks[LINE1_STATIONS.length + k]!, LINE2_STATIONS[k]!, 'rails', tick);
       return target;
     },
+    /** A whole state is coming again (reconnect, resync): this one stays as it is, actions wait, until it has all
+     * arrived and replaces it. */
+    refill() {
+      mirror.refill();
+      synced = false;
+    },
     reset() {
       mirror.reset();
       s.piles = [];

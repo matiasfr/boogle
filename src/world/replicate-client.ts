@@ -13,7 +13,9 @@
 //   mirror.stamp(step, atMs)          a server clock stamp from outside the packets (the room's w:c clock)
 //   mirror.step(atMs)                 estimated server step (src/world/room-clock.ts) from the packets' tk stamps
 //   mirror.clone()                    a deep copy of every component (the predictor's confirmed base, budget test)
-//   mirror.reset()                    drop everything (reconnect; the server re-sends whole from change tick -1)
+//   mirror.refill()                   a whole state is coming again (reconnect, resync): build it aside and keep
+//                                     showing this one until its last chunk (w), then swap it in, rows it lacks deleted
+//   mirror.reset()                    drop everything
 //
 //   const p = createPredictor({ confirmed, clone, apply, window })
 //   p.session(epoch, next)            the session's action identity: the existing railway (epoch, request) pair
@@ -56,6 +58,10 @@ export function createMirror(schemas: readonly Schema[]) {
   const divergedFns: ((why: 'refused' | 'hash') => void)[] = [];
   const estimate = createStepEstimate();
   let tk = -1;
+  // While refilling: the incoming whole state, built aside (and its step) until its last chunk swaps it in.
+  let staging: Map<string, Map<EntityId, Fields>> | null = null;
+  let stagingTk = -1;
+  const target = () => staging ?? store;
   let whole = false;
   let heard = -1; // the newest server step heard (packets and clock stamps)
   const stats = { applied: 0, refused: 0, chars: 0, diverged: 0 };
@@ -65,7 +71,8 @@ export function createMirror(schemas: readonly Schema[]) {
 
   // Whole-packet validation: nothing is mutated unless every entry is well-formed for the current mirror.
   function valid(p: unknown): p is ServerPacket {
-    if (!isObj(p) || p.t !== 's' || !isStep(p.tk) || p.tk < tk || (p.w !== undefined && p.w !== 1)) return false;
+    if (!isObj(p) || p.t !== 's' || !isStep(p.tk) || p.tk < (staging ? stagingTk : tk)) return false;
+    if (p.w !== undefined && p.w !== 1) return false;
     if (p.m !== undefined && p.m !== 1) return false;
     if (
       p.ok !== undefined &&
@@ -125,7 +132,7 @@ export function createMirror(schemas: readonly Schema[]) {
         const schema = kinds.get(r[0]);
         if (!schema) return false;
         // A change to an entity this mirror holds may be partial; anything else must arrive whole.
-        const held = store.get(r[0])!.has(r[1]) && !gone.has(entityKey(r[0], r[1]));
+        const held = target().get(r[0])!.has(r[1]) && !gone.has(entityKey(r[0], r[1]));
         if (!validFields(schema, r[2], held)) return false;
       }
     }
@@ -134,6 +141,31 @@ export function createMirror(schemas: readonly Schema[]) {
 
   function notify(kind: string, id: EntityId, fields: Fields | null, changed: Fields | null) {
     for (const fn of changeFns.get(kind) ?? []) fn(id, fields, changed);
+  }
+  // The refill's last chunk: the staged state replaces this one, telling the views only what differs.
+  function swap(next: Map<string, Map<EntityId, Fields>>) {
+    for (const [kind, rows] of store) {
+      const fresh = next.get(kind)!;
+      for (const id of [...rows.keys()])
+        if (!fresh.has(id)) {
+          rows.delete(id);
+          notify(kind, id, null, null);
+        }
+      for (const [id, f] of fresh) {
+        const old = rows.get(id);
+        const changed: Fields = {};
+        let any = !old;
+        for (const k in f)
+          if (!old || old[k] !== f[k]) {
+            changed[k] = f[k]!;
+            any = true;
+          }
+        if (!any) continue;
+        const now = old ? Object.assign(old, f) : { ...f };
+        if (!old) rows.set(id, now);
+        notify(kind, id, now, changed);
+      }
+    }
   }
 
   return {
@@ -145,16 +177,33 @@ export function createMirror(schemas: readonly Schema[]) {
         if (whole) for (const fn of divergedFns) fn('refused');
         return false;
       }
-      tk = packet.tk;
       estimate.hear(packet.tk, at);
       if (packet.tk > heard) heard = packet.tk;
-      for (const [kind, id] of packet.x ?? []) if (store.get(kind)!.delete(id)) notify(kind, id, null, null);
-      for (const [kind, id, fields] of packet.c ?? []) {
-        const rows = store.get(kind)!;
-        const old = rows.get(id);
-        const next = old ? Object.assign(old, fields) : { ...fields };
-        if (!old) rows.set(id, next);
-        notify(kind, id, next, fields);
+      if (staging) {
+        stagingTk = packet.tk;
+        for (const [kind, id] of packet.x ?? []) staging.get(kind)!.delete(id);
+        for (const [kind, id, fields] of packet.c ?? []) {
+          const rows = staging.get(kind)!;
+          const old = rows.get(id);
+          if (old) Object.assign(old, fields);
+          else rows.set(id, { ...fields });
+        }
+        if (packet.w) {
+          const next = staging;
+          staging = null;
+          tk = stagingTk;
+          swap(next);
+        }
+      } else {
+        tk = packet.tk;
+        for (const [kind, id] of packet.x ?? []) if (store.get(kind)!.delete(id)) notify(kind, id, null, null);
+        for (const [kind, id, fields] of packet.c ?? []) {
+          const rows = store.get(kind)!;
+          const old = rows.get(id);
+          const next = old ? Object.assign(old, fields) : { ...fields };
+          if (!old) rows.set(id, next);
+          notify(kind, id, next, fields);
+        }
       }
       if (packet.w) whole = true;
       stats.applied++;
@@ -209,7 +258,14 @@ export function createMirror(schemas: readonly Schema[]) {
       }
       return out;
     },
+    /** The server is sending the whole state again (a reconnect, a resync): keep this one until it has all arrived. */
+    refill() {
+      staging = new Map(schemas.map((s) => [s.kind, new Map()]));
+      stagingTk = -1;
+      whole = false;
+    },
     reset() {
+      staging = null;
       for (const [kind, rows] of store)
         for (const id of [...rows.keys()]) {
           rows.delete(id);

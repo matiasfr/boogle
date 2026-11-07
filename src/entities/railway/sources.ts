@@ -559,7 +559,18 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   const offRemap = adapter.onRemap((request, id) => {
     for (const flight of pileFlights) if (flight.request === request) flight.id = id;
   });
-  const offReset = adapter.onReset(reconstruct);
+  // After a lost connection or a resync only what changed meanwhile is re-posed; swings and flights carry on.
+  const offReset = adapter.onReset((soft) => {
+    if (!soft) return reconstruct();
+    state = adapter.inspect();
+    for (const tree of trees) {
+      const k = sourceIndex.get(tree.index),
+        h = hardwoodIndex.get(tree.index);
+      const left = k !== undefined ? state.sources[k] : h !== undefined ? state.hardwood[h] : undefined;
+      if (left !== undefined && tree.issued !== tree.ceiling - left) fromState(tree);
+    }
+    drawPiles();
+  });
   reconstruct();
   function dropOne() {
     state = adapter.inspect();

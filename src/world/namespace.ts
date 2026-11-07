@@ -15,8 +15,9 @@
 // v13 (2026-11-06): line two's forge, Q1-Q3, depot, lever and hook join the railway state; rails ride the back.
 // v14 (2026-11-06): replication R1a: the railway is Server-kind state (replicated, saved by pid with the server's
 // checkpoint), its lockstep ops and hash gone; the isolated t1v01 railway rooms removed.
+// v15 (2026-11-06): the `railBeamGraceS` tunable (an absent carrier keeps the beam, then it goes down where they stood).
 // Pure: read by room routing and tests.
-export const WORLD_NS = 'v14';
+export const WORLD_NS = 'v15';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

@@ -91,6 +91,13 @@ const supply = {
     at: 'next owner movement update',
     meaning: 'Vertical-speed threshold for the second-jump apex presentation.',
   },
+  railBeamGraceS: {
+    id: 'railway.beamGraceS',
+    units: 'seconds',
+    at: 'next carrier absence',
+    meaning:
+      'How long the unique beam stays with a carrier who left (a hidden tab, a reload, a lost link) before it goes down where they last stood.',
+  },
 } as const;
 /** Commands the dev tool and `npm run tune` both accept. */
 export const TUNE_COMMANDS = ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'] as const;
