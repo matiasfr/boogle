@@ -21,8 +21,8 @@ answered the layout's open questions in 3D at the real scale. The owner's calls,
 greybox reads as its one source:
 
 1. **Scale stays; the fog extends.** "I like the sense of scale. We should just extend the fog if we need to." The
-   game's fog ran out at 1.5 km, so from Home only Bell Rock and the classic island showed. The outdoor fog is now the
-   crossing's 3.6 km everywhere (`OUTDOOR_FOG_FAR`, held by the frozen sky). Performance before and after is in the
+   game's fog ran out at 1.5 km, so from Home only Bell Rock and the classic island showed. In the greybox the fog now runs
+   to the crossing's 3.6 km (the live game keeps its own until these areas are built). Performance before and after is in the
    greybox report; other options come back if it costs too much.
 2. **The tweaks.** A chalk islet on each side of Canopy Town (six islets, one kit), so the wall reads as one, with
    Canopy's giant crowns rising over it and the line entering the town through a 70 m cleft; the Gorge split turned so
