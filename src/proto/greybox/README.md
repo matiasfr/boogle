@@ -30,8 +30,16 @@ Use a room of your own (`room=`), so you don't fly about in front of other peopl
 The panel (bottom left, in the HUD, so captures leave it out) has views, go-to for every place (moves your own body)
 and rides along the lines at the economy model's 20 m/s, x1 or x4, with the model's ride time. `window.__greybox`
 drives the same from a look eval: `view(id)`, `pose(cam, look)`, `ride(route, speed)`, `go(place)`, `free()`,
-`labels(on)`, `fog(mode)`, `viewPose(id)`, `state()`. The review shot list is `dev/look/beats/sickle-greybox.ts`
-(`node dev/look/shots.ts dev/look/beats/sickle-greybox.ts --name sickle` when the look queue is quiet).
+`labels(on)`, `fog(mode)`, `viewPose(id)`, `refresh()`, `state()`. Under the look harness some meshes' first draws
+never appear (7 November); call `refresh()` in the look action, after warm-up, before judging a still:
+
+```sh
+npm run look -- --query 'greybox=sickle&labels=0' --cam 812,8,22 --look -829,60,-331 --action refresh.ts --name spawn
+# refresh.ts: (window as any).__greybox.refresh(); await new Promise((r) => setTimeout(r, 400)); export {};
+```
+
+The review views as a shot list are `dev/look/beats/sickle-greybox.ts`; frozen shots can't refresh after warm-up, so
+check their cells against a look still.
 
 ## What it reads from the JSON
 
