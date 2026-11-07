@@ -307,6 +307,14 @@ inside E (C's storage; the API hides storage), then bitECS. This trigger change 
   an audited world whose writes go through the systems (a write to the view throws); encoding tests became snapshot
   load tests on the world (malformed columns, archetypes, keys, conservation). `npm run check` 448 pass; server 79
   pass; `test:net` 111/111.
+- **The solo playthrough is not verified to the end.** Two runs that got past the harness lobby woke the machine, laid
+  T1 and T2, carried and deposited the great beam and funded T3, then stopped at the bot's "T3 laid once" wait: the
+  harness's server ran about 0.65 rule ticks per game second, so T3's 217 ticks need ~330 game seconds against the
+  bot's 300 s default. That is the same rate `origin/main` shows (T1 laid +3:12 on E, +3:16 in another agent's run
+  of a current tree), and that agent's branch raises the bot's laying waits to 600 s and finishes T3 at +5:31.
+  Four retries with that wait applied locally (not committed) and three runs of `origin/main` itself timed out at the
+  harness lobby, which other agents' runs were hitting too. **Rerun the playthrough once the bot's laying wait lands
+  and the harness is quiet.**
 
 | Rules, per call (Node, the diff run, no audit) | Before (plain object) | E |
 |---|---|---|
