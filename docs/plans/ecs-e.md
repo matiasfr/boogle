@@ -20,7 +20,8 @@
   beam, the forge, the global row, the request history). Its rules become systems that declare what they read and
   write. Its hand-written save encodings, JSON hash and the server's projections go. The client keeps reading
   today's `Railway` shape, now a *derived read model* rebuilt from the world, so the adapter and views do not change.
-- **The core is capped at its built size, 650 non-blank lines** (450 planned; step 2), with a closed feature list (below). Anything past it is a reason to
+- **The core was capped at 650 non-blank lines in step 2 and is 708 after step 3** (450 planned; see step 3's
+  notes: the growth is flagged for the owner, not re-capped), with a closed feature list (below). Anything past it is a reason to
   adopt a library, not to grow E.
 
 ## 1. Where it lives, and why
@@ -85,10 +86,11 @@ w.clone();     // the predictor's scratch copy
 
 ### Closed feature list (the cap)
 
-In: components with typed fields and defaults, `key`, `replicate`, `requires`; stamped ids and `reserve`; `get`,
-`mut`, `has`, `each` over up to four components, `ids`, `count`, `single`, `lookup`; deferred structure; systems with
-declared access, phases and orders; `changes`; hash, snapshot, load, clone; audit mode; `inspect()` (counts and rows
-for the dev tools).
+In: components with typed fields and defaults, `key`, `replicate`, `track`, `requires`; stamped ids and `reserve`;
+`get`, `mut`, `has`, `each` over up to four components (optionally writable), `ids`, `count`, `single`, `lookup`;
+deferred structure; systems with declared access, phases and orders; `changes`; hash, snapshot, load, clone
+(copy-on-write); audit mode; `inspect()` (counts for the dev tools). `track`, writable `each` and copy-on-write clones
+were added in steps 2 and 3, each for a measured cost (below).
 
 Out, deliberately: relations, observers/hooks, `Without`/`Changed` filters, archetype storage, parallel scheduling,
 events, resources (a singleton is an entity with `single`), queries by value, and any three.js type. Each is a
@@ -277,6 +279,92 @@ own criterion is "a library only if profiling at 3,000 entities asks for it", an
 keep E, and replace the relative trigger with absolute ones:** a rule tick over 1 ms at 3,000 entities, a server step
 over 0.5 ms from E's own work, or any E work in a frame over 0.05 ms. If one is hit, the first lever is SoA columns
 inside E (C's storage; the API hides storage), then bitECS. This trigger change is the owner's call.
+
+## Step 3: the railway on E, what landed and what it measured (7 November, M1 Max)
+
+- **State:** `src/sim/railway-world.ts` declares the components of section 4 and spawns a fresh railway in catalog
+  order; `src/sim/railway-systems.ts` holds the rules as 29 systems (one per action op, the receipt and remember
+  around them, the three tick systems, resume, session, supply, and the beam's three absent-carrier paths), each
+  naming what it reads and writes. `Railway` is a read model: `railwayView` builds it, `refreshRailway` patches it
+  from the change marks, and the load check (`railwayCheck`) validates archetypes, catalog counts and then every
+  domain invariant the hand loader had, on the read model.
+- **Server:** `install` holds a world; the save is `world.snapshot()`, the hash `world.hash()`, the load
+  `world.load(json, railwayCheck)`; replication reads the replicated components through `worldProjections` and is
+  fed by `touchChanges` after every action, tick and pulse. The host reads the beam, piles and markers through narrow
+  getters; `api.railway` is the read model, rebuilt after a change.
+- **Client:** the mirror writes each packet into a world (`reserve` keeps the server's ids) and patches its read
+  model from what changed; prediction clones that world copy-on-write and runs the same systems; thresholds are held
+  back exactly as before. The adapter and the views are unchanged.
+- **Deleted:** `serializeRailway`/`loadRailway`/`hashRailway`, `src/sim/railway-line-code.ts`, line two's and the
+  supply's hand encodings, `railProjections` and the touch lists, and the T1-only and playable-without-line states
+  (tests only). **`WORLD_NS` v16.**
+- **Same rules, checked:** `dev/spikes/ecs/railway-diff.ts` runs the pre-move rules (a copy of `src/sim` from before
+  the move) and the systems on the same random action streams (three players, every op, ticks, supply pulses with
+  random intervals, resumes, sessions, the beam's absent paths) and compares the read model with the old state after
+  every step: **200 seeds, 300,600 comparisons, all equal**, every seed reaching Q3 and the lever; 60 more after the
+  copy-on-write change, 90,180 comparisons, equal.
+- **Tests:** the rule tests written against `Railway` run through `test/railway-live.ts`, a read-only live view of
+  an audited world whose writes go through the systems (a write to the view throws); encoding tests became snapshot
+  load tests on the world (malformed columns, archetypes, keys, conservation). `npm run check` 448 pass; server 79
+  pass; `test:net` 111/111.
+
+| Rules, per call (Node, the diff run, no audit) | Before (plain object) | E |
+|---|---|---|
+| An action | 1.7 µs | 4.4 µs (with the job clock settle) |
+| A rule tick | 2.2 µs | 4.8 µs |
+
+The "before" column excludes the projections and touch lists the old path also ran per action; E's includes its
+change marks.
+
+**Load** (`npm run load`, 15 s a row, headless pages over the real server; the same machine and session as the
+baseline column, other agents' work running):
+
+| Measure (18 rows, normal and 5x; crowd separately) | R1b (`origin/main`, this session) | **E** |
+|---|---|---|
+| Actor press to effect, p50 / p95 / max | 0.1-0.6 / 0.6-1.7 / 1.0-5.3 ms | **0.2-0.6 / 0.5-1.7 / 1.2-6.2 ms** |
+| Others see it, p50 at 0 / 100 / 200 ms | 11-13 / 115-118 / 214-216 ms | **11-13 / 113-116 / 213-217 ms** |
+| Downlink per client at 6 players, normal / 5x | 14.9-15 / 59.7-68.2 kbit/s | **14.5-14.6 / 59-66.5 kbit/s** |
+| Server ms per step, mean of the rows, normal / 5x | 0.197 / 0.248 | **0.225 / 0.292** |
+| Host ms per action message, mean of the rows, normal / 5x | 0.122 / 0.097 | **0.187 / 0.123** |
+| Corrections, normal and 5x | 0 | **0** |
+| Crowd corrections per player-minute, 2 / 4 / 6 players | 8-10 / 16-17 / 28-30 (R1b's own table: 8-10 / 14-16 / 32-39) | **8-10 / 16-17 / 33-35** |
+| Late join | 31.4-32.5 KB | **35.7-36.9 KB** |
+| Checkpoint | 7.8-8.5 KB | **10.1-10.8 KB** |
+| Conserved, every mirror agreeing (a late joiner included) | all rows | **all rows** |
+
+Press to effect is the same at p50; at normal churn E's p95 rows read 1.1-1.7 ms against 0.8-1.7 (every row under
+the one-frame bar). The server rows read 14-18% higher on E, and the host's action time 30-50% higher. Both runs shared the machine with
+other agents' browser jobs (load 6-8) and ran one after the other, not interleaved. The same comparison in one Node
+process, both trees' own railway installs on one action stream (`dev/spikes/ecs/server-path.ts`, three rounds), reads
+the other way: an action 5.7-7.2 µs on E against 10.1-17.9 µs before (the old path rebuilt pile maps and touch
+lists), a step with its commit and flush to two mirrors 78-83 µs against 78-94 µs. Crowding one pile at 6 players
+corrected 33-35 per player-minute on E against 28-30 on `origin/main` in this session and 32-39 in R1b's own table:
+these are simultaneous presses on a shared beat, which vary from run to run. So E is not shown worse, but the
+bar "no worse than R1b" is met only within this noise: **a quiet-machine rerun of `npm run load` against
+`origin/main` is the check to make before trusting the server columns.**
+
+- **Saves and late join grew** with the explicit schema: a checkpoint is ~10.1-10.8 KB (R1b ~8 KB), a late join
+  35.7-36.9 KB (R1b 31-32 KB; catalog kinds now carry `slot`, accounts `pid`). The worst-case recovery document
+  (`test/railway-line-bounds.test.ts`, every field at its widest) is 104-114 KB of the 128 KB bound; the packed
+  encodings were smaller. A binary snapshot is the lever if it ever matters.
+- **Prediction:** a press clones the mirror's world copy-on-write (8 µs) and replays; a chop with its read-model
+  patch costs ~60 µs in Node (before: `structuredClone` ~43 µs plus the rule).
+
+**Adversarial notes on step 3.**
+- The read model is a second representation. It is derived (one builder, one patcher) and never written back, and
+  the replication test compares the mirror's world row for row with the server's, but a field added to a component
+  and forgotten in `railwayView` or `refreshRailway` would show stale on the client. A test that patches and rebuilds
+  and compares the two is the guard (`railway-replicate.test.ts` agrees whole read models every few actions).
+- Copy-on-write clones grew the core to **708 non-blank lines**, past the 650 set in step 2. They were added for a
+  measured cost: a press cloned the whole mirror world (~75 µs) where R1b's `structuredClone` took ~43 µs; now the
+  clone is ~8 µs and a predicted chop ~60 µs. The plan's own rule says growth past the cap is the owner's call, so it
+  is flagged rather than re-capped.
+- The live test view is a shim: tests that read `Railway` keep running, but they no longer exercise the read model's
+  exact object identity (a held pile reference now follows its index). New tests should use the world directly.
+- Rules on E are 2-3x slower per call than on the plain object (still single microseconds). The move removed more
+  than it added (production code +1,688 / -2,057 lines, mostly the hand encodings and projections), but each rule
+  reads longer: declared access, lookups by key and `mut` cost words. Readability is the owner's call; `rail.chop`
+  in `src/sim/railway-systems.ts` is the example to read.
 
 ## 9. Steps
 
