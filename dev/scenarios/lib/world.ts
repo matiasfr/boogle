@@ -13,6 +13,7 @@ export const TOSSED = `window.boogle.gifts.items.some((it) => it.src === 0 && it
 // How long to wait for a tab to apply an edit, a toss or a pick-up. At about a frame a second (a CI runner's software
 // WebGPU) a tab's world clock gains 2.5 ticks a frame (src/world/sync.ts, MAX_STEPS on a 50 ms dt), so it applies one it
 // has already received 80 s or more late. On a real GPU it lands at once and the wait returns.
+const sleepMs = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 export const EDIT_WAIT_MS = 180000;
 export const MET = `window.boogle.net.room && window.boogle.remotes.size >= 1`;
 const ROLE = `(() => { const w = window.boogle.sync.worldStatus(); return w.ready && w.mode + (w.hostId === 'server' ? '@server' : ''); })()`;
@@ -42,35 +43,29 @@ export async function hashesAtOneTick(host: Game, client: Game) {
   let detail = 'no samples';
   try {
     await Promise.all([host, client].map((g) => g.eval(`window.boogle.sync.captureHashes(true);`)));
+    // Each tab records its hashes on a shared tick grid (src/features/debug-handle.ts) and keeps a long history, so the
+    // faster tab's samples are still there when the slower one arrives at a tick. Compare the latest tick both hold; a
+    // slow client never has to land inside a short sliding window.
+    const ticks = (g: Game) => g.eval<number[]>(`return window.boogle.sync.hashTicks();`);
     while (Date.now() < deadline) {
-      const samples = await host.eval<{ tick: number; hashes: Record<string, number> }[]>(`
-        const s = window.boogle.sync;
-        return s.hashTicks().map((tick) => ({ tick, hashes: s.hashesAt(tick) }));`);
-      const ticks = samples.map((s) => s.tick);
-      const list = JSON.stringify(ticks);
-      // If the client has already passed this whole batch (e.g. by loading a snapshot), refresh it as the host
-      // records more. Otherwise wait for a recorded common tick, not an assumed number of rendered frames.
-      await client.waitFor(
-        `${list}.some((t) => window.boogle.sync.hashesAt(t) !== null) || window.boogle.sync.world.tick > ${Math.max(...ticks)}`,
-        { timeout: Math.max(1, Math.min(1000, deadline - Date.now())) },
-      );
-      const match = await client.eval<{ tick: number; hashes: Record<string, number> } | null>(`
-        const s = window.boogle.sync, tick = ${list}.find((t) => s.hashesAt(t) !== null);
-        return tick === undefined ? null : { tick, hashes: s.hashesAt(tick) };`);
-      if (match) {
-        const a = samples.find((s) => s.tick === match.tick)!.hashes,
-          b = match.hashes;
-        const same = JSON.stringify(a) === JSON.stringify(b);
-        return {
-          same,
-          status: same ? 'matched' : 'mismatch',
-          detail: `tick ${match.tick} host ${JSON.stringify(a)} client ${JSON.stringify(b)}`,
-        };
+      const [h, c] = await Promise.all([ticks(host), ticks(client)]);
+      const have = new Set(h);
+      const common = c.filter((t) => have.has(t));
+      detail = `host recorded ${h.length} ticks (${h[0]}..${h.at(-1)}), client ${c.length} (${c[0]}..${c.at(-1)}), none in common yet`;
+      if (common.length) {
+        const tick = Math.max(...common);
+        const at = (g: Game) => g.eval<Record<string, number> | null>(`return window.boogle.sync.hashesAt(${tick});`);
+        const [a, b] = await Promise.all([at(host), at(client)]);
+        if (a && b) {
+          const same = JSON.stringify(a) === JSON.stringify(b);
+          return {
+            same,
+            status: same ? 'matched' : 'mismatch',
+            detail: `tick ${tick} host ${JSON.stringify(a)} client ${JSON.stringify(b)}`,
+          };
+        }
       }
-      detail = `host recorded ${ticks.length} ticks (${ticks[0]}..${ticks.at(-1)}), client has no overlap`;
-      await host.waitFor(`window.boogle.sync.hashTicks().some((t) => t > ${Math.max(...ticks)})`, {
-        timeout: Math.max(1, Math.min(1000, deadline - Date.now())),
-      });
+      await sleepMs(1000);
     }
     return { same: false, status: 'unavailable', detail: `no shared tick before deadline; ${detail}` };
   } finally {

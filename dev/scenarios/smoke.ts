@@ -36,6 +36,10 @@ const lowCostInit = `try {
   localStorage.setItem('boogle.dev.graphics.v1', JSON.stringify({ version: 1, values: ${JSON.stringify(LOW_COST.dev)} }));
 } catch {}`;
 
+// SMOKE_DEPTH=light (the CI workflow, software rendering): connect, presence, the server's world, a roster edit and the
+// server's own hash checks. The default, full, adds the ball's owner handover and the same-tick hash comparison, which
+// need a tab that draws at a few frames a second at least (the owner's Mac nightly, dev/daily).
+const FULL = process.env.SMOKE_DEPTH !== 'light';
 const PRESENCE_WAIT_MS = 240000;
 // ?netdebug=2 logs every reconnect (src/netplay/net.ts); kept for the failure message.
 const netLog: string[] = [];
@@ -122,25 +126,46 @@ export default {
 
     // The client throws the ball: it takes ownership and the host watches it fly.
     const ballAt = `(() => { const p = window.boogle.ball.pose.p; return [p.x, p.y, p.z]; })()`;
-    const from = await host.eval(`return ${ballAt};`);
-    await client.eval(`window.boogle.sync.tossBall(0.6);`);
-    const flew = await host.waitFor(
-      ([x, y, z]) => {
-        const b = window.boogle.ball;
-        const p = b.pose.p;
-        return !b.mine && b.remoteOwned && Math.hypot(p.x - x, p.y - y, p.z - z) > 1;
-      },
-      { timeout: 60000, arg: from },
-    );
-    const to = await host.eval(`return ${ballAt};`);
-    t.check(
-      'the thrown ball moves for the other player',
-      flew >= 0,
-      `${from.map(Math.round)} -> ${to.map(Math.round)}`,
-    );
+    if (FULL) {
+      const from = await host.eval(`return ${ballAt};`);
+      await client.eval(`window.boogle.sync.tossBall(0.6);`);
+      // Two questions, so a failure says which: did the throw happen on the thrower's tab (it owns the ball and it left
+      // the spot), and did that reach the other tab (it sees another tab's ball move). A tab drawing a frame a second
+      // can be slow to act on the first; only the second is a sync problem.
+      const ballState = (g: Game) =>
+        g
+          .eval(
+            `const b = window.boogle.ball, p = b.pose.p; return JSON.stringify({ mine: b.mine, held: b.held, remoteOwned: b.remoteOwned, p: [p.x, p.y, p.z].map(Math.round) });`,
+          )
+          .catch((e: Error) => 'eval failed: ' + e.message);
+      const threw = await client.waitFor(
+        ([x, y, z]) => {
+          const b = window.boogle.ball;
+          const p = b.pose.p;
+          return b.mine && !b.held && Math.hypot(p.x - x, p.y - y, p.z - z) > 1;
+        },
+        { timeout: 90000, arg: from },
+      );
+      const flew = await host.waitFor(
+        ([x, y, z]) => {
+          const b = window.boogle.ball;
+          const p = b.pose.p;
+          return !b.mine && b.remoteOwned && Math.hypot(p.x - x, p.y - y, p.z - z) > 1;
+        },
+        { timeout: 120000, arg: from },
+      );
+      const to = await host.eval(`return ${ballAt};`);
+      t.check(
+        'the thrown ball moves for the other player',
+        flew >= 0,
+        flew >= 0
+          ? `${from.map(Math.round)} -> ${to.map(Math.round)}`
+          : `${threw >= 0 ? 'thrown on the thrower tab (replication failed)' : 'never left the thrower tab (slow tab or no grab)'}; ${from.map(Math.round)} -> ${to.map(Math.round)}; thrower ${await ballState(client)} watcher ${await ballState(host)}`,
+      );
 
-    const hashes = await hashesAtOneTick(host, client);
-    t.check('both tabs hash every state the same at one tick', hashes.same, hashes.detail);
+      const hashes = await hashesAtOneTick(host, client);
+      t.check('both tabs hash every state the same at one tick', hashes.same, hashes.detail);
+    }
 
     // And sync's own check (the server broadcasts per-state hashes every 2 s) ran on the client, without a mismatch.
     // A long wait: on a CI runner's software WebGPU (the live-site run in smoke.yml) two tabs draw a few frames a

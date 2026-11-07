@@ -16,7 +16,7 @@ const marks = new Map<number, ReturnType<typeof stateHashes> | null>();
 let capturing = false;
 function record(tick: number) {
   marks.set(tick, stateHashes());
-  if (marks.size > 256) marks.delete(marks.keys().next().value!);
+  if (marks.size > 4096) marks.delete(marks.keys().next().value!);
 }
 
 const sync = {
@@ -48,7 +48,7 @@ onStart(() => {
   // After every onTick handler and before the host hashes, so a mark sees the tick's final state (what sync hashes).
   onAfterTick((t) => {
     // One sample per simulation second, on the SAME tick grid in both tabs. The history survives slow browser
-    // evaluations and snapshot jumps; 256 samples exceed the scenario's three-minute observation window.
+    // evaluations and snapshot jumps; 4096 samples (about 40 minutes of ticks) let a slow tab reach a tick the faster one passed long before.
     if (marks.has(t) || (capturing && t % 10 === 0)) record(t);
   });
   if (!window.boogle) return;
