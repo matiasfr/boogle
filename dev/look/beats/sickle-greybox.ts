@@ -1,7 +1,7 @@
 import type { ShotList } from '../shot-types.ts';
 
 // The Sickle Isles greybox's review views (src/proto/greybox/index.ts, VIEWS: window.__greybox.viewPose(id) prints
-// them), in world metres, with the game's 3.6 km fog and the old 1.5 km one for comparison.
+// them), in world metres, with the greybox's 3.6 km fog and the live game's 1.5 km one for comparison.
 // `node dev/look/shots.ts dev/look/beats/sickle-greybox.ts --name sickle` when the look queue is quiet.
 const cameras = [
   { name: 'Spawn (West landing): the Wall', cam: [812, 8, 22], look: [-829, 60, -331] },
@@ -31,8 +31,8 @@ export default {
       warm: 4,
       cameras,
       variants: [
-        { name: 'Game fog (3.6 km)', query: 'dev=1&greybox=sickle&labels=0' },
-        { name: 'Old fog (1.5 km)', query: 'dev=1&greybox=sickle&labels=0&gbfog=1500' },
+        { name: 'Greybox fog (3.6 km)', query: 'dev=1&greybox=sickle&labels=0' },
+        { name: 'Live game fog (1.5 km)', query: 'dev=1&greybox=sickle&labels=0&gbfog=game' },
       ],
     },
   ],

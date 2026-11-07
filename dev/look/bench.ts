@@ -44,7 +44,7 @@ export const POSES = {
   forge: { cam: [945, 30, -32], look: [913, 19, 2] }, // line 2 leaves the turntable by the forge and rack
   far: { cam: [1040, 170, 260], look: [0, 0, 0] }, // over Place towards the classic island, ~1 km away
   island: { cam: [-40, 40, 40], look: [-5, 0, 0] }, // the classic island close (dev/look/lib.ts VIEWS.overview)
-  bay: { cam: [780, 9, 0], look: [-700, 40, -500] }, // from the West landing over the bay: the long view the 3.6 km fog opens
+  bay: { cam: [780, 9, 0], look: [-700, 40, -500] }, // from the West landing over the bay: the long view (?greybox=sickle extends the fog here)
   play: null, // mid-play: a second player beside you, walking, dust particles, the player camera
 } as const;
 type PoseName = keyof typeof POSES;

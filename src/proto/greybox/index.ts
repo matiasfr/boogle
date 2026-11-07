@@ -4,6 +4,7 @@
 import * as THREE from 'three/webgpu';
 import './greybox.css';
 import { camera, scene, toScreen, view as viewport } from '../../render/scene.ts';
+import { atmosphere } from '../../render/sky.ts';
 import { defineKind, spawn } from '../../entity/entity.ts';
 import { me, cam } from '../../player/state.ts';
 import { releaseInput } from '../../player/input.ts';
@@ -108,9 +109,13 @@ if (newLand)
     'off',
   );
 
-// ---------------------------------------------------------------- fog compare (the game's own is 3.6 km, src/constants.ts)
+// ---------------------------------------------------------------- fog: the greybox's own 3.6 km (owner, 7 November)
+// The live game keeps its route's range (the railway's 1.5 km); with the greybox on, the world after Ring Island reads at
+// the crossing's 180 to 3600 m. `&gbfog=game` shows the live game's own fog, `off` none, a number any range.
+const GREYBOX_FOG = 3600;
 type Fog = 'game' | 'off' | number;
-const parseFog = (v: string | null): Fog => (v === 'off' ? 'off' : v && Number.isFinite(+v) && +v > 0 ? +v : 'game');
+const parseFog = (v: string | null): Fog =>
+  v === 'off' || v === 'game' ? v : v && Number.isFinite(+v) && +v > 0 ? +v : GREYBOX_FOG;
 let fogMode: Fog = parseFog(q.get('gbfog'));
 let viewFog: Fog | null = null;
 /** The far plane the world set before this tool stretched it. */
@@ -127,11 +132,11 @@ function setFar(far: number | null) {
   }
   camera.updateProjectionMatrix();
 }
-/** Late, after the sky holds the outdoor range: the fog node reads scene.fog at render time. */
+/** Late (after every route's update, before the sea and the render read scene.fog), and never underground. */
 function applyFog() {
   const fog = scene.fog as THREE.Fog | null;
   const mode = viewFog ?? fogMode;
-  if (!fog || mode === 'game') return setFar(null);
+  if (!fog || mode === 'game' || atmosphere.underground > 0) return setFar(null);
   if (mode === 'off') {
     fog.near = 20000;
     fog.far = 40000;
@@ -314,7 +319,7 @@ const button = (parent: HTMLElement, text: string, run: () => void, title = '') 
   panel.append(row);
   button(row, 'Labels', () => setLabels(!labelsOn));
   const fogButton = button(row, '', () => {
-    fogMode = fogMode === 'game' ? 1500 : fogMode === 1500 ? 'off' : 'game';
+    fogMode = fogMode === GREYBOX_FOG ? 'game' : fogMode === 'game' ? 'off' : GREYBOX_FOG;
     fogButton.textContent = `Fog: ${fogMode}`;
   });
   fogButton.textContent = `Fog: ${fogMode}`;

@@ -14,7 +14,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
-import { FOG_HEX, OUTDOOR_FOG_FAR, OUTDOOR_FOG_NEAR } from '../../constants.ts';
+import { FOG_HEX, FOG_NEAR, FOG_FAR } from '../../constants.ts';
 import { skyState } from '../../sim/sky-clock.ts';
 import { clouds } from '../props.ts';
 import { renderer, rendererReady, scene, sky, sun } from '../scene.ts';
@@ -56,22 +56,12 @@ const direction = east.clone().multiplyScalar(Math.cos(angle)).addScaledVector(n
 let timeOfDay = WATER_TOD;
 const CAVE = { fog: new THREE.Color('#15120f'), sky: new THREE.Color('#8f806e'), ground: new THREE.Color('#3d342a') };
 
-/** The one outdoor fog range, closing in underground. The sky writes it early (route code may still read it) and
- * again late (`holdOutdoorFog`), so it is what renders; the fog node reads scene.fog at render time. */
-function setOutdoorFog() {
-  const ug = atmosphere.underground;
-  const f = scene.fog as THREE.Fog | null;
-  if (!f) return;
-  f.near = THREE.MathUtils.lerp(OUTDOOR_FOG_NEAR, 6, ug);
-  f.far = THREE.MathUtils.lerp(OUTDOOR_FOG_FAR, 80, ug);
-}
-/** Late, before the sea reads the range and the frame renders: the owner's one fog (7 November, "extend the fog"),
- * whatever a route wrote in its update. Dev tools that compare ranges write after this. */
-export const holdOutdoorFog = setOutdoorFog;
-
 /** Same early sky slot: reset route fog ranges before crossing/place apply theirs, with the cave transition intact. */
 export function updateFrozenDay() {
-  setOutdoorFog();
+  const ug = atmosphere.underground;
+  const f = scene.fog as THREE.Fog;
+  f.near = THREE.MathUtils.lerp(FOG_NEAR, 6, ug);
+  f.far = THREE.MathUtils.lerp(FOG_FAR, 80, ug);
   skyNow.frac = timeOfDay;
   skyNow.phase = 0.5;
   skyNow.illum = 1;
@@ -108,12 +98,10 @@ export function createFrozenWaterSky() {
     exposure: renderer.toneMappingExposure,
     hemi: hemi && { color: hemi.color.clone(), ground: hemi.groundColor.clone(), intensity: hemi.intensity },
   };
-  // Read at render time, so a range written this frame is the one drawn (it used to be copied only when the lighting
-  // flushed, and later fog writes never reached the picture).
-  const near = uniform(OUTDOOR_FOG_NEAR).onRenderUpdate(
-      () => (scene.fog as THREE.Fog | null)?.near ?? OUTDOOR_FOG_NEAR,
-    ),
-    far = uniform(OUTDOOR_FOG_FAR).onRenderUpdate(() => (scene.fog as THREE.Fog | null)?.far ?? OUTDOOR_FOG_FAR),
+  // Read at render time, so whatever range the frame ends with is the one drawn (it was copied in the sea's late
+  // update, so a later write never reached the picture). Routes keep setting their own ranges on scene.fog.
+  const near = uniform(FOG_NEAR).onRenderUpdate(() => (scene.fog as THREE.Fog | null)?.near ?? FOG_NEAR),
+    far = uniform(FOG_FAR).onRenderUpdate(() => (scene.fog as THREE.Fog | null)?.far ?? FOG_FAR),
     underground = uniform(0).onRenderUpdate(() => atmosphere.underground),
     skyReady = uniform(0);
   const upper = new THREE.Color(),

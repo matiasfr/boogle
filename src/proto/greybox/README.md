@@ -4,6 +4,8 @@ A dev-only blockout of a map layout from [docs/world/map-prototypes.html](../../
 added to today's world at the real scale, to walk, look and ride round before anything is dressed. New areas after
 Ring Island start here, greybox-first.
 
+- **The fog.** With the greybox on, the fog runs to 3.6 km (the crossing's range, owner, 7 November), so the islands
+  read at the real scale; the live game keeps its own. `index.ts` writes it late each frame, outside caves.
 - **Dev server only.** `src/features/proto-greybox.ts` loads it when `import.meta.env.DEV` and `?greybox=` are both
   present, so a production build has no greybox code and players never see it. It adds meshes and static solids to
   the scene and nothing else: no ops, no state, no saves, no sim.
@@ -22,7 +24,7 @@ Use a room of your own (`room=`), so you don't fly about in front of other peopl
 | ---------------------------- | --------------------------------------------------------------------------------- |
 | `&gbview=<id>`               | Hold the camera at a named view (the panel lists them; Free camera gives it back) |
 | `&gbcam=x,y,z&gblook=x,y,z`  | Hold it anywhere, world metres (the panel's readout prints the current pose)       |
-| `&gbfog=game\|1500\|off`     | The game's own fog (3.6 km), the old 1.5 km for comparison, or none                |
+| `&gbfog=game\|off\|<m>`      | Greybox fog is 3.6 km by default; `game` shows the live game's own (1.5 km), `off` none, or a range |
 | `&pick=A\|B`                 | Colour lines for the first branch first (A) or the second (B)                      |
 | `&labels=0`                  | Start with labels and station markers hidden                                       |
 | `&gbcliff=<hex>`             | Override the cliff tint (e.g. `d9d4c8`, chalk white)                               |
