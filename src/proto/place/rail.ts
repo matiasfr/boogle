@@ -1184,14 +1184,15 @@ export function buildMachine(owner?: OwnedView, mode: 'panels' | 'continuous' = 
 export function thud(machine: Machine, kind: string, x: number, y: number, z: number) {
   if (kind === 'sleeper' || kind === 'plank') {
     thump(x, z);
-    dustRing(x, y, z, 7, 1.6, 0.22);
+    // A panel lands a row of these at once: a modest puff each, or the row becomes a smoke bank on the ground.
+    dustRing(x, y, z, 3, 0.9, 0.16, 1, 0.6);
     machine.bump();
   } else if (kind === 'rail') {
     clank(x, z);
     dustRing(x, y + 0.1, z, 2, 0.8, 0.1);
   } else if (kind === 'leg' || kind === 'cap') {
     thump(x, z);
-    if (kind === 'leg') dustRing(x, y + 0.2, z, 12, 3, 0.6);
+    if (kind === 'leg') dustRing(x, y + 0.2, z, 6, 1.8, 0.4, 1, 0.7);
     machine.bump();
   }
 }

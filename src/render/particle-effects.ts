@@ -81,7 +81,16 @@ export function chips(x: number, y: number, z: number, n = 10, floor = y - 1.1, 
 }
 
 /** Low-alpha lobes, not a smoke wall. Dust keeps intensity one under the existing exposure policy. */
-export function dustRing(x: number, y: number, z: number, n = 10, speed = 2.2, size = 0.3, intensity = 1) {
+export function dustRing(
+  x: number,
+  y: number,
+  z: number,
+  n = 10,
+  speed = 2.2,
+  size = 0.3,
+  intensity = 1,
+  life = 1,
+) {
   if (reducedMotion) return;
   n = Math.min(40, n);
   puff.alpha = particleEffects.dustAlpha;
@@ -95,7 +104,7 @@ export function dustRing(x: number, y: number, z: number, n = 10, speed = 2.2, s
     puff.vx = Math.cos(a) * sp;
     puff.vz = Math.sin(a) * sp;
     puff.vy = 0.2 + Math.random() * 0.25;
-    puff.life = 0.65 + Math.random() * 0.25;
+    puff.life = (0.65 + Math.random() * 0.25) * life;
     puff.size = size * (2.2 + Math.random() * 0.5);
     puff.rotation = Math.random() * Math.PI * 2;
     puff.spin = (Math.random() - 0.5) * 0.7;
