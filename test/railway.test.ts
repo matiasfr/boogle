@@ -190,7 +190,7 @@ test('strict atomic loading refuses cross-account loss, future catalog and malfo
   }
 });
 
-test('supported pid lifetime cannot strand the full finite catalog; bounded document stays below60KB', (t) => {
+test('supported pid lifetime cannot strand the full finite catalog; bounded document stays within the recovery budget', (t) => {
   const s = createRailway();
   s.awake = 0;
   for (let k = 0; k < MAX_PLAYERS; k++) railSession(s, `p${k}`.padEnd(32, 'x'), 1);

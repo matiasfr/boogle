@@ -16,6 +16,7 @@ import { createRailwayArrival } from './arrival.ts';
 import { createRailwayOpening } from './opening-view.ts';
 import { createRailwayPath } from './path.ts';
 import { createRailwayPanelView } from './panel-view.ts';
+import { createRailwayLine2 } from './line2-view.ts';
 
 export async function createRailwayView(adapter: RailwayAdapter) {
   const owner = createOwnedView();
@@ -55,6 +56,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     }),
   );
   const sources = await createRailwaySources(adapter, owner);
+  const line2 = await createRailwayLine2(adapter, owner, machine, sources.bundleOrigin);
   if (look.LOOK.contact) kit.installContact([machine.flatbed, machine.loco], sources.inspect(), owner);
   const reward = await createRailwayReward(adapter, owner, (out) =>
     out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z),
@@ -210,8 +212,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     previousPhase = state.phase;
     previousOpen = opened();
     path.update(opened(), true);
+    line2.snapshot();
   }
   machine.onStep = (dt) => {
+    if (line2.working()) return line2.step(dt);
     const previousBody = visualHead + setback;
     const speed = state.stations[state.activeStation]!.timing.cruiseCmPerTick / 10;
     const spec = LINE1_STATIONS[state.activeStation]!;
@@ -317,11 +321,14 @@ export async function createRailwayView(adapter: RailwayAdapter) {
             1,
             Math.max(0, (spec.fromCm / 100 - visualHead) / ((spec.fromCm - spec.toCm) / 100)),
           );
-          machine.setCradle(Math.min(entered, Math.ceil(spec.bill[0] * (1 - fraction))));
+          if (!line2.working()) machine.setCradle(Math.min(entered, Math.ceil(spec.bill[0] * (1 - fraction))));
         }
       });
       targetHead = head();
-      panels.update(dt);
+      // One machine: line two takes its panel frame and rack once it has crossed.
+      machine.onPanelFrame = line2.working() ? line2.panelFrame : panels.frame;
+      if (!line2.working()) panels.update(dt);
+      line2.update(dt);
       if (!previousOpen && opened() && !reconstructed) {
         sounds.fanfare(true);
         whistle(machine.flatbed.x, machine.flatbed.z);
@@ -372,7 +379,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       owner.update(ctx);
     },
     targets(): Interactable[] {
-      const targets = [...sources.targets(), ...reward.targets()];
+      const targets = [...sources.targets(), ...reward.targets(), ...line2.targets()];
       const p = me.body?.position;
       if (p && state.ready && state.phase === 'asleep' && machine.distance(p.x, p.z) < 6)
         targets.push({
@@ -400,6 +407,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       trees: sources.inspect(),
       reward: reward.inspect(),
       pathOpen: opened(),
+      line2View: line2.inspect(),
     }),
     dispose: () => owner.dispose(),
   };

@@ -134,6 +134,8 @@ for (const roomId of ['t1v01-proto-crash', railwayRoomId('crash')])
                 delivered: 0,
                 total: 24,
               },
+              line2: 0,
+              rails: { forge: 0, carry: 0, loose: 0, stations: 0, poured: 0, total: 0, delivered: 0 },
             }
           : {}),
       });

@@ -20,6 +20,8 @@ import {
 } from '../sim/railway-line-layout.ts';
 import type { RailwayApi } from '../world/rules/railway.ts';
 import { LINE_TIMING } from '../sim/railway-line.ts';
+import { LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
+import { line2Active, line2Completed, line2GateOpen } from '../sim/railway-line2.ts';
 import type { createSync, WorldRoom } from '../world/sync.ts';
 
 type Sync = Pick<
@@ -39,13 +41,14 @@ export type RailwayIntent =
   | { op: 'rail.chop'; id: number; yaw?: number; collapsed?: boolean }
   | { op: 'rail.mine'; id: number }
   | { op: 'rail.axe' | 'rail.beamChop' | 'rail.jump' }
+  | { op: 'rail.forgeTake' | 'rail.depotTake' | 'rail.lever' | 'rail.hook' }
   | { op: 'rail.beamTake'; revision: number }
   | { op: 'rail.beamDrop'; revision: number; x: number; y: number; z: number }
   | { op: 'rail.beamDeposit'; revision: number; station: 'T3' }
-  | { op: 'rail.take'; id: number; kind?: RailMaterial }
+  | { op: 'rail.take'; id: number; kind?: RailMaterial | 2 }
   | { op: 'rail.rackTake'; kind?: RailMaterial }
-  | { op: 'rail.deposit'; station: LineStationId; n: number; kind?: RailMaterial }
-  | { op: 'rail.drop'; x: number; y?: number; z: number; n: number; kind?: RailMaterial };
+  | { op: 'rail.deposit'; station: LineStationId | Line2StationId | 'F'; n: number; kind?: RailMaterial | 2 }
+  | { op: 'rail.drop'; x: number; y?: number; z: number; n: number; kind?: RailMaterial | 2 };
 export type RailwayAccepted = Readonly<
   RailwayIntent & { pid: string; epoch: number; request: number; accepted: number; tick: number }
 >;
@@ -112,8 +115,17 @@ function result(v: unknown): v is RailResult & Record<string, unknown> {
 }
 function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.wake') return { op: e.op };
-  const kind = e.kind === 1 ? 1 : 0;
-  if (e.op === 'rail.axe' || e.op === 'rail.beamChop' || e.op === 'rail.jump') return { op: e.op };
+  const kind = e.kind === 1 ? 1 : e.kind === 2 ? 2 : 0;
+  if (
+    e.op === 'rail.axe' ||
+    e.op === 'rail.beamChop' ||
+    e.op === 'rail.jump' ||
+    e.op === 'rail.forgeTake' ||
+    e.op === 'rail.depotTake' ||
+    e.op === 'rail.lever' ||
+    e.op === 'rail.hook'
+  )
+    return { op: e.op };
   if (e.op === 'rail.mine' && railInt(e.id, 2)) return { op: e.op, id: e.id };
   if (e.op === 'rail.beamTake' && railInt(e.revision)) return { op: e.op, revision: e.revision };
   if (e.op === 'rail.beamDeposit' && railInt(e.revision) && e.station === 'T3')
@@ -126,7 +138,7 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     railInt(e.z, 200000, -200000)
   )
     return { op: e.op, revision: e.revision, x: e.x, y: e.y, z: e.z };
-  if (e.op === 'rail.rackTake') return { op: e.op, kind };
+  if (e.op === 'rail.rackTake') return { op: e.op, kind: kind === 1 ? 1 : 0 };
   if (e.op === 'rail.take' && railInt(e.id)) return { op: e.op, id: e.id, kind };
   if (e.op === 'rail.chop' && railInt(e.id))
     return {
@@ -136,7 +148,13 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     };
   if (
     e.op === 'rail.deposit' &&
-    (e.station === 'T1' || e.station === 'T2' || e.station === 'T3') &&
+    (e.station === 'T1' ||
+      e.station === 'T2' ||
+      e.station === 'T3' ||
+      e.station === 'F' ||
+      e.station === 'Q1' ||
+      e.station === 'Q2' ||
+      e.station === 'Q3') &&
     railInt(e.n, RAILWAY_T1.carry, 1)
   )
     return { op: e.op, station: e.station, n: e.n, kind };
@@ -318,14 +336,16 @@ export function createRailwayAdapter({
     let incoming = 0,
       outgoing = 0,
       logs = 0,
-      stone = 0;
+      stone = 0,
+      rails = 0;
     for (const p of pending.values()) {
       incoming += p.incoming;
       outgoing += p.outgoing;
       if ('kind' in p.intent && p.intent.kind === 1) stone += p.outgoing;
+      else if ('kind' in p.intent && p.intent.kind === 2) rails += p.outgoing;
       else logs += p.outgoing;
     }
-    return { incoming, outgoing, logs, stone };
+    return { incoming, outgoing, logs, stone, rails };
   }
   function wire(p: Pending) {
     return { ...p.intent, epoch: p.epoch, request: p.request, ms: p.ms, ...(p.at ? { at: p.at } : {}) };
@@ -336,10 +356,10 @@ export function createRailwayAdapter({
     const held = reservations();
     const account = api.account(pid);
     const carry = account ? railCarry(account) : 0;
-    const stone = 'kind' in intent && intent.kind === 1;
-    const balance = stone ? (account?.stone ?? 0) : (account?.carry ?? 0);
-    if (incoming > RAILWAY_T1.carry - carry - held.incoming || outgoing > balance - (stone ? held.stone : held.logs))
-      return false;
+    const kind = 'kind' in intent ? (intent.kind ?? 0) : 0;
+    const balance = kind === 1 ? (account?.stone ?? 0) : kind === 2 ? (account?.rails ?? 0) : (account?.carry ?? 0);
+    const spent = kind === 1 ? held.stone : kind === 2 ? held.rails : held.logs;
+    if (incoming > RAILWAY_T1.carry - carry - held.incoming || outgoing > balance - spent) return false;
     const beam = api.railway.line?.beam;
     if (beam?.state === 'held' && beam.holder === pid && (incoming || outgoing)) return false;
     if (intent.op === 'rail.beamTake' && (carry || held.incoming || held.outgoing || pending.size)) return false;
@@ -349,7 +369,8 @@ export function createRailwayAdapter({
     )
       return false;
     if (intent.op === 'rail.chop' && ['asleep', 'waking'].includes(api.phase())) return false;
-    if (intent.op === 'rail.deposit' && api.phase() !== 'idle') return false;
+    const line1Deposit = intent.op === 'rail.deposit' && intent.station.startsWith('T');
+    if (line1Deposit && api.phase() !== 'idle') return false;
     const request = next++;
     const body = pose();
     const at =
@@ -395,6 +416,25 @@ export function createRailwayAdapter({
     );
     const current = stations[activeStation]!;
     const panels = api.panels();
+    const l2 = s.line2;
+    const line2Done = line2Completed(s);
+    const line2 = l2
+      ? Object.freeze({
+          forge: Object.freeze({ ...l2.forge }),
+          active: line2Active(s),
+          completed: line2Done,
+          routes: Object.freeze(line2Routes(line2Done)),
+          gateOpen: line2GateOpen(s),
+          lever: l2.lever,
+          hook: l2.hook,
+          depot: l2.depot,
+          stations: Object.freeze(
+            l2.jobs.map((job, i) =>
+              Object.freeze({ ...job, id: LINE2_STATIONS[i]!.id, timing: Object.freeze({ ...job.timing }) }),
+            ),
+          ),
+        })
+      : null;
     return Object.freeze({
       tick: sync.world.tick,
       ...api.movement(),
@@ -404,6 +444,8 @@ export function createRailwayAdapter({
       phase: api.phase(),
       carry: api.account(pid)?.carry ?? 0,
       stoneCarry: api.account(pid)?.stone ?? 0,
+      railsCarry: api.account(pid)?.rails ?? 0,
+      line2,
       activeStation,
       stations: Object.freeze(stations),
       axe: s.line?.axe ?? false,
@@ -459,7 +501,8 @@ export function createRailwayAdapter({
       reservations: Object.freeze(held),
       availableCarry: Math.max(0, state.carry - held.logs),
       availableStone: Math.max(0, state.stoneCarry - held.stone),
-      freeCarry: Math.max(0, RAILWAY_T1.carry - state.carry - state.stoneCarry - held.incoming),
+      availableRails: Math.max(0, state.railsCarry - held.rails),
+      freeCarry: Math.max(0, RAILWAY_T1.carry - state.carry - state.stoneCarry - state.railsCarry - held.incoming),
     });
   }
   return {
@@ -551,7 +594,7 @@ export function createRailwayAdapter({
         pile.n,
         RAILWAY_T1.carry - (api.account(pid) ? railCarry(api.account(pid)!) : 0) - held.incoming,
       );
-      return n > 0 && submit({ op: 'rail.take', id, kind: pile.kind === 1 ? 1 : 0 }, n);
+      return n > 0 && submit({ op: 'rail.take', id, kind: pile.kind === 1 ? 1 : pile.kind === 2 ? 2 : 0 }, n);
     },
     rackTake(kind: RailMaterial = 0) {
       const n = Math.min(
@@ -560,7 +603,7 @@ export function createRailwayAdapter({
       );
       return n > 0 && submit({ op: 'rail.rackTake', kind }, n);
     },
-    drop(x: number, y: number, z: number, n = 1, kind: RailMaterial = 0) {
+    drop(x: number, y: number, z: number, n = 1, kind: RailMaterial | 2 = 0) {
       return (
         railInt(x, 200000, -200000) &&
         railInt(y, 200000, -200000) &&
@@ -569,6 +612,26 @@ export function createRailwayAdapter({
         submit({ op: 'rail.drop', x, y, z, n, kind }, 0, n)
       );
     },
+    /** Line two: the forge frame ('F') or the active Q frame. The authority decides readiness. */
+    depositLine2(station: 'F' | Line2StationId, n = 1, kind: 0 | 2 = 0) {
+      return railInt(n, RAILWAY_T1.carry, 1) && submit({ op: 'rail.deposit', station, n, kind }, 0, n);
+    },
+    forgeTake() {
+      const n = Math.min(
+        api.railway.line2?.forge.rack ?? 0,
+        RAILWAY_T1.carry - (api.account(pid) ? railCarry(api.account(pid)!) : 0) - reservations().incoming,
+      );
+      return n > 0 && submit({ op: 'rail.forgeTake' }, n);
+    },
+    depotTake() {
+      const n = Math.min(
+        api.railway.line2?.depot ?? 0,
+        RAILWAY_T1.carry - (api.account(pid) ? railCarry(api.account(pid)!) : 0) - reservations().incoming,
+      );
+      return n > 0 && submit({ op: 'rail.depotTake' }, n);
+    },
+    pullLever: () => submit({ op: 'rail.lever' }),
+    claimHook: () => submit({ op: 'rail.hook' }),
     deposit(n = 1, kind: RailMaterial = 0) {
       const station = LINE1_STATIONS[railActiveStation(api.railway)]!.id;
       return railInt(n, RAILWAY_T1.carry, 1) && submit({ op: 'rail.deposit', station, n, kind }, 0, n);

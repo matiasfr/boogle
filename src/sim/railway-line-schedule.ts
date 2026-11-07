@@ -1,6 +1,11 @@
 // Accepted schedule primitives for slice 3. Callers pin room tunables when funding a station.
 // Line-one production only; the isolated T1 proof retains its own schedule.
 import { linePanels, type LineStation } from './railway-line-layout.ts';
+import { line2Panels, type Line2Station } from './railway-line2-layout.ts';
+
+type AnyStation = LineStation | Line2Station;
+const panelsOf = (station: AnyStation) =>
+  'depot' in station ? line2Panels(station) : linePanels().filter((panel) => panel.station === station.id);
 
 export type LineTiming = {
   depositMs: number;
@@ -13,7 +18,7 @@ export type LineTiming = {
 };
 export type LineFeed = { kind: 'log' | 'stone' | 'beam'; slot: number; launchMs: number; landMs: number };
 /** Beam first, stone next, logs last. A flight is display of an accepted transfer, never a debit callback. */
-export function lineFeed(station: LineStation, timing: LineTiming): LineFeed[] {
+export function lineFeed(station: AnyStation, timing: LineTiming): LineFeed[] {
   const feed: LineFeed[] = [];
   const add = (kind: LineFeed['kind'], count: number, flight: number) => {
     for (let slot = count - 1; slot >= 0; slot--) {
@@ -42,7 +47,7 @@ function timingValid(t: LineTiming): boolean {
     t.cruiseCmPerTick <= 10000
   );
 }
-export function lineSchedule(station: LineStation, timing: LineTiming) {
+export function lineSchedule(station: AnyStation, timing: LineTiming) {
   if (!timingValid(timing)) throw new Error('railway: line timing');
   const feed = lineFeed(station, timing);
   const feedMs = feed.reduce((last, flight) => Math.max(last, flight.landMs), 0);
@@ -59,10 +64,12 @@ export function lineSchedule(station: LineStation, timing: LineTiming) {
     }
     return lo;
   };
-  const panels = linePanels()
-    .filter((panel) => panel.station === station.id)
-    .map((panel) => ({ ...panel, tick: contactTick(station.fromCm - panel.toCm) }));
-  const layTicks = contactTick(station.fromCm - station.toCm);
+  // Line one lays towards smaller s, line two towards larger: distances are absolute.
+  const panels = panelsOf(station).map((panel) => ({
+    ...panel,
+    tick: contactTick(Math.abs(station.fromCm - panel.toCm)),
+  }));
+  const layTicks = contactTick(Math.abs(station.fromCm - station.toCm));
   return {
     depositTicks,
     feedTicks,
@@ -74,7 +81,7 @@ export function lineSchedule(station: LineStation, timing: LineTiming) {
   };
 }
 /** Whole contacts are derived from accepted integer elapsed ticks, never a rendered/interpolated head. */
-export function linePanelCount(station: LineStation, elapsed: number, timing: LineTiming): number {
+export function linePanelCount(station: AnyStation, elapsed: number, timing: LineTiming): number {
   const schedule = lineSchedule(station, timing);
   const laying = elapsed - schedule.depositTicks - schedule.feedTicks;
   return schedule.panels.filter((panel) => panel.tick <= laying).length;

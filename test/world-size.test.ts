@@ -1,8 +1,8 @@
-// The snapshot budget (brief 10 M9): with every state filled to its caps, a saved world stays under 60 KB, so the
-// pagehide upload still gets fetch keepalive (src/world/sync.ts persist) and snapshots stay quick to serve.
+// The snapshot budget (brief 10 M9): with every state filled to its caps, a saved world stays within
+// MAX_RECOVERY_BYTES (128 KB since 6 November), so snapshots stay quick to serve.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSync } from '../src/world/sync.ts';
+import { createSync, MAX_RECOVERY_BYTES } from '../src/world/sync.ts';
 import { installRules } from '../src/world/rules/index.ts';
 import { homeLand } from './helpers/land.ts';
 import { setWho, MAX_PLAYERS } from '../src/sim/roster.ts';
@@ -11,9 +11,9 @@ import { MAX_PILES, MAX_N } from '../src/sim/piles.ts';
 import { MAX_ITEMS, tossItem } from '../src/sim/gifts.ts';
 import { TRACK, HELPER, costOf } from '../src/sim/route.ts';
 
-const BUDGET = 60000;
+const BUDGET = MAX_RECOVERY_BYTES;
 
-test('a world filled to every cap serializes under 60 KB', () => {
+test('a world filled to every cap serializes within the recovery budget', () => {
   const s = createSync();
   s.setSelfId('a');
   const rules = installRules(s, homeLand());

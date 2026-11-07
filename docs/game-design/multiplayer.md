@@ -81,8 +81,8 @@ lockstep and Place train reconciliation are unchanged. Serves DESIGN.md 4, Coope
 - States have versions and migrations (`registerState(key, { version, migrate })`); all are at version 0 today. A
   state that fails to load starts fresh; a state from a newer build is skipped and that tab stops persisting.
 - The world seed is the constant 20261028 for every room.
-- Budget: a world with every state at its caps (256 players, 128 piles, full plaques) saves under 60 KB (about 27 KB
-  today, `test/world-size.test.ts`), so the pagehide upload keeps `keepalive`. `worldStatus().snapBytes` reports the
+- Budget: a world with every state at its caps (256 players, 128 piles, full plaques) saves within `MAX_RECOVERY_BYTES`, 128 KB
+  since 6 November (about 27 KB today, `test/world-size.test.ts`; the railway's worst case is about 60 KB). `worldStatus().snapBytes` reports the
   last size; telemetry doesn't send it yet.
 
 ## 8.5 What persists and where

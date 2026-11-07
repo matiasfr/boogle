@@ -173,6 +173,25 @@ function slabAt(s: number) {
 }
 /** The lever on the apron, and the winch its chain runs to. */
 export const LEVER = { x: 97.4, z: 42.2, y: 26.2 };
+
+export type RoutePoint = { x: number; z: number; y: number };
+const apron = padById('apron');
+/** Route v2's service routes (4026d5cd), drawn by the production railway from accepted Q2/Q3 completions.
+ * Three metres clear; the hook approach turns outside the pillar before rising alongside it. */
+export const SERVICE_ROUTES = {
+  quarry: [
+    { x: apron.x, z: apron.z + apron.hz + 9, y: apron.top - 2.2 },
+    { x: apron.x, z: apron.z + apron.hz, y: apron.top },
+  ],
+  hook: [
+    beside(E, 92, -1, 1),
+    { x: P2.x + 7.5, z: P2.z + 4.2, y: P2.y },
+    { x: P2.x + 7.5, z: P2.z - 1.5, y: P2.y + 2.2 },
+    { x: P2.x + 7.5, z: P2.z - 3, y: P2.y + 2.2 },
+    { x: P2.x + 2, z: P2.z - 3, y: P2.y + 2.2 },
+  ],
+} satisfies Record<string, RoutePoint[]>;
+export const SERVICE_WIDTH = 3;
 /** Dark stone posts from the sea gate back towards the tower: light runs along them when its summit wakes. */
 export const POSTS: { x: number; z: number }[] = [];
 {

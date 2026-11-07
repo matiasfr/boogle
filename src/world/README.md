@@ -97,7 +97,7 @@ tick). Tabs run ~2-3 ticks behind the server; edits apply 3 ticks after it stamp
 - `onDesync(fn)`: a hash check failed, `{ tick, keys }`.
 - `onSnapFail(fn)`: a snapshot from the host (`from: 'peer'`) or the host's own save (`'local'`) could not be loaded, or one state in it:
   `{ from, reason }`; `from: 'state'` with reason `'<key> load'` (that state started fresh).
-- `worldStatus()`: debug. `snapBytes` is the size of the last snapshot saved or served (budget 60 KB with every state
+- `worldStatus()`: debug. `snapBytes` is the size of the last snapshot saved or served (budget 128 KB, `MAX_RECOVERY_BYTES`, with every state
   at its caps, `test/world-size.test.ts`). `loadErrors` counts states that started fresh; `badSave` prevents a host from
   saving or serving a failed-load fallback.
 - `profileTicks()`: `npm run perf -- --sim` only. Times every op apply, handler and state hash until `stop()`, which
@@ -109,7 +109,7 @@ Railway rooms use `attachWorld(..., { recovery })`; ordinary rooms keep snapshot
 
 Sync freezes production stamps, ticking and snapshot serving while a replacement is pending. A stamp batch is written before publication; reentrant edits submitted by a tick callback also stop advancement at that boundary. Recovery validates the whole envelope, replays its tail using the existing tick order, then checkpoints before readiness. `whenDurable()` drains the barrier and rejects on failure. `receiveEdit(edit, authenticatedSession)` exposes admission to the isolated request coordinator; admission is still not a terminal material receipt.
 
-The complete envelope is capped at **60,000 UTF-8 bytes**, including its at-most-64 future stamps. Admission checks the serialized checkpoint and complete candidate tail before consuming a sequence number, accounting for JSON escaping, UTF-8 and maximum tick/hash/checksum widths. A full tail refuses new work with `recovery-budget`; it does not poison the room. The write boundary retains its independent size guard. Oversize, unsupported, corrupt or refused recovery stops production publication and never overwrites the last good file. The `badSave` guard also prevents serving a failed-load fallback in ordinary rooms. Process-crash durability is the guarantee; disk loss and power-loss flush guarantees are outside it.
+The complete envelope is capped at **128,000 UTF-8 bytes** (`MAX_RECOVERY_BYTES`, raised from 60,000 on 6 November), including its at-most-64 future stamps. Admission checks the serialized checkpoint and complete candidate tail before consuming a sequence number, accounting for JSON escaping, UTF-8 and maximum tick/hash/checksum widths. A full tail refuses new work with `recovery-budget`; it does not poison the room. The write boundary retains its independent size guard. Oversize, unsupported, corrupt or refused recovery stops production publication and never overwrites the last good file. The `badSave` guard also prevents serving a failed-load fallback in ordinary rooms. Process-crash durability is the guarantee; disk loss and power-loss flush guarantees are outside it.
 
 ## The land as data
 

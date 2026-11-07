@@ -63,7 +63,8 @@ export type RecoveryStore = {
   /** Resolve only after atomic replacement succeeds; refusal and I/O errors must reject. */
   write(envelope: RecoveryEnvelope): Promise<void>;
 };
-export const MAX_RECOVERY_BYTES = 60000;
+// Raised from 60 KB (owner, 6 November: the save size guarantee can be bigger) for line two's remaining stations.
+export const MAX_RECOVERY_BYTES = 128000;
 const MAX_RECOVERY_TAIL = 64;
 /** The part of a room (src/net/README.md) the world uses. */
 export type WorldRoom = {
@@ -150,7 +151,7 @@ export function createSync({ env: env0 }: { env?: Obj } = {}) {
     saves: 0,
     heldDropped: 0,
     loadErrors: 0, // states that failed to load and started fresh
-    snapBytes: 0, // characters of the last snapshot saved or served (budget: 60 KB, test/world-size.test.ts)
+    snapBytes: 0, // characters of the last snapshot saved or served (budget: MAX_RECOVERY_BYTES, test/world-size.test.ts)
   };
   // The host's own save failed to load (corrupt, or a state's load threw): it runs on a fresh fallback and must
   // never write that over the real save, which stays on disk for a fix. Cleared only by a restart.

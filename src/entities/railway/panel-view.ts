@@ -1,14 +1,15 @@
 // Local panel choreography (rail.ts layPanel). Only the verified integer cursor commits track, collision and stock.
-import type { RailwayInspection } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 
 type Rail = typeof import('../../proto/place/rail.ts');
 type Machine = ReturnType<Rail['buildMachine']>;
 type Track = ReturnType<Rail['buildTrack']>;
+/** The accepted facts one line's panel choreography reads: line one's inspection, or line two's projection. */
+export type PanelState = { phase: string; activeStation: number; panelStock: number; panelCount: number };
 export function createRailwayPanelView(
   machine: Machine,
   track: Track,
-  state: () => RailwayInspection,
+  state: () => PanelState,
   head: () => number,
   contact: (end: number) => void,
   owner: OwnedView,
@@ -16,7 +17,7 @@ export function createRailwayPanelView(
   let returning = 1;
   const pose = (index: number, phase: number, stock = state().panelStock) =>
     machine.layPanel(track, index, phase, stock);
-  machine.onPanelFrame = (dt) => {
+  const frame = (dt: number) => {
     const current = state(),
       index = track.cursor,
       panel = track.panels[index];
@@ -35,10 +36,13 @@ export function createRailwayPanelView(
       machine.layHome(returning, current.panelStock);
     }
   };
+  machine.onPanelFrame = frame;
   owner.cleanup(() => {
     machine.onPanelFrame = () => {};
   });
   return {
+    /** The owner hands the machine's panel frame to whichever line it is working. */
+    frame,
     restore() {
       const count = state().panelCount;
       track.snapTo(count ? track.panels[count - 1]!.to : track.panels[0]!.from);

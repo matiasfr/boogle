@@ -194,7 +194,17 @@ function startWorld(room: Room) {
         case 'rail.chop':
           return adapter.chop(intent.id, intent.yaw, intent.collapsed);
         case 'rail.deposit':
-          return adapter.deposit(intent.n, intent.kind);
+          return intent.station.startsWith('T')
+            ? adapter.deposit(intent.n, intent.kind === 1 ? 1 : 0)
+            : adapter.depositLine2(intent.station as 'F', intent.n, intent.kind === 2 ? 2 : 0);
+        case 'rail.forgeTake':
+          return adapter.forgeTake();
+        case 'rail.depotTake':
+          return adapter.depotTake();
+        case 'rail.lever':
+          return adapter.pullLever();
+        case 'rail.hook':
+          return adapter.claimHook();
         case 'rail.drop':
           return intent.y !== undefined && adapter.drop(intent.x, intent.y, intent.z, intent.n, intent.kind);
         case 'rail.take':
