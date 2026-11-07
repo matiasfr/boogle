@@ -19,6 +19,7 @@ import {
   stageOf,
   type Land,
   type Layout,
+  type Work,
   type XZ,
 } from './map-data.ts';
 
@@ -44,6 +45,19 @@ export const STAGE_COLOURS: Record<number, string> = {
   8: '#e85cab',
 };
 const UNBUILT = '#8a8a8a';
+/** Line 2's work marks take the stage palette; the survey line is pink, so it never reads as a laid stage. */
+const WORK_COLOURS: Record<Work['kind'], string> = {
+  frame: STAGE_COLOURS[2]!,
+  gate: STAGE_COLOURS[4]!,
+  chest: STAGE_COLOURS[7]!,
+  halt: STAGE_COLOURS[6]!,
+  boiler: STAGE_COLOURS[3]!,
+  train: STAGE_COLOURS[5]!,
+};
+const SURVEY = '#ff5fa8';
+const SURVEY_EVERY = 20;
+/** The railway's deck over the sea, metres (Place's `LINES.east` rail height past the rim). */
+const LINE2_DECK = 24.3;
 const WALK = flat(TINT.walk),
   BACKDROP = flat(TINT.backdrop),
   GATE = flat(TINT.gate, 0.6),
@@ -315,6 +329,75 @@ export function buildGreybox(map: Layout, ground: Ground): Greybox {
     if (p.id === 'home' || p.id === 'camp' || p.id === 'splitrock' || p.id === 'pier' || p.id === 'original') continue;
     boxes([{ w: 16, h: 1, d: 16, x, y: y - 0.5, z }], MARKER, root);
     boxes([{ w: 1.4, h: 30, d: 1.4, x, y: y + 15, z }], MARKER, markers, false);
+  }
+
+  // ---- line-2 works: thin, non-solid posts with labels, and the unlaid stretch as a survey line (never solid)
+  // The production railway is (or will be) laid there, so nothing here collides: a laid track must never meet a greybox solid.
+  {
+    const deck = LINE2_DECK;
+    const groups = new Map<Work['kind'], Box[]>();
+    for (const w of map.works) {
+      const [ax, az] = w.at;
+      const x = wx(ax),
+        z = wz(az),
+        under = ground.groundAt(ax, az);
+      const base = Math.max(under, 0),
+        top = (under < 1 ? deck : Math.max(under, 2.5)) + 9;
+      const list = groups.get(w.kind) ?? [];
+      list.push(
+        { w: 0.45, h: top - base, d: 0.45, x, y: (top + base) / 2, z },
+        { w: 2.6, h: 1.3, d: 0.12, x: x + 1.3, y: top - 0.9, z },
+      );
+      groups.set(w.kind, list);
+      spots[`work-${w.id}`] = { pos: new THREE.Vector3(x, top, z), label: w.name, kind: 'mark', stage: null };
+    }
+    for (const [kind, list] of groups) boxes(list, flat(WORK_COLOURS[kind], 0.7), root, false);
+
+    const l2b = map.lines.find((l) => l.id === 'l2b');
+    if (l2b) {
+      const stakes: Box[] = [],
+        tape: Box[] = [];
+      const every = SURVEY_EVERY;
+      let carried = 0,
+        prev: XZ | null = null;
+      const stake = (x: number, z: number) => {
+        const under = ground.groundAt(x, z),
+          base = Math.max(under, 0),
+          top = Math.max(base, deck) + 2.5;
+        stakes.push({ w: 0.22, h: top - base, d: 0.22, x: wx(x), y: (top + base) / 2, z: wz(z) });
+        if (prev)
+          tape.push({
+            w: Math.hypot(x - prev[0], z - prev[1]),
+            h: 0.1,
+            d: 0.1,
+            x: wx((x + prev[0]) / 2),
+            y: Math.max(base, deck) + 2,
+            z: wz((z + prev[1]) / 2),
+            yaw: alongYaw(x - prev[0], z - prev[1]),
+          });
+        prev = [x, z];
+      };
+      const pts = l2b.pts;
+      stake(pts[0]![0], pts[0]![1]);
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, az] = pts[i - 1]!,
+          [bx, bz] = pts[i]!,
+          len = Math.hypot(bx - ax, bz - az);
+        for (let d = every - carried; d <= len; d += every)
+          stake(ax + ((bx - ax) * d) / len, az + ((bz - az) * d) / len);
+        carried = (carried + len) % every;
+      }
+      stake(pts.at(-1)![0], pts.at(-1)![1]);
+      boxes(stakes, flat(SURVEY, 0.8), root, false);
+      boxes(tape, flat(SURVEY, 0.8), root, false);
+      const mid = pts[1]!;
+      spots['survey-l2b'] = {
+        pos: new THREE.Vector3(wx(mid[0]), deck + 12, wz(mid[1])),
+        label: `${l2b.name}: survey line, stakes every ${every} m (not laid)`,
+        kind: 'mark',
+        stage: null,
+      };
+    }
   }
 
   // ---- gates: the sea cave is built into its face; the rest are tall orange posts

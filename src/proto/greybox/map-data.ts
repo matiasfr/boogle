@@ -111,6 +111,19 @@ export type Backdrop = {
   smoke: XZ;
   note?: string;
 };
+/** Line-2 works (greybox only; the page ignores them): pinned from Place's layout and the railway catalog. `s` is metres
+ * along `line` ('l1' = Place's north line, 'l2' = its east line) at the nearest rail; `off` how far to its side the mark
+ * stands. Nothing here is solid: the real railway is, or will be, laid there. */
+export type Work = {
+  id: string;
+  name: string;
+  at: XZ;
+  kind: 'frame' | 'gate' | 'chest' | 'halt' | 'boiler' | 'train';
+  line?: 'l1' | 'l2';
+  s?: number;
+  off?: number;
+  note?: string;
+};
 export type Ambient = { id: string; name: string; kind: string; speed: number; phase: number; pts: XZ[] };
 export type Option = {
   id: string;
@@ -129,7 +142,7 @@ export type Option = {
 };
 export type MapData = {
   ride: { speed: number; accelS: number; dwellS: number; boardS: number };
-  common: { land: Land[]; places: Place[]; lines: Line[] };
+  common: { land: Land[]; places: Place[]; lines: Line[]; works?: Work[] };
   options: Option[];
 };
 
@@ -234,6 +247,7 @@ export type Layout = {
   ride: MapData['ride'];
   places: Place[];
   lines: Line[];
+  works: Work[];
   land: (Land & { outline: XZ[] })[];
   terrain: Terrain[];
   gates: Gate[];
@@ -268,6 +282,7 @@ export function layout(data: MapData, optionId: string, pick: Pick = 'A'): Layou
     ride: data.ride,
     places: [...data.common.places, ...option.places],
     lines: [...data.common.lines, ...option.lines],
+    works: data.common.works ?? [],
     land,
     terrain,
     gates: option.gates ?? [],

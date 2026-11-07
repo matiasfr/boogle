@@ -17,6 +17,7 @@ import { precompile } from '../../render/precompile.ts';
 import { FAR } from '../place/layout.ts';
 import { MAP } from './page.ts';
 import { layout, polyLen, rideSeconds, type Pick, type XZ } from './map-data.ts';
+import { rideModelSeconds, ridePoints, workRides } from './rides.ts';
 import { createGround, wx, wz } from './ground.ts';
 import { buildGreybox, STAGE_COLOURS } from './build.ts';
 
@@ -155,7 +156,10 @@ type Ride = {
   along: number[];
   total: number;
   s: number;
+  /** Review multiplier (x1, x4). */
   speed: number;
+  /** The ride's own cruising speed, m/s. */
+  mps: number;
   model: number;
 };
 const RIDE_SPEED = map.ride.speed;
@@ -184,20 +188,28 @@ const NAMED_ROUTES: { id: string; name: string; legs: string[] }[] = [
   { id: 'wall', name: 'The White Wall line, High Port to High Gorge', legs: ['wall-s', 'wall-n'] },
   { id: 'ending', name: 'Home to The Boogler: shortcut and causeway', legs: ['bay-cut', 'final'] },
 ];
+/** The line-2 rides (rides.ts): the depot cart, the line 2 train and the boiler walk, on the real rails. */
+const WORK_RIDES = workRides(map.ride);
 const ROUTES = [
   ...NAMED_ROUTES.filter((r) => r.legs.every((id) => box.lines.some((l) => l.id === id))),
   ...box.lines.filter((l) => l.stage !== 0).map((l) => ({ id: l.id, name: l.name, legs: [l.id] })),
+  ...WORK_RIDES.map((r) => ({ id: r.id, name: r.name, legs: [] as string[] })),
 ];
 function startRide(id: string, speed = 1) {
   const route = ROUTES.find((r) => r.id === id);
   if (!route) return false;
+  const work = WORK_RIDES.find((r) => r.id === id);
   const path: THREE.Vector3[] = [];
-  for (const leg of route.legs)
-    for (const p of box.lines.find((l) => l.id === leg)!.path) if (!path.at(-1)?.equals(p)) path.push(p);
+  if (work) for (const [x, y, z] of ridePoints(work)) path.push(new THREE.Vector3(wx(x), y, wz(z)));
+  else
+    for (const leg of route.legs)
+      for (const p of box.lines.find((l) => l.id === leg)!.path) if (!path.at(-1)?.equals(p)) path.push(p);
   const along = [0];
   for (let i = 1; i < path.length; i++) along.push(along[i - 1]! + path[i]!.distanceTo(path[i - 1]!));
   const lens = route.legs.map((leg) => polyLen(map.lines.find((l) => l.id === leg)!.pts));
-  ride = { name: route.name, path, along, total: along.at(-1)!, s: 0, speed, model: rideSeconds(map.ride, lens) };
+  const mps = work?.mps ?? RIDE_SPEED;
+  const model = work ? rideModelSeconds(work) : rideSeconds(map.ride, lens);
+  ride = { name: route.name, path, along, total: along.at(-1)!, s: 0, speed, mps, model };
   held = null;
   heldId = `ride:${id}`;
   return true;
@@ -231,11 +243,20 @@ const vec = (s: string | null) => {
 }
 
 // ---------------------------------------------------------------- travel: your own body, in your own tab
+/** A place or a line-2 work, by id or name (any case): go('Q4'), go('Far Head'), go('pier'). */
+const workOf = (id: string) => {
+  const k = id.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const same = (w: { id: string; name: string }) =>
+    [w.id, w.name, w.name.replace(/ halt$/, '')].some((v) => v.toLowerCase().replace(/[^a-z0-9]+/g, '') === k);
+  return map.works.find(same);
+};
 function goTo(id: string) {
   const body = me.body;
-  const at = id === 'home' ? ([-199, 10] as XZ) : placeAt(id);
+  const place = map.places.find((p) => p.id === id);
+  const work = place ? undefined : workOf(id);
+  const at = id === 'home' ? ([-199, 10] as XZ) : (place?.at ?? work?.at);
   if (!body || !at) return false;
-  const y = id === 'home' ? 3.6 : ground.deckOf(id, at);
+  const y = id === 'home' ? 3.6 : work ? Math.max(ground.groundAt(at[0], at[1]), 2.5) + 0.5 : ground.deckOf(id, at);
   free();
   releaseInput();
   releaseJump();
@@ -333,7 +354,11 @@ const button = (parent: HTMLElement, text: string, run: () => void, title = '') 
   for (const [id, v] of Object.entries(VIEWS)) button(views, v.name, () => holdView(id), id);
   const go = section('Go to (moves your body)');
   for (const p of map.places) button(go, p.name, () => goTo(p.id));
-  const rides = section(`Ride at ${RIDE_SPEED} m/s (x4 for review)`);
+  if (map.works.length) {
+    const goWorks = section('Go to line 2 works (Q4, Far Head, halts...)');
+    for (const w of map.works) button(goWorks, w.name, () => goTo(w.id), w.note ?? '');
+  }
+  const rides = section(`Ride at the model's speed (${RIDE_SPEED} m/s on the sea lines; x4 for review)`);
   for (const r of ROUTES) {
     const row2 = document.createElement('div');
     row2.className = 'gbx-row';
@@ -353,7 +378,7 @@ function drawReadout(dt: number) {
   if (readoutClock < 0.25) return;
   readoutClock = 0;
   if (ride) {
-    readout.textContent = `${ride.name}: ${(ride.s / 1000).toFixed(2)} / ${(ride.total / 1000).toFixed(2)} km, ${mmss(ride.s / RIDE_SPEED)} of ${mmss(ride.total / RIDE_SPEED)} at ${RIDE_SPEED} m/s (x${ride.speed}); the model's ride with boarding and stops: ${mmss(ride.model)}`;
+    readout.textContent = `${ride.name}: ${(ride.s / 1000).toFixed(2)} / ${(ride.total / 1000).toFixed(2)} km, ${mmss(ride.s / ride.mps)} of ${mmss(ride.total / ride.mps)} at ${ride.mps.toFixed(1)} m/s (x${ride.speed}); the model's ride with boarding and stops: ${mmss(ride.model)}`;
     return;
   }
   camera.getWorldDirection(ahead);
@@ -388,7 +413,7 @@ spawn({
     if (box.root.visible && ++shownFrames === 30) refreshMaterials();
     applyFog();
     if (ride) {
-      ride.s = Math.min(ride.total, ride.s + RIDE_SPEED * ride.speed * dt);
+      ride.s = Math.min(ride.total, ride.s + ride.mps * ride.speed * dt);
       pointAt(ride, ride.s, camera.position).y += 6;
       pointAt(ride, ride.s + 90, look).y += 4;
       camera.lookAt(look);
@@ -428,7 +453,7 @@ const api = {
     VIEWS[id] && { cam: VIEWS[id].cam.toArray(), look: VIEWS[id].look.toArray(), fog: VIEWS[id].fog },
   state: () => ({
     held: heldId,
-    ride: ride && { s: ride.s, total: ride.total, model: ride.model },
+    ride: ride && { s: ride.s, total: ride.total, mps: ride.mps, model: ride.model },
     camera: camera.position.toArray(),
     fog: { near: (scene.fog as THREE.Fog).near, far: (scene.fog as THREE.Fog).far, cameraFar: camera.far },
   }),

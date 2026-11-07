@@ -30,7 +30,7 @@ Use a room of your own (`room=`), so you don't fly about in front of other peopl
 | `&gbcliff=<hex>`             | Override the cliff tint (e.g. `d9d4c8`, chalk white)                               |
 
 The panel (bottom left, in the HUD, so captures leave it out) has views, go-to for every place (moves your own body)
-and rides along the lines at the economy model's 20 m/s, x1 or x4, with the model's ride time. `window.__greybox`
+and rides along the lines at the economy model's 20 m/s, x1 or x4, with the model's ride time. Three more rides (`rides.ts`, on Place's real rails, at their own speeds) give the 2D economy model its legs: the depot **cart** trip (camp, turntable and forge stop, Q4 rack, 9 m/s), the **line 2 train** (Village, quarry stop, Far Head stop, pier, 20 m/s) and the **boiler** walk (Far Head, apron, camp, about 5.6 m/s). `window.__greybox`
 drives the same from a look eval: `view(id)`, `pose(cam, look)`, `ride(route, speed)`, `go(place)`, `free()`,
 `labels(on)`, `fog(mode)`, `viewPose(id)`, `refresh()`, `state()`. Under the look harness some meshes' first draws
 never appear (7 November); call `refresh()` in the look action, after warm-up, before judging a still:
@@ -54,6 +54,13 @@ Everything the page draws, plus optional greybox fields the page ignores:
 - **Terrain:** `forest` with `h` (crown tops), `gorge` (the split), `pier` (breakwaters on the page).
 - **`landmarks`:** `crane`, `arch` (with `lantern`), `pinnacle`, `waterfall`, `saltworks`, `lamps` (along a line).
 - **`harbour`:** breakwater, quay, warehouses, moorings, head light, mouth.
+- **`common.works`** (line 2's production railway; Place-local metres like the rest): `{ id, name, at, kind, line?, s?, off?, note? }`
+  for the forge, Q1 to Q6 frames, the pack chest, the quarry lever and sea switch, the boiler, the old train and the
+  halts. `s` is metres along Place's real rails (`l1` = `LINES.north`, `l2` = `LINES.east`) and `off` the mark's side
+  offset. They are thin, labelled, **non-solid** posts, and the unlaid `l2b` stretch (Split-rock to the pier) is a
+  **non-solid survey line** (pink, stakes every 20 m), never solids, so the real track laid there never meets a greybox
+  solid. The page ignores `works`, and the 2D economy prototype may read it. Go-to takes any of them by id or name
+  (`go('Q4')`, `go('Far Head')`, `go('pier')`). `test/greybox-works.test.ts` pins them to the railway catalog and the rails.
 - **`backdrop`:** the mainland's city (towers, lighthouse, smoke).
 - **`ambient`:** boat routes, there and back, cosmetic.
 
@@ -61,6 +68,6 @@ Heights it can't find come from today's ground: Home's terrain, the classic isla
 
 ## Files
 
-`index.ts` the entry (flags, views, rides, panel, labels, the one late hook) · `build.ts` meshes and solids ·
+`index.ts` the entry (flags, views, rides, panel, labels, the one late hook) · `build.ts` meshes and solids · `rides.ts` the line-2 rides ·
 `ground.ts` heights, decks and line profiles · `map-data.ts` the JSON's types and the page's geometry · `page.ts`
 the raw import · `greybox.css`.
