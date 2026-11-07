@@ -231,3 +231,19 @@ Not the replay: Grant couldn't play, so this doesn't answer the two-player quest
 - **Works on a device:** loaded fine; the avatar fix held. Performance stepped down from 2x to 1.2x from 18:11.
 - **Broke:** soft-lock from shouldering the great trunk at Station 1. One GPU error on returning from the background.
 - **Loved:** building the forge, the town zoom-out, the NPCs, the museum.
+
+## 2026-11-06 (evening, all of today's content)
+- Who: Matias, solo, desktop Safari (session mw5y0cl1, build e439b72a: R1a, line 2 part 1, Fresh palette, readable glows).
+- Played: 17 min, plus 8 min with the tab hidden; reached the quarry gate, the end of what's built. About 4.8 km walked; 406 chop presses on 61 chop prompts; 17 bonks.
+- Felt off:
+  - The conductor's-hat reward particles, ability pickups and log piles still read dark.
+  - The second power-up gave no reveal at all.
+  - Dropped piles were invisible depending on camera angle.
+  - Rolled back while carrying after the pause menu and a hidden tab.
+  - The track layer jumped ahead and back.
+  - The forge's counter is hidden by its walls, its pour box clips the wall, it didn't look finished, and its rails weren't visible though takeable.
+  - Wood platforms clip the track in places; too much smoke when laying ends; the double jump lost its sparkle; the gantry beam is too long.
+  - The great beam chain is unclear: 40 logs, then the axe chest, then the great tree. A second axe so soon feels redundant, and the beam carry animation looks odd.
+- Liked: the new track-piece laying animation.
+- Data: frame p50 17 ms, p95 25 ms on the Mac. Dynamic resolution dropped from 2x to 1.2x at 6 min and stayed there. Slowest CPU sections: railway update 5.3 ms, render 4.5 ms, gifts 1.8 ms. The production railway marks no beats, so "Did" stays empty. A Windows Chrome 117 visitor couldn't create a WebGPU adapter.
+- After: fixes are running or queued (dark glows and piles, reveal, tab-resume rollback and track-layer jump, forge visuals, clipping platforms, laying smoke, double-jump sparkle, a great-beam clarity and carry design, smaller track chunks after R1b).
