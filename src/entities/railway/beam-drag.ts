@@ -14,6 +14,8 @@ const RADIUS = 0.24;
 const LIFT_S = 0.3;
 /** Metres of drag between scrapes. */
 const SCRAPE_EVERY = 1.6;
+/** How fast (1/s) the trailing line settles toward the shoulder side. */
+const TRAIL_PULL = 1.5;
 const Z = new THREE.Vector3(0, 0, 1);
 const smooth = (t: number) => t * t * (3 - 2 * t);
 const a = new THREE.Vector3(),
@@ -28,7 +30,7 @@ export function createBeamDrag(
   ground: (x: number, z: number) => number,
   ropeMaterial: THREE.Material,
 ) {
-  const rope = createRope(world, ropeMaterial, 8, 0.04);
+  const rope = createRope(world, ropeMaterial, 8, 0.055);
   const far = new THREE.Vector3(),
     near = new THREE.Vector3(),
     liftedA = new THREE.Vector3(),
@@ -38,12 +40,15 @@ export function createBeamDrag(
     lift = 0,
     scrape = 0;
   const groundAt = (v: THREE.Vector3) => ground(v.x, v.z) + RADIUS;
-  /** Pull the far end to `BEAM_LENGTH` from the near end along the line it trails on, resting on the ground. */
-  function follow() {
+  /** Pull the far end to `BEAM_LENGTH` from the near end along the line it trails on, resting on the ground, eased
+   * toward `trail` (off the shoulder side) so it swings wide on turns but settles out of the follow camera's way. */
+  function follow(dt: number, trail: THREE.Vector3) {
     d.set(far.x - near.x, 0, far.z - near.z);
+    if (d.lengthSq() < 1e-6) d.copy(trail);
+    d.normalize().addScaledVector(trail, Math.min(1, dt * TRAIL_PULL));
     let length = d.length();
     if (length < 1e-3) {
-      d.set(1, 0, 0);
+      d.copy(trail);
       length = 1;
     }
     for (let k = 0; k < 2; k++) {
@@ -62,13 +67,15 @@ export function createBeamDrag(
     },
     /**
      * anchor: the rope's end on the carrier's load frame; hip: where the trunk's near end hangs; from: where the far end
-     * starts on the first frame (the trunk as it lay); helped: the two shoulders when a friend lifts it, else null.
+     * starts on the first frame (the trunk as it lay); trail: the unit ground direction it settles toward (behind, off
+     * the shoulder side); helped: the two shoulders when a friend lifts it, else null.
      */
     update(
       dt: number,
       anchor: THREE.Vector3,
       hip: THREE.Vector3,
       from: THREE.Vector3,
+      trail: THREE.Vector3,
       helped: [THREE.Vector3, THREE.Vector3] | null,
     ) {
       if (beam.parent !== world) world.add(beam);
@@ -93,7 +100,7 @@ export function createBeamDrag(
         liftedA.copy(a).addScaledVector(d, -BEAM_LENGTH / 2);
         liftedB.copy(a).addScaledVector(d, BEAM_LENGTH / 2);
       }
-      follow();
+      follow(dt, trail);
       const s = smooth(lift);
       a.lerpVectors(near, liftedA, s);
       b.lerpVectors(far, liftedB, s);

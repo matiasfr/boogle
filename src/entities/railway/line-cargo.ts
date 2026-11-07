@@ -93,7 +93,8 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     hip = new THREE.Vector3(),
     from = new THREE.Vector3(),
     shoulderA = new THREE.Vector3(),
-    shoulderB = new THREE.Vector3();
+    shoulderB = new THREE.Vector3(),
+    trail = new THREE.Vector3();
   let last = performance.now(),
     grabbing = -Infinity;
   const ground = makeCarryModels();
@@ -272,7 +273,11 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
           }
         drag.float(now, avatar.position, yaw, side, helped);
         sparkleAxe(model.beam, true, reducedMotion, emit, readableIntensity(), dt);
-      } else drag.update(dt, anchor, hip, from, helped);
+      } else {
+        // Trail about 35 degrees off straight behind, on the shoulder side: the trunk shows its length across the view.
+        trail.set(back.x * 0.82 + Math.cos(yaw) * side * 0.57, 0, back.z * 0.82 - Math.sin(yaw) * side * 0.57);
+        drag.update(dt, anchor, hip, from, trail, helped);
+      }
     }
     for (const [pid, model] of worn)
       if (!live.has(pid)) {

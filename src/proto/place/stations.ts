@@ -59,7 +59,7 @@ function saddles(g: THREE.Group) {
     rope = flat(GOLD_ROPE, 0.7);
   const tied: THREE.Mesh[] = [];
   const loose: ReturnType<typeof createRope>[] = [];
-  const ring = new THREE.TorusGeometry(0.33, 0.05, 6, 18);
+  const ring = new THREE.TorusGeometry(0.34, 0.065, 6, 18);
   const a = new THREE.Vector3(),
     b = new THREE.Vector3();
   for (const sz of [-1, 1]) {
@@ -75,8 +75,8 @@ function saddles(g: THREE.Group) {
     for (const sx of [-1, 1]) part(0.14, 0.34, 0.3, sx * 0.42, 1.55);
     for (const sx of [-1, 1]) {
       // A loose lashing hangs off each cheek, waiting.
-      const r = createRope(g, rope, 5, 0.035);
-      r.set(a.set(sx * 0.42, 1.7, z), b.set(sx * 0.62, 1.05, z + sz * 0.12), 0.06);
+      const r = createRope(g, rope, 6, 0.055);
+      r.set(a.set(sx * 0.42, 1.72, z), b.set(sx * 0.7, 0.85, z + sz * 0.16), 0.08);
       loose.push(r);
     }
     const t = new THREE.Mesh(ring, rope);

@@ -23,16 +23,18 @@ export function createGreatTreeDress(
   };
   const roots = new THREE.Group();
   roots.position.set(tree.x, tree.y, tree.z);
-  const rootGeo = keep(new THREE.ConeGeometry(0.5, 1, 4, 1).translate(0, 0.5, 0));
-  const bark = flat('#8a6a4a', 0.95);
-  // Five flared buttresses: low wedges leaning out from the trunk's foot, half sunk into the slope.
+  // Five flared buttresses: a square fin turned on its corner and centred on the trunk's skin, so what shows outside
+  // the trunk is a sloping wedge, tall where it meets the bark and running into the ground.
+  const fin = 0.62 * tree.size;
+  const rootGeo = keep(new THREE.BoxGeometry(0.16 * tree.size, fin, fin));
+  const bark = flat('#7f5a36', 0.95);
   for (let k = 0; k < 5; k++) {
     const yaw = (k / 5) * Math.PI * 2 + 0.4;
     const m = new THREE.Mesh(rootGeo, bark);
-    m.position.set(Math.sin(yaw) * trunkR(tree, 0) * 0.9, -0.15, Math.cos(yaw) * trunkR(tree, 0) * 0.9);
+    const r = trunkR(tree, 0) * 0.95;
+    m.position.set(Math.sin(yaw) * r, -0.12, Math.cos(yaw) * r);
     m.rotation.set(0, yaw, 0);
-    m.rotateX(1.05);
-    m.scale.set(0.55 * tree.size, 1.5 * tree.size, 0.35 * tree.size);
+    m.rotateX(Math.PI / 4);
     m.castShadow = true;
     roots.add(m);
   }
@@ -42,7 +44,7 @@ export function createGreatTreeDress(
   sling.position.set(tree.x, tree.y, tree.z);
   const rope = flat(GOLD_ROPE, 0.7);
   for (const h of [1.5, 1.85]) {
-    const band = new THREE.Mesh(keep(new THREE.TorusGeometry(trunkR(tree, h) + 0.03, 0.06, 6, 22)), rope);
+    const band = new THREE.Mesh(keep(new THREE.TorusGeometry(trunkR(tree, h) + 0.04, 0.08, 6, 22)), rope);
     band.rotation.x = Math.PI / 2;
     band.position.y = h;
     band.castShadow = true;
