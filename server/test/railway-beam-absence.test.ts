@@ -9,6 +9,7 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost, type RailwayPosition } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
+import { Beam } from '../../src/sim/railway-world.ts';
 
 type Obj = Record<string, unknown>;
 
@@ -48,33 +49,40 @@ test('a carrier back after 4 s still carries the beam; after 5 min it lies where
     await host.whenReady();
     const epoch = await open('a');
     // Alice holds the beam (the route to it is line-host's test) and walks off with it.
-    const beam = host.rules.railway.railway.line!.beam;
-    Object.assign(beam, { state: 'held', holder: 'alice', epoch, revision: beam.revision + 1 });
+    // The state is the railway's world; a test sets it up through the store (marked, so it replicates).
+    const w = host.rules.railway.world();
+    const id = w.single(Beam);
+    Object.assign(w.mut(Beam, id)!, { state: 'held', holder: 'alice', epoch, revision: w.get(Beam, id)!.revision + 1 });
+    const beam = () => host.rules.railway.beam();
     people = [{ pid: 'alice', x: 980, y: 30.45, z: -130, at: now }];
     await ticks(12);
-    assert.deepEqual([beam.x, beam.y, beam.z], [98000, 3000, -13000], 'it follows where she stands, at her feet');
+    assert.deepEqual([beam().x, beam().y, beam().z], [98000, 3000, -13000], 'it follows where she stands, at her feet');
 
     // A 4 s absence: her socket goes, a new one opens; she still carries it, in the new session.
     host.depart('a');
     people = [];
     await ticks(40);
-    assert.equal(beam.state, 'held');
+    assert.equal(beam().state, 'held');
     const back = await open('a2');
     assert.equal(back, epoch + 1);
-    assert.deepEqual([beam.state, beam.holder, beam.epoch], ['held', 'alice', back], 'back within the grace: carrying');
+    assert.deepEqual(
+      [beam().state, beam().holder, beam().epoch],
+      ['held', 'alice', back],
+      'back within the grace: carrying',
+    );
 
     // A 5 minute absence: past the grace it goes down where she last stood, never back to the tree.
     host.depart('a2');
     now += 5 * 60000;
     await ticks(3);
     assert.deepEqual(
-      [beam.state, beam.holder, beam.x, beam.y, beam.z],
+      [beam().state, beam().holder, beam().x, beam().y, beam().z],
       ['ground', '', 98000, 3000, -13000],
       'on the ground where she stood',
     );
     const later = await open('a3');
     assert.ok(later > back);
-    assert.equal(beam.state, 'ground', 'coming back later finds it there');
+    assert.equal(beam().state, 'ground', 'coming back later finds it there');
   } finally {
     await host.close({ save: false }).catch(() => {});
     await fs.rm(dir, { recursive: true, force: true });

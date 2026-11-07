@@ -10,7 +10,7 @@ import { createRoomHost } from '../src/host/rooms.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
-import { railwayInvariant } from '../../src/sim/railway.ts';
+import { railwayInvariant } from '../../src/sim/railway-world.ts';
 import type { TuneApi } from '../../src/world/rules/tune.ts';
 import { SUPPLY_SOURCE, supplyFixture } from './fixtures/railway-supply-fixture.ts';
 

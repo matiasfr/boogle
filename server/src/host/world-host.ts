@@ -209,7 +209,6 @@ export function createRailwayWorldHost({
   const base = installRules(sync, home.land as Parameters<typeof installRules>[1]);
   const api = installRailway(sync, base, replication);
   const rules = { ...base, railway: api };
-  const railway = api.railway;
   const sent = new Set<(message: Msg) => void>();
   const incoming = new Set<(message: unknown, from: string) => void>();
   const send = (message: Msg) => {
@@ -253,7 +252,7 @@ export function createRailwayWorldHost({
   });
   const supplySafe = (e: SupplyPulse) => {
     const people = positions();
-    const beam = railway.line!.beam;
+    const beam = api.beam();
     return (
       RAILWAY_SOURCES.every((_source, k) => !railGrows(e.grow, k) || railGrowthAllowed(k, true)) &&
       (e.beam === undefined ||
@@ -262,7 +261,7 @@ export function createRailwayWorldHost({
           beam.age === 21 &&
           railNobodyNear(people, now(), beam.x, beam.z))) &&
       e.recover.every((id) => {
-        const pile = railway.piles.find((p) => p.id === id);
+        const pile = api.piles().find((p) => p.id === id);
         return !!pile && railNobodyNear(people, now(), pile.x, pile.z);
       })
     );
@@ -271,23 +270,24 @@ export function createRailwayWorldHost({
   const maintainSupply = () => {
     if (!running || closed || sync.worldStatus().recoveryError) return;
     const marker = Math.floor(now() / 60000);
-    if (marker < railway.supply!.marker) return;
+    if (marker < api.supplyMarker()) return;
     const people = positions();
-    const recover = railway.piles
+    const recover = api
+      .piles()
       .filter(
-        (pile) => (marker > railway.supply!.marker || pile.age === 21) && railNobodyNear(people, now(), pile.x, pile.z),
+        (pile) => (marker > api.supplyMarker() || pile.age === 21) && railNobodyNear(people, now(), pile.x, pile.z),
       )
       .map((pile) => pile.id)
       .sort((a, b) => a - b)
       .slice(0, 1);
-    const ground = railway.line!.beam;
+    const ground = api.beam();
     const beam =
       ground.state === 'ground' && ground.age === 21 && railNobodyNear(people, now(), ground.x, ground.z)
         ? ground.revision
         : undefined;
-    if (marker === railway.supply!.marker && !recover.length && beam === undefined) return;
+    if (marker === api.supplyMarker() && !recover.length && beam === undefined) return;
     const grow = railGrowthMask(
-      RAILWAY_SOURCES.flatMap((_source, k) => (railway.sources[k] === 0 && railGrowthAllowed(k, true) ? [k] : [])),
+      RAILWAY_SOURCES.flatMap((_source, k) => (api.felled(k) && railGrowthAllowed(k, true) ? [k] : [])),
     );
     const pulse: SupplyPulse = { marker, grow, recover, ...(beam === undefined ? {} : { beam }) };
     if (supplySafe(pulse)) api.supply(pulse);
@@ -324,7 +324,7 @@ export function createRailwayWorldHost({
           async write(data) {
             // Until startup has applied the offline catch-up, a save must not claim the absent time as passed.
             const updatedAt = startup
-              ? Math.max(savedAt, railway.resumeMarker * 100)
+              ? Math.max(savedAt, api.resumeMarker() * 100)
               : awayMarker !== null
                 ? awayMarker * 100
                 : now();
@@ -341,7 +341,7 @@ export function createRailwayWorldHost({
     );
   // New material may not inherit an unprocessed absence from the global supply marker.
   // One minute is the deliberately conservative 21/31-minute quantization; marker zero has no elapsed age.
-  const supplyCurrent = () => !railway.supply!.marker || Math.floor(now() / 60000) - railway.supply!.marker <= 1;
+  const supplyCurrent = () => !api.supplyMarker() || Math.floor(now() / 60000) - api.supplyMarker() <= 1;
   const requests = createRailwayRequests({
     api,
     pidOf,
@@ -358,7 +358,7 @@ export function createRailwayWorldHost({
   let beamAway: number | null = null;
   let stoodAt = -Infinity;
   const maintainBeam = () => {
-    const beam = railway.line!.beam;
+    const beam = api.beam();
     if (beam.state !== 'held') return void (beamAway = null);
     const t = now();
     if (requests.active(beam.holder)) {
@@ -384,7 +384,7 @@ export function createRailwayWorldHost({
     // The room stood still from its last save (less any tail the recovery replayed): the away credit waits for a join.
     awayMarker = Math.min(
       Math.floor(now() / 100),
-      Math.max(Math.floor(savedAt / 100), railway.resumeMarker) + (sync.world.tick - savedTick),
+      Math.max(Math.floor(savedAt / 100), api.resumeMarker()) + (sync.world.tick - savedTick),
     );
     startup = false;
     if (present) credit(); // whoever's joining sees the credited world in the startup checkpoint
@@ -535,7 +535,7 @@ export function createRailwayWorldHost({
     /** The room's actual departure of a session (after its reconnect grace). A carried beam waits for its carrier. */
     depart(sid: string) {
       const session = requests.depart(sid);
-      const beam = railway.line!.beam;
+      const beam = api.beam();
       // The grace runs from the carrier's departure, not from when maintenance next notices it.
       if (session && beam.state === 'held' && beam.holder === session.pid && !requests.active(session.pid))
         beamAway ??= now();

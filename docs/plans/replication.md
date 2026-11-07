@@ -547,6 +547,15 @@ Unverified: the owner's feel, especially of corrections (only the headless tests
 real networks; Safari and mobile; not tested on a device. A reversed tree snaps upright with a shake rather than
 easing back up.
 
+### The railway on E (7 November)
+
+The railway's state moved into an E world ([ecs-e](ecs-e.md), section 4): the replicated components above are now
+E components (`src/sim/railway-world.ts`), each a replication schema as it stands, and the server's world is its own
+projection (`src/world/replicate-world.ts`): the systems mark what they change, so `railProjections` and the
+hand-written touch lists are gone. Catalog kinds and accounts are keyed by entity id and carry their `slot` or `pid`;
+`rail.nextPile` is no longer sent. The client's mirror writes packets into a world of the same components, and
+prediction runs the server's systems on a clone of it. `WORLD_NS` v17.
+
 ### Fly `shared-cpu-1x` throttling check (plan; not run)
 
 The room now wakes 60 times a second. `shared-cpu-1x` gets 5 ms of every 80 ms at baseline plus a burst balance; once

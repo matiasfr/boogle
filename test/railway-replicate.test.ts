@@ -7,7 +7,8 @@ import { createSync } from '../src/world/sync.ts';
 import { installRules } from '../src/world/rules/index.ts';
 import { install as installRailway, type Actor } from '../src/world/railway-server.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
-import { createRailwayMirror, railProjections, RAIL_SCHEMAS } from '../src/world/railway-replicate.ts';
+import { createRailwayMirror, RAIL_SCHEMAS } from '../src/world/railway-replicate.ts';
+import { Account, Job, Rail, Tree, railwayInvariant } from '../src/sim/railway-world.ts';
 import { RULE_STEPS } from '../src/world/room-clock.ts';
 import {
   railCounts,
@@ -15,7 +16,6 @@ import {
   railPanelCount,
   railActiveStation,
   railJobs,
-  railwayInvariant,
   type RailAction,
 } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
@@ -61,11 +61,17 @@ function agree(r: ReturnType<typeof room>, cid: string) {
   const tick = r.sync.world.tick;
   const server = r.api.railway;
   const mirrored = m.at(tick);
-  for (const p of railProjections(() => server)) {
-    const ids = [...p.ids()];
-    assert.equal([...m.mirror.entries(p.schema.kind)].length, ids.length, `${cid} ${p.schema.kind} count`);
-    for (const id of ids)
-      assert.deepEqual(m.mirror.get(p.schema.kind, id), p.project(id), `${cid} ${p.schema.kind} ${id}`);
+  // Every replicated component of the server's world, row for row.
+  const w = r.api.world();
+  for (const c of RAIL_SCHEMAS) {
+    const ids = w.ids(c);
+    assert.equal([...m.mirror.entries(c.kind)].length, ids.length, `${cid} ${c.kind} count`);
+    for (const id of ids) {
+      const row = w.get(c, id) as Record<string, unknown>;
+      const fields = Object.fromEntries(c.names.map((f) => [f, row[f]]));
+      assert.deepEqual(m.mirror.get(c.kind, id), fields, `${cid} ${c.kind} ${id}`);
+      assert.deepEqual(m.world().get(c, id), row, `${cid} ${c.kind} ${id} in the mirror's world`);
+    }
   }
   assert.deepEqual(railCounts(mirrored), railCounts(server), `${cid} counts`);
   assert.equal(railPhase(mirrored, tick), railPhase(server, tick), `${cid} phase`);
@@ -172,22 +178,22 @@ test('a random multi-player action stream replicates exactly, live and to a late
 test('a running job sends nothing per rule tick: its timed fields are derived', () => {
   const r = room();
   r.join('a');
-  const s = r.api.railway;
-  // Fund T1 directly, then let it lay.
+  const s = () => r.api.railway;
+  // Fund T1 directly, then let it lay: the state is set up on the world (marked, so it replicates).
   r.api.session('alice', 1);
-  s.awake = 0;
+  const w = r.api.world();
+  w.mut(Rail, w.single(Rail))!.awake = 0;
   for (let k = 0; k <= T1.wakeTicks; k++) r.sync.stepWorld(100);
-  Object.assign(s.accounts[0]!, { carry: 0 });
-  s.stock = T1.bill - 1;
-  s.sources[0]! -= T1.bill;
-  s.accounts[0]!.carry = 1;
+  Object.assign(w.mut(Job, w.lookup(Job, 0)!)!, { stock: T1.bill - 1, delivered: T1.bill - 1 });
+  w.mut(Tree, w.lookup(Tree, 0)!)!.left -= T1.bill;
+  w.mut(Account, w.lookup(Account, 'alice')!)!.carry = 1;
   r.api.touchAll();
   r.pump();
   assert.equal(
     r.api.act('alice', { op: 'rail.deposit', station: 'T1', n: 1, epoch: 1, request: 1 }, anywhere).accepted,
     1,
   );
-  assert.ok(s.start >= 0, 'funded');
+  assert.ok(s().start >= 0, 'funded');
   r.pump();
   const before = r.bytes();
   for (let k = 0; k < 30; k++) {
@@ -196,7 +202,7 @@ test('a running job sends nothing per rule tick: its timed fields are derived', 
   }
   assert.equal(r.bytes(), before, 'thirty steps of laying cost no bytes');
   agree(r, 'a');
-  assert.ok(s.elapsed > 0 && r.mirrors.get('a')!.at(r.sync.world.tick).elapsed === s.elapsed);
+  assert.ok(s().elapsed > 0 && r.mirrors.get('a')!.at(r.sync.world.tick).elapsed === s().elapsed);
   assert.equal(RULE_STEPS, 6);
 });
 
@@ -216,7 +222,7 @@ test('the railway state is a server state: saved by the host, never hashed or se
 test('a scripted run through line one and line two to the open quarry gate replicates exactly', () => {
   const r = room();
   r.join('a');
-  const s = r.api.railway;
+  const s = () => r.api.railway; // rebuilt after each change
   const req = new Map<string, number>();
   const act = (pid: string, op: string, fields: Partial<RailAction> = {}) => {
     const n = (req.get(pid) ?? 0) + 1;
@@ -235,11 +241,11 @@ test('a scripted run through line one and line two to the open quarry gate repli
       }
     }
   };
-  const account = (pid: string) => s.accounts.find((a) => a.pid === pid)!;
+  const account = (pid: string) => s().accounts.find((a) => a.pid === pid)!;
   const chop = (pid: string) => {
-    const a = account(pid);
-    while (a.carry + (a.stone ?? 0) + (a.rails ?? 0) < 8) {
-      const k = s.sources.findIndex((n) => n > 0);
+    const load = () => account(pid).carry + (account(pid).stone ?? 0) + (account(pid).rails ?? 0);
+    while (load() < 8) {
+      const k = s().sources.findIndex((n) => n > 0);
       act(pid, 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0.5, collapsed: true });
     }
   };
@@ -254,7 +260,7 @@ test('a scripted run through line one and line two to the open quarry gate repli
   const rails = (pid: string, station: string, n: number) => {
     while (n > 0) {
       if (!account(pid).rails) {
-        if (!s.line2!.forge.rack) advance(40);
+        if (!s().line2!.forge.rack) advance(40);
         assert.ok(act(pid, 'rail.forgeTake') > 0);
       }
       const moved = act(pid, 'rail.deposit', { station, n: Math.min(n, account(pid).rails!), kind: 2 });
@@ -268,7 +274,7 @@ test('a scripted run through line one and line two to the open quarry gate repli
   logs('a', 'T1', 24);
   advance(300);
   for (let i = 0; i < 8;) {
-    const k = s.line!.rocks.findIndex((n) => n > 0);
+    const k = s().line!.rocks.findIndex((n) => n > 0);
     const n = act('b', 'rail.mine', { id: k });
     assert.equal(act('b', 'rail.deposit', { station: 'T2', kind: 1, n }), n);
     i += n;
@@ -278,28 +284,28 @@ test('a scripted run through line one and line two to the open quarry gate repli
   logs('a', 'T3', 40);
   act('a', 'rail.axe');
   for (let i = 0; i < 12; i++) act('a', 'rail.beamChop');
-  act('a', 'rail.beamTake', { revision: s.line!.beam.revision });
-  assert.equal(act('a', 'rail.beamDeposit', { revision: s.line!.beam.revision, station: 'T3' }), 1);
+  act('a', 'rail.beamTake', { revision: s().line!.beam.revision });
+  assert.equal(act('a', 'rail.beamDeposit', { revision: s().line!.beam.revision, station: 'T3' }), 1);
   advance(600);
-  assert.equal(s.line!.jobs[1].completion, 1);
+  assert.equal(s().line!.jobs[1].completion, 1);
   logs('a', 'F', 24);
   logs('b', 'F', 32);
-  assert.ok(s.line2!.forge.lit >= 0, 'the forge is lit');
+  assert.ok(s().line2!.forge.lit >= 0, 'the forge is lit');
   for (let k = 0; k < LINE2_STATIONS.length; k++) {
     const spec = LINE2_STATIONS[k]!;
     advance(40);
     if (spec.depot) {
-      while (s.line2!.jobs[k]!.stock < spec.bill[0]) {
+      while (s().line2!.jobs[k]!.stock < spec.bill[0]) {
         advance(20);
-        if (s.line2!.depot) {
+        if (s().line2!.depot) {
           act('b', 'rail.depotTake');
           act('b', 'rail.deposit', { station: spec.id, n: account('b').carry, kind: 0 });
-        } else logs('a', spec.id, Math.min(8, spec.bill[0] - s.line2!.jobs[k]!.stock));
+        } else logs('a', spec.id, Math.min(8, spec.bill[0] - s().line2!.jobs[k]!.stock));
       }
     } else logs('a', spec.id, spec.bill[0]);
     rails('a', spec.id, spec.bill[1]);
     advance(2000);
-    assert.equal(s.line2!.jobs[k]!.completion, 1, `Q${k + 1} complete`);
+    assert.equal(s().line2!.jobs[k]!.completion, 1, `Q${k + 1} complete`);
     if (k === 1) assert.equal(act('a', 'rail.hook'), 1);
   }
   assert.equal(act('a', 'rail.lever'), 1);

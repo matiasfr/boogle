@@ -1,16 +1,9 @@
 // A railway played through line one, the forge lit and Q1 laid: Q2 takes materials and the depot cart runs. Built
-// from accepted sim ops only (the same path as test/railway-line2.test.ts), for tests that need line two's yards.
+// from accepted sim ops only (the same path as test/railway-line2.test.ts), for tests that need line two's yards. The
+// state is an E world behind ./railway-live.ts's read-only view.
 import assert from 'node:assert/strict';
-import {
-  createRailway,
-  railSession,
-  railAccount,
-  railApply,
-  railTick,
-  railwayInvariant,
-  type Railway,
-  type RailAction,
-} from '../../src/sim/railway.ts';
+import { railAccount, type Railway, type RailAction } from '../../src/sim/railway.ts';
+import { createRailway, invariant as railwayInvariant, railApply, railSession, railTick } from '../railway-live.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { line2Schedule } from '../../src/sim/railway-line2.ts';
 import { LINE2_FORGE } from '../../src/sim/railway-line2-layout.ts';
@@ -54,7 +47,7 @@ function rails(w: World, pid: string, station: string, n: number) {
 }
 /** Players `a` and `b`, at Q2 with nothing delivered there yet. */
 export function railwayAtQ2(): World {
-  const s = createRailway(true, true);
+  const s = createRailway();
   for (const pid of ['a', 'b']) railSession(s, pid, 1);
   railApply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   const w = { s, t: 40 };

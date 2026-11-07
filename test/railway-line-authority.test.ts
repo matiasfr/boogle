@@ -1,32 +1,37 @@
-// Accepted transfers, production and the one beam through the new isolated line-one authority.
+// Accepted transfers, production and the one beam through line one's systems (on E: ./railway-live.ts).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createRailway,
-  railSession,
   railAccount,
-  railApply,
-  railTick,
-  railResume,
   railCounts,
   railMaxDuration,
   railJobs,
   railCurrentJob,
   railActiveStation,
   railAxeAvailable,
-  railBeamRelease,
   railBeamChoppable,
   railPanelCount,
   railPanelStock,
-  serializeRailway,
-  loadRailway,
-  railwayInvariant,
-  hashRailway,
   type Railway,
   type RailAction,
 } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
-import { railSupplyPulse, railGrowthMask, railGrowthAllowed } from '../src/sim/railway-supply.ts';
+import { railGrowthMask, railGrowthAllowed } from '../src/sim/railway-supply.ts';
+import { Rail, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
+import {
+  createRailway,
+  edit,
+  hash,
+  invariant as railwayInvariant,
+  railApply,
+  railBeamRelease,
+  railResume,
+  railSession,
+  railSupplyPulse,
+  railTick,
+  restore,
+  worldOf,
+} from './railway-live.ts';
 import { LINE1_STATIONS, LINE1_RAIL_PAIRS, linePanels } from '../src/sim/railway-line-layout.ts';
 import { lineSchedule } from '../src/sim/railway-line-schedule.ts';
 
@@ -39,7 +44,7 @@ function act(s: Railway, pid: string, op: string, fields: Partial<RailAction> = 
   return { r, e };
 }
 function fresh(pids = ['a', 'b']) {
-  const s = createRailway(true, true);
+  const s = createRailway();
   for (const pid of pids) railSession(s, pid, 1);
   railApply(s, pids[0]!, { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   return s;
@@ -72,13 +77,6 @@ function finish(s: Railway) {
   railTick(s, job.lastTick + railMaxDuration(s));
   assert.equal(job.completion, 1);
   assert.equal(railwayInvariant(s), null);
-}
-function restore(s: Railway) {
-  const n = createRailway(true, true),
-    pids = s.accounts.map((a) => a.pid);
-  loadRailway(n, JSON.parse(JSON.stringify(serializeRailway(s, pids))), pids);
-  assert.equal(hashRailway(s, pids), hashRailway(n, pids));
-  return n;
 }
 function toT3() {
   const s = fresh();
@@ -362,8 +360,7 @@ test('production ceiling refuses an unrepresentable proper-axe bonus atomically'
   const s = toForge();
   if (railAccount(s, 'a')!.carry) act(s, 'a', 'rail.drop', { x: 100000, y: 3000, z: -14000, n: 8 });
   assert.equal(act(s, 'a', 'rail.axe').r.accepted, 1);
-  s.supply!.produced = 2147479735;
-  s.supply!.rack = s.supply!.produced;
+  edit(s, (w) => Object.assign(w.mut(Rail, w.single(Rail))!, { produced: 2147479735, rack: 2147479735 }));
   const k = s.sources.findIndex((n) => n === 10);
   assert.equal(railwayInvariant(s), null);
   assert.equal(act(s, 'a', 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false }).r.accepted, 0);
@@ -371,21 +368,26 @@ test('production ceiling refuses an unrepresentable proper-axe bonus atomically'
 });
 
 test('malformed line loads are atomic and replay hashes match through accepted actions and restoration', () => {
-  const s = toT3(),
-    pids = s.accounts.map((a) => a.pid);
-  const saved = serializeRailway(s, pids),
-    before = hashRailway(s, pids);
+  const s = toT3();
+  const saved = worldOf(s).snapshot(),
+    before = hash(s);
+  type Snap = typeof saved;
+  const col = (j: Snap, kind: string, field: string) => {
+    const c = worldOf(s).components.find((row) => row.kind === kind)!;
+    return j.c[kind]![1 + c.names.indexOf(field)]!;
+  };
   for (const mutate of [
-    (j: typeof saved) => j.catalog++,
-    (j: typeof saved) => j.line!.r[0]!--,
-    (j: typeof saved) => (j.line!.a = 1),
-    (j: typeof saved) => (j.line!.b[0] = 2),
-    (j: typeof saved) => (j.accounts[0]![1] = 80),
+    (j: Snap) => (col(j, 'rock', 'left')[0] = (col(j, 'rock', 'left')[0] as number) - 1),
+    (j: Snap) => (col(j, 'rail', 'axe')[0] = 1),
+    (j: Snap) => (col(j, 'beam', 'state')[0] = 'held'),
+    (j: Snap) => (col(j, 'account', 'carry')[0] = 80),
+    (j: Snap) => (col(j, 'tree', 'slot')[1] = 0),
   ]) {
     const bad = structuredClone(saved);
     mutate(bad);
-    assert.throws(() => loadRailway(s, bad, pids));
-    assert.equal(hashRailway(s, pids), before);
+    assert.throws(() => worldOf(s).load(bad, railwayCheck));
+    assert.throws(() => createRailwayWorld().load(bad, railwayCheck));
+    assert.equal(hash(s), before);
   }
   const copy = restore(s);
   for (let i = 0; i < 12; i++) {
@@ -402,7 +404,7 @@ test('malformed line loads are atomic and replay hashes match through accepted a
       collapsed: false,
     };
     assert.deepEqual(railApply(s, 'a', e, 500 + i), railApply(copy, 'a', e, 500 + i));
-    assert.equal(hashRailway(s, pids), hashRailway(copy, pids));
+    assert.equal(hash(s), hash(copy));
   }
 });
 
@@ -410,8 +412,9 @@ test('wrong material deposits and spent-rock strokes remain material no-ops', ()
   const s = fresh();
   stones(s, 'a', 8, false);
   assert.equal(act(s, 'a', 'rail.deposit', { station: 'T1', kind: 1, n: 8 }).r.accepted, 0);
-  assert.equal(Object.hasOwn(s, 'stoneStock'), false);
-  assert.equal(Object.hasOwn(s, 'stoneDelivered'), false);
+  // T1 takes no stone: its job's stone counts stay zero.
+  assert.equal(s.stoneStock, 0);
+  assert.equal(s.stoneDelivered, 0);
   restore(s);
   railSupplyPulse(s, { marker: 100, grow: railGrowthMask([]), recover: [] });
   railSupplyPulse(s, { marker: 110, grow: railGrowthMask([]), recover: [] });

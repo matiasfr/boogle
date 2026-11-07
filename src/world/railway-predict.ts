@@ -4,7 +4,8 @@
 //
 //   RAIL_PREDICTED                    the ops a client predicts (chop, mine, take, rack take, drop, deposit, forge and
 //                                     depot takes, wake, lever); the rest wait for the server as in R1a
-//   railPredict(s, pid, e, tick)      apply e to s (a clone) as the server would at tick, keeping thresholds for the
+//   railwayOf(world, into?)           the read model of a world, linked to it (a mirror's confirmed state, a clone's)
+//   railPredict(s, pid, e, tick)      apply e to s's world (a clone) as the server would at tick, keeping thresholds for the
 //                                     server: a bill it completes shows full but is funded only when confirmed, a forge it
 //                                     fills is lit only when confirmed. A pile it creates gets the temporary id -request
 //                                     until the server's id arrives (railTempPile, the replicator's `ids` remap)
@@ -13,11 +14,28 @@
 //   railWakeTick(tick, claimed)       the server's wake start: the tick the actor pressed at (its estimate), never later
 //                                     than the arrival and at most WAKE_BACKDATE_TICKS before it, so the actor's
 //                                     animation and the authoritative wake line up
-import { railAccount, railApply, railJobs, type RailAction, type RailPile, type Railway } from '../sim/railway.ts';
+import type { World } from '../ecs/index.ts';
+import type { RailAction, Railway } from '../sim/railway.ts';
 import { LINE1_STATIONS } from '../sim/railway-line-layout.ts';
 import { RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import { LINE2_STATIONS } from '../sim/railway-line2-layout.ts';
 import { LINE_TIMING } from '../sim/railway-line.ts';
+import { railApply } from '../sim/railway-systems.ts';
+import {
+  Account,
+  Forge,
+  ForgeClock,
+  Job,
+  JobRun,
+  Pile,
+  QJob,
+  QJobRun,
+  Rail,
+  copyRailway,
+  fillRailway,
+  railwayView,
+  refreshRailway,
+} from '../sim/railway-world.ts';
 
 export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.wake',
@@ -51,100 +69,110 @@ export function railParseTempPile(temp: string): [epoch: number, request: number
   return m ? [Number(m[1]), Number(m[2])] : null;
 }
 
+/** Each pile's position and count, before an action (what its effect reads afterwards). */
+export type PileBefore = { x: number; y: number; z: number; n: number };
+export function piles(w: World) {
+  const out = new Map<number, PileBefore>();
+  w.each([Pile], (id, p) => out.set(id, { x: p.x, y: p.y, z: p.z, n: p.n }));
+  return out;
+}
+
 /** What an accepted action's effect needs, as it stood right after that action (several can share one packet, and
  * views must not read their counts from the packet's final state): the actor's balance of the moved kind, the
  * target's count, and the pile involved with its position. */
 export type RailEffect = { carried: number; level?: number; pile?: number; px?: number; py?: number; pz?: number };
-export function railEffect(s: Railway, pid: string, e: RailAction, before: Map<number, RailPile>): RailEffect {
-  const a = railAccount(s, pid)!;
+export function railEffect(w: World, pid: string, e: RailAction, before: Map<number, PileBefore>): RailEffect {
+  const a = w.get(Account, w.lookup(Account, pid)!)!;
   const kind = e.op === 'rail.mine' ? 1 : e.op === 'rail.forgeTake' ? 2 : e.kind === 1 || e.kind === 2 ? e.kind : 0;
-  const effect: RailEffect = { carried: kind === 1 ? (a.stone ?? 0) : kind === 2 ? (a.rails ?? 0) : a.carry };
+  const effect: RailEffect = { carried: kind === 1 ? a.stone : kind === 2 ? a.rails : a.carry };
   if (e.op === 'rail.drop') {
-    const pile = s.piles.find((p) => p.n > (before.get(p.id)?.n ?? 0));
-    if (pile) Object.assign(effect, { pile: pile.id, level: pile.n, px: pile.x, py: pile.y ?? 0, pz: pile.z });
+    let hit = 0;
+    w.each([Pile], (id, p) => {
+      if (!hit && p.n > (before.get(id)?.n ?? 0)) hit = id;
+    });
+    const p = hit ? w.get(Pile, hit)! : undefined;
+    if (p) Object.assign(effect, { pile: hit, level: p.n, px: p.x, py: p.y, pz: p.z });
   }
   if (e.op === 'rail.take') {
-    const pile = before.get(e.id!);
-    if (pile)
-      Object.assign(effect, {
-        pile: pile.id,
-        level: s.piles.find((p) => p.id === pile.id)?.n ?? 0,
-        px: pile.x,
-        py: pile.y ?? 0,
-        pz: pile.z,
-      });
+    const p = before.get(e.id!);
+    if (p) Object.assign(effect, { pile: e.id, level: w.get(Pile, e.id!)?.n ?? 0, px: p.x, py: p.y, pz: p.z });
   }
   if (e.op === 'rail.deposit' || e.op === 'rail.beamDeposit') {
     const i = e.op === 'rail.beamDeposit' ? 2 : LINE1_STATIONS.findIndex((row) => row.id === e.station);
     const q = LINE2_STATIONS.findIndex((row) => row.id === e.station);
     if (i >= 0) {
-      const job = railJobs(s)[i]!;
-      effect.level =
-        kind === 1
-          ? (job.stoneStock ?? 0) + (job.stoneAllocation ?? 0) + (job.stoneUsed ?? 0)
-          : job.stock + job.allocation + job.used;
+      const id = w.lookup(Job, i)!;
+      const j = w.get(Job, id)!,
+        r = w.get(JobRun, id)!;
+      effect.level = kind === 1 ? j.stoneStock + r.stoneAllocation + r.stoneUsed : j.stock + r.allocation + r.used;
     } else if (q >= 0) {
-      const job = s.line2!.jobs[q]!;
-      effect.level = kind === 2 ? job.railDelivered : job.delivered;
-    } else if (e.station === 'F') effect.level = s.line2!.forge.used;
+      const j = w.get(QJob, w.lookup(QJob, q)!)!;
+      effect.level = kind === 2 ? j.railDelivered : j.delivered;
+    } else if (e.station === 'F') effect.level = w.get(Forge, w.single(Forge))!.used;
   }
   return effect;
 }
 
-/** A deep copy of a railway (the predictor's scratch state). */
-export const cloneRailway = (s: Railway): Railway => structuredClone(s);
-
-type Job = Record<string, unknown>;
-const JOB_FIELDS = [
-  'stock',
-  'allocation',
-  'used',
-  'start',
-  'elapsed',
-  'lastTick',
-  'completion',
-  'stoneStock',
-  'stoneAllocation',
-  'stoneUsed',
-  'railStock',
-  'railAllocation',
-  'railUsed',
-  'timing',
-] as const;
-const COUNTERS = [
-  ['stock', 'delivered'],
-  ['stoneStock', 'stoneDelivered'],
-  ['railStock', 'railDelivered'],
-] as const;
+// The read model knows its world: a mirror's confirmed state and each predicted clone carry one, so the adapter keeps
+// handling plain `Railway` objects while the rules run on the world.
+const worlds = new WeakMap<Railway, World>();
+export function railwayOf(w: World, into?: Railway): Railway {
+  const s = into ? fillRailway(into, w) : railwayView(w);
+  worlds.set(s, w);
+  return s;
+}
+/** Whether the world holds a whole railway yet (a mirror before its late join's last chunk does not). */
+const whole = (w: World) => w.count(Rail) === 1;
+/** A copy of a read model, linked to a copy of its world (the predictor's scratch state). */
+export function cloneRailway(s: Railway): Railway {
+  const w = worlds.get(s);
+  if (!w || !whole(w)) return structuredClone(s);
+  const copy = copyRailway(s);
+  worlds.set(copy, w.clone()); // copy-on-write: only the tables a prediction writes are copied
+  return copy;
+}
 
 export type RailPrediction = { n: number; effect: RailEffect | null };
+type Saved = { job: Record<string, unknown>; run: Record<string, unknown> };
 /** Apply a predicted action to a scratch railway as the server would at `tick`; see the header for what is held back. */
 export function railPredict(s: Railway, pid: string, e: RailAction, tick: number): RailPrediction {
-  if (!RAIL_PREDICTED.has(e.op) || !railAccount(s, pid)) return { n: 0, effect: null };
-  const before = new Map(s.piles.map((p) => [p.id, { ...p }]));
-  const jobs = [...railJobs(s), ...(s.line2?.jobs ?? [])] as unknown as Job[];
-  const saved = jobs.map((job) => {
-    const out: Job = {};
-    for (const k of JOB_FIELDS) if (k in job) out[k] = job[k];
-    for (const [, d] of COUNTERS) if (d in job) out[d] = job[d];
-    return out;
-  });
-  const forge = s.line2?.forge;
-  const lit = forge ? [forge.lit, forge.lastPour] : null;
-  const nextPile = s.nextPile;
-  if (e.op === 'rail.drop') s.nextPile = -e.request; // a stable temporary id until the server's arrives
-  const result = railApply(s, pid, e, tick, LINE_TIMING);
-  if (e.op === 'rail.drop') s.nextPile = nextPile;
-  // Thresholds are the server's: a completed bill shows full and waits; a filled forge waits to be lit.
-  jobs.forEach((job, k) => {
+  const w = worlds.get(s);
+  if (!w || !whole(w) || !RAIL_PREDICTED.has(e.op) || w.lookup(Account, pid) === undefined)
+    return { n: 0, effect: null };
+  const before = piles(w);
+  const jobs = [
+    ...w.ids(Job).map((id) => [Job, JobRun, id, 'delivered', 'stoneDelivered'] as const),
+    ...w.ids(QJob).map((id) => [QJob, QJobRun, id, 'delivered', 'railDelivered'] as const),
+  ];
+  const saved: Saved[] = jobs.map(([c, r, id]) => ({ job: { ...w.get(c, id)! }, run: { ...w.get(r, id)! } }));
+  const fid = w.single(Forge);
+  const lit = [w.get(Forge, fid)!.lit, w.get(ForgeClock, fid)!.lastPour] as const;
+  if (e.op === 'rail.drop') w.reserve(-e.request); // a stable temporary id until the server's arrives
+  const result = railApply(w, pid, e, tick, LINE_TIMING);
+  // Thresholds are the server's: a completed bill shows full and waits; a filled forge waits to be lit. The bill's
+  // delivered counts stand, and its stock keeps what this action delivered.
+  jobs.forEach(([c, r, id, delivered, second], k) => {
     const old = saved[k]!;
-    if ((old.start as number) >= 0 || (job.start as number) < 0) return;
-    for (const f of JOB_FIELDS) if (f in old) job[f] = old[f];
-    for (const [stock, delivered] of COUNTERS)
-      if (stock in job && delivered in job)
-        job[stock] = (job[stock] as number) + (job[delivered] as number) - (old[delivered] as number);
+    const j = w.get(c, id)! as unknown as Record<string, number>;
+    if ((old.job.start as number) >= 0 || j.start! < 0) return;
+    const stock = (old.job.stock as number) + j[delivered]! - (old.job[delivered] as number);
+    const stock2key = second === 'stoneDelivered' ? 'stoneStock' : 'railStock';
+    const stock2 = (old.job[stock2key] as number) + j[second]! - (old.job[second] as number);
+    Object.assign(
+      w.mut(c, id)!,
+      { ...old.job, [delivered]: j[delivered], [second]: j[second] },
+      {
+        stock,
+        [stock2key]: stock2,
+      },
+    );
+    Object.assign(w.mut(r, id)!, old.run);
   });
-  if (forge && lit && lit[0]! < 0 && forge.lit >= 0) [forge.lit, forge.lastPour] = lit as [number, number];
+  if (lit[0] < 0 && w.get(Forge, fid)!.lit >= 0) {
+    w.mut(Forge, fid)!.lit = lit[0];
+    w.mut(ForgeClock, fid)!.lastPour = lit[1];
+  }
+  refreshRailway(s, w);
   const n = result.status === 'accepted' ? result.accepted : 0;
-  return { n, effect: n > 0 ? railEffect(s, pid, e, before) : null };
+  return { n, effect: n > 0 ? railEffect(w, pid, e, before) : null };
 }

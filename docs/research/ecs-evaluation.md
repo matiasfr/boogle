@@ -2,6 +2,8 @@
 
 ## Follow-up spike, 6 November (later): the best entity system for 3,000 entities
 
+_7 November: E is built and timed as option E of this spike; see [ecs-e](../plans/ecs-e.md), "Step 2"._
+
 _The owner questioned the first criteria: "I really want to make sure that we set up our entity system as best possible." So the per-process world limit no longer disqualifies anything (1–2 rooms per server, or dedicated hosting), the target is up to 3,000 live entities, and the judgement is on the long-term fit, not micro-benchmarks. The owner then asked whether bitECS itself had been tried, since "the main thing that's useful seems to be conformance to a sort of ECS system in case we ever need to migrate later". Spike code: [`dev/spikes/ecs/`](../../dev/spikes/ecs/) (its own `package.json`; not wired into the game). Measured on the M1 Max in headless Chromium 156 and Node 26, three Chromium runs per option, with the machine heavily loaded (load average 14–39). Chromium coarsens timers to 0.1 ms, so per-tick numbers are averages over 600 ticks. Not tested on a device. Tags as below._
 
 ### Result
