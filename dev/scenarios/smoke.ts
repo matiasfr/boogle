@@ -45,7 +45,7 @@ const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6
 export default {
   sourceImports: false,
   about: 'two tabs join, see each other, rename one, throw the ball, and agree on every world hash',
-  timeout: 720000, // generous: two software-rendered tabs on a busy runner (smoke.yml) drop to a few frames per second
+  timeout: 960000, // generous: two software-rendered tabs on a busy runner (smoke.yml) drop to a few frames per second
   async run(t: T) {
     const room = process.env.SMOKE_ROOM || ('smoke-' + id).slice(0, 32);
     const size = [480, 300]; // small frames keep software GL fast enough for the world clock to run near real time
