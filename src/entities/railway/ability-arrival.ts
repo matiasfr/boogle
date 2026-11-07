@@ -121,7 +121,6 @@ export function createAbilityArrival(
   let flash = 0,
     pulse = 0,
     deferred = false,
-    wasCharge = true,
     lastVy = 0,
     lateWait = 0,
     rippleT = 0,
@@ -210,7 +209,9 @@ export function createAbilityArrival(
       // The charge mark.
       const { charge, second } = env.jump();
       const airborne = !grounded && !fallArrival.active && !inputState.seated && !me.swimming;
-      if (charge && !wasCharge && deferred) {
+      // An unlock that arrived in the air shows hollow until the landing fills it (whatever frame the charge itself
+      // catches up on).
+      if (deferred && grounded) {
         deferred = false;
         flash = Math.max(flash, FILL_S);
         stats.fills++;
@@ -220,7 +221,6 @@ export function createAbilityArrival(
           rippleT = RIPPLE_S * 0.7;
         }
       }
-      wasCharge = charge;
       flash = Math.max(0, flash - dt);
       // The first jump after an unlock that wasn't yours: at its top, the mark pulses with the Jump glyph, once.
       // Only a jump of yours counts, not a step up or a bounce.
@@ -247,7 +247,7 @@ export function createAbilityArrival(
       mark.visible = state.jump && !me.swimming && (airborne || flash > 0 || pulse > 0);
       if (mark.visible) {
         feet(mark.position);
-        fill.visible = charge;
+        fill.visible = charge && !deferred;
         const pop = flash > FLASH_S - 0.25 ? 1 + (flash - (FLASH_S - 0.25)) * 2.4 : 1;
         const beat = pulse > 0 && !reducedMotion ? 1 + 0.35 * Math.abs(Math.sin((TEACH_S - pulse) * 9)) : 1;
         mark.scale.setScalar(pop * beat);
