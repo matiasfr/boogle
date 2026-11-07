@@ -117,7 +117,7 @@ export default {
     t.check(
       "one tab's roster edit reaches the other",
       landed >= 0,
-      `${landed < 0 ? -1 : Date.now() - tossedAt} ms; sent ${sent.join()}; ${dropped} held edits dropped`,
+      `${landed < 0 ? -1 : Date.now() - tossedAt} ms; sent ${sent.join()}; ${dropped} held edits dropped${landed < 0 ? `; Alice ${await net(A)} Bob ${await net(B)}; net log: ${netLog.slice(-12).join(' | ')}` : ''}`,
     );
 
     // The client throws the ball: it takes ownership and the host watches it fly.
@@ -155,7 +155,10 @@ export default {
       JSON.stringify({ hashOk: st.hashOk, hashBad: st.hashBad, resyncs: st.resyncs, subsystems: st.subsystems }),
     );
     const errs = [...worldErrors.get(host)!, ...worldErrors.get(client)!];
-    const shots = [await A.still('Alice'), await B.still('Bob')];
+    const shots = [
+      await A.still('Alice').catch(() => 'no Alice still'),
+      await B.still('Bob').catch(() => 'no Bob still'),
+    ];
     t.check('no [world] errors in either console', !errs.length, [...errs.slice(0, 2), ...shots].join(' | '));
     // Last, since the runner reads these after this returns. The CDN just after a deploy can 503 a file for a moment (runs
     // 41425998584, 41883882018). A file the game needs fails the checks above; lib.ts prints which file it was.
