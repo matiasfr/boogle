@@ -9,6 +9,7 @@ import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
 import type { WorldRoom } from '../../src/world/sync.ts';
+import { delayedRoom } from '../../src/world/delayed-room.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { railActiveStation } from '../../src/sim/railway-line.ts';
@@ -17,6 +18,7 @@ import { RULE_STEPS } from '../../src/world/room-clock.ts';
 import {
   createRailwayAdapter,
   type RailwayAccepted,
+  type RailwayCorrection,
   type RailwayInspection,
   type RailwayIntent,
 } from '../../src/adapters/railway.ts';
@@ -43,6 +45,7 @@ export type RailwayProbe = {
 export type RailwayAdapterProbe = {
   state: RailwayInspection;
   effects: readonly RailwayAccepted[];
+  corrections: readonly RailwayCorrection[];
   resets: number;
 };
 
@@ -59,6 +62,8 @@ const PID = q.get('pid') ?? 'p' + Math.random().toString(36).slice(2, 10);
 
 // The railway actor's position in cm, set by railPose: what each railway action carries.
 let railAt: [number, number, number] | null = null;
+// performance.now() of the press the adapter load is making (-1 between presses).
+let pressedAt = -1;
 const T = (window.T = {
   room: null as Room | null,
   left: [] as { peer: string; at: number }[],
@@ -75,6 +80,9 @@ const T = (window.T = {
   railPackets: [] as { at: number; chars: number; ack?: number[]; rej?: unknown[] }[],
   railEvents: [] as { at: number; pid: string; epoch: number; request: number; op: string }[],
   railSent: [] as { at: number; epoch: number; request: number; op: string }[],
+  // Adapter pages (R1b): ms from each press to its predicted effect, and every correction.
+  railResponse: [] as number[],
+  railCorrections: [] as { at: number; op: string; lost: number; reason: string }[],
   railSyncedAt: 0,
   railSyncedChars: 0, // packet characters received up to the whole late join
   railSyncedPackets: 0,
@@ -187,16 +195,6 @@ const T = (window.T = {
 
 // The railway's own messages, with LAT/2 added each way (the lockstep world and presence are left undelayed).
 let railRoom: WorldRoom | null = null;
-function delayed(room: Room): WorldRoom {
-  if (!LAT) return room;
-  const half = LAT / 2;
-  return {
-    selfId: room.selfId,
-    send: (m) => void setTimeout(() => room.send(m), half),
-    onMessage: (h) => room.onMessage((m, from) => void setTimeout(() => h(m, from), half)),
-    onConnection: (h) => room.onConnection(h),
-  };
-}
 
 function startWorld(room: Room) {
   const w = createSync();
@@ -209,7 +207,7 @@ function startWorld(room: Room) {
   const roomId = q.get('room') ?? '';
   const rules = installRules(w, land);
   const rail = isRailwayRoom(roomId) ? createRailwayMirror() : null;
-  railRoom = rail ? delayed(room) : null;
+  railRoom = rail ? delayedRoom(room, LAT) : null;
   T.railStartAt = Date.now();
   const adapter =
     rail && q.get('adapter') === '1'
@@ -289,10 +287,49 @@ function startWorld(room: Room) {
   }
   if (adapter) {
     const effects: RailwayAccepted[] = [];
+    const corrections: RailwayCorrection[] = [];
     let resets = 0;
-    adapter.onAccepted((event) => effects.push(event));
+    adapter.onAccepted((event) => {
+      effects.push(event);
+      // A predicted effect is the actor's visible response: from the press (railPressedAt) to here.
+      if (event.predicted && pressedAt >= 0) {
+        T.railSent.push({ at: Date.now(), epoch: event.epoch, request: event.request, op: event.op });
+        T.railResponse.push(performance.now() - pressedAt);
+      }
+    });
+    adapter.onCorrected((c) => {
+      corrections.push(c);
+      T.railCorrections.push({ at: Date.now(), op: c.event.op, lost: c.lost, reason: c.reason });
+    });
     adapter.onReset(() => resets++);
-    T.railAdapter = () => ({ state: adapter.inspect(), effects: effects.map((e) => ({ ...e })), resets });
+    T.railAdapter = () => ({
+      state: adapter.inspect(),
+      effects: effects.map((e) => ({ ...e })),
+      corrections: corrections.map((c) => ({ ...c })),
+      resets,
+    });
+    // The load run through the real adapter (R1b): the same chop, drop and take cycle, predicted.
+    T.railLoad = ({ ms, every, first }) =>
+      new Promise((resolve) => {
+        let k = 0;
+        let tree = first;
+        let pressed = 0;
+        const t = setInterval(() => {
+          const s = adapter.inspect();
+          const phase = k++ % 3;
+          while (s.sources[tree] === 0) tree = (tree + 1) % RAILWAY_SOURCES.length;
+          const [id, x, z] = RAILWAY_SOURCES[tree]!;
+          railAt = [x, 3000, z];
+          const mine = s.piles.find((p) => p.id > 0 && p.x === x && p.z === z && p.y === 3000);
+          pressedAt = performance.now();
+          if (phase === 1 && s.carry > 0) adapter.drop(x, 3000, z, Math.min(2, s.carry), 0);
+          else if (phase === 2 && mine) adapter.take(mine.id);
+          else adapter.chop(id, 0, false);
+          pressedAt = -1;
+          pressed++;
+        }, every);
+        setTimeout(() => (clearInterval(t), resolve(pressed)), ms);
+      });
     T.railIntent = (intent) => {
       switch (intent.op) {
         case 'rail.wake':

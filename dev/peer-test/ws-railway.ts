@@ -236,7 +236,8 @@ export async function railwayChecks(c: Ctx) {
   railCheck('the reloaded mirror matches the active players', await agree([RA2, RB, RC]));
   await Promise.all([RA2, RB, RC].map((p) => p.page.close()));
 
-  // The real browser adapter: reservations while a request is out, effects from accepted events only.
+  // The real browser adapter (R1b): own actions predicted with their effects at once, settled by acks and refusals,
+  // what a refusal took back returned through a correction; everyone else's effects from accepted events.
   const adapterRoom = railwayRoomId(`${c.room}-adapter`);
   const openAdapter = (name: string, pid: string) =>
     c.web.open(name, `room=${adapterRoom}&server=http://127.0.0.1:${c.port()}&pid=${pid}&adapter=1`);
@@ -258,40 +259,53 @@ export async function railwayChecks(c: Ctx) {
     await ev(AA.page, () => window.T.railIntent({ op: 'rail.chop', id: 0, yaw: 0, collapsed: false })),
   );
   railCheck(
-    'a refused stroke retires without material or effects',
+    'a refused stroke is shown at once, then retires and gives its logs back',
     (await waitFor(async () => {
       const p = await adapter(AA);
       return (
         p.state.ready &&
         p.state.pending === 0 &&
         p.state.carry === 0 &&
-        p.effects.length === beforeRejected.effects.length
+        p.effects.length === beforeRejected.effects.length + 1 &&
+        p.effects.at(-1)!.predicted === true &&
+        p.corrections.length === beforeRejected.corrections.length + 1 &&
+        p.corrections.at(-1)!.reason === 'refused'
       );
     })) >= 0,
   );
   await sleep(RAILWAY_T1.swingMs);
   await pose(AA, 'source');
-  const incoming = await ev(
+  // Two strokes at once: the second is sooner than the swing cadence, so it is "not yet" and never sent.
+  const burst = await ev(
     AA.page,
-    (id: number) => {
-      const queued: boolean[] = [];
-      for (let n = 0; n < 9; n++) queued.push(window.T.railIntent({ op: 'rail.chop', id, yaw: 0, collapsed: false }));
-      return { queued, state: window.T.railAdapter().state };
-    },
+    (id: number) => [0, 1].map(() => window.T.railIntent({ op: 'rail.chop', id, yaw: 0, collapsed: false })),
     RAILWAY_SOURCES[0]![0],
   );
-  railCheck(
-    'incoming reservations cannot offer more than eight carry slots',
-    incoming.queued.filter(Boolean).length === 4 &&
-      incoming.state.reservations.incoming === 8 &&
-      incoming.state.freeCarry === 0,
+  railCheck('a stroke sooner than the swing cadence is not sent', burst[0] === true && burst[1] === false);
+  // Five strokes a swing apart: four fill the eight carry slots at once; the fifth is not yet.
+  const incoming = await ev(
+    AA.page,
+    async ({ id, every }: { id: number; every: number }) => {
+      const queued: boolean[] = [];
+      for (let n = 0; n < 5; n++) {
+        await new Promise((r) => setTimeout(r, every));
+        queued.push(window.T.railIntent({ op: 'rail.chop', id, yaw: 0, collapsed: false }));
+      }
+      return { queued, state: window.T.railAdapter().state };
+    },
+    { id: RAILWAY_SOURCES[0]![0], every: RAILWAY_T1.swingMs + 10 },
   );
   railCheck(
-    'every burst stroke retires; accepted ones show as carry and as one effect each',
+    'predicted strokes cannot offer more than eight carry slots',
+    incoming.queued.filter(Boolean).length === 3 && incoming.state.carry === 8 && incoming.state.freeCarry === 0,
+  );
+  railCheck(
+    'every burst stroke retires; what was shown minus what was given back is what is carried',
     (await waitFor(async () => {
       const p = await adapter(AA);
       const chops = p.effects.filter((e) => e.op === 'rail.chop');
-      const harvested = chops.reduce((n, e) => n + e.accepted, 0);
+      const returned = p.corrections.filter((x) => x.event.op === 'rail.chop').reduce((n, x) => n + x.lost, 0);
+      const harvested = chops.reduce((n, e) => n + e.accepted, 0) - returned;
       return (
         p.state.pending === 0 &&
         p.state.carry === harvested &&
@@ -311,17 +325,24 @@ export async function railwayChecks(c: Ctx) {
     await waitFor(async () => (await adapter(AA)).state.carry > before && (await adapter(AA)).state.pending === 0);
   }
   await pose(AA, 'station');
-  const outgoing = await ev(AA.page, () => {
-    const queued: boolean[] = [];
-    for (let n = 0; n < 9; n++) queued.push(window.T.railIntent({ op: 'rail.deposit', station: 'T1', n: 1 }));
-    return { queued, state: window.T.railAdapter().state };
-  });
+  const outgoing = await ev(
+    AA.page,
+    async (every: number) => {
+      const queued: boolean[] = [];
+      for (let n = 0; n < 9; n++) {
+        await new Promise((r) => setTimeout(r, every));
+        queued.push(window.T.railIntent({ op: 'rail.deposit', station: 'T1', n: 1 }));
+      }
+      return { queued, state: window.T.railAdapter().state };
+    },
+    RAILWAY_T1.unloadMs + 10,
+  );
   railCheck(
-    'eight outgoing reservations prevent a ninth spend without debiting carry',
+    'eight predicted deposits show at once and prevent a ninth spend',
     outgoing.queued.filter(Boolean).length === 8 &&
-      outgoing.state.pending === 8 &&
       outgoing.state.availableCarry === 0 &&
-      outgoing.state.carry === 8,
+      outgoing.state.carry === 0 &&
+      outgoing.state.stations[0]!.stock === 8,
   );
   railCheck(
     'every deposit retires and only accepted logs leave carry, in both mirrors',
@@ -374,13 +395,17 @@ const pct = (xs: number[], q: number) => {
   return s[Math.min(s.length - 1, Math.floor(q * s.length))]!;
 };
 
-/** R1a's measurements: players x added latency x churn. Returns the rows it printed. */
-export async function railwayLoad(c: Ctx, { players = [2, 4, 6], lat = [0, 100, 200], seconds = 15 } = {}) {
+/** R1a's and R1b's measurements: players x added latency x churn, every player driving the real predicting adapter.
+ * Returns the rows it printed. */
+export async function railwayLoad(
+  c: Ctx,
+  { players = [2, 4, 6], lat = [0, 100, 200], seconds = 15, churns = ['normal', '5x'] } = {},
+) {
   const rows: Record<string, number | string>[] = [];
   for (const churn of [
     { name: 'normal', every: 500 },
     { name: '5x', every: 100 },
-  ])
+  ].filter((x) => churns.includes(x.name)))
     for (const n of players)
       for (const l of lat) {
         const id = `${c.room}-l${n}-${l}-${churn.name}`;
@@ -388,25 +413,23 @@ export async function railwayLoad(c: Ctx, { players = [2, 4, 6], lat = [0, 100, 
         const pages: Page[] = [];
         for (let k = 0; k < n; k++)
           pages.push(
-            await c.web.open(`L${k}`, `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=load${k}&lat=${l}`),
+            await c.web.open(
+              `L${k}`,
+              `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=load${k}&lat=${l}&adapter=1`,
+            ),
           );
-        await waitFor(async () => (await Promise.all(pages.map(rail))).every((s) => s.ready), 15000);
-        const epochs: number[] = [];
-        for (const p of pages) {
-          await waitFor(async () => {
-            await ev(p.page, () => window.T.railOpen());
-            await sleep(l + 50);
-            return (await rail(p)).messages.some((m) => m.t === 'r:session');
-          }, 10000);
-          epochs.push(Number((await rail(p)).messages.findLast((m) => m.t === 'r:session')!.epoch));
-        }
+        // Each adapter opens its own session once the whole state has arrived.
+        await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
         await ev(pages[0]!.page, () => window.T.railPose('station'));
-        await ev(
-          pages[0]!.page,
-          (epoch: number) => window.T.railEdit({ op: 'rail.wake', epoch, request: 1 }),
-          epochs[0]!,
+        await ev(pages[0]!.page, () => window.T.railIntent({ op: 'rail.wake' }));
+        await waitFor(
+          async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.phase === 'idle'),
+          10000,
         );
-        await waitFor(async () => (await rail(pages[0]!)).phase === 'idle', 10000);
+        await ev(pages[0]!.page, () => {
+          window.T.railResponse.length = 0;
+          window.T.railCorrections.length = 0;
+        });
         const hosted = c.hosted(roomId)!;
         const world = hosted.world as RailwayWorldHost;
         const stats0 = { ...world.stats };
@@ -415,11 +438,11 @@ export async function railwayLoad(c: Ctx, { players = [2, 4, 6], lat = [0, 100, 
         const t0 = Date.now();
         await Promise.all(
           pages.map((p, k) =>
-            ev(
-              p.page,
-              (o: { ms: number; every: number; first: number; epoch: number; next: number }) => window.T.railLoad(o),
-              { ms: seconds * 1000, every: churn.every, first: k * 40, epoch: epochs[k]!, next: k === 0 ? 2 : 1 },
-            ),
+            ev(p.page, (o: { ms: number; every: number; first: number }) => window.T.railLoad(o), {
+              ms: seconds * 1000,
+              every: churn.every,
+              first: k * 40,
+            }),
           ),
         );
         const t1 = Date.now();
@@ -429,13 +452,26 @@ export async function railwayLoad(c: Ctx, { players = [2, 4, 6], lat = [0, 100, 
           sent: { at: number; epoch: number; request: number }[];
           events: { at: number; pid: string; epoch: number; request: number }[];
           packets: { at: number; chars: number }[];
+          response: number[];
+          corrections: { at: number; op: string; lost: number; reason: string }[];
+          stats: { predicted: number; notYet: number; unpredicted: number };
         };
         const logs: Log[] = await Promise.all(
           pages.map((p) =>
-            ev(p.page, () => ({ sent: window.T.railSent, events: window.T.railEvents, packets: window.T.railPackets })),
+            ev(p.page, () => ({
+              sent: window.T.railSent,
+              events: window.T.railEvents,
+              packets: window.T.railPackets,
+              response: window.T.railResponse,
+              corrections: window.T.railCorrections,
+              stats: window.T.railAdapter().state.prediction,
+            })),
           ),
         );
-        const actor: number[] = [],
+        // Actor: press to its predicted effect (the visible response; the frame adds at most one frame). Confirm:
+        // the press to the server's event for it arriving (R1a's actor latency, now invisible).
+        const actor = logs.flatMap((log) => log.response),
+          confirm: number[] = [],
           others: number[] = [];
         let accepted = 0;
         logs.forEach((log, k) => {
@@ -445,7 +481,7 @@ export async function railwayLoad(c: Ctx, { players = [2, 4, 6], lat = [0, 100, 
             const mine = log.events.find((e) => e.pid === pid && e.epoch === s.epoch && e.request === s.request);
             if (!mine) continue;
             accepted++;
-            actor.push(mine.at - s.at);
+            confirm.push(mine.at - s.at);
             logs.forEach((other, j) => {
               if (j === k) return;
               const seen = other.events.find((e) => e.pid === pid && e.epoch === s.epoch && e.request === s.request);
@@ -486,8 +522,29 @@ export async function railwayLoad(c: Ctx, { players = [2, 4, 6], lat = [0, 100, 
           lat: l,
           accepted,
           actionsPerSec: Math.round((accepted / (seconds * n)) * 10) / 10,
-          actorP50: pct(actor, 0.5),
-          actorP95: pct(actor, 0.95),
+          actorP50: Math.round(pct(actor, 0.5) * 100) / 100,
+          actorP95: Math.round(pct(actor, 0.95) * 100) / 100,
+          actorMax: Math.round(Math.max(...actor) * 100) / 100,
+          confirmP50: pct(confirm, 0.5),
+          predicted: logs.reduce((n, log) => n + log.stats.predicted, 0),
+          corrections: logs.reduce((n, log) => n + log.corrections.filter((x) => x.at >= t0).length, 0),
+          correctionsPerPlayerMin:
+            Math.round(
+              (logs.reduce((n, log) => n + log.corrections.filter((x) => x.at >= t0).length, 0) /
+                n /
+                ((t1 - t0) / 60000)) *
+                100,
+            ) / 100,
+          notYet: logs.reduce((n, log) => n + log.stats.notYet, 0),
+          // Corrections by op and reason, e.g. "rail.chop refused": 3.
+          correctionReasons: JSON.stringify(
+            logs
+              .flatMap((log) => log.corrections.filter((x) => x.at >= t0))
+              .reduce<Record<string, number>>(
+                (o, x) => ((o[`${x.op} ${x.reason}`] = (o[`${x.op} ${x.reason}`] ?? 0) + 1), o),
+                {},
+              ),
+          ),
           othersP50: pct(others, 0.5),
           othersP95: pct(others, 0.95),
           kbitMean: Math.round((kbits.reduce((a, b) => a + b, 0) / kbits.length) * 10) / 10,
@@ -513,7 +570,7 @@ export async function railwayLoad(c: Ctx, { players = [2, 4, 6], lat = [0, 100, 
         c.check(`railway load ${churn.name} ${n}p ${l}ms mirrors agree`, mirrorsAgree);
         await Promise.all([...pages, late].map((p) => p.page.close()));
       }
-  const out = new URL('../../.look/replication-r1a/', import.meta.url);
+  const out = new URL('../../.look/replication-r1b/', import.meta.url);
   await fs.mkdir(out, { recursive: true });
   await fs.writeFile(new URL('load.json', out), JSON.stringify(rows, null, 2));
   console.table(rows);

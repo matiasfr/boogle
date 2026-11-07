@@ -7,6 +7,7 @@ import { registerInteractable, NO_TARGETS } from '../../player/hands.ts';
 import { net, onRoomReady, onNetState, localPresence } from '../../netplay/net.ts';
 import { warmUp } from '../../render/precompile.ts';
 import { createRailwayAdapter, railMovement } from '../../adapters/railway.ts';
+import { delayedRoom } from '../../world/delayed-room.ts';
 import { createRailwayView, type RailwayView } from './view.ts';
 import { setRailwayView } from './state.ts';
 
@@ -24,9 +25,11 @@ if (productionRailway && railwayMirror) {
       return local?.entered && local.body ? local.body.position : null;
     },
   });
-  onRoomReady((room) => adapter.attach(room));
+  // Dev only: &railLag=<ms> adds that round trip to the railway's own messages (replication R1b captures).
+  const lag = Math.min(1000, Math.max(0, Number(new URLSearchParams(location.search).get('railLag')) || 0));
+  onRoomReady((room) => adapter.attach(delayedRoom(room, lag)));
   onNetState(() => {
-    if (net.room) adapter.attach(net.room);
+    if (net.room) adapter.attach(delayedRoom(net.room, lag));
   });
   const loaded = createRailwayView(adapter).then((view) => {
     active = view;

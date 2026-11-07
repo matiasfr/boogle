@@ -230,11 +230,18 @@ try {
   };
   await railwayChecks(ctx);
 
-  // 11. WS_LOAD=1: R1a's measurements (2, 4, 6 players at 0, 100, 200 ms added latency, normal and 5x churn).
+  // 11. WS_LOAD=1: R1a's and R1b's measurements (2, 4, 6 players at 0, 100, 200 ms added latency, normal and 5x
+  // churn). WS_LOAD_PLAYERS=6 / WS_LOAD_LAT=200 / WS_LOAD_CHURN=5x pick rows.
   if (process.env.WS_LOAD) {
     await svc.close({ save: false });
     svc = await serve({ MAX_PLAYERS: '8', SERVER_SAVE_MS: '2000', UPGRADES_PER_MIN: '1000' }); // every page is one IP
-    await railwayLoad(ctx, { seconds: Number(process.env.WS_LOAD_SECONDS || 15) });
+    const list = (v: string | undefined) => v?.split(',').map(Number);
+    await railwayLoad(ctx, {
+      seconds: Number(process.env.WS_LOAD_SECONDS || 15),
+      ...(process.env.WS_LOAD_PLAYERS ? { players: list(process.env.WS_LOAD_PLAYERS) } : {}),
+      ...(process.env.WS_LOAD_LAT ? { lat: list(process.env.WS_LOAD_LAT) } : {}),
+      ...(process.env.WS_LOAD_CHURN ? { churns: process.env.WS_LOAD_CHURN.split(',') } : {}),
+    });
   }
 
   const failed = results.filter((r) => !r.ok);
