@@ -84,7 +84,10 @@ export function createHostedRoom({
   log?: (...a: unknown[]) => void;
 }) {
   const graceMs = cfg.reconnectGraceMs ?? 1500;
-  const deadMs = cfg.deadMs ?? 5000;
+  // A tab sends nothing while its own main thread is stalled (a long frame, a software-rendered runner at a frame every few
+  // seconds), so a short limit drops healthy sockets and every peer re-lists them. A closed tab or a lost link still ends the
+  // socket at once (close/reset); this only bounds a connection that went silent without either.
+  const deadMs = cfg.deadMs ?? 20000;
   const leadHiddenMs = cfg.leadHiddenMs ?? 5000;
   const clients = new Map<string, Client>(); // ready clients by selfId
   const railway = isRailwayRoom(roomId);

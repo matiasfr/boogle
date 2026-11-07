@@ -212,7 +212,15 @@ export async function createWsRoom(opts: WsRoomOptions) {
     });
   });
 
+  let lastBeat = performance.now();
   const heartbeat = setInterval(() => {
+    // A beat that comes much later than 1 s means this tab's own main thread was stalled (a software-rendered or loading
+    // tab, a long frame), not that the server went quiet: the server's replies sit unread in the socket queue behind the
+    // stall. Count the silence from now, or a stall over DEAD_MS drops a healthy socket, loses edits held across the
+    // reconnect and makes every peer re-list us.
+    const now = performance.now();
+    if (now - lastBeat > HEARTBEAT_MS * 2) heard = openedAt = now; // a handshake finished behind the stall is not stuck either
+    lastBeat = now;
     if (ws?.readyState === WebSocket.CONNECTING && performance.now() - openedAt > (opts.openTimeoutMs ?? 5000))
       return void ws.close(); // a reconnect stuck on a dead route: try again
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
