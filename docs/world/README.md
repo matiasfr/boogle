@@ -136,6 +136,6 @@ model's 1.2 km ring, not from `layout.ts`, and its places are proposals.
 [Map prototypes](map-prototypes.html) compares five layouts for the world after Ring Island at the real 1 km scale
 (the owner's 6 November note: irregular, surprising, not a literal circle). Each has a stepper that plays the
 progression, an order-choice toggle, fog for what isn't seen yet, sightlines, ability gates and secrets, and a ride
-table computed from the drawn lines with the economy model's ride settings. The `#map-data` block is hand-edited JSON;
+table computed from the drawn lines with the economy model's ride settings. An art-surface table measures walkable and backdrop land, track over land, sea and tunnel, biomes and set pieces, and how much of each station's view is sea. The `#map-data` block is hand-edited JSON;
 Home, Split-rock Works, the pier and Ring Island match `world-map.html`, and everything after is proposed. The pitches,
 risks, model changes and open questions are in [map-prototypes.md](map-prototypes.md).

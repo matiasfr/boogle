@@ -40,7 +40,8 @@
             [-80, -240],
             [-200, -150],
             [-260, -40]
-          ]
+          ],
+          "biome": "Home (as built)"
         },
         {
           "id": "ring-land",
@@ -49,7 +50,8 @@
           "c": [330, -1120],
           "r": [240, 200],
           "seed": 7,
-          "rough": 0.18
+          "rough": 0.18,
+          "biome": "Ring Island: shard and steel works"
         }
       ],
       "places": [
@@ -186,17 +188,19 @@
     "options": [
       {
         "id": "sickle",
-        "name": "Sickle Coast",
-        "shape": "A lopsided ring with a long cliff arc",
-        "feel": "The long, scenic way round under a wall of cliffs, then a shortcut that drops you home in a minute.",
+        "name": "Sickle Isles",
+        "shape": "A lopsided chain of small islands round a bay (Sickle Coast, reworked)",
+        "feel": "The long way round, island to island under a broken wall of chalk cliffs, then a shortcut that drops you home in a minute.",
         "refs": [
           ["Dark Souls", "reach a place the long way, then open the lift back to Firelink: the bay shortcut"],
           [
             "Breath of the Wild",
-            "a landmark on the skyline from day one (the Port's crane) and a cliff wall that asks over or around"
-          ]
+            "a landmark on the skyline from day one (the Port crane) and a wall of cliffs that asks over or around"
+          ],
+          ["The Wind Waker", "every island its own silhouette and its own idea, with sea between"],
+          ["Super Mario Odyssey", "a small kingdom with a high density of things to find"]
         ],
-        "pitch": "West of Home a crescent of high land, the Sickle, curls round a shallow bay. Its inner face is the White Wall, a 120 m cliff. Home sits off-centre on the east side of the ring, so one side is short sea hops and the other is a long cliff arc. High Port's crane is on the south-west skyline from day one, but you reach it last, by doubling back through a sea cave under Home.",
+        "pitch": "West of Home a lopsided chain of small islands curls round a shallow bay. Its spine is the White Wall: a string of narrow chalk sea-cliff islets, 120 m tall, that reads as one broken wall on the skyline. Each place is its own island, small enough to dress densely: High Gorge is a sea stack split in two and bridged by its town, Canopy Town is a forest island, High Port sits on a cliff-top island with its quay at the foot, and Lantern Notch is a sea arch. Home is off-centre on the east side, so one side is short sea hops and the other is the long string of chalk. The bay shortcut, the crane on the skyline from day one, and the double-back through a sea cave under Home are kept from Sickle Coast.",
         "choice": {
           "stage": 3,
           "from": "ring",
@@ -206,31 +210,101 @@
         },
         "land": [
           {
-            "id": "sickle",
-            "on": ["gorge", "canopy", "quay", "port", "notch"],
+            "id": "stack-w",
+            "on": ["gorge"],
+            "seen": 2,
+            "c": [-1265, -1930],
+            "r": [185, 150],
+            "seed": 41,
+            "rough": 0.2,
+            "biome": "Split sea stack: copper works"
+          },
+          {
+            "id": "stack-e",
+            "on": ["gorge"],
+            "seen": 2,
+            "c": [-1010, -1865],
+            "r": [165, 140],
+            "seed": 42,
+            "rough": 0.2,
+            "biome": "Split sea stack: copper works"
+          },
+          {
+            "id": "wall-n1",
+            "on": ["gorge"],
             "seen": 0,
-            "poly": [
-              [-650, -1950],
-              [-1100, -2250],
-              [-1700, -2250],
-              [-2300, -1800],
-              [-2750, -1000],
-              [-2850, -100],
-              [-2600, 700],
-              [-2100, 1300],
-              [-1450, 1550],
-              [-850, 1450],
-              [-550, 1200],
-              [-750, 1000],
-              [-1150, 850],
-              [-1550, 600],
-              [-1800, 150],
-              [-1850, -500],
-              [-1650, -1100],
-              [-1350, -1500],
-              [-950, -1700],
-              [-700, -1800]
-            ]
+            "c": [-1460, -1490],
+            "r": [250, 65],
+            "rot": 122,
+            "seed": 43,
+            "rough": 0.1,
+            "biome": "Chalk sea-cliff islets"
+          },
+          {
+            "id": "wall-n2",
+            "on": ["canopy"],
+            "seen": 0,
+            "c": [-1760, -1030],
+            "r": [250, 65],
+            "rot": 112,
+            "seed": 44,
+            "rough": 0.1,
+            "biome": "Chalk sea-cliff islets"
+          },
+          {
+            "id": "canopy-isle",
+            "on": ["canopy"],
+            "seen": 2,
+            "c": [-2060, -300],
+            "r": [360, 300],
+            "seed": 45,
+            "rough": 0.16,
+            "biome": "Forest island: giant trees"
+          },
+          {
+            "id": "wall-s1",
+            "on": ["canopy"],
+            "seen": 0,
+            "c": [-1960, 360],
+            "r": [250, 65],
+            "rot": 78,
+            "seed": 46,
+            "rough": 0.1,
+            "biome": "Chalk sea-cliff islets"
+          },
+          {
+            "id": "wall-s2",
+            "on": ["port"],
+            "seen": 0,
+            "c": [-1720, 760],
+            "r": [240, 65],
+            "rot": 48,
+            "seed": 47,
+            "rough": 0.1,
+            "biome": "Chalk sea-cliff islets"
+          },
+          {
+            "id": "port-isle",
+            "on": ["quay", "port"],
+            "seen": 0,
+            "c": [-1190, 1080],
+            "r": [360, 240],
+            "seed": 48,
+            "rough": 0.15,
+            "biome": "Harbour on a cliff-top island"
+          },
+          {
+            "id": "notch-isle",
+            "on": ["notch"],
+            "seen": {
+              "c": "B",
+              "s": [3, 5]
+            },
+            "c": [-2600, -1000],
+            "r": [140, 100],
+            "seed": 49,
+            "rough": 0.2,
+            "biome": "Sea arch and lantern"
           },
           {
             "id": "bell-land",
@@ -239,7 +313,8 @@
             "c": [-1050, -450],
             "r": [120, 95],
             "seed": 3,
-            "rough": 0.2
+            "rough": 0.2,
+            "biome": "Bell Rock"
           },
           {
             "id": "salt-land",
@@ -248,7 +323,8 @@
             "c": [-450, 700],
             "r": [170, 110],
             "seed": 5,
-            "rough": 0.2
+            "rough": 0.2,
+            "biome": "Salt flats"
           },
           {
             "id": "orig-land",
@@ -256,7 +332,8 @@
             "c": [-3150, -1700],
             "r": [230, 190],
             "seed": 9,
-            "rough": 0.15
+            "rough": 0.15,
+            "biome": "The Original Island"
           }
         ],
         "terrain": [
@@ -270,36 +347,66 @@
           },
           {
             "kind": "forest",
-            "land": "sickle",
-            "c": [-2250, -350],
-            "r": [380, 560],
+            "land": "canopy-isle",
+            "c": [-2070, -300],
+            "r": [300, 240],
             "seed": 4
           },
           {
             "kind": "cliff",
-            "land": "sickle",
-            "label": "The White Wall, 120 m",
+            "land": "wall-n1",
             "pts": [
-              [-900, -1720],
-              [-1350, -1520],
-              [-1650, -1120],
-              [-1830, -500],
-              [-1780, 150],
-              [-1530, 620],
-              [-1150, 870]
+              [-1317, -1651],
+              [-1430, -1471],
+              [-1542, -1291]
             ],
-            "labelAt": [-2350, -1500]
+            "label": "White Wall islets, 120 m",
+            "labelAt": [-2150, -1450]
+          },
+          {
+            "kind": "cliff",
+            "land": "wall-n2",
+            "pts": [
+              [-1647, -1214],
+              [-1727, -1017],
+              [-1806, -820]
+            ]
+          },
+          {
+            "kind": "cliff",
+            "land": "wall-s1",
+            "pts": [
+              [-1969, 145],
+              [-1925, 353],
+              [-1881, 560]
+            ]
+          },
+          {
+            "kind": "cliff",
+            "land": "wall-s2",
+            "pts": [
+              [-1830, 584],
+              [-1693, 736],
+              [-1557, 888]
+            ]
           },
           {
             "kind": "gorge",
-            "land": "sickle",
-            "label": "High Gorge, 90 m deep",
+            "land": "stack-w",
             "pts": [
-              [-980, -1740],
-              [-1200, -2000],
-              [-1330, -2240]
-            ],
-            "labelAt": [-1350, -2420]
+              [-1138, -2060],
+              [-1140, -1900],
+              [-1136, -1740]
+            ]
+          },
+          {
+            "kind": "cliff",
+            "land": "port-isle",
+            "pts": [
+              [-1500, 1000],
+              [-1400, 880],
+              [-1250, 860]
+            ]
           },
           {
             "kind": "cliff",
@@ -324,7 +431,7 @@
             "seen": 2,
             "la": "n",
             "gives": "Copper. The powered pick and a longer hook reel.",
-            "note": "A cliff-top town split by a 90 m gorge. Its waterfall is the first thing you see from Ring Island's aperture."
+            "note": "A town on a sea stack split in two, bridged across the 90 m gap. The split is the first thing you see from Ring Island’s aperture."
           },
           {
             "id": "canopy",
@@ -338,7 +445,7 @@
             "seen": 2,
             "la": "w",
             "gives": "Fibre. The carrying sling and glider cloth.",
-            "note": "Treehouse streets in giant trees at the foot of the White Wall."
+            "note": "Its own forest island: treehouse streets in giant trees."
           },
           {
             "id": "bell",
@@ -384,20 +491,20 @@
             "seen": 0,
             "la": "s",
             "gives": "Town services, the harbour crane, the service bay and a faster engine. Recombines steel, footings, copper and fibre.",
-            "note": "Its cliff-top crane is on the south-west skyline from Home on day one. Here the Port comes after both branches, so it takes both materials."
+            "note": "On a cliff-top island; its crane is on the south-west skyline from Home on day one. Here the Port comes after both branches, so it takes both materials."
           },
           {
             "id": "notch",
             "name": "Lantern Notch",
             "kind": "stop",
-            "at": [-2620, -1000],
+            "at": [-2600, -1000],
             "reach": 8,
             "seen": {
               "c": "B",
               "s": [3, 5]
             },
             "la": "w",
-            "gives": "A telescope, and the tunnel through the White Wall to the outer sea."
+            "gives": "A sea arch with a lantern and a telescope; the final crossing leaves from here."
           },
           {
             "id": "original",
@@ -409,7 +516,7 @@
               "c": "A",
               "s": [3, 5]
             },
-            "la": "n",
+            "la": "s",
             "gives": "The Boogler.",
             "note": "A lighthouse blinking beyond the Wall, seen from the Gorge's rim."
           }
@@ -417,7 +524,7 @@
         "lines": [
           {
             "id": "ledge",
-            "name": "Cliff-ledge line",
+            "name": "Stack line",
             "from": "ring",
             "to": "gorge",
             "kind": "main",
@@ -432,7 +539,7 @@
               [-650, -1780],
               [-1150, -1900]
             ],
-            "note": "A trestle out of Ring Island, then a ledge cut into the Wall's north face."
+            "note": "A long trestle from Ring Island out to the split stack."
           },
           {
             "id": "ring-bell",
@@ -486,11 +593,11 @@
           },
           {
             "id": "incline",
-            "name": "Gorge incline",
+            "name": "Stack incline",
             "from": "bell",
             "to": "gorge",
             "kind": "spoke",
-            "style": "incline",
+            "style": "sea",
             "stage": {
               "c": "A",
               "s": [4, 5]
@@ -500,7 +607,7 @@
               [-1080, -1100],
               [-1150, -1900]
             ],
-            "note": "Up the White Wall from Bell Rock, so the Gorge also comes home through the hub."
+            "note": "A trestle from Bell Rock that climbs onto the stacks, so the Gorge also comes home through the hub."
           },
           {
             "id": "seacave",
@@ -554,11 +661,12 @@
             "stage": 7,
             "pts": [
               [-1300, 1180],
-              [-1700, 850],
-              [-2050, 350],
+              [-1720, 760],
+              [-1960, 360],
               [-2100, -300]
             ],
-            "note": "Along the cliff top through three headland tunnels."
+            "note": "Hops along the tops of the chalk islets on short bridges.",
+            "style": "sea"
           },
           {
             "id": "wall-n",
@@ -569,25 +677,28 @@
             "stage": 7,
             "pts": [
               [-2100, -300],
-              [-2150, -1000],
-              [-1700, -1700],
+              [-1950, -700],
+              [-1760, -1030],
+              [-1460, -1490],
               [-1150, -1900]
             ],
-            "note": "Over the gorge mouth on crystal collars. With the south half, the ring closes: the first lap."
+            "note": "Along the northern chalk islets and over the deep gap to the stacks on crystal collars. With the south half, the ring closes: the first lap.",
+            "style": "sea"
           },
           {
             "id": "notch-tunnel",
-            "name": "Notch tunnel",
+            "name": "Notch line",
             "from": "canopy",
             "to": "notch",
             "kind": "final",
-            "style": "tunnel",
+            "style": "sea",
             "stage": 8,
             "pts": [
               [-2100, -300],
               [-2450, -700],
               [-2620, -1000]
-            ]
+            ],
+            "note": "Out to the sea arch at Lantern Notch."
           },
           {
             "id": "final",
@@ -630,20 +741,20 @@
           },
           {
             "id": "collar",
-            "name": "Gorge-mouth gap",
+            "name": "Deep gap at the stacks",
             "kind": "build",
-            "at": [-1450, -1830],
+            "at": [-1300, -1700],
             "needs": "Crystal collars (seeds from Bell Rock and the Saltpan)",
             "seen": 2,
             "open": 7,
             "leads": "canopy",
-            "note": "Closes the ring."
+            "note": "The last span of the White Wall line, from the chalk to the stacks. Closes the ring."
           },
           {
             "id": "notch-ledge",
             "name": "Notch ledge",
             "kind": "ability",
-            "at": [-2430, -640],
+            "at": [-2300, -520],
             "needs": "Hook reel up, glider cloth across the drop",
             "seen": {
               "c": "B",
@@ -651,20 +762,20 @@
             },
             "open": 8,
             "leads": "notch",
-            "note": "A ledge above Canopy Town that you see on your first visit."
+            "note": "A ledge above Canopy Town’s west shore that you see on your first visit; from it you glide to the arch."
           }
         ],
         "secrets": [
           {
             "id": "falls",
-            "name": "Cave behind the falls",
-            "at": [-1020, -1690],
+            "name": "Cave in the stack",
+            "at": [-1010, -1760],
             "seen": 2,
             "found": {
               "c": "A",
               "s": [3, 5]
             },
-            "note": "On the Gorge approach: a double-jump ledge behind the waterfall, with the first crystal seed."
+            "note": "On the Gorge approach: a double-jump ledge inside the split, with the first crystal seed."
           },
           {
             "id": "trestle",
@@ -708,7 +819,7 @@
           {
             "t": 3.5,
             "title": "The fork at Ring Island",
-            "note": "Pick High Gorge (the cliff ledge) or Canopy Town (the bay trestle by Bell Rock). Both work with steel and footings."
+            "note": "Pick High Gorge (a long trestle out to the split stack) or Canopy Town (the bay trestle by Bell Rock). Both work with steel and footings."
           },
           {
             "t": 4.4,
@@ -728,14 +839,15 @@
           {
             "t": 7.3,
             "title": "The White Wall line closes the ring",
-            "note": "Cliff-top line from High Port to Canopy Town and on to the Gorge, over the gorge mouth on crystal collars. The first lap."
+            "note": "The line hops along the chalk islets from High Port to Canopy Town and on to the stacks, over the last deep gap on crystal collars. The first lap."
           },
           {
             "t": 8.2,
             "title": "The Notch and the Original Island",
-            "note": "Hook up and glide across the Notch ledge, tunnel through the Wall, cross to The Boogler."
+            "note": "Glide from the Canopy ledge to the sea arch, set the lantern, cross to The Boogler."
           }
-        ]
+        ],
+        "art": "The 4.3 km² crescent becomes a chain of small islands, each small enough to dress densely, with sea between them. The four chalk islets are one modular kit placed four times, so the White Wall costs one set piece, not four. Half the track is over water, and from most stations the ground in view is mostly sea. One island is resident at a time, with its neighbours as silhouettes."
       },
       {
         "id": "eight",
@@ -760,9 +872,10 @@
             "on": ["gorge"],
             "seen": 2,
             "c": [1450, -1450],
-            "r": [400, 330],
+            "r": [340, 280],
             "seed": 11,
-            "rough": 0.2
+            "rough": 0.2,
+            "biome": "Copper crag and gorge"
           },
           {
             "id": "copper-isle",
@@ -771,7 +884,8 @@
             "c": [1150, -650],
             "r": [150, 110],
             "seed": 12,
-            "rough": 0.2
+            "rough": 0.2,
+            "biome": "Copperstair cliff"
           },
           {
             "id": "reed-isle",
@@ -780,16 +894,18 @@
             "c": [-760, 460],
             "r": [150, 105],
             "seed": 14,
-            "rough": 0.2
+            "rough": 0.2,
+            "biome": "Reed shallows"
           },
           {
             "id": "green",
             "on": ["canopy"],
             "seen": 1,
             "c": [-1400, 1050],
-            "r": [520, 420],
+            "r": [400, 320],
             "seed": 13,
-            "rough": 0.16
+            "rough": 0.16,
+            "biome": "Forest island: giant trees"
           },
           {
             "id": "salt-isle",
@@ -798,16 +914,18 @@
             "c": [560, 760],
             "r": [170, 115],
             "seed": 15,
-            "rough": 0.2
+            "rough": 0.2,
+            "biome": "Saltworks"
           },
           {
             "id": "port-isle",
             "on": ["port"],
             "seen": 1,
             "c": [500, 1700],
-            "r": [520, 330],
+            "r": [420, 280],
             "seed": 17,
-            "rough": 0.16
+            "rough": 0.16,
+            "biome": "Harbour town"
           },
           {
             "id": "orig-land",
@@ -815,7 +933,8 @@
             "c": [2500, -150],
             "r": [250, 210],
             "seed": 9,
-            "rough": 0.15
+            "rough": 0.15,
+            "biome": "The Original Island"
           }
         ],
         "terrain": [
@@ -837,7 +956,7 @@
             "kind": "mountain",
             "land": "gorge-isle",
             "c": [1520, -1520],
-            "r": [300, 240],
+            "r": [250, 200],
             "seed": 11,
             "label": "Copper Crag, 260 m"
           },
@@ -854,7 +973,7 @@
             "kind": "forest",
             "land": "green",
             "c": [-1420, 1060],
-            "r": [400, 320],
+            "r": [320, 250],
             "seed": 6
           },
           {
@@ -1252,7 +1371,8 @@
             "title": "Back north to the Original Island",
             "note": "Glide to the Copperstair beacon ledge, set the crystal collars, cross to The Boogler."
           }
-        ]
+        ],
+        "art": "Already made of islands; the forest and port islands shrink by about a third. Home is the crossing every trip passes through, so it is the place that has to look best, and it already exists."
       },
       {
         "id": "spine",
@@ -1295,7 +1415,73 @@
               [-1700, -3400],
               [-2300, -2800],
               [-2450, -2200]
-            ]
+            ],
+            "walk": false,
+            "biome": "Uplands backdrop"
+          },
+          {
+            "id": "landfall-pocket",
+            "on": ["landfall"],
+            "seen": 2,
+            "c": [330, -1800],
+            "r": [230, 140],
+            "seed": 51,
+            "rough": 0.12,
+            "biome": "Landfall beach"
+          },
+          {
+            "id": "valley-floor",
+            "on": ["fork"],
+            "seen": 3,
+            "poly": [
+              [230, -1900],
+              [420, -1900],
+              [400, -2300],
+              [360, -2750],
+              [150, -2750],
+              [190, -2300]
+            ],
+            "biome": "Long Valley floor"
+          },
+          {
+            "id": "fork-pocket",
+            "on": ["fork"],
+            "seen": 3,
+            "c": [250, -2900],
+            "r": [220, 170],
+            "seed": 52,
+            "rough": 0.12,
+            "biome": "Fork Halt"
+          },
+          {
+            "id": "gorge-pocket",
+            "on": ["gorge"],
+            "seen": 3,
+            "c": [1600, -2700],
+            "r": [330, 260],
+            "seed": 53,
+            "rough": 0.14,
+            "biome": "Copper gorge town"
+          },
+          {
+            "id": "canopy-pocket",
+            "on": ["canopy"],
+            "seen": 3,
+            "c": [-1400, -2550],
+            "r": [380, 320],
+            "seed": 54,
+            "rough": 0.14,
+            "biome": "Forest basin: giant trees"
+          },
+          {
+            "id": "port-pocket",
+            "on": ["port"],
+            "seen": 3,
+            "c": [250, -3540],
+            "r": [330, 170],
+            "seed": 55,
+            "rough": 0.12,
+            "biome": "Harbour town"
           },
           {
             "id": "orig-land",
@@ -1303,7 +1489,8 @@
             "c": [-2900, -3500],
             "r": [230, 180],
             "seed": 9,
-            "rough": 0.15
+            "rough": 0.15,
+            "biome": "The Original Island"
           }
         ],
         "terrain": [
@@ -1682,7 +1869,8 @@
             "title": "The Original Island",
             "note": "From the Port across the north strait on crystal collars."
           }
-        ]
+        ],
+        "art": "Weakened by this lens. The Uplands is 8.4 km² of one landmass. Revised so the mainland is a painted backdrop (ridges, forest and coast seen from the line, not walked) with six walkable pockets. That keeps the walkable area in line with the others, but the ground in view is about half land, the backdrop has to hold up for minutes from the valley line, and the most land near one station is several times the island layouts."
       },
       {
         "id": "climb",
@@ -1712,7 +1900,59 @@
             "c": [-650, -2450],
             "r": [1450, 1200],
             "seed": 23,
-            "rough": 0.1
+            "rough": 0.1,
+            "walk": false,
+            "biome": "Mount Brae backdrop"
+          },
+          {
+            "id": "brae-pocket",
+            "on": ["brae"],
+            "seen": 2,
+            "c": [-150, -1500],
+            "r": [230, 130],
+            "seed": 61,
+            "rough": 0.12,
+            "biome": "Brae Foot station and cliff"
+          },
+          {
+            "id": "gorge-terrace",
+            "on": ["gorge"],
+            "seen": 2,
+            "c": [430, -2520],
+            "r": [260, 200],
+            "seed": 62,
+            "rough": 0.14,
+            "biome": "Gorge terrace town"
+          },
+          {
+            "id": "canopy-terrace",
+            "on": ["canopy"],
+            "seen": 2,
+            "c": [-1620, -2050],
+            "r": [330, 280],
+            "seed": 63,
+            "rough": 0.14,
+            "biome": "Forest slopes: giant trees"
+          },
+          {
+            "id": "windgap-saddle",
+            "on": ["windgap"],
+            "seen": 4,
+            "c": [-750, -3380],
+            "r": [240, 150],
+            "seed": 64,
+            "rough": 0.12,
+            "biome": "Windgap saddle and ice cave"
+          },
+          {
+            "id": "crater-rim",
+            "on": ["port", "summit"],
+            "seen": 4,
+            "c": [-680, -2560],
+            "r": [380, 300],
+            "seed": 65,
+            "rough": 0.1,
+            "biome": "Crater lake harbour and rim"
           },
           {
             "id": "orig-land",
@@ -1720,7 +1960,8 @@
             "c": [-3050, -1600],
             "r": [230, 190],
             "seed": 9,
-            "rough": 0.15
+            "rough": 0.15,
+            "biome": "The Original Island"
           }
         ],
         "terrain": [
@@ -2138,7 +2379,8 @@
             "title": "The rim, the summit and the Long Descent",
             "note": "Round the crater rim to the lantern, then all the way down to the sea and The Boogler."
           }
-        ]
+        ],
+        "art": "Weakened most. The mountain is the view from everywhere, so it is a hero asset whether or not you walk on it. Revised so only five terraces are walkable, but the slopes between them are seen up close from the switchbacks and drop lines, the most land-side track of the five, and the whole mountain is resident from anywhere on it."
       },
       {
         "id": "stones",
@@ -2170,7 +2412,8 @@
             "c": [1300, -1300],
             "r": [210, 180],
             "seed": 31,
-            "rough": 0.22
+            "rough": 0.22,
+            "biome": "Sea stacks: copper town"
           },
           {
             "id": "stack-b",
@@ -2179,7 +2422,8 @@
             "c": [1560, -1150],
             "r": [170, 150],
             "seed": 32,
-            "rough": 0.22
+            "rough": 0.22,
+            "biome": "Sea stacks: copper town"
           },
           {
             "id": "tern-isle",
@@ -2188,7 +2432,8 @@
             "c": [1150, -520],
             "r": [110, 90],
             "seed": 33,
-            "rough": 0.2
+            "rough": 0.2,
+            "biome": "Tern Rock bird colony"
           },
           {
             "id": "canopy-isle",
@@ -2197,7 +2442,8 @@
             "c": [-1250, -650],
             "r": [400, 320],
             "seed": 34,
-            "rough": 0.18
+            "rough": 0.18,
+            "biome": "Forest island: giant trees"
           },
           {
             "id": "kelp-isle",
@@ -2206,7 +2452,8 @@
             "c": [-700, -150],
             "r": [130, 100],
             "seed": 35,
-            "rough": 0.2
+            "rough": 0.2,
+            "biome": "Kelp tide pools"
           },
           {
             "id": "bell-isle",
@@ -2215,7 +2462,8 @@
             "c": [-520, -1180],
             "r": [140, 110],
             "seed": 36,
-            "rough": 0.2
+            "rough": 0.2,
+            "biome": "Bell Terraces"
           },
           {
             "id": "port-isle",
@@ -2224,7 +2472,8 @@
             "c": [1150, 950],
             "r": [450, 320],
             "seed": 37,
-            "rough": 0.16
+            "rough": 0.16,
+            "biome": "Harbour town"
           },
           {
             "id": "bar",
@@ -2235,7 +2484,8 @@
             "rot": 42,
             "seed": 38,
             "rough": 0.12,
-            "sand": true
+            "sand": true,
+            "biome": "Long Bar sandbank and beacon"
           },
           {
             "id": "reef-isle",
@@ -2244,7 +2494,8 @@
             "c": [-450, 1250],
             "r": [120, 90],
             "seed": 39,
-            "rough": 0.2
+            "rough": 0.2,
+            "biome": "Reef Steps"
           },
           {
             "id": "orig-land",
@@ -2252,7 +2503,8 @@
             "c": [-1700, 1650],
             "r": [240, 200],
             "seed": 9,
-            "rough": 0.15
+            "rough": 0.15,
+            "biome": "The Original Island"
           }
         ],
         "terrain": [
@@ -2732,9 +2984,14 @@
             "title": "Reef Steps to the Original Island",
             "note": "Two hops on crystal collars over the outer deep."
           }
-        ]
+        ],
+        "art": "The small-island case already: every place its own island, most gaps 300 m of sea or more, so one island streams in at a time and the rest are silhouettes. The cost runs the other way: the most biomes of the five, so each island needs one strong idea rather than full dressing."
       }
-    ]
+    ],
+    "art": {
+      "viewRadius": 1000,
+      "note": "Art surface: walkable land is land a player can reach on foot (backdrop land is seen but not walked). Track is split by what is under it: land (seen up close, dressed), sea (a repeated trestle kit over water) and tunnel. The view share samples the ground within 1 km of each station: sea is cheap and already looks good in the renderer, land has to be dressed."
+    }
   }
 </script>
 <style>
@@ -2934,6 +3191,19 @@
   .chip b {
     color: var(--ink);
     font-weight: 600;
+  }
+  .artbox {
+    display: grid;
+    gap: 4px;
+    background: var(--accent-bg);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  .artnums {
+    font: 12.5px/1.5 var(--mono);
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
   }
   .departs {
     border-left: 3px solid var(--final);
@@ -3230,7 +3500,9 @@
       Five top-down layouts for the world after Ring Island, at the real scale: Home, Split-rock Works and Ring Island
       sit where they are on the map today, and the grid squares are 1 km. Each one has a mostly linear unlock order, one
       order choice where you visit both sides, and at least one double-back to a gate you saw early. Every place is on
-      the main path. Step through the stages to feel the order; tap anything for details.
+      the main path. Step through the stages to feel the order; tap anything for details. The art-surface table near the
+      end counts what each layout asks the art to dress: smaller islands with sea between them mean less land, each
+      dressed more densely.
     </p>
   </header>
 
@@ -3303,6 +3575,18 @@
       Rides are computed from the drawn lines: length at 20 m/s, plus 10 s to speed up and slow down and 8 s dwell per
       link, plus 20 s to board, the same settings as the economy model. Hours are the model's solo pacing, moved to each
       layout's order; they are allowances, not measurements.
+    </p>
+  </section>
+
+  <section class="card" aria-label="Art surface">
+    <h3>Art surface: what has to be dressed</h3>
+    <div class="scroll"><table id="art-table"></table></div>
+    <p style="margin-top: 8px; font-size: 13px">
+      New land only; Home is about 0.25 km² as drawn. Walkable land is reachable on foot and gets dense dressing;
+      backdrop land is seen from the line but not walked (hatched on the map). Track on land is seen up close; track
+      over sea is one repeated trestle kit; tunnels are interiors. Sea in view is the share of the ground within 1 km of
+      each station that is water: sea and sky are cheap, readable and already look good in the renderer. The last column
+      is the most land within 1 km of any one station, a rough measure of what must be resident at once.
     </p>
   </section>
 
@@ -3453,6 +3737,73 @@
     }
     const fmtMin = (t) => (t / 60).toFixed(1);
 
+    // ---- art surface -------------------------------------------------------
+    const inPoly = (pt, poly) => {
+      let inside = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const [xi, zi] = poly[i];
+        const [xj, zj] = poly[j];
+        if (zi > pt[1] !== zj > pt[1] && pt[0] < ((xj - xi) * (pt[1] - zi)) / (zj - zi) + xi) inside = !inside;
+      }
+      return inside;
+    };
+    const areaKm2 = (p) =>
+      Math.abs(p.reduce((s, a, i) => s + a[0] * p[(i + 1) % p.length][1] - p[(i + 1) % p.length][0] * a[1], 0)) /
+      2 /
+      1e6;
+    const ART = new Map();
+    function art(o) {
+      if (ART.has(o.id)) return ART.get(o.id);
+      const fresh = o.land.filter((g) => g.id !== 'home-land');
+      const walk = fresh.filter((g) => g.walk !== false);
+      const back = fresh.filter((g) => g.walk === false);
+      const onLand = (pt) => o.land.some((g) => inPoly(pt, g.pts));
+      // track by what is under it, sampled every 10 m
+      const track = { land: 0, sea: 0, tunnel: 0 };
+      for (const l of o.lines) {
+        if (l.kind === 'built' || at(l.stage, 'A') == null) continue;
+        for (let i = 1; i < l.pts.length; i++) {
+          const [a, b] = [l.pts[i - 1], l.pts[i]];
+          const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+          for (let d = 5; d < L; d += 10) {
+            const pt = [a[0] + ((b[0] - a[0]) * d) / L, a[1] + ((b[1] - a[1]) * d) / L];
+            track[l.style === 'tunnel' ? 'tunnel' : onLand(pt) ? 'land' : 'sea'] += 10;
+          }
+        }
+      }
+      // ground within the view radius of each station: land to dress, or sea
+      const R = DATA.art.viewRadius;
+      const step = 50;
+      let landShare = 0;
+      let peak = 0;
+      const stations = o.places.filter((p) => !p.minor);
+      for (const p of stations) {
+        let n = 0;
+        let hit = 0;
+        for (let x = -R; x <= R; x += step)
+          for (let z = -R; z <= R; z += step) {
+            if (x * x + z * z > R * R) continue;
+            n++;
+            if (onLand([p.at[0] + x, p.at[1] + z])) hit++;
+          }
+        landShare += hit / n;
+        peak = Math.max(peak, (hit * step * step) / 1e6);
+      }
+      const out = {
+        walk: walk.reduce((m, g) => m + areaKm2(g.pts), 0),
+        back: back.reduce((m, g) => m + areaKm2(g.pts), 0),
+        home: areaKm2(o.landById['home-land'].pts),
+        islands: walk.length,
+        biomes: new Set(walk.map((g) => g.biome).filter(Boolean)).size,
+        sets: o.gates.length + o.secrets.length,
+        track: { land: track.land / 1000, sea: track.sea / 1000, tunnel: track.tunnel / 1000 },
+        sea: 1 - landShare / stations.length,
+        peak,
+      };
+      ART.set(o.id, out);
+      return out;
+    }
+
     // ---- drawing helpers ---------------------------------------------------
     const smooth = (pts, closed) => {
       const n = pts.length;
@@ -3533,11 +3884,16 @@
         );
 
       // land
+      push(
+        `<defs><pattern id="backdrop" width="${10 * u}" height="${10 * u}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${10 * u}" stroke="var(--contour)" stroke-width="${1.6 * u}"/></pattern></defs>`,
+      );
       for (const g of o.land) {
         const st = stateOf(landReach(o, g, S.pick), landSeen(o, g, S.pick), s);
+        const d = smooth(g.pts, true);
         push(
-          `<path d="${smooth(g.pts, true)}" fill="${g.sand ? 'var(--sand)' : 'var(--land)'}" stroke="var(--contour)" stroke-width="1" vector-effect="non-scaling-stroke" opacity="${opFor(st)}" ${st === 'seen' ? 'stroke-dasharray="4 3"' : ''}/>`,
+          `<path d="${d}" fill="${g.sand ? 'var(--sand)' : 'var(--land)'}" stroke="var(--contour)" stroke-width="1" vector-effect="non-scaling-stroke" opacity="${opFor(st)}" ${st === 'seen' ? 'stroke-dasharray="4 3"' : ''}/>`,
         );
+        if (g.walk === false) push(`<path d="${d}" fill="url(#backdrop)" opacity="${opFor(st) * 0.7}"/>`);
       }
       // land terrain
       const terrLabels = [];
@@ -3712,7 +4068,8 @@
             `<g class="hit" data-k="place:${p.id}" opacity="${op}"><circle cx="${x}" cy="${z}" r="${Math.max(r * 1.8, 12 * u)}" fill="transparent"/><circle cx="${x}" cy="${z}" r="${r}" fill="${fill}" stroke="${col}" stroke-width="${p.kind === 'hub' ? 3 : 2}" vector-effect="non-scaling-stroke" ${st === 'seen' ? 'stroke-dasharray="3 2"' : ''}/>${p.kind === 'hub' ? `<circle cx="${x}" cy="${z}" r="${r * 0.4}" fill="var(--surface)"/>` : ''}</g>`,
           );
         }
-        const showLabel = !p.minor || vw < 2600;
+        const roomy = u < 10; // on a phone at full view, only the main places get labels
+        const showLabel = p.minor ? vw < 2600 : p.kind !== 'stop' || roomy;
         if (showLabel && st !== 'hidden') labels.push([p, st, r]);
       }
       const fs = 12.5 * u;
@@ -3735,7 +4092,7 @@
           anchor = 'middle';
         }
         if (la === 'e' || la === 'w') z += fs * 0.35;
-        const elev = p.elev != null && o.id === 'climb' ? ` · ${p.elev} m` : '';
+        const elev = p.elev != null && o.id === 'climb' && u < 10 ? ` · ${p.elev} m` : '';
         const weight = p.kind === 'stop' ? 500 : 650;
         // keep the label inside the frame (rough width: 0.58 em per character)
         const wide = (p.name + elev).length * 0.58 * fs;
@@ -3750,8 +4107,11 @@
       for (const [c, label, g, exact] of terrLabels) {
         const st = stateOf(landReach(o, g, S.pick), landSeen(o, g, S.pick), s);
         if (st === 'hidden' && S.fog) continue;
+        if (u >= 10) continue;
+        const half = label.length * 0.29 * fs * 0.85;
+        const tx = Math.min(Math.max(c[0], vx + half + 6 * u), vx + vw - half - 6 * u);
         push(
-          `<text class="lbl-t terr" x="${c[0]}" y="${exact ? c[1] : c[1] + fs * 1.6}" font-size="${fs * 0.85}" text-anchor="middle" stroke-width="${3 * u}">${esc(label)}</text>`,
+          `<text class="lbl-t terr" x="${tx}" y="${exact ? c[1] : c[1] + fs * 1.6}" font-size="${fs * 0.85}" text-anchor="middle" stroke-width="${3 * u}">${esc(label)}</text>`,
         );
       }
       svg.innerHTML = out.join('');
@@ -3817,11 +4177,16 @@
       $('opt-head').innerHTML = `
         <h2>${esc(o.name)} <span style="font-weight:400;color:var(--ink-3);font-size:15px">· ${esc(o.shape)}</span></h2>
         <p class="feel">“${esc(o.feel)}”</p>`;
+      const artBlock = (o) => {
+        const a = art(o);
+        return `<div class="artbox"><p><b>Art surface.</b> ${esc(o.art || '')}</p><p class="artnums">${a.walk.toFixed(1)} km² walkable (${(a.walk / a.home).toFixed(1)} Home islands)${a.back ? ` + ${a.back.toFixed(1)} km² backdrop` : ''} · ${a.islands} walkable pieces · ${a.biomes} biomes, ${a.sets} set pieces · track ${a.track.land.toFixed(1)} km on land, ${a.track.sea.toFixed(1)} over sea, ${a.track.tunnel.toFixed(1)} in tunnel · ${Math.round(a.sea * 100)}% sea in view</p></div>`;
+      };
       $('opt-pitch').innerHTML = `
         <h3>The pitch</h3>
         <p>${esc(o.pitch)}</p>
         ${o.departs ? `<p class="departs"><b>Departs from the brief.</b> ${esc(o.departs)}</p>` : ''}
         <p style="font-size:13.5px"><b>Order choice, stage ${o.choice.stage}:</b> ${esc(o.choice.text)}</p>
+        ${artBlock(o)}
         <div class="refs">${o.refs.map(([g, w]) => `<span class="chip"><b>${esc(g)}</b>: ${esc(w)}</span>`).join('')}</div>`;
       const A = o.byId[o.choice.A].name;
       const B = o.byId[o.choice.B].name;
@@ -3983,6 +4348,13 @@
       $('compare').innerHTML =
         `<tr><th>Layout</th><th class="n">Places</th><th class="n">New rail km</th><th class="n">Loops</th><th class="n">Choice at stage</th><th class="n">Double-backs</th><th class="n">Mean ride, min</th><th class="n">Longest ride</th><th class="n">To the ending</th></tr>` +
         OPTS.map(rowsFor).join('');
+      const artRow = (o) => {
+        const a = art(o);
+        return `<tr><td><b>${esc(o.name)}</b></td><td class="n">${a.walk.toFixed(1)} <span style="color:var(--ink-3)">(${(a.walk / a.home).toFixed(1)}×)</span></td><td class="n">${a.back ? a.back.toFixed(1) : '—'}</td><td class="n">${a.islands}</td><td class="n">${a.track.land.toFixed(1)}</td><td class="n">${a.track.sea.toFixed(1)}</td><td class="n">${a.track.tunnel.toFixed(1)}</td><td class="n">${a.biomes}</td><td class="n">${a.sets}</td><td class="n">${Math.round(a.sea * 100)}%</td><td class="n">${a.peak.toFixed(2)}</td></tr>`;
+      };
+      $('art-table').innerHTML =
+        `<tr><th>Layout</th><th class="n">Walkable land, km² (× Home)</th><th class="n">Backdrop land, km²</th><th class="n">Walkable pieces</th><th class="n">Track on land, km</th><th class="n">Over sea</th><th class="n">In tunnel</th><th class="n">Biomes</th><th class="n">Set pieces</th><th class="n">Sea in view</th><th class="n">Most land near one station, km²</th></tr>` +
+        OPTS.map(artRow).join('');
     }
 
     // ---- interaction ---------------------------------------------------------
