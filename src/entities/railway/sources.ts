@@ -22,6 +22,7 @@ import { readableIntensity } from '../../render/readable-unlit.ts';
 import { bindCargoDrop } from '../../player/cargo-drop.ts';
 import { NO_TARGETS, type Interactable } from '../../player/hands.ts';
 import { frameOf, fitOf, slotAt, shownOf, SHOWN } from '../../render/haul-bundle.ts';
+import { commitPieces } from '../../render/haul-pieces.ts';
 import { createRecoveryRack } from './supply-view.ts';
 import { createLineCargo } from './line-cargo.ts';
 import { LINE1_HARDWOODS } from '../../sim/railway-line-layout.ts';
@@ -252,8 +253,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         } else pieces.setStackLog(piles, count++, pieces.stackSlot(k, 3, at, 0, pilePoint), 0);
       }
     }
-    piles.count = count;
-    piles.instanceMatrix.needsUpdate = true;
+    // commitPieces also shows the batch: logStackMesh starts hidden, so setting only `count` left every pile undrawn.
+    commitPieces(piles, count);
     stonePiles.count = stoneCount;
     stonePiles.instanceMatrix.needsUpdate = true;
     railPiles.count = railCount;
