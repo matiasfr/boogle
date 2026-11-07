@@ -7,7 +7,13 @@ import { interactTarget } from '../../../src/player/hands.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
 import { carry } from '../../../src/physics/platforms.ts';
 import { playMark } from '../../../src/proto/mark.ts';
-import { LINE1_STATIONS, LINE1_GREAT_TREE, LINE1_INITIAL } from '../../../src/sim/railway-line-layout.ts';
+import {
+  LINE1_STATIONS,
+  LINE1_GREAT_TREE,
+  LINE1_INITIAL,
+  LINE1_RAIL_PAIRS,
+  linePanels,
+} from '../../../src/sim/railway-line-layout.ts';
 import { PLAYER_R } from '../../../src/constants.ts';
 import { fallArrival } from '../../../src/fall/arrival.ts';
 import { onRemotePresence, remotes } from '../../../src/netplay/net.ts';
@@ -169,9 +175,13 @@ export async function play({ stopBeforeReward = false } = {}) {
     require(aboard() && !me.swimming, `${name} rider remains aboard and dry`);
     mark(`${name} layer ride completed`);
   };
-  const panels = (committed: number, stock: number) => {
+  /** After `stations` stops: their rail pairs are laid and the rest stay on the stack. */
+  const panels = (stations: number) => {
+    const ids = LINE1_STATIONS.slice(0, stations).map((s) => s.id);
+    const committed = linePanels().filter((p) => ids.includes(p.station)).length,
+      stock = LINE1_RAIL_PAIRS - committed;
     require(read().panelCount === committed &&
-      read().panelStock === stock, `${committed} accepted whole panels leave ${stock} stock panels`);
+      read().panelStock === stock, `${committed} accepted rail pairs leave ${stock} on the stack`);
   };
   const logs = async (station: number, loads: number) => {
     for (let load = 0; load < loads; load++) {
@@ -301,7 +311,7 @@ export async function play({ stopBeforeReward = false } = {}) {
     mark('T1 funded');
     await ride(0);
     await until(() => job(0).completion === 1, 'T1 laid once');
-    panels(3, 9);
+    panels(1);
     require(job(0).used === 24 && job(0).allocation === 0, 'T1 contains exactly 24 logs');
     mark('T1 laid');
     const track = railAt(154);
@@ -336,7 +346,7 @@ export async function play({ stopBeforeReward = false } = {}) {
     mark('T2 funded');
     await ride(1);
     await until(() => job(1).completion === 1, 'T2 laid once');
-    panels(6, 6);
+    panels(2);
     require(job(1).used === 32 && job(1).stoneUsed === 8, 'T2 embodies 32 logs and 8 stone');
     await checkpoint('T2 laid');
     await box(1);
@@ -464,7 +474,7 @@ export async function play({ stopBeforeReward = false } = {}) {
     await checkpoint('T3 funded');
     await ride(2);
     await until(() => job(2).completion === 1, 'T3 laid once');
-    panels(12, 0);
+    panels(3);
     require(read().beam?.state === 'used' && job(2).used === 40, 'single beam and 40 logs embodied');
     require(read().reward.claims === 2, 'only T1 and T2 personal boxes earned');
     const counts = read().counts;
@@ -718,10 +728,11 @@ export async function play({ stopBeforeReward = false } = {}) {
         const stockBefore = l2().stations[k]!.stock;
         require(await bot.use(depot[0]!, depot[2]!, 'take depot logs', /^Pick up$/), 'depot rack offered');
         // Confirmed within a round trip now, the logs can already have unloaded into the frame beside the rack.
-        require(
-          await bot.work(() => read().carry > 0 || l2().stations[k]!.stock > stockBefore, 5000, 380),
-          'depot logs accepted after bounded retries',
-        );
+        require(await bot.work(
+          () => read().carry > 0 || l2().stations[k]!.stock > stockBefore,
+          5000,
+          380,
+        ), 'depot logs accepted after bounded retries');
         await until(() => read().pending === 0, 'depot logs settle');
         await walk(frameAt.x, frameAt.z, 2.4);
         await until(() => read().carry === 0 && read().pending === 0, `Q${k + 1} logs unload`, 20000);

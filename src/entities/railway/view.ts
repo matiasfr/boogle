@@ -121,10 +121,11 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     track,
     () => state,
     () => visualHead,
-    (end) => {
+    (end, unit) => {
       const p = rail.besideLine(line.line, end, 0);
       clank(p.x, p.z);
-      pieces.dustRing(p.x, layout.railY(line.line, end) + 0.1, p.z, 4, 0.5, 0.12);
+      // Contact dust once per stock unit, as before the pairs: smaller commits add no smoke.
+      if (unit) pieces.dustRing(p.x, layout.railY(line.line, end) + 0.1, p.z, 4, 0.5, 0.12);
     },
     owner,
   );

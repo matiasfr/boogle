@@ -4,17 +4,26 @@ import * as THREE from 'three/webgpu';
 import { carriedPiece, panelEase, panelPose } from './track-panels.ts';
 
 export const PANEL_BEAM_Y = 4;
-/** The small rail stack on the gantry's shoulders: one pair per held stock unit, left rail left, right rail right.
+/** The slewing beam's reach from its pivot over the deck, as built (assets/src/track-layer.py BEAM; 17.5 m before rail
+ * pairs). A pair is 2.3-3.3 m and the deck rides 5.73 m behind the head, so the trolley runs at most about 4.9 m out
+ * (deck setback less a third of the shortest pair, at the end of the sweep); the level check holds the built beam to
+ * this constant and every sampled line-one trolley position, plus its 0.35 m half length, inside it. */
+export const PANEL_BEAM_LENGTH = 5.8;
+/** The small rail stack on the gantry's shoulders: one pair per rail pair still to lay (drawn up to 36), left rail
+ * left, right rail right.
  * Each layer fills inner column to outer before the next goes on, so a few pairs lie low and wide; the gantry takes
  * the top layer's outermost pair. Rail bases, rig frame. */
 export const STACK = { y: 2.86, z: 1.5, x: 0.3, dx: 0.12, dy: 0.13, layers: 6, columns: 6 } as const;
 export const STACK_PAIRS = STACK.layers * STACK.columns;
-export const stackSlot = (n: number, side: number, out: THREE.Vector3) =>
-  out.set(
-    side * (STACK.x + (n % STACK.columns) * STACK.dx),
-    STACK.y + Math.floor(n / STACK.columns) * STACK.dy,
+/** Slot `n` from the bottom; a stack holding more pairs than it draws (line one starts with 56) picks from the top. */
+export const stackSlot = (n: number, side: number, out: THREE.Vector3) => {
+  const k = Math.min(n, STACK_PAIRS - 1);
+  return out.set(
+    side * (STACK.x + (k % STACK.columns) * STACK.dx),
+    STACK.y + Math.floor(k / STACK.columns) * STACK.dy,
     STACK.z,
   );
+};
 /** Rail base below the jaw slide origin, and the closed jaw's rail centre. */
 const GRIP_Y = 0.23,
   GRIP_X = 0.45,
@@ -89,10 +98,11 @@ export function panelMechanism(parent: THREE.Object3D, railBatch: RailBatch) {
     stackLengths: number[] = [],
     selecting = false;
   function drawStack() {
-    const n = Math.max(0, Math.min(STACK_PAIRS, stackCount) - (selecting ? 1 : 0));
+    const shown = Math.min(STACK_PAIRS, stackCount),
+      n = Math.max(0, shown - (selecting ? 1 : 0));
     for (let k = 0; k < n; k++) {
-      // Slot k from the bottom holds the unit used (count - 1 - k)th from now.
-      const length = carriedPiece(stackLengths[stackCount - 1 - k] ?? 3).length;
+      // Slot k from the bottom holds the pair laid (shown - 1 - k)th from now; pairs beyond the drawn stack follow.
+      const length = carriedPiece(stackLengths[shown - 1 - k] ?? 3).length;
       for (let side = 0; side < 2; side++) {
         stackSlot(k, side ? 1 : -1, slot);
         matrix.makeTranslation(slot.x, slot.y, slot.z).scale(scale.set(1, 1, length / RAIL_KIT_LENGTH));

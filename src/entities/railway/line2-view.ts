@@ -11,10 +11,12 @@ import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
 import { readableGlow } from '../../render/readable-unlit.ts';
-import { LINE2_FORGE, LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_STATIONS, line2Panels } from '../../sim/railway-line2-layout.ts';
 import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 
+/** Rail pairs each stretch lays, one per commit. */
+const STRETCH_PAIRS = LINE2_STATIONS.map((station) => line2Panels(station).length);
 type Rail = typeof import('../../proto/place/rail.ts');
 type Machine = ReturnType<Rail['buildMachine']>;
 type Inspection = ReturnType<RailwayAdapter['inspect']>;
@@ -423,8 +425,8 @@ export async function createRailwayLine2(
     });
     const k = activeIndex(),
       job = l.stations[k]!;
-    const before = LINE2_STATIONS.slice(0, k).reduce((n, s) => n + s.panels, 0);
-    const stock = job.start >= 0 && !job.completion ? LINE2_STATIONS[k]!.panels - (count - before) : 0;
+    const before = STRETCH_PAIRS.slice(0, k).reduce((n, pairs) => n + pairs, 0);
+    const stock = job.start >= 0 && !job.completion ? STRETCH_PAIRS[k]! - (count - before) : 0;
     return { phase: phaseOf(k), activeStation: k, panelStock: Math.max(0, stock), panelCount: count };
   };
   const panels = createRailwayPanelView(
@@ -432,10 +434,11 @@ export async function createRailwayLine2(
     track,
     panelState,
     () => visualHead,
-    (end) => {
+    (end, unit) => {
       const p = rail.besideLine(quarry.line, end, 0);
       clank(p.x, p.z);
-      pieces.dustRing(p.x, layout.railY(quarry.line, end) + 0.1, p.z, 4, 0.5, 0.12);
+      // Contact dust once per stock unit, as before the pairs: smaller commits add no smoke.
+      if (unit) pieces.dustRing(p.x, layout.railY(quarry.line, end) + 0.1, p.z, 4, 0.5, 0.12);
     },
     owner,
   );

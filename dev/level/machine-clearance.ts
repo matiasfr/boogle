@@ -447,15 +447,23 @@ export async function checkMachineClearance() {
     assembly.update(0);
     root.updateWorldMatrix(true, true);
   }
+  // The trolley's farthest run from the beam pivot, rig frame: the beam must reach it with the trolley's half length.
+  let reach = 0,
+    reachAt = '';
+  const measureReach = (label: string) => {
+    const r = Math.hypot(rig.trolley.position.x, rig.trolley.position.z);
+    if (r > reach) [reach, reachAt] = [r, label];
+  };
+  const pairs = schedule.length;
   at(line.stations[0]!.s + 2.4);
-  rig.drawStack(12, lengths, false);
-  rig.home(1, 12);
+  rig.drawStack(pairs, lengths, false);
+  rig.home(1, pairs);
   inspect('parked start');
   for (const [index, panel] of schedule.entries()) {
-    acceptedPanels = index;
+    acceptedPanels = schedule.slice(0, index).reduce((units, p) => units + p.stock, 0);
     const stage = line.stations[panel.stage]!;
     // The real stack and carried rail pair; falling track pieces are the track's own and are excluded.
-    rig.drawStack(12 - index, lengths.slice(index), true);
+    rig.drawStack(pairs - index, lengths.slice(index), true);
     for (let step = 0; step <= 1000; step++) {
       const phase = step / 1000,
         head = line.line.len - (panel.from + (panel.to - panel.from) * phase),
@@ -468,7 +476,7 @@ export async function checkMachineClearance() {
       track.panelStart(index, start).applyMatrix4(toRig);
       rig.pose(
         phase,
-        12 - index,
+        pairs - index,
         seat,
         Math.atan2(dir.x, dir.z),
         Math.asin(Math.max(-1, Math.min(1, dir.y))),
@@ -476,8 +484,9 @@ export async function checkMachineClearance() {
         track.carriedLength(index),
       );
       inspect('panel ' + index + ' phase ' + phase);
+      measureReach('panel ' + index + ' phase ' + phase);
     }
-    rig.drawStack(11 - index, lengths.slice(index + 1), false);
+    rig.drawStack(pairs - 1 - index, lengths.slice(index + 1), false);
     if (index === schedule.length - 1 || schedule[index + 1]!.stage !== panel.stage) {
       if (index === schedule.length - 1) {
         // Production path.ts enables these only after T3, behind the already passed machine.
@@ -497,8 +506,9 @@ export async function checkMachineClearance() {
       for (let k = 0; k <= 1500; k++) {
         const t = k / 500;
         at(Math.max(head + 2.4, start - t * 5));
-        rig.home(Math.min(1, t / 0.65), 11 - index);
+        rig.home(Math.min(1, t / 0.65), pairs - 1 - index);
         inspect('return ' + index + ' ' + k);
+        measureReach('return ' + index + ' ' + k);
       }
     }
   }
@@ -508,6 +518,18 @@ export async function checkMachineClearance() {
     inspect('village park ' + s);
   }
   if (!lipPlaced) throw new Error('The completed line did not open its jump-pillar walkway');
+  // The built beam must be the source constant and reach every trolley position with the trolley's 0.35 m half length.
+  const beamMesh = rig.beam.getObjectByName('lay_gantry_beam') as THREE.Mesh | undefined;
+  if (!beamMesh) throw new Error('track-layer.glb has no lay_gantry_beam');
+  beamMesh.geometry.computeBoundingBox();
+  const beamBox = beamMesh.geometry.boundingBox!.clone().applyMatrix4(beamMesh.matrix);
+  const beamLength = beamBox.max.z - Math.max(0, beamBox.min.z);
+  if (Math.abs(beamLength - panels.PANEL_BEAM_LENGTH) > 0.02)
+    throw new Error(`Built beam is ${beamLength.toFixed(2)} m; machine-panels says ${panels.PANEL_BEAM_LENGTH} m`);
+  if (reach + 0.35 > panels.PANEL_BEAM_LENGTH)
+    throw new Error(
+      `The trolley runs ${reach.toFixed(2)} m out (${reachAt}), past the ${panels.PANEL_BEAM_LENGTH} m beam`,
+    );
   return {
     level: 'machine-clearance',
     samples: count,
@@ -517,9 +539,13 @@ export async function checkMachineClearance() {
     maximumSweepStepMetres: 0.1,
     obstacles: obstacles.length,
     lipOpenedAt,
+    beamMetres: panels.PANEL_BEAM_LENGTH,
+    trolleyReachMetres: Math.round(reach * 1000) / 1000,
+    trolleyReachAt: reachAt,
+    railPairs: pairs,
     failures: failures.size,
     contacts: [...failures.values()],
     coverage:
-      'Current production T1-T3 route, parked/working/return/village approach; decoded rigid machine with source-driven wheels/rods, the rail stack, the carried rail pair and the 17.5 m slewing beam against authored buildings, stations/full stock, reward crates, standing trees, rocks, recovery rack, yard props, opening stops, the jump pillar/device and construction-derived lip and path lamps. Local 0.001-phase sampling plus bounded rigid interpolation and a 25 cm envelope. Dynamic players, dropped cargo and falling trees are excluded.',
+      'Current production T1-T3 route, parked/working/return/village approach; decoded rigid machine with source-driven wheels/rods, the rail stack, the carried rail pair and the slewing beam against authored buildings, stations/full stock, reward crates, standing trees, rocks, recovery rack, yard props, opening stops, the jump pillar/device and construction-derived lip and path lamps. Local 0.001-phase sampling plus bounded rigid interpolation and a 25 cm envelope. Dynamic players, dropped cargo and falling trees are excluded.',
   };
 }

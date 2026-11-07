@@ -60,9 +60,10 @@ export const PILLARS = [
   { id: 'p2', x: P2.x, z: P2.z, top: P2.y + 2.2, r: 3.6, foot: -3, lipTo: null },
 ];
 
-/** Local construction view: the lip can join once accepted track and the entire machine have passed. */
-export const p1LipClear = (panelCount: number, machineZ: number) =>
-  panelCount >= 10 && machineZ > Math.max(PILLARS[0]!.z, PILLARS[0]!.lipTo!.z) + 1.2 + 25;
+/** Local construction view: the lip can join once accepted track (ten of line one's twelve stock units) and the
+ * entire machine have passed. */
+export const p1LipClear = (unitsLaid: number, machineZ: number) =>
+  unitsLaid >= 10 && machineZ > Math.max(PILLARS[0]!.z, PILLARS[0]!.lipTo!.z) + 1.2 + 25;
 
 export const PADS: Pad[] = [
   { id: 'p1', x: P1.x, z: P1.z, top: P1.y, hx: 3.4, hz: 3.4, look: 'stone' },
