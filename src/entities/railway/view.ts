@@ -17,6 +17,7 @@ import { createRailwayOpening } from './opening-view.ts';
 import { createRailwayPath } from './path.ts';
 import { createRailwayPanelView } from './panel-view.ts';
 import { createRailwayLine2 } from './line2-view.ts';
+import { createRailwayShelf } from './shelf-view.ts';
 
 export async function createRailwayView(adapter: RailwayAdapter) {
   const owner = createOwnedView();
@@ -62,6 +63,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z),
   );
   const line2 = await createRailwayLine2(adapter, owner, machine, sources.bundleOrigin, reward.youGot);
+  const shelf = await createRailwayShelf(adapter, owner, line2.depotPlace, sources.bundleOrigin);
   if (look.LOOK.contact) kit.installContact([machine.flatbed, machine.loco], sources.inspect(), owner);
   const wake = createWakePresentation(machine, owner, { fanfare: sounds.fanfare, dustRing: pieces.dustRing });
   const path = await createRailwayPath(owner);
@@ -397,6 +399,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       machine.onPanelFrame = line2.working() ? line2.panelFrame : panels.frame;
       if (!line2.working()) panels.update(dt);
       line2.update(dt);
+      shelf.update();
       if (!previousOpen && opened() && !reconstructed) {
         sounds.fanfare(true);
         whistle(machine.flatbed.x, machine.flatbed.z);
@@ -447,7 +450,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       owner.update(ctx);
     },
     targets(): Interactable[] {
-      const targets = [...sources.targets(), ...reward.targets(), ...line2.targets()];
+      const targets = [...sources.targets(), ...reward.targets(), ...line2.targets(), ...shelf.targets()];
       const p = me.body?.position;
       if (p && state.ready && state.phase === 'asleep' && machine.distance(p.x, p.z) < 6)
         targets.push({
@@ -476,7 +479,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       trees: sources.inspect(),
       reward: reward.inspect(),
       pathOpen: opened(),
-      line2View: line2.inspect(),
+      line2View: { ...line2.inspect(), ...shelf.inspect() },
     }),
     dispose: () => owner.dispose(),
   };

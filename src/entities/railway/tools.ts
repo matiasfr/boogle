@@ -12,8 +12,9 @@ import { GRAVITY, PLAYER_MASS, FIXED } from '../../constants.ts';
 import { T1_CRATE_PARTS, MULTI_AXE_REWARD } from '../../render/t1-reward-parts.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
-import { AXE_REWARD, JUMP_REWARD } from './reward-data.ts';
+import { AXE_REWARD, JUMP_REWARD, PACK_REWARD } from './reward-data.ts';
 import { linePanels } from '../../sim/railway-line-layout.ts';
+import { LINE2_PACK } from '../../sim/railway-line2-layout.ts';
 
 /** Stock units line one has closed after each count of laid rail pairs. */
 const UNITS_LAID = [0];
@@ -35,13 +36,14 @@ export async function createRailwayTools(
   reveal: ReturnType<typeof createRewardReveal>,
   machineFrom?: (out: THREE.Vector3) => void,
 ) {
-  const [layout, tech, land, shapes, axes, flat] = await Promise.all([
+  const [layout, tech, land, shapes, axes, flat, gear] = await Promise.all([
     import('../../proto/place/layout.ts'),
     import('../../proto/place/tech-layout.ts'),
     import('../../proto/place/land.ts'),
     import('../../proto/place/part-geometry.ts'),
     import('../../proto/place/axe-models.ts'),
     import('../../proto/flat.ts'),
+    import('../../proto/place/gear-models.ts'),
   ]);
   const root = new THREE.Group();
   owner.root.add(root);
@@ -74,6 +76,16 @@ export async function createRailwayTools(
   chest.position.copy(chestAt);
   chest.visible = false;
   const chestTarget = chestAt.clone().add(new THREE.Vector3(0, 1.3, 0));
+  // The pack frame's chest stands beside the forge once its first bill is in (Place's ladder rung 2): the same chest,
+  // on the ground, and whoever opens it opens it for everyone.
+  const packAt = new THREE.Vector3(LINE2_PACK.x / 100, 0, LINE2_PACK.z / 100);
+  packAt.y = land.H(packAt.x, packAt.z);
+  const packChest = mesh(shapes.merged(T1_CRATE_PARTS), material);
+  packChest.position.copy(packAt);
+  packChest.visible = false;
+  const packTarget = packAt.clone().add(new THREE.Vector3(0, 1.3, 0));
+  const packPrize = shapes.merged(gear.packParts());
+  geometries.push(packPrize);
 
   // Only the first pillar and its original lip are promoted. Walking home never depends on taking this device.
   const pillar = tech.PILLARS[0]!;
@@ -145,6 +157,7 @@ export async function createRailwayTools(
   const multiPrize = shapes.merged(MULTI_AXE_REWARD.parts);
   geometries.push(multiPrize);
   let axeReveals = 0,
+    packReveals = 0,
     jumpReveals = 0,
     jumps = 0;
   let charge = true,
@@ -162,6 +175,13 @@ export async function createRailwayTools(
       if (!mine(event)) return;
       if (reveal.youGot({ key: 'axe', ...AXE_REWARD, model: properModel.clone(true), from: chestAt.clone() }))
         axeReveals++;
+    }
+    if (event.op === 'rail.pack') {
+      if (!mine(event)) return;
+      if (
+        reveal.youGot({ key: 'pack', ...PACK_REWARD, model: new THREE.Mesh(packPrize, material), from: packAt.clone() })
+      )
+        packReveals++;
     }
     if (event.op === 'rail.jump') {
       flare = FLARE_S;
@@ -182,15 +202,22 @@ export async function createRailwayTools(
     const s = adapter.inspect();
     return s.ready && !s.axe && (s.line2?.forge.lit ?? -1) >= 0;
   };
+  const packAvailable = () => {
+    const s = adapter.inspect();
+    return s.ready && s.line2.packReady && !s.line2.pack;
+  };
   const api = {
-    /** A fresh model of an axe for a friend's flourish (materials are shared with the cards). */
+    /** A fresh model of an axe (or the pack frame) for a friend's flourish (materials are shared with the cards). */
     axeModel(key: string): THREE.Object3D | null {
       if (key === 'axe') return properModel.clone(true);
       if (key === 'multi-axe') return new THREE.Mesh(multiPrize, material);
+      if (key === 'pack') return new THREE.Mesh(packPrize, material);
       return null;
     },
     inspect: () => ({
       axeChest: { x: chestAt.x, y: chestAt.y, z: chestAt.z, available: axeAvailable() },
+      packChest: { x: packAt.x, y: packAt.y, z: packAt.z, available: packAvailable() },
+      packReveals,
       jumpDevice: {
         x: deviceAt.x,
         y: deviceAt.y,
@@ -215,6 +242,14 @@ export async function createRailwayTools(
           at: chestTarget,
           r: 3.4,
           run: () => void adapter.openAxe(),
+        });
+      if (packAvailable() && inReach(packAt))
+        targets.push({
+          id: 'railway-pack-chest',
+          verb: 'Open',
+          at: packTarget,
+          r: 3.4,
+          run: () => void adapter.openPack(),
         });
       if (!s.jump && Math.hypot(p.x - deviceAt.x, p.z - deviceAt.z) <= 3 && Math.abs(p.y - deviceAt.y) <= 2.2)
         targets.push({
@@ -248,6 +283,8 @@ export async function createRailwayTools(
       }
       chest.visible = axeAvailable();
       if (chest.visible) chest.position.copy(chestAt).y += Math.max(0, Math.sin(now * 0.004)) * 0.06;
+      packChest.visible = packAvailable();
+      if (packChest.visible) packChest.position.copy(packAt).y += Math.max(0, Math.sin(now * 0.004 + 1.3)) * 0.06;
       for (const object of [ring, ring2, core]) object.visible = !state.jump;
       // The flare: up fast, held, then gone with the device's glow.
       flare = Math.max(0, flare - dt);

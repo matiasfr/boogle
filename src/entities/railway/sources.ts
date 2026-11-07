@@ -579,7 +579,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       rails: current.railsCarry,
       stone: current.stoneCarry,
       big: current.beam?.state === 'held' && current.beam.holder === current.pid ? ('beam' as const) : null,
-      capacity: RAILWAY_T1.carry,
+      capacity: current.carryMax,
       flyingLogs: Math.min(current.carry, harvestFlights.length),
       attention: swing.response === 'full' && swing.t < 0.55,
     };

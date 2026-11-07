@@ -1,5 +1,5 @@
 // Line two's Local views over accepted state: the forge rising and pouring, its rails rack, the machine on the quarry line,
-// Q1-Q3 frames, the depot rack, and the route-v2 service decks, winch drive, lever, gate, pillar p2 and hook device.
+// Q1-Q4 frames, the depot rack, and the route-v2 service decks, winch drive, lever, gate, pillar p2 and hook device.
 // Geometry and colliders are rebuilt from accepted construction state; nothing here transfers material.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
@@ -104,9 +104,7 @@ export async function createRailwayLine2(
   let smokeAcc = 0;
   const mouth = mesh(
     new THREE.BoxGeometry(2.8, 1.8, 0.1),
-    readableGlow(
-      new THREE.MeshStandardNodeMaterial({ color: '#3a1a08', emissive: '#ff5a0a', emissiveIntensity: 1.3 }),
-    ),
+    readableGlow(new THREE.MeshStandardNodeMaterial({ color: '#3a1a08', emissive: '#ff5a0a', emissiveIntensity: 1.3 })),
   );
   materials.push(mouth.material as THREE.Material);
   mouth.position.set(plans.X, plan.y + 1.5, plans.Z + plans.D / 2 - 0.5);
@@ -913,12 +911,15 @@ export async function createRailwayLine2(
       const job = l.stations[k]!,
         spec = LINE2_STATIONS[k]!,
         frame = frames[k]!;
-      if (job.start >= 0 || !near(frame.x, frame.z)) return;
+      // A gated frame (Q4 behind the quarry gate) takes nothing until the lever has dropped the gate.
+      if (job.start >= 0 || (spec.gate === 'quarry' && !l.lever) || !near(frame.x, frame.z)) return;
       if (state.availableCarry > 0 && job.stock < spec.bill[0] && adapter.depositLine2(spec.id, 1, 0))
         unload = layout.TUNE.unloadS;
       else if (state.availableRails > 0 && job.railStock < spec.bill[1] && adapter.depositLine2(spec.id, 1, 2))
         unload = layout.TUNE.unloadS;
     },
+    /** Where the depot rack for stretch k stands (the rails shelf stands beside it: shelf-view.ts). */
+    depotPlace,
     targets(): Interactable[] {
       const l = l2(),
         p = me.body?.position;
