@@ -295,3 +295,21 @@ In the nightly history this shows as `*.cpu.room-clock-replicationMs` falling by
 - `sources.update` walks all 400 trees twice a frame (~2 ms a second): fine in V8; worth a dirty list if Safari shows it.
 - Render CPU (C2 above), 4.5 ms in the owner's Safari session, is now the largest section.
 - The nightly benchmark is Chromium only: a Safari number needs the owner's playtest page or a WebKit harness.
+
+## 7. The phone tier's steps, measured (7 November, on main 9ad155b7)
+
+`npm run bench -- --no-load --poses spawn,far,bay --seconds 4`, M1 Max, a busy machine (load average about 15), so differences under about 0.3 ms are noise. Each row is cumulative down the ladder. Desktop is 1280×800 at DPR 2 with the given `resolution`; phone is `--size 375x812 --query 'q=mobile&dev=1&graphics=msaa:false,…'`. Values are draw calls / triangles (thousands) / CPU ms / GPU ms at the **far** pose (spawn and bay move the same way).
+
+| Step | Desktop | Phone |
+| --- | --- | --- |
+| Full detail, resolution 1 | 265 / 1,551 / 5.2 / 14.4 (noisy; default run: 3.9 / 11.8) | 235 / 1,532 / 3.8 / 8.0 |
+| Resolution 0.6 | 265 / 1,551 / 4.0 / 10.0 | 235 / 1,532 / 3.7 / 7.8 |
+| + Simpler sea | 265 / 1,266 / 3.9 / 9.4 | 235 / 1,247 / 3.7 / 7.9 |
+| + No shadows | 217 / 1,178 / 3.5 / 9.1 | 187 / 1,159 / 3.1 / 7.5 |
+| + MSAA off (desktop only) | 217 / 1,178 / 3.5 / 8.6 | — |
+
+- **Resolution** is the big GPU step on desktop (about −1.5 to −4 ms). On the phone profile, which already renders small, it barely moves.
+- **Simpler sea** removes about 285k triangles (a quarter of the frame) for −0.4 to −0.8 ms GPU.
+- **No shadows** removes 48 draw calls and about 90k triangles: about −0.4 to −0.5 ms CPU and −0.3 to −0.5 ms GPU. It is the biggest CPU step on the phone profile.
+- **The far settings** (`farSea`, `farGround`, off by default) show no measurable gain. `farGround` drops about 150k triangles at far and bay, but GPU time is within noise, sometimes higher. The desktop and phone stills (`dev/look/beats/far-detail.ts`) show no visible difference either. Recommendation: leave both off; revisit only if a device profile shows the far sea or ground as the bottleneck.
+- Not measured: a real phone. These are desktop-browser emulations.
