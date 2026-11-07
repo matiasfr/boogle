@@ -33,3 +33,6 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 - **Post looks for a later rendering pass.** Toy-only outlines (dark, 2 px) read best, then haze for distance. Before reuse: cut the roughly 6 ms cost, reduce line crawl on hat seams and roofs, and explain the white shoreline marks using frozen-frame captures. Layers are on tag `archive/post-looks-round2`; see [round two](research/post-look-round2.md).
 
 - **A critters-and-life pass for the new environments** (owner, 6 November): fish and gulls now live on the classic island only; give the new world its own critters and life, reusing the fish (`src/features/critter-fish.ts`) and gull (`src/features/critter-gulls.ts`) code. (2026-11-06)
+
+## World and story
+- Narrative pass per area, after the mechanics and numbers are settled: characters you meet with fun dialogue, lore for each place and how the world ties together, plus what each environment looks like; it "will really just flesh out the world" (owner, 2026-11-06)
