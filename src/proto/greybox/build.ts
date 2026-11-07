@@ -32,7 +32,8 @@ import {
   type XZ,
 } from './sickle-data.ts';
 
-/** `&gbcliff=d9d4c8` puts chalk white back: near-white cliffs vanished into the pale horizon haze past ~2 km. */
+/** Mid grey keeps far silhouettes legible; `&gbcliff=d9d4c8` compares chalk white, which reads but with little
+ * contrast against the pale horizon haze at 2 km. */
 const cliffTint = /^[0-9a-f]{6}$/i.test(new URLSearchParams(location.search).get('gbcliff') ?? '')
   ? `#${new URLSearchParams(location.search).get('gbcliff')}`
   : '#9c988f';

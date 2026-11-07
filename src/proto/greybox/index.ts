@@ -7,7 +7,7 @@
 //   &gbfog=game|3600|off    the game's own fog (default), a longer range to compare, or none
 //   &pick=A|B               colour lines for High Gorge first (A, default) or Canopy Town first (B)
 //   &labels=0               start with labels and station markers hidden
-//   &gbcliff=d9d4c8         cliff tint (default mid grey; chalk white loses the far islets in the horizon haze)
+//   &gbcliff=d9d4c8         cliff tint (default mid grey; chalk white has little contrast with the horizon haze)
 // window.__greybox drives the same from a look eval: view(id), pose(cam, look), ride(route, speed), go(place), free(),
 // labels(on), fog(mode). The game's fog is the frozen sky's fog node, refreshed here by flushing its lighting.
 import * as THREE from 'three/webgpu';
