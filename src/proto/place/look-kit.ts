@@ -26,12 +26,26 @@ if (LOOK.contact) SPECK.setAttribute('color', new THREE.BufferAttribute(new Floa
 const waiting = new Map<string, THREE.Mesh[]>();
 const baked = new Map<string, THREE.BufferGeometry>();
 let loadedKit: THREE.Object3D | null = null;
-function kitGeometry(name: string) {
+function kitGeometry(name: string): THREE.BufferGeometry {
   const cached = baked.get(name);
   if (cached) return cached;
+  if (name.startsWith('feeder_bed:')) {
+    // The kit's bed was cut for the old 3.2 m feeder. Fit it to the span, so it starts at the receiver's side
+    // instead of running back through it into its middle, and ends where the feeder's collider ends.
+    const span = Number(name.split(':')[1]);
+    const geometry: THREE.BufferGeometry = kitGeometry('feeder_bed').clone();
+    geometry.computeBoundingBox();
+    const box = geometry.boundingBox!;
+    const centre = (box.min.x + box.max.x) / 2;
+    geometry.translate(-centre, 0, 0).scale(span / (box.max.x - box.min.x), 1, 1);
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    baked.set(name, geometry);
+    return geometry;
+  }
   if (name.startsWith('feeder_steel:')) {
     const span = Number(name.split(':')[1]);
-    const parts = [kitGeometry('feeder_bed').clone()];
+    const parts = [kitGeometry(`feeder_bed:${span}`).clone()];
     for (let k = 0; k < Math.round(span / 0.3); k++)
       parts.push(
         kitGeometry('roller')
@@ -293,7 +307,7 @@ export function stationKit(
   stationPict.computeBoundingSphere();
   // With mats enabled BED and ROLLER have identical effective steel colour,
   // roughness and metalness. With mats off their authored paints differ.
-  at(LOOK.mats ? `feeder_steel:${SPAN}` : 'feeder_bed', BED, 0, 0, 0, feederAt);
+  at(LOOK.mats ? `feeder_steel:${SPAN}` : `feeder_bed:${SPAN}`, BED, 0, 0, 0, feederAt);
   if (corner) {
     // Rough Station 3 composition: two existing bottom-pivoted timbers lead the eye from receiver to machine.
     // Local only. Inside the unchanged feeder collider: length SPAN, width 0.9, top 0.56. Rollers stay exposed.

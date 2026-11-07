@@ -14,7 +14,8 @@ import { label } from '../minis/common.ts';
 import { H, addStatic } from './land.ts';
 import { LOOK, STEEL, addBlob, boxPaint, lookBox, paint } from './look.ts';
 import { kitBatch, stationKit } from './look-kit.ts';
-import { GOODS, noStock, type Goods, type Station, type Stock } from './layout.ts';
+import { FORGE, GOODS, ORIGIN, noStock, type Goods, type Station, type Stock } from './layout.ts';
+import { HIGH } from './opening-plans.ts';
 import { RAIL_SIZE, logStackMesh, send, setStackLog, stackSlot } from './pieces.ts';
 import { addFoot } from './sites.ts';
 import {
@@ -210,8 +211,13 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
   const billOut = spec0.id === 'T3' ? 4 : 0;
   tag.sprite.position.set(x + lx * billOut, y + 2.9, z + lz * billOut);
   // The pack is on the working apron: put this existing bill on the building frontage,
-  // not between the follow camera and the receiver as the player collects it.
-  if (spec0.id === 'F1') tag.sprite.position.set(x, y + 3.6, z + 6);
+  // not between the follow camera and the receiver as the player collects it. It stands out past the scaffold and
+  // clear above the wall tops, so the second bill's walls rising around the old spot never hide it.
+  if (spec0.id === 'F1') {
+    const fx = FORGE.x + ORIGIN.x,
+      fz = FORGE.z + ORIGIN.z;
+    tag.sprite.position.set(x, H(fx, fz) + HIGH + 1.25, fz - FORGE.d / 2 - 1.3);
+  }
   if (owner) owner.add(tag.sprite);
   else scene.add(tag.sprite);
   owner?.cleanup(() => {
