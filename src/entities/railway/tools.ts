@@ -13,6 +13,14 @@ import { T1_CRATE_PARTS } from '../../render/t1-reward-parts.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { AXE_REWARD, JUMP_REWARD } from './reward-data.ts';
 
+/** A chest or box is in reach from its own spot: the ground distance the pick already measures to its edge, and about
+ * a storey of height, so a prompt never floats up from one far away or on another level. */
+export const CHEST_REACH = 3.4;
+export function inReach(at: THREE.Vector3) {
+  const p = me.body?.interpolatedPosition;
+  return !!p && Math.hypot(p.x - at.x, p.z - at.z) <= CHEST_REACH && Math.abs(p.y - at.y) <= 3;
+}
+
 export async function createRailwayTools(
   adapter: RailwayAdapter,
   owner: OwnedView,
@@ -174,7 +182,7 @@ export async function createRailwayTools(
         p = me.body?.position;
       if (!s.ready || !p) return [];
       const targets: Interactable[] = [];
-      if (axeAvailable())
+      if (axeAvailable() && inReach(chestAt))
         targets.push({
           id: 'railway-axe-chest',
           verb: 'Open',

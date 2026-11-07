@@ -14,7 +14,7 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { thump } from '../../render/machine-sfx.ts';
 import { T2_REWARD } from './reward-data.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
-import { createRailwayTools } from './tools.ts';
+import { createRailwayTools, inReach } from './tools.ts';
 import { seatConductorHat } from '../../render/head-clearance.ts';
 
 const localCosmetics = new Set<string>();
@@ -386,7 +386,7 @@ async function createStationReward(
       z: at.z,
     }),
     targets(): Interactable[] {
-      if (!crate.visible || flight < 1 || revealT >= 0 || busy) return [];
+      if (!crate.visible || flight < 1 || revealT >= 0 || busy || !inReach(at)) return [];
       return [
         {
           id: `railway-${stationId.toLowerCase()}-box`,
