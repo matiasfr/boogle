@@ -1,0 +1,1376 @@
+<title>Co-op Abilities</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta
+  name="description"
+  content="A 2D storyboard of five ways Boogle could give everyone a new ability at once, with friends far away, mid-air, offline or joining later."
+/>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f3ef;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-3: #8a8984;
+    --line: #dddcd6;
+    --sea: #e3eef6;
+    --sea-line: #c9dceb;
+    --land: #e9e2cf;
+    --land-line: #d6ccb2;
+    --rail: #9b4a2c;
+    --p1: #eb6834;
+    --p2: #2a78d6;
+    --p3: #1f9e6e;
+    --teal: #12a99a;
+    --gold: #d79a12;
+    --warn: #c43d3d;
+    --folk: #9c978a;
+    --accent-bg: #eef4fc;
+    --rec-bg: #edf7f2;
+    --rec-line: #9fd2b7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: #121211;
+      --surface: #1a1a19;
+      --ink: #f0efec;
+      --ink-2: #c3c2b7;
+      --ink-3: #8f8e86;
+      --line: #34332f;
+      --sea: #16222c;
+      --sea-line: #213444;
+      --land: #2e2a20;
+      --land-line: #423c2d;
+      --rail: #d27a52;
+      --p1: #f07a48;
+      --p2: #4b93ea;
+      --p3: #35b886;
+      --teal: #33cbbb;
+      --gold: #e8b23a;
+      --warn: #e06464;
+      --folk: #7d796e;
+      --accent-bg: #18232f;
+      --rec-bg: #14241c;
+      --rec-line: #2f5e46;
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #121211;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --ink-3: #8f8e86;
+    --line: #34332f;
+    --sea: #16222c;
+    --sea-line: #213444;
+    --land: #2e2a20;
+    --land-line: #423c2d;
+    --rail: #d27a52;
+    --p1: #f07a48;
+    --p2: #4b93ea;
+    --p3: #35b886;
+    --teal: #33cbbb;
+    --gold: #e8b23a;
+    --warn: #e06464;
+    --folk: #7d796e;
+    --accent-bg: #18232f;
+    --rec-bg: #14241c;
+    --rec-line: #2f5e46;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font:
+      15px/1.5 system-ui,
+      -apple-system,
+      'Segoe UI',
+      sans-serif;
+  }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 16px 64px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font-size: 20px;
+    margin: 0;
+  }
+  h3 {
+    font-size: 14px;
+    margin: 0 0 2px;
+  }
+  p {
+    margin: 0 0 8px;
+    color: var(--ink-2);
+  }
+  .lede {
+    font-size: 16px;
+    max-width: 68ch;
+  }
+  .top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .seg {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .seg button {
+    font: inherit;
+    font-size: 13px;
+    border: 0;
+    padding: 6px 10px;
+    background: transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--accent-bg);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  nav.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0 0;
+  }
+  nav.chips a {
+    font-size: 13px;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 4px 12px;
+  }
+  nav.chips a.rec {
+    border-color: var(--rec-line);
+    background: var(--rec-bg);
+    font-weight: 600;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .card.rec {
+    border-color: var(--rec-line);
+    box-shadow: 0 0 0 3px var(--rec-bg);
+  }
+  .head {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .tag {
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 2px 10px;
+    background: var(--accent-bg);
+    color: var(--ink-2);
+  }
+  .tag.rec {
+    background: var(--rec-bg);
+    color: var(--ink);
+    border: 1px solid var(--rec-line);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    font-size: 13px;
+    color: var(--ink-2);
+    margin-top: 12px;
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .frames {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+  figure {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  figure svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  figcaption {
+    padding: 8px 12px 10px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  figcaption b {
+    color: var(--ink);
+  }
+  figcaption ul {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0;
+  }
+  figcaption li {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+    margin-top: 2px;
+  }
+  figcaption li .dot {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    transform: translateY(-1px);
+  }
+  .step {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-3);
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px 16px;
+    margin-top: 14px;
+    font-size: 13px;
+  }
+  .facts div {
+    border-top: 1px solid var(--line);
+    padding-top: 6px;
+  }
+  .facts dt {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .facts dd {
+    margin: 0;
+    color: var(--ink-2);
+  }
+  .verdict {
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .scroll {
+    overflow-x: auto;
+    margin-top: 10px;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    color: var(--ink);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td {
+    color: var(--ink-2);
+  }
+  .good {
+    color: var(--p3);
+    font-weight: 600;
+  }
+  .bad {
+    color: var(--warn);
+    font-weight: 600;
+  }
+  .mid {
+    color: var(--gold);
+    font-weight: 600;
+  }
+  ol.qs {
+    padding-left: 20px;
+    margin: 8px 0 0;
+  }
+  ol.qs li {
+    margin-bottom: 6px;
+    color: var(--ink-2);
+  }
+  ol.qs b {
+    color: var(--ink);
+  }
+  svg text {
+    font-family: inherit;
+  }
+  @media (max-width: 520px) {
+    h1 {
+      font-size: 24px;
+    }
+    .card {
+      padding: 14px;
+    }
+  }
+</style>
+
+<main>
+  <div class="top">
+    <div>
+      <h1>Co-op Abilities</h1>
+      <p class="lede">
+        When one friend finds a new ability, how does everyone else get it? Five ways it could work, each shown with the
+        same three friends: <b>the finder</b> at the find, <b>a hauler</b> carrying logs on the far side of the island,
+        and <b>an away friend</b> who's offline and joins later. Brief: <code>docs/brainstorms/coop-abilities.md</code>.
+      </p>
+    </div>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" data-theme-set="auto" aria-pressed="true">Auto</button>
+      <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Gut question</h2>
+    <p style="font-size: 16px; color: var(--ink); margin-top: 4px">
+      "When the double jump arrived while you were somewhere else, did it feel like yours?"
+    </p>
+    <div class="legend" aria-label="Legend">
+      <span><i class="dot" style="background: var(--p1)"></i>Finder</span>
+      <span><i class="dot" style="background: var(--p2)"></i>Hauler (far away, carrying)</span>
+      <span><i class="dot" style="background: var(--p3)"></i>Away friend (offline, joins later)</span>
+      <span><i class="dot" style="background: var(--teal)"></i>The ability: rings, flourish, flare</span>
+      <span><i class="dot" style="background: var(--gold)"></i>Full "You got" card</span>
+      <span><i class="dot" style="background: var(--warn)"></i>Stopped / problem</span>
+    </div>
+    <nav class="chips" id="chips" aria-label="Options"></nav>
+  </div>
+
+  <div id="options"></div>
+
+  <div class="card">
+    <h2>Side by side</h2>
+    <p>How each option handles the friends who weren't at the find.</p>
+    <div class="scroll"><table id="compare"></table></div>
+  </div>
+
+  <div class="card">
+    <h2>Open questions</h2>
+    <ol class="qs">
+      <li>
+        <b>Does anyone but the finder get a card that stops them?</b> Recommended: no; everyone else gets a flourish
+        that never stops them, and the full card is the finder's alone.
+      </li>
+      <li>
+        <b>Where's the gathering spot?</b> Recommended: a trophy plinth at the finders' bay in the village, playing
+        automatically the first time each player passes; never required.
+      </li>
+      <li>
+        <b>Do the rings appear on everyone at once, or get fitted at Home?</b> Recommended: at once, wherever you are;
+        Home keeps the trophy, not your rings.
+      </li>
+      <li><b>Any summon at all?</b> Recommended: no moving players; at most an optional beckon later.</li>
+    </ol>
+  </div>
+</main>
+
+<script id="story-data" type="application/json">
+  {
+    "spots": {
+      "find": [256, 60],
+      "balcony": [270, 44],
+      "haul": [150, 122],
+      "haulAir": [150, 104],
+      "home": [58, 116],
+      "plinth": [104, 90],
+      "plinthA": [92, 100],
+      "plinthB": [116, 100],
+      "away": [40, 21],
+      "landHome": [64, 110],
+      "route1": [200, 92],
+      "train1": [190, 99],
+      "train2": [120, 113],
+      "trainHome": [72, 120],
+      "nearFind": [244, 68],
+      "nearFind2": [266, 70],
+      "fallHome": [64, 70]
+    },
+    "options": [
+      {
+        "id": "today",
+        "name": "Today",
+        "tag": "Baseline, as built",
+        "pitch": "Everyone gets the full card the moment it's found, wherever they are. The card holds input and stops you in the air. A friend who joins later is never told.",
+        "frames": [
+          {
+            "title": "The find",
+            "players": [
+              { "who": "p1", "at": "find", "fx": ["card"] },
+              { "who": "p2", "at": "haul", "state": "carry", "fx": ["card", "freeze"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": [],
+            "lines": {
+              "p1": "Full show at the find.",
+              "p2": "The same card, 200 m away: stopped mid-haul, turned to the camera.",
+              "p3": "Offline."
+            }
+          },
+          {
+            "title": "Mid-jump",
+            "players": [
+              { "who": "p1", "at": "find" },
+              { "who": "p2", "at": "haulAir", "state": "air", "fx": ["card", "freeze"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": [],
+            "lines": {
+              "p2": "Jumping when it arrived: held in the air until the card is dismissed."
+            }
+          },
+          {
+            "title": "Joins next day",
+            "players": [
+              { "who": "p1", "at": "find" },
+              { "who": "p2", "at": "haul", "state": "carry" },
+              { "who": "p3", "at": "landHome", "state": "fall" }
+            ],
+            "world": [],
+            "lines": {
+              "p3": "Lands at Home with a double jump nobody told them about."
+            }
+          }
+        ],
+        "facts": {
+          "Far / mid-haul": "Full card, input held.",
+          "Mid-air": "Stopped in the air.",
+          "Offline / later": "Silently remembered: no moment.",
+          "Teaching": "Finder only (the device lesson).",
+          "NPC beat": "None.",
+          "Cost": "Built."
+        },
+        "verdict": "Shares the ability correctly, but interrupts everyone and forgets the late friend.",
+        "score": { "far": "bad", "haul": "bad", "air": "bad", "late": "bad", "together": "mid" }
+      },
+      {
+        "id": "a",
+        "name": "A. At once, a flourish wherever you are",
+        "tag": "Owner idea 1",
+        "pitch": "The finder gets the full show. Everyone else gets a small flourish where they stand: rings click on, the charge mark lights, and the find's shaft flares on the horizon. Nobody stops.",
+        "frames": [
+          {
+            "title": "The find",
+            "players": [
+              { "who": "p1", "at": "find", "fx": ["card"] },
+              { "who": "p2", "at": "haul", "state": "carry", "fx": ["flourish", "mark"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["shaft"],
+            "lines": {
+              "p1": "Full show, then the balcony lesson right there.",
+              "p2": "Rings click on, two-note sound, mark lit. Keeps walking; nothing drops. Sees the shaft flare to the east.",
+              "p3": "Offline."
+            }
+          },
+          {
+            "title": "If they were mid-jump",
+            "players": [
+              { "who": "p1", "at": "balcony" },
+              { "who": "p2", "at": "haulAir", "state": "air", "fx": ["flourish", "hollow"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["shaft"],
+            "lines": {
+              "p2": "Flourish now; the mark stays hollow in the air and fills on landing. No extra jump mid-flight."
+            }
+          },
+          {
+            "title": "Their first double jump",
+            "players": [
+              { "who": "p1", "at": "balcony" },
+              { "who": "p2", "at": "haulAir", "state": "air", "fx": ["pulse"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": [],
+            "lines": {
+              "p2": "Next jump: the mark pulses at the top with the Jump glyph. Once, then never again."
+            }
+          },
+          {
+            "title": "Joins next day",
+            "players": [
+              { "who": "p1", "at": "find" },
+              { "who": "p2", "at": "haul", "state": "carry" },
+              { "who": "p3", "at": "landHome", "state": "fall", "fx": ["flourish", "mark"] }
+            ],
+            "world": [],
+            "lines": {
+              "p3": "Lands from the fall, and the same flourish plays once: rings on, mark lit."
+            }
+          }
+        ],
+        "facts": {
+          "Far / mid-haul": "Flourish, keeps walking.",
+          "Mid-air": "Shown now, fills on landing.",
+          "Offline / later": "Own flourish on first landing.",
+          "Teaching": "Apex pulse on each player's first jump.",
+          "NPC beat": "Optional: a villager glances at your feet.",
+          "Cost": "Code small, art tiny. Local only; no wire or save change."
+        },
+        "verdict": "Never interrupts and covers everyone, but for whoever wasn't there it's a sparkle, not a celebration.",
+        "score": { "far": "good", "haul": "good", "air": "good", "late": "good", "together": "bad" }
+      },
+      {
+        "id": "b",
+        "name": "B. Everyone is brought to the find",
+        "tag": "Owner idea 2",
+        "pitch": "A bell rings across the island and everyone online is pulled up and dropped beside the finder for one group show.",
+        "frames": [
+          {
+            "title": "The bell",
+            "players": [
+              { "who": "p1", "at": "find", "fx": ["card"] },
+              { "who": "p2", "at": "haul", "state": "carry", "fx": ["summon"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["bellFind"],
+            "lines": {
+              "p1": "Holds the rings up; a bell rings.",
+              "p2": "Lifted out of the haul. What happens to the logs?",
+              "p3": "Offline: can't be summoned."
+            }
+          },
+          {
+            "title": "Together at the find",
+            "players": [
+              { "who": "p1", "at": "nearFind", "fx": ["card"] },
+              { "who": "p2", "at": "nearFind2", "fx": ["card"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["dropped"],
+            "lines": {
+              "p1": "Group show and the balcony lesson together.",
+              "p2": "Best teaching of any option, but the logs are back on the path.",
+              "p3": "Still away."
+            }
+          },
+          {
+            "title": "Joins next day",
+            "players": [
+              { "who": "p1", "at": "find" },
+              { "who": "p2", "at": "nearFind2" },
+              { "who": "p3", "at": "landHome", "state": "fall", "fx": ["flourish"] }
+            ],
+            "world": [],
+            "lines": {
+              "p2": "Has to walk back to the haul, or ride a return trip.",
+              "p3": "Needs option A's flourish anyway."
+            }
+          }
+        ],
+        "facts": {
+          "Far / mid-haul": "Pulled away; cargo, seats and trains need rules.",
+          "Mid-air": "The pull has to wait or take over.",
+          "Offline / later": "Can't summon; needs A's flourish.",
+          "Teaching": "Best: everyone at the balcony.",
+          "NPC beat": "The find's machinery or a villager holds the moment.",
+          "Cost": "Code large (moving bodies, cargo, return trip, camera), art medium."
+        },
+        "verdict": "Takes your hands off the controller unasked and only works for whoever's online.",
+        "score": { "far": "bad", "haul": "bad", "air": "bad", "late": "mid", "together": "good" }
+      },
+      {
+        "id": "c",
+        "name": "C. Solve it, redeem it where everyone gathers",
+        "tag": "Owner idea 3",
+        "pitch": "The puzzle gives a sealed case, not the ability. Someone carries it to a stand at Home, and redeeming it there switches it on for everyone, with a group show.",
+        "frames": [
+          {
+            "title": "Puzzle solved",
+            "players": [
+              { "who": "p1", "at": "find", "fx": ["case"] },
+              { "who": "p2", "at": "haul", "state": "carry", "fx": ["chime"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["stand"],
+            "lines": {
+              "p1": "Gets a glowing case. No ability yet.",
+              "p2": "Hears a chime, sees the glow far off. Nothing else changes.",
+              "p3": "Offline."
+            }
+          },
+          {
+            "title": "Carrying it home",
+            "players": [
+              { "who": "p1", "at": "route1", "state": "carryCase" },
+              { "who": "p2", "at": "haul", "state": "carry" },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["stand", "trip"],
+            "lines": {
+              "p1": "Walks the case back. The balcony is now a trip away.",
+              "p2": "Might go and meet them at Home."
+            }
+          },
+          {
+            "title": "Redeemed at Home",
+            "players": [
+              { "who": "p1", "at": "plinthA", "fx": ["card"] },
+              { "who": "p2", "at": "plinthB", "fx": ["card"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["stand", "standGlow", "crowd", "confetti"],
+            "lines": {
+              "p1": "Redeems it: group show at the stand. Now everyone can double jump.",
+              "p2": "There for it, because they chose to come.",
+              "p3": "Still away."
+            }
+          },
+          {
+            "title": "Joins next day",
+            "players": [
+              { "who": "p1", "at": "find" },
+              { "who": "p2", "at": "haul", "state": "carry" },
+              { "who": "p3", "at": "landHome", "state": "fall", "fx": ["flourish"] }
+            ],
+            "world": ["stand"],
+            "lines": {
+              "p3": "Ability on; needs its own moment too."
+            }
+          }
+        ],
+        "facts": {
+          "Far / mid-haul": "Unaffected until redeemed.",
+          "Mid-air": "Not a case: it switches on at the stand.",
+          "Offline / later": "Arrives to it, or to the case waiting.",
+          "Teaching": "In a yard at Home, far from the balcony.",
+          "NPC beat": "A villager keeps the stand and gathers folk round.",
+          "Cost": "Code medium-large (earned-not-redeemed fact, a carried relic that survives a carrier leaving), art medium."
+        },
+        "verdict": "Brings people together, but puts an errand between the find and its first use, and a carried key can strand a room.",
+        "score": { "far": "mid", "haul": "good", "air": "good", "late": "mid", "together": "good" }
+      },
+      {
+        "id": "d",
+        "name": "D. The relic rides the train home",
+        "tag": "Variant",
+        "pitch": "The find's relic is loaded into a wagon and the train brings it home. The ability switches on when it arrives at Home.",
+        "frames": [
+          {
+            "title": "Loaded",
+            "players": [
+              { "who": "p1", "at": "find", "fx": ["card"] },
+              { "who": "p2", "at": "haul", "state": "carry" },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["train1", "noRail"],
+            "lines": {
+              "p1": "Shows it off; the relic goes into a wagon.",
+              "p2": "Nothing yet.",
+              "p3": "Offline."
+            }
+          },
+          {
+            "title": "Passing by",
+            "players": [
+              { "who": "p1", "at": "find" },
+              { "who": "p2", "at": "haul", "state": "carry", "fx": ["look"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["train2"],
+            "lines": {
+              "p2": "Watches the train pass with the relic aboard."
+            }
+          },
+          {
+            "title": "Home",
+            "players": [
+              { "who": "p1", "at": "find", "fx": ["flourish"] },
+              { "who": "p2", "at": "haul", "state": "carry", "fx": ["flourish"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["trainHome", "crowd"],
+            "lines": {
+              "p1": "Can double jump only now, a ride later.",
+              "p2": "Same. Whoever's at the platform sees the show."
+            }
+          }
+        ],
+        "facts": {
+          "Far / mid-haul": "Sees the train; switches on later.",
+          "Mid-air": "Applies on landing.",
+          "Offline / later": "Already home.",
+          "Teaching": "At the platform.",
+          "NPC beat": "The stationmaster unloads it; the village gathers.",
+          "Cost": "Code medium, art small-medium. Needs a line to the find, which an expedition usually lacks."
+        },
+        "verdict": "Pretty, and the train shows its work, but the train gets the credit and the ability waits a ride.",
+        "score": { "far": "mid", "haul": "good", "air": "good", "late": "mid", "together": "mid" }
+      },
+      {
+        "id": "e",
+        "name": "E. At once everywhere, plus a trophy at Home",
+        "tag": "Recommended hybrid",
+        "rec": true,
+        "pitch": "Option A's flourish for everyone, the finder's full show at the find, and a copy of the find on a plinth at the village's finders' bay. The plinth plays for whoever hasn't seen it, bigger when friends arrive together.",
+        "frames": [
+          {
+            "title": "The find",
+            "players": [
+              { "who": "p1", "at": "find", "fx": ["card"] },
+              { "who": "p2", "at": "haul", "state": "carry", "fx": ["flourish", "mark"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["shaft", "ripple", "plinth", "plinthNew"],
+            "lines": {
+              "p1": "Full show, balcony lesson beside the find.",
+              "p2": "Flourish where they stand, mark lit, shaft flare to the east. Keeps hauling.",
+              "p3": "Offline. A copy of the rings appears on the plinth at Home."
+            }
+          },
+          {
+            "title": "First double jump",
+            "players": [
+              { "who": "p1", "at": "balcony" },
+              { "who": "p2", "at": "haulAir", "state": "air", "fx": ["pulse"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["plinth", "plinthNew"],
+            "lines": {
+              "p1": "Up on the balcony, pulls the ramp lever.",
+              "p2": "Mark pulses at the top of their first jump. Mid-air at the unlock? Fills on landing."
+            }
+          },
+          {
+            "title": "Home together",
+            "players": [
+              { "who": "p1", "at": "plinthA", "fx": ["cheer"] },
+              { "who": "p2", "at": "plinthB", "fx": ["cheer"] },
+              { "who": "p3", "at": "away", "state": "away" }
+            ],
+            "world": ["plinth", "plinthGlow", "crowd", "confetti", "bellHome"],
+            "lines": {
+              "p1": "Walking through Home: folk gather and clap. No second card.",
+              "p2": "First time past the plinth: it lights, the bell rings, confetti. Bigger because they came in together.",
+              "p3": "Still away."
+            }
+          },
+          {
+            "title": "Joins next day",
+            "players": [
+              { "who": "p1", "at": "find" },
+              { "who": "p2", "at": "haul", "state": "carry" },
+              { "who": "p3", "at": "plinthA", "fx": ["flourish", "mark"] }
+            ],
+            "world": ["plinth", "plinthGlow", "crowdSmall"],
+            "lines": {
+              "p3": "Lands: own flourish. Walks past the plinth alone: a smaller show, and a villager waves them over."
+            }
+          }
+        ],
+        "facts": {
+          "Far / mid-haul": "Flourish, keeps walking.",
+          "Mid-air": "Shown now, fills on landing.",
+          "Offline / later": "Own flourish on landing, plus the plinth.",
+          "Teaching": "Finder at the balcony; everyone's first jump pulses.",
+          "NPC beat": "A villager waves you to the plinth; folk gather when friends arrive together.",
+          "Cost": "A, plus a greybox plinth and a Local proximity show. No new shared state."
+        },
+        "verdict": "Nobody is interrupted, the late friend gets a moment of their own, and the gathering happens on the route people already walk. Risk: the plinth goes unseen, or the flourish reads too small.",
+        "score": { "far": "good", "haul": "good", "air": "good", "late": "good", "together": "good" }
+      }
+    ]
+  }
+</script>
+
+<script>
+  (() => {
+    const data = JSON.parse(document.getElementById('story-data').textContent);
+    const S = data.spots;
+    const NS = 'http://www.w3.org/2000/svg';
+    const COLOR = { p1: 'var(--p1)', p2: 'var(--p2)', p3: 'var(--p3)' };
+    const NAME = { p1: 'Finder', p2: 'Hauler', p3: 'Away friend' };
+    let uid = 0;
+
+    // Theme switch: Auto follows the system; Light/Dark set data-theme on the root.
+    const root = document.documentElement;
+    const buttons = document.querySelectorAll('[data-theme-set]');
+    const applyTheme = (t) => {
+      if (t === 'auto') root.removeAttribute('data-theme');
+      else root.setAttribute('data-theme', t);
+      buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === t)));
+    };
+    let saved = 'auto';
+    try {
+      saved = localStorage.getItem('coop-abilities-theme') || 'auto';
+    } catch {}
+    applyTheme(saved);
+    buttons.forEach((b) =>
+      b.addEventListener('click', () => {
+        applyTheme(b.dataset.themeSet);
+        try {
+          localStorage.setItem('coop-abilities-theme', b.dataset.themeSet);
+        } catch {}
+      }),
+    );
+
+    const el = (tag, attrs = {}, parent) => {
+      const n = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      if (parent) parent.appendChild(n);
+      return n;
+    };
+    const text = (parent, x, y, s, attrs = {}) => {
+      const t = el('text', { x, y, 'font-size': 10, fill: 'var(--ink-2)', ...attrs }, parent);
+      t.textContent = s;
+      return t;
+    };
+
+    function map(svg) {
+      el('rect', { x: 0, y: 0, width: 300, height: 170, fill: 'var(--sea)' }, svg);
+      for (let i = 0; i < 4; i++)
+        el(
+          'path',
+          {
+            d: `M${-10 + i * 80} ${160 - i * 2} q 20 -6 40 0 t 40 0`,
+            fill: 'none',
+            stroke: 'var(--sea-line)',
+            'stroke-width': 1,
+          },
+          svg,
+        );
+      el(
+        'path',
+        {
+          d: 'M16 124 C 12 82, 52 56, 108 58 C 150 44, 196 46, 226 52 C 246 36, 286 34, 292 60 C 298 86, 268 96, 236 102 C 196 136, 140 152, 92 150 C 52 150, 20 144, 16 124 Z',
+          fill: 'var(--land)',
+          stroke: 'var(--land-line)',
+          'stroke-width': 1.2,
+        },
+        svg,
+      );
+      // railway: Home to the works (built), beyond (planned, dashed)
+      el(
+        'path',
+        { d: 'M58 122 C 90 126, 130 118, 170 106', fill: 'none', stroke: 'var(--rail)', 'stroke-width': 2 },
+        svg,
+      );
+      el(
+        'path',
+        {
+          d: 'M170 106 C 200 96, 222 84, 244 70',
+          fill: 'none',
+          stroke: 'var(--rail)',
+          'stroke-width': 1.5,
+          'stroke-dasharray': '3 3',
+          opacity: 0.6,
+        },
+        svg,
+      );
+      // Home village
+      for (const [x, y] of [
+        [44, 108],
+        [54, 102],
+        [40, 118],
+        [52, 114],
+      ])
+        el('rect', { x, y, width: 7, height: 6, rx: 1, fill: 'var(--folk)', opacity: 0.55 }, svg);
+      text(svg, 30, 136, 'Home', { 'font-weight': 600, fill: 'var(--ink)' });
+      // the works on the way
+      el('rect', { x: 164, y: 96, width: 12, height: 8, rx: 1, fill: 'var(--folk)', opacity: 0.45 }, svg);
+      text(svg, 180, 104, 'Works', { 'font-size': 8, fill: 'var(--ink-3)' });
+      // the find: a pillar with a balcony
+      const [fx, fy] = S.find;
+      el('rect', { x: fx - 4, y: fy - 4, width: 8, height: 16, fill: 'var(--land-line)' }, svg);
+      el('rect', { x: 262, y: 46, width: 18, height: 4, fill: 'var(--land-line)' }, svg);
+      text(svg, 226, 92, 'The find', { 'font-weight': 600, fill: 'var(--ink)' });
+      text(svg, 258, 34, 'balcony', { 'font-size': 7.5, fill: 'var(--ink-3)' });
+      // away box
+      el(
+        'rect',
+        {
+          x: 6,
+          y: 6,
+          width: 72,
+          height: 30,
+          rx: 6,
+          fill: 'var(--surface)',
+          stroke: 'var(--line)',
+          'stroke-dasharray': '3 2',
+        },
+        svg,
+      );
+      text(svg, 12, 16, 'offline', { 'font-size': 8, fill: 'var(--ink-3)' });
+    }
+
+    function world(svg, fx) {
+      const [fX, fY] = S.find;
+      const has = (k) => fx.includes(k);
+      if (has('shaft')) {
+        el(
+          'line',
+          {
+            x1: fX,
+            y1: fY - 4,
+            x2: fX,
+            y2: 0,
+            stroke: 'var(--teal)',
+            'stroke-width': 6,
+            opacity: 0.25,
+            'stroke-linecap': 'round',
+          },
+          svg,
+        );
+        el('line', { x1: fX, y1: fY - 4, x2: fX, y2: 0, stroke: 'var(--teal)', 'stroke-width': 1.6 }, svg);
+      }
+      if (has('ripple'))
+        for (const r of [40, 80, 130])
+          el(
+            'circle',
+            {
+              cx: fX,
+              cy: fY,
+              r,
+              fill: 'none',
+              stroke: 'var(--teal)',
+              'stroke-width': 1,
+              'stroke-dasharray': '2 4',
+              opacity: 0.7 - r / 300,
+            },
+            svg,
+          );
+      if (has('bellFind')) bell(svg, fX + 14, fY - 12);
+      if (has('bellHome')) bell(svg, 134, 74);
+      if (has('dropped')) {
+        logs(svg, S.haul[0], S.haul[1] + 2);
+        text(svg, S.haul[0] - 18, S.haul[1] + 16, 'logs left', { 'font-size': 8, fill: 'var(--warn)' });
+      }
+      if (has('noRail'))
+        text(svg, 196, 72, 'needs a line here', {
+          'font-size': 7.5,
+          fill: 'var(--warn)',
+          transform: 'rotate(-28 196 72)',
+        });
+      if (has('trip')) {
+        el(
+          'path',
+          {
+            d: `M${S.route1[0] - 6} ${S.route1[1] + 4} C 160 120, 120 112, 92 104`,
+            fill: 'none',
+            stroke: 'var(--p1)',
+            'stroke-width': 1.2,
+            'stroke-dasharray': '2 3',
+            'marker-end': 'url(#arrow-p1)',
+          },
+          svg,
+        );
+      }
+      if (has('stand') || has('plinth')) {
+        const [x, y] = S.plinth;
+        const glow = has('standGlow') || has('plinthGlow');
+        if (glow) el('circle', { cx: x, cy: y - 4, r: 13, fill: 'var(--gold)', opacity: 0.22 }, svg);
+        el('rect', { x: x - 5, y: y - 4, width: 10, height: 8, rx: 1, fill: 'var(--ink-3)' }, svg);
+        if (has('plinth') && (has('plinthNew') || glow))
+          el('circle', { cx: x, cy: y - 7, r: 2.6, fill: 'none', stroke: 'var(--teal)', 'stroke-width': 1.6 }, svg);
+        text(svg, x - 34, y - 2, has('stand') ? 'stand' : 'plinth', { 'font-size': 8, fill: 'var(--ink-3)' });
+      }
+      if (has('crowd') || has('crowdSmall')) {
+        const spots = has('crowd')
+          ? [
+              [86, 88],
+              [122, 88],
+              [80, 96],
+              [128, 96],
+              [96, 82],
+              [112, 82],
+            ]
+          : [[124, 92]];
+        for (const [x, y] of spots) {
+          el('circle', { cx: x, cy: y - 3, r: 2, fill: 'var(--folk)' }, svg);
+          el('rect', { x: x - 2, y: y - 1, width: 4, height: 4, rx: 1, fill: 'var(--folk)' }, svg);
+        }
+        if (has('crowdSmall')) text(svg, 130, 90, 'waves', { 'font-size': 7.5, fill: 'var(--ink-3)' });
+      }
+      if (has('confetti')) {
+        const cols = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--gold)', 'var(--teal)'];
+        for (let i = 0; i < 22; i++) {
+          const x = 82 + ((i * 37) % 46),
+            y = 58 + ((i * 23) % 18);
+          el(
+            'rect',
+            {
+              x,
+              y,
+              width: 2.4,
+              height: 1.4,
+              fill: cols[i % cols.length],
+              transform: `rotate(${(i * 47) % 180} ${x} ${y})`,
+            },
+            svg,
+          );
+        }
+      }
+      for (const k of ['train1', 'train2', 'trainHome'])
+        if (has(k)) {
+          const [x, y] = S[k];
+          el('rect', { x: x - 9, y: y - 5, width: 10, height: 6, rx: 1, fill: 'var(--rail)' }, svg);
+          el('rect', { x: x + 2, y: y - 5, width: 8, height: 6, rx: 1, fill: 'var(--rail)', opacity: 0.8 }, svg);
+          el('circle', { cx: x + 6, cy: y - 8, r: 2.4, fill: 'var(--teal)' }, svg);
+        }
+    }
+
+    function bell(svg, x, y) {
+      el('path', { d: `M${x - 4} ${y + 4} q 0 -8 4 -8 q 4 0 4 8 z`, fill: 'var(--gold)' }, svg);
+      for (const r of [7, 10])
+        el(
+          'path',
+          {
+            d: `M${x - r} ${y - 2} a ${r} ${r} 0 0 1 ${2 * r} 0`,
+            fill: 'none',
+            stroke: 'var(--gold)',
+            'stroke-width': 0.8,
+            opacity: 0.7,
+          },
+          svg,
+        );
+    }
+    function logs(svg, x, y) {
+      for (let i = 0; i < 3; i++)
+        el('rect', { x: x - 5 + i, y: y - 2 - i * 2, width: 10, height: 2, rx: 1, fill: '#8a5a33' }, svg);
+    }
+
+    function player(svg, p) {
+      const [x0, y0] = S[p.at];
+      const c = COLOR[p.who];
+      const fx = p.fx || [];
+      const g = el('g', {}, svg);
+      const x = x0,
+        y = y0;
+      if (p.state === 'away') {
+        el(
+          'circle',
+          { cx: x + 14, cy: y + 2, r: 5, fill: 'none', stroke: c, 'stroke-width': 1.4, 'stroke-dasharray': '2 2' },
+          g,
+        );
+        text(g, x - 12, y + 12, 'away', { 'font-size': 8, fill: c });
+        return;
+      }
+      if (p.state === 'air') {
+        el('ellipse', { cx: x, cy: y + 18, rx: 5, ry: 1.6, fill: 'var(--ink)', opacity: 0.15 }, g);
+        el(
+          'path',
+          {
+            d: `M${x - 12} ${y + 18} q 12 -22 24 0`,
+            fill: 'none',
+            stroke: 'var(--ink-3)',
+            'stroke-width': 0.8,
+            'stroke-dasharray': '1.5 2',
+          },
+          g,
+        );
+      }
+      if (p.state === 'fall') {
+        el(
+          'line',
+          {
+            x1: x,
+            y1: S.fallHome[1],
+            x2: x,
+            y2: y - 9,
+            stroke: c,
+            'stroke-width': 1,
+            'stroke-dasharray': '2 2',
+            'marker-end': `url(#arrow-${p.who})`,
+          },
+          g,
+        );
+      }
+      if (fx.includes('summon')) {
+        el(
+          'path',
+          {
+            d: `M${x} ${y - 8} C ${x + 20} 40, 210 30, ${S.nearFind2[0] - 6} ${S.nearFind2[1] - 8}`,
+            fill: 'none',
+            stroke: 'var(--warn)',
+            'stroke-width': 1.2,
+            'stroke-dasharray': '3 2',
+            'marker-end': 'url(#arrow-warn)',
+          },
+          g,
+        );
+      }
+      // flourish: teal ring at the feet and a little star
+      if (fx.includes('flourish')) {
+        el('circle', { cx: x, cy: y, r: 11, fill: 'var(--teal)', opacity: 0.18 }, g);
+        el(
+          'ellipse',
+          { cx: x, cy: y + 6, rx: 7, ry: 2.2, fill: 'none', stroke: 'var(--teal)', 'stroke-width': 1.4 },
+          g,
+        );
+        star(g, x + 9, y - 8, 3.4, 'var(--teal)');
+      }
+      if (fx.includes('card')) {
+        el('circle', { cx: x, cy: y, r: 12, fill: 'var(--gold)', opacity: 0.22 }, g);
+      }
+      if (fx.includes('cheer')) {
+        star(g, x - 7, y - 10, 2.6, 'var(--gold)');
+        star(g, x + 7, y - 11, 2.6, 'var(--gold)');
+      }
+      // body
+      el('circle', { cx: x, cy: y - 3, r: 3.2, fill: c }, g);
+      el('rect', { x: x - 3.2, y: y, width: 6.4, height: 6, rx: 2, fill: c }, g);
+      if (p.state === 'carry') logs(g, x - 5, y + 1);
+      if (p.state === 'carryCase')
+        el('rect', { x: x - 9, y: y - 2, width: 6, height: 6, rx: 1, fill: 'var(--teal)' }, g);
+      if (fx.includes('case')) {
+        el('rect', { x: x + 6, y: y - 2, width: 6, height: 6, rx: 1, fill: 'var(--teal)' }, g);
+        el('circle', { cx: x + 9, cy: y + 1, r: 7, fill: 'var(--teal)', opacity: 0.2 }, g);
+      }
+      if (fx.includes('chime') || fx.includes('look')) {
+        el(
+          'path',
+          {
+            d: `M${x + 7} ${y - 6} l 8 -6`,
+            stroke: 'var(--ink-3)',
+            'stroke-width': 0.8,
+            'stroke-dasharray': '1.5 1.5',
+          },
+          g,
+        );
+        text(g, x + 14, y - 13, fx.includes('chime') ? 'chime' : 'look', { 'font-size': 7.5, fill: 'var(--ink-3)' });
+      }
+      // charge mark beside Buddy
+      if (fx.includes('mark') || fx.includes('hollow') || fx.includes('pulse')) {
+        const mx = x - 10,
+          my = y - 6;
+        if (fx.includes('pulse'))
+          el(
+            'circle',
+            { cx: mx, cy: my, r: 6, fill: 'none', stroke: 'var(--teal)', 'stroke-width': 1, opacity: 0.6 },
+            g,
+          );
+        el(
+          'circle',
+          {
+            cx: mx,
+            cy: my,
+            r: 2.6,
+            fill: fx.includes('hollow') ? 'var(--bg)' : 'var(--teal)',
+            stroke: 'var(--teal)',
+            'stroke-width': 1.2,
+          },
+          g,
+        );
+        if (fx.includes('pulse')) {
+          el('rect', { x: mx - 22, y: my - 16, width: 19, height: 10, rx: 2, fill: 'var(--ink)' }, g);
+          text(g, mx - 20, my - 8.5, 'Jump', {
+            textLength: 15,
+            lengthAdjust: 'spacingAndGlyphs',
+            'font-size': 6,
+            fill: 'var(--bg)',
+            'font-weight': 600,
+          });
+        }
+      }
+      if (fx.includes('card')) {
+        const w = 76;
+        const cx = Math.min(Math.max(x - w / 2, 2), 298 - w);
+        el(
+          'rect',
+          {
+            x: cx,
+            y: y - 30,
+            width: w,
+            height: 13,
+            rx: 3,
+            fill: 'var(--surface)',
+            stroke: 'var(--gold)',
+            'stroke-width': 1.2,
+          },
+          g,
+        );
+        text(g, cx + 4, y - 20.5, 'You got a second jump!', {
+          textLength: w - 8,
+          lengthAdjust: 'spacingAndGlyphs',
+          'font-size': 6.2,
+          fill: 'var(--ink)',
+          'font-weight': 600,
+        });
+      }
+      if (fx.includes('freeze')) {
+        el('circle', { cx: x, cy: y, r: 13, fill: 'none', stroke: 'var(--warn)', 'stroke-width': 1.4 }, g);
+        el('rect', { x: x + 11, y: y + 4, width: 2, height: 6, fill: 'var(--warn)' }, g);
+        el('rect', { x: x + 15, y: y + 4, width: 2, height: 6, fill: 'var(--warn)' }, g);
+        text(g, x + 19, y + 10, 'stopped', { 'font-size': 7.5, fill: 'var(--warn)', 'font-weight': 600 });
+      }
+    }
+    function star(g, x, y, r, fill) {
+      const pts = [];
+      for (let i = 0; i < 8; i++) {
+        const a = (i * Math.PI) / 4,
+          rr = i % 2 ? r * 0.4 : r;
+        pts.push(`${(x + Math.cos(a) * rr).toFixed(2)},${(y + Math.sin(a) * rr).toFixed(2)}`);
+      }
+      el('polygon', { points: pts.join(' '), fill }, g);
+    }
+
+    function defs(svg) {
+      const d = el('defs', {}, svg);
+      for (const [id, col] of [
+        ['p1', 'var(--p1)'],
+        ['p2', 'var(--p2)'],
+        ['p3', 'var(--p3)'],
+        ['warn', 'var(--warn)'],
+      ]) {
+        const m = el(
+          'marker',
+          { id: `arrow-${id}`, viewBox: '0 0 6 6', refX: 5, refY: 3, markerWidth: 5, markerHeight: 5, orient: 'auto' },
+          d,
+        );
+        el('path', { d: 'M0 0 L6 3 L0 6 z', fill: col }, m);
+      }
+    }
+
+    const options = document.getElementById('options');
+    const chips = document.getElementById('chips');
+    for (const opt of data.options) {
+      const a = document.createElement('a');
+      a.href = `#opt-${opt.id}`;
+      a.textContent = opt.name.replace(/^([A-E])\. /, '$1 · ');
+      if (opt.rec) a.className = 'rec';
+      chips.appendChild(a);
+
+      const card = document.createElement('section');
+      card.className = 'card' + (opt.rec ? ' rec' : '');
+      card.id = `opt-${opt.id}`;
+      card.innerHTML = `<div class="head"><h2></h2><span class="tag${opt.rec ? ' rec' : ''}"></span></div><p></p>`;
+      card.querySelector('h2').textContent = opt.name;
+      card.querySelector('.tag').textContent = opt.tag;
+      card.querySelector('p').textContent = opt.pitch;
+
+      const frames = document.createElement('div');
+      frames.className = 'frames';
+      opt.frames.forEach((f, i) => {
+        const fig = document.createElement('figure');
+        const svg = el('svg', {
+          viewBox: '0 0 300 170',
+          role: 'img',
+          'aria-label': `${opt.name}, frame ${i + 1}: ${f.title}`,
+        });
+        // unique marker ids per svg, so themes and duplicates never collide
+        defs(svg);
+        map(svg);
+        world(svg, f.world || []);
+        for (const p of f.players) player(svg, p);
+        const n = ++uid;
+        svg.querySelectorAll('marker').forEach((m) => {
+          const old = m.id;
+          m.id = `${old}-${n}`;
+          svg
+            .querySelectorAll(`[marker-end="url(#${old})"]`)
+            .forEach((e) => e.setAttribute('marker-end', `url(#${old}-${n})`));
+        });
+        fig.appendChild(svg);
+        const cap = document.createElement('figcaption');
+        cap.innerHTML = `<b><span class="step">${i + 1}</span></b>`;
+        const t = document.createElement('b');
+        t.textContent = f.title;
+        cap.firstChild.appendChild(t);
+        const ul = document.createElement('ul');
+        for (const who of ['p1', 'p2', 'p3']) {
+          const line = f.lines && f.lines[who];
+          if (!line) continue;
+          const li = document.createElement('li');
+          li.innerHTML = `<i class="dot" style="background:${COLOR[who]}"></i><span></span>`;
+          li.querySelector('span').textContent = `${NAME[who]}: ${line}`;
+          ul.appendChild(li);
+        }
+        cap.appendChild(ul);
+        fig.appendChild(cap);
+        frames.appendChild(fig);
+      });
+      card.appendChild(frames);
+
+      const dl = document.createElement('dl');
+      dl.className = 'facts';
+      for (const [k, v] of Object.entries(opt.facts)) {
+        const div = document.createElement('div');
+        div.innerHTML = '<dt></dt><dd></dd>';
+        div.querySelector('dt').textContent = k;
+        div.querySelector('dd').textContent = v;
+        dl.appendChild(div);
+      }
+      card.appendChild(dl);
+      const v = document.createElement('p');
+      v.className = 'verdict';
+      v.textContent = opt.verdict;
+      card.appendChild(v);
+      options.appendChild(card);
+    }
+
+    // comparison table
+    const cols = [
+      ['far', 'Far away'],
+      ['haul', 'Mid-haul'],
+      ['air', 'Mid-air'],
+      ['late', 'Offline / later'],
+      ['together', 'A together moment'],
+    ];
+    const word = { good: 'good', mid: 'partly', bad: 'poor' };
+    const table = document.getElementById('compare');
+    const thead = document.createElement('tr');
+    thead.innerHTML = '<th>Option</th>' + cols.map(([, l]) => `<th>${l}</th>`).join('');
+    table.appendChild(thead);
+    for (const opt of data.options) {
+      const tr = document.createElement('tr');
+      const th = document.createElement('th');
+      th.textContent = opt.name;
+      tr.appendChild(th);
+      for (const [k] of cols) {
+        const td = document.createElement('td');
+        const s = opt.score[k];
+        td.innerHTML = `<span class="${s}">${word[s]}</span>`;
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+  })();
+</script>
