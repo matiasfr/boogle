@@ -88,7 +88,13 @@ test('late join sends everything whole, chunked under the message cap', () => {
   assert.ok(packets.length > 1, 'chunked');
   for (const p of packets) assert.ok(JSON.stringify(p).length < MAX_PACKET_CHARS + 200);
   const m = createMirror([treeSchema, roomSchema]);
-  for (const p of packets) assert.ok(m.apply(p));
+  // Only the last chunk says the mirror is whole: a client never acts on a partial late join.
+  assert.deepEqual(
+    packets.map((p) => p.w ?? 0),
+    packets.map((_p, k) => (k === packets.length - 1 ? 1 : 0)),
+  );
+  for (const p of packets.slice(0, -1)) assert.ok(m.apply(p) && !m.whole());
+  assert.ok(m.apply(packets.at(-1)) && m.whole());
   assert.deepEqual(seen(m), expected(w, 'all'));
   assert.equal(
     st.chars,

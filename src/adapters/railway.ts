@@ -412,9 +412,12 @@ export function createRailwayAdapter({
       status,
       connected,
       synced,
-      /** The server step the mirror is current to, and a hash of the mirror there (co-op witnesses compare them). */
+      /** The server step the mirror is current to, and a hash of the mirror there (co-op witnesses compare them;
+       * computed only when read). */
       step: rail.step(),
-      hash: rail.hash(),
+      get hash() {
+        return rail.hash();
+      },
       ready: available(),
       epoch,
       next,

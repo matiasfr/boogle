@@ -63,6 +63,7 @@ type Client = {
   ids: [string, EntityId][];
   drops: Despawn[];
   ev: Fields[];
+  fresh: boolean; // joined, whole state not yet sent: the next send ends with w: 1
 };
 /** Events held for one backed-up client; older ones are dropped (effects only, the state still arrives whole). */
 export const MAX_EVENTS = 256;
@@ -196,7 +197,8 @@ export function createReplicator() {
       const cell = cells.get(key);
       if (cell) since(cell, t, x, c);
     }
-    if (!x.length && !c.length && !cl.ackDue && !cl.rej.length && !cl.ids.length && !cl.ev.length) return [];
+    if (!x.length && !c.length && !cl.ackDue && !cl.rej.length && !cl.ids.length && !cl.ev.length && !cl.fresh)
+      return [];
     for (const key of sub.keys()) sub.set(key, step);
     const packets: ServerPacket[] = [];
     let cur: ServerPacket = { t: 's', tk: step };
@@ -217,6 +219,8 @@ export function createReplicator() {
     if (cl.rej.length) cur.rej = cl.rej.splice(0);
     if (cl.ids.length) cur.ids = cl.ids.splice(0);
     if (cl.ev.length) cur.ev = cl.ev.splice(0);
+    if (cl.fresh) cur.w = 1;
+    cl.fresh = false;
     cl.ackDue = false;
     packets.push(cur);
     return packets;
@@ -258,7 +262,17 @@ export function createReplicator() {
     },
     commit,
     addClient(cid: string, cellsWanted: readonly string[] | 'all' = 'all') {
-      clients.set(cid, { all: false, cells: new Map(), ack: null, ackDue: false, rej: [], ids: [], drops: [], ev: [] });
+      clients.set(cid, {
+        all: false,
+        cells: new Map(),
+        ack: null,
+        ackDue: false,
+        rej: [],
+        ids: [],
+        drops: [],
+        ev: [],
+        fresh: true,
+      });
       subscribe(cid, cellsWanted);
     },
     subscribe,

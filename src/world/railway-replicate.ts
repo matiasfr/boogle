@@ -442,9 +442,9 @@ export function createRailwayMirror() {
     l2.lever = f.lever as boolean;
     l2.hook = f.hook as boolean;
     for (let k = 0; k < l2.depotOut.length; k++) l2.depotOut[k] = num(f, `out${k}`);
-    synced = true; // the global row exists from the first packet: the late join's whole state has arrived
   });
   mirror.onPacket(() => {
+    synced = mirror.whole();
     if (pilesDirty) s.piles = [...piles.values()].sort((a, b) => a.id - b.id);
     if (accountsDirty) s.accounts = [...accounts.values()];
     pilesDirty = accountsDirty = false;

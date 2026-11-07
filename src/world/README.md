@@ -9,7 +9,9 @@ Everything players can change and everyone must agree on (items, piles) lives be
 | `sync.ts` | Tick clock, edit pipeline (submit → host stamps → everyone applies in order), state registry, snapshots, hashes, late join and the host's saves; the host is our server (`server/src/host/world-host.ts`) (wire messages and save rules at its top). |
 | `rules/` | The lockstep half of each system (ops, state, ticks), one module per system, installed in `RULES` order. **Adding a lockstep system: `rules/README.md`.** |
 | `namespace.ts` | `WORLD_NS` and `worldRoomId(room)`: the id a room's world lives under (host id, saves). Bumped on a clean break. |
-| `game-world.ts` | The island's `land` and the rules installed on the real sync (`rules.gifts`, ...). Adapters import it first. |
+| `game-world.ts` | The island's `land` and the rules installed on the real sync (`rules.gifts`, ...), and the railway mirror. Adapters import it first. |
+| `replicate*.ts`, `room-clock.ts` | Replication (docs/plans/replication.md): component schemas, the server's touched-entity diff and per-client send, the client mirror and prediction hooks; the one 60 Hz room clock. |
+| `railway-server.ts`, `railway-replicate.ts` | The railway as Server kind: the host's rules (actions applied on arrival, a server state saved with the checkpoint) and its projections; the client mirror rebuilt into the `Railway` shape. |
 | `grid.ts` | Pure, lockstep: grid constants. |
 | `background.ts`, `clock-worker.ts` | One bounded elapsed-time clock shared by visible frames and hidden-tab heartbeats; independent of the physics frame clamp. |
 

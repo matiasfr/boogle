@@ -7,6 +7,7 @@
 //   mirror.get(kind, id) / entries(kind) / size()
 //   mirror.onChange(kind, fn)         fn(id, fields | null, changed | null) after each applied change (null: despawned)
 //   mirror.onPacket(fn)               fn(packet) after a packet applied (acks, refusals, id remaps and events ride on it)
+//   mirror.whole()                    the late join's last chunk (w) has arrived since the last reset
 //   mirror.step(atMs)                 estimated server step (src/world/room-clock.ts) from the packets' tk stamps
 //   mirror.clone()                    a deep copy of every component (the predictor's confirmed base, budget test)
 //   mirror.reset()                    drop everything (reconnect; the server re-sends whole from change tick -1)
@@ -47,11 +48,12 @@ export function createMirror(schemas: readonly Schema[]) {
   const packetFns: ((p: ServerPacket) => void)[] = [];
   const estimate = createStepEstimate();
   let tk = -1;
+  let whole = false;
   const stats = { applied: 0, refused: 0, chars: 0 };
 
   // Whole-packet validation: nothing is mutated unless every entry is well-formed for the current mirror.
   function valid(p: unknown): p is ServerPacket {
-    if (!isObj(p) || p.t !== 's' || !isStep(p.tk) || p.tk < tk) return false;
+    if (!isObj(p) || p.t !== 's' || !isStep(p.tk) || p.tk < tk || (p.w !== undefined && p.w !== 1)) return false;
     if (
       p.ack !== undefined &&
       !(Array.isArray(p.ack) && p.ack.length === 2 && isRequest(p.ack[0]) && isRequest(p.ack[1]))
@@ -125,6 +127,7 @@ export function createMirror(schemas: readonly Schema[]) {
         if (!old) rows.set(id, next);
         notify(kind, id, next, fields);
       }
+      if (packet.w) whole = true;
       stats.applied++;
       for (const fn of packetFns) fn(packet);
       return true;
@@ -147,6 +150,8 @@ export function createMirror(schemas: readonly Schema[]) {
     },
     step: (at: number) => estimate.now(at),
     lastStep: () => tk,
+    /** The server's whole state has arrived since the last reset (a late join's last chunk carries w). */
+    whole: () => whole,
     clone() {
       const out = new Map<string, Map<EntityId, Fields>>();
       for (const [kind, rows] of store) {
@@ -163,6 +168,7 @@ export function createMirror(schemas: readonly Schema[]) {
           notify(kind, id, null, null);
         }
       tk = -1;
+      whole = false;
       estimate.reset();
     },
   };

@@ -17,6 +17,7 @@
 //       ids   [[tempId, serverId], ...] predicted spawns re-keyed
 //       x     [[kind, id], ...] despawns, applied before c
 //       c     [[kind, id, { field: value }], ...] changed fields of changed components; a spawn carries every field
+//       w     1 on the last chunk of a client's first send after it joined: its mirror is whole from here on
 //       ev    [{ field: value }, ...] one-off events since the last send (accepted actions, for effects), read after
 //             x and c are applied; never part of the mirror, never re-sent to a late joiner
 //   client -> server  { t:'a', ep, rq, op, ...fields }   an action, identified by (epoch, request)
@@ -38,6 +39,7 @@ export type ServerPacket = {
   x?: Despawn[];
   c?: Change[];
   ev?: Fields[];
+  w?: 1;
 };
 
 export const GLOBAL_CELL = 'g';
