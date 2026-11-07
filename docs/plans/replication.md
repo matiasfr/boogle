@@ -418,61 +418,70 @@ mobile; not tested on a device.
 - **The wake starts at the press on both ends.** `rail.wake` carries `tk`, the tick the actor pressed at; the server
   starts the wake there, bounded to at most 1 s before arrival (`railWakeTick`), so the actor's 3.1 s animation and the
   authoritative readiness end together. Partners still see the wake about one round trip after the press.
-- **Reconciliation:** on ack, the confirmed result replaces the prediction with no visible change when they agree
-  (every row below). When the server's answer, or a replay on a newer mirror, gives less than was shown,
-  `onCorrected({ event, kept, lost, reason, winner })` names it: `refused`, `noop`, `contested` (a later or earlier
-  action now moves less) or `session` (a session/order refusal or a room status: that action and later ones). Views
-  return the pieces physically: off your back to whoever got them (their event in the same packet carries
-  `returned`, so the pile does not also send them) or back to the tree, rock, rack, forge rack or depot; out of a
-  frame or off a pile back onto your back; a reversed tree stands back up with a shake and the rebound sound; a wake
-  settles back asleep with a thump; a lever clanks back. Arcs over 6 m are skipped. A socket loss plays no returns:
-  the views rebuild from the whole state.
-- **Predicted piles:** a drop that creates a pile gives it the temporary id `-request`; the server sends
-  `ids: [['p:<epoch>:<request>', id]]` through the replicator's remap hook and the view re-keys its in-flight pieces.
-  A pile cannot be taken until it has its server id (well under one round trip after the drop).
+- **Reconciliation:** each accepted action of yours is answered with `ok: [epoch, request, n]` on the packet that acks
+  it (held like refusals, never dropped like events); the actor gets no event for a predicted action. When `n` equals
+  what was shown, nothing on screen changes (every row below). When the answer, or a replay of what is still pending on
+  a newer mirror, gives less, `onCorrected({ event, kept, lost, reason, winner })` names it: `refused`, `noop`,
+  `contested` (a later or earlier action now moves less) or `session` (a session/order refusal or a room status: that
+  action and later ones); when it gives more, the extra plays as another predicted effect. Replays and corrections
+  are read only on a whole mirror at the last chunk of a send: the server marks every earlier chunk `m`, and a mirror
+  refilling after a resync is not whole. Views return the pieces physically: off your back to whoever got them (their
+  event in the same packet carries `returned`, so the pile does not also send them) or back to the tree, rock, rack,
+  forge rack or depot; out of a frame or off a pile back onto your back; a reversed tree stands back up with a shake
+  and the rebound sound; a refused wake settles back asleep with a thump; a refused lever clanks back. A wake or lever
+  someone else won stands: no return, and their event does not restart the animation. Arcs over 6 m are skipped. A
+  socket loss plays no returns: the views rebuild from the whole state.
+- **Predicted piles:** a drop that creates a pile gives it the temporary id `-request`; for every drop the server sends
+  `ids: [['p:<epoch>:<request>', id]]` through the replicator's remap hook, and when that differs from the pile shown
+  (a temporary id, or a merge the server made a new pile) the view re-keys that drop's pieces in flight. A pile cannot
+  be taken until it has its server id (well under one round trip after the drop).
 - **Stall cue:** a stroke unanswered after `STALL_MS` (1 s) holds the axe at the bite, wobbling, until it settles.
-- **Tooling:** `&railLag=<ms>` adds a round trip to the game's railway messages (dev captures), the headless page's
+- **Tooling:** `&railLag=<ms>` adds a round trip to the game's railway messages (dev builds only), the headless page's
   `&lat` uses the same `delayedRoom`; `npm run load` now drives every player through the real predicting adapter
   (`WS_LOAD_PLAYERS`, `WS_LOAD_LAT`, `WS_LOAD_CHURN` pick rows). `WORLD_NS` is unchanged: no saved shape changed.
 
 Measured with `npm run load` as in R1a (headless pages over the real server in one process, added latency half each
 way on the railway's messages, 15 s a row, the same chop/drop/take cycle every 500 ms or, 5x, every 100 ms), now
-through the predicting adapter. Actor = press to its predicted effect having fired, in the page (the frame that draws
-it adds at most one frame: under the 16 ms bar at every latency). Server answer = press to the server's event for it
-arriving (R1a's actor latency, which the actor no longer sees). Others = press to the event arriving on the other pages.
+through the predicting adapter, after the review fixes below. Actor = press to its predicted effect having fired, in
+the page (the frame that draws it adds at most one frame: under the 16 ms bar at every latency). Server answer = press
+to the `ok` for it arriving (R1a's actor latency, which the actor no longer sees). Others = press to the event arriving
+on the other pages.
 
-| Players | Added RTT | Actor press → effect p50 / p95 / max | Server answer p50 | Others p50 / p95 | Corrections, normal / 5x | Downlink per client, normal / 5x | Server ms per step (mean) |
-|---|---|---|---|---|---|---|---|
-| 2 | 0 ms | 0.3 / 0.4 / 1.2 ms | 7 ms | 7 / 17 ms | 0 / 0 | 7.8 / 34.6 kbit/s | 0.069 / 0.057 |
-| 2 | 100 ms | 0.2 / 0.5 / 0.9 ms | 111 ms | 111 / 121 ms | 0 / 0 | 7.7 / 30.8 kbit/s | 0.076 / 0.08 |
-| 2 | 200 ms | 0.2 / 0.4 / 1.3 ms | 214 ms | 213 / 221 ms | 0 / 0 | 7.6 / 30.9 kbit/s | 0.089 / 0.093 |
-| 4 | 0 ms | 0.3 / 0.6 / 1.3 ms | 11 ms | 11 / 18 ms | 0 / 0 | 13.8 / 63.8 kbit/s | 0.072 / 0.118 |
-| 4 | 100 ms | 0.2 / 0.3 / 1.1 ms | 110 ms | 110 / 120 ms | 0 / 0 | 13.9 / 57.4 kbit/s | 0.054 / 0.093 |
-| 4 | 200 ms | 0.2 / 0.4 / 1.3 ms | 216 ms | 216 / 221 ms | 0 / 0 | 13.9 / 57.3 kbit/s | 0.078 / 0.094 |
-| 6 | 0 ms | 0.2 / 0.4 / 1.2 ms | 10 ms | 10 / 16 ms | 0 / 0 | 19.9 / 92 kbit/s | 0.087 / 0.103 |
-| 6 | 100 ms | 0.2 / 0.7 / 1.3 ms | 111 ms | 111 / 120 ms | 0 / 0 | 20 / 82.6 kbit/s | 0.107 / 0.102 |
-| 6 | 200 ms | 0.1 / 0.3 / 1 ms | 209 ms | 209 / 221 ms | 0 / 0 | 20 / 83.2 kbit/s | 0.09 / 0.14 |
+| Players | Added RTT | Actor press → effect p50 / p95 / max | Server answer p50 | Others p50 / p95 | Corrections, normal / 5x | Accepted actions per player-second, normal / 5x | Downlink per client, normal / 5x | Server ms per step (mean) |
+|---|---|---|---|---|---|---|---|---|
+| 2 | 0 ms | 0.3 / 0.5 / 0.9 ms | 12 ms | 12 / 20 ms | 0 / 0 | 1.6 / 6.9 | 5.1 / 22.9 kbit/s | 0.139 / 0.164 |
+| 2 | 100 ms | 0.4 / 0.6 / 1.9 ms | 117 ms | 117 / 123 ms | 0 / 0 | 1.6 / 6.8 | 5.2 / 19.5 kbit/s | 0.149 / 0.163 |
+| 2 | 200 ms | 0.4 / 0.8 / 1.9 ms | 213 ms | 213 / 219 ms | 0 / 0 | 1.6 / 6.8 | 5.1 / 20 kbit/s | 0.145 / 0.166 |
+| 4 | 0 ms | 0.3 / 1 / 1.9 ms | 12 ms | 12 / 20 ms | 0 / 0 | 1.6 / 6.9 | 9.9 / 45.7 kbit/s | 0.239 / 0.285 |
+| 4 | 100 ms | 0.3 / 0.5 / 2.7 ms | 114 ms | 114 / 124 ms | 0 / 0 | 1.6 / 6.8 | 10.2 / 40.1 kbit/s | 0.189 / 0.331 |
+| 4 | 200 ms | 0.2 / 0.5 / 1.6 ms | 214 ms | 214 / 228 ms | 0 / 0 | 1.6 / 6.8 | 10 / 40 kbit/s | 0.174 / 0.274 |
+| 6 | 0 ms | 0.3 / 0.6 / 1.4 ms | 12 ms | 12 / 21 ms | 0 / 0 | 1.6 / 6.9 | 15.4 / 68 kbit/s | 0.243 / 0.346 |
+| 6 | 100 ms | 0.3 / 0.8 / 2 ms | 115 ms | 115 / 124 ms | 0 / 0 | 1.6 / 6.8 | 15.1 / 59.9 kbit/s | 0.239 / 0.216 |
+| 6 | 200 ms | 0.2 / 0.4 / 2.9 ms | 217 ms | 217 / 224 ms | 0 / 0 | 1.6 / 6.8 | 15.1 / 60.1 kbit/s | 0.253 / 0.348 |
 
-- **Instant for the actor at every latency:** press to effect 0.1-0.3 ms p50, at most 1.3 ms, independent of the added
-  round trip. Others are unchanged from R1a: RTT plus at most a step (R1a 11/118/215 ms p50; now 7-11/110-111/209-216).
+- **Instant for the actor at every latency:** press to effect 0.2-0.4 ms p50, at most 2.9 ms, independent of the added
+  round trip. Others are unchanged from R1a: RTT plus at most a step (R1a 11/118/215 ms p50; now 12/114-117/213-217).
 - **Corrections:** none in any of these rows (players apart, as R1a's script). R1a's script at 5x presses faster than
-  the swing allows; those presses are now "not yet" (`notYet` 90-288 a row; at normal churn 6 per player, a full back)
+  the swing allows; those presses are now "not yet" (`notYet` 92-288 a row; at normal churn 6 per player, a full back)
   rather than shown and refused. Before the cadence check was predicted, the 5x rows at 100-200 ms corrected 2-3 swings
   per player (8-12 per player-minute, all `rail.chop refused`), which is why the client now runs the server's check.
 - **Crowding one pile** (`WS_LOAD_CHURN=crowd`: every player at the same tree, dropping on and taking from the same
-  pile, all pressing on the same 500 ms beat): corrections at 0 / 100 / 200 ms are 10 / 10 / 12 per player-minute
-  at 2 players (10-12% of predictions), 13 / 16 / 15 at 4 (13-16%), and 32 / 35 / 29 at 6 (27-32%): mostly takes of
-  a pile someone emptied first (`rail.take refused` or `contested`) and strokes on a tree others finished (`rail.chop
-  noop`). The rate does not grow with latency: these are real races between simultaneous presses, which no client
-  can predict, and the server settles them the same way at 0 ms. That misses the plan's bar (< 1 per player-minute at
-  6 players crowding one pile, 200 ms), but this script is a synchronized worst case: real players do not press on
-  a shared beat. Each correction is a physical return (the piece flies to whoever got it). All rows conserved and
-  agreed.
-- **Downlink:** under the bar; 5x at 6 players is 83-92 kbit/s (R1a 69-77), normal 20 kbit/s (R1a 16.5). The
-  predicting script lands more drops and takes on piles than R1a's raw one; the cause is not measured further. The
-  binary codec trigger (half the bar) was already passed in R1a.
-- **Late join, saves, server:** unchanged (31-32 KB, 2-130 ms; ~8 KB per checkpoint, about one per 2 s; 0.05-0.14 ms
-  per step). All 18 rows conserved logs, stone and rails, and every mirror hashed equal, a late joiner included.
+  pile, all pressing on the same 500 ms beat): corrections at 0 / 100 / 200 ms are 8 / 8 / 10 per player-minute at 2
+  players (8-10% of predictions), 14 / 16 / 14 at 4 (14-16%), and 32 / 39 / 37 at 6 (29-35%). They are mostly takes of
+  a pile someone emptied first (`rail.take refused` or `contested`) and strokes on a tree others finished
+  (`rail.chop noop`). The rate barely grows with latency: these are real races between simultaneous presses, which no
+  client can predict, and the server settles them the same way at 0 ms. That misses the plan's bar (< 1 per
+  player-minute at 6 players crowding one pile, 200 ms), but this script is a synchronized worst case: real players do
+  not press on a shared beat. Each correction is a physical return (the piece flies to whoever got it). All rows
+  conserved and agreed.
+- **Downlink:** 60-68 kbit/s at 6 players, 5x (R1a 69-77; 83-92 before the review), 15 kbit/s at normal churn (R1a
+  16.5). Accepted actions per player-second match R1a exactly (1.6 and 6.8-6.9), so the earlier rise was not more
+  landed actions. It came from echoing each action's event to its own actor, the drop's id remap and events repeating
+  what the intent says; those are gone or cut. The binary codec trigger (half the bar) is still passed at 6 players, 5x.
+- **Late join, saves, server:** unchanged (31-32 KB, 6-117 ms; ~8 KB per checkpoint, about one per 2 s). Server ms per
+  step read 0.14-0.35, up from 0.05-0.14: these rows ran while other agents' browser runs shared the machine, so they
+  are not a regression measurement. All 18 rows conserved logs, stone and rails, and every mirror hashed equal, a late
+  joiner included.
 - **Unit coverage** (`test/railway-adapter.test.ts`): a chop at 200 ms shows at once and the ack changes nothing on any
   frame; a refused wake and a refused felling stroke roll back with a correction; two actors racing for the last log
   (one returned to the winner, whose own pile flight is suppressed); the drop's temporary pile and its remap; "not yet"
@@ -482,7 +491,7 @@ arriving (R1a's actor latency, which the actor no longer sees). Others = press t
   contest (about one in seven predictions in that crowded worst case).
 - **Playthroughs** (local, warped): the solo production route (`npm run playthrough -- --eval
   dev/look/evals/railway-job.ts --query 'shot=play'`) finished every expected beat through line one, the forge, Q1-Q3,
-  the hook walk and the quarry lever, 32 game minutes, no errors. The two-player run of the same bot (`npm run look --
+  the hook walk and the quarry lever, 32 game minutes, no errors; rerun after the review and reconnect fixes, again every expected beat, 29 game minutes. The two-player run of the same bot (`npm run look --
   --players 2 --eval dev/look/evals/railway-job.ts --query 'shot=play' --until window.__placeDone`) finished on both
   peers; their mirror hashes agree at all 195 server steps both sampled. The 5x warp reported clock DRIFT (page clock
   deficits of 9-18 game s), as before.
@@ -498,10 +507,45 @@ arriving (R1a's actor latency, which the actor no longer sees). Others = press t
   in-flight messages whenever the room reported "connected" again, which lost a late join's last chunk under
   `&railLag`; it now drops them only on a lost connection.
 
+### R1b review and the owner's two live bugs (6 November, evening)
+
+- **One rollback while carrying: a lost own event.** In the branch before these fixes, a headless test
+  (`test/railway-adapter.test.ts`, "a tab hidden for 30 s while carrying") reproduces the rollback: a stroke is still
+  out when the tab hides, three others work for 30 s, and on return the stroke's logs fly off the back while the
+  mirror keeps them. The cause was the actor's own event dropping out of a backed-up client's queue (past
+  `MAX_EVENTS`), which read as a refusal; `ok` fixes it. Reading only whole, final chunks fixes the resync variant ("a
+  resync while predictions are out"); on its own it does not change the hidden-tab case.
+- **The rollbacks the owner saw: a lost connection.** A hidden tab's socket closes. 1.5 s later the server's departure
+  put a carried beam back at the great tree. On the client, the disconnect reset the mirror: carried logs blinked off
+  (no accounts), and the estimated tick fell to 0, so a laying machine snapped to its stretch start and back.
+- **Fixed:** on a lost connection or a resync the client keeps showing the last state, with its timed jobs still
+  advancing, and actions wait. The incoming whole state is built aside (`mirror.refill()`) and swapped in at its last
+  chunk (`w`), with rows it lacks deleted. The tick never goes back. Views ease to the new state: trees re-pose only
+  where something changed, and the machine catches up at twice its speed unless it is more than 12 m off.
+  The server keeps a carried beam for its absent carrier for `railBeamGraceS` (180 s, a tunable; `WORLD_NS` v15). Back
+  in time, `railSession` moves it to the new session. Away longer, it goes down where they last stood: the server
+  follows the carrier's presence once a second, and `lineBeamGround` now takes any ground in line one's work area. A
+  restart keeps the beam too. A beam put down anywhere in that area stays where it was put (before, it went back to
+  the tree); one left out of reach still recovers to the tree after 21 supply minutes. A tab going hidden sends one
+  presence at once, and the server then allows a hidden socket 120 s of silence (20 s otherwise, #1130).
+- **Tests:** a reconnect after 4 s (still carrying) and after 5 minutes (on the ground where she stood,
+  `server/test/railway-beam-absence.test.ts`); every frame through a lost connection and through a resync mid-laying
+  (the job's elapsed time and the tick never step back, the two carried logs never blink, the accounts never empty);
+  racing wakes; the extra pieces a newer mirror gives; a merge the server made a new pile.
+- **Review cleanups:** events no longer repeat what the intent says (no epoch or tick, a drop's pile position, a
+  take's pile, a chop's fall, `n`, a kind of 0). A wake or lever someone else won stands, with no return and no
+  restarted animation. A replay that moves more plays the extra. `&railLag` is dev only. createPredictor's `attach` and
+  `onRejected` are gone.
+- **In a browser** (the investigation's drive script against this branch: a real page, the socket dropped as a
+  silent tab's is, traced every frame). The trace runs three drops. A 4 s drop while carrying the beam: the beam stays
+  held through it and through the reconnect (before: back at the great tree). A 1 s drop mid-laying: the machine
+  moves at most 0.09 m per frame throughout, its normal cruise (before: -34 m then +29 m in single frames). A 4 s drop
+  while carrying five logs: the carry reads 5 on every frame (before: 5, 0, 5). The tick never went back in any of the
+  three. The 5-minute absence was checked headless only.
+
 Unverified: the owner's feel, especially of corrections (only the headless tests and the counts here exercise them);
 real networks; Safari and mobile; not tested on a device. A reversed tree snaps upright with a shake rather than
-easing back up. An ack whose event a backed-up client lost (past `MAX_EVENTS`) reads as a refusal and plays a return
-the mirror then contradicts.
+easing back up.
 
 ### Fly `shared-cpu-1x` throttling check (plan; not run)
 
