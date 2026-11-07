@@ -125,6 +125,28 @@ export function createBeamDrag(
         }
       }
     },
+    /**
+     * The one-comparison float (K1, `&beamcarry=float`): the trunk hovers beside the carrier at shoulder height with a
+     * slow bob, along their path; helped, it floats level between the two shoulders. The caller adds the glints.
+     */
+    float(now: number, at: THREE.Vector3, yaw: number, side: number, helped: [THREE.Vector3, THREE.Vector3] | null) {
+      if (beam.parent !== world) world.add(beam);
+      beam.visible = true;
+      rope.visible = false;
+      started = false;
+      if (helped) {
+        beam.position.addVectors(helped[0], helped[1]).multiplyScalar(0.5);
+        d.subVectors(helped[1], helped[0]);
+        if (d.lengthSq() > 1e-6) beam.quaternion.setFromUnitVectors(Z, d.normalize());
+        return;
+      }
+      beam.position.set(
+        at.x + Math.cos(yaw) * side * 1.1,
+        at.y + 0.9 + Math.sin(now / 600) * 0.08,
+        at.z - Math.sin(yaw) * side * 1.1,
+      );
+      beam.quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
+    },
     hide() {
       rope.visible = false;
       started = false;

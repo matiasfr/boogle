@@ -9,6 +9,9 @@ import { heldId } from '../../player/inventory.ts';
 import { addPresenceField, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { LINE1_ROCKS } from '../../sim/railway-line-layout.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
+import { emit } from '../../render/particles.ts';
+import { readableIntensity } from '../../render/readable-unlit.ts';
+import { reducedMotion } from '../../constants.ts';
 import { createBeamDrag, BEAM_LENGTH, type BeamDrag } from './beam-drag.ts';
 
 let localHelp: (() => string | null) | null = null;
@@ -26,12 +29,16 @@ const frameOf = (avatar: THREE.Object3D | null) => {
 };
 
 export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView, mine: (id: number) => void) {
-  const [{ H, addStatic }, { ROCKS }, { flat }, { makeCarryModels, BEAM_CARRY_POSITION }] = await Promise.all([
-    import('../../proto/place/land.ts'),
-    import('../../proto/place/layout.ts'),
-    import('../../proto/flat.ts'),
-    import('../../proto/place/carry-models.ts'),
-  ]);
+  const [{ H, addStatic }, { ROCKS }, { flat }, { makeCarryModels, BEAM_CARRY_POSITION }, { sparkleAxe }] =
+    await Promise.all([
+      import('../../proto/place/land.ts'),
+      import('../../proto/place/layout.ts'),
+      import('../../proto/flat.ts'),
+      import('../../proto/place/carry-models.ts'),
+      import('../../proto/place/axe-sparkle.ts'),
+    ]);
+  // `&beamcarry=float` shows the floating carry (K1) beside the rope drag, for one comparison (7 November).
+  const floatCarry = new URLSearchParams(location.search).get('beamcarry') === 'float';
   let state = adapter.inspect(),
     helping: string | null = null,
     alive = true;
@@ -250,7 +257,20 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
         helper.localToWorld(shoulderB);
         if (shoulderA.distanceToSquared(shoulderB) >= 0.25) helped = [shoulderA, shoulderB];
       }
-      drag.update(dt, anchor, hip, from, helped);
+      if (floatCarry) {
+        if (!model.beam.getObjectByName('axe-blade-contact'))
+          for (const [name, z] of [
+            ['axe-blade-contact', BEAM_LENGTH / 2],
+            ['axe-grip-left', -BEAM_LENGTH / 2],
+          ] as const) {
+            const marker = new THREE.Object3D();
+            marker.name = name;
+            marker.position.z = z;
+            model.beam.add(marker);
+          }
+        drag.float(now, avatar.position, yaw, side, helped);
+        sparkleAxe(model.beam, true, reducedMotion, emit, readableIntensity(), dt);
+      } else drag.update(dt, anchor, hip, from, helped);
     }
     for (const [pid, model] of worn)
       if (!live.has(pid)) {
