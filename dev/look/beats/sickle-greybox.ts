@@ -23,7 +23,7 @@ const cameras = [
 ] satisfies ShotList['beats'][number]['cameras'];
 // Line 2 part 2 (the `works` marks and the survey line, docs/plans/line2-part2-greybox.md): where each payoff reads.
 const works = [
-  { name: 'Q4 frame: the rim and the sea', cam: [1083.7, 30, 36.7], look: [1330, 22, -150] },
+  { name: 'Q4 frame: the rim and the sea', cam: [1083.7, 46, 36.7], look: [1330, 22, -150] },
   { name: 'Far Head: the trestle back to the quarry', cam: [1362, 31, -166], look: [1083, 24, 37] },
   { name: 'Pier: Ring Island to the north', cam: [1402, 12, -372], look: [1330, 70, -1120] },
 ] satisfies ShotList['beats'][number]['cameras'];
