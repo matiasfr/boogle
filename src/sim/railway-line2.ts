@@ -1,4 +1,4 @@
-// Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q4, the depot rack and
+// Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q5, the depot rack and
 // rails shelf, the pack, the quarry lever and the hook device. Its rules are systems in ./railway-systems.ts.
 import type { Railway } from './railway.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
@@ -31,6 +31,7 @@ export type RailLine2 = {
   /** Depot logs minted for each stretch, in station order; never more than that stretch's log bill. */
   depotOut: number[];
   lever: boolean;
+  sea: boolean;
   hook: boolean;
   /** The pack is open: everyone's back carries LINE2_PACK.carry. */
   pack: boolean;
@@ -49,7 +50,7 @@ export const line2Lit = (s: Railway) => !!s.line2 && s.line2.forge.lit >= 0;
 export const railCarryMax = (s: Railway) => (s.line2?.pack ? LINE2_PACK.carry : T1.carry);
 /** The pack chest is there: the forge has taken its first bill. */
 export const line2PackReady = (s: Railway) => (s.line2?.forge.used ?? 0) >= FORGE.bills[0];
-/** Completed Q stretches, 0-4. */
+/** Completed Q stretches, 0-5. */
 export const line2Completed = (s: Railway) => s.line2?.jobs.filter((j) => j.completion).length ?? 0;
 /** The Q station that takes materials now, or -1 before the forge is lit / after the last. */
 export const line2Active = (s: Railway) => {
@@ -59,6 +60,12 @@ export const line2Active = (s: Railway) => {
 };
 /** The quarry gate is down only with Q3 complete and the lever pulled. */
 export const line2GateOpen = (s: Railway) => line2Completed(s) >= 3 && !!s.line2?.lever;
+/** The sea gate is down only with Q4 complete and the summit switch pulled. */
+export const line2SeaOpen = (s: Railway) => line2Completed(s) >= 4 && !!s.line2?.sea;
+export const line2GateDown = (s: Railway, k: number) => {
+  const g = LINE2_STATIONS[k]?.gate;
+  return !g || (g === 'quarry' ? line2GateOpen(s) : line2SeaOpen(s));
+};
 export const line2Schedule = (k: number, job: RailQJob) => lineSchedule(LINE2_STATIONS[k]!, job.timing);
 /** The stretch the depot cart serves (a depot stretch not yet funded), or -1. */
 export const line2Served = (s: Railway) => {
@@ -194,6 +201,7 @@ export function validateRailLine2(s: Railway) {
   )
     throw new Error('railway: cart');
   if (l.lever && line2Completed(s) < 3) throw new Error('railway: lever before Q3');
+  if (l.sea && line2Completed(s) < 4) throw new Error('railway: sea before Q4');
   if (l.hook && line2Completed(s) < 2) throw new Error('railway: hook before Q2');
   if (l.pack && f.used < FORGE.bills[0]) throw new Error('railway: pack before the forge bill');
   // The shelf holds rails only for the active, unfunded `shelf` stretch (funding sends what is left back to the forge

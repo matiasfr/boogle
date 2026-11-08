@@ -113,7 +113,7 @@ function useful(s: Railway, pid: string): Partial<RailAction> {
       }
       return { op: 'rail.drop', x: 500, z: 500, y: 0, n: 1, kind: a.carry ? 0 : a.stone ? 1 : 2 };
     }
-    return pick2([{ op: 'rail.lever' }, { op: 'rail.hook' }, { op: 'rail.jump' }]);
+    return pick2([{ op: 'rail.lever' }, { op: 'rail.seaSwitch' }, { op: 'rail.hook' }, { op: 'rail.jump' }]);
   }
   return { op: 'rail.jump' };
 }
@@ -249,6 +249,7 @@ function run(seed: number, steps: number) {
       () => ({ op: 'rail.forgeTake' }),
       () => ({ op: 'rail.depotTake' }),
       () => ({ op: 'rail.lever' }),
+      () => ({ op: 'rail.seaSwitch' }),
       () => ({ op: 'rail.hook' }),
       () => ({ op: 'rail.reject' }),
     ];

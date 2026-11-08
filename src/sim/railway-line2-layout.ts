@@ -1,6 +1,6 @@
-// Line two's pinned numeric catalog: the forge, Q1-Q4, the pack chest and the quarry's lever and hook device.
+// Line two's pinned numeric catalog: the forge, Q1-Q5, the pack chest and the gates' switches and hook device.
 // Coordinates are world centimetres pinned from Place's layout/tech-layout/ladder (6-7 November 2026);
-// no runtime prototype imports or native trig in lockstep. Q5 onward is not promoted yet.
+// no runtime prototype imports or native trig in lockstep. Q6 onward is not promoted yet.
 import { pairsOf, type LineStation } from './railway-line-layout.ts';
 
 export const RAILS = 2;
@@ -16,7 +16,7 @@ export const LINE2_FORGE = {
   pourTicks: 5,
   turnTicks: 26,
 } as const;
-export type Line2StationId = 'Q1' | 'Q2' | 'Q3' | 'Q4';
+export type Line2StationId = 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5';
 /** `bill[1]` is rails. Panels are the station's rails, evenly spaced; `speed` scales the room's laying speed.
  * `depot`: the cart brings its logs to a rack by the frame; `shelf`: it also moves its rails there from the forge rack.
  * `gate`: the frame takes nothing until that gate is down. */
@@ -25,7 +25,7 @@ export type Line2Station = Omit<LineStation, 'id'> & {
   speed: number;
   depot: boolean;
   shelf: boolean;
-  gate?: 'quarry';
+  gate?: 'quarry' | 'sea';
 };
 export const LINE2_STATIONS: readonly Line2Station[] = [
   {
@@ -85,6 +85,21 @@ export const LINE2_STATIONS: readonly Line2Station[] = [
     shelf: true,
     gate: 'quarry',
   },
+  {
+    id: 'Q5',
+    bill: [24, 24],
+    beam: 0,
+    fromCm: 28600,
+    toCm: 54600,
+    x: 116668,
+    z: -2831,
+    panels: 24,
+    crate: true,
+    speed: 180,
+    depot: true,
+    shelf: true,
+    gate: 'sea',
+  },
 ];
 /** The depot's cart brings logs from the camp to a rack by the frame, never past the bill; from Q4 it stops at the
  * forge for rails too (Place: "the cart holds 16 rails"). Its trip and what a load holds: ./railway-cart.ts. `reach`:
@@ -96,6 +111,8 @@ export const LINE2_PACK = { x: 91400, z: -900, carry: 16 } as const;
 /** The lever on the quarry apron (2.2 m up), and the hook device on pillar p2's top. */
 export const LINE2_LEVER = { x: 109740, z: 4220, y: 2620 } as const;
 export const LINE2_HOOK = { x: 99954, z: 2086, y: 2350 } as const;
+/** Place tech-layout.ts SEA_SWITCH, on Needle Bell's summit deck. */
+export const LINE2_SEA = { x: 101180, z: -600, y: 10240 } as const;
 /** Readiness from accepted completions only: Q2 builds the hook walkway, Q3 the quarry ramp and winch drive. */
 export const line2Routes = (completed: number) => ({ hook: completed >= 2, quarry: completed >= 3 });
 /** Integer-centimetre rail-pair boundaries for a line-two stretch: each stock rail lays as its rail pairs. */

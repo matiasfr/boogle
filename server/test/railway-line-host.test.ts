@@ -16,9 +16,84 @@ import { railCounts } from '../../src/sim/railway.ts';
 import { LINE2_FORGE, LINE2_PACK, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
 import { CART, CART_CALL, CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
 import { worldOf } from '../../test/railway-live.ts';
-import { railwayAtQ4 } from '../../test/helpers/railway-q2.ts';
+import { railwayAtQ4, railwayAtQ5 } from '../../test/helpers/railway-q2.ts';
 
 type Obj = Record<string, unknown>;
+test('line host: the sea switch judged at the summit; Q5 behind it; sea survives a restart', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-q5-'));
+  const store = createStore({ dataDir: dir, maxRooms: 2 });
+  await store.init();
+  let now = 1800000000000;
+  const sent: Obj[] = [];
+  const create = () => {
+    const value = createRailwayWorldHost({
+      roomId: railwayRoomId('line-host-q5'),
+      store,
+      tick: false,
+      now: () => now,
+      pidOf: () => 'a',
+    });
+    value.onSend((message) => sent.push(message));
+    return value;
+  };
+  let host = create();
+  const ticks = async (n: number) => {
+    for (let i = 0; i < n; i++) {
+      now += 100;
+      host.step(0.1);
+    }
+    await host.sync.whenDurable();
+  };
+  try {
+    await host.whenReady();
+    const w = railwayAtQ5('q4-done');
+    while (host.sync.world.tick <= w.t) await ticks(1);
+    host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+    host.rules.railway.touchAll();
+    host.deliver({ t: 'r:open' }, 's1');
+    await ticks(3);
+    const session = sent.findLast((m) => m.t === 'r:session' && m.to === 's1');
+    assert.ok(session);
+    let request = Number(session.next) - 1;
+    const edit = async (e: Obj, at: [number, number, number]) => {
+      now += 1000;
+      host.deliver(
+        { t: 'r:edit', e: { ...e, epoch: Number(session.epoch), request: ++request, at, ms: now - 1800000000000 } },
+        's1',
+      );
+      await ticks(3);
+      assert.equal(railwayInvariant(host.rules.railway.railway), null);
+      return host.rules.railway.outcome('a', Number(session.epoch), request)!;
+    };
+    const q5 = LINE2_STATIONS[4]!;
+    const frame: [number, number, number] = [q5.x, 2400, q5.z];
+    const summit: [number, number, number] = [101180, 10240, -600];
+    assert.equal((await edit({ op: 'rail.seaSwitch' }, [101180, 2400, -600])).status, 'rejected');
+    assert.equal((await edit({ op: 'rail.seaSwitch' }, frame)).status, 'rejected');
+    assert.equal(host.rules.railway.railway.line2!.sea, false);
+    // Rack logs give the actor something real to deposit on either side of the pull.
+    await ticks(3 * cartCycleTicks(4));
+    assert.equal((await edit({ op: 'rail.depotTake' }, frame)).status, 'accepted');
+    const deposit = { op: 'rail.deposit', station: 'Q5', n: 1, kind: 0 };
+    assert.equal((await edit(deposit, frame)).status, 'noop');
+    assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'accepted');
+    assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'noop');
+    assert.equal((await edit(deposit, frame)).status, 'accepted');
+    const rails = railCounts(host.rules.railway.railway).rails!;
+    assert.equal(rails.total, rails.poured);
+    await host.close({ save: true });
+    host = create();
+    await host.whenReady();
+    assert.equal(host.rules.railway.railway.line2!.sea, true);
+    const restored = railCounts(host.rules.railway.railway).rails!;
+    assert.equal(restored.total, rails.total);
+    assert.equal(restored.total, restored.poured);
+    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+  } finally {
+    await host.close({ save: false }).catch(() => {});
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
 test('line host keeps a departed carrier the beam through its grace, then grounds it; a restart keeps it too', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-'));
   const store = createStore({ dataDir: dir, maxRooms: 2 });

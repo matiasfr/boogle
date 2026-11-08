@@ -53,11 +53,13 @@ export const Rail = defineComponent(
     depot: 'int',
     depotProduced: 'int',
     lever: 'bool',
+    sea: 'bool',
     hook: 'bool',
     out0: 'int',
     out1: 'int',
     out2: 'int',
     out3: 'int',
+    out4: 'int',
     pack: 'bool',
     depotRails: 'int',
     shelfOut: 'int',
@@ -156,7 +158,7 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
 /** What a client is sent: the replicated components (the wire schema, one source with the save). */
 export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
 export const RAIL_STATUS = ['accepted', 'noop', 'rejected'] as const satisfies readonly RailResult['status'][];
-export const DEPOT_OUT = ['out0', 'out1', 'out2', 'out3'] as const;
+export const DEPOT_OUT = ['out0', 'out1', 'out2', 'out3', 'out4'] as const;
 if (LINE2_STATIONS.length !== DEPOT_OUT.length) throw new Error('railway: depot outputs');
 
 /** The fresh railway, catalog entities spawned in a fixed order (so a fresh world's ids match on every machine). */
@@ -307,6 +309,7 @@ export function railwayView(w: World): Railway {
       depotProduced: rail.depotProduced,
       depotOut: DEPOT_OUT.map((k) => rail[k]),
       lever: rail.lever,
+      sea: rail.sea,
       hook: rail.hook,
       pack: rail.pack,
       depotRails: rail.depotRails,
@@ -380,6 +383,7 @@ export function refreshRailway(s: Railway, w: World) {
       depot: r.depot,
       depotProduced: r.depotProduced,
       lever: r.lever,
+      sea: r.sea,
       hook: r.hook,
       pack: r.pack,
       depotRails: r.depotRails,

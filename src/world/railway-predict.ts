@@ -49,6 +49,7 @@ export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.depotTake',
   'rail.depotRailTake',
   'rail.lever',
+  'rail.seaSwitch',
   'rail.pack',
   'rail.cartCall',
 ]);
