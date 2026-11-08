@@ -228,7 +228,6 @@ export async function createRailwayHookView(owner: OwnedView) {
       halo.lookAt(camAt);
       halo.scale.setScalar(1 + Math.sin(now * 0.01) * 0.06);
     }
-    handAt(me.avatar, hand);
     let cableTo: THREE.Vector3 | null = null;
     if (pull) {
       cableTo = targetAt.set(pull.at.x, pull.at.y, pull.at.z);
@@ -237,6 +236,7 @@ export async function createRailwayHookView(owner: OwnedView) {
       cableTo = flick;
       flickLeft = Math.max(0, flickLeft - dt);
     }
+    handAt(me.avatar, hand);
     drawCable(cable, hand, cableTo, dt);
     for (const other of others.values()) {
       const root = other.remote.avatar;

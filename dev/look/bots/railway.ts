@@ -30,7 +30,7 @@ function hookRing(id: string) {
   if (!ring) throw new Error(`Missing production hook ring ${id}`);
   return ring;
 }
-function aimHook(id: string) {
+export function aimHook(id: string) {
   const r = hookRing(id),
     p = me.body!.position;
   const d = Math.hypot(r.x - p.x, r.z - p.z);
@@ -59,7 +59,7 @@ async function hookLanding(bot: Bot, id: string) {
     `hook landed on ${id}`,
   );
 }
-async function hookTo(bot: Bot, id: string) {
+export async function hookTo(bot: Bot, id: string) {
   aimHook(id);
   hookCheck(
     bot,
@@ -74,7 +74,7 @@ async function hookTo(bot: Bot, id: string) {
   await hookLanding(bot, id);
   bot.note(`hook: ${id}`);
 }
-async function returnFromTower(bot: Bot, ids = ['t5', 't4', 't3', 't2', 't1', 't0', 'p2']) {
+export async function returnFromTower(bot: Bot, ids = ['t5', 't4', 't3', 't2', 't1', 't0', 'p2']) {
   const body = me.body!;
   for (const id of ids) {
     const departureY = body.position.y,
