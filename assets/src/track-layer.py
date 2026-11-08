@@ -21,6 +21,10 @@ CHAIR_Z = -1.15
 # height of his Driving_Loop hips (MACHINE_CHAIR_SEAT in src/proto/place/machine-model.ts is the same number).
 CHAIR_SEAT = 0.32
 CHAIR_BACK = 0.40
+CHAIR_SLAB = 0.06
+CHAIR_WIDTH = 0.44  # Hands hang beside the hips in Driving_Loop; keep wood inside their sweep.
+CHAIR_DEPTH = 0.46
+CHAIR_SETBACK = 0.13  # Keep the front edge behind the seated knees; anchors remain at CHAIR_Z.
 WHEEL_R = 0.13
 AXLE_Y = 0.235 + WHEEL_R  # Native place-kit rail top; deck underside stays 0.52.
 
@@ -143,11 +147,15 @@ def deck_wood(bm):
 
 
 def chair_wood(bm):
-    # A low bench seat: a 12 cm plank on two side blocks, its top CHAIR_SEAT above the deck.
+    # A shallow plank on four narrow legs: no side blocks across Buddy's hanging shins.
+    # Preserve the seat top and back edge for Buddy and the smaller station hands.
     for x in CHAIR_X:
-        box(bm, x, DECK + CHAIR_SEAT - 0.06, CHAIR_Z, 0.8, 0.12, 0.65, BIG_BEVEL)
-        for side in (-0.3, 0.3):
-            box(bm, x + side, DECK + (CHAIR_SEAT - 0.12) / 2, CHAIR_Z, 0.12, CHAIR_SEAT - 0.12, 0.55, BIG_BEVEL)
+        box(bm, x, DECK + CHAIR_SEAT - CHAIR_SLAB / 2, CHAIR_Z - CHAIR_SETBACK,
+            CHAIR_WIDTH, CHAIR_SLAB, CHAIR_DEPTH, BIG_BEVEL)
+        for side in (-0.15, 0.15):
+            for z in (-0.26, 0.02):
+                box(bm, x + side, DECK + (CHAIR_SEAT - CHAIR_SLAB) / 2, CHAIR_Z + z,
+                    0.08, CHAIR_SEAT - CHAIR_SLAB, 0.08, BEVEL)
 
 
 def chair_teal(bm):
