@@ -35,7 +35,7 @@ if (q.get('railStop')) {
     (async () => {
       while (!shot.__railStop) await wait(100);
       window.__debugCam!.clear();
-      cam.yaw = me.yaw + (q.get('packCam') === 'side' ? 1.57 : 3.14);
+      cam.yaw = me.yaw + (q.get('packCam') === 'side' ? 1.57 : 1.9);
       hideNotes();
       await wait(1500);
       shot.__placeDone = true;
