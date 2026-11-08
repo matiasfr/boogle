@@ -37,7 +37,9 @@ open(p, "w").write(re.sub(r"<<<<<<< [^\n]*\n(.*?)=======\n(.*?)>>>>>>> [^\n]*\n"
   fi
 done
 npm ci --silent >/dev/null 2>&1
-SHIP_NO_AI=1 npm run --silent ship -- $([ "$wait" = 1 ] && echo --wait) 2>&1 | tail -8
+ship_args=(--silent ship --)
+if [ "$wait" = 1 ]; then ship_args+=(--wait); fi
+SHIP_NO_AI=1 npm run "${ship_args[@]}" 2>&1 | tail -8
 status=${PIPESTATUS[0]}
 [ "$status" = 0 ] || exit "$status"
 if [ "$wait" = 0 ]; then

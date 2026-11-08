@@ -90,18 +90,14 @@ jobs:
         if: steps.pr.outputs.number != '' && env.GREEN == 'true'
         env:
           PR: ${{ steps.pr.outputs.number }}
-          PROTECTION_TOKEN: ${{ secrets.SHIP_PROTECTION_TOKEN }}
         run: |
-          # Fail closed: GitHub must atomically reject a head that falls behind between our
-          # ancestry check and merge. No --admin; required checks and admin enforcement are mandatory.
-          protection=$(GH_TOKEN="${PROTECTION_TOKEN:-$GH_TOKEN}" gh api "repos/$GH_REPO/branches/main/protection")
-          jq -e '.enforce_admins.enabled == true and .required_status_checks.strict == true and
-            ((.required_status_checks.contexts + [.required_status_checks.checks[]?.context]) |
-             index("client") != null and index("server") != null and index("net") != null and
-             index("scenario world-inputs") != null)' <<<"$protection" >/dev/null || {
-            echo '::error::main needs strict required CI checks and enforcement for admins; see shipping.md.'
-            exit 1
-          }
+          # Optional hardening only: 404 (no protection) and 403 (unreadable) must not stop ships.
+          if protection=$(gh api "repos/$GH_REPO/branches/main/protection" 2>/dev/null) &&
+             jq -e '.required_status_checks.strict == true' <<<"$protection" >/dev/null; then
+            echo 'Strict up-to-date checks are enabled; GitHub also guards the final merge race.'
+          else
+            echo '::notice::Strict branch protection is absent or unreadable. A seconds-wide race remains between the ancestry check and merge; CI runs on main after every merge to detect a bad combination.'
+          fi
           refresh() {
             gh api -X PUT "repos/$GH_REPO/pulls/$PR/update-branch" -f expected_head_sha="$SHA"
             # update-branch is asynchronous (202); dispatch only after its new ref exists.

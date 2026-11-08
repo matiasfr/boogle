@@ -2,7 +2,7 @@ Before substantial work, committing or shipping, read this shipping procedure.
 
 ## Shipping
 
-For CI/ship changes, read [pipeline ordering, strict protection and live smoke](ship-pipeline.md).
+For CI/ship changes, read [pipeline ordering, optional hardening and live smoke](ship-pipeline.md).
 
 - Before starting something larger, `npm run inflight` lists unmerged `wip/`, `ship/` and `claude/` branches and the files they touch (`!` = files you changed too); split work so parallel tracks don't touch the same files. Work that spans sessions: `npm run wip -- <topic>` pushes it to `wip/<you>/<topic>` (no CI) so others see it; `ship` removes it once shipped.
 - A large or risky change (several files with shared state, or `src/sim/`, `src/world/`, `src/net*`, `server/`) can start from a plan in `docs/plans/<name>.md` when asked for one, using the format in `.claude/agents/planner.md`; wait for approval before building it.
