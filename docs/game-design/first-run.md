@@ -63,6 +63,10 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
 - **The fall** ([src/fall/](../../src/fall/); `?proto=fall` replays it on every load, with your saved name). Your Buddy rides a track layer's flat trolley along a rail above the clouds, already travelling while you pick (the rail's sleepers and the clouds slide past at 5 m/s, and its open deck shows your whole Buddy), with the card beside it (no logo on
   it) and no HUD. It takes your colour live and hops when you change it, and your name floats over it as you type. Jump in
   runs it off the end of the rail (about 1.2 s, speeding up to 10 m/s) while the camera swings round from your face to behind you, one shot with no cut. The stronger light on your Buddy's front on the card eases down to the usual fill ([player.md](player.md)) over that swing.
+  The ride has quiet procedural axle clacks every 3.8 m, loose-metal rattle and occasional timber creaks on the existing
+  SFX bus (after audio unlock). Small camera roll and bob follow the travel, with a damped bump on each axle contact;
+  they fade out over the last 0.25 s of the roll. Reduced motion suppresses these camera offsets and the trolley's
+  existing rail tremble. All are Local, with no extra wait, input gate or change to the fall's timing (DESIGN.md 10 and 11).
   You steer on the way down (the usual air control, inside a funnel that closes on the title, so you can't miss), drop
   through the cloud into the island's daylight, and see BOOGLE in timber hanging 55 m up. You smash through it (a burst, a thump
   and a shake) and the letters tumble in a loose ring around you at your speed. You land flat with stars (1.8 s; any input

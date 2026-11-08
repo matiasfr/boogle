@@ -19,6 +19,7 @@ import { createNameLabel, type NameLabel } from '../components/name-label/view.t
 import { input, inputState } from '../player/input-state.ts';
 import { cam, me } from '../player/player.ts';
 import { getAudio } from '../render/audio.ts';
+import { renderPlaceSound, type PlaceCue } from '../render/place-sfx.ts';
 import { emit } from '../render/particles.ts';
 import { camera, sky, sun } from '../render/scene.ts';
 import { SUN_DIR } from '../render/sun-dir.ts';
@@ -151,6 +152,7 @@ function lightStage(at: THREE.Vector3) {
 
 // ---------------------------------------------------------------- Jump in: on the rail, then off it
 let rollT = 0;
+let cruiseTravel = 0;
 const carAt = new THREE.Vector3();
 const ROLL_S = (2 * (ROLL_DIST + OFF_END)) / (CRUISE + RELEASE); // steady speeding up, from CRUISE to RELEASE
 function rollPlace(t: number) {
@@ -162,6 +164,8 @@ let playerMask = -1;
 
 onEntered(() => {
   state = 'roll';
+  cruiseTravel = travelled;
+  rollPlace(0); // the render frame may arrive before the first fixed step after the press
   document.body.classList.remove('fall-stage');
   despawn(previewProp);
   inputState.held = true;
@@ -216,6 +220,38 @@ function holdOrSteer() {
 const carV = new THREE.Vector3();
 let travelled = 0,
   rumble = 0;
+// Local presentation only: metres between rail joints and axles, then camera amplitudes in metres/radians.
+const RIDE = { jointGap: 3.8, axleGap: 1.7, bob: 0.018, bump: 0.035, roll: 0.004, gain: 1 };
+let rideAge = 0;
+function rideSound(cue: PlaceCue) {
+  const a = getAudio();
+  if (a) renderPlaceSound(a.ctx, a.out, cue, a.ctx.currentTime + 0.002, RIDE.gain);
+}
+function updateRide(dt: number) {
+  if (state !== 'card' && state !== 'roll') return;
+  rideAge += dt;
+  const previous = travelled;
+  const speed = state === 'card' ? CRUISE : CRUISE + (RELEASE - CRUISE) * Math.min(rollT / ROLL_S, 1);
+  if (state === 'card') travelled += dt * speed;
+  else travelled = cruiseTravel + carAt.distanceTo(CAR_START);
+  let joint = 0;
+  // Both axles clack; derive the tiny spring response from distance so it follows the accelerating roll.
+  // Stalls skip missed contacts rather than dumping a backlog of sounds on the next frame.
+  for (const offset of [0, RIDE.axleGap]) {
+    const distance = travelled + offset;
+    if (dt < 0.1 && Math.floor(distance / RIDE.jointGap) !== Math.floor((previous + offset) / RIDE.jointGap))
+      rideSound('introJoint');
+    const age = (distance % RIDE.jointGap) / speed;
+    joint += Math.sin(age * 48) * Math.exp(-age * 22);
+  }
+  if (dt < 0.1 && Math.floor(travelled / 9.5) !== Math.floor(previous / 9.5)) rideSound('introCreak');
+  if (dt < 0.1 && Math.floor(travelled / 1.9) !== Math.floor(previous / 1.9)) rideSound('introRattle');
+  if (reducedMotion) return;
+  // Compose after the director's camera, never into its follow target or the player's body. Settle before takeoff.
+  const envelope = Math.min(rideAge / 0.5, 1) * (state === 'roll' ? clamp((ROLL_S - rollT) / 0.25, 0, 1) : 1);
+  camera.position.y += (Math.sin(travelled * 1.3) * RIDE.bob + joint * RIDE.bump) * envelope;
+  camera.rotateZ((Math.sin(travelled * 0.85) * RIDE.roll + joint * RIDE.roll * 0.5) * envelope);
+}
 let carFlying = false,
   carDown = false,
   carSpin = 0;
@@ -230,9 +266,8 @@ function updateCar(dt: number) {
   const g = car.group;
   if (state === 'card' || state === 'roll') {
     // It rides the sleepers: a small tremble and a slow rock.
-    travelled += dt * CRUISE;
-    rumble = Math.sin((travelled * 2 * Math.PI) / 0.95) * 0.007;
-    g.rotation.x = Math.sin(travelled * 1.3) * 0.009;
+    rumble = reducedMotion ? 0 : Math.sin((travelled * 2 * Math.PI) / 0.95) * 0.007;
+    g.rotation.x = reducedMotion ? 0 : Math.sin(travelled * 1.3) * 0.009;
   }
   if (state === 'card') {
     slideWorld(travelled);
@@ -395,7 +430,7 @@ const director = spawn({
   describe: () => ({ state, height: HEIGHT }),
   update({ dt }) {
     if (state === 'card') {
-      standOnCar(stageAt, CAR_START); // not the cart's rumble: the camera holds still
+      standOnCar(stageAt, CAR_START); // base framing stays independent of the cart's rumble
       stageShot(stageAt);
       camera.position.copy(stagePos);
       camera.quaternion.copy(stageQ);
@@ -404,8 +439,10 @@ const director = spawn({
     } else if (me.body) blendCamera(dt);
   },
   lateUpdate({ now, dt }) {
+    updateRide(dt);
     updateCar(dt);
     if (state === 'card') {
+      sky.position.copy(camera.position);
       updatePreview(dt);
       return;
     }
