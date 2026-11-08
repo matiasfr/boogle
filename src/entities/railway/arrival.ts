@@ -9,8 +9,7 @@ import { fallArrival } from '../../fall/arrival.ts';
 import { physicsTime, setCcd, teleport, sweepSphere, type Body } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { carry } from '../../physics/platforms.ts';
-import { camera, scene } from '../../render/scene.ts';
-import { atmosphere } from '../../render/sky.ts';
+import { camera } from '../../render/scene.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { registerRailwayRecovery } from './state.ts';
 import { identity } from '../../player/identity.ts';
@@ -24,7 +23,6 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     { H, insidePlace, PATH_SAMPLES },
     { SPAWN, toWorld, ORIGIN, VILLAGE },
     { registerPlaceShore },
-    { CROSSING },
     ,
     { SHORE_SAMPLES },
     { feet, outOf },
@@ -33,21 +31,19 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     import('../../proto/place/land.ts'),
     import('../../proto/place/layout.ts'),
     import('../../proto/place/water.ts'),
-    import('../../proto/crossing/tuning.ts'),
     import('../../proto/place/place.css'),
     import('../../proto/place/terrain.ts'),
     import('../../proto/place/sites.ts'),
     import('../../proto/place/pose.ts'),
   ]);
   owner.cleanup(registerPlaceShore());
-  const old = { wall: softWall.at, near: camera.near, far: camera.far, moved: haulHooks.moved };
+  const old = { wall: softWall.at, near: camera.near, moved: haulHooks.moved };
   const wasFresh = document.body.classList.contains('place-fresh');
   document.body.classList.add('place-fresh');
   hideControls(['respawn', 'use', 'toss', 'guest-crouch', 'guest-punch']);
   haulHooks.moved = () => true;
   softWall.at = Infinity;
   camera.near = 0.25;
-  camera.far = CROSSING.fogFar * 1.3;
   camera.updateProjectionMatrix();
   const constraint = (_look: THREE.Vector3, position: THREE.Vector3) => {
     if (insidePlace(position.x, position.z)) position.y = Math.max(position.y, H(position.x, position.z) + 0.5);
@@ -161,7 +157,6 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
     softWall.at = old.wall;
     haulHooks.moved = old.moved;
     camera.near = old.near;
-    camera.far = old.far;
     camera.updateProjectionMatrix();
     if (!wasFresh) document.body.classList.remove('place-fresh');
   });
@@ -206,11 +201,6 @@ export async function createRailwayArrival(owner: OwnedView, laidPath: () => rea
           capturePose();
           if (JSON.stringify(savedPose) !== before) savePose();
         }
-      }
-      if (atmosphere.underground <= 0 && scene.fog) {
-        const fog = scene.fog as THREE.Fog;
-        fog.near = 170;
-        fog.far = 1500;
       }
     },
   };

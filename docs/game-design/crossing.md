@@ -55,9 +55,10 @@ Counters: `rides` (the verb), `crossings` (on the train at the far stop) and `fa
 
 All at runtime, under the flag:
 
-- `camera.far` goes from 1500 m to 1.3 × the fog's far (4.7 km, or 12 km in `vast`) and `camera.near` from 0.1 to
-  0.25 m, for depth precision.
-- The fog is set after `sky.ts` rewrites it each frame: 180 to 3600 m (9200 m in `vast`).
+- `camera.far` is 1.3 × the fog's far (4.7 km, the game's own since 7 November, or 12 km in `vast`) and `camera.near`
+  goes from 0.1 to 0.25 m, for depth precision.
+- The fog is 180 to 3600 m, the game's own outdoor range since 7 November ([sky](day-night.md)); only `vast` writes its
+  own (9200 m) after `sky.ts` sets it each frame.
 - Four flat rectangles of sea surround the game's fixed 1300 m plane, out to where the fog is solid. They wear the
   plane's own material (`src/proto/crossing/sea.ts`), so nothing shows where they meet at 650 m.
 - Past the map's 237 m soft wall (`src/entities/player/state.ts`), a later pre-step hook puts back the speed the wall took.

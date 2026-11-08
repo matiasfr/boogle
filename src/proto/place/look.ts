@@ -27,9 +27,7 @@ import {
   vec3,
   vertexColor,
 } from 'three/tsl';
-import { onFrame } from '../../loop.ts';
 import { scene } from '../../render/scene.ts';
-import { atmosphere } from '../../render/sky.ts';
 import { flat } from '../flat.ts';
 import { dressBundleLogs } from '../../render/haul-bundle.ts';
 import { patchNode } from '../../render/material-patch.ts';
@@ -132,21 +130,9 @@ export function groundMaterial() {
 /** The spire's rock, when the land's is warm too. */
 export const spireRock = (color: string) => (LOOK.ground ? (color === '#8c8478' ? '#c6a274' : '#d6b688') : color);
 
-// The frozen water sky owns light. Preserve only this route's existing fog range.
+// The frozen water sky owns light and the fog range (src/render/water/frozen-sky.ts).
 // Passive compatibility handle for the trusted capture/bot tools; it no longer drives a clock.
 export const DAY = { seconds: 1680, u: 0.23, hold: true, low: 0.14, high: 0.42 };
-export function installLight() {
-  onFrame(
-    () => {
-      if (atmosphere.underground <= 0) {
-        const fog = scene.fog as THREE.Fog;
-        fog.near = 170;
-        fog.far = 1500;
-      }
-    },
-    { phase: 'update', order: -2 },
-  );
-}
 
 // ---------------------------------------------------------------- materials
 export type Paint = {

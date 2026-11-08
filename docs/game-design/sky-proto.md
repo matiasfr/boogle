@@ -25,7 +25,7 @@ game keeps them; none of this is in the game without the flag.
   steady angular band even from a low camera. The dome shoulder spans direction heights 0–0.025.
   Three's scene fog still fades the distant sea into the sky and hides the plane's square edge; there is no rim fade.
   No new water design or palette.
-- Distant land keeps the plain game's fog range, 110–520 m, and caves retain their own fog range.
+- Distant land keeps the game's outdoor fog range (180–3600 m since 7 November; [sky](day-night.md)), and caves retain their own fog range.
   The sea keeps scene fog on, with the prototype's angular haze applied before it.
 - No new meshes beyond the existing five cloud groups, cloud shadow casters, textures, volumes or render passes.
   Ground cloud shadows remain deferred. Real-time smoothness and iPad cost need device playtesting.

@@ -21,8 +21,11 @@ export const INTERP_MS = 120;
 export const SPAWN = { x: 14, z: 26 };
 export const BALL_SPAWN = { x: 12, z: 20 };
 export const FOG_HEX = '#bfe6f5';
-export const FOG_NEAR = 110;
-export const FOG_FAR = 520;
+// The outdoor view (owner, 7 November 2026: "Let's start with bigger"; docs/research/world-scale.md). Every route
+// shares it: src/render/water/frozen-sky.ts writes it each frame and the camera's far plane follows it.
+export const FOG_NEAR = 180;
+export const FOG_FAR = 3600;
+export const CAMERA_FAR = FOG_FAR * 1.3;
 export const COLORS = ['#ff6b5a', '#ffc23d', '#7fd14a', '#19c3b3', '#3d9bff', '#9b6bff', '#ff6fb5', '#ff9a3d'];
 export const DEFAULT_NAME = 'Dat Frinco';
 export const DEFAULT_ROOM = 'boogle';
