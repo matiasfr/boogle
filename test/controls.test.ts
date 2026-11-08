@@ -107,11 +107,14 @@ test('controls: a wrap waits for its action, and a missing id warns', async () =
   assert.equal(quiet(() => assert.equal(actionById('clash-test'), null)).length, 1);
 });
 
-// Static check: every registerAction('id', { pad: 'slot' ... }) in src/ claims a real slot no other call claims.
+// Production and prototypes bind on separate pages, matching registry's pads/protoPads split.
+// Every registerAction('id', { pad: 'slot' ... }) claims a real slot no other call in its group claims.
 // Slots picked at runtime (update-reload takes freeSlots()[0]) are skipped by design.
 test('controls: no two actions in src/ claim the same pad slot', () => {
   const src = new URL('../src/', import.meta.url);
-  const owners = new Map(); // slot -> 'file:id'
+  const production = new Map(),
+    prototypes = new Map(); // slot -> 'file:id', per page group
+  let productionClaims = 0;
   let n = 0;
   for (const f of readdirSync(src, { recursive: true, encoding: 'utf8' })) {
     if (!/\.[jt]s$/.test(f)) continue;
@@ -122,12 +125,15 @@ test('controls: no two actions in src/ claim the same pad slot', () => {
     )) {
       n++;
       const who = `${f}:${id}`;
+      const owners = f.startsWith('proto/') ? prototypes : production;
+      if (owners === production) productionClaims++;
       assert.ok(PAD.includes(pad!), `${who} uses unknown pad slot "${pad}"`);
       assert.ok(!owners.has(pad), `pad slot ${pad} is claimed by both ${owners.get(pad)} and ${who}`);
       owners.set(pad, who);
     }
   }
   assert.ok(n >= 10, `found only ${n} registerAction calls; did the pattern stop matching?`);
+  assert.equal(production.size, productionClaims, 'production code has no duplicate pad claims');
 });
 
 test('controls: listControls sorts by group, then order, then registration; describeControl claims no slot', () => {
@@ -181,10 +187,12 @@ test('controls: controlProblems finds gaps in the guide', () => {
   assert.deepEqual(controlProblems([ok, { ...other, context: 'swimming' }]), []);
 });
 
-// Static check, like the pad slots: no two registerAction / onKey calls in src/ bind the same key code.
+// As with pad slots, production and prototype key claims are checked separately.
 test('controls: no two bindings in src/ claim the same key', () => {
   const src = new URL('../src/', import.meta.url);
-  const owners = new Map(); // code -> 'file:id'
+  const production = new Map(),
+    prototypes = new Map(); // code -> 'file:id', per page group
+  let productionClaims = 0;
   let n = 0;
   for (const f of readdirSync(src, { recursive: true, encoding: 'utf8' })) {
     if (!/\.[jt]s$/.test(f) || f === 'player/controls.ts') continue;
@@ -199,12 +207,15 @@ test('controls: no two bindings in src/ claim the same key', () => {
       for (const [, code] of key!.matchAll(/['`]([\w${}+ ]+)['`]/g)) {
         n++;
         const who = `${f}:${id}`;
+        const owners = f.startsWith('proto/') ? prototypes : production;
+        if (owners === production) productionClaims++;
         assert.ok(!owners.has(code), `key ${code} is bound by both ${owners.get(code)} and ${who}`);
         owners.set(code, who);
       }
     }
   }
   assert.ok(n >= 3, `found only ${n} key bindings; did the pattern stop matching?`);
+  assert.equal(production.size, productionClaims, 'production code has no duplicate key claims');
 });
 
 test('controls: a key presses its action through one guard', () => {

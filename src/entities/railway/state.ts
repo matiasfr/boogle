@@ -25,6 +25,7 @@ export type RailwayViewInspection = RailwayInspection & {
     ReturnType<Awaited<ReturnType<typeof import('./shelf-view.ts').createRailwayShelf>>['inspect']> &
     ReturnType<Awaited<ReturnType<typeof import('./cart-view.ts').createRailwayCart>>['inspect']>;
   reward: ReturnType<Awaited<ReturnType<typeof import('./reward.ts').createRailwayReward>>['inspect']>;
+  hookShot: ReturnType<Awaited<ReturnType<typeof import('./hook-shot.ts').createRailwayHook>>['inspect']>;
 };
 let current: (() => RailwayViewInspection) | null = null;
 export const inspectRailway = () => current?.() ?? null;
@@ -40,5 +41,14 @@ export function registerRailwayRecovery(fn: () => void) {
   recover = fn;
   return () => {
     if (recover === fn) recover = null;
+  };
+}
+
+let hookProbe: ((id: string) => string) | null = null;
+export const hookWhyNot = (id: string): string => hookProbe?.(id) ?? 'hook view unavailable';
+export function registerHookProbe(fn: (id: string) => string) {
+  hookProbe = fn;
+  return () => {
+    if (hookProbe === fn) hookProbe = null;
   };
 }

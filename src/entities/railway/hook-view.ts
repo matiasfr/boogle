@@ -6,14 +6,19 @@ import type { Shape } from '../../physics/engine.ts';
 import { camera } from '../../render/scene.ts';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import { hookRings, type HookRing } from './hook-path.ts';
+import { me, camForward } from '../../player/player.ts';
+import { glyph } from '../../player/glyphs.ts';
+import { placeSound } from '../../render/place-sfx.ts';
 
 export async function createRailwayHookView(owner: OwnedView) {
-  const [tech, layout, land, shapes, flatMod] = await Promise.all([
+  const [tech, layout, land, shapes, flatMod, gear, sounds] = await Promise.all([
     import('../../proto/place/tech-layout.ts'),
     import('../../proto/place/layout.ts'),
     import('../../proto/place/land.ts'),
     import('../../proto/place/part-geometry.ts'),
     import('../../proto/flat.ts'),
+    import('../../proto/place/gear-models.ts'),
+    import('../../proto/minis/common.ts'),
   ]);
   const ox = layout.ORIGIN.x;
   const rings = hookRings(tech.PADS, tech.ringAt, ox);
@@ -96,6 +101,72 @@ export async function createRailwayHookView(owner: OwnedView) {
     hot = new THREE.Color('#d6fff5'),
     color = new THREE.Color();
   const camAt = new THREE.Vector3();
+  const cableMat = readableGlow(
+    new THREE.MeshStandardNodeMaterial({ color: '#2b2a33', emissive: '#39e6c6', emissiveIntensity: 0.5 }),
+  );
+  const cableGeo = new THREE.CylinderGeometry(0.018, 0.018, 1, 5).translate(0, 0.5, 0);
+  geometries.push(cableGeo);
+  type Cable = { m: THREE.Mesh; t: number; last: THREE.Vector3 };
+  function makeCable(): Cable {
+    const m = new THREE.Mesh(cableGeo, cableMat);
+    m.visible = false;
+    m.frustumCulled = false;
+    owner.add(m);
+    return { m, t: 0, last: new THREE.Vector3() };
+  }
+  const cable = makeCable(),
+    hand = new THREE.Vector3(),
+    direction = new THREE.Vector3(),
+    up = new THREE.Vector3(0, 1, 0);
+  function drawCable(c: Cable, from: THREE.Vector3, to: THREE.Vector3 | null, dt: number) {
+    c.t = to ? Math.min(1, c.t + dt / 0.07) : Math.max(0, c.t - dt / 0.11);
+    c.m.visible = c.t > 0;
+    if (!c.m.visible) return;
+    if (to) c.last.copy(to);
+    direction.subVectors(c.last, from);
+    const len = direction.length();
+    c.m.position.copy(from);
+    c.m.quaternion.setFromUnitVectors(up, direction.divideScalar(len || 1));
+    c.m.scale.set(1, len * c.t, 1);
+  }
+  function handAt(root: THREE.Object3D | null | undefined, out: THREE.Vector3) {
+    const h = root?.getObjectByName('hand_r');
+    if (h) h.getWorldPosition(out);
+    else {
+      const p = me.body?.interpolatedPosition;
+      out.set(p?.x ?? 0, (p?.y ?? 0) + 0.6, p?.z ?? 0);
+    }
+  }
+  const flick = new THREE.Vector3(),
+    targetAt = new THREE.Vector3();
+  let flickLeft = 0,
+    blinkUntil = 0;
+  function fire(ring: HookRing) {
+    flickLeft = 0;
+    targetAt.set(ring.at.x, ring.at.y, ring.at.z);
+    placeSound('hookFire', me.body!.position.x, me.body!.position.z);
+    if (me.avatar) gear.armToRing(me.avatar, targetAt, 0.9);
+    handAt(me.avatar, hand);
+    drawCable(cable, hand, targetAt, 1 / 60);
+  }
+  function end() {
+    const p = me.body?.position;
+    if (p) placeSound('hookLatch', p.x, p.z);
+  }
+  function deny() {
+    sounds.pop(0, 0.25);
+    handAt(me.avatar, hand);
+    camForward(flick);
+    flick.multiplyScalar(1.5).add(hand);
+    flickLeft = 0.07;
+    blinkUntil = performance.now() + 200;
+    drawCable(cable, hand, flick, 1 / 60);
+  }
+  const chip = document.createElement('div');
+  chip.className = 'place-key';
+  (document.querySelector('.hud') ?? document.body).append(chip);
+  const onScreen = new THREE.Vector3();
+  let chipOn = false;
   function update(
     dt: number,
     now: number,
@@ -103,10 +174,11 @@ export async function createRailwayHookView(owner: OwnedView) {
     pick: HookRing | null = null,
     pull: HookRing | null = null,
     range: Set<HookRing> = new Set(),
+    pulls = 0,
   ) {
     camera.getWorldPosition(camAt);
     rings.forEach((r, k) => {
-      const bright = r === pick || r === pull,
+      const bright = r === pick || r === pull || (now < blinkUntil && range.has(r)),
         inRange = range.has(r);
       pose.position.set(r.at.x, r.at.y, r.at.z);
       pose.lookAt(camAt);
@@ -127,10 +199,29 @@ export async function createRailwayHookView(owner: OwnedView) {
       halo.lookAt(camAt);
       halo.scale.setScalar(1 + Math.sin(now * 0.01) * 0.06);
     }
+    handAt(me.avatar, hand);
+    let cableTo: THREE.Vector3 | null = null;
+    if (pull) {
+      cableTo = targetAt.set(pull.at.x, pull.at.y, pull.at.z);
+      if (me.avatar) gear.armToRing(me.avatar, cableTo, 0.9);
+    } else if (flickLeft > 0) {
+      cableTo = flick;
+      flickLeft = Math.max(0, flickLeft - dt);
+    }
+    drawCable(cable, hand, cableTo, dt);
+    chipOn = !!pick && !pull && pulls < 3 && !document.body.classList.contains('touch');
+    chip.classList.toggle('on', chipOn);
+    if (chipOn && pick) {
+      const html = glyph('hook');
+      if (chip.innerHTML !== html) chip.innerHTML = html;
+      onScreen.set(pick.at.x, pick.at.y, pick.at.z).project(camera);
+      chip.style.transform = `translate(calc(${((onScreen.x + 1) / 2) * innerWidth}px - 50%), calc(${((1 - onScreen.y) / 2) * innerHeight}px - 50%))`;
+    }
   }
   owner.cleanup(() => {
     for (const g of geometries) g.dispose();
-    for (const m of [partMat, glow, ringMat, haloMat]) m.dispose();
+    for (const m of [partMat, glow, ringMat, haloMat, cableMat]) m.dispose();
+    chip.remove();
   });
-  return { rings, ringById, update };
+  return { rings, ringById, update, fire, end, deny, remoteCables: () => 0, chip: () => chipOn };
 }

@@ -396,6 +396,10 @@ Both beam grips use `currentCoopPeer` from `coop-identity.ts`, the same bounded 
 
 ### Production Needle Bell hook climb (8 November 2026)
 
+The room's existing hook fact grants everyone a zip-line pull to the ring nearest the middle of the view: 24 m range, 25° cone, 16 m/s cruise with 60 m/s² acceleration and 70 m/s² braking. Picking uses chest ray clearance, both body-sphere sweeps and 20%/150 ms hysteresis. Jump, Back or a second press lets go with horizontal speed capped at 9.5 m/s and upward speed at 3 m/s; cancelling never refills the air jump. A pull skips the second-jump step. Reveal input holding blocks new pulls but lets a current pull finish. Ownership survives disconnect/resync and clears only after two ready seconds without the shared fact.
+
+The press immediately starts its sound, 70 ms reaching cable and arm pose; arrival/let-go sounds and winds the cable back over 110 ms. A denied press gives a quiet pop, 1.5 m cable flick and 200 ms blink on nearby rings without moving the body. The picked ring shows the F/RB glyph for the first three pulls, with touch using its Hook button. Targeting and cosmetics are Local; the pull is Owner physics carried by ordinary position presence, with an additive nullable `railwayHook` pad id. No new shared operation or state is added.
+
 The production railway shows eight rings from the start: p2, t0–t5 and the summit. Six 0.9 m floating stone slabs have teal undersides; the 0.4 m wooden summit deck is at 102.4 m. Positions and ring placement read Place's `tech-layout.ts` directly. Thin 1.5 m collider tiles preserve the camera's view beneath the next slab. The existing p2 slab is reused. The t0 secret box, t3 side slab and all other Place rings stay out of production. The summit ring and its post retain Place's off-deck east-edge placement for the orchestrator's review.
 
 ## Ancient technology (round 4, exploring)
