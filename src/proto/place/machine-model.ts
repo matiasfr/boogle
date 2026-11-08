@@ -6,6 +6,8 @@ import { panelMechanism, type RailBatch } from './machine-panels.ts';
 export const MACHINE_GAP = 3.7;
 export const MACHINE_DECK = 0.7;
 export const MACHINE_CHAIRS = [-0.55, 0.55] as const;
+/** Chair seat top above the deck top (m): Buddy sits with his feet on the deck, his seated pose (Driving_Loop) hips this high. assets/src/track-layer.py CHAIR_SEAT. */
+export const MACHINE_CHAIR_SEAT = 0.32;
 export const MACHINE_WHEEL_RADIUS = 0.13;
 export const wheelAngle = (distance: number) => distance / MACHINE_WHEEL_RADIUS;
 /** Wrap logical axle pivots without discarding GLB quantization/decode transforms. Also used by the asset stage. */

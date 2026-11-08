@@ -70,7 +70,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   let state = adapter.inspect();
   const opened = () => state.stations[2]?.completion === 1;
   const opening = await createRailwayOpening(owner, {
-    machine: () => ({ mesh: machine.flatbed.mesh, top: machine.flatbed.spec.top }),
+    // top: the deck in the mesh frame (the chairs stand on it), not the car spec height above the rails.
+    machine: () => ({ mesh: machine.flatbed.mesh, top: machine.flatbed.hy }),
     traffic: [machine.loco, machine.flatbed],
     station: () => frames[state.activeStation]!,
     busy: () => state.phase === 'feeding' || state.phase === 'laying',
