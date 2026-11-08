@@ -276,7 +276,7 @@ export async function createRailwayCart(
       tag.sprite.visible = l2.cartStatus !== 'off' && l2.served >= 0;
       if (tag.sprite.visible) {
         depotPlace(l2.served, rackAt);
-        tag.sprite.position.set(rackAt.x, rackAt.y + 3.4, rackAt.z);
+        tag.sprite.position.set(rackAt.x, rackAt.y + 4.8, rackAt.z); // above the frame's own tag
         tag.set(title, 'More coming', color);
       }
       // Place's handle (pair.ts): it drops on the press; a call made while the cart is out with a load is served once it
