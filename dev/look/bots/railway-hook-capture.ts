@@ -24,6 +24,14 @@ export function start() {
   background(play(), 'played hook capture');
   background(
     (async () => {
+      if (url.searchParams.get('player') === '2') {
+        // The helper waits at the quarry gate rather than visiting the leader's tower checkpoint.
+        while (!inspectRailway()?.hookShot.owned) await wait(100);
+        window.__debugCam!.set([1018, 35, 25], [1000, 32, 5], 65);
+        hideNotes();
+        shot.__placeDone = true;
+        return;
+      }
       while (!shot.__railStop) await wait(100);
       if (shot.__railStop !== beat) throw new Error(`Hook capture missed ${beat}`);
       if (mode === 'summit') window.__debugCam!.set([1040, 117, 3], [1014, 102.4, -6], 65);

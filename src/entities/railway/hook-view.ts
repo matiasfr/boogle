@@ -107,6 +107,8 @@ export async function createRailwayHookView(owner: OwnedView) {
     near = new THREE.Color('#39e6c6'),
     hot = new THREE.Color('#d6fff5'),
     color = new THREE.Color();
+  // Allocate instanceColor before the first material compilation; later updates change its contents.
+  rings.forEach((_, k) => ringMesh.setColorAt(k, dim));
   const camAt = new THREE.Vector3();
   const cableMat = readableGlow(
     new THREE.MeshStandardNodeMaterial({ color: '#2b2a33', emissive: '#39e6c6', emissiveIntensity: 0.5 }),
