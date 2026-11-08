@@ -26,6 +26,8 @@ export const backSeam = {
   count: (n: number) => n,
   remote: null as ((peer: string) => number) | null, // ?proto=place&coop=1: a partner's logs, from their presence
   carry: null as (() => CarryReadout) | null,
+  /** Whether every back wears the carry frame (the railway's shared pack); null where no owner draws one. */
+  pack: null as (() => boolean) | null,
 };
 /** Where the next piece onto your bundle goes, holding `n` now: its world position and the bundle's world rotation. */
 export function myBundleNext(n: number, out: THREE.Vector3, rot: THREE.Quaternion): boolean {
