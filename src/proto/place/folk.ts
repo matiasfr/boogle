@@ -14,6 +14,7 @@ import { me } from '../../player/player.ts';
 import { flat } from '../flat.ts';
 import { babble, CHATTER } from './chatter.ts';
 import { H } from './land.ts';
+import { MACHINE_CHAIR_SEAT } from './machine-model.ts';
 import { merged } from './part-geometry.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { TOWN, toWorld, FORGE } from './layout.ts';
@@ -94,6 +95,7 @@ type Guy = {
   tz: number;
   hasTarget: boolean;
   fy: number | null; // stands at this height, not on the ground (a scaffold, a platform)
+  rideUp: number; // m a rider's root sits above the deck it rides on: a chair's seat, feet still on the deck
   cheer: number;
   gather: boolean;
   follow: number;
@@ -150,6 +152,7 @@ function make(job: Job, x: number, z: number, extra?: Partial<Guy>): Guy {
     tz: z,
     hasTarget: false,
     fy: null,
+    rideUp: 0,
     cheer: 0,
     gather: false,
     follow: 0,
@@ -893,7 +896,7 @@ function pose(g: Guy) {
   }
   // Torso rock, breath and chat never lift a planted boot. Sample each sole on slopes; decks supply their own height.
   const airborne = g.mood === 'cheer' ? hop : 0;
-  const seatDrop = g.mood === 'ride' ? -0.14 : 0; // ride() raises the seated root above its deck
+  const seatDrop = g.mood === 'ride' ? -0.14 - g.rideUp : 0; // ride() raises the seated root above its deck
   q.setFromEuler(e.set(0, g.yaw, 0));
   base.compose(p.set(g.x, gy + airborne, g.z), q, s.set(1, 1, 1));
   for (let foot = 0; foot < 2; foot++) {
@@ -910,9 +913,10 @@ const SLEEP = 150; // m from the camera past which they stop updating and aren't
 const BEHIND = 6; // m behind the camera's plane before someone isn't drawn: past their shadow's reach into the view
 const look = new THREE.Vector3();
 const wp = new THREE.Vector3();
-function ride(g: Guy, car: { mesh: THREE.Object3D; top: number }, x: number, z: number, yaw: number) {
+function ride(g: Guy, car: { mesh: THREE.Object3D; top: number }, x: number, z: number, yaw: number, up = 0) {
+  g.rideUp = up;
   car.mesh.updateWorldMatrix(true, false);
-  wp.set(x, car.top + 0.14, z).applyMatrix4(car.mesh.matrixWorld);
+  wp.set(x, car.top + 0.14 + up, z).applyMatrix4(car.mesh.matrixWorld);
   g.x = wp.x;
   g.z = wp.z;
   g.fy = wp.y; // Follow the actual roof through pitch and wake shudder, including its local height.
@@ -1191,7 +1195,8 @@ export function updateFolk(dt: number) {
     else brain(g, dt);
     if (e_ && g.job === 'station' && g.mood === 'ride') {
       const car = e_.machine();
-      ride(g, car, g.seat ? 0.42 : -0.42, -1.1, g.seat ? -0.7 : 0.7);
+      // On the track layer's chair, bottom on the seat top (a sitting guy's root is 3.5 cm under it, as in the sit pose).
+      ride(g, car, g.seat ? 0.55 : -0.55, -1.15, g.seat ? -0.7 : 0.7, MACHINE_CHAIR_SEAT - 0.035);
     } else if (e_ && g.job === 'rider') {
       const car = e_.trainCar(g.camp);
       if (!car) continue;

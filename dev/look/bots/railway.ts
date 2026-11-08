@@ -172,7 +172,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     }
     input.keys.delete('KeyW');
     require(aboard(), `boarded ${name} layer by real jump`);
-    mark(`${name} layer boarded`);
+    await checkpoint(`${name} layer boarded`);
     if (query.get('seat') === '1') return sit(station);
     let stayedAboard = true;
     await until(() => {

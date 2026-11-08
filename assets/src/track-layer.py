@@ -17,6 +17,10 @@ BEVEL = 0.008  # Narrow rack/grille solids must not clamp into zero-area bevel f
 BIG_BEVEL = 0.015  # One segment, same envelope: highlight the large forms, step and chair shells.
 CHAIR_X = (-0.55, 0.55)
 CHAIR_Z = -1.15
+# Seat/back heights above the deck top, in metres. Buddy sits with his feet on the deck, so the seat top is the
+# height of his Driving_Loop hips (MACHINE_CHAIR_SEAT in src/proto/place/machine-model.ts is the same number).
+CHAIR_SEAT = 0.32
+CHAIR_BACK = 0.40
 WHEEL_R = 0.13
 AXLE_Y = 0.235 + WHEEL_R  # Native place-kit rail top; deck underside stays 0.52.
 
@@ -139,16 +143,17 @@ def deck_wood(bm):
 
 
 def chair_wood(bm):
-    # Same machine chair transforms/dimensions as seatMesh; bake only this machine's static furniture.
+    # A low bench seat: a 12 cm plank on two side blocks, its top CHAIR_SEAT above the deck.
     for x in CHAIR_X:
-        box(bm, x, DECK + 0.49, CHAIR_Z, 0.8, 0.12, 0.65, BIG_BEVEL)
+        box(bm, x, DECK + CHAIR_SEAT - 0.06, CHAIR_Z, 0.8, 0.12, 0.65, BIG_BEVEL)
         for side in (-0.3, 0.3):
-            box(bm, x + side, DECK + 0.23, CHAIR_Z, 0.12, 0.46, 0.55, BIG_BEVEL)
+            box(bm, x + side, DECK + (CHAIR_SEAT - 0.12) / 2, CHAIR_Z, 0.12, CHAIR_SEAT - 0.12, 0.55, BIG_BEVEL)
 
 
 def chair_teal(bm):
+    # A short back rest rising CHAIR_BACK over the seat top, on the rear edge.
     for x in CHAIR_X:
-        box(bm, x, DECK + 0.95, CHAIR_Z - 0.3, 0.8, 0.8, 0.12, BIG_BEVEL)
+        box(bm, x, DECK + CHAIR_SEAT + CHAIR_BACK / 2, CHAIR_Z - 0.3, 0.8, CHAIR_BACK, 0.12, BIG_BEVEL)
 
 
 def deck_iron(bm):
