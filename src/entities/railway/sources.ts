@@ -571,6 +571,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     const pid = remotes.get(peer)?.pid;
     return adapter.inspect().accounts.find((account) => account.pid === pid)?.carry ?? 0;
   };
+  backSeam.pack = () => adapter.inspect().line2.pack;
   backSeam.carry = () => {
     const current = adapter.inspect();
     harvestFlights = harvestFlights.filter((flight) => flight());

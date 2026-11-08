@@ -6,6 +6,9 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { createRewardReveal } from '../../render/reward-reveal.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
+import { backSeam } from '../../player/haul-back.ts';
+import { frameOf } from '../../render/haul-bundle.ts';
+import { remotes } from '../../netplay/net.ts';
 import { inputState } from '../../player/input-state.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { GRAVITY, PLAYER_MASS, FIXED } from '../../constants.ts';
@@ -206,6 +209,18 @@ export async function createRailwayTools(
     const s = adapter.inspect();
     return s.ready && s.line2.packReady && !s.line2.pack;
   };
+  // The pack frame on every back, once the world has it (shared state, so a friend's is derived the same way: no
+  // presence key). It rides the avatar's back socket, the same frame the haul bundle sits in.
+  const frames = new Map<THREE.Object3D, THREE.Mesh>();
+  const wearPack = (avatar: THREE.Object3D | null | undefined, on: boolean) => {
+    if (!avatar) return;
+    let frame = frames.get(avatar);
+    if (!on) return void frame?.removeFromParent();
+    frame ??= gear.packFrameMesh();
+    frames.set(avatar, frame);
+    const back = frameOf(avatar);
+    if (frame.parent !== back) back.add(frame);
+  };
   const api = {
     /** A fresh model of an axe (or the pack frame) for a friend's flourish (materials are shared with the cards). */
     axeModel(key: string): THREE.Object3D | null {
@@ -218,6 +233,7 @@ export async function createRailwayTools(
       axeChest: { x: chestAt.x, y: chestAt.y, z: chestAt.z, available: axeAvailable() },
       packChest: { x: packAt.x, y: packAt.y, z: packAt.z, available: packAvailable() },
       packReveals,
+      packFramesWorn: [...frames.values()].filter((f) => f.parent).length,
       jumpDevice: {
         x: deviceAt.x,
         y: deviceAt.y,
@@ -285,6 +301,14 @@ export async function createRailwayTools(
       if (chest.visible) chest.position.copy(chestAt).y += Math.max(0, Math.sin(now * 0.004)) * 0.06;
       packChest.visible = packAvailable();
       if (packChest.visible) packChest.position.copy(packAt).y += Math.max(0, Math.sin(now * 0.004 + 1.3)) * 0.06;
+      const packOn = backSeam.pack?.() ?? false;
+      wearPack(me.entered ? me.avatar : null, packOn);
+      for (const r of remotes.values()) wearPack(r.visible && r.entered ? r.avatar : null, packOn);
+      for (const [avatar, frame] of frames)
+        if (!avatar.parent) {
+          frame.removeFromParent();
+          frames.delete(avatar);
+        }
       for (const object of [ring, ring2, core]) object.visible = !state.jump;
       // The flare: up fast, held, then gone with the device's glow.
       flare = Math.max(0, flare - dt);
@@ -346,6 +370,8 @@ export async function createRailwayTools(
       if (disposed) return;
       disposed = true;
       offAccepted();
+      for (const frame of frames.values()) frame.removeFromParent();
+      frames.clear();
       root.removeFromParent();
       for (const geometry of geometries) geometry.dispose();
       material.dispose();
