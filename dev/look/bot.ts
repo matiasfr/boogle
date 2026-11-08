@@ -8,7 +8,7 @@ import { input } from '../../src/player/input.ts';
 import { interactDown, interactTarget, interactUp, useDown, useUp } from '../../src/player/hands.ts';
 import { getMask, rayHit, raycastClosest, sweepSphere } from '../../src/physics/engine.ts';
 import { GROUP } from '../../src/physics/physics.ts';
-import { PLAYER_R, SEA, WALKABLE_NY } from '../../src/constants.ts';
+import { PLAYER_R, SEA, SWIM_DEPTH, WALKABLE_NY } from '../../src/constants.ts';
 
 const CELL = 1; // m: a deck two metres wide has centres on it
 const STEP_UP = 0.9; // m in one cell without a jump
@@ -36,6 +36,8 @@ const TURNS = [
 type Point = { x: number; y: number; z: number };
 type Node = Point & { ix: number; iz: number; g: number; f: number; from: Node | null; key: string };
 export type BotOptions = {
+  /** Plan through surface water and steer normally there; never implies relocation recovery. */
+  allowSwimming?: boolean;
   /** Is this spot under water? Default: below the sea. */
   water?: (x: number, y: number, z: number) => boolean;
   /** Get out of the water, as a person would. */
@@ -103,8 +105,10 @@ export function makeBot(opts: BotOptions = {}) {
   }
   /** From a spot to the next, one cell or so off. Returns the height there, or null if you can't. */
   function step(a: Point, x: number, z: number, steepest = WALKABLE_NY) {
-    const y = ground(x, a.y, z, steepest);
-    if (y === null || y - a.y > JUMP_UP || a.y - y > DROP || water(x, y, z)) return null;
+    let y = ground(x, a.y, z, steepest);
+    // A low bank can lead onto the water surface. Never turn a high ledge's missing floor into a shortcut down.
+    if (opts.allowSwimming && a.y <= SEA + JUMP_UP && (y === null || water(x, y, z))) y = SEA - SWIM_DEPTH - PLAYER_R;
+    if (y === null || y - a.y > JUMP_UP || a.y - y > DROP || (!opts.allowSwimming && water(x, y, z))) return null;
     const lift = PLAYER_R + 0.45;
     const from = { x: a.x, y: a.y + lift, z: a.z },
       to = { x, y: y + lift, z };
@@ -115,6 +119,7 @@ export function makeBot(opts: BotOptions = {}) {
   }
   /** Is there a drop close beside this spot? A narrow deck has these all along its sides, so walk down the middle. */
   function nearEdge(x: number, y: number, z: number) {
+    if (opts.allowSwimming && y <= SEA + JUMP_UP) return false;
     for (const [dx, dz] of EDGE) {
       const g = ground(x + dx, y, z + dz, 0.2);
       if (g === null ? !solidBeside(x + dx, y, z + dz) : water(x + dx, g, z + dz) || y - g > DROP * 0.7) return true;
@@ -150,7 +155,10 @@ export function makeBot(opts: BotOptions = {}) {
     // The browser also sends room heartbeats. A harvest's batch of searches must not disconnect a peer.
     await wait(0);
     const p = body().position;
-    const y0 = ground(p.x, p.y - PLAYER_R, p.z) ?? p.y - PLAYER_R;
+    const y0 =
+      opts.allowSwimming && me.swimming
+        ? SEA - SWIM_DEPTH - PLAYER_R
+        : (ground(p.x, p.y - PLAYER_R, p.z) ?? p.y - PLAYER_R);
     const start: Node = {
       x: p.x,
       y: y0,
@@ -267,7 +275,7 @@ export function makeBot(opts: BotOptions = {}) {
     wet = me.swimming;
   }
   function swimCheck() {
-    if (!me.swimming) return false;
+    if (!me.swimming || opts.allowSwimming) return false;
     // Recovery can deliberately throw in a continuous route. Stop driving even when its caller aborts.
     input.keys.delete('KeyW');
     input.keys.delete('ShiftLeft');

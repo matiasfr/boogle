@@ -138,17 +138,81 @@ async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
     `HOOK DROP GROUND ${JSON.stringify({ id, position: b.position, p2Distance: distance, p2WhyNot: hookWhyNot('p2') })}`,
   );
   const deck = layout.lineAt(layout.LINKS[1]!.line, 84, { x: 0, z: 0, ux: 0, uz: 1 });
+  // The production player can surface-swim. Opt in only for this return, preserving the main route's dry checks.
+  const returning = makeBot({
+    allowSwimming: true,
+    recover: () => {
+      throw new Error('Gorge return requested forbidden relocation recovery');
+    },
+  });
+  // Reaching the trestle's x/z on the floor is not reaching its deck. Follow the existing low quarry footbridge
+  // and its authored graded path up the east bank. Join behind the parked machine, as the Q3 delivery route does.
+  const footpath = layout.PATHS[1]!;
+  for (const [x, z] of footpath.pts.slice(footpath.bridgeAt + 1)) {
+    hookCheck(
+      bot,
+      await returning.walk(x + layout.ORIGIN.x, z, 1, { limit: 300000 }),
+      `gorge return reached existing quarry path (${x}, ${z}) without recovery`,
+    );
+  }
+  bot.note(`hook drop ${id} reached the existing upper quarry path`);
+  const line = layout.LINKS[1]!.line;
+  const frame = inspectRailway()!.line2View.frames[2]!;
   hookCheck(
     bot,
-    await bot.walk(deck.x + layout.ORIGIN.x, deck.z, 1),
-    `DROP RETURN BLOCKED: ${id} must walk to quarry s=84 without recovery`,
+    await returning.walk(frame.x, frame.z - 5, 0.8),
+    'gorge return rounded the north side of the Q3 frame',
+  );
+  const join = layout.lineAt(line, 112, { x: 0, z: 0, ux: 0, uz: 1 });
+  const x = join.x + layout.ORIGIN.x;
+  const side = Math.sign(-join.uz * (frame.x - x) + join.ux * (frame.z - join.z)) || 1;
+  hookCheck(
+    bot,
+    await returning.straight(x - join.uz * side * 4.5, join.z + join.ux * side * 4.5, 0.6, 10000),
+    'gorge return walked the clear side of the parked machine',
+  );
+  // The track has a raised timber edge: approach on the bank, then use an ordinary held jump onto it.
+  hookCheck(
+    bot,
+    await returning.straight(x - join.uz * side * 2.25, join.z + join.ux * side * 2.25, 0.6, 10000),
+    'gorge return reached the track edge',
+  );
+  hookCheck(
+    bot,
+    await bot.until(() => me.coyote > 0, 3000, 'supported before the track-edge jump'),
+    'track-edge jump starts on the bank',
+  );
+  pressJump();
+  try {
+    hookCheck(bot, await returning.straight(x, join.z, 0.5, 10000), 'gorge return jumped onto the rail');
+  } finally {
+    releaseJump();
+  }
+  hookCheck(
+    bot,
+    await bot.until(() => me.coyote > 0 && !me.swimming, 5000, 'track-edge jump lands'),
+    'gorge return landed on the rail',
+  );
+  for (let s = 112; s > 84; s -= 3) {
+    const p = layout.lineAt(line, s, { x: 0, z: 0, ux: 0, uz: 1 });
+    hookCheck(
+      bot,
+      await returning.straight(p.x + layout.ORIGIN.x, p.z, 0.5, 10000),
+      `gorge return followed rail s=${s}`,
+    );
+    hookCheck(bot, Math.abs(b.position.y - PLAYER_R - layout.railY(line, s)) < 1, `gorge return stays on deck s=${s}`);
+  }
+  hookCheck(
+    bot,
+    await returning.straight(deck.x + layout.ORIGIN.x, deck.z, 0.5, 10000),
+    `DROP RETURN BLOCKED: ${id} must walk/swim to quarry s=84 without recovery`,
   );
   hookCheck(
     bot,
     Math.abs(b.position.y - PLAYER_R - layout.railY(layout.LINKS[1]!.line, 84)) < 1 && me.coyote > 0,
     `drop ${id} returned to the quarry deck`,
   );
-  bot.note(`hook drop ${id} walked home without recovery`);
+  bot.note(`hook drop ${id} walked/swam home without recovery`);
 }
 
 const HOOK_RELOAD_KEY = 'look.railway-hook-reload';
@@ -188,7 +252,7 @@ export function startHookReload() {
         await bot.until(() => inspectRailway()?.hookShot.owned, 5000, 'hook latch restored'),
         'hook latch restored once ready',
       );
-      await hookTo(bot, 't1');
+      await returnFromTower(bot, ['t1']);
       sessionStorage.removeItem(HOOK_RELOAD_KEY);
       document.documentElement.dataset.railwayHookReload = 'done';
       bot.finish('hook reload returns to t2 and pulls to t1');
@@ -1338,6 +1402,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         },
       })}`,
     );
+    if (query.has('hookDrop')) (window as Window & { __placeDone?: boolean }).__placeDone = true;
     throw error;
   } finally {
     input.keys.delete('KeyW');
