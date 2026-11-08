@@ -1,0 +1,28 @@
+{
+  "id": "hook",
+  "title": "You pull to a hook ring",
+  "kind": "owner",
+  "order": 31,
+  "steps": [
+    {
+      "go": [["you.input", "you.systems"]],
+      "text": "Once the room has the shared hook, F or RB starts a cable and arm pose immediately. A missed target gives a short flick and sound.",
+      "cite": [{ "action": "hook" }, { "file": "src/entities/railway/hook-shot.ts" }]
+    },
+    {
+      "hl": ["you.systems"],
+      "text": "Your tab drives your body along the clear path to the picked slab. The pull, target choice and feedback add no shared operation.",
+      "cite": [{ "file": "src/entities/railway/hook-path.ts" }, { "file": "src/entities/railway/hook-view.ts" }]
+    },
+    {
+      "go": [["you.systems", "you.netplay", "lane:owner", "fr.netplay"]],
+      "text": "Normal position presence carries the travel. The additional railwayHook field names the ring only while pulling; missing or invalid values mean off.",
+      "cite": [{ "presence": "railwayHook" }, { "file": "src/netplay/net.ts" }]
+    },
+    {
+      "go": [["fr.netplay", "fr.screen"]],
+      "text": "Your friend draws a cable from your interpolated hand to the known ring and poses that arm. Letting go winds it back; leaving removes it.",
+      "cite": [{ "file": "src/entities/railway/hook-view.ts" }]
+    }
+  ]
+}

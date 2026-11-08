@@ -31,6 +31,7 @@ export async function createRailwayLine2(
   bundleOrigin: (pid: string, count: number, out: THREE.Vector3) => boolean,
   /** The railway's one reveal queue (reward.ts): devices show "You got" like the jump device does. */
   youGot: (got: Got) => boolean,
+  hookShown?: () => void,
 ) {
   const [layout, rail, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit] = await Promise.all([
     import('../../proto/place/layout.ts'),
@@ -564,6 +565,7 @@ export async function createRailwayLine2(
         line: HOOK_REWARD.line,
         model: new THREE.Mesh(hookPrize, partMat),
         from: hookRing.position.clone(),
+        done: () => hookShown?.(),
       });
       return;
     }

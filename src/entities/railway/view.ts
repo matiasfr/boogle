@@ -19,6 +19,7 @@ import { createRailwayPanelView } from './panel-view.ts';
 import { createRailwayLine2 } from './line2-view.ts';
 import { createRailwayShelf } from './shelf-view.ts';
 import { createRailwayCart } from './cart-view.ts';
+import { createRailwayHook } from './hook-shot.ts';
 
 export async function createRailwayView(adapter: RailwayAdapter) {
   const owner = createOwnedView();
@@ -63,7 +64,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const reward = await createRailwayReward(adapter, owner, (out) =>
     out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z),
   );
-  const line2 = await createRailwayLine2(adapter, owner, machine, sources.bundleOrigin, reward.youGot);
+  let demo = () => {};
+  const line2 = await createRailwayLine2(adapter, owner, machine, sources.bundleOrigin, reward.youGot, () => demo());
+  const hook = await createRailwayHook(adapter, owner);
+  demo = hook.demo;
   const shelf = await createRailwayShelf(adapter, owner, line2.depotPlace, sources.bundleOrigin);
   const cart = await createRailwayCart(adapter, owner, line2.depotPlace);
   line2.holdDepot(cart.flying);
@@ -311,8 +315,13 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   return {
     root: owner.root,
     owner,
-    prePhysics: () => sources.prePhysics(),
-    fixedPre: () => reward.fixedPre(),
+    prePhysics: () => {
+      sources.prePhysics();
+      hook.prePhysics();
+    },
+    fixedPre: () => {
+      if (!hook.fixedPre()) reward.fixedPre();
+    },
     update(ctx: FrameCtx) {
       const { dt, now } = ctx;
       state = adapter.inspect();
@@ -404,6 +413,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       machine.onPanelFrame = line2.working() ? line2.panelFrame : panels.frame;
       if (!line2.working()) panels.update(dt);
       line2.update(dt);
+      hook.update(dt, now);
       shelf.update();
       cart.update();
       if (!previousOpen && opened() && !reconstructed) {
@@ -490,6 +500,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       machine: { x: machine.flatbed.x, y: machine.flatbed.y, z: machine.flatbed.z },
       trees: sources.inspect(),
       reward: reward.inspect(),
+      hookShot: hook.inspect(),
       pathOpen: opened(),
       line2View: { ...line2.inspect(), ...shelf.inspect(), ...cart.inspect() },
     }),

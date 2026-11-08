@@ -394,6 +394,24 @@ The optional **9 m beam** starts at the village's west edge (868, -30). **Lift**
 
 Both beam grips use `currentCoopPeer` from `coop-identity.ts`, the same bounded participation-tick check as railway peer election. The stable `placeCoop` presence/message tag is not a build version. Existing co-op look fixtures check malformed ticks, release and departure; generation checks and beam ownership remain unchanged. Saved beam runs use `saved=1` and real movement after checkpoint restoration.
 
+### Production Needle Bell hook climb (8 November 2026)
+
+The production bot now marks `hook taken` after the demo lands on t0, requires the six remaining upward pulls and a dry `needle bell summit` landing, then returns through t5–t0 and p2. Each pull uses the registered action and requires a clear path and landing; climb and descent spend no air jump.
+
+**Falling and returning:** the gorge has an existing exit. From its low floor, follow the low quarry footbridge and graded quarry path up the east bank. Round the north side of Q3's frame and the parked track layer, then use a normal jump over the raised timber track edge at s=112 and walk back to s=84. A summit fall can land on the upper bank and join this route directly. Both drop returns have passed without relocation recovery; no new stair, ramp, ladder or other exit geometry was added. Surface swimming is allowed in the bot's return mode, while the successful t3 route needed walking and a ground jump. The p2 ring is outside its 24 m range at the observed drop landings (about 62 m from t3's floor landing, 44 m from the summit's bank landing).
+
+**Reload limitation:** production railway arrival currently remembers terrain positions, rejecting saved positions beneath tower slabs. A real reload during the t2→t3 pull did not restore the last standing slab, so the plan's t2 return and downward-pull proof remains unmet. The hook implementation has not changed that Local save policy.
+
+Only the finder gets a demonstration: 0.3 s after dismissing the hook card, standing on p2 with a clear body path automatically pulls them to t0. A friend gets the existing shared-ability flourish and chooses their own pulls. The demo never runs from a late join or a reconstructed unlock.
+
+A friend's nullable `railwayHook` presence names a known ring, with every other value treated as off. The Local view draws a cable from their interpolated avatar's right hand and poses that arm toward the ring. Missing presence winds the cable back; leaving removes the mesh, and a railway rebuild clears the view. The existing position presence remains the only body travel state.
+
+The room's existing hook fact grants everyone a zip-line pull to the ring nearest the middle of the view: 24 m range, 25° cone, 16 m/s cruise with 60 m/s² acceleration and 70 m/s² braking. Picking uses chest ray clearance, both body-sphere sweeps and 20%/150 ms hysteresis. Jump, Back or a second press lets go with horizontal speed capped at 9.5 m/s and upward speed at 3 m/s; cancelling never refills the air jump. A pull skips the second-jump step. Reveal input holding blocks new pulls but lets a current pull finish. Ownership survives disconnect/resync and clears only after two ready seconds without the shared fact.
+
+The press immediately starts its sound, 70 ms reaching cable and arm pose; arrival/let-go sounds and winds the cable back over 110 ms. A denied press gives a quiet pop, 1.5 m cable flick and 200 ms blink on nearby rings without moving the body. The picked ring shows the F/RB glyph for the first three pulls, with touch using its Hook button. Targeting and cosmetics are Local; the pull is Owner physics carried by ordinary position presence, with an additive nullable `railwayHook` pad id. No new shared operation or state is added.
+
+The production railway shows eight rings from the start: p2, t0–t5 and the summit. Rings are brass before ownership, teal when owned or in range, and bright when picked or pulling. Six 0.9 m floating stone slabs have teal undersides; the 0.4 m wooden summit deck is at 102.4 m. Positions and ring placement read Place's `tech-layout.ts` directly. Thin 1.5 m collider tiles preserve the camera's view beneath the next slab. The existing p2 slab is reused. The t0 secret box, t3 side slab and all other Place rings stay out of production. The summit ring and its post retain Place's off-deck east-edge placement for the orchestrator's review.
+
 ## Ancient technology (round 4, exploring)
 
 The glider's sea-gate cinematic waits until the player dismisses the reward reveal and any queued reward cards. The shared unlock, gate state, save and broadcast still happen immediately; only the local camera waits. Reset cancels a pending cinematic.
