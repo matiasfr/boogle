@@ -1,6 +1,7 @@
 // Production line 1 through ordinary inputs. Inspection observes; it never seeds a world or moves a player.
-import { makeBot } from '../bot.ts';
-import { inspectRailway, type RailwayViewInspection } from '../../../src/entities/railway/state.ts';
+import { makeBot, type Bot } from '../bot.ts';
+import { inspectRailway, hookWhyNot, type RailwayViewInspection } from '../../../src/entities/railway/state.ts';
+import { triggerAction } from '../../../src/player/controls.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
@@ -19,18 +20,111 @@ import { CART_PHASE } from '../../../src/sim/railway-cart.ts';
 import { fallArrival } from '../../../src/fall/arrival.ts';
 import { net, onRemotePresence, remotes } from '../../../src/netplay/net.ts';
 
+function hookCheck(bot: Bot, ok: unknown, label: string) {
+  bot.check(label, ok);
+  if (!ok) throw new Error(label);
+}
+function hookRing(id: string) {
+  const ring = inspectRailway()?.hookShot.rings.find((r) => r.id === id);
+  if (!ring) throw new Error(`Missing production hook ring ${id}`);
+  return ring;
+}
+function aimHook(id: string) {
+  const r = hookRing(id),
+    p = me.body!.position;
+  const d = Math.hypot(r.x - p.x, r.z - p.z);
+  cam.yaw = me.yaw = Math.atan2(-(r.x - p.x), -(r.z - p.z));
+  cam.pitch = Math.min(0.85, Math.atan2(r.y - p.y - 1.35, d) - 0.3);
+}
+async function hookLanding(bot: Bot, id: string) {
+  const { PADS } = await import('../../../src/proto/place/tech-layout.ts');
+  const pad = PADS.find((p) => p.id === id)!;
+  hookCheck(
+    bot,
+    await bot.until(
+      () => {
+        const p = me.body!.position;
+        return (
+          !inspectRailway()!.hookShot.pulling &&
+          me.coyote > 0 &&
+          !me.swimming &&
+          Math.abs(p.y - PLAYER_R - pad.top) < 1 &&
+          Math.hypot(p.x - pad.x - 1000, p.z - pad.z) < 4
+        );
+      },
+      6000,
+      `dry hook landing ${id}`,
+    ),
+    `hook landed on ${id}`,
+  );
+}
+async function hookTo(bot: Bot, id: string) {
+  aimHook(id);
+  hookCheck(
+    bot,
+    await bot.until(() => inspectRailway()?.hookShot.pick === id, 3500, `picked hook ${id}`),
+    `hook ${id}: picked ${inspectRailway()?.hookShot.pick ?? 'nothing'}, ${hookWhyNot(id)}`,
+  );
+  hookCheck(bot, hookWhyNot(id) === 'nothing', `hook ${id} path is clear: ${hookWhyNot(id)}`);
+  const before = inspectRailway()!.hookShot.pulls;
+  triggerAction('hook', 'down');
+  triggerAction('hook', 'up');
+  hookCheck(bot, inspectRailway()!.hookShot.pulls === before + 1, `hook ${id} starts on the press`);
+  await hookLanding(bot, id);
+  bot.note(`hook: ${id}`);
+}
+async function returnFromTower(bot: Bot, ids = ['t5', 't4', 't3', 't2', 't1', 't0', 'p2']) {
+  const body = me.body!;
+  for (const id of ids) {
+    const departureY = body.position.y,
+      started = performance.now();
+    let clear = false;
+    try {
+      while (performance.now() - started < 3500) {
+        aimHook(id);
+        if (
+          body.position.y < departureY - 1.5 &&
+          inspectRailway()?.hookShot.pick === id &&
+          hookWhyNot(id) === 'nothing'
+        ) {
+          clear = true;
+          break;
+        }
+        input.keys.add('KeyW');
+        await bot.wait(30);
+      }
+    } finally {
+      input.keys.delete('KeyW');
+    }
+    hookCheck(bot, clear, `return hook ${id}: ${hookWhyNot(id)}`);
+    triggerAction('hook', 'down');
+    triggerAction('hook', 'up');
+    await hookLanding(bot, id);
+    bot.note(`return hook: ${id}`);
+  }
+  cam.pitch = -0.1;
+}
+
 /** `solo`: play the solo route even on a two-player page, beside a friend another eval drives (coop-unlock.ts). */
 export async function play({ stopBeforeReward = false, solo = false } = {}) {
   const query = new URLSearchParams(location.search);
   const player = query.get('player');
   const coop = !solo && (player === '1' || player === '2');
   const second = coop && player === '2';
+  const hookSeen = new Set<string>();
+  let remoteCableSeen = false;
   const peers = new Map<
     string,
     { pid: string | null; x: number; y: number; z: number; seenAt: number; beamHelp: string | null }
   >();
   const offPresence = coop
     ? onRemotePresence((remote, presence) => {
+        if (
+          second &&
+          typeof presence.railwayHook === 'string' &&
+          ['p2', 't0', 't1', 't2', 't3', 't4', 't5', 'summit'].includes(presence.railwayHook)
+        )
+          hookSeen.add(presence.railwayHook);
         if (remote.entered && Array.isArray(presence.p))
           peers.set(remote.peer, {
             pid: remote.pid ?? null,
@@ -69,6 +163,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   const sampler = coop
     ? setInterval(() => {
         const state = inspectRailway();
+        if (second && state && state.hookShot.remoteCables >= 1) remoteCableSeen = true;
         if (state?.ready && state.line2.forge.used > 0 && state.step >= 0) tickHashes.set(state.step, state.hash);
       }, 50)
     : 0;
@@ -116,6 +211,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         aboard: carry.on?.id ?? null,
         reward: state.reward,
         pathOpen: state.pathOpen,
+        hookShot: state.hookShot,
         beamHelpPeers: [...peers.values()].filter((p) => p.beamHelp && performance.now() - p.seenAt < 1500),
         workedSources: state.trees
           .filter((tree) => tree.work > 0)
@@ -705,6 +801,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     if (second) {
       // The friend stays in the room through line two; the leader plays it. Both peers report hashes per beat.
       await until(() => read().line2?.gateOpen, 'leader opens the quarry gate', 1800000);
+      require(hookSeen.size >= 5, `friend saw ${hookSeen.size} distinct hook ring ids`);
+      require(remoteCableSeen, 'friend saw a remote hook cable');
       await checkpoint('quarry gate open');
       // The leader opens the pack: the friend's back carries 16 too, and they get the flourish, not the card.
       await until(() => read().line2?.pack, 'leader opens the pack', 600000);
@@ -921,7 +1019,18 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         await bot.wait(1200);
         if (read().reward.showing || !coop) await dismiss('hook reveal');
         else require(read().reward.arrival.seen.includes('hook'), "friend's hook flourish played");
+        await until(() => read().hookShot.pulls > 0, 'hook demo starts after the card', 5000);
+        await hookLanding(bot, 't0');
+        aimHook('t1');
+        await until(() => read().hookShot.pick === 't1', `first climb ring picked: ${hookWhyNot('t1')}`, 3500);
         await checkpoint('hook taken');
+        for (const id of ['t1', 't2', 't3', 't4', 't5', 'summit']) await hookTo(bot, id);
+        require(Math.abs(me.body!.position.y - PLAYER_R - 102.4) < 1 &&
+          me.coyote > 0, 'standing on Needle Bell summit');
+        noJump('hook climb');
+        await checkpoint('needle bell summit');
+        await returnFromTower(bot);
+        noJump('hook descent');
         const back = v2().routePoints.hook;
         for (let i = back.length - 1; i >= 0; i--)
           require(await bot.straight(back[i]![0]!, back[i]![2]!, 0.6, 10000), 'walked back down the walkway');
@@ -1096,7 +1205,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await bot.wait(3000);
       logHashes();
     }
-    bot.finish('line one, forge, Q1-Q3, hook walk, quarry ramp and lever, the pack and Q4, walking only');
+    bot.finish('line one, forge, Q1-Q3, Needle Bell hook climb and descent, quarry ramp and lever, pack and Q4');
   } catch (error) {
     document.documentElement.dataset.railwayProof = 'failed';
     bot.never(`production line1 stopped: ${error instanceof Error ? error.message : String(error)}`);
