@@ -6,6 +6,9 @@ import path from 'node:path';
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { createStore } from './store.ts';
+import { inventorySaves, inventoryLine } from './save-inventory.ts';
+import { WORLD_NS } from '../../src/world/namespace.ts';
+import { RAILWAY_PLAY_NS } from '../../src/world/railway-namespace.ts';
 import { addPlaydata } from './playdata.ts';
 import { addReviews } from './reviews.ts';
 import { routeUpgrades } from './host/upgrade.ts';
@@ -62,6 +65,10 @@ export function loadConfig(
     reportRatePerMin: Number(env.REPORT_RATE_PER_MIN ?? 12),
     reportMaxBytesPerDay: Number(env.REPORT_MAX_BYTES_PER_DAY ?? 5 * 1024 * 1024),
     reportToken: env.REPORT_TOKEN || '',
+    // Accepted for the staged rollout, deliberately inert until the owner reviews the inventory.
+    saveCleanup: env.SAVE_CLEANUP === 'trash' ? 'trash' : 'off',
+    saveCleanupDigest: env.SAVE_CLEANUP_DIGEST || '',
+    saveCleanupLegacy: env.SAVE_CLEANUP_LEGACY === '1',
     serverRooms: env.SERVER_ROOMS ? list(env.SERVER_ROOMS) : ['*'], // rooms it hosts (docs/plans/server-host.md); default all
     tuneControllerKey: env.TUNE_CONTROLLER_KEY || '',
     maxPlayers: Number(env.MAX_PLAYERS ?? 8),
@@ -91,6 +98,9 @@ export type ServerConfig = {
   reportRatePerMin: number;
   reportMaxBytesPerDay: number;
   reportToken: string;
+  saveCleanup: 'trash' | 'off';
+  saveCleanupDigest: string;
+  saveCleanupLegacy: boolean;
   serverRooms: string[];
   tuneControllerKey: string;
   maxPlayers: number;
@@ -305,6 +315,17 @@ export function createService(cfg: ServerConfig) {
     return true;
   };
 
+  const saveInventory = () => inventorySaves(cfg.dataDir, { ns: { world: WORLD_NS, rail: RAILWAY_PLAY_NS } });
+  app.get('/admin/saves', async (req: Request, res: Response, next: NextFunction) => {
+    if (!authed(req, res)) return;
+    try {
+      res.set('Cache-Control', 'no-store');
+      res.json(await saveInventory());
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const reviewReport = addReviews(app, cfg, {
     authed,
     withLock,
@@ -352,6 +373,11 @@ export function createService(cfg: ServerConfig) {
     roomHost: () => roomHost,
     async listen(port = cfg.port) {
       await store.init();
+      try {
+        cfg.log(inventoryLine(await saveInventory()));
+      } catch (error) {
+        cfg.log('save inventory failed:', error);
+      }
       roomHost ??= createRoomHost(cfg, store);
       await new Promise<void>((resolve, reject) => {
         server.once('error', reject);

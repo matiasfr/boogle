@@ -6,6 +6,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { createService, loadConfig } from '../src/server.ts';
 import type { ServerConfig } from '../src/server.ts';
+import { inventorySaves } from '../src/save-inventory.ts';
+import { WORLD_NS } from '../../src/world/namespace.ts';
+import { RAILWAY_PLAY_NS } from '../../src/world/railway-namespace.ts';
 
 async function start(env: Record<string, string> = {}, overrides: Partial<ServerConfig> = {}) {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-test-'));
@@ -31,6 +34,59 @@ test('healthz', async () => {
     const r = await fetch(`${s.base}/healthz`);
     assert.equal(r.status, 200);
     assert.equal(await r.text(), 'ok');
+  } finally {
+    await s.stop();
+  }
+});
+
+test('save inventory is authed, fresh, and read-only even with cleanup configured', async () => {
+  let s = await start();
+  try {
+    assert.equal((await fetch(`${s.base}/admin/saves`)).status, 404);
+  } finally {
+    await s.stop();
+  }
+  const logs: string[] = [];
+  s = await start(
+    { REPORT_TOKEN: 'tok', SAVE_CLEANUP: 'trash', SAVE_CLEANUP_DIGEST: 'anything', SAVE_CLEANUP_LEGACY: '1' },
+    {
+      log: (...args) => {
+        logs.push(args.map(String).join(' '));
+      },
+    },
+  );
+  try {
+    assert.equal(s.svc.config.saveCleanup, 'trash');
+    assert.equal(s.svc.config.saveCleanupDigest, 'anything');
+    assert.equal(s.svc.config.saveCleanupLegacy, true);
+    assert.equal(loadConfig({ SAVE_CLEANUP: 'other' }).saveCleanup, 'off');
+    assert.equal(loadConfig({}).saveCleanupLegacy, false);
+    assert.equal(logs.filter((line) => line.startsWith('save inventory ')).length, 1);
+    const get = (token?: string) =>
+      fetch(`${s.base}/admin/saves`, { headers: token ? { authorization: `Bearer ${token}` } : {} });
+    assert.equal((await get()).status, 401);
+    assert.equal((await get('wrong')).status, 401);
+    for (const name of [`${WORLD_NS}-a.json`, `${RAILWAY_PLAY_NS}-b.json`, 'v01-old.json', 'garden.json'])
+      await fs.writeFile(path.join(s.dataDir, name), 'inventory only');
+    const response = await get('tok');
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const inv = await inventorySaves(s.dataDir, { ns: { world: WORLD_NS, rail: RAILWAY_PLAY_NS } });
+    assert.deepEqual(await response.json(), inv);
+    assert.equal(inv.current.count, 2);
+    assert.deepEqual(inv.files, ['v01-old.json']);
+    assert.deepEqual(inv.legacyFiles, ['garden.json']);
+    // Restart with the exact digest and all cleanup settings on: this stage still cannot move files.
+    await s.svc.close({ save: false });
+    s.svc.config.saveCleanupDigest = inv.digestWithLegacy;
+    await s.svc.listen(s.port);
+    assert.deepEqual(await (await get('tok')).json(), inv);
+    assert.equal(logs.filter((line) => line.startsWith('save inventory ')).length, 2);
+    assert.deepEqual(
+      (await fs.readdir(s.dataDir)).filter((name) => name.endsWith('.json')).sort(),
+      [`${WORLD_NS}-a.json`, `${RAILWAY_PLAY_NS}-b.json`, 'v01-old.json', 'garden.json'].sort(),
+    );
+    assert.ok(!(await fs.readdir(s.dataDir)).includes('.trash'));
   } finally {
     await s.stop();
   }

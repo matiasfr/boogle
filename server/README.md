@@ -70,6 +70,24 @@ A director reads the JSON, preserves the owner's words and evidence, then uses `
 | `MAX_PLAYERS`                | `8`         | Players per hosted room (the server is not one). A reconnecting player is always let back in.                                                                          |
 | `SERVER_SAVE_MS`             | `2000`      | How often a hosted room saves its world (when it changed).                                                                                                             |
 
+## Save inventory (read-only)
+
+Each boot logs one `save inventory <digest>` line before any room is loaded. `GET /admin/saves` returns a fresh
+inventory with the same `Authorization: Bearer <REPORT_TOKEN>` guard as reports (404 if the token is unset, 401
+for missing or wrong credentials). It reports current room counts/bytes and idle counts, old classic and railway
+namespaces with their newest modification times, legacy files, old temporary files, directory sizes and unknown
+names. It uses directory entries and file metadata only, never save contents, and does not follow symlinks.
+
+`files` lists old-namespace saves and temp files older than an hour; `legacyFiles` lists unprefixed saves separately.
+`digest` is the first 16 hex characters of SHA-256 over sorted `files` joined by newlines; `digestWithLegacy` includes
+both sorted lists. Current rooms, including idle ones, are never candidates. `reports/`, `playdata/`, `reviews/` and
+`.trash/` are only measured. Unknown entries are reported. Inventory failure is logged without stopping boot.
+
+`SAVE_CLEANUP` (`trash` or default `off`), `SAVE_CLEANUP_DIGEST` (default empty) and `SAVE_CLEANUP_LEGACY` (`1` or
+default false) are accepted configuration fields for the staged rollout, but have no effect in this version.
+There is no cleanup implementation: no save files are moved or deleted. The owner reviews the inventory before
+any later cleanup stage.
+
 ## Run locally
 
 ```sh
