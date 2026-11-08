@@ -2,10 +2,18 @@
 # Installed automatically by `npm install` (package.json "prepare" sets core.hooksPath=.githooks).
 # main only takes PRs: `npm run ship` pushes your commits to a ship/ branch that merges itself once CI is green.
 set -euo pipefail
+tips=()
 
 while read -r _local_ref local_sha remote_ref _remote_sha; do
   if [ "$remote_ref" = "refs/heads/main" ] && [ "$local_sha" != "0000000000000000000000000000000000000000" ]; then
     echo "pre-push: main only takes PRs. Use 'npm run ship' (rebases, checks, pushes a ship/ branch that merges itself)." >&2
     exit 1
   fi
+  [ "$local_sha" = 0000000000000000000000000000000000000000 ] || tips+=("$local_sha")
 done
+
+# Full CI is the merge gate. Deletions need no local check; compare all pushed commits with main,
+# including branches whose remote tip is already present (never diff only the last commit).
+if [ "${#tips[@]}" -gt 0 ]; then
+  for tip in "${tips[@]}"; do node dev/ship-check.ts origin/main "$tip"; done
+fi
