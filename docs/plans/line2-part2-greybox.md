@@ -142,9 +142,14 @@ reset, no migration) and keeps the paused world and away credit whole.
   70-101 s, so 8 a trip would have tripled the wait for Q2. A call is served at the forge on the cart's next pass and
   holds it 8 s to board; the handle's copy is Place's ("Call cart to forge", "Cart called", "After unloading / Then
   back to forge"). The rider proof in `npm run load` is a new opt-in row (`WS_LOAD_CHURN=cart`): three headless tabs
-  at 0/100/200 ms place the cart from their own tick estimates; how far apart they are is how far a partner's rider
-  seems to slide. The physical ride is the bot's: it calls the cart, double-jumps onto the loaded cart, rides it to the
-  Q4 rack (checkpoints `cart ride`, `cart at the rack`) and must stay aboard all the way. `WORLD_NS` v19.
+  at 0/100/200 ms place the cart from their own tick estimates (a partner's rider is drawn on each tab's own copy of
+  the deck); measured over 60 s of trip: at most 1.05 m apart between tabs, no frame-to-frame jump over 3 cm past
+  cruise. The physical ride is the bot's: it calls the cart, double-jumps onto the loaded cart, rides it to the
+  Q4 rack (checkpoints `cart ride`, `cart at the rack`) and must stay aboard all the way. The solo playthrough
+  (`npm run playthrough -- --long --eval dev/look/evals/railway-job.ts --query 'shot=play'`; without `--long` its
+  300 s wall limit stops it near Q2, about 20 game minutes in) finished: quarry gate 27:05, cart ride 29:57, Q4 laid
+  32:53, no errors. Stills: the cart unloading at the Q4 rack; a real-time ride from the forge to Q4. `WORLD_NS` v19.
+  Not tested on a device.
 - [ ] **B4. Q5 and the sea gate.** Add `Q5` (24/24, 28600 → 54600, speed 180) and `sea` with `rail.seaSwitch` at
   `SEA_SWITCH`, which requires Q4. Views: the sea slab and switch, the 260 m trestle, Far Head rockets and lamps
   (Local, on `onAccepted`). Proof: tests as in B2; bot checkpoints `sea gate`, `Q5 laid` and `Far Head`; a still from

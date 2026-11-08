@@ -582,9 +582,10 @@ export async function railwayLoad(
 
 /** WS_LOAD_CHURN=cart: the depot cart ridden across tabs (docs/plans/line2-part2-greybox.md, B3). A room at Q4 with its
  * cart running, three tabs at 0, 100 and 200 ms added latency. Each tab places the cart from its own estimate of the
- * server's tick; a rider on one tab is drawn on the others at their copy of the deck (the shared platform), so how far
- * the tabs' carts are apart at one instant is how far a rider seems to slide on it, and a tab's cart jumping between
- * frames is what would throw its own rider. Both must stay well inside the deck (1.35 m from its middle). */
+ * server's tick. A rider on one tab is drawn on the others at their own copy of the deck (the shared platform), so they
+ * stay on it there; how far the tabs' carts are apart at one instant is how far two players' views of cart and rider
+ * disagree (kept under half the deck, 1.35 m), and a tab's cart jumping between frames is what would throw its own
+ * rider. */
 export async function railwayCartRide(c: Ctx, { seconds = 60 } = {}) {
   const { railwayAtQ4 } = await import('../../test/helpers/railway-q2.ts');
   const { worldOf } = await import('../../test/railway-live.ts');
@@ -605,7 +606,16 @@ export async function railwayCartRide(c: Ctx, { seconds = 60 } = {}) {
   world.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(q4.s).snapshot())), railwayCheck);
   world.rules.railway.touchAll();
   const cartOf = (p: Page) => ev(p.page, () => window.T.railCart());
-  await waitFor(async () => (await Promise.all(pages.map(cartOf))).every((x) => x !== null), 5000);
+  // Every tab has the loaded world's cart (its phase and where it set out), then a moment to settle: the load itself
+  // relocates the cart, which is a restart, not a ride.
+  const server = () => world.rules.railway.railway.line2!.cart;
+  await waitFor(async () => {
+    const want = server();
+    return (await Promise.all(pages.map(adapter))).every(
+      (p) => p.state.line2.cart.phase === want.phase && p.state.line2.cart.depart === want.depart,
+    );
+  }, 10000);
+  await sleep(2000);
   type Sample = { along: number; phase: number; at: number };
   const series: Sample[][] = lats.map(() => []);
   let apart = 0;
