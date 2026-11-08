@@ -200,7 +200,8 @@ jobs:
                       | "\(.number) \(.headRefName) \(.headRefOid)"' |
             while read -r num ref sha; do
               if [[ "$ref" == ship/* ]] && [ "$(gh api "repos/$GH_REPO/compare/main...$sha" --jq .ahead_by)" = 0 ]; then
-                gh pr close "$num" --delete-branch --comment "Everything in here is already on main (it went in with #$PR)."
+                # Preserve the ref: it can advance after this comparison. A new head can reopen a PR.
+                gh pr close "$num" --comment "The compared head $sha is already on main (it went in with #$PR). Branch retained in case it advanced."
               elif [ "$(gh pr view "$num" --json mergeable --jq .mergeable)" = CONFLICTING ]; then
                 echo "#$num now conflicts with main; asking ci-autofix.yml to merge main into $ref."
                 gh workflow run ci-autofix.yml --ref main -f branch="$ref" -f reason=conflict
