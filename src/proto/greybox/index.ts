@@ -20,6 +20,7 @@ import { layout, polyLen, rideSeconds, type Pick, type XZ } from './map-data.ts'
 import { rideModelSeconds, ridePoints, workRides } from './rides.ts';
 import { createGround, wx, wz } from './ground.ts';
 import { buildGreybox, STAGE_COLOURS } from './build.ts';
+import { RIDER, createRider } from './rider.ts';
 
 const q = new URLSearchParams(location.search);
 const optionId = q.get('greybox') || 'sickle';
@@ -36,6 +37,13 @@ background(
   }),
   'greybox pipelines',
 );
+// `&gbrider=1`: ride as Buddy, seated on a train, with the play camera behind (./rider.ts).
+const rider = RIDER
+  ? createRider(
+      box.root,
+      box.lines.filter((l) => map.lines.find((x) => x.id === l.id)?.kind !== 'built'),
+    )
+  : null;
 const W = (x: number, y: number, z: number) => new THREE.Vector3(wx(x), y, wz(z));
 const placeAt = (id: string) => map.places.find((p) => p.id === id)?.at;
 
@@ -218,6 +226,7 @@ function holdView(id: string) {
   const v = VIEWS[id];
   if (!v) return false;
   ride = null;
+  rider?.stop();
   held = { cam: v.cam.clone(), look: v.look.clone() };
   viewFog = v.fog ?? null;
   heldId = id;
@@ -226,6 +235,7 @@ function holdView(id: string) {
 function free() {
   held = null;
   ride = null;
+  rider?.stop();
   viewFog = null;
   heldId = '';
 }
@@ -414,10 +424,15 @@ spawn({
     applyFog();
     if (ride) {
       ride.s = Math.min(ride.total, ride.s + ride.mps * ride.speed * dt);
-      pointAt(ride, ride.s, camera.position).y += 6;
-      pointAt(ride, ride.s + 90, look).y += 4;
-      camera.lookAt(look);
-      camera.updateMatrixWorld();
+      if (rider) {
+        const r = ride;
+        rider.update((s, out) => pointAt(r, s, out), ride.s, ride.s < ride.total ? ride.mps * ride.speed : 0, dt);
+      } else {
+        pointAt(ride, ride.s, camera.position).y += 6;
+        pointAt(ride, ride.s + 90, look).y += 4;
+        camera.lookAt(look);
+        camera.updateMatrixWorld();
+      }
     } else if (held) {
       camera.position.copy(held.cam);
       camera.lookAt(held.look);
@@ -441,6 +456,13 @@ const api = {
     heldId = 'custom';
   },
   ride: startRide,
+  /** Each line's deck height range, metres over the sea (docs/research/train-ride-feel.md). */
+  lineHeights: () =>
+    box.lines.map((l) => ({
+      id: l.id,
+      min: Math.round(Math.min(...l.path.map((p) => p.y))),
+      max: Math.round(Math.max(...l.path.map((p) => p.y))),
+    })),
   go: goTo,
   /** Fresh material clones for every mesh (a look action calls this after warm-up; see refreshMaterials). */
   refresh: refreshMaterials,
