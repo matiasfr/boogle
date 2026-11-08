@@ -44,7 +44,11 @@ if (production) args.splice(args.indexOf('--production'), 1);
 const { coopWarpOptions } = (await import(
   pathToFileURL(path.resolve('dev/look/coop-warp.ts')).href
 )) as typeof import('../look/coop-warp.ts');
-const warp = (operation === 'look' || operation === 'playthrough') && coopWarpOptions(args).enabled;
+// A brokered look uses our local URL. Supply its clock URL even with one player, so look does not classify it as an
+// external site and silently disable its requested warm-up warp. The local server remains at 1x unless a pair scales it.
+const real = args.includes('--real') && args.lastIndexOf('--real') > args.lastIndexOf('--warp');
+const pairWarp = (operation === 'look' || operation === 'playthrough') && coopWarpOptions(args).enabled;
+const warp = (!production && operation === 'look' && !real) || pairWarp;
 if (production && warp)
   throw new Error(
     '--production --players 2 needs --real; omit --production to use the disposable dev server for warped co-op.',
