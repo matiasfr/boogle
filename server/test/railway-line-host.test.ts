@@ -13,7 +13,8 @@ import { LINE1_STATIONS, LINE1_ROCKS, LINE1_GREAT_TREE } from '../../src/sim/rai
 import { railMaxDuration } from '../../src/sim/railway-line.ts';
 import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
 import { railCounts } from '../../src/sim/railway.ts';
-import { LINE2_DEPOT, LINE2_FORGE, LINE2_PACK, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_PACK, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
+import { CART, CART_CALL, CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
 import { worldOf } from '../../test/railway-live.ts';
 import { railwayAtQ4 } from '../../test/helpers/railway-q2.ts';
 
@@ -256,13 +257,22 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     assert.equal(line2().pack, false);
     assert.equal((await edit('s1', { op: 'rail.pack' }, [LINE2_PACK.x, 0, LINE2_PACK.z])).status, 'accepted');
     assert.equal(line2().pack, true);
+    // "Call cart to forge" is heard only at the handle by the turntable; a second call while one stands is a noop.
+    assert.equal((await edit('s1', { op: 'rail.cartCall' }, [q4.x, 0, q4.z])).status, 'rejected');
+    const call = [CART_CALL.x, 0, CART_CALL.z] as [number, number, number];
+    assert.equal((await edit('s1', { op: 'rail.cartCall' }, call)).status, 'accepted');
+    assert.equal((await edit('s1', { op: 'rail.cartCall' }, call)).status, 'noop');
+    assert.equal(line2().cart.recall, true);
     // The cart's first trip to the Q4 rack; the shelf is taken from beside the frame, not from the forge.
-    await ticks(LINE2_DEPOT.everyTicks + 2);
-    assert.equal(line2().depotRails, LINE2_DEPOT.rails);
+    let waited = 0;
+    while (line2().cart.phase !== CART_PHASE.DROP && waited < cartCycleTicks(3)) waited += (await ticks(10), 10);
+    assert.equal(line2().cart.phase, CART_PHASE.DROP, 'the cart reached the rack');
+    assert.equal(line2().cart.recall, false, 'the call was served at the forge on the way');
+    assert.equal(line2().depotRails, CART.rails);
     const far = await edit('s1', { op: 'rail.depotRailTake' }, [LINE2_FORGE.x, 0, LINE2_FORGE.z]);
     assert.equal(far.status, 'rejected');
     const take = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
-    assert.equal(take.accepted, LINE2_DEPOT.rails, 'a back of 16 takes them all');
+    assert.equal(take.accepted, CART.rails, 'a back of 16 takes them all');
     // The quarry gate is up: the frame takes nothing.
     const shut = await edit('s1', { op: 'rail.deposit', station: 'Q4', n: 8, kind: 2 }, [q4.x, 0, q4.z]);
     assert.equal(shut.status, 'noop');
@@ -274,7 +284,7 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     host = create();
     await host.whenReady();
     assert.equal(line2().pack, true);
-    assert.equal(host.rules.railway.account('a')!.rails, LINE2_DEPOT.rails);
+    assert.equal(host.rules.railway.account('a')!.rails, CART.rails);
     assert.equal(railCounts(host.rules.railway.railway).rails!.total, rails.total);
   } finally {
     await host.close({ save: false }).catch(() => {});

@@ -22,8 +22,10 @@
 // kinds and accounts replicated by entity id with their slot or pid.
 // v18 (2026-11-07): line 2 part 2's first playable: the pack (`rail.pack`, a back of 16 for everyone) and Q4 behind
 // the quarry gate, its depot shelf of rails moved from the forge rack (`rail.depotRailTake`); new `rail` fields.
+// v19 (2026-11-08): the depot cart's real trip (line 2 part 2, B3): a new `cart` component (`rail.cartCall`), the
+// depot's load clock (`railClock.depotLast`) gone.
 // Pure: read by room routing and tests.
-export const WORLD_NS = 'v18';
+export const WORLD_NS = 'v19';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

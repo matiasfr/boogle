@@ -20,7 +20,8 @@ import {
   worldOf,
 } from './railway-live.ts';
 import { line2Active, line2Completed, line2GateOpen, line2Schedule, railCarryMax } from '../src/sim/railway-line2.ts';
-import { LINE2_FORGE, LINE2_STATIONS, LINE2_DEPOT, LINE2_PACK, line2Routes } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_STATIONS, LINE2_PACK, line2Routes } from '../src/sim/railway-line2-layout.ts';
+import { CART, CART_PHASE, cartCycleTicks } from '../src/sim/railway-cart.ts';
 import { RAILWAY_T1 } from '../src/sim/railway-layout.ts';
 import { railwayAtQ4 } from './helpers/railway-q2.ts';
 
@@ -35,6 +36,17 @@ function act(w: World, pid: string, op: string, fields: Partial<RailAction> = {}
 function advance(w: World, ticks: number) {
   for (let i = 0; i < ticks; i++) railTick(w.s, ++w.t);
   assert.equal(railwayInvariant(w.s), null);
+}
+/** Tick until the depot cart has unloaded at the rack (bounded by two whole trips) and `also` holds. */
+function untilUnload(w: World, k: number, also: () => boolean = () => true) {
+  for (let t = 1; t <= 2 * cartCycleTicks(k); t++) {
+    railTick(w.s, ++w.t);
+    if (w.s.line2!.cart.phase === CART_PHASE.DROP && also()) {
+      assert.equal(railwayInvariant(w.s), null);
+      return t;
+    }
+  }
+  assert.fail('the cart never unloaded');
 }
 function chop(w: World, pid: string) {
   const a = railAccount(w.s, pid)!;
@@ -140,25 +152,26 @@ test('Q1-Q3 fund atomically from logs and rails; depot, hook and lever follow ac
   assert.equal(w.s.line2!.jobs[0]!.start, -1, 'logs alone never fund');
   rails(w, 'a', 'Q1', 6);
   assert.ok(w.s.line2!.jobs[0]!.start >= 0);
-  assert.equal(w.s.line2!.depotLast, -1, 'no depot before Q1 completes');
+  assert.equal(w.s.line2!.cart.phase, CART_PHASE.REST, 'no depot cart before Q1 completes');
+  assert.equal(w.s.line2!.depotProduced, 0);
   restore(w);
   // Lever and hook do nothing before their stretches, even when the request reaches the authority.
   assert.equal(act(w, 'a', 'rail.lever'), 0);
   assert.equal(act(w, 'a', 'rail.hook'), 0);
   finishQ(w, 0);
   assert.equal(line2Active(w.s), 1);
-  advance(w, LINE2_DEPOT.everyTicks + 1);
-  assert.equal(w.s.line2!.depot, LINE2_DEPOT.load, 'cart brings one load');
   const leftover = railAccount(w.s, 'a')!.carry;
   if (leftover) assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q2', n: leftover }), leftover);
   const r = railAccount(w.s, 'a')!.rails ?? 0;
   if (r) assert.equal(act(w, 'a', 'rail.drop', { x: 94900, y: 2000, z: 3000, n: r, kind: 2 }), r);
-  assert.equal(act(w, 'a', 'rail.depotTake'), LINE2_DEPOT.load);
-  assert.equal(w.s.line2!.depot, 0);
+  untilUnload(w, 1);
+  assert.equal(w.s.line2!.depot, 24 - leftover, 'one load brings what the frame still needs');
+  assert.equal(act(w, 'a', 'rail.depotTake'), 8);
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q2', n: 8 }), 8);
   logs(w, 'a', 'Q2', 16 - leftover);
-  advance(w, LINE2_DEPOT.everyTicks * 3);
-  assert.equal(w.s.line2!.depot, 0, 'depot never exceeds what the frame still needs');
+  const produced = w.s.line2!.depotProduced;
+  advance(w, cartCycleTicks(1) * 2);
+  assert.equal(w.s.line2!.depotProduced, produced, 'the depot mints nothing past what the frame still needs');
   rails(w, 'b', 'Q2', 12);
   restore(w);
   finishQ(w, 1);
@@ -277,10 +290,10 @@ test('taking depot logs and dropping them elsewhere never makes the depot exceed
       if (n) act(w, pid, 'rail.drop', { x: 95000 + kind * 100, y: 2000, z: 3000, n, kind });
     }
   }
-  const before = railCounts(w.s).produced;
-  // Ten rounds of take-and-drop: a hoarder cannot make the cart mint past Q2's 24-log bill.
-  for (let round = 0; round < 10; round++) {
-    advance(w, LINE2_DEPOT.everyTicks + 1);
+  const before = railCounts(w.s).produced - w.s.line2!.depotOut[1]!; // the cart's first load is minted already
+  // Rounds of take-and-drop, one cart trip apart: a hoarder cannot make the cart mint past Q2's 24-log bill.
+  for (let round = 0; round < 4; round++) {
+    advance(w, cartCycleTicks(1));
     const n = act(w, 'a', 'rail.depotTake');
     if (n) assert.equal(act(w, 'a', 'rail.drop', { x: 96000 + round * 10, y: 2000, z: 3000, n }), n);
   }
@@ -327,18 +340,20 @@ test('the away credit fills the forge rack and the depot cart once, never past t
   const l = w.s.line2!;
   const k = line2Active(w.s);
   assert.equal(k, 1, 'Q2 takes materials: the depot runs');
-  const before = { rack: l.forge.rack, poured: l.forge.poured, depot: l.depot, out: l.depotOut[k]! };
+  // The cart set out with Q2's first load as Q1 was laid: it lands in the credit, then the trips' loads.
+  const before = { rack: l.forge.rack, poured: l.forge.poured, depot: l.depot + l.cart.logs, out: l.depotOut[k]! };
   const produced = railCounts(w.s).produced;
   const stock = l.jobs[k]!.stock;
-  // One depot interval of production: one load, and the rack as far as that many pours reach.
-  const yard = LINE2_DEPOT.everyTicks;
+  // One cart trip of production: one load, and the rack as far as that many pours reach.
+  const yard = cartCycleTicks(k);
   assert.equal(railResume(w.s, 0, 20, w.t, yard), 0, 'no funded job to advance');
   const pours = Math.min(LINE2_FORGE.rackMax - before.rack, Math.floor(yard / LINE2_FORGE.pourTicks));
   assert.equal(l.forge.rack, before.rack + pours);
   assert.equal(l.forge.poured, before.poured + pours, 'every poured rail is counted');
   const bill = LINE2_STATIONS[k]!.bill[0];
   const need = Math.min(bill - stock - before.depot, bill - before.out);
-  assert.equal(l.depot, before.depot + Math.min(need, LINE2_DEPOT.load));
+  assert.equal(l.depot, before.depot + Math.min(need, CART.load));
+  assert.equal(l.cart.logs, 0, 'the load under way landed');
   assert.equal(railCounts(w.s).produced, produced + (l.depot - before.depot), 'depot logs are counted production');
   assert.equal(railwayInvariant(w.s), null);
   // The same marker never credits twice; a long absence fills the yards to their limits, no further.
@@ -411,11 +426,15 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   // The cart runs behind the gate: one load of logs (minted, counted) and one of rails (moved, not made).
   const poured = railsHeld(w).poured,
     rack = l().forge.rack;
-  for (let t = 0; t <= LINE2_DEPOT.everyTicks && !l().depot; t++) advance(w, 1); // the cart's first trip
-  assert.equal(l().depot, LINE2_DEPOT.load);
-  assert.equal(l().depotRails, LINE2_DEPOT.rails, 'the cart holds all of the rails Q4 needs');
+  // Q2's first load was still on its way when Q2 and Q3 were filled by hand: it goes on to Q4's rack, the logs Q4
+  // needs, and the next trip stops at the forge for the rails.
+  const aboard = l().cart.logs;
+  untilUnload(w, 3, () => l().depotRails > 0);
+  assert.equal(l().depot, aboard, 'the load under way went on to the next rack');
+  assert.equal(l().depotOut[3], 0, 'Q4 needed no logs minted');
+  assert.equal(l().depotRails, CART.rails, 'the cart holds all of the rails Q4 needs');
   const pours = railsHeld(w).poured - poured;
-  assert.equal(l().forge.rack, rack + pours - LINE2_DEPOT.rails, 'the shelf rails left the forge rack');
+  assert.equal(l().forge.rack, rack + pours - CART.rails, 'the shelf rails left the forge rack');
   restore(w);
   assert.equal(act(w, 'a', 'rail.lever'), 1);
   assert.equal(line2GateOpen(w.s), true);
@@ -425,8 +444,8 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 4 }), 4, 'logs go in with the gate down');
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: room, kind: 2 }), room);
   assert.equal(act(w, 'b', 'rail.depotRailTake'), RAILWAY_T1.carry, 'a full back of rails, no more');
-  advance(w, LINE2_DEPOT.everyTicks + 1);
-  assert.equal(l().depotRails, LINE2_DEPOT.rails - room - 8, 'rails on backs are not brought again');
+  advance(w, cartCycleTicks(3));
+  assert.equal(l().depotRails, CART.rails - room - 8, 'rails on backs are not brought again');
   assert.equal(act(w, 'b', 'rail.deposit', { station: 'Q4', n: 8, kind: 2 }), 8);
   railsHeld(w);
   // Rails carried from the forge by hand fill the bill first, so the shelf's rest is left over when Q4 funds: it goes
@@ -435,7 +454,7 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   assert.equal(l().jobs[3]!.railStock, 16);
   const shelfLeft = l().depotRails;
   assert.ok(shelfLeft > 0, 'shelf rails are left over');
-  advance(w, LINE2_DEPOT.everyTicks + 1);
+  advance(w, cartCycleTicks(3));
   assert.equal(l().depotRails, shelfLeft, 'no more rails come to a stretch whose rails are in');
   const leftover = l().depotRails,
     before = l().forge.rack;
@@ -460,9 +479,9 @@ test("the away credit runs Q4's cart too: shelf rails come off the poured rack, 
   const l = () => w.s.line2!; // read anew: a restore replaces the world
   const produced = railCounts(w.s).produced;
   railResume(w.s, 0, 30, w.t, 1000000);
-  assert.equal(l().depot, 16, 'the logs the stretch needs');
+  assert.equal(l().depot, 24, "the load under way (Q2's) covers the logs the stretch needs");
   assert.equal(l().depotRails, 16, 'and its rails, moved from the forge');
-  assert.equal(railCounts(w.s).produced, produced + 16, 'only the logs are production');
+  assert.equal(railCounts(w.s).produced, produced, 'nothing minted: rails are moved, not made');
   railsHeld(w);
   const hash = hashOf(w.s);
   railResume(w.s, 0, 30, w.t, 1000000);
