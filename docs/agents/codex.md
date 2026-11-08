@@ -12,6 +12,11 @@ Codex can do what Claude Code does here; `.codex/` sets it up (config, `rules/bo
 - **Formatting.** If the format hook hasn't run on your edit, run `npx prettier --write <your files>` and `npm run lint -- <your files>`, or use `npm run patch`. The lint runner includes Oxlint, type-aware rules and Boogle's parser protections.
 - **Test diet.** It applies if an older skill asks for broader tests: use the `look` harness, with no new UI unit tests or scenarios unless a sync contract needs one.
 - **Pick checks first.** `npm run checks-for` prints the diff's minimum plan; `-- --run` executes it through the broker.
+  Workers can and should run `node .look/see-client.ts net` for sync/server changes (`npm run test:net`), and
+  `node .look/see-client.ts perf` for performance changes (`npm run perf`). The broker runs trusted harnesses
+  against the worker's tree, shares the bot queue, and returns manifests with status, logs, artifacts and commit/tree.
+  `net` accepts no flags; `perf` accepts `--render`, `--sim`, `--hardware`, `--seconds`, `--view`, `--size` and `--query`.
+  The broker owns perf's JSON output path. Timings still require a quiet machine.
   Read [bot checks](test-details/bot-segments.md) for segments and fixtures. Worker harness edits need a reviewed launcher
   restart; a broker rejecting new flags leaves that browser proof unverified. Never bypass it with Chromium.
 - **Shipping.** `npm run ship` hands a rebase conflict back to you rather than starting Claude Code. Resolve it keeping both changes and rerun. A push, green CI, merge and deployment are separate states; report only the ones verified.

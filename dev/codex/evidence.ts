@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { buildAt, sameBuild, type Build } from './source.ts';
 
-export type Operation = 'look' | 'playthrough' | 'scenario' | 'cold-start';
+export type Operation = 'look' | 'playthrough' | 'scenario' | 'cold-start' | 'net' | 'perf';
 export type Request = {
   operation: Operation;
   url: string;

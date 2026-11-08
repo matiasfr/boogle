@@ -66,6 +66,8 @@ node .look/see-client.ts playthrough
 node .look/see-client.ts look --at list
 node .look/see-client.ts look --at "forge lit" --hud --question "Can I see what the train delivery built?"
 node .look/see-client.ts scenario world-inputs
+node .look/see-client.ts net
+node .look/see-client.ts perf
 ```
 
 `dev/codex/see.ts` is the same client in an updated checkout. Omitting `look` keeps its old capture syntax working.
@@ -81,6 +83,17 @@ node .look/see-client.ts scenario world-inputs
 - **Scenario:** accepts names of existing scenarios from the launcher's trusted checkout, plus `--no-trace`. It runs them
   against the worker's game and server. New or edited worker scenario code does not execute outside the sandbox; promote
   it through the normal review workflow first. A scenario may need a matching build's interfaces.
+- **Net:** run for sync or server changes. Runs the trusted `test:net` harness with its browser probe bundled against
+  the worker's `src/`. The worker's server runs inside its sandbox; a loopback control endpoint lets the trusted test
+  start, save, restart and stop it. Accepts no flags or `WS_LOAD` runs. The normal standalone `npm run test:net` is unchanged.
+- **Perf:** run for performance changes. Runs the trusted `perf` harness against the worker's running game. Accepts
+  `--render`, `--sim`, `--hardware`, `--seconds`, `--view`, `--size` and `--query`. The broker saves render counts in
+  `render.json` (unless sim-only) and all console tables in `output.txt`. Workers cannot choose `--json` output paths.
+  Timings require a quiet machine; counts and successful execution alone do not establish device performance.
+
+Both operations use the machine-wide bot queue and the same commit/tree, status, log and artifact manifests as captures.
+The copied client supports them even when the worker's build predates these broker operations. Harness changes still
+need a reviewed launcher restart; never run a worker-edited harness outside the sandbox.
 
 The broker owns `--url`, `--root`, `--data-dir` and `--out`. The worker starts Vite and the game server in its sandbox;
 the trusted launcher's harness runs Chromium on the local GPU. Only page eval/action code crosses into the browser.

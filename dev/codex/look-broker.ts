@@ -17,6 +17,8 @@ const ENTRIES: Record<Operation, string> = {
   playthrough: 'dev/look/playthrough.ts',
   scenario: 'dev/scenarios/run.ts',
   'cold-start': 'dev/cold-start.ts',
+  net: 'dev/peer-test/ws-run.ts',
+  perf: 'dev/look/perf.ts',
 };
 const VALUES: Record<Operation, string[]> = {
   look: [
@@ -46,12 +48,16 @@ const VALUES: Record<Operation, string[]> = {
   playthrough: ['--query', '--eval', '--stall', '--players', '--warp-speed', '--from', '--to', '--saves'],
   scenario: [],
   'cold-start': ['--runs', '--mode', '--seconds', '--query'],
+  net: [],
+  perf: ['--seconds', '--view', '--size', '--query'],
 };
 const FLAGS: Record<Operation, string[]> = {
   look: ['--video', '--heatmap', '--hud', '--warp', '--real', '--curves'],
   playthrough: ['--full', '--long', '--real', '--regenerate'],
   scenario: ['--no-trace'],
   'cold-start': ['--video-probe'],
+  net: [],
+  perf: ['--render', '--sim', '--hardware'],
 };
 const FILES = ['--eval', '--action', '--curves-vs', '--saves'];
 let active: ChildProcess | undefined;
@@ -137,6 +143,8 @@ async function execute(id: string, request: Request) {
   const args = [...request.args];
   if (request.clockUrl) args.push('--clock-url', request.clockUrl);
   if (operation === 'cold-start') args.push('--direct');
+  if (operation === 'net') args.push('--root', worktree, '--data-dir', request.dataDir);
+  if (operation === 'perf') args.push('--json', path.join(out, 'render.json'));
   if (operation === 'look' && args.includes('--at') && !args.includes('--saves')) {
     const latest = path.join(dir, 'latest-playthrough.json');
     if (!fs.existsSync(latest)) throw new Error('Run see.ts playthrough first, or give --saves <directory>');
@@ -160,10 +168,21 @@ async function execute(id: string, request: Request) {
     const log = fs.openSync(outputFile, 'w');
     const child = (active = spawn(
       process.execPath,
-      [path.join(trusted, ENTRIES[operation]), ...args, '--url', url, '--out', out],
+      [
+        path.join(trusted, ENTRIES[operation]),
+        ...args,
+        '--url',
+        url,
+        ...(operation === 'net' || operation === 'perf' ? [] : ['--out', out]),
+      ],
       {
         cwd: worktree,
-        env: { ...process.env, BOOGLE_QUERY: query, BOOGLE_BOT_LEASE: lease.file },
+        env: {
+          ...process.env,
+          BOOGLE_QUERY: query,
+          BOOGLE_BOT_LEASE: lease.file,
+          ...(operation === 'net' ? { WS_LOAD: '' } : {}),
+        },
         detached: true,
         stdio: ['ignore', log, log],
       },
