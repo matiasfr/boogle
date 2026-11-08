@@ -15,6 +15,12 @@
   Solo restarts the railway; co-op reloads into the same room as a newcomer and takes an existing partner's railway
   through the normal join snapshot. With no partner, the railway starts fresh too, as the confirmation explains.
   No shared reset is sent. On classic, the island keeps everything and your old plaque lines keep your old name. There's no undo.
+- **World wipes.** A world namespace bump resets local room visits and saved spots, ability flourishes and teach
+  moments, cosmetics claimed in old worlds, and The Boogler's memory of you. Name, colour, pid/key, last-visit info,
+  device and graphics tuning, sound and control preferences, dev settings and prototype bests stay. Each boot prunes
+  stale namespaced progress; plain memories reset only when a previously recorded world changes, so the first boot
+  after this feature ships preserves current-world memories. Profile pruning requires the same cross-tab Web Lock
+  as reward claims. Player-supplied engine files, session plumbing and service-worker caches are untouched.
 - **No rank on the player.** Contribution tiers ([haul.md](haul.md)) stay as data; nothing shows them until rewards
   are designed (owner, 2 Nov 2026).
 - **Sync kind.** Local storage for this browser; presence (`name`, colour) and the lockstep roster carry them to others.

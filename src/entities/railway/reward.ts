@@ -3,6 +3,7 @@
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import { createBrowserRailwayProfile } from '../../railway-profile-browser.ts';
+import { claimsPruned } from '../../boot/world-reset.ts';
 import { addPresenceField, getRoomId, onRemotePresence, remotes } from '../../netplay/net.ts';
 import { me } from '../../player/player.ts';
 import type { Interactable } from '../../player/hands.ts';
@@ -259,6 +260,9 @@ async function createStationReward(
   } catch (cause) {
     error = cause instanceof Error ? cause.message : 'Personal reward storage unavailable';
   }
+  void claimsPruned.then(() => {
+    if (!disposed) load();
+  });
   const listeners = new AbortController();
   addEventListener(
     'storage',

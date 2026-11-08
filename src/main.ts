@@ -1,3 +1,4 @@
+import './boot/world-reset.ts';
 import './dev-preferences.ts';
 import './style.css';
 import * as THREE from 'three/webgpu';
