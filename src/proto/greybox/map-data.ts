@@ -77,6 +77,8 @@ export type Line = {
   kind: string;
   stage: Staged;
   pts: XZ[];
+  /** Authored deck metres above sea, one per point; null uses the terrain/station deck. */
+  heights?: (number | null)[];
   style?: string;
   note?: string;
 };

@@ -62,6 +62,7 @@ Sync kinds are defined in [DESIGN.md](../DESIGN.md), "Pick how each feature shar
 tick of 100 ms (10 per second).
 
 - [6.1 Beach ball](game-design/ball.md)
+- [Dev-only Sickle Isles review rides](game-design/sickle-greybox.md)
 - [6.4 Mushrooms and the seed stand](game-design/mushrooms.md)
 - [6.5 Gifts](game-design/gifts.md)
 - [6.6 What you hold](game-design/held.md)

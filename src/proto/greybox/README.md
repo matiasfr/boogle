@@ -28,7 +28,7 @@ Use a room of your own (`room=`), so you don't fly about in front of other peopl
 | `&pick=A\|B`                 | Colour lines for the first branch first (A) or the second (B)                      |
 | `&labels=0`                  | Start with labels and station markers hidden                                       |
 | `&gbcliff=<hex>`             | Override the cliff tint (e.g. `d9d4c8`, chalk white)                               |
-| `&gbrider=1\|bare`           | Rides draw a train with your Buddy seated on it and use the play camera; `1` adds sleepers, rails and a pole every 25 m to every line (`rider.ts`, [train-ride-feel](../../../docs/research/train-ride-feel.md)) |
+| `&gbrider=1\|0\|bare`        | Default `1`: train, seated Buddy, play-height camera, sleepers/rails and poles every 25 m. `0`: old overview camera. `bare`: seated rider without furniture. See [train-ride-feel](../../../docs/research/train-ride-feel.md). |
 
 The panel (bottom left, in the HUD, so captures leave it out) has views, go-to for every place (moves your own body)
 and rides along the lines at the economy model's 20 m/s, x1 or x4, with the model's ride time. Three more rides (`rides.ts`, on Place's real rails, at their own speeds) give the 2D economy model its legs: the depot **cart** trip (camp, turntable and forge stop, Q4 rack, 9 m/s), the **line 2 train** (Village, quarry stop, Far Head stop, pier, 20 m/s) and the **boiler** walk (Far Head, apron, camp, about 5.6 m/s). `window.__greybox`
@@ -52,6 +52,7 @@ Everything the page draws, plus optional greybox fields the page ignores:
   so the sea lightens toward the shore), `tint` (cliff colour), `module` (lands sharing one kit mesh, like the chalk
   islets), `clip` `{ by, gap }` (split by a terrain line, like the Gorge), `tier` (a terrace on another land),
   `existing` (already built: nothing drawn), `walk: false` with `horizon` (a far backdrop).
+- **Lines:** optional `heights`, one deck height per `pts` vertex, in metres above sea; `null` keeps the station/terrain height. Sickle sea links use 4 m decks, with sampled clearance approaches to unchanged stations. The five formerly straight links bend about 20° at 68% of the chord; the south White Wall line follows the chalk's bay-side foot. Review rides still start at cruise and stop abruptly; the panel separately reports model acceleration, boarding and dwell.
 - **Terrain:** `forest` with `h` (crown tops), `gorge` (the split), `pier` (breakwaters on the page).
 - **`landmarks`:** `crane`, `arch` (with `lantern`), `pinnacle`, `waterfall`, `saltworks`, `lamps` (along a line).
 - **`harbour`:** breakwater, quay, warehouses, moorings, head light, mouth, and `seabed` `{ quay, basin, mouth }` (metres below
