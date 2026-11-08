@@ -60,6 +60,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   const until = async (fn: () => unknown, beat: string, ms = 300000) => require(await bot.until(fn, ms, beat), beat);
   // Laying runs on the server's real-time ticks while the page's clock races ahead, so a loaded machine needs longer here.
   const LAYING_MS = 600000;
+  // The depot cart runs on the server's clock (a round trip of 70-101 s of it), which a loaded machine runs well behind
+  // the warped page clock: as with laying, its waits get twice the default.
+  const CART_MS = 600000;
   const job = (station: number) => read().stations[station]!;
   // Co-op witness: mirrored railway hashes by server step, compared offline between the two peers' logs.
   const tickHashes = new Map<number, number>();
@@ -674,10 +677,14 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     const cartBrings = async (beat: string, done: () => boolean) => {
       if (done()) return;
       const seen = new Set<number>();
-      await until(() => {
-        seen.add(l2().cart.phase);
-        return done();
-      }, beat);
+      await until(
+        () => {
+          seen.add(l2().cart.phase);
+          return done();
+        },
+        beat,
+        CART_MS,
+      );
       if (l2().depot + l2().depotRails > 0)
         require(seen.has(CART_PHASE.RUN) || seen.has(CART_PHASE.DROP), `${beat}: the cart was seen bringing it`);
       mark(`${beat} (the cart unloaded at the rack)`);
@@ -835,6 +842,10 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       // Q3's frame is across the gorge: walk the finished Q2 trestle.
       const start = qAt(10);
       await walk(start.x + layout.ORIGIN.x, start.z, 1);
+      // The depot cart runs this track too and would shove a walker off the trestle: set out while it is on line one
+      // (home, resting or loading at the camp), which leaves it at least a leg's run behind.
+      const home = [CART_PHASE.HOME, CART_PHASE.REST, CART_PHASE.LOAD] as number[];
+      await until(() => home.includes(l2().cart.phase), 'the cart is off the quarry track', CART_MS);
       await walkQuarry(10, 112);
       // The parked machine fills the track's end: step off on the frame's side, clear of its body.
       const off = besideQ(112, frameAt);
@@ -998,7 +1009,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await walk(call.x, call.z, 1.6);
     require(await bot.use(call.x, call.z, 'call the cart', /^Call cart to forge$/), 'cart call handle offered');
     require(await bot.work(() => l2().cart.recall || l2().cart.phase === CART_PHASE.FORGE, 5000, 380), 'cart called');
-    await until(() => l2().cart.phase === CART_PHASE.FORGE, 'the cart comes to the forge');
+    await checkpoint('cart called');
+    await until(() => l2().cart.phase === CART_PHASE.FORGE, 'the cart comes to the forge', CART_MS);
     // A loaded cart stands about 2 m tall: up with the optional double jump, as Place's porter boards it.
     const boardBy = performance.now() + 15000;
     while (!aboardCart() && performance.now() < boardBy && l2().cart.phase === CART_PHASE.FORGE) {
@@ -1023,10 +1035,14 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     require(aboardCart(), 'boarded the cart by real jump');
     await checkpoint('cart ride');
     let stayed = true;
-    await until(() => {
-      stayed &&= aboardCart() && !me.swimming;
-      return l2().cart.phase === CART_PHASE.DROP;
-    }, 'the cart reaches the Q4 rack');
+    await until(
+      () => {
+        stayed &&= aboardCart() && !me.swimming;
+        return l2().cart.phase === CART_PHASE.DROP;
+      },
+      'the cart reaches the Q4 rack',
+      CART_MS,
+    );
     require(stayed, 'rider stayed aboard the cart all the way');
     await checkpoint('cart at the rack');
     {

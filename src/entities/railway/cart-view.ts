@@ -163,11 +163,19 @@ export async function createRailwayCart(
   grip.position.y = 1.5;
   post.castShadow = grip.castShadow = true;
   handle.add(post, grip);
-  const callTag = common.label(5.4, 1.6);
-  callTag.sprite.position.y = 3.8;
-  handle.add(callTag.sprite);
   const callX = CART_CALL.x / 100,
     callZ = CART_CALL.z / 100;
+  // The handle's sign, the size of the rack's and frames' tags, above the turntable stop where the cart comes: in view
+  // past a player waiting by the handle, never between the camera and them.
+  const callTag = common.label(3.6, 1.2);
+  const stopAt = new THREE.Vector3();
+  {
+    const p = layout.lineAt(east, 0, { x: 0, z: 0, ux: 0, uz: 1 });
+    stopAt.set(p.x + layout.ORIGIN.x, layout.railY(east, 0) + 4.2, p.z);
+  }
+  callTag.sprite.position.copy(stopAt);
+  callTag.sprite.visible = false;
+  owner.add(callTag.sprite);
   handle.position.set(callX, land.H(callX, callZ), callZ);
   handle.visible = false;
   owner.add(handle);
@@ -186,6 +194,7 @@ export async function createRailwayCart(
     for (const g of geometries) g.dispose();
     for (const m of materials) m.dispose();
     tag.sprite.removeFromParent();
+    callTag.sprite.removeFromParent();
   });
 
   return {
@@ -196,6 +205,8 @@ export async function createRailwayCart(
       const l2 = s.line2;
       const on = s.ready && !!l2 && l2.completed >= 1;
       handle.visible = on && l2.served >= 0;
+      // Once the cart stands at the forge it is its own sign.
+      callTag.sprite.visible = handle.visible && l2.cart.phase !== CART_PHASE.FORGE;
       if (!on || !l2) {
         tag.sprite.visible = false;
         return;
