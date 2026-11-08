@@ -2,6 +2,19 @@ import path from 'node:path';
 import os from 'node:os';
 
 export const stateDir = path.join(os.homedir(), '.boogle', 'daily');
+// Two-player live WebGPU is a Mac-only daily check; CI Smoke uses dev/live-smoke.ts.
+export const scenarios = [
+  'reconnect-edit',
+  'shared-kinds',
+  'one-hand',
+  'interact',
+  'caves',
+  'lighthouse',
+  'atlas',
+  'second-tab',
+  'smoke',
+];
+export const liveScenarios: Record<string, string> = { smoke: 'https://boogle.club/' };
 export const jobs = {
   atlas: { utcHour: 13, minute: 7, scope: 'docs/atlas/', model: 'gpt-6.1-terra', effort: 'low' },
   'patch-video': { utcHour: 14, minute: 23, scope: 'dev/video/shots/', model: 'gpt-6-astra', effort: 'high' },

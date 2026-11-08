@@ -2,6 +2,8 @@
 # the image carries src/world, src/sim and the shared net modules beside server/ (docs/plans/server-host.md, step 7).
 # Node 26 runs the .ts modules as they are (type stripping); the root package.json only gives src/ "type": "module".
 FROM node:26-alpine
+ARG BOOGLE_BUILD=dev
+ENV BOOGLE_BUILD=$BOOGLE_BUILD
 ENV NODE_ENV=production
 WORKDIR /app
 COPY package.json ./

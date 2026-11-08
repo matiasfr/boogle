@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { jobs, jobName, prompt, reviewPrompt, stateDir } from './jobs.ts';
+import { jobs, jobName, prompt, reviewPrompt, stateDir, scenarios, liveScenarios as LIVE } from './jobs.ts';
 import { compare, invalid, report, type Bench, type Entry } from './perf.ts';
 
 const args = process.argv.slice(2);
@@ -79,19 +79,6 @@ function codex(work: string, report: string, brief: string) {
   }
 }
 
-const scenarios = [
-  'reconnect-edit',
-  'shared-kinds',
-  'one-hand',
-  'interact',
-  'caves',
-  'lighthouse',
-  'atlas',
-  'second-tab',
-  'smoke', // the full depth, against the live site (see LIVE below)
-];
-// Scenarios that play a deployed site, not this checkout's stack.
-const LIVE: Record<string, string> = { smoke: 'https://boogle.club/' };
 if (onlyIndex >= 0 && (job !== 'scenarios' || !scenarios.includes(only!))) throw new Error('Unknown nightly scenario');
 const selected = only ? [only] : scenarios;
 const perfHistory = path.join(stateDir, 'perf', 'history.jsonl');

@@ -68,7 +68,15 @@ jobs:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: superfly/flyctl-actions/setup-flyctl@1.6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Identify the server source commit
+        id: build
+        run: echo "sha=$(node --input-type=module -e 'import { serverBuild } from "./dev/server-build.ts"; console.log(serverBuild())')" >> "$GITHUB_OUTPUT"
       # The app is the FLY_APP repo variable if set, else `app` in fly.toml.
       - name: Pick the app
         id: app
@@ -77,9 +85,10 @@ jobs:
         run: echo "name=${FLY_APP:-$(sed -n 's/^app *= *"\(.*\)".*/\1/p' server/fly.toml)}" >> "$GITHUB_OUTPUT"
       # One machine: the volume is per machine and signaling state lives in memory. Built from the repo root: the
       # image carries src/world, src/sim and the shared net modules (server/Dockerfile).
-      - run: flyctl deploy . --config server/fly.toml --dockerfile server/Dockerfile --remote-only --ha=false --app "$APP"
+      - run: flyctl deploy . --config server/fly.toml --dockerfile server/Dockerfile --remote-only --ha=false --app "$APP" --build-arg "BOOGLE_BUILD=$BUILD"
         env:
           APP: ${{ steps.app.outputs.name }}
+          BUILD: ${{ steps.build.outputs.sha }}
       - name: Wait for /healthz
         env:
           APP: ${{ steps.app.outputs.name }}
