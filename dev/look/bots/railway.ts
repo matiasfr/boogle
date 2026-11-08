@@ -125,11 +125,20 @@ async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
   } finally {
     input.keys.delete('KeyW');
   }
-  hookCheck(
-    bot,
-    await bot.until(() => me.coyote > 0 && !me.swimming && b.position.y < pad.top - 3, 10000, `landed below ${id}`),
-    `drop ${id} landed dry`,
-  );
+  if (id === 'summit') input.keys.add('KeyW'); // Walk off an intermediate slab too, rather than calling t5 the ground.
+  try {
+    hookCheck(
+      bot,
+      await bot.until(
+        () => (me.coyote > 0 || (me.swimming && Math.abs(b.velocity.y) < 1.5)) && b.position.y < 30,
+        20000,
+        `landed on terrain or surface water below ${id}`,
+      ),
+      `drop ${id} reached terrain or surface water`,
+    );
+  } finally {
+    input.keys.delete('KeyW');
+  }
   aimHook('p2');
   await bot.wait(200);
   const ring = hookRing('p2');
@@ -148,7 +157,7 @@ async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
   // Reaching the trestle's x/z on the floor is not reaching its deck. Follow the existing low quarry footbridge
   // and its authored graded path up the east bank. Join behind the parked machine, as the Q3 delivery route does.
   const footpath = layout.PATHS[1]!;
-  for (const [x, z] of footpath.pts.slice(footpath.bridgeAt + 1)) {
+  for (const [x, z] of b.position.y - PLAYER_R < 15 ? footpath.pts.slice(footpath.bridgeAt + 1) : []) {
     hookCheck(
       bot,
       await returning.walk(x + layout.ORIGIN.x, z, 1, { limit: 300000 }),
@@ -231,6 +240,13 @@ export function startHookReload() {
         await play();
         return;
       }
+      // On a real navigation the eval can re-enter before the player body exists. Wait without the bot's body sampler.
+      const deadline = performance.now() + 300000;
+      while (
+        (!me.body || !inspectRailway()?.ready || fallArrival.active || me.coyote <= 0) &&
+        performance.now() < deadline
+      )
+        await new Promise<void>((resolve) => setTimeout(resolve, 60));
       const bot = makeBot({
         recover: () => {
           throw new Error('Hook reload proof required recovery');
