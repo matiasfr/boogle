@@ -86,9 +86,10 @@ export const LINE2_STATIONS: readonly Line2Station[] = [
     gate: 'quarry',
   },
 ];
-/** The depot's cart brings logs from the camp to a rack by the frame: one load every `everyTicks`, never past the bill.
- * From Q4 it stops at the forge too and carries up to `rails` of its rails (Place: "the cart holds 16 rails"). */
-export const LINE2_DEPOT = { load: 8, rails: 16, everyTicks: 120, reach: 700 } as const;
+/** The depot's cart brings logs from the camp to a rack by the frame, never past the bill; from Q4 it stops at the
+ * forge for rails too (Place: "the cart holds 16 rails"). Its trip and what a load holds: ./railway-cart.ts. `reach`:
+ * how near the frame a take from the rack or shelf is heard. */
+export const LINE2_DEPOT = { reach: 700 } as const;
 /** The pack chest beside the forge (Place ladder.ts CHEST_AT.pack): the forge's first bill (24 logs) puts it there, and
  * opening it gives everyone in the world a back that carries `carry` instead of RAILWAY_T1.carry. */
 export const LINE2_PACK = { x: 91400, z: -900, carry: 16 } as const;

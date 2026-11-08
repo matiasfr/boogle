@@ -4,6 +4,7 @@ import type { Railway } from './railway.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE2_FORGE as FORGE, LINE2_PACK, LINE2_STATIONS, RAILS } from './railway-line2-layout.ts';
 import { lineSchedule, type LineTiming } from './railway-line-schedule.ts';
+import { CART, CART_PHASE, CART_PHASES, CART_ROAD, type RailCart } from './railway-cart.ts';
 
 export type RailForge = { used: number; lit: number; rack: number; poured: number; lastPour: number };
 export type RailQJob = {
@@ -27,7 +28,6 @@ export type RailLine2 = {
   depot: number;
   /** Total minted by the depot; always the sum of `depotOut`. */
   depotProduced: number;
-  depotLast: number;
   /** Depot logs minted for each stretch, in station order; never more than that stretch's log bill. */
   depotOut: number[];
   lever: boolean;
@@ -36,8 +36,11 @@ export type RailLine2 = {
   pack: boolean;
   /** Rails on the shelf by a `shelf` stretch's rack, moved there from the forge rack (never minted). */
   depotRails: number;
-  /** Rails the cart has moved to the shelf for the active stretch; never past its rail bill, reset when it funds. */
+  /** Rails the cart has taken off the forge rack for the active stretch (aboard or on the shelf); never past its rail
+   * bill, reset when it funds. */
   shelfOut: number;
+  /** The depot cart (./railway-cart.ts): its phase on the trip, and the logs and rails aboard. */
+  cart: RailCart;
 };
 /** The first path (T3) is open: the forge frame takes logs. */
 export const line2Open = (s: Railway) => !!s.line?.jobs[1].completion;
@@ -57,11 +60,46 @@ export const line2Active = (s: Railway) => {
 /** The quarry gate is down only with Q3 complete and the lever pulled. */
 export const line2GateOpen = (s: Railway) => line2Completed(s) >= 3 && !!s.line2?.lever;
 export const line2Schedule = (k: number, job: RailQJob) => lineSchedule(LINE2_STATIONS[k]!, job.timing);
+/** The stretch the depot cart serves (a depot stretch not yet funded), or -1. */
+export const line2Served = (s: Railway) => {
+  const k = line2Active(s);
+  return k >= 0 && LINE2_STATIONS[k]!.depot && s.line2!.jobs[k]!.start < 0 ? k : -1;
+};
+/** The rails the cart still wants aboard for stretch k at the forge stop (the systems' rule, on the read model). */
+export function line2CartWants(s: Railway, k: number) {
+  const l = s.line2!,
+    spec = LINE2_STATIONS[k];
+  if (!spec?.shelf) return 0;
+  const owed = Math.min(spec.bill[1] - l.jobs[k]!.railStock - l.depotRails - l.cart.rails, spec.bill[1] - l.shelfOut);
+  return Math.max(0, Math.min(CART.rails - l.cart.rails, owed));
+}
+/** What the rack's tag says (Place's depot service): off when nothing is owed and nothing is aboard. */
+export function line2CartStatus(s: Railway): 'off' | 'loading' | 'travelling' | 'unloading' | 'waiting' {
+  const l = s.line2!,
+    c = l.cart,
+    k = line2Served(s);
+  if (c.phase === CART_PHASE.DROP) return 'unloading';
+  const aboard = c.logs + c.rails > 0;
+  if (k < 0 && !aboard) return 'off';
+  if (c.phase === CART_PHASE.FORGE) return line2CartWants(s, k) > 0 && l.forge.rack === 0 ? 'waiting' : 'loading';
+  if (c.phase === CART_PHASE.LOAD) return 'loading';
+  if (c.phase === CART_PHASE.OUT || c.phase === CART_PHASE.RUN) return 'travelling';
+  // Home or heading there: more is coming only while the stretch still needs some.
+  const spec = LINE2_STATIONS[k]!,
+    j = l.jobs[k]!;
+  const logs = Math.min(spec.bill[0] - j.stock - l.depot, spec.bill[0] - l.depotOut[k]!);
+  return logs > 0 || line2CartWants(s, k) > 0 || c.recall
+    ? c.phase === CART_PHASE.REST
+      ? 'loading'
+      : 'travelling'
+    : 'off';
+}
 export const line2Logs = (l: RailLine2) =>
-  l.forge.used + l.depot + l.jobs.reduce((n, j) => n + j.stock + j.allocation + j.used, 0);
+  l.forge.used + l.depot + l.cart.logs + l.jobs.reduce((n, j) => n + j.stock + j.allocation + j.used, 0);
 export const line2Rails = (s: Railway) =>
   (s.line2?.forge.rack ?? 0) +
   (s.line2?.depotRails ?? 0) +
+  (s.line2?.cart.rails ?? 0) +
   s.accounts.reduce((n, a) => n + (a.rails ?? 0), 0) +
   s.piles.reduce((n, p) => n + (p.kind === RAILS ? p.n : 0), 0) +
   (s.line2?.jobs.reduce((n, j) => n + j.railStock + j.railAllocation + j.railUsed, 0) ?? 0);
@@ -133,21 +171,34 @@ export function validateRailLine2(s: Railway) {
         throw new Error('railway: line2 funded job');
     }
   });
-  if ((l.depot || l.depotProduced || l.depotLast >= 0) && !l.jobs[0]!.completion)
-    throw new Error('railway: early depot');
+  if ((l.depot || l.depotProduced) && !l.jobs[0]!.completion) throw new Error('railway: early depot');
   if (
     l.depotOut.length !== LINE2_STATIONS.length ||
     l.depotOut.some((n, k) => !int(n, LINE2_STATIONS[k]!.bill[0]) || (n > 0 && !LINE2_STATIONS[k]!.depot)) ||
     l.depotOut.reduce((a, b) => a + b, 0) !== l.depotProduced
   )
     throw new Error('railway: depot output');
-  if (l.depot > l.depotProduced) throw new Error('railway: depot stock');
+  if (l.depot + l.cart.logs > l.depotProduced) throw new Error('railway: depot stock');
+  const c = l.cart;
+  const road = CART_ROAD.rackCm(LINE2_STATIONS.length - 1);
+  if (
+    !int(c.phase, CART_PHASES - 1) ||
+    !int(c.depart) ||
+    !int(c.to, road) ||
+    !int(c.from, c.to) ||
+    !int(c.logs, CART.load) ||
+    !int(c.rails, CART.rails) ||
+    typeof c.recall !== 'boolean' ||
+    ((c.phase === CART_PHASE.RUN || c.phase === CART_PHASE.DROP || c.phase === CART_PHASE.BACK) &&
+      (c.to < CART_ROAD.forgeCm || c.from < CART_ROAD.forgeCm))
+  )
+    throw new Error('railway: cart');
   if (l.lever && line2Completed(s) < 3) throw new Error('railway: lever before Q3');
   if (l.hook && line2Completed(s) < 2) throw new Error('railway: hook before Q2');
   if (l.pack && f.used < FORGE.bills[0]) throw new Error('railway: pack before the forge bill');
   // The shelf holds rails only for the active, unfunded `shelf` stretch (funding sends what is left back to the forge
   // rack), and never more than its rail bill.
-  if (!int(l.depotRails, 64) || !int(l.shelfOut, 64) || l.depotRails > l.shelfOut)
+  if (!int(l.depotRails, 64) || !int(l.shelfOut, 64) || l.depotRails + l.cart.rails > l.shelfOut)
     throw new Error('railway: shelf bounds');
   if (l.shelfOut) {
     const k = line2Active(s);

@@ -167,6 +167,7 @@ export async function createRailwayLine2(
     return out;
   };
   let drawnDepot = '';
+  let cartFlying = () => ({ logs: 0 });
   function drawDepot(k: number, n: number) {
     const key = `${k}:${n}`;
     if (key === drawnDepot) return;
@@ -881,7 +882,7 @@ export async function createRailwayLine2(
         targetHead = head();
         panels.update(dt);
       }
-      drawDepot(l.active, l.depot);
+      drawDepot(l.active, Math.max(0, l.depot - cartFlying().logs));
       syncSolids(l);
       if (slabT >= 0) {
         slabT += dt;
@@ -920,6 +921,10 @@ export async function createRailwayLine2(
     },
     /** Where the depot rack for stretch k stands (the rails shelf stands beside it: shelf-view.ts). */
     depotPlace,
+    /** Pieces the cart is heaving onto the rack (cart-view.ts): shown once they land. */
+    holdDepot(fn: () => { logs: number }) {
+      cartFlying = fn;
+    },
     targets(): Interactable[] {
       const l = l2(),
         p = me.body?.position;

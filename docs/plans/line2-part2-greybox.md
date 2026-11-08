@@ -124,7 +124,7 @@ reset, no migration) and keeps the paused world and away credit whole.
   `rail.resume` (there is no `railLine2Yards`). The survey stake stands at the rim, where Q4 ends. The solo
   playthrough passed to `Q4 laid` (43 game minutes, no errors); stills: the pack chest, the shelf beside Q4's frame
   and the laid stretch to the rim under `?greybox=sickle`. `WORLD_NS` v18. Not tested on a device.
-- [ ] **B3. The cart's real trip (new kind `cart`).** Add the component and a `rail.cartTick` system: load at the
+- [x] **B3. The cart's real trip (new kind `cart`).** Add the component and a `rail.cartTick` system: load at the
   camp from the depot's minted logs, stop at the forge for rails (from Q4 on), run to the active rack, unload, return.
   Each step is one atomic transfer, and `depot`/`depotRails` only change at unload. The pose comes from
   `cartPose(leg, tick)` in a new `src/sim/railway-cart.ts`, pure integer cm along the pinned route. `rail.cartCall`
@@ -132,6 +132,24 @@ reset, no migration) and keeps the paused world and away credit whole.
   ride it as a platform (Owner). Proof: `test/railway-cart.test.ts` (load conservation across a mid-trip
   snapshot/load, an empty forge waits, a double call is one call, away credit); a rider stays aboard in a two-tab
   `npm run load` row; a look still of the cart at the rack; the bot waits on a real unload.
+  *Built 8 November (B3).* Departures: the component is `cart` with `phase, depart, from, to, logs, rails, recall`;
+  `from` lets a load that set out for a stretch someone filled by hand go on to the next stretch's rack (the test
+  helpers fill Q2 and Q3 faster than one trip). The pose is `cartAlong(cart, tick)` in `src/sim/railway-cart.ts`: an
+  eased trapezoid (9 m/s, 3 m/s², Place's numbers) in + − × ÷ and `Math.sqrt`, rounded to whole cm along a road whose
+  stops are pinned from Place (camp 0, the turntable 196 m, a rack stop 13 m short of its stretch's start); the views
+  turn cm into a pose on Place's own lines. Every trip stops at the turntable (a pass-through eases to a halt there).
+  A load is Place's 24 logs (`LINE2_DEPOT.load` 8 and `everyTicks` went, with `railClock.depotLast`): a round trip is
+  70-101 s, so 8 a trip would have tripled the wait for Q2. A call is served at the forge on the cart's next pass and
+  holds it 8 s to board; the handle's copy is Place's ("Call cart to forge", "Cart called", "After unloading / Then
+  back to forge"). The rider proof in `npm run load` is a new opt-in row (`WS_LOAD_CHURN=cart`): three headless tabs
+  at 0/100/200 ms place the cart from their own tick estimates (a partner's rider is drawn on each tab's own copy of
+  the deck); measured over 60 s of trip: at most 1.05 m apart between tabs, no frame-to-frame jump over 3 cm past
+  cruise. The physical ride is the bot's: it calls the cart, double-jumps onto the loaded cart, rides it to the
+  Q4 rack (checkpoints `cart ride`, `cart at the rack`) and must stay aboard all the way. The solo playthrough
+  (`npm run playthrough -- --long --eval dev/look/evals/railway-job.ts --query 'shot=play'`; without `--long` its
+  300 s wall limit stops it near Q2, about 20 game minutes in) finished: quarry gate 27:05, cart ride 29:57, Q4 laid
+  32:53, no errors. Stills: the cart unloading at the Q4 rack; a real-time ride from the forge to Q4. `WORLD_NS` v19.
+  Not tested on a device.
 - [ ] **B4. Q5 and the sea gate.** Add `Q5` (24/24, 28600 → 54600, speed 180) and `sea` with `rail.seaSwitch` at
   `SEA_SWITCH`, which requires Q4. Views: the sea slab and switch, the 260 m trestle, Far Head rockets and lamps
   (Local, on `onAccepted`). Proof: tests as in B2; bot checkpoints `sea gate`, `Q5 laid` and `Far Head`; a still from

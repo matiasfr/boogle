@@ -175,11 +175,16 @@ export async function createRailwayShelf(
     for (const m of materials) m.dispose();
   });
 
+  let inFlight = () => ({ rails: 0 });
   return {
+    /** Rails the cart is heaving onto the shelf (cart-view.ts): shown once they land. */
+    holdRails(fn: () => { rails: number }) {
+      inFlight = fn;
+    },
     update() {
       const s = adapter.inspect();
       const k = s.line2.active;
-      draw(k, k >= 0 ? s.line2.depotRails : 0);
+      draw(k, k >= 0 ? Math.max(0, s.line2.depotRails - inFlight().rails) : 0);
       drawStake(k);
     },
     targets(): Interactable[] {

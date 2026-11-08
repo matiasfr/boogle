@@ -154,11 +154,14 @@ test("the away credit runs Q4's cart: its shelf rails come off the forge rack, n
     const s = live(() => f.host.rules.railway.world());
     assert.equal(line2Active(s), 3, 'Q4 is next, behind the gate');
     f.host.pause();
+    // Q2's first load is still on its way (the helper fills Q2 and Q3 by hand faster than a trip): it lands too.
+    const aboard = s.line2!.cart.logs;
     const before = { ...railCounts(s).rails!, depot: s.line2!.depot, shelf: s.line2!.depotRails };
     f.clock.now += 8 * HOUR;
     f.host.wake();
     const q4 = LINE2_STATIONS[3]!;
-    assert.equal(s.line2!.depot, q4.bill[0], "the cart brought Q4's logs");
+    assert.equal(s.line2!.depot, Math.max(q4.bill[0], before.depot + aboard), "the cart brought Q4's logs");
+    assert.equal(s.line2!.cart.logs + s.line2!.cart.rails, 0, 'and is home, empty');
     assert.equal(s.line2!.depotRails, q4.bill[1], 'and its rails, to the shelf');
     const after = railCounts(s).rails!;
     assert.equal(after.total, after.poured, 'every rail on the shelf was poured by the forge');

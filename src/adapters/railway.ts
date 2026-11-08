@@ -42,7 +42,15 @@ import {
 } from '../sim/railway-line-layout.ts';
 import { LINE_TIMING, railBeamChoppable } from '../sim/railway-line.ts';
 import { LINE2_PACK, LINE2_STATIONS, line2Routes, type Line2StationId } from '../sim/railway-line2-layout.ts';
-import { line2Active, line2Completed, line2GateOpen, line2PackReady, railCarryMax } from '../sim/railway-line2.ts';
+import {
+  line2Active,
+  line2CartStatus,
+  line2Completed,
+  line2GateOpen,
+  line2PackReady,
+  line2Served,
+  railCarryMax,
+} from '../sim/railway-line2.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
 import type { RailwayMirror } from '../world/railway-replicate.ts';
 import { createPredictor } from '../world/replicate-client.ts';
@@ -65,7 +73,16 @@ export type RailwayIntent =
   | { op: 'rail.chop'; id: number; yaw?: number; collapsed?: boolean }
   | { op: 'rail.mine'; id: number }
   | { op: 'rail.axe' | 'rail.beamChop' | 'rail.jump' }
-  | { op: 'rail.forgeTake' | 'rail.depotTake' | 'rail.depotRailTake' | 'rail.lever' | 'rail.hook' | 'rail.pack' }
+  | {
+      op:
+        | 'rail.forgeTake'
+        | 'rail.depotTake'
+        | 'rail.depotRailTake'
+        | 'rail.lever'
+        | 'rail.hook'
+        | 'rail.pack'
+        | 'rail.cartCall';
+    }
   | { op: 'rail.beamTake'; revision: number }
   | { op: 'rail.beamDrop'; revision: number; x: number; y: number; z: number }
   | { op: 'rail.beamDeposit'; revision: number; station: 'T3' }
@@ -142,7 +159,8 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     e.op === 'rail.lever' ||
     e.op === 'rail.hook' ||
     e.op === 'rail.depotRailTake' ||
-    e.op === 'rail.pack'
+    e.op === 'rail.pack' ||
+    e.op === 'rail.cartCall'
   )
     return { op: e.op };
   if (e.op === 'rail.mine' && railInt(e.id, 2)) return { op: e.op, id: e.id };
@@ -221,7 +239,9 @@ const holds = (s: Railway, op: string) =>
       ? !!s.line2?.lever
       : op === 'rail.pack'
         ? !!s.line2?.pack
-        : false;
+        : op === 'rail.cartCall'
+          ? !!s.line2?.cart.recall
+          : false;
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op !== b.op) return false;
@@ -248,6 +268,7 @@ const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.lever',
   'rail.hook',
   'rail.pack',
+  'rail.cartCall',
   'rail.beamChop',
   'rail.beamTake',
   'rail.beamDrop',
@@ -302,6 +323,14 @@ export function createRailwayAdapter({
     const step = rail.mirror.step(now(), frozen !== null && !connected);
     if (step >= 0) shownTick = Math.max(shownTick, Math.floor(step / RULE_STEPS));
     return shownTick;
+  };
+  // The same estimate with its fraction, never going backwards: what a moving thing's pose is read from (the depot
+  // cart, ../sim/railway-cart.ts), so every tab draws it where the server's clock has it.
+  let smoothTick = 0;
+  const tickNow = () => {
+    const step = rail.mirror.step(now(), frozen !== null && !connected);
+    if (step >= 0) smoothTick = Math.max(smoothTick, step / RULE_STEPS);
+    return smoothTick;
   };
 
   // ---------------------------------------------------------------- prediction (the pending list)
@@ -680,6 +709,11 @@ export function createRailwayAdapter({
       packReady: line2PackReady(s),
       depot: l2.depot,
       depotRails: l2.depotRails,
+      cart: Object.freeze({ ...l2.cart }),
+      /** The rack's tag: Loading, On the way, Unloading, Waiting for forge, or nothing. */
+      cartStatus: line2CartStatus(s),
+      /** The stretch the cart serves, or -1. */
+      served: line2Served(s),
       stations: Object.freeze(
         l2.jobs.map((job, i) =>
           Object.freeze({ ...job, id: LINE2_STATIONS[i]!.id, timing: Object.freeze({ ...job.timing }) }),
@@ -898,6 +932,10 @@ export function createRailwayAdapter({
     depotTake: () => submit({ op: 'rail.depotTake' }),
     depotRailTake: () => submit({ op: 'rail.depotRailTake' }),
     openPack: () => submit({ op: 'rail.pack' }),
+    /** "Call cart to forge": the depot cart stops at the forge on its next pass and waits to be boarded. */
+    callCart: () => submit({ op: 'rail.cartCall' }),
+    /** The server's tick as this tab estimates it, with its fraction (never going backwards). */
+    tickNow,
     pullLever: () => submit({ op: 'rail.lever' }),
     claimHook: () => submit({ op: 'rail.hook' }),
     deposit(n = 1, kind: RailMaterial = 0) {

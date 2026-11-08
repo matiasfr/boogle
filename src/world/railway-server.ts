@@ -38,6 +38,7 @@ import {
   LINE2_PACK,
 } from '../sim/railway-line2-layout.ts';
 import { line2Active, line2GateOpen, line2Completed } from '../sim/railway-line2.ts';
+import { CART_CALL } from '../sim/railway-cart.ts';
 import { RECOVERY_RACK, type SupplyPulse } from '../sim/railway-supply.ts';
 import {
   Account,
@@ -104,6 +105,7 @@ export const RAIL_ACTIONS = new Set([
   'rail.hook',
   'rail.depotRailTake',
   'rail.pack',
+  'rail.cartCall',
 ]);
 
 /** Whether a well-formed action is in range of its target. Readiness and balances are the rule's, not this. */
@@ -180,6 +182,8 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
     }
     case 'rail.pack':
       return near(LINE2_PACK.x, LINE2_PACK.z, 340);
+    case 'rail.cartCall':
+      return near(CART_CALL.x, CART_CALL.z, CART_CALL.reach);
     case 'rail.lever':
       return height(LINE2_LEVER.y) && near(LINE2_LEVER.x, LINE2_LEVER.z, 320);
     case 'rail.hook':

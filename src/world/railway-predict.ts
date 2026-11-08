@@ -50,6 +50,7 @@ export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.depotRailTake',
   'rail.lever',
   'rail.pack',
+  'rail.cartCall',
 ]);
 /** Swing and unload cadence on the actor's own action clock (replication revision 1): the server refuses an action
  * closer than `ms - RAIL_CADENCE_SLACK_MS` to the last of its kind, and a client predicts the same check. */

@@ -4,7 +4,7 @@
 // helpers (railCounts, railPhase, line2Active, ...) and validation, and is never written back.
 //
 //   components                     tree, hardwood, rock, pile, account, job(+jobRun), qjob(+qjobRun), beam,
-//                                  forge(+forgeClock), rail(+railClock), outcome; RAIL_REPLICATED is the wire
+//                                  forge(+forgeClock), rail(+railClock), cart, outcome; RAIL_REPLICATED is the wire
 //   createRailwayWorld(opts)       the fresh railway: one entity per catalog thing, spawned in catalog order
 //   railwayView(world)             today's `Railway` shape, from the components
 //   fillRailway(target, world)     the same, into an existing object (a mirror's stable read model)
@@ -16,6 +16,7 @@ import { LINE1_CATALOG, LINE1_GREAT_TREE, LINE1_ROCKS, LINE1_STATIONS } from './
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { LINE_TIMING, validateRailLine, type RailBeam, type RailJob } from './railway-line.ts';
 import { railCarryMax, validateRailLine2, type RailQJob } from './railway-line2.ts';
+import type { RailCart } from './railway-cart.ts';
 import { RECOVERY_MINUTES } from './railway-supply.ts';
 import { railCounts, railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES, RAILWAY_PILES } from './railway.ts';
 import type { Railway, RailResult } from './railway.ts';
@@ -36,8 +37,8 @@ const clockDefaults = { start: -1, end: -1, ...LINE_TIMING };
 
 export const RailClock = defineComponent(
   'railClock',
-  { depotLast: 'int', resumeMarker: 'int', supplyMarker: 'int' },
-  { replicate: false, defaults: { depotLast: -1 } },
+  { resumeMarker: 'int', supplyMarker: 'int' },
+  { replicate: false },
 );
 export const Rail = defineComponent(
   'rail',
@@ -78,6 +79,16 @@ export const Beam = defineComponent(
   },
   { defaults: { state: 'standing', x: LINE1_GREAT_TREE.x, y: 3000, z: LINE1_GREAT_TREE.z } },
 );
+/** The depot cart (./railway-cart.ts): sent only when its phase changes; its place on the road follows from the tick. */
+export const Cart = defineComponent('cart', {
+  phase: 'u8',
+  depart: 'int',
+  from: 'int',
+  to: 'int',
+  logs: 'int',
+  rails: 'int',
+  recall: 'bool',
+});
 export const ForgeClock = defineComponent('forgeClock', { lastPour: 'int' }, { replicate: false });
 export const Forge = defineComponent(
   'forge',
@@ -140,6 +151,7 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   Pile,
   Account,
   Outcome,
+  Cart,
 ];
 /** What a client is sent: the replicated components (the wire schema, one source with the save). */
 export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
@@ -158,6 +170,7 @@ export function createRailwayWorld(opts: { audit?: boolean } = {}) {
   RAILWAY_SOURCES.forEach((_s, slot) => w.spawn([Tree, { slot, left: T1.sourceYield }]));
   for (let slot = 0; slot < 2; slot++) w.spawn([Hardwood, { slot, left: 15 }]);
   LINE1_ROCKS.forEach((_r, slot) => w.spawn([Rock, { slot, left: 8 }]));
+  w.spawn([Cart, {}]);
   return w;
 }
 
@@ -292,13 +305,13 @@ export function railwayView(w: World): Railway {
       jobs: bySlot(w, QJob, LINE2_STATIONS.length, (id) => qjobOf(w, id)),
       depot: rail.depot,
       depotProduced: rail.depotProduced,
-      depotLast: clock.depotLast,
       depotOut: DEPOT_OUT.map((k) => rail[k]),
       lever: rail.lever,
       hook: rail.hook,
       pack: rail.pack,
       depotRails: rail.depotRails,
       shelfOut: rail.shelfOut,
+      cart: copyOf(Cart, w.get(Cart, w.single(Cart))!) as RailCart,
     },
     falls: { yaw: trees.map((t) => t.yaw), collapsed: trees.map((t) => t.fell) },
     supply: { marker: clock.supplyMarker, ages: trees.map((t) => t.age), rack: rail.rack, produced: rail.produced },
@@ -357,6 +370,7 @@ export function refreshRailway(s: Railway, w: World) {
       f = w.get(Forge, id)!;
     l2.forge = { used: f.used, lit: f.lit, rack: f.rack, poured: f.poured, lastPour: w.get(ForgeClock, id)!.lastPour };
   }
+  if (w.changes(Cart).length) l2.cart = copyOf(Cart, w.get(Cart, w.single(Cart))!) as RailCart;
   if (w.changes(Rail).length) {
     const r = w.get(Rail, w.single(Rail))!;
     s.awake = r.awake;
@@ -398,7 +412,13 @@ export function copyRailway(s: Railway): Railway {
       hardwoodWork: l.hardwoodWork.slice(),
       beam: { ...l.beam },
     },
-    line2: { ...l2, forge: { ...l2.forge }, jobs: l2.jobs.map(job), depotOut: l2.depotOut.slice() },
+    line2: {
+      ...l2,
+      forge: { ...l2.forge },
+      jobs: l2.jobs.map(job),
+      depotOut: l2.depotOut.slice(),
+      cart: { ...l2.cart },
+    },
     falls: { yaw: s.falls!.yaw.slice(), collapsed: s.falls!.collapsed.slice() },
     supply: { ...s.supply!, ages: s.supply!.ages.slice() },
   };
@@ -417,6 +437,7 @@ const ARCHETYPES = [
   [Pile],
   [Account],
   [Outcome],
+  [Cart],
 ].map((set) => set.map((c) => c.kind).join());
 /** Every entity has a known shape, the catalog is whole, and every domain invariant holds on the read model. */
 export function railwayCheck(w: World) {
@@ -438,6 +459,7 @@ export function railwayCheck(w: World) {
     [Tree, RAILWAY_SOURCES.length],
     [Hardwood, 2],
     [Rock, LINE1_ROCKS.length],
+    [Cart, 1],
   ] as const)
     if (w.count(c) !== n) throw new Error(`railway: ${w.count(c)} ${c.kind}`);
   if (w.count(Account) > MAX_PLAYERS || w.count(Pile) > RAILWAY_PILES || w.count(Outcome) > RAILWAY_OUTCOMES)
@@ -538,8 +560,7 @@ export function validateRailway(n: Railway) {
     !railInt(f.rack, 4096) ||
     !railInt(f.poured) ||
     !railInt(f.lastPour) ||
-    !railInt(n.line2!.depot, 64) ||
-    !railInt(n.line2!.depotLast, RAILWAY_MAX_INT, -1)
+    !railInt(n.line2!.depot, 64)
   )
     throw new Error('railway: line2 bounds');
   for (const job of [...[n, ...l.jobs], ...n.line2!.jobs])

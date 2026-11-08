@@ -218,7 +218,7 @@ test('the railway state is a server state: saved by the host, never hashed or se
   const again = room();
   again.sync.loadSnapshot(saved);
   assert.equal(again.api.account('alice')?.epoch, 1);
-  assert.equal(RAIL_SCHEMAS.length, 10);
+  assert.equal(RAIL_SCHEMAS.length, 11); // the depot cart joined (B3)
 });
 
 test('a scripted run through line one, the pack and line two to Q4 replicates exactly, live and to a late joiner', () => {

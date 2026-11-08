@@ -5,20 +5,16 @@
 // client's prediction runs the very same ones on a clone of its mirror.
 //
 //   railApply(w, pid, e, tick, timing)   one action: receipt, the op, remember (the request history)
-//   railTick(w, tick)                    the rule tick: line one's job, line two's forge, depot and job, the job clocks
+//   railTick(w, tick)                    the rule tick: line one's job, line two's forge and job, the depot cart's trip
+//                                        (./railway-cart.ts), the job clocks
 //   railResume / railSession / railSupplyPulse / railBeamRelease / railBeamStood / railBeamPutDown
 import { defineSystem, type System, type World } from '../ecs/index.ts';
 import { MAX_PLAYERS, okPid } from './roster.ts';
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE1_GREAT_TREE, LINE1_STATIONS, lineBeamGround } from './railway-line-layout.ts';
-import {
-  LINE2_DEPOT as DEPOT,
-  LINE2_FORGE as FORGE,
-  LINE2_PACK as PACK,
-  LINE2_STATIONS,
-  RAILS,
-} from './railway-line2-layout.ts';
+import { LINE2_FORGE as FORGE, LINE2_PACK as PACK, LINE2_STATIONS, RAILS } from './railway-line2-layout.ts';
 import { lineSchedule, type LineTiming } from './railway-line-schedule.ts';
+import { CART, CART_PHASE, CART_ROAD, cartCycleTicks, cartEnd } from './railway-cart.ts';
 import { LINE_TIMING } from './railway-line.ts';
 import {
   railGrows,
@@ -32,6 +28,7 @@ import type { RailAction, RailResult } from './railway.ts';
 import {
   Account,
   Beam,
+  Cart,
   DEPOT_OUT,
   Forge,
   ForgeClock,
@@ -58,6 +55,7 @@ const TIMING_KEYS = Object.keys(LINE_TIMING) as (keyof LineTiming)[];
 const railId = (w: World) => w.single(Rail);
 const beamId = (w: World) => w.single(Beam);
 const forgeId = (w: World) => w.single(Forge);
+const cartId = (w: World) => w.single(Cart);
 const job = (w: World, slot: number) => w.lookup(Job, slot)!;
 const qjob = (w: World, slot: number) => w.lookup(QJob, slot)!;
 /** The line-one station taking materials now (railActiveStation). */
@@ -416,11 +414,14 @@ function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
   run.allocation = spec.bill[0];
   run.railAllocation = spec.bill[1];
   jm.start = run.lastTick = tick;
-  // Rails still on the shelf go back to the forge rack: the shelf only ever holds an unfunded stretch's rails.
-  const rail = w.get(Rail, railId(w))!;
-  if (spec.shelf && (rail.depotRails || rail.shelfOut)) {
-    w.mut(Forge, forgeId(w))!.rack += rail.depotRails;
+  // Rails still on the shelf or aboard the cart go back to the forge rack: they only ever wait for an unfunded
+  // stretch.
+  const rail = w.get(Rail, railId(w))!,
+    aboard = w.get(Cart, cartId(w))!.rails;
+  if (spec.shelf && (rail.depotRails || rail.shelfOut || aboard)) {
+    w.mut(Forge, forgeId(w))!.rack += rail.depotRails + aboard;
     Object.assign(w.mut(Rail, railId(w))!, { depotRails: 0, shelfOut: 0 });
+    if (aboard) w.mut(Cart, cartId(w))!.rails = 0;
   }
   // Each stretch pins the room's timing when funded; Q2/Q3 lay faster, as in Place.
   Object.assign(jm, timingOf(timing), {
@@ -429,7 +430,7 @@ function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
 }
 const deposit2 = defineSystem(
   'rail.deposit2',
-  { reads: [Beam, Job], writes: [Rail, Forge, ForgeClock, QJob, QJobRun, Account], phase: 'act', order: 20 },
+  { reads: [Beam, Job], writes: [Rail, Forge, ForgeClock, QJob, QJobRun, Account, Cart], phase: 'act', order: 20 },
   (w, { a: aid, e, tick, timing }: Act) => {
     const a = w.mut(Account, aid)!;
     const fid = forgeId(w);
@@ -528,6 +529,18 @@ const hook = defineSystem('rail.hook', { reads: [QJob], writes: [Rail], phase: '
   return 1;
 });
 
+/** "Call cart to forge": the cart stops at the forge on its next pass (or sets out from the camp now) and waits there
+ * to be boarded. Only while it serves a stretch; one call stands until it is served, so a second is a noop. */
+const cartCall = defineSystem(
+  'rail.cartCall',
+  { reads: [Forge, QJob, Rail], writes: [Cart], phase: 'act', order: 27 },
+  (w) => {
+    if (cartServing(w) < 0 || w.get(Cart, cartId(w))!.recall) return 0;
+    w.mut(Cart, cartId(w))!.recall = true;
+    return 1;
+  },
+);
+
 /** The systems for each op, in the order they are tried: the first that moves something answers. */
 // An op system that reads no action (the axe, the jump, the lever, the hook) takes it all the same.
 const OPS: Record<string, readonly System<never, number>[]> = {
@@ -550,6 +563,7 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.hook': [hook],
   'rail.depotRailTake': [depotRailTake],
   'rail.pack': [pack],
+  'rail.cartCall': [cartCall],
 };
 
 export function railOutcome(w: World, pid: string, epoch: number, request: number): RailResult | null {
@@ -594,35 +608,112 @@ const lineTick = defineSystem(
   { reads: [Rail], writes: [Job, JobRun, Beam], phase: 'tick', order: 0 },
   (w, tick: number) => layLine1(w, tick),
 );
-/** What the depot still owes stretch k: logs to mint (a stretch's output is capped at its bill, so logs taken from the
- * rack and dropped elsewhere are not replaced), the rails its shelf is still owed, and how many of them the forge rack
- * can give now. */
+/** What the depot still owes stretch k: logs to mint at the camp (a stretch's output is capped at its bill, so logs
+ * taken from the rack and dropped elsewhere are not replaced) and the rails its shelf is still owed (rails on a back are
+ * not brought again: the cart moves at most the stretch's rail bill, shelfOut). Counts what the cart has aboard. */
 function depotNeed(w: World, k: number, j: Readonly<{ stock: number; railStock: number }>) {
   const spec = LINE2_STATIONS[k]!,
-    rail = w.get(Rail, railId(w))!;
-  const logs = Math.max(0, Math.min(spec.bill[0] - j.stock - rail.depot, spec.bill[0] - rail[DEPOT_OUT[k]!]));
-  // Rails on someone's back are not owed again: the cart moves at most the stretch's rail bill (shelfOut).
-  const owed = spec.shelf
-    ? Math.max(0, Math.min(spec.bill[1] - j.railStock - rail.depotRails, spec.bill[1] - rail.shelfOut))
+    rail = w.get(Rail, railId(w))!,
+    cart = w.get(Cart, cartId(w))!;
+  const logs = Math.max(
+    0,
+    Math.min(spec.bill[0] - j.stock - rail.depot - cart.logs, spec.bill[0] - rail[DEPOT_OUT[k]!]),
+  );
+  const rails = spec.shelf
+    ? Math.max(0, Math.min(spec.bill[1] - j.railStock - rail.depotRails - cart.rails, spec.bill[1] - rail.shelfOut))
     : 0;
-  const rails = Math.min(owed, w.get(Forge, forgeId(w))!.rack);
-  return { logs, rails, owed };
+  return { logs, rails };
 }
-/** One atomic depot load for stretch k: `logs` minted (counted production) and `rails` moved from the forge rack. */
-function depotLoad(w: World, k: number, logs: number, rails: number) {
-  if (logs <= 0 && rails <= 0) return false;
+/** The stretch the cart serves now (a depot stretch not yet funded), or -1. */
+function cartServing(w: World) {
+  const k = qActive(w);
+  if (k < 0 || !LINE2_STATIONS[k]!.depot) return -1;
+  return w.get(QJob, qjob(w, k))!.start < 0 ? k : -1;
+}
+// The cart's three transfers, each one atomic: logs minted onto it at the camp (counted production), rails moved onto
+// it off the forge rack at the forge stop, and everything aboard onto the rack and shelf at the rack. `depot` and
+// `depotRails` change only at the unload.
+function cartMint(w: World, k: number, n: number) {
+  if (n <= 0) return;
   const rm = w.mut(Rail, railId(w))!;
-  if (logs > 0) {
-    rm.depot += logs;
-    rm.depotProduced += logs;
-    rm[DEPOT_OUT[k]!] += logs;
+  rm.depotProduced += n;
+  rm[DEPOT_OUT[k]!] += n;
+  w.mut(Cart, cartId(w))!.logs += n;
+}
+function cartTakeRails(w: World, n: number) {
+  if (n <= 0) return;
+  w.mut(Forge, forgeId(w))!.rack -= n;
+  w.mut(Rail, railId(w))!.shelfOut += n;
+  w.mut(Cart, cartId(w))!.rails += n;
+}
+function cartUnload(w: World) {
+  const c = w.get(Cart, cartId(w))!;
+  if (!c.logs && !c.rails) return;
+  const rm = w.mut(Rail, railId(w))!;
+  rm.depot += c.logs;
+  rm.depotRails += c.rails;
+  Object.assign(w.mut(Cart, cartId(w))!, { logs: 0, rails: 0 });
+}
+/** The rails the cart still wants at the forge stop for the stretch it serves (k), up to what it holds. */
+function cartWants(w: World, k: number) {
+  if (k < 0 || !LINE2_STATIONS[k]!.shelf) return 0;
+  const { rails } = depotNeed(w, k, w.get(QJob, qjob(w, k))!);
+  return Math.min(CART.rails - w.get(Cart, cartId(w))!.rails, rails);
+}
+/** The cart's trip at `tick`: each phase ends on its clock (or, at rest and at the forge, on a condition), and the next
+ * starts where it ended, so the pose stays continuous and the server sends the cart only at a phase change. */
+function cartStep(w: World, tick: number) {
+  const id = cartId(w);
+  const P = CART_PHASE;
+  for (let guard = 0; guard < 16; guard++) {
+    const c = w.get(Cart, id)!;
+    const k = cartServing(w);
+    const end = cartEnd(c);
+    const next = (phase: number, depart: number, more: { from?: number; to?: number; recall?: boolean } = {}) =>
+      Object.assign(w.mut(Cart, id)!, { phase, depart, ...more });
+    switch (c.phase) {
+      case P.REST: {
+        if (k < 0) {
+          if (c.recall) w.mut(Cart, id)!.recall = false; // nothing to serve: a stale call lapses
+          return;
+        }
+        const need = depotNeed(w, k, w.get(QJob, qjob(w, k))!);
+        if (!need.logs && !need.rails && !c.recall) return;
+        next(P.LOAD, tick, { from: 0, to: CART_ROAD.rackCm(k) });
+        cartMint(w, k, Math.min(CART.load, need.logs));
+        continue;
+      }
+      case P.FORGE: {
+        const want = cartWants(w, k);
+        if (want > 0 && w.get(Forge, forgeId(w))!.rack > 0) {
+          cartTakeRails(w, Math.min(want, w.get(Forge, forgeId(w))!.rack));
+          w.mut(Cart, id)!.depart = tick; // the leave clock starts at the last rails aboard
+        }
+        if (cartWants(w, k) > 0) return; // waiting for the forge
+        const now = w.get(Cart, id)!;
+        const dwell = now.recall ? CART.forgeTicks : now.rails > 0 ? CART.leaveTicks : 0;
+        if (tick < now.depart + dwell) return;
+        if (k < 0 && !now.logs && !now.rails) next(P.HOME, tick, { recall: false });
+        else next(P.RUN, tick, { recall: false, from: CART_ROAD.forgeCm, to: k >= 0 ? CART_ROAD.rackCm(k) : now.to });
+        continue;
+      }
+      default:
+        if (tick < end) return;
+        if (c.phase === P.LOAD) next(P.OUT, end);
+        else if (c.phase === P.OUT) next(P.FORGE, end);
+        else if (c.phase === P.RUN) {
+          // Its stretch funded on the way and the next one's rack is further on: the load goes on there.
+          if (k >= 0 && CART_ROAD.rackCm(k) > c.to && c.logs + c.rails > 0)
+            next(P.RUN, end, { from: c.to, to: CART_ROAD.rackCm(k) });
+          else {
+            next(P.DROP, end);
+            cartUnload(w);
+          }
+        } else if (c.phase === P.DROP) next(P.BACK, end);
+        else if (c.phase === P.BACK) next(c.recall ? P.FORGE : P.HOME, end);
+        else next(P.REST, end);
+    }
   }
-  if (rails > 0) {
-    w.mut(Forge, forgeId(w))!.rack -= rails;
-    rm.depotRails += rails;
-    rm.shelfOut += rails;
-  }
-  return true;
 }
 function layLine2(w: World, tick: number) {
   const fid = forgeId(w);
@@ -644,20 +735,6 @@ function layLine2(w: World, tick: number) {
   const id = qjob(w, k);
   const j = w.get(QJob, id)!,
     spec = LINE2_STATIONS[k]!;
-  // The depot runs from Q1's completion while a rack-fed stretch still needs logs (and, for a shelf stretch, rails).
-  if (spec.depot && j.start < 0) {
-    const rid = railId(w);
-    const clock = w.mut(RailClock, rid)!;
-    if (clock.depotLast < 0) clock.depotLast = tick;
-    const { logs, rails, owed } = depotNeed(w, k, j);
-    if ((logs || owed) && tick - clock.depotLast >= DEPOT.everyTicks) {
-      // One load: up to DEPOT.load logs minted at the camp, and up to DEPOT.rails rails moved off the forge rack. With
-      // the logs in and the rack short of a load, the cart waits for the forge (its clock is not reset).
-      const load = Math.min(DEPOT.rails, rails);
-      if ((logs || load >= Math.min(DEPOT.rails, owed)) && depotLoad(w, k, Math.min(DEPOT.load, logs), load))
-        clock.depotLast = tick;
-    } else if (!logs && !owed) clock.depotLast = tick;
-  }
   if (j.start < 0 || j.completion) return;
   const schedule = scheduleOf(spec, j);
   const run = w.mut(QJobRun, id)!;
@@ -672,13 +749,19 @@ function layLine2(w: World, tick: number) {
 }
 const line2Tick = defineSystem(
   'rail.line2Tick',
-  { writes: [Forge, ForgeClock, Rail, RailClock, QJob, QJobRun], phase: 'tick', order: 1 },
+  { writes: [Forge, ForgeClock, QJob, QJobRun], phase: 'tick', order: 1 },
   (w, tick: number) => layLine2(w, tick),
+);
+/** The depot cart, after the forge has poured this tick (so a waiting cart takes a rail the tick it lands). */
+const cartTick = defineSystem(
+  'rail.cartTick',
+  { reads: [QJob], writes: [Cart, Rail, Forge], phase: 'tick', order: 2 },
+  (w, tick: number) => cartStep(w, tick),
 );
 /** The wire's job clock: `ahead` and `end` follow from what the tick advanced (written only when they change). */
 const jobClock = defineSystem(
   'rail.jobClock',
-  { reads: [JobRun, QJobRun], writes: [Job, QJob], phase: 'tick', order: 2 },
+  { reads: [JobRun, QJobRun], writes: [Job, QJob], phase: 'tick', order: 3 },
   (w) => {
     const settle = (c: typeof Job | typeof QJob, run: typeof JobRun | typeof QJobRun, id: number) => {
       const j = w.get(c, id)!,
@@ -696,6 +779,7 @@ export const railSettle = (w: World) => w.run(jobClock, undefined);
 export function railTick(w: World, tick: number) {
   w.run(lineTick, tick);
   w.run(line2Tick, tick);
+  w.run(cartTick, tick);
   w.run(jobClock, undefined);
 }
 
@@ -721,24 +805,26 @@ function awayCredit(w: World, ticks: number, tick: number) {
       c.lastPour = Math.max(c.lastPour, tick);
     }
   }
-  const k = qActive(w);
-  const spec = k >= 0 ? LINE2_STATIONS[k]! : null;
-  const j = k >= 0 ? w.get(QJob, qjob(w, k))! : null;
-  if (spec?.depot && j && j.start < 0) {
-    // The cart's trips while away: logs minted and shelf rails moved off the (credited) forge rack, as the tick would.
-    const trips = Math.floor(ticks / DEPOT.everyTicks);
-    const { logs, rails } = depotNeed(w, k, j);
-    const n = Math.min(logs, trips * DEPOT.load);
-    depotLoad(w, k, n, Math.min(rails, trips * DEPOT.rails));
+  const k = cartServing(w);
+  const trips = k >= 0 ? Math.floor(ticks / cartCycleTicks(k)) : 0;
+  if (trips > 0) {
+    // The cart's trips while away, each transfer as the tick would make it: the load under way lands, then whole trips
+    // mint logs at the camp and move rails off the (credited) forge rack, and land them. It is home again after.
+    cartUnload(w);
+    const { logs, rails } = depotNeed(w, k, w.get(QJob, qjob(w, k))!);
+    const n = Math.min(logs, trips * CART.load);
+    cartMint(w, k, n);
+    cartTakeRails(w, Math.min(rails, trips * CART.rails, w.get(Forge, fid)!.rack));
+    cartUnload(w);
+    Object.assign(w.mut(Cart, cartId(w))!, { phase: CART_PHASE.REST, depart: tick, from: 0, recall: false });
     made += n;
-    w.mut(RailClock, railId(w))!.depotLast = tick;
   }
   return made;
 }
 /** Bounded catch-up for the funded stretch only (the yards' credit comes first, from awayCredit). */
 const resume = defineSystem(
   'rail.resume',
-  { writes: [Rail, RailClock, Job, JobRun, QJob, QJobRun, Beam, Forge, ForgeClock], phase: 'resume', order: 0 },
+  { writes: [Rail, RailClock, Job, JobRun, QJob, QJobRun, Beam, Forge, ForgeClock, Cart], phase: 'resume', order: 0 },
   (w, { ticks, marker, tick, yard }: { ticks: number; marker: number; tick: number; yard: number }) => {
     const clock = w.mut(RailClock, railId(w))!;
     if (marker <= clock.resumeMarker) return 0;
