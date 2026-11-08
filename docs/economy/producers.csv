@@ -1,5 +1,5 @@
 id,makes,place,level,rate_per_h,yard_cap,W,St,R,C,S,Fi,U,X,at_if_first,at_if_second,look,source
-P-W1,W,home,1,2400,24,0,0,0,0,0,0,0,0,home.line2,home.line2,Depot cart rattles logs to a rack by the frame,"As built: LINE2_DEPOT 8 logs / 120 ticks, never past the bill"
+P-W1,W,home,1,980,24,0,0,0,0,0,0,0,0,home.line2,home.line2,Depot cart rattles logs to a rack by the frame,"As built: the depot cart, 24 logs a round trip (88 s to Q3, 70 s to Q2, 101 s to Q4), never past the bill"
 P-R1,R,home,1,7200,24,56,0,0,0,0,0,0,0,home.forge,home.forge,Forge pours rails onto its rack,"As built: LINE2_FORGE bills 24 + 32 logs, 1 rail / 5 ticks, rackMax 24"
 C0,C,splitrock,1,40,12,16,0,0,0,0,0,0,0,splitrock.connect,splitrock.connect,"One crusher, one mould, a crew of two",five-area C0 bill
 P-C2,C,splitrock,2,120,24,4,0,0,8,0,0,0,0,ring.connect,ring.connect,A second mould and a drying rack,Bill of five-area C2 (larger stock bays)

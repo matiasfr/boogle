@@ -15,6 +15,7 @@ import {
   ROUTE,
   SETTINGS,
   STORAGE,
+  TRAIN_SERVICE,
   type Bill,
   type Branch,
   type Material,
@@ -102,18 +103,28 @@ export const awayCredit = (s: Settings, away: number) => {
   return num(s, 'awayFill') * h * (1 - Math.exp(-away / h));
 };
 
+/** Service tuning at the current speed step; arbitrary counterfactual speeds use the preceding step. */
+export const trainSetting = (s: Settings, speed: number, key: 'accel' | 'dwellS' | 'boardWaitS') => {
+  const tier = TRAIN_SERVICE.findLast((t) => speed >= t.speed) ?? TRAIN_SERVICE[0]!;
+  return num(s, `${key}${tier.suffix}`);
+};
+/** Rest-to-rest rail seconds, including short triangular trips. Offline only, never lockstep. */
+export const railRideS = (s: Settings, metres: number, speed: number) => {
+  const accel = trainSetting(s, speed, 'accel');
+  return metres >= (speed * speed) / accel ? metres / speed + speed / accel : 2 * Math.sqrt(metres / accel);
+};
 /** Seconds from door to door over `km`: walked below the walk limit, else one train ride (speed-up, dwell, boarding wait). */
 export const rideS = (s: Settings, km: number, speed: number) =>
   km < num(s, 'walkLimitKm')
     ? (km * 1000) / num(s, 'walkMps')
-    : (km * 1000) / speed + speed / num(s, 'accel') + num(s, 'dwellS') + num(s, 'boardWaitS');
+    : railRideS(s, km * 1000, speed) + trainSetting(s, speed, 'dwellS') + trainSetting(s, speed, 'boardWaitS');
 
 /** Units/hour the trains can bring from a source `km` from the Home Yard, shared between `remote` remote producers. */
 export const freightRate = (s: Settings, km: number, speed: number, wagon: number, trains: number, remote: number) =>
   km < num(s, 'walkLimitKm')
     ? 1e9
     : (wagon * trains * 3600) /
-      (2 * ((km * 1000) / speed + speed / num(s, 'accel') + num(s, 'dwellS')) + 2 * num(s, 'transferS')) /
+      (2 * (railRideS(s, km * 1000, speed) + trainSetting(s, speed, 'dwellS')) + 2 * num(s, 'transferS')) /
       Math.max(1, remote);
 
 /** Seconds for one hand load of `carry` units: harvest, pick up, and the walk or ride both ways. */
