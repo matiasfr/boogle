@@ -154,6 +154,7 @@ reset, no migration) and keeps the paused world and away credit whole.
   `SEA_SWITCH`, which requires Q4. Views: the sea slab and switch, the 260 m trestle, Far Head rockets and lamps
   (Local, on `onAccepted`). Proof: tests as in B2; bot checkpoints `sea gate`, `Q5 laid` and `Far Head`; a still from
   Far Head back down the trestle; `npm run perf` (trestle and lamps).
+  Hook prerequisite is implemented on the hook-shot branch: the production bot reaches checkpoint `needle bell summit`; B4's switch remains out of that branch's scope.
 - [ ] **B5. Halts as views.** Add the platforms at the pinned halts, shown only once `trains` is set (Local, from
   state; the boxes stay straight, checked as in `dev/level/timber-track.ts`). No new kind. Proof: a still of the
   village halt before and after.
