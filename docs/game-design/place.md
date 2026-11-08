@@ -394,6 +394,10 @@ The optional **9 m beam** starts at the village's west edge (868, -30). **Lift**
 
 Both beam grips use `currentCoopPeer` from `coop-identity.ts`, the same bounded participation-tick check as railway peer election. The stable `placeCoop` presence/message tag is not a build version. Existing co-op look fixtures check malformed ticks, release and departure; generation checks and beam ownership remain unchanged. Saved beam runs use `saved=1` and real movement after checkpoint restoration.
 
+### Production Needle Bell hook climb (8 November 2026)
+
+The production railway shows eight rings from the start: p2, t0–t5 and the summit. Six 0.9 m floating stone slabs have teal undersides; the 0.4 m wooden summit deck is at 102.4 m. Positions and ring placement read Place's `tech-layout.ts` directly. Thin 1.5 m collider tiles preserve the camera's view beneath the next slab. The existing p2 slab is reused. The t0 secret box, t3 side slab and all other Place rings stay out of production. The summit ring and its post retain Place's off-deck east-edge placement for the orchestrator's review.
+
 ## Ancient technology (round 4, exploring)
 
 The glider's sea-gate cinematic waits until the player dismisses the reward reveal and any queued reward cards. The shared unlock, gate state, save and broadcast still happen immediately; only the local camera waits. Reset cancels a pending cinematic.
