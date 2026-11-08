@@ -36,9 +36,9 @@ jobs:
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.head_branch != 'main' &&
       (
-        (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' &&
+        ((github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'workflow_dispatch') && github.event.workflow_run.conclusion == 'success' &&
          !startsWith(github.event.workflow_run.head_branch, 'ship/')) ||
-        (github.event.workflow_run.event == 'push' && startsWith(github.event.workflow_run.head_branch, 'ship/'))
+        ((github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch') && startsWith(github.event.workflow_run.head_branch, 'ship/'))
       )
     runs-on: ubuntu-latest
     env:
@@ -54,13 +54,18 @@ jobs:
       - name: Find or open the PR
         id: pr
         run: |
+          current=$(gh api "repos/$GH_REPO/git/ref/heads/$BRANCH" --jq .object.sha)
+          if [ "$current" != "$SHA" ]; then
+            echo 'Superseded CI head; do not open a PR or delete its ref.'
+            exit 0
+          fi
           pr=$(gh pr list --head "$BRANCH" --base main --state open --json number,isCrossRepository --jq '[.[] | select(.isCrossRepository | not)][0].number // empty')
           if [ -z "$pr" ] && [[ "$BRANCH" == ship/* ]]; then
             commits=$(gh api "repos/$GH_REPO/compare/main...$SHA" --jq '.commits')
             n=$(jq length <<<"$commits")
             if [ "$n" = 0 ]; then
-              echo "Everything on $BRANCH is already on main; deleting the branch."
-              gh api -X DELETE "repos/$GH_REPO/git/refs/heads/$BRANCH" || true
+              # Do not delete a ref here: it could advance between comparison and deletion.
+              echo "Everything at $SHA is already on main; nothing to merge."
               exit 0
             fi
             title=$(jq -r '.[-1].commit.message | split("\n")[0]' <<<"$commits")
@@ -85,7 +90,32 @@ jobs:
         if: steps.pr.outputs.number != '' && env.GREEN == 'true'
         env:
           PR: ${{ steps.pr.outputs.number }}
+          PROTECTION_TOKEN: ${{ secrets.SHIP_PROTECTION_TOKEN }}
         run: |
+          # Fail closed: GitHub must atomically reject a head that falls behind between our
+          # ancestry check and merge. No --admin; required checks and admin enforcement are mandatory.
+          protection=$(GH_TOKEN="${PROTECTION_TOKEN:-$GH_TOKEN}" gh api "repos/$GH_REPO/branches/main/protection")
+          jq -e '.enforce_admins.enabled == true and .required_status_checks.strict == true and
+            ((.required_status_checks.contexts + [.required_status_checks.checks[]?.context]) |
+             index("client") != null and index("server") != null and index("net") != null and
+             index("scenario world-inputs") != null)' <<<"$protection" >/dev/null || {
+            echo '::error::main needs strict required CI checks and enforcement for admins; see shipping.md.'
+            exit 1
+          }
+          refresh() {
+            gh api -X PUT "repos/$GH_REPO/pulls/$PR/update-branch" -f expected_head_sha="$SHA"
+            # update-branch is asynchronous (202); dispatch only after its new ref exists.
+            for _ in $(seq 1 12); do
+              tip=$(gh pr view "$PR" --json headRefOid --jq .headRefOid)
+              if [ "$tip" != "$SHA" ]; then
+                gh workflow run ci.yml --ref "$BRANCH"
+                return
+              fi
+              sleep 2
+            done
+            echo '::error::Branch update did not become visible; rerun CI after inspecting the PR.'
+            return 1
+          }
           # GitHub works out mergeability in the background; UNKNOWN means not yet.
           for _ in 1 2 3 4 5 6; do
             info=$(gh pr view "$PR" --json isDraft,isCrossRepository,baseRefName,headRefOid,labels,mergeable,title)
@@ -101,12 +131,29 @@ jobs:
             gh workflow run ci-autofix.yml --ref main -f branch="$BRANCH" -f reason=conflict
             exit 0
           fi
+          main=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)
+          relation=$(gh api "repos/$GH_REPO/compare/$main...$SHA" --jq .status)
+          if [ "$relation" != ahead ] && [ "$relation" != identical ]; then
+            # Merge latest main into this branch, preserving ship commit ancestry. The token's
+            # update does not trigger push CI, so explicitly dispatch CI on the NEW head.
+            refresh
+            echo 'Main moved: updated branch; a fresh full CI must pass before merge.'
+            exit 0
+          fi
           # Two merges landing together fail one with "Base branch was modified", and nothing would run this again.
           for try in 1 2 3 4 5; do
             if [[ "$BRANCH" == ship/* ]]; then
               gh pr merge "$PR" --merge --subject "$(jq -r .title <<<"$info") (#$PR)" --delete-branch --match-head-commit "$SHA" && break
             else
               gh pr merge "$PR" --squash --delete-branch --match-head-commit "$SHA" && break
+            fi
+            # Main may have moved during merge. Never retry with stale green evidence;
+            # update the branch and let its new CI completion wake this workflow.
+            main=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)
+            relation=$(gh api "repos/$GH_REPO/compare/$main...$SHA" --jq .status)
+            if [ "$relation" != ahead ] && [ "$relation" != identical ]; then
+              refresh
+              exit 0
             fi
             [ "$try" != 5 ] || exit 1
             sleep $((try * 10))
@@ -120,7 +167,7 @@ jobs:
         run: |
           gh workflow run deploy.yml --ref main
           gh workflow run ci.yml --ref main
-          if gh pr diff "$PR" --name-only | grep -qE '^(server/|src/world/|src/sim/|src/net/ids\.ts|src/net/ws-wire\.ts|\.dockerignore)'; then
+          if gh pr diff "$PR" --name-only | grep -qE '^(server/|src/world/|src/sim/|src/ecs/|src/net/ids\.ts|src/net/ws-wire\.ts|package\.json|\.dockerignore|\.github/workflows/deploy-server\.yml)'; then
             gh workflow run deploy-server.yml --ref main
           fi
           # The atlas upkeep's gate (atlas.yml) decides whether a merge matters; this only wakes it. A GITHUB_TOKEN
