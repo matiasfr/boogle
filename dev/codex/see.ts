@@ -24,8 +24,8 @@ fs.mkdirSync(dir, { recursive: true });
 const id = `${Date.now()}-${process.pid}`;
 const args = process.argv.slice(2);
 const operation = (args[0] && !args[0].startsWith('--') ? args.shift() : 'look') as Operation;
-if (!['look', 'playthrough', 'scenario', 'cold-start'].includes(operation))
-  throw new Error('Use see.ts [look|playthrough|scenario|cold-start] <options>');
+if (!['look', 'playthrough', 'scenario', 'cold-start', 'net', 'perf'].includes(operation))
+  throw new Error('Use see.ts [look|playthrough|scenario|cold-start|net|perf] <options>');
 const ready = path.join(dir, 'ready.json');
 if (!fs.existsSync(ready)) throw new Error('No broker: run this task through dev/codex/run.ts');
 const { pid } = JSON.parse(fs.readFileSync(ready, 'utf8')) as { pid: number };
@@ -39,6 +39,7 @@ function brokerAlive() {
 }
 brokerAlive();
 const production = args.includes('--production');
+if (production && operation === 'net') throw new Error('net tests source modules, not a production page');
 if (production) args.splice(args.indexOf('--production'), 1);
 const { coopWarpOptions } = (await import(
   pathToFileURL(path.resolve('dev/look/coop-warp.ts')).href
@@ -49,13 +50,15 @@ if (production && warp)
     '--production --players 2 needs --real; omit --production to use the disposable dev server for warped co-op.',
   );
 const stack =
-  operation === 'cold-start' || production
-    ? await (
-        (await import(
-          pathToFileURL(path.resolve('dev/cold-start/production.ts')).href
-        )) as typeof import('../cold-start/production.ts')
-      ).startProduction(dir, { harness: operation !== 'cold-start' })
-    : await startStack({ dataRoot: dir, warp });
+  operation === 'net'
+    ? await startNet()
+    : operation === 'cold-start' || production
+      ? await (
+          (await import(
+            pathToFileURL(path.resolve('dev/cold-start/production.ts')).href
+          )) as typeof import('../cold-start/production.ts')
+        ).startProduction(dir, { harness: operation !== 'cold-start' })
+      : await startStack({ dataRoot: dir, warp });
 let status: number;
 try {
   const request: Request = {
@@ -105,3 +108,52 @@ try {
   await stack.close();
 }
 process.exit(status);
+
+// The worker's server stays inside the sandbox. Only the trusted broker starts browsers or drives tests.
+async function startNet(): Promise<import('../look/lib.ts').Stack> {
+  const { createServer } = await import('node:http');
+  const { createService, loadConfig } = (await import(
+    pathToFileURL(path.resolve('server/src/server.ts')).href
+  )) as typeof import('../../server/src/server.ts');
+  const { freePort } = (await import(
+    pathToFileURL(path.resolve('dev/look/lib.ts')).href
+  )) as typeof import('../look/lib.ts');
+  const dataDir = fs.mkdtempSync(path.join(dir, 'boogle-net-'));
+  const port = await freePort();
+  let service: ReturnType<typeof createService> | undefined;
+  const control = createServer((req, res) => {
+    void (async () => {
+      if (req.method !== 'POST' || !['/start', '/stop', '/save'].includes(req.url ?? '')) {
+        res.writeHead(404).end();
+        return;
+      }
+      if (req.url === '/start') {
+        if (service) throw new Error('Server already running');
+        service = createService(
+          loadConfig(
+            { DATA_DIR: dataDir, SERVER_ROOMS: '*', MAX_PLAYERS: '4', SERVER_SAVE_MS: '200' },
+            { log: () => {} },
+          ),
+        );
+        await service.listen(port);
+      } else {
+        await service?.close({ save: req.url === '/save' });
+        service = undefined;
+      }
+      res.end(JSON.stringify({ port }));
+    })().catch((error: unknown) => {
+      res.writeHead(500).end(String(error));
+    });
+  });
+  await new Promise<void>((resolve) => control.listen(0, '127.0.0.1', resolve));
+  const address = control.address() as import('node:net').AddressInfo;
+  return {
+    base: `http://127.0.0.1:${address.port}/`,
+    dataDir,
+    async close() {
+      await service?.close({ save: false });
+      await new Promise<void>((resolve, reject) => control.close((error) => (error ? reject(error) : resolve())));
+      fs.rmSync(dataDir, { recursive: true, force: true });
+    },
+  };
+}

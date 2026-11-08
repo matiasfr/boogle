@@ -206,6 +206,8 @@ ${
 - \`node .look/see-client.ts playthrough\`: the full place bot, reports, saved checkpoints and end still. Optional --query, --eval and --stall. A missed expected beat fails the run; read its report even on failure.
 - \`node .look/see-client.ts look --at list\`: names this job's bot checkpoints. Then --at "<beat>" captures one; --query 'proto=x', --eval, --action, --curves and other look options work too. --saves selects an explicit checkpoint directory.
 - \`node .look/see-client.ts scenario world-inputs\`: existing trusted scenarios against YOUR running build. Name the relevant scenario(s), not a new harness.
+- \`node .look/see-client.ts net\`: run test:net when touching sync or server code. No flags. The trusted harness tests your server and browser modules.
+- \`node .look/see-client.ts perf\`: run perf when touching performance. Optional --render, --sim, --hardware, --seconds, --view, --size and --query. Timings need a quiet machine; render JSON is saved with the evidence.
 The broker owns --url, --root, --data-dir and --out. Each command prints a manifest in .look/evidence with the tested commit/tree, status, logs and artifact paths. Open the PNGs with view_image; a successful command is not a visual verdict. Name a visual question, frame the action, inspect and iterate up to three rounds. For motion use --curves and consecutive frames extracted from --video with ffmpeg; real-time feel and smoothness remain unverified. Never edit source while a run is in progress. After code changes, repeat the affected checks so the evidence matches the final tree.`
     : 'You cannot see the running game.'
 }

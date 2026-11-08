@@ -17,16 +17,35 @@ function check(name: string, ok: boolean, detail = '') {
 }
 
 const room = 'ws' + Math.random().toString(36).slice(2, 8);
-const port = await freePort();
-const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-ws-'));
+const args = process.argv.slice(2);
+const option = (flag: string) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined);
+const controlUrl = option('--url');
+const root = option('--root');
+const dataDir = option('--data-dir') ?? (await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-ws-')));
+let port = await freePort();
+async function control(command: string) {
+  const response = await fetch(new URL(command, controlUrl), { method: 'POST' });
+  if (!response.ok) throw new Error(`Worker net server: ${await response.text()}`);
+  return (await response.json()) as { port: number };
+}
 async function serve(env: Record<string, string> = {}) {
+  if (controlUrl) {
+    if (Object.keys(env).length) throw new Error('Broker net does not support WS_LOAD');
+    port = (await control('start')).port;
+    return {
+      close: async ({ save }: { save: boolean }) => {
+        await control(save ? 'save' : 'stop');
+      },
+      roomHost: () => undefined,
+    };
+  }
   const env0 = { DATA_DIR: dataDir, SERVER_ROOMS: '*', MAX_PLAYERS: '4', SERVER_SAVE_MS: '200', ...env };
   const svc = createService(loadConfig(env0, { log: () => {} }));
   await svc.listen(port);
   return svc;
 }
 let svc = await serve();
-const web = await startWeb('ws-page.ts');
+const web = await startWeb('ws-page.ts', root);
 // Each page is its own player (pid from its name) unless `pid` says otherwise.
 const open = (name: string, pid = 'pl' + name.toLowerCase()): Promise<Page> =>
   web.open(name, `room=${room}&server=http://127.0.0.1:${port}&pid=${pid}`);
@@ -256,6 +275,6 @@ try {
 } finally {
   await web.close();
   await svc.close({ save: false });
-  await fs.rm(dataDir, { recursive: true, force: true });
+  if (!controlUrl) await fs.rm(dataDir, { recursive: true, force: true });
 }
 process.exit(exitCode);

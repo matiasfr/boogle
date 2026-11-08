@@ -64,7 +64,7 @@ export async function seesAll(group: { page: Page; selfId: SelfId }[]): Promise<
 
 // page.js-style bundle `entry` served on a free port, plus headless Chromium. open(name, query) loads a page and runs
 // its T.start(); selfId is the page's id, or { error } when the room turned it away.
-export async function startWeb(entry: string) {
+export async function startWeb(entry: string, root?: string) {
   const webPort = await freePort();
   const built = await esbuild.build({
     entryPoints: [path.join(here, entry)],
@@ -73,6 +73,21 @@ export async function startWeb(entry: string) {
     write: false,
     platform: 'browser',
     logLevel: 'warning',
+    // Test instructions stay trusted; only the application under test comes from the worker tree.
+    plugins: root
+      ? [
+          {
+            name: 'worker-source',
+            setup(build) {
+              build.onResolve({ filter: /^\.\.?\// }, (args) => {
+                const resolved = path.resolve(args.resolveDir, args.path);
+                const source = path.resolve(here, '../../src') + path.sep;
+                if (resolved.startsWith(source)) return { path: path.join(root, 'src', resolved.slice(source.length)) };
+              });
+            },
+          },
+        ]
+      : [],
   });
   const js = built.outputFiles[0]!.text;
   const web = http
