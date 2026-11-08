@@ -2,7 +2,10 @@
 const { startHookReload } = (await import(
   '/dev/look/bots/railway.ts' as string
 )) as typeof import('../bots/railway.ts');
-if (new URLSearchParams(location.search).get('player') === '2') {
+const helper = new URLSearchParams(location.search).get('player') === '2';
+if (helper && !document.documentElement.dataset.railwayHookReload) {
+  // --until imports this module too; pageScript's first evaluation must not start a second helper bot.
+  document.documentElement.dataset.railwayHookReload = 'helper';
   const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
   const { play } = (await import('/dev/look/bots/railway.ts' as string)) as typeof import('../bots/railway.ts');
   const { inspectRailway } = (await import(
@@ -16,5 +19,5 @@ if (new URLSearchParams(location.search).get('player') === '2') {
     })(),
     'observe the helper unlock',
   );
-} else startHookReload();
+} else if (!helper) startHookReload();
 export {};
