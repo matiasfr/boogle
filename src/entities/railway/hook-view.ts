@@ -9,6 +9,13 @@ import { hookRings, type HookRing } from './hook-path.ts';
 import { me, camForward } from '../../player/player.ts';
 import { glyph } from '../../player/glyphs.ts';
 import { placeSound } from '../../render/place-sfx.ts';
+import { onRemotePresence, onPeerRemoved, type Remote } from '../../netplay/net.ts';
+
+type RemoteView = { presence: (r: Remote, value: unknown) => void; removed: (peer: string) => void };
+let activeRemote: RemoteView | null = null;
+// Network hooks have module lifetime; rebuilds forward only to the mounted railway view.
+onRemotePresence((r, pr) => activeRemote?.presence(r, pr.railwayHook));
+onPeerRemoved((r) => activeRemote?.removed(r.peer));
 
 export async function createRailwayHookView(owner: OwnedView) {
   const [tech, layout, land, shapes, flatMod, gear, sounds] = await Promise.all([
@@ -132,7 +139,10 @@ export async function createRailwayHookView(owner: OwnedView) {
   function handAt(root: THREE.Object3D | null | undefined, out: THREE.Vector3) {
     const h = root?.getObjectByName('hand_r');
     if (h) h.getWorldPosition(out);
-    else {
+    else if (root) {
+      root.getWorldPosition(out);
+      out.y += 0.6;
+    } else {
       const p = me.body?.interpolatedPosition;
       out.set(p?.x ?? 0, (p?.y ?? 0) + 0.6, p?.z ?? 0);
     }
@@ -167,6 +177,25 @@ export async function createRailwayHookView(owner: OwnedView) {
   (document.querySelector('.hud') ?? document.body).append(chip);
   const onScreen = new THREE.Vector3();
   let chipOn = false;
+  const others = new Map<string, { remote: Remote; cable: Cable; ring: HookRing | null }>();
+  const remoteView: RemoteView = {
+    presence(remote, value) {
+      const ring = typeof value === 'string' ? (ringById.get(value) ?? null) : null;
+      let other = others.get(remote.peer);
+      if (!other && ring) {
+        other = { remote, cable: makeCable(), ring };
+        others.set(remote.peer, other);
+      }
+      if (other) other.ring = ring;
+    },
+    removed(peer) {
+      others.get(peer)?.cable.m.removeFromParent();
+      others.delete(peer);
+    },
+  };
+  activeRemote = remoteView;
+  const theirHand = new THREE.Vector3(),
+    theirTarget = new THREE.Vector3();
   function update(
     dt: number,
     now: number,
@@ -209,6 +238,18 @@ export async function createRailwayHookView(owner: OwnedView) {
       flickLeft = Math.max(0, flickLeft - dt);
     }
     drawCable(cable, hand, cableTo, dt);
+    for (const other of others.values()) {
+      const root = other.remote.avatar;
+      if (!root || !other.remote.entered || !other.remote.visible) {
+        other.cable.m.visible = false;
+        other.cable.t = 0;
+        continue;
+      }
+      const to = other.ring ? theirTarget.set(other.ring.at.x, other.ring.at.y, other.ring.at.z) : null;
+      if (to) gear.armToRing(root, to, 0.9);
+      handAt(root, theirHand);
+      drawCable(other.cable, theirHand, to, dt);
+    }
     chipOn = !!pick && !pull && pulls < 3 && !document.body.classList.contains('touch');
     chip.classList.toggle('on', chipOn);
     if (chipOn && pick) {
@@ -219,9 +260,21 @@ export async function createRailwayHookView(owner: OwnedView) {
     }
   }
   owner.cleanup(() => {
+    if (activeRemote === remoteView) activeRemote = null;
+    for (const other of others.values()) other.cable.m.removeFromParent();
+    others.clear();
     for (const g of geometries) g.dispose();
     for (const m of [partMat, glow, ringMat, haloMat, cableMat]) m.dispose();
     chip.remove();
   });
-  return { rings, ringById, update, fire, end, deny, remoteCables: () => 0, chip: () => chipOn };
+  return {
+    rings,
+    ringById,
+    update,
+    fire,
+    end,
+    deny,
+    remoteCables: () => [...others.values()].filter((o) => o.cable.m.visible).length,
+    chip: () => chipOn,
+  };
 }
