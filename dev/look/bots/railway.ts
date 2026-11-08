@@ -2,6 +2,7 @@
 import { makeBot, type Bot } from '../bot.ts';
 import { inspectRailway, hookWhyNot, type RailwayViewInspection } from '../../../src/entities/railway/state.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
+import { background } from '../../../src/async.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
@@ -103,6 +104,101 @@ async function returnFromTower(bot: Bot, ids = ['t5', 't4', 't3', 't2', 't1', 't
     bot.note(`return hook: ${id}`);
   }
   cam.pitch = -0.1;
+}
+
+async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
+  if (id === 't3') await returnFromTower(bot, ['t5', 't4', 't3']);
+  const [{ PADS }, layout] = await Promise.all([
+    import('../../../src/proto/place/tech-layout.ts'),
+    import('../../../src/proto/place/layout.ts'),
+  ]);
+  const pad = PADS.find((p) => p.id === id)!,
+    b = me.body!;
+  // Walk outwards from the spire, beyond this pad's outer edge. No hook or recovery on the way home.
+  const dx = pad.x - 8,
+    dz = pad.z + 10;
+  cam.yaw = me.yaw = Math.atan2(-dx, -dz);
+  cam.pitch = -0.1;
+  input.keys.add('KeyW');
+  try {
+    hookCheck(bot, await bot.until(() => b.position.y < pad.top - 2, 5000, `walked off ${id}`), `walked off ${id}`);
+  } finally {
+    input.keys.delete('KeyW');
+  }
+  hookCheck(
+    bot,
+    await bot.until(() => me.coyote > 0 && !me.swimming && b.position.y < pad.top - 3, 10000, `landed below ${id}`),
+    `drop ${id} landed dry`,
+  );
+  aimHook('p2');
+  await bot.wait(200);
+  const ring = hookRing('p2');
+  const distance = Math.hypot(ring.x - b.position.x, ring.y - b.position.y, ring.z - b.position.z);
+  console.log(
+    `HOOK DROP GROUND ${JSON.stringify({ id, position: b.position, p2Distance: distance, p2WhyNot: hookWhyNot('p2') })}`,
+  );
+  const deck = layout.lineAt(layout.LINKS[1]!.line, 84, { x: 0, z: 0, ux: 0, uz: 1 });
+  hookCheck(
+    bot,
+    await bot.walk(deck.x + layout.ORIGIN.x, deck.z, 1),
+    `DROP RETURN BLOCKED: ${id} must walk to quarry s=84 without recovery`,
+  );
+  hookCheck(
+    bot,
+    Math.abs(b.position.y - PLAYER_R - layout.railY(layout.LINKS[1]!.line, 84)) < 1 && me.coyote > 0,
+    `drop ${id} returned to the quarry deck`,
+  );
+  bot.note(`hook drop ${id} walked home without recovery`);
+}
+
+const HOOK_RELOAD_KEY = 'look.railway-hook-reload';
+let hookReloadStarted = false;
+/** Entry for look's existing reload-aware eval loop. Session storage contains observations, never game state. */
+export function startHookReload() {
+  if (hookReloadStarted) return;
+  hookReloadStarted = true;
+  background(
+    (async () => {
+      const saved = JSON.parse(sessionStorage.getItem(HOOK_RELOAD_KEY) ?? 'null') as {
+        stage: 'hook';
+        pid: string;
+      } | null;
+      if (!saved) {
+        await play();
+        return;
+      }
+      const bot = makeBot({
+        recover: () => {
+          throw new Error('Hook reload proof required recovery');
+        },
+      });
+      hookCheck(
+        bot,
+        await bot.until(
+          () => inspectRailway()?.ready && me.body && !fallArrival.active && me.coyote > 0,
+          300000,
+          'hook reload arrival',
+        ),
+        'hook reload arrived dry',
+      );
+      hookCheck(bot, inspectRailway()!.pid === saved.pid, 'hook reload retains player identity');
+      await hookLanding(bot, 't2');
+      hookCheck(
+        bot,
+        await bot.until(() => inspectRailway()?.hookShot.owned, 5000, 'hook latch restored'),
+        'hook latch restored once ready',
+      );
+      await hookTo(bot, 't1');
+      sessionStorage.removeItem(HOOK_RELOAD_KEY);
+      document.documentElement.dataset.railwayHookReload = 'done';
+      bot.finish('hook reload returns to t2 and pulls to t1');
+    })().catch((error: unknown) => {
+      document.documentElement.dataset.railwayHookReload = 'failed';
+      (window as Window & { __placeDone?: boolean }).__placeDone = true;
+      throw error;
+    }),
+    'hook reload proof',
+  );
 }
 
 /** `solo`: play the solo route even on a two-player page, beside a friend another eval drives (coop-unlock.ts). */
@@ -1024,11 +1120,32 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         aimHook('t1');
         await until(() => read().hookShot.pick === 't1', `first climb ring picked: ${hookWhyNot('t1')}`, 3500);
         await checkpoint('hook taken');
-        for (const id of ['t1', 't2', 't3', 't4', 't5', 'summit']) await hookTo(bot, id);
+        for (const id of ['t1', 't2', 't3', 't4', 't5', 'summit']) {
+          await hookTo(bot, id);
+          if (id === 't2' && query.get('hookReload') === '1') {
+            await bot.wait(5500); // Let the ordinary safe-ground pose writer save this actual landing.
+            aimHook('t3');
+            await until(() => read().hookShot.pick === 't3', `reload pull picked t3: ${hookWhyNot('t3')}`, 3500);
+            triggerAction('hook', 'down');
+            triggerAction('hook', 'up');
+            await bot.wait(100);
+            require(read().hookShot.pulling &&
+              read().hookShot.ring === 't3', 'reload happens during the t2 to t3 pull');
+            sessionStorage.setItem(HOOK_RELOAD_KEY, JSON.stringify({ stage: 'hook', pid: read().pid }));
+            location.reload();
+            await new Promise<void>(() => {});
+          }
+        }
         require(Math.abs(me.body!.position.y - PLAYER_R - 102.4) < 1 &&
           me.coyote > 0, 'standing on Needle Bell summit');
         noJump('hook climb');
         await checkpoint('needle bell summit');
+        const drop = query.get('hookDrop');
+        if (drop === 't3' || drop === 'summit') {
+          await dropFromTower(bot, drop);
+          bot.finish(`hook drop ${drop} walked home without recovery`);
+          return;
+        }
         await returnFromTower(bot);
         noJump('hook descent');
         const back = v2().routePoints.hook;
