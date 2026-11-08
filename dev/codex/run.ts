@@ -244,6 +244,27 @@ const meta: Job = {
   ...(previous ? { feedback: brief } : {}),
 };
 
+function warnTrustedCheckout() {
+  // The trusted harness comes from the launcher, independently of the worker's selected build.
+  // Use the locally known origin/main; this warning itself never fetches or refuses a launch.
+  try {
+    const behind = Number(git(repo, 'rev-list', '--count', 'HEAD..origin/main', '--', 'dev/'));
+    const dirty = git(repo, 'status', '--porcelain', '--untracked-files=all', '--', 'dev/');
+    const paths = dirty ? dirty.split('\n').length : 0;
+    if (behind || paths)
+      console.warn(
+        `\nWARNING: TRUSTED BROKER/HARNESS CHECKOUT ${repo}\n` +
+          `  ${behind} dev/ commits behind origin/main; ${paths} uncommitted dev/ paths.\n` +
+          `  Workers use this checkout's trusted bots, even when their game build is newer.\n` +
+          `  Launch from an up-to-date checkout with committed dev/ tools. Continuing as requested.\n`,
+      );
+  } catch (error) {
+    console.warn(
+      `WARNING: Could not inspect trusted broker/harness freshness against origin/main: ${String(error)}. Continuing.`,
+    );
+  }
+}
+
 async function main(job?: JobControl): Promise<number> {
   const reportFile = path.join(logs, 'report.md');
   let cwd: string;
@@ -251,6 +272,8 @@ async function main(job?: JobControl): Promise<number> {
   let prompt: string;
   if (!previous && job && !IN_PLACE.includes(mode) && !opts.snapshot && !opts['base-ref'] && !opts['ref-branch'])
     await job.command('git', ['fetch', '-q', 'origin', 'main'], repo);
+  // Repeat in the supervisor log after any normal fetch refreshes the remote-tracking ref.
+  if (opts.supervisor) warnTrustedCheckout();
   const sourceCommit = previous
     ? previous.sourceCommit
     : IN_PLACE.includes(mode)
@@ -415,6 +438,8 @@ if (opts['base-ref']) git(repo, 'rev-parse', '--verify', `${opts['base-ref']}^{c
 if (opts['ref-branch']) git(repo, 'rev-parse', '--verify', `${opts['ref-branch']}^{commit}`);
 if (!previous && ['task', 'research'].includes(mode) && git(repo, 'branch', '--list', `codex/${topic}`))
   throw new Error(`Branch codex/${topic} exists; pick another topic`);
+// Print to the caller before supervisor output is redirected, including --detach launches.
+if (!opts.supervisor) warnTrustedCheckout();
 if (opts.dry) process.exitCode = await main();
 else if (!opts.supervisor) process.exitCode = await launchJob(logs, [process.argv[1]!, ...args], !!opts.detach);
 else {
