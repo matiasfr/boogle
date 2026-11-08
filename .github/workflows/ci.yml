@@ -125,43 +125,5 @@ jobs:
         run: npx playwright install --with-deps chromium
       - run: npm run test:net
 
-  # Single-player browser scenarios only, one leg each so the slowest sets the wall time. Two tabs drawing in the
-  # runner's software WebGPU (SwiftShader) run at a few frames a second and time out at random, so SCENARIO_GATE=pr
-  # makes run.ts refuse a second player. Multiplayer is covered here by test:net (real rooms, no rendering) and the
-  # replay unit test; rendered `smoke` runs daily against the live site on the Mac GPU and optionally before ship
-  # (`--gpu`). Post-deploy smoke.yml is browserless. Other scenarios run nightly on the owner Mac. A flaky leg
-  # here gets a better wait (on a condition, not a time), never a skip; one that can't be reliable here moves to the
-  # device gate or the nightly list.
-  scenarios:
-    needs: changes
-    if: needs.changes.outputs.heavy == 'true'
-    # One scenario today: keep its required-check name explicit even when the job is skipped.
-    name: scenario world-inputs
-    runs-on: ubuntu-latest
-    # Browsers and system libraries are baked in: no apt install/upgrade or service restarts per run.
-    # Keep this tag and the version assertion below aligned with the installed Playwright package.
-    container: mcr.microsoft.com/playwright:v1.64.1-noble
-    timeout-minutes: 8
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      - name: Check Playwright matches the container
-        run: >-
-          node -e "require('node:assert/strict').equal(require('playwright/package.json').version,
-          '1.64.1', 'Update the scenario container tag and version assertion when upgrading Playwright')"
-      - run: npm run scenario -- world-inputs
-        env:
-          SCENARIO_GATE: pr # one player only; run.ts refuses a second tab
-      - if: failure() || cancelled()
-        uses: actions/upload-artifact@v7
-        with:
-          name: scenario-world-inputs
-          path: .look/scenarios/world-inputs/
-          include-hidden-files: true # .look/ is a dot directory
-          if-no-files-found: ignore
+  # Rendered scenarios (world-inputs included) run daily on the owner's Mac, not software WebGPU CI.
+  # CI retains headless test:net and replay units; post-deploy Smoke is browserless.

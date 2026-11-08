@@ -4,6 +4,7 @@ import os from 'node:os';
 export const stateDir = path.join(os.homedir(), '.boogle', 'daily');
 // Two-player live WebGPU is a Mac-only daily check; CI Smoke uses dev/live-smoke.ts.
 export const scenarios = [
+  'world-inputs', // moved from software WebGPU CI to the owner's Mac (8 November)
   'reconnect-edit',
   'shared-kinds',
   'one-hand',

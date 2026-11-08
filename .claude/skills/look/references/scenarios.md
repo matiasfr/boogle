@@ -2,14 +2,14 @@
 
 A scenario is `dev/scenarios/<name>.ts`: `export default { about, async run(t: T) {...} }` (`T` from `./run.ts`).
 It sets up a situation in the real game, captures images, and asserts on state. Prints PASS/FAIL per check with image paths; exit code 1 on any
-failure, including page and console errors. Follow the test diet in docs/agents/tests.md: new scenarios only for sync contracts, not routine UI, tuning or feel. Run the relevant existing scenario when it resolves a concrete concern. PR CI runs `world-inputs` (single-player only; `SCENARIO_GATE=pr` refuses a second tab), `npm run check:gpu` (or `npm run ship -- --gpu`) runs `smoke` on a Mac's GPU, and the rest run nightly
+failure, including page and console errors. Follow the test diet in docs/agents/tests.md: new scenarios only for sync contracts, not routine UI, tuning or feel. Run the relevant existing scenario when it resolves a concrete concern. Rendered scenarios, including `world-inputs`, run daily on the owner's Mac outside CI; `npm run check:gpu` (or `npm run ship -- --gpu`) also runs `smoke` on a Mac's GPU
 (`dev/daily` on the owner Mac); a failing leg's images and a
 Playwright trace per player (`<player>-trace.zip`; open with `npx playwright show-trace <zip>`: the action timeline,
 console, network and errors) are retained in its run folder. `--no-trace` skips tracing. So local runs
 are optional; if access blocks a required visual check, request it per docs/agents/verification.md rather than substituting CI for seeing the change.
 `--url <game>` runs against a running or deployed build instead of a local stack; there are no
 `/src/` modules to import on a built site, so such scenarios use window handles only (`window.boogle.sync`, from
-`src/features/debug-handle.ts`). `smoke` is one: `.github/workflows/smoke.yml` runs it nightly on the live site.
+`src/features/debug-handle.ts`). `smoke` is one: `dev/daily/jobs.ts` runs it daily on the live site; CI Smoke is browserless.
 `reconnect-edit` (stalls the host tab, tosses while the client reconnects) is another, kept out of the nightly smoke (it runs in the Mac daily scenarios job): run it
 after changing held edits in `src/world/sync.ts`, reconnects in `src/net/ws-room.ts` or `src/netplay/net.ts` attach/fail.
 
@@ -29,7 +29,7 @@ export default {
 
 Player (`Game`) API, from `dev/look/lib.ts`:
 - `g.eval(fn | 'async body with return')` runs in the page; game modules via `await import('/src/...')`; state handles
-  `window.boogle` (me, ball, world, remotes, net, camera), `window.__water`. Return JSON-able values.
+`window.boogle` (me, ball, world, remotes, net, camera), `window.__water`. Return JSON-able values.
 - `g.waitFor(expr | fn, { timeout })` polls until truthy; returns ms or -1. Use it instead of fixed sleeps.
 - `g.view('hill' | { cam, look }, fov)` freezes the camera (`?debugcam=1`, `src/debug/debug-cam.ts`).
 - `g.key('KeyQ', holdMs)`, `g.down/up(code)`, `g.click(x, y)` send real input events (throw is click-hold).
