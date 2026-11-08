@@ -265,7 +265,9 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     assert.equal(line2().cart.recall, true);
     // The cart's first trip to the Q4 rack; the shelf is taken from beside the frame, not from the forge.
     let waited = 0;
-    while (line2().cart.phase !== CART_PHASE.DROP && waited < cartCycleTicks(3)) waited += (await ticks(10), 10);
+    // (A load under way from Q2, which the helper filled by hand, lands first; the trip after brings the rails.)
+    while (!(line2().cart.phase === CART_PHASE.DROP && line2().depotRails > 0) && waited < 3 * cartCycleTicks(3))
+      waited += (await ticks(10), 10);
     assert.equal(line2().cart.phase, CART_PHASE.DROP, 'the cart reached the rack');
     assert.equal(line2().cart.recall, false, 'the call was served at the forge on the way');
     assert.equal(line2().depotRails, CART.rails);
