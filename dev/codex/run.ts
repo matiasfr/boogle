@@ -1,7 +1,7 @@
 // Hand a job to Codex CLI (GPT-6-Astra on the ChatGPT subscription) and collect its report. See
 // .claude/skills/codex/SKILL.md.
 //
-//   node dev/codex/run.ts <mode> <topic> [--effort low|medium|high|xhigh|max] [--model gpt-6-astra]
+//   node dev/codex/run.ts <mode> <topic> [--effort low|medium|high|xhigh|max] [--model gpt-6.1-sol]
 //                         [--base-ref <ref> | --snapshot] [--ref a.png,b.png] [--shots 4] [--ref-branch <branch>]
 //                         [--eyes off] [--role design|systems|creative] [--dry] [--detach] "<brief>"
 //
@@ -38,7 +38,7 @@ const DEFAULT_EFFORT: Record<Mode, string> = {
   previz: 'medium',
   brainstorm: 'high',
   research: 'high',
-  task: 'high',
+  task: 'medium',
   review: 'high',
 };
 // Modes that read the caller's checkout in place instead of a worktree of their own.
@@ -118,7 +118,7 @@ const metaFile = path.join(logs, 'meta.json');
 const previous: Job | undefined = command === 'resume' ? JSON.parse(fs.readFileSync(metaFile, 'utf8')) : undefined;
 const mode = previous?.mode ?? (command as Mode);
 const effort = opts.effort || previous?.effort || DEFAULT_EFFORT[mode];
-const model = opts.model || previous?.model || 'gpt-6-astra';
+const model = opts.model || previous?.model || 'gpt-6.1-sol'; // the workhorse (owner, 8 November); --model gpt-6-astra for the hardest calls
 const eyes =
   mode === 'task' &&
   (previous ? previous.argv.includes('sandbox_workspace_write.network_access=true') : opts.eyes !== 'off');

@@ -1,6 +1,6 @@
 ---
 name: codex
-description: Hand work to Codex CLI (GPT-6-Astra, on the owner's ChatGPT subscription) and review what comes back. Previz of a prototype, game moment or effect at its idealized look; deep research docs; a second-opinion code review; or a self-contained task on its own branch. Use when the user says /codex, asks to use Codex or Astra, wants previz or a visual brainstorm of how something could look, or wants work spread across their Codex usage.
+description: Hand work to Codex CLI (GPT-6.1-Sol by default, GPT-6-Astra for the hardest calls, on the owner's ChatGPT subscription) and review what comes back. Previz of a prototype, game moment or effect at its idealized look; deep research docs; a second-opinion code review; or a self-contained task on its own branch. Use when the user says /codex, asks to use Codex or Astra, wants previz or a visual brainstorm of how something could look, or wants work spread across their Codex usage.
 ---
 
 # Codex jobs
@@ -34,7 +34,7 @@ Codex reads AGENTS.md and the docs its table triggers like you do, and can't pus
 | `previz` | medium (`high` for a hard art-direction call) | `.look/previz/<topic>/` (gitignored) | `shot-<n>.png` (`--shots`, default 4) and `board.md`: pitch, per-shot camera, light, palette, the prompt, and how we'd build it in TSL, particles and post |
 | `brainstorm` | high, live web search, read-only | this checkout, in place; `--role design\|systems\|creative` | one panelist's contribution as `.look/codex/<topic>/report.md`; resume for round 2 (the brainstorm skill drives it) |
 | `research` | xhigh, live web search | worktree `../boogle-codex/<topic>`, branch `codex/<topic>` | `docs/research/<topic>.md` committed, not pushed |
-| `task` | high | same worktree setup | commits on `codex/<topic>`, `npm run check` run, not pushed |
+| `task` | medium (high for server or sync work) | same worktree setup | commits on `codex/<topic>`, `npm run check` run, not pushed |
 | `review` | xhigh | detached worktree at `--ref-branch` (default HEAD) | `codex exec review` against `origin/main`; an optional brief focuses it |
 
 Effort: previz is mostly image prompts, so `medium` (or `high`) is enough; `xhigh` for research and review; `high` for implementation; `max` only for one hard question. For straightforward implementation with a clear shape, use `--model gpt-6.1-terra --effort low` first (docs/agents/owner-calls.md, "Codex first").
