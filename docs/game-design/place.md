@@ -396,6 +396,8 @@ Both beam grips use `currentCoopPeer` from `coop-identity.ts`, the same bounded 
 
 ### Production Needle Bell hook climb (8 November 2026)
 
+Only the finder gets a demonstration: 0.3 s after dismissing the hook card, standing on p2 with a clear body path automatically pulls them to t0. A friend gets the existing shared-ability flourish and chooses their own pulls. The demo never runs from a late join or a reconstructed unlock.
+
 A friend's nullable `railwayHook` presence names a known ring, with every other value treated as off. The Local view draws a cable from their interpolated avatar's right hand and poses that arm toward the ring. Missing presence winds the cable back; leaving removes the mesh, and a railway rebuild clears the view. The existing position presence remains the only body travel state.
 
 The room's existing hook fact grants everyone a zip-line pull to the ring nearest the middle of the view: 24 m range, 25° cone, 16 m/s cruise with 60 m/s² acceleration and 70 m/s² braking. Picking uses chest ray clearance, both body-sphere sweeps and 20%/150 ms hysteresis. Jump, Back or a second press lets go with horizontal speed capped at 9.5 m/s and upward speed at 3 m/s; cancelling never refills the air jump. A pull skips the second-jump step. Reveal input holding blocks new pulls but lets a current pull finish. Ownership survives disconnect/resync and clears only after two ready seconds without the shared fact.

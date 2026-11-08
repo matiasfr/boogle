@@ -50,6 +50,7 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
   let pulls = 0,
     denied = 0,
     ended = 0;
+  let demoLeft = -1;
   const range = new Set<HookRing>();
   const fwd = new THREE.Vector3(),
     to = new THREE.Vector3(),
@@ -167,6 +168,9 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     offProbe();
   });
   return {
+    demo() {
+      demoLeft = 0.3;
+    },
     prePhysics() {
       if (pull && me.jumpQueued > 0) cancel();
     },
@@ -205,6 +209,24 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
         });
       }
       document.body.classList.toggle('place-has-hook', owned);
+      if (demoLeft >= 0) {
+        demoLeft -= dt;
+        if (demoLeft <= 0) {
+          demoLeft = -1;
+          const p2 = view.ringById.get('p2')!,
+            t0 = view.ringById.get('t0')!,
+            b = me.body;
+          if (
+            b &&
+            !pull &&
+            me.coyote > 0 &&
+            Math.abs(b.position.y - PLAYER_R - p2.pad.top) < 1 &&
+            Math.hypot(b.position.x - p2.land.x, b.position.z - p2.land.z) < 4 &&
+            clearFor(t0)
+          )
+            press(t0);
+        }
+      }
       pickRing(now);
       view.update(dt, now, owned, pick, pull?.ring ?? null, range, pulls);
     },

@@ -64,8 +64,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const reward = await createRailwayReward(adapter, owner, (out) =>
     out.set(machine.flatbed.x, machine.flatbed.y + 0.5, machine.flatbed.z),
   );
-  const line2 = await createRailwayLine2(adapter, owner, machine, sources.bundleOrigin, reward.youGot);
+  let demo = () => {};
+  const line2 = await createRailwayLine2(adapter, owner, machine, sources.bundleOrigin, reward.youGot, () => demo());
   const hook = await createRailwayHook(adapter, owner);
+  demo = hook.demo;
   const shelf = await createRailwayShelf(adapter, owner, line2.depotPlace, sources.bundleOrigin);
   const cart = await createRailwayCart(adapter, owner, line2.depotPlace);
   line2.holdDepot(cart.flying);
