@@ -579,3 +579,74 @@ export async function railwayLoad(
   console.table(rows);
   return rows;
 }
+
+/** WS_LOAD_CHURN=cart: the depot cart ridden across tabs (docs/plans/line2-part2-greybox.md, B3). A room at Q4 with its
+ * cart running, three tabs at 0, 100 and 200 ms added latency. Each tab places the cart from its own estimate of the
+ * server's tick; a rider on one tab is drawn on the others at their copy of the deck (the shared platform), so how far
+ * the tabs' carts are apart at one instant is how far a rider seems to slide on it, and a tab's cart jumping between
+ * frames is what would throw its own rider. Both must stay well inside the deck (1.35 m from its middle). */
+export async function railwayCartRide(c: Ctx, { seconds = 60 } = {}) {
+  const { railwayAtQ4 } = await import('../../test/helpers/railway-q2.ts');
+  const { worldOf } = await import('../../test/railway-live.ts');
+  const { railwayCheck } = await import('../../src/sim/railway-world.ts');
+  const { CART, CART_PHASE } = await import('../../src/sim/railway-cart.ts');
+  const q4 = railwayAtQ4(); // built before the room opens: it holds the event loop ~20 s
+  const roomId = railwayRoomId(`${c.room}-cart`);
+  const lats = [0, 100, 200];
+  const pages: Page[] = [];
+  for (const [k, l] of lats.entries())
+    pages.push(
+      await c.web.open(`C${k}`, `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=cart${k}&lat=${l}&adapter=1`),
+    );
+  await waitFor(async () => (await Promise.all(pages.map(adapter))).every((p) => p.state.ready), 15000);
+  const world = c.hosted(roomId)!.world as RailwayWorldHost;
+  // The built world's clock is ahead of this fresh room's: wait for the room to pass it, then load it.
+  await waitFor(() => world.sync.world.tick > q4.t + 5, (q4.t + 60) * 100);
+  world.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(q4.s).snapshot())), railwayCheck);
+  world.rules.railway.touchAll();
+  const cartOf = (p: Page) => ev(p.page, () => window.T.railCart());
+  await waitFor(async () => (await Promise.all(pages.map(cartOf))).every((x) => x !== null), 5000);
+  type Sample = { along: number; phase: number; at: number };
+  const series: Sample[][] = lats.map(() => []);
+  let apart = 0;
+  const phases = new Set<number>();
+  const end = Date.now() + seconds * 1000;
+  while (Date.now() < end) {
+    const now = (await Promise.all(pages.map(cartOf))) as Sample[];
+    now.forEach((x, k) => series[k]!.push(x));
+    // Only while every tab has the same phase (a phase change reaches each tab after its own latency).
+    if (now.every((x) => x.phase === now[0]!.phase)) {
+      const base = now[0]!;
+      // Less what the cart can travel between the two pages' sample instants (cruise: CART.speed cm per 100 ms).
+      for (const x of now)
+        apart = Math.max(apart, Math.abs(x.along - base.along) - (CART.speed / 100) * Math.abs(x.at - base.at));
+    }
+    for (const x of now) phases.add(x.phase);
+    await sleep(50);
+  }
+  // A tab's cart between two samples never moves faster than cruise (plus the sample's own timing slack).
+  const jumps = series.map((s) =>
+    s.slice(1).reduce((m, x, i) => {
+      const dt = Math.max(1, x.at - s[i]!.at) / 100; // ticks
+      return Math.max(m, Math.abs(x.along - s[i]!.along) - CART.speed * dt * 1.25);
+    }, 0),
+  );
+  const moved = phases.has(CART_PHASE.OUT) || phases.has(CART_PHASE.RUN) || phases.has(CART_PHASE.BACK);
+  const row = {
+    seconds,
+    phases: [...phases].sort().join(','),
+    tabsApartMaxCm: Math.round(apart),
+    jumpMaxCm: Math.round(Math.max(...jumps)),
+    samples: series[0]!.length,
+  };
+  console.log(`  railway cart ride ${JSON.stringify(row)}`);
+  c.check('railway cart ride: the cart ran while sampled', moved, row.phases);
+  c.check(
+    'railway cart ride: tabs place the cart within half a deck of each other',
+    apart < 135,
+    `${row.tabsApartMaxCm} cm`,
+  );
+  c.check('railway cart ride: no tab jumps its cart under a rider', Math.max(...jumps) < 50, `${row.jumpMaxCm} cm`);
+  await Promise.all(pages.map((p) => p.page.close()));
+  return row;
+}

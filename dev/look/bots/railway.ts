@@ -15,6 +15,7 @@ import {
   linePanels,
 } from '../../../src/sim/railway-line-layout.ts';
 import { PLAYER_R } from '../../../src/constants.ts';
+import { CART_PHASE } from '../../../src/sim/railway-cart.ts';
 import { fallArrival } from '../../../src/fall/arrival.ts';
 import { net, onRemotePresence, remotes } from '../../../src/netplay/net.ts';
 
@@ -669,6 +670,18 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     const v2 = () => read().line2View;
     const quarry = layout.LINKS[1]!;
     const qAt = (s: number) => layout.lineAt(quarry.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
+    /** Wait for the depot cart's load: when it comes, it was seen on its way and unloading at the rack. */
+    const cartBrings = async (beat: string, done: () => boolean) => {
+      if (done()) return;
+      const seen = new Set<number>();
+      await until(() => {
+        seen.add(l2().cart.phase);
+        return done();
+      }, beat);
+      if (l2().depot + l2().depotRails > 0)
+        require(seen.has(CART_PHASE.RUN) || seen.has(CART_PHASE.DROP), `${beat}: the cart was seen bringing it`);
+      mark(`${beat} (the cart unloaded at the rack)`);
+    };
     const walkQuarry = async (from: number, to: number) => {
       const direction = Math.sign(to - from);
       for (let s = from; direction * (to - s) >= 0; s += direction * 3) {
@@ -847,8 +860,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         rails = [0, 12, 12][k]!;
       if (k === 2) await viaTrack(frameAt);
       while (l2().stations[k]!.start < 0 && l2().stations[k]!.stock < bill) {
-        // The depot runs on the server's clock (12 s a load); the warped page clock can run ~9x faster than it.
-        await until(() => l2().depot > 0, `Q${k + 1} depot brings logs`);
+        // The cart runs on the server's clock (a round trip of 70-90 s); the warped page clock can run ~9x faster.
+        await cartBrings(`Q${k + 1} depot brings logs`, () => l2().depot > 0);
         const depot = v2().depot!;
         const stockBefore = l2().stations[k]!.stock;
         require(await bot.use(depot[0]!, depot[2]!, 'take depot logs', /^Pick up$/), 'depot rack offered');
@@ -979,11 +992,53 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       require(await bot.straight(off.x, off.z, 0.6, 8000), 'stepped off the track beside Q4');
       await walk(q4.x, q4.z, 2.4);
     };
+    // Out to Q4 on the depot cart: call it to the forge, board it by a real jump and ride it to the rack.
+    const aboardCart = () => carry.on?.id === 'railway:cart';
+    const call = v2().cartCall;
+    await walk(call.x, call.z, 1.6);
+    require(await bot.use(call.x, call.z, 'call the cart', /^Call cart to forge$/), 'cart call handle offered');
+    require(await bot.work(() => l2().cart.recall || l2().cart.phase === CART_PHASE.FORGE, 5000, 380), 'cart called');
+    await until(() => l2().cart.phase === CART_PHASE.FORGE, 'the cart comes to the forge');
+    // A loaded cart stands about 2 m tall: up with the optional double jump, as Place's porter boards it.
+    const boardBy = performance.now() + 15000;
+    while (!aboardCart() && performance.now() < boardBy && l2().cart.phase === CART_PHASE.FORGE) {
+      const c = v2().cart;
+      face(c.x, c.z);
+      input.keys.add('KeyW');
+      if (me.coyote > 0) {
+        pressJump();
+        await bot.wait(120);
+        releaseJump();
+        await bot.until(() => me.body!.velocity.y <= 0.5 || aboardCart(), 1500);
+        if (!aboardCart()) {
+          face(c.x, c.z);
+          pressJump();
+          await bot.wait(120);
+          releaseJump();
+        }
+      }
+      await bot.wait(200);
+    }
+    input.keys.delete('KeyW');
+    require(aboardCart(), 'boarded the cart by real jump');
+    await checkpoint('cart ride');
+    let stayed = true;
+    await until(() => {
+      stayed &&= aboardCart() && !me.swimming;
+      return l2().cart.phase === CART_PHASE.DROP;
+    }, 'the cart reaches the Q4 rack');
+    require(stayed, 'rider stayed aboard the cart all the way');
+    await checkpoint('cart at the rack');
+    {
+      const s = v2().cart.along / 100 - 196; // metres along line two (the forge stop is 196 m along its road)
+      const off = besideQ(Math.round(s), q4);
+      require(await bot.straight(off.x, off.z, 0.6, 8000), 'stepped off the cart beside the track');
+    }
     await toQ4();
     const q4Job = () => l2().stations[3]!;
     for (let trip = 0; q4Job().start < 0; trip++) {
       require(trip < 8, 'Q4 funds in bounded trips');
-      await until(() => l2().depot > 0 || l2().depotRails > 0 || q4Job().start >= 0, 'Q4 depot brings a load');
+      await cartBrings('Q4 depot brings a load', () => l2().depot > 0 || l2().depotRails > 0 || q4Job().start >= 0);
       if (q4Job().start >= 0) break;
       if (l2().depot > 0) {
         const depot = v2().depot!;

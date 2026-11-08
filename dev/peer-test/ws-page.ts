@@ -22,6 +22,7 @@ import {
   type RailwayInspection,
   type RailwayIntent,
 } from '../../src/adapters/railway.ts';
+import { cartAlong } from '../../src/sim/railway-cart.ts';
 import home from '../../src/world/home-land.json';
 
 export type RailwayProbe = {
@@ -168,6 +169,8 @@ const T = (window.T = {
   world: (): unknown => null,
   rail: (): RailwayProbe | null => null,
   railAdapter: (): RailwayAdapterProbe | null => null,
+  /** The depot cart where this tab draws it now (cm along its road), from its own estimate of the server's tick. */
+  railCart: (): { along: number; phase: number; tick: number; at: number } | null => null,
   railIntent: null as unknown as (intent: RailwayIntent) => boolean,
   railSnapshot: null as unknown as () => boolean,
   railOpen: () => railRoom!.send({ t: 'r:open' }),
@@ -302,6 +305,11 @@ function startWorld(room: Room) {
       T.railCorrections.push({ at: Date.now(), op: c.event.op, lost: c.lost, reason: c.reason });
     });
     adapter.onReset(() => resets++);
+    T.railCart = () => {
+      const c = adapter.inspect().line2.cart;
+      const tick = adapter.tickNow();
+      return { along: cartAlong(c, tick), phase: c.phase, tick, at: Date.now() };
+    };
     T.railAdapter = () => ({
       state: adapter.inspect(),
       effects: effects.map((e) => ({ ...e })),
@@ -348,6 +356,8 @@ function startWorld(room: Room) {
           return adapter.depotRailTake();
         case 'rail.pack':
           return adapter.openPack();
+        case 'rail.cartCall':
+          return adapter.callCart();
         case 'rail.lever':
           return adapter.pullLever();
         case 'rail.hook':

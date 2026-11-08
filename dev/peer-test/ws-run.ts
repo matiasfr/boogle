@@ -7,7 +7,7 @@ import path from 'node:path';
 import { startWeb, waitFor, ev, snap, seesAll, sleep } from './harness.ts';
 import { freePort } from '../look/lib.ts';
 import { createService, loadConfig } from '../../server/src/server.ts';
-import { railwayChecks, railwayLoad } from './ws-railway.ts';
+import { railwayChecks, railwayLoad, railwayCartRide } from './ws-railway.ts';
 
 type Page = { name: string; page: import('playwright').Page; selfId: string | { error: string; max?: number } };
 const results: { name: string; ok: boolean }[] = [];
@@ -236,6 +236,8 @@ try {
     await svc.close({ save: false });
     svc = await serve({ MAX_PLAYERS: '8', SERVER_SAVE_MS: '2000', UPGRADES_PER_MIN: '1000' }); // every page is one IP
     const list = (v: string | undefined) => v?.split(',').map(Number);
+    if (process.env.WS_LOAD_CHURN?.split(',').includes('cart'))
+      await railwayCartRide(ctx, { seconds: Number(process.env.WS_LOAD_SECONDS || 60) });
     await railwayLoad(ctx, {
       seconds: Number(process.env.WS_LOAD_SECONDS || 15),
       ...(process.env.WS_LOAD_PLAYERS ? { players: list(process.env.WS_LOAD_PLAYERS) } : {}),
