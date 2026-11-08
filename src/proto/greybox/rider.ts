@@ -1,4 +1,4 @@
-// `&gbrider=1` (greybox only): ride the review routes as Buddy would, to judge the train ride at the character's size
+// Default greybox review: ride as Buddy would, to judge the train ride at the character's size (`&gbrider=0`: overview)
 // (docs/research/train-ride-feel.md). A loco and two flatbeds at Place's real sizes run along the route with your own
 // Buddy seated on the first flatbed, the camera follows at the play camera's height and distance, and the lines get
 // near-track furniture: sleepers, rails and a pole every 25 m. `&gbrider=bare` keeps the train and camera but drops
@@ -11,7 +11,7 @@ import { PLAYER_R } from '../../constants.ts';
 import { flat } from '../flat.ts';
 
 const q = new URLSearchParams(location.search);
-export const RIDER = q.get('gbrider');
+export const RIDER = q.get('gbrider') ?? '1';
 export const RIDER_FEEL = {
   back: 5.6, // m behind Buddy, as the play camera (docs/research/world-scale.md)
   up: 2.5, // m over him
@@ -62,7 +62,10 @@ export function createRider(root: THREE.Group, lines: { path: THREE.Vector3[] }[
     const rails: THREE.BufferGeometry[] = [];
     const poles: THREE.BufferGeometry[] = [];
     const o = new THREE.Object3D();
-    for (const { path } of lines)
+    for (const { path } of lines) {
+      let along = 0,
+        nextSleeper = 0,
+        nextPole = RIDER_FEEL.poleEvery / 2;
       for (let i = 0; i < path.length - 1; i++) {
         const a = path[i]!,
           b = path[i + 1]!;
@@ -70,7 +73,8 @@ export function createRider(root: THREE.Group, lines: { path: THREE.Vector3[] }[
         if (len < 0.5) continue;
         o.position.copy(a);
         o.lookAt(b);
-        for (let s = 0; s < len; s += RIDER_FEEL.sleeperEvery) {
+        for (; nextSleeper < along + len; nextSleeper += RIDER_FEEL.sleeperEvery) {
+          const s = nextSleeper - along;
           o.position.copy(a).lerp(b, s / len);
           o.position.y += 0.06;
           o.updateMatrix();
@@ -81,7 +85,8 @@ export function createRider(root: THREE.Group, lines: { path: THREE.Vector3[] }[
         for (const x of [-0.5, 0.5])
           rails.push(new THREE.BoxGeometry(0.1, 0.14, len).translate(x, 0.19, 0).applyMatrix4(o.matrix));
         const side = new THREE.Vector3(b.z - a.z, 0, -(b.x - a.x)).normalize();
-        for (let s = RIDER_FEEL.poleEvery / 2; s < len; s += RIDER_FEEL.poleEvery) {
+        for (; nextPole < along + len; nextPole += RIDER_FEEL.poleEvery) {
+          const s = nextPole - along;
           const p = a
             .clone()
             .lerp(b, s / len)
@@ -91,7 +96,9 @@ export function createRider(root: THREE.Group, lines: { path: THREE.Vector3[] }[
           );
           poles.push(new THREE.BoxGeometry(1.4, 0.12, 0.12).translate(p.x, p.y + RIDER_FEEL.poleH - 0.4, p.z));
         }
+        along += len;
       }
+    }
     const sl = new THREE.InstancedMesh(new THREE.BoxGeometry(2.3, 0.12, 0.42), flat('#6e4c2a', 0.9), sleepers.length);
     sleepers.forEach((m, i) => sl.setMatrixAt(i, m));
     sl.name = 'rider-sleepers';

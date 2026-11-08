@@ -20,6 +20,7 @@ import {
   ROUTE,
   SETTINGS,
   STORAGE,
+  TRAIN_SERVICE,
   type Bill,
   type Branch,
   type Material,
@@ -32,6 +33,8 @@ import {
   orderOf,
   placeKm,
   simulate,
+  railRideS,
+  trainSetting,
   slotOfSource,
   type Result,
 } from './ring-sim.ts';
@@ -195,12 +198,18 @@ const kmF = (slot: string, i: string) => {
   const at = (col: string) => `INDEX(World!$${col}:$${col},MATCH(${slot},World!$A:$A,0))`;
   return `MIN(IF(${spoke1Order}<${i},${at('I')},${at('H')}),IF(${closeOrder}<${i},${at('J')},${NEVER}),IF(${at('M')}<${i},${at('K')},${NEVER}))`;
 };
-const rideF = (km: string, v: string, wait: string) =>
-  `IF(${km}<${S('walkLimitKm')},${km}*1000/${S('walkMps')},${km}*1000/${v}+${v}/${S('accel')}+${S('dwellS')}+${wait})`;
+const trainF = (v: string, key: 'accel' | 'dwellS' | 'boardWaitS') =>
+  TRAIN_SERVICE.slice(1).reduce((f, t) => `IF(${v}>=${t.speed},${S(`${key}${t.suffix}`)},${f})`, S(key));
+const railF = (km: string, v: string) => {
+  const a = trainF(v, 'accel');
+  return `IF(${km}*1000>=${v}*${v}/${a},${km}*1000/${v}+${v}/${a},2*SQRT(${km}*1000/${a}))`;
+};
+const rideF = (km: string, v: string) =>
+  `IF(${km}<${S('walkLimitKm')},${km}*1000/${S('walkMps')},${railF(km, v)}+${trainF(v, 'dwellS')}+${trainF(v, 'boardWaitS')})`;
 const rideTS = (km: number, v: number, wait: number) =>
   km < Number(set.walkLimitKm)
     ? (km * 1000) / Number(set.walkMps)
-    : (km * 1000) / v + v / Number(set.accel) + Number(set.dwellS) + wait;
+    : railRideS(set, km * 1000, v) + trainSetting(set, v, 'dwellS') + wait;
 const v0 = `INDEX(${ladderRange('speed')},1,1)`;
 const placeKey = (slot: string, b: Branch) =>
   slot === 'b1' ? b : slot === 'b2' ? (b === 'canopy' ? 'gorge' : 'canopy') : slot.startsWith('stop') ? 'stops' : slot;
@@ -297,8 +306,8 @@ const worldSheet: Sheet = {
         ...kmCells,
         I(p.ownSpoke),
         F(`IFERROR(MATCH(L${row},Route!$A:$A,0)-1,${NEVER})`, orderOf(p.ownSpoke), STYLE.int),
-        F(`${rideF(`H${row}`, v0, S('boardWaitS'))}/60`, r1(longMin)),
-        F(`${rideF(`K${row}`, v0, S('boardWaitS'))}/60`, r1(ownMin)),
+        F(`${rideF(`H${row}`, v0)}/60`, r1(longMin)),
+        F(`${rideF(`K${row}`, v0)}/60`, r1(ownMin)),
         F(`N${row}-O${row}`, r1(longMin - ownMin)),
         F(
           `SUMIFS(Recipes!$S:$S,Recipes!$F:$F,B${row},Recipes!$E:$E,"main")`,
@@ -370,14 +379,14 @@ const routeSheet: Sheet = {
         lad('trains', st.trains),
         lad('carry', st.carry),
         lad('tool', st.tool),
-        F(rideF(`H${row}`, `I${row}`, S('boardWaitS')), r1(st.rideS)),
+        F(rideF(`H${row}`, `I${row}`), r1(st.rideS)),
         F(remote, st.remote, STYLE.int),
         T(ret ? `${r.note}. Return: ${ret.note}` : r.note, STYLE.note),
         I(ret?.slot ?? ''),
         I(ret?.trips ?? 0),
         I(ret?.activityMin ?? 0),
         F(`IF(Q${row}="",0,${kmF(`Q${row}`, `E${row}`)})`, r1(st.back.km), STYLE.num),
-        F(`IF(Q${row}="",0,${rideF(`T${row}`, `I${row}`, S('boardWaitS'))})`, r1(st.back.rideS)),
+        F(`IF(Q${row}="",0,${rideF(`T${row}`, `I${row}`)})`, r1(st.back.rideS)),
       ];
     }),
   ],
@@ -665,13 +674,13 @@ res.steps.forEach((st, k) => {
       F(resA('E', r), slotOfSource(RESOURCES.find((x) => x.id === m)!.source, first), STYLE.none),
       F(kmF(`H${r}`, `$A${r}`), r1(f.km), STYLE.num),
       F(
-        `IF(I${r}<${S('walkLimitKm')},1000000000,${route('J', r)}*${route('K', r)}*3600/(2*(I${r}*1000/${v}+${v}/${S('accel')}+${S('dwellS')})+2*${S('transferS')})/MAX(1,${route('O', r)}))`,
+        `IF(I${r}<${S('walkLimitKm')},1000000000,${route('J', r)}*${route('K', r)}*3600/(2*(${railF(`I${r}`, v)}+${trainF(v, 'dwellS')})+2*${S('transferS')})/MAX(1,${route('O', r)}))`,
         r1(f.freight),
         STYLE.int,
       ),
       F(`MIN(F${r},J${r})`, r1(f.auto), STYLE.int),
       F(
-        `IF(${manual}=0,0,${carry}*3600/(${harvest}*${tool}*${carry}+${S('pickupS')}+2*${rideF(`I${r}`, v, S('boardWaitS'))}))`,
+        `IF(${manual}=0,0,${carry}*3600/(${harvest}*${tool}*${carry}+${S('pickupS')}+2*${rideF(`I${r}`, v)}))`,
         r1(f.manual),
         STYLE.int,
       ),

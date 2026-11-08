@@ -10,6 +10,14 @@ export type Bill = Partial<Record<Material, number>>;
 export const BRANCHES = ['canopy', 'gorge'] as const;
 export type Branch = (typeof BRANCHES)[number];
 
+/** Offline service upgrades follow the speed step in both sims and the spreadsheet. */
+export const TRAIN_SERVICE = [
+  { speed: 20, suffix: '', accel: 3.5, dwellS: 5, boardWaitS: 20 },
+  { speed: 25, suffix: '25', accel: 4.5, dwellS: 4, boardWaitS: 15 },
+  { speed: 30, suffix: '30', accel: 5.5, dwellS: 3, boardWaitS: 10 },
+  { speed: 40, suffix: '40', accel: 7, dwellS: 2, boardWaitS: 5 },
+];
+
 export type Setting = { key: string; label: string; value: number | string; unit: string; note: string };
 export const SETTINGS: Setting[] = [
   {
@@ -42,15 +50,29 @@ export const SETTINGS: Setting[] = [
     unit: 'km',
     note: 'Same-island hauls are walked',
   },
-  { key: 'accel', label: 'Train acceleration', value: 2, unit: 'm/s²', note: 'campaign-kit accelerationMps2' },
-  { key: 'dwellS', label: 'Train dwell per stop', value: 8, unit: 's', note: 'campaign-kit dwellS' },
-  {
-    key: 'boardWaitS',
-    label: 'Rider wait for a train',
-    value: 20,
-    unit: 's per ride',
-    note: 'Manual hauling by train waits for it',
-  },
+  ...TRAIN_SERVICE.flatMap((t) => [
+    {
+      key: `accel${t.suffix}`,
+      label: `Train acceleration at ${t.speed} m/s`,
+      value: t.accel,
+      unit: 'm/s²',
+      note: 'train-ride-feel: acceleration rises with cruise',
+    },
+    {
+      key: `dwellS${t.suffix}`,
+      label: `Train dwell at ${t.speed} m/s`,
+      value: t.dwellS,
+      unit: 's',
+      note: 'Shorter stops with each speed upgrade',
+    },
+    {
+      key: `boardWaitS${t.suffix}`,
+      label: `Boarding wait at ${t.speed} m/s`,
+      value: t.boardWaitS,
+      unit: 's per ride',
+      note: 'Shorter wait with each speed upgrade',
+    },
+  ]),
   { key: 'transferS', label: 'Freight transfer per trip end', value: 6, unit: 's', note: 'campaign-kit transferS' },
   {
     key: 'lastCarryS',
@@ -130,7 +152,7 @@ export const LADDERS: Ladder[] = [
   {
     key: 'speed',
     label: 'Train cruise speed',
-    steps: [20, 25, 30, 40],
+    steps: TRAIN_SERVICE.map((t) => t.speed),
     unit: 'm/s',
     note: "20 m/s is today's tuning; 50 m/s is the owner's late-game novelty ceiling",
   },

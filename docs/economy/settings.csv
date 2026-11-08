@@ -5,9 +5,18 @@ targetHours,Main-game target (rough),6,hours,"Owner, 6 November: roughly six hou
 walkMps,Walking speed,5.6,m/s,campaign-kit profile.walkMps
 pickupS,Pick-up overhead per load,1.2,s,campaign-kit profile.pickupS
 walkLimitKm,Walk instead of ride below,0.8,km,Same-island hauls are walked
-accel,Train acceleration,2,m/s²,campaign-kit accelerationMps2
-dwellS,Train dwell per stop,8,s,campaign-kit dwellS
-boardWaitS,Rider wait for a train,20,s per ride,Manual hauling by train waits for it
+accel,Train acceleration at 20 m/s,3.5,m/s²,train-ride-feel: acceleration rises with cruise
+dwellS,Train dwell at 20 m/s,5,s,Shorter stops with each speed upgrade
+boardWaitS,Boarding wait at 20 m/s,20,s per ride,Shorter wait with each speed upgrade
+accel25,Train acceleration at 25 m/s,4.5,m/s²,train-ride-feel: acceleration rises with cruise
+dwellS25,Train dwell at 25 m/s,4,s,Shorter stops with each speed upgrade
+boardWaitS25,Boarding wait at 25 m/s,15,s per ride,Shorter wait with each speed upgrade
+accel30,Train acceleration at 30 m/s,5.5,m/s²,train-ride-feel: acceleration rises with cruise
+dwellS30,Train dwell at 30 m/s,3,s,Shorter stops with each speed upgrade
+boardWaitS30,Boarding wait at 30 m/s,10,s per ride,Shorter wait with each speed upgrade
+accel40,Train acceleration at 40 m/s,7,m/s²,train-ride-feel: acceleration rises with cruise
+dwellS40,Train dwell at 40 m/s,2,s,Shorter stops with each speed upgrade
+boardWaitS40,Boarding wait at 40 m/s,5,s per ride,Shorter wait with each speed upgrade
 transferS,Freight transfer per trip end,6,s,campaign-kit transferS
 lastCarryS,"Last carry, rack to frame",1.5,s per stock unit,Hands still place every shared unit
 handParallel,"Each extra player adds, hauling",0.7,of a hauler,Shared sources and frames contend

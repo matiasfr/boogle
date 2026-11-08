@@ -37,13 +37,11 @@ background(
   }),
   'greybox pipelines',
 );
-// `&gbrider=1`: ride as Buddy, seated on a train, with the play camera behind (./rider.ts).
-const rider = RIDER
-  ? createRider(
-      box.root,
-      box.lines.filter((l) => map.lines.find((x) => x.id === l.id)?.kind !== 'built'),
-    )
-  : null;
+// Seated Buddy by default; `&gbrider=0` restores the old overview camera (./rider.ts).
+const rider = createRider(
+  box.root,
+  box.lines.filter((l) => map.lines.find((x) => x.id === l.id)?.kind !== 'built'),
+);
 const W = (x: number, y: number, z: number) => new THREE.Vector3(wx(x), y, wz(z));
 const placeAt = (id: string) => map.places.find((p) => p.id === id)?.at;
 
@@ -424,7 +422,7 @@ spawn({
     applyFog();
     if (ride) {
       ride.s = Math.min(ride.total, ride.s + ride.mps * ride.speed * dt);
-      if (rider) {
+      if (RIDER !== '0') {
         const r = ride;
         rider.update((s, out) => pointAt(r, s, out), ride.s, ride.s < ride.total ? ride.mps * ride.speed : 0, dt);
       } else {

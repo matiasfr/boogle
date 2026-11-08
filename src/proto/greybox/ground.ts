@@ -78,8 +78,10 @@ export function createGround(map: Layout) {
       return out;
     }
     const pts = line.pts;
-    const ys: (number | null)[] = pts.map((p, i) =>
-      i === 0 ? deckOf(line.from, p) : i === pts.length - 1 ? deckOf(line.to, p) : landTop(p[0], p[1]),
+    const ys: (number | null)[] = pts.map(
+      (p, i) =>
+        line.heights?.[i] ??
+        (i === 0 ? deckOf(line.from, p) : i === pts.length - 1 ? deckOf(line.to, p) : landTop(p[0], p[1])),
     );
     const along = [0];
     for (let i = 1; i < pts.length; i++)

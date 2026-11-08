@@ -12,10 +12,10 @@
     "units": "metres; [x, z] with x east and z south (north is -z), Place-local like world-map.html",
     "ride": {
       "speed": 20,
-      "accelS": 10,
-      "dwellS": 8,
+      "accelS": 5.714285714285714,
+      "dwellS": 5,
       "boardS": 20,
-      "note": "Per link: length / 20 m/s + 10 s to speed up and slow down at 2 m/s² + 8 s dwell. Plus 20 s waiting to board. Same settings as ring-data.ts."
+      "note": "Base service: 20 m/s, 3.5 m/s² (5.714 s rest-to-rest overhead), 5 s dwell per link and 20 s boarding. Same base settings as ring-data.ts; review rides move at constant cruise."
     },
     "view": [-4900, -3950, 7900, 7700],
     "common": {
@@ -161,30 +161,173 @@
           "stage": 2,
           "pts": [
             [402, -372],
-            [380, -650],
+            [402.54, -391.92],
+            [413.92, -810.17],
+            [414.46, -830.08],
+            [415, -850],
+            [335.67, -1102],
             [330, -1120]
           ],
-          "note": "751 m on the real map (the model rounds it to 1.2 km)."
+          "note": "751 m on the real map (the model rounds it to 1.2 km).",
+          "heights": [null, 4, 4, 4.83, 8.72, 63.11, null]
         }
       ],
       "works": [
-        {"id": "forge", "name": "Forge", "at": [-88, -12], "kind": "frame", "note": "LINE2_FORGE: logs bills 24 then 32; the rails rack is at (-85.5, 5.4)."},
-        {"id": "pack", "name": "Pack chest", "at": [-91, 0], "kind": "chest", "note": "Opens once the forge has its first 24 logs: carry 8 to 16. Approximate (beside the forge); pinned when it is built."},
-        {"id": "Q1", "name": "Q1 frame", "at": [-72.8, 10.6], "kind": "frame", "line": "l2", "s": 6, "off": 7.5, "note": "16 logs, 6 rails."},
-        {"id": "Q2", "name": "Q2 frame", "at": [-50.5, 30.6], "kind": "frame", "line": "l2", "s": 41, "off": 7.5, "note": "24 logs, 12 rails."},
-        {"id": "Q3", "name": "Q3 frame", "at": [28, 26.8], "kind": "frame", "line": "l2", "s": 121, "off": 7.5, "note": "16 logs, 12 rails."},
-        {"id": "Q4", "name": "Q4 frame", "at": [83.7, 36.7], "kind": "frame", "line": "l2", "s": 179, "off": 1.1, "note": "16 logs, 16 rails, 178 to 286 m: to the rim. Behind the quarry gate."},
-        {"id": "Q5", "name": "Q5 frame (the rim)", "at": [172.1, -22.9], "kind": "frame", "line": "l2", "s": 286, "off": 0, "note": "24 logs, 24 rails, 286 to 546 m: 260 m of trestle over the sea to Far Head. Behind the sea gate."},
-        {"id": "Q6", "name": "Q6 frame (Far Head)", "at": [379.4, -179.5], "kind": "frame", "line": "l2", "s": 546, "off": 0, "note": "32 logs, 32 rails, 546 to 742 m: to the pier. Fed by the line 2 train."},
-        {"id": "lever", "name": "Quarry lever", "at": [97.4, 42.2], "kind": "gate", "note": "Q4's gate, at Split-rock."},
-        {"id": "sea-switch", "name": "Sea switch (Needle Bell)", "at": [11.8, -6], "kind": "gate", "note": "Q5's gate, on the Needle Bell summit."},
-        {"id": "boiler", "name": "Boiler (apron)", "at": [-81, 5.4], "kind": "boiler", "note": "Cast by the forge when Q5 completes; carried 546 m to the old train."},
-        {"id": "old-train", "name": "Old train (camp)", "at": [-13, -142], "kind": "train", "line": "l1", "s": 183, "off": 5.8, "note": "Fit the boiler here and trains run."},
-        {"id": "halt-village", "name": "Village halt", "at": [-71.8, -4.3], "kind": "halt", "line": "l1", "s": 19, "off": 2.9, "note": "A platform, shown once trains run."},
-        {"id": "halt-camp", "name": "Camp halt", "at": [9.6, -146.1], "kind": "halt", "line": "l1", "s": 207, "off": 2.9, "note": "A platform, shown once trains run."},
-        {"id": "halt-village-line-2", "name": "Village, line 2 halt", "at": [-72.2, 26.2], "kind": "halt", "line": "l2", "s": 17, "off": 3.1, "note": "A platform, shown once trains run."},
-        {"id": "halt-quarry", "name": "Quarry halt", "at": [81.3, 41.1], "kind": "halt", "line": "l2", "s": 176, "off": 2.9, "note": "A platform, shown once trains run."},
-        {"id": "halt-far-head", "name": "Far Head halt", "at": [363.6, -163.5], "kind": "halt", "line": "l2", "s": 524, "off": 2.9, "note": "A platform, shown once trains run."}
+        {
+          "id": "forge",
+          "name": "Forge",
+          "at": [-88, -12],
+          "kind": "frame",
+          "note": "LINE2_FORGE: logs bills 24 then 32; the rails rack is at (-85.5, 5.4)."
+        },
+        {
+          "id": "pack",
+          "name": "Pack chest",
+          "at": [-91, 0],
+          "kind": "chest",
+          "note": "Opens once the forge has its first 24 logs: carry 8 to 16. Approximate (beside the forge); pinned when it is built."
+        },
+        {
+          "id": "Q1",
+          "name": "Q1 frame",
+          "at": [-72.8, 10.6],
+          "kind": "frame",
+          "line": "l2",
+          "s": 6,
+          "off": 7.5,
+          "note": "16 logs, 6 rails."
+        },
+        {
+          "id": "Q2",
+          "name": "Q2 frame",
+          "at": [-50.5, 30.6],
+          "kind": "frame",
+          "line": "l2",
+          "s": 41,
+          "off": 7.5,
+          "note": "24 logs, 12 rails."
+        },
+        {
+          "id": "Q3",
+          "name": "Q3 frame",
+          "at": [28, 26.8],
+          "kind": "frame",
+          "line": "l2",
+          "s": 121,
+          "off": 7.5,
+          "note": "16 logs, 12 rails."
+        },
+        {
+          "id": "Q4",
+          "name": "Q4 frame",
+          "at": [83.7, 36.7],
+          "kind": "frame",
+          "line": "l2",
+          "s": 179,
+          "off": 1.1,
+          "note": "16 logs, 16 rails, 178 to 286 m: to the rim. Behind the quarry gate."
+        },
+        {
+          "id": "Q5",
+          "name": "Q5 frame (the rim)",
+          "at": [172.1, -22.9],
+          "kind": "frame",
+          "line": "l2",
+          "s": 286,
+          "off": 0,
+          "note": "24 logs, 24 rails, 286 to 546 m: 260 m of trestle over the sea to Far Head. Behind the sea gate."
+        },
+        {
+          "id": "Q6",
+          "name": "Q6 frame (Far Head)",
+          "at": [379.4, -179.5],
+          "kind": "frame",
+          "line": "l2",
+          "s": 546,
+          "off": 0,
+          "note": "32 logs, 32 rails, 546 to 742 m: to the pier. Fed by the line 2 train."
+        },
+        {
+          "id": "lever",
+          "name": "Quarry lever",
+          "at": [97.4, 42.2],
+          "kind": "gate",
+          "note": "Q4's gate, at Split-rock."
+        },
+        {
+          "id": "sea-switch",
+          "name": "Sea switch (Needle Bell)",
+          "at": [11.8, -6],
+          "kind": "gate",
+          "note": "Q5's gate, on the Needle Bell summit."
+        },
+        {
+          "id": "boiler",
+          "name": "Boiler (apron)",
+          "at": [-81, 5.4],
+          "kind": "boiler",
+          "note": "Cast by the forge when Q5 completes; carried 546 m to the old train."
+        },
+        {
+          "id": "old-train",
+          "name": "Old train (camp)",
+          "at": [-13, -142],
+          "kind": "train",
+          "line": "l1",
+          "s": 183,
+          "off": 5.8,
+          "note": "Fit the boiler here and trains run."
+        },
+        {
+          "id": "halt-village",
+          "name": "Village halt",
+          "at": [-71.8, -4.3],
+          "kind": "halt",
+          "line": "l1",
+          "s": 19,
+          "off": 2.9,
+          "note": "A platform, shown once trains run."
+        },
+        {
+          "id": "halt-camp",
+          "name": "Camp halt",
+          "at": [9.6, -146.1],
+          "kind": "halt",
+          "line": "l1",
+          "s": 207,
+          "off": 2.9,
+          "note": "A platform, shown once trains run."
+        },
+        {
+          "id": "halt-village-line-2",
+          "name": "Village, line 2 halt",
+          "at": [-72.2, 26.2],
+          "kind": "halt",
+          "line": "l2",
+          "s": 17,
+          "off": 3.1,
+          "note": "A platform, shown once trains run."
+        },
+        {
+          "id": "halt-quarry",
+          "name": "Quarry halt",
+          "at": [81.3, 41.1],
+          "kind": "halt",
+          "line": "l2",
+          "s": 176,
+          "off": 2.9,
+          "note": "A platform, shown once trains run."
+        },
+        {
+          "id": "halt-far-head",
+          "name": "Far Head halt",
+          "at": [363.6, -163.5],
+          "kind": "halt",
+          "line": "l2",
+          "s": 524,
+          "off": 2.9,
+          "note": "A platform, shown once trains run."
+        }
       ],
       "stages": [
         {
@@ -786,11 +929,15 @@
             },
             "pts": [
               [330, -1120],
-              [-150, -1450],
-              [-650, -1780],
+              [314.4, -1132.16],
+              [95.95, -1302.33],
+              [80.34, -1314.48],
+              [-575, -1825],
+              [-1084.14, -1982.18],
               [-1103, -1988]
             ],
-            "note": "A long trestle from Ring Island out to the split stack."
+            "note": "A long trestle from Ring Island out to the split stack.",
+            "heights": [null, 62.93, 5.92, 4, 4, 4, null]
           },
           {
             "id": "ring-bell",
@@ -805,10 +952,51 @@
             },
             "pts": [
               [330, -1120],
-              [-300, -1000],
+              [310.41, -1118.51],
+              [251.63, -1114.04],
+              [232.04, -1112.55],
+              [212.45, -1111.06],
+              [192.86, -1109.57],
+              [173.27, -1108.08],
+              [153.67, -1106.59],
+              [134.08, -1105.1],
+              [114.49, -1103.61],
+              [94.9, -1102.12],
+              [75.31, -1100.63],
+              [55.71, -1099.14],
+              [36.12, -1097.65],
+              [16.53, -1096.16],
+              [-3.06, -1094.67],
+              [-630, -1047],
+              [-945, -899.25],
+              [-962.5, -891.04],
+              [-1032.5, -858.21],
               [-1050, -850]
             ],
-            "note": "Only built if Canopy Town is first; if it's second you go by the shortcut."
+            "note": "Only built if Canopy Town is first; if it's second you go by the shortcut.",
+            "heights": [
+              null,
+              62.96,
+              50.82,
+              54.06,
+              65.33,
+              75.02,
+              81.79,
+              83.81,
+              80.28,
+              72.51,
+              62.27,
+              50.7,
+              38.37,
+              25.61,
+              12.56,
+              4,
+              4,
+              4,
+              15,
+              15,
+              null
+            ]
           },
           {
             "id": "bell-canopy",
@@ -823,10 +1011,17 @@
             },
             "pts": [
               [-1050, -850],
-              [-1600, -600],
+              [-1068.49, -842.93],
+              [-1142.44, -814.63],
+              [-1160.93, -807.56],
+              [-1808, -560],
+              [-1851.8, -521],
+              [-1866.4, -508],
+              [-2085.4, -313],
               [-2100, -300]
             ],
-            "note": "Into Canopy Town through the 70 m cleft between the two chalk headlands."
+            "note": "Into Canopy Town through the 70 m cleft between the two chalk headlands.",
+            "heights": [null, 15, 15, 4, 4, 4, 13, 13, null]
           },
           {
             "id": "bay-cut",
@@ -838,10 +1033,15 @@
             "stage": 4,
             "pts": [
               [-199, 10],
-              [-600, -420],
+              [-211.14, -5.55],
+              [-709, -643],
+              [-964.75, -798.25],
+              [-981.8, -808.6],
+              [-1032.95, -839.65],
               [-1050, -850]
             ],
-            "note": "Straight across the bay from the West landing: the Dark Souls lift. When Canopy Town is first, its ride drops from 4.1 km to 2.0 km."
+            "note": "Straight across the bay from the West landing: the Dark Souls lift. When Canopy Town is first, its ride drops from 4.1 km to 2.0 km.",
+            "heights": [null, 4, 4, 4, 15, 15, null]
           },
           {
             "id": "incline",
@@ -856,10 +1056,19 @@
             },
             "pts": [
               [-1050, -850],
-              [-1080, -1350],
+              [-1048.59, -869.95],
+              [-1042.95, -949.74],
+              [-1041.54, -969.69],
+              [-995, -1628],
+              [-1006.37, -1665.89],
+              [-1012.05, -1684.84],
+              [-1040.47, -1779.58],
+              [-1080.26, -1912.21],
+              [-1097.32, -1969.05],
               [-1103, -1988]
             ],
-            "note": "A trestle from Bell Rock that climbs onto the stacks, so the Gorge also comes home through the hub."
+            "note": "A trestle from Bell Rock that climbs onto the stacks, so the Gorge also comes home through the hub.",
+            "heights": [null, 15, 15, 4, 4, 4, 16.762377568261343, 86, 86, 44.45849896789965, null]
           },
           {
             "id": "seacave",
@@ -886,10 +1095,13 @@
             "stage": 6,
             "pts": [
               [-450, 700],
-              [-700, 880],
+              [-467.39, 707.89],
+              [-763, 842],
+              [-867, 946.89],
               [-880, 960]
             ],
-            "note": "Along the breakwater into the harbour."
+            "note": "Along the breakwater into the harbour.",
+            "heights": [null, 4, 4, 4, null]
           },
           {
             "id": "lift",
@@ -914,13 +1126,40 @@
             "stage": 7,
             "pts": [
               [-1300, 1180],
-              [-1720, 760],
-              [-1960, 360],
-              [-2080, -20],
+              [-1312.86, 1165.71],
+              [-1467.14, 994.29],
+              [-1480, 980],
+              [-1486.87, 962.5],
+              [-1493.75, 945],
+              [-1500.62, 927.5],
+              [-1535, 840],
+              [-1755, 520],
+              [-1875, 180],
+              [-1885, -12],
+              [-1886, -31.2],
+              [-1900, -300],
+              [-2080, -300],
               [-2100, -300]
             ],
-            "note": "Hops along the tops of the chalk islets on short bridges, down into Canopy Town.",
-            "style": "sea"
+            "note": "At the foot of the chalk, on the bay side: 4 m over sea, climbing only for the Port and Canopy landings. The final bend brings the mother trees across the front.",
+            "style": "sea",
+            "heights": [
+              null,
+              56,
+              56,
+              42.542808130965874,
+              29.80954887750128,
+              16.79002501913581,
+              4,
+              4,
+              4,
+              4,
+              4,
+              13,
+              13,
+              13,
+              null
+            ]
           },
           {
             "id": "wall-n",
@@ -931,13 +1170,44 @@
             "stage": 7,
             "pts": [
               [-2100, -300],
-              [-1995, -565],
-              [-1760, -1030],
-              [-1460, -1490],
+              [-2086.84, -314.74],
+              [-2047.37, -358.95],
+              [-2021.05, -388.42],
+              [-1928.95, -491.58],
+              [-1915.79, -506.32],
+              [-1902.63, -521.05],
+              [-1889.47, -535.79],
+              [-1850, -580],
+              [-1640, -1000],
+              [-1340, -1500],
+              [-1272.29, -1639.43],
+              [-1263.82, -1656.86],
+              [-1221.5, -1744],
+              [-1128.39, -1935.71],
+              [-1111.46, -1970.57],
               [-1103, -1988]
             ],
             "note": "Along the northern chalk islets and over the deep gap to the stacks on crystal collars. With the south half, the ring closes: the first lap.",
-            "style": "sea"
+            "style": "sea",
+            "heights": [
+              null,
+              79.51411746147843,
+              121,
+              121,
+              24.196312859343493,
+              13,
+              13,
+              4,
+              4,
+              4,
+              4,
+              4,
+              18.18895827374419,
+              86,
+              86,
+              58.8724530228036,
+              null
+            ]
           },
           {
             "id": "notch-tunnel",
@@ -949,10 +1219,17 @@
             "stage": 8,
             "pts": [
               [-2100, -300],
-              [-2450, -700],
+              [-2109.93, -317.27],
+              [-2258.93, -576.27],
+              [-2268.87, -593.53],
+              [-2398, -818],
+              [-2516.4, -915.07],
+              [-2531.2, -927.2],
+              [-2605.2, -987.87],
               [-2620, -1000]
             ],
-            "note": "Out to the sea arch at Lantern Notch."
+            "note": "Out to the sea arch at Lantern Notch.",
+            "heights": [null, 13, 13, 4, 4, 4, 7, 7, null]
           },
           {
             "id": "final",
@@ -964,10 +1241,15 @@
             "stage": 8,
             "pts": [
               [-1050, -850],
-              [-1030, -480],
+              [-1050.96, -830.65],
+              [-1053.85, -772.62],
+              [-1054.81, -753.27],
+              [-1075, -347],
+              [-1005.77, -133.77],
               [-1000, -116]
             ],
-            "note": "Over the shallows from Bell Rock to The Boogler's island, lit when the Notch lantern is set."
+            "note": "Over the shallows from Bell Rock to The Boogler's island, lit when the Notch lantern is set.",
+            "heights": [null, 15, 15, 4, 4, 4, null]
           }
         ],
         "gates": [
@@ -1091,7 +1373,7 @@
           {
             "t": 7.3,
             "title": "The White Wall line closes the ring",
-            "note": "The line hops along the chalk islets from High Port, down through the cleft into Canopy Town and on to the stacks, over the last deep gap on crystal collars. The first lap; from the wall tops, the mainland city on the horizon."
+            "note": "The line follows the foot of the chalk from High Port, through the cleft into Canopy Town and on to the stacks, over the last deep gap on crystal collars. The first lap; the mainland city beyond the chalk."
           },
           {
             "t": 8.2,
