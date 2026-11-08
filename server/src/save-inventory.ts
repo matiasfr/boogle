@@ -1,4 +1,4 @@
-// Read-only disk inventory. No room contents are loaded and no cleanup mode is acted on here.
+// Read-only disk inventory. No room contents are loaded; boot cleanup lives in save-cleanup.ts.
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -39,9 +39,9 @@ export function classify(name: string, ns: Namespace): Classification {
   return TMP.test(name) ? 'tmp' : 'unknown';
 }
 
-// Independent of classify: future cleanup callers must never be able to move a current room save.
+// Independent of classify: protect every current namespace file, including an orphaned temp write.
 export function assertNotCurrent(name: string, ns: Namespace): void {
-  if (name.endsWith('.json') && currentPrefix(name, ns)) throw new Error(`Current world save: ${name}`);
+  if (currentPrefix(name, ns)) throw new Error(`Current world save: ${name}`);
 }
 
 async function statIfPresent(file: string) {
@@ -124,7 +124,7 @@ export async function inventorySaves(
     } else if (kind === 'legacy') {
       add(inv.candidates.legacy, stat.size);
       inv.legacyFiles.push(name);
-    } else if (kind === 'tmp' && stat.mtimeMs < now - tmpAgeMs) {
+    } else if (kind === 'tmp' && !currentPrefix(name, ns) && stat.mtimeMs < now - tmpAgeMs) {
       add(inv.candidates.tmp, stat.size);
       inv.files.push(name);
     }

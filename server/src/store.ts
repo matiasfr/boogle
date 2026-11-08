@@ -8,6 +8,7 @@
 //   await store.write(id, doc, { ifNewer })  { status: 200 | 409 | 507, body }: 409 when ifNewer and the saved tick is
 //                                         higher, 507 when a new room would pass maxRooms
 //   store.known(id), store.count()        rooms with a file
+//   store.forget(id)                      after boot cleanup moved its file, under withLock(id)
 //   store.withLock(key, fn)               run fn after every earlier call with the same key has settled
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -80,6 +81,7 @@ export function createStore(cfg: { dataDir: string; maxRooms: number }) {
     },
     known: (id: string) => knownRooms.has(id),
     count: () => knownRooms.size,
+    forget: (id: string) => knownRooms.delete(id),
   };
 }
 export type Store = ReturnType<typeof createStore>;
