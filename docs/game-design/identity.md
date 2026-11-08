@@ -2,7 +2,8 @@
 
 - **What.** No sign-up. You are a random player id (pid, [src/player/identity.ts](../../src/player/identity.ts);
   [multiplayer.md](multiplayer.md), 8.6) plus a name (up to 16 characters) and one of eight colours, kept in this
-  browser (`boogle.name`, `boogle.color`). You pick them on your first visit's card (a friendly random name and a
+  browser (`boogle.name`, `boogle.color`). You pick them on your first visit's card (a friendly random name, which
+  the die button beside it can reroll, and a
   random colour are already there; [first-run.md](first-run.md)), and every later visit goes straight in with them.
 - **Changing them.** The pause view's Room page has a You section: a name box and the colour swatches, saved as you
   type or tap. The roster, the HUD list, your avatar, the floating name over you and plaque lines follow (presence on

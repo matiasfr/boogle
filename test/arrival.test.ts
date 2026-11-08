@@ -65,3 +65,14 @@ test('names read naturally', () => {
 test('a friendly name is never empty', () => {
   for (let k = 0; k < 20; k++) assert.ok(A.friendlyName()!.length > 0);
 });
+
+test('a new suggestion never repeats the current name', () => {
+  assert.equal(
+    A.pickFriendlyName(['Ana', 'Bo'], 'Ana', () => 0),
+    'Bo',
+  );
+  assert.equal(
+    A.pickFriendlyName(['Ana', 'Bo'], 'Ana', () => 0.99),
+    'Bo',
+  );
+});

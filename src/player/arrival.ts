@@ -158,7 +158,12 @@ const NAMES = [
   'Merry Moth',
   'Swift Tern',
 ];
-export const friendlyName = () => NAMES[Math.floor(Math.random() * NAMES.length)]!;
+export function pickFriendlyName(names: readonly string[], previous: string, random = Math.random): string {
+  const choices = names.filter((name) => name !== previous);
+  const pool = choices.length ? choices : names;
+  return pool[Math.floor(random() * pool.length)] ?? '';
+}
+export const friendlyName = (previous = '') => pickFriendlyName(NAMES, previous);
 
 export function leaveIsland() {
   location.href = new URL(

@@ -149,6 +149,18 @@ export function initLobby() {
     // storage unavailable; start with defaults
   }
   dom.nameInput.value = storedName || friendlyName();
+  const nameRow = document.createElement('div');
+  nameRow.className = 'name-row';
+  const reroll = document.createElement('button');
+  reroll.className = 'name-reroll';
+  reroll.type = 'button';
+  reroll.textContent = '⚄';
+  reroll.setAttribute('aria-label', 'Suggest another name');
+  reroll.addEventListener('click', () => {
+    dom.nameInput.value = friendlyName(dom.nameInput.value);
+  });
+  dom.nameInput.replaceWith(nameRow);
+  nameRow.append(dom.nameInput, reroll);
   if (direct) dom.lobbyEl.hidden = true; // the loading screen covers the wait
   me.colorIdx =
     Number.isInteger(storedColor) && storedColor >= 0 && storedColor < COLORS.length
