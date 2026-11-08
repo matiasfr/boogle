@@ -13,6 +13,7 @@ import type { CurveData } from './curves.ts';
 import { TARGETS } from './targets.ts';
 import { coopWarpOptions, startCoopWarp } from './coop-warp.ts';
 import { READ_RESTORED } from './restore-pair.ts';
+import { writeRailSeed } from './rail-seed.ts';
 
 const opt: {
   view: string;
@@ -35,6 +36,7 @@ const opt: {
   fov: number | null;
   name: string | null;
   room?: string;
+  railSeed?: string;
   query: string | undefined;
   hud: boolean;
   warp: boolean;
@@ -93,6 +95,7 @@ for (let k = 0; k < argv.length; k++) {
     return value;
   };
   if (a === '--view') opt.view = v();
+  else if (a === '--rail-seed') opt.railSeed = v();
   else if (a === '--cam') opt.cam = v().split(',').map(Number);
   else if (a === '--look') opt.look = v().split(',').map(Number);
   else if (a === '--url') opt.url = v();
@@ -232,7 +235,12 @@ async function pageScript(g: Game, file: string) {
   if (out !== undefined) console.log('eval result:', JSON.stringify(out));
 }
 try {
+  if (opt.railSeed && opt.url) throw new Error('--rail-seed needs a local stack, not --url');
   stack = await startStack({ url: opt.url, root: opt.root, warp: opt.warp && opt.players === 2 });
+  if (opt.railSeed) {
+    opt.room ??= 'look-rail';
+    await writeRailSeed(stack.dataDir!, opt.room, opt.railSeed);
+  }
   browser = await launch();
   const g = await Game.open(browser, stack, {
     sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until || opt.island),

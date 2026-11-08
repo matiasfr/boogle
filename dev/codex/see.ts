@@ -41,6 +41,14 @@ brokerAlive();
 const production = args.includes('--production');
 if (production && operation === 'net') throw new Error('net tests source modules, not a production page');
 if (production) args.splice(args.indexOf('--production'), 1);
+const seedAt = args.indexOf('--rail-seed');
+const railSeed = seedAt < 0 ? undefined : args[seedAt + 1];
+if (seedAt >= 0) {
+  if (!railSeed || railSeed.startsWith('--')) throw new Error('--rail-seed needs a stage');
+  if (operation !== 'look' || production || args.includes('--url'))
+    throw new Error('--rail-seed needs a local look stack');
+  args.splice(seedAt, 2);
+}
 const { coopWarpOptions } = (await import(
   pathToFileURL(path.resolve('dev/look/coop-warp.ts')).href
 )) as typeof import('../look/coop-warp.ts');
@@ -65,6 +73,16 @@ const stack =
       : await startStack({ dataRoot: dir, warp });
 let status: number;
 try {
+  if (railSeed) {
+    const roomAt = args.indexOf('--room');
+    const room = roomAt < 0 ? 'look-rail' : args[roomAt + 1];
+    if (!room || room.startsWith('--')) throw new Error('--room needs a name');
+    if (roomAt < 0) args.push('--room', room);
+    const { writeRailSeed } = (await import(
+      pathToFileURL(path.resolve('dev/look/rail-seed.ts')).href
+    )) as typeof import('../look/rail-seed.ts');
+    await writeRailSeed(stack.dataDir!, room, railSeed);
+  }
   const request: Request = {
     operation,
     url: stack.base,
