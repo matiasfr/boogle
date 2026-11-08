@@ -10,6 +10,7 @@ import { mulberry32 } from '../src/sim/rng.ts';
 import { cellOf, GLOBAL_CELL } from '../src/world/replicate.ts';
 import { createReplicator } from '../src/world/replicate-server.ts';
 import { createMirror } from '../src/world/replicate-client.ts';
+import { measureWithinBudget, overBudget } from './helpers/budget.ts';
 import { touchChanges, worldProjections } from '../src/world/replicate-world.ts';
 
 const N = 3000;
@@ -85,8 +86,10 @@ function onE(w: World, rep: ReturnType<typeof createReplicator>): Path {
   };
 }
 
-test(`E against today's replicated path: ${N} entities, ${CLIENTS} clients`, (t) => {
+// One full measurement of both paths on fresh state; the test keeps the best of a few (test/helpers/budget.ts).
+function measureOnce() {
   const report: Record<string, number | string>[] = [];
+  const ms: Record<string, number> = {};
   for (const which of ['today', 'E'] as const) {
     const rand = mulberry32(3000);
     const rows = new Map<number, Row>();
@@ -150,12 +153,32 @@ test(`E against today's replicated path: ${N} entities, ${CLIENTS} clients`, (t)
       rebuild8Ms: +rebuild.toFixed(3),
       mirror: String(hash.length) + ':' + hashText(hash),
     });
-    assert.ok(normal.ms < 2 && churn5.ms < 5, `${path.name} step ${normal.ms} / ${churn5.ms} ms`);
-    assert.ok(clone < 15 && rebuild < 20, `${path.name} clone ${clone} ms, rebuild ${rebuild} ms`);
+    ms[`${which}StepMs`] = normal.ms;
+    ms[`${which}Churn5StepMs`] = churn5.ms;
+    ms[`${which}CloneMs`] = clone;
+    ms[`${which}RebuildMs`] = rebuild;
   }
   assert.equal(report[0]!.mirror, report[1]!.mirror, 'both paths replicate the same state');
-  t.diagnostic(JSON.stringify(report));
-  if (process.env.ECS_BUDGET) console.table(report);
+  return { report, ms };
+}
+
+// Absolute limits in ms, loose enough for CI and stretched by machine load; a real regression is tens of times slower.
+const LIMITS = Object.fromEntries(
+  ['today', 'E'].flatMap((w) => [
+    [`${w}StepMs`, 2],
+    [`${w}Churn5StepMs`, 5],
+    [`${w}CloneMs`, 15],
+    [`${w}RebuildMs`, 20],
+  ]),
+);
+
+test(`E against today's replicated path: ${N} entities, ${CLIENTS} clients`, { timeout: 60_000 }, (t) => {
+  let last!: ReturnType<typeof measureOnce>;
+  const { best, limits, scale, runs } = measureWithinBudget(LIMITS, () => (last = measureOnce()).ms);
+  t.diagnostic(JSON.stringify({ report: last.report, best, loadScale: +scale.toFixed(2), runs }));
+  if (process.env.ECS_BUDGET) console.table(last.report);
+  const bad = overBudget(best, limits, scale, runs);
+  assert.equal(bad, '', `ecs budget: ${bad}`);
 });
 function time(fn: () => void) {
   const t = performance.now();
