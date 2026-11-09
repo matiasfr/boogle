@@ -67,6 +67,8 @@ Ship each branch as it passes. Run `ship-branch.sh` under Node 26 (`export PATH=
    - "Chops trees, breaks rocks, and more" appears before rocks exist in T1.
 4. **Museum:** inspect the miniature, the crystal specimen, or both. **Worktree cleanup:** about 280 old worktrees.
 
+- **Tidy:** last code pass `1af61213` (5 November; first tidy pass catches up by area). Architecture, docs, memory, debris: never run as tidy.
+
 ## Next moves
 
 - Get the final long playthrough passing and publish the playtest guide for the 8 November fixes plus B5–B8; the owner plays when they can, and nothing waits ([direction](../direction.md#now-next-later)).
