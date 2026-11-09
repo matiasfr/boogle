@@ -9,7 +9,7 @@ import { getMask } from '../../physics/engine.ts';
 import { groundProbe } from '../../physics/physics.ts';
 import { waterField } from '../../physics/water-field.ts';
 import { makeCameraArm } from '../../player/camera-arm.ts';
-import { cam, camConstraints, camForward, me } from '../../player/player.ts';
+import { cam, camConstraints, camForward, followEye, me } from '../../player/player.ts';
 import { camera, sky, sun } from '../../render/scene.ts';
 import { SUN_DIR } from '../../render/sun-dir.ts';
 
@@ -37,6 +37,7 @@ function updateCamera(elapsed: number) {
     const a = reducedMotion ? 0.9 : 0.9 + elapsed * 0.04;
     camera.position.set(Math.cos(a) * 66, 26, Math.sin(a) * 66);
     camera.lookAt(0, 3, 0);
+    followEye.copy(camera.position);
   } else {
     const ip = me.body.interpolatedPosition;
     camForward(fwd);
@@ -44,12 +45,14 @@ function updateCamera(elapsed: number) {
       rz = -Math.sin(cam.yaw);
     camLook.set(ip.x + rx * 0.55, ip.y + 1.35, ip.z + rz * 0.55);
     camPos.copy(camLook).addScaledVector(fwd, -cam.dist);
+    followEye.copy(camPos);
     if (!constrained(camLook, camPos)) {
       // Up over the ground first, so a slope lifts the camera instead of pulling it in; then the arm, out of whatever's
       // left in the way (a ridge, a wall). It collides with what you collide with: outside the caves, not their rock.
       camPos.y = Math.max(camPos.y, camFloor(camPos.x, camPos.z));
       camArm.solve(camFrom.set(ip.x, ip.y + 1.35, ip.z), camPos, getMask(me.body));
       camPos.y = Math.max(camPos.y, camFloor(camPos.x, camPos.z));
+      followEye.copy(camPos);
     } else camArm.reset();
     camera.position.copy(camPos);
     camera.lookAt(camLook.addScaledVector(fwd, 8));

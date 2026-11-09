@@ -27,6 +27,10 @@ export const me = {
 };
 export const cam = { yaw: Math.atan2(SPAWN.x - BALL_SPAWN.x, SPAWN.z - BALL_SPAWN.z), pitch: -0.22, dist: 5.2 };
 
+// Where the player's own follow camera sits this frame, before any cinematic constraint moves the rendered camera
+// (src/entities/camera/index.ts writes it). Aim from here with camForward: both are the player's view, not a shot's.
+export const followEye = new THREE.Vector3();
+
 export function camForward(out = new THREE.Vector3()) {
   const cp = Math.cos(cam.pitch);
   return out.set(-Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), -Math.cos(cam.yaw) * cp);
