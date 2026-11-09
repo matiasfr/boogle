@@ -589,16 +589,11 @@ export function createRailwayWorldHost({
       const beam = api.beam();
       // The grace runs from the carrier's departure, not from when maintenance next notices it.
       if (session && beam.state === 'held' && beam.holder === session.pid && !requests.active(session.pid))
-        beamAway ??= now();
+        beamAway = now();
       const boiler = api.boiler();
       if (session && boiler.state === 'held' && boiler.holder === session.pid && !requests.active(session.pid))
-        boilerAway ??= now();
-      if (
-        session &&
-        !requests.active(session.pid) &&
-        !footAway.has(session.pid) &&
-        api.footHolders().some((h) => h.pid === session.pid)
-      )
+        boilerAway = now();
+      if (session && !requests.active(session.pid) && api.footHolders().some((h) => h.pid === session.pid))
         footAway.set(session.pid, now());
     },
     async close({ save = true } = {}) {
