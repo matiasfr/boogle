@@ -486,21 +486,21 @@ the live railway.
   `src/player/world-reset.ts`, `test/world-reset.test.ts`, `docs/game-design/place.md`.
 
 **Steps.**
-- [ ] **T4a.** Move the catalog verbatim, names and lines included, from `gifts.ts` to `cosmetic-parts.ts`:
+- [x] **T4a.** Move the catalog verbatim, names and lines included, from `gifts.ts` to `cosmetic-parts.ts`:
   `GiftId`, `Slot`, `Tier`, `GIFTS`, `STOCK`, `Stock`, `BOXES`, `ODDS`, `PITY`, and each item's `parts`. The `hat` and
   `scarf` entries point at `T1_REWARD` (`t1-reward-parts.ts`) and `T2_REWARD` (`reward-data.ts`) rather than holding a
   second copy. `gifts.ts` imports from it.
-- [ ] **T4b.** `wardrobe/state.ts`:
+- [x] **T4b.** `wardrobe/state.ts`:
   - The store `boogle.railway-wardrobe.v0:…` holds `{ got, bought, worn: { hat?, accessory?, outfit? }, dry, opened }`.
   - API: `owned(slot)`, `isOwned(id)`, `isWorn(id)`, `tried()`, `tryOn(id)`, `keepTried()`, `wearOwned(id)`,
     `takeOff(id)`, `swapSlot(slot)`, `swapLabel(slot)`, `grant(id, { wear })` and `onWardrobe(fn)`. Semantics are
     copied from `gifts.ts` lines 644–830.
   - Ownership of `hat`/`scarf` also counts accepted `railway-profile.ts` claims.
   - Presence `wardrobe`. Null when nothing is worn and nothing is tried.
-- [ ] **T4c.** `wardrobe/view.ts` draws the worn items, and an item being tried on, on the local avatar and on each
+- [x] **T4c.** `wardrobe/view.ts` draws the worn items, and an item being tried on, on the local avatar and on each
   remote, using `seatConductorHat` and head clearance. It sweeps on `onPeerRemoved`. `index.ts` spawns it in
   production (`defineKind('wardrobe', { lateUpdate: 5 })`; confirm the order with `npm run registry`).
-- [ ] **T4d.** In `reward.ts`, drop `localCosmetics`, `railwayCosmetic` and `railwayScarf` and their remote rendering.
+- [x] **T4d.** In `reward.ts`, drop `localCosmetics`, `railwayCosmetic` and `railwayScarf` and their remote rendering.
   An accepted T1/T2 claim calls `grant('hat' | 'scarf', { wear: true })`.
 
 **Proofs.**
@@ -513,6 +513,19 @@ the live railway.
 
 **Done means.** One personal wardrobe holds every wearable, and other players see what you wear. The T1 and T2
 rewards still arrive and are worn as before.
+
+**As built (9 November).**
+- An entity's `state.ts` may not import `src/render/` (lint, `dev/lint/policy.ts`), so `wardrobe/index.ts` hands the
+  catalog to `startWardrobe(catalog, storage)`. Ids are plain strings in `state.ts`.
+- The scarf's one copy is the catalog entry; `reward-data.ts`'s `T2_REWARD` points at it, so `src/render` never
+  imports an entity. The hat is still `T1_REWARD`.
+- `swapLabel(slot, offVerb)` takes the shop's `SHOP.offVerb`, since `state.ts` can't import `town-lines.ts`.
+- A claim grants at its reveal's end, so the hat isn't on your head behind its own card. A claim the wardrobe hasn't
+  heard of (an earlier visit, a reload mid-reveal) is granted and worn on load.
+- **The seam for T5 and C1:** `wardrobe()` in `src/entities/wardrobe/state.ts` returns the `WardrobeApi` (`null`
+  before the production railway starts it). `onWardrobe` sends `try`, `untry`, `keep`, `wear`, `off`, `swap`,
+  `grant` and `load`. The view plays Place's pops; `keepTried()`'s "You got" card belongs to the shop, through
+  `reward.youGot`. Nothing under `src/entities/town/` was touched.
 
 ### Job T5: the shop opens on the first path
 
