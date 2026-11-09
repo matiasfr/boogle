@@ -1,0 +1,204 @@
+// Home's layout B in greybox, look only (docs/plans/home-station.md, step 3; `?home=b`): the hall, the buffer stops, the
+// apron, a kerb outline of the island (its deck drops in with the trains, as halts do: ./halts-view.ts), the stubs, the
+// spur, the stall roads and, once line 2 has its first stretch, the cart's leg, and the two ruined stalls beside the
+// open one (./roundhouse-view.ts). Local: the rules keep today's anchors, so prompts stay where they were.
+import type { OwnedView } from '../../render/owned-view.ts';
+import type { RailwayAdapter } from '../../adapters/railway.ts';
+import { drawWorksBoxes } from './works-box-view.ts';
+import { beam, box, type WorksBox, type WorksPoint } from './works-shape.ts';
+
+const STONE = '#c8c0b0',
+  KERB = '#ddd6c6',
+  BRICK = '#a6614a',
+  POST = '#5c4530',
+  ROOF = '#c4453a',
+  RUIN = '#9a958b',
+  SLEEPER = '#8a6236',
+  RAIL = '#4c5058',
+  BUFFER = '#a33a2c',
+  BRASS = '#e6a33e';
+
+export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedView) {
+  const [{ H }, layout, home] = await Promise.all([
+    import('../../proto/place/land.ts'),
+    import('../../proto/place/layout.ts'),
+    import('../../proto/place/home-station.ts'),
+  ]);
+  const world = (p: { x: number; z: number }): WorksPoint => ({ x: p.x + layout.ORIGIN.x, z: p.z });
+  const ground = (p: WorksPoint) => H(p.x, p.z);
+  const at = (a: number, c: number) => world(home.axisPoint(a, c));
+  const yaw = home.HALL.yaw;
+  /** Local x of a box turned `yaw`, in world: across the station axis (toward road 1). */
+  const across = { x: Math.cos(yaw), z: -Math.sin(yaw) };
+  const boxes: WorksBox[] = [];
+  const add = (b: WorksBox, colour: `#${string}`, solid = false) => boxes.push({ ...b, colour, solid });
+  const highest = (pts: WorksPoint[]) => Math.max(...pts.map(ground));
+
+  /** Sleepers and rails along a polyline (world points about a metre apart), the rail head at `y(k)`. */
+  function track(pts: WorksPoint[], y: (k: number) => number, into: WorksBox[]) {
+    for (let k = 0; k < pts.length; k++) {
+      const a = pts[Math.max(0, k - 1)]!,
+        b = pts[Math.min(pts.length - 1, k + 1)]!;
+      const heading = Math.atan2(b.x - a.x, b.z - a.z);
+      into.push({ ...box(pts[k]!.x, y(k) - 0.02, pts[k]!.z, 2.3, 0.12, 0.42, heading), colour: SLEEPER, solid: false });
+      if (k === 0) continue;
+      const p = pts[k - 1]!,
+        q = pts[k]!,
+        len = Math.hypot(q.x - p.x, q.z - p.z) || 1;
+      for (const r of [-0.5, 0.5]) {
+        const ox = ((q.z - p.z) / len) * r,
+          oz = (-(q.x - p.x) / len) * r;
+        into.push({
+          ...beam({ x: p.x + ox, z: p.z + oz }, { x: q.x + ox, z: q.z + oz }, (y(k - 1) + y(k)) / 2 + 0.16, 0.1, 0.12),
+          colour: RAIL,
+          solid: false,
+        });
+      }
+    }
+  }
+  const railAt = (road: 0 | 1, s: number) =>
+    layout.railY(road ? layout.LINES.east : layout.LINES.north, Math.max(0, s));
+  const TABLE_RAIL = layout.railY(layout.LINES.east, 0);
+
+  // ---------------------------------------------------------------- the stubs and the buffer stops
+  for (const road of [0, 1] as const) {
+    const from = home.BUFFERS[road] + 0.4;
+    const pts: WorksPoint[] = [];
+    for (let s = from; s < 0.6; s += 1) pts.push(world(home.roadAt(road, s)));
+    track(pts, () => railAt(road, 0), boxes);
+    const p = world(home.roadAt(road, home.BUFFERS[road])),
+      y = railAt(road, 0);
+    const off = (x: number, ahead: number) => ({
+      x: p.x + across.x * x + Math.sin(yaw) * ahead,
+      z: p.z + across.z * x + Math.cos(yaw) * ahead,
+    });
+    const beamAt = off(0, 0.15);
+    add(box(beamAt.x, y + 0.85, beamAt.z, 2.3, 0.45, 0.3, yaw), BUFFER, true);
+    for (const x of [-0.75, 0.75]) {
+      const post = off(x, -0.15);
+      add(box(post.x, y + 0.5, post.z, 0.26, 1.15, 0.26, yaw), RAIL, true);
+      const head = off(x * 0.8, 0.45);
+      add(box(head.x, y + 0.85, head.z, 0.3, 0.3, 0.3, yaw), '#2f3131');
+    }
+  }
+
+  // ---------------------------------------------------------------- the hall: posts, end walls, roof, on its floor
+  {
+    const { a, c, w, d, height } = home.HALL;
+    const corners = [-1, 1].flatMap((i) => [-1, 1].map((j) => at(a + (i * d) / 2, c + (j * w) / 2)));
+    const floor = highest([...corners, at(a, c)]) + 0.12;
+    const mid = at(a, c);
+    add(box(mid.x, floor - 0.12, mid.z, w + 0.2, 0.24, d + 0.2, yaw), STONE, true);
+    for (const j of [-1, 1]) {
+      const wall = at(a, c + j * (w / 2 - 0.15));
+      add(box(wall.x, floor + height / 2, wall.z, 0.3, height, d, yaw), BRICK, true);
+    }
+    for (const i of [-1, 1])
+      for (const x of [-w / 4, 0, w / 4]) {
+        const post = at(a + i * (d / 2 - 0.2), c + x);
+        add(box(post.x, floor + height / 2, post.z, 0.35, height, 0.35, yaw), POST, true);
+      }
+    for (const i of [-1, 1]) {
+      const fascia = at(a + i * (d / 2 - 0.1), c);
+      add(box(fascia.x, floor + height - 0.25, fascia.z, w, 0.5, 0.2, yaw), POST);
+    }
+    add(box(mid.x, floor + height + 0.15, mid.z, w + 0.8, 0.3, d + 0.8, yaw), ROOF, true);
+  }
+
+  // ---------------------------------------------------------------- the island: the apron and the kerb outline
+  {
+    const { buffers, apron, foot } = home.ISLAND_A;
+    const half = home.ISLAND.width / 2,
+      c = home.ISLAND_C;
+    const pts = [at(buffers, c - half), at(buffers, c + half), at(apron, c - half), at(apron, c + half)];
+    const top = highest(pts) + 0.1;
+    const mid = at((buffers + apron) / 2, c);
+    add(box(mid.x, top - 0.15, mid.z, home.ISLAND.width, 0.3, home.ISLAND.apron, yaw), STONE, true);
+    // The kerb, from the apron's end round the island's far end: a station waiting for its trains.
+    const pieces = Math.ceil((foot - apron) / 4);
+    for (const j of [-1, 1])
+      for (let k = 0; k < pieces; k++) {
+        const a0 = apron + ((foot - apron) * k) / pieces,
+          a1 = apron + ((foot - apron) * (k + 1)) / pieces;
+        const p = at((a0 + a1) / 2, c + j * (half - 0.15));
+        add(box(p.x, ground(p) + 0.1, p.z, 0.3, 0.24, a1 - a0 - 0.05, yaw), KERB);
+      }
+    const end = at(foot - 0.15, c);
+    add(box(end.x, ground(end) + 0.1, end.z, home.ISLAND.width, 0.24, 0.3, yaw), KERB);
+  }
+
+  // ---------------------------------------------------------------- the spur, the stall roads and the ruined stalls
+  track(home.spurPoints().map(world), () => TABLE_RAIL, boxes);
+  const lever = (p: WorksPoint, heading: number) => {
+    add(box(p.x, ground(p) + 0.18, p.z, 0.5, 0.36, 0.8, heading), POST, true);
+    add(box(p.x, ground(p) + 0.75, p.z, 0.08, 0.9, 0.08, heading), BRASS);
+  };
+  const side = (road: 0 | 1, s: number, lat: number) => {
+    const p = home.roadAt(road, s);
+    const n = { x: Math.cos((p.bearing * Math.PI) / 180), z: Math.sin((p.bearing * Math.PI) / 180) };
+    return world({ x: p.x + n.x * lat, z: p.z + n.z * lat });
+  };
+  lever(side(1, home.SPUR.s - 1.5, 2.4), yaw);
+  const FLOOR = 18.05;
+  for (const bearing of home.STALLS.bearings) {
+    const f = home.stallFrame(bearing);
+    const rim = world(f.rim),
+      door = world(f.door);
+    if (bearing !== home.STALLS.open) {
+      const n = Math.ceil(home.STALLS.door - home.TABLE.r);
+      track(
+        Array.from({ length: n + 1 }, (_, k) => ({
+          x: rim.x + ((door.x - rim.x) * k) / n,
+          z: rim.z + ((door.z - rim.z) * k) / n,
+        })),
+        () => TABLE_RAIL + 0.05,
+        boxes,
+      );
+      // A ruin's outline: a cracked floor and broken low walls, the shape of the stall that isn't built.
+      const right = { x: Math.cos(f.yaw), z: -Math.sin(f.yaw) };
+      const p = (r: number, x: number) =>
+        world({ x: home.TABLE.x + f.u.x * r + right.x * x, z: home.TABLE.z + f.u.z * r + right.z * x });
+      const { door: d0, depth, width } = home.STALLS;
+      const centre = p(d0 + depth / 2, 0);
+      add(box(centre.x, FLOOR, centre.z, width, 0.12, depth, f.yaw), '#8f8a80');
+      for (const x of [-1, 1]) {
+        const heights = x < 0 ? [0.9, 0.35, 0.6] : [0.5, 0.8, 0.3];
+        heights.forEach((h, k) => {
+          const q = p(d0 + (depth * (k + 0.5)) / 3, x * (width / 2 - 0.2));
+          add(box(q.x, FLOOR + h / 2, q.z, 0.4, h, depth / 3 - 0.4, f.yaw), RUIN, true);
+        });
+      }
+      for (const [x, h] of [
+        [-1, 0.7],
+        [1, 0.45],
+      ] as const) {
+        const q = p(d0 + depth - 0.2, (x * width) / 4);
+        add(box(q.x, FLOOR + h / 2, q.z, width / 2 - 0.3, h, 0.4, f.yaw), RUIN, true);
+      }
+    }
+  }
+  const statics = await drawWorksBoxes(owner, boxes);
+  statics.castShadow = true;
+
+  // ---------------------------------------------------------------- the cart's leg, laid with line 2's first stretch
+  const legBoxes: WorksBox[] = [];
+  const leg = home.legPoints().map(world);
+  const fromY = railAt(0, home.LEG.from),
+    toY = railAt(1, home.LEG.to);
+  track(leg, (k) => fromY + ((toY - fromY) * k) / (leg.length - 1), legBoxes);
+  const legMesh = await drawWorksBoxes(owner, [
+    ...legBoxes,
+    ...[side(0, home.LEG.from + 1.5, -2.4), side(1, home.LEG.to + 1.5, 2.4)].flatMap((p): WorksBox[] => [
+      { ...box(p.x, ground(p) + 0.18, p.z, 0.5, 0.36, 0.8, yaw), colour: POST, solid: false },
+      { ...box(p.x, ground(p) + 0.75, p.z, 0.08, 0.9, 0.08, yaw), colour: BRASS, solid: false },
+    ]),
+  ]);
+  legMesh.castShadow = true;
+  const legLaid = () => adapter.inspect().line2.completed >= 1;
+  legMesh.visible = legLaid();
+  return {
+    update() {
+      legMesh.visible = legLaid();
+    },
+  };
+}

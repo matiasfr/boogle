@@ -89,6 +89,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const cart = await createRailwayCart(adapter, owner, line2.depotPlace, line2.depotSlot, shelf.railSlot);
   const trains = await createRailwayTrains(adapter, owner, seats, line2.depotPlace);
   const halts = await createRailwayHalts(adapter, owner);
+  // `?home=b`: Home drawn as one terminus station (docs/plans/home-station.md, step 3). Look only.
+  const homeStation = (await import('../../proto/place/home-station.ts')).homeLayout()
+    ? await import('./home-station-view.ts').then((m) => m.createHomeStation(adapter, owner))
+    : null;
   const flying = () => ({
     logs: cart.flying().logs + trains.trainFlying().logs,
     rails: cart.flying().rails + trains.trainFlying().rails,
@@ -470,6 +474,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       cart.update(dt);
       trains.update(dt);
       halts.update(dt);
+      homeStation?.update();
       works?.update(dt);
       line2.update(dt);
       hook.update(dt, now);
