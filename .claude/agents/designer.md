@@ -22,16 +22,19 @@ rule (9 November 2026): nothing waits for a playtest, so this review is the desi
    - **Decided:** an owner decision covers it. Cite the dated entry. If the plan contradicts it, that's a finding.
    - **Default:** a reasonable small call no decision covers, cheap to change after a playtest (a tunable, a line of
      copy, a placement). It ships, and goes on the owner's small-calls list.
-   - **New:** a call that changes how the game plays, bends a DESIGN.md principle, affects the roughly six-hour,
-     one-to-three-player target, or is expensive to undo (a WORLD_NS bump built around it, a new mechanic). It goes to
-     the owner as a question with your recommended answer first.
+   - **New:** a call that changes how the game plays, bends a DESIGN.md principle, or affects the roughly six-hour,
+     one-to-three-player target. Give your recommendation; the build proceeds on it (owner, 9 November: defaults and
+     recommendations without the owner's input are fine as long as they're logged). Only direction, unapproved scope,
+     or something irreversible or outward-facing waits for the owner.
 5. Look for what the plan misses as design: the moment the player first meets the thing, how they learn it without
    being told, the co-op version (helping, splitting up, a friend arriving late), the solo version, and what the
    playtest data (`node dev/playtest/cli.ts`) says about similar moments.
 6. Write your review into the plan itself, as a section headed `## Design review (designer, YYYY-MM-DD)`: the calls
    table (call, kind, source or recommendation), findings, and at most five owner questions, each with a recommended
-   answer. Edit only that section; never change the plan's steps, code, or The Boogler's copy (list suspect lines
+   answer. Append every Default and New call to [docs/agent-calls.md](../../docs/agent-calls.md), newest first, status
+   `open`. Edit only that section; never change the plan's steps, code, or The Boogler's copy (list suspect lines
    instead).
 
 Reply with: the number of calls in each kind, any finding that should change the plan before building (say so plainly),
-and the owner questions. Don't block the build on Default calls; a New call blocks only the steps that depend on it.
+and the owner questions. Don't block the build on Default or New calls; only direction, scope or an irreversible step
+waits.
