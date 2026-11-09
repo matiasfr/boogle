@@ -58,6 +58,13 @@ test('town memory from an old rail namespace is removed', () => {
   );
 });
 
+test('found crystals and finds from an old rail namespace are removed', () => {
+  assert.deepEqual(
+    staleKeys(['boogle.railway-finds.v0:rail-v18-a:p', 'boogle.railway-finds.v0:rail-v19-a:p'], 'v19', ns),
+    ['boogle.railway-finds.v0:rail-v18-a:p'],
+  );
+});
+
 test('several missed wipes reset all old-world progress, keeping identity, preferences and unrelated data', () => {
   const keep = [
     'boogle.name',

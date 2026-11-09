@@ -1,6 +1,7 @@
 // Read-only observation of the mounted town (the house, shop and museum you can walk into). Debug and evals read this;
 // the town's own state is derived from the shared railway (src/sim/town-facts.ts) and Local presentation.
 import type { TownFact } from '../../sim/town-facts.ts';
+import type { CurioShelf } from './curio-shelf.ts';
 
 export type TownRoomInspection = { up: boolean; ready: boolean };
 export type TownInspection = {
@@ -35,8 +36,13 @@ export type TownInspection = {
   shelf: { x: number; y: number; z: number; yaw: number; uncovered: string[]; covered: number } | null;
 };
 let current: (() => TownInspection) | null = null;
+let shelf: CurioShelf | null = null;
 export const inspectTown = () => current?.() ?? null;
+/** The mounted curio shelf, for what other entities stand on it (K1's crystal row, F1's finds board): its `shelfGroup`
+ * and `crystalPeg`. Null until the town has loaded, and again once it goes; a new town is a new shelf. */
+export const townShelf = () => shelf;
 /** Lifecycle owner only. */
-export function setTownView(view: (() => TownInspection) | null) {
-  current = view;
+export function setTownView(view: { inspect: () => TownInspection; shelf: CurioShelf | null } | null) {
+  current = view?.inspect ?? null;
+  shelf = view?.shelf ?? null;
 }
