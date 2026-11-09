@@ -4,7 +4,8 @@
 // helpers (railCounts, railPhase, line2Active, ...) and validation, and is never written back.
 //
 //   components                     tree, hardwood, rock, pile, account, job(+jobRun), qjob(+qjobRun), beam,
-//                                  forge(+forgeClock), rail(+railClock), cart, boiler, train, outcome; RAIL_REPLICATED is the wire
+//                                  forge(+forgeClock), rail(+railClock), cart, boiler, train, works(+worksClock), shed,
+//                                  outcome; RAIL_REPLICATED is the wire
 //   createRailwayWorld(opts)       the fresh railway: one entity per catalog thing, spawned in catalog order
 //   railwayView(world)             today's `Railway` shape, from the components
 //   fillRailway(target, world)     the same, into an existing object (a mirror's stable read model)
@@ -12,7 +13,9 @@
 import { createWorld, defineComponent, type AnyComponent, type World } from '../ecs/index.ts';
 import { MAX_PLAYERS, okPid } from './roster.ts';
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-layout.ts';
-import { LINE1_CATALOG, LINE1_GREAT_TREE, LINE1_ROCKS, LINE1_STATIONS } from './railway-line-layout.ts';
+import { LINE1_CATALOG, LINE1_GREAT_TREE, LINE1_STATIONS } from './railway-line-layout.ts';
+import { RAIL_ROCKS } from './railway-works-layout.ts';
+import { validateRailWorks, type RailShed, type RailWorks } from './railway-works.ts';
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { LINE_TIMING, validateRailLine, type RailBeam, type RailJob } from './railway-line.ts';
 import { railCarryMax, validateRailLine2, type RailQJob } from './railway-line2.ts';
@@ -121,8 +124,42 @@ export const Train = defineComponent(
     call: 'int',
     logs: 'int',
     rails: 'int',
+    wagon: 'bool',
+    foot: 'int',
   },
   { key: 'slot', defaults: { call: -1, sweep: 1 } },
+);
+/** Split-rock Works (./railway-works.ts): the breaker, the seams, the kiln, its rack and the pier's footings. */
+export const WorksClock = defineComponent('worksClock', { lastCast: 'int' }, { replicate: false });
+export const Works = defineComponent(
+  'works',
+  {
+    breaker: 'u8',
+    seams: 'u8',
+    logs: 'int',
+    stone: 'int',
+    lit: 'int',
+    rack: 'int',
+    poured: 'int',
+    pierRack: 'int',
+    pierSet: 'int',
+    crossing: 'int',
+  },
+  { requires: [WorksClock], defaults: { lit: -1, crossing: -1 } },
+);
+/** The Roundhouse stall at Home's turntable: its footings, the wagon's cradle, the table and the wagon's roll-out. */
+export const Shed = defineComponent(
+  'shed',
+  {
+    stall: 'int',
+    cradle: 'int',
+    cradleRails: 'int',
+    fitted: 'int',
+    table: 'u8',
+    tableRev: 'int',
+    ready: 'int',
+  },
+  { defaults: { fitted: -1, ready: -1 } },
 );
 export const ForgeClock = defineComponent('forgeClock', { lastPour: 'int' }, { replicate: false });
 export const Forge = defineComponent(
@@ -161,7 +198,7 @@ export const Rock = defineComponent('rock', { slot: 'int', left: 'int', work: 'i
 export const Pile = defineComponent('pile', { x: 'int', y: 'int', z: 'int', n: 'int', kind: 'int', age: 'int' });
 export const Account = defineComponent(
   'account',
-  { pid: 'str', carry: 'int', stone: 'int', rails: 'int', epoch: 'int', request: 'int' },
+  { pid: 'str', carry: 'int', stone: 'int', rails: 'int', foot: 'int', epoch: 'int', request: 'int' },
   { key: 'pid' },
 );
 /** The bounded request history (RAILWAY_OUTCOMES, oldest despawned): the server's idempotency record. */
@@ -189,6 +226,9 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   Cart,
   Boiler,
   Train,
+  Works,
+  WorksClock,
+  Shed,
 ];
 /** What a client is sent: the replicated components (the wire schema, one source with the save). */
 export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
@@ -206,10 +246,12 @@ export function createRailwayWorld(opts: { audit?: boolean } = {}) {
   LINE2_STATIONS.forEach((_s, slot) => w.spawn([QJob, { slot }], [QJobRun, {}]));
   RAILWAY_SOURCES.forEach((_s, slot) => w.spawn([Tree, { slot, left: T1.sourceYield }]));
   for (let slot = 0; slot < 2; slot++) w.spawn([Hardwood, { slot, left: 15 }]);
-  LINE1_ROCKS.forEach((_r, slot) => w.spawn([Rock, { slot, left: 8 }]));
+  RAIL_ROCKS.forEach((r, slot) => w.spawn([Rock, { slot, left: r.initial }]));
   w.spawn([Cart, {}]);
   w.spawn([Boiler, {}]);
   TRAIN_HOME.forEach((at, slot) => w.spawn([Train, { slot, at, to: at }]));
+  w.spawn([Works, {}], [WorksClock, {}]);
+  w.spawn([Shed, {}]);
   return w;
 }
 
@@ -279,7 +321,7 @@ export function railwayView(w: World): Railway {
   const beam = w.get(Beam, w.single(Beam))!;
   const trees = bySlot(w, Tree, RAILWAY_SOURCES.length, (id) => w.get(Tree, id)!);
   const hardwood = bySlot<Bits>(w, Hardwood, 2, (id) => w.get(Hardwood, id)!);
-  const rocks = bySlot(w, Rock, LINE1_ROCKS.length, (id) => w.get(Rock, id)!);
+  const rocks = bySlot(w, Rock, RAIL_ROCKS.length, (id) => w.get(Rock, id)!);
   const jobs = bySlot(w, Job, LINE1_STATIONS.length, (id) => jobOf(w, id));
   const t1 = jobs[0]!;
   const accounts: Railway['accounts'] = [];
@@ -356,9 +398,15 @@ export function railwayView(w: World): Railway {
       train: bySlot(w, Train, 2, (id) => copyOf(Train, w.get(Train, id)!) as RailTrain),
       cart: copyOf(Cart, w.get(Cart, w.single(Cart))!) as RailCart,
     },
+    works: worksOf(w),
+    shed: copyOf(Shed, w.get(Shed, w.single(Shed))!) as RailShed,
     falls: { yaw: trees.map((t) => t.yaw), collapsed: trees.map((t) => t.fell) },
     supply: { marker: clock.supplyMarker, ages: trees.map((t) => t.age), rack: rail.rack, produced: rail.produced },
   };
+}
+function worksOf(w: World): RailWorks {
+  const id = w.single(Works);
+  return { ...(copyOf(Works, w.get(Works, id)!) as RailWorks), lastCast: w.get(WorksClock, id)!.lastCast };
 }
 /** Rebuild into an existing object (whose identity a reader holds). */
 export function fillRailway(target: Railway, w: World) {
@@ -419,6 +467,8 @@ export function refreshRailway(s: Railway, w: World) {
     l2.train[r.slot] = copyOf(Train, r) as RailTrain;
   }
   if (w.changes(Cart).length) l2.cart = copyOf(Cart, w.get(Cart, w.single(Cart))!) as RailCart;
+  if (w.changes(Works).length) s.works = worksOf(w);
+  if (w.changes(Shed).length) s.shed = copyOf(Shed, w.get(Shed, w.single(Shed))!) as RailShed;
   if (w.changes(Rail).length) {
     const r = w.get(Rail, w.single(Rail))!;
     s.awake = r.awake;
@@ -471,6 +521,8 @@ export function copyRailway(s: Railway): Railway {
       boiler: { ...l2.boiler },
       train: l2.train.map((r) => ({ ...r })),
     },
+    works: { ...s.works! },
+    shed: { ...s.shed! },
     falls: { yaw: s.falls!.yaw.slice(), collapsed: s.falls!.collapsed.slice() },
     supply: { ...s.supply!, ages: s.supply!.ages.slice() },
   };
@@ -492,6 +544,8 @@ const ARCHETYPES = [
   [Cart],
   [Boiler],
   [Train],
+  [Works, WorksClock],
+  [Shed],
 ].map((set) => set.map((c) => c.kind).join());
 /** Every entity has a known shape, the catalog is whole, and every domain invariant holds on the read model. */
 export function railwayCheck(w: World) {
@@ -512,10 +566,12 @@ export function railwayCheck(w: World) {
     [QJob, LINE2_STATIONS.length],
     [Tree, RAILWAY_SOURCES.length],
     [Hardwood, 2],
-    [Rock, LINE1_ROCKS.length],
+    [Rock, RAIL_ROCKS.length],
     [Cart, 1],
     [Boiler, 1],
     [Train, 2],
+    [Works, 1],
+    [Shed, 1],
   ] as const)
     if (w.count(c) !== n) throw new Error(`railway: ${w.count(c)} ${c.kind}`);
   if (w.count(Account) > MAX_PLAYERS || w.count(Pile) > RAILWAY_PILES || w.count(Outcome) > RAILWAY_OUTCOMES)
@@ -549,7 +605,7 @@ export function validateRailway(n: Railway) {
       (p) =>
         !railInt(p.id, n.nextPile - 1, 1) ||
         !railInt(p.n, T1.carry, 1) ||
-        !railInt(p.kind, 2) ||
+        !railInt(p.kind, 3) ||
         !railInt(p.x, 200000, -200000) ||
         !railInt(p.z, 200000, -200000) ||
         !railInt(p.y, 200000, -200000) ||
@@ -623,6 +679,7 @@ export function validateRailway(n: Railway) {
     if (Object.values(job.timing!).some((v) => !railInt(v, 60000))) throw new Error('railway: timing');
   validateRailLine(n);
   validateRailLine2(n);
+  validateRailWorks(n);
   const counts = railCounts(n);
   if (counts.total !== RAILWAY_SUPPLY + 30 + counts.produced) throw new Error('railway: conservation');
 }

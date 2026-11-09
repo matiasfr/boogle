@@ -3,6 +3,7 @@ import type { RailAccount, Railway } from './railway.ts';
 import { LINE1_STATIONS, LINE1_RAIL_PAIRS, lineBeamGround } from './railway-line-layout.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { lineSchedule, linePanelCount, type LineTiming } from './railway-line-schedule.ts';
+import { RAIL_ROCKS } from './railway-works-layout.ts';
 
 export const LINE_TIMING: Readonly<LineTiming> = {
   depositMs: 320,
@@ -170,8 +171,9 @@ export function validateRailLine(s: Railway) {
     s.accounts.reduce((n, a) => n + (a.stone ?? 0), 0) +
     s.piles.reduce((n, p) => n + (p.kind === 1 ? p.n : 0), 0) +
     l.stoneRack +
+    (s.works?.stone ?? 0) +
     jobs.reduce((n, j) => n + (j.stoneStock ?? 0) + (j.stoneAllocation ?? 0) + (j.stoneUsed ?? 0), 0);
-  if (stone !== 24 + l.stoneProduced) throw new Error('railway: stone conservation');
+  if (stone !== 8 * RAIL_ROCKS.length + l.stoneProduced) throw new Error('railway: stone conservation');
   const b = l.beam;
   if (b.state === 'ground' ? !lineBeamGround(b.x, b.y, b.z) : b.age !== 0) throw new Error('railway: beam ground');
   if (b.state === 'standing' ? b.work >= 12 : b.work !== 12) throw new Error('railway: beam work');

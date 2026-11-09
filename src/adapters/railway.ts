@@ -57,6 +57,8 @@ import {
   railCarryMax,
 } from '../sim/railway-line2.ts';
 import { LINE_HALTS } from '../sim/railway-train.ts';
+import { RAIL_ROCKS, WORKS_ROCKS } from '../sim/railway-works-layout.ts';
+import { pierNeed, worksStage } from '../sim/railway-works.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
 import { createRailwayClock, RAIL_CLOCK_EVERY_MS, RAIL_CLOCK_TIMEOUT_MS } from '../world/railway-clock.ts';
 import type { RailwayMirror } from '../world/railway-replicate.ts';
@@ -89,18 +91,25 @@ export type RailwayIntent =
         | 'rail.seaSwitch'
         | 'rail.hook'
         | 'rail.pack'
-        | 'rail.cartCall';
+        | 'rail.cartCall'
+        | 'rail.breaker'
+        | 'rail.kiln'
+        | 'rail.cradle';
     }
   | { op: 'rail.call'; id: number }
+  | { op: 'rail.strike'; id: number }
+  | { op: 'rail.footTake'; rack: 0 | 1 }
+  | { op: 'rail.footSet'; site: 0 | 1 | 2 }
+  | { op: 'rail.turn'; to: 0 | 1; revision: number }
   | { op: 'rail.boilerTake' | 'rail.boilerFit'; revision: number }
   | { op: 'rail.boilerDrop'; revision: number; x: number; y: number; z: number }
   | { op: 'rail.beamTake'; revision: number }
   | { op: 'rail.beamDrop'; revision: number; x: number; y: number; z: number }
   | { op: 'rail.beamDeposit'; revision: number; station: 'T3' }
-  | { op: 'rail.take'; id: number; kind?: RailMaterial | 2 }
+  | { op: 'rail.take'; id: number; kind?: RailMaterial | 2 | 3 }
   | { op: 'rail.rackTake'; kind?: RailMaterial }
   | { op: 'rail.deposit'; station: LineStationId | Line2StationId | 'F'; n: number; kind?: RailMaterial | 2 }
-  | { op: 'rail.drop'; x: number; y?: number; z: number; n: number; kind?: RailMaterial | 2 };
+  | { op: 'rail.drop'; x: number; y?: number; z: number; n: number; kind?: RailMaterial | 2 | 3 };
 export type RailwayAccepted = Readonly<
   RailwayIntent & {
     pid: string;
@@ -161,6 +170,22 @@ const cm = (m: number) => Math.round(m * 100) || 0;
 function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.wake') return { op: e.op };
   const kind = e.kind === 1 ? 1 : e.kind === 2 ? 2 : 0;
+  if (e.op === 'rail.breaker' || e.op === 'rail.kiln' || e.op === 'rail.cradle') return { op: e.op };
+  if (e.op === 'rail.strike' && railInt(e.id, 1)) return { op: e.op, id: e.id };
+  if (e.op === 'rail.footTake' && railInt(e.rack, 1)) return { op: e.op, rack: e.rack as 0 | 1 };
+  if (e.op === 'rail.footSet' && railInt(e.site, 2)) return { op: e.op, site: e.site as 0 | 1 | 2 };
+  if (e.op === 'rail.turn' && railInt(e.to, 1) && railInt(e.revision))
+    return { op: e.op, to: e.to as 0 | 1, revision: e.revision };
+  // A footing goes down and comes up alone, as pile kind 3.
+  if (
+    e.op === 'rail.drop' &&
+    e.kind === 3 &&
+    e.n === 1 &&
+    railInt(e.x, 200000, -200000) &&
+    railInt(e.z, 200000, -200000)
+  )
+    return { op: e.op, x: e.x, z: e.z, n: 1, kind: 3, ...(railInt(e.y, 200000, -200000) ? { y: e.y } : {}) };
+  if (e.op === 'rail.take' && e.kind === 3 && railInt(e.id)) return { op: e.op, id: e.id, kind: 3 };
   if (
     e.op === 'rail.axe' ||
     e.op === 'rail.beamChop' ||
@@ -178,7 +203,7 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.call' && railInt(e.id, LINE_HALTS.length - 1)) return { op: e.op, id: e.id };
   if ((e.op === 'rail.boilerTake' || e.op === 'rail.boilerFit') && railInt(e.revision))
     return { op: e.op, revision: e.revision };
-  if (e.op === 'rail.mine' && railInt(e.id, 2)) return { op: e.op, id: e.id };
+  if (e.op === 'rail.mine' && railInt(e.id, RAIL_ROCKS.length - 1)) return { op: e.op, id: e.id };
   if (e.op === 'rail.beamTake' && railInt(e.revision)) return { op: e.op, revision: e.revision };
   if (e.op === 'rail.beamDeposit' && railInt(e.revision) && e.station === 'T3')
     return { op: e.op, revision: e.revision, station: 'T3' };
@@ -268,13 +293,18 @@ const holds = (s: Railway, op: string, event?: RailwayIntent) =>
               ? !!s.line2?.pack
               : op === 'rail.cartCall'
                 ? !!s.line2?.cart.recall
-                : false;
+                : op === 'rail.strike' && event?.op === 'rail.strike'
+                  ? !!((s.works?.seams ?? 0) & (event.id ? 2 : 1))
+                  : op === 'rail.turn' && event?.op === 'rail.turn'
+                    ? s.shed?.table === event.to
+                    : false;
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op !== b.op) return false;
   if (a.op === 'rail.chop' || a.op === 'rail.mine') return a.id === (b as typeof a).id;
   if (a.op === 'rail.take') return a.pile === b.pile || a.id === (b as typeof a).id;
   if (a.op === 'rail.rackTake') return (a.kind ?? 0) === ((b as typeof a).kind ?? 0);
+  if (a.op === 'rail.footTake') return a.rack === (b as typeof a).rack;
   return a.op === 'rail.forgeTake' || a.op === 'rail.depotTake' || a.op === 'rail.depotRailTake';
 }
 /** Pieces flowing to the actor (a correction can return them to whoever got them instead). */
@@ -286,6 +316,7 @@ const TAKES: ReadonlySet<string> = new Set([
   'rail.forgeTake',
   'rail.depotTake',
   'rail.depotRailTake',
+  'rail.footTake',
 ]);
 /** The ops that never move material, so a held beam does not block them. */
 const NOT_MATERIAL: ReadonlySet<string> = new Set([
@@ -305,6 +336,9 @@ const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.beamTake',
   'rail.beamDrop',
   'rail.beamDeposit',
+  'rail.breaker',
+  'rail.strike',
+  'rail.turn',
 ]);
 /** Corrections kept for measurement. */
 const LOG_MAX = 256;
@@ -651,9 +685,18 @@ export function createRailwayAdapter({
     if (beam?.state === 'held' && beam.holder === pid && !NOT_MATERIAL.has(intent.op)) return false;
     const boiler = v.line2?.boiler;
     if (boiler?.state === 'held' && boiler.holder === pid && !NOT_MATERIAL.has(intent.op)) return false;
+    // A footing fills your back: only setting it or putting it down moves anything.
+    const foot = account?.foot ?? 0;
+    if (
+      foot &&
+      !NOT_MATERIAL.has(intent.op) &&
+      intent.op !== 'rail.footSet' &&
+      !(intent.op === 'rail.drop' && intent.kind === 3)
+    )
+      return false;
     if (
       (intent.op === 'rail.beamTake' || intent.op === 'rail.boilerTake') &&
-      ((account ? railCarry(account) : 0) || predictor.pending().length)
+      ((account ? railCarry(account) : 0) || foot || predictor.pending().length)
     )
       return false;
     const t = tick();
@@ -742,6 +785,33 @@ export function createRailwayAdapter({
   type Pile = Railway['piles'][number];
   const samePile = (a: Pile, b: Pile) =>
     a.id === b.id && a.x === b.x && a.y === b.y && a.z === b.z && a.n === b.n && a.kind === b.kind && a.age === b.age;
+  function worksOf(s: Railway) {
+    const w = s.works!;
+    return Object.freeze({
+      breaker: w.breaker,
+      seams: w.seams,
+      kiln: Object.freeze({ logs: w.logs, stone: w.stone, lit: w.lit }),
+      rack: w.rack,
+      poured: w.poured,
+      pierRack: w.pierRack,
+      pierSet: w.pierSet,
+      crossing: w.crossing,
+      stage: worksStage(s),
+      /** Footings the pier still wants beyond what is set, racked there or aboard the wagon. */
+      pierNeed: pierNeed(s),
+      /** The bowl's limestone rocks (rock slots 3 and 4). */
+      rocks: Object.freeze(
+        WORKS_ROCKS.map((rock) =>
+          Object.freeze({
+            ...rock,
+            remaining: s.line!.rocks[rock.id] ?? 0,
+            work: s.line!.rockWork[rock.id] ?? 0,
+            age: s.line!.rockAge[rock.id] ?? 0,
+          }),
+        ),
+      ),
+    });
+  }
   function buildState(
     t: number,
     s: Railway,
@@ -810,6 +880,10 @@ export function createRailwayAdapter({
       carry: account?.carry ?? 0,
       stoneCarry: account?.stone ?? 0,
       railsCarry: account?.rails ?? 0,
+      /** A footing on your back (0 or 1). */
+      foot: account?.foot ?? 0,
+      works: worksOf(s),
+      shed: Object.freeze({ ...s.shed! }),
       /** What a back carries now: 8, or 16 with the pack (shared). */
       carryMax: railCarryMax(s),
       line2,
@@ -989,7 +1063,7 @@ export function createRailwayAdapter({
       railInt(z, 200000, -200000) &&
       submit({ op: 'rail.beamDrop', revision, x, y, z }),
     beamDeposit: (revision: number) => railInt(revision) && submit({ op: 'rail.beamDeposit', revision, station: 'T3' }),
-    mine: (id: number) => railInt(id, 2) && submit({ op: 'rail.mine', id }),
+    mine: (id: number) => railInt(id, RAIL_ROCKS.length - 1) && submit({ op: 'rail.mine', id }),
     chop(id: number, yaw?: number, collapsed?: boolean) {
       const known =
         RAILWAY_SOURCES.some((source) => source[0] === id) || LINE1_HARDWOODS.some((source) => source[0] === id);
@@ -998,15 +1072,17 @@ export function createRailwayAdapter({
     take(id: number) {
       // A pile you just dropped has a temporary id until the server names it: it can be taken once it has.
       const pile = id > 0 ? pileIn(id) : undefined;
-      return !!pile && submit({ op: 'rail.take', id, kind: pile.kind === 1 ? 1 : pile.kind === 2 ? 2 : 0 });
+      const kind = pile?.kind === 1 ? 1 : pile?.kind === 2 ? 2 : pile?.kind === 3 ? 3 : 0;
+      return !!pile && submit({ op: 'rail.take', id, kind });
     },
     rackTake: (kind: RailMaterial = 0) => submit({ op: 'rail.rackTake', kind }),
-    drop(x: number, y: number, z: number, n = 1, kind: RailMaterial | 2 = 0) {
+    /** Kind 3 puts down the footing on your back (n 1). */
+    drop(x: number, y: number, z: number, n = 1, kind: RailMaterial | 2 | 3 = 0) {
       return (
         railInt(x, 200000, -200000) &&
         railInt(y, 200000, -200000) &&
         railInt(z, 200000, -200000) &&
-        railInt(n, CARRY_MAX, 1) &&
+        railInt(n, kind === 3 ? 1 : CARRY_MAX, 1) &&
         submit({ op: 'rail.drop', x, y, z, n, kind })
       );
     },
@@ -1029,6 +1105,19 @@ export function createRailwayAdapter({
     fitBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerFit', revision }),
     callTrain: (id: number) => railInt(id, LINE_HALTS.length - 1) && submit({ op: 'rail.call', id }),
     callCart: () => submit({ op: 'rail.cartCall' }),
+    /** The Works and the Roundhouse (docs/plans/split-rock-roundhouse.md). */
+    takeBreaker: () => submit({ op: 'rail.breaker' }),
+    /** Strike a seam: 0 the stall slab at Home, 1 the throat at the quarry. */
+    strike: (id: number) => railInt(id, 1) && submit({ op: 'rail.strike', id }),
+    fillKiln: () => submit({ op: 'rail.kiln' }),
+    /** Shoulder a footing: 0 the Works rack, 1 the pier rack. */
+    shoulderFooting: (rack: 0 | 1) => railInt(rack, 1) && submit({ op: 'rail.footTake', rack }),
+    /** Set the footing on your back: 0 the stall, 1 the cradle, 2 the pier. */
+    setFooting: (site: 0 | 1 | 2) => railInt(site, 2) && submit({ op: 'rail.footSet', site }),
+    fitCradle: () => submit({ op: 'rail.cradle' }),
+    /** Turn the table to a road (0 the stall road, 1 line 2's) on the revision you saw. */
+    turnTable: (to: 0 | 1, revision: number) =>
+      railInt(to, 1) && railInt(revision) && submit({ op: 'rail.turn', to, revision }),
     /** The server's tick as this tab estimates it, with its fraction (never going backwards). */
     tickNow,
     pullLever: () => submit({ op: 'rail.lever' }),

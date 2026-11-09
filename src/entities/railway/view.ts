@@ -561,8 +561,9 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       glider: glide.inspect(),
       pathOpen: opened(),
       line2View: { ...line2.inspect(), ...shelf.inspect(), ...cart.inspect(), ...trains.inspect(), ...halts.inspect() },
-      works: works[0]?.inspect() ?? null,
-      shed: works[1]?.inspect() ?? null,
+      // The blockouts' own inspection; `works` and `shed` are the adapter's accepted state (J3).
+      worksView: works[0]?.inspect() ?? null,
+      shedView: works[1]?.inspect() ?? null,
     }),
     dispose: () => owner.dispose(),
   };

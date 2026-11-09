@@ -417,6 +417,20 @@ function startWorld(room: Room) {
           return adapter.beamDrop(intent.x, intent.y, intent.z, intent.revision);
         case 'rail.beamDeposit':
           return adapter.beamDeposit(intent.revision);
+        case 'rail.breaker':
+          return adapter.takeBreaker();
+        case 'rail.strike':
+          return adapter.strike(intent.id);
+        case 'rail.kiln':
+          return adapter.fillKiln();
+        case 'rail.footTake':
+          return adapter.shoulderFooting(intent.rack);
+        case 'rail.footSet':
+          return adapter.setFooting(intent.site);
+        case 'rail.cradle':
+          return adapter.fitCradle();
+        case 'rail.turn':
+          return adapter.turnTable(intent.to, intent.revision);
       }
     };
   }

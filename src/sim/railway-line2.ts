@@ -1,6 +1,6 @@
 // Line two's shapes, read helpers and invariants on the read model: the forge, its rails, Q1-Q6, the depot rack and
 // rails shelf, the pack, the quarry lever and the hook device. Its rules are systems in ./railway-systems.ts.
-import { TRAIN_STOPS, TRAIN_HOME, TRAIN_PHASE, type RailTrain } from './railway-train.ts';
+import { TRAIN_HOME, TRAIN_PHASE, trainStopsOf, type RailTrain } from './railway-train.ts';
 import type { Railway } from './railway.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE2_FORGE as FORGE, LINE2_PACK, LINE2_STATIONS, RAILS } from './railway-line2-layout.ts';
@@ -135,7 +135,10 @@ export const line2Rails = (s: Railway) =>
   (s.line2?.train[1]?.rails ?? 0) +
   s.accounts.reduce((n, a) => n + (a.rails ?? 0), 0) +
   s.piles.reduce((n, p) => n + (p.kind === RAILS ? p.n : 0), 0) +
-  (s.line2?.jobs.reduce((n, j) => n + j.railStock + j.railAllocation + j.railUsed, 0) ?? 0);
+  (s.line2?.jobs.reduce((n, j) => n + j.railStock + j.railAllocation + j.railUsed, 0) ?? 0) +
+  (s.shed?.cradleRails ?? 0);
+/** The stops line k serves now (TRAIN_STOPS; line 2's pier opens once Q6 is laid). */
+export const trainStops = (s: Railway, k: number) => trainStopsOf(k, line2Completed(s) >= 6);
 
 // ---------------------------------------------------------------- invariants on the read model
 const JOB_FIELDS = [
@@ -261,7 +264,7 @@ export function validateRailLine2(s: Railway) {
     throw new Error('railway: boiler');
   if (l.train.length !== 2) throw new Error('railway: trains');
   l.train.forEach((r, k) => {
-    const last = TRAIN_STOPS[k]!.length - 1;
+    const last = trainStops(s, k).length - 1;
     if (
       !int(r.phase, 1) ||
       !int(r.at, last) ||

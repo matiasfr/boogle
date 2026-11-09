@@ -64,7 +64,8 @@ function logs(s: Railway, pid: string, n: number, station: string = LINE1_STATIO
 }
 function stones(s: Railway, pid: string, n: number, deposit = true) {
   while (n > 0) {
-    const k = s.line!.rocks.findIndex((n) => n > 0);
+    // Line one's three rocks (the Works' limestone, slots 3-4, waits in the bowl).
+    const k = s.line!.rocks.slice(0, 3).findIndex((n) => n > 0);
     const moved = act(s, pid, 'rail.mine', { id: k }).r.accepted;
     assert.ok(moved > 0);
     if (deposit) assert.equal(act(s, pid, 'rail.deposit', { station: 'T2', kind: 1, n: moved }).r.accepted, moved);
@@ -198,7 +199,7 @@ test('line-one bills, unique beam and funded completion survive every stage rest
   assert.equal(s.line!.beam.state, 'used');
   assert.equal(railCounts(s).completion, 3);
   assert.equal(railCounts(s).total, 3910);
-  assert.equal(railCounts(s).stone!.total, 24);
+  assert.equal(railCounts(s).stone!.total, 40, 'line one 24 and the bowl 16');
 });
 
 test('mixed back, final deposit races and exact station identity cannot overflow or spill', () => {
@@ -240,14 +241,14 @@ test('three departed stone carriers cannot strand T2: slow counted renewal never
   logs(s, 'visitor', 24);
   finish(s);
   for (const pid of ['a', 'b', 'c']) stones(s, pid, 8, false);
-  assert.deepEqual(s.line!.rocks, [0, 0, 0]);
+  assert.deepEqual(s.line!.rocks, [0, 0, 0, 8, 8]);
   assert.equal(railCounts(s).stone!.carry, 24);
   const pulse = (marker: number) => railSupplyPulse(s, { marker, grow: railGrowthMask([]), recover: [] });
   pulse(100);
   pulse(130);
-  assert.deepEqual(s.line!.rocks, [0, 0, 0]);
+  assert.deepEqual(s.line!.rocks, [0, 0, 0, 8, 8]);
   pulse(131);
-  assert.deepEqual(s.line!.rocks, [8, 8, 8]);
+  assert.deepEqual(s.line!.rocks, [8, 8, 8, 8, 8]);
   assert.equal(s.line!.stoneProduced, 24);
   pulse(131);
   assert.equal(s.line!.stoneProduced, 24);
@@ -257,7 +258,7 @@ test('three departed stone carriers cannot strand T2: slow counted renewal never
   finish(s);
   restore(s);
   assert.equal(s.line!.jobs[0].completion, 1);
-  assert.equal(railCounts(s).stone!.total, 48);
+  assert.equal(railCounts(s).stone!.total, 64);
 });
 
 test('partial jobs stay partial offline; funded jobs finish once without funding the next receiver', () => {

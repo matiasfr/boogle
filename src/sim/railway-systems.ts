@@ -6,7 +6,10 @@
 //
 //   railApply(w, pid, e, tick, timing)   one action: receipt, the op, remember (the request history)
 //   railTick(w, tick)                    the rule tick: line one's job, line two's forge and job, the depot cart's trip
-//                                        (./railway-cart.ts), the two trains (./railway-train.ts), the job clocks
+//                                        (./railway-cart.ts), the two trains (./railway-train.ts) with line 2's
+//                                        footing wagon, the Works kiln's casts (./railway-works.ts), the job clocks
+//   the Works block                      rail.breaker, rail.strike, rail.kiln, rail.footTake, rail.footSet,
+//                                        rail.cradle, rail.turn and the shed's commissioning (the wagon's roll-out)
 //   railBoilerRelease                   return an absent carrier's boiler to the apron
 //   railResume / railSession / railSupplyPulse / railBeamRelease / railBeamStood / railBeamPutDown
 import { defineSystem, type System, type World } from '../ecs/index.ts';
@@ -25,7 +28,9 @@ import {
 } from './railway-line2-layout.ts';
 import { lineSchedule, type LineTiming } from './railway-line-schedule.ts';
 import { CART, CART_PHASE, CART_ROAD, cartCycleTicks, cartEnd } from './railway-cart.ts';
-import { TRAIN, TRAIN_PHASE, TRAIN_STOPS, TRAIN_HOME, LINE_HALTS, trainArrives } from './railway-train.ts';
+import { TRAIN, TRAIN_PHASE, TRAIN_HOME, LINE_HALTS, trainArrives, trainStopsOf } from './railway-train.ts';
+import { RAIL_ROCKS, WORKS } from './railway-works-layout.ts';
+import { SEAM_STALL, SEAM_THROAT } from './railway-works.ts';
 import { LINE_TIMING } from './railway-line.ts';
 import {
   railGrows,
@@ -56,7 +61,10 @@ import {
   RailClock,
   RAIL_STATUS,
   Rock,
+  Shed,
   Tree,
+  Works,
+  WorksClock,
 } from './railway-world.ts';
 
 type Act = { a: number; e: RailAction; tick: number; timing: LineTiming };
@@ -89,19 +97,33 @@ const boilerHeld = (w: World, pid: string) => {
   const b = w.get(Boiler, boilerId(w))!;
   return b.state === 'held' && b.holder === pid;
 };
-const heldBig = (w: World, pid: string) => held(w, pid) || boilerHeld(w, pid);
 type AccountRow = Row<typeof Account>;
+/** A big thing fills your back: the great beam, the boiler or a footing. */
+const heldBig = (w: World, a: Readonly<AccountRow>) => held(w, a.pid) || boilerHeld(w, a.pid) || a.foot > 0;
 const carried = (a: Readonly<AccountRow>) => a.carry + a.stone + a.rails;
 /** What a back carries (railCarryMax): the pack is shared progression, like the axe. */
 const carryMax = (w: World) => (w.get(Rail, railId(w))!.pack ? PACK.carry : T1.carry);
-const free = (w: World, a: Readonly<AccountRow>) => (heldBig(w, a.pid) ? 0 : Math.max(0, carryMax(w) - carried(a)));
-const balanceOf = (a: Readonly<AccountRow>, kind: number) => (kind === 1 ? a.stone : kind === 2 ? a.rails : a.carry);
+const free = (w: World, a: Readonly<AccountRow>) => (heldBig(w, a) ? 0 : Math.max(0, carryMax(w) - carried(a)));
+/** Pile kinds: 0 logs, 1 stone, 2 rails, 3 a footing (one to a pile, one to a back). */
+const FOOT = 3;
+const pileKind = (kind: unknown) => (kind === 1 || kind === RAILS || kind === FOOT ? kind : 0);
+const pileCap = (kind: number) => (kind === FOOT ? 1 : 8);
+/** What a back can take of a kind: a footing only onto an empty back. */
+const roomFor = (w: World, a: Readonly<AccountRow>, kind: number) =>
+  kind === FOOT ? Number(!heldBig(w, a) && carried(a) === 0) : free(w, a);
+const balanceOf = (a: Readonly<AccountRow>, kind: number) =>
+  kind === 1 ? a.stone : kind === RAILS ? a.rails : kind === FOOT ? a.foot : a.carry;
 function credit(a: AccountRow, kind: number, n: number) {
   if (kind === 1) a.stone += n;
   else if (kind === RAILS) a.rails += n;
+  else if (kind === FOOT) a.foot += n;
   else a.carry += n;
 }
 const qCompleted = (w: World) => LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjob(w, k))!.completion).length;
+/** The stops line k serves now (trainStops): line 2's pier once Q6 is laid. */
+const stopsOf = (w: World, k: number) => trainStopsOf(k, qCompleted(w) >= LINE2_STATIONS.length);
+const worksId = (w: World) => w.single(Works);
+const shedId = (w: World) => w.single(Shed);
 /** The Q station taking materials now, or -1 before the forge is lit / after Q3 (line2Active). */
 export function railLine2Active(w: World) {
   return qActive(w);
@@ -199,7 +221,7 @@ const mine = defineSystem(
   { reads: [Boiler, Rail, Beam], writes: [Rock, Account], phase: 'act', order: 3 },
   (w, { a: aid, e, tick }: Act) => {
     const a = w.get(Account, aid)!;
-    if (!ready(w, tick) || free(w, a) <= 0 || !Number.isInteger(e.id) || e.id! < 0 || e.id! >= 3) return 0;
+    if (!ready(w, tick) || free(w, a) <= 0 || !railInt(e.id, RAIL_ROCKS.length - 1)) return 0;
     const rock = w.mut(Rock, w.lookup(Rock, e.id!)!)!;
     const n = Math.min(2, rock.left, free(w, a));
     rock.left -= n;
@@ -262,22 +284,25 @@ const deposit = defineSystem(
   },
 );
 const drop = defineSystem('rail.drop', { writes: [Pile, Account], phase: 'act', order: 5 }, (w, { a: aid, e }: Act) => {
-  const kind = e.kind === 1 || e.kind === 2 ? e.kind : 0;
+  const kind = pileKind(e.kind),
+    cap = pileCap(kind);
+  // A footing goes down whole, never with others.
+  if (kind === FOOT && e.n !== 1) return 0;
   const a = w.mut(Account, aid)!;
   const carry = balanceOf(a, kind);
   let at = -1;
   w.each([Pile], (id, p) => {
-    if (at < 0 && p.kind === kind && p.x === e.x && p.z === e.z && p.y === e.y && p.n < 8) at = id;
+    if (at < 0 && p.kind === kind && p.x === e.x && p.z === e.z && p.y === e.y && p.n < cap) at = id;
   });
   if (at < 0) {
     if (carry <= 0 || w.count(Pile) >= RAILWAY_PILES || w.nextId() >= 2147483647) return 0;
-    const n = Math.min(e.n!, carry, 8);
+    const n = Math.min(e.n!, carry, cap);
     w.spawn([Pile, { x: e.x!, y: e.y!, z: e.z!, n, kind, age: 0 }]);
     credit(a, kind, -n);
     return n;
   }
   const p = w.mut(Pile, at)!;
-  const n = Math.min(e.n!, carry, 8 - p.n);
+  const n = Math.min(e.n!, carry, cap - p.n);
   p.n += n;
   if (n) p.age = 0;
   credit(a, kind, -n);
@@ -288,8 +313,8 @@ const take = defineSystem(
   { reads: [Boiler, Rail, Beam], writes: [Pile, Account], phase: 'act', order: 6 },
   (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
-    const room = free(w, a);
-    const kind = e.kind === 1 || e.kind === 2 ? e.kind : 0;
+    const kind = pileKind(e.kind);
+    const room = roomFor(w, a, kind);
     const p = room > 0 && railInt(e.id, RAILWAY_MAX_INT, -RAILWAY_MAX_INT) ? w.mut(Pile, e.id) : undefined;
     if (!p || kind !== p.kind) return 0;
     const n = Math.min(p.n, room);
@@ -356,6 +381,7 @@ const beamTake = defineSystem(
       e.revision !== b.revision ||
       b.revision >= 2147483647 ||
       carried(a) !== 0 ||
+      a.foot ||
       boilerHeld(w, a.pid)
     )
       return 0;
@@ -448,6 +474,7 @@ const boilerTake = defineSystem(
       e.revision !== b.revision ||
       b.revision >= RAILWAY_MAX_INT ||
       carried(a) ||
+      a.foot ||
       held(w, a.pid)
     )
       return 0;
@@ -502,10 +529,11 @@ const boilerFit = defineSystem(
 );
 const call = defineSystem(
   'rail.call',
-  { reads: [Rail], writes: [Train], phase: 'act', order: 32 },
+  { reads: [Rail, QJob], writes: [Train], phase: 'act', order: 32 },
   (w, { e, tick }: Act) => {
     const halt = railInt(e.id, LINE_HALTS.length - 1) ? LINE_HALTS[e.id] : undefined;
-    if (!halt || w.get(Rail, railId(w))!.trains < 0) return 0;
+    // The pier halt is there once Q6 is laid.
+    if (!halt || w.get(Rail, railId(w))!.trains < 0 || halt.stop >= stopsOf(w, halt.line).length) return 0;
     const id = trainId(w, halt.line),
       r = w.get(Train, id)!;
     if (r.phase === TRAIN_PHASE.STAND && r.at === halt.stop && tick > r.depart) {
@@ -689,6 +717,135 @@ const cartCall = defineSystem(
   },
 );
 
+// ---------------------------------------------------------------- the Works and the Roundhouse (./railway-works.ts)
+// Server kind: every op is judged from the actor's own position by railValid; each transfer is one apply.
+/** The breaker on the boiler's old pedestal: the forge's third made thing, cast when Q6 is laid. A room-wide rung. */
+const breaker = defineSystem('rail.breaker', { writes: [Works], phase: 'act', order: 33 }, (w) => {
+  if (w.get(Works, worksId(w))!.breaker !== 1) return 0;
+  w.mut(Works, worksId(w))!.breaker = 2;
+  return 1;
+});
+/** One generous strike opens a seam (0 the stall slab, 1 the throat); a repeat strike moves nothing. */
+const strike = defineSystem('rail.strike', { writes: [Works], phase: 'act', order: 34 }, (w, { e }: Act) => {
+  const works = w.get(Works, worksId(w))!;
+  if (!railInt(e.id, 1) || works.breaker !== 2) return 0;
+  const bit = e.id ? SEAM_THROAT : SEAM_STALL;
+  if (works.seams & bit) return 0;
+  w.mut(Works, worksId(w))!.seams = works.seams | bit;
+  return 1;
+});
+/** Logs and stone off your back into the kiln's bills; it lights the moment both are full. */
+const kiln = defineSystem(
+  'rail.kiln',
+  { writes: [Works, WorksClock, Account], phase: 'act', order: 35 },
+  (w, { a: aid, tick }: Act) => {
+    const id = worksId(w),
+      works = w.get(Works, id)!;
+    if (!(works.seams & SEAM_THROAT) || works.lit >= 0) return 0;
+    const a = w.get(Account, aid)!;
+    const logs = Math.min(a.carry, WORKS.kilnLogs - works.logs),
+      stone = Math.min(a.stone, WORKS.kilnStone - works.stone);
+    if (logs + stone <= 0) return 0;
+    const am = w.mut(Account, aid)!,
+      wm = w.mut(Works, id)!;
+    am.carry -= logs;
+    am.stone -= stone;
+    wm.logs += logs;
+    wm.stone += stone;
+    if (wm.logs === WORKS.kilnLogs && wm.stone === WORKS.kilnStone) wm.lit = w.mut(WorksClock, id)!.lastCast = tick;
+    return logs + stone;
+  },
+);
+/** The wagon rolls out to wait on line 2 once the cradle is fitted and the table points at line 2 (any op that makes
+ * that true calls this); it couples at the train's next village stop. */
+function commission(w: World, tick: number) {
+  const h = w.get(Shed, shedId(w))!;
+  if (h.fitted >= 0 && h.table === 1 && h.ready < 0 && !w.get(Train, trainId(w, 1))!.wagon)
+    w.mut(Shed, shedId(w))!.ready = tick + WORKS.rollTicks;
+}
+/** Shoulder a footing (rack 0 the Works rack, 1 the pier rack): it fills an empty back. */
+const footTake = defineSystem(
+  'rail.footTake',
+  { reads: [Beam, Boiler], writes: [Works, Account], phase: 'act', order: 36 },
+  (w, { a: aid, e }: Act) => {
+    const a = w.get(Account, aid)!,
+      works = w.get(Works, worksId(w))!;
+    if (!railInt(e.rack, 1) || roomFor(w, a, FOOT) < 1) return 0;
+    const key = e.rack ? 'pierRack' : 'rack';
+    if (works[key] <= 0) return 0;
+    w.mut(Works, worksId(w))![key]--;
+    w.mut(Account, aid)!.foot = 1;
+    return 1;
+  },
+);
+/** Set the footing on your back: 0 the stall (after the slab), 1 the cradle (after the stall), 2 the pier (after
+ * Q6, while the pier still needs one that is not already racked there or aboard the wagon). */
+const footSet = defineSystem(
+  'rail.footSet',
+  { reads: [QJob, Train], writes: [Works, Shed, Account], phase: 'act', order: 37 },
+  (w, { a: aid, e, tick }: Act) => {
+    const a = w.get(Account, aid)!;
+    if (a.foot !== 1 || !railInt(e.site, 2)) return 0;
+    const works = w.get(Works, worksId(w))!,
+      h = w.get(Shed, shedId(w))!;
+    if (e.site === 0) {
+      if (!(works.seams & SEAM_STALL) || h.stall >= WORKS.stall) return 0;
+      w.mut(Shed, shedId(w))!.stall++;
+    } else if (e.site === 1) {
+      if (h.stall !== WORKS.stall || h.cradle >= WORKS.cradle) return 0;
+      w.mut(Shed, shedId(w))!.cradle++;
+      fit(w, tick);
+    } else {
+      const aboard = w.get(Train, trainId(w, 1))!.foot;
+      if (qCompleted(w) < LINE2_STATIONS.length || works.pierSet + works.pierRack + aboard >= WORKS.pier) return 0;
+      const wm = w.mut(Works, worksId(w))!;
+      wm.pierSet++;
+      if (wm.pierSet === WORKS.pier) wm.crossing = tick;
+    }
+    w.mut(Account, aid)!.foot = 0;
+    return 1;
+  },
+);
+/** Whichever op completes the cradle (two footings and eight rails) fits it. */
+function fit(w: World, tick: number) {
+  const h = w.get(Shed, shedId(w))!;
+  if (h.fitted >= 0 || h.cradle !== WORKS.cradle || h.cradleRails !== WORKS.cradleRails) return;
+  w.mut(Shed, shedId(w))!.fitted = tick;
+  commission(w, tick);
+}
+/** Rails off your back onto the cradle, up to its eight, once the stall stands. */
+const cradle = defineSystem(
+  'rail.cradle',
+  { writes: [Shed, Account], reads: [Train], phase: 'act', order: 38 },
+  (w, { a: aid, tick }: Act) => {
+    const h = w.get(Shed, shedId(w))!;
+    if (h.stall !== WORKS.stall) return 0;
+    const n = Math.min(w.get(Account, aid)!.rails, WORKS.cradleRails - h.cradleRails);
+    if (n <= 0) return 0;
+    w.mut(Account, aid)!.rails -= n;
+    w.mut(Shed, shedId(w))!.cradleRails += n;
+    fit(w, tick);
+    return n;
+  },
+);
+/** Turn the table to a road, on the revision the actor saw. Before the wagon couples, turning back calls it home;
+ * after, the table is a toy. */
+const turn = defineSystem(
+  'rail.turn',
+  { reads: [Train], writes: [Shed], phase: 'act', order: 39 },
+  (w, { e, tick }: Act) => {
+    const h = w.get(Shed, shedId(w))!;
+    if (h.stall !== WORKS.stall || !railInt(e.to, 1) || e.revision !== h.tableRev || e.to === h.table) return 0;
+    if (h.tableRev >= RAILWAY_MAX_INT) return 0;
+    const hm = w.mut(Shed, shedId(w))!;
+    hm.table = e.to;
+    hm.tableRev++;
+    if (e.to === 0 && !w.get(Train, trainId(w, 1))!.wagon) hm.ready = -1;
+    else commission(w, tick);
+    return 1;
+  },
+);
+
 /** The systems for each op, in the order they are tried: the first that moves something answers. */
 // An op system that reads no action (the axe, the jump, the lever, the hook) takes it all the same.
 const OPS: Record<string, readonly System<never, number>[]> = {
@@ -717,6 +874,13 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.boilerDrop': [boilerDrop],
   'rail.boilerFit': [boilerFit],
   'rail.call': [call],
+  'rail.breaker': [breaker],
+  'rail.strike': [strike],
+  'rail.kiln': [kiln],
+  'rail.footTake': [footTake],
+  'rail.footSet': [footSet],
+  'rail.cradle': [cradle],
+  'rail.turn': [turn],
 };
 
 export function railOutcome(w: World, pid: string, epoch: number, request: number): RailResult | null {
@@ -872,13 +1036,29 @@ function cartStep(w: World, tick: number) {
     }
   }
 }
+/** Line 2 arriving with the wagon: at the quarry it loads what the Works rack has and the pier still needs; at the
+ * pier it unloads everything onto the pier rack. One apply each. */
+function wagonArrives(w: World, row: Row<typeof Train>) {
+  if (!row.wagon) return;
+  if (row.at === 1) {
+    const works = w.get(Works, worksId(w))!;
+    const need = WORKS.pier - works.pierSet - works.pierRack - row.foot;
+    const n = Math.min(WORKS.wagonCap - row.foot, works.rack, need);
+    if (n <= 0) return;
+    w.mut(Works, worksId(w))!.rack -= n;
+    row.foot += n;
+  } else if (row.at === 3 && row.foot) {
+    w.mut(Works, worksId(w))!.pierRack += row.foot;
+    row.foot = 0;
+  }
+}
 /** One train row per line; transfers and phase changes are atomic inside this tick apply. */
 function trainStep(w: World, tick: number) {
   const on = w.get(Rail, railId(w))!.trains;
   if (on < 0) return;
   for (let slot = 0; slot < 2; slot++) {
     const id = trainId(w, slot),
-      stops = TRAIN_STOPS[slot]!;
+      stops = stopsOf(w, slot);
     for (let guard = 0; guard < 16; guard++) {
       const r = w.get(Train, id)!;
       if (r.phase === TRAIN_PHASE.RUN) {
@@ -891,13 +1071,25 @@ function trainStep(w: World, tick: number) {
           depart: arrival,
           call: r.call === r.to ? -1 : r.call,
         });
-        if (slot === 1 && row.at === stops.length - 1 && (row.logs || row.rails)) {
+        // Q6's kit unloads at Far Head (stop 2).
+        if (slot === 1 && row.at === 2 && (row.logs || row.rails)) {
           const rail = w.mut(Rail, railId(w))!;
           rail.depot += row.logs;
           rail.depotRails += row.rails;
           row.logs = row.rails = 0;
         }
+        if (slot === 1) wagonArrives(w, row);
         continue;
+      }
+      // The footing wagon couples to line 2 standing at the village once it has rolled out; a train standing there
+      // when it is due holds its departure for it (at most WORKS.rollTicks).
+      if (slot === 1 && r.at === 0 && !r.wagon) {
+        const due = w.get(Shed, shedId(w))!.ready;
+        if (due >= 0 && tick >= due) {
+          w.mut(Train, id)!.wagon = true;
+          continue;
+        }
+        if (due >= 0) break;
       }
       const k = qActive(w),
         kitServing = slot === 1 && k === 5 && w.get(QJob, qjob(w, 5))!.start < 0;
@@ -977,11 +1169,14 @@ function layLine2(w: World, tick: number) {
   if (run.elapsed === schedule.totalTicks) {
     w.mut(QJob, id)!.completion = 1;
     if (k === 4 && w.get(Boiler, boilerId(w))!.state === 'none') boilerPedestal(w);
+    // The forge's third made thing: Q6 laid casts the breaker on the boiler's old pedestal.
+    if (k === LINE2_STATIONS.length - 1 && w.get(Works, worksId(w))!.breaker === 0)
+      w.mut(Works, worksId(w))!.breaker = 1;
   }
 }
 const line2Tick = defineSystem(
   'rail.line2Tick',
-  { writes: [Forge, ForgeClock, QJob, QJobRun, Boiler], phase: 'tick', order: 1 },
+  { writes: [Forge, ForgeClock, QJob, QJobRun, Boiler, Works], phase: 'tick', order: 1 },
   (w, tick: number) => layLine2(w, tick),
 );
 /** The depot cart, after the forge has poured this tick (so a waiting cart takes a rail the tick it lands). */
@@ -992,8 +1187,30 @@ const cartTick = defineSystem(
 );
 const trainTick = defineSystem(
   'rail.trainTick',
-  { reads: [QJob, Cart], writes: [Train, Rail, Forge], phase: 'tick', order: 3 },
+  { reads: [QJob, Cart, Shed], writes: [Train, Rail, Forge, Works], phase: 'tick', order: 3 },
   (w, tick: number) => trainStep(w, tick),
+);
+/** The Works kiln: once lit with the throat open, one footing down the rollers every castTicks while the rack has
+ * room, WORKS.total in all. A full rack waits; the next cast comes as soon as there is room. */
+const worksTick = defineSystem(
+  'rail.worksTick',
+  { writes: [Works, WorksClock], phase: 'tick', order: 5 },
+  (w, tick: number) => {
+    const id = worksId(w),
+      works = w.get(Works, id)!;
+    if (
+      works.lit < 0 ||
+      !(works.seams & SEAM_THROAT) ||
+      works.poured >= WORKS.total ||
+      works.rack >= WORKS.rackCap ||
+      tick - w.get(WorksClock, id)!.lastCast < WORKS.castTicks
+    )
+      return;
+    const wm = w.mut(Works, id)!;
+    wm.rack++;
+    wm.poured++;
+    w.mut(WorksClock, id)!.lastCast = tick;
+  },
 );
 /** The wire's job clock: `ahead` and `end` follow from what the tick advanced (written only when they change). */
 const jobClock = defineSystem(
@@ -1018,6 +1235,7 @@ export function railTick(w: World, tick: number) {
   w.run(line2Tick, tick);
   w.run(cartTick, tick);
   w.run(trainTick, tick);
+  w.run(worksTick, tick);
   w.run(jobClock, undefined);
 }
 
@@ -1063,7 +1281,7 @@ function awayCredit(w: World, ticks: number, tick: number) {
 const resume = defineSystem(
   'rail.resume',
   {
-    writes: [Rail, RailClock, Job, JobRun, QJob, QJobRun, Beam, Forge, ForgeClock, Cart, Boiler, Train],
+    writes: [Rail, RailClock, Job, JobRun, QJob, QJobRun, Beam, Forge, ForgeClock, Cart, Boiler, Train, Works],
     phase: 'resume',
     order: 0,
   },
@@ -1134,7 +1352,7 @@ const progressUnits = (marker: number, minutes: number, interval: number, units:
 /** Idempotent accepted event. Nearby/unknown players are excluded by the host before it stamps recover ids. */
 const supply = defineSystem(
   'rail.supply',
-  { writes: [Rail, RailClock, Pile, Forge, Tree, Rock, Beam, Boiler], phase: 'supply', order: 0 },
+  { writes: [Rail, RailClock, Pile, Forge, Tree, Rock, Beam, Boiler, Works], phase: 'supply', order: 0 },
   (w, { e, intervals }: { e: SupplyPulse; intervals: SupplyIntervals }) => {
     const rid = railId(w);
     const clock = w.get(RailClock, rid)!;
@@ -1154,6 +1372,8 @@ const supply = defineSystem(
           if (pile.kind === 1) rail.stoneRack += pile.n;
           // Abandoned rails return to the forge's rack; logs to the recovery rack.
           else if (pile.kind === RAILS) w.mut(Forge, forgeId(w))!.rack += pile.n;
+          // An abandoned footing goes back to the Works rack (past its cap if it must).
+          else if (pile.kind === FOOT) w.mut(Works, worksId(w))!.rack += pile.n;
           else rail.rack += pile.n;
           moved += pile.n;
           pile.n = 0;

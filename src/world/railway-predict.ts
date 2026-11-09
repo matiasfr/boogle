@@ -1,14 +1,18 @@
-// Boiler and train call ops are never predicted: the unique boiler and route decisions wait for acceptance.
+// Boiler and train call ops are never predicted: the unique boiler and route decisions wait for acceptance. Nor are the
+// Works' mechanism facts (rail.breaker, rail.strike, rail.turn): they wait for the server.
 // Replication R1b (docs/plans/replication.md, section 2): what a client predicts of its own railway actions, and the
 // effect facts both ends compute for an accepted action. Headless and pure: the server runs railEffect after each
 // action it applies; a client runs railPredict on a scratch copy of its mirror with the very same railApply.
 //
 //   RAIL_PREDICTED                    the ops a client predicts (chop, mine, take, rack take, drop, deposit, forge,
-//                                     depot and shelf takes, wake, lever, summit switch, pack); the rest wait for the server as in R1a
+//                                     depot and shelf takes, wake, lever, summit switch, pack, the kiln, footings and
+//                                     the cradle); the rest wait for the server as in R1a
 //   railwayOf(world, into?)           the read model of a world, linked to it (a mirror's confirmed state, a clone's)
 //   railPredict(s, pid, e, tick)      apply e to s's world (a clone) as the server would at tick, keeping thresholds for the
 //                                     server: a bill it completes shows full but is funded only when confirmed, a forge it
-//                                     fills is lit only when confirmed. A pile it creates gets the temporary id -request
+//                                     fills is lit only when confirmed, and so are the Works' thresholds (the kiln lit,
+//                                     the cradle fitted, the wagon rolling out, the crossing footed). A pile it creates
+//                                     gets the temporary id -request
 //                                     until the server's id arrives (railTempPile, the replicator's `ids` remap)
 //   railEffect(s, pid, e, before)     what an accepted action's effect needs, as it stood right after that action
 //   railCadence(op)                   the swing/unload cadence both ends judge on the actor's action clock
@@ -34,6 +38,9 @@ import {
   QJob,
   QJobRun,
   Rail,
+  Shed,
+  Works,
+  WorksClock,
   copyRailway,
   fillRailway,
   railwayView,
@@ -55,6 +62,10 @@ export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.seaSwitch',
   'rail.pack',
   'rail.cartCall',
+  'rail.kiln',
+  'rail.footTake',
+  'rail.footSet',
+  'rail.cradle',
 ]);
 /** Swing and unload cadence on the actor's own action clock (replication revision 1): the server refuses an action
  * closer than `ms - RAIL_CADENCE_SLACK_MS` to the last of its kind, and a client predicts the same check. */
@@ -99,6 +110,20 @@ export function railEffect(w: World, pid: string, e: RailAction, before: Map<num
           ? e.kind
           : 0;
   const effect: RailEffect = { carried: kind === 1 ? a.stone : kind === 2 ? a.rails : a.carry };
+  // A footing: what is on your back after it (0 or 1), and the count where it went or came from.
+  if (e.op === 'rail.footTake' || e.op === 'rail.footSet' || (e.op === 'rail.drop' && e.kind === 3))
+    effect.carried = a.foot;
+  if (e.op === 'rail.footTake' || e.op === 'rail.footSet' || e.op === 'rail.kiln' || e.op === 'rail.cradle') {
+    const works = w.get(Works, w.single(Works))!,
+      shed = w.get(Shed, w.single(Shed))!;
+    if (e.op === 'rail.footTake') effect.level = e.rack ? works.pierRack : works.rack;
+    else if (e.op === 'rail.footSet') effect.level = [shed.stall, shed.cradle, works.pierSet][e.site!] ?? 0;
+    else if (e.op === 'rail.kiln') effect.level = works.logs + works.stone;
+    else {
+      effect.carried = a.rails;
+      effect.level = shed.cradleRails;
+    }
+  }
   if (e.op === 'rail.drop') {
     let hit = 0;
     w.each([Pile], (id, p) => {
@@ -167,6 +192,12 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
   const shelf = [rail0.depotRails, w.get(Forge, fid)!.rack, rail0.shelfOut, w.get(Cart, cartId)!.rails] as const;
   const kitId = w.lookup(Train, 1)!;
   const kitRails = w.get(Train, kitId)!.rails;
+  // The Works' thresholds, held for the server like the forge's.
+  const wid = w.single(Works),
+    sid = w.single(Shed);
+  const works0 = { lit: w.get(Works, wid)!.lit, crossing: w.get(Works, wid)!.crossing },
+    cast0 = w.get(WorksClock, wid)!.lastCast;
+  const shed0 = { fitted: w.get(Shed, sid)!.fitted, ready: w.get(Shed, sid)!.ready };
   let heldBack = false;
   if (e.op === 'rail.drop') w.reserve(-e.request); // a stable temporary id until the server's arrives
   const result = railApply(w, pid, e, tick, LINE_TIMING);
@@ -200,6 +231,13 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
     w.mut(Forge, fid)!.lit = lit[0];
     w.mut(ForgeClock, fid)!.lastPour = lit[1];
   }
+  const works = w.get(Works, wid)!,
+    shed = w.get(Shed, sid)!;
+  if (works.lit !== works0.lit || works.crossing !== works0.crossing) {
+    Object.assign(w.mut(Works, wid)!, works0);
+    w.mut(WorksClock, wid)!.lastCast = cast0;
+  }
+  if (shed.fitted !== shed0.fitted || shed.ready !== shed0.ready) Object.assign(w.mut(Shed, sid)!, shed0);
   refreshRailway(s, w);
   const n = result.status === 'accepted' ? result.accepted : 0;
   return { n, effect: n > 0 ? railEffect(w, pid, e, before) : null };

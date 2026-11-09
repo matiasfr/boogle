@@ -1,5 +1,5 @@
 // Split-rock Works and Roundhouse positions, world centimetres, pinned from Place and the Sickle map (8 Nov 2026).
-// Dormant numeric catalog: no runtime consumer until the Works rules land. No prototype imports.
+// The Works rules (./railway-works.ts, ./railway-systems.ts) and the server read it. No prototype imports.
 import { LINE1_ROCKS } from './railway-line-layout.ts';
 
 export const WORKS = {
