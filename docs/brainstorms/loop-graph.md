@@ -41,7 +41,7 @@ No browser: this is tooling with no player-visible change.
 - `npm run loop -- trace <session>` on the 9 November sessions (`mw9papxp`, `mw9srqnz`) shows predicted, bot and human time per node, with a confusion rank per node. Which beats rank highest is a finding, not a pass test.
 - `npm run loop` prints every node with its bill, distance and cue. On today's main it lists the kiln's missing cue, station 6 as doable before trains or its refusal as a rule (whichever main holds), and Far Head's rails as the largest grind.
 - `npm run loop -- run --players 2` finishes line 1, line 2 and the Works through the real rules in under ten seconds and prints time per node; a deliberately broken bill makes it report a softlock.
-- `npm run loop -- trace <session>` on the 9 November sessions (`mw9papxp`, `mw9srqnz`) shows predicted, bot and human time per node, and ranks station 6 and the boiler among the most confused beats.
+- `npm run loop -- trace <session>` on the 9 November sessions (`mw9papxp`, `mw9srqnz`) shows predicted, bot and human time per node, with a confusion rank per node. Which beats rank highest is a finding, not a pass test.
 - A unit test fails when a rail action or mark has no node.
 - `npm run check` passes with the ball and player runs gone.
 
