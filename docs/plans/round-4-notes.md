@@ -105,6 +105,32 @@ Source: Matias's written [playtest notes](../playtests.md#2026-11-07-owner-playt
 - [ ] Station 4 (written "station 4l"): track-layer arm sometimes extends unrealistically. The owner is open to slower animation if needed for believable motion; cause and remedy remain unverified.
 - [ ] Station 4: arch top missing after opening.
 
+## Owner session, 9 November (desktop, live build; ranked)
+
+Matias played the live game from 20:15 UTC and sent notes as he went (sessions `mw9papxp`, `mw9pg5a5`, `mw9prlct`). Ranks per the owner call "Rank every note P1, P2 or P3, and keep them all"; he re-ranks freely. Status is as of 21:40 UTC; the [orchestrator state](../agents/orchestrator-state.md) has the live one.
+
+| P | Note (his words where quoted) | What it is | Status |
+| --- | --- | --- | --- |
+| P1 | "I saw the cut scene start but either my input interrupted it or it finished super fast. it's a bug" (the pinnacle lever) | The gate shot ends on any input, mouse movement included. His rule: "the cinematic should be uninterruptible unless by maybe a specific highlighted button press" | Being fixed |
+| P1 | "I see the engine emitting smoke but I can't pick it up yet" | "Shoulder the boiler" shows no prompt and no reason unless you carry nothing; it blocks the way to trains | Being fixed |
+| P1 | "the longest grind has been getting rails to the pier station, because the cart does not bring them" | Station 5 needs 24 rails and the cart held 16; he took rails by hand six times | The cart carries 24: on main (#1280). Wait at the rim still to be judged (P2 below) |
+| P1 | "upon world resets ... it should start me at the beginning of the game with the character creation menu" | A returning player loads into town after a reset | Being fixed, ahead of the v23 reset |
+| P1 | "I just finished the rail to where fireworks were supposed to happen but got no cutscene I could see" | Far Head's rockets fire with no camera; also unseen on iPad earlier the same day | Being fixed with the cinematics |
+| P1 | "im confused on what's supposed to occur with the breaker once I hit it next to rotunda" | The first strike only opens the stall; the next step is a second seam about 500 m away and nothing points there | Queued: designer pass |
+| P2 | "it feels weird to already be emitting smoke" (the boiler) | The forge's call plume rises from the boiler itself | Being fixed: the plume moves to the forge |
+| P2 | "im confused on call cart to forge. what's the point" | The call only hails a ride; deliveries are automatic. He chose to cut the handle | Being cut (the rule goes with the next reset) |
+| P2 | "what is this slab and why does the train clip the tracklayer here. bug?" (Pier halt) | The empty pier rack pad overhangs the deck; the train's last stop overlaps the parked track layer | Being fixed |
+| P2 | "the top here disappears which looks weird, bug" (quarry gate) | The slab sinks when the gate opens, leaving bare posts and a chain ending in mid-air | Being fixed |
+| P2 | "positioning is weird and sitting feels broken" (stools on the empty train cars); "my pet trails behind me when riding, it should be next to me when im sitting on a stool" | Stools at the car's edge; the pet's riding spot | Queued: one pass |
+| P2 | "we should also make carrying the boiler also with a rope like the great log, but maybe a little faster because it's lighter" | Owner direction ([decision](../decisions.md#decided)) | Queued behind the boiler fix |
+| P2 | Station 5's wait at the rim with the 24-rail cart (expected 80–125 s) and whether the rack's status reads | Follow-up to the grind note | Queued: measure, then the designer |
+| P2 | "visual pass needed on the train engine, it looks a bit lackluster" | Art pass, previz first | Queued |
+| P3 | "I like the new particle effect on double jump, I don't think we need the blue ring below the player" | Keep the glints, drop the ring | Being fixed |
+| P3 | "conductor hat also sits a bit above the head, but that's low priority ... a cosmetics fitting pass in the future" | With the paper hat's 10 cm float from the Home flow review | Queued: cosmetics fitting pass |
+| P3 | "yes the slab fell over, I need to check the animation again" (the stall slab) | The design calls for three pieces, a hit-stop, chips and a thump | Waiting on his recheck |
+
+Liked: the double jump's new glints.
+
 ## No job yet
 
 ### Co-op and carrying

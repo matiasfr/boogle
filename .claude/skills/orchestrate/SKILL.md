@@ -89,6 +89,7 @@ List peers with ListAgents, and message them with SendMessage: what you're doing
 
 - Update the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C) (database `items`: sections `running`, `queued`, `call`, `road`, `phase`) and the state file as jobs start, merge and finish. The board is the live status; fold state-file edits into the next ship, and ship the file alone only at a pause, a session's end or an owner decision (13 of 104 merges from 7 to 9 November were bookkeeping, each through CI and a deploy). Leftovers a job reports but doesn't fix go in the state file's "Leftovers" section the same day, not in session notes: the next orchestrator can't read those.
 - Send only the images worth seeing, stitched into one where you can, and give complete links, never bare flags.
+- Rank every note and bug P1, P2 or P3 when you log it (owner call "Rank every note"), in the tracker, the board title and the state file; pick work by rank and never drop a note for ranking low.
 - Say "not tested on a device" where it applies. Report failures and your own mistakes plainly, and correct a wrong status as soon as you find it.
 
 To improve this skill, use the Anthropic skill-creator skill.
