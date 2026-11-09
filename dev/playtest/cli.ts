@@ -96,6 +96,7 @@ function printList(list: PlaySession[]) {
         span(secs).padEnd(11),
         `${Math.round(s.bytes / 1024)} KB`,
         cleanText(str(m.room)),
+        ...(str(m.seed) ? [`from ${cleanText(str(m.seed))}`] : []),
       ].join('  '),
     );
   }

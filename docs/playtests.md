@@ -2,6 +2,8 @@
 
 One short entry per session: date, who (first names), what was new, what was fun, what broke, and the answer to the current phase's question from PLAN.md.
 
+Sessions whose summary says "Started: jump-in" began in a seeded private room (docs/game-design/dev-menu.md, "Jump in"), so read their beats as a segment, not a first run.
+
 ## 2026-10-28
 - Who: Matias + friends
 - New: PeerJS multiplayer on the live site.
