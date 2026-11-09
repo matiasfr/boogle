@@ -55,7 +55,8 @@ export function createGateRig(owner: OwnedView, deps: Deps, spec: Spec) {
   const { land, shapes, flat, partMat } = deps;
   const { w, h, pillar } = spec.slab;
   const JAMB = h + 0.8,
-    SHEAVE_Y = JAMB + 0.55,
+    // The sheaves' axles sit just over the beams in pillow blocks, so the wheels stand clear and read from the ground.
+    SHEAVE_Y = JAMB + BEAM_H + 0.12,
     RUN_Y = SHEAVE_Y + CHAIN_R,
     EYE = gateEyeAt(spec.slab),
     OUT = w / 2 + pillar;
@@ -77,15 +78,30 @@ export function createGateRig(owner: OwnedView, deps: Deps, spec: Spec) {
     return o;
   };
 
+  // `near` is the side the chain leaves for (the winch's); without a winch both chains run in to the drum at the middle.
+  const winchLocal = spec.winch
+    ? new THREE.Vector3(spec.winch.x, spec.winch.y, spec.winch.z).applyMatrix4(toLocal)
+    : null;
+  const near = winchLocal && winchLocal.x > 0 ? 1 : -1;
+  // The winch side's sheave stands outside its chain (which leaves outward); the others inside theirs (they lead in).
+  const nearSheave = near * (EYE + R);
+  const sheaves = winchLocal ? [nearSheave, -near * (EYE - R)] : [-(EYE - R), EYE - R];
+
   // ---------------------------------------------------------------- the stone frame: jambs, beams and bearing blocks
   const blockW = OUT - (EYE + 2 * R) - 0.05;
   const parts: Part[] = [];
+  for (const c of sheaves)
+    for (const side of [-1, 1]) parts.push(['b', c, JAMB + BEAM_H + 0.1, side * BEAM_Z, 0.26, 0.2, BEAM_D, STONE]);
   for (const side of [-1, 1]) {
     parts.push(['b', (side * (w + pillar)) / 2, JAMB / 2, 0, pillar, JAMB, pillar, STONE]);
     parts.push(['b', 0, JAMB + BEAM_H / 2, side * BEAM_Z, 2 * OUT, BEAM_H, BEAM_D, STONE]);
     // Over each jamb, outside its sheave, a block closes the slot between the beams.
     parts.push(['b', side * (OUT - blockW / 2), JAMB + BEAM_H / 2, 0, blockW, BEAM_H, pillar, STONE]);
-    if (!spec.winch) parts.push(['b', 0, JAMB + BEAM_H + 0.37, side * BEAM_Z, 0.3, 0.74, BEAM_D, STONE]);
+    if (!spec.winch) {
+      // The drum's bearing blocks, up to its axle over the chains' run.
+      const axle = SHEAVE_Y + CHAIN_R + DRUM_R + 0.1 - (JAMB + BEAM_H);
+      parts.push(['b', 0, JAMB + BEAM_H + axle / 2, side * BEAM_Z, 0.3, axle, BEAM_D, STONE]);
+    }
   }
   const frameGeometry = shapes.merged(parts);
   sources.push(frameGeometry);
@@ -107,11 +123,6 @@ export function createGateRig(owner: OwnedView, deps: Deps, spec: Spec) {
   );
 
   // ---------------------------------------------------------------- the chains' paths, in the gate's frame
-  // `near` is the side the chain leaves for (the winch's); without a winch both chains run in to the drum at the middle.
-  const winchLocal = spec.winch
-    ? new THREE.Vector3(spec.winch.x, spec.winch.y, spec.winch.z).applyMatrix4(toLocal)
-    : null;
-  const near = winchLocal && winchLocal.x > 0 ? 1 : -1;
   const winchTop = winchLocal ? winchLocal.clone().add(new THREE.Vector3(0, spec.winch!.r, 0)) : null;
   /** Points over a sheave at `c` (local x) from angle a0 to a1 (0 is the sheave's side at +x, PI/2 its top). */
   const arc = (out: THREE.Vector3[], c: number, z: number, a0: number, a1: number) => {
@@ -122,7 +133,6 @@ export function createGateRig(owner: OwnedView, deps: Deps, spec: Spec) {
     }
   };
   // Where the winch run leaves the near sheave: the angle it falls at from the sheave's top towards the drum.
-  const nearSheave = near * (EYE + R);
   const fall = winchTop ? Math.atan2(SHEAVE_Y - winchTop.y, Math.hypot(winchTop.x - nearSheave, winchTop.z)) : 0;
   type Chain = { from: number; z: number };
   // Quarry: one chain from each end, both to the winch over the near sheave. Sea: each end's chain to the middle drum.
