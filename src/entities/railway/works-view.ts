@@ -286,7 +286,8 @@ export async function createRailwayWorks(
   const logAt = (i: number) => {
     const layer = Math.floor(i / 4),
       j = (i % 4) - 1.5;
-    p.set(cradle.x + face.x * j * 0.37, kilnGround + 0.45 + layer * 0.3, cradle.z + face.z * j * 0.32);
+    // Side by side across the 1.6 m cradle (they had stacked end to end in one 0.3 m column).
+    p.set(cradle.x + across.x * j * 0.37, kilnGround + 0.45 + layer * 0.3, cradle.z + across.z * j * 0.37);
     return faceYaw + Math.PI / 2;
   };
   const stoneAt = (i: number) => {
