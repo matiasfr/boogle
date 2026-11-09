@@ -14,6 +14,7 @@ import { GROUP } from '../../physics/physics.ts';
 import { carry } from '../../physics/platforms.ts';
 import { HEAD_OFFSET, PLAYER_R, SEA } from '../../constants.ts';
 import { me } from '../../player/player.ts';
+import { roadPlaque } from './home-pictogram.ts';
 type Box = import('../../proto/net/boxes.ts').Box;
 type Line = import('../../proto/place/layout.ts').Line;
 type LinePoint = import('../../proto/place/layout.ts').LinePoint;
@@ -27,6 +28,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     layout,
     { boardMaterial },
     { dropSet, dustRing },
+    { ISLAND },
   ] = await Promise.all([
     import('../../proto/flat.ts'),
     import('../../proto/net/boxes.ts'),
@@ -35,6 +37,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     import('../../proto/place/layout.ts'),
     import('../../proto/place/look.ts'),
     import('../../proto/place/pieces.ts'),
+    import('../../proto/place/home-station.ts'),
   ]);
   const { ORIGIN, lineAt, railY } = layout;
   const addStatic = (
@@ -42,8 +45,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     at: Parameters<typeof staticBody>[1],
     q: THREE.Quaternion,
   ) => staticBody(shape, at, q, GROUP.SCENERY, owner);
-  const slab = (ax: number, az: number, bx: number, bz: number, ya: number, yb: number) =>
-    staticSlab(ax, az, bx, bz, ya, yb, 2.5, owner, undefined, 'grass');
+  const slab = (ax: number, az: number, bx: number, bz: number, ya: number, yb: number, width = 2.5) =>
+    staticSlab(ax, az, bx, bz, ya, yb, width, owner, undefined, 'grass');
 
   const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
   const WOOD = '#a9794c',
@@ -56,9 +59,23 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     out.z = P.z + P.ux * l + ORIGIN.z;
     return out;
   };
-  /** A platform along one side of `line`, `s0` to `s1` metres along, at `lat` from the rails, with a ramp off its side. */
-  function makeHalt(name: string, k: number, line: Line, s0: number, s1: number, lat: number, stop: number) {
+  /** A platform along one side of `line`, `s0` to `s1` metres along, at `lat` from the rails, with a ramp off its side.
+   * An `island` halt (`?home=b`) is one edge of the island both village roads share: line 1's edge builds the deck, its
+   * end ramps and a greybox canopy down the middle (no back ramp, no shelter), and each edge has its own signal, board
+   * and destination plaque. Standing anywhere on the island is on both. */
+  function makeHalt(
+    name: string,
+    k: number,
+    line: Line,
+    s0: number,
+    s1: number,
+    lat: number,
+    stop: number,
+    island = false,
+  ) {
     const boxes: Box[] = [];
+    const hw = island ? ISLAND.width / 2 : 1.25,
+      deck = !island || k === 0;
     const mid = (s0 + s1) / 2,
       half = (s1 - s0) / 2,
       sign = Math.sign(lat);
@@ -91,17 +108,21 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       const a = { x: 0, z: 0 },
         b = { x: 0, z: 0 };
       const ramp = (foot: number) => out.push({ ax: a.x, az: a.z, bx: b.x, bz: b.z, foot });
+      if (!deck) return out;
+      const head = island ? ISLAND.headRamp : 6,
+        end = island ? ISLAND.endRamp : 6;
       lineAt(line, s0, P);
       lateral(lat, a);
-      lineAt(line, s0 - 6, P);
+      lineAt(line, s0 - head, P);
       lateral(lat, b);
-      ramp(overWater ? railY(line, s0 - 6) + 0.05 : H(b.x, b.z) + 0.05);
+      ramp(overWater ? railY(line, s0 - head) + 0.05 : H(b.x, b.z) + 0.05);
       if (overWater) return out;
       lineAt(line, s1, P);
       lateral(lat, a);
-      lineAt(line, s1 + 6, P);
+      lineAt(line, s1 + end, P);
       lateral(lat, b);
       ramp(H(b.x, b.z) + 0.05);
+      if (island) return out;
       lineAt(line, mid, P);
       lateral(lat + sign * 1.25, a);
       lateral(lat + sign * 7, b);
@@ -109,30 +130,41 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       return out;
     };
     // The deck, in lengths, with its edge stones.
-    const lengths = Math.ceil((half * 2) / 6);
+    const lengths = deck ? Math.ceil((half * 2) / 6) : 0;
     for (let k = 0; k < lengths; k++) {
       const ds = -half + ((k + 0.5) * half * 2) / lengths;
-      part(0, -0.5, ds, 2.5, 0.5, (half * 2) / lengths + 0.02, STONE);
+      part(0, -0.5, ds, hw * 2, 0.5, (half * 2) / lengths + 0.02, STONE);
     }
-    for (const sl of [-1, 1]) part(sl * 1.1, -0.04, 0, 0.3, 0.05, half * 2, '#f2d36a'); // a bright edge: this is the place
+    // A bright edge: this is the place.
+    if (deck) for (const sl of [-1, 1]) part(sl * (hw - 0.15), -0.04, 0, 0.3, 0.05, half * 2, '#f2d36a');
     // Under it, down to the ground; over the sea, timber piles to the sea floor like the trestle's.
-    if (!overWater) part(0, ground - low, 0, 2.5, low - 0.5 - ground, half * 2, '#9a9184');
-    else
+    if (deck && !overWater) part(0, ground - low, 0, hw * 2, low - 0.5 - ground, half * 2, '#9a9184');
+    else if (deck)
       for (let ds = -half + 1; ds <= half - 1 + 1e-6; ds += (half * 2 - 2) / 3)
         for (const dl of [-0.9, 0.9]) part(dl, ground - low, ds, 0.4, low - 0.5 - ground, 0.4, '#a2743f');
     // Local +sign x points toward the rails. Face the train from the outer edge,
     // along from the middle entrance so the rear ramp and the aisle stay clear.
     const post = 3.2,
       shelter = -4.8;
-    for (const ds of [-3, 3]) part(-sign * 0.95, 0, shelter + ds, 0.22, post, 0.22, POST);
-    part(-sign * 0.4, post, shelter, 2.4, 0.16, 8, WOOD);
-    part(-sign * 0.4, post + 0.16, shelter, 2.7, 0.14, 8.4, ROOF);
-    part(-sign * 0.75, 0, shelter - 1.2, 0.5, 0.42, 0.16, POST);
-    part(-sign * 0.75, 0, shelter + 1.2, 0.5, 0.42, 0.16, POST);
-    part(-sign * 0.75, 0.42, shelter, 0.56, 0.1, 3, WOOD);
-    part(-sign * 1.02, 0.5, shelter, 0.1, 0.5, 3, WOOD);
-    // The signal's mast, at the end the train comes in.
-    part(sign * 0.95, 0, half - 0.8, 0.14, 4.4, 0.14, IRON);
+    const CANOPY = 4.6,
+      canopyPosts = [-0.75, -0.25, 0.25, 0.75].map((f) => f * (half * 2 - 2));
+    if (!island) {
+      for (const ds of [-3, 3]) part(-sign * 0.95, 0, shelter + ds, 0.22, post, 0.22, POST);
+      part(-sign * 0.4, post, shelter, 2.4, 0.16, 8, WOOD);
+      part(-sign * 0.4, post + 0.16, shelter, 2.7, 0.14, 8.4, ROOF);
+      part(-sign * 0.75, 0, shelter - 1.2, 0.5, 0.42, 0.16, POST);
+      part(-sign * 0.75, 0, shelter + 1.2, 0.5, 0.42, 0.16, POST);
+      part(-sign * 0.75, 0.42, shelter, 0.56, 0.1, 3, WOOD);
+      part(-sign * 1.02, 0.5, shelter, 0.1, 0.5, 3, WOOD);
+    } else if (deck) {
+      // The island's canopy, on posts down its middle, its roof 4.6 m up (clear of every jump from the deck).
+      for (const ds of canopyPosts) part(0, 0, ds, 0.24, CANOPY, 0.24, POST);
+      part(0, CANOPY, 0, hw * 2 + 1, 0.16, half * 2, WOOD);
+      part(0, CANOPY + 0.16, 0, hw * 2 + 1.3, 0.14, half * 2 + 0.3, ROOF);
+    }
+    // The signal's mast, at the end the train comes in, on this edge.
+    const mast = sign * (hw - 0.3);
+    part(mast, 0, half - 0.8, 0.14, 4.4, 0.14, IRON);
     const set = dropSet(
       boxes,
       (k) => {
@@ -152,18 +184,29 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const armBlade = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.22, 0.05), flat('#e8392a'));
     armBlade.position.x = 0.5;
     arm.add(armBlade);
+    const cosY = Math.cos(yaw),
+      sinY = Math.sin(yaw);
     {
-      const cosY = Math.cos(yaw),
-        sinY = Math.sin(yaw);
-      const dl = sign * 0.95,
-        ds = half - 0.8;
-      arm.position.set(c.x + dl * cosY + ds * sinY, low + 4.2, c.z - dl * sinY + ds * cosY);
+      const ds = half - 0.8;
+      arm.position.set(c.x + mast * cosY + ds * sinY, low + 4.2, c.z - mast * sinY + ds * cosY);
       arm.rotation.y = yaw + (sign > 0 ? 0 : Math.PI);
     }
     arm.visible = false;
     owner.add(arm);
+    // Where this edge's trains go, on its mast, facing along the deck.
+    const plaque = island ? roadPlaque(k as 0 | 1) : null;
+    if (plaque) {
+      const ds = half - 0.8;
+      plaque.mesh.position.set(c.x + mast * cosY + ds * sinY, low + 2.9, c.z - mast * sinY + ds * cosY);
+      plaque.mesh.rotation.y = yaw;
+      plaque.mesh.visible = false;
+      owner.add(plaque.mesh);
+      owner.cleanup(plaque.dispose);
+    }
     const board = label(3, 1.5);
-    board.sprite.position.set(c.x, low + 5.2, c.z);
+    // An island's two boards stand over their own edges, not on top of each other.
+    const edge = island ? sign * (hw - 0.8) : 0;
+    board.sprite.position.set(c.x + edge * cosY, low + 5.2, c.z - edge * sinY);
     board.sprite.visible = false;
     owner.add(board.sprite);
     owner.cleanup(() => {
@@ -173,30 +216,32 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
 
     let bodies: Body[] = [];
     const addBodies = () => {
-      const cosY = Math.cos(yaw),
-        sinY = Math.sin(yaw);
       const q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
       const at = (dl: number, dy: number, ds: number) => ({
         x: c.x + dl * cosY + ds * sinY,
         y: low + dy,
         z: c.z - dl * sinY + ds * cosY,
       });
-      bodies.push(addStatic({ kind: 'box', hx: 1.25, hy: 0.25, hz: half }, at(0, -0.25, 0), q));
-      if (!overWater)
+      if (deck) bodies.push(addStatic({ kind: 'box', hx: hw, hy: 0.25, hz: half }, at(0, -0.25, 0), q));
+      if (deck && !overWater)
         bodies.push(
           addStatic(
-            { kind: 'box', hx: 1.25, hy: (low - 0.5 - ground) / 2 + 0.2, hz: half },
+            { kind: 'box', hx: hw, hy: (low - 0.5 - ground) / 2 + 0.2, hz: half },
             at(0, (ground - low - 0.5) / 2, 0),
             q,
           ),
         );
-      for (const ds of [-3, 3])
-        bodies.push(
-          addStatic({ kind: 'box', hx: 0.11, hy: post / 2, hz: 0.11 }, at(-sign * 0.95, post / 2, shelter + ds), q),
-        );
-      bodies.push(addStatic({ kind: 'box', hx: 0.3, hy: 0.28, hz: 1.5 }, at(-sign * 0.8, 0.28, shelter), q));
-      bodies.push(addStatic({ kind: 'box', hx: 0.07, hy: 2.2, hz: 0.07 }, at(sign * 0.95, 2.2, half - 0.8), q));
-      for (const r of rampEnds()) bodies.push(slab(r.bx, r.bz, r.ax, r.az, r.foot, low));
+      if (!island) {
+        for (const ds of [-3, 3])
+          bodies.push(
+            addStatic({ kind: 'box', hx: 0.11, hy: post / 2, hz: 0.11 }, at(-sign * 0.95, post / 2, shelter + ds), q),
+          );
+        bodies.push(addStatic({ kind: 'box', hx: 0.3, hy: 0.28, hz: 1.5 }, at(-sign * 0.8, 0.28, shelter), q));
+      } else if (deck)
+        for (const ds of canopyPosts)
+          bodies.push(addStatic({ kind: 'box', hx: 0.12, hy: CANOPY / 2, hz: 0.12 }, at(0, CANOPY / 2, ds), q));
+      bodies.push(addStatic({ kind: 'box', hx: 0.07, hy: 2.2, hz: 0.07 }, at(mast, 2.2, half - 0.8), q));
+      for (const r of rampEnds()) bodies.push(slab(r.bx, r.bz, r.ax, r.az, r.foot, low, hw * 2));
       // A halt can arrive around someone, including a partner who did not fit the boiler. Rapier cannot
       // lift a sphere already trapped between the ground and a new ramp. Only displace actual overlaps,
       // testing in each box's frame so the pitched ramps and every halt's orientation are covered.
@@ -242,7 +287,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         len = Math.hypot(dx, dz),
         dy = yb - ya,
         full = Math.hypot(len, dy);
-      const m = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.4, full), flat(STONE));
+      const m = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, 0.4, full), flat(STONE));
       m.quaternion.setFromEuler(new THREE.Euler(-Math.atan2(dy, len), Math.atan2(dx, dz), 0, 'YXZ'));
       m.position.set((ax + bx) / 2, (ya + yb) / 2 - 0.2, (az + bz) / 2);
       m.castShadow = m.receiveShadow = true;
@@ -279,6 +324,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         halt.up = on;
         boxes.forEach((_, k) => set.snap(k, on));
         ramps.visible = arm.visible = on;
+        if (plaque) plaque.mesh.visible = on;
         board.sprite.visible = false;
         if (on) addBodies();
       },
@@ -291,7 +337,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
           sinY = Math.sin(yaw);
         const l = dx * cosY - dz * sinY,
           s = dx * sinY + dz * cosY;
-        return Math.abs(l) < 1.6 + margin && Math.abs(s) < half + 0.4 + margin && Math.abs(y - low) < 1.6 + margin;
+        return (
+          Math.abs(l) < hw + 0.35 + margin && Math.abs(s) < half + 0.4 + margin && Math.abs(y - low) < 1.6 + margin
+        );
       },
       /** The signal and the board, for a train on its way in `eta` s; null for nothing coming. */
       signal(eta: number | null, quiet = false) {
@@ -306,7 +354,10 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         set.update(dt);
         if (reveal >= 0) {
           reveal -= dt;
-          if (reveal <= 0) ramps.visible = arm.visible = true;
+          if (reveal <= 0) {
+            ramps.visible = arm.visible = true;
+            if (plaque) plaque.mesh.visible = true;
+          }
         }
       },
     };
@@ -318,7 +369,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     ...layout.HALTS,
     { name: LINE_HALTS[PIER]!.name, line: 1 as const, s0: 719, s1: 741, lat: -2.9, stop: 3 },
   ];
-  const halts = rows.map((h) => makeHalt(h.name, h.line, layout.LINKS[h.line]!.line, h.s0, h.s1, h.lat, h.stop));
+  const halts = rows.map((h) =>
+    makeHalt(h.name, h.line, layout.LINKS[h.line]!.line, h.s0, h.s1, h.lat, h.stop, 'island' in h && !!h.island),
+  );
   let shown = false;
   const inside = halts.map(() => false);
   /** Whether halt `k` stands now: every halt once trains run, the Pier halt only once Q6 is laid. */

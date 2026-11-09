@@ -1,0 +1,291 @@
+// Layout B's geometry (docs/plans/home-station.md, step 1): the heads meet today's lines, the station's pieces stand
+// in order along road 2, every stop sits beside the island, the stalls are radial, the tracks clear the buildings, and
+// the cart's road is continuous. Pure numbers: nothing here is drawn or reaches the rules.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  BUFFERS,
+  CART_FORGE,
+  HALL,
+  HEADS,
+  ISLAND,
+  ISLAND_A,
+  ISLAND_C,
+  LEG,
+  PROPS,
+  ROAD2_S,
+  ROAD_GAP,
+  SHELF_B,
+  SHUNT_CUSP_S,
+  SPUR,
+  STALLS,
+  TABLE,
+  axisPoint,
+  cartRoadAt,
+  headPoints,
+  legPoints,
+  march,
+  roadAt,
+  shuntPath,
+  spliceHead,
+  spurPoints,
+  stallFrame,
+  toAxis,
+  type XZ,
+} from '../src/proto/place/home-station.ts';
+import { CART, FORGE, LINES, ROOM_PLOTS, TOWN, lineAt, type Plot } from '../src/proto/place/layout.ts';
+import { LOCO, TRAILER, TRAIN_OFFSETS, WAGON_CAR } from '../src/proto/wagon/cars.ts';
+import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
+import { WAGON_S } from '../src/sim/railway-works-layout.ts';
+
+const bearingOf = (ux: number, uz: number) => ((((Math.atan2(ux, -uz) * 180) / Math.PI) % 360) + 360) % 360;
+const angleGap = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
+const dist = (a: XZ, b: XZ) => Math.hypot(a.x - b.x, a.z - b.z);
+const STOP = TRAIN_STOPS.map((stops) => stops[0]! / 100);
+const P = { x: 0, z: 0, ux: 0, uz: 0 };
+
+test('each head is 1 m samples from s 0 to its join, meeting today line at the join on the same heading', () => {
+  const today = [LINES.north, LINES.east];
+  for (const road of [0, 1] as const) {
+    const head = headPoints(road),
+      join = HEADS[road].join;
+    assert.equal(head.length, join + 1);
+    for (let s = 1; s <= join; s++)
+      assert.ok(Math.abs(dist(head[s - 1]!, head[s]!) - 1) < 0.002, `road ${road} s ${s}`);
+    lineAt(today[road]!, join, P);
+    assert.ok(dist(head[join]!, P) < 0.03, `road ${road} meets today's line: ${dist(head[join]!, P)} m`);
+    assert.ok(angleGap(roadAt(road, join).bearing, bearingOf(P.ux, P.uz)) < 0.5, `road ${road} heading at the join`);
+  }
+});
+
+/** A train's extent along its road at stop `s`: cars from TRAIN_OFFSETS, the engine scaled by `engine` and moved out
+ * so the gap behind its cab stays, every car scaled by `cars`. */
+function trainSpan(s: number, cars: number, withWagon: boolean, engine = cars) {
+  const [first, , third, fourth] = TRAIN_OFFSETS as [number, number, number, number];
+  const gap = first - LOCO.hz - TRAILER.hz;
+  const lead = TRAILER.hz * cars + gap + LOCO.hz * engine;
+  const tail = withWagon ? fourth * cars - WAGON_CAR.hz * cars : third * cars - TRAILER.hz * cars;
+  return [s + tail, s + lead + LOCO.hz * engine] as const;
+}
+
+test('both stops are on the straight and abeam, with room for an engine up to 1.5 times past them', () => {
+  const [l1, l2] = STOP as [number, number];
+  assert.equal(l1, 14);
+  assert.equal(l2, 17);
+  assert.ok(Math.abs(toAxis(roadAt(0, l1)).a - toAxis(roadAt(1, l2)).a) < 0.2, 'abeam');
+  for (const engine of [1, 1.25, 1.5]) {
+    assert.ok(
+      trainSpan(l1, 1, false, engine)[1] <= HEADS[0].segs[0].len,
+      `line 1's front on the straight at ${engine}x`,
+    );
+    assert.ok(
+      trainSpan(l2, 1, true, engine)[1] <= HEADS[1].segs[0].len,
+      `line 2's front on the straight at ${engine}x`,
+    );
+  }
+});
+
+/** In order along the road and not touching. */
+function inOrder(spans: [string, number, number][]) {
+  for (let k = 1; k < spans.length; k++) {
+    const [a, , aEnd] = spans[k - 1]!,
+      [b, bStart] = spans[k]!;
+    assert.ok(aEnd < bStart, `${a} ends at ${aEnd.toFixed(2)}, before ${b} starts at ${bStart.toFixed(2)}`);
+  }
+}
+
+test('road 2: buffer, cart, points, waiting wagon, train and leg in order and apart; no stop overlaps a buffer', () => {
+  const wagon = WAGON_S / 100;
+  for (const engine of [1, 1.25, 1.5]) {
+    const train = trainSpan(STOP[1]!, 1, false, engine);
+    inOrder([
+      ['buffer', BUFFERS[1], BUFFERS[1]],
+      ['the cart at its forge stop', -CART.hz, CART.hz],
+      ["the spur's points", SPUR.s, SPUR.s],
+      ['the waiting wagon', wagon - WAGON_CAR.hz, wagon + WAGON_CAR.hz],
+      [`the train, engine ${engine}x`, train[0], train[1]],
+      ["the leg's points", LEG.to, LEG.to],
+    ]);
+  }
+  // The whole train at 1.25x stands with its wagon coupled: the scaled cars reach back past the waiting wagon's place
+  // (the engine pass must move WAGON_S, or the stop, before it scales the cars).
+  const whole = trainSpan(STOP[1]!, 1.25, true);
+  inOrder([
+    ['buffer', BUFFERS[1], BUFFERS[1]],
+    ['the cart', -CART.hz, CART.hz],
+    ["the spur's points", SPUR.s, SPUR.s],
+    ['the whole train at 1.25x, wagon coupled', whole[0], whole[1]],
+    ["the leg's points", LEG.to, LEG.to],
+  ]);
+  const one = trainSpan(STOP[0]!, 1.25, false);
+  assert.ok(BUFFERS[0] < one[0], "line 1's whole train at 1.25x clears road 1's buffer");
+  assert.ok(one[1] <= HEADS[0].segs[0].len, "and stays on road 1's straight");
+});
+
+test('every stop stands beside the island, 1.65 m in from its edge and within its halt reach', () => {
+  assert.ok(Math.abs(ROAD_GAP - (ISLAND.width + 2 * ISLAND.edge)) < 0.01, 'the roads are 7.6 m apart');
+  const centre = axisPoint((ISLAND_A.deck0 + ISLAND_A.deck1) / 2, ISLAND_C);
+  const cases = [
+    { road: 0 as const, halt: LINE_HALTS[0], shift: 0, wagon: false },
+    { road: 1 as const, halt: LINE_HALTS[2], shift: ROAD2_S, wagon: true },
+  ];
+  for (const { road, halt, shift, wagon } of cases)
+    for (const engine of [1, 1.25, 1.5]) {
+      const [rear, front] = trainSpan(STOP[road]!, 1, wagon, engine);
+      assert.ok(
+        rear - shift >= ISLAND_A.deck0 && front - shift <= ISLAND_A.deck1,
+        `road ${road} at ${engine}x on the deck`,
+      );
+      for (let s = rear; s <= front; s += 0.5) {
+        const at = toAxis(roadAt(road, s));
+        assert.ok(Math.abs(Math.abs(at.c - ISLAND_C) - (ISLAND.width / 2 + ISLAND.edge)) < 0.01, `road ${road} s ${s}`);
+        assert.ok(dist(roadAt(road, s), centre) <= halt.reach / 100, `road ${road} s ${s} within ${halt.name}'s reach`);
+      }
+    }
+});
+
+/** Separating axes: two rectangles (centre, unit `u` along their depth, half sizes) overlap. */
+function overlaps(a: Rect, b: Rect) {
+  const corners = (r: Rect) =>
+    [-1, 1].flatMap((i) =>
+      [-1, 1].map((j) => ({
+        x: r.c.x + r.u.x * r.hd * i - r.u.z * r.hw * j,
+        z: r.c.z + r.u.z * r.hd * i + r.u.x * r.hw * j,
+      })),
+    );
+  for (const r of [a, b])
+    for (const axis of [r.u, { x: -r.u.z, z: r.u.x }]) {
+      const pa = corners(a).map((p) => p.x * axis.x + p.z * axis.z),
+        pb = corners(b).map((p) => p.x * axis.x + p.z * axis.z);
+      if (Math.max(...pa) <= Math.min(...pb) || Math.max(...pb) <= Math.min(...pa)) return false;
+    }
+  return true;
+}
+type Rect = { c: XZ; u: XZ; hw: number; hd: number };
+
+test('the table and stalls are radial: the spur and each stall road point at its centre, stalls 30 degrees apart', () => {
+  const end = march(
+    roadAt(1, SPUR.s),
+    SPUR.segs,
+    SPUR.segs.reduce((n, s) => n + s.len, 0),
+  );
+  assert.ok(Math.abs(dist(end, TABLE) - TABLE.r) < 1e-6, "the spur ends at the table's rim");
+  assert.ok(angleGap(bearingOf(TABLE.x - end.x, TABLE.z - end.z), end.bearing) < 0.01, 'the spur runs at the centre');
+  assert.ok(
+    Math.abs(TABLE.x + 57.9) < 0.05 && Math.abs(TABLE.z - 17.12) < 0.05,
+    'the plan put the table at (-57.90, 17.12)',
+  );
+  const frames = STALLS.bearings.map(stallFrame);
+  for (const f of frames) {
+    for (const p of [f.rim, f.door, f.back, f.centre])
+      assert.ok(angleGap(bearingOf(p.x - TABLE.x, p.z - TABLE.z), f.bearing) < 1e-6, `stall ${f.bearing} radial`);
+    assert.ok(Math.abs(dist(f.door, TABLE) - STALLS.door) < 1e-9);
+  }
+  for (let k = 1; k < frames.length; k++) {
+    assert.equal(frames[k]!.bearing - frames[k - 1]!.bearing, 30);
+    const rect = (f: (typeof frames)[number]): Rect => ({
+      c: f.centre,
+      u: f.u,
+      hw: STALLS.width / 2,
+      hd: STALLS.depth / 2,
+    });
+    assert.ok(
+      !overlaps(rect(frames[k - 1]!), rect(frames[k]!)),
+      `stalls ${frames[k - 1]!.bearing} and ${frames[k]!.bearing}`,
+    );
+  }
+  // The open stall is not straight through from the spur, so a turn shows: it swings 60 degrees.
+  assert.equal(angleGap(TABLE.spur, STALLS.open), 120);
+  const open = frames[1]!;
+  assert.ok(dist(open.door, { x: -59.37, z: 25.49 }) < 0.05 && dist(open.back, { x: -60.94, z: 34.35 }) < 0.05);
+});
+
+test('no track centre comes within 2.8 m of a building', () => {
+  const plots: Plot[] = [
+    ...TOWN.start,
+    ...TOWN.wood.flat(),
+    ...TOWN.stone.flat(),
+    ...TOWN.camps.flatMap((c) => [...c.asleep, ...c.awake]),
+  ];
+  const rects: (Rect & { name: string })[] = [
+    { name: 'the forge', c: FORGE, u: { x: 0, z: 1 }, hw: FORGE.w / 2, hd: FORGE.d / 2 },
+    ...plots.map((p) => ({
+      name: `${p.type} at (${p.x}, ${p.z})`,
+      c: p,
+      u: { x: Math.sin(p.yaw ?? 0), z: Math.cos(p.yaw ?? 0) },
+      hw: (p.w ?? 6) / 2,
+      hd: (p.d ?? 6) / 2,
+    })),
+    ...Object.entries(ROOM_PLOTS).map(([name, p]) => ({
+      name,
+      c: p,
+      u: { x: Math.sin(p.yaw), z: Math.cos(p.yaw) },
+      hw: p.w / 2,
+      hd: p.d / 2,
+    })),
+  ];
+  const gap = (p: XZ, r: Rect) => {
+    const dx = p.x - r.c.x,
+      dz = p.z - r.c.z;
+    const along = dx * r.u.x + dz * r.u.z,
+      across = -dx * r.u.z + dz * r.u.x;
+    return Math.hypot(Math.max(0, Math.abs(across) - r.hw), Math.max(0, Math.abs(along) - r.hd));
+  };
+  const stubs = ([0, 1] as const).flatMap((road) =>
+    Array.from({ length: Math.ceil(-BUFFERS[road]) + 1 }, (_, k) => roadAt(road, Math.min(0, BUFFERS[road] + k))),
+  );
+  const roads = STALLS.bearings.flatMap((b) => {
+    const f = stallFrame(b);
+    return Array.from({ length: 5 }, (_, k) => ({
+      x: f.rim.x + ((f.door.x - f.rim.x) * k) / 4,
+      z: f.rim.z + ((f.door.z - f.rim.z) * k) / 4,
+    }));
+  });
+  const track = [...headPoints(0), ...headPoints(1), ...stubs, ...legPoints(), ...spurPoints(), ...roads];
+  for (const r of rects)
+    for (const p of track)
+      assert.ok(
+        gap(p, r) >= 2.8,
+        `track at (${p.x.toFixed(1)}, ${p.z.toFixed(1)}) is ${gap(p, r).toFixed(2)} m from ${r.name}`,
+      );
+});
+
+test("the cart's road is continuous: line 1, the leg, road 2 to the buffers (the forge stop), then out along line 2", () => {
+  const lines = { north: spliceHead(LINES.north, headPoints(0)), east: spliceHead(LINES.east, headPoints(1)) };
+  const legEnd = march(LEG.start, LEG.segs, LEG.len);
+  assert.ok(dist(legEnd, roadAt(1, LEG.to)) < 0.03, 'the leg lands on road 2 at s 26');
+  assert.ok(angleGap(legEnd.bearing, roadAt(1, LEG.to).bearing + 180) < 0.5, 'heading in');
+  assert.ok(dist(cartRoadAt(CART_FORGE, lines), roadAt(1, 0)) < 0.01, "the forge stop is road 2's s 0");
+  assert.ok(dist(roadAt(1, 0), PROPS.rack) < 4, 'beside the forge rack');
+  const step = 0.25;
+  let prev = cartRoadAt(0, lines);
+  for (let d = step; d <= CART_FORGE + 120; d += step) {
+    const at = cartRoadAt(d, lines);
+    const moved = dist(prev, at);
+    // A reversal at the forge stop moves nothing for one step.
+    assert.ok(moved <= step + 0.03, `d ${d.toFixed(2)}: a ${moved.toFixed(3)} m jump`);
+    prev = at;
+  }
+});
+
+test('the shunt fits the stub, over the cart forge stop', () => {
+  const SHUNTER_HZ = 1.7,
+    GAP = 3.6;
+  const shunter = SHUNT_CUSP_S - GAP;
+  assert.ok(shunter - SHUNTER_HZ >= BUFFERS[1] + 0.25, 'the shunter stops short of the buffer');
+  assert.ok(SHUNT_CUSP_S + WAGON_CAR.hz < SPUR.s, "the wagon's rear clears the points");
+  const path = shuntPath(WAGON_S / 100);
+  for (let k = 1; k < path.pts.length; k++) assert.ok(dist(path.pts[k - 1]!, path.pts[k]!) < 9.1, `shunt step ${k}`);
+  // The stub move and the cart's forge stop share road 2's first metres: safe only because by the Works the cart
+  // serves nothing (its stretches are train-fed) and rests at the camp. test/railway-works.test.ts asserts that
+  // against the cart's phase through the roll-out, so a rule that wakes the cart then fails there.
+  assert.ok(shunter - SHUNTER_HZ < CART.hz && SHUNT_CUSP_S + WAGON_CAR.hz > -CART.hz, 'they overlap on the road');
+});
+
+test('the hall and shelf: 1 m behind the buffers, centred on the island; the shelf inside the north end wall', () => {
+  assert.ok(Math.abs(HALL.a + HALL.d / 2 - (BUFFERS[0] - 1)) < 1e-9);
+  assert.ok(dist(HALL, { x: -90.16, z: 11.03 }) < 0.05, 'the plan put the hall at (-90.16, 11.03)');
+  const shelf = toAxis(SHELF_B);
+  assert.ok(shelf.c < HALL.c - HALL.w / 2 + 1 && shelf.c > HALL.c - HALL.w / 2, 'on the north end wall');
+  assert.ok(Math.abs(shelf.a - HALL.a) < HALL.d / 2, 'inside the hall');
+});

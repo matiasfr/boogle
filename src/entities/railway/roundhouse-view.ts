@@ -18,17 +18,7 @@ import { material } from '../../render/materials.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 import { WORKS, SHED_STALL, SHED_TABLE, WAGON_S } from '../../sim/railway-works-layout.ts';
 import { SEAM_STALL } from '../../sim/railway-works.ts';
-import {
-  STALL_BOXES,
-  STALL_SLAB,
-  STALL_ROAD,
-  STALL_SOCKETS,
-  STALL_YAW,
-  stallPoint,
-  beam,
-  box,
-  type WorksBox,
-} from './works-shape.ts';
+import { STALL_TODAY, stallShape, beam, box, type WorksBox } from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts } from './works-box-view.ts';
 
 type Inspection = ReturnType<RailwayAdapter['inspect']>;
@@ -50,10 +40,19 @@ export async function createRailwayRoundhouse(
   owner: OwnedView,
   deps: { contactIn: (id: number) => number },
 ) {
-  const [{ addStatic }, layout] = await Promise.all([
+  const [{ addStatic }, layout, home] = await Promise.all([
     import('../../proto/place/land.ts'),
     import('../../proto/place/layout.ts'),
+    import('../../proto/place/home-station.ts'),
   ]);
+  // `?home=b` (docs/plans/home-station.md, step 3) draws the open stall on the table's 190 degree road and the table at
+  // its spur's end. Look only: the prompts' reach keeps today's anchors, and the shunt still runs today's path.
+  const homeB = home.homeLayout();
+  const open = home.stallFrame(home.STALLS.open);
+  const toWorld = (p: { x: number; z: number }) => ({ x: p.x + layout.ORIGIN.x, z: p.z });
+  const { STALL_BOXES, STALL_SLAB, STALL_ROAD, STALL_SOCKETS, STALL_YAW, stallPoint } = homeB
+    ? stallShape({ centre: toWorld(open.centre), yaw: open.yaw, slabZ: -2.9, rim: toWorld(open.rim) })
+    : STALL_TODAY;
   const boxes: WorksBox[] = [...STALL_BOXES];
   const part = (x: number, y: number, z: number, w: number, h: number, d: number, colour: `#${string}`) => {
     const p = stallPoint(x, z);
@@ -83,7 +82,8 @@ export async function createRailwayRoundhouse(
 
   // ---------------------------------------------------------------- the turntable (Place's junction disc is not
   // loaded in production: the Roundhouse draws its own at the same place and size)
-  const table = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
+  const anchor = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
+  const table = homeB ? toWorld(home.TABLE) : anchor;
   const line2 = layout.LINKS[1]!.line;
   const lp = { x: 0, z: 0, ux: 0, uz: 0 };
   const lineAt = (s: number, out: THREE.Vector3) => {
@@ -95,7 +95,8 @@ export async function createRailwayRoundhouse(
   const rim = STALL_ROAD[0]!;
   const yaws = [Math.atan2(rim.x - table.x, rim.z - table.z), 0];
   layout.lineAt(line2, 0.5, lp);
-  yaws[1] = Math.atan2(lp.ux, lp.uz);
+  const spur = (home.TABLE.spur * Math.PI) / 180;
+  yaws[1] = homeB ? Math.atan2(Math.sin(spur), -Math.cos(spur)) : Math.atan2(lp.ux, lp.uz);
   const discGeo = new THREE.CylinderGeometry(R, R, 0.24, 24);
   const disc = new THREE.Mesh(discGeo, material('stone', { colour: '#7f7a70' }));
   discGeo.dispose();
@@ -678,7 +679,7 @@ export async function createRailwayRoundhouse(
         !rolling &&
         !tableTurning &&
         !want &&
-        Math.hypot(pos.x - table.x, pos.z - table.z) <= SHED_TABLE.reach / 100 - 0.6 &&
+        Math.hypot(pos.x - anchor.x, pos.z - anchor.z) <= SHED_TABLE.reach / 100 - 0.6 &&
         Math.abs(pos.y - SHED_TABLE.y / 100) <= 2.6
       ) {
         const to = (1 - sh.table) as 0 | 1;

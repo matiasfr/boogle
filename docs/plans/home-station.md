@@ -301,7 +301,7 @@ Codex is out until 13 November, so previz may wait; steps 1 to 6 do not.
 Smallest first. Each leaves `npm run check` green. No step runs the long playthrough (owner call "Tight tests per
 change; the full loop once a day").
 
-- [ ] **1. The geometry as data, with its tests.** No behaviour change.
+- [x] **1. The geometry as data, with its tests.** No behaviour change.
   - New `src/proto/place/home-station.ts` (Local, no three.js): `HOME_B` with the axis, `LINE_ORIGIN`, both heads as the
     segment table above, the leg, the spur, the table, the three stalls, the island (apron, ramps, deck), the concourse,
     the buffers and the moved props. Exports `headPoints(line)` (1 m samples from s 0 to the join, marching the
@@ -316,13 +316,13 @@ change; the full loop once a day").
     - no track centre is within 2.8 m of a building footprint (`FORGE`, `TOWN`, `ROOM_PLOTS`);
     - the cart's road is continuous and `cartRoadAt(F)` is road 2's s 0.
   - Verify: the new test; `npm run check`.
-- [ ] **2. The 2D page shows the real geometry.** Docs only.
+- [x] **2. The 2D page shows the real geometry.** Docs only.
   - `docs/world/home-layout.html`: replace option B's data block with step 1's output (a small script,
     `dev/level/home-station-page.ts`, prints it); stalls at 160°, 190°, 220°; the leg where the crossover was drawn; the
     moved props; a row for the engine at 1.25×. Republish the artifact at its URL.
   - `docs/research/home-station-layout.md`: status to "adopted, with the plan's changes".
   - Verify: open the page; its clearance list shows no "warn" for B.
-- [ ] **3. Draw the layout in 3D behind `?home=b`.** Look only; default off; the rules still use today's anchors, so
+- [x] **3. Draw the layout in 3D behind `?home=b`.** Look only; default off; the rules still use today's anchors, so
   prompts at Home are in the old places in this view.
   - `src/proto/place/home-station.ts`: `homeLayout()` is true for `?home=b` or the environment variable
     `BOOGLE_HOME=b` (for Node tools).
@@ -344,6 +344,9 @@ change; the full loop once a day").
     above; `--rail-seed trains-on --query 'home=b' --video` of a train arriving and leaving; `--rail-seed q4-arriving
     --query 'home=b' --video` of the cart's reversal; `--rail-seed cradle-fitted --query 'home=b' --video` of the
     roll-out. `npm run perf` (new meshes).
+  - Built 9 November as the review's smallest version, with a greybox canopy on the island (it drops in with the deck)
+    and a destination picture on each edge's mast. Cut to step 6: the cart's pose on `cartRoadAt`, the shunt on
+    `shuntPath()`, `sites.ts` feet and the three videos. The leg measures 38.32 m (not 38.64), so `forgeCm` is 20632.
 - [ ] **4. The owner sees it.** Send the full link `https://boogle.club/?home=b` and the three stills. Designer rules on
   the Level findings and questions 1 to 7. Adjust step 1's numbers if he moves anything, and rerun steps 1 to 3's checks.
 - [ ] **5. Make tools follow the anchors.** No behaviour change.
