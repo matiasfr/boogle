@@ -49,6 +49,8 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 
 **The production forge reads finished (6 November evening playtest).** Its bill stands on the frontage clear above the wall tops and out past the scaffold poles, so the second bill's walls never hide the count. Lit, it keeps the prototype's furnace opening in the front boards, so the glowing mouth shows; the chimney smokes; and each rail the server pours flies out of the mouth onto the rack, where the rails stay visible until taken. The roof still waits for trains, as designed. Every receiver's feeder bed is fitted to its 0.7 m span and collider, so it no longer runs back through the receiver's side. Local presentation over the mirrored forge; serves DESIGN.md 7 (Telegraph everything) and "Machines show their work physically".
 
+**Town greeter (8 November playtest note).** Sleeves, the yellow shore worker, stands beside the dock-to-town path at the town entrance. Within 8 m he faces and waves at this player; within 3.3 m Interact offers Talk through the existing townsfolk conversation card. Repeated conversations rotate three short lines per stage: asleep/waking, awake before the forge lights, forge lit before Q2, Q2 onward (Needle Bell), and the sea gate open. Each new stage starts with its current direction. Entirely Local, reading the railway mirror; no progression, saved state or Boogler copy changes. Serves DESIGN.md 7 (Telegraph everything).
+
 ## Production line 1 continuation (5 November 2026, slice 3 branch)
 
 **Single-press wake (8 November solo playtest fix).** The six-metre “Wake it up” prompt and the server's existing
