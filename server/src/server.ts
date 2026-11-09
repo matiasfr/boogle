@@ -11,6 +11,7 @@ import { cleanupSaves, cleanupLine, type Cleanup } from './save-cleanup.ts';
 import { roomNamespaces } from './room-ids.ts';
 import { addPlaydata } from './playdata.ts';
 import { addReviews } from './reviews.ts';
+import { addJump, type JumpConfig } from './jump.ts';
 import { routeUpgrades } from './host/upgrade.ts';
 import { createRoomHost } from './host/rooms.ts';
 import type { RoomHost } from './host/rooms.ts';
@@ -80,6 +81,12 @@ export function loadConfig(
     playMaxSessionBytes: Number(env.PLAY_MAX_SESSION_BYTES) || 4 * 1024 * 1024,
     playMaxTotalBytes: Number(env.PLAY_MAX_TOTAL_BYTES) || 200 * 1024 * 1024,
     playMaxSessions: Number(env.PLAY_MAX_SESSIONS) || 2000,
+    // POST /jump (./jump.ts): per IP, per UTC day, and where seeds come from (production: prebuilt only).
+    jumpRatePerMin: Number(env.JUMP_RATE_PER_MIN) || 6,
+    jumpMaxPerDay: Number(env.JUMP_MAX_PER_DAY) || 100,
+    jumpBuild: env.JUMP_BUILD === 'prebuilt' ? 'prebuilt' : 'any',
+    jumpIdleDays: Number(env.JUMP_IDLE_DAYS) || 3, // test rooms nobody touched this long are deleted
+    jumpMaxRooms: Number(env.JUMP_MAX_ROOMS) || 200, // test rooms at once, well under maxRooms
     log: (...a: unknown[]) => console.log(new Date().toISOString(), ...a),
     ...overrides,
   };
@@ -105,6 +112,13 @@ export type ServerConfig = {
   playMaxSessionBytes: number;
   playMaxTotalBytes: number;
   playMaxSessions: number;
+  jumpRatePerMin: number;
+  jumpMaxPerDay: number;
+  jumpBuild: 'any' | 'prebuilt';
+  jumpIdleDays: number;
+  jumpMaxRooms: number;
+  jumpSeedsDir?: string; // test override: where prebuilt seeds live (default server/seeds)
+  jumpBuildDoc?: JumpConfig['jumpBuildDoc']; // test seam: builds a seed in place of the worker
   serverSaveMs: number;
   roomIdleMs: number;
   roomPauseMs?: number;
@@ -170,7 +184,7 @@ function cleanReport(r: any): Report | null {
 
 /**
  * Build (but don't start listening) the service.
- * Returns { app, server, listen(port), close({ save }), config, roomHost() }.
+ * Returns { app, server, listen(port), close({ save }), config, roomHost(), jumps }.
  */
 export function createService(cfg: ServerConfig) {
   const app = express();
@@ -229,7 +243,8 @@ export function createService(cfg: ServerConfig) {
   app.get('/rooms/:roomId/host', validRoom, (req, res) => {
     res.set('Cache-Control', 'no-store');
     if (!roomHost?.hosts(req.params.roomId)) return res.status(404).json({ error: 'not hosted' });
-    res.json(roomHost.status(req.params.roomId));
+    const seed = jumps.seedOf(req.params.roomId); // a jump room's stage (./jump.ts)
+    res.json({ ...roomHost.status(req.params.roomId), ...(seed && { seed }) });
   });
 
   // ---- reports (errors, desyncs, snapshot and connection failures from players' browsers) ----
@@ -345,6 +360,12 @@ export function createService(cfg: ServerConfig) {
 
   // ---- playtest data (./playdata.ts) ----
   addPlaydata(app, cfg, { limit: createRateLimiter({ perMinute: cfg.playRatePerMin }), authed, withLock });
+  // ---- playtest jump-ins (./jump.ts) ----
+  const jumps = addJump(app, cfg, {
+    store,
+    roomHost: () => roomHost,
+    limit: createRateLimiter({ perMinute: cfg.jumpRatePerMin }),
+  });
 
   // ---- room sockets (./host/upgrade.ts) ----
   const server = http.createServer(app);
@@ -367,6 +388,7 @@ export function createService(cfg: ServerConfig) {
     server,
     config: cfg,
     roomHost: () => roomHost,
+    jumps,
     async listen(port = cfg.port) {
       if (server.listening) throw new Error('Service is already listening');
       await store.init();
@@ -382,6 +404,8 @@ export function createService(cfg: ServerConfig) {
       } catch (error) {
         cfg.log(`save inventory/cleanup failed: ${String(error)}`);
       }
+      // Before any room loads: old-namespace sidecars and idle test rooms go.
+      await jumps.boot().catch((error: unknown) => cfg.log(`jump boot failed: ${String(error)}`));
       roomHost ??= createRoomHost(cfg, store);
       await new Promise<void>((resolve, reject) => {
         server.once('error', reject);
