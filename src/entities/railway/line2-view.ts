@@ -1,5 +1,5 @@
 // Line two's Local views over accepted state: the forge rising and pouring, its rails rack, the machine on the quarry line,
-// Q1-Q4 frames, the depot rack, and the route-v2 service decks, winch drive, lever, gate, pillar p2 and hook device.
+// Q1-Q5 frames, depot racks, route-v2 decks, both gates, the summit switch and Far Head's lamps and live arrival show.
 // Geometry and colliders are rebuilt from accepted construction state; nothing here transfers material.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
@@ -16,6 +16,8 @@ import { LINE2_FORGE, LINE2_STATIONS, line2Panels } from '../../sim/railway-line
 import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
+import { createRailwaySeaGate } from './sea-gate-view.ts';
+import { createRailwayFarHead } from './far-head-view.ts';
 
 /** Rail pairs each stretch lays, one per commit. */
 const STRETCH_PAIRS = LINE2_STATIONS.map((station) => line2Panels(station).length);
@@ -352,6 +354,8 @@ export async function createRailwayLine2(
   slab.position.set(G.x + ox, slabUp, G.z);
   let slabBody: Body | null = null;
   let slabT = -1;
+  const seaGate = createRailwaySeaGate(adapter, owner, { layout, tech, land, shapes, flat, sounds, partMat, glow });
+  const farHead = createRailwayFarHead(owner, { layout, rail, land, flat, sounds });
   // The chain from the slab's top to the winch.
   {
     const a = new THREE.Vector3(G.x + ox, G.y + SLAB.h + 1.25, G.z),
@@ -489,6 +493,8 @@ export async function createRailwayLine2(
           ? 0
           : lineFeed(spec, job.timing).filter((f) => f.launchMs <= (job.elapsed - depositTicks) * 100).length;
     });
+    seaGate.restore(l);
+    farHead.restore(l.stations[4]?.completion === 1);
     visualHead = targetHead = working() ? head() : TURN_HEAD;
     setback = 2.4;
     if (working()) {
@@ -515,6 +521,7 @@ export async function createRailwayLine2(
     state = adapter.inspect();
     const l = l2();
     if (!l) return;
+    seaGate.accepted(event);
     if (event.op === 'rail.forgeTake') {
       for (let n = 0; n < event.accepted - (event.returned ?? 0); n++)
         deposits.push({
@@ -615,6 +622,7 @@ export async function createRailwayLine2(
     const l = l2();
     const e = c.event;
     if (!l) return;
+    seaGate.corrected(c);
     if (e.op === 'rail.lever') {
       clank(lever.x + ox, lever.z);
       return;
@@ -886,6 +894,8 @@ export async function createRailwayLine2(
       }
       drawDepot(l.active, Math.max(0, l.depot - cartFlying().logs));
       syncSolids(l);
+      seaGate.update(dt, l);
+      farHead.update(dt, l.stations[4]?.completion === 1);
       if (slabT >= 0) {
         slabT += dt;
         const u = Math.min(1, slabT / 1.5);
@@ -936,7 +946,7 @@ export async function createRailwayLine2(
       const l = l2(),
         p = me.body?.position;
       if (!l || !p || !state.ready) return [];
-      const out: Interactable[] = [];
+      const out: Interactable[] = seaGate.targets(p, l);
       const full = state.freeCarry <= 0 ? { blocked: 'Your back is full' } : {};
       if (l.forge.rack > 0 && Math.hypot(p.x - RX, p.z - RZ) <= 3)
         out.push({
@@ -984,6 +994,8 @@ export async function createRailwayLine2(
       const l = l2();
       return {
         working: working(),
+        ...seaGate.inspect(),
+        ...farHead.inspect(),
         head: visualHead,
         targetHead,
         setback,
