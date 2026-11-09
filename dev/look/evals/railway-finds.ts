@@ -1,9 +1,11 @@
 // The production railway's finds (place-retirement K1): stand by a crystal, walk into it, and see its stub light on the
 // curio shelf. Use with the production railway (no ?proto=):
 //   findk=0..6               which crystal (default 0, the lookout)
+//   findgold=<id>            a gold find instead (F1; Place's ids: 0-2, 10-12, 50-52), by the same acts
 //   findsfrom=90             the side you stand on, in degrees round the crystal (default 0: +x); findsoff=7 how far (m)
 //   findsact=walk            walk straight into it: it comes to you with its magnet and chime
 //   findsact=walk,shelf      then go to the curio shelf and frame its bottom row
+//   findsact=walk,board      then frame the whole shelf with the finds board beside it
 //   findsact=walk,reload     then reload the page for real; with
 //                            --until "window.__findsReloaded ?? (import('/dev/look/evals/railway-finds.ts'), false)"
 //                            the eval runs again in the new document, frames the shelf and prints `FINDS reloaded <json>`
@@ -40,8 +42,13 @@ sessionStorage.removeItem(RELOAD_KEY);
 const actor = query.get('findsactor');
 const acts = reloaded || (actor && query.get('player') !== actor) ? [] : (query.get('findsact') ?? '').split(',');
 const k = Number(query.get('findk') ?? 0);
-const spot = inspectFinds()!.spots![k];
+const goldId = query.get('findgold');
+const goldK = goldId === null ? -1 : inspectFinds()!.gold!.findIndex((f) => f.id === Number(goldId));
+if (goldId !== null && goldK < 0) throw new Error(`findgold=${goldId}: no such gold find`);
+const spot = goldK >= 0 ? inspectFinds()!.gold![goldK] : inspectFinds()!.spots![k];
 if (!spot) throw new Error(`findk=${k}: no such crystal`);
+/** Still waiting where it stands: not flying, not found. */
+const waiting = () => (goldK >= 0 ? !inspectFinds()!.gold![goldK]!.found : inspectFinds()!.spots![k]!.state === 0);
 type V = { x: number; y: number; z: number };
 const ground = (x: number, z: number): V => ({ x, y: land.H(x, z), z });
 let stand: V, look: V, eye: V;
@@ -57,14 +64,18 @@ function frameSpot() {
   // From the side, a little back: the player on one edge, the crystal on the other.
   eye = { x: look.x - uz * 7 + ux * 1.5, y: Math.max(stand.y, spot!.y) + 2.6, z: look.z + ux * 7 + uz * 1.5 };
 }
-function frameShelf() {
+function frameShelf(board = false) {
   const s = inspectTown()!.shelf!;
-  // The shelf faces +z in its own space; the crystals' row is on its bottom board.
+  // The shelf faces +z in its own space; the crystals' row is on its bottom board. The finds board is 3.6 m along its +x.
   const fx = Math.sin(s.yaw),
     fz = Math.cos(s.yaw);
-  stand = ground(s.x + fx * 2.6 + fz * 1.2, s.z + fz * 2.6 - fx * 1.2);
-  look = { x: s.x, y: s.y + 1.1, z: s.z };
-  eye = { x: s.x + fx * 4.6 - fz * 0.8, y: s.y + 2, z: s.z + fz * 4.6 + fx * 0.8 };
+  const cx = s.x + (board ? fz * 0.9 : 0),
+    cz = s.z - (board ? fx * 0.9 : 0),
+    back = board ? 7.4 : 4.6;
+  stand = ground(cx + fx * 2.6 - fz * 3.6, cz + fz * 2.6 + fx * 3.6);
+  if (!board) stand = ground(s.x + fx * 2.6 + fz * 1.2, s.z + fz * 2.6 - fx * 1.2);
+  look = { x: cx, y: s.y + (board ? 1.6 : 1.1), z: cz };
+  eye = { x: cx + fx * back - fz * 0.8, y: s.y + 2, z: cz + fz * back + fx * 0.8 };
 }
 const free = query.get('findscam') === 'follow';
 const setCam = () => {
@@ -79,7 +90,7 @@ function goTo() {
   setCam();
   setTimeout(setCam, 100);
 }
-if (reloaded) frameShelf();
+if (reloaded) frameShelf(query.get('findsact')?.includes('board'));
 else frameSpot();
 goTo();
 if (query.get('findshold') !== '0') {
@@ -101,7 +112,7 @@ async function runAct() {
       const end = performance.now() + 6000;
       input.keys.add('KeyW');
       try {
-        while (performance.now() < end && inspectFinds()!.spots![k]!.state === 0) {
+        while (performance.now() < end && waiting()) {
           cam.yaw = me.yaw = Math.atan2(-(spot!.x - body.position.x), -(spot!.z - body.position.z));
           await wait(30);
         }
@@ -109,8 +120,8 @@ async function runAct() {
         input.keys.delete('KeyW');
       }
       await wait(Number(query.get('findswait') ?? 1200));
-    } else if (act === 'shelf') {
-      frameShelf();
+    } else if (act === 'shelf' || act === 'board') {
+      frameShelf(act === 'board');
       goTo();
       await wait(800);
     } else if (act === 'reload') {
@@ -118,7 +129,7 @@ async function runAct() {
       console.log(`FINDS reloading ${JSON.stringify(stored())}`);
       setTimeout(() => location.reload(), 300);
       return;
-    } else throw new Error(`findsact=${act}: choose walk, shelf or reload`);
+    } else throw new Error(`findsact=${act}: choose walk, shelf, board or reload`);
     console.log(
       `FINDS ${JSON.stringify({ k, act, player: { ...body.position }, ...inspectFinds(), stored: stored() })}`,
     );
