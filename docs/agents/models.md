@@ -25,7 +25,8 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
   code.
 - **Strongest model for the few calls that steer the rest** (9 November, the orchestrator's reading of the owner's
   "let's do 1-8"; logged in [agent-calls](../agent-calls.md)): the main session, the planner and the independent
-  review run on Fable; implementers stay on Opus.
+  review run on Fable; implementers stay on Opus. The owner then set the planner's route himself: Fable at medium
+  effort ("planners can use fable medium effort").
 - **Daily jobs** (`dev/daily/jobs.ts`) stay on Codex; at a limit they fail and report rather than spend Claude usage
   unattended.
 - **Changing a route:** edit `dev/models.ts` and record the owner's words in

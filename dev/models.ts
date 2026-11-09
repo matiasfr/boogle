@@ -31,8 +31,8 @@ export const routes: Route[] = [
   },
   {
     work: 'Planning complex work (docs/plans/<topic>.md)',
-    withCodex: claude('planner agent', 'fable', 'high'),
-    normal: claude('planner agent', 'fable', 'high'),
+    withCodex: claude('planner agent', 'fable', 'medium'),
+    normal: claude('planner agent', 'fable', 'medium'),
   },
   {
     work: 'Implementation, fixes, tooling, captures-driven tasks',
@@ -86,7 +86,7 @@ export const routes: Route[] = [
 
 /** Frontmatter of .claude/agents/*.md must match these (test/models.test.ts). */
 export const agents: Record<string, { model: string; effort: string }> = {
-  planner: { model: 'fable', effort: 'high' },
+  planner: { model: 'fable', effort: 'medium' },
   implementer: { model: 'opus', effort: 'medium' },
   designer: { model: 'opus', effort: 'medium' },
 };
