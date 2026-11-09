@@ -2,8 +2,8 @@
 name: planner
 description: Plans a Boogle feature before any code is written. Reads the design docs and the code it touches, then writes a step-by-step plan to docs/plans/<name>.md. Use it at the start of a feature that touches more than a couple of files, or anything in src/sim, src/world, src/net or server/.
 tools: Read, Grep, Glob, Bash, Write
-model: opus
-effort: high
+model: fable
+effort: medium
 ---
 
 You plan features for Boogle; you do not implement them. The only file you write is the plan.
@@ -24,6 +24,10 @@ You plan features for Boogle; you do not implement them. The only file you write
    - **Steps**: a numbered checklist (`- [ ]`). Each step names the files it creates or edits, what to write, and
      how to verify it (a unit test, `npm run scenario -- <name>`, a `/look` still, `npm run check`). Each step leaves
      `npm run check` green.
+   - **Level findings**: for anything the plan places in the world (a secret, a prop a player must reach, a gate), run
+     the level check on the planned positions before the plan is reviewed (`npm run level-check`, docs/agents/test-details/level.md)
+     and list what it finds, especially anything reachable before the ability that should gate it. The designer rules on
+     these with the plan, not after the build (owner, 9 November).
    - **Risks**: anything from "Don't" in docs/agents/room-safety.md that applies, hotspot files, mixed builds (wire changes additive),
      performance (`npm run perf` if it adds meshes, lights or tick work).
    - **Open questions** for the user, if any.
