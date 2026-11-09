@@ -42,13 +42,14 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   const device = new THREE.Group();
   device.position.copy(at);
   owner.add(device);
-  // Place's device drum, the sea switch's family; dark under its cap so it doesn't read as a second switch.
+  // Place's device drum, the sea switch's family, but dark all over: no brass cap, so it doesn't read as a second
+  // switch (Proof 1, 9 November: with a brass cap and a pale mast it looked like a switch with a lever).
   device.add(
     mesh(
       shapes.merged([
         ['c', 0, 0.35, 0, 0.72, 0.7, 0.72, '#4a4842'],
         ['c', 0, 0.78, 0, 0.56, 0.16, 0.56, '#5d5a52'],
-        ['c', 0, 0.9, 0, 0.5, 0.06, 0.5, '#6e5c3a'],
+        ['c', 0, 0.9, 0, 0.5, 0.06, 0.5, '#54524b'],
       ]),
     ),
   );
@@ -59,9 +60,9 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
     undefined,
     owner,
   );
-  // A short mast at the drum's east edge, and the vane at its top pointing west (-x), at the forge.
+  // A short dark mast at the drum's east edge, and the vane at its top pointing west (-x), at the forge.
   const MAST = { x: 0.48, top: 2.35 };
-  const mast = mesh(new THREE.BoxGeometry(0.08, MAST.top - 0.93, 0.08).translate(MAST.x, (MAST.top + 0.93) / 2, 0));
+  const mast = mesh(shapes.merged([['b', MAST.x, (MAST.top + 0.93) / 2, 0, 0.08, MAST.top - 0.93, 0.08, '#3d3c38']]));
   const furled = mesh(
     shapes.merged([
       ['b', -0.25, 0, 0, 1.3, 0.16, 0.2, '#3d3c38'],
