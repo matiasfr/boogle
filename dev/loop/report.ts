@@ -15,7 +15,7 @@ const cueText = (n: LoopNode) => {
   return `NO CUE (${[...new Set(why)].join(', ')})`;
 };
 
-export function loopReport() {
+function loopReport() {
   const canonical = proposeOrders()[0]!.order;
   const packAt = canonical.indexOf('pack');
   const packed = (id: NodeId) => canonical.indexOf(id) > packAt;

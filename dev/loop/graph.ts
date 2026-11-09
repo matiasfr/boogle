@@ -699,7 +699,7 @@ export function carryOf(material: Material, packed: boolean) {
 }
 /** Straight-line one-way metres a carry of `material` walks to the node: from the nearest sources that hold its
  * bill (trees yield `sourceYield` each, rocks their initial stone), or from the rack beside the frame. */
-export function carryMetres(n: LoopNode, material: Material) {
+function carryMetres(n: LoopNode, material: Material) {
   const s = n.supply[material];
   const bill = n.bill[material] ?? 0;
   if (!s || !bill) return 0;

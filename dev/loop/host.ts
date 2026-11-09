@@ -18,7 +18,7 @@ export type Host = {
 
 /** Stands at `at` (world cm); `y` undefined means on the ground, below every raised target. Cadence always passes:
  * the runner spaces its presses by the action times it assumes. */
-export const standingAt = (at: Point): Actor => ({
+const standingAt = (at: Point): Actor => ({
   reach: (x, z, r) => (at.x - x) ** 2 + (at.z - z) ** 2 <= r * r,
   height: (y, r) => at.y !== undefined && Math.abs(at.y - y) <= r,
   cadence: () => true,

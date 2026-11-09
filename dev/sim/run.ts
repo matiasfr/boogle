@@ -3,19 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const here = import.meta.dirname;
-const NOT_RUNS = new Set([
-  'hooks',
-  'run',
-  'world',
-  'inspect',
-  'timed',
-  'ball-browser',
-  'ball-course',
-  'ball-handoff-peer',
-  'player-browser',
-  'player-course',
-  'replay-record',
-]);
+const NOT_RUNS = new Set(['hooks', 'run', 'world', 'inspect']);
 const runs = fs
   .readdirSync(here)
   .filter((f) => f.endsWith('.ts'))
@@ -24,7 +12,11 @@ const runs = fs
 
 const name = process.argv[2];
 if (!name || !runs.includes(name)) {
-  console.error(`npm run sim -- <name>, one of: ${runs.join(', ')}`);
+  console.error(
+    runs.length
+      ? `npm run sim -- <name>, one of: ${runs.join(', ')}`
+      : 'npm run sim: no runs in dev/sim/ (the ball and player runs were retired; see ./README.md)',
+  );
   process.exit(2);
 }
 await import(path.join(here, `${name}.ts`));
