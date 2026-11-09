@@ -40,6 +40,25 @@ The queue names the blocking job; a dead PID's unique ticket is reclaimed. Broke
 after acquisition, and the slot lasts until browser/child cleanup. A timeout with a final observed expected beat can pass
 with a note; missing beats, health errors and co-op convergence/clock failures still fail. Timeouts are reported separately.
 
+The queue also waits for the machine: a free slot is not granted while the 1-minute load average is above
+`BOOGLE_BOT_MAX_LOAD` (default 30; `0` turns the gate off), and queue progress says so ("waiting for load 41 → 30").
+After `BOOGLE_BOT_LOAD_WAIT_MS` (default 20 minutes) at the front of the queue the run goes ahead and is marked under
+load. The gate is on acquisition only: a running job's own load never stops it, and the load wait comes before the
+browser budget and co-op clock samples start. So don't poll `uptime` or wait for the load yourself: enqueue the run and
+end your turn, naming the queued run.
+
+Every playthrough, look and scenario writes a verdict (`.look/playthrough/<name>/verdict.json`,
+`<out>/<label>-verdict.json` for look, `.look/scenarios/verdict.json`) through `dev/look/verdict.ts`. It reads
+`"running"` with the pid and start time from the start: a `running` verdict whose pid is gone did not finish, which is
+not a pass. The final verdict is stamped with `commit` (HEAD), `tree` (HEAD^{tree}), `dirty` (uncommitted file count),
+`loadAtStart`, `loadAtEnd`, `underLoad`, `queueWaitMs`, `startedAt`, `endedAt` and `command` (the exact command line,
+with any `BOOGLE_BOT_*`, `BOOGLE_QUERY` and `LOOK_*` settings), and the same in one line of `report.txt`. `underLoad`
+is true when either load is above the limit (30 when the gate is off) or the gate gave up waiting; a pass under load
+says "passed under load: not evidence of timing or feel". A run stopped from outside (SIGTERM, SIGINT or SIGHUP, or its
+browser, context or page closed under it) is `"killed"` with a `reason` (and the `outcome` its caller saw), exit code 3;
+a game failure stays a failure, exit 1. Rerun a killed run; it says nothing about the game. A brokered harness stamps
+the broker's queue wait only once the launcher checkout has this queue.
+
 The trusted broker and its Node harness come from the launcher checkout. Worker edits do not upgrade that process.
 New flags and queue-aware deadlines require review and a launcher restart. A rejected flag is a verification blocker,
 not permission to bypass the broker. Set queue environment variables before launching it. The client prints queue progress
