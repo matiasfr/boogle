@@ -76,7 +76,17 @@ export const RAIL_FROM = {
   'trains-on': { railFrom: 'q6', after: 'trains' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop }>;
 /** Beats both peers pass in a two-player run; the follower watches line two from the village. */
-export const RAIL_COOP_STOPS: readonly RailStop[] = ['wake', 't1-done', 't2-funded', 'T2', 'T3', 'Q4', 'Q5', 'Q6'];
+export const RAIL_COOP_STOPS: readonly RailStop[] = [
+  'wake',
+  't1-done',
+  't2-funded',
+  'T2',
+  'T3',
+  'Q4',
+  'Q5',
+  'Q6',
+  'pier',
+];
 
 export function railSegmentOptions(args: string[]) {
   const value = (flag: string) => {

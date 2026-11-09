@@ -287,7 +287,7 @@ async function main() {
   if (players === 2) {
     if (rail?.from) throw new Error('Two-player runs start fresh; the seeded bot is solo');
     if (rail?.to && !RAIL_COOP_STOPS.includes(rail.to))
-      throw new Error(`Two-player --to: ${RAIL_COOP_STOPS.join(', ')}, pier (beats both peers pass)`);
+      throw new Error(`Two-player --to: ${RAIL_COOP_STOPS.join(', ')} (beats both peers pass)`);
     return railCoopPlaythrough({ args, checkout, dir, query, stallS, evalFile, to: rail?.to });
   }
 
