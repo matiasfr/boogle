@@ -158,16 +158,23 @@ export async function createRailwayLine2(
   track.snapTo(track.u(layout.STUB.east));
   const depotLogs = pieces.logStackMesh(24, owner);
   depotLogs.count = 0;
+  // Restore the prototype depot's timber bearers and stops, independently of whether it has stock.
+  // Logs lie along X here (the prototype turns them along Z), so turn the same rack parts to match.
+  const rackParts: Parameters<typeof shapes.merged>[0] = [];
+  for (const x of [-1.1, 1.1]) {
+    rackParts.push(['b', x, 0.08, 0, 0.2, 0.16, 1.6, '#8a6236']);
+    for (const z of [-0.8, 0.8]) rackParts.push(['b', x, 0.65, z, 0.14, 1.3, 0.14, '#7f5630']);
+  }
+  const depotRack = mesh(shapes.merged(rackParts));
+  depotRack.visible = false;
   const depotAt = new THREE.Vector3();
   const depotPlace = (k: number, out: THREE.Vector3) => {
     const f = frames[k]!;
-    // Beside the frame, further along the line: you do the last carry.
-    const p = layout.lineAt(quarry.line, LINE2_STATIONS[k]!.fromCm / 100 + 5, { x: 0, z: 0, ux: 0, uz: 1 });
-    const lx = f.x - (p.x + ox),
-      lz = f.z - p.z,
-      d = Math.hypot(lx, lz) || 1;
-    out.set(p.x + ox + (lx / d) * 6.5, 0, p.z + (lz / d) * 6.5);
-    out.y = land.H(out.x, out.z);
+    // On the approach beside the frame: clear its posts, feeder, parked machine and Q5's gate jambs.
+    // Use the frame's tangent; normalizing a vector toward the frame crowded the pile against it on bends.
+    // The full 3.2 m pickup zone must stay inside the server's existing 7 m reach around the frame.
+    out.set(f.x - Math.sin(f.yaw) * 3.4, 0, f.z - Math.cos(f.yaw) * 3.4);
+    out.y = land.H(out.x, out.z) + 0.16; // the bearer tops, shared by unload flights and pickup targets
     return out;
   };
   let drawnDepot = '';
@@ -176,11 +183,13 @@ export async function createRailwayLine2(
     const key = `${k}:${n}`;
     if (key === drawnDepot) return;
     drawnDepot = key;
+    depotRack.visible = k >= 0 && LINE2_STATIONS[k]!.depot;
     if (k < 0 || !LINE2_STATIONS[k]!.depot) {
       commitPieces(depotLogs, 0);
       return;
     }
     depotPlace(k, depotAt);
+    depotRack.position.copy(depotAt).y -= 0.16;
     const shown = Math.min(24, n);
     for (let i = 0; i < shown; i++) pieces.setStackLog(depotLogs, i, pieces.stackSlot(i, 4, depotAt, 0, tmp), 0);
     // logStackMesh starts hidden. Commit visibility and colour uploads along with its matrices.

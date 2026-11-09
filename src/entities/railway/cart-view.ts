@@ -30,7 +30,7 @@ const TICKS_PER_S = 10;
 export async function createRailwayCart(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  /** Where line2-view stands the depot rack for stretch k (world metres, on the ground). */
+  /** Where line2-view stands the depot's log bed for stretch k (world metres). */
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
   const [layout, rail, pieces, land, flatMod, look, kit, props, common] = await Promise.all([
