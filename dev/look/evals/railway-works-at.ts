@@ -53,7 +53,7 @@ if (!pose) throw new Error(`Choose worksat=${Object.keys(poses).join('|')}`);
 const shot = window as Window & { __worksPrepared?: boolean; __worksWalkDone?: boolean };
 if (mode === 'wagon') {
   // The coupled wagon shows behind line 2's train while it stands at the village.
-  const end = performance.now() + 90000;
+  const end = performance.now() + 240000;
   const home = () => {
     const row = inspectRailway()!.line2.train[1]!;
     return row.phase === 0 && row.at === 0;

@@ -281,6 +281,21 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
       const rope = hook.y - (fy + FOOTING.h);
       if (rope > 0.05) batch.box(hook.x, fy + FOOTING.h + rope / 2, hook.z, 0.06, rope, 0.06, '#d8cfa8');
       batch.box(hook.x, hook.y, hook.z, 0.5, 0.3, 0.5, IRON);
+      // The hook runs out on a line paid off the jib's head, so it never travels unsupported.
+      const dx = hook.x - jibHead.x,
+        dz = hook.z - jibHead.z,
+        run = Math.hypot(dx, dz);
+      if (run > 0.3)
+        batch.box(
+          (hook.x + jibHead.x) / 2,
+          jibHead.y,
+          (hook.z + jibHead.z) / 2,
+          0.08,
+          0.08,
+          run,
+          '#d8cfa8',
+          Math.atan2(dx, dz),
+        );
     }
   }
   function stepLowering(dt: number) {
