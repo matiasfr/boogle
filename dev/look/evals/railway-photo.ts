@@ -23,6 +23,12 @@ const frames: Record<string, Frame> = {
   TRAINS: { camera: [1023, 38, -137], target: [1009, 32, -149] },
   'Q6 laid': { camera: [1365, 39, -155], target: [1402, 25, -368] },
   pier: { camera: [1402, 34, -348], target: [1402, 27, -700] },
+  // Split-rock (J5f): through the cut from the quarry halt; the stall with its shunter and wagon; the footing wagon
+  // coupled behind line 2's train at the village; and the bents from the pier head toward Ring Island.
+  'throat open': { camera: [1078, 29, 35], target: [1121, 26, 84] },
+  'stall built': { camera: [923, 25, 8], target: [909.5, 20, 20.5] },
+  'wagon coupled': { camera: [936, 25, 31], target: [924, 19.5, 16] },
+  'crossing footed': { camera: [1408, 33, -372], target: [1404, 2, -470] },
 };
 const beat = new URLSearchParams(location.search).get('railStop') ?? '';
 const frame = frames[beat];
@@ -34,6 +40,7 @@ if (new URLSearchParams(location.search).has('railFrom')) {
   shot.__railPhoto = true;
   const from = new URLSearchParams(location.search).get('railFrom');
   if (from === 'boiler' || from === 'q6') await import('/dev/look/evals/railway-b5b8-bot.ts' as string);
+  else if (from === 'works' || from === 'wagon') await import('/dev/look/evals/railway-works-bot.ts' as string);
   else await import('/dev/look/evals/railway-b4-bot.ts' as string);
 } else background(play(), 'played railway photo');
 background(

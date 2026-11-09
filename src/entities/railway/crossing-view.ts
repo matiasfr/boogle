@@ -1,0 +1,414 @@
+// The first sea crossing, live from accepted state (docs/plans/split-rock-roundhouse.md, J5c): from Q6 the pier head
+// shows twelve empty footing sockets on the sea floor along `ringx` and a stake at each bent, the pier rack on the Pier
+// halt holds what the wagon brought, and a jib at the pier head lowers each set footing on a rope into its socket.
+// Every pair raises a trestle bent to deck height; twelve set is one whistle and two rockets at the last bent. Local
+// view: lowering, bents rising and the show play on accepted events and live edges; restore snaps them.
+import * as THREE from 'three/webgpu';
+import type { RailwayAdapter, RailwayAccepted, RailwayCorrection } from '../../adapters/railway.ts';
+import type { OwnedView } from '../../render/owned-view.ts';
+import type { Interactable } from '../../player/hands.ts';
+import { me } from '../../player/player.ts';
+import { remotes } from '../../netplay/net.ts';
+import { clank, thump, whistle } from '../../render/machine-sfx.ts';
+import { placeSound } from '../../render/place-sfx.ts';
+import { splash } from '../../render/splash.ts';
+import { emit } from '../../render/particles.ts';
+import { dustRing } from '../../render/particle-effects.ts';
+import { readableIntensity } from '../../render/readable-unlit.ts';
+import { SEA } from '../../constants.ts';
+import { WORKS, PIER_RACK, PIER_FRAME, CROSSING_BENTS, CROSSING_FOOT_OFF } from '../../sim/railway-works-layout.ts';
+import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
+
+/** Deck height over the sea (the 8 November low-lines call), and the pieces' timings in seconds. */
+const DECK = SEA + 4;
+const RISE_S = 2,
+  OUT_SPEED = 28,
+  LOWER_S = 2.2;
+const TIMBER = '#8a6236',
+  IRON = '#3a3d44',
+  STAKE = '#e8a33a';
+
+export async function createRailwayCrossing(adapter: RailwayAdapter, owner: OwnedView, deps: { toPier: () => number }) {
+  const [{ H }, layout] = await Promise.all([
+    import('../../proto/place/land.ts'),
+    import('../../proto/place/layout.ts'),
+  ]);
+  const line = layout.LINKS[1]!.line;
+  const P = { x: 0, z: 0, ux: 0, uz: 1 };
+  let state = adapter.inspect();
+  const batch = createBoxBatch(owner, 360);
+  const m = new THREE.Matrix4(),
+    p = new THREE.Vector3();
+
+  // ---------------------------------------------------------------- the crossing's line: bents, sockets, stakes
+  const first = CROSSING_BENTS[0]!,
+    last = CROSSING_BENTS.at(-1)!;
+  const along = { x: last.x - first.x, z: last.z - first.z };
+  const len = Math.hypot(along.x, along.z);
+  along.x /= len;
+  along.z /= len;
+  const across = { x: along.z, z: -along.x };
+  const bentYaw = Math.atan2(along.x, along.z);
+  const bents = CROSSING_BENTS.map((b) => ({ x: b.x / 100, z: b.z / 100 }));
+  const off = CROSSING_FOOT_OFF / 100;
+  const sockets = bents.flatMap((b) =>
+    [-1, 1].map((side) => {
+      const x = b.x + across.x * side * off,
+        z = b.z + across.z * side * off;
+      return { x, z, y: H(x, z) };
+    }),
+  );
+
+  // ---------------------------------------------------------------- the pier rack, on the Pier halt's deck
+  const rack = { x: PIER_RACK.x / 100, z: PIER_RACK.z / 100 };
+  layout.lineAt(line, 733, P);
+  const rackYaw = Math.atan2(P.ux, P.uz);
+  const rackY = layout.railY(line, 733) + 0.72; // the halt deck's top (halts-view's `low`)
+  const rackAxis = { x: Math.sin(rackYaw), z: Math.cos(rackYaw) },
+    rackSide = { x: rackAxis.z, z: -rackAxis.x };
+  /** Rack slot k's base centre: two across the deck, three along it, then a second layer. */
+  const rackSlot = (k: number, out: THREE.Vector3) => {
+    const layer = Math.floor(k / 6),
+      i = k % 6;
+    const u = (i % 2) - 0.5,
+      v = Math.floor(i / 2) - 1;
+    return out.set(
+      rack.x + rackSide.x * u * 1.25 + rackAxis.x * v * 1.3,
+      rackY + 0.14 + layer * (FOOTING.h + 0.1),
+      rack.z + rackSide.z * u * 1.25 + rackAxis.z * v * 1.3,
+    );
+  };
+
+  // ---------------------------------------------------------------- the jib at the pier head
+  const frame = { x: PIER_FRAME.x / 100, z: PIER_FRAME.z / 100 };
+  const deckY = layout.railY(line, 742) + 0.1;
+  const jibYaw = Math.atan2(first.x / 100 - frame.x, first.z / 100 - frame.z);
+  const jibHead = new THREE.Vector3(frame.x + Math.sin(jibYaw) * 3.2, deckY + 4.6, frame.z + Math.cos(jibYaw) * 3.2);
+
+  // ---------------------------------------------------------------- live pieces
+  type Lowering = { slot: number; from: THREE.Vector3; t: number };
+  const lowering: Lowering[] = [];
+  /** Per bent: seconds since it started rising (≥ RISE_S once stood), or −1 for not yet. */
+  const rise = bents.map(() => -1);
+  let shownCrossing = -1,
+    show = -1,
+    rockets: { t: number; x: number; y: number; z: number; colour: THREE.Color }[] = [];
+  const colours = ['#ffcc63', '#39e6c6'].map((c) => new THREE.Color(c));
+  const trail = new THREE.Color('#ffe9b0');
+
+  const open = () => state.ready && state.line2.trains && state.line2.completed >= LINE2_STATIONS.length;
+  /** Footings standing in the sea now: set ones minus those still on their way down. */
+  const inSea = () => Math.max(0, state.works.pierSet - lowering.length);
+  const lowerTime = (l: Lowering) => {
+    const s = sockets[l.slot]!;
+    return Math.hypot(s.x - jibHead.x, s.z - jibHead.z) / OUT_SPEED;
+  };
+  const avatarBack = (pid: string, out: THREE.Vector3) => {
+    const a = pid === state.pid ? me.avatar : [...remotes.values()].find((r) => r.pid === pid && r.entered)?.avatar;
+    if (!a) return false;
+    out.copy(a.position);
+    out.y += 1.3;
+    return true;
+  };
+
+  function snap() {
+    state = adapter.inspect();
+    lowering.length = 0;
+    const pairs = Math.floor(state.works.pierSet / 2);
+    rise.forEach((_, b) => (rise[b] = b < pairs ? RISE_S : -1));
+    shownCrossing = state.works.crossing;
+    show = -1;
+    rockets = [];
+  }
+  snap();
+
+  function drawBent(b: number) {
+    const t = rise[b]!;
+    if (t < 0) return;
+    const c = bents[b]!;
+    const foot = Math.max(sockets[b * 2]!.y, sockets[b * 2 + 1]!.y) + FOOTING.h;
+    const postH = DECK - foot;
+    // Four pieces in turn, each sliding up out of the water into place: two posts, the brace, the cap.
+    const piece = (k: number) => Math.min(1, Math.max(0, (t - k * 0.4) / 0.6));
+    for (const [k, side] of [
+      [0, -1],
+      [1, 1],
+    ] as const) {
+      const u = piece(k);
+      if (u <= 0) continue;
+      const drop = (1 - u * u * (3 - 2 * u)) * postH;
+      batch.box(
+        c.x + across.x * side * off,
+        foot + postH / 2 - drop,
+        c.z + across.z * side * off,
+        0.5,
+        postH,
+        0.5,
+        TIMBER,
+        bentYaw,
+      );
+    }
+    const brace = piece(2);
+    if (brace > 0) {
+      const span = Math.hypot(off * 2, postH * 0.7);
+      batch.box(
+        c.x,
+        foot + postH * 0.5 - (1 - brace) * postH,
+        c.z,
+        0.22,
+        span,
+        0.22,
+        TIMBER,
+        bentYaw + Math.PI / 2,
+        0,
+        Math.atan2(off * 2, postH * 0.7),
+      );
+    }
+    const cap = piece(3);
+    if (cap > 0) batch.box(c.x, DECK + 0.3 + (1 - cap) * 3, c.z, off * 2 + 1.4, 0.6, 0.7, IRON, bentYaw + Math.PI / 2);
+  }
+  function draw() {
+    batch.begin();
+    if (open()) {
+      // Sockets: an iron collar on the sea floor; a stake at each bent, its top painted to read from the pier.
+      sockets.forEach((s, k) => {
+        for (const [dx, dz, w, d] of [
+          [0, 0.8, 1.7, 0.2],
+          [0, -0.8, 1.7, 0.2],
+          [0.8, 0, 0.2, 1.4],
+          [-0.8, 0, 0.2, 1.4],
+        ] as const)
+          batch.box(
+            s.x + across.x * dx + along.x * dz,
+            s.y + 0.15,
+            s.z + across.z * dx + along.z * dz,
+            w,
+            0.3,
+            d,
+            IRON,
+            bentYaw + Math.PI / 2,
+          );
+        if (k < inSea()) footingParts(batch, footingFrame(m, s.x, s.y, s.z, bentYaw));
+      });
+      for (const b of bents) {
+        const ground = H(b.x, b.z);
+        batch.box(b.x, (ground + SEA + 1.8) / 2, b.z, 0.25, SEA + 1.8 - ground, 0.25, TIMBER);
+        batch.box(b.x, SEA + 1.55, b.z, 0.3, 0.5, 0.3, STAKE);
+      }
+      bents.forEach((_, b) => drawBent(b));
+      // The pier rack's pallet and its stack (less what is still hopping off the wagon).
+      batch.box(rack.x, rackY + 0.07, rack.z, 2.6, 0.14, 4.1, '#6b5a44', rackYaw);
+      const resting = Math.max(0, state.works.pierRack - deps.toPier());
+      for (let k = 0; k < Math.min(resting, WORKS.pier); k++) {
+        rackSlot(k, p);
+        footingParts(batch, footingFrame(m, p.x, p.y, p.z, rackYaw));
+      }
+      // The jib: a mast on the pier head and an arm reaching out over the sea toward the crossing.
+      const mastH = jibHead.y - deckY;
+      batch.box(frame.x, deckY + mastH / 2, frame.z, 0.35, mastH, 0.35, IRON);
+      batch.box(frame.x, deckY + 0.15, frame.z, 1.6, 0.3, 1.6, IRON);
+      batch.box((frame.x + jibHead.x) / 2, jibHead.y, (frame.z + jibHead.z) / 2, 0.25, 0.25, 3.4, STAKE, jibYaw);
+    }
+    for (const l of lowering) drawLowering(l);
+    batch.commit();
+  }
+  /** Off the setter's back up to the jib's hook, out over the stakes at hook height, then down on the rope. */
+  function drawLowering(l: Lowering) {
+    const s = sockets[l.slot]!;
+    const hook = new THREE.Vector3();
+    const up = 0.6,
+      out = lowerTime(l);
+    let fx: number, fy: number, fz: number;
+    if (l.t < up) {
+      const u = Math.max(0, l.t / up);
+      hook.copy(jibHead);
+      fx = l.from.x + (jibHead.x - l.from.x) * u;
+      fy = l.from.y + (jibHead.y - 2.2 - l.from.y) * u + Math.sin(u * Math.PI) * 0.8;
+      fz = l.from.z + (jibHead.z - l.from.z) * u;
+    } else if (l.t < up + out) {
+      const u = (l.t - up) / out,
+        e = u * u * (3 - 2 * u);
+      hook.set(jibHead.x + (s.x - jibHead.x) * e, jibHead.y, jibHead.z + (s.z - jibHead.z) * e);
+      fx = hook.x;
+      fy = hook.y - 2.2;
+      fz = hook.z;
+    } else {
+      const u = Math.min(1, (l.t - up - out) / LOWER_S);
+      hook.set(s.x, jibHead.y, s.z);
+      fx = s.x;
+      fy = jibHead.y - 2.2 + (s.y - (jibHead.y - 2.2)) * u;
+      fz = s.z;
+    }
+    footingParts(batch, footingFrame(m, fx, fy, fz, bentYaw));
+    if (l.t >= up) {
+      const rope = hook.y - (fy + FOOTING.h);
+      if (rope > 0.05) batch.box(hook.x, fy + FOOTING.h + rope / 2, hook.z, 0.06, rope, 0.06, '#d8cfa8');
+      batch.box(hook.x, hook.y, hook.z, 0.5, 0.3, 0.5, IRON);
+    }
+  }
+  function stepLowering(dt: number) {
+    for (let i = lowering.length - 1; i >= 0; i--) {
+      const l = lowering[i]!;
+      const before = l.t;
+      l.t += dt;
+      const s = sockets[l.slot]!;
+      const down = 0.6 + lowerTime(l);
+      if (before < down + LOWER_S * 0.55 && l.t >= down + LOWER_S * 0.55) {
+        // Through the surface.
+        splash(s.x, s.z, 0.6, SEA);
+      }
+      if (l.t < down + LOWER_S) continue;
+      lowering.splice(i, 1);
+      thump(s.x, s.z);
+      const pair = Math.floor(l.slot / 2);
+      if (inSea() >= pair * 2 + 2 && rise[pair]! < 0) {
+        rise[pair] = 0;
+        clank(bents[pair]!.x, bents[pair]!.z);
+      }
+    }
+  }
+  function stepShow(dt: number) {
+    if (show >= 0) {
+      const lastBent = rise.at(-1)!;
+      // The show waits for the last bent to stand (or 10 s, whichever is first).
+      if (show < 100 && (lastBent >= RISE_S || show > 10)) {
+        const b = bents.at(-1)!;
+        whistle(b.x, b.z);
+        for (const k of [0, 1])
+          rockets.push({ t: -k * 0.6, x: b.x + across.x * (k ? 3 : -3), y: DECK, z: b.z, colour: colours[k]! });
+        show = 100;
+      } else if (show < 100) show += dt;
+    }
+    for (let k = rockets.length - 1; k >= 0; k--) {
+      const r = rockets[k]!;
+      r.t += dt;
+      if (r.t < 0) continue;
+      if (r.t >= 0.9) {
+        for (let n = 0; n < 60; n++) {
+          const a = Math.random() * Math.PI * 2,
+            u = Math.random() * 2 - 1,
+            radius = Math.sqrt(1 - u * u),
+            speed = 18 + Math.random() * 4;
+          emit({
+            x: r.x,
+            y: r.y + 30,
+            z: r.z,
+            vx: Math.cos(a) * radius * speed,
+            vy: u * speed,
+            vz: Math.sin(a) * radius * speed,
+            life: 1.6,
+            size: 1.1,
+            color: r.colour,
+            intensity: readableIntensity(),
+            gravity: 7,
+            drag: 1.4,
+            shrink: 0.4,
+          });
+        }
+        rockets.splice(k, 1);
+      } else
+        emit({
+          x: r.x,
+          y: r.y + 30 * (1 - (1 - r.t / 0.9) ** 2),
+          z: r.z,
+          vx: 0,
+          vy: -1,
+          vz: 0,
+          life: 0.5,
+          size: 0.6,
+          color: trail,
+          intensity: readableIntensity(),
+          shrink: 0.5,
+        });
+    }
+  }
+
+  return {
+    restore: snap,
+    /** Where a footing hopping off the wagon lands: the pier rack's slot k. */
+    rackSlot,
+    update(dt: number) {
+      state = adapter.inspect();
+      stepLowering(dt);
+      // A bent whose pair arrived without a lowering here (a correction, a late accept) still rises.
+      const pairs = Math.floor(inSea() / 2);
+      rise.forEach((t, b) => {
+        if (t >= 0) rise[b] = t + dt;
+        else if (b < pairs) rise[b] = 0;
+      });
+      if (pairs < rise.filter((t) => t >= 0).length) rise.forEach((_, b) => b >= pairs && (rise[b] = -1));
+      if (state.works.crossing >= 0 && shownCrossing < 0) show = 0;
+      shownCrossing = state.works.crossing;
+      stepShow(dt);
+      draw();
+    },
+    accepted(e: RailwayAccepted) {
+      if (e.op === 'rail.footSet' && e.site === 2) {
+        const from = new THREE.Vector3();
+        if (!avatarBack(e.pid, from)) from.copy(jibHead);
+        lowering.push({ slot: Math.max(0, state.works.pierSet - 1), from, t: 0 });
+        clank(frame.x, frame.z);
+      }
+      if (e.op === 'rail.footTake' && e.rack === 1) {
+        rackSlot(Math.max(0, state.works.pierRack), p);
+        placeSound('shoulder', p.x, p.z);
+        dustRing(p.x, p.y + 0.1, p.z, 6, 1, 0.2);
+      }
+    },
+    corrected(c: RailwayCorrection) {
+      if (c.event.op === 'rail.footSet' && c.event.site === 2) lowering.length = 0;
+    },
+    targets(): Interactable[] {
+      const pos = me.body?.position;
+      if (!open() || !pos) return [];
+      const w = state.works,
+        out: Interactable[] = [];
+      const backFree = !state.carry && !state.stoneCarry && !state.railsCarry && !state.foot;
+      const free = backFree && state.beam?.holder !== state.pid && state.line2.boiler.holder !== state.pid;
+      if (
+        w.pierRack > 0 &&
+        Math.hypot(pos.x - rack.x, pos.z - rack.z) <= PIER_RACK.reach / 100 - 0.4 &&
+        Math.abs(pos.y - PIER_RACK.y / 100) <= 2.6
+      ) {
+        const top = rackSlot(Math.max(0, w.pierRack - 1), new THREE.Vector3()).add(new THREE.Vector3(0, 1.6, 0));
+        out.push(
+          free
+            ? {
+                id: 'railway-foot-take-1',
+                verb: 'Shoulder a footing',
+                at: top,
+                run: () => void adapter.shoulderFooting(1),
+              }
+            : { id: 'railway-foot-take-1', verb: 'Shoulder a footing', at: top, blocked: 'Empty your back first' },
+        );
+      }
+      const aboard = state.line2.train[1]?.foot ?? 0;
+      if (
+        state.foot &&
+        w.pierSet + w.pierRack + aboard < WORKS.pier &&
+        Math.hypot(pos.x - frame.x, pos.z - frame.z) <= PIER_FRAME.reach / 100 - 0.4 &&
+        Math.abs(pos.y - PIER_FRAME.y / 100) <= 2.6
+      )
+        out.push({
+          id: 'railway-foot-set-2',
+          verb: 'Set the footing',
+          at: new THREE.Vector3(frame.x, deckY + 1.8, frame.z),
+          run: () => void adapter.setFooting(2),
+        });
+      return out;
+    },
+    inspect: () => ({
+      crossingView: {
+        sockets: sockets.length,
+        inSea: inSea(),
+        lowering: lowering.length,
+        bents: rise.filter((t) => t >= RISE_S).length,
+        rising: rise.filter((t) => t >= 0 && t < RISE_S).length,
+        pierRack: Math.max(0, state.works.pierRack - deps.toPier()),
+        show: show >= 0,
+        rockets: rockets.length,
+      },
+    }),
+  };
+}

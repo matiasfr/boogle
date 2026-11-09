@@ -22,6 +22,8 @@ import { fallArrival } from '../../../src/fall/arrival.ts';
 import { net, onRemotePresence, remotes } from '../../../src/netplay/net.ts';
 import { RAIL_STOPS } from '../segments.ts';
 import { RAIL_STONE } from '../../../src/sim/railway-works-layout.ts';
+import { splitRockToCrossing } from './railway-works.ts';
+export { splitRockToCrossing };
 
 /** `?botTo=<stop>` ends the route after that beat: a segment, not a failure. */
 class RouteStop extends Error {}
@@ -716,7 +718,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   const botTo = query.get('botTo');
   if (botTo !== null && !(botTo in RAIL_STOPS)) throw new Error(`Unknown botTo ${botTo}`);
   // `pier` is the whole route: its closing totals still run.
-  const stopAt = botTo && botTo !== 'pier' ? RAIL_STOPS[botTo as keyof typeof RAIL_STOPS] : null;
+  const stopAt = botTo && botTo !== 'crossing' ? RAIL_STOPS[botTo as keyof typeof RAIL_STOPS] : null;
   const hookSeen = new Set<string>();
   let remoteCableSeen = false;
   const peers = new Map<
@@ -1455,11 +1457,14 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await checkpoint('Q5 laid');
       await until(() => read().line2?.stations[5]?.completion === 1, 'leader lays Q6', LAYING_MS * 6);
       await checkpoint('Q6 laid');
+      // Split-rock: the leader opens the Works and footes the crossing; the friend sees it stand.
+      await until(() => (read().works?.crossing ?? -1) >= 0, 'leader footes the crossing', LAYING_MS * 40);
+      await checkpoint('crossing footed');
       document.documentElement.dataset.railwayProof = 'done';
       await bot.wait(3000);
       logHashes();
       require(!stopAt, `botTo ${botTo} was reached`);
-      bot.finish('line one with a friend; line two observed to the pier');
+      bot.finish('line one with a friend; line two and the crossing observed');
       return;
     }
     // Back down the pillar lip and home along line one.
@@ -1846,6 +1851,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await checkpoint('Q4 laid');
     await seaToFarHead({ bot, checkpoint, walkQuarry, quarryFrom: 172 });
     await boilerToPier({ bot, checkpoint, walkQuarry });
+    await splitRockToCrossing({ bot, checkpoint, walkQuarry });
     const totals = read().counts;
     require(totals.rails && totals.rails.total === totals.rails.poured, 'rails conserve the forge pour');
     require(totals.total === LINE1_INITIAL[0] + totals.produced, 'logs conserve through line two');
@@ -1855,7 +1861,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       logHashes();
     }
     require(!stopAt, `botTo ${botTo} was reached`);
-    bot.finish('line one, forge, Q1-Q6, Needle Bell, boiler, two train rides and the pier');
+    bot.finish('line one, forge, Q1-Q6, Needle Bell, boiler, train rides, the pier and the crossing footed');
   } catch (error) {
     if (error instanceof RouteStop) {
       input.keys.clear();

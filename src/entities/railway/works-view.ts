@@ -505,6 +505,8 @@ export async function createRailwayWorks(
   snap();
   return {
     restore: snap,
+    /** The halt rack's slot k (base centre), where the footing wagon's loads hop from (J5). */
+    rackSlot: slotAt,
     update(dt: number) {
       throatCamera.update(dt);
       later.update(dt);
