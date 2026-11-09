@@ -1223,3 +1223,10 @@ atomic arrival unloads both onto the depot rack and shelf. Players carry them in
 which lays 64 rail pairs to the pier. Counts include cargo aboard, and trains receive no away credit. This is the
 headless authority and adapter API; the boiler, halt, train and pier presentation follows in jobs B/C. WORLD_NS v21.
 Serves DESIGN.md **Clear authority** and **Enjoyable alone and together**. Not tested on a device.
+
+**Replicated mover time (job A clock correction).** Trains and the depot cart read the same `adapter.tickNow()`
+presentation clock. A session sends `r:clock` twice a second; the server echoes the token with its precise 60 Hz room
+step, rate limited by host steps. The tab anchors that step at the local round-trip midpoint, removing the one-way
+latency offset between players. Small corrections slew at 90–110% clock rate so running decks do not jump. Action
+prediction retains its conservative receipt-time clock. Remote riders retain the existing Owner `riding` coordinates
+in the shared platform's frame, reconstructed on each tab's drawn deck rather than delayed world presence.

@@ -58,6 +58,7 @@ import {
 } from '../sim/railway-line2.ts';
 import { LINE_HALTS } from '../sim/railway-train.ts';
 import { RULE_STEPS } from '../world/room-clock.ts';
+import { createRailwayClock, RAIL_CLOCK_EVERY_MS, RAIL_CLOCK_TIMEOUT_MS } from '../world/railway-clock.ts';
 import type { RailwayMirror } from '../world/railway-replicate.ts';
 import { createPredictor } from '../world/replicate-client.ts';
 import {
@@ -356,14 +357,22 @@ export function createRailwayAdapter({
     if (step >= 0) shownTick = Math.max(shownTick, Math.floor(step / RULE_STEPS));
     return shownTick;
   };
-  // The same estimate with its fraction, never going backwards: what a moving thing's pose is read from (the depot
-  // cart, ../sim/railway-cart.ts), so every tab draws it where the server's clock has it.
-  let smoothTick = 0;
+  // All replicated movers use one RTT-compensated room time. The conservative tick above remains for actions.
+  const moverClock = createRailwayClock();
+  let clockSent: number | null = null;
+  let clockProbeAt = -Infinity;
   const tickNow = () => {
-    const step = rail.mirror.step(now(), frozen !== null && !connected);
-    if (step >= 0) smoothTick = Math.max(smoothTick, step / RULE_STEPS);
-    return smoothTick;
+    const at = now();
+    return Math.max(0, moverClock.now(at, rail.mirror.step(at, frozen !== null && !connected)) / RULE_STEPS);
   };
+  function probeClock() {
+    const at = now();
+    if (!connected || !room || !epoch || stopped() || at - clockProbeAt < RAIL_CLOCK_EVERY_MS) return;
+    if (clockSent !== null && at - clockSent < RAIL_CLOCK_TIMEOUT_MS) return;
+    clockSent = Math.max(0, Math.round(at));
+    clockProbeAt = at;
+    room.send({ t: 'r:clock', at: clockSent });
+  }
 
   // ---------------------------------------------------------------- prediction (the pending list)
   const results = new Map<number, RailPrediction>(); // request -> its result in the last rebuild
@@ -591,6 +600,13 @@ export function createRailwayAdapter({
   });
   function hear(message: unknown, from: string) {
     if (disposed || from !== SERVER_ID || !object(message)) return;
+    if (message.t === 'r:clock') {
+      if (message.to === room?.selfId && clockSent !== null && message.at === clockSent && railInt(message.step)) {
+        moverClock.hear(message.step, clockSent, now());
+        clockSent = null;
+      }
+      return;
+    }
     if (message.t === 's') {
       rail.mirror.apply(message, now());
       return;
@@ -936,6 +952,9 @@ export function createRailwayAdapter({
         room.onMessage(hear),
         room.onConnection((live) => {
           connected = live;
+          moverClock.reset();
+          clockSent = null;
+          clockProbeAt = -Infinity;
           if (!live) {
             // The server re-sends everything whole when the socket comes back: keep showing this until it has.
             refill();
@@ -949,6 +968,7 @@ export function createRailwayAdapter({
       if (disposed) return;
       clock = nowMs;
       probe();
+      probeClock();
     },
     wake: () => submit({ op: 'rail.wake' }),
     openAxe: () => submit({ op: 'rail.axe' }),

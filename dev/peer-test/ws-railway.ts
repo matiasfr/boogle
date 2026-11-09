@@ -666,7 +666,7 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
   const { railwayAtTrains } = await import('../../test/helpers/railway-trains.ts');
   const { worldOf } = await import('../../test/railway-live.ts');
   const { railwayCheck } = await import('../../src/sim/railway-world.ts');
-  const { TRAIN, TRAIN_PHASE } = await import('../../src/sim/railway-train.ts');
+  const { TRAIN, TRAIN_PHASE, trainAlong } = await import('../../src/sim/railway-train.ts');
   const seed = railwayAtTrains('trains-on');
   const roomId = railwayRoomId(`${c.room}-train`);
   const lats = [0, 100, 200];
@@ -693,9 +693,13 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
     );
   }, 10000);
   await sleep(2000);
-  type Sample = { along: number; phase: number; depart: number; at: number };
+  type Sample = NonNullable<Awaited<ReturnType<typeof trainOf>>>;
   const series: Sample[][] = lats.map(() => []);
   let apart = 0;
+  let sameInstantApart = 0,
+    sampleSkew = 0,
+    clockSpread = 0,
+    conservativeSpread = 0;
   const phases = new Set<number>();
   const stats0 = { ...world.stats };
   const end = Date.now() + seconds * 1000;
@@ -705,6 +709,15 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
     // Only while every tab has the same phase (a phase change reaches each tab after its own latency).
     if (now.every((x) => x.phase === now[0]!.phase && x.depart === now[0]!.depart)) {
       const base = now[0]!;
+      const at = Math.max(...now.map((x) => x.at));
+      sampleSkew = Math.max(sampleSkew, at - Math.min(...now.map((x) => x.at)));
+      // Project each tab's own train/clock sample to one wall instant. This removes RPC polling skew, not clock skew.
+      const poses = now.map((x) => trainAlong(x.row, 1, x.tick + (at - x.at) / 100));
+      sameInstantApart = Math.max(sameInstantApart, Math.max(...poses) - Math.min(...poses));
+      const clocks = now.map((x) => x.tick * 100 + at - x.at);
+      const conservative = now.map((x) => x.conservativeTick * 100 + at - x.at);
+      clockSpread = Math.max(clockSpread, Math.max(...clocks) - Math.min(...clocks));
+      conservativeSpread = Math.max(conservativeSpread, Math.max(...conservative) - Math.min(...conservative));
       // Less what the train can travel between the two pages' sample instants (cruise: TRAIN.speed cm per 100 ms).
       for (const x of now)
         apart = Math.max(apart, Math.abs(x.along - base.along) - (TRAIN.speed / 100) * Math.abs(x.at - base.at));
@@ -726,6 +739,10 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
     stepMsMax: world.stats.maxStepMs,
     phases: [...phases].sort().join(','),
     tabsApartMaxCm: Math.round(apart),
+    sameInstantApartMaxCm: Math.round(sameInstantApart),
+    clockSpreadMaxMs: Math.round(clockSpread),
+    conservativeSpreadMaxMs: Math.round(conservativeSpread),
+    sampleSkewMaxMs: Math.round(sampleSkew),
     jumpMaxCm: Math.round(Math.max(...jumps)),
     samples: series[0]!.length,
   };
@@ -733,7 +750,7 @@ export async function railwayTrainRide(c: Ctx, { seconds = 60 } = {}) {
   c.check('railway train ride: the train ran while sampled', moved, row.phases);
   c.check(
     'railway train ride: tabs place the train within half a deck of each other',
-    apart < 160,
+    apart < 160 && sameInstantApart < 160,
     `${row.tabsApartMaxCm} cm`,
   );
   c.check('railway train ride: no tab jumps its train under a rider', Math.max(...jumps) < 50, `${row.jumpMaxCm} cm`);

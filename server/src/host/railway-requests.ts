@@ -27,7 +27,7 @@ import type { Replicator } from '../../../src/world/replicate-server.ts';
 import type { RailwayResponse } from '../../../src/world/railway-wire.ts';
 
 type Obj = Record<string, unknown>;
-type Session = { sid: string; epoch: number };
+type Session = { sid: string; epoch: number; clockStep: number };
 const object = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 const token = (v: Obj) => railInt(v.epoch, RAILWAY_MAX_INT, 1) && railInt(v.request, RAILWAY_MAX_INT, 1);
 /** Validation facts a client action carries (docs/plans/replication.md, revision 1): where the actor stood
@@ -135,6 +135,13 @@ export function createRailwayRequests({
       const pid = pidOf(from);
       if (!pid) return;
       const current = sessions.get(pid);
+      if (message.t === 'r:clock') {
+        const step = api.step();
+        if (!available() || current?.sid !== from || !railInt(message.at) || step < current.clockStep) return;
+        current.clockStep = step + 6; // at most ten replies/second/session, independent of the echoed client clock
+        send({ t: 'r:clock', to: from, at: message.at, step });
+        return;
+      }
       if (message.t === 'r:resync') {
         // Whole state again, from change tick -1; the mirror reset itself before asking.
         if (replication.has(from)) replication.resync(from);
@@ -147,7 +154,7 @@ export function createRailwayRequests({
         // A new page (or a takeover): a new epoch retires whatever the old one had in flight.
         const epoch = (api.account(pid)?.epoch ?? 0) + 1;
         if (epoch > RAILWAY_MAX_INT || !api.session(pid, epoch)) return state(from, 'full');
-        sessions.set(pid, { sid: from, epoch });
+        sessions.set(pid, { sid: from, epoch, clockStep: 0 });
         send({ t: 'r:session', to: from, epoch, next: 1 });
         return;
       }

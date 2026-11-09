@@ -218,7 +218,7 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
   return false;
 }
 
-export function install(sync: SyncView, rules: { tune: TuneApi }, replication: Replicator) {
+export function install(sync: SyncView & { roomStep(): number }, rules: { tune: TuneApi }, replication: Replicator) {
   // The railway's state is an E world (src/sim/railway-world.ts); its rules are systems (src/sim/railway-systems.ts).
   let world = createRailwayWorld();
   const touch = (kind: string, id: number | string) => replication.touch(kind, id);
@@ -338,6 +338,7 @@ export function install(sync: SyncView, rules: { tune: TuneApi }, replication: R
     },
     /** The rule tick actions apply at now. */
     tick: () => sync.world.tick,
+    step: () => sync.roomStep(),
     account(pid: string) {
       const id = world.lookup(Account, pid);
       return id === undefined ? undefined : { ...world.get(Account, id)! };
