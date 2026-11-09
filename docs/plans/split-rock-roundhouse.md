@@ -878,6 +878,10 @@ new `src/entities/railway/crossing-view.ts`, `src/entities/railway/view.ts` (wir
     - `railFrom=wagon&railStop=crossing footed` from `wagon-on` (`greybox=sickle`; 246 s of wall clock): footings at
       the pier 502.7, crossing footed 1362.2 (twelve sets from the pier rack).
     - The Q6/Far Head bot trap was not hit.
+  - **Long playthrough** (`playthrough --long --wall 3000 --name j5-long2`, after both rule fixes): pass, 197 min of
+    game in 29 min (1714 s of wall clock). Hand trips 889, 819, 793 and 773 s; wagon coupled 10645.6; footings at the
+    pier 11699.4 (1054 s: line 2 now stops at every stop on the way while footings are owed); crossing footed
+    11831.7. Stalls: still 93 min (before the Works, as on main).
   - **Stills** (opened): `.look/j5-photo-throat-still.png` (the quarry halt and line 2's train, the outcrop with the
     cut open and the toppled slab), `.look/j5-photo-stall-still.png` (the stall standing on its two footings with
     its roof, the shunter inside and the turntable in front), `.look/j5-half-works-still.png` (`wagon coupled`: the
