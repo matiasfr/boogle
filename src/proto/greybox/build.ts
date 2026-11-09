@@ -54,6 +54,7 @@ const WORK_COLOURS: Record<Work['kind'], string> = {
   halt: STAGE_COLOURS[6]!,
   boiler: STAGE_COLOURS[3]!,
   train: STAGE_COLOURS[5]!,
+  works: '#d9d4c8',
 };
 const SURVEY = '#ff5fa8';
 const SURVEY_EVERY = 20;
