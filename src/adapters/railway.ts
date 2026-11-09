@@ -1120,7 +1120,6 @@ export function createRailwayAdapter({
     depotTake: () => submit({ op: 'rail.depotTake' }),
     depotRailTake: () => submit({ op: 'rail.depotRailTake' }),
     openPack: () => submit({ op: 'rail.pack' }),
-    /** "Call cart to forge": the depot cart stops at the forge on its next pass and waits to be boarded. */
     shoulderBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerTake', revision }),
     dropBoiler: (x: number, y: number, z: number, revision: number) =>
       railInt(revision) &&
@@ -1130,7 +1129,6 @@ export function createRailwayAdapter({
       submit({ op: 'rail.boilerDrop', revision, x, y, z }),
     fitBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerFit', revision }),
     callTrain: (id: number) => railInt(id, LINE_HALTS.length - 1) && submit({ op: 'rail.call', id }),
-    callCart: () => submit({ op: 'rail.cartCall' }),
     /** The Works and the Roundhouse (docs/plans/split-rock-roundhouse.md). */
     takeBreaker: () => submit({ op: 'rail.breaker' }),
     /** Strike a seam: 0 the stall slab at Home, 1 the throat at the quarry. */

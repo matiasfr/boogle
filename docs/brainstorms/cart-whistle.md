@@ -1,4 +1,6 @@
-> **Status: building (approved, owner, 2026-11-05).**
+> **Status: building (approved, owner, 2026-11-05).** Variant A's "Call cart to forge" handle is **cut** (owner,
+> 2026-11-09, [decision](../decisions.md#trains-and-the-world)): the live cart already serves the next rack by itself.
+> The rack's delivery status is **kept**.
 
 # Cart whistle: do I trust the little guys to bring the rest?
 
