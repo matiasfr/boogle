@@ -41,6 +41,16 @@ rule (9 November 2026): nothing waits for a playtest, so this review is the desi
      (`npm run look -- --rail-seed <stage> --cam x,y,z --look x,y,z`, or `npm run session` to walk around), and read them. Say what
      you couldn't see.
    - Judge it:
+     - **Flow first: does the layout follow the order the game is played?** Lay the plan's stretch of the route out as
+       legs, beat to beat, with positions from the map data and walk- or ride-seconds per leg. Check that:
+       - where one beat ends, the next goal is in view or clearly pulled toward (a light, a sound, a character, the
+         track itself), not found by wandering;
+       - places you can't use yet are seen before they're reached (tease, then return), and the return is short;
+       - stations, gates and grants sit along the ground in the order they're unlocked, so progress reads as moving
+         outward from home;
+       - no leg doubles back over ground with nothing new on it, and trips get shorter as track and tools open up;
+       - a new ability is granted where its first use is in sight.
+       Say where the flow breaks, and propose the move that fixes it.
      - **Distance in walk-seconds** (5.6 m/s walk): something to notice every few seconds, something to do every
        10–20 s on Home.
      - **Sightlines and landmarks:** where it's first seen, from how far, and what frames it. The three sizes of shape:
