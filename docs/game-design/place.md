@@ -496,6 +496,34 @@ continuous trestle; daylight reduces the distant lamps' contrast. These are targ
 campaign or real-time smoothness verdict. The long route and owner playtest remain with the orchestrator.
 `WORLD_NS` v20; not tested on a device.
 
+### Production boiler, trains and the pier (8 November 2026)
+
+Q5 completion casts one communal boiler on the forge apron. An empty-backed player shoulders it and walks
+line one's finished track to fit it at the old camp locomotive. Accepted fitting starts the wake (rust clearing,
+steam and whistle) and drops five Local halts into place. These effects do not replay on restore. Leaving while
+holding the boiler returns that same boiler to its pedestal after the host's grace period.
+
+Standing on a halt calls its train from the player's accepted position. A running train finishes its current leg
+before acting on the call; there is no mid-leg reversal or rider express. The two Server-owned lines run at
+20 m/s: camp–village, and village–quarry–Far Head, including the quarry dwell. Owner platform carry keeps a rider
+aboard; train schedules receive no away credit. The first line-2 service moves Q6's kit from the forge: 32 minted
+logs and 32 already-poured rails, aboard the train, then atomically onto Far Head's rack and shelf. Every unit
+stays in the existing conservation accounts. The bot reads those counts from state, independently of rack artwork.
+
+Two sixteen-unit carries of each material fund Q6's 32/32 frame. The machine lays the last stretch to the pier;
+the live completion edge fires rockets over the pier and village, without a banner. The production bot continues
+after Far Head through `boiler`, `TRAINS`, `train called`, `train ride`, `Q6 stocked`, `Q6 funded`, `Q6 laid` and
+`pier`; its friend observes Q6 completion. The final parked machine requires ordinary grounded hops over its low
+deck, with dry support checked every 3 m. Earlier route waypoints and checkpoints are unchanged.
+
+Both accepted-seed halves pass without recovery. The boiler half reaches boiler at 3.1 s and TRAINS at 46.9 s;
+an additional first-line ride reaches the camp call at 47.7 s and village at 72.9 s. The Q6 half reaches call at
+14.7 s, ride at 78.0 s, stocked at 78.6 s, funded at 93.0 s, laid at 120.8 s and pier at 157.1 s. These are seeded
+bot times at 1×, not first-visitor pacing. Opened photos show the carried boiler, wake puffs and arriving halt
+pieces, the completed pier with rockets, and the northward Ring Island view (`greybox=sickle`).
+[B8's record](../plans/line2-part2-greybox.md#b5b8-proof-record-8-november) links the manifests and limitations.
+`WORLD_NS` v21; not tested on a device. The orchestrator owns the long final pass and owner playtest guide.
+
 ## Ancient technology (round 4, exploring)
 
 The glider's sea-gate cinematic waits until the player dismisses the reward reveal and any queued reward cards. The shared unlock, gate state, save and broadcast still happen immediately; only the local camera waits. Reset cancels a pending cinematic.

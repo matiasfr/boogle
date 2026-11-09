@@ -180,22 +180,61 @@ reset, no migration) and keeps the paused world and away credit whole.
   during these proofs; this record was updated afterwards. Solo warped looks still hit the trusted harness's
   `--clock-url` rejection, so the targeted looks used `--real`. The orchestrator still owns the long full-route
   final pass and owner playtest guide; neither ran here. Real-time smoothness unverified. Not tested on a device.
-- [ ] **B5. Halts as views.** Add the platforms at the pinned halts, shown only once `trains` is set (Local, from
+- [x] **B5. Halts as views.** Add the platforms at the pinned halts, shown only once `trains` is set (Local, from
   state; the boxes stay straight, checked as in `dev/level/timber-track.ts`). No new kind. Proof: a still of the
   village halt before and after.
-- [ ] **B6. Boiler (new kind `boiler`).** The forge casts it when Q5 completes, at the apron. It's carried like the
+- [x] **B6. Boiler (new kind `boiler`).** The forge casts it when Q5 completes, at the apron. It's carried like the
   beam (held by one pid, with epoch and revision; dropped where it's released; put back if its holder leaves).
   Fitting it at the old train sets `rail.trains`. Proof: tests mirroring the beam's (take race, holder leaves, fit
   once); bot checkpoints `boiler` and `TRAINS`; a still of the wake.
-- [ ] **B7. Trains, and Q6 (new kind `train`).** Line 1 runs camp ↔ village and line 2 village ↔ quarry ↔ Far Head,
+- [x] **B7. Trains, and Q6 (new kind `train`).** Line 1 runs camp ↔ village and line 2 village ↔ quarry ↔ Far Head,
   at 20 m/s. `trainPose(slot, tick)` is pure, from `start` (the server only sends it when the schedule changes).
   `rail.call` from a halt reroutes the train: the server checks you're on that halt from your action's own position.
   Add `Q6` (32/32, 54600 → 74200, rack fed by the line-2 train's kit load from the forge rack and depot) and its
   pier-end flag. Proof: `test/railway-train.test.ts` (pose continuity across a call, a kit unit has one home through
   load and unload, snapshot mid-trip); a two-player ride in a `npm run load` row; the bot to checkpoint `pier`; a
   still from the pier toward Ring Island; `npm run perf`.
-- [ ] **B8. Record it.** Update `docs/game-design/place.md` (production line 2), `docs/plans/production-core.md`
+- [x] **B8. Record it.** Update `docs/game-design/place.md` (production line 2), `docs/plans/production-core.md`
   slice 4 notes, the greybox README, then stop for the owner's playtest (owner-calls).
+
+### B5–B8 proof record (8 November)
+
+*Built 8 November (B5–B8).* Jobs A (#1216), B (#1221) and C (#1222) supply the Server rules and Local views;
+job D adds the real-input bot, seeded eval and four photo frames. `WORLD_NS` is **v21**. Existing routes before
+Far Head are unchanged. B5–B8 are built; the orchestrator's long integration run and owner playtest are still pending.
+
+Departures retained: calls take effect at the next decision, no rider express, a departed boiler holder returns
+the boiler to its pedestal, no train away credit, and no pier banner. The bot needs ordinary grounded hops over
+the parked machine in the last metres; centre walking stopped at 735 m and a side-strip attempt stopped at 738 m.
+All successful seeded proofs use real inputs with no recovery, teleport or direct op. The Q6 seed first opens
+the existing pack chest because `trains-on` leaves it unclaimed; its reveal needs 1.6 s before dismissal.
+
+| Seed / manifest | Checkpoint seconds from bot start (1×) |
+| --- | --- |
+| [q5-done, boiler → first ride](../../.look/evidence/1794208043671-16796/evidence.json) | boiler 3.1; TRAINS 46.9; camp call 47.7; village ride 72.9 |
+| [trains-on → pier](../../.look/evidence/1794207897318-13820/evidence.json) | train called 14.7; train ride 78.0; Q6 stocked 78.6; funded 93.0; laid 120.8; pier 157.1 |
+
+Opened all four requested stills (each directory has `evidence.json`):
+
+- [boiler](../../.look/evidence/1794207575210-8643/b58-boiler-still.png): the red boiler worn on Buddy's back at the apron.
+- [TRAINS / wake](../../.look/evidence/1794207576383-8645/b58-trains-still.png): puffs around the camp train, halt pieces arriving and the signal dropping. This alone does not verify the full rust/steam sequence.
+- [Q6 laid](../../.look/evidence/1794208042520-16766/b58-q6-laid-still.png): the continuous curved route and pier trestle, with completion rockets.
+- [pier](../../.look/evidence/1794207897318-13820/b58-pier-still.png): Buddy supported at the endpoint, looking north past the parked hoist toward Ring Island with `greybox=sickle`.
+
+The [moving-train sample](../../.look/evidence/1794207897318-13820/moving-train-perf.json) covers 3 s / 180 completed
+frames while riding in RUN: CPU mean/p95 6.35/6.70 ms, GPU render mean/p95 9.86/11.18 ms. Exploratory headless
+Mac timing, not a quiet-machine comparison or device verdict. Village performance and real-time smoothness remain
+unverified. Full wake motion remains unverified. Not tested on a device.
+
+`npm run check` passes (539 unit tests). The [fresh short opening](../../.look/evidence/1794208427823-24100/evidence.json)
+passes through T1; its report and end still were inspected. Its first attempt finished, but the trusted harness
+changed during the run, invalidating provenance; the repeat is stable. Earlier failures: the broker rejected solo
+warped `--clock-url`, two early pack-dismissal attempts failed, then the parked machine blocked two centre walks
+and one side walk. No recovery was used. The accepted halves therefore use `--real`; long server-paced waits
+remain generous for the orchestrator's warped run with `--stall 6000`.
+
+Runtime code was unchanged during each accepted capture; this documentation record follows the proofs. No long
+playthrough, push or ship ran here. Stop after the orchestrator's final pass and guide for the owner's playtest.
 
 ## Risks
 
