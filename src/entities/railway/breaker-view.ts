@@ -233,8 +233,10 @@ export function createRailwayBreaker(
       // A glint off the head's brass bands on the carrier's back while a seam is left.
       glint -= dt;
       if (onBack && glint <= 0) {
-        glint = 0.9 + Math.random() * 0.5;
-        contact.set(0, 1.36, 0);
+        glint = 0.7 + Math.random() * 0.4;
+        // On a brass band's top edge, outside the head (a glint inside the iron is never seen).
+        side *= -1;
+        contact.set(side * 0.18, 1.6, 0);
         breaker.localToWorld(contact);
         emit({
           x: contact.x,
@@ -244,7 +246,7 @@ export function createRailwayBreaker(
           vy: 0.05,
           vz: 0,
           life: 0.45,
-          size: 0.16,
+          size: 0.22,
           color: GOLD,
           intensity: readableIntensity() * 2,
           alpha: 0.9,
