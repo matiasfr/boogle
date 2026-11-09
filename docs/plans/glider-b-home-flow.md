@@ -335,7 +335,11 @@ Branch `claude/glider-b-home-flow` from `origin/main`. Each step leaves `npm run
       - After an orderly restart, `railway.line2.glide === true`.
   - Verify: `node --test test/railway-line2.test.ts test/railway-replicate.test.ts`, `npm --prefix server test`, then
     `npm run check`.
-- [ ] **3. The glide tunables.**
+- [x] **3. The glide tunables.** _(Built as planned. The catalog's `owner` override is `'owner' in railway`, since
+  `supply` is `as const`. Beyond the plan, three hand-written `RailwayMovement` literals (`test/railway-adapter.test.ts`,
+  `test/railway-replicate.test.ts`, `dev/peer-test/ws-page.ts`) spread `railMovement` of the defaults. `npm run tune --
+  list` shows the eight. The `railGlide=1` look was queued behind two long playthroughs on the shared GPU and stopped
+  before it ran; the same flight numbers, now from the tunables, are Proof 4's.)_
   - `src/sim/tune.ts`: the eight keys, appended.
   - `src/tunables/catalog.ts`: the eight `supply` entries and the `owner` override.
   - `server/src/host/world-host.ts`: `RAIL_TUNE_KEYS`.

@@ -54,6 +54,33 @@ export const TUNABLES = [
     label: 'Railway second jump apex threshold (centimetres per second)',
   },
   { key: 'railBeamGraceS', def: 180, min: 5, max: 3600, label: 'Railway beam kept for an absent carrier (seconds)' },
+  // The glider (piece B), at docs/research/botw-glide-target.md's target. Appended: the order is hashed.
+  { key: 'railGlideSpeed', def: 1000, min: 300, max: 2000, label: 'Railway glide speed (centimetres per second)' },
+  { key: 'railGlideSink', def: 320, min: 50, max: 1500, label: 'Railway glide sink (centimetres per second)' },
+  {
+    key: 'railGlideAccel',
+    def: 1800,
+    min: 200,
+    max: 6000,
+    label: 'Railway glide speed-up (centimetres per second squared)',
+  },
+  {
+    key: 'railGlideBrake',
+    def: 1200,
+    min: 100,
+    max: 6000,
+    label: 'Railway glide brake, stick let go (centimetres per second squared)',
+  },
+  {
+    key: 'railGlideOver',
+    def: 800,
+    min: 100,
+    max: 6000,
+    label: 'Railway glide settle from overspeed (centimetres per second squared)',
+  },
+  { key: 'railGlideTurnTau', def: 120, min: 20, max: 1000, label: 'Railway glide turn time constant (milliseconds)' },
+  { key: 'railGlideTurnMax', def: 360, min: 45, max: 1080, label: 'Railway glide turn rate cap (degrees per second)' },
+  { key: 'railGlideDeploy', def: 100, min: 10, max: 1000, label: 'Railway glide deploy (milliseconds)' },
 ] as const;
 export type TuneKey = (typeof TUNABLES)[number]['key'];
 export type TuneSpec = (typeof TUNABLES)[number];

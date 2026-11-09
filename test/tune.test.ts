@@ -65,3 +65,27 @@ test('only proto- rooms tune', () => {
   assert.ok(isProtoRoom('v02-proto-haul') && isProtoRoom('proto-haul'));
   assert.ok(!isProtoRoom('v02-beach') && !isProtoRoom('v02-myproto-x') && !isProtoRoom(undefined));
 });
+
+test('the glider tunables: appended after the railway keys, defaulting to the BotW target', () => {
+  const keys = TUNABLES.map((t) => t.key as string);
+  const glide = {
+    railGlideSpeed: 1000,
+    railGlideSink: 320,
+    railGlideAccel: 1800,
+    railGlideBrake: 1200,
+    railGlideOver: 800,
+    railGlideTurnTau: 120,
+    railGlideTurnMax: 360,
+    railGlideDeploy: 100,
+  };
+  const at = keys.indexOf('railBeamGraceS');
+  assert.deepEqual(keys.slice(at + 1, at + 9), Object.keys(glide), 'appended in order, after railBeamGraceS');
+  for (const [key, def] of Object.entries(glide)) {
+    const t = TUNABLES.find((s) => s.key === key)!;
+    assert.equal(t.def, def, key);
+    assert.ok(okTune(key, def), key);
+    assert.equal(okTune(key, 0), false, `${key} refuses 0`);
+    assert.equal(okTune(key, t.min - 1), false, `${key} below its range`);
+    assert.equal(okTune(key, t.max + 1), false, `${key} above its range`);
+  }
+});

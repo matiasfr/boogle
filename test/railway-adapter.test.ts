@@ -6,10 +6,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createRailwayAdapter,
+  railMovement,
   type RailwayAccepted,
   type RailwayCorrection,
   type RailwayInspection,
 } from '../src/adapters/railway.ts';
+import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 import { createSync, type WorldRoom } from '../src/world/sync.ts';
 import { installRules } from '../src/world/rules/index.ts';
@@ -23,7 +25,15 @@ import { LINE1_INITIAL } from '../src/sim/railway-line-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
 
-const MOVEMENT = { beamSoloSpeed: 2, beamHelpSpeed: 5, jumpImpulse: 6, jumpTurn: 1, jumpSteer: 25, jumpApexSpeed: 1 };
+const MOVEMENT = {
+  ...railMovement({ get: (k) => specOf(k)!.def }),
+  beamSoloSpeed: 2,
+  beamHelpSpeed: 5,
+  jumpImpulse: 6,
+  jumpTurn: 1,
+  jumpSteer: 25,
+  jumpApexSpeed: 1,
+};
 const TREE = RAILWAY_SOURCES[0]![0];
 
 type Client = {

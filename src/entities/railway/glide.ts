@@ -17,15 +17,7 @@ import { getMask, raycastClosest, rayHit } from '../../physics/engine.ts';
 import { GROUP } from '../../physics/physics.ts';
 import { playMark } from '../../proto/mark.ts';
 import { createHookLatch } from './hook-path.ts';
-import {
-  GLIDE_ARM_MS,
-  closeGlide,
-  createGlide,
-  openGlide,
-  rearmGlide,
-  stepGlide,
-  type GlideMove,
-} from './glide-step.ts';
+import { GLIDE_ARM_MS, closeGlide, createGlide, openGlide, rearmGlide, stepGlide } from './glide-step.ts';
 import { createRailwayGlideView } from './glide-view.ts';
 
 type Active = { toggle: () => void; open: () => boolean };
@@ -36,9 +28,7 @@ addPresenceField('railwayGlide', () => (active?.open() ? true : null));
 const JUMP_OPEN_CLEARANCE = 1.6;
 
 export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedView, hookPulling: () => boolean) {
-  const [view, tech] = await Promise.all([createRailwayGlideView(owner), import('../../proto/place/tech-layout.ts')]);
-  // Piece A reads Place's authored numbers; piece B moves them to rules.tune ids with its WORLD_NS bump.
-  const tune: GlideMove = tech.MOVE;
+  const view = await createRailwayGlideView(owner);
   const latch = createHookLatch();
   const g = createGlide();
   const before = { x: 0, z: 0 },
@@ -130,7 +120,8 @@ export async function createRailwayGlide(adapter: RailwayAdapter, owner: OwnedVi
       v.x = b.velocity.x;
       v.y = b.velocity.y;
       v.z = b.velocity.z;
-      if (!stepGlide(g, before, v, me.wish, tune)) return;
+      // The numbers are the room's `railGlide*` tunables, through the adapter's movement (a GlideMove subset).
+      if (!stepGlide(g, before, v, me.wish, adapter.inspect())) return;
       b.velocity.set(v.x, v.y, v.z);
       b.force.y = PLAYER_MASS * GRAVITY; // gravity's taken out once, and nothing else has a say
     },

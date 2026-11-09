@@ -40,7 +40,13 @@ import { cartCycleTicks } from '../src/sim/railway-cart.ts';
 import { RAILWAY_SUPPLY } from '../src/sim/railway-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
-import { createRailwayAdapter, type RailwayAccepted, type RailwayCorrection } from '../src/adapters/railway.ts';
+import {
+  createRailwayAdapter,
+  railMovement,
+  type RailwayAccepted,
+  type RailwayCorrection,
+} from '../src/adapters/railway.ts';
+import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 
 const anywhere: Actor = { reach: () => true, height: () => true, cadence: () => true };
@@ -386,6 +392,7 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
       const adapter = createRailwayAdapter({
         mirror: seaMirror,
         movement: () => ({
+          ...railMovement({ get: (k) => specOf(k)!.def }),
           beamSoloSpeed: 2,
           beamHelpSpeed: 5,
           jumpImpulse: 6,
@@ -577,6 +584,7 @@ test('a footing take predicted, then lost to a friend, comes back as a correctio
   const adapter = createRailwayAdapter({
     mirror,
     movement: () => ({
+      ...railMovement({ get: (k) => specOf(k)!.def }),
       beamSoloSpeed: 2,
       beamHelpSpeed: 5,
       jumpImpulse: 6,

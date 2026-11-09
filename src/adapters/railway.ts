@@ -153,6 +153,15 @@ export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
   jumpTurn: tune.get('railJumpTurn') / 100,
   jumpSteer: tune.get('railJumpSteer') / 100,
   jumpApexSpeed: tune.get('railJumpApexSpeed') / 100,
+  // The glider (piece B): metres, seconds and radians for glide-step.ts's GlideMove.
+  glideSpeed: tune.get('railGlideSpeed') / 100,
+  glideSink: tune.get('railGlideSink') / 100,
+  glideAccel: tune.get('railGlideAccel') / 100,
+  glideBrake: tune.get('railGlideBrake') / 100,
+  glideOver: tune.get('railGlideOver') / 100,
+  glideTurnTau: tune.get('railGlideTurnTau') / 1000,
+  glideTurnMax: (tune.get('railGlideTurnMax') * Math.PI) / 180,
+  glideDeploy: tune.get('railGlideDeploy') / 1000,
 });
 export type RailwayMovement = {
   beamSoloSpeed: number;
@@ -161,6 +170,14 @@ export type RailwayMovement = {
   jumpTurn: number;
   jumpSteer: number;
   jumpApexSpeed: number;
+  glideSpeed: number;
+  glideSink: number;
+  glideAccel: number;
+  glideBrake: number;
+  glideOver: number;
+  glideTurnTau: number;
+  glideTurnMax: number;
+  glideDeploy: number;
 };
 /** The most a back ever carries (with the pack): the wire's bound on a moved count; the rule clips to today's back. */
 const CARRY_MAX = LINE2_PACK.carry;
@@ -765,7 +782,15 @@ export function createRailwayAdapter({
     a.jumpImpulse === b.jumpImpulse &&
     a.jumpTurn === b.jumpTurn &&
     a.jumpSteer === b.jumpSteer &&
-    a.jumpApexSpeed === b.jumpApexSpeed;
+    a.jumpApexSpeed === b.jumpApexSpeed &&
+    a.glideSpeed === b.glideSpeed &&
+    a.glideSink === b.glideSink &&
+    a.glideAccel === b.glideAccel &&
+    a.glideBrake === b.glideBrake &&
+    a.glideOver === b.glideOver &&
+    a.glideTurnTau === b.glideTurnTau &&
+    a.glideTurnMax === b.glideTurnMax &&
+    a.glideDeploy === b.glideDeploy;
   function readState() {
     const t = tick();
     const v = view();
