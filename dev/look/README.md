@@ -82,3 +82,6 @@ The final measurements and capture paths are recorded in the local `.look/` arti
 not committed. Capture checks establish WebGPU, advancing game frames and no graphics/page/console errors. Opened
 motion sheets show a train descending the bridge; they do not establish real-time smoothness. No 30-minute
 end-to-end bot playthrough was performed.
+
+Seeded starts: `--rail-seed <stage>` writes a stage from `src/sim/railway-seeds.ts` as the run's save; `--query from=<stage>`
+runs a playtest jump-in through `POST /jump` instead, and `dev/look/evals/jump-in.ts` checks where it landed.
