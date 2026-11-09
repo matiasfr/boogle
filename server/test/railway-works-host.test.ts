@@ -8,7 +8,8 @@ import path from 'node:path';
 import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost, type RailwayPosition } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { Beam, Boiler, railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
+import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
+import { LINE2_BOILER } from '../../src/sim/railway-line2-layout.ts';
 import {
   SHED_TABLE,
   WORKS,
@@ -18,9 +19,10 @@ import {
   WORKS_SEAMS,
 } from '../../src/sim/railway-works-layout.ts';
 import { footingTotal } from '../../src/sim/railway-works.ts';
-import { worldOf } from '../../test/railway-live.ts';
+import { createRailway, railApply, railSession, worldOf } from '../../test/railway-live.ts';
 import { advanceWorks, railwayAtWorks, type WorksStage } from '../../test/helpers/railway-works.ts';
-import type { World as Fixture } from '../../test/helpers/railway-q2.ts';
+import { act, advance, logs, type World as Fixture } from '../../test/helpers/railway-q2.ts';
+import { railwayAtTrains } from '../../test/helpers/railway-trains.ts';
 
 type Obj = Record<string, unknown>;
 type At = [number, number, number];
@@ -279,32 +281,76 @@ test('works host: a carrier back for less than a rule tick still gets a fresh gr
     await r.done();
   }
 });
-test('works host: the beam and the boiler too get a fresh grace after a return shorter than a rule tick', async () => {
-  for (const [kind, C] of [
-    ['beam', Beam],
-    ['boiler', Boiler],
-  ] as const) {
-    const r = await host(`brief-${kind}`, fixture('wagon-on'));
-    try {
-      const w = r.h.rules.railway.world();
-      const id = w.single(C);
-      const epoch = r.h.rules.railway.account('a')!.epoch;
-      Object.assign(w.mut(C, id)!, { state: 'held', holder: 'a', epoch, revision: w.get(C, id)!.revision + 1 });
-      const state = () => (kind === 'beam' ? r.h.rules.railway.beam() : r.h.rules.railway.boiler()).state;
-      const grace = r.h.rules.tune.get('railBeamGraceS') * 1000;
-      r.h.depart('s');
-      await r.ticks(1);
-      r.later(grace - 1000);
-      r.h.deliver({ t: 'r:open' }, 's');
-      r.h.depart('s');
-      r.later(1500);
-      await r.ticks(1);
-      assert.equal(state(), 'held', `${kind}: the second absence has its own grace`);
-      r.later(grace);
-      await r.ticks(1);
-      assert.notEqual(state(), 'held', `${kind}: and it ends`);
-    } finally {
-      await r.done();
-    }
+type Host = Awaited<ReturnType<typeof host>>;
+/** Away almost the whole grace, then back in a new session (r:open) and gone again before any rule tick saw them. */
+async function briefReturn(r: Host) {
+  r.h.depart('s');
+  await r.ticks(1);
+  r.later(r.h.rules.tune.get('railBeamGraceS') * 1000 - 1000);
+  r.h.deliver({ t: 'r:open' }, 's');
+  r.h.depart('s');
+  r.later(1500);
+  await r.ticks(1);
+}
+/** Line one at T3, open and unfunded, with the great tree felled: the beam is there to take. Sim ops only. */
+function atBeam(): Fixture {
+  const s = createRailway();
+  for (const pid of ['a', 'b']) railSession(s, pid, 1);
+  railApply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
+  const w = { s, t: 40 };
+  logs(w, 'a', 'T1', 24);
+  advance(w, 300);
+  for (let i = 0; i < 8;) {
+    const n = act(w, 'b', 'rail.mine', { id: s.line!.rocks.findIndex((left) => left > 0) });
+    assert.equal(act(w, 'b', 'rail.deposit', { station: 'T2', kind: 1, n }), n);
+    i += n;
+  }
+  logs(w, 'a', 'T2', 32);
+  advance(w, 300);
+  for (let i = 0; i < 12; i++) assert.equal(act(w, 'a', 'rail.beamChop'), 1);
+  assert.equal(s.line!.beam.state, 'available');
+  return w;
+}
+test('works host: a boiler carrier back for less than a rule tick gets a fresh grace, then it goes to the pedestal', async () => {
+  const r = await host('brief-boiler', railwayAtTrains('boiler'));
+  try {
+    const boiler = () => r.h.rules.railway.boiler();
+    const grace = r.h.rules.tune.get('railBeamGraceS') * 1000;
+    assert.equal(
+      await r.action({ op: 'rail.boilerTake', revision: boiler().revision }, spot(LINE2_BOILER)),
+      'accepted',
+    );
+    await briefReturn(r);
+    assert.equal(railwayInvariant(r.h.rules.railway.railway), null);
+    assert.deepEqual([boiler().state, boiler().holder], ['held', 'a'], 'the second absence has its own grace');
+    r.later(grace);
+    await r.ticks(1);
+    assert.deepEqual([boiler().state, boiler().holder], ['pedestal', '']);
+    assert.deepEqual([boiler().x, boiler().y, boiler().z], spot(LINE2_BOILER));
+    assert.equal(railwayInvariant(r.h.rules.railway.railway), null);
+  } finally {
+    await r.done();
+  }
+});
+test('works host: a beam carrier back for less than a rule tick gets a fresh grace, then it lies where they stood', async () => {
+  const r = await host('brief-beam', atBeam());
+  try {
+    const beam = () => r.h.rules.railway.beam();
+    const grace = r.h.rules.tune.get('railBeamGraceS') * 1000;
+    assert.equal(
+      await r.action({ op: 'rail.beamTake', revision: beam().revision }, [beam().x, 0, beam().z]),
+      'accepted',
+    );
+    const stood = [beam().x, beam().y, beam().z];
+    await briefReturn(r);
+    assert.equal(railwayInvariant(r.h.rules.railway.railway), null);
+    assert.deepEqual([beam().state, beam().holder], ['held', 'a'], 'the second absence has its own grace');
+    r.later(grace);
+    await r.ticks(1);
+    assert.deepEqual([beam().state, beam().holder], ['ground', '']);
+    assert.deepEqual([beam().x, beam().y, beam().z], stood, 'where they stood');
+    assert.equal(railwayInvariant(r.h.rules.railway.railway), null);
+  } finally {
+    await r.done();
   }
 });
