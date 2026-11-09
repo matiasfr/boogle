@@ -52,8 +52,12 @@ test('line host: the sea switch judged at the summit; Q5 behind it; sea survives
     host.rules.railway.touchAll();
     host.deliver({ t: 'r:open' }, 's1');
     await ticks(3);
-    const session = sent.findLast((m) => m.t === 'r:session' && m.to === 's1');
-    assert.ok(session);
+    const getSession = () => {
+      const session = sent.findLast((m) => m.t === 'r:session' && m.to === 's1');
+      assert.ok(session);
+      return session;
+    };
+    let session = getSession();
     let request = Number(session.next) - 1;
     const edit = async (e: Obj, at: [number, number, number]) => {
       now += 1000;
@@ -75,7 +79,17 @@ test('line host: the sea switch judged at the summit; Q5 behind it; sea survives
     await ticks(3 * cartCycleTicks(4));
     assert.equal((await edit({ op: 'rail.depotTake' }, frame)).status, 'accepted');
     const deposit = { op: 'rail.deposit', station: 'Q5', n: 1, kind: 0 };
-    assert.equal((await edit(deposit, frame)).status, 'noop');
+    assert.equal((await edit(deposit, frame)).status, 'accepted');
+    assert.equal(host.rules.railway.railway.line2!.jobs[4]!.start, -1);
+    await host.close({ save: true });
+    host = create();
+    await host.whenReady();
+    assert.equal(host.rules.railway.railway.line2!.sea, false);
+    assert.equal(host.rules.railway.railway.line2!.jobs[4]!.stock, 1, 'gated stock survives restart');
+    host.deliver({ t: 'r:open' }, 's1');
+    await ticks(3);
+    session = getSession();
+    request = Number(session.next) - 1;
     assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'accepted');
     assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'noop');
     assert.equal((await edit(deposit, frame)).status, 'accepted');
@@ -350,10 +364,11 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     assert.equal(far.status, 'rejected');
     const take = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
     assert.equal(take.accepted, CART.rails, 'a back of 16 takes them all');
-    // The quarry gate is up: the frame takes nothing.
+    // The quarry gate is up: deliveries stock the frame without starting it.
     const shut = await edit('s1', { op: 'rail.deposit', station: 'Q4', n: 8, kind: 2 }, [q4.x, 0, q4.z]);
-    assert.equal(shut.status, 'noop');
-    assert.equal(line2().jobs[3]!.railStock, 0);
+    assert.equal(shut.status, 'accepted');
+    assert.equal(line2().jobs[3]!.railStock, 8);
+    assert.equal(line2().jobs[3]!.start, -1);
     const rails = railCounts(host.rules.railway.railway).rails!;
     assert.equal(rails.total, rails.poured);
     // A restart keeps the pack, the shelf and the rails on the back.
@@ -361,7 +376,9 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     host = create();
     await host.whenReady();
     assert.equal(line2().pack, true);
-    assert.equal(host.rules.railway.account('a')!.rails, CART.rails);
+    assert.equal(host.rules.railway.account('a')!.rails, CART.rails - 8);
+    assert.equal(line2().jobs[3]!.railStock, 8);
+    assert.equal(line2().lever, false);
     assert.equal(railCounts(host.rules.railway.railway).rails!.total, rails.total);
   } finally {
     await host.close({ save: false }).catch(() => {});

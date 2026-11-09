@@ -23,6 +23,7 @@ import { LINE_TIMING } from '../sim/railway-line.ts';
 import { railApply } from '../sim/railway-systems.ts';
 import {
   Account,
+  Cart,
   Forge,
   ForgeClock,
   Job,
@@ -160,7 +161,8 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
   const lit = [w.get(Forge, fid)!.lit, w.get(ForgeClock, fid)!.lastPour] as const;
   // Funding a shelf stretch sends the shelf's leftovers back to the forge rack: held back with the funding.
   const rail0 = w.get(Rail, w.single(Rail))!;
-  const shelf = [rail0.depotRails, w.get(Forge, fid)!.rack, rail0.shelfOut] as const;
+  const cartId = w.single(Cart);
+  const shelf = [rail0.depotRails, w.get(Forge, fid)!.rack, rail0.shelfOut, w.get(Cart, cartId)!.rails] as const;
   let heldBack = false;
   if (e.op === 'rail.drop') w.reserve(-e.request); // a stable temporary id until the server's arrives
   const result = railApply(w, pid, e, tick, LINE_TIMING);
@@ -187,6 +189,7 @@ export function railPredict(s: Railway, pid: string, e: RailAction, tick: number
   if (heldBack && w.get(Rail, w.single(Rail))!.shelfOut !== shelf[2]) {
     Object.assign(w.mut(Rail, w.single(Rail))!, { depotRails: shelf[0], shelfOut: shelf[2] });
     w.mut(Forge, fid)!.rack = shelf[1];
+    w.mut(Cart, cartId)!.rails = shelf[3];
   }
   if (lit[0] < 0 && w.get(Forge, fid)!.lit >= 0) {
     w.mut(Forge, fid)!.lit = lit[0];

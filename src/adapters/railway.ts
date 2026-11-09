@@ -952,7 +952,7 @@ export function createRailwayAdapter({
         submit({ op: 'rail.drop', x, y, z, n, kind })
       );
     },
-    /** Line two: the forge frame ('F') or the active Q frame. */
+    /** Line two: the forge frame ('F') or active Q frame, including while its gate holds laying. */
     depositLine2(station: 'F' | Line2StationId, n = 1, kind: 0 | 2 = 0) {
       return railInt(n, CARRY_MAX, 1) && submit({ op: 'rail.deposit', station, n, kind });
     },

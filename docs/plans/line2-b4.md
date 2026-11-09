@@ -9,6 +9,17 @@ cart stays solid); **train lines run low and bend** and world scale unchanged (n
 
 ## Goal
 
+**8 November owner playtest correction (gated-fill):** supersedes the deposit-gate requirements below.
+Q4/Q5 accept both logs and rails while gated, from hand carries and the depot shelf/rack. The bill stays stocked
+with no allocation or laying until the quarry lever / summit switch is pulled. A full bill funds on the pull;
+an incomplete bill funds on its last deposit after the pull. Full waiting frames show counters, physical stock
+and “Pull the lever / switch to start”, with no “More coming” tag over a full bill. Auto-unload retries both materials every update while in reach, paced
+by the existing unload cadence; no carry-change or drop/pickup requirement. Funding remains Server kind;
+prediction retains stock until confirmation, including shelf/cart rails returned by funding. `depotNeed` already
+subtracts frame stock, rack and aboard cargo, so requires no change. No wire/save shape or WORLD_NS change.
+Proofs cover gated partial/full reloads, conservation, pull-first and deposit-first ordering, prediction/replication,
+host restart, and seeded Q4/Q5 looks with real pickup/unload inputs.
+
 The line-2 arc reaches Far Head: with Q4 laid, you hook-climb Needle Bell, pull the sea switch on the summit, the sea
 gate drops, the cart brings Q5's logs and rails, you fund Q5 and the machine lays the 260 m trestle to Far Head, which
 greets you with lamps along the trestle and rockets. This is the last beat before the owner's playtest. Serves DESIGN

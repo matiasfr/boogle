@@ -22,7 +22,17 @@ import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts'
 import { LINE1_STATIONS, LINE1_INITIAL } from '../src/sim/railway-line-layout.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { railCarryMax } from '../src/sim/railway-line2.ts';
-import { cloneRailway, railPredict } from '../src/world/railway-predict.ts';
+import { cloneRailway, railPredict, railwayOf } from '../src/world/railway-predict.ts';
+import {
+  act as seedAct,
+  advance as seedAdvance,
+  logs as seedLogs,
+  rails as seedRails,
+  railwayAtQ4,
+  railwayAtQ5,
+} from './helpers/railway-q2.ts';
+import { worldOf } from './railway-live.ts';
+import { cartCycleTicks } from '../src/sim/railway-cart.ts';
 import { RAILWAY_SUPPLY } from '../src/sim/railway-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
@@ -30,6 +40,37 @@ import { createRailwayAdapter, type RailwayAccepted, type RailwayCorrection } fr
 import { SERVER_ID } from '../src/net/ids.ts';
 
 const anywhere: Actor = { reach: () => true, height: () => true, cadence: () => true };
+
+for (const k of [3, 4]) {
+  test(`Q${k + 1} predicts a stocked gate pull without funding or returning cart/shelf rails early`, () => {
+    const w = k === 3 ? railwayAtQ4() : railwayAtQ5('q4-done');
+    const spec = LINE2_STATIONS[k]!;
+    for (let t = 0; w.s.line2!.cart.rails === 0 && t < 3 * cartCycleTicks(k); t++) seedAdvance(w, 1);
+    assert.ok(w.s.line2!.cart.rails > 0, 'rails aboard when the bill fills by hand');
+    seedLogs(w, 'a', spec.id, spec.bill[0]);
+    seedRails(w, 'b', spec.id, spec.bill[1]);
+    const shown = cloneRailway(railwayOf(worldOf(w.s)));
+    const before = structuredClone(shown.line2!);
+    const a = w.s.accounts.find((a) => a.pid === 'a')!;
+    const op = k === 3 ? 'rail.lever' : 'rail.seaSwitch';
+    assert.equal(railPredict(shown, 'a', { op, epoch: a.epoch, request: a.request + 1 }, w.t).n, 1);
+    const l = shown.line2!,
+      j = l.jobs[k]!;
+    assert.equal(k === 3 ? l.lever : l.sea, true);
+    assert.equal(j.start, -1, 'funding waits for confirmation');
+    assert.equal(j.stock, spec.bill[0]);
+    assert.equal(j.railStock, spec.bill[1]);
+    assert.equal(j.allocation + j.railAllocation, 0);
+    assert.deepEqual(l.cart, before.cart);
+    assert.equal(l.depotRails, before.depotRails);
+    assert.equal(l.shelfOut, before.shelfOut);
+    assert.equal(l.forge.rack, before.forge.rack);
+    assert.equal(railCounts(shown).rails!.total, railCounts(shown).rails!.poured);
+    assert.equal(seedAct(w, 'a', op), 1);
+    assert.equal(w.s.line2!.jobs[k]!.start, w.t);
+    assert.equal(w.s.line2!.cart.rails, 0, 'only the accepted pull returns surplus cargo');
+  });
+}
 
 function room() {
   const sync = createSync();
@@ -314,11 +355,23 @@ test('a scripted run through line one, the pack and line two to Q5 replicates ex
   for (let k = 0; k < LINE2_STATIONS.length; k++) {
     const spec = LINE2_STATIONS[k]!;
     if (spec.gate === 'quarry') {
-      assert.equal(act('b', 'rail.deposit', { station: spec.id, n: 1, kind: 0 }), 0, 'the quarry gate is up');
       assert.equal(act('a', 'rail.lever'), 1);
     }
     if (spec.gate === 'sea') {
-      assert.equal(act('b', 'rail.deposit', { station: spec.id, n: 1, kind: 0 }), 0, 'the sea gate is up');
+      chop('b');
+      const shown = cloneRailway(mirror.at(r.sync.world.tick));
+      const deposit = {
+        op: 'rail.deposit',
+        station: spec.id,
+        n: 1,
+        kind: 0,
+        epoch: 1,
+        request: (req.get('b') ?? 0) + 1,
+      };
+      assert.equal(railPredict(shown, 'b', deposit, r.sync.world.tick).n, 1, 'gated deposit predicts');
+      assert.equal(shown.line2!.jobs[k]!.stock, 1);
+      assert.equal(shown.line2!.jobs[k]!.start, -1);
+      assert.equal(act('b', 'rail.deposit', { station: spec.id, n: 1, kind: 0 }), 1, 'gated deposit confirms');
       r.join('sea-predict');
       const seaMirror = r.mirrors.get('sea-predict')!;
       const adapter = createRailwayAdapter({

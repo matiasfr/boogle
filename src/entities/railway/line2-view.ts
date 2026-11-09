@@ -879,7 +879,12 @@ export async function createRailwayLine2(
           stone: 0,
           beam: 0,
         });
-        frame.setTag(now && k === l.active && job.start < 0);
+        const gated = spec.gate === 'quarry' ? !l.gateOpen : spec.gate === 'sea' ? !l.seaOpen : false;
+        const waiting = gated && job.stock === spec.bill[0] && job.railStock === spec.bill[1];
+        frame.setTag(
+          now && k === l.active && job.start < 0,
+          waiting ? `Pull the ${spec.gate === 'quarry' ? 'lever' : 'switch'} to start` : undefined,
+        );
         if (now && k === activeIndex()) {
           const entered = feed.filter((f) => f.kind === 'log' && f.landMs <= feedMs).length;
           const fraction = Math.min(
@@ -925,13 +930,8 @@ export async function createRailwayLine2(
       const job = l.stations[k]!,
         spec = LINE2_STATIONS[k]!,
         frame = frames[k]!;
-      // Gated frames wait for the quarry gate (Q4) or sea gate (Q5) to drop.
-      if (
-        job.start >= 0 ||
-        (spec.gate === 'quarry' ? !l.gateOpen : spec.gate === 'sea' ? !l.seaOpen : false) ||
-        !near(frame.x, frame.z)
-      )
-        return;
+      // Retry both materials while in reach, even after a refused attempt. Gates only hold laying.
+      if (job.start >= 0 || !near(frame.x, frame.z)) return;
       if (state.availableCarry > 0 && job.stock < spec.bill[0] && adapter.depositLine2(spec.id, 1, 0))
         unload = layout.TUNE.unloadS;
       else if (state.availableRails > 0 && job.railStock < spec.bill[1] && adapter.depositLine2(spec.id, 1, 2))
