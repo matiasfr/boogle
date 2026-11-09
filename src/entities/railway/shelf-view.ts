@@ -11,7 +11,7 @@ import { readableUnlit } from '../../render/readable-unlit.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { stockSign } from './stock-sign.ts';
 
-const SHOWN = 16; // a stretch's rail bill at most
+const MAX_RAILS = Math.max(...LINE2_STATIONS.map((station) => station.bill[1]));
 const REACH = 3.2;
 
 export async function createRailwayShelf(
@@ -60,11 +60,11 @@ export async function createRailwayShelf(
     shelf.add(leg);
   }
   const rails = look.LOOK.kit
-    ? kit.kitBatch('rail', look.STEEL, SHOWN, owner)
+    ? kit.kitBatch('rail', look.STEEL, MAX_RAILS, owner)
     : new THREE.InstancedMesh(
         new THREE.BoxGeometry(pieces.RAIL_SIZE.x, pieces.RAIL_SIZE.y, pieces.RAIL_SIZE.z),
         flat('#4c5058', 0.6),
-        SHOWN,
+        MAX_RAILS,
       );
   // kitBatch only swaps in the kit's geometry; the shelf carries it, so its rails turn with it.
   rails.removeFromParent();
@@ -102,7 +102,7 @@ export async function createRailwayShelf(
     place(k);
     sign.sprite.position.copy(at).y += 1.5;
     sign.set(n);
-    rails.count = Math.min(SHOWN, n);
+    rails.count = Math.min(MAX_RAILS, n);
     for (let i = 0; i < rails.count; i++) rails.setMatrixAt(i, m4.makeTranslation(slot(i, tmp)));
     rails.instanceMatrix.needsUpdate = true;
   }
