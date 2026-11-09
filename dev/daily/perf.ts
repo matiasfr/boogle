@@ -27,6 +27,9 @@ export const PERF_POLICY = {
   } as Record<string, [number, number]>,
   /** Absolute budgets: asset-pipeline.md (owner, 6 November) and one 120 Hz frame on the Mac. */
   budget: { firstLoadMB: 25, totalMB: 100, assetMB: 4, frameMs: 8.33 },
+  /** Measure only with the bot slot held, no other harness browser and the 1-minute load at most `maxLoad` (10 cores);
+   * wait up to `waitMinutes` for that, then skip the night rather than record a busy machine. */
+  quiet: { maxLoad: 6, waitMinutes: 30 },
 };
 
 type Stat = { avg: number; p95: number; max: number; n: number } | null;
@@ -171,7 +174,13 @@ function lines(changes: Change[]) {
 export function report(
   b: Bench,
   result: ReturnType<typeof compare>,
-  { base, range, dir, problems }: { base: string; range: string; dir: string; problems: string[] },
+  {
+    base,
+    range,
+    dir,
+    problems,
+    load,
+  }: { base: string; range: string; dir: string; problems: string[]; load?: [number, number] },
 ) {
   const rows = Object.entries(b.poses)
     .filter((e): e is [string, Pose] => isPose(e[1]))
@@ -187,7 +196,7 @@ export function report(
         ? `No regressions against the median of the last ${result.baselineRuns} run${result.baselineRuns > 1 ? 's' : ''}.`
         : 'First run: this is the baseline.';
   return [
-    `Daily benchmark of ${base.slice(0, 8)} (dev/look/bench.ts, M1 Max, 1280x800 at DPR 2, ${b.seconds} s real frames per pose). ${verdict}`,
+    `Daily benchmark of ${base.slice(0, 8)} (dev/look/bench.ts, M1 Max, 1280x800 at DPR 2, ${b.seconds} s real frames per pose${load ? `; bot slot held, 1-minute load ${load[0].toFixed(1)} before and ${load[1].toFixed(1)} after` : ''}). ${verdict}`,
     '',
     ...(result.regressions.length ? ['**Regressions**', ...lines(result.regressions), ''] : []),
     ...(result.over.length ? ['**Over budget**', ...result.over.map((o) => `- ${o}`), ''] : []),
