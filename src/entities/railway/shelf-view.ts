@@ -9,6 +9,7 @@ import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { stockSign } from './stock-sign.ts';
 
 const SHOWN = 16; // a stretch's rail bill at most
 const REACH = 3.2;
@@ -37,6 +38,8 @@ export async function createRailwayShelf(
   const shelf = new THREE.Group();
   owner.add(shelf);
   shelf.visible = false;
+  const sign = stockSign(owner, 'rails');
+  sign.sprite.visible = false;
   const plankGeo = new THREE.BoxGeometry(2.6, 0.12, 3.4),
     legGeo = new THREE.BoxGeometry(0.16, 0.5, 0.16);
   geometries.push(plankGeo, legGeo);
@@ -94,8 +97,11 @@ export async function createRailwayShelf(
     drawn = key;
     const spec = LINE2_STATIONS[k];
     shelf.visible = !!spec?.shelf;
+    sign.sprite.visible = shelf.visible;
     if (!spec?.shelf) return;
     place(k);
+    sign.sprite.position.copy(at).y += 1.5;
+    sign.set(n);
     rails.count = Math.min(SHOWN, n);
     for (let i = 0; i < rails.count; i++) rails.setMatrixAt(i, m4.makeTranslation(slot(i, tmp)));
     rails.instanceMatrix.needsUpdate = true;
@@ -174,6 +180,11 @@ export async function createRailwayShelf(
 
   let inFlight = () => ({ rails: 0 });
   return {
+    railSlot(k: number, n: number, out: THREE.Vector3) {
+      place(k);
+      shelf.updateMatrixWorld(true);
+      return shelf.localToWorld(slot(n, out));
+    },
     /** Rails the cart is heaving onto the shelf (cart-view.ts): shown once they land. */
     holdRails(fn: () => { rails: number }) {
       inFlight = fn;

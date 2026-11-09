@@ -19,6 +19,7 @@ import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
 import { createRailwaySeaGate } from './sea-gate-view.ts';
 import { createRailwayFarHead } from './far-head-view.ts';
+import { stockSign } from './stock-sign.ts';
 
 /** Rail pairs each stretch lays, one per commit. */
 const STRETCH_PAIRS = LINE2_STATIONS.map((station) => line2Panels(station).length);
@@ -158,15 +159,18 @@ export async function createRailwayLine2(
   track.snapTo(track.u(layout.STUB.east));
   const depotLogs = pieces.logStackMesh(24, owner);
   depotLogs.count = 0;
-  // Restore the prototype depot's timber bearers and stops, independently of whether it has stock.
-  // Logs lie along X here (the prototype turns them along Z), so turn the same rack parts to match.
+  // The open ends of the rack and its logs face the path's approach, including on bends.
   const rackParts: Parameters<typeof shapes.merged>[0] = [];
   for (const x of [-1.1, 1.1]) {
     rackParts.push(['b', x, 0.08, 0, 0.2, 0.16, 1.6, '#8a6236']);
     for (const z of [-0.8, 0.8]) rackParts.push(['b', x, 0.65, z, 0.14, 1.3, 0.14, '#7f5630']);
   }
+  rackParts.push(['b', -1.2, 0.65, -1.3, 0.1, 1.3, 0.1, '#a98249']);
   const depotRack = mesh(shapes.merged(rackParts));
   depotRack.visible = false;
+  const depotSign = stockSign(owner, 'logs');
+  depotSign.sprite.visible = false;
+  const depotYaw = (k: number) => frames[k]!.yaw - Math.PI / 2;
   const depotAt = new THREE.Vector3();
   const depotPlace = (k: number, out: THREE.Vector3) => {
     const f = frames[k]!;
@@ -177,6 +181,8 @@ export async function createRailwayLine2(
     out.y = land.H(out.x, out.z) + 0.16; // the bearer tops, shared by unload flights and pickup targets
     return out;
   };
+  const depotSlot = (k: number, n: number, out: THREE.Vector3) =>
+    pieces.stackSlot(n, 4, depotPlace(k, depotAt), depotYaw(k), out);
   let drawnDepot = '';
   let cartFlying = () => ({ logs: 0 });
   function drawDepot(k: number, n: number) {
@@ -184,14 +190,21 @@ export async function createRailwayLine2(
     if (key === drawnDepot) return;
     drawnDepot = key;
     depotRack.visible = k >= 0 && LINE2_STATIONS[k]!.depot;
+    depotSign.sprite.visible = depotRack.visible;
     if (k < 0 || !LINE2_STATIONS[k]!.depot) {
       commitPieces(depotLogs, 0);
       return;
     }
     depotPlace(k, depotAt);
     depotRack.position.copy(depotAt).y -= 0.16;
+    depotRack.rotation.y = depotYaw(k);
+    depotSign.sprite.position
+      .set(-1.2, 1.7, -1.3)
+      .applyAxisAngle(THREE.Object3D.DEFAULT_UP, depotYaw(k))
+      .add(depotRack.position);
+    depotSign.set(n);
     const shown = Math.min(24, n);
-    for (let i = 0; i < shown; i++) pieces.setStackLog(depotLogs, i, pieces.stackSlot(i, 4, depotAt, 0, tmp), 0);
+    for (let i = 0; i < shown; i++) pieces.setStackLog(depotLogs, i, depotSlot(k, i, tmp), depotYaw(k));
     // logStackMesh starts hidden. Commit visibility and colour uploads along with its matrices.
     commitPieces(depotLogs, shown);
   }
@@ -553,16 +566,18 @@ export async function createRailwayLine2(
       return;
     }
     if (event.op === 'rail.depotTake') {
-      depotPlace(Math.max(0, l.active), from);
-      from.y += 0.8;
-      for (let n = 0; n < event.accepted - (event.returned ?? 0); n++)
+      const taken = event.accepted - (event.returned ?? 0);
+      const carried = event.carried ?? state.accounts.find((a) => a.pid === event.pid)?.carry ?? 0;
+      for (let n = 0; n < taken; n++) {
+        depotSlot(Math.max(0, l.active), l.depot + taken - n - 1, from);
         pieces.send(
           'log',
           from,
           from,
-          { dur: 0.3, apex: 0.9, aim: (out) => void bundleOrigin(event.pid, state.carry, out) },
+          { dur: 0.3, delay: n * 0.025, apex: 0.9, aim: (out) => void bundleOrigin(event.pid, carried, out) },
           owner,
         );
+      }
       return;
     }
     if (event.op === 'rail.lever') {
@@ -948,6 +963,7 @@ export async function createRailwayLine2(
     },
     /** Where the depot rack for stretch k stands (the rails shelf stands beside it: shelf-view.ts). */
     depotPlace,
+    depotSlot,
     /** Pieces the cart is heaving onto the rack (cart-view.ts): shown once they land. */
     holdDepot(fn: () => { logs: number }) {
       cartFlying = fn;

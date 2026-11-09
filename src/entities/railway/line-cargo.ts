@@ -228,8 +228,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
       model.stone.count = account.stone ?? 0;
       model.stone.visible = model.stone.count > 0;
       // Rails share capacity with logs, but their mesh has its own count and lifetime, including after logs unload.
-      model.rails.count = account.rails ?? 0;
-      model.rails.visible = model.rails.count > 0;
+      model.setRails(account.rails ?? 0, state.line2.pack);
       let drag = drags.get(account.pid);
       if (!beamHeld || !avatar) {
         model.beam.visible = false;

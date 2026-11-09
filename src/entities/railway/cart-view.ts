@@ -32,6 +32,8 @@ export async function createRailwayCart(
   owner: OwnedView,
   /** Where line2-view stands the depot's log bed for stretch k (world metres). */
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
+  depotSlot: (k: number, n: number, out: THREE.Vector3) => THREE.Vector3,
+  shelfSlot: (k: number, n: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
   const [layout, rail, pieces, land, flatMod, look, kit, props, common] = await Promise.all([
     import('../../proto/place/layout.ts'),
@@ -191,6 +193,10 @@ export async function createRailwayCart(
   /** Pieces in flight from the cart: the rack and shelf show them only once they land. */
   let flyingLogs = 0,
     flyingRails = 0;
+  // Keep the waiting pieces on the cart until their individual flights launch. Collider stock still follows
+  // accepted state immediately: this is only the load's Local drawing, never a delayed transfer or platform.
+  let unloading: { elapsed: number; logs: number; rails: number } | null = null;
+  const STAGGER = 0.045;
   owner.cleanup(() => {
     for (const g of geometries) g.dispose();
     for (const m of materials) m.dispose();
@@ -202,7 +208,7 @@ export async function createRailwayCart(
   return {
     /** Logs and rails on their way from the cart to the rack and shelf (line2-view and shelf-view hold them back). */
     flying: () => ({ logs: flyingLogs, rails: flyingRails }),
-    update() {
+    update(dt: number) {
       const s = adapter.inspect();
       const l2 = s.line2;
       const on = s.ready && !!l2 && l2.completed >= 1;
@@ -217,44 +223,58 @@ export async function createRailwayCart(
         return;
       }
       const c = l2.cart;
-      drawLoad(c.logs, c.rails);
+      if (unloading) unloading.elapsed += dt;
       // The unload: what was aboard is heaved onto the rack and shelf, in a stream.
       if (last && c.phase === CART_PHASE.DROP && last.phase !== CART_PHASE.DROP && last.logs + last.rails > 0) {
         const k = l2.active >= 0 ? l2.active : -1;
         if (k >= 0) {
           depotPlace(k, rackAt);
-          const from = new THREE.Vector3(car.x, car.y + 1, car.z);
+          unloading = { elapsed: 0, logs: last.logs, rails: last.rails };
+          cartLook.updateWorldMatrix(true, false);
           const firstLog = Math.max(0, l2.depot - last.logs);
+          const deliveredLogs = last.logs;
           flyingLogs += last.logs;
           for (let i = 0; i < last.logs; i++) {
-            const to = pieces.stackSlot(firstLog + i, 4, rackAt, 0, new THREE.Vector3());
+            const slot = last.logs - i - 1;
+            const from = cartLook.localToWorld(
+              new THREE.Vector3(((slot % 4) - 1.5) * 0.3, SIZE.top + 0.15 + Math.floor(slot / 4) * 0.27, 0),
+            );
+            const to = depotSlot(k, firstLog + i, new THREE.Vector3());
             pieces.send(
               'log',
               from,
               to,
               {
                 dur: 0.55,
-                delay: i * 0.06,
+                delay: (last.rails + i) * STAGGER,
                 apex: 1.6,
-                size: [1.6, 2.2],
+                size: [2.2, 2.2],
                 land: () => {
                   flyingLogs = Math.max(0, flyingLogs - 1);
                   if (i % 3 === 0) common.pop(Math.min(7, i / 3), 0.35);
-                  if (i === last!.logs - 1) thump(rackAt.x, rackAt.z);
+                  if (i === deliveredLogs - 1) thump(rackAt.x, rackAt.z);
                 },
               },
               owner,
             );
           }
           flyingRails += last.rails;
-          for (let i = 0; i < last.rails; i++)
+          for (let i = 0; i < last.rails; i++) {
+            const slot = last.rails - i - 1;
+            const from = cartLook.localToWorld(
+              new THREE.Vector3(
+                ((slot % 8) - 3.5) * 0.16,
+                SIZE.top + 0.3 + Math.ceil(last.logs / 4) * 0.27 + Math.floor(slot / 8) * 0.18,
+                0,
+              ),
+            );
             pieces.send(
               'rail',
               from,
-              rackAt.clone().setY(rackAt.y + 0.8),
+              shelfSlot(k, Math.max(0, l2.depotRails - last.rails) + i, new THREE.Vector3()),
               {
                 dur: 0.55,
-                delay: (last.logs + i) * 0.06,
+                delay: i * STAGGER,
                 apex: 1.4,
                 land: () => {
                   flyingRails = Math.max(0, flyingRails - 1);
@@ -262,7 +282,17 @@ export async function createRailwayCart(
               },
               owner,
             );
+          }
         }
+      }
+      drawLoad(c.logs, c.rails);
+      if (unloading) {
+        const launched = Math.floor(unloading.elapsed / STAGGER) + 1;
+        // Lift the upper steel layer first, then the timber underneath: waiting cargo remains supported.
+        logs.count = Math.max(c.logs, unloading.logs - Math.max(0, launched - unloading.rails));
+        railsMesh.count = Math.max(c.rails, unloading.rails - launched);
+        logs.visible = logs.count > 0;
+        if (launched >= unloading.logs + unloading.rails) unloading = null;
       }
       if (last && c.phase === CART_PHASE.LOAD && last.phase !== CART_PHASE.LOAD) clank(car.x, car.z);
       last = { phase: c.phase, logs: c.logs, rails: c.rails };
