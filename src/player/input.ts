@@ -167,7 +167,8 @@ export function initInput() {
   );
   // Pinching on a phone zoomed the whole page (Safari ignores touch-action for it): block it. Double-tap zoom is
   // off through touch-action in style.css and user-scalable=no in index.html.
-  for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault());
+  for (const ev of ['gesturestart', 'gesturechange', 'gestureend'])
+    document.addEventListener(ev, (e) => e.preventDefault());
   document.addEventListener('touchmove', (e) => e.touches.length > 1 && e.preventDefault(), { passive: false });
 
   const { touchEl, stickEl, knobEl, jumpBtn, grabBtn } = dom;
@@ -214,6 +215,7 @@ export function initInput() {
       setStickSprint(free && mag >= (stickSprint ? STICK_SPRINT_OFF : STICK_SPRINT_ON));
       knobEl.style.transform = `translate(${dx}px, ${dy}px)`;
     } else if (e.pointerId === look.id) {
+      if (e.clientX !== look.x || e.clientY !== look.y) inputState.touchLooked = true;
       cam.yaw -= (e.clientX - look.x) * 0.006;
       cam.pitch = clamp(cam.pitch - (e.clientY - look.y) * 0.005, -1.25, 0.9);
       look.x = e.clientX;

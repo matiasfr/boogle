@@ -101,8 +101,10 @@ Notes:
   mouse, and so does a wheel or two-finger scroll; the next finger switches back
   ([src/player/input.ts](../../src/player/input.ts)). Hovering never switches. A trackpad click on the touch overlay
   never starts the stick or a touch look. So an iPad with a Magic Keyboard plays with the keyboard, trackpad look
-  (Safari on iPad has no Pointer Lock: click-drag or two-finger scroll, and the hint says so until you have looked) and
+  (Safari on iPad has no Pointer Lock: click-drag or two-finger scroll) and
   the keyboard guide. HUD buttons sit above the touch overlay in both modes.
+  On a touch device, look guidance appears only while touch is active; keyboard, trackpad and pad input hide it.
+  Returning to touch brings it back until the first touch look drag, which retires it for the visit.
 - **Touch sprint** (2026-11-02; [cross-device-input.md](../research/cross-device-input.md), rec 9): the stick is one
   control for walk and sprint. A push to 90% of its travel (45 px on a phone, 54 px on a tablet) sprints, and it holds
   until the push falls under 80%, so a thumb at the edge doesn't flicker it. Below that the stick walks, in proportion
