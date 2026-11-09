@@ -38,7 +38,9 @@ export default {
     t.check('climbed the spiral stair to the gallery deck', climb.top > climb.deck, JSON.stringify(climb));
     await t.sleep(1000);
     t.check('on the deck', true, await g.still('deck'));
-    await g.view({ cam: [160, 26, -10], look: [212, 26, -50] }, 62);
+    // From the sea to the south-east, the whole tower (site.ts: x 6, z -58, its pad at 11 m). The old view looked out
+    // to sea for the night beams, which went with the night (ded7aeed), so the still showed no tower.
+    await g.view({ cam: [44, 22, -96], look: [6, 20, -58] }, 50);
     await t.sleep(2500);
     t.check('the tower by day', true, await g.still('tower'));
   },

@@ -13,6 +13,7 @@ const PAUSE_MS = 2000; // well under sync's 5 s held-edit age
 
 export default {
   sourceImports: false,
+  query: 'proto=place', // tosses: the current game's railway room refuses gift.toss (since ded7aeed, 6 November)
   about: 'a tab drops off the network, tosses while reconnecting, and the toss lands once it is back',
   timeout: 300000, // generous: two software-rendered tabs on a busy machine
   async run(t: T) {
