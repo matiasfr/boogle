@@ -166,6 +166,19 @@ async function walkQuarryRail(bot: Bot, from: number, to: number) {
   const { LINKS, ORIGIN, lineAt, railY } = await import('../../../src/proto/place/layout.ts');
   const { besideLine } = await import('../../../src/proto/place/rail.ts');
   const direction = Math.sign(to - from);
+  if (from === 546 && direction < 0) {
+    for (const [along, side] of [
+      [546, 4.5],
+      [540, 4.5],
+      [535, 4.5],
+      [532, 0],
+    ] as const) {
+      const p = besideLine(LINKS[1]!.line, along, side);
+      hookCheck(bot, await bot.straight(p.x, p.z, 0.5, 12000), 'walked home around the Far Head machine');
+      hookCheck(bot, await bot.until(() => me.coyote > 0 && !me.swimming, 5000), 'home bypass stays supported');
+    }
+    return walkQuarryRail(bot, 532, to);
+  }
   for (let s = from; direction * (to - s) >= 0; s += direction * 3) {
     if (from === 286 && s >= 535) {
       // On Far Head's broad ground, round the solid parked machine rather than walking into its rear.
@@ -181,12 +194,19 @@ async function walkQuarryRail(bot: Bot, from: number, to: number) {
       }
       return;
     }
+    // Q6's parked machine occupies the last centre metres. Hop its low passenger deck with ordinary Jump.
+    const pierMachine = from === 546 && direction > 0 && s >= 735;
     const point = lineAt(LINKS[1]!.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
-    hookCheck(
-      bot,
-      await bot.straight(point.x + ORIGIN.x, point.z, 0.5, 12000),
-      `walked quarry rail at ${s.toFixed(0)} m`,
-    );
+    if (pierMachine) pressJump();
+    try {
+      hookCheck(
+        bot,
+        await bot.straight(point.x + ORIGIN.x, point.z, 0.5, 12000),
+        `walked quarry rail at ${s.toFixed(0)} m`,
+      );
+    } finally {
+      if (pierMachine) releaseJump();
+    }
     hookCheck(
       bot,
       await bot.until(() => me.coyote > 0 && !me.swimming, 5000, 'quarry track supports the walker'),
@@ -330,6 +350,175 @@ export async function seaToFarHead(
   check(Math.hypot(me.body!.position.x - end.x, me.body!.position.z - end.z) < 3, 'Far Head reached along the trestle');
   check(view().trestleLamps! > 0, 'Far Head trestle lamps placed');
   await checkpoint('Far Head');
+}
+
+/** B5–B8, observing accepted state and using the same inputs as the full route. */
+export async function boilerToPier(
+  { bot, checkpoint, walkQuarry = (a, b) => walkQuarryRail(bot, a, b) }: B4Route,
+  from: 'far-head' | 'boiler' | 'q6' = 'far-head',
+) {
+  const read = () => inspectRailway()!;
+  const l2 = () => read().line2;
+  type Trains = ReturnType<
+    Awaited<ReturnType<typeof import('../../../src/entities/railway/train-view.ts').createRailwayTrains>>['inspect']
+  >;
+  type Halts = ReturnType<
+    Awaited<ReturnType<typeof import('../../../src/entities/railway/halts-view.ts').createRailwayHalts>>['inspect']
+  >;
+  const view = () => read().line2View as RailwayViewInspection['line2View'] & Trains & Halts;
+  const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
+  // The page races about 10x faster than the authority. These are page-time budgets, not train schedules.
+  const until = async (fn: () => unknown, beat: string, ms = 2400000) => check(await bot.until(fn, ms, beat), beat);
+  const walk = async (x: number, z: number, radius = 1) =>
+    check(await bot.walk(x, z, radius), `B8 walked to ${x.toFixed(1)}, ${z.toFixed(1)} without recovery`);
+  const straight = async (x: number, z: number) =>
+    check(await bot.straight(x, z, 0.5, 12000), 'B8 walked a supported track waypoint');
+  const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+  const point = (line: number, s: number) => {
+    const p = lineAt(LINKS[line]!.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
+    return { ...p, x: p.x + ORIGIN.x };
+  };
+  check(l2().stations[4]?.completion === 1, 'B8 starts after Q5');
+  check(view().boiler && view().trains && view().halts, 'B8 requires merged boiler, train and halt inspections');
+  if (from === 'q6' && !l2().pack) {
+    const chest = read().reward.tools.packChest;
+    check(await bot.use(chest.x, chest.z, 'open the pack chest', /^Open/), 'seeded pack chest offered');
+    check(await bot.work(() => l2().pack, 30000, 380), 'seeded pack accepted');
+    await bot.wait(1600);
+    if (read().reward.showing) {
+      // The reveal owns the menu key rather than the world Interact action, as in the full route's dismiss().
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+      await until(() => !read().reward.showing, 'seeded pack reveal dismissed', 10000);
+    }
+  }
+  if (from !== 'q6') {
+    if (from === 'far-head') {
+      await walkQuarry(546, 10);
+      await walk(view().forgeRack.x, view().forgeRack.z, 3);
+    }
+    const b = view().boiler;
+    check(await bot.use(b.x, b.z, 'shoulder the boiler', /^Shoulder the boiler$/), 'boiler pickup offered');
+    check(await bot.work(() => view().boiler.mine, 30000, 380), 'boiler accepted onto the back');
+    await checkpoint('boiler');
+    // Reverse the production path-home bypass, then follow line one's laid deck to camp.
+    const village = point(0, 14),
+      join = point(0, 30);
+    await walk(village.x, village.z);
+    await straight(village.x - village.uz * 4, village.z + village.ux * 4);
+    await straight(join.x - join.uz * 4, join.z + join.ux * 4);
+    await straight(join.x, join.z);
+    for (let s = 30; s <= 192; s += 3) {
+      const p = point(0, s);
+      await straight(p.x, p.z);
+      await until(() => me.coyote > 0 && !me.swimming, 'boiler path stays supported', 5000);
+      check(view().boiler.mine, 'boiler stays on its carrier');
+    }
+    const saddle = view().boiler.saddle;
+    check(await bot.use(saddle.x, saddle.z, 'fit the boiler', /^Fit the boiler$/), 'boiler fit offered');
+    check(await bot.work(() => l2().trains, 30000, 380), 'boiler fitted at the old train');
+    await checkpoint('TRAINS');
+  }
+  const ride = async (line: number, haltId: number, destination: number, called: boolean) => {
+    const halt = view().halts[haltId]!;
+    await until(() => view().halts[haltId]!.up, 'halt drops into place');
+    await walk(halt.x, halt.z, 0.5);
+    await until(() => view().halts[haltId]!.calling, `${halt.name} halt calls a train`);
+    if (called) await checkpoint('train called');
+    await until(() => l2().train[line]!.phase === 0 && l2().train[line]!.at === halt.stop, 'called train arrives');
+    const aboard = () => view().trains[line]!.cars.some((car) => car.riding);
+    const end = performance.now() + 20000;
+    try {
+      while (!aboard() && performance.now() < end) {
+        const car = view().trains[line]!.cars[1]!;
+        const p = me.body!.position;
+        cam.yaw = me.yaw = Math.atan2(-(car.x - p.x), -(car.z - p.z));
+        input.keys.add('KeyW');
+        if (me.coyote > 0) pressJump();
+        await bot.wait(120);
+        releaseJump();
+        await bot.wait(80);
+      }
+    } finally {
+      input.keys.delete('KeyW');
+      releaseJump();
+    }
+    check(aboard(), 'boarded passenger car by real jump');
+    let ran = false;
+    let sample: Promise<void> | undefined;
+    await until(
+      () => {
+        check(aboard() && !me.swimming, 'rider stays aboard throughout the train journey');
+        const row = l2().train[line]!;
+        ran ||= row.phase === 1;
+        if (row.phase === 1 && !sample && new URLSearchParams(location.search).has('railPerf')) {
+          sample = (async () => {
+            const { hardwareTiming } = await import('../../../src/debug/prof-overlay.ts');
+            const timing = await hardwareTiming(3);
+            console.log(
+              `RAILWAY MOVING PERF ${JSON.stringify({ line, timing, riding: aboard(), phase: l2().train[line]!.phase })}`,
+            );
+          })();
+          background(sample, 'moving train performance sample');
+        }
+        return ran && row.phase === 0 && row.at === destination;
+      },
+      `line ${line + 1} arrives with rider`,
+    );
+    await sample;
+    if (line === 0 || from === 'q6') await checkpoint('train ride');
+    else bot.note('line 2 train ride');
+    const arrival = view().halts.find((h) => h.line === line && h.stop === destination)!;
+    await straight(arrival.x, arrival.z);
+    await until(() => !aboard() && me.coyote > 0, 'stepped off the train onto the halt', 10000);
+  };
+  if (from !== 'q6') await ride(0, 1, 0, true);
+  await ride(1, 2, 2, from === 'q6');
+  await until(() => l2().depot === 32 && l2().depotRails === 32, 'Q6 train unloads all 32 logs and 32 rails');
+  await checkpoint('Q6 stocked');
+  check(read().carryMax === 16, 'Q6 back holds sixteen');
+  const job = () => l2().stations[5]!;
+  const frame = view().frames[5]!;
+  const deliver = async () => {
+    await walk(frame.x, frame.z, 2.4);
+    await until(
+      () => read().carry === 0 && read().railsCarry === 0 && read().pending === 0,
+      'Q6 unload settles',
+      30000,
+    );
+  };
+  for (let trip = 0; job().start < 0; trip++) {
+    check(trip < 4, 'Q6 funds in bounded sixteen-unit carries');
+    if (job().stock < 32) {
+      const depot = view().depot!;
+      check(await bot.use(depot[0]!, depot[2]!, 'take Q6 depot logs', /^Pick up$/), 'Q6 depot offered');
+      check(await bot.work(() => read().carry > 0, 30000, 380), 'Q6 logs accepted');
+      await until(() => read().pending === 0, 'Q6 log take settles', 30000);
+      await deliver();
+    }
+    if (job().railStock < 32) {
+      const shelf = view().shelf!;
+      check(await bot.use(shelf.x, shelf.z, 'take Q6 shelf rails', /^Take rails$/), 'Q6 shelf offered');
+      check(await bot.work(() => read().railsCarry > 0, 30000, 380), 'Q6 rails accepted');
+      await until(() => read().pending === 0, 'Q6 rail take settles', 30000);
+      await deliver();
+    }
+  }
+  await checkpoint('Q6 funded');
+  await until(() => job().completion === 1, 'Q6 laid once');
+  await checkpoint('Q6 laid');
+  const start = point(1, 546);
+  await straight(start.x, start.z);
+  await walkQuarry(546, 739);
+  const end = point(1, 739);
+  pressJump();
+  try {
+    await straight(end.x, end.z);
+  } finally {
+    releaseJump();
+  }
+  await until(() => me.coyote > 0 && !me.swimming, 'pier end supports the walker', 5000);
+  await checkpoint('pier');
 }
 
 async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
@@ -1214,10 +1403,12 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await checkpoint('Q4 laid');
       await until(() => read().line2?.stations[4]?.completion === 1, 'leader lays Q5', LAYING_MS * 3);
       await checkpoint('Q5 laid');
+      await until(() => read().line2?.stations[5]?.completion === 1, 'leader lays Q6', LAYING_MS * 6);
+      await checkpoint('Q6 laid');
       document.documentElement.dataset.railwayProof = 'done';
       await bot.wait(3000);
       logHashes();
-      bot.finish('line one with a friend; line two observed to Q5');
+      bot.finish('line one with a friend; line two observed to the pier');
       return;
     }
     // Back down the pillar lip and home along line one.
@@ -1603,6 +1794,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await until(() => q4Job().completion === 1, 'Q4 laid once', LAYING_MS);
     await checkpoint('Q4 laid');
     await seaToFarHead({ bot, checkpoint, walkQuarry, quarryFrom: 172 });
+    await boilerToPier({ bot, checkpoint, walkQuarry });
     const totals = read().counts;
     require(totals.rails && totals.rails.total === totals.rails.poured, 'rails conserve the forge pour');
     require(totals.total === LINE1_INITIAL[0] + totals.produced, 'logs conserve through line two');
@@ -1611,7 +1803,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await bot.wait(3000);
       logHashes();
     }
-    bot.finish('line one, forge, Q1-Q5, Needle Bell hook climb and descent, sea gate and Far Head');
+    bot.finish('line one, forge, Q1-Q6, Needle Bell, boiler, two train rides and the pier');
   } catch (error) {
     document.documentElement.dataset.railwayProof = 'failed';
     bot.never(`production line1 stopped: ${error instanceof Error ? error.message : String(error)}`);

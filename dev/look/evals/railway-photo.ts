@@ -19,6 +19,10 @@ const frames: Record<string, Frame> = {
   'sea gate': { camera: [983, 120, 25], target: [1090, 62, -18] },
   'Q5 laid': { camera: [1150, 42, -10], target: [1260, 25, -88] },
   'Far Head': { camera: [1385, 44, -188], target: [1220, 25, -58] },
+  boiler: { camera: [928, 25, 14], target: [919, 20, 5.4] },
+  TRAINS: { camera: [1023, 38, -137], target: [1009, 32, -149] },
+  'Q6 laid': { camera: [1365, 39, -155], target: [1402, 25, -368] },
+  pier: { camera: [1402, 34, -348], target: [1402, 27, -700] },
 };
 const beat = new URLSearchParams(location.search).get('railStop') ?? '';
 const frame = frames[beat];
@@ -28,7 +32,9 @@ const shot = window as Window & { __railStop?: string; __placeDone?: boolean; __
 setTimeout(() => window.__debugCam!.clear(), 100);
 if (new URLSearchParams(location.search).has('railFrom')) {
   shot.__railPhoto = true;
-  await import('/dev/look/evals/railway-b4-bot.ts' as string);
+  const from = new URLSearchParams(location.search).get('railFrom');
+  if (from === 'boiler' || from === 'q6') await import('/dev/look/evals/railway-b5b8-bot.ts' as string);
+  else await import('/dev/look/evals/railway-b4-bot.ts' as string);
 } else background(play(), 'played railway photo');
 background(
   (async () => {
@@ -38,6 +44,8 @@ background(
     // Hide only makeBot's diagnostic note panel; the console/report retains every note.
     for (const panel of document.querySelectorAll<HTMLDivElement>('body > div'))
       if (panel.style.zIndex === '9999' && panel.style.whiteSpace === 'pre') panel.style.display = 'none';
+    for (const panel of document.querySelectorAll<HTMLElement>('body > section'))
+      if (panel.querySelector('button')?.textContent === 'Measure 5 seconds') panel.style.display = 'none';
     await wait(600);
     console.log(`RAILWAY PHOTO ${beat} reached through real inputs; full route proof is separate`);
     shot.__placeDone = true;

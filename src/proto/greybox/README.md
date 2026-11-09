@@ -8,6 +8,9 @@ The live game also draws a separate, non-walkable, merged silhouette of this map
 (`src/entities/sickle-backdrop/`), with no review tools. It shares the pure parser in `src/sickle/map-data.ts`;
 the local `map-data.ts` re-exports it for existing tools. Dev `?greybox=` replaces that horizon with this full blockout.
 
+The production pier photo still uses `greybox=sickle` to show the northward view toward Ring Island. Job D's
+`railway-photo.ts` frame `pier` is reached through the accepted-seed real-input bot, not a greybox teleport.
+
 - **The fog.** With the greybox on, the fog runs to 3.6 km (the crossing's range, owner, 7 November), so the islands
   read at the real scale; the live game keeps its own. `index.ts` writes it late each frame, outside caves.
 - **Dev server only.** `src/features/proto-greybox.ts` loads it when `import.meta.env.DEV` and `?greybox=` are both
