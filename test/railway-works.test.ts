@@ -2,7 +2,7 @@
 // fixtures, every transfer one apply, every footing in one home.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { railwayAtTrains } from './helpers/railway-trains.ts';
+import { railwayAtTrains, TRAIN_STAGES } from './helpers/railway-trains.ts';
 import { act, advance } from './helpers/railway-q2.ts';
 import { advanceWorks, railwayAtWorks, WORKS_STAGES } from './helpers/railway-works.ts';
 import {
@@ -19,7 +19,7 @@ import { railAccount, railCounts } from '../src/sim/railway.ts';
 import { line2Completed, line2Rails, line2Schedule } from '../src/sim/railway-line2.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
-import { WORKS, WORKS_BREAKER, WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
+import { RAIL_ROCKS, RAIL_STONE, WORKS, WORKS_BREAKER, WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal, pierNeed, worksStage } from '../src/sim/railway-works.ts';
 import { Account, Train, Works, createRailwayWorld, railwayCheck } from '../src/sim/railway-world.ts';
 import type { World as Fixture } from './helpers/railway-q2.ts';
@@ -322,5 +322,20 @@ test('every seeded stage loads', () => {
     const w = railwayAtWorks(stage);
     assert.equal(invariant(w.s), null, stage);
     assert.equal(footingTotal(w.s), w.s.works!.poured, stage);
+  }
+});
+
+test("the counted stone total is every rock slot's start plus renewal, as the bot checks it", () => {
+  // The production playthrough checks `counts.stone.total === RAIL_STONE + produced` (dev/look/bots/railway.ts); it
+  // once used line one's 24 and failed at T3 once the Works rocks counted. Hold the counts to the validator's sum.
+  assert.equal(RAIL_STONE, 8 * RAIL_ROCKS.length);
+  const fixtures = [
+    ...TRAIN_STAGES.map((k) => [k, railwayAtTrains(k)] as const),
+    ...WORKS_STAGES.map((k) => [k, railwayAtWorks(k)] as const),
+  ];
+  for (const [stage, w] of fixtures) {
+    const stone = railCounts(w.s).stone!;
+    assert.equal(stone.total, RAIL_STONE + stone.produced, stage);
+    assert.equal(invariant(w.s), null, stage);
   }
 });

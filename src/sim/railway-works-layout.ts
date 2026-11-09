@@ -46,3 +46,6 @@ export const CROSSING_BENTS = [
 ] as const;
 export const CROSSING_FOOT_OFF = 250;
 export const RAIL_ROCKS = [...LINE1_ROCKS, ...WORKS_ROCKS] as const;
+/** Every rock slot's starting stone: the conserved stone total before renewal (`railCounts(s).stone.total` and
+ * validateRailLine both equal this plus `stoneProduced`). */
+export const RAIL_STONE = RAIL_ROCKS.reduce((n, r) => n + r.initial, 0);

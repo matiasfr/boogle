@@ -8,6 +8,7 @@ import { waitFor, ev, sleep } from './harness.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
+import { RAIL_STONE } from '../../src/sim/railway-works-layout.ts';
 import { railCounts, type RailAction } from '../../src/sim/railway.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import type { RailwayProbe, RailwayAdapterProbe } from './ws-page.ts';
@@ -513,7 +514,7 @@ export async function railwayLoad(
         const server = world.rules.railway.railway;
         const counts = railCounts(server);
         const conserved =
-          counts.total === INITIAL + counts.produced && counts.stone!.total === 24 && counts.rails!.total === 0;
+          counts.total === INITIAL + counts.produced && counts.stone!.total === RAIL_STONE && counts.rails!.total === 0;
         const probes = await Promise.all([...pages, late].map(rail));
         const mirrorsAgree = probes.every((s) => s.hash === probes[0]!.hash && s.counts.total === counts.total);
         world.sync.saveNow(true);
