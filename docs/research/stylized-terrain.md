@@ -8,7 +8,7 @@ _Research report, 2 November 2026. Stylized terrain for Boogle's Sunshine-like a
 
 **Per-island terrain modules are a good authoring boundary, provided they share surface, material and lifecycle contracts.** An island may contain several terrain chunks and a cliff kit; it should not acquire its own renderer, physics world or incompatible ground API. Separate the island's identity from both its sampling grid and its streaming units. **Hypothesis H2:** this makes a varied archipelago substantially easier to author and stream than enlarging today's global grid.
 
-The principles served are [DESIGN.md](../../DESIGN.md)'s **Telegraph everything** (land and paths communicate where to go), **Designed for drop-in, drop-out** (a pleasant solo place), **Small and readable**, and **Code first, images by approval**. The [owner's decision log](../proposals/boogle-2.md) supplies the important constraints: the rail route and distant discoveries matter; solid-looking things must be solid; the M4 iPad is a target, not a reason to make the art timid. This report does not change the day/night decision or today's island layout.
+The principles served are [DESIGN.md](../../DESIGN.md)'s **Telegraph everything** (land and paths communicate where to go), **Designed for drop-in, drop-out** (a pleasant solo place), **Small and readable**, and **Code first, images by approval**. The [owner's decision log](../decisions.md) supplies the important constraints: the rail route and distant discoveries matter; solid-looking things must be solid; the M4 iPad is a target, not a reason to make the art timid. This report does not change the day/night decision or today's island layout.
 
 Evidence labels:
 

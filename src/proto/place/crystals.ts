@@ -1,6 +1,6 @@
 // A handful of rare crystals in ?proto=place, tucked along the routes and at spots worth stopping at, the same blue as the
 // shard on the far island (owner: the beacon read as a floating crystal, "a fantasy element in the future, which is cool";
-// boogle-2.md, 2 November). You walk through one and it comes to you with a satisfying magnet and a chime, and it takes its
+// decisions.md, 2 November). You walk through one and it comes to you with a satisfying magnet and a chime, and it takes its
 // place in a glowing row on the curio shelf. They do nothing yet. Local.
 import * as THREE from 'three/webgpu';
 import { emit } from '../../render/particles.ts';

@@ -3,7 +3,7 @@
 > **8 November 2026:** historical; what's next is in the one roadmap, [direction.md](../direction.md).
 
 > **Status: in progress (started 2026-11-01).** The build plan for "Next: find the fun" in
-> [boogle-2.md](../proposals/boogle-2.md): five mechanics-only prototypes, each behind a `?proto=` flag, each asking
+> [decisions.md](../decisions.md): five mechanics-only prototypes, each behind a `?proto=` flag, each asking
 > one playtest question. The design record owns the questions and what the answers decide; this file owns the order of
 > work and one checkbox per PR. Findings go in [docs/playtests.md](../playtests.md).
 
@@ -72,7 +72,7 @@ switch variant (another reload) → back to the page to copy notes. Research rec
    (`protos/store.ts`); one Copy all, in the bar and on the page, writes the whole playtests.md entry (`protos/entry.ts`).
 8. **Only the current toy's panel shows** on the island (`playPanel`); counters and the trace follow the current step,
    and the wagon runs only the really laid line while the laying run is up.
-9. **Verdicts go to the server** (owner's OK, boogle-2.md): each verdict tap and finished note is also a `playtest`
+9. **Verdicts go to the server** (owner's OK, decisions.md): each verdict tap and finished note is also a `playtest`
    report (`src/proto/bar/send.ts`, POST /report), with a small "✓ sent" by the verdict; `npm run verdicts` reads them
    back (`--md` drafts the playtests.md lines). Copy all stays for the full entry; a failed send is silent.
 10. Standalone `?proto=<name>` pages work as before, for builders and their scenarios (`dev/scenarios/play-playlist.ts`
@@ -98,7 +98,7 @@ switch variant (another reload) → back to the page to copy notes. Research rec
       improves five rounded cloud groups and softens the sea horizon across the normal day/night cycle. Owner question:
       “Do these clouds and this horizon keep the sky you liked and make it better?” [As built](../game-design/sky-proto.md).
       This completes the revised prototype build, not look approval. Parked the same day: the owner prefers the original
-      sky and cloud shape (`docs/proposals/boogle-2.md`).
+      sky and cloud shape (`docs/decisions.md`).
 
 Work that can run beside the prototypes when there's attention or agents to spare. None of it ships into the game
 until a look is picked; none of it blocks a playtest.
@@ -125,7 +125,7 @@ and test it.
       numbers change for everyone in the room at once.
 - [x] **Haul variants:** a wheelbarrow (`&v=barrow`) and throwing logs (`&v=toss`) beside the back bundle, compared
       in the same playtest ([haul.md](../game-design/haul.md), "Prototype: haul variants").
-- [x] **Playtest 1** (solo); findings in playtests.md, answer in boogle-2.md.
+- [x] **Playtest 1** (solo); findings in playtests.md, answer in decisions.md.
 
 ## 2. Is riding fun? (the rail spike)
 
@@ -160,13 +160,13 @@ and test it.
 
 ## 6. Does the line feed the town? (the rail loop)
 
-The rail builds the world ([boogle-2.md](../proposals/boogle-2.md), Decided, 2 November). Throwaway greybox on today's
+The rail builds the world ([decisions.md](../decisions.md), Decided, 2 November). Throwaway greybox on today's
 island: prototypes stay outside the entity plan until they're promoted, so this doesn't wait for its steps 10–12. The
 real slice does.
 
 - [x] **`?proto=net`:** connect a camp, crates ride to the village, the village steps up and the train speeds up; then
       the rail fills the next work site for you (`&v=haul` keeps hauling by hand, to tell which part is the fun).
-- [x] **`&v=depot`:** the owner's lean after playing it (boogle-2.md, 2026-11-02): junctions unlock the network, you
+- [x] **`&v=depot`:** the owner's lean after playing it (decisions.md, 2026-11-02): junctions unlock the network, you
       still haul. Each camp connected puts up a depot the wagon stocks; one press, one load, one carry to the ring.
 - [ ] **Playtest 6.**
 

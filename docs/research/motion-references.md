@@ -93,7 +93,7 @@ Judge each against proportions/hat, fixed grip and single axe, silhouette at act
 
 ## Rack experiment: frozen text control and view test
 
-The requested object is the **safe recovery rack**, not a train-delivery rack or a new inventory design. [5 November supply direction](../proposals/boogle-2.md#the-shape-of-the-game) requires safe recovery and counted regrowth before slice 2; [solo design pass §11](solo-design-pass.md#11-recover-drops-and-regrow-trees-with-explicit-resource-accounting) contains proposed accounting details. Those proposals are not mesh requirements or authority to implement timers, capacity, ownership, saves or recovery interactions.
+The requested object is the **safe recovery rack**, not a train-delivery rack or a new inventory design. [5 November supply direction](../decisions.md#the-shape-of-the-game) requires safe recovery and counted regrowth before slice 2; [solo design pass §11](solo-design-pass.md#11-recover-drops-and-regrow-trees-with-explicit-resource-accounting) contains proposed accounting details. Those proposals are not mesh requirements or authority to implement timers, capacity, ownership, saves or recovery interactions.
 
 Freeze this text-only control brief before revealing a generated rack concept to its builder:
 

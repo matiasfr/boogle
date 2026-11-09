@@ -2,7 +2,7 @@
 // All of it is a draft. Change anything here; nothing else knows the words. Pip's first line is the owner's. No line here is
 // spoken by The Boogler, and none says what he really is: rumours are other people's impressions, they contradict each other on
 // purpose, and only the prices hint at where it's heading. See docs/research/town-interiors.md, "Rumours without committing the
-// story", and docs/proposals/boogle-2.md, "The shape of the game".
+// story", and docs/decisions.md, "The shape of the game".
 
 /** Things anyone can see have happened to the town, oldest first (./growth.ts decides which are true). */
 export type Fact = 'path' | 'forge' | 'depot' | 'head' | 'trains' | 'town' | 'stone' | 'pier';

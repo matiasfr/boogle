@@ -12,7 +12,7 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 ## The Boogler
 
 ## Trains
-- A side-on camera while seated on the train, the island sliding by; sitting itself is now decided (boogle-2.md), but the bench variant's camera was cut (owner, 2026-11-02)
+- A side-on camera while seated on the train, the island sliding by; sitting itself is now decided (decisions.md), but the bench variant's camera was cut (owner, 2026-11-02)
 - Train-riding UX pass once there are trains beyond the default cargo ones: a way to board that looks natural (a passenger car or seats, not sitting on a flat deck), and a ride that feels really satisfying over the long stretches; builds on [train-riding](research/train-riding.md) (owner, 2026-11-06)
 
 ## Multiplayer

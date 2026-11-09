@@ -235,7 +235,7 @@ Secondary (search summaries, reviews, wikis, forums): all other links above.
 
 ## Addendum, 1 November 2026: RC cars
 
-*Why: the owner said "no" to the soapbox twice ("it needs to feel more like a suspensiony RC car maybe ... bumper/trigger for accelerating and braking makes a big difference in feel"). [boogle-2.md](../proposals/boogle-2.md) gives it one more try as an RC car. This addendum asks what makes small RC-style cars feel great, for suspension, traction, air control and the pad mapping. It amends recommendation 1 above ("keep the sphere") for the look of the ride, not its physics.*
+*Why: the owner said "no" to the soapbox twice ("it needs to feel more like a suspensiony RC car maybe ... bumper/trigger for accelerating and braking makes a big difference in feel"). [decisions.md](../decisions.md) gives it one more try as an RC car. This addendum asks what makes small RC-style cars feel great, for suspension, traction, air control and the pad mapping. It amends recommendation 1 above ("keep the sphere") for the look of the ride, not its physics.*
 
 ### What the sources say
 

@@ -1,6 +1,6 @@
 # Business for Beginners: a lore tech tree for Boogle
 
-> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](../decisions.md).
 
 *Proposal, 29 October 2026. A progression tree that grows out of The Boogler's story and unlocks features. It is a menu to pick from, not a plan. Each idea cites the game or designer it borrows from; the evidence is in [progression-feel-exploration.md](../research/progression-feel-exploration.md) and [_primary-source-notes.md](../research/_primary-source-notes.md). Nothing here is built.*
 

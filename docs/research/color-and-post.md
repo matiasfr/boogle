@@ -2,7 +2,7 @@
 
 3 November 2026. Research recommendation, **not an approved renderer change**. Serves DESIGN.md **Show, don't tell**, **Telegraph everything**, and **Small and readable**.
 
-**Keep the frozen late-morning demo sky and water AgX; fix radiance/exposure and the material palette, then add a restrained grade and bloom.** A more saturated curve alone does not make this world sunny. Keep honey timber, warm cream/tan land, cyan shallows and blue distance; reserve stronger reds/purples/yellows for toys and feedback. Preserve the Buddy's Castle Story **Bricktrons-like proportions and soft shoulders, without rim light**, as the [owner decided](../proposals/boogle-2.md#characters-and-story).
+**Keep the frozen late-morning demo sky and water AgX; fix radiance/exposure and the material palette, then add a restrained grade and bloom.** A more saturated curve alone does not make this world sunny. Keep honey timber, warm cream/tan land, cyan shallows and blue distance; reserve stronger reds/purples/yellows for toys and feedback. Preserve the Buddy's Castle Story **Bricktrons-like proportions and soft shoulders, without rim light**, as the [owner decided](../decisions.md#characters-and-story).
 
 ## Recommendations, in order
 

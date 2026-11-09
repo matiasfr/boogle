@@ -2,7 +2,7 @@
 
 Boogle is a shared world for a handful of friends: you connect an archipelago by rail, and it grows because of what you connect. Toys to throw and bounce are there to mess with along the way.
 
-These principles decide arguments. If a feature idea conflicts with one of them, either the idea changes or we change the principle here on purpose, with a reason. [docs/proposals/boogle-2.md](docs/proposals/boogle-2.md) records where the game is heading, and its decisions win over anything older; this file says *how we decide*. The research behind the rail loop is in [docs/research/compounding-infrastructure.md](docs/research/compounding-infrastructure.md), [rail-as-play.md](docs/research/rail-as-play.md) and [vast-world-scale.md](docs/research/vast-world-scale.md).
+These principles decide arguments. If a feature idea conflicts with one of them, either the idea changes or we change the principle here on purpose, with a reason. [docs/decisions.md](docs/decisions.md) records where the game is heading, and its decisions win over anything older; this file says *how we decide*. The research behind the rail loop is in [docs/research/compounding-infrastructure.md](docs/research/compounding-infrastructure.md), [rail-as-play.md](docs/research/rail-as-play.md) and [vast-world-scale.md](docs/research/vast-world-scale.md).
 
 ## The core loop
 

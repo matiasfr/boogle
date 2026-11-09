@@ -2,7 +2,7 @@
 
 _2026-11-03. Research only; source audit at `2e647d9e`, installed Three r187, live engine documentation and developer sources. **[V]** = code/source text read; **[A]** = talk abstract only; **[S]** = secondary account, unconfirmed; **[D]** = recommendation/inference. No implementation or new device test._
 
-**Yes: Boogle needs a small shared material library. It already supports sophisticated materials; it does not need a new shading engine.** Standard PBR, imported glTF, vertex colours, procedural TSL and a complex custom ocean are present. What is missing is a named, consistent contract for agents to author timber, painted toys and foliage, and for the owner to tune them together. Keep faceted scenery, softened kit edges and Buddy's smooth shoulders; **no Buddy rim light**. The [look decisions](../proposals/boogle-2.md#look) make frozen late-morning sky plus AgX the reference for the new-water route.
+**Yes: Boogle needs a small shared material library. It already supports sophisticated materials; it does not need a new shading engine.** Standard PBR, imported glTF, vertex colours, procedural TSL and a complex custom ocean are present. What is missing is a named, consistent contract for agents to author timber, painted toys and foliage, and for the owner to tune them together. Keep faceted scenery, softened kit edges and Buddy's smooth shoulders; **no Buddy rim light**. The [look decisions](../decisions.md#look) make frozen late-morning sky plus AgX the reference for the new-water route.
 
 ## Recommendations, in order [D]
 

@@ -1,6 +1,6 @@
 # NPC babble voices: character, cadence and a browser implementation
 
-_Research report, 1 November 2026. Deepens [audio-and-music.md §7 and recommendation 6](audio-and-music.md#7-voices-without-voice-acting): Animal Crossing's Animalese is the owner's reference; the target is expressive sound accompanying readable text, without recording the script. Covers shipped approaches, evidence limits, voice identity, fatigue, repeatability, Web Audio, and scaling beyond The Boogler. Read against [DESIGN.md](../../DESIGN.md), [the decision log](../proposals/boogle-2.md), [The Boogler as built](../game-design/boogler.md) and [his lore](../game-design/boogler-lore.md). Research and proposals only; no sound was implemented, auditioned, benchmarked or extracted from a game._
+_Research report, 1 November 2026. Deepens [audio-and-music.md §7 and recommendation 6](audio-and-music.md#7-voices-without-voice-acting): Animal Crossing's Animalese is the owner's reference; the target is expressive sound accompanying readable text, without recording the script. Covers shipped approaches, evidence limits, voice identity, fatigue, repeatability, Web Audio, and scaling beyond The Boogler. Read against [DESIGN.md](../../DESIGN.md), [the decision log](../decisions.md), [The Boogler as built](../game-design/boogler.md) and [his lore](../game-design/boogler-lore.md). Research and proposals only; no sound was implemented, auditioned, benchmarked or extracted from a game._
 
 **Evidence markers:** **[P]** developer interview, original paper, official documentation or inspected source code; **[S]** secondary account, fan research or a player's report, identified as such; **[C]** calculation or proposed Boogle design; **[U]** implementation detail not established. Translated interviews remain primary testimony, with the translation caveat. Search excerpts and inaccessible pages are called out. Inline links support the adjacent claim; a game's audible effect does not establish its underlying algorithm.
 
@@ -277,7 +277,7 @@ These are from this checkout, not assumptions inherited from the earlier audio r
 | [src/render/audio.ts](../../src/render/audio.ts)               | `voice` is already a bus name, but all buses currently alias the master unless a mixer is installed. Master gain is 0.8 before a compressor, threshold −20 dB and ratio 6. A bus name alone does not provide isolated speech volume.       |
 | [src/ui/ui-sound.ts](../../src/ui/ui-sound.ts)                 | Small tonal/noise UI effects, own gain 0.4, randomized pitch and rate limiting; currently calls default `getAudio()` rather than an isolated voice route. Reuse the shared audio door, not the UI sound vocabulary or its random sequence. |
 
-The [decision log's sound audit](../proposals/boogle-2.md) cuts the current synth groove and reserves music for owner-made material later. This proposal does not revive it. Babble should not call `onBeat()` or wait for a musical grid; narrative cadence takes priority.
+The [decision log's sound audit](../decisions.md) cuts the current synth groove and reserves music for owner-made material later. This proposal does not revive it. Babble should not call `onBeat()` or wait for a musical grid; narrative cadence takes priority.
 
 ### A small voice specification
 

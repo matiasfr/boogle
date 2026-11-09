@@ -1,9 +1,9 @@
 # Island layout: options for eras 1–2, and a rough archipelago
 
-> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](../decisions.md).
 
 *Proposal, 1 November 2026. Draft options for the director to react to; nothing here is decided until
-[boogle-2.md](boogle-2.md) says so. Serves DESIGN.md 7 (telegraph everything) and 8 (designed for drop-in), and the
+[decisions.md](../decisions.md) says so. Serves DESIGN.md 7 (telegraph everything) and 8 (designed for drop-in), and the
 owner's "solo first". "Rec n" cites the numbered recommendations in
 [level-design.md](../research/level-design.md), "What this means for Boogle".*
 
@@ -118,7 +118,7 @@ Findings:
 - **Rec 10 and the fog agree:** an island 150–300 m off home's shore sits 250–400 m from spawn, inside the 520 m fog,
   hazy from the beach and clear from the lighthouse deck.
 - **Rec 16 (one or two unreached islands in view):** with eras 3–6 all near home, four islands were in view at once.
-  Here eras 5–6 sit past the fog; they could also rise out of the sea with their era, as boogle-2.md has new islands
+  Here eras 5–6 sit past the fog; they could also rise out of the sea with their era, as decisions.md has new islands
   doing.
 - **Recs 5, 6, 11 (the mainland as the global landmark, seen from spawn):** no placement fixes this. A 650 m city
   1.6 km out is past `FOG_FAR`, so it needs a skyline drawn through the fog (an unfogged, exaggerated silhouette or

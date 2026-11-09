@@ -1,8 +1,8 @@
 # Proposals
 
-[boogle-2.md](boogle-2.md) is the living decision log. Everything else here is historical or parked (marked at its top) and binds no one. Pick, mix, cut. Each file cites the research it rests on, in [docs/research/](../research/README.md).
+The living decision log is [docs/decisions.md](../decisions.md) and the one roadmap is [docs/direction.md](../direction.md) (split out of `boogle-2.md` on 8 November). Everything here is historical or parked (marked at its top) and binds no one. Pick, mix, cut. Each file cites the research it rests on, in [docs/research/](../research/README.md).
 
-- [boogle-2.md](boogle-2.md): **start here for Boogle 2.0.** The owner's design decisions (rounds 1–8), standing preferences, where the artifacts and paintings are, open questions, and the agreed next step: find the fun with mechanics-only prototypes.
+- [boogle-2.md](boogle-2.md): a pointer since 8 November. The owner's decisions moved to [decisions.md](../decisions.md), where things are and the first prototype order to [direction.md](../direction.md), and how the owner works to [owner-calls](../agents/owner-calls.md#how-the-owner-works).
 - [directions.md](directions.md): eight broad directions for the game (an idle bazaar, exploration by raft and buggy, a mystery told by the island, toybox physics, an asynchronous coconut post, staying tiny, plus the storm tide and the landmark restoration from the newer reports on `main`), the two plumbing fixes they depend on, the principles each serves and bends, and ways to mix them.
 - [boogler-tech-tree.md](boogler-tech-tree.md): *Business for Beginners*, a lore-driven tech tree. The stuck pages of The Boogler's washed-up business book unlock the stall and Boat Fund, vehicles, the coconut post, Oyijon's kitchen, suzani pattern magic and Gary's boats, with three possible endings. It is split into finishable seasons and wraps the communal report's landmark restoration.
 - [vehicles.md](vehicles.md): feel rules and starting cannon-es numbers for the soapbox buggy, land yacht, melon raft and cart, plus how they sync.

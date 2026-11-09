@@ -1,6 +1,6 @@
 # Tone comparison, 3 November 2026
 
-Serves DESIGN.md **Show, don't tell** and **Small and readable**. The owner's [Look decision](../proposals/boogle-2.md#look)
+Serves DESIGN.md **Show, don't tell** and **Small and readable**. The owner's [Look decision](../decisions.md#look)
 opens Neutral to comparison, not automatic replacement. This change is Local. `src/render/scene.ts` is untouched.
 
 ## Evidence and scope

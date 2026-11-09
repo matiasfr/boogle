@@ -1,6 +1,6 @@
 # Visual target: how good can the island look on an M4 iPad Pro?
 
-> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](../decisions.md).
 
 *Proposal, 1 November 2026. A measured spike, not a change to the shipped look: everything here sits behind
 `?proto=look` (the look lab, `src/debug/look-lab.ts`). No authored assets: code-built shapes, TSL materials and three's

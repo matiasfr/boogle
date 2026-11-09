@@ -2,10 +2,10 @@
 
 # The ring and the economy
 
-**Owner amendment, 7 November:** evaluate the whole project and solo/co-op alongside each other. Effective coordination should pay off; broadly similar six-hour runs are targets, not reasons to erase that benefit. Judge producer bottlenecks by the worthwhile choices they create. The 5.8-hour endgame below remains future direction until the first complete automation cycle earns more. Model figures below have not been rerun under this review; [Process](../proposals/boogle-2.md#process) owns the accepted direction.
+**Owner amendment, 7 November:** evaluate the whole project and solo/co-op alongside each other. Effective coordination should pay off; broadly similar six-hour runs are targets, not reasons to erase that benefit. Judge producer bottlenecks by the worthwhile choices they create. The 5.8-hour endgame below remains future direction until the first complete automation cycle earns more. Model figures below have not been rerun under this review; [Process](../decisions.md#process) owns the accepted direction.
 
 Design only; no game code. This builds on the owner's 6 November direction and the answers to this brief's first five
-questions, recorded in [boogle-2.md](../proposals/boogle-2.md#trains-and-the-world). The earlier recorded answers still
+questions, recorded in [decisions.md](../decisions.md#trains-and-the-world). The earlier recorded answers still
 stand: Split-rock Works next, then Ring Island; the smallest Roundhouse first. The length is now roughly six hours to
 the ending, a rough target rather than a rule, with solo and groups close together (owner, 6 November).
 
@@ -58,7 +58,7 @@ reached by exploration with abilities and route shortcuts, not bought.
 
 Later the same day, the owner approved the [principles audit](../research/economy-principles-audit.md)'s wording,
 including the funded job finishing as part of the away credit and the wallet's visible strongroom. The owner added four
-calls, recorded as "economy principles amended" in [boogle-2.md](../proposals/boogle-2.md#progress-and-rewards):
+calls, recorded as "economy principles amended" in [decisions.md](../decisions.md#progress-and-rewards):
 
 7. **Shared progression:** "let's make progression completely shared." Every upgrade and ability bought or earned
    (carry sling, powered pick, double jump) applies to everyone in the world.

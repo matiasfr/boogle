@@ -1,6 +1,6 @@
 # Characters: what reads, what feels good, what it costs on the web
 
-_1 November 2026. Research for the open character-track question in [docs/proposals/boogle-2.md](../proposals/boogle-2.md) (question 7), covering the player and The Boogler. Sources are developer interviews, studio blogs, official specs and the three.js r187 source in `node_modules`. Many of the named games have never published how they build characters, and where only forum guesses exist this report says so. Budgets marked "starting point" are my proposals and haven't been measured on an iPad. Research only: no art, no decisions._
+_1 November 2026. Research for the open character-track question in [docs/decisions.md](../decisions.md) (question 7), covering the player and The Boogler. Sources are developer interviews, studio blogs, official specs and the three.js r187 source in `node_modules`. Many of the named games have never published how they build characters, and where only forum guesses exist this report says so. Budgets marked "starting point" are my proposals and haven't been measured on an iPad. Research only: no art, no decisions._
 
 ## Summary
 
@@ -20,7 +20,7 @@ _1 November 2026. Research for the open character-track question in [docs/propos
 - **Player** ([src/player/avatars.ts](../../src/player/avatars.ts)): a capsule 0.9 m wide and 1.7 m tall in one of eight colours, with two sphere eyes and pupils at 0.95 m. The face is high on a body that is all head. There are no limbs, and a name label sits above. The camera orbits at 6.5 m by default (4 or 10 m on R3), so most of the time you see other players from 5–20 m away.
 - **Motion** ([src/features/feel.ts](../../src/features/feel.ts)): every avatar has a render-only spring layer, with landing squash scaled by fall speed, a take-off stretch and lean toward acceleration. Canned flops (splat, stomp, bonk) sync as one presence field `fl`. That is the "events, not poses" pattern from [character-controller-feel.md](character-controller-feel.md).
 - **The Boogler** ([src/boogler/boogler.ts](../../src/boogler/boogler.ts)): a lavender ellipsoid 1.6 m wide and 0.54 m tall, with a painted face texture in six moods, sphere hands and feet, and a black top hat about 1.5 times his height. The hat has its own pivot, so it lags, wobbles and gets crushed flat. His silhouette (wide, low, one tall vertical) is the opposite of the players' (narrow, tall, rounded), which is the main readability job done.
-- **Coming:** som (a personal coin) is "spent on looks" ([boogle-2.md](../proposals/boogle-2.md)), so cosmetics will exist. Hauled logs ride on the character's back ([haul.md](../game-design/haul.md)). The model pipeline is planned as glTF with meshopt plus KTX2 ([open-world.md](../plans/open-world.md), section 2). An asset-pipeline plan is being written in parallel and may land as `docs/plans/asset-pipeline.md`.
+- **Coming:** som (a personal coin) is "spent on looks" ([decisions.md](../decisions.md)), so cosmetics will exist. Hauled logs ride on the character's back ([haul.md](../game-design/haul.md)). The model pipeline is planned as glTF with meshopt plus KTX2 ([open-world.md](../plans/open-world.md), section 2). An asset-pipeline plan is being written in parallel and may land as `docs/plans/asset-pipeline.md`.
 
 ## Findings by source
 

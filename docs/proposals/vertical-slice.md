@@ -1,11 +1,11 @@
 # Vertical slice: eras 1–2 (the wood age → steam wagons)
 
-> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+> **Historical (2 November 2026; 8 November: see [direction.md](../direction.md), the one roadmap).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](../decisions.md).
 
 *Proposal and build spec, 31 October 2026. Round 7 decisions folded in, 1 November 2026.*
 
-- **Design source.** [boogle-2.md](boogle-2.md), the Boogle 2.0 design record (the owner's decisions from the design thread), is authoritative on design. Story detail is in [story-and-finale](story-and-finale.md).
-- **Order of work (1 November).** Mechanics first: the five find-the-fun questions in [boogle-2.md](boogle-2.md), "Next", come before the mayor, props, hats and gags (S4, S6).
+- **Design source.** [decisions.md](../decisions.md), the Boogle 2.0 design record (the owner's decisions from the design thread), is authoritative on design. Story detail is in [story-and-finale](story-and-finale.md).
+- **Order of work (1 November).** Mechanics first: the five find-the-fun questions in [decisions.md](../decisions.md), "Next", come before the mayor, props, hats and gags (S4, S6).
 - **What it builds on.** The **0.1 groundwork already on `main`**: identity, roster, piles, the haul stack, work sites, palm log sources, machine runs and the offline helper bank ([docs/game-design/haul.md](../game-design/haul.md), [docs/plans/0.1-groundwork.md](../plans/0.1-groundwork.md)).
 - **Status.** Nothing in this spec is built yet. It is written so that `/feature` can turn each milestone into a plan.
 

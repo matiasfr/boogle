@@ -1,6 +1,6 @@
 # The island as a hub: mini-games, vehicles and a character of your own
 
-> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](../decisions.md).
 
 *Proposal, 30 October 2026. A Club Penguin-shaped direction for Boogle: the island is the place you hang out, mini-games are the reason to go somewhere, vehicles and exploration connect them, and each character grows personally. Game feel comes before everything else. The evidence is in [hub-and-minigames.md](../research/hub-and-minigames.md) (hubs, Club Penguin, Toontown) and [progression-feel-exploration.md](../research/progression-feel-exploration.md) (feel, vehicles, exploration, incremental). Nothing here is built.*
 

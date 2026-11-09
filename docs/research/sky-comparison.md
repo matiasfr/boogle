@@ -1,7 +1,7 @@
 # Frozen demo sky comparison, 3 November 2026
 
 Serves DESIGN.md **Show, don't tell** and **Small and readable**. Local only. Owner decision:
-[Look](../proposals/boogle-2.md#look). This is a viewing experiment, not the final sky integration.
+[Look](../decisions.md#look). This is a viewing experiment, not the final sky integration.
 
 ## Sources and decisions
 

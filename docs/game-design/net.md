@@ -1,7 +1,7 @@
 # 6.27 Prototype: the line feeds the town (`?proto=net`)
 
 *A greybox prototype for [find-the-fun](../plans/find-the-fun.md), step 6, from the owner's rail-loop direction in
-[boogle-2.md](../proposals/boogle-2.md) ("Trains and the world", 2026-11-02), after Death Stranding's auto-pavers and
+[decisions.md](../decisions.md) ("Trains and the world", 2026-11-02), after Death Stranding's auto-pavers and
 monorails: building infrastructure makes it easier to build more. Gut question: "When the village steps up, do you want
 to go connect the next camp?" Serves DESIGN.md 1 (Toys before chores) and 9 (Leave something for the next visitor).
 Without the flag nothing loads: `src/features/proto-net.ts` imports `src/proto/net/` only with it. Research:
@@ -45,7 +45,7 @@ The world is the readout: no counters or progress bars for goods or stages. The 
 whether the fun is the rail doing the work or the town growing. It uses the same room, so switching keeps your place.
 
 **`&v=depot`** asks "Does the haul feel good now that the network is helping?", after the owner's lean
-([boogle-2.md](../proposals/boogle-2.md), "junctions unlock the network") and Death Stranding's auto-pavers fed from
+([decisions.md](../decisions.md), "junctions unlock the network") and Death Stranding's auto-pavers fed from
 nearby stock ([compounding infrastructure](../research/compounding-infrastructure.md), summary 1, recs 1 and 5). Same run,
 town and camps, and the rail never fills the ring:
 

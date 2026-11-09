@@ -1,6 +1,6 @@
 # Boogle iteration plan
 
-> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](DESIGN.md) and the [decision log](docs/proposals/boogle-2.md).
+> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](DESIGN.md) and the [decision log](docs/decisions.md).
 
 Goal: turn Boogle from "a beach ball on an island" into a drop-in co-op toy where friends play around a shared island that remembers them.
 

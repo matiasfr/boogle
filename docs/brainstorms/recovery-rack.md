@@ -2,7 +2,7 @@
 
 # Recovery rack and regrowth
 
-**Pitch.** Your lost logs turn up on a crooked outdoor rack you already pass on the way through town. Cut trees come back as young growth around the pale stumps you left, so the return journey shows your railway, your clearing and your cargo at once. The [supply rules](../proposals/boogle-2.md) are the owner's and stay fixed: this covers only how they read. It serves DESIGN.md's **Show, don't tell**.
+**Pitch.** Your lost logs turn up on a crooked outdoor rack you already pass on the way through town. Cut trees come back as young growth around the pale stumps you left, so the return journey shows your railway, your clearing and your cargo at once. The [supply rules](../decisions.md) are the owner's and stay fixed: this covers only how they read. It serves DESIGN.md's **Show, don't tell**.
 
 **Gut question.** After noticing a bundle was gone, did you work out where it went without being told?
 

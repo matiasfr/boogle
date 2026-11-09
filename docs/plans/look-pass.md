@@ -2,7 +2,7 @@
 
 > **Status, 8 November 2026.** Written for the `?proto=place` look test. The game is now the production railway, which still borrows Place's views; `src/proto/place` goes with production core's last slice. The machine to-do below is done: the track layer got its own crawler machine (#1018) and stool seats (#1197). The iPad measurement folds into the target-quality pass in [direction.md](../direction.md#target-quality-pass-art-and-characters), where it is deferred for now. The rest is history; open art work is listed there, not here.
 
-What's left after the look test on `?proto=place` (`&v=look&look=all`, [#582](https://github.com/matiasfr/boogle/pull/582)), so any agent can pick it up. The owner's verdict on that link, 2 November: "it looks pretty great". Decision: [boogle-2.md](../proposals/boogle-2.md), "Look", 2 November. Nothing here is on the main island yet.
+What's left after the look test on `?proto=place` (`&v=look&look=all`, [#582](https://github.com/matiasfr/boogle/pull/582)), so any agent can pick it up. The owner's verdict on that link, 2 November: "it looks pretty great". Decision: [decisions.md](../decisions.md), "Look", 2 November. Nothing here is on the main island yet.
 
 The target is simple, toy-like and sunlit, in the spirit of Mario Sunshine: the previz shots the owner picked ([sunshine-look.md](../research/sunshine-look.md)), and the track-laying painting, `.look/previz/visible-materials/shot-3.png` (gitignored and only on the owner's Mac; the comparison sheet is in #582).
 

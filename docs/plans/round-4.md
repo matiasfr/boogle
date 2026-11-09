@@ -1,6 +1,6 @@
 # Plan: round 4 of `?proto=place`
 
-Approved by the owner, 2 November: "build everything from the feedback as best you can, even if it takes a long time". Don't optimise for an early playtest. Sources: [playtests.md](../playtests.md) (round 3 survey and brainstorm), [boogle-2.md](../proposals/boogle-2.md), "The shape of the game", first entry. All numbers are hypotheses until played.
+Approved by the owner, 2 November: "build everything from the feedback as best you can, even if it takes a long time". Don't optimise for an early playtest. Sources: [playtests.md](../playtests.md) (round 3 survey and brainstorm), [decisions.md](../decisions.md), "The shape of the game", first entry. All numbers are hypotheses until played.
 
 **Gut question:** did you get hungry for a better way, and did finding one feel great?
 
@@ -29,7 +29,7 @@ Serves DESIGN.md 1, Toys before chores; 4, Cooperation is automatic; 7, Telegrap
 - [x] Something points to the next island.
 - [x] Crates and gifts vary, since "one tree and boxes" stopped feeling different: cosmetic boxes with rarity, common first and rarer later, filling swappable hat, accessory and outfit slots. No curios as prizes. Train slots wait for the roundhouse.
 
-## From the Design Table call (boogle-2.md, "The shape of the game")
+## From the Design Table call (decisions.md, "The shape of the game")
 
 - [x] Show, don't tell: go through every line this round puts on screen. Cut any that narrate what the world already shows, and fix the world where cutting leaves it unclear. Keep The Boogler's copy.
 - [x] Try showing the tool in a lo-fi way: an axe you can see while chopping, which visibly changes with the better axe. Drop it if it looks wrong; the full answer waits for the systems to lock.

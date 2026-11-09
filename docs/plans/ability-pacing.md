@@ -1,6 +1,6 @@
 # Proposal: give each ability room
 
-_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../proposals/boogle-2.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
+_Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 **Owner decision needed; proposed pacing experiment, not approval.** Reviewed 4 November 2026 against `326dda13`. Serves [DESIGN.md](../../DESIGN.md) **1. Toys before chores**, **7. Telegraph everything** and **10. Slapstick over precision**. Goal: learn a move, use it somewhere meaningful, then want the next one.
 
@@ -29,7 +29,7 @@ The [as-built technology](../game-design/place.md#ancient-technology-round-4-exp
 2. Greybox the hook lesson → quarry use → tower/glider route without double jump. Use existing bot/checkpoints and broker captures to inspect readable access, then verify solo completion and a late-joining partner. The visual question is whether each new route is visible before its unlock and understandable afterward. Implementation owners: `src/proto/place/{tech-layout,tech,moves}.ts`, progression consumers and the as-built chapter; no new harness or feature unit tests.
 3. Owner plays, then stop. One line on what's new: “Hook gets a job before the tower gives you glide; double jump is saved for later.” One gut question: **“Did each new move get time to become useful before the next?”**
 
-The [Design Table direction](../proposals/boogle-2.md#the-shape-of-the-game) is about eight hours, with one-to-two-hour areas, movement opening paths and some ability rewards providing closure. This 24-minute prototype is not that campaign compressed to scale. Later double jump can reopen familiar ledges and deepen gliding, with a forgiving multi-jump playground when acquired; do not build the next area to justify it now. Replay → [production core](production-core.md) T1 proof → representative slice still governs. Swing-hook physics, new button mappings and campaign-wide unlock timings are separate decisions.
+The [Design Table direction](../decisions.md#the-shape-of-the-game) is about eight hours, with one-to-two-hour areas, movement opening paths and some ability rewards providing closure. This 24-minute prototype is not that campaign compressed to scale. Later double jump can reopen familiar ledges and deepen gliding, with a forgiving multi-jump playground when acquired; do not build the next area to justify it now. Replay → [production core](production-core.md) T1 proof → representative slice still governs. Swing-hook physics, new button mappings and campaign-wide unlock timings are separate decisions.
 
 ## Exact owner questions
 

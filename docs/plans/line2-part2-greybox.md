@@ -9,7 +9,7 @@ chest, the depot cart's real trip and trains. Build it greybox-first inside `?gr
 the pier and looks north at Ring Island 751 m away. This is the next stretch of the approved line-2 route.
 
 Binding calls: owner, 7 November, "line 2, part 2, this should fit into our gray box... consolidate and just start
-working with the gray box" ([keep going while the owner is away](../proposals/boogle-2.md#process), item 2). Also
+working with the gray box" ([keep going while the owner is away](../decisions.md#process), item 2). Also
 **next proof: work, machinery, exploration**: playable detail on line 2, ECS one domain at a time. And the
 [orchestrator's 6 November order](../agents/orchestrator-state.md#queued), item 5: slice 4 part 2 on replication, after
 ECS E. Serves DESIGN **Enjoyable alone and together**, **Telegraph everything**, **Show, don't tell** and **Clear

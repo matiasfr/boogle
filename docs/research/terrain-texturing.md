@@ -10,7 +10,7 @@ Texturing is a first-class part of this experiment. This revises the **texture-f
 
 Evidence labels: **C** = inspected source; **P** = primary publication/developer statement; **V** = visual observation of an identified published image; **R** = earlier report, not rerun; **H** = proposed Boogle technique, budget or interpretation. Screenshots establish appearance, not proprietary topology, shader graphs or texture resolution. GDC abstracts below were read; their full talks were not watched. No reference-game executable, ROM or extracted asset was used.
 
-The proposal serves [Show, don't tell](../../DESIGN.md#11-show-dont-tell) and [Small and readable](../../DESIGN.md#small-and-readable). The [owner calls](../agents/owner-calls.md#owners-standing-calls) and [Look decisions](../proposals/boogle-2.md#look) still govern adoption: coordinate terrain with level design, preserve the current route during the proof, and stop for owner review before extending it. The latest [iPhone note](../playtests.md#2026-11-04-owner-solo-on-iphone-the-default-url) is not the two-player replay. This research does not resolve that gate.
+The proposal serves [Show, don't tell](../../DESIGN.md#11-show-dont-tell) and [Small and readable](../../DESIGN.md#small-and-readable). The [owner calls](../agents/owner-calls.md#owners-standing-calls) and [Look decisions](../decisions.md#look) still govern adoption: coordinate terrain with level design, preserve the current route during the proof, and stop for owner review before extending it. The latest [iPhone note](../playtests.md#2026-11-04-owner-solo-on-iphone-the-default-url) is not the two-player replay. This research does not resolve that gate.
 
 ### Branch provenance and current constraints
 

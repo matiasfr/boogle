@@ -5,7 +5,7 @@ changed. Owner, 8 November: "yes, and likely start building" this while line 2 p
 format from [line2-b5-b8](line2-b5-b8.md); what exists and what B5–B8 adds is in that plan and in
 [line2-part2-greybox](line2-part2-greybox.md).
 
-**Binding calls** ([decision log](../proposals/boogle-2.md)):
+**Binding calls** ([decision log](../decisions.md)):
 - **2026-11-06, Split-rock Works next, then Ring Island; the smallest Roundhouse first.** The Roundhouse's first build
   is one engine, one wagon, a turntable beside the line and one visible fitting.
 - **The jump-upgrades and gate-puzzles briefs**, approved with their recommended answers: Split-rock opens solid
@@ -275,7 +275,7 @@ progress (owner, "a world wipe is a new save").
    s = 9.6, and the next village stop couples it.
 6. **The service:** the line-2 train carries footings from the quarry halt to the pier stop. At the pier you set them;
    each one lowers on a rope into its socket, and every pair raises a bent. When twelve are set, six bents march 120 m
-   out toward Ring Island. **Stop for the owner's playtest.**
+   out toward Ring Island. The owner plays it when they can.
 
 **Rough length** (a hypothesis to time solo and with two players): pier → home 2 min; breaker and slab 1; logs 3; to
 the quarry 1; strike and stone 3; four footings home by hand about 8 (the "before"); cradle and turn 2; two train
@@ -297,12 +297,11 @@ later: E (ankle rings + balcony), after the B5–B8 verdict and owner question 4
 
 - **Start now: J1 and J2.** They share no file with B5–B8's A–D except one wiring hunk in `src/entities/railway/view.ts`
   (J2), which B also edits: whichever lands second rebases. Neither adds state, ops or saves. J2's views are default-on
-  unless `?works=0`. Both may merge to main before the B5–B8 playtest: they don't change the flow it tests (owner calls,
-  "Stop at the owner's playtest").
+  unless `?works=0`. Both may merge to main any time.
 - **Wait for B5–B8 job A: J3.** It edits the train kinds, the train tick, `LINE_HALTS`, `heldBig`, the adapter and
   `WORLD_NS` that A introduces. `codex/b5b8-rules` already has A's three commits: J3 may branch from that tip now and
-  rebase after A merges ("Iterate fast"). **J3 merges only after the owner has played B5–B8.** It bumps `WORLD_NS` and
-  changes the trains, which is gameplay the playtest could change.
+  rebase after A merges ("Iterate fast"). **J3 proceeds now** (owner, 9 November: nothing waits for a playtest). It bumps `WORLD_NS`,
+  so don't ship it while the owner is mid-session.
 - **Wait for J3 and B5–B8's C: J4.** C owns the boiler pedestal view J4 reuses for the breaker.
 - **Wait for J3, J4 and B5–B8's B and D: J5.** It edits B's `train-view.ts` and `halts-view.ts` and extends D's bot. J4
   and J5 can be written in parallel against the pinned names; J5 merges after J4.
@@ -601,7 +600,7 @@ update and was repeated. No new scenario or harness was added.
   - `npm run look -- --rail-seed works-lit --eval dev/look/evals/railway-works-at.ts --query 'worksat=halt&works=1'`
     prints `works.rack 6`.
 - **Done means.** All of the above green, every seeded stage loads, `WORLD_NS` bumped with its history line, and no
-  view file changed. Don't merge until the owner has played B5–B8.
+  view file changed. Don't ship while the owner is mid-session (the `WORLD_NS` bump resets saves).
 
 **Codex brief (paste):**
 
@@ -750,7 +749,7 @@ new `src/entities/railway/crossing-view.ts`, `src/entities/railway/view.ts` (wir
     "not tested on a device".
   - Add slice notes in `production-core.md`, and note in the greybox README that the crossing bents stand in the
     production world.
-  - Then the orchestrator's final pass, and **stop for the owner's playtest**.
+  - Then the orchestrator's final pass and playtest guide; work carries on.
 - **Proofs.**
   - `npm run check`.
   - Seeded halves `railFrom=works&railStop=wagon coupled` and `railFrom=wagon&railStop=crossing footed`: both pass
@@ -780,7 +779,7 @@ new `src/entities/railway/crossing-view.ts`, `src/entities/railway/view.ts` (wir
 On main with J1–J5 merged, run `npm run playthrough -- --long --eval dev/look/evals/railway-job.ts --query
 'shot=play'`. It must pass every checkpoint through `crossing footed` with no errors. Then write the playtest guide:
 what's new, the gut question, what to try (both strikes, a footing home by hand, the turn, a ride with the wagon), and
-the solo/two-player time. **Stop all development** until the owner has played.
+the solo/two-player time. Development carries on; the owner plays when they can (owner, 9 November).
 
 ## Bot checkpoints added
 

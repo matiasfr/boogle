@@ -1,6 +1,6 @@
 # Where Boogle could go: eight directions
 
-> **Historical (2 November 2026).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](boogle-2.md).
+> **Historical (2 November 2026; 8 November: see [direction.md](../direction.md), the one roadmap).** Kept for its history and ideas; it binds no one. Current design: [DESIGN.md](../../DESIGN.md) and the [decision log](../decisions.md).
 
 *Proposal, 29 October 2026. Broad directions for the game, each with what it draws from, which [DESIGN.md](../../DESIGN.md) principles it serves and bends, a first slice to test it, and a sign it isn't working. They are meant to be mixed. The evidence is in [progression-feel-exploration.md](../research/progression-feel-exploration.md); the lore tree that can tie them together is [boogler-tech-tree.md](boogler-tech-tree.md).*
 

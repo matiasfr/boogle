@@ -10,7 +10,7 @@ _Research report, 2 November 2026. An agent-driven production pipeline for Boogl
 
 The best next step is to formalize the working **station frame and feeder**, then reuse it at another existing station with a different orientation and approach. Do not begin by producing all six eras. Keep reusable structural families, era-specific shape additions and place-specific arrangements separate. This extends the working Python → GLB path rather than introducing a general building editor or replacing three.js.
 
-The principles served are [DESIGN.md](../../DESIGN.md)'s **Telegraph everything**, **Toys before chores**, **Leave something for the next visitor**, **Small and readable**, and **Code first, images by approval**. The [owner's decision log](../proposals/boogle-2.md) supplies the sunlit Mario Sunshine target, physical piece-by-piece construction, solid-looking surfaces that are solid, six eras, Buddy, and the M4 iPad Pro floor. [Rail slice](../plans/rail-slice.md) remains a draft awaiting approval; this report does not authorize its implementation.
+The principles served are [DESIGN.md](../../DESIGN.md)'s **Telegraph everything**, **Toys before chores**, **Leave something for the next visitor**, **Small and readable**, and **Code first, images by approval**. The [owner's decision log](../decisions.md) supplies the sunlit Mario Sunshine target, physical piece-by-piece construction, solid-looking surfaces that are solid, six eras, Buddy, and the M4 iPad Pro floor. [Rail slice](../plans/rail-slice.md) remains a draft awaiting approval; this report does not authorize its implementation.
 
 The main hypotheses to test are:
 

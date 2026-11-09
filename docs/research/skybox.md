@@ -8,7 +8,7 @@ _6 November 2026. Research for the owner's Wind Waker / Super Mario Sunshine sky
 
 ## Scope, direction and what already exists [L]
 
-The [standing call](../agents/owner-calls.md#owners-standing-calls) prefers our own recipes, with free-to-ship resources as tasteful fallbacks or comparisons. The [Look record](../proposals/boogle-2.md#look) preferred the more naturally populated procedural sky over `sky=toy` on 3 November. The owner's 6 November brief reopens a bounded comparison; it does not accept a replacement. Serve [DESIGN's Code first, images by approval](../../DESIGN.md#code-first-images-by-approval) and **Small and readable**, making the island pleasant without obscuring routes or Buddy.
+The [standing call](../agents/owner-calls.md#owners-standing-calls) prefers our own recipes, with free-to-ship resources as tasteful fallbacks or comparisons. The [Look record](../decisions.md#look) preferred the more naturally populated procedural sky over `sky=toy` on 3 November. The owner's 6 November brief reopens a bounded comparison; it does not accept a replacement. Serve [DESIGN's Code first, images by approval](../../DESIGN.md#code-first-images-by-approval) and **Small and readable**, making the island pleasant without obscuring routes or Buddy.
 
 Read [procedural-sky](procedural-sky.md) and [water-times-of-day](water-times-of-day.md) as dated research, then refresh against code. In particular, the latter's missing prepared-state interface and exposure meter are **no longer current**. [Water's as-built chapter](../game-design/water.md#prepared-evening-preview-5-november-2026), the [water-graduation plan](../plans/water-graduation.md) and these owners establish today's integration:
 

@@ -6,7 +6,7 @@ _Research report, 2 November 2026. A source audit and plotting brief for the Bot
 
 **BotW's neutral descent has a published measurement; its normal camera has useful datamined settings. A complete measured BotW glide curve was not found.** TotK supplies a useful forward-flight measurement, but it cannot fill BotW's missing cells as fact. Start the Boogle comparison at **10 m/s forward and 3.2 m/s down**, explicitly a proposed hybrid reference, and keep the unknown transients visibly separate from those anchors.
 
-This serves [DESIGN.md](../../DESIGN.md)'s **Toys before chores** and **Slapstick over precision**: height should buy enjoyable, forgiving travel. The [owner's decision](../proposals/boogle-2.md) is to match BotW closely, in Boogle's own way, as a later unlock. This report proposes tuning, changes no controller or camera, and does not finish round 4's combined research-and-pictures track.
+This serves [DESIGN.md](../../DESIGN.md)'s **Toys before chores** and **Slapstick over precision**: height should buy enjoyable, forgiving travel. The [owner's decision](../decisions.md) is to match BotW closely, in Boogle's own way, as a later unlock. This report proposes tuning, changes no controller or camera, and does not finish round 4's combined research-and-pictures track.
 
 ### Labels, units and confidence
 

@@ -1,6 +1,6 @@
 // How anything gets built in ?proto=place: the forge's way, for every building. Bare poles first, then a frame, walls row by
 // row, a roof board by board and a chimney, each piece falling into place with a thud, and only then do the poles come down.
-// Nothing scales up. docs/proposals/boogle-2.md, "construction is physical" and "town buildings get scaffolding and are
+// Nothing scales up. docs/decisions.md, "construction is physical" and "town buildings get scaffolding and are
 // solid"; docs/research/growing-towns.md (8-10 s for an ordinary addition, the longest for the landmark). Every building's
 // pieces share one instanced set, batched by shape. Local.
 import * as THREE from 'three/webgpu';

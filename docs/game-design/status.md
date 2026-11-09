@@ -1,6 +1,6 @@
 # 10. Status
 
-What's next is in the one roadmap, [direction.md](../direction.md); owner decisions live in [boogle-2.md](../proposals/boogle-2.md). [find-the-fun.md](../plans/find-the-fun.md), [PLAN.md](../../PLAN.md) and older proposals are historical, not today's roadmap. This file does not duplicate the checkboxes.
+What's next is in the one roadmap, [direction.md](../direction.md); owner decisions live in [decisions.md](../decisions.md). [find-the-fun.md](../plans/find-the-fun.md), [PLAN.md](../../PLAN.md) and older proposals are historical, not today's roadmap. This file does not duplicate the checkboxes.
 
 ## Related ideas (not built)
 

@@ -6,7 +6,7 @@ Build the owner's approved, Local five-look comparison on the existing procedura
 
 ## Sources and authority
 
-Read the graphics route of the current-decision index and `Look` in `docs/proposals/boogle-2.md`: procedural sky remains preferred; toy sky stays opt-in and unused by this comparison. Read `color-sources.md`, `color-and-post.md`, `sunshine-sky.md`, and `dev-tools-agentic.md`'s grade section. `sunshine-rendering.md` is absent from this checkout but available locally as `git show 41f69fc5:docs/research/sunshine-rendering.md`; its water starting values are also repeated in the owner's brief. Do not restore its superseded toy-sky recommendation. No external networking is authorized. `npm run inflight` fetches, so inspect local refs instead; existing local branches are not proof of active ownership.
+Read the graphics route of the current-decision index and `Look` in `docs/decisions.md`: procedural sky remains preferred; toy sky stays opt-in and unused by this comparison. Read `color-sources.md`, `color-and-post.md`, `sunshine-sky.md`, and `dev-tools-agentic.md`'s grade section. `sunshine-rendering.md` is absent from this checkout but available locally as `git show 41f69fc5:docs/research/sunshine-rendering.md`; its water starting values are also repeated in the owner's brief. Do not restore its superseded toy-sky recommendation. No external networking is authorized. `npm run inflight` fetches, so inspect local refs instead; existing local branches are not proof of active ownership.
 
 ## Design
 

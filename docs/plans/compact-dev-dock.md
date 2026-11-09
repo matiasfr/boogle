@@ -1,6 +1,6 @@
 # Compact Dev dock
 
-Owner-approved follow-up to [persistent Dev dock](persistent-dev-dock.md), after the `origin/main` merge at `5d292bbc`. **Proceed within existing scope:** this records the requested UI revision, not a new approval gate. Serves **Understandable at a glance**, **Show, don't tell**, and **Small and readable**. Parent owns the separate sky decision in `docs/proposals/boogle-2.md`.
+Owner-approved follow-up to [persistent Dev dock](persistent-dev-dock.md), after the `origin/main` merge at `5d292bbc`. **Proceed within existing scope:** this records the requested UI revision, not a new approval gate. Serves **Understandable at a glance**, **Show, don't tell**, and **Small and readable**. Parent owns the separate sky decision in `docs/decisions.md`.
 
 ## Goal and design
 

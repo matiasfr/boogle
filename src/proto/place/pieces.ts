@@ -1,6 +1,6 @@
 // How things move in ?proto=place: nothing scales and nothing vanishes. A piece that joins a build falls into place and
 // lands with a thud (`dropSet`, for the track and the forge), and a piece on its way somewhere is a real piece in the air
-// (`send`, for logs and rails between trees, backs, frames, machine and rack). docs/proposals/boogle-2.md, "construction
+// (`send`, for logs and rails between trees, backs, frames, machine and rack). docs/decisions.md, "construction
 // is physical". Local and cosmetic.
 import * as THREE from 'three/webgpu';
 import { material } from '../../render/materials.ts';

@@ -6,7 +6,7 @@ geometry. The shared frozen late-morning sky and metered Neutral own the light. 
 
 _A throwaway greybox for [find-the-fun](../plans/find-the-fun.md), step 7: "Does the crossing feel vast in a good way,
 and would you ride it again?" The owner's direction is that the train is far faster than walking and islands may be
-vastly far apart ([boogle-2.md](../proposals/boogle-2.md), "Trains and the world"); this finds what that means in
+vastly far apart ([decisions.md](../decisions.md), "Trains and the world"); this finds what that means in
 seconds and metres. Serves DESIGN.md 1 (Toys before chores). Research: [sea-crossings.md](../research/sea-crossings.md)
 (the destination in view, control kept), [train-riding.md](../research/train-riding.md), section 20 (Death Stranding's
 quiet screen). Without the flag nothing loads: `src/features/proto-crossing.ts` imports `src/proto/crossing/` only with

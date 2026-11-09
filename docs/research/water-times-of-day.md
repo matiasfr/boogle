@@ -6,7 +6,7 @@ _4 November 2026. Research and proposal at `906ddad4026e2131eacbb99190e1f6035edc
 
 ## Direction and present implementation [L]
 
-The [Look decisions](../proposals/boogle-2.md#look) say “change the time only intentionally, in parts of the game” and “bake each chosen time once, ahead of time.” The later 3 November call narrows today's implementation to one late-morning bake at `tod=0.24`; the 4 November call keeps Neutral. The [Design Table entry](../proposals/boogle-2.md#the-shape-of-the-game) still asks for day-only and night-only things and a brief northern-summer night. These are compatible: authored moments can provide those activities without reinstating the old cycle. “Ahead of time” does not yet choose build-time files versus preparation before a moment.
+The [Look decisions](../decisions.md#look) say “change the time only intentionally, in parts of the game” and “bake each chosen time once, ahead of time.” The later 3 November call narrows today's implementation to one late-morning bake at `tod=0.24`; the 4 November call keeps Neutral. The [Design Table entry](../decisions.md#the-shape-of-the-game) still asks for day-only and night-only things and a brief northern-summer night. These are compatible: authored moments can provide those activities without reinstating the old cycle. “Ahead of time” does not yet choose build-time files versus preparation before a moment.
 
 The [water plan](../plans/water-graduation.md#steps) owns steps 7–8, and the [round-4 tracker](../plans/round-4-notes.md) owns the replay. The [direction view](../direction.md) describes replay → durable production core → vertical slice; its reviewed commit is older than this checkout, so the cited decisions and tracker take precedence. New gameplay-dependent time work follows those gates. Independent research is authorized now; this report changes neither job nor their files.
 
@@ -154,7 +154,7 @@ A night-only mandatory ability would need an intentionally reachable/replayable 
 
 ## Numbered recommendations for Boogle [D]
 
-1. **Author named moments, not a clock.** Keep late morning and propose one `line-evening` state serving closure; treat real night as later. Link the chosen trigger and persistence meaning in [Look](../proposals/boogle-2.md#look) only after the owner answers. This preserves the Design Table's purpose without reopening its superseded cycle.
+1. **Author named moments, not a clock.** Keep late morning and propose one `line-evening` state serving closure; treat real night as later. Link the chosen trigger and persistence meaning in [Look](../decisions.md#look) only after the owner answers. This preserves the Design Table's purpose without reopening its superseded cycle.
 
 2. **Treat each look as a coherent lighting package.** Future work in [`frozen-sky.ts`](../../src/render/water/frozen-sky.ts), [`sky-core.ts`](../../src/render/water/sky-core.ts), [`surface.ts`](../../src/render/water/surface.ts) and [`post.ts`](../../src/render/water/post.ts) should apply one prepared state across raw/filtered sky, key/fill, fog, water/underwater, exposure and daylight semantics. Keep solar direction distinct from a moon key. Preserve one sea lifecycle and one output pipeline; no material-per-time duplication.
 

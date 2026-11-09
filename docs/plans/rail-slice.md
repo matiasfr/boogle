@@ -2,7 +2,7 @@
 
 > **Historical (owner, 4 November 2026).** This 2 November draft was never approved. Materials replaced eras, round 4's place now has much of this loop, and [production-core.md](production-core.md) is the next plan. Its terrain notes remain useful.
 > Replaces the earlier draft and the historical [vertical slice](../proposals/vertical-slice.md).
-> The audit picks and later decisions in [boogle-2.md](../proposals/boogle-2.md) take precedence over research suggestions.
+> The audit picks and later decisions in [decisions.md](../decisions.md) take precedence over research suggestions.
 > This is docs only: no gameplay, prototype completion or owner acceptance is claimed by writing it.
 > All proposed dimensions, recipes, durations, counts and era keys below remain hypotheses unless labelled as prototype evidence.
 
@@ -24,7 +24,7 @@ wood and steam, and does not pad either to hit a clock.
 **Proven** below means the owner's recorded solo verdict, not a multiplayer result or proof that production is built.
 **Decided** is an owner instruction, which can still need implementation. **Testing** and **hypothesis** are not acceptance.
 Sources: the latest [playtests](../playtests.md), all 2 November “Trains and the world” / “Look” entries and the audit picks
-in [boogle-2.md](../proposals/boogle-2.md), and [place as built](../game-design/place.md).
+in [decisions.md](../decisions.md), and [place as built](../game-design/place.md).
 
 | Part                                                                               | Status and consequence for this draft                                                                                                                                                                                  |
 | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
