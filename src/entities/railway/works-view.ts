@@ -347,11 +347,13 @@ export async function createRailwayWorks(
     if (reducedMotion || !ghostStone) return;
     rockMote -= dt;
     if (rockMote > 0) return;
-    rockMote = 0.3;
+    rockMote = 0.2;
     rockSide *= -1;
     for (const rock of state.works.rocks) {
       if (rock.remaining <= 0) continue;
-      goldMote(rock.x / 100 + rockSide * 0.9, rock.y / 100 + 2.1, rock.z / 100 - rockSide * 0.6, rockSide, 0.16);
+      // Off the rock's shoulders, the drawn pile being about 1.3 m tall.
+      const a = Math.random() * Math.PI * 2;
+      goldMote(rock.x / 100 + Math.cos(a) * 0.6, rock.y / 100 + 1.1, rock.z / 100 + Math.sin(a) * 0.6, rockSide, 0.22);
     }
   }
   function drawRack(dt: number) {
