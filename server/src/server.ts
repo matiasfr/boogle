@@ -81,9 +81,11 @@ export function loadConfig(
     playMaxSessionBytes: Number(env.PLAY_MAX_SESSION_BYTES) || 4 * 1024 * 1024,
     playMaxTotalBytes: Number(env.PLAY_MAX_TOTAL_BYTES) || 200 * 1024 * 1024,
     playMaxSessions: Number(env.PLAY_MAX_SESSIONS) || 2000,
-    // POST /jump (./jump.ts): per IP, per UTC day, and where seeds come from (production: prebuilt only).
+    // POST /jump (./jump.ts): per IP, per UTC day for everyone and per address, and where seeds come from (the image
+    // sets JUMP_BUILD=prebuilt: production never builds).
     jumpRatePerMin: Number(env.JUMP_RATE_PER_MIN) || 6,
-    jumpMaxPerDay: Number(env.JUMP_MAX_PER_DAY) || 100,
+    jumpMaxPerDay: Number(env.JUMP_MAX_PER_DAY) || 500,
+    jumpMaxPerAddressDay: Number(env.JUMP_MAX_PER_ADDRESS_DAY) || 30,
     jumpBuild: env.JUMP_BUILD === 'prebuilt' ? 'prebuilt' : 'any',
     jumpIdleDays: Number(env.JUMP_IDLE_DAYS) || 3, // test rooms nobody touched this long are deleted
     jumpMaxRooms: Number(env.JUMP_MAX_ROOMS) || 200, // test rooms at once, well under maxRooms
@@ -114,6 +116,7 @@ export type ServerConfig = {
   playMaxSessions: number;
   jumpRatePerMin: number;
   jumpMaxPerDay: number;
+  jumpMaxPerAddressDay: number;
   jumpBuild: 'any' | 'prebuilt';
   jumpIdleDays: number;
   jumpMaxRooms: number;

@@ -8,7 +8,8 @@
 // Seeds come from the image's prebuilt docs (./seeds/prebuild.ts, `JUMP_BUILD=prebuilt` in production, which never
 // builds at runtime), or, anywhere else, from a worker build (./seeds/worker.ts), one at a time, then cached in memory.
 // Test rooms idle JUMP_IDLE_DAYS are deleted (boot and before each jump), and at most JUMP_MAX_ROOMS exist, so jumps
-// can't fill the store's MAX_ROOMS.
+// can't fill the store's MAX_ROOMS. A UTC day allows JUMP_MAX_PER_DAY jump-ins, at most JUMP_MAX_PER_ADDRESS_DAY of them
+// from one address (an IPv6 /64), so one visitor can't switch jump-ins off for everyone; only a jump that succeeds counts.
 //
 //   const jumps = addJump(app, cfg, { store, roomHost, limit })
 //   await jumps.boot()            before rooms load: drop old-namespace sidecars, sweep idle test rooms
@@ -29,7 +30,14 @@ import type { SeedManifest } from './seeds/prebuild.ts';
 import { currentRoomId, roomNamespaces } from './room-ids.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { JUMP_ROOM_RE, jumpRoomName, type JumpReply, type RoomSeed } from '../../src/world/railway-jump.ts';
+import {
+  JUMP_ADDRESS_ERROR,
+  JUMP_DAY_ERROR,
+  JUMP_ROOM_RE,
+  jumpRoomName,
+  type JumpReply,
+  type RoomSeed,
+} from '../../src/world/railway-jump.ts';
 import { isSeedStage, type SeedStage } from '../../src/sim/railway-seeds.ts';
 
 export type JumpConfig = {
@@ -37,7 +45,9 @@ export type JumpConfig = {
   build: string;
   serverRooms: string[];
   log: (...a: unknown[]) => void;
+  /** Jump-ins a UTC day: for everyone, and for one address (an IPv6 /64), so one visitor can't use up the day. */
   jumpMaxPerDay: number;
+  jumpMaxPerAddressDay: number;
   jumpBuild: 'any' | 'prebuilt';
   jumpIdleDays: number;
   jumpMaxRooms: number;
@@ -80,6 +90,23 @@ function workerBuild(stage: SeedStage): Promise<SeedDoc> {
   }).finally(() => void worker.terminate());
 }
 
+/** Whose budget a request spends: an IPv4 address, or an IPv6 address's /64 (one home network or phone hands out many). */
+export function addressKey(ip: string | undefined): string {
+  const a = (ip ?? '').toLowerCase().split('%')[0]!;
+  const v4 = /^(?:::ffff:)?(\d{1,3}(?:\.\d{1,3}){3})$/.exec(a);
+  if (v4) return v4[1]!;
+  if (!a.includes(':')) return a || 'unknown';
+  const [head, tail = ''] = a.split('::');
+  const parts = (s: string) => s.split(':').filter(Boolean);
+  const h = parts(head!),
+    t = parts(tail);
+  const groups = a.includes('::') ? [...h, ...Array<string>(Math.max(0, 8 - h.length - t.length)).fill('0'), ...t] : h;
+  return `${groups
+    .slice(0, 4)
+    .map((g) => (parseInt(g, 16) || 0).toString(16))
+    .join(':')}::/64`;
+}
+
 export function addJump(
   app: Express,
   cfg: JumpConfig,
@@ -94,8 +121,15 @@ export function addJump(
   const building = new Map<SeedStage, Promise<SeedDoc>>();
   let queue: Promise<unknown> = Promise.resolve();
   let manifest: SeedManifest | null | undefined;
+  // Today's jump-ins, counted when one succeeds. A request in flight holds a reservation (taken synchronously after the
+  // sweep, so concurrent jumps can't overshoot a cap) that counts against the room cap and both day budgets until it
+  // either becomes a room or is refused.
   let day = '',
     today = 0;
+  const byAddress = new Map<string, number>(); // address key -> today's jump-ins
+  const pending = new Map<string, number>(); // address key -> reservations in flight
+  let reserving = 0, // reservations in flight
+    reservedRooms = 0; // of those, the ones not yet in `seeds`
 
   const loaded = (id: string) => !!roomHost()?.room(id);
   async function prebuilt(): Promise<SeedManifest | null> {
@@ -212,39 +246,68 @@ export function addJump(
         if (stage !== 'start' && cfg.jumpBuild === 'prebuilt' && !(await hasPrebuilt(stage)))
           return res.status(503).json({ error: 'stage not built' });
         if (pageNs !== RAILWAY_PLAY_NS) return res.status(409).json({ error: 'world changed', ns: RAILWAY_PLAY_NS });
-        const utc = new Date().toISOString().slice(0, 10);
-        if (utc !== day) [day, today] = [utc, 0];
-        if (today >= cfg.jumpMaxPerDay) return res.status(429).json({ error: 'too many jump-ins today' });
-        today++;
         await sweep();
-        if (seeds.size >= cfg.jumpMaxRooms) return res.status(507).json({ error: 'too many test rooms' });
-        await fs.mkdir(dir, { recursive: true });
-        let id = '',
-          name = '';
-        for (let tries = 0; tries < 3 && !id; tries++) {
-          name = jumpRoomName(stage, suffix());
-          const candidate = railwayRoomId(name);
-          if (store.known(candidate) || seeds.has(candidate)) continue;
-          const sidecar: Sidecar = { stage, at: new Date().toISOString(), build: cfg.build };
+        // From here to the reservation is synchronous: no await between the checks and taking the slot.
+        const utc = new Date().toISOString().slice(0, 10);
+        if (utc !== day) {
+          [day, today] = [utc, 0];
+          byAddress.clear();
+        }
+        const who = addressKey(req.ip);
+        if (today + reserving >= cfg.jumpMaxPerDay) return res.status(429).json({ error: JUMP_DAY_ERROR });
+        if ((byAddress.get(who) ?? 0) + (pending.get(who) ?? 0) >= cfg.jumpMaxPerAddressDay)
+          return res.status(429).json({ error: JUMP_ADDRESS_ERROR });
+        if (seeds.size + reservedRooms >= cfg.jumpMaxRooms)
+          return res.status(507).json({ error: 'too many test rooms' });
+        reserving++;
+        reservedRooms++;
+        pending.set(who, (pending.get(who) ?? 0) + 1);
+        let roomReserved = true; // still counted in reservedRooms, not yet in `seeds`
+        let id = '';
+        try {
+          await fs.mkdir(dir, { recursive: true });
+          let name = '';
+          for (let tries = 0; tries < 3 && !id; tries++) {
+            name = jumpRoomName(stage, suffix());
+            const candidate = railwayRoomId(name);
+            if (store.known(candidate) || seeds.has(candidate)) continue;
+            const sidecar: Sidecar = { stage, at: new Date().toISOString(), build: cfg.build };
+            try {
+              // The sidecar names the room: `wx` refuses a name another request just took.
+              await fs.writeFile(sidecarFor(candidate), JSON.stringify(sidecar), { flag: 'wx' });
+            } catch (e) {
+              if ((e as NodeJS.ErrnoException).code === 'EEXIST') continue;
+              throw e;
+            }
+            seeds.set(candidate, sidecar);
+            reservedRooms--;
+            roomReserved = false;
+            id = candidate;
+          }
+          if (!id) return res.status(503).json({ error: 'no free room name' });
+          let result: SeedResult;
           try {
-            // The sidecar is the reservation: `wx` refuses a name another request just took.
-            await fs.writeFile(sidecarFor(candidate), JSON.stringify(sidecar), { flag: 'wx' });
+            result = await seedRoom(id, stage);
           } catch (e) {
-            if ((e as NodeJS.ErrnoException).code === 'EEXIST') continue;
+            await forget(id); // a throw (the store's write) leaves no sidecar for a room with no save
             throw e;
           }
-          seeds.set(candidate, sidecar);
-          id = candidate;
+          if (result.status !== 200) {
+            await forget(id);
+            return res.status(result.status).json({ error: result.error });
+          }
+          today++;
+          byAddress.set(who, (byAddress.get(who) ?? 0) + 1);
+          cfg.log(`jump ${stage} -> ${id}`);
+          const reply: JumpReply = { room: name, stage };
+          res.set('Cache-Control', 'no-store').json(reply);
+        } finally {
+          reserving--;
+          if (roomReserved) reservedRooms--;
+          const left = (pending.get(who) ?? 1) - 1;
+          if (left > 0) pending.set(who, left);
+          else pending.delete(who);
         }
-        if (!id) return res.status(503).json({ error: 'no free room name' });
-        const result = await seedRoom(id, stage);
-        if (result.status !== 200) {
-          await forget(id);
-          return res.status(result.status).json({ error: result.error });
-        }
-        cfg.log(`jump ${stage} -> ${id}`);
-        const reply: JumpReply = { room: name, stage };
-        res.set('Cache-Control', 'no-store').json(reply);
       } catch (e) {
         next(e);
       }

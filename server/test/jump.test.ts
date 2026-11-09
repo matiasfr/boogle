@@ -11,7 +11,8 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { buildSeedDoc } from '../src/seeds/build.ts';
 import { prebuild } from '../src/seeds/prebuild.ts';
 import { RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { JUMP_ROOM_RE } from '../../src/world/railway-jump.ts';
+import { JUMP_ADDRESS_ERROR, JUMP_DAY_ERROR, JUMP_ROOM_RE } from '../../src/world/railway-jump.ts';
+import { addressKey } from '../src/jump.ts';
 import { DEFAULT_ROOM } from '../../src/constants.ts';
 import type { SeedStage } from '../../src/sim/railway-seeds.ts';
 
@@ -207,6 +208,158 @@ test('at most jumpMaxRooms test rooms at once', async () => {
   try {
     assert.equal((await s.jump({ stage: 'start', ns })).status, 200);
     assert.equal((await s.jump({ stage: 'start', ns })).status, 507);
+  } finally {
+    await s.stop();
+  }
+});
+
+// ---- caps, refusals and failures (from the branch review) ----
+
+const sidecars = async (dir: string) => fs.readdir(path.join(dir, 'jumps')).catch((): string[] => []);
+const tinyDoc = async () => ({ tick: 1, data: { probe: true } });
+const post = (base: string, body: string, type = 'text/plain') =>
+  fetch(`${base}/jump`, { method: 'POST', headers: { 'content-type': type }, body });
+
+test('the room cap holds when jumps arrive together, and a refused jump spends no day', async () => {
+  const s = await start({ jumpMaxRooms: 1, jumpMaxPerDay: 3, jumpRatePerMin: 1000 });
+  try {
+    const all = await Promise.all(Array.from({ length: 8 }, () => s.jump({ stage: 'start', ns })));
+    assert.deepEqual(all.map((r) => r.status).sort(), [200, 507, 507, 507, 507, 507, 507, 507]);
+    assert.equal((await sidecars(s.dataDir)).length, 1);
+    // Seven refusals and one room: the day still has two left, so the next refusal is the room cap's.
+    assert.equal((await s.jump({ stage: 'start', ns })).status, 507);
+  } finally {
+    await s.stop();
+  }
+});
+
+test('the day caps: per address, then for everyone; only a jump that makes a room counts', async () => {
+  let s = await start({ jumpMaxPerAddressDay: 2, jumpRatePerMin: 1000 });
+  try {
+    assert.equal((await s.jump({ stage: 'start', ns })).status, 200);
+    assert.equal((await s.jump({ stage: 'start', ns })).status, 200);
+    const r = await s.jump({ stage: 'start', ns });
+    assert.equal(r.status, 429);
+    assert.equal(((await r.json()) as { error: string }).error, JUMP_ADDRESS_ERROR);
+    assert.equal((await sidecars(s.dataDir)).length, 2);
+  } finally {
+    await s.stop();
+  }
+  s = await start({ jumpMaxPerDay: 1, jumpRatePerMin: 1000 });
+  try {
+    assert.equal((await s.jump({ stage: 'nope', ns })).status, 400); // refused before any count
+    assert.equal((await s.jump({ stage: 'start', ns })).status, 200);
+    const r = await s.jump({ stage: 'start', ns });
+    assert.equal(r.status, 429);
+    assert.equal(((await r.json()) as { error: string }).error, JUMP_DAY_ERROR);
+  } finally {
+    await s.stop();
+  }
+});
+
+test('an address budget keys IPv4 on the address and IPv6 on its /64', () => {
+  assert.equal(addressKey('203.0.113.7'), '203.0.113.7');
+  assert.equal(addressKey('::ffff:203.0.113.7'), '203.0.113.7');
+  assert.equal(addressKey('2001:db8:1:2:aaaa::1'), '2001:db8:1:2::/64');
+  assert.equal(addressKey('2001:0db8:0001:0002:ffff:1:2:3'), '2001:db8:1:2::/64');
+  assert.equal(addressKey('2001:db8::1'), '2001:db8:0:0::/64');
+  assert.equal(addressKey('fe80::1%en0'), 'fe80:0:0:0::/64');
+  assert.notEqual(addressKey('2001:db8:1:3::1'), addressKey('2001:db8:1:2::1'));
+  assert.equal(addressKey(undefined), 'unknown');
+});
+
+test('a jump whose save throws leaves no room and no sidecar behind', { skip: process.getuid?.() === 0 }, async () => {
+  const s = await start({ jumpBuildDoc: tinyDoc });
+  try {
+    await fs.mkdir(path.join(s.dataDir, 'jumps'), { recursive: true });
+    await fs.chmod(s.dataDir, 0o555); // the room file can't be written; the sidecar directory still can
+    const r = await s.jump({ stage: 'awake', ns });
+    await fs.chmod(s.dataDir, 0o755);
+    assert.equal(r.status, 500);
+    assert.deepEqual(await roomFiles(s.dataDir), []);
+    assert.deepEqual(await sidecars(s.dataDir), []);
+    // The reservation went with it: the room cap and the day are untouched.
+    assert.equal((await s.jump({ stage: 'awake', ns })).status, 200);
+  } finally {
+    await fs.chmod(s.dataDir, 0o755).catch(() => {});
+    await s.stop();
+  }
+});
+
+test('malformed bodies are refused and nothing is written', async () => {
+  const s = await start({ jumpBuildDoc: tinyDoc, jumpRatePerMin: 1000 });
+  try {
+    assert.equal((await post(s.base, JSON.stringify({ stage: 'awake', ns, pad: 'x'.repeat(2048) }))).status, 413);
+    for (const body of ['{not json', '"awake"', 'null', ''])
+      assert.equal((await post(s.base, body)).status, 400, JSON.stringify(body));
+    assert.equal((await post(s.base, JSON.stringify({ stage: 'awake', ns }), 'text/html')).status, 400);
+    for (const stage of [{}, 1, null, '__proto__', 'constructor', '../boogle', 'boogle', 'AWAKE', 'a'.repeat(300)])
+      assert.equal((await s.jump({ stage, ns })).status, 400, JSON.stringify(stage));
+    assert.equal((await post(s.base, `{"stage":"awake","ns":"${ns}","__proto__":{"x":1}}`)).status, 400);
+    assert.equal((await fetch(`${s.base}/jump`)).status, 404);
+    assert.deepEqual(await roomFiles(s.dataDir), []);
+    assert.deepEqual(await sidecars(s.dataDir), []);
+  } finally {
+    await s.stop();
+  }
+});
+
+test('a failed build writes nothing and is retried; a third stage waiting is told busy', async () => {
+  let builds = 0;
+  let release = () => {};
+  const gate = new Promise<void>((r) => (release = r));
+  const s = await start({
+    jumpRatePerMin: 1000,
+    jumpBuildDoc: async (stage) => {
+      builds++;
+      if (stage === 'awake' && builds === 1) throw new Error('boom');
+      if (stage === 'q1-done' || stage === 'q3-done') await gate;
+      return { tick: 1, data: { stage } };
+    },
+  });
+  try {
+    assert.equal((await s.jump({ stage: 'awake', ns })).status, 500);
+    assert.deepEqual(await roomFiles(s.dataDir), []);
+    assert.deepEqual(await sidecars(s.dataDir), []);
+    assert.equal((await s.jump({ stage: 'awake', ns })).status, 200);
+    const a = s.jump({ stage: 'q1-done', ns });
+    const b = s.jump({ stage: 'q3-done', ns });
+    await new Promise((r) => setTimeout(r, 100));
+    assert.equal((await s.jump({ stage: 'hook-taken', ns })).status, 503);
+    release();
+    assert.equal((await a).status, 200);
+    assert.equal((await b).status, 200);
+    assert.equal((await roomFiles(s.dataDir)).length, 3);
+    assert.equal((await sidecars(s.dataDir)).length, 3);
+  } finally {
+    release();
+    await s.stop();
+  }
+});
+
+test('the request-time sweep deletes an idle test room, never a loaded one or one without a sidecar', async () => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-jump-'));
+  const loaded = railwayRoomId('awake-live01');
+  const hand = railwayRoomId('sunday-family'); // a jump room's shape, but no sidecar: never indexed, never swept
+  await fs.writeFile(path.join(dataDir, `${hand}.json`), '{}');
+  const old = new Date(Date.now() - 10 * 86_400_000);
+  await fs.utimes(path.join(dataDir, `${hand}.json`), old, old);
+  await fs.mkdir(path.join(dataDir, 'jumps'));
+  await fs.writeFile(
+    path.join(dataDir, 'jumps', `${loaded}.json`),
+    JSON.stringify({ stage: 'awake', at: new Date().toISOString() }),
+  );
+  const s = await start({ serverRooms: ['*', loaded], jumpIdleDays: 2 / 86400, jumpRatePerMin: 1000 }, dataDir);
+  try {
+    const first = await s.jump({ stage: 'start', ns });
+    assert.equal(first.status, 200);
+    const idle = railwayRoomId(((await first.json()) as { room: string }).room);
+    await new Promise((r) => setTimeout(r, 2300));
+    assert.ok(s.svc.roomHost()?.room(loaded));
+    assert.equal((await s.jump({ stage: 'start', ns })).status, 200); // its sweep finds the first long idle
+    assert.equal(s.svc.jumps.seedOf(idle), null);
+    assert.ok(s.svc.jumps.seedOf(loaded), 'the loaded room keeps its sidecar');
+    assert.ok(await fs.stat(path.join(dataDir, `${hand}.json`)));
   } finally {
     await s.stop();
   }
