@@ -115,8 +115,11 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       part(0, -0.5, ds, 2.5, 0.5, (half * 2) / lengths + 0.02, STONE);
     }
     for (const sl of [-1, 1]) part(sl * 1.1, -0.04, 0, 0.3, 0.05, half * 2, '#f2d36a'); // a bright edge: this is the place
-    // Under it, down to the ground.
-    part(0, ground - low, 0, 2.5, low - 0.5 - ground, half * 2, '#9a9184');
+    // Under it, down to the ground; over the sea, timber piles to the sea floor like the trestle's.
+    if (!overWater) part(0, ground - low, 0, 2.5, low - 0.5 - ground, half * 2, '#9a9184');
+    else
+      for (let ds = -half + 1; ds <= half - 1 + 1e-6; ds += (half * 2 - 2) / 3)
+        for (const dl of [-0.9, 0.9]) part(dl, ground - low, ds, 0.4, low - 0.5 - ground, 0.4, '#a2743f');
     // Local +sign x points toward the rails. Face the train from the outer edge,
     // along from the middle entrance so the rear ramp and the aisle stay clear.
     const post = 3.2,
@@ -179,13 +182,14 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         z: c.z - dl * sinY + ds * cosY,
       });
       bodies.push(addStatic({ kind: 'box', hx: 1.25, hy: 0.25, hz: half }, at(0, -0.25, 0), q));
-      bodies.push(
-        addStatic(
-          { kind: 'box', hx: 1.25, hy: (low - 0.5 - ground) / 2 + 0.2, hz: half },
-          at(0, (ground - low - 0.5) / 2, 0),
-          q,
-        ),
-      );
+      if (!overWater)
+        bodies.push(
+          addStatic(
+            { kind: 'box', hx: 1.25, hy: (low - 0.5 - ground) / 2 + 0.2, hz: half },
+            at(0, (ground - low - 0.5) / 2, 0),
+            q,
+          ),
+        );
       for (const ds of [-3, 3])
         bodies.push(
           addStatic({ kind: 'box', hx: 0.11, hy: post / 2, hz: 0.11 }, at(-sign * 0.95, post / 2, shelter + ds), q),
@@ -310,7 +314,10 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   }
   // Place's halts, then line 2's Pier halt (LINE_HALTS[5], Place's halt maths at s 719-741 m), which opens with Q6.
   const PIER = LINE_HALTS.length - 1;
-  const rows = [...layout.HALTS, { name: LINE_HALTS[PIER]!.name, line: 1 as const, s0: 719, s1: 741, lat: -2.9, stop: 3 }];
+  const rows = [
+    ...layout.HALTS,
+    { name: LINE_HALTS[PIER]!.name, line: 1 as const, s0: 719, s1: 741, lat: -2.9, stop: 3 },
+  ];
   const halts = rows.map((h) => makeHalt(h.name, h.line, layout.LINKS[h.line]!.line, h.s0, h.s1, h.lat, h.stop));
   let shown = false;
   const inside = halts.map(() => false);

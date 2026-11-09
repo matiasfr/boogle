@@ -150,7 +150,7 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
     const c = bents[b]!;
     const foot = Math.max(sockets[b * 2]!.y, sockets[b * 2 + 1]!.y) + FOOTING.h;
     const postH = DECK - foot;
-    // Four pieces in turn, each sliding up out of the water into place: two posts, the brace, the cap.
+    // Four pieces in turn, each sliding up out of the water into place: two posts, the braces, the cap.
     const piece = (k: number) => Math.min(1, Math.max(0, (t - k * 0.4) / 0.6));
     for (const [k, side] of [
       [0, -1],
@@ -163,31 +163,34 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
         c.x + across.x * side * off,
         foot + postH / 2 - drop,
         c.z + across.z * side * off,
-        0.5,
+        0.75,
         postH,
-        0.5,
+        0.75,
         TIMBER,
         bentYaw,
       );
     }
     const brace = piece(2);
     if (brace > 0) {
-      const span = Math.hypot(off * 2, postH * 0.7);
-      batch.box(
-        c.x,
-        foot + postH * 0.5 - (1 - brace) * postH,
-        c.z,
-        0.22,
-        span,
-        0.22,
-        TIMBER,
-        bentYaw + Math.PI / 2,
-        0,
-        Math.atan2(off * 2, postH * 0.7),
-      );
+      // An X of braces in the post's top half, where it shows above the water.
+      const rise = DECK - 0.6 - (SEA - 1),
+        span = Math.hypot(off * 2, rise);
+      for (const lean of [-1, 1])
+        batch.box(
+          c.x,
+          SEA - 1 + rise / 2 - (1 - brace) * postH,
+          c.z,
+          0.3,
+          span,
+          0.3,
+          '#7a5530',
+          bentYaw,
+          0,
+          lean * Math.atan2(off * 2, rise),
+        );
     }
     const cap = piece(3);
-    if (cap > 0) batch.box(c.x, DECK + 0.3 + (1 - cap) * 3, c.z, off * 2 + 1.4, 0.6, 0.7, IRON, bentYaw + Math.PI / 2);
+    if (cap > 0) batch.box(c.x, DECK - 0.4 + (1 - cap) * 3, c.z, off * 2 + 1.8, 0.8, 1, '#5b4a3a', bentYaw);
   }
   function draw() {
     batch.begin();
@@ -208,7 +211,7 @@ export async function createRailwayCrossing(adapter: RailwayAdapter, owner: Owne
             0.3,
             d,
             IRON,
-            bentYaw + Math.PI / 2,
+            bentYaw,
           );
         if (k < inSea()) footingParts(batch, footingFrame(m, s.x, s.y, s.z, bentYaw));
       });
