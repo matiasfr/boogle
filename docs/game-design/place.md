@@ -862,6 +862,36 @@ Sync: Personal Local, `boogle.railway-finds.v0:<railwayRoomId>:<pid>` (`crystals
 the store; the cut gold finds' `finds` field is still parsed, unused), pruned by a world bump. No presence key, op or
 `WORLD_NS` change.
 
+### Secrets in the live game (9 November 2026, place-retirement F2)
+
+As the designer fit check (9 November, [agent calls](../agent-calls.md)) set it:
+
+- **Nine of Place's ten secrets** stand where Place had them (`tech-layout.ts`'s `SECRETS`), each a crate with a
+  cosmetic only it gives, beside something that makes you look twice: laundry and a fence behind the cottage (yard),
+  a scarf on a dead branch over the lookout shelf, a bell under a bracket you hear from the footbridge, the catwalk
+  under the trestle (alcove, its ring facing the bridge), the tower's first slab and its side nook (on plinths), a
+  yellow block on the quarry's low rock (loft, its ring facing the camp), a weather vane on the village column
+  (balcony) and an orange flag on Far Head's sea stack. Walk into a crate (1.25 m) or Open it (at the bay, Open only): the station boxes'
+  show and card play (one reveal queue, `src/render/crate-show.ts`), the gift is yours at once, and on you when you
+  put the card away if its slot is empty. Cards are name-only: these gifts have no line. Mark `secret found`.
+- **Not ported:** the jump course and its lamplighter's cap ("block") move to job E with the double jump; Place's Far
+  Head glide pad and ramp are cut (glider B's device is on Needle Bell).
+- **Abilities are production's:** the alcove, nook, loft and the way back up from the sea stack are hook rings after
+  the climb's (`hook-path.ts` `HOOK_SIDE`); the lookout needs the double jump; the balcony and the stack need the
+  glider, and their crates appear only once the room has it (`glide`: false in production until glider B).
+- **The finders' bay** stands across the path from the curio shelf, drawn with it (no draws of its own): the secrets'
+  gifts under sheets until they're yours. A secret you went on past without turns up there as a second crate, in the
+  order the abilities come: yard and bell with the hook; alcove and firstpull with the glider; nook and loft with the
+  trains; the lookout once the double jump is yours and line 2 is complete; the balcony and the stack at the end of
+  the run (line 2 complete). Open either crate and the other goes. Mark `secret at the hub`.
+- **Reach** (`npm run level-check`, Place's model): each hook and glide secret is out of reach before its ability,
+  except three the check prints as EARLY, kept where Place had them for a layout call: the lookout (one jump from the
+  hillside 2 m west), the alcove (a running jump from the bank 4 m south-east) and the sea stack (a double jump down
+  from the stack-return slab).
+
+Sync: Personal Local, the finds store's `secrets` and `hubbed`, each written the moment it changes. No presence key,
+op or `WORLD_NS` change; a partner sees their own crates.
+
 ## Departures from the brief
 
 The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2. The graybox turntable has a pale rim and paired dark rails within its existing disc footprint; collision and turning motion are unchanged.
