@@ -87,7 +87,7 @@ export function railwayAtQ2(): World {
   assert.equal(railwayInvariant(s), null);
   return w;
 }
-/** Players `a` and `b`, Q3 laid and the gate still up: Q4 takes materials once the lever is pulled, its depot cart
+/** Players `a` and `b`, Q3 laid and the gate still up: Q4 stocks materials before the lever is pulled, its depot cart
  * runs (logs and the rails shelf). Backs empty and Q3's unused depot logs carried off. */
 export function railwayAtQ4(): World {
   const w = railwayAtQ2();
