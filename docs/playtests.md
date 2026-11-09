@@ -248,6 +248,21 @@ Not the replay: Grant couldn't play, so this doesn't answer the two-player quest
 - Data: frame p50 17 ms, p95 25 ms on the Mac. Dynamic resolution dropped from 2x to 1.2x at 6 min and stayed there. Slowest CPU sections: railway update 5.3 ms, render 4.5 ms, gifts 1.8 ms. The production railway marks no beats, so "Did" stays empty. A Windows Chrome 117 visitor couldn't create a WebGPU adapter.
 - After: fixes are running or queued (dark glows and piles, reveal, tab-resume rollback and track-layer jump, forge visuals, clipping platforms, laying smoke, double-jump sparkle, a great-beam clarity and carry design, smaller track chunks after R1b).
 
+## 2026-11-07 (owner playtest, "tot")
+
+- **Who / source:** Matias, written notes in chat, captured while the Claude orchestrator was unavailable. "tot" is the owner's build/location label; exact URL, build, device, session IDs and other players were not supplied. No transcript or telemetry was matched; these are owner observations, not independently reproduced findings.
+- **What was new / fun / phase question:** not reported in this batch of bug notes; no new verdict on the current carrying/progression question.
+- **Broke / requested follow-up:**
+  - Small square shadows still appear on the ground in some places.
+  - Track-layer seats look weird at different "attitudes"; visually inspect them. Exact angles/elevations were not specified.
+  - Double-jump particles read as a circle; the owner wants a motion particle effect like the axe's magic trail.
+  - Hookshot platforms clip / z-fight. Investigate alignment or a general solution, since this recurs frequently.
+  - Picking up rails showed nothing on the backpack.
+  - Station 4 resources were invisible on the stand, and deposits were blocked until the gate opened; that timing felt weird.
+  - The track-layer arm sometimes extended unrealistically at station 4 (written "station 4l"). Slowing the animation is acceptable if needed to make the motion make sense; it is a possible remedy, not a diagnosed cause.
+  - Station 4's arch had no top part after opening.
+- **Handoff:** all eight reports remain open in the [tracker](plans/round-4-notes.md#owner-playtest-7-november-tot-not-yet-triaged). Earlier shipped-fix records do not establish that these replay findings are resolved. This entry captures feedback only; no fixes or visual verification were performed.
+
 ## 2026-11-08 (quick solo, before the Needle Bell playtest)
 - Who: Matias, solo, iPad with Magic Keyboard, live build (world v20, main at #1190).
 - New: the hook shot, B4 (sea gate, Q5, Far Head), name dice, rickety cart intro, world version label.

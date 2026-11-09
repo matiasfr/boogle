@@ -92,6 +92,19 @@ Answers are being collected on the [review page](https://claude.ai/artifact/4MQm
 
 - Forge coming together from train supplies, zoom-out on connecting town, "thanks for playing" cutaway, jump puzzle, museum, NPCs (especially the free hat), the water and shallows, crystal pickup animation and sound.
 
+## Owner playtest, 7 November (tot, not yet triaged)
+
+Source: Matias's written [playtest notes](../playtests.md#2026-11-07-owner-playtest-tot), captured for the Claude orchestrator while usage was exhausted. Exact build, device and session are unknown; no independent reproduction or visual check yet. Keep these open even where earlier entries record a shipped fix.
+
+- [ ] Small square shadows still appear on the ground in some places; locate and visually check the remaining cases.
+- [ ] Track-layer seats look weird at different "attitudes"; visually check their alignment. Exact angles/elevations were not specified.
+- [ ] Double-jump effect reads as a circle; the requested direction is a motion particle effect like the axe's magic trail.
+- [ ] Hookshot platforms clip / z-fight; investigate alignment or a general solution for this recurring problem.
+- [ ] Rails picked up do not appear on the backpack.
+- [ ] Station 4: resources invisible on the stand, and deposits blocked until the gate opens. The sequence felt weird; investigate both visibility and deposit timing.
+- [ ] Station 4 (written "station 4l"): track-layer arm sometimes extends unrealistically. The owner is open to slower animation if needed for believable motion; cause and remedy remain unverified.
+- [ ] Station 4: arch top missing after opening.
+
 ## No job yet
 
 ### Co-op and carrying
