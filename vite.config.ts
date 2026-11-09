@@ -7,6 +7,7 @@ import { atlasFacts } from './dev/atlas/vite-plugin.ts';
 import { assetCatalogue } from './dev/assets/vite-plugin.ts';
 import { harnessImports } from './dev/look/import-map.ts';
 import { developmentPage } from './dev/development/vite-plugin.ts';
+import { serverBuild } from './dev/server-build.ts';
 import { build as esbuild } from 'esbuild';
 import type { Service, createService as CreateService, loadConfig as LoadConfig } from './server/src/server.ts';
 
@@ -137,7 +138,12 @@ export default defineConfig({
         return [{ tag: 'meta', attrs: { name: 'boogle-build', content: build }, injectTo: 'head-prepend' }];
       },
       generateBundle() {
-        this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ build }) + '\n' });
+        this.emitFile({
+          type: 'asset',
+          fileName: 'version.json',
+          source:
+            JSON.stringify({ build, serverBuild: serverBuild(), server: process.env.VITE_BOOGLE_SERVER || '' }) + '\n',
+        });
       },
     },
     {

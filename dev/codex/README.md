@@ -1,6 +1,11 @@
 # Claude → Codex → gameplay evidence
 
 Run from the checkout whose tools you want to use. `run.ts` starts a worker and its browser broker; it never pushes.
+At launch it warns loudly if this checkout is behind the locally known `origin/main` in `dev/` (with the commit
+count) or has uncommitted `dev/` paths, including untracked tools. It still launches. The warning suggests using
+an up-to-date checkout: a newer worker build does not update the launcher's trusted broker or bots. It prints in
+the caller before detaching, and repeats in the supervisor log after any normal fetch. The warning
+does not fetch; ordinary launches keep their existing fetch behavior, while dry runs and resumes remain offline.
 
 ```sh
 # A committed Claude branch, rather than origin/main (which remains the default).

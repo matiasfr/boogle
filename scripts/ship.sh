@@ -2,8 +2,8 @@
 # npm run ship: rebase your commits onto the latest main, run the checks, push them to a ship/<you>-<sha> branch.
 # CI runs on that branch. Green: automerge.yml opens a PR, merges it into main and deploys. Red: ci-autofix.yml has
 # Claude push a fix to the branch. main itself only takes PRs.
-# Runs the fast checks (check) here; CI runs the heavy ones (server tests, headless network test, the scenarios that
-# fit software WebGPU) on the branch, and smoke.yml runs smoke against the live site after every deploy and nightly.
+# The pre-push hook runs changed-file lint, typecheck and affected unit tests; --full also runs check locally.
+# CI owns the full gate; smoke.yml probes the live assets/version/room without a browser after deploys and nightly.
 # `npm run ship -- --gpu` also runs smoke on this Mac's GPU first (check:gpu): worth it for networking or render
 # pipeline changes, not for every ship (several agents share one GPU). `-- --wait` waits until your commits are on main.
 set -euo pipefail
@@ -33,15 +33,24 @@ resolve_with_claude() {
 }
 
 ship() {
-  local wait=0 gpu=0 a
+  local wait=0 gpu=0 full=0 dry=0 a
   for a in "$@"; do
     case "$a" in
       --wait) wait=1 ;;
       --gpu) gpu=1 ;;
+      --full) full=1 ;;
+      --dry-run) dry=1 ;;
+      *) echo "ship: unknown argument: $a" >&2; exit 2 ;;
     esac
   done
 
   cd "$(git rev-parse --show-toplevel)"
+  # Exercise the actual local gate without fetch, rebase, push, or waiting. Includes working edits.
+  if [ "$dry" = 1 ]; then
+    if [ "$full" = 1 ]; then npm run --silent check; else node dev/ship-check.ts origin/main HEAD; fi
+    echo 'ship: dry run; no fetch, rebase or push.'
+    exit 0
+  fi
   if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
     echo "ship: you have uncommitted changes. Commit (or stash) them first." >&2
     exit 1
@@ -65,7 +74,7 @@ EOF
     exit 0
   fi
 
-  npm run --silent check
+  if [ "$full" = 1 ]; then npm run --silent check; fi
   if [ "$gpu" = 1 ]; then
     if [ "$(uname)" != Darwin ]; then
       echo "ship: --gpu needs a Mac's GPU; smoke still runs against the live site after the deploy." >&2
@@ -82,6 +91,7 @@ EOF
   who=$(printf '%s' "${who:-someone}" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-*//;s/-*$//' | cut -c1-20)
   branch="ship/${who:-someone}-$(git rev-parse --short=7 HEAD)"
   n=$(git rev-list --count origin/main..HEAD)
+  # The hook owns the pre-push gate (also for direct pushes). A full run above is intentionally opt-in.
   git push -q origin "HEAD:refs/heads/$branch"
 
   # Your `npm run wip` markers whose commits this ship carries are done (dev/inflight.ts).

@@ -129,6 +129,6 @@ jobs:
     permissions:
       actions: write
     steps:
-      - run: gh workflow run smoke.yml --repo "$GITHUB_REPOSITORY" --ref main
+      - run: gh workflow run smoke.yml --repo "$GITHUB_REPOSITORY" --ref main -f build="$GITHUB_SHA"
         env:
           GH_TOKEN: ${{ github.token }}

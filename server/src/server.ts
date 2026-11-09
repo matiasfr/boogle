@@ -54,6 +54,7 @@ export function loadConfig(
   const origins = list(env.ALLOWED_ORIGINS);
   return {
     port: Number(env.PORT ?? 9000),
+    build: env.BOOGLE_BUILD || 'dev',
     dataDir: env.DATA_DIR || './data',
     allowedOrigins: origins.length ? origins : ['*'],
     maxRooms: Number(env.MAX_ROOMS ?? 1000),
@@ -81,6 +82,7 @@ export function loadConfig(
 }
 
 export type ServerConfig = {
+  build: string;
   port: number;
   dataDir: string;
   allowedOrigins: string[];
@@ -191,6 +193,10 @@ export function createService(cfg: ServerConfig) {
 
   // ---- health ----
   app.get('/healthz', (_req: Request, res: Response) => res.type('text/plain').send('ok'));
+  // Read-only deployment identity; healthz stays plain text for Fly's existing health checks.
+  app.get('/version', (_req: Request, res: Response) =>
+    res.set('Cache-Control', 'no-store').json({ build: cfg.build }),
+  );
 
   // ---- snapshot storage (./store.ts) ----
   const store = createStore(cfg);

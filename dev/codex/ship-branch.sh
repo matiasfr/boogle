@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Ship one finished job branch from its worktree: rebase onto origin/main, keep both sides of docs-only conflicts,
-# then `npm run ship -- --wait`. Usage: npm run ship-branch -- ../boogle-codex/<topic>
+# then enqueue with `npm run ship`. Add --wait to wait for main explicitly.
 # Cancelled CI runs are rerun automatically (twice at most). Exit codes: 2 code conflict (nothing shipped, rebase aborted), 3 a commit became empty on rebase (aborted, check it
-# isn't already on main), otherwise ship's own status. Always read the output: it says whether main has the commits.
+# isn't already on main), otherwise ship's own status. Queued is not merged; --wait reports ancestry on main.
 set -uo pipefail
 cd "${1:?worktree path}" || exit 1
+wait=0
+for arg in "${@:2}"; do
+  case "$arg" in --wait) wait=1 ;; *) echo "Unknown argument: $arg"; exit 1 ;; esac
+done
 git fetch -q origin
 git rebase origin/main >/dev/null 2>&1
 while [ -d "$(git rev-parse --git-path rebase-merge)" ]; do
@@ -33,8 +37,15 @@ open(p, "w").write(re.sub(r"<<<<<<< [^\n]*\n(.*?)=======\n(.*?)>>>>>>> [^\n]*\n"
   fi
 done
 npm ci --silent >/dev/null 2>&1
-SHIP_NO_AI=1 npm run --silent ship -- --wait 2>&1 | tail -3
+ship_args=(--silent ship --)
+if [ "$wait" = 1 ]; then ship_args+=(--wait); fi
+SHIP_NO_AI=1 npm run "${ship_args[@]}" 2>&1 | tail -8
 status=${PIPESTATUS[0]}
+[ "$status" = 0 ] || exit "$status"
+if [ "$wait" = 0 ]; then
+  echo 'ship-branch: queued; CI and merge still pending. Next branch can start now.'
+  exit 0
+fi
 git fetch -q origin
 left=$(git log origin/main..HEAD --oneline | wc -l | tr -d ' ')
 # CI's browser install is sometimes cancelled; rerun only cancelled runs (never real failures), up to twice.
