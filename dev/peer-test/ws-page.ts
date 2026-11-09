@@ -393,7 +393,7 @@ function startWorld(room: Room) {
         case 'rail.call':
           return adapter.callTrain(intent.id);
         case 'rail.cartCall':
-          return adapter.callCart();
+          return false; // the call handle is cut (9 November); the op itself goes with the next WORLD_NS bump
         case 'rail.lever':
           return adapter.pullLever();
         case 'rail.seaSwitch':

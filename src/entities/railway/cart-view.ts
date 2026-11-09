@@ -2,19 +2,18 @@
 // and this tab's estimate of the server's tick (./../../sim/railway-cart.ts cartAlong), so it is where the server has
 // it on every tab and you can ride it (an Owner-kind moving platform; riders on other tabs are drawn on their own
 // copy, `shared`). Its load, the logs and rails heaved onto the rack and shelf when it unloads, the rack's tag
-// (Loading, On the way, Unloading, Waiting for forge) and the "Call cart to forge" handle by the turntable. Nothing
-// here moves material: the transfers are the server's ticks, the call is the adapter's (predicted on the press).
+// (Loading, On the way, Unloading, Waiting for forge). Nothing here moves material: the transfers are the server's
+// ticks. The "Call cart to forge" handle is cut (owner, 9 November; docs/decisions.md).
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import type { Interactable } from '../../player/hands.ts';
 import { FIXED } from '../../constants.ts';
 import { setShapes, stepAlpha, teleport } from '../../physics/engine.ts';
 import { carry, CARRY } from '../../physics/platforms.ts';
 import { me } from '../../player/player.ts';
-import { clank, thump, whistle } from '../../render/machine-sfx.ts';
+import { clank, thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
-import { CART, CART_CALL, CART_PHASE, CART_ROAD, cartAlong } from '../../sim/railway-cart.ts';
+import { CART, CART_PHASE, CART_ROAD, cartAlong } from '../../sim/railway-cart.ts';
 import { playMark } from '../../proto/mark.ts';
 
 /** Place's depot service tag (depot.ts SERVICE). */
@@ -35,11 +34,10 @@ export async function createRailwayCart(
   depotSlot: (k: number, n: number, out: THREE.Vector3) => THREE.Vector3,
   shelfSlot: (k: number, n: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
-  const [layout, rail, pieces, land, flatMod, look, kit, props, common] = await Promise.all([
+  const [layout, rail, pieces, flatMod, look, kit, props, common] = await Promise.all([
     import('../../proto/place/layout.ts'),
     import('../../proto/place/rail.ts'),
     import('../../proto/place/pieces.ts'),
-    import('../../proto/place/land.ts'),
     import('../../proto/flat.ts'),
     import('../../proto/place/look.ts'),
     import('../../proto/place/look-kit.ts'),
@@ -155,35 +153,6 @@ export async function createRailwayCart(
   tag.sprite.visible = false;
   const rackAt = new THREE.Vector3();
 
-  // ---------------------------------------------------------------- the call handle by the turntable (Place pair.ts)
-  const handle = new THREE.Group();
-  const postGeo = new THREE.BoxGeometry(0.45, 1.35, 0.45),
-    gripGeo = new THREE.BoxGeometry(1.25, 0.3, 0.4);
-  geometries.push(postGeo, gripGeo);
-  const post = new THREE.Mesh(postGeo, flat('#5b5145'));
-  post.position.y = 0.675;
-  const grip = new THREE.Mesh(gripGeo, flat('#e6a33e'));
-  grip.position.y = 1.5;
-  post.castShadow = grip.castShadow = true;
-  handle.add(post, grip);
-  const callX = CART_CALL.x / 100,
-    callZ = CART_CALL.z / 100;
-  // The handle's sign, the size of the rack's and frames' tags, above the turntable stop where the cart comes: in view
-  // past a player waiting by the handle, never between the camera and them.
-  const callTag = common.label(3.6, 1.2);
-  const stopAt = new THREE.Vector3();
-  {
-    const p = layout.lineAt(east, 0, { x: 0, z: 0, ux: 0, uz: 1 });
-    stopAt.set(p.x + layout.ORIGIN.x, layout.railY(east, 0) + 4.2, p.z);
-  }
-  callTag.sprite.position.copy(stopAt);
-  callTag.sprite.visible = false;
-  owner.add(callTag.sprite);
-  handle.position.set(callX, land.H(callX, callZ), callZ);
-  handle.visible = false;
-  owner.add(handle);
-  const callAt = new THREE.Vector3(callX, handle.position.y + 1.5, callZ);
-
   // ---------------------------------------------------------------- unloads and the cart's sounds, from state
   let last: { phase: number; logs: number; rails: number } | null = null;
   let heard: { x: number; z: number } | null = null,
@@ -201,7 +170,6 @@ export async function createRailwayCart(
     for (const g of geometries) g.dispose();
     for (const m of materials) m.dispose();
     tag.sprite.removeFromParent();
-    callTag.sprite.removeFromParent();
   });
 
   let riding = false;
@@ -215,12 +183,8 @@ export async function createRailwayCart(
       const aboard = on && carry.on === car.platform;
       if (aboard && !riding) playMark('cart ride', { authority: 'local' });
       riding = aboard;
-      handle.visible = on && l2.served >= 0;
-      // Once the cart stands at the forge it is its own sign.
-      callTag.sprite.visible = handle.visible && l2.cart.phase !== CART_PHASE.FORGE;
       if (!on || !l2) {
         tag.sprite.visible = false;
-        callTag.sprite.visible = false;
         return;
       }
       const c = l2.cart;
@@ -326,32 +290,6 @@ export async function createRailwayCart(
         tag.sprite.position.set(rackAt.x, rackAt.y + 4.8, rackAt.z); // above the frame's own tag
         tag.set(title, 'More coming', color);
       }
-      // Place's handle (pair.ts): it drops on the press; a call made while the cart is out with a load is served once it
-      // has unloaded, on its way back.
-      const called = c.recall;
-      const after = called && (c.phase === CART_PHASE.RUN || c.phase === CART_PHASE.DROP);
-      grip.position.y = called ? 1.25 : 1.5;
-      callTag.set(
-        after ? 'After unloading' : called ? 'Cart called' : 'Call cart to forge',
-        after ? 'Then back to forge' : '',
-        called ? '#8edbff' : '#ffd26e',
-      );
-    },
-    targets(): Interactable[] {
-      const s = adapter.inspect(),
-        p = me.body?.position;
-      if (!s.ready || !p || !handle.visible || s.line2.cart.recall) return [];
-      if (Math.hypot(p.x - callX, p.z - callZ) > CART_CALL.reach / 100 - 0.3) return [];
-      return [
-        {
-          id: 'railway-cart-call',
-          verb: 'Call cart to forge',
-          at: callAt,
-          run: () => {
-            if (adapter.callCart()) whistle(callX, callZ);
-          },
-        },
-      ];
     },
     inspect: () => {
       const s = adapter.inspect();
@@ -363,12 +301,10 @@ export async function createRailwayCart(
           phase: s.line2.cart.phase,
           logs: s.line2.cart.logs,
           rails: s.line2.cart.rails,
-          recall: s.line2.cart.recall,
           along: cartAlong(s.line2.cart, adapter.tickNow()),
           riding: carry.on === car.platform,
           status: s.line2.cartStatus,
         },
-        cartCall: { x: callX, y: handle.position.y, z: callZ, shown: handle.visible },
       };
     },
   };

@@ -535,7 +535,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         ...reward.targets(),
         ...line2.targets(),
         ...shelf.targets(),
-        ...cart.targets(),
         ...(works?.targets() ?? []),
       ];
       const p = me.body?.position;
