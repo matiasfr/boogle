@@ -1,6 +1,6 @@
 import type * as THREE from 'three/webgpu';
 
-export { me, cam, camForward, ITEM_HAND } from './state.ts';
+export { me, cam, camForward, followEye, ITEM_HAND } from './state.ts';
 export { enterIsland } from '../entities/player/state.ts';
 
 // Features that need the third-person camera somewhere special (the caves keep it inside the tunnel) push
