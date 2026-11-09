@@ -1043,11 +1043,16 @@ function cartStep(w: World, tick: number) {
 }
 /** Line 2 arriving with the wagon: at the quarry it loads what the Works rack has and the pier still needs; at the
  * pier it unloads everything onto the pier rack. One apply each. */
+/** Footings the pier still needs that are neither set, racked there, nor aboard the wagon (`aboard`). */
+function pierOwed(w: World, aboard: number) {
+  const works = w.get(Works, worksId(w))!;
+  return WORKS.pier - works.pierSet - works.pierRack - aboard;
+}
 function wagonArrives(w: World, row: Row<typeof Train>) {
   if (!row.wagon) return;
   if (row.at === 1) {
     const works = w.get(Works, worksId(w))!;
-    const need = WORKS.pier - works.pierSet - works.pierRack - row.foot;
+    const need = pierOwed(w, row.foot);
     const n = Math.min(WORKS.wagonCap - row.foot, works.rack, need);
     if (n <= 0) return;
     w.mut(Works, worksId(w))!.rack -= n;
@@ -1129,7 +1134,11 @@ function trainStep(w: World, tick: number) {
       let sweep = r.sweep;
       if (r.at === 0) sweep = 1;
       else if (r.at === stops.length - 1) sweep = -1;
-      const to = r.call >= 0 && r.call !== r.at ? r.call : r.at + sweep;
+      // While the wagon still has footings to fetch for the pier, line 2 calls at every stop on its sweep instead of
+      // running straight to a caller: someone waiting on the Pier halt would otherwise keep it shuttling between the
+      // pier and Far Head, never reaching the quarry's rack. The call still stands, so the train stops for it.
+      const fetching = slot === 1 && r.wagon && pierOwed(w, r.foot) > 0;
+      const to = r.call >= 0 && r.call !== r.at && !fetching ? r.call : r.at + sweep;
       Object.assign(w.mut(Train, id)!, {
         phase: TRAIN_PHASE.RUN,
         to,

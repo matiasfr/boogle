@@ -854,6 +854,13 @@ new `src/entities/railway/crossing-view.ts`, `src/entities/railway/view.ts` (wir
     isn't fitted, a take is capped at `cradleRails − shed.cradleRails − your rails`. A rule change, not a state
     change: no `WORLD_NS` bump (`test/railway-works.test.ts`, "after Q6 the forge rack gives only what the cradle
     still needs").
+  - **Line 2 sweeps every stop while the wagon still has footings to fetch.** A call sent the train straight to the
+    caller, so anyone waiting on the Pier halt (stepping onto its deck calls) kept it shuttling between the pier and
+    Far Head, and it never reached the quarry's rack: the second long playthrough sat 800 s at the pier after six
+    sets. While the pier is owed footings not set, racked or aboard, the train takes its sweep's next stop and the
+    call still stands. A rule change, no state change, no `WORLD_NS` bump (`test/railway-works.test.ts`, "someone
+    waiting on the Pier halt never starves the wagon"; it fails without the change).
+  - `playthrough` gained `--wall N`: the whole production round now runs past the 1800 s `--long` limit.
   - The bot comes at a stall socket from the stall's side: the set is offered within the stall's reach of its
     centre, and arriving from the halt stopped just outside it.
   - Look tooling: poses `crossing`, `pierhead`, `bents` and `wagon` in `railway-works-at.ts`, and `worksdo=pier`
