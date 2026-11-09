@@ -1,0 +1,841 @@
+// `npm run loop -- run [--players N] [--order <name>] [--json]`: plays each order the loop graph allows through the
+// REAL rules (the host's install: railValid, railApply, railTick; dev/loop/host.ts) for 1 to 4 players and prints
+// the time each node is reached. Walking is straight-line at WALK_MPS (no terrain, no trains ridden); cart, train,
+// laying and kiln time come from the sim. A stall with nothing accepted is a softlock; an order the graph allows that
+// the rules refuse is a graph bug. Decided edges the graph says nothing enforces (and edges said to be the rules')
+// are probed: the dependent node is tried first on a copy of the world.
+import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
+import {
+  LINE1_STATIONS,
+  LINE1_ROCKS,
+  LINE1_GREAT_TREE,
+  LINE1_AXE_STAND,
+  LINE1_JUMP_DEVICE,
+  LINE1_HARDWOODS,
+} from '../../src/sim/railway-line-layout.ts';
+import {
+  LINE2_STATIONS,
+  LINE2_FORGE,
+  LINE2_PACK,
+  LINE2_LEVER,
+  LINE2_HOOK,
+  LINE2_SEA,
+  LINE2_GLIDE,
+  LINE2_OLD_TRAIN,
+} from '../../src/sim/railway-line2-layout.ts';
+import { line2Active, railCarryMax } from '../../src/sim/railway-line2.ts';
+import {
+  WORKS,
+  WORKS_SEAMS,
+  WORKS_BREAKER,
+  WORKS_KILN,
+  WORKS_RACK,
+  WORKS_ROCKS,
+  SHED_STALL,
+  SHED_TABLE,
+  PIER_STOP,
+  PIER_RACK,
+  PIER_FRAME,
+} from '../../src/sim/railway-works-layout.ts';
+import { railAccount, type RailAction, type Railway } from '../../src/sim/railway.ts';
+import { NODES, WALK_MPS, cm, node, proposeOrders, type NodeId, type Point } from './graph.ts';
+import { createHost, type Host } from './host.ts';
+
+type Cmd = { walk: Point } | { act: string; fields?: Partial<RailAction> } | { wait: number };
+type Policy = Generator<Cmd, void, number>;
+type Player = { pid: string; i: number; at: Point; busy: number; walked: number; gen: Policy | null };
+type Tally = { carries: number; walked: number; refused: number; actions: number; accepted: number; last?: Cmd };
+export type NodeTime = { id: NodeId; tick: number; startTick: number; parked: boolean } & Tally;
+export type RunResult = {
+  order: string;
+  players: number;
+  nodes: NodeTime[];
+  ticks: number;
+  softlock?: { node: NodeId; tick: number; why: string };
+  graphBug?: string[];
+  probes?: Probe[];
+};
+
+/** Assumed press times (ticks of 100 ms): one swing per chop or strike, `unloadMs` per unit unloaded, 0.3 s else. */
+const SWING = Math.ceil(T1.swingMs / 100);
+const PRESS = 3;
+/** Ticks with nothing accepted and no node reached before the run calls it a softlock (20 minutes). */
+const STALL = 12000;
+const ticksFor = (cmd: Cmd, n: number) => {
+  if (!('act' in cmd)) return 0;
+  if (cmd.act === 'rail.chop' || cmd.act === 'rail.mine' || cmd.act === 'rail.beamChop' || cmd.act === 'rail.strike')
+    return SWING;
+  if (cmd.act === 'rail.deposit' || cmd.act === 'rail.kiln' || cmd.act === 'rail.cradle')
+    return Math.max(PRESS, Math.ceil((n * T1.unloadMs) / 100));
+  return PRESS;
+};
+const CARRY_OPS = new Set([
+  'rail.deposit',
+  'rail.kiln',
+  'rail.cradle',
+  'rail.footSet',
+  'rail.beamDeposit',
+  'rail.boilerFit',
+]);
+
+class Game {
+  h: Host;
+  players: Player[];
+  /** Units each player has committed to bringing, by node and material, so friends split a bill. */
+  bringing = new Map<string, number>();
+  private view: Railway | null = null;
+  private viewTick = -1;
+  constructor(h: Host, players: Player[]) {
+    this.h = h;
+    this.players = players;
+  }
+  get s(): Railway {
+    if (!this.view || this.viewTick !== this.h.tick()) {
+      this.view = this.h.api.railway;
+      this.viewTick = this.h.tick();
+    }
+    return this.view;
+  }
+  invalidate() {
+    this.view = null;
+  }
+  acct(pid: string) {
+    return railAccount(this.s, pid)!;
+  }
+  others(key: string, pid: string) {
+    let n = 0;
+    for (const [k, v] of this.bringing) if (k.startsWith(`${key}|`) && !k.endsWith(`|${pid}`)) n += v;
+    return n;
+  }
+}
+
+// ---------------------------------------------------------------- policies: one generator per player per node
+function* walk(to: Point): Policy {
+  yield { walk: to };
+}
+function* press(op: string, fields: Partial<RailAction> = {}): Generator<Cmd, number, number> {
+  return yield { act: op, fields };
+}
+function* waitFor(g: Game, ok: () => boolean): Policy {
+  while (!ok()) yield { wait: 10 };
+}
+/** Everything off the back where you stand. */
+function* clearBack(g: Game, pl: Player, keep?: 0 | 1 | 2): Policy {
+  const a = () => g.acct(pl.pid);
+  const of = (kind: 0 | 1 | 2) =>
+    keep === kind ? 0 : kind === 0 ? a().carry : kind === 1 ? (a().stone ?? 0) : (a().rails ?? 0);
+  for (let k = 0; of(0) + of(1) + of(2) > 0 && k < 12; k++) {
+    const kind = of(0) ? 0 : of(1) ? 1 : 2;
+    const n = Math.min(of(kind), 8);
+    yield* press('rail.drop', { x: Math.round(pl.at.x) + k * 20, z: Math.round(pl.at.z), y: pl.at.y ?? 0, n, kind });
+  }
+}
+/** The boiler, the beam or a footing off the back, where you stand. */
+function* dropBig(g: Game, pl: Player): Policy {
+  const at = { x: Math.round(pl.at.x), z: Math.round(pl.at.z), y: pl.at.y ?? 0 };
+  const l2 = g.s.line2,
+    beamRow = g.s.line?.beam;
+  if (l2?.boiler.state === 'held' && l2.boiler.holder === pl.pid)
+    yield* press('rail.boilerDrop', { revision: l2.boiler.revision, ...at });
+  if (beamRow?.state === 'held' && beamRow.holder === pl.pid)
+    yield* press('rail.beamDrop', { revision: beamRow.revision, ...at });
+  if (g.acct(pl.pid).foot) yield* press('rail.drop', { ...at, n: 1, kind: 3 });
+}
+const free = (g: Game, pid: string) => {
+  const a = g.acct(pid);
+  return railCarryMax(g.s) - a.carry - (a.stone ?? 0) - (a.rails ?? 0);
+};
+/** Chop the nearest standing tree (or hardwood, with the proper axe) until `want` logs are on the back. */
+function* chopTo(g: Game, pl: Player, want: number): Policy {
+  for (let guard = 0; g.acct(pl.pid).carry < want && free(g, pl.pid) > 0 && guard < 200; guard++) {
+    const s = g.s;
+    let best: { id: number; at: Point } | null = null;
+    let bd = Infinity;
+    RAILWAY_SOURCES.forEach(([id, x, z], k) => {
+      if ((s.sources[k] ?? 0) <= 0) return;
+      const d = cm(pl.at, { x, z });
+      if (d < bd) [bd, best] = [d, { id, at: { x, z } }];
+    });
+    if (s.line?.axe)
+      LINE1_HARDWOODS.forEach(([id, x, z], h) => {
+        if ((s.line!.hardwood[h] ?? 0) <= 0) return;
+        const d = cm(pl.at, { x, z });
+        if (d < bd) [bd, best] = [d, { id, at: { x, z } }];
+      });
+    if (!best) {
+      yield { wait: 100 }; // trees regrow on the supply pulse
+      continue;
+    }
+    const b: { id: number; at: Point } = best;
+    yield* walk(b.at);
+    yield* press('rail.chop', { id: b.id, yaw: 0, collapsed: false });
+  }
+}
+function* mineTo(
+  g: Game,
+  pl: Player,
+  rocks: readonly { id: number; x: number; z: number; y?: number }[],
+  want: number,
+) {
+  for (let guard = 0; (g.acct(pl.pid).stone ?? 0) < want && free(g, pl.pid) > 0 && guard < 200; guard++) {
+    const left = rocks.filter((r) => (g.s.line!.rocks[r.id] ?? 0) > 0);
+    if (!left.length) return;
+    const r = left.reduce((a, b) => (cm(pl.at, a) <= cm(pl.at, b) ? a : b));
+    yield* walk({ x: r.x, z: r.z, ...(r.y === undefined ? {} : { y: r.y }) });
+    yield* press('rail.mine', { id: r.id });
+  }
+}
+function* forgeRails(g: Game, pl: Player, want: number) {
+  yield* walk({ x: LINE2_FORGE.rackX, z: LINE2_FORGE.rackZ });
+  for (let guard = 0; (g.acct(pl.pid).rails ?? 0) < want && free(g, pl.pid) > 0 && guard < 2000; guard++) {
+    if (g.s.line2!.forge.rack > 0 && (yield* press('rail.forgeTake')) > 0) continue;
+    yield { wait: 10 };
+  }
+}
+type Need = { key: string; left: () => number; kind: 0 | 1 | 2 };
+/** Bring `need` to `to` and unload with `unload`, sharing it with friends through `bringing`. */
+function* carry(
+  g: Game,
+  pl: Player,
+  need: Need,
+  fetch: (want: number) => Policy,
+  have: () => number,
+  to: Point,
+  unload: (n: number) => Partial<RailAction> & { op: string },
+): Policy {
+  const mark = `${need.key}|${pl.pid}`;
+  try {
+    for (let guard = 0; guard < 200; guard++) {
+      const left = need.left() - g.others(need.key, pl.pid);
+      if (left <= 0 && have() === 0) return;
+      if (have() < Math.min(left, railCarryMax(g.s))) {
+        if (left <= 0) return;
+        // Anything else on the back goes down first, so the whole carry is this material.
+        const a = g.acct(pl.pid),
+          other = a.carry + (a.stone ?? 0) + (a.rails ?? 0) - have();
+        if (other > 0) yield* clearBack(g, pl, need.kind);
+        const want = Math.min(left, railCarryMax(g.s));
+        g.bringing.set(mark, want);
+        yield* fetch(want);
+      }
+      if (have() === 0) {
+        yield { wait: 20 };
+        continue;
+      }
+      yield* walk(to);
+      const { op, ...fields } = unload(have());
+      const moved = yield* press(op, fields);
+      g.bringing.set(mark, 0);
+      if (!moved) {
+        // Not taken (a friend filled it, or not yet ready): wait, then judge again.
+        if (need.left() <= 0) return;
+        yield { wait: 20 };
+      }
+    }
+  } finally {
+    g.bringing.delete(mark);
+  }
+}
+
+const L1 = (id: string) => LINE1_STATIONS.find((s) => s.id === id)!;
+const L2 = (k: number) => LINE2_STATIONS[k]!;
+const job1 = (s: Railway, k: number) => (k === 0 ? s : s.line!.jobs[k - 1]!);
+const stationIdx = { T1: 0, T2: 1, T3: 2 } as const;
+
+function lineOne(g: Game, pl: Player, id: 'T1' | 'T2' | 'T3'): Policy {
+  const k = stationIdx[id];
+  const spec = L1(id);
+  const lane = (pl.i + (spec.bill[1] ? 1 : 0)) % g.players.length;
+  return (function* () {
+    yield* waitFor(g, () => (k === 0 ? true : !!job1(g.s, k - 1).completion));
+    const logs: Need = { key: `${id}:logs`, kind: 0, left: () => spec.bill[0] - (job1(g.s, k).stock ?? 0) };
+    const stone: Need = { key: `${id}:stone`, kind: 1, left: () => spec.bill[1] - (job1(g.s, k).stoneStock ?? 0) };
+    const runs: Policy[] = [];
+    // With friends, the stone goes to the last player; solo, stone first (it's nearer the frame on T2).
+    const doStone = spec.bill[1] > 0 && (g.players.length === 1 || lane === 0);
+    if (doStone)
+      runs.push(
+        carry(
+          g,
+          pl,
+          stone,
+          (want) => mineTo(g, pl, LINE1_ROCKS, want),
+          () => g.acct(pl.pid).stone ?? 0,
+          spec,
+          (n) => ({ op: 'rail.deposit', station: id, kind: 1, n }),
+        ),
+      );
+    runs.push(
+      carry(
+        g,
+        pl,
+        logs,
+        (want) => chopTo(g, pl, want),
+        () => g.acct(pl.pid).carry,
+        spec,
+        (n) => ({ op: 'rail.deposit', station: id, kind: 0, n }),
+      ),
+    );
+    for (const r of runs) yield* r;
+  })();
+}
+function* beam(g: Game, pl: Player): Policy {
+  if (pl.i !== 0) return;
+  yield* waitFor(g, () => !!g.s.line?.jobs[0]!.completion);
+  yield* walk(LINE1_GREAT_TREE);
+  for (let i = 0; i < 40 && g.s.line!.beam.state === 'standing'; i++) yield* press('rail.beamChop');
+  yield* clearBack(g, pl);
+  yield* press('rail.beamTake', { revision: g.s.line!.beam.revision });
+  yield* walk(L1('T3'));
+  yield* press('rail.beamDeposit', { revision: g.s.line!.beam.revision, station: 'T3' });
+}
+function* forge(g: Game, pl: Player): Policy {
+  yield* waitFor(g, () => !!g.s.line?.jobs[1]!.completion);
+  const used = () => g.s.line2!.forge.used;
+  yield* carry(
+    g,
+    pl,
+    { key: 'F:logs', kind: 0, left: () => LINE2_FORGE.logs - used() },
+    (want) => chopTo(g, pl, want),
+    () => g.acct(pl.pid).carry,
+    LINE2_FORGE,
+    (n) => ({ op: 'rail.deposit', station: 'F', kind: 0, n }),
+  );
+}
+function* device(g: Game, pl: Player, at: Point, op: string, ready: () => boolean): Policy {
+  if (pl.i !== 0) return;
+  yield* waitFor(g, ready);
+  yield* walk(at);
+  yield* press(op);
+}
+function quarry(g: Game, pl: Player, k: number): Policy {
+  const spec = L2(k);
+  const j = () => g.s.line2!.jobs[k]!;
+  return (function* () {
+    yield* waitFor(g, () => line2Active(g.s) === k && g.h.tick() >= g.s.line2!.forge.lit + LINE2_FORGE.turnTicks);
+    const logs: Need = { key: `${spec.id}:logs`, kind: 0, left: () => spec.bill[0] - j().stock };
+    const rails: Need = { key: `${spec.id}:rails`, kind: 2, left: () => spec.bill[1] - j().railStock };
+    const toFrame = (kind: 0 | 2) => (n: number) => ({ op: 'rail.deposit', station: spec.id, kind, n });
+    // Rails first for whoever takes the rails lane; with one player, logs then rails.
+    const railsLane = g.players.length > 1 && pl.i === g.players.length - 1;
+    const logRun = carry(
+      g,
+      pl,
+      logs,
+      spec.depot
+        ? (want) => fromRack(g, pl, spec, 'rail.depotTake', () => g.s.line2!.depot, want, 'carry')
+        : (want) => chopTo(g, pl, want),
+      () => g.acct(pl.pid).carry,
+      spec,
+      toFrame(0),
+    );
+    const railRun = carry(
+      g,
+      pl,
+      rails,
+      spec.shelf
+        ? (want) => fromRack(g, pl, spec, 'rail.depotRailTake', () => g.s.line2!.depotRails, want, 'rails')
+        : (want) => forgeRails(g, pl, want),
+      () => g.acct(pl.pid).rails ?? 0,
+      spec,
+      toFrame(2),
+    );
+    for (const r of railsLane ? [railRun, logRun] : [logRun, railRun]) yield* r;
+  })();
+}
+function* fromRack(
+  g: Game,
+  pl: Player,
+  at: Point,
+  op: string,
+  stock: () => number,
+  want: number,
+  field: 'carry' | 'rails',
+): Policy {
+  yield* walk(at);
+  const have = () => (field === 'carry' ? g.acct(pl.pid).carry : (g.acct(pl.pid).rails ?? 0));
+  for (let guard = 0; have() < want && guard < 3000; guard++) {
+    if (stock() > 0 && (yield* press(op)) > 0) continue;
+    if (have() > 0) return;
+    yield { wait: 10 };
+  }
+}
+function* boiler(g: Game, pl: Player): Policy {
+  if (pl.i !== 0) return;
+  yield* waitFor(g, () => g.s.line2!.boiler.state === 'pedestal');
+  const b = g.s.line2!.boiler;
+  yield* walk({ x: b.x, z: b.z });
+  yield* clearBack(g, pl);
+  yield* press('rail.boilerTake', { revision: g.s.line2!.boiler.revision });
+}
+function* fit(g: Game, pl: Player): Policy {
+  if (g.s.line2!.boiler.holder !== pl.pid) return;
+  yield* walk(LINE2_OLD_TRAIN);
+  yield* press('rail.boilerFit', { revision: g.s.line2!.boiler.revision });
+}
+function* pier(g: Game, pl: Player, reached: () => void): Policy {
+  if (pl.i !== 0) return;
+  yield* waitFor(g, () => !!g.s.line2!.jobs[5]!.completion);
+  yield* walk(PIER_STOP);
+  reached();
+}
+function* strike(g: Game, pl: Player, id: 0 | 1): Policy {
+  if (pl.i !== 0) return;
+  yield* waitFor(g, () => g.s.works!.breaker === 2);
+  yield* walk(WORKS_SEAMS[id]);
+  yield* press('rail.strike', { id });
+}
+function* kiln(g: Game, pl: Player): Policy {
+  yield* waitFor(g, () => !!(g.s.works!.seams & 2));
+  const w = () => g.s.works!;
+  const stone = carry(
+    g,
+    pl,
+    { key: 'kiln:stone', kind: 1, left: () => WORKS.kilnStone - w().stone },
+    (want) => mineTo(g, pl, WORKS_ROCKS, want),
+    () => g.acct(pl.pid).stone ?? 0,
+    WORKS_KILN,
+    () => ({ op: 'rail.kiln' }),
+  );
+  const logs = carry(
+    g,
+    pl,
+    { key: 'kiln:logs', kind: 0, left: () => WORKS.kilnLogs - w().logs },
+    (want) => chopTo(g, pl, want),
+    () => g.acct(pl.pid).carry,
+    WORKS_KILN,
+    () => ({ op: 'rail.kiln' }),
+  );
+  yield* clearBack(g, pl);
+  for (const r of pl.i % 2 ? [stone, logs] : [logs, stone]) yield* r;
+}
+/** Footings from a rack to a site, one per back, shared among friends. */
+function* footings(g: Game, pl: Player, rack: 0 | 1, site: 0 | 1 | 2, left: () => number, stock: () => number): Policy {
+  const key = `foot${site}`,
+    mark = `${key}|${pl.pid}`;
+  const from = rack ? PIER_RACK : WORKS_RACK,
+    to = site === 2 ? PIER_FRAME : SHED_STALL;
+  try {
+    for (let guard = 0; guard < 400; guard++) {
+      if (left() - g.others(key, pl.pid) <= 0 && !g.acct(pl.pid).foot) return;
+      if (!g.acct(pl.pid).foot) {
+        g.bringing.set(mark, 1);
+        yield* walk(from);
+        yield* clearBack(g, pl);
+        if (stock() <= 0 || !(yield* press('rail.footTake', { rack }))) {
+          g.bringing.set(mark, 0);
+          yield { wait: 20 };
+          continue;
+        }
+      }
+      yield* walk(to);
+      yield* press('rail.footSet', { site });
+      g.bringing.set(mark, 0);
+    }
+  } finally {
+    g.bringing.delete(mark);
+  }
+}
+function* cradle(g: Game, pl: Player): Policy {
+  const sh = () => g.s.shed!;
+  if (pl.i === g.players.length - 1 || g.players.length === 1) {
+    const rails = () => WORKS.cradleRails - sh().cradleRails;
+    if (rails() > 0) {
+      yield* clearBack(g, pl);
+      yield* forgeRails(g, pl, rails());
+      yield* walk(SHED_STALL);
+      yield* press('rail.cradle');
+      yield* clearBack(g, pl);
+    }
+  }
+  yield* footings(
+    g,
+    pl,
+    0,
+    1,
+    () => WORKS.cradle - sh().cradle,
+    () => g.s.works!.rack,
+  );
+}
+
+type Run = {
+  g: Game;
+  done: Record<NodeId, () => boolean>;
+  policy: Record<NodeId, (pl: Player) => Policy>;
+};
+function setup(h: Host, n: number): Run {
+  const players: Player[] = Array.from({ length: n }, (_v, i) => ({
+    pid: `p${i + 1}`,
+    i,
+    at: { x: T1.wake.x + i * 150, z: T1.wake.z },
+    busy: 0,
+    walked: 0,
+    gen: null,
+  }));
+  const g = new Game(h, players);
+  let atPier = false;
+  const s = () => g.s;
+  const q = (k: number) => !!s().line2?.jobs[k]?.completion;
+  const done: Record<NodeId, () => boolean> = {
+    wake: () => (s().awake ?? -1) >= 0,
+    T1: () => !!s().completion,
+    T2: () => !!s().line?.jobs[0].completion,
+    beam: () => ['allocated', 'used'].includes(s().line?.beam.state ?? ''),
+    T3: () => !!s().line?.jobs[1].completion,
+    jump: () => !!s().line?.jump,
+    forge: () => (s().line2?.forge.lit ?? -1) >= 0,
+    axe: () => !!s().line?.axe,
+    pack: () => !!s().line2?.pack,
+    Q1: () => q(0),
+    Q2: () => q(1),
+    hook: () => !!s().line2?.hook,
+    Q3: () => q(2),
+    lever: () => !!s().line2?.lever,
+    Q4: () => q(3),
+    sea: () => !!s().line2?.sea,
+    Q5: () => q(4),
+    glider: () => !!s().line2?.glide,
+    boiler: () => ['held', 'fitted'].includes(s().line2?.boiler.state ?? ''),
+    trains: () => (s().line2?.trains ?? -1) >= 0,
+    Q6: () => q(5),
+    pier: () => atPier,
+    breaker: () => (s().works?.breaker ?? 0) === 2,
+    slab: () => !!((s().works?.seams ?? 0) & 1),
+    throat: () => !!((s().works?.seams ?? 0) & 2),
+    kiln: () => (s().works?.lit ?? -1) >= 0,
+    stall: () => (s().shed?.stall ?? 0) >= WORKS.stall,
+    cradle: () => (s().shed?.fitted ?? -1) >= 0,
+    table: () => !!s().line2?.train[1]?.wagon,
+    crossing: () => (s().works?.pierSet ?? 0) >= WORKS.pier,
+  };
+  const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());
+  const policy: Record<NodeId, (pl: Player) => Policy> = {
+    wake: (pl) => device(g, pl, T1.wake, 'rail.wake', () => true),
+    T1: (pl) => lineOne(g, pl, 'T1'),
+    T2: (pl) => lineOne(g, pl, 'T2'),
+    beam: (pl) => beam(g, pl),
+    T3: (pl) => lineOne(g, pl, 'T3'),
+    jump: (pl) => device(g, pl, LINE1_JUMP_DEVICE, 'rail.jump', () => true),
+    forge: (pl) => forge(g, pl),
+    axe: (pl) => device(g, pl, LINE1_AXE_STAND, 'rail.axe', ready('axe')),
+    pack: (pl) => device(g, pl, LINE2_PACK, 'rail.pack', () => (s().line2?.forge.used ?? 0) >= LINE2_FORGE.bills[0]),
+    Q1: (pl) => quarry(g, pl, 0),
+    Q2: (pl) => quarry(g, pl, 1),
+    hook: (pl) => device(g, pl, LINE2_HOOK, 'rail.hook', ready('hook')),
+    Q3: (pl) => quarry(g, pl, 2),
+    lever: (pl) => device(g, pl, LINE2_LEVER, 'rail.lever', ready('lever')),
+    Q4: (pl) => quarry(g, pl, 3),
+    sea: (pl) => device(g, pl, LINE2_SEA, 'rail.seaSwitch', () => true),
+    Q5: (pl) => quarry(g, pl, 4),
+    glider: (pl) => device(g, pl, LINE2_GLIDE, 'rail.glide', ready('glider')),
+    boiler: (pl) => boiler(g, pl),
+    trains: (pl) => fit(g, pl),
+    Q6: (pl) => quarry(g, pl, 5),
+    pier: (pl) => pier(g, pl, () => void (atPier = true)),
+    breaker: (pl) => device(g, pl, WORKS_BREAKER, 'rail.breaker', () => s().works!.breaker === 1),
+    slab: (pl) => strike(g, pl, 0),
+    throat: (pl) => strike(g, pl, 1),
+    kiln: (pl) => kiln(g, pl),
+    stall: (pl) =>
+      footings(
+        g,
+        pl,
+        0,
+        0,
+        () => WORKS.stall - s().shed!.stall,
+        () => s().works!.rack,
+      ),
+    cradle: (pl) => cradle(g, pl),
+    table: (pl) => device(g, pl, SHED_TABLE, 'rail.turn', () => s().shed!.stall >= WORKS.stall) as Policy,
+    crossing: (pl) =>
+      footings(
+        g,
+        pl,
+        1,
+        2,
+        () => WORKS.pier - s().works!.pierSet,
+        () => s().works!.pierRack,
+      ),
+  };
+  return { g, done, policy };
+}
+
+/** Steps one player's generator until it asks for time. */
+function step(r: Run, pl: Player, t: Tally, log: string[]) {
+  const { g } = r;
+  let input = 0;
+  for (let guard = 0; pl.gen && pl.busy <= g.h.tick() && guard < 100; guard++) {
+    const next = pl.gen.next(input);
+    if (next.done) {
+      pl.gen = null;
+      return;
+    }
+    const cmd = next.value;
+    input = 0;
+    if ('walk' in cmd) {
+      const d = cm(pl.at, cmd.walk);
+      pl.at = { ...cmd.walk };
+      pl.walked += d / 100;
+      t.walked += d / 100;
+      pl.busy = g.h.tick() + Math.ceil((d / (WALK_MPS * 100)) * 10);
+    } else if ('wait' in cmd) pl.busy = g.h.tick() + cmd.wait;
+    else {
+      const fields = { ...cmd.fields };
+      // The table turn and fit name the revision the actor sees now.
+      if (cmd.act === 'rail.turn') Object.assign(fields, { to: 1, revision: g.s.shed!.tableRev });
+      const res = g.h.act(pl.pid, cmd.act, fields, pl.at);
+      g.invalidate();
+      t.actions++;
+      if (res.status === 'rejected') {
+        t.refused++;
+        log.push(`${g.h.tick()} ${pl.pid} ${cmd.act} refused at (${Math.round(pl.at.x)}, ${Math.round(pl.at.z)})`);
+      }
+      if (res.status === 'accepted' && res.accepted > 0 && CARRY_OPS.has(cmd.act)) t.carries++;
+      input = res.status === 'accepted' ? res.accepted : 0;
+      pl.busy = g.h.tick() + ticksFor(cmd, input);
+      if (input > 0) {
+        t.accepted++;
+        t.last = cmd;
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------- order probes
+/** What a player would try for `id` if nothing told them to wait: logs by hand for a bill, else its own press. */
+function probePolicy(r: Run, pl: Player, id: NodeId): Policy | null {
+  const n = node(id);
+  const { g } = r;
+  const station = [...LINE1_STATIONS, ...LINE2_STATIONS].find((s) => s.id === id);
+  if (station || id === 'forge' || id === 'kiln')
+    return (function* () {
+      yield* dropBig(g, pl);
+      yield* clearBack(g, pl, 0);
+      yield* chopTo(g, pl, T1.carry);
+      yield* walk(id === 'forge' ? LINE2_FORGE : id === 'kiln' ? WORKS_KILN : station!);
+      yield* press(id === 'kiln' ? 'rail.kiln' : 'rail.deposit', {
+        station: id === 'forge' ? 'F' : id,
+        kind: 0,
+        n: g.acct(pl.pid).carry,
+      });
+    })();
+  const seam = id === 'slab' ? 0 : id === 'throat' ? 1 : -1;
+  // The pier is the world's (a walk), the crossing's footings ride the wagon: nothing to press early.
+  if (seam < 0 && !n.ops.length) return null;
+  return (function* () {
+    yield* walk(n.at);
+    yield* press(seam >= 0 ? 'rail.strike' : n.ops[0]!, seam >= 0 ? { id: seam } : {});
+  })();
+}
+export type Probe = { node: NodeId; before: NodeId; by: string; accepted: boolean; what: string };
+/** On a copy of the world at the moment `before` starts: does the rule accept `id`'s own first action? */
+function probe(h: Host, players: Player[], id: NodeId, before: NodeId): Probe | null {
+  const pids = players.map((p) => p.pid);
+  const copy = createHost(pids, { snapshot: h.snapshot(), tick: h.tick() });
+  const r = setup(copy, players.length);
+  const pl = r.g.players[0]!;
+  pl.at = { ...players[0]!.at };
+  const gen = probePolicy(r, pl, id);
+  if (!gen) return null;
+  pl.gen = gen;
+  const t: Tally = { carries: 0, walked: 0, refused: 0, actions: 0, accepted: 0 };
+  const own = new Set([...node(id).ops, 'rail.deposit', 'rail.kiln']);
+  let accepted = false;
+  for (let k = 0; k < PROBE && pl.gen; k++) {
+    const before = t.accepted;
+    step(r, pl, t, []);
+    if (t.accepted > before && t.last && 'act' in t.last && own.has(t.last.act)) accepted = true;
+    copy.advance();
+    r.g.invalidate();
+  }
+  const edge = node(id).requires.find((e) => e.on === before && e.status === 'decided')!;
+  return { node: id, before, by: edge.by, accepted, what: edge.source };
+}
+/** Ticks a probe may take (10 minutes: a chop and a walk across the map). */
+const PROBE = 6000;
+
+export function playOrder(
+  order: readonly NodeId[],
+  name: string,
+  players: number,
+  opts: { verbose?: boolean; probes?: boolean; mutate?: (h: Host) => void } = {},
+): RunResult {
+  const h = createHost(Array.from({ length: players }, (_v, i) => `p${i + 1}`));
+  opts.mutate?.(h);
+  const r = setup(h, players);
+  const { g, done } = r;
+  const result: RunResult = { order: name, players, nodes: [], ticks: 0 };
+  const log: string[] = [];
+  const parked: { id: NodeId; t: NodeTime }[] = [];
+  let lastProgress = 0;
+  const probes: Probe[] = [];
+  /** Before `id` starts: every node that a decided edge holds behind it, whose other prerequisites are met. */
+  const probeBefore = (id: NodeId) => {
+    for (const b of NODES)
+      for (const e of b.requires) {
+        if (e.on !== id || e.status !== 'decided' || e.by === 'world' || (e.scope ?? 'start') !== 'start') continue;
+        const others = b.requires.filter((x) => x !== e && x.status === 'decided' && (x.scope ?? 'start') === 'start');
+        if (done[b.id]() || !others.every((x) => done[x.on]())) continue;
+        const p = probe(h, g.players, b.id, id);
+        if (p) probes.push(p);
+      }
+  };
+  const finishParked = () => {
+    for (let k = parked.length - 1; k >= 0; k--)
+      if (done[parked[k]!.id]()) {
+        parked[k]!.t.tick = h.tick();
+        parked.splice(k, 1);
+        lastProgress = h.tick();
+      }
+  };
+  for (const id of order) {
+    const t: NodeTime = {
+      id,
+      tick: -1,
+      startTick: h.tick(),
+      parked: false,
+      carries: 0,
+      walked: 0,
+      refused: 0,
+      actions: 0,
+      accepted: 0,
+    };
+    result.nodes.push(t);
+    if (done[id]()) {
+      t.tick = h.tick();
+      continue;
+    }
+    if (opts.probes) probeBefore(id);
+    for (const pl of g.players) pl.gen = r.policy[id](pl);
+    for (;;) {
+      const before = t.accepted;
+      for (const pl of g.players) step(r, pl, t, log);
+      if (t.accepted > before) lastProgress = h.tick();
+      finishParked();
+      if (done[id]()) {
+        t.tick = h.tick();
+        lastProgress = h.tick();
+        break;
+      }
+      const idle = g.players.every((pl) => !pl.gen);
+      const waitsOnFinish = node(id).requires.some((e) => e.scope === 'finish' && !done[e.on]());
+      if (idle && waitsOnFinish) {
+        t.parked = true;
+        parked.push({ id, t });
+        break;
+      }
+      if (h.tick() - lastProgress > STALL) {
+        result.softlock = {
+          node: id,
+          tick: h.tick(),
+          why: idle ? 'every player is done and the node is not' : 'nothing accepted',
+        };
+        break;
+      }
+      h.advance();
+      g.invalidate();
+    }
+    for (const pl of g.players) pl.gen = null;
+    if (result.softlock) break;
+  }
+  while (!result.softlock && parked.length) {
+    finishParked();
+    if (!parked.length) break;
+    if (h.tick() - lastProgress > STALL)
+      result.softlock = { node: parked[0]!.id, tick: h.tick(), why: 'parked and never finished' };
+    else {
+      h.advance();
+      g.invalidate();
+    }
+  }
+  result.ticks = h.tick();
+  if (opts.probes) result.probes = probes;
+  if (opts.verbose) console.error(log.slice(-40).join('\n'));
+  return result;
+}
+
+const clock = (ticks: number) => {
+  const s = Math.max(0, Math.round(ticks / 10));
+  const h = Math.floor(s / 3600),
+    m = Math.floor((s % 3600) / 60),
+    ss = String(s % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+};
+
+export function runLoop(args: string[]) {
+  const value = (flag: string) => {
+    const i = args.indexOf(flag);
+    return i >= 0 ? args[i + 1] : undefined;
+  };
+  const counts = value('--players') ? [Number(value('--players'))] : [1, 2, 3, 4];
+  if (counts.some((n) => !Number.isInteger(n) || n < 1 || n > 4)) throw new Error('--players: 1 to 4');
+  const only = value('--order');
+  const broken = value('--break');
+  if (broken) breakBill(broken);
+  const orders = proposeOrders().filter((o) => (broken ? o.name === 'canonical' : !only || o.name === only));
+  const started = performance.now();
+  const results: RunResult[] = [];
+  for (const players of counts)
+    for (const o of orders) {
+      const probes = o.name === 'canonical' && players === counts[0] && !args.includes('--no-probes');
+      const res = playOrder(o.order, o.name, players, { verbose: args.includes('--verbose'), probes });
+      if (res.softlock && o.name !== 'canonical')
+        res.graphBug = [`the graph allows "${o.name}" but the rules never finished ${res.softlock.node}`];
+      results.push(res);
+    }
+  const ms = Math.round(performance.now() - started);
+  if (args.includes('--json')) return console.log(JSON.stringify({ ms, results }, null, 2));
+  const out: string[] = [
+    `Loop run through the real rules (railway-server install: railValid, railApply, railTick). A lower bound: walking`,
+    `is straight-line at ${WALK_MPS} m/s with no terrain, trains are not ridden, presses take ${PRESS / 10} s, there`,
+    `are no regrowth or recovery pulses; cart, trains, laying and kiln time are the sim's. ${ms} ms.`,
+  ];
+  if (broken) out.push(`BROKEN BILL (--break ${broken}): its log bill is a hundred times the catalog's.`);
+  const probes = results.find((r) => r.probes)?.probes ?? [];
+  if (probes.length) {
+    out.push(
+      '',
+      `Order probes at ${results.find((r) => r.probes)!.players} player(s): the held node tried first, on a copy.`,
+    );
+    for (const p of probes) {
+      const claim = p.by === 'none' ? 'nothing enforces it' : 'the rules enforce it';
+      const fact = p.accepted ? 'the rules ACCEPT it out of order' : 'the rules refuse it';
+      const flag =
+        p.accepted && p.by === 'none'
+          ? '  <- DEFECT (decided order not enforced)'
+          : p.accepted
+            ? '  <- GRAPH BUG (graph says the rules enforce it)'
+            : p.by === 'none'
+              ? '  <- GRAPH BUG (graph says nothing enforces it)'
+              : '';
+      out.push(`  ${p.node} before ${p.before}: graph says ${claim}; ${fact}${flag}`);
+    }
+  }
+  for (const players of counts) {
+    const shown = only && !broken ? only : 'canonical';
+    const canon = results.find((r) => r.players === players && r.order === shown)!;
+    out.push('', `${players} player${players > 1 ? 's' : ''}, ${shown} order: ${verdict(canon)}`);
+    out.push('  node      reached    took     carries  walked m  refused');
+    for (const t of canon.nodes) {
+      // From the moment its turn came to the moment it was reached (a parked node finishes later).
+      const took = t.tick < 0 ? '-' : clock(t.tick - t.startTick);
+      out.push(
+        `  ${t.id.padEnd(9)} ${(t.tick < 0 ? 'never' : clock(t.tick)).padStart(8)}  ${took.padStart(7)}${t.parked ? ' (parked)' : '         '}${String(t.carries).padStart(4)} ${String(Math.round(t.walked)).padStart(9)} ${String(t.refused).padStart(8)}`,
+      );
+    }
+    for (const r of results.filter((x) => x.players === players && x.order !== shown))
+      out.push(`  order "${r.order}": ${verdict(r)}`);
+  }
+  console.log(out.join('\n'));
+}
+/** In this process only: a station's log bill a hundred times over, so the run must report a softlock. */
+function breakBill(id: string) {
+  const s = [...LINE1_STATIONS, ...LINE2_STATIONS].find((x) => x.id === id);
+  if (!s)
+    throw new Error(`--break: a station id (${[...LINE1_STATIONS, ...LINE2_STATIONS].map((x) => x.id).join(', ')})`);
+  Object.assign(s, { bill: [s.bill[0] * 100, s.bill[1]] });
+}
+const verdict = (r: RunResult) =>
+  r.softlock
+    ? `SOFTLOCK at ${r.softlock.node} (${clock(r.softlock.tick)}: ${r.softlock.why})${r.graphBug ? `; GRAPH BUG: ${r.graphBug.join('; ')}` : ''}`
+    : `finished in ${clock(r.ticks)}`;
