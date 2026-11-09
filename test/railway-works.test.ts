@@ -189,7 +189,7 @@ test('fitted once; the table needs the stall; a stale revision is 0', () => {
   assert.equal(fitted.s.shed!.fitted, at);
   assert.equal(line2Rails(fitted.s), fitted.s.line2!.forge.poured, 'rails on the cradle are counted');
 });
-test('ready only after fitted and turned; turning back before coupling cancels it', () => {
+test('ready only after fitted and turned; the table holds while the wagon rolls out and waits', () => {
   const w = railwayAtWorks('stall-done'),
     shed = w.s.shed!,
     train = w.s.line2!.train[1]!;
@@ -204,18 +204,24 @@ test('ready only after fitted and turned; turning back before coupling cancels i
   act(w, 'b', 'rail.forgeTake');
   assert.equal(act(w, 'b', 'rail.cradle'), WORKS.cradleRails);
   assert.equal(shed.ready, w.t + WORKS.rollTicks);
-  assert.equal(act(w, 'a', 'rail.turn', { to: 0, revision: 1 }), 1);
-  assert.equal(shed.ready, -1, 'turning back calls the wagon home');
-  assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: 2 }), 1);
-  assert.equal(shed.ready, w.t + WORKS.rollTicks);
+  const due = shed.ready;
+  assert.equal(act(w, 'b', 'rail.turn', { to: 0, revision: 1 }), 0, 'no turning back while it rolls out');
+  assert.deepEqual([shed.table, shed.tableRev, shed.ready], [1, 1, due]);
+  advanceWorks(w, WORKS.rollTicks + 1);
+  if (!train.wagon) {
+    assert.equal(act(w, 'b', 'rail.turn', { to: 0, revision: 1 }), 0, 'nor while it waits for its train');
+    assert.equal(shed.ready, due);
+  }
   for (let guard = 0; !train.wagon; guard++) {
     assert.ok(guard < 4000);
     advanceWorks(w, 1);
     assert.ok(train.wagon ? w.t >= shed.ready : true);
   }
   const ready = shed.ready;
-  assert.equal(act(w, 'a', 'rail.turn', { to: 0, revision: 3 }), 1);
+  assert.equal(act(w, 'a', 'rail.turn', { to: 0, revision: 1 }), 1);
   assert.deepEqual([train.wagon, shed.ready], [true, ready], 'after coupling the table is a toy');
+  assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: 2 }), 1);
+  assert.deepEqual([train.wagon, shed.ready], [true, ready]);
   assert.equal(worksStage(w.s), 'wagon');
   assert.equal(invariant(w.s), null);
 });

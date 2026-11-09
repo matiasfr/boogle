@@ -829,8 +829,8 @@ const cradle = defineSystem(
     return n;
   },
 );
-/** Turn the table to a road, on the revision the actor saw. Before the wagon couples, turning back calls it home;
- * after, the table is a toy. */
+/** Turn the table to a road, on the revision the actor saw. It holds while the wagon rolls out or waits for its train
+ * (`ready ≥ 0`, not yet coupled), so nobody can call a friend's wagon home; after coupling the table is a toy. */
 const turn = defineSystem(
   'rail.turn',
   { reads: [Train], writes: [Shed], phase: 'act', order: 39 },
@@ -838,11 +838,11 @@ const turn = defineSystem(
     const h = w.get(Shed, shedId(w))!;
     if (h.stall !== WORKS.stall || !railInt(e.to, 1) || e.revision !== h.tableRev || e.to === h.table) return 0;
     if (h.tableRev >= RAILWAY_MAX_INT) return 0;
+    if (h.ready >= 0 && !w.get(Train, trainId(w, 1))!.wagon) return 0;
     const hm = w.mut(Shed, shedId(w))!;
     hm.table = e.to;
     hm.tableRev++;
-    if (e.to === 0 && !w.get(Train, trainId(w, 1))!.wagon) hm.ready = -1;
-    else commission(w, tick);
+    commission(w, tick);
     return 1;
   },
 );
