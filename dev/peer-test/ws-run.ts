@@ -4,10 +4,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { startWeb, waitFor, ev, snap, seesAll, sleep } from './harness.ts';
-import { freePort } from '../look/lib.ts';
-import { createService, loadConfig } from '../../server/src/server.ts';
-import { railwayChecks, railwayLoad, railwayCartRide } from './ws-railway.ts';
+import { useWorkerSource } from './worker-source.ts';
 
 type Page = { name: string; page: import('playwright').Page; selfId: string | { error: string; max?: number } };
 const results: { name: string; ok: boolean }[] = [];
@@ -21,6 +18,12 @@ const args = process.argv.slice(2);
 const option = (flag: string) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined);
 const controlUrl = option('--url');
 const root = option('--root');
+// Install before loading any harness dependencies: they can import src transitively, too.
+useWorkerSource(root);
+const { startWeb, waitFor, ev, snap, seesAll, sleep } = await import('./harness.ts');
+const { freePort } = await import('../look/lib.ts');
+const { createService, loadConfig } = await import('../../server/src/server.ts');
+const { railwayChecks, railwayLoad, railwayCartRide } = await import('./ws-railway.ts');
 const dataDir = option('--data-dir') ?? (await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-ws-')));
 let port = await freePort();
 async function control(command: string) {
