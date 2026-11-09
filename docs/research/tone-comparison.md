@@ -1,5 +1,9 @@
 # Tone comparison, 3 November 2026
 
+> **Verdict:** Compare neutral, agx, agx-sat and aces tone maps per scene.
+> **Top recommendations:** 1. Compare tone=neutral|agx|agx-sat|aces on each requested scene. 2. Reuse the water meter for all four curves: 32×32 log-luminance, 16 samples per texel, 1×1 adaptation with 256. 3. Match middle grey rather than the whole image histogram, which would hide the curve's contrast.
+> **Status:** reference. See [Look](../decisions.md#look).
+
 Serves DESIGN.md **Show, don't tell** and **Small and readable**. The owner's [Look decision](../decisions.md#look)
 opens Neutral to comparison, not automatic replacement. This change is Local. `src/render/scene.ts` is untouched.
 

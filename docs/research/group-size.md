@@ -1,5 +1,9 @@
 # One railway for one to four friends
 
+> **Verdict:** Fixed bills, friends shorten work; designed for one to three players.
+> **Top recommendations:** 1. Keep bills, per-source yield and installed capacities independent of attendance. 2. Give four willing players usable space and several short-lived jobs around one outcome. 3. Make main-line puzzles sequentially solvable and permanently useful.
+> **Status:** adopted. See [Progress and rewards](../decisions.md#progress-and-rewards).
+
 _Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 _Note added 6 November 2026: the owner now designs and tunes for 1–3 players, tolerates 4 and doesn't design for more ([economy principles amended](../decisions.md#progress-and-rewards)). Read "one to four" below with that target. All progression is shared, so every upgrade and ability applies to everyone present._

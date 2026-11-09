@@ -1,5 +1,9 @@
 # Smoke 884: bounded startup recovery
 
+> **Verdict:** Bounded startup recovery for the failing smoke test; issue open.
+> **Top recommendations:** 1. No evidence justifies a deploy-specific smoke restart, so none was added.
+> **Status:** open. No decision cites it yet.
+
 4 November 2026 incident; local verification continued on 5 November UTC. Issue remains open. No push or ship.
 
 ## Incident findings

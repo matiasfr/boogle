@@ -1,5 +1,9 @@
 # Third-person cameras: direct control, a readable island, and comfortable rides
 
+> **Verdict:** Immediate horizontal follow, steadier view on jumps, manual look has priority.
+> **Top recommendations:** 1. Keep immediate horizontal follow. 2. Make jumping move the character within a steadier view. 3. Give manual looking clear priority.
+> **Status:** adopted. See [Controls](../decisions.md#controls).
+
 _Research report, 2 November 2026. Live web research and a source audit of Boogle at `83b88195`: walking, jumping, carrying, co-op, trains and the soapbox on mouse, gamepad and touch. Read alongside [DESIGN.md](../../DESIGN.md), the owner's [Boogle 2.0 decisions](../decisions.md), [vehicle-feel.md](vehicle-feel.md), [cross-device-input.md](cross-device-input.md) and [coop-physics-vehicles-netcode.md](coop-physics-vehicles-netcode.md). Follows the research index and the character-controller/level-design reports' evidence-and-recommendations format. Recommendations only; this report changes no camera behavior or owner decision._
 
 **Evidence.** **[V]** means fetched primary documentation, a developer's own account, or inspected repository code. **[P]** means partial access, such as a talk's official abstract without its recording. **[O]** means a published first-hand observation of a shipped game, not an engine specification. **[D]** means calculated from stated assumptions. **[R]** means a proposed Boogle experiment. Every new tuning number below is **[R]**, unless explicitly marked otherwise. No commercial game was instrumented or frame-counted in this research; no metres or damping constants are inferred from promotional screenshots. In particular, an attractive game is not evidence that every version of its camera is universally liked.

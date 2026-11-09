@@ -1,5 +1,9 @@
 # Procedural sky: a small, sunny prototype
 
+> **Verdict:** Small sunny procedural sky; replaced by the summer sky default.
+> **Top recommendations:** 1. Keep the plain game's lighter blue palette, gradient curve, sun, hemisphere and fog colour at every time of day. 2. Add a soft low band derived solely from the existing horizon colour. 3. Keep five merged rounded mesh groups with slow continuous drift, following camera x/z at fixed world heights.
+> **Status:** superseded by [skybox](skybox.md); see [Look](../decisions.md#look).
+
 3 November 2026. Serves DESIGN.md 1, **Toys before chores**: “Every system must be fun to mess with before it has goals.” A place worth lingering in supports that play. Build behind `?proto=sky`; no change to the shared clock.
 
 ## Evidence and references

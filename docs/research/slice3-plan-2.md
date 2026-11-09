@@ -1,5 +1,9 @@
 # Slice 3: finish line 1, then walk what you built
 
+> **Verdict:** Finish line 1 in six ordered commits, then walk what you built.
+> **Top recommendations:** 1. Start from one accepted slice-2 integration and its proof ledger. 2. Extend one typed catalog and transaction path for T2/T3. 3. Make supply recovery material-aware and resolve stone exhaustion explicitly.
+> **Status:** adopted. See [plan production-core](../plans/production-core.md).
+
 _5 November 2026. Research and implementation proposal, not implemented or approved by this report. Live primary-source research plus read-only inspection of the production plan, both draft slice-2 branches and the Place code they promote. **V** = inspected source/code; **R** = another branch's recorded result, not rerun here; **P** = proposal or inference. No game, save, dependency or asset edits. Not tested on a device._
 
 **Prepare six ordered commits on top of the accepted slice-2 integration, preserving one material authority. Finish T2, earn the proper axe only after T3's 40 logs, carry its unique beam, and walk the completed shortcut home. Stop at the first-path owner verdict.** This serves **Toys before chores**, **Cooperation is automatic, not negotiated**, **Communal world, personal rewards**, **Designed for drop-in, drop-out** and **Clear authority** in [DESIGN](../../DESIGN.md). The scope is [production-core slice 3](../plans/production-core.md#reviewable-promotion-slices), not forge/depot/trains or the entire ability campaign.

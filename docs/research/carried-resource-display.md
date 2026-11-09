@@ -1,5 +1,9 @@
 # Carried resources: let the load speak, show the number when it matters
 
+> **Verdict:** Worn cargo is the display, with a small tag when quantities change.
+> **Top recommendations:** 1. Fix the meaning before moving the pill. 2. Try the hybrid beside the load first, with the existing wood token. 3. Use events and context, not only a timer.
+> **Status:** open. No decision cites it yet.
+
 _Research report, 4 November 2026. Carried-resource placement, duration, capacity, mixed loads, deposits and co-op readability. Live web research, focused source inspection at `64cedd84`, one staged desktop WebGPU capture and four illustrative mockups. Research only: no game code or design decisions changed. Serves DESIGN.md 7 (Telegraph everything), 11 (Show, don't tell) and 4 (Cooperation is automatic)._
 
 ## Recommendation first

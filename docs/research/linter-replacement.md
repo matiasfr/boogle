@@ -1,5 +1,9 @@
 # Linter replacement feasibility
 
+> **Verdict:** Oxlint with a small dev/lint runner replaces ESLint.
+> **Top recommendations:** none; the replacement is done.
+> **Status:** adopted.
+
 ## Implementation status — 4 November 2026
 
 The owner's replacement decision is implemented: Oxlint **1.91.0** and oxlint-tsgolint **7.0.2005**, with no ESLint,

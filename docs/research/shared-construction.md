@@ -1,5 +1,9 @@
 # Building one railway together
 
+> **Verdict:** Build the same 24-log station with two people before changing the bill.
+> **Top recommendations:** 1. Build the same 24-log station with two people before changing the bill or adding a carry mechanic.
+> **Status:** partly adopted. See [plan production-core](../plans/production-core.md).
+
 _Research report, 2 November 2026. Shared construction in Boogle's rail loop: parallel labour, fluid jobs for 2–8 friends, contribution and crowding, project costs, joining and leaving, shared finishes, and the feel of server-stamped chopping and deposits. Live web research and repository inspection at `76f20fee`; no new Boogle playtest, shipped-game play session or network measurement was performed. Recommendations and starting numbers are hypotheses, not owner decisions or approval of the draft rail slice._
 
 ## The question to answer first

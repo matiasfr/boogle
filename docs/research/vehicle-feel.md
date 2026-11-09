@@ -1,5 +1,9 @@
 # Vehicle feel: driving the soapbox, riding the wagon
 
+> **Verdict:** Keep the soapbox sphere, add a sprung chassis and a short drift charge.
+> **Top recommendations:** 1. Keep the soapbox's one-sphere model. 2. Make grip a curve, not a cap. 3. Add the drift charge, short, with no timing window.
+> **Status:** reference.
+
 *Research report, 1 November 2026. How games make vehicles feel good to drive and to ride: handling models, grip and drift, boosts, speed feel, vehicle cameras, crash comedy, touch steering, and standing on moving trains. For the soapbox cart (`src/proto/soapbox/`, [soapbox.md](../game-design/soapbox.md)) and the timetabled wagon (`src/proto/wagon/`, `src/physics/platforms.ts`). Builds on [progression-feel-exploration.md](progression-feel-exploration.md) §3 (Lonely Mountains, Mario Kart Wii's integer charge, TotK, cannon-es maths), [vehicles.md](../proposals/vehicles.md) and [rail-as-play.md](rail-as-play.md); those findings are not repeated here. Recommendations only: nothing here is a design decision.*
 
 **Markers.** *Verified*: fetched and read at the source (for slides, the text extracted from the PDF). *Secondary*: a wiki, review, forum or summary, not the developer. *Derived*: worked out for Boogle from the sources and the code, not stated by anyone.

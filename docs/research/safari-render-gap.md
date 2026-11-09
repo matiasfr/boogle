@@ -1,5 +1,9 @@
 # Missing railway visuals, 8 November 2026
 
+> **Verdict:** Two missing railway visuals confirmed in Chromium too; WebKit report not reproduced.
+> **Top recommendations:** 1. Commit depot logs with commitPieces, including the zero-stock path. 2. Restore the prototype's existing 14-glint burst on the production player's second jump. 3. Report thrown precompile failures with console.error, including the first-frame compile path.
+> **Status:** open. See [plan line2-b5-b8](../plans/line2-b5-b8.md).
+
 The owner's iPad report is not yet reproduced on WebKit. Two production presentation omissions are confirmed
 in this checkout. They also occur in Chromium and must not be described as Safari shader fixes.
 

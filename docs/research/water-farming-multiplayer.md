@@ -1,5 +1,9 @@
 # Research: multiplayer fun, voxel water and farming for Boogle
 
+> **Verdict:** Tide-and-garden loop on cheap deterministic water; replaced by the railway direction.
+> **Top recommendations:** 1. Fixed tick clock. 2. Integer-only fluid. 3. Checksums + resync.
+> **Status:** superseded by the owner calls in [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 *Research report, October 2026. Kept as the background behind [DESIGN.md](../../DESIGN.md) and [PLAN.md](../../PLAN.md).*
 
 > **Note on what has changed since this was written.** The report assumed Boogle ran only inside a claude.ai artifact, using its peer-to-peer presence channel and artifact storage. We have since moved to **PeerJS with a host peer and our own small server** (see PLAN.md, "Key decision"). The design findings and the deterministic-sim advice still apply. The parts about artifact storage, the claude.ai `room` channel and iframe threading limits (in "Constraints you're working within") no longer apply. The host peer now plays the role the report gives to an "elected snapshot writer".

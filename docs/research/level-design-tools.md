@@ -1,5 +1,9 @@
 # Level-design tools for agents: describe the place, prove the placement
 
+> **Verdict:** One inspectable description per place plus Rapier queries and bots; partial build.
+> **Top recommendations:** 1. Extend existing checks around one inspectable description of each place. 2. Keep TypeScript authoring; add Rapier queries and bots before buying a new tool.
+> **Status:** partly adopted.
+
 _4 November 2026; source/live research began 3 November. Research, source audit and measured Node checks at `279cbc7167913401254113a21a9fe337daedcd51`, on `codex/level-design-tools`. Scope: reliable placement and traversal while Boogle grows into more authored locations; engine/studio practice, agent tooling, authoring options and a smallest proof. Recommendations only; no game changes, editor installation, browser playthrough or historical runtime replay. Not tested on a device._
 
 **Implementation update:** [Executed results, 4 November](#executed-results--4-november-2026) supersedes the paper predictions where tested. The bounded implementation is **partial**, with failed coverage and a missed historical discriminator; it has not met section 9's acceptance.

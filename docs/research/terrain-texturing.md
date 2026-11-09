@@ -1,5 +1,9 @@
 # Smooth, sculpted and textured terrain
 
+> **Verdict:** Continuous authored normals, banded strata, grass/rock/sand/path families.
+> **Top recommendations:** 1. Fix normal continuity before adding triangles. 2. Keep the heightfield-plus-kit architecture and round only visible major turns. 3. Make painted textures part of the first material proof.
+> **Status:** adopted. See [plan terrain-pilot](../plans/terrain-pilot.md), [Look](../decisions.md#look).
+
 _Research report — 2026-11-05. Live primary-source research, close study of publisher/artist images, current-source inspection at `736e6066`, and the separate terrain-pilot and lookdev-loop branches. Recommendations only: no game changes, generated textures, fresh game captures or performance measurements. Not tested on a device._
 
 ## Answer and evidence

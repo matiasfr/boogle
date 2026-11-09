@@ -1,5 +1,9 @@
 # Entity architecture: what to copy, and what to change in the plan
 
+> **Verdict:** Declare hooks as rows on the kind; pin step order before renaming.
+> **Top recommendations:** 1. The entity shape can't express the ball. 2. preStep is not FixedUpdate, and the fixed step is missing. 3. Dispatch isn't worth designing around.
+> **Status:** adopted. See [plan entity-architecture](../plans/entity-architecture.md), [Process](../decisions.md#process).
+
 _2026-11-01. How Unity, Unreal, Godot, PlayCanvas and Needle define an object's lifecycle and tick order, how networked
 games split state from view, how long migrations finish, and what an update call costs in a browser. For the builders of
 [entity-architecture.md](../plans/entity-architecture.md), steps 7 to 18. Code and plan read at `54f5e2d4`. It builds on

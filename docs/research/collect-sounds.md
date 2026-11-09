@@ -1,5 +1,9 @@
 # Collect sounds: the Ratchet & Clank bolt and the recipe behind a good pickup
 
+> **Verdict:** A pickup is a metallic ting per piece with a ringing tail and a voice cap.
+> **Top recommendations:** 1. The bolt is a metallic "ting", not a note. 2. One sound per piece is the whole trick (already in ratchet-and-clank-feel.md). 3. A good collect sound has three layers: a strike (a few ms of bright noise).
+> **Status:** adopted. See [Sound](../decisions.md#sound-listening-pack-audit-2026-11-01).
+
 *Research report, 2 November 2026. A deep dive behind the owner's 2026-11-02 sound audit ([docs/playtests.md](../playtests.md), [docs/decisions.md](../decisions.md) "Sound"): "pickup thock: juice it better", "magnet burst: more Ratchet & Clank-y", "haul count run: keep, towards Ratchet & Clank". What is known about how Insomniac's bolt pickup sounds, how other collect sounds are built (Mario coins, Sonic rings, Spyro gems, Peggle's pegs, slot-machine payouts), the general recipe, and the numbers Boogle now uses in [src/render/clink.ts](../../src/render/clink.ts), [src/proto/haul/pickup-feel.ts](../../src/proto/haul/pickup-feel.ts), [src/proto/haul/magnet-sound.ts](../../src/proto/haul/magnet-sound.ts) and the `count` voice in [src/render/ui-sound.ts](../../src/render/ui-sound.ts). Builds on [ratchet-and-clank-feel.md](ratchet-and-clank-feel.md) (recs 2 and 9) and [audio-and-music.md](audio-and-music.md) without repeating them. **No Insomniac audio talk, interview or postmortem about the bolt sound was found**; the bolt's character below comes from reviews, the PlayStation Blog and a fan wiki, and the recipe from synthesis physics and comparable games. Nothing was measured from game audio.*
 
 **Markers.** **[V]**: the page was fetched and the point matches it. **[S]**: seen only in a search summary, a review quoted secondhand or a fan wiki; check before quoting. **[C]**: computed or chosen here. Findings are paraphrased.

@@ -1,5 +1,9 @@
 # Rail network depth without a dispatching job
 
+> **Verdict:** Friends choose connections and bottlenecks; the railway runs itself; paper first.
+> **Top recommendations:** 1. Keep connection order and bottleneck upgrades as the initial two decisions. 2. Package junctions as safe authored constructions with automatic signals. 3. Give each new material several useful destinations and every connection automatic service.
+> **Status:** open. No decision cites it yet.
+
 _Research report, 5 November 2026. Repository baseline `68ee082d`. Live primary-source research on Mini Metro, Sid Meier's Railroads!, Transport Fever 2, OpenTTD, Factorio, Satisfactory, Train Valley and Railbound. Scope: a possible later network layer, its smallest decision set, safe junctions, towns and resource hubs, cooperative editing, physical readability and an offline paper-model specification. Research only; no game or economy-model changes._
 
 **Evidence:** **[V]** = fetched developer/manual text or inspected repository material; **[D]** = project-hosted community documentation; **[R]** = earlier Boogle research or recorded playtest, not reproduced; **[P]** = inference, proposed rule or illustrative arithmetic. All proposed numbers are hypotheses. No reference game was played, no video was watched and no Boogle playtest was run. The GDC source is its session abstract, not the talk. Not tested on a device.

@@ -1,5 +1,9 @@
 # Ability upgrades: make familiar places worth another visit
 
+> **Verdict:** Three short ability ladders (jump, glide, hook), five upgrades after the base finds.
+> **Top recommendations:** 1. Budget five post-acquisition upgrades, with cuts allowed. 2. Move double jump later only with its dependent gates. 3. Use a longer cable, then a fixed-anchor relay; retain target-pull identity.
+> **Status:** open. See [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 _Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 _Research report, 5 November 2026. Repository baseline `68ee082d`. Live primary-source research, focused inspection of Place's current moves and a proposed eight-hour ladder for double jump, glider and target-pull hook. Research and proposals only: no gameplay changes, reference-game replay, Boogle playtest or campaign simulation._

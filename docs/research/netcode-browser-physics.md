@@ -1,5 +1,9 @@
 # Research: netcode for browser physics games
 
+> **Verdict:** Host-authoritative physics with a lockstep sim; older than the server plan.
+> **Top recommendations:** 1. Keep physics host-authoritative and stream state to peers. 2. Keep the shared world sim deterministic.
+> **Status:** reference. See [shared-physics](shared-physics.md).
+
 *Research notes, October 2026. Multi-source web research with each claim checked by three independent verifiers; only claims that survived are kept here. Background for the networking rows of [DESIGN.md](../../DESIGN.md) ("Clear authority") and [src/net/README.md](../../src/net/README.md).*
 
 **Bottom line for Boogle:** our current split is the one the evidence supports. Keep cannon-es physics **host-authoritative** and stream its state to peers. Keep the shared world sim (water, terrain, tide) on **integers with a fixed tick**, and treat native trig as off-limits there, the same as `Math.random()`. Don't try lockstep or rollback on top of cannon-es.

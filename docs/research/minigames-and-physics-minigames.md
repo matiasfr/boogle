@@ -1,5 +1,9 @@
 # Research: mini-games and physics mini-games, and why they work
 
+> **Verdict:** Why mini-games and physics mini-games work, from shipped games.
+> **Top recommendations:** 1. Build the toy, then find the game inside it. 2. One rule a newcomer reads in a glance. 3. Rounds are short, speed up, and restart instantly.
+> **Status:** reference.
+
 > **Update, 1 November 2026 (gap-fill round).** Section 5.3's unchecked list is replaced by findings on Animal Crossing
 > tours, Mario Odyssey's jump rope and volleyball, Wobbly Life, Super Rubber Bandits, Stumble Guys, Club Penguin,
 > Jackbox's audience and Mario Party / Wii Party (5.3–5.10). Golf With Your Friends' and Trackmania's unchecked lines

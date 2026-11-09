@@ -1,5 +1,9 @@
 # Development asset retention inventory — 5 November 2026
 
+> **Verdict:** Asset retention inventory for the "No old builds in development" call.
+> **Top recommendations:** none; inventory of what was cut under the "No old builds in development" call.
+> **Status:** adopted.
+
 Implements the owner's "No old builds in development" call. Principle: **Small and readable**.
 
 | Machinery | Decision | Reason |

@@ -1,5 +1,9 @@
 # Audio mix and locomotion build — 5 November 2026
 
+> **Verdict:** Audio mix and locomotion build record, rebased 5 November.
+> **Top recommendations:** none; build record for the audio mix and locomotion commits.
+> **Status:** reference. See [audio-mix](audio-mix.md).
+
 ## Rebase follow-up — 6 November 2026 UTC
 
 Rebased all six audio commits onto fetched `origin/main` at `766c94d5`, staying

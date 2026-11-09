@@ -1,5 +1,9 @@
 # Terrain art for the Place starter area
 
+> **Verdict:** Author coastal structure before surface detail; two-direction previz.
+> **Top recommendations:** 1. Author a coastal structure before surface detail. 2. Choose the style with a matched two-direction previz. 3. Use heightfield plus a bounded cliff kit.
+> **Status:** partly adopted. See [plan terrain-pilot](../plans/terrain-pilot.md).
+
 _Research report — 2026-11-05. Live primary-source research and source inspection at `68ee082d`. Scope: coastal landforms, nine game references, terrain authoring, materials, water contact, collision and device budgets. Research and a proposed plan only: no game changes, generated art, browser runs, fresh GPU measurements or owner playtest._
 
 ## Answer and evidence

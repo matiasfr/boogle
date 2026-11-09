@@ -1,5 +1,9 @@
 # Graphics settings: preserve the look, scale the work
 
+> **Verdict:** Three presets and six controls; registry and cost switches built, pages not.
+> **Top recommendations:** 1. Make Auto a policy, with three explicit presets and a Custom indicator. 2. Expose six controls, not the water laboratory. 3. Use one small registry with owned adapters.
+> **Status:** partly adopted. See [plan graphics-switches](../plans/graphics-switches.md).
+
 _2026-11-03. Research and recommendation, not implementation approval. Checkout `0562c947`. **[V]** = primary source text or repository code read; **[S]** = secondary account read; **[I]** = search excerpt only; **[D]** = proposal. No games launched or new benchmarks run; not tested on a device._
 
 **4 November implementation update:** the owner subsequently approved build-order steps 1–2 only. The Local

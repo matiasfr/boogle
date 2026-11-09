@@ -1,5 +1,9 @@
 # Paint the island inside the materials
 
+> **Verdict:** Paint the island inside the materials; existing choices hold up.
+> **Top recommendations:** 1. Keep the existing choices: heightmap water depth, palette-driven sky, vertex-baked terrain shading. 2. Measure every prototype on the device.
+> **Status:** reference.
+
 > **Update, 30 October 2026.** Boogle has since moved to `WebGPURenderer` with TSL node materials and a
 > `RenderPipeline` (one output pass for tone mapping), on purpose: the owner wants the high end (compute, TRAA,
 > bloom, GTAO, SSGI) on modern devices, iOS 26 Safari included. Read "add a pass" below as "add a pass on a quality

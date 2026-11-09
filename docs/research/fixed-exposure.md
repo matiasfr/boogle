@@ -1,5 +1,9 @@
 # Fixed HDR exposure — 5 November 2026
 
+> **Verdict:** First fixed-exposure pass; calibration replaced by the follow-up.
+> **Top recommendations:** none; first pass, its calibration is replaced by the follow-up.
+> **Status:** superseded by [fixed-exposure-followup](fixed-exposure-followup.md).
+
 **Historical first pass:** [the follow-up](fixed-exposure-followup.md) supersedes its calibration,
 integration status, GPU measurements and bot comparison with fresh rebased evidence.
 

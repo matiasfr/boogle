@@ -1,5 +1,9 @@
 # Maximal rewards on the railway
 
+> **Verdict:** Gift Freight: delivered cargo builds the town and reveals frequent gifts.
+> **Top recommendations:** 1. Start with Gift Freight: let delivered cargo build the town and reveal frequent personal gifts. 2. Budget 30–40 finds an hour and hundreds of tactile arrivals, with automatic keeping and grouped reveals. 3. Compose one rising phrase from harvest through pour, construction and unloading, ending in a world response.
+> **Status:** partly adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 _Research report, 2 November 2026. Constant, exuberant payouts; personal uniqueness and useful finds; cargo as a capsule; finite incremental growth across six eras and about eight hours, followed by a toy box. Live web research plus inspection of Boogle's current rail prototype. Recommendations for the owner to react to, not decisions or an implementation plan approved for construction._
 
 **Brief:** make the world extremely generous. The owner wants “handing out a lot of rewards that feel good,” integrated with the mechanics and world. Start from what landed: magnet pickups, construction you watch, and trains substantively growing the town with cargo from rail expansion. The proposed answer is **a railway that repeatedly turns your work into a shower, a changed place, and something recognizably yours**. Useful rare finds are welcome.

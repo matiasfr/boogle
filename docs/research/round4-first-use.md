@@ -1,5 +1,9 @@
 # Round 4 first-use pipelines — 3 November 2026
 
+> **Verdict:** First worn rails and glider pipelines compiled behind loading.
+> **Top recommendations:** none; fix record for first-use render pipelines.
+> **Status:** adopted.
+
 The first worn rails and opened glider did create synchronous render pipelines after loading. The carried meshes
 were detached until the avatar's update, and the canopy stayed detached until first opened; whole-scene compilation
 could not reach them. The glider also needed a separate double-sided shadow pipeline. This is a credible hitch

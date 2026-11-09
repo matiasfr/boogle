@@ -1,5 +1,9 @@
 # Rail economics: what does the next load buy?
 
+> **Verdict:** Retire the long supply journey, keep a short contribution; cut T3 first.
+> **Top recommendations:** 1. Cut only T3 from 24 to 12 logs first. 2. Bring both logs and rails to the frontier, with a visible supply handover. 3. Grant capacity at an actual trip threshold, independently of freight.
+> **Status:** partly adopted. See [plan little-guys-rails](../plans/little-guys-rails.md).
+
 _Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 _Research report, 2 November 2026. Live primary-source research and an executable, dependency-free TypeScript model of Boogle's rail work, supply, travel and novelty. Repository inspected at `5f8b9009`. Fits the existing scripted prototype measurements; does not report a new human playtest, multiplayer measurement or reference-game play session. Everything about future costs, durations, rewards, supply and enjoyment is a hypothesis._

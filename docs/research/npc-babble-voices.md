@@ -1,5 +1,9 @@
 # NPC babble voices: character, cadence and a browser implementation
 
+> **Verdict:** Formant babble generator separate from speech rhythm.
+> **Top recommendations:** 1. Separate the sound generator from the speech rhythm. 2. The strongest documented expressive example is Celeste's performed, edited, emotion-specific bank. 3. For Boogle, compare a small native-node vowel synth with an original recorded bank.
+> **Status:** adopted. See [Sound](../decisions.md#sound-listening-pack-audit-2026-11-01).
+
 _Research report, 1 November 2026. Deepens [audio-and-music.md §7 and recommendation 6](audio-and-music.md#7-voices-without-voice-acting): Animal Crossing's Animalese is the owner's reference; the target is expressive sound accompanying readable text, without recording the script. Covers shipped approaches, evidence limits, voice identity, fatigue, repeatability, Web Audio, and scaling beyond The Boogler. Read against [DESIGN.md](../../DESIGN.md), [the decision log](../decisions.md), [The Boogler as built](../game-design/boogler.md) and [his lore](../game-design/boogler-lore.md). Research and proposals only; no sound was implemented, auditioned, benchmarked or extracted from a game._
 
 **Evidence markers:** **[P]** developer interview, original paper, official documentation or inspected source code; **[S]** secondary account, fan research or a player's report, identified as such; **[C]** calculation or proposed Boogle design; **[U]** implementation detail not established. Translated interviews remain primary testimony, with the translation caveat. Search excerpts and inaccessible pages are called out. Inline links support the adjacent claim; a game's audible effect does not establish its underlying algorithm.

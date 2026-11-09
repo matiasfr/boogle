@@ -1,5 +1,9 @@
 # Primary-source notes (fetched 2026-10-29)
 
+> **Verdict:** Raw fetched facts behind the early reports, no proposals.
+> **Top recommendations:** none; raw source facts only, no proposals.
+> **Status:** reference.
+
 Raw facts for the research reports. No design proposals here.
 
 **How to read this file**

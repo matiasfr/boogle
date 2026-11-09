@@ -1,5 +1,9 @@
 # Places as modules: two shores, one world
 
+> **Verdict:** A place is the unit of content, a chunk of residency, a room of simulation.
+> **Top recommendations:** 1. Introduce explicit place identity and local authoring before replacing home — M, first. 2. Make place construction reversible through entities — L, first architectural risk. 3. Replace the global ground and square-bound contracts — L, before travel.
+> **Status:** adopted. See [plan mainline-architecture](../plans/mainline-architecture.md).
+
 _Research report, 2 November 2026. A codebase audit of Boogle's single-grid assumptions and the smallest architecture for two authored places linked by a kilometre-scale railway, with nearby collision and distant silhouettes. Inspected checkout `5f8b900991aed4dab0228e97446205af2729cabd`, Node 24.11.1, three r187 and Rapier 0.19.3; live engine documentation checked on the report date. Documentation only: no game code changed, no browser/physics experiment or device benchmark performed. Recommendations are proposals, not an approved implementation plan._
 
 ## Answer and evidence

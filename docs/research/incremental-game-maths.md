@@ -1,5 +1,9 @@
 # Incremental maths: earn the better way
 
+> **Verdict:** Incremental-game maths for earning the better way.
+> **Top recommendations:** 1. Rebase the forecast on round 4 and a real activity trace. 2. Use short cost ramps with fixed post-upgrade benchmarks. 3. Make each tool or carry rung remove a real burden.
+> **Status:** reference.
+
 _Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 _Note added 6 November 2026: the owner approved a shared wallet, fully shared progression and a world paused while empty, with a capped away credit on the next join ([economy principles amended](../decisions.md#progress-and-rewards)). Its offline rule (one committed project, no time allowance) is replaced by a soft-capped away credit into producers' yards. The rest stands as written._

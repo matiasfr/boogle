@@ -1,5 +1,9 @@
 # Rare materials and wonder on the railway
 
+> **Verdict:** One extraordinary crystal property inside familiar construction; lift first.
+> **Top recommendations:** 1. Test one impossible property inside familiar railway work. 2. Make rarity geographical and discovery generous. 3. Keep the material visible from source to installed part.
+> **Status:** partly adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 _Research report, 2 November 2026. Rare materials, a possible fantastic element, distant promises across a roughly eight-hour rail journey, and discovering today's small island as an already inhabited place. Live web research and repository inspection; options for the owner and narrative collaborators, not approved fiction, a build plan or implemented mechanics._
 
 **Recommendation:** try one extraordinary property inside familiar construction. A crystal should make a particular piece of railway do something players can see, and its source should be a place worth reaching. Keep the source beautiful after collecting from it. First compare this with a mostly natural mineral treatment; the owner's delight in a floating crystal is permission to investigate, not a decision that Boogle needs magic everywhere.

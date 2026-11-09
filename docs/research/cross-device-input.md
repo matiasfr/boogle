@@ -1,5 +1,9 @@
 # Cross-device input: one game on touch, keyboard and trackpad, and gamepad
 
+> **Verdict:** One game on touch, keyboard, trackpad and pad; WebKit pointer and pinch facts.
+> **Top recommendations:** 1. iPadOS Safari has no Pointer Lock, through Safari 27.2. 2. An iPad with a Magic Keyboard matches (pointer: coarse), the media query isTouch reads at load. 3. Two-finger trackpad scrolls arrive as wheel events on iPadOS since 14.5.
+> **Status:** reference.
+
 *Research report, 1 November 2026. How one game serves touch, keyboard with trackpad or mouse, and gamepads, with the M4 iPad Pro and its Magic Keyboard as the lowest target ([decisions.md](../decisions.md), Process). It covers iPadOS Safari (pointer lock, trackpad events, Pointer Events, keyboard quirks, the Gamepad API), touch controls in shipped games (Genshin Impact, Fortnite, Sky, Brawl Stars, Roblox, Minecraft Bedrock), virtual sticks, touch camera and gyro, switching input modes mid-session, glyphs, vehicles on touch, and accessibility. It builds on [controls-guide-and-pause-menu.md](controls-guide-and-pause-menu.md) (the registry, the pause view, last-used-device detection, glyph sets, Kenney prompts, the PlayStation trademark question) and [vehicle-feel.md](vehicle-feel.md) §6 (touch steering, Telfer's "less control is more"); those findings are not repeated. The code was read at 2acec33. The input-mode switch (key or trackpad → keyboard mode, touch → touch mode) was not on `main` yet, so this report describes the code as it is and leaves the switch to its author. Nothing was run on an iPad. Recommendations only: nothing here is a design decision.*
 
 *Update, 1 November 2026 (gap fill, from WebKit source and bugs; nothing run on an iPad yet):*

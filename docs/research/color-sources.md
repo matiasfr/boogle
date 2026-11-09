@@ -1,5 +1,9 @@
 # Colour sources: put Neutral back in front
 
+> **Verdict:** Put Neutral back in front; fix shade and feedback alongside the curve.
+> **Top recommendations:** 1. Compare three named looks: unchanged production AgX; metered Neutral / clean toys (leading candidate). 2. Fix shade and feedback alongside the curve. 3. Keep one output owner and explicit colour domains.
+> **Status:** adopted. See [Look](../decisions.md#look).
+
 _3 November 2026. Live-source companion to the offline colour-and-post report; recommendations only, no renderer changes. Serves **Telegraph everything**, **Show, don't tell**, and **Small and readable**._
 
 **Metered Neutral should lead the next comparison. Yes: the tested AgX configuration is costing Boogle some toy-colour immediacy.** Its deliberate bright-colour compression is a real trade-off, not necessarily a material mistake. The original board, reopened here, supports its own verdict that Neutral is the liveliest: stronger greens, warmer paths and a richer purple player. That does not establish AgX as the sole cause of dullness: the board lowered AgX about **0.375 EV** from production, and every curve retained dark tree faces and muddy stars. The proposed “AgX sunny toys” finish was never demonstrated. Keep the approved sky and AgX production control; change the ranking of hypotheses, not the owner's decision history.

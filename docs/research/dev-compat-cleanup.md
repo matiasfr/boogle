@@ -1,5 +1,9 @@
 # Development compatibility cleanup — 5 November 2026
 
+> **Verdict:** Development compatibility cleanup, runtime tree passed all checks.
+> **Top recommendations:** none; record of the cleanup under the "No old builds in development" call.
+> **Status:** adopted.
+
 Owner call: [No old builds in development](../agents/owner-calls.md). Starting tree: local `origin/main` at `a2df1b35`, including Slice 3. No fetch, push or ship; `inflight` was not run because it fetches, contrary to this job's local-network-only constraint.
 
 ## Inventory and decisions

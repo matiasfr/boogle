@@ -1,5 +1,9 @@
 # Town interiors: doors worth opening, little guys worth meeting
 
+> **Verdict:** Each door gives private life, personal expression or shared spectacle.
+> **Top recommendations:** 1. Give each door a different reward: private life, personal expression, shared spectacle. 2. Start with local roof/near-wall cutaways and preserve manual orbit. 3. Make conversation framing participate in indoor clearance.
+> **Status:** open. See [plan round-4](../plans/round-4.md).
+
 _Research report, 2 November 2026. Round 4's house, shop and museum: third-person indoor cameras, seamless thresholds, small surprising rooms, short dialogue and babble, comic money, collective exhibits, rumours and two visitors. Research and proposed experiments, not implemented features or new owner decisions._
 
 **Verification.** **[V]**: relevant source text fetched and read; developer testimony establishes what its author says, not access to the game's implementation. **[T]**: developer testimony in translation. **[P]**: conference abstract only; the recording was not watched. **[C]**: code inspected at `e402350a`. **[H]**: Boogle hypothesis, interpretation or proposed number, untested. Live web searches were performed for this report. No reference game was newly played, prototype rendered, camera benchmark run or multiplayer behaviour tested. All proposed dimensions, timings, dialogue and shop rules below are **[H]**, including tables and examples.

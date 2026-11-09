@@ -1,5 +1,9 @@
 # GLB delivery: compression works; tighten service worker caching
 
+> **Verdict:** Keep Meshopt and gzip; exclude HTML from the immutable asset cache.
+> **Top recommendations:** 1. Keep the existing Meshopt + HTTP gzip path and hashed URLs. 2. Exclude HTML and navigations from the immutable asset cache. 3. Fix lazy-hit promotion and cache-write lifetime together, in the existing worker.
+> **Status:** adopted. See [plan loading](../plans/loading.md).
+
 _2026-11-05. Initial production audit, following owner-approved recommendation 3 of `codex/threejs-tips-audit`, commit `40ed8921` (read with `git show`). Live GET inspection of boogle.club and one cold/repeat browser pair; source and deployed build both `736e6066a78c633b6e2a6f20110e6e07533794db`. **[V]** = observed response, inspected source or local reproduction; **[D]** = recommendation/inference; **[U]** = not verified. No production writes, gameplay changes, push or deployment._
 
 **The deployed GLBs already receive gzip, valid MIME types, validators and effective repeat-load caching.** Seven emitted GLBs total **168,952 bytes over HTTP after compression versus 674,520 decoded bytes**, a **75.0% body-byte reduction**. A CDN or codec change is not supported by this evidence. The smallest useful fixes are in the existing service worker: exclude the unversioned asset-stage HTML, retain used lazy assets across build-cache purges, and attach background writes to the fetch event's lifetime.

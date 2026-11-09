@@ -1,5 +1,9 @@
 # Procedural animation: what to do in code, what to author as clips
 
+> **Verdict:** Code for gameplay-driven motion, clips for authored beats.
+> **Top recommendations:** 1. Boogle already animates almost everything in code, and every file rolls its own maths. 2. Code wins for anything driven by gameplay numbers that change every frame: squash, lean, look-at, wheel spin, suspension. 3. Overgrowth's character ran on a handful of key poses blended by physics-driven code (GDC Vault).
+> **Status:** reference.
+
 *Research report, 1 November 2026. How shipped games and technical writers animate characters, props, construction, vehicles and crowds in code (springs, secondary motion, procedural steps, ragdolls, squash and stretch, tweens, vertex animation, vertex animation textures), and where authored clips win, read against Boogle's capsule avatars, the `?proto=build` hut, the wagon and soapbox prototypes and WebGPU three.js 0.187 on an M4 iPad Pro. Builds on [character-controller-feel.md](character-controller-feel.md) (jump shape, the spring jelly layer, why not active ragdolls), [stylized-rendering-on-a-budget.md](stylized-rendering-on-a-budget.md) (vertex wind), [creature-ai-and-ecosystems.md](creature-ai-and-ecosystems.md) (instanced critters) and [progression-feel-exploration.md](progression-feel-exploration.md) (cannon-es suspension maths) without repeating them. Several GDC talks are video only: where I read a listing or a secondary summary rather than the talk, the text says so. `docs/plans/asset-pipeline.md` was not on `main` when this was written.*
 
 ## Summary

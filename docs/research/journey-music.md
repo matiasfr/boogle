@@ -1,5 +1,9 @@
 # Journey music: a crossing worth listening to
 
+> **Verdict:** Prove one owner track against the crossing before building a music system.
+> **Top recommendations:** 1. Prove one owner track against the crossing before building a music system. 2. Make highlights occasional and keep player control.
+> **Status:** open. No decision cites it yet.
+
 *Research report, 2 November 2026. Music as the reward of a long train ride, and an arrangement that changes as friends connect the world. Studies Death Stranding, Journey, Sable, Wipeout, Hi-Fi Rush, Tetris Effect, Rez, Forza Horizon radio, Grand Theft Auto, Cyberpunk, Sayonara Wild Hearts, Big Walk and Fortnite. Builds on [audio-and-music.md](audio-and-music.md), [train-riding.md §20](train-riding.md#20-death-stranding-and-snowrunner-rides-as-journeys) and [vast-world-scale.md](vast-world-scale.md); does not reopen their general audio, vehicle or world-scale briefs. Recommendations, not owner decisions or an implementation.*
 
 **Verification.** Following [sea-crossings.md](sea-crossings.md), **[V]** means the source was fetched and supports the attributed statement; **[S]** means search-only evidence, a guide, a forum or a reporter's paraphrase. A fetched interview verifies what its speaker said, not the game's source code. **[C]** marks this checkout's inspected code or owner decision; **[D]** marks a proposal, calculation or inference. No games were played, recordings auditioned, GDC videos watched or devices benchmarked for this report. API documentation is not an iPad measurement. External sources are linked beside their claims; internal links identify the implementation a recommendation would touch.

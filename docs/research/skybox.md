@@ -1,5 +1,9 @@
 # Skybox directions: painted wind and summer cumulus
 
+> **Verdict:** Summer cumulus became the default sky; windpaint and toy sky archived.
+> **Top recommendations:** 1. Prototype ?sky=windpaint first: original painted-cel direction. 2. Prototype ?sky=summer: improve our existing cumulus recipe. 3. Prototype ?sky=gobi as the hand-painted audition, with Kenney day as the CC0 backup.
+> **Status:** partly adopted. See [Look](../decisions.md#look).
+
 > **Outcome (6 November):** `summer` is now the default daytime sky; windpaint and the toy sky are archived and their flags removed. This page is the historical brief; the `sky=` selector and `skySize` below no longer exist. See [water](../game-design/water.md#the-summer-sky-6-november-2026).
 
 _6 November 2026. Research for the owner's Wind Waker / Super Mario Sunshine sky experiment and free-resource search. Local source inspected at `95c6e84eb5df8e6e1b39cd317a6047b3d07d733d`; live publisher/developer, asset-author and engine sources checked today. **[L]** local implementation/decision; **[P]** primary source; **[V]** visual reading of published images; **[D]** proposal; **[E]** estimate. Documentation only: no runtime changes or assets added to the repository. Not tested on a device._

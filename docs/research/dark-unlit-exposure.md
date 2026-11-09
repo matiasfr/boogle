@@ -1,5 +1,9 @@
 # Dark particles and floating labels: exposure or materials?
 
+> **Verdict:** Exposure on display-range materials caused the regression; fix readability materials first.
+> **Top recommendations:** 1. Fix the reported readability regression before changing the whole look. 2. Prefer fixed HDR plus explicit material brightness as the long-term simple-style candidate. 3. Make adaptive compensation feedback-safe if retained.
+> **Status:** adopted. See [Look](../decisions.md#look).
+
 _5 November 2026. Owner's iPhone report; live primary-source research, source-family audit, matched Mac WebGPU stills and serial Metal timestamp samples. Source `7acbc2f2c865c5ce05ceeb76da40a365da67087d`, three.js 0.187.0; historical baseline `c0ba1419b832301db7d6df4a769e78d5325fb4dc`. **[M]** newly measured; **[L]** inspected code; **[H]** existing branch evidence; **[P]** primary source; **[E]** engineering estimate; **[D]** recommendation. No game-source changes. **not tested on a device**: no physical iPhone/iPad verification. Runtime diagnostic overrides below were discarded, not implemented as features._
 
 **The regression is real, and the immediate cause is exposure applied to display-range materials. Keep HDR and Neutral; correct the readability materials first.** At the measured station camera, the meter supplies **0.091579 gain (−3.449 stops)**. The same cream label falls from **240/232/217 to 64/60/52 sRGB**, retaining **5.62% of its previous output-linear luminance**. Crystal and gold particle samples retain **5.55% and 8.63%**. Inverse-gain compensation restores all three samples exactly to the old build. Fixed or narrow exposure alone does not fix their radiance mismatch. [M]

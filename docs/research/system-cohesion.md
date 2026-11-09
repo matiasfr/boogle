@@ -1,5 +1,9 @@
 # Research: how systems fit together (Big Walk and others), applied to Boogle
 
+> **Verdict:** How Big Walk's systems fit together, applied to Boogle.
+> **Top recommendations:** 1. Every challenge pays one reward. 2. The key-cutter chain: the blank key visits five cutter stations across the land, following arrows. 3. Each key opens transport or information, not a level.
+> **Status:** reference.
+
 *Research report, 30 October 2026. Follows `docs/research/big-walk-and-communal-endings.md`; mechanics only, no NPC or story beats. Tags: **[V]** fetched and read this round; **[S]** secondary (search snippet, fan guide or paraphrase). Big Walk is three months old: its detail comes from reviews, Wikipedia and fan guides, which disagree on names.*
 
 ---

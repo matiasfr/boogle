@@ -1,5 +1,9 @@
 # Agent-made models: keep the recipe, inspect the result
 
+> **Verdict:** Author small parametric Blender recipes, inspect the exported asset; no new generator.
+> **Top recommendations:** 1. Keep editable recipes in assets/src. 2. Make inspection part of authoring. 3. Reuse the build, catalogue and material presets.
+> **Status:** partly adopted. See [asset-model-trial](asset-model-trial.md), [plan asset-stage](../plans/asset-stage.md).
+
 _2026-11-04. Research only: local source inspection and live primary-source reading; no generation, installations, paid tasks or benchmark reproduction. Links below were read on this date unless explicitly marked indexed-only. Vendor timings, prices and demonstrations are attributed, not independently measured. Proposed budgets and judgements are ours._
 
 **Use Astra to author small, parametric Blender Python assets, then inspect the exported asset in Boogle.** The missing capability is a repeatable geometry-and-image review loop, not another generator. Image-to-3D is useful reference material or an occasional rigid prop source; it is not demonstrated as a dependable replacement for Buddy's authored proportions, topology and rig.

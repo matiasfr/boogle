@@ -1,5 +1,9 @@
 # Beautiful land: smooth ground, authored cliffs
 
+> **Verdict:** Smooth-normal heightfield plus a small authored cliff kit.
+> **Top recommendations:** 1. Keep smooth-normal heightfield land as the baseline. 2. Build one small cliff kit before changing terrain representation. 3. Close joins with shared boundaries, opaque aprons and real cuts.
+> **Status:** partly adopted. See [plan terrain-pilot](../plans/terrain-pilot.md).
+
 _Research report, 2 November 2026. Stylized terrain for Boogle's Sunshine-like archipelago: broad cliff planes without hand-painting every surface; heightfields, cliff kits and volumetric surfaces; TSL materials, collision and level validation; per-island authoring and a 1–4 km world on an M4 iPad Pro. Live primary-source research and source inspection at `76f20fee`. Recommendations and hypotheses, not an approved implementation plan. No game changes, runtime tests or device benchmarks were performed._
 
 ## Answer and evidence

@@ -1,5 +1,9 @@
 # Progression models for Boogle 2.0
 
+> **Verdict:** Progress from world state that ordinary play produces; pre-Design Table.
+> **Top recommendations:** 1. Drive progress from world state that ordinary play produces anyway.
+> **Status:** reference.
+
 *Research note, 30 October 2026. Question: if mini-games stop being the main source of era progress (eight eras, castaway to maglev, an archipelago joined by rail), what else can move the island forward? Builds on `docs/research/communal-progression.md` and `docs/proposals/hub-and-minigames.md` in the repo.*
 
 **Markers.** **[V]** means the quote was checked this session on the linked page (an interview or a write-up of a talk). **[S]** means secondary: a wiki, a news paraphrase, or a page that could not be fetched. Treat [S] facts as likely, not certain.

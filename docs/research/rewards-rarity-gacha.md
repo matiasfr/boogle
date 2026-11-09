@@ -1,5 +1,9 @@
 # Rewards, rarity and gacha
 
+> **Verdict:** Finite 12-object collection first; separate surprise from near-miss tricks.
+> **Top recommendations:** 1. Reward a detour with something the player wants to keep, place or introduce to friends. 2. The useful parts of gacha are surprise, a tactile opening and a memorable object. 3. An eight-hour game needs its best surprises inside the first evening.
+> **Status:** partly adopted. See [Progress and rewards](../decisions.md#progress-and-rewards).
+
 _Research report, 2 November 2026. What mini-games and side play could reward in Boogle: free rolls, finite collections, camp helpers, incremental growth, personal ownership and shared displays, within a roughly eight-hour co-op rail journey followed by a toy box. Live web research, developer interviews, GDC slides, papers, official descriptions and repository inspection. Recommendations for the owner to react to, not decisions or implemented systems._
 
 **Read with.** The owner found these reward levels too gentle ("Rewards should be maximal", [decisions.md](../decisions.md)); [maximal-rewards.md](maximal-rewards.md) is the follow-up with that brief. Neither report authorizes implementation.

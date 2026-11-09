@@ -1,5 +1,9 @@
 # ECS libraries versus a stricter GameEntity
 
+> **Verdict:** Build E: in-house ECS-shaped tables with id-ordered systems on the fixed clock.
+> **Top recommendations:** 1. Choose Option B, and record it in the decision log as answering the 6 November "evaluate", with this report linked. 2. Build defineTable and run the smallest proof: port the railway state onto it. 3. Land the fixed clock (simTick every N physics steps) before the shared slices, so new tables are born on it.
+> **Status:** adopted. See [plan ecs-e](../plans/ecs-e.md), [Process](../decisions.md#process).
+
 ## Follow-up spike, 6 November (later): the best entity system for 3,000 entities
 
 _7 November: E is built and timed as option E of this spike; see [ecs-e](../plans/ecs-e.md), "Step 2"._

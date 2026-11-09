@@ -1,5 +1,9 @@
 # New-water startup: measured costs, unresolved freeze
 
+> **Verdict:** Reported freeze not reproduced; cause found in the cold-start work.
+> **Top recommendations:** none; the reported freeze was not reproduced here.
+> **Status:** superseded by [water-metal-cold](water-metal-cold.md).
+
 2026-11-03. M1 Max, 32 GPU cores; source `e4cd214c`. DESIGN.md: **Small and readable — measure before optimizing**.
 
 **The reported minute-long visible freeze was not reproduced, so its cause and fix remain unresolved.** The largest measured gaps are CPU shore/eikonal solves behind the existing opaque loading screen. The only post-opening >50 ms gap occurs on the initial join click with both seas; Long Animation Frames attribute most of it to WebAudio unlock, outside water. No gameplay patch or after-fix improvement is claimed.

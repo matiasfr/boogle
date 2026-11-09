@@ -1,5 +1,9 @@
 # Material pipeline: enough shading, missing shared authoring
 
+> **Verdict:** Small shared material library of six presets; no new shading engine.
+> **Top recommendations:** 1. Calibrate materials before adding post. 2. Introduce six named presets with one small typed schema: timber, paintedToy, foliage, stone, steel, feedback. 3. Expose the same presets in the asset stage and Dev dock.
+> **Status:** partly adopted. See [texturing](texturing.md).
+
 _2026-11-03. Research only; source audit at `2e647d9e`, installed Three r187, live engine documentation and developer sources. **[V]** = code/source text read; **[A]** = talk abstract only; **[S]** = secondary account, unconfirmed; **[D]** = recommendation/inference. No implementation or new device test._
 
 **Yes: Boogle needs a small shared material library. It already supports sophisticated materials; it does not need a new shading engine.** Standard PBR, imported glTF, vertex colours, procedural TSL and a complex custom ocean are present. What is missing is a named, consistent contract for agents to author timber, painted toys and foliage, and for the owner to tune them together. Keep faceted scenery, softened kit edges and Buddy's smooth shoulders; **no Buddy rim light**. The [look decisions](../decisions.md#look) make frozen late-morning sky plus AgX the reference for the new-water route.

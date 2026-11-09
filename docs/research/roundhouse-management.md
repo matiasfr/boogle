@@ -1,5 +1,9 @@
 # A roundhouse and light train management
 
+> **Verdict:** Roundhouse with one small configuration choice per line.
+> **Top recommendations:** 1. Unlock the roundhouse from the first island completed connection, with default service already running.
+> **Status:** partly adopted. See [Trains and the world](../decisions.md#trains-and-the-world).
+
 _Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 _Research report, 2 November 2026. A walkable roundhouse, rideable turntable, shared engines and wagons, and the smallest useful management layer for Boogle. Live web research across Sid Meier's Railroads!, A-Train, Mini Metro, Transport Fever 2, OpenTTD, Railway Empire, Factorio, Satisfactory, Dorfromantik, Death Stranding, Animal Crossing, Pikmin and Ratchet & Clank; checked against this checkout's rail prototypes and plans. Recommendations and prototype hypotheses, not an approved feature or a description of shipped gameplay._

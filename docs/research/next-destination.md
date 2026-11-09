@@ -1,5 +1,9 @@
 # The next destination after Line 1
 
+> **Verdict:** East quarry as Split-rock works, concrete footings for the first crossing.
+> **Top recommendations:** 1. Rework the east quarry into Split-rock works. 2. Crack one brittle wall to open a haul cut; bring home concrete footings for the first sea crossing.
+> **Status:** adopted. See [plan split-rock-roundhouse](../plans/split-rock-roundhouse.md), [Trains and the world](../decisions.md#trains-and-the-world).
+
 _Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 _Research report, 6 November 2026. Four candidates after the owner's roughly 30-minute demo: Line 1, T1–T3, the walk home, track layer and cove. Live primary-source research and repository inspection at `e7eea656`; recommendation and visual planning only. No gameplay changes, new playtest or implementation approval. Companion: [visual comparison](next-destination.html)._

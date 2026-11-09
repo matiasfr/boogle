@@ -1,5 +1,9 @@
 # Smooth home shore: geometry, pictures and GPU cost
 
+> **Verdict:** Smooth shore kept opt-in; take rock forms first.
+> **Top recommendations:** 1. Low along the shore — avatar-height camera, green palette intact; the near rock is the clearest gain. 2. High over the shore — the court and rising grass remain readable; the bounded patch has no visible perimeter join. 3. Close at the feet — sand's triangular lighting is gone, but the deliberately worst offset exposes the contact limitation.
+> **Status:** reference.
+
 3 November 2026. Runtime source: `cb7433b5`, on `codex/shore-slice`. Local experiment; no push.
 DESIGN.md: **Code first, images by approval**, **Small and readable**, **Pick how each feature shares state**.
 

@@ -1,5 +1,9 @@
 # Boiler, saddle and cart art — 5 November
 
+> **Verdict:** Presentation pass on the boiler, saddle and cart before the round-4 replay.
+> **Top recommendations:** none; presentation work record before the round-4 replay.
+> **Status:** reference.
+
 Owner-authorized presentation work before the round-4 replay, on this worktree only; coordinator reviews and merges. Principles: **Telegraph everything** and **Show, don't tell**. No gameplay, collision, placement, cargo capacity, unlock, copy or motion-authority changes.
 
 ## Measured brief

@@ -1,5 +1,9 @@
 # Agent navigation and unused-code audit
 
+> **Verdict:** Contradictory routing advice, not dead code, is the main agent-navigation cost.
+> **Top recommendations:** 1. Repair current recipes and expose document authority in search.
+> **Status:** reference.
+
 2026-11-03. Audited `e93a0a11af9436e4f0d5120189a8dc031d96a84d`, on `codex/agent-navigation-audit`.
 Audit only: this report is the only committed change. Principles: **Understandable at a glance** and **Small and readable**
 ([DESIGN.md](../../DESIGN.md)). No source, existing documentation, assets or tools were changed.

@@ -1,5 +1,9 @@
 # Carrying and logistics as play
 
+> **Verdict:** Keep the bundle reliable, put slapstick in optional tools; building what ends hauling is the reward.
+> **Top recommendations:** 1. Keep the bundle boring and reliable; put the slapstick in optional tools. 2. The beloved part of Death Stranding's hauling was building what ends it. 3. Today's chore is probably the gathering, not the carrying.
+> **Status:** reference.
+
 *Research report, 1 November 2026. How games make carrying, hauling and moving goods fun, and what they do when it turns into a chore: Death Stranding 1 and 2, Pikmin, Moving Out, Overcooked 2, Human Fall Flat, Totally Reliable Delivery Service, Peak, Untitled Goose Game, Lethal Company, Valheim, Factorio, Satisfactory, Palworld, Deep Rock Galactic, Sons of the Forest, Animal Crossing, Minecraft and Spiritfarer. Builds on [0.1/7-resource-loop.md](0.1/7-resource-loop.md) (why a body stack, Pikmin carry, Katamari scale, the pacing table) and does not repeat it. Context: the first solo haul playtest replaced the swaying log tower with a plain back bundle ([decisions.md](../decisions.md), Decided); wheelbarrow and toss variants are being built. Recommendations only, no decisions.*
 
 *Gap-fill pass, 1 November 2026 (later the same day).* This pass filled four gaps: R.E.P.O.'s cart, Tears of the Kingdom's Ultrahand, Lethal Company's two-handed scrap, and Death Stranding's balance. Nintendo's Ask the Developer and its GDC 2024 talk gave first-party material on Ultrahand. R.E.P.O.'s cart and Lethal Company's two-handed scrap are covered only by wikis and guides. Death Stranding's balance design still has no primary source. Recommendations 2, 3, 6 and 9 gained evidence; none changed direction. New sections are marked *(gap-fill)*.

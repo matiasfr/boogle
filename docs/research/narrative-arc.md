@@ -1,5 +1,9 @@
 # Narrative arc: familiar faces along one railway
 
+> **Verdict:** A small recurring cast changed by the railway, one material promise per area.
+> **Top recommendations:** 1. Give each big area a material promise, a particular beneficiary and a visible lasting consequence. 2. Reuse a small cast through recognition, changed activity and payoff. 3. Build The Boogler's arc through optional rumours and commercial traces while preserving every line.
+> **Status:** open. No decision cites it yet.
+
 _Research report, 5 November 2026. Story and character structure for Boogle's roughly eight-hour, material-led journey: The Boogler, residents, little guys, the original-island ending, and storytelling during uninterrupted co-op play. Live web research and focused repository inspection at `68ee082d`. Research and proposals only; no copy, gameplay, approved plan or design decision changed._
 
 **Recommendation [H]:** make the railway change the lives of a small recurring cast. Each major area offers a visible material capability, someone who has a particular use for it, and a consequence that remains after departure. Small stops offer discovery and breathing room. Carry The Boogler through contradictory rumours and ordinary commercial traces until the original-island meeting resolves them. His entrepreneurial reveal is the joke; the useful world friends built is the sincere payoff.

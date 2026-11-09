@@ -1,5 +1,9 @@
 # Default-game draw capacity audit
 
+> **Verdict:** Default-game draw capacity audit after the forge and place bounds.
+> **Top recommendations:** none; audit table of draw capacities in the default game.
+> **Status:** reference. See [freeze-instance-overflow](freeze-instance-overflow.md).
+
 4 November 2026. This inventory records the production paths present at the start of the follow-up audit, after the forge and place bounds in `93b86aa6` and `e4a61305`. It complements [the original reconciliation investigation](freeze-instance-overflow.md); it does not replace that dated report. Browser evidence and any additional shared-render fixes belong below this inventory.
 
 ## Scope and method

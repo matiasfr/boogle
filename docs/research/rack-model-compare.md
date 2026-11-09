@@ -1,5 +1,9 @@
 # Recovery rack model comparison
 
+> **Verdict:** Owner preferred the reference-guided rack build.
+> **Top recommendations:** 1. Keep build B, the reference-guided rack, under the id recovery-rack.
+> **Status:** adopted.
+
 Owner exception, 5 November 2026: work may start before the round-4 replay, assuming it goes well. Remain on this branch; no push, ship or game placement. Slice 2 owns stock and placement. This is static geometry and Local asset-stage metadata only, with no shared state, lockstep math, events or gameplay changes. DESIGN.md: **Show, don't tell**.
 
 ## Owner verdict — 5 November follow-up

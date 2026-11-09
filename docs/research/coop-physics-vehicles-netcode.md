@@ -1,5 +1,9 @@
 # Co-op physics: vehicles, riders and carried objects
 
+> **Verdict:** Send riders in the vehicle's frame; grab ownership; survey of shipped games.
+> **Top recommendations:** 1. A player standing on a moving thing should be sent in that thing's frame (deck-relative position plus which. 2. Timetabled vehicles are a pure function of the tick, so every tab can place the deck "now". That makes remote. 3. Boarding and leaving need a short blend between world space and deck space, or buffered snapshots pop.
+> **Status:** reference. See [shared-physics](shared-physics.md).
+
 _Gap-fill pass, 2026-11-01 (later the same day). I searched again for first-party material on the six games listed
 below as second-hand, plus R.E.P.O. and Tears of the Kingdom. New findings carry markers: **[V]** fetched and the wording
 matched; **[S]** from a search summary, wiki, forum, or a modder's notes, not checked against the original; **[K]** well known, not re-checked. Still no

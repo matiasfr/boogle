@@ -1,5 +1,9 @@
 # Vast world scale
 
+> **Verdict:** Rail decisively faster than feet; 1 to 3 km legs; crossing baseline set.
+> **Top recommendations:** 1. Make rail decisively faster than feet: test 18, 30 and 60 m/s first, with a proposed era ladder of 12/18/24/30/36/45/50/60 m/s. 2. Compare 300 m, 1 km, 2 km, 3 km and 6 km legs, including acceleration; prefer 1–3 km unless the two-minute ride earns its time. 3. Design frequency with speed: target 20–30 s headways and room-wide boarding capacity.
+> **Status:** partly adopted. See [Trains and the world](../decisions.md#trains-and-the-world).
+
 _Research report, 1 November 2026. Kilometres of sea crossed by a fast, ride-only train in a browser: traversal measurements, perceived speed and distance, persistent far landmarks, precision, ocean and terrain streaming, moving platforms, service frequency, first access and separated friends. Read against branch `codex/vast-world-scale`, code at `01c20cf6`, including the entries labelled 2026-11-02 in the current [owner decision log](../decisions.md). Recommendations only; no owner decisions or implementation._
 
 **Later owner decisions (2 November, after this report was briefed):** the `?proto=crossing` playtest set the baseline at about a minute, 1.2 km at 20 m/s. 4 km at 50 m/s felt like "a novelty that would wear off", and 50 m/s belongs to end-game trains. Era count is being reduced from eight. Read this report's speed ladder, leg lengths and 60 m/s tests as options around those decisions ([decisions.md](../decisions.md)).

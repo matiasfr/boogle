@@ -1,5 +1,9 @@
 # Research: Big Walk, Untitled Goose Game and communal endings
 
+> **Verdict:** Big Walk, Goose Game and Journey on communication as play and shared endings.
+> **Top recommendations:** 1. A finale is a ritual that meets the group's achievement (Big Walk).
+> **Status:** reference.
+
 *Research report, 30 October 2026. What House House (Big Walk, Untitled Goose Game) and Jenova Chen (Journey) have said about communication as play, comedy built from systems, and endings that feel shared. It feeds a goofy story and a communal finale for the Boogle 2.0 concept. 21 sources were fetched and 82 claims extracted; the 25 strongest went through the three-vote adversarial check. 24 survived and 1 was refuted. Tags as in [progression-feel-exploration.md](progression-feel-exploration.md). Proposal: [docs/proposals/story-and-finale.md](../proposals/story-and-finale.md).*
 
 **Sourcing caveat.** Most Big Walk detail comes from secondary press (Kotaku, GamesRadar/Edge, PC Gamer, Game Informer), Wikipedia and fan guides. The launch press release is the only primary House House source for Big Walk. Big Walk launched three months ago, so patches may still change things.

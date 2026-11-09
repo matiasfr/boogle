@@ -1,5 +1,9 @@
 # Ground edges: one comparison
 
+> **Verdict:** Ground-edge comparison; owner kept Current, code archived on tag.
+> **Top recommendations:** 1. Keep Current ground edges; adopt new ones only with terrain that follows water.
+> **Status:** superseded by the owner calls in [Look](../decisions.md#look).
+
 **Decision: owner kept Current.** The comparison code and saved beat are not on `main`; they are on tag `archive/ground-edges`.
 
 4 November 2026. Owner-approved render-options suggestion 2 / question 2. **Current stays default; adoption waits for “terrain follows water”, with level design.** Code: `3bfe629a`, then crisp's zero-derivative guard `171410c3`. DESIGN.md: **Show, don't tell; Small and readable.** Local, explicit `dev=1&groundEdges=1`.

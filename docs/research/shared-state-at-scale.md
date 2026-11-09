@@ -1,5 +1,9 @@
 # Shared state at open-world scale
 
+> **Verdict:** How large shared worlds split simulation state; informed the server plan.
+> **Top recommendations:** 1. The server becomes the only simulator of shared state (server-host.md). 2. Then the server stops sending the whole world. 3. Clients keep a read-only mirror shaped like today's rules state (rules.gifts.gifts.items, garden plots, ...).
+> **Status:** reference. See [plan replication](../plans/replication.md), [plan architecture](../plans/architecture.md).
+
 _2026-10-31. How games with many players and a big world share simulation state, and what that means for Boogle's
 lockstep world, a sim worker and the dedicated server. Sources are listed at the end; Epic's and Blizzard's material
 was read through their docs and talk summaries, not the full talks._

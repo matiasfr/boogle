@@ -1,5 +1,9 @@
 # Level design for island and open maps
 
+> **Verdict:** Size the map in walk-seconds; something to notice every few seconds.
+> **Top recommendations:** 1. Size the map from movement speed and a place you know (BotW sized Hyrule by overlaying Kyoto and timing Link's walk). 2. Something to notice every few seconds, something to do every 10–20 s of walking on home. 3. Three sizes of shape (BotW's triangle rule): big landmarks to steer by, medium shapes that block the view.
+> **Status:** partly adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 *Research report, 1 November 2026. How shipped games lay out open maps, islands and archipelagos (Breath of the Wild and Tears of the Kingdom, Death Stranding 1 and 2, Wind Waker, A Short Hike, Outer Wilds, Mario Odyssey, Animal Crossing, Fortnite, Palworld, Valheim, Townscaper, rail sims, Disneyland), turned into recommendations for the layout lab ([decisions.md](../decisions.md), open question 6). Builds on [discovery-progression.md](discovery-progression.md), [rail-as-play.md](rail-as-play.md) and [big-walk-and-communal-endings.md](big-walk-and-communal-endings.md) without repeating them. Recommendations only; no design decisions.*
 
 **Markers.** **[V]**: the page was fetched and the words match. **[S]**: seen only in a search summary, a recap or a wiki; check before quoting. Boogle numbers come from the code: walk 5.6 m/s, sprint 9.5 m/s ([src/physics/physics.ts](../../src/physics/physics.ts)), fog fully opaque at 520 m ([src/constants.ts](../../src/constants.ts)), POI positions from [docs/game-design/island.md](../game-design/island.md).

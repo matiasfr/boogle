@@ -1,5 +1,9 @@
 # Fixed exposure follow-up — 5 November 2026
 
+> **Verdict:** Fixed HDR exposure calibrated on rebased evidence.
+> **Top recommendations:** 1. Use one fixed gain that keeps labels readable without washing out sand or sky.
+> **Status:** adopted. See [fixed-exposure](fixed-exposure.md), [Look](../decisions.md#look).
+
 This supersedes the measurements and starting calibration in [the initial report](fixed-exposure.md).
 The branch was rebased onto **f0f9bcaa**, the requested readable-unlit merge. Shared `origin/main`
 advanced to **19c4c94e** during testing; later-main compatibility is not verified. No push or ship.

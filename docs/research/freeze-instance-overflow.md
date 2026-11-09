@@ -1,5 +1,9 @@
 # Round 4 freeze: instance-count audit
 
+> **Verdict:** Forge rail rack drew 25 from 24 matrices; fixed with a regression test.
+> **Top recommendations:** none; the bug is fixed with a regression test.
+> **Status:** adopted.
+
 ## Finding
 
 The forge rail rack can reproduce the reported **25 draws from 24 matrices (1536 bytes)**. This is a demonstrated bug, not proof that this was Grant's particular failing batch: the session records neither mesh identity nor reconciliation snapshots.

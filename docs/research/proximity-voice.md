@@ -1,5 +1,9 @@
 # Proximity voice with a short range
 
+> **Verdict:** Short-range voice plus a long-range tool; about 25 m in shipped games.
+> **Top recommendations:** 1. Every game in this survey that makes voice part of play uses a short range and a long-range tool: walkie-talkies (Big Walk. 2. The published ranges cluster around 25 m to silence: VRChat's default far distance is 25 m , DayZ's normal voice 25 m (whisper 7. 3. Comedy comes from what voice does to bodies and items: mouths that flap when you talk (Peak, R.E.P.O.).
+> **Status:** reference.
+
 *Research report, 1 November 2026. Proximity voice in shipped games (Big Walk, Lethal Company, Content Warning, Peak, R.E.P.O., Sea of Thieves, Rust, DayZ, VRChat, Rec Room, the Among Us CrewLink mod, Fortnite, Roblox, Valheim) and the browser technology behind it (WebRTC mesh vs SFU, Web Audio spatialisation, echo cancellation, iPad Safari, Bluetooth, costs), turned into recommendations for [net-roadmap.md](../plans/net-roadmap.md) phase 8. Builds on [big-walk-and-communal-endings.md](big-walk-and-communal-endings.md) (section 1.2, House House keeping the range short) and [system-cohesion.md](system-cohesion.md) (section 1.1, the short range is what gives the tools a job) without repeating them. Recommendations only; no design decisions.*
 
 **Markers.** **[V]**: the page was fetched and the words match. **[S]**: seen only in a search summary, a fan wiki, a vendor page or a forum; check before quoting. Boogle numbers come from the code: walk 5.6 m/s, sprint 9.5 m/s ([src/physics/physics.ts](../../src/physics/physics.ts)), presence at 20 Hz (`SEND_MS`), at most 8 players per room (`MAX_PLAYERS`, [server/src/server.ts](../../server/src/server.ts)), and the shared `AudioContext` in [src/render/audio.ts](../../src/render/audio.ts), which sets iOS's `navigator.audioSession.type = 'playback'`.

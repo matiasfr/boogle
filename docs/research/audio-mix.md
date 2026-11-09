@@ -1,5 +1,9 @@
 # Mixing Boogle: feet, friends and headroom
 
+> **Verdict:** Keep five buses, make levels tunable, measure before adding material footsteps.
+> **Top recommendations:** 1. Make the baseline trustworthy first. 2. Calibrate existing families before adding more layers. 3. Adopt the five-bus table through local tunables.
+> **Status:** partly adopted. See [audio-architecture](audio-architecture.md).
+
 _Research report, 5 November 2026. Owner-requested character-sound, complete source-inventory and mixing study of checkout `3048c9242883a4ec792d492c6ed4f34c717363bb`. Live primary-source research, native Web Audio signal renders and a repeatable measurement/build plan. Research only; no runtime changes. Not tested on a device._
 
 **Recommendation:** retain the five existing category buses, make their effective levels locally tunable, and establish a measured reference before adding quiet, material-specific locomotion. A nearby friend should be audible without six walkers turning the world into a percussion loop. Normalize comparable assets within a family; calibrate the complete game separately.

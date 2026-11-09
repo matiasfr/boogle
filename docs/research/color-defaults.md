@@ -1,5 +1,9 @@
 # Owner colour defaults — remote-name follow-up, 5 November 2026
 
+> **Verdict:** Remote name labels use full readable-unlit compensation.
+> **Top recommendations:** none; the fix is built: remote names use readable-unlit compensation.
+> **Status:** reference.
+
 **Remote names now use full readable-unlit compensation once. Six new three-way boards show clear white lettering without looking garish or too bright, including evening. Rebased onto `origin/main` at `8270d364`, retaining both sides.** The earlier evening lit-board concern remains: paper/red ink is too dim for unqualified distance/phone clearance. Research evidence is **8.28 MB**, only reader-facing boards and small JSON. Raw scenes, scripts and logs remain under `.look`; heavy files are absent from branch history. No push, ship or merge.
 
 ![Fresh native crops: main and defaults, day and evening](color-defaults/summary.png)

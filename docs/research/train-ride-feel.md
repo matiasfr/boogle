@@ -1,5 +1,9 @@
 # Train ride feel: riding at Buddy's size, and how far the train goes
 
+> **Verdict:** 20 m/s and 1 to 1.2 km links are right; add near-field motion beside the track.
+> **Top recommendations:** 1. The train is a ride-on miniature for Buddy, and that is the right toy scale. 2. Speed is sold close up, and the Sickle Isles' links have nothing close up. 3. A minute is a journey when the far shore grows, something passes every 10–20 s, and you can move; it is a wait.
+> **Status:** partly adopted. See [Trains and the world](../decisions.md#trains-and-the-world).
+
 *Research report, 7 November 2026. The owner, on the world-scale study: "I really care about it more in terms of how
 does the train distance traveled feel and how does riding the train itself feel for the character model size." Numbers
 come from the code at `b643242b` and from captures of the Sickle Isles greybox; references from web sources and the

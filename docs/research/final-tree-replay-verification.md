@@ -1,5 +1,9 @@
 # Final replay tree verification, 5 November 2026
 
+> **Verdict:** Final replay tree verification, one seated-ride failure then pass.
+> **Top recommendations:** none; verification record for the final replay tree.
+> **Status:** reference.
+
 The full solo bot passed. Continuous co-op failed once during a seated ride, then passed a fresh full 1x repeat. Actual first-stage worker framing passed desktop and touch-profile portrait/landscape inspection. **The first passenger detachment is not conclusively explained by load.** No game code, dialogue or harness source changed; no speculative fix is proposed from one non-reproducing failure.
 
 ## Exact boundary

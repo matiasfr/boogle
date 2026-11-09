@@ -1,5 +1,9 @@
 # Room-owned time after T1
 
+> **Verdict:** Room-owned day-evening-day sequence driven by construction facts.
+> **Top recommendations:** 1. Install a two-field, three-step room sequence after T1. 2. Use Station 3 completion and prefer funded Q1 start for daylight return. 3. Upgrade recovery explicitly while preserving accepted T1 progress.
+> **Status:** open. No decision cites it yet.
+
 _5 November 2026. Research and implementation proposal, not an approved gameplay decision. Base: `10dc567b81367d792e8a0bb59668e5d2101e3a66`. Read-only comparison with `codex/production-core-slice-2` at `cb3429992aadffbb559588db3988bf78a7986bbc` and `codex/color-defaults` at `08a2056aae6e3dcb823f0e302069566cf9d5b32a`. Live primary-source research and focused code inspection; no implementation or runtime experiment. **[V]** inspected source/decision; **[H]** earlier recorded evidence, not rerun; **[D]** recommendation; **[E]** planning estimate. Night is out of scope._
 
 **Give the room one durable, bounded day → evening → day sequence, driven by accepted construction facts, and let each renderer present its current endpoint.** Build the authority seam after T1; connect it to Station 3 only when production slice 3 owns that completion. Prefer returning to daylight when line 2's first construction becomes fully funded and starts, subject to the owner's unanswered brief. A small lamp on the sign is the leading readability fix at gain **0.12**. No calendar, automatic cycle, attendance check, timer-based daylight return or time-gated activity is needed.

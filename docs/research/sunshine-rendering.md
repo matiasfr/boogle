@@ -1,5 +1,9 @@
 # Sunshine rendering: author the colour, keep the good water
 
+> **Verdict:** Metered Neutral, authored toy sky, restrained water retuning.
+> **Top recommendations:** 1. Choose metered Neutral as the lead, and judge a whole look. 2. Retune the existing water; do not port _umi. 3. Have sunshine-sky author one sky for the whole picture.
+> **Status:** partly adopted. See [plan look-compare](../plans/look-compare.md), [Look](../decisions.md#look).
+
 _3 November 2026. Super Mario Sunshine's GameCube water, sky and sunny light, translated to Boogle at `0e4376b1`. Live source research and local code inspection; no implementation. Not tested on a device._
 
 **Recommendation: use metered Khronos Neutral for the Sunshine-feeling candidate, with an authored toy sky and restrained water retuning.** A tone curve is the finishing transform, not the main explanation of Sunshine's look. The evidence points to deliberately coloured materials, vertex lighting, animated texture combiners, selective glare and stage-specific atmosphere—not a modern filmic HDR grade. Keep Boogle's FFT, shore, caustics, foam and underwater treatment. This is a comparison recommendation, not a replacement of the [frozen demo-sky/AgX decision](../decisions.md#look).

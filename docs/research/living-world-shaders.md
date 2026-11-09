@@ -1,5 +1,9 @@
 # Small effects that make Boogle feel alive
 
+> **Verdict:** Few connected effects: shared visual clock, wind field, tree sway first.
+> **Top recommendations:** 1. Share one visual clock, wind field and sun/key-light handles across sky.ts, water-render.ts and the selected lab effects. 2. Start with anchored tree sway and restrained path-side grass from look-world.ts, replacing colour-inferred bend weights. 3. Make the track machine and chimneys exhale round, wind-driven puffs through an extension of particles.ts's existing pool.
+> **Status:** open. No decision cites it yet.
+
 _Research report, 2 November 2026. Environmental motion and material effects for a warm, simple, toy-like world in the spirit of Mario Sunshine, implemented with three.js WebGPU/TSL on an M4 iPad Pro. Live primary-source research and source inspection at `6d24bcd0`; proposals only, with no renderer changes, visual acceptance or device benchmarks._
 
 ## Brief, evidence and scope

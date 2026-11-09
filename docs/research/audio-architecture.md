@@ -1,5 +1,9 @@
 # Audio architecture for Boogle
 
+> **Verdict:** One AudioContext plus a small audio service owning admission, routing and lifetimes.
+> **Top recommendations:** 1. Preserve the audited baseline and record its real mix. 2. Keep one native AudioContext and harden its lifecycle. 3. Make mix ownership explicit before rebalancing.
+> **Status:** adopted. See [Sound](../decisions.md#sound-listening-pack-audit-2026-11-01).
+
 _Research report, 2 November 2026. Native Web Audio for a co-op railway world, with M4 iPad Pro Safari and a controller as the principal listening and performance target. Project-specific architecture and migration advice; no runtime changes._
 
 **Recommendation:** keep Boogle's one AudioContext and existing sound identities. Add a small audio service that owns admission, routing, lifetimes, spatial perspective, assets and interruptions. Use procedural sound for responsive toys and the chosen babble voice, recordings for material detail and sustained environments, and the owner's music for selected crossing reveals. No audio library earns a dependency yet.

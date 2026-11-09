@@ -1,5 +1,9 @@
 # Feature organization and performance audit
 
+> **Verdict:** Feature organization and performance audit; keep flat composition entries.
+> **Top recommendations:** 1. Keep flat composition entries; clarify their role in the source map (STATIC). 2. Make layout finalization explicit when that area next changes (STATIC). 3. Extract pause implementation selectively, leaving its entry (STATIC).
+> **Status:** reference.
+
 2026-11-03. Audited commit `9d785b5c66fc06cbbddb31e9f5e6e0a680adeb15`, tree
 `bb4e5655b2a7b8c04f53bda8e623560b3ad12878`. Audit only: no changes to game, server, harness or design.
 Principles served: **Small and readable**, **Understandable at a glance**, and **Measure before optimizing** in

@@ -1,5 +1,9 @@
 # Next destinations: a railway that brings the journey home
 
+> **Verdict:** Chalk coast, steel harbour, suspended geology, high port, the finale.
+> **Top recommendations:** 1. The arriving cradle contains the committed beam kit; the receiving cradle has an obvious matching empty space. 2. A clamp closes around one piece. 3. The jib pivots toward the surveyed gap; the hook rises only enough to clear the deck.
+> **Status:** partly adopted.
+
 _Note added 6 November 2026: the owner moved the main-game target to roughly six hours, a rough target rather than a rule, with solo and groups of two or three close together ([decision log](../decisions.md#the-shape-of-the-game)). Read eight-hour figures below as the earlier target._
 
 _Research report, 5 November 2026. Live primary-source research on destination-led progression, seven candidate destinations after the starter island, three roughly eight-hour arrangements, physical upgrades, uneven co-op attendance and the smallest next proof. Repository baseline `1732514f`. Research and proposals only; no gameplay, accepted decisions or implementation plan changed._

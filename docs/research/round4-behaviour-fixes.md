@@ -1,5 +1,9 @@
 # Round 4 behaviour follow-up — 3 November 2026
 
+> **Verdict:** Train unlock pinning fix in halts.ts.
+> **Top recommendations:** none; fix record for the train-unlock pinning bug.
+> **Status:** adopted.
+
 ## 1. Camp halt trap
 
 The supplied session records train unlock at t=912.4, followed by the player pinned near (1010,30,-144) until Get unstuck at t=926.9. Camp's platform is centred at (1009.638,31.02,-146.1), above terrain around 30.22. The new back ramp appears around the player's body immediately when the halt builds. Rapier pushes the overlapping player down against the terrain; it cannot lift them onto the ramp. This reproduced locally: the player settled at y=30.446, visibly sunk into the ramp.

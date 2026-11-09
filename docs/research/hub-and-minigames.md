@@ -1,5 +1,9 @@
 # Research: a social hub plus mini-games, with personal progression
 
+> **Verdict:** Social hub plus mini-games with personal progression; Club Penguin lessons.
+> **Top recommendations:** 1. Hanging out comes first. 2. Give each space one activity. 3. Make separate spaces easy to join and leave together.
+> **Status:** reference.
+
 *Research report, 30 October 2026. What the designers of Club Penguin, Toontown, Habbo, Animal Crossing, Splatoon, Jackbox and Fall Guys said about hub spaces, mini-games, personal economies and drop-in play. The question behind it: should Boogle move toward a Club Penguin shape, with the island as a hub, many small mini-games, and individual character development instead of communal meta-progression? 20 sources were fetched and 82 claims extracted. The 25 strongest went through a three-vote adversarial check: 20 survived and 5 were refuted (listed at the end). Tags as in [progression-feel-exploration.md](progression-feel-exploration.md): **verified** (3-vote check passed), **fetched** (page loaded, not vote-checked), **secondary**. The proposal built on this is [docs/proposals/hub-and-minigames.md](../proposals/hub-and-minigames.md).*
 
 ---

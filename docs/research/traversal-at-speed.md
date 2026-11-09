@@ -1,5 +1,9 @@
 # Traversal at speed: flow, boost and the journey between places
 
+> **Verdict:** Pleasant walking, expressive connected movement, chosen speed bursts.
+> **Top recommendations:** 1. Make ordinary movement pleasant, connected movement expressive and speed bursts a choice.
+> **Status:** partly adopted. See [The shape of the game](../decisions.md#the-shape-of-the-game).
+
 _Research report, 2 November 2026. Live web research into Sunset Overdrive, Burnout, Breath of the Wild, Spider-Man, Tony Hawk, A Short Hike and Jusant; source audit of Boogle at `3280c6ff`. Builds on [movement-abilities.md](movement-abilities.md), with [third-person-camera.md](third-person-camera.md) and [vehicle-feel.md](vehicle-feel.md) as format and adjacent research. Recommendations only: no game was played, controller instrumented, route validated or performance measured for this report._
 
 **Evidence:** **[V]** fetched primary source, including a developer speaking in an interview; **[P]** partial evidence, such as an official talk abstract or indexed guide text; **[C]** inspected repository fact; **[D]** calculation from stated assumptions; **[H]** proposed Boogle behavior or inference. All new tuning values are **[H]**, never purported constants from a reference game. Sources are inline. Spider-Man's published slides and speaker notes and Sunset Overdrive's audio slides were downloaded and read in the relevant sections; the recordings were not watched.

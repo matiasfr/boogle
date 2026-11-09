@@ -1,5 +1,9 @@
 # Visual validation: evidence before a pass
 
+> **Verdict:** Separate capture health from visual judgment; state the question first.
+> **Top recommendations:** 1. Separate capture health from visual judgment. 2. State a question, action, view/device and expected visible result. 3. Keep stills and contact sheets for composition and coarse poses.
+> **Status:** adopted.
+
 2 November 2026. Serves DESIGN.md's "Small and readable" and "Light tests, real playtests".
 
 ## Observed failure

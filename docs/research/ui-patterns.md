@@ -1,5 +1,9 @@
 # UI that is pleasant, satisfying and fun
 
+> **Verdict:** Pick a side per piece of information: in the world or a bold overlay.
+> **Top recommendations:** 1. The best-loved game UIs pick a side per piece of information: either it lives in the world (a map in your hands, a health spine. 2. Nintendo's Zelda team aimed for UI that is better when absent. 3. Playful UI comes from one strong identity (Persona 5: one colour.
+> **Status:** reference.
+
 *Research report, 1 November 2026. How shipped games make their interface quiet, playful and juicy: minimal HUDs and diegetic UI (Breath of the Wild and Tears of the Kingdom, Dead Space, Firewatch, Sea of Thieves, Death Stranding), playful UI (Persona 5, Hi-Fi Rush, Splatoon, Animal Crossing, Mario Wonder, Super Mario Maker, Pikmin 4, Fortnite, Fall Guys, Tunic, Untitled Goose Game, Astro Bot, Nintendo system sounds), juice and motion, accessibility, and what a web page on an iPad Pro can afford. Builds on [controls-guide-and-pause-menu.md](controls-guide-and-pause-menu.md) (the control registry, pause view and paper-card look) without repeating it. Boogle's side was read from `main` at c8ad8ed: [src/style.css](../../src/style.css), the CSS of the hotbar, prompt, haul chip, pause, first-run and ping features, and [src/render/audio.ts](../../src/render/audio.ts). Nothing was run on an iPad. Recommendations only; no design decisions.*
 
 **Markers.** **[V]**: the page was fetched and the point matches it. **[S]**: seen only in a search summary, a review or a fan wiki; check before quoting. **[C]**: computed here from the code and a cited rule. Findings are paraphrased, not quoted.
