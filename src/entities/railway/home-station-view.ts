@@ -82,19 +82,19 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     }
   }
 
-  // ---------------------------------------------------------------- the hall: posts, end walls, roof, on its floor
+  // ---------------------------------------------------------------- the hall: posts, low end walls, roof, on its floor
   {
-    const { a, c, w, d, height } = home.HALL;
-    const corners = [-1, 1].flatMap((i) => [-1, 1].map((j) => at(a + (i * d) / 2, c + (j * w) / 2)));
-    const floor = highest([...corners, at(a, c)]) + 0.12;
+    const { a, c, w, d, height, endWall, floor } = home.HALL;
     const mid = at(a, c);
     add(box(mid.x, floor - 0.12, mid.z, w + 0.2, 0.24, d + 0.2, yaw), STONE, true);
+    // The end walls stop at 2.4 m, with a stone coping; the roof stands on the posts, the corner ones included.
     for (const j of [-1, 1]) {
       const wall = at(a, c + j * (w / 2 - 0.15));
-      add(box(wall.x, floor + height / 2, wall.z, 0.3, height, d, yaw), BRICK, true);
+      add(box(wall.x, floor + endWall / 2, wall.z, 0.3, endWall, d - 0.4, yaw), BRICK, true);
+      add(box(wall.x, floor + endWall + 0.06, wall.z, 0.42, 0.12, d - 0.2, yaw), STONE);
     }
     for (const i of [-1, 1])
-      for (const x of [-w / 4, 0, w / 4]) {
+      for (const x of [-(w / 2 - 0.15), -w / 4, 0, w / 4, w / 2 - 0.15]) {
         const post = at(a + i * (d / 2 - 0.2), c + x);
         add(box(post.x, floor + height / 2, post.z, 0.35, height, 0.35, yaw), POST, true);
       }
