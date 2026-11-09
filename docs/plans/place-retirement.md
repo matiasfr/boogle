@@ -825,6 +825,12 @@ unused, so existing saves keep their other fields. The notes below are history.
   slab and ring behind (`f2-stack-wide`); `--hud` mid-reveal, "You got a straw hat!" and its star, no second line
   (`f2-reveal-hud`); on Buddy from the front, the brass whistle hangs on a thin dark cord, the station master's on a
   wide blue band (`f2-wear-*`). They read apart by the cord; front-on, each whistle's brass body is an end-on disc.
+- **Rebased on world v23 (9 November, glider B merged; `npm run check` 609/609, same three EARLY findings).** Only
+  `docs/agent-calls.md` conflicted (main's new rows beside F1's and F2's; both kept). `railGlide=1` is gone, so the
+  stills above used a grant production now has for real. Tight looks at `BOOGLE_BOT_RANK=2`: at `--rail-seed
+  glide-earned` the bay holds yard, bell, alcove and firstpull, not the trains or end-of-run ones (`f2-bay-glide`);
+  from Needle Bell's summit (staged as the glide bot does) the real glider, by real input, landed Buddy on the balcony
+  and took its crate in 25 s (`.look/glide-to.ts`, scratch).
 - **Firstpull** stands on t0's east edge (10.1, 8), not Place's north edge: there its plinth blocked the walk off t0
   back down to p2, and the first long run failed on it (`return hook p2: nothing`).
 - **The reveal** is now shared with the station boxes: `src/render/crate-show.ts` (`createCrateShow`), used by

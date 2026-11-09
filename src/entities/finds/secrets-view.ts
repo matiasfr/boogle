@@ -292,8 +292,8 @@ export async function createSecretsView(owner: OwnedView, store: FindsApi) {
   const show = createCrateShow(root, { floor: H, softGlow, youGot: railwayYouGot });
   let opening: string | null = null;
 
-  /** The room has the glider. TODO(glider B): `glide` is only a dev test room's grant until glider B makes it the
-   * accepted Rail.glide (Needle Bell's summit), so in production this is false and the glide-only boxes stay away. */
+  /** The room has the glider: the accepted `Rail.glide`, taken on Needle Bell's summit (glider B). Until then the
+   * glide-only boxes stay away. */
   const glider = () => !!railwayRead()?.glide;
   /** You've gone on past it (Place's `passed`), in the order production's abilities come (designer fit check, 9
    * November): the walks with the hook; the catwalk and the tower's first box with the glider; the nook and the loft
