@@ -354,7 +354,11 @@ Branch `claude/glider-b-home-flow` from `origin/main`. Each step leaves `npm run
       window.__placeDone --action dev/look/evals/railway-glide-first-act.ts --video --seconds 14`, run before step 4
       removes the dev grant. The flight matches piece A's: sink 3.2 ± 0.3 m/s, 10 ± 0.5 m/s at full stick.
     - `npm run check`.
-- [ ] **4. Adapter, device, grant, flourish and teach.**
+- [x] **4. Adapter, device, grant, flourish and teach.** _(Built as planned. The card's parts are Place's worn glide
+  shape typed `Part[]`; `inspect` also reports `unfurling`. The teach's chip is `glyph('glide')`, empty on touch like the
+  jump teach. After Proof 1 the sealed drum lost its brass cap and the mast turned the vane's dark cloth (it read as a
+  switch with a lever). After Proof 4 the forge plume parts around the sight line from the camera to Buddy
+  (`forge-call.ts`, a logged default): the first flight comes down the column and spent 11 s inside it.)_
   - `src/adapters/railway.ts`: the intent, `intentOf`, `NOT_MATERIAL`, `claimGlide`, `glide` from state, and remove
     the option.
   - `src/adapters/railway-marks.ts` and `dev/playtest/beats.ts`: the mark and its beat.
@@ -367,7 +371,10 @@ Branch `claude/glider-b-home-flow` from `origin/main`. Each step leaves `npm run
   - `src/entities/railway/glide.ts`: `railwayGlideOpen`.
   - `test/railway-marks.test.ts`: add `'glide'` to the `ops` list.
   - Verify: `npm run check`. Then the stills in Proofs 1–3 and the grant video (Proof 4), each opened and looked at.
-- [ ] **5. Seeds, evals and the glider look.**
+- [x] **5. Seeds, evals and the glider look.** _(Built as planned. The grant's take and flight are the bot's own
+  `takeGlider` and `glideToBoiler` (exported from `bots/railway.ts`), so the look and the route fly the same path. With
+  `--players 2` player 2 checks the flourish, no card and the roll, then watches the leader's canopy. The wake eval
+  needs `--real`: a warped warm-up runs the page's waits in game time while the server ticks in real time.)_
   - `dev/look/rail-seed.ts`: `glide-earned`, `q5-shelved` and `q5-arriving`.
   - `dev/look/bots/railway-glide.ts`:
     - `stage()` accepts either a granted room (`glide-earned`) or `glideTake=1` at `q5-done`. With `glideTake=1` it
@@ -377,7 +384,11 @@ Branch `claude/glider-b-home-flow` from `origin/main`. Each step leaves `npm run
       `flights`.
   - `dev/look/evals/railway-glide-first.ts`: update its usage comment.
   - Verify: `npm run checkpoints -- awake q5-done trains-on glide-earned q5-shelved q5-arriving`, then Proofs 4–6.
-- [ ] **6. The bot.** Bot items 1–6 above, in `dev/look/bots/railway.ts`, `dev/look/segments.ts` and
+- [x] **6. The bot.** _(Built as planned, with the glide home split into exported `takeGlider` and `glideToBoiler`
+  for the look; the samples are every 100 ms at full stick from 3 s after opening to the let-go, checked as the mean
+  sink and the top speed. The seeded half `railFrom=glide` passed with no recovery: glider taken at 39.2 s, glided home
+  at 68.7 s, the flight 27.9 s, 4.0 m from the pedestal, dry. The `--to Q2`, `--to hook` and `--to Q5` playthroughs
+  were folded into the long run, which passes each of those checkpoints.)_ Bot items 1–6 above, in `dev/look/bots/railway.ts`, `dev/look/segments.ts` and
   `dev/look/evals/railway-b5b8-bot.ts`.
   - Verify the seeded half: `npm run look -- --rail-seed q5-done --query 'railFrom=glide&railStop=glided home' --eval
     dev/look/evals/railway-b5b8-bot.ts --until window.__railStop`. It must pass with no recovery.
@@ -442,8 +453,8 @@ All looks are opened and looked at. Report what each one shows.
    glide-heading`. The device in the foreground and the forge plume beyond it, along the step-off line.
 3. **Woken still**, desktop and phone size. New eval `dev/look/evals/railway-glide-wake.ts` waits for
    `line2View.glideDevice.woken` on a live edge, then sets `__placeDone`.
-   - `npm run look -- --rail-seed q5-finishing --eval dev/look/evals/railway-glide-wake.ts --until window.__placeDone
-     --cam 1379,27.5,-180 --look 1016,120,-8.8 --name glide-woken`
+   - `npm run look -- --real --rail-seed q5-finishing --eval dev/look/evals/railway-glide-wake.ts --until
+     window.__placeDone --cam 1379,27.5,-180 --look 1016,120,-8.8 --name glide-woken`
    - Repeat with `--size 844x390`.
    - Report honestly whether the locator reads at 400 m (open question 2).
 4. **Grant moment** (motion): `npm run look -- --rail-seed q5-done --query glideTake=1 --eval
@@ -564,6 +575,42 @@ All looks are opened and looked at. Report what each one shows.
    waits.
 4. **Building piece B makes the summit return live** (glider call 1, a New call still open in agent-calls). Recommended:
    proceed. Moving it to Far Head's pad later is one constant (`LINE2_GLIDE`) and a seed.
+
+## As built
+
+Built 9 November on the implementer's branch; steps 1–7 as ticked above. Every still and sheet below was opened and
+looked at. Not tested on a device.
+
+- **Proof 1, sealed** (`.look/glide-sealed-still.png`, `hook-earned`): first pass, the brass cap and a pale mast beside
+  the live switch read as a second switch with a lever. Rebuilt dark all over (no cap, the mast in the vane's cloth);
+  second pass it reads as an unlit dark post beside the only bright, pressable thing, the switch. Its silhouette still
+  echoes the switch's drum; the owner may want to look.
+- **Proof 2, take faces the forge** (`.look/glide-heading-still.png`, `q5-done`, from 1020.5, 105.2, −3 toward the
+  plume): the woken device in the foreground, teal vane open, rings and core lit, the faint shaft above. The forge
+  plume shows as a white puff just over the summit pad's west edge; the forge itself is below the edge until you step
+  to it. The plan's camera (2 m from the drum, looking 37° down) was all drum and is not kept.
+- **Proof 3, woken from Far Head** (`.look/glide-woken-still.png`, `glide-woken-phone-still.png`, live edge from
+  `q5-finishing`, `--real`): the device woke on the live edge (`unfurling` seen, then woken). From 400 m the locator
+  does **not** read at desktop size (a barely visible line over Needle Bell's flag at 3× zoom) or at 844×390 (nothing).
+  The forge plume does read from Far Head at desktop size. Open question 2 stays the owner's: widen the shaft
+  (radius 0.1 → 0.5) or the designer's summit bell note.
+- **Proof 4, the grant** (`.look/glide-grant-realtime.webm`, `glideTake=1`): the press, Buddy turns and lifts the
+  prize in a starburst over the device, the roll on the back, the walk to the step-off, the canopy, the glide over the
+  village and the landing beside the boiler. `__glideResult`: 28.0 s, sink 3.2 m/s, top speed 10.0 m/s (51 samples at
+  full stick), let go at 9.7 s from the step-off, landed dry 4.3 m from the pedestal, card shown, one flight. The card's
+  text sits in the HUD, which looks hide; `reward.showing` was true. First pass: 11 s of the 28 s flight were inside the
+  forge plume's opaque puffs with Buddy hidden (the column stands on the pedestal the glide aims at). The plume now
+  parts around the sight line from the camera to Buddy (`forge-call.ts`, logged in agent-calls); second pass Buddy and
+  the canopy stay in view all the way down, the column whole around them. Holding full stick instead carries you about
+  250 m, past the forge into the cove (a swim): the first flight lands on the apron only if you let go over it.
+- **Proof 5, co-op** (`.look/glide-grant-coop-realtime.webm`, `--players 2`): player 2 got the flourish
+  (`arrival.seen` has `glide`), no card, owned it and drew two rolls; it saw the leader's open canopy through presence.
+  The leader's video shows the partner's roll from the take on.
+- **Proof 6, cart rails** (`.look/cart-24-rails-still.png`, `q5-shelved`; `.look/cart-24-aboard-still.png`,
+  `q5-arriving`): the shelf holds 24 rails in layers beside the 24-log rack (`shelf.shown` 24), half behind a frame post
+  from the plan's angle; the cart crosses the gorge bridge with a deep stack of rails aboard, `cart.rails` 24, no logs.
+- **Proof 9, restore** (`.look/glide-restore-still.png`, `glide-earned`): owned within 2 s, the folded roll on Buddy's
+  back, the device dark and taken (no vane, mast or lights), no card.
 
 ## Design review (designer, 2026-11-09)
 
