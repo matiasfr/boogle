@@ -16,7 +16,8 @@ import {
   hash,
 } from './railway-live.ts';
 import { railAccount, railCounts } from '../src/sim/railway.ts';
-import { line2Completed, line2Rails, line2Schedule } from '../src/sim/railway-line2.ts';
+import { line2Active, line2Completed, line2Rails, line2Schedule, railCarryMax } from '../src/sim/railway-line2.ts';
+import { forgeRailsOffered } from '../src/entities/railway/forge-offer.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
 import { RAIL_ROCKS, RAIL_STONE, WORKS, WORKS_BREAKER, WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
@@ -226,6 +227,42 @@ test('after the cradle is fitted the forge rack gives nothing', () => {
   assert.equal(act(w, 'b', 'rail.forgeTake'), 0, 'nor for one already carrying rails');
   assert.equal(l2.forge.rack, rack);
   assert.equal(line2Rails(w.s), l2.forge.poured, 'rails still conserved');
+});
+test('"Take rails" is offered exactly where the forge rack gives some, from Q5 to the crossing', () => {
+  // The view's offer (forge-offer.ts) against rail.forgeTake, for a back with room and no beam, boiler or footing
+  // (those it does not judge: a full back is "Your back is full").
+  const seen = { offered: 0, hidden: 0 };
+  const check = (name: string, w: Fixture) => {
+    for (const pid of ['a', 'b']) {
+      const s = w.s,
+        a = railAccount(s, pid)!;
+      const held = [s.line?.beam, s.line2?.boiler].some((x) => x?.state === 'held' && x.holder === pid);
+      const room = railCarryMax(s) - a.carry - (a.stone ?? 0) - (a.rails ?? 0);
+      if (held || (a.foot ?? 0) > 0 || room <= 0 || !s.line2?.forge.rack) continue;
+      const offered = forgeRailsOffered(line2Active(s), s.shed!.cradleRails, a.rails ?? 0);
+      seen[offered ? 'offered' : 'hidden']++;
+      assert.equal(offered, act(w, pid, 'rail.forgeTake') > 0, `${name} ${pid}`);
+    }
+  };
+  // The train stages cover a Q station still taking rails (Q5, Q6); the Works stages the time after Q6.
+  const stages: [string, () => Fixture][] = [
+    ...TRAIN_STAGES.map((k): [string, () => Fixture] => [k, () => railwayAtTrains(k)]),
+    ...WORKS_STAGES.map((k): [string, () => Fixture] => [k, () => railwayAtWorks(k)]),
+  ];
+  for (const [name, make] of stages) {
+    const w = make();
+    for (let guard = 0; w.s.line2!.forge.rack < 4 && w.s.line2!.forge.lit >= 0 && guard < 400; guard++) advance(w, 1);
+    check(name, w);
+  }
+  // After Q6: the eight the cradle needs on your back, then on the cradle with its footings still to set.
+  const w = railwayAtWorks('stall-done');
+  while (w.s.line2!.forge.rack < WORKS.cradleRails * 2) advanceWorks(w, 1);
+  assert.equal(act(w, 'b', 'rail.forgeTake'), WORKS.cradleRails);
+  check('b carries the eight', w);
+  assert.equal(act(w, 'b', 'rail.cradle'), WORKS.cradleRails);
+  assert.ok(w.s.shed!.fitted < 0);
+  check('cradle railed, footings to set', w);
+  assert.ok(seen.offered > 0 && seen.hidden > 0, JSON.stringify(seen));
 });
 test('ready only after fitted and turned; the table holds while the wagon rolls out and waits', () => {
   const w = railwayAtWorks('stall-done'),
