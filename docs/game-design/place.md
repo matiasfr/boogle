@@ -261,8 +261,9 @@ Seat arbitration, registrations, boarding and rear-step exits retain their curre
 The track-layer chairs use a 6 cm slab on four narrow legs, open underneath and at the front for Buddy's seated legs.
 The slab is 0.44 m wide to clear the hanging hands and 0.46 m deep, centred 0.13 m behind the rider anchor;
 its front edge is 0.10 m ahead of that anchor. The 8 cm square legs sit at X ±0.15 m and Z −0.26/+0.02 m relative to it.
-Seat tops remain 0.32 m above the deck, backrests 0.40 m above the seats. Buddy's capsule anchor remains at seat top
+The backrests are removed entirely, leaving plain stools (owner playtest, 8 November). Seat tops remain 0.32 m above the deck. Buddy's capsule anchor remains at seat top
 plus 0.63 m, X ±0.55 m and Z −1.15 m; the station hands retain their seat-height offset. This is Local mesh geometry.
+The shared workshop seat builder also has no back. Production train resting places sit directly on the deck; the freight cart has no chair.
 
 **The track layer's chairs work in the production railway (owner's 6 November order, item 4).** Aboard the machine with nothing nearer to press for, Interact reads **Sit**; seated, it reads only **Stand up** (Jump also stands). The press sits you at once with a soft pop, in a live room too: the lead's existing `placeSeatGrants` then confirm the chair, slide the loser of a race for one chair into the free neighbour, or step them off onto their rear-step exit when both are taken or the lead says nothing for 2 s. A confirmed sitter whose chair the lead gives to someone else also steps off. The sitter rides the deck through the whole laying, and a deck that snaps to its accepted place (a restore or catch-up) carries them along instead of dropping them where the chair was. Network loss, a lead change and standing all release onto the exit, as before. Friends see you seated through the existing presence pose. The two station hands who ride the chairs while it lays give a chair up to a player: that hand waits at the station frame (or beside the deck, with no frame) instead. No new presence key, message, saved or simulated state; claims stay Host kind. Not tested on a device.
 
