@@ -1,4 +1,4 @@
-> **Status: building (2026-11-09).** The owner answered question 2: boiler first, the cart stays at 24. Question 1 (where choices are made) is still open. Revised the same day after the [design review](#design-review-designer-2026-11-09).
+> **Status: building (2026-11-09).** The owner answered question 2: boiler first, the cart stays at 24. Question 1 is answered too: in the world only, no menu. Revised the same day after the [design review](#design-review-designer-2026-11-09).
 
 # Upgrade choices
 
@@ -94,7 +94,7 @@ Whether choosing it feels powerful is the playtest's question.
 ## Open questions
 
 1. Where are choices made? **Recommended: at the machine the part changes; a works board later on the unified Home
-   station; no menu from anywhere, and Pause can show a read-only list.** Answer: ___
+   station; no menu from anywhere, and Pause can show a read-only list.** Answer: **in the world only** (owner, 9 November).
 2. Re-cast the 24-rail cart as the first choice, starting at 16? **Recommended: no. Keep 24 and make the boiler fit the
    first upgrade choice.** Answer: **yes** (owner, 9 November: "Yes, boiler first"). Plan: `docs/plans/boiler-first-choice.md`.
 3. Forks? **Recommended: order choices, built after the first single choice.** Answer: ___
