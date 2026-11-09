@@ -284,7 +284,11 @@ the pattern of `sea-gate-view.ts`, with the same `Deps` (layout, land, shapes, f
 
 Branch `claude/glider-b-home-flow` from `origin/main`. Each step leaves `npm run check` green, and each is one commit.
 
-- [ ] **1. The cart carries 24 rails.**
+- [x] **1. The cart carries 24 rails.** _(Built: `CART.rails = 24`. Beyond the plan, five Q4 assertions that read
+  `CART.rails` as "Q4's rails" now read Q4's bill (16): `test/railway-cart.test.ts` (`Q4_RAILS`), the Q4 test in
+  `test/railway-line2.test.ts` and the pack/cart test in `server/test/railway-line-host.test.ts`. The `railwayAtQ5`
+  helper waits for 24 shelf rails. The Q5 test hand-stocks 8 forge rails before the shelf's 16, so 8 are left to
+  return on funding, and checks the cart rests with no second trip. `cart-view.ts` sizes from `CART.rails`.)_
   - `src/sim/railway-cart.ts`: `CART.rails: 24`, and update the comment ("the cart holds 24 rails: one shipment covers
     Q5", Home flow finding 1).
   - `test/railway-line2.test.ts`: rewrite `'Q5: behind the sea gate; two cart trips bring its rails, never minted'` as
