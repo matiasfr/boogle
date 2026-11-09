@@ -41,30 +41,28 @@ rule (9 November 2026): nothing waits for a playtest, so this review is the desi
      (`npm run look -- --rail-seed <stage> --cam x,y,z --look x,y,z`, or `npm run session` to walk around), and read them. Say what
      you couldn't see.
    - Judge it:
-     - **Flow first: does the layout follow the order the game is played?** Lay the plan's stretch of the route out as
-       legs, beat to beat, with positions from the map data and walk- or ride-seconds per leg. Ground each check in the
-       research and cite the rule a finding rests on; the numbers are from
-       [level-design](../../docs/research/level-design.md#the-rules-most-applicable-to-boogle) unless named:
-       - **Pull:** where one beat ends, the next goal is in view or drawn toward (a light, a sound, a character, the
-         track itself), not found by wandering. Prefer gravity to a single path: several pulls of different strength in
-         view at once (4), one tall landmark per area that the paths point at (5), and the next thing hidden behind a
-         medium shape and revealed on a crest (3, and section 13's sightline reveals).
-       - **Tease, then return:** places you can't use yet are seen before they're reached, with exaggerated silhouettes
-         at distance (6), and the return is short.
-       - **Outward order:** stations, gates and grants sit along the ground in the order they open, so progress reads as
-         moving out from home, with a hub everyone comes back to (section 13). Change lands on places players already
-         know (8), and what players build stays visible as the map's progress (9).
-       - **No empty backtracking:** no leg doubles back over ground with nothing new on it, and trips shorten as track and
-         tools open up. Each faster mode stretches the comfortable gap (10).
-       - **Teach in place:** a new ability is granted where its first use is in sight, and the first use is safe
-         ([wordless-onboarding](../../docs/research/wordless-onboarding.md): introduce, develop, twist, master).
-       - **Gates hold:** what an ability or opening reaches early follows
+     - **Flow: does the layout make sense for the order the game is played?** Lay the plan's stretch of the route
+       out as legs, beat to beat, with positions from the map data and walk- or ride-seconds per leg. The questions
+       below are lenses from our research, not rules (owner, 9 November: don't over-index on them). Wandering, quiet
+       stretches, a surprise, a goal you have to look for and getting a little lost are often good. Say so when a
+       break works. Raise a finding only where a player would lose the thread: no idea where to go next, dead time,
+       a backtrack that feels like a chore, or a gate that leaks. Weight it by evidence: the bot's idle and wander
+       time, and owner sessions. Numbers refer to
+       [level-design](../../docs/research/level-design.md#the-rules-most-applicable-to-boogle) unless named.
+       - **Pull:** when a beat ends, can the player find the next goal? A light, a sound, a character or the track
+         can carry it. Several pulls at once (4), a landmark per area (5) and reveals on a crest (3) are the usual
+         tools.
+       - **Tease, then return:** is the place seen before it's usable, and is the way back reasonable (6)?
+       - **Order:** does progress broadly read as moving out from home and coming back changed (8, 9, section 13)?
+       - **Backtracking:** when a leg doubles back, is there something new on it, or a faster way (10)?
+       - **Teach in place:** is a new ability's first use near where it's given, and safe to try
+         ([wordless-onboarding](../../docs/research/wordless-onboarding.md))?
+       - **Gates hold** (this one is firm): what reaches what early, per
          [route-contract](../../docs/research/route-contract.md) and
          [ability-upgrades](../../docs/research/ability-upgrades.md).
-       Say where the flow breaks, and propose the move that fixes it. If a check has no research behind it yet, say so
-       rather than inventing a rule.
-     - **Distance in walk-seconds** (5.6 m/s walk): something to notice every few seconds, something to do every
-       10–20 s on Home.
+       Keep flow findings few: the ones that matter most, each citing the lens and evidence it rests on.
+     - **Distance in walk-seconds** (5.6 m/s walk): as a guide, something to notice every few seconds and
+       something to do every 10–20 s on Home.
      - **Sightlines and landmarks:** where it's first seen, from how far, and what frames it. The three sizes of shape:
        big to steer by, medium that block the view, small to reward a look.
      - **The route contract:** travel edges and work edges are kept separate. Stronger movement may skip a walk or reach
