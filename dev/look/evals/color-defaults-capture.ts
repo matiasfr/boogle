@@ -8,8 +8,8 @@ const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const { rooms, roomToWorld } = (await import(
-  '/src/proto/place/rooms.ts' as string
-)) as typeof import('../../../src/proto/place/rooms.ts');
+  '/src/proto/place/place-rooms.ts' as string
+)) as typeof import('../../../src/proto/place/place-rooms.ts');
 const { H } = (await import('/src/proto/place/land.ts' as string)) as typeof import('../../../src/proto/place/land.ts');
 const { skyNow } = (await import('/src/render/sky.ts' as string)) as typeof import('../../../src/render/sky.ts');
 type V = [number, number, number];

@@ -1,0 +1,34 @@
+// The town entity in the live game (place-retirement T1): the house, shop and museum, after the railway each frame.
+import { railwayMirror } from '../../world/game-world.ts';
+import { productionRailway } from '../../proto/flags.ts';
+import { defineKind, spawn } from '../../entity/entity.ts';
+import { registerInteractable, NO_TARGETS } from '../../player/hands.ts';
+import { warmUp } from '../../render/precompile.ts';
+import { railwayRead } from '../railway/state.ts';
+import { createTownView, type TownView } from './view.ts';
+import { setTownView } from './state.ts';
+
+defineKind('town', { update: 11 });
+let active: TownView | null = null;
+registerInteractable(() => active?.targets() ?? NO_TARGETS);
+
+if (productionRailway && railwayMirror) {
+  const loaded = createTownView(railwayRead).then((view) => {
+    active = view;
+    setTownView(view.inspect);
+    return spawn({
+      kind: 'town',
+      mesh: view.root,
+      update(ctx) {
+        view.update(ctx);
+      },
+      describe: view.inspect,
+      dispose() {
+        active = null;
+        setTownView(null);
+        view.dispose();
+      },
+    });
+  });
+  warmUp(() => loaded, { beforeScene: true });
+}

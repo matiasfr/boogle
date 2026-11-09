@@ -17,7 +17,7 @@ import { job } from './job.ts';
 import { H } from './land.ts';
 import { lines, machine } from './lines.ts';
 import { FORGE, GRID, ORIGIN, SPIRE, railY, toWorld } from './layout.ts';
-import { addSolid, plate, roomMesh, rooms, type Part } from './rooms.ts';
+import { addSolid, plate, roomMesh, rooms, type Part } from './place-rooms.ts';
 import { run } from './run.ts';
 import { sites } from './sites.ts';
 import { forge } from './forge.ts';

@@ -12,7 +12,7 @@ import { shell, SHELLS } from '../net/town-fx.ts';
 import type { Block } from '../era/blocks.ts';
 import { buildSites, siteSmokes, snapSite, startSite, updateSites, addSite, type Site } from './sites.ts';
 import { H } from './land.ts';
-import { snapRooms } from './rooms.ts';
+import { snapRooms } from './place-rooms.ts';
 import { LOOK } from './look.ts';
 import { TOWN, VILLAGE, toWorld, type Plot } from './layout.ts';
 

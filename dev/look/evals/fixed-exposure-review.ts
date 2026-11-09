@@ -4,8 +4,8 @@ const { canvas, renderFrame } = (await import(
   '/src/render/scene.ts' as string
 )) as typeof import('../../../src/render/scene.ts');
 const { rooms } = (await import(
-  '/src/proto/place/rooms.ts' as string
-)) as typeof import('../../../src/proto/place/rooms.ts');
+  '/src/proto/place/place-rooms.ts' as string
+)) as typeof import('../../../src/proto/place/place-rooms.ts');
 const { skyNow } = (await import('/src/render/sky.ts' as string)) as typeof import('../../../src/render/sky.ts');
 const { hardwareTiming } = (await import(
   '/src/debug/prof-overlay.ts' as string

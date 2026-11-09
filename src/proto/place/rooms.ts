@@ -10,17 +10,19 @@
 // from clearance (the research doc's table); so does this, with the cutaway as the shot's half.
 //
 // Interiors draw only near their building (`near`), so a village you're not in pays for its walls and nothing behind them. Local;
-// which rooms exist comes from `roomEnv.up`, read from what's shared.
+// which rooms exist comes from `env.up`, read from what's shared. `createRooms` mounts them on an owner: the town entity's in
+// the live game (src/entities/town/), and a never-disposed one in ?proto=place (./place-rooms.ts).
 import * as THREE from 'three/webgpu';
 import { registerStepFloor } from '../../render/locomotion-surfaces.ts';
 import { vertexColor } from 'three/tsl';
 import { reducedMotion } from '../../constants.ts';
-import { getMask, removeBody, type Body } from '../../physics/engine.ts';
+import { getMask, type Body } from '../../physics/engine.ts';
 import { makeCameraArm } from '../../player/camera-arm.ts';
-import { cam, me } from '../../player/player.ts';
+import { cam, camConstraints, me } from '../../player/player.ts';
 import { precompile } from '../../render/precompile.ts';
-import { camera, scene } from '../../render/scene.ts';
-import { merged } from './gifts.ts';
+import { camera } from '../../render/scene.ts';
+import type { OwnedView } from '../../render/owned-view.ts';
+import { merged } from './part-geometry.ts';
 import { H, ROOM_GROUP, addStatic } from './land.ts';
 import { ROOM_PLOTS, toWorld, type RoomId } from './layout.ts';
 import { paintBoard } from './signs.ts';
@@ -149,124 +151,6 @@ function planOf(id: RoomId): Plan {
   return plan;
 }
 
-function makeRoom(id: RoomId): Room {
-  const p = ROOM_PLOTS[id],
-    plan = planOf(id);
-  const site = addSite(`room-${id}`, plan, id === 'museum' ? 1.6 : 1);
-  const cos = Math.cos(p.yaw),
-    sin = Math.sin(p.yaw);
-  const pieces: Record<Face, number[]> = { roof: [], front: [], back: [], left: [], right: [] };
-  const corners: Room['corners'] = [];
-  const rowTop = FLOOR + (p.high - FLOOR) / rowsOf(p.high) + 0.02;
-  plan.pieces.forEach((b, i) => {
-    const k = site.pole1 + i;
-    if (i >= plan.WALLS) return void pieces.roof.push(k);
-    const ax = b.x - plan.x,
-      az = b.z - plan.z,
-      lx = ax * cos - az * sin,
-      lz = ax * sin + az * cos;
-    const e = b.local.elements;
-    // The bottom course stays: it says there's a wall here, and you can see the floor over it.
-    if (e[13]! + e[5]! <= rowTop) return;
-    const dist = {
-      front: Math.abs(lz - p.d / 2),
-      back: Math.abs(lz + p.d / 2),
-      left: Math.abs(lx + p.w / 2),
-      right: Math.abs(lx - p.w / 2),
-    };
-    let best: (typeof WALLS)[number] = 'front';
-    for (const w of WALLS) if (dist[w] < dist[best]) best = w;
-    // A post on a corner belongs to both its walls: it goes when either does, or it stands right in front of the lens.
-    const other = WALLS.find((w) => w !== best && dist[w] < 0.35);
-    if (other) corners.push({ k, a: best, b: other, shown: 0 });
-    else pieces[best].push(k);
-  });
-  const y = plan.y + FLOOR;
-  const group = () => {
-    const g = new THREE.Group();
-    g.position.set(plan.x, y, plan.z);
-    g.rotation.y = p.yaw;
-    g.visible = false;
-    scene.add(g);
-    return g;
-  };
-  const top = doorTop(p.high) - FLOOR;
-  const side = (p.w - DOOR.w) / 2,
-    hh = p.high - FLOOR,
-    t = 0.2;
-  const B = (x: number, yy: number, z: number, sx: number, sy: number, sz: number): Part => [
-    'b',
-    x,
-    yy,
-    z,
-    sx,
-    sy,
-    sz,
-    '#000000',
-  ];
-  const proxy = new THREE.Mesh(
-    merged([
-      B(0, hh + 0.2, 0, p.w + 1, 0.4, p.d + 1),
-      B(0, hh / 2, -p.d / 2, p.w, hh, t),
-      B(-p.w / 2, hh / 2, 0, t, hh, p.d),
-      B(p.w / 2, hh / 2, 0, t, hh, p.d),
-      B(-(DOOR.w + side) / 2, hh / 2, p.d / 2, side, hh, t),
-      B((DOOR.w + side) / 2, hh / 2, p.d / 2, side, hh, t),
-      B(0, (top + hh) / 2, p.d / 2, DOOR.w, hh - top, t),
-    ]),
-    shadowOnly,
-  );
-  proxy.castShadow = true;
-  proxy.position.set(plan.x, y, plan.z);
-  proxy.rotation.y = p.yaw;
-  proxy.visible = false;
-  proxy.frustumCulled = false;
-  scene.add(proxy);
-  return {
-    id,
-    x: plan.x,
-    z: plan.z,
-    y,
-    yaw: p.yaw,
-    w: p.w,
-    d: p.d,
-    high: p.high,
-    site,
-    near: group(),
-    over: group(),
-    outside: group(),
-    pieces,
-    corners,
-    t: { roof: 0, front: 0, back: 0, left: 0, right: 0 },
-    shown: { roof: 0, front: 0, back: 0, left: 0, right: 0 },
-    proxy,
-    solids: [],
-    bodies: [],
-    up: false,
-    ready: false,
-  };
-}
-export const rooms: Record<RoomId, Room> = {
-  house: makeRoom('house'),
-  shop: makeRoom('shop'),
-  museum: makeRoom('museum'),
-};
-const LIST = Object.values(rooms);
-for (const r of LIST) {
-  registerStepFloor((x, z) => {
-    if (!r.up || !r.ready) return null;
-    const p = worldToRoom(r, x, z);
-    return Math.abs(p.x) <= r.w / 2 && Math.abs(p.z) <= r.d / 2 ? { top: r.y, surface: 'wood' } : null;
-  });
-}
-/** Which rooms stand. Set by ./town-life.ts from what's shared; the house is there from the start. */
-export const roomEnv: { up: (id: RoomId) => boolean } = { up: (id) => id === 'house' };
-/** `room`: the show is on for this one. `inside`: you're over its threshold. */
-export const indoors = { room: null as Room | null, inside: null as Room | null };
-const enterFns: ((r: Room, inside: boolean) => void)[] = [];
-/** You've come in, or gone out: fn(room, true or false). */
-export const onRoom = (fn: (r: Room, inside: boolean) => void) => void enterFns.push(fn);
-
 // ---------------------------------------------------------------- helpers for what goes in them
 /** Eight alternating planks, shared by the house and shop; sizes stay in room space. */
 export function plankFloor({ w, d }: Room, even: string, odd: string): Part[] {
@@ -300,16 +184,6 @@ export function addSolid(r: Room, lx: number, lz: number, hx: number, hz: number
 }
 const q_ = new THREE.Quaternion(),
   v_ = new THREE.Vector3();
-function setSolid(r: Room, on: boolean) {
-  for (const b of r.bodies) removeBody(b);
-  r.bodies.length = 0;
-  if (!on) return;
-  q_.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
-  for (const s of r.solids) {
-    roomToWorld(r, s.x, s.y, s.z, v_);
-    r.bodies.push(addStatic({ kind: 'box', hx: s.hx, hy: s.hy, hz: s.hz }, { x: v_.x, y: v_.y, z: v_.z }, q_));
-  }
-}
 /** One merged mesh of parts in room space, in the rooms' material. */
 export function roomMesh(parts: Part[], shadow = true) {
   const m = new THREE.Mesh(parts.length ? merged(parts) : new THREE.BufferGeometry(), roomMat);
@@ -334,99 +208,6 @@ export function plate(
   return m;
 }
 
-// ---------------------------------------------------------------- the plots before they're built
-const stakes = new Map<Room, { g: THREE.Group; body: Body | null; lines: Parameters<typeof paintBoard>[0] }>();
-function stakeSolid(r: Room, st: { g: THREE.Group; body: Body | null }) {
-  q_.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
-  st.body = addStatic(
-    { kind: 'box', hx: 1.2, hy: 1.1, hz: 0.1 },
-    { x: st.g.position.x, y: st.g.position.y + 1.1, z: st.g.position.z },
-    q_,
-  );
-}
-/** A board on the empty plot, saying something's coming. It goes when the building starts. */
-export function stakeBoard(r: Room, lines: Parameters<typeof paintBoard>[0]) {
-  const g = new THREE.Group();
-  const out = r.d / 2 + 2;
-  const wx = r.x + out * Math.sin(r.yaw),
-    wz = r.z + out * Math.cos(r.yaw);
-  g.position.set(wx, H(wx, wz), wz);
-  g.rotation.y = r.yaw;
-  g.add(plate(lines, 2.2, 1.1, 0, 1.5, 0.08));
-  g.add(
-    roomMesh([
-      ['b', 0, 1.5, 0, 2.4, 1.3, 0.12, '#7f5630'],
-      ['b', 0, 0.45, 0, 0.18, 0.9, 0.18, '#7f5630'],
-    ]),
-  );
-  g.visible = false;
-  scene.add(g);
-  stakes.set(r, { g, body: null, lines });
-}
-function setStake(r: Room, on: boolean) {
-  const st = stakes.get(r);
-  if (!st || st.g.visible === on) return;
-  st.g.visible = on;
-  if (on) stakeSolid(r, st);
-  else if (st.body) {
-    removeBody(st.body);
-    st.body = null;
-  }
-}
-
-// ---------------------------------------------------------------- standing, or not
-/** Start over, a reload or a co-op snapshot: each as the state says, with no show, and every piece back in its place. */
-export function snapRooms() {
-  for (const r of LIST) {
-    const up = roomEnv.up(r.id);
-    r.up = up;
-    snapSite(r.site, up);
-    setStake(r, !up);
-    for (const g of FACES) r.t[g] = r.shown[g] = 0;
-    for (const c of r.corners) c.shown = 0;
-  }
-}
-/** Warm the rooms' shaders while nobody's waiting on them: docs/research/town-interiors.md, "Doors with no load screen". */
-export const warmRooms = () => {
-  for (const r of LIST) void precompile(r.near);
-};
-
-// ---------------------------------------------------------------- the frame
-const arm = makeCameraArm();
-const from = new THREE.Vector3();
-/** A camera constraint, registered last (./town-life.ts), so a pull-out or the telescope comes first. Indoors, the clearance
- * here is the camera's: everything but the walls that are out of the way. */
-export function indoorCamera(look: THREE.Vector3, pos: THREE.Vector3) {
-  const r = indoors.room,
-    b = me.body;
-  if (!r || !b) return false;
-  const ip = b.interpolatedPosition;
-  const floor = r.y + 0.5;
-  pos.y = Math.max(pos.y, floor, H(pos.x, pos.z) + 0.5);
-  // From your head, not from `look`: a talk tilts that down through the floor, and the arm would come in with it.
-  arm.solve(from.set(ip.x, ip.y + 1.35, ip.z), pos, getMask(b) & ~ROOM_GROUP);
-  pos.y = Math.max(pos.y, floor, H(pos.x, pos.z) + 0.5);
-  return true;
-}
-const hint = { on: false, to: 0, was: 0, lastPitch: 0, lastYaw: 0, touched: false };
-function suggestPitch(dt: number) {
-  if (!hint.on) return;
-  if (Math.abs(cam.pitch - hint.lastPitch) > 1e-4 || Math.abs(cam.yaw - hint.lastYaw) > 1e-4) {
-    hint.on = false;
-    hint.touched = true;
-    return;
-  }
-  cam.pitch += (hint.to - cam.pitch) * (1 - Math.exp(-dt * ROOM_CAM.pitchRate));
-  hint.lastPitch = cam.pitch;
-  hint.lastYaw = cam.yaw;
-  if (Math.abs(cam.pitch - hint.to) < 0.003) hint.on = false;
-}
-function suggest(to: number) {
-  hint.on = true;
-  hint.to = to;
-  hint.lastPitch = cam.pitch;
-  hint.lastYaw = cam.yaw;
-}
 function writePiece(k: number, t: number, travel: number) {
   if (t >= 1) showPiece(k, false);
   else if (t <= 0) showPiece(k, true);
@@ -439,103 +220,340 @@ function write(r: Room, g: Face) {
   const travel = g === 'roof' ? 7 : -(r.high + 0.4);
   for (const k of r.pieces[g]) writePiece(k, t, travel);
 }
-export function updateRooms(dt: number) {
+/** The three buildings, their stake boards, the cutaway and the indoor camera, owned by `owner`. Which rooms stand comes
+ * from `env.up`, read from what's shared; the house is there from the start. Call `snap()` once the drop set is built
+ * (./sites.ts `buildSites`), and `update(dt)` every frame. */
+export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) {
+  function makeRoom(id: RoomId): Room {
+    const p = ROOM_PLOTS[id],
+      plan = planOf(id);
+    const site = addSite(`room-${id}`, plan, id === 'museum' ? 1.6 : 1);
+    const cos = Math.cos(p.yaw),
+      sin = Math.sin(p.yaw);
+    const pieces: Record<Face, number[]> = { roof: [], front: [], back: [], left: [], right: [] };
+    const corners: Room['corners'] = [];
+    const rowTop = FLOOR + (p.high - FLOOR) / rowsOf(p.high) + 0.02;
+    plan.pieces.forEach((b, i) => {
+      const k = site.pole1 + i;
+      if (i >= plan.WALLS) return void pieces.roof.push(k);
+      const ax = b.x - plan.x,
+        az = b.z - plan.z,
+        lx = ax * cos - az * sin,
+        lz = ax * sin + az * cos;
+      const e = b.local.elements;
+      // The bottom course stays: it says there's a wall here, and you can see the floor over it.
+      if (e[13]! + e[5]! <= rowTop) return;
+      const dist = {
+        front: Math.abs(lz - p.d / 2),
+        back: Math.abs(lz + p.d / 2),
+        left: Math.abs(lx + p.w / 2),
+        right: Math.abs(lx - p.w / 2),
+      };
+      let best: (typeof WALLS)[number] = 'front';
+      for (const w of WALLS) if (dist[w] < dist[best]) best = w;
+      // A post on a corner belongs to both its walls: it goes when either does, or it stands right in front of the lens.
+      const other = WALLS.find((w) => w !== best && dist[w] < 0.35);
+      if (other) corners.push({ k, a: best, b: other, shown: 0 });
+      else pieces[best].push(k);
+    });
+    const y = plan.y + FLOOR;
+    const group = () => {
+      const g = new THREE.Group();
+      g.position.set(plan.x, y, plan.z);
+      g.rotation.y = p.yaw;
+      g.visible = false;
+      owner.add(g);
+      return g;
+    };
+    const top = doorTop(p.high) - FLOOR;
+    const side = (p.w - DOOR.w) / 2,
+      hh = p.high - FLOOR,
+      t = 0.2;
+    const B = (x: number, yy: number, z: number, sx: number, sy: number, sz: number): Part => [
+      'b',
+      x,
+      yy,
+      z,
+      sx,
+      sy,
+      sz,
+      '#000000',
+    ];
+    const proxy = new THREE.Mesh(
+      merged([
+        B(0, hh + 0.2, 0, p.w + 1, 0.4, p.d + 1),
+        B(0, hh / 2, -p.d / 2, p.w, hh, t),
+        B(-p.w / 2, hh / 2, 0, t, hh, p.d),
+        B(p.w / 2, hh / 2, 0, t, hh, p.d),
+        B(-(DOOR.w + side) / 2, hh / 2, p.d / 2, side, hh, t),
+        B((DOOR.w + side) / 2, hh / 2, p.d / 2, side, hh, t),
+        B(0, (top + hh) / 2, p.d / 2, DOOR.w, hh - top, t),
+      ]),
+      shadowOnly,
+    );
+    proxy.castShadow = true;
+    proxy.position.set(plan.x, y, plan.z);
+    proxy.rotation.y = p.yaw;
+    proxy.visible = false;
+    proxy.frustumCulled = false;
+    owner.add(proxy);
+    return {
+      id,
+      x: plan.x,
+      z: plan.z,
+      y,
+      yaw: p.yaw,
+      w: p.w,
+      d: p.d,
+      high: p.high,
+      site,
+      near: group(),
+      over: group(),
+      outside: group(),
+      pieces,
+      corners,
+      t: { roof: 0, front: 0, back: 0, left: 0, right: 0 },
+      shown: { roof: 0, front: 0, back: 0, left: 0, right: 0 },
+      proxy,
+      solids: [],
+      bodies: [],
+      up: false,
+      ready: false,
+    };
+  }
+  const rooms: Record<RoomId, Room> = {
+    house: makeRoom('house'),
+    shop: makeRoom('shop'),
+    museum: makeRoom('museum'),
+  };
+  const LIST = Object.values(rooms);
   for (const r of LIST) {
-    const want = roomEnv.up(r.id);
-    if (want && !r.up) {
-      r.up = true;
-      setStake(r, false);
-      startSite(r.site, r.id === 'museum' ? 3 : 1.2);
-    } else if (!want && r.up) {
-      r.up = false;
-      snapSite(r.site, false);
-      setStake(r, true);
-    }
-    const ready = r.site.state === 'done';
-    if (ready !== r.ready) {
-      r.ready = ready;
-      setSolid(r, ready);
-      r.outside.visible = r.over.visible = ready;
+    owner.cleanup(
+      registerStepFloor((x, z) => {
+        if (!r.up || !r.ready) return null;
+        const p = worldToRoom(r, x, z);
+        return Math.abs(p.x) <= r.w / 2 && Math.abs(p.z) <= r.d / 2 ? { top: r.y, surface: 'wood' } : null;
+      }),
+    );
+  }
+  /** `room`: the show is on for this one. `inside`: you're over its threshold. */
+  const indoors = { room: null as Room | null, inside: null as Room | null };
+  const enterFns: ((r: Room, inside: boolean) => void)[] = [];
+  /** You've come in, or gone out: fn(room, true or false). */
+  const onRoom = (fn: (r: Room, inside: boolean) => void) => void enterFns.push(fn);
+
+  function setSolid(r: Room, on: boolean) {
+    for (const b of r.bodies) owner.removeBody(b);
+    r.bodies.length = 0;
+    if (!on) return;
+    q_.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
+    for (const s of r.solids) {
+      roomToWorld(r, s.x, s.y, s.z, v_);
+      r.bodies.push(
+        addStatic({ kind: 'box', hx: s.hx, hy: s.hy, hz: s.hz }, { x: v_.x, y: v_.y, z: v_.z }, q_, undefined, owner),
+      );
     }
   }
-  const p = me.body?.interpolatedPosition;
-  if (!p) return;
-  // Are you in one?
-  let room = indoors.room;
-  const cx = camera.position.x,
-    cz = camera.position.z;
-  if (room) {
-    const l = worldToRoom(room, p.x, p.z);
-    const stillIn = Math.abs(l.x) < room.w / 2 + 0.2 && l.z < room.d / 2 + ROOM_CAM.enter && l.z > -room.d / 2 - 0.2;
-    if (indoors.inside !== room && stillIn && l.z < room.d / 2) {
-      indoors.inside = room;
-      for (const fn of enterFns) fn(room, true);
-    } else if (indoors.inside === room && !stillIn) {
-      indoors.inside = null;
-      for (const fn of enterFns) fn(room, false);
+  // ---------------------------------------------------------------- the plots before they're built
+  const stakes = new Map<Room, { g: THREE.Group; body: Body | null; lines: Parameters<typeof paintBoard>[0] }>();
+  function stakeSolid(r: Room, st: { g: THREE.Group; body: Body | null }) {
+    q_.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw);
+    st.body = addStatic(
+      { kind: 'box', hx: 1.2, hy: 1.1, hz: 0.1 },
+      { x: st.g.position.x, y: st.g.position.y + 1.1, z: st.g.position.z },
+      q_,
+      undefined,
+      owner,
+    );
+  }
+  /** A board on the empty plot, saying something's coming. It goes when the building starts. */
+  function stakeBoard(r: Room, lines: Parameters<typeof paintBoard>[0]) {
+    const g = new THREE.Group();
+    const out = r.d / 2 + 2;
+    const wx = r.x + out * Math.sin(r.yaw),
+      wz = r.z + out * Math.cos(r.yaw);
+    g.position.set(wx, H(wx, wz), wz);
+    g.rotation.y = r.yaw;
+    g.add(plate(lines, 2.2, 1.1, 0, 1.5, 0.08));
+    g.add(
+      roomMesh([
+        ['b', 0, 1.5, 0, 2.4, 1.3, 0.12, '#7f5630'],
+        ['b', 0, 0.45, 0, 0.18, 0.9, 0.18, '#7f5630'],
+      ]),
+    );
+    g.visible = false;
+    owner.add(g);
+    stakes.set(r, { g, body: null, lines });
+  }
+  function setStake(r: Room, on: boolean) {
+    const st = stakes.get(r);
+    if (!st || st.g.visible === on) return;
+    st.g.visible = on;
+    if (on) stakeSolid(r, st);
+    else if (st.body) {
+      owner.removeBody(st.body);
+      st.body = null;
     }
-    // Out: it comes back once the camera's out as well, so it never comes down on the lens.
-    if (!stillIn) {
-      const c = worldToRoom(room, cx, cz);
-      const clear = ROOM_CAM.camClear;
-      const camIn = Math.abs(c.x) < room.w / 2 + clear && Math.abs(c.z) < room.d / 2 + clear;
-      const far = Math.hypot(l.x, l.z) > Math.max(room.w, room.d) / 2 + 9;
-      if (!camIn || far || !room.ready) {
-        room = indoors.room = null;
-        arm.reset();
-        // Your view's your own: it goes back only if you never touched it.
-        if (!hint.touched) suggest(hint.was);
-      }
-    }
-  } else {
+  }
+
+  // ---------------------------------------------------------------- standing, or not
+  /** Start over, a reload or a co-op snapshot: each as the state says, with no show, and every piece back in its place. */
+  function snap() {
     for (const r of LIST) {
+      const up = env.up(r.id);
+      r.up = up;
+      snapSite(r.site, up);
+      setStake(r, !up);
+      for (const g of FACES) r.t[g] = r.shown[g] = 0;
+      for (const c of r.corners) c.shown = 0;
+    }
+  }
+  /** Warm the rooms' shaders while nobody's waiting on them: docs/research/town-interiors.md, "Doors with no load screen". */
+  const warm = () => {
+    for (const r of LIST) void precompile(r.near);
+  };
+
+  // ---------------------------------------------------------------- the frame
+  const arm = makeCameraArm();
+  const from = new THREE.Vector3();
+  /** A camera constraint, registered with the rooms, so one pushed earlier comes first. Indoors, the clearance here is the
+   * camera's: everything but the walls that are out of the way. */
+  function indoorCamera(look: THREE.Vector3, pos: THREE.Vector3) {
+    const r = indoors.room,
+      b = me.body;
+    if (!r || !b) return false;
+    const ip = b.interpolatedPosition;
+    const floor = r.y + 0.5;
+    pos.y = Math.max(pos.y, floor, H(pos.x, pos.z) + 0.5);
+    // From your head, not from `look`: a talk tilts that down through the floor, and the arm would come in with it.
+    arm.solve(from.set(ip.x, ip.y + 1.35, ip.z), pos, getMask(b) & ~ROOM_GROUP);
+    pos.y = Math.max(pos.y, floor, H(pos.x, pos.z) + 0.5);
+    return true;
+  }
+  const hint = { on: false, to: 0, was: 0, lastPitch: 0, lastYaw: 0, touched: false };
+  function suggestPitch(dt: number) {
+    if (!hint.on) return;
+    if (Math.abs(cam.pitch - hint.lastPitch) > 1e-4 || Math.abs(cam.yaw - hint.lastYaw) > 1e-4) {
+      hint.on = false;
+      hint.touched = true;
+      return;
+    }
+    cam.pitch += (hint.to - cam.pitch) * (1 - Math.exp(-dt * ROOM_CAM.pitchRate));
+    hint.lastPitch = cam.pitch;
+    hint.lastYaw = cam.yaw;
+    if (Math.abs(cam.pitch - hint.to) < 0.003) hint.on = false;
+  }
+  function suggest(to: number) {
+    hint.on = true;
+    hint.to = to;
+    hint.lastPitch = cam.pitch;
+    hint.lastYaw = cam.yaw;
+  }
+  function update(dt: number) {
+    for (const r of LIST) {
+      const want = env.up(r.id);
+      if (want && !r.up) {
+        r.up = true;
+        setStake(r, false);
+        startSite(r.site, r.id === 'museum' ? 3 : 1.2);
+      } else if (!want && r.up) {
+        r.up = false;
+        snapSite(r.site, false);
+        setStake(r, true);
+      }
+      const ready = r.site.state === 'done';
+      if (ready !== r.ready) {
+        r.ready = ready;
+        setSolid(r, ready);
+        r.outside.visible = r.over.visible = ready;
+      }
+    }
+    const p = me.body?.interpolatedPosition;
+    if (!p) return;
+    // Are you in one?
+    let room = indoors.room;
+    const cx = camera.position.x,
+      cz = camera.position.z;
+    if (room) {
+      const l = worldToRoom(room, p.x, p.z);
+      const stillIn = Math.abs(l.x) < room.w / 2 + 0.2 && l.z < room.d / 2 + ROOM_CAM.enter && l.z > -room.d / 2 - 0.2;
+      if (indoors.inside !== room && stillIn && l.z < room.d / 2) {
+        indoors.inside = room;
+        for (const fn of enterFns) fn(room, true);
+      } else if (indoors.inside === room && !stillIn) {
+        indoors.inside = null;
+        for (const fn of enterFns) fn(room, false);
+      }
+      // Out: it comes back once the camera's out as well, so it never comes down on the lens.
+      if (!stillIn) {
+        const c = worldToRoom(room, cx, cz);
+        const clear = ROOM_CAM.camClear;
+        const camIn = Math.abs(c.x) < room.w / 2 + clear && Math.abs(c.z) < room.d / 2 + clear;
+        const far = Math.hypot(l.x, l.z) > Math.max(room.w, room.d) / 2 + 9;
+        if (!camIn || far || !room.ready) {
+          room = indoors.room = null;
+          arm.reset();
+          // Your view's your own: it goes back only if you never touched it.
+          if (!hint.touched) suggest(hint.was);
+        }
+      }
+    } else {
+      for (const r of LIST) {
+        if (!r.ready) continue;
+        const l = worldToRoom(r, p.x, p.z);
+        const atDoor = Math.abs(l.x) < DOOR.w / 2 + 0.7 && l.z < r.d / 2 + ROOM_CAM.enter + 0.2 && l.z > r.d / 2 - 0.4;
+        const inside = Math.abs(l.x) < r.w / 2 && Math.abs(l.z) < r.d / 2;
+        if ((atDoor || inside) && p.y < r.y + r.high) {
+          room = indoors.room = r;
+          hint.was = cam.pitch;
+          hint.touched = false;
+          if (cam.pitch > ROOM_CAM.pitch) suggest(ROOM_CAM.pitch);
+          arm.reset();
+          break;
+        }
+      }
+    }
+    suggestPitch(dt);
+    // What's in the way of this tab's view.
+    const step = reducedMotion ? 1 : dt / ROOM_CAM.reveal;
+    for (const r of LIST) {
+      const on = r === room;
+      const near = r.ready && (on || Math.hypot(p.x - r.x, p.z - r.z) < ROOM_CAM.drawWithin);
+      if (r.near.visible !== near) r.near.visible = near;
       if (!r.ready) continue;
-      const l = worldToRoom(r, p.x, p.z);
-      const atDoor = Math.abs(l.x) < DOOR.w / 2 + 0.7 && l.z < r.d / 2 + ROOM_CAM.enter + 0.2 && l.z > r.d / 2 - 0.4;
-      const inside = Math.abs(l.x) < r.w / 2 && Math.abs(l.z) < r.d / 2;
-      if ((atDoor || inside) && p.y < r.y + r.high) {
-        room = indoors.room = r;
-        hint.was = cam.pitch;
-        hint.touched = false;
-        if (cam.pitch > ROOM_CAM.pitch) suggest(ROOM_CAM.pitch);
-        arm.reset();
-        break;
+      let any = false;
+      const c = on ? worldToRoom(r, cx, cz) : null;
+      r.t.roof = on ? Math.min(1, r.t.roof + step) : Math.max(0, r.t.roof - step);
+      for (const w of WALLS) {
+        let hide = false;
+        if (c) {
+          const gap = r.t[w] > 0 ? ROOM_CAM.farWall : ROOM_CAM.nearWall;
+          const toWall =
+            w === 'front' ? r.d / 2 - c.z : w === 'back' ? r.d / 2 + c.z : w === 'left' ? r.w / 2 + c.x : r.w / 2 - c.x;
+          // Past the door with the camera still in the room: the front wall stays down, or it's between you and yourself.
+          hide = toWall < gap || (w === 'front' && indoors.inside !== r);
+        }
+        r.t[w] = hide ? Math.min(1, r.t[w] + step) : Math.max(0, r.t[w] - step);
       }
+      for (const g of FACES) {
+        write(r, g);
+        if (r.t[g] > 0) any = true;
+      }
+      for (const q of r.corners) {
+        const t = Math.max(r.t[q.a], r.t[q.b]);
+        if (t === q.shown) continue;
+        q.shown = t;
+        writePiece(q.k, t, -(r.high + 0.4));
+      }
+      r.proxy.visible = any;
+      r.over.visible = r.t.roof < 1;
     }
   }
-  suggestPitch(dt);
-  // What's in the way of this tab's view.
-  const step = reducedMotion ? 1 : dt / ROOM_CAM.reveal;
-  for (const r of LIST) {
-    const on = r === room;
-    const near = r.ready && (on || Math.hypot(p.x - r.x, p.z - r.z) < ROOM_CAM.drawWithin);
-    if (r.near.visible !== near) r.near.visible = near;
-    if (!r.ready) continue;
-    let any = false;
-    const c = on ? worldToRoom(r, cx, cz) : null;
-    r.t.roof = on ? Math.min(1, r.t.roof + step) : Math.max(0, r.t.roof - step);
-    for (const w of WALLS) {
-      let hide = false;
-      if (c) {
-        const gap = r.t[w] > 0 ? ROOM_CAM.farWall : ROOM_CAM.nearWall;
-        const toWall =
-          w === 'front' ? r.d / 2 - c.z : w === 'back' ? r.d / 2 + c.z : w === 'left' ? r.w / 2 + c.x : r.w / 2 - c.x;
-        // Past the door with the camera still in the room: the front wall stays down, or it's between you and yourself.
-        hide = toWall < gap || (w === 'front' && indoors.inside !== r);
-      }
-      r.t[w] = hide ? Math.min(1, r.t[w] + step) : Math.max(0, r.t[w] - step);
-    }
-    for (const g of FACES) {
-      write(r, g);
-      if (r.t[g] > 0) any = true;
-    }
-    for (const q of r.corners) {
-      const t = Math.max(r.t[q.a], r.t[q.b]);
-      if (t === q.shown) continue;
-      q.shown = t;
-      writePiece(q.k, t, -(r.high + 0.4));
-    }
-    r.proxy.visible = any;
-    r.over.visible = r.t.roof < 1;
-  }
+  camConstraints.push(indoorCamera);
+  owner.cleanup(() => {
+    const k = camConstraints.indexOf(indoorCamera);
+    if (k >= 0) camConstraints.splice(k, 1);
+  });
+  return { rooms, indoors, onRoom, indoorCamera, update, warm, snap, stakeBoard };
 }
+export type Rooms = ReturnType<typeof createRooms>;

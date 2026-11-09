@@ -91,7 +91,7 @@ export const READ_RESTORED = `
   const { me } = await import('/src/player/player.ts');
   const { getRoomId } = await import('/src/netplay/net.ts');
   const { job } = await import('/src/proto/place/job.ts');
-  const { indoors } = await import('/src/proto/place/rooms.ts');
+  const { indoors } = await import('/src/proto/place/place-rooms.ts');
   const p = me.body?.position;
   return {
     position: p ? { x: p.x, y: p.y, z: p.z } : null,

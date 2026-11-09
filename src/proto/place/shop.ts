@@ -39,7 +39,7 @@ import {
   rooms,
   worldToRoom,
   type Part,
-} from './rooms.ts';
+} from './place-rooms.ts';
 import { residentSay } from './residents.ts';
 import { dollars, money } from './score.ts';
 import { BOARDS, SHOP } from './town-lines.ts';

@@ -2,6 +2,7 @@
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayInspection } from '../../adapters/railway.ts';
+import { townPopulation, townReadOf } from '../../sim/town-facts.ts';
 import { createTownGreeter } from './greeter.ts';
 
 type OpeningEnv = {
@@ -139,15 +140,17 @@ export async function createRailwayOpening(owner: OwnedView, env: OpeningEnv) {
   folk.setPopulation(layout.TUNE.people);
   const greeter = await createTownGreeter(owner, env.progress);
   let pathOpen = false;
+  let population = -1;
+  const people = () => townPopulation(townReadOf(env.progress()));
   return {
     targets: greeter.targets,
     numbers(score: { money: number; logs: number; metres: number }, snapshot = false) {
-      signs.setNumbers(score, layout.TUNE.people + (env.pathOpen() ? 8 : 0), snapshot);
+      signs.setNumbers(score, people(), snapshot);
     },
     update(dt: number) {
+      if (population !== people()) folk.setPopulation((population = people()));
       if (pathOpen !== env.pathOpen()) {
         pathOpen = env.pathOpen();
-        folk.setPopulation(layout.TUNE.people + (pathOpen ? 8 : 0));
         folk.setCommuters(pathOpen, 14);
       }
       folk.setCamp(0, env.awake());

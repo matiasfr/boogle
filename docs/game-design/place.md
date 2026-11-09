@@ -667,6 +667,8 @@ Work and festival overalls have a fitted low waist, curved front/back bibs, open
 
 **Two players:** which buildings stand, and everything in the miniature, come from what's shared; cameras, cutaways, talks, what you've heard and what you've taken are your own. Nobody can spend anybody's money, since nobody spends any. A partner doesn't see what you're wearing yet.
 
+**In the live game (9 November 2026, place-retirement T1).** boogle.club has the town entity (`src/entities/town/`): the house, with the same cutaway, indoor camera and Pip's desk, and the shop's and museum's plots with their stake boards. The shop and museum stay boards until T3 and T5 open them on the first path; nobody lives in the house yet (T2 brings the residents). The town's facts are pure reads of the shared railway (`src/sim/town-facts.ts`): **path** when T3 is laid, **forge** when the forge is lit, **depot** at Q1, **head** at Q5 (Far Head), **trains** when the trains run, **pier** at Q6. **town** and **stone**, the cargo-built rows, stay false until train cargo arrives in production-core slice 5. Pip's desk follows path, forge and trains. The village sign and its walkers count 12 people, +8 when the path opens, +6 at Far Head and +6 at the pier (32). `?proto=place` mounts the same rooms and house through `place-rooms.ts` until it is deleted.
+
 ## Departures from the brief
 
 The machine doesn't come back by train: line 1 ends at the village, so it's already there, and a turntable hands it to line 2. The graybox turntable has a pale rim and paired dark rails within its existing disc footprint; collision and turning motion are unchanged.
