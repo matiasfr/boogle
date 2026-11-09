@@ -1970,7 +1970,10 @@
             const q = boxDist(b, p[0], p[1]);
             if (q < best) ((best = q), (at = i));
           });
-          if (best < TRACK)
+          // A line that ends at a buffer stop by the hall is a terminus, not a track passing it: check its gap only.
+          if (at === 0 && s0 < 0 && b.label === 'station building') {
+            if (best < 0.5) out.push(['warn', `${k}'s buffer stop is ${best.toFixed(2)} m from the ${b.label}`]);
+          } else if (best < TRACK)
             out.push([
               best < 1.15 ? 'warn' : 'tight',
               `${k} at s ${Math.round(at + s0)} passes ${best.toFixed(2)} m from the ${b.label}`,
