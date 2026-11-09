@@ -580,7 +580,11 @@ the wagon's cradle, and eight forge rails (**Fit the cradle**) turn it brass. **
 pushing the wagon out to wait on line 2; the table holds (in the rules, not only the view) until line 2 couples it, so
 no one can call a friend's wagon home. From then the wagon is line 2's fourth car: arriving at the quarry, up to six
 footings hop from the Works rack onto its cradle; arriving at the new **Pier** halt (open once Q6 is laid), they hop
-onto the pier rack. At the pier head a jib swings each set footing out over the stakes and lowers it on a rope into
+onto the pier rack. Line 2 stands there 3.5 m short of the halt's middle, so its engine stops 2.7 m clear of the
+track layer parked at the rails' end (1.2 m with an engine half as long again) and the wagon stands at the halt's
+landward end. The pier rack is a timber row of six (two high)
+along the halt deck's seaward edge, leaving the track side free to walk and board; it stands once the kiln has cast
+its first footing. At the pier head a jib swings each set footing out over the stakes and lowers it on a rope into
 its socket on the sea floor; each pair raises a trestle bent to deck height, 4 m over the sea, and the twelfth set
 gives one whistle and two rockets at the last bent, toward Ring Island.
 
