@@ -15,7 +15,7 @@ const report = (beat: string) => {
   const s = read(),
     v = s.line2View as { trainOwed?: boolean; q6Sign?: unknown; depot?: number[] | null };
   console.log(
-    `Q6WAIT ${beat} ${JSON.stringify({
+    `SIXWAIT ${beat} ${JSON.stringify({
       offered: interactTarget()?.verb ?? null,
       carry: s.carry,
       railsCarry: s.railsCarry,
@@ -40,9 +40,16 @@ const frame = (read().line2View as { frames: { x: number; z: number }[] }).frame
 // `q6cam=frame`: the debug camera on the frame and its rack, so the sheet catches the sign's bob.
 if (new URLSearchParams(location.search).get('q6cam') === 'frame') {
   const [x, y, z] = depot;
-  window.__debugCam!.set([x! - 6, y! + 3.5, z! + 7], [x!, y! + 1.6, z!], 55);
+  window.__debugCam!.set([x! - 7, y! + 3.5, z! + 6], [(x! + frame.x) / 2, y! + 1.4, (z! + frame.z) / 2], 55);
 }
-await bot.walk(frame.x, frame.z, 2);
+// Up to the frame from the rack's side, stopping 1.6 m short (its posts and the parked machine stand round it).
+const toward = Math.hypot(depot[0]! - frame.x, depot[2]! - frame.z);
+const ok = await bot.walk(
+  frame.x + ((depot[0]! - frame.x) / toward) * 1.6,
+  frame.z + ((depot[2]! - frame.z) / toward) * 1.6,
+  0.6,
+);
+console.log(`SIXWAIT walked ${ok}`);
 await bot.wait(300);
 report('in reach');
 await bot.wait(2500);

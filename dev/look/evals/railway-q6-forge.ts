@@ -18,7 +18,7 @@ const read = () => inspectRailway()!;
 const report = (beat: string) => {
   const s = read();
   console.log(
-    `Q6FORGE ${beat} ${JSON.stringify({
+    `SIXFORGE ${beat} ${JSON.stringify({
       offered: interactTarget()?.verb ?? null,
       blocked: interactTarget()?.blocked ?? null,
       active: s.line2.active,
