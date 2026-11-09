@@ -28,10 +28,11 @@ export async function createRailwayReward(
   owner: OwnedView,
   machineFrom?: (out: THREE.Vector3) => void,
 ) {
-  const [{ softGlow }, { fanfare, pop }, shapes] = await Promise.all([
+  const [{ softGlow }, { fanfare, pop }, shapes, props] = await Promise.all([
     import('../../proto/place/look.ts'),
     import('../../proto/minis/common.ts'),
     import('../../proto/place/part-geometry.ts'),
+    import('../../proto/place/prop-kit.ts'),
   ]);
   // One reveal queue owns input/camera holding for both personal boxes and shared tools.
   const reveal = createRewardReveal({ parent: owner.root, fanfare, pop, softGlow });
@@ -45,14 +46,23 @@ export async function createRailwayReward(
   // The glider's flourish badge: the folded wing from its card (reward-data.ts), on a material of its own.
   const glidePrize = shapes.merged(GLIDE_REWARD.parts);
   const glideMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
+  // The boiler's: one copy of the engine's boiler (makeProp owns its geometry and materials), reused by each flourish.
+  const boilerBadge = props.makeProp('boiler');
   owner.cleanup(() => {
     glidePrize.dispose();
     glideMat.dispose();
+    boilerBadge.removeFromParent();
+    boilerBadge.traverse((o) => {
+      if (!(o instanceof THREE.Mesh)) return;
+      o.geometry.dispose();
+      for (const m of [o.material].flat()) m.dispose();
+    });
   });
   const arrival = createAbilityArrival(adapter, owner, {
     busy: reveal.gettingItem,
     jump: () => tools.inspect(),
-    axeModel: (key) => (key === 'glide' ? new THREE.Mesh(glidePrize, glideMat) : tools.axeModel(key)),
+    axeModel: (key) =>
+      key === 'glide' ? new THREE.Mesh(glidePrize, glideMat) : key === 'boiler' ? boilerBadge : tools.axeModel(key),
   });
   const plinth = await createTrophyPlinth(adapter, owner, arrival.seen, reveal.gettingItem);
   return {
