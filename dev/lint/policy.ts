@@ -165,7 +165,7 @@ export const INPUT_LAYER = [
   'src/player/input.ts', // keyboard, mouse look, touch stick and buttons, wheel
   'src/player/dev-input.ts', // lets the dev tools take the input
   'src/player/input-state.ts', // the state input.ts fills
-  'src/player/dismiss-pointer.ts', // the shared tap-to-dismiss for the reward card and celebration camera
+  'src/player/dismiss-pointer.ts', // the reward card's tap-to-dismiss and the celebration camera's one skip
   'src/features/gamepad.ts', // the pad driver: polls the pad and dispatches to actions
 ];
 // Not gameplay input, or not ours to change yet. Each entry says why.
