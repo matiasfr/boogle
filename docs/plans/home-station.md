@@ -481,3 +481,225 @@ Recommendations first. Under "Pick and log, don't ask", the orchestrator may tak
 9. **(Owner) When does v24 ship?** Recommended: **as soon as step 6 is reviewed and no session is live**; it replays the
    opening for everyone.
 10. **(Designer) `WORKS.rollTicks` 60 to 110** (a held train waits up to 11 s for the wagon). Recommended: **yes**.
+
+## Design review (designer, 2026-11-09)
+
+Read: DESIGN.md; owner-calls; decisions (Decided, top three entries; Rail, construction, levels and travel); the two
+2026-11-09 entries in playtests and their ranked rows in round-4-notes; research home-station-layout (whole),
+level-design, route-contract, progression-flow-layout (lenses and "Home, beat by beat"), world-scale (top blocks); the
+Home flow audit (`docs/reviews/home-flow.md`); boiler-first-choice (rulings, Stage A); upgrade-choices (finding 4); the
+works-signposting brief that landed beside this plan. Code read where a call depends on today's behaviour:
+`layout.ts` (`PATHS`, `SPAWN`, `TOWN`, `ROOM_PLOTS`, `FORGE`, `STUB`), `shore-layout.ts`, `railway-cart.ts`,
+`railway-line2.ts` (`line2CartStatus`), `railway-train.ts`, `railway-systems.ts` (`rail.call`),
+`halts-view.ts` (`wanted`, `fixedPre`), `train-view.ts`, `cart-view.ts`, `line2-view.ts` (the machine's crossing, the
+pour). Data: `npm run playtest -- mw9srqnz` (the co-op session). Geometry below is computed from this plan's own
+coordinates.
+
+**Not seen.** No stills. A still from the shore approach (`--rail-seed awake --cam 890,19.8,3 --look 912,19,9`) sat
+behind about twelve queued look jobs and was stopped at 5 minutes, and `?home=b` does not exist yet, so nothing of B
+can be seen before step 3. Every sightline here is computed from coordinates and footprints, not looked at; heights
+(hall, end walls, canopy) are not in the plan, so occlusion claims assume walls taller than eye height. Step 3's stills
+are where these get checked (listed under "Smallest version", below).
+
+### Rulings on the designer's questions
+
+2. **Join line 2 at s 84 with R 18: yes.** The trestle is generated from the line, its hook walkway (s 86) and pillar
+   do not move, and R 16 would put tighter curves and 20° more turning at the throat, where trains are watched most.
+   Check the trestle's dry-support rule (every 3 m) on the moved first metres in step 3's level check.
+3. **The cart stops at platform 2's buffers: yes.** Rack to cart 3.9 m, Q2's rack stop stays at s 29, and the cart
+   visits the station. Keep the forge's pour flight (mouth to rack, `line2-view.ts`); it now crosses road 1's stub, 8.1 m
+   instead of about 4.4 m, so it is the thing that ties the rack to the forge (finding 9).
+4. **Footings: accept.** The figure is closer to 29 m than 19 m in practice (finding 5), about 13 s at carry pace
+   against 5 s today, four times, once per world, inside the deliberate "four home by hand" before. That is within lens
+   6's exception. Keep the step-11 crossing; site it off the points (finding 5).
+5. **The island calls both trains: yes, as a default.** Splitting a 4.3 m deck is fiddly and the cost is small: in
+   co-op, walking onto the island to board one line also calls the other line home (`rail.call` overwrites a pending
+   call) and re-holds a train already standing (it restarts `depart`). Revisit only if a session shows a friend's train
+   stolen.
+6. **The cart through a standing train: leave it**, for a stronger reason than the plan gives. In normal play they never
+   meet: line 2's train is not drawn until trains run (`train-view.ts`, `secondVisible`), and from then the cart is
+   `off` because the stretch it would serve is train-fed (`line2CartStatus`), resting at the camp. The same reasoning
+   makes the shunt's stub move safe (finding 8).
+7. **Hall 13 × 6 m, open-fronted, 3.7 m from the path's end: yes**, with one amendment: spawn's facing is not "as it
+   is" for free. From spawn (−97, 14), facing 14°, the hall's north end wall stands at bearings 12.5° to 36°, 8.2 to
+   12.6 m away, across the forge (13° to 49°, 14 to 26 m). You look through the open front at the end wall's inside (the
+   shelf, which is good) and lose most of the forge behind it. Keep end walls below eye height above the shelf (about
+   2.4 m, open above to the roof) or turn spawn to about 40° so the forge and the hall's front share the frame. Decide
+   from step 3's spawn still. Spawn is where a returning player starts; a newcomer lands on the shore (below).
+10. **`WORKS.rollTicks` 60 to 110: yes.** 11 s once per world, while the wagon visibly comes out; same 4.3 m/s.
+
+### My view on the owner's questions
+
+1. **Stalls at 160°, 190°, 220°: yes.** "Turn the table" has to be seen to do something ("Machines show their work
+   physically"); a 60° swing does, and the two outlines flank the open stall symmetrically. Its cost: the stall leaves
+   spawn's view (finding 7).
+8. **Engine 1.25×, engine only: yes, as the floor.** It is the smallest size with the driver's head and hat clear, and
+   every clearance here takes up to 1.5×. In the engine pass, put 1.25× beside about 1.4× (2.2 m wide, as wide as its
+   cars, which is part of why today's reads small) in one still and let him pick from that. The cars need not grow.
+9. **v24: as soon as step 6 is independently reviewed and the heartbeat shows no live owner session.** Don't hold it
+   for art (steps 7 to 11) or for the Pier fix (it rides only if already merged). Before step 6, add the machine's
+   `turnTicks` (finding 2) so nothing in this layout needs a v25.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Layout B: a terminus, one island, one concourse facing the town, the forge as goods side | Decided | [decisions](../decisions.md#decided), "Home gets one coherent station", 9 November |
+| 2 | Keep the 9.6 m table | Decided | Same entry |
+| 3 | One open stall and two ruin outlines | Decided | Same entry |
+| 4 | Line trains never turn on the table | Decided | Same entry |
+| 5 | The engine grows enough to show a seated little guy | Decided | Same entry, the owner's scale notes; the factor is call 30 |
+| 6 | `rail.cartCall` and `Cart.recall` go with the next reset | Decided | [playtests](../playtests.md), 9 November desktop session, "cut the cart handle" |
+| 7 | A `WORLD_NS` bump never ships mid-session | Decided | [owner calls](../agents/owner-calls.md), "Nothing waits for a playtest" |
+| 8 | Previz and sheets for the hall, canopy, buffers, stalls; a storyboard and parts sheet, not a beauty render, for the table | Decided | Owner calls "Previz before modelling", "Machines show their work physically" |
+| 9 | Joins at s 60 and s 84 on R 18; the trestle's first metres move up to 2.3 m | Default | Ruling 2 |
+| 10 | Train stops stay at s 14 and s 17, abeam | Default | Research recommendation 2 (keep `s`) |
+| 11 | Island 4.3 m; deck 18 m at rail + 0.72; head ramp 5 m, end ramp 4 m, no back ramp; 3.3 m ground apron | Default | Research recommendation 5 |
+| 12 | Track centres 7.6 m; canopy at least 4.6 m above the rail; curves 18 m (lines) and 15 m (leg, spur) | Default | Plan's clearance table |
+| 13 | Hall 13 × 6 m, open front, end walls, 3.7 m from the path's end | Default | Ruling 7, with the spawn amendment (call 37) |
+| 14 | Curio shelf inside, on the north end wall, facing in | Default | Visible from spawn through the front; check in step 3 |
+| 15 | Spur R 15 through 60°; table at (−57.90, 17.12), 24.6 m from today's | Default | Plan |
+| 16 | Stall doors 8.5 m out, 9 m deep, 3.6 m clear by 4.0 m high | Default | Research ratios |
+| 17 | The cart's forge stop is road 2 s 0 at the buffers | Default | Ruling 3 |
+| 18 | `CART_ROAD.forgeCm` 19600 to 20664 (about 2.4 s more per round trip) | Default | Plan; not felt at station 5 (home-flow finding 1) |
+| 19 | The cart keeps its heading through the reversal, so it rides out to the racks backwards | Default | Recommend a double-ended look (finding 11) |
+| 20 | The cart may pass through a standing line-2 train | Default | Ruling 6 |
+| 21 | Forge rack on the apron at (−84.90, 9.12), 8.1 m from the forge across road 1's stub | Default | Ruling 3, finding 9 |
+| 22 | Pedestal (boiler, then breaker) at (−78.0, −1.05); crane, dock and stone yard moved | Default | The breaker-on-pedestal ruling is already logged (boiler-first, ruling 2) |
+| 23 | Q1's frame on the south side of road 2; Q2's frame moves to (−40.52, −1.51) | Default | Plan; the hook beat keeps its frame-to-rings distance (46 m against 50 m) |
+| 24 | Standing anywhere on the island calls both lines | Default | Ruling 5 |
+| 25 | `WORKS.rollTicks` 60 to 110 | Default | Ruling 10 |
+| 26 | The shunt reverses on road 2's buffer stub | Default | Finding 8 |
+| 27 | Footings walk 19 to 36 m against 11 m | Default | Ruling 4 |
+| 28 | Pedestal to stall seam 32 m (14 today); forge rack to stall 32 m (15 today) for the cradle's 8 rails | Default | Once each per world; finding 7 |
+| 29 | The works board on the hall's south end wall | New | Recommend the wall's inside face, mirroring the shelf on the north wall, so the hall is where the room's record lives and both are seen from the square through the front. Overlaps the logged upgrade-choices call |
+| 30 | Engine 1.25×, engine only | New | Owner's question 8; my view above |
+| 31 | Stalls at 160°, 190°, 220° instead of the approved 130°, 160°, 190° | New | Owner's question 1; my view above |
+| 32 | v24 carries this, the cart-call removal, the boiler pace tunables and the Pier fix if ready | Default | Owner's question 9 (timing); one bump |
+| 33 | `?home=b` is look-only, with prompts in the old places | Default | Plan; never for playing |
+| 34 | Art budgets by prominence (hall 12k, canopy 8k, stall 6k, outlines 800, buffers 600) | Default | Owner call "Geometry budgets follow prominence" |
+| 35 | **Missing:** which parts stand from the start. Recommend the hall, buffers, apron and island kerb from the start; the island deck and canopy drop in with trains, as halts do today | New | Finding 1 |
+| 36 | **Missing:** how the track layer crosses from road 1 to road 2 at the forge's lighting. Recommend it drives the leg in the view, with `LINE2_FORGE.turnTicks` set to the drive in v24 | New | Finding 2 |
+| 37 | Spawn's facing: keep, or turn to about 40°, decided from the step-3 still | Default | Ruling 7 |
+| 38 | **Missing:** which road goes where. One destination pictogram per platform edge on the halt boards (the camp's machine for road 1; the quarry, Far Head and pier for road 2) | Default | Finding 4 |
+| 39 | Town paths to the hall's front, flagstone apron, a boarded crossing toward the stall (step 11) | Default | Finding 5 for the crossing's site |
+
+Totals: 8 Decided, 26 Default, 5 New.
+
+### Findings
+
+**Before building (they change the plan):**
+
+1. **The island isn't there for the first half hour.** Halts are drawn only once trains run (`halts-view.ts`,
+   `wanted`), and the plan routes the island through that code. So a newcomer's first sight from the shore isn't "the
+   island running away between two tracks": it's the hall, two buffer stops, road 1's 30 m village stub
+   (`STUB.village`) and road 2's 7 m stub (`STUB.east`) with the spur's points. The rails walk to Q2 "up the head ramp,
+   along the island" crosses open ground until the boiler is fitted (it is still 30 m, so nothing is lost). Say in
+   step 3 which parts stand from the start. Recommended (call 35): the hall, buffers, apron and a kerb outline of the
+   island from the start (a station waiting for its trains is lens 4's tease, and it echoes the stall's ruin outlines),
+   with the deck and canopy dropping in when trains run, as the halts do today, so the boiler fit still pays off at
+   Home. Step 3's stills need both `awake` and `trains-on`.
+2. **The track layer jumps 16.7 m of bare ground.** Today it waits at line 1 s 19 and appears on line 2 s 7 once the
+   forge is lit, 2.6 s later (`turnTicks`), beside a table that plausibly turned it. In B the two roads are parallel and
+   unconnected at the station, so the cut is a big machine popping sideways across the island's site, in front of the
+   forge, at a moment players are watching. That's the "rails that make sense" the owner asked for, failing at the
+   station's own front. The only route is out road 1 to s 54, the leg, then back down road 2 to s 7, about 93 m.
+   Recommended (call 36): draw that drive, whistle at the start, and set `LINE2_FORGE.turnTicks` to its length in v24.
+   It's one Server constant, and Q1's deposits already wait on it. Decide before step 6; showing it in step 3 is
+   optional.
+3. **The newcomer's arrival works, but say why.** The shore path runs east along z = 3 and then turns to 131° for its
+   last 9 m. From (−110, 3) the forge is at bearing 75° and the hall's north end at 92° to 101°, so the forge and the
+   gap down road 1 read to the left of the hall. On the last leg the hall's open front fills the view straight ahead
+   (90° to 140°). The bold path north starts 2.8 m from the hall's corner, and Sleeves (1.9 m from the front) still
+   points up it. The risk is the strongest shape at the path's end pulling a first-timer into the station: before T3,
+   road 1 leads to a stub that ends at s 30 and doesn't go to the camp. Today's stubs already do this and the friend
+   still woke the machine at 2:20, so it's a lens-1 check for the step-3 still, not a change. The north end's outside
+   face is the one wall seen from the whole z = 3 approach: put the station's name board or clock there, not on the
+   south wall. Spawn is ruling 7.
+4. **One island, two lines: which train is mine?** Today the halts are 30 m apart on different lines, so the place
+   tells you the line. On one deck it doesn't. Give each platform edge its destination on the existing halt board as a
+   pictogram, with no new copy (call 38). Real stations number their platforms for this reason.
+
+**Fine to build as planned; fix in the named step:**
+
+5. **The footing hop is blocked while the train stands.** You step off line 2's train onto the island, and that
+   entry calls the halt, which restarts the standing train's dwell (`rail.call`), so road 2 is blocked for about 5 s
+   more. The practical route is 6 m along the deck past the train's nose (s 22.2), down, and across road 2 at s 24,
+   about 29 m. The step-11 crossing belongs there, between the nose and the leg's points at s 26 (1.5 m of room past
+   the deck's end). Keep it off the points. The straight route from there to the stall door crosses the table: if
+   step 10 sinks it into a pit, keep the rim a step, not a drop, or the carry route bends round it.
+6. **The end ramp lands 3.9 m from the cart's leg** (track centres), and the walk from the island to Q2's frame
+   crosses the leg. Add crossing timbers there in step 9, and check in step 3's cart video that the cart doesn't shove
+   a walker.
+7. **The Roundhouse leaves the home view, and the Works brief leans on today's distances.** Today the stall ruin is
+   7 m from spawn. In B it is 42 m from the square, behind the hall, and first seen from Q1's frame (17.5 m) and the
+   island. That's enough of a tease for a beat that comes after the pier. But the works-signposting brief beside this
+   plan counts on "the cracked stall slab 14 m away" from the pedestal, "the forge rack 15 m away" from the stall and
+   the sockets being "in view at Home since the first hour". In B those are 32 m, 32 m, and from Q1 and the island only,
+   with the canopy and a standing train between the pedestal and the slab. That brief's stills should be taken in B
+   (the plan's ordering row already says to design with these numbers).
+8. **The shunt's stub move overlaps the cart's forge stop** (stub −2.6 to 5.5, cart −1.35 to 1.35). It is safe because
+   the cart is off and at the camp by the Works (ruling 6). Step 1's "disjoint" test should say so, or assert it
+   against the cart's phase, so a later rule change that wakes the cart fails the test.
+9. **Take rails was already the weak pickup.** In the co-op session the owner pressed with nothing in reach eight times
+   2 to 10 m from "Take rails" (`mw9srqnz`, 7:06 to 14:57), and the 8 November session had the rack invisible on the
+   iPad. B moves the rack further from the forge and puts a track between them. Keep the pour flight visibly crossing
+   the stub, face the rack's sign to the square, and take a still in step 3 at the reach edge.
+10. **The level check.** Its two expected failures are fine. Each halt's back ramp only exists because the test used
+    plain decks. For the rack's floating foot, build the apron slab in step 3's greybox rather than nudging the rack;
+    the rack sits on it either way. What the tool didn't cover, and step 3 should: the hall, canopy, stalls, table,
+    spur and leg as colliders in the reach flood (the canopy is a new roof at 4.6 m or more: confirm it reaches nothing
+    early); the machine on the leg (finding 2; its 61,660 poses were line 1 only); the footing carry route over road 2,
+    the spur and the table; and any line of sight. A reach claim for those is unproven until then.
+11. **The cart now rides out to the racks backwards.** That's the leg a player rides, forge to rack. Today it rides
+    that way forwards and only runs backwards coming home. If the cart's model has an obvious front, give it a lamp at
+    each end so it reads as double-ended (P3, look only).
+
+### Flow: Home's changed stretch, beat by beat
+
+Walk 5.6 m/s; boiler haul 3.0 m/s solo and 5.4 m/s helped; footing carry 2.2 m/s solo. Straight-line metres from this
+plan's coordinates; no bot route exists for B yet.
+
+| Beat to beat | B | Today | Seconds (B) | What pulls you on | Lens notes |
+| --- | --- | --- | --- | --- | --- |
+| Shore path's last leg to the square | 9 m | 9 m | 2 | The hall's open front | 1 ✓; the bold path north 2.8 m off the hall's corner (finding 3) |
+| T3 laid, machine home | Parks at road 1 s 19 | The same | — | The line home | 6 ✓ |
+| Forge lit, machine to line 2 | About 93 m drive (recommended) | A cut by the table | About 12 | The whistle; the machine coming round to Q1 | Finding 2 |
+| Forge rack to Q1's frame | 13 m | 13.7 m | 2.3 | The frame by the spur | 7 ✓ |
+| Forge rack to Q2's cart stop | 30 m | 36 m | 5.4 | Q2's frame and rack | 6 ✓ |
+| Far Head to the pedestal | About 536 m | The same | About 96 | Forge plume and whistle | Unchanged (home-flow finding 2, built) |
+| Pedestal to the old train (haul) | 172 m | 179 m | 57 solo, 32 helped | The empty saddle | Once per world |
+| Pier to pedestal to stall seam | 32 m from the pedestal | 14 m | 5.7 | The cracked slab | Finding 7 |
+| Quarry halt to stall, four footings | 19 to 29 m each from the island | 11 m | 9 to 13 each | Gold ghosts in the sockets (works brief) | Lens 6 exception: the deliberate before |
+| Forge rack to stall, cradle rails | 32 m | 15 m | 5.7 | The wagon's empty cradle | Once |
+
+Near-universal rules: **1** holds wherever there is a still or a pull to point to; the open checks are the step-3 stills
+(findings 3 and 7). **2** holds: nothing new moves faster, the trains still carry people and not work, and the canopy
+is the only new height (finding 10). **3** holds: every gate is solo, the island has ramps at both ends and steps off
+its sides, and no key can be lost. Lenses: **8** improves the most. Both lines now leave from one deck beside the hall,
+so a group splits there and meets there again, with a late friend spawning 4.5 m away. **5** improves: one front door.
+No flow finding rests on bot or session evidence for B, because there is none. The session data only bears on finding 9.
+
+### Smallest version to the owner, and what waits for him
+
+To reach `?home=b` soonest, do steps 1 and 3 only. Step 2 (the 2D page) runs alongside, and nothing waits on it.
+**Cut from step 3 for the first look:** the cart's scaled pose, the shunt path, `sites.ts` feet and the roll-out video.
+Those are needed by step 6, not by his look. **Keep:** the two heads, the island in both states (finding 1), greybox
+boxes for the hall, buffers, apron and stalls, the table at B's centre, the moved props, the apron slab, `perf`. Stills
+for him and for this review: the shore path from (−110, 3); spawn; the square into the hall; the island looking out
+along both roads; the pedestal toward the stall; Q1's frame toward the stall. Each in `awake` and `trains-on`.
+
+**Waits for him:** question 1 (stall bearings) before step 6 pins `SHED_TABLE`, `SHED_STALL` and the seam; question 8
+in the engine pass, not this plan; question 9 only for timing. Everything else proceeds on the calls above.
+
+**Suspect lines.** None: the plan has no Boogler copy.
+
+### Owner questions
+
+1. **Stalls at 160°, 190°, 220° (instead of your 130°, 160°, 190°)?** Recommended: **yes**. The table visibly turns 60°
+   from the spur to the open stall. At your bearings, "Turn the table" would move nothing you can see.
+2. **How big is the engine?** Recommended: **at least 1.25×, engine only**, chosen in the engine pass from one still of
+   1.25× beside about 1.4× (as wide as its cars). Either fits the new station.
+3. **When does the reset (v24) ship?** Recommended: **as soon as step 6 is reviewed and you're not mid-session**. It
+   carries everything that needs a reset (this, the cart handle's rule, the boiler haul's pace, the machine's crossing)
+   so there is no second one.
