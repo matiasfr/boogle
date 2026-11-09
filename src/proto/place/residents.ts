@@ -366,19 +366,23 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
       guys[id].on = r.near.visible && r.ready;
     }
     barkGap = Math.max(0, barkGap - dt);
-    if (conversation.open || env.hush()) {
+    // Nobody chats over a conversation or a reveal. A line said straight to you (`say`, a shout) is an answer to what
+    // you just did, like Button's when you take something, whose "You got" card is itself a reveal: only a conversation
+    // stops that.
+    const hushed = env.hush();
+    if (conversation.open || (hushed && !shouting)) {
       stopBark();
       return;
     }
     const next = pending[0];
-    if (next && performance.now() >= next.at) {
+    if (!hushed && next && performance.now() >= next.at) {
       pending.shift();
       if (rooms.indoors.room?.id === CAST[next.id].room) {
         if (next.fact) playMark('resident noticed', { who: next.id, what: next.fact });
         bark(guys[next.id], next.text);
       }
     }
-    street(dt);
+    if (!hushed) street(dt);
     if (!barker) return;
     barkLeft -= dt;
     const g = barker;
