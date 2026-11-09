@@ -23,6 +23,9 @@ test('report line: a pass under load says it is not evidence', () => {
   assert.match(stampLine('pass', under), /passed under load: not evidence of timing or feel/);
   assert.doesNotMatch(stampLine('failure', under), /not evidence/);
   assert.doesNotMatch(stampLine('pass', stampOf({ ...base, slot: slot(2), loadAtEnd: 2, limit: 30 })), /not evidence/);
+  const shared = stampOf({ ...base, slot: slot(2), shared: true, loadAtEnd: 2, limit: 30 });
+  assert.equal(shared.shared, true);
+  assert.match(stampLine('pass', shared), /shared the machine with another run/);
 });
 
 test('killed: a signal, or the browser closed under a failing run; a game failure stays a failure', () => {

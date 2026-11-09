@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { maxLoad, slotRecord, type Slot } from './bot-queue.ts';
+import { maxLoad, slotRecord, wasShared, type Slot } from './bot-queue.ts';
 
 export const KILLED_EXIT = 3;
 /** The load a run is judged against when the gate is off (BOOGLE_BOT_MAX_LOAD=0): turning it off isn't evidence. */
@@ -23,6 +23,7 @@ export type Stamp = Git & {
   loadAtEnd: number;
   underLoad: boolean;
   queueWaitMs?: number;
+  shared: boolean;
   startedAt: string;
   endedAt: string;
   command: string;
@@ -41,6 +42,7 @@ export function killReason(body: Body, signal?: string): string | undefined {
 export function stampOf(input: {
   git: Git;
   slot?: Slot;
+  shared?: boolean;
   loadAtEnd: number;
   limit: number;
   startedAt: number;
@@ -56,6 +58,7 @@ export function stampOf(input: {
     loadAtEnd: round(loadAtEnd),
     underLoad: !!slot?.loadTimedOut || (slot?.loadAtStart ?? 0) > limit || loadAtEnd > limit,
     queueWaitMs: slot?.queueWaitMs,
+    shared: !!input.shared,
     startedAt: new Date(startedAt).toISOString(),
     endedAt: new Date(endedAt).toISOString(),
     command,
@@ -67,8 +70,9 @@ export function stampLine(verdict: string, s: Stamp) {
   const load = `load ${s.loadAtStart ?? '?'} → ${s.loadAtEnd}${s.underLoad ? ' (UNDER LOAD)' : ''}`;
   const tree = `${s.commit?.slice(0, 8) ?? '?'}${s.dirty ? ` + ${s.dirty} uncommitted` : ''}`;
   const wait = s.queueWaitMs === undefined ? '' : `, queued ${(s.queueWaitMs / 1000).toFixed(0)} s`;
+  const shared = s.shared ? ', shared the machine with another run' : '';
   const note = verdict === 'pass' && s.underLoad ? '; passed under load: not evidence of timing or feel' : '';
-  return `verdict: ${verdict} on ${tree}, ${load}${wait}, ${s.startedAt} to ${s.endedAt}${note}`;
+  return `verdict: ${verdict} on ${tree}, ${load}${wait}${shared}, ${s.startedAt} to ${s.endedAt}${note}`;
 }
 
 function git(checkout: string): Git {
@@ -149,6 +153,7 @@ export function finishRun(body: Body, report = true) {
   const stamp = stampOf({
     git: run.git,
     slot: slotRecord(),
+    shared: wasShared(),
     loadAtEnd: os.loadavg()[0]!,
     limit: maxLoad(),
     startedAt: run.startedAt,
