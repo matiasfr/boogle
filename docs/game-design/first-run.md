@@ -39,7 +39,12 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   The loading screen waits up to 45 seconds for Buddy to finish preparing, then permits a recoverable `load-deadline` capsule.
   A genuine load failure also allows the card to open with a capsule;
   a successful automatic retry replaces it with Buddy ([player.md](player.md#avatar-colours-and-names)).
-- **Returning visit.** With a name saved, there is no card and no fall: the game goes in on its own as soon as the island
+- **After a world reset.** The first load after a `WORLD_NS` bump (this browser's `boogle.worldSeen` names an older
+  world; [src/player/world-reset.ts](../../src/player/world-reset.ts)) is a first visit too: the fall, then the card,
+  pre-filled with the saved name and colour, landing on the shore. The reset forgets what it always has (room progress,
+  wardrobe, reward claims, The Boogler) and keeps identity and preferences. A reload after that is a returning visit
+  ([decisions](../decisions.md#controls), 9 November).
+- **Returning visit.** With a name saved (and no world reset since the last load), there is no card and no fall: the game goes in on its own as soon as the island
   can be drawn, with the saved name and colour, where you last stood in this room and facing the same way (the pause view's Get unstuck forgets that spot)
   ([src/features/return-spot.ts](../../src/features/return-spot.ts)). Only a place you were standing counts, not a deck, a
   seat or the water; with no record, a different world namespace, or ground that has moved or gone under the sea, you get

@@ -36,7 +36,7 @@ Routing updated 7 November 2026. Read only the linked sections and dated entries
 
 ### Controls, HUD and arrival
 
-[Decided](#decided), introductory lines only: one thing in hand, no hotbar/empty-hand bump. [Controls](#controls): Interact X/Square, no petting/tier labels, first fall/title, room-specific return, confirmed fresh start, Get unstuck, stopped Leave menu and no first-run controls card. Later return/menu entries supersede earlier arrival descriptions; invite links wait.
+[Decided](#decided), introductory lines only: one thing in hand, no hotbar/empty-hand bump. [Controls](#controls): Interact X/Square, no petting/tier labels, first fall/title, room-specific return, reset replays opening, confirmed fresh start, Get unstuck, stopped Leave menu and no first-run controls card. Later return/menu entries supersede earlier arrival descriptions; invite links wait.
 
 ### Architecture, tools and prototype lifecycle
 
@@ -345,6 +345,7 @@ The owner's answers to the standing design audit ([design-audit.md](proposals/de
 
 ### Controls
 
+- **2026-11-09, a world reset starts the game over** (owner: "upon world resets, if I log in it shouldn't spawn me in town, it should start me at the beginning of the game with the character creation menu I believe"). The first load after a `WORLD_NS` bump is a first visit: the fall, then the name-and-colour card, landing on the shore rather than at the village spawn. The card comes pre-filled with the saved name and colour, so a reset costs one Jump in; what the reset already forgets (room progress, the railway wardrobe, reward claims, The Boogler) is unchanged, and identity and preferences stay. A reload after that, or any load without a reset, is a returning visit as before. Built in `src/player/world-reset.ts` (`newWorld`) and `src/player/arrival.ts`; [first-run](game-design/first-run.md#existing-arrival). The open calls it left are in [agent-calls](agent-calls.md).
 - **2026-11-03, no first-run controls card** (owner: "the pause menu has sufficient context for now"). The "Getting around" card that popped up on entering is removed; the pause view's Controls page is the one place controls are listed.
 
 - **2026-11-01, Interact moves to X / Square** (the west face button; owner, iPad playtest with a controller: "I want to use X/Square and it prompts me B for a lot of things"). B becomes back/cancel. Dialogue with The Boogler gets a controller pass designed to scale to every NPC.
