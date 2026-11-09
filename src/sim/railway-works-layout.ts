@@ -31,8 +31,11 @@ export const SHED_STALL = { x: 90950, z: 2050, y: 1800, reach: 500 } as const;
 export const SHED_TABLE = { x: 91800, z: 1200, y: 1830, reach: 600 } as const;
 export const SHED_ROAD = { stall: 0, line2: 1 } as const;
 export const WAGON_S = 960;
-export const PIER_STOP_CM = 73000;
-export const PIER_STOP = { x: 140259, z: -35846, y: 2430 } as const;
+// Line 2 stands 3.5 m short of the Pier halt's middle (s 730), so its engine stops 2.7 m clear of the track layer
+// parked at the rails' end (742 m, its loco's back at 734.4 m), still 1.2 m with an engine half as long again, and the
+// wagon still stands at the halt's landward end (s 719-741).
+export const PIER_STOP_CM = 72650;
+export const PIER_STOP = { x: 140275, z: -35496, y: 2430 } as const;
 // Least displacement on the centimetre grid to clear the real rail by 3.5 m (not its 1 m sample vertices).
 export const PIER_RACK = { x: 139894, z: -36177, y: 2430, reach: 400 } as const;
 export const PIER_FRAME = { x: 140554, z: -37107, y: 2430, reach: 500 } as const;
