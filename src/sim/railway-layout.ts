@@ -18,6 +18,8 @@ export const RAILWAY_T1 = {
   layTicks: 82,
   x: 99562,
   z: -14189,
+  // Parked flatbed centre, not the receiving frame beside the track. Shared by prompt and server validation.
+  wake: { x: 99605, z: -14940, reach: 600 },
   reach: 360,
   sourceReach: 320,
   starterRails: 12,
