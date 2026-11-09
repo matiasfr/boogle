@@ -32,9 +32,11 @@ export type TownInspection = {
     street: TownFact | null;
     streetRumour: number;
   };
-  /** The curio shelf in the village: where it stands, what's uncovered and how many are still under sheets. */
-  shelf: { x: number; y: number; z: number; yaw: number; uncovered: string[]; covered: number } | null;
+  /** The curio shelf in the village (and the finders' bay across the path): where each stands, what's uncovered and how
+   * many are still under sheets. */
+  shelf: (ShelfSight & { bay: ShelfSight }) | null;
 };
+type ShelfSight = { x: number; y: number; z: number; yaw: number; uncovered: string[]; covered: number };
 let current: (() => TownInspection) | null = null;
 let shelf: CurioShelf | null = null;
 export const inspectTown = () => current?.() ?? null;

@@ -16,6 +16,7 @@ import { emit } from '../../render/particles.ts';
 import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts';
 import { townShelf } from '../town/state.ts';
 import { CRYSTAL_SPOTS, CRYSTALS, type FindsApi, type FindsViewInspection } from './state.ts';
+import { createSecretsView } from './secrets-view.ts';
 
 const BLUE = '#7fd0ff',
   GLOW = '#58c8ff';
@@ -31,6 +32,8 @@ export async function createFindsView(store: FindsApi) {
     import('../../proto/place/layout.ts'),
     import('../../proto/minis/common.ts'),
   ]);
+  // F2's secrets, their boxes and the ground they stand on (./secrets-view.ts).
+  const secrets = await createSecretsView(owner, store);
   const shape = () => new THREE.OctahedronGeometry(1, 0).scale(0.28, 0.62, 0.28);
   const glowMat = readableGlow(
     new THREE.MeshStandardNodeMaterial({
@@ -139,6 +142,7 @@ export async function createFindsView(store: FindsApi) {
 
   function update({ dt, now }: FrameCtx) {
     followShelf();
+    secrets.update(dt, now);
     const b = me.body;
     for (const [k, c] of items.entries()) {
       if (c.state === 2) {
@@ -201,10 +205,13 @@ export async function createFindsView(store: FindsApi) {
   return {
     root: owner.root,
     update,
+    /** Open a waiting secret's box, in reach. */
+    targets: secrets.targets,
     inspect: (): FindsViewInspection => ({
       spots: items.map((c) => ({ x: c.x, y: c.y, z: c.z, state: c.state })),
       lit: shelf ? lit.count : 0,
       onShelf: !!shelf,
+      ...secrets.inspect(),
     }),
     dispose: () => owner.dispose(),
   };

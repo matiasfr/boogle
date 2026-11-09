@@ -1,6 +1,11 @@
 // The production railway's finds (place-retirement K1): stand by a crystal, walk into it, and see its stub light on the
 // curio shelf. Use with the production railway (no ?proto=):
 //   findk=0..6               which crystal (default 0, the lookout)
+//   findsecret=<id>          a secret's box in the world instead (F2; tech-layout.ts SECRETS ids: yard, bell, ...);
+//                            findsecretbay=1 its second box at the finders' bay (once it's there)
+//   findsact=…,dismiss       put the reward card away (Interact)
+//   findsact=…,bay           frame the finders' bay with the boxes waiting in front of it
+//   findsact=…,spot          frame the first spot again (after a bay box, to see its world box gone)
 //   findsfrom=90             the side you stand on, in degrees round the crystal (default 0: +x); findsoff=7 how far (m)
 //   findsact=walk            walk straight into it: it comes to you with its magnet and chime
 //   findsact=walk,shelf      then go to the curio shelf and frame its bottom row
@@ -41,10 +46,20 @@ sessionStorage.removeItem(RELOAD_KEY);
 const actor = query.get('findsactor');
 const acts = reloaded || (actor && query.get('player') !== actor) ? [] : (query.get('findsact') ?? '').split(',');
 const k = Number(query.get('findk') ?? 0);
-const spot = inspectFinds()!.spots![k];
+const secretId = query.get('findsecret'),
+  secretAtBay = query.get('findsecretbay') === '1';
+await wait(200); // a frame for the bay's boxes to find their places
+const secretBox = () => {
+  const box = inspectFinds()!.boxes!.find((b) => b.id === secretId);
+  if (!box) throw new Error(`findsecret=${secretId}: no such secret`);
+  const at = secretAtBay ? box.bay : box.world;
+  if (!at) throw new Error(`findsecret=${secretId}: it has no box in the world (findsecretbay=1)`);
+  return at;
+};
+const spot = secretId ? { ...secretBox() } : inspectFinds()!.spots![k];
 if (!spot) throw new Error(`findk=${k}: no such crystal`);
 /** Still waiting where it stands: not flying, not found. */
-const waiting = () => inspectFinds()!.spots![k]!.state === 0;
+const waiting = () => (secretId ? secretBox().waiting : inspectFinds()!.spots![k]!.state === 0);
 type V = { x: number; y: number; z: number };
 const ground = (x: number, z: number): V => ({ x, y: land.H(x, z), z });
 let stand: V, look: V, eye: V;
@@ -71,6 +86,15 @@ function frameShelf(whole = false) {
   look = { x: s.x, y: s.y + (whole ? 1.6 : 1.1), z: s.z };
   eye = { x: s.x + fx * back - fz * 0.8, y: s.y + 2, z: s.z + fz * back + fx * 0.8 };
 }
+function frameBay() {
+  const s = inspectTown()!.shelf!.bay;
+  // The bay faces +z in its own space; missed boxes wait 1.5–2.6 m in front of it, either side of the trophy plinth.
+  const fx = Math.sin(s.yaw),
+    fz = Math.cos(s.yaw);
+  stand = ground(s.x + fx * 4.2 + fz * 4.6, s.z + fz * 4.2 - fx * 4.6);
+  look = { x: s.x + fx * 1.6, y: s.y + 1.2, z: s.z + fz * 1.6 };
+  eye = { x: s.x + fx * 9.5 - fz * 1.2, y: s.y + 3.4, z: s.z + fz * 9.5 + fx * 1.2 };
+}
 const free = query.get('findscam') === 'follow';
 const setCam = () => {
   if (!free) window.__debugCam?.set([eye.x, eye.y, eye.z], [look.x, look.y, look.z], 55);
@@ -84,7 +108,8 @@ function goTo() {
   setCam();
   setTimeout(setCam, 100);
 }
-if (reloaded) frameShelf(query.get('findsact')?.includes('wholeshelf'));
+if (reloaded && query.get('findsact')?.includes('bay')) frameBay();
+else if (reloaded) frameShelf(query.get('findsact')?.includes('wholeshelf'));
 else frameSpot();
 goTo();
 if (query.get('findshold') !== '0') {
@@ -118,12 +143,27 @@ async function runAct() {
       frameShelf(act === 'wholeshelf');
       goTo();
       await wait(800);
+    } else if (act === 'bay' || act === 'spot') {
+      if (act === 'bay') frameBay();
+      else frameSpot();
+      goTo();
+      await wait(800);
+    } else if (act === 'dismiss') {
+      // The card takes 1.5 s to become dismissable; press Interact until it's gone.
+      const end = performance.now() + 6000;
+      while (performance.now() < end && document.body.classList.contains('place-getting')) {
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+        await wait(60);
+        window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+        await wait(240);
+      }
+      await wait(400);
     } else if (act === 'reload') {
       sessionStorage.setItem(RELOAD_KEY, '1');
       console.log(`FINDS reloading ${JSON.stringify(stored())}`);
       setTimeout(() => location.reload(), 300);
       return;
-    } else throw new Error(`findsact=${act}: choose walk, shelf, wholeshelf or reload`);
+    } else throw new Error(`findsact=${act}: choose walk, shelf, wholeshelf, bay, spot, dismiss or reload`);
     console.log(
       `FINDS ${JSON.stringify({ k, act, player: { ...body.position }, ...inspectFinds(), stored: stored() })}`,
     );

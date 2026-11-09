@@ -27,7 +27,7 @@ export const CRYSTALS = CRYSTAL_SPOTS.length;
 
 export const FINDS_PREFIX = 'boogle.railway-finds.v0:';
 export type FindsSave = { crystals: number[]; finds: number[]; secrets: string[]; hubbed: string[] };
-export type FindsEvent = { kind: 'crystal' | 'load'; id: number | null };
+export type FindsEvent = { kind: 'crystal' | 'secret' | 'hub' | 'load'; id: number | string | null };
 export type FindsStorage = { read(): string | null; write(text: string): void };
 
 const MAX_TEXT = 4096;
@@ -106,6 +106,30 @@ export function createFinds(storage: FindsStorage) {
       changed({ kind: 'crystal', id: k });
       return true;
     },
+    /** Found secrets, by Place's secret id (tech-layout.ts's SECRETS), in the order found. */
+    secrets: (): readonly string[] => save.secrets,
+    hasSecret: (id: string) => save.secrets.includes(id),
+    /** Records secret `id` as found (from its box in the world or its box at the finders' bay: open either and the
+     * other goes) and writes the store at once, before its reveal. False if it isn't an id or was already found. */
+    takeSecret(id: string): boolean {
+      if (!secretId(id) || save.secrets.includes(id) || save.secrets.length >= MAX_SECRETS) return false;
+      save = { ...save, secrets: [...save.secrets, id] };
+      write();
+      changed({ kind: 'secret', id });
+      return true;
+    },
+    /** Secrets whose second box has turned up at the finders' bay. */
+    hubbed: (): readonly string[] => save.hubbed,
+    isHubbed: (id: string) => save.hubbed.includes(id),
+    /** You went on past secret `id` without it: its box turns up at the finders' bay too. Written at once. False if it
+     * isn't an id or is already there. */
+    hubSecret(id: string): boolean {
+      if (!secretId(id) || save.hubbed.includes(id) || save.hubbed.length >= MAX_SECRETS) return false;
+      save = { ...save, hubbed: [...save.hubbed, id] };
+      write();
+      changed({ kind: 'hub', id });
+      return true;
+    },
     onFinds(fn: (e: FindsEvent) => void) {
       listeners.add(fn);
       return () => void listeners.delete(fn);
@@ -141,6 +165,16 @@ export type FindsViewInspection = {
   /** How many of the shelf's crystal stubs are lit, and whether the row is on the shelf yet. */
   lit: number;
   onShelf: boolean;
+  /** Each secret's two boxes, in the world and at the finders' bay, and whether each is waiting now (a glide-only
+   * one's world box waits only once the glider is the room's). */
+  boxes: {
+    id: string;
+    gift: string;
+    world: { x: number; y: number; z: number; waiting: boolean };
+    bay: { x: number; y: number; z: number; waiting: boolean };
+  }[];
+  /** The secret whose box is opening now, or null. */
+  opening: string | null;
 };
 export const inspectFinds = () => (mine ? { ...mine.inspect(), ...(shown?.() ?? null) } : null);
 /** Lifecycle owner only. */
