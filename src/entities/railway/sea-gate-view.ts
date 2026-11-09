@@ -9,6 +9,7 @@ import { clank, whistle } from '../../render/machine-sfx.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { playMark } from '../../proto/mark.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
+import { createGateRig, gateEyes } from './gate-rig.ts';
 
 type Line2 = NonNullable<ReturnType<RailwayAdapter['inspect']>['line2']>;
 type Deps = {
@@ -35,24 +36,17 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
     view.castShadow = view.receiveShadow = true;
     return view;
   };
-  for (const side of [-1, 1]) {
-    const jamb = mesh(new THREE.BoxGeometry(SLAB.pillar, SLAB.h + 0.8, SLAB.pillar), flat('#917b5e', 0.9));
-    const along = (side * (SLAB.w + SLAB.pillar)) / 2;
-    jamb.position.set(G.x + ox + Math.cos(G.yaw) * along, G.y + (SLAB.h + 0.8) / 2, G.z - Math.sin(G.yaw) * along);
-    jamb.quaternion.copy(rotation);
-    owner.add(jamb);
-    land.addStatic(
-      { kind: 'box', hx: SLAB.pillar / 2, hy: (SLAB.h + 0.8) / 2, hz: SLAB.pillar / 2 },
-      jamb.position,
-      rotation,
-      undefined,
-      owner,
-    );
-  }
+  // Jambs under a headstock whose drum winds the slab's two chains: the switch's signal turns it (gate-rig.ts).
+  const rig = createGateRig(
+    owner,
+    { land, shapes, flat, partMat },
+    { x: G.x + ox, y: G.y, z: G.z, yaw: G.yaw, slab: SLAB },
+  );
   const slab = mesh(
     shapes.merged([
       ['b', 0, 0, 0, SLAB.w, SLAB.h, SLAB.d, '#b6a080'],
       ['b', 0, SLAB.h / 2 - 0.3, SLAB.d / 2 + 0.01, SLAB.w - 0.6, 0.2, 0.04, '#39e6c6'],
+      ...gateEyes(SLAB),
     ]),
   );
   const up = G.y + SLAB.h / 2,
@@ -155,6 +149,7 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
       slabT = lightT = -1;
       solid(l);
       slab.position.y = l.seaOpen ? down : up;
+      rig.pose(slab.position.y);
       handle.rotation.z = l.sea ? PULLED : READY;
       refusal = 1;
       drum.rotation.z = 0;
@@ -171,6 +166,7 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
         slab.position.y = up - (up - down) * u * u * (3 - 2 * u);
         if (u === 1) slabT = -1;
       } else slab.position.y = l.seaOpen ? down : up;
+      rig.pose(slab.position.y);
       if (lightT >= 0) {
         lightT += dt;
         drawCaps(Math.min(tech.POSTS.length, 1 + Math.floor(lightT / (1.5 / tech.POSTS.length))));
