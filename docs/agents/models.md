@@ -8,12 +8,14 @@ in two modes: **normal** (Claude only) and **withCodex** (Codex is the workhorse
 - **Switching:** `codexFrom` in `dev/models.ts` is the local date withCodex starts (null: stay normal). Only the owner
   switches modes; an agent that hits a Codex limit in withCodex mode pauses and tells the owner.
 - **Enforcement:** in normal mode `dev/codex/run.ts` and `npm run queue` refuse Codex jobs except previz, which is
-  still tried because only Codex paints; at a limit, images wait and the owner is told. The `planner` and `implementer`
+  still tried because only Codex paints; at a limit, images wait and the owner is told. The `planner`, `implementer` and `designer`
   frontmatter must match `agents` in `dev/models.ts` (`test/models.test.ts`).
 - **Effort at spawn:** where a route names an effort different from the agent's frontmatter (high-risk implementation),
   pass it as the Agent tool's `effort`. Opus `max` only when the owner asks.
-- **Normal-mode brainstorm:** run the three panelists as Claude subagents, each given its role file from
-  `.claude/skills/brainstorm/roles/`, then synthesize as usual.
+- **Brainstorm:** light by default, one subagent covering the three role files in `.claude/skills/brainstorm/roles/`
+  in one pass; `--panel` runs three, one per role, for a new area or big mechanic (owner, 9 November).
+- **Design review:** every plan or brief with gameplay calls gets the `designer` agent before it is built (owner,
+  9 November).
 - **Daily jobs** (`dev/daily/jobs.ts`) stay on Codex; at a limit they fail and report rather than spend Claude usage
   unattended.
 - **Changing a route:** edit `dev/models.ts` and record the owner's words in

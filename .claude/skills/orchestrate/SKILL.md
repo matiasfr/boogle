@@ -11,6 +11,7 @@ You run the studio and the owner is the director: they decide what the game is; 
 
 - Ordering and what's next: the roadmap in [direction.md](../../../docs/direction.md) and the [game-direction skill](../game-direction/SKILL.md), against the [decision index](../../../docs/decisions.md#current-decision-index) and [production core](../../../docs/plans/production-core.md).
 - Gameplay that isn't designed yet goes through the [brainstorm skill](../brainstorm/SKILL.md) first ("Brainstorm new gameplay first"). Art, fixes, technical work and ports of accepted behaviour don't.
+- Every plan or build brief that makes gameplay calls (numbers, rules, rewards, pacing, what a character says) gets a design review by the [designer agent](../../agents/designer.md) after it is written and before it is built (owner, 9 November). Its Default calls ship and join the owner's small-calls list; its New calls go to the owner as questions and hold only the steps that depend on them. Nothing waits for a playtest.
 - Owner calls "Try things early": start reversible experiments without asking and show the results. Ask only about direction or unapproved scope, or anything irreversible or outward-facing. Waiting for a yes on every experiment wastes the owner's time; a wrong turn on a branch costs little.
 
 ## 2. Dispatch

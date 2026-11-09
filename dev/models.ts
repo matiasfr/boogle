@@ -25,6 +25,11 @@ export const routes: Route[] = [
     normal: claude('main session', 'opus', 'medium'),
   },
   {
+    work: 'Design review of a plan or brief with gameplay calls, before it is built',
+    withCodex: claude('designer agent', 'opus', 'medium'),
+    normal: claude('designer agent', 'opus', 'medium'),
+  },
+  {
     work: 'Planning complex work (docs/plans/<topic>.md)',
     withCodex: claude('planner agent', 'opus', 'high'),
     normal: claude('planner agent', 'opus', 'high'),
@@ -50,9 +55,9 @@ export const routes: Route[] = [
     normal: claude('general-purpose subagent', 'sonnet', 'medium'),
   },
   {
-    work: 'Brainstorm panel (three panelists)',
+    work: 'Brainstorm (light: one agent, three lenses; --panel: three panelists)',
     withCodex: codex('gpt-6.1-sol', 'high'),
-    normal: claude('three general-purpose subagents with the role files', 'opus', 'medium'),
+    normal: claude('one general-purpose subagent (light), or three with the role files (--panel)', 'opus', 'medium'),
   },
   {
     work: 'Images and previz (only Codex paints)',
@@ -69,6 +74,7 @@ export const routes: Route[] = [
 export const agents: Record<string, { model: string; effort: string }> = {
   planner: { model: 'opus', effort: 'high' },
   implementer: { model: 'opus', effort: 'medium' },
+  designer: { model: 'opus', effort: 'medium' },
 };
 
 /** Default Codex model for dev/codex/run.ts. */
