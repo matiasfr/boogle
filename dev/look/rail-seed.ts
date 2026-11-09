@@ -1,5 +1,6 @@
 // Accepted railway beats written through the real host's save path before a look opens its room.
 import { railwayAtTrains, TRAIN_STAGES, type TrainStage } from '../../test/helpers/railway-trains.ts';
+import { railwayAtWorks, WORKS_STAGES, type WorksStage } from '../../test/helpers/railway-works.ts';
 import { pathToFileURL } from 'node:url';
 import { createStore } from '../../server/src/store.ts';
 import { createRailwayWorldHost } from '../../server/src/host/world-host.ts';
@@ -22,8 +23,11 @@ import { createRailway, railSession, railApply, railTick, worldOf } from '../../
 export async function writeRailSeed(dataDir: string, room: string, stage: string) {
   // B5-B8 stages stay separate from the earlier/depot fixture blocks.
   const trainStage = TRAIN_STAGES.includes(stage as TrainStage);
+  // Split-rock Works and the Roundhouse (J3f), built on `q6-done`.
+  const worksStage = WORKS_STAGES.includes(stage as WorksStage);
   if (
     !trainStage &&
+    !worksStage &&
     ![
       'awake',
       'q1-done',
@@ -43,15 +47,17 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
     ].includes(stage)
   )
     throw new Error(`Unknown railway seed: ${stage}`);
-  const w = trainStage
-    ? railwayAtTrains(stage as TrainStage)
-    : stage === 'awake'
-      ? { s: createRailway(), t: 40 }
-      : stage === 'q1-done' || stage === 'q2-stocked' || stage === 'q2-arriving' || stage === 'q3-stocked'
-        ? railwayAtQ2()
-        : stage === 'q3-done' || stage === 'q4-stocked' || stage === 'q4-arriving' || stage === 'hook-earned'
-          ? railwayAtQ4()
-          : railwayAtQ5(stage === 'q5-carry' ? 'q5-stocked' : (stage as RailSeedStage));
+  const w = worksStage
+    ? railwayAtWorks(stage as WorksStage)
+    : trainStage
+      ? railwayAtTrains(stage as TrainStage)
+      : stage === 'awake'
+        ? { s: createRailway(), t: 40 }
+        : stage === 'q1-done' || stage === 'q2-stocked' || stage === 'q2-arriving' || stage === 'q3-stocked'
+          ? railwayAtQ2()
+          : stage === 'q3-done' || stage === 'q4-stocked' || stage === 'q4-arriving' || stage === 'hook-earned'
+            ? railwayAtQ4()
+            : railwayAtQ5(stage === 'q5-carry' ? 'q5-stocked' : (stage as RailSeedStage));
   if (stage === 'hook-earned') act(w, 'a', 'rail.hook');
   if (stage === 'awake') {
     railSession(w.s, 'a', 1);
