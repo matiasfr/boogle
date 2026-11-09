@@ -93,10 +93,12 @@ it. **Drop** names the decision that allows it. **Move** means production alread
 
 ### Crystals and finds (port; jobs K1, F1–F3)
 
+**Fit check first** (owner, 9 November): every port still to build gets a designer check (keep, change or cut) before it starts; see owner-calls, "Port from Place only what still fits".
+
 | Module | Verdict |
 | --- | --- |
 | `crystals.ts` | Port, K1. Personal by default (**owner question 2**). |
-| `props.ts`: gold finds and the finds board | Port, F1 |
+| `props.ts`: gold finds and the finds board | **Cut** (owner, 9 November). F1 shipped them in #1269; they come out again. |
 | `tech.ts`: secrets and the finders' bay | Port, F2. Glide-only secrets go straight to the bay (**owner question 5**). |
 | `props.ts`: buoys; `props.ts` + `telescope.ts` + `telescope.css`: the telescope | Port, F3, with the fixed view only (6 November) |
 | `props.ts`: the boiler by the forge | Replaced by `boiler-view.ts` |
