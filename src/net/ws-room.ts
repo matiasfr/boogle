@@ -11,6 +11,7 @@
 import { SELF_ID, SERVER_ID } from './ids.ts';
 import { WS_PROTOCOL, CLOSE, MAX_MSG, encode, decode, roomUrl, type WireMsg } from './ws-wire.ts';
 import { createPeerTable } from './peer-table.ts';
+import { worldRoomId } from '../world/namespace.ts';
 import type { PeersChange } from './peer-table.ts';
 
 /** A room failure: code is 'room_full' (max: the cap), 'peer_hosted', 'unreachable', 'bad' or 'browser-incompatible'. */
@@ -42,7 +43,7 @@ const jitter = (ms: number) => ms * (0.7 + Math.random() * 0.6);
 
 export async function createWsRoom(opts: WsRoomOptions) {
   if (typeof WebSocket === 'undefined') throw err('browser-incompatible', 'WebSocket is not available');
-  const roomId = String(opts.roomId ?? 'default');
+  const roomId = String(opts.roomId ?? worldRoomId('default'));
   const url = roomUrl(opts.server, roomId, {
     self: SELF_ID,
     pid: opts.pid,

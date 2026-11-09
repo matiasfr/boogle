@@ -26,7 +26,7 @@ async function fixture() {
   return { dir, store, inventory: () => inventorySaves(dir, { ns, now }) };
 }
 
-test('cleanup moves exactly old-world, legacy and stale temp saves, manifests them, and frees room capacity', async (t) => {
+test('cleanup moves old namespaces and their stale temps, preserves bare rooms, and frees room capacity', async (t) => {
   const f = await fixture();
   t.after(() => fs.rm(f.dir, { recursive: true, force: true }));
   const keep = [
@@ -34,6 +34,7 @@ test('cleanup moves exactly old-world, legacy and stale temp saves, manifests th
     `${ns.rail}-b.json`,
     `${ns.world}-v01-nested.json`,
     `${ns.rail}-b.json.12.abcdef01.tmp`,
+    'garden-1.json',
     'v01-fresh.json.34.012345ab.tmp',
     'notes.txt',
     'reports/x.jsonl',
@@ -41,7 +42,7 @@ test('cleanup moves exactly old-world, legacy and stale temp saves, manifests th
     'reviews/r/card.json',
   ];
   for (const name of keep) await put(f.dir, name, `keep:${name}`, name.includes('fresh') ? 0 : 40 * day);
-  const moved = ['garden-1.json', 'rail-v02-old.json', 'v01-old.json', 'v01-old.json.12.abcdef01.tmp'];
+  const moved = ['rail-v02-old.json', 'v01-old.json', 'v01-old.json.12.abcdef01.tmp'];
   for (const name of moved) await put(f.dir, name, `move:${name}`);
   await put(f.dir, `.trash/${stamp(8)}/v01-expired.json`);
   await put(f.dir, `.trash/${stamp(6)}/v01-newer.json`);
@@ -58,7 +59,7 @@ test('cleanup moves exactly old-world, legacy and stale temp saves, manifests th
   );
   assert.deepEqual(result.unknown, ['notes.txt']);
   assert.deepEqual(result.purged, [`.trash/${stamp(8)}`]);
-  assert.equal(f.store.count(), 3);
+  assert.equal(f.store.count(), 4);
   for (const name of keep) assert.equal(await fs.readFile(path.join(f.dir, name), 'utf8'), `keep:${name}`);
   for (const name of moved) {
     await assert.rejects(fs.stat(path.join(f.dir, name)), { code: 'ENOENT' });
@@ -72,7 +73,7 @@ test('cleanup moves exactly old-world, legacy and stale temp saves, manifests th
     files: moved.map((name) => ({
       name,
       bytes: Buffer.byteLength(`move:${name}`),
-      reason: name.endsWith('.tmp') ? 'tmp' : name.startsWith('garden') ? 'legacy' : 'old-ns',
+      reason: name.endsWith('.tmp') ? 'tmp' : 'old-ns',
     })),
   });
   assert.deepEqual((await fs.readdir(path.join(f.dir, result.trash!))).sort(), ['files', 'manifest.json']);
@@ -93,7 +94,7 @@ test('cleanup moves exactly old-world, legacy and stale temp saves, manifests th
   const third = await cleanupSaves(f.dir, await f.inventory(), f.store, { now: now + 1 });
   assert.deepEqual(third.moved, []);
   assert.deepEqual(third.purged, [`.trash/${stamp(7)}`]);
-  assert.match(cleanupLine(result), /moved 4 .*old-ns 2, legacy 1, tmp 1/);
+  assert.match(cleanupLine(result), /moved 3 .*old-ns 2, legacy 0, tmp 1/);
   assert.match(cleanupLine(result), /unknown 1 \["notes.txt"\]/);
 });
 
@@ -154,15 +155,17 @@ test('purging preserves current/live files, unknown entries and symlinks in tras
   assert.equal(result.unknown.length, 3);
 });
 
-test('a legacy room named manifest cannot overwrite audit metadata, and its archive still expires', async (t) => {
+test('an unprefixed manifest room is retained while an obsolete namespace still archives and expires', async (t) => {
   const f = await fixture();
   t.after(() => fs.rm(f.dir, { recursive: true, force: true }));
   await put(f.dir, 'manifest.json', 'room data');
+  await put(f.dir, 'v01-obsolete.json', 'old data');
   await f.store.init();
   const result = await cleanupSaves(f.dir, await f.inventory(), f.store, { now });
   assert.deepEqual(result.errors, []);
-  assert.deepEqual(result.moved, [{ name: 'manifest.json', bytes: 9, reason: 'legacy' }]);
-  assert.equal(await fs.readFile(path.join(f.dir, result.trash!, 'files/manifest.json'), 'utf8'), 'room data');
+  assert.deepEqual(result.moved, [{ name: 'v01-obsolete.json', bytes: 8, reason: 'old-ns' }]);
+  assert.equal(await fs.readFile(path.join(f.dir, 'manifest.json'), 'utf8'), 'room data');
+  assert.equal(await fs.readFile(path.join(f.dir, result.trash!, 'files/v01-obsolete.json'), 'utf8'), 'old data');
   const manifest = JSON.parse(await fs.readFile(path.join(f.dir, result.trash!, 'manifest.json'), 'utf8'));
   assert.deepEqual(manifest.files, result.moved);
   const later = await cleanupSaves(f.dir, await f.inventory(), f.store, { now: now + 8 * day });
@@ -194,9 +197,9 @@ test('default service boot cleans before hosting, exposes the last cleanup and i
   const f = await fixture();
   const expired = new Date(Date.now() - 8 * day).toISOString();
   const newer = new Date(Date.now() - 6 * day).toISOString();
-  const current = [`${ns.world}-a.json`, `${ns.rail}-b.json`, `${ns.world}-a.json.12.abcdef01.tmp`];
+  const current = [`${ns.world}-a.json`, `${ns.rail}-b.json`, `${ns.world}-a.json.12.abcdef01.tmp`, 'garden.json'];
   for (const name of current) await put(f.dir, name, `keep:${name}`);
-  const candidates = ['garden.json', 'rail-v02-old.json', 'v01-old.json', 'v01-old.json.12.abcdef01.tmp'];
+  const candidates = ['rail-v02-old.json', 'v01-old.json', 'v01-old.json.12.abcdef01.tmp'];
   for (const name of candidates) await put(f.dir, name, `move:${name}`);
   await put(f.dir, 'v01-fresh.json.12.abcdef01.tmp');
   await fs.utimes(path.join(f.dir, 'v01-fresh.json.12.abcdef01.tmp'), new Date(), new Date());
@@ -229,7 +232,7 @@ test('default service boot cleans before hosting, exposes the last cleanup and i
     return response.json();
   };
   const first = await get();
-  assert.equal(first.current.count, 2);
+  assert.equal(first.current.count, 3);
   assert.deepEqual(first.files, []);
   assert.deepEqual(first.legacyFiles, []);
   assert.deepEqual(first.unknown, ['notes.txt']);

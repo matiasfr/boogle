@@ -8,8 +8,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { createStore } from './store.ts';
 import { inventorySaves, inventoryLine } from './save-inventory.ts';
 import { cleanupSaves, cleanupLine, type Cleanup } from './save-cleanup.ts';
-import { WORLD_NS } from '../../src/world/namespace.ts';
-import { RAILWAY_PLAY_NS } from '../../src/world/railway-namespace.ts';
+import { roomNamespaces } from './room-ids.ts';
 import { addPlaydata } from './playdata.ts';
 import { addReviews } from './reviews.ts';
 import { routeUpgrades } from './host/upgrade.ts';
@@ -312,7 +311,7 @@ export function createService(cfg: ServerConfig) {
     return true;
   };
 
-  const saveInventory = () => inventorySaves(cfg.dataDir, { ns: { world: WORLD_NS, rail: RAILWAY_PLAY_NS } });
+  const saveInventory = () => inventorySaves(cfg.dataDir, { ns: roomNamespaces(cfg.serverRooms) });
   app.get('/admin/saves', async (req: Request, res: Response, next: NextFunction) => {
     if (!authed(req, res)) return;
     try {

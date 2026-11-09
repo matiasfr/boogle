@@ -75,9 +75,9 @@ test('save inventory is authed and fresh, reports cleanup, and honors the kill s
     assert.deepEqual(body.lastCleanup.moved, []);
     const { lastCleanup: _cleanup, ...fresh } = body;
     assert.deepEqual(fresh, inv);
-    assert.equal(inv.current.count, 2);
+    assert.equal(inv.current.count, 3);
     assert.deepEqual(inv.files, ['v01-old.json']);
-    assert.deepEqual(inv.legacyFiles, ['garden.json']);
+    assert.deepEqual(inv.legacyFiles, []);
     // The read endpoint never performs cleanup; the explicit kill switch also prevents it on boot.
     await s.svc.close({ save: false });
     await s.svc.listen(s.port);

@@ -75,27 +75,33 @@ A director reads the JSON, preserves the owner's words and evidence, then uses `
 Each boot logs one `save inventory <digest>` line before any room is loaded. `GET /admin/saves` returns a fresh
 inventory with the same `Authorization: Bearer <REPORT_TOKEN>` guard as reports (404 if the token is unset, 401
 for missing or wrong credentials). It reports current room counts/bytes and idle counts, old classic and railway
-namespaces with their newest modification times, legacy files, old temporary files, directory sizes and unknown
+namespaces with their newest modification times, old temporary files, directory sizes and unknown
 names. It uses directory entries and file metadata only, never save contents, and does not follow symlinks.
 
-`files` lists old-namespace saves and temp files older than an hour; `legacyFiles` lists unprefixed saves separately.
+`files` lists obsolete-namespace saves and their temp files older than an hour. Bare room IDs are **current**, because
+the generic room host still writes them. `currentRooms` reports explicit `SERVER_ROOMS` entries, which are also
+protected even when their names resemble an older namespace. `legacyFiles` and legacy counts now remain empty/zero;
+a bare filename alone cannot prove a save is unused.
 `digest` is the first 16 hex characters of SHA-256 over sorted `files` joined by newlines; `digestWithLegacy` includes
 both sorted lists. Current rooms, including idle ones, are never candidates. `reports/`, `playdata/`, `reviews/` and
 `.trash/` are only measured by the inventory. Current-namespace temp files are also protected, regardless of age.
 Unknown entries are reported. Inventory failure is logged without stopping boot or running cleanup.
 
 Cleanup is **enabled by default**, following the owner's 8 November approval. After inventory and before loading any
-rooms, old-world classic and railway saves, unprefixed legacy saves and stale non-current temp files move to
+rooms, obsolete classic and railway namespace saves and their stale temp files move to
 `DATA_DIR/.trash/<UTC ISO stamp>-<unique suffix>/files/`. There is no digest gate or legacy opt-in. Each run logs one
 `save cleanup:` line with moved counts/bytes by reason, purged folder count, skipped count, unknown names and errors.
 Unknown root entries, symlinks, `reports/`, `playdata/` and `reviews/` stay in place.
 
 Every move rechecks the filename, file type, temp age and live-room ownership under the store's per-room writer lock.
-Current namespace files (classic, railway and temp), including idle rooms, never move. A moved room is forgotten by
-the store so obsolete saves no longer occupy `MAX_ROOMS`. The separate `files/` directory lets even a legacy room
-named `manifest` keep its original filename without colliding with metadata. Each trash run has an atomic `manifest.json` recording
+Current namespace files, bare room files, explicitly configured room files and their temp writes never move, even
+when idle or stale. This protection also applies inside trash during purging. Admission, Store writes and inventory
+share `server/src/room-ids.ts`: the wildcard host refuses an obsolete namespace and Store refuses writing it;
+an explicit `SERVER_ROOMS` entry is retained by all three. A moved room is forgotten by the store so obsolete saves
+no longer occupy `MAX_ROOMS`. Each trash run has an atomic `manifest.json` recording
 `{ at, ns, rail, files: [{ name, bytes, reason }] }`, where reason is `old-ns`, `legacy` or `tmp`. The next entry is
-recorded before its rename; after an interrupted run, compare source and destination to resolve any pending entry.
+recorded before its rename; payloads live under `files/`, separate from audit metadata. After an interrupted run,
+compare source and destination to resolve any pending entry.
 
 At boot, UTC-stamped trash run folders **strictly older than seven days** are permanently purged. Newer folders stay.
 Folders with current/live files or unexpected entries, non-stamped folders and symlinks are kept and reported.

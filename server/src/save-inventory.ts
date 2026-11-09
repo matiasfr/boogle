@@ -2,13 +2,14 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { currentRoomFile, roomNamespace, type RoomNamespaces } from './room-ids.ts';
 
-type Namespace = { world: string; rail: string };
 type Count = { count: number; bytes: number };
 type Classification = 'current' | 'old-ns' | 'legacy' | 'tmp' | 'dir' | 'unknown';
 export type Inventory = {
   ns: string;
   rail: string;
+  currentRooms: string[];
   current: Count & { idle: Count };
   candidates: {
     oldNs: Record<string, Count & { newest: string }>;
@@ -24,24 +25,20 @@ export type Inventory = {
 };
 
 const ROOM = /^[a-z0-9-]{1,32}\.json$/;
-const OLD_NS = /^(rail-)?v\d{2}-/;
 const TMP = /^[a-z0-9-]{1,32}\.json\.\d+\.[0-9a-f]{8}\.tmp$/;
 const DIRS = new Set(['reports', 'playdata', 'reviews', '.trash']);
-const currentPrefix = (name: string, ns: Namespace) =>
-  name.startsWith(`${ns.world}-`) || name.startsWith(`${ns.rail}-`);
-
-export function classify(name: string, ns: Namespace): Classification {
+export function classify(name: string, ns: RoomNamespaces): Classification {
   if (DIRS.has(name)) return 'dir';
   if (ROOM.test(name)) {
-    if (currentPrefix(name, ns)) return 'current';
-    return OLD_NS.test(name) ? 'old-ns' : 'legacy';
+    if (currentRoomFile(name, ns)) return 'current';
+    return 'old-ns';
   }
   return TMP.test(name) ? 'tmp' : 'unknown';
 }
 
 // Independent of classify: protect every current namespace file, including an orphaned temp write.
-export function assertNotCurrent(name: string, ns: Namespace): void {
-  if (currentPrefix(name, ns)) throw new Error(`Current world save: ${name}`);
+export function assertNotCurrent(name: string, ns: RoomNamespaces): void {
+  if (currentRoomFile(name, ns)) throw new Error(`Current world save: ${name}`);
 }
 
 async function statIfPresent(file: string) {
@@ -79,7 +76,7 @@ export async function inventorySaves(
     tmpAgeMs = 3_600_000,
     idleDays = 30,
   }: {
-    ns: Namespace;
+    ns: RoomNamespaces;
     now?: number;
     tmpAgeMs?: number;
     idleDays?: number;
@@ -88,6 +85,7 @@ export async function inventorySaves(
   const inv: Inventory = {
     ns: ns.world,
     rail: ns.rail,
+    currentRooms: [...(ns.currentRooms ?? [])],
     current: { ...count(), idle: count() },
     candidates: { oldNs: {}, legacy: count(), tmp: count() },
     dirs: {},
@@ -116,15 +114,12 @@ export async function inventorySaves(
       add(inv.current, stat.size);
       if (stat.mtimeMs < now - idleDays * 86_400_000) add(inv.current.idle, stat.size);
     } else if (kind === 'old-ns') {
-      const namespace = OLD_NS.exec(name)![0].slice(0, -1);
+      const namespace = roomNamespace(name)!;
       const group = (inv.candidates.oldNs[namespace] ??= { ...count(), newest: stat.mtime.toISOString() });
       add(group, stat.size);
       if (stat.mtime.toISOString() > group.newest) group.newest = stat.mtime.toISOString();
       inv.files.push(name);
-    } else if (kind === 'legacy') {
-      add(inv.candidates.legacy, stat.size);
-      inv.legacyFiles.push(name);
-    } else if (kind === 'tmp' && !currentPrefix(name, ns) && stat.mtimeMs < now - tmpAgeMs) {
+    } else if (kind === 'tmp' && !currentRoomFile(name, ns) && stat.mtimeMs < now - tmpAgeMs) {
       add(inv.candidates.tmp, stat.size);
       inv.files.push(name);
     }

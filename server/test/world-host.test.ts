@@ -11,6 +11,7 @@ import { createStore } from '../src/store.ts';
 import { loadHomeLand } from '../src/host/land.ts';
 import { RULES } from '../../src/world/rules/index.ts';
 import { mulberry32 } from '../../src/sim/rng.ts';
+import { worldRoomId } from '../../src/world/namespace.ts';
 
 type Msg = Record<string, any>;
 const generators: Record<string, (r: unknown, view: unknown) => Msg | null> = Object.assign(
@@ -25,7 +26,7 @@ function stream(seed: number) {
 const home = loadHomeLand();
 const settle = () => new Promise((r) => setImmediate(r));
 
-async function makeHost(dir: string, saveMs = 2000, roomId = 'beach') {
+async function makeHost(dir: string, saveMs = 2000, roomId = worldRoomId('beach')) {
   const store = createStore({ dataDir: dir, maxRooms: 10 });
   await store.init();
   const wh = createWorldHost({
@@ -46,7 +47,7 @@ for (const corruption of ['missing-value', 'range', 'revision'] as const) {
   test(`an invalid tuning profile refuses load without rewriting the file: ${corruption}`, async (t) => {
     const dir = tmp();
     t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-    const roomId = 'proto-tunables';
+    const roomId = worldRoomId('proto-tunables');
     const first = await makeHost(dir, 1, roomId);
     const snapshot = first.wh.sync.snapshot();
     await first.wh.close({ save: false });
@@ -72,7 +73,7 @@ for (const corruption of ['missing-value', 'range', 'revision'] as const) {
 
 test('tuning commits require the assigned controller and current revision, and persist defaults', async () => {
   const dir = tmp();
-  const { wh } = await makeHost(dir, 1, 'v07-proto-tunables');
+  const { wh } = await makeHost(dir, 1, worldRoomId('proto-tunables'));
   const edit = {
     op: 'tune.commit',
     i: 0,
@@ -103,7 +104,7 @@ test('tuning commits require the assigned controller and current revision, and p
   );
   const hash = wh.sync.stateHashes().tune;
   await wh.close({ save: true });
-  const loaded = await makeHost(dir, 1, 'v07-proto-tunables');
+  const loaded = await makeHost(dir, 1, worldRoomId('proto-tunables'));
   assert.equal(loaded.wh.rules.tune.get('yield'), 9);
   assert.equal(loaded.wh.rules.tune.tune.revision, 1);
   assert.equal(loaded.wh.sync.stateHashes().tune, hash);
@@ -112,7 +113,7 @@ test('tuning commits require the assigned controller and current revision, and p
 });
 
 test('every op of every rules module is accepted from a client or, host-only, from the server', async () => {
-  const { wh, sent } = await makeHost(tmp(), 2000, 'v02-proto-beach'); // a playtest room: the tune ops run too
+  const { wh, sent } = await makeHost(tmp(), 2000, worldRoomId('proto-beach')); // the tune ops run too
   assert.equal(wh.status().mode, 'host');
   assert.equal(wh.status().ready, true);
   // The replay test's head start: piles to take and a full Track ring so a run can start.
@@ -194,7 +195,7 @@ test('the world saves as the server and a restart resumes from it', async () => 
   wh.deliver({ t: 'w:edit', e: { op: 'gift.toss', i: 230, j: 205, k: 1, y: -1, n: 7, l: [0, 100, 0, 0, 0, 0] } }, 'c1');
   for (let f = 0; f < 12; f++) (wh.step(0.05), await settle());
   await wh.close({ save: true });
-  const doc = store.readSync('beach')!;
+  const doc = store.readSync(worldRoomId('beach'))!;
   assert.equal(doc.writerId, 'server');
   const tick = doc.tick;
   assert.ok(tick > 0 && (doc.data as Msg).tick === tick);
@@ -205,7 +206,7 @@ test('the world saves as the server and a restart resumes from it', async () => 
   for (let f = 0; f < 30; f++) (wh.step(0.1), await settle());
   const later = wh.sync.world.tick;
   await wh.close({ save: true });
-  assert.equal(store.readSync('beach')!.tick, later);
+  assert.equal(store.readSync(worldRoomId('beach'))!.tick, later);
 
   ({ wh } = await makeHost(dir));
   assert.ok(wh.sync.world.tick >= later && later > tick, `resumed at ${wh.sync.world.tick}, saved ${later}`);

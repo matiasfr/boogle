@@ -21,7 +21,10 @@ test('classify separates current, old railway/classic, legacy, temps, directorie
     assert.equal(classify(name, ns), 'old-ns');
     assert.doesNotThrow(() => assertNotCurrent(name, ns));
   }
-  for (const name of ['garden-1.json', 't1v01-room.json']) assert.equal(classify(name, ns), 'legacy');
+  for (const name of ['garden-1.json', 't1v01-room.json', 'wsabcdef.json', 'beach.json', 'default.json', 'test.json']) {
+    assert.equal(classify(name, ns), 'current');
+    assert.throws(() => assertNotCurrent(name, ns));
+  }
   assert.equal(classify('rail-v19-b.json.123.abcdef01.tmp', ns), 'tmp');
   for (const name of ['reports', 'playdata', 'reviews', '.trash']) assert.equal(classify(name, ns), 'dir');
   for (const name of ['notes.txt', '../v18-a.json', 'v18-a.json.12.xyz.tmp', 'V18-a.json', 'a'.repeat(33) + '.json'])
@@ -58,17 +61,17 @@ test('inventory measures without reading contents, keeps idle current rooms and 
     const inv = await inventorySaves(dir, { ns, now });
     assert.equal(inv.ns, 'v19');
     assert.equal(inv.rail, 'rail-v19');
-    assert.deepEqual(inv.current, { count: 3, bytes: 25, idle: { count: 3, bytes: 25 } });
+    assert.deepEqual(inv.current, { count: 5, bytes: 44, idle: { count: 5, bytes: 44 } });
     assert.deepEqual(inv.candidates.oldNs, {
       'rail-v17': { count: 1, bytes: 8, newest: new Date(old).toISOString() },
       v18: { count: 2, bytes: 21, newest: new Date(now).toISOString() },
     });
-    assert.deepEqual(inv.candidates.legacy, { count: 2, bytes: 19 });
+    assert.deepEqual(inv.candidates.legacy, { count: 0, bytes: 0 });
     assert.deepEqual(inv.candidates.tmp, { count: 1, bytes: 8 });
     assert.deepEqual(inv.dirs, { '.trash': 5, playdata: 4, reports: 6, reviews: 6 });
     assert.deepEqual(inv.unknown, ['notes.txt']);
     assert.deepEqual(inv.files, ['rail-v17-d.json', 'v18-c.json', 'v18-c.json.123.abcdef01.tmp', 'v18-e.json']);
-    assert.deepEqual(inv.legacyFiles, ['garden-1.json', 't1v01-room.json']);
+    assert.deepEqual(inv.legacyFiles, []);
     assert.equal(inv.digest, hash(inv.files));
     assert.equal(inv.digestWithLegacy, hash([...inv.files, ...inv.legacyFiles].sort()));
     assert.equal((await inventorySaves(dir, { ns, now })).digest, inv.digest);
@@ -77,7 +80,7 @@ test('inventory measures without reading contents, keeps idle current rooms and 
     await fs.writeFile(path.join(dir, 'another-legacy.json'), 'x');
     const legacyAdded = await inventorySaves(dir, { ns, now });
     assert.equal(legacyAdded.digest, inv.digest);
-    assert.notEqual(legacyAdded.digestWithLegacy, inv.digestWithLegacy);
+    assert.equal(legacyAdded.digestWithLegacy, inv.digestWithLegacy);
     await fs.writeFile(path.join(dir, 'v16-new.json'), 'x');
     assert.notEqual((await inventorySaves(dir, { ns, now })).digest, inv.digest);
   } finally {

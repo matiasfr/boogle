@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { assertNotCurrent, classify, type Inventory } from './save-inventory.ts';
 import type { Store } from './store.ts';
+import { roomIdFromFile } from './room-ids.ts';
 
 const TMP_AGE_MS = 3_600_000;
 const TRASH_AGE_MS = 7 * 86_400_000;
@@ -17,7 +18,6 @@ export type Cleanup = {
   unknown: string[];
   errors: string[];
 };
-const roomId = (name: string) => /^([a-z0-9-]{1,32})\.json(?:\.\d+\.[0-9a-f]{8}\.tmp)?$/.exec(name)?.[1];
 
 async function lstat(file: string) {
   try {
@@ -60,7 +60,7 @@ export async function cleanupSaves(
     errors: [],
   };
   if (!enabled) return result; // The kill switch disables both moves and purging.
-  const ns = { world: inv.ns, rail: inv.rail };
+  const ns = { world: inv.ns, rail: inv.rail, currentRooms: inv.currentRooms };
   const trashRoot = path.join(dataDir, '.trash');
   const protectedFile = (name: string) => {
     try {
@@ -68,7 +68,7 @@ export async function cleanupSaves(
     } catch {
       return 'current';
     }
-    const id = roomId(name);
+    const id = roomIdFromFile(name);
     return id && isLive(id) ? 'live' : null;
   };
   const unknown = (name: string) => {
@@ -82,9 +82,9 @@ export async function cleanupSaves(
         if (await keepArchive(path.join(dir, 'files'), name, true)) keep = true;
         continue;
       }
-      const reason = protectedFile(child.name);
       const kind = classify(child.name, ns);
       const metadata = !inFiles && (child.name === 'manifest.json' || child.name === 'manifest.json.tmp');
+      const reason = metadata ? null : protectedFile(child.name);
       if (reason) {
         result.skipped.push({ name, reason });
         keep = true;
@@ -140,7 +140,7 @@ export async function cleanupSaves(
   for (const name of [...new Set([...inv.files, ...inv.legacyFiles])].sort()) {
     // Do not trust the inventory's file list to authorize arbitrary paths or a different file kind.
     const kind = classify(name, ns);
-    const id = roomId(name);
+    const id = roomIdFromFile(name);
     if (!id || (kind !== 'old-ns' && kind !== 'legacy' && kind !== 'tmp')) {
       result.skipped.push({ name, reason: 'not a candidate' });
       continue;

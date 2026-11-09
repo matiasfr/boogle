@@ -10,6 +10,7 @@ import { createStore } from '../src/store.ts';
 import { createWorldHost, createRailwayWorldHost } from '../src/host/world-host.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
+import { worldRoomId } from '../../src/world/namespace.ts';
 import { railMaxDuration } from '../../src/sim/railway.ts';
 import { railwayInvariant } from '../../src/sim/railway-world.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
@@ -155,9 +156,9 @@ async function fixture(roomId = railwayRoomId('host'), saveMs = 2000) {
 test('ordinary rooms keep the classic registry; a railway room holds railway as a server state', async () => {
   const f = await fixture();
   try {
-    const ordinary = createWorldHost({ roomId: 'v14-boogle', store: f.store, tick: false });
+    const ordinary = createWorldHost({ roomId: worldRoomId('boogle'), store: f.store, tick: false });
     assert.equal(ordinary.sync.registry().states.includes('railway'), false);
-    assert.throws(() => createRailwayWorldHost({ roomId: 'v14-boogle', store: f.store, tick: false }));
+    assert.throws(() => createRailwayWorldHost({ roomId: worldRoomId('boogle'), store: f.store, tick: false }));
     await ordinary.close({ save: false });
     assert.ok(f.host.sync.registry().states.includes('railway'));
     assert.ok(!('railway' in f.host.sync.stateHashes()), 'never hashed: clients mirror it');

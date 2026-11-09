@@ -13,7 +13,6 @@ function check(name: string, ok: boolean, detail = '') {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  (' + detail + ')' : ''}`);
 }
 
-const room = 'ws' + Math.random().toString(36).slice(2, 8);
 const args = process.argv.slice(2);
 const option = (flag: string) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined);
 const controlUrl = option('--url');
@@ -24,6 +23,9 @@ const { startWeb, waitFor, ev, snap, seesAll, sleep } = await import('./harness.
 const { freePort } = await import('../look/lib.ts');
 const { createService, loadConfig } = await import('../../server/src/server.ts');
 const { railwayChecks, railwayLoad, railwayCartRide } = await import('./ws-railway.ts');
+const { worldRoomId } = await import('../../src/world/namespace.ts');
+// Namespaced like the real game's rooms, so boot cleanup keeps it across the restart check.
+const room = worldRoomId('ws' + Math.random().toString(36).slice(2, 8));
 const dataDir = option('--data-dir') ?? (await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-ws-')));
 let port = await freePort();
 async function control(command: string) {

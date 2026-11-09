@@ -5,6 +5,10 @@ server saves that are no longer used. The follow-up authorizes automatic cleanup
 about any existing save data"; it "can cover everything". This revision supersedes the original staged inventory,
 digest approval and manual switch-flip proposal. Current-world files and live-room files remain protected.
 
+**Restart-review correction:** unprefixed files are not demonstrably legacy. The current generic server writes bare
+room IDs, including the network test's `ws<random>`, so cleanup must keep the entire supported bare-ID family.
+The current-room contract below supersedes the original proposal to move all unprefixed JSON files.
+
 ## Authority and scope
 
 - Pause and browser progress are Local. Disk inventory and cleanup are server-only.
@@ -13,6 +17,39 @@ digest approval and manual switch-flip proposal. Current-world files and live-ro
 - `WORLD_NS` is the authority for classic room prefixes; `RAILWAY_PLAY_NS` derives the railway prefix from it.
 - Room saves and recovery checkpoints are the same `DATA_DIR/<roomId>.json` files. Interrupted atomic writes can
   leave `<roomId>.json.<pid>.<8 hex>.tmp` files.
+
+## Current writer audit and restart invariant
+
+`server/src/store.ts` is the only root-room file writer. Both classic `createWorldHost` (its storage adapter) and
+`createRailwayWorldHost` (its recovery writer) call `store.write(roomId, document)` in `server/src/host/world-host.ts`.
+There is no separate crash/recovery file and no snapshot upload endpoint. Store writes a temp with the same room
+ID, then atomically renames it to `<roomId>.json`; the lock uses that exact ID too.
+
+| Current producer | Actual durable room IDs |
+| --- | --- |
+| Normal browser, classic island and prototypes (`src/netplay/net.ts`) | `worldRoomId(getRoomId())`, currently `v19-*` |
+| Production railway (`src/netplay/net.ts`) | `railwayRoomId(getRoomId())`, currently `rail-v19-*` |
+| Browser look/scenario/video tools | Go through the normal browser entry above; their plain URL `room=` names are not disk IDs |
+| Network runner (`dev/peer-test/ws-run.ts`) | Now uses `worldRoomId('ws' + random)`; previously wrote the bare `ws<random>.json` that cleanup misclassified |
+| Headless network page and Node worker (`ws-page.ts`, `node-player.ts`) | Explicit room query is already a wire/disk ID; fallback now uses `worldRoomId('test')` |
+| Transport with omitted room (`src/net/ws-room.ts`) | Fallback now uses `worldRoomId('default')`; explicit IDs remain opaque |
+| Railway network, load, cart, adapter and staging probes (`ws-railway.ts`, `staging-load.ts`) | All call `railwayRoomId`, including long-name hashing |
+| Generic host/WebSocket callers and explicit `SERVER_ROOMS` | Bare valid IDs such as `beach`, `one`, `proto-tunables`, `manifest`, and arbitrary test names remain supported |
+| Direct classic/headless host fixtures | Bare IDs or `worldRoomId`; stale `v02`, `v06`, `v07`, `v14` literals in current writer fixtures were replaced |
+| Direct railway host/crash/supply fixtures | `railwayRoomId`; deliberately obsolete inventory fixtures are seeded with filesystem calls, not current writers |
+| Reports, playdata and reviews | Separate subdirectory writers; never root room candidates |
+
+`server/src/room-ids.ts` is shared by admission, Store and inventory. A valid room ID is current if it has the active
+classic/railway prefix, has no reserved `v<number>-` / `rail-v<number>-` prefix, or is explicitly listed in this
+process's `SERVER_ROOMS`. The wildcard `*` does not exempt obsolete namespaces. Admission refuses those namespaces
+and Store independently rejects writing them, so **every successful current Store write is classified current**
+under the same configuration. Read-only inventory exposes its explicit `currentRooms` list; cleanup and trash purge
+use that same list. Bare JSON files and bare temp writes are retained, including former `t1v01-*` names: the generic
+host can still use them as classic rooms. Legacy counts/lists remain zero rather than guessing they are unused.
+
+Do not add a namespace only to Store's filename: a raw room and a namespaced room could then become two live
+authorities writing the same file. Prefix first-party producers at room creation instead, while retaining the
+supported generic raw-ID API. No saved payload migration or wire shape change is introduced.
 
 ## Part 1: Pause label
 
@@ -43,9 +80,10 @@ Owning documentation: `docs/game-design/identity.md`, `src/world/README.md`.
 ### Inventory
 
 `server/src/save-inventory.ts` enumerates names and metadata without reading save contents. It reports current
-counts/bytes and idle counts; old namespaces with counts/bytes/newest mtime; legacy and stale-temp counts/bytes;
-directory sizes; unknown names; sorted candidate/legacy lists and observational digests. Old classic rooms are
-included. Current classic and railway files, and their temp files, are protected even when idle or stale.
+counts/bytes and idle counts; obsolete namespaces with counts/bytes/newest mtime; stale-temp counts/bytes;
+directory sizes; unknown names; sorted candidate lists and observational digests. Old classic rooms are included
+unless explicitly configured. Current classic, railway, bare and configured files and their temps are protected
+even when idle or stale.
 Fresh non-current temp files (under one hour old) are kept. Unknown entries and symlinks are never candidates.
 
 ### Cleanup, enabled by default
@@ -54,7 +92,7 @@ After `store.init()` and inventory, **before `createRoomHost` or listening**, ca
 `SAVE_CLEANUP=off`, which disables both moves and purging. Unset or any other value enables cleanup. Remove the
 obsolete digest and legacy configuration fields; digests remain inventory metadata only.
 
-- Move all old-namespace classic/railway saves, unprefixed legacy saves and stale non-current temp files into a
+- Move only obsolete-namespace classic/railway saves and their stale temp files into a
   unique `DATA_DIR/.trash/<UTC ISO timestamp>-<suffix>/files/` folder. Keep the audit manifest in the parent run
   folder, so a room named `manifest` cannot overwrite it. Never delete a root save directly.
 - Under `store.withLock(roomId)`, independently reject current names, recheck file type, recheck temp age and check
@@ -91,9 +129,12 @@ no-op is a new result; older detailed manifests remain in trash until their rete
 3. Enable boot cleanup and expose `lastCleanup`; update server docs. A real service temp-directory test verifies
    moves before hosting, API reporting, manifest contents, current bytes/mtime, untouched auxiliary directories,
    older trash removal, newer retention, and a second process boot doing nothing. The classic resume proof uses a
-   current namespaced room so it exercises the retained-save contract.
-4. Format changed files. Run `npm run check` and `npm --prefix server test` after the final edit. Skip `test:net` per
-   the orchestrator; they run it. Run the restarted broker's `world-inputs` and relevant co-op route, open new PNGs,
+   current namespaced room, a raw `ws` room under wildcard hosting, and an explicitly configured older-looking room.
+   Each produces a real accepted item and durable tick, restarts with cleanup enabled and verifies both survive.
+   Store/inventory tests cover every producer family above and ensure obsolete/invalid writes cannot create files.
+4. Format changed files. Run `npm run check` and `npm --prefix server test` after the final edit. Run the network
+   restart proof through `node .look/see-client.ts net` and require 111/111. Use the restarted broker for relevant
+   captures, open new PNGs,
    inspect new desktop/phone label stills and distinguish execution health from visual quality. Preserve failures.
 5. Run a local seeded service and capture the first/second boot cleanup summaries and authenticated inventory.
    Commit in small imperative steps naming a DESIGN.md principle. Do not push, ship or operate production.
