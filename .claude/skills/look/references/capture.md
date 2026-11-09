@@ -1,6 +1,6 @@
 ## 1. Inspect: `npm run look`
 
-In Codex, use `--query 'proto=place'` rather than `BOOGLE_QUERY=`, since its rules don't see past an environment variable (docs/agents/codex.md, "Codex").
+In Codex, use `--query 'shot=play'` (or `--query 'proto=<name>'` for a prototype) rather than `BOOGLE_QUERY=`, since its rules don't see past an environment variable (docs/agents/codex.md, "Codex").
 
 ```
 npm run look -- --view hill                           # startup/capture check only
