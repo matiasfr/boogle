@@ -155,7 +155,8 @@ for (let k = 0; k < argv.length; k++) {
   [--question "what should be visible?"] [--eval setup.ts] [--action action.ts] [--video]
   [--filmstrip N] [--every K]              capture N drawn frames, K game frames apart (warp only)
   [--warm 10] [--frames 8] [--seconds 2] [--heatmap --region x,y,w,h (fractions)] [--size 960x600]
-  [--query 'proto=place&shot=play'] [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
+  [--query 'shot=play'] [--hud] [--out .look] [--name label] [--room proto-x] [--url http://...]
+  [--rail-seed awake]                       start from an accepted railway server save (dev/look/rail-seed.ts)
   [--island]                                start on the classic island (the original island at the origin)
   [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them

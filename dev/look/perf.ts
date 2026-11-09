@@ -1,7 +1,8 @@
 // Render and sim cost in under a minute: `npm run perf` (or `-- --url http://localhost:5173/` for a running game;
 // `-- --render` or `-- --sim` for one half; `-- --json file` writes the first render row from a fixed pose, for
 // dev/look/counts.ts). `--hardware` opens a visible browser and samples real frames for 5 seconds;
-// `--seconds N` (1–30), `--view NAME`, `--size 1210x702` and `--query proto=place` select the sample. Counts stay timing-free.
+// `--seconds N` (1–30), `--view NAME`, `--size 1210x702` and `--query 'k=v'` select the sample (default: the production
+// entry). Counts stay timing-free.
 // Render: draw calls, triangles, shadow-pass calls, geometries and shader stages (vertex and fragment, deduplicated) for the island as you enter it.
 // Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.

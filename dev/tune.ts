@@ -77,7 +77,7 @@ function main() {
   let raw: string;
   if (broker) {
     console.error('Broker transport opens a fresh page; local values last only for this capture.');
-    const launchQuery = new URLSearchParams(query ?? 'proto=place&tune=1');
+    const launchQuery = new URLSearchParams(query ?? 'tune=1');
     const queryRooms = launchQuery.getAll('room');
     if (queryRooms.length > 1 || (room && queryRooms[0] && room !== queryRooms[0]))
       throw new Error('Use one room: --room or the matching room query parameter.');

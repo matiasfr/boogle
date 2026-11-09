@@ -5,30 +5,33 @@ unstaged and untracked files, without fetching. `-- --base <ref>` changes the co
 plan; `-- --run` executes the printed commands sequentially and stops on failure. `-- --files a,b` previews a sample
 diff and cannot execute it. This routing is a minimum: read the applicable contracts above too.
 
-- Render/material/shader/assets changes: a restored cove still and a short cove-to-wake segment.
-- `src/sim`, `src/world`, `src/net*` or `server`: co-op cove-through-T2 and the existing `world-inputs` scenario.
-- Terrain/layout changes: cove-through-T1. Audio changes: three walk, jump and dry-landing repetitions (inspect/listen;
-  this is action coverage, not an audio quality verdict).
-- Other gameplay or browser-harness changes: cove-through-T1; docs and unrelated tooling need no browser.
+Every route is the production railway bot (`dev/look/bots/railway.ts`) on the production entry, from a fresh room.
 
-`npm run checkpoints` regenerates disposable solo fixtures through the pier using current saves and real route actions;
-`npm run checkpoints -- --players 2` generates the separate pair. In a broker job these use `.look/see-client.ts`.
-Regenerate when the world or route changes; no old-save migrations or compatibility checks. Fixtures live under
-`.look/checkpoints/{solo,coop}` and are only published after a successful regeneration. Held-item and transient animation
-states are not invented: `beam-in-hand` is not a fixture because the existing durable save does not promise that state.
+- Render/material/shader/assets changes: a `--rail-seed awake` still and a short opening-to-wake segment.
+- `src/sim`, `src/world`, `src/net*` or `server`: two peers through T2 and the existing `world-inputs` scenario.
+- Terrain/layout changes: through T1. Audio changes: three walk, jump and dry-landing repetitions on the opening path
+  (inspect/listen; this is action coverage, not an audio quality verdict).
+- Other gameplay or browser-harness changes: through T1; docs and unrelated tooling need no browser.
 
-Co-op fixtures are captured when both bots reach the coordinator barrier. Both files hold the same
-authority's shared save (population included), alongside each peer's own personal inventory, pose and route cursor.
-Independently timed arrival saves remain diagnostic observations, not a restorable pair. `checkpoint-pairs.json`
-retains the paired captures; publish fixtures only after the entire regeneration passes. Regenerate existing pairs.
+The railway is shared server state, so production checkpoints are accepted server saves, not client fixtures:
+`dev/look/rail-seed.ts` builds each `--rail-seed` stage from the lockstep sim and writes it through the real host's save
+path into the run's fresh data directory. Nothing is kept between runs and there is nothing to migrate.
+`npm run checkpoints` checks that the stages the routes use (`awake`, `q5-done`, `trains-on`) still build after a world or
+route change; `npm run checkpoints -- <stage> ...` checks others.
 
-`playthrough --from at-cove` resumes at the machine before waking it, through T1; `--from t1-done` goes through T2;
-`--from t2-funded` checks T2's laying/completion; `--from pier-ending` finishes the pier.
-Add `--to wake|t1-done|t2-funded|T2|T3|jump|forge-lit|Q1|Q2|hook|Q3|Q4|Q5|glider|trains|pier-ending|Q6|pier|audio-loop`
-to choose a later end. `--players 2` uses the co-op pair and coordinator. `--saves <directory>` selects fixtures explicitly.
-The entry pose is restored once, progress is checked against the live owners, and earlier route actions are skipped;
-there are no recovery teleports during co-op. Segment evidence does not prove a fresh full route or interruptions outside
-that segment. Read `report.txt`, `verdict.json` and the images even on failure.
+`playthrough --to <beat>` plays the production route from a fresh room and stops after that beat (`?botTo=`; names and
+bot beats in `dev/look/segments.ts`, `RAIL_STOPS`):
+`audio-loop|wake|t1-done|t2-funded|T2|T3|jump|forge-lit|Q1|Q2|hook|Q3|Q4|Q5|trains|Q6|pier` (`pier` is the whole route).
+`--from q5-done` (to `trains|Q6|pier`) and `--from trains-on` (to `Q6|pier`) write that seed and run the seeded
+`railway-b5b8-bot.ts` (`railFrom=boiler|q6`, `railStop`); the full bot cannot yet resume from earlier seeds.
+`--players 2` runs both peers (`&player=1` leads, `&player=2` follows) in one fresh room at 5x warp, from fresh, to
+`wake|t1-done|t2-funded|T2|T3|Q4|Q5|Q6|pier`, and passes when both finish and their mirrored railway hashes agree at every
+server step both sampled. Real inputs only: no recovery teleports. Segment evidence does not prove a fresh full route.
+Read `report.txt`, `verdict.json` and the images even on failure. The full production proof is
+`npm run playthrough -- --long --stall 6000` (the same as `--query 'shot=play' --eval dev/look/evals/railway-job.ts`).
+
+`--query 'proto=place&shot=play'` keeps the legacy Place route with its `.look/checkpoints/{solo,coop}` fixtures,
+`--from at-cove|t1-done|t2-funded|pier-ending` and `--regenerate`, until D1 deletes it; no routed check uses it.
 
 All harness browser launches share the machine queue at `/tmp/boogle-bots-<uid>` (across worktrees).
 Default capacity is 1; set `BOOGLE_BOT_CONCURRENCY` on launchers to raise it. Use the same setting everywhere;
