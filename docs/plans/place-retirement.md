@@ -939,6 +939,114 @@ The game, the railway bot and every routed check pass on boogle.club's entry.
   canopy). The gear model stays in `gear-models.ts`, and the code stays in Git history at this plan's base,
   `46eb7125`, for the movement slice.
 
+## Design review (designer, 2026-11-09)
+
+Read against DESIGN.md, [owner-calls](../agents/owner-calls.md), [decisions.md](../decisions.md) (index, then The shape
+of the game, Trains and the world, Progress and rewards, Characters and story), [direction.md](../direction.md), the
+newest [playtests](../playtests.md) (3, 4, 6, 7 and 8 November), [find-the-fun](find-the-fun.md) steps 6 and 10, and
+the research index's town, reward and movement entries. `node dev/playtest/cli.ts` doesn't run in this checkout (it
+can't find `playwright`), so playtest data comes from the written entries. Every Default and New call below is in
+[agent-calls](../agent-calls.md), status `open`.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Three enterable buildings: house, shop and museum | Decided | 2 Nov, "the direction after round 3" (Towns), and "the town you can go into" |
+| 2 | Shop and museum rise on the shared first-path fact (T3 done); until then their stake boards show the town's words | Default | Place's rule. Shared, so co-op sees one town |
+| 3 | The house stands from the start; its furniture follows the facts | Default | Place's rule |
+| 4 | Fact milestones: path = T3, forge = forge lit, depot = Q1, head = Q5, trains = trains on, pier = Q6 | Default | Nearest production equivalents. The `depot` lines talk about a cart, which production has |
+| 5 | Town sign population: 12, +8 at path, +6 at Far Head, +6 at the pier (32) | Default | Place's numbers. Production adds the Far Head and pier steps |
+| 6 | Each resident notices the newest fact once per player; rumours rotate; memory is personal, survives reload and is cleared by a world bump | Default | DESIGN 6. Copy unchanged |
+| 7 | Residents hold their tongue while a reward reveal or a conversation is up | Default | Keeps the reveal readable (3 Nov: cards closed by accident) |
+| 8 | Production keeps Sleeves at the shore in place of Place's shore worker; `SHORE_ASK` stays in `town-lines.ts` | Default | 8 Nov greeter call (agent-calls) |
+| 9 | Museum: a 1:120 table of the live railway, drawn within 34 m | Default | town-interiors rec 1, "shared spectacle". The owner loved the museum (4 Nov) |
+| 10 | One personal wardrobe; others see what you wear and what you're trying on | Decided | 6 Nov economy amendment ("certain wearables stay personal"); Design Table slots (hat, accessory, outfit) |
+| 11 | The T1 hat and T2 scarf go into the wardrobe and are worn as they arrive | Decided | 4 Nov production core: one recoverable cosmetic per player, later visitors included |
+| 12 | The shop is free; the list price is a joke that climbs with the score | Decided | 6 Nov "roughly six hours": "the shop stays free until the shared wallet ships"; money in dialogue stays a joke |
+| 13 | Station boxes for T3 and Q1–Q6, personal, each player rolling their own | New | **Yes** (owner question 3) |
+| 14 | Box odds and pity from Place's catalog (a Wonder by the third box) | Default | cosmetic-rarity recs 1–2 |
+| 15 | A box opens when you walk into it (1.25 m); it's saved before the reveal, which joins the reward queue | Default | Place's rule, plus the audit's mid-reveal fix |
+| 16 | Late joiners and reloads find an unopened box for every completion already reached | Default | Same spirit as the 4 Nov "later visitors" call; DESIGN 8 |
+| 17 | The curio shelf shows what you own; what you don't stands under dust sheets | Decided | 2 Nov, gifts hint at themselves |
+| 18 | The stowaway follows you, partners see it, and it rides trains | Decided | Design Table: the pet hops on your shoulder when you board a train. Fixes 3 Nov "a partner's pet not shown" |
+| 19 | Crystals are personal: seven spots, the magnet and chime, a shelf row | New | **Personal** (owner question 2) |
+| 20 | Gold finds are personal, with the pinned finds board | Default | DESIGN 6. The brass look is decided (5 Nov) |
+| 21 | Each secret grants a cosmetic only it gives; hook and jump secrets use production's abilities | Default | Place's rule; DESIGN 6 |
+| 22 | Missed prizes wait at the finders' bay; open either box and the other goes | Default | Place's rule |
+| 23 | The two glide-only secrets wait at the bay from trains on | Default | Follows question 5. They return to the world with the glider |
+| 24 | The telescope keeps only its fixed view; the buoys come across | Decided | 6 Nov, first prototype answers |
+| 25 | The sea, gulls and breeze ambience plays in the live game | Decided | 1 Nov sound audit: tweak the ambience, don't cut it |
+| 26 | The playtest flag (M or d-pad right) shows as "Flag" in every player's controls guide | Default | Owner calls, call-first feedback: flag moments without typing |
+| 27 | The wood and stone growth rows build on railway milestones now | New | **No: they wait for cargo in slice 5** (owner question 1; finding 1) |
+| 28 | Camps wake with their lines (camp 0 at path, camp 1 at Q3), with fireworks and chimney smoke | Default | Driven by what you connect, not by cargo, so it doesn't touch the 7 Nov call |
+| 29 | A growth show plays on first sight of a fact and snaps on load | Default | Place's rule (applies when the rows come) |
+| 30 | The forge workshop opens when the forge is lit | Decided | 5 Nov design proposals: "finishing it opens a tiny walk-in workshop" |
+| 31 | The glider's code leaves `main` with D1, archived, and returns in the movement slice | New | **Yes, with an archive tag** (owner question 5; finding 2) |
+| 32 | Interactable verbs, marks and every town, gift and stock line move verbatim | Decided | Owner calls: keep The Boogler's copy; plan header |
+
+**Count:** 10 Decided, 18 Default, 4 New.
+
+### Findings
+
+1. **T6's growth rows contradict a dated owner call (changes T6, not T1).** On 7 November the owner approved "Train
+   cargo and town growth: keep them for slice 5"
+   ([line2-part2-greybox](line2-part2-greybox.md#open-questions-for-the-owner-answered-7-november), question 4). In
+   Place the rows were cargo-built (`town.ts` line 1: "Cargo builds it"). DESIGN's core loop says "Towns grow from what
+   arrives", and [growing-towns](../research/growing-towns.md) rec 1 ties each cargo to a district. Rows on milestones
+   would teach that the town grows from milestones, and slice 5 would then change what that means. **Call:** T6 ships
+   the workshop (decided 5 November) and the camps waking (call 28), and leaves the rows for slice 5. `town` and
+   `stone` stay false until then; T1's test `'town and stone stay false'` already says so. Without the rows, the
+   village still visibly changes: shop and museum, population, workshop, camps. D1 deletes `town.ts`'s row code with
+   the rest; slice 5 restores it from the archive tag in finding 2. If the owner prefers milestones, T6a as written is
+   the switch, and it's reversible.
+2. **The glider is deferred, not dropped.** The inventory's "The glider is **dropped** (7 November …)" misstates
+   it. On 7 November its spot was "kept for the movement slice", and the owner has since said he just wanted it later
+   in the game. The 1 November ("glide is an unlock") and 5 November ("glider speed" upgrades) calls keep it in the
+   vision, and it was a 3 November highlight ("The glider, stop and reopen"). The code survives in history at
+   `46eb7125`, but a base commit is easy to lose track of. **Call:** D1 deletes it as planned. Before deleting, D1
+   tags its parent commit `archive/place` and pushes the tag (owner calls, prototype lifecycle; the precedent is
+   `archive/moves`). D1 names the tag in its commit body and in `docs/game-design/place.md`. That file's glider
+   paragraph (the BotW tuning: 10 m/s, 3.2 m/s sink, 5.2 m camera) becomes a short "Deferred: the glider" note, not a
+   deletion. The movement slice restores `moves.ts`/`moves-view.ts` from that tag and puts the two glide secrets
+   back in the world.
+3. **Question 4 is already decided.** The 6 November "roughly six hours" entry says the shop stays free until the
+   shared wallet ships. No wallet ships today: `src` has no wallet. Revisit this when the wallet lands.
+4. **Two kinds of crystal.** Open question 19's crystals are a shared building resource you mine and carry to make
+   pillars. Seven personal shelf crystals are fine now. When pillars come, the shelf ones need a distinct name or
+   look (shards, specimens), or must fold into the pillar crystals, so "crystal" doesn't mean two things. No change
+   to K1.
+5. **Players walked past the town last time (adds a T1 proof, no step change).** Round 4 (3 November): house 5 s,
+   shop 7 s, the museum never, `Talk` shown 11 times and pressed 0, nothing tried on. Solo, with time, the owner loved
+   the NPCs and the museum (4 November). This plan ports Place as it was, so that discovery gap comes along.
+   - T1 adds one still from the path at Sleeves, on a fresh world: does the house door read as open and lit from
+     there? (DESIGN 11; [town-interiors](../research/town-interiors.md) rec 1.)
+   - T2's talk still checks that a resident's bark is visible from the doorway. Players learn to go in from that pull,
+     not from a prompt.
+6. **Different boxes for each friend is a call, not an accident.** In round 4 Grant asked about it. C1 keeps a
+   personal roll. [cosmetic-rarity](../research/cosmetic-rarity.md) ("give each friend their own result from the
+   same shared accomplishment") and the 6 November personal-wearables call support it. It's logged with call 13.
+7. **Conversation framing indoors.** [town-interiors](../research/town-interiors.md) rec 3 asks the conversation
+   camera to respect indoor clearance. T2 mounts conversations inside rooms, so T2's talk still should be taken
+   indoors in the house, not only at a door.
+8. **The playtest flag is visible to everyone.** "Flag" in the controls guide on boogle.club means nothing to a
+   visitor who isn't playtesting. This is a default, so it ships, but it's on the owner's small-calls list.
+
+**Copy.** No line of The Boogler's or the town's is edited or lost. In `src/proto/place`, The Boogler appears only in
+comments (`shop.ts`, `score.ts`, `folk.ts`, `chatter.ts`). Suspect lines for the owner: player-facing lines in modules
+D1 deletes. Each is replaced or removed by a decision, but none moves anywhere:
+
+- `objective.ts` prompts such as "Follow the path." and "That was the whole test. Wander as long as you like." (the
+  objective was removed 3 November);
+- `celebrate.ts` banners "Far Head!" and "Thanks for playing!";
+- `coop.ts` buttons "Start over (both)" and "Really? Resets you both";
+- `moves.ts` control labels "Open or close the glider, in the air" and "Hook shot, at a ring". The glider's label
+  comes back with the archive tag.
+
+### Owner questions
+
+None new. The designer decided the plan's five, below, and logged each one. None blocks a job.
+
 ## Owner questions
 
 1. **Town growth and the forge workshop.** Production has no train cargo yet; that's production-core slice 5, as you
@@ -946,18 +1054,34 @@ The game, the railway bot and every routed check pass on boogle.club's entry.
    Head, the pier), with the workshop opening when the forge lights? Or should they wait until trains carry cargo to
    town? *Recommended: milestones now.* The same buildings rise for everyone, no new state, and slice 5 swaps the
    trigger for real deliveries later.
+   **Status:** Decided by designer, logged in agent-calls; owner may revisit. **Call:** the workshop opens when the
+   forge is lit (decided 5 November), and the camps wake with their lines. The wood and stone rows wait for cargo in
+   slice 5, as the owner approved on 7 November. See design review, finding 1. T6a as written is the switch if
+   the owner wants milestones.
 2. **Crystals: yours, or everyone's?** Personal means each player finds all seven, with their own magnet-and-chime
    moment and their own shelf. Shared means the first finder takes it for the whole world; that needs new server state
    and a world reset. *Recommended: personal for now.* Crystals do nothing yet, and when they become the pillar
    resource (open question 19) they become shared state then.
+   **Status:** Decided by designer, logged in agent-calls; owner may revisit. **Call:** personal, as recommended. No
+   `WORLD_NS` bump and no J3 overlap. When pillars come, the shelf crystals get a distinct name or look (finding 4).
 3. **Station boxes after the scarf.** In Place, every finished stretch after T2 handed you a personal box: common,
    rare or Wonder, with a guaranteed Wonder by the third. Production stops after the hat and scarf. Bring the boxes
    for T3 and Q1–Q6 back? *Recommended: yes, as personal wearables.* This matches 6 November ("what you wear …
    stays personal"). The alternative is to keep only secret crates and the shop.
+   **Status:** Decided by designer, logged in agent-calls; owner may revisit. **Call:** yes, personal, with each
+   player rolling their own box (finding 6). This fits "Rewards should be maximal" (2 November) and the Design Table's
+   boxes with rarity.
 4. **Does the shop cost anything?** In Place, Fine Prices shows absurd prices that climb with the money and charges $0.
    *Recommended: keep it free and the prices a joke* (6 November: money in dialogue stays a joke; NPC copy unchanged).
    The alternative is to charge the shared wallet for shop wearables.
+   **Status:** Decided by designer, logged in agent-calls; owner may revisit. **Call:** free, with joke prices. The
+   owner's 6 November "roughly six hours" entry already covers this ("the shop stays free until the shared wallet
+   ships"); revisit when the wallet lands (finding 3).
 5. **The glider.** It isn't in the live game (left out of line 2 part 2 for the movement slice). Deleting
    `?proto=place` deletes its code, which stays in Git history, and the two glide-only secrets would wait at the
    finders' bay instead. *Recommended: yes, delete it now and rebuild it in the movement slice.* The alternative is to
    park the glide physics in production, unused, until then.
+   **Status:** Decided by designer, logged in agent-calls; owner may revisit. **Call:** delete it in D1, deferred and
+   not cut. Before deleting, D1 tags its parent commit `archive/place` and pushes the tag. It names the tag in its
+   commit and in `docs/game-design/place.md`, keeps the glider's tuning as a "Deferred: the glider" note, and the
+   movement slice restores the code from that tag (finding 2). `46eb7125` also has it.
