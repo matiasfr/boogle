@@ -685,7 +685,7 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 `docs/game-design/place.md`.
 
 **Steps.**
-- [ ] **F3a.** Port the buoys (`BUOYS`, `updateBuoys`) and the telescope at `SCOPE`, with its `Look` target, using
+- [x] **F3a.** Port the buoys (`BUOYS`, `updateBuoys`) and the telescope at `SCOPE`, with its `Look` target, using
   `telescope.ts`'s **fixed** view as the only view. Drop `v=pan` and the v1 fly-out (6 November call).
 
 **Proofs.**

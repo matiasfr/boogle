@@ -175,6 +175,7 @@ export const INPUT_ALLOW = [
   'src/render/audio.ts', // any gesture unlocks the audio context; reads no control
   'src/features/wake-lock.ts', // any input takes the screen wake lock; reads no control
   'src/boogler/dialogue.ts', // keeps clicks inside the DOM dialogue from reaching the canvas; reads no control
+  'src/entities/lookout/view.ts', // keeps taps on the telescope's buttons from reaching the canvas; reads no control
   'src/render/reward-reveal.ts', // TODO: render file, owned by the performance agent for now; move to onMenuKey and dismissPointer
 ];
 
