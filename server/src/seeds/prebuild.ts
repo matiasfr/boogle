@@ -8,6 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { buildSeedDoc } from './build.ts';
 import { isSeedStage, type SeedStage } from '../../../src/sim/railway-seeds.ts';
 import { RAILWAY_PLAY_NS } from '../../../src/world/railway-namespace.ts';
+import { OFFERED_STAGES } from '../../../src/world/railway-jump.ts';
 
 export type SeedManifest = { ns: string; stages: SeedStage[] };
 
@@ -32,5 +33,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const named = args.filter((a, i) => !a.startsWith('--') && (at < 0 || i !== at + 1));
   const bad = named.filter((s) => !isSeedStage(s));
   if (bad.length) throw new Error(`Unknown railway seed: ${bad.join(', ')}`);
-  await prebuild(out, named.length ? (named as SeedStage[]) : ['awake']);
+  await prebuild(out, named.length ? (named as SeedStage[]) : OFFERED_STAGES);
 }
