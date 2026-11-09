@@ -106,6 +106,190 @@ export async function returnFromTower(bot: Bot, ids = ['t5', 't4', 't3', 't2', '
   cam.pitch = -0.1;
 }
 
+/** The original p2 approach; the first visit pauses here to take the device and play its demo. */
+async function approachNeedleBell(bot: Bot) {
+  const view = inspectRailway()!.line2View;
+  let lowest = Infinity;
+  for (const [x, y, z] of view.routePoints.hook) {
+    hookCheck(bot, await bot.straight(x!, z!, 0.6, 10000), 'walked the hook walkway');
+    hookCheck(
+      bot,
+      await bot.until(() => me.coyote > 0 && !me.swimming, 5000, 'walkway supports the walker'),
+      'walkway supports the walker',
+    );
+    lowest = Math.min(lowest, me.body!.position.y - PLAYER_R - y!);
+  }
+  hookCheck(bot, lowest > -0.25, `hook walkway has no dip (${lowest.toFixed(2)} m)`);
+}
+
+async function climbNeedleBell(bot: Bot, onRing?: (id: string) => Promise<void>) {
+  // With no demo on a repeat visit, reach p2 by the same walkway and pull to t0 yourself.
+  if (!onRing) {
+    await approachNeedleBell(bot);
+    await hookTo(bot, 't0');
+  }
+  for (const id of ['t1', 't2', 't3', 't4', 't5', 'summit']) {
+    await hookTo(bot, id);
+    await onRing?.(id);
+  }
+  hookCheck(
+    bot,
+    Math.abs(me.body!.position.y - PLAYER_R - 102.4) < 1 && me.coyote > 0,
+    'standing on Needle Bell summit',
+  );
+}
+
+async function downFromNeedleBell(bot: Bot, noJump: (beat: string) => void) {
+  await returnFromTower(bot);
+  noJump('hook descent');
+  const back = inspectRailway()!.line2View.routePoints.hook;
+  for (let i = back.length - 1; i >= 0; i--)
+    hookCheck(bot, await bot.straight(back[i]![0]!, back[i]![2]!, 0.6, 10000), 'walked back down the walkway');
+  noJump('hook walk return');
+}
+
+// B's pinned Local inspection contract. Optional until that parallel job merges; never invent its observations.
+type B4View = {
+  sea?: { x: number; y: number; z: number; pulled: boolean };
+  seaGateSolid?: boolean;
+  farHead?: { x: number; y: number; z: number };
+  trestleLamps?: number;
+};
+type B4Route = {
+  bot: Bot;
+  checkpoint: (name: string) => Promise<void>;
+  walkQuarry?: (from: number, to: number) => Promise<void>;
+};
+
+async function walkQuarryRail(bot: Bot, from: number, to: number) {
+  const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+  const direction = Math.sign(to - from);
+  for (let s = from; direction * (to - s) >= 0; s += direction * 3) {
+    const point = lineAt(LINKS[1]!.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
+    hookCheck(
+      bot,
+      await bot.straight(point.x + ORIGIN.x, point.z, 0.5, 12000),
+      `walked quarry rail at ${s.toFixed(0)} m`,
+    );
+    hookCheck(
+      bot,
+      await bot.until(() => me.coyote > 0 && !me.swimming, 5000, 'quarry track supports the walker'),
+      'quarry track supports the walker',
+    );
+  }
+}
+
+/** Real inputs only, shared by the production route and the two accepted-state seeded half-runs. */
+export async function seaToFarHead(
+  { bot, checkpoint, walkQuarry = (a, b) => walkQuarryRail(bot, a, b) }: B4Route,
+  from: 'sea' | 'q5' = 'sea',
+) {
+  const read = () => inspectRailway()!;
+  const l2 = () => read().line2;
+  const view = () => read().line2View as RailwayViewInspection['line2View'] & B4View;
+  const check = (ok: unknown, beat: string) => hookCheck(bot, ok, beat);
+  const until = async (fn: () => unknown, beat: string, ms = 600000) => check(await bot.until(fn, ms, beat), beat);
+  const walk = async (x: number, z: number, radius = 2.4) =>
+    check(await bot.walk(x, z, radius), `B4 walked to ${x.toFixed(1)}, ${z.toFixed(1)} without recovery`);
+  check(
+    view().sea && typeof view().seaGateSolid === 'boolean' && view().farHead && typeof view().trestleLamps === 'number',
+    'B4 Local views missing: line2View.sea, seaGateSolid, farHead, trestleLamps (job B required)',
+  );
+  check(l2().stations[3]?.completion === 1, 'B4 starts with Q4 laid');
+  if (from === 'sea') {
+    const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+    const deck = lineAt(LINKS[1]!.line, 84, { x: 0, z: 0, ux: 0, uz: 1 });
+    await walk(deck.x + ORIGIN.x, deck.z, 1);
+    await walkQuarry(84, 92);
+    const jumps = read().reward.tools.jumps;
+    await climbNeedleBell(bot);
+    const sea = view().sea!;
+    await walk(sea.x, sea.z, 0.8);
+    await until(() => interactTarget()?.id === 'railway-sea-switch', 'summit offers railway-sea-switch', 5000);
+    check(await bot.use(sea.x, sea.z, 'pull sea switch', /^Pull$/), 'sea switch offered');
+    check(await bot.work(() => l2().seaOpen, 5000, 380), 'sea switch accepted');
+    await until(() => l2().seaOpen && !view().seaGateSolid, 'sea gate collider removed');
+    await checkpoint('sea gate');
+    await downFromNeedleBell(bot, (beat) =>
+      check(read().reward.tools.jumps === jumps, `${beat} needed no extra air jump`),
+    );
+  }
+  check(l2().seaOpen, 'Q5 seed or summit pull opens the sea gate');
+  const q5 = view().frames[4]!;
+  check(q5, 'Q5 frame exists');
+  const { LINKS, ORIGIN, lineAt } = await import('../../../src/proto/place/layout.ts');
+  if (!(await bot.plan(q5.x, q5.z, 2.4)).arrives) {
+    // The finished Q4 track is the dry fallback across the gorge, just as for Q3/Q4 deliveries.
+    const start = lineAt(LINKS[1]!.line, 10, { x: 0, z: 0, ux: 0, uz: 1 });
+    await walk(start.x + ORIGIN.x, start.z, 1);
+    const home = [CART_PHASE.HOME, CART_PHASE.REST, CART_PHASE.LOAD] as number[];
+    await until(() => home.includes(l2().cart.phase), 'the cart is off the quarry track');
+    await walkQuarry(10, 274);
+    const off = lineAt(LINKS[1]!.line, 274, { x: 0, z: 0, ux: 0, uz: 1 });
+    const x = off.x + ORIGIN.x;
+    const side = Math.sign(-off.uz * (q5.x - x) + off.ux * (q5.z - off.z)) || 1;
+    check(
+      await bot.straight(x - off.uz * side * 4.5, off.z + off.ux * side * 4.5, 0.6, 8000),
+      'stepped off the track beside Q5',
+    );
+  }
+  await walk(q5.x, q5.z);
+  const job = () => l2().stations[4]!;
+  const deliver = async () => {
+    await walk(q5.x, q5.z);
+    await until(
+      () => (read().carry === 0 && read().railsCarry === 0 && read().pending === 0) || job().start >= 0,
+      'Q5 frame unloads automatically',
+      30000,
+    );
+  };
+  for (let trip = 0; job().start < 0; trip++) {
+    check(trip < 8, 'Q5 funds in bounded depot trips');
+    const seen = new Set<number>();
+    const waiting = l2().depot + l2().depotRails === 0;
+    await until(() => {
+      seen.add(l2().cart.phase);
+      return l2().depot > 0 || l2().depotRails > 0 || job().start >= 0;
+    }, 'Q5 depot brings a load');
+    if (job().start >= 0) break;
+    if (waiting) check(seen.has(CART_PHASE.RUN) || seen.has(CART_PHASE.DROP), 'Q5 cart seen bringing the load');
+    if (l2().depot > 0 && job().stock < 24) {
+      const depot = view().depot!;
+      const before = job().stock;
+      check(await bot.use(depot[0]!, depot[2]!, 'take Q5 depot logs', /^Pick up$/), 'Q5 depot rack offered');
+      check(await bot.work(() => read().carry > 0 || job().stock > before, 5000, 380), 'Q5 depot logs accepted');
+      await until(() => read().pending === 0, 'Q5 depot logs settle');
+      await deliver(); // Logs and rails share the same back capacity.
+    }
+    if (l2().depotRails > 0 && job().railStock < 24) {
+      const shelf = view().shelf!;
+      const before = job().railStock;
+      check(await bot.use(shelf.x, shelf.z, 'take Q5 shelf rails', /^Take rails$/), 'Q5 rails shelf offered');
+      check(
+        await bot.work(() => read().railsCarry > 0 || job().railStock > before, 5000, 380),
+        'Q5 shelf rails accepted',
+      );
+      await until(() => read().pending === 0, 'Q5 shelf rails settle');
+    }
+    await deliver();
+    bot.note(`Q5 trip ${trip + 1} (${job().stock}/24 logs, ${job().railStock}/24 rails)`);
+  }
+  await until(() => job().start >= 0, 'Q5 funded');
+  await checkpoint('Q5 funded');
+  await until(() => job().completion === 1, 'Q5 laid once');
+  await checkpoint('Q5 laid');
+  // Join the finished deck on the rim, behind the machine now parked at Far Head.
+  const rim = lineAt(LINKS[1]!.line, 286, { x: 0, z: 0, ux: 0, uz: 1 });
+  await walk(rim.x + ORIGIN.x, rim.z, 0.5);
+  await walkQuarry(286, 546);
+  const end = view().farHead!;
+  check(await bot.straight(end.x, end.z, 0.5, 12000), 'walked the final two metres to Far Head');
+  await until(() => me.coyote > 0 && !me.swimming, 'Far Head supports the walker', 5000);
+  check(Math.hypot(me.body!.position.x - end.x, me.body!.position.z - end.z) < 3, 'Far Head reached along the trestle');
+  check(view().trestleLamps! > 0, 'Far Head trestle lamps placed');
+  await checkpoint('Far Head');
+}
+
 async function dropFromTower(bot: Bot, id: 't3' | 'summit') {
   if (id === 't3') await returnFromTower(bot, ['t5', 't4', 't3']);
   const [{ PADS }, layout] = await Promise.all([
@@ -992,10 +1176,12 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         LAYING_MS * 3,
       );
       await checkpoint('Q4 laid');
+      await until(() => read().line2?.stations[4]?.completion === 1, 'leader lays Q5', LAYING_MS * 3);
+      await checkpoint('Q5 laid');
       document.documentElement.dataset.railwayProof = 'done';
       await bot.wait(3000);
       logHashes();
-      bot.finish('line one with a friend; line two observed to Q4');
+      bot.finish('line one with a friend; line two observed to Q5');
       return;
     }
     // Back down the pillar lip and home along line one.
@@ -1179,13 +1365,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         const deck = qAt(84);
         await walk(deck.x + layout.ORIGIN.x, deck.z, 1);
         await walkQuarry(84, 92);
-        let lowest = Infinity;
-        for (const [x, y, z] of v2().routePoints.hook) {
-          require(await bot.straight(x!, z!, 0.6, 10000), 'walked the hook walkway');
-          await until(() => me.coyote > 0 && !me.swimming, 'walkway supports the walker', 5000);
-          lowest = Math.min(lowest, me.body!.position.y - PLAYER_R - y!);
-        }
-        require(lowest > -0.25, `hook walkway has no dip (${lowest.toFixed(2)} m)`);
+        await approachNeedleBell(bot);
         noJump('hook walk');
         const hook = v2().hook;
         require(hook.available, 'hook device available after Q2');
@@ -1200,8 +1380,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         aimHook('t1');
         await until(() => read().hookShot.pick === 't1', `first climb ring picked: ${hookWhyNot('t1')}`, 3500);
         await checkpoint('hook taken');
-        for (const id of ['t1', 't2', 't3', 't4', 't5', 'summit']) {
-          await hookTo(bot, id);
+        await climbNeedleBell(bot, async (id) => {
           if (id === 't2' && query.get('hookReload') === '1') {
             await bot.wait(5500); // Let the ordinary safe-ground pose writer save this actual landing.
             aimHook('t3');
@@ -1215,9 +1394,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
             location.reload();
             await new Promise<void>(() => {});
           }
-        }
-        require(Math.abs(me.body!.position.y - PLAYER_R - 102.4) < 1 &&
-          me.coyote > 0, 'standing on Needle Bell summit');
+        });
         noJump('hook climb');
         await checkpoint('needle bell summit');
         const drop = query.get('hookDrop');
@@ -1226,12 +1403,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
           bot.finish(`hook drop ${drop} walked home without recovery`);
           return;
         }
-        await returnFromTower(bot);
-        noJump('hook descent');
-        const back = v2().routePoints.hook;
-        for (let i = back.length - 1; i >= 0; i--)
-          require(await bot.straight(back[i]![0]!, back[i]![2]!, 0.6, 10000), 'walked back down the walkway');
-        noJump('hook walk return');
+        await downFromNeedleBell(bot, noJump);
         if (query.get('earlyLedge') === '1') {
           // Before Q3: reach the apron with the optional double jump; the uncoupled lever must do nothing.
           const [, top] = v2().routePoints.quarry;
@@ -1394,6 +1566,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await checkpoint('Q4 funded');
     await until(() => q4Job().completion === 1, 'Q4 laid once', LAYING_MS);
     await checkpoint('Q4 laid');
+    await seaToFarHead({ bot, checkpoint, walkQuarry });
     const totals = read().counts;
     require(totals.rails && totals.rails.total === totals.rails.poured, 'rails conserve the forge pour');
     require(totals.total === LINE1_INITIAL[0] + totals.produced, 'logs conserve through line two');
@@ -1402,7 +1575,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await bot.wait(3000);
       logHashes();
     }
-    bot.finish('line one, forge, Q1-Q3, Needle Bell hook climb and descent, quarry ramp and lever, pack and Q4');
+    bot.finish('line one, forge, Q1-Q5, Needle Bell hook climb and descent, sea gate and Far Head');
   } catch (error) {
     document.documentElement.dataset.railwayProof = 'failed';
     bot.never(`production line1 stopped: ${error instanceof Error ? error.message : String(error)}`);
