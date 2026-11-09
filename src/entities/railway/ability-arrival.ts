@@ -115,7 +115,8 @@ export function createAbilityArrival(
   const missing = new Map<string, number>();
   const watched = new Set<string>();
 
-  // The charge mark: a teal ring under Buddy's feet in the air, filled while the second jump is there to spend.
+  // The charge mark: a filled teal ring under Buddy's feet in the air while the second jump is there to spend (hollow
+  // only in a flourish whose unlock arrived mid-flight).
   const geometries = [
     new THREE.RingGeometry(0.24, 0.32, 32).rotateX(-Math.PI / 2),
     new THREE.CircleGeometry(0.2, 28).rotateX(-Math.PI / 2),
@@ -337,7 +338,9 @@ export function createAbilityArrival(
       }
       if (glidePulse > 0 && (canopy || grounded)) glidePulse = 0;
       glidePulse = Math.max(0, glidePulse - dt);
-      mark.visible = state.jump && !me.swimming && (airborne || flash > 0 || pulse > 0);
+      // In the air only while the second jump is there to spend: spending it leaves the glints, not a hollow ring
+      // (owner, 9 November).
+      mark.visible = state.jump && !me.swimming && ((airborne && charge && !deferred) || flash > 0 || pulse > 0);
       if (mark.visible) {
         feet(mark.position);
         fill.visible = charge && !deferred;
