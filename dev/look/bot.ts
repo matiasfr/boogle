@@ -13,6 +13,7 @@ import { PLAYER_R, SEA, SWIM_DEPTH, WALKABLE_NY } from '../../src/constants.ts';
 const CELL = 1; // m: a deck two metres wide has centres on it
 const STEP_UP = 0.9; // m in one cell without a jump
 const JUMP_UP = 1.4; // the jump tops out at 1.6
+const OFF_START_DROP = 3; // m: the way off wherever you stand now, however high a thing the plan can't see put you
 const DROP = JUMP_UP; // m: anything further is a way down you might not get back up, and a plan shouldn't count on those
 const MAX_NODES = 25000; // past this it goes as near as it got and thinks again from there
 const CLOSE = 1.5; // m past the distance asked for that still counts as there, for what's solid in the middle
@@ -97,23 +98,23 @@ export function makeBot(opts: BotOptions = {}) {
   const hit = rayHit();
   const mask = () => getMask(body()) & ~GROUP.DEFAULT; // every static thing you'd walk into, never your own body
   /** Where you'd stand at (x, z), coming from height y: null if nothing's there, or a wall stands in it. */
-  function ground(x: number, y: number, z: number, steepest = WALKABLE_NY) {
+  function ground(x: number, y: number, z: number, steepest = WALKABLE_NY, drop = DROP) {
     // A little off the exact spot: a ray straight down an edge of a heightfield's cell goes through it.
     const from = { x: x + 0.017, y: y + JUMP_UP + 0.3, z: z + 0.013 };
-    const to = { x: x + 0.017, y: y - DROP - 0.5, z: z + 0.013 };
+    const to = { x: x + 0.017, y: y - drop - 0.5, z: z + 0.013 };
     if (!raycastClosest(from, to, { mask: mask() }, hit)) return null;
     if (hit.distance < 0.01 || hit.hitNormalWorld.y < steepest) return null; // inside something, or too steep to stand on
     return hit.hitPointWorld.y;
   }
   /** From a spot to the next, one cell or so off. Returns the height there, or null if you can't. */
-  function step(a: Point, x: number, z: number, steepest = WALKABLE_NY) {
+  function step(a: Point, x: number, z: number, steepest = WALKABLE_NY, drop = DROP) {
     // Into an avoided spot, never; out of one (you're standing in it), always.
     for (const s of avoiding)
       if (Math.hypot(x - s.x, z - s.z) < s.r && Math.hypot(a.x - s.x, a.z - s.z) >= s.r) return null;
-    let y = ground(x, a.y, z, steepest);
+    let y = ground(x, a.y, z, steepest, drop);
     // A low bank can lead onto the water surface. Never turn a high ledge's missing floor into a shortcut down.
     if (opts.allowSwimming && a.y <= SEA + JUMP_UP && (y === null || water(x, y, z))) y = SEA - SWIM_DEPTH - PLAYER_R;
-    if (y === null || y - a.y > JUMP_UP || a.y - y > DROP || (!opts.allowSwimming && water(x, y, z))) return null;
+    if (y === null || y - a.y > JUMP_UP || a.y - y > drop || (!opts.allowSwimming && water(x, y, z))) return null;
     const lift = PLAYER_R + 0.45;
     const from = { x: a.x, y: a.y + lift, z: a.z },
       to = { x, y: y + lift, z };
@@ -162,10 +163,10 @@ export function makeBot(opts: BotOptions = {}) {
     await wait(0);
     avoiding = opts.avoid?.() ?? [];
     const p = body().position;
-    const y0 =
-      opts.allowSwimming && me.swimming
-        ? SEA - SWIM_DEPTH - PLAYER_R
-        : (ground(p.x, p.y - PLAYER_R, p.z) ?? p.y - PLAYER_R);
+    const under = opts.allowSwimming && me.swimming ? null : ground(p.x, p.y - PLAYER_R, p.z);
+    // Nothing in reach below, yet you stand: on something the plan can't see, such as a parked train's roof.
+    const high = under === null && me.coyote > 0;
+    const y0 = opts.allowSwimming && me.swimming ? SEA - SWIM_DEPTH - PLAYER_R : (under ?? p.y - PLAYER_R);
     const start: Node = {
       x: p.x,
       y: y0,
@@ -233,8 +234,9 @@ export function makeBot(opts: BotOptions = {}) {
           z = iz * CELL;
         const cell = `${ix},${iz}`;
         if ((blocked.get(cell) ?? 0) > clock) continue;
-        // You may be standing somewhere steep already, and the way off it counts.
-        const y = step(a, x, z, a.g < 3 ? 0.3 : WALKABLE_NY);
+        // You may be standing somewhere steep already, and the way off it counts. So does a way down from
+        // somewhere the plan can't see (a parked train's roof, 2 m up): a person just steps off it.
+        const y = a.g < 3 ? step(a, x, z, 0.3, high ? OFF_START_DROP : DROP) : step(a, x, z);
         if (y === null || nearEdge(x, y, z)) continue;
         const key = `${cell},${Math.round(y / 2)}`;
         const g = a.g + Math.hypot(dx, dz) * CELL + (y - a.y > STEP_UP ? 4 : 0);
