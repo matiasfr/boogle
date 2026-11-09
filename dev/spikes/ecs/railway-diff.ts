@@ -122,6 +122,13 @@ function useful(s: Railway, pid: string): Partial<RailAction> {
       { op: 'rail.boilerDrop', revision: l2.boiler.revision, x: 91900, y: 1815, z: 540 },
       { op: 'rail.boilerFit', revision: l2.boiler.revision },
       { op: 'rail.call', id: 2 },
+      { op: 'rail.breaker' },
+      { op: 'rail.strike', id: 1 },
+      { op: 'rail.kiln' },
+      { op: 'rail.footTake', rack: 0 },
+      { op: 'rail.footSet', site: 0 },
+      { op: 'rail.cradle' },
+      { op: 'rail.turn', to: 1, revision: s.shed?.tableRev ?? 0 },
     ]);
   }
   return { op: 'rail.jump' };
@@ -232,7 +239,7 @@ function run(seed: number, steps: number) {
         yaw: pick([0.5, 1.25, -2]),
         collapsed: r() < 0.5,
       }),
-      () => ({ op: 'rail.mine', id: Math.floor(r() * 3) }),
+      () => ({ op: 'rail.mine', id: Math.floor(r() * 5) }),
       () => ({
         op: 'rail.deposit',
         station: pick([LINE1_STATIONS[active]!.id, 'F', q >= 0 ? LINE2_STATIONS[q]!.id : 'Q1', 'T1']),
@@ -263,10 +270,17 @@ function run(seed: number, steps: number) {
       () => ({ op: 'rail.boilerTake', revision: s.line2!.boiler.revision }),
       () => ({ op: 'rail.boilerDrop', revision: s.line2!.boiler.revision, x: 91900, y: 1815, z: 540 }),
       () => ({ op: 'rail.boilerFit', revision: s.line2!.boiler.revision }),
-      () => ({ op: 'rail.call', id: Math.floor(r() * 5) }),
+      () => ({ op: 'rail.call', id: Math.floor(r() * 6) }),
+      () => ({ op: 'rail.breaker' }),
+      () => ({ op: 'rail.strike', id: Math.floor(r() * 2) }),
+      () => ({ op: 'rail.kiln' }),
+      () => ({ op: 'rail.footTake', rack: Math.floor(r() * 2) }),
+      () => ({ op: 'rail.footSet', site: Math.floor(r() * 3) }),
+      () => ({ op: 'rail.cradle' }),
+      () => ({ op: 'rail.turn', to: Math.floor(r() * 2), revision: s.shed?.tableRev ?? 0 }),
       () => ({ op: 'rail.reject' }),
     ];
-    const weights = [1, 8, 3, 8, 3, 3, 1, 1, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 0.3];
+    const weights = [1, 8, 3, 8, 3, 3, 1, 1, 2, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.3];
     let x = r() * weights.reduce((a, b) => a + b, 0),
       k = 0;
     while ((x -= weights[k]!) > 0) k++;

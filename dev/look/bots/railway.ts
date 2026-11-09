@@ -21,6 +21,7 @@ import { CART_PHASE } from '../../../src/sim/railway-cart.ts';
 import { fallArrival } from '../../../src/fall/arrival.ts';
 import { net, onRemotePresence, remotes } from '../../../src/netplay/net.ts';
 import { RAIL_STOPS } from '../segments.ts';
+import { RAIL_STONE } from '../../../src/sim/railway-works-layout.ts';
 
 /** `?botTo=<stop>` ends the route after that beat: a segment, not a failure. */
 class RouteStop extends Error {}
@@ -1284,8 +1285,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     const counts = read().counts;
     require(counts.total === LINE1_INITIAL[0] + counts.produced, 'counted logs conserve initial supply and renewal');
     require(counts.stone &&
-      counts.stone.total ===
-        LINE1_INITIAL[1] + counts.stone.produced, 'counted stone conserves initial supply and renewal');
+      counts.stone.total === RAIL_STONE + counts.stone.produced, 'counted stone conserves initial supply and renewal');
     await checkpoint('T3 laid');
     require(!read().jump, 'walk home does not need optional jump');
     const access = railAt(116);

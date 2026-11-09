@@ -1,5 +1,5 @@
 // Split-rock Works and Roundhouse positions, world centimetres, pinned from Place and the Sickle map (8 Nov 2026).
-// Dormant numeric catalog: no runtime consumer until the Works rules land. No prototype imports.
+// The Works rules (./railway-works.ts, ./railway-systems.ts) and the server read it. No prototype imports.
 import { LINE1_ROCKS } from './railway-line-layout.ts';
 
 export const WORKS = {
@@ -46,3 +46,6 @@ export const CROSSING_BENTS = [
 ] as const;
 export const CROSSING_FOOT_OFF = 250;
 export const RAIL_ROCKS = [...LINE1_ROCKS, ...WORKS_ROCKS] as const;
+/** Every rock slot's starting stone: the conserved stone total before renewal (`railCounts(s).stone.total` and
+ * validateRailLine both equal this plus `stoneProduced`). */
+export const RAIL_STONE = RAIL_ROCKS.reduce((n, r) => n + r.initial, 0);

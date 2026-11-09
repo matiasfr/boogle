@@ -1,4 +1,5 @@
 // Server train legs, pure in whole centimetres and 100 ms ticks. Rows change at decisions; views derive the pose.
+import { PIER_STOP_CM } from './railway-works-layout.ts';
 export const TRAIN = {
   speed: 200,
   accel: 3.5,
@@ -10,8 +11,13 @@ export const TRAIN = {
 export const TRAIN_PHASE = { STAND: 0, RUN: 1 } as const;
 export const TRAIN_STOPS: readonly (readonly number[])[] = [
   [1400, 20700],
-  [1700, 17400, 52400],
+  [1700, 17400, 52400, PIER_STOP_CM],
 ];
+/** The stops a line serves now: line 2's fourth, the pier, opens once Q6 is laid (every decision reads this; the
+ * pose and legs index TRAIN_STOPS, whose first stops are the same). */
+const BEFORE_PIER = TRAIN_STOPS[1]!.slice(0, 3);
+export const trainStopsOf = (line: number, pier: boolean): readonly number[] =>
+  line === 1 && !pier ? BEFORE_PIER : TRAIN_STOPS[line]!;
 export const TRAIN_HOME = [1, 0] as const;
 export const LINE_HALTS = [
   { name: 'Village', line: 0, stop: 0, x: 92819, z: -434, y: 1902, reach: 1260 },
@@ -19,6 +25,8 @@ export const LINE_HALTS = [
   { name: 'Village, line 2', line: 1, stop: 0, x: 92779, z: 2617, y: 1902, reach: 1260 },
   { name: 'Quarry', line: 1, stop: 1, x: 108132, z: 4114, y: 2502, reach: 1160 },
   { name: 'Far Head', line: 1, stop: 2, x: 136361, z: -16353, y: 2502, reach: 1260 },
+  // Place's halt maths at s 719-741 m, lat -2.9 (the side of the pier rack); open once Q6 is laid.
+  { name: 'Pier', line: 1, stop: 3, x: 139969, z: -35833, y: 2502, reach: 1260 },
 ] as const;
 export type RailTrain = {
   phase: number;
@@ -29,6 +37,9 @@ export type RailTrain = {
   call: number;
   logs: number;
   rails: number;
+  /** Line 2 only: the footing wagon is coupled, and the footings aboard it. */
+  wagon: boolean;
+  foot: number;
 };
 export function trainIdle(line: number): RailTrain {
   return {
@@ -40,6 +51,8 @@ export function trainIdle(line: number): RailTrain {
     call: -1,
     logs: 0,
     rails: 0,
+    wagon: false,
+    foot: 0,
   };
 }
 function profile(dist: number) {

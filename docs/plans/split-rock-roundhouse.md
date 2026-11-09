@@ -195,8 +195,11 @@ the test moves a candidate to clear something, J1 says so; the cm above are the 
 - **Rocks**: `createRailwayWorld` appends Rock slots 3 and 4. `rail.mine` validates `railInt(e.id, RAIL_ROCKS.length −
   1)` against `RAIL_ROCKS`, and their regrowth works as line 1's rocks do.
 - **Drop**: `rail.drop` accepts kind 3 with `n === 1` from a back holding a footing. The supply pulse ages a kind-3
-  pile and returns it to `works.rack` when nobody is near, under the same conditions it uses for rail piles. A footing
-  on an absent player's back stays theirs, as carried stock does (the supply contract).
+  pile and returns it to `works.rack` when nobody is near, under the same conditions it uses for rail piles.
+- **Leavers**: a footing on an absent player's back is theirs through `railBeamGraceS`, like the boiler; after that,
+  host maintenance returns it to `works.rack` (`railFootRelease`, keyed by the session that left). The kiln casts
+  exactly the sixteen the sites need, so a footing kept by a leaver would stop the pier at eleven for good; every
+  partial state has to survive a leaver.
 - **No away credit for the kiln** in this build. A rack of 6 refills in 48 s of play.
 
 **Server** (`src/world/railway-server.ts`): add the seven ops to `RAIL_ACTIONS`. `railValid` checks each against its
@@ -530,7 +533,7 @@ update and was repeated. No new scenario or harness was added.
 
 **Steps.**
 
-- [ ] **J3a. State.**
+- [x] **J3a. State.**
   - `Works = defineComponent('works', { breaker: 'u8', seams: 'u8', logs: 'int', stone: 'int', lit: 'int',
     rack: 'int', poured: 'int', pierRack: 'int', pierSet: 'int', crossing: 'int' }, { requires: [WorksClock],
     defaults: { lit: -1, crossing: -1 } })`, with `WorksClock` `{ lastCast: 'int' }` (`replicate: false`).
@@ -542,14 +545,14 @@ update and was repeated. No new scenario or harness was added.
   - `railwayView`, `refreshRailway` and `copyRailway` carry `works`, `shed` and the new fields.
   - Write `src/sim/railway-works.ts` ("New module") and wire `validateRailWorks` into `railwayCheck`, together with
     the changed stone, log and rail totals.
-- [ ] **J3b. Systems.** Everything in "Systems", in a Works block after the train block, and the seven ops in `OPS`.
+- [x] **J3b. Systems.** Everything in "Systems", in a Works block after the train block, and the seven ops in `OPS`.
   Update the file header's index.
-- [ ] **J3c. Trains.** `trainStops`, `LINE_HALTS`' Pier row, the stop-0 couple, the stop-1 load and the stop-3 unload,
+- [x] **J3c. Trains.** `trainStops`, `LINE_HALTS`' Pier row, the stop-0 couple, the stop-1 load and the stop-3 unload,
   as in "Train changes". `trainEtaTicks` uses `trainStops`.
-- [ ] **J3d. Server, host, prediction, adapter** as in their paragraphs. `ws-page.ts` gets the op cases;
+- [x] **J3d. Server, host, prediction, adapter** as in their paragraphs. `ws-page.ts` gets the op cases;
   `railway-diff.ts` gets the ops in both lists.
-- [ ] **J3e. WORLD_NS** v22 (or the next free version) with its history line.
-- [ ] **J3f. Helpers and seeds.** `test/helpers/railway-works.ts` exports `railwayAtWorks(stage)`, built on B5–B8's
+- [x] **J3e. WORLD_NS** v22 (or the next free version) with its history line.
+- [x] **J3f. Helpers and seeds.** `test/helpers/railway-works.ts` exports `railwayAtWorks(stage)`, built on B5–B8's
   `railwayAtTrains('q6-done')`. Each stage asserts `railwayInvariant === null`:
   - `works-arrive`: the breaker on the pedestal;
   - `works-open`: `a` takes it and strikes both seams;
@@ -562,7 +565,7 @@ update and was repeated. No new scenario or harness was added.
 
   `rail-seed.ts` adds the eight stages. `railway-works-at.ts` waits for a seed when `--rail-seed` is given, and prints
   `inspect().works` and `inspect().shed`.
-- [ ] **J3g. Tests.**
+- [x] **J3g. Tests.**
   - `test/railway-works.test.ts`:
     - `'breaker cast once when Q6 completes; one taker'`;
     - `'a strike needs the breaker and is idempotent'`;
@@ -601,6 +604,28 @@ update and was repeated. No new scenario or harness was added.
     prints `works.rack 6`.
 - **Done means.** All of the above green, every seeded stage loads, `WORLD_NS` bumped with its history line, and no
   view file changed. Don't ship while the owner is mid-session (the `WORLD_NS` bump resets saves).
+- **As built (9 November, `WORLD_NS` v22).** Where J3 differs from the text above, J4 and J5 follow this:
+  - J2 had already named its blockout inspection `works` and `shed` in `view.ts`; J3 renamed those two keys to
+    `worksView` and `shedView` (its only `src/entities` edit) so the adapter's pinned `inspect().works` and `.shed` are
+    not shadowed. J4's `worksView` replaces J2's.
+  - `trainStops(s, k)` takes the read model (`src/sim/railway-line2.ts`); the systems use `trainStopsOf(k, pier)`
+    from `railway-train.ts`. The Pier halt is `LINE_HALTS[5]`, Place's halt maths at s 719–741 m, lat −2.9.
+    `trainEtaTicks` is unchanged: it indexes stops, which `TRAIN_STOPS[1]` keeps in the same order.
+  - `rail.take` also lifts a footing pile (kind 3) onto an empty back, so a dropped footing can be picked up again.
+  - Setting a footing at the pier also needs `pierSet + pierRack + train[1].foot < pier`, so a hand-carried footing
+    can never push the pier past twelve once the wagon has been loaded for it.
+  - `railValid` refuses `rail.kiln` before the throat is struck (its frame is in the sealed cut) and `rail.turn` on a
+    stale revision, so both are `rejected` as J3g's host test asks rather than `noop`.
+  - `inspect()` gains a top-level `foot` (beside `carry`, as there is no `me`), and `works` also carries `pierNeed` and
+    the bowl's two `rocks`. `state.rocks` stays line one's three.
+  - The host's supply pulse already recovers any aged pile (one per pulse, lowest id first), and the sim sends kind 3
+    to the Works rack. Its one addition is `maintainFeet` beside `maintainBoiler` (the review's leaver fix, see
+    "Leavers" above).
+  - Left for J4 from the J3 review: the look of a kind-3 pile (J3 draws nothing for it; J4d), and the turntable
+    toggle's hold (the adapter holds a `rail.turn` until `shed.table === to`; J4f decides how the disc shows a pending
+    turn and a quick turn back).
+  - The friend's Help carry for a footing (owner, 8 November) is presence and movement, so it is J4's, beside the
+    beam's.
 
 **Codex brief (paste):**
 
@@ -646,7 +671,7 @@ update and was repeated. No new scenario or harness was added.
   - The worn model is the sample block on the avatar's load frame, for you and remote holders by pid, with a stoop.
     Copy boiler-view's worn-model approach in this file; don't edit `line-cargo.ts`.
   - The drop uses the existing `place-drop`: no new binding, since `rail.drop` kind 3 already covers it. A footing pile
-    draws as the block lying on the ground.
+    draws as the block lying on the ground. (J3 review: J3 draws nothing for a kind-3 pile, so this is all J4's.)
 - [ ] **J4e. The stall.**
   - `railway-foot-set-0` (**Set the footing**) at the sockets runs `adapter.setFooting(0)`. Each footing lowers into
     its socket.
@@ -658,6 +683,9 @@ update and was repeated. No new scenario or harness was added.
   - `railway-turn` (**Turn the table**) by the turntable when `stall === 2` runs `adapter.turnTable(1 − table,
     tableRev)`. On accepted, rotate Place's `disc` (`src/proto/place/lines.ts`) 90° over 2 s through the same Place
     handle the views already use; don't import Place at module scope.
+  - The toggle's hold (J3 review): the adapter holds a predicted `rail.turn` until `shed.table === to`. Show the
+    pending turn from the prediction, and check a quick turn back (a second press before the first is accepted) reads
+    right and settles on the accepted table.
   - **The shunt** is driven by state: with `ready ≥ 0 && !train[1].wagon`, the shunter pushes the wagon over the table
     onto line 2 to `WAGON_S` within `rollTicks` (6 s), timed from `ready − rollTicks` on `adapter.tickNow()`, then
     backs into the stall. If `ready` returns to −1, the wagon rolls home.
@@ -808,12 +836,13 @@ the solo/two-player time. Development carries on; the owner plays when they can 
   - `view.ts` gets J2's and J5's wiring hunks, while B edits it too.
   - `train-view.ts` and `halts-view.ts` belong to B; J5 starts after B merges.
   - `rail-seed.ts` is shared by many branches; its stage lists are additive, so rebase rather than redesign.
-- **B5–B8 collisions.** Nothing of J3–J5 starts before A, and J3 merges only after the owner's B5–B8 playtest. If B5–B8
+- **B5–B8 collisions.** Nothing of J3–J5 starts before A; nothing waits for a playtest (owner, 9 November). If B5–B8
   renames a pinned name (`TRAIN_STOPS`, `LINE_HALTS`, `heldBig`, `trainFlying`, the boiler pedestal), J3–J5 follow the
   merged name and note it.
 - **Mixed builds.** One `WORLD_NS` bump in J3's commit (new kinds, new fields, rock slots, a stop). The ops are
   additive, with no compatibility code. Between J3 and J4 merging, a room past Q6 has the dormant default-on blockout
-  without live interactions. Merge J3 and J4 in one ship batch to avoid that.
+  without live interactions; its state stays valid. J3 ships ahead of J4 (a logged default in
+  [agent-calls](../agent-calls.md), owner 9 November: build out as much as possible).
 - **The turntable.** It is Place's junction disc, which the depot cart uses as its forge stop. The cart retires when
   trains run (B5–B8, B3), long before the breaker exists, so the two never meet. Line 1's and line 2's standing
   trains stop at s = 14 and 17, outside the disc. The wagon waiting at s = 9.6 is behind line 2's tail (11.7 m): J1

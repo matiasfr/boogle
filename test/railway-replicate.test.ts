@@ -32,6 +32,8 @@ import {
   railwayAtQ5,
 } from './helpers/railway-q2.ts';
 import { railwayAtTrains } from './helpers/railway-trains.ts';
+import { railwayAtWorks } from './helpers/railway-works.ts';
+import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { RAIL_PREDICTED } from '../src/world/railway-predict.ts';
 import { worldOf } from './railway-live.ts';
 import { cartCycleTicks } from '../src/sim/railway-cart.ts';
@@ -263,7 +265,7 @@ test('the railway state is a server state: saved by the host, never hashed or se
   const again = room();
   again.sync.loadSnapshot(saved);
   assert.equal(again.api.account('alice')?.epoch, 1);
-  assert.equal(RAIL_SCHEMAS.length, 13); // the depot cart, boiler and trains
+  assert.equal(RAIL_SCHEMAS.length, 15); // the depot cart, boiler and trains; the Works and the shed
 });
 
 test('a scripted run through line one, the pack and line two to Q6 replicates exactly, live and to a late joiner', () => {
@@ -556,4 +558,109 @@ test('Q6 prediction keeps train rails aboard until funding is confirmed', () => 
   assert.equal(w.s.line2!.train[1]!.logs, 32, 'logs already minted stay aboard');
   seedAdvance(w, 500);
   assert.equal(railCounts(w.s).rails!.total, railCounts(w.s).rails!.poured);
+});
+
+test('a footing take predicted, then lost to a friend, comes back as a correction; mechanism ops wait', () => {
+  const seed = railwayAtWorks('works-lit'),
+    r = room();
+  while (r.sync.world.tick < seed.t) r.sync.stepWorld(100);
+  r.api.world().load(JSON.parse(JSON.stringify(worldOf(seed.s).snapshot())));
+  r.api.touchAll();
+  r.join('a');
+  r.pump();
+  agree(r, 'a');
+  const mirror = r.mirrors.get('a')!;
+  const adapter = createRailwayAdapter({
+    mirror,
+    movement: () => ({
+      beamSoloSpeed: 2,
+      beamHelpSpeed: 5,
+      jumpImpulse: 6,
+      jumpTurn: 1,
+      jumpSteer: 25,
+      jumpApexSpeed: 1,
+    }),
+    pid: 'a',
+    pose: () => ({ x: 1088, y: 24, z: 50 }),
+    now: () => 1000,
+  });
+  let hear: ((message: unknown, from: string) => void) | undefined;
+  const sent: Record<string, unknown>[] = [],
+    corrections: RailwayCorrection[] = [];
+  adapter.onCorrected((c) => corrections.push(c));
+  adapter.attach({
+    selfId: 'a',
+    send: (m) => void sent.push((m as { e: Record<string, unknown> }).e),
+    onMessage: (fn) => {
+      hear = fn;
+      return () => {};
+    },
+    onConnection: () => () => {},
+  });
+  const server = (pid: string, e: Record<string, unknown>) => {
+    const a = r.api.account(pid)!;
+    return r.api.act(pid, { epoch: a.epoch, request: a.request + 1, ...e } as RailAction, anywhere);
+  };
+  hear!(
+    { t: 'r:session', to: 'a', epoch: r.api.account('a')!.epoch, next: r.api.account('a')!.request + 1 },
+    SERVER_ID,
+  );
+  r.pump();
+  // A friend takes all but one footing (each put down beside the rack).
+  for (let k = 0; k < WORKS.rackCap - 1; k++) {
+    assert.equal(server('b', { op: 'rail.footTake', rack: 0 }).status, 'accepted');
+    assert.equal(server('b', { op: 'rail.drop', x: 108800, y: 2400, z: 5000, n: 1, kind: 3 }).status, 'accepted');
+  }
+  r.pump();
+  assert.equal(adapter.inspect().works.rack, 1);
+  assert.equal(adapter.shoulderFooting(0), true, 'predicted on the press');
+  assert.equal(adapter.inspect().foot, 1);
+  assert.equal(adapter.inspect().works.rack, 0);
+  assert.equal(server('b', { op: 'rail.footTake', rack: 0 }).status, 'accepted', 'the friend got there first');
+  const e = sent.at(-1)!;
+  assert.equal(e.op, 'rail.footTake');
+  assert.equal(r.api.act('a', e as RailAction, anywhere).status, 'noop');
+  r.replication.ack('a', e.epoch as number, e.request as number);
+  r.pump();
+  assert.equal(adapter.inspect().pending, 0);
+  assert.equal(adapter.inspect().foot, 0, 'the footing goes back');
+  assert.deepEqual(
+    corrections.map((c) => [c.event.op, c.lost]),
+    [['rail.footTake', 1]],
+  );
+  // A footing on your back blocks every other material op; the mechanism ops wait for the server.
+  for (const op of ['rail.breaker', 'rail.strike', 'rail.turn']) assert.equal(RAIL_PREDICTED.has(op), false, op);
+  adapter.dispose();
+  agree(r, 'a');
+});
+test('the kiln lit, the cradle fitted and the wagon rolling out are never predicted', () => {
+  const w = railwayAtWorks('works-open');
+  const a = (pid: string) => w.s.accounts.find((row) => row.pid === pid)!;
+  while (a('a').carry < WORKS.kilnLogs) {
+    const k = w.s.sources.findIndex((n) => n > 0);
+    seedAct(w, 'a', 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false });
+  }
+  assert.equal(seedAct(w, 'a', 'rail.kiln'), WORKS.kilnLogs);
+  for (const id of [3, 4]) while (w.s.line!.rocks[id]! > 0) seedAct(w, 'b', 'rail.mine', { id });
+  let shown = cloneRailway(railwayOf(worldOf(w.s)));
+  const kiln = { op: 'rail.kiln', epoch: a('b').epoch, request: a('b').request + 1 };
+  assert.equal(railPredict(shown, 'b', kiln, w.t).n, WORKS.kilnStone);
+  assert.deepEqual([shown.works!.logs, shown.works!.stone, shown.works!.lit], [16, 16, -1], 'full, lit by the server');
+  for (const e of [{ op: 'rail.strike', id: 0 }, { op: 'rail.turn', to: 1, revision: 0 }, { op: 'rail.breaker' }])
+    assert.equal(railPredict(shown, 'a', { ...e, epoch: a('a').epoch, request: a('a').request + 1 }, w.t).n, 0);
+  const s = railwayAtWorks('stall-done');
+  const b = s.s.accounts.find((row) => row.pid === 'b')!;
+  assert.equal(seedAct(s, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
+  for (let i = 0; i < 2; i++) {
+    seedAct(s, 'a', 'rail.footTake', { rack: 0 });
+    seedAct(s, 'a', 'rail.footSet', { site: 1 });
+  }
+  while (s.s.line2!.forge.rack < 8) seedAdvance(s, 1);
+  seedAct(s, 'b', 'rail.forgeTake');
+  shown = cloneRailway(railwayOf(worldOf(s.s)));
+  assert.equal(railPredict(shown, 'b', { op: 'rail.cradle', epoch: b.epoch, request: b.request + 1 }, s.t).n, 8);
+  assert.deepEqual([shown.shed!.cradleRails, shown.shed!.fitted, shown.shed!.ready], [8, -1, -1]);
+  assert.equal(seedAct(s, 'b', 'rail.cradle'), 8);
+  assert.equal(s.s.shed!.fitted, s.t);
+  assert.equal(s.s.shed!.ready, s.t + WORKS.rollTicks);
 });

@@ -24,6 +24,13 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
     'rail.boilerTake': 'boiler taken',
     'rail.boilerFit': 'boiler fitted',
     'rail.call': 'train called',
+    'rail.breaker': 'breaker taken',
+    'rail.strike': 'seam struck',
+    'rail.kiln': 'kiln filled',
+    'rail.footTake': 'footing shouldered',
+    'rail.footSet': 'footing set',
+    'rail.cradle': 'cradle rails',
+    'rail.turn': 'table turned',
     'rail.depotTake': 'depot pick up',
     'rail.depotRailTake': 'depot pick up',
     'rail.deposit': 'deposit',
@@ -37,6 +44,9 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
   if (intent.op === 'rail.depotTake') data.material = 'logs';
   if (intent.op === 'rail.depotRailTake') data.material = 'rails';
   if (intent.op === 'rail.call') data.halt = intent.id;
+  if (intent.op === 'rail.strike') data.seam = intent.id;
+  if (intent.op === 'rail.footTake') data.rack = intent.rack;
+  if (intent.op === 'rail.footSet') data.site = intent.site;
   return [[name, data]];
 }
 

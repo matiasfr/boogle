@@ -1,4 +1,5 @@
-// Fresh-world J2 poses, plus a no-jump walk through the real colliders. No accepted-state seed needed.
+// J2 poses, plus a no-jump walk through the real colliders. Works on a fresh world; with --rail-seed (look's seeded
+// room, look-rail) it first waits for the accepted Works state, then prints the adapter's `works` and `shed`.
 const { inspectRailway } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
@@ -16,6 +17,11 @@ while (!inspectRailway()?.ready && performance.now() < deadline) await wait(50);
 if (!inspectRailway()?.ready || !me.body) throw new Error('Works view not ready');
 const query = new URLSearchParams(location.search),
   mode = query.get('worksat') ?? 'halt';
+if (query.get('room') === 'look-rail') {
+  const seeded = performance.now() + 15000;
+  while ((inspectRailway()?.works.stage ?? 'dormant') === 'dormant' && performance.now() < seeded) await wait(50);
+  if (inspectRailway()?.works.stage === 'dormant') console.log('WORKS seed: still dormant (a seed before Q6?)');
+}
 const poses: Record<
   string,
   { body: [number, number]; camera: [number, number, number]; aim: [number, number, number] }
@@ -41,9 +47,12 @@ const frame = () => window.__debugCam!.set(pose.camera, pose.aim, 65);
 frame();
 setTimeout(frame, 100);
 shot.__worksPrepared = true;
-console.log(
-  `WORKS pose ${mode} ${JSON.stringify({ works: (inspectRailway() as { works?: unknown } | null)?.works, shed: (inspectRailway() as { shed?: unknown } | null)?.shed })}`,
-);
+{
+  const state = inspectRailway()!;
+  console.log(`WORKS pose ${mode} ${JSON.stringify({ works: state.works, shed: state.shed, foot: state.foot })}`);
+  const view = state as typeof state & { worksView?: unknown; shedView?: unknown };
+  console.log(`WORKS view ${JSON.stringify({ works: view.worksView, shed: view.shedView })}`);
+}
 if (query.get('workswalk') === '1' && action) {
   const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
   const bot = makeBot({

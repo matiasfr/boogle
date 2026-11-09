@@ -20,6 +20,7 @@ export {
 } from './railway-line.ts';
 import type { RailSupply } from './railway-supply.ts';
 import { line2Logs, line2Rails, type RailLine2 } from './railway-line2.ts';
+import type { RailShed, RailWorks } from './railway-works.ts';
 
 export const RAILWAY_OUTCOMES = 64;
 export const RAILWAY_WINDOW = 8;
@@ -32,6 +33,8 @@ export type RailAccount = {
   carry: number;
   stone?: number;
   rails?: number;
+  /** A footing on your back (0 or 1): it fills it. */
+  foot?: number;
   epoch: number;
   request: number;
 };
@@ -69,6 +72,9 @@ export type Railway = {
   line?: RailLine;
   /** Line two (forge, Q1-Q5, the pack and gates); present with line one. */
   line2?: RailLine2;
+  /** Split-rock Works and the Roundhouse stall (./railway-works.ts); present with line two. */
+  works?: RailWorks;
+  shed?: RailShed;
   /** Playable namespace only: accepted collision presentation, independent of material balances. */
   falls?: { yaw: number[]; collapsed: boolean[] };
   supply?: RailSupply;
@@ -86,6 +92,12 @@ export type RailAction = RailRequest & {
   kind?: number;
   station?: string;
   revision?: number;
+  /** rail.footTake: 0 the Works rack, 1 the pier rack. */
+  rack?: number;
+  /** rail.footSet: 0 the stall, 1 the cradle, 2 the pier. */
+  site?: number;
+  /** rail.turn: the road the table turns to (0 the stall road, 1 line 2's). */
+  to?: number;
   /** rail.wake: the rule tick its actor pressed at (the client's estimate); the server bounds it (railWakeTick). */
   tk?: number;
 };
@@ -95,12 +107,13 @@ export const railYaw = (v: unknown): v is number =>
   typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 6.283185307179586 && !Object.is(v, -0);
 export const railAccount = (s: Railway, pid: string) => s.accounts.find((a) => a.pid === pid);
 export const railSource = (id: number) => RAILWAY_SOURCES.findIndex((row) => row[0] === id);
-/** Conserved totals include both the depot cart and the line-2 kit train through line2Logs/line2Rails. */
+/** Conserved totals include both the depot cart and the line-2 kit train through line2Logs/line2Rails, and the
+ * Works kiln's logs and stone. */
 export function railCounts(s: Railway) {
   const source = s.sources.reduce((a, b) => a + b, 0) + (s.line?.hardwood.reduce((a, b) => a + b, 0) ?? 0);
   const carry = s.accounts.reduce((a, b) => a + b.carry, 0);
   const loose = s.piles.reduce((a, b) => a + (b.kind ? 0 : b.n), 0);
-  const line2 = s.line2 ? line2Logs(s.line2) : 0;
+  const line2 = s.line2 ? line2Logs(s.line2) + (s.works?.logs ?? 0) : 0;
   const jobs = railJobs(s);
   const stock = jobs.reduce((n, j) => n + j.stock, 0),
     allocation = jobs.reduce((n, j) => n + j.allocation, 0);
@@ -115,11 +128,13 @@ export function railCounts(s: Railway) {
     allocation: jobs.reduce((n, j) => n + (j.stoneAllocation ?? 0), 0),
     used: jobs.reduce((n, j) => n + (j.stoneUsed ?? 0), 0),
     rack: s.line?.stoneRack ?? 0,
+    kiln: s.works?.stone ?? 0,
     produced: s.line?.stoneProduced ?? 0,
     delivered: jobs.reduce((n, j) => n + (j.stoneDelivered ?? 0), 0),
     total: 0,
   };
-  stone.total = stone.source + stone.carry + stone.loose + stone.stock + stone.allocation + stone.used + stone.rack;
+  stone.total =
+    stone.source + stone.carry + stone.loose + stone.stock + stone.allocation + stone.used + stone.rack + stone.kiln;
   const l2 = s.line2;
   const rails = l2
     ? {

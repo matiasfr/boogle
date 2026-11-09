@@ -29,7 +29,10 @@
 // Pure: read by room routing and tests.
 // v21 (2026-11-08): line 2 part 2, B5-B8: boiler and train components; rail.boilerTake/boilerDrop/boilerFit,
 // rail.call; Q6 (sixth qjob) fed by the line-2 kit; new rail fields trains and out5.
-export const WORLD_NS = 'v21';
+// v22 (2026-11-09): Split-rock Works and the smallest Roundhouse: new `works` and `shed` components
+// (rail.breaker, rail.strike, rail.kiln, rail.footTake, rail.footSet, rail.cradle, rail.turn), `foot` on accounts
+// and trains, the train's `wagon`, rock slots 3-4, pile kind 3, line 2's pier stop.
+export const WORLD_NS = 'v22';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

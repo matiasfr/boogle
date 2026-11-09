@@ -22,7 +22,6 @@ import {
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import {
   LINE1_STATIONS,
-  LINE1_ROCKS,
   LINE1_GREAT_TREE,
   LINE1_HARDWOODS,
   LINE1_AXE_STAND,
@@ -42,7 +41,19 @@ import {
 } from '../sim/railway-line2-layout.ts';
 import { line2Active, line2GateOpen, line2Completed } from '../sim/railway-line2.ts';
 import { LINE_HALTS } from '../sim/railway-train.ts';
+import {
+  PIER_FRAME,
+  PIER_RACK,
+  RAIL_ROCKS,
+  SHED_STALL,
+  SHED_TABLE,
+  WORKS_BREAKER,
+  WORKS_KILN,
+  WORKS_RACK,
+  WORKS_SEAMS,
+} from '../sim/railway-works-layout.ts';
 import { CART_CALL } from '../sim/railway-cart.ts';
+import { SEAM_THROAT } from '../sim/railway-works.ts';
 import { RECOVERY_RACK, type SupplyPulse } from '../sim/railway-supply.ts';
 import {
   Account,
@@ -52,7 +63,9 @@ import {
   Pile,
   RailClock,
   Rail,
+  Shed,
   Tree,
+  Works,
   createRailwayWorld,
   railwayCheck,
   railwayView,
@@ -60,6 +73,8 @@ import {
 import {
   railApply,
   railBoilerRelease,
+  railFootHolders,
+  railFootRelease,
   railBeamPutDown,
   railBeamRelease,
   railBeamStood,
@@ -118,13 +133,25 @@ export const RAIL_ACTIONS = new Set([
   'rail.boilerDrop',
   'rail.boilerFit',
   'rail.call',
+  'rail.breaker',
+  'rail.strike',
+  'rail.kiln',
+  'rail.footTake',
+  'rail.footSet',
+  'rail.cradle',
+  'rail.turn',
 ]);
 
 /** Whether a well-formed action is in range of its target. Readiness and balances are the rule's, not this. */
 export function railValid(w: World, e: RailAction, actor: Actor): boolean {
   const near = (x: number, z: number, r: number) => actor.reach(x, z, r) && actor.cadence(e.op);
   const kind = e.kind === undefined || railInt(e.kind, 2);
+  // Drops and takes also move a footing (pile kind 3); nothing else takes kind 3.
+  const pileKind = e.kind === undefined || railInt(e.kind, 3);
   const height = (y: number) => actor.height(y + 40, 260);
+  // The Works and the Roundhouse: judged at the catalog's spot, at its height.
+  const at = (p: { x: number; z: number; y: number; reach: number }) =>
+    actor.height(p.y, 300) && near(p.x, p.z, p.reach);
   switch (e.op) {
     case 'rail.wake':
       // Keep the existing ten-metre server allowance, centred on the machine like its six-metre prompt.
@@ -146,7 +173,7 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
     case 'rail.drop':
       return (
         railInt(e.n, LINE2_PACK.carry, 1) &&
-        kind &&
+        pileKind &&
         railInt(e.x, 200000, -200000) &&
         railInt(e.z, 200000, -200000) &&
         railInt(e.y, 200000, -200000) &&
@@ -155,12 +182,12 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
     case 'rail.take': {
       if (!railInt(e.id, RAILWAY_MAX_INT, 1)) return false;
       const pile = w.get(Pile, e.id);
-      return !!pile && kind && near(pile.x, pile.z, 320);
+      return !!pile && pileKind && near(pile.x, pile.z, 320);
     }
     case 'rail.rackTake':
       return (e.kind === undefined || railInt(e.kind, 1)) && near(RECOVERY_RACK.x, RECOVERY_RACK.z, 320);
     case 'rail.mine': {
-      const rock = railInt(e.id, 2) ? LINE1_ROCKS[e.id] : undefined;
+      const rock = railInt(e.id, RAIL_ROCKS.length - 1) ? RAIL_ROCKS[e.id] : undefined;
       return !!rock && near(rock.x, rock.z, 320);
     }
     case 'rail.axe':
@@ -214,6 +241,22 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
       return height(LINE2_SEA.y) && near(LINE2_SEA.x, LINE2_SEA.z, 320);
     case 'rail.hook':
       return height(LINE2_HOOK.y) && near(LINE2_HOOK.x, LINE2_HOOK.z, 320);
+    case 'rail.breaker':
+      return at(WORKS_BREAKER);
+    case 'rail.strike':
+      return railInt(e.id, 1) && at(WORKS_SEAMS[e.id]!);
+    case 'rail.kiln':
+      // Its loading frame stands in the cut: nobody reaches it before the throat is struck.
+      return !!(w.get(Works, w.single(Works))!.seams & SEAM_THROAT) && at(WORKS_KILN);
+    case 'rail.footTake':
+      return railInt(e.rack, 1) && at(e.rack ? PIER_RACK : WORKS_RACK);
+    case 'rail.footSet':
+      return railInt(e.site, 2) && at(e.site === 2 ? PIER_FRAME : SHED_STALL);
+    case 'rail.cradle':
+      return at(SHED_STALL);
+    case 'rail.turn':
+      // A turn names the table it saw: a stale one is refused, like a contested beam.
+      return railInt(e.to, 1) && e.revision === w.get(Shed, w.single(Shed))!.tableRev && at(SHED_TABLE);
   }
   return false;
 }
@@ -227,7 +270,7 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
       cellOf(RAILWAY_SOURCES[f.slot as number]![1], RAILWAY_SOURCES[f.slot as number]![2]),
     hardwood: (_id: number, f: Fields) =>
       cellOf(LINE1_HARDWOODS[f.slot as number]![1], LINE1_HARDWOODS[f.slot as number]![2]),
-    rock: (_id: number, f: Fields) => cellOf(LINE1_ROCKS[f.slot as number]!.x, LINE1_ROCKS[f.slot as number]!.z),
+    rock: (_id: number, f: Fields) => cellOf(RAIL_ROCKS[f.slot as number]!.x, RAIL_ROCKS[f.slot as number]!.z),
     pile: (_id: number, f: Fields) => cellOf(f.x as number, f.z as number),
   };
   for (const p of worldProjections(() => world, cells, GLOBAL_CELL)) replication.define(p);
@@ -328,6 +371,13 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
     },
     boilerRelease(pid: string, epoch: number, revision: number) {
       const n = railBoilerRelease(world, pid, epoch, revision);
+      commit();
+      return n;
+    },
+    /** Who carries a footing, and in which session (at most one row per player). */
+    footHolders: () => railFootHolders(world),
+    footRelease(pid: string, epoch: number) {
+      const n = railFootRelease(world, pid, epoch);
       commit();
       return n;
     },
