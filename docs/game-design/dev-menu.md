@@ -23,6 +23,19 @@ Player movement and stage setup recheck the disposable route/version/marker, exa
 
 **Agent API:** `boogle.dev.tools()`, `open(tool?)`, `run(tool, command, args?)`, `snapshot()` and `close()` use the same bounded tool descriptors and result path as the UI. Tool ids are `water`, `destinations`, `camera`, `inspect`, `performance`, `room`, `report`, `scenarios`, `looks`. No arbitrary scripting or property setter is provided.
 
+## Jump in
+
+A playtest jump-in opens a fresh private room on the real server, seeded at a stage of the route, so a beat can be played without replaying everything before it ([plan](../plans/playtest-jump-in.md)). The shared `boogle` world is never touched: the server refuses any room that isn't a new jump room, has a save or is loaded. Links work for anyone and land in a new room each time, for example https://boogle.club/?from=hook-taken (right after the hook, before Q3), https://boogle.club/?from=hook-earned (the quarry gate) and https://boogle.club/?from=start (from the beginning, a fresh private room with no fall). Pause → More → **Jump in** lists the same rows; it shows with Dev on, and inside any jump room, where its header reads "This room started at …" with a way back to the shared island.
+
+- **Rows** (`src/world/railway-jump.ts`, in route order): From the beginning, Just woke, Cart starts, Hook earned, Quarry gate, Sea switch, Boiler waiting, Glide earned, Trains running, Pier reached, Works open, Crossing built. Each names its stage, a one-line description and where you land.
+- **Landing.** Anyone with no saved pose in the room, including a friend who joins by invite, lands at the row's segment, standing on the terrain, pad or deck it names (the railway arrival checks the surface is there, else the usual spawn). A saved pose wins after that, as anywhere.
+- **Marking.** The room's name starts with the stage (`hook-earned-k3x9qa`). Each device sees one line per room, through the notification lane: "A test room, started at <label>. The shared island is unchanged." No HUD badge.
+- **Failure.** The splash stays up with the reason (Boogle just updated, no such jump-in, can't reach the server, the server is busy) and three buttons: Try again, From the beginning, The shared island.
+- **Limits.** `POST /jump` takes 6 a minute per address and 100 a day; jump rooms idle three days are deleted, and at most 200 exist at once.
+- **Playtests.** A session in a jump room is summarised as "Started: jump-in "<label>"", so its beats read as a segment.
+
+**Sync kinds:** the seed is a server save (the railway's Server kind) written once by `POST /jump` before anyone joins; the stage label is room metadata from `/rooms/<id>/host`; the page, landing and arrival line are Local. No new wire operations.
+
 ## Tunables agent proof
 
 Shared URL edits wait for both appearance restoration and the initial authoritative room snapshot, then submit once. A later snapshot or reconnect never repeats that intent. Local-only URL edits do not wait for the room.

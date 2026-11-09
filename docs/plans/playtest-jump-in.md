@@ -148,7 +148,7 @@ export type RoomSeed = { stage: string; at: string };
 
 The room name is readable, `hook-earned-k3x9qa`. That puts the stage in the Room page, in the invite link and in every
 playtest summary for free. `jumpRoomName` keeps the name at 22 characters or fewer, so `railwayRoomId` never hashes it
-(`rail-v22-` plus 22 is 31). `boogle` can never match `JUMP_ROOM_RE`, because it has no `-xxxxxx` suffix.
+(`rail-v23-` plus 22 is 31). `boogle` can never match `JUMP_ROOM_RE`, because it has no `-xxxxxx` suffix.
 
 Proposed rows, in route order (designer review: labels, which stages and landings):
 
@@ -369,16 +369,12 @@ sits at world x ≈ 900–1400 m, past `SOFT_WALL` (237 m), so every landing wou
 
 - **Before D1.** D1c deletes `src/debug/dev/fixtures.ts`, Place's in-game way in. This plan is the production
   replacement, so it lands first.
-- **Glider B** (`claude/glider-b-plan`, running) adds `glide-earned`, `q5-shelved` and `q5-arriving` to
-  `dev/look/rail-seed.ts`, and so does step 1 here.
-  - If glider B lands first, step 1 ports those three cases into `buildSeedWorld` mechanically, and step 3 adds the
-    "Glide earned" row.
-  - If this plan lands first, glider B's step 5 adds the three cases to `src/sim/railway-seeds.ts` instead, plus the
-    `JUMPS` row.
-
-  Tell its implementer either way.
-- **Split-rock J5** (running) may edit `test/helpers/railway-works.ts`. Step 1 moves that file, so on rebase apply J5's
-  hunks to `src/sim/railway-seed-works.ts`.
+- **Glider B** landed first (#1290, `WORLD_NS` v23). Its `glide-earned`, `q5-shelved` and `q5-arriving` cases were
+  ported into `buildSeedWorld` on rebase (route order: `q5-arriving` and `q5-shelved` after `q4-done`, `glide-earned`
+  after `q5-done`), and the "Glide earned" row was added with its landing on the summit deck.
+- **Split-rock J5** landed before the rebase; its later hunks did not touch `test/helpers/railway-works.ts`, so
+  nothing needed porting. The cart's 24-rail trip (#1280) was ported into `railwayAtQ5` in
+  `src/sim/railway-seed-route.ts`.
 - **What D1c then deletes or keeps.** Replace D1c's last sentence ("`fixtures.ts` goes, since production setups are
   `--rail-seed`") with:
   - **Delete:**
@@ -398,7 +394,9 @@ sits at world x ≈ 900–1400 m, past `SOFT_WALL` (237 m), so every landing wou
 
 Branch `claude/playtest-jump-in` from `origin/main`. Each step is one commit and leaves `npm run check` green.
 
-- [ ] **1. Seed builders into `src/sim/`.**
+- [x] **1. Seed builders into `src/sim/`.** (947bc1fd) Built as written, plus `src/sim/railway-seed-route.ts` for the route
+  builders (railway-seeds and railway-seed-works were an import knot) and the new `hook-taken` stage (Q2 + hook, no
+  clear). check green; checkpoints all ok at the table's times.
   - `git mv test/railway-live.ts src/sim/railway-live.ts`, then:
     - replace `assert.equal(w.hash(), …)` with `need(w.hash() === …, 'restore: hash')`;
     - add the header "Seed and test driver over an E world; never imported by the game, rules or adapters";
@@ -416,7 +414,9 @@ Branch `claude/playtest-jump-in` from `origin/main`. Each step is one commit and
     - `npm run check`;
     - `npm run checkpoints -- awake q1-done q3-done hook-earned q5-done trains-on q6-done works-open crossing-done`,
       all ok, with times within 20% of the table above.
-- [ ] **2. One host save path.**
+- [x] **2. One host save path.** (7ff9e315) Built as written; `writeRailSeed` writes no jump sidecar, so `--rail-seed`
+  runs are not jump rooms. prebuild wrote awake/q1-done with namespace `rail-v22`, and all ten offered seeds in ~27 s
+  from an image-shaped copy. The `--rail-seed q3-done --hud` still showed the default spawn view, not Q3: no proof.
   - `server/src/seeds/build.ts`: `buildSeedDoc(stage)`, as in Design.
   - `dev/look/rail-seed.ts`: `writeRailSeed(dataDir, room, stage)`:
     1. `buildSeedDoc(stage)`;
@@ -434,7 +434,8 @@ Branch `claude/playtest-jump-in` from `origin/main`. Each step is one commit and
     - `node server/src/seeds/prebuild.ts --out "$TMPDIR/seeds" awake q1-done`: two files, and their `data.namespace`
       equals `RAILWAY_PLAY_NS`;
     - `npm run look -- --rail-seed q3-done --hud`: the still shows Q3 laid, the same as before.
-- [ ] **3. The catalog.**
+- [x] **3. The catalog.** (f4c319ca) Rows as adopted after the review, plus Crossing built (its stage exists on the
+  base). `land` is still unset (step 7).
   - `src/world/railway-jump.ts`, as in Design, with the rows whose stages exist on the base.
   - `land` stays unset in this step; step 7 fills it.
   - `prebuild.ts` defaults to `JUMPS` stages.
@@ -450,7 +451,10 @@ Branch `claude/playtest-jump-in` from `origin/main`. Each step is one commit and
   - `dev/checks-for.ts`: changes to `src/sim/railway-seeds*.ts`, `src/sim/railway-live.ts`, `src/world/railway-jump.ts`
     or `server/src/seeds/` route to `npm run checkpoints`.
   - Verify: `npm run check`; `npm run checkpoints`, where every row's stage builds.
-- [ ] **4. `POST /jump` on the server.**
+- [x] **4. `POST /jump` on the server.** (8763d556) Built as written. The idle sweep deletes (not trashes) jump rooms
+  idle 3 days, at boot and before each jump, with a 200-room cap (507). `server/test/jump.test.ts`: 8 tests covering
+  cases 1-10, the shared/saved/loaded refusals with byte-identical files; server suite 119 pass. No Docker here, so
+  CI's deploy-server build is the image proof.
   - `server/src/store.ts`: `create(id, doc)`, and its line in the header comment.
   - `server/src/jump.ts`: `addJump`, `seedRoom`, `seedOf`, the doc source (cache, then prebuilt, then worker) and boot
     sidecar cleanup.
@@ -484,7 +488,12 @@ Branch `claude/playtest-jump-in` from `origin/main`. Each step is one commit and
   - Verify: `npm --prefix server test`; `npm run check:full`. Run `docker build -f server/Dockerfile .` if Docker is
     available, and check that the log lists each `JUMPS` stage; otherwise CI's deploy-server build is the proof, so say
     so.
-- [ ] **5. The `?from=` link.**
+- [x] **5. The `?from=` link.** Built (185847e6). Proven 9 November: `jump-q3` passed its eval (room `q3-done-nicq8t`,
+  no `from`, Q1–Q3 laid and Q4 not, seed `q3-done`) and its still shows the Q3 stretch over the gorge with Station 4
+  "On the way". The eval now holds its framing for a second after returning, since look freezes its default view
+  after an eval on a page without `--rail-seed`. look waits for the lobby, which a failed jump never shows, so the
+  `from=nope` still came from a small Playwright script on the look stack: "There's no jump-in called nope." and the
+  three 44 px buttons, on desktop and at 375x812.
   - `src/boot/jump-in.ts`, the `src/boot/index.ts` line, `splashNote` in `src/boot/splash.ts`, and
     `src/netplay/room-seed.ts`.
   - `test/invite-flags.test.ts`: `roomInviteQuery('hook-earned-k3x9qa', '?room=hook-earned-k3x9qa&dev=1')` is
@@ -500,7 +509,10 @@ Branch `claude/playtest-jump-in` from `origin/main`. Each step is one commit and
     - `npm run look -- --query from=q3-done --eval dev/look/evals/jump-in.ts --until window.__jumpDone --hud`: the
       eval passes, and the still shows the Q3 stretch built (open it);
     - `npm run look -- --query from=nope --hud`: the still shows the failure text and three buttons.
-- [ ] **6. Two players in a seeded room (`test:net`).**
+- [x] **6. Two players in a seeded room (`test:net`).** Built (6b163672) with mirror pages instead of `adapter=1`.
+  Proven 9 November: `npm run test:net` all PASS (121 checks), including the jump-in block through the restart. The
+  first run failed its chop check, which expected the source one lower; a chop takes its whole yield, so the check is
+  now "lower than before" and prints both mirrors' counts and the reply.
   - `dev/peer-test/ws-railway.ts`: `railwayJumpIn(c)`.
     1. `POST http://127.0.0.1:${c.port()}/jump { stage: 'q3-done', ns: RAILWAY_PLAY_NS }`.
     2. Open two pages, `room=${railwayRoomId(room)}&pid=jump0` and `pid=jump1` with `adapter=1`.
@@ -510,7 +522,17 @@ Branch `claude/playtest-jump-in` from `origin/main`. Each step is one commit and
     6. Check that `rail-…-boogle.json` was not created or changed.
   - `dev/peer-test/ws-run.ts`: call it after `railwayChecks`.
   - Verify: `npm run test:net`, all PASS.
-- [ ] **7. The Jump in page and landings.**
+- [x] **7. The Jump in page and landings.** Proven 9 November, on a local stack (not tested on a device). Every row with
+  `land` passed `dev/look/evals/jump-in.ts` (the avatar within 1 m of the landing, standing on its surface) and its
+  still was opened; the sheet is `.look/jump-landings-sheet.png`. Fixes the stills asked for:
+  - the landing's surface test counts thin shapes too, since ring pads such as the summit deck are tiled in pieces
+    under 1.6 m across and the pose restore's sweep skips those;
+  - a friend already standing at the landing moves you to a free spot on a 1.4 m ring (the first two-player run
+    stacked P2 on P1's head);
+  - Boiler waiting stands beside the pedestal, off the track; Works open stands 6 m in front of the kiln, clear of its
+    walls; Crossing built stands on the halt's deck, not the jib's side of the frame.
+  The page looks passed: Dev on at desktop and 375x812 (the rows scroll), the `from=hook-earned` room's header "This
+  room started at Quarry gate", and without Dev, More shows Get unstuck, Start fresh and Back only.
   - `src/features/jump-in.ts` (page and landing), as in Design. It uses `.pause-btn` and needs no CSS file.
   - Fill `land` for each row in `railway-jump.ts`.
   - Verify each with a still:
@@ -520,14 +542,17 @@ Branch `claude/playtest-jump-in` from `origin/main`. Each step is one commit and
       Pause → More → Jump in) and from a jump room (`--query 'dev=1&from=hook-earned'`), so the header reads "This room
       started at Hook earned".
     - Without `dev=1`, More has no Jump in entry.
-- [ ] **8. Playtest tie-in.**
+- [x] **8. Playtest tie-in.** (a6191f5d) Built as written. A hand-written `seed: 'hook-earned'` session prints
+  `Started: jump-in "Quarry gate" (hook-earned), ...` (the review renamed that row), the seeded prefix, and compare's
+  Start row. The page-console check waits on step 5's look.
   - `record.ts` `seed`; `summary.ts`, `cli.ts` and `compare()` lines; the `docs/playtests.md` header line.
   - Verify:
     - `npm run check`;
     - write a session file by hand in the scratchpad (a `session` event with `seed: 'hook-earned'`) and print
       `summarize(parseSession(...))` with a short `node -e`: it shows `Started: jump-in "Hook earned"`;
     - the step 5 look run's page console shows the session re-sent with `seed`.
-- [ ] **9. Docs.**
+- [x] **9. Docs.** Written and rechecked after step 7; the dev menu lists Glide earned. Not shipped: the branch waits
+  for an independent review.
   - `docs/game-design/dev-menu.md`: a "Jump in" paragraph with the full links, for example https://boogle.club/?from=hook-earned
     and https://boogle.club/?from=start.
   - `docs/agents/test-details/bot-segments.md` and `docs/agents/tools.md`: where seeds live now, and "Adding a stage".
@@ -536,13 +561,30 @@ Branch `claude/playtest-jump-in` from `origin/main`. Each step is one commit and
   - `docs/agent-calls.md`: the calls below as adopted after the designer review.
   - Verify: `npm run check`. Then ship with `npm run ship -- --full`, with step 7's stills in the commit body.
 
+### Where this stopped (2026-11-09, built and proven locally)
+
+Branch `worktree-agent-a1abf1ff2a1170b5a`, rebased onto `origin/main` (WORLD_NS v23), nothing pushed or shipped, no
+WORLD_NS bump. Glider B (`glide-earned`, `q5-shelved`, `q5-arriving`, the Glide earned row) and main's 24-rail cart
+are ported; J5 needed no hunks.
+
+- **Built and proven:** steps 1-9, on a local stack; not tested on a device. `npm run check`, `npm run checkpoints`
+  (11 stages through the host save path) and `npm --prefix server test` (121) green; `npm run test:net` all PASS.
+- **Not proven:** step 8's page-console check (the session re-sent with `seed`), and the boogle.club check below,
+  which waits for the deploy.
+- **Next:** an independent review of the branch, then `npm run ship -- --full` with the landing sheet's stills in
+  the commit body.
+- **How the browser runs went:** one shared-queue slot each, through a Playwright script on the look stack
+  (`Game.open`, the eval, then a still), since look waits for the lobby and freezes its default view after an eval.
+  It ran every landing row, the four page looks and two players in one jump room. The two players stand 1.4 m apart
+  on the p2 pad, level, in the same room and seed.
+
 **Proofs, collected.**
 - Step 5's look run lands at Q3 complete through `?from=q3-done` on a local stack.
 - `server/test/jump.test.ts` cases 3–5 refuse `boogle`, an existing save and a loaded room.
 - `npm run test:net`'s `railwayJumpIn` has two players in one seeded room, through a restart.
 - `npm run checkpoints` builds every offered stage.
 - On boogle.club after deploy, https://boogle.club/?from=hook-earned lands in a new `hook-earned-…` room, and the shared
-  room's `/rooms/rail-v22-boogle/host` tick keeps advancing only from its own players. Report this as checked only if it
+  room's `/rooms/rail-v23-boogle/host` tick keeps advancing only from its own players. Report this as checked only if it
   was opened.
 
 ### Size and split
