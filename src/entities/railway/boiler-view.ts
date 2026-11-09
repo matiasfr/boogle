@@ -39,7 +39,7 @@ export function createRailwayBoiler(adapter: RailwayAdapter, owner: OwnedView, {
   pedestal.position.set(bx, by + 0.3, bz);
   owner.add(pedestal, loose, worn.root);
   // The forge's call while the boiler waits; Split-rock's breaker uses the same one (forge-call.ts).
-  const call = createForgeCall({ x: bx, y: by, z: bz });
+  const call = createForgeCall({ x: bx, y: by, z: bz }, owner);
   let body: Body | null = null;
   let mote = 0,
     side = 1;

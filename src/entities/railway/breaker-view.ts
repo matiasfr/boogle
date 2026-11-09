@@ -46,7 +46,7 @@ export function createRailwayBreaker(
   owner.add(breaker);
   geometry.dispose();
   owner.cleanup(() => mat.dispose());
-  const call = createForgeCall({ x: bx, y: by, z: bz });
+  const call = createForgeCall({ x: bx, y: by, z: bz }, owner);
   const gold = new THREE.Color('#ffdc7a');
   let mote = 0,
     side = 1,
