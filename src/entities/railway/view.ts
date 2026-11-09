@@ -19,6 +19,8 @@ import { createRailwayPanelView } from './panel-view.ts';
 import { createRailwayLine2 } from './line2-view.ts';
 import { createRailwayShelf } from './shelf-view.ts';
 import { createRailwayCart } from './cart-view.ts';
+import { createRailwayTrains } from './train-view.ts';
+import { createRailwayHalts } from './halts-view.ts';
 import { createRailwayHook } from './hook-shot.ts';
 
 export async function createRailwayView(adapter: RailwayAdapter) {
@@ -79,8 +81,14 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   demo = hook.demo;
   const shelf = await createRailwayShelf(adapter, owner, sources.bundleOrigin);
   const cart = await createRailwayCart(adapter, owner, line2.depotPlace, line2.depotSlot, shelf.railSlot);
-  line2.holdDepot(cart.flying);
-  shelf.holdRails(cart.flying);
+  const trains = await createRailwayTrains(adapter, owner, seats, line2.depotPlace);
+  const halts = await createRailwayHalts(adapter, owner);
+  const flying = () => ({
+    logs: cart.flying().logs + trains.trainFlying().logs,
+    rails: cart.flying().rails + trains.trainFlying().rails,
+  });
+  line2.holdDepot(flying);
+  shelf.holdRails(flying);
   if (look.LOOK.contact)
     kit.installContact(
       [machine.flatbed, machine.loco],
@@ -202,6 +210,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   }
   function accepted(event: RailwayAccepted) {
     state = adapter.inspect();
+    trains.accepted(event);
     if (event.op === 'rail.wake') {
       liveWake = true;
       wake.start();
@@ -305,6 +314,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     previousOpen = opened();
     path.update(opened(), true);
     line2.snapshot();
+    trains.restore();
+    halts.restore();
   }
   machine.onStep = (dt) => {
     if (line2.working()) return line2.step(dt);
@@ -335,6 +346,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       hook.prePhysics();
     },
     fixedPre: () => {
+      halts.fixedPre(trains.isTrain);
       if (!hook.fixedPre()) reward.fixedPre();
     },
     update(ctx: FrameCtx) {
@@ -354,6 +366,10 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       const reconstructed = hard || rebuild === 'soft'; // either way, nothing that happened meanwhile plays its fanfare
       if (hard) snapshot();
       else if (rebuild === 'soft' && Math.abs(head() - visualHead) > 12) restoreMotion();
+      if (rebuild === 'soft') {
+        trains.restore();
+        halts.restore();
+      }
       rebuild = null;
       wasReady = state.ready;
       everReady ||= state.ready;
@@ -429,6 +445,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       if (!line2.working()) panels.update(dt);
       // Reserve the accepted delivery before the receiving views draw it; pieces appear there on landing.
       cart.update(dt);
+      trains.update(dt);
+      halts.update(dt);
       line2.update(dt);
       hook.update(dt, now);
       shelf.update();
@@ -525,7 +543,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       reward: reward.inspect(),
       hookShot: hook.inspect(),
       pathOpen: opened(),
-      line2View: { ...line2.inspect(), ...shelf.inspect(), ...cart.inspect() },
+      line2View: { ...line2.inspect(), ...shelf.inspect(), ...cart.inspect(), ...trains.inspect(), ...halts.inspect() },
     }),
     dispose: () => owner.dispose(),
   };

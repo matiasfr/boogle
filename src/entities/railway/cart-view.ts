@@ -129,7 +129,7 @@ export async function createRailwayCart(
   function step() {
     const s = adapter.inspect();
     const l2 = s.line2;
-    const on = s.ready && !!l2 && l2.completed >= 1;
+    const on = s.ready && !!l2 && l2.completed >= 1 && !(l2.trains && l2.cart.phase === CART_PHASE.REST);
     if (!on || !l2) {
       if (shown) {
         car.y = -60; // waits under the land: nothing to draw, nor to stand on
@@ -211,7 +211,7 @@ export async function createRailwayCart(
     update(dt: number) {
       const s = adapter.inspect();
       const l2 = s.line2;
-      const on = s.ready && !!l2 && l2.completed >= 1;
+      const on = s.ready && !!l2 && l2.completed >= 1 && !(l2.trains && l2.cart.phase === CART_PHASE.REST);
       const aboard = on && carry.on === car.platform;
       if (aboard && !riding) playMark('cart ride', { authority: 'local' });
       riding = aboard;
@@ -220,6 +220,7 @@ export async function createRailwayCart(
       callTag.sprite.visible = handle.visible && l2.cart.phase !== CART_PHASE.FORGE;
       if (!on || !l2) {
         tag.sprite.visible = false;
+        callTag.sprite.visible = false;
         return;
       }
       const c = l2.cart;
