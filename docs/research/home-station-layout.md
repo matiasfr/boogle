@@ -2,7 +2,7 @@
 
 > **Verdict:** Home's two halts, the table-centre junction and the kinked stall road are what read as unreal, not the sizes. Recommend option B: one terminus with an island platform for both lines, the forge as its goods side, and the turntable moved onto its own engine spur with radial stalls.
 > **Top recommendations:** 1. One island platform serving both lines at buffer stops by a concourse that faces the town. 2. Keep every line's arc length (stagger the buffers) so no `s` constant moves. 3. Take the turntable off the running lines; stall roads radial, stalls about 1.0× the table deep. 4. Keep the 9.6 m table. 5. Fit the station's ratios to Boogle's short trains, not real platform lengths.
-> **Status:** open. The owner picks an option on [home-layout.html](../world/home-layout.html); then the designer, then a plan. Nothing in the game changes before his pick ([decision](../decisions.md#decided), 9 November).
+> **Status:** adopted, with the plan's changes: the owner picked B on 9 November, and [the home-station plan](../plans/home-station.md) builds it (joins at s 60 and s 84, a 4.3 m island, the table on a spur off road 2, stalls at 160°, 190° and 220°, the cart's leg). [home-layout.html](../world/home-layout.html) now shows today and B as planned, generated from the code; options A and C and the numbers below are this report's, not the plan's.
 
 _Research report, 9 November 2026. The owner asked, with a screenshot of Home: "visual pass on home here should be done so
 the town is coherent, the rails feel more realistic, instead of 2 stations maybe it's one unified one, where the rails also
@@ -149,8 +149,9 @@ Take each against Boogle's own train and Buddy, not against real sizes.
 
 ## The options
 
-All three are drawn to scale on [home-layout.html](../world/home-layout.html), with today's layout, walk lines, trains, a
-Buddy figure, a clearance check and each option's moves. The clearance check's results are repeated here.
+All three were drawn to scale on the first version of [home-layout.html](../world/home-layout.html) (git history), with
+today's layout, walk lines, trains, a Buddy figure, a clearance check and each option's moves; the page now shows only
+today and B as planned. The clearance check's results are repeated here.
 
 **A: through island with the rotunda at its head.** The table moves 14.6 m west onto the square (−96.6, 12.3). Both lines
 start at it and splay into parallel roads 7.3 m apart either side of a 4 × 23 m island, then rejoin today's lines at s 82
