@@ -314,7 +314,7 @@ export function createFrozenWaterSky() {
     if (!evening) return bake();
     if (disposed) return;
     // Research water-times-of-day recommendations 1–4: two prepared endpoints, no live sunset.
-    // Both endpoints use the loading-time comparison size; ordinary visits retain 1024.
+    // Both endpoints use the one cube size (SKY_CUBE_SIZE, flags.ts).
     evening.bake({ elevation: 12, azimuth: 255, turbidity: 3.2, sunIntensity: 9, cloudCoverage: 0.3 });
     // Both reads own their GPU resources until settled, even if the other read rejects.
     const [dayBake, eveningRead] = await Promise.allSettled([bake(), readFill(evening)]);

@@ -164,7 +164,10 @@ The owner chose `summer` as the daytime sky ("I like the colors there"), so it i
 water, fog, PBR reflections and hemisphere fill: original direction-space cumulus, thirteen uneven clusters with varied
 aspect/size, soft bases and a saturated blue ramp with horizon haze. It keeps current water, production Neutral post,
 surface gain .12, key/fill 1.12/3.2, cloud radiance .8 and neutral scene lights (owner cell 5); only cloud radiance
-changes with the art, and the physical sun direction and water's solar lobe remain. The cube is always 1024.
+changes with the art, and the physical sun direction and water's solar lobe remain. The cube is 512 per face (owner,
+9 November: "halving sky texture feels fine"), 16 MiB with mips against 64 MiB at 1024; its blur levels keep the
+1024 cube's angles. Matched desktop stills of the horizon, sun, clouds and the water's reflection at Far Head and the
+cove could not tell the two apart, so 512 is used everywhere; `skyCube=1024` brings back the old size to compare.
 Recipe values live in `sky-art.ts`; edit and reload. Cube RGB contains no sun disc, and alpha remains sun
 transmittance. `inspect()` reports the cube payload, bake count, CPU bake submission time and readiness; none establish
 device residency or real-time smoothness. No shared state, network shapes or gameplay change.
