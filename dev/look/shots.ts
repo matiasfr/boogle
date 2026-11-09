@@ -168,7 +168,7 @@ for (const [bi, beat] of list.beats.entries()) {
       if (!(Array.isArray(value) ? value : [value]).every((n) => typeof n === 'number' && Number.isFinite(n)))
         throw new Error('Live values must be finite numbers');
     }
-    const query = new URLSearchParams(beat.query ?? 'proto=place&dev=1');
+    const query = new URLSearchParams(beat.query ?? 'dev=1');
     for (const [key, value] of new URLSearchParams(variant.query)) query.set(key, value);
     if (variant.graphics?.msaa !== undefined) query.set('graphicsMsaa', variant.graphics.msaa ? '1' : '0');
     query.sort();

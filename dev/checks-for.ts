@@ -50,44 +50,27 @@ if (matches(/^(src\/net[^/]*\/|src\/world\/(sync|game-world)\.ts$|server\/)/)) {
   add('Room/network changes', 'npm', '--prefix', 'server', 'test');
   add('Room/network changes', 'npm', 'run', 'test:net');
 }
+// Every route is the production railway bot (dev/look/bots/railway.ts) from a fresh room; --to ends it at a beat.
 if (shared) {
-  browser(
-    'Shared simulation or server: two peers through T2',
-    'playthrough',
-    '--players',
-    '2',
-    '--from',
-    'at-cove',
-    '--to',
-    'T2',
-  );
+  browser('Shared simulation or server: two peers through T2', 'playthrough', '--players', '2', '--to', 'T2');
   browser('Shared world inputs', 'scenario', 'world-inputs');
 }
 if (render) {
-  browser('Render: inspect a restored still', 'look', '--at', 'at-cove', '--saves', '.look/checkpoints/solo', '--hud');
-  browser('Render: short played segment', 'playthrough', '--from', 'at-cove', '--to', 'wake');
+  browser('Render: inspect a seeded still, just awake', 'look', '--rail-seed', 'awake', '--hud');
+  browser('Render: short played segment, opening to wake', 'playthrough', '--to', 'wake');
 }
-if (terrain)
-  browser('Terrain: cove approach, harvest and first track', 'playthrough', '--from', 'at-cove', '--to', 't1-done');
-if (audio)
-  browser(
-    'Audio: walk, jump and dry landing repeated three times',
-    'playthrough',
-    '--from',
-    'at-cove',
-    '--to',
-    'audio-loop',
-  );
+if (terrain) browser('Terrain: opening walk, harvest and first track', 'playthrough', '--to', 't1-done');
+if (audio) browser('Audio: walk, jump and dry landing repeated three times', 'playthrough', '--to', 'audio-loop');
 if (harness || (gameplay && !shared && !terrain && !audio && !render))
-  browser('Gameplay/tool harness: short route', 'playthrough', '--from', 'at-cove', '--to', 't1-done');
+  browser('Gameplay/tool harness: short route', 'playthrough', '--to', 't1-done');
 const plan = { base: value('--base') ?? 'origin/main (local ref; no fetch)', files, checks };
 const quote = (s: string) => (/^[\w./:@=-]+$/.test(s) ? s : `'${s.replaceAll("'", "'\\''")}'`);
 if (args.includes('--json')) console.log(JSON.stringify(plan, null, 2));
 else {
   console.log(`Checks for ${files.length} changed files (including working edits):`);
   for (const c of checks) console.log(`  ${c.command.map(quote).join(' ')}\n    ${c.reason}`);
-  if (checks.some((c) => c.command.includes('--from') || c.command.includes('--saves')))
-    console.log('Fixtures missing or world changed? Regenerate: npm run checkpoints (add -- --players 2 for co-op).');
+  if (checks.some((c) => c.command.includes('--rail-seed')))
+    console.log('Seeds are server saves written per run (dev/look/rail-seed.ts); no client fixtures to regenerate.');
   if (sample) console.log('Sample file list; no claim about the actual checkout diff.');
 }
 if (args.includes('--run')) {

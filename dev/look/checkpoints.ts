@@ -1,20 +1,36 @@
-// Rebuild disposable fixtures using the real route and current save machinery. No old-save conversion.
+// npm run checkpoints [-- <stage> ...]: the production route's checkpoints are accepted --rail-seed server saves, built
+// per run from the lockstep sim through the real host's save path (dev/look/rail-seed.ts). There are no client fixtures to
+// keep or migrate. This writes each stage the routed checks and `playthrough --from` use (or the stages named) into a
+// throwaway data directory, so a world or route change that breaks a seed shows here, before a browser run needs it.
+// The legacy ?proto=place fixtures regenerate with `npm run playthrough -- --regenerate --long --query 'proto=place&shot=play'`
+// until D1 deletes them.
 import fs from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
+import { writeRailSeed } from './rail-seed.ts';
+import { RAIL_FROM } from './segments.ts';
 
 const args = process.argv.slice(2);
-if (args.some((a) => ['--from', '--to', '--eval', '--saves'].includes(a)))
-  throw new Error('Regenerate the whole fixture set; options are --players 2, --real, --warp-speed and --query');
-const broker = fs.existsSync('.look/see-client.ts');
-const child = spawnSync(
-  process.execPath,
-  [
-    ...(broker ? ['.look/see-client.ts', 'playthrough'] : ['dev/look/playthrough.ts']),
-    '--regenerate',
-    '--long',
-    ...args,
-  ],
-  { stdio: 'inherit' },
+if (args.some((a) => a.startsWith('--')))
+  throw new Error('Seeds are server saves built per run; name stages to check, or none for the routed ones');
+const stages = args.length ? args : ['awake', ...Object.keys(RAIL_FROM)];
+let failed = 0;
+for (const stage of stages) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-seed-'));
+  const started = Date.now();
+  try {
+    await writeRailSeed(dir, 'checkpoints', stage);
+    const saved = fs.readdirSync(dir, { recursive: true }).length;
+    if (!saved) throw new Error('the host saved nothing');
+    console.log(`ok   ${stage.padEnd(14)} ${((Date.now() - started) / 1000).toFixed(1)} s`);
+  } catch (error) {
+    failed++;
+    console.log(`FAIL ${stage.padEnd(14)} ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+console.log(
+  failed ? `${failed} of ${stages.length} seeds failed` : `${stages.length} seeds build through the host save path`,
 );
-if (child.error) throw child.error;
-process.exit(child.status ?? 1);
+process.exit(failed ? 1 : 0);
