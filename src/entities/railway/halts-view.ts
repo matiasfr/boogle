@@ -15,6 +15,7 @@ import { carry } from '../../physics/platforms.ts';
 import { HEAD_OFFSET, PLAYER_R, SEA } from '../../constants.ts';
 import { me } from '../../player/player.ts';
 import { roadPlaque } from './home-pictogram.ts';
+import { createFlapFace } from './flap-face.ts';
 type Box = import('../../proto/net/boxes.ts').Box;
 type Line = import('../../proto/place/layout.ts').Line;
 type LinePoint = import('../../proto/place/layout.ts').LinePoint;
@@ -23,7 +24,6 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   const [
     { flat },
     { box, place },
-    { label },
     { H, addStatic: staticBody, slab: staticSlab },
     layout,
     { boardMaterial },
@@ -32,7 +32,6 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   ] = await Promise.all([
     import('../../proto/flat.ts'),
     import('../../proto/net/boxes.ts'),
-    import('../../proto/minis/common.ts'),
     import('../../proto/place/land.ts'),
     import('../../proto/place/layout.ts'),
     import('../../proto/place/look.ts'),
@@ -165,6 +164,12 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     // The signal's mast, at the end the train comes in, on this edge.
     const mast = sign * (hw - 0.3);
     part(mast, 0, half - 0.8, 0.14, 4.4, 0.14, IRON);
+    // The departure board fixed to the mast below the arm, across the platform end and wholly inboard of the mast: a
+    // dark backing, a red cap, and a split-flap face either side (owner, 9 November: a real sign, not floating text).
+    // An island edge carries its destination plaque at 2.9 m, so its board goes above the plaque instead.
+    const FACE = { w: 1.5, h: 0.62, across: mast - sign * 0.88, up: island ? 3.3 : 2.15 };
+    part(FACE.across, FACE.up - 0.06, half - 0.8, FACE.w + 0.12, FACE.h + 0.12, 0.08, '#23262d');
+    part(FACE.across, FACE.up + FACE.h + 0.06, half - 0.8, FACE.w + 0.3, 0.08, 0.3, ROOF);
     const set = dropSet(
       boxes,
       (k) => {
@@ -203,16 +208,20 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       owner.add(plaque.mesh);
       owner.cleanup(plaque.dispose);
     }
-    const board = label(3, 1.5);
-    // Over the signal's arm at the platform's end, not over its middle where it covered the view along the line
-    // (at the quarry, the opened throat): the signal and the board say "a train is coming" in one place.
-    board.sprite.position.set(arm.position.x, low + 5.3, arm.position.z);
-    board.sprite.visible = false;
-    owner.add(board.sprite);
-    owner.cleanup(() => {
-      board.sprite.material.map?.dispose();
-      board.sprite.material.dispose();
-    });
+    // Five flaps: the seconds to the next train, as the floating board said them ("23 S").
+    const board = createFlapFace(5, FACE.w, FACE.h, 0.045);
+    {
+      const ds = half - 0.8;
+      board.mesh.position.set(
+        c.x + FACE.across * cosY + ds * sinY,
+        low + FACE.up + FACE.h / 2,
+        c.z - FACE.across * sinY + ds * cosY,
+      );
+      board.mesh.rotation.y = yaw;
+    }
+    board.mesh.visible = false;
+    owner.add(board.mesh);
+    owner.cleanup(() => board.dispose());
 
     let bodies: Body[] = [];
     const addBodies = () => {
@@ -308,6 +317,10 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       z: c.z,
       up: false,
       calling: false,
+      /** What the departure board's flaps read now. */
+      get board() {
+        return board.shown;
+      },
       /** It's built: down the pieces come. */
       build(delay = 0) {
         if (halt.up) return;
@@ -323,9 +336,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         bodies = [];
         halt.up = on;
         boxes.forEach((_, k) => set.snap(k, on));
-        ramps.visible = arm.visible = on;
+        ramps.visible = arm.visible = board.mesh.visible = on;
         if (plaque) plaque.mesh.visible = on;
-        board.sprite.visible = false;
+        board.set('');
         if (on) addBodies();
       },
       /** A body at (x, y, z) stands on it; margin retains an already occupied halt through edge jitter. */
@@ -347,18 +360,18 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         if (on && !halt.calling && !quiet) clank(c.x, c.z);
         halt.calling = on;
         arm.rotation.z = on ? -0.75 : 0;
-        board.sprite.visible = on && eta! > 0;
-        if (on && eta! > 0) board.set(`${eta} s`);
+        board.set(on && eta! > 0 ? `${eta} s` : '');
       },
       update: (dt: number) => {
         set.update(dt);
         if (reveal >= 0) {
           reveal -= dt;
           if (reveal <= 0) {
-            ramps.visible = arm.visible = true;
+            ramps.visible = arm.visible = board.mesh.visible = true;
             if (plaque) plaque.mesh.visible = true;
           }
         }
+        board.update(dt);
       },
     };
     return halt;
@@ -434,6 +447,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         z: h.z,
         up: h.up,
         calling: h.calling,
+        board: h.board,
       })),
     }),
   };
