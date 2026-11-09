@@ -18,6 +18,16 @@ Playtest reports label the default visit as `place` and include its effective fl
 
 ## Production T1 branch (5 November 2026)
 
+**Q5 rules and the sea switch (8 November; B4 job A).** Production line two now reaches Q5: 24 logs and 24 rails
+fund the 260 m trestle from the rim to Far Head (286 → 546 m, 96 rail pairs). Its frame waits for the Server-kind
+`rail.seaSwitch`: Q4 must be complete, and the server checks the actor's reach and height at Needle Bell's summit
+(world 1011.8, 102.4, −6 m). Your pull is predicted; a friend's earlier pull stands without a correction effect.
+The cart serves Q5 as soon as Q4 completes, even with the gate up; its 24 rails take two trips of 16 and 8, moved
+from the forge. Leftover shelf rails return to the forge when Q5 funds. The sea flag and fifth station persist
+through restart; `WORLD_NS` v20 resets development worlds. The gate/switch views and summit access are separate
+jobs; this rules slice adds only the frame's deposit guard. Serves DESIGN.md **Clear authority** and **Enjoyable
+alone and together**. Not tested on a device.
+
 **Supply continuation, `codex/slice2-supply` only, unshipped:** eligible drops move to the owner-selected `recovery-rack.glb` on the forge courtyard's town path at world `(905,1)`, by default after 21 host-stamped minutes and with every fresh known player more than 12 m away. It is open before the forge; ordinary Interact pickup uses the eight-log back and the model's visible-stock anchor. Its structural collider comes from the model, and its 0–3 displayed logs represent the fully counted rack account. After roughly 30 minutes, pale stumps gain shoots, saplings, young trees and finally mature harvestable trees on separate accepted minutes. The owner's later 5 November call removes the visibility requirement: growth can happen in view, occupied rooms and after T1 completion, but completed track clearings remain bare. Maturity adds exactly 10 counted production units. The existing tunables catalog exposes `railway.regrowMinutes` (31) and `railway.recoveryMinutes` (21), in integer minutes from 1–1440, through controller-authorized accepted edits. Existing main rooms retain their full saved tuning values through the explicit version upgrade; mismatched builds are refused. Frozen v0 recovery is verified before the bounded supply upgrade and atomic replacement. Great-log/boiler respawn remains in the later-slice contract. See [supply branch record](../plans/production-core.md#supply-branch-integration-5-november) for proof scope and limits.
 
 On `codex/production-core-slice-2`, the default entry now uses server-owned T1 construction in isolated `t1v02` rooms. The historical full Place behavior below remains available through explicit `?proto=place`; classic is unchanged. This branch must not land before the owner and Grant's round 4 replay.

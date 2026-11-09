@@ -47,6 +47,7 @@ import {
   line2CartStatus,
   line2Completed,
   line2GateOpen,
+  line2SeaOpen,
   line2PackReady,
   line2Served,
   railCarryMax,
@@ -79,6 +80,7 @@ export type RailwayIntent =
         | 'rail.depotTake'
         | 'rail.depotRailTake'
         | 'rail.lever'
+        | 'rail.seaSwitch'
         | 'rail.hook'
         | 'rail.pack'
         | 'rail.cartCall';
@@ -157,6 +159,7 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     e.op === 'rail.forgeTake' ||
     e.op === 'rail.depotTake' ||
     e.op === 'rail.lever' ||
+    e.op === 'rail.seaSwitch' ||
     e.op === 'rail.hook' ||
     e.op === 'rail.depotRailTake' ||
     e.op === 'rail.pack' ||
@@ -192,7 +195,8 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
       e.station === 'Q1' ||
       e.station === 'Q2' ||
       e.station === 'Q3' ||
-      e.station === 'Q4') &&
+      e.station === 'Q4' ||
+      e.station === 'Q5') &&
     railInt(e.n, CARRY_MAX, 1)
   )
     return { op: e.op, station: e.station, n: e.n, kind };
@@ -237,11 +241,13 @@ const holds = (s: Railway, op: string) =>
     ? s.awake >= 0
     : op === 'rail.lever'
       ? !!s.line2?.lever
-      : op === 'rail.pack'
-        ? !!s.line2?.pack
-        : op === 'rail.cartCall'
-          ? !!s.line2?.cart.recall
-          : false;
+      : op === 'rail.seaSwitch'
+        ? !!s.line2?.sea
+        : op === 'rail.pack'
+          ? !!s.line2?.pack
+          : op === 'rail.cartCall'
+            ? !!s.line2?.cart.recall
+            : false;
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op !== b.op) return false;
@@ -266,6 +272,7 @@ const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.axe',
   'rail.jump',
   'rail.lever',
+  'rail.seaSwitch',
   'rail.hook',
   'rail.pack',
   'rail.cartCall',
@@ -704,6 +711,8 @@ export function createRailwayAdapter({
       routes: Object.freeze(line2Routes(line2Done)),
       gateOpen: line2GateOpen(s),
       lever: l2.lever,
+      sea: l2.sea,
+      seaOpen: line2SeaOpen(s),
       hook: l2.hook,
       pack: l2.pack,
       packReady: line2PackReady(s),
@@ -937,6 +946,7 @@ export function createRailwayAdapter({
     /** The server's tick as this tab estimates it, with its fraction (never going backwards). */
     tickNow,
     pullLever: () => submit({ op: 'rail.lever' }),
+    pullSeaSwitch: () => submit({ op: 'rail.seaSwitch' }),
     claimHook: () => submit({ op: 'rail.hook' }),
     deposit(n = 1, kind: RailMaterial = 0) {
       const station = LINE1_STATIONS[railActiveStation(view())]!.id;

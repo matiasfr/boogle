@@ -67,7 +67,7 @@ export type Railway = {
   stoneUsed?: number;
   stoneDelivered?: number;
   line?: RailLine;
-  /** Line two (forge, Q1-Q4, the pack); present with line one. */
+  /** Line two (forge, Q1-Q5, the pack and gates); present with line one. */
   line2?: RailLine2;
   /** Playable namespace only: accepted collision presentation, independent of material balances. */
   falls?: { yaw: number[]; collapsed: boolean[] };

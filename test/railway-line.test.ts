@@ -106,7 +106,7 @@ test('line 1 preserves source identity, exact bills and the one twelve-panel all
   }
   assert.deepEqual(
     LINE2_STATIONS.map((station) => line2Panels(station).length),
-    [12, 24, 24, 32],
+    [12, 24, 24, 32, 96],
   );
 });
 
@@ -173,7 +173,7 @@ test('the machine view lays the same rail pairs the shared schedule commits', as
     local.forEach((p, i) => assert.ok(Math.abs(p.end * 100 - shared[i]!.toCm) <= 1, `pair ${i} end`));
   };
   same(view('timber'), linePanels());
-  // Production line two is Q1-Q4: the view's first four stages.
+  // Production line two is Q1-Q5: the view's first five stages.
   const shared = LINE2_STATIONS.flatMap((station) => line2Panels(station));
   same(view('quarry').slice(0, shared.length), shared);
 });

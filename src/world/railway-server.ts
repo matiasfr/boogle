@@ -34,6 +34,7 @@ import {
   LINE2_STATIONS,
   LINE2_DEPOT,
   LINE2_LEVER,
+  LINE2_SEA,
   LINE2_HOOK,
   LINE2_PACK,
 } from '../sim/railway-line2-layout.ts';
@@ -102,6 +103,7 @@ export const RAIL_ACTIONS = new Set([
   'rail.forgeTake',
   'rail.depotTake',
   'rail.lever',
+  'rail.seaSwitch',
   'rail.hook',
   'rail.depotRailTake',
   'rail.pack',
@@ -186,6 +188,8 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
       return near(CART_CALL.x, CART_CALL.z, CART_CALL.reach);
     case 'rail.lever':
       return height(LINE2_LEVER.y) && near(LINE2_LEVER.x, LINE2_LEVER.z, 320);
+    case 'rail.seaSwitch':
+      return height(LINE2_SEA.y) && near(LINE2_SEA.x, LINE2_SEA.z, 320);
     case 'rail.hook':
       return height(LINE2_HOOK.y) && near(LINE2_HOOK.x, LINE2_HOOK.z, 320);
   }

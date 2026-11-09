@@ -12,7 +12,13 @@ import { defineSystem, type System, type World } from '../ecs/index.ts';
 import { MAX_PLAYERS, okPid } from './roster.ts';
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY, RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE1_GREAT_TREE, LINE1_STATIONS, lineBeamGround } from './railway-line-layout.ts';
-import { LINE2_FORGE as FORGE, LINE2_PACK as PACK, LINE2_STATIONS, RAILS } from './railway-line2-layout.ts';
+import {
+  LINE2_FORGE as FORGE,
+  LINE2_PACK as PACK,
+  LINE2_STATIONS,
+  RAILS,
+  type Line2Station,
+} from './railway-line2-layout.ts';
 import { lineSchedule, type LineTiming } from './railway-line-schedule.ts';
 import { CART, CART_PHASE, CART_ROAD, cartCycleTicks, cartEnd } from './railway-cart.ts';
 import { LINE_TIMING } from './railway-line.ts';
@@ -403,6 +409,10 @@ const jump = defineSystem('rail.jump', { writes: [Rail], phase: 'act', order: 13
 });
 
 // ---------------------------------------------------------------- line two's ops
+function gateDown(w: World, spec: Line2Station) {
+  const rail = w.get(Rail, railId(w))!;
+  return !spec.gate || (spec.gate === 'quarry' ? rail.lever : rail.sea);
+}
 function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
   const spec = LINE2_STATIONS[k]!;
   const id = qjob(w, k);
@@ -448,8 +458,8 @@ const deposit2 = defineSystem(
     if (k < 0 || e.station !== LINE2_STATIONS[k]!.id || tick < w.get(Forge, fid)!.lit + FORGE.turnTicks) return 0;
     const j = w.get(QJob, qjob(w, k))!,
       spec = LINE2_STATIONS[k]!;
-    // A gated frame takes nothing until its gate is down (the quarry lever, which needs Q3).
-    if (j.start >= 0 || (spec.gate === 'quarry' && !w.get(Rail, railId(w))!.lever)) return 0;
+    // Gated frames wait for the quarry lever (Q3) or summit sea switch (Q4).
+    if (j.start >= 0 || !gateDown(w, spec)) return 0;
     const rails = e.kind === RAILS;
     if (e.kind !== undefined && e.kind !== 0 && !rails) return 0;
     const n = Math.min(e.n!, rails ? a.rails : a.carry, spec.bill[rails ? 1 : 0] - (rails ? j.railStock : j.stock));
@@ -528,6 +538,11 @@ const hook = defineSystem('rail.hook', { reads: [QJob], writes: [Rail], phase: '
   w.mut(Rail, railId(w))!.hook = true;
   return 1;
 });
+const seaSwitch = defineSystem('rail.seaSwitch', { reads: [QJob], writes: [Rail], phase: 'act', order: 28 }, (w) => {
+  if (qCompleted(w) < 4 || w.get(Rail, railId(w))!.sea) return 0;
+  w.mut(Rail, railId(w))!.sea = true;
+  return 1;
+});
 
 /** "Call cart to forge": the cart stops at the forge on its next pass (or sets out from the camp now) and waits there
  * to be boarded. Only while it serves a stretch; one call stands until it is served, so a second is a noop. */
@@ -560,6 +575,7 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.forgeTake': [forgeTake],
   'rail.depotTake': [depotTake],
   'rail.lever': [lever],
+  'rail.seaSwitch': [seaSwitch],
   'rail.hook': [hook],
   'rail.depotRailTake': [depotRailTake],
   'rail.pack': [pack],

@@ -8,6 +8,7 @@ import { createRailway, invariant as railwayInvariant, railApply, railSession, r
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { line2Schedule } from '../../src/sim/railway-line2.ts';
 import { LINE2_FORGE } from '../../src/sim/railway-line2-layout.ts';
+import { CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
 
 export type World = { s: Railway; t: number };
 export function act(w: World, pid: string, op: string, fields: Partial<RailAction> = {}) {
@@ -18,6 +19,15 @@ export function act(w: World, pid: string, op: string, fields: Partial<RailActio
 }
 export function advance(w: World, ticks: number) {
   for (let i = 0; i < ticks; i++) railTick(w.s, ++w.t);
+}
+function clear(w: World) {
+  for (const pid of ['a', 'b']) {
+    const a = railAccount(w.s, pid)!;
+    for (const kind of [0, 2] as const) {
+      const n = kind ? (a.rails ?? 0) : a.carry;
+      if (n) assert.equal(act(w, pid, 'rail.drop', { x: 100000 + kind * 100, y: 2000, z: 3000, n, kind }), n);
+    }
+  }
 }
 function chop(w: World, pid: string) {
   const a = railAccount(w.s, pid)!;
@@ -92,19 +102,40 @@ export function railwayAtQ4(): World {
   logs(w, 'a', 'Q3', 16);
   rails(w, 'b', 'Q3', 12);
   finish(2);
-  const clear = () => {
-    for (const pid of ['a', 'b']) {
-      const a = railAccount(w.s, pid)!;
-      for (const kind of [0, 2] as const) {
-        const n = kind ? (a.rails ?? 0) : a.carry;
-        if (n) assert.equal(act(w, pid, 'rail.drop', { x: 100000 + kind * 100, y: 2000, z: 3000, n, kind }), n);
-      }
-    }
-  };
-  clear();
+  clear(w);
   while (w.s.line2!.depot) {
     act(w, 'a', 'rail.depotTake');
-    clear();
+    clear(w);
+  }
+  assert.equal(railwayInvariant(w.s), null);
+  return w;
+}
+
+export type RailSeedStage = 'q4-done' | 'sea-open' | 'q5-stocked' | 'q5-finishing' | 'q5-done';
+/** Q4 laid and Q5 active, then the accepted summit pull, cart stock, or funded trestle at the named beat. */
+export function railwayAtQ5(stage: RailSeedStage): World {
+  const w = railwayAtQ4();
+  assert.equal(act(w, 'a', 'rail.lever'), 1);
+  assert.equal(act(w, 'a', 'rail.hook'), 1);
+  logs(w, 'a', 'Q4', 16);
+  rails(w, 'b', 'Q4', 16);
+  advance(w, line2Schedule(3, w.s.line2!.jobs[3]!).totalTicks);
+  assert.equal(w.s.line2!.jobs[3]!.completion, 1);
+  clear(w);
+  if (stage !== 'q4-done') assert.equal(act(w, 'a', 'rail.seaSwitch'), 1);
+  if (stage === 'q5-stocked' || stage === 'q5-finishing' || stage === 'q5-done') {
+    let waited = 0;
+    while (!(w.s.line2!.depot === 24 && w.s.line2!.depotRails === 16 && w.s.line2!.cart.phase === CART_PHASE.DROP)) {
+      assert.ok(waited++ < 3 * cartCycleTicks(4), 'Q5 cart stock arrived');
+      advance(w, 1);
+    }
+  }
+  if (stage === 'q5-finishing' || stage === 'q5-done') {
+    logs(w, 'a', 'Q5', 24);
+    rails(w, 'b', 'Q5', 24);
+    const total = line2Schedule(4, w.s.line2!.jobs[4]!).totalTicks;
+    advance(w, stage === 'q5-finishing' ? total - 60 : total);
+    clear(w);
   }
   assert.equal(railwayInvariant(w.s), null);
   return w;

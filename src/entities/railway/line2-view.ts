@@ -914,8 +914,13 @@ export async function createRailwayLine2(
       const job = l.stations[k]!,
         spec = LINE2_STATIONS[k]!,
         frame = frames[k]!;
-      // A gated frame (Q4 behind the quarry gate) takes nothing until the lever has dropped the gate.
-      if (job.start >= 0 || (spec.gate === 'quarry' && !l.lever) || !near(frame.x, frame.z)) return;
+      // Gated frames wait for the quarry gate (Q4) or sea gate (Q5) to drop.
+      if (
+        job.start >= 0 ||
+        (spec.gate === 'quarry' ? !l.gateOpen : spec.gate === 'sea' ? !l.seaOpen : false) ||
+        !near(frame.x, frame.z)
+      )
+        return;
       if (state.availableCarry > 0 && job.stock < spec.bill[0] && adapter.depositLine2(spec.id, 1, 0))
         unload = layout.TUNE.unloadS;
       else if (state.availableRails > 0 && job.railStock < spec.bill[1] && adapter.depositLine2(spec.id, 1, 2))

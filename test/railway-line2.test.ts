@@ -1,4 +1,4 @@
-// Line two's accounts: forge bills and pour, Q1-Q4 funding and laying, the depot and its rails shelf, the pack, lever
+// Line two's accounts: forge bills and pour, Q1-Q5 funding and laying, the depot and its rails shelf, the pack, gates
 // and hook readiness (line two's systems on E, through ./railway-live.ts).
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -19,11 +19,19 @@ import {
   restore as restored,
   worldOf,
 } from './railway-live.ts';
-import { line2Active, line2Completed, line2GateOpen, line2Schedule, railCarryMax } from '../src/sim/railway-line2.ts';
+import {
+  line2Active,
+  line2Completed,
+  line2GateOpen,
+  line2SeaOpen,
+  line2GateDown,
+  line2Schedule,
+  railCarryMax,
+} from '../src/sim/railway-line2.ts';
 import { LINE2_FORGE, LINE2_STATIONS, LINE2_PACK, line2Routes } from '../src/sim/railway-line2-layout.ts';
 import { CART, CART_PHASE, cartCycleTicks } from '../src/sim/railway-cart.ts';
 import { RAILWAY_T1 } from '../src/sim/railway-layout.ts';
-import { railwayAtQ4 } from './helpers/railway-q2.ts';
+import { railwayAtQ4, railwayAtQ5 } from './helpers/railway-q2.ts';
 
 type World = { s: Railway; t: number };
 function act(w: World, pid: string, op: string, fields: Partial<RailAction> = {}) {
@@ -245,6 +253,7 @@ test('malformed line-two documents fail atomically', () => {
     j.c[c.kind]![1 + c.names.indexOf(field)]!;
   const cases: [string, (j: Snap) => void][] = [
     ['lever before Q3', (j) => (col(j, Rail, 'lever')[0] = 1)],
+    ['sea before Q4', (j) => (col(j, Rail, 'sea')[0] = 1)],
     ['hook before Q2', (j) => (col(j, Rail, 'hook')[0] = 1)],
     ['minted rail', (j) => (col(j, Forge, 'rack')[0] = w.s.line2!.forge.rack + 1)],
     ['unlit pour', (j) => (col(j, Forge, 'lit')[0] = -1)],
@@ -268,7 +277,7 @@ test('malformed line-two documents fail atomically', () => {
     assert.throws(() => worldOf(w.s).load(j, railwayCheck), Error, name);
     assert.equal(hashOf(w.s), hash, name);
   }
-  assert.equal(LINE2_STATIONS.length, 4);
+  assert.equal(LINE2_STATIONS.length, 5);
 });
 
 function toQ2(): World {
@@ -466,11 +475,83 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   restore(w);
   finishQ(w, 3);
   assert.equal(line2Completed(w.s), 4);
-  assert.equal(line2Active(w.s), -1);
+  assert.equal(line2Active(w.s), 4);
   assert.equal(act(w, 'a', 'rail.depotRailTake'), 0, 'an empty shelf gives nothing');
   const c = railsHeld(w);
   assert.equal(c.stations, 6 + 12 + 12 + 16);
   assert.equal(railCounts(w.s).total, 3910 + railCounts(w.s).produced);
+  restore(w);
+});
+
+test('Q5: behind the sea gate; the switch needs Q4; two cart trips bring its rails, never minted', () => {
+  const early = railwayAtQ4();
+  assert.equal(act(early, 'a', 'rail.seaSwitch'), 0);
+  assert.equal(early.s.line2!.sea, false);
+  const w = railwayAtQ5('q4-done');
+  const l = () => w.s.line2!;
+  assert.equal(line2Active(w.s), 4);
+  assert.equal(line2SeaOpen(w.s), false);
+  assert.equal(line2GateDown(w.s, 4), false);
+  // The cart serves the frame even with the sea gate up.
+  untilUnload(w, 4, () => l().depotRails === 16);
+  assert.equal(l().depot, 24);
+  assert.ok(l().depotOut[4]! <= 24);
+  assert.equal(l().shelfOut, 16);
+  railsHeld(w);
+  const move = (pid: string, op: string, fields: Partial<RailAction> = {}) => {
+    const n = act(w, pid, op, fields);
+    railsHeld(w);
+    return n;
+  };
+  assert.equal(move('a', 'rail.depotTake'), 8);
+  assert.equal(move('a', 'rail.deposit', { station: 'Q5', n: 8 }), 0);
+  assert.equal(move('a', 'rail.seaSwitch'), 1);
+  assert.equal(move('b', 'rail.seaSwitch'), 0);
+  assert.equal(line2SeaOpen(w.s), true);
+  assert.equal(line2GateDown(w.s, 4), true);
+  assert.equal(move('a', 'rail.deposit', { station: 'Q5', n: 8 }), 8);
+  for (const pid of ['a', 'b']) {
+    assert.equal(move(pid, 'rail.depotRailTake'), 8);
+    assert.equal(move(pid, 'rail.deposit', { station: 'Q5', kind: 2, n: 8 }), 8);
+  }
+  restore(w);
+  untilUnload(w, 4, () => l().depotRails === 8);
+  assert.equal(l().shelfOut, 24, 'the second trip brings just the remaining eight rails');
+  assert.equal(l().depot, 16, 'no more logs than the bill');
+  railsHeld(w);
+  // Finish the rail bill by hand, leaving the second shipment on the shelf to return on funding.
+  assert.equal(move('b', 'rail.forgeTake'), 8);
+  assert.equal(move('b', 'rail.deposit', { station: 'Q5', kind: 2, n: 8 }), 8);
+  for (let i = 0; i < 2; i++) {
+    const before = l().forge.rack;
+    assert.equal(move('a', 'rail.depotTake'), 8);
+    assert.equal(move('a', 'rail.deposit', { station: 'Q5', n: 8 }), 8);
+    if (i === 1) assert.equal(l().forge.rack, before + 8, 'the shelf leftovers return to the forge');
+  }
+  const start = l().jobs[4]!.start;
+  assert.ok(start >= 0);
+  assert.equal(l().depotRails, 0);
+  assert.equal(l().shelfOut, 0);
+  assert.equal(move('a', 'rail.deposit', { station: 'Q5', n: 1 }), 0);
+  assert.equal(l().jobs[4]!.start, start, 'funded once');
+  restore(w);
+  finishQ(w, 4);
+  assert.equal(line2Completed(w.s), 5);
+  assert.equal(line2Active(w.s), -1);
+  assert.equal(railsHeld(w).stations, 6 + 12 + 12 + 16 + 24);
+  restore(w);
+});
+
+test("the away credit runs Q5's cart too: rails move from the forge, logs stop at the bill", () => {
+  const w = railwayAtQ5('q4-done');
+  railResume(w.s, 0, 40, w.t, 1000000);
+  assert.equal(w.s.line2!.depot, 24);
+  assert.equal(w.s.line2!.depotRails, 24, 'away credit runs both rail shipments up to the bill');
+  assert.ok(w.s.line2!.depotOut[4]! <= 24);
+  railsHeld(w);
+  const hash = hashOf(w.s);
+  railResume(w.s, 0, 40, w.t, 1000000);
+  assert.equal(hashOf(w.s), hash, 'once per marker');
   restore(w);
 });
 

@@ -26,6 +26,8 @@ import { cloneRailway, railPredict } from '../src/world/railway-predict.ts';
 import { RAILWAY_SUPPLY } from '../src/sim/railway-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
+import { createRailwayAdapter, type RailwayAccepted, type RailwayCorrection } from '../src/adapters/railway.ts';
+import { SERVER_ID } from '../src/net/ids.ts';
 
 const anywhere: Actor = { reach: () => true, height: () => true, cadence: () => true };
 
@@ -221,7 +223,7 @@ test('the railway state is a server state: saved by the host, never hashed or se
   assert.equal(RAIL_SCHEMAS.length, 11); // the depot cart joined (B3)
 });
 
-test('a scripted run through line one, the pack and line two to Q4 replicates exactly, live and to a late joiner', () => {
+test('a scripted run through line one, the pack and line two to Q5 replicates exactly, live and to a late joiner', () => {
   const r = room();
   r.join('a');
   const s = () => r.api.railway; // rebuilt after each change
@@ -230,6 +232,10 @@ test('a scripted run through line one, the pack and line two to Q4 replicates ex
     const n = (req.get(pid) ?? 0) + 1;
     req.set(pid, n);
     const result = r.api.act(pid, { op, ...fields, epoch: 1, request: n } as RailAction, anywhere);
+    if (op === 'rail.seaSwitch') {
+      if (result.accepted) r.replication.emit({ op, pid, request: n, accepted: result.accepted }, pid);
+      if (pid === 'a') r.replication.ack('sea-predict', 1, n);
+    }
     r.pump();
     agree(r, 'a');
     return result.accepted;
@@ -311,6 +317,51 @@ test('a scripted run through line one, the pack and line two to Q4 replicates ex
       assert.equal(act('b', 'rail.deposit', { station: spec.id, n: 1, kind: 0 }), 0, 'the quarry gate is up');
       assert.equal(act('a', 'rail.lever'), 1);
     }
+    if (spec.gate === 'sea') {
+      assert.equal(act('b', 'rail.deposit', { station: spec.id, n: 1, kind: 0 }), 0, 'the sea gate is up');
+      r.join('sea-predict');
+      const seaMirror = r.mirrors.get('sea-predict')!;
+      const adapter = createRailwayAdapter({
+        mirror: seaMirror,
+        movement: () => ({
+          beamSoloSpeed: 2,
+          beamHelpSpeed: 5,
+          jumpImpulse: 6,
+          jumpTurn: 1,
+          jumpSteer: 25,
+          jumpApexSpeed: 1,
+        }),
+        pid: 'a',
+        pose: () => ({ x: 1011.8, y: 102.4, z: -6 }),
+        now: () => 1000,
+      });
+      let hear: ((message: unknown, from: string) => void) | undefined;
+      const corrections: RailwayCorrection[] = [],
+        effects: RailwayAccepted[] = [];
+      adapter.onCorrected((c) => corrections.push(c));
+      adapter.onAccepted((e) => effects.push(e));
+      adapter.attach({
+        selfId: 'a',
+        send: () => {},
+        onMessage: (fn) => {
+          hear = fn;
+          return () => {};
+        },
+        onConnection: () => () => {},
+      });
+      hear!({ t: 'r:session', to: 'a', epoch: 1, next: (req.get('a') ?? 0) + 1 }, SERVER_ID);
+      r.pump();
+      assert.equal(adapter.pullSeaSwitch(), true, 'sea switch predicts on the press');
+      assert.equal(adapter.inspect().line2.sea, true);
+      assert.equal(seaMirror.railway.line2!.sea, false, 'confirmed mirror waits');
+      assert.equal(act('b', 'rail.seaSwitch'), 1, 'a friend pulled it first');
+      assert.equal(act('a', 'rail.seaSwitch'), 0, 'the pending press settles as noop');
+      assert.equal(corrections.length, 0, 'a shared flag that holds gives no correction effect');
+      assert.equal(effects.filter((e) => e.op === 'rail.seaSwitch').length, 1, 'the pull only plays once');
+      assert.equal(adapter.inspect().line2.seaOpen, true);
+      assert.equal(adapter.inspect().pending, 0, 'the noop acknowledges the predicted press');
+      adapter.dispose();
+    }
     advance(40);
     if (spec.shelf) {
       // Q4's rails ride the depot from the forge rack to the shelf; taking them is predicted like any take.
@@ -345,6 +396,7 @@ test('a scripted run through line one, the pack and line two to Q4 replicates ex
   agree(r, 'c');
   const mirrored = r.mirrors.get('c')!.at(r.sync.world.tick);
   assert.equal(mirrored.line2!.lever, true);
+  assert.equal(mirrored.line2!.sea, true, 'a late joiner gets the sea switch');
   assert.equal(mirrored.line2!.pack, true, 'a late joiner gets the pack');
   assert.equal(railCarryMax(mirrored), 16);
   assert.equal(railCounts(mirrored).rails!.total, railCounts(mirrored).rails!.poured, 'no rail minted');

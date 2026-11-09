@@ -360,6 +360,8 @@ function startWorld(room: Room) {
           return adapter.callCart();
         case 'rail.lever':
           return adapter.pullLever();
+        case 'rail.seaSwitch':
+          return adapter.pullSeaSwitch();
         case 'rail.hook':
           return adapter.claimHook();
         case 'rail.drop':
