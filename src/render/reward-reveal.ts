@@ -8,7 +8,7 @@ import { inputState } from '../player/input-state.ts';
 import { setPadGrab } from '../player/controls.ts';
 import { glyph } from '../player/glyphs.ts';
 import type { Avatar } from '../player/avatars.ts';
-import { rewardSparkles } from './reward-particles.ts';
+import { acquisitionMotes, acquisitionTint, rewardSparkles } from './reward-particles.ts';
 import { headwearTop } from './head-clearance.ts';
 import { camera } from './scene.ts';
 import { dismissPointer } from '../player/dismiss-pointer.ts';
@@ -46,7 +46,7 @@ export function createRewardReveal({
   const rememberGot = (key: string) => void shown.add(key);
   /** A missed shared reset starts new unlock history without cancelling an in-progress personal prize. */
   const resetGotHistory = () => shown.clear();
-  let cur: (Got & { t: number; start: THREE.Vector3 }) | null = null;
+  let cur: (Got & { t: number; start: THREE.Vector3; tint?: THREE.Color }) | null = null;
   const gettingItem = () => !!cur || queue.length > 0;
 
   const BUILD_S = 0.45;
@@ -96,7 +96,7 @@ export function createRewardReveal({
   function next() {
     const g = queue.shift();
     if (!g) return;
-    cur = { ...g, t: 0, start: new THREE.Vector3() };
+    cur = { ...g, t: 0, start: new THREE.Vector3(), tint: acquisitionTint(g.key) };
     resetTouch();
     spin.clear();
     const fit = new THREE.Box3().setFromObject(g.model).getSize(new THREE.Vector3());
@@ -143,7 +143,7 @@ export function createRewardReveal({
     setAloft(false);
     inputState.held = false;
     setPadGrab(null);
-    if (!reducedMotion) sparkles(holder.position, 24, 3.4);
+    if (!reducedMotion && !g.tint) sparkles(holder.position, 24, 3.4);
     pop(7, 0.7);
     g.done?.();
     next();
@@ -236,7 +236,16 @@ export function createRewardReveal({
     haloGlow.strength.value =
       u < BUILD_S ? 0.08 + (u / BUILD_S) * 0.16 : reducedMotion ? 0.3 : 0.3 + Math.sin(u * 5) * 0.06;
     raysGlow.strength.value = 0.35 * ease;
-    if (!reducedMotion && u >= REVEAL_S && Math.floor(u * 6) !== Math.floor((u - dt) * 6))
+    // Gather towards Buddy, open a ring at the reveal, then settle on the prize. All gone before MIN_S:
+    // a dismissal never starts another burst, and waiting on the card cannot keep emitting particles.
+    if (!reducedMotion && cur.tint) {
+      const before = u - dt;
+      if (before < 0.08 && u >= 0.08) acquisitionMotes(top, cur.tint, 'gather', 32);
+      if (before < REVEAL_S && u >= REVEAL_S) acquisitionMotes(holder.position, cur.tint, 'burst', 40);
+      if (u >= BUILD_S && u < 1.1 && Math.floor(u * 24) !== Math.floor(before * 24))
+        acquisitionMotes(holder.position, cur.tint, 'settle', 3);
+    }
+    if (!reducedMotion && !cur.tint && u >= REVEAL_S && Math.floor(u * 6) !== Math.floor((u - dt) * 6))
       sparkles(holder.position, 3, 1.6);
     if (u >= MIN_S && !hint.innerHTML) hint.innerHTML = `${glyph('interact')}<i>▼</i>`;
   }

@@ -7,6 +7,50 @@ import { dustRing } from './particle-effects.ts';
 import { readableIntensity } from './readable-unlit.ts';
 
 const GOLD = new THREE.Color('#ffd76a');
+const IVORY = new THREE.Color('#fff4dc');
+const ABILITY_TINTS: Readonly<Record<string, THREE.Color>> = {
+  hook: new THREE.Color('#428bff'),
+  jump: new THREE.Color('#ac72ff'),
+  pack: new THREE.Color('#ff9466'),
+  axe: GOLD,
+  multi: GOLD,
+  'multi-axe': GOLD,
+};
+export const acquisitionTint = (key?: string) => (key ? ABILITY_TINTS[key] : undefined);
+const mote: Particle = { x: 0, y: 0, z: 0, life: 0.4, size: 0.18, color: GOLD };
+
+/** Bounded Local births over the same pool as the second jump's axe glints. No persistent emitter or new draw. */
+export function acquisitionMotes(at: THREE.Vector3, tint: THREE.Color, kind: 'gather' | 'burst' | 'settle', n: number) {
+  const gather = kind === 'gather',
+    burst = kind === 'burst';
+  Object.assign(mote, {
+    intensity: readableIntensity(),
+    gravity: 0,
+    drag: burst ? 2 : 0,
+    shape: 'glint',
+    alphaCurve: [0.7, 1, 0],
+    sizeCurve: [0.55, 1, 0.2],
+    spin: 1.5,
+  });
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + Math.random() * 0.2;
+    const radius = gather ? 1.1 + Math.random() * 0.6 : burst ? 0.35 : 0.3 + Math.random() * 0.3;
+    const dx = Math.cos(a) * radius,
+      dz = Math.sin(a) * radius,
+      dy = burst ? (Math.random() - 0.5) * 0.2 : (Math.random() - 0.3) * 0.9;
+    mote.x = at.x + dx;
+    mote.y = at.y + dy;
+    mote.z = at.z + dz;
+    mote.life = gather ? 0.4 : burst ? 0.45 : 0.28;
+    mote.vx = burst ? Math.cos(a) * 3.2 : -dx / mote.life;
+    mote.vy = burst ? (i % 2 ? 0.6 : -0.3) : -dy / mote.life;
+    mote.vz = burst ? Math.sin(a) * 3.2 : -dz / mote.life;
+    mote.size = (burst ? 0.19 : 0.13) + Math.random() * 0.07;
+    mote.color = i % 4 === 0 ? IVORY : tint;
+    mote.rotation = a;
+    emit(mote);
+  }
+}
 const CONFETTI = ['#ff4f4f', '#ffcf33', '#2f8cff', '#4fdc7a', '#ff7ad9', '#ffffff'].map((c) => new THREE.Color(c));
 // One reused birth record: emit copies its scalars synchronously, so bursts allocate nothing.
 const spark: Particle = { x: 0, y: 0, z: 0, life: 1, size: 0.2, color: GOLD };
