@@ -169,9 +169,10 @@ the pattern of `sea-gate-view.ts`, with the same `Deps` (layout, land, shapes, f
 - **`inspect()` → `glideDevice: { x, y, z, available, woken, taken, locator }`.**
 - **Facing the forge** (Home flow finding 2): the hook lands you on the summit's east side. Walking to the device faces
   you west, over the device and the switch toward the forge, where J4's 62 m plume stands over the boiler that Q5 just
-  cast. The natural step-off heads for the forge apron. From 102.4 m, a full-stick glide covers about 260 m, which
-  reaches past the forge. Letting go of the stick over the apron stops you in about 0.8 s, and you sink at 3.2 m/s onto
-  a broad, dry landing about 26 s after the step-off (call 14).
+  cast. The natural step-off heads for the forge apron. From 102.4 m, a full-stick glide covers about 250–260 m: over the
+  forge and the village and down into the cove (a swim). The first flight lands on the apron only if you let go over
+  it: letting go of the stick there stops you in about 0.8 s, and you sink at 3.2 m/s onto a broad, dry landing about
+  26 s after the step-off (call 14). _(Designer, 9 November, finding 3: the landing was stated without that caveat.)_
 
 **Supporting changes.**
 - **The card** (`src/entities/railway/reward-data.ts`): `GLIDE_REWARD = { name: 'The glider', line: 'Open it in the
@@ -185,8 +186,10 @@ the pattern of `sea-gate-view.ts`, with the same `Deps` (layout, land, shapes, f
 - **The first-fall teach** (call 10), in `ability-arrival.ts`:
   - The trigger is a new record key `'glide-taught'`. It fires when you own the glider, are airborne, falling faster than
     4 m/s, the canopy is shut, no card is busy and `glide-taught` hasn't been seen.
-  - It shows the existing chip with `glyph('jump')` for `TEACH_S`, placed at Buddy's back (feet + 1.2 m). It ends early
-    when the canopy opens or you land.
+  - It shows the existing chip with the **Glide action's** glyph (LB, Q, touch "Glide") for `TEACH_S`, placed at
+    Buddy's back (feet + 1.2 m). It ends early when the canopy opens or you land. _(Designer, 9 November, finding 2: was
+    `glyph('jump')`. At Q5 every room still has the double jump, so Jump spends the air jump first and opens the canopy
+    only on a second press. Switch the teach to Jump when job E moves the double jump.)_
   - The canopy's state comes from a new export in `glide.ts`: `export const railwayGlideOpen = () => active?.open() ??
     false`. If lint-boundaries refuses that import, pass it as an `env.glideOpen` getter from `reward.ts`.
   - The finder's take marks `glide-taught` as unseen (the teach is for the finder too). A friend's flourish doesn't mark
@@ -423,6 +426,8 @@ All looks are opened and looked at. Report what each one shows.
 
 1. **Sealed still:** `npm run look -- --rail-seed hook-earned --cam 1021.5,104.6,-1 --look 1016,103.2,-4.5 --name
    glide-sealed`. A dark drum and vane beside the switch, with no ring or shaft. `glideDevice.available` is false.
+   It must not read as a second, broken switch: on 8 November players pressed Pull 18 times at this spot. If it does,
+   drop the brass cap or darken the drum; don't add a prompt or a sign. _(Designer, 9 November, finding 4.)_
 2. **Take-faces-forge still:** `npm run look -- --rail-seed q5-done --cam 1018.6,104.3,-4.5 --look 919,30,5.4 --name
    glide-heading`. The device in the foreground and the forge plume beyond it, along the step-off line.
 3. **Woken still**, desktop and phone size. New eval `dev/look/evals/railway-glide-wake.ts` waits for
@@ -436,7 +441,9 @@ All looks are opened and looked at. Report what each one shows.
    --video --seconds 40`.
    - The press, then on the next frame the card "The glider" / "Open it in the air.", the sound and the roll on your
      back.
-   - Then the step-off, the canopy open within 0.1 s, the 5.2 m camera, and the landing on the forge apron.
+   - Then the step-off, the canopy open within 0.1 s, the 5.2 m camera, and, letting go over it, the landing on the
+     forge apron. Holding the stick instead carries you about 250 m, into the cove; the as-built note says so
+     (designer, 9 November, finding 3).
    - Report `__glideResult`: about 26 s, sink 3.2 ± 0.3 m/s, 10 ± 0.5 m/s, dry, under 14 m from the pedestal.
    - Look at consecutive frames of the take and the landing (owner call "Review motion").
 5. **Co-op grant:** Proof 4 with `--players 2`. Player 2 gets the flourish (teal puff, `pickupGlider`, the glider
@@ -457,8 +464,9 @@ All looks are opened and looked at. Report what each one shows.
     6000`.
     - Must pass with the new checkpoints in order: `pack` (before `Q1 funded`), `sea gate` (on the first climb, after
       `needle bell summit`), `Q5 laid`, `glider taken`, `glided home`, `boiler` … `pier`, plus J5's if rebased.
-    - Report the Q5 rim wait (it was 216 s server time; expect about one cart cycle, 125 s), the glide segment's time,
-      and the total against `x1-long`'s 118 game-minutes.
+    - Report the Q5 rim wait (it was 216 s server time; expect 80–125 s, about 66 s of outbound cart plus what's left
+      of its return from Q4; designer, 9 November, finding 5), the glide segment's time, and the total against
+      `x1-long`'s 118 game-minutes.
 
 ## Done means (in order)
 
@@ -699,4 +707,5 @@ from line 2, a phone view, and co-op.
 
 1. **Is the summit return, with a hook climb back after Q5, the place you want the glider found?** Recommended: yes. It's
    about 25 minutes in, the only Home spot high enough for a first flight worth having, and it faces the forge.
-   Alternative: Far Head's 32 m pad, with no climb but a flight about a third as long.
+   Alternative: Far Head's 32 m pad, with no climb but a flight about a third as long. _(Built on the default, yes; the
+   call is logged in agent-calls as glider-placement call 1 and stays open for the owner.)_
