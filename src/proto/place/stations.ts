@@ -362,13 +362,13 @@ export function buildStation(spec0: Station, place: FrameAt, owner?: OwnedView) 
       lashings?.tie(n.beam > 0);
     },
     /** The sign over it; off when it's not its turn or it's done. */
-    setTag(on: boolean) {
+    setTag(on: boolean, status?: string) {
       tag.sprite.visible = on;
       if (!on) return;
       const parts = GOODS.filter((g) => run.need(g) > 0).map(
         (g) => `${g === 'beam' ? 'great beam' : g} ${run.have[g]}/${run.need(g)}`,
       );
-      tag.set(run.spec.label.replace('Line 2, s', 'S'), parts.join('  '));
+      tag.set(status ?? run.spec.label.replace('Line 2, s', 'S'), parts.join('  '));
     },
     need: (kind: Goods) => run.spec[kind] ?? 0,
     full: () => GOODS.every((g) => run.have[g] >= run.need(g)),

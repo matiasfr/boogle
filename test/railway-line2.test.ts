@@ -25,6 +25,7 @@ import {
   line2GateOpen,
   line2SeaOpen,
   line2GateDown,
+  line2CartStatus,
   line2Schedule,
   railCarryMax,
 } from '../src/sim/railway-line2.ts';
@@ -431,7 +432,7 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   assert.equal(line2Active(w.s), 3);
   assert.equal(line2GateOpen(w.s), false);
   chopTo(w, 'a', 4);
-  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 4 }), 0, 'the gate is up: the frame takes nothing');
+  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 1 }), 1, 'the gate is up: the frame stocks logs');
   // The cart runs behind the gate: one load of logs (minted, counted) and one of rails (moved, not made).
   const poured = railsHeld(w).poured,
     rack = l().forge.rack;
@@ -450,7 +451,7 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   // Taking from the shelf: the back's room clips it.
   const room = RAILWAY_T1.carry - railAccount(w.s, 'a')!.carry;
   assert.equal(act(w, 'a', 'rail.depotRailTake'), room);
-  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 4 }), 4, 'logs go in with the gate down');
+  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 3 }), 3, 'logs go in with the gate down');
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: room, kind: 2 }), room);
   assert.equal(act(w, 'b', 'rail.depotRailTake'), RAILWAY_T1.carry, 'a full back of rails, no more');
   advance(w, cartCycleTicks(3));
@@ -504,12 +505,12 @@ test('Q5: behind the sea gate; the switch needs Q4; two cart trips bring its rai
     return n;
   };
   assert.equal(move('a', 'rail.depotTake'), 8);
-  assert.equal(move('a', 'rail.deposit', { station: 'Q5', n: 8 }), 0);
+  assert.equal(move('a', 'rail.deposit', { station: 'Q5', n: 8 }), 8, 'cart logs stock behind the gate');
   assert.equal(move('a', 'rail.seaSwitch'), 1);
   assert.equal(move('b', 'rail.seaSwitch'), 0);
   assert.equal(line2SeaOpen(w.s), true);
   assert.equal(line2GateDown(w.s, 4), true);
-  assert.equal(move('a', 'rail.deposit', { station: 'Q5', n: 8 }), 8);
+  assert.equal(move('a', 'rail.deposit', { station: 'Q5', n: 8 }), 0, 'the back is already empty');
   for (const pid of ['a', 'b']) {
     assert.equal(move(pid, 'rail.depotRailTake'), 8);
     assert.equal(move(pid, 'rail.deposit', { station: 'Q5', kind: 2, n: 8 }), 8);
@@ -541,6 +542,38 @@ test('Q5: behind the sea gate; the switch needs Q4; two cart trips bring its rai
   assert.equal(railsHeld(w).stations, 6 + 12 + 12 + 16 + 24);
   restore(w);
 });
+
+for (const k of [3, 4]) {
+  test(`Q${k + 1}: stocked behind its gate survives load; only the pull funds once`, () => {
+    const w = k === 3 ? railwayAtQ4() : railwayAtQ5('q4-done');
+    const spec = LINE2_STATIONS[k]!;
+    logs(w, 'a', spec.id, 1);
+    rails(w, 'b', spec.id, 1);
+    restore(w); // A gated, partly stocked save is valid without a shape/version change.
+    logs(w, 'a', spec.id, spec.bill[0] - 1);
+    rails(w, 'b', spec.id, spec.bill[1] - 1);
+    assert.equal(line2CartStatus(w.s), 'off', 'a full bill no longer says More coming');
+    advance(w, 1000);
+    restore(w);
+    const j = () => w.s.line2!.jobs[k]!;
+    assert.equal(j().stock, spec.bill[0]);
+    assert.equal(j().railStock, spec.bill[1]);
+    assert.equal(j().start, -1);
+    assert.equal(j().elapsed, 0);
+    assert.equal(j().allocation + j().railAllocation, 0);
+    const pull = k === 3 ? 'rail.lever' : 'rail.seaSwitch';
+    assert.equal(act(w, 'a', pull), 1);
+    assert.equal(j().start, w.t);
+    assert.equal(j().stock + j().railStock, 0);
+    assert.equal(j().allocation, spec.bill[0]);
+    assert.equal(j().railAllocation, spec.bill[1]);
+    assert.equal(act(w, 'b', pull), 0);
+    restore(w);
+    finishQ(w, k);
+    railsHeld(w);
+    assert.equal(railCounts(w.s).total, 3910 + railCounts(w.s).produced);
+  });
+}
 
 test("the away credit runs Q5's cart too: rails move from the forge, logs stop at the bill", () => {
   const w = railwayAtQ5('q4-done');

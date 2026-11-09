@@ -85,6 +85,12 @@ export function line2CartStatus(s: Railway): 'off' | 'loading' | 'travelling' | 
   const l = s.line2!,
     c = l.cart,
     k = line2Served(s);
+  // A full bill is waiting for its gate/confirmation, not another delivery. The frame shows what starts it.
+  if (k >= 0) {
+    const spec = LINE2_STATIONS[k]!,
+      j = l.jobs[k]!;
+    if (j.stock === spec.bill[0] && j.railStock === spec.bill[1]) return 'off';
+  }
   if (c.phase === CART_PHASE.DROP) return 'unloading';
   const aboard = c.logs + c.rails > 0;
   if (k < 0 && !aboard) return 'off';
@@ -157,12 +163,13 @@ export function validateRailLine2(s: Railway) {
         job.completion ||
         job.stock !== job.delivered ||
         job.railStock !== job.railDelivered ||
-        (job.stock === spec.bill[0] && job.railStock === spec.bill[1])
+        (job.stock === spec.bill[0] && job.railStock === spec.bill[1] && line2GateDown(s, k))
       )
         throw new Error('railway: line2 unfunded job');
     } else {
       const fraction = Math.max(0, job.elapsed - schedule.depositTicks - schedule.feedTicks) / schedule.layTicks;
       if (
+        !line2GateDown(s, k) ||
         job.start < f.lit ||
         job.lastTick < job.start ||
         job.stock ||

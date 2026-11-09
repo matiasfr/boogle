@@ -417,7 +417,7 @@ function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
   const spec = LINE2_STATIONS[k]!;
   const id = qjob(w, k);
   const j = w.get(QJob, id)!;
-  if (j.start >= 0 || j.stock !== spec.bill[0] || j.railStock !== spec.bill[1]) return;
+  if (j.start >= 0 || !gateDown(w, spec) || j.stock !== spec.bill[0] || j.railStock !== spec.bill[1]) return;
   const jm = w.mut(QJob, id)!,
     run = w.mut(QJobRun, id)!;
   jm.stock = jm.railStock = 0;
@@ -458,8 +458,8 @@ const deposit2 = defineSystem(
     if (k < 0 || e.station !== LINE2_STATIONS[k]!.id || tick < w.get(Forge, fid)!.lit + FORGE.turnTicks) return 0;
     const j = w.get(QJob, qjob(w, k))!,
       spec = LINE2_STATIONS[k]!;
-    // Gated frames wait for the quarry lever (Q3) or summit sea switch (Q4).
-    if (j.start >= 0 || !gateDown(w, spec)) return 0;
+    // A gate holds the machine, not deliveries to its frame.
+    if (j.start >= 0) return 0;
     const rails = e.kind === RAILS;
     if (e.kind !== undefined && e.kind !== 0 && !rails) return 0;
     const n = Math.min(e.n!, rails ? a.rails : a.carry, spec.bill[rails ? 1 : 0] - (rails ? j.railStock : j.stock));
@@ -528,21 +528,31 @@ const pack = defineSystem('rail.pack', { reads: [Forge], writes: [Rail], phase: 
   return 1;
 });
 // Before Q3 the drive is uncoupled: a pull does nothing, even from a jump onto the apron.
-const lever = defineSystem('rail.lever', { reads: [QJob], writes: [Rail], phase: 'act', order: 23 }, (w) => {
-  if (qCompleted(w) < 3 || w.get(Rail, railId(w))!.lever) return 0;
-  w.mut(Rail, railId(w))!.lever = true;
-  return 1;
-});
+const lever = defineSystem(
+  'rail.lever',
+  { writes: [Rail, QJob, QJobRun, Forge, Cart], phase: 'act', order: 23 },
+  (w, { tick, timing }: Act) => {
+    if (qCompleted(w) < 3 || w.get(Rail, railId(w))!.lever) return 0;
+    w.mut(Rail, railId(w))!.lever = true;
+    fundQ(w, 3, tick, timing);
+    return 1;
+  },
+);
 const hook = defineSystem('rail.hook', { reads: [QJob], writes: [Rail], phase: 'act', order: 24 }, (w) => {
   if (qCompleted(w) < 2 || w.get(Rail, railId(w))!.hook) return 0;
   w.mut(Rail, railId(w))!.hook = true;
   return 1;
 });
-const seaSwitch = defineSystem('rail.seaSwitch', { reads: [QJob], writes: [Rail], phase: 'act', order: 28 }, (w) => {
-  if (qCompleted(w) < 4 || w.get(Rail, railId(w))!.sea) return 0;
-  w.mut(Rail, railId(w))!.sea = true;
-  return 1;
-});
+const seaSwitch = defineSystem(
+  'rail.seaSwitch',
+  { writes: [Rail, QJob, QJobRun, Forge, Cart], phase: 'act', order: 28 },
+  (w, { tick, timing }: Act) => {
+    if (qCompleted(w) < 4 || w.get(Rail, railId(w))!.sea) return 0;
+    w.mut(Rail, railId(w))!.sea = true;
+    fundQ(w, 4, tick, timing);
+    return 1;
+  },
+);
 
 /** "Call cart to forge": the cart stops at the forge on its next pass (or sets out from the camp now) and waits there
  * to be boarded. Only while it serves a stretch; one call stands until it is served, so a second is a noop. */
