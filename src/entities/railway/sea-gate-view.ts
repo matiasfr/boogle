@@ -7,6 +7,7 @@ import type { Body, V3 } from '../../physics/engine.ts';
 import { LINE2_SEA } from '../../sim/railway-line2-layout.ts';
 import { clank, whistle } from '../../render/machine-sfx.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
+import { playMark } from '../../proto/mark.ts';
 
 type Line2 = NonNullable<ReturnType<RailwayAdapter['inspect']>['line2']>;
 type Deps = {
@@ -163,6 +164,7 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
           at: target,
           run: () => {
             if (l.completed < 4) {
+              playMark('sea switch refused', { reason: 'before Q4', authority: 'local' });
               clank(at.x, at.z);
               return;
             }

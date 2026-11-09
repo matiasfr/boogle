@@ -24,7 +24,9 @@ import { getRoomId, onNetState, onPeopleChanged, remotes } from '../../netplay/n
 import { coarseUa, firstFrame, scrub } from '../../netplay/report-format.ts';
 import { BUILD } from '../../build-id.ts';
 import { IDLE_S } from '../../../protos/store.ts';
-import { PROTO, protoV, pageQuery } from '../flags.ts';
+import { PROTO, protoV, pageQuery, productionRailway } from '../flags.ts';
+import { inspectRailway } from '../../entities/railway/state.ts';
+import { HEAD, ORIGIN } from '../place/layout.ts';
 import { currentCard } from '../card.ts';
 import { hookActivity, onPlayMark, playWhereNow, type PlayData } from '../mark.ts';
 import type { PlayEvent } from '../../../server/src/playdata.ts';
@@ -175,6 +177,7 @@ let lastSession = '';
 function sayWho() {
   const fields = {
     name: me.name || '',
+    railway: productionRailway,
     room: getRoomId(),
     card,
     v: protoV(card),
@@ -283,7 +286,30 @@ function padsNow() {
   for (const p of navigator.getGamepads?.() ?? []) if (p?.buttons.some((b) => b.pressed)) used.pad++;
 }
 onInteractPress((t, ran) => {
-  if (!t) return count('press nothing');
+  if (!t) {
+    count('press nothing');
+    const p = me.body?.position;
+    let nearest: { id: string; verb: string; distance: number } | null = null;
+    if (p)
+      for (const [id, prompt] of seenPrompts) {
+        const distance = Math.hypot(p.x - prompt.x, p.y - prompt.y, p.z - prompt.z);
+        if (!nearest || distance < nearest.distance) nearest = { id, verb: prompt.verb, distance };
+      }
+    if (marksLeft-- > 0)
+      push('press', {
+        verb: 'nothing in reach',
+        id: '',
+        ran: false,
+        nearest: nearest?.id ?? '',
+        nearestVerb: nearest?.verb ?? '',
+        distance: nearest ? round(nearest.distance) : -1,
+        context: 'nearest previously shown prompt',
+        last: lastShownPrompt?.id ?? '',
+        ago: lastShownPrompt ? round((performance.now() - lastShownPrompt.at) / 1000) : -1,
+        ...here(),
+      });
+    return;
+  }
   push('press', {
     verb: t.verb.slice(0, 40),
     id: t.id.slice(0, 60),
@@ -293,6 +319,9 @@ onInteractPress((t, ran) => {
   });
 });
 let lastPrompt = '';
+let lastShownPrompt: { id: string; verb: string; at: number } | null = null;
+const seenPrompts = new Map<string, { verb: string; x: number; y: number; z: number }>();
+let reachedHead = false;
 const promptsOf = new Map<string, number>();
 
 // ---------------------------------------------------------------- each frame: small comparisons, no garbage
@@ -340,6 +369,17 @@ function sample(ms: number) {
   const x = round(b.x),
     z = round(b.z);
   const a = activity();
+  if (
+    productionRailway &&
+    !reachedHead &&
+    !me.swimming &&
+    (inspectRailway()?.line2.completed ?? 0) >= 5 &&
+    Math.abs(b.y - HEAD.y) < 5 &&
+    Math.hypot(b.x - HEAD.x - ORIGIN.x, b.z - HEAD.z - ORIGIN.z) < HEAD.r
+  ) {
+    reachedHead = true;
+    if (marksLeft-- > 0) push('m', { n: 'Far Head reached', authority: 'local', ...here() }, ms);
+  }
   const where = playWhereNow();
   const carried = !!carry.on || a === 'driving';
   if (!carried && !wasCarried && Math.hypot(x - lastX, z - lastZ) > FAR)
@@ -398,9 +438,12 @@ onFrame(
 
     const target = interactTarget();
     const prompt = target?.id ?? '';
+    if (target && (seenPrompts.has(prompt) || seenPrompts.size < 128))
+      seenPrompts.set(prompt, { verb: target.verb.slice(0, 40), x: target.at.x, y: target.at.y, z: target.at.z });
     if (prompt !== lastPrompt) {
       lastPrompt = prompt;
       if (target) {
+        lastShownPrompt = { id: prompt.slice(0, 60), verb: target.verb.slice(0, 40), at: ms };
         const n = (promptsOf.get(prompt) ?? 0) + 1;
         promptsOf.set(prompt, n);
         if (n <= PROMPTS_PER_ID) push('prompt', { verb: target.verb.slice(0, 40), id: prompt.slice(0, 60), ...here() });

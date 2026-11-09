@@ -15,6 +15,7 @@ import { me } from '../../player/player.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { CART, CART_CALL, CART_PHASE, CART_ROAD, cartAlong } from '../../sim/railway-cart.ts';
+import { playMark } from '../../proto/mark.ts';
 
 /** Place's depot service tag (depot.ts SERVICE). */
 const SERVICE = {
@@ -197,6 +198,7 @@ export async function createRailwayCart(
     callTag.sprite.removeFromParent();
   });
 
+  let riding = false;
   return {
     /** Logs and rails on their way from the cart to the rack and shelf (line2-view and shelf-view hold them back). */
     flying: () => ({ logs: flyingLogs, rails: flyingRails }),
@@ -204,6 +206,9 @@ export async function createRailwayCart(
       const s = adapter.inspect();
       const l2 = s.line2;
       const on = s.ready && !!l2 && l2.completed >= 1;
+      const aboard = on && carry.on === car.platform;
+      if (aboard && !riding) playMark('cart ride', { authority: 'local' });
+      riding = aboard;
       handle.visible = on && l2.served >= 0;
       // Once the cart stands at the forge it is its own sign.
       callTag.sprite.visible = handle.visible && l2.cart.phase !== CART_PHASE.FORGE;

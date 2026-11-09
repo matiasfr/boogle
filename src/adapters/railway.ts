@@ -16,6 +16,8 @@
 //   onRemap(fn)          fn(request, id): your drop of that request landed in pile `id`, not the pile it was shown
 //                        landing in (a temporary id, or a merge the server made a new pile)
 import { SERVER_ID } from '../net/ids.ts';
+import { playMark } from '../proto/mark.ts';
+import { createRailwayProgressMarks, railwayActionMarks } from './railway-marks.ts';
 import { RAILWAY_SOURCES } from '../sim/railway-layout.ts';
 import {
   railInt,
@@ -304,6 +306,7 @@ export function createRailwayAdapter({
   now?: () => number;
 }) {
   const confirmed = rail.railway;
+  const progressMarks = createRailwayProgressMarks();
   const effects = new Set<(event: RailwayAccepted) => void>();
   const corrections = new Set<(c: RailwayCorrection) => void>();
   const remaps = new Set<(request: number, id: number) => void>();
@@ -443,11 +446,26 @@ export function createRailwayAdapter({
           for (const fn of remaps) fn(t[1], id);
       }
     const tick = Math.floor(p.tk / RULE_STEPS);
+    // Read only accepted packets, before confirm removes the pending intents. Never use the predicted view here.
+    const pending = new Map(predictor.pending().map((q) => [q.id[1], q.action.intent]));
+    for (const [e, r, n] of p.ok ?? []) {
+      const intent = e === ep ? pending.get(r) : undefined;
+      if (intent) for (const [name, data] of railwayActionMarks(intent, n, true)) playMark(name, data);
+    }
+    for (const [e, r, reason] of p.rej ?? []) {
+      const intent = e === ep ? pending.get(r) : undefined;
+      if (intent) playMark('railway refused', { op: intent.op, reason, authority: 'server' });
+    }
+    if (consistent) for (const [name, data] of progressMarks(confirmed, rebuilt)) playMark(name, data);
     const events: RailwayAccepted[] = [];
     for (const raw of p.ev ?? []) {
       const full = implied(raw);
       const intent = intentOf(full);
       if (!intent || !accepted(full)) continue;
+      // Predicted local actions arrive in ok, other actions arrive as events.
+      if (full.pid !== pid || !p.ok?.some(([e, r]) => e === ep && r === full.request))
+        for (const [name, data] of railwayActionMarks(intent, full.accepted as number, full.pid === pid))
+          playMark(name, data);
       events.push({
         ...intent,
         pid: full.pid as string,
@@ -609,6 +627,7 @@ export function createRailwayAdapter({
     if (predict && !(r && r.n > 0)) {
       predictor.withdraw(id);
       stats.notYet++;
+      playMark('railway refused', { op: intent.op, reason: 'not yet', authority: 'local' });
       return false;
     }
     next = request + 1;

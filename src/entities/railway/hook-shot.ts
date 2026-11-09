@@ -25,6 +25,7 @@ import {
 } from './hook-path.ts';
 import { createRailwayHookView } from './hook-view.ts';
 import { registerHookProbe } from './state.ts';
+import { playMark } from '../../proto/mark.ts';
 
 type Active = { press: () => void; cancel: () => void; pulling: () => boolean; ring: () => string | null };
 let active: Active | null = null;
@@ -51,6 +52,7 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     denied = 0,
     ended = 0;
   let demoLeft = -1;
+  let summitReached = false;
   const range = new Set<HookRing>();
   const fwd = new THREE.Vector3(),
     to = new THREE.Vector3(),
@@ -151,6 +153,7 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     pull = buildPull(me.body!.position, ring);
     me.jumpQueued = 0;
     pulls++;
+    playMark('hook pulled', { ring: ring.id, authority: 'local' });
     view.fire(ring);
   }
   const controls: Active = { press: () => press(), cancel, pulling: () => !!pull, ring: () => pull?.ring.id ?? null };
@@ -196,6 +199,21 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     update(dt: number, now: number) {
       const state = adapter.inspect();
       owned = latch(state.ready, state.line2.hook, dt);
+      const summit = view.ringById.get('summit');
+      const p = me.body?.position;
+      if (
+        !summitReached &&
+        owned &&
+        summit &&
+        p &&
+        !me.swimming &&
+        Math.abs(p.x - summit.land.x) <= summit.pad.hx &&
+        Math.abs(p.z - summit.land.z) <= summit.pad.hz &&
+        Math.abs(p.y - PLAYER_R - summit.pad.top) < 1
+      ) {
+        summitReached = true;
+        playMark('needle bell summit reached', { authority: 'local' });
+      }
       if (owned && !registered) {
         registered = true;
         registerAction('hook', {
