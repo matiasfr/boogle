@@ -13,7 +13,7 @@ import { chips, dustRing } from '../../render/particle-effects.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
-import { WORKS_BREAKER, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
+import { WORKS_BREAKER, WORKS_RACK, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
 import { SEAM_STALL, SEAM_THROAT } from '../../sim/railway-works.ts';
 import { reducedMotion } from '../../constants.ts';
 import { createForgeCall } from './forge-call.ts';
@@ -79,27 +79,33 @@ export function createRailwayBreaker(
     seamMote = 0,
     glint = 0,
     onBack = false;
-  // Each seam's slab, from the shape both seams' views draw: motes rise off either broad face, never inside the stone.
+  // Each seam's slab, from the shape both seams' views draw, and the face you come at it from: the stall's toward the
+  // pedestal, the throat's toward the halt rack. Motes rise off that face along the crack, never inside the stone.
   const slabs = [STALL_SLAB, THROAT_SLAB[1]!] as const;
+  const from = [WORKS_BREAKER, WORKS_RACK] as const;
+  const faces = slabs.map((b, k) => {
+    const cx = Math.cos(b.yaw),
+      sx = Math.sin(b.yaw);
+    const side = Math.sign(sx * (from[k]!.x / 100 - b.x) + cx * (from[k]!.z / 100 - b.z)) || 1;
+    return { cx, sx, off: side * (b.d / 2 + 0.12) };
+  });
   function seamMotes(dt: number, seams: number) {
     seamMote -= dt;
     if (seamMote > 0) return;
     seamMote = SEAM_MOTE_S;
+    side *= -1;
     for (const seam of WORKS_SEAMS) {
       if (seams & (seam.id === 0 ? SEAM_STALL : SEAM_THROAT)) continue;
       const b = slabs[seam.id]!,
-        face = Math.random() < 0.5 ? -1 : 1,
+        { cx, sx, off } = faces[seam.id]!,
         u = (Math.random() - 0.5) * b.w * 0.2;
       // The slab's yaw turns its local x (width) and z (depth) into the world.
-      const cx = Math.cos(b.yaw),
-        sx = Math.sin(b.yaw);
-      const off = face * (b.d / 2 + 0.12);
       goldMote(
         b.x + cx * u + sx * off,
         b.y - b.h * 0.35 + Math.random() * b.h * 0.7,
         b.z - sx * u + cx * off,
-        face,
-        seam.id === 0 ? 0.18 : 0.3,
+        side,
+        seam.id === 0 ? 0.3 : 0.45,
       );
     }
   }

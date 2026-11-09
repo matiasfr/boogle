@@ -351,9 +351,9 @@ export async function createRailwayWorks(
     rockSide *= -1;
     for (const rock of state.works.rocks) {
       if (rock.remaining <= 0) continue;
-      // Off the rock's shoulders, the drawn pile being about 1.3 m tall.
+      // Round the top of the drawn pile (about 1.3 m tall, 2.4 m across), clear of the stone.
       const a = Math.random() * Math.PI * 2;
-      goldMote(rock.x / 100 + Math.cos(a) * 0.6, rock.y / 100 + 1.1, rock.z / 100 + Math.sin(a) * 0.6, rockSide, 0.22);
+      goldMote(rock.x / 100 + Math.cos(a) * 1, rock.y / 100 + 1.5, rock.z / 100 + Math.sin(a) * 1, rockSide, 0.3);
     }
   }
   function drawRack(dt: number) {
