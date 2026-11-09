@@ -31,6 +31,7 @@ test('accepted railway actions map amounts and material without identifying the 
     'chop',
     'axe',
     'hook',
+    'glide',
     'lever',
     'seaSwitch',
     'pack',

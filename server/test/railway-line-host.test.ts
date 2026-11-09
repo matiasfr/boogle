@@ -18,6 +18,7 @@ import { line2Active, line2SeaOpen } from '../../src/sim/railway-line2.ts';
 import { CART_CALL, CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
 import { worldOf } from '../../test/railway-live.ts';
 import { railwayAtQ4, railwayAtQ5 } from '../../test/helpers/railway-q2.ts';
+import type { TuneApi } from '../../src/world/rules/tune.ts';
 
 type Obj = Record<string, unknown>;
 for (const early of [true, false]) {
@@ -131,6 +132,90 @@ for (const early of [true, false]) {
     }
   });
 }
+test('line host: the glider judged on the summit device, only after Q5; one shared take survives a restart', async () => {
+  const { LINE2_GLIDE, LINE2_HOOK, LINE2_SEA } = await import('../../src/sim/railway-line2-layout.ts');
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-glide-'));
+  const store = createStore({ dataDir: dir, maxRooms: 2 });
+  await store.init();
+  let now = 1800000000000;
+  const sent: Obj[] = [];
+  const create = () => {
+    const value = createRailwayWorldHost({
+      roomId: railwayRoomId('line-host-glide'),
+      store,
+      tick: false,
+      now: () => now,
+      pidOf: (sid) => sid,
+    });
+    value.onSend((message) => sent.push(message));
+    return value;
+  };
+  let host = create();
+  const ticks = async (n: number) => {
+    for (let i = 0; i < n; i++) {
+      now += 100;
+      host.step(0.1);
+    }
+    await host.sync.whenDurable();
+  };
+  const sessions = new Map<string, { epoch: number; request: number }>();
+  const open = async (sid: string) => {
+    host.deliver({ t: 'r:open' }, sid);
+    await ticks(3);
+    const session = sent.findLast((m) => m.t === 'r:session' && m.to === sid);
+    assert.ok(session);
+    sessions.set(sid, { epoch: Number(session.epoch), request: Number(session.next) - 1 });
+  };
+  const edit = async (sid: string, e: Obj, at: [number, number, number]) => {
+    const s = sessions.get(sid)!;
+    now += 1000;
+    host.deliver({ t: 'r:edit', e: { ...e, epoch: s.epoch, request: ++s.request, at, ms: now - 1800000000000 } }, sid);
+    await ticks(3);
+    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+    return host.rules.railway.outcome(sid, s.epoch, s.request)!;
+  };
+  const load = async (w: { s: Parameters<typeof worldOf>[0]; t: number }) => {
+    while (host.sync.world.tick <= w.t) await ticks(1);
+    host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+    host.rules.railway.touchAll();
+  };
+  const device: [number, number, number] = [LINE2_GLIDE.x, LINE2_GLIDE.y, LINE2_GLIDE.z];
+  const glide = { op: 'rail.glide' };
+  try {
+    await host.whenReady();
+    // Before Q5 is laid the device is sealed: refused by the rule even at the device.
+    await load(railwayAtQ5('q5-finishing'));
+    await open('a');
+    assert.equal((await edit('a', glide, device)).status, 'noop');
+    assert.equal(host.rules.railway.railway.line2!.glide, false);
+    await host.close({ save: false });
+    host = create();
+    await host.whenReady();
+    await load(railwayAtQ5('q5-done'));
+    for (const sid of ['a', 'b']) await open(sid);
+    // Heard only on the summit device: not below it at the foot (y 20 m), not at the sea switch 4.5 m off, not at the
+    // hook device.
+    assert.equal((await edit('a', glide, [LINE2_GLIDE.x, 2000, LINE2_GLIDE.z])).status, 'rejected');
+    assert.equal((await edit('a', glide, [LINE2_SEA.x, LINE2_SEA.y, LINE2_SEA.z])).status, 'rejected');
+    assert.equal((await edit('a', glide, [LINE2_HOOK.x, LINE2_HOOK.y, LINE2_HOOK.z])).status, 'rejected');
+    // Reach is 3.2 m across the deck and from 2.2 m below to 3 m above the device's foot.
+    assert.equal((await edit('a', glide, [LINE2_GLIDE.x + 330, LINE2_GLIDE.y, LINE2_GLIDE.z])).status, 'rejected');
+    assert.equal((await edit('a', glide, [LINE2_GLIDE.x, LINE2_GLIDE.y + 320, LINE2_GLIDE.z])).status, 'rejected');
+    assert.equal(host.rules.railway.railway.line2!.glide, false);
+    assert.equal((await edit('a', glide, [LINE2_GLIDE.x + 300, LINE2_GLIDE.y, LINE2_GLIDE.z])).status, 'accepted');
+    assert.equal((await edit('b', glide, device)).status, 'noop', 'one shared take');
+    assert.equal(host.rules.railway.railway.line2!.glide, true);
+    await host.close({ save: true });
+    host = create();
+    await host.whenReady();
+    assert.equal(host.rules.railway.railway.line2!.glide, true, 'the glider survives an orderly restart');
+    assert.equal(railwayInvariant(host.rules.railway.railway), null);
+  } finally {
+    await host.close({ save: false }).catch(() => {});
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('line host keeps a departed carrier the beam through its grace, then grounds it; a restart keeps it too', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-'));
   const store = createStore({ dataDir: dir, maxRooms: 2 });
@@ -525,5 +610,46 @@ test('line host: the boiler and trains; a call judged on the halt; trains surviv
   } finally {
     await host.close({ save: false }).catch(() => {});
     await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("line host: a proto room's controller can tune all eight of the glider's numbers", async (t) => {
+  const { supplyFixture } = await import('./fixtures/railway-supply-fixture.ts');
+  const { CATALOG } = await import('../../src/tunables/catalog.ts');
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-glide-tune-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const f = await supplyFixture(dir, railwayRoomId('proto-glide-tune'), false);
+  const tune = () => {
+    assert.ok('tune' in f.host.rules);
+    return f.host.rules.tune as TuneApi;
+  };
+  const keys = CATALOG.filter((c) => c.owner === 'src/entities/railway/glide-step.ts');
+  assert.equal(keys.length, 8, "the glider's eight tunables");
+  let request = 0;
+  try {
+    for (const spec of keys) {
+      const key = spec.sharedKey!;
+      const before = tune().get(key);
+      const v = before + 1 <= spec.max ? before + 1 : before - 1;
+      f.host.deliver(
+        {
+          t: 'w:edit',
+          e: {
+            op: 'tune.commit',
+            i: 0,
+            j: 0,
+            key,
+            v,
+            expectedRevision: tune().tune.revision,
+            requestId: `glide-tune-${++request}`,
+          },
+        },
+        'supplysession',
+      );
+      await f.ticks(4);
+      assert.equal(tune().get(key), v, `${key} accepted from the controller`);
+    }
+  } finally {
+    await f.host.close({ save: false });
   }
 });

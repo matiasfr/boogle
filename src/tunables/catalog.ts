@@ -23,6 +23,8 @@ export type NumberSpec = {
   ruleOwner?: string;
   meaning?: string;
 } & ({ scope: 'lockstep'; sharedKey: TuneKey } | { scope: 'local' | 'owner'; sharedKey?: never });
+/** The glide numbers are read by the Owner glide step, not by a rule. */
+const GLIDE_OWNER = 'src/entities/railway/glide-step.ts';
 const supply = {
   railRegrowMinutes: {
     id: 'railway.regrowMinutes',
@@ -99,6 +101,62 @@ const supply = {
     meaning:
       'How long the unique beam stays with a carrier who left (a hidden tab, a reload, a lost link) before it goes down where they last stood.',
   },
+  railGlideSpeed: {
+    id: 'railway.glideSpeed',
+    units: 'centimetres per second',
+    at: 'next owner glide step',
+    meaning: 'Forward glide speed at full stick (BotW target 10 m/s).',
+    owner: GLIDE_OWNER,
+  },
+  railGlideSink: {
+    id: 'railway.glideSink',
+    units: 'centimetres per second',
+    at: 'next owner glide step',
+    meaning: 'Downward speed under the open canopy, moving or not (BotW target 3.2 m/s).',
+    owner: GLIDE_OWNER,
+  },
+  railGlideAccel: {
+    id: 'railway.glideAccel',
+    units: 'centimetres per second squared',
+    at: 'next owner glide step',
+    meaning: 'Glide acceleration from rest to full stick.',
+    owner: GLIDE_OWNER,
+  },
+  railGlideBrake: {
+    id: 'railway.glideBrake',
+    units: 'centimetres per second squared',
+    at: 'next owner glide step',
+    meaning: 'Glide deceleration with the stick let go.',
+    owner: GLIDE_OWNER,
+  },
+  railGlideOver: {
+    id: 'railway.glideOver',
+    units: 'centimetres per second squared',
+    at: 'next owner glide step',
+    meaning: 'How fast a glide entered above glide speed settles to it, with no boost.',
+    owner: GLIDE_OWNER,
+  },
+  railGlideTurnTau: {
+    id: 'railway.glideTurnTau',
+    units: 'milliseconds',
+    at: 'next owner glide step',
+    meaning: 'Time constant of the glide heading toward the stick.',
+    owner: GLIDE_OWNER,
+  },
+  railGlideTurnMax: {
+    id: 'railway.glideTurnMax',
+    units: 'degrees per second',
+    at: 'next owner glide step',
+    meaning: 'Most the glide heading turns in a second.',
+    owner: GLIDE_OWNER,
+  },
+  railGlideDeploy: {
+    id: 'railway.glideDeploy',
+    units: 'milliseconds',
+    at: 'next owner glide step',
+    meaning: 'Time from the fall speed to the glide sink once the canopy holds you, with no overshoot.',
+    owner: GLIDE_OWNER,
+  },
 } as const;
 /** Commands the dev tool and `npm run tune` both accept. */
 export const TUNE_COMMANDS = ['list', 'get', 'validate', 'set', 'status', 'snapshot', 'diff', 'reset-local'] as const;
@@ -117,9 +175,11 @@ export const CATALOG: readonly NumberSpec[] = [
       units: railway?.units ?? t.label,
       at: railway ? railway.at : t.key === 'yield' ? 'next accepted take' : 'existing rule boundary',
       owner: railway
-        ? railway.at === 'next accepted supply-maintenance pulse'
-          ? 'src/sim/railway-supply.ts'
-          : 'src/sim/railway-line.ts'
+        ? 'owner' in railway
+          ? railway.owner
+          : railway.at === 'next accepted supply-maintenance pulse'
+            ? 'src/sim/railway-supply.ts'
+            : 'src/sim/railway-line.ts'
         : 'src/sim/tune.ts',
       ...(railway ? { ruleOwner: 'src/world/railway-server.ts' } : {}),
       meaning: railway?.meaning ?? t.label,

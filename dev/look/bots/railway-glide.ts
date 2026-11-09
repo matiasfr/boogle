@@ -1,6 +1,12 @@
-// The glider's first flight (docs/brainstorms/glider-placement.md, piece A): a dev test room grants the fact
-// (&railGlide=1), the setup stands you on Needle Bell's summit (staging only), and the flight uses real input: walk off,
-// Jump spends the air jump, Jump again opens the canopy, Glide closes and reopens it, Jump while open does nothing.
+// The glider on Needle Bell's summit (docs/brainstorms/glider-placement.md). Two rooms:
+// - `--rail-seed glide-earned`, where the room has taken the glider: the setup stands you on the summit (staging only)
+//   and the flight is piece A's, by real input: walk off, Jump spends the air jump, Jump again opens the canopy, Glide
+//   closes and reopens it, Jump while open does nothing.
+// - `--rail-seed q5-done --query glideTake=1` (piece B's grant): the setup stands you 2.5 m east of the woken device,
+//   facing it (staging only); the flight presses Interact to take it, dismisses the card, steps off west and flies to
+//   the boiler's apron by the forge as the bot's glide home does, writing `__glideResult`.
+import { makeBot } from '../bot.ts';
+import { glideToBoiler, takeGlider } from './railway.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
@@ -21,6 +27,8 @@ async function until(ok: () => boolean, what: string, ms: number) {
   }
 }
 const glider = () => inspectRailway()!.glider;
+const query = new URLSearchParams(location.search);
+const taking = query.get('glideTake') === '1';
 /** Heading -x: off the summit towards the village, the forge and the line. */
 const face = (pitch = -0.12) => {
   cam.yaw = me.yaw = Math.PI / 2;
@@ -33,19 +41,55 @@ function hideNotes() {
 
 export async function stage() {
   await until(() => !!inspectRailway()?.ready && !!me.body, 'railway ready', 60000);
-  if (!inspectRailway()!.glide) throw new Error('GLIDE the test room did not grant the glider (&railGlide=1)');
-  await until(() => glider().owned, 'glider owned', 5000);
   // With --players 2 the second stands a little apart, so each flies beside the other.
-  const side = new URLSearchParams(location.search).get('player') === '2' ? 2.5 : -1;
+  const side = query.get('player') === '2' ? 2.5 : -1;
+  if (taking) {
+    const s = inspectRailway()!;
+    const device = s.line2View.glideDevice;
+    if (s.glide || !device.available || !device.woken)
+      throw new Error(`GLIDE glideTake=1 needs a woken, untaken device (q5-done): ${JSON.stringify(device)}`);
+    teleport(me.body!, device.x + 2.5, device.y + PLAYER_R + 0.2, device.z + (side > 0 ? side : 0));
+    me.body!.velocity.set(0, 0, 0);
+    face();
+    await wait(800);
+    hideNotes();
+    console.log(`GLIDE staged by the device ${JSON.stringify(device)}`);
+    page.__placeDone = true;
+    if (side > 0) background(watchTake(), "player 2 watches the leader's take");
+    return;
+  }
+  if (!inspectRailway()!.glide)
+    throw new Error('GLIDE the room has not taken the glider: use --rail-seed glide-earned, or glideTake=1');
+  await until(() => glider().owned, 'glider owned within 2 s', 2000);
+  const s = inspectRailway()!;
+  if (!s.line2View.glideDevice.taken) throw new Error('GLIDE the summit device does not read taken');
+  if (s.reward.showing) throw new Error('GLIDE a restored glider played its card');
   teleport(me.body!, SUMMIT.x + 2.5, SUMMIT.y + PLAYER_R + 0.2, SUMMIT.z + side);
   me.body!.velocity.set(0, 0, 0);
   face();
   await wait(800);
   if (glider().rolls < 1) throw new Error('GLIDE no folded roll on your back');
+  if (inspectRailway()!.reward.showing) throw new Error('GLIDE a restored glider played its card');
   hideNotes();
   console.log(`GLIDE staged ${JSON.stringify(glider())}`);
   page.__placeDone = true;
   if (side > 0) background(watchPartner(), 'player 2 watches the leader glide');
+}
+
+/** glideTake=1, player 2: the leader's take reaches you as the flourish (no card) and the roll on your back. */
+async function watchTake() {
+  await until(() => inspectRailway()!.glide, "the leader's take reaches player 2", 90000);
+  await wait(1500);
+  const s = inspectRailway()!;
+  const seen = {
+    flourish: s.reward.arrival.seen.includes('glide'),
+    card: s.reward.showing,
+    owned: s.glider.owned,
+    rolls: s.glider.rolls,
+  };
+  console.log(`GLIDE partner take ${JSON.stringify(seen)}`);
+  if (!seen.flourish || seen.card || !seen.owned) console.error(`GLIDE partner take wrong: ${JSON.stringify(seen)}`);
+  await watchPartner();
 }
 
 /** Player 2 stays on the summit, looking out after the leader, and reports their canopy from presence railwayGlide. */
@@ -65,7 +109,31 @@ async function watchPartner() {
   if (!seen) console.error('GLIDE player 2 never saw the leader open a canopy');
 }
 
+/** glideTake=1: Interact on the device, the card, then the glide home to the boiler's apron. */
+async function takeAndGlide() {
+  window.__debugCam?.clear();
+  const bot = makeBot({
+    recover: () => {
+      throw new Error('GLIDE the take requested recovery');
+    },
+  });
+  hideNotes();
+  const { card } = await takeGlider(bot);
+  const r = await glideToBoiler(bot);
+  page.__glideResult = {
+    seconds: r.seconds,
+    sinkMean: r.sinkMean,
+    speedMax: r.speedMax,
+    landing: { x: r.landing.x, z: r.landing.z, dry: r.landing.dry, toPedestal: r.landing.toPedestal },
+    card,
+    flights: r.flights,
+    released: r.released,
+  };
+  console.log(`GLIDE result ${JSON.stringify(page.__glideResult)}`);
+}
+
 export async function fly() {
+  if (taking) return takeAndGlide();
   window.__debugCam?.clear();
   face();
   const b = me.body!;

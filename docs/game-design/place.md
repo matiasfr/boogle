@@ -482,8 +482,8 @@ Pulling funds a full bill; otherwise the last deposit after the pull funds it.
 Automatic unloading retries in reach at the ordinary cadence, logs then rails, without a drop/pickup cycle.
 The Server rule and client prediction share this acceptance rule; funding stays authoritative. Existing partly
 stocked gated saves remain valid with the same world namespace.
-The cart stocks the rack even before the switch is pulled; its 16-rail capacity requires two
-trips. The bot now reuses the Needle Bell climb and descent after Q4, pulls `railway-sea-switch`, unloads logs
+The cart stocks the rack even before the switch is pulled; it carries 24 rails a trip since glider piece B (it was
+16, two trips), so Q5's rails come in one shipment. The bot now reuses the Needle Bell climb and descent after Q4, pulls `railway-sea-switch`, unloads logs
 before taking shelf rails, funds Q5, waits for laying and walks the 260 m trestle with dry support checks every
 3 m. Checkpoints are `sea gate`, `Q5 funded`, `Q5 laid` and `Far Head`; a friend witnesses Q5 completion.
 
@@ -501,6 +501,41 @@ and lamps sequencing to 54. The summit, rim and reverse Far Head stills show the
 continuous trestle; daylight reduces the distant lamps' contrast. These are targeted seeded proofs, not a full
 campaign or real-time smoothness verdict. The long route and owner playtest remain with the orchestrator.
 `WORLD_NS` v20; not tested on a device.
+
+### Production glider (9 November 2026, piece B)
+
+[Plan](../plans/glider-b-home-flow.md); [placement brief](../brainstorms/glider-placement.md). The glider waits
+sealed on Needle Bell's summit at world (1016, 102.4, −4.5), 4.5 m from the sea switch: a dark drum with a brass cap
+and a short mast carrying a furled vane in dark cloth, pointing west at the forge. It has no ring, no light, no shaft
+and no prompt, so on the first climb it reads as a thing that isn't on yet.
+
+Q5's completion wakes it, on the same edge that casts the boiler (no summit cinematic). The vane takes the worn roll's
+teal and cream, Place's two rings and core light up and turn, and a faint locator shaft rises 50 m (radius 0.1,
+opacity 0.1). On the live edge only the vane unfurls once over 0.6 s; a reload or a late join snaps it to woken.
+The hook brings you back up. **Take it** (Place's verb) is one shared take, `rail.glide`, a Server op on the railway
+world, heard within 3.2 m across and 2.6 m of the summit's height and only after Q5: whoever takes it takes it for
+the room. It is predicted, so the finder gets Place's card ("The glider" / "Open it in the air."), the
+`pickupGlider` sound and the folded roll on the press; partners get the ability-arrival flourish (teal puff, sound,
+the glider badge) and no card. Taken, the device keeps its drum and loses its lights.
+
+The first time you fall faster than 4 m/s with the glider shut, the Glide action's glyph (LB / Q; nothing on touch,
+like the jump teach) pulses at your back until you open it or land. It shows Glide, not Jump, because at Q5 Jump
+spends the double jump first. The flight is piece A's, now read from eight room tunables (`railGlideSpeed` 1000 cm/s,
+`railGlideSink` 320 cm/s, `railGlideAccel` 1800, `railGlideBrake` 1200, `railGlideOver` 800 cm/s², `railGlideTurnTau`
+120 ms, `railGlideTurnMax` 360°/s, `railGlideDeploy` 100 ms).
+
+Taking it faces you west over the device toward the forge, where the plume stands over the new boiler, so the natural
+step-off heads home. The first flight lands on the forge apron only if you let go of the stick over it: letting go
+brakes you in under a second and you sink onto broad, dry ground. Holding full stick carries you about 250 m, over the
+forge and the village and into the cove, which is a swim.
+
+The cart now carries 24 rails a trip (16 before), so Q5's whole rail bill comes in one shipment. The production bot
+plays in a player's order: it opens the pack at the forge before Q1, pulls the sea switch on the first climb, waits
+at the rim for Q5's single shipment, and after Far Head climbs back up, takes the glider and glides to the boiler;
+`&botOrder=legacy` keeps the old order. Seeds `glide-earned`, `q5-shelved` and `q5-arriving` replace the dev grant
+`&railGlide=1`. Code: `rail.glide` in `src/sim/railway-systems.ts`, `Rail.glide`, the view
+`src/entities/railway/glide-device-view.ts`, the flourish and teach in `ability-arrival.ts`. `WORLD_NS` v23. Not
+tested on a device.
 
 ### Production boiler, trains and the pier (8 November 2026)
 

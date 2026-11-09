@@ -632,4 +632,12 @@ const RAIL_TUNE_KEYS = new Set([
   'railJumpSteer',
   'railJumpApexSpeed',
   'railBeamGraceS',
+  'railGlideSpeed',
+  'railGlideSink',
+  'railGlideAccel',
+  'railGlideBrake',
+  'railGlideOver',
+  'railGlideTurnTau',
+  'railGlideTurnMax',
+  'railGlideDeploy',
 ]);

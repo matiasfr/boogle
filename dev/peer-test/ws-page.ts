@@ -16,8 +16,10 @@ import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { railActiveStation } from '../../src/sim/railway-line.ts';
 import { railCounts, railPhase, type RailAction, type RailAccount } from '../../src/sim/railway.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
+import { specOf } from '../../src/sim/tune.ts';
 import {
   createRailwayAdapter,
+  railMovement,
   type RailwayAccepted,
   type RailwayCorrection,
   type RailwayInspection,
@@ -228,6 +230,7 @@ function startWorld(room: Room) {
       ? createRailwayAdapter({
           mirror: rail,
           movement: () => ({
+            ...railMovement({ get: (k) => specOf(k)!.def }),
             beamSoloSpeed: 2,
             beamHelpSpeed: 5,
             jumpImpulse: 6,
@@ -397,6 +400,8 @@ function startWorld(room: Room) {
           return adapter.pullSeaSwitch();
         case 'rail.hook':
           return adapter.claimHook();
+        case 'rail.glide':
+          return adapter.claimGlide();
         case 'rail.drop':
           return intent.y !== undefined && adapter.drop(intent.x, intent.y, intent.z, intent.n, intent.kind);
         case 'rail.take':

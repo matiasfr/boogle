@@ -90,6 +90,7 @@ export type RailwayIntent =
         | 'rail.lever'
         | 'rail.seaSwitch'
         | 'rail.hook'
+        | 'rail.glide'
         | 'rail.pack'
         | 'rail.cartCall'
         | 'rail.breaker'
@@ -153,6 +154,15 @@ export const railMovement = (tune: Pick<TuneApi, 'get'>) => ({
   jumpTurn: tune.get('railJumpTurn') / 100,
   jumpSteer: tune.get('railJumpSteer') / 100,
   jumpApexSpeed: tune.get('railJumpApexSpeed') / 100,
+  // The glider (piece B): metres, seconds and radians for glide-step.ts's GlideMove.
+  glideSpeed: tune.get('railGlideSpeed') / 100,
+  glideSink: tune.get('railGlideSink') / 100,
+  glideAccel: tune.get('railGlideAccel') / 100,
+  glideBrake: tune.get('railGlideBrake') / 100,
+  glideOver: tune.get('railGlideOver') / 100,
+  glideTurnTau: tune.get('railGlideTurnTau') / 1000,
+  glideTurnMax: (tune.get('railGlideTurnMax') * Math.PI) / 180,
+  glideDeploy: tune.get('railGlideDeploy') / 1000,
 });
 export type RailwayMovement = {
   beamSoloSpeed: number;
@@ -161,6 +171,14 @@ export type RailwayMovement = {
   jumpTurn: number;
   jumpSteer: number;
   jumpApexSpeed: number;
+  glideSpeed: number;
+  glideSink: number;
+  glideAccel: number;
+  glideBrake: number;
+  glideOver: number;
+  glideTurnTau: number;
+  glideTurnMax: number;
+  glideDeploy: number;
 };
 /** The most a back ever carries (with the pack): the wire's bound on a moved count; the rule clips to today's back. */
 const CARRY_MAX = LINE2_PACK.carry;
@@ -195,6 +213,7 @@ function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     e.op === 'rail.lever' ||
     e.op === 'rail.seaSwitch' ||
     e.op === 'rail.hook' ||
+    e.op === 'rail.glide' ||
     e.op === 'rail.depotRailTake' ||
     e.op === 'rail.pack' ||
     e.op === 'rail.cartCall'
@@ -291,13 +310,15 @@ const holds = (s: Railway, op: string, event?: RailwayIntent) =>
             ? !!s.line2?.sea
             : op === 'rail.pack'
               ? !!s.line2?.pack
-              : op === 'rail.cartCall'
-                ? !!s.line2?.cart.recall
-                : op === 'rail.strike' && event?.op === 'rail.strike'
-                  ? !!((s.works?.seams ?? 0) & (event.id ? 2 : 1))
-                  : op === 'rail.turn' && event?.op === 'rail.turn'
-                    ? s.shed?.table === event.to
-                    : false;
+              : op === 'rail.glide'
+                ? !!s.line2?.glide
+                : op === 'rail.cartCall'
+                  ? !!s.line2?.cart.recall
+                  : op === 'rail.strike' && event?.op === 'rail.strike'
+                    ? !!((s.works?.seams ?? 0) & (event.id ? 2 : 1))
+                    : op === 'rail.turn' && event?.op === 'rail.turn'
+                      ? s.shed?.table === event.to
+                      : false;
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op !== b.op) return false;
@@ -326,6 +347,7 @@ const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.lever',
   'rail.seaSwitch',
   'rail.hook',
+  'rail.glide',
   'rail.pack',
   'rail.cartCall',
   'rail.boilerTake',
@@ -353,7 +375,6 @@ export function createRailwayAdapter({
   pid,
   pose = () => null,
   now = () => performance.now(),
-  glide = false,
 }: {
   mirror: RailwayMirror;
   movement: () => RailwayMovement;
@@ -362,9 +383,6 @@ export function createRailwayAdapter({
   pose?: ActorPose;
   /** The client's monotonic clock in ms: action times, the server step estimate and the stall cue. */
   now?: () => number;
-  /** The glider fact a dev test room grants (docs/brainstorms/glider-placement.md, piece A). Piece B replaces it with
-   * the accepted `Rail.glide`; until then production never sets it, so the glide stays off. */
-  glide?: boolean;
 }) {
   const confirmed = rail.railway;
   const progressMarks = createRailwayProgressMarks();
@@ -765,7 +783,15 @@ export function createRailwayAdapter({
     a.jumpImpulse === b.jumpImpulse &&
     a.jumpTurn === b.jumpTurn &&
     a.jumpSteer === b.jumpSteer &&
-    a.jumpApexSpeed === b.jumpApexSpeed;
+    a.jumpApexSpeed === b.jumpApexSpeed &&
+    a.glideSpeed === b.glideSpeed &&
+    a.glideSink === b.glideSink &&
+    a.glideAccel === b.glideAccel &&
+    a.glideBrake === b.glideBrake &&
+    a.glideOver === b.glideOver &&
+    a.glideTurnTau === b.glideTurnTau &&
+    a.glideTurnMax === b.glideTurnMax &&
+    a.glideDeploy === b.glideDeploy;
   function readState() {
     const t = tick();
     const v = view();
@@ -891,8 +917,8 @@ export function createRailwayAdapter({
       stations: Object.freeze(stations),
       axe: s.line!.axe,
       jump: s.line!.jump,
-      /** The room has the glider (piece A: only a dev test room's grant; piece B: accepted state). */
-      glide,
+      /** The room has the glider: the accepted (or your own predicted) `Rail.glide`, taken on Needle Bell's summit. */
+      glide: l2.glide,
       beam: Object.freeze({ ...s.line!.beam }),
       rocks: Object.freeze(
         LINE1_ROCKS.map((rock, i) =>
@@ -1123,6 +1149,8 @@ export function createRailwayAdapter({
     pullLever: () => submit({ op: 'rail.lever' }),
     pullSeaSwitch: () => submit({ op: 'rail.seaSwitch' }),
     claimHook: () => submit({ op: 'rail.hook' }),
+    /** Take the glider from its summit device (once Q5 is laid; the rule and the server judge it). */
+    claimGlide: () => submit({ op: 'rail.glide' }),
     deposit(n = 1, kind: RailMaterial = 0) {
       const station = LINE1_STATIONS[railActiveStation(view())]!.id;
       return railInt(n, CARRY_MAX, 1) && submit({ op: 'rail.deposit', station, n, kind });

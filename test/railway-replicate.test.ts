@@ -40,7 +40,13 @@ import { cartCycleTicks } from '../src/sim/railway-cart.ts';
 import { RAILWAY_SUPPLY } from '../src/sim/railway-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { homeLand } from './helpers/land.ts';
-import { createRailwayAdapter, type RailwayAccepted, type RailwayCorrection } from '../src/adapters/railway.ts';
+import {
+  createRailwayAdapter,
+  railMovement,
+  type RailwayAccepted,
+  type RailwayCorrection,
+} from '../src/adapters/railway.ts';
+import { specOf } from '../src/sim/tune.ts';
 import { SERVER_ID } from '../src/net/ids.ts';
 
 const anywhere: Actor = { reach: () => true, height: () => true, cadence: () => true };
@@ -191,7 +197,11 @@ test('a random multi-player action stream replicates exactly, live and to a late
                         ? { op: 'rail.depotTake' }
                         : roll < 0.97
                           ? { op: 'rail.rackTake', kind: int(2) }
-                          : { op: ['rail.axe', 'rail.beamChop', 'rail.lever', 'rail.hook', 'rail.jump'][int(5)]! };
+                          : {
+                              op: ['rail.axe', 'rail.beamChop', 'rail.lever', 'rail.hook', 'rail.jump', 'rail.glide'][
+                                int(6)
+                              ]!,
+                            };
     if (act(pid, fields).status === 'accepted') accepted++;
     // Rule ticks (and the steps between them) at random; a supply pulse now and then.
     if (rng() < 0.3) r.sync.stepWorld(int(4) * 50 + 17);
@@ -273,13 +283,16 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
   r.join('a');
   const s = () => r.api.railway; // rebuilt after each change
   const req = new Map<string, number>();
+  const RACED: Record<string, string> = { 'rail.seaSwitch': 'sea-predict', 'rail.glide': 'glide-predict' };
   const act = (pid: string, op: string, fields: Partial<RailAction> = {}) => {
     const n = (req.get(pid) ?? 0) + 1;
     req.set(pid, n);
     const result = r.api.act(pid, { op, ...fields, epoch: 1, request: n } as RailAction, anywhere);
-    if (op === 'rail.seaSwitch') {
+    // The one-flag takes raced below: a's predicting adapter listens on its own mirror session.
+    const racing = RACED[op];
+    if (racing) {
       if (result.accepted) r.replication.emit({ op, pid, request: n, accepted: result.accepted }, pid);
-      if (pid === 'a') r.replication.ack('sea-predict', 1, n);
+      if (pid === 'a') r.replication.ack(racing, 1, n);
     }
     r.pump();
     agree(r, 'a');
@@ -356,6 +369,43 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
   assert.equal(railCarryMax(mirror.at(r.sync.world.tick)), 16, 'the mirror carries 16 once confirmed');
   logs('b', 'F', 32);
   assert.ok(s().line2!.forge.lit >= 0, 'the forge is lit');
+  /** a's predicting adapter on its own mirror session `name`, standing at `pose`, for a one-flag take race. */
+  const racer = (name: string, pose: { x: number; y: number; z: number }) => {
+    r.join(name);
+    const mirrorOf = r.mirrors.get(name)!;
+    const adapter = createRailwayAdapter({
+      mirror: mirrorOf,
+      movement: () => ({
+        ...railMovement({ get: (k) => specOf(k)!.def }),
+        beamSoloSpeed: 2,
+        beamHelpSpeed: 5,
+        jumpImpulse: 6,
+        jumpTurn: 1,
+        jumpSteer: 25,
+        jumpApexSpeed: 1,
+      }),
+      pid: 'a',
+      pose: () => pose,
+      now: () => 1000,
+    });
+    let hear: ((message: unknown, from: string) => void) | undefined;
+    const corrections: RailwayCorrection[] = [],
+      effects: RailwayAccepted[] = [];
+    adapter.onCorrected((c) => corrections.push(c));
+    adapter.onAccepted((e) => effects.push(e));
+    adapter.attach({
+      selfId: 'a',
+      send: () => {},
+      onMessage: (fn) => {
+        hear = fn;
+        return () => {};
+      },
+      onConnection: () => () => {},
+    });
+    hear!({ t: 'r:session', to: 'a', epoch: 1, next: (req.get('a') ?? 0) + 1 }, SERVER_ID);
+    r.pump();
+    return { adapter, mirror: mirrorOf, corrections, effects };
+  };
   for (let k = 0; k < LINE2_STATIONS.length; k++) {
     const spec = LINE2_STATIONS[k]!;
     if (spec.gate === 'quarry') {
@@ -377,38 +427,7 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
     }
     if (k === 3) {
       assert.equal(s().line2!.jobs[3]!.completion, 0, 'Q4 has not been built');
-      r.join('sea-predict');
-      const seaMirror = r.mirrors.get('sea-predict')!;
-      const adapter = createRailwayAdapter({
-        mirror: seaMirror,
-        movement: () => ({
-          beamSoloSpeed: 2,
-          beamHelpSpeed: 5,
-          jumpImpulse: 6,
-          jumpTurn: 1,
-          jumpSteer: 25,
-          jumpApexSpeed: 1,
-        }),
-        pid: 'a',
-        pose: () => ({ x: 1011.8, y: 102.4, z: -6 }),
-        now: () => 1000,
-      });
-      let hear: ((message: unknown, from: string) => void) | undefined;
-      const corrections: RailwayCorrection[] = [],
-        effects: RailwayAccepted[] = [];
-      adapter.onCorrected((c) => corrections.push(c));
-      adapter.onAccepted((e) => effects.push(e));
-      adapter.attach({
-        selfId: 'a',
-        send: () => {},
-        onMessage: (fn) => {
-          hear = fn;
-          return () => {};
-        },
-        onConnection: () => () => {},
-      });
-      hear!({ t: 'r:session', to: 'a', epoch: 1, next: (req.get('a') ?? 0) + 1 }, SERVER_ID);
-      r.pump();
+      const { adapter, mirror: seaMirror, corrections, effects } = racer('sea-predict', { x: 1011.8, y: 102.4, z: -6 });
       assert.equal(adapter.pullSeaSwitch(), true, 'sea switch predicts on the press');
       assert.equal(adapter.inspect().line2.sea, true);
       assert.equal(adapter.inspect().line2.seaOpen, true, 'the early press immediately predicts the open gate');
@@ -476,6 +495,20 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
     advance(2000);
     assert.equal(s().line2!.jobs[k]!.completion, 1, `Q${k + 1} complete`);
     if (k === 1) assert.equal(act('a', 'rail.hook'), 1);
+    if (k === 4) {
+      // Both take the glider within one round trip: the friend's take wins, a's predicted take settles as noop with
+      // no correction, so a's arrival keeps its card and the reward plays once.
+      const glide = racer('glide-predict', { x: 1016, y: 102.4, z: -4.5 });
+      assert.equal(glide.adapter.claimGlide(), true, 'the take predicts on the press');
+      assert.equal(glide.mirror.railway.line2!.glide, false, 'confirmed mirror waits');
+      assert.equal(act('b', 'rail.glide'), 1, 'a friend took it first');
+      assert.equal(act('a', 'rail.glide'), 0, 'the pending take settles as noop');
+      assert.equal(glide.corrections.length, 0, 'a shared flag that holds gives no correction effect');
+      assert.equal(glide.effects.filter((e) => e.op === 'rail.glide').length, 1, 'the take only plays once');
+      assert.equal(glide.adapter.inspect().glide, true);
+      assert.equal(glide.adapter.inspect().pending, 0, 'the noop acknowledges the predicted take');
+      glide.adapter.dispose();
+    }
   }
   r.pump();
   agree(r, 'a');
@@ -486,6 +519,7 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
   assert.equal(mirrored.line2!.lever, true);
   assert.equal(mirrored.line2!.sea, true, 'a late joiner gets the sea switch');
   assert.equal(mirrored.line2!.pack, true, 'a late joiner gets the pack');
+  assert.equal(mirrored.line2!.glide, true, 'a late joiner sees the glider taken');
   assert.equal(railCarryMax(mirrored), 16);
   assert.equal(railCounts(mirrored).rails!.total, railCounts(mirrored).rails!.poured, 'no rail minted');
   assert.equal(railCounts(mirrored).total, RAILWAY_SUPPLY + 30 + railCounts(mirrored).produced);
@@ -573,6 +607,7 @@ test('a footing take predicted, then lost to a friend, comes back as a correctio
   const adapter = createRailwayAdapter({
     mirror,
     movement: () => ({
+      ...railMovement({ get: (k) => specOf(k)!.def }),
       beamSoloSpeed: 2,
       beamHelpSpeed: 5,
       jumpImpulse: 6,

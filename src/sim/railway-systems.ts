@@ -10,6 +10,7 @@
 //                                        footing wagon, the Works kiln's casts (./railway-works.ts), the job clocks
 //   the Works block                      rail.breaker, rail.strike, rail.kiln, rail.footTake, rail.footSet,
 //                                        rail.cradle, rail.turn and the shed's commissioning (the wagon's roll-out)
+//   rail.glide                           the glider's one shared take on Needle Bell's summit, once Q5 is laid
 //   railBoilerRelease                   return an absent carrier's boiler to the apron
 //   railFootRelease / railFootHolders   return an absent carrier's footing to the Works rack
 //   railResume / railSession / railSupplyPulse / railBeamRelease / railBeamStood / railBeamPutDown
@@ -699,6 +700,13 @@ const hook = defineSystem('rail.hook', { reads: [QJob], writes: [Rail], phase: '
   w.mut(Rail, railId(w))!.hook = true;
   return 1;
 });
+// The glider on Needle Bell's summit (glider piece B): sealed until Q5 is laid, then one shared take for the room.
+// Order 40: after the Works block (33-39).
+const glide = defineSystem('rail.glide', { reads: [QJob], writes: [Rail], phase: 'act', order: 40 }, (w) => {
+  if (qCompleted(w) < 5 || w.get(Rail, railId(w))!.glide) return 0;
+  w.mut(Rail, railId(w))!.glide = true;
+  return 1;
+});
 const seaSwitch = defineSystem(
   'rail.seaSwitch',
   { writes: [Rail, QJob, QJobRun, Forge, Cart, Train], phase: 'act', order: 28 },
@@ -852,7 +860,7 @@ const turn = defineSystem(
 );
 
 /** The systems for each op, in the order they are tried: the first that moves something answers. */
-// An op system that reads no action (the axe, the jump, the lever, the hook) takes it all the same.
+// An op system that reads no action (the axe, the jump, the lever, the hook, the glider) takes it all the same.
 const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.wake': [wake],
   'rail.chop': [chop],
@@ -872,6 +880,7 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.lever': [lever],
   'rail.seaSwitch': [seaSwitch],
   'rail.hook': [hook],
+  'rail.glide': [glide],
   'rail.depotRailTake': [depotRailTake],
   'rail.pack': [pack],
   'rail.cartCall': [cartCall],

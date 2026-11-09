@@ -18,6 +18,7 @@ import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-lin
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
 import { createRailwaySeaGate } from './sea-gate-view.ts';
+import { createRailwayGlideDevice } from './glide-device-view.ts';
 import { createRailwayFarHead } from './far-head-view.ts';
 import { createRailwayBoiler } from './boiler-view.ts';
 import { createRailwayPier } from './pier-view.ts';
@@ -407,6 +408,7 @@ export async function createRailwayLine2(
   let slabBody: Body | null = null;
   let slabT = -1;
   const seaGate = createRailwaySeaGate(adapter, owner, { layout, tech, land, shapes, flat, sounds, partMat, glow });
+  const glideDevice = createRailwayGlideDevice(adapter, owner, { land, shapes, partMat, glow, youGot });
   const farHead = createRailwayFarHead(owner, { layout, rail, land, flat, sounds });
   const boiler = createRailwayBoiler(adapter, owner, { land, props, carry, sounds, pieces });
   const pier = createRailwayPier(owner, { layout, rail, sounds });
@@ -550,6 +552,7 @@ export async function createRailwayLine2(
           : lineFeed(spec, job.timing).filter((f) => f.launchMs <= (job.elapsed - depositTicks) * 100).length;
     });
     seaGate.restore(l);
+    glideDevice.restore(l);
     farHead.restore(l.stations[4]?.completion === 1);
     boiler.restore();
     pier.restore(l.stations[5]?.completion === 1);
@@ -580,6 +583,7 @@ export async function createRailwayLine2(
     const l = l2();
     if (!l) return;
     seaGate.accepted(event);
+    glideDevice.accepted(event);
     boiler.accepted(event);
     if (event.op === 'rail.seaSwitch' && event.pid === state.pid) showSwitch('sea');
     if (event.op === 'rail.forgeTake') {
@@ -966,6 +970,7 @@ export async function createRailwayLine2(
       drawDepot(l.active, Math.max(0, l.depot - cartFlying().logs));
       syncSolids(l);
       seaGate.update(dt, l);
+      glideDevice.update(dt, l);
       farHead.update(dt, l.stations[4]?.completion === 1);
       boiler.update(dt);
       pier.update(dt, l.stations[5]?.completion === 1);
@@ -1015,7 +1020,7 @@ export async function createRailwayLine2(
       const l = l2(),
         p = me.body?.position;
       if (!l || !p || !state.ready) return [];
-      const out: Interactable[] = seaGate.targets(p, l);
+      const out: Interactable[] = [...seaGate.targets(p, l), ...glideDevice.targets(p, l)];
       out.push(...boiler.targets());
       const full = state.freeCarry <= 0 ? { blocked: 'Your back is full' } : {};
       if (l.forge.rack > 0 && Math.hypot(p.x - RX, p.z - RZ) <= 3)
@@ -1069,6 +1074,7 @@ export async function createRailwayLine2(
       return {
         working: working(),
         ...seaGate.inspect(),
+        ...glideDevice.inspect(),
         switchCamera: { ...switchCamera.inspect(), kind: switchKind },
         ...farHead.inspect(),
         ...boiler.inspect(),

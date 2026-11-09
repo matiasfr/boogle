@@ -48,6 +48,11 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
       'q5-stocked',
       'q5-finishing',
       'q5-done',
+      // Glider piece B: the room has taken the glider (the dev grant's replacement); and, look only, Q5's single
+      // 24-rail shipment on the shelf and on its way.
+      'glide-earned',
+      'q5-shelved',
+      'q5-arriving',
     ].includes(stage)
   )
     throw new Error(`Unknown railway seed: ${stage}`);
@@ -61,7 +66,11 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
           ? railwayAtQ2()
           : stage === 'q3-done' || stage === 'q4-stocked' || stage === 'q4-arriving' || stage === 'hook-earned'
             ? railwayAtQ4()
-            : railwayAtQ5(stage === 'q5-carry' ? 'q5-stocked' : (stage as RailSeedStage));
+            : stage === 'glide-earned'
+              ? railwayAtQ5('q5-done')
+              : stage === 'q5-shelved' || stage === 'q5-arriving'
+                ? railwayAtQ5('q4-done')
+                : railwayAtQ5(stage === 'q5-carry' ? 'q5-stocked' : (stage as RailSeedStage));
   if (stocked) {
     chopTo(w, 'a', WORKS.kilnLogs);
     if (act(w, 'a', 'rail.kiln') !== WORKS.kilnLogs) throw new Error('works-stocked: logs');
@@ -74,6 +83,7 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
     if (act(w, 'b', 'rail.kiln') !== WORKS.kilnStone - left) throw new Error('works-stocked: stone');
   }
   if (stage === 'hook-earned') act(w, 'a', 'rail.hook');
+  if (stage === 'glide-earned' && act(w, 'a', 'rail.glide') !== 1) throw new Error('glide-earned: the take');
   if (stage === 'awake') {
     railSession(w.s, 'a', 1);
     railApply(w.s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
@@ -85,14 +95,15 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
     advance(w, line2Schedule(1, w.s.line2!.jobs[1]!).totalTicks);
   }
   if (stage === 'q4-stocked' || stage === 'q4-arriving') act(w, 'a', 'rail.lever');
-  if (stage === 'q2-arriving' || stage === 'q4-arriving') {
-    const k = stage === 'q2-arriving' ? 1 : 3;
+  if (stage === 'q2-arriving' || stage === 'q4-arriving' || stage === 'q5-arriving') {
+    const k = stage === 'q2-arriving' ? 1 : stage === 'q4-arriving' ? 3 : 4;
     let waited = 0;
-    // Q4 can inherit a timber-only cart already en route; its later steel delivery exercises the shelf flight.
+    // Q4 can inherit a timber-only cart already en route; its later steel delivery exercises the shelf flight. Q5's
+    // one shipment carries all 24 of its rails.
     while (!(
       w.s.line2!.cart.phase === CART_PHASE.RUN &&
       w.s.line2!.cart.to === CART_ROAD.rackCm(k) &&
-      (k < 3 || w.s.line2!.cart.rails > 0)
+      (k < 3 || w.s.line2!.cart.rails >= (k === 4 ? 24 : 1))
     )) {
       if (waited++ > 3 * cartCycleTicks(k)) throw new Error(`${stage}: cart never approached`);
       advance(w, 1);
@@ -107,6 +118,13 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
       (k < 3 || w.s.line2!.depotRails > 0)
     )) {
       if (waited++ > 3 * cartCycleTicks(k)) throw new Error(`${stage}: cart never unloaded`);
+      advance(w, 1);
+    }
+  }
+  if (stage === 'q5-shelved') {
+    let waited = 0;
+    while (!(w.s.line2!.cart.phase === CART_PHASE.DROP && w.s.line2!.depotRails === 24)) {
+      if (waited++ > 3 * cartCycleTicks(4)) throw new Error('q5-shelved: cart never unloaded 24 rails');
       advance(w, 1);
     }
   }

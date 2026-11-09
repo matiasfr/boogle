@@ -6,7 +6,7 @@
 //
 //   RAIL_PREDICTED                    the ops a client predicts (chop, mine, take, rack take, drop, deposit, forge,
 //                                     depot and shelf takes, wake, lever, summit switch, pack, the kiln, footings and
-//                                     the cradle); the rest wait for the server as in R1a
+//                                     the cradle, the glider take); the rest wait for the server as in R1a
 //   railwayOf(world, into?)           the read model of a world, linked to it (a mirror's confirmed state, a clone's)
 //   railPredict(s, pid, e, tick)      apply e to s's world (a clone) as the server would at tick, keeping thresholds for the
 //                                     server: a bill it completes shows full but is funded only when confirmed, a forge it
@@ -66,6 +66,7 @@ export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   'rail.footTake',
   'rail.footSet',
   'rail.cradle',
+  'rail.glide',
 ]);
 /** Swing and unload cadence on the actor's own action clock (replication revision 1): the server refuses an action
  * closer than `ms - RAIL_CADENCE_SLACK_MS` to the last of its kind, and a client predicts the same check. */

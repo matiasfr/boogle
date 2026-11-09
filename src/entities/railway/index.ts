@@ -20,9 +20,6 @@ registerInteractable(() => active?.targets() ?? NO_TARGETS);
 if (productionRailway && railwayMirror) {
   const query = new URLSearchParams(location.search);
   const adapter = createRailwayAdapter({
-    // Dev only: &railGlide=1 grants the glider to this tab's test room (the glider's piece A; production stays false
-    // until the accepted rail.glide fact lands in piece B).
-    glide: import.meta.env.DEV && query.get('railGlide') === '1',
     mirror: railwayMirror,
     movement: () => railMovement(rules.tune),
     pid: identity.pid,

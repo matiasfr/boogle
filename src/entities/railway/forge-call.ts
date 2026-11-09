@@ -10,12 +10,17 @@ import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { material } from '../../render/materials.ts';
 import { whistle } from '../../render/machine-sfx.ts';
+import { camera } from '../../render/scene.ts';
+import { me } from '../../player/player.ts';
 import { reducedMotion } from '../../constants.ts';
 
 /** Metres: the call reaches the pier's end and Far Head (about 600 m). */
 export const FORGE_CALL_HEAR = 900;
 /** Puffs in the column, the seconds one takes to rise, and the column's height and lean (metres). */
 const PLUME = { puffs: 22, rise: 11, height: 62, lean: 8 } as const;
+/** Metres of clear air a puff keeps from your view of Buddy: nearer, it parts (shrinks away) so a glide down the
+ * column toward the boiler isn't flown blind (glider piece B, Proof 4: 11 s of a 28 s first flight inside it). */
+const PART_M = 3;
 
 export function createForgeCall(at: { x: number; y: number; z: number }, owner: OwnedView) {
   const geometry = new THREE.IcosahedronGeometry(1, 1);
@@ -28,7 +33,11 @@ export function createForgeCall(at: { x: number; y: number; z: number }, owner: 
   const m = new THREE.Matrix4(),
     p = new THREE.Vector3(),
     q = new THREE.Quaternion(),
-    s = new THREE.Vector3();
+    s = new THREE.Vector3(),
+    eye = new THREE.Vector3(),
+    you = new THREE.Vector3(),
+    line = new THREE.Line3(eye, you),
+    near = new THREE.Vector3();
   let waiting: boolean | null = null,
     clock = 0,
     // Seconds the plume has been rising: a new call grows its column from the pedestal up, it doesn't appear whole.
@@ -37,6 +46,10 @@ export function createForgeCall(at: { x: number; y: number; z: number }, owner: 
     clock += dt * (reducedMotion ? 0.3 : 1);
     shown = waiting ? shown + dt : 0;
     let n = 0;
+    // The sight line from the camera to Buddy: puffs on it part, so the steam never hides you or swallows the view.
+    camera.getWorldPosition(eye);
+    if (me.body) you.set(me.body.position.x, me.body.position.y, me.body.position.z);
+    else you.copy(eye);
     for (let i = 0; i < PLUME.puffs; i++) {
       const age = (clock + (i / PLUME.puffs) * PLUME.rise) % PLUME.rise;
       // Puffs older than the column itself are not out yet.
@@ -50,8 +63,13 @@ export function createForgeCall(at: { x: number; y: number; z: number }, owner: 
         at.y + 2 + up * PLUME.height,
         at.z + Math.cos(i * 1.7 + clock * 0.5) * 0.5 * u,
       );
+      // With no body the sight line has no length (its closest point is NaN): nothing to part, draw the puff whole.
+      const k = me.body
+        ? Math.min(1, Math.max(0, (line.closestPointToPoint(p, true, near).distanceTo(p) - r) / PART_M))
+        : 1;
+      if (k <= 0) continue;
       q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, i * 1.3);
-      puffs.setMatrixAt(n++, m.compose(p, q, s.set(r, r * 0.85, r)));
+      puffs.setMatrixAt(n++, m.compose(p, q, s.set(r * k, r * 0.85 * k, r * k)));
     }
     puffs.count = n;
     puffs.instanceMatrix.needsUpdate = true;

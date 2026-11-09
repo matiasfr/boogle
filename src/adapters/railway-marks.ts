@@ -16,6 +16,7 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
     'rail.mine': 'mined',
     'rail.axe': 'proper axe gained',
     'rail.hook': 'hook shot gained',
+    'rail.glide': 'glider gained',
     'rail.jump': 'second jump gained',
     'rail.lever': 'quarry lever pulled',
     'rail.seaSwitch': 'sea switch pulled',

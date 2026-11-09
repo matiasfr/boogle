@@ -1,4 +1,4 @@
-import { cosmetic } from '../../render/cosmetic-parts.ts';
+import { cosmetic, type Part } from '../../render/cosmetic-parts.ts';
 
 // T2's scarf is the cosmetics catalog's own entry: one copy of its name, line and shape.
 export const T2_REWARD = cosmetic('scarf')!;
@@ -14,4 +14,13 @@ export const HOOK_REWARD = {
     ['c', 0, 0, 0, 0.3, 0.12, 0.3, '#39e6c6'],
     ['k', 0, 0.42, 0, 0.12, 0.34, 0.12, '#39e6c6'],
   ] satisfies ['c' | 'k', number, number, number, number, number, number, string][],
+};
+export const GLIDE_REWARD = {
+  name: 'The glider',
+  line: 'Open it in the air.',
+  // What you wear for it, held up as you take it: the folded wing (Place's tech.ts WORN_SHAPE.glide).
+  parts: [
+    ['b', 0, 0, 0, 1.4, 0.05, 0.5, '#39e6c6', 0, 0.12],
+    ['b', 0, -0.06, 0, 1.3, 0.06, 0.06, '#c79a3e'],
+  ] satisfies Part[],
 };
