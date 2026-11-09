@@ -47,3 +47,17 @@
 - `window.boogle.gfx` (`gfx()` in `scene.ts`) is `'webgpu'` once `rendererReady` resolves, null before; telemetry
   reports it with each connection.
 - Headless frame rates mean nothing. Judge frame time on a real iPhone, iPad and a mid-range Android.
+
+### Portable device validation
+
+In development, `?gpuProfile=portable` supplies the one renderer with a device that disables optional features
+(including float32 filtering/blending, compressed textures, f16 and subgroups). Core semantics remain enabled
+where advertised. It requests baseline limits: 8 storage buffers/stage, 8 vertex buffers, 32 colour-attachment
+bytes/sample. `dev/look/evals/gpu-portability.ts` logs effective limits/features; requests are minimum requirements,
+not arbitrary upper caps (requesting 4 storage buffers on this Chromium device still returned 8).
+Pair it with `dev=1&graphics=msaa:false` to exercise the touch scene sample count. Normal visits are unchanged.
+This does not emulate Safari's compiler, attachment implementation or iPad limits, which have not been captured.
+
+Use the existing broker look operation and accepted railway seeds; [commands and findings](../../../docs/research/safari-render-gap.md).
+Compilation exceptions in both precompile paths are console errors, so a look cannot accept a partially compiled
+scene. The existing initialized-texture guard still warns once for its handled #35069 case.
