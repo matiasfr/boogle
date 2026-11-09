@@ -81,6 +81,7 @@ export const railOutcome = rule(sys.railOutcome);
 export const railBeamRelease = rule(sys.railBeamRelease);
 export const railBeamStood = rule(sys.railBeamStood);
 export const railBeamPutDown = rule(sys.railBeamPutDown);
+export const railFootRelease = rule(sys.railFootRelease);
 export const railSupplyPulse = rule((w, e: SupplyPulse, intervals?: SupplyIntervals) =>
   sys.railSupplyPulse(w, e, intervals),
 );

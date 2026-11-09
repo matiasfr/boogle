@@ -404,6 +404,25 @@ export function createRailwayWorldHost({
       boilerAway = null;
     }
   };
+  // A footing works the same way: its carrier keeps it through the grace, then it goes back to the Works rack (the
+  // kiln casts exactly the sixteen the sites need, so one held by a leaver would stall the crossing for good).
+  const footAway = new Map<string, number>();
+  const maintainFeet = () => {
+    const holders = api.footHolders();
+    for (const pid of footAway.keys()) if (!holders.some((h) => h.pid === pid)) footAway.delete(pid);
+    for (const { pid, epoch } of holders) {
+      if (requests.active(pid)) {
+        footAway.delete(pid);
+        continue;
+      }
+      const away = footAway.get(pid) ?? now();
+      footAway.set(pid, away);
+      if (now() - away >= rules.tune.get('railBeamGraceS') * 1000) {
+        api.footRelease(pid, epoch);
+        footAway.delete(pid);
+      }
+    }
+  };
   const ready = (async () => {
     attach();
     await sync.whenDurable();
@@ -460,6 +479,7 @@ export function createRailwayWorldHost({
             maintainSupply(); // on rule ticks only, not 60 times a second
             maintainBeam();
             maintainBoiler();
+            maintainFeet();
           }
           const ms = performance.now() - time;
           stats.wakes++;
@@ -538,6 +558,7 @@ export function createRailwayWorldHost({
         maintainSupply();
         maintainBeam();
         maintainBoiler();
+        maintainFeet();
       }
     },
     status: () => ({
@@ -572,6 +593,13 @@ export function createRailwayWorldHost({
       const boiler = api.boiler();
       if (session && boiler.state === 'held' && boiler.holder === session.pid && !requests.active(session.pid))
         boilerAway ??= now();
+      if (
+        session &&
+        !requests.active(session.pid) &&
+        !footAway.has(session.pid) &&
+        api.footHolders().some((h) => h.pid === session.pid)
+      )
+        footAway.set(session.pid, now());
     },
     async close({ save = true } = {}) {
       closed = true;

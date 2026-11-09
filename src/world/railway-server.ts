@@ -73,6 +73,8 @@ import {
 import {
   railApply,
   railBoilerRelease,
+  railFootHolders,
+  railFootRelease,
   railBeamPutDown,
   railBeamRelease,
   railBeamStood,
@@ -369,6 +371,13 @@ export function install(sync: SyncView & { roomStep(): number }, rules: { tune: 
     },
     boilerRelease(pid: string, epoch: number, revision: number) {
       const n = railBoilerRelease(world, pid, epoch, revision);
+      commit();
+      return n;
+    },
+    /** Who carries a footing, and in which session (at most one row per player). */
+    footHolders: () => railFootHolders(world),
+    footRelease(pid: string, epoch: number) {
+      const n = railFootRelease(world, pid, epoch);
       commit();
       return n;
     },

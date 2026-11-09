@@ -111,7 +111,11 @@ export function railEffect(w: World, pid: string, e: RailAction, before: Map<num
           : 0;
   const effect: RailEffect = { carried: kind === 1 ? a.stone : kind === 2 ? a.rails : a.carry };
   // A footing: what is on your back after it (0 or 1), and the count where it went or came from.
-  if (e.op === 'rail.footTake' || e.op === 'rail.footSet' || (e.op === 'rail.drop' && e.kind === 3))
+  if (
+    e.op === 'rail.footTake' ||
+    e.op === 'rail.footSet' ||
+    ((e.op === 'rail.drop' || e.op === 'rail.take') && e.kind === 3)
+  )
     effect.carried = a.foot;
   if (e.op === 'rail.footTake' || e.op === 'rail.footSet' || e.op === 'rail.kiln' || e.op === 'rail.cradle') {
     const works = w.get(Works, w.single(Works))!,

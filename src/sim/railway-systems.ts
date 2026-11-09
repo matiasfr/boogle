@@ -11,6 +11,7 @@
 //   the Works block                      rail.breaker, rail.strike, rail.kiln, rail.footTake, rail.footSet,
 //                                        rail.cradle, rail.turn and the shed's commissioning (the wagon's roll-out)
 //   railBoilerRelease                   return an absent carrier's boiler to the apron
+//   railFootRelease / railFootHolders   return an absent carrier's footing to the Works rack
 //   railResume / railSession / railSupplyPulse / railBeamRelease / railBeamStood / railBeamPutDown
 import { defineSystem, type System, type World } from '../ecs/index.ts';
 import { MAX_PLAYERS, okPid } from './roster.ts';
@@ -1493,3 +1494,25 @@ const boilerRelease = defineSystem(
 );
 export const railBoilerRelease = (w: World, pid: string, epoch: number, revision: number): number =>
   w.run(boilerRelease, { pid, epoch, revision });
+
+const footRelease = defineSystem(
+  'rail.footRelease',
+  { writes: [Account, Works], phase: 'foot', order: 0 },
+  (w, q: { pid: string; epoch: number }) => {
+    const id = w.lookup(Account, q.pid);
+    const a = id === undefined ? undefined : w.get(Account, id)!;
+    if (!a || a.foot !== 1 || a.epoch !== q.epoch) return 0;
+    w.mut(Account, id!)!.foot = 0;
+    w.mut(Works, worksId(w))!.rack++;
+    return 1;
+  },
+);
+/** A footing's carrier stayed away past the grace (the session `epoch` the host saw leave): it goes back to the Works
+ * rack, so the kiln's sixteen always reach their sites. Never once they are back in a new session. */
+export const railFootRelease = (w: World, pid: string, epoch: number): number => w.run(footRelease, { pid, epoch });
+/** Who carries a footing, and in which session (the host's leaver check; accepted state only). */
+export function railFootHolders(w: World) {
+  const out: { pid: string; epoch: number }[] = [];
+  w.each([Account], (_id, a) => void (a.foot > 0 && out.push({ pid: a.pid, epoch: a.epoch })));
+  return out;
+}

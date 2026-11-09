@@ -5,7 +5,16 @@ import assert from 'node:assert/strict';
 import { railwayAtTrains } from './helpers/railway-trains.ts';
 import { act, advance } from './helpers/railway-q2.ts';
 import { advanceWorks, railwayAtWorks, WORKS_STAGES } from './helpers/railway-works.ts';
-import { restore, worldOf, edit, invariant, railResume, railSupplyPulse, hash } from './railway-live.ts';
+import {
+  restore,
+  worldOf,
+  edit,
+  invariant,
+  railFootRelease,
+  railResume,
+  railSupplyPulse,
+  hash,
+} from './railway-live.ts';
 import { railAccount, railCounts } from '../src/sim/railway.ts';
 import { line2Completed, line2Rails, line2Schedule } from '../src/sim/railway-line2.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
@@ -240,6 +249,31 @@ test('a dropped footing is a pile; it recovers to the Works rack', () => {
   assert.equal(footingTotal(w.s), works.poured);
   assert.equal(invariant(w.s), null);
 });
+test("a leaver's footing goes back to the Works rack, so the crossing still finishes", () => {
+  const w = railwayAtWorks('wagon-on'),
+    works = () => w.s.works!;
+  // B shoulders one footing and leaves; the kiln casts exactly the sixteen the sites need.
+  assert.equal(act(w, 'b', 'rail.footTake', { rack: 0 }), 1);
+  const epoch = railAccount(w.s, 'b')!.epoch;
+  assert.equal(railFootRelease(w.s, 'b', epoch + 1), 0, 'only the session the host saw leave');
+  assert.equal(railFootRelease(w.s, 'a', railAccount(w.s, 'a')!.epoch), 0, 'nothing on that back');
+  const rack = works().rack;
+  assert.equal(railFootRelease(w.s, 'b', epoch), 1);
+  assert.equal(railAccount(w.s, 'b')!.foot, 0);
+  assert.equal(works().rack, rack + 1);
+  assert.equal(railFootRelease(w.s, 'b', epoch), 0, 'once');
+  assert.equal(invariant(w.s), null);
+  for (let t = 0; t < 60000 && works().pierSet < WORKS.pier; t++) {
+    if (works().pierRack > 0) {
+      assert.equal(act(w, 'a', 'rail.footTake', { rack: 1 }), 1);
+      assert.equal(act(w, 'a', 'rail.footSet', { site: 2 }), 1);
+    } else advanceWorks(w, 1);
+  }
+  assert.equal(works().poured, WORKS.total);
+  assert.equal(works().pierSet, WORKS.pier);
+  assert.ok(works().crossing >= 0);
+});
+
 test('snapshot mid-cast keeps rack and poured', () => {
   const w = railwayAtWorks('works-lit');
   advanceWorks(w, WORKS.castTicks);

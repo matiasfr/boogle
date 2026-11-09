@@ -220,3 +220,35 @@ test('works host: an aged footing pile with nobody near goes back to the Works r
     await r.done();
   }
 });
+
+test("works host: a leaver's footing waits out the grace, then goes back to the Works rack", async () => {
+  // The reviewer's case: the kiln casts exactly the sixteen the sites need, so a footing kept by a leaver would stop
+  // the pier at eleven for good.
+  const r = await host('leaver', fixture('wagon-on'));
+  try {
+    const works = () => r.h.rules.railway.railway.works!;
+    const foot = () => r.h.rules.railway.account('a')!.foot;
+    const grace = () => r.h.rules.tune.get('railBeamGraceS') * 1000;
+    assert.equal(await r.action({ op: 'rail.footTake', rack: 0 }, spot(WORKS_RACK)), 'accepted');
+    // A restart ends every session; whoever comes back within the grace still carries it.
+    await r.restart();
+    r.later(grace());
+    await r.ticks(3);
+    assert.equal(foot(), 1, 'back in a new session: still on their back');
+    r.h.depart('s');
+    await r.ticks(5);
+    assert.equal(foot(), 1, 'an absent carrier keeps it through the grace');
+    const before = { ...works() };
+    r.later(grace());
+    await r.ticks(3);
+    assert.equal(foot(), 0);
+    // Back on the Works rack, besides whatever the kiln cast meanwhile (it may run over six; the kiln then waits).
+    assert.equal(works().rack, before.rack + 1 + works().poured - before.poured);
+    assert.equal(footingTotal(r.h.rules.railway.railway), works().poured);
+    await r.restart();
+    assert.equal(foot(), 0, 'a restart does not bring it back');
+    assert.equal(footingTotal(r.h.rules.railway.railway), works().poured);
+  } finally {
+    await r.done();
+  }
+});
