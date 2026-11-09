@@ -254,3 +254,10 @@ Not the replay: Grant couldn't play, so this doesn't answer the two-player quest
 - Felt off: dark square patches on the grass near the dock where you arrive. Had to hold E to wake the track layer (it is meant to be one press). The track layer seats still have a back that clips: remove the back and keep the stool. A persistent "touch to look around" prompt stays up after switching to the Magic Keyboard.
 - Wants: a little guy at the town entrance you can talk to, who tells you to follow the path or that they need help getting the rail running; goofy.
 - After: one Codex job each (dock-patches, wake-press, seat-stool, ipad-look-hint, town-greeter).
+
+## 2026-11-08 (solo to Far Head, iPad)
+- Who: Matias, solo, iPad with Magic Keyboard, sessions mw8mn9bg and mw8n0kbk (about 16 min active, no errors, 60 fps).
+- Main issues (owner): visibility and understanding of the cart mechanic, visibility of the side resources (the depot rack and shelf), and confusion over the switch gating.
+- Data: Pull pressed 18 times on 4 showings (the sea switch before Q4, no feedback); the rack's Pick up shown 26 times, pressed 4 (the rack and cart were invisible on the iPad while their prompts worked); 41 drops (dropping and re-picking rails to make them register); Wake it up pressed 3 for 3 showings. Reached Far Head along the line; didn't notice any rockets (they fire only when Q5 finishes laying). The live build marks no railway beats, so the data can't show progress.
+- Calls: fill a gated stretch before its switch (boogle-2.md); carried rails show on the pack frame; the summit handle's rotation looked wrong.
+- After: Codex jobs depot-rack-carry, gated-fill, sea-switch-early, wake-press; the puzzle-order brainstorm.
