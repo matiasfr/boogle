@@ -128,6 +128,7 @@ Status: **adopted** (built or decided as written), **partly adopted** (some take
 - [texturing.md](texturing.md) (2026-11-06): procedural tiles baked to small textures; Meshy only as a drafting source. **Status:** adopted. See [Look](../decisions.md#look).
 - [tone-comparison.md](tone-comparison.md) (2026-11-03): compare neutral, agx, agx-sat and aces tone maps per scene. **Status:** reference. See [Look](../decisions.md#look).
 - [ultra-water.md](ultra-water.md) (2026-11-02): take filtering, shared fields and accounting; no whole-renderer port. **Status:** partly adopted. See [plan water-graduation](../plans/water-graduation.md), [Look](../decisions.md#look).
+- [water-sunshine.md](water-sunshine.md) · [water-sunshine.html](water-sunshine.html) (2026-11-09): Sunshine's one-plane recipe with no screen copies, about a tenth of Ultra's cost; compare behind `?water=`. **Status:** open. See [plan water-sunshine](../plans/water-sunshine.md).
 - [water-demo-diagnosis.md](water-demo-diagnosis.md) (2026-11-02): numerical diagnosis of the water demo spectrum and shore. **Status:** reference. See [plan water-graduation](../plans/water-graduation.md).
 - [water-demo-validation.md](water-demo-validation.md) (2026-11-03): water demo scene visual validation, four rounds. **Status:** reference. See [plan water-graduation](../plans/water-graduation.md).
 - [water-shore-seams.md](water-shore-seams.md) (2026-11-03): shore seam diagnosis after the shore-water branch. **Status:** reference.
