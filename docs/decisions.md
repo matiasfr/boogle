@@ -50,6 +50,7 @@ _Decision log, 1 November 2026. The owner's picks from the Boogle 2.0 design thr
 
 ## Decided
 
+- **The gold finds are cut; the crystals stay** (9 November, owner: "Yeah, I think I would cut them in that case."; "The crystals are fine for now, and maybe there will be some special unlocks for getting all of them."). The brass trail finds gave no reward and only echoed the crystals, which do the same job better. They come out of the live game (F1, #1269) and aren't ported further; the curio shelf's layout fix stays. Ports from Place now get a fit check first ([owner calls](agents/owner-calls.md), "Port from Place only what still fits").
 - **The hotbar is cut: one thing in your hands** (2 November, owner, after playing `?proto=onehand`: "No I didn't [miss it] at all. I think in that case we cut it. We can always bring it back if a real gameplay element demands it."). Picking something up replaces what you hold, which lands by you; no slots, no LB, RB or 1-5. What you hold isn't saved.
 - **The ball bump is cut** (2 November): the owner was already unsure of it, and it made the main action conditional. RT and left click use or throw what you hold; with empty hands they do nothing.
 
