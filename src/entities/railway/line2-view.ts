@@ -18,6 +18,7 @@ import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-lin
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
 import { createRailwaySeaGate } from './sea-gate-view.ts';
+import { forgeRailsOffered } from './forge-offer.ts';
 import { createRailwayGlideDevice } from './glide-device-view.ts';
 import { createGateRig, gateEyes } from './gate-rig.ts';
 import { createRailwayFarHead } from './far-head-view.ts';
@@ -1004,7 +1005,11 @@ export async function createRailwayLine2(
       const out: Interactable[] = [...seaGate.targets(p, l), ...glideDevice.targets(p, l)];
       out.push(...boiler.targets());
       const full = state.freeCarry <= 0 ? { blocked: 'Your back is full' } : {};
-      if (l.forge.rack > 0 && state.shed.fitted < 0 && Math.hypot(p.x - RX, p.z - RZ) <= 3)
+      if (
+        l.forge.rack > 0 &&
+        forgeRailsOffered(l.active, state.shed.cradleRails, state.railsCarry) &&
+        Math.hypot(p.x - RX, p.z - RZ) <= 3
+      )
         out.push({
           id: 'railway-forge-rails',
           verb: 'Take rails',
