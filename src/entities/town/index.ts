@@ -16,7 +16,7 @@ registerInteractable(() => active?.targets() ?? NO_TARGETS);
 if (productionRailway && railwayMirror) {
   const loaded = createTownView(railwayRead).then((view) => {
     active = view;
-    setTownView(view.inspect);
+    setTownView(view);
     return spawn({
       kind: 'town',
       mesh: view.root,

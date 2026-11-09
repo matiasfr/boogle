@@ -698,7 +698,7 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
   `dev/playtest/beats.ts`, `docs/game-design/place.md`.
 
 **Steps.**
-- [ ] **K1a.** Port `crystals.ts` (`SPOTS`, the magnet and chime, the glowing shelf row through `crystalPeg`) into the
+- [x] **K1a.** Port `crystals.ts` (`SPOTS`, the magnet and chime, the glowing shelf row through `crystalPeg`) into the
   finds view. The finds store is `boogle.railway-finds.v0:…`, field `crystals`. Mark `crystal found`.
 - [ ] **K1b.** If the owner chooses shared crystals instead, follow "WORLD_NS" above. Use the lockstep-system /
   Server recipe: a field on `Rail`, op `rail.crystal`, server reach validation, prediction, adapter method
@@ -711,6 +711,22 @@ with the forge. If question 1 is "wait for cargo", T6 is skipped and the rows co
 - A second tab still sees its own crystal (personal) or sees it gone (shared).
 
 **Done means.** The seven crystals can be found in production and fill the shelf.
+
+**As built (9 November).** Owner question 2: personal, so K1a only (no `Rail` field, op or `WORLD_NS` bump).
+- **Store:** `src/entities/finds/state.ts` (`createFinds`, `parseFinds`, `startFinds`, `finds()`, `inspectFinds()`),
+  key `FINDS_PREFIX` + `<railwayRoomId>:<pid>`, with `crystals`, `finds`, `secrets` and `hubbed` from the start. Each
+  field is validated on its own (a bad `finds` never costs your crystals). `CRYSTAL_SPOTS` (Place's `SPOTS`) is data in
+  state.ts. F1 and F2 add their `take…`/`has…` methods and events beside `takeCrystal`.
+- **Saved before the show:** the crystal is recorded the moment it starts to fly (as C1's boxes are), so a reload
+  mid-flight keeps it; the stub lights when it lands. The view follows every store change (another tab, a reload).
+- **The shelf:** the town's `state.ts` gained `townShelf()` (set with `setTownView(view)`), so the finds view reaches
+  the shelf without importing the town's view; it puts its row on whichever shelf is mounted. `curio-shelf.ts`'s only
+  change is a C1 fix: a player who owned nothing saw an empty shelf (no dust sheets), since `redraw`'s first call
+  matched its starting key.
+- **Eval:** `dev/look/evals/railway-finds.ts`: `findk=`, `findsact=walk|shelf|reload`, `findsdefer=1`,
+  `findsactor=1` (two players stand a quarter turn apart).
+- **The bot** passes within 4.2 m of crystal 1 (the arch) on its walk in and takes it at 24 s without slowing; the long
+  run (`k1-long`) finished, 111 game minutes against C1's 114, the same longest waits.
 
 ### Job F1: gold finds and the finds board
 

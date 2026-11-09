@@ -89,7 +89,8 @@ export async function createCurioShelf(owner: OwnedView, wardrobe: WardrobeApi, 
   const real = new THREE.Mesh(new THREE.BufferGeometry(), giftMat);
   const cover = new THREE.Mesh(new THREE.BufferGeometry(), sheetMat);
   shelf.add(real, cover);
-  let shown = '';
+  // Null until the first draw: owning nothing ('') still has every shape to put under its sheet.
+  let shown: string | null = null;
   function redraw() {
     const out = ON_SHELF.filter((g) => wardrobe.isOwned(g.id));
     const key = out.map((g) => g.id).join();

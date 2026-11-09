@@ -4,12 +4,14 @@ import { MAX_RAILWAY_CLAIMS, MAX_RAILWAY_PROFILE_BYTES } from '../railway-profil
 export const WORLD_SEEN_KEY = 'boogle.worldSeen';
 type Namespace = { world: string; rail: string };
 const PROFILE_PREFIX = 'boogle.railway-profile.v0.';
-// The wardrobe's prefix is WARDROBE_PREFIX in src/entities/wardrobe/state.ts.
+// The wardrobe's prefix is WARDROBE_PREFIX in src/entities/wardrobe/state.ts; the finds' is FINDS_PREFIX in
+// src/entities/finds/state.ts.
 const ROOM_PREFIXES = [
   'boogle.railway-seen.v0:',
   'boogle.railway-pose.v0:',
   'boogle.railway-wardrobe.v0:',
   'boogle.railway-town.v0:',
+  'boogle.railway-finds.v0:',
 ];
 
 export function staleKeys(keys: string[], marker: string | null, ns: Namespace): string[] {
