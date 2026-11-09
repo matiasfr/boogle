@@ -11,7 +11,7 @@ import { delayedRoom } from '../../world/delayed-room.ts';
 import { createRailwayView, type RailwayView } from './view.ts';
 import { setRailwayView } from './state.ts';
 
-defineKind('railway', { prePhysics: -59, fixedPre: 43, update: 10 });
+defineKind('railway', { prePhysics: -59, fixedPre: 43, update: 10, lateUpdate: 0 });
 let active: RailwayView | null = null;
 registerInteractable(() => active?.targets() ?? NO_TARGETS);
 
@@ -48,6 +48,9 @@ if (productionRailway && railwayMirror) {
       update(ctx) {
         adapter.update(ctx.now);
         view.update(ctx);
+      },
+      lateUpdate() {
+        view.lateUpdate();
       },
       describe: view.inspect,
       dispose() {

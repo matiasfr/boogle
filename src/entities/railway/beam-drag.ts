@@ -33,6 +33,7 @@ export function createBeamDrag(
   const rope = createRope(world, ropeMaterial, 8, 0.055);
   const far = new THREE.Vector3(),
     near = new THREE.Vector3(),
+    ropeEnd = new THREE.Vector3(),
     liftedA = new THREE.Vector3(),
     liftedB = new THREE.Vector3(),
     last = new THREE.Vector3();
@@ -66,13 +67,12 @@ export function createBeamDrag(
       lift = 0;
     },
     /**
-     * anchor: the rope's end on the carrier's load frame; hip: where the trunk's near end hangs; from: where the far end
+     * hip: where the trunk's near end hangs; from: where the far end
      * starts on the first frame (the trunk as it lay); trail: the unit ground direction it settles toward (behind, off
      * the shoulder side); helped: the two shoulders when a friend lifts it, else null.
      */
     update(
       dt: number,
-      anchor: THREE.Vector3,
       hip: THREE.Vector3,
       from: THREE.Vector3,
       trail: THREE.Vector3,
@@ -115,9 +115,7 @@ export function createBeamDrag(
       beam.position.addVectors(a, b).multiplyScalar(0.5);
       d.subVectors(b, a);
       if (d.lengthSq() > 1e-6) beam.quaternion.setFromUnitVectors(Z, d.normalize());
-      // The rope sags when slack (lifted, the hip end rises toward the anchor) and runs straight when it pulls.
-      const span = anchor.distanceTo(a);
-      rope.set(anchor, a, Math.max(0.02, 0.35 * (1 - Math.min(1, span / 1.25))));
+      ropeEnd.copy(a);
       this.grip.lerpVectors(a, b, 0.7);
       this.grip.y += 0.5;
       // The dragging end scuffs a little dust and scrapes now and then while it moves.
@@ -131,6 +129,10 @@ export function createBeamDrag(
           placeSound('beamScrape', far.x, far.z);
         }
       }
+    },
+    /** Draw after Buddy's final animation/squash, so the pulling end stays in the animated mitt. */
+    drawRope(hand: THREE.Vector3) {
+      if (started) rope.set(hand, ropeEnd, 0.02);
     },
     /**
      * The one-comparison float (K1, `&beamcarry=float`): the trunk hovers beside the carrier at shoulder height with a
