@@ -17,10 +17,9 @@ BEVEL = 0.008  # Narrow rack/grille solids must not clamp into zero-area bevel f
 BIG_BEVEL = 0.015  # One segment, same envelope: highlight the large forms, step and chair shells.
 CHAIR_X = (-0.55, 0.55)
 CHAIR_Z = -1.15
-# Seat/back heights above the deck top, in metres. Buddy sits with his feet on the deck, so the seat top is the
+# Seat height above the deck top, in metres. Buddy sits with his feet on the deck, so the seat top is the
 # height of his Driving_Loop hips (MACHINE_CHAIR_SEAT in src/proto/place/machine-model.ts is the same number).
 CHAIR_SEAT = 0.32
-CHAIR_BACK = 0.40
 CHAIR_SLAB = 0.06
 CHAIR_WIDTH = 0.44  # Hands hang beside the hips in Driving_Loop; keep wood inside their sweep.
 CHAIR_DEPTH = 0.46
@@ -148,7 +147,7 @@ def deck_wood(bm):
 
 def chair_wood(bm):
     # A shallow plank on four narrow legs: no side blocks across Buddy's hanging shins.
-    # Preserve the seat top and back edge for Buddy and the smaller station hands.
+    # Plain stools for Buddy and the smaller station hands; preserve the seat top and slab footprint.
     for x in CHAIR_X:
         box(bm, x, DECK + CHAIR_SEAT - CHAIR_SLAB / 2, CHAIR_Z - CHAIR_SETBACK,
             CHAIR_WIDTH, CHAIR_SLAB, CHAIR_DEPTH, BIG_BEVEL)
@@ -156,12 +155,6 @@ def chair_wood(bm):
             for z in (-0.26, 0.02):
                 box(bm, x + side, DECK + (CHAIR_SEAT - CHAIR_SLAB) / 2, CHAIR_Z + z,
                     0.08, CHAIR_SEAT - CHAIR_SLAB, 0.08, BEVEL)
-
-
-def chair_teal(bm):
-    # A short back rest rising CHAIR_BACK over the seat top, on the rear edge.
-    for x in CHAIR_X:
-        box(bm, x, DECK + CHAIR_SEAT + CHAIR_BACK / 2, CHAIR_Z - 0.3, 0.8, CHAIR_BACK, 0.12, BIG_BEVEL)
 
 
 def deck_iron(bm):
@@ -265,7 +258,6 @@ part('chair_wood', (0.32, 0.2, 0.095), chair_wood)
 part('deck_iron', STEEL, deck_iron)
 part('deck_gantry', ORANGE, deck_gantry)
 part('deck_cream', CREAM, deck_cream)
-part('chair_teal', (36 / 255, 86 / 255, 83 / 255), chair_teal)
 part('power_bogie', STEEL, lambda bm: bogie(bm, -GAP, 0.8, 0.57))
 part('deck_bogie', STEEL, lambda bm: bogie(bm, -0.9, 0.45, 0.52))
 for body, zs in [('power', (-GAP - 0.8, -GAP + 0.8)), ('deck', (-1.35, -0.45))]:
