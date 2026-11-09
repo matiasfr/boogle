@@ -101,11 +101,11 @@ export async function createFindsView(store: FindsApi) {
     shelf.shelfGroup.add(row, lit);
     drawRow();
   }
-  // Another tab of this player found one, or a reload: take what the store says, without the show.
+  // Another tab of this player found one, a reload, or a find taken from outside the view: take what the store says,
+  // without the show. One already flying lands as it would.
   owner.cleanup(
-    store.onFinds((e) => {
-      if (e.kind !== 'load') return;
-      for (const [k, c] of items.entries()) c.state = store.hasCrystal(k) ? 2 : c.state === 1 ? 1 : 0;
+    store.onFinds(() => {
+      for (const [k, c] of items.entries()) if (c.state !== 1) c.state = store.hasCrystal(k) ? 2 : 0;
       drawRow();
     }),
   );
@@ -151,13 +151,14 @@ export async function createFindsView(store: FindsApi) {
       if (c.state === 0 && b) {
         const d = Math.hypot(b.position.x - c.x, b.position.z - c.z);
         if (d < SPARKLE_NEAR && Math.random() < dt * 1.5) sparkleAt(c.x, c.y, c.z, 1, 0.7);
-        // Found the moment it starts to come (saved before the show).
-        if (d < MAGNET && Math.abs(b.position.y - c.y) < 4 && store.takeCrystal(k)) {
+        // Found the moment it starts to come (saved before the show; flying first, so the store's echo leaves it be).
+        if (d < MAGNET && Math.abs(b.position.y - c.y) < 4 && !store.hasCrystal(k)) {
           c.state = 1;
           c.t = 0;
           c.fx = c.x;
           c.fy = y;
           c.fz = c.z;
+          store.takeCrystal(k);
           pop(1, 0.5);
           playMark('crystal found', { k, n: store.crystals().length });
         }

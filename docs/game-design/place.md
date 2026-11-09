@@ -739,6 +739,20 @@ Sync: owning it is Personal Local in the wardrobe store, saved with what you wea
 presence `stowaway`, `{ riding: boolean }` (true on a moving deck), or null when it's away; the `wardrobe` presence
 still carries only the clothes. Each tab animates its own copy of a partner's from that flag and their interpolated
 avatar, so where it hops differs a little between tabs. No op or `WORLD_NS` change.
+### Crystals in the live game (9 November 2026, place-retirement K1)
+
+- **Seven crystals**, at Place's seven spots (a lookout, an arch, a river bank, the top of the ridge, behind the old
+  kiln, by the old cart, the far table), the same blue as the far shard, turning and bobbing, with a sparkle now and
+  then once you're within 40 m. Walk within 4.2 m (and 4 m of its height) and it comes to you, slowly then all at once
+  in 0.34 s, and lands with a three-note chime and a burst. A dull stub on the curio shelf's bottom row lights up, in
+  the order you found them. They do nothing yet, award nothing and gate nothing. Mark `crystal found`.
+- **Yours** (owner question 2, 9 November: personal). Each player finds their own seven; a partner still sees theirs
+  where you took yours. A crystal is saved the moment it starts to fly, so a reload mid-flight keeps it.
+- **When pillars come** (open question 19's shared building crystals), these get a distinct name or look, or fold into
+  them (place-retirement designer finding 4). Not now.
+
+Sync: Personal Local, `boogle.railway-finds.v0:<railwayRoomId>:<pid>` (`crystals`; F1's `finds`, F2's `secrets` and
+`hubbed` share the store), pruned by a world bump. No presence key, op or `WORLD_NS` change.
 
 ## Departures from the brief
 
