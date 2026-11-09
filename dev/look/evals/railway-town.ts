@@ -105,6 +105,11 @@ const setCam = () => {
 };
 setCam();
 setTimeout(setCam, 100);
+// `look` frames its own --view after the eval: hold this one through the warm-up unless --cam was given.
+if (query.get('townhold') !== '0') {
+  const hold = setInterval(setCam, 200);
+  setTimeout(() => clearInterval(hold), 6000);
+}
 await wait(600);
 console.log(`TOWN ${JSON.stringify({ at, stand, ...inspectTown(), target: interactTarget()?.id ?? null })}`);
 
