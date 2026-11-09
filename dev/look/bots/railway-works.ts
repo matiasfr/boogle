@@ -100,21 +100,16 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
       // `railPerf`: one real-frame sample aboard a moving train (with the wagon once it is coupled).
       if (row.phase === 1 && !sample && new URLSearchParams(location.search).has('railPerf'))
         sample = (async () => {
-          // As `worksperf` in railway-works-at.ts: the observer makes hardware timing work without `prof=1`.
-          const { hardwareTiming, observeGpu } = await import('../../../src/debug/prof-overlay.ts');
+          // Needs `prof=1` (hardware timing). The counts are read just after a game frame, when renderer.info
+          // still holds that frame's scene pass (as dev/look/perf.ts does).
+          const { hardwareTiming } = await import('../../../src/debug/prof-overlay.ts');
           const { renderer } = await import('../../../src/render/scene.ts');
-          const observer = await observeGpu();
-          try {
-            const timing = await hardwareTiming(3);
-            const calls = renderer.info.render.drawCalls,
-              tris = renderer.info.render.triangles;
-            const gpu = timing.gpu.render.stats;
-            console.log(
-              `RAILWAY MOVING PERF ${JSON.stringify({ wagon: row.wagon, calls, tris, gpu, cpu: timing.cpu })}`,
-            );
-          } finally {
-            observer.stop();
-          }
+          const timing = await hardwareTiming(3);
+          await new Promise((done) => requestAnimationFrame(() => setTimeout(done, 0)));
+          const calls = renderer.info.render.drawCalls,
+            tris = renderer.info.render.triangles;
+          const gpu = timing.gpu.render.stats;
+          console.log(`RAILWAY MOVING PERF ${JSON.stringify({ wagon: row.wagon, calls, tris, gpu, cpu: timing.cpu })}`);
         })();
       return ran && row.phase === 0 && row.at === destination;
     }, `line 2 arrives at stop ${destination} with its rider`);
@@ -208,7 +203,17 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
       await until(() => read().foot === 1, `footing ${trip + 1} on the back`, 30000);
       await ride(HALT.quarry, 0);
       const site = trip < WORKS.stall ? 0 : 1;
-      const to = site === 0 ? STALL_SOCKETS[trip]! : stall;
+      // The set is offered within the stall's reach of its centre, and a socket sits near that edge: come at the
+      // socket from the stall's side, 1.5 m in, so arriving from the halt never stops just outside the reach.
+      const socket = STALL_SOCKETS[Math.min(trip, STALL_SOCKETS.length - 1)]!,
+        inward = Math.hypot(stall.x - socket.x, stall.z - socket.z) || 1;
+      const to =
+        site === 0
+          ? {
+              x: socket.x + ((stall.x - socket.x) / inward) * 1.5,
+              z: socket.z + ((stall.z - socket.z) / inward) * 1.5,
+            }
+          : stall;
       await use(to, /^Set the footing$/, `set footing ${trip + 1}`);
       await until(() => read().foot === 0, `footing ${trip + 1} set`, 30000);
       await settle(`footing ${trip + 1}`);
