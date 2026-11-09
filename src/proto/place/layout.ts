@@ -6,6 +6,7 @@
 import { smoothstep } from '../../math.ts';
 import { SHORE_COAST, SHORE_LANDING } from './shore-layout.ts';
 import { CHOP_CONTACT, CHOP_RESTART } from './chop-timing.ts';
+import { LINE_ORIGIN } from './home-station.ts';
 
 /** Far from today's island, past its soft wall, as the crossing does. */
 // The bank cart has one level resting place on the shoulder, clear of the steep bank.
@@ -191,10 +192,11 @@ export const railY = (l: Line, s: number) => l.y0 + (l.y1 - l.y0) * smoothstep(l
 
 /** Line 1's village end, and the turntable there: line 2 leaves from the same spot. */
 export const TURNTABLE = { x: -82, z: 12, r: 4.8 };
+// Both lines start at LINE_ORIGIN, not TURNTABLE: moving the table (docs/plans/home-station.md) must not reshape them.
 export const LINES = {
   north: makeLine(
     [
-      [TURNTABLE.x, TURNTABLE.z], // straight for its first 36 m: the platform is one straight box
+      [LINE_ORIGIN.x, LINE_ORIGIN.z], // straight for its first 36 m: the platform is one straight box
       [-70, -2],
       [-58, -16],
       [-46, -36],
@@ -213,7 +215,7 @@ export const LINES = {
   ),
   east: makeLine(
     [
-      [TURNTABLE.x, TURNTABLE.z],
+      [LINE_ORIGIN.x, LINE_ORIGIN.z],
       [-70, 24],
       [-58, 36],
       [-40, 38],

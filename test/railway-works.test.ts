@@ -16,8 +16,16 @@ import {
   hash,
 } from './railway-live.ts';
 import { railAccount, railCounts } from '../src/sim/railway.ts';
-import { line2Active, line2Completed, line2Rails, line2Schedule, railCarryMax } from '../src/sim/railway-line2.ts';
+import {
+  line2Active,
+  line2CartStatus,
+  line2Completed,
+  line2Rails,
+  line2Schedule,
+  railCarryMax,
+} from '../src/sim/railway-line2.ts';
 import { forgeRailsOffered } from '../src/entities/railway/forge-offer.ts';
+import { CART_PHASE, cartAlong } from '../src/sim/railway-cart.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE2_BOILER } from '../src/sim/railway-line2-layout.ts';
 import { RAIL_ROCKS, RAIL_STONE, WORKS, WORKS_BREAKER, WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
@@ -299,6 +307,25 @@ test('ready only after fitted and turned; the table holds while the wagon rolls 
   assert.deepEqual([train.wagon, shed.ready], [true, ready]);
   assert.equal(worksStage(w.s), 'wagon');
   assert.equal(invariant(w.s), null);
+});
+// Home's layout B (docs/plans/home-station.md, design review finding 8): the shunt reverses on road 2's buffer stub,
+// over the cart's forge stop. That is safe only while the cart rests at the camp through the whole roll-out.
+test('the cart rests at the camp, serving nothing, from the cradle fitted until the wagon has coupled and settled', () => {
+  const w = railwayAtWorks('cradle-fitted');
+  const atCamp = () => {
+    const c = w.s.line2!.cart;
+    assert.equal(line2CartStatus(w.s), 'off');
+    assert.ok(c.phase === CART_PHASE.REST || c.phase === CART_PHASE.LOAD, `cart phase ${c.phase}`);
+    assert.equal(cartAlong(c, w.t), 0);
+  };
+  atCamp();
+  assert.equal(act(w, 'a', 'rail.turn', { to: 1, revision: w.s.shed!.tableRev }), 1);
+  for (let guard = 0; !w.s.line2!.train[1]!.wagon; guard++) {
+    assert.ok(guard < 4000, 'the wagon couples');
+    atCamp();
+    advanceWorks(w, 1);
+  }
+  for (let t = 0; t < WORKS.rollTicks; t++, advanceWorks(w, 1)) atCamp();
 });
 test('a dropped footing is a pile; it recovers to the Works rack', () => {
   const w = railwayAtWorks('works-lit'),
