@@ -4,7 +4,7 @@
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
 import { dustRing } from '../../render/particle-effects.ts';
-import { placeSound } from '../../render/place-sfx.ts';
+import { placeSound, type PlaceCue } from '../../render/place-sfx.ts';
 import { createRope } from '../../render/gold-rope.ts';
 import { bind } from '../../render/water/live.ts';
 import { beamCarry, BEAM_CARRY_PARAMETERS, type BeamCarryKey } from '../../player/beam-carry-tuning.ts';
@@ -21,9 +21,12 @@ for (const [name, spec] of Object.entries(BEAM_CARRY_PARAMETERS)) {
   );
 }
 
-/** The carried trunk's length (the worn beam model's). */
-export const BEAM_LENGTH = 5.4;
-const RADIUS = 0.24;
+/** A dragged load: its length end to end and its radius (m), and the sounds its far end makes on the ground. */
+export type DragShape = { length: number; radius: number; scrape: PlaceCue; drop: PlaceCue };
+/** The great beam's trunk (the worn beam model's). */
+export const BEAM_SHAPE: DragShape = { length: 5.4, radius: 0.24, scrape: 'beamScrape', drop: 'beamDrop' };
+/** The carried trunk's length. */
+export const BEAM_LENGTH = BEAM_SHAPE.length;
 /** Seconds for a helper's lift (and the drop when they let go). */
 const LIFT_S = 0.3;
 /** Metres of drag between scrapes. */
@@ -37,13 +40,16 @@ const a = new THREE.Vector3(),
   d = new THREE.Vector3();
 
 export type BeamDrag = ReturnType<typeof createBeamDrag>;
-/** One carried beam's drag. `beam` is the worn model's trunk mesh; it is moved into world space under `world`. */
+/** One carried load's drag. `beam` is the worn model's trunk mesh; it is moved into world space under `world`.
+ * `shape` is the load's size and sounds; the great beam's by default. */
 export function createBeamDrag(
   world: THREE.Object3D,
   beam: THREE.Mesh,
   ground: (x: number, z: number) => number,
   ropeMaterial: THREE.Material,
+  shape: DragShape = BEAM_SHAPE,
 ) {
+  const { length: span, radius } = shape;
   const rope = createRope(world, ropeMaterial, 8, 0.055);
   const far = new THREE.Vector3(),
     near = new THREE.Vector3(),
@@ -62,7 +68,7 @@ export function createBeamDrag(
   let started = false,
     lift = 0,
     scrape = 0;
-  const groundAt = (v: THREE.Vector3) => ground(v.x, v.z) + RADIUS;
+  const groundAt = (v: THREE.Vector3) => ground(v.x, v.z) + radius;
   const wrapped = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
   function present(dt: number) {
     target.addVectors(a, b).multiplyScalar(0.5);
@@ -106,11 +112,11 @@ export function createBeamDrag(
     beam.position.copy(centre);
     d.set(Math.sin(yaw) * flat, dy, Math.cos(yaw) * flat).normalize();
     if (d.lengthSq() > 1e-6) beam.quaternion.setFromUnitVectors(Z, d);
-    ropeEnd.copy(centre).addScaledVector(d, -BEAM_LENGTH / 2);
-    grip.copy(centre).addScaledVector(d, BEAM_LENGTH * 0.2);
+    ropeEnd.copy(centre).addScaledVector(d, -span / 2);
+    grip.copy(centre).addScaledVector(d, span * 0.2);
     grip.y += 0.5;
   }
-  /** Pull the far end to `BEAM_LENGTH` from the near end along the line it trails on, resting on the ground, eased
+  /** Pull the far end to the load's `span` from the near end along the line it trails on, resting on the ground, eased
    * toward `trail` (off the shoulder side) so it swings wide on turns but settles out of the follow camera's way. */
   function follow(dt: number, trail: THREE.Vector3) {
     d.set(far.x - near.x, 0, far.z - near.z);
@@ -123,7 +129,7 @@ export function createBeamDrag(
     }
     for (let k = 0; k < 2; k++) {
       const dy = near.y - groundAt(far);
-      const flatLength = Math.sqrt(Math.max(0.25, BEAM_LENGTH * BEAM_LENGTH - dy * dy));
+      const flatLength = Math.sqrt(Math.max(0.25, span * span - dy * dy));
       far.set(near.x + (d.x / length) * flatLength, 0, near.z + (d.z / length) * flatLength);
       far.y = Math.min(near.y, groundAt(far));
     }
@@ -167,8 +173,8 @@ export function createBeamDrag(
         if (d.lengthSq() < 0.04) d.set(far.x - near.x, 0, far.z - near.z);
         d.normalize();
         a.addVectors(helped[0], helped[1]).multiplyScalar(0.5);
-        liftedA.copy(a).addScaledVector(d, -BEAM_LENGTH / 2);
-        liftedB.copy(a).addScaledVector(d, BEAM_LENGTH / 2);
+        liftedA.copy(a).addScaledVector(d, -span / 2);
+        liftedB.copy(a).addScaledVector(d, span / 2);
       }
       follow(dt, trail);
       const s = smooth(lift);
@@ -180,7 +186,7 @@ export function createBeamDrag(
       }
       if (wasLifted > 0 && lift === 0) {
         dustRing(far.x, ground(far.x, far.z), far.z, 10, 1.8, 0.3);
-        placeSound('beamDrop', far.x, far.z);
+        placeSound(shape.drop, far.x, far.z);
       }
       present(dt);
       // The dragging end scuffs a little dust and scrapes now and then while it moves.
@@ -191,7 +197,7 @@ export function createBeamDrag(
         if (!reducedMotion && Math.random() < moved * 4) dustRing(far.x, ground(far.x, far.z), far.z, 2, 0.6, 0.18);
         if (scrape >= SCRAPE_EVERY) {
           scrape = 0;
-          placeSound('beamScrape', far.x, far.z);
+          placeSound(shape.scrape, far.x, far.z);
         }
       }
     },

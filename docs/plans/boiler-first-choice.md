@@ -350,7 +350,8 @@ Step 2 is the guard only and can ship with step 3.
 
 ### Stage B: the rope
 
-- [ ] **4. One drag for two loads (refactor, no behaviour change).**
+- [x] **4. One drag for two loads (refactor, no behaviour change).** The shape's length is `span` inside the factory
+  (`follow` already has a local `length`).
   - `src/entities/railway/beam-drag.ts`: add `DragShape`, `BEAM_SHAPE` and the fifth parameter as in Design; replace
     the module constants `BEAM_LENGTH` and `RADIUS` inside the factory with `shape.length` and `shape.radius`, and the
     two `placeSound` cues with `shape.scrape` and `shape.drop`. Keep `export const BEAM_LENGTH = BEAM_SHAPE.length`.
