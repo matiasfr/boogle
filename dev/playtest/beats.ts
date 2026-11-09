@@ -35,7 +35,29 @@ const BEATS: Record<string, [string, RegExp][]> = {
     ['did something together', /co-?op/],
   ],
 };
-export const beatsOf = (card: string) => BEATS[card] ?? [];
+const RAILWAY_BEATS: [string, RegExp][] = [
+  ['woke the machine', /^woke$/],
+  ['chopped', /^chop$/],
+  ['delivered', /^deposit$/],
+  ...['T1', 'T2', 'T3', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'].flatMap((id): [string, RegExp][] => [
+    [`funded ${id}`, new RegExp(`^stretch funded ${id}$`)],
+    [`laid ${id}`, new RegExp(`^stretch laid ${id}$`)],
+  ]),
+  ['lit the forge', /^forge lit$/],
+  ['gained the proper axe', /^proper axe gained$/],
+  ['gained the hook shot', /^hook shot gained$/],
+  ['pulled on a hook ring', /^hook pulled$/],
+  ['reached Needle Bell summit', /^needle bell summit reached$/],
+  ['pulled the quarry lever', /^quarry lever pulled$/],
+  ['gained the pack', /^pack gained$/],
+  ['called the cart', /^cart called$/],
+  ['rode the cart', /^cart ride$/],
+  ['picked up at the depot', /^depot pick up$/],
+  ['pulled the sea switch', /^sea switch pulled$/],
+  ['pressed the sea switch before Q4', /^sea switch refused$/],
+  ['reached Far Head', /^Far Head reached$/],
+];
+export const beatsOf = (card: string, railway = false) => (railway ? RAILWAY_BEATS : (BEATS[card] ?? []));
 
 export type Place = { name: string; x: number; z: number; r: number };
 export type Sketch = { lines: [number, number][][]; rails: [number, number][][]; places: Place[] };

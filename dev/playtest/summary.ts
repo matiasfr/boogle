@@ -251,6 +251,26 @@ export function summarize(s: Session, others: Session[], places: Place[]): strin
   }
 
   const marks = marksByName(s);
+  const railway = of(s, 'm').filter((e) => e.authority === 'server' || e.authority === 'local');
+  if (railway.length) {
+    out.push('', 'Railway objective timeline (server accepted; local movement/refusals labelled):');
+    for (const e of railway) {
+      const detail = ['station', 'material', 'ring', 'op', 'reason']
+        .map((key) => str(e[key]))
+        .filter(Boolean)
+        .join(', ');
+      out.push(
+        `  ${clock(e.t).padStart(6)}  ${str(e.n)}${detail ? ` (${detail})` : ''}` +
+          `${num(e.by) > 1 ? ` x${num(e.by)}` : ''} [${str(e.authority)}${e.mine === false ? ', teammate' : ''}]`,
+      );
+    }
+    const refusals = new Map<string, number>();
+    for (const e of railway.filter((e) => /refused$/.test(str(e.n)))) {
+      const key = `${str(e.op) || str(e.n)}: ${str(e.reason)}`;
+      refusals.set(key, (refusals.get(key) ?? 0) + 1);
+    }
+    if (refusals.size) out.push(`Refusals by kind: ${[...refusals].map(([key, n]) => `${key} x${n}`).join('; ')}`);
+  }
   out.push('', 'Marks (first at, count):');
   if (!marks.size) out.push('  (none)');
   for (const [name, o] of [...marks.entries()].sort((a, b) => a[1].first - b[1].first))
@@ -280,6 +300,11 @@ export function summarize(s: Session, others: Session[], places: Place[]): strin
   };
   for (const e of of(s, 'prompt')) promptOf(str(e.verb)).shown++;
   for (const e of of(s, 'press')) {
+    if (e.verb === 'nothing in reach')
+      out.push(
+        `  ${clock(e.t)} press with nothing in reach: nearest known prompt ${str(e.nearest) || 'unknown'}` +
+          `${str(e.nearestVerb) ? ` (${str(e.nearestVerb)}, ${num(e.distance)} m)` : ''}; ${str(e.context)}`,
+      );
     const p = promptOf(str(e.verb));
     if (e.ran) p.pressed++;
     else p.blocked.set(str(e.why) || 'blocked', (p.blocked.get(str(e.why) || 'blocked') ?? 0) + 1);
@@ -297,7 +322,7 @@ export function summarize(s: Session, others: Session[], places: Place[]): strin
     out.push('', `Presses: ${list.join(', ')}`);
   }
 
-  const beats = beatsOf(s.card);
+  const beats = beatsOf(s.card, m.railway === true);
   if (beats.length) {
     const did: string[] = [];
     const never: string[] = [];

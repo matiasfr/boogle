@@ -23,6 +23,15 @@
   id, or `--compare a b`) downloads to `.look/playtest/`, prints a summary and draws a heat map.
   A prototype adds beats with `playMark('crate opened', { kind: 'hat' })`, `playObjective(text)` and `playWhere(fn)` from
   `src/proto/mark.ts`; `protoMark` and `protoCount` already reach it. Local.
+  Production railway marks use server confirmations (including acknowledgements of predicted actions) for wake,
+  chopping, material deposits, shared tools, levers, pack, cart calls and depot pickups. Consistent replicated state
+  supplies funding/laying edges for T1–T3 and Q1–Q6 and forge ignition; initial snapshots and refills establish a baseline
+  without claiming historical work. Marks distinguish your actions from teammates'. Hook pulls, summit/Far Head
+  arrivals and cart boarding are Local/Owner observations, labelled separately from server acceptance. Refusals retain
+  action and reason, including the locally blocked sea switch before Q4. Empty interact presses include the nearest
+  previously shown prompt (up to 128 remembered sites), distance and last-prompt age; unknown prompts remain unknown.
+  These small flat marks share the recorder's existing rate, queue and session limits and add no personal data.
+  The CLI prints a railway objective timeline and refusals by kind.
   Files: [src/proto/playdata/record.ts](../../src/proto/playdata/record.ts),
   [server/src/playdata.ts](../../server/src/playdata.ts), [dev/playtest/cli.ts](../../dev/playtest/cli.ts).
 - **Startup hitches.** For the first 20 seconds after loading, at most 120 invisible `startup frame` marks identify
