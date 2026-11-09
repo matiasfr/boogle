@@ -9,6 +9,25 @@ still go to autofix. A red, superseded or cancelled run never authorizes a merge
 compared again; if it moved, the branch receives another update/CI cycle before retrying.
 No force pushes or shared Actions concurrency group that could discard pending ships.
 
+Automerge owns that update/CI continuation in the same job: it waits for the asynchronous branch update,
+records the existing dispatch run IDs, dispatches CI, and polls for a newer dispatch on that exact branch/head.
+It does not rely on a `workflow_run` event from token-dispatched CI. The previous dispatch-and-exit path could
+leave a green refreshed ship open indefinitely when no follow-up event arrived. Discovery and completion share
+a 30-minute deadline per refresh; the job has a 55-minute ceiling and at most five merge/refresh attempts.
+Timeout, API failure, changed head or unsuccessful CI stops without merging. Inspect and rerun CI to retry.
+After success it repeats the PR guards (open, same-repository, main base, same branch/head, non-draft and no
+`no-automerge` label), checks that the latest eligible CI run for the head is still that successful run, then
+compares current main ancestry again. Ship eligibility counts push/dispatch CI, never duplicate PR CI; other
+branches count PR/dispatch CI. A newer run or a pending/failed/cancelled rerun cannot reuse older green evidence.
+
+For two racing ships A and B initially green against M0: if A merges first to M1, B merges M1 into its branch
+to produce B1, dispatches CI for B1 and waits in its existing automerge job. Green B1 re-enters all guards and
+merges only if current main is its ancestor. If another ship moves main to M2 during that wait, B refreshes
+again to B2 and waits for B2 CI; green B1 never authorizes B2. If main moves between the ancestry check and
+the merge request and GitHub rejects the merge, the same refresh/wait/recheck cycle runs. If B's head changes,
+its CI fails, a newer CI run supersedes it, or someone opts out, B stops. Without strict protection, the final
+ancestry-to-merge race described below still applies even after this continuation fix.
+
 Main currently has no branch protection (owner verified GET protection: 404); its ruleset blocks force pushes.
 Automerge requires neither protection nor an extra token. It uses `GITHUB_TOKEN` and `--match-head-commit`,
 without `--admin`. If strict protection is readable and enabled, GitHub adds a final atomic up-to-date guard.
