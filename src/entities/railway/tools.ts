@@ -23,9 +23,6 @@ import { LINE2_PACK } from '../../sim/railway-line2-layout.ts';
 /** Stock units line one has closed after each count of laid rail pairs. */
 const UNITS_LAID = [0];
 for (const pair of linePanels()) UNITS_LAID.push(UNITS_LAID.at(-1)! + pair.stock);
-/** Seconds the device's shaft flares when the jump is found. */
-const FLARE_S = 3;
-
 /** A chest or box is in reach from its own spot: the ground distance the pick already measures to its edge, and about
  * a storey of height, so a prompt never floats up from one far away or on another level. */
 export const CHEST_REACH = 3.4;
@@ -168,10 +165,9 @@ export async function createRailwayTools(
   let charge = true,
     second = false,
     knew = false,
-    flare = 0,
     disposed = false;
   // Only the finder gets the card (docs/brainstorms/coop-abilities.md, option E); everyone else's flourish is
-  // ability-arrival.ts. The device's tall shaft flares for everyone, so far players see where it came from.
+  // ability-arrival.ts. The shared card owns the finder's bounded particle moment.
   const mine = (event: { pid: string }) => event.pid === adapter.inspect().pid;
   const offAccepted = adapter.onAccepted((event) => {
     if (event.accepted <= 0) return;
@@ -189,7 +185,6 @@ export async function createRailwayTools(
         packReveals++;
     }
     if (event.op === 'rail.jump') {
-      flare = FLARE_S;
       if (!mine(event)) return;
       placeSound('pickupJump', deviceAt.x, deviceAt.z);
       if (
@@ -312,12 +307,8 @@ export async function createRailwayTools(
           frames.delete(avatar);
         }
       for (const object of [ring, ring2, core]) object.visible = !state.jump;
-      // The flare: up fast, held, then gone with the device's glow.
-      flare = Math.max(0, flare - dt);
-      const k = flare > 0 ? Math.min(1, (FLARE_S - flare) / 0.25, flare / 1.2) : 0;
-      shaft.visible = !state.jump || k > 0;
-      shaft.scale.set(1 + 14 * k, 1, 1 + 14 * k);
-      shaftMaterial.opacity = 0.1 + 0.6 * k;
+      // Keep the faint unclaimed locator; acquiring the power never expands it into a screen-filling beam.
+      shaft.visible = !state.jump;
       ring.rotation.z = now * 0.0007;
       ring2.rotation.y = now * 0.001;
       core.rotation.y = now * 0.0012;
