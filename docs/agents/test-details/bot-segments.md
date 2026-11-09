@@ -24,7 +24,7 @@ bot beats in `dev/look/segments.ts`, `RAIL_STOPS`):
 `audio-loop|wake|t1-done|t2-funded|T2|T3|jump|forge-lit|Q1|Q2|hook|Q3|Q4|Q5|trains|Q6|pier` (`pier` is the whole route).
 `--from q5-done` (to `trains|Q6|pier`) and `--from trains-on` (to `Q6|pier`) write that seed and run the seeded
 `railway-b5b8-bot.ts` (`railFrom=boiler|q6`, `railStop`); the full bot cannot yet resume from earlier seeds.
-`--players 2` runs both peers (`&player=1` leads, `&player=2` follows) in one fresh room at 5x warp, from fresh, to
+`--players 2` runs both peers (`&player=1` leads, `&player=2` follows) in one fresh room at 5x warp (`--warp-speed 3` when two peers can't hold 5x: the routed check uses 3), from fresh, to
 `wake|t1-done|t2-funded|T2|T3|Q4|Q5|Q6|pier`, and passes when both finish and their mirrored railway hashes agree at every
 server step both sampled. Real inputs only: no recovery teleports. Segment evidence does not prove a fresh full route.
 Read `report.txt`, `verdict.json` and the images even on failure. The full production proof is

@@ -52,7 +52,17 @@ if (matches(/^(src\/net[^/]*\/|src\/world\/(sync|game-world)\.ts$|server\/)/)) {
 }
 // Every route is the production railway bot (dev/look/bots/railway.ts) from a fresh room; --to ends it at a beat.
 if (shared) {
-  browser('Shared simulation or server: two peers through T2', 'playthrough', '--players', '2', '--to', 'T2');
+  // Two peers can't hold the 5x default on the shared Mac (the clock-capacity check fails); 3x passes.
+  browser(
+    'Shared simulation or server: two peers through T2',
+    'playthrough',
+    '--players',
+    '2',
+    '--to',
+    'T2',
+    '--warp-speed',
+    '3',
+  );
   browser('Shared world inputs', 'scenario', 'world-inputs');
 }
 if (render) {
