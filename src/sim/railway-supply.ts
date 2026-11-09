@@ -31,5 +31,5 @@ export const railGrows = (mask: string, k: number) =>
   (Number.parseInt(mask[Math.floor(k / 4)]!, 16) & (1 << (k % 4))) !== 0;
 
 export type RailSupply = { marker: number; ages: number[]; rack: number; produced: number };
-export type SupplyPulse = { marker: number; grow: string; recover: number[]; beam?: number };
+export type SupplyPulse = { marker: number; grow: string; recover: number[]; beam?: number; boiler?: number };
 export type SupplyIntervals = { regrow: number; recover: number };

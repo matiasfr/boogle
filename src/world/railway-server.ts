@@ -37,13 +37,18 @@ import {
   LINE2_SEA,
   LINE2_HOOK,
   LINE2_PACK,
+  LINE2_BOILER,
+  LINE2_OLD_TRAIN,
 } from '../sim/railway-line2-layout.ts';
 import { line2Active, line2GateOpen, line2Completed } from '../sim/railway-line2.ts';
+import { LINE_HALTS } from '../sim/railway-train.ts';
 import { CART_CALL } from '../sim/railway-cart.ts';
 import { RECOVERY_RACK, type SupplyPulse } from '../sim/railway-supply.ts';
 import {
   Account,
   Beam,
+  Boiler,
+  Train,
   Pile,
   RailClock,
   Rail,
@@ -54,6 +59,7 @@ import {
 } from '../sim/railway-world.ts';
 import {
   railApply,
+  railBoilerRelease,
   railBeamPutDown,
   railBeamRelease,
   railBeamStood,
@@ -108,6 +114,10 @@ export const RAIL_ACTIONS = new Set([
   'rail.depotRailTake',
   'rail.pack',
   'rail.cartCall',
+  'rail.boilerTake',
+  'rail.boilerDrop',
+  'rail.boilerFit',
+  'rail.call',
 ]);
 
 /** Whether a well-formed action is in range of its target. Readiness and balances are the rule's, not this. */
@@ -157,10 +167,21 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
       return near(LINE1_AXE_STAND.x, LINE1_AXE_STAND.z, 340);
     case 'rail.beamChop':
       return near(LINE1_GREAT_TREE.x, LINE1_GREAT_TREE.z, 420);
+    case 'rail.boilerTake': {
+      const b = w.get(Boiler, w.single(Boiler))!;
+      return railInt(e.revision) && near(b.x, b.z, LINE2_BOILER.reach);
+    }
+    case 'rail.boilerFit':
+      return railInt(e.revision) && near(LINE2_OLD_TRAIN.x, LINE2_OLD_TRAIN.z, LINE2_OLD_TRAIN.reach);
+    case 'rail.call': {
+      const h = railInt(e.id, LINE_HALTS.length - 1) ? LINE_HALTS[e.id] : undefined;
+      return !!h && height(h.y) && near(h.x, h.z, h.reach);
+    }
     case 'rail.beamTake': {
       const beam = w.get(Beam, w.single(Beam))!;
       return railInt(e.revision) && near(beam.x, beam.z, 420);
     }
+    case 'rail.boilerDrop':
     case 'rail.beamDrop':
       return (
         railInt(e.revision) &&
@@ -197,7 +218,7 @@ export function railValid(w: World, e: RailAction, actor: Actor): boolean {
   return false;
 }
 
-export function install(sync: SyncView, rules: { tune: TuneApi }, replication: Replicator) {
+export function install(sync: SyncView & { roomStep(): number }, rules: { tune: TuneApi }, replication: Replicator) {
   // The railway's state is an E world (src/sim/railway-world.ts); its rules are systems (src/sim/railway-systems.ts).
   let world = createRailwayWorld();
   const touch = (kind: string, id: number | string) => replication.touch(kind, id);
@@ -305,6 +326,11 @@ export function install(sync: SyncView, rules: { tune: TuneApi }, replication: R
       commit();
       return moved;
     },
+    boilerRelease(pid: string, epoch: number, revision: number) {
+      const n = railBoilerRelease(world, pid, epoch, revision);
+      commit();
+      return n;
+    },
     beamRelease(pid: string, epoch: number, revision: number) {
       const n = railBeamRelease(world, pid, epoch, revision);
       commit();
@@ -312,6 +338,7 @@ export function install(sync: SyncView, rules: { tune: TuneApi }, replication: R
     },
     /** The rule tick actions apply at now. */
     tick: () => sync.world.tick,
+    step: () => sync.roomStep(),
     account(pid: string) {
       const id = world.lookup(Account, pid);
       return id === undefined ? undefined : { ...world.get(Account, id)! };
@@ -331,6 +358,11 @@ export function install(sync: SyncView, rules: { tune: TuneApi }, replication: R
       return { active: line2Active(s), completed: line2Completed(s), gateOpen: line2GateOpen(s) };
     },
     // Narrow reads for the host's maintenance (no read model needed).
+    boiler: () => ({ ...world.get(Boiler, world.single(Boiler))! }),
+    train: (k: number) => {
+      const id = world.lookup(Train, k);
+      return id === undefined ? undefined : { ...world.get(Train, id)! };
+    },
     beam: () => ({ ...world.get(Beam, world.single(Beam))! }),
     piles: () => {
       const out: { id: number; x: number; z: number; age: number }[] = [];

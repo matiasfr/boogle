@@ -1,6 +1,6 @@
-// Line two's pinned numeric catalog: the forge, Q1-Q5, the pack chest and the gates' switches and hook device.
+// Line two's pinned numeric catalog: the forge, Q1-Q6, the pack chest and the gates' switches and hook device.
 // Coordinates are world centimetres pinned from Place's layout/tech-layout/ladder (6-7 November 2026);
-// no runtime prototype imports or native trig in lockstep. Q6 onward is not promoted yet.
+// no runtime prototype imports or native trig in lockstep. Q6 is the last.
 import { pairsOf, type LineStation } from './railway-line-layout.ts';
 
 export const RAILS = 2;
@@ -16,7 +16,7 @@ export const LINE2_FORGE = {
   pourTicks: 5,
   turnTicks: 26,
 } as const;
-export type Line2StationId = 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5';
+export type Line2StationId = 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5' | 'Q6';
 /** `bill[1]` is rails. Panels are the station's rails, evenly spaced; `speed` scales the room's laying speed.
  * `depot`: the cart brings its logs to a rack by the frame; `shelf`: it also moves its rails there from the forge rack.
  * `gate`: the frame takes nothing until that gate is down. */
@@ -26,6 +26,7 @@ export type Line2Station = Omit<LineStation, 'id'> & {
   depot: boolean;
   shelf: boolean;
   gate?: 'quarry' | 'sea';
+  feed?: 'train';
 };
 export const LINE2_STATIONS: readonly Line2Station[] = [
   {
@@ -100,6 +101,21 @@ export const LINE2_STATIONS: readonly Line2Station[] = [
     shelf: true,
     gate: 'sea',
   },
+  {
+    id: 'Q6',
+    bill: [32, 32],
+    beam: 0,
+    fromCm: 54600,
+    toCm: 74200,
+    x: 137293,
+    z: -18355,
+    panels: 32,
+    crate: true,
+    speed: 180,
+    depot: true,
+    shelf: true,
+    feed: 'train',
+  },
 ];
 /** The depot's cart brings logs from the camp to a rack by the frame, never past the bill; from Q4 it stops at the
  * forge for rails too (Place: "the cart holds 16 rails"). Its trip and what a load holds: ./railway-cart.ts. `reach`:
@@ -127,3 +143,13 @@ export function line2Panels(station: Line2Station) {
     .flat()
     .map((pair, index) => ({ station: station.id, index, ...pair }));
 }
+
+/** Boiler pickup and camp fit anchors, world cm, pinned from Place. */
+export const LINE2_BOILER = { x: 91900, z: 540, y: 1815, reach: 420 } as const;
+export const LINE2_OLD_TRAIN = { x: 100964, z: -14900, reach: 800 } as const;
+export const LINE2_BOILER_AREA = { x0: 88000, x1: 104000, z0: -17200, z1: 3500, y0: 1000, y1: 4500 } as const;
+export function line2BoilerGround(x: number, y: number, z: number) {
+  const a = LINE2_BOILER_AREA;
+  return x >= a.x0 && x <= a.x1 && y >= a.y0 && y <= a.y1 && z >= a.z0 && z <= a.z1;
+}
+export const LINE2_KIT = { logs: 32, rails: 32 } as const;

@@ -27,7 +27,7 @@ import type { Replicator } from '../../../src/world/replicate-server.ts';
 import type { RailwayResponse } from '../../../src/world/railway-wire.ts';
 
 type Obj = Record<string, unknown>;
-type Session = { sid: string; epoch: number };
+type Session = { sid: string; epoch: number; clockStep: number };
 const object = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 const token = (v: Obj) => railInt(v.epoch, RAILWAY_MAX_INT, 1) && railInt(v.request, RAILWAY_MAX_INT, 1);
 /** Validation facts a client action carries (docs/plans/replication.md, revision 1): where the actor stood
@@ -39,7 +39,7 @@ const position = (v: unknown): v is [number, number, number] =>
 /** The action as the rules see it: only this op's wire shape. The actor's `at`/`ms` are validation facts. */
 export function railwayRequestEdit(e: Obj, epoch: number, request: number): RailAction {
   const clean: Obj = { op: e.op, epoch, request };
-  if (e.op === 'rail.chop' || e.op === 'rail.take' || e.op === 'rail.mine') clean.id = e.id;
+  if (e.op === 'rail.chop' || e.op === 'rail.take' || e.op === 'rail.mine' || e.op === 'rail.call') clean.id = e.id;
   if (e.op === 'rail.chop') {
     clean.yaw = e.yaw;
     clean.collapsed = e.collapsed;
@@ -49,9 +49,19 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
     clean.n = e.n;
   }
   if (['rail.deposit', 'rail.drop', 'rail.take', 'rail.rackTake'].includes(String(e.op))) clean.kind = e.kind;
-  if (['rail.beamTake', 'rail.beamDrop', 'rail.beamDeposit'].includes(String(e.op))) clean.revision = e.revision;
+  if (
+    [
+      'rail.beamTake',
+      'rail.beamDrop',
+      'rail.beamDeposit',
+      'rail.boilerTake',
+      'rail.boilerDrop',
+      'rail.boilerFit',
+    ].includes(String(e.op))
+  )
+    clean.revision = e.revision;
   if (e.op === 'rail.beamDeposit') clean.station = e.station;
-  if (e.op === 'rail.beamDrop' || e.op === 'rail.drop') {
+  if (e.op === 'rail.beamDrop' || e.op === 'rail.boilerDrop' || e.op === 'rail.drop') {
     clean.x = e.x;
     clean.y = e.y;
     clean.z = e.z;
@@ -125,6 +135,13 @@ export function createRailwayRequests({
       const pid = pidOf(from);
       if (!pid) return;
       const current = sessions.get(pid);
+      if (message.t === 'r:clock') {
+        const step = api.step();
+        if (!available() || current?.sid !== from || !railInt(message.at) || step < current.clockStep) return;
+        current.clockStep = step + 6; // at most ten replies/second/session, independent of the echoed client clock
+        send({ t: 'r:clock', to: from, at: message.at, step });
+        return;
+      }
       if (message.t === 'r:resync') {
         // Whole state again, from change tick -1; the mirror reset itself before asking.
         if (replication.has(from)) replication.resync(from);
@@ -137,7 +154,7 @@ export function createRailwayRequests({
         // A new page (or a takeover): a new epoch retires whatever the old one had in flight.
         const epoch = (api.account(pid)?.epoch ?? 0) + 1;
         if (epoch > RAILWAY_MAX_INT || !api.session(pid, epoch)) return state(from, 'full');
-        sessions.set(pid, { sid: from, epoch });
+        sessions.set(pid, { sid: from, epoch, clockStep: 0 });
         send({ t: 'r:session', to: from, epoch, next: 1 });
         return;
       }
