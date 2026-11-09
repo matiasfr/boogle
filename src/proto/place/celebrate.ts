@@ -4,7 +4,7 @@
 // completion beat is the one place for a camera move). Local and cosmetic.
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../../constants.ts';
-import { camConstraints, camForward, me } from '../../player/player.ts';
+import { camConstraints, me } from '../../player/player.ts';
 import { whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
@@ -12,16 +12,16 @@ import { readableIntensity } from '../../render/readable-unlit.ts';
 import { fanfare } from '../minis/common.ts';
 import { SHELLS } from '../net/town-fx.ts';
 import { dustRing } from './pieces.ts';
-import { dismissPointer } from './dismiss-pointer.ts';
+import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 import { scheduleWake, type Waker } from '../../render/wake-presentation.ts';
+import { seated } from './seat.ts';
 
 // ---------------------------------------------------------------- a little timeline
 const queue: { t: number; fn: () => void }[] = [];
 export const after = (t: number, fn: () => void) => void queue.push({ t, fn });
 export const clearMoments = () => {
   queue.length = 0;
-  pull.w = pull.t = 0;
-  pull.on = false;
+  pull.reset();
   shake = 0;
   banner.classList.remove('on');
 };
@@ -95,71 +95,26 @@ export function barrage(cx: number, y: number, cz: number, n: number, gap: numbe
 }
 
 // ---------------------------------------------------------------- the pull-out
-const pull = {
-  on: false,
-  t: 0,
-  dur: 3,
-  w: 0,
-  cut: 1,
-  shot: new THREE.Vector3(),
-  shotTo: new THREE.Vector3(),
-  at: new THREE.Vector3(),
-  pad: false,
-};
-const ease = (u: number) => u * u * (3 - 2 * u);
-const padInteract = () => [...(navigator.getGamepads?.() ?? [])].some((p) => !!p?.buttons[2]?.pressed);
-const stop = () => {
-  if (pull.on && pull.t >= 0.6) pull.cut = Math.min(pull.cut, 0.999);
-};
-addEventListener(
-  'keydown',
-  (e) => {
-    if (pull.on && !e.repeat && e.code === 'KeyE') {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      stop();
-    }
-  },
-  { capture: true },
-);
-const resetTouch = dismissPointer(
-  () => pull.on,
-  () => pull.t >= 0.6,
-  stop,
+const pull = createCameraPullOut(
+  () => false,
+  false,
+  () => !!seated(),
 );
 /** The camera eases out to `shot`, looking at `at`, drifting to `shotTo`. A deliberate press brings it straight back. */
 export function pullOut(shot: THREE.Vector3, shotTo: THREE.Vector3, at: THREE.Vector3, seconds = 3) {
-  if (reducedMotion) return;
-  pull.on = true;
-  resetTouch();
-  pull.t = 0;
-  pull.dur = seconds;
-  pull.cut = 1;
-  pull.shot.copy(shot);
-  pull.shotTo.copy(shotTo);
-  pull.at.copy(at);
-  pull.pad = padInteract();
+  pull.play(shot, shotTo, at, seconds);
 }
-export const pullOn = () => pull.on;
-const fwd = new THREE.Vector3(),
-  aim = new THREE.Vector3(),
-  shotNow = new THREE.Vector3();
+export const pullOn = pull.active;
 let shake = 0;
 /** A little shudder of the view, near something heavy. */
 export const shakeView = (amount: number) => void (shake = Math.max(shake, reducedMotion ? 0 : amount));
-camConstraints.push((look, pos) => {
+camConstraints.push((_look, pos) => {
   if (shake > 0.001) {
     pos.x += (Math.random() - 0.5) * shake;
     pos.y += (Math.random() - 0.5) * shake;
     pos.z += (Math.random() - 0.5) * shake;
   }
-  if (!pull.on || pull.w <= 0) return false;
-  camForward(fwd);
-  shotNow.lerpVectors(pull.shot, pull.shotTo, pull.t / pull.dur);
-  aim.copy(look).addScaledVector(fwd, 8).lerp(pull.at, pull.w);
-  pos.lerp(shotNow, pull.w);
-  look.copy(aim).addScaledVector(fwd, -8);
-  return true;
+  return false;
 });
 
 // ---------------------------------------------------------------- the machine waking
@@ -250,17 +205,5 @@ export function updateMoments(dt: number) {
       shrink: 0.5,
     });
   }
-  if (!pull.on) return;
-  pull.t += dt;
-  const button = padInteract();
-  if (button && !pull.pad) stop();
-  pull.pad = button;
-  if (pull.cut < 1) pull.cut = Math.max(0, pull.cut - dt / 0.14);
-  const out = Math.min(1, pull.t / 0.95),
-    back = Math.max(0, (pull.t - (pull.dur - 0.55)) / 0.55);
-  pull.w = ease(out) * (1 - ease(Math.min(1, back))) * pull.cut;
-  if (pull.t >= pull.dur || pull.cut <= 0) {
-    pull.on = false;
-    pull.w = 0;
-  }
+  pull.update(dt);
 }

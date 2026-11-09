@@ -76,6 +76,7 @@ export async function createRailwayReward(
     },
     targets: () => [...first.targets(), ...second.targets(), ...tools.targets()],
     youGot: reveal.youGot,
+    gettingItem: reveal.gettingItem,
     update(dt: number, now: number) {
       first.update(dt, now);
       second.update(dt, now);

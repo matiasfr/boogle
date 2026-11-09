@@ -20,6 +20,7 @@ import { HOOK_REWARD } from './reward-data.ts';
 import { createRailwaySeaGate } from './sea-gate-view.ts';
 import { createRailwayFarHead } from './far-head-view.ts';
 import { stockSign } from './stock-sign.ts';
+import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 
 /** Rail pairs each stretch lays, one per commit. */
 const STRETCH_PAIRS = LINE2_STATIONS.map((station) => line2Panels(station).length);
@@ -36,6 +37,8 @@ export async function createRailwayLine2(
   /** The railway's one reveal queue (reward.ts): devices show "You got" like the jump device does. */
   youGot: (got: Got) => boolean,
   hookShown?: () => void,
+  rewardBusy: () => boolean = () => false,
+  seated: () => boolean = () => false,
 ) {
   const [layout, rail, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit] = await Promise.all([
     import('../../proto/place/layout.ts'),
@@ -53,6 +56,23 @@ export async function createRailwayLine2(
   ]);
   const { flat } = flatMod;
   const ox = layout.ORIGIN.x;
+  // The same pull-out as Place's glider reveal, now owned by this view and queued behind its reward cards.
+  const switchCamera = createCameraPullOut(rewardBusy, true, seated);
+  owner.cleanup(() => switchCamera.dispose());
+  let switchKind: 'sea' | 'quarry' | null = null;
+  function showSwitch(kind: 'sea' | 'quarry') {
+    switchKind = kind;
+    const gate = tech.GATES[kind];
+    const source = kind === 'sea' ? tech.SEA_SWITCH : tech.LEVER;
+    const from = new THREE.Vector3(source.x + ox - 12, source.y + 14, source.z + 22);
+    const to = new THREE.Vector3(
+      gate.x + ox - (kind === 'sea' ? 12 : 18),
+      gate.y + (kind === 'sea' ? 12 : 16),
+      gate.z + (kind === 'sea' ? 16 : 24),
+    );
+    const focus = new THREE.Vector3(gate.x + ox, gate.y + 2.5, gate.z);
+    switchCamera.play(from, to, focus, 3.2, kind === 'sea' ? 1.2 : 3.2);
+  }
   const quarry = layout.LINKS[1]!;
   const geometries: THREE.BufferGeometry[] = [];
   const materials: THREE.Material[] = [];
@@ -501,6 +521,8 @@ export async function createRailwayLine2(
     pouring = 0,
     pourGeneration = 0;
   function restore() {
+    switchCamera.reset();
+    switchKind = null;
     deposits = [];
     const l = l2();
     litShown = l?.forge.lit ?? -1;
@@ -545,6 +567,7 @@ export async function createRailwayLine2(
     const l = l2();
     if (!l) return;
     seaGate.accepted(event);
+    if (event.op === 'rail.seaSwitch' && event.pid === state.pid) showSwitch('sea');
     if (event.op === 'rail.forgeTake') {
       for (let n = 0; n < event.accepted - (event.returned ?? 0); n++)
         deposits.push({
@@ -581,6 +604,7 @@ export async function createRailwayLine2(
       return;
     }
     if (event.op === 'rail.lever') {
+      if (event.pid === state.pid) showSwitch('quarry');
       slabT = 0;
       whistle(G.x + ox, G.z);
       clank(lever.x + ox, lever.z);
@@ -648,6 +672,7 @@ export async function createRailwayLine2(
     const e = c.event;
     if (!l) return;
     seaGate.corrected(c);
+    if ((e.op === 'rail.seaSwitch' && !l.sea) || (e.op === 'rail.lever' && !l.lever)) switchCamera.cancel();
     if (e.op === 'rail.lever') {
       clank(lever.x + ox, lever.z);
       return;
@@ -773,6 +798,7 @@ export async function createRailwayLine2(
       wasWorking = working();
     },
     update(dt: number) {
+      switchCamera.update(dt);
       state = adapter.inspect();
       const l = l2();
       if (!l) return;
@@ -1021,6 +1047,7 @@ export async function createRailwayLine2(
       return {
         working: working(),
         ...seaGate.inspect(),
+        switchCamera: { ...switchCamera.inspect(), kind: switchKind },
         ...farHead.inspect(),
         head: visualHead,
         targetHead,

@@ -14,100 +14,123 @@ import { railMaxDuration } from '../../src/sim/railway-line.ts';
 import { railwayCheck, railwayInvariant } from '../../src/sim/railway-world.ts';
 import { railCounts } from '../../src/sim/railway.ts';
 import { LINE2_FORGE, LINE2_PACK, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
+import { line2Active, line2SeaOpen } from '../../src/sim/railway-line2.ts';
 import { CART, CART_CALL, CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
 import { worldOf } from '../../test/railway-live.ts';
 import { railwayAtQ4, railwayAtQ5 } from '../../test/helpers/railway-q2.ts';
 
 type Obj = Record<string, unknown>;
-test('line host: the sea switch judged at the summit; Q5 behind it; sea survives a restart', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-q5-'));
-  const store = createStore({ dataDir: dir, maxRooms: 2 });
-  await store.init();
-  let now = 1800000000000;
-  const sent: Obj[] = [];
-  const create = () => {
-    const value = createRailwayWorldHost({
-      roomId: railwayRoomId('line-host-q5'),
-      store,
-      tick: false,
-      now: () => now,
-      pidOf: () => 'a',
-    });
-    value.onSend((message) => sent.push(message));
-    return value;
-  };
-  let host = create();
-  const ticks = async (n: number) => {
-    for (let i = 0; i < n; i++) {
-      now += 100;
-      host.step(0.1);
-    }
-    await host.sync.whenDurable();
-  };
-  try {
-    await host.whenReady();
-    const w = railwayAtQ5('q4-done');
-    while (host.sync.world.tick <= w.t) await ticks(1);
-    host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
-    host.rules.railway.touchAll();
-    host.deliver({ t: 'r:open' }, 's1');
-    await ticks(3);
-    const getSession = () => {
-      const session = sent.findLast((m) => m.t === 'r:session' && m.to === 's1');
-      assert.ok(session);
-      return session;
+for (const early of [true, false]) {
+  test(`line host: summit pull ${early ? 'before' : 'after'} Q4 survives a restart; Q5 respects the active stretch`, async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-q5-'));
+    const store = createStore({ dataDir: dir, maxRooms: 2 });
+    await store.init();
+    let now = 1800000000000;
+    const sent: Obj[] = [];
+    const create = () => {
+      const value = createRailwayWorldHost({
+        roomId: railwayRoomId('line-host-q5'),
+        store,
+        tick: false,
+        now: () => now,
+        pidOf: () => 'a',
+      });
+      value.onSend((message) => sent.push(message));
+      return value;
     };
-    let session = getSession();
-    let request = Number(session.next) - 1;
-    const edit = async (e: Obj, at: [number, number, number]) => {
-      now += 1000;
-      host.deliver(
-        { t: 'r:edit', e: { ...e, epoch: Number(session.epoch), request: ++request, at, ms: now - 1800000000000 } },
-        's1',
-      );
+    let host = create();
+    const ticks = async (n: number) => {
+      for (let i = 0; i < n; i++) {
+        now += 100;
+        host.step(0.1);
+      }
+      await host.sync.whenDurable();
+    };
+    try {
+      await host.whenReady();
+      const w = early ? railwayAtQ4() : railwayAtQ5('q4-done');
+      while (host.sync.world.tick <= w.t) await ticks(1);
+      host.rules.railway.world().load(JSON.parse(JSON.stringify(worldOf(w.s).snapshot())), railwayCheck);
+      host.rules.railway.touchAll();
+      host.deliver({ t: 'r:open' }, 's1');
       await ticks(3);
+      const getSession = () => {
+        const session = sent.findLast((m) => m.t === 'r:session' && m.to === 's1');
+        assert.ok(session);
+        return session;
+      };
+      let session = getSession();
+      let request = Number(session.next) - 1;
+      const edit = async (e: Obj, at: [number, number, number]) => {
+        now += 1000;
+        host.deliver(
+          { t: 'r:edit', e: { ...e, epoch: Number(session.epoch), request: ++request, at, ms: now - 1800000000000 } },
+          's1',
+        );
+        await ticks(3);
+        assert.equal(railwayInvariant(host.rules.railway.railway), null);
+        return host.rules.railway.outcome('a', Number(session.epoch), request)!;
+      };
+      const q5 = LINE2_STATIONS[4]!;
+      const frame: [number, number, number] = [q5.x, 2400, q5.z];
+      const summit: [number, number, number] = [101180, 10240, -600];
+      assert.equal((await edit({ op: 'rail.seaSwitch' }, [101180, 2400, -600])).status, 'rejected');
+      assert.equal((await edit({ op: 'rail.seaSwitch' }, frame)).status, 'rejected');
+      assert.equal(host.rules.railway.railway.line2!.sea, false);
+      // Rack logs give the actor something real to deposit on either side of the pull.
+      const active = LINE2_STATIONS[early ? 3 : 4]!;
+      const rack: [number, number, number] = [active.x, 2400, active.z];
+      await ticks(3 * cartCycleTicks(early ? 3 : 4));
+      assert.equal((await edit({ op: 'rail.depotTake' }, rack)).status, 'accepted');
+      const deposit = { op: 'rail.deposit', station: 'Q5', n: 1, kind: 0 };
+      assert.equal((await edit(deposit, frame)).status, early ? 'noop' : 'accepted');
+      assert.equal(host.rules.railway.railway.line2!.jobs[4]!.start, -1);
+      if (!early) {
+        await host.close({ save: true });
+        host = create();
+        await host.whenReady();
+        assert.equal(host.rules.railway.railway.line2!.sea, false);
+        assert.equal(host.rules.railway.railway.line2!.jobs[4]!.stock, 1, 'gated stock survives restart');
+        host.deliver({ t: 'r:open' }, 's1');
+        await ticks(3);
+        session = getSession();
+        request = Number(session.next) - 1;
+      }
+      assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'accepted');
+      assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'noop');
+      assert.equal(line2SeaOpen(host.rules.railway.railway), true);
+      assert.equal((await edit(deposit, frame)).status, early ? 'noop' : 'accepted');
+      if (early) {
+        const carry = host.rules.railway.account('a')!.carry;
+        assert.ok(carry > 0, 'a real log load was refused');
+        assert.equal(
+          (await edit({ op: 'rail.drop', n: carry, kind: 0, x: frame[0], y: frame[1], z: frame[2] }, frame)).status,
+          'accepted',
+        );
+        assert.equal((await edit({ op: 'rail.depotRailTake' }, rack)).status, 'accepted');
+        assert.ok(host.rules.railway.account('a')!.rails! > 0);
+        assert.equal((await edit({ op: 'rail.deposit', station: 'Q5', n: 1, kind: 2 }, frame)).status, 'noop');
+        const q5 = host.rules.railway.railway.line2!.jobs[4]!;
+        assert.deepEqual([q5.stock, q5.railStock, q5.start], [0, 0, -1]);
+      }
+      const rails = railCounts(host.rules.railway.railway).rails!;
+      assert.equal(rails.total, rails.poured);
+      await host.close({ save: true });
+      host = create();
+      await host.whenReady();
+      assert.equal(host.rules.railway.railway.line2!.sea, true);
+      assert.equal(line2SeaOpen(host.rules.railway.railway), true);
+      assert.equal(line2Active(host.rules.railway.railway), early ? 3 : 4, 'restart cannot advance the active stretch');
+      const restored = railCounts(host.rules.railway.railway).rails!;
+      assert.equal(restored.total, rails.total);
+      assert.equal(restored.total, restored.poured);
       assert.equal(railwayInvariant(host.rules.railway.railway), null);
-      return host.rules.railway.outcome('a', Number(session.epoch), request)!;
-    };
-    const q5 = LINE2_STATIONS[4]!;
-    const frame: [number, number, number] = [q5.x, 2400, q5.z];
-    const summit: [number, number, number] = [101180, 10240, -600];
-    assert.equal((await edit({ op: 'rail.seaSwitch' }, [101180, 2400, -600])).status, 'rejected');
-    assert.equal((await edit({ op: 'rail.seaSwitch' }, frame)).status, 'rejected');
-    assert.equal(host.rules.railway.railway.line2!.sea, false);
-    // Rack logs give the actor something real to deposit on either side of the pull.
-    await ticks(3 * cartCycleTicks(4));
-    assert.equal((await edit({ op: 'rail.depotTake' }, frame)).status, 'accepted');
-    const deposit = { op: 'rail.deposit', station: 'Q5', n: 1, kind: 0 };
-    assert.equal((await edit(deposit, frame)).status, 'accepted');
-    assert.equal(host.rules.railway.railway.line2!.jobs[4]!.start, -1);
-    await host.close({ save: true });
-    host = create();
-    await host.whenReady();
-    assert.equal(host.rules.railway.railway.line2!.sea, false);
-    assert.equal(host.rules.railway.railway.line2!.jobs[4]!.stock, 1, 'gated stock survives restart');
-    host.deliver({ t: 'r:open' }, 's1');
-    await ticks(3);
-    session = getSession();
-    request = Number(session.next) - 1;
-    assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'accepted');
-    assert.equal((await edit({ op: 'rail.seaSwitch' }, summit)).status, 'noop');
-    assert.equal((await edit(deposit, frame)).status, 'accepted');
-    const rails = railCounts(host.rules.railway.railway).rails!;
-    assert.equal(rails.total, rails.poured);
-    await host.close({ save: true });
-    host = create();
-    await host.whenReady();
-    assert.equal(host.rules.railway.railway.line2!.sea, true);
-    const restored = railCounts(host.rules.railway.railway).rails!;
-    assert.equal(restored.total, rails.total);
-    assert.equal(restored.total, restored.poured);
-    assert.equal(railwayInvariant(host.rules.railway.railway), null);
-  } finally {
-    await host.close({ save: false }).catch(() => {});
-    await fs.rm(dir, { recursive: true, force: true });
-  }
-});
+    } finally {
+      await host.close({ save: false }).catch(() => {});
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+}
 test('line host keeps a departed carrier the beam through its grace, then grounds it; a restart keeps it too', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-'));
   const store = createStore({ dataDir: dir, maxRooms: 2 });

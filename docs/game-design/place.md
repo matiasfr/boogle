@@ -36,8 +36,8 @@ visible. These are Local views over existing accepted stock; supply, bills, capa
 Serves DESIGN.md **7. Telegraph everything** and **11. Show, don't tell**.
 
 **Q5 rules and the sea switch (8 November; B4 job A).** Production line two now reaches Q5: 24 logs and 24 rails
-fund the 260 m trestle from the rim to Far Head (286 → 546 m, 96 rail pairs). Its frame waits for the Server-kind
-`rail.seaSwitch`: Q4 must be complete, and the server checks the actor's reach and height at Needle Bell's summit
+fund the 260 m trestle from the rim to Far Head (286 → 546 m, 96 rail pairs). Laying waits for the Server-kind
+`rail.seaSwitch`: the first reached summit pull opens it, and the server checks the actor's reach and height at Needle Bell's summit
 (world 1011.8, 102.4, −6 m). Your pull is predicted; a friend's earlier pull stands without a correction effect.
 The cart serves Q5 as soon as Q4 completes, even with the gate up; its 24 rails take two trips of 16 and 8, moved
 from the forge. Leftover shelf rails return to the forge when Q5 funds. The sea flag and fifth station persist
@@ -468,8 +468,8 @@ The production railway shows eight rings from the start: p2, t0–t5 and the sum
 
 ### Production Q5, the sea gate and Far Head (8 November 2026)
 
-Job A supplies Q5's Server state: the summit switch needs Q4 complete, opens the sea gate and permits Q5's
-laying. The active Q4/Q5 frame accepts logs and rails before its gate is down (owner playtest call, 8 November).
+Job A supplies Q5's Server state: the summit switch opens the sea gate whenever reached; Q5's
+24-log/24-rail bill still waits for Q4 to complete and Q5 to become active. The active Q4/Q5 frame accepts logs and rails before its gate is down (owner playtest call, 8 November).
 Hand-carried and depot-cart materials stock the bill; a full gated frame keeps its physical stock and counters,
 with “Pull the lever / switch to start”. The cart's “More coming” tag hides when the bill is full.
 Pulling funds a full bill; otherwise the last deposit after the pull funds it.
@@ -516,6 +516,10 @@ The worn equipment uses the same pure builders and attachment transforms as [Bud
 3. **The glider** (LB, Q, or the touch button: a toggle). On Far Head's broad landing at local `(367, -169)`, reached by a six-metre-wide walkable ramp after the existing 24-log/24-rail sea crossing. The landing is eight metres above the new track, giving an immediate short glide onto the route home. Pickup requires the crossing complete; no elapsed-time gate. Jump and hook keep their existing placements. Toggle in the air: 10 m/s at full stick, 3.2 m/s down moving or not, 18 m/s² up to speed, 12 m/s² stopping when you let go, heading up to 360 degrees a second, opening in 0.1 s from any fall, closing keeps your velocity. It never gives height back and has no boost. Landing, water or sitting closes it. The camera eases to Breath of the Wild's normal framing, 5.2 m and 50 degrees (`&glidecam=pull` or `off` to compare). The glyph shows under you if you're falling with it shut, until you've flown twice.
 
 **Two gates on the line, both slabs across the track bed.** You can walk round one; the machine can't. Its frame stocks logs and rails while the slab is up, and waits for the pull before laying. _The quarry:_ a chain runs from the slab up to a lever on a ledge 2.2 m high, banded in the devices' teal (**Pull**). _The rim, before the sea:_ dark posts lead from the slab back to the tower. A separate summit switch (**Pull**) sends light down them and drops the slab, without granting the glider. The same hook rings provide the return descent. Building the sea crossing then reaches the glider; its reward is dismissed before the immediate glide home, and the distant-island reveal remains later at the pier. The `solo-input-hud` branch owns reward/camera sequencing; this change removes the gate/pickup coupling without duplicating its queue. Optional balcony and sea-stack routes remain accessible after earning the glider, with their existing missed-prize rules. The owner's 21–24 minute range is diagnostic only; no bill, movement speed or delay was added to meet it.
+
+The first accepted summit Pull opens the sea gate immediately, even before Q4 (owner, 8 November; [puzzle order](../brainstorms/puzzle-order.md), suggestion 1). There is no jam or refusal line. The teal handle pivots at the drum's axle and pulls down toward the summit approach, holding that pose after reload. The server still checks the summit position; Q5 can take materials and fund only when it is the active stretch after Q4. This remains true with gated filling: a closed gate may hold an active frame's construction, but never permits deliveries to an inactive stretch. Existing saved sea flags remain valid; no saved shape or namespace changes.
+
+The puller's summit switch and quarry lever each queue a 3.2-second Local camera move toward their gate, using Place's shared celebration pull-out and the railway's reward-card queue. Other players see only the world opening. The move waits until all reward cards are dismissed, blends back to the ordinary camera behind Buddy, yields to any new keyboard, pointer, wheel or controller input, and is cancelled in a seat or by a view reset. Reduced motion skips the camera move. Gate state, lights and handle motion never wait for a camera or reward card.
 
 Both sealed gates have paired stone leaves, recessed courses, pale edge strips and a brass circular seal over dim teal. The relief is merged into the existing face mesh, with a faint fill in shadow; no additional draw or light.
 

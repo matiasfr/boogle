@@ -3,7 +3,7 @@
 // action it applies; a client runs railPredict on a scratch copy of its mirror with the very same railApply.
 //
 //   RAIL_PREDICTED                    the ops a client predicts (chop, mine, take, rack take, drop, deposit, forge,
-//                                     depot and shelf takes, wake, lever, pack); the rest wait for the server as in R1a
+//                                     depot and shelf takes, wake, lever, summit switch, pack); the rest wait for the server as in R1a
 //   railwayOf(world, into?)           the read model of a world, linked to it (a mirror's confirmed state, a clone's)
 //   railPredict(s, pid, e, tick)      apply e to s's world (a clone) as the server would at tick, keeping thresholds for the
 //                                     server: a bill it completes shows full but is funded only when confirmed, a forge it

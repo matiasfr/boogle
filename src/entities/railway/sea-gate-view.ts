@@ -8,6 +8,7 @@ import { LINE2_SEA } from '../../sim/railway-line2-layout.ts';
 import { clank, whistle } from '../../render/machine-sfx.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
 import { playMark } from '../../proto/mark.ts';
+import { uiSound } from '../../ui/ui-sound.ts';
 
 type Line2 = NonNullable<ReturnType<RailwayAdapter['inspect']>['line2']>;
 type Deps = {
@@ -72,10 +73,27 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
     ]),
   );
   drum.position.copy(at);
-  const handle = mesh(new THREE.BoxGeometry(0.18, 1.2, 0.18), glow);
-  handle.position.y = 1.4;
+  // The shaft turns at the drum's axle, rather than around the middle of the shaft.
+  // From the east-side landing it starts leaning away, then pulls down toward Buddy.
+  const READY = 0.65,
+    PULLED = -0.95;
+  const handle = new THREE.Group();
+  handle.position.y = 0.9;
+  handle.add(mesh(new THREE.BoxGeometry(0.18, 1.1, 0.18).translate(0, 0.55, 0), glow));
+  const grip = mesh(new THREE.BoxGeometry(0.36, 0.22, 0.36));
+  grip.position.y = 1.1;
+  handle.add(grip);
   drum.add(handle);
+  const axle = mesh(new THREE.BoxGeometry(0.3, 0.22, 0.65));
+  axle.position.y = 0.9;
+  drum.add(axle);
   owner.add(drum); // Deliberately no switch collider at the hook landing.
+  let refusal = 1;
+  function refuse() {
+    refusal = 0;
+    uiSound('deny');
+    clank(at.x, at.z);
+  }
   const capMat = readableUnlit(new THREE.MeshBasicNodeMaterial({ color: '#ffffff' }));
   const postGeo = new THREE.BoxGeometry(0.5, 2.6, 0.5),
     capGeo = new THREE.OctahedronGeometry(0.22);
@@ -130,19 +148,23 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
     },
     corrected(c: RailwayCorrection) {
       if (c.event.op !== 'rail.seaSwitch') return;
-      clank(at.x, at.z);
+      refuse();
       slabT = lightT = -1;
     },
     restore(l: Line2) {
       slabT = lightT = -1;
       solid(l);
       slab.position.y = l.seaOpen ? down : up;
-      handle.rotation.z = l.sea ? -0.7 : 0.7;
+      handle.rotation.z = l.sea ? PULLED : READY;
+      refusal = 1;
+      drum.rotation.z = 0;
       drawCaps(l.sea ? tech.POSTS.length : 0);
     },
     update(dt: number, l: Line2) {
       solid(l);
-      handle.rotation.z += ((l.sea ? -0.7 : 0.7) - handle.rotation.z) * Math.min(1, dt * 10);
+      refusal = Math.min(1, refusal + dt / 0.55);
+      drum.rotation.z = Math.sin(refusal * Math.PI * 6) * (1 - refusal) * 0.12;
+      handle.rotation.z += ((l.sea ? PULLED : READY) - handle.rotation.z) * (1 - Math.exp(-dt * 10));
       if (slabT >= 0) {
         slabT += dt;
         const u = Math.min(1, slabT / 1.5);
@@ -163,18 +185,23 @@ export function createRailwaySeaGate(adapter: RailwayAdapter, owner: OwnedView, 
           verb: 'Pull',
           at: target,
           run: () => {
-            if (l.completed < 4) {
-              playMark('sea switch refused', { reason: 'before Q4', authority: 'local' });
-              clank(at.x, at.z);
-              return;
+            if (!adapter.pullSeaSwitch()) {
+              playMark('sea switch refused', { reason: 'not accepted locally', authority: 'local' });
+              refuse();
             }
-            void adapter.pullSeaSwitch();
           },
         },
       ];
     },
     inspect: () => ({
-      sea: { x: at.x, y: at.y, z: at.z, pulled: !!adapter.inspect().line2?.sea },
+      sea: {
+        x: at.x,
+        y: at.y,
+        z: at.z,
+        pulled: !!adapter.inspect().line2?.sea,
+        handleAngle: handle.rotation.z,
+        refusal,
+      },
       seaGateSolid: !!body,
     }),
   };
