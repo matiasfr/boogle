@@ -62,7 +62,7 @@ The same finite ordinary trees, eight-log back, 24-log first frame, wake animati
 
 **Keeping your load (6 November evening; owner: "you keep your load, or it goes down where you stood; you're never pulled back").** Hiding the tab, a reload or a dropped link no longer takes anything from you. While the connection is gone the world stays as you last saw it (your carried logs stay on your back, a laying machine keeps laying) and your actions wait; when it is back, the world eases to the current state instead of rebuilding. The great beam stays yours while you are away, up to three minutes (`railway.beamGraceS`): come back in time and you are still carrying it. Stay away longer and it lies on the ground where you last stood, ready to pick up again; a beam you put down anywhere on line one's ground stays there too, instead of going back to the great tree. One left out of everyone's reach still returns to the tree after 21 minutes. Serves DESIGN.md 8 (Designed for drop-in, drop-out).
 
-The original opening terrain, village/camps, forge scaffold, signs and locals share their render constructors. Interiors, discoveries, telescope interaction, later town growth and forge work are not promoted. The former local/co-op save descriptions below do not describe production T1: production never imports their saves. Personal return poses use the original ground/footprint safety policy and cadence under a separate namespace/room/pid key. Solo and two-player T1, one personal claim each, standing on track and a solo layer ride passed real-input broker runs. Browser reload and complete opening parity remain unverified. See the [slice record](../plans/production-core.md#slice-2-branch-record-5-november-2026-technical-proofs-in-progress) for technical evidence and departures; no pacing retune is implied.
+The original opening terrain, village/camps, forge scaffold, signs and locals share their render constructors. Interiors, discoveries, later town growth and forge work are not promoted. The telescope and the buoys are (below, after Far Head). The former local/co-op save descriptions below do not describe production T1: production never imports their saves. Personal return poses use the original ground/footprint safety policy and cadence under a separate namespace/room/pid key. Solo and two-player T1, one personal claim each, standing on track and a solo layer ride passed real-input broker runs. Browser reload and complete opening parity remain unverified. See the [slice record](../plans/production-core.md#slice-2-branch-record-5-november-2026-technical-proofs-in-progress) for technical evidence and departures; no pacing retune is implied.
 
 **The production forge reads finished (6 November evening playtest).** Its bill stands on the frontage clear above the wall tops and out past the scaffold poles, so the second bill's walls never hide the count. Lit, it keeps the prototype's furnace opening in the front boards, so the glowing mouth shows; the chimney smokes; and each rail the server pours flies out of the mouth onto the rack, where the rails stay visible until taken. The roof still waits for trains, as designed. Every receiver's feeder bed is fitted to its 0.7 m span and collider, so it no longer runs back through the receiver's side. Local presentation over the mirrored forge; serves DESIGN.md 7 (Telegraph everything) and "Machines show their work physically".
 
@@ -145,15 +145,21 @@ An island about 440 m across, 1 km east of today's, in the crossing's sea. A Y-s
 and a river at the bottom, splits it into three lobes: the village (west, 18 m), the timber camp (north ridge, 30 m) and the
 quarry (east table, 24 m). Needle Bell, a leaning 105 m spire, stands where the gorge forks. Two low footbridges cross the
 river. Past the quarry, across about 170 m of sea, is **Far Head**, a low headland you can't walk to until the line gets there. Across the sea to the north, about a kilometre out and out of reach, stands a dark island with a broken ring on it
-and a bright shard in the ring's middle. Two physical things point at it: a line of orange buoys straight out from the end of the pier, and an old brass telescope on the ridge's top, aimed at it; **Look through it** (Interact) flies the view out along the barrel, and a deliberate press brings you back.
+and a bright shard in the ring's middle. Two physical things point at it: a line of orange buoys straight out from the end of the pier, and an old brass telescope on the ridge's top, aimed at it; **Look through it** (Interact).
 
-The branch experiment `?proto=place&telescope=v2` cuts to one persistent authored railway/ring composition,
-resetting the camera and zoom on every visit. The view is fixed: it never pans (owner, 6 November); +/−, shoulders or
-the onscreen buttons zoom.
-Interact, Escape, pad B/Menu or **Step back** exit immediately. The view takes local input while the world continues.
-The cut is immediate and nothing drifts, so reduced motion needs no variant. No shared state or friend-following: existing construction and remote poses remain the scene's
-owners. Tuning lives in `src/proto/place/telescope.ts`. Without `telescope=v2`, existing behavior is unchanged.
-The [brief](../brainstorms/telescope.md) remains proposed; recurrence/fun and devices need the owner's playtest.
+**The lookout in the live game (job F3, 9 November; `src/entities/lookout/`).** Both stand in production with no flag.
+Seven orange buoys bob in a line from where the pier ends towards Ring Island, 62 m apart, the last about 20 m off its
+waterline (Place had twelve; on the production map the last five stood inside the island's hills). The telescope stands on
+the ridge's top at Place-local (-15, -207), 15 m east of Place's spot, which was among pines that blocked the view. Its
+barrel points where its view looks. **Look through it** cuts to the one fixed view from the eyepiece: Ring Island, ring and
+shard left of centre, and the buoys as small orange dots running in from the right towards it (2× makes them plain). The
+pier itself is just off the right edge, so this view doesn't yet show construction changing (the brief's recurrence test).
+Camera and zoom reset on every visit. The view never pans (owner, 6 November; the live game has neither the v1 fly-out nor `v=pan`); +/−,
+shoulders or the onscreen buttons zoom up to 2×. Interact, Escape, pad B/Menu or **Step back** exit immediately. The view
+takes local input while the world continues. The cut is immediate and nothing drifts, so reduced motion needs no variant.
+Local only: no shared state or friend-following; construction and remote poses remain the scene's owners. Tuning is
+`telescopeTuning` in `src/entities/lookout/view.ts`. The [brief](../brainstorms/telescope.md) remains proposed;
+recurrence/fun needs the owner's playtest. `?proto=place` keeps its own copy until D1.
 
 ## The run
 
