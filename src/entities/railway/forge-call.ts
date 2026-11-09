@@ -63,8 +63,10 @@ export function createForgeCall(at: { x: number; y: number; z: number }, owner: 
         at.y + 2 + up * PLUME.height,
         at.z + Math.cos(i * 1.7 + clock * 0.5) * 0.5 * u,
       );
-      const gap = line.closestPointToPoint(p, true, near).distanceTo(p) - r;
-      const k = Math.min(1, Math.max(0, gap / PART_M));
+      // With no body the sight line has no length (its closest point is NaN): nothing to part, draw the puff whole.
+      const k = me.body
+        ? Math.min(1, Math.max(0, (line.closestPointToPoint(p, true, near).distanceTo(p) - r) / PART_M))
+        : 1;
       if (k <= 0) continue;
       q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, i * 1.3);
       puffs.setMatrixAt(n++, m.compose(p, q, s.set(r * k, r * 0.85 * k, r * k)));
