@@ -71,6 +71,34 @@ if (query.get('b4show') === '1') {
   camera.splice(0, 3, 1425, 58, -130);
   aim.splice(0, 3, 1340, 35, -158);
 }
+if (query.get('b4show') === 'village') {
+  camera.splice(0, 3, 1006, 62, -45);
+  aim.splice(0, 3, layout.VILLAGE.x + layout.ORIGIN.x, layout.VILLAGE.y + 22, layout.VILLAGE.z);
+}
+if (query.get('b4edge') === '1') {
+  // The finishing track has not reached the head yet. Keep the diagnostic body on the already-solid rim.
+  const rim = rail.besideLine(line, 280, 0);
+  teleport(me.body, rim.x, layout.railY(line, 280) + 0.85, rim.z);
+  me.body.velocity.set(0, 0, 0);
+  if (inspectRailway()!.line2.stations[4]!.completion === 1)
+    throw new Error('Q5 finishing seed expired before mounting; live edge not observed');
+  // completion is a terminal flag, not a progress fraction: watch the moving head before its final pairs.
+  while (inspectRailway()!.line2View.head < 532) await wait(50);
+  if (inspectRailway()!.line2View.head >= 546) throw new Error('Missed the live final-pair approach');
+  let samples = 0;
+  const timer = setInterval(() => {
+    const state = inspectRailway()!;
+    console.log(
+      `BFOUR edge ${JSON.stringify({
+        completion: state.line2.stations[4]!.completion,
+        lamps: state.line2View.trestleLamps,
+        rockets: state.line2View.farHeadRockets,
+        panels: state.line2View.panelCursor,
+      })}`,
+    );
+    if (++samples >= 60) clearInterval(timer);
+  }, 200);
+}
 window.__debugCam!.set(camera, aim, 65);
 await wait(250);
 if (state.line2.stations[4]?.completion === 1) {
