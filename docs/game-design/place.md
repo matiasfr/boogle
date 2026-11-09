@@ -721,10 +721,24 @@ ids only, null when nothing is on). It replaced `railwayCosmetic` and `railwaySc
 - **The curio shelf** stands at Place's spot in the village, by the forge: what you own of the boxes' gifts stands on
   it, the rest under dust sheets (and the two shapes that never come out of this run's boxes). A sheet comes off with a
   puff of cloth when a box's card is put away within 40 m. Within 4.4 m, "Swap hat / accessory / outfit" cycles what
-  you own, as the shop's rail does. The stowaway's slot comes with C2; the finders' bay with F2.
+  you own, as the shop's rail does. The stowaway's slot came with C2 (below); the finders' bay comes with F2.
 
 Sync: Personal Local in the wardrobe store (`opened`, `dry`, `got`); eligibility is the server's accepted completion.
 No new presence key, op or `WORLD_NS` change. Measured at the bench's town pose: 233 draw calls against 231 before.
+
+### The stowaway in the live game (9 November 2026, place-retirement C2)
+
+The stowaway (the pet slot's only gift, a Rare from a station box) is Place's follower. When its box's card is put
+away it comes out beside you if the pet slot is empty, and hops along behind you and a little to the side, squashing as
+it goes; on a moving deck (a train, the track layer) it hops up onto your shoulder and rides there, smaller. "Swap pet"
+at the curio shelf, beside the three clothes slots, puts it away and brings it back; the shop's rail still
+swaps only clothes. A reload keeps it out, or away. Partners see it follow you and ride on your shoulder, and it goes
+when you leave.
+
+Sync: owning it is Personal Local in the wardrobe store, saved with what you wear (`worn.pet`). That it's out is Owner
+presence `stowaway`, `{ riding: boolean }` (true on a moving deck), or null when it's away; the `wardrobe` presence
+still carries only the clothes. Each tab animates its own copy of a partner's from that flag and their interpolated
+avatar, so where it hops differs a little between tabs. No op or `WORLD_NS` change.
 
 ## Departures from the brief
 
