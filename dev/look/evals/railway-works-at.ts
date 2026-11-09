@@ -59,7 +59,11 @@ if (mode === 'wagon') {
     return row.phase === 0 && row.at === 0;
   };
   while (!home() && performance.now() < end) await wait(100);
-  console.log(`WORKS wagon pose: line 2 at the village ${home()}`);
+  const train = (inspectRailway() as unknown as { line2View: { trains: { wagon?: unknown; cars: unknown[] }[] } })
+    .line2View.trains[1];
+  console.log(
+    `WORKS wagon pose: line 2 at the village ${home()} ${JSON.stringify({ wagon: train?.wagon, cars: train?.cars })}`,
+  );
 }
 const action = !!shot.__worksPrepared;
 if (!action) {

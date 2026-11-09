@@ -48,6 +48,31 @@ background(
     while (!shot.__railStop) await wait(100);
     if (shot.__railStop !== beat) throw new Error(`Railway photo missed ${beat}`);
     window.__debugCam!.set(frame.camera, frame.target, 65);
+    // The train leaves as the wagon couples, so this frame rides with it: from beside and behind the wagon,
+    // along the train (the static frame above is only where it starts).
+    if (beat === 'wagon coupled') {
+      type Pose = { x: number; y: number; z: number };
+      const { inspectRailway } = (await import(
+        '/src/entities/railway/state.ts' as string
+      )) as typeof import('../../../src/entities/railway/state.ts');
+      const follow = () => {
+        const train = (inspectRailway() as unknown as { line2View?: { trains: { wagon?: Pose; cars: Pose[] }[] } })
+          .line2View?.trains[1];
+        const w = train?.wagon,
+          head = train?.cars[2];
+        if (!w || !head) return;
+        const d = Math.hypot(head.x - w.x, head.z - w.z) || 1,
+          fx = (head.x - w.x) / d,
+          fz = (head.z - w.z) / d;
+        window.__debugCam!.set(
+          [w.x - fz * 7 - fx * 5, w.y + 4.5, w.z + fx * 7 - fz * 5],
+          [w.x + fx * 4, w.y + 0.6, w.z + fz * 4],
+          65,
+        );
+      };
+      follow();
+      setInterval(follow, 30);
+    }
     // Hide only makeBot's diagnostic note panel; the console/report retains every note.
     for (const panel of document.querySelectorAll<HTMLDivElement>('body > div'))
       if (panel.style.zIndex === '9999' && panel.style.whiteSpace === 'pre') panel.style.display = 'none';
