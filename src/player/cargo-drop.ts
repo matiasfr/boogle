@@ -2,7 +2,16 @@
 import { registerAction } from './controls.ts';
 
 let activeDrop: (() => boolean) | null = null;
+let bigDrop: (() => boolean) | null = null;
 let installed = false;
+
+/** Unique server cargo gets first refusal without declaring another control. */
+export function bindBigDrop(drop: () => boolean) {
+  bigDrop = drop;
+  return () => {
+    if (bigDrop === drop) bigDrop = null;
+  };
+}
 
 export function bindCargoDrop(drop: () => boolean) {
   if (!installed) {
@@ -16,6 +25,7 @@ export function bindCargoDrop(drop: () => boolean) {
       group: 'hands',
       order: 3,
       down: () => {
+        if (bigDrop?.()) return;
         activeDrop?.();
       },
     });
