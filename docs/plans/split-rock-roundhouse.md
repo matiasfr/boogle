@@ -288,7 +288,7 @@ loads to the pier and 12 sets about 8. That is **about 28 minutes solo**, less w
 
 ```
 start now (parallel with B5–B8):  J1 layout + map + tests ──┐
-                                  J2 blockout views (?works=1) ┤
+                                  J2 blockout views (default on) ┤
 B5–B8 job A merges (v21) ─────────► J3 rules, server, adapter, seeds, WORLD_NS v22 ──┬─► J4 Works + Roundhouse live views ──┐
 B5–B8 B, C merge ───────────────────────────────────────────────────────────────────┤                                     ├─► J5 wagon, pier, bot, record ─► final pass ─► stop
 B5–B8 D merges; owner has played B5–B8 ─────────────────────────────────────────────┴─────────────────────────────────────┘
@@ -296,8 +296,8 @@ later: E (ankle rings + balcony), after the B5–B8 verdict and owner question 4
 ```
 
 - **Start now: J1 and J2.** They share no file with B5–B8's A–D except one wiring hunk in `src/entities/railway/view.ts`
-  (J2), which B also edits: whichever lands second rebases. Neither adds state, ops or saves. J2's views stay hidden
-  unless `?works=1`. Both may merge to main before the B5–B8 playtest: they don't change the flow it tests (owner calls,
+  (J2), which B also edits: whichever lands second rebases. Neither adds state, ops or saves. J2's views are default-on
+  unless `?works=0`. Both may merge to main before the B5–B8 playtest: they don't change the flow it tests (owner calls,
   "Stop at the owner's playtest").
 - **Wait for B5–B8 job A: J3.** It edits the train kinds, the train tick, `LINE_HALTS`, `heldBig`, the adapter and
   `WORLD_NS` that A introduces. `codex/b5b8-rules` already has A's three commits: J3 may branch from that tip now and
@@ -384,7 +384,7 @@ later: E (ankle rings + balcony), after the B5–B8 verdict and owner question 4
 
 ---
 
-### Job J2: the blockout, behind `?works=1` (start now)
+### Job J2: the blockout, already default-on (`?works=0` disables it)
 
 **Files.** New `src/entities/railway/works-shape.ts` (pure data: boxes in world metres, no three.js), new
 `src/entities/railway/works-flag.ts`, new `src/entities/railway/works-view.ts`, new
@@ -393,7 +393,7 @@ later: E (ankle rings + balcony), after the B5–B8 verdict and owner question 4
 
 **Steps.**
 
-- [ ] **J2a. Shapes** (`works-shape.ts`), built from J1's catalog:
+- [x] **J2a. Shapes** (`works-shape.ts`), built from J1's catalog:
   - `SPLIT_ROCK_BOXES`: the outcrop as 10–16 yawed boxes (walls 16 m, a 3–5 m rim, the bowl floor at table height)
     with the cut's sides.
   - `THROAT_SLAB`: three toppling slabs filling the 8 m cut.
@@ -410,9 +410,9 @@ later: E (ankle rings + balcony), after the B5–B8 verdict and owner question 4
   - `'the throat is shut'`: no gap ≥ 0.6 m through the cut with `THROAT_SLAB` in place.
   - `'no box on a rail, path, plot or frame'`: the J1 clearances, applied to the boxes.
   - `'the roller road clears the camp'`: ≥ 1.5 m from both quarry camp plot sets and the derrick.
-- [ ] **J2b. Flag.** `works-flag.ts` exports `worksPreview(): boolean`, true when the address has `works=1`. J4 makes it
-  default-on; there is one check site in `view.ts`.
-- [ ] **J2c. `works-view.ts`**, `createRailwayWorks(adapter, owner)`, dormant pose only:
+- [x] **J2b. Flag.** `works-flag.ts` exports `worksPreview(): boolean`, true unless the address has `works=0`.
+  Default-on from J2 per the owner's 8 November answer; there is one check site in `view.ts`.
+- [x] **J2c. `works-view.ts`**, `createRailwayWorks(adapter, owner)`, dormant pose only:
   - the outcrop in a limestone blockout colour, with `addStatic(…, owner)` colliders;
   - the throat slab solid, with a painted seam line;
   - the kiln's back and a cold chimney, the cold roller road, and the Works rack with one broken sample footing
@@ -420,7 +420,7 @@ later: E (ankle rings + balcony), after the B5–B8 verdict and owner question 4
   - the two limestone rocks drawn as static boulders (J4 swaps them for real sources).
 
   `update()` does nothing yet; `inspect()` returns `{ boxes: n, slab: true }`.
-- [ ] **J2d. `roundhouse-view.ts`**, `createRailwayRoundhouse(adapter, owner)`, dormant pose only:
+- [x] **J2d. `roundhouse-view.ts`**, `createRailwayRoundhouse(adapter, owner)`, dormant pose only:
   - the stall shell on its road;
   - the cracked door slab, solid;
   - a tarp over the shunter (a small engine: one cab box, one boiler cylinder, 4 m long) and the wagon (a flatbed,
@@ -429,32 +429,88 @@ later: E (ankle rings + balcony), after the B5–B8 verdict and owner question 4
   - the stall road's rails from the turntable rim.
 
   `inspect()` returns `{ slab: true, tarp: true }`.
-- [ ] **J2e. Wire** both in `view.ts` after the cart, only when `worksPreview()`, and free them with the owner. Add
+- [x] **J2e. Wire** both in `view.ts` after the cart, only when `worksPreview()`, and free them with the owner. Add
   `update`, `restore`, `targets` and `inspect` calls alongside the cart's.
-- [ ] **J2f. The eval** `dev/look/evals/railway-works-at.ts`, modelled on `railway-b4-at.ts`. It teleports and frames
+- [x] **J2f. The eval** `dev/look/evals/railway-works-at.ts`, modelled on `railway-b4-at.ts`. It teleports and frames
   the camera at `worksat` = `halt` (on the quarry halt facing the seam), `ledge` (east ledge at the cleft), `bowl`
   (inside, facing the kiln's back), `stall` (from spawn toward the stall), `table` (beside the turntable facing the
   stall road) or `pier` (at the pier head facing north). It must work on a fresh world (no seed). J3 extends it to wait
   for seeds.
 - **Proofs.**
   - `npm run check`.
-  - Stills, each opened and described: `npm run look -- --query 'works=1' --eval dev/look/evals/railway-works-at.ts
+  - Stills, each opened and described: broker `look --real --eval dev/look/evals/railway-works-at.ts
     --query 'worksat=<v>'` for `halt`, `ledge`, `bowl` and `stall`. The seam should read from the halt, the cleft from
     the ledge, and the stall ruin from spawn.
   - One walk: a look `--action` that walks `WORKS_WALK` from the halt into the bowl without a jump. Report whether it
     arrived.
-  - `npm run perf` before (same base) and after, with `works=1`, at the quarry halt. Report draw calls, triangles and
+  - `npm run perf` with `works=0` versus default, at the quarry halt. Report draw calls, triangles and
     frame ms; the target is ≤ 10 extra draw calls (instance or merge the boxes).
-  - Without the flag, a still at `worksat=halt` is unchanged from main.
-- **Done means.** All proofs pass and were looked at. No state, ops or sim edits. Without `?works=1` the game is
-  byte-for-byte the same in play.
+  - With `works=0`, a still at `worksat=halt` is unchanged from main.
+- **Done means.** All proofs pass and were looked at. No state, ops or sim edits. `works=0` bypasses both views and
+  their colliders; the normal visit includes the dormant blockout.
+
+**J2 implementation departures (8 November).** J1 pins interaction anchors, not full footprints. The proposed
+7 × 14 m stall overlaps the existing path and the rotated hall. Its ruin is 4 × 9 m, two metres north of
+`SHED_STALL`, heading west with a bent road from the table; the original seam anchor remains inside its slab.
+Low side walls expose the tarp silhouettes and sockets. The outcrop has ten walls, with a buried 16 m base and
+40 m rim because the sea-face ground falls below 18 m. No terrain is flattened. The cleft is 1.4 m wide.
+The roller road bends around both quarry camp states; the bowl walk also bends around the dormant boulders.
+`works-box-view.ts` is shared by both views: two box batches plus the boiler cylinder, at most three added scene
+draws with no new shadow draws. No changes to `src/proto/greybox`, state, ops or sim.
+
+**J2 proof record (8 November, `codex/works-blockout`, base `471223a2`, J1/#1218).** `npm run check` passed
+all gates and 543 unit tests after the final socket placement. Inspected stills and broker manifests:
+
+- [Halt](../../.look/evidence/1794206486301-83568/evidence.json): the three-part closed throat and dark seam
+  read beyond the existing quarry rocks; the roller road leads to the notched sample at the rack.
+- [Ledge](../../.look/evidence/1794206487457-83653/evidence.json): the narrow vertical cleft reads between
+  the sea-face walls. Their buried bases meet the sloping terrain.
+- [Bowl](../../.look/evidence/1794206488639-83691/evidence.json): cold kiln back and chimney are clear;
+  one existing tree stands beside them and a limestone boulder occupies the foreground.
+- [Stall from spawn](../../.look/evidence/1794206881903-95337/evidence.json): the low shell exposes the
+  covered cab and wagon. [Close view](../../.look/evidence/1794206882931-95399/evidence.json) confirms
+  two empty apron sockets in front of the closed slab, clear of the vehicles.
+- [No-jump walk](../../.look/evidence/1794206490945-83734/evidence.json): arrived at world
+  `(1133.073, 25.575, 94.203)`, no jumps or recovery, 0% airborne in 3324 recorded frames. Opened the end
+  still and curves. The first attempt stopped at a new boulder; the polyline now goes around it, and the
+  clearance test includes both boulders. The full route is 210.94 m (about 169 m to the cleft, longer than
+  the plan's 120 m estimate); the body descends to 9.3 m on the outer ledge before climbing into the bowl.
+- Opened [original main view](../../.look/evidence/1794206347462-80587/evidence.json) and
+  [`works=0`](../../.look/evidence/1794206514698-84323/evidence.json) halt stills: visually the same geometry,
+  path, camp and trees. Not pixel-identical: 1.07% of pixels differ, mean RGB channel difference 0.016/255
+  across live captures. The baseline used the original `origin/main` view file, then restored the wiring.
+
+Matched quarry measurements use `railway-works-at.ts` with `worksperf=1`, the existing `observeGpu` and
+`hardwareTiming` profiler, on the Mac's Apple Metal adapter. Both use `gpuProfile=portable`, MSAA 1,
+390 × 844 pixels, identical camera and a five-second sample (300 frames). The profiler UI obscures much
+of these diagnostic stills; the four clean stills above establish the visual verdict.
+
+| Quarry halt | [`works=0`](../../.look/evidence/1794206515843-84444/evidence.json) | [Default](../../.look/evidence/1794206884185-95480/evidence.json) |
+| --- | ---: | ---: |
+| Draw calls | 102 | 103 |
+| Triangles | 917157 | 917961 |
+| Main-thread CPU avg / p95 ms | 3.723 / 4.10 | 3.667 / 4.10 |
+| Completed-frame interval avg / p95 ms | 16.6659 / 16.70 | 16.6662 / 16.80 |
+
+One extra draw and 804 triangles meet the ten-draw budget. Average frame interval is unchanged to 0.01 ms;
+p95 rose 0.1 ms. This single pair cannot distinguish that change from scheduling variation or guarantee device cost.
+Portable mode disables timestamp queries, so GPU execution time is unavailable. Real devices, exclusive GPU
+use and real-time smoothness remain unverified.
+
+The broker's `perf` has no quarry pose or eval option: its fixed overview is a separate smoke, not the quarry
+comparison. Final render-only [off](../../.look/evidence/1794207034966-99402/evidence.json) and
+[on](../../.look/evidence/1794207036112-99535/evidence.json) runs passed: 156/162 draws,
+1268045/1271765 triangles, CPU table averages 4.742/5.747 ms (including 180/210 ms startup outliers, not
+steady-state frame timings). Earlier headed perf runs returned data but failed on two local 404 console errors;
+they are not passing evidence. The first off quarry run was also invalidated by an external trusted-harness
+update and was repeated. No new scenario or harness was added.
 
 **Codex brief (paste):**
 
 > Build job J2 of docs/plans/split-rock-roundhouse.md on a branch from origin/main (J1 merged, or J1's branch tip if
 > it hasn't merged; say which): the greybox-style blockout of the split rock (outcrop, throat slab, cleft, kiln back,
 > roller road, rack) and the Roundhouse stall (slab, tarped shunter and wagon, sockets, stall road), as Local views
-> with static colliders, shown only with `?works=1`. Also `works-shape.ts` with its tests and the
+> with static colliders, on by default (`?works=0` disables it). Also `works-shape.ts` with its tests and the
 > `railway-works-at.ts` eval. Read AGENTS.md, src/entities/AGENTS.md, .claude/rules/state-consumers.md,
 > docs/agents/rendering.md, docs/agents/verification.md and the look skill. Follow J2a–J2f. No state, ops or sim
 > edits; one wiring hunk in view.ts. Proofs: npm run check, four stills (open and describe each), the no-jump walk
@@ -611,7 +667,8 @@ later: E (ankle rings + balcony), after the B5–B8 verdict and owner question 4
   - The wagon is a solid platform `railway:shed-wagon` while it is parked.
 - [ ] **J4g. Rocks.** `sources.ts` iterates `RAIL_ROCKS`, so the two limestone rocks mine like line 1's. Remove J2's
   static boulders.
-- [ ] **J4h. Default on.** `worksPreview()` returns true unless `works=0`.
+- [x] **J4h. Already default on in J2.** `worksPreview()` returns true unless `works=0`; keep that off switch for
+  before/after performance and the unchanged-still proof.
 - **Proofs** (seeded; open every PNG):
   - The breaker on its pedestal with **Take the breaker** at `works-arrive`, `worksat=table`, plus an `--action` take.
   - The stall slab strike as a 6 s `--video` from `works-arrive` with an `--action` that takes, walks and strikes.
@@ -756,8 +813,8 @@ the solo/two-player time. **Stop all development** until the owner has played.
   renames a pinned name (`TRAIN_STOPS`, `LINE_HALTS`, `heldBig`, `trainFlying`, the boiler pedestal), J3–J5 follow the
   merged name and note it.
 - **Mixed builds.** One `WORLD_NS` bump in J3's commit (new kinds, new fields, rock slots, a stop). The ops are
-  additive, with no compatibility code. Between J3 and J4 merging, a room past Q6 has a dormant-looking Works (the flag
-  is still off). Merge J3 and J4 in one ship batch to avoid that.
+  additive, with no compatibility code. Between J3 and J4 merging, a room past Q6 has the dormant default-on blockout
+  without live interactions. Merge J3 and J4 in one ship batch to avoid that.
 - **The turntable.** It is Place's junction disc, which the depot cart uses as its forge stop. The cart retires when
   trains run (B5–B8, B3), long before the breaker exists, so the two never meet. Line 1's and line 2's standing
   trains stop at s = 14 and 17, outside the disc. The wagon waiting at s = 9.6 is behind line 2's tail (11.7 m): J1

@@ -133,7 +133,8 @@ export const STALL_ROAD = [
   stallPoint(0, -4),
   roadEnd,
 ];
-export const STALL_SOCKETS = [-1.5, 1.5].map((x) => stallPoint(x, 2));
+// Footing sockets occupy the clear apron in front of the sealed slab, never underneath a waiting vehicle.
+export const STALL_SOCKETS = [-1.5, 1.5].map((x) => stallPoint(x, -3.7));
 const pier = metres(PIER_FRAME);
 export const PIER_SOCKETS = Array.from({ length: 12 }, (_, i) => ({
   x: pier.x + (i % 2 ? 2.5 : -2.5),
