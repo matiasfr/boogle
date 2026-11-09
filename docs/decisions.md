@@ -36,7 +36,7 @@ Routing updated 7 November 2026. Read only the linked sections and dated entries
 
 ### Controls, HUD and arrival
 
-[Decided](#decided), introductory lines only: one thing in hand, no hotbar/empty-hand bump. [Controls](#controls): Interact X/Square, no petting/tier labels, first fall/title, room-specific return, reset replays opening, confirmed fresh start, Get unstuck, stopped Leave menu, no first-run controls card, uninterruptible cinematics. Later return/menu entries supersede earlier arrival descriptions; invite links wait.
+[Decided](#decided), introductory lines only: one thing in hand, no hotbar/empty-hand bump. [Controls](#controls): Interact X/Square, no petting/tier labels, first fall/title, room-specific return, reset replays opening, confirmed fresh start, Get unstuck, stopped Leave menu, no first-run controls card, uncut cinematics. Later return/menu entries supersede earlier arrival descriptions; invite links wait.
 
 ### Architecture, tools and prototype lifecycle
 
