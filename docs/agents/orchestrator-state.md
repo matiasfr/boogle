@@ -2,7 +2,7 @@
 
 The living status for whoever is orchestrating, Claude or Codex: read it first, update it as jobs start, merge and finish, and ship it with docs. How to work is in the [orchestrate skill](../../.claude/skills/orchestrate/SKILL.md). It's a snapshot, not authority: decisions live in [owner calls](owner-calls.md) and the [decision index](../decisions.md#current-decision-index).
 
-**Updated:** 9 November 2026, 20:00 UTC. The roadmap (now, next, later) is [direction.md](../direction.md), not this file. Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
+**Updated:** 9 November 2026, 20:15 UTC. The roadmap (now, next, later) is [direction.md](../direction.md), not this file. Public copy: https://boogle.club/development/ The owner sees the same status on the [Line Map board](https://claude.ai/artifact/2znk2jAgbsyu7so8vA3v5C).
 
 ## Links
 
@@ -15,24 +15,16 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
   - approved: [recovery rack](../brainstorms/recovery-rack.md), [signposts](../brainstorms/signposts.md);
   - building: [tunables](../brainstorms/tunables.md), [cart whistle](../brainstorms/cart-whistle.md).
 
-## Paused for a machine restart
-
-The owner paused development on 9 November at about 20:00 UTC to update and restart the Mac. Nothing is running. Start no agents or bot runs until the owner is back from the restart; then resume the jobs under "Running" from their branches (`npm run heartbeat` lists each worktree and its last commit). Each branch's plan file has a "Where this stopped" note with the runs it still owes. Delete this section when work resumes.
-
-- The restart ends the orchestrator session's subagents and wipes `/private/tmp`. Start a fresh orchestrator session from this file rather than reviving the old one.
-- The Morning Brief and playtest guide sources were copied to `.look/orchestrator/` in the main checkout (gitignored); either can also be read back from its artifact.
-- The hourly heartbeat was a schedule inside the old session and does not survive it. Set it up again in the new session, with `npm run heartbeat` and `npm run ship-queue` in its wording.
-
 ## Running
 
-Claude only until 12 November (`npm run models`). Agents run in `.claude/worktrees/agent-*`; `npm run heartbeat` lists them with their queued bot runs. Ship with `npm run ship-queue -- <worktree> --wait`.
+Claude only until 12 November (`npm run models`). Agents run in `.claude/worktrees/agent-*`, resumed in their existing worktrees after the 9 November restart (ship order where files overlap: glider B, F2, jump-ins); `npm run heartbeat` lists them with their queued bot runs. Ship with `npm run ship-queue -- <worktree> --wait`.
 
 | Job | Status | Blocker or next step |
 | --- | --- | --- |
-| F2: secrets and the finders' bay | paused, built | `.claude/worktrees/agent-af6410c7219d14e16`. Rebased, check green. At `cf18b269`. Owes its long run (`f2-long2`, never ran) and four stills, then the review and ship. Three secrets are reachable before their ability (lookout, alcove, sea stack): a layout call for the designer. Cuts the gold finds from the live game |
-| Glider B + Home flow fixes | paused, built | `.claude/worktrees/agent-a1c64a5b32fc10f09`. Its long run was in progress at the pause; check its plan note for the verdict. WORLD_NS v23: ship only when no owner session is live; needs an independent review and `--reviewed` |
-| Playtest jump-ins | paused, part built | `.claude/worktrees/agent-a1abf1ff2a1170b5a`. Owner ask, 9 Nov. Plan: docs/plans/playtest-jump-in.md. Its looks (`jump-q3`, `ws-run`, the landing probe) were stopped in the queue and are still owed; lands before D1 |
-| Review of unreviewed lockstep merges | paused, partial | `578d8d3d`, `0d3f4190`, `a67afce9`, `9efed0ad`, `2afdbb86`, `6a41ab2b` merged on 9 November with only their author's checks. Findings so far: `docs/reviews/lockstep-merges-2026-11-09.md` on branch `worktree-agent-af4d03be8160ce481`, which says which commits it finished. Verify each finding, finish the rest, dispatch fixes |
+| F2: secrets and the finders' bay | running, built | `.claude/worktrees/agent-af6410c7219d14e16`. Resumed 20:10 UTC after the restart: rebase, then the long run `f2-long2` and four stills. Then the designer's layout call (three secrets reachable before their ability: lookout, alcove, sea stack), the review and ship. Cuts the gold finds from the live game |
+| Glider B + Home flow fixes | running, built | `.claude/worktrees/agent-a1c64a5b32fc10f09`. The restart killed its long run (`gb-long`: browser closed, no verdict); resumed 20:10 UTC to rebase and run `gb-long2`. An independent review of the branch runs beside it. WORLD_NS v23: ship only when no owner session is live, with `--reviewed` |
+| Playtest jump-ins | running, part built | `.claude/worktrees/agent-a1abf1ff2a1170b5a`. Owner ask, 9 Nov. Plan: docs/plans/playtest-jump-in.md. Resumed 20:10 UTC: rebase onto J5, then the plan's seven owed runs and step 7's `land` values. The glider B rows wait until glider B is on main (message the agent then). Needs an independent review; lands before D1 |
+| Review of unreviewed lockstep merges | running | `578d8d3d`, `0d3f4190`, `a67afce9`, `9efed0ad`, `2afdbb86`, `6a41ab2b` merged on 9 November with only their author's checks. A reviewer resumed 20:10 UTC on `docs/reviews/lockstep-merges-2026-11-09.md` (branch `worktree-agent-af4d03be8160ce481`): finish `9efed0ad`, re-verify the seven findings, write fix briefs. Then dispatch the fixes (forge-rack cap after the fit and the remembered release epoch look the most likely) |
 | Next | | D1 (delete `?proto=place`, with D1c per the jump-in plan) → R1–R3; kiln mouth polish; Split-rock cleft placement; the leftovers below |
 
 ## Merged 9 November
