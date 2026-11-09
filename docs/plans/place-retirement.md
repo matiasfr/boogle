@@ -13,7 +13,7 @@ agent each (Codex gpt-6.1-sol or a Claude subagent, per `npm run models`).
   Every job proceeds in order and none waits for a playtest. Split-rock J3 also starts now, in parallel
   ([split-rock-roundhouse](split-rock-roundhouse.md)).
 
-**Binding earlier calls** (read from [the decision log](../proposals/boogle-2.md), which a docs agent is splitting into
+**Binding earlier calls** (read from [the decision log](../decisions.md), split from boogle-2.md on 9 November into
 `docs/decisions.md` and `docs/direction.md`; the dates stay the same):
 - **2026-11-02, numbers go on what everyone shares.** Town population and level are shared.
 - **2026-11-02, the town you can go into**: house, shop and museum, all three ([place](../game-design/place.md),
